@@ -1620,9 +1620,30 @@ static const Type* tryFindTypeViaCopyFn(Resolver& resolver,
   return ErroneousType::get(resolver.context);
 }
 
-QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
-                                       const AstNode* typeForErr,
-                                       const AstNode* initForErr,
+// The production compiler inserts temps for default values of actuals.
+// As a result, `ref x: t = e` is treated as `var tmp: t = e; ref x = tmp;`.
+// This means that, unlike "normal" ref arguments (which require exact
+// type matches), defaults have the opportunity to coerce. To simulate this,
+// adjust the intent of the formal to be non-ref for formals with default values.
+static QualifiedType::Kind adjustDeclKindForFormalWithInitExpr(const AstNode* decl,
+                                                               const AstNode* initExpr,
+                                                               QualifiedType::Kind declKind) {
+  // no initialization expression, no need to adjust.
+  if (!initExpr) return declKind;
+
+  auto formal = decl->toFormal();
+  auto td = decl->toTupleDecl();
+  auto va = decl->toVarArgFormal();
+
+  // not a formal, no need to adjust.
+  if (!formal && !va && (!td || !td->isTupleDeclFormal())) return declKind;
+
+  return KindProperties::removeRef(declKind);
+}
+
+QualifiedType Resolver::getTypeForDecl(const AstNode* decl,
+                                       const AstNode* typeExpr,
+                                       const AstNode* initExpr,
                                        QualifiedType::Kind declKind,
                                        QualifiedType declaredType,
                                        QualifiedType initExprType) {
@@ -1630,16 +1651,16 @@ QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
   const Type* typePtr = nullptr;
   const Param* paramPtr = nullptr;
 
-  if (typeForErr == nullptr)
-    typeForErr = declForErr;
-  if (initForErr == nullptr)
-    initForErr = declForErr;
+  if (typeExpr == nullptr)
+    typeExpr = decl;
+  if (initExpr == nullptr)
+    initExpr = decl;
 
   bool inferParam = (declKind == QualifiedType::PARAM &&
                      initExprType.kind() == QualifiedType::PARAM);
 
   // check that the resolution of the type expression is a type
-  if (checkForKindError(typeForErr, initForErr, declKind,
+  if (checkForKindError(typeExpr, initExpr, declKind,
                         declaredType, initExprType)) {
     // error already issued in checkForKindError
     typePtr = ErroneousType::get(context);
@@ -1652,10 +1673,10 @@ QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
   } else if (!declaredType.hasTypePtr() && initExprType.hasTypePtr()) {
     // Iterators are 'materialized' into arrays
     if (initExprType.type()->isIteratorType()) {
-      typePtr = computeChplCopyInit(declForErr, declKind, initExprType);
+      typePtr = computeChplCopyInit(decl, declKind, initExprType);
     // Check if this type requires custom type inference
     } else if (auto rec = getTypeWithCustomInfer(context, initExprType.type())) {
-      typePtr = computeCustomInferType(declForErr, rec);
+      typePtr = computeCustomInferType(decl, rec);
     } else {
       // init but no declared type, so use init type
       typePtr = initExprType.type();
@@ -1664,9 +1685,12 @@ QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
       }
     }
   } else {
+    declKind = adjustDeclKindForFormalWithInitExpr(decl, initExpr, declKind);
+
     // otherwise both declaredType and initExprType are provided.
     // check that they are compatible
     auto fullDeclType = QualifiedType(declKind, declaredType.type());
+
     auto got = canPass(context, initExprType, fullDeclType);
     if (!got.passes()) {
       if (initExprType.isUnknownOrErroneous()) {
@@ -1710,16 +1734,16 @@ QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
         // TODO: store an associated action?
         const Scope* scope = currentScope();
         auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
-        auto c = resolution::resolveGeneratedCall(rc, declForErr, ci, inScopes);
+        auto c = resolution::resolveGeneratedCall(rc, decl, ci, inScopes);
         if (!c.mostSpecific().isEmpty()) {
           typePtr = declaredType.type();
         } else {
-          RESOLVER_REPORT(*this, IncompatibleTypeAndInit, declForErr, typeForErr,
-                      initForErr, declaredType.type(), initExprType.type());
+          RESOLVER_REPORT(*this, IncompatibleTypeAndInit, decl, typeExpr,
+                      initExpr, declaredType.type(), initExprType.type());
           typePtr = ErroneousType::get(context);
         }
       } else {
-        typePtr = tryFindTypeViaCopyFn(*this, declForErr, typeForErr, initForErr,
+        typePtr = tryFindTypeViaCopyFn(*this, decl, typeExpr, initExpr,
                                        declaredType, initExprType);
       }
     } else if (!got.instantiates() || declaredType.type()->isUnknownType()) {

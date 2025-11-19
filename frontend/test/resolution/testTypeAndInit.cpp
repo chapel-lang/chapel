@@ -172,11 +172,65 @@ static void testPrimitiveTypeIncompatibleSplitInit() {
   guard.realizeErrors();
 }
 
+static void testDefaultArgRefCoercion() {
+  // even though `0` is a uint and ref doesn't allow coercions,
+  // it should work in formals. Use 'const' to not care about mutability of '0'.
+  {
+    auto context = buildStdContext();
+    ErrorGuard guard(context);
+    auto qt = resolveQualifiedTypeOfX(context,
+                                      R""""(
+                                        proc foo(const ref arg: uint = 0) do return arg;
+                                        var x = foo();
+                                      )"""");
+    assert(qt.kind() == QualifiedType::VAR);
+    assert(qt.type()->isUintType());
+  }
+  // Same as before but with a global variable to disentangle this from
+  // param narrowing.
+  {
+    auto context = buildStdContext();
+    ErrorGuard guard(context);
+    auto qt = resolveQualifiedTypeOfX(context,
+                                      R""""(
+                                        var glob: int = 0;
+                                        proc foo(const ref arg: uint = glob) do return arg;
+                                        var x = foo();
+                                      )"""");
+    assert(qt.kind() == QualifiedType::VAR);
+    assert(qt.type()->isUintType());
+  }
+
+  // neither of the above cases should work for variables.
+  {
+    auto context = buildStdContext();
+    ErrorGuard guard(context);
+    auto qt = resolveQualifiedTypeOfX(context,
+                                      R""""(
+                                        const ref x: uint = 0;
+                                      )"""");
+    assert(qt.isUnknownOrErroneous());
+    assert(guard.realizeErrors() == 1);
+  }
+  {
+    auto context = buildStdContext();
+    ErrorGuard guard(context);
+    auto qt = resolveQualifiedTypeOfX(context,
+                                      R""""(
+                                        var glob: int = 0;
+                                        const ref x: uint = glob;
+                                      )"""");
+    assert(qt.isUnknownOrErroneous());
+    assert(guard.realizeErrors() == 1);
+  }
+}
+
 int main() {
   test1();
   test2();
   testBytesStringInitConversion();
   testPrimitiveTypeIncompatibleInit();
   testPrimitiveTypeIncompatibleSplitInit();
+  testDefaultArgRefCoercion();
   return 0;
 }
