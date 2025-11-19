@@ -5099,7 +5099,19 @@ static bool resolveSpecialClassCast(Context* context,
 
   auto newTargetType = ClassType::get(context, finalBase, finalManager, d);
   if (srcQt.isType()) {
-    // type-to-type cast is easy; just return what we computed
+    // type-to-type cast is easy; just return what we computed; unless
+    // we're casting unrelated classes.
+
+    if (auto newBct = newTargetType->basicClassType()) {
+      if (auto srcBct = srcClass->basicClassType()) {
+        bool ignoredConverts, ignoredInstantiates;
+        if (!srcBct->isSubtypeOf(context, newBct, ignoredConverts, ignoredInstantiates) &&
+            !newBct->isSubtypeOf(context, srcBct, ignoredConverts, ignoredInstantiates)) {
+          return false;
+        }
+      }
+    }
+
     exprTypeOut = QualifiedType(srcQt.kind(), newTargetType);
     return true;
   }
