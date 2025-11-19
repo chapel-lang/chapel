@@ -72,7 +72,8 @@ bool Pass::shouldProcess(Symbol* sym) {
 
 void Pass::process(Symbol* sym) {
   // TODO: The 'maybeAdjustSymbolType' should be made to take a template arg.
-  //       That way, we can avoid the cost of constructing std::function.
+  //       That way, we can avoid the cost of constructing std::function. Or,
+  //       we can migrate the entirety of the code to live in this file.
   AdjustTypeFn adjustTypeFn = [this](Type* t) {
     return this->computeAdjustedType(t);
   };

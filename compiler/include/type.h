@@ -206,8 +206,7 @@ public:
   static Qualifier qualifierForRetTag(RetTag retTag);
 
   // Static methods for working with Qualifier
-  static bool qualifierIsConst(Qualifier q)
-  {
+  static bool qualifierIsConst(Qualifier q) {
     return (q == QUAL_CONST ||
             q == QUAL_CONST_REF ||
             q == QUAL_CONST_VAL ||
@@ -215,8 +214,13 @@ public:
             q == QUAL_CONST_WIDE_REF);
   }
 
-  static Qualifier qualifierToConst(Qualifier q)
-  {
+  static bool qualifierIsRef(Qualifier q) {
+    return q == QUAL_REF        || q == QUAL_CONST_REF        ||
+           q == QUAL_NARROW_REF || q == QUAL_CONST_NARROW_REF ||
+           q == QUAL_WIDE_REF   || q == QUAL_CONST_WIDE_REF;
+  }
+
+  static Qualifier qualifierToConst(Qualifier q) {
     switch (q) {
       case QUAL_CONST:
       case QUAL_CONST_REF:

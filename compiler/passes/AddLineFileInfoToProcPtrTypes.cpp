@@ -50,11 +50,14 @@ Type* Pass::computeAdjustedType(Type* t) const {
         //       if this has already been done.
         //
         // Do not change if the formals match the line/file formals.
-        return ft;
+        return t;
       }
     }
 
-    return ft->getWithLineFileInfo();
+    // Otherwise, compute the new type and match the ref level.
+    auto ret = ft->getWithLineFileInfo();
+
+    return ret;
   }
 
   return t;
