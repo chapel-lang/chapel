@@ -5400,23 +5400,6 @@ static bool resolveFnCallSpecial(ResolutionContext* rc,
     }
   }
 
-  if (ci.name() == USTR("isCoercible")) {
-    if (ci.numActuals() != 2) {
-      if (!ci.isMethodCall()) {
-        context->error(astForErr, "bad call to %s", ci.name().c_str());
-        exprTypeOut = QualifiedType(QualifiedType::UNKNOWN,
-                                    ErroneousType::get(context));
-        return true;
-      } else {
-        return false;
-      }
-    }
-    auto got = canPassScalar(context, ci.actual(0).type(), ci.actual(1).type());
-    bool result = got.passes();
-    exprTypeOut = QualifiedType::makeParamBool(context, result);
-    return true;
-  }
-
   if (ci.name() == USTR("this") && ci.numActuals() == 2) {
     // compiler-defined 'this' operator for param-indexed tuples
     auto thisType = ci.actual(0).type();
