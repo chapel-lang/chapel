@@ -18,6 +18,7 @@
  */
 
 #include "chpl/types/RecordType.h"
+#include "chpl/types/TypeTag.h"
 #include "test-resolution.h"
 #include "chpl/resolution/resolution-queries.h"
 
@@ -898,6 +899,79 @@ static void test60() {
   assert(foundTupleCast);
 }
 
+static void testAdjustCastCalls() {
+  printf("testAdjustCastCalls\n");
+
+
+  // Helper to test casts - works for both type-level and value-level
+  // expectedManager: owned/shared type for managed, nullptr for unmanaged/borrowed
+  // expectedClassName: name of the class in the result (C or D)
+  // expectError: true if we expect the cast to produce an error
+  auto testCast = [](const char* program, const char* varName,
+                            const typetags::TypeTag expectedManager,
+                            const char* expectedClassName,
+                            bool expectError = false) {
+    auto stdContext = buildStdContext();
+    ErrorGuard guard(stdContext);
+
+    std::string fullProgram =
+      "class C { }\n"
+      "class D : C { }\n"
+      "class E { }\n" +
+      std::string(program);
+
+    auto varType = resolveTypeOfVariable(stdContext, fullProgram, varName);
+
+    if (expectError) {
+      assert(guard.numErrors() > 0);
+      guard.realizeErrors();
+    } else {
+      assert(varType.type());
+      auto ct = varType.type()->toClassType();
+      assert(ct);
+      assert(ct->basicClassType()->name() == UniqueString::get(stdContext, expectedClassName));
+
+      if (expectedManager != typetags::NUM_TYPE_TAGS) {
+        assert(ct->decorator().isManaged());
+        assert(ct->manager());
+        assert(ct->manager()->tag() == expectedManager);
+      } else {
+        assert(!ct->decorator().isManaged());
+      }
+
+      assert(guard.numErrors() == 0);
+    }
+  };
+
+  // Type-level casts
+  testCast("type t = owned C : shared;", "t", typetags::AnySharedType, "C");
+  testCast("type t = owned C : shared C;", "t", typetags::AnySharedType, "C");
+  testCast("type t = owned C : unmanaged;", "t", typetags::NUM_TYPE_TAGS, "C");
+  testCast("type t = owned C : borrowed;", "t", typetags::NUM_TYPE_TAGS, "C");
+  testCast("type t = borrowed C : owned;", "t", typetags::AnyOwnedType, "C");
+  testCast("type t = borrowed C : owned C;", "t", typetags::AnyOwnedType, "C");
+  testCast("type t = unmanaged C : owned;", "t", typetags::AnyOwnedType, "C");
+  testCast("type t = unmanaged C : owned C;", "t", typetags::AnyOwnedType, "C");
+  testCast("type t = owned C : shared D;", "t", typetags::AnySharedType, "D");  // RHS class used
+  testCast("type t = owned D : shared C;", "t", typetags::AnySharedType, "C");  // RHS class used
+
+  // Type-level cast that should fail (unrelated classes)
+  testCast("type t = owned C : shared E;", "t", typetags::NUM_TYPE_TAGS, nullptr, true);
+
+  // Value-level casts
+  testCast("var oc = new owned C();\nvar v = oc.borrow();\nvar x = v : unmanaged;", "x", typetags::NUM_TYPE_TAGS, "C");
+  testCast("var oc = new owned C();\nvar v = oc.borrow();\nvar x = v : borrowed;", "x", typetags::NUM_TYPE_TAGS, "C");
+
+  // Value-level casts that should fail
+  testCast("var oc = new owned C();\nvar x = oc : shared;", "x", typetags::NUM_TYPE_TAGS, nullptr, true);
+  testCast("var oc = new owned C();\nvar x = oc : shared C;", "x", typetags::NUM_TYPE_TAGS, nullptr, true);
+  testCast("var oc = new owned C();\nvar x = oc : shared D;", "x", typetags::NUM_TYPE_TAGS, nullptr, true);  // C is parent of D
+  testCast("var od = new owned D();\nvar x = od : shared C;", "x", typetags::NUM_TYPE_TAGS, nullptr, true);  // D is child of C
+  testCast("var oc = new owned C();\nvar x = oc : shared E;", "x", typetags::NUM_TYPE_TAGS, nullptr, true);  // unrelated
+  testCast("var bc = (new owned C()).borrow();\nvar x = bc : owned;", "x", typetags::NUM_TYPE_TAGS, nullptr, true);
+  testCast("var bc = (new owned C()).borrow();\nvar x = bc : owned C;", "x", typetags::NUM_TYPE_TAGS, nullptr, true);
+}
+
 int main() {
   test1();
   test2();
@@ -959,6 +1033,8 @@ int main() {
   test58();
   test59();
   test60();
+
+  testAdjustCastCalls();
 
   return 0;
 }
