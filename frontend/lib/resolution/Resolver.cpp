@@ -6108,8 +6108,10 @@ getDecoratedClassForNew(Resolver& rv, const New* node,
     case New::DEFAULT_MANAGEMENT:
       // Management might've been provided for us already; otherwise
       // fall back to the default: 'owned'.
-      if (!classType->decorator().isUnknownManagement())
+      if (!classType->decorator().isUnknownManagement()) {
+        manager = classType->manager();
         break;
+      }
 
       // Fall through to 'owned' management.
 
