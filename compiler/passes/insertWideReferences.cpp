@@ -2515,13 +2515,10 @@ insertWideReferences(void) {
   INT_ASSERT(wideRefMap.n == 0);
   buildWideRefMap();
 
-  // NOTE: This pass must run after wide-ref and wide-class types are built.
   PassManager pm;
 
-  // TODO: "Run pass over all symbols..."
-  pm.runPass(WidenComponentsOfProcPtrTypes(), gFnSymbols);
-  pm.runPass(WidenComponentsOfProcPtrTypes(), gArgSymbols);
-  pm.runPass(WidenComponentsOfProcPtrTypes(), gVarSymbols);
+  // NOTE: This pass must run after wide-ref and wide-class types are built.
+  runPassOverAllSymbols(pm, WidenComponentsOfProcPtrTypes());
 
   //
   // 1) change arrays of classes into arrays of wide classes
