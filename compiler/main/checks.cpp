@@ -568,10 +568,14 @@ static void check_afterResolution()
 
   // Ensure functions 'used-by-value' are actually used that way.
   forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (!fn->isUsed() || !fn->inTree()) continue;
+
     if (fn->isUsedAsValue()) {
       bool atLeastOnce = false;
 
       for_SymbolSymExprs(se, fn) {
+        if (!se->inTree()) continue;
+
         atLeastOnce = isUseOfProcedureAsValue(se);
         if (atLeastOnce) break;
       }
