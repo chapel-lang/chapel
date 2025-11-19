@@ -163,8 +163,6 @@ enum Qualifier {
   // The abstract qualifiers
   QUAL_UNKNOWN,
   QUAL_CONST,
-  QUAL_REF,
-  QUAL_CONST_REF,
   QUAL_PARAM,
 
   // The concrete qualifiers
@@ -179,11 +177,11 @@ enum Qualifier {
   // Something with Qualifier QUAL_VAL is mutable, but
   // something with Qualifier QUAL_CONST_VAL is not.
   QUAL_VAL,
-  QUAL_NARROW_REF,
+  QUAL_REF,
   QUAL_WIDE_REF,
 
   QUAL_CONST_VAL,
-  QUAL_CONST_NARROW_REF,
+  QUAL_CONST_REF,
   QUAL_CONST_WIDE_REF
 };
 
@@ -205,26 +203,27 @@ public:
   static Qualifier qualifierForArgIntent(IntentTag intent);
   static Qualifier qualifierForRetTag(RetTag retTag);
 
-  // Static methods for working with Qualifier
   static bool qualifierIsConst(Qualifier q) {
     return (q == QUAL_CONST ||
             q == QUAL_CONST_REF ||
             q == QUAL_CONST_VAL ||
-            q == QUAL_CONST_NARROW_REF ||
             q == QUAL_CONST_WIDE_REF);
   }
 
   static bool qualifierIsRef(Qualifier q) {
     return q == QUAL_REF        || q == QUAL_CONST_REF        ||
-           q == QUAL_NARROW_REF || q == QUAL_CONST_NARROW_REF ||
            q == QUAL_WIDE_REF   || q == QUAL_CONST_WIDE_REF;
+  }
+
+  // TODO: Could be eliminated entirely with the typed converter online.
+  static bool qualifierIsAbstract(Qualifier q) {
+    return q == QUAL_UNKNOWN || q == QUAL_CONST || q == QUAL_PARAM;
   }
 
   static Qualifier qualifierToConst(Qualifier q) {
     switch (q) {
       case QUAL_CONST:
       case QUAL_CONST_REF:
-      case QUAL_CONST_NARROW_REF:
       case QUAL_CONST_WIDE_REF:
       case QUAL_CONST_VAL:
       case QUAL_PARAM:
@@ -236,8 +235,6 @@ public:
         return QUAL_CONST_REF;
       case QUAL_VAL:
         return QUAL_CONST_VAL;
-      case QUAL_NARROW_REF:
-        return QUAL_CONST_NARROW_REF;
       case QUAL_WIDE_REF:
         return QUAL_CONST_WIDE_REF;
       // no default: update as Qualifier is updated
@@ -263,8 +260,7 @@ public:
   }
 
   bool isAbstract() const {
-    return (_qual == QUAL_UNKNOWN || _qual == QUAL_CONST ||
-            _qual == QUAL_REF || _qual == QUAL_CONST_REF);
+    return qualifierIsAbstract(_qual);
   }
 
   bool isVal() const {
@@ -273,7 +269,6 @@ public:
 
   bool isRef() const {
     return (_qual == QUAL_REF || _qual == QUAL_CONST_REF ||
-            _qual == QUAL_NARROW_REF || _qual == QUAL_CONST_NARROW_REF ||
             isRefType());
   }
 
