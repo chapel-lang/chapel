@@ -88,7 +88,7 @@ QualifiedType QualifiedType::makeParamBytes(Context* context, std::string s) {
 bool QualifiedType::needsSplitInitTypeInfo(Context* context) const {
   return (isParam() && !hasParamPtr()) ||
     isUnknownKindOrType() ||
-    resolution::getTypeGenericity(context, type()) == Type::GENERIC;
+    resolution::getTypeGenericity(context, type()) != Type::CONCRETE;
 }
 
 QualifiedType QualifiedType::createParamBool(Context* context, bool x) {

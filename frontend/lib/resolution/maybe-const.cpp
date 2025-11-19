@@ -293,36 +293,50 @@ bool AdjustMaybeRefs::enter(const Call* ast, RV& rv) {
       const FormalActual* fa = formalActualMap.byActualIdx(actualIdx);
       int formalIdx = fa->formalIdx();
 
-      if (fa->hasActual()) {
-        // actualAsts might not include an entry for the method receiver if
-        // it was inferred, so we need to offset by one.
-        const AstNode* actualAst = inferredReceiver ? actualAsts[actualIdx-1] :
-                                                      actualAsts[actualIdx];
+      if (!fa->hasActual()) continue;
+      // actualAsts might not include an entry for the method receiver if
+      // it was inferred, so we need to offset by one.
+      const AstNode* actualAst = inferredReceiver ? actualAsts[actualIdx-1] :
+                                                    actualAsts[actualIdx];
 
-        // we could've inserted synthetic actuals when making a second
-        // call to a partially instantiated type.
-        if (!actualAst) {
-          continue;
-        }
-
-        Access access = accessForQualifier(fa->formalType().kind());
-
-        exprStack.push_back(ExprStackEntry(actualAst, access,
-                                           fn, formalIdx));
-
-        actualAst->traverse(rv);
-
-        // check for const-ness errors after return-intent overloads
-        // are chosen
-        if (access == REF) {
-          ResolvedExpression& actualRe = rv.byAst(actualAst);
-          if (actualRe.type().isConst()) {
-            context->error(actualAst, "cannot pass const to non-const");
-          }
-        }
-
-        exprStack.pop_back();
+      // we could've inserted synthetic actuals when making a second
+      // call to a partially instantiated type.
+      if (!actualAst) {
+        continue;
       }
+
+      Access access = accessForQualifier(fa->formalType().kind());
+
+      exprStack.push_back(ExprStackEntry(actualAst, access,
+                                         fn, formalIdx));
+
+      actualAst->traverse(rv);
+
+      // if we are initializing the actual, a 'REF' access is allowed,
+      // since the assignment is providing the initial value.
+      ResolvedExpression& actualRe = rv.byAst(actualAst);
+      bool isInit = false;
+      for (auto& action : actualRe.associatedActions()) {
+        if (action.action() == AssociatedAction::COPY_INIT ||
+            action.action() == AssociatedAction::INIT_OTHER ||
+            action.action() == AssociatedAction::MOVE_INIT) {
+          isInit = true;
+          break;
+        }
+      }
+
+      // check for const-ness errors after return-intent overloads
+      // are chosen
+      if (isInit) {
+        // nothing to do regardless of access
+      } else if (access == REF) {
+        bool isConst = actualRe.type().isConst();
+        if (isConst) {
+          context->error(actualAst, "cannot pass const to non-const");
+        }
+      }
+
+      exprStack.pop_back();
     }
   }
 

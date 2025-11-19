@@ -523,13 +523,14 @@ class CallInfoActual {
  private:
   types::QualifiedType type_;
   UniqueString byName_;
+  bool expectSplitInit_ = false;
 
  public:
   explicit CallInfoActual(types::QualifiedType type)
     : type_(std::move(type)) {
   }
-  CallInfoActual(types::QualifiedType type, UniqueString byName)
-    : type_(std::move(type)), byName_(byName) {
+  CallInfoActual(types::QualifiedType type, UniqueString byName, bool expectSplitInit = false)
+    : type_(std::move(type)), byName_(byName), expectSplitInit_(expectSplitInit) {
   }
 
   /** return the qualified type */
@@ -540,8 +541,15 @@ class CallInfoActual {
    */
   UniqueString byName() const { return byName_; }
 
+  /** In some cases, we resolve calls with partial information (unknown/generic
+      actuals) because we consider it possible that an 'out' formal will
+      split-init them. Returns true if this is one such actual. */
+  bool expectSplitInit() const { return expectSplitInit_; }
+
   bool operator==(const CallInfoActual &other) const {
-    return type_ == other.type_ && byName_ == other.byName_;
+    return type_ == other.type_ &&
+           byName_ == other.byName_ &&
+           expectSplitInit_ == other.expectSplitInit_;
   }
   bool operator!=(const CallInfoActual& other) const {
     return !(*this == other);
@@ -551,7 +559,7 @@ class CallInfoActual {
     byName_.mark(context);
   }
   size_t hash() const {
-    return chpl::hash(type_, byName_);
+    return chpl::hash(type_, byName_, expectSplitInit_);
   }
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
@@ -675,6 +683,10 @@ class CallInfo {
 
   /** Copy and rename a CallInfo. */
   static CallInfo copyAndRename(const CallInfo& ci, UniqueString rename);
+
+  /** Copy and mark the selected actuals as "only having been allowed in
+      in oder to support split-init". */
+  static CallInfo copyAndMarkSplitInitActuals(const CallInfo& ci, const std::unordered_set<int>& actualIndices);
 
   /** Prepare actuals for a call for later use in creating a CallInfo.
       This is a helper function for CallInfo::create that is sometimes
@@ -1520,15 +1532,22 @@ class ApplicabilityResult {
     on success as a placeholder.
    */
   int formalIdx_;
+  /**
+    If the ApplicabilityResult is a failure because we couldn't pass an actual
+    to a formal, the index of the formal that we couldn't pass to. Set to -1
+    on success as a placeholder.
+   */
+  int actualIdx_;
 
   ApplicabilityResult(ErrorVariant rejected,
                       const TypedFnSignature* candidate,
                       CandidateFailureReason candidateReason,
                       PassingFailureReason formalReason,
-                      int formalIdx) :
+                      int formalIdx,
+                      int actualIdx) :
     rejected_(std::move(rejected)), candidate_(candidate),
     candidateReason_(candidateReason), formalReason_(formalReason),
-    formalIdx_(formalIdx) {
+    formalIdx_(formalIdx), actualIdx_(actualIdx) {
     CHPL_ASSERT(!candidate_ || (formalIdx_ == -1 &&
                                 candidateReason_ == FAIL_CANDIDATE_OTHER &&
                                 formalReason_ == FAIL_FORMAL_OTHER));
@@ -1536,47 +1555,48 @@ class ApplicabilityResult {
 
  public:
   ApplicabilityResult()
-    : ApplicabilityResult(ID(), nullptr, FAIL_CANDIDATE_OTHER, FAIL_FORMAL_OTHER, -1) {}
+    : ApplicabilityResult(ID(), nullptr, FAIL_CANDIDATE_OTHER, FAIL_FORMAL_OTHER, -1, -1) {}
 
   static ApplicabilityResult success(const TypedFnSignature* candidate) {
-    return ApplicabilityResult(ID(), candidate, FAIL_CANDIDATE_OTHER, FAIL_FORMAL_OTHER, -1);
+    return ApplicabilityResult(ID(), candidate, FAIL_CANDIDATE_OTHER, FAIL_FORMAL_OTHER, -1, -1);
   }
 
   static ApplicabilityResult failure(const TypedFnSignature* initialForErr,
                                      PassingFailureReason reason,
-                                     int formalIdx) {
-    return ApplicabilityResult(initialForErr, nullptr, FAIL_CANNOT_PASS, reason, formalIdx);
+                                     int formalIdx,
+                                     int actualIdx = -1) {
+    return ApplicabilityResult(initialForErr, nullptr, FAIL_CANNOT_PASS, reason, formalIdx, actualIdx);
   }
 
   static ApplicabilityResult failure(const TypedFnSignature* rejected, CandidateFailureReason reason) {
-    return ApplicabilityResult(rejected, nullptr, reason, FAIL_FORMAL_OTHER, -1);
+    return ApplicabilityResult(rejected, nullptr, reason, FAIL_FORMAL_OTHER, -1, -1);
   }
 
   static ApplicabilityResult failure(const UntypedFnSignature* rejected, CandidateFailureReason reason) {
-    return ApplicabilityResult(rejected, nullptr, reason, FAIL_FORMAL_OTHER, -1);
+    return ApplicabilityResult(rejected, nullptr, reason, FAIL_FORMAL_OTHER, -1, -1);
   }
 
   static ApplicabilityResult failure(ID idForErr, CandidateFailureReason reason) {
-    return ApplicabilityResult(std::move(idForErr), nullptr, reason, FAIL_FORMAL_OTHER, -1);
+    return ApplicabilityResult(std::move(idForErr), nullptr, reason, FAIL_FORMAL_OTHER, -1, -1);
   }
 
   static ApplicabilityResult failureErrorInAnotherCandidate(const TypedFnSignature* fn) {
-    return ApplicabilityResult(fn, nullptr, FAIL_ERRORS_THROWN, FAIL_FORMAL_OTHER, -1);
+    return ApplicabilityResult(fn, nullptr, FAIL_ERRORS_THROWN, FAIL_FORMAL_OTHER, -1, -1);
   }
 
   static ApplicabilityResult failureErrorInFormal(const TypedFnSignature* fn,
                                                   int formalIdx) {
-    return ApplicabilityResult(fn, nullptr, FAIL_ERRORS_THROWN, FAIL_FORMAL_OTHER, formalIdx);
+    return ApplicabilityResult(fn, nullptr, FAIL_ERRORS_THROWN, FAIL_FORMAL_OTHER, formalIdx, -1);
   }
 
   static ApplicabilityResult failureErrorInWhereClause(const TypedFnSignature* fn) {
-    return ApplicabilityResult(fn, nullptr, FAIL_ERRORS_THROWN, FAIL_FORMAL_OTHER, fn->numFormals());
+    return ApplicabilityResult(fn, nullptr, FAIL_ERRORS_THROWN, FAIL_FORMAL_OTHER, fn->numFormals(), -1);
   }
 
   static ApplicabilityResult failureNoDefaultValueForGenericField(const TypedFnSignature* fn,
                                                                   int formalIdx) {
     return ApplicabilityResult(fn, nullptr, FAIL_NO_DEFAULT_VALUE_FOR_GENERIC_FIELD,
-                               FAIL_FORMAL_OTHER, formalIdx);
+                               FAIL_FORMAL_OTHER, formalIdx, -1);
   }
 
   static bool update(ApplicabilityResult& keep, ApplicabilityResult& addin) {
@@ -1586,6 +1606,7 @@ class ApplicabilityResult {
     update |= defaultUpdateBasic(keep.candidateReason_, addin.candidateReason_);
     update |= defaultUpdateBasic(keep.formalReason_, addin.formalReason_);
     update |= defaultUpdateBasic(keep.formalIdx_, addin.formalIdx_);
+    update |= defaultUpdateBasic(keep.actualIdx_, addin.actualIdx_);
     return update;
   }
 
@@ -1594,7 +1615,8 @@ class ApplicabilityResult {
            candidate_ == other.candidate_ &&
            candidateReason_ == other.candidateReason_ &&
            formalReason_ == other.formalReason_ &&
-           formalIdx_ == other.formalIdx_;
+           formalIdx_ == other.formalIdx_ &&
+           actualIdx_ == other.actualIdx_;
   }
 
   bool operator !=(const ApplicabilityResult& other) const {
@@ -1604,7 +1626,7 @@ class ApplicabilityResult {
   void mark(Context* context) const;
 
   size_t hash() const {
-    return chpl::hash(rejected_, candidate_, candidateReason_, formalReason_, formalIdx_);
+    return chpl::hash(rejected_, candidate_, candidateReason_, formalReason_, formalIdx_, actualIdx_);
   }
 
   const ID& idForErr() const;
@@ -1622,6 +1644,8 @@ class ApplicabilityResult {
   PassingFailureReason formalReason() const { return formalReason_; }
 
   int formalIdx() const { return formalIdx_; }
+
+  int actualIdx() const { return actualIdx_; }
 
   inline bool failedDueToWrongActual() const {
     return candidateReason_ == resolution::FAIL_CANNOT_PASS &&
@@ -2527,6 +2551,7 @@ class AssociatedAction {
  public:
   enum Action {
     ASSIGN,           // same type or different type assign
+    MOVE_INIT,        // no copy function invoked, value was moved
     COPY_INIT,        // init= from same type
     INIT_OTHER,       // init= from other type
     CUSTOM_COPY_INIT, // chpl__copyInit for specialized behavior

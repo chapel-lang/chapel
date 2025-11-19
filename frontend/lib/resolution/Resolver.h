@@ -347,6 +347,10 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
                                     const uast::For* loop,
                                     ResolutionResultByPostorderID& bodyResults);
 
+  bool isLazy() const {
+    return callEagerness == CallResolutionEagerness::LAZY;
+  }
+
   static const PoiScope*
   poiScopeOrNull(Context* context,
                  const TypedFnSignature* sig,

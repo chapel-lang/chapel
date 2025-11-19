@@ -809,7 +809,10 @@ void CallInitDeinit::resolveMoveInit(const AstNode* ast,
       // author to be a hook for move initialization across locales
       // (see issue #15676).
 
-      // Otherwise, no need to resolve anything else.
+      // Otherwise, no need to resolve anything else. However, note
+      // an associated action for the move init.
+      ResolvedExpression& opR = rv.byAst(ast);
+      opR.addAssociatedAction(AssociatedAction::MOVE_INIT, nullptr, ast->id(), QualifiedType());
     } else {
       bool lhsGenUnk = lhsType.isUnknown() ||
                        getTypeGenericity(context, lhsType) != Type::CONCRETE;
