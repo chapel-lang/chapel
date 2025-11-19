@@ -3038,7 +3038,7 @@ static bool couldBeOutInitialized(Resolver& rv, const ID& toId, const QualifiedT
     return true;
   }
 
-  return true;
+  return false;
 }
 
 static bool skipDependingOnEagerness(Resolver& rv, const ID& toId,
