@@ -605,17 +605,20 @@ static constexpr int DEF_USE = 3;
 static int computeDefAndOrUseDirectCall(FnSymbol* fn, SymExpr* se) {
   auto ret = USE;
 
-  ArgSymbol* arg = actual_to_formal(se);
-  if (arg->intent == INTENT_REF ||
-      arg->intent == INTENT_INOUT ||
-      (fn->name == astrSassign &&
-       fn->getFormal(1) == arg &&
-       isRecord(arg->type))) {
-    ret = DEF_USE;
-  } else if (arg->intent == INTENT_OUT) {
-    ret = DEF;
+  if (auto arg = actual_to_formal(se)) {
+    if (arg->intent == INTENT_REF   ||
+        arg->intent == INTENT_INOUT ||
+        (fn->name == astrSassign &&
+         fn->getFormal(1) == arg &&
+         isRecord(arg->type))) {
+      // BHARSH TODO: get rid of this 'isRecord' special case
+      ret = DEF_USE;
+    } else if (arg->intent == INTENT_OUT) {
+      ret = DEF;
+    }
   }
 
+  // OK to fall through.
   return ret;
 }
 
@@ -640,6 +643,7 @@ static int computeDefAndOrUseFromFunctionType(CallExpr* call, SymExpr* se) {
     }
   }
 
+  // OK to fall through.
   return ret;
 }
 
@@ -663,6 +667,11 @@ int isDefAndOrUse(SymExpr* se) {
   if (CallExpr* call = toCallExpr(se->parentExpr)) {
     bool isFirstActual = (call->numActuals() && call->get(1) == se);
     auto fn = call->resolvedFunction();
+
+    if (se->symbol() == fn && call->baseExpr == se) {
+      // The use is of a function that is called.
+      return USE;
+    }
 
     // TODO: PRIM_SET_MEMBER, PRIM_SET_SVEC_MEMBER
 
@@ -698,9 +707,13 @@ int isDefAndOrUse(SymExpr* se) {
       // ^-def    ^-use
       return DEF_USE;
     } else if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
-      // actual_to_formal() breaks if passed the cid argument
-      if (se == call->get(2))
+
+      if (se == call->get(1) || se == call->get(2)) {
+        // actual_to_formal() breaks if passed the cid argument, or the
+        // 'FnSymbol' representing the static method type.
         return USE;
+      }
+
       // same as for resolvedFunction()
       ArgSymbol* arg = actual_to_formal(se);
       if (arg->intent == INTENT_REF ||
@@ -1893,15 +1906,19 @@ bool isUseOfProcedureAsValue(SymExpr* se) {
   if (!fn) return false;
 
   if (auto call = toCallExpr(se->parentExpr)) {
+    // TODO: Detect/reject virtual calls if needed.
+
     if (call->baseExpr != se) {
       auto formal = call->resolvedFunction() ? actual_to_formal(se) : nullptr;
+      bool isMoveOrAssign = call->isPrimitive(PRIM_ASSIGN) ||
+                            call->isPrimitive(PRIM_MOVE);
 
-      if (call->isPrimitive(PRIM_MOVE) && call->get(2) == se) {
-        // Ok, being moved into a variable.
+      if (isMoveOrAssign && call->get(2) == se) {
+        // Ok, being moved or assigned into a variable.
         return true;
 
-      } else if (formal && isFunctionType(formal)) {
-        // Ok, being passed.
+      } else if (formal) {
+        // Ok, being passed (assume that the type matches).
         return true;
       }
     }

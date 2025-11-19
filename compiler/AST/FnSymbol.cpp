@@ -604,17 +604,7 @@ FunctionType* FnSymbol::computeAndSetType() {
 }
 
 bool FnSymbol::isUsedAsValue() const {
-  if (hasFlag(FLAG_FIRST_CLASS_FUNCTION_INVOCATION)) {
-    // TODO: This is a shortcut that may not always be correct? E.g., what
-    //       if the use we are thinking of was removed from the tree?
-    return true;
-  }
-
-  for_SymbolSymExprs(se, this) {
-    if (isUseOfProcedureAsValue(se)) return true;
-  }
-
-  return false;
+  return hasFlag(FLAG_FIRST_CLASS_FUNCTION_INVOCATION);
 }
 
 // Removes all statements from body and adds all statements from block.
