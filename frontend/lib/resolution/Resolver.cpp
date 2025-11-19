@@ -2760,7 +2760,7 @@ void Resolver::resolveTupleDecl(const TupleDecl* td, QualifiedType useType) {
 }
 
 static SkipCallResolutionReason
-shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
+shouldSkipCallResolution(Resolver& rv, const uast::AstNode* callLike,
                          std::vector<const uast::AstNode*> actualAsts,
                          const CallInfo& ci,
                          std::unordered_set<int>* actualsToInit = nullptr);
@@ -2771,7 +2771,7 @@ shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
   by the call in 'ci'.
  */
 static SkipCallResolutionReason
-shouldSkipCallResolutionAllowInit(Resolver* rv, const uast::AstNode* callLike,
+shouldSkipCallResolutionAllowInit(Resolver& rv, const uast::AstNode* callLike,
                                   std::vector<const uast::AstNode*> actualAsts,
                                   CallInfo& ci);
 
@@ -2848,7 +2848,7 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
   auto inPoiScope = poiScope;
   auto inScopes = CallScopeInfo::forNormalCall(inScope, inPoiScope);
 
-  if (shouldSkipCallResolutionAllowInit(this, call, actualAsts, ci)) {
+  if (shouldSkipCallResolutionAllowInit(*this, call, actualAsts, ci)) {
     return true;
   }
 
@@ -2975,45 +2975,45 @@ toIdAffectedBySubstitutions(Context* context, ID toId) {
   return QUERY_END(affectedBySubstitutions);
 }
 
-static bool idCouldBePartial(Resolver* rv, const ID& toId) {
-  bool noSubstitution = rv->substitutions == nullptr ||
-    (!toId.isEmpty() && rv->substitutions->count(toId) == 0);
+static bool idCouldBePartial(Resolver& rv, const ID& toId) {
+  bool noSubstitution = rv.substitutions == nullptr ||
+    (!toId.isEmpty() && rv.substitutions->count(toId) == 0);
 
   ID toUse = toId;
-  if (rv->substitutions && noSubstitution && !toId.isEmpty()) {
+  if (rv.substitutions && noSubstitution && !toId.isEmpty()) {
     // formals like `x` in `(x, y)` don't have their own substitutions,
     // but their parent multi-decl might.
-    auto parentId = parsing::idToContainingMultiDeclId(rv->context, toId);
-    if (asttags::isTupleDecl(parsing::idToTag(rv->context, parentId))) {
+    auto parentId = parsing::idToContainingMultiDeclId(rv.context, toId);
+    if (asttags::isTupleDecl(parsing::idToTag(rv.context, parentId))) {
       toUse = parentId;
-      noSubstitution = rv->substitutions->count(toUse) == 0;
+      noSubstitution = rv.substitutions->count(toUse) == 0;
     }
   }
 
   return noSubstitution &&
-         toIdAffectedBySubstitutions(rv->context, toUse);
+         toIdAffectedBySubstitutions(rv.context, toUse);
 }
 
 // checks if an identifier referring to toId could be attempting to set its
 // type via a call to an 'out' function.
-static bool couldBeOutInitialized(Resolver* rv, const ID& toId, const QualifiedType& qt) {
+static bool couldBeOutInitialized(Resolver& rv, const ID& toId, const QualifiedType& qt) {
   // params and types can't be out-initialized, nor can refs.
   if (qt.kind() == QualifiedType::PARAM ||
       qt.kind() == QualifiedType::TYPE ||
       qt.isRef()) return false;
 
-  if (!asttags::isVarLikeDecl(parsing::idToTag(rv->context, toId))) return false;
+  if (!asttags::isVarLikeDecl(parsing::idToTag(rv.context, toId))) return false;
 
-  auto vld = parsing::idToAst(rv->context, toId)->toVarLikeDecl();
+  auto vld = parsing::idToAst(rv.context, toId)->toVarLikeDecl();
 
   // if it an init expression, we certainly can't be trying to out-initialize it.
   // We might be out-initialize variables with type expressions (e.g., for
   // 'var x: numeric').
   if (vld->initExpression()) return false;
 
-  auto parentDecl = parsing::idToContainingMultiDeclId(rv->context, toId);
-  auto parentOfDecl = parsing::idToParentId(rv->context, parentDecl);
-  if (asttags::isIndexableLoop(parsing::idToTag(rv->context, parentOfDecl))) {
+  auto parentDecl = parsing::idToContainingMultiDeclId(rv.context, toId);
+  auto parentOfDecl = parsing::idToParentId(rv.context, parentDecl);
+  if (asttags::isIndexableLoop(parsing::idToTag(rv.context, parentOfDecl))) {
     // if this is a (multi)decl in a loop, it can't be out-initialized;
     // it's set by the loop.
     return false;
@@ -3022,7 +3022,7 @@ static bool couldBeOutInitialized(Resolver* rv, const ID& toId, const QualifiedT
   // While we're lazy, it's hard to tell if something is generic because
   // it's uninstantiated, or generic because it should be out-initialized.
   // Wait until we know more.
-  if (rv->callEagerness == Resolver::CallResolutionEagerness::LAZY &&
+  if (rv.callEagerness == Resolver::CallResolutionEagerness::LAZY &&
       idCouldBePartial(rv, toId)) {
     return false;
   }
@@ -3032,7 +3032,7 @@ static bool couldBeOutInitialized(Resolver* rv, const ID& toId, const QualifiedT
     // initialize(x);
     return true;
   } else if (vld->typeExpression() &&
-             getTypeGenericity(rv->context, qt.type()) != Type::CONCRETE) {
+             getTypeGenericity(rv.context, qt.type()) != Type::CONCRETE) {
     // var x: numeric;
     // initialize(x);
     return true;
@@ -3041,9 +3041,9 @@ static bool couldBeOutInitialized(Resolver* rv, const ID& toId, const QualifiedT
   return true;
 }
 
-static bool skipDependingOnEagerness(Resolver* rv, const ID& toId,
+static bool skipDependingOnEagerness(Resolver& rv, const ID& toId,
                                      const ResolvedExpression* actualRe) {
-  if (rv->callEagerness == Resolver::CallResolutionEagerness::EAGER) {
+  if (rv.callEagerness == Resolver::CallResolutionEagerness::EAGER) {
     return false;
   } else {
     bool compoundExpr =
@@ -3055,13 +3055,13 @@ static bool skipDependingOnEagerness(Resolver* rv, const ID& toId,
 }
 
 static SkipCallResolutionReason
-shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
+shouldSkipCallResolution(Resolver& rv, const uast::AstNode* callLike,
                          std::vector<const uast::AstNode*> actualAsts,
                          const CallInfo& ci,
                          std::unordered_set<int>* actualsToInit) {
-  Context* context = rv->context;
+  Context* context = rv.context;
   SkipCallResolutionReason skip = NONE;
-  auto& byPostorder = rv->byPostorder;
+  auto& byPostorder = rv.byPostorder;
 
   // In lazy resolution mode, skip resolving expressions that depend on
   // partial information. For the most part, this is defined inductively as
@@ -3206,7 +3206,7 @@ shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
 
 
 static SkipCallResolutionReason
-shouldSkipCallResolutionAllowInit(Resolver* rv, const uast::AstNode* callLike,
+shouldSkipCallResolutionAllowInit(Resolver& rv, const uast::AstNode* callLike,
                                   std::vector<const uast::AstNode*> actualAsts,
                                   CallInfo& ci) {
   std::unordered_set<int> actualsToInit;
@@ -3259,7 +3259,7 @@ bool Resolver::resolveSpecialOpCall(const Call* call) {
                        /* isParenless */ false,
                        std::move(actuals));
 
-    if (shouldSkipCallResolution(this, call, actualAsts, ci)) {
+    if (shouldSkipCallResolution(*this, call, actualAsts, ci)) {
       return true;
     }
 
@@ -3382,7 +3382,7 @@ resolveSpecialKeywordCallAsNormalCall(Resolver& rv,
                                /* rename */ name,
                                &isIncompleteTypeConstructor);
 
-    auto skip = shouldSkipCallResolution(&rv, innerCall, actualAsts, ci);
+    auto skip = shouldSkipCallResolution(rv, innerCall, actualAsts, ci);
     if (isIncompleteTypeConstructor || skip != NONE) {
       return CallResolutionResult::getEmpty();
     }
@@ -3478,7 +3478,7 @@ bool Resolver::resolveSpecialKeywordCall(const Call* call) {
 
       // if one of the actuals is unknown for some reason, don't attempt
       // to resolve the call.
-      if (shouldSkipCallResolution(this, fnCall, actualAsts, ci) != NONE) {
+      if (shouldSkipCallResolution(*this, fnCall, actualAsts, ci) != NONE) {
         r.setType(QualifiedType(QualifiedType::UNKNOWN, UnknownType::get(context)));
         return true;
       }
@@ -5206,7 +5206,7 @@ void Resolver::exit(const Range* range) {
 
   // Skip calls when the bounds are unknown to avoid putting function resolution
   // into an awkward position.
-  auto skip = shouldSkipCallResolution(this, range, actualAsts, ci);
+  auto skip = shouldSkipCallResolution(*this, range, actualAsts, ci);
   if (!skip) {
     auto scope = currentScope();
     auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
@@ -5276,7 +5276,7 @@ void Resolver::exit(const uast::Array* decl) {
                      /* isMethodCall */ false,
                      /* hasQuestionArg */ false,
                      /* isParenless */ false, actuals);
-  if (shouldSkipCallResolution(this, decl, actualAsts, ci)) {
+  if (shouldSkipCallResolution(*this, decl, actualAsts, ci)) {
     r.setType(QualifiedType());
     return;
   }
@@ -5363,7 +5363,7 @@ void Resolver::exit(const uast::Domain* decl) {
                        actuals);
 
     ResolvedExpression& r = byPostorder.byAst(decl);
-    if (shouldSkipCallResolution(this, decl, actualAsts, ci)) {
+    if (shouldSkipCallResolution(*this, decl, actualAsts, ci)) {
       r.setType(QualifiedType());
     } else {
       auto scope = currentScope();
@@ -5713,7 +5713,7 @@ void Resolver::handleCallExpr(const uast::Call* call) {
     CallScopeInfo::forNormalCall(scope, poiScope) :
     CallScopeInfo::forQualifiedCall(context, moduleScopeId, scope, poiScope);
 
-  auto skip = shouldSkipCallResolutionAllowInit(this, call, actualAsts, ci);
+  auto skip = shouldSkipCallResolutionAllowInit(*this, call, actualAsts, ci);
   if (!skip && !isIncompleteTypeConstructor) {
     ResolvedExpression& r = byPostorder.byAst(call);
     QualifiedType receiverType = methodReceiverType();
@@ -5922,7 +5922,7 @@ void Resolver::exit(const Dot* dot) {
       receiverType = UnknownType::get(context);
       r.setIsPartialResult(true);
     } else if (getTypeGenericity(context, receiver.type().type()) != Type::CONCRETE &&
-               skipDependingOnEagerness(this, receiver.toId(), &receiver)) {
+               skipDependingOnEagerness(*this, receiver.toId(), &receiver)) {
       receiverType = UnknownType::get(context);
       r.setIsPartialResult(true);
     } else if (receiver.type().type() != nullptr) {
@@ -6046,7 +6046,7 @@ void Resolver::exit(const Dot* dot) {
 
   // apply the usual call skipping rules, that rule out (e.g.) generic
   // actuals.
-  if (shouldSkipCallResolution(this, dot, actualAsts, ci)) {
+  if (shouldSkipCallResolution(*this, dot, actualAsts, ci)) {
     return;
   }
 
@@ -7217,7 +7217,7 @@ static bool handleArrayTypeExpr(Resolver& rv,
         actuals);
 
 
-    if (shouldSkipCallResolution(&rv, iterandExpr, actualAsts, ci)) {
+    if (shouldSkipCallResolution(rv, iterandExpr, actualAsts, ci)) {
       computeUninstanced = true;
     } else {
       auto scope = rv.currentScope();
