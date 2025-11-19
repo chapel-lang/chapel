@@ -454,8 +454,6 @@ void VarScopeVisitor::exit(const NamedDecl* ast, RV& rv) {
   //       is there an analysis that does need to handle loop indices?
   if (!isLoopIndex(ast)) {
     if (auto vld = ast->toVarLikeDecl()) {
-      const AstNode* astForDeclProps;
-
       const AstNode* parent;
       const AstNode* initExpr;
       QualifiedType initType;
@@ -463,10 +461,11 @@ void VarScopeVisitor::exit(const NamedDecl* ast, RV& rv) {
       bool isFormal;
 
       auto maybeOuterTuple = outermostContainingTuple();
-      if (const TupleDecl* outerTuple =
+      if (vld->name() == USTR("_") && maybeOuterTuple) {
+        // Skip _ ident in tuple
+      } else if (const TupleDecl* outerTuple =
               (maybeOuterTuple ? maybeOuterTuple->toTupleDecl() : nullptr)) {
-        astForDeclProps = outerTuple;
-
+        parent = parsing::parentAst(context, outerTuple);
         initExpr = outerTuple->initExpression();
         auto parentInitExpr = tupleInitExprsStack.back();
         if (parentInitExpr) {
@@ -480,19 +479,20 @@ void VarScopeVisitor::exit(const NamedDecl* ast, RV& rv) {
               parentInitTupleType->elementType(indexWithinContainingTuple(ast));
         }
         intentOrKind = (Qualifier)outerTuple->intentOrKind();
-      } else {
-        astForDeclProps = vld;
+        isFormal = outerTuple->isFormal() || outerTuple->isVarArgFormal() || outerTuple->isTupleDeclFormal();
 
+        handleDeclaration(vld, parent, initExpr, initType, intentOrKind, isFormal,
+                        rv);
+      } else {
+        parent = parsing::parentAst(context, vld);
         initExpr = vld->initExpression();
         initType = initExpr ? rv.byAst(initExpr).type() : QualifiedType();
         intentOrKind = vld->storageKind();
-      }
-      parent = parsing::parentAst(context, astForDeclProps);
-      isFormal =
-          astForDeclProps->isFormal() || astForDeclProps->isVarArgFormal();
+        isFormal = vld->isFormal() || vld->isVarArgFormal();
 
-      handleDeclaration(vld, parent, initExpr, initType, intentOrKind, isFormal,
+        handleDeclaration(vld, parent, initExpr, initType, intentOrKind, isFormal,
                         rv);
+      }
     }
   }
 
