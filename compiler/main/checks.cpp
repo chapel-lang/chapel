@@ -566,9 +566,25 @@ static void check_afterResolution()
     checkInitEqAssignCast();
   }
 
-  // Ensure functions 'used-by-value' are actually used that way.
+  // Ensure functions 'used as values' are actually used that way.
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (!fn->isUsed() || !fn->inTree()) continue;
+    if (!fn->isUsed() || !fn->inTree()) {
+      /*
+      // TODO: We might like to do this, but right now expressions like
+      //       'myAdd.type' are counted as a 'use as value', even though
+      //       when resolved they will not actually leave a 'SymExpr' in
+      //       the tree.
+      //
+      if (!fn->isUsed() && fn->inTree()) {
+        // If the function is not in the tree then we don't care at all (it
+        // will be pruned soon), but if it is 'inTree()' but not 'isUsed()',
+        // then it definitely shouldn't be marked as 'isUsedAsValue()'!.
+        INT_ASSERT(!fn->isUsedAsValue());
+      }
+      */
+
+      continue;
+    }
 
     if (fn->isUsedAsValue()) {
       bool atLeastOnce = false;
