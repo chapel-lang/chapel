@@ -940,20 +940,16 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants,
     // 'const ref', we can relax this restriction and say that changing things
     // from underneath it are undefined behavior
     // https://chapel-lang.org/docs/language/spec/procedures.html#the-const-intent
-    // auto isArray = symExpr->typeInfo() &&
-    //                (symExpr->typeInfo()->symbol->hasFlag(FLAG_ARRAY) ||
-    //                 isArrayClass(symExpr->typeInfo()));
-    // auto isConstArray =
-    //   isArray && isArgSymbol(symExpr->symbol()) &&
-    //              (toArgSymbol(symExpr->symbol())->originalIntent == INTENT_CONST ||
-    //               toArgSymbol(symExpr->symbol())->originalIntent == INTENT_BLANK);
+    auto isArray = symExpr->typeInfo() &&
+                   (symExpr->typeInfo()->symbol->hasFlag(FLAG_ARRAY) ||
+                    isArrayClass(symExpr->typeInfo()));
     bool declaredWithConstIntent = false;
     if (auto argSym = toArgSymbol(symExpr->symbol())) {
       declaredWithConstIntent = argSym->intent == INTENT_CONST_REF &&
                                 (argSym->originalIntent == INTENT_CONST ||
                                  argSym->originalIntent == INTENT_BLANK);
     }
-    if (!declaredWithConstIntent && !isGpuBound) {
+    if (!declaredWithConstIntent && (!isGpuBound || !isArray)) {
       if (isArgSymbol(symExpr->symbol()) &&
           symExpr->getValType()->symbol->hasFlag(FLAG_ITERATOR_CLASS) == false) {
         if(ArgSymbol* argSymbol = toArgSymbol(symExpr->symbol())) {
