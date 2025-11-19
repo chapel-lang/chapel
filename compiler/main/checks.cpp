@@ -248,8 +248,13 @@ void check_cullOverReferences()
 
     // TODO: Tuple formals are not having their intents properly resolved due
     //       to how 'cullOverReferences' appears to work. It's unclear to me
-    //       if this is an easy fix.
-    if (!t->symbol->hasFlag(FLAG_TUPLE)) {
+    //       if this is an easy fix. These exceptions mirror those made in
+    //       that pass.
+    bool skip = t->symbol->hasFlag(FLAG_TUPLE) ||
+                arg->getFunction()->hasFlag(FLAG_BUILD_TUPLE) ||
+                arg->getFunction()->hasFlag(FLAG_TUPLE_CAST_FN);
+
+    if (!skip) {
       // Should have been decided by this pass.
       INT_ASSERT(!(arg->intent & INTENT_FLAG_MAYBE_CONST));
     }
