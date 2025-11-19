@@ -1377,6 +1377,21 @@ static void test48() {
     {}); // x is mentioned in receiver of method call, so no elision
 }
 
+static void test49() {
+  testCopyElision("test49",
+    R""""(
+        record R { proc foo(){} }
+        proc test(cond: bool) {
+          var x: R;
+          var z = x;
+          on here {
+            x;
+          }
+        }
+    )"""",
+    {}); // x is mentioned in a non-eligible block, so no elision
+}
+
 int main() {
   test1();
   test2();
@@ -1426,5 +1441,6 @@ int main() {
   test46();
   test47();
   test48();
+  test49();
   return 0;
 }
