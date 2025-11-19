@@ -3022,8 +3022,7 @@ static bool couldBeOutInitialized(Resolver& rv, const ID& toId, const QualifiedT
   // While we're lazy, it's hard to tell if something is generic because
   // it's uninstantiated, or generic because it should be out-initialized.
   // Wait until we know more.
-  if (rv.callEagerness == Resolver::CallResolutionEagerness::LAZY &&
-      idCouldBePartial(rv, toId)) {
+  if (rv.isLazy() && idCouldBePartial(rv, toId)) {
     return false;
   }
 
@@ -3043,7 +3042,7 @@ static bool couldBeOutInitialized(Resolver& rv, const ID& toId, const QualifiedT
 
 static bool skipDependingOnEagerness(Resolver& rv, const ID& toId,
                                      const ResolvedExpression* actualRe) {
-  if (rv.callEagerness == Resolver::CallResolutionEagerness::EAGER) {
+  if (!rv.isLazy()) {
     return false;
   } else {
     bool compoundExpr =
