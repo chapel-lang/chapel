@@ -1281,10 +1281,13 @@ static QualifiedType
 primIsCoercible(Context* context, const CallInfo& ci) {
   if (ci.numActuals() < 2) return QualifiedType();
 
-  // Adjust them to have 'VAR' and 'IN' intents, since coercions between
+  // Adjust them to have 'INIT_RECEIVER' and 'IN' intents, since coercions between
   // 'TYPE' formals have different rules (e.g., disallow borrowing coercions).
+  // We use 'INIT_RECEIVER' because weant to allow the actual to be generic,
+  // so that 'childClass' is coercible to 'parentClass' even if the ownership
+  // is not known.
   auto qtToAdj = QualifiedType(QualifiedType::IN, ci.actual(0).type().type());
-  auto qtFromAdj = QualifiedType(QualifiedType::VAR, ci.actual(1).type().type());
+  auto qtFromAdj = QualifiedType(QualifiedType::INIT_RECEIVER, ci.actual(1).type().type());
 
   auto canPass = CanPassResult::canPassScalar(context, qtFromAdj, qtToAdj);
   return QualifiedType::makeParamBool(context, canPass.passes());
