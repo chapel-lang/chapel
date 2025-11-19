@@ -342,15 +342,11 @@ const char* QualifiedType::qualifierToStr(Qualifier q) {
 
       case QUAL_VAL:
         return "val";
-      case QUAL_NARROW_REF:
-        return "narrow-ref";
       case QUAL_WIDE_REF:
         return "wide-ref";
 
       case QUAL_CONST_VAL:
         return "const-val";
-      case QUAL_CONST_NARROW_REF:
-        return "const-narrow-ref";
       case QUAL_CONST_WIDE_REF:
         return "const-wide-ref";
     }
@@ -1104,8 +1100,8 @@ functionTypeStreamlineFormalQualifier(const FunctionType::Formal& f) {
   bool isConst = QualifiedType::qualifierIsConst(qualForIntent) ||
                  QualifiedType::qualifierIsConst(qt.getQual());
 
-  if (qualForIntent == QUAL_CONST) {
-    // Clear this abstract intent.
+  if (QualifiedType::qualifierIsAbstract(qualForIntent)) {
+    // Clear this abstract intent. Use the type to make decisions.
     qualForIntent = QUAL_UNKNOWN;
   }
 
@@ -1122,12 +1118,11 @@ functionTypeStreamlineFormalQualifier(const FunctionType::Formal& f) {
     ret = QUAL_VAL;
   }
 
+  // Make const if needed.
   if (isConst) ret = QualifiedType::qualifierToConst(ret);
 
   // Should not appear at this point.
-  INT_ASSERT(ret != QUAL_UNKNOWN &&
-             ret != QUAL_PARAM &&
-             ret != QUAL_CONST);
+  INT_ASSERT(!QualifiedType::qualifierIsAbstract(ret));
 
   return ret;
 }
@@ -1405,10 +1400,8 @@ const char* FunctionType::qualifierMnemonicMangled(Qualifier qual) {
     case QUAL_CONST_REF: return "qcr";
     case QUAL_PARAM: return "qp";
     case QUAL_VAL: return "qv";
-    case QUAL_NARROW_REF: return "qnr";
     case QUAL_WIDE_REF: return "qwr";
     case QUAL_CONST_VAL: return "qcv";
-    case QUAL_CONST_NARROW_REF: return "qcnr";
     case QUAL_CONST_WIDE_REF: return "qcwr";
   }
   return nullptr;
