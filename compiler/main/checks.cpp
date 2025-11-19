@@ -244,10 +244,12 @@ void check_cullOverReferences()
   }
 
   for_alive_in_Vec(ArgSymbol, arg, gArgSymbols) {
+    auto t = arg->type->getValType();
+
     // TODO: Tuple formals are not having their intents properly resolved due
     //       to how 'cullOverReferences' appears to work. It's unclear to me
     //       if this is an easy fix.
-    if (!arg->type->symbol->hasFlag(FLAG_TUPLE)) {
+    if (!t->symbol->hasFlag(FLAG_TUPLE)) {
       // Should have been decided by this pass.
       INT_ASSERT(!(arg->intent & INTENT_FLAG_MAYBE_CONST));
     }
