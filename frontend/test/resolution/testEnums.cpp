@@ -687,6 +687,7 @@ static void test18internal() {
         red, green, blue
       }
       var tmp = color.red;
+      var tmpStr = "red", tmpStrBytes = b"red";
       param tmpParam = color.red;
       var a = chpl__enumToOrder(tmp);
       param b = chpl__enumToOrder(tmp); // error
@@ -694,13 +695,17 @@ static void test18internal() {
       param d = chpl__enumToOrder(color.red);
       param e = chpl__enumToOrder(color.green);
       param f = chpl__enumToOrder(color.blue);
+      var g = tmp : string;
+      var h = tmp : bytes;
+      var i = tmpStr : color;
+      var j = tmpStrBytes : color;
       )""");
 
   auto& br = parseFileToBuilderResultAndCheck(context, path, {});
   assert(br.numTopLevelExpressions() == 1);
   auto mod = br.topLevelExpression(0)->toModule();
   auto vars = resolveTypesOfVariables(context, mod,
-      {"a", "b", "c", "d", "e", "f"});
+      {"a", "b", "c", "d", "e", "f", "g", "h", "i", "j"});
 
   assert(vars.at("a").type());
   assert(vars.at("a").type()->isIntType());
@@ -726,6 +731,14 @@ static void test18internal() {
   assert(vars.at("f").param());
   assert(vars.at("f").param()->isIntParam());
   assert(vars.at("f").param()->toIntParam()->value() == 2);
+  assert(vars.at("g").type());
+  assert(vars.at("g").type()->isStringType());
+  assert(vars.at("h").type());
+  assert(vars.at("h").type()->isBytesType());
+  assert(vars.at("i").type());
+  assert(vars.at("i").type()->isEnumType());
+  assert(vars.at("j").type());
+  assert(vars.at("j").type()->isEnumType());
 
   assert(guard.realizeErrors() == 1);
 }
