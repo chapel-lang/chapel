@@ -1101,6 +1101,13 @@ functionTypeStreamlineFormalQualifier(const FunctionType::Formal& f) {
 
   // TODO: Do this or call 'concreteIntent' as is done in resolve?
   auto qualForIntent = QualifiedType::qualifierForArgIntent(f.intent());
+  bool isConst = QualifiedType::qualifierIsConst(qualForIntent) ||
+                 QualifiedType::qualifierIsConst(qt.getQual());
+
+  if (qualForIntent == QUAL_CONST) {
+    // Clear this abstract intent.
+    qualForIntent = QUAL_UNKNOWN;
+  }
 
   if (qualForIntent != QUAL_UNKNOWN) {
     ret = qualForIntent;
@@ -1115,15 +1122,12 @@ functionTypeStreamlineFormalQualifier(const FunctionType::Formal& f) {
     ret = QUAL_VAL;
   }
 
-  // Determine if there is any constness to preserve.
-  if (QualifiedType::qualifierIsConst(qualForIntent) ||
-      QualifiedType::qualifierIsConst(qt.getQual())) {
-    ret = QualifiedType::qualifierToConst(ret);
-  }
+  if (isConst) ret = QualifiedType::qualifierToConst(ret);
 
   // Should not appear at this point.
-  INT_ASSERT(ret != QUAL_UNKNOWN);
-  INT_ASSERT(ret != QUAL_PARAM);
+  INT_ASSERT(ret != QUAL_UNKNOWN &&
+             ret != QUAL_PARAM &&
+             ret != QUAL_CONST);
 
   return ret;
 }

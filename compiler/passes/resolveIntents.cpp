@@ -513,7 +513,8 @@ class ResolveIntentsForProcPtrTypes : public AdjustSymbolTypes {
  public:
   Type* computeAdjustedType(Type* t) const override {
     if (auto ft = toFunctionType(t->getValType())) {
-      return computeConcreteIntentsForFunctionType(ft);
+      auto ret = computeConcreteIntentsForFunctionType(ft);
+      return ret;
     }
     return t;
   };
