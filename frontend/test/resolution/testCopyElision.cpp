@@ -1385,13 +1385,22 @@ static void test49() {
       record R { }
       proc test() {
         var r = new R();
+        var s = new R();
 
-        var tup = (1, r, "hi");
+        var tup = ((1,), r, ((s, "hi"), 2, 3.14));
 
-        var (a, b, _) = tup;
+        var ((a,), b, ((c, d), _, e)) = tup;
       }
     )"""",
-    {"M.test@5", "M.test@9", "M.test@10"});
+    {
+      "M.test@10",
+      "M.test@11",
+      "M.test@19",
+      "M.test@21",
+      "M.test@22",
+      "M.test@23",
+      "M.test@26",
+    });
 
   // Assign
   testCopyElision("test49b",

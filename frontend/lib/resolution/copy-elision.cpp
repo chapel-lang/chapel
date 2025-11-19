@@ -391,20 +391,11 @@ void FindElidedCopies::handleDeclaration(const VarLikeDecl* ast,
                             isFormal, rv);
         } else {
           ID rhsVarId = refersToId(eltExpr, rv);
+          QualifiedType rhsType = rv.byId(rhsVarId).type();
           if (!rhsVarId.isEmpty() && isEligibleVarInAnyFrame(rhsVarId)) {
-            // check that the types are the same, per tuple position
-            if (rv.hasId(lhsVarId) && rv.hasId(rhsVarId)) {
-              if (lhsType.type() && lhsType.type()->isTupleType()) {
-                const TupleType* ttype = lhsType.type()->toTupleType();
-                CHPL_ASSERT(ttype->numElements() ==
-                            tupleExprInit->numActuals());
-                QualifiedType lhsEltType = ttype->elementType(i);
-
-                QualifiedType rhsType = rv.byId(rhsVarId).type();
-                if (copyElisionAllowedForTypes(lhsEltType, rhsType, ast, rv)) {
-                  addCopyInit(frame, rhsVarId, eltExpr->id());
-                }
-              }
+            // TODO: do we need to verify LHS and RHS type compatibility per element?
+            if (copyElisionAllowedForTypes(rhsType, rhsType, ast, rv)) {
+              addCopyInit(frame, rhsVarId, eltExpr->id());
             }
           }
         }
