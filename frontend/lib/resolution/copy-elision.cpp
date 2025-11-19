@@ -381,41 +381,39 @@ void FindElidedCopies::handleDeclaration(const VarLikeDecl* ast,
   if (initExpr) {
     VarFrame* frame = currentFrame();
     ID lhsVarId = ast->id();
-    // QualifiedType lhsType = rv.byId(lhsVarId).type();
-    // if (auto tupleExprInit = initExpr->toTuple()) {
-    //   // handle init with tuple expression
-    //   for (int i = 0; i < tupleExprInit->numActuals(); i++) {
-    //     auto actual = tupleExprInit->actual(i);
-    //     if (actual->isTuple()) {
-    //       // processSingleDeclHelper(ast, actual, QualifiedType(),
-    //       //                         isFormal, intentOrKind, rv);
-    //       handleDeclaration(ast, parent, actual, QualifiedType(), intentOrKind,
-    //                         isFormal, rv);
-    //     } else {
-    //       ID rhsVarId = refersToId(actual, rv);
-    //       if (!rhsVarId.isEmpty() && isEligibleVarInAnyFrame(rhsVarId)) {
-    //         // check that the types are the same
-    //         if (rv.hasId(lhsVarId) && rv.hasId(rhsVarId)) {
-    //           if (lhsType.type() && lhsType.type()->isTupleType()) {
-    //             const TupleType* ttype = lhsType.type()->toTupleType();
-    //             CHPL_ASSERT(ttype->numElements() == tupleExprInit->numActuals());
-    //             QualifiedType lhsEltType = ttype->elementType(i);
+    QualifiedType lhsType = rv.byId(lhsVarId).type();
+    if (auto tupleExprInit = initExpr->toTuple()) {
+      // handle init with tuple expression
+      for (int i = 0; i < tupleExprInit->numActuals(); i++) {
+        auto eltExpr = tupleExprInit->actual(i);
+        if (eltExpr->isTuple()) {
+          handleDeclaration(ast, parent, eltExpr, QualifiedType(), intentOrKind,
+                            isFormal, rv);
+        } else {
+          ID rhsVarId = refersToId(eltExpr, rv);
+          if (!rhsVarId.isEmpty() && isEligibleVarInAnyFrame(rhsVarId)) {
+            // check that the types are the same, per tuple position
+            if (rv.hasId(lhsVarId) && rv.hasId(rhsVarId)) {
+              if (lhsType.type() && lhsType.type()->isTupleType()) {
+                const TupleType* ttype = lhsType.type()->toTupleType();
+                CHPL_ASSERT(ttype->numElements() ==
+                            tupleExprInit->numActuals());
+                QualifiedType lhsEltType = ttype->elementType(i);
 
-    //             QualifiedType rhsType = rv.byId(rhsVarId).type();
-    //             if (copyElisionAllowedForTypes(lhsEltType, rhsType, ast, rv)) {
-    //               addCopyInit(frame, rhsVarId, actual->id());
-    //             }
-    //           }
-    //         }
-    //       }
-    //     }
-    //   }
-    // }
+                QualifiedType rhsType = rv.byId(rhsVarId).type();
+                if (copyElisionAllowedForTypes(lhsEltType, rhsType, ast, rv)) {
+                  addCopyInit(frame, rhsVarId, eltExpr->id());
+                }
+              }
+            }
+          }
+        }
+      }
+    }
     ID rhsVarId = refersToId(initExpr, rv);
     if (!rhsVarId.isEmpty() && isEligibleVarInAnyFrame(rhsVarId)) {
       // check that the types are the same
       if (rv.hasId(lhsVarId) && rv.hasId(rhsVarId)) {
-        QualifiedType lhsType = rv.byId(lhsVarId).type();
         QualifiedType rhsType = initType;
         if (copyElisionAllowedForTypes(lhsType, rhsType, ast, rv)) {
           addCopyInit(frame, rhsVarId, ast->id());
