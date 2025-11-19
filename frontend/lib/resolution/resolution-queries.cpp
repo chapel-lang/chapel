@@ -4860,14 +4860,24 @@ static const Type* resolveBuiltinTypeCtor(Context* context,
     }
   }
 
+  // the reference compiler-generated function accepts `param n: int`,
+  // which allows `param` coercions. So, use 'canPass' and 'getInstantiationType'.
   if (ci.name() == USTR("*") && ci.numActuals() == 2) {
     auto first = ci.actual(0).type();
     auto second = ci.actual(1).type();
-    if (first.isParam() && first.type()->isIntType() &&
-        second.isType()) {
-      auto num = first.param()->toIntParam()->value();
-      std::vector<const Type*> eltTypes(num, second.type());
-      return TupleType::getValueTuple(context, eltTypes);
+
+    if (second.isType()) {
+      auto expectedParamType = QualifiedType(QualifiedType::PARAM,
+                                             IntType::get(context, 0));
+      auto got = canPassScalar(context, first, expectedParamType);
+      if (got.passes()) {
+        auto instType = getInstantiationType(context, first, expectedParamType);
+        CHPL_ASSERT(instType.isParam() && instType.type()->isIntType());
+
+        auto num = instType.param()->toIntParam()->value();
+        std::vector<const Type*> eltTypes(num, second.type());
+        return TupleType::getValueTuple(context, eltTypes);
+      }
     }
   }
 
