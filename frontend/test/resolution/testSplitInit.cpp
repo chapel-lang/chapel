@@ -1527,6 +1527,45 @@ static void test72b() {
   assert(qtC.type()->isIntType());
 }
 
+// same as test72a but split-init variable has generic type constraint.
+// Regression test for issue in which module-level generic-typed split-init
+// variable was not being considered a valid actual for 'out' calls.
+static void test72c() {
+  printf("test72a\n");
+  std::string program = R"""(
+      module A {
+        use B;
+        var a: numeric;
+        a = 42;
+        var c = b;
+      }
+      module B {
+        use A;
+        var b = a;
+      }
+  )""";
+
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+  auto filename = UniqueString::get(context, "test.chpl");
+  setFileText(context, filename, program);
+  auto& br = parseFileToBuilderResultAndCheck(context, filename, UniqueString());
+
+  assert(br.numTopLevelExpressions() == 2);
+  auto modA = br.topLevelExpression(0)->toModule();
+  assert(modA && modA->name() == "A");
+  auto modB = br.topLevelExpression(1)->toModule();
+  assert(modB && modB->name() == "B");
+
+  auto declC = modA->stmt(3)->toVariable();
+  assert(declC && declC->name() == "c");
+
+  auto& modARes = resolveModule(context, modA->id());
+  auto qtC = modARes.byId(declC->id()).type();
+  assert(!qtC.isUnknownOrErroneous());
+  assert(qtC.type()->isIntType());
+}
+
 // Test split-init with generic type 'numeric' - should error when branches
 // have different concrete types (per spec)
 static void test73() {
@@ -1739,6 +1778,7 @@ int main() {
   test71();
   test72a();
   test72b();
+  test72c();
   test73();
   test74();
   test75();
