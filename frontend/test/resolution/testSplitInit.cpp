@@ -1699,6 +1699,20 @@ static void test80() {
 }
 */
 
+// Split init via tuple destructuring assignment
+static void test81() {
+  testSplitInit(__FUNCTION__,
+    R"""(
+        proc test() {
+          var tup = (1, 2, 3);
+          var x: int;
+          var y: int = 3;
+          (x, y, _) = tup;
+        }
+    )""",
+    {"x"});
+}
+
 int main() {
   test1();
   test2();
@@ -1786,6 +1800,8 @@ int main() {
   test77();
   test78();
   test79();
+  // test80();
+  test81();
 
   return 0;
 }

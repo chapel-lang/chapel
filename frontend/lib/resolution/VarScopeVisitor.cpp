@@ -140,12 +140,11 @@ void VarScopeVisitor::processMentions(const AstNode* ast, RV& rv) {
 }
 
 bool
-VarScopeVisitor::processSplitInitAssign(const OpCall* ast,
+VarScopeVisitor::processSplitInitAssign(const AstNode* lhsAst,
                                         const std::set<ID>& allSplitInitedVars,
                                         RV& rv) {
   bool inserted = false;
   auto frame = currentFrame();
-  auto lhsAst = ast->actual(0);
   ID lhsVarId = refersToId(lhsAst, rv);
   if (!lhsVarId.isEmpty() && allSplitInitedVars.count(lhsVarId) > 0) {
     inserted = frame->addToInitedVars(lhsVarId);
@@ -167,13 +166,63 @@ VarScopeVisitor::processSplitInitOut(const Call* ast,
   return inserted;
 }
 
-bool VarScopeVisitor::processDeclarationInit(const VarLikeDecl* ast, RV& rv) {
+bool VarScopeVisitor::processDeclarationInit(const NamedDecl* lhsAst, const AstNode* initExpression, RV& rv) {
   auto frame = currentFrame();
   bool inserted = false;
-  if (ast->initExpression() != nullptr) {
-    inserted = frame->addToInitedVars(ast->id());
+  if (initExpression) {
+    inserted = frame->addToInitedVars(lhsAst->id());
   }
   return inserted;
+}
+
+bool VarScopeVisitor::isLoopIndex(const AstNode* ast) const {
+  if (auto parentAst = parsing::parentAst(context, ast)) {
+    if (auto indexableLoop = parentAst->toIndexableLoop()) {
+      if (ast == indexableLoop->index()) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+const AstNode* VarScopeVisitor::outermostContainingTuple() const {
+  if (tupleInitTypesStack.empty()) return nullptr;
+
+  CHPL_ASSERT(!inAstStack.empty());
+  auto currentAst = inAstStack.back();
+
+  int offset = 0;
+  if (!(currentAst->isTuple() || currentAst->isTupleDecl())) {
+    offset = 1;
+  }
+
+  CHPL_ASSERT(inAstStack.size() >= (tupleInitTypesStack.size() + offset));
+  return inAstStack[inAstStack.size() - (tupleInitTypesStack.size() + offset)];
+}
+
+int VarScopeVisitor::indexWithinContainingTuple(const AstNode* ast) const {
+  CHPL_ASSERT(inAstStack.size() > 1);
+  auto parentAst = inAstStack[inAstStack.size() - 2];
+
+  int parentNumDecls = -1;
+  int indexWithinParent = -1;
+  if (auto tuple = parentAst->toTuple()) {
+    parentNumDecls = tuple->numActuals();
+    while (++indexWithinParent < parentNumDecls &&
+           tuple->actual(indexWithinParent) != ast);
+  } else if (auto tupleDecl = parentAst->toTupleDecl()) {
+    parentNumDecls = tupleDecl->numDecls();
+    while (++indexWithinParent < parentNumDecls &&
+           tupleDecl->decl(indexWithinParent) != ast);
+  } else {
+    CHPL_ASSERT(false && "expected parent to be a tuple or tuple decl");
+  }
+  CHPL_ASSERT(indexWithinParent < parentNumDecls &&
+              "could not find child within parent tuple decl");
+
+  return indexWithinParent;
 }
 
 const QualifiedType& VarScopeVisitor::returnOrYieldType() {
@@ -273,18 +322,109 @@ bool VarScopeVisitor::enter(const TupleDecl* ast, RV& rv) {
   enterAst(ast);
   enterScope(ast, rv);
 
-  // TODO: handle tuple decls
+  QualifiedType initType;
+  if (auto typeExpr = ast->typeExpression()) {
+    initType = rv.byAst(typeExpr).type();
+  } else if (auto initExpr = ast->initExpression()) {
+    initType = rv.byAst(initExpr).type();
+  } else if (outermostContainingTuple()) {
+    // Otherwise, see if we're nested in another tuple decl and can
+    // derive it from our parent's.
+    if (auto parentInitType = tupleInitTypesStack.back().type()) {
+      auto parentTupleType = parentInitType->toTupleType();
+      CHPL_ASSERT(parentTupleType);
+      initType = parentTupleType->elementType(indexWithinContainingTuple(ast));
+    }
+  }
+  if (!initType.isUnknown()) {
+    auto initTupleType = initType.type()->toTupleType();
+    CHPL_ASSERT(initTupleType);
+    CHPL_ASSERT(ast->numDecls() == initTupleType->numElements());
+  }
+
+  const Tuple* initPart = nullptr;
+  if (auto initExpr = ast->initExpression()) {
+    // Get init part (if any) directly, which is possible if this is a top level
+    // tuple decl.
+    initPart = initExpr->toTuple();
+  } else if (outermostContainingTuple()) {
+    // Otherwise, see if we're nested in another tuple decl and can
+    // derive it from our parent's.
+    if (auto parentInit = tupleInitExprsStack.back()) {
+      initPart = parentInit->actual(indexWithinContainingTuple(ast))->toTuple();
+    }
+  }
+  if (initPart) CHPL_ASSERT(ast->numDecls() == initPart->numActuals());
+
+  tupleInitTypesStack.push_back(initType);
+  tupleInitExprsStack.push_back(initPart);
+
+
+  // Loop index variables don't need default-initialization and aren't
+  // subject to split init etc., so skip them.
+  //
+  // TODO: I think it's fine to skip this for all users of VarScopeVisitor;
+  //       is there an analysis that does need to handle loop indices?
+  // See also: skip for NamedDecl
+  // In this tuple decl case, also prevent descending into the contained decls.
+  if (!isLoopIndex(outermostContainingTuple())) {
+    if (auto typeExpr = ast->typeExpression()) {
+      typeExpr->traverse(rv);
+    }
+    if (auto initExpr = ast->initExpression()) {
+      initExpr->traverse(rv);
+    }
+    for (auto decl : ast->decls()) {
+      decl->traverse(rv);
+    }
+  }
   return false;
 }
 void VarScopeVisitor::exit(const TupleDecl* ast, RV& rv) {
+  CHPL_ASSERT(!scopeStack.empty());
+
+  // Loop index variables don't need default-initialization and aren't
+  // subject to split init etc., so skip them.
+  //
+  // TODO: I think it's fine to skip this for all users of VarScopeVisitor;
+  //       is there an analysis that does need to handle loop indices?
+  // See also: skip for NamedDecl
+  // if (!isLoopIndex(outermostContainingTuple())) {
+  //   handleTupleDeclaration(ast, rv);
+  // }
+
+  // Add tuple index info to AssociatedActions on contained decls
+  for (int i = 0; i < ast->numDecls(); i++) {
+    auto decl = ast->decl(i);
+    auto& re = rv.byPostorder().byAst(decl);
+    AssociatedAction::ActionsList subActions;
+    for (auto action : re.associatedActions()) {
+      auto useId = action.id();
+      auto useTupleEltIdx = i;
+      // if (rhsTupleAst) {
+      //   useId = rhsTupleAst->actual(i)->id();
+      //   useTupleEltIdx = -1;
+      // }
+      auto actionWithIdx = new AssociatedAction(
+          action.action(), action.fn(), useId, action.type(),
+          /* tupleEltIdx */ useTupleEltIdx, action.subActions());
+      subActions.push_back(actionWithIdx);
+    }
+
+    re.clearAssociatedActions();
+    for (auto action : subActions) {
+      re.addAssociatedAction(*action);
+    }
+  }
+
+  tupleInitTypesStack.pop_back();
+  tupleInitExprsStack.pop_back();
+
   exitScope(ast, rv);
   exitAst(ast);
-
-  return;
 }
 
 bool VarScopeVisitor::enter(const NamedDecl* ast, RV& rv) {
-
   if (ast->id().isSymbolDefiningScope()) {
     // It's a symbol with a different path, e.g. a Function.
     // Don't try to resolve it now in this
@@ -305,25 +445,54 @@ void VarScopeVisitor::exit(const NamedDecl* ast, RV& rv) {
     return;
   }
 
+  CHPL_ASSERT(!scopeStack.empty());
+
   // Loop index variables don't need default-initialization and aren't
   // subject to split init etc., so skip them.
   //
   // TODO: I think it's fine to skip this for all users of VarScopeVisitor;
   //       is there an analysis that does need to handle loop indices?
-  bool skipDecl = false;
-  if (inAstStack.size() > 1) {
-    auto parentAst = inAstStack[inAstStack.size() - 2];
-    if (auto indexableLoop = parentAst->toIndexableLoop()) {
-      if (ast == indexableLoop->index()) {
-        skipDecl = true;
-      }
-    }
-  }
-
-  CHPL_ASSERT(!scopeStack.empty());
-  if (!scopeStack.empty() && !skipDecl) {
+  if (!isLoopIndex(ast)) {
     if (auto vld = ast->toVarLikeDecl()) {
-      handleDeclaration(vld, rv);
+      const AstNode* parent;
+      const AstNode* initExpr;
+      QualifiedType initType;
+      Qualifier intentOrKind;
+      bool isFormal;
+
+      auto maybeOuterTuple = outermostContainingTuple();
+      if (vld->name() == USTR("_") && maybeOuterTuple) {
+        // Skip _ ident in tuple
+      } else if (const TupleDecl* outerTuple =
+              (maybeOuterTuple ? maybeOuterTuple->toTupleDecl() : nullptr)) {
+        parent = parsing::parentAst(context, outerTuple);
+        initExpr = outerTuple->initExpression();
+        auto parentInitExpr = tupleInitExprsStack.back();
+        if (parentInitExpr) {
+          initExpr = parentInitExpr->actual(indexWithinContainingTuple(ast));
+        }
+        auto parentInitType = tupleInitTypesStack.back();
+        if (!parentInitType.isUnknown()) {
+          auto parentInitTupleType = parentInitType.type()->toTupleType();
+          CHPL_ASSERT(parentInitTupleType);
+          initType =
+              parentInitTupleType->elementType(indexWithinContainingTuple(ast));
+        }
+        intentOrKind = (Qualifier)outerTuple->intentOrKind();
+        isFormal = outerTuple->isFormal() || outerTuple->isVarArgFormal() || outerTuple->isTupleDeclFormal();
+
+        handleDeclaration(vld, parent, initExpr, initType, intentOrKind, isFormal,
+                        rv);
+      } else {
+        parent = parsing::parentAst(context, vld);
+        initExpr = vld->initExpression();
+        initType = initExpr ? rv.byAst(initExpr).type() : QualifiedType();
+        intentOrKind = vld->storageKind();
+        isFormal = vld->isFormal() || vld->isVarArgFormal();
+
+        handleDeclaration(vld, parent, initExpr, initType, intentOrKind, isFormal,
+                        rv);
+      }
     }
   }
 
