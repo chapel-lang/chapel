@@ -3685,13 +3685,14 @@ QualifiedType Resolver::typeForId(const ID& id) {
     // We're referring to a variable somewhere in this module. Are we the
     // statement that's initializing this variable via split-init?
     // If so, don't try to resolve that module statement, and instead
-    // return Unknown.
+    // return the (possibly incomplete) information that doesn't incorporate
+    // other module statements.
     if (isCurrentModule && curStmt && !id.isSymbolDefiningScope()) {
       auto topLevelId = parsing::idToContainingMultiDeclId(context, id);
       auto& standaloneInfo = resolveModuleStmtStandalone(context, topLevelId);
       if (auto it = standaloneInfo.second.find(id);
           it != standaloneInfo.second.end() && it->second == curStmt->id()) {
-        return QualifiedType();
+        return standaloneInfo.first.byId(id).type();
       }
     }
 
