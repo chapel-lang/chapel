@@ -2797,13 +2797,13 @@ index cc1699cb7ee..d22f447a1ab 100644
 +$CHPL_HOME/modules/standard/Sort/MSBRadixSort.chpl:nnnn: error: Bad comparator for radix sort ContrivedComparator with eltType (real(64), int(64))
 +$CHPL_HOME/modules/standard/Sort/MSBRadixSort.chpl:nnnn: error: Bad comparator for radix sort ContrivedComparator with eltType (real(64), int(64))
 diff --git a/test/types/tuple/errors/invalidTupleSizeExpr.good b/test/types/tuple/errors/invalidTupleSizeExpr.good
-index 07e0fe90dc1..6013d3fface 100644
+index 07e0fe90dc1..f52345454a2 100644
 --- a/test/types/tuple/errors/invalidTupleSizeExpr.good
 +++ b/test/types/tuple/errors/invalidTupleSizeExpr.good
 @@ -1,2 +1,2 @@
  invalidTupleSizeExpr.chpl:1: In function 'main':
 -invalidTupleSizeExpr.chpl:1: error: tuple must have positive size
-+invalidTupleSizeExpr.chpl:2: error: type specifier is a value of type 'void', but it was expected to be a type
++invalidTupleSizeExpr.chpl:2: error: tuple must have positive size
 diff --git a/test/types/tuple/errors/returnWrongSize.good b/test/types/tuple/errors/returnWrongSize.good
 index da77619dc80..c717dab07ce 100644
 --- a/test/types/tuple/errors/returnWrongSize.good
