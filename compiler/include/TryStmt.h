@@ -40,6 +40,7 @@ public:
   BlockStmt*          body() const;
   bool                tryBang() const;
   bool                isSyncTry() const;
+  bool                isManageStmt() const;
 
   void                accept(AstVisitor* visitor) override;
   void                replaceChild(Expr* old_ast, Expr* new_ast) override;

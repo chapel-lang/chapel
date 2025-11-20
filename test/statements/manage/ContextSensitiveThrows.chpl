@@ -1,3 +1,4 @@
+// This is from #27764.
 module ContextSensitiveThrows {
   record R {
     var x: int;
