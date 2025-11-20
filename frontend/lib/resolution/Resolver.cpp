@@ -3692,7 +3692,10 @@ QualifiedType Resolver::typeForId(const ID& id) {
       auto& standaloneInfo = resolveModuleStmtStandalone(context, topLevelId);
       if (auto it = standaloneInfo.second.find(id);
           it != standaloneInfo.second.end() && it->second == curStmt->id()) {
-        return standaloneInfo.first.byId(id).type();
+        if (auto re = standaloneInfo.first.byIdOrNull(id)) {
+          return re->type();
+        }
+        return QualifiedType();
       }
     }
 
