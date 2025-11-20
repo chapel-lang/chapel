@@ -13,8 +13,7 @@ if [ ! -f "$LL_FILE" ]; then
   echo "Expected LLVM IR file $LL_FILE not found!" >> $OUTFILE
   exit 0
 fi
-
-TMPFILE="$LL_FILE.prediff.tmp"
+LL_FILE_SIMPLIFIED=$TESTNAME.simple.ll
 
 LLVM_CONFIG=`${CHPL_HOME}/util/chplenv/chpl_llvm.py --llvm-config`
 BINDIR=`${LLVM_CONFIG} --bindir`
@@ -28,12 +27,8 @@ fi
 
 OPT="${BINDIR}/opt"
 # run some passes to simplify the IR for easier checking
-$OPT -S -passes='mem2reg,simplifycfg' $LL_FILE -o $TMPFILE
+$OPT -S -passes='mem2reg,simplifycfg' $LL_FILE -o $LL_FILE_SIMPLIFIED
 
-
-$FILECHECK --enable-var-scope --input-file $TMPFILE $TESTNAME.chpl 2>> $OUTFILE
-
-# Make sure to propagate memory leaks
-awk '/=* Memory Leaks =*/ {intable=1} {if (intable) {print($0);}}' <$TMPFILE >>$OUTFILE
-
-rm $TMPFILE
+$FILECHECK --enable-var-scope --input-file $LL_FILE_SIMPLIFIED $TESTNAME.chpl 2> $OUTFILE.tmp
+cat $OUTFILE.tmp >> $OUTFILE
+rm $OUTFILE.tmp
