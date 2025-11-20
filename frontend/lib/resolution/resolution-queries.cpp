@@ -4875,8 +4875,13 @@ static const Type* resolveBuiltinTypeCtor(Context* context,
         CHPL_ASSERT(instType.isParam() && instType.type()->isIntType());
 
         auto num = instType.param()->toIntParam()->value();
-        std::vector<const Type*> eltTypes(num, second.type());
-        return TupleType::getValueTuple(context, eltTypes);
+        if (num > 0) {
+          std::vector<const Type*> eltTypes(num, second.type());
+          return TupleType::getValueTuple(context, eltTypes);
+        } else {
+          context->error(astForErr, "tuple must have positive size");
+          return ErroneousType::get(context);
+        }
       }
     }
   }
