@@ -4308,7 +4308,9 @@ Expr* TConverter::convertFieldInitOrNull(
                                 const resolution::CallInfo& ci,
                                 RV& rv) {
   // If not in an initializer, then 'this.x = ...' cannot be an init point.
-  if (!cur.fnSymbol->isInitializer() || ci.name() != USTR("=")) {
+  if ((!cur.fnSymbol->isInitializer() &&
+      !cur.fnSymbol->isCopyInit()) ||
+      ci.name() != USTR("=")) {
     return nullptr;
   }
 
