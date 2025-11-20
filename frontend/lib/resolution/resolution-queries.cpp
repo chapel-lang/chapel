@@ -5018,29 +5018,143 @@ static bool resolveSpecialClassCast(Context* context,
                                     const AstNode* astForErr,
                                     const QualifiedType& srcQt,
                                     const QualifiedType& dstQt,
+                                    const CallScopeInfo& inScopes,
                                     QualifiedType& exprTypeOut) {
-  // cast (borrowed class) : unmanaged,
-  // and (unmanaged class) : borrowed
+  // the corresponding production compiler logic is in
+  //   compiler/resolution/functionResolution.cpp (resolveBuiltinCastCall, adjustClassCast)
+  //
+  // Production does something a little tricky: for `v : t`, it adjusts
+  // `t` with some information from `v`, but then allows resolution to proceed,
+  // so that we resolve casts using module code.
+
+  // General algorithm:
+  //  1. Pick target class type
+  //     * if RHS type has a class type ('C', not 'owned'), use that
+  //     * otherwise, use class type from the LHS (which may be anything)
+  //  2. Combine LHS and RHS decorators to get final decorator 'd'
+  //  3. If 'd' is managed, decide the manager.
+  //     * if RHS has a manager, use that
+  //     * otherwise, use the LHS manager
+  //  4. For values, give up if the results are suspicious, so that later resolution emits a "real" error
+  //     * if 'd' is managed but the value is not (casting borrowed to owned at the value level is bad)
+  //     * if 'd' is managed and the managers don't match (owned to shared is bad)
+  //  5. For values, resolve .borrow() on the value before performing the cast.
+  //
+  // Once this is done, if we didn't bail, replace dstQt with the adjusted type,
+  // and keep going.
+
   auto srcTy = srcQt.type();
   auto dstTy = dstQt.type();
   auto srcClass = srcTy->toClassType();
   auto dstClass = dstTy->toClassType();
-  bool isValidDst = dstClass->manageableType()->isAnyClassType() &&
-                    (dstClass->decorator().isUnmanaged() ||
-                     dstClass->decorator().isBorrowed());
-  bool isValidSrc = srcClass->decorator().isBorrowed() ||
-                    srcClass->decorator().isUnmanaged();
-  if (isValidDst && isValidSrc) {
-    auto management = ClassTypeDecorator::removeNilableFromDecorator(dstClass->decorator().val());
-    auto decorator = ClassTypeDecorator(management);
-    decorator = decorator.copyNilabilityFrom(srcClass->decorator());
-    auto outTy = ClassType::get(context, srcClass->manageableType(),
-                                nullptr, decorator);
-    exprTypeOut = QualifiedType(srcQt.kind(), outTy, srcQt.param());
+
+  CHPL_ASSERT(srcClass);
+  CHPL_ASSERT(dstClass || (dstTy->isAnyOwnedType() || dstTy->isAnySharedType()));
+  // TODO: looks like we just don't have AnyBorrowedType? might need to add it here.
+
+  // part (1)
+  const ManageableType* finalBase = nullptr;
+  if (dstClass && dstClass->manageableType()->isBasicClassType()) {
+    finalBase = dstClass->manageableType();
+  } else {
+    finalBase = srcClass->manageableType();
+  }
+
+  // part (2)
+  auto srcDec = srcClass->decorator();
+  auto dstDec = dstClass ? dstClass->decorator()
+                         /* relies on the assertion above */
+                         : ClassTypeDecorator(ClassTypeDecorator::MANAGED);
+  auto d = dstDec.combine(srcDec);
+
+  // part (3)
+  const Type* finalManager = nullptr;
+  if (d.isManaged()) {
+    if (dstDec.isUnknownManagement()) {
+      finalManager = srcClass->manager();
+    } else {
+      if (dstClass) {
+        finalManager = dstClass->manager();
+      } else {
+        finalManager = dstTy;
+      }
+    }
+  }
+
+  // part (4)
+  if (!srcQt.isType()) {
+    if (d.isManaged() && !srcDec.isManaged()) {
+      return false;
+    }
+    if (srcDec.isManaged() && dstDec.isManaged()) {
+      // note: above, we set finalManager to the dst manager if it was known.
+      if (srcClass->manager() != finalManager) {
+        return false;
+      }
+    }
+  }
+
+  // part (5)
+  // TODO
+
+  auto newTargetType = ClassType::get(context, finalBase, finalManager, d);
+  if (srcQt.isType()) {
+    // type-to-type cast is easy; just return what we computed; unless
+    // we're casting unrelated classes.
+
+    if (auto newBct = newTargetType->basicClassType()) {
+      if (auto srcBct = srcClass->basicClassType()) {
+        bool ignoredConverts, ignoredInstantiates;
+        if (!srcBct->isSubtypeOf(context, newBct, ignoredConverts, ignoredInstantiates) &&
+            !newBct->isSubtypeOf(context, srcBct, ignoredConverts, ignoredInstantiates)) {
+          return false;
+        }
+      }
+    }
+
+    exprTypeOut = QualifiedType(srcQt.kind(), newTargetType);
     return true;
   }
 
-  return false;
+  // As part of 'resolveBuiltinCastCall', which is the path that class casting
+  // takes, production checks if values are coercible (as in during argument
+  // passing), and if so, converts the call to `PRIM_CAST`. See our `primCast`
+  // implementation; it simply produces the target type. Just do that here.
+  auto got = canPassScalar(context, srcQt, QualifiedType(QualifiedType::IN, newTargetType));
+  if (got.passes()) {
+    exprTypeOut = QualifiedType(srcQt.kind(), newTargetType);
+    return true;
+  }
+
+  // value cast: resolve the adjusted cast to get module-level
+  // code to handle it. Unless we didn't adjust the call.
+  if (newTargetType == dstTy) {
+    return false;
+  }
+
+  std::vector<CallInfoActual> actuals;
+  auto dstAsType = QualifiedType(QualifiedType::TYPE, newTargetType);
+  actuals.push_back(CallInfoActual(srcQt, UniqueString()));
+  actuals.push_back(CallInfoActual(dstAsType, UniqueString()));
+  auto ci = CallInfo(USTR(":"),
+                     QualifiedType(),
+                     /* isMethodCall */ false,
+                     /* hasQuestionArg */ false,
+                     /* isParenless */ false,
+                     std::move(actuals));
+
+  auto rc = createDummyRC(context);
+  auto cr = resolveGeneratedCall(&rc, astForErr, ci, inScopes);
+
+  if (cr.mostSpecific().isEmpty()) {
+    // couldn't resolve the call. Fall back to resolving the unadjusted call,
+    // to report errors in the normal way.
+    return false;
+  } else {
+    exprTypeOut = cr.exprType();
+  }
+
+  return true;
 }
 
 static bool resolveSpecialTupleCast(Context* context,
@@ -5183,8 +5297,10 @@ static bool resolveFnCallSpecial(ResolutionContext* rc,
       srcTy->stringify(oss, chpl::StringifyKind::CHPL_SYNTAX);
       exprTypeOut = QualifiedType::makeParamString(context, oss.str());
       return true;
-    } else if (srcTy->isClassType() && dstTy->isClassType()) {
-      if (resolveSpecialClassCast(context, astForErr, srcQt, dstQt, exprTypeOut)) {
+    } else if (srcTy->isClassType() && (dstTy->isClassType() ||
+                                        dstTy->isAnyOwnedType() ||
+                                        dstTy->isAnySharedType())) {
+      if (resolveSpecialClassCast(context, astForErr, srcQt, dstQt, inScopes, exprTypeOut)) {
         return true;
       }
     } else if (srcTy->isTupleType() && dstTy->isTupleType()) {
