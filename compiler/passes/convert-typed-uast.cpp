@@ -831,6 +831,11 @@ struct TConverter final : UastConverter,
   Expr* convertPrimCallOrNull(const Call* node, RV& rv);
   // Try to convert a primitive that changes class nilability or management
   Expr* classCastHelper(const PrimCall* node, RV& rv);
+  SymExpr* insertClassConversion(types::QualifiedType to,
+                              types::QualifiedType from,
+                              const AstNode* astForErr,
+                              Expr* fromExpr,
+                              RV& rv);
 
   // Try to convert a 'new' expression (which is considered a special
   // form of call) into a call to a middle-end only '_new' wrapper.
@@ -5722,6 +5727,37 @@ bool TConverter::enter(const Return* node, RV& rv) {
 
   return true;
 }
+
+SymExpr* TConverter::insertClassConversion(types::QualifiedType to,
+                                        types::QualifiedType from,
+                                        const AstNode* astForErr,
+                                        Expr* fromExpr,
+                                        RV& rv) {
+  auto ct = to.type()->toClassType();
+  if (auto mt = ct->managerRecordType(context)) {
+    types::QualifiedType recvQt = { to.kind(), mt };
+
+    std::vector<CallInfoActual> mtActuals;
+    mtActuals.push_back(CallInfoActual(from));
+
+    auto ci1 = resolution::CallInfo::createSimple(USTR("init="), mtActuals);
+    auto ci2 = resolution::CallInfo::createWithReceiver(ci1, recvQt);
+
+    // Search for 'init()' using the generated call.
+    const ResolvedFunction* rf = nullptr;
+    auto fn = convertFunctionForGeneratedCall(ci2, astForErr, &rf);
+
+    VarSymbol* initTemp = newTemp("initTemp", convertType(recvQt.type()));
+    insertStmt(new DefExpr(initTemp));
+
+    insertStmt(new CallExpr(fn, initTemp, fromExpr));
+    return new SymExpr(initTemp);
+  } else {
+    auto cast = new CallExpr(PRIM_CAST, convertType(to.type()), fromExpr);
+    return storeInTempIfNeeded(cast, to);
+  }
+}
+
 void TConverter::exit(const Return* node, RV& rv) {
   TC_DEBUGF(this, "exit return %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 
@@ -5739,6 +5775,12 @@ void TConverter::exit(const Return* node, RV& rv) {
       move = new CallExpr(PRIM_MOVE,
                           cur.retVar, new CallExpr(PRIM_ADDR_OF, temp));
     } else {
+      auto commonType = cur.resolvedFunction->returnType();
+      if (retQt.type() != commonType.type() &&
+          commonType.type()->isClassType()) {
+        temp = insertClassConversion(commonType, retQt, node, temp, rv);
+      }
+
       move = new CallExpr(PRIM_MOVE, cur.retVar, temp);
     }
     insertStmt(move);
