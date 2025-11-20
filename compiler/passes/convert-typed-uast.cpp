@@ -5588,18 +5588,20 @@ Expr* TConverter::convertFieldAccessOrNull(const AstNode* node, RV& rv) {
   Expr* recv = recvAst ? convertExpr(recvAst, rv, &qtRecv) : nullptr;
 
   if (recvAst && qtRecv.type()->isClassType() &&
-      qtRecv.type()->toClassType()->manager() &&
-      qtRecv.type()->toClassType()->manager()->isAnyOwnedType() &&
-      fieldName != "chpl_p") {
-    // temporarily simulate forwarding for owned records
+      qtRecv.type()->toClassType()->manager()) {
+    // temporarily simulate forwarding for owned/shared records
     qtRecv = types::QualifiedType(qtRecv.kind(),
                qtRecv.type()->toClassType()->managerRecordType(context));
     auto fwd = codegenGetFieldImpl(this, PRIM_UNKNOWN, recv, qtRecv,
                                    "chpl_p",
                                    -1,
                                    rv, &qtField);
-    recv = storeInTempIfNeeded(fwd, qtField);
-    qtRecv = qtField;
+    if (fieldName == "chpl_p") {
+      return storeInTempIfNeeded(fwd, qtField);
+    } else {
+      recv = storeInTempIfNeeded(fwd, qtField);
+      qtRecv = qtField;
+    }
   }
 
   const int fieldIndex = -1;
