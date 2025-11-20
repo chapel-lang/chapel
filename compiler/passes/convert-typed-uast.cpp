@@ -3890,9 +3890,8 @@ Expr* TConverter::convertNewCallOrNull(const Call* node, RV& rv) {
 
     convertAndInsertActuals(toCallExpr(ret), node, actualAsts, init, fam, rv);
 
-    if (re->type().type()->toClassType()->managerRecordType(context)->isOwnedRecordType()) {
-      auto ct = re->type().type()->toClassType();
-      auto mt = ct->managerRecordType(context);
+    auto ct = re->type().type()->toClassType();
+    if (auto mt = ct ? ct->managerRecordType(context) : nullptr) {
       types::QualifiedType recvQt = { re->type().kind(), mt };
 
       auto dec = types::ClassTypeDecorator(types::ClassTypeDecorator::UNMANAGED);
@@ -4013,7 +4012,18 @@ Expr* TConverter::convertPrimCallOrNull(const Call* node, RV& rv) {
 
   // there should not be associated actions for primitive calls
   auto re = rv.byAstOrNull(node);
-  INT_ASSERT(!re || !re->hasAssociatedActions());
+  if (re) {
+    for (auto a : re->associatedActions()) {
+      // For now, allow only MOVE_INIT actions, indicating that the result of
+      // this primitive is intended to be 'moved'.
+      //
+      // Note: Right now call-init-deinit is casting a wide net and including
+      // integers in this analysis, so we might get rid of this check long
+      // term.
+      INT_ASSERT(a.action() == AssociatedAction::MOVE_INIT);
+      INT_ASSERT(a.id() == node->id());
+    }
+  }
 
   CallExpr* ret = nullptr;
   if (primCall->prim() == chpl::uast::primtags::PRIM_RT_ERROR) {
