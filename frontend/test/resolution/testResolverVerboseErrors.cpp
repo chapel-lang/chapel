@@ -385,6 +385,48 @@ static const char* errorLabelAsValue = R"""(
       |
 )""";
 
+static const char* notSplitInit = R"""(
+  proc foo(x: int) {}
+  proc foo(x: real) {}
+  var x: numeric;
+  foo(x);
+)""";
+
+static const char* errorNotSplitInit = R"""(
+─── error in file.chpl:4 [NoMatchingCandidates] ───
+  Unable to resolve call to 'foo': no matching candidates.
+      |
+    4 |   foo(x);
+      |
+  
+  The following candidate didn't match because it does not initialize an actual which expects to be initialized:
+      |
+    2 |   proc foo(x: real) {}
+      |            ⎺⎺⎺⎺⎺⎺⎺
+      |
+  The actual 'x' expects to be split-initialized because it is declared with a generic type and no initialization expression here:
+      |
+    3 |   var x: numeric;
+      |       ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      |
+  The call to 'foo' occurs before any valid initialization points:
+      |
+    4 |   foo(x);
+      |       ⎺
+      |
+  The call to 'foo' cannot initialize 'x' because only 'out' formals can be used to split-initialize. However, 'x' is passed to formal 'x' which has intent 'const in'.
+  
+  The following candidate didn't match because it does not initialize an actual which expects to be initialized:
+      |
+    1 |   proc foo(x: int) {}
+      |            ⎺⎺⎺⎺⎺⎺
+      |
+      |
+    4 |   foo(x);
+      |       ⎺
+      |
+)""";
+
 static void testResolverError(const char* program, const char* error,
                               bool standard = true,
                               ErrorType expectedType = ErrorType::NoMatchingCandidates) {
@@ -406,16 +448,32 @@ static void testResolverError(const char* program, const char* error,
   auto mod = parseResult.singleModule();
   auto resolutionResult = resolveModule(context, mod->id());
 
-  assert(guard.numErrors() == 1);
+  assert(guard.numErrors() >= 1);
   assert(guard.error(0)->type() == expectedType);
 
   std::ostringstream oss;
   ErrorWriter detailedWriter(context, oss, ErrorWriter::DETAILED, /* useColor */ false);
   guard.error(0)->write(detailedWriter);
 
+  auto got = oss.str();
   printf("Expected error:\n%s\n", error);
-  printf("Actual error:\n%s\n", oss.str().c_str());
-  assert(oss.str() == error);
+  printf("Actual error:\n%s\n", got.c_str());
+  auto minlen = std::min(strlen(error), got.size());
+  int line = 0;
+  int col = 0;
+  for (size_t i = 0; i < minlen; i++) {
+    if (error[i] != got[i]) {
+      printf("First difference at line %d column %d, (%c vs %c)\n",
+             line, col, error[i], got[i]);
+      break;
+    }
+    if (error[i] == '\n') {
+      line++;
+      col = 0;
+    }
+    col++;
+  }
+  assert(got == error);
 
   guard.clearErrors();
 }
@@ -436,6 +494,7 @@ int main() {
 
   testResolverError(progBreakNonLoop, errorBreakNonLoop, true,  ErrorType::InvalidContinueBreakTarget);
   testResolverError(progLabelAsValue, errorLabelAsValue, true, ErrorType::LoopLabelOutsideBreakOrContinue);
+  testResolverError(notSplitInit, errorNotSplitInit, true, ErrorType::NoMatchingCandidates);
 
   return 0;
 }

@@ -813,7 +813,7 @@ static QualifiedType primFamilyIsSubtype(Context* context,
 
   auto prim = call->prim();
   auto& parentQT = ci.actual(0).type();
-  auto& subQT = ci.actual(1).type();
+  auto subQT = ci.actual(1).type();
 
   bool parentIsType = parentQT.isType();
   bool subIsType = subQT.isType();
@@ -827,9 +827,39 @@ static QualifiedType primFamilyIsSubtype(Context* context,
     if (!parentIsType || !subIsType) return QualifiedType();
   }
 
-  // Note: omitted here is the special logic for distributions
-  // (if parent is a distribution class, retrieve the child distribution's
-  // _instance). It's unclear if we need this logic in Dyno.
+  // in production, _distribution(someDistClass) is unwrapped to
+  // someDistClass (via resolving the _instance field), but only if
+  // the parent type inherits from a distribution base class.
+  auto subT = subQT.type();
+  if (subT && subT->hasPragma(context, pragmatags::PRAGMA_DISTRIBUTION)) {
+
+    bool foundDistBase = false;
+    auto parentT = parentQT.type();
+    if (parentT && parentT->getCompositeType()) {
+      auto parentCT = parentT->getCompositeType()->toBasicClassType();
+      while (parentCT) {
+        if (parentCT->hasPragma(context, pragmatags::PRAGMA_BASE_DIST)) {
+          foundDistBase = true;
+          break;
+        }
+        parentCT = parentCT->parentClassType();
+      }
+    }
+
+    if (foundDistBase) {
+      auto ct = subT->getCompositeType();
+      CHPL_ASSERT(ct != nullptr);
+
+      auto rc = createDummyRC(context);
+      auto fields = fieldsForTypeDecl(&rc, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+      for (int i = 0; i < fields.numFields(); i++) {
+        if (fields.fieldName(i) == USTR("_instance")) {
+          subQT = fields.fieldType(i);
+          break;
+        }
+      }
+    }
+  }
 
   auto newParentQT = QualifiedType(QualifiedType::TYPE, parentQT.type());
   auto newSubQT = QualifiedType(QualifiedType::TYPE, subQT.type());

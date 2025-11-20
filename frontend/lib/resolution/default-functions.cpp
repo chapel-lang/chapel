@@ -1456,6 +1456,32 @@ static void buildWhenStmts(Context* context, Builder* builder,
   }
 }
 
+// In production, some functions like 'enumToOrder' or string casts get
+// inserted into the ChapelBase module. They therefore get access to 'operator=='
+// even if their module doesn't have access to ChapelBase.
+// In dyno, we can't do this, since generated code has to be in a particular
+// location (at this time, logically "inside" the type declaration it's generated
+// for). To ensure we have the necessary access to things in ChapelBase,
+// `use` ChapelBase` in the body.
+static owned<Use> useDefsFromChapelBase(Context* context, Builder* builder,
+                                        const Location& dummyLoc,
+                                        std::vector<const char*> limitationStrs = {"=="}) {
+  AstList baseUseList;
+  auto baseIdent = Identifier::build(builder, dummyLoc,
+                                     UniqueString::get(context, "ChapelBase"));
+  std::vector<owned<AstNode>> limitations;
+  for (auto limitation : limitationStrs) {
+    auto eq = Identifier::build(builder, dummyLoc, UniqueString::get(context, limitation));
+    limitations.push_back(std::move(eq));
+  }
+  auto baseVisClause = VisibilityClause::build(builder, dummyLoc,
+                                               std::move(baseIdent), VisibilityClause::ONLY, std::move(limitations));
+  baseUseList.push_back(std::move(baseVisClause));
+
+  auto useBase = Use::build(builder, dummyLoc, Decl::Visibility::DEFAULT_VISIBILITY, std::move(baseUseList));
+  return useBase;
+}
+
 const BuilderResult& buildEnumToOrder(Context* context, ID typeID) {
   QUERY_BEGIN(buildEnumToOrder, context, typeID);
 
@@ -1485,24 +1511,7 @@ const BuilderResult& buildEnumToOrder(Context* context, ID typeID) {
     stmts.push_back(std::move(useEnum));
   }
 
-  // In production, the new function gets inserted into the ChapelBase module.
-  // In dyno, we can't do this, since generated code has to be in a particular
-  // location (at this time, logically "inside" the type declaration it's generated
-  // for). To ensure we have the necessary code, `use` ChapelBase` in the body.
-  {
-    AstList baseUseList;
-    auto baseIdent = Identifier::build(builder, dummyLoc,
-                                       UniqueString::get(context, "ChapelBase"));
-    auto eq = Identifier::build(builder, dummyLoc, USTR("=="));
-    std::vector<owned<AstNode>> limitations;
-    limitations.push_back(std::move(eq));
-    auto baseVisClause = VisibilityClause::build(builder, dummyLoc,
-                                                 std::move(baseIdent), VisibilityClause::ONLY, std::move(limitations));
-    baseUseList.push_back(std::move(baseVisClause));
-
-    auto useBase = Use::build(builder, dummyLoc, Decl::Visibility::DEFAULT_VISIBILITY, std::move(baseUseList));
-    stmts.push_back(std::move(useBase));
-  }
+  stmts.push_back(useDefsFromChapelBase(context, builder, dummyLoc));
 
 
   // build up when-stmts
@@ -1595,6 +1604,8 @@ struct EnumCastBuilder : BinaryFnBuilder {
   }
 
   BuilderResult finalize() {
+    stmts().push_back(useDefsFromChapelBase(context(), builder(), dummyLoc_,
+                      {"==", "chpl_enum_cast_error"}));
     auto select = Select::build(builder(), dummyLoc_,
                                 identifier(lhsFormal()->name()),
                                 std::move(selectWhens_));

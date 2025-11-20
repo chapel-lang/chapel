@@ -830,10 +830,9 @@ void FindElidedCopies::propagateChildToParent(VarFrame* frame, VarFrame* parent,
   saveLocalVarElidedCopies(frame);
 
   if (parent != nullptr) {
-    bool makeMentions = turnElisionToMention(frame, parent, ast);
+    bool makeMentions = turnElisionToMention(frame, parent, ast) || !allowsCopyElision(ast);
     // propagate any non-local variables
-    if (allowsCopyElision(ast) &&
-        parent != nullptr) {
+    if (parent != nullptr) {
       for (const auto& pair : frame->copyElisionState) {
         ID id = pair.first;
         const CopyElisionState& state = pair.second;

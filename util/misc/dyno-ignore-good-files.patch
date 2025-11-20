@@ -68,10 +68,10 @@ index dc386e89673..88ad174d5e3 100644
     The call to printX() is not ambiguous because M2’s definition shadows
     that of M1. On the other hand, the call to printY() is ambiguous
 diff --git a/doc/rst/language/spec/variables.rst b/doc/rst/language/spec/variables.rst
-index 57b4b8d78b4..b0d208e7515 100644
+index 57b4b8d78b4..8da7750790b 100644
 --- a/doc/rst/language/spec/variables.rst
 +++ b/doc/rst/language/spec/variables.rst
-@@ -224,9 +224,15 @@ unconditionally return.
+@@ -224,9 +224,14 @@ unconditionally return.
     .. BLOCK-test-chapeloutput
  
        no-split-init.chpl:1: In function 'main':
@@ -79,14 +79,13 @@ index 57b4b8d78b4..b0d208e7515 100644
 -      no-split-init.chpl:2: note: cannot find initialization point to split-init this variable
 -      no-split-init.chpl:3: note: 'x' is used here before it is initialized
 +      no-split-init.chpl:3: error: unable to resolve call to 'writeln': no matching candidates
-+      $CHPL_HOME/modules/standard/ChapelIO.chpl:409: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+      no-split-init.chpl:2: note: The actual 'x' expects to be split-initialized because it is declared without a type or initialization expression here
++      $CHPL_HOME/modules/standard/ChapelIO.chpl:409: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++      no-split-init.chpl:2: note: The actual 'x' expects to be split-initialized because it is declared with a generic type and no initialization expression here
 +      no-split-init.chpl:3: note: The call to 'writeln' occurs before any valid initialization points
-+      $CHPL_HOME/modules/standard/ChapelIO.chpl:403: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+      no-split-init.chpl:2: note: The actual 'x' expects to be split-initialized because it is declared without a type or initialization expression here
-+      no-split-init.chpl:3: note: The call to 'writeln' occurs before any valid initialization points
++      $CHPL_HOME/modules/standard/ChapelIO.chpl:403: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
 +      no-split-init.chpl:3: note: omitting 1 more candidates that didn't match
 +      no-split-init.chpl:4: error: cannot pass const to non-const
++
  
  
     *Example (split-cond-blocks-init.chpl)*
@@ -750,14 +749,20 @@ index 7df509600a2..099e1206b37 100644
 +int-coerce-var.chpl:12: error: unable to resolve call to 'acceptIntRef': no matching candidates
 +int-coerce-var.chpl:1: note: the following candidate didn't match because an actual couldn't be passed to a formal
 diff --git a/test/types/integral/integralvariable2.good b/test/types/integral/integralvariable2.good
-index 3bd7a3ad5c0..6a4593b9dbe 100644
+index 3bd7a3ad5c0..4bc5d7d0076 100644
 --- a/test/types/integral/integralvariable2.good
 +++ b/test/types/integral/integralvariable2.good
-@@ -1,4 +1 @@
+@@ -1,4 +1,7 @@
 -integralvariable2.chpl:1: error: cannot default-initialize a variable with generic type
 -integralvariable2.chpl:1: note: 'r' has generic type 'integral'
 -integralvariable2.chpl:1: note: cannot find initialization point to split-init this variable
 -integralvariable2.chpl:2: note: 'r' is used here before it is initialized
++integralvariable2.chpl:2: error: unable to resolve call to 'writeln': no matching candidates
++$CHPL_HOME/modules/standard/ChapelIO.chpl:409: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++integralvariable2.chpl:1: note: The actual 'r' expects to be split-initialized because it is declared with a generic type and no initialization expression here
++integralvariable2.chpl:2: note: The call to 'writeln' occurs before any valid initialization points
++$CHPL_HOME/modules/standard/ChapelIO.chpl:403: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++integralvariable2.chpl:2: note: omitting 1 more candidates that didn't match
 +integralvariable2.chpl:1: error: cannot default initialize variable using generic or unknown type
 diff --git a/test/types/locale/bradc/changeLocaleID.good b/test/types/locale/bradc/changeLocaleID.good
 index 5396f581a39..e436e36f239 100644
@@ -785,10 +790,10 @@ index 5e8aee6ffa9..aecf08cddbb 100644
 -note: An additional error is hidden. Use --print-additional-errors to see it.
 +bad-managed-init.chpl:13: error: type mismatch between declared type of 's' and initialization expression
 diff --git a/test/types/partial/default-init-generic1.good b/test/types/partial/default-init-generic1.good
-index ce672e1bd09..b5a20932dd2 100644
+index ce672e1bd09..5d74e1f7b7e 100644
 --- a/test/types/partial/default-init-generic1.good
 +++ b/test/types/partial/default-init-generic1.good
-@@ -1,7 +1,4 @@
+@@ -1,7 +1,22 @@
 -default-init-generic1.chpl:22: warning: please use '?' when declaring a variable with generic type
 -default-init-generic1.chpl:22: note: for example with 'S(?)'
  default-init-generic1.chpl:21: In function 'main':
@@ -796,19 +801,49 @@ index ce672e1bd09..b5a20932dd2 100644
 -default-init-generic1.chpl:22: note: 'D' has generic type 'S'
 -default-init-generic1.chpl:22: note: cannot find initialization point to split-init this variable
 -default-init-generic1.chpl:23: note: 'D' is used here before it is initialized
++default-init-generic1.chpl:23: error: unable to resolve call to 'writeln': no matching candidates
++$CHPL_HOME/modules/standard/ChapelIO.chpl:409: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++default-init-generic1.chpl:22: note: The actual 'D' expects to be split-initialized because it is declared with a generic type and no initialization expression here
++default-init-generic1.chpl:23: note: The call to 'writeln' occurs before any valid initialization points
++$CHPL_HOME/modules/standard/ChapelIO.chpl:403: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++default-init-generic1.chpl:23: note: omitting 1 more candidates that didn't match
++default-init-generic1.chpl:26: error: unable to resolve call to 'writeln': no matching candidates
++$CHPL_HOME/modules/standard/ChapelIO.chpl:409: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++default-init-generic1.chpl:25: note: The actual 'A' expects to be split-initialized because it is declared with a generic type and no initialization expression here
++default-init-generic1.chpl:26: note: The call to 'writeln' occurs before any valid initialization points
++$CHPL_HOME/modules/standard/ChapelIO.chpl:403: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++default-init-generic1.chpl:26: note: omitting 1 more candidates that didn't match
++default-init-generic1.chpl:29: error: unable to resolve call to 'writeln': no matching candidates
++$CHPL_HOME/modules/standard/ChapelIO.chpl:409: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++default-init-generic1.chpl:28: note: The actual 'x' expects to be split-initialized because it is declared with a generic type and no initialization expression here
++default-init-generic1.chpl:29: note: The call to 'writeln' occurs before any valid initialization points
++$CHPL_HOME/modules/standard/ChapelIO.chpl:403: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++default-init-generic1.chpl:29: note: omitting 1 more candidates that didn't match
 +default-init-generic1.chpl:22: error: cannot default initialize variable using generic or unknown type
 +default-init-generic1.chpl:25: error: cannot default initialize variable using generic or unknown type
 +default-init-generic1.chpl:28: error: cannot default initialize variable using generic or unknown type
 diff --git a/test/types/partial/default-init-generic2.good b/test/types/partial/default-init-generic2.good
-index 8d265af15ad..ad39e892589 100644
+index 8d265af15ad..100a3535924 100644
 --- a/test/types/partial/default-init-generic2.good
 +++ b/test/types/partial/default-init-generic2.good
-@@ -1,5 +1,3 @@
+@@ -1,5 +1,15 @@
  default-init-generic2.chpl:12: In function 'main':
 -default-init-generic2.chpl:13: error: cannot default-initialize a variable with generic type
 -default-init-generic2.chpl:13: note: 'B' has generic type 'R(real(64))'
 -default-init-generic2.chpl:13: note: cannot find initialization point to split-init this variable
 -default-init-generic2.chpl:14: note: 'B' is used here before it is initialized
++default-init-generic2.chpl:14: error: unable to resolve call to 'writeln': no matching candidates
++$CHPL_HOME/modules/standard/ChapelIO.chpl:409: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++default-init-generic2.chpl:13: note: The actual 'B' expects to be split-initialized because it is declared with a generic type and no initialization expression here
++default-init-generic2.chpl:14: note: The call to 'writeln' occurs before any valid initialization points
++$CHPL_HOME/modules/standard/ChapelIO.chpl:403: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++default-init-generic2.chpl:14: note: omitting 1 more candidates that didn't match
++default-init-generic2.chpl:17: error: unable to resolve call to 'writeln': no matching candidates
++$CHPL_HOME/modules/standard/ChapelIO.chpl:409: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++default-init-generic2.chpl:16: note: The actual 'C' expects to be split-initialized because it is declared with a generic type and no initialization expression here
++default-init-generic2.chpl:17: note: The call to 'writeln' occurs before any valid initialization points
++$CHPL_HOME/modules/standard/ChapelIO.chpl:403: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++default-init-generic2.chpl:17: note: omitting 1 more candidates that didn't match
 +default-init-generic2.chpl:13: error: cannot default initialize variable using generic or unknown type
 +default-init-generic2.chpl:16: error: cannot default initialize variable using generic or unknown type
 diff --git a/test/types/partial/dependent.simple.good b/test/types/partial/dependent.simple.good
@@ -1958,21 +1993,19 @@ index b0775c29d35..be3d4740181 100644
 -error-never-initialized-values-global4.chpl:3: note: consider adding a management decorator such as 'owned', 'shared', 'borrowed', or 'unmanaged'
 +error-never-initialized-values-global4.chpl:3: error: cannot default initialize variable using generic or unknown type
 diff --git a/test/types/records/split-init/error-never-initialized-values-mentioned1.good b/test/types/records/split-init/error-never-initialized-values-mentioned1.good
-index bfa8e6442f2..4111436584e 100644
+index bfa8e6442f2..f24f0c03170 100644
 --- a/test/types/records/split-init/error-never-initialized-values-mentioned1.good
 +++ b/test/types/records/split-init/error-never-initialized-values-mentioned1.good
-@@ -1,4 +1,9 @@
+@@ -1,4 +1,7 @@
  error-never-initialized-values-mentioned1.chpl:3: In function 'error':
 -error-never-initialized-values-mentioned1.chpl:5: error: 'a2' is not initialized and has no type
 -error-never-initialized-values-mentioned1.chpl:5: note: cannot find initialization point to split-init this variable
 -error-never-initialized-values-mentioned1.chpl:7: note: 'a2' is used here before it is initialized
 +error-never-initialized-values-mentioned1.chpl:7: error: unable to resolve call to 'writeln': no matching candidates
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:409: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+error-never-initialized-values-mentioned1.chpl:5: note: The actual 'a2' expects to be split-initialized because it is declared without a type or initialization expression here
++$CHPL_HOME/modules/standard/ChapelIO.chpl:409: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++error-never-initialized-values-mentioned1.chpl:5: note: The actual 'a2' expects to be split-initialized because it is declared with a generic type and no initialization expression here
 +error-never-initialized-values-mentioned1.chpl:7: note: The call to 'writeln' occurs before any valid initialization points
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:403: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+error-never-initialized-values-mentioned1.chpl:5: note: The actual 'a2' expects to be split-initialized because it is declared without a type or initialization expression here
-+error-never-initialized-values-mentioned1.chpl:7: note: The call to 'writeln' occurs before any valid initialization points
++$CHPL_HOME/modules/standard/ChapelIO.chpl:403: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
 +error-never-initialized-values-mentioned1.chpl:7: note: omitting 1 more candidates that didn't match
 diff --git a/test/types/records/split-init/error-never-initialized-values-mentioned2.good b/test/types/records/split-init/error-never-initialized-values-mentioned2.good
 index 6e31d880999..bf9905cbd68 100644
@@ -1986,26 +2019,38 @@ index 6e31d880999..bf9905cbd68 100644
 -note: Consider using the type borrowed C? instead
 +error-never-initialized-values-mentioned2.chpl:5: error: cannot default initialize variable using non-nilable class type
 diff --git a/test/types/records/split-init/error-never-initialized-values-mentioned3.good b/test/types/records/split-init/error-never-initialized-values-mentioned3.good
-index c9032597bca..4e823f9d975 100644
+index c9032597bca..8fb878f21c4 100644
 --- a/test/types/records/split-init/error-never-initialized-values-mentioned3.good
 +++ b/test/types/records/split-init/error-never-initialized-values-mentioned3.good
-@@ -1,5 +1,2 @@
+@@ -1,5 +1,8 @@
  error-never-initialized-values-mentioned3.chpl:3: In function 'error':
 -error-never-initialized-values-mentioned3.chpl:5: error: cannot default-initialize a variable with generic type
 -error-never-initialized-values-mentioned3.chpl:5: note: 'c2' has generic type 'C'
 -error-never-initialized-values-mentioned3.chpl:5: note: cannot find initialization point to split-init this variable
 -error-never-initialized-values-mentioned3.chpl:7: note: 'c2' is used here before it is initialized
++error-never-initialized-values-mentioned3.chpl:7: error: unable to resolve call to 'writeln': no matching candidates
++$CHPL_HOME/modules/standard/ChapelIO.chpl:409: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++error-never-initialized-values-mentioned3.chpl:5: note: The actual 'c2' expects to be split-initialized because it is declared with a generic type and no initialization expression here
++error-never-initialized-values-mentioned3.chpl:7: note: The call to 'writeln' occurs before any valid initialization points
++$CHPL_HOME/modules/standard/ChapelIO.chpl:403: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++error-never-initialized-values-mentioned3.chpl:7: note: omitting 1 more candidates that didn't match
 +error-never-initialized-values-mentioned3.chpl:5: error: cannot default initialize variable using non-nilable class type
 diff --git a/test/types/records/split-init/error-never-initialized-values-mentioned4.good b/test/types/records/split-init/error-never-initialized-values-mentioned4.good
-index fd160707c4e..9e288f17f44 100644
+index fd160707c4e..9bac5805485 100644
 --- a/test/types/records/split-init/error-never-initialized-values-mentioned4.good
 +++ b/test/types/records/split-init/error-never-initialized-values-mentioned4.good
-@@ -1,5 +1,2 @@
+@@ -1,5 +1,8 @@
  error-never-initialized-values-mentioned4.chpl:3: In function 'error':
 -error-never-initialized-values-mentioned4.chpl:5: error: cannot default-initialize a variable with generic type
 -error-never-initialized-values-mentioned4.chpl:5: note: 'q2' has generic type 'C?'
 -error-never-initialized-values-mentioned4.chpl:5: note: cannot find initialization point to split-init this variable
 -error-never-initialized-values-mentioned4.chpl:7: note: 'q2' is used here before it is initialized
++error-never-initialized-values-mentioned4.chpl:7: error: unable to resolve call to 'writeln': no matching candidates
++$CHPL_HOME/modules/standard/ChapelIO.chpl:409: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++error-never-initialized-values-mentioned4.chpl:5: note: The actual 'q2' expects to be split-initialized because it is declared with a generic type and no initialization expression here
++error-never-initialized-values-mentioned4.chpl:7: note: The call to 'writeln' occurs before any valid initialization points
++$CHPL_HOME/modules/standard/ChapelIO.chpl:403: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++error-never-initialized-values-mentioned4.chpl:7: note: omitting 1 more candidates that didn't match
 +error-never-initialized-values-mentioned4.chpl:5: error: cannot default initialize variable using non-nilable class type
 diff --git a/test/types/records/split-init/error-never-initialized-values-not-mentioned1.good b/test/types/records/split-init/error-never-initialized-values-not-mentioned1.good
 index c5ddf997706..638eca19729 100644
@@ -2095,15 +2140,19 @@ index 58126dba8c9..a24c6e03fbb 100644
 +split-init-const-ref-multiple.chpl:7: error: cannot pass const to non-const
 +split-init-const-ref-multiple.chpl:9: error: cannot pass const to non-const
 diff --git a/test/types/records/split-init/split-init-error-bug/Reproducer.good b/test/types/records/split-init/split-init-error-bug/Reproducer.good
-index 36e04092c85..e017141e1b6 100644
+index 36e04092c85..d759a67709e 100644
 --- a/test/types/records/split-init/split-init-error-bug/Reproducer.good
 +++ b/test/types/records/split-init/split-init-error-bug/Reproducer.good
-@@ -1,5 +1,2 @@
+@@ -1,5 +1,6 @@
  Reproducer.chpl:4: In function 'main':
 -Reproducer.chpl:5: error: cannot default-initialize a variable with generic type
 -Reproducer.chpl:5: note: 'myFoo' has generic type 'foo(false)'
 -Reproducer.chpl:5: note: cannot find initialization point to split-init this variable
 -Reproducer.chpl:9: note: 'myFoo' is used here before it is initialized
++Reproducer.chpl:9: error: unable to resolve call to 'Use_Foo': no matching candidates
++FooUser.chpl:3: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++Reproducer.chpl:5: note: The actual 'myFoo' expects to be split-initialized because it is declared with a generic type and no initialization expression here
++Reproducer.chpl:9: note: The call to 'Use_Foo' occurs before any valid initialization points
 +Reproducer.chpl:5: error: cannot default initialize variable using generic or unknown type
 diff --git a/test/types/records/split-init/split-init-globals-reorder-cond-error.good b/test/types/records/split-init/split-init-globals-reorder-cond-error.good
 index 50c3ede5d1d..99f5ef95035 100644
@@ -2124,20 +2173,23 @@ index 764472f72e1..18ddee4d23c 100644
 -note: the type for a generic out-intent formal is inferred in the function body
 +split-init-out-formal-never-set.chpl:1: error: cannot default initialize variable using generic or unknown type
 diff --git a/test/types/records/split-init/split-init-out-formal-never-set2.good b/test/types/records/split-init/split-init-out-formal-never-set2.good
-index e6ce9ed9b72..c3606c54649 100644
+index e6ce9ed9b72..c5998a8960c 100644
 --- a/test/types/records/split-init/split-init-out-formal-never-set2.good
 +++ b/test/types/records/split-init/split-init-out-formal-never-set2.good
-@@ -1,4 +1,5 @@
+@@ -1,4 +1,8 @@
  split-init-out-formal-never-set2.chpl:1: In function 'outProc':
 -split-init-out-formal-never-set2.chpl:1: error: 'outarg' is not initialized and has no type
 -note: the type for a generic out-intent formal is inferred in the function body
 -split-init-out-formal-never-set2.chpl:2: note: 'outarg' is used here before it is initialized
-+split-init-out-formal-never-set2.chpl:1: error: variable 'outarg' is declared without an initializer or type
-+split-init-out-formal-never-set2.chpl:2: note: cannot find initialization point to split-init this variable
-+split-init-out-formal-never-set2.chpl:2: note: the variable 'outarg' is used here
++split-init-out-formal-never-set2.chpl:2: error: unable to resolve call to '+': no matching candidates
++$CHPL_HOME/modules/internal/ChapelDomain.chpl:438: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++split-init-out-formal-never-set2.chpl:1: note: The actual 'outarg' expects to be split-initialized because it is declared with a generic type and no initialization expression here
++split-init-out-formal-never-set2.chpl:2: note: The call to '+' occurs before any valid initialization points
++$CHPL_HOME/modules/internal/ChapelDomain.chpl:428: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++split-init-out-formal-never-set2.chpl:2: note: omitting 80 more candidates that didn't match
 +split-init-out-formal-never-set2.chpl:9: error: unable to resolve call to '=': no matching candidates
 diff --git a/test/types/records/split-init/split-init-out-return-intent-overloads3.good b/test/types/records/split-init/split-init-out-return-intent-overloads3.good
-index b6369d1bc20..9ad31747e68 100644
+index b6369d1bc20..1e181cb8054 100644
 --- a/test/types/records/split-init/split-init-out-return-intent-overloads3.good
 +++ b/test/types/records/split-init/split-init-out-return-intent-overloads3.good
 @@ -1,4 +1,14 @@
@@ -2146,11 +2198,11 @@ index b6369d1bc20..9ad31747e68 100644
 -split-init-out-return-intent-overloads3.chpl:30: note: cannot find initialization point to split-init this variable
 -split-init-out-return-intent-overloads3.chpl:31: note: 'x' is used here before it is initialized
 +split-init-out-return-intent-overloads3.chpl:31: error: unable to resolve call to 'c': no matching candidates
-+split-init-out-return-intent-overloads3.chpl:27: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+split-init-out-return-intent-overloads3.chpl:30: note: The actual 'x' expects to be split-initialized because it is declared without a type or initialization expression here
++split-init-out-return-intent-overloads3.chpl:27: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++split-init-out-return-intent-overloads3.chpl:30: note: The actual 'x' expects to be split-initialized because it is declared with a generic type and no initialization expression here
 +split-init-out-return-intent-overloads3.chpl:31: note: The call to 'c' occurs before any valid initialization points
-+split-init-out-return-intent-overloads3.chpl:26: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+split-init-out-return-intent-overloads3.chpl:30: note: The actual 'y' expects to be split-initialized because it is declared without a type or initialization expression here
++split-init-out-return-intent-overloads3.chpl:26: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++split-init-out-return-intent-overloads3.chpl:30: note: The actual 'y' expects to be split-initialized because it is declared with a generic type and no initialization expression here
 +split-init-out-return-intent-overloads3.chpl:31: note: The call to 'c' occurs before any valid initialization points
 +split-init-out-return-intent-overloads3.chpl:30: error: variable 'x' is declared without an initializer or type
 +split-init-out-return-intent-overloads3.chpl:32: note: cannot find initialization point to split-init this variable
@@ -2159,7 +2211,7 @@ index b6369d1bc20..9ad31747e68 100644
 +split-init-out-return-intent-overloads3.chpl:31: note: cannot find initialization point to split-init this variable
 +split-init-out-return-intent-overloads3.chpl:31: note: the variable 'y' is used here
 diff --git a/test/types/records/split-init/split-init-out-return-intent-overloads4.good b/test/types/records/split-init/split-init-out-return-intent-overloads4.good
-index 1aa23a6151e..3fca029ab1a 100644
+index 1aa23a6151e..ddab265216f 100644
 --- a/test/types/records/split-init/split-init-out-return-intent-overloads4.good
 +++ b/test/types/records/split-init/split-init-out-return-intent-overloads4.good
 @@ -1,4 +1,14 @@
@@ -2168,11 +2220,11 @@ index 1aa23a6151e..3fca029ab1a 100644
 -split-init-out-return-intent-overloads4.chpl:30: note: cannot find initialization point to split-init this variable
 -split-init-out-return-intent-overloads4.chpl:31: note: 'x' is used here before it is initialized
 +split-init-out-return-intent-overloads4.chpl:31: error: unable to resolve call to 'd': no matching candidates
-+split-init-out-return-intent-overloads4.chpl:27: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+split-init-out-return-intent-overloads4.chpl:30: note: The actual 'x' expects to be split-initialized because it is declared without a type or initialization expression here
++split-init-out-return-intent-overloads4.chpl:27: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++split-init-out-return-intent-overloads4.chpl:30: note: The actual 'x' expects to be split-initialized because it is declared with a generic type and no initialization expression here
 +split-init-out-return-intent-overloads4.chpl:31: note: The call to 'd' occurs before any valid initialization points
-+split-init-out-return-intent-overloads4.chpl:26: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+split-init-out-return-intent-overloads4.chpl:30: note: The actual 'y' expects to be split-initialized because it is declared without a type or initialization expression here
++split-init-out-return-intent-overloads4.chpl:26: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++split-init-out-return-intent-overloads4.chpl:30: note: The actual 'y' expects to be split-initialized because it is declared with a generic type and no initialization expression here
 +split-init-out-return-intent-overloads4.chpl:31: note: The call to 'd' occurs before any valid initialization points
 +split-init-out-return-intent-overloads4.chpl:30: error: variable 'x' is declared without an initializer or type
 +split-init-out-return-intent-overloads4.chpl:32: note: cannot find initialization point to split-init this variable
@@ -2273,11 +2325,17 @@ index 65856d9b0d3..5d6d8c390d7 100644
 -externRecordInvalidNOT_EQUALS.chpl:5: error: unresolved call '!=(blah_t, 1)'
 +externRecordInvalidNOT_EQUALS.chpl:5: error: unable to resolve call to '!=': no matching candidates
 diff --git a/test/types/records/tupleFields/detupleFieldDecl.good b/test/types/records/tupleFields/detupleFieldDecl.good
-index f2b8c3613e5..d0bd96fc06a 100644
+index f2b8c3613e5..836619f92f9 100644
 --- a/test/types/records/tupleFields/detupleFieldDecl.good
 +++ b/test/types/records/tupleFields/detupleFieldDecl.good
-@@ -1 +1,2 @@
+@@ -1 +1,8 @@
  detupleFieldDecl.chpl:10: error: de-tupling declarations are not currently supported as fields
++detupleFieldDecl.chpl:17: error: unable to resolve call to 'writeln': no matching candidates
++$CHPL_HOME/modules/standard/ChapelIO.chpl:409: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++detupleFieldDecl.chpl:16: note: The actual 'myR2' expects to be split-initialized because it is declared with a generic type and no initialization expression here
++detupleFieldDecl.chpl:17: note: The call to 'writeln' occurs before any valid initialization points
++$CHPL_HOME/modules/standard/ChapelIO.chpl:403: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++detupleFieldDecl.chpl:17: note: omitting 1 more candidates that didn't match
 +detupleFieldDecl.chpl:16: error: cannot default initialize variable using generic or unknown type
 diff --git a/test/types/records/typeArgs/argConstraints2.good b/test/types/records/typeArgs/argConstraints2.good
 index 6845f32f34e..5fd92f7f8ff 100644
@@ -2665,11 +2723,17 @@ index 45aa6d5fef3..9d82882479f 100644
  underscore_is_special.chpl:4: error: Throwaway variable '_' is not allowed in this context
 +underscore_is_special.chpl:3: error: unable to resolve call to '=': no matching candidates
 diff --git a/test/types/tuple/diten/zerotuple.good b/test/types/tuple/diten/zerotuple.good
-index 2e262243d51..840498b22db 100644
+index 2e262243d51..5f259fbff1e 100644
 --- a/test/types/tuple/diten/zerotuple.good
 +++ b/test/types/tuple/diten/zerotuple.good
-@@ -1 +1 @@
+@@ -1 +1,7 @@
 -zerotuple.chpl:1: error: tuple must have positive size
++zerotuple.chpl:2: error: unable to resolve call to 'writeln': no matching candidates
++$CHPL_HOME/modules/standard/ChapelIO.chpl:409: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++zerotuple.chpl:1: note: The actual 'x' expects to be split-initialized because it is declared with a generic type and no initialization expression here
++zerotuple.chpl:2: note: The call to 'writeln' occurs before any valid initialization points
++$CHPL_HOME/modules/standard/ChapelIO.chpl:403: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++zerotuple.chpl:2: note: omitting 1 more candidates that didn't match
 +zerotuple.chpl:1: error: cannot default initialize variable using generic or unknown type
 diff --git a/test/types/tuple/errors/genericArrayAsTupleSize.good b/test/types/tuple/errors/genericArrayAsTupleSize.good
 index 9b607b7c291..9fd33151906 100644
@@ -3394,13 +3458,19 @@ index 00000000000..07fd5bd8e46
 +../../../../util/test/prediff-obscure-internal-error
 \ No newline at end of file
 diff --git a/test/types/typedefs/deitz/test_type3.good b/test/types/typedefs/deitz/test_type3.good
-index 7cf82588936..52bea1d6921 100644
+index 7cf82588936..a4964440989 100644
 --- a/test/types/typedefs/deitz/test_type3.good
 +++ b/test/types/typedefs/deitz/test_type3.good
-@@ -1,3 +1,6 @@
+@@ -1,3 +1,12 @@
  test_type3.chpl:1: In function 'main':
  test_type3.chpl:2: error: statement references variable 'b' before it is defined
  test_type3.chpl:3: note: the variable 'b' is defined here
++test_type3.chpl:5: error: unable to resolve call to 'writeln': no matching candidates
++$CHPL_HOME/modules/standard/ChapelIO.chpl:409: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++test_type3.chpl:4: note: The actual 'c' expects to be split-initialized because it is declared with a generic type and no initialization expression here
++test_type3.chpl:5: note: The call to 'writeln' occurs before any valid initialization points
++$CHPL_HOME/modules/standard/ChapelIO.chpl:403: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++test_type3.chpl:5: note: omitting 1 more candidates that didn't match
 +test_type3.chpl:4: error: variable 'c' is declared without an initializer or type
 +test_type3.chpl:5: note: cannot find initialization point to split-init this variable
 +test_type3.chpl:5: note: the variable 'c' is used here

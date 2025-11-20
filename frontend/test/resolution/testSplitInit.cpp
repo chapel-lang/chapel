@@ -119,7 +119,7 @@ static void testSplitInit(const char* test,
 }
 
 static void test1() {
-  testSplitInit("test1",
+  testSplitInit(__FUNCTION__,
     R""""(
         proc test() {
           var x:int = 0;
@@ -129,7 +129,7 @@ static void test1() {
 }
 
 static void test2() {
-  testSplitInit("test2",
+  testSplitInit(__FUNCTION__,
     R""""(
         proc test() {
           var yes1;
@@ -140,7 +140,7 @@ static void test2() {
 }
 
 static void test3() {
-  testSplitInit("test3",
+  testSplitInit(__FUNCTION__,
     R""""(
         proc test() {
           var yes1:int;
@@ -152,7 +152,7 @@ static void test3() {
 
 
 static void test4() {
-  testSplitInit("test4",
+  testSplitInit(__FUNCTION__,
     R""""(
         proc test() {
           var x:int = 0;
@@ -167,7 +167,7 @@ static void test4() {
 }
 
 static void test5() {
-  testSplitInit("test5",
+  testSplitInit(__FUNCTION__,
     R""""(
         proc test(cond: bool) {
           var x:int = 0;
@@ -193,7 +193,7 @@ static void test5() {
 }
 
 static void test6() {
-  testSplitInit("test6",
+  testSplitInit(__FUNCTION__,
     R""""(
         proc test(cond: bool, otherCond: bool) {
           var yes5;
@@ -210,7 +210,7 @@ static void test6() {
 }
 
 static void test7() {
-  testSplitInit("test7",
+  testSplitInit(__FUNCTION__,
     R""""(
         proc test() {
           var no1 = 4;
@@ -221,7 +221,7 @@ static void test7() {
 }
 
 static void test8() {
-  testSplitInit("test8",
+  testSplitInit(__FUNCTION__,
     R""""(
         proc test() {
           {
@@ -235,7 +235,7 @@ static void test8() {
 }
 
 static void test9() {
-  testSplitInit("test9",
+  testSplitInit(__FUNCTION__,
     R""""(
         proc test() {
           {
@@ -249,7 +249,7 @@ static void test9() {
 }
 
 static void test10() {
-  testSplitInit("test10",
+  testSplitInit(__FUNCTION__,
     R""""(
         proc test(cond: bool) {
           var x;
@@ -262,7 +262,7 @@ static void test10() {
 }
 
 static void test11() {
-  testSplitInit("test11",
+  testSplitInit(__FUNCTION__,
     R""""(
         proc test(cond: bool) throws {
           var x;
@@ -275,7 +275,7 @@ static void test11() {
 }
 
 static void test12() {
-  testSplitInit("test12",
+  testSplitInit(__FUNCTION__,
     R""""(
         proc test() {
           var x:int;
@@ -292,7 +292,7 @@ static void test12() {
 }
 
 static void test13() {
-  testSplitInit("test13",
+  testSplitInit(__FUNCTION__,
     R""""(
         proc test() {
           var x:int;
@@ -308,7 +308,7 @@ static void test13() {
 }
 
 static void test14() {
-  testSplitInit("test14",
+  testSplitInit(__FUNCTION__,
     R""""(
         proc test() {
           var x:int;
@@ -325,7 +325,7 @@ static void test14() {
 }
 
 static void test15() {
-  testSplitInit("test15",
+  testSplitInit(__FUNCTION__,
     R""""(
         proc test() {
           var x:int;
@@ -339,7 +339,7 @@ static void test15() {
 }
 
 static void test16() {
-  testSplitInit("test16",
+  testSplitInit(__FUNCTION__,
     R""""(
         proc test(out formal: int) {
           formal = 4;
@@ -349,7 +349,7 @@ static void test16() {
 }
 
 static void test17() {
-  testSplitInit("test17",
+  testSplitInit(__FUNCTION__,
     R""""(
         proc fOut(out formal: int) { formal = 4; }
         proc test() {
@@ -361,7 +361,7 @@ static void test17() {
 }
 
 static void test18() {
-  testSplitInit("test18",
+  testSplitInit(__FUNCTION__,
     R""""(
         proc fOut(out formal: int) { formal = 4; }
         proc test() {
@@ -373,7 +373,7 @@ static void test18() {
 }
 
 static void test19() {
-  testSplitInit("test19",
+  testSplitInit(__FUNCTION__,
     R""""(
         proc int.fOut(out formal: int) { formal = 4; }
         proc test() {
@@ -387,7 +387,7 @@ static void test19() {
 
 // test out intent combined with varargs formals oh my!
 static void test20() {
-  testSplitInit("test20",
+  testSplitInit(__FUNCTION__,
     R""""(
         proc fOut(out formals:int...) {
           formals = (4,);
@@ -401,7 +401,7 @@ static void test20() {
     /* expect errors for now as a temporary workaround */ ERRORS_EXPECTED);
 }
 static void test21() {
-  testSplitInit("test21",
+  testSplitInit(__FUNCTION__,
     R""""(
         proc fOut(out formals:int...) {
           formals = (4,5);
@@ -418,7 +418,7 @@ static void test21() {
 
 /* not tested -- "out intent varargs are not supported"
 static void test22() {
-  testSplitInit("test22",
+  testSplitInit(__FUNCTION__,
     R""""(
         proc fOut(out formals...) {
           formals = (4,);
@@ -432,7 +432,7 @@ static void test22() {
 }
 
 static void test23() {
-  testSplitInit("test23",
+  testSplitInit(__FUNCTION__,
     R""""(
         proc fOut(out formals...) {
           formals = (4,5);
@@ -447,7 +447,7 @@ static void test23() {
 }
 
 static void test24() {
-  testSplitInit("test24",
+  testSplitInit(__FUNCTION__,
     R""""(
         proc fOut(out formals...) {
           formals = (4,);
@@ -460,7 +460,7 @@ static void test24() {
     {"x"});
 }
 static void test25() {
-  testSplitInit("test25",
+  testSplitInit(__FUNCTION__,
     R""""(
         proc fOut(out formals...) {
           formals = (4,5);
@@ -521,7 +521,7 @@ static void test26c() {
 }
 
 static void test27() {
-  testSplitInit("test27",
+  testSplitInit(__FUNCTION__,
     R""""(
         proc test(ref arg: int) {
           var x:int;
@@ -534,7 +534,7 @@ static void test27() {
 }
 
 static void test28() {
-  testSplitInit("test28",
+  testSplitInit(__FUNCTION__,
     R""""(
         proc test() {
           var x:int;
@@ -547,7 +547,7 @@ static void test28() {
 }
 
 static void test29() {
-  testSplitInit("test29",
+  testSplitInit(__FUNCTION__,
     R""""(
         proc test() {
           var x:int;
@@ -560,7 +560,7 @@ static void test29() {
 }
 
 static void test30() {
-  testSplitInit("test30",
+  testSplitInit(__FUNCTION__,
     R""""(
         proc test(r: bool) {
           var x, y;
@@ -578,7 +578,7 @@ static void test30() {
 
 /* Uncomment these tests after we have nested functions implemented
 static void test31() {
-  testSplitInit("test31",
+  testSplitInit(__FUNCTION__,
     R""""(
         proc test() {
           var x: int;
@@ -593,7 +593,7 @@ static void test31() {
 }
 
 static void test32() {
-  testSplitInit("test32",
+  testSplitInit(__FUNCTION__,
     R""""(
         proc test() {
           var x: int;
@@ -608,7 +608,7 @@ static void test32() {
 }
 
 static void test33() {
-  testSplitInit("test33",
+  testSplitInit(__FUNCTION__,
     R""""(
         proc test() {
           var x: int;
@@ -623,7 +623,7 @@ static void test33() {
 }
 
 static void test34() {
-  testSplitInit("test34",
+  testSplitInit(__FUNCTION__,
     R""""(
         proc test() {
           var x: int;
@@ -640,7 +640,7 @@ static void test34() {
 
 /* Uncomment these tests after we have return intent overloading implemented
 static void test35() {
-  testSplitInit("test35",
+  testSplitInit(__FUNCTION__,
     R""""(
         var g: int;
         proc f(out x: int) const ref { return g; }
@@ -654,7 +654,7 @@ static void test35() {
 }
 
 static void test36() {
-  testSplitInit("test36",
+  testSplitInit(__FUNCTION__,
     R""""(
         var g: int;
         proc f(out x: int,     y: int) const ref { return g; }
@@ -669,7 +669,7 @@ static void test36() {
 */
 
 static void test37() {
-  testSplitInit("test37",
+  testSplitInit(__FUNCTION__,
     R""""(
         proc test(cond: bool) {
           var x;
@@ -682,7 +682,7 @@ static void test37() {
 }
 
 static void test38() {
-  testSplitInit("test38",
+  testSplitInit(__FUNCTION__,
     R""""(
         proc test() {
           var x:int;
@@ -697,7 +697,7 @@ static void test38() {
 }
 
 static void test39() {
-  testSplitInit("test39",
+  testSplitInit(__FUNCTION__,
     R""""(
         proc test() {
           var x:int;
@@ -709,7 +709,7 @@ static void test39() {
 }
 
 static void test40() {
-  testSplitInit("test40",
+  testSplitInit(__FUNCTION__,
     R""""(
         proc test(cond: bool) {
           var x:int;
@@ -723,7 +723,7 @@ static void test40() {
 }
 
 static void test41() {
-  testSplitInit("test41",
+  testSplitInit(__FUNCTION__,
     R""""(
         proc test() {
           var x:int;
@@ -737,7 +737,7 @@ static void test41() {
 }
 
 static void test42() {
-  testSplitInit("test42",
+  testSplitInit(__FUNCTION__,
     R""""(
         proc test() throws {
           var x:int;
@@ -751,7 +751,7 @@ static void test42() {
 }
 
 static void test43() {
-  testSplitInit("test43",
+  testSplitInit(__FUNCTION__,
     R""""(
         proc test() {
           var x:int;
@@ -766,7 +766,7 @@ static void test43() {
 }
 
 static void test44() {
-  testSplitInit("test44",
+  testSplitInit(__FUNCTION__,
     R""""(
         proc test(cond: bool) {
           var x:int;
@@ -785,7 +785,7 @@ static void test44() {
 }
 
 static void test45() {
-  testSplitInit("test45",
+  testSplitInit(__FUNCTION__,
     R""""(
         proc test(cond: bool) {
           var x:int;
@@ -802,7 +802,7 @@ static void test45() {
 }
 
 static void test46() {
-  testSplitInit("test46",
+  testSplitInit(__FUNCTION__,
     R""""(
         proc test(cond: bool) {
           var x:int;
@@ -825,7 +825,7 @@ static void test46() {
 // (alternative design would be to default-init it for the return,
 //  but that is not what we have)
 static void test47() {
-  testSplitInit("test47",
+  testSplitInit(__FUNCTION__,
     R""""(
         config var cond = true;
 
@@ -842,7 +842,7 @@ static void test47() {
 
 // similar to the above but with try/catch
 static void test48() {
-  testSplitInit("test48",
+  testSplitInit(__FUNCTION__,
     R""""(
         proc test(out x: int) {
           try {
@@ -855,7 +855,7 @@ static void test48() {
 }
 
 static void test49() {
-  testSplitInit("test49",
+  testSplitInit(__FUNCTION__,
     R""""(
         proc test(out x: int) {
           return;
@@ -871,7 +871,7 @@ static void test49() {
 // initializing an 'out' formal in a conditional is OK if the
 // other branch returns or throws
 static void test50() {
-  testSplitInit("test50",
+  testSplitInit(__FUNCTION__,
     R""""(
         config var cond = false;
 
@@ -886,7 +886,7 @@ static void test50() {
     {"x"});
 }
 static void test51() {
-  testSplitInit("test51",
+  testSplitInit(__FUNCTION__,
     R""""(
         proc test(out x: int) throws {
           try {
@@ -900,7 +900,7 @@ static void test51() {
 }
 
 static void test52() {
-  testSplitInit("test52",
+  testSplitInit(__FUNCTION__,
     R""""(
         proc test(out x: int) throws {
           throw nil;
@@ -911,7 +911,7 @@ static void test52() {
 }
 
 static void test53() {
-  testSplitInit("test53",
+  testSplitInit(__FUNCTION__,
     R""""(
         config var cond = false;
 
@@ -929,7 +929,7 @@ static void test53() {
 }
 
 static void test54() {
-  testSplitInit("test54",
+  testSplitInit(__FUNCTION__,
     R""""(
         proc test() {
           var x;
@@ -942,7 +942,7 @@ static void test54() {
 }
 
 static void test55() {
-  testSplitInit("test55",
+  testSplitInit(__FUNCTION__,
     R""""(
         proc test() {
           var x;
@@ -955,7 +955,7 @@ static void test55() {
 }
 
 static void test56() {
-  testSplitInit("test56",
+  testSplitInit(__FUNCTION__,
     R""""(
         proc test() {
           type T = int;
@@ -969,7 +969,7 @@ static void test56() {
 }
 
 static void test57() {
-  testSplitInit("test57",
+  testSplitInit(__FUNCTION__,
     R""""(
         proc test() {
           var x;
@@ -983,7 +983,7 @@ static void test57() {
 
 
 static void test58() {
-  testSplitInit("test58",
+  testSplitInit(__FUNCTION__,
     R""""(
         proc test() {
           var x;
@@ -999,7 +999,7 @@ static void test58() {
 }
 
 static void test59() {
-  testSplitInit("test59",
+  testSplitInit(__FUNCTION__,
     R""""(
         proc test() {
           var x;
@@ -1015,7 +1015,7 @@ static void test59() {
 }
 
 static void test60() {
-  testSplitInit("test60",
+  testSplitInit(__FUNCTION__,
     R""""(
         config const cond: bool = true;
         proc test() {
@@ -1032,7 +1032,7 @@ static void test60() {
 }
 
 static void test61() {
-  testSplitInit("test61",
+  testSplitInit(__FUNCTION__,
     R""""(
         config const cond: bool = true;
         proc test() {
@@ -1049,7 +1049,7 @@ static void test61() {
 }
 
 static void test62() {
-  testSplitInit("test62",
+  testSplitInit(__FUNCTION__,
     R""""(
         proc test(i: int) {
           var x;
@@ -1071,7 +1071,7 @@ static void test62() {
 }
 
 static void test63() {
-  testSplitInit("test63",
+  testSplitInit(__FUNCTION__,
     R""""(
         proc test(i: int) {
           var x;
@@ -1090,7 +1090,7 @@ static void test63() {
 }
 
 static void test64() {
-  testSplitInit("test64",
+  testSplitInit(__FUNCTION__,
     R""""(
         proc test(i: int) {
           var x;
@@ -1113,7 +1113,7 @@ static void test64() {
 
 
 static void test65() {
-  testSplitInit("test65",
+  testSplitInit(__FUNCTION__,
     R""""(
         config const i: int;
         proc test(i: int) {
@@ -1135,7 +1135,7 @@ static void test65() {
 
 
 static void test66() {
-  testSplitInit("test66",
+  testSplitInit(__FUNCTION__,
     R""""(
         config const i: int;
         proc test(i: int) {
@@ -1339,7 +1339,7 @@ static void test65a() {
 
 // Test params are split-inited to their param value when their type is known.
 static void test68() {
-  testSplitInit("test68",
+  testSplitInit(__FUNCTION__,
     R""""(
         proc test() {
           param x:int;
@@ -1364,7 +1364,7 @@ static void test68() {
 
 // test that split-init is sensitive to break/continue keywords.
 static void test69(const std::string& controlFlow) {
-  testSplitInit("test69",
+  testSplitInit(__FUNCTION__,
     (
     R"""(
       proc test() {
@@ -1388,7 +1388,7 @@ static void test69() {
 
 // test that split-init is sensitive to break/continue keywords within branches,
 static void test70(const std::string& controlFlow1, const std::string& controlFlow2) {
-  testSplitInit("test70",
+  testSplitInit(__FUNCTION__,
     (
     R"""(
       proc test() {
@@ -1530,7 +1530,7 @@ static void test72b() {
 // Test split-init with generic type 'numeric' - should error when branches
 // have different concrete types (per spec)
 static void test73() {
-  testSplitInit("test73",
+  testSplitInit(__FUNCTION__,
     R""""(
         proc test(flag: bool) {
           var x: numeric;
@@ -1547,7 +1547,7 @@ static void test73() {
 // Test split-init with generic type 'integral' - should error when branches
 // have different concrete types
 static void test74() {
-  testSplitInit("test74",
+  testSplitInit(__FUNCTION__,
     R""""(
         proc test(flag: bool) {
           var x: integral;
@@ -1563,7 +1563,7 @@ static void test74() {
 
 // Test split-init with generic type where branches match - should succeed
 static void test75() {
-  testSplitInit("test79",
+  testSplitInit(__FUNCTION__,
     R""""(
         proc test(flag: bool) {
           var x: numeric;
@@ -1579,7 +1579,7 @@ static void test75() {
 
 // Test split-init with no explicit type - type inferred from branches
 static void test76() {
-  testSplitInit("test80",
+  testSplitInit(__FUNCTION__,
     R""""(
         proc test(flag: bool) {
           var x;
@@ -1593,9 +1593,76 @@ static void test76() {
     {}, ERRORS_EXPECTED);
 }
 
-// Split init via tuple destructuring assignment
 static void test77() {
-  testSplitInit("test77",
+  testSplitInit(__FUNCTION__,
+    R"""(
+      proc doInitInt(out x: int) { x = 42; }
+      proc test() {
+        var x: numeric;
+        doInitInt(x);
+      }
+    )""",{"x"});
+}
+
+static void test78() {
+  testSplitInit(__FUNCTION__,
+    R""""(
+        proc initWith(type t, out v) {
+          var tmp: t;
+          v = tmp;
+        }
+        proc test(flag: bool) {
+          var x: integral;
+          if flag {
+            initWith(int(64), x);
+          } else {
+            initWith(int(64), x);
+          }
+        }
+    )"""",
+    {"x"});
+}
+
+static void test79() {
+  testSplitInit(__FUNCTION__,
+    R""""(
+        proc initWith(type t, out v) {
+          var tmp: t;
+          v = tmp;
+        }
+        proc test(flag: bool) {
+          var x: integral;
+          if flag {
+            initWith(int(32), x);
+          } else {
+            initWith(int(64), x);
+          }
+        }
+    )"""",
+    {}, ERRORS_EXPECTED);
+}
+
+/* TODO: Fails, split-init doesn't enforce type constraints.
+
+static void test80() {
+  testSplitInit(__FUNCTION__,
+    R""""(
+        proc initWith(type t, out v) {
+          var tmp: t;
+          v = tmp;
+        }
+        proc test(flag: bool) {
+          var x: integral;
+          initWith(real(64), x);
+        }
+    )"""",
+    {}, ERRORS_EXPECTED);
+}
+*/
+
+// Split init via tuple destructuring assignment
+static void test81() {
+  testSplitInit(__FUNCTION__,
     R"""(
         proc test() {
           var tup = (1, 2, 3);
@@ -1691,6 +1758,10 @@ int main() {
   test75();
   test76();
   test77();
+  test78();
+  test79();
+  // test80();
+  test81();
 
   return 0;
 }

@@ -1751,6 +1751,30 @@ static void testBuiltinTypeConstructorErrors() {
   assert(guard.realizeErrors() > 0);
 }
 
+// regression test: only instantiating signature checing was done on
+// type constructors, which meant concrete type constructors could be invoked
+// with totally nonsensical arguments.
+static void testConcreteTypeConstructorBadCall() {
+  printf("testConcreteTypeConstructorBadCall\n");
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program = R"""(
+    record R {
+      var f: int;
+    }
+
+    var x: R(int); // bad call, R is concrete.
+  )""";
+
+  auto vars = resolveTypesOfVariables(context, program.c_str(), {"x"});
+
+  assert(vars["x"].isUnknownOrErroneous());
+  assert(guard.numErrors() == 1);
+  assert(guard.error(0)->type() == ErrorType::NoMatchingCandidates);
+  guard.realizeErrors();
+}
+
 int main() {
   test1();
   test2();
@@ -1810,6 +1834,8 @@ int main() {
   testEnumTypeConstructorError();
   testPrimitiveTypeConstructorErrors();
   testBuiltinTypeConstructorErrors();
+
+  testConcreteTypeConstructorBadCall();
 
   return 0;
 }

@@ -1377,10 +1377,25 @@ static void test48() {
     {}); // x is mentioned in receiver of method call, so no elision
 }
 
-// Copy elision for destructuring of tuple var
 static void test49() {
+  testCopyElision("test49",
+    R""""(
+        record R { proc foo(){} }
+        proc test(cond: bool) {
+          var x: R;
+          var z = x;
+          on here {
+            x;
+          }
+        }
+    )"""",
+    {}); // x is mentioned in a non-eligible block, so no elision
+}
+
+// Copy elision for destructuring of tuple var
+static void test50() {
   // Init
-  testCopyElision("test49a",
+  testCopyElision("test50a",
     R""""(
       record R { }
       proc test() {
@@ -1403,7 +1418,7 @@ static void test49() {
     });
 
   // Assign
-  testCopyElision("test49b",
+  testCopyElision("test50b",
     R""""(
       record R { }
       proc test() {
@@ -1419,10 +1434,10 @@ static void test49() {
     {"M.test@5", "M.test@13", "M.test@14"});
 }
 
-// Like test49, but no elision as the variable is mentioned later
-static void test50() {
+// Like test50, but no elision as the variable is mentioned later
+static void test51() {
   // Init
-  testCopyElision("test50a",
+  testCopyElision("test51a",
     R""""(
       record R { }
       proc test() {
@@ -1437,7 +1452,7 @@ static void test50() {
     {"M.test@5"});
 
   // Assign
-  testCopyElision("test50b",
+  testCopyElision("test51b",
     R""""(
       record R { }
       proc test() {
@@ -1455,9 +1470,9 @@ static void test50() {
 }
 
 // Copy elision for assigning tuple expr into tuple var
-static void test51() {
+static void test52() {
   // Init
-  testCopyElision("test51a",
+  testCopyElision("test52a",
     R""""(
       record R { }
       proc test() {
@@ -1471,7 +1486,7 @@ static void test51() {
     {"M.test@9"});
 
   // Assign
-  testCopyElision("test51b",
+  testCopyElision("test52b",
     R""""(
       record R { }
       proc test() {
@@ -1538,6 +1553,7 @@ int main() {
   test49();
   test50();
   test51();
+  test52();
 
   return 0;
 }

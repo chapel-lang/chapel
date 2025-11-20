@@ -694,6 +694,8 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
   // helpful.
   bool printedDecentCandidate = false;
 
+  std::unordered_set<int> explainedSplitInitsForActuals;
+
   unsigned int printCount = 0;
   static const unsigned int maxPrintCount = 2;
   for (auto& candidate : rejected) {
@@ -721,13 +723,18 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
       resolution::FormalActualMap fa(fn, ci);
       auto badPass = fa.byFormalIdx(candidate.formalIdx());
       auto formalDecl = badPass.formal();
-      const uast::AstNode* actualExpr = getActual(badPass.actualIdx());
+      const uast::AstNode* actualExpr = getActual(candidate.actualIdx());
+      bool badSplitInit = ci.actual(candidate.actualIdx()).expectSplitInit();
 
       // formalDecl can be null if the function is in an 'extern' block, in which
       // case there is no Chapel AST corresponding to the formal.
 
       wr.message("");
-      wr.note(fn->id(), candidateDescription, " didn't match because ", passedThingArticle, " ", passedThing, " couldn't be passed to ", expectedThingArticle, " ", expectedThing, ":");
+      if (badSplitInit) {
+        wr.note(fn->id(), candidateDescription, " didn't match because it does not initialize ", passedThingArticle, " ", passedThing, " which expects to be initialized:");
+      } else {
+        wr.note(fn->id(), candidateDescription, " didn't match because ", passedThingArticle, " ", passedThing, " couldn't be passed to ", expectedThingArticle, " ", expectedThing, ":");
+      }
 
       std::vector<const uast::AstNode*> highlightNodes;
       if (formalDecl) highlightNodes.push_back(formalDecl);
@@ -776,23 +783,22 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
         // and say something nicer.
         wr.message("The instantiated type of ", expectedThing, " ", formalName,
                    " does not allow ", passedThing, "s of type '", badPass.actualType().type(), "'.");
-      } else if (badPass.actualType().isUnknown() &&
-                 offendingActual &&
-                 !offendingActual->initExpression() &&
-                 !offendingActual->typeExpression()) {
+      } else if (ci.actual(candidate.actualIdx()).expectSplitInit()) {
         auto formalKind = badPass.formalType().kind();
         auto actualName = "'" + actualExpr->toIdentifier()->name().str() + "'";
-        wr.note(offendingActual->id(), "The actual ", actualName,
-                   " expects to be split-initialized because it is declared without a type or initialization expression here:");
-        wr.codeForDef(offendingActual);
-        wr.note(actualExpr, "The call to '", ci.name() ,"' occurs before any valid initialization points:");
-        wr.code(actualExpr, { actualExpr });
-        actualPrinted = true;
-        wr.message("The call to '", ci.name(), "' cannot initialize ",
-                   actualName,
-                   " because only 'out' formals can be used to split-initialize. However, ",
-                   actualName, " is passed to formal ", formalName, " which has intent '", formalKind, "'.");
 
+        if (explainedSplitInitsForActuals.insert(candidate.actualIdx()).second) {
+          wr.note(offendingActual->id(), "The actual ", actualName,
+                     " expects to be split-initialized because it is declared with a generic type and no initialization expression here:");
+          wr.codeForDef(offendingActual);
+          wr.note(actualExpr, "The call to '", ci.name() ,"' occurs before any valid initialization points:");
+          wr.code(actualExpr, { actualExpr });
+          actualPrinted = true;
+          wr.message("The call to '", ci.name(), "' cannot initialize ",
+                     actualName,
+                     " because only 'out' formals can be used to split-initialize. However, ",
+                     actualName, " is passed to formal ", formalName, " which has intent '", formalKind, "'.");
+        }
       } else {
         wr.message("The ", expectedThing, " ", formalName, " expects ", badPass.formalType(),
                    ", but the ", passedThing, " was ", badPass.actualType(), ".");

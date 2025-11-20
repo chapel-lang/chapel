@@ -44,6 +44,7 @@
 #include <string>
 #include <tuple>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -1126,15 +1127,11 @@ handleRejectedCandidates(Resolver::CallResultWrapper& result,
         !candidate.failedDueToWrongActual()) {
       continue;
     }
-    auto fn = candidate.initialForErr();
-    // TODO: this can assert if the fn was resolved but had erroneous type formals
-    resolution::FormalActualMap fa(fn, *result.ci);
-    auto& badPass = fa.byFormalIdx(candidate.formalIdx());
     const uast::AstNode *actualExpr = nullptr;
     const uast::VarLikeDecl *actualDecl = nullptr;
-    size_t actualIdx = badPass.actualIdx();
+    size_t actualIdx = candidate.actualIdx();
     CHPL_ASSERT(0 <= actualIdx && actualIdx < actualAsts.size());
-    actualExpr = actualAsts[badPass.actualIdx()];
+    actualExpr = actualAsts[actualIdx];
 
     // look for a definition point of the actual for error reporting of
     // uninitialized vars typically in the case of bad split-initialization
@@ -1623,9 +1620,30 @@ static const Type* tryFindTypeViaCopyFn(Resolver& resolver,
   return ErroneousType::get(resolver.context);
 }
 
-QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
-                                       const AstNode* typeForErr,
-                                       const AstNode* initForErr,
+// The production compiler inserts temps for default values of actuals.
+// As a result, `ref x: t = e` is treated as `var tmp: t = e; ref x = tmp;`.
+// This means that, unlike "normal" ref arguments (which require exact
+// type matches), defaults have the opportunity to coerce. To simulate this,
+// adjust the intent of the formal to be non-ref for formals with default values.
+static QualifiedType::Kind adjustDeclKindForFormalWithInitExpr(const AstNode* decl,
+                                                               const AstNode* initExpr,
+                                                               QualifiedType::Kind declKind) {
+  // no initialization expression, no need to adjust.
+  if (!initExpr) return declKind;
+
+  auto formal = decl->toFormal();
+  auto td = decl->toTupleDecl();
+  auto va = decl->toVarArgFormal();
+
+  // not a formal, no need to adjust.
+  if (!formal && !va && (!td || !td->isTupleDeclFormal())) return declKind;
+
+  return KindProperties::removeRef(declKind);
+}
+
+QualifiedType Resolver::getTypeForDecl(const AstNode* decl,
+                                       const AstNode* typeExpr,
+                                       const AstNode* initExpr,
                                        QualifiedType::Kind declKind,
                                        QualifiedType declaredType,
                                        QualifiedType initExprType) {
@@ -1633,16 +1651,16 @@ QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
   const Type* typePtr = nullptr;
   const Param* paramPtr = nullptr;
 
-  if (typeForErr == nullptr)
-    typeForErr = declForErr;
-  if (initForErr == nullptr)
-    initForErr = declForErr;
+  if (typeExpr == nullptr)
+    typeExpr = decl;
+  if (initExpr == nullptr)
+    initExpr = decl;
 
   bool inferParam = (declKind == QualifiedType::PARAM &&
                      initExprType.kind() == QualifiedType::PARAM);
 
   // check that the resolution of the type expression is a type
-  if (checkForKindError(typeForErr, initForErr, declKind,
+  if (checkForKindError(typeExpr, initExpr, declKind,
                         declaredType, initExprType)) {
     // error already issued in checkForKindError
     typePtr = ErroneousType::get(context);
@@ -1655,10 +1673,10 @@ QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
   } else if (!declaredType.hasTypePtr() && initExprType.hasTypePtr()) {
     // Iterators are 'materialized' into arrays
     if (initExprType.type()->isIteratorType()) {
-      typePtr = computeChplCopyInit(declForErr, declKind, initExprType);
+      typePtr = computeChplCopyInit(decl, declKind, initExprType);
     // Check if this type requires custom type inference
     } else if (auto rec = getTypeWithCustomInfer(context, initExprType.type())) {
-      typePtr = computeCustomInferType(declForErr, rec);
+      typePtr = computeCustomInferType(decl, rec);
     } else {
       // init but no declared type, so use init type
       typePtr = initExprType.type();
@@ -1667,9 +1685,12 @@ QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
       }
     }
   } else {
+    declKind = adjustDeclKindForFormalWithInitExpr(decl, initExpr, declKind);
+
     // otherwise both declaredType and initExprType are provided.
     // check that they are compatible
     auto fullDeclType = QualifiedType(declKind, declaredType.type());
+
     auto got = canPass(context, initExprType, fullDeclType);
     if (!got.passes()) {
       if (initExprType.isUnknownOrErroneous()) {
@@ -1713,16 +1734,16 @@ QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
         // TODO: store an associated action?
         const Scope* scope = currentScope();
         auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
-        auto c = resolution::resolveGeneratedCall(rc, declForErr, ci, inScopes);
+        auto c = resolution::resolveGeneratedCall(rc, decl, ci, inScopes);
         if (!c.mostSpecific().isEmpty()) {
           typePtr = declaredType.type();
         } else {
-          RESOLVER_REPORT(*this, IncompatibleTypeAndInit, declForErr, typeForErr,
-                      initForErr, declaredType.type(), initExprType.type());
+          RESOLVER_REPORT(*this, IncompatibleTypeAndInit, decl, typeExpr,
+                      initExpr, declaredType.type(), initExprType.type());
           typePtr = ErroneousType::get(context);
         }
       } else {
-        typePtr = tryFindTypeViaCopyFn(*this, declForErr, typeForErr, initForErr,
+        typePtr = tryFindTypeViaCopyFn(*this, decl, typeExpr, initExpr,
                                        declaredType, initExprType);
       }
     } else if (!got.instantiates() || declaredType.type()->isUnknownType()) {
@@ -2763,9 +2784,20 @@ void Resolver::resolveTupleDecl(const TupleDecl* td, QualifiedType useType) {
 }
 
 static SkipCallResolutionReason
-shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
+shouldSkipCallResolution(Resolver& rv, const uast::AstNode* callLike,
                          std::vector<const uast::AstNode*> actualAsts,
-                         const CallInfo& ci);
+                         const CallInfo& ci,
+                         std::unordered_set<int>* actualsToInit = nullptr);
+
+/*
+  A more permissive version of shouldSkipCallResolution, which doesn't
+  skip calls if actuals are generic/unknown but possibly 'out'-inited
+  by the call in 'ci'.
+ */
+static SkipCallResolutionReason
+shouldSkipCallResolutionAllowInit(Resolver& rv, const uast::AstNode* callLike,
+                                  std::vector<const uast::AstNode*> actualAsts,
+                                  CallInfo& ci);
 
 bool Resolver::resolveSpecialNewCall(const Call* call) {
   if (!call->calledExpression() ||
@@ -2840,7 +2872,7 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
   auto inPoiScope = poiScope;
   auto inScopes = CallScopeInfo::forNormalCall(inScope, inPoiScope);
 
-  if (shouldSkipCallResolution(this, call, actualAsts, ci)) {
+  if (shouldSkipCallResolutionAllowInit(*this, call, actualAsts, ci)) {
     return true;
   }
 
@@ -2942,28 +2974,6 @@ static void resolveReduceAssign(Resolver& rv, const OpCall* op) {
   resolvedOp.setType(QualifiedType(QualifiedType::CONST_VAR, VoidType::get(rv.context)));
 }
 
-// checks if an identifier referring to toId could be attempting to set its
-// type via a call to an 'out' function.
-static bool couldBeOutInitialized(Resolver* rv, const ID& toId) {
-  if (!asttags::isVarLikeDecl(parsing::idToTag(rv->context, toId))) return false;
-
-  auto vld = parsing::idToAst(rv->context, toId)->toVarLikeDecl();
-
-  // if it had a type expression or an init expression, we certainly can't
-  // be trying to out-initialize it.
-  if (vld->typeExpression() || vld->initExpression()) return false;
-
-  auto parentDecl = parsing::idToContainingMultiDeclId(rv->context, toId);
-  auto parentOfDecl = parsing::idToParentId(rv->context, parentDecl);
-  if (asttags::isIndexableLoop(parsing::idToTag(rv->context, parentOfDecl))) {
-    // if this is a (multi)decl in a loop, it can't be out-initialized;
-    // it's set by the loop.
-    return false;
-  }
-
-  return true;
-}
-
 static bool const&
 toIdAffectedBySubstitutions(Context* context, ID toId) {
   QUERY_BEGIN(toIdAffectedBySubstitutions, context, toId);
@@ -2989,41 +2999,92 @@ toIdAffectedBySubstitutions(Context* context, ID toId) {
   return QUERY_END(affectedBySubstitutions);
 }
 
-static bool skipDependingOnEagerness(Resolver* rv, const ID& toId,
+static bool idCouldBePartial(Resolver& rv, const ID& toId) {
+  bool noSubstitution = rv.substitutions == nullptr ||
+    (!toId.isEmpty() && rv.substitutions->count(toId) == 0);
+
+  ID toUse = toId;
+  if (rv.substitutions && noSubstitution && !toId.isEmpty()) {
+    // formals like `x` in `(x, y)` don't have their own substitutions,
+    // but their parent multi-decl might.
+    auto parentId = parsing::idToContainingMultiDeclId(rv.context, toId);
+    if (asttags::isTupleDecl(parsing::idToTag(rv.context, parentId))) {
+      toUse = parentId;
+      noSubstitution = rv.substitutions->count(toUse) == 0;
+    }
+  }
+
+  return noSubstitution &&
+         toIdAffectedBySubstitutions(rv.context, toUse);
+}
+
+// checks if an identifier referring to toId could be attempting to set its
+// type via a call to an 'out' function.
+static bool couldBeOutInitialized(Resolver& rv, const ID& toId, const QualifiedType& qt) {
+  // params and types can't be out-initialized, nor can refs.
+  if (qt.kind() == QualifiedType::PARAM ||
+      qt.kind() == QualifiedType::TYPE ||
+      qt.isRef()) return false;
+
+  if (!asttags::isVarLikeDecl(parsing::idToTag(rv.context, toId))) return false;
+
+  auto vld = parsing::idToAst(rv.context, toId)->toVarLikeDecl();
+
+  // if it an init expression, we certainly can't be trying to out-initialize it.
+  // We might be out-initialize variables with type expressions (e.g., for
+  // 'var x: numeric').
+  if (vld->initExpression()) return false;
+
+  auto parentDecl = parsing::idToContainingMultiDeclId(rv.context, toId);
+  auto parentOfDecl = parsing::idToParentId(rv.context, parentDecl);
+  if (asttags::isIndexableLoop(parsing::idToTag(rv.context, parentOfDecl))) {
+    // if this is a (multi)decl in a loop, it can't be out-initialized;
+    // it's set by the loop.
+    return false;
+  }
+
+  // While we're lazy, it's hard to tell if something is generic because
+  // it's uninstantiated, or generic because it should be out-initialized.
+  // Wait until we know more.
+  if (rv.isLazy() && idCouldBePartial(rv, toId)) {
+    return false;
+  }
+
+  if (qt.isUnknown() && vld->typeExpression() == nullptr) {
+    // var x;
+    // initialize(x);
+    return true;
+  } else if (vld->typeExpression() &&
+             getTypeGenericity(rv.context, qt.type()) != Type::CONCRETE) {
+    // var x: numeric;
+    // initialize(x);
+    return true;
+  }
+
+  return false;
+}
+
+static bool skipDependingOnEagerness(Resolver& rv, const ID& toId,
                                      const ResolvedExpression* actualRe) {
-  if (rv->callEagerness == Resolver::CallResolutionEagerness::EAGER) {
+  if (!rv.isLazy()) {
     return false;
   } else {
     bool compoundExpr =
       actualRe != nullptr && toId.isEmpty() && !actualRe->isBuiltin();
     if (compoundExpr) return actualRe->isPartialResult();
 
-    bool noSubstitution = rv->substitutions == nullptr ||
-      (!toId.isEmpty() && rv->substitutions->count(toId) == 0);
-
-    ID toUse = toId;
-    if (rv->substitutions && noSubstitution && !toId.isEmpty()) {
-      // formals like `x` in `(x, y)` don't have their own substitutions,
-      // but their parent multi-decl might.
-      auto parentId = parsing::idToContainingMultiDeclId(rv->context, actualRe->toId());
-      if (asttags::isTupleDecl(parsing::idToTag(rv->context, parentId))) {
-        toUse = parentId;
-        noSubstitution = rv->substitutions->count(toUse) == 0;
-      }
-    }
-
-    return noSubstitution &&
-           toIdAffectedBySubstitutions(rv->context, toUse);
+    return idCouldBePartial(rv, toId);
   }
 }
 
 static SkipCallResolutionReason
-shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
+shouldSkipCallResolution(Resolver& rv, const uast::AstNode* callLike,
                          std::vector<const uast::AstNode*> actualAsts,
-                         const CallInfo& ci) {
-  Context* context = rv->context;
+                         const CallInfo& ci,
+                         std::unordered_set<int>* actualsToInit) {
+  Context* context = rv.context;
   SkipCallResolutionReason skip = NONE;
-  auto& byPostorder = rv->byPostorder;
+  auto& byPostorder = rv.byPostorder;
 
   // In lazy resolution mode, skip resolving expressions that depend on
   // partial information. For the most part, this is defined inductively as
@@ -3091,15 +3152,15 @@ shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
     if (t != nullptr && t->isErroneousType()) {
       // always skip if there is an ErroneousType
       skip = ERRONEOUS_ACT;
-    } else if (!toId.isEmpty() && !isNonOutFormal &&
-               qt.isUnknown() &&
-               qt.kind() != QualifiedType::PARAM &&
-               qt.kind() != QualifiedType::TYPE &&
-               qt.isRef() == false &&
-               couldBeOutInitialized(rv, toId)) {
-      // don't skip because it could be initialized with 'out' intent,
-      // but not for non-out formals because they can't be split-initialized.
-    } else if (actualAst != nullptr && actualAst->isTypeQuery() && ci.calledType().isType()) {
+      break;
+    }
+
+    // In some cases, don't skip because it could be initialized with 'out'
+    // intent, but not for non-out formals because they can't be split-initialized.
+    bool splitInitAllowed = !toId.isEmpty() && !isNonOutFormal &&
+                            couldBeOutInitialized(rv, toId, qt);
+
+    if (actualAst != nullptr && actualAst->isTypeQuery() && ci.calledType().isType()) {
       // don't skip for type queries in type constructors
     } else {
       if (qt.isParam() && qt.param() == nullptr) {
@@ -3109,7 +3170,11 @@ shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
           skip = UNKNOWN_PARAM;
         }
       } else if (qt.isUnknown()) {
-        skip = UNKNOWN_ACT;
+        if (splitInitAllowed && actualsToInit != nullptr) {
+          actualsToInit->insert(actualIdx);
+        } else {
+          skip = UNKNOWN_ACT;
+        }
       } else if (t != nullptr && qt.kind() != QualifiedType::INIT_RECEIVER) {
         // For initializer calls, allow generic formals using the above
         // condition; this way, 'this.init(..)' while 'this' is generic
@@ -3124,7 +3189,11 @@ shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
             skip = GENERIC_TYPE;
           }
         } else if (!qt.isType() && g != Type::CONCRETE) {
-          skip = GENERIC_VALUE;
+          if (splitInitAllowed && actualsToInit != nullptr) {
+            actualsToInit->insert(actualIdx);
+          } else {
+            skip = GENERIC_VALUE;
+          }
         }
       }
     }
@@ -3158,6 +3227,18 @@ shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
   return skip;
 }
 
+
+static SkipCallResolutionReason
+shouldSkipCallResolutionAllowInit(Resolver& rv, const uast::AstNode* callLike,
+                                  std::vector<const uast::AstNode*> actualAsts,
+                                  CallInfo& ci) {
+  std::unordered_set<int> actualsToInit;
+  auto skip = shouldSkipCallResolution(rv, callLike, actualAsts, ci, &actualsToInit);
+  if (skip != NONE || actualsToInit.empty()) return skip;
+
+  ci = CallInfo::copyAndMarkSplitInitActuals(ci, actualsToInit);
+  return NONE;
+}
 
 bool Resolver::resolveSpecialOpCall(const Call* call) {
   if (!call->isOpCall()) return false;
@@ -3212,7 +3293,7 @@ bool Resolver::resolveSpecialOpCall(const Call* call) {
                        /* isParenless */ false,
                        std::move(actuals));
 
-    if (shouldSkipCallResolution(this, call, actualAsts, ci)) {
+    if (shouldSkipCallResolution(*this, call, actualAsts, ci)) {
       return true;
     }
 
@@ -3335,7 +3416,7 @@ resolveSpecialKeywordCallAsNormalCall(Resolver& rv,
                                /* rename */ name,
                                &isIncompleteTypeConstructor);
 
-    auto skip = shouldSkipCallResolution(&rv, innerCall, actualAsts, ci);
+    auto skip = shouldSkipCallResolution(rv, innerCall, actualAsts, ci);
     if (isIncompleteTypeConstructor || skip != NONE) {
       return CallResolutionResult::getEmpty();
     }
@@ -3431,7 +3512,7 @@ bool Resolver::resolveSpecialKeywordCall(const Call* call) {
 
       // if one of the actuals is unknown for some reason, don't attempt
       // to resolve the call.
-      if (shouldSkipCallResolution(this, fnCall, actualAsts, ci) != NONE) {
+      if (shouldSkipCallResolution(*this, fnCall, actualAsts, ci) != NONE) {
         r.setType(QualifiedType(QualifiedType::UNKNOWN, UnknownType::get(context)));
         return true;
       }
@@ -5159,7 +5240,7 @@ void Resolver::exit(const Range* range) {
 
   // Skip calls when the bounds are unknown to avoid putting function resolution
   // into an awkward position.
-  auto skip = shouldSkipCallResolution(this, range, actualAsts, ci);
+  auto skip = shouldSkipCallResolution(*this, range, actualAsts, ci);
   if (!skip) {
     auto scope = currentScope();
     auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
@@ -5229,7 +5310,7 @@ void Resolver::exit(const uast::Array* decl) {
                      /* isMethodCall */ false,
                      /* hasQuestionArg */ false,
                      /* isParenless */ false, actuals);
-  if (shouldSkipCallResolution(this, decl, actualAsts, ci)) {
+  if (shouldSkipCallResolution(*this, decl, actualAsts, ci)) {
     r.setType(QualifiedType());
     return;
   }
@@ -5316,7 +5397,7 @@ void Resolver::exit(const uast::Domain* decl) {
                        actuals);
 
     ResolvedExpression& r = byPostorder.byAst(decl);
-    if (shouldSkipCallResolution(this, decl, actualAsts, ci)) {
+    if (shouldSkipCallResolution(*this, decl, actualAsts, ci)) {
       r.setType(QualifiedType());
     } else {
       auto scope = currentScope();
@@ -5666,7 +5747,7 @@ void Resolver::handleCallExpr(const uast::Call* call) {
     CallScopeInfo::forNormalCall(scope, poiScope) :
     CallScopeInfo::forQualifiedCall(context, moduleScopeId, scope, poiScope);
 
-  auto skip = shouldSkipCallResolution(this, call, actualAsts, ci);
+  auto skip = shouldSkipCallResolutionAllowInit(*this, call, actualAsts, ci);
   if (!skip && !isIncompleteTypeConstructor) {
     ResolvedExpression& r = byPostorder.byAst(call);
     QualifiedType receiverType = methodReceiverType();
@@ -5875,7 +5956,7 @@ void Resolver::exit(const Dot* dot) {
       receiverType = UnknownType::get(context);
       r.setIsPartialResult(true);
     } else if (getTypeGenericity(context, receiver.type().type()) != Type::CONCRETE &&
-               skipDependingOnEagerness(this, receiver.toId(), &receiver)) {
+               skipDependingOnEagerness(*this, receiver.toId(), &receiver)) {
       receiverType = UnknownType::get(context);
       r.setIsPartialResult(true);
     } else if (receiver.type().type() != nullptr) {
@@ -5999,7 +6080,7 @@ void Resolver::exit(const Dot* dot) {
 
   // apply the usual call skipping rules, that rule out (e.g.) generic
   // actuals.
-  if (shouldSkipCallResolution(this, dot, actualAsts, ci)) {
+  if (shouldSkipCallResolution(*this, dot, actualAsts, ci)) {
     return;
   }
 
@@ -7170,7 +7251,7 @@ static bool handleArrayTypeExpr(Resolver& rv,
         actuals);
 
 
-    if (shouldSkipCallResolution(&rv, iterandExpr, actualAsts, ci)) {
+    if (shouldSkipCallResolution(rv, iterandExpr, actualAsts, ci)) {
       computeUninstanced = true;
     } else {
       auto scope = rv.currentScope();
@@ -7188,10 +7269,12 @@ static bool handleArrayTypeExpr(Resolver& rv,
     if (auto dt = domainT->toDomainType()) {
       domainT = dt->makeUninstanced(rv.context);
     }
+    auto eltTypeT = eltType.type();
+    if (!eltTypeT) eltTypeT = UnknownType::get(rv.context);
     auto adjustedDomainType =
       QualifiedType(QualifiedType::TYPE, domainT);
     auto adjustedEltType =
-      QualifiedType(QualifiedType::TYPE, eltType.type());
+      QualifiedType(QualifiedType::TYPE, eltTypeT);
     arrayType = QualifiedType(QualifiedType::TYPE,
         ArrayType::getUninstancedArrayType(rv.context, adjustedDomainType, adjustedEltType));
   }

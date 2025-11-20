@@ -758,7 +758,7 @@ module ChapelDistribution {
     var obj: borrowed BaseSparseDom(?);
 
     type idxType = if rank==1 then int else rank*int;
-    var bufDom = domain(1);
+    var bufDom: domain(1);
     var buf: [bufDom] idxType;
     var cur = 0;
 
