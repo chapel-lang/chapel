@@ -829,6 +829,8 @@ struct TConverter final : UastConverter,
 
   // Try to convert a primitive call.
   Expr* convertPrimCallOrNull(const Call* node, RV& rv);
+  // Try to convert a primitive that changes class nilability or management
+  Expr* classCastHelper(const PrimCall* node, RV& rv);
 
   // Try to convert a 'new' expression (which is considered a special
   // form of call) into a call to a middle-end only '_new' wrapper.
@@ -3963,6 +3965,43 @@ void TConverter::convertAndInsertPrimCallActuals(CallExpr* call,
   exitCallActuals();
 }
 
+Expr* TConverter::classCastHelper(const PrimCall* primCall, RV& rv) {
+  auto makeCast = [&](const types::Type* t) -> CallExpr* {
+    auto sym = convertType(t)->symbol;
+    auto arg = convertExpr(primCall->actual(0), rv);
+    arg = storeInTempIfNeeded(arg, rv.byAst(primCall->actual(0)).type());
+    return new CallExpr(PRIM_CAST, sym, arg);
+  };
+
+  using Decorator = types::ClassTypeDecorator;
+  auto computeType = [&](Decorator::ClassTypeDecoratorEnum kind) {
+    auto ct = rv.byAst(primCall->actual(0)).type().type()->toClassType();
+    if (Decorator::isDecoratorUnknownManagement(kind)) {
+      // Passed in e.g. GENERIC_NONNIL
+      auto dec = Decorator(kind);
+      dec = ct->decorator().copyNilabilityFrom(dec);
+      return ct->withDecorator(context, dec);
+    } else {
+      // Passed in 'borrowed' or 'unmanaged'
+      auto dec = Decorator(kind);
+      dec = dec.copyNilabilityFrom(ct->decorator());
+      return ct->withDecorator(context, dec);
+    }
+  };
+
+  if (primCall->prim() == chpl::uast::primtags::PRIM_TO_BORROWED_CLASS) {
+    return makeCast(computeType(Decorator::BORROWED));
+  } else if (primCall->prim() == chpl::uast::primtags::PRIM_TO_UNMANAGED_CLASS) {
+    return makeCast(computeType(Decorator::UNMANAGED));
+  } else if (primCall->prim() == chpl::uast::primtags::PRIM_TO_NILABLE_CLASS) {
+    return makeCast(computeType(Decorator::GENERIC_NILABLE));
+  } else if (primCall->prim() == chpl::uast::primtags::PRIM_TO_NON_NILABLE_CLASS) {
+    return makeCast(computeType(Decorator::GENERIC_NONNIL));
+  }
+
+  return nullptr;
+}
+
 Expr* TConverter::convertPrimCallOrNull(const Call* node, RV& rv) {
   auto primCall = node->toPrimCall();
   if (!primCall) return nullptr;
@@ -3974,15 +4013,8 @@ Expr* TConverter::convertPrimCallOrNull(const Call* node, RV& rv) {
   CallExpr* ret = nullptr;
   if (primCall->prim() == chpl::uast::primtags::PRIM_RT_ERROR) {
     ret = new CallExpr(primCall->prim(), new_CStringSymbol("<cannot handle PRIM_RT_ERROR without strings>"));
-  } else if (primCall->prim() == chpl::uast::primtags::PRIM_TO_BORROWED_CLASS) {
-    auto ct = rv.byAst(node->actual(0)).type().type()->toClassType();
-    auto dec = types::ClassTypeDecorator(types::ClassTypeDecorator::BORROWED);
-    dec = dec.copyNilabilityFrom(ct->decorator());
-    auto ut = ct->withDecorator(context, dec);
-    auto sym = convertType(ut)->symbol;
-    auto arg = convertExpr(node->actual(0), rv);
-    arg = storeInTempIfNeeded(arg, rv.byAst(node->actual(0)).type());
-    ret = new CallExpr(PRIM_CAST, sym, arg);
+  } else if (auto expr = classCastHelper(primCall, rv)) {
+    ret = toCallExpr(expr);
   } else {
     ret = new CallExpr(primCall->prim());
 
