@@ -3054,10 +3054,12 @@ static bool couldBeOutInitialized(Resolver& rv, const ID& toId, const QualifiedT
     // var x;
     // initialize(x);
     return true;
-  } else if (vld->typeExpression() &&
+  } else if (!qt.isUnknownOrErroneous() &&
              getTypeGenericity(rv.context, qt.type()) != Type::CONCRETE) {
     // var x: numeric;
     // initialize(x);
+    //
+    // also if x is a formal (without type expr, its initial type is AnyType).
     return true;
   }
 
