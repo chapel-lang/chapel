@@ -28,10 +28,10 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 # 4) Update START_DATE to be today, using the format mm/dd/yy
 #
 
-GITHUB_USER=chapel-lang
-GITHUB_BRANCH=main
-SHORT_NAME=main
-START_DATE=05/09/25
+GITHUB_USER=jabraham17
+GITHUB_BRANCH=better-licm
+SHORT_NAME=better-licm
+START_DATE=11/19/25
 
 set -e
 checkout_branch $GITHUB_USER $GITHUB_BRANCH
