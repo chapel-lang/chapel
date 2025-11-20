@@ -2722,19 +2722,6 @@ index 45aa6d5fef3..9d82882479f 100644
  underscore_is_special.chpl:3: error: Throwaway variable '_' is not allowed in this context
  underscore_is_special.chpl:4: error: Throwaway variable '_' is not allowed in this context
 +underscore_is_special.chpl:3: error: unable to resolve call to '=': no matching candidates
-diff --git a/test/types/tuple/diten/zerotuple.good b/test/types/tuple/diten/zerotuple.good
-index 2e262243d51..5f259fbff1e 100644
---- a/test/types/tuple/diten/zerotuple.good
-+++ b/test/types/tuple/diten/zerotuple.good
-@@ -1 +1,7 @@
--zerotuple.chpl:1: error: tuple must have positive size
-+zerotuple.chpl:2: error: unable to resolve call to 'writeln': no matching candidates
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:409: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
-+zerotuple.chpl:1: note: The actual 'x' expects to be split-initialized because it is declared with a generic type and no initialization expression here
-+zerotuple.chpl:2: note: The call to 'writeln' occurs before any valid initialization points
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:403: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
-+zerotuple.chpl:2: note: omitting 1 more candidates that didn't match
-+zerotuple.chpl:1: error: cannot default initialize variable using generic or unknown type
 diff --git a/test/types/tuple/errors/genericArrayAsTupleSize.good b/test/types/tuple/errors/genericArrayAsTupleSize.good
 index 9b607b7c291..9fd33151906 100644
 --- a/test/types/tuple/errors/genericArrayAsTupleSize.good
