@@ -1,0 +1,1 @@
+--llvm-print-ir mulScalar1,mulScalar2,mulScalar3,mulScalar4 --llvm-print-ir-stage basic --llvm-print-ir-file mulScalar.ll --ccflags -fno-discard-value-names --no-checks
