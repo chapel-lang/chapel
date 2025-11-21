@@ -309,6 +309,27 @@ bool AdjustMaybeRefs::enter(const Call* ast, RV& rv) {
   // there should be only one candidate at this point
   CHPL_ASSERT(candidates.numBest() <= 1);
 
+  // Now, emit deferred constness errors from inside the function we called,
+  // if any. See deferErrorForMutatingConstfield.
+  if (candidates.numBest() == 1) {
+    const auto& best = candidates.only();
+    auto resolvedFn = resolveFunctionIfPossible(rc, best.fn(), re.poiScope());
+
+    if (resolvedFn) {
+      for (const auto& id : resolvedFn->mutatedConstFieldIds()) {
+        (void) id;
+        // use the 'init resolver' as a proxy for 'are we in an initializer?'
+        // notably, this includes both 'init' and 'init='.
+        if (resolver.initResolver) {
+          continue;
+        } else {
+          context->error(ast, "function '%s' mutates const fields of its receiver",
+                         best.fn()->untyped()->name().c_str());
+        }
+      }
+    }
+  }
+
   // then, traverse nested call-expressions
   if (auto msc = candidates.only()) {
     auto fn = msc.fn();

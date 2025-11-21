@@ -3735,6 +3735,25 @@ const ResolvedFunction* resolveFunction(ResolutionContext* rc,
   return helpResolveFunction(rc, sig, poiScope, skipIfRunning);
 }
 
+const ResolvedFunction* resolveFunctionIfPossible(ResolutionContext* rc,
+                                                  const TypedFnSignature* sig,
+                                                  const PoiScope* poiScope) {
+  // compiler-generated fns don't always have ASTs, so we can't resolve them.
+  // If it has a fabricated ID, then we generated an AST body, so don't skip it.
+  if (sig->isCompilerGenerated()) {
+    auto& id = sig->id();
+    if (!id.isFabricatedId() || id.fabricatedIdKind() != ID::Generated ||
+        !parsing::idIsFunction(rc->context(), id)) {
+      return nullptr;
+    }
+  }
+
+  // shouldn't happen, but it currently does in some cases.
+  if (sig->needsInstantiation()) return nullptr;
+
+  return resolveFunction(rc, sig, poiScope, /* skipIfRunning */ true);
+}
+
 static const ImplementationPoint* const&
 resolveImplementsStmtQuery(Context* context, ID id) {
   QUERY_BEGIN(resolveImplementsStmtQuery, context, id);
