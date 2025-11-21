@@ -81,24 +81,37 @@ static int chpl_unwind_dladdrGetLineNum(void *addr) {
   // addr2line isn't present.
   // We try the following commands in order. llvm-addr2line is preferred
   // since it woks betters with LLVM/clang and also works with gnu
+  // but, llvm-addr2line might not be present, in which case we try
+  // llvm-symbolizer (llvm-addr2line is a symlink to llvm-symbolizer anyways).
+  // https://llvm.org/docs/CommandGuide/llvm-addr2line.html
   // 1. CHPL_LLVM_BIN_DIR/llvm-addr2line
-  // 2. llvm-addr2line
-  // 3. addr2line
+  // 2. CHPL_LLVM_BIN_DIR/llvm-symbolizer
+  // 3. llvm-addr2line
+  // 4. llvm-symbolizer
+  // 5. addr2line
 
   const char* script =
     "my_addr2line() { "
-    "addr2line_cmd=$1/addr2line; shift; "
+    "addr2line_cmd=$1/llvm-addr2line; shift; addr2line_args= ; "
     "if ! command -v $addr2line_cmd >/dev/null 2>&1; then "
-      "addr2line_cmd=llvm-addr2line; "
+      "addr2line_cmd=$1/llvm-symbolizer; "
+      "addr2line_args='--functions=none --no-demangle --output-style=GNU'; "
       "if ! command -v $addr2line_cmd >/dev/null 2>&1; then "
-        "addr2line_cmd=addr2line; "
+        "addr2line_cmd=llvm-addr2line; addr2line_args= ; "
         "if ! command -v $addr2line_cmd >/dev/null 2>&1; then "
-          "addr2line_cmd= ; "
+          "addr2line_cmd=llvm-symbolizer; "
+          "addr2line_args='--functions=none --no-demangle --output-style=GNU'; "
+          "if ! command -v $addr2line_cmd >/dev/null 2>&1; then "
+            "addr2line_cmd=addr2line; addr2line_args= ; "
+            "if ! command -v $addr2line_cmd >/dev/null 2>&1; then "
+              "addr2line_cmd= ; addr2line_args= ; "
+            "fi; "
+          "fi; "
         "fi; "
       "fi; "
     "fi; "
     "if [ -n \"$addr2line_cmd\" ]; then "
-      "$addr2line_cmd -e $@ ; "
+      "$addr2line_cmd $addr2line_args -e $@ ; "
     "fi } ; my_addr2line "
     ;
   // then CHPL_LLVM_BIN_DIR
