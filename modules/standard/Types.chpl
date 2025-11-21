@@ -997,8 +997,12 @@ proc integral.chpl_checkValue(type T: integral): owned IllegalArgumentError? {
 
 @unstable("integral.safeCast() is unstable and its behavior may change in the future")
 proc integral.safeCast(type T: bool) {
-  if this != 0 && this != 1 then
-    HaltWrappers.safeCastCheckHalt("casting "+this.type:string+" to 'bool' requires it to have a value of either 0 or 1, but the current value is " + this:string);
+  if castChecking then
+    if this != 0 && this != 1 then
+      HaltWrappers.safeCastCheckHalt(
+        "casting "+this.type:string+
+        " to 'bool' requires it to have a value of either 0 or 1,"+
+        " but the current value is " + this:string);
   return this: bool;
 }
 
