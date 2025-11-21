@@ -67,6 +67,9 @@ struct AdjustMaybeRefs {
   std::set<ID> refMaybeConstFormalsUsedRef;
   std::vector<ExprStackEntry> exprStack;
 
+  // outputs
+  std::set<ID>* mutatedConstFieldIds = nullptr;
+
   // methods
   AdjustMaybeRefs(ResolutionContext* rc, Resolver& resolver)
     : rc(rc), resolver(resolver)
@@ -78,6 +81,17 @@ struct AdjustMaybeRefs {
   Access currentAccess();
 
   void constCheckAssociatedActions(const AstNode* ast, RV& rv);
+
+  /*
+   In production, we allow methods called directly from the initializer
+   to mutate const fields of 'this', to help set up complicated types.
+   Since Dyno has no notion of a call stack, instead, always defer errors
+   in this pass, track a set of accessed fields, and then have the caller
+   issue errors if the caller is not a constructor.
+
+   Returns true if this is such a field access.
+  */
+  bool deferErrorForMutatingConstfield(const AstNode* ref, RV& rv);
 
   bool enter(const VarLikeDecl* ast, RV& rv);
   void exit(const VarLikeDecl* ast, RV& rv);
@@ -168,6 +182,45 @@ void AdjustMaybeRefs::constCheckAssociatedActions(const AstNode* ast, RV& rv) {
   */
 
   // consider each associated action
+}
+
+bool AdjustMaybeRefs::deferErrorForMutatingConstfield(const AstNode* ref, RV& rv) {
+  // Do a bit of pattern matching. Only 'myField' (implicit 'this') and
+  // 'this.myField' are supported for now.
+  if (!ref->isIdentifier() && !ref->isDot()) return false;
+  if (!mutatedConstFieldIds) return false;
+
+  // Is it a field?
+  ID fieldId;
+  if (auto refR = rv.byPostorder().byAstOrNull(ref)) {
+    auto toId = refR->toId();
+    if (parsing::idIsField(context, toId)) {
+      fieldId = toId;
+    }
+  }
+  if (fieldId.isEmpty()) return false;
+
+  // if it's a dot, check that the lhs refers to 'this':
+  if (auto dot = ref->toDot()) {
+    bool thisDot = false;
+    auto recv = dot->receiver();
+    if (auto recvR = rv.byPostorder().byAstOrNull(recv)) {
+      auto toId = recvR->toId();
+      auto toAst = parsing::idToAst(context, toId);
+      if (toAst && toAst->isFormal() && toAst->toFormal()->name() == USTR("this")) {
+        thisDot = true;
+      }
+    }
+    if (!thisDot) return false;
+
+    // Performance: The above is a more robust check for the following, which
+    // might be faster.
+    CHPL_ASSERT(recv->isIdentifier() && recv->toIdentifier()->name() == USTR("this"));
+  }
+
+  // ok, this is a field of 'this'. Defer the error.
+  mutatedConstFieldIds->insert(fieldId);
+  return true;
 }
 
 bool AdjustMaybeRefs::enter(const VarLikeDecl* ast, RV& rv) {
@@ -331,7 +384,7 @@ bool AdjustMaybeRefs::enter(const Call* ast, RV& rv) {
         // nothing to do regardless of access
       } else if (access == REF) {
         bool isConst = actualRe.type().isConst();
-        if (isConst) {
+        if (isConst && !deferErrorForMutatingConstfield(actualAst, rv)) {
           context->error(actualAst, "cannot pass const to non-const");
         }
       }
@@ -364,8 +417,9 @@ bool AdjustMaybeRefs::enter(const uast::AstNode* node, RV& rv) {
 void AdjustMaybeRefs::exit(const uast::AstNode* node, RV& rv) {
 }
 
-void adjustReturnIntentOverloadsAndMaybeConstRefs(Resolver& resolver) {
+void adjustReturnIntentOverloadsAndMaybeConstRefs(Resolver& resolver, std::set<ID>* mutatedConstFieldIds) {
   AdjustMaybeRefs uv(resolver.rc, resolver);
+  uv.mutatedConstFieldIds = mutatedConstFieldIds;
   uv.process(resolver.symbol, resolver.byPostorder);
 }
 

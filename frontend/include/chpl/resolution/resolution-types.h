@@ -2988,6 +2988,8 @@ class ResolvedFunction {
   // diagnostics that callers of this function should emit
   std::vector<CompilerDiagnostic> diagnostics_;
 
+  std::set<ID> mutatedConstFieldIds_;
+
   // These two maps attempt to mimick what is done to cache generic
   // instantiations in the queries 'resolveFunctionByInfo' and
   // 'resolveFunctionByPois'. The maps take the place of the query cache
@@ -3004,6 +3006,7 @@ class ResolvedFunction {
                    UniqueString linkageName,
                    types::QualifiedType returnType,
                    std::vector<CompilerDiagnostic> diagnostics,
+                   std::set<ID> mutatedConstFieldIds,
                    PoiTraceToChildMap poiTraceToChild,
                    SigAndInfoToChildPtrMap sigAndInfoToChildPtr)
       : signature_(signature),
@@ -3013,6 +3016,7 @@ class ResolvedFunction {
         linkageName_(linkageName),
         returnType_(std::move(returnType)),
         diagnostics_(std::move(diagnostics)),
+        mutatedConstFieldIds_(std::move(mutatedConstFieldIds)),
         poiTraceToChild_(std::move(poiTraceToChild)),
         sigAndInfoToChildPtr_(std::move(sigAndInfoToChildPtr)) {}
  ~ResolvedFunction() = default;
@@ -3036,6 +3040,12 @@ class ResolvedFunction {
   /** the diagnostic incurred by this function */
   const std::vector<CompilerDiagnostic>& diagnostics() const {
     return diagnostics_;
+  }
+
+  /** the IDs of const fields that were mutated within this function.
+      This might be allowed if the function was called from a constructor. */
+  const std::set<ID>& mutatedConstFieldIds() const {
+    return mutatedConstFieldIds_;
   }
 
   /** this is the output of the resolution process */
@@ -3065,6 +3075,7 @@ class ResolvedFunction {
            linkageName_ == other.linkageName_ &&
            returnType_ == other.returnType_ &&
            diagnostics_ == other.diagnostics_ &&
+           mutatedConstFieldIds_ == other.mutatedConstFieldIds_ &&
            poiTraceToChild_ == other.poiTraceToChild_ &&
            sigAndInfoToChildPtr_ == other.sigAndInfoToChildPtr_;
   }
@@ -3080,6 +3091,7 @@ class ResolvedFunction {
     linkageName_.swap(other.linkageName_);
     returnType_.swap(other.returnType_);
     std::swap(diagnostics_, other.diagnostics_);
+    std::swap(mutatedConstFieldIds_, other.mutatedConstFieldIds_);
     std::swap(poiTraceToChild_, other.poiTraceToChild_);
     std::swap(sigAndInfoToChildPtr_, other.sigAndInfoToChildPtr_);
   }
@@ -3094,6 +3106,7 @@ class ResolvedFunction {
     linkageName_.mark(context);
     returnType_.mark(context);
     chpl::mark<decltype(diagnostics_)>{}(context, diagnostics_);
+    chpl::mark<decltype(mutatedConstFieldIds_)>{}(context, mutatedConstFieldIds_);
     for (auto& p : poiTraceToChild_) {
       chpl::mark<decltype(p.first)>{}(context, p.first);
       context->markPointer(p.second);
@@ -3106,7 +3119,7 @@ class ResolvedFunction {
   size_t hash() const {
     // Skip 'resolutionById_' since it can be quite large.
     std::ignore = resolutionById_;
-    size_t ret = chpl::hash(signature_, returnIntent_, poiInfo_, linkageName_, returnType_, diagnostics_);
+    size_t ret = chpl::hash(signature_, returnIntent_, poiInfo_, linkageName_, returnType_, diagnostics_, mutatedConstFieldIds_);
     for (auto& p : poiTraceToChild_) {
       ret = hash_combine(ret, chpl::hash(p.first));
       ret = hash_combine(ret, chpl::hash(p.second));
