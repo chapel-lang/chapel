@@ -318,9 +318,34 @@ bool AdjustMaybeRefs::enter(const Call* ast, RV& rv) {
     if (resolvedFn) {
       for (const auto& id : resolvedFn->mutatedConstFieldIds()) {
         (void) id;
-        // use the 'init resolver' as a proxy for 'are we in an initializer?'
-        // notably, this includes both 'init' and 'init='.
-        if (resolver.initResolver) {
+        // The only way for the 'mutatedConstFieldIds' to be non-empty
+        // is if we deferred errors in the called function, which we could
+        // only do for methods.
+        CHPL_ASSERT(best.fn()->isMethod());
+
+        // Note: this pattern matching here is more fragile than I would like,
+        // but is there a better way to detect a call on 'this' specifically?
+        bool isValidCallOnThis = false;
+        if (!resolver.initResolver) {
+          // we're not in an initializer, so we can't mutate const fields.
+        } else if (auto fnCall = ast->toFnCall()) {
+          // call like 'method()', implicit receiver.
+          if (auto ident = fnCall->calledExpression()->toIdentifier()) {
+            if (ident->name() == best.fn()->untyped()->name()) {
+              isValidCallOnThis = true;
+            }
+          // call like 'this.method()'
+          } else if (auto dot = fnCall->calledExpression()->toDot()) {
+            if (auto recvIdent = dot->receiver()->toIdentifier()) {
+              if (recvIdent->name() == USTR("this") &&
+                  dot->field() == best.fn()->untyped()->name()) {
+                isValidCallOnThis = true;
+              }
+            }
+          }
+        }
+
+        if (isValidCallOnThis) {
           continue;
         } else {
           context->error(ast, "function '%s' mutates const fields of its receiver",
