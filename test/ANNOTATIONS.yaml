@@ -2401,6 +2401,12 @@ compilerAndTestingStats: &compiler-perf-base
     - Move the GpuSort Module code into the GPU module (#23989)
   01/18/24:
     - Remove 'use GPU' from ChapelGpuSupport (#24185)
+  11/13/25:
+    - Changed isDefAndOrUse (#27961)
+  11/14/25:
+    - System software change
+  11/19/25:
+    - Fixed regression due to isDefAndOrUse change (#28082)
 
 allTotalTime:
   <<: *compiler-perf-base
