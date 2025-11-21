@@ -1280,13 +1280,17 @@ static QualifiedType primNeedsAutoDestroy(ResolutionContext* rc, const CallInfo&
 static QualifiedType
 primIsCoercible(Context* context, const CallInfo& ci) {
   if (ci.numActuals() < 2) return QualifiedType();
-  auto qtFrom = ci.actual(0).type();
-  auto qtTo = ci.actual(1).type();
-  auto canPass = CanPassResult::canPassScalar(context, qtFrom, qtTo);
-  bool eval = canPass.passes() &&
-              (canPass.instantiates() || canPass.converts()) &&
-              !canPass.promotes();
-  return QualifiedType::makeParamBool(context, eval);
+
+  // Adjust arguments to have 'INIT_RECEIVER' and 'IN' intents, since coercions between
+  // 'TYPE' formals have different rules (e.g., disallow borrowing coercions).
+  // We use 'INIT_RECEIVER' because we want to allow the actual to be generic,
+  // so that 'childClass' is coercible to 'parentClass' even if the ownership
+  // is not known.
+  auto qtToAdj = QualifiedType(QualifiedType::IN, ci.actual(0).type().type());
+  auto qtFromAdj = QualifiedType(QualifiedType::INIT_RECEIVER, ci.actual(1).type().type());
+
+  auto canPass = CanPassResult::canPassScalar(context, qtFromAdj, qtToAdj);
+  return QualifiedType::makeParamBool(context, canPass.passes());
 }
 
 static std::string typeToString(Context* context, const Type* t);
