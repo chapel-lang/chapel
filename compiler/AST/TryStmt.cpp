@@ -77,7 +77,7 @@ bool TryStmt::isSyncTry() const {
   return _isSyncTry;
 }
 
-bool TryStmt::isManageStmt() const {
+bool TryStmt::isForManageStmt() const {
   if (auto block = _body) {
     if (tryBang() && block->blockTag == BLOCK_NORMAL) {
       if (auto def = toDefExpr(block->body.first())) {

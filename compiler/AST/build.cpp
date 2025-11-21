@@ -1967,6 +1967,8 @@ BlockStmt* buildManagerBlock(Expr* managerExpr, std::set<Flag>* flags,
   auto tryBlock = new BlockStmt();
 
   // The first statement must be a block for the user code.
+  // TODO: Can make scopeless without impacting destructors? Or just
+  //       have the user code replace the block, NOP, etc...
   tryBlock->insertAtTail(new BlockStmt());
 
   // Next, set the success flag to 'true'.
@@ -2094,7 +2096,7 @@ buildManageStmt(BlockStmt* managers, BlockStmt* block, ModTag modTag) {
   block->flattenAndRemove();
 
   // This should hold.
-  INT_ASSERT(ret->isManageStmt());
+  INT_ASSERT(ret->isForManageStmt());
 
   return ret;
 }

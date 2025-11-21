@@ -235,6 +235,32 @@ ErrorHandlingVisitor::ErrorHandlingVisitor(ArgSymbol*   _outError,
 bool ErrorHandlingVisitor::enterTryStmt(TryStmt* node) {
   SET_LINENO(node);
 
+  if (node->isForManageStmt()) {
+    // Either we are in a try/catch, or we are in a throwing function.
+    bool inThrowingContext = !tryStack.empty() || outError != NULL;
+
+    if (inThrowingContext) {
+      // If we are in a throwing context, then we can remove the 'try!' and
+      // replace it with the body. This is because if there are throwing
+      // statements in the body, we want them to propagate correctly into
+      // any parent constructs (e.g., try/catch or an out-error-var for
+      // 'throws' procedures.
+      auto body = node->body();
+      INT_ASSERT(body);
+
+      // Just remove the 'try!' entirely.
+      body->remove();
+      node->replace(body);
+
+      // Since we have manually replaced the 'try!', we must take control of
+      // the traversal ourselves. Go ahead and walk the body of the try.
+      body->accept(this);
+
+      // Do not continue, the 'try!' is no longer in the tree.
+      return false;
+    }
+  }
+
   VarSymbol*   errorVar     = newTemp("error", dtErrorNilable());
   errorVar->addFlag(FLAG_ERROR_VARIABLE);
   LabelSymbol* handlerLabel = new LabelSymbol("handler");
