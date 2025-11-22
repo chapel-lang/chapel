@@ -808,6 +808,7 @@ struct TConverter final : UastConverter,
   // without performing legacy resolution? Then we can remove the 'qt'
   // requirement, which would mean types no longer need to map 1-to-1.
   SymExpr* storeInTempIfNeeded(Expr* e, const types::QualifiedType& qt);
+  SymExpr* insertDerefTemp(SymExpr* se, const types::QualifiedType& qt);
 
   Expr* convertLifetimeClause(const AstNode* node, RV& rv);
 
@@ -829,6 +830,13 @@ struct TConverter final : UastConverter,
 
   // Try to convert a primitive call.
   Expr* convertPrimCallOrNull(const Call* node, RV& rv);
+  // Try to convert a primitive that changes class nilability or management
+  Expr* classCastHelper(const PrimCall* node, RV& rv);
+  SymExpr* insertClassConversion(types::QualifiedType to,
+                              types::QualifiedType from,
+                              const AstNode* astForErr,
+                              Expr* fromExpr,
+                              RV& rv);
 
   // Try to convert a 'new' expression (which is considered a special
   // form of call) into a call to a middle-end only '_new' wrapper.
@@ -3277,6 +3285,12 @@ TConverter::storeInTempIfNeeded(Expr* e, const types::QualifiedType& qt) {
   return new SymExpr(t);
 }
 
+SymExpr*
+TConverter::insertDerefTemp(SymExpr* se, const types::QualifiedType& qt) {
+  auto deref = new CallExpr(PRIM_DEREF, se->copy());
+  return storeInTempIfNeeded(deref, qt);
+}
+
 // note: new_IntSymbol etc already returns existing if already created
 Symbol* TConverter::convertParam(const types::QualifiedType& qt) {
   const types::Param* p = qt.param();
@@ -3882,6 +3896,34 @@ Expr* TConverter::convertNewCallOrNull(const Call* node, RV& rv) {
     INT_ASSERT(fam.isValid());
 
     convertAndInsertActuals(toCallExpr(ret), node, actualAsts, init, fam, rv);
+
+    auto ct = re->type().type()->toClassType();
+    if (auto mt = ct ? ct->managerRecordType(context) : nullptr) {
+      types::QualifiedType recvQt = { re->type().kind(), mt };
+
+      auto dec = types::ClassTypeDecorator(types::ClassTypeDecorator::UNMANAGED);
+      dec = dec.copyNilabilityFrom(ct->decorator());
+      auto ut = ct->withDecorator(context, dec);
+      types::QualifiedType uqt = { re->type().kind(), ut };
+      std::vector<CallInfoActual> mtActuals;
+      mtActuals.push_back(CallInfoActual(uqt));
+
+      auto ci1 = resolution::CallInfo::createSimple(USTR("init"), mtActuals);
+      auto ci2 = resolution::CallInfo::createWithReceiver(ci1, recvQt);
+
+      // Search for 'init()' using the generated call.
+      const ResolvedFunction* rf = nullptr;
+      auto fn = convertFunctionForGeneratedCall(ci2, node, &rf);
+
+      VarSymbol* initTemp = newTemp("initTemp", convertType(recvQt.type()));
+      insertStmt(new DefExpr(initTemp));
+
+      auto newResult = storeInTempIfNeeded(ret, init->formalType(0));
+      Expr* unm = new CallExpr(PRIM_CAST, convertType(ut)->symbol, newResult);
+      unm = storeInTempIfNeeded(unm, uqt);
+      insertStmt(new CallExpr(fn, initTemp, unm));
+      ret = new SymExpr(initTemp);
+    }
   }
 
   return ret;
@@ -3934,17 +3976,67 @@ void TConverter::convertAndInsertPrimCallActuals(CallExpr* call,
   exitCallActuals();
 }
 
+Expr* TConverter::classCastHelper(const PrimCall* primCall, RV& rv) {
+  auto makeCast = [&](const types::Type* t) -> CallExpr* {
+    auto sym = convertType(t)->symbol;
+    auto arg = convertExpr(primCall->actual(0), rv);
+    arg = storeInTempIfNeeded(arg, rv.byAst(primCall->actual(0)).type());
+    return new CallExpr(PRIM_CAST, sym, arg);
+  };
+
+  using Decorator = types::ClassTypeDecorator;
+  auto computeType = [&](Decorator::ClassTypeDecoratorEnum kind) {
+    auto ct = rv.byAst(primCall->actual(0)).type().type()->toClassType();
+    if (Decorator::isDecoratorUnknownManagement(kind)) {
+      // Passed in e.g. GENERIC_NONNIL
+      auto dec = Decorator(kind);
+      dec = ct->decorator().copyNilabilityFrom(dec);
+      return ct->withDecorator(context, dec);
+    } else {
+      // Passed in 'borrowed' or 'unmanaged'
+      auto dec = Decorator(kind);
+      dec = dec.copyNilabilityFrom(ct->decorator());
+      return ct->withDecorator(context, dec);
+    }
+  };
+
+  if (primCall->prim() == chpl::uast::primtags::PRIM_TO_BORROWED_CLASS) {
+    return makeCast(computeType(Decorator::BORROWED));
+  } else if (primCall->prim() == chpl::uast::primtags::PRIM_TO_UNMANAGED_CLASS) {
+    return makeCast(computeType(Decorator::UNMANAGED));
+  } else if (primCall->prim() == chpl::uast::primtags::PRIM_TO_NILABLE_CLASS) {
+    return makeCast(computeType(Decorator::GENERIC_NILABLE));
+  } else if (primCall->prim() == chpl::uast::primtags::PRIM_TO_NON_NILABLE_CLASS) {
+    return makeCast(computeType(Decorator::GENERIC_NONNIL));
+  }
+
+  return nullptr;
+}
+
 Expr* TConverter::convertPrimCallOrNull(const Call* node, RV& rv) {
   auto primCall = node->toPrimCall();
   if (!primCall) return nullptr;
 
   // there should not be associated actions for primitive calls
   auto re = rv.byAstOrNull(node);
-  INT_ASSERT(!re || !re->hasAssociatedActions());
+  if (re) {
+    for (auto a : re->associatedActions()) {
+      // For now, allow only MOVE_INIT actions, indicating that the result of
+      // this primitive is intended to be 'moved'.
+      //
+      // Note: Right now call-init-deinit is casting a wide net and including
+      // integers in this analysis, so we might get rid of this check long
+      // term.
+      INT_ASSERT(a.action() == AssociatedAction::MOVE_INIT);
+      INT_ASSERT(a.id() == node->id());
+    }
+  }
 
   CallExpr* ret = nullptr;
   if (primCall->prim() == chpl::uast::primtags::PRIM_RT_ERROR) {
     ret = new CallExpr(primCall->prim(), new_CStringSymbol("<cannot handle PRIM_RT_ERROR without strings>"));
+  } else if (auto expr = classCastHelper(primCall, rv)) {
+    ret = toCallExpr(expr);
   } else {
     ret = new CallExpr(primCall->prim());
 
@@ -4238,7 +4330,9 @@ Expr* TConverter::convertFieldInitOrNull(
                                 const resolution::CallInfo& ci,
                                 RV& rv) {
   // If not in an initializer, then 'this.x = ...' cannot be an init point.
-  if (!cur.fnSymbol->isInitializer() || ci.name() != USTR("=")) {
+  if ((!cur.fnSymbol->isInitializer() &&
+      !cur.fnSymbol->isCopyInit()) ||
+      ci.name() != USTR("=")) {
     return nullptr;
   }
 
@@ -4769,6 +4863,28 @@ Expr* TConverter::ActualConverter::convertActual(const FormalActual& fa) {
           temp = tc_->storeInTempIfNeeded(new CallExpr(PRIM_CAST, type->symbol, temp), fa.formalType());
         }
       }
+    } else if (SymExpr* se = toSymExpr(temp)) {
+      if (auto re = rv_.byAstOrNull(astActual); re && re->hasAssociatedActions()) {
+        INT_ASSERT(re->associatedActions().size() == 1);
+        auto action = re->associatedActions()[0].action();
+        if (action == AssociatedAction::ASSIGN ||
+            action == AssociatedAction::MOVE_INIT) {
+          if (se->isRef()) {
+            types::QualifiedType type = { types::QualifiedType::VAR, re->type().type() };
+            temp = tc_->insertDerefTemp(se, type);
+          }
+        } else {
+          TC_UNIMPL("associated action on an actual");
+        }
+      } else {
+        if (fa.actualType().isRef() &&
+            se->isRef() &&
+            !fa.formalType().isUnknownKindOrType() &&
+            !fa.formalType().isRef()) {
+          types::QualifiedType type = { types::QualifiedType::VAR, fa.formalType().type() };
+          temp = tc_->insertDerefTemp(se, type);
+        }
+      }
     }
 
     return temp;
@@ -4904,8 +5020,9 @@ convertAndInsertActuals(CallExpr* call, bool skipReceiver) {
       // Is usually a SymExpr, but can be a PRIM_TUPLE_EXPAND which needs
       // to remain in the call's actuals
       if (CallExpr* actual = toCallExpr(expr)) {
+        auto actualAst = fa.hasActual() ? actualAsts_[fa.actualIdx()] : nullptr;
         INT_ASSERT(actual->isPrimitive(PRIM_TUPLE_EXPAND));
-        skipUnpack += expandTupleHelper(call, actualAsts_[fa.actualIdx()], actual->get(1));
+        skipUnpack += expandTupleHelper(call, actualAst, actual->get(1));
       } else if (SymExpr* se = toSymExpr(expr)) {
         call->insertAtTail(expr);
 
@@ -5511,7 +5628,32 @@ Expr* TConverter::convertFieldAccessOrNull(const AstNode* node, RV& rv) {
   // Otherwise we'll do our best to generate a "plain-old" field access.
   types::QualifiedType qtField;
   auto [recvAst, fieldName] = accessExpressionDetails(node);
-  auto get = codegenGetField(recvAst, fieldName.c_str(), rv, &qtField);
+
+  types::QualifiedType qtRecv;
+  Expr* recv = recvAst ? convertExpr(recvAst, rv, &qtRecv) : nullptr;
+
+  if (recvAst && qtRecv.type()->isClassType() &&
+      qtRecv.type()->toClassType()->manager()) {
+    // temporarily simulate forwarding for owned/shared records
+    qtRecv = types::QualifiedType(qtRecv.kind(),
+               qtRecv.type()->toClassType()->managerRecordType(context));
+    auto fwd = codegenGetFieldImpl(this, PRIM_UNKNOWN, recv, qtRecv,
+                                   "chpl_p",
+                                   -1,
+                                   rv, &qtField);
+    if (fieldName == "chpl_p") {
+      return storeInTempIfNeeded(fwd, qtField);
+    } else {
+      recv = storeInTempIfNeeded(fwd, qtField);
+      qtRecv = qtField;
+    }
+  }
+
+  const int fieldIndex = -1;
+  auto get = codegenGetFieldImpl(this, PRIM_UNKNOWN, recv, qtRecv,
+                                 fieldName.c_str(),
+                                 fieldIndex,
+                                 rv, &qtField);
 
   // NOTE: Field accesses should be stored in temps to make the rest of
   // the compiler passes after callDestructors happy (part of the normal
@@ -5625,6 +5767,37 @@ bool TConverter::enter(const Return* node, RV& rv) {
 
   return true;
 }
+
+SymExpr* TConverter::insertClassConversion(types::QualifiedType to,
+                                        types::QualifiedType from,
+                                        const AstNode* astForErr,
+                                        Expr* fromExpr,
+                                        RV& rv) {
+  auto ct = to.type()->toClassType();
+  if (auto mt = ct->managerRecordType(context)) {
+    types::QualifiedType recvQt = { to.kind(), mt };
+
+    std::vector<CallInfoActual> mtActuals;
+    mtActuals.push_back(CallInfoActual(from));
+
+    auto ci1 = resolution::CallInfo::createSimple(USTR("init="), mtActuals);
+    auto ci2 = resolution::CallInfo::createWithReceiver(ci1, recvQt);
+
+    // Search for 'init()' using the generated call.
+    const ResolvedFunction* rf = nullptr;
+    auto fn = convertFunctionForGeneratedCall(ci2, astForErr, &rf);
+
+    VarSymbol* initTemp = newTemp("initTemp", convertType(recvQt.type()));
+    insertStmt(new DefExpr(initTemp));
+
+    insertStmt(new CallExpr(fn, initTemp, fromExpr));
+    return new SymExpr(initTemp);
+  } else {
+    auto cast = new CallExpr(PRIM_CAST, convertType(to.type()), fromExpr);
+    return storeInTempIfNeeded(cast, to);
+  }
+}
+
 void TConverter::exit(const Return* node, RV& rv) {
   TC_DEBUGF(this, "exit return %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 
@@ -5642,6 +5815,12 @@ void TConverter::exit(const Return* node, RV& rv) {
       move = new CallExpr(PRIM_MOVE,
                           cur.retVar, new CallExpr(PRIM_ADDR_OF, temp));
     } else {
+      auto commonType = cur.resolvedFunction->returnType();
+      if (retQt.type() != commonType.type() &&
+          commonType.type()->isClassType()) {
+        temp = insertClassConversion(commonType, retQt, node, temp, rv);
+      }
+
       move = new CallExpr(PRIM_MOVE, cur.retVar, temp);
     }
     insertStmt(move);
