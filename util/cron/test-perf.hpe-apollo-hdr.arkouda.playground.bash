@@ -51,11 +51,11 @@ TEST_NIGHTLY=1
 GITHUB_USER=chapel-lang
 GITHUB_BRANCH=main
 
-SHORT_NAME=new-sort
-START_DATE=11/10/25
+SHORT_NAME=negative-bigint
+START_DATE=11/17/25
 
-export ARKOUDA_URL=https://github.com/e-kayrakli/arkouda.git
-export ARKOUDA_BRANCH=use-new-sort
+export ARKOUDA_URL=https://github.com/1RyanK/arkouda.git
+export ARKOUDA_BRANCH=5043-Investigate_performance_loss_from_negative_bigint_changes
 
 if [[ "$TEST_NIGHTLY" == "1" ]]; then
   set -e
