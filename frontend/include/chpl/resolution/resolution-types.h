@@ -2850,6 +2850,7 @@ class ResolutionResultByPostorderID {
     return byId(ast->id());
   }
   const ResolvedExpression* byAstOrNull(const uast::AstNode* ast) const {
+    if (ast == nullptr) return nullptr;
     return byIdOrNull(ast->id());
   }
 
