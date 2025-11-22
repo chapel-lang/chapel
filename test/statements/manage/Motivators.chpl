@@ -57,7 +57,6 @@ proc test1() {
   // Calls the value overload of 'enterContext'.
   manage new man() do doSomething();
 }
-test1(); writeln();
 
 proc test2() {
   writeln('T2');
@@ -66,7 +65,6 @@ proc test2() {
     doSomething();
   }
 }
-test2(); writeln();
 
 // Make sure 'manager' stays alive till end of block.
 proc test3() {
@@ -74,7 +72,6 @@ proc test3() {
   var myManager = new man();
   manage myManager do doSomething();
 }
-test3(); writeln();
 
 // Make sure 'manager' stays alive till end of block, nested.
 proc test4() {
@@ -84,7 +81,6 @@ proc test4() {
     doSomething();
   }
 }
-test4(); writeln();
 
 // Make sure both managers stay alive till end of block.
 proc test5() {
@@ -94,7 +90,6 @@ proc test5() {
   manage myManager1, myManager2 do
     doSomething();
 }
-test5(); writeln();
 
 // TODO: This may be dropped if we decide we don't want explicit storage.
 proc test6() {
@@ -102,7 +97,6 @@ proc test6() {
   manage new man() as var myResource do
     myResource.doSomething();
 }
-test6(); writeln();
 
 // TODO: This may be dropped if we decide we don't want explicit storage.
 proc test7() {
@@ -110,7 +104,6 @@ proc test7() {
   manage new man() as ref myResource do
     myResource.doSomething();
 }
-test7(); writeln();
 
 // TODO: This may be dropped if we decide we don't want explicit storage.
 proc test8() {
@@ -118,7 +111,6 @@ proc test8() {
   manage new man() as const ref myResource do
     myResource.doSomething();
 }
-test8(); writeln();
 
 // TODO: This may be dropped if we decide we don't want explicit storage.
 // Make sure manager survives to end of block.
@@ -128,7 +120,6 @@ proc test9() {
   manage myManager as var myResource do
     myResource.doSomething();
 }
-test9(); writeln();
 
 // TODO: This may be dropped if we decide we don't want explicit storage.
 // Make sure manager survives to end of block.
@@ -138,7 +129,6 @@ proc test10() {
   manage myManager as ref myResource do
     myResource.doSomething();
 }
-test10(); writeln();
 
 // TODO: This may be dropped if we decide we don't want explicit storage.
 // Make sure manager survives to end of block.
@@ -148,7 +138,6 @@ proc test11() {
   manage myManager as const ref myResource do
     myResource.doSomething();
 }
-test11(); writeln();
 
 // TODO: This may be dropped if we decide we don't want explicit storage.
 proc test12() {
@@ -160,7 +149,6 @@ proc test12() {
     res3.doSomething();
   }
 }
-test12(); writeln();
 
 // TODO: This may be dropped if we decide we don't want explicit storage.
 // All managers should live till end of block.
@@ -176,7 +164,6 @@ proc test13() {
     res3.doSomething();
   }
 }
-test13(); writeln();
 
 // TODO: This may be dropped if we decide we don't want explicit storage.
 proc test14() {
@@ -189,5 +176,59 @@ proc test14() {
     res3.doSomething();
   }
 }
-test14(); writeln();
 
+record rx : contextManager {
+  proc doSomething() do writeln('Something!');
+  proc doSomethingThrowing() throws do throw new Error('Throwing!');
+  proc ref enterContext() ref do return this;
+  proc exitContext(in e: owned Error?) throws {
+    // if (e) && e!.message() == 'Hidden message!' then throw Error('Intercepted!');
+    if e then throw e;
+  }
+}
+
+proc test15() {
+  writeln('T15: throwing method called in manage statement');
+
+  var foo: rx;
+
+  try {
+    manage foo as x do x.doSomethingThrowing();
+  } catch e {
+    writeln(e);
+  }
+}
+
+proc test16() {
+  writeln('T16: \'throws\' occurs in manage statement');
+
+  var foo: rx;
+
+  try {
+    manage foo as x do throw new Error('Uh oh!');
+  } catch e {
+    writeln(e);
+  }
+}
+
+proc test17() {
+  writeln('T17: \'throws\' occurs in manage statement and is intercepted');
+
+  var foo: rx;
+
+  try {
+    manage foo as x do throw new Error('Hidden message!');
+  } catch e {
+    writeln(e);
+  }
+}
+
+proc main() {
+  const tests = [ test1, test2, test3, test4, test5, test6, test7,
+                  test8, test9, test10, test11, test12, test13, test14,
+                  test15, /* test16, test17 */ ];
+  for t in tests {
+    t();
+    if t != tests.last then writeln();
+  }
+}

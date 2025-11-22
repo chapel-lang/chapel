@@ -130,3 +130,5 @@ leaving
 leaving
 deinit (ptr = {x = 19})
 
+T15: throwing method called in manage statement
+Error: Throwing!
