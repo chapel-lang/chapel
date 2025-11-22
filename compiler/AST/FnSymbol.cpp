@@ -572,20 +572,19 @@ Symbol* FnSymbol::getReturnSymbol() {
     return nullptr;
   }
 
-  if (retval == NULL) {
+  if (retval == nullptr) {
     CallExpr* ret = toCallExpr(body->body.last());
 
-    if (ret != NULL && ret->isPrimitive(PRIM_RETURN) == true) {
+    if (ret != nullptr && ret->isPrimitive(PRIM_RETURN) == true) {
       if (SymExpr* sym = toSymExpr(ret->get(1))) {
         retval = sym->symbol();
-      } else {
-        INT_FATAL(this, "function is not normal");
       }
     }
   }
 
-  if (retval == NULL) {
-    INT_FATAL(this, "function is not normal");
+  if (!retval && isNormalized()) {
+    // Crash only if we expected to find something.
+    INT_FATAL(this, "Function marked as normalized but is not normal");
   }
 
   return retval;
