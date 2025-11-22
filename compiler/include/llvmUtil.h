@@ -127,6 +127,8 @@ llvm::Type* tryComputingPointerElementType(llvm::Value* ptr);
 // Newer LLVMs don't distinguish between pointer type, these return an opaque `ptr`
 llvm::Type* getPointerType(llvm::LLVMContext& ctx, unsigned AS=0);
 llvm::Type* getPointerType(llvm::IRBuilder<>* irBuilder, unsigned AS=0);
+// although this takes a type, it returns an opaque `ptr` on newer LLVMs
+llvm::Type* getPointerType(llvm::Type* eltType, unsigned AS=0);
 
 #endif //HAVE_LLVM
 #endif //LLVMUTIL_H
