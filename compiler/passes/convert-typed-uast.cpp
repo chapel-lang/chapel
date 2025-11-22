@@ -808,6 +808,7 @@ struct TConverter final : UastConverter,
   // without performing legacy resolution? Then we can remove the 'qt'
   // requirement, which would mean types no longer need to map 1-to-1.
   SymExpr* storeInTempIfNeeded(Expr* e, const types::QualifiedType& qt);
+  SymExpr* insertDerefTemp(SymExpr* se, const types::QualifiedType& qt);
 
   Expr* convertLifetimeClause(const AstNode* node, RV& rv);
 
@@ -3282,6 +3283,12 @@ TConverter::storeInTempIfNeeded(Expr* e, const types::QualifiedType& qt) {
   t = makeNewTemp(qt);
   insertStmt(new CallExpr(PRIM_MOVE, t, e));
   return new SymExpr(t);
+}
+
+SymExpr*
+TConverter::insertDerefTemp(SymExpr* se, const types::QualifiedType& qt) {
+  auto deref = new CallExpr(PRIM_DEREF, se->copy());
+  return storeInTempIfNeeded(deref, qt);
 }
 
 // note: new_IntSymbol etc already returns existing if already created
