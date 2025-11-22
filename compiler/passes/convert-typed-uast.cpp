@@ -4863,6 +4863,28 @@ Expr* TConverter::ActualConverter::convertActual(const FormalActual& fa) {
           temp = tc_->storeInTempIfNeeded(new CallExpr(PRIM_CAST, type->symbol, temp), fa.formalType());
         }
       }
+    } else if (SymExpr* se = toSymExpr(temp)) {
+      if (auto re = rv_.byAstOrNull(astActual); re && re->hasAssociatedActions()) {
+        INT_ASSERT(re->associatedActions().size() == 1);
+        auto action = re->associatedActions()[0].action();
+        if (action == AssociatedAction::ASSIGN ||
+            action == AssociatedAction::MOVE_INIT) {
+          if (se->isRef()) {
+            types::QualifiedType type = { types::QualifiedType::VAR, re->type().type() };
+            temp = tc_->insertDerefTemp(se, type);
+          }
+        } else {
+          TC_UNIMPL("associated action on an actual");
+        }
+      } else {
+        if (fa.actualType().isRef() &&
+            se->isRef() &&
+            !fa.formalType().isUnknownKindOrType() &&
+            !fa.formalType().isRef()) {
+          types::QualifiedType type = { types::QualifiedType::VAR, fa.formalType().type() };
+          temp = tc_->insertDerefTemp(se, type);
+        }
+      }
     }
 
     return temp;
@@ -4998,8 +5020,9 @@ convertAndInsertActuals(CallExpr* call, bool skipReceiver) {
       // Is usually a SymExpr, but can be a PRIM_TUPLE_EXPAND which needs
       // to remain in the call's actuals
       if (CallExpr* actual = toCallExpr(expr)) {
+        auto actualAst = fa.hasActual() ? actualAsts_[fa.actualIdx()] : nullptr;
         INT_ASSERT(actual->isPrimitive(PRIM_TUPLE_EXPAND));
-        skipUnpack += expandTupleHelper(call, actualAsts_[fa.actualIdx()], actual->get(1));
+        skipUnpack += expandTupleHelper(call, actualAst, actual->get(1));
       } else if (SymExpr* se = toSymExpr(expr)) {
         call->insertAtTail(expr);
 
