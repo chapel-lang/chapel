@@ -382,6 +382,9 @@ struct TConverter final : UastConverter,
     // Convert a single actual considering 'fa'.
     Expr* convertActual(const FormalActual& fa);
 
+    Expr* convertActualWithArg(const FormalActual& fa);
+    Expr* convertActualUsingDefault(const FormalActual& fa);
+
    public:
     ActualConverter(TConverter* tc,
                     const AstNode* astForCall,
@@ -4811,97 +4814,109 @@ void TConverter::ActualConverter::prepareCalledFnConversionState() {
 Expr* TConverter::ActualConverter::convertActual(const FormalActual& fa) {
   if (tc_->shouldElideFormal(tfs_, fa.formalIdx())) return nullptr;
 
-  Context* context = tc_->context;
-
   // One or the other must hold in order to compute the slot index.
   INT_ASSERT(fa.hasDefault() || fa.hasActual());
 
   if (fa.hasActual()) {
-    INT_ASSERT(fa.hasActual());
+    return convertActualWithArg(fa);
+  } else {
+    return convertActualUsingDefault(fa);
+  }
+}
 
-    // If there is no default argument then an actual is present.
-    int idxActual = fa.actualIdx();
-    INT_ASSERT(0 <= idxActual && idxActual < ((int) actualAsts_.size()));
+Expr* TConverter::ActualConverter::convertActualWithArg(const FormalActual& fa) {
+  Context* context = tc_->context;
+  INT_ASSERT(fa.hasActual());
 
-    // And there should be AST there.
-    auto astActual = fa.hasActual() ? actualAsts_[idxActual] : nullptr;
-    INT_ASSERT(astActual);
+  // If there is no default argument then an actual is present.
+  int idxActual = fa.actualIdx();
+  INT_ASSERT(0 <= idxActual && idxActual < ((int) actualAsts_.size()));
 
-    // Convert the actual and leave.
-    types::QualifiedType actualType;
-    Expr* actualExpr = nullptr;
-    if (auto formal = astActual->toFormal()) {
-      // We don't have a 'this' identifier for implicit method calls, so we
-      // use the 'this' formal's uAST as a signal to generate the implicit
-      // 'this'.
-      INT_ASSERT(formal->name() == USTR("this"));
-      actualExpr = tc_->codegenImplicitThis(rv_);
-    } else {
-      actualExpr = tc_->convertExpr(astActual, rv_, &actualType);
-    }
+  // And there should be AST there.
+  auto astActual = fa.hasActual() ? actualAsts_[idxActual] : nullptr;
+  INT_ASSERT(astActual);
 
-    Expr* temp = nullptr;
-    if (CallExpr* call = toCallExpr(actualExpr);
-        call && call->isPrimitive(PRIM_TUPLE_EXPAND)) {
-      // expanded later
-      temp = actualExpr;
-    } else {
-      temp = tc_->storeInTempIfNeeded(actualExpr, actualType);
-    }
+  // Convert the actual and leave.
+  types::QualifiedType actualType;
+  Expr* actualExpr = nullptr;
+  if (auto formal = astActual->toFormal()) {
+    // We don't have a 'this' identifier for implicit method calls, so we
+    // use the 'this' formal's uAST as a signal to generate the implicit
+    // 'this'.
+    INT_ASSERT(formal->name() == USTR("this"));
+    actualExpr = tc_->codegenImplicitThis(rv_);
+  } else {
+    actualExpr = tc_->convertExpr(astActual, rv_, &actualType);
+  }
 
-    // Note: Assumes that an unknown formal indicates some kind of fabricated
-    // formal/actual map based on an untyped signature. This can happen when
-    // we create a _new wrapper (which doesn't exist in the frontend)
-    // and we want to insert actuals.
-    if (!fa.formalType().isUnknown() &&
-        fa.formalType().type() != fa.actualType().type()) {
-      auto got = canPassScalar(context, fa.actualType(), fa.formalType());
-      if (got.converts() &&
-          got.conversionKind() != CanPassResult::ConversionKind::TO_REFERENTIAL_TUPLE) {
-        bool isExternFn = parsing::idIsExtern(context, tfs_->untyped()->id());
-        if (isExternFn &&
-            fa.formalType().type()->isCStringType() &&
-            astActual->isStringLiteral()) {
-          // When passing a string literal to an extern 'c' function expecting
-          // a c_string, just create a c_string directly instead of allocating
-          // a class.
-          auto sym = new_CStringSymbol(
-              astActual->toStringLiteral()->value().c_str());
-          temp = new SymExpr(sym);
-        } else {
-          auto type = tc_->convertType(fa.formalType().type());
-          temp = tc_->storeInTempIfNeeded(new CallExpr(PRIM_CAST, type->symbol, temp), fa.formalType());
-        }
-      }
-    } else if (SymExpr* se = toSymExpr(temp)) {
-      // Insert dereference temps as-needed based on the formal/actual types
-      if (auto re = rv_.byAstOrNull(astActual); re && re->hasAssociatedActions()) {
-        INT_ASSERT(re->associatedActions().size() == 1);
-        auto action = re->associatedActions()[0].action();
-        if (action == AssociatedAction::ASSIGN ||
-            action == AssociatedAction::MOVE_INIT) {
-          if (se->isRef()) {
-            types::QualifiedType type = { types::QualifiedType::VAR,
-                                          re->type().type() };
-            temp = tc_->insertDerefTemp(se, type);
-          }
-        } else {
-          TC_UNIMPL("unhandled associated action on an actual");
-        }
+  Expr* temp = nullptr;
+  if (CallExpr* call = toCallExpr(actualExpr);
+      call && call->isPrimitive(PRIM_TUPLE_EXPAND)) {
+    // expanded later
+    temp = actualExpr;
+  } else {
+    temp = tc_->storeInTempIfNeeded(actualExpr, actualType);
+  }
+
+  // Note: Assumes that an unknown formal indicates some kind of fabricated
+  // formal/actual map based on an untyped signature. This can happen when
+  // we create a _new wrapper (which doesn't exist in the frontend)
+  // and we want to insert actuals.
+  if (!fa.formalType().isUnknown() &&
+      fa.formalType().type() != fa.actualType().type()) {
+    auto got = canPassScalar(context, fa.actualType(), fa.formalType());
+    if (got.converts() &&
+        got.conversionKind() != CanPassResult::ConversionKind::TO_REFERENTIAL_TUPLE) {
+      bool isExternFn = parsing::idIsExtern(context, tfs_->untyped()->id());
+      if (isExternFn &&
+          fa.formalType().type()->isCStringType() &&
+          astActual->isStringLiteral()) {
+        // When passing a string literal to an extern 'c' function expecting
+        // a c_string, just create a c_string directly instead of allocating
+        // a class.
+        auto sym = new_CStringSymbol(
+            astActual->toStringLiteral()->value().c_str());
+        temp = new SymExpr(sym);
       } else {
-        if (fa.actualType().isRef() &&
-            se->isRef() &&
-            !fa.formalType().isUnknownKindOrType() &&
-            !fa.formalType().isRef()) {
+        auto type = tc_->convertType(fa.formalType().type());
+        temp = tc_->storeInTempIfNeeded(new CallExpr(PRIM_CAST, type->symbol, temp), fa.formalType());
+      }
+    }
+  } else if (SymExpr* se = toSymExpr(temp)) {
+    // Insert dereference temps as-needed based on the formal/actual types
+    if (auto re = rv_.byAstOrNull(astActual); re && re->hasAssociatedActions()) {
+      INT_ASSERT(re->associatedActions().size() == 1);
+      auto action = re->associatedActions()[0].action();
+      if (action == AssociatedAction::ASSIGN ||
+          action == AssociatedAction::MOVE_INIT) {
+        if (se->isRef()) {
           types::QualifiedType type = { types::QualifiedType::VAR,
-                                        fa.formalType().type() };
+                                        re->type().type() };
           temp = tc_->insertDerefTemp(se, type);
         }
+      } else {
+        TC_UNIMPL("unhandled associated action on an actual");
+      }
+    } else {
+      if (fa.actualType().isRef() &&
+          se->isRef() &&
+          !fa.formalType().isUnknownKindOrType() &&
+          !fa.formalType().isRef()) {
+        types::QualifiedType type = { types::QualifiedType::VAR,
+                                      fa.formalType().type() };
+        temp = tc_->insertDerefTemp(se, type);
       }
     }
-
-    return temp;
   }
+
+  return temp;
+}
+
+Expr* TConverter::ActualConverter::convertActualUsingDefault(const FormalActual& fa) {
+  Context* context = tc_->context;
+
+  // One or the other must hold in order to compute the slot index.
+  INT_ASSERT(fa.hasDefault());
 
   // Note: 'calledFnState_' is only populated if there are default args
   // Otherwise we need a default argument. Get the formal's init expression.
