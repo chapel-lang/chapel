@@ -831,7 +831,7 @@ struct TConverter final : UastConverter,
   // Try to convert a primitive call.
   Expr* convertPrimCallOrNull(const Call* node, RV& rv);
   // Try to convert a primitive that changes class nilability or management
-  Expr* classCastHelper(const PrimCall* node, RV& rv);
+  CallExpr* classCastHelper(const PrimCall* node, RV& rv);
   SymExpr* insertClassConversion(types::QualifiedType to,
                               types::QualifiedType from,
                               const AstNode* astForErr,
@@ -3897,6 +3897,8 @@ Expr* TConverter::convertNewCallOrNull(const Call* node, RV& rv) {
 
     convertAndInsertActuals(toCallExpr(ret), node, actualAsts, init, fam, rv);
 
+    // If this a managed class, use the result of _new to initialize the
+    // manager record.
     auto ct = re->type().type()->toClassType();
     if (auto mt = ct ? ct->managerRecordType(context) : nullptr) {
       types::QualifiedType recvQt = { re->type().kind(), mt };
@@ -3905,6 +3907,7 @@ Expr* TConverter::convertNewCallOrNull(const Call* node, RV& rv) {
       dec = dec.copyNilabilityFrom(ct->decorator());
       auto ut = ct->withDecorator(context, dec);
       types::QualifiedType uqt = { re->type().kind(), ut };
+
       std::vector<CallInfoActual> mtActuals;
       mtActuals.push_back(CallInfoActual(uqt));
 
@@ -3915,9 +3918,10 @@ Expr* TConverter::convertNewCallOrNull(const Call* node, RV& rv) {
       const ResolvedFunction* rf = nullptr;
       auto fn = convertFunctionForGeneratedCall(ci2, node, &rf);
 
-      VarSymbol* initTemp = newTemp("initTemp", convertType(recvQt.type()));
+      VarSymbol* initTemp = newTemp("_new_mngd_tmp", convertType(recvQt.type()));
       insertStmt(new DefExpr(initTemp));
 
+      // 'init' on managed types expects an unmanaged class
       auto newResult = storeInTempIfNeeded(ret, init->formalType(0));
       Expr* unm = new CallExpr(PRIM_CAST, convertType(ut)->symbol, newResult);
       unm = storeInTempIfNeeded(unm, uqt);
@@ -3976,7 +3980,7 @@ void TConverter::convertAndInsertPrimCallActuals(CallExpr* call,
   exitCallActuals();
 }
 
-Expr* TConverter::classCastHelper(const PrimCall* primCall, RV& rv) {
+CallExpr* TConverter::classCastHelper(const PrimCall* primCall, RV& rv) {
   auto makeCast = [&](const types::Type* t) -> CallExpr* {
     auto sym = convertType(t)->symbol;
     auto arg = convertExpr(primCall->actual(0), rv);
@@ -4000,14 +4004,20 @@ Expr* TConverter::classCastHelper(const PrimCall* primCall, RV& rv) {
     }
   };
 
-  if (primCall->prim() == chpl::uast::primtags::PRIM_TO_BORROWED_CLASS) {
-    return makeCast(computeType(Decorator::BORROWED));
-  } else if (primCall->prim() == chpl::uast::primtags::PRIM_TO_UNMANAGED_CLASS) {
-    return makeCast(computeType(Decorator::UNMANAGED));
-  } else if (primCall->prim() == chpl::uast::primtags::PRIM_TO_NILABLE_CLASS) {
-    return makeCast(computeType(Decorator::GENERIC_NILABLE));
-  } else if (primCall->prim() == chpl::uast::primtags::PRIM_TO_NON_NILABLE_CLASS) {
-    return makeCast(computeType(Decorator::GENERIC_NONNIL));
+  using namespace chpl::uast::primtags;
+
+  // TODO: checked primitives
+  switch (primCall->prim()) {
+    case PRIM_TO_UNMANAGED_CLASS:
+      return makeCast(computeType(Decorator::UNMANAGED));
+    case PRIM_TO_BORROWED_CLASS:
+      return makeCast(computeType(Decorator::BORROWED));
+    case PRIM_TO_NILABLE_CLASS:
+      return makeCast(computeType(Decorator::GENERIC_NILABLE));
+    case PRIM_TO_NON_NILABLE_CLASS:
+      return makeCast(computeType(Decorator::GENERIC_NONNIL));
+    default:
+      break;
   }
 
   return nullptr;
@@ -4036,7 +4046,7 @@ Expr* TConverter::convertPrimCallOrNull(const Call* node, RV& rv) {
   if (primCall->prim() == chpl::uast::primtags::PRIM_RT_ERROR) {
     ret = new CallExpr(primCall->prim(), new_CStringSymbol("<cannot handle PRIM_RT_ERROR without strings>"));
   } else if (auto expr = classCastHelper(primCall, rv)) {
-    ret = toCallExpr(expr);
+    ret = expr;
   } else {
     ret = new CallExpr(primCall->prim());
 
@@ -4864,24 +4874,27 @@ Expr* TConverter::ActualConverter::convertActual(const FormalActual& fa) {
         }
       }
     } else if (SymExpr* se = toSymExpr(temp)) {
+      // Insert dereference temps as-needed based on the formal/actual types
       if (auto re = rv_.byAstOrNull(astActual); re && re->hasAssociatedActions()) {
         INT_ASSERT(re->associatedActions().size() == 1);
         auto action = re->associatedActions()[0].action();
         if (action == AssociatedAction::ASSIGN ||
             action == AssociatedAction::MOVE_INIT) {
           if (se->isRef()) {
-            types::QualifiedType type = { types::QualifiedType::VAR, re->type().type() };
+            types::QualifiedType type = { types::QualifiedType::VAR,
+                                          re->type().type() };
             temp = tc_->insertDerefTemp(se, type);
           }
         } else {
-          TC_UNIMPL("associated action on an actual");
+          TC_UNIMPL("unhandled associated action on an actual");
         }
       } else {
         if (fa.actualType().isRef() &&
             se->isRef() &&
             !fa.formalType().isUnknownKindOrType() &&
             !fa.formalType().isRef()) {
-          types::QualifiedType type = { types::QualifiedType::VAR, fa.formalType().type() };
+          types::QualifiedType type = { types::QualifiedType::VAR,
+                                        fa.formalType().type() };
           temp = tc_->insertDerefTemp(se, type);
         }
       }
@@ -5632,12 +5645,15 @@ Expr* TConverter::convertFieldAccessOrNull(const AstNode* node, RV& rv) {
   types::QualifiedType qtRecv;
   Expr* recv = recvAst ? convertExpr(recvAst, rv, &qtRecv) : nullptr;
 
-  if (recvAst && qtRecv.type()->isClassType() &&
-      qtRecv.type()->toClassType()->manager()) {
-    // temporarily simulate forwarding for owned/shared records
-    qtRecv = types::QualifiedType(qtRecv.kind(),
-               qtRecv.type()->toClassType()->managerRecordType(context));
-    auto fwd = codegenGetFieldImpl(this, PRIM_UNKNOWN, recv, qtRecv,
+  // Handle 'chpl_p' field access for owned/shared classes, and also simulate
+  // forwarding of class fields on owned/shared classes.
+  if (auto ct = recvAst ? qtRecv.type()->toClassType() : nullptr;
+      ct && ct->manager()) {
+    auto mrt = types::QualifiedType(qtRecv.kind(),
+                                    ct->managerRecordType(context));
+    // Can always generate an access for 'chpl_p', since we're either accessing
+    // that field directly, or forwarding to it.
+    auto fwd = codegenGetFieldImpl(this, PRIM_UNKNOWN, recv, mrt,
                                    "chpl_p",
                                    -1,
                                    rv, &qtField);
