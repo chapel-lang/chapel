@@ -839,6 +839,9 @@ struct TConverter final : UastConverter,
                               Expr* fromExpr,
                               RV& rv);
 
+  // Convert move-init expressions
+  Expr* convertMoveInitAssignOrNull(const Call* node, RV& rv);
+
   // Try to convert a 'new' expression (which is considered a special
   // form of call) into a call to a middle-end only '_new' wrapper.
   Expr* convertNewCallOrNull(const Call* node, RV& rv);
@@ -913,6 +916,13 @@ struct TConverter final : UastConverter,
 
   // Support '...' tuple expansion
   Expr* convertTupleExpand(const Call* node,
+                           const ResolvedExpression* re,
+                           const std::vector<const AstNode*>& actualAsts,
+                           const resolution::CallInfo& ci,
+                           RV& rv);
+
+  // Support for e.g., ``(a, b) = fn()``
+  Expr* convertMultiAssign(const Call* node,
                            const ResolvedExpression* re,
                            const std::vector<const AstNode*>& actualAsts,
                            const resolution::CallInfo& ci,
@@ -3773,6 +3783,32 @@ Expr* TConverter::paramElideCallOrNull(const TypedFnSignature* sig,
   return ret;
 }
 
+Expr* TConverter::convertMoveInitAssignOrNull(const Call* node, RV& rv) {
+  auto op = node->toOpCall();
+  if (!op || op->op() != USTR("=")) return nullptr;
+
+  auto re = rv.byAstOrNull(node);
+  auto& candidate = re->mostSpecific().only();
+  auto sig = candidate.fn();
+  bool noCandidateForCall = !candidate || !sig;
+  if (!noCandidateForCall) return nullptr;
+  if (!re->hasAssociatedActions()) return nullptr;
+  auto& actions = re->associatedActions();
+  INT_ASSERT(actions.size() == 1);
+  if (actions[0].action() != AssociatedAction::MOVE_INIT) {
+    return nullptr;
+  }
+
+  types::QualifiedType lhsQt, rhsQt;
+  auto lhs = convertExpr(op->actual(0), rv, &lhsQt);
+  auto rhs = convertExpr(op->actual(1), rv, &rhsQt);
+
+  lhs = storeInTempIfNeeded(lhs, lhsQt);
+  rhs = storeInTempIfNeeded(rhs, rhsQt);
+
+  return new CallExpr(PRIM_MOVE, lhs, rhs);
+}
+
 Expr* TConverter::convertNewCallOrNull(const Call* node, RV& rv) {
   if (!node->calledExpression() ||
       !node->calledExpression()->isNew()) {
@@ -5836,6 +5872,8 @@ bool TConverter::enter(const Call* node, RV& rv) {
   // Branch to handle the different 'call-like' constructs.
   Expr* expr = nullptr;
   if (auto x = convertPrimCallOrNull(node, rv)) {
+    expr = x;
+  } else if (auto x = convertMoveInitAssignOrNull(node, rv)) {
     expr = x;
   } else if (auto x = convertNewCallOrNull(node, rv)) {
     expr = x;
