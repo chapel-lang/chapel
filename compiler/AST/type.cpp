@@ -1105,16 +1105,20 @@ functionTypeStreamlineFormalQualifier(const FunctionType::Formal& f) {
     qualForIntent = QUAL_UNKNOWN;
   }
 
-  if (qualForIntent != QUAL_UNKNOWN) {
-    ret = qualForIntent;
-
-  } else if (qt.isWideRefType()) {
+  if (qt.isWideRef()) {
+    // If 'wide ref' is specified in any fashion, it should be preserved.
     ret = QUAL_WIDE_REF;
 
-  } else if (qt.isRefType()) {
+  } else if (qt.isRef()) {
+    // If 'ref' is specified in any fashion, preserve it...
     ret = QUAL_REF;
 
+  } else if (qualForIntent != QUAL_UNKNOWN) {
+    // Otherwise, defer to the intent.
+    ret = qualForIntent;
+
   } else {
+    // If nothing else, assume a value type.
     ret = QUAL_VAL;
   }
 
@@ -1152,16 +1156,31 @@ static Type* functionTypeStreamlineType(Qualifier qual, Type* t) {
     qt = { qt.getQual(), ret };
   }
 
-  if (qt.isWideRef() && !qt.isWideRefType()) {
-    ret = ret->getWideRefType();
-    INT_ASSERT(ret);
+  auto q = qt.getQual();
+  switch (q) {
+    case QUAL_REF:
+    case QUAL_CONST_REF: {
+      // A combo of e.g., 'QUAL_CONST_REF' and 'wide(ref)' type can happen
+      // for return intents, so just let the wide-ref type persist.
+      if (!qt.isWideRefType() && !qt.isRefType()) {
+        ret = ret->refType;
+        INT_ASSERT(ret);
+      }
+    } break;
 
-  } else if (qt.isRef() && !qt.isRefType()) {
-    ret = ret->refType;
-    INT_ASSERT(ret);
+    case QUAL_WIDE_REF:
+    case QUAL_CONST_WIDE_REF: {
+      // The qualifier was specified as wide-ref, so it must be a wide type.
+      if (!qt.isWideRefType()) {
+        ret = ret->getWideRefType();
+        INT_ASSERT(ret);
+      }
+    } break;
 
-  } else if (!qt.isRefOrWideRef()) {
-    ret = ret->getValType();
+    default: {
+      // Otherwise, assume it must be a value type.
+      ret = ret->getValType();
+    } break;
   }
 
   return ret;
@@ -1178,8 +1197,10 @@ functionTypeStreamlineFormal(const FunctionType::Formal& f) {
 }
 
 static void
-functionTypeValidateReturnIntent(RetTag returnIntent, Type* returnType) {
-  if (returnType->isRef()) {
+functionTypeVerifyReturnIntent(RetTag returnIntent, Type* returnType) {
+  if (!fVerify) return;
+
+  if (returnType->isRefOrWideRef()) {
     INT_ASSERT(returnIntent == RET_REF || returnIntent == RET_CONST_REF);
   } else {
     INT_ASSERT(returnIntent == RET_VALUE);
@@ -1208,7 +1229,7 @@ FunctionType* FunctionType::getWithStreamlinedComponents() const {
   auto returnQual = QualifiedType::qualifierForRetTag(returnIntent_);
   auto newReturnType = functionTypeStreamlineType(returnQual, returnType_);
 
-  functionTypeValidateReturnIntent(returnIntent_, newReturnType);
+  functionTypeVerifyReturnIntent(returnIntent_, newReturnType);
 
   auto ret = get(kind_, width_, linkage_, std::move(newFormals),
                  returnIntent_,
@@ -1551,7 +1572,7 @@ size_t FunctionType::hash() const {
 FunctionType::Formal::Formal(Qualifier qual, Type* type, IntentTag intent,
                              const char* name)
     : qual_(qual), type_(type), intent_(intent) {
-  name_ = name ? astr(name) : astr("_");
+  name_ = (name && 0 != strcmp(name, "")) ? astr(name) : astr("_");
 }
 
 bool

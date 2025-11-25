@@ -950,7 +950,7 @@ static void addKnownWides() {
         }
       }
 
-    } else if (fn->isUsedAsValue()) {
+    } else if (fn->isUsedAsValue() && !fn->hasForeignLinkage()) {
       DEBUG_PRINTF("Function %s (%d) is used as value, must be wide\n",
                    fn->cname, fi->id);
 
