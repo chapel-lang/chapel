@@ -470,8 +470,8 @@ QualifiedType computeWidenedType(Symbol* sym, bool mustBeWide, bool wideVal) {
   if (isFullyWide(sym) || !typeCanBeWide(sym)) return ret;
 
   if (isObj(sym) && mustBeWide) {
-    if (TypeSymbol* ts = toTypeSymbol(sym->defPoint->parentSymbol)) {
-      if (isFullyWide(ts)) return ret;
+    if (sym->inTree()) {
+      if (isFullyWide(sym->defPoint->parentSymbol)) return ret;
     }
 
     if (Type* wide = wideClassMap.get(sym->type)) {

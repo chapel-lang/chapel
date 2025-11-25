@@ -35,6 +35,8 @@ namespace {
 }
 
 bool Pass::shouldProcessDefault(Symbol* sym) {
+  if (!sym || !sym->inTree()) return false;
+
   if (auto fn = toFnSymbol(sym)) {
     // Process because the functions's type has semantic importance.
     if (fn->isUsedAsValue()) return true;
@@ -48,6 +50,8 @@ bool Pass::shouldProcessDefault(Symbol* sym) {
 }
 
 bool Pass::shouldProcessIfNonForeignLinkage(Symbol* sym) {
+  if (!sym || !sym->inTree()) return false;
+
   if (auto fn = toFnSymbol(sym)) {
     if (fn->isUsedAsValue() && !fn->hasForeignLinkage()) return true;
 
