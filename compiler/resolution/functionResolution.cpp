@@ -7011,6 +7011,14 @@ static int compareSpecificity(ResolutionCandidate*         candidate1,
     return 2;
 
   } else {
+
+    if (nArgsIncomparable > 0 ||
+        (DS.fn1NonParamArgsPreferred && DS.fn2NonParamArgsPreferred) ||
+        (DS.fn1ParamArgsPreferred && DS.fn2ParamArgsPreferred)) {
+      EXPLAIN("\nW: Fn %d and Fn %d are incomparable\n", i, j);
+      return -1;
+    }
+
     // Note: exists to support the typed converter. We don't want to resolve to
     // the early-resolved function if the other candidate is not early-resolved.
     bool early1 = candidate1->fn->hasFlag(FLAG_RESOLVED_EARLY);
@@ -7022,13 +7030,6 @@ static int compareSpecificity(ResolutionCandidate*         candidate1,
     } else if (!early1 && early2) {
       EXPLAIN("\nFn %d is not resolved early, Fn %d is\n", i, j);
       return 1;
-    }
-
-    if (nArgsIncomparable > 0 ||
-        (DS.fn1NonParamArgsPreferred && DS.fn2NonParamArgsPreferred) ||
-        (DS.fn1ParamArgsPreferred && DS.fn2ParamArgsPreferred)) {
-      EXPLAIN("\nW: Fn %d and Fn %d are incomparable\n", i, j);
-      return -1;
     }
 
     EXPLAIN("\nW: Fn %d and Fn %d are equally specific\n", i, j);
