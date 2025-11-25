@@ -1,10 +1,10 @@
 one of myC or myOtherC is non-nil
 one of myC or myNil is non-nil
 both myNil and myNil are nil
-examining nil
-examining 0x10031f3d8
+examining nil pointer
+examining non-nil pointer
 one of myNilPtr or myRPtr is non-nil
-examining 0x10031f3d8
+examining non-nil pointer
 one of myRPtr or myRPtr is non-nil
 examining 0
 examining 2

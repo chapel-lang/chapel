@@ -38,6 +38,11 @@ proc produce(x) do {
   return x;
 }
 
+proc produce(x: c_ptr(?)) {
+  writeln("examining ", if x then "non-nil pointer" else "nil pointer");
+  return x;
+}
+
 if produce(1) && produce(2) {
   writeln("1 && 2 is true");
 } else {
