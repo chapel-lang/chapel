@@ -326,7 +326,7 @@ class StreamlineProcPtrTypesForCodegen : public AdjustSymbolTypes {
   A widenable component is e.g., a 'ref' formal or a 'class' formal.
 
   After this pass the AST will be in an inconsistent state, and the pass
-  'InsertWideReferences' pass must be run in order to fix it up.
+  'InsertWideReferences' must be run in order to fix it up.
 */
 class WidenComponentsOfProcPtrTypes : public AdjustSymbolTypes {
  public:
