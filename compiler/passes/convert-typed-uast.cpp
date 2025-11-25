@@ -922,11 +922,11 @@ struct TConverter final : UastConverter,
                            RV& rv);
 
   // Support for e.g., ``(a, b) = fn()``
-  Expr* convertMultiAssign(const Call* node,
-                           const ResolvedExpression* re,
-                           const std::vector<const AstNode*>& actualAsts,
-                           const resolution::CallInfo& ci,
-                           RV& rv);
+  Expr* convertGroupedAssign(const Call* node,
+                             const ResolvedExpression* re,
+                             const std::vector<const AstNode*>& actualAsts,
+                             const resolution::CallInfo& ci,
+                             RV& rv);
 
   // Try to elide a call to a specific signature at compile-time. If so,
   // generate and return a NOOP. Sets 'outRf' to the results of the
@@ -3609,9 +3609,10 @@ Symbol* TConverter::convertVariable(const uast::Variable* node,
                                        new CallExpr(PRIM_ADDR_OF, expr));
       }
     } else {
+      const resolution::ResolvedExpression* re = rv.byAstOrNull(node);
       if (initExpr == nullptr) {
         // compute the default value for this type
-        if (const resolution::ResolvedExpression* re = rv.byAstOrNull(node)) {
+        if (re) {
           types::QualifiedType qt = re->type();
           if (!qt.isUnknownOrErroneous()) {
             if (!node->hasPragma(context, uast::PRAGMA_NO_INIT)) {
@@ -3622,7 +3623,31 @@ Symbol* TConverter::convertVariable(const uast::Variable* node,
         INT_ASSERT(initExpr);
       }
 
-      move = new CallExpr(PRIM_MOVE, varSym, initExpr);
+      // TODO: All variable initializations should have some kind of associated
+      // action indicating the intended behavior.
+      if (re->hasAssociatedActions()) {
+        auto& actions = re->associatedActions();
+        INT_ASSERT(actions.size() == 1);
+        auto action = actions[0];
+        if (action.action() == resolution::AssociatedAction::ASSIGN) {
+          const ResolvedFunction *rf;
+          auto _elide = paramElideCallOrNull(actions[0].fn(), re->poiScope(), &rf);
+          INT_ASSERT(!_elide);
+          auto calledFn = findOrConvertFunction(rf);
+          // Use temp to avoid constness errors later in compiler
+          VarSymbol* initTemp = newTemp("initTemp", convertType(re->type().type()));
+          insertStmt(new DefExpr(initTemp));
+          insertStmt(new CallExpr(calledFn, initTemp, initExpr));
+          move = new CallExpr(PRIM_MOVE, varSym, initTemp);
+        } else if (action.action() == resolution::AssociatedAction::MOVE_INIT ||
+                   action.action() == resolution::AssociatedAction::DEFAULT_INIT) {
+          move = new CallExpr(PRIM_MOVE, varSym, initExpr);
+        } else {
+          TC_UNIMPL("unknown associated action for variable initialization");
+        }
+      } else {
+        move = new CallExpr(PRIM_MOVE, varSym, initExpr);
+      }
     }
     insertStmt(move);
   }
@@ -4647,6 +4672,61 @@ Expr* TConverter::convertTupleExpand(
   return new CallExpr(PRIM_TUPLE_EXPAND, tup);
 }
 
+Expr* TConverter::convertGroupedAssign(
+                                const Call* node,
+                                const ResolvedExpression* re,
+                                const std::vector<const AstNode*>& actualAsts,
+                                const resolution::CallInfo& ci,
+                                RV& rv) {
+  // In practice, we have something like:
+  //
+  // (OpCall =
+  //   (Tuple a, b)
+  //   (FnCall helper)
+  //
+  // and there are associated 'ASSIGN' actions on 'a' and 'b'
+  auto op = node->toOpCall();
+  if (!op || op->op() != USTR("=")) return nullptr;
+
+  auto lhs = op->actual(0)->toTuple();
+  if (!lhs) return nullptr;
+
+  auto rhs = op->actual(1);
+  INT_ASSERT(rhs->isFnCall());
+
+  types::QualifiedType rhsQt;
+  auto rhsExpr = convertExpr(rhs, rv, &rhsQt);
+  INT_ASSERT(rhsQt.type()->isTupleType());
+  auto rhsSym = storeInTempIfNeeded(rhsExpr, rhsQt);
+
+  for (int i = 0; i < lhs->numActuals(); i++) {
+    auto lhsAst = lhs->actual(i);
+    types::QualifiedType lhsQt;
+    auto lhsExpr = convertExpr(lhsAst, rv, &lhsQt);
+    lhsExpr = storeInTempIfNeeded(lhsExpr, lhsQt);
+
+    // Extract the i'th element from the RHS tuple.
+    Expr* getElem = new CallExpr(PRIM_GET_MEMBER, rhsSym->copy(),
+                                new_CStringSymbol(astr("x", istr(i))));
+    getElem = storeInTempIfNeeded(getElem, rhsQt.type()->toTupleType()->elementType(i));
+
+    auto re = rv.byAst(lhsAst);
+    INT_ASSERT(re.hasAssociatedActions());
+    INT_ASSERT(re.associatedActions().size() == 1);
+    auto action = re.associatedActions()[0];
+    INT_ASSERT(action.action() == AssociatedAction::ASSIGN);
+
+    // Assign it to the LHS element.
+    const ResolvedFunction* rf;
+    auto _elide = paramElideCallOrNull(action.fn(), re.poiScope(), &rf);
+    INT_ASSERT(!_elide);
+    auto calledFn = findOrConvertFunction(rf);
+    CallExpr* ret = new CallExpr(calledFn, lhsExpr, getElem);
+    insertStmt(ret);
+  }
+  return new CallExpr(PRIM_NOOP);;
+}
+
 Expr* TConverter::convertNamedCallOrNull(const Call* node, RV& rv) {
   auto re = rv.byAstOrNull(node);
 
@@ -4717,6 +4797,9 @@ Expr* TConverter::convertNamedCallOrNull(const Call* node, RV& rv) {
     if (ret) return ret;
 
     ret = convertTupleExpand(node, re, actualAsts, ci, rv);
+    if (ret) return ret;
+
+    ret = convertGroupedAssign(node, re, actualAsts, ci, rv);
     if (ret) return ret;
 
     TC_UNIMPL("Unhandled named call with no candidate!");
