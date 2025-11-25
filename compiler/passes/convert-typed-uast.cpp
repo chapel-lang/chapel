@@ -833,8 +833,6 @@ struct TConverter final : UastConverter,
 
   // Try to convert a primitive call.
   Expr* convertPrimCallOrNull(const Call* node, RV& rv);
-  // Try to convert a primitive that changes class nilability or management
-  CallExpr* classCastHelper(const PrimCall* node, RV& rv);
   SymExpr* insertClassConversion(types::QualifiedType to,
                               types::QualifiedType from,
                               const AstNode* astForErr,
@@ -3851,9 +3849,6 @@ Expr* TConverter::convertNewCallOrNull(const Call* node, RV& rv) {
   } else {
     // For 'new unmanaged C(...)' it should generate a call to a '_new'
     // function. The actuals are passed along to it down below.
-    //
-    // TODO: Handle management appropriately here (e.g., 'owned').
-    //
     FnSymbol* calledFn = findOrConvertNewWrapper(rf);
     ret = new CallExpr(calledFn);
 
@@ -3983,49 +3978,6 @@ void TConverter::convertAndInsertPrimCallActuals(CallExpr* call,
   exitCallActuals();
 }
 
-CallExpr* TConverter::classCastHelper(const PrimCall* primCall, RV& rv) {
-  auto makeCast = [&](const types::Type* t) -> CallExpr* {
-    auto sym = convertType(t)->symbol;
-    auto arg = convertExpr(primCall->actual(0), rv);
-    arg = storeInTempIfNeeded(arg, rv.byAst(primCall->actual(0)).type());
-    return new CallExpr(PRIM_CAST, sym, arg);
-  };
-
-  using Decorator = types::ClassTypeDecorator;
-  auto computeType = [&](Decorator::ClassTypeDecoratorEnum kind) {
-    auto ct = rv.byAst(primCall->actual(0)).type().type()->toClassType();
-    if (Decorator::isDecoratorUnknownManagement(kind)) {
-      // Passed in e.g. GENERIC_NONNIL
-      auto dec = Decorator(kind);
-      dec = ct->decorator().copyNilabilityFrom(dec);
-      return ct->withDecorator(context, dec);
-    } else {
-      // Passed in 'borrowed' or 'unmanaged'
-      auto dec = Decorator(kind);
-      dec = dec.copyNilabilityFrom(ct->decorator());
-      return ct->withDecorator(context, dec);
-    }
-  };
-
-  using namespace chpl::uast::primtags;
-
-  // TODO: checked primitives
-  switch (primCall->prim()) {
-    case PRIM_TO_UNMANAGED_CLASS:
-      return makeCast(computeType(Decorator::UNMANAGED));
-    case PRIM_TO_BORROWED_CLASS:
-      return makeCast(computeType(Decorator::BORROWED));
-    case PRIM_TO_NILABLE_CLASS:
-      return makeCast(computeType(Decorator::GENERIC_NILABLE));
-    case PRIM_TO_NON_NILABLE_CLASS:
-      return makeCast(computeType(Decorator::GENERIC_NONNIL));
-    default:
-      break;
-  }
-
-  return nullptr;
-}
-
 Expr* TConverter::convertPrimCallOrNull(const Call* node, RV& rv) {
   auto primCall = node->toPrimCall();
   if (!primCall) return nullptr;
@@ -4045,11 +3997,19 @@ Expr* TConverter::convertPrimCallOrNull(const Call* node, RV& rv) {
     }
   }
 
+  using namespace chpl::uast::primtags;
   CallExpr* ret = nullptr;
-  if (primCall->prim() == chpl::uast::primtags::PRIM_RT_ERROR) {
+  if (primCall->prim() == PRIM_RT_ERROR) {
     ret = new CallExpr(primCall->prim(), new_CStringSymbol("<cannot handle PRIM_RT_ERROR without strings>"));
-  } else if (auto expr = classCastHelper(primCall, rv)) {
-    ret = expr;
+  } else if (primCall->prim() == PRIM_TO_UNMANAGED_CLASS ||
+             primCall->prim() == PRIM_TO_BORROWED_CLASS ||
+             primCall->prim() == PRIM_TO_NILABLE_CLASS ||
+             primCall->prim() == PRIM_TO_NON_NILABLE_CLASS) {
+    auto qt = rv.byAst(primCall).type();
+    auto sym = convertType(qt.type())->symbol;
+    auto arg = convertExpr(primCall->actual(0), rv);
+    arg = storeInTempIfNeeded(arg, rv.byAst(primCall->actual(0)).type());
+    ret = new CallExpr(PRIM_CAST, sym, arg);
   } else {
     ret = new CallExpr(primCall->prim());
 
@@ -4884,6 +4844,10 @@ Expr* TConverter::ActualConverter::convertActualWithArg(const FormalActual& fa) 
     }
   } else if (SymExpr* se = toSymExpr(temp)) {
     // Insert dereference temps as-needed based on the formal/actual types
+    //
+    // TODO: Can we better represent this in the frontend to save on these
+    // kinds of heuristics here? Perhaps by re-using the 'access' information
+    // from 'maybe-const'?
     if (auto re = rv_.byAstOrNull(astActual); re && re->hasAssociatedActions()) {
       INT_ASSERT(re->associatedActions().size() == 1);
       auto action = re->associatedActions()[0].action();
@@ -5662,6 +5626,8 @@ Expr* TConverter::convertFieldAccessOrNull(const AstNode* node, RV& rv) {
 
   // Handle 'chpl_p' field access for owned/shared classes, and also simulate
   // forwarding of class fields on owned/shared classes.
+  //
+  // TODO: May need to handle actual _owned records as well
   if (auto ct = recvAst ? qtRecv.type()->toClassType() : nullptr;
       ct && ct->manager()) {
     auto mrt = types::QualifiedType(qtRecv.kind(),
@@ -5800,10 +5766,11 @@ bool TConverter::enter(const Return* node, RV& rv) {
 }
 
 SymExpr* TConverter::insertClassConversion(types::QualifiedType to,
-                                        types::QualifiedType from,
-                                        const AstNode* astForErr,
-                                        Expr* fromExpr,
-                                        RV& rv) {
+                                           types::QualifiedType from,
+                                           const AstNode* astForErr,
+                                           Expr* fromExpr,
+                                           RV& rv) {
+  // TODO: This would be better served via associated actions.
   auto ct = to.type()->toClassType();
   if (auto mt = ct->managerRecordType(context)) {
     types::QualifiedType recvQt = { to.kind(), mt };
