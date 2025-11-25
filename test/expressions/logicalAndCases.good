@@ -1,0 +1,13 @@
+myC is non-nil and foo() returned true
+myNil is nil or foo() returned false
+myRPtr is non-nil and foo() returned true
+myNilPtr is nil or foo() returned false
+examining 1
+examining 2
+1 && 2 is true
+examining 1
+examining 0
+1 && 0 is false
+examining 0
+0 && 2 is false
+found a match and numBytes is 4

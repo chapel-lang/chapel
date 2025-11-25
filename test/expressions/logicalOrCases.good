@@ -1,0 +1,13 @@
+one of myC or myOtherC is non-nil
+one of myC or myNil is non-nil
+both myNil and myNil are nil
+examining nil
+examining 0x10031f3d8
+one of myNilPtr or myRPtr is non-nil
+examining 0x10031f3d8
+one of myRPtr or myRPtr is non-nil
+examining 0
+examining 2
+0 || 2 is true
+examining 1
+1 || 0 is true
