@@ -196,22 +196,43 @@ static bool needsKilling(SymExpr* se, std::set<Symbol*>& liveRefs)
   // Skip the "base" symbol.
   if (call && se == call->baseExpr) return false;
 
-  if (FnSymbol* fn = call->resolvedFunction())
-  {
-    INT_ASSERT(se->symbol() != fn);
+  if (call->resolvedFunction() || call->isIndirectCall()) {
+    auto fn = call->resolvedFunction();
 
-    ArgSymbol* arg = actual_to_formal(se);
+    // TODO: Isn't this assert redundant with the above?
+    INT_ASSERT(!fn || se->symbol() != fn);
 
-    if (arg->intent == INTENT_OUT   ||
-        arg->intent == INTENT_INOUT ||
-        arg->intent == INTENT_REF   ||
-        arg->hasFlag(FLAG_ARG_THIS)) // Todo: replace with arg intent check?
-    {
+    bool isArgReceiver = false;
+    IntentTag argIntent = INTENT_BLANK;
+    Type* argType = nullptr;
+
+    if (fn) {
+      // TODO: I avoid computing fresh function types here. If we stopped
+      //       caring about that we could collapse these two branches.
+      ArgSymbol* arg = actual_to_formal(se);
+
+      argType = arg->type;
+      argIntent = arg->intent;
+      isArgReceiver = arg->hasFlag(FLAG_ARG_THIS);
+
+    } else if (auto ft = call->functionType()) {
+      if (auto formal = ft->formalByOrdinal(se)) {
+        argType = formal->type();
+        argIntent = formal->intent();
+        // TODO: Can this change?
+        isArgReceiver = false;
+      }
+    }
+
+    if (argIntent == INTENT_OUT   ||
+        argIntent == INTENT_INOUT ||
+        argIntent == INTENT_REF   ||
+        isArgReceiver) {
       liveRefs.insert(se->symbol());
       return true;
     }
 
-    if (isRecordWrappedType(arg->type))
+    if (isRecordWrappedType(argType))
     {
       return true;
     }
@@ -348,6 +369,19 @@ static bool isUse(SymExpr* se)
     if (arg->intent == INTENT_OUT ||
         (arg->intent & INTENT_FLAG_REF))
       return false;
+  }
+  else if (call->isIndirectCall()) {
+    auto ft = call->functionType();
+    INT_ASSERT(ft);
+
+    if (auto formal = ft->formalByOrdinal(se)) {
+      auto qt = formal->qualType();
+      if (qt.isRefOrWideRef()) return false;
+      if (formal->intent() == INTENT_OUT ||
+          formal->intent() & INTENT_FLAG_REF) {
+        return false;
+      }
+    }
   }
   else if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL))
   {

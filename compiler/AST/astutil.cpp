@@ -1539,28 +1539,102 @@ void collectUsedFnSymbols(BaseAST* ast, std::set<FnSymbol*>& fnSymbols) {
   }
 }
 
-static void setQualRef(Symbol* sym) {
-  if (sym->isRefOrWideRef() && sym->type->symbol->hasEitherFlag(FLAG_REF, FLAG_WIDE_REF)) {
-    Qualifier q = sym->qualType().getQual();
-    const bool isRef = q == QUAL_REF        || q == QUAL_CONST_REF        ||
-                       q == QUAL_NARROW_REF || q == QUAL_CONST_NARROW_REF ||
-                       q == QUAL_WIDE_REF   || q == QUAL_CONST_WIDE_REF;
-    if (isRef == false) {
-      if (sym->type->symbol->hasFlag(FLAG_WIDE_REF)) {
+static QualifiedType computeFlattenedRefType(QualifiedType qt) {
+  Qualifier retQual = qt.getQual();
+  Type* retType = qt.type();
+
+  bool isRefType = qt.type()->symbol->hasEitherFlag(FLAG_REF, FLAG_WIDE_REF);
+
+  if (qt.isRefOrWideRef() && isRefType) {
+    Qualifier q = qt.getQual();
+    const bool isRefQual = QualifiedType::qualifierIsRef(q);
+
+    if (!isRefQual) {
+      if (qt.isWideRefType()) {
         q = QUAL_WIDE_REF;
       } else {
         q = QUAL_REF;
       }
-      sym->qual = q;
+      retQual = q;
+    }
+
+    retType = retType->getValType();
+  }
+
+  QualifiedType ret = { retQual, retType };
+
+  return ret;
+}
+
+static void setQualRef(Symbol* sym) {
+  auto qt1 = sym->qualType();
+  auto qt2 = computeFlattenedRefType(qt1);
+
+  if (qt1 != qt2) {
+    // Only write on a change.
+    if (qt1.getQual() != qt2.getQual()) sym->qual = qt2.getQual();
+
+    // Only write on a change.
+    if (qt1.type() != qt2.type()) sym->type = qt2.type();
+
+    if (qt2.isRefOrWideRef()) {
       if (ArgSymbol* arg = toArgSymbol(sym)) {
-        if (arg->intent != INTENT_CONST_REF) {
-          arg->intent = INTENT_REF;
+        // Invariant should already be maintained, so just assert.
+        if (qt2.isConst()) {
+          INT_ASSERT(arg->intent == INTENT_CONST_REF);
+        } else {
+          // TODO: Tuple types are weird here...
+          INT_ASSERT(arg->intent == INTENT_REF_MAYBE_CONST ||
+                     arg->intent == INTENT_REF);
         }
       }
     }
-    sym->type = sym->getValType();
   }
 }
+
+// TODO: At this point I've written this pattern enough that we could use a
+//       more general purpose component-transformer sort of utility...
+static FunctionType* flattenRefsForFunctionTypes(FunctionType* ft) {
+  FunctionType* ret = ft;
+
+  std::vector<FunctionType::Formal> newFormals;
+  bool changed = false;
+
+  for (auto& formal : ft->formals()) {
+    auto qt1 = formal.qualType();
+    auto qt2 = computeFlattenedRefType(qt1);
+
+    newFormals.push_back({ qt2.getQual(), qt2.type(),
+                           formal.intent(),
+                           formal.name() });
+    changed = changed || qt1 != qt2;
+  }
+
+  if (changed) {
+    // If any formal type changed, then recompute the function type.
+    SET_LINENO(ft->symbol);
+    auto newFt = FunctionType::get(ft->kind(), ft->width(), ft->linkage(),
+                                   std::move(newFormals),
+                                   ft->returnIntent(),
+                                   ft->returnType(),
+                                   ft->throws());
+    INT_ASSERT(ft != newFt);
+    ret = newFt;
+  }
+
+  return ret;
+}
+
+class FlattenRefsInProcPtrTypes : public AdjustSymbolTypes {
+ public:
+  Type* computeAdjustedType(Type* t) const override {
+    if (auto ft = toFunctionType(t->getValType())) {
+      auto ret = flattenRefsForFunctionTypes(ft);
+      return ret;
+    }
+    return t;
+  };
+};
 
 void convertToQualifiedRefs() {
 #define fixRefSymbols(SymType) \
@@ -1571,6 +1645,10 @@ void convertToQualifiedRefs() {
   fixRefSymbols(VarSymbol);
   fixRefSymbols(ArgSymbol);
   fixRefSymbols(ShadowVarSymbol);
+
+  // TODO: Merge the above traversal with this pass to save a walk.
+  PassManager pm;
+  runPassOverAllSymbols(pm, FlattenRefsInProcPtrTypes());
 
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_ADDR_OF)) {
@@ -1674,18 +1752,7 @@ computeNewSymbolType(std::unordered_map<Type*, Type*>& alreadyAdjusted,
     INT_ASSERT(vt2);
 
     // TODO: Do wide classes need any sort of special treatment?
-    if (t->isWideRef()) {
-      ret = vt2->getWideRefType();
-      INT_ASSERT(ret);
-
-    } else if (t->isRef()) {
-      if (!vt2->refType) makeRefType(vt2);
-      ret = vt2->getRefType();
-      INT_ASSERT(ret);
-
-    } else {
-      ret = vt2;
-    }
+    ret = matchRefLevel(vt2, t);
 
   } else {
     // Otherwise, just perform the caller-given adjustment function.
@@ -1925,4 +1992,21 @@ bool isUseOfProcedureAsValue(SymExpr* se) {
   }
 
   return false;
+}
+
+Type* matchRefLevel(Type* t, Type* match) {
+  auto vt = t->getValType();
+  auto ret = t;
+
+  if (match->isRef() && !t->isRef()) {
+    if (!vt->refType) makeRefType(vt);
+    ret = vt->refType;
+
+  } else if (match->isWideRef() && !t->isWideRef()) {
+    ret = vt->getWideRefType();
+  }
+
+  INT_ASSERT(ret);
+
+  return ret;
 }

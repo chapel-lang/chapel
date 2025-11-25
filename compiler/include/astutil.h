@@ -267,4 +267,9 @@ bool symExprIsUsedAsRef(
 // used as a value. This function relies on typed AST to make determinations.
 bool isUseOfProcedureAsValue(SymExpr* se);
 
+// Make the ref level of 't' match the ref level of 'matchType'. E.g., if
+// 'matchType' is 'ref', then 't' will be adjusted to be 't->refType' if it
+// is not already a ref type.
+Type* matchRefLevel(Type* t, Type* matchType);
+
 #endif

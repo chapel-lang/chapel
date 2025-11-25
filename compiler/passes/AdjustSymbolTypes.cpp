@@ -35,6 +35,8 @@ namespace {
 }
 
 bool Pass::shouldProcessDefault(Symbol* sym) {
+  if (!sym || !sym->inTree()) return false;
+
   if (auto fn = toFnSymbol(sym)) {
     // Process because the functions's type has semantic importance.
     if (fn->isUsedAsValue()) return true;
@@ -48,6 +50,8 @@ bool Pass::shouldProcessDefault(Symbol* sym) {
 }
 
 bool Pass::shouldProcessIfNonForeignLinkage(Symbol* sym) {
+  if (!sym || !sym->inTree()) return false;
+
   if (auto fn = toFnSymbol(sym)) {
     if (fn->isUsedAsValue() && !fn->hasForeignLinkage()) return true;
 
@@ -72,7 +76,8 @@ bool Pass::shouldProcess(Symbol* sym) {
 
 void Pass::process(Symbol* sym) {
   // TODO: The 'maybeAdjustSymbolType' should be made to take a template arg.
-  //       That way, we can avoid the cost of constructing std::function.
+  //       That way, we can avoid the cost of constructing std::function. Or,
+  //       we can migrate the entirety of the code to live in this file.
   AdjustTypeFn adjustTypeFn = [this](Type* t) {
     return this->computeAdjustedType(t);
   };
