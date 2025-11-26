@@ -33,7 +33,7 @@
 
 using ActionElt = std::tuple<AssociatedAction::Action,
                              std::string, /* ID where action occurs */
-                             std::string /* ID acted upon or "" */ >;
+                             std::string /* ID acted upon (or second ID if present) */ >;
 using Actions = std::vector<ActionElt>;
 
 static std::string idToStr(Context* context, ID id) {
@@ -47,11 +47,27 @@ static std::string idToStr(Context* context, ID id) {
   return name;
 }
 
-static void gatherActions(Context* context,
-                          const AstNode* ast,
-                          const ResolvedFunction* r,
-                          Actions& actions) {
+static void addAction(Context* context, Actions& actions, const AstNode* ast,
+                      const AssociatedAction* act) {
+  // HACK: Store tuple idx as the acted upon ID if it exists, otherwise use the
+  // actual acted upon ID.
+  std::string useActIdStr;
+  if (act->hasTupleEltIdx()) {
+    useActIdStr = std::to_string(act->tupleEltIndex());
+  } else {
+    useActIdStr = idToStr(context, act->id());
+  }
 
+  actions.emplace_back(act->action(), idToStr(context, ast->id()), useActIdStr);
+
+  // Add sub-actions (if any) flattened into the list.
+  for (auto subAct : act->subActions()) {
+    addAction(context, actions, ast, subAct);
+  }
+}
+
+static void gatherActions(Context* context, const AstNode* ast,
+                          const ResolvedFunction* r, Actions& actions) {
   // gather actions for child nodes
   for (auto child : ast->children()) {
     gatherActions(context, child, r, actions);
@@ -60,21 +76,11 @@ static void gatherActions(Context* context,
   // gather actions for this node
   const ResolvedExpression* re = r->resolutionById().byAstOrNull(ast);
   if (re != nullptr) {
-    for (auto act: re->associatedActions()) {
-      if (act.action() == AssociatedAction::DEINIT) {
-        actions.push_back(std::make_tuple(act.action(),
-                                          idToStr(context, ast->id()),
-                                          idToStr(context, act.id())));
-      } else {
-        // ignore acted-upon ID expect for DEINIT
-        actions.push_back(std::make_tuple(act.action(),
-                                          idToStr(context, ast->id()),
-                                          ""));
-      }
+    for (auto act : re->associatedActions()) {
+      addAction(context, actions, ast, &act);
     }
   }
 }
-
 
 static void printAction(const ActionElt& a) {
   AssociatedAction::Action gotAction;
@@ -164,6 +170,11 @@ static void testActions(const char* test,
     expectAction = std::get<0>(expected[i]);
     expectInId = std::get<1>(expected[i]);
     expectActId = std::get<2>(expected[i]);
+    if (expectActId.empty()) {
+      if (gotActId == gotInId) {
+        gotActId = "";
+      }
+    }
 
     if (gotAction != expectAction) {
       assert(false && "Failure: mismatched action type");
@@ -1967,6 +1978,56 @@ static void test26() {
   */
 }
 
+// Copying tuple expr
+static void test27a() {
+  testActions("test27a",
+    R""""(
+      module M {
+        record R { }
+        proc test() {
+          var r = new R();
+
+          var x = (1, r);
+          r;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
+      {AssociatedAction::INIT_OTHER, "x",           ""},
+        {AssociatedAction::ASSIGN,  "x",      "M.test@4"},
+        {AssociatedAction::COPY_INIT,  "x",   "M.test@5"},
+      {AssociatedAction::DEINIT,     "M.test@9",   "r"}
+    });
+}
+
+// Copying tuple variable
+static void test27b() {
+  testActions("test27b",
+    R""""(
+      module M {
+        record R { }
+        proc test() {
+          var r = new R();
+          var tup = (1, r);
+
+          var x = tup;
+          tup;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
+      {AssociatedAction::INIT_OTHER, "tup",         ""},
+        {AssociatedAction::ASSIGN,  "tup",      "M.test@4"},
+        {AssociatedAction::COPY_INIT,  "tup",   "M.test@5"},
+      {AssociatedAction::COPY_INIT, "x",            ""},
+        {AssociatedAction::ASSIGN,  "x",      "0"},
+        {AssociatedAction::COPY_INIT,  "x",   "1"},
+      {AssociatedAction::DEINIT,     "M.test@11",   "r"}
+    });
+}
+
 // Copying then moving tuple
 static void test27() {
   testActions("test27",
@@ -1983,8 +2044,9 @@ static void test27() {
     )"""",
     {
       {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
-      {AssociatedAction::MOVE_INIT,  "r",           ""},
       {AssociatedAction::INIT_OTHER, "x",           ""},
+        {AssociatedAction::ASSIGN,  "x",      "M.test@4"},
+        {AssociatedAction::MOVE_INIT,  "x",   "M.test@5"},
       {AssociatedAction::MOVE_INIT,  "y",           ""},
       {AssociatedAction::DEINIT,     "M.test@10",   "r"}
     });
@@ -2009,7 +2071,11 @@ static void test28() {
       {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
       {AssociatedAction::MOVE_INIT,  "r",           ""},
       {AssociatedAction::INIT_OTHER, "x",           ""},
+        {AssociatedAction::ASSIGN,  "x",      "M.test@4"},
+        {AssociatedAction::MOVE_INIT,  "x",   "M.test@5"},
       {AssociatedAction::COPY_INIT,  "y",           ""},
+        {AssociatedAction::ASSIGN,  "y",      "0"},
+        {AssociatedAction::COPY_INIT,  "y",   "1"},
       {AssociatedAction::DEINIT,     "M.test@11",   "r"}
     });
 }
@@ -2031,8 +2097,9 @@ static void test29() {
     )"""",
     {
       {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
-      {AssociatedAction::MOVE_INIT,  "r",           ""},
       {AssociatedAction::INIT_OTHER, "y",           ""},
+        {AssociatedAction::ASSIGN,  "y",      "0"},
+        {AssociatedAction::MOVE_INIT,  "y",   "1"},
       {AssociatedAction::DEINIT,     "M.test@11",   "r"}
     });
 }
@@ -2049,8 +2116,166 @@ static void test30() {
       }
     )"""",
     {
-      {AssociatedAction::INIT_OTHER, "M.test@5", ""},
+      {AssociatedAction::INIT_OTHER,  "M.test@5",   ""},
+        {AssociatedAction::ASSIGN,    "M.test@5",   "M.test@2"},
+        {AssociatedAction::MOVE_INIT, "M.test@5",   "M.test@3"},
     });
+}
+
+// Assignment with tuple destructuring, copying out of tuple
+static void test31() {
+  testActions("test31",
+    R""""(
+      module M {
+        record R { }
+        proc test() {
+          var r = new R();
+
+          var tup = (1, r);
+
+          var a = 1;
+          var b = new R();
+          (a, b) = tup;
+          tup;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
+      {AssociatedAction::MOVE_INIT,  "r",           ""},
+      {AssociatedAction::INIT_OTHER, "tup",         ""},
+        {AssociatedAction::ASSIGN,    "tup",   "M.test@4"},
+        {AssociatedAction::MOVE_INIT, "tup",   "M.test@5"},
+      {AssociatedAction::NEW_INIT,   "M.test@12",   ""},
+      {AssociatedAction::ASSIGN,     "M.test@18",   "0"},
+      {AssociatedAction::ASSIGN,     "M.test@18",   "1"},
+      {AssociatedAction::DEINIT,     "M.test@20",   "b"},
+      {AssociatedAction::DEINIT,     "M.test@20",   "r"}
+    });
+}
+
+// Assignment with tuple destructuring, moving out of tuple
+static void test32() {
+  testActions("test32",
+    R""""(
+      module M {
+        record R { }
+        proc test() {
+          var r = new R();
+
+          var tup = (1, r);
+
+          var a = 1;
+          var b = new R();
+          (a, b) = tup;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
+      {AssociatedAction::INIT_OTHER, "tup",         ""},
+        {AssociatedAction::ASSIGN,    "tup",   "M.test@4"},
+        {AssociatedAction::COPY_INIT, "tup",   "M.test@5"},
+      {AssociatedAction::NEW_INIT,   "M.test@12",   ""},
+      {AssociatedAction::ASSIGN,     "M.test@18",   "0"},
+      {AssociatedAction::ASSIGN,     "M.test@18",   "1"},
+      {AssociatedAction::DEINIT,     "M.test@19",   "b"},
+      {AssociatedAction::DEINIT,     "M.test@19",   "r"},
+    });
+}
+
+// Init with tuple destructuring, copying out of tuple
+static void test33() {
+  testActions("test33",
+    R""""(
+      module M {
+        record R { }
+        proc test() {
+          var r = new R();
+
+          var tup = (1, r);
+
+          var (a, b) = tup;
+          tup;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
+      {AssociatedAction::INIT_OTHER, "tup",         ""},
+        {AssociatedAction::ASSIGN,    "tup",   "M.test@4"},
+        {AssociatedAction::MOVE_INIT, "tup",   "M.test@5"},
+      {AssociatedAction::ASSIGN,    "a",   "0"},
+      {AssociatedAction::COPY_INIT, "b",   "1"},
+      {AssociatedAction::DEINIT,     "M.test@13",   "b"},
+      {AssociatedAction::DEINIT,     "M.test@13",   "r"}
+    });
+}
+
+// Init with tuple destructuring, moving out of tuple
+static void test34() {
+  testActions("test34",
+    R""""(
+      module M {
+        record R { }
+        proc test() {
+          var r = new R();
+
+          var tup = (1, r);
+
+          var (a, b) = tup;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
+      {AssociatedAction::INIT_OTHER, "tup",         ""},
+        {AssociatedAction::ASSIGN,    "tup",   "M.test@4"},
+        {AssociatedAction::MOVE_INIT, "tup",   "M.test@5"},
+      {AssociatedAction::DEINIT,     "M.test@12",   "b"},
+      {AssociatedAction::DEINIT,     "M.test@12",   "r"}
+    });
+}
+
+// Tuple expr containing tuple variables
+static void test35() {
+  {
+    // Inner tuples of same type
+    testActions("test35a",
+      R""""(
+        module M {
+          record R { }
+          proc test() {
+            var tup, tup2 : 2 * int;
+            var x = (tup, tup2);
+          }
+        }
+      )"""",
+      {
+        {AssociatedAction::INIT_OTHER, "x",         ""},
+          {AssociatedAction::MOVE_INIT, "x",   "M.test@6"},
+          {AssociatedAction::MOVE_INIT, "x",   "M.test@7"},
+      });
+  }
+  {
+    // Inner tuples of different type
+    testActions("test35b",
+      R""""(
+        module M {
+          record R { }
+          proc test() {
+            var tup : 2 * int;
+            var tup2 : 3 * int;
+            var x = (tup, tup2);
+          }
+        }
+      )"""",
+      {
+        {AssociatedAction::INIT_OTHER, "x",         ""},
+          {AssociatedAction::MOVE_INIT, "x",   "M.test@8"},
+          {AssociatedAction::MOVE_INIT, "x",   "M.test@9"},
+      });
+  }
 }
 
 // calling function with 'out' intent formal
@@ -2155,10 +2380,17 @@ int main() {
   test25();
   test26();
 
+  test27a();
+  test27b();
   test27();
   test28();
   test29();
   test30();
+  test31();
+  test32();
+  test33();
+  test34();
+  test35();
 
   return 0;
 }
