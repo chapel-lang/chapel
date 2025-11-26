@@ -308,7 +308,12 @@ static void adjustForOperatorMethod(FnSymbol* fn, CallInfo& info,
         info.actuals.clear();
         info.actualNames.clear();
         for_actuals(actual, info.call) {
-          SymExpr* se = toSymExpr(actual);
+          SymExpr* se;
+          if (NamedExpr* named = toNamedExpr(actual)) {
+            se = toSymExpr(named->actual);
+          } else {
+            se = toSymExpr(actual);
+          }
           INT_ASSERT(se);
           info.actuals.add(se->symbol());
           info.actualNames.add(NULL);
@@ -2231,7 +2236,7 @@ static Symbol* leadingArg(PromotionInfo& promotion, CallExpr* call,
   // Operators might have a different number of formals than provided actuals.
   // In this case, the promotedType array access needs to be adjusted to account
   // for the offset.
-  int actualIdx = promotion.formalToActualOpMod;
+  int actualIdx = promotion.formalToActualOpMod >= 0 ? 0 : promotion.formalToActualOpMod;
   for_actuals(actualExpr, call) {
     if (actualIdx < 0) {
       actualIdx++;
@@ -3081,9 +3086,13 @@ static bool haveLeaderAndFollowers(PromotionInfo& promotion, CallExpr* call,
   // Operators might have a different number of formals than provided actuals.
   // In this case, the promotedType array access needs to be adjusted to account
   // for the offset.
-  int actualIdx = promotion.formalToActualOpMod;
+  int actualIdx = promotion.formalToActualOpMod >= 0 ? 0 : promotion.formalToActualOpMod;
 
   for_actuals(actualExpr, call) {
+    if (actualIdx < 0) {
+      actualIdx++;
+      continue;
+    }
     INT_ASSERT(actualIdx < (int)actualIdxToFormal.size());
 
     ArgSymbol* formal = actualIdxToFormal[actualIdx];
@@ -3141,14 +3150,6 @@ static CallExpr* createPromotedCallForWrapper(PromotionInfo& promotion) {
   Vec<Symbol*> actuals;
   std::vector<ArgSymbol*> actualIdxToFormal;
 
-  // When adding the call to the original function within a
-  // promotion wrapper, we need to pass non-promoted arguments
-  // to the original function through. But some of the arguments
-  // might not need to be passed if we're using their default value.
-  //
-  // If we skip defaulted arguments, we must use named arguments
-  // to ensure correct formal-actual mapping when defaults are added.
-  bool needNamedArgs = false;
   int i = 0;
   for_formals(formal, fn) {
 
@@ -3163,16 +3164,11 @@ static CallExpr* createPromotedCallForWrapper(PromotionInfo& promotion) {
     } else if (promotion.defaulted[i] == false) {
       ArgSymbol* newFormal = promotion.wrapperFormals[i];
       actual = new SymExpr(newFormal);
-    } else {
-      // This formal is defaulted - subsequent arguments need names
-      needNamedArgs = true;
     }
 
     if (actual != NULL) {
-      // Use named arguments if we've skipped any defaulted formals
-      if (needNamedArgs) {
-        actual = new NamedExpr(formal->name, actual);
-      }
+      // Use named arguments to ensure things work with reordering.
+      actual = new NamedExpr(formal->name, actual);
       retval->insertAtTail(actual);
       actualIdxToFormal.push_back(formal);
     }
