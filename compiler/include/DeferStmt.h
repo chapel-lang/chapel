@@ -27,13 +27,18 @@ class DeferStmt final : public Stmt
 {
 
 public:
+  enum  Kind { DEFAULT, THROWING };
 
   BlockStmt*          body() const;
+  Kind                kind() const;
+
+  bool                isThrowingDefer() const;
 
   // To be invoked by the parser; returns a BlockStmt
   // containing the DeferStmt.
   static BlockStmt*   build(BlockStmt* body);
 
+                      DeferStmt(Kind kind, BlockStmt* body);
                       DeferStmt(BlockStmt* body);
                       DeferStmt(CallExpr* call);
                      ~DeferStmt() override = default;
@@ -51,7 +56,8 @@ private:
   static BlockStmt*   buildChplStmt(Expr* expr);
                       DeferStmt();
 
-  BlockStmt*          _body;
+  BlockStmt*          body_;
+  Kind                kind_ = DEFAULT;
 };
 
 void checkDefersAfterParsing();

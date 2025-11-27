@@ -1885,26 +1885,22 @@ BlockStmt* buildConditionalLocalStmt(Expr* condExpr, Expr *stmt) {
   {
     TEMP ref manager = PRIM_ADDR_OF(myManager());
     chpl__verifyTypeContext(manager);
+
     USER [var/ref/const] myResource = manager.enterContext();
-    TEMP success = false;
+    TEMP error = nil;
+
+    // This is a special variation of 'defer' where the contents can throw.
+    // We need it in case the user code contains e.g., a 'return'. It is
+    // not exposed to the user so we don't need the semantics to be perfect.
+    defer-try { manager.exitContext(error); }
 
     try {
       // Insertion point for next manager or user block.
       //
       // ... <scopeless block for user code> ...
       //
-      // If we made it this far then there was no error.
-      // TODO: What if the manager accepts no argument?
-      success = true;
-      manager.exitContext(nil);
     } catch chpl_temp_err {
-      if success {
-        // If we succeeded then the user's 'exitContext' wants to throw.
-        throw chpl_temp_err;
-      } else {
-        // Otherwise there was an error during normal execution.
-        try manager.exitContext(chpl_temp_err);
-      }
+      error = chpl_temp_err;
     }
   }
 */
@@ -1956,64 +1952,40 @@ BlockStmt* buildManagerBlock(Expr* managerExpr, std::set<Flag>* flags,
     ret->insertAtTail(enterContext);
   }
 
-  // BUILD: TEMP var success = false;
-  auto successTemp = newTemp();
-  ret->insertAtTail(new DefExpr(successTemp, gFalse, dtBool->symbol));
+  // BUILD: TEMP var error = nil;
+  auto errorTemp = newTemp();
+  auto errorType = new CallExpr("_owned", new CallExpr(PRIM_TO_NILABLE_CLASS,
+                                new UnresolvedSymExpr("Error")));
+  ret->insertAtTail(new DefExpr(errorTemp, gNil, errorType));
 
-  //
-  // Build the try block.
-  //
+  // BUILD: defer-try manager.exitContext(error);
+  auto exitCall = new CallExpr("exitContext",
+                               gMethodToken,
+                               new SymExpr(managerHandle),
+                               new SymExpr(errorTemp));
+  auto deferBlock = new BlockStmt();
+  deferBlock->insertAtTail(exitCall);
+  auto defer = new DeferStmt(DeferStmt::THROWING, deferBlock);
+  ret->insertAtTail(defer);
 
+  // The try block contains the code for the next manager or user code.
   auto tryBlock = new BlockStmt();
-
-  // The first statement must be a block for the user code.
-  // TODO: Can make scopeless without impacting destructors? Or just
-  //       have the user code replace the block, NOP, etc...
-  tryBlock->insertAtTail(new BlockStmt());
-
-  // Next, set the success flag to 'true'.
-  tryBlock->insertAtTail(new CallExpr(PRIM_ASSIGN, successTemp, gTrue));
-
-  // Finally, call 'exitContext' with a 'nil' argument.
-  auto exitCallNil = new CallExpr("exitContext", gMethodToken,
-                                  new SymExpr(managerHandle),
-                                  new SymExpr(gNil));
-  tryBlock->insertAtTail(exitCallNil);
-
-  //
-  // Build the catch block.
-  //
 
   const char* caughtErrName = "chpl_tmp_err";
 
+  // Next, build the catch block.
   auto catchBlock = new BlockStmt();
 
-  // Build the 'then' block.
-  auto thenBlock = new BlockStmt();
-  auto thenErrUsym = new UnresolvedSymExpr(caughtErrName);
-  thenBlock->insertAtTail(new CallExpr(PRIM_THROW, thenErrUsym));
-
-  // Build the 'else' block.
-  auto elseBlock = new BlockStmt();
-  auto elseErrUsym = new UnresolvedSymExpr(caughtErrName);
-  auto exitCall = new CallExpr("exitContext", gMethodToken,
-                               new SymExpr(managerHandle),
-                               elseErrUsym);
-  auto tryExitCall = new CallExpr(PRIM_TRY_EXPR, exitCall);
-  elseBlock->insertAtTail(tryExitCall);
-
-  // Build the entire conditional and insert it into the catch block.
-  auto cond = new CondStmt(new SymExpr(successTemp), thenBlock, elseBlock);
-  catchBlock->insertAtTail(cond);
+  // BUILD: errorTemp = chpl_temp_err;
+  auto caughtErrUsym = new UnresolvedSymExpr(caughtErrName);
+  auto errorTempSet = new CallExpr("=", errorTemp, caughtErrUsym);
+  catchBlock->insertAtTail(errorTempSet);
 
   // Assemble the AST for the catch statement.
   auto catchStmt = CatchStmt::build(caughtErrName, catchBlock);
   catchStmt->createErrSym();
 
-  //
   // Assemble the entire try/catch.
-  //
-
   auto catchList = new BlockStmt();
   catchList->insertAtTail(catchStmt);
 
@@ -2078,7 +2050,7 @@ buildManageStmt(BlockStmt* managers, BlockStmt* block, ModTag modTag) {
     // Scroll forward looking for the next insertion point.
     for_alist(stmt, managerBlock->body) {
       if (TryStmt* tryStmt = toTryStmt(stmt)) {
-        auto block = toBlockStmt(tryStmt->body()->body.head);
+        auto block = toBlockStmt(tryStmt->body());
         INT_ASSERT(block);
         insertionPoint = block;
         break;
