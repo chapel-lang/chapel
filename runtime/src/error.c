@@ -57,14 +57,11 @@
 // Necessary for instruct libunwind to use only the local unwind
 #define UNW_LOCAL_ONLY
 #include <libunwind.h>
+#include <dlfcn.h>
 
-
-// TODO: can we do this on other platforms? Whats platform-specific about it?
 #ifdef __linux__
-#include <dlfcn.h> // for dladdr
 // We create a pipe with addr2line and try to get a line number
-// Currently the precise line number works only on linux64
-static int chpl_unwind_dladdrGetLineNum(void *addr) {
+static int chpl_unwind_refineGetLineNum(void *addr) {
 
   int rc;
   Dl_info info;
@@ -179,7 +176,65 @@ static int chpl_unwind_dladdrGetLineNum(void *addr) {
 
   return line;
 }
+#elif defined __APPLE__
+// invoke atos to get line number information
+static int chpl_unwind_refineGetLineNum(void *addr) {
+  char buf[2048];
+  int rc;
+
+  // atos -o EXECUTABLE_PATH -offset REL_ADDRESS
+  // Compute the object containing the address
+  Dl_info info;
+  rc = dladdr(addr, &info);
+  if (rc == 0)
+    return 0; // dladdr failed.
+
+  // Compute the relative address within the object
+  intptr_t relativeAddr = (intptr_t)addr - (intptr_t)info.dli_fbase;
+
+  // Compute the path to the file containing the object
+  if (info.dli_fname != NULL && info.dli_fname[0] != '\0') {
+    // use the path from dladdr to construct atos cmd
+    rc = snprintf(buf, sizeof(buf),
+                  "atos -o %s --fullPath -offset %p",
+                  info.dli_fname, (void*)relativeAddr);
+    if (rc+1 >= sizeof(buf))
+      return 0; // command too long for buffer - give up
+  } else {
+    // we failed to get the file name
+    // TODO: we could maybe invoke atos with getpid?
+    return 0;
+  }
+
+  FILE* f = popen(buf, "r");
+  if (f == NULL)
+    return 0; // popen failed - give up
+
+  char* p = fgets(buf, sizeof(buf), f);
+  if (p == NULL) {
+    // couldn't read from the pipe - close and give up
+    pclose(f);
+    return 0;
+  }
+  pclose(f);
+  // format is '<FN_NAME> (in <REL_EXEC_NAME>) (<FILENAME>:<LINENUME>)
+  // search from the end of the string backwards for ':'
+  p = buf + strlen(buf) - 1;
+  while (p > buf && *p != ':') { p--; }
+  if (p == buf)
+    return 0; // didn't find ':' - give up
+  p++; // move past ':'
+
+  int line = atoi(p);
+  return line;
+}
+#else
+static int chpl_unwind_refineGetLineNum(void *addr) {
+  // Not implemented on this platform
+  return 0;
+}
 #endif
+
 
 static unsigned int chpl_unwind_getLineNum(unw_cursor_t* cursor,
                                            unw_word_t wordValue,
@@ -187,15 +242,13 @@ static unsigned int chpl_unwind_getLineNum(unw_cursor_t* cursor,
   // use the procedure line number
   unsigned int line = chpl_filenumSymTable[tableIdx + 1];
 
-#ifdef __linux__
   // try and use dladdr to get a more precise line number
   unw_proc_info_t info;
   // Maybe we can get a more precise line number
   unw_get_proc_info(cursor, &info);
-  unsigned int lineTmp = chpl_unwind_dladdrGetLineNum((void *)(info.start_ip + wordValue));
+  unsigned int lineTmp = chpl_unwind_refineGetLineNum((void *)(info.start_ip + wordValue));
   if (lineTmp != 0)
     line = lineTmp;
-#endif
 
   return line;
 }
