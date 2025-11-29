@@ -6365,8 +6365,12 @@ bool TConverter::enter(const Range* node, RV& rv) {
     {node->lowerBound(), node->upperBound()};
 
   std::vector<CallInfoActual> actuals;
-  actuals.push_back(CallInfoActual(rv.byAst(node->lowerBound()).type()));
-  actuals.push_back(CallInfoActual(rv.byAst(node->upperBound()).type()));
+  if (node->lowerBound()) {
+    actuals.push_back(CallInfoActual(rv.byAst(node->lowerBound()).type()));
+  }
+  if (node->upperBound()) {
+    actuals.push_back(CallInfoActual(rv.byAst(node->upperBound()).type()));
+  }
   auto ci = resolution::CallInfo::createSimple(sig->untyped()->name(), actuals);
 
   auto calledFn = findOrConvertFunction(rf);
