@@ -3919,50 +3919,23 @@ Expr* TConverter::convertNewCallOrNull(const Call* node, RV& rv) {
     // For 'new unmanaged C(...)' it should generate a call to a '_new'
     // function. The actuals are passed along to it down below.
     FnSymbol* calledFn = findOrConvertNewWrapper(rf);
-    ret = new CallExpr(calledFn);
+    auto initCall = new CallExpr(calledFn);
 
-    // Copy over the init formal shapes, except for the receiver formal.
-    std::vector<UntypedFnSignature::FormalDetail> formals;
-    auto ufsInit = init->untyped();
-
-    INT_ASSERT(ufsInit->isMethod());
-    for (int i = 0; i < ufsInit->numFormals(); i++) {
-      if (i == 0) continue;
-      formals.push_back({ ufsInit->formalName(i),
-                          ufsInit->formalDefaultKind(i),
-                          /*decl*/ nullptr,
-                          ufsInit->formalIsVarArgs(i) });
-    }
-
-    // Generate an untyped signature to get at the formal/actual map.
-    auto fakeNewUfs = UntypedFnSignature::get(context,
-                                          /*id*/ ID(),
-                                          /*name*/ ustr("_new"),
-                                          /*isMethod*/ false,
-                                          /*isTypeConstructor*/ false,
-                                          /*isCompilerGenerated*/ true,
-                                          /*throws*/ init->untyped()->throws(),
-                                          /*idTag*/ uast::asttags::Function,
-                                          /*kind*/ uast::Function::PROC,
-                                          /*formals*/ std::move(formals),
-                                          /*whereClause*/ nullptr,
-                                          /*compilerGeneratedOrigin*/ ID());
-
-    // Note that we're creating a CI, but we're not actually going to resolve
-    // this generated call, because the '_new' function exists only in the
-    // middle-end. Instead, we're just using the CI to generate a formals-to-
-    // actuals map.
-    auto ci = resolution::CallInfo(ustr("_new"), types::QualifiedType(),
+    actualAsts.insert(actualAsts.begin(), nullptr);
+    // TODO: is it right that 'hasQuestionArg' is always false here?
+    auto ci1 = resolution::CallInfo(USTR("init"), types::QualifiedType(),
                                    /*isMethodCall*/ false,
                                    /*hasQuestionArg*/ hasQuestionArg,
                                    /*isParenless*/ false,
                                    /*actuals*/ std::move(actuals));
+    auto ci2 = resolution::CallInfo::createWithReceiver(ci1,
+                                   init->formalType(0));
+    auto fam = FormalActualMap(init->untyped(), ci2);
 
-    // This mapping drives the conversion of actuals.
-    auto fam = FormalActualMap(fakeNewUfs, ci);
-    INT_ASSERT(fam.isValid());
+    TConverter::ActualConverter ac(this, node, actualAsts, init, fam, rv);
+    ac.convertAndInsertActuals(initCall, /*skipReceiver=*/true);
 
-    convertAndInsertActuals(toCallExpr(ret), node, actualAsts, init, fam, rv);
+    ret = initCall;
 
     // If this a managed class, use the result of _new to initialize the
     // manager record.
