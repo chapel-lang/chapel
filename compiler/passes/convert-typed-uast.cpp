@@ -5777,6 +5777,7 @@ Expr* TConverter::convertFieldAccessOrNull(const AstNode* node, RV& rv) {
 
   types::QualifiedType qtRecv;
   Expr* recv = recvAst ? convertExpr(recvAst, rv, &qtRecv) : nullptr;
+  recv = recv ? storeInTempIfNeeded(recv, qtRecv) : nullptr;
 
   // Handle 'chpl_p' field access for owned/shared classes, and also simulate
   // forwarding of class fields on owned/shared classes.
