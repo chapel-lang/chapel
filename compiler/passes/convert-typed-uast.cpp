@@ -5951,7 +5951,7 @@ SymExpr* TConverter::insertClassConversion(types::QualifiedType to,
     insertStmt(new CallExpr(fn, initTemp, fromExpr));
     return new SymExpr(initTemp);
   } else {
-    auto cast = new CallExpr(PRIM_CAST, convertType(to.type()), fromExpr);
+    auto cast = new CallExpr(PRIM_CAST, convertType(to.type())->symbol, fromExpr);
     return storeInTempIfNeeded(cast, to);
   }
 }
