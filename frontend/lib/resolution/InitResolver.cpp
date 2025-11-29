@@ -965,6 +965,8 @@ bool InitResolver::handleCallToInit(const FnCall* node,
         receiver->toIdentifier()->name() != USTR("this")) {
       return false;
     }
+  } else if (calledExpr->isOpCall()) {
+    return false;
   }
 
   // It's a call to 'this.init', which means any initialized fields are
