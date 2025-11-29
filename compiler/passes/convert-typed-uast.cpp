@@ -685,7 +685,8 @@ struct TConverter final : UastConverter,
   Symbol* convertVariable(const uast::Variable* node,
                           RV& rv,
                           bool useLinkageName,
-                          MultiDeclState* multiState = nullptr);
+                          MultiDeclState* multiState = nullptr,
+                          Expr* initExprOverride = nullptr);
 
   /// --------------------- ///
   /// Tree Mutation Helpers ///
@@ -1066,6 +1067,9 @@ struct TConverter final : UastConverter,
 
   bool enter(const Variable* node, RV& rv);
   void exit(const Variable* node, RV& rv);
+
+  bool enter(const TupleDecl* node, RV& rv);
+  void exit(const TupleDecl* node, RV& rv);
 
   bool enter(const Literal* node, RV& rv);
   void exit(const Literal* node, RV& rv);
@@ -3435,7 +3439,8 @@ Expr* TConverter::convertRuntimeTypeExpression(const AstNode* node, RV& rv) {
 Symbol* TConverter::convertVariable(const uast::Variable* node,
                                     RV& rv,
                                     bool useLinkageName,
-                                    MultiDeclState* multiState) {
+                                    MultiDeclState* multiState,
+                                    Expr* initExprOverride) {
   astlocMarker markAstLoc(node->id());
 
   bool isStatic = false;
@@ -3609,6 +3614,8 @@ Symbol* TConverter::convertVariable(const uast::Variable* node,
         move = new CallExpr(PRIM_MOVE, varSym,
                                        new CallExpr(PRIM_ADDR_OF, expr));
       }
+    } else if (initExprOverride != nullptr) {
+      move = new CallExpr(PRIM_MOVE, varSym, initExprOverride);
     } else {
       const resolution::ResolvedExpression* re = rv.byAstOrNull(node);
       if (initExpr == nullptr) {
@@ -5662,6 +5669,33 @@ bool TConverter::enter(const Variable* node, RV& rv) {
 
 void TConverter::exit(const Variable* node, RV& rv) {
   TC_DEBUGF(this, "exit variable %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
+}
+
+bool TConverter::enter(const TupleDecl* node, RV& rv) {
+  if (node->isTupleDeclFormal()) {
+    enterScope(node, rv);
+    return true;
+  } else {
+    types::QualifiedType initQt;
+    auto initExpr = convertExpr(node->initExpression(), rv, &initQt);
+    auto tup = makeNewTemp(initQt);
+    insertStmt(new CallExpr(PRIM_MOVE, tup, initExpr));
+    for (int i = 0; i < node->numDecls(); i++) {
+      auto decl = node->decl(i);
+      Expr* declInit = new CallExpr(PRIM_GET_MEMBER_VALUE,
+                                   tup,
+                                   new_CStringSymbol(astr("x", istr(i))));
+      declInit = storeInTempIfNeeded(declInit, initQt.type()->toTupleType()->elementType(i));
+      auto sym = convertVariable(decl->toVariable(), rv, true, nullptr, declInit);
+      INT_ASSERT(sym);
+    }
+    return false;
+  }
+}
+void TConverter::exit(const TupleDecl* node, RV& rv) {
+  if (node->isTupleDeclFormal()) {
+    exitScope(node, rv);
+  }
 }
 
 bool TConverter::enter(const Literal* node, RV& rv) {
