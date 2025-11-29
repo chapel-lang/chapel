@@ -1763,7 +1763,7 @@ AggregateType* AggregateType::getCurInstantiation(Symbol* sym, Type* symType) {
       // See param/ferguson/mismatched-param-type-error.chpl for an example
       // where this check is necessary.
       //
-      if (expected != NULL && expected != symType) {
+      if (expected != NULL && expected != symType && expected != dtUnknown) {
         Immediate result;
         Immediate* lhs = getSymbolImmediate(at->substitutions.get(field));
         Immediate* rhs = getSymbolImmediate(sym);
