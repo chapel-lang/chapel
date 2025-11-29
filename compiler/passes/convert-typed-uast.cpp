@@ -3101,11 +3101,12 @@ Type* TConverter::convertType(const types::Type* t) {
     // of optimization passes that are looking for records, so my guess is
     // that the codegen generated ones should probably be 'CLASS' as well.
     AggregateType* ref = new AggregateType(AGGREGATE_CLASS);
-    const char* name = astr("_ref_", ret->symbol->cname);
+    const char* name = astr("_ref_", ret->symbol->name);
     if (isDecoratedClassType(ret)) {
       name = astr("_ref(", ret->symbol->name, ")");
     }
     TypeSymbol* refTs = new TypeSymbol(name, ref);
+    refTs->cname = astr("_ref_", ret->symbol->cname);
     refTs->addFlag(FLAG_REF);
     refTs->addFlag(FLAG_NO_DEFAULT_FUNCTIONS);
     refTs->addFlag(FLAG_NO_OBJECT);
