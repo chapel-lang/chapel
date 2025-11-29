@@ -5840,9 +5840,14 @@ Expr* TConverter::convertParenlessCallOrNull(const AstNode* node, RV& rv) {
     } else {
       auto [recvAst, fieldName] = accessExpressionDetails(node);
       std::ignore = fieldName;
-      types::QualifiedType qtRecv;
-      auto recv = recvAst ? convertExpr(recvAst, rv, &qtRecv) : nullptr;
-      ret = new CallExpr(calledFn, storeInTempIfNeeded(recv, qtRecv));
+      auto thisType = rf->signature()->formalType(0);
+      if (!thisType.isType()) {
+        types::QualifiedType qtRecv;
+        auto recv = recvAst ? convertExpr(recvAst, rv, &qtRecv) : nullptr;
+        ret = new CallExpr(calledFn, storeInTempIfNeeded(recv, qtRecv));
+      } else {
+        ret = new CallExpr(calledFn);
+      }
     }
   } else {
     ret = new CallExpr(calledFn);
