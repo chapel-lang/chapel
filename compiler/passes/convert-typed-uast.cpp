@@ -5217,7 +5217,7 @@ ArgSymbol* TConverter::convertFormal(const Formal* fml, RV& rv) {
       auto block = new BlockStmt();
       pushBlock(block);
       types::QualifiedType qt;
-      auto expr = convertExpr(fml->initExpression(), rv, &qt);
+      auto expr = convertAstUntyped(fml->initExpression());
       block->insertAtTail(expr);
       popBlock();
       ret->defaultExpr = block;
