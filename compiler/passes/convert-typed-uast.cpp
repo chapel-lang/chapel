@@ -4938,8 +4938,32 @@ Expr* TConverter::ActualConverter::convertActualWithArg(const FormalActual& fa) 
             astActual->toStringLiteral()->value().c_str());
         temp = new SymExpr(sym);
       } else {
-        auto type = tc_->convertType(fa.formalType().type());
-        temp = tc_->storeInTempIfNeeded(new CallExpr(PRIM_CAST, type->symbol, temp), fa.formalType());
+        auto kind = got.conversionKind();
+        if (kind == CanPassResult::ConversionKind::BORROWS ||
+            kind == CanPassResult::ConversionKind::BORROWS_SUBTYPE) {
+          auto ct = fa.actualType().type()->toClassType();
+          Expr* borrow = nullptr;
+          if (ct->manager()) {
+            auto mrt = types::QualifiedType(fa.actualType().kind(),
+                                            ct->managerRecordType(context));
+            types::QualifiedType qtField;
+            // Can always generate an access for 'chpl_p', since we're either accessing
+            // that field directly, or forwarding to it.
+            borrow = codegenGetFieldImpl(tc_, PRIM_UNKNOWN, temp, mrt,
+                                         "chpl_p",
+                                         -1,
+                                         rv_, &qtField);
+            borrow = tc_->storeInTempIfNeeded(borrow, qtField);
+          } else {
+            // e.g. unmanaged, so just cast
+            borrow = temp;
+          }
+          auto type = tc_->convertType(fa.formalType().type());
+          temp = tc_->storeInTempIfNeeded(new CallExpr(PRIM_CAST, type->symbol, borrow), fa.formalType());
+        } else {
+          auto type = tc_->convertType(fa.formalType().type());
+          temp = tc_->storeInTempIfNeeded(new CallExpr(PRIM_CAST, type->symbol, temp), fa.formalType());
+        }
       }
     }
   } else if (SymExpr* se = toSymExpr(temp)) {
@@ -4958,6 +4982,9 @@ Expr* TConverter::ActualConverter::convertActualWithArg(const FormalActual& fa) 
                                         re->type().type() };
           temp = tc_->insertDerefTemp(se, type);
         }
+      } else if (action == AssociatedAction::NEW_INIT) {
+        INT_ASSERT(astActual->isFnCall());
+        INT_ASSERT(astActual->toFnCall()->calledExpression()->isNew());
       } else {
         TC_UNIMPL("unhandled associated action on an actual");
       }
