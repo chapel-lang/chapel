@@ -452,7 +452,7 @@ struct TConverter final : UastConverter,
 
   // Stores functions, modules, module-scope vars, and does not need to
   // be cleaned up when 'ConvertedSymbolState' is changed.
-  std::unordered_map<ID, Symbol*> globalSyms;
+  std::map<ID, Symbol*> globalSyms;
 
   // this one handles functions in a way that allows for instantiation
   std::unordered_map<const ResolvedFunction*, FnSymbol*> fns;
