@@ -6015,13 +6015,29 @@ void TConverter::exit(const Return* node, RV& rv) {
       move = new CallExpr(PRIM_MOVE,
                           cur.retVar, new CallExpr(PRIM_ADDR_OF, temp));
     } else {
+      auto re = rv.byAstOrNull(node);
       auto commonType = cur.resolvedFunction->returnType();
       if (retQt.type() != commonType.type() &&
           commonType.type()->isClassType()) {
+        // TODO: this should be an associated action
         temp = insertClassConversion(commonType, retQt, node, temp, rv);
+        move = new CallExpr(PRIM_MOVE, cur.retVar, temp);
+      } else if (re && re->hasAssociatedActions()) {
+        auto action = re->associatedActions()[0];
+        if (action.action() == resolution::AssociatedAction::ASSIGN) {
+          const ResolvedFunction* rf;
+          INT_ASSERT(!paramElideCallOrNull(action.fn(), re->poiScope(), &rf));
+          auto fn = findOrConvertFunction(rf);
+          move = new CallExpr(fn, cur.retVar, temp);
+        } else if (action.action() == resolution::AssociatedAction::MOVE_INIT) {
+          move = new CallExpr(PRIM_MOVE, cur.retVar, temp);
+        } else {
+          TC_UNIMPL("Unhandled associated action on return value");
+          move = new CallExpr(PRIM_MOVE, cur.retVar, temp);
+        }
+      } else {
+        move = new CallExpr(PRIM_MOVE, cur.retVar, temp);
       }
-
-      move = new CallExpr(PRIM_MOVE, cur.retVar, temp);
     }
     insertStmt(move);
   }
