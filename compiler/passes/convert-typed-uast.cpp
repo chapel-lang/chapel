@@ -3621,19 +3621,16 @@ Symbol* TConverter::convertVariable(const uast::Variable* node,
       }
     } else if (initExprOverride != nullptr) {
       move = new CallExpr(PRIM_MOVE, varSym, initExprOverride);
-    } else {
+    } else if (!node->hasPragma(context, uast::PRAGMA_NO_INIT)) {
       const resolution::ResolvedExpression* re = rv.byAstOrNull(node);
       if (initExpr == nullptr) {
         // compute the default value for this type
         if (re) {
           types::QualifiedType qt = re->type();
           if (!qt.isUnknownOrErroneous()) {
-            if (!node->hasPragma(context, uast::PRAGMA_NO_INIT)) {
-              initExpr = defaultValueForType(qt.type(), node, rv);
-            }
+            initExpr = defaultValueForType(qt.type(), node, rv);
           }
         }
-        INT_ASSERT(initExpr);
       }
 
       // TODO: All variable initializations should have some kind of associated
@@ -3657,12 +3654,15 @@ Symbol* TConverter::convertVariable(const uast::Variable* node,
           move = new CallExpr(PRIM_MOVE, varSym, initExpr);
         } else {
           TC_UNIMPL("unknown associated action for variable initialization");
+          move = new CallExpr(PRIM_MOVE, varSym, initExpr);
         }
       } else {
         move = new CallExpr(PRIM_MOVE, varSym, initExpr);
       }
     }
-    insertStmt(move);
+
+    if (move)
+      insertStmt(move);
   }
 
   auto loopFlags = LoopAttributeInfo::fromVariableDeclaration(context, node);
