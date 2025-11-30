@@ -842,6 +842,7 @@ struct TConverter final : UastConverter,
 
   // Convert move-init expressions
   Expr* convertMoveInitAssignOrNull(const Call* node, RV& rv);
+  Expr* convertEnumIntegralCastOrNull(const Call* node, RV& rv);
 
   // Try to convert a 'new' expression (which is considered a special
   // form of call) into a call to a middle-end only '_new' wrapper.
@@ -2735,7 +2736,11 @@ struct ConvertTypeHelper {
 
     // TODO: enums with values
     for (auto elem : node->enumElements()) {
-      DefExpr* def = new DefExpr(new EnumSymbol(astr(elem->name())), nullptr);
+      Expr* initExpr = nullptr;
+      if (elem->initExpression()) {
+        initExpr = tc_->convertAstUntyped(elem->initExpression());
+      }
+      DefExpr* def = new DefExpr(new EnumSymbol(astr(elem->name())), initExpr);
       def->sym->type = enumType;
       enumType->constants.insertAtTail(def);
 
@@ -3840,6 +3845,44 @@ Expr* TConverter::convertMoveInitAssignOrNull(const Call* node, RV& rv) {
   rhs = storeInTempIfNeeded(rhs, rhsQt);
 
   return new CallExpr(PRIM_MOVE, lhs, rhs);
+}
+
+Expr* TConverter::convertEnumIntegralCastOrNull(const Call* node, RV& rv) {
+  auto op = node->toOpCall();
+  if (!op || op->op() != USTR(":")) return nullptr;
+
+  auto re = rv.byAstOrNull(node);
+  auto& candidate = re->mostSpecific().only();
+  auto sig = candidate.fn();
+  if (!sig->formalType(1).type()->isEnumType()) return nullptr;
+  INT_ASSERT(sig->untyped()->isCompilerGenerated());
+
+  FnSymbol* fn = new FnSymbol(astrScolon);
+  fn->addFlag(FLAG_RESOLVED);
+  fn->addFlag(FLAG_RESOLVED_EARLY);
+  fn->addFlag(FLAG_OPERATOR);
+  fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->addFlag(FLAG_LAST_RESORT);
+  auto from = new ArgSymbol(INTENT_CONST_IN, "from",
+                            convertType(sig->formalType(0).type()));
+  fn->insertFormalAtTail(from);
+
+  // TODO: implement for non-concrete enums
+  auto enumType = convertType(sig->formalType(1).type());
+  auto ret = new VarSymbol("ret", enumType);
+  ret->addFlag(FLAG_RESOLVED_EARLY);
+  fn->insertAtTail(new DefExpr(ret));
+  fn->insertAtTail(new CallExpr(PRIM_MOVE, ret,
+                                new CallExpr(PRIM_CAST, enumType->symbol, from)));
+  fn->insertAtTail(new CallExpr(PRIM_RETURN, ret));
+  cur.moduleSymbol->block->insertAtTail(new DefExpr(fn));
+
+  fn->retType = enumType;
+
+  types::QualifiedType qt;
+  auto arg = convertExpr(op->actual(0), rv, &qt);
+  arg = storeInTempIfNeeded(arg, qt);
+  return new CallExpr(fn, arg);
 }
 
 Expr* TConverter::convertNewCallOrNull(const Call* node, RV& rv) {
@@ -6004,6 +6047,8 @@ bool TConverter::enter(const Call* node, RV& rv) {
   } else if (auto x = convertTupleCallOrNull(node, rv)) {
     expr = x;
   } else if (auto x = convertNamedCallOrNull(node, rv)) {
+    expr = x;
+  } else if (auto x = convertEnumIntegralCastOrNull(node, rv)) {
     expr = x;
   }
 
