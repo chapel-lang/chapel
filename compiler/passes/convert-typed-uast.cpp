@@ -1105,6 +1105,9 @@ struct TConverter final : UastConverter,
   bool enter(const While* node, RV& rv);
   void exit(const While* node, RV& rv);
 
+  bool enter(const For* node, RV& rv);
+  void exit(const For* node, RV& rv);
+
   bool enter(const AstNode* node, RV& rv);
   void exit(const AstNode* node, RV& rv);
 };
@@ -6516,6 +6519,44 @@ bool TConverter::enter(const While* node, RV& rv) {
 }
 
 void TConverter::exit(const While* node, RV& rv) {
+}
+
+bool TConverter::enter(const For* node, RV& rv) {
+  enterScope(node, rv);
+  if (!node->isParam()) return true;
+
+  const ResolvedExpression& rr = rv.byAst(node);
+  const ResolvedParamLoop* resolvedLoop = rr.paramLoop();
+
+  // no param resolution results, act like a normal loop
+  if (resolvedLoop == nullptr) return true;
+
+
+  for (const auto& loopBody : resolvedLoop->loopBodies()) {
+    BlockStmt* block = new BlockStmt();
+    pushBlock(block);
+
+    ConvertedSymbolState calledFnState_ = cur;
+    std::swap(calledFnState_, cur);
+    RV loopVis(rv.rc(), node, *this, loopBody);
+
+    for (const AstNode* child : node->children()) {
+      // Written to visit "all but the iterand" in case we add more
+      // fields/children to the For class later.
+      if (child != node->iterand()) {
+        child->traverse(loopVis);
+      }
+    }
+
+    std::swap(calledFnState_, cur);
+
+    insertStmt(popBlock());
+  }
+
+  return false;
+}
+void TConverter::exit(const For* node, RV& rv) {
+  exitScope(node, rv);
 }
 
 bool TConverter::enter(const AstNode* node, RV& rv) {
