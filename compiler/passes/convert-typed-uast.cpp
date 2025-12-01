@@ -4086,7 +4086,7 @@ Expr* TConverter::convertPrimCallOrNull(const Call* node, RV& rv) {
   }
 
   using namespace chpl::uast::primtags;
-  CallExpr* ret = nullptr;
+  Expr* ret = nullptr;
   if (primCall->prim() == PRIM_RT_ERROR) {
     ret = new CallExpr(primCall->prim(), new_CStringSymbol("<cannot handle PRIM_RT_ERROR without strings>"));
   } else if (primCall->prim() == PRIM_TO_UNMANAGED_CLASS ||
@@ -4098,12 +4098,18 @@ Expr* TConverter::convertPrimCallOrNull(const Call* node, RV& rv) {
     auto arg = convertExpr(primCall->actual(0), rv);
     arg = storeInTempIfNeeded(arg, rv.byAst(primCall->actual(0)).type());
     ret = new CallExpr(PRIM_CAST, sym, arg);
+  } else if (primCall->prim() == chpl::uast::primtags::PRIM_FIELD_BY_NUM) {
+    auto re = rv.byAst(primCall->actual(1));
+    int64_t idx = re.type().param()->toIntParam()->value();
+    types::QualifiedType qtField;
+    ret = codegenGetField(primCall->actual(0), idx, rv, &qtField);
+    ret = storeInTempIfNeeded(ret, qtField);
   } else {
     ret = new CallExpr(primCall->prim());
 
-    convertAndInsertPrimCallActuals(ret, node->actuals(), rv);
+    convertAndInsertPrimCallActuals(toCallExpr(ret), node->actuals(), rv);
 
-    handlePostCallActions(ret, node, re, rv);
+    handlePostCallActions(toCallExpr(ret), node, re, rv);
   }
 
   return ret;
