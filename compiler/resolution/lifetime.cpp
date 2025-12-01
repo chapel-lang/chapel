@@ -442,6 +442,11 @@ void checkLifetimesInFunction(FnSymbol* fn) {
   // No need to lifetime check extern functions
   if (fn->hasFlag(FLAG_EXTERN))
     return;
+  if (fn->hasFlag(FLAG_RESOLVED_EARLY)) {
+    // TODO: temporary hack to avoid lifetime checking while we develop the
+    // converter
+    return;
+  }
 
   bool debugging = debuggingLifetimesForFn(fn);
 

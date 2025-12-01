@@ -11,6 +11,9 @@ module swap gcc gcc/12.2.0
 # Our test machine actually calls it 'gcc-native'
 module swap gcc-native gcc-native/12.3
 
+# Newest cray-libsci doesn't work with gnu/12.2.0, and we don't need it anyway
+module unload cray-libsci
+
 module load cray-pmi
 
 export CHPL_HOST_PLATFORM=hpe-cray-ex

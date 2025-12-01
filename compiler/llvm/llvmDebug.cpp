@@ -199,7 +199,7 @@ void DebugData::finalize() {
       // then remove the same number of pointers from newDI
       auto [baseOldDI, numPtrs] =
         removePointersAndQualifiers(llvm::cast<llvm::DIType>(oldDI));
-      auto [baseNewDI, _] = removePointersAndQualifiers(newDI, numPtrs);
+      auto baseNewDI = std::get<0>(removePointersAndQualifiers(newDI, numPtrs));
 
       auto dibuilder = ts->getModule()->llvmDIBuilder;
       dibuilder->replaceTemporary(llvm::TempDIType(baseOldDI), baseNewDI);
@@ -415,7 +415,7 @@ llvm::DIType* DebugData::constructTypeForAggregate(llvm::StructType* ty,
       // remove any pointers we added to the fwd
       // then remove the same number of pointers from N
       auto [baseFwd, numPtrs] = removePointersAndQualifiers(fwd);
-      auto [baseN, _] = removePointersAndQualifiers(N, numPtrs);
+      auto baseN = std::get<0>(removePointersAndQualifiers(N, numPtrs));
 
       dibuilder->replaceTemporary(llvm::TempDIType(baseFwd), baseN);
       type->symbol->llvmDIForwardType = nullptr;

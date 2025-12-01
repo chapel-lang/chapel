@@ -325,7 +325,7 @@ const char* toString(Type* type, bool decorateAllClasses) {
 *                                                                             *
 ************************************** | *************************************/
 
-const char* qualifierToStr(Qualifier q) {
+const char* QualifiedType::qualifierToStr(Qualifier q) {
     switch (q) {
       case QUAL_UNKNOWN:
         return "unknown";
@@ -342,15 +342,11 @@ const char* qualifierToStr(Qualifier q) {
 
       case QUAL_VAL:
         return "val";
-      case QUAL_NARROW_REF:
-        return "narrow-ref";
       case QUAL_WIDE_REF:
         return "wide-ref";
 
       case QUAL_CONST_VAL:
         return "const-val";
-      case QUAL_CONST_NARROW_REF:
-        return "const-narrow-ref";
       case QUAL_CONST_WIDE_REF:
         return "const-wide-ref";
     }
@@ -889,10 +885,16 @@ static const char* builtinTypeName(Type* vt) {
 }
 
 const char* FunctionType::typeToString(Type* t) {
-  // Use the value type when printing out the user type to hide '_ref'.
-  auto vt = t->getValType();
-  if (auto builtinName = builtinTypeName(vt)) return builtinName;
-  return vt->symbol->name;
+  if (!developer) {
+    // Use the value type when printing out the user type to hide '_ref'.
+    auto vt = t->getValType();
+    if (auto builtinName = builtinTypeName(vt)) return builtinName;
+    return vt->symbol->name;
+
+  } else {
+    // As a developer, display the type exactly as given.
+    return t->symbol->name;
+  }
 }
 
 const char* FunctionType::returnIntentToString(RetTag intent) {
@@ -911,11 +913,17 @@ FunctionType* FunctionType::create(FunctionType::Kind kind,
   bool isAnyFormalNamed = false;
 
   for (auto& formal : formals) {
-    // Call 'makeRefType' if it's likely needed to avoid problems later.
-    bool isRef = formal.qual() == QUAL_CONST_REF ||
-                 formal.qual() == QUAL_REF ||
-                 formal.intent() & INTENT_REF;
-    if (isRef) makeRefType(formal.type());
+    bool isRefIntent = formal.qual() == QUAL_CONST_REF ||
+                       formal.qual() == QUAL_REF ||
+                       formal.intent() & INTENT_REF;
+    bool isRefType = formal.qualType().isRefType();
+    bool isWideRefType = formal.qualType().isWideRefType();
+
+    if (isRefIntent && !isRefType && !isWideRefType) {
+      // Call 'makeRefType' if it's needed to avoid problems later.
+      // It should not be called if the type is already a 'ref' type.
+      makeRefType(formal.type());
+    }
 
     isAnyFormalNamed |= formal.isNamed();
   }
@@ -1089,29 +1097,36 @@ functionTypeStreamlineFormalQualifier(const FunctionType::Formal& f) {
 
   // TODO: Do this or call 'concreteIntent' as is done in resolve?
   auto qualForIntent = QualifiedType::qualifierForArgIntent(f.intent());
+  bool isConst = QualifiedType::qualifierIsConst(qualForIntent) ||
+                 QualifiedType::qualifierIsConst(qt.getQual());
 
-  if (qualForIntent != QUAL_UNKNOWN) {
-    ret = qualForIntent;
+  if (QualifiedType::qualifierIsAbstract(qualForIntent)) {
+    // Clear this abstract intent. Use the type to make decisions.
+    qualForIntent = QUAL_UNKNOWN;
+  }
 
-  } else if (qt.isWideRefType()) {
+  if (qt.isWideRef()) {
+    // If 'wide ref' is specified in any fashion, it should be preserved.
     ret = QUAL_WIDE_REF;
 
-  } else if (qt.isRefType()) {
+  } else if (qt.isRef()) {
+    // If 'ref' is specified in any fashion, preserve it...
     ret = QUAL_REF;
 
+  } else if (qualForIntent != QUAL_UNKNOWN) {
+    // Otherwise, defer to the intent.
+    ret = qualForIntent;
+
   } else {
+    // If nothing else, assume a value type.
     ret = QUAL_VAL;
   }
 
-  // Determine if there is any constness to preserve.
-  if (QualifiedType::qualifierIsConst(qualForIntent) ||
-      QualifiedType::qualifierIsConst(qt.getQual())) {
-    ret = QualifiedType::qualifierToConst(ret);
-  }
+  // Make const if needed.
+  if (isConst) ret = QualifiedType::qualifierToConst(ret);
 
   // Should not appear at this point.
-  INT_ASSERT(ret != QUAL_UNKNOWN);
-  INT_ASSERT(ret != QUAL_PARAM);
+  INT_ASSERT(!QualifiedType::qualifierIsAbstract(ret));
 
   return ret;
 }
@@ -1141,16 +1156,31 @@ static Type* functionTypeStreamlineType(Qualifier qual, Type* t) {
     qt = { qt.getQual(), ret };
   }
 
-  if (qt.isWideRef() && !qt.isWideRefType()) {
-    ret = ret->getWideRefType();
-    INT_ASSERT(ret);
+  auto q = qt.getQual();
+  switch (q) {
+    case QUAL_REF:
+    case QUAL_CONST_REF: {
+      // A combo of e.g., 'QUAL_CONST_REF' and 'wide(ref)' type can happen
+      // for return intents, so just let the wide-ref type persist.
+      if (!qt.isWideRefType() && !qt.isRefType()) {
+        ret = ret->refType;
+        INT_ASSERT(ret);
+      }
+    } break;
 
-  } else if (qt.isRef() && !qt.isRefType()) {
-    ret = ret->refType;
-    INT_ASSERT(ret);
+    case QUAL_WIDE_REF:
+    case QUAL_CONST_WIDE_REF: {
+      // The qualifier was specified as wide-ref, so it must be a wide type.
+      if (!qt.isWideRefType()) {
+        ret = ret->getWideRefType();
+        INT_ASSERT(ret);
+      }
+    } break;
 
-  } else if (!qt.isRefOrWideRef()) {
-    ret = ret->getValType();
+    default: {
+      // Otherwise, assume it must be a value type.
+      ret = ret->getValType();
+    } break;
   }
 
   return ret;
@@ -1167,8 +1197,10 @@ functionTypeStreamlineFormal(const FunctionType::Formal& f) {
 }
 
 static void
-functionTypeValidateReturnIntent(RetTag returnIntent, Type* returnType) {
-  if (returnType->isRef()) {
+functionTypeVerifyReturnIntent(RetTag returnIntent, Type* returnType) {
+  if (!fVerify) return;
+
+  if (returnType->isRefOrWideRef()) {
     INT_ASSERT(returnIntent == RET_REF || returnIntent == RET_CONST_REF);
   } else {
     INT_ASSERT(returnIntent == RET_VALUE);
@@ -1197,7 +1229,7 @@ FunctionType* FunctionType::getWithStreamlinedComponents() const {
   auto returnQual = QualifiedType::qualifierForRetTag(returnIntent_);
   auto newReturnType = functionTypeStreamlineType(returnQual, returnType_);
 
-  functionTypeValidateReturnIntent(returnIntent_, newReturnType);
+  functionTypeVerifyReturnIntent(returnIntent_, newReturnType);
 
   auto ret = get(kind_, width_, linkage_, std::move(newFormals),
                  returnIntent_,
@@ -1231,6 +1263,63 @@ FunctionType::getWithMask(int64_t mask, bool& outMaskConflicts) const {
   }
 
   outMaskConflicts = maskConflicts;
+
+  return ret;
+}
+
+// Linked in from 'insertWideReferences.cpp'.
+QualifiedType computeWidenedType(Symbol* sym, bool mustBeWide, bool wideVal);
+
+static QualifiedType widenType(QualifiedType qt) {
+  // Create and set a temporary as a workaround for passing in a 'Symbol*'.
+  auto temp = newTemp();
+  temp->type = qt.type();
+  temp->qual = qt.getQual();
+
+  // True as in 'setWide' in 'insertWideReferences.cpp'.
+  bool mustBeWide = true;
+  bool wideVal = true;
+
+  auto ret = computeWidenedType(temp, mustBeWide, wideVal);
+
+  return ret;
+}
+
+FunctionType* FunctionType::getWithWidenedComponents() const {
+  FunctionType* ret = (FunctionType*) this;
+
+  std::vector<Formal> newFormals;
+  Type* newReturnType = returnType_;
+  bool change = false;
+
+  // Set now as 'widenType' may create a temp.
+  SET_LINENO(this->symbol);
+
+  for (int i = 0; i < numFormals(); i++) {
+    auto f = this->formal(i);
+    auto qt1 = f->qualType();
+    auto qt2 = widenType(qt1);
+
+    Formal newFormal = { qt2.getQual(), qt2.type(), f->intent(), f->name() };
+    newFormals.push_back(std::move(newFormal));
+    change = change || qt1 != qt2;
+  }
+
+  Qualifier retTagQual = QualifiedType::qualifierForRetTag(returnIntent_);
+  QualifiedType qtReturnType1 = { retTagQual, returnType() };
+  QualifiedType qtReturnType2 = widenType(qtReturnType1);
+
+  change = change || qtReturnType1 != qtReturnType2;
+
+  // TODO: Check to make sure intents still map?
+  newReturnType = qtReturnType2.type();
+
+  if (change) {
+    return get(kind_, width_, linkage_, std::move(newFormals),
+               returnIntent_,
+               newReturnType,
+               throws_);
+  }
 
   return ret;
 }
@@ -1332,10 +1421,8 @@ const char* FunctionType::qualifierMnemonicMangled(Qualifier qual) {
     case QUAL_CONST_REF: return "qcr";
     case QUAL_PARAM: return "qp";
     case QUAL_VAL: return "qv";
-    case QUAL_NARROW_REF: return "qnr";
     case QUAL_WIDE_REF: return "qwr";
     case QUAL_CONST_VAL: return "qcv";
-    case QUAL_CONST_NARROW_REF: return "qcnr";
     case QUAL_CONST_WIDE_REF: return "qcwr";
   }
   return nullptr;
@@ -1485,7 +1572,7 @@ size_t FunctionType::hash() const {
 FunctionType::Formal::Formal(Qualifier qual, Type* type, IntentTag intent,
                              const char* name)
     : qual_(qual), type_(type), intent_(intent) {
-  name_ = name ? astr(name) : astr("_");
+  name_ = (name && 0 != strcmp(name, "")) ? astr(name) : astr("_");
 }
 
 bool

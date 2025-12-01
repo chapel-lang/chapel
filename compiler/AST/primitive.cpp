@@ -1039,7 +1039,7 @@ initPrimitive() {
   prim_def(PRIM_IS_PROPER_SUBTYPE, "is_proper_subtype", returnInfoBool);
   // accepts two arguments: A class/record type expression and a param string for the field name
   prim_def(PRIM_IS_BOUND, "is bound", returnInfoBool);
-  // PRIM_IS_COERCIBLE arguments are (source type, target type)
+  // PRIM_IS_COERCIBLE arguments are (target type, source type)
   prim_def(PRIM_IS_COERCIBLE, "is_coercible", returnInfoBool);
   // PRIM_CAST arguments are (type to cast to, value to cast)
   prim_def(PRIM_CAST, "cast", returnInfoCast, false, true);

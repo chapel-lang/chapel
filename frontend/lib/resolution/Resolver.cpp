@@ -3054,10 +3054,12 @@ static bool couldBeOutInitialized(Resolver& rv, const ID& toId, const QualifiedT
     // var x;
     // initialize(x);
     return true;
-  } else if (vld->typeExpression() &&
+  } else if (!qt.isUnknownOrErroneous() &&
              getTypeGenericity(rv.context, qt.type()) != Type::CONCRETE) {
     // var x: numeric;
     // initialize(x);
+    //
+    // also if x is a formal (without type expr, its initial type is AnyType).
     return true;
   }
 
@@ -3694,12 +3696,16 @@ QualifiedType Resolver::typeForId(const ID& id) {
     // We're referring to a variable somewhere in this module. Are we the
     // statement that's initializing this variable via split-init?
     // If so, don't try to resolve that module statement, and instead
-    // return Unknown.
+    // return the (possibly incomplete) information that doesn't incorporate
+    // other module statements.
     if (isCurrentModule && curStmt && !id.isSymbolDefiningScope()) {
       auto topLevelId = parsing::idToContainingMultiDeclId(context, id);
       auto& standaloneInfo = resolveModuleStmtStandalone(context, topLevelId);
       if (auto it = standaloneInfo.second.find(id);
           it != standaloneInfo.second.end() && it->second == curStmt->id()) {
+        if (auto re = standaloneInfo.first.byIdOrNull(id)) {
+          return re->type();
+        }
         return QualifiedType();
       }
     }
@@ -6119,8 +6125,10 @@ getDecoratedClassForNew(Resolver& rv, const New* node,
     case New::DEFAULT_MANAGEMENT:
       // Management might've been provided for us already; otherwise
       // fall back to the default: 'owned'.
-      if (!classType->decorator().isUnknownManagement())
+      if (!classType->decorator().isUnknownManagement()) {
+        manager = classType->manager();
         break;
+      }
 
       // Fall through to 'owned' management.
 

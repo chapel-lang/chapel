@@ -162,7 +162,7 @@ if [ ${CHPL_TEST_ARKOUDA_STOP_AFTER_BUILD} = "false" ]; then
 
   # Run benchmarks
   if [ "${CHPL_TEST_ARKOUDA_PERF}" = "true" ] ; then
-    benchmark_opts="--save-data --dat-dir $CHPL_TEST_PERF_DIR --gen-graphs --graph-dir $CHPL_TEST_PERF_DIR/html"
+    benchmark_opts="--save-data --dat-dir $CHPL_TEST_PERF_DIR --gen-graphs --graph-dir $CHPL_TEST_PERF_DIR/$CHPL_TEST_PERF_DESCRIPTION/html"
     if [ "${CHPL_TEST_GEN_ARKOUDA_GRAPHS}" = "false" ] ; then
         # Where should perf logs go?
         export ARKOUDA_TEST_PERF_DIR="${WORKSPACE}/perfData"
@@ -209,7 +209,7 @@ if [ ${CHPL_TEST_ARKOUDA_STOP_AFTER_BUILD} = "false" ]; then
 
   # Run benchmarks_v2
   if [ "${CHPL_TEST_ARKOUDA_PERF_V2}" = "true" ] ; then
-    reformat_benchmark_opts=" --dat-dir $CHPL_TEST_PERF_DIR --graph-dir $CHPL_TEST_PERF_DIR/html"
+    reformat_benchmark_opts=" --dat-dir $CHPL_TEST_PERF_DIR --graph-dir $CHPL_TEST_PERF_DIR/$CHPL_TEST_PERF_DESCRIPTION/html"
     if [ "${CHPL_TEST_GEN_ARKOUDA_GRAPHS}" = "false" ] ; then
       # v2 benchmarks do not support not generating graphs
       log_fatal_error "CHPL_TEST_GEN_ARKOUDA_GRAPHS must be true for benchmarks_v2"

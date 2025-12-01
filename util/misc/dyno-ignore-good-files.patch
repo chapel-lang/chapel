@@ -1472,14 +1472,20 @@ index 9b2d9720d02..071dcfab346 100644
 +init-new-changes-type.chpl:20: error: final result of initialization does not match the initial type
 +init-new-changes-type.chpl:16: note: field 't' started with type 'int(64)', but had incompatible type 'real(64)' after initialization
 diff --git a/test/types/records/bad-change-type/init-uses-default.good b/test/types/records/bad-change-type/init-uses-default.good
-index 66d88624433..d2cc17f6a5e 100644
+index 66d88624433..656035472dd 100644
 --- a/test/types/records/bad-change-type/init-uses-default.good
 +++ b/test/types/records/bad-change-type/init-uses-default.good
-@@ -1,4 +1 @@
+@@ -1,4 +1,7 @@
 -init-uses-default.chpl:11: error: cannot default-initialize a variable with generic type
 -init-uses-default.chpl:11: note: 'xx' has generic type 'R'
 -init-uses-default.chpl:11: note: cannot find initialization point to split-init this variable
 -init-uses-default.chpl:12: note: 'xx' is used here before it is initialized
++init-uses-default.chpl:12: error: unable to resolve call to 'writeln': no matching candidates
++$CHPL_HOME/modules/standard/ChapelIO.chpl:409: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++init-uses-default.chpl:11: note: The actual 'xx' expects to be split-initialized because it is declared with a generic type and no initialization expression here
++init-uses-default.chpl:12: note: The call to 'writeln' occurs before any valid initialization points
++$CHPL_HOME/modules/standard/ChapelIO.chpl:403: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++init-uses-default.chpl:12: note: omitting 1 more candidates that didn't match
 +init-uses-default.chpl:11: error: cannot default initialize variable using generic or unknown type
 diff --git a/test/types/records/bad-change-type/range-init1.good b/test/types/records/bad-change-type/range-init1.good
 index 17f6c7aa48d..d30584ffcf1 100644
@@ -2722,19 +2728,6 @@ index 45aa6d5fef3..9d82882479f 100644
  underscore_is_special.chpl:3: error: Throwaway variable '_' is not allowed in this context
  underscore_is_special.chpl:4: error: Throwaway variable '_' is not allowed in this context
 +underscore_is_special.chpl:3: error: unable to resolve call to '=': no matching candidates
-diff --git a/test/types/tuple/diten/zerotuple.good b/test/types/tuple/diten/zerotuple.good
-index 2e262243d51..5f259fbff1e 100644
---- a/test/types/tuple/diten/zerotuple.good
-+++ b/test/types/tuple/diten/zerotuple.good
-@@ -1 +1,7 @@
--zerotuple.chpl:1: error: tuple must have positive size
-+zerotuple.chpl:2: error: unable to resolve call to 'writeln': no matching candidates
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:409: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
-+zerotuple.chpl:1: note: The actual 'x' expects to be split-initialized because it is declared with a generic type and no initialization expression here
-+zerotuple.chpl:2: note: The call to 'writeln' occurs before any valid initialization points
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:403: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
-+zerotuple.chpl:2: note: omitting 1 more candidates that didn't match
-+zerotuple.chpl:1: error: cannot default initialize variable using generic or unknown type
 diff --git a/test/types/tuple/errors/genericArrayAsTupleSize.good b/test/types/tuple/errors/genericArrayAsTupleSize.good
 index 9b607b7c291..9fd33151906 100644
 --- a/test/types/tuple/errors/genericArrayAsTupleSize.good
@@ -2797,13 +2790,13 @@ index cc1699cb7ee..d22f447a1ab 100644
 +$CHPL_HOME/modules/standard/Sort/MSBRadixSort.chpl:nnnn: error: Bad comparator for radix sort ContrivedComparator with eltType (real(64), int(64))
 +$CHPL_HOME/modules/standard/Sort/MSBRadixSort.chpl:nnnn: error: Bad comparator for radix sort ContrivedComparator with eltType (real(64), int(64))
 diff --git a/test/types/tuple/errors/invalidTupleSizeExpr.good b/test/types/tuple/errors/invalidTupleSizeExpr.good
-index 07e0fe90dc1..6013d3fface 100644
+index 07e0fe90dc1..f52345454a2 100644
 --- a/test/types/tuple/errors/invalidTupleSizeExpr.good
 +++ b/test/types/tuple/errors/invalidTupleSizeExpr.good
 @@ -1,2 +1,2 @@
  invalidTupleSizeExpr.chpl:1: In function 'main':
 -invalidTupleSizeExpr.chpl:1: error: tuple must have positive size
-+invalidTupleSizeExpr.chpl:2: error: type specifier is a value of type 'void', but it was expected to be a type
++invalidTupleSizeExpr.chpl:2: error: tuple must have positive size
 diff --git a/test/types/tuple/errors/returnWrongSize.good b/test/types/tuple/errors/returnWrongSize.good
 index da77619dc80..c717dab07ce 100644
 --- a/test/types/tuple/errors/returnWrongSize.good
@@ -3458,19 +3451,13 @@ index 00000000000..07fd5bd8e46
 +../../../../util/test/prediff-obscure-internal-error
 \ No newline at end of file
 diff --git a/test/types/typedefs/deitz/test_type3.good b/test/types/typedefs/deitz/test_type3.good
-index 7cf82588936..a4964440989 100644
+index 7cf82588936..52bea1d6921 100644
 --- a/test/types/typedefs/deitz/test_type3.good
 +++ b/test/types/typedefs/deitz/test_type3.good
-@@ -1,3 +1,12 @@
+@@ -1,3 +1,6 @@
  test_type3.chpl:1: In function 'main':
  test_type3.chpl:2: error: statement references variable 'b' before it is defined
  test_type3.chpl:3: note: the variable 'b' is defined here
-+test_type3.chpl:5: error: unable to resolve call to 'writeln': no matching candidates
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:409: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
-+test_type3.chpl:4: note: The actual 'c' expects to be split-initialized because it is declared with a generic type and no initialization expression here
-+test_type3.chpl:5: note: The call to 'writeln' occurs before any valid initialization points
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:403: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
-+test_type3.chpl:5: note: omitting 1 more candidates that didn't match
 +test_type3.chpl:4: error: variable 'c' is declared without an initializer or type
 +test_type3.chpl:5: note: cannot find initialization point to split-init this variable
 +test_type3.chpl:5: note: the variable 'c' is used here

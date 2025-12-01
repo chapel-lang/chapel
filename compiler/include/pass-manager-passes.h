@@ -320,4 +320,18 @@ class StreamlineProcPtrTypesForCodegen : public AdjustSymbolTypes {
   Type* computeAdjustedType(Type* t) const override;
 };
 
+/**
+  This pass adjusts any symbol with a procedure-pointer type so that it is
+  a new, similiar type where all of its widenable components are widened.
+  A widenable component is e.g., a 'ref' formal or a 'class' formal.
+
+  After this pass the AST will be in an inconsistent state, and the pass
+  'InsertWideReferences' must be run in order to fix it up.
+*/
+class WidenComponentsOfProcPtrTypes : public AdjustSymbolTypes {
+ public:
+  bool shouldProcess(Symbol* sym) override;
+  Type* computeAdjustedType(Type* t) const override;
+};
+
 #endif

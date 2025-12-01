@@ -6,6 +6,8 @@
 # replace the url and sha in the chapel formula with the url pointing to the tarball created and sha of the tarball.
 # run home-brew scripts to install chapel.
 
+set -ex
+
 UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 
 # common-tarball sets CHPL_HOME
@@ -65,41 +67,11 @@ brew uninstall --force chapel
 # Remove the cached chapel tar file before running brew install --build-from-source chapel.rb
 rm $HOME/Library/Caches/Homebrew/downloads/*--chapel-${short_version}.tar.gz
 HOMEBREW_DEVELOPER=1 HOMEBREW_NO_INSTALL_FROM_API=1 brew install -v --build-from-source ./chapel.rb
-INSTALL_STATUS=$?
-    if [ $INSTALL_STATUS -ne 0 ]
-    then
-      log_error "brew install --build-from-source chapel.rb failed"
-      exit 1
-      else
-      log_info "brew install --build-from-source chapel.rb succeeded"
-    fi
 chpl --version
-CHPL_INSTALL=$?
-    if [ $CHPL_INSTALL -ne 0 ]
-    then
-      log_error "chpl --version failed"
-      exit 1
-    else
-      log_info "chpl --version succeeded"
-    fi
 
 # Run pidigits and see if it works
 cd ${CHPL_HOME}/examples/benchmarks/shootout
 chpl pidigits.chpl
-   if [ $? -ne 0 ]
-   then
-     log_error "chpl pidigits.chpl failed to compile"
-     exit 1
-   else
-     log_info "Compiled pidigits.chpl"
-   fi
 ./pidigits
-  if [ $? -ne 0 ]
-   then
-     log_error "./pidigits failed"
-     exit 1
-   else
-     log_info "./pidigits succeeded"
-   fi
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="homebrew"

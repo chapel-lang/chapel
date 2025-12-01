@@ -243,6 +243,23 @@ void check_cullOverReferences()
     INT_FATAL("ContextCallExpr should no longer be in AST");
   }
 
+  for_alive_in_Vec(ArgSymbol, arg, gArgSymbols) {
+    auto t = arg->type->getValType();
+
+    // TODO: Tuple formals are not having their intents properly resolved due
+    //       to how 'cullOverReferences' appears to work. It's unclear to me
+    //       if this is an easy fix. These exceptions mirror those made in
+    //       that pass.
+    bool skip = t->symbol->hasFlag(FLAG_TUPLE) ||
+                arg->getFunction()->hasFlag(FLAG_BUILD_TUPLE) ||
+                arg->getFunction()->hasFlag(FLAG_TUPLE_CAST_FN);
+
+    if (!skip) {
+      // Should have been decided by this pass.
+      INT_ASSERT(!(arg->intent & INTENT_FLAG_MAYBE_CONST));
+    }
+  }
+
   checkForPromotionsThatMayRace();
 }
 
@@ -622,14 +639,34 @@ static void check_afterResolveIntents()
           INT_FATAL("Symbol should not have unknown qualifier: %s (%d)", sym->cname, sym->id);
         }
 
-      } else if (auto ts = toTypeSymbol(sym)) {
-        auto ft = toFunctionType(ts->type);
-        if (ts->inTree() && ts->isUsed() && ft) {
+      } else if (sym->type && isFunctionType(sym->getValType())) {
+        auto ft = toFunctionType(sym->getValType());
+        auto parent = sym->defPoint->parentSymbol;
+        bool isSymbolToCheck = true;
+
+        if (isTypeSymbol(sym) && isFunctionType(sym->type)) {
+          // Don't check function types - they can persist in the tree.
+          isSymbolToCheck = false;
+
+        } else if (sym->hasEitherFlag(FLAG_REF, FLAG_WIDE_REF) &&
+                   isTypeSymbol(sym)) {
+          // Don't check ref types.
+          isSymbolToCheck = false;
+
+        } else if (parent->hasEitherFlag(FLAG_REF, FLAG_WIDE_REF) &&
+                   isVarSymbol(sym) &&
+                   isTypeSymbol(parent)) {
+          // Check types, but ignore the fields of 'ref'/'wide-ref' types.
+          isSymbolToCheck = false;
+        }
+
+        if (isSymbolToCheck) {
           for (auto& formal : ft->formals()) {
             INT_ASSERT(formal.intent() != INTENT_BLANK);
             INT_ASSERT(formal.qual() != QUAL_UNKNOWN);
           }
         }
+
       } else if (auto fn = toFnSymbol(sym)) {
         if (auto ft1 = toFunctionType(fn->type)) {
           auto ft2 = fn->computeAndSetType();
