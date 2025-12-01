@@ -4102,7 +4102,7 @@ Expr* TConverter::convertPrimCallOrNull(const Call* node, RV& rv) {
     auto re = rv.byAst(primCall->actual(1));
     int64_t idx = re.type().param()->toIntParam()->value();
     types::QualifiedType qtField;
-    ret = codegenGetField(primCall->actual(0), idx, rv, &qtField);
+    ret = codegenGetField(primCall->actual(0), idx-1, rv, &qtField);
     ret = storeInTempIfNeeded(ret, qtField);
   } else {
     ret = new CallExpr(primCall->prim());
@@ -4191,6 +4191,8 @@ locateFieldSymbolAndType(TConverter* tc,
                                            fieldName, -1);
       }
     }
+  } else {
+    dynoFieldIndex = fieldIndex;
   }
 
   bool inBounds = (0 <= dynoFieldIndex && dynoFieldIndex < rfds.numFields());
@@ -4212,7 +4214,9 @@ locateFieldSymbolAndType(TConverter* tc,
     // with only doing one while also retrieving the field's frontend type?
     const int idx = (dynoFieldIndex + 1) + superOffset;
     auto field = at->getField(idx);
-    CHPL_ASSERT(0==strcmp(fieldName, field->name));
+    if (fieldName) {
+      CHPL_ASSERT(0==strcmp(fieldName, field->name));
+    }
     return { base, field, fieldType };
   }
 
