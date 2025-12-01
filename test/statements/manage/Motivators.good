@@ -131,4 +131,10 @@ leaving
 deinit (ptr = {x = 19})
 
 T15: throwing method called in manage statement
-Error: Throwing!
+Error: Something throwing!
+
+T16: 'throws' occurs in manage statement
+Error: Uh oh!
+
+T17: 'throws' occurs in manage statement and is intercepted
+Error: Intercepted! Original: 'Hidden message!'

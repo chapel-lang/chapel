@@ -168,7 +168,9 @@ proc test13() {
 // TODO: This may be dropped if we decide we don't want explicit storage.
 proc test14() {
   writeln('T14: same manager nested, mixed resource storage types');
+
   var myManager = new man();
+
   manage myManager as var res1, myManager as ref res2,
          myManager as const ref res3 {
     res1.doSomething();
@@ -179,11 +181,14 @@ proc test14() {
 
 record rx : contextManager {
   proc doSomething() do writeln('Something!');
-  proc doSomethingThrowing() throws do throw new Error('Throwing!');
+  proc doSomethingThrowing() throws do throw new Error('Something throwing!');
   proc ref enterContext() ref do return this;
   proc exitContext(in e: owned Error?) throws {
-    // if (e) && e!.message() == 'Hidden message!' then throw Error('Intercepted!');
-    if e then throw e;
+    if e {
+      if e!.message() == 'Hidden message!' then
+        throw new Error('Intercepted! Original: \'' + e!.message() + '\'');
+      throw e;
+    }
   }
 }
 
@@ -226,7 +231,7 @@ proc test17() {
 proc main() {
   const tests = [ test1, test2, test3, test4, test5, test6, test7,
                   test8, test9, test10, test11, test12, test13, test14,
-                  test15, /* test16, test17 */ ];
+                  test15, test16, test17 ];
   for t in tests {
     t();
     if t != tests.last then writeln();
