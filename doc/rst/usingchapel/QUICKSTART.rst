@@ -46,6 +46,16 @@ Chapel 2.4:
 See `this page <https://chapel-lang.org/download/#linux>`__ for the most
 up-to-date list of supported OSes and platforms.
 
+.. note::
+
+   If you are using an RPM based distribution like RHEL, Rocky Linux, or
+   Alma Linux, you may need to install the EPEL repository before installing
+   Chapel.
+
+   .. code-block:: bash
+
+      sudo dnf install epel-release
+
 brew
 ~~~~
 
