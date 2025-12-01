@@ -96,6 +96,11 @@ ENV CHPL_RT_OVERSUBSCRIBED=yes
 
     return ""
 
+def pre_install_commands(package):
+    if ".el" in package:
+        return "RUN dnf install -y epel-release\n"
+    return ""
+
 def infer_pkg_type(package):
     if package.endswith(".deb"):
         return "apt"
@@ -122,12 +127,15 @@ def build_docker(test_dir, package_path, package_name, docker_os):
     test_package = textwrap.dedent(
         test_full_package if not is_minimal_package(package_name) else test_minimal_package).strip()
 
+    pre_install = pre_install_commands(package_name)
+
     substitutions = {
         "OS_BASE_IMAGE": docker_os,
         "HOST_PACKAGE_PATH": package_path,
         "PACKAGE_NAME": package_name,
         "TEST_ENV": infer_env_vars(package_name),
         "TEST_SCRIPT": test_package,
+        "PRE_INSTALL": pre_install,
     }
 
     src = MyTemplate(template)
