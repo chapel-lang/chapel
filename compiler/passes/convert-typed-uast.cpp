@@ -3835,7 +3835,6 @@ Expr* TConverter::convertMoveInitAssignOrNull(const Call* node, RV& rv) {
   if (!noCandidateForCall) return nullptr;
   if (!re->hasAssociatedActions()) return nullptr;
   auto& actions = re->associatedActions();
-  INT_ASSERT(actions.size() == 1);
   if (actions[0].action() != AssociatedAction::MOVE_INIT) {
     return nullptr;
   }
