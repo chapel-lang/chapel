@@ -1402,7 +1402,8 @@ class CLSConfig:
 
     def _mason_setup(self):
         # if this is a mason project, add 'src' as a module-dir
-        self.args["module_dir"] = self.args["module_dir"] + ["src"]
+        if os.path.exists(os.path.join(os.getcwd(), "Mason.toml")):
+            self.args["module_dir"] = self.args["module_dir"] + ["src"]
 
     def parse_args(self):
         self.args = copy.deepcopy(vars(self.parser.parse_args()))
