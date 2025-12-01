@@ -1,0 +1,212 @@
+#!/usr/bin/env python3
+
+import os
+import sys
+import subprocess as sp
+import shutil
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, Dict, Optional, List, Iterator, Tuple
+
+chpl_home = Path(os.environ.get("CHPL_HOME", ""))
+if not chpl_home.exists():
+    sys.stdout.write("[Error: CHPL_HOME not set or does not exist]\n")
+    sys.exit(1)
+sys.path.insert(0, str(chpl_home / "util" / "test"))
+import sub_test as sub_test_util
+sub_test_util.utildir = str(chpl_home / "util")
+
+def timeout():
+    default=300
+    return int(os.getenv("CHPL_TEST_TIMEOUT", default))
+
+def chpl() -> Path:
+    sub_dir =  chpl_home / "util" / "chplenv" / "chpl_bin_subdir.py"
+    result = sp.check_output(
+        [sys.executable, str(sub_dir), "--host"],
+        encoding="utf-8",
+        stderr=sp.STDOUT,
+    ).strip()
+    return chpl_home / "bin" / result / "chpl"
+
+def chpl_parallel_dbg() -> Path:
+    return chpl_home / "tools" / "chpl-parallel-dbg"
+
+@dataclass
+class Test:
+    """
+    Describes a test to be run through chpl-parallel-dbg
+
+    Currently only supports simple, one line, non-executable compopts/execopts
+    """
+    source_file: Path
+    good_file: Path
+    dbggood_file: Path
+    dbgcmds_file: Path
+    numlocales: int = 2
+    compopts_file: Optional[Path] = None
+    execopts_file: Optional[Path] = None
+
+    @classmethod
+    def find_tests(cls, directory: Path) -> Iterator["Test"]:
+        for f in directory.glob("*.chpl"):
+            if f.with_suffix(".notest").exists():
+                continue
+            if test := cls.test_factory(f):
+                yield test
+
+    @classmethod
+    def test_factory(cls, source_file: Path):
+        good_file = source_file.with_suffix(".good")
+        dbggood_file = source_file.with_suffix(".dbg.good")
+        dbgcmds_file = source_file.with_suffix(".dbg.cmds")
+        compopts_file = source_file.with_suffix(".compopts")
+        execopts_file = source_file.with_suffix(".execopts")
+        if not good_file.exists():
+            sys.stdout.write(f"[Warning: missing .good file for {source_file}]\n")
+            return None
+        if not dbggood_file.exists():
+            sys.stdout.write(f"[Warning: missing .dbg.good file for {source_file}]\n")
+            return None
+        if not dbgcmds_file.exists():
+            sys.stdout.write(f"[Warning: missing .dbg.cmds file for {source_file}]\n")
+            return None
+        kwargs: Dict[str, Any] = {
+            "source_file": source_file,
+            "good_file": good_file,
+            "dbggood_file": dbggood_file,
+            "dbgcmds_file": dbgcmds_file,
+        }
+
+        if source_file.with_suffix(".numlocales").exists():
+            with open(source_file.with_suffix(".numlocales"), "r") as f:
+                kwargs["numlocales"] = int(f.read().strip())
+
+        if compopts_file.exists():
+            kwargs["compopts_file"] = compopts_file
+        if execopts_file.exists():
+            kwargs["execopts_file"] = execopts_file
+        return cls(**kwargs)
+
+    def _compile(self) -> bool:
+        compopts = []
+        if env_compopts := os.getenv("COMPOPTS"):
+            compopts.extend(env_compopts.strip().splitlines())
+        if self.compopts_file:
+            with open(self.compopts_file, "r") as f:
+                compopts.extend(f.read().strip().splitlines())
+
+        try:
+            sp.check_call(
+                [str(chpl()), str(self.source_file)] + compopts,
+            )
+        except sp.CalledProcessError as e:
+            sys.stdout.write(f"[Error compiling {self.source_file}]\n")
+            return False
+        return True
+
+    def _execute(self) -> Tuple[Path, Path]:
+        executable = self.source_file.with_suffix("")
+        execopts = []
+        if env_execopts := os.getenv("EXECOPTS"):
+            execopts.extend(env_execopts.strip().splitlines())
+        if self.execopts_file:
+            with open(self.execopts_file, "r") as f:
+                execopts.extend(f.read().strip().splitlines())
+
+
+        executable_output = self.source_file.with_suffix(".out")
+        debugger_output = self.source_file.with_suffix(".dbgout")
+        executable_fp = open(executable_output, "w")
+        debugger_fp = open(debugger_output, "w")
+        executable_process = sp.Popen([str(executable)] + execopts,
+                                        stdout=executable_fp,
+                                        stderr=sp.STDOUT)
+        dbg_process = sp.Popen(
+            [str(chpl_parallel_dbg()), str(executable), str(self.numlocales), "--source", str(self.dbgcmds_file)],
+            stdout=debugger_fp,
+            stderr=sp.STDOUT,
+        )
+        dbg_process.wait(timeout=timeout())
+        try:
+            executable_process.wait(timeout=5)
+        except sp.TimeoutExpired:
+            executable_process.kill()
+
+        executable_fp.close()
+        debugger_fp.close()
+
+        return executable_output, debugger_output
+
+    def _compare_output(self, executable_output: Path, debugger_output: Path) -> bool:
+        # check executable output
+        try:
+            sp.check_call(
+                ["diff", "-u", str(self.good_file), str(executable_output)],
+            )
+        except sp.CalledProcessError as e:
+            sys.stdout.write(f"[Error matching executable output for {self.source_file}]\n")
+            return False
+        # check debugger output
+        try:
+            sp.check_call(
+                ["diff", "-u", str(self.dbggood_file), str(debugger_output)],
+            )
+        except sp.CalledProcessError as e:
+            sys.stdout.write(f"[Error matching debugger output for {self.source_file}]\n")
+            return False
+        return True
+
+
+
+
+    def test(self):
+        sys.stdout.write(f"[Testing {self.source_file}]\n")
+        if not self._compile():
+            return
+        executable_output, debugger_output = self._execute()
+        if not self._compare_output(executable_output, debugger_output):
+            return
+        sys.stdout.write("[Success matching output for {}]\n".format(self.source_file.stem))
+
+def dirSkipIf(d: Path):
+    skipif_file = d / "SKIPIF"
+    if skipif_file.exists() and os.getenv('CHPL_TEST_SINGLES')=='0':
+        sys.stdout.write('[Checking SKIPIF]\n')
+        sys.stdout.flush()
+        do_not_test = False
+        try:
+            skipme=False
+            skiptest=sub_test_util.runSkipIf(str(skipif_file.name))
+            if skiptest.strip() != "False":
+                skipme = skiptest.strip() == "True" or int(skiptest) == 1
+            if skipme:
+                sys.stdout.write('[Skipping test based on SKIPIF]\n')
+                do_not_test=True
+        except (ValueError, RuntimeError) as e:
+            sys.stdout.write(str(e)+'\n')
+            sys.stdout.write('[Error processing SKIPIF file]\n')
+            do_not_test=True
+        if do_not_test:
+            return True
+    return False
+
+def main():
+    sys.stdout.write("[Starting subtest]\n")
+    d = Path(os.path.dirname(os.path.abspath(__file__)))
+
+    if dirSkipIf(d):
+        return
+
+    if onetest := os.environ.get("CHPL_ONETEST"):
+        if t := Test.test_factory(Path(onetest)):
+            t.test()
+    else:
+        for t in Test.find_tests(d):
+            t.test()
+
+    sys.stdout.write("[Finished subtest {}]\n".format(d))
+
+
+if __name__ == "__main__":
+    main()
