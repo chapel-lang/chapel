@@ -195,9 +195,7 @@ proc compileSrc(lockFile: borrowed Toml, binLoc: string, show: bool,
                 projectHome: string) : bool throws {
 
   const (sourceList, gitList) = genSourceList(lockFile);
-  /*const depPath = MASON_HOME + '/src/';*/
   const depPath = Path.joinPath(MASON_HOME, 'src');
-  /*const gitDepPath = MASON_HOME + '/git/';*/
   const gitDepPath = Path.joinPath(MASON_HOME, 'git');
   const project = lockFile["root"]!["name"]!.s;
   const pathToProj = Path.replaceExt(Path.joinPath(projectHome,

@@ -94,7 +94,7 @@ proc masonExternal(args: [] string) {
       // Engin: Why do we clone spack itself while creating our own registry?
       // If spack registry is not installed then install it
       if !isDir(spackRegistryDefaultPath) {
-        writeln("Installing Spack Registry ...");
+        log.infoln("Installing Spack Registry ...");
         const dest = spackRegistryDefaultPath;
         const branch = ' --branch releases/latest ';
         const status = cloneSpackRepository(branch, dest);
@@ -102,12 +102,13 @@ proc masonExternal(args: [] string) {
           throw new owned MasonError("Spack registry installation failed.");
       }
       else {
-        writef("Using existing Spack Registry at %s\n",
-               spackRegistryDefaultPath);
+        log.infof("Using existing Spack Registry at %s\n",
+                  spackRegistryDefaultPath);
       }
 
-      /* Engin: Unclear to me why we do this.
-
+      /* Engin: Unclear to me why we do this. We _definitely_ shouldn't do it if
+         mason doesn't own the spack installation to say the least. I am not
+         sure if mason should ever own its own spack either.
       // If spack is installed and version is outdated, update it
       if isDir(SPACK_ROOT) && getSpackVersion() != minSpackVersion {
         writeln("Updating Spack backend ... ");
@@ -119,7 +120,8 @@ proc masonExternal(args: [] string) {
 
       // If spack is not installed then install it. Note that this is going to
       // be a spack installation owned by Mason, in that it will make it use its
-      // own registry. That may be OK.
+      // own registry. I am not sure if we should do that vs. making spack a
+      // mason dependency if a package has a spack-based dependency.
       if !isDir(SPACK_ROOT) {
         writeln("Installing Spack backend ... ");
         const spackLatestBranch = ' --branch ' + spackBranch + ' ';
@@ -255,7 +257,7 @@ private proc updateSpackCommandLine() {
 
 
 // ENGIN: If you have your independent spack installation, this function
-// basically highjacks it. It feels wrong to be doing this.
+// basically hijacks it. This doesn't feel right.
 /*
   Generate site-specific repos.yaml :-
   Replaces package repository path of repos.yaml file at

@@ -24,7 +24,8 @@ module MasonLogger {
 
 
   // Note: we use >= to determine whether we should output something. So, if you
-  // change enum values, make sure to put things in order.
+  // change enum values, make sure to put things in order, where the lower
+  // values mean lower verbosity.
   enum logLevel { no, error, warn, info, debug };
 
   config const logs = logLevel.info;
