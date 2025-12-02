@@ -1846,6 +1846,8 @@ size_t hashPromotedFormalMap(const PromotedFormalMap& map);
   the spec, but is not allowed in practice due to the aliasing rules of C.
   */
 class MostSpecificCandidate {
+ public:
+   using SyncReadsList = llvm::SmallVector<std::tuple<int, int>, 2>;
  private:
   friend class MostSpecificCandidates;
 
@@ -1854,22 +1856,26 @@ class MostSpecificCandidate {
   owned<PromotedFormalMap> promotedFormals_;
   int constRefCoercionFormal_;
   int constRefCoercionActual_;
+  SyncReadsList syncReads_;
 
   MostSpecificCandidate(const TypedFnSignature* fn,
                         FormalActualMap faMap,
                         PromotedFormalMap promotedFormals,
                         int constRefCoercionFormal,
-                        int constRefCoercionActual)
+                        int constRefCoercionActual,
+                        SyncReadsList syncReads)
     : fn_(fn), faMap_(new FormalActualMap(std::move(faMap))),
       promotedFormals_(new PromotedFormalMap(std::move(promotedFormals))),
       constRefCoercionFormal_(constRefCoercionFormal),
-      constRefCoercionActual_(constRefCoercionActual) {}
+      constRefCoercionActual_(constRefCoercionActual),
+      syncReads_(std::move(syncReads)) {}
 
  public:
   MostSpecificCandidate()
     : fn_(nullptr), faMap_(), promotedFormals_(),
       constRefCoercionFormal_(-1),
-      constRefCoercionActual_(-1) {}
+      constRefCoercionActual_(-1),
+      syncReads_() {}
 
   MostSpecificCandidate& operator=(MostSpecificCandidate&& other) = default;
   MostSpecificCandidate& operator=(const MostSpecificCandidate& other) {
@@ -1882,6 +1888,7 @@ class MostSpecificCandidate {
     }
     constRefCoercionFormal_ = other.constRefCoercionFormal_;
     constRefCoercionActual_ = other.constRefCoercionActual_;
+    syncReads_ = other.syncReads_;
     return *this;
   }
 
@@ -1914,8 +1921,12 @@ class MostSpecificCandidate {
 
   bool hasConstRefCoercion() const { return constRefCoercionFormal_ != -1; }
 
+  bool hasSyncReads() const { return !syncReads_.empty(); }
+
+  SyncReadsList const& syncReads() const { return syncReads_; }
+
   operator bool() const {
-    CHPL_ASSERT(fn_ || (constRefCoercionFormal_ == -1 && constRefCoercionActual_ == -1));
+    CHPL_ASSERT(fn_ || (constRefCoercionFormal_ == -1 && constRefCoercionActual_ == -1 && hasSyncReads() == false));
     return fn_ != nullptr;
   }
 
@@ -1937,7 +1948,8 @@ class MostSpecificCandidate {
     return fn_ == other.fn_ &&
            faMapsEqual &&
            constRefCoercionFormal_ == other.constRefCoercionFormal_ &&
-           constRefCoercionActual_ == other.constRefCoercionActual_;
+           constRefCoercionActual_ == other.constRefCoercionActual_ &&
+           syncReads_ == other.syncReads_;
   }
 
   bool operator!=(const MostSpecificCandidate& other) const {
@@ -1955,7 +1967,7 @@ class MostSpecificCandidate {
   }
 
   size_t hash() const {
-    return chpl::hash(fn_, faMap_, promotedFormals_, constRefCoercionFormal_, constRefCoercionActual_);
+    return chpl::hash(fn_, faMap_, promotedFormals_, constRefCoercionFormal_, constRefCoercionActual_, syncReads_);
   }
 
   static bool update(MostSpecificCandidate& keep,
@@ -1969,6 +1981,7 @@ class MostSpecificCandidate {
     std::swap(promotedFormals_, other.promotedFormals_);
     std::swap(constRefCoercionFormal_, other.constRefCoercionFormal_);
     std::swap(constRefCoercionActual_, other.constRefCoercionActual_);
+    std::swap(syncReads_, other.syncReads_);
   }
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
