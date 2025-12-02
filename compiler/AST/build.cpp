@@ -1892,7 +1892,7 @@ BlockStmt* buildConditionalLocalStmt(Expr* condExpr, Expr *stmt) {
     // This is a special variation of 'defer' where the contents can throw.
     // We need it in case the user code contains e.g., a 'return'. It is
     // not exposed to the user so we don't need the semantics to be perfect.
-    defer-try { manager.exitContext(error); }
+    unchecked-defer { manager.exitContext(error); }
 
     try {
       // Insertion point for next manager or user block.
@@ -1958,14 +1958,14 @@ BlockStmt* buildManagerBlock(Expr* managerExpr, std::set<Flag>* flags,
                                 new UnresolvedSymExpr("Error")));
   ret->insertAtTail(new DefExpr(errorTemp, gNil, errorType));
 
-  // BUILD: defer-try manager.exitContext(error);
+  // BUILD: unchecked-defer manager.exitContext(error);
   auto exitCall = new CallExpr("exitContext",
                                gMethodToken,
                                new SymExpr(managerHandle),
                                new SymExpr(errorTemp));
   auto deferBlock = new BlockStmt();
   deferBlock->insertAtTail(exitCall);
-  auto defer = new DeferStmt(DeferStmt::THROWING, deferBlock);
+  auto defer = new DeferStmt(DeferStmt::UNCHECKED, deferBlock);
   ret->insertAtTail(defer);
 
   // The try block contains the code for the next manager or user code.

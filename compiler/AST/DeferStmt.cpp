@@ -64,8 +64,8 @@ DeferStmt::Kind DeferStmt::kind() const {
   return kind_;
 }
 
-bool DeferStmt::isThrowingDefer() const {
-  return kind_ == THROWING;
+bool DeferStmt::isUncheckedDefer() const {
+  return kind_ == UNCHECKED;
 }
 
 void DeferStmt::accept(AstVisitor* visitor) {

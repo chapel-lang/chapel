@@ -649,7 +649,7 @@ void ErrorHandlingVisitor::exitForallStmt(ForallStmt* node) {
 bool ErrorHandlingVisitor::enterDeferStmt(DeferStmt* node) {
   deferDepth++;
 
-  if (node->isThrowingDefer()) {
+  if (node->isUncheckedDefer()) {
     // This is a special kind of 'defer' that can't be constructed by a user,
     // however it can be constructed by other AST as needed (e.g., by a
     // 'manage' statement). This variant of 'defer' can throw, but can only
@@ -665,8 +665,8 @@ bool ErrorHandlingVisitor::enterDeferStmt(DeferStmt* node) {
 
     if (!inThrowingContext) {
       // If this were user-facing, what would we do? Wrap it in a 'try!'?
-      INT_FATAL(node, "cannot currently use a throwing defer block in a "
-                      "non-throwing context");
+      INT_FATAL(node, "cannot currently use an unchecked defer block that "
+                      "throws in a non-throwing context");
     }
 
     SET_LINENO(node->body());
@@ -1253,7 +1253,7 @@ void ErrorCheckingVisitor::exitDeferStmt(DeferStmt* node) {
 
     // OK, no checking needed
 
-  } else if (canBlockStmtThrow(node->body()) && !node->isThrowingDefer()) {
+  } else if (canBlockStmtThrow(node->body()) && !node->isUncheckedDefer()) {
     USR_FATAL_CONT(node, "error handling in defer blocks must be complete");
     printReason(node, reasons);
   }

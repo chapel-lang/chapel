@@ -34,7 +34,6 @@ module ThrowContext {
     writeln('Done!');
   }
 
-  // TODO: mention of non-nilable variable after ownership is transferred...?
   proc test1() throws {
     writeln('T1');
 

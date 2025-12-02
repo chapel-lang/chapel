@@ -27,12 +27,12 @@ class DeferStmt final : public Stmt
 {
 
 public:
-  enum  Kind { DEFAULT, THROWING };
+  enum  Kind { DEFAULT, UNCHECKED };
 
   BlockStmt*          body() const;
   Kind                kind() const;
 
-  bool                isThrowingDefer() const;
+  bool                isUncheckedDefer() const;
 
   // To be invoked by the parser; returns a BlockStmt
   // containing the DeferStmt.
