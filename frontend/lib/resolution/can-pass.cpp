@@ -781,12 +781,14 @@ CanPassResult CanPassResult::canConvert(Context* context,
       auto fieldQt = fields.fieldType(i);
       if (!fieldQt.isUnknownOrErroneous()) {
         auto adjustedQt = QualifiedType(actualQT.kind(), fieldQt.type());
-        // Further note: ideally, I'd like to have a custom conversion
-        // kind for this. But I think borrowing conversions (e.g.) are more
-        // important to signal here.
-        //
-        // TODO: maybe we need to turn conversion kind into a bitfield?
-        return canPassScalar(context, adjustedQt, formalQT);
+        auto got = canPassScalar(context, adjustedQt, formalQT);
+        if (!got.passes()) return got;
+
+        // augment conversionKind with the fact that we invoked `.readFF`.
+        return CanPassResult(/* no fail reason, passes */ {},
+                             /* instantiates */ got.instantiates(),
+                             /* promotes */ got.promotes(),
+                             /* conversion kind */ got.conversionKind() | READS);
       }
     }
   }
