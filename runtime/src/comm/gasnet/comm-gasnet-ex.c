@@ -1017,11 +1017,11 @@ int chpl_comm_run_in_lldb(int argc, char* argv[], int lldbArgnum, int* status) {
   const char* default_lldb_server =
     "/Library/Developer/CommandLineTools/Library/PrivateFrameworks/LLDB.framework/Resources/debugserver";
 #else
-  const char* default_lldb_server = "/usr/bin/lldb-server";
+  const char* default_lldb_server = "lldb-server";
 #endif
 
   const char* lldb_server =
-    chpl_env_rt_get("LLDB_DEBUG_SERVER_PATH", default_lldb_server);
+    chpl_env_rt_get("LLDB_DEBUG_SERVER_PATH", NULL);
   int BASE_PORT = chpl_env_rt_get_int("DEBUG_SERVER_BASE_PORT", 5000);
   // before launching the runtime, sleep for just a little bit to allow the
   // parent to attach to the runtime process
@@ -1030,11 +1030,14 @@ int chpl_comm_run_in_lldb(int argc, char* argv[], int lldbArgnum, int* status) {
     chpl_env_rt_get_int("DEBUG_SERVER_SLEEP_FUDGE_FACTOR", 2);
 
   // this check is really important for good user errors and preventing injection
-  if (access(lldb_server, X_OK) != 0) {
+  if (lldb_server != NULL && access(lldb_server, X_OK) != 0) {
     char buf[1024];
     snprintf(buf, sizeof(buf), "Could not find '%s'", lldb_server);
     chpl_error(buf, 0, 0);
     return 1;
+  }
+  if (lldb_server == NULL) {
+    lldb_server = default_lldb_server;
   }
 
   int port = BASE_PORT + chpl_nodeID;
