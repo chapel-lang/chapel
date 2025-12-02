@@ -3641,8 +3641,8 @@ Symbol* TConverter::convertVariable(const uast::Variable* node,
         auto action = actions[0];
         if (action.action() == resolution::AssociatedAction::ASSIGN) {
           const ResolvedFunction *rf;
-          auto _elide = paramElideCallOrNull(actions[0].fn(), re->poiScope(), &rf);
-          INT_ASSERT(!_elide);
+          auto elide = paramElideCallOrNull(actions[0].fn(), re->poiScope(), &rf);
+          INT_ASSERT(!elide);
           auto calledFn = findOrConvertFunction(rf);
           // Use temp to avoid constness errors later in compiler
           VarSymbol* initTemp = newTemp("initTemp", convertType(re->type().type()));
@@ -3847,6 +3847,7 @@ Expr* TConverter::convertMoveInitAssignOrNull(const Call* node, RV& rv) {
   return new CallExpr(PRIM_MOVE, lhs, rhs);
 }
 
+// TODO: Can we generate some proper uAST here, somehow?
 Expr* TConverter::convertEnumIntegralCastOrNull(const Call* node, RV& rv) {
   auto op = node->toOpCall();
   if (!op || op->op() != USTR(":")) return nullptr;
@@ -4742,8 +4743,8 @@ Expr* TConverter::convertGroupedAssign(
 
     // Assign it to the LHS element.
     const ResolvedFunction* rf;
-    auto _elide = paramElideCallOrNull(action.fn(), re.poiScope(), &rf);
-    INT_ASSERT(!_elide);
+    auto elide = paramElideCallOrNull(action.fn(), re.poiScope(), &rf);
+    INT_ASSERT(!elide);
     auto calledFn = findOrConvertFunction(rf);
     CallExpr* ret = new CallExpr(calledFn, lhsExpr, getElem);
     insertStmt(ret);
@@ -4990,8 +4991,6 @@ Expr* TConverter::ActualConverter::convertActualWithArg(const FormalActual& fa) 
             auto mrt = types::QualifiedType(fa.actualType().kind(),
                                             ct->managerRecordType(context));
             types::QualifiedType qtField;
-            // Can always generate an access for 'chpl_p', since we're either accessing
-            // that field directly, or forwarding to it.
             borrow = codegenGetFieldImpl(tc_, PRIM_UNKNOWN, temp, mrt,
                                          "chpl_p",
                                          -1,
@@ -5718,22 +5717,22 @@ bool TConverter::enter(const TupleDecl* node, RV& rv) {
   if (node->isTupleDeclFormal()) {
     enterScope(node, rv);
     return true;
-  } else {
-    types::QualifiedType initQt;
-    auto initExpr = convertExpr(node->initExpression(), rv, &initQt);
-    auto tup = makeNewTemp(initQt);
-    insertStmt(new CallExpr(PRIM_MOVE, tup, initExpr));
-    for (int i = 0; i < node->numDecls(); i++) {
-      auto decl = node->decl(i);
-      Expr* declInit = new CallExpr(PRIM_GET_MEMBER_VALUE,
-                                   tup,
-                                   new_CStringSymbol(astr("x", istr(i))));
-      declInit = storeInTempIfNeeded(declInit, initQt.type()->toTupleType()->elementType(i));
-      auto sym = convertVariable(decl->toVariable(), rv, true, nullptr, declInit);
-      INT_ASSERT(sym);
-    }
-    return false;
   }
+
+  types::QualifiedType initQt;
+  auto initExpr = convertExpr(node->initExpression(), rv, &initQt);
+  auto tup = makeNewTemp(initQt);
+  insertStmt(new CallExpr(PRIM_MOVE, tup, initExpr));
+  for (int i = 0; i < node->numDecls(); i++) {
+    auto decl = node->decl(i);
+    Expr* declInit = new CallExpr(PRIM_GET_MEMBER_VALUE,
+                                 tup,
+                                 new_CStringSymbol(astr("x", istr(i))));
+    declInit = storeInTempIfNeeded(declInit, initQt.type()->toTupleType()->elementType(i));
+    auto sym = convertVariable(decl->toVariable(), rv, true, nullptr, declInit);
+    INT_ASSERT(sym);
+  }
+  return false;
 }
 void TConverter::exit(const TupleDecl* node, RV& rv) {
   if (node->isTupleDeclFormal()) {
