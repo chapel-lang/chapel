@@ -119,6 +119,7 @@ module ChapelSyncvar {
 
   pragma "sync"
   pragma "default intent is ref"
+  pragma "infer custom type"
   @chpldoc.nodoc
   record _syncvar : writeSerializable, readDeserializable {
     type valType;                              // The compiler knows this name
@@ -199,6 +200,8 @@ module ChapelSyncvar {
     proc serialize(writer, ref serializer) throws {
       compilerError("sync variables cannot currently be written - apply readFE/readFF() to those variables first");
     }
+
+    proc chpl__inferCopyType() type do return valType;
   }
 
   /*

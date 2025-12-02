@@ -206,6 +206,7 @@ X(stringId            , "String._string")
 X(bytesId             , "Bytes._bytes")
 X(localeId            , "ChapelLocale._locale")
 X(rangeId             , "ChapelRange._range")
+X(syncvarId           , "ChapelSyncvar._syncvar")
 
 /* A string too long is checked at compile time */
 /* X(somethingtoolong      , "somethingtoolongforthemacro") */
