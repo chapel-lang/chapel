@@ -26,3 +26,5 @@ unsudo make
 make install
 
 update-alternatives --install /usr/bin/cmake cmake /usr/local/bin/cmake 1
+
+hide rm -rf $MYTMP
