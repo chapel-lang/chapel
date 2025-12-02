@@ -179,15 +179,54 @@ proc test14() {
   }
 }
 
+// This context manager is used to test throwing manage statements.
 record rx : contextManager {
-  proc doSomething() do writeln('Something!');
-  proc doSomethingThrowing() throws do throw new Error('Something throwing!');
+  var _userInterceptMsg: string;
+  var _userReplacementMsg: string;
+  var _throwOnExit: bool;
+  var _numInterceptions = 0;
+
+  proc numInterceptions do return _numInterceptions;
+
+  proc init(interceptMsg: string='', replacementMsg: string='',
+            throwOnExit: bool=false) {
+    this._userInterceptMsg = interceptMsg;
+    this._userReplacementMsg = replacementMsg;
+    this._throwOnExit = throwOnExit;
+  }
+
+  proc type defaultReplacementMsg(num: int, msg: string) {
+    var ret = 'Intercepted! (' + num:string + '): \'' + msg + '\'';
+    return ret;
+  }
+
+  proc ref _replacementMsg(e: borrowed Error?) {
+    var ret = if _userReplacementMsg.isEmpty()
+        then this.type.defaultReplacementMsg(_numInterceptions, e!.message())
+        else _userReplacementMsg;
+    _numInterceptions += 1;
+    return ret;
+  }
+
+  proc doSomething(msg='Something!') do writeln(msg);
+
+  proc doSomethingThrowing(msg='Something throwing!') throws {
+    throw new Error(msg);
+  }
+
   proc ref enterContext() ref do return this;
-  proc exitContext(in e: owned Error?) throws {
+
+  proc ref exitContext(in e: owned Error?) throws {
     if e {
-      if e!.message() == 'Hidden message!' then
-        throw new Error('Intercepted! Original: \'' + e!.message() + '\'');
-      throw e;
+      if !_userInterceptMsg.isEmpty() && e!.message() == _userInterceptMsg {
+        const msg = _replacementMsg(e);
+        throw new Error(msg);
+      } else {
+        throw e;
+      }
+    } else if _throwOnExit {
+      const msg = 'Error thrown regardless!';
+      throw new Error(msg);
     }
   }
 }
@@ -219,21 +258,106 @@ proc test16() {
 proc test17() {
   writeln('T17: \'throws\' occurs in manage statement and is intercepted');
 
-  var foo: rx;
+  const msg = 'Hidden message!';
+  var foo = new rx(msg);
 
   try {
-    manage foo as x do throw new Error('Hidden message!');
+    manage foo as x do throw new Error(msg);
   } catch e {
     writeln(e);
+  }
+}
+
+proc test18() {
+  writeln('T18: different managers nested, handling thrown errors');
+
+  const msgToIntercept1 = 'Nested hidden message!';
+  const replacementMsg1 = 'Passing on another message!';
+  const msgToIntercept2 = replacementMsg1;
+
+  var man1 = new rx(msgToIntercept2);
+  var man2 = new rx(msgToIntercept1, replacementMsg1);
+  var man3 = new rx();
+
+  try {
+    // m3: propagate -> m2: intecept -> m1: intercept
+    manage man1 as m1, man2 as m2, man3 as m3 {
+      m1.doSomethingThrowing(msgToIntercept1);
+    }
+  } catch e {
+    assert(man1.numInterceptions == 1);
+    assert(man2.numInterceptions == 1);
+    assert(man3.numInterceptions == 0);
+    writeln(e);
+  }
+}
+
+proc test19() {
+  writeln('T19: same manager nested, handling thrown errors');
+
+  const msgToIntercept1 = 'Hidden message!';
+
+  // Effectively propagates the same message upwards through replacements.
+  var man = new rx(msgToIntercept1, msgToIntercept1);
+
+  try {
+    manage man as m1, man as m2, man as m3 {
+      m1.doSomethingThrowing(msgToIntercept1);
+    }
+  } catch e {
+    writeln(e);
+    const n = man.numInterceptions;
+    assert(n == 3);
+    writeln(n);
+  }
+}
+
+proc test20() {
+  writeln('T20: manage statement does not throw but \'exitContext()\' does');
+
+  var man = new rx(throwOnExit=true);
+
+  try {
+    manage man as m do m.doSomething();
+  } catch e {
+    assert(man.numInterceptions == 0);
+    writeln(e);
+  }
+}
+
+proc test21() {
+  writeln('T21: nested managers, starts with \'exitContext()\' throwing');
+
+  const msgToIntercept1 = 'Hidden message!';
+  const replacementMsg1 = 'Passing on another message!';
+  const msgToIntercept2 = 'Error thrown regardless!';
+  const replacementMsg2 = 'Gotcha!';
+
+  var man1 = new rx(msgToIntercept2, replacementMsg2);  // Ok
+  var man2 = new rx(msgToIntercept1, replacementMsg1);  // Skipped
+  var man3 = new rx(throwOnExit=true);                  // Start
+
+  try {
+    manage man1 as m1, man2 as m2, man3 as m3 {
+      // No throwing occurs in the body!
+      m1.doSomething();
+      m2.doSomething();
+      m3.doSomething();
+    }
+  } catch e {
+    writeln(e);
+    assert(man1.numInterceptions == 1);
+    assert(man2.numInterceptions == 0);
+    assert(man3.numInterceptions == 0);
   }
 }
 
 proc main() {
   const tests = [ test1, test2, test3, test4, test5, test6, test7,
                   test8, test9, test10, test11, test12, test13, test14,
-                  test15, test16, test17 ];
-  for t in tests {
-    t();
-    if t != tests.last then writeln();
+                  test15, test16, test17, test18, test19, test20, test21 ];
+  for test in tests {
+    test();
+    if test != tests.last then writeln();
   }
 }

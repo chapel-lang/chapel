@@ -25,7 +25,7 @@ module ThrowContext {
   }
 
   proc test0() throws {
-    writeln('Running test...');
+    writeln('T0');
 
     manage new externCaller() as call {
       call.retVal = fakeFailingExtern();
@@ -36,7 +36,7 @@ module ThrowContext {
 
   // TODO: mention of non-nilable variable after ownership is transferred...?
   proc test1() throws {
-    writeln('Running test...');
+    writeln('T1');
 
     manage new externCaller() as call {
       throw new Error('Another unexpected error occurred!');
@@ -48,8 +48,6 @@ module ThrowContext {
 
   proc main() {
     try { test0(); } catch e { writeln(e); }
-    /*
     try { test1(); } catch e { writeln(e); }
-    */
   }
 }

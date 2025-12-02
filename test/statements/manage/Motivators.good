@@ -137,4 +137,21 @@ T16: 'throws' occurs in manage statement
 Error: Uh oh!
 
 T17: 'throws' occurs in manage statement and is intercepted
-Error: Intercepted! Original: 'Hidden message!'
+Error: Intercepted! (0): 'Hidden message!'
+
+T18: different managers nested, handling thrown errors
+Error: Intercepted! (0): 'Passing on another message!'
+
+T19: same manager nested, handling thrown errors
+Error: Hidden message!
+3
+
+T20: manage statement does not throw but 'exitContext()' does
+Something!
+Error: Error thrown regardless!
+
+T21: nested managers, starts with 'exitContext()' throwing
+Something!
+Something!
+Something!
+Error: Gotcha!
