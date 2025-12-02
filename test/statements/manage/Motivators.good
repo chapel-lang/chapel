@@ -155,3 +155,11 @@ Something!
 Something!
 Something!
 Error: Gotcha!
+
+T22: clean up occurs when 'return' is in a manage statement
+Something!
+Error: Error thrown regardless!
+
+T23: cannot currently terminate control through a manage
+Something!
+8

@@ -352,10 +352,48 @@ proc test21() {
   }
 }
 
+// Will always clean up on all paths.
+proc test22() {
+  writeln('T22: clean up occurs when \'return\' is in a manage statement');
+
+  proc nestedThrows() throws {
+    manage new rx(throwOnExit=true) as m {
+      m.doSomething();
+      return;
+    }
+
+    writeln('Never reaches here!');
+  }
+
+  try {
+    nestedThrows();
+  } catch e {
+    writeln(e);
+  }
+}
+
+// TODO: Manage statement is not currently considered as terminating control.
+proc test23() {
+  writeln('T23: cannot currently terminate control through a manage');
+
+  proc nestedReturn8() {
+    manage new rx() as m {
+      m.doSomething();
+      return 8;
+    }
+    // TODO: Remove this and you get a compiler error.
+    return 0;
+  }
+
+  const n = nestedReturn8();
+  writeln(n);
+}
+
 proc main() {
-  const tests = [ test1, test2, test3, test4, test5, test6, test7,
-                  test8, test9, test10, test11, test12, test13, test14,
-                  test15, test16, test17, test18, test19, test20, test21 ];
+  const tests = [ test1, test2, test3, test4, test5, test6, test7, test8,
+                  test9, test10, test11, test12, test13, test14, test15,
+                  test16, test17, test18, test19, test20, test21, test22,
+                  test23 ];
   for test in tests {
     test();
     if test != tests.last then writeln();
