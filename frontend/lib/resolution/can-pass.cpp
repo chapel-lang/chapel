@@ -482,12 +482,7 @@ CanPassResult CanPassResult::canPassDecorators(Context* context,
       instantiates = true;  // instantiating with passed management
     else if (formalMgmt.isBorrowed()) {
       // management can convert to borrowed
-      if (conversion == NONE)
-        conversion = BORROWS;
-      else if (conversion == SUBTYPE)
-        conversion = BORROWS_SUBTYPE;
-      else
-        CHPL_ASSERT(false && "should be unreachable");
+      conversion |= BORROWS;
     } else
       fails = FAIL_INCOMPATIBLE_MGMT;
   }
@@ -567,8 +562,7 @@ CanPassResult CanPassResult::canPassSubtypeNonBorrowing(Context* context,
       auto formalBct = formalCt->basicClassType();
 
       // Only consider subtype conversions here.
-      bool converts = (decResult.conversionKind_ == SUBTYPE ||
-                       decResult.conversionKind_ == BORROWS_SUBTYPE);
+      bool converts = decResult.conversionKind_ & SUBTYPE;
       bool instantiates = decResult.instantiates_;
 
       bool pass = false;
@@ -634,7 +628,7 @@ CanPassResult CanPassResult::canPassSubtypeNonBorrowing(Context* context,
 // Like canPassSubtypeNonBorrowing, but considers subtyping conversions and/or implicit
 // borrowing conversions.
 // This function returns CanPassResult which always has
-// conversion kind of NONE, SUBTYPE, BORROWS, or BORROWS_SUBTYPE.
+// conversion kind of NONE, SUBTYPE, BORROWS, or BORROWS | SUBTYPE.
 CanPassResult CanPassResult::canPassSubtypeOrBorrowing(Context* context,
                                                        const Type* actualT,
                                                        const Type* formalT) {
@@ -652,30 +646,14 @@ CanPassResult CanPassResult::canPassSubtypeOrBorrowing(Context* context,
         CanPassResult decResult = canPassDecorators(
             context, actualCt->decorator(), formalCt->decorator());
         CHPL_ASSERT(decResult.passes() && "expected types known to pass");
-        // Extract borrowing conversion info only.
         borrowingConversion = decResult.conversionKind();
-        if (borrowingConversion == SUBTYPE) borrowingConversion = NONE;
       }
     }
 
-    // Adjust subtyping component of conversion to reflect necessary borrowing.
-    ConversionKind adjustedConversion;
-    if (borrowingConversion == NONE) {
-      // no adjustment needed
-      adjustedConversion = subtypingConversion;
-    } else if (borrowingConversion == BORROWS) {
-      if (subtypingConversion == NONE) {
-        adjustedConversion = BORROWS;
-      } else {
-        adjustedConversion = BORROWS_SUBTYPE;
-      }
-    } else {
-      CHPL_ASSERT(borrowingConversion == BORROWS_SUBTYPE);
-      CHPL_ASSERT(subtypingConversion == SUBTYPE);
-      adjustedConversion = BORROWS_SUBTYPE;
-    }
+    result.conversionKind_ = subtypingConversion | borrowingConversion;
 
-    result.conversionKind_ = adjustedConversion;
+    // the only two flags that should be set are 'SUBTYPE' or 'BORROWS'
+    CHPL_ASSERT((result.conversionKind_ & ~(result.SUBTYPE | result.BORROWS)) == 0);
     return result;
   } else {
     return fail(FAIL_EXPECTED_SUBTYPE);
@@ -753,10 +731,6 @@ CanPassResult CanPassResult::canConvert(Context* context,
   {
     auto got = canPassSubtypeOrBorrowing(context, actualT, formalT);
     if (got.passes()) {
-      CHPL_ASSERT(got.conversionKind_ == NONE ||
-                  got.conversionKind_ == SUBTYPE ||
-                  got.conversionKind_ == BORROWS ||
-                  got.conversionKind_ == BORROWS_SUBTYPE);
       return got;
     }
   }
@@ -1126,7 +1100,7 @@ CanPassResult CanPassResult::canInstantiate(Context* context,
             return CanPassResult(/* no fail reason, passes */ {},
                                  /* instantiates */ true,
                                  /* promotes */ false,
-                                 /* converts */ ConversionKind::OTHER);
+                                 /* converts */ OTHER);
           }
         }
       }
@@ -1254,8 +1228,7 @@ CanPassResult CanPassResult::canPassScalar(Context* context,
 
     auto got = canInstantiate(context, actualQT, formalQT);
     if (got.passes() && formalQT.kind() == QualifiedType::TYPE &&
-        (got.conversionKind() == BORROWS ||
-         got.conversionKind() == BORROWS_SUBTYPE)) {
+        (got.conversionKind() & BORROWS)) {
       // 'type x: borrowed' should not be instantiate-able with 'owned C'.
       return fail(FAIL_INCOMPATIBLE_MGMT);
     }

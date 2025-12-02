@@ -4986,7 +4986,7 @@ Expr* TConverter::ActualConverter::convertActualWithArg(const FormalActual& fa) 
       fa.formalType().type() != fa.actualType().type()) {
     auto got = canPassScalar(context, fa.actualType(), fa.formalType());
     if (got.converts() &&
-        got.conversionKind() != CanPassResult::ConversionKind::TO_REFERENTIAL_TUPLE) {
+        got.conversionKind() != CanPassResult::TO_REFERENTIAL_TUPLE) {
       bool isExternFn = parsing::idIsExtern(context, tfs_->untyped()->id());
       if (isExternFn &&
           fa.formalType().type()->isCStringType() &&
@@ -4999,8 +4999,7 @@ Expr* TConverter::ActualConverter::convertActualWithArg(const FormalActual& fa) 
         temp = new SymExpr(sym);
       } else {
         auto kind = got.conversionKind();
-        if (kind == CanPassResult::ConversionKind::BORROWS ||
-            kind == CanPassResult::ConversionKind::BORROWS_SUBTYPE) {
+        if (kind & CanPassResult::BORROWS) {
           auto ct = fa.actualType().type()->toClassType();
           Expr* borrow = nullptr;
 

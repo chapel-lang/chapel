@@ -1206,7 +1206,7 @@ void DisambiguationCandidate::computeConversionInfo(Context* context, int numAct
                                           fa1->formalType());
 
     if (canPass.passes() &&
-        canPass.conversionKind() == CanPassResult::ConversionKind::PARAM_NARROWING) {
+        canPass.conversionKind() == CanPassResult::PARAM_NARROWING) {
       numParamNarrowing++;
     }
 
@@ -1220,7 +1220,7 @@ void DisambiguationCandidate::computeConversionInfo(Context* context, int numAct
     }
 
     if (canPass.passes() &&
-        canPass.conversionKind() == CanPassResult::ConversionKind::NONE &&
+        canPass.conversionKind() == CanPassResult::NONE &&
         !canPass.promotes()) {
       continue;
     }
