@@ -139,6 +139,7 @@ X(uint_               , "uint")
 X(unmanaged           , "unmanaged")
 X(void_               , "void")
 X(range               , "range")
+X(valType             , "valType")
 
 X(atMark              , "@")
 X(equals              , "=")

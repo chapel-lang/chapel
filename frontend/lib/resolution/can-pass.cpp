@@ -792,6 +792,31 @@ CanPassResult CanPassResult::canConvert(Context* context,
     return canConvertTuples(context, aT, fT);
   }
 
+  // Note (D.F. Dec 1. 2025):
+  // sync int -> sync conversion is handled in production via
+  // canCoerceToCopyType. However, In Dyno, I'd like to make it its own thing,
+  // since it's special (requiring resolution of `.readFF`), and since we'd
+  // like to generate warnings for it.
+  if (actualQT.type()->isSyncType()) {
+    auto rc = createDummyRC(context);
+    CHPL_ASSERT(actualQT.type()->isCompositeType());
+    auto fields = fieldsForTypeDecl(&rc, actualQT.type()->toCompositeType(), DefaultsPolicy::IGNORE_DEFAULTS);
+    for (int i = 0; i < fields.numFields(); i++) {
+      if (fields.fieldName(i) != USTR("valType")) continue;
+
+      auto fieldQt = fields.fieldType(i);
+      if (!fieldQt.isUnknownOrErroneous()) {
+        auto adjustedQt = QualifiedType(actualQT.kind(), fieldQt.type());
+        // Further note: ideally, I'd like to have a custom conversion
+        // kind for this. But I think borrowing conversions (e.g.) are more
+        // important to signal here.
+        //
+        // TODO: maybe we need to turn conversion kind into a bitfield?
+        return canPassScalar(context, adjustedQt, formalQT);
+      }
+    }
+  }
+
   // TODO: check for conversion to copy type
   // (relevant for array slices and iterator records)
   // TODO: port canCoerceToCopyType
