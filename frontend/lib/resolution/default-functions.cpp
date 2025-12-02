@@ -1502,6 +1502,16 @@ const BuilderResult& buildEnumToOrder(Context* context, ID typeID) {
   auto argType = Identifier::build(builder, dummyLoc, typeID.symbolName(context));
   auto typeIdent = argType->copy(); // make a copy for the 'use <type>' stmt
   auto argName = UniqueString::get(context, "e");
+  if (argName == argType->name()) {
+    // if the enum is named 'e', don't generate a formal like 'e : e'.
+    //
+    // Note: on the one hand, it seems like we don't even need to specify the
+    // type expression, since the generated `buildEnumToOrder` is exactly the
+    // one corresponding to the type (it's build via the `EnumType`). However,
+    // it seems like we might need that information when generating production
+    // compiler AST, so instead, I chose to avoid naming conflicts via this check.
+    argName = UniqueString::getConcat(context, argName.c_str(), "_");
+  }
   auto argFormal = Formal::build(builder, dummyLoc, nullptr,
                                   argName, Formal::DEFAULT_INTENT,
                                   std::move(argType), nullptr);

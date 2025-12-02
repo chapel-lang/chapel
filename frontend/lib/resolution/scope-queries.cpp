@@ -1881,7 +1881,8 @@ static LookupResult helpLookupInScopeWithShadowingWarning(
                                &shadowed,
                                /* traceShadowed */ nullptr);
 
-  if (shadowed.numIds() > 0) {
+  // don't issue shadowing warnings for generated code, we know what we are doing.
+  if (shadowed.numIds() > 0 && !idForWarnings.isFabricatedId()) {
     // once more, with feeling!
     // well, tracing, actually.
     shadowed.clear();
