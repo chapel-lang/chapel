@@ -11,6 +11,7 @@ RUN dnf upgrade -y && dnf install -y --allowerasing sudo vim which shadow-utils
 COPY --chown=user @@{HOST_PACKAGE_PATH}/@@{PACKAGE_NAME} /home/user/@@{PACKAGE_NAME}
 
 USER root
+@@{PRE_INSTALL}
 RUN dnf install -y --allowerasing ./@@{PACKAGE_NAME}
 USER user
 WORKDIR /home/user

@@ -29,6 +29,14 @@ supported / most recommended and the boxes (such as bento and ubuntu
 images that the Vagrantfiles specify to download) usually start with
 VirtualBox support.
 
+### Note on FreeBSD boxes
+
+[Official FreeBSD
+boxes](https://portal.cloud.hashicorp.com/vagrant/discover/freebsd) have not
+been published since version 13.4, so we've switched to using the [Bento
+project boxes](https://portal.cloud.hashicorp.com/vagrant/discover/bento) for
+FreeBSD.
+
 ## About the scripts in this directory
 
 The scripts in this directory automate common tasks that amount to doing

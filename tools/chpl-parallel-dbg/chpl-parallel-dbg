@@ -47,4 +47,4 @@ commands_file="$CHPL_HOME/runtime/etc/debug/chpl_parallel_dbg_commands.py"
 lldb \
   -o "command script import '$commands_file'" \
   -o "connect $real_name $numLocales" \
-  $@
+  "$@"
