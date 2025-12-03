@@ -113,7 +113,7 @@ proc runCommand(cmd: [] string, quiet=false) : string throws {
     log.debugln("stdout:");
     while process.stdout.readLine(line) {
       ret += line;
-      log.debug(line);
+      if quiet then log.debug(line); else log.info(line);
     }
     log.debugln("end stdout");
 

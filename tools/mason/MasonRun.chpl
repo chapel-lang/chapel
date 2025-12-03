@@ -109,8 +109,9 @@ proc runProjectBinary(show: bool, release: bool, execopts: list(string)) throws 
       }
 
       // Build if not built, throwing error if Mason.toml doesnt exist
-      if isFile(joinPath(projectHome, "Mason.lock")) && built then {
-        log.infoln(runCommand(command));
+      if isFile(joinPath(projectHome, "Mason.lock")) && built {
+        const output = runCommand(command);
+        log.infoln(command);
       }
       else if isFile(joinPath(projectHome, "Mason.toml")) {
         const msg = "Mason could not find your Mason.lock.\n";

@@ -42,7 +42,7 @@ function test_command() {
   test_start "${cmd}"
   $cmd
   if [[ $? -ne 0 ]] ; then
-    log "Error running '${cmd}'"
+    log "Error matching '${cmd}'"
   else
     log "Success matching '${cmd}'"
   fi

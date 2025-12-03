@@ -34,7 +34,7 @@ record pushdMgr: contextManager {
   var path: string;
   var initDir = here.cwd();
 
-  proc ref enterContext() { here.chdir(path); }
+  proc ref enterContext() do here.chdir(path);
   proc ref exitContext(in err: owned Error?) throws {
     if err then throw err;
     here.chdir(initDir);
@@ -63,24 +63,20 @@ iter chplFlags(const baseDir = here.cwd()) {
   var flags: list(string);
 
   for prereq in prereqs(baseDir) {
-    const cmd = "make --quiet -C %s %s".format(prereq, makeTargetChplFlags);
-    const pFlags = MasonUtils.runCommand(cmd).strip();
+    const cmd = "make --quiet %s".format(makeTargetChplFlags);
+    var makeOutput: string;
+    manage pushd(prereq) do makeOutput = MasonUtils.runCommand(cmd).strip();
 
+    const pFlags = makeOutput.strip();
     for pFlag in pFlags.split(" ") {
       yield pFlag;
     }
-    // should prereqs expose these in their Makefiles instead?
-    const incGlob = Path.joinPath(prereq, "include", "*.h");
-    for path in FS.glob(incGlob) {
-      flags.pushBack(path);
-      yield path;
-    }
-
-    const objGlob = Path.joinPath(prereq, "obj", "*.o");
-    for path in FS.glob(objGlob) {
-      yield path;
-    }
   }
+}
+
+proc dirHasMakefile(dir: string) {
+  const checkPath = Path.joinPath(dir, "Makefile");
+  return FS.isFile(checkPath);
 }
 
 iter prereqs(const baseDir = here.cwd()) {
@@ -96,7 +92,15 @@ iter prereqs(const baseDir = here.cwd()) {
       // See https://github.com/chapel-lang/chapel/issues/27855
       const dirs = FS.walkDirs(prereqsPath, depth=1);
 
-      for dir in dirs[1..] do yield dir;
+      for dir in dirs[1..] {
+        if dirHasMakefile(dir) {
+          yield dir;
+        }
+        else {
+          log.warnf("%s is in prereqs directory. But doesn't have a Makefile." +
+                    " Ignoring.", dir);
+        }
+      }
     }
     else {
       log.infof("%s is supposed to be directory with prerequisites " +

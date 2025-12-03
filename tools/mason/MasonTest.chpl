@@ -247,10 +247,9 @@ private proc runTests(show: bool, run: bool, parallel: bool, filter: string,
 
     log.debugln("Adding prerequisite flags");
 
-    param compFlagFmt = "+compflag %s\n";
     // add prerequisite compopts
     for flag in MasonPrereqs.chplFlags() {
-      log.debugf(compFlagFmt, flag);
+      log.debugf("+compflag %s\n", flag);
       compopts.pushBack(flag);
     }
 

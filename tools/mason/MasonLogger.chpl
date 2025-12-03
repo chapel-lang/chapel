@@ -65,6 +65,14 @@ module MasonLogger {
       if doWarn then Safe.writef(logWriter, addPrefix("%s"), s);
     }
 
+    proc warnln(s: string) {
+      if doWarn then Safe.writeln(logWriter, addPrefix("%s"), s);
+    }
+
+    proc warnf(f: string, args...) {
+      if doWarn then Safe.writef(logWriter, addPrefix(f), (...args));
+    }
+
     proc debug(s: string) {
       if doDebug then Safe.writef(logWriter, addPrefix("%s"), s);
     }
@@ -85,24 +93,20 @@ module MasonLogger {
         return start+s+reset;
       }
 
-      try {
-        const prefixFmt = bold("%%<%is:".format(pad));
-        return Safe.format(prefixFmt+" %s", this.prefix, f);
-      }
-      catch e {
-        writeln("Error creating log prefix");
-        return f;
-      }
+      const prefixFmt = bold(Safe.format("%%<%is:", pad));
+      return Safe.format(prefixFmt+" %s", this.prefix, f);
     }
   }
 
   module SafeCalls {
+    import IO.stderr;
+
     proc format(fmt:string, args...) {
       try {
         return fmt.format((...args));
       }
       catch e {
-        writeln("Error formatting string");
+        try! stderr.writeln("Error formatting string\n", e);
         return "Unable to format";
       }
     }
@@ -112,8 +116,7 @@ module MasonLogger {
         writer.writef(fmt, (...args));
       }
       catch e {
-        // just use the non-throwing console output
-        writeln("Error writing formatted debug output");
+        try! stderr.writeln("Error writing formatted debug output\n", e);
       }
     }
 
@@ -122,8 +125,7 @@ module MasonLogger {
         writer.writeln(s);
       }
       catch e {
-        // just use the non-throwing console output
-        writeln("Error writing debug output");
+        try! stderr.writeln("Error writing debug output\n", e);
       }
     }
   }

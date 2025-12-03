@@ -18,8 +18,6 @@
  * limitations under the License.
  */
 
-/* Version as of Chapel 1.25 - to be updated each release */
-
 use ArgumentParser;
 use FileSystem;
 use List;
@@ -34,6 +32,7 @@ use TOML;
 
 var log = new logger("mason external");
 
+// We could consider bumping this version up as needed.
 const minSpackVersion = new VersionInfo('1.0.0');
 const major = minSpackVersion.major:string;
 const minor = minSpackVersion.minor:string;
@@ -193,10 +192,9 @@ proc spackInstalled() throws {
   }
   // if local version is a major or minor version higher than required version
   if !minSpackVersion.isCompatible(getSpackVersion()) {
-    writeln("Your version of Spack (v%s) differs ".format(getSpackVersion().str()) +
-            "from that supported by Mason " +
-            "(v%s).\nThis may lead to unexpected ".format(minSpackVersion.str()) +
-            "behavior");
+    log.warnf("Your version of Spack (v%s) differs from that supported by " +
+              "Mason (v%s).\nThis may lead to unexpected behavior",
+              getSpackVersion().str(), minSpackVersion.str());
   }
   return true;
 }

@@ -101,8 +101,8 @@ proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock", show=true) {
       log.infoln("Will do external update");
       if isDir(SPACK_ROOT) && TomlFile.pathExists('external') {
         if getSpackVersion() < minSpackVersion then
-        throw new owned MasonError("Mason has been updated. " +
-                    "To install Spack, call: mason external --setup.");
+          throw new owned MasonError("Mason has been updated. " +
+                      "To install Spack, run: mason external --setup.");
       }
 
       log.debugln("Will do createDepTree");

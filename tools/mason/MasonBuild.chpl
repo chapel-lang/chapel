@@ -247,8 +247,9 @@ proc compileSrc(lockFile: borrowed Toml, binLoc: string, show: bool,
       cmd.pushBack(gitDepSrc);
     }
 
-    log.infof("Compiling [%s] target: %s\n",
-              if release then "release" else "debug", project);
+    if show then
+      log.infof("Compiling [%s] target: %s\n",
+                if release then "release" else "debug", project);
 
     // compile Program with deps
     const command = " ".join(cmd.these());
@@ -335,7 +336,7 @@ proc getSrcCode(sourceListArg: list(3*string), skipUpdate, show) throws {
         gitC(destination, checkout);
       }
 
-      //add prerequisites
+      // add prerequisites
       for prereq in MasonPrereqs.prereqs(destination) {
         MasonPrereqs.install(prereq);
       }
