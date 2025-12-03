@@ -120,68 +120,60 @@ private proc checkChplVersion(lockFile : borrowed Toml) throws {
 proc buildProgram(release: bool, show: bool, force: bool, skipUpdate: bool,
                   ref cmdLineCompopts: list(string), tomlName="Mason.toml",
                   lockName="Mason.lock") throws {
+  const cwd = here.cwd();
+  const projectHome = getProjectHome(cwd, tomlName);
+  const toParse = open(projectHome + "/" + lockName, ioMode.r);
+  var lockFile = parseToml(toParse);
+  const projectName = lockFile["root"]!["name"]!.s;
 
-  try! {
-
-    const cwd = here.cwd();
-    const projectHome = getProjectHome(cwd, tomlName);
-    const toParse = open(projectHome + "/" + lockName, ioMode.r);
-    var lockFile = parseToml(toParse);
-    const projectName = lockFile["root"]!["name"]!.s;
-
-    // --fast
-    var binLoc = 'debug';
-    if release then
-      binLoc = 'release';
+  // --fast
+  var binLoc = 'debug';
+  if release then
+    binLoc = 'release';
 
 
-    // build on last modification
-    if projectModified(projectHome, projectName, binLoc) || force {
+  // build on last modification
+  if projectModified(projectHome, projectName, binLoc) || force {
 
-      if isFile(projectHome + "/" + lockName) {
+    if isFile(projectHome + "/" + lockName) {
 
-        // Make build files and check chapel version
-        makeTargetFiles(binLoc, projectHome);
-        checkChplVersion(lockFile);
+      // Make build files and check chapel version
+      makeTargetFiles(binLoc, projectHome);
+      checkChplVersion(lockFile);
 
-        if isDir(MASON_HOME) == false {
-          mkdir(MASON_HOME, parents=true);
-        }
+      if isDir(MASON_HOME) == false {
+        mkdir(MASON_HOME, parents=true);
+      }
 
-        // generate list of dependencies and get src code
-        var (sourceList, gitList) = genSourceList(lockFile);
+      // generate list of dependencies and get src code
+      var (sourceList, gitList) = genSourceList(lockFile);
 
-        if lockFile.pathExists('external') {
-          spackInstalled();
-        }
+      if lockFile.pathExists('external') {
+        spackInstalled();
+      }
+      
+      getSrcCode(sourceList, skipUpdate, show);
 
-        getSrcCode(sourceList, skipUpdate, show);
+      getGitCode(gitList, show);
 
-        getGitCode(gitList, show);
-
-        // get compilation options including external dependencies
-        const compopts = getTomlCompopts(lockFile, cmdLineCompopts);
-        // Compile Program
-        if compileSrc(lockFile, binLoc, show, release, compopts, projectHome) {
-          writeln("Build Successful\n");
-        }
-        else {
-          throw new owned MasonError("Build Failed");
-        }
-        // Close memory
-        toParse.close();
+      // get compilation options including external dependencies
+      const compopts = getTomlCompopts(lockFile, cmdLineCompopts);
+      // Compile Program
+      if compileSrc(lockFile, binLoc, show, release, compopts, projectHome) {
+        writeln("Build Successful\n");
       }
       else {
-        throw new owned MasonError("Cannot build: no Mason.lock found");
+        throw new owned MasonError("Build Failed");
       }
+      // Close memory
+      toParse.close();
     }
     else {
-      writeln("Skipping Build... No changes to project");
+      throw new owned MasonError("Cannot build: no Mason.lock found");
     }
   }
-  catch e: MasonError {
-    stderr.writeln(e.message());
-    exit(1);
+  else {
+    writeln("Skipping Build... No changes to project");
   }
 }
 

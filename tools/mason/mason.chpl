@@ -144,7 +144,6 @@ proc main(args: [] string) throws {
       otherwise {
         throw new owned MasonError("No such subcommand '%s'\ntry mason --help"
                                    .format(usedCmd));
-        exit(1);
       }
     }
   }
