@@ -1,7 +1,8 @@
 /*
-    Modules should use PascalCase naming convention.
+  Modules should use PascalCase naming convention.
 */
 
+// This module uses camelCase which violates the rule.
 module modX {
   var x: string = "Module MX";
   proc printX() {
@@ -9,6 +10,7 @@ module modX {
   }
 }
 
+// This module uses PascalCase which is correct.
 module ModX {
   var x: string = "Module MX";
   proc printX() {

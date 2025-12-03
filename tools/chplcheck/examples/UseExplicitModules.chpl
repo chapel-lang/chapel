@@ -1,11 +1,14 @@
 /*
-  Code should use explicit module declarations rather than relying on auto-inserted implicit modules.
+  Code should use explicit module declarations rather than
+  relying on auto-inserted implicit modules.
 */
 
-writeln("Hello, World!"); 
+// This code relies on an implicit module which violates the rule
+writeln("Hello, World!");
 
+// This code uses an explicit module which is correct
 module myModule {
-    proc main() {
+    proc main(){
         writeln("Hello, World!");
     }
 }
