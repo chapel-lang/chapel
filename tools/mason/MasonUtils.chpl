@@ -504,7 +504,7 @@ proc projectModified(projectHome, projectName, binLocation) : bool {
 
   if isFile(binaryPath) {
     const binModTime = getLastModified(binaryPath);
-    for file in listDir(joinPath(projectHome, "src")) {
+    for file in findFiles(joinPath(projectHome, "src"), recursive=true) {
       var srcPath = joinPath(projectHome, "src", file);
       if getLastModified(srcPath) > binModTime {
         return true;
