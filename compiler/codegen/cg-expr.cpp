@@ -392,7 +392,8 @@ static llvm::Value* extendToPointerSize(GenRet index, unsigned AS) {
 
 static llvm::Value* createInBoundsGEP(llvm::Type* gepType,
                                       llvm::Value* ptr,
-                                      llvm::ArrayRef<llvm::Value*> idxList) {
+                                      llvm::ArrayRef<llvm::Value*> idxList,
+                                      std::string_view name = "") {
   GenInfo* info = gGenInfo;
 
   INT_ASSERT(gepType);
@@ -411,7 +412,7 @@ static llvm::Value* createInBoundsGEP(llvm::Type* gepType,
       // consider calling extendToPointerSize at the call site
     }
   }
-  llvm::Value* gep = info->irBuilder->CreateInBoundsGEP(gepType, ptr, idxList);
+  llvm::Value* gep = info->irBuilder->CreateInBoundsGEP(gepType, ptr, idxList, name);
   trackLLVMValue(gep);
   return gep;
 }
@@ -1002,11 +1003,11 @@ static GenRet codegenWideThingField(GenRet ws, WideThingField field)
         llvm::Type* ty = genWideType.type;
         INT_ASSERT(ty);
         ret.val = info->irBuilder->CreateConstInBoundsGEP2_32(
-                                            ty, ws.val, 0, field);
+                                            ty, ws.val, 0, field, fname);
         trackLLVMValue(ret.val);
       } else {
         ret.isLVPtr = GEN_VAL;
-        ret.val = info->irBuilder->CreateExtractValue(ws.val, field);
+        ret.val = info->irBuilder->CreateExtractValue(ws.val, field, fname);
         trackLLVMValue(ret.val);
       }
       assert(ret.val);
@@ -1307,7 +1308,7 @@ GenRet doCodegenFieldPtr(
       // Get a pointer to the union data then cast it to the right type
       bool unused;
       ret.val = info->irBuilder->CreateStructGEP(
-          baseTy, baseValue, cBaseType->getMemberGEP("_u", unused));
+          baseTy, baseValue, cBaseType->getMemberGEP("_u", unused), "_u");
       trackLLVMValue(ret.val);
       auto addrSpace = baseValue->getType()->getPointerAddressSpace();
       llvm::PointerType* ty = llvm::PointerType::get(retType.type, addrSpace);
@@ -1327,16 +1328,16 @@ GenRet doCodegenFieldPtr(
         GenRet genEltType = eltTypeSym->type;
         llvm::Type* retTy = genEltType.type;
         INT_ASSERT(retTy);
-        ret.val = info->irBuilder->CreateStructGEP(baseTy, baseValue, fieldno);
+        ret.val = info->irBuilder->CreateStructGEP(baseTy, baseValue, fieldno, c_field_name);
         trackLLVMValue(ret.val);
         llvm::StructType* sTy = llvm::cast<llvm::StructType>(baseTy);
         INT_ASSERT(sTy);
         llvm::Type* eltTy = sTy->getElementType(fieldno);
-        ret.val = info->irBuilder->CreateStructGEP(eltTy, ret.val, 0);
+        ret.val = info->irBuilder->CreateStructGEP(eltTy, ret.val, 0, c_field_name);
         ret.isLVPtr = GEN_VAL;
         trackLLVMValue(ret.val);
       } else {
-        ret.val = info->irBuilder->CreateStructGEP(baseTy, baseValue, fieldno);
+        ret.val = info->irBuilder->CreateStructGEP(baseTy, baseValue, fieldno, c_field_name);
         trackLLVMValue(ret.val);
 
         if (isUnion(ct) ||
