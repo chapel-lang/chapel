@@ -102,7 +102,8 @@ x 40 EOL May 2025
 
 FreeBSD -- see https://www.freebsd.org/security/unsupported.html (unsupported releases)
         -- and https://www.freebsd.org/releases/ (all releases)
-        -- and https://app.vagrantup.com/freebsd
+        -- and https://portal.cloud.hashicorp.com/vagrant/discover/bento
+          -- these are unofficial Vagrant boxes for FreeBSD
         -- also note https://docs.freebsd.org/en/books/handbook/virtualization/#virtualization-guest-virtualbox
            has instructions for installing virtualbox guest additions, in
            case that is needed
