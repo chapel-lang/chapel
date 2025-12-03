@@ -7,7 +7,7 @@
 writeln("Hello, World!");
 
 // This code uses an explicit module which is correct
-module myModule {
+module MyModule {
   proc main(){
     writeln("Hello, World!");
   }
