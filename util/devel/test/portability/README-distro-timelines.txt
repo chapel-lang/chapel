@@ -7,11 +7,8 @@ Alma Linux -- see https://wiki.almalinux.org/release-notes/
               Each minor version reaches end of life when the new version is released.
               For example, AlmaLinux OS 9.2 reached end of life with the release of AlmaLinux OS 9.3.
   8.x  EOL 2029
-  8.10 released May 2024
   9.x  EOL 2032
-  9.7  released Nov 2025
   10.x EOL 2035
-  10.0 released May 2025
 
 Alpine Linux -- see https://www.alpinelinux.org/releases/
 x 3.14  EOL 2023-05-01
@@ -151,17 +148,10 @@ Rocky Linux -- see https://wiki.rockylinux.org/rocky/version/
             -- and https://hub.docker.com/r/rockylinux/rockylinux
             -- Note: We're automatically updating to the latest minor version
   8.x  EOL May 2029
-x 8.9  EOL May 2024
-  8.10 released May 2024
 
   9.x  EOL May 2032
-x 9.5  EOL May 2024
-x 9.6  EOL Nov 2025
-  9.7  released Dec 2025
 
   10.x EOL May 2035
-x 10.0 EOL Nov 2025
-  10.1 EOL May 2026
 
 Ubuntu -- see https://wiki.ubuntu.com/Releases
        -- and https://app.vagrantup.com/ubuntu
