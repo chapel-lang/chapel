@@ -7,12 +7,6 @@
       sudo dnf install llvm-devel clang clang-devel
 
 
-  * Alpine 3.19::
-
-      sudo apk add gcc g++ m4 perl python3 python3-dev bash make gawk git cmake libunwind-dev
-      sudo apk add llvm15-dev clang15-dev llvm15-static clang15-static
-
-
   * Alpine 3.20, 3.21, 3.22::
 
       sudo apk add gcc g++ m4 perl python3 python3-dev bash make gawk git cmake libunwind-dev
@@ -54,13 +48,13 @@
       sudo pacman -S llvm20 clang20
 
 
-  * CentOS Stream 10, 9::
+  * CentOS Stream 9, 10::
 
       sudo dnf upgrade
       sudo dnf install epel-release
       sudo dnf install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake libunwind-devel
       sudo dnf install which diffutils
-      sudo dnf install llvm-devel clang clang-devel
+      sudo dnf install llvm20-devel clang20 clang20-devel
 
 
   * Debian 11 "Bullseye"::
@@ -85,13 +79,21 @@
       sudo dnf install llvm-devel clang clang-devel
 
 
-  * FreeBSD 13.5, 14.2, 14.3::
+  * Fedora 43::
+
+      sudo dnf upgrade
+      sudo dnf install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake libunwind-devel
+      sudo dnf install which diffutils
+      sudo dnf install llvm20-devel clang20 clang20-devel
+
+
+  * FreeBSD 13.5, 14.3::
 
       sudo pkg install gcc m4 perl5 python3 bash gmake gawk git pkgconf cmake libunwind
       sudo pkg install llvm
 
 
-  * OpenSuse Leap 15.6::
+  * OpenSuse Leap 15.6, 16.0::
 
       sudo zypper install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git pkg-config cmake libunwind-devel
       sudo zypper install llvm-devel clang-devel clang
@@ -106,7 +108,7 @@
       sudo dnf install llvm-devel clang clang-devel
 
 
-  * Ubuntu 22.04 "Jammy Jellyfish", 24.04 "Noble Numbat", 25.04 "Plucky Puffin"::
+  * Ubuntu 22.04 "Jammy Jellyfish", 24.04 "Noble Numbat", 25.04 "Plucky Puffin", 25.10 "Questing Quokka"::
 
       sudo apt-get update
       sudo apt-get install gcc g++ m4 perl python3 python3-dev bash make mawk git pkg-config cmake libunwind-dev
