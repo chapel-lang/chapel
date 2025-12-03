@@ -191,7 +191,7 @@ def main():
 
             subdirs.append(subpath)
 
-    subdirs.sort(key=os.path.basename)
+    subdirs.sort(key=fixname)
 
     tocmds = { }
 
