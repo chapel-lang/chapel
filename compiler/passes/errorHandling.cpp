@@ -1108,6 +1108,11 @@ bool ErrorCheckingVisitor::enterCallExpr(CallExpr* node) {
     auto parentFn = toFnSymbol(node->parentSymbol);
     bool inThrowingFunction = parentFn ? parentFn->throwsError() : false;
 
+    // TODO: implement error handling in typed converter code
+    if (calledFn && calledFn->hasFlag(FLAG_RESOLVED_EARLY)) {
+      return true;
+    }
+
     if (!inThrowingFunction && calledFn && isTaskFun(calledFn)) {
       taskFunctionDepth++;
       calledFn->body->accept(this);

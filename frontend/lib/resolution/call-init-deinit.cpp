@@ -736,7 +736,9 @@ void CallInitDeinit::resolveCopyInit(const AstNode* ast,
       }
       return;
     } else {
-      // TODO: we could resolve it anyway
+      // TODO: assume such types only require an assignment
+      // Note: needed for extern initialization, e.g., var e:errorCode = 0;
+      resolveAssign(ast, lhsType, rhsType, rv);
       return;
     }
   }
