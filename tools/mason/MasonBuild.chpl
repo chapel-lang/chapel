@@ -217,6 +217,11 @@ proc compileSrc(lockFile: borrowed Toml, binLoc: string, show: bool,
     if release then cmd.pushBack("--fast");
     if sourceList.size > 0 then cmd.pushBack("--main-module " + project);
 
+    for flag in MasonPrereqs.chplFlags() {
+      log.debugf("+compflag %s\n", flag);
+      cmd.pushBack(flag);
+    }
+
     log.debugf("Base command: %?\n", cmd);
 
     for (_, name, version) in sourceList {
@@ -227,9 +232,9 @@ proc compileSrc(lockFile: borrowed Toml, binLoc: string, show: bool,
         const depSrc = Path.replaceExt(Path.joinPath(depDir, "src", name),
                                        "chpl");
 
+        log.debugf("Adding source dependency %s's flags\n", name);
         cmd.pushBack(depSrc);
 
-        log.debugf("Adding source dependency %s's flags\n", name);
         for flag in MasonPrereqs.chplFlags(depDir) {
           log.debugf("+compflag %s\n", flag);
           cmd.pushBack(flag);
