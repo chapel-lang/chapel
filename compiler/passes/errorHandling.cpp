@@ -235,6 +235,32 @@ ErrorHandlingVisitor::ErrorHandlingVisitor(ArgSymbol*   _outError,
 bool ErrorHandlingVisitor::enterTryStmt(TryStmt* node) {
   SET_LINENO(node);
 
+  if (node->isForManageStmt()) {
+    // Either we are in a try/catch, or we are in a throwing function.
+    bool inThrowingContext = !tryStack.empty() || outError != NULL;
+
+    if (inThrowingContext) {
+      // If we are in a throwing context, then we can remove the 'try!' and
+      // replace it with the body. This is because if there are throwing
+      // statements in the body, we want them to propagate correctly into
+      // any parent constructs (e.g., try/catch or an out-error-var for
+      // 'throws' procedures).
+      auto body = node->body();
+      INT_ASSERT(body);
+
+      // Just remove the 'try!' entirely.
+      body->remove();
+      node->replace(body);
+
+      // Since we have manually replaced the 'try!', we must take control of
+      // the traversal ourselves. Go ahead and walk the body of the try.
+      body->accept(this);
+
+      // Do not continue, the 'try!' is no longer in the tree.
+      return false;
+    }
+  }
+
   VarSymbol*   errorVar     = newTemp("error", dtErrorNilable());
   errorVar->addFlag(FLAG_ERROR_VARIABLE);
   LabelSymbol* handlerLabel = new LabelSymbol("handler");
@@ -622,6 +648,58 @@ void ErrorHandlingVisitor::exitForallStmt(ForallStmt* node) {
 
 bool ErrorHandlingVisitor::enterDeferStmt(DeferStmt* node) {
   deferDepth++;
+
+  if (node->isUncheckedDefer()) {
+    // This is a special kind of 'defer' that can't be constructed by a user,
+    // however it can be constructed by other AST as needed (e.g., by a
+    // 'manage' statement). This variant of 'defer' can throw, but can only
+    // appear in a throwing context.
+    //
+    if (!canBlockStmtThrow(node->body())) {
+      // If the contained code cannot possibly throw, then just proceed.
+      return true;
+    }
+
+    // Otherwise, make sure we are in a throwing context.
+    bool inThrowingContext = !tryStack.empty() || outError != NULL;
+
+    if (!inThrowingContext) {
+      // If this were user-facing, what would we do? Wrap it in a 'try!'?
+      INT_FATAL(node, "cannot currently use an unchecked defer block that "
+                      "throws in a non-throwing context");
+    }
+
+    SET_LINENO(node->body());
+
+    // Next, wrap the body in a _non-complete_ 'try' block, just to make
+    // sure that an error handling variable is created and any thrown
+    // error is propagated into the parent handler.
+    auto newBody = new BlockStmt();
+    auto oldBody = node->body();
+
+    oldBody->replace(newBody);
+    INT_ASSERT(!oldBody->inTree());
+
+    auto tryStmt = new TryStmt(false, oldBody, nullptr);
+
+    newBody->insertAtTail(tryStmt);
+
+    // Manually traverse the body, since there is more we want to do after.
+    node->body()->accept(this);
+
+    // Now after the 'try' has been lowered, clean up a redundant block.
+    INT_ASSERT(newBody && newBody->inTree() && node->body() == newBody);
+    auto block = toBlockStmt(newBody->body.head);
+    INT_ASSERT(block);
+
+    newBody->replace(block->remove());
+
+    // Make sure to decrement the defer depth.
+    deferDepth--;
+
+    // Do not continue traversing.
+    return false;
+  }
 
   return true;
 }
@@ -1180,7 +1258,7 @@ void ErrorCheckingVisitor::exitDeferStmt(DeferStmt* node) {
 
     // OK, no checking needed
 
-  } else if (canBlockStmtThrow(node->body())) {
+  } else if (canBlockStmtThrow(node->body()) && !node->isUncheckedDefer()) {
     USR_FATAL_CONT(node, "error handling in defer blocks must be complete");
     printReason(node, reasons);
   }

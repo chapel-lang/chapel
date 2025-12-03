@@ -27,35 +27,51 @@
 #include "global-ast-vecs.h"
 
 BlockStmt* DeferStmt::build(BlockStmt* body) {
-  return buildChplStmt(new DeferStmt(body));
+  return buildChplStmt(new DeferStmt(DeferStmt::DEFAULT, body));
 }
 
 BlockStmt* DeferStmt::buildChplStmt(Expr* expr) {
   return new BlockStmt(expr, BLOCK_SCOPELESS);
 }
 
+DeferStmt::DeferStmt(Kind kind, BlockStmt* body)
+  : Stmt(E_DeferStmt),
+   body_(body),
+   kind_(kind) {
+
+  gDeferStmts.add(this);
+}
+
 DeferStmt::DeferStmt(BlockStmt* body)
   : Stmt(E_DeferStmt),
-   _body(body) {
+   body_(body) {
 
   gDeferStmts.add(this);
 }
 
 DeferStmt::DeferStmt(CallExpr* call)
   : Stmt(E_DeferStmt),
-   _body(new BlockStmt(call)) {
+   body_(new BlockStmt(call)) {
 
   gDeferStmts.add(this);
 }
 
 BlockStmt* DeferStmt::body() const {
-  return _body;
+  return body_;
+}
+
+DeferStmt::Kind DeferStmt::kind() const {
+  return kind_;
+}
+
+bool DeferStmt::isUncheckedDefer() const {
+  return kind_ == UNCHECKED;
 }
 
 void DeferStmt::accept(AstVisitor* visitor) {
   if (visitor->enterDeferStmt(this)) {
-    if (_body) {
-      _body->accept(visitor);
+    if (body_) {
+      body_->accept(visitor);
     }
 
     visitor->exitDeferStmt(this);
@@ -63,19 +79,20 @@ void DeferStmt::accept(AstVisitor* visitor) {
 }
 
 DeferStmt* DeferStmt::copyInner(SymbolMap* map) {
-  DeferStmt* copy = new DeferStmt(COPY_INT(_body));
+  DeferStmt* copy = new DeferStmt(COPY_INT(body_));
+  copy->kind_ = kind_;
   return copy;
 }
 
 void DeferStmt::replaceChild(Expr* oldAst, Expr* newAst) {
-  if (oldAst == _body) {
-    _body = toBlockStmt(newAst);
+  if (oldAst == body_) {
+    body_ = toBlockStmt(newAst);
   }
 }
 
 Expr* DeferStmt::getFirstExpr() {
-  if (_body) {
-    return _body->getFirstExpr();
+  if (body_) {
+    return body_->getFirstExpr();
   }
   return NULL;
 }
@@ -87,8 +104,8 @@ Expr* DeferStmt::getNextExpr(Expr* expr) {
 void DeferStmt::verify() {
   Stmt::verify(E_DeferStmt);
 
-  if (!_body) {
-    INT_FATAL(this, "DeferStmt::verify. _body is missing");
+  if (!body_) {
+    INT_FATAL(this, "DeferStmt::verify. body_ is missing");
   }
 }
 
