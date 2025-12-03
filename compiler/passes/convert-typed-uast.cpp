@@ -2454,7 +2454,8 @@ struct ConvertTypeHelper {
         // Attach untyped conversion results for methods and nested types
         for (auto stmt : decl->declOrComments()) {
           if (auto decl = stmt->toNamedDecl();
-              decl && !decl->isVarLikeDecl()) {
+              decl && !decl->isVarLikeDecl() &&
+              parsing::idIsInBundledModule(context(), decl->id())) {
             if (instantiatedFrom != nullptr) {
               if (decl->name() == USTR("init") ||
                   decl->name() == USTR("init=") ||
