@@ -1,14 +1,13 @@
 BootStrap: docker
-From: quay.io/centos/centos:stream10
+From: quay.io/fedora/fedora:43
 
 %files
     ../../provision-scripts/* /provision-scripts/
 
 %post
     /provision-scripts/dnf-upgrade.sh
-    /provision-scripts/dnf-epel.sh
     /provision-scripts/dnf-deps.sh
-    # installing llvm-devel installs LLVM 21
+    # installs llvm / clang version 21, so pin to version 20
     /provision-scripts/dnf-llvm20.sh
 
 %runscript

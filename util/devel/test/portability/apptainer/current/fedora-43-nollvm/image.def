@@ -1,11 +1,12 @@
 BootStrap: docker
-From: alpine:3.19
+From: quay.io/fedora/fedora:43
 
 %files
     ../../provision-scripts/* /provision-scripts/
 
 %post
-    /provision-scripts/apk-deps.sh
+    /provision-scripts/dnf-upgrade.sh
+    /provision-scripts/dnf-deps.sh
 
 %runscript
     ../../provision-scripts/run.sh "$@"

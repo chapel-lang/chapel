@@ -8,8 +8,8 @@ From: quay.io/centos/centos:stream9
     /provision-scripts/dnf-upgrade.sh
     /provision-scripts/dnf-epel.sh
     /provision-scripts/dnf-deps.sh
-    # installing llvm-devel installs LLVM 18
-    /provision-scripts/dnf-llvm.sh
+    # installing llvm-devel installs LLVM 21
+    /provision-scripts/dnf-llvm20.sh
 
 %runscript
     ../../provision-scripts/run.sh "$@"

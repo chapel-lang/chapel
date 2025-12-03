@@ -1,17 +1,14 @@
 x means reached end of life
 - means end of life soon
-  (last updated: 2025-05-30)
+  (last updated: 2025-12-01)
 
 Alma Linux -- see https://wiki.almalinux.org/release-notes/
            -- Version 9 will have active support until 31 May 2027, and security support until 31 May 2032.
               Each minor version reaches end of life when the new version is released.
               For example, AlmaLinux OS 9.2 reached end of life with the release of AlmaLinux OS 9.3.
   8.x  EOL 2029
-  8.10 released May 2024
   9.x  EOL 2032
-  9.6  released May 2025
   10.x EOL 2035
-  10.0 released May 2025
 
 Alpine Linux -- see https://www.alpinelinux.org/releases/
 x 3.14  EOL 2023-05-01
@@ -19,7 +16,7 @@ x 3.15  EOL 2023-11-01
 x 3.16  EOL 2024-05-23
 x 3.17  EOL 2024-11-22
 x 3.18  EOL 2025-05-09
-  3.19  EOL 2025-11-01
+x 3.19  EOL 2025-11-01
   3.20  EOL 2026-04-01
   3.21  EOL 2026-11-01
   3.22  EOL 2027-05-01
@@ -27,10 +24,10 @@ x 3.18  EOL 2025-05-09
 Amazon Linux
        -- see https://docs.aws.amazon.com/linux/al2022/ug/release-cadence.html
        -- which has 2 years of standard support, 3 of maintenance
-  2    EOL June 30, 2025
+       -- No new version of Amazon Linux in 2025/26 (last checked 2025-12-01)
+  2    EOL June 30, 2026
 x 2022 was renamed to 2023 in March 2023
-  2023 EOL 2028
-  2025 to be released
+  2023 EOL June 30, 2029
 
 Arch
 * currently just testing the current release
@@ -68,8 +65,8 @@ x  8 "jessie"   long-term support until May 2020
 x  9 "stretch"  long-term support until Jun 2022
 x 10 "buster"   long-term support until Jun 2024
   11 "bullseye" long-term support until Jun 2026
-  12 "bookworm" released June 2023
-  13 "trixie"   released Aug 2025
+  12 "bookworm" long-term support until Jun 2028
+  13 "trixie"   long-term support until Jun 2030
   14 "forky"    expected release ?
   15 "duke"     expected release ?
 
@@ -97,12 +94,13 @@ x 39 EOL Nov 2024
 x 40 EOL May 2025
   41 EOL Nov 2025
   42 EOL May 2026
-  43 release Nov 2025
+  43 EOL Dec 2026
   44 release April 2026
 
 FreeBSD -- see https://www.freebsd.org/security/unsupported.html (unsupported releases)
         -- and https://www.freebsd.org/releases/ (all releases)
-        -- and https://app.vagrantup.com/freebsd
+        -- and https://portal.cloud.hashicorp.com/vagrant/discover/bento
+          -- these are unofficial Vagrant boxes for FreeBSD
         -- also note https://docs.freebsd.org/en/books/handbook/virtualization/#virtualization-guest-virtualbox
            has instructions for installing virtualbox guest additions, in
            case that is needed
@@ -125,9 +123,10 @@ x 13.3 EOL Dec 2024
 x 14.0 EOL Sep 2024
 x 14.1 EOL Mar 2025
 x 13.4 EOL Jun 2025
-  13.5 EOL Apr 2026
-  14.2 released Dec 2024 (as of 3/5/25 there was no 14.2-STABLE vagrant box available from freebsd)
-  14.3 released Jun 2025
+  13.5 EOL Apr 2026 (Legacy Release)
+x 14.2 EOL Sep 2025
+  14.3 EOL Jun 2026 (Production Release)
+  15.0 EOL Sep 2026 (awaiting vagrant box)
 
 OpenSuse -- see https://en.opensuse.org/Lifetime
          -- and https://app.vagrantup.com/opensuse
@@ -142,20 +141,17 @@ x 15.2 EOL Dec 2021
 x 15.3 EOL Nov 2022
 x 15.4 EOL Nov 2023
 x 15.5 EOL Dec 2024
-  15.6 EOL Dec 2025
+  15.6 EOL Apr 2026
+  16.0 EOL Oct 2027
 
 Rocky Linux -- see https://wiki.rockylinux.org/rocky/version/
             -- and https://hub.docker.com/r/rockylinux/rockylinux
+            -- Note: We're automatically updating to the latest minor version
   8.x  EOL May 2029
-x 8.9  EOL May 2024
-  8.10 released May 2024
 
   9.x  EOL May 2032
-x 9.5  EOL May 2024
-  9.6  released Jun 2025
 
   10.x EOL May 2035
-  10.0 released Jun 2025
 
 Ubuntu -- see https://wiki.ubuntu.com/Releases
        -- and https://app.vagrantup.com/ubuntu
@@ -186,3 +182,4 @@ x 23.04 "Lunar Lobster"     EOL Jan 2024
 x 23.10 "Mantic Minotaur"   EOL Jul 2024
 x 24.10 "Oracular Oriole"   EOL Jul 2025
   25.04 "Plucky Puffin"     EOL Jan 2026
+  25.10 "Questing Quokka"   EOL Jul 2026
