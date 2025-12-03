@@ -30,6 +30,8 @@ module MasonLogger {
 
   config const logs = logLevel.info;
 
+  var noColor = false;
+
   private var logWriter = IO.stdout;
 
   private proc doDebug do return logs>=logLevel.debug;
@@ -87,6 +89,8 @@ module MasonLogger {
 
     proc addPrefix(f) {
       proc bold(s) {
+        if noColor then return s;
+
         param start = "\x1b[1m";
         param reset = "\x1b[0m";
 
