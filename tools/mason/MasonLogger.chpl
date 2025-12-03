@@ -28,6 +28,8 @@ module MasonLogger {
   // values mean lower verbosity.
   enum logLevel { no, error, warn, info, debug };
 
+  // TODO we should actually use Mason's argumentParser based approach instead
+  // of config variables.
   config const logs = logLevel.info;
 
   var noColor = false;

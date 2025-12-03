@@ -284,7 +284,7 @@ private proc printSpackVersion() {
 proc getSpackVersion() : VersionInfo {
   const command = "spack --version";
   @functionStatic
-  const tmpVersion = getSpackResult(command,true).strip();
+  ref tmpVersion = getSpackResult(command,true).strip();
   // on systems with their own spack, spack --version can provide
   // a version string like x.x.x.xxxx (hash)
   // partitioning the string allows us to separate the major.minor.bug

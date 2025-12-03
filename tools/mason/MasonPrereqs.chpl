@@ -67,8 +67,7 @@ iter chplFlags(const baseDir = here.cwd()) {
     var makeOutput: string;
     manage pushd(prereq) do makeOutput = MasonUtils.runCommand(cmd).strip();
 
-    const pFlags = makeOutput.strip();
-    for pFlag in pFlags.split(" ") {
+    for pFlag in makeOutput.split(" ") {
       yield pFlag;
     }
   }
