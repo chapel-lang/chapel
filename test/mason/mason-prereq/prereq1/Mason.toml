@@ -1,0 +1,9 @@
+[brick]
+name="prereq1"
+version="0.1.0"
+chplVersion="2.7.0"
+license="None"
+type="application"
+
+[dependencies]
+

@@ -180,6 +180,7 @@ proc masonHelp() {
   writeln('Options:');
   writeln('    -h, --help          Display this message');
   writeln('    -V, --version       Print version info and exit');
+  writeln('    --no-color          Do not format text printed on console');
   writeln();
   writeln('Mason commands:');
   writeln('    new         Create a new mason project');

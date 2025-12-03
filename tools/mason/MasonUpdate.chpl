@@ -27,8 +27,11 @@ use MasonExternal;
 use MasonHelp;
 use MasonSystem;
 use MasonUtils;
+use MasonLogger;
 use TOML;
 import Path;
+
+import MasonPrereqs;
 
 /*
 Update: Performs the upfront dependency resolution and generates the lock file.
@@ -46,6 +49,7 @@ The current resolution strategy for Mason 0.1.0 is the IVRS as described below:
 */
 
 private var failedChapelVersion: list(string);
+private var log = new logger("mason update");
 
 proc masonUpdate(args: [?d] string) {
   var tf = "Mason.toml";
@@ -76,35 +80,52 @@ proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock", show=true) {
     const lockPath = projectHome + "/" + Path.relPath(lf);
     const openFile = openReader(tomlPath, locking=false);
     const TomlFile = parseToml(openFile);
-    var updated = false;
-    if isFile(tomlPath) {
-      if TomlFile.pathExists('dependencies') {
-        if TomlFile['dependencies']!.A.size > 0 {
-          updateRegistry(skipUpdate, show);
-          updated = true;
+    log.debugf("Parsed %s\n", tomlPath);
+
+    if !skipUpdate {
+      var updated = false;
+      if isFile(tomlPath) {
+        if TomlFile.pathExists('dependencies') {
+          if TomlFile['dependencies']!.A.size > 0 {
+            log.infoln("Updating registry");
+            updateRegistry(skipUpdate, show);
+            updated = true;
+          }
+        }
+        if !updated && show {
+          log.infoln("Skipping registry update since no dependency found in " +
+                     "manifest file.");
         }
       }
-      if !updated && show {
-        writeln("Skipping registry update since no dependency found in manifest file.");
+
+      log.infoln("Will do external update");
+      if isDir(SPACK_ROOT) && TomlFile.pathExists('external') {
+        if getSpackVersion() < minSpackVersion then
+          throw new owned MasonError("Mason has been updated. " +
+                      "To install Spack, run: mason external --setup.");
       }
+
+      log.debugln("Will do createDepTree");
+      const lockFile = createDepTree(TomlFile);
+      if failedChapelVersion.size > 0 {
+        const prefix = if failedChapelVersion.size == 1
+          then "The following package is"
+          else "The following packages are";
+        stderr.writeln(prefix, " incompatible with your version of Chapel (", getChapelVersionStr(), ")");
+        for msg in failedChapelVersion do
+          stderr.writeln("  ", msg);
+        exit(1);
+      }
+      // Generate Lock File
+      log.debugln("Generating lock file");
+      genLock(lockFile, lockPath);
+
+      log.infoln("Installing prerequisites");
+      MasonPrereqs.install();
     }
-    if isDir(SPACK_ROOT) && TomlFile.pathExists('external') {
-      if getSpackVersion < spackVersion then
-      throw new owned MasonError("Mason has been updated. " +
-                  "To install Spack, call: mason external --setup.");
+    else {
+      log.infoln("Skipping updates");
     }
-    const lockFile = createDepTree(TomlFile);
-    if failedChapelVersion.size > 0 {
-      const prefix = if failedChapelVersion.size == 1
-        then "The following package is"
-        else "The following packages are";
-      stderr.writeln(prefix, " incompatible with your version of Chapel (", getChapelVersionStr(), ")");
-      for msg in failedChapelVersion do
-        stderr.writeln("  ", msg);
-      exit(1);
-    }
-    // Generate Lock File
-    genLock(lockFile, lockPath);
     // Close Memory
     openFile.close();
 
@@ -113,6 +134,7 @@ proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock", show=true) {
     stderr.writeln(e.message());
     exit(1);
   }
+  log.debugln("updateLock returning");
   return (tf, lf);
 }
 
@@ -227,6 +249,7 @@ private proc createDepTree(root: Toml) {
     exit(1);
   }
 
+  log.debugln("Setting depTree for Chapel dependencies");
   if root.pathExists("dependencies") {
     var deps = getDependencies(root);
 
@@ -271,12 +294,14 @@ private proc createDepTree(root: Toml) {
   }
 
   // Check for pkg-config dependencies
+  log.debugln("Setting depTree for system dependencies");
   if root.pathExists("system") {
     const exDeps = getPCDeps(root["system"]!);
     depTree.set("system", exDeps);
   }
 
   // Check for non-Chapel dependencies
+  log.debugln("Setting depTree for external dependencies");
   if root.pathExists("external") {
     const externals = getExternalPackages(root["external"]!);
     depTree.set("external", externals);
@@ -513,7 +538,7 @@ private proc pullGitDeps(gitDeps, show=false) {
     const nameVers = val + "-" + branch;
     const destination = baseDir + nameVers;
     if !depExists(nameVers, '/git/') {
-      writeln("Downloading dependency: " + nameVers);
+      log.infof("Downloading dependency: %s\n", nameVers);
       var getDependency = "git clone -q "+ srcURL + ' ' + destination +'/';
       runCommand(getDependency);
 
