@@ -4621,8 +4621,11 @@ Expr* TConverter::convertIntrinsicLogicalOrNull(
   types::QualifiedType qtArg1;
   auto exprArg1 = convertExpr(arg1, rv, &qtArg1);
 
+  if (qtArg1.isRef()) {
+    qtArg1 = KindProperties::removeRef(qtArg1);
+  }
   // Make a temp...
-  auto temp = makeNewTemp(reArg1->type());
+  auto temp = makeNewTemp(qtArg1);
 
   // Move the left sub-tree into the temp.
   auto moveArg1 = new CallExpr(PRIM_MOVE, temp, exprArg1);
@@ -6101,6 +6104,24 @@ bool TConverter::enter(const Conditional* node, RV& rv) {
 
   // Not param-known condition; visit both branches as normal.
 
+  auto insertCondTest = [&](types::QualifiedType condType,
+                            const AstNode* node,
+                            Expr* condExpr) {
+    // emit a call to '_cond_test' and store the result in a temp
+    auto ci = resolution::CallInfo(
+                         ustr("_cond_test"),
+                         /* calledType */ types::QualifiedType(),
+                         /* isMethodCall */ false,
+                         /* hasQuestionArg */ false,
+                         /* isParenless */ false,
+                         {CallInfoActual(condType)});
+    FnSymbol* condFn = convertFunctionForGeneratedCall(ci, node);
+    CallExpr* condCall = new CallExpr(condFn, condExpr);
+    types::QualifiedType type = {types::QualifiedType::CONST_VAR,
+                                 types::BoolType::get(context)};
+    return storeInTempIfNeeded(condCall, type);
+  };
+
   if (node->isExpressionLevel()) {
     INT_ASSERT(node->elseBlock());
     INT_ASSERT(node->thenBlock()->numStmts() == 1);
@@ -6122,6 +6143,13 @@ bool TConverter::enter(const Conditional* node, RV& rv) {
       types::QualifiedType qtCond;
       auto condExpr = convertExpr(node->condition(), rv, &qtCond);
       auto condTempUse = storeInTempIfNeeded(condExpr, qtCond);
+
+      if (!qtCond.type()->isBoolType()) {
+        condTempUse = insertCondTest(qtCond, node->condition(), condTempUse);
+      } else if (qtCond.isRef()) {
+        condTempUse = insertDerefTemp(condTempUse,
+                                      KindProperties::removeRef(qtCond));
+      }
 
       // TODO: Insert conversion if necessary?
       auto thenBlock = new BlockStmt(makeMove(node->thenBlock()->stmt(0)));
@@ -6205,11 +6233,9 @@ bool TConverter::enter(const Conditional* node, RV& rv) {
       attachSymbolVisibility(ifVar, ifVarSym);
     } else {
       cond = convertExpr(node->condition(), rv, &qtCond);
-      // TODO: need to resolve _cond_test
       if (qtCond.isRef()) {
-        auto qt = types::QualifiedType(KindProperties::removeRef(qtCond.kind()),
-                                      qtCond.type());
-        cond = storeInTempIfNeeded(new CallExpr(PRIM_DEREF, cond), qt);
+        cond = storeInTempIfNeeded(new CallExpr(PRIM_DEREF, cond),
+                                   KindProperties::removeRef(qtCond));
       }
     }
     INT_ASSERT(cond);
@@ -6221,19 +6247,7 @@ bool TConverter::enter(const Conditional* node, RV& rv) {
       types::QualifiedType qt = rr->type();
       if (!qt.isUnknown()) {
         if (!qt.type()->isBoolType()) {
-          // emit a call to '_cond_test' and store the result in a temp
-          auto ci = resolution::CallInfo(
-                               ustr("_cond_test"),
-                               /* calledType */ types::QualifiedType(),
-                               /* isMethodCall */ false,
-                               /* hasQuestionArg */ false,
-                               /* isParenless */ false,
-                               {CallInfoActual(qt)});
-          FnSymbol* condFn = convertFunctionForGeneratedCall(ci, node);
-          CallExpr* condCall = new CallExpr(condFn, cond);
-          types::QualifiedType type = {types::QualifiedType::CONST_VAR,
-                                       types::BoolType::get(context)};
-          cond = storeInTempIfNeeded(condCall, type);
+          cond = insertCondTest(qt, node->condition(), cond);
         }
       }
     }
