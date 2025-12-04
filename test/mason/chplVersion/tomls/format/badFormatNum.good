@@ -1,4 +1,3 @@
-
 Invalid chplVersion in package 'badFormatNum-0.1.0': 1.x.x
 Details: Invalid Chapel version format: 1.x.x
 
