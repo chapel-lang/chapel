@@ -469,32 +469,6 @@ module TomlParser {
   }
   private use fieldtag;
 
-
-  @chpldoc.nodoc
-  proc setupToml(ref t: shared Toml, A: [?D] shared Toml)
-    where D.isAssociative() {
-    if t == nil {
-      t = new shared Toml(A);
-    } else {
-      t.tag = fieldToml;
-      t.D = D;
-      t.A = A;
-    }
-  }
-
-  @chpldoc.nodoc
-  proc setupToml(ref t: shared Toml, arr: [?dom] shared Toml)
-    where !dom.isAssociative(){
-    if t == nil {
-      t = new shared Toml(arr);
-    } else {
-      t.tag = fieldArr;
-      t.dom = dom;
-      t.arr = arr;
-    }
-  }
-
-
   /*
     Class to hold various types parsed from input
     used to recursively hold tables and respective values
