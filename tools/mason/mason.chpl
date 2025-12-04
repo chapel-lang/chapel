@@ -99,6 +99,9 @@ proc main(args: [] string) throws {
                                    opts=["--no-color"],
                                    defaultValue=false);
 
+  var verboseFlag = parser.addFlag(name="verbose",
+                                   defaultValue="info");
+
   parser.parseArgs(args);
 
   // TODO: Can printVersion take an exit code?
@@ -107,7 +110,15 @@ proc main(args: [] string) throws {
     exit(0);
   }
 
-  MasonLogger.noColor = noColorFlag.valueAsBool();
+  MasonLogger.setColor(noColorFlag.valueAsBool());
+  try {
+    MasonLogger.setLevel(verboseFlag.value());
+  }
+  catch e: IllegalArgumentError {
+    throw new owned MasonError("%s is not a valid option for --verbose"
+                               .format(verboseFlag.value()));
+
+  }
 
   var usedCmd:string;
   var cmdList:list(string);
