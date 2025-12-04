@@ -474,8 +474,8 @@ module UnitTest {
       checkAssertEquality(first, second);
     }
 
-    param defaultRelTol: real = 1e-5;
-    param defaultAbsTol: real = 0.0;
+    proc defaultRelTol param : real do return 1e-5;
+    proc defaultAbsTol param : real do return 0.0;
 
     /*
     Check if two scalars are within tolerance.
@@ -496,16 +496,14 @@ module UnitTest {
       return abs(actual - expected) <= absTol + relTol * abs(expected);
     }
     @chpldoc.nodoc
-    proc withinTol(const in actual: [] ?T, const in expected: [] T,
+    proc withinTol(const in actual: [?D] ?T, const in expected: [D] T,
       const in relTol: real=defaultRelTol,
-      const in absTol: real=defaultAbsTol): [] bool
-      where (actual.shape == expected.shape) {
-      return abs(actual - expected) <= absTol + relTol * abs(expected);
-      // return [iTuple in actual.domain] withinTol(
-      //   actual=actual[iTuple],
-      //   expected=expected[iTuple],
-      //   absTol=absTol,
-      //   relTol=relTol);
+      const in absTol: real=defaultAbsTol): [] bool {
+      return [iTuple in actual.domain] withinTol(
+        actual=actual[iTuple],
+        expected=expected[iTuple],
+        absTol=absTol,
+        relTol=relTol);
     }
 
     /*
@@ -549,7 +547,6 @@ module UnitTest {
 
     pragma "insert line file info"
     pragma "always propagate line file info"
-    @chpldoc.nodoc
     proc assertClose(const in actual: ?T, const in expected: T,
                     const in relTol: real=defaultRelTol,
                     const in absTol: real=defaultAbsTol) throws
