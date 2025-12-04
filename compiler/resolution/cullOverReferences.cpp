@@ -483,11 +483,14 @@ static void maybeIssueRefMaybeConstWarning(ArgSymbol* arg) {
     bool useFunctionForWarning = (isTaskIntent | isArgThis) && arg->getFunction();
     Symbol* warnSym =
       useFunctionForWarning ? (Symbol*)arg->getFunction() : (Symbol*)arg;
-    USR_WARN(warnSym,
-            "inferring a default intent to be 'ref' is deprecated "
-            "- please %s '%s'",
-            intentName,
-            argName);
+    USR_FATAL_CONT(warnSym,
+                   "%s is const by default, but code attempted to modify it.",
+                   argName);
+    USR_PRINT("If you intended to modify %s, %s '%s'.",
+              argName,
+              intentName,
+              argName);
+    USR_STOP();
   }
 }
 
