@@ -91,7 +91,6 @@ const char* Function::kindToString(Kind kind) {
     case Function::PROC:     return "proc";
     case Function::ITER:     return "iter";
     case Function::OPERATOR: return "operator";
-    case Function::LAMBDA:   return "lambda";
   }
 
   return "<unknown>";

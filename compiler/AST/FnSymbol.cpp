@@ -1039,7 +1039,7 @@ bool FnSymbol::isSignature() const {
 }
 
 bool FnSymbol::isAnonymous() const {
-  return hasFlag(FLAG_ANONYMOUS_FN) || hasFlag(FLAG_LEGACY_LAMBDA);
+  return hasFlag(FLAG_ANONYMOUS_FN);
 }
 
 void FnSymbol::accept(AstVisitor* visitor) {

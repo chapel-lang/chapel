@@ -141,7 +141,6 @@ struct Visitor {
   void checkOverrideNonMethod(const Function* node);
   void checkFormalsForTypeOrParamProcs(const Function* node);
   void checkNoReceiverClauseOnPrimaryMethod(const Function* node);
-  void checkLambdaReturnIntent(const Function* node);
   void checkConstReturnIntent(const Function* node);
   void checkProcTypeFormalsAreAnnotated(const FunctionSignature* node);
   void checkProcDefFormalsAreNamed(const Function* node);
@@ -154,7 +153,6 @@ struct Visitor {
   void checkUserModuleHasPragma(const AttributeGroup* node);
   void checkParenfulDeprecation(const AttributeGroup* node);
   void checkExternBlockAtModuleScope(const ExternBlock* node);
-  void checkLambdaDeprecated(const Function* node);
   void checkAllowedImplementsTypeIdent(const Implements* impl, const Identifier* node);
   void checkOtherwiseAfterWhens(const Select* sel);
   void checkUnstableSerial(const Serial* ser);
@@ -1125,36 +1123,6 @@ void Visitor::checkNoReceiverClauseOnPrimaryMethod(const Function* node) {
   }
 }
 
-void Visitor::checkLambdaDeprecated(const Function* node) {
-  if (node->kind() != Function::LAMBDA) return;
-  warn(node, "'lambda' syntax is deprecated, please construct anonymous "
-             "procedures using the 'proc' keyword instead");
-}
-
-void Visitor::checkLambdaReturnIntent(const Function* node) {
-  if (node->kind() != Function::LAMBDA) return;
-
-  const char* disallowedReturnType = NULL;
-  switch (node->returnIntent()) {
-    case Function::CONST_REF:
-    case Function::REF:
-      disallowedReturnType = "[const] ref";
-      break;
-    case Function::PARAM:
-      disallowedReturnType = "param";
-      break;
-    case Function::TYPE:
-      disallowedReturnType = "type";
-      break;
-    default:
-      break;
-  }
-  if (disallowedReturnType) {
-    error(node, "'%s' return intent is not allowed in lambdas.",
-          disallowedReturnType);
-  }
-}
-
 void Visitor::checkConstReturnIntent(const Function* node) {
   if (node->returnIntent() != Function::CONST) return;
   if (!shouldEmitUnstableWarning(node)) return;
@@ -1809,8 +1777,6 @@ void Visitor::visit(const Function* node) {
   checkOverrideNonMethod(node);
   checkFormalsForTypeOrParamProcs(node);
   checkNoReceiverClauseOnPrimaryMethod(node);
-  checkLambdaDeprecated(node);
-  checkLambdaReturnIntent(node);
   checkConstReturnIntent(node);
   checkProcDefFormalsAreNamed(node);
   checkIterNames(node);
