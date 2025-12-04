@@ -441,8 +441,6 @@ struct ParserContext {
                                  AstNode* retType);
   void exitScopeForFunctionDecl(YYLTYPE bodyLocation, FunctionParts& fp);
 
-  AstNode* buildLambda(YYLTYPE location, FunctionParts& fp);
-
   AstNode* buildLetExpr(YYLTYPE location, ParserExprList* decls,
                         AstNode* expr);
 

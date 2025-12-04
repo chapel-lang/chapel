@@ -54,8 +54,7 @@ class Function final : public NamedDecl {
   enum Kind {
     PROC,
     ITER,
-    OPERATOR,
-    LAMBDA
+    OPERATOR
   };
 
   enum IteratorKind {
@@ -275,7 +274,7 @@ class Function final : public NamedDecl {
   bool isParenless() const { return parenless_; }
 
   bool isAnonymous() const {
-    bool ret = name().isEmpty() || kind() == LAMBDA;
+    bool ret = name().isEmpty();
     return ret;
   }
 
