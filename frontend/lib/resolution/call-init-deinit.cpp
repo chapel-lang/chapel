@@ -829,6 +829,10 @@ void CallInitDeinit::resolveMoveInit(const AstNode* ast,
       // resolve a copy init and a deinit to deinit the temporary
       if (lhsGenUnk || rhsGenUnk) {
         CHPL_ASSERT(false && "should not be reached");
+      } else if (lhsType.type()->isCPtrType() &&
+                 rhsType.type()->isStringLikeType()) {
+        // Passing string to c_ptr should just coerce
+        // TODO: Should we generate a call to c_str()?
       } else {
         resolveCopyInit(ast, rhsAst, lhsType, rhsType,
                         /* forMoveInit */ true,
