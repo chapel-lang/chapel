@@ -803,10 +803,16 @@ void CallInitDeinit::resolveMoveInit(const AstNode* ast,
     // Accept if we can pass with only a subtype conversion
     // (for passing non-nilable to nilable).
     auto canPassResult = canPass(context, rhsType, lhsType);
+    bool isManagedClass = false;
+    if (auto ct = lhsType.type()->toClassType()) {
+      if (ct->decorator().isManaged()) {
+        isManagedClass = true;
+      }
+    }
     if (canPassResult.passes() &&
         (!canPassResult.converts() ||
-         canPassResult.conversionKind() ==
-             CanPassResult::ConversionKind::SUBTYPE)) {
+         (!isManagedClass && canPassResult.conversionKind() ==
+             CanPassResult::ConversionKind::SUBTYPE))) {
       // Future TODO: might need to call something provided by the record
       // author to be a hook for move initialization across locales
       // (see issue #15676).

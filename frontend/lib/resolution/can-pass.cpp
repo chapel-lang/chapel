@@ -1532,6 +1532,13 @@ types::QualifiedType::Kind KindProperties::removeRef(types::QualifiedType::Kind 
   return props.toKind();
 }
 
+types::QualifiedType KindProperties::removeRef(types::QualifiedType type) {
+  return QualifiedType(
+      removeRef(type.kind()),
+      type.type(),
+      type.param());
+}
+
 // Try finding a common ancestor type between class types
 static optional<QualifiedType> findByAncestor(
     Context* context, const std::vector<QualifiedType>& types,

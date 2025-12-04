@@ -1336,7 +1336,7 @@ void ErrorInvalidParamCast::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorInvalidSuper::write(ErrorWriterBase& wr) const {
-  auto superExpr = std::get<const uast::Identifier*>(info_);
+  auto superExpr = std::get<const uast::AstNode*>(info_);
   auto qt = std::get<types::QualifiedType>(info_);
 
   const types::RecordType* recordType = nullptr;

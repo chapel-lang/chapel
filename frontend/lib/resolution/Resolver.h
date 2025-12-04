@@ -431,7 +431,7 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
    */
   types::QualifiedType getSuperType(Context* context,
                                     const types::QualifiedType& sub,
-                                    const uast::Identifier* identForError);
+                                    const uast::AstNode* identForError);
 
   // helper for resolveTypeQueriesFromFormalType
   void resolveTypeQueries(const uast::AstNode* formalTypeExpr,

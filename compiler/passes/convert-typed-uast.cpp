@@ -1105,6 +1105,9 @@ struct TConverter final : UastConverter,
   bool enter(const While* node, RV& rv);
   void exit(const While* node, RV& rv);
 
+  bool enter(const For* node, RV& rv);
+  void exit(const For* node, RV& rv);
+
   bool enter(const AstNode* node, RV& rv);
   void exit(const AstNode* node, RV& rv);
 };
@@ -2451,7 +2454,8 @@ struct ConvertTypeHelper {
         // Attach untyped conversion results for methods and nested types
         for (auto stmt : decl->declOrComments()) {
           if (auto decl = stmt->toNamedDecl();
-              decl && !decl->isVarLikeDecl()) {
+              decl && !decl->isVarLikeDecl() &&
+              parsing::idIsInBundledModule(context(), decl->id())) {
             if (instantiatedFrom != nullptr) {
               if (decl->name() == USTR("init") ||
                   decl->name() == USTR("init=") ||
@@ -3832,7 +3836,6 @@ Expr* TConverter::convertMoveInitAssignOrNull(const Call* node, RV& rv) {
   if (!noCandidateForCall) return nullptr;
   if (!re->hasAssociatedActions()) return nullptr;
   auto& actions = re->associatedActions();
-  INT_ASSERT(actions.size() == 1);
   if (actions[0].action() != AssociatedAction::MOVE_INIT) {
     return nullptr;
   }
@@ -4084,7 +4087,7 @@ Expr* TConverter::convertPrimCallOrNull(const Call* node, RV& rv) {
   }
 
   using namespace chpl::uast::primtags;
-  CallExpr* ret = nullptr;
+  Expr* ret = nullptr;
   if (primCall->prim() == PRIM_RT_ERROR) {
     ret = new CallExpr(primCall->prim(), new_CStringSymbol("<cannot handle PRIM_RT_ERROR without strings>"));
   } else if (primCall->prim() == PRIM_TO_UNMANAGED_CLASS ||
@@ -4096,12 +4099,18 @@ Expr* TConverter::convertPrimCallOrNull(const Call* node, RV& rv) {
     auto arg = convertExpr(primCall->actual(0), rv);
     arg = storeInTempIfNeeded(arg, rv.byAst(primCall->actual(0)).type());
     ret = new CallExpr(PRIM_CAST, sym, arg);
+  } else if (primCall->prim() == chpl::uast::primtags::PRIM_FIELD_BY_NUM) {
+    auto re = rv.byAst(primCall->actual(1));
+    int64_t idx = re.type().param()->toIntParam()->value();
+    types::QualifiedType qtField;
+    ret = codegenGetField(primCall->actual(0), idx-1, rv, &qtField);
+    ret = storeInTempIfNeeded(ret, qtField);
   } else {
     ret = new CallExpr(primCall->prim());
 
-    convertAndInsertPrimCallActuals(ret, node->actuals(), rv);
+    convertAndInsertPrimCallActuals(toCallExpr(ret), node->actuals(), rv);
 
-    handlePostCallActions(ret, node, re, rv);
+    handlePostCallActions(toCallExpr(ret), node, re, rv);
   }
 
   return ret;
@@ -4183,6 +4192,8 @@ locateFieldSymbolAndType(TConverter* tc,
                                            fieldName, -1);
       }
     }
+  } else {
+    dynoFieldIndex = fieldIndex;
   }
 
   bool inBounds = (0 <= dynoFieldIndex && dynoFieldIndex < rfds.numFields());
@@ -4204,7 +4215,9 @@ locateFieldSymbolAndType(TConverter* tc,
     // with only doing one while also retrieving the field's frontend type?
     const int idx = (dynoFieldIndex + 1) + superOffset;
     auto field = at->getField(idx);
-    CHPL_ASSERT(0==strcmp(fieldName, field->name));
+    if (fieldName) {
+      CHPL_ASSERT(0==strcmp(fieldName, field->name));
+    }
     return { base, field, fieldType };
   }
 
@@ -4608,8 +4621,11 @@ Expr* TConverter::convertIntrinsicLogicalOrNull(
   types::QualifiedType qtArg1;
   auto exprArg1 = convertExpr(arg1, rv, &qtArg1);
 
+  if (qtArg1.isRef()) {
+    qtArg1 = KindProperties::removeRef(qtArg1);
+  }
   // Make a temp...
-  auto temp = makeNewTemp(reArg1->type());
+  auto temp = makeNewTemp(qtArg1);
 
   // Move the left sub-tree into the temp.
   auto moveArg1 = new CallExpr(PRIM_MOVE, temp, exprArg1);
@@ -6015,13 +6031,29 @@ void TConverter::exit(const Return* node, RV& rv) {
       move = new CallExpr(PRIM_MOVE,
                           cur.retVar, new CallExpr(PRIM_ADDR_OF, temp));
     } else {
+      auto re = rv.byAstOrNull(node);
       auto commonType = cur.resolvedFunction->returnType();
       if (retQt.type() != commonType.type() &&
           commonType.type()->isClassType()) {
+        // TODO: this should be an associated action
         temp = insertClassConversion(commonType, retQt, node, temp, rv);
+        move = new CallExpr(PRIM_MOVE, cur.retVar, temp);
+      } else if (re && re->hasAssociatedActions()) {
+        auto action = re->associatedActions()[0];
+        if (action.action() == resolution::AssociatedAction::ASSIGN) {
+          const ResolvedFunction* rf;
+          INT_ASSERT(!paramElideCallOrNull(action.fn(), re->poiScope(), &rf));
+          auto fn = findOrConvertFunction(rf);
+          move = new CallExpr(fn, cur.retVar, temp);
+        } else if (action.action() == resolution::AssociatedAction::MOVE_INIT) {
+          move = new CallExpr(PRIM_MOVE, cur.retVar, temp);
+        } else {
+          TC_UNIMPL("Unhandled associated action on return value");
+          move = new CallExpr(PRIM_MOVE, cur.retVar, temp);
+        }
+      } else {
+        move = new CallExpr(PRIM_MOVE, cur.retVar, temp);
       }
-
-      move = new CallExpr(PRIM_MOVE, cur.retVar, temp);
     }
     insertStmt(move);
   }
@@ -6072,6 +6104,24 @@ bool TConverter::enter(const Conditional* node, RV& rv) {
 
   // Not param-known condition; visit both branches as normal.
 
+  auto insertCondTest = [&](types::QualifiedType condType,
+                            const AstNode* node,
+                            Expr* condExpr) {
+    // emit a call to '_cond_test' and store the result in a temp
+    auto ci = resolution::CallInfo(
+                         ustr("_cond_test"),
+                         /* calledType */ types::QualifiedType(),
+                         /* isMethodCall */ false,
+                         /* hasQuestionArg */ false,
+                         /* isParenless */ false,
+                         {CallInfoActual(condType)});
+    FnSymbol* condFn = convertFunctionForGeneratedCall(ci, node);
+    CallExpr* condCall = new CallExpr(condFn, condExpr);
+    types::QualifiedType type = {types::QualifiedType::CONST_VAR,
+                                 types::BoolType::get(context)};
+    return storeInTempIfNeeded(condCall, type);
+  };
+
   if (node->isExpressionLevel()) {
     INT_ASSERT(node->elseBlock());
     INT_ASSERT(node->thenBlock()->numStmts() == 1);
@@ -6093,6 +6143,13 @@ bool TConverter::enter(const Conditional* node, RV& rv) {
       types::QualifiedType qtCond;
       auto condExpr = convertExpr(node->condition(), rv, &qtCond);
       auto condTempUse = storeInTempIfNeeded(condExpr, qtCond);
+
+      if (!qtCond.type()->isBoolType()) {
+        condTempUse = insertCondTest(qtCond, node->condition(), condTempUse);
+      } else if (qtCond.isRef()) {
+        condTempUse = insertDerefTemp(condTempUse,
+                                      KindProperties::removeRef(qtCond));
+      }
 
       // TODO: Insert conversion if necessary?
       auto thenBlock = new BlockStmt(makeMove(node->thenBlock()->stmt(0)));
@@ -6176,11 +6233,9 @@ bool TConverter::enter(const Conditional* node, RV& rv) {
       attachSymbolVisibility(ifVar, ifVarSym);
     } else {
       cond = convertExpr(node->condition(), rv, &qtCond);
-      // TODO: need to resolve _cond_test
       if (qtCond.isRef()) {
-        auto qt = types::QualifiedType(KindProperties::removeRef(qtCond.kind()),
-                                      qtCond.type());
-        cond = storeInTempIfNeeded(new CallExpr(PRIM_DEREF, cond), qt);
+        cond = storeInTempIfNeeded(new CallExpr(PRIM_DEREF, cond),
+                                   KindProperties::removeRef(qtCond));
       }
     }
     INT_ASSERT(cond);
@@ -6192,19 +6247,7 @@ bool TConverter::enter(const Conditional* node, RV& rv) {
       types::QualifiedType qt = rr->type();
       if (!qt.isUnknown()) {
         if (!qt.type()->isBoolType()) {
-          // emit a call to '_cond_test' and store the result in a temp
-          auto ci = resolution::CallInfo(
-                               ustr("_cond_test"),
-                               /* calledType */ types::QualifiedType(),
-                               /* isMethodCall */ false,
-                               /* hasQuestionArg */ false,
-                               /* isParenless */ false,
-                               {CallInfoActual(qt)});
-          FnSymbol* condFn = convertFunctionForGeneratedCall(ci, node);
-          CallExpr* condCall = new CallExpr(condFn, cond);
-          types::QualifiedType type = {types::QualifiedType::CONST_VAR,
-                                       types::BoolType::get(context)};
-          cond = storeInTempIfNeeded(condCall, type);
+          cond = insertCondTest(qt, node->condition(), cond);
         }
       }
     }
@@ -6500,6 +6543,44 @@ bool TConverter::enter(const While* node, RV& rv) {
 }
 
 void TConverter::exit(const While* node, RV& rv) {
+}
+
+bool TConverter::enter(const For* node, RV& rv) {
+  enterScope(node, rv);
+  if (!node->isParam()) return true;
+
+  const ResolvedExpression& rr = rv.byAst(node);
+  const ResolvedParamLoop* resolvedLoop = rr.paramLoop();
+
+  // no param resolution results, act like a normal loop
+  if (resolvedLoop == nullptr) return true;
+
+
+  for (const auto& loopBody : resolvedLoop->loopBodies()) {
+    BlockStmt* block = new BlockStmt();
+    pushBlock(block);
+
+    ConvertedSymbolState calledFnState_ = cur;
+    std::swap(calledFnState_, cur);
+    RV loopVis(rv.rc(), node, *this, loopBody);
+
+    for (const AstNode* child : node->children()) {
+      // Written to visit "all but the iterand" in case we add more
+      // fields/children to the For class later.
+      if (child != node->iterand()) {
+        child->traverse(loopVis);
+      }
+    }
+
+    std::swap(calledFnState_, cur);
+
+    insertStmt(popBlock());
+  }
+
+  return false;
+}
+void TConverter::exit(const For* node, RV& rv) {
+  exitScope(node, rv);
 }
 
 bool TConverter::enter(const AstNode* node, RV& rv) {
