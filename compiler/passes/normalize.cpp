@@ -1325,27 +1325,11 @@ static void processSyntacticDistributions(CallExpr* call) {
   if (call->isNamed("chpl__distributed")) {
     if (CallExpr* distCall = toCallExpr(call->get(1))) {
       if (SymExpr* distClass = toSymExpr(distCall->baseExpr)) {
-        if (TypeSymbol* ts = expandTypeAlias(distClass)) {
-          USR_WARN(
+        if (expandTypeAlias(distClass) != nullptr) {
+          USR_FATAL(
             distCall,
-            "omitting 'new' in a dmapped initialization expression is deprecated; please use '<domain> dmapped new <DistName>(<args>)'"
+            "dmapped initialization expression requires a value, not a type - did you mean to use 'new'?"
           );
-          if (isDistClass(canonicalClassType(ts->type)) == true) {
-            CallExpr* newExpr = new CallExpr(PRIM_NEW,
-                new NamedExpr(astr_chpl_manager,
-                              new SymExpr(dtUnmanaged->symbol)),
-                distCall->remove());
-
-            call->insertAtHead(new CallExpr("chpl__buildDistValue", newExpr));
-
-            processManagedNew(newExpr);
-          } else {  // handle new cases where we use a record instead
-            CallExpr* newExpr = new CallExpr(PRIM_NEW, distCall->remove());
-
-            call->insertAtHead(new CallExpr("chpl__buildDistValue", newExpr));
-
-            processManagedNew(newExpr);
-          }
         }
       }
     }
@@ -5208,9 +5192,9 @@ static void updateInitMethod(FnSymbol* fn) {
 ************************************** | *************************************/
 
 static TypeSymbol* expandTypeAlias(SymExpr* se) {
-  TypeSymbol* retval = NULL;
+  TypeSymbol* retval = nullptr;
 
-  while (se != NULL && retval == NULL) {
+  while (se != nullptr && retval == nullptr) {
     Symbol* sym = se->symbol();
 
     if (TypeSymbol* ts = toTypeSymbol(sym)) {
@@ -5224,11 +5208,11 @@ static TypeSymbol* expandTypeAlias(SymExpr* se) {
         se = toSymExpr(def->init);
 
       } else {
-        se = NULL;
+        se = nullptr;
       }
 
     } else {
-      se = NULL;
+      se = nullptr;
     }
   }
 
