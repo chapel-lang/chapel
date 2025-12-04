@@ -518,10 +518,9 @@ module UnitTest {
     */
     pragma "insert line file info"
     pragma "always propagate line file info"
-    proc assertClose(const actual: [] ?T, const expected: [] T,
+    proc assertClose(const actual: [?D] ?T, const expected: [D] T,
                      const in relTol: real=defaultRelTol,
-                     const in absTol: real=defaultAbsTol) throws
-                     where (actual.shape == expected.shape) {
+                     const in absTol: real=defaultAbsTol): void throws {
       const isWithinTol = withinTol(actual=actual, expected=expected,
                                     relTol=relTol, absTol=absTol);
       const passes = && reduce isWithinTol;
