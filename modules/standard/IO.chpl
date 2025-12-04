@@ -1797,12 +1797,6 @@ to get the path to a file.
 :throws SystemError: If the path could not be retrieved.
  */
 proc file.path : string throws {
-  return this._abspath;
-}
-
-// helper for relative-path deprecation
-@chpldoc.nodoc
-proc file._abspath: string throws {
   var ret: string;
   var err:errorCode = 0;
   on this._home {
