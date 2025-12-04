@@ -29,6 +29,7 @@
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
 #include "chpl/uast/Variable.h"
+#include <unordered_map>
 
 // resolves the last function, or module if testModule=true
 // checks that the copy elision points match the string IDs provided
@@ -67,7 +68,7 @@ static void testCopyElision(const char* test,
   }
 
   std::set<ID> splitIds;
-  std::set<ID> elisionPoints;
+  std::unordered_map<ID, ID> elisionPoints;
 
   if (testModule == false) {
     assert(func);
@@ -98,7 +99,8 @@ static void testCopyElision(const char* test,
   }
 
   std::set<std::string> pointNames;
-  for (auto id : elisionPoints) {
+  for (auto point : elisionPoints) {
+    auto id = point.first;
     pointNames.insert(id.str());
   }
 
@@ -1408,8 +1410,7 @@ static void test50() {
       }
     )"""",
     {
-      "M.test@10",
-      "M.test@11",
+      "M.test@18",
       "M.test@19",
       "M.test@21",
       "M.test@22",
@@ -1431,7 +1432,7 @@ static void test50() {
         (a, b, _) = tup;
       }
     )"""",
-    {"M.test@5", "M.test@13", "M.test@14"});
+    {"M.test@8", "M.test@13", "M.test@14"});
 }
 
 // Like test50, but no elision as the variable is mentioned later
@@ -1442,14 +1443,15 @@ static void test51() {
       record R { }
       proc test() {
         var r = new R();
+        var s = new R();
 
-        var tup = (1, r, "hi");
+        var tup = ((1,), r, ((s, "hi"), 2, 3.14));
 
-        var (a, b, _) = tup;
+        var ((a,), b, ((c, d), _, e)) = tup;
         tup;
       }
     )"""",
-    {"M.test@5"});
+    {"M.test@18"});
 
   // Assign
   testCopyElision("test51b",
@@ -1466,7 +1468,7 @@ static void test51() {
         tup;
       }
     )"""",
-    {"M.test@5"});
+    {"M.test@8"});
 }
 
 // Copy elision for assigning tuple expr into tuple var
@@ -1483,7 +1485,7 @@ static void test52() {
         s;
       }
     )"""",
-    {"M.test@9"});
+    {"M.test@12"});
 
   // Assign
   testCopyElision("test52b",

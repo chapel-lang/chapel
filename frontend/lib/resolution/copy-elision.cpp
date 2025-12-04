@@ -47,7 +47,7 @@ struct FindElidedCopies : VarScopeVisitor {
   std::set<ID> outOrInoutFormals;
 
   // result of the process
-  std::set<ID> allElidedCopyFromIds;
+  std::unordered_map<ID, ID> allElidedCopyFromIds;
 
   // methods
   FindElidedCopies(Context* context,
@@ -251,7 +251,9 @@ void FindElidedCopies::saveElidedCopies(VarFrame* frame) {
   for (const auto& pair : frame->copyElisionState) {
     const CopyElisionState& state = pair.second;
     if (state.lastIsCopy) {
-      allElidedCopyFromIds.insert(state.points.begin(), state.points.end());
+      for (auto point : state.points) {
+        allElidedCopyFromIds.emplace(point, pair.first);
+      }
     }
   }
 }
@@ -261,7 +263,9 @@ void FindElidedCopies::saveLocalVarElidedCopies(VarFrame* frame) {
     CHPL_ASSERT(frame->declaredVars.count(id) > 0);
     if (lastMentionIsCopy(frame, id)) {
       const CopyElisionState& state = frame->copyElisionState[id];
-      allElidedCopyFromIds.insert(state.points.begin(), state.points.end());
+      for (auto point : state.points) {
+        allElidedCopyFromIds.emplace(point, id);
+      }
     }
   }
 }
@@ -395,19 +399,20 @@ void FindElidedCopies::handleDeclaration(const VarLikeDecl* ast,
           if (!rhsVarId.isEmpty() && isEligibleVarInAnyFrame(rhsVarId)) {
             // TODO: do we need to verify LHS and RHS type compatibility per element?
             if (copyElisionAllowedForTypes(rhsType, rhsType, ast, rv)) {
-              addCopyInit(frame, rhsVarId, eltExpr->id());
+              addCopyInit(frame, rhsVarId, ast->id());
             }
           }
         }
       }
-    }
-    ID rhsVarId = refersToId(initExpr, rv);
-    if (!rhsVarId.isEmpty() && isEligibleVarInAnyFrame(rhsVarId)) {
-      // check that the types are the same
-      if (rv.hasId(lhsVarId) && rv.hasId(rhsVarId)) {
-        QualifiedType rhsType = initType;
-        if (copyElisionAllowedForTypes(lhsType, rhsType, ast, rv)) {
-          addCopyInit(frame, rhsVarId, ast->id());
+    } else {
+      ID rhsVarId = refersToId(initExpr, rv);
+      if (!rhsVarId.isEmpty() && isEligibleVarInAnyFrame(rhsVarId)) {
+        // check that the types are the same
+        if (rv.hasId(lhsVarId) && rv.hasId(rhsVarId)) {
+          QualifiedType rhsType = initType;
+          if (copyElisionAllowedForTypes(lhsType, rhsType, ast, rv)) {
+            addCopyInit(frame, rhsVarId, ast->id());
+          }
         }
       }
     }
@@ -871,14 +876,14 @@ void FindElidedCopies::handleScope(const AstNode* ast, RV& rv) {
   propagateChildToParent(frame, parent, ast);
 }
 
-std::set<ID>
+std::unordered_map<ID, ID>
 computeElidedCopies(Context* context,
                     const uast::AstNode* symbol,
                     const ResolutionResultByPostorderID& byPostorder,
                     const PoiScope* poiScope,
                     const std::set<ID>& allSplitInitedVars,
                     QualifiedType fnYieldedType) {
-  std::set<ID> elidedCopyFromIds;
+  std::unordered_map<ID, ID> elidedCopyFromIds;
 
   auto fn = symbol->toFunction();
 
