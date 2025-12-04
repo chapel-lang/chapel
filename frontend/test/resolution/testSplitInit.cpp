@@ -1713,6 +1713,44 @@ static void test81() {
     {"x"});
 }
 
+// Split init of vars declared with destructuring
+static void test82() {
+  // No default init
+  testSplitInit(__FUNCTION__,
+    R"""(
+        proc test() {
+          var (x, y);
+          x = 1;
+          y = 2;
+        }
+    )""",
+    {"x", "y"});
+}
+
+// Like previous, but with a default init
+static void test83() {
+  testSplitInit(__FUNCTION__,
+    R"""(
+        proc test() {
+          var (x, y) : (int, int);
+          y = 2;
+        }
+    )""",
+    {"y"});
+}
+
+// Like previous, but the init is tuple-grouped as well
+static void test84() {
+  testSplitInit(__FUNCTION__,
+    R"""(
+        proc test() {
+          var (x, y);
+          (x, y) = (1, 2);
+        }
+    )""",
+    {"x", "y"});
+}
+
 int main() {
   test1();
   test2();
@@ -1802,6 +1840,9 @@ int main() {
   test79();
   // test80();
   test81();
+  test82();
+  test83();
+  test84();
 
   return 0;
 }
