@@ -993,12 +993,7 @@ module List {
       :return: A reference to the first item in this list.
       :rtype: `ref eltType`
     */
-    proc ref first ref {
-      if parSafe then
-        compilerWarning(
-          'Cannot call `first()` on a list initialized with `parSafe=true`, ' +
-          'consider using `update()`, `getValue()`, or '+
-          '`getBorrowed()` instead', 2);
+    proc ref first ref where parSafe == false {
       _enter();
 
       if boundsChecking && _size == 0 {
@@ -1011,6 +1006,13 @@ module List {
       _leave();
 
       return result;
+    }
+    @chpldoc.nodoc
+    proc ref first ref where parSafe {
+      compilerError(
+        'Cannot call `first()` on a list initialized with `parSafe=true`, ' +
+        'consider using `update()`, `getValue()`, or '+
+        '`getBorrowed()` instead', 2);
     }
 
     /*
@@ -1025,12 +1027,7 @@ module List {
       :return: A reference to the last item in this list.
       :rtype: `ref eltType`
     */
-    proc ref last ref {
-      if parSafe then
-        compilerWarning(
-          'Cannot call `last()` on a list initialized with `parSafe=true`, ' +
-          'consider using `update()`, `getValue()`, or '+
-          '`getBorrowed()` instead', 2);
+    proc ref last ref where parSafe == false {
       _enter();
 
       if boundsChecking && _size == 0 {
@@ -1043,6 +1040,13 @@ module List {
       _leave();
 
       return result;
+    }
+    @chpldoc.nodoc
+    proc ref last ref where parSafe {
+      compilerError(
+        'Cannot call `last()` on a list initialized with `parSafe=true`, ' +
+        'consider using `update()`, `getValue()`, or '+
+        '`getBorrowed()` instead', 2);
     }
 
     /*
@@ -1672,12 +1676,7 @@ module List {
 
       :return: A reference to an element in this list
     */
-    proc ref this(i: int) ref {
-      if parSafe then
-        compilerError(
-          'Cannot index a list initialized with `parSafe=true`, ' +
-          'use `update()` to modify the list', 2);
-
+    proc ref this(i: int) ref where parSafe == false {
       if boundsChecking && !_withinBounds(i) {
         const msg = "Invalid list index: " + i:string;
         boundsCheckHalt(msg);
@@ -1686,14 +1685,15 @@ module List {
       ref result = _getRef(i);
       return result;
     }
+    @chpldoc.nodoc
+    proc ref this(i: int) ref where parSafe {
+      compilerError(
+        'Cannot index a list initialized with `parSafe=true`, ' +
+        'use `update()` to modify the list', 2);
+    }
 
     @chpldoc.nodoc
-    proc const ref this(i: int) const ref {
-      if parSafe then
-        compilerError(
-          'Cannot index a list initialized with `parSafe=true`, ' +
-          'use `getValue()`/`getBorrowed()` to get values from the list', 2);
-
+    proc const ref this(i: int) const ref where parSafe == false {
       if boundsChecking && !_withinBounds(i) {
         const msg = "Invalid list index: " + i:string;
         halt(msg);
@@ -1701,6 +1701,12 @@ module List {
 
       const ref result = _getRef(i);
       return result;
+    }
+    @chpldoc.nodoc
+    proc const ref this(i: int) const ref where parSafe {
+      compilerError(
+        'Cannot index a list initialized with `parSafe=true`, ' +
+        'use `getValue()`/`getBorrowed()` to get values from the list', 2);
     }
 
     // TODO - make const ref return intent overloads for `these`
