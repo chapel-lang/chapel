@@ -501,9 +501,11 @@ class ChapelLanguageServer(LanguageServer):
             return []
 
         # If the call is a method call (x.foo(a, b, c)), then by the time
-        # we see 'a', we have already skipped over the 'this' actual 'x'.
-        # However, for call inlays, this is fine, since there's no good call
-        # inlay to show for 'this' anyway.
+        # we see 'a', we have already skipped over the 'this' actual 'x', either
+        # because it was explicitly specified or because it was inserted.
+        # So, treat that as an extra actual. But, there's no good way to show
+        # inlay hints for it anyway, so keep it None and it'll be skipped,
+        # only affecting the index in enumerate.
         actuals = call.actuals()
         if fn.is_method():
             actuals = [None] + list(actuals)
