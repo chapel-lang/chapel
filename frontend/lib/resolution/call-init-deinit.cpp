@@ -913,7 +913,9 @@ void CallInitDeinit::resolveCopyInit(const AstNode* ast,
       }
       return;
     } else {
-      // TODO: we could resolve it anyway
+      // TODO: assume such types only require an assignment
+      // Note: needed for extern initialization, e.g., var e:errorCode = 0;
+      resolveAssign(ast, lhsType, rhsType, rv);
       return;
     }
   }
@@ -978,10 +980,16 @@ void CallInitDeinit::resolveMoveInit(const AstNode* ast,
     // Accept if we can pass with only a subtype conversion
     // (for passing non-nilable to nilable).
     auto canPassResult = canPass(context, rhsType, lhsType);
+    bool isManagedClass = false;
+    if (auto ct = lhsType.type()->toClassType()) {
+      if (ct->decorator().isManaged()) {
+        isManagedClass = true;
+      }
+    }
     if (canPassResult.passes() &&
         (!canPassResult.converts() ||
-         canPassResult.conversionKind() ==
-             CanPassResult::ConversionKind::SUBTYPE)) {
+         (!isManagedClass && canPassResult.conversionKind() ==
+             CanPassResult::ConversionKind::SUBTYPE))) {
       // Future TODO: might need to call something provided by the record
       // author to be a hook for move initialization across locales
       // (see issue #15676).
@@ -998,6 +1006,10 @@ void CallInitDeinit::resolveMoveInit(const AstNode* ast,
       // resolve a copy init and a deinit to deinit the temporary
       if (lhsGenUnk || rhsGenUnk) {
         CHPL_ASSERT(false && "should not be reached");
+      } else if (lhsType.type()->isCPtrType() &&
+                 rhsType.type()->isStringLikeType()) {
+        // Passing string to c_ptr should just coerce
+        // TODO: Should we generate a call to c_str()?
       } else {
         resolveCopyInit(ast, rhsAst, lhsType, rhsType,
                         /* forMoveInit */ true,

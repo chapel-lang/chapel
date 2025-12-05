@@ -868,6 +868,10 @@ struct FnBuilder {
     return Identifier::build(builder(), dummyLoc_, name);
   }
 
+  owned<Identifier> identifier(std::string name) {
+    return Identifier::build(builder(), dummyLoc_, UniqueString::get(context_, name));
+  }
+
   owned<Dot> dot(owned<AstNode> lhs, UniqueString name) {
     return Dot::build(builder(), dummyLoc_, std::move(lhs), name);
   }
@@ -1366,7 +1370,6 @@ const BuilderResult& buildDeSerialize(Context* context, ID typeID, bool isSerial
 
   // TODO:
   // - use types for formals
-  // - add calls to (de)serializeDefaultImpl
 
   auto bld = Builder::createForGeneratedCode(context, typeID);
   auto builder = bld.get();
@@ -1380,12 +1383,19 @@ const BuilderResult& buildDeSerialize(Context* context, ID typeID, bool isSerial
   auto writerArg = Formal::build(builder, dummyLoc, nullptr, UniqueString::get(context, "writer"),
                                  Formal::DEFAULT_INTENT, {}, nullptr);
   auto serializerArg = Formal::build(builder, dummyLoc, nullptr, UniqueString::get(context, "serializer"),
-                                 Formal::DEFAULT_INTENT, {}, nullptr);
+                                 Formal::REF, {}, nullptr);
   AstList formals;
   formals.push_back(std::move(writerArg));
   formals.push_back(std::move(serializerArg));
 
   AstList stmts;
+  FnBuilder helper(context, typeID, UniqueString(),
+           Function::Kind::PROC, false);
+  auto call = helper.call(helper.identifier("serializeDefaultImpl"),
+                helper.identifier(UniqueString::get(context, "writer")),
+                helper.identifier(UniqueString::get(context, "serializer")),
+                helper.identifier(USTR("this")));
+  stmts.push_back(std::move(call));
   auto body = Block::build(builder, dummyLoc, std::move(stmts));
 
   auto genFn = Function::build(builder,

@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+source functions.bash
+
+mason_test_start $1
+
+test_command "mason build"
+test_command "mason run"
+
+mason_test_end $0

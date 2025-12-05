@@ -31,6 +31,9 @@ public use MasonEnv;
 public use Path;
 public use TOML;
 use Regex;
+import MasonLogger;
+
+private var log = new MasonLogger.logger("mason utils");
 
 
 /* Gets environment variables for spawn commands */
@@ -103,17 +106,26 @@ proc runCommand(cmd: [] string, quiet=false) : string throws {
   try {
     var process = spawn(cmd, stdout=pipeStyle.pipe, stderr=pipeStyle.pipe);
 
+    log.debugf("runCommand: %?\n", cmd);
+
     var line:string;
+
+    log.debugln("stdout:");
     while process.stdout.readLine(line) {
       ret += line;
-      if !quiet {
-        write(line);
-      }
+      if quiet then log.debug(line); else log.info(line);
     }
-    if !quiet {
-      while process.stderr.readLine(line) do write(line);
+    log.debugln("end stdout");
+
+    log.debugln("stderr:");
+    while process.stderr.readLine(line) {
+      log.warn(line);
     }
+    log.debugln("end stderr.");
+
     process.wait();
+
+    log.debugf("exitCode: %i\n", process.exitCode);
     if process.exitCode != 0 {
       var cmdStr = " ".join(cmd);
       throw new owned MasonError("Command failed: '" + cmdStr + "'");
@@ -232,6 +244,7 @@ proc getSpackResult(cmd, quiet=false) : string throws {
     " && export PATH=\"$SPACK_ROOT/bin:$PATH\"" +
     " && . $SPACK_ROOT/share/spack/setup-env.sh && ";
     var splitCmd = prefix + cmd;
+    log.debugf("running spack command %s\n", splitCmd);
     var process = spawnshell(splitCmd, stdout=pipeStyle.pipe, executable="bash");
 
     for line in process.stdout.lines() {

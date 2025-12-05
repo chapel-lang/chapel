@@ -88,10 +88,10 @@ function test_compile() {
 
   test_start "make $kind"
   make $version $make_vars 2> $kind.comp.out.tmp
-  local status=$?
+  export test_compile_status=$?
   cat $kind.comp.out.tmp
 
-  if [[ $status -ne 0 ]] ; then
+  if [[ $test_compile_status -ne 0 ]] ; then
     log_error "compiling ${kind}"
   else
     log_success "make output"
@@ -104,8 +104,8 @@ function test_compile() {
   fi
 
   # early return if compilation failed, to prevent spurious perf stats errors
-  if [[ $status -ne 0 ]] ; then
-    return $status
+  if [[ $test_compile_status -ne 0 ]] ; then
+    return
   fi
 
   if [ -z "$CHAMPS_QUICKSTART" ]; then
@@ -119,8 +119,6 @@ function test_compile() {
       log_error "computing emitted code size stats for ${kind}"
     fi
   fi
-
-  return $status
 }
 
 function test_run() {
@@ -132,12 +130,12 @@ function test_run() {
   # Why?
   eval $CHPL_TEST_LAUNCHCMD --walltime=2:00:00 ./bin/champs_${CHAMPS_VERSION}_$kind -nl $nl -f $kind.in 2>&1 >$kind.exec.out.tmp
 
-  local status=$?
+  export test_run_status=$?
   cat $kind.exec.out.tmp
 
-  if [[ $status -ne 0 ]] ; then
+  if [[ $test_run_status -ne 0 ]] ; then
     log_fatal_error "running ${kind}"
-  else 
+  else
     log_success "$kind output"
   fi
   test_end

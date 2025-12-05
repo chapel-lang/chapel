@@ -322,6 +322,7 @@ class KindProperties {
 
   /* Creates a corresponding kind that is not a reference */
   static types::QualifiedType::Kind removeRef(types::QualifiedType::Kind kind);
+  static types::QualifiedType removeRef(types::QualifiedType type);
 };
 
 /**

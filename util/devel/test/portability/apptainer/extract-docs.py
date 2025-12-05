@@ -76,6 +76,8 @@ def title(name):
         name = '24.10 "Oracular Oriole"'
     if name == "Plucky":
         name = '25.04 "Plucky Puffin"'
+    if name == "Questing":
+        name = '25.10 "Questing Quokka"'
     return name
 
 def fixname(subdir):
@@ -189,7 +191,7 @@ def main():
 
             subdirs.append(subpath)
 
-    subdirs.sort(key=os.path.basename)
+    subdirs.sort(key=fixname)
 
     tocmds = { }
 

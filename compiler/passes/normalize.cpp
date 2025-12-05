@@ -911,6 +911,7 @@ static bool isInsideTaskWithClause(Expr* expr) {
 }
 
 void checkUseBeforeDefs(FnSymbol* fn) {
+  if (fn->hasFlag(FLAG_RESOLVED_EARLY)) return;
   if (fn->defPoint->parentSymbol) {
     ModuleSymbol*         mod = fn->getModule();
 

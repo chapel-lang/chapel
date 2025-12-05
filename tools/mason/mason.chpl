@@ -42,6 +42,8 @@ use MasonTest;
 use MasonUpdate;
 use MasonUtils;
 use MasonModules;
+
+import MasonLogger;
 use List;
 /*
 
@@ -93,6 +95,10 @@ proc main(args: [] string) throws {
                                    opts=["-V","--version"],
                                    defaultValue=false);
 
+  var noColorFlag = parser.addFlag(name="noColorFlag",
+                                   opts=["--no-color"],
+                                   defaultValue=false);
+
   parser.parseArgs(args);
 
   // TODO: Can printVersion take an exit code?
@@ -100,6 +106,9 @@ proc main(args: [] string) throws {
     printVersion();
     exit(0);
   }
+
+  MasonLogger.setColor(noColorFlag.valueAsBool());
+
   var usedCmd:string;
   var cmdList:list(string);
   // identify which, if any, subcommand was used and collect its arguments

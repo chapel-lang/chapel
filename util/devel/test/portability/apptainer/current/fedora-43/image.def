@@ -1,0 +1,14 @@
+BootStrap: docker
+From: quay.io/fedora/fedora:43
+
+%files
+    ../../provision-scripts/* /provision-scripts/
+
+%post
+    /provision-scripts/dnf-upgrade.sh
+    /provision-scripts/dnf-deps.sh
+    # installs llvm / clang version 21, so pin to version 20
+    /provision-scripts/dnf-llvm20.sh
+
+%runscript
+    ../../provision-scripts/run.sh "$@"

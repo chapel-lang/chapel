@@ -204,8 +204,7 @@ BlockStmt* buildLocalStmt(Expr* stmt);
 BlockStmt* buildManagerBlock(Expr* managerExpr, std::set<Flag>* flags,
                              const char* resourceName,
                              Symbol*& outStoredResource);
-BlockStmt* buildManageStmt(BlockStmt* managers, BlockStmt* block,
-                           ModTag modTag);
+Expr* buildManageStmt(BlockStmt* managers, BlockStmt* block, ModTag modTag);
 BlockStmt* buildOnStmt(Expr* expr, Expr* stmt);
 BlockStmt* buildBeginStmt(CallExpr* byref_vars, Expr* stmt);
 BlockStmt* buildSyncStmt(Expr* stmt);
