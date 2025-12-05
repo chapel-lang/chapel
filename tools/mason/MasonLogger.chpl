@@ -30,10 +30,6 @@ module MasonLogger {
 
   var logs = getDefaultLogs();
 
-  proc setLevel(flag: string) throws {
-    logs = flag:logLevel;
-  }
-
   private proc getDefaultLogs() {
     import OS, OS.POSIX;
     const envChar = OS.POSIX.getenv("MASON_QUIET");
