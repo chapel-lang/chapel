@@ -478,7 +478,7 @@ module UnitTest {
     proc defaultAbsTol param : real do return 0.0;
 
     /*
-    Check if two scalars are within tolerance.
+    Check if two scalars/arrays are within tolerance.
 
     :arg actual: actual value
     :arg expected: expected value
@@ -489,21 +489,10 @@ module UnitTest {
     :rtype: bool
     */
     @chpldoc.nodoc
-    proc withinTol(const in actual: ?T, const in expected: T,
+    proc withinTol(const actual: ?T, const expected: T,
                    const in relTol: real=defaultRelTol,
-                   const in absTol: real=defaultAbsTol): bool
-                   where (isNumericType(T) && !isIntegralType(T)) {
+                   const in absTol: real=defaultAbsTol) {
       return abs(actual - expected) <= absTol + relTol * abs(expected);
-    }
-    @chpldoc.nodoc
-    proc withinTol(const in actual: [?D] ?T, const in expected: [D] T,
-      const in relTol: real=defaultRelTol,
-      const in absTol: real=defaultAbsTol): [] bool {
-      return [iTuple in actual.domain] withinTol(
-        actual=actual[iTuple],
-        expected=expected[iTuple],
-        absTol=absTol,
-        relTol=relTol);
     }
 
     /*
@@ -516,9 +505,15 @@ module UnitTest {
     */
     pragma "insert line file info"
     pragma "always propagate line file info"
-    proc assertClose(const actual: [?D] ?T, const expected: [D] T,
+    proc assertClose(const actual: [] ?T, const expected: [] T,
                      const in relTol: real=defaultRelTol,
-                     const in absTol: real=defaultAbsTol): void throws {
+                     const in absTol: real=defaultAbsTol): void throws
+                     where (isNumericType(T) && !isIntegralType(T)) {
+      if actual.shape != expected.shape {
+        throw new owned Error("Actual array shape " + actual.shape:string
+                              + " does not match expected: "
+                              + expected.shape:string);
+      }
       const isWithinTol = withinTol(actual=actual, expected=expected,
                                     relTol=relTol, absTol=absTol);
       const passes = && reduce isWithinTol;
@@ -537,9 +532,9 @@ module UnitTest {
           maxRelErr reduce= relErr;
         }
         throw new owned AssertionError(
-          "\nassertClose failed for %i/%i elements (%r %%)\n".format(numFailed,
+          "assert failed for %i/%i elements (%r%%)\n".format(numFailed,
             numTotal, percFailed)
-          + "Max Rel. Error: %r %%\n".format(maxRelErr*100.0)
+          + "Max Rel. Error: %r%%\n".format(maxRelErr*100.0)
           + "Max Abs. Error: %r".format(maxAbsErr)
         );
       }
@@ -548,16 +543,16 @@ module UnitTest {
     pragma "insert line file info"
     pragma "always propagate line file info"
     proc assertClose(const in actual: ?T, const in expected: T,
-                    const in relTol: real=defaultRelTol,
-                    const in absTol: real=defaultAbsTol) throws
-                    where (isNumericType(T) && !isIntegralType(T)) {
+                     const in relTol: real=defaultRelTol,
+                     const in absTol: real=defaultAbsTol):void throws
+                     where (isNumericType(T) && !isIntegralType(T)) {
       const isWithinTol = withinTol(actual=actual, expected=expected,
                                     relTol=relTol, absTol=absTol);
       if !isWithinTol {
         const absErr: real = abs(actual - expected);
         const relErr = absErr / abs(expected);
         throw new owned UnitTest.TestError.AssertionError(
-          "\nassertClose failed for actual=%r, expected=%r\n".format(actual, expected)
+          "assert failed for actual=%n, expected=%n\n".format(actual, expected)
           + "Rel. Error: %r %%\n".format(relErr*100.0)
           + "Abs. Error: %r".format(absErr)
         );
