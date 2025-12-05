@@ -2698,6 +2698,12 @@ arkouda-comp:
     - Yield tuples by value when appropriate (#21789)
   05/02/23:
     - Generate write method stubs for FCF superclass types (#22195)
+  11/13/25:
+    - Changed isDefAndOrUse (#27961)
+  11/14/25:
+    - System software change
+  11/19/25:
+    - Fixed regression due to isDefAndOrUse change (#28082)
 
 arkouda-array_create:
   <<: *arkouda-base
