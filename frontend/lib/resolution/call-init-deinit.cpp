@@ -126,27 +126,27 @@ struct CallInitDeinit : VarScopeVisitor {
                      const QualifiedType& type,
                      RV& rv);
 
-  bool validateTuplesForAssignOrInit(const AstNode* ast,
-                                     const QualifiedType& lhsType,
-                                     const QualifiedType& rhsType);
+  // bool validateTuplesForAssignOrInit(const AstNode* ast,
+  //                                    const QualifiedType& lhsType,
+  //                                    const QualifiedType& rhsType);
   // void resolveTupleInit(const AstNode* ast,
   //                       const AstNode* rhsAst,
   //                       const QualifiedType& lhsType,
   //                       const QualifiedType& rhsType,
   //                       RV& rv);
-  void resolveTupleUnpackAssignOrInit(const Tuple* lhsTuple,
-                                      const Tuple* rhsTuple,
-                                      const AstNode* astForErr,
-                                      const QualifiedType& initialLhsType,
-                                      const QualifiedType& rhsType,
-                                      RV& rv);
+  // void resolveTupleUnpackAssignOrInit(const Tuple* lhsTuple,
+  //                                     const Tuple* rhsTuple,
+  //                                     const AstNode* astForErr,
+  //                                     const QualifiedType& initialLhsType,
+  //                                     const QualifiedType& rhsType,
+  //                                     RV& rv);
 
-  void processSingleAssignHelper(const OpCall* ast,
-                                 const AstNode* lhsAst,
-                                 const AstNode* rhsAst,
-                                 const QualifiedType& lhsType,
-                                 const QualifiedType& rhsType,
-                                 RV& rv);
+  // void processSingleAssignHelper(const OpCall* ast,
+  //                                const AstNode* lhsAst,
+  //                                const AstNode* rhsAst,
+  //                                const QualifiedType& lhsType,
+  //                                const QualifiedType& rhsType,
+  //                                RV& rv);
 
   void validateTypeAndInitExpr(const AstNode* typeExpression,
                                const AstNode* initExpression,
@@ -163,7 +163,11 @@ struct CallInitDeinit : VarScopeVisitor {
                          bool isFormal,
                          RV& rv) override;
   void handleMention(const Identifier* ast, ID varId, RV& rv) override;
-  void handleAssign(const OpCall* ast, RV& rv) override;
+  void handleAssign(const AstNode* lhsAst,
+                    const AstNode* rhsAst,
+                    const types::QualifiedType& rhsType,
+                    const OpCall* opAst,
+                    RV& rv) override;
   void handleOutFormal(const Call* ast, const AstNode* actual,
                        const QualifiedType& formalType,
                        RV& rv) override;
@@ -601,77 +605,77 @@ void CallInitDeinit::resolveDefaultInit(const NamedDecl* ast, Qualifier intentOr
 
 // Adjusts LHS tuple type so that its components are all values.
 // Does no sanity checks.
-static QualifiedType
-getLhsForTupleUnpackAssign(Context* context,
-                           const uast::AstNode* astForErr,
-                           const Tuple* lhsTuple,
-                           const QualifiedType& lhsType) {
-  std::vector<QualifiedType> eltTypes;
+// static QualifiedType
+// getLhsForTupleUnpackAssign(Context* context,
+//                            const uast::AstNode* astForErr,
+//                            const Tuple* lhsTuple,
+//                            const QualifiedType& lhsType) {
+//   std::vector<QualifiedType> eltTypes;
 
-  auto lhsT = lhsType.type() ? lhsType.type()->toTupleType() : nullptr;
-  if (!lhsT || lhsT->numElements() != lhsTuple->numActuals()) return lhsType;
+//   auto lhsT = lhsType.type() ? lhsType.type()->toTupleType() : nullptr;
+//   if (!lhsT || lhsT->numElements() != lhsTuple->numActuals()) return lhsType;
 
-  for (int i = 0; i < lhsTuple->numActuals(); i++) {
-    auto actual = lhsTuple->actual(i);
-    auto ident = actual->toIdentifier();
-    QualifiedType qt;
+//   for (int i = 0; i < lhsTuple->numActuals(); i++) {
+//     auto actual = lhsTuple->actual(i);
+//     auto ident = actual->toIdentifier();
+//     QualifiedType qt;
 
-    if (ident && ident->name() == USTR("_")) {
-      // If the LHS actual is '_', then use the Nothing type. This is fine
-      // since the '_' will never be set.
-      qt = { QualifiedType::VAR, NothingType::get(context) };
+//     if (ident && ident->name() == USTR("_")) {
+//       // If the LHS actual is '_', then use the Nothing type. This is fine
+//       // since the '_' will never be set.
+//       qt = { QualifiedType::VAR, NothingType::get(context) };
 
-    } else {
-      // Otherwise, turn its qualifier into 'var' / 'const var'
-      auto eqt = lhsT->elementType(i);
-      auto useKind = KindProperties::removeRef(eqt.kind());
-      qt = { useKind, eqt.type(), eqt.param() };
-    }
+//     } else {
+//       // Otherwise, turn its qualifier into 'var' / 'const var'
+//       auto eqt = lhsT->elementType(i);
+//       auto useKind = KindProperties::removeRef(eqt.kind());
+//       qt = { useKind, eqt.type(), eqt.param() };
+//     }
 
-    eltTypes.push_back(std::move(qt));
-  }
+//     eltTypes.push_back(std::move(qt));
+//   }
 
-  // Set the 'LHS' tuple type.
-  auto k = QualifiedType::VAR;
-  auto t = TupleType::getQualifiedTuple(context, std::move(eltTypes));
-  QualifiedType ret = { k, t };
-  return ret;
-}
+//   // Set the 'LHS' tuple type.
+//   auto k = QualifiedType::VAR;
+//   auto t = TupleType::getQualifiedTuple(context, std::move(eltTypes));
+//   QualifiedType ret = { k, t };
+//   return ret;
+// }
 
-bool CallInitDeinit::validateTuplesForAssignOrInit(const AstNode* ast,
-                                     const QualifiedType& lhsType,
-                                     const QualifiedType& rhsType) {
-  // Make sure that both the LHS and RHS have types
-  if (!lhsType.hasTypePtr()) {
-    context->error(ast, "Unknown lhs type in tuple assign or init");
-    return false;
-  }
-  if (!rhsType.hasTypePtr()) {
-    context->error(ast, "Unknown rhs type in tuple assign or init");
-    return false;
-  }
+// bool CallInitDeinit::validateTuplesForAssignOrInit(const AstNode* ast,
+//                                      const QualifiedType& lhsType,
+//                                      const QualifiedType& rhsType) {
+//   // Make sure that both the LHS and RHS have types
+//   if (!lhsType.hasTypePtr()) {
+//     context->error(ast, "Unknown lhs type in tuple assign or init");
+//     return false;
+//   }
+//   if (!rhsType.hasTypePtr()) {
+//     context->error(ast, "Unknown rhs type in tuple assign or init");
+//     return false;
+//   }
 
-  const TupleType* lhsTupleType = nullptr;
-  const TupleType* rhsTupleType = nullptr;
+//   const TupleType* lhsTupleType = nullptr;
+//   const TupleType* rhsTupleType = nullptr;
 
-  // Then, check that lhsType and rhsType are tuples
-  if (!(lhsTupleType = lhsType.type()->toTupleType())) {
-    context->error(ast, "lhs type is not tuple in tuple assign or init");
-    return false;
-  }
-  if (!(rhsTupleType = rhsType.type()->toTupleType())) {
-    context->error(ast, "rhs type is not tuple in tuple assign or init");
-    return false;
-  }
+//   // Then, check that lhsType and rhsType are tuples
+//   if (!(lhsTupleType = lhsType.type()->toTupleType())) {
+//     context->error(ast, "lhs type is not tuple in tuple assign or init");
+//     return false;
+//   }
+//   if (!(rhsTupleType = rhsType.type()->toTupleType())) {
+//     context->error(ast, "rhs type is not tuple in tuple assign or init");
+//     return false;
+//   }
 
-  // Then, check that they have the same size
-  if (lhsTupleType->numElements() != rhsTupleType->numElements()) {
-    // assume error already emitted
-    return false;
-  }
+//   // Then, check that they have the same size
+//   if (lhsTupleType->numElements() != rhsTupleType->numElements()) {
+//     // assume error already emitted
+//     return false;
+//   }
 
-  return true;
-}
+//   return true;
+// }
 
 // void CallInitDeinit::resolveTupleInit(const AstNode* ast, const AstNode* rhsAst,
 //                                       const QualifiedType& lhsType,
@@ -744,80 +748,80 @@ bool CallInitDeinit::validateTuplesForAssignOrInit(const AstNode* ast,
 //   }
 // }
 
-void CallInitDeinit::resolveTupleUnpackAssignOrInit(const Tuple* lhsTuple,
-                                                    const Tuple* rhsTuple,
-                                                    const AstNode* astForErr,
-                                                    const QualifiedType& initialLhsType,
-                                                    const QualifiedType& rhsType,
-                                                    RV& rv) {
-  VarFrame* frame = currentFrame();
+// void CallInitDeinit::resolveTupleUnpackAssignOrInit(const Tuple* lhsTuple,
+//                                                     const Tuple* rhsTuple,
+//                                                     const AstNode* astForErr,
+//                                                     const QualifiedType& initialLhsType,
+//                                                     const QualifiedType& rhsType,
+//                                                     RV& rv) {
+//   VarFrame* frame = currentFrame();
 
-  if (!validateTuplesForAssignOrInit(astForErr, initialLhsType, rhsType)) {
-    return;
-  }
+//   if (!validateTuplesForAssignOrInit(astForErr, initialLhsType, rhsType)) {
+//     return;
+//   }
 
-  auto lhsType = getLhsForTupleUnpackAssign(context, astForErr, lhsTuple,
-                                            initialLhsType);
-  rv.byPostorder().byAst(lhsTuple).setType(lhsType);
+//   auto lhsType = getLhsForTupleUnpackAssign(context, astForErr, lhsTuple,
+//                                             initialLhsType);
+//   rv.byPostorder().byAst(lhsTuple).setType(lhsType);
 
-  auto lhsTupleType = lhsType.type()->toTupleType();
-  auto rhsTupleType = rhsType.type()->toTupleType();
+//   auto lhsTupleType = lhsType.type()->toTupleType();
+//   auto rhsTupleType = rhsType.type()->toTupleType();
 
-  // Resolve an init per component, which will become sub-actions of the
-  // overall top-level tuple init.
-  auto& re = rv.byPostorder().byAst(astForErr);
-  AssociatedAction::ActionsList subActions;
-  for (int i = 0; i < lhsTuple->numActuals(); i++) {
-    auto actual = lhsTuple->actual(i);
+//   // Resolve an init per component, which will become sub-actions of the
+//   // overall top-level tuple init.
+//   auto& re = rv.byPostorder().byAst(astForErr);
+//   AssociatedAction::ActionsList subActions;
+//   for (int i = 0; i < lhsTuple->numActuals(); i++) {
+//     auto actual = lhsTuple->actual(i);
 
-    QualifiedType lhsEltType = lhsTupleType->elementType(i);
-    QualifiedType rhsEltType = rhsTupleType->elementType(i);
-    auto ident = actual->toIdentifier();
+//     QualifiedType lhsEltType = lhsTupleType->elementType(i);
+//     QualifiedType rhsEltType = rhsTupleType->elementType(i);
+//     auto ident = actual->toIdentifier();
 
-    // Do not perform an assignment in the case of a '_' variable.
-    if (ident && ident->name() == USTR("_")) continue;
+//     // Do not perform an assignment in the case of a '_' variable.
+//     if (ident && ident->name() == USTR("_")) continue;
 
-    if (auto innerTuple = actual->toTuple()) {
-      // Recurse if the element is a tuple.
-      const Tuple* rhsInnerTuple = nullptr;
-      if (rhsTuple) {
-        rhsInnerTuple = rhsTuple->actual(i)->toTuple();
-      }
-      resolveTupleUnpackAssignOrInit(innerTuple, rhsInnerTuple, astForErr, lhsEltType, rhsEltType, rv);
-      continue;
-    }
+//     if (auto innerTuple = actual->toTuple()) {
+//       // Recurse if the element is a tuple.
+//       const Tuple* rhsInnerTuple = nullptr;
+//       if (rhsTuple) {
+//         rhsInnerTuple = rhsTuple->actual(i)->toTuple();
+//       }
+//       resolveTupleUnpackAssignOrInit(innerTuple, rhsInnerTuple, astForErr, lhsEltType, rhsEltType, rv);
+//       continue;
+//     }
 
-    // Resolve assignment of the element
-    if (auto op = astForErr->toOpCall()) {
-      processSingleAssignHelper(op, actual, nullptr, lhsEltType, rhsEltType,
-                                rv);
-    } else {
-      processInit(frame, actual, lhsEltType, rhsEltType, rv);
-    }
+//     // Resolve assignment of the element
+//     if (auto op = astForErr->toOpCall()) {
+//       processSingleAssignHelper(op, actual, nullptr, lhsEltType, rhsEltType,
+//                                 rv);
+//     } else {
+//       processInit(frame, actual, lhsEltType, rhsEltType, rv);
+//     }
 
-    for (auto action : re.associatedActions()) {
-      auto useId = action.id();
-      auto useTupleEltIdx = i;
-      if (rhsTuple) {
-        useId = rhsTuple->actual(i)->id();
-        useTupleEltIdx = -1;
-      }
-      auto actionWithIdx = new AssociatedAction(
-          action.action(), action.fn(), useId, action.type(),
-          /* tupleEltIdx */ useTupleEltIdx, action.subActions());
-      subActions.push_back(actionWithIdx);
-    }
-    re.clearAssociatedActions();
-  }
+//     for (auto action : re.associatedActions()) {
+//       auto useId = action.id();
+//       auto useTupleEltIdx = i;
+//       if (rhsTuple) {
+//         useId = rhsTuple->actual(i)->id();
+//         useTupleEltIdx = -1;
+//       }
+//       auto actionWithIdx = new AssociatedAction(
+//           action.action(), action.fn(), useId, action.type(),
+//           /* tupleEltIdx */ useTupleEltIdx, action.subActions());
+//       subActions.push_back(actionWithIdx);
+//     }
+//     re.clearAssociatedActions();
+//   }
 
-  // TODO: Resolve a top-level init or assign for the tuple itself
+//   // TODO: Resolve a top-level init or assign for the tuple itself
 
-  // Gather the sub-actions into this new action.
-  re.clearAssociatedActions();
-  for (auto action : subActions) {
-    re.addAssociatedAction(*action);
-  }
-}
+//   // Gather the sub-actions into this new action.
+//   re.clearAssociatedActions();
+//   for (auto action : subActions) {
+//     re.addAssociatedAction(*action);
+//   }
+// }
 
 void CallInitDeinit::resolveAssign(const AstNode* ast,
                                    const QualifiedType& lhsType,
@@ -831,20 +835,20 @@ void CallInitDeinit::resolveAssign(const AstNode* ast,
     return;
   }
 
-  if (auto call = ast->toOpCall()) {
-    if (call->op() == "="  && call->child(0)->isTuple()) {
-      if (lhsType.type() && lhsType.type()->isTupleType()) {
-        // Tuple unpacking assignment
-        // (a, b, c) = foo();
-        auto lhsTuple = call->actual(0)->toTuple();
-        auto rhsTuple = call->actual(1)->toTuple();
-        auto& lhsType = rv.byPostorder().byAst(call->actual(0)).type();
-        auto& rhsType = rv.byPostorder().byAst(call->actual(1)).type();
-        resolveTupleUnpackAssignOrInit(lhsTuple, rhsTuple, call, lhsType, rhsType, rv);
-        return;
-      }
-    }
-  }
+  // if (auto call = ast->toOpCall()) {
+  //   if (call->op() == "="  && call->child(0)->isTuple()) {
+  //     if (lhsType.type() && lhsType.type()->isTupleType()) {
+  //       // Tuple unpacking assignment
+  //       // (a, b, c) = foo();
+  //       auto lhsTuple = call->actual(0)->toTuple();
+  //       auto rhsTuple = call->actual(1)->toTuple();
+  //       auto& lhsType = rv.byPostorder().byAst(call->actual(0)).type();
+  //       auto& rhsType = rv.byPostorder().byAst(call->actual(1)).type();
+  //       resolveTupleUnpackAssignOrInit(lhsTuple, rhsTuple, call, lhsType, rhsType, rv);
+  //       return;
+  //     }
+  //   }
+  // }
 
   // In an 'if var' decl, resolve assign as though the RHS is non-nil.
   // We'll verify it is at runtime.
@@ -1551,10 +1555,61 @@ void CallInitDeinit::handleMention(const Identifier* ast, ID varId, RV& rv) {
   checkUseOfDeinited(ast, varId);
 }
 
-void CallInitDeinit::processSingleAssignHelper(
-    const OpCall* ast, const AstNode* lhsAst, const AstNode* rhsAst,
-    const QualifiedType& lhsType, const QualifiedType& rhsType, RV& rv) {
+// void CallInitDeinit::processSingleAssignHelper(
+//     const OpCall* ast, const AstNode* lhsAst, const AstNode* rhsAst,
+//     const QualifiedType& lhsType, const QualifiedType& rhsType, RV& rv) {
+//   VarFrame* frame = currentFrame();
+
+//   // update initedVars if it is initializing a variable
+//   bool splitInited = processSplitInitAssign(lhsAst, splitInitedVars, rv);
+
+//   if (splitInited) {
+//     // if initializing a variable, update localsAndDefers or initedOuterVars
+//     ID lhsId = refersToId(lhsAst, rv);
+//     recordInitializationOrder(frame, lhsId);
+//   }
+
+//   // check for use of deinited variables
+//   processMentions(ast, rv);
+
+//   bool isInit = splitInited;
+//   isInit |= resolver.initResolver && resolver.initResolver->isInitPoint(ast);
+
+//   if (lhsType.isType() || lhsType.isParam()) {
+//     // these are basically 'move' initialization
+//     resolveMoveInit(ast, rhsAst, lhsType, rhsType, rv);
+//   } else if (isInit) {
+//     processInit(frame, ast, lhsType, rhsType, rv);
+//   } else {
+//     // it is assignment, so resolve the '=' call
+//     resolveAssign(ast, lhsType, rhsType, rv);
+//   }
+// }
+
+void CallInitDeinit::handleAssign(const AstNode* lhsAst,
+                                  const AstNode* rhsAst,
+                                  const types::QualifiedType& rhsType,
+                                  const OpCall* opAst,
+                                  RV& rv) {
+  // // What is the RHS and LHS of the '=' call?
+  // auto lhsAst = ast->actual(0);
+  // auto rhsAst = ast->actual(1);
+
+  // ResolvedExpression& lhsRe = rv.byAst(lhsAst);
+  // QualifiedType lhsType = lhsRe.type();
+  // ResolvedExpression& rhsRe = rv.byAst(rhsAst);
+  // QualifiedType rhsType = rhsRe.type();
+
+  // if (auto lhsTuple = lhsAst->toTuple()) {
+  //   resolveTupleUnpackAssignOrInit(lhsTuple, rhsAst->toTuple(), ast, lhsType, rhsType, rv);
+  // } else {
+  //   processSingleAssignHelper(ast, lhsAst, rhsAst, lhsType, rhsType, rv);
+  // }
+
   VarFrame* frame = currentFrame();
+
+  ResolvedExpression& lhsRe = rv.byAst(lhsAst);
+  QualifiedType lhsType = lhsRe.type();
 
   // update initedVars if it is initializing a variable
   bool splitInited = processSplitInitAssign(lhsAst, splitInitedVars, rv);
@@ -1566,38 +1621,25 @@ void CallInitDeinit::processSingleAssignHelper(
   }
 
   // check for use of deinited variables
-  processMentions(ast, rv);
+  processMentions(lhsAst, rv);
+  // TODO is this needed? I think so since previously we ran processMentions
+  // on the entire OpCall
+  processMentions(rhsAst, rv);
 
   bool isInit = splitInited;
-  isInit |= resolver.initResolver && resolver.initResolver->isInitPoint(ast);
+  isInit |= resolver.initResolver && resolver.initResolver->isInitPoint(opAst);
 
   if (lhsType.isType() || lhsType.isParam()) {
     // these are basically 'move' initialization
-    resolveMoveInit(ast, rhsAst, lhsType, rhsType, rv);
+    resolveMoveInit(opAst, rhsAst, lhsType, rhsType, rv);
   } else if (isInit) {
-    processInit(frame, ast, lhsType, rhsType, rv);
+    processInit(frame, opAst, lhsType, rhsType, rv);
   } else {
     // it is assignment, so resolve the '=' call
-    resolveAssign(ast, lhsType, rhsType, rv);
+    resolveAssign(opAst, lhsType, rhsType, rv);
   }
 }
 
-void CallInitDeinit::handleAssign(const OpCall* ast, RV& rv) {
-  // What is the RHS and LHS of the '=' call?
-  auto lhsAst = ast->actual(0);
-  auto rhsAst = ast->actual(1);
-
-  ResolvedExpression& lhsRe = rv.byAst(lhsAst);
-  QualifiedType lhsType = lhsRe.type();
-  ResolvedExpression& rhsRe = rv.byAst(rhsAst);
-  QualifiedType rhsType = rhsRe.type();
-
-  if (auto lhsTuple = lhsAst->toTuple()) {
-    resolveTupleUnpackAssignOrInit(lhsTuple, rhsAst->toTuple(), ast, lhsType, rhsType, rv);
-  } else {
-    processSingleAssignHelper(ast, lhsAst, rhsAst, lhsType, rhsType, rv);
-  }
-}
 void CallInitDeinit::handleOutFormal(const Call* ast,
                                      const AstNode* actual,
                                      const QualifiedType& formalType,

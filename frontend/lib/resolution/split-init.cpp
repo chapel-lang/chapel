@@ -61,10 +61,10 @@ struct FindSplitInits : VarScopeVisitor {
 
   void propagateChildToParent(VarFrame* frame, VarFrame* parent, const AstNode* ast);
 
-  void processSingleAssignHelper(const AstNode* lhsAst,
-                                 const AstNode* rhsAst,
-                                 const AstNode* ast,
-                                 RV& rv);
+  // void processSingleAssignHelper(const AstNode* lhsAst,
+  //                                const AstNode* rhsAst,
+  //                                const AstNode* ast,
+  //                                RV& rv);
 
   // overrides
   void handleDeclaration(const VarLikeDecl* ast,
@@ -75,7 +75,11 @@ struct FindSplitInits : VarScopeVisitor {
                          bool isFormal,
                          RV& rv) override;
   void handleMention(const Identifier* ast, ID varId, RV& rv) override;
-  void handleAssign(const OpCall* ast, RV& rv) override;
+  void handleAssign(const AstNode* lhsAst,
+                    const AstNode* rhsAst,
+                    const types::QualifiedType& rhsType,
+                    const OpCall* opAst,
+                    RV& rv) override;
   void handleOutFormal(const Call* ast, const AstNode* actual,
                        const QualifiedType& formalType,
                        RV& rv) override;
@@ -259,31 +263,45 @@ void FindSplitInits::handleMention(const Identifier* ast, ID varId, RV& rv) {
   }
 }
 
-void FindSplitInits::processSingleAssignHelper(const AstNode* lhsAst,
-                                               const AstNode* rhsAst,
-                                               const AstNode* ast,
-                                               RV& rv) {
+// void FindSplitInits::processSingleAssignHelper(const AstNode* lhsAst,
+//                                                const AstNode* rhsAst,
+//                                                const AstNode* ast,
+//                                                RV& rv) {
+//   ID lhsVarId = refersToId(lhsAst, rv);
+//   if (!lhsVarId.isEmpty()) {
+//     // get the type for the rhs
+//     QualifiedType rhsType = rv.byAst(rhsAst).type();
+//     handleInitOrAssign(lhsVarId, rhsType, rv);
+//   } else {
+//     // visit the LHS to check for mentions
+//     lhsAst->traverse(rv);
+//   }
+// }
+
+void FindSplitInits::handleAssign(const AstNode* lhsAst,
+                                  const AstNode* rhsAst,
+                                  const types::QualifiedType& rhsType,
+                                  const OpCall* opAst,
+                                  RV& rv) {
+  // auto lhsAst = ast->actual(0);
+  // auto rhsAst = ast->actual(1);
+
+  // if (auto lhsTuple = lhsAst->toTuple()) {
+  //   for (auto elt : lhsTuple->actuals()) {
+  //     processSingleAssignHelper(elt, rhsAst, ast, rv);
+  //   }
+  // } else {
+  //   processSingleAssignHelper(lhsAst, rhsAst, ast, rv);
+  // }
+
   ID lhsVarId = refersToId(lhsAst, rv);
   if (!lhsVarId.isEmpty()) {
-    // get the type for the rhs
-    QualifiedType rhsType = rv.byAst(rhsAst).type();
+    // // get the type for the rhs
+    // QualifiedType rhsType = rv.byAst(rhsAst).type();
     handleInitOrAssign(lhsVarId, rhsType, rv);
   } else {
     // visit the LHS to check for mentions
     lhsAst->traverse(rv);
-  }
-}
-
-void FindSplitInits::handleAssign(const OpCall* ast, RV& rv) {
-  auto lhsAst = ast->actual(0);
-  auto rhsAst = ast->actual(1);
-
-  if (auto lhsTuple = lhsAst->toTuple()) {
-    for (auto elt : lhsTuple->actuals()) {
-      processSingleAssignHelper(elt, rhsAst, ast, rv);
-    }
-  } else {
-    processSingleAssignHelper(lhsAst, rhsAst, ast, rv);
   }
 }
 

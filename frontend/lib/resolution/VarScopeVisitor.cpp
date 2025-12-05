@@ -124,6 +124,8 @@ ID VarScopeVisitor::refersToId(const AstNode* ast, RV& rv) {
 }
 
 void VarScopeVisitor::processMentions(const AstNode* ast, RV& rv) {
+  if (!ast) return;
+
   // This could be its own ResolvedVisitor if it needs to handle
   // more complex forms. For now, this simple implementation should suffice
   // for expressions used as actuals etc.
@@ -330,6 +332,7 @@ bool VarScopeVisitor::enter(const TupleDecl* ast, RV& rv) {
   } else if (outermostContainingTuple()) {
     // Otherwise, see if we're nested in another tuple decl and can
     // derive it from our parent's.
+    CHPL_ASSERT(!tupleInitTypesStack.empty());
     if (auto parentInitType = tupleInitTypesStack.back().type()) {
       auto parentTupleType = parentInitType->toTupleType();
       CHPL_ASSERT(parentTupleType);
@@ -356,6 +359,7 @@ bool VarScopeVisitor::enter(const TupleDecl* ast, RV& rv) {
   }
   if (initPart) CHPL_ASSERT(ast->numDecls() == initPart->numActuals());
 
+  // if (ast->initExpression()) ast->initExpression()->dump();
   tupleInitTypesStack.push_back(initType);
   tupleInitExprsStack.push_back(initPart);
 
@@ -417,6 +421,7 @@ void VarScopeVisitor::exit(const TupleDecl* ast, RV& rv) {
     }
   }
 
+  CHPL_ASSERT(!tupleInitTypesStack.empty() && !tupleInitExprsStack.empty());
   tupleInitTypesStack.pop_back();
   tupleInitExprsStack.pop_back();
 
@@ -505,21 +510,91 @@ bool VarScopeVisitor::enter(const OpCall* ast, RV& rv) {
   enterAst(ast);
 
   if (ast->op() == USTR("=")) {
-    // What is the RHS of the '=' call?
+    auto lhsAst = ast->actual(0);
     auto rhsAst = ast->actual(1);
+    auto rhsType = rv.byAst(rhsAst).type();
 
-    // visit the RHS first
-    rhsAst->traverse(rv);
+    if (lhsAst->isTuple()) {
+      // Tuple destructuring assignment
 
-    handleAssign(ast, rv);
+      rhsAst->traverse(rv);
 
-    return false;
+      inTupleAssignment = true;
+      lhsAst->traverse(rv);
+      inTupleAssignment = false;
+
+      return false;
+    } else {
+      // visit the RHS first
+      rhsAst->traverse(rv);
+
+      handleAssign(lhsAst, rhsAst, rhsType, ast, rv);
+
+      return false;
+    }
   } else {
     return resolvedCallHelper(ast, rv);
   }
 }
 
 void VarScopeVisitor::exit(const OpCall* ast, RV& rv) {
+  exitAst(ast);
+}
+
+bool VarScopeVisitor::enter(const Tuple* ast, RV& rv) {
+  enterAst(ast);
+
+  QualifiedType tupInitType;
+  const Tuple* tupInitPart = nullptr;
+
+  bool entered = true;
+  auto parentAst = parsing::parentAst(context, ast);
+  auto parentOp = parentAst->toOpCall();
+  if (parentOp && parentOp->op() == USTR("=") && ast == parentOp->actual(0)) {
+    auto rhsAst = parentOp->actual(1);
+    tupleInitExprsStack.push_back(rhsAst->toTuple());
+    tupleInitTypesStack.push_back(rv.byAst(rhsAst).type());
+  } else if (outermostContainingTuple() && parentAst->isTuple()) {
+    CHPL_ASSERT(!tupleInitTypesStack.empty() && !tupleInitExprsStack.empty());
+    if (auto parentInitType = tupleInitTypesStack.back().type()) {
+      auto parentTupleType = parentInitType->toTupleType();
+      CHPL_ASSERT(parentTupleType);
+      tupInitType = parentTupleType->elementType(indexWithinContainingTuple(ast));
+    }
+
+    if (auto parentInit = tupleInitExprsStack.back()) {
+      tupInitPart = parentInit->actual(indexWithinContainingTuple(ast))->toTuple();
+    }
+
+    if (tupInitPart) CHPL_ASSERT(ast->numActuals() == tupInitPart->numActuals());
+
+    tupleInitTypesStack.push_back(tupInitType);
+    tupleInitExprsStack.push_back(tupInitPart);
+  } else {
+    entered = false;
+  }
+
+  for (auto elt : ast->actuals()) {
+    elt->traverse(rv);
+  }
+
+  if (entered) {
+    tupleInitTypesStack.pop_back();
+    tupleInitExprsStack.pop_back();
+  }
+
+  return false;
+}
+
+void VarScopeVisitor::exit(const Tuple* ast, RV& rv) {
+  // auto parentAst = parsing::parentAst(context, ast);
+  // if (outermostContainingTuple() && (parentAst->isTuple() ||
+  //                                   (parentAst->toOpCall() &&
+  //                                    parentAst->toOpCall()->op() == USTR("=")))) {
+  //   tupleInitTypesStack.pop_back();
+  //   tupleInitExprsStack.pop_back();
+  // }
+
   exitAst(ast);
 }
 
@@ -745,8 +820,31 @@ void VarScopeVisitor::exit(const Yield* ast, RV& rv) {
 
 bool VarScopeVisitor::enter(const Identifier* ast, RV& rv) {
   enterAst(ast);
+
+  // if (ast->name() == "x") debuggerBreakHere();
+  auto outerTuple = outermostContainingTuple();
+  if (inTupleAssignment) {
+    auto parentOp = parsing::parentAst(context, outerTuple)->toOpCall();
+    CHPL_ASSERT(parentOp && parentOp->op() == USTR("="));
+
+    const AstNode* rhsAst = nullptr;
+    QualifiedType rhsType;
+
+    if (auto tupInitPart = tupleInitExprsStack.back()) {
+      rhsAst = tupInitPart->actual(indexWithinContainingTuple(ast));
+    }
+    if (auto tupInitTy = tupleInitTypesStack.back().type()) {
+      auto tupType = tupInitTy->toTupleType();
+      CHPL_ASSERT(tupType);
+      rhsType = tupType->elementType(indexWithinContainingTuple(ast));
+    }
+
+    handleAssign(ast, rhsAst, rhsType, parentOp, rv);
+  }
+
   return true;
 }
+
 void VarScopeVisitor::exit(const Identifier* ast, RV& rv) {
   if (!scopeStack.empty()) {
     ID toId = rv.byAst(ast).toId();

@@ -65,9 +65,9 @@ class VarScopeVisitor : public BranchSensitiveVisitor<VarFrame, MutatingResolved
   std::vector<const AstNode*> inAstStack;
   // Stack of tuple init/assign RHS types, matching the number and order of
   // tuple decls in the AST stack.
-  // TODO: use SmallVectors
-  std::vector<types::QualifiedType> tupleInitTypesStack;
-  std::vector<const Tuple*> tupleInitExprsStack;
+  llvm::SmallVector<types::QualifiedType> tupleInitTypesStack;
+  llvm::SmallVector<const Tuple*> tupleInitExprsStack;
+  bool inTupleAssignment = false;
 
   // ----- methods to be implemented by specific analysis subclass
 
@@ -82,7 +82,11 @@ class VarScopeVisitor : public BranchSensitiveVisitor<VarFrame, MutatingResolved
   /** Called for an Identifier not used in one of the below cases */
   virtual void handleMention(const uast::Identifier* ast, ID varId, RV& rv) = 0;
   /** Called for <expr> = <expr> assignment pattern */
-  virtual void handleAssign(const uast::OpCall* ast, RV& rv) = 0;
+  virtual void handleAssign(const AstNode* lhsAst,
+                            const AstNode* rhsAst,
+                            const types::QualifiedType& rhsType,
+                            const OpCall* opAst,
+                            RV& rv) = 0;
   /** Called for an actual passed to an 'out' formal */
   virtual void handleOutFormal(const uast::Call* ast,
                                const uast::AstNode* actual,
@@ -209,6 +213,9 @@ class VarScopeVisitor : public BranchSensitiveVisitor<VarFrame, MutatingResolved
 
   bool enter(const OpCall* ast, RV& rv);
   void exit(const OpCall* ast, RV& rv);
+
+  bool enter(const Tuple* ast, RV& rv);
+  void exit(const Tuple* ast, RV& rv);
 
   bool enter(const FnCall* ast, RV& rv);
   void exit(const FnCall* ast, RV& rv);
