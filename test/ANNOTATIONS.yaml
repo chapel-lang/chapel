@@ -632,7 +632,7 @@ all:
       config: 16-node-apollo-hdr
   09/27/25:
     - text: System hardware/software change
-      config: 16-node-hpe-cray-ex
+      config: 16-node-hpe-cray-ex, 1-node-a100, 1-node-mi250x
   09/27/25:
     - text: Beginning of noise due to node with less memory
       config: 16-node-apollo-hdr
