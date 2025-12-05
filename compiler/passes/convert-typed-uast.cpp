@@ -3180,10 +3180,14 @@ struct ConvertDefaultValueHelper {
   }
 
   Expr* visit(const types::ClassType* t) {
-    // Note that we use 'nil' regardless of whether or not the class is
-    // non-nilable or not, because non-nilable classes set to 'nil' or
-    // default-initialized should have been caught earlier in compilation.
-    return new SymExpr(gNil);
+    if (t->manager()) {
+      return visit(t->managerRecordType(context()));
+    } else {
+      // Note that we use 'nil' regardless of whether or not the class is
+      // non-nilable or not, because non-nilable classes set to 'nil' or
+      // default-initialized should have been caught earlier in compilation.
+      return new SymExpr(gNil);
+    }
   }
 
   Expr* visit(const types::RecordType* t) {
