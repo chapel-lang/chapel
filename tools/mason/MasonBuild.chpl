@@ -247,9 +247,8 @@ proc compileSrc(lockFile: borrowed Toml, binLoc: string, show: bool,
       cmd.pushBack(gitDepSrc);
     }
 
-    if show then
-      log.infof("Compiling [%s] target: %s\n",
-                if release then "release" else "debug", project);
+    writef("Compiling [%s] target: %s\n",
+            if release then "release" else "debug", project);
 
     // compile Program with deps
     const command = " ".join(cmd.these());
