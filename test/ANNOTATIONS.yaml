@@ -2034,6 +2034,8 @@ scanPerf:
     - Support optionally parallel 1D scans on default rectangular (#12469)
   01/14/21:
     - Optimize scans by using noinit for the result array (#16919)
+  09/30/25:
+    - Halve memory used by scanPerf performance test (#27873)
 
 scanPerf.ml-time:
   03/06/19:
@@ -2042,6 +2044,8 @@ scanPerf.ml-time:
     - Increase the problem size for the multi-locale scan performance test (#16918)
   01/14/21:
     - Optimize scans by using noinit for the result array (#16919)
+  09/30/25:
+    - Halve memory used by scanPerf performance test (#27873)
 
 search:
   04/20/17:
