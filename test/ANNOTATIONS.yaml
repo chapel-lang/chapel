@@ -2653,6 +2653,8 @@ arkouda: &arkouda-base
     - Improve parquet read implementation and multiple column read performance (Bears-R-Us/arkouda#4906)
   10/02/25:
     - Resolves Issue 4810, cumSum and cumProd performance (Bears-R-Us/arkouda#4819)
+  12/01/25:
+    - Fix CSV Parsing of Quoted Fields, Escaped Quotes, Embedded Delimiters, and Multi-Line Records (Bears-R-Us/arkouda#5080)
 
 arkouda-string:
   <<: *arkouda-base
