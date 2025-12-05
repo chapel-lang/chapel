@@ -2449,14 +2449,14 @@ index a4b94a943b3..ec8832818fc 100644
 +sync-coerce-to-ref.chpl:10: error: unable to resolve call to 'acceptRef': no matching candidates
 +sync-coerce-to-ref.chpl:1: note: the following candidate didn't match because an actual couldn't be passed to a formal
 diff --git a/test/types/sync/ferguson/sync-copy-init-cannot-coerce.good b/test/types/sync/ferguson/sync-copy-init-cannot-coerce.good
-index 59a40747e9f..d47b6a4f576 100644
+index 59a40747e9f..659b363b671 100644
 --- a/test/types/sync/ferguson/sync-copy-init-cannot-coerce.good
 +++ b/test/types/sync/ferguson/sync-copy-init-cannot-coerce.good
 @@ -1,3 +1,2 @@
 -sync-copy-init-cannot-coerce.chpl:3: warning: Initializing a type-inferred variable from a 'sync' is deprecated; apply a 'read??()' method to the right-hand side
 -sync-copy-init-cannot-coerce.chpl:3: error: cannot initialize 'sync int(64)' from 'sync real(64)' because 'real(64)' is not coercible to 'int(64)'
 -note: An additional error is hidden. Use --print-additional-errors to see it.
-+$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:162: error: cannot implicitly initialize field 'valType', which does not have a default value
++$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:163: error: cannot implicitly initialize field 'valType', which does not have a default value
 +sync-copy-init-cannot-coerce.chpl:3: error: cannot initialize '_syncvar(int(64))' from '_syncvar(real(64))' because 'real(64)' is not coercible to 'int(64)'
 diff --git a/test/types/sync/ferguson/sync-copy-init-cannot-coerce2.good b/test/types/sync/ferguson/sync-copy-init-cannot-coerce2.good
 index 5b41c272b9a..f867649e208 100644
@@ -2471,22 +2471,22 @@ index 5b41c272b9a..f867649e208 100644
 -$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:nnnn: note:   _syncvar.init=(in other: this.type.valType)
 +sync-copy-init-cannot-coerce2.chpl:3: error: type mismatch between declared type of 's' and initialization expression
 diff --git a/test/types/sync/ferguson/sync-owned-nilable-readFF.good b/test/types/sync/ferguson/sync-owned-nilable-readFF.good
-index 39f8fe696d3..f4e1265eea7 100644
+index 39f8fe696d3..284cb360835 100644
 --- a/test/types/sync/ferguson/sync-owned-nilable-readFF.good
 +++ b/test/types/sync/ferguson/sync-owned-nilable-readFF.good
 @@ -1 +1,3 @@
 -sync-owned-nilable-readFF.chpl:6: error: readFF requires that the type contained in the sync variable be const-copyable and const-assignable
-+$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:223: In method 'readFF':
-+$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:224: error: readFF requires that the type contained in the sync variable be const-copyable and const-assignable
++$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:226: In method 'readFF':
++$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:227: error: readFF requires that the type contained in the sync variable be const-copyable and const-assignable
 +sync-owned-nilable-readFF.chpl:6: error: Cannot establish type for call expression
 diff --git a/test/types/sync/syncNothing.good b/test/types/sync/syncNothing.good
-index cae16bb0a2c..51c58dd1dff 100644
+index cae16bb0a2c..bc934c0b150 100644
 --- a/test/types/sync/syncNothing.good
 +++ b/test/types/sync/syncNothing.good
 @@ -1 +1,2 @@
 -syncNothing.chpl:5: error: sync types cannot contain type 'nothing'
-+$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:130: In initializer:
-+$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:131: error: sync types cannot contain type 'nothing'
++$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:131: In initializer:
++$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:132: error: sync types cannot contain type 'nothing'
 diff --git a/test/types/sync/vass/readThis.good b/test/types/sync/vass/readThis.good
 index 95a0b001533..c8f7bc9ef78 100644
 --- a/test/types/sync/vass/readThis.good
