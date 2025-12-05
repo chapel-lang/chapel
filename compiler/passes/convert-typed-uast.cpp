@@ -5004,17 +5004,18 @@ Expr* TConverter::ActualConverter::convertActualWithArg(const FormalActual& fa) 
           auto ct = fa.actualType().type()->toClassType();
           Expr* borrow = nullptr;
 
-          auto mrt = types::QualifiedType(fa.actualType().kind(),
-                                          ct->managerRecordType(context));
-          types::QualifiedType qtField;
-          borrow = codegenGetFieldImpl(tc_, PRIM_UNKNOWN, temp, mrt,
-                                       "chpl_p",
-                                       -1,
-                                       rv_, &qtField);
-          // TODO: need to handle non-managed case
-          // NOTE: for some reason, converting the non-managed case results
-          // in a runtime error? Seems related to virtual dispatch.
-          borrow = tc_->storeInTempIfNeeded(borrow, qtField);
+          if (ct->manager()) {
+            auto mrt = types::QualifiedType(fa.actualType().kind(),
+                                            ct->managerRecordType(context));
+            types::QualifiedType qtField;
+            borrow = codegenGetFieldImpl(tc_, PRIM_UNKNOWN, temp, mrt,
+                                         "chpl_p",
+                                         -1,
+                                         rv_, &qtField);
+            borrow = tc_->storeInTempIfNeeded(borrow, qtField);
+          } else {
+            borrow = temp;
+          }
 
           auto type = tc_->convertType(fa.formalType().type());
           temp = tc_->storeInTempIfNeeded(new CallExpr(PRIM_CAST, type->symbol, borrow), fa.formalType());
