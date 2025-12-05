@@ -633,6 +633,12 @@ all:
   09/27/25:
     - text: System hardware/software change
       config: 16-node-hpe-cray-ex
+  09/27/25:
+    - text: Beginning of noise due to node with less memory
+      config: 16-node-apollo-hdr
+  10/22/25:
+    - text: End of noise due node now having full memory
+      config: 16-node-apollo-hdr
 
 # End all
 
