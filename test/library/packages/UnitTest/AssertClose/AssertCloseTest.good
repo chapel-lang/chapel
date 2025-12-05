@@ -1,0 +1,13 @@
+Error Caught in Unequal complex 1D arrays
+AssertionError: in AssertCloseTest.chpl:7 - assert failed for 1/2 elements (50%)
+Max Rel. Error: 39.2232%
+Max Abs. Error: 1.41421
+================================================================================
+Error Caught in Mismatched array sizes
+Error: Actual array shape (5,) does not match expected: (4,)
+================================================================================
+Error Caught in Unequal complex numbers
+AssertionError: in AssertCloseTest.chpl:7 - assert failed for actual=1.8 + 3i, expected=1.8 + 3i
+Rel. Error: 2.85831e-05 %
+Abs. Error: 1e-06
+================================================================================
