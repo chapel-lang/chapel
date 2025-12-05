@@ -993,12 +993,12 @@ module List {
       :return: A reference to the first item in this list.
       :rtype: `ref eltType`
     */
-    @deprecated(parenful=true, notes="`list.first()` is deprecated; please use the parenless version `list.first` instead")
     proc ref first ref {
       if parSafe then
-        compilerWarning('Calling `first()` on a list initialized with ' +
-                        '`parSafe=true` has been deprecated, consider ' +
-                        'using `set()` or `update()` instead');
+        compilerWarning(
+          'Cannot call `first()` on a list initialized with `parSafe=true`, ' +
+          'consider using `update()`, `getValue()`, or '+
+          '`getBorrowed()` instead', 2);
       _enter();
 
       if boundsChecking && _size == 0 {
@@ -1025,12 +1025,12 @@ module List {
       :return: A reference to the last item in this list.
       :rtype: `ref eltType`
     */
-    @deprecated(parenful=true, notes="`list.last()` is deprecated; please use the parenless version `list.last` instead")
     proc ref last ref {
       if parSafe then
-        compilerWarning('Calling `last()` on a list initialized with ' +
-                        '`parSafe=true` has been deprecated, consider ' +
-                        'using `set()` or `update()` instead');
+        compilerWarning(
+          'Cannot call `last()` on a list initialized with `parSafe=true`, ' +
+          'consider using `update()`, `getValue()`, or '+
+          '`getBorrowed()` instead', 2);
       _enter();
 
       if boundsChecking && _size == 0 {
@@ -1652,15 +1652,6 @@ module List {
       return updater(i, slot);
     }
 
-    @chpldoc.nodoc
-    inline proc _warnForParSafeIndexing() {
-      if parSafe then
-        compilerWarning('Indexing a list initialized with `parSafe=true` ' +
-                        'has been deprecated, consider using `set()` ' +
-                        'or `update()` instead', 2);
-      return;
-    }
-
     /*
       Index this list via subscript. Returns a reference to the element at a
       given index in this list.
@@ -1682,7 +1673,10 @@ module List {
       :return: A reference to an element in this list
     */
     proc ref this(i: int) ref {
-      _warnForParSafeIndexing();
+      if parSafe then
+        compilerError(
+          'Cannot index a list initialized with `parSafe=true`, ' +
+          'use `update()` to modify the list', 2);
 
       if boundsChecking && !_withinBounds(i) {
         const msg = "Invalid list index: " + i:string;
@@ -1695,7 +1689,10 @@ module List {
 
     @chpldoc.nodoc
     proc const ref this(i: int) const ref {
-      _warnForParSafeIndexing();
+      if parSafe then
+        compilerError(
+          'Cannot index a list initialized with `parSafe=true`, ' +
+          'use `getValue()`/`getBorrowed()` to get values from the list', 2);
 
       if boundsChecking && !_withinBounds(i) {
         const msg = "Invalid list index: " + i:string;
