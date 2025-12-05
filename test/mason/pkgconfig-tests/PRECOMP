@@ -16,7 +16,6 @@ pkgincs="$(echo -e "${pkgincs}" | sed -e 's/[[:space:]]*$//')"
 
 # output the expected output to goodfile
 
-echo Skipping registry update since no dependency found in manifest file. >$good
 echo>>$good
 echo [root]>>$good
 echo chplVersion = \"$chplver..$chplver\">>$good

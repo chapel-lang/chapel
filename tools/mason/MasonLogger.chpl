@@ -28,19 +28,25 @@ module MasonLogger {
   // values mean lower verbosity.
   enum logLevel { no, error, warn, info, debug };
 
-  // TODO we should actually use Mason's argumentParser based approach instead
-  // of config variables.
-  config const logs = logLevel.info;
+  var logs = getDefaultLogs();
 
-  var noColor = false;
-
-  private var logWriter = IO.stdout;
+  private proc getDefaultLogs() {
+    import OS, OS.POSIX;
+    const envChar = OS.POSIX.getenv("MASON_QUIET");
+    return if envChar == nil then logLevel.info else logLevel.no;
+  }
 
   private proc doDebug do return logs>=logLevel.debug;
   private proc doInfo do return logs>=logLevel.info;
   private proc doWarn do return logs>=logLevel.warn;
   private proc doError do return logs>=logLevel.error;
 
+  private var noColor = false;
+  proc setColor(flag: bool) throws {
+    noColor = flag;
+  }
+
+  private var logWriter = IO.stdout;
   private var pad = 0;
 
   record logger {

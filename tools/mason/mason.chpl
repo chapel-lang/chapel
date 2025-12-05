@@ -107,7 +107,7 @@ proc main(args: [] string) throws {
     exit(0);
   }
 
-  MasonLogger.noColor = noColorFlag.valueAsBool();
+  MasonLogger.setColor(noColorFlag.valueAsBool());
 
   var usedCmd:string;
   var cmdList:list(string);
