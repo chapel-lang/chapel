@@ -2256,7 +2256,7 @@ static Symbol* leadingArg(PromotionInfo& promotion, CallExpr* call,
     }
 
     INT_ASSERT(formalIdx < (int)promotion.promotedType.size());
-    if (promotion.promotedType[formalIdx] != NULL) {
+    if (promotion.promotedType[formalIdx] != nullptr) {
       return symbolForActual(actualExpr);
     }
 
@@ -3107,7 +3107,7 @@ static bool haveLeaderAndFollowers(PromotionInfo& promotion, CallExpr* call,
     }
 
     CHPL_ASSERT(formalIdx < (int)promotion.promotedType.size());
-    if (promotion.promotedType[formalIdx] != NULL) {
+    if (promotion.promotedType[formalIdx] != nullptr) {
       Symbol* actual = symbolForActual(actualExpr);
 
       if (leader == NULL) {
@@ -3204,7 +3204,7 @@ static void fixUnresolvedSymExprsForPromotionWrapper(FnSymbol* wrapper,
   for_vector(CallExpr, call, calls) {
     if (call->resolvedFunction() == fn) {
       for_actuals(actual, call) {
-        UnresolvedSymExpr* unsym = NULL;
+        UnresolvedSymExpr* unsym = nullptr;
 
         // Check if this is a NamedExpr wrapping an UnresolvedSymExpr
         if (NamedExpr* named = toNamedExpr(actual)) {
