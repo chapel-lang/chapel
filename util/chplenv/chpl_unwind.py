@@ -27,6 +27,10 @@ def get():
             val = 'system'
         else:
             val = 'bundled'
+    elif val == 'system':
+        if not system_library_available():
+            error("CHPL_UNWIND=system specified but libunwind not found on system.",
+                  ValueError)
 
     if osx and val == 'bundled':
         error("Using CHPL_UNWIND=bundled is not supported on Mac OS X."
