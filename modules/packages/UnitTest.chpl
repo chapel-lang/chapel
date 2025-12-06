@@ -474,6 +474,92 @@ module UnitTest {
       checkAssertEquality(first, second);
     }
 
+    proc defaultRelTol param : real do return 1e-5;
+    proc defaultAbsTol param : real do return 0.0;
+
+    /*
+    Check if two scalars/arrays are within tolerance.
+
+    :arg actual: actual value
+    :arg expected: expected value
+    :arg relTol: relative tolerance
+    :arg absTol: absolute tolerance
+
+    :returns: True if within tolerance, else false
+    :rtype: bool
+    */
+    @chpldoc.nodoc
+    proc withinTol(const actual: ?T, const expected: T,
+                   const in relTol: real=defaultRelTol,
+                   const in absTol: real=defaultAbsTol) {
+      return abs(actual - expected) <= absTol + relTol * abs(expected);
+    }
+
+    /*
+      Assert that ``actual ~= expected``.
+
+      :arg actual: The first object to compare.
+      :arg expected: The second object to compare.
+      :throws AssertionError: If `actual` is not approximately equal to
+      `expected` within the specified tolerance.
+    */
+    pragma "insert line file info"
+    pragma "always propagate line file info"
+    proc assertClose(const actual: [] ?T, const expected: [] T,
+                     const in relTol: real=defaultRelTol,
+                     const in absTol: real=defaultAbsTol): void throws
+                     where (isNumericType(T) && !isIntegralType(T)) {
+      if actual.shape != expected.shape {
+        throw new owned Error("Actual array shape " + actual.shape:string
+                              + " does not match expected: "
+                              + expected.shape:string);
+      }
+      const isWithinTol = withinTol(actual=actual, expected=expected,
+                                    relTol=relTol, absTol=absTol);
+      const passes = && reduce isWithinTol;
+      if !passes {
+        const numFailed: int = isWithinTol.count(false);
+        const numTotal: int = isWithinTol.size;
+        const percFailed: real = 100.0 * numFailed / numTotal;
+
+        var maxAbsErr = min(real);
+        var maxRelErr = min(real);
+        forall (a, e) in zip(actual, expected) with (max reduce maxAbsErr,
+                                                     max reduce maxRelErr) {
+          const absErr = abs(a - e);
+          const relErr = absErr / abs(e);
+          maxAbsErr reduce= absErr;
+          maxRelErr reduce= relErr;
+        }
+        throw new owned AssertionError(
+          "assert failed for %i/%i elements (%r%%)\n".format(numFailed,
+            numTotal, percFailed)
+          + "Max Rel. Error: %r%%\n".format(maxRelErr*100.0)
+          + "Max Abs. Error: %r".format(maxAbsErr)
+        );
+      }
+    }
+
+    pragma "insert line file info"
+    pragma "always propagate line file info"
+    proc assertClose(const in actual: ?T, const in expected: T,
+                     const in relTol: real=defaultRelTol,
+                     const in absTol: real=defaultAbsTol):void throws
+                     where (isNumericType(T) && !isIntegralType(T)) {
+      const isWithinTol = withinTol(actual=actual, expected=expected,
+                                    relTol=relTol, absTol=absTol);
+      if !isWithinTol {
+        const absErr: real = abs(actual - expected);
+        const relErr = absErr / abs(expected);
+        throw new owned UnitTest.TestError.AssertionError(
+          "assert failed for actual=%n, expected=%n\n".format(actual, expected)
+          + "Rel. Error: %r %%\n".format(relErr*100.0)
+          + "Abs. Error: %r".format(absErr)
+        );
+      }
+    }
+
+
     /*
       Assert that x matches the regular expression pattern.
 
