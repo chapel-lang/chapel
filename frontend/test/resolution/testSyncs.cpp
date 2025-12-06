@@ -56,8 +56,39 @@ static void testExplicitCoerce() {
   assert(vars.at("y").type()->isIntType());
 }
 
+static void testCoerceInCall() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context,
+      R"""(
+      var tmp1: sync int;
+      var tmp2: sync real;
+      var tmp3: sync bool;
+
+      proc foo1(x: int) { return x; }
+      proc foo2(x: real) { return x; }
+      proc foo3(x: bool) { return x; }
+
+      var x = foo1(tmp1);
+      var y = foo2(tmp2);
+      var z = foo3(tmp3);
+      )""", {"x", "y", "z"});
+
+  assert(vars.at("x").type()->isIntType());
+  assert(vars.at("y").type()->isRealType());
+  assert(vars.at("z").type()->isBoolType());
+
+  assert(guard.numErrors() == 3);
+  for (auto& err : guard.errors()) {
+    assert(err->type() == ErrorType::DeprecatedSyncRead);
+  }
+  guard.realizeErrors();
+}
+
 
 int main() {
   testCoerceToDesync();
   testExplicitCoerce();
+  testCoerceInCall();
 }
