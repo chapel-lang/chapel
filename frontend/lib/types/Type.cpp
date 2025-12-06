@@ -237,6 +237,15 @@ bool Type::isLocaleType() const {
   return false;
 }
 
+bool Type::isSyncType() const {
+  if (auto rec = toRecordType()) {
+    if (rec->id().symbolPath() == USTR("ChapelSyncvar._syncvar")) {
+      return true;
+    }
+  }
+  return false;
+}
+
 bool Type::isNilablePtrType() const {
   if (isPointerLikeType()) {
 

@@ -317,6 +317,30 @@ void ErrorConstRefCoercion::write(ErrorWriterBase& wr) const {
   }
 }
 
+void ErrorDeprecatedSyncRead::write(ErrorWriterBase& wr) const {
+  auto type = std::get<0>(info_);
+  auto astForErr = std::get<1>(info_);
+  auto source = std::get<2>(info_);
+  auto dest = std::get<3>(info_);
+
+  // For now, the type prints ugly ('_syncvar(bla)'), so don't show it.
+  std::ignore = type;
+
+  wr.heading(kind_, type_, astForErr, "implicitly reading from a 'sync' value is deprecated.");
+  wr.codeForLocation(astForErr);
+  if (dest != astForErr && dest) {
+    wr.note(dest, "encountered while trying to pass a 'sync' value to this non-'sync' destination");
+    wr.code(dest, { dest });
+  }
+  if (source) {
+    wr.note(source, "to silence this warning, please explicitly call '.read\?\?' on the 'sync' value here:");
+    wr.code(source, { source });
+  } else {
+    wr.note(astForErr, "to silence this warning, please explicitly call '.read\?\?'");
+  }
+  return;
+}
+
 void ErrorDeprecation::write(ErrorWriterBase& wr) const {
   auto msg = std::get<std::string>(info_);
   auto mention = std::get<const uast::AstNode*>(info_);

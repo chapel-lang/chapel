@@ -670,6 +670,12 @@ reportInvalidMultipleInheritance(Context* context,
                                  const uast::AstNode* firstParent,
                                  const uast::AstNode* secondParent);
 
+void reportDeprecatedSyncRead(Context* context,
+                              const types::Type* syncT,
+                              const uast::AstNode* astForErr,
+                              const uast::AstNode* source,
+                              const uast::AstNode* dest);
+
 /**
   One of the compiler primitives has the side effect of collecting all
   test functions. This helper retrieves the list of test functions that has

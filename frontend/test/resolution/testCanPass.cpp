@@ -60,7 +60,7 @@ static bool passesBorrowingSubtype(CanPassResult r) {
          !r.instantiates() &&
          !r.promotes() &&
          r.converts() &&
-         r.conversionKind() == CanPassResult::BORROWS_SUBTYPE;
+         r.conversionKind() == (CanPassResult::BORROWS | CanPassResult::SUBTYPE);
 }
 
 static bool passesSubtype(CanPassResult r) {
