@@ -39,7 +39,25 @@ static void testCoerceToDesync() {
   assert(vars.at("z").type()->isBoolType());
 }
 
+static void testExplicitCoerce() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context,
+      R"""(
+      var tmp1: sync int;
+      var tmp2: sync bool;
+
+      var x: real = tmp1;
+      var y: int = tmp2;
+      )""", {"x", "y"});
+
+  assert(vars.at("x").type()->isRealType());
+  assert(vars.at("y").type()->isIntType());
+}
+
 
 int main() {
   testCoerceToDesync();
+  testExplicitCoerce();
 }
