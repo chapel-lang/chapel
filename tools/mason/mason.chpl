@@ -121,7 +121,7 @@ proc main(args: [] string) throws {
   }
   var cmdArgs = cmdList.toArray();
   // pass the arguments to the appropriate subcommand
-  try {
+  try! {
     select (usedCmd) {
       when "add" do masonModify(cmdArgs);
       when "build" do masonBuild(cmdArgs);
@@ -144,11 +144,9 @@ proc main(args: [] string) throws {
       otherwise {
         throw new owned MasonError("No such subcommand '%s'\ntry mason --help"
                                    .format(usedCmd));
-        exit(1);
       }
     }
-  }
-  catch ex : MasonError {
+  } catch ex : MasonError {
     stderr.writeln(ex.message());
     exit(1);
   }
