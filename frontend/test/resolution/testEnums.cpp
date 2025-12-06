@@ -743,6 +743,32 @@ static void test18internal() {
   assert(guard.realizeErrors() == 1);
 }
 
+// regression test: we used to generate `e : e` formals, which was not valid.
+static void test18e() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context,
+      R"""(
+      enum e {
+        red, green, blue
+      }
+      var tmp = e.red;
+      param tmpParam = e.red;
+      var a = chpl__enumToOrder(tmp);
+      param c = chpl__enumToOrder(tmpParam);
+      )""", {"a","c" });
+
+  assert(vars.at("a").type());
+  assert(vars.at("a").type()->isIntType());
+  assert(!vars.at("a").param());
+  assert(vars.at("c").type());
+  assert(vars.at("c").type()->isIntType());
+  assert(vars.at("c").param());
+  assert(vars.at("c").param()->isIntParam());
+  assert(vars.at("c").param()->toIntParam()->value() == 0);
+}
+
 static void test19() {
   auto context = buildStdContext();
   ErrorGuard guard(context);
@@ -1136,6 +1162,7 @@ int main() {
   test17();
   test18();
   test18internal();
+  test18e();
   test19();
   test20();
   test21();
