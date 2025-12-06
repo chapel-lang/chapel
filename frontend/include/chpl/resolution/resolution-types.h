@@ -1964,6 +1964,7 @@ class MostSpecificCandidate {
     }
     (void) constRefCoercionFormal_; // nothing to mark
     (void) constRefCoercionActual_; // nothing to mark
+    (void) syncReads_; // nothing to mark
   }
 
   size_t hash() const {
