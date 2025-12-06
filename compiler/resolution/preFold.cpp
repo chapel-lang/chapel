@@ -1294,7 +1294,10 @@ static Expr* preFoldPrimOp(CallExpr* call) {
       retval = new SymExpr(new_StringSymbol(envMap[envKey]));
 
       call->replace(retval);
-
+    } else if (envKey == "CHPL_DYNO") {
+      auto str = fDynoResolver || fDynoResolveOnly ? "on" : "off";
+      retval = new SymExpr(new_StringSymbol(str));
+      call->replace(retval);
     } else {
       USR_FATAL(call,
                 "primitive string does not match any environment variable");

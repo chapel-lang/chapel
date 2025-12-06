@@ -1918,7 +1918,14 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
         auto chplenv = context->getChplEnv();
         auto varName = ci.actual(0).type().param()->toStringParam()->value().str();
         auto it = chplenv->find(varName);
-        auto ret = (it != chplenv->end()) ? it->second : "";
+        std::string ret;
+        if (it != chplenv->end()) {
+          ret = it->second;
+        } else if (varName == "CHPL_DYNO") {
+          ret = "on";
+        } else {
+          context->error(call, "primitive string does not match any environment variable");
+        }
 
         type = QualifiedType::makeParamString(context, ret);
       }
