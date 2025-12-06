@@ -1762,54 +1762,6 @@ void ParserContext::exitScopeForFunctionDecl(YYLTYPE bodyLocation,
   }
 }
 
-AstNode* ParserContext::buildLambda(YYLTYPE location, FunctionParts& fp) {
-  // drop any comments before the lambda
-  clearComments(fp.comments);
-
-  AstNode* ret = nullptr;
-
-  if (fp.errorExpr == nullptr) {
-    owned<Block> body;
-    if (fp.body != nullptr) {
-      body = consumeToBlock(location, fp.body);
-    }
-
-    // Own the recorded identifier to clean it up, but grab its location.
-    owned<Identifier> identName = toOwned(fp.name);
-    CHPL_ASSERT(identName.get());
-    auto identNameLoc = builder->getLocation(identName.get());
-    CHPL_ASSERT(!identNameLoc.isEmpty());
-
-    auto returnIntent = checkReturnIntent(this, fp.returnIntentLoc, fp.returnIntent);
-
-    auto f = Function::build(builder, identNameLoc,
-                             toOwned(fp.attributeGroup),
-                             Decl::DEFAULT_VISIBILITY,
-                             Decl::DEFAULT_LINKAGE,
-                             /* linkageName */ nullptr,
-                             UniqueString(),
-                             /* inline */ false,
-                             /* override */ false,
-                             Function::LAMBDA,
-                             /* receiver */ nullptr,
-                             returnIntent,
-                             fp.throws,
-                             /* primaryMethod */ false,
-                             /* parenless */ false,
-                             this->consumeList(fp.formals),
-                             toOwned(fp.returnType),
-                             toOwned(fp.where),
-                             this->consumeList(fp.lifetime),
-                             std::move(body));
-    builder->noteDeclNameLocation(f.get(), identNameLoc);
-    ret = f.release();
-  } else {
-    ret = fp.errorExpr;
-  }
-  this->clearComments();
-  return ret;
-}
-
 AstNode*
 ParserContext::buildLetExpr(YYLTYPE location, ParserExprList* decls,
                             AstNode* expr) {

@@ -436,7 +436,7 @@
 %token <uniqueStr> TIF TIMAG TIMPORT TIN TINCLUDE
 %token <uniqueStr> TINDEX TINLINE TINOUT TINT TITER TINIT TINITEQUALS
 %token <uniqueStr> TIMPLEMENTS TINTERFACE
-%token <uniqueStr> TLABEL TLAMBDA TLET TLIFETIME TLOCAL TLOCALE
+%token <uniqueStr> TLABEL TLET TLIFETIME TLOCAL TLOCALE
 %token <uniqueStr> TMANAGE TMINUSMINUS TMODULE
 %token <uniqueStr> TNEW TNIL TNOINIT TNONE TNOTHING
 %token <uniqueStr> TON TONLY TOPERATOR TOTHERWISE TOUT TOVERRIDE TOWNED
@@ -629,8 +629,6 @@
 %type <expr> opt_colon_formal_type
 %type <expr> colon_formal_type
 %type <expr> formal_type
-%type <functionParts> lambda_decl_start
-%type <expr> lambda_decl_expr
 %type <typeDeclParts> enum_header
 %type <exprList> enum_ls
 
@@ -671,7 +669,7 @@
 %type <functionParts> fn_type fn_expr
 %type <exprList> fn_type_formal_ls opt_fn_type_formal_ls
 %type <expr> fn_type_formal
-%type <exprList> opt_formal_ls req_formal_ls formal_ls formal_ls_inner
+%type <exprList> opt_formal_ls formal_ls formal_ls_inner
 %type <expr> fn_decl_receiver_expr
 %type <functionKind> proc_iter_or_op
 %type <functionParts> linkage_spec
@@ -2342,51 +2340,6 @@ enum_item:
     }
 ;
 
-lambda_decl_start:
-  TLAMBDA
-    {
-      FunctionParts fp = context->makeFunctionParts(false, false);
-      context->noteDeclStartLoc(@1);
-      auto loc = context->declStartLoc(@$);
-      fp.comments = context->gatherComments(loc);
-      fp.attributeGroup = context->buildAttributeGroup(@$).release();
-      fp.visibility = context->visibility;
-      context->resetAttributeGroupPartsState();
-      fp.kind = Function::PROC;
-      $$ = fp;
-    }
-;
-
-lambda_decl_expr:
-  lambda_decl_start req_formal_ls opt_ret_tag opt_type
-  opt_throws_error
-  opt_lifetime_where
-    {
-      context->clearComments();
-      context->resetDeclState();
-      context->enterScope(asttags::Function, STR("lambda"));
-    }
-  function_body_stmt
-    {
-      FunctionParts fp = $1;
-      fp.name = context->buildIdent(@1, STR("lambda"));
-      fp.formals = $2;
-      fp.returnIntent = $3;
-      fp.returnIntentLoc = @3;
-      fp.returnType = $4;
-      fp.throws = ($5 == ThrowsTag_THROWS);
-      WhereAndLifetime wl = $6;
-      fp.lifetime = wl.lifetime;
-      fp.where = wl.where;
-      fp.body = $8;
-
-      context->clearComments();
-      context->exitScope(asttags::Function, STR("lambda"));
-
-      $$ = context->buildLambda(@$, fp);
-    }
-;
-
 linkage_spec_empty:
 ;
 
@@ -2659,11 +2612,6 @@ formal_var_arg_expr:
 opt_formal_ls:
                      { $$ = context->parenlessMarker; }
 | TLP formal_ls TRP  { $$ = $2; }
-;
-
-req_formal_ls:
-  TLP TRP                   { $$ = context->makeList(); }
-| TLP formal_ls_inner TRP   { $$ = $2; }
 ;
 
 formal_ls_inner:
@@ -3312,7 +3260,6 @@ stmt_level_expr:
 | ident_expr
 | dot_expr
 | call_expr
-| lambda_decl_expr
 | new_expr
 | let_expr
 ;
@@ -3561,7 +3508,6 @@ expr:
 /** -- 'type_level_expr' -- **/
 | reduce_expr
 | scan_expr
-| lambda_decl_expr
 | new_expr
 | let_expr
 | ifc_constraint
@@ -3599,7 +3545,6 @@ call_base_expr:
                                                              STR("postfix!"),
                                                              $1); }
 | sub_type_level_expr TQUESTION { $$ = context->buildUnaryOp(@$, $2, $1); }
-| lambda_decl_expr
 | str_bytes_literal
 ;
 
