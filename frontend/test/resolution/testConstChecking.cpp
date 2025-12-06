@@ -359,6 +359,98 @@ static void test7a() {
   {});
 }
 
+
+// modifying a const field in a method can be okay, but only if
+// that method is called directly from the initializer.
+static void test8() {
+  testConstChecking("test8-1",
+      R"""(
+      module M {
+        record R {
+          const x: int;
+
+          proc ref setX() {
+            x = 1;
+          }
+
+          proc init() { init this; setX(); }
+        }
+
+        proc main() {
+          var r = new R();
+        }
+      }
+    )""",
+    {});
+
+  testConstChecking("test8-2",
+      R"""(
+      module M {
+        record R {
+          const x: int;
+
+          proc ref setX() {
+            x = 1;
+          }
+
+          proc init() { x = 1; }
+        }
+
+        proc main() {
+          var r = new R();
+          r.setX();
+        }
+      }
+    )""",
+    {15});
+
+  // same as the previous two cases, but use 'out' formals
+  testConstChecking("test8-3",
+      R"""(
+      module M {
+        proc setField(out field: int) do field = 1;
+
+        record R {
+          const x: int;
+
+          proc ref setX() {
+            setField(x);
+          }
+
+          proc init() { init this; setX(); }
+        }
+
+        proc main() {
+          var r = new R();
+        }
+      }
+    )""",
+    {});
+
+  testConstChecking("test8-4",
+      R"""(
+      module M {
+        proc setField(out field: int) do field = 1;
+
+        record R {
+          const x: int;
+
+          proc ref setX() {
+            setField(x);
+          }
+
+          proc init() { x = 1; }
+        }
+
+        proc main() {
+          var r = new R();
+          r.setX();
+        }
+      }
+    )""",
+    {17});
+}
+
 // TODO: test const checking for associated functions
 
 
@@ -387,6 +479,8 @@ int main() {
   test6c();
 
   test7a();
+
+  test8();
 
   return 0;
 }
