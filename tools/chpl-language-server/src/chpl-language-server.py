@@ -500,8 +500,19 @@ class ChapelLanguageServer(LanguageServer):
         if not fn or not isinstance(fn, chapel.core.Function):
             return []
 
+        # If the call is a method call (x.foo(a, b, c)), then by the time
+        # we see 'a', we have already skipped over the 'this' actual 'x', either
+        # because it was explicitly specified or because it was inserted.
+        # So, treat that as an extra actual. But, there's no good way to show
+        # inlay hints for it anyway, so keep it None and it'll be skipped,
+        # only affecting the index in enumerate.
+        actuals = call.actuals()
+        if fn.is_method():
+            actuals = [None] + list(actuals)
+
         inlays = []
-        for i, act in zip(msc.formal_actual_mapping(), call.actuals()):
+
+        for i, act in zip(msc.formal_actual_mapping(), actuals):
             if not isinstance(act, chapel.core.AstNode):
                 # Named arguments are represented using (name, node)
                 # tuples. We don't need hints for those.
