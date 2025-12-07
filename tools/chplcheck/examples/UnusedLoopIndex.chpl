@@ -1,13 +1,18 @@
 /*
-  Loop index variables should be used in the loop body.
+ Loop indices should be used, or omitted if not needed.
 */
 
-// This loop has an unused index which violates the rule.
+// Unused index,it will be flagged by the rule.
 for i in 1..10 {
   writeln("Hello");
 }
 
-// This loop uses the index which is correct.
+// Index used this is the preferred style.
 for i in 1..10 {
   writeln(i);
+}
+
+// Index omitted,this is also preferred.
+for 1..10 {
+  writeln("Hello");
 }

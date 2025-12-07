@@ -6,5 +6,5 @@
 var x: int;
 var y: int;
 
-// This combined declaration is correct.
+// This combined declaration follows the rule.
 var a, b: int;

@@ -1,14 +1,16 @@
 /*
-  Boolean literals like 'true' or 'false' should not be used in conditional statements.
+ Boolean literals like 'true' or 'false' should not be used in conditional statements.
 */
 
-// This uses a boolean literal in the condition which violates the rule.
+// The condition is always true, so the if statement is unnecessary.
 if true {
-  writeln("Ready to execute");
+  writeln("Always executes");
 }
 
-// This uses a variable in the condition which is correct.
-var isReady = true;
-if isReady {
-  writeln("Ready to execute");
+// Just execute the code directly.
+writeln("Always executes");
+
+// Similarly, this code will never execute, we can remove it.
+if false {
+  writeln("Never executes");
 }

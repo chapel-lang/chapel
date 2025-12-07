@@ -1,11 +1,15 @@
 /*
-  Tuple unpacking should not have all unused elements like '(_, _)'.
+ Tuple unpacking should use at least one element, not ignore all with '(_, _)'.
 */
 
-// This unpacks a tuple but ignores all elements which violates the rule.
-var tuple = (1, 2);
-var (_, _) = tuple;
+var tuples = [(1, 2), (3, 4), (5, 6)];
 
-// This unpacks a tuple and uses at least one element which is correct.
-var (a, _) = tuple;
-writeln(a);
+// All elements are ignored, the unpacking serves no purpose.
+for (_, _) in tuples {
+  writeln("processing");
+}
+
+// At least one element used.
+for (i, _) in tuples {
+  writeln(i);
+}

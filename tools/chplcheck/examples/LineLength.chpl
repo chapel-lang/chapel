@@ -1,9 +1,17 @@
 /*
-  Lines should not exceed the maximum length (default 80 characters).
+ Lines should not exceed the maximum length (default 80 characters).
 */
 
-// This line exceeds 80 characters which violates the rule.
-var thisIsAVeryLongVariableNameThatExceedsTheMaximumLineLengthAllowedByDefault = 10;
+// Exceeds 80 characters which will be flagged by the rule.
+proc sendMessage(recipientName: string, messageContent: string, priority: int): bool {
+  return true;
+}
 
-// This line is within the limit which is correct.
-var shortName = 10;
+// Reflowed to multiple lines, preferred style.
+proc sendMessage(
+  recipientName: string,
+  messageContent: string,
+  priority: int
+): bool {
+  return true;
+}
