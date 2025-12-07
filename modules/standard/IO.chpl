@@ -4224,6 +4224,13 @@ proc fileReader.init(param locking:bool, type deserializerType) {
 proc fileWriter.init(param locking:bool, type serializerType) {
   this.locking = locking;
   this.serializerType = serializerType;
+  if __primitive("get compiler variable", "CHPL_DYNO") == "on" {
+    pragma "no auto destroy"
+    var _serializer : shared _serializeWrapper?(serializerType);
+    this._serializer = _serializer;
+  } else {
+    this._serializer = nil;
+  }
 }
 
 @chpldoc.nodoc

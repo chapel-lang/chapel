@@ -34,6 +34,8 @@ use TestResult;
 use Time;
 use TOML;
 
+import MasonLogger;
+import MasonPrereqs;
 
 var subdir = false;
 var keepExec = false;
@@ -42,6 +44,8 @@ var setComm: string;
 var comm: string;
 var dirs: list(string);
 var files: list(string);
+
+private var log = new MasonLogger.logger("mason test");
 
 /* Runs the .chpl files found within the /tests directory of Mason packages
    or files which in the path provided.
@@ -78,6 +82,8 @@ proc masonTest(args: [] string) throws {
   if updateFlag.hasValue() {
     skipUpdate = !updateFlag.valueAsBool();
   }
+  if skipUpdate then log.debugln("Will skip updates");
+
   if setCommOpt.hasValue() then setComm = setCommOpt.value();
 
   var isMasonProject = true;
@@ -233,8 +239,19 @@ private proc runTests(show: bool, run: bool, parallel: bool, filter: string,
     const project = lockFile["root"]!["name"]!.s;
     const projectPath = "".join(projectHome, "/src/", project, ".chpl");
 
+    // TODO Unfortunately, get TomlCompopts modifies its second argument and
+    // then returns it. We need to fix that.
     // Get system, and external compopts
-    const compopts = getTomlCompopts(lockFile, cmdLineCompopts);
+    var compopts = getTomlCompopts(lockFile, cmdLineCompopts);
+    log.debugf("compopts from Mason.toml: %?\n", compopts);
+
+    log.debugln("Adding prerequisite flags");
+
+    // add prerequisite compopts
+    for flag in MasonPrereqs.chplFlags() {
+      log.debugf("+compflag %s\n", flag);
+      compopts.pushBack(flag);
+    }
 
     if isDir(joinPath(projectHome, "target/test/")) {
       rmTree(joinPath(projectHome, "target/test/"));
@@ -282,6 +299,7 @@ private proc runTests(show: bool, run: bool, parallel: bool, filter: string,
             testPath = "".join('test/', test);
           }
         }
+        log.infof("Testing %s\n", testPath);
         const testName = basename(stripExt(test, ".chpl"));
 
         // get the string of dependencies for compilation
@@ -295,6 +313,7 @@ private proc runTests(show: bool, run: bool, parallel: bool, filter: string,
         const outputLoc = projectHome + "/target/test/" + stripExt(testTemp, ".chpl");
         const moveTo = "-o " + outputLoc;
         const compCommand = " ".join("chpl",testPath, projectPath, moveTo, allCompOpts);
+        log.debugf("\t%s\n", compCommand);
         const compilation = runWithStatus(compCommand, !show);
 
         if compilation != 0 {

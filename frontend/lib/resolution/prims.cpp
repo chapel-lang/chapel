@@ -39,9 +39,16 @@ namespace resolution {
 using namespace uast;
 using namespace types;
 
+enum TypeReq {
+  IS,
+  IS_NOT,
+  EITHER,
+};
+
 static const CompositeType* toCompositeTypeActual(const QualifiedType& type,
-                                                  bool shouldBeType = true) {
-  if ((type.kind() == QualifiedType::TYPE) == shouldBeType) {
+                                                  TypeReq req = TypeReq::IS) {
+  bool matches = (type.kind() == QualifiedType::TYPE) == (req == TypeReq::IS);
+  if (req == TypeReq::EITHER || matches) {
     if (auto t = type.type()) {
       if (auto ct = t->getCompositeType()) {
         return ct;
@@ -54,8 +61,8 @@ static const CompositeType* toCompositeTypeActual(const QualifiedType& type,
 static const ResolvedFields*
 toCompositeTypeActualFields(ResolutionContext* rc,
                             const QualifiedType& type,
-                            bool shouldBeType = true) {
-  if (auto ct = toCompositeTypeActual(type, shouldBeType)) {
+                            TypeReq req = TypeReq::IS) {
+  if (auto ct = toCompositeTypeActual(type, req)) {
     auto& resolvedFields = fieldsForTypeDecl(rc, ct,
                                              DefaultsPolicy::IGNORE_DEFAULTS);
     return &resolvedFields;
@@ -149,7 +156,7 @@ static QualifiedType primFieldNumToName(ResolutionContext* rc, const CallInfo& c
 
   auto firstActual = ci.actual(0).type();
   auto secondActual = ci.actual(1).type();
-  if (auto fields = toCompositeTypeActualFields(rc, firstActual)) {
+  if (auto fields = toCompositeTypeActualFields(rc, firstActual, TypeReq::EITHER)) {
     int64_t fieldNum = 0;
     if (!toParamIntActual(secondActual, fieldNum)) return type;
     // Fields in these primitives are 1-indexed.
@@ -207,7 +214,7 @@ static QualifiedType primFieldByNum(ResolutionContext* rc, const CallInfo& ci) {
   auto secondActual = ci.actual(1).type();
   auto fields = toCompositeTypeActualFields(rc,
                                             firstActual,
-                                            /* shouldBeType */ false);
+                                            /* req */ TypeReq::IS_NOT);
   if (!fields) return QualifiedType();
   int64_t fieldNum = 0;
   if (!toParamIntActual(secondActual, fieldNum)) return QualifiedType();
@@ -1911,7 +1918,14 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
         auto chplenv = context->getChplEnv();
         auto varName = ci.actual(0).type().param()->toStringParam()->value().str();
         auto it = chplenv->find(varName);
-        auto ret = (it != chplenv->end()) ? it->second : "";
+        std::string ret;
+        if (it != chplenv->end()) {
+          ret = it->second;
+        } else if (varName == "CHPL_DYNO") {
+          ret = "on";
+        } else {
+          context->error(call, "primitive string does not match any environment variable");
+        }
 
         type = QualifiedType::makeParamString(context, ret);
       }

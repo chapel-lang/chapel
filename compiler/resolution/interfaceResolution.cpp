@@ -907,7 +907,10 @@ static Type* inferAssociatedType(InterfaceSymbol* isym,  ImplementsStmt*   istm,
   FnSymbol* target = tryResolveCall(enterContextCall);
   callStack.pop();
 
-  if (!targetFunctionIsValid(target, false)) return nullptr;
+  if (!targetFunctionIsValid(target, false)) {
+    cleanupHolder(holder);
+    return nullptr;
+  }
 
   handleContextCallExpr(enterContextCall, RET_REF, target);
   resolveFunction(target); // aborts if there are errors

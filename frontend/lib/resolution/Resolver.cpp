@@ -4280,7 +4280,7 @@ static void maybeEmitWarningsForId(Resolver* rv, QualifiedType qt,
 
 QualifiedType Resolver::getSuperType(Context* context,
                                      const QualifiedType& sub,
-                                     const Identifier* identForError) {
+                                     const AstNode* identForError) {
   // Early return: if we don't know the child type, we can't figure out the
   // parent type either.
   if (sub.isUnknownKindOrType()) {
@@ -5970,6 +5970,11 @@ void Resolver::exit(const Dot* dot) {
   if (dot->field() == USTR("locale")) {
     r.setType(QualifiedType(QualifiedType::CONST_VAR,
                             CompositeType::getLocaleType(context)));
+    return;
+  }
+
+  if (dot->field() == USTR("super")) {
+    r.setType(getSuperType(context, receiver.type(), dot));
     return;
   }
 

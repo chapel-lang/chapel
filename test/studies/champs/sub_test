@@ -88,7 +88,8 @@ FLOW_SUCCESS=0
 
 if [ -z "$CHAMPS_QUICKSTART" ] || [ ! -z "$CHAMPS_COMPILE_ALL_EXECS" ] ; then
   test_compile prep
-  FLOW_SUCCESS=$(test_compile flow)
+  test_compile flow
+  FLOW_SUCCESS=$test_compile_status
   test_compile drop
   # broken!
   # test_compile potential
@@ -127,6 +128,7 @@ if [ -z "$CHAMPS_QUICKSTART" ] && [[ $FLOW_SUCCESS -eq 0 ]] ; then
   # ... and this is where it really gets unfortunate.
   cp -r $CHAMPS_DEP_PATH $CHAMPS_HOME/
   export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CHAMPS_HOME/deps-manual/lib
+  export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CHAMPS_HOME/USR_MMG_INSTALL/lib64
   echo LD_LIBRARY_PATH=$LD_LIBRARY_PATH
 
   test_run flow 16

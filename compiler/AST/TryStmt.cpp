@@ -77,6 +77,17 @@ bool TryStmt::isSyncTry() const {
   return _isSyncTry;
 }
 
+bool TryStmt::isForManageStmt() const {
+  if (auto block = _body) {
+    if (tryBang() && block->blockTag == BLOCK_NORMAL) {
+      if (auto def = toDefExpr(block->body.first())) {
+        if (def->sym->hasFlag(FLAG_MANAGER_HANDLE)) return true;
+      }
+    }
+  }
+  return false;
+}
+
 void TryStmt::accept(AstVisitor* visitor) {
   if (visitor->enterTryStmt(this)) {
     if (_body) {

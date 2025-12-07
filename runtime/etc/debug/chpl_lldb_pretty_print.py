@@ -340,20 +340,28 @@ array_regex_llvm = re.compile(
 )
 
 
-def ArrayRecognizer(sbtype, internal_dict):
+def IsChapelArrayType(sbtype):
     typename = sbtype.GetName()
+    if sbtype.IsReferenceType():
+        typename = sbtype.GetPointeeType().GetName()
     match = array_regex_c.match(typename) or array_regex_llvm.match(typename)
     return match is not None
 
+def GetArrayRank(sbtype):
+    typename = sbtype.GetName()
+    if sbtype.IsReferenceType():
+        typename = sbtype.GetPointeeType().GetName()
+    match = array_regex_c.match(typename) or array_regex_llvm.match(typename)
+    return int(match.group("rank"))
+
+def ArrayRecognizer(sbtype, internal_dict):
+    return IsChapelArrayType(sbtype)
+
 
 def ArraySummary(valobj, internal_dict):
-    typename = valobj.GetTypeName()
-    match = array_regex_c.match(typename) or array_regex_llvm.match(typename)
-    if not match:
-        errorp(
-            f"Array_Summary: type name '{typename}' did not match expected pattern"
-        )
-        return None
+    if not IsChapelArrayType(valobj.GetType()):
+        errorp("ArraySummary: not a Chapel array type")
+        return
 
     _instance = MaybeResolveWidePointer(
         valobj.GetNonSyntheticValue().GetChildMemberWithName("_instance")
@@ -379,14 +387,8 @@ class ArrayProvider:
         self.valobj = valobj
 
         self.synthetic_children = {}
-        typename = self.valobj.GetTypeName()
-        match = array_regex_c.match(typename) or array_regex_llvm.match(
-            typename
-        )
-        if not match:
-            errorp(
-                f"ArrayProvider: type name '{typename}' did not match expected pattern"
-            )
+        if not IsChapelArrayType(self.valobj.GetType()):
+            errorp("ArrayProvider: not a Chapel array type")
             return
 
         self._instance = (
@@ -401,7 +403,7 @@ class ArrayProvider:
         # but the array printer currently gets confused if we do that
         # self.synthetic_children["domain"] = self.domClass
 
-        self.rank = int(match.group("rank"))
+        self.rank = GetArrayRank(self.valobj.GetType())
         self.element_type = GetArrayType(self._instance)
 
         self._make_synthetic_array()

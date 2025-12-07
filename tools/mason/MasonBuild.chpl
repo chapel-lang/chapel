@@ -18,9 +18,9 @@
  * limitations under the License.
  */
 
+import MasonPrereqs;
 
 use ArgumentParser;
-use FileSystem;
 use List;
 use Map;
 use MasonUtils;
@@ -30,8 +30,14 @@ use MasonUpdate;
 use MasonSystem;
 use MasonExternal;
 use MasonExample;
+use MasonLogger;
 use Subprocess;
 use TOML;
+
+import Path;
+import MasonPrereqs;
+
+private var log = new logger("mason build");
 
 proc masonBuild(args: [] string) throws {
 
@@ -46,6 +52,7 @@ proc masonBuild(args: [] string) throws {
   var passArgs = parser.addPassThrough();
 
   parser.parseArgs(args);
+  log.debugln("Arguments parsed");
 
   if passArgs.hasValue() && exampleOpts._present {
     throw new owned MasonError("Examples do not support `--` syntax");
@@ -54,6 +61,8 @@ proc masonBuild(args: [] string) throws {
   const projectType = getProjectType();
   if projectType == "light" then
     throw new owned MasonError("Mason light projects do not currently support 'mason build'");
+
+  log.debugln("Project type acquired");
 
   var show = showFlag.valueAsBool();
   var release = releaseFlag.valueAsBool();
@@ -70,6 +79,9 @@ proc masonBuild(args: [] string) throws {
     else skipUpdate = true;
   }
 
+  MasonPrereqs.install();
+
+  log.debugf("Is example? %s\n", example);
   if example {
     // compopts become example names. Build never runs examples
     for val in exampleOpts.values() do compopts.pushBack(val);
@@ -90,6 +102,7 @@ proc masonBuild(args: [] string) throws {
     const configNames = updateLock(skipUpdate);
     const tomlName = configNames[0];
     const lockName = configNames[1];
+    log.debugln("About to build program");
     buildProgram(release, show, force, skipUpdate, compopts, tomlName, lockName);
   }
 }
@@ -141,11 +154,7 @@ proc buildProgram(release: bool, show: bool, force: bool, skipUpdate: bool,
         if lockFile.pathExists('external') {
           spackInstalled();
         }
-        //
-        // TODO: Temporarily use `toArray` here because `list` does not yet
-        // support parallel iteration, which the `getSrcCode` method _must_
-        // have for good performance.
-        //
+
         getSrcCode(sourceList, skipUpdate, show);
 
         getGitCode(gitList, show);
@@ -182,44 +191,68 @@ proc buildProgram(release: bool, show: bool, force: bool, skipUpdate: bool,
    named after the project folder in which it is
    contained */
 proc compileSrc(lockFile: borrowed Toml, binLoc: string, show: bool,
-                release: bool, compopts: list(string), projectHome: string) : bool throws {
+                release: bool, compopts: list(string),
+                projectHome: string) : bool throws {
 
   const (sourceList, gitList) = genSourceList(lockFile);
-  const depPath = MASON_HOME + '/src/';
-  const gitDepPath = MASON_HOME + '/git/';
+  const depPath = Path.joinPath(MASON_HOME, 'src');
+  const gitDepPath = Path.joinPath(MASON_HOME, 'git');
   const project = lockFile["root"]!["name"]!.s;
-  const pathToProj = projectHome + '/src/'+ project + '.chpl';
-  const moveTo = ' -o ' + projectHome + '/target/'+ binLoc +'/'+ project;
+  const pathToProj = Path.replaceExt(Path.joinPath(projectHome,
+                                                   'src',
+                                                   project), 'chpl');
+
+  const moveTo = Path.joinPath(projectHome, 'target', binLoc, project);
 
   if !isFile(pathToProj) {
     throw new owned MasonError("Mason could not find your project");
   }
   else {
-    var command: string = 'chpl ' + pathToProj + moveTo + ' ' + ' '.join(compopts.these());
-    if release then command += " --fast";
-    if sourceList.size > 0 then command += " --main-module " + project;
+    log.debugln("Starting to create compilation command");
+
+    var cmd: list(string);
+    cmd.pushBack("chpl");
+    cmd.pushBack(pathToProj);
+    cmd.pushBack("-o " + moveTo);
+    if release then cmd.pushBack("--fast");
+    if sourceList.size > 0 then cmd.pushBack("--main-module " + project);
+
+    for flag in MasonPrereqs.chplFlags() {
+      log.debugf("+compflag %s\n", flag);
+      cmd.pushBack(flag);
+    }
+
+    log.debugf("Base command: %?\n", cmd);
 
     for (_, name, version) in sourceList {
+      const nameVer = "%s-%s".format(name, version);
       // version of -1 specifies a git dep
       if version != "-1" {
-        var depSrc = ' ' + depPath + name + "-" + version + '/src/' + name + ".chpl";
-        command += depSrc;
+        const depDir = Path.joinPath(depPath, nameVer);
+        const depSrc = Path.replaceExt(Path.joinPath(depDir, "src", name),
+                                       "chpl");
+
+        log.debugf("Adding source dependency %s's flags\n", name);
+        cmd.pushBack(depSrc);
+
+        for flag in MasonPrereqs.chplFlags(depDir) {
+          log.debugf("+compflag %s\n", flag);
+          cmd.pushBack(flag);
+        }
       }
     }
 
     for (_, name, branch, _) in gitList {
       var gitDepSrc = ' ' + gitDepPath + name + "-" + branch + '/src/' + name + ".chpl";
-      command += gitDepSrc;
+      cmd.pushBack(gitDepSrc);
     }
 
-    // Verbosity control
-    if show then writeln("Compilation command: " + command);
-    else {
-      if release then writeln("Compiling [release] target: " + project);
-      else writeln("Compiling [debug] target: " + project);
-    }
+    writef("Compiling [%s] target: %s\n",
+            if release then "release" else "debug", project);
 
     // compile Program with deps
+    const command = " ".join(cmd.these());
+    log.debugln("Compilation command: " + command);
     var compilation = runWithStatus(command);
     if compilation != 0 {
       return false;
@@ -239,7 +272,9 @@ proc compileSrc(lockFile: borrowed Toml, binLoc: string, show: bool,
 proc genSourceList(lockFile: borrowed Toml) {
   var sourceList: list((string, string, string));
   var gitList: list((string, string, string, string));
+  log.infoln("Generating source list");
   for (name, package) in zip(lockFile.A.keys(), lockFile.A.values()) {
+    log.debugln("name: "+name);
     if package!.tag == fieldtag.fieldToml {
       if name == "root" || name == "system" || name == "external" then continue;
       else {
@@ -257,9 +292,11 @@ proc genSourceList(lockFile: borrowed Toml) {
           } else {
             branch = "HEAD";
           }
+          log.debugln("adding to gitList: "+name);
           gitList.pushBack((url, name, branch, revision));
         } else if toml.pathExists("source") {
           var source = toml["source"]!.s;
+          log.debugln("adding to sourceList: "+name);
           sourceList.pushBack((source, name, version));
         }
       }
@@ -268,11 +305,9 @@ proc genSourceList(lockFile: borrowed Toml) {
   return (sourceList, gitList);
 }
 
-
 /* Clones the git repository of each dependency into
    the src code dependency pool */
 proc getSrcCode(sourceListArg: list(3*string), skipUpdate, show) throws {
-
   //
   // TODO: Temporarily use `toArray` here because `list` does not yet
   // support parallel iteration, which the `getSrcCode` method _must_
@@ -289,7 +324,7 @@ proc getSrcCode(sourceListArg: list(3*string), skipUpdate, show) throws {
       if !depExists(nameVers) {
         if skipUpdate then
           throw new owned MasonError("Dependency cannot be installed when MASON_OFFLINE is set.");
-        writeln("Downloading dependency: " + nameVers);
+        log.infoln("Downloading dependency: " + nameVers);
         var getDependency = "git clone -qn "+ srcURL + ' ' + destination +'/';
         var checkout = "git checkout -q v" + version;
         if show {
@@ -298,6 +333,11 @@ proc getSrcCode(sourceListArg: list(3*string), skipUpdate, show) throws {
         }
         runCommand(getDependency);
         gitC(destination, checkout);
+      }
+
+      // add prerequisites
+      for prereq in MasonPrereqs.prereqs(destination) {
+        MasonPrereqs.install(prereq);
       }
     }
   }
@@ -320,7 +360,7 @@ proc getGitCode(gitListArg: list(4*string), show) {
     const nameVers = name + "-" + branch;
     const destination = baseDir + nameVers;
     if !depExists(nameVers, '/git/') {
-      writeln("Downloading dependency: " + nameVers);
+      log.infoln("Downloading dependency: " + nameVers);
       var getDependency = "git clone -qn "+ srcURL + ' ' + destination +'/';
       var checkout = "git checkout -q " + revision;
       if show {

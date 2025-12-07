@@ -1,0 +1,308 @@
+#!/usr/bin/env python3
+
+import os
+import sys
+import subprocess as sp
+import shutil
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, Dict, Optional, List, Iterator, Tuple
+import time
+import signal
+
+chpl_home = Path(os.environ.get("CHPL_HOME", ""))
+if not chpl_home.exists():
+    sys.stdout.write("[Error: CHPL_HOME not set or does not exist]\n")
+    sys.exit(1)
+sys.path.insert(0, str(chpl_home / "util" / "test"))
+import sub_test as sub_test_util
+sub_test_util.utildir = str(chpl_home / "util")
+
+def timeout():
+    default=300
+    return int(os.getenv("CHPL_TEST_TIMEOUT", default))
+
+def chpl() -> Path:
+    sub_dir =  chpl_home / "util" / "chplenv" / "chpl_bin_subdir.py"
+    result = sp.check_output(
+        [sys.executable, str(sub_dir), "--host"],
+        encoding="utf-8",
+        stderr=sp.STDOUT,
+    ).strip()
+    return chpl_home / "bin" / result / "chpl"
+
+def chpl_parallel_dbg() -> Path:
+    return chpl_home / "tools" / "chpl-parallel-dbg" / "chpl-parallel-dbg"
+
+def FileCheck() -> Path:
+    llvm_config_script = chpl_home / "util" / "chplenv" / "chpl_llvm.py"
+    llvm_config = sp.check_output(
+        [sys.executable, str(llvm_config_script), "--llvm-config"],
+        encoding="utf-8",
+        stderr=sp.STDOUT,
+    ).strip()
+    bindir = sp.check_output(
+        [llvm_config, "--bindir"],
+        encoding="utf-8",
+        stderr=sp.STDOUT,
+    ).strip()
+    filecheck = Path(bindir) / "FileCheck"
+    if filecheck.exists():
+        return filecheck
+    prefix = sp.check_output(
+        [llvm_config, "--prefix"],
+        encoding="utf-8",
+        stderr=sp.STDOUT,
+    ).strip()
+    filecheck = Path(prefix) / "libexec" / "llvm" / "FileCheck"
+    assert filecheck.exists(), "Could not find FileCheck"
+    return filecheck
+
+def FileCheckFiles(input_file: Path, pattern: Path) -> int:
+    args = ["--input-file", str(input_file), str(pattern)]
+    sys.stdout.write('[Executing FileCheck {}]\n'.format(' '.join(args)))
+    (returncode, myoutput, _) = sub_test_util.run_process(
+        [str(FileCheck())] + args,
+        stdout=sp.PIPE,
+        stderr=sp.STDOUT
+    )
+    if returncode != 0:
+        sys.stdout.write(sub_test_util.trim_output(myoutput))
+    return returncode
+
+
+def EXECOPTS(d: Path) -> List[str]:
+    execopts_file = d / "EXECOPTS"
+    execopts = []
+    if execopts_file.exists():
+        with open(execopts_file, "r") as f:
+            execopts.extend(f.read().strip().split())
+    return execopts
+
+def COMPOPTS(d: Path) -> List[str]:
+    compopts_file = d / "COMPOPTS"
+    compopts = []
+    if compopts_file.exists():
+        with open(compopts_file, "r") as f:
+            compopts.extend(f.read().strip().split())
+    return compopts
+
+@dataclass
+class Test:
+    """
+    Describes a test to be run through chpl-parallel-dbg
+
+    Currently only supports simple, one line, non-executable compopts/execopts
+    """
+    source_file: Path
+    good_file: Path
+    dbgcmds_file: Path
+    numlocales: int = 2
+    compopts_file: Optional[Path] = None
+    execopts_file: Optional[Path] = None
+
+    @classmethod
+    def find_tests(cls, directory: Path) -> Iterator["Test"]:
+        for f in directory.glob("*.chpl"):
+            if f.with_suffix(".notest").exists():
+                continue
+            if test := cls.test_factory(f):
+                yield test
+
+    @classmethod
+    def test_factory(cls, source_file: Path):
+        good_file = source_file.with_suffix(".good")
+        dbgcmds_file = source_file.with_suffix(".dbg.cmds")
+        compopts_file = source_file.with_suffix(".compopts")
+        execopts_file = source_file.with_suffix(".execopts")
+        if not good_file.exists():
+            sys.stdout.write(f"[Warning: missing .good file for {source_file}]\n")
+            return None
+        if not dbgcmds_file.exists():
+            sys.stdout.write(f"[Warning: missing .dbg.cmds file for {source_file}]\n")
+            return None
+        kwargs: Dict[str, Any] = {
+            "source_file": source_file,
+            "good_file": good_file,
+            "dbgcmds_file": dbgcmds_file,
+        }
+
+        if source_file.with_suffix(".numlocales").exists():
+            with open(source_file.with_suffix(".numlocales"), "r") as f:
+                kwargs["numlocales"] = int(f.read().strip())
+
+        if compopts_file.exists():
+            kwargs["compopts_file"] = compopts_file
+        if execopts_file.exists():
+            kwargs["execopts_file"] = execopts_file
+        return cls(**kwargs)
+
+    def _compile(self) -> bool:
+        compopts = []
+        if env_compopts := os.getenv("COMPOPTS"):
+            compopts.extend(env_compopts.strip().split())
+        compopts.extend(COMPOPTS(self.source_file.parent))
+        if self.compopts_file:
+            with open(self.compopts_file, "r") as f:
+                compopts.extend(f.read().strip().split())
+
+        try:
+            cmd = [str(chpl()), str(self.source_file)] + compopts
+            sys.stdout.write('[Executing compiler command: {}]\n'.format(' '.join(cmd)))
+            sys.stdout.flush()
+            sp.check_call(cmd)
+        except sp.CalledProcessError as e:
+            sys.stdout.write(f"[Error compiling {self.source_file}]\n")
+            return False
+        return True
+
+    def _execute(self) -> Tuple[Optional[Path], Optional[Path]]:
+        executable = self.source_file.with_suffix("")
+        execopts = []
+        if env_execopts := os.getenv("EXECOPTS"):
+            execopts.extend(env_execopts.strip().split())
+        execopts.extend(EXECOPTS(self.source_file.parent))
+        if self.execopts_file:
+            with open(self.execopts_file, "r") as f:
+                execopts.extend(f.read().strip().split())
+        execopts.append("-nl{}".format(self.numlocales))
+
+
+        if not executable.exists():
+            sys.stdout.write(f"[Error finding {executable}]\n")
+            sys.stdout.flush()
+            return None, None
+
+        executable_output = self.source_file.with_suffix(".exec.out.tmp")
+        debugger_output = self.source_file.with_suffix(".exec.dbg.out.tmp")
+        executable_fp = open(executable_output, "w")
+        debugger_fp = open(debugger_output, "w")
+
+        cmd = [str(executable.absolute())] + execopts
+        sys.stdout.write('[Executing program: {}]\n'.format(' '.join(cmd)))
+        sys.stdout.flush()
+        # preexec_fn=os.setsid to allow killing the entire process group later
+        executable_process = sp.Popen(cmd, stdout=executable_fp, stderr=sp.STDOUT, preexec_fn=os.setsid)
+
+        time.sleep(2)
+
+        dbg_cmd = [str(chpl_parallel_dbg()), str(executable), str(self.numlocales), "-o", "settings set interpreter.stop-command-source-on-error false", "-o", "settings set interpreter.prompt-on-quit false"]
+        sys.stdout.write('[Executing debugger: {}]\n'.format(' '.join(dbg_cmd)))
+        sys.stdout.flush()
+        dbg_process = sp.Popen(dbg_cmd, stdout=debugger_fp, stderr=sp.STDOUT, stdin=sp.PIPE, encoding="utf-8")
+        with open (self.dbgcmds_file, "r") as f:
+            dbg_commands = f.read()
+            for line in dbg_commands.splitlines():
+                if line.strip().startswith("#") or line.strip() == "":
+                    continue
+                sys.stdout.write(f"[Sending debugger command: {line}]\n")
+                sys.stdout.flush()
+                debugger_fp.flush()
+                dbg_process.stdin.write(line + "\n")
+                dbg_process.stdin.flush()
+                time.sleep(0.5)
+        dbg_process.wait(timeout=timeout())
+        exec_process_group_pid = os.getpgid(executable_process.pid)
+        try:
+            time.sleep(0.5)
+            # kill the entire process group, since the launcher may have
+            # spawned children
+            os.killpg(exec_process_group_pid, signal.SIGINT)
+            executable_process.wait(timeout=5)
+        except sp.TimeoutExpired:
+            # if the gentle kill didn't work, force kill
+            os.killpg(exec_process_group_pid, signal.SIGTERM)
+
+        executable_fp.close()
+        debugger_fp.close()
+
+        return executable_output, debugger_output
+
+    def _run_prediff(self, output_file: Path):
+        PREDIFF = self.source_file.parent / "PREDIFF"
+        if not PREDIFF.exists():
+            return
+        sys.stdout.write('[Executing ./PREDIFF]\n')
+        sys.stdout.flush()
+        stdout = sub_test_util.run_process(
+            [str(PREDIFF.absolute()), self.source_file.stem, str(output_file), chpl()],
+            stdout=sp.PIPE, stderr=sp.STDOUT)[1]
+        sys.stdout.write(stdout)
+        sys.stdout.flush()
+
+    def _compare_output(self, executable_output: Path, debugger_output: Path) -> bool:
+        # check executable output
+        self._run_prediff(executable_output)
+        if sub_test_util.DiffFiles(str(self.good_file), str(executable_output)) != 0:
+            sys.stdout.write(f"[Error matching executable output for {self.source_file}]\n")
+            return False
+        # check debugger output with FileCheck
+        if FileCheckFiles(debugger_output, self.source_file) != 0:
+            sys.stdout.write(f"[Error matching debugger output for {self.source_file}]\n")
+            return False
+        return True
+
+    def _cleanup(self, executable_output: Path, debugger_output: Path):
+        if executable_output.exists():
+            executable_output.unlink()
+        if debugger_output.exists():
+            debugger_output.unlink()
+        executable = self.source_file.with_suffix("")
+        if executable.exists():
+            executable.unlink()
+        if executable.with_name(executable.name + "_real").exists():
+            executable.with_name(executable.name + "_real").unlink()
+
+    def test(self):
+        sys.stdout.write(f"[Testing {self.source_file}]\n")
+        if not self._compile():
+            return
+        executable_output, debugger_output = self._execute()
+        if executable_output is None or debugger_output is None:
+            return
+        if not self._compare_output(executable_output, debugger_output):
+            return
+        self._cleanup(executable_output, debugger_output)
+        sys.stdout.write("[Success matching output for {}]\n".format(self.source_file.stem))
+
+def dirSkipIf(d: Path):
+    skipif_file = d / "SKIPIF"
+    if skipif_file.exists() and os.getenv('CHPL_TEST_SINGLES')=='0':
+        sys.stdout.write('[Checking SKIPIF]\n')
+        sys.stdout.flush()
+        do_not_test = False
+        try:
+            skipme=False
+            skiptest=sub_test_util.runSkipIf(str(skipif_file.name))
+            if skiptest.strip() != "False":
+                skipme = skiptest.strip() == "True" or int(skiptest) == 1
+            if skipme:
+                sys.stdout.write('[Skipping test based on SKIPIF]\n')
+                do_not_test=True
+        except (ValueError, RuntimeError) as e:
+            sys.stdout.write(str(e)+'\n')
+            sys.stdout.write('[Error processing SKIPIF file]\n')
+            do_not_test=True
+        if do_not_test:
+            return True
+    return False
+
+def main():
+    sys.stdout.write("[Starting subtest]\n")
+    d = Path(os.path.dirname(os.path.abspath(__file__)))
+
+    if dirSkipIf(d):
+        return
+
+    if onetest := os.environ.get("CHPL_ONETEST"):
+        if t := Test.test_factory(Path(onetest)):
+            t.test()
+    else:
+        for t in Test.find_tests(d):
+            t.test()
+
+    sys.stdout.write("[Finished subtest {}]\n".format(d))
+
+
+if __name__ == "__main__":
+    main()

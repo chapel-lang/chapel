@@ -1,0 +1,13 @@
+#f
+#target list
+
+on 0
+#target list
+#process status
+
+c
+on 1
+c
+p myArr
+p localArr
+q
