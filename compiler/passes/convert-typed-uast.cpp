@@ -1110,6 +1110,9 @@ struct TConverter final : UastConverter,
   bool enter(const For* node, RV& rv);
   void exit(const For* node, RV& rv);
 
+  bool enter(const Init* node, RV& rv);
+  void exit(const Init* node, RV& rv);
+
   bool enter(const AstNode* node, RV& rv);
   void exit(const AstNode* node, RV& rv);
 };
@@ -6638,6 +6641,19 @@ bool TConverter::enter(const For* node, RV& rv) {
 }
 void TConverter::exit(const For* node, RV& rv) {
   exitScope(node, rv);
+}
+
+bool TConverter::enter(const Init* node, RV& rv) {
+  auto inits = cur.resolvedFunction->implicitInits();
+  if (auto it = inits.find(node->id()); it != inits.end()) {
+    auto& vec = it->second;
+    for (auto [ct, id] : vec) {
+      convertImplicitInit(ct, id, rv);
+    }
+  }
+  return false;
+}
+void TConverter::exit(const Init* node, RV& rv) {
 }
 
 bool TConverter::enter(const AstNode* node, RV& rv) {
