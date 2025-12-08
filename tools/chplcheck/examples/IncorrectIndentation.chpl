@@ -7,7 +7,7 @@ var x = true;
 if x then
   writeln("First");
   writeln("Second");
-  
+
 // Correct indentation shows the second statement is outside the if.
 if x then
   writeln("First");
