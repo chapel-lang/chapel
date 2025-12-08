@@ -6,4 +6,4 @@
 var x = 10;;
 
 // This has no empty statement which is correct.
-var x = 10;
+var y = 10;

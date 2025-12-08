@@ -1,2 +1,2 @@
-BoolLitInCondStmt.chpl:6: node violates rule BoolLitInCondStmt
-BoolLitInCondStmt.chpl:14: node violates rule BoolLitInCondStmt
+BoolLitInCondStmt.chpl:7: node violates rule BoolLitInCondStmt
+BoolLitInCondStmt.chpl:15: node violates rule BoolLitInCondStmt

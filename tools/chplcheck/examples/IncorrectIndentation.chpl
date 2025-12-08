@@ -1,15 +1,14 @@
 /*
-  Code should have consistent indentation.
+  Code should have consistent indentation within blocks.
 */
 
-// This has inconsistent indentation which violates the rule.
-proc badProc() {
-var x = 10;
-  var y = 20;
-}
-
-// This has consistent indentation which is correct.
-proc goodProc() {
-  var x = 10;
-  var y = 20;
-}
+// This statement is incorrectly indented - it's not inside the if.
+var x = true;
+if x then
+  writeln("First");
+  writeln("Second");
+  
+// Correct indentation shows the second statement is outside the if.
+if x then
+  writeln("First");
+writeln("Second");

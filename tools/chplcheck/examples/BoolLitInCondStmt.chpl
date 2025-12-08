@@ -1,5 +1,6 @@
 /*
- Boolean literals like 'true' or 'false' should not be used in conditional statements.
+ Boolean literals like 'true' or 'false' 
+ should not be used in conditional statements.
 */
 
 // The condition is always true, so the if statement is unnecessary.

@@ -1,0 +1,1 @@
+--disable-rule LineLength --disable-rule IncorrectIndentation --disable-rule UnusedLoopIndex
