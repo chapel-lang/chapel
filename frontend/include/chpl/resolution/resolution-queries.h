@@ -225,13 +225,6 @@ const types::Type* initialTypeForTypeDecl(Context* context, ID declId);
   declaration. */
 const types::Type* initialTypeForInterface(Context* context, ID declId);
 
-const ResolvedFieldResults&
-resolveFieldResults(ResolutionContext* rc,
-                    const types::CompositeType* ct,
-                    ID fieldId,
-                    DefaultsPolicy defaultsPolicy,
-                    bool syntaxOnly = false);
-
 /**
   Resolve a single field decl (which could be e.g. a MultiDecl)
   within a CompositeType.
@@ -249,6 +242,29 @@ const ResolvedFields& resolveFieldDecl(ResolutionContext* rc,
                                        DefaultsPolicy defaultsPolicy,
                                        bool syntaxOnly = false);
 
+/**
+  Resolve a single field decl (which could be e.g. a MultiDecl)
+  within a CompositeType.
+
+  The results can be used to examine detailed information about the field,
+  its type expression, and its initialization expression.
+
+  If syntaxOnly is set, computes basic information (field order, IDs)
+  but does not compute types.
+ */
+const ResolvedFieldResults&
+resolveFieldResults(ResolutionContext* rc,
+                    const types::CompositeType* ct,
+                    ID fieldId,
+                    DefaultsPolicy defaultsPolicy,
+                    bool syntaxOnly = false);
+
+/**
+  Creates a ResolvedFields from ResolvedFieldResults.
+
+  When combined with ``resolveFieldResults``, it has the same effect as
+  having called ``resolveFieldDecl``.
+*/
 const ResolvedFields& resolvedFieldsFromResults(ResolutionContext* rc,
                                                 const ResolvedFieldResults& results);
 
