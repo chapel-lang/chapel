@@ -3091,7 +3091,8 @@ class ResolvedFunction {
            returnType_ == other.returnType_ &&
            diagnostics_ == other.diagnostics_ &&
            poiTraceToChild_ == other.poiTraceToChild_ &&
-           sigAndInfoToChildPtr_ == other.sigAndInfoToChildPtr_;
+           sigAndInfoToChildPtr_ == other.sigAndInfoToChildPtr_ &&
+           implicitInits_ == other.implicitInits_;
   }
   bool operator!=(const ResolvedFunction& other) const {
     return !(*this == other);
@@ -3107,6 +3108,7 @@ class ResolvedFunction {
     std::swap(diagnostics_, other.diagnostics_);
     std::swap(poiTraceToChild_, other.poiTraceToChild_);
     std::swap(sigAndInfoToChildPtr_, other.sigAndInfoToChildPtr_);
+    std::swap(implicitInits_, other.implicitInits_);
   }
   static bool update(owned<ResolvedFunction>& keep,
                      owned<ResolvedFunction>& addin) {
@@ -3127,10 +3129,19 @@ class ResolvedFunction {
       chpl::mark<decltype(p.first)>{}(context, p.first);
       context->markPointer(p.second);
     }
+    for (auto& p : implicitInits_) {
+      p.first.mark(context);
+      for (auto& key : p.second) {
+        context->markPointer(key.first);
+        key.second.mark(context);
+      }
+    }
   }
   size_t hash() const {
     // Skip 'resolutionById_' since it can be quite large.
     std::ignore = resolutionById_;
+    // Skip 'implicitInits_' as it does not add any relevant information
+    std::ignore = implicitInits_;
     size_t ret = chpl::hash(signature_, returnIntent_, poiInfo_, linkageName_, returnType_, diagnostics_);
     for (auto& p : poiTraceToChild_) {
       ret = hash_combine(ret, chpl::hash(p.first));
