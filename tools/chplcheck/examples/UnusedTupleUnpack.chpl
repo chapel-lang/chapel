@@ -15,6 +15,6 @@ for (i, _) in tuples {
 }
 
 // preferred: we can skip unpacking
-for _ in tuples {
+for tuples {
   writeln("processing");
 }
