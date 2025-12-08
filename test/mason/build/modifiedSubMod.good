@@ -1,10 +1,8 @@
-Skipping registry update since no dependency found in manifest file.
 Compiling [debug] target: _subModule
 Build Successful
 
 Modified Bar.chpl to introduce syntax error. rebuilding...
 
-Skipping registry update since no dependency found in manifest file.
 Compiling [debug] target: _subModule
 Bar.chpl:9: syntax error: near 'is'
 Caught expected error from masonBuild due to syntax error:
