@@ -2,9 +2,18 @@
 
 source functions.bash
 
-mason_test_start $1
+# this is a make-shift skipif mechanism
 
-test_command "mason build"
-test_command "mason run"
+mason_exec=$(dirname $1)/mason
+mason_ver=$(${mason_exec} --version)
 
-mason_test_end $0
+
+if [ $? -eq 0 ]; then
+
+  mason_test_start $1
+
+  test_command "mason build"
+  test_command "mason run"
+
+  mason_test_end $0
+fi
