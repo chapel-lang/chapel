@@ -963,23 +963,25 @@ CHPL_LLVM_GCC_INSTALL_DIR
 
 CHPL_UNWIND
 ~~~~~~~~~~~
-   Optionally, the ``CHPL_UNWIND`` environment variable can be used to select
-   an unwind library for stack tracing. Current options are:
+   Optionally, the ``CHPL_UNWIND`` environment variable can be used to enable
+   stack tracing support with libunwind. Current options are:
 
        ========= =======================================================
        Value     Description
        ========= =======================================================
-       bundled   use the libunwind bundled with Chapel in third-party
        system    assume libunwind is already installed on the system
-       none      don't use an unwind library, disabling stack tracing
+       bundled   use the libunwind bundled with Chapel in third-party
+       none      don't use libunwind, disabling stack tracing
        ========= =======================================================
 
-   If unset, ``CHPL_UNWIND`` defaults to ``none``
+   If unset, ``CHPL_UNWIND`` has the following defaults:
 
-   .. note::
+      * If libunwind is detected on the system, ``CHPL_UNWIND`` defaults to ``system``.
 
-      At present, ``CHPL_UWIND=bundled`` does not work on Mac OS X.
-      ``CHPL_UNWIND=system`` should be used instead on that system.
+      * Otherwise, ``CHPL_UNWIND`` defaults to ``bundled`` on linux64.
+
+      * On MacOS, ``CHPL_UNWIND`` always defaults to ``system``.
+        ``CHPL_UNWIND=bundled`` is not supported on MacOS.
 
 .. _readme-chplenv.CHPL_LIB_PIC:
 
