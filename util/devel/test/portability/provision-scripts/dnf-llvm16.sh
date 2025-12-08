@@ -1,3 +1,3 @@
 #!/bin/sh
 
-dnf -y install llvm20-devel clang20 clang20-devel
+dnf -y install llvm16-devel clang16 clang16-devel
