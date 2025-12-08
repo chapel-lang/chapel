@@ -1,5 +1,5 @@
 /*
- Boolean literals like 'true' or 'false' 
+ Boolean literals like 'true' or 'false'
  should not be used in conditional statements.
 */
 
