@@ -104,6 +104,7 @@ static GenRet codegenAddrOf(GenRet r);
 static GenRet codegenCallExprInner(GenRet function,
                                    std::vector<GenRet> & args,
                                    FnSymbol* fn,
+                                   astlocT callLoc,
                                    ClangFunctionDeclPtr FD,
                                    LlvmFunctionTypePtr fnTy,
                                    bool defaultToValues);
@@ -111,11 +112,13 @@ static GenRet codegenCallExprWithArgs(GenRet function,
                                       std::vector<GenRet> & args,
                                       const char* fnName,
                                       FnSymbol* fnSym,
+                                      astlocT callLoc,
                                       ClangFunctionDeclPtr FD,
                                       bool defaultToValues);
 static void codegenCallWithArgs(const char* fnName,
                                 std::vector<GenRet> & args,
                                 FnSymbol* fnSym = nullptr,
+                                astlocT callLoc = astlocT::unknownLoc(),
                                 ClangFunctionDeclPtr FD = nullptr,
                                 bool defaultToValues = true);
 
@@ -821,7 +824,7 @@ GenRet codegenLocaleForNode(GenRet node)
   auto baseBuildLocaleId = gChplBuildLocaleId->codegenAsCallBaseExpr();
   GenRet ret = codegenCallExprWithArgs(baseBuildLocaleId, args,
                                        gChplBuildLocaleId->cname,
-                                       gChplBuildLocaleId, nullptr, true);
+                                       gChplBuildLocaleId, astlocT::unknownLoc(), nullptr, true);
   ret.chplType = LOCALE_ID_TYPE;
   return ret;
 }
@@ -2787,6 +2790,7 @@ GenRet codegenArgForFormal(GenRet arg,
 static GenRet codegenCallExprInner(GenRet function,
                                    std::vector<GenRet> & args,
                                    FnSymbol* fn,
+                                   astlocT callLoc,
                                    ClangFunctionDeclPtr FD,
                                    LlvmFunctionTypePtr fnTyArg,
                                    bool defaultToValues) {
@@ -2981,6 +2985,17 @@ static GenRet codegenCallExprInner(GenRet function,
               // The simpler case
               llvm::Value* val = args[i].val;
               val = convertValueToType(val, argInfo->getCoerceToType(), true);
+              if (val == nullptr) {
+                if (fn && formal)
+                  USR_FATAL_CONT(fn, "mismatched type for '%s' when calling '%s'", formal->name, fn->name);
+                else if (func)
+                  USR_FATAL_CONT("argument to '%s' cannot be passed", func->getName().str().c_str());
+                else
+                  USR_FATAL_CONT("argument to function cannot be passed");
+                if (callLoc.lineno() != 0) USR_PRINT(callLoc, "function called here");
+                if (isExternOrExport) USR_PRINT("check that the argument types match the C function signature");
+                USR_STOP();
+              }
               llArgs.push_back(val);
             } else {
               // handle a more complex direct argument
@@ -2995,6 +3010,17 @@ static GenRet codegenCallExprInner(GenRet function,
 
                 GenRet tmp = args[i];
                 tmp.val = convertValueToType(tmp.val, sTy, false, true);
+                if (val == nullptr) {
+                  if (fn && formal)
+                    USR_FATAL_CONT(fn, "mismatched type for '%s' when calling '%s'", formal->name, fn->name);
+                  else if (func)
+                    USR_FATAL_CONT("argument to '%s' cannot be passed", func->getName().str().c_str());
+                  else
+                    USR_FATAL_CONT("argument to function cannot be passed");
+                  if (callLoc.lineno() != 0) USR_PRINT(callLoc, "function called here");
+                  if (isExternOrExport) USR_PRINT("check that the argument types match the C function signature");
+                  USR_STOP();
+                }
 
                 // Create a temp variable to load from
                 tmp = createTempVarWith(args[i]);
@@ -3031,6 +3057,17 @@ static GenRet codegenCallExprInner(GenRet function,
 
                 val = convertValueToType(val, argInfo->getCoerceToType(),
                                          !tmp.isUnsigned, true);
+                if (val == nullptr) {
+                  if (fn && formal)
+                    USR_FATAL_CONT(fn, "mismatched type for '%s' when calling '%s'", formal->name, fn->name);
+                  else if (func)
+                    USR_FATAL_CONT("argument to '%s' cannot be passed", func->getName().str().c_str());
+                  else
+                    USR_FATAL_CONT("argument to function cannot be passed");
+                  if (callLoc.lineno() != 0) USR_PRINT(callLoc, "function called here");
+                  if (isExternOrExport) USR_PRINT("check that the argument types match the C function signature");
+                  USR_STOP();
+                }
                 llArgs.push_back(val);
               }
             }
@@ -3043,6 +3080,17 @@ static GenRet codegenCallExprInner(GenRet function,
 
             GenRet tmp = args[i];
             tmp.val = convertValueToType(tmp.val, sTy, false, true);
+            if (val == nullptr) {
+              if (fn && formal)
+                USR_FATAL_CONT(fn, "mismatched type for '%s' when calling '%s'", formal->name, fn->name);
+              else if (func)
+                USR_FATAL_CONT("argument to '%s' cannot be passed", func->getName().str().c_str());
+              else
+                USR_FATAL_CONT("argument to function cannot be passed");
+              if (callLoc.lineno() != 0) USR_PRINT(callLoc, "function called here");
+              if (isExternOrExport) USR_PRINT("check that the argument types match the C function signature");
+              USR_STOP();
+            }
 
             // Create a temp variable to load from
             tmp = createTempVarWith(args[i]);
@@ -3102,6 +3150,19 @@ static GenRet codegenCallExprInner(GenRet function,
 
     llvm::CallInst* c = NULL;
 
+    if (!fnType->isVarArg() && fnType->getNumParams() != llArgs.size()) {
+      if (fn)
+        USR_FATAL_CONT(fn, "mismatched number of arguments in call to '%s'", fn->name);
+      else if (func)
+        USR_FATAL_CONT("mismatched number of arguments in call to '%s'",
+                  func->getName().str().c_str());
+      else
+        USR_FATAL_CONT("mismatched number of arguments in function call");
+      if (callLoc.lineno() != 0) USR_PRINT(callLoc, "function called here");
+      if (isExternOrExport) USR_PRINT("check that the number of arguments match the C function signature");
+      USR_STOP();
+    }
+
     if (func) {
       c = info->irBuilder->CreateCall(func, llArgs);
       trackLLVMValue(c);
@@ -3155,6 +3216,7 @@ static GenRet codegenCallExprWithArgs(GenRet function,
                                       std::vector<GenRet> & args,
                                       const char* fnName,
                                       FnSymbol* fnSym,
+                                      astlocT callLoc,
                                       ClangFunctionDeclPtr FD,
                                       bool defaultToValues) {
   GenInfo* info = gGenInfo;
@@ -3184,13 +3246,14 @@ static GenRet codegenCallExprWithArgs(GenRet function,
     INT_FATAL("Could not find FD or fn in codegenCallExprWithArgs");
   }
 
-  return codegenCallExprInner(function, args, fnSym, FD, nullptr,
+  return codegenCallExprInner(function, args, fnSym, callLoc, FD, nullptr,
                               defaultToValues);
 }
 
 GenRet codegenCallExprWithArgs(const char* fnName,
                                std::vector<GenRet> & args,
                                FnSymbol* fnSym,
+                               astlocT callLoc,
                                ClangFunctionDeclPtr FD,
                                bool defaultToValues)
 {
@@ -3199,7 +3262,7 @@ GenRet codegenCallExprWithArgs(const char* fnName,
   if( info->cfile ) {
     fn.c = fnName;
     return codegenCallExprWithArgs(fn, args, fnName,
-                                   fnSym, FD, defaultToValues);
+                                   fnSym, callLoc, FD, defaultToValues);
   } else {
 #ifdef HAVE_LLVM
     fn.val = getFunctionLLVM(fnName);
@@ -3207,7 +3270,7 @@ GenRet codegenCallExprWithArgs(const char* fnName,
       INT_FATAL(fnSym, "unable to find function %s\n", fnName);
     }
     return codegenCallExprWithArgs(fn, args, fnName,
-                                   fnSym, FD, defaultToValues);
+                                   fnSym, callLoc, FD, defaultToValues);
 #endif
   }
 
@@ -3219,11 +3282,12 @@ static
 void codegenCallWithArgs(const char* fnName,
                          std::vector<GenRet> & args,
                          FnSymbol* fnSym,
+                         astlocT callLoc,
                          ClangFunctionDeclPtr FD,
                          bool defaultToValues)
 {
   GenInfo* info = gGenInfo;
-  GenRet r = codegenCallExprWithArgs(fnName, args, fnSym, FD, defaultToValues);
+  GenRet r = codegenCallExprWithArgs(fnName, args, fnSym, callLoc, FD, defaultToValues);
   if( info->cfile ) {
     info->cStatements.push_back(r.c + ";\n");
   }
@@ -4307,7 +4371,7 @@ static GenRet codegenCall(CallExpr* call) {
 
   // Generate the body of the call.
   auto cname = fn ? fn->cname : nullptr;
-  ret = codegenCallExprWithArgs(base, args, cname, fn, nullptr, true);
+  ret = codegenCallExprWithArgs(base, args, cname, fn, call->astloc, nullptr, true);
 
   // C: Append a semicolon for end of statement if needed.
   if (gGenInfo->cfile != nullptr) {
@@ -6338,7 +6402,7 @@ DEFINE_PRIM(FTABLE_CALL) {
 
     args.push_back(arg);
 
-    ret = codegenCallExprInner(fngen, args, nullptr, nullptr, fnTy, true);
+    ret = codegenCallExprInner(fngen, args, nullptr, astlocT::unknownLoc(), nullptr, fnTy, true);
 }
 DEFINE_PRIM(VIRTUAL_METHOD_CALL) {
     GenRet    fnPtr;
@@ -6394,7 +6458,7 @@ DEFINE_PRIM(VIRTUAL_METHOD_CALL) {
       args.push_back(call->get(i++));
     }
 
-    ret = codegenCallExprInner(fngen, args, fn, nullptr, nullptr, true);
+    ret = codegenCallExprInner(fngen, args, fn, call->astloc, nullptr, nullptr, true);
 }
 
 DEFINE_BASIC_PRIM(LOOKUP_FILENAME)

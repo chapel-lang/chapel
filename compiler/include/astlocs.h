@@ -59,6 +59,10 @@ public:
     : id_(std::move(id)), filename_(nullptr), lineno_(0)
   { }
 
+  static astlocT unknownLoc(const char* filenameArg = "unknown") {
+    return astlocT(0, astr(filenameArg));
+  }
+
   int compare(const astlocT& other) const;
   void convertIdToFileLine(const char*& filename, int& lineno) const;
   const char* stringLoc() const;
