@@ -20,6 +20,8 @@ New Language Features
 
 Language Feature Improvements
 -----------------------------
+* added support for `.domain` queries on array types in addition to values
+* added support for promoting `min()`/`max()` (e.g., over array arguments)
 
 Semantic Changes / Changes to the Language Definition
 -----------------------------------------------------
@@ -122,6 +124,11 @@ Generated Executable Flags
 
 Error Messages / Semantic Checks
 --------------------------------
+* added user-facing errors when using incorrect types to index into a tuple
+* added a user-facing error message for fields defined using detupling syntax  
+  (e.g., `var (x, y): t;` is not currently supported as a field)
+* improved error messages when formal default values don't match type or kind
+* improved error messages for invalid `ref` task intents on `coforall` loops
 
 Error Messages / Semantic Checks for Libraries
 ----------------------------------------------
@@ -141,6 +148,10 @@ Third-Party Software Changes
 Bug Fixes
 ---------
 * fixed a bug in rank-change slices using `uint` indices
+* fixed support for indexing into tuple types stored in `type` fields
+* fixed memory corruption for `in` intents when copies have a different type
+* fixed mixed-type varargs when the type constraint is generic-with-defaults
+* fixed incorrectly classifying certain generic fields as being concrete
 
 Bug Fixes for Libraries
 -----------------------
@@ -184,9 +195,31 @@ Developer-oriented changes: Compiler improvements / changes
 Developer-oriented changes: 'dyno' Compiler improvements / changes
 ------------------------------------------------------------------
 * made numerous improvements to the 'dyno' resolver for types and calls:
+  - implemented the 'strict' error handling mode
+  - implemented split-initialization for module-level variables
+  - improved enforcing type constraints on split-initialized variables
+  - fixed split-initializing `const` variables using `out` formals
+  - implemented `param` casts between `enum` types and `bytes`
+  - handled integer overflow when assigning values to `enum` constants
+  - implemented elementwise tuple casting
+  - fixed tuple expansion when passing tuple types to `type` formals
+  - implemented more robust compiler-generated class casts
   - fixed a bug where generated serialization methods were incomplete
+  - implemented C pointer support in `extern` blocks
   - fixed a bug preventing passing strings to `extern` functions
   - fixed a bug for missing `extern type` initializations
+  - implemented partially instantiating generic types
+  - implemented treating array formals as distribution-generic
+  - vastly improved queries for array formal element types and domains
+  - allowed `ref` formals to accept coerced initial values
+  - enabled disambiguation to distinguish fully and partially generic formals
+  - fixed implicit coercions for generic formals with default values
+  - fixed duplicate errors due to invalid generic formals during instantiation
+  - improved user-facing errors when trying to call types without constructors
+  - fixed multi-declarations with no type expressions
+  - fixed finding generic fields when their type exprs are generic-with-default
+  - fixed return intent overloading for iterators
+  - reduced false positives in copy elision analysis
 * made numerous improvements when converting 'dyno' AST to production AST
   - added support for `owned`/`shared` classes
   - added support for range literals
@@ -196,7 +229,7 @@ Developer-oriented changes: 'dyno' Compiler improvements / changes
   - added support for grouped assignment (e.g., `(a,b) = foo();`)
   - added support for tuple-decl initialization (e.g., `var (x,y) = bar();`)
   - added support for paren-less methods on types (e.g., `var x = MyType.foo;`)
-  - added support for integral-to-enum casts
+  - added support for integral-to-`enum` casts
   - added support for implicit method calls
   - significantly improved support for inheritance 
   - significantly improved support for generic types
@@ -219,6 +252,8 @@ Developer-oriented changes: Testing System
 
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
+* added inlays for computed `enum` constant values to `chpl-language-server`  
+  (see https://chapel-lang.org/docs/2.7/tools/chpl-language-server/chpl-language-server.html#experimental-resolver-features)
 
 Developer-oriented changes: Utilities
 -------------------------------------
