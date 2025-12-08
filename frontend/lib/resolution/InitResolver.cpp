@@ -876,7 +876,7 @@ void InitResolver::handleInitMarker(const uast::AstNode* node) {
   int stop = fieldIdsByOrdinal_.size();
   for (int i = start; i < stop; i++) {
     auto id = fieldIdsByOrdinal_[i];
-    std::ignore = implicitlyResolveFieldType(id, nullptr);
+    std::ignore = implicitlyResolveFieldType(id, node);
   }
 
   // TODO: Better/more appropriate user facing error message for this?
