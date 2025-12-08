@@ -3216,6 +3216,69 @@ struct ForwardingDetail {
 };
 /// \endcond DO_NOT_DOCUMENT
 
+class ResolvedFieldResults {
+  const types::CompositeType* type_ = nullptr;
+  ID fieldID_;
+  const uast::AstNode* fieldAst_;
+  ResolutionResultByPostorderID results_;
+  bool syntaxOnly_ = false;
+
+ public:
+  ResolvedFieldResults(
+      const types::CompositeType* type,
+      ID fieldID,
+      const uast::AstNode* fieldAst,
+      ResolutionResultByPostorderID results,
+      bool syntaxOnly) :
+        type_(type), fieldID_(fieldID),
+        fieldAst_(fieldAst), results_(std::move(results)),
+        syntaxOnly_(syntaxOnly)
+      { }
+  ResolvedFieldResults() {}
+
+  const types::CompositeType* type() const { return type_; }
+  const ID& fieldID() const { return fieldID_; }
+  const uast::AstNode* fieldAst() const { return fieldAst_; }
+  const ResolutionResultByPostorderID& results() const { return results_; }
+  bool syntaxOnly() const { return syntaxOnly_; }
+
+  bool operator==(const ResolvedFieldResults& other) const {
+    return type_ == other.type_ &&
+            fieldID_ == other.fieldID_ &&
+            fieldAst_ == other.fieldAst_ &&
+            results_ == other.results_ &&
+            syntaxOnly_ == other.syntaxOnly_;
+  }
+  bool operator!=(const ResolvedFieldResults& other) const {
+    return !(*this == other);
+  }
+  void swap(ResolvedFieldResults& other) {
+    std::swap(type_, other.type_);
+    fieldID_.swap(other.fieldID_);
+    std::swap(fieldAst_, other.fieldAst_);
+    results_.swap(other.results_);
+    std::swap(syntaxOnly_, other.syntaxOnly_);
+  }
+  static bool update(ResolvedFieldResults& keep,
+                     ResolvedFieldResults& addin) {
+    return defaultUpdate(keep, addin);
+  }
+  void mark(Context* context) const {
+    context->markPointer(type_);
+    fieldID_.mark(context);
+    context->markPointer(fieldAst_);
+    results_.mark(context);
+  }
+  size_t hash() const {
+    // Skip 'resolutionById_' since it can be quite large.
+    std::ignore = results_;
+    return chpl::hash(type_, fieldID_, fieldAst_, syntaxOnly_);
+  }
+
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
+  }
+};
+
 /** ResolvedFields represents the fully resolved fields for a
     class/record/union/tuple type.
 
@@ -3703,6 +3766,7 @@ CHPL_DEFINE_STD_HASH_(MostSpecificCandidate, (key.hash()));
 CHPL_DEFINE_STD_HASH_(MostSpecificCandidates, (key.hash()));
 CHPL_DEFINE_STD_HASH_(CallResolutionResult, (key.hash()));
 CHPL_DEFINE_STD_HASH_(TheseResolutionResult, (key.hash()));
+CHPL_DEFINE_STD_HASH_(ResolvedFieldResults, (key.hash()));
 CHPL_DEFINE_STD_HASH_(ResolvedFields, (key.hash()));
 CHPL_DEFINE_STD_HASH_(FieldDetail, (key.hash()));
 CHPL_DEFINE_STD_HASH_(ForwardingDetail, (key.hash()));
