@@ -225,6 +225,13 @@ const types::Type* initialTypeForTypeDecl(Context* context, ID declId);
   declaration. */
 const types::Type* initialTypeForInterface(Context* context, ID declId);
 
+const ResolvedFieldResults&
+resolveFieldResults(ResolutionContext* rc,
+                    const types::CompositeType* ct,
+                    ID fieldId,
+                    DefaultsPolicy defaultsPolicy,
+                    bool syntaxOnly = false);
+
 /**
   Resolve a single field decl (which could be e.g. a MultiDecl)
   within a CompositeType.
@@ -241,6 +248,9 @@ const ResolvedFields& resolveFieldDecl(ResolutionContext* rc,
                                        ID fieldId,
                                        DefaultsPolicy defaultsPolicy,
                                        bool syntaxOnly = false);
+
+const ResolvedFields& resolvedFieldsFromResults(ResolutionContext* rc,
+                                                const ResolvedFieldResults& results);
 
 /**
   Compute the fields and their types for a CompositeType
