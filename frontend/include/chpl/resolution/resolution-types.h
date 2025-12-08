@@ -3242,7 +3242,7 @@ struct ForwardingDetail {
 class ResolvedFieldResults {
   const types::CompositeType* type_ = nullptr;
   ID fieldID_;
-  const uast::AstNode* fieldAst_;
+  const uast::AstNode* fieldAst_ = nullptr;
   ResolutionResultByPostorderID results_;
   bool syntaxOnly_ = false;
 
