@@ -13,3 +13,8 @@ for (_, _) in tuples {
 for (i, _) in tuples {
   writeln(i);
 }
+
+// preferred: we can skip unpacking
+for _ in tuples {
+  writeln("processing");
+}
