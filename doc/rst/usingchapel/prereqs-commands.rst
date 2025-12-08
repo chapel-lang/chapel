@@ -48,13 +48,22 @@
       sudo pacman -S llvm20 clang20
 
 
-  * CentOS Stream 9, 10::
+  * CentOS Stream 10::
 
       sudo dnf upgrade
       sudo dnf install epel-release
       sudo dnf install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake libunwind-devel
       sudo dnf install which diffutils
-      sudo dnf install llvm20-devel clang20 clang20-devel
+      sudo dnf install llvm-devel clang clang-devel
+
+
+  * CentOS Stream 9::
+
+      sudo dnf upgrade
+      sudo dnf install epel-release
+      sudo dnf install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake libunwind-devel
+      sudo dnf install which diffutils
+      sudo dnf install llvm16-devel clang16 clang16-devel
 
 
   * Debian 11 "Bullseye"::
@@ -96,6 +105,7 @@
   * OpenSuse Leap 15.6, 16.0::
 
       sudo zypper install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git pkg-config cmake libunwind-devel
+      sudo zypper install findutils diffutils
       sudo zypper install llvm-devel clang-devel clang
 
 

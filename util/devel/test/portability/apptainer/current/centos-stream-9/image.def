@@ -9,7 +9,8 @@ From: quay.io/centos/centos:stream9
     /provision-scripts/dnf-epel.sh
     /provision-scripts/dnf-deps.sh
     # installing llvm-devel installs LLVM 21
-    /provision-scripts/dnf-centos-llvm20.sh
+    # this relies on epel being enabled
+    /provision-scripts/dnf-llvm16.sh
 
 %runscript
     ../../provision-scripts/run.sh "$@"
