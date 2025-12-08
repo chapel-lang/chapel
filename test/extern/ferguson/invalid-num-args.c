@@ -1,0 +1,1 @@
+void myFunc(int x) { }
