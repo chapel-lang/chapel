@@ -140,6 +140,7 @@ Third-Party Software Changes
 
 Bug Fixes
 ---------
+* fixed a bug in rank-change slices using `uint` indices
 
 Bug Fixes for Libraries
 -----------------------
