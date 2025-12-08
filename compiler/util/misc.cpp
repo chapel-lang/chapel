@@ -230,7 +230,7 @@ static void print_error(const char* format, ...) {
 }
 
 static void print_user_internal_error() {
-  char error[20];
+  char error[21];
 
   const char* filename_start = strrchr(err_filename, '/');
   const char* filename_end = NULL;
@@ -275,8 +275,8 @@ static void print_user_internal_error() {
   }
 
   error[idx++] = '-';
-  // next 4 characters are the line number
-  snprintf(&error[idx], 5 * sizeof(char), "%04d", err_lineno);
+  // next 5 characters are the line number
+  snprintf(&error[idx], 6 * sizeof(char), "%05d", err_lineno);
 
   // now make the error string upper case
   for (int i = 0; i < (int)sizeof(error) && error[i]; i++) {
