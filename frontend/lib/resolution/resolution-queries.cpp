@@ -3375,7 +3375,8 @@ resolveFunctionByInfoImpl(ResolutionContext* rc, const TypedFnSignature* sig,
                                   std::move(visitor.returnType),
                                   std::move(visitor.userDiagnostics),
                                   std::move(visitor.poiTraceToChild),
-                                  std::move(visitor.sigAndInfoToChildPtr)));
+                                  std::move(visitor.sigAndInfoToChildPtr),
+                                  visitor.getImplicitInits()));
   return ret;
 }
 

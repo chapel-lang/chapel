@@ -2981,6 +2981,8 @@ class ResolvedFunction {
   using PoiTraceToChildMap = std::unordered_map<PoiTrace, Child>;
   using SigAndInfo = std::tuple<const TypedFnSignature*, PoiInfo>;
   using SigAndInfoToChildPtrMap = std::unordered_map<SigAndInfo, ChildPtr>;
+  using ImplicitInitKey = std::pair<const types::CompositeType*, ID>;
+  using ImplicitInitMap = std::map<ID, std::vector<ImplicitInitKey>>;
 
  private:
   const TypedFnSignature* signature_ = nullptr;
@@ -3011,6 +3013,8 @@ class ResolvedFunction {
   PoiTraceToChildMap poiTraceToChild_;
   SigAndInfoToChildPtrMap sigAndInfoToChildPtr_;
 
+  ImplicitInitMap implicitInits_;
+
  public:
   ResolvedFunction(const TypedFnSignature *signature,
                    uast::Function::ReturnIntent returnIntent,
@@ -3020,7 +3024,8 @@ class ResolvedFunction {
                    types::QualifiedType returnType,
                    std::vector<CompilerDiagnostic> diagnostics,
                    PoiTraceToChildMap poiTraceToChild,
-                   SigAndInfoToChildPtrMap sigAndInfoToChildPtr)
+                   SigAndInfoToChildPtrMap sigAndInfoToChildPtr,
+                   ImplicitInitMap implicitInits)
       : signature_(signature),
         returnIntent_(returnIntent),
         resolutionById_(std::move(resolutionById)),
@@ -3029,7 +3034,8 @@ class ResolvedFunction {
         returnType_(std::move(returnType)),
         diagnostics_(std::move(diagnostics)),
         poiTraceToChild_(std::move(poiTraceToChild)),
-        sigAndInfoToChildPtr_(std::move(sigAndInfoToChildPtr)) {}
+        sigAndInfoToChildPtr_(std::move(sigAndInfoToChildPtr)),
+        implicitInits_(std::move(implicitInits)) {}
  ~ResolvedFunction() = default;
   ResolvedFunction(const ResolvedFunction& rhs) = delete;
   ResolvedFunction(ResolvedFunction&& rhs) = default;
@@ -3070,6 +3076,10 @@ class ResolvedFunction {
     } else {
       return nullptr;
     }
+  }
+
+  const ImplicitInitMap& implicitInits() const {
+    return implicitInits_;
   }
 
   bool operator==(const ResolvedFunction& other) const {

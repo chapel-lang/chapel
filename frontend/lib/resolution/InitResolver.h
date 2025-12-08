@@ -78,6 +78,8 @@ class InitResolver {
   //initialization points to guide handling `=` operators
   std::set<const uast::AstNode*> initPoints;
 
+  ResolvedFunction::ImplicitInitMap implicitInits_;
+
   InitResolver(Context* ctx, Resolver& visitor,
                const uast::Function* fn,
                const types::Type* recvType)
@@ -105,7 +107,7 @@ class InitResolver {
 
 
   void updateResolverVisibleReceiverType(void);
-  bool implicitlyResolveFieldType(ID id);
+  bool implicitlyResolveFieldType(ID id, const uast::AstNode* initBefore);
 
   bool applyResolvedInitCallToState(const uast::FnCall* node,
                                     const CallResolutionResult* c);
@@ -163,6 +165,10 @@ public:
 
   // Returns true if the AST node is an initialization point
   bool isInitPoint(const uast::AstNode* node);
+
+  ResolvedFunction::ImplicitInitMap& implicitInits() {
+    return implicitInits_;
+  }
 };
 
 } // end namespace resolution
