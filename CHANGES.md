@@ -183,6 +183,27 @@ Developer-oriented changes: Compiler improvements / changes
 
 Developer-oriented changes: 'dyno' Compiler improvements / changes
 ------------------------------------------------------------------
+* made numerous improvements to the 'dyno' resolver for types and calls:
+  - fixed a bug where generated serialization methods were incomplete
+  - fixed a bug preventing passing strings to `extern` functions
+  - fixed a bug for missing `extern type` initializations
+* made numerous improvements when converting 'dyno' AST to production AST
+  - added support for `owned`/`shared` classes
+  - added support for range literals
+  - added support for `ref` declarations
+  - added support for `param` for-loops
+  - added support for tuple unpacking (e.g., `foo((...myTuple))`)
+  - added support for grouped assignment (e.g., `(a,b) = foo();`)
+  - added support for tuple-decl initialization (e.g., `var (x,y) = bar();`)
+  - added support for paren-less methods on types (e.g., `var x = MyType.foo;`)
+  - added support for integral-to-enum casts
+  - added support for implicit method calls
+  - significantly improved support for inheritance 
+  - significantly improved support for generic types
+  - significantly improved support for copy/move semantics
+  - improved support for `extern` types
+  - fixed a bug when escaping string literals
+  - fixed a bug preventing `new` expressions for generic types
 
 Developer-oriented changes: GPU support
 ---------------------------------------
