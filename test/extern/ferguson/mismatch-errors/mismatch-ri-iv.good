@@ -1,1 +1,3 @@
-mismatch-ri-iv.chpl:4: error: extern proc does not match C declaration
+mismatch-ri-iv.chpl:4: error: mismatched number of arguments in call to 'returnIntFromIntArg'
+mismatch-ri-iv.chpl:7: note: function called here
+note: check that the number of arguments match the C function signature

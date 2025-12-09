@@ -315,7 +315,7 @@ void addMinMax(const char* prefix, int nbits, bool isSigned)
 
   astlocT prevloc = currentAstLoc;
 
-  currentAstLoc = astlocT(0, astr("<internal>"));
+  currentAstLoc = astlocT::unknownLoc("<internal>");
 
   const char* min_name = astr(prefix, "_MIN");
   const char* max_name = astr(prefix, "_MAX");

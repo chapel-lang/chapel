@@ -246,6 +246,7 @@ GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2);
 GenRet codegenCallExprWithArgs(const char* fnName,
                                std::vector<GenRet> & args,
                                FnSymbol* fnSym = nullptr,
+                               astlocT callLoc = astlocT::unknownLoc(),
                                ClangFunctionDeclPtr FD = nullptr,
                                bool defaultToValues = true);
 GenRet codegenGetLocaleID(void);
