@@ -98,11 +98,16 @@ Debugging Improvements
 
 Tool Improvements
 -----------------
+* added a "prerequisites" capability to Mason to support interoperability  
+  (see TODO)
 * improved the integration of `mason` with `chpl-language-server`
 * improved the ergonomics of building `mason`
   (see https://chapel-lang.org/docs/2.7/tools/mason/start/installation.html)
 * improved the performance of `mason` by building it with optimizations
 * fixed a bug where `mason` failed to detect changes in submodules
+* made bug fixes and other minor improvements to `mason test`
+* started to modernize Mason's integration with Spack
+* started to improve Mason's logging capabilities
 * improved the startup performance of `chplcheck`
 
 Syntax Highlighters
