@@ -533,7 +533,7 @@ private proc pullGitDeps(gitDeps, show=false) {
     const nameVers = val + "-" + branch;
     const destination = baseDir + nameVers;
     if !depExists(nameVers, '/git/') {
-      log.infof("Downloading dependency: %s\n", nameVers);
+      writeln("Downloading dependency: %s\n", nameVers);
       var getDependency = "git clone -q "+ srcURL + ' ' + destination +'/';
       runCommand(getDependency);
 

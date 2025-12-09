@@ -311,7 +311,7 @@ proc getSrcCode(sourceListArg: list(3*string), skipUpdate, show) throws {
       if !depExists(nameVers) {
         if skipUpdate then
           throw new owned MasonError("Dependency cannot be installed when MASON_OFFLINE is set.");
-        log.infoln("Downloading dependency: " + nameVers);
+        writeln("Downloading dependency: " + nameVers);
         var getDependency = "git clone -qn "+ srcURL + ' ' + destination +'/';
         var checkout = "git checkout -q v" + version;
         if show {
@@ -347,7 +347,7 @@ proc getGitCode(gitListArg: list(4*string), show) {
     const nameVers = name + "-" + branch;
     const destination = baseDir + nameVers;
     if !depExists(nameVers, '/git/') {
-      log.infoln("Downloading dependency: " + nameVers);
+      writeln("Downloading dependency: " + nameVers);
       var getDependency = "git clone -qn "+ srcURL + ' ' + destination +'/';
       var checkout = "git checkout -q " + revision;
       if show {
