@@ -27,6 +27,7 @@ Language Feature Improvements
 
 Semantic Changes / Changes to the Language Definition
 -----------------------------------------------------
+* `manage` statements in non-throwing contexts can now contain throwing code
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
@@ -223,6 +224,7 @@ Bug Fixes
 * fixed a bug when slicing strided ranges with an idxType of less than 32 bits
 * fixed support for indexing into tuple types stored in `type` fields
 * fixed a bug where managed nilable classes could lose their nilability
+* fixed a bug where `manage` statements could not contain throwing code
 * fixed memory corruption for `in` intents when copies have a different type
 * fixed mixed-type varargs when the type constraint is generic-with-defaults
 * fixed incorrectly classifying certain generic fields as being concrete
@@ -289,6 +291,9 @@ Developer-oriented changes: Compiler improvements / changes
 * improved the debuggability of the compiler during code generation
 * improved generated LLVM code readability with `-fno-discard-value-names`
 * added `CHPL_CHECK_MAX_LOCALES` to `make check` to support constrained systems
+* procedure-pointer types now support file/line numbers
+* procedure-pointer types can now be passed wide-reference types
+* improved resolution and code generation of procedure-pointer types
 * cleaned up the implementation of the `c_string` and `c_fn_ptr` types
 * removed the unused `doc` field in the compiler AST
 
