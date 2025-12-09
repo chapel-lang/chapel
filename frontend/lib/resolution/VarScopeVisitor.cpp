@@ -512,7 +512,6 @@ bool VarScopeVisitor::enter(const OpCall* ast, RV& rv) {
   if (ast->op() == USTR("=")) {
     auto lhsAst = ast->actual(0);
     auto rhsAst = ast->actual(1);
-    auto rhsType = rv.byAst(rhsAst).type();
 
     if (lhsAst->isTuple()) {
       // Tuple destructuring assignment
@@ -522,16 +521,15 @@ bool VarScopeVisitor::enter(const OpCall* ast, RV& rv) {
       inTupleAssignment = true;
       lhsAst->traverse(rv);
       inTupleAssignment = false;
-
-      return false;
     } else {
       // visit the RHS first
       rhsAst->traverse(rv);
 
+      auto rhsType = rv.byAst(rhsAst).type();
       handleAssign(lhsAst, rhsAst, rhsType, ast, rv);
-
-      return false;
     }
+
+    return false;
   } else {
     return resolvedCallHelper(ast, rv);
   }
@@ -550,11 +548,12 @@ bool VarScopeVisitor::enter(const Tuple* ast, RV& rv) {
   bool entered = true;
   auto parentAst = parsing::parentAst(context, ast);
   auto parentOp = parentAst->toOpCall();
-  if (parentOp && parentOp->op() == USTR("=") && ast == parentOp->actual(0)) {
+  if (inTupleAssignment && parentOp && parentOp->op() == USTR("=") &&
+      ast == parentOp->actual(0)) {
     auto rhsAst = parentOp->actual(1);
     tupleInitExprsStack.push_back(rhsAst->toTuple());
     tupleInitTypesStack.push_back(rv.byAst(rhsAst).type());
-  } else if (outermostContainingTuple() && parentAst->isTuple()) {
+  } else if (inTupleAssignment && outermostContainingTuple() && parentAst->isTuple()) {
     CHPL_ASSERT(!tupleInitTypesStack.empty() && !tupleInitExprsStack.empty());
     if (auto parentInitType = tupleInitTypesStack.back().type()) {
       auto parentTupleType = parentInitType->toTupleType();
@@ -571,30 +570,53 @@ bool VarScopeVisitor::enter(const Tuple* ast, RV& rv) {
     tupleInitTypesStack.push_back(tupInitType);
     tupleInitExprsStack.push_back(tupInitPart);
   } else {
+    CHPL_ASSERT(!inTupleAssignment);
     entered = false;
   }
 
-  for (auto elt : ast->actuals()) {
-    elt->traverse(rv);
-  }
-
   if (entered) {
+    auto outerTupleAssign = parsing::parentAst(context, ast)->toOpCall();
+    auto& re = rv.byPostorder().byAst(outerTupleAssign);
+    AssociatedAction::ActionsList subActions;
+    for (int i = 0; i < ast->numActuals(); i++) {
+      auto elt = ast->actual(i);
+
+      const AstNode* rhsAst = nullptr;
+      QualifiedType rhsType;
+
+      if (auto tupInitPart = tupleInitExprsStack.back()) {
+        rhsAst = tupInitPart->actual(i);
+      }
+      if (auto tupInitTy = tupleInitTypesStack.back().type()) {
+        auto tupType = tupInitTy->toTupleType();
+        CHPL_ASSERT(tupType);
+        rhsType = tupType->elementType(i);
+      }
+
+      handleAssign(elt, rhsAst, rhsType, outerTupleAssign, rv);
+
+      for (auto action : re.associatedActions()) {
+        auto useTupleEltIdx = i;
+        auto actionWithIdx = new AssociatedAction(
+            action.action(), action.fn(), action.id(), action.type(),
+            /* tupleEltIdx */ useTupleEltIdx, action.subActions());
+        subActions.push_back(actionWithIdx);
+      }
+      re.clearAssociatedActions();
+    }
+
+    for (auto action : subActions) {
+      re.addAssociatedAction(*action);
+    }
+
     tupleInitTypesStack.pop_back();
     tupleInitExprsStack.pop_back();
   }
 
-  return false;
+  return true;
 }
 
 void VarScopeVisitor::exit(const Tuple* ast, RV& rv) {
-  // auto parentAst = parsing::parentAst(context, ast);
-  // if (outermostContainingTuple() && (parentAst->isTuple() ||
-  //                                   (parentAst->toOpCall() &&
-  //                                    parentAst->toOpCall()->op() == USTR("=")))) {
-  //   tupleInitTypesStack.pop_back();
-  //   tupleInitExprsStack.pop_back();
-  // }
-
   exitAst(ast);
 }
 
@@ -820,27 +842,6 @@ void VarScopeVisitor::exit(const Yield* ast, RV& rv) {
 
 bool VarScopeVisitor::enter(const Identifier* ast, RV& rv) {
   enterAst(ast);
-
-  // if (ast->name() == "x") debuggerBreakHere();
-  auto outerTuple = outermostContainingTuple();
-  if (inTupleAssignment) {
-    auto parentOp = parsing::parentAst(context, outerTuple)->toOpCall();
-    CHPL_ASSERT(parentOp && parentOp->op() == USTR("="));
-
-    const AstNode* rhsAst = nullptr;
-    QualifiedType rhsType;
-
-    if (auto tupInitPart = tupleInitExprsStack.back()) {
-      rhsAst = tupInitPart->actual(indexWithinContainingTuple(ast));
-    }
-    if (auto tupInitTy = tupleInitTypesStack.back().type()) {
-      auto tupType = tupInitTy->toTupleType();
-      CHPL_ASSERT(tupType);
-      rhsType = tupType->elementType(indexWithinContainingTuple(ast));
-    }
-
-    handleAssign(ast, rhsAst, rhsType, parentOp, rv);
-  }
 
   return true;
 }

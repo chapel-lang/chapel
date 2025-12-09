@@ -608,7 +608,7 @@ void FindElidedCopies::handleAssign(const AstNode* lhsAst,
         if (rv.hasId(lhsVarId) && rv.hasId(rhsVarId)) {
           QualifiedType lhsType = rv.byId(lhsVarId).type();
           if (copyElisionAllowedForTypes(lhsType, rhsType, opAst, rv)) {
-            addCopyInit(frame, rhsVarId, lhsAst->id());
+            addCopyInit(frame, rhsVarId, opAst->id());
           }
         }
       }
