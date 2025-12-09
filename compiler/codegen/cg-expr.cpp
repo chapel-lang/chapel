@@ -2783,6 +2783,7 @@ GenRet codegenArgForFormal(GenRet arg,
   return arg;
 }
 
+#ifdef HAVE_LLVM
 static void codegenCallExprInnerCoerceError(FnSymbol* fn,
                                             astlocT callLoc,
                                             llvm::Function* func,
@@ -2798,6 +2799,7 @@ static void codegenCallExprInnerCoerceError(FnSymbol* fn,
   if (isExternOrExport) USR_PRINT("check that the argument types match the C function signature");
   USR_STOP();
 }
+#endif
 
 // if fn is non-NULL, we use that to decide what to dereference.
 // Otherwise, if defaultToValues=true, we will codegenValue() the arguments,
