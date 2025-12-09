@@ -67,7 +67,7 @@ class VarScopeVisitor : public BranchSensitiveVisitor<VarFrame, MutatingResolved
   // tuple decls in the AST stack.
   llvm::SmallVector<types::QualifiedType> tupleInitTypesStack;
   llvm::SmallVector<const Tuple*> tupleInitExprsStack;
-  bool inTupleAssignment = false;
+  const uast::OpCall* inTupleAssignment = nullptr;
 
   // ----- methods to be implemented by specific analysis subclass
 
