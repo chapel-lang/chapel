@@ -2783,6 +2783,22 @@ GenRet codegenArgForFormal(GenRet arg,
   return arg;
 }
 
+static void codegenCallExprInnerCoerceError(FnSymbol* fn,
+                                            astlocT callLoc,
+                                            llvm::Function* func,
+                                            Symbol* formal,
+                                            bool isExternOrExport) {
+  if (fn && formal)
+    USR_FATAL_CONT(fn, "mismatched type for '%s' when calling '%s'", formal->name, fn->name);
+  else if (func)
+    USR_FATAL_CONT("argument to '%s' cannot be passed", func->getName().str().c_str());
+  else
+    USR_FATAL_CONT("argument to function cannot be passed");
+  if (callLoc.lineno() != 0) USR_PRINT(callLoc, "function called here");
+  if (isExternOrExport) USR_PRINT("check that the argument types match the C function signature");
+  USR_STOP();
+}
+
 // if fn is non-NULL, we use that to decide what to dereference.
 // Otherwise, if defaultToValues=true, we will codegenValue() the arguments,
 //            and if it is false, they will pass by reference if they
@@ -2985,17 +3001,8 @@ static GenRet codegenCallExprInner(GenRet function,
               // The simpler case
               llvm::Value* val = args[i].val;
               val = convertValueToType(val, argInfo->getCoerceToType(), true);
-              if (val == nullptr) {
-                if (fn && formal)
-                  USR_FATAL_CONT(fn, "mismatched type for '%s' when calling '%s'", formal->name, fn->name);
-                else if (func)
-                  USR_FATAL_CONT("argument to '%s' cannot be passed", func->getName().str().c_str());
-                else
-                  USR_FATAL_CONT("argument to function cannot be passed");
-                if (callLoc.lineno() != 0) USR_PRINT(callLoc, "function called here");
-                if (isExternOrExport) USR_PRINT("check that the argument types match the C function signature");
-                USR_STOP();
-              }
+              if (val == nullptr)
+                codegenCallExprInnerCoerceError(fn, callLoc, func, formal, isExternOrExport);
               llArgs.push_back(val);
             } else {
               // handle a more complex direct argument
@@ -3010,17 +3017,8 @@ static GenRet codegenCallExprInner(GenRet function,
 
                 GenRet tmp = args[i];
                 tmp.val = convertValueToType(tmp.val, sTy, false, true);
-                if (val == nullptr) {
-                  if (fn && formal)
-                    USR_FATAL_CONT(fn, "mismatched type for '%s' when calling '%s'", formal->name, fn->name);
-                  else if (func)
-                    USR_FATAL_CONT("argument to '%s' cannot be passed", func->getName().str().c_str());
-                  else
-                    USR_FATAL_CONT("argument to function cannot be passed");
-                  if (callLoc.lineno() != 0) USR_PRINT(callLoc, "function called here");
-                  if (isExternOrExport) USR_PRINT("check that the argument types match the C function signature");
-                  USR_STOP();
-                }
+                if (val == nullptr)
+                  codegenCallExprInnerCoerceError(fn, callLoc, func, formal, isExternOrExport);
 
                 // Create a temp variable to load from
                 tmp = createTempVarWith(args[i]);
@@ -3057,17 +3055,8 @@ static GenRet codegenCallExprInner(GenRet function,
 
                 val = convertValueToType(val, argInfo->getCoerceToType(),
                                          !tmp.isUnsigned, true);
-                if (val == nullptr) {
-                  if (fn && formal)
-                    USR_FATAL_CONT(fn, "mismatched type for '%s' when calling '%s'", formal->name, fn->name);
-                  else if (func)
-                    USR_FATAL_CONT("argument to '%s' cannot be passed", func->getName().str().c_str());
-                  else
-                    USR_FATAL_CONT("argument to function cannot be passed");
-                  if (callLoc.lineno() != 0) USR_PRINT(callLoc, "function called here");
-                  if (isExternOrExport) USR_PRINT("check that the argument types match the C function signature");
-                  USR_STOP();
-                }
+                if (val == nullptr)
+                  codegenCallExprInnerCoerceError(fn, callLoc, func, formal, isExternOrExport);
                 llArgs.push_back(val);
               }
             }
@@ -3080,17 +3069,8 @@ static GenRet codegenCallExprInner(GenRet function,
 
             GenRet tmp = args[i];
             tmp.val = convertValueToType(tmp.val, sTy, false, true);
-            if (val == nullptr) {
-              if (fn && formal)
-                USR_FATAL_CONT(fn, "mismatched type for '%s' when calling '%s'", formal->name, fn->name);
-              else if (func)
-                USR_FATAL_CONT("argument to '%s' cannot be passed", func->getName().str().c_str());
-              else
-                USR_FATAL_CONT("argument to function cannot be passed");
-              if (callLoc.lineno() != 0) USR_PRINT(callLoc, "function called here");
-              if (isExternOrExport) USR_PRINT("check that the argument types match the C function signature");
-              USR_STOP();
-            }
+            if (val == nullptr)
+              codegenCallExprInnerCoerceError(fn, callLoc, func, formal, isExternOrExport);
 
             // Create a temp variable to load from
             tmp = createTempVarWith(args[i]);
