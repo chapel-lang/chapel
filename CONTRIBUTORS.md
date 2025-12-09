@@ -11,6 +11,7 @@ Contributors to the Chapel 2.7 release
 * Soohoon Choi, [HPE]
 * Lydia Duncan, [HPE]
 * Daniel Fedorin, [HPE]
+* Rohith Gurram, individual contributor
 * [Paul H. Hargrove], [Lawrence Berkeley National Laboratory]
 * Ben Harshbarger, [HPE]
 * Guillaume Helbecque, individual contributor
