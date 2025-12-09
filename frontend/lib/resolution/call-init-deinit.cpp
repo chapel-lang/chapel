@@ -1472,7 +1472,7 @@ void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast,
     auto rhsType = lhsType;
 
     // doProcessInit = true;
-    processInit(frame, ast, lhsType, rhsType, rv);
+    processInit(frame, ast, lhsType, rhsType, rv, initExpr);
   } else if (inited) {
     auto lhsAst = ast;
     ResolvedExpression& lhsRe = rv.byAst(lhsAst);
@@ -1481,7 +1481,7 @@ void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast,
     QualifiedType rhsType = initType;
 
     // doProcessInit = true;
-    processInit(frame, ast, lhsType, rhsType, rv);
+    processInit(frame, ast, lhsType, rhsType, rv, initExpr);
     // note that the variable is now initialized
     ID id = ast->id();
     frame->addToInitedVars(id);
@@ -1633,7 +1633,7 @@ void CallInitDeinit::handleAssign(const AstNode* lhsAst,
     // these are basically 'move' initialization
     resolveMoveInit(opAst, rhsAst, lhsType, rhsType, rv);
   } else if (isInit) {
-    processInit(frame, opAst, lhsType, rhsType, rv);
+    processInit(frame, opAst, lhsType, rhsType, rv, rhsAst);
   } else {
     // it is assignment, so resolve the '=' call
     resolveAssign(opAst, lhsType, rhsType, rv);

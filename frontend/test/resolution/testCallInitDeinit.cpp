@@ -2237,9 +2237,9 @@ static void test34() {
       {AssociatedAction::INIT_OTHER, "tup",         ""},
         {AssociatedAction::ASSIGN,    "tup",   "M.test@4"},
         {AssociatedAction::MOVE_INIT, "tup",   "M.test@5"},
-      {AssociatedAction::ASSIGN,    "a",   "0"},
+      {AssociatedAction::MOVE_INIT, "a",   "0"},
       {AssociatedAction::MOVE_INIT, "b",   "1"},
-      {AssociatedAction::DEINIT,     "M.test@12",   "b"},
+      {AssociatedAction::DEINIT,    "M.test@12",   "b"},
     });
 }
 
