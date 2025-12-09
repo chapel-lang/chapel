@@ -384,6 +384,7 @@ bool VarScopeVisitor::enter(const TupleDecl* ast, RV& rv) {
   }
   return false;
 }
+
 void VarScopeVisitor::exit(const TupleDecl* ast, RV& rv) {
   CHPL_ASSERT(!scopeStack.empty());
 
@@ -584,8 +585,12 @@ bool VarScopeVisitor::enter(const Tuple* ast, RV& rv) {
   AssociatedAction::ActionsList subActions;
   for (int i = 0; i < ast->numActuals(); i++) {
     auto elt = ast->actual(i);
+
     elt->traverse(rv);
+
     if (elt->isTuple()) continue;
+    auto ident = elt->toIdentifier();
+    if (ident && ident->name() == USTR("_")) continue;
 
     const AstNode* rhsAst = nullptr;
     QualifiedType rhsType = QualifiedType();
