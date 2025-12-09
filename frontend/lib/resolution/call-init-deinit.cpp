@@ -1105,7 +1105,7 @@ void CallInitDeinit::processInit(VarFrame* frame,
                         /* forMoveInit */ false, rv);
 
 
-        // special handling for tuples: process init for each element,
+        // special handling for tuple expr RHS: process init for each element,
         // subsuming associated actions for each as sub-actions of the top-level
         // init=
         if (auto lhsTupleType =
