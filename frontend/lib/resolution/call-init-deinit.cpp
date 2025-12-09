@@ -603,45 +603,6 @@ void CallInitDeinit::resolveDefaultInit(const NamedDecl* ast, Qualifier intentOr
   }
 }
 
-// Adjusts LHS tuple type so that its components are all values.
-// Does no sanity checks.
-// static QualifiedType
-// getLhsForTupleUnpackAssign(Context* context,
-//                            const uast::AstNode* astForErr,
-//                            const Tuple* lhsTuple,
-//                            const QualifiedType& lhsType) {
-//   std::vector<QualifiedType> eltTypes;
-
-//   auto lhsT = lhsType.type() ? lhsType.type()->toTupleType() : nullptr;
-//   if (!lhsT || lhsT->numElements() != lhsTuple->numActuals()) return lhsType;
-
-//   for (int i = 0; i < lhsTuple->numActuals(); i++) {
-//     auto actual = lhsTuple->actual(i);
-//     auto ident = actual->toIdentifier();
-//     QualifiedType qt;
-
-//     if (ident && ident->name() == USTR("_")) {
-//       // If the LHS actual is '_', then use the Nothing type. This is fine
-//       // since the '_' will never be set.
-//       qt = { QualifiedType::VAR, NothingType::get(context) };
-
-//     } else {
-//       // Otherwise, turn its qualifier into 'var' / 'const var'
-//       auto eqt = lhsT->elementType(i);
-//       auto useKind = KindProperties::removeRef(eqt.kind());
-//       qt = { useKind, eqt.type(), eqt.param() };
-//     }
-
-//     eltTypes.push_back(std::move(qt));
-//   }
-
-//   // Set the 'LHS' tuple type.
-//   auto k = QualifiedType::VAR;
-//   auto t = TupleType::getQualifiedTuple(context, std::move(eltTypes));
-//   QualifiedType ret = { k, t };
-//   return ret;
-// }
-
 // bool CallInitDeinit::validateTuplesForAssignOrInit(const AstNode* ast,
 //                                      const QualifiedType& lhsType,
 //                                      const QualifiedType& rhsType) {
