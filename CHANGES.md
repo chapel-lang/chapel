@@ -30,7 +30,10 @@ Semantic Changes / Changes to the Language Definition
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
+* removed the deprecated `IO.ioendian` type
+* removed `Sort.sort()` and `.isSorted()` overloads with deprecated arguments
 * remove deprecated `Python.importModule` method
+* removed the deprecated `HDFS` module
 
 Namespace Changes
 -----------------
@@ -259,6 +262,8 @@ Developer-oriented changes: Process
 
 Developer-oriented changes: Documentation
 -----------------------------------------
+* added developer-oriented documentation on how to update Python dependencies  
+  (see https://chapel-lang.org/docs/2.7/developer/bestPractices/PythonDeps.html#readme-python-deps)
 * improved the process of running `extract-docs.py` for updating Chapel prereqs
 
 Developer-oriented changes: Syntactic / Naming Changes
