@@ -63,7 +63,7 @@
       sudo dnf install epel-release
       sudo dnf install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake libunwind-devel
       sudo dnf install which diffutils
-      sudo dnf install llvm16-devel clang16 clang16-devel
+      sudo dnf install llvm15-devel clang15 clang15-devel
 
 
   * Debian 11 "Bullseye"::
