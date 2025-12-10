@@ -163,7 +163,7 @@ static int chpl_unwind_refineGetLineNum(void *addr) {
 
   if (!chpl_get_command_output(buf, output, sizeof(output)))
     return 0;
-  
+
   for (bufPtr = output; *bufPtr++ != ':';) { }
   line = atoi(bufPtr);
   if (line != 0)
@@ -173,7 +173,7 @@ static int chpl_unwind_refineGetLineNum(void *addr) {
   rc = snprintf(&buf[i], sizeof(buf)-i, " %p", addr);
   if (rc+1 >= sizeof(buf)-i)
     return 0; // command too long for buffer - give up
-  
+
   if (!chpl_get_command_output(buf, output, sizeof(output)))
     return 0;
 
@@ -218,7 +218,7 @@ static int chpl_unwind_refineGetLineNum(void *addr) {
   // format is '<FN_NAME> (in <REL_EXEC_NAME>) (<FILENAME>:<LINENUME>)
   // search from the end of the string backwards for ':'
   char* bufPtr = buf + strlen(buf) - 1;
-  while (bufPtr > buf && *pbufPtr != ':') { p--; }
+  while (bufPtr > buf && *bufPtr != ':') { bufPtr--; }
   if (bufPtr == buf)
     return 0; // didn't find ':' - give up
   bufPtr++; // move past ':'
