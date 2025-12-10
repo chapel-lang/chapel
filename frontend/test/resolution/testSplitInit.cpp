@@ -1744,7 +1744,7 @@ static void test84() {
   testSplitInit(__FUNCTION__,
     R"""(
         proc test() {
-          var (x, y);
+          var (x, y) : (int, int);
           (x, y) = (1, 2);
         }
     )""",

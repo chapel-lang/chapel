@@ -905,9 +905,11 @@ bool VarScopeVisitor::enter(const Identifier* ast, RV& rv) {
 
 void VarScopeVisitor::exit(const Identifier* ast, RV& rv) {
   if (!scopeStack.empty()) {
-    ID toId = rv.byAst(ast).toId();
-    if (!toId.isEmpty()) {
-      handleMention(ast, toId, rv);
+    if (!inTupleAssignment) {
+      ID toId = rv.byAst(ast).toId();
+      if (!toId.isEmpty()) {
+        handleMention(ast, toId, rv);
+      }
     }
   }
   exitAst(ast);
