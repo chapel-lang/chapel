@@ -72,7 +72,6 @@ static int chpl_unwind_refineGetLineNum(void *addr) {
   int i = 0;
   int line;
   char* bufPtr;
-  FILE *f;
   ssize_t path_len;
 
 
