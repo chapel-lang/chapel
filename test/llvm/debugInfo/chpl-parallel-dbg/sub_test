@@ -200,7 +200,7 @@ class Test:
                 debugger_fp.flush()
                 dbg_process.stdin.write(line + "\n")
                 dbg_process.stdin.flush()
-                time.sleep(0.5)
+                time.sleep(1)
         dbg_process.wait(timeout=timeout())
         exec_process_group_pid = os.getpgid(executable_process.pid)
         try:
