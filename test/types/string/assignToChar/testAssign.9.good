@@ -1,0 +1,4 @@
+Helpers.chpl:10: In function 'testAssign':
+Helpers.chpl:12: error: Cannot assign to uint(8) from string
+Helpers.chpl:12: note: did you mean to call '.toByte()'?
+  testAssign.chpl:22: called as testAssign(param strBytes = "a", type toType = uint(8))

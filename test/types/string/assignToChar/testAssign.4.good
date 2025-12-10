@@ -1,0 +1,3 @@
+Helpers.chpl:15: In function 'testAssignVal':
+Helpers.chpl:17: error: Cannot assign to int(8) from string
+  testAssign.chpl:12: called as testAssignVal(strBytes: string, type toType = int(8))
