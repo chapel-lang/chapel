@@ -1007,7 +1007,6 @@ void CallInitDeinit::processInit(VarFrame* frame,
   auto op = ast->toOpCall();
   if (!rhsAst) {
     if (op != nullptr && op->op() == USTR("=")) {
-      lhsAst = op->actual(0);
       rhsAst = op->actual(1);
     } else if (auto vd = ast->toVarLikeDecl()) {
       rhsAst = vd->initExpression();
@@ -1027,6 +1026,9 @@ void CallInitDeinit::processInit(VarFrame* frame,
     lhsAst = op->actual(0);
     lhsIsTuple = lhsAst && lhsAst->isTuple();
   }
+  if (lhsAst == nullptr) {
+    lhsAst = ast;
+  }
 
   if (lhsType.isType() || lhsType.isParam()) {
     // these are basically 'move' initialization
@@ -1045,8 +1047,10 @@ void CallInitDeinit::processInit(VarFrame* frame,
       if (isCallProducingValue(rhsAst, rhsType, rv)) {
         resolveDeinit(ast, rhsAst->id(), rhsType, rv);
       }
-    } else if (elidedCopyFromIds.count(ast->id()) > 0 &&
-               elidedCopyFromIds.at(ast->id()) == rhsDeclId) {
+    } else if ((elidedCopyFromIds.count(lhsAst->id()) > 0 &&
+                elidedCopyFromIds.at(lhsAst->id()) == rhsDeclId) ||
+               (elidedCopyFromIds.count(rhsAst->id()) > 0 &&
+                elidedCopyFromIds.at(rhsAst->id()) == rhsDeclId)) {
       // it is move initialization
       resolveMoveInit(ast, rhsAst, lhsType, rhsType, rv);
 
