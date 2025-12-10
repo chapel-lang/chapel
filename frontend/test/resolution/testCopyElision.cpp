@@ -274,7 +274,7 @@ static void test6() {
           }
         }
     )"""",
-    {"M.test@8", "M.test@12"});
+    {"M.test@6", "M.test@10"});
 
   testCopyElision("test6b",
     R""""(
@@ -351,7 +351,7 @@ static void test11() {
           y = x;
         }
     )"""",
-    {"M.test@5"});
+    {"M.test@3"});
 }
 
 static void test12() {
@@ -410,7 +410,7 @@ static void test14() {
           }
         }
     )"""",
-    {"M.test@10"});
+    {"M.test@8"});
 }
 
 static void test15() {
@@ -426,7 +426,7 @@ static void test15() {
           }
         }
     )"""",
-    {"M.test@8"});
+    {"M.test@6"});
 }
 
 static void test16() {
@@ -488,7 +488,7 @@ static void test19() {
           }
         }
     )"""",
-    {"M.test@5"});
+    {"M.test@3"});
 }
 
 static void test20() {
@@ -588,7 +588,7 @@ static void test26() {
           z = y;
         }
     )"""",
-    {"M.test@7"});
+    {"M.test@5"});
 }
 // including with an inner block
 static void test27() {
@@ -605,7 +605,7 @@ static void test27() {
           z = y;
         }
     )"""",
-    {"M.test@7"});
+    {"M.test@5"});
 }
 // including with a conditional
 static void test28() {
@@ -626,7 +626,7 @@ static void test28() {
           z = c;
         }
     )"""",
-    {"M.test@8", "M.test@12"});
+    {"M.test@6", "M.test@10"});
 }
 // including with a try/catch
 static void test29() {
@@ -647,7 +647,7 @@ static void test29() {
           z = b;
         }
     )"""",
-    {"M.test@7"});
+    {"M.test@5"});
 }
 
 // out variable can't be copy elided from b/c it is mentioned by return
@@ -708,7 +708,7 @@ static void test34() {
           z = c;
         }
     )"""",
-    {"M.test@8"});
+    {"M.test@6"});
 }
 
 static void test35() {
@@ -1188,7 +1188,7 @@ static void test42() {
           }
         }
     )"""",
-    {"M.test@12","M.test@18"});
+    {"M.test@10","M.test@16"});
 }
 
 static void test43() {
