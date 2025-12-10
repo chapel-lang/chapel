@@ -4925,6 +4925,8 @@ void printResolutionErrorUnresolved(CallInfo&       info,
                          "Cannot assign to %s from %s",
                          toString(info.actuals.v[0]->type),
                          toString(info.actuals.v[1]->type));
+          maybeSuggestToByteCall(info.actuals.v[1], info.actuals.v[1]->type,
+                                 info.actuals.v[0]->type, call);
         }
       }
 

@@ -2754,6 +2754,7 @@ static void issueInitConversionError(Symbol* to, Symbol* toType, Symbol* from,
   USR_FATAL_CONT(where,
                  "cannot initialize %s of type '%s' from %s'%s'",
                  toName, toTypeStr, sep, fromStr);
+  maybeSuggestToByteCall(from, from->type, toType->type, where);
 }
 
 // Emit an init= or similar pattern to create 'to' of type 'toType' from 'from'
@@ -3115,6 +3116,28 @@ void ensureInMethodList(FnSymbol* fn) {
 
     if (found == false) {
       thisType->methods.add(fn);
+    }
+  }
+}
+
+void maybeSuggestToByteCall(Symbol* from,
+                            Type* fromType, Type* toType,
+                            BaseAST* where) {
+  // if attempted conversion to int(8)/uint(8) from param string/bytes of length 1
+  // then suggest toByte()
+  auto fromValType = fromType->getValType();
+  auto toValType = toType->getValType();
+  if (isIntegralByteType(toValType) &&
+      (fromValType == dtString || fromValType == dtBytes) &&
+      (from->hasEitherFlag(FLAG_CHAPEL_STRING_LITERAL,
+                           FLAG_CHAPEL_BYTES_LITERAL))) {
+    if (auto var = toVarSymbol(from)) {
+      if (var->immediate) {
+        const char* str = var->immediate->string_value();
+        if (str[0] != '\0' && str[1] == '\0') {
+          USR_PRINT(where, "did you mean to call '.toByte()'?");
+        }
+      }
     }
   }
 }
