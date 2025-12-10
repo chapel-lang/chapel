@@ -89,3 +89,7 @@ FROM chapel-base AS chapel
 COPY --from=chapel-build $CHPL_HOME $CHPL_HOME
 
 ENV PATH="${PATH}:${CHPL_HOME}/bin:${CHPL_HOME}/util"
+
+# Not relying on inherited CMD command in debian:11 base image.
+# Instead, explicitly invoking it in this image.
+CMD ["/bin/bash"]
