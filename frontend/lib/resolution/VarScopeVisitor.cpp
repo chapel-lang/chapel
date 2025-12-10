@@ -627,8 +627,7 @@ bool VarScopeVisitor::enter(const Tuple* ast, RV& rv) {
   tupleInitExprsStack.push_back(tupInitPart);
 
   // Traverse components in order and resolve assignments for each
-  auto outerTupleAssign = parsing::parentAst(context, ast)->toOpCall();
-  auto& re = rv.byPostorder().byAst(outerTupleAssign);
+  auto& re = rv.byPostorder().byAst(inTupleAssignment);
   AssociatedAction::ActionsList subActions;
   for (int i = 0; i < ast->numActuals(); i++) {
     auto elt = ast->actual(i);
@@ -639,7 +638,7 @@ bool VarScopeVisitor::enter(const Tuple* ast, RV& rv) {
     auto ident = elt->toIdentifier();
     if (ident && ident->name() == USTR("_")) continue;
 
-    const AstNode* rhsAst = nullptr;
+    const AstNode* rhsAst = inTupleAssignment->actual(1);
     QualifiedType rhsType = QualifiedType();
 
     if (tupInitPart) {
@@ -651,7 +650,7 @@ bool VarScopeVisitor::enter(const Tuple* ast, RV& rv) {
       rhsType = tupType->elementType(i);
     }
 
-    handleAssign(elt, rhsAst, rhsType, outerTupleAssign, rv);
+    handleAssign(elt, rhsAst, rhsType, inTupleAssignment, rv);
 
     for (auto action : re.associatedActions()) {
       auto useTupleEltIdx = i;
