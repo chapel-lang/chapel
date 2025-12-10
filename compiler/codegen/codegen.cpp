@@ -1820,7 +1820,6 @@ static void codegen_header(std::set<const char*> & cnames,
 
   std::unordered_set<FunctionType*> fnTypesToCodegen;
 
-
   //
   // Collect functions and function types.
   //
@@ -1831,24 +1830,20 @@ static void codegen_header(std::set<const char*> & cnames,
     // OK, should generate the function and consider its type.
     functions.push_back(fn);
 
-    // Collect function types to generate. The vast majority are discarded.
-    // TODO (dlongnecke): Ensure that this flag is not stale...
     bool isProcPtrRoot = fn->isUsedAsValue();
     auto ft = toFunctionType(fn->type);
 
     INT_ASSERT(!isProcPtrRoot || ft);
 
-    if (auto ft = toFunctionType(fn->type)) {
+    if (ft) {
       if (isProcPtrRoot || ft->symbol->isUsed()) {
-        // It is used or a root used to construct a value, so keep it.
-        if (auto it = fnTypesToCodegen.find(ft);
-                 it == fnTypesToCodegen.end()) {
-          fnTypesToCodegen.emplace_hint(it, ft);
-          types.push_back(ft->symbol);
-        }
-      } else {
-        // TODO (dlongnecke): Could be pruned/discarded earlier...
-        continue;
+        // The function type is used (as a value), so keep it.
+        fnTypesToCodegen.insert(ft);
+      }
+
+      if (!isProcPtrRoot) {
+        // If the function is not used as a value, clear its type.
+        fn->type = dtUnknown;
       }
     }
   }
@@ -1857,28 +1852,27 @@ static void codegen_header(std::set<const char*> & cnames,
   // Collect types.
   //
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
+    bool isFunctionTypeSym = isFunctionType(ts->type);
+
     if (auto ft = toFunctionType(ts->type->getValType())) {
-      INT_ASSERT(fcfs::usePointerImplementation() || !ts->isUsed());
+      if (!isFunctionTypeSym) {
+        // We need the function type since it's appearing in some other type.
+        fnTypesToCodegen.insert(ft);
 
-      if (!ts->isUsed() && !ft->symbol->isUsed() &&
-          !fnTypesToCodegen.count(ft)) {
-        // This (ref/wide-ref) type is not used at all, so skip it.
-        if (ts->inTree()) {
-          ts->defPoint->remove();
-        }
-
-        continue;
-      }
-
-      if (isFunctionType(ts->type)) {
+      } else if (ts->isUsed()) {
+        // Otherwise, preserve it if it's used as a type.
         fnTypesToCodegen.insert(ft);
       }
-
-      types.push_back(ts);
-
-    } else if (ts->defPoint->parentExpr != rootModule->block) {
-      types.push_back(ts);
     }
+
+    if (ts->defPoint->parentExpr != rootModule->block) {
+      if (!isFunctionTypeSym) types.push_back(ts);
+    }
+  }
+
+  for (auto ft : fnTypesToCodegen) {
+    // Non-determinism here doesn't matter since we sort below.
+    types.push_back(ft->symbol);
   }
 
   // Now we can sort types...
