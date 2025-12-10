@@ -128,20 +128,6 @@ static const char* chpl_get_debugger_cmd_file(void) {
   return debuggerCmdFile;
 }
 
-static chpl_bool chpl_get_command_output(const char* command,
-                                         char* output, size_t output_size);
-static chpl_bool chpl_get_command_output(const char* command,
-                                         char* output, size_t output_size) {
-  FILE* pipe = popen(command, "r");
-  if (!pipe) {
-    return false;
-  }
-  size_t bytes_read = fread(output, sizeof(char), output_size - 1, pipe);
-  output[bytes_read] = '\0';
-  int status = pclose(pipe);
-  return (status == 0);
-}
-
 static chpl_bool chpl_lldb_supports_python(void);
 static chpl_bool chpl_lldb_supports_python(void) {
   char output[256];
