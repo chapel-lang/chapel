@@ -200,7 +200,7 @@ class Test:
                 debugger_fp.flush()
                 dbg_process.stdin.write(line + "\n")
                 dbg_process.stdin.flush()
-                time.sleep(0.5)
+                time.sleep(1)
         dbg_process.wait(timeout=timeout())
         exec_process_group_pid = os.getpgid(executable_process.pid)
         try:
@@ -254,16 +254,18 @@ class Test:
             executable.with_name(executable.name + "_real").unlink()
 
     def test(self):
-        sys.stdout.write(f"[Testing {self.source_file}]\n")
-        if not self._compile():
-            return
-        executable_output, debugger_output = self._execute()
-        if executable_output is None or debugger_output is None:
-            return
-        if not self._compare_output(executable_output, debugger_output):
-            return
-        self._cleanup(executable_output, debugger_output)
-        sys.stdout.write("[Success matching output for {}]\n".format(self.source_file.stem))
+        start_time = time.time()
+        sub_test_util.printTestName(self.source_file)
+        if self._compile():
+            executable_output, debugger_output = self._execute()
+            if executable_output is None or debugger_output is None:
+                pass
+            else:
+                if self._compare_output(executable_output, debugger_output):
+                    self._cleanup(executable_output, debugger_output)
+                    sys.stdout.write("[Success matching output for {}]\n".format(self.source_file.stem))
+        elapsed = time.time() - start_time
+        sub_test_util.printEndOfTestMsg(self.source_file, elapsed)
 
 def dirSkipIf(d: Path):
     skipif_file = d / "SKIPIF"
@@ -288,7 +290,8 @@ def dirSkipIf(d: Path):
     return False
 
 def main():
-    sys.stdout.write("[Starting subtest]\n")
+    sub_test_util.printStartOfTestMsg(time.localtime())
+
     d = Path(os.path.dirname(os.path.abspath(__file__)))
 
     if dirSkipIf(d):
