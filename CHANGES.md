@@ -2,21 +2,21 @@ Release Changes List
 ====================
 
 TODO:
-o '(http:' -> '(see http:'
-o sort items within categories
-o check placement of items into categories
-o check for ' vs `
-o fulfill TODOs
-o check man page or util/chpl-completion.bash for new compiler flags
-o check test/release/examples
-o check for docs/2.4/ links
-o check forced linebreaks
-o check initial '*'
-o check for initial 'A-Z'
-o check for 'see:'
-o check for changes put too far down in file
-o add highlights
-o spellcheck
+* '(http:' -> '(see http:'
+* sort items within categories
+* check placement of items into categories
+* check for ' vs `
+* fulfill TODOs
+* check man page or util/chpl-completion.bash for new compiler flags
+* check test/release/examples
+* check for docs/2.4/ links
+* check forced linebreaks
+* check initial '*'
+* check for initial 'A-Z'
+* check for 'see:'
+* check for changes put too far down in file
+* add highlights
+* spellcheck
 o remove empty sections
 o check ordering of categories relative to one another
 o check links
@@ -122,9 +122,9 @@ Debugging Improvements
 * added wide pointer resolution to `chpl-parallel-dbg`
 * improved the debugger's pretty printing of `uint(8)` and `int(8)`
 * hid internal module names for types like `string` and tuples
-* added debug inforomation for complex numbers, syncs, and atomics
+* added debug information for complex numbers, syncs, and atomics
 * improved generated debug info, especially for classes and wide pointers
-* updated the debug info for `ref`'s to be treated as references, not pointers
+* updated the debug info for `ref`s to be treated as references, not pointers
 * removed compiler-inserted temporary variables from debug info where possible
 
 Tool Improvements
@@ -132,13 +132,14 @@ Tool Improvements
 * improved the ergonomics of building `mason`  
   (see https://chapel-lang.org/docs/2.7/tools/mason/start/installation.html)
 * added a "prerequisites" capability to Mason to support interoperability  
-  (see TODO)
+  (see https://chapel-lang.org/docs/2.7/tools/mason/guide/prereqs.html)
 * improved the integration of `mason` into `chpl-language-server`
 * improved the performance of `mason` by building it with optimizations
 * fixed a bug where `mason` failed to detect changes in submodules
 * made bug fixes and other minor improvements to `mason test`
 * started to modernize Mason's integration with Spack
 * started to improve Mason's logging capabilities
+* fixed incorrect call inlays for method calls
 * improved the startup performance of `chplcheck`
 
 Syntax Highlighters
@@ -148,7 +149,6 @@ Documentation Improvements
 --------------------------
 * improved the documentation for `CHPL_TARGET_CPU`  
   (see https://chapel-lang.org/docs/2.7/usingchapel/chplenv.html#chpl-target-cpu)
-* added more documentation about Chapel language evolution through editions (TODO - not yet merged)
 * updated mentions of "generated C code" to use "generated code" for generality
 * removed remaining mentions of `single` from the docs
 * fixed the formatting of the launcher docs
@@ -227,7 +227,7 @@ Error Messages / Semantic Checks
 * added user-facing errors when using incorrect types to index into a tuple
 * added information to generated stack traces about how to disable them
 * improved error messages when formal default values don't match type or kind
-* added a user-facing error message for fields defined using detupling syntax  
+* added a user-facing error message for fields defined using de-tupling syntax  
   (e.g., `var (x, y): t;` is not currently supported as a field declaration)
 * improved error messages for invalid `ref` task intents on `coforall` loops
 
@@ -262,8 +262,10 @@ Bug Fixes
 * fixed a bug where managed nilable classes could lose their nilability
 * fixed a bug where `manage` statements could not contain throwing code
 * fixed memory corruption for `in` intents when copies have a different type
+* fixed errors when using reordered, named arguments in promoted calls
 * fixed mixed-type varargs when the type constraint is generic-with-defaults
 * fixed incorrectly classifying certain generic fields as being concrete
+* fixed an internal error when an `extern proc` is specified incorrectly
 * fixed a compiler crash when using `--help-settings`
 * fixed a compiler crash when trying to use `atomic c_ptr(?)`
 * fixed a compiler crash with `--baseline` and wide pointers
@@ -342,7 +344,7 @@ Developer-oriented changes: Dyno Compiler improvements / changes
   - fixed split-initializing `const` variables using `out` formals
   - implemented `param` casts between `enum` values and `bytes`
   - handled integer overflow when assigning values to `enum` constants
-  - implemented elementwise tuple casting
+  - implemented element-wise tuple casting
   - fixed tuple expansion when passing tuple types to `type` formals
   - implemented more robust compiler-generated class casts
   - fixed a bug where generated serialization methods were incomplete
@@ -12947,7 +12949,7 @@ Highlights
 * added an early prototype interactive/interpreted mode for writing Chapel code  
   (see doc/technotes/README.chpl-ipe.rst for more details)
 * initial support for Python->Chapel interoperability via PyChapel  
-  (see http://pychapel.readthedocs.org/ for more details)
+  (see https://pychapel.readthedocs.org/ for more details)
 * made 'ugni'/'muxed' the default comm/tasking choices for cray-x* module users  
   (see doc/platforms/README.cray and doc/README.chplenv)
 * added a new 'chpltags' utility to generate emacs/vim tags for Chapel code  
@@ -13014,7 +13016,7 @@ New Features
 New Interoperability Features
 -----------------------------
 * initial support for Python->Chapel interoperability via PyChapel  
-  (see http://pychapel.readthedocs.org/ for more details)
+  (see https://pychapel.readthedocs.org/ for more details)
 * added a prototype capability to embed external dependencies to source via 'use'  
   (e.g., use "foo.h", "-lfoo"; is like adding these to the 'chpl' command-line)
 * added support for passing multidimensional arrays to external routines  
@@ -14823,7 +14825,7 @@ Highlights (see entries in subsequent categories for details)
 
 Environment Changes
 -------------------
-- added support for fish shell users (http://fishshell.com)  
+- added support for fish shell users (https://fishshell.com)  
   (see $CHPL_HOME/README and $CHPL_HOME/util/setchplenv.fish)
 
 Semantic Changes / Changes to Chapel Language
