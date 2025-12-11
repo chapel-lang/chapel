@@ -61,8 +61,8 @@ features.
 
 * **Changing the behavior of a stable feature** (`Breaking Change`)
 
-    A stable feature should only have its behavior change in the `preview`
-    edition. The `preview` edition collects changes that will be included in
+    A stable feature should only have its behavior change in the ``preview``
+    edition. The ``preview`` edition collects changes that will be included in
     the next edition.
 
     .. note::
@@ -74,8 +74,8 @@ features.
 
 * **Deprecation (and subsequent removal) of a stable feature** (`Breaking Change`)
 
-    A stable feature should only be deprecated in the `preview` edition. The
-    `preview` edition collects changes that will be included in the next
+    A stable feature should only be deprecated in the ``preview`` edition. The
+    ``preview`` edition collects changes that will be included in the next
     edition.
 
     .. note::
@@ -109,7 +109,7 @@ features.
     can be added as an unstable feature to any Chapel compiler release. This
     makes the feature available to users who wish to use it, without affecting
     the edition. When we feel the new feature is ready to be stabilized, it can
-    be marked as stable in a new edition (either being added to the `preview`
+    be marked as stable in a new edition (either being added to the ``preview``
     edition staging ground or directly to the next edition).
 
     Users who make use of the new feature should get an unstable warning,
