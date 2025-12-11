@@ -182,7 +182,6 @@ async def test_call_inlays_generic(client: LanguageClient):
 
 
 @pytest.mark.asyncio
-@pytest.mark.xfail
 async def test_call_inlays_in_range(client: LanguageClient):
     """
     Call inlays should only be generated in the requested range
