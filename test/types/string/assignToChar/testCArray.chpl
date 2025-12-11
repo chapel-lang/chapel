@@ -26,5 +26,9 @@ if t == 1 {
   testCArray("hello", uint(8));
 } else if t == 12 {
   testCArrayVal("hello", uint(8));
+} else if t == 13 {
+  testCArray("", uint(8)); // this case is technically valid because the zero-length string means we never assign to the c_array
+} else if t == 14 {
+  testCArrayVal("", uint(8));
 }
 

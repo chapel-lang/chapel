@@ -26,5 +26,10 @@ if t == 1 {
   testInit("hello", uint(8));
 } else if t == 12 {
   testInitVal("hello", uint(8));
+} else if t == 13 {
+  testInit("", uint(8));
+} else if t == 14 {
+  testInitVal("", uint(8));
 }
+
 

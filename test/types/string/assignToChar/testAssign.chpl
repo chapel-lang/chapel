@@ -19,12 +19,16 @@ if t == 1 {
 } else if t == 8 {
   testAssignVal("hello", int(8));
 } else if t == 9 {
-  testAssign('a', uint(8));
+  testAssign(b'a', uint(8));
 } else if t == 10 {
-  testAssignVal('a', uint(8));
+  testAssignVal(b'a', uint(8));
 } else if t == 11 {
-  testAssign("hello", uint(8));
+  testAssign(b"hello", uint(8));
 } else if t == 12 {
-  testAssignVal("hello", uint(8));
+  testAssignVal(b"hello", uint(8));
+} else if t == 13 {
+  testAssign("", uint(8));
+} else if t == 14 {
+  testAssignVal("", uint(8));
 }
 

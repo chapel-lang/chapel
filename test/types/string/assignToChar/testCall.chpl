@@ -26,5 +26,9 @@ if t == 1 {
   testCall("hello", uint(8));
 } else if t == 12 {
   testCallVal("hello", uint(8));
+} else if t == 13 {
+  testCallVal("", uint(8));
+} else if t == 14 {
+  testCallVal("", uint(8));
 }
 
