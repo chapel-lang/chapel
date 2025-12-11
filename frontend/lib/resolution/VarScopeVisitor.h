@@ -63,15 +63,30 @@ class VarScopeVisitor : public BranchSensitiveVisitor<VarFrame, MutatingResolved
 
   // ----- internal variables
   std::vector<const AstNode*> inAstStack;
+  // Stack of tuple init/assign RHS types, matching the number and order of
+  // tuple decls in the AST stack.
+  llvm::SmallVector<types::QualifiedType> tupleInitTypesStack;
+  llvm::SmallVector<const Tuple*> tupleInitExprsStack;
+  const uast::OpCall* inTupleAssignment = nullptr;
 
   // ----- methods to be implemented by specific analysis subclass
 
   /** Called for a variable declaration */
-  virtual void handleDeclaration(const uast::VarLikeDecl* ast, RV& rv) = 0;
+  virtual void handleDeclaration(const VarLikeDecl* ast,
+                                 const AstNode* parent,
+                                 const AstNode* initExpr,
+                                 const types::QualifiedType& initType,
+                                 Qualifier intentOrKind,
+                                 bool isFormal,
+                                 RV& rv) = 0;
   /** Called for an Identifier not used in one of the below cases */
   virtual void handleMention(const uast::Identifier* ast, ID varId, RV& rv) = 0;
   /** Called for <expr> = <expr> assignment pattern */
-  virtual void handleAssign(const uast::OpCall* ast, RV& rv) = 0;
+  virtual void handleAssign(const AstNode* lhsAst,
+                            const AstNode* rhsAst,
+                            const types::QualifiedType& rhsType,
+                            const OpCall* opAst,
+                            RV& rv) = 0;
   /** Called for an actual passed to an 'out' formal */
   virtual void handleOutFormal(const uast::Call* ast,
                                const uast::AstNode* actual,
@@ -148,7 +163,7 @@ class VarScopeVisitor : public BranchSensitiveVisitor<VarFrame, MutatingResolved
 
   /** Update initedVars if an assignment represents a split-init.
       Returns true if it was a split init. */
-  bool processSplitInitAssign(const OpCall* ast,
+  bool processSplitInitAssign(const AstNode* lhsAst,
                               const std::set<ID>& allSplitInitedVars,
                               RV& rv);
 
@@ -160,7 +175,20 @@ class VarScopeVisitor : public BranchSensitiveVisitor<VarFrame, MutatingResolved
                            RV& rv);
 
   /** Update initedVars for a declaration with an initExpression. */
-  bool processDeclarationInit(const VarLikeDecl* ast, RV& rv);
+  bool processDeclarationInit(const NamedDecl* lhsAst,
+                              const AstNode* initExpression,
+                              RV& rv);
+
+  /** Determine if the given AST node is a loop index variable. */
+  bool isLoopIndex(const AstNode* ast) const;
+  /** Get the outermost containing tuple declaration for the current
+      surrounding tuple nest, or nullptr if not within a tuple decl. */
+  const AstNode* outermostContainingTuple() const;
+  /** Get the index of the given AST within its the surrounding tuple
+      declaration.
+      Expects that we are currently within a tuple declaration that does
+      actually contain that ast. */
+  int indexWithinContainingTuple(const AstNode* ast) const;
 
   /** Returns the return or yield type of the function being processed */
   const types::QualifiedType& returnOrYieldType();
@@ -185,6 +213,9 @@ class VarScopeVisitor : public BranchSensitiveVisitor<VarFrame, MutatingResolved
 
   bool enter(const OpCall* ast, RV& rv);
   void exit(const OpCall* ast, RV& rv);
+
+  bool enter(const Tuple* ast, RV& rv);
+  void exit(const Tuple* ast, RV& rv);
 
   bool enter(const FnCall* ast, RV& rv);
   void exit(const FnCall* ast, RV& rv);

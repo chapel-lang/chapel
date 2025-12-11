@@ -1021,6 +1021,8 @@ bool InitResolver::handleAssignmentToField(const OpCall* node) {
   auto lhs = node->actual(0);
   auto rhs = node->actual(1);
 
+  // TODO: handle assignment to field(s) via tuple destructuring
+
   // TODO: Is 'field' or 'this.field' too strict of a pattern?
   auto [fieldId, isSuperField] = fieldIdFromPossibleMentionOfField(lhs);
 
