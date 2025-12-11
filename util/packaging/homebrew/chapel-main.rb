@@ -20,7 +20,7 @@ class Chapel < Formula
   depends_on "jemalloc"
   depends_on "llvm@20"
   depends_on "pkgconf"
-  depends_on "python@3.13"
+  depends_on "python@3.14"
 
   def llvm
     deps.map(&:to_formula).find { |f| f.name.match? "^llvm" }
@@ -38,8 +38,8 @@ class Chapel < Formula
 
   def install
     # Always detect Python used as dependency rather than needing aliased Python formula
-    python = "python3.13"
-    # It should be noted that this will expand to: 'for cmd in python3.13 python3 python python2; do'
+    python = "python3.14"
+    # It should be noted that this will expand to: 'for cmd in python3.14 python3 python python2; do'
     # in our find-python.sh script.
     inreplace "util/config/find-python.sh", /^(for cmd in )(python3 )/, "\\1#{python} \\2"
 
