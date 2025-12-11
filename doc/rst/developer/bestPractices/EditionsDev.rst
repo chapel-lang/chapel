@@ -65,8 +65,12 @@ features.
     edition. The `preview` edition collects changes that will be included in
     the next edition.
 
-    Users can get warnings about code that will need to be migrated by using
-    `--flag-edition-changes <TransitionFlag>`_.
+    .. note::
+
+        An unimplemented feature is the
+        `--flag-edition-changes <TransitionFlag>`_ flag, which will warn users
+        in a given edition about code that will need to be migrated in the next
+          edition.
 
 * **Deprecation (and subsequent removal) of a stable feature** (`Breaking Change`)
 
@@ -74,8 +78,12 @@ features.
     `preview` edition collects changes that will be included in the next
     edition.
 
-    Users can get deprecation warnings about code that will need to be migrated
-    by using `--flag-edition-changes <TransitionFlag>`_.
+    .. note::
+
+        An unimplemented feature is the
+        `--flag-edition-changes <TransitionFlag>`_ flag, which will warn users
+        in a given edition about code that will need to be migrated in the next
+          edition.
 
 * **Changing the behavior of an unstable feature** (`Non-Breaking Change`)
 
