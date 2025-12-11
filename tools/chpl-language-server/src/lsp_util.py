@@ -1014,6 +1014,18 @@ class FileInfo:
 
             self._search_instantiations(fn, via=sig)
 
+    def _invalidate_inst_segments(
+        self,
+    ):
+        """
+        Once we've collected new instantiations, remove any instantiation
+        segments that were built with instantiations we no longer have.
+        """
+        for decl, inst in self.instantiation_segments.elts:
+            available_insts = self.instantiations.get(decl.node.unique_id())
+            if not available_insts or inst not in available_insts:
+                self.instantiation_segments.clear_range(decl.rng)
+
     def find_decl_by_unique_id(self, unique_id: str) -> Optional[NodeAndRange]:
         """
         Traverse the (location-key'ed) definition segment table and
@@ -1127,6 +1139,7 @@ class FileInfo:
         if self.use_resolver:
             for ast in asts:
                 self._search_instantiations(ast)
+                self._invalidate_inst_segments()
             self.call_segments.sort()
 
     def called_function_at_position(

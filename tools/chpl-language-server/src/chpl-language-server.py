@@ -766,7 +766,9 @@ def run_lsp():
             fi, _ = ls.get_file_info(text_doc.uri)
             fi.earliest_changed_pos = None
 
+        # note: this also recomputes uses, definitions, etc.
         diag = ls.build_diagnostics(text_doc.uri)
+
         ls.publish_diagnostics(text_doc.uri, diag)
         ls.lsp.send_request_async(WORKSPACE_INLAY_HINT_REFRESH)
         ls.lsp.send_request_async(WORKSPACE_SEMANTIC_TOKENS_REFRESH)
