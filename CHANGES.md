@@ -162,8 +162,6 @@ Error Messages / Semantic Checks
 Error Messages / Semantic Checks for Libraries
 ----------------------------------------------
 * added bounds-checking for improper usage of `BitOps.rotl` and `BitOps.rotr`  
-  (see https://chapel-lang.org/docs/2.7/modules/standard/BitOps.html#BitOps.rotl  
-   and https://chapel-lang.org/docs/2.7/modules/standard/BitOps.html#BitOps.rotr)
 * improved the error when creating a `blockCycDist` with a block size of 0
 
 Runtime Library Improvements
@@ -219,7 +217,7 @@ Bug Fixes for the Runtime
 Developer-oriented changes: Documentation
 -----------------------------------------
 * added documentation for how developers can update Python dependencies  
-  (see https://chapel-lang.org/docs/2.7/developer/bestPractices/PythonDeps.html#readme-python-deps)
+  (see https://chapel-lang.org/docs/2.7/developer/bestPractices/PythonDeps.html)
 * improved the process of running `extract-docs.py` for updating Chapel prereqs
 
 Developer-oriented changes: Module changes
