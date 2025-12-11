@@ -43,12 +43,6 @@ Updates to Chapel Prerequisites
 * updated Linux prereqs to include `libunwind` to get stack traces by default  
   (see https://chapel-lang.org/docs/2.7/usingchapel/prereqs.html#installation)
 
-Syntactic / Naming Changes
---------------------------
-
-New Language Features
----------------------
-
 Language Feature Improvements
 -----------------------------
 * added support for `.domain` queries on array types, as with array values  
@@ -67,34 +61,10 @@ Deprecated / Unstable / Removed Language Features
 * remove the deprecated `Python.importModule` method
 * removed the deprecated `HDFS` module
 
-Namespace Changes
------------------
-
-New Standard Library Features
------------------------------
-
 Changes / Feature Improvements in Standard Libraries
 ----------------------------------------------------
 * made `Debugger.breakpoint` more robust w.r.t. compiler optimizations  
 * improved `Debugger.breakpoint` when automatically switching stack frames
-
-New Package Module Features
----------------------------
-
-Changes / Feature Improvements in Package Modules
--------------------------------------------------
-
-New Standard Layout and Distribution Features
----------------------------------------------
-
-Name Changes for Standard Layouts and Distributions
----------------------------------------------------
-
-Name Changes in Libraries
--------------------------
-
-Deprecated / Unstable / Removed Library Features
-------------------------------------------------
 
 Compiler Flags
 --------------
@@ -110,12 +80,6 @@ Compiler Flags
   (see https://chapel-lang.org/docs/2.7/usingchapel/man.html#man-print-passes-memory)
 * removed all previously deprecated compiler flag environment variables  
   (e.g., `CHPL_NO_CHECKS`, `CHPL_NO_NIL_CHECKS`, `CHPL_NO_CODEGEN`, etc.)
-
-Compiler Improvements
----------------------
-
-GPU Computing
--------------
 
 Debugging Improvements
 ----------------------
@@ -142,9 +106,6 @@ Tool Improvements
 * fixed incorrect call inlays for method calls
 * improved the startup performance of `chplcheck`
 
-Syntax Highlighters
--------------------
-
 Documentation Improvements
 --------------------------
 * improved the documentation for `CHPL_TARGET_CPU`  
@@ -153,12 +114,6 @@ Documentation Improvements
 * removed remaining mentions of `single` from the docs
 * fixed the formatting of the launcher docs
 
-Language Specification Improvements
------------------------------------
-
-Documentation Improvements for Libraries
-----------------------------------------
-
 Documentation Improvements for Tools
 ------------------------------------
 * added more examples for `chplcheck` rules  
@@ -166,30 +121,9 @@ Documentation Improvements for Tools
 * extended docs for using `mason` test runners in VSCode  
   (see https://chapel-lang.org/docs/2.7/usingchapel/editor-support.html#building-and-running-chapel-code)
 
-Documentation Improvements to the 'man' Pages
----------------------------------------------
-
-Platform-Specific Documentation Improvements
---------------------------------------------
-
-Technical Note Improvements
----------------------------
-
-Example Codes
--------------
-
 Performance Optimizations / Improvements
 ----------------------------------------
 * removed checks in `integral.safeCast(bool)` when compiling with `--no-checks`
-
-Improvements to Compile Times
------------------------------
-
-Generated Code Improvements
----------------------------
-
-Memory Improvements
--------------------
 
 Configuration / Build Changes
 -----------------------------
@@ -216,12 +150,6 @@ Portability / Platform-specific Improvements
 * fixed `CHPL_LAUNCHER=mpirun4ofi` when using OpenMPI 5.x
 * deprecated support for Cray XC and `CHPL_COMM=ugni`
 
-Portability / Build Improvements for GPUs
------------------------------------------
-
-Generated Executable Flags
---------------------------
-
 Error Messages / Semantic Checks
 --------------------------------
 * added user-facing errors when using incorrect types to index into a tuple
@@ -237,12 +165,6 @@ Error Messages / Semantic Checks for Libraries
   (see https://chapel-lang.org/docs/2.7/modules/standard/BitOps.html#BitOps.rotl  
    and https://chapel-lang.org/docs/2.7/modules/standard/BitOps.html#BitOps.rotr)
 * improved the error when creating a `blockCycDist` with a block size of 0
-
-Error Messages for Build Issues
--------------------------------
-
-Launchers
----------
 
 Runtime Library Improvements
 ----------------------------
@@ -278,9 +200,6 @@ Bug Fixes for Libraries
 -----------------------
 * fixed protobuf builds for the latest version of 'protobuf'
 
-Bug Fixes for GPU Computing
----------------------------
-
 Bug Fixes for Tools
 -------------------
 * fixed the quoting of arguments in `chpl-parallel-dbg`
@@ -297,17 +216,11 @@ Bug Fixes for the Runtime
 -------------------------
 * fixed the logic for detecting `addr2line` to improve stack trace generation
 
-Developer-oriented changes: Process
------------------------------------
-
 Developer-oriented changes: Documentation
 -----------------------------------------
 * added documentation for how developers can update Python dependencies  
   (see https://chapel-lang.org/docs/2.7/developer/bestPractices/PythonDeps.html#readme-python-deps)
 * improved the process of running `extract-docs.py` for updating Chapel prereqs
-
-Developer-oriented changes: Syntactic / Naming Changes
-------------------------------------------------------
 
 Developer-oriented changes: Module changes
 ------------------------------------------
@@ -317,12 +230,6 @@ Developer-oriented changes: Module changes
 Developer-oriented changes: Performance improvements
 ----------------------------------------------------
 * improved the performance and memory requirements of `gen_release`
-
-Developer-oriented changes: Makefile / Build-time changes
----------------------------------------------------------
-
-Developer-oriented changes: Compiler Flags
-------------------------------------------
 
 Developer-oriented changes: Compiler improvements / changes
 -----------------------------------------------------------
@@ -380,9 +287,6 @@ Developer-oriented changes: Dyno Compiler improvements / changes
   - fixed a bug when escaping string literals
   - fixed a bug preventing `new` expressions for generic types
 
-Developer-oriented changes: GPU support
----------------------------------------
-
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
 * adjusted the runtime build to always use the gnu11 C standard
@@ -390,9 +294,6 @@ Developer-oriented changes: Runtime improvements
 * added better error handling for `libunwind` failures
 * renamed `gdb.c` to `debugger.c` for clarity and generality
 * removed the no-longer-used `numa` locale model header file
-
-Developer-oriented changes: Platform-specific bug fixes
--------------------------------------------------------
 
 Developer-oriented changes: Testing System
 ------------------------------------------
@@ -403,9 +304,6 @@ Developer-oriented changes: Tool Improvements
 * added inlays for computed `enum` constant values to `chpl-language-server`  
   (see https://chapel-lang.org/docs/2.7/tools/chpl-language-server/chpl-language-server.html#experimental-resolver-features)
 * started using the Python 3.10 stable ABI for `chapel-py`
-
-Developer-oriented changes: Utilities
--------------------------------------
 
 
 version 2.6
