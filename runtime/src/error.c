@@ -31,6 +31,7 @@
 #include "chplexit.h"
 #include "chpl-mem.h"
 #include "chpl-env.h"
+#include "chpl-exec.h"
 
 #include <stdarg.h>
 #include <string.h>
@@ -67,10 +68,10 @@ static int chpl_unwind_refineGetLineNum(void *addr) {
   Dl_info info;
   intptr_t relativeAddr;
   char buf[2048];
+  char output[2048];
   int i = 0;
   int line;
-  char* p;
-  FILE *f;
+  char* bufPtr;
   ssize_t path_len;
 
 
@@ -154,27 +155,31 @@ static int chpl_unwind_refineGetLineNum(void *addr) {
   }
   i += path_len;
 
-  rc = snprintf(&buf[i], sizeof(buf)-i,
-                " %p", (void*)relativeAddr);
+  // Attempt to invoke addr2line with the relative address
+  rc = snprintf(&buf[i], sizeof(buf)-i, " %p", (void*)relativeAddr);
   if (rc+1 >= sizeof(buf)-i)
     return 0; // command too long for buffer - give up
 
-  f = popen(buf, "r");
-  if (f == NULL)
-    return 0; // popen failed - give up
-
-  p = fgets(buf, sizeof(buf), f);
-  if (p == NULL){
-    // couldn't read from the pipe - close and give up
-    pclose(f);
+  if (!chpl_get_command_output(buf, output, sizeof(output)))
     return 0;
-  }
-  pclose(f);
-  // file name is until ':'
-  while (*p++ != ':') { }
-  line = atoi(p);
 
+  for (bufPtr = output; *bufPtr++ != ':';) { }
+  line = atoi(bufPtr);
+  if (line != 0)
+    return line;
+
+  // addr2line on a relative address didn't work, try an absolute address
+  rc = snprintf(&buf[i], sizeof(buf)-i, " %p", addr);
+  if (rc+1 >= sizeof(buf)-i)
+    return 0; // command too long for buffer - give up
+
+  if (!chpl_get_command_output(buf, output, sizeof(output)))
+    return 0;
+
+  for (bufPtr = output; *bufPtr++ != ':';) { }
+  line = atoi(bufPtr);
   return line;
+
 }
 #elif defined __APPLE__
 // invoke atos to get line number information
@@ -206,26 +211,18 @@ static int chpl_unwind_refineGetLineNum(void *addr) {
     return 0;
   }
 
-  FILE* f = popen(buf, "r");
-  if (f == NULL)
-    return 0; // popen failed - give up
-
-  char* p = fgets(buf, sizeof(buf), f);
-  if (p == NULL) {
-    // couldn't read from the pipe - close and give up
-    pclose(f);
+  if (!chpl_get_command_output(buf, buf, sizeof(buf)))
     return 0;
-  }
-  pclose(f);
+
   // format is '<FN_NAME> (in <REL_EXEC_NAME>) (<FILENAME>:<LINENUME>)
   // search from the end of the string backwards for ':'
-  p = buf + strlen(buf) - 1;
-  while (p > buf && *p != ':') { p--; }
-  if (p == buf)
+  char* bufPtr = buf + strlen(buf) - 1;
+  while (bufPtr > buf && *bufPtr != ':') { bufPtr--; }
+  if (bufPtr == buf)
     return 0; // didn't find ':' - give up
-  p++; // move past ':'
+  bufPtr++; // move past ':'
 
-  int line = atoi(p);
+  int line = atoi(bufPtr);
   return line;
 }
 #else

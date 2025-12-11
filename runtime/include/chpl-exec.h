@@ -21,6 +21,8 @@
 #ifndef _chpl_exec_h_
 #define _chpl_exec_h_
 
+#include "chpltypes.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -34,6 +36,14 @@ extern "C" {
 int chpl_invoke_using_system(const char* command,
                              const char* description,
                              int ignore_status);
+
+/*
+  Invokes the given command using popen() and captures its output
+  into the provided buffer. The output buffer is guaranteed to be
+  null-terminated. Returns true on success, false on failure.
+*/
+chpl_bool chpl_get_command_output(const char* command,
+                                  char* output, size_t output_size);
 
 #ifdef __cplusplus
 }
