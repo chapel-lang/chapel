@@ -1,6 +1,27 @@
 Release Changes List
 ====================
 
+TODO:
+o '(http:' -> '(see http:'
+o sort items within categories
+o check placement of items into categories
+o check for ' vs `
+o fulfill TODOs
+o check man page or util/chpl-completion.bash for new compiler flags
+o check test/release/examples
+o check for docs/2.4/ links
+o check forced linebreaks
+o check initial '*'
+o check for initial 'A-Z'
+o check for 'see:'
+o check for changes put too far down in file
+o add highlights
+o spellcheck
+o remove empty sections
+o check ordering of categories relative to one another
+o check links
+
+
 version 2.7
 ===========
 
@@ -8,11 +29,19 @@ released December 18, 2025
 
 Highlights (see the sections that follow for details)
 -----------------------------------------------------
+* Chapel's first release since becoming an HPSF / Linux Foundation project  
+  (see https://hpsf.io/blog/2025/hpsf-welcomes-chapel/)
+* a new `--vector-library` flag to simplify using optimized back-end libraries
+* stack traces for errors by default in most configurations and builds
+* improved debugging, esp. when using multiple locales and the global namespace
+* many Mason advances, including build improvements for multi-language packages
+* several Linux package improvements in terms of flexibility and features
+* many other improvements in terms of features, bug fixes, docs, error msgs
 
 Updates to Chapel Prerequisites
 -------------------------------
-* updated Linux prereqs to include `libunwind` for best stack trace results  
-  (see https://chapel-lang.org/docs/main/usingchapel/prereqs.html#installation)
+* updated Linux prereqs to include `libunwind` to get stack traces by default  
+  (see https://chapel-lang.org/docs/2.7/usingchapel/prereqs.html#installation)
 
 Syntactic / Naming Changes
 --------------------------
@@ -22,8 +51,10 @@ New Language Features
 
 Language Feature Improvements
 -----------------------------
-* added support for `.domain` queries on array types in addition to values
-* added support for promoting `min()`/`max()` (e.g., over array arguments)
+* added support for `.domain` queries on array types, as with array values  
+  (e.g., `proc foo(type t) { ...t.domain... }  foo([1..3] real);` now works)
+* added support for promoting `min()`/`max()` over general iterable exprs  
+  (e.g., `min([i in 1..4] i, [4, 3, 2, 1])` now works)
 
 Semantic Changes / Changes to the Language Definition
 -----------------------------------------------------
@@ -33,7 +64,7 @@ Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
 * removed the deprecated `IO.ioendian` type
 * removed `Sort.sort()` and `.isSorted()` overloads with deprecated arguments
-* remove deprecated `Python.importModule` method
+* remove the deprecated `Python.importModule` method
 * removed the deprecated `HDFS` module
 
 Namespace Changes
@@ -67,7 +98,7 @@ Deprecated / Unstable / Removed Library Features
 
 Compiler Flags
 --------------
-* added new `--vector-library` flag to enable using vectorization libraries  
+* added a new `--vector-library` flag to enable using vectorization libraries  
   (see https://chapel-lang.org/docs/2.7/usingchapel/man.html#man-vector-library)
 * added `--debug-safe-optimizations-only` to disable key opts. for debugging  
   (see https://chapel-lang.org/docs/2.7/usingchapel/man.html#man-debug-safe-optimizations-only)
@@ -75,7 +106,7 @@ Compiler Flags
   (see https://chapel-lang.org/docs/2.7/usingchapel/man.html#man-debug-symbols)
 * changed `--debug` to imply `-g` and `--debug-safe-optimizations-only`  
   (see https://chapel-lang.org/docs/2.7/usingchapel/man.html#man-debug)
-* added `--print-passes-memory` to report memory usage of compiler passes  
+* added `--print-passes-memory` to report memory used by compiler passes  
   (see https://chapel-lang.org/docs/2.7/usingchapel/man.html#man-print-passes-memory)
 * removed all previously deprecated compiler flag environment variables  
   (e.g., `CHPL_NO_CHECKS`, `CHPL_NO_NIL_CHECKS`, `CHPL_NO_CODEGEN`, etc.)
@@ -89,20 +120,20 @@ GPU Computing
 Debugging Improvements
 ----------------------
 * added wide pointer resolution to `chpl-parallel-dbg`
-* added debug info for complex numbers, syncs, and atomics
-* improved generated debug info, especially for classes and wide pointers
 * improved the debugger's pretty printing of `uint(8)` and `int(8)`
-* updated the debug info for `ref`'s to be treated as references, not pointers
 * hid internal module names for types like `string` and tuples
+* added debug inforomation for complex numbers, syncs, and atomics
+* improved generated debug info, especially for classes and wide pointers
+* updated the debug info for `ref`'s to be treated as references, not pointers
 * removed compiler-inserted temporary variables from debug info where possible
 
 Tool Improvements
 -----------------
+* improved the ergonomics of building `mason`  
+  (see https://chapel-lang.org/docs/2.7/tools/mason/start/installation.html)
 * added a "prerequisites" capability to Mason to support interoperability  
   (see TODO)
-* improved the integration of `mason` with `chpl-language-server`
-* improved the ergonomics of building `mason`
-  (see https://chapel-lang.org/docs/2.7/tools/mason/start/installation.html)
+* improved the integration of `mason` into `chpl-language-server`
 * improved the performance of `mason` by building it with optimizations
 * fixed a bug where `mason` failed to detect changes in submodules
 * made bug fixes and other minor improvements to `mason test`
@@ -115,7 +146,7 @@ Syntax Highlighters
 
 Documentation Improvements
 --------------------------
-* improved the docs for `CHPL_TARGET_CPU`  
+* improved the documentation for `CHPL_TARGET_CPU`  
   (see https://chapel-lang.org/docs/2.7/usingchapel/chplenv.html#chpl-target-cpu)
 * added more documentation about Chapel language evolution through editions (TODO - not yet merged)
 * updated mentions of "generated C code" to use "generated code" for generality
@@ -166,11 +197,10 @@ Configuration / Build Changes
   (see https://chapel-lang.org/docs/2.7/usingchapel/chplenv.html#chpl-unwind)
 * added `make check` support for `CHPL_LAUNCHER=mpirun4ofi`
 * improved the build process for finding 'libfabric' and MPI installations
-* deprecated support for Cray XC and `CHPL_COMM=ugni`
 
 Updates to Chapel's Release Formats
 -----------------------------------
-* improved Linux packages to:
+* improved the pre-built Linux packages to:
   - enable user code specialization by default
   - include support for the GASNet+SMP communication layer
   - include support for using sanitizers with LLVM builds
@@ -184,6 +214,7 @@ Portability / Platform-specific Improvements
 * improved generated debug info on MacOS by using the correct `dsymutil` tool
 * updated the set of CPU targets automatically detected from `craype` modules
 * fixed `CHPL_LAUNCHER=mpirun4ofi` when using OpenMPI 5.x
+* deprecated support for Cray XC and `CHPL_COMM=ugni`
 
 Portability / Build Improvements for GPUs
 -----------------------------------------
@@ -194,10 +225,10 @@ Generated Executable Flags
 Error Messages / Semantic Checks
 --------------------------------
 * added user-facing errors when using incorrect types to index into a tuple
-* added a user-facing error message for fields defined using detupling syntax  
-  (e.g., `var (x, y): t;` is not currently supported as a field)
 * added information to generated stack traces about how to disable them
 * improved error messages when formal default values don't match type or kind
+* added a user-facing error message for fields defined using detupling syntax  
+  (e.g., `var (x, y): t;` is not currently supported as a field declaration)
 * improved error messages for invalid `ref` task intents on `coforall` loops
 
 Error Messages / Semantic Checks for Libraries
@@ -205,7 +236,7 @@ Error Messages / Semantic Checks for Libraries
 * added bounds-checking for improper usage of `BitOps.rotl` and `BitOps.rotr`  
   (see https://chapel-lang.org/docs/2.7/modules/standard/BitOps.html#BitOps.rotl  
    and https://chapel-lang.org/docs/2.7/modules/standard/BitOps.html#BitOps.rotr)
-* improved the error when creating a `blockCycDist` with block size of 0
+* improved the error when creating a `blockCycDist` with a block size of 0
 
 Error Messages for Build Issues
 -------------------------------
@@ -239,11 +270,11 @@ Bug Fixes
 * added proper handling of unknown files during codegen of line numbers
 * fixed bugs relating to `libunwind` trying to link with compression libraries
 * fixed dSYM generation when `CHPL_LAUNCHER!=none`
-* fixed printing of certain obfuscated internal errors
+* fixed the printing of certain obfuscated internal errors
 
 Bug Fixes for Libraries
 -----------------------
-* fixed protobuf builds with the latest version of protobuf
+* fixed protobuf builds for the latest version of 'protobuf'
 
 Bug Fixes for GPU Computing
 ---------------------------
@@ -262,14 +293,14 @@ Bug Fixes for Build Issues
 
 Bug Fixes for the Runtime
 -------------------------
-* fixed logic for detecting `addr2line` to improve stack trace generation
+* fixed the logic for detecting `addr2line` to improve stack trace generation
 
 Developer-oriented changes: Process
 -----------------------------------
 
 Developer-oriented changes: Documentation
 -----------------------------------------
-* added developer-oriented documentation on how to update Python dependencies  
+* added documentation for how developers can update Python dependencies  
   (see https://chapel-lang.org/docs/2.7/developer/bestPractices/PythonDeps.html#readme-python-deps)
 * improved the process of running `extract-docs.py` for updating Chapel prereqs
 
@@ -294,10 +325,10 @@ Developer-oriented changes: Compiler Flags
 Developer-oriented changes: Compiler improvements / changes
 -----------------------------------------------------------
 * improved the debuggability of the compiler during code generation
-* improved generated LLVM code readability with `-fno-discard-value-names`
+* improved readability of generated LLVM code with `-fno-discard-value-names`
 * added `CHPL_CHECK_MAX_LOCALES` to `make check` to support constrained systems
 * procedure-pointer types now support file/line numbers
-* procedure-pointer types can now be passed wide-reference types
+* procedure-pointer types can now accept wide-reference types
 * improved resolution and code generation of procedure-pointer types
 * cleaned up the implementation of the `c_string` and `c_fn_ptr` types
 * removed the unused `doc` field in the compiler AST
@@ -305,11 +336,11 @@ Developer-oriented changes: Compiler improvements / changes
 Developer-oriented changes: Dyno Compiler improvements / changes
 ----------------------------------------------------------------
 * made numerous improvements to the Dyno resolver for types and calls:
-  - implemented the 'strict' error handling mode
+  - implemented Chapel's 'strict' error handling mode
   - implemented split-initialization for module-level variables
   - improved enforcing type constraints on split-initialized variables
   - fixed split-initializing `const` variables using `out` formals
-  - implemented `param` casts between `enum` types and `bytes`
+  - implemented `param` casts between `enum` values and `bytes`
   - handled integer overflow when assigning values to `enum` constants
   - implemented elementwise tuple casting
   - fixed tuple expansion when passing tuple types to `type` formals
@@ -318,7 +349,7 @@ Developer-oriented changes: Dyno Compiler improvements / changes
   - implemented C pointer support in `extern` blocks
   - fixed a bug preventing passing strings to `extern` functions
   - fixed a bug for missing `extern type` initializations
-  - implemented partially instantiating generic types
+  - implemented partially instantiation of generic types
   - implemented treating array formals as distribution-generic
   - vastly improved queries for array formal element types and domains
   - allowed `ref` formals to accept coerced initial values
@@ -335,14 +366,13 @@ Developer-oriented changes: Dyno Compiler improvements / changes
   - added support for range literals
   - added support for `ref` declarations
   - added support for `param` for-loops
-  - added support for tuple unpacking (e.g., `foo((...myTuple))`)
-  - added support for grouped assignment (e.g., `(a,b) = foo();`)
-  - added support for tuple-decl initialization (e.g., `var (x,y) = bar();`)
+  - added support for tuple expansion (e.g., `foo((...myTuple))`)
+  - added support for tuple-based assignment and initialization
+    (e.g., `(a,b) = foo();` or `var (x,y) = bar();`)
   - added support for paren-less methods on types (e.g., `var x = MyType.foo;`)
   - added support for integral-to-`enum` casts
   - added support for implicit method calls
-  - significantly improved support for inheritance 
-  - significantly improved support for generic types
+  - significantly improved support for inheritance and generic types
   - significantly improved support for copy/move semantics
   - improved support for `extern` types
   - fixed a bug when escaping string literals
@@ -354,10 +384,10 @@ Developer-oriented changes: GPU support
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
 * adjusted the runtime build to always use the gnu11 C standard
-* refactored the stack unwinding logic to improve code reuse/maintainability
+* refactored the stack unwinding logic to improve code re-use/maintainability
 * added better error handling for `libunwind` failures
-* renamed `gdb.c` to `debugger.c` for clarity
-* removed the unused `numa` locale model header file
+* renamed `gdb.c` to `debugger.c` for clarity and generality
+* removed the no-longer-used `numa` locale model header file
 
 Developer-oriented changes: Platform-specific bug fixes
 -------------------------------------------------------
