@@ -55,7 +55,9 @@ Tool Improvements
 * made bug fixes and other minor improvements to `mason test`
 * started to modernize Mason's integration with Spack
 * started to improve Mason's logging capabilities
-* fixed incorrect call inlays for method calls
+* added inlays for computed `enum` constant values to `chpl-language-server`  
+  (see https://chapel-lang.org/docs/2.7/tools/chpl-language-server/chpl-language-server.html#experimental-resolver-features)
+* fixed incorrect call inlays for method calls in `chpl-language-server`
 * improved the startup performance of `chplcheck`
 
 Updates to Chapel Prerequisites
@@ -68,7 +70,7 @@ Configuration / Build Changes
 * made `CHPL_UNWIND` default to `system` when possible, otherwise `bundled`  
   (see https://chapel-lang.org/docs/2.7/usingchapel/chplenv.html#chpl-unwind)
 * added `make check` support for `CHPL_LAUNCHER=mpirun4ofi`
-* improved the build process for finding 'libfabric' and MPI installations
+* improved the build process for finding `libfabric` and MPI installations
 
 Updates to Chapel's Release Formats
 -----------------------------------
@@ -99,7 +101,7 @@ Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
 * removed the deprecated `IO.ioendian` type
 * removed `Sort.sort()` and `.isSorted()` overloads with deprecated arguments
-* remove the deprecated `Python.importModule` method
+* removed the deprecated `Python.importModule` method
 * removed the deprecated `HDFS` module
 
 Changes / Feature Improvements in Standard Libraries
@@ -279,8 +281,6 @@ Developer-oriented changes: Testing System
 
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
-* added inlays for computed `enum` constant values to `chpl-language-server`  
-  (see https://chapel-lang.org/docs/2.7/tools/chpl-language-server/chpl-language-server.html#experimental-resolver-features)
 * started using the Python 3.10 stable ABI for `chapel-py`
 
 
