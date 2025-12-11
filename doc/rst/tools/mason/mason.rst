@@ -129,6 +129,7 @@ that make using mason worthwhile.
    guide/chapeldependencies
    guide/gitdependencies
    guide/externaldependencies
+   guide/prereqs
    guide/masonregistry
    guide/submitting
    guide/manifestfile
