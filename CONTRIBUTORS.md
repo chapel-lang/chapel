@@ -17,6 +17,7 @@ Contributors to the Chapel 2.7 release
 * Guillaume Helbecque, individual contributor
 * Engin Kayraklioglu, [HPE]
 * David Longnecker, [HPE]
+* Benson Muite, individual contributor
 * Anna Rift, [HPE]
 
 Contributors to previous releases
