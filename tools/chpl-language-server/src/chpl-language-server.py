@@ -1165,7 +1165,7 @@ def run_lsp():
                     action = CodeLens(
                         data=(decl.node.unique_id(), i),
                         command=Command(
-                            "Show instantiation",
+                            "Show Instantiation",
                             "chpl-language-server/showInstantiation",
                             [
                                 params.text_document.uri,
