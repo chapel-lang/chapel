@@ -17,8 +17,8 @@ TODO:
 * check for changes put too far down in file
 * add highlights
 * spellcheck
-o remove empty sections
-o check ordering of categories relative to one another
+* remove empty sections
+* check ordering of categories relative to one another
 o check links
 
 
@@ -37,34 +37,6 @@ Highlights (see the sections that follow for details)
 * many Mason advances, including build improvements for multi-language packages
 * several Linux package improvements in terms of flexibility and features
 * many other improvements in terms of features, bug fixes, docs, error msgs
-
-Updates to Chapel Prerequisites
--------------------------------
-* updated Linux prereqs to include `libunwind` to get stack traces by default  
-  (see https://chapel-lang.org/docs/2.7/usingchapel/prereqs.html#installation)
-
-Language Feature Improvements
------------------------------
-* added support for `.domain` queries on array types, as with array values  
-  (e.g., `proc foo(type t) { ...t.domain... }  foo([1..3] real);` now works)
-* added support for promoting `min()`/`max()` over general iterable exprs  
-  (e.g., `min([i in 1..4] i, [4, 3, 2, 1])` now works)
-
-Semantic Changes / Changes to the Language Definition
------------------------------------------------------
-* `manage` statements in non-throwing contexts can now contain throwing code
-
-Deprecated / Unstable / Removed Language Features
--------------------------------------------------
-* removed the deprecated `IO.ioendian` type
-* removed `Sort.sort()` and `.isSorted()` overloads with deprecated arguments
-* remove the deprecated `Python.importModule` method
-* removed the deprecated `HDFS` module
-
-Changes / Feature Improvements in Standard Libraries
-----------------------------------------------------
-* made `Debugger.breakpoint` more robust w.r.t. compiler optimizations  
-* improved `Debugger.breakpoint` when automatically switching stack frames
 
 Compiler Flags
 --------------
@@ -106,24 +78,10 @@ Tool Improvements
 * fixed incorrect call inlays for method calls
 * improved the startup performance of `chplcheck`
 
-Documentation Improvements
---------------------------
-* improved the documentation for `CHPL_TARGET_CPU`  
-  (see https://chapel-lang.org/docs/2.7/usingchapel/chplenv.html#chpl-target-cpu)
-* updated mentions of "generated C code" to use "generated code" for generality
-* removed remaining mentions of `single` from the docs
-* fixed the formatting of the launcher docs
-
-Documentation Improvements for Tools
-------------------------------------
-* added more examples for `chplcheck` rules  
-  (see https://chapel-lang.org/docs/2.7/tools/chplcheck/chplcheck.html#current-rules)
-* extended docs for using `mason` test runners in VSCode  
-  (see https://chapel-lang.org/docs/2.7/usingchapel/editor-support.html#building-and-running-chapel-code)
-
-Performance Optimizations / Improvements
-----------------------------------------
-* removed checks in `integral.safeCast(bool)` when compiling with `--no-checks`
+Updates to Chapel Prerequisites
+-------------------------------
+* updated Linux prereqs to include `libunwind` to get stack traces by default  
+  (see https://chapel-lang.org/docs/2.7/usingchapel/prereqs.html#installation)
 
 Configuration / Build Changes
 -----------------------------
@@ -142,6 +100,33 @@ Updates to Chapel's Release Formats
   - use `libunwind` to enable stack traces
 * added a Fedora 43 Linux package and retired the Fedora 41 package
 
+Language Feature Improvements
+-----------------------------
+* added support for `.domain` queries on array types, as with array values  
+  (e.g., `proc foo(type t) { ...t.domain... }  foo([1..3] real);` now works)
+* added support for promoting `min()`/`max()` over general iterable exprs  
+  (e.g., `min([i in 1..4] i, [4, 3, 2, 1])` now works)
+
+Semantic Changes / Changes to the Language Definition
+-----------------------------------------------------
+* `manage` statements in non-throwing contexts can now contain throwing code
+
+Performance Optimizations / Improvements
+----------------------------------------
+* removed checks in `integral.safeCast(bool)` when compiling with `--no-checks`
+
+Deprecated / Unstable / Removed Language Features
+-------------------------------------------------
+* removed the deprecated `IO.ioendian` type
+* removed `Sort.sort()` and `.isSorted()` overloads with deprecated arguments
+* remove the deprecated `Python.importModule` method
+* removed the deprecated `HDFS` module
+
+Changes / Feature Improvements in Standard Libraries
+----------------------------------------------------
+* made `Debugger.breakpoint` more robust w.r.t. compiler optimizations  
+* improved `Debugger.breakpoint` when automatically switching stack frames
+
 Portability / Platform-specific Improvements
 --------------------------------------------
 * improved the quality of stack traces on MacOS using `atos`
@@ -149,6 +134,21 @@ Portability / Platform-specific Improvements
 * updated the set of CPU targets automatically detected from `craype` modules
 * fixed `CHPL_LAUNCHER=mpirun4ofi` when using OpenMPI 5.x
 * deprecated support for Cray XC and `CHPL_COMM=ugni`
+
+Documentation Improvements
+--------------------------
+* improved the documentation for `CHPL_TARGET_CPU`  
+  (see https://chapel-lang.org/docs/2.7/usingchapel/chplenv.html#chpl-target-cpu)
+* updated mentions of "generated C code" to use "generated code" for generality
+* removed remaining mentions of `single` from the docs
+* fixed the formatting of the launcher docs
+
+Documentation Improvements for Tools
+------------------------------------
+* added more examples for `chplcheck` rules  
+  (see https://chapel-lang.org/docs/2.7/tools/chplcheck/chplcheck.html#current-rules)
+* extended docs for using `mason` test runners in VSCode  
+  (see https://chapel-lang.org/docs/2.7/usingchapel/editor-support.html#building-and-running-chapel-code)
 
 Error Messages / Semantic Checks
 --------------------------------
