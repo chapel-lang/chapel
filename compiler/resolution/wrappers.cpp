@@ -308,7 +308,12 @@ static void adjustForOperatorMethod(FnSymbol* fn, CallInfo& info,
         info.actuals.clear();
         info.actualNames.clear();
         for_actuals(actual, info.call) {
-          SymExpr* se = toSymExpr(actual);
+          SymExpr* se;
+          if (NamedExpr* named = toNamedExpr(actual)) {
+            se = toSymExpr(named->actual);
+          } else {
+            se = toSymExpr(actual);
+          }
           INT_ASSERT(se);
           info.actuals.add(se->symbol());
           info.actualNames.add(NULL);
@@ -2213,7 +2218,8 @@ static Expr*      getIndices(PromotionInfo& promotion);
 static Expr*      getIterator(PromotionInfo& promotion);
 
 static bool       haveLeaderAndFollowers(PromotionInfo& promotion,
-                                         CallExpr* call);
+                                         CallExpr* call,
+                                         llvm::SmallVectorImpl<ArgSymbol*>& actualIdxToFormal);
 
 static CallExpr* createPromotedCallForWrapper(PromotionInfo& promotion);
 
@@ -2223,18 +2229,38 @@ static void       collectPromotionFormals(PromotionInfo& promotion,
 static void       fixUnresolvedSymExprsForPromotionWrapper(FnSymbol* wrapper,
                                                            FnSymbol* fn);
 
-static Symbol* leadingArg(PromotionInfo& promotion, CallExpr* call) {
-  int i = promotion.formalToActualOpMod;
+static Symbol* leadingArg(PromotionInfo& promotion, CallExpr* call,
+                          llvm::SmallVectorImpl<ArgSymbol*>& actualIdxToFormal) {
+  // When named arguments with defaults are used, actuals don't map directly
+  // to formals by position. Use actualIdxToFormal to find the correct mapping.
   // Operators might have a different number of formals than provided actuals.
   // In this case, the promotedType array access needs to be adjusted to account
   // for the offset.
-  for_actuals(actual, call) {
-    if (i < 0) {
-      i++;
+  int actualIdx = promotion.formalToActualOpMod >= 0 ? 0 : promotion.formalToActualOpMod;
+  for_actuals(actualExpr, call) {
+    if (actualIdx < 0) {
+      actualIdx++;
       continue;
     }
-    if (promotion.promotedType[i++] != NULL)
-      return symbolForActual(actual);
+    INT_ASSERT(actualIdx < (int)actualIdxToFormal.size());
+
+    ArgSymbol* formal = actualIdxToFormal[actualIdx];
+    INT_ASSERT(formal);
+
+    // Find this formal's index
+    // Performance: if we tracked an index<->index map, we could avoid this loop.
+    int formalIdx = 0;
+    for_formals(f, promotion.fn) {
+      if (f == formal) break;
+      formalIdx++;
+    }
+
+    INT_ASSERT(formalIdx < (int)promotion.promotedType.size());
+    if (promotion.promotedType[formalIdx] != nullptr) {
+      return symbolForActual(actualExpr);
+    }
+
+    actualIdx++;
   }
 
   INT_ASSERT(false); // did not find any promoted things
@@ -2299,7 +2325,8 @@ static bool isDuplicateSetIteratorShape(Symbol* irTemp, bool isNestedCall) {
 }
 
 // insert PRIM_ITERATOR_RECORD_SET_SHAPE(iterRecord,shapeSource)
-static void addSetIteratorShape(PromotionInfo& promotion, CallExpr* call) {
+static void addSetIteratorShape(PromotionInfo& promotion, CallExpr* call,
+                                llvm::SmallVectorImpl<ArgSymbol*>& actualIdxToFormal) {
   bool isNestedCall = false;
   CallExpr* move = getMoveToIRtemp(call, isNestedCall); // sets isNestedCall
   if (move == nullptr)
@@ -2310,7 +2337,7 @@ static void addSetIteratorShape(PromotionInfo& promotion, CallExpr* call) {
     return;
 
   // The first promoted argument argument determines the shape.
-  Symbol* shapeSource = leadingArg(promotion, call);
+  Symbol* shapeSource = leadingArg(promotion, call, actualIdxToFormal);
 
   LoopExprType type = FORALL_EXPR;
   if (checkIteratorFromForeachExpr(move, shapeSource)) {
@@ -2415,7 +2442,7 @@ static FnSymbol* promotionWrap(FnSymbol* fn,
     promotion.fn->maybeGenerateUnstableWarning(info.call);
   }
 
-  addSetIteratorShape(promotion, info.call);
+  addSetIteratorShape(promotion, info.call, actualIdxToFormal);
 
   return retval;
 }
@@ -2632,7 +2659,7 @@ static BlockStmt* buildPromotionLoop(PromotionInfo& promotion,
    addFormalsForGpuOuterVarsToPromotionWrapper(promotion, info,
                                                actualIdxToFormal, outerToFormals);
 
- if (haveLeaderAndFollowers(promotion, info.call))
+ if (haveLeaderAndFollowers(promotion, info.call, actualIdxToFormal))
  {
   promotion.hasLeaderFollowers = true;
 
@@ -3047,25 +3074,40 @@ static FnSymbol* leaderForSymbol(Expr* anchor, Symbol* leadingSym) {
 // Taking the standalone iterator into account - when there is only a single
 // promoted argument - is future work - GitHub Issue #12323.
 //
-static bool haveLeaderAndFollowers(PromotionInfo& promotion, CallExpr* call) {
+static bool haveLeaderAndFollowers(PromotionInfo& promotion, CallExpr* call,
+                                    llvm::SmallVectorImpl<ArgSymbol*>& actualIdxToFormal) {
   // This is analogous to optionalFollowersAreMissing() in foralls.cpp,
   // with an additional check for the first leader and the first follower.
+  // When named arguments with defaults are used, actuals don't map directly
+  // to formals by position. Use actualIdxToFormal to find the correct mapping.
   Expr* anchor = call->getStmtExpr();
   FnSymbol* leader = NULL;  // non-null for promoted args after the first
   VarSymbol* followme = NULL;
-  int i = 0;
-  if (promotion.formalToActualOpMod < 0) {
-    // Operators might have more actuals than there are formals.  In this case,
-    // we need to skip the extra actuals (the "this" actual and method token)
-    i = promotion.formalToActualOpMod;
-  }
+  // Operators might have a different number of formals than provided actuals.
+  // In this case, the promotedType array access needs to be adjusted to account
+  // for the offset.
+  int actualIdx = promotion.formalToActualOpMod >= 0 ? 0 : promotion.formalToActualOpMod;
 
   for_actuals(actualExpr, call) {
-    if (i < 0) {
-      i++;
+    if (actualIdx < 0) {
+      actualIdx++;
       continue;
     }
-    if (promotion.promotedType[i++] != NULL) {
+    INT_ASSERT(actualIdx < (int)actualIdxToFormal.size());
+
+    ArgSymbol* formal = actualIdxToFormal[actualIdx];
+    INT_ASSERT(formal);
+
+    // Find this formal's index
+    // Performance: if we kept an index<->index map, we wouldn't need this loop.
+    int formalIdx = 0;
+    for_formals(f, promotion.fn) {
+      if (f == formal) break;
+      formalIdx++;
+    }
+
+    CHPL_ASSERT(formalIdx < (int)promotion.promotedType.size());
+    if (promotion.promotedType[formalIdx] != nullptr) {
       Symbol* actual = symbolForActual(actualExpr);
 
       if (leader == NULL) {
@@ -3082,7 +3124,7 @@ static bool haveLeaderAndFollowers(PromotionInfo& promotion, CallExpr* call) {
         followme = new VarSymbol("followme", yType);
 
         if (! fsGotFollower(anchor, followme, actual)) {
-          USR_FATAL_CONT(call, "a follower iterator is required for %d-th argument of the promoted expression", i);
+          USR_FATAL_CONT(call, "a follower iterator is required for %d-th argument of the promoted expression", actualIdx+1);
           USR_PRINT(call, "because it is the first promoted argument and has a leader iterator");
           USR_PRINT(leader, "the leader iterator is here");
         }
@@ -3092,6 +3134,7 @@ static bool haveLeaderAndFollowers(PromotionInfo& promotion, CallExpr* call) {
           return false;
       }
     }
+    actualIdx++;
   }
   return true; // all needed iterators are present
 }
@@ -3107,10 +3150,6 @@ static CallExpr* createPromotedCallForWrapper(PromotionInfo& promotion) {
   Vec<Symbol*> actuals;
   std::vector<ArgSymbol*> actualIdxToFormal;
 
-  // When adding the call to the original function within a
-  // promotion wrapper, we need to pass non-promoted arguments
-  // to the original function through. But some of the arguments
-  // might not need to be passed if we're using their default value.
   int i = 0;
   for_formals(formal, fn) {
 
@@ -3128,6 +3167,8 @@ static CallExpr* createPromotedCallForWrapper(PromotionInfo& promotion) {
     }
 
     if (actual != NULL) {
+      // Use named arguments to ensure things work with reordering.
+      actual = new NamedExpr(formal->name, actual);
       retval->insertAtTail(actual);
       actualIdxToFormal.push_back(formal);
     }
@@ -3163,7 +3204,16 @@ static void fixUnresolvedSymExprsForPromotionWrapper(FnSymbol* wrapper,
   for_vector(CallExpr, call, calls) {
     if (call->resolvedFunction() == fn) {
       for_actuals(actual, call) {
-        if (UnresolvedSymExpr* unsym = toUnresolvedSymExpr(actual)) {
+        UnresolvedSymExpr* unsym = nullptr;
+
+        // Check if this is a NamedExpr wrapping an UnresolvedSymExpr
+        if (NamedExpr* named = toNamedExpr(actual)) {
+          unsym = toUnresolvedSymExpr(named->actual);
+        } else {
+          unsym = toUnresolvedSymExpr(actual);
+        }
+
+        if (unsym) {
           std::vector<DefExpr*> defs;
           BlockStmt*            callBlock = NULL;
           BlockStmt*            loop      = NULL;
