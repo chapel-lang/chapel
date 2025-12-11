@@ -18,8 +18,8 @@ When creating new editions, be sure to:
   - Update :ref:`edition-changes` to list those changes under this new release
     name instead of under :ref:`preview-changes`.
 
-- When https://github.com/chapel-lang/chapel/issues/27336 gets implemented, be
-  sure to update it as well.
+- When `--flag-edition-changes <TransitionFlag>`_ gets implemented, be sure to
+  update it as well.
 
 -----------------------
 What Goes in an Edition
@@ -70,7 +70,7 @@ features.
         An unimplemented feature is the
         `--flag-edition-changes <TransitionFlag>`_ flag, which will warn users
         in a given edition about code that will need to be migrated in the next
-          edition.
+        edition.
 
 * **Deprecation (and subsequent removal) of a stable feature** (`Breaking Change`)
 
@@ -83,7 +83,7 @@ features.
         An unimplemented feature is the
         `--flag-edition-changes <TransitionFlag>`_ flag, which will warn users
         in a given edition about code that will need to be migrated in the next
-          edition.
+        edition.
 
 * **Changing the behavior of an unstable feature** (`Non-Breaking Change`)
 
