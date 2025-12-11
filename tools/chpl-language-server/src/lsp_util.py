@@ -220,6 +220,12 @@ def location_to_location(loc) -> Location:
     )
 
 
+def min_pos(a: Position, b: Optional[Position]) -> Position:
+    if b is None:
+        return a
+    return min(a, b)
+
+
 def get_symbol_information(
     decl: chapel.NamedDecl,
 ) -> Optional[SymbolInformation]:
@@ -709,6 +715,7 @@ class FileInfo:
         Dict[chapel.TypedSignature, CallsInTypeContext],
     ] = field(init=False)
     siblings: chapel.SiblingMap = field(init=False)
+    earliest_changed_pos: Optional[Position] = None
 
     def __post_init__(self):
         self.use_segments = PositionList(lambda x: x.ident.rng)

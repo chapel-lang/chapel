@@ -48,6 +48,12 @@ from lsprotocol.types import TEXT_DOCUMENT_TYPE_DEFINITION, TypeDefinitionParams
 from lsprotocol.types import TEXT_DOCUMENT_DECLARATION, DeclarationParams
 from lsprotocol.types import TEXT_DOCUMENT_REFERENCES, ReferenceParams
 from lsprotocol.types import (
+    TEXT_DOCUMENT_DID_CHANGE,
+    DidChangeTextDocumentParams,
+    TextDocumentContentChangeEvent_Type1,
+    TextDocumentContentChangeEvent_Type2,
+)
+from lsprotocol.types import (
     TEXT_DOCUMENT_COMPLETION,
     CompletionParams,
     CompletionOptions,
@@ -753,6 +759,13 @@ def run_lsp():
         params: Union[DidSaveTextDocumentParams, DidOpenTextDocumentParams],
     ):
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
+
+        # This file is loaded from disk, no changes since save, so reset
+        # earliest changed position.
+        if isinstance(params, DidSaveTextDocumentParams):
+            fi, _ = ls.get_file_info(text_doc.uri)
+            fi.earliest_changed_pos = None
+
         diag = ls.build_diagnostics(text_doc.uri)
         ls.publish_diagnostics(text_doc.uri, diag)
         ls.lsp.send_request_async(WORKSPACE_INLAY_HINT_REFRESH)
@@ -771,6 +784,29 @@ def run_lsp():
         if segment:
             return segment.get_location()
         return None
+
+    @server.feature(TEXT_DOCUMENT_DID_CHANGE)
+    async def get_changed(
+        ls: ChapelLanguageServer, params: DidChangeTextDocumentParams
+    ):
+        new_least_pos: Optional[Position] = None
+        for change in params.content_changes:
+            # If the whole document changed, no more iteration.
+            if isinstance(change, TextDocumentContentChangeEvent_Type2):
+                new_least_pos = Position(0, 0)
+                break
+
+            new_least_pos = min_pos(change.range.start, new_least_pos)
+
+        if not new_least_pos:
+            return
+
+        fi, _ = ls.get_file_info(params.text_document.uri)
+        fi.earliest_changed_pos = min_pos(
+            new_least_pos,
+            fi.earliest_changed_pos,
+        )
+        ls.lsp.send_request_async(WORKSPACE_INLAY_HINT_REFRESH)
 
     @server.feature(TEXT_DOCUMENT_REFERENCES)
     async def get_refs(ls: ChapelLanguageServer, params: ReferenceParams):
@@ -989,7 +1025,17 @@ def run_lsp():
         if not ls.use_resolver:
             return inlays
 
-        decls = fi.def_segments.range(params.range)
+        # Dyno computes inlays etc. from the file on disk. We have a
+        # possible edited file in the buffer. Inlays after the earliest
+        # changed position may be invalid, so we limit the range.
+        requested_range = params.range
+        if fi.earliest_changed_pos is not None:
+            requested_range = Range(
+                requested_range.start,
+                min(requested_range.end, fi.earliest_changed_pos),
+            )
+
+        decls = fi.def_segments.range(requested_range)
         calls = list(
             call for call, _ in chapel.each_matching(ast, chapel.core.FnCall)
         )
@@ -999,10 +1045,24 @@ def run_lsp():
             inlays.extend(ls.get_decl_inlays(decl, instantiation))
 
         for call in calls:
-            instantiation = fi.get_inst_segment_at_position(
-                location_to_range(call.location()).start
-            )
-            inlays.extend(ls.get_call_inlays(call, instantiation))
+            call_range = location_to_range(call.location())
+            if (
+                call_range.end < requested_range.start
+                or call_range.start >= requested_range.end
+            ):
+                continue
+
+            # call is in the range, but not all of its inlay hints may be.
+            instantiation = fi.get_inst_segment_at_position(call_range.start)
+            inlays_from_call = ls.get_call_inlays(call, instantiation)
+
+            for inlay in inlays_from_call:
+                if (
+                    inlay.position < requested_range.start
+                    or inlay.position >= requested_range.end
+                ):
+                    continue
+                inlays.append(inlay)
 
         return inlays
 
