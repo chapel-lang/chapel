@@ -194,6 +194,11 @@ bool AdjustMaybeRefs::deferErrorForMutatingConstfield(const AstNode* ref, RV& rv
   ID fieldId;
   if (auto refR = rv.byPostorder().byAstOrNull(ref)) {
     auto toId = refR->toId();
+    if (toId.isEmpty()) {
+      if (refR->mostSpecific().numBest() == 1) {
+        toId = refR->mostSpecific().only().fn()->id();
+      }
+    }
     if (parsing::idIsField(context, toId)) {
       fieldId = toId;
     }
