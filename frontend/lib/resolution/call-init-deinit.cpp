@@ -811,8 +811,8 @@ void CallInitDeinit::resolveMoveInit(const AstNode* ast,
     }
     if (canPassResult.passes() &&
         (!canPassResult.converts() ||
-         (!isManagedClass && canPassResult.conversionKind() ==
-             CanPassResult::ConversionKind::SUBTYPE))) {
+         (!isManagedClass && canPassResult.conversionKind() &
+          CanPassResult::SUBTYPE))) {
       // Future TODO: might need to call something provided by the record
       // author to be a hook for move initialization across locales
       // (see issue #15676).

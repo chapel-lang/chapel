@@ -8116,6 +8116,26 @@ reportInvalidMultipleInheritance(Context* context,
                                                      firstParent, secondParent);
 }
 
+static const bool&
+reportDeprecatedSyncReadImpl(Context* context,
+                             const Type* syncT,
+                             const AstNode* astForErr,
+                             const AstNode* source,
+                             const AstNode* dest) {
+  QUERY_BEGIN(reportDeprecatedSyncReadImpl, context, syncT, astForErr, source, dest);
+  CHPL_REPORT(context, DeprecatedSyncRead, syncT, astForErr, source, dest);
+  auto result = false;
+  return QUERY_END(result);
+}
+
+void reportDeprecatedSyncRead(Context* context,
+                              const Type* syncT,
+                              const AstNode* astForErr,
+                              const AstNode* source,
+                              const AstNode* dest) {
+  std::ignore = reportDeprecatedSyncReadImpl(context, syncT, astForErr, source, dest);
+}
+
 const Decl* findFieldByName(Context* context,
                             const AggregateDecl* ad,
                             const CompositeType* ct,
