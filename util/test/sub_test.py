@@ -1298,7 +1298,11 @@ def main():
 
         # print testname
         printTestName(os.path.join(localdir, testname))
-        test_filename = re.match(r'^(.*)\.(?:chpl|test\.c|test\.cpp|ml-test\.c|ml-test\.cpp)$', testname).group(1)
+        if m := re.match(r'^(.*)\.(?:chpl|test\.c|test\.cpp|ml-test\.c|ml-test\.cpp)$', testname):
+            test_filename = m.group(1)
+        else:
+            sys.stdout.write('[Error: {} does not match the expected format for a test name]\n'.format(testname))
+            continue
         execname = test_filename
         if uniquifyTests:
             execname += '.{0}'.format(os.getpid())
