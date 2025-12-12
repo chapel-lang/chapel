@@ -478,12 +478,19 @@ module UnitTest {
     proc defaultAbsTol param : real do return 0.0;
 
     /*
-    Check if two scalars/arrays are within tolerance.
+    Check if a scalar or array is within tolerance of the expected value.
 
     :arg actual: actual value
+    :type actual: ?T
+
     :arg expected: expected value
+    :type expected: T
+
     :arg relTol: relative tolerance
+    :type relTol: real
+
     :arg absTol: absolute tolerance
+    :type absTol: real
 
     :returns: True if within tolerance, else false
     :rtype: bool
@@ -492,14 +499,31 @@ module UnitTest {
     proc withinTol(const actual: ?T, const expected: T,
                    const in relTol: real=defaultRelTol,
                    const in absTol: real=defaultAbsTol) {
+      assert(relTol >= 0.0);
+      assert(absTol >= 0.0);
       return abs(actual - expected) <= absTol + relTol * abs(expected);
     }
 
     /*
-      Assert that ``actual ~= expected``.
+      Assert that two arrays are, element-wise, approximately equal to within
+      the specified tolerances.
 
-      :arg actual: The first object to compare.
-      :arg expected: The second object to compare.
+      It asserts that actual <= absTol + relTol*expected for each element.
+
+      :arg actual: The user-computed value.
+      :type actual: [] ?T
+
+      :arg expected: The expected or desired value.
+      :type expected: [] T
+
+      :arg relTol: relative tolerance
+      :type relTol: real
+
+      :arg absTol: absolute tolerance
+      :type absTol: real
+
+      :throws Error: If `actual` and `expected` are of different shape.
+
       :throws AssertionError: If `actual` is not approximately equal to
       `expected` within the specified tolerance.
     */
@@ -540,6 +564,27 @@ module UnitTest {
       }
     }
 
+    /*
+      Assert that two numeric types are approximately equal to within
+      the specified tolerances.
+
+      It asserts that actual <= absTol + relTol*expected.
+
+      :arg actual: The user-computed value (real or complex).
+      :type actual: T
+
+      :arg expected: The expected or desired value (real or complex).
+      :type expected: T
+
+      :arg relTol: relative tolerance
+      :type relTol: real
+
+      :arg absTol: absolute tolerance
+      :type absTol: real
+
+      :throws AssertionError: If `actual` is not approximately equal to
+      `expected` within the specified tolerance.
+    */
     pragma "insert line file info"
     pragma "always propagate line file info"
     proc assertClose(const in actual: ?T, const in expected: T,
