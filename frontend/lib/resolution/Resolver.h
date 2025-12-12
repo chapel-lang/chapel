@@ -234,6 +234,14 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
   Resolver(Resolver&& rhs) = default;
  ~Resolver();
 
+  const ResolvedFunction::ImplicitInitMap getImplicitInits() {
+    if (initResolver) {
+      return initResolver->implicitInits();
+    } else {
+      return ResolvedFunction::ImplicitInitMap();
+    }
+  }
+
   // set up Resolver to resolve a Module
   static Resolver
   createForModuleStmt(ResolutionContext* rc, const uast::Module* mod,
