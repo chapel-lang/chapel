@@ -632,7 +632,13 @@ all:
       config: 16-node-apollo-hdr
   09/27/25:
     - text: System hardware/software change
-      config: 16-node-hpe-cray-ex
+      config: 16-node-hpe-cray-ex, 1-node-a100, 1-node-mi250x
+  09/27/25:
+    - text: Beginning of noise due to node with less memory
+      config: 16-node-apollo-hdr
+  10/22/25:
+    - text: End of noise due node now having full memory
+      config: 16-node-apollo-hdr
 
 # End all
 
@@ -2034,6 +2040,8 @@ scanPerf:
     - Support optionally parallel 1D scans on default rectangular (#12469)
   01/14/21:
     - Optimize scans by using noinit for the result array (#16919)
+  09/30/25:
+    - Halve memory used by scanPerf performance test (#27873)
 
 scanPerf.ml-time:
   03/06/19:
@@ -2042,6 +2050,8 @@ scanPerf.ml-time:
     - Increase the problem size for the multi-locale scan performance test (#16918)
   01/14/21:
     - Optimize scans by using noinit for the result array (#16919)
+  09/30/25:
+    - Halve memory used by scanPerf performance test (#27873)
 
 search:
   04/20/17:
@@ -2643,6 +2653,8 @@ arkouda: &arkouda-base
     - Improve parquet read implementation and multiple column read performance (Bears-R-Us/arkouda#4906)
   10/02/25:
     - Resolves Issue 4810, cumSum and cumProd performance (Bears-R-Us/arkouda#4819)
+  12/01/25:
+    - Fix CSV Parsing of Quoted Fields, Escaped Quotes, Embedded Delimiters, and Multi-Line Records (Bears-R-Us/arkouda#5080)
 
 arkouda-string:
   <<: *arkouda-base
@@ -2652,7 +2664,9 @@ arkouda-bigint:
   09/27/24:
     - Fixes 3783, 3784, 3788 multilocale io test failures (Bears-R-Us/arkouda#3790)
   10/17/25:
-    - Closes #4984: ak.array with negative numbers still has problems (Bears-R-Us/arkouda#4985)
+    - Closes 4984 ak.array with negative numbers still has problems (Bears-R-Us/arkouda#4985)
+  11/21/25:
+    - Closes 4569 Simplify and extend logic in doBigIntBinOpvv and doBigIntBinOpvvBoolReturn (Bears-R-Us/arkouda#4593)
 
 arkouda-comp:
   <<: *arkouda-base
@@ -2686,6 +2700,12 @@ arkouda-comp:
     - Yield tuples by value when appropriate (#21789)
   05/02/23:
     - Generate write method stubs for FCF superclass types (#22195)
+  11/13/25:
+    - Changed isDefAndOrUse (#27961)
+  11/14/25:
+    - System software change
+  11/19/25:
+    - Fixed regression due to isDefAndOrUse change (#28082)
 
 arkouda-array_create:
   <<: *arkouda-base
