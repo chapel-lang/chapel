@@ -494,13 +494,19 @@ module UnitTest {
 
     :returns: True if within tolerance, else false
     :rtype: bool
+
+    :throws AssertionError: either tolerance is negative
     */
+    pragma "insert line file info"
+    pragma "always propagate line file info"
     @chpldoc.nodoc
     proc withinTol(const actual: ?T, const expected: T,
                    const in relTol: real=defaultRelTol,
-                   const in absTol: real=defaultAbsTol) {
-      assert(relTol >= 0.0);
-      assert(absTol >= 0.0);
+                   const in absTol: real=defaultAbsTol) throws {
+      if relTol < 0.0 || absTol < 0.0 {
+        throw new owned AssertionError(
+          "relTol and absTol must both be nonnegative.");
+      }
       return abs(actual - expected) <= absTol + relTol * abs(expected);
     }
 
