@@ -1,3 +1,9 @@
+Error Caught in Negative relative tolerance
+AssertionError: in AssertCloseTest.chpl:7 - relTol and absTol must both be nonnegative.
+================================================================================
+Error Caught in Negative absolute tolerance
+AssertionError: in AssertCloseTest.chpl:7 - relTol and absTol must both be nonnegative.
+================================================================================
 Error Caught in Unequal complex 1D arrays
 AssertionError: in AssertCloseTest.chpl:7 - assert failed for 1/2 elements (50%)
 Max Rel. Error: 39.2232%

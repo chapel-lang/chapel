@@ -15,11 +15,21 @@ proc testAssert(actual, expected, absTol, relTol, reason="") {
 
 
 proc main() {
+  negativeRelTol();
+  negativeAbsTol();
   equalArray();
   unequalComplexArray();
   mismatchedArraySize();
   equalReal();
   unequalComplex();
+}
+
+proc negativeRelTol() {
+  testAssert(1.5, 1.6, -.1, 1e-15, "Negative relative tolerance");
+}
+
+proc negativeAbsTol() {
+  testAssert(1.5, 1.6, .1, -1e-15, "Negative absolute tolerance");
 }
 
 proc equalArray() {
