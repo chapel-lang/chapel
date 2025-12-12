@@ -6711,9 +6711,9 @@ static void adjustConstnessBasedOnReceiver(Context* context,
   }
 
   if (adjustConst) {
-    auto kp = KindProperties::fromKind(rt.kind());
-    kp.setConst(ci.methodReceiverType().isConst());
-    rt = QualifiedType(kp.toKind(), rt.type());
+    if (ci.methodReceiverType().isConst()) {
+      rt = QualifiedType(KindProperties::addConstness(rt.kind()), rt.type());
+    }
   }
 }
 
