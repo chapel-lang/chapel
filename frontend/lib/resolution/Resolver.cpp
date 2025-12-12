@@ -2217,20 +2217,7 @@ gatherUserDiagnostics(ResolutionContext* rc,
   for (auto& msc : c.mostSpecific()) {
     if (!msc) continue;
 
-    // compiler-generated fns don't always have ASTs, so we can't resolve them.
-    // If it has a fabricated ID, then we generated an AST body, so don't skip it.
-    if (msc.fn()->isCompilerGenerated()) {
-      auto& id = msc.fn()->id();
-      if (!id.isFabricatedId() || id.fabricatedIdKind() != ID::Generated ||
-          !parsing::idIsFunction(rc->context(), id)) {
-        continue;
-      }
-    }
-
-    // shouldn't happen, but it currently does in some cases.
-    if (msc.fn()->needsInstantiation()) continue;
-
-    auto resolvedFn = resolveFunction(rc, msc.fn(), c.poiInfo().poiScope(), /* skipIfRunning */ true);
+    auto resolvedFn = resolveFunctionIfPossible(rc, msc.fn(), c.poiInfo().poiScope());
     if (!resolvedFn) continue;
 
     into.insert(into.end(), resolvedFn->diagnostics().begin(),
