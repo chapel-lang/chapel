@@ -102,12 +102,12 @@ async def test_go_to_call_generic(client: LanguageClient):
         await check_goto_decl_def(client, doc, pos((2, 19)), pos((2, 9)))
 
         # Select the first instantiation
-        await select_inst(1, "Show instantiation")
+        await select_inst(1, "Show Instantiation")
         await check_goto_decl_def(client, doc, pos((2, 15)), pos((0, 5)))
         await check_goto_decl_def(client, doc, pos((2, 19)), pos((2, 9)))
 
         # Select the second instantiation
-        await select_inst(2, "Show instantiation")
+        await select_inst(2, "Show Instantiation")
         await check_goto_decl_def(client, doc, pos((2, 15)), pos((1, 5)))
         await check_goto_decl_def(client, doc, pos((2, 19)), pos((2, 9)))
 
