@@ -453,138 +453,26 @@ module TomlParser {
   }
 
 
-@chpldoc.nodoc
-// Enum for Toml class field: tag
- enum fieldtag {
-   fieldBool,
-   fieldInt,
-   fieldArr,
-   fieldToml,
-   fieldReal,
-   fieldString,
-   fieldEmpty,
-   fieldDate,
-   fieldTime,
-   fieldDateTime }
- private use fieldtag;
+  @chpldoc.nodoc
+  // Enum for Toml class field: tag
+  enum fieldtag {
+    fieldBool,
+    fieldInt,
+    fieldArr,
+    fieldToml,
+    fieldReal,
+    fieldString,
+    fieldEmpty,
+    fieldDate,
+    fieldTime,
+    fieldDateTime
+  }
+  private use fieldtag;
 
- @chpldoc.nodoc
- operator Toml.=(ref t: shared Toml, s: string) {
-   compilerWarning("= overloads for Toml are deprecated");
-   if t == nil {
-     t = new shared Toml(s);
-   } else {
-     t.tag = fieldString;
-     t.s = s;
-   }
- }
-
- @chpldoc.nodoc
- operator Toml.=(ref t: shared Toml, i: int) {
-   compilerWarning("= overloads for Toml are deprecated");
-   if t == nil {
-     t = new shared Toml(i);
-   } else {
-     t.tag = fieldInt;
-     t.i = i;
-   }
- }
-
- @chpldoc.nodoc
- operator Toml.=(ref t: shared Toml, b: bool) {
-   compilerWarning("= overloads for Toml are deprecated");
-   if t == nil {
-     t = new shared Toml(b);
-   } else {
-     t.tag = fieldBool;
-     t.boo = b;
-   }
- }
-
- @chpldoc.nodoc
- operator Toml.=(ref t: shared Toml, r: real) {
-   compilerWarning("= overloads for Toml are deprecated");
-   if t == nil {
-     t = new shared Toml(r);
-   } else {
-     t.tag = fieldReal;
-     t.re = r;
-   }
- }
-
- @chpldoc.nodoc
- operator Toml.=(ref t: shared Toml, ld: date) {
-   compilerWarning("= overloads for Toml are deprecated");
-   if t == nil {
-     t = new shared Toml(ld);
-   } else {
-     t.tag = fieldDate;
-     t.ld = ld;
-   }
- }
-
- @chpldoc.nodoc
- operator Toml.=(ref t: shared Toml, ti: time) {
-   compilerWarning("= overloads for Toml are deprecated");
-   if t == nil {
-     t = new shared Toml(ti);
-   } else {
-     t.tag = fieldTime;
-     t.ti = ti;
-   }
- }
-
- @chpldoc.nodoc
- operator Toml.=(ref t: shared Toml, dt: dateTime) {
-   compilerWarning("= overloads for Toml are deprecated");
-   if t == nil {
-     t = new shared Toml(dt);
-   } else {
-     t.tag = fieldDateTime;
-     t.dt = dt;
-   }
- }
-
- @chpldoc.nodoc
- operator Toml.=(ref t: shared Toml,
-                 A: [?D] shared Toml) where D.isAssociative() {
-   compilerWarning("= overloads for Toml are deprecated");
-   setupToml(t, A);
- }
- @chpldoc.nodoc
- proc setupToml(ref t: shared Toml, A: [?D] shared Toml) where D.isAssociative() {
-   if t == nil {
-     t = new shared Toml(A);
-   } else {
-     t.tag = fieldToml;
-     t.D = D;
-     t.A = A;
-   }
- }
-
- @chpldoc.nodoc
- proc setupToml(ref t: shared Toml, arr: [?dom] shared Toml) where !dom.isAssociative(){
-   if t == nil {
-     t = new shared Toml(arr);
-   } else {
-     t.tag = fieldArr;
-     t.dom = dom;
-     t.arr = arr;
-   }
- }
-
-
- @chpldoc.nodoc
- operator Toml.=(ref t: shared Toml, arr: [?dom] shared Toml) where !dom.isAssociative(){
-   compilerWarning("= overloads for Toml are deprecated");
-   setupToml(t, arr);
- }
-
-
-/*
-Class to hold various types parsed from input
-used to recursively hold tables and respective values
-*/
+  /*
+    Class to hold various types parsed from input
+    used to recursively hold tables and respective values
+  */
   class Toml : writeSerializable {
 
     @chpldoc.nodoc
