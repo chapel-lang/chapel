@@ -357,6 +357,7 @@ char compileVersion[64];
 
 std::array<std::string, 2> editions ({{"2.0", "preview"}});
 std::string fEdition = "2.0";
+std::string defaultEdition = fEdition;
 bool fUserSetPreEdition = false;
 
 static bool fPrintCopyright = false;
@@ -961,6 +962,10 @@ static void setEdition(const ArgumentDescription* desc, const char* arg) {
     clean_exit(1);
   } else {
     fEdition = val;
+  }
+  // when using a non-default edition (and not preview), warn about unstable features
+  if (defaultEdition != fEdition && fEdition != "preview") {
+    fWarnUnstable = true;
   }
 }
 
