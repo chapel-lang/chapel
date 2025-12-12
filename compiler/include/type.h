@@ -679,6 +679,7 @@ void     initCompilerGlobals();
 bool isBoolType(Type*);
 bool isIntType(Type*);
 bool isUIntType(Type*);
+bool isIntegralByteType(Type*);
 bool isSignedType(Type*);
 bool isRealType(Type*);
 bool isImagType(Type*);
