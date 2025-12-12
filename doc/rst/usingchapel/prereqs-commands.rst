@@ -80,7 +80,7 @@
       sudo apt-get install llvm-dev llvm clang libclang-dev libclang-cpp-dev libedit-dev
 
 
-  * Fedora 41, 42::
+  * Fedora 42::
 
       sudo dnf upgrade
       sudo dnf install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake libunwind-devel
