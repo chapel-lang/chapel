@@ -18,21 +18,22 @@ When creating new editions, be sure to:
   - Update :ref:`edition-changes` to list those changes under this new release
     name instead of under :ref:`preview-changes`.
 
-- When `--flag-edition-changes <TransitionFlag>`_ gets implemented, be sure to
+- When `#27336 <TransitionFlag>`_ gets implemented, be sure to
   update it as well.
 
 -----------------------
 What Goes in an Edition
 -----------------------
 
-When making a change to the language and/or standard library, its important
+When making a change to the language and/or standard library, it's important
 to consider how that change fits into an edition. Editions define the state of
 the language at a point in time, so breaking changes to stable code should be
 associated with an edition.
 
 It is important to define what constitutes a "breaking change" and what belongs
 in an edition versus what can just be changed or added.
-We consider a feature to be stable if it is not marked unstable.
+We consider a feature to be stable if it is not marked unstable (either directly
+or indirectly by being included in a module that is marked unstable).
 
 * **Breaking Changes**
 
@@ -55,7 +56,7 @@ We consider a feature to be stable if it is not marked unstable.
    unstable feature is widely used in practice, changing its behavior may be
    considered a breaking change.
 
-The following provides a set of for several scenarios of language evolution. In
+The following provides several scenarios of language evolution. In
 this, we do not distinguish between language features and standard library
 features.
 
@@ -67,8 +68,8 @@ features.
 
     .. note::
 
-        An unimplemented feature is the
-        `--flag-edition-changes <TransitionFlag>`_ flag, which will warn users
+        An unimplemented feature is the flag described in
+        `#27336 <TransitionFlag>`_, which will warn users
         in a given edition about code that will need to be migrated in the next
         edition.
 
@@ -80,8 +81,8 @@ features.
 
     .. note::
 
-        An unimplemented feature is the
-        `--flag-edition-changes <TransitionFlag>`_ flag, which will warn users
+        An unimplemented feature is the flag described in
+        `#27336 <TransitionFlag>`_, which will warn users
         in a given edition about code that will need to be migrated in the next
         edition.
 
@@ -109,19 +110,22 @@ features.
     can be added as an unstable feature to any Chapel compiler release. This
     makes the feature available to users who wish to use it, without affecting
     the edition. When we feel the new feature is ready to be stabilized, it can
-    be marked as stable in a new edition (either being added to the ``preview``
-    edition staging ground or directly to the next edition).
+    be marked as stable in a new edition by being added to the ``preview``
+    edition. Then, when a new edition is created from the ``preview`` edition,
+    the feature will be stable in that edition.
 
-    Users who make use of the new feature should get an unstable warning,
-    unless they are using an edition of the language that includes the feature
-    as stable.
+    Users who make use of the new feature will get an unstable warning if
+    ``--warn-unstable`` is enabled (or by default when compiling with a
+    non-default and non-preview edition), unless they are using an edition of
+    the language that includes the feature as stable.
 
 In summary, if a user is using only stable features of a given language
 edition, two different versions of the compiler that support that edition
-should behave the same way (baring bug fixes, performance improvements, etc).
-Non-breaking changes to stable features should still be associated with a
+should behave the same way (barring bug fixes, performance improvements, etc).
+Breaking changes to stable features should be associated with a
 edition. Unstable features may be changed or removed at any time without being
-associated with an edition.
+associated with an edition. New features should be added as unstable features or
+directly added to the ``preview`` edition as stable features.
 
 
 -----------------------------------
