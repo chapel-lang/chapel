@@ -152,6 +152,9 @@ The following are further requirements for GPU support:
 
   * CUDA toolkit version 11.7+ or 12.x must be installed.
 
+    * While CUDA 12.9 may work, it is untested and may generate deprecation
+      warnings.
+
   * We test with LLVM 20. Older versions may work.
 
     * Note that LLVM versions older than 16 do not support CUDA 12.
@@ -701,7 +704,7 @@ marked with * are covered in our nightly testing configurations.
 
   * Hardware: RTX A2000, P100*, V100*, A100*, H100, GH200
 
-  * Software: CUDA 11.7, 11.8*, 12.0, 12.2, 12.4*
+  * Software: CUDA 11.7, 11.8*, 12.0, 12.2, 12.4, 12.8*
 
 * AMD
 

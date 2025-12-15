@@ -11,14 +11,14 @@ prerequisites.
 
 Understanding Prerequisites
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
-While they are similar to dependencies, prerequisites are inherent part of the
-Mason package whereas dependencies need to be built and installed before Mason
-can start building a package. Consider a scenario in which your Mason package
-has a dependency on a C or C++ library, and that you need to implement a shim
-between that library and the Chapel code. That shim needs to be compiled before
-the Chapel code and needs to be linked. Obviously, the Chapel compiler cannot be
-used in this case. Moreover, depending on the library, build process can be
-completely different from one scenario to another.
+While they are similar to dependencies, prerequisites are an inherent part of
+the Mason package whereas dependencies need to be built and installed before
+Mason can start building a package. Consider a scenario in which your Mason
+package has a dependency on a C or C++ library, and that you need to implement a
+shim between that library and the Chapel code. That shim needs to be compiled
+before the Chapel code and needs to be linked. Obviously, the Chapel compiler
+cannot be used in this case. Moreover, depending on the library, build process
+can be completely different from one scenario to another.
 
 Mason can use other tools to build such code that is part of your package.
 
@@ -71,12 +71,18 @@ function that Chapel calls. The key source files in this scenario are:
 As of Chapel 2.7, building this project with Mason requires:
 
 * A ``prereqs`` directory at the project root,
+
 * Each prerequisite to have a subdirectory within ``prereqs``,
+
 * Within each prerequisite's directory a ``Makefile``,
+
 * Each ``Makefile`` to support two targets
-    * The default ``make``: To build the external code into something that Chapel
-      compiler link, typically a object file
-    * ``make printchplflags``: To print flags to be passed to ``chpl`` for this
+
+    * The default target, invoked by ``make``: To build the external code into
+      something that Chapel compiler link against, typically an object file
+
+    * The ``printchplflags`` target, invoked by ``make printchplflags``: To
+      print flags and files to be passed to ``chpl`` for this
       prerequisite to be linked with the Chapel application or library.
 
 Based on these requirements, the file structure should look like:
@@ -105,10 +111,10 @@ Where a simple `Makefile` could look like:
    printchplflags:
         @$(info prereqs/some-c-lib/hello.h prereqs/some-c-lib/hello.o)
 
-   clean:  # not needed by Mason
+   clean:  # not needed or used by Mason
         rm -f hello.o
 
-For example, in this setup, `mason build` will roughly do the following:
+In this setup, `mason build` will roughly do the following:
 
 1. Walk into ``prereqs/some-c-lib``,
 2. Run ``make``, which will result in creating the object file
