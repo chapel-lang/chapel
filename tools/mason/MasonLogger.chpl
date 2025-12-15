@@ -37,9 +37,8 @@ module MasonLogger {
       // this is in lie of proper mason log level control
       // https://github.com/chapel-lang/chapel/issues/28163
       const logLevelChar = OS.POSIX.getenv("MASON_LOG_LEVEL");
-      const logLevelString = string.createCopyingBuffer(logLevelChar);
       try {
-        const ll = logLevel.toLower():logLevel;
+        const ll = string.createCopyingBuffer(logLevelChar).toLower():logLevel;
         return ll;
       } catch {
         return logLevel.info;
