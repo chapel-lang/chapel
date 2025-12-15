@@ -39,7 +39,7 @@ or indirectly by being included in a module that is marked unstable).
 
    * altering the behavior of a stable feature
 
-   * deprecation or removal of a stable feature
+   * removal of a stable feature
 
 * **Non-Breaking Changes**
 
@@ -73,11 +73,13 @@ features.
         in a given edition about code that will need to be migrated in the next
         edition.
 
-* **Deprecation (and subsequent removal) of a stable feature** (`Breaking Change`)
+* **Removal of a stable feature** (`Breaking Change`)
 
-    A stable feature should only be deprecated in the ``preview`` edition. The
+    A stable feature should only be removed in the ``preview`` edition. The
     ``preview`` edition collects changes that will be included in the next
-    edition.
+    edition. The act of marking a stable feature as removed in a future edition
+    enables deprecation warnings for the feature in the current edition
+    (when requested).
 
     .. note::
 
