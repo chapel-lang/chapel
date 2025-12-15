@@ -41,6 +41,7 @@ class CanPassResult {
  public:
   using ConversionKind = uint8_t;
 
+  /// \cond DO_NOT_DOCUMENT
   enum {
     /** No implicit conversion is needed */
     NONE = 0,
@@ -63,6 +64,7 @@ class CanPassResult {
     /** A conversion from a tuple to its referential tuple type equivalent */
     TO_REFERENTIAL_TUPLE = 0x40,
   };
+  /// \endcond DO_NOT_DOCUMENT
 
  private:
   optional<PassingFailureReason> failReason_ = {};
