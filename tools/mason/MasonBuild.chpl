@@ -204,6 +204,8 @@ proc compileSrc(lockFile: borrowed Toml, binLoc: string, show: bool,
     if release then cmd.pushBack("--fast");
     if sourceList.size > 0 then cmd.pushBack("--main-module " + project);
 
+    cmd.pushBack(compopts);
+
     for flag in MasonPrereqs.chplFlags() {
       log.debugf("+compflag %s\n", flag);
       cmd.pushBack(flag);
