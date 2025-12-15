@@ -26,14 +26,26 @@ module MasonLogger {
   // Note: we use >= to determine whether we should output something. So, if you
   // change enum values, make sure to put things in order, where the lower
   // values mean lower verbosity.
-  enum logLevel { no, error, warn, info, debug };
+  enum logLevel { no, error, warn, info, debug }
 
   var logs = getDefaultLogs();
 
   private proc getDefaultLogs() {
     import OS, OS.POSIX;
     const envChar = OS.POSIX.getenv("MASON_QUIET");
-    return if envChar == nil then logLevel.info else logLevel.no;
+    if envChar == nil {
+      // this is in lie of proper mason log level control
+      // https://github.com/chapel-lang/chapel/issues/28163
+      const logLevelChar = OS.POSIX.getenv("MASON_LOG_LEVEL");
+      const logLevelString = string.createCopyingBuffer(logLevelChar);
+      try {
+        const ll = logLevel.toLower():logLevel;
+        return ll;
+      } catch {
+        return logLevel.info;
+      }
+    } else
+      return logLevel.no;
   }
 
   private proc doDebug do return logs>=logLevel.debug;

@@ -104,9 +104,8 @@ proc stripExt(toStrip: string, ext: string) : string {
 proc runCommand(cmd: [] string, quiet=false) : string throws {
   var ret : string;
   try {
-    var process = spawn(cmd, stdout=pipeStyle.pipe, stderr=pipeStyle.pipe);
-
     log.debugf("runCommand: %?\n", cmd);
+    var process = spawn(cmd, stdout=pipeStyle.pipe, stderr=pipeStyle.pipe);
 
     var line:string;
 
@@ -131,11 +130,13 @@ proc runCommand(cmd: [] string, quiet=false) : string throws {
       throw new owned MasonError("Command failed: '" + cmdStr + "'");
     }
   } catch e: FileNotFoundError {
+    log.debugf("Caught FileNotFoundError for command: %?\n", cmd);
     var cmdStr = " ".join(cmd);
     throw new owned MasonError("Command not found: '" + cmdStr + "'");
   } catch e: MasonError {
     throw e;
-  } catch {
+  } catch e {
+    log.debugf("Caught unknown error ('%?') for command: %?\n", e, cmd);
     throw new owned MasonError("Internal mason error");
   }
   return ret;
@@ -171,11 +172,13 @@ proc runWithStatus(command, quiet=false): int {
 proc runWithProcess(command, quiet=false) throws {
   try {
     var cmd = command.split();
+    log.debugf("runWithProcess: %?\n", cmd);
     var process = spawn(cmd, stdout=pipeStyle.pipe, stderr=pipeStyle.pipe);
 
     return process;
   }
-  catch {
+  catch e {
+    log.debugf("Caught unknown error ('%?') for command: %?\n", e, command);
     throw new owned MasonError("Internal mason error");
     exit(0);
   }
@@ -239,11 +242,11 @@ proc getSpackRegistry : string {
    TODO: get to work with Subprocess */
 proc getSpackResult(cmd, quiet=false) : string throws {
   var ret : string;
+  var prefix = "export SPACK_ROOT=" + SPACK_ROOT +
+               " && export PATH=\"$SPACK_ROOT/bin:$PATH\"" +
+               " && . $SPACK_ROOT/share/spack/setup-env.sh && ";
+  var splitCmd = prefix + cmd;
   try {
-    var prefix = "export SPACK_ROOT=" + SPACK_ROOT +
-    " && export PATH=\"$SPACK_ROOT/bin:$PATH\"" +
-    " && . $SPACK_ROOT/share/spack/setup-env.sh && ";
-    var splitCmd = prefix + cmd;
     log.debugf("running spack command %s\n", splitCmd);
     var process = spawnshell(splitCmd, stdout=pipeStyle.pipe, executable="bash");
 
@@ -255,7 +258,8 @@ proc getSpackResult(cmd, quiet=false) : string throws {
     }
     process.wait();
   }
-  catch {
+  catch e {
+    log.debugf("Caught unknown error ('%?') for command: %?\n", e, splitCmd);
     throw new owned MasonError("Internal mason error");
   }
   return ret;
