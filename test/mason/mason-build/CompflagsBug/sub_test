@@ -13,7 +13,7 @@ if [ $? -eq 0 ]; then
   mason_test_start $1
 
   test_command "mason build -- -stestFlagCmdLine=1"
-  test_command "mason run"
+  test_command "mason run -- --testExecFlagCmdLine=bar"
 
 
   mason_test_end $0
