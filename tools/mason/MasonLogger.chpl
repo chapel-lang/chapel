@@ -34,7 +34,7 @@ module MasonLogger {
     import OS, OS.POSIX;
     const envChar = OS.POSIX.getenv("MASON_QUIET");
     if envChar == nil {
-      // this is in lie of proper mason log level control
+      // this is in lieu of proper mason log level control
       // https://github.com/chapel-lang/chapel/issues/28163
       const logLevelChar = OS.POSIX.getenv("MASON_LOG_LEVEL");
       try {
