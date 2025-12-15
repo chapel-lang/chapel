@@ -5,6 +5,12 @@
 #   to implement environment modifications in Bash than Make.
 #
 
+if [ "$DEBUG" == "1" ]; then
+  echo "Building Mason in debug mode"
+else
+  echo "Building Mason in release mode"
+fi
+
 export CHPL_COMM=none
 export CHPL_RE2=bundled
 
@@ -26,7 +32,18 @@ if command -v module > /dev/null 2>&1 ; then
   fi
 fi
 
-if ! $chplBinDir/chpl --launcher=none --fast --checks --no-specialize mason.chpl -o $chplBinDir/mason; then
+COMPOPTS="--launcher=none --checks"
+if [ "$DEBUG" == "1" ]; then
+  # TODO add --debug-safe-optimizations-only once https://github.com/chapel-lang/chapel/issues/28165 is resolved
+  COMPOPTS="$COMPOPTS -g --no-devel"
+else
+  COMPOPTS="$COMPOPTS --fast --no-specialize"
+fi
+
+COMMAND="$chplBinDir/chpl $COMPOPTS mason.chpl -o $chplBinDir/mason"
+echo "Building Mason: $COMMAND"
+
+if ! $COMMAND; then
   cat<<EOF
   Error building mason.
 EOF
