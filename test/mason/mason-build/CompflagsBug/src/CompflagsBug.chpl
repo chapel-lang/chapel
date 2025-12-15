@@ -2,8 +2,10 @@
 module CompflagsBug {
 
   config param testFlag = false;
+  config param testFlagCmdLine = 0;
 
   proc main() {
-    assert(testFlag); // we expect Mason to set this to true
+    assert(testFlag); // set in Mason.toml
+    assert(testFlagCmdLine == 1); // set via command line
   }
 }
