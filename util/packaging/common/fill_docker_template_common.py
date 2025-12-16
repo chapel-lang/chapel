@@ -117,7 +117,7 @@ gasnet_config = {
     "CHPL_COMM_SUBSTRATE": ["udp", "smp"],
     "CHPL_GASNET_SEGMENT": ["everything", "fast"],
     "CHPL_TASKS": "qthreads",
-    "CHPL_LAUNCHER": "amudprun",
+    "CHPL_LAUNCHER": None,
     "CHPL_UNWIND": "system",
     "CHPL_HOST_MEM": "jemalloc",
     "CHPL_TARGET_MEM": ["jemalloc", "cstdlib"],
