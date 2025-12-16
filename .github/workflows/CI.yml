@@ -104,6 +104,9 @@ jobs:
     - name: lint standard modules
       run: |
         CHPL_HOME=$PWD make DYNO_ENABLE_ASSERTIONS=1 lint-standard-modules -j`util/buildRelease/chpl-make-cpu_count`
+    - name: lint mason
+      run: |
+        CHPL_HOME=$PWD make DYNO_ENABLE_ASSERTIONS=1 lint-mason -j`util/buildRelease/chpl-make-cpu_count`
 
   make_check_llvm_none:
     runs-on: ubuntu-latest
