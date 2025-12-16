@@ -118,7 +118,7 @@ private proc checkChplVersion(lockFile : borrowed Toml) throws {
 
 
 proc buildProgram(release: bool, show: bool, force: bool, skipUpdate: bool,
-                  ref cmdLineCompopts: list(string), tomlName="Mason.toml",
+                  cmdLineCompopts: list(string), tomlName="Mason.toml",
                   lockName="Mason.lock") throws {
   const cwd = here.cwd();
   const projectHome = getProjectHome(cwd, tomlName);
@@ -164,7 +164,8 @@ proc buildProgram(release: bool, show: bool, force: bool, skipUpdate: bool,
     getGitCode(gitList, show);
 
     // get compilation options including external dependencies
-    const compopts = getTomlCompopts(lockFile, cmdLineCompopts);
+    var compopts = cmdLineCompopts;
+    compopts.pushBack(getTomlCompopts(lockFile));
     // Compile Program
     if compileSrc(lockFile, binLoc, show, release, compopts, projectHome) {
       writeln("Build Successful\n");
@@ -378,12 +379,12 @@ proc getGitCode(gitListArg: list(4*string), show) {
 }
 
 // Retrieves root table compopts, external compopts, and system compopts
-proc getTomlCompopts(lock: borrowed Toml, ref compopts: list(string)) {
-
+proc getTomlCompopts(lock: borrowed Toml) {
+  var compopts = new list(string);
   // Checks for compilation options are present in Mason.toml
   if lock.pathExists('root.compopts') {
     const cmpFlags = lock["root"]!["compopts"]!.s;
-    compopts.pushBack(cmpFlags);
+    compopts.pushBack(cmpFlags.split(" "));
   }
 
   if lock.pathExists('external') {

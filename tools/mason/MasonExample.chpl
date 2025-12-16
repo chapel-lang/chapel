@@ -101,11 +101,8 @@ private proc getBuildInfo(projectHome: string, skipUpdate: bool) {
   // get the example names from lockfile or from example directory
   const exampleNames = getExamples(tomlFile.borrow(), projectHome);
 
-  var emptyCompopts = new list(string);
-  emptyCompopts.pushBack("");
-
   // Get system, and external compopts
-  const compopts = getTomlCompopts(lockFile.borrow(), emptyCompopts);
+  const compopts = getTomlCompopts(lockFile.borrow());
   var perExampleOptions = getExampleOptions(tomlFile.borrow(), exampleNames);
 
   // Close lock and toml
@@ -230,15 +227,19 @@ private proc runExamples(show: bool, run: bool, build: bool, release: bool,
 
             // get the string of dependencies for compilation
             // also names example as --main-module
-            const masonCompopts = getMasonDependencies(sourceList, gitList, exampleName);
-            var allCompOpts = " ".join(" ".join(compopts.these()), masonCompopts,
-                                       exampleCompopts);
-
-            const moveTo = "-o " + projectHome + "/target/example/" + exampleName;
-            const compCommand = " ".join("chpl",examplePath, projectPath,
-                                         moveTo, allCompOpts);
+            const masonCompopts =
+              getMasonDependencies(sourceList, gitList, exampleName);
+            const outputName =
+              joinPath(projectHome, "target", "example", exampleName);
+            var compCommand = new list(string);
+            compCommand.pushBack(["chpl", examplePath, projectPath,
+                                  "-o", outputName]);
+            // TODO: prereqs go here, or maybe in getBuildInfo?
+            compCommand.pushBack(compopts);
+            compCommand.pushBack(masonCompopts);
+            compCommand.pushBack(exampleCompopts);
             if show then writeln(compCommand);
-            const compilation = runWithStatus(compCommand);
+            const compilation = runWithStatus(compCommand.toArray());
 
             if compilation != 0 {
               stderr.writeln("compilation failed for " + example);
