@@ -65,15 +65,6 @@ The ``cyclicDist`` distribution uses a round-robin partitioning to map
 d-dimensional indices to a d-dimensional array of locales, starting
 from a given index.
 
-.. Warning::
-
-  The ``cyclicDist`` distribution was, until recently, a class named
-  ``Cyclic``.  Today, ``Cyclic`` is still supported in a deprecated
-  form, yet is an alias to the ``cyclicDist`` record here.  In our
-  experience, most uses of ``Cyclic`` in distribution contexts should
-  continue to work, but updating to ``cyclicDist`` is requested going
-  forward due to the deprecation.
-
 More precisely, for a ``cyclicDist`` distribution with:
 
   =============  ====================================================
@@ -342,9 +333,6 @@ operator =(ref a: cyclicDist(?), b: cyclicDist(?)) {
       _reprivatize(a._value);
   }
 }
-
-@deprecated("'Cyclic' is deprecated, please use 'cyclicDist' instead")
-type Cyclic = cyclicDist;
 
 @chpldoc.nodoc
 class CyclicImpl: BaseDist, writeSerializable {

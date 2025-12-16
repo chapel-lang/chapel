@@ -674,18 +674,12 @@ module ChapelArray {
   //
   pragma "syntactic distribution"
   @chpldoc.nodoc
-  @unstable("the type 'dmap' is unstable, instead please use distribution factory functions when available")
-  record dmap { }
+  record chpl_dmap { }
 
   proc chpl__buildDistType(type t) type where isSubtype(_to_borrowed(t), BaseDist) {
     var x: _to_unmanaged(t)?;
     var y = new _distribution(x!);
     return y.type;
-  }
-
-  proc chpl__buildDistType(type t: record) type {
-    compilerWarning("The use of 'dmap' is deprecated for this distribution; please replace 'dmap(<DistName>(<args>))' with '<DistName>(<args>)'");
-    return t;
   }
 
   proc chpl__buildDistType(type t) {
@@ -706,18 +700,12 @@ module ChapelArray {
     compilerError("illegal domain map value specifier - must be a subclass of BaseDist");
   }
 
-  proc chpl__buildDistDMapValue(const ref x: record) const ref {
-    compilerWarning("The use of 'dmap' is deprecated for this distribution; please replace 'new dmap(new <DistName>(<args>))' with 'new <DistName>(<args>)'");
-    return chpl__buildDistValue(x);
-  }
-
   proc chpl__buildDistDMapValue(x:unmanaged) where isSubtype(x.borrow().type, BaseDist) {
     return new _distribution(x);
   }
   proc chpl__buildDistDMapValue(in x:owned) where isSubtype(x.borrow().type, BaseDist) {
     return new _distribution(owned.release(x));
   }
-
 
   @chpldoc.nodoc
   inline operator ==(d1: _distribution(?), d2: _distribution(?)) {

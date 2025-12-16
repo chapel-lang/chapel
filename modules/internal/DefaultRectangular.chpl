@@ -139,11 +139,11 @@ module DefaultRectangular {
   // model initialization
   //
   pragma "locale private"
-  var defaultDist = new dmap(new unmanaged DefaultDist());
+  var defaultDist = new chpl_dmap(new unmanaged DefaultDist());
 
   proc chpl_defaultDistInitPrivate() {
     if defaultDist._value==nil {
-      defaultDist = new dmap(new DefaultDist());
+      defaultDist = new chpl_dmap(new DefaultDist());
     }
   }
 

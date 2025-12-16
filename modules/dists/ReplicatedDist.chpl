@@ -168,11 +168,6 @@ record replicatedDist : writeSerializable {
 }
 
 
-@deprecated("'Replicated' is deprecated, please use 'replicatedDist' instead")
-type Replicated = replicatedDist;
-
-
-
 @chpldoc.nodoc
 class ReplicatedImpl : BaseDist {
   var targetLocDom : domain(here.id.type);

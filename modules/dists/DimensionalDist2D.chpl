@@ -269,10 +269,6 @@ operator =(ref a: dimensionalDist2D(?), b: dimensionalDist2D(?)) {
 }
 
 
-@deprecated("'DimensionalDist2D' is deprecated, please use 'dimensionalDist2D' instead")
-type DimensionalDist2D = dimensionalDist2D;
-
-
 class DimensionalDist2DImpl : BaseDist, writeSerializable {
   type targLocType;
   type di1t;

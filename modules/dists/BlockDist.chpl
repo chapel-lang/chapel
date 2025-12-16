@@ -62,9 +62,6 @@ public use SparseBlockDist;
 config param debugBlockDist = false;
 config param debugBlockDistBulkTransfer = false;
 
-@deprecated("'disableAliasedBulkTransfer' is deprecated and has no effect")
-config const disableAliasedBulkTransfer = true;
-
 config param disableBlockDistBulkTransfer = false;
 config param disableBlockDistArrayViewElision = false;
 
@@ -144,15 +141,6 @@ distinct locale in a ``targetLocales`` array.  The indices within the
 bounding box are partitioned as evenly as possible across the target
 locales.  An index outside the bounding box is mapped to the same
 locale as the nearest index within the bounding box.
-
-.. Warning::
-
-  The ``blockDist`` distribution was, until recently, a class named
-  ``Block``.  Today, ``Block`` is still supported in a deprecated
-  form, yet is an alias to the ``blockDist`` record here.  In our
-  experience, most uses of ``Block`` in distribution contexts should
-  continue to work, but updating to ``blockDist`` is requested going
-  forward due to the deprecation.
 
 More precisely, an index ``idx`` is mapped to
 ``targetLocales[locIdx]``, where ``locIdx`` is computed as follows.
@@ -479,10 +467,6 @@ operator =(ref a: blockDist(?), b: blockDist(?)) {
       _reprivatize(a._value);
   }
 }
-
-
-@deprecated("'Block' is deprecated, please use 'blockDist' instead")
-type Block = blockDist;
 
 
 @chpldoc.nodoc
