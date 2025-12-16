@@ -147,7 +147,6 @@ proc runCommand(cmd: string, quiet=false) : string throws {
   return runCommand(cmds, quiet=quiet);
 }
 
-
 /* Same as runCommand but for situations where an
    exit status is needed */
 proc runWithStatus(command: string, quiet=false): int {
@@ -170,6 +169,10 @@ proc runWithStatus(command: [] string, quiet=false): int {
     log.debugf("Caught unknown error ('%?') for command: %?\n", e, command);
     return -1;
   }
+}
+proc runWithStatus(cmd: string, quiet=false): int {
+  var cmds = cmd.split();
+  return runWithStatus(cmds, quiet=quiet);
 }
 
 proc SPACK_ROOT : string {
@@ -567,9 +570,8 @@ record srcSource {
 proc getMasonDependencies(sourceList: list(srcSource),
                           gitList: list(gitSource),
                           progName: string): list(string) {
-
   // Declare example to run as the main module
-  var masonCompopts: list(string);
+  var masonCompopts = new list(string);
   masonCompopts.pushBack("--main-module");
   masonCompopts.pushBack(progName);
 
@@ -632,6 +634,11 @@ proc getDepToml(depName: string, depVersion: string) throws {
   var results: list(string);
   for registry in MASON_CACHED_REGISTRY {
     const searchDir = registry + "/Bricks/";
+
+    if !isDir(searchDir) then
+      throw new MasonError("Registry path '" + registry +
+                           "' does not exist.\n" +
+                           "Try running 'mason update --force'.");
 
     for dir in listDir(searchDir, files=false, dirs=true) {
       const name = dir.replace("/", "");
