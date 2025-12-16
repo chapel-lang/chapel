@@ -226,6 +226,10 @@ def min_pos(a: Position, b: Optional[Position]) -> Position:
     return min(a, b)
 
 
+def range_overlap(r1: Range, r2: Range) -> bool:
+    return not (r1.end <= r2.start or r1.start >= r2.end)
+
+
 def get_symbol_information(
     decl: chapel.NamedDecl,
 ) -> Optional[SymbolInformation]:

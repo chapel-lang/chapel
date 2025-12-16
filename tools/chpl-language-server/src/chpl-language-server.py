@@ -670,7 +670,10 @@ class ChapelLanguageServer(LanguageServer):
         return active_patterns
 
     def get_end_markers(
-        self, ast: List[chapel.AstNode], file_lines: List[str]
+        self,
+        ast: List[chapel.AstNode],
+        file_lines: List[str],
+        requested_range: Range,
     ) -> List[InlayHint]:
         """
         Get the inlay hints that mark the end of significant blocks of code.
@@ -682,11 +685,17 @@ class ChapelLanguageServer(LanguageServer):
         for pattern in self.end_marker_patterns.values():
             for node, _ in chapel.each_matching(ast, pattern.pattern):
                 end_loc = location_to_range(node.location()).end
+
+                end_range = Range(end_loc, end_loc)
+                if not range_overlap(end_range, requested_range):
+                    continue
+
                 header_loc = pattern.header_location(node)
                 goto_loc = pattern.goto_location(node)
 
                 if header_loc is None:
                     continue
+
                 # skip blocks that are smaller than the threshold
                 block_size = end_loc.line - header_loc.end()[0]
                 if block_size < self.end_marker_threshold:
@@ -1014,8 +1023,18 @@ def run_lsp():
         ast = fi.get_asts()
         inlays: List[InlayHint] = []
 
+        # Dyno computes inlays etc. from the file on disk. We have a
+        # possible edited file in the buffer. Inlays after the earliest
+        # changed position may be invalid, so we limit the range.
+        requested_range = params.range
+        if fi.earliest_changed_pos is not None:
+            requested_range = Range(
+                requested_range.start,
+                min(requested_range.end, fi.earliest_changed_pos),
+            )
+
         file_lines = fi.file_lines()
-        block_inlays = ls.get_end_markers(ast, file_lines)
+        block_inlays = ls.get_end_markers(ast, file_lines, requested_range)
         if len(block_inlays) > 0:
             inlays.extend(block_inlays)
 
@@ -1026,16 +1045,6 @@ def run_lsp():
         # calls to feed to those methods.
         if not ls.use_resolver:
             return inlays
-
-        # Dyno computes inlays etc. from the file on disk. We have a
-        # possible edited file in the buffer. Inlays after the earliest
-        # changed position may be invalid, so we limit the range.
-        requested_range = params.range
-        if fi.earliest_changed_pos is not None:
-            requested_range = Range(
-                requested_range.start,
-                min(requested_range.end, fi.earliest_changed_pos),
-            )
 
         decls = fi.def_segments.range(requested_range)
         calls = list(
@@ -1048,10 +1057,7 @@ def run_lsp():
 
         for call in calls:
             call_range = location_to_range(call.location())
-            if (
-                call_range.end < requested_range.start
-                or call_range.start >= requested_range.end
-            ):
+            if not range_overlap(call_range, requested_range):
                 continue
 
             # call is in the range, but not all of its inlay hints may be.
@@ -1059,10 +1065,8 @@ def run_lsp():
             inlays_from_call = ls.get_call_inlays(call, instantiation)
 
             for inlay in inlays_from_call:
-                if (
-                    inlay.position < requested_range.start
-                    or inlay.position >= requested_range.end
-                ):
+                inlay_range = Range(inlay.position, inlay.position)
+                if not range_overlap(inlay_range, requested_range):
                     continue
                 inlays.append(inlay)
 
