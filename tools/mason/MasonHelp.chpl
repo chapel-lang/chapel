@@ -329,6 +329,7 @@ proc masonUpdateHelp() {
   writeln("Options:");
   writeln("    -h, --help                  Display this message");
   writeln("    --[no-]update               [Do not] update the mason registry before generating the lock file");
+  writeln("    --force                     Force an update to the cached mason registry");
 }
 
 proc masonEnvHelp() {
