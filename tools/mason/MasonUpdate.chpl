@@ -179,7 +179,7 @@ proc updateRegistry(skipUpdate: bool, show=true) {
   for ((name, registry), registryHome) in zip(MASON_REGISTRY, MASON_CACHED_REGISTRY) {
 
     if isDir(registryHome) {
-      var pullRegistry = 'git pull -q origin master';
+      var pullRegistry = 'git pull -q origin';
       if show then writeln("Updating ", name);
       gitC(registryHome, pullRegistry);
     }
