@@ -249,7 +249,7 @@ def endpos(text: str) -> Position:
     lines = text.splitlines()
     if len(lines) == 0:
         return pos((0, 0))
-    return pos((len(lines) - 1, len(lines[-1])))
+    return pos((len(lines), 0))
 
 
 def standard_module(name: str):
