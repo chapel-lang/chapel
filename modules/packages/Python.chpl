@@ -3568,7 +3568,7 @@ module Python {
   /*
     Represents a handle to a Chapel array that is usable by Python code. This
     allows code to pass Chapel arrays to Python without copying the data. This
-    only works for 1D local rectangular arrays.
+    only works for local rectangular arrays.
 
     .. note::
 
@@ -3620,7 +3620,7 @@ module Python {
     proc init(in interpreter: borrowed Interpreter, ref arr: [])
       where !isSupportedArrayType(arr) {
       super.init(interpreter, nil: PyObjectPtr, isOwned=false);
-      compilerError("Only 1D local rectangular arrays are currently supported");
+      compilerError("Only local rectangular arrays are currently supported");
       this.eltType = nothing;
     }
     @chpldoc.nodoc
