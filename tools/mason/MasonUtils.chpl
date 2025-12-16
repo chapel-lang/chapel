@@ -146,13 +146,10 @@ proc runCommand(cmd: string, quiet=false) : string throws {
   return runCommand(cmds, quiet=quiet);
 }
 
-
 /* Same as runCommand but for situations where an
    exit status is needed */
-proc runWithStatus(command, quiet=false): int {
-
+proc runWithStatus(cmd: [] string, quiet=false): int {
   try {
-    var cmd = command.split();
     var sub = spawn(cmd, stdout=pipeStyle.pipe, stderr=pipeStyle.pipe);
 
     var line:string;
@@ -166,6 +163,10 @@ proc runWithStatus(command, quiet=false): int {
   catch {
     return -1;
   }
+}
+proc runWithStatus(cmd: string, quiet=false): int {
+  var cmds = cmd.split();
+  return runWithStatus(cmds, quiet=quiet);
 }
 
 proc runWithProcess(command, quiet=false) throws {
@@ -546,18 +547,20 @@ proc isIdentifier(name:string) {
 
 proc getMasonDependencies(sourceList: list(3*string),
                           gitList: list(4*string),
-                          progName: string) {
+                          progName: string): list(string) {
 
   // Declare example to run as the main module
-  var masonCompopts = " ".join(" --main-module", progName, " ");
+  var masonCompopts = new list(string);
+  masonCompopts.pushBack("--main-module");
+  masonCompopts.pushBack(progName);
 
   if sourceList.size > 0 {
     const depPath = MASON_HOME + "/src/";
 
     // Add dependencies to project
     for (_, name, version) in sourceList {
-      var depSrc = "".join(' ',depPath, name, "-", version, '/src/', name, ".chpl");
-      masonCompopts += depSrc;
+      var depSrc = "".join(depPath, name, "-", version, '/src/', name, ".chpl");
+      masonCompopts.pushBack(depSrc);
     }
   }
   if gitList.size > 0 {
@@ -565,8 +568,8 @@ proc getMasonDependencies(sourceList: list(3*string),
 
     // Add git dependencies
     for (_, name, branch, _) in gitList {
-      var gitDepSrc = ' ' + gitDepPath + name + "-" + branch + '/src/' + name + ".chpl";
-      masonCompopts += gitDepSrc;
+      var gitDepSrc = gitDepPath + name + "-" + branch + '/src/' + name + ".chpl";
+      masonCompopts.pushBack(gitDepSrc);
     }
   }
   return masonCompopts;
@@ -608,6 +611,11 @@ proc getDepToml(depName: string, depVersion: string) throws {
   var results: list(string);
   for registry in MASON_CACHED_REGISTRY {
     const searchDir = registry + "/Bricks/";
+
+    if !isDir(searchDir) then
+      throw new MasonError("Registry path '" + registry +
+                           "' does not exist.\n" +
+                           "Try running 'mason update --force'.");
 
     for dir in listDir(searchDir, files=false, dirs=true) {
       const name = dir.replace("/", "");

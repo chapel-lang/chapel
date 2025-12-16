@@ -46,7 +46,7 @@ proc masonSearch(args: [?d] string) {
   masonSearch(listArgs);
 }
 
-proc masonSearch(ref args: list(string)) {
+proc masonSearch(ref args: list(string)) throws {
 
   var parser = new argumentParser(helpHandler=new MasonSearchHelpHandler());
 
@@ -79,6 +79,10 @@ proc masonSearch(ref args: list(string)) {
   var registries: list(string);
   for registry in MASON_CACHED_REGISTRY {
     const searchDir = registry + "/Bricks/";
+    if !isDir(searchDir) then
+      throw new MasonError("Registry path '" + registry +
+                           "' does not exist.\n" +
+                           "Try running 'mason update --force'.");
 
     for dir in listDir(searchDir, files=false, dirs=true) {
       const name = dir.replace("/", "");
