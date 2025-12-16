@@ -72,8 +72,9 @@ const invBoxSize = 1.0/boxSize;
 sanityCheck(latticeConstant);
 
 const boxDom   = {1..numBoxes(0), 1..numBoxes(1), 1..numBoxes(2)};
-const boxSpace = boxDom dmapped AccumStencil(boxDom, targetLocales=ReshapedLocales,
-                                             fluff=(1,1,1), periodic=true);
+const boxSpace = boxDom dmapped new dmap(
+                                  new AccumStencil(boxDom, targetLocales=ReshapedLocales,
+                                                   fluff=(1,1,1), periodic=true));
 
 var Boxes : [boxSpace] Box;
 
