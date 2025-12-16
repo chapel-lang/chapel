@@ -818,6 +818,7 @@ def run_lsp():
             fi.earliest_changed_pos,
         )
         ls.lsp.send_request_async(WORKSPACE_INLAY_HINT_REFRESH)
+        ls.lsp.send_request_async(WORKSPACE_SEMANTIC_TOKENS_REFRESH)
 
     @server.feature(TEXT_DOCUMENT_REFERENCES)
     async def get_refs(ls: ChapelLanguageServer, params: ReferenceParams):
