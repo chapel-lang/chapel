@@ -76,6 +76,7 @@ proc MASON_REGISTRY {
     registries.pushBack(default);
   } else {
     for str in env.split(',') {
+      if str.strip().isEmpty() then continue;
       const regArr = str.split('|');
       if regArr.size > 2 || regArr.size < 1 {
         stderr.writeln("expected MASON_REGISTRY to contain a comma " +
