@@ -1989,6 +1989,12 @@ module ChapelArray {
     return result;
   }
 
+  @chpldoc.nodoc
+  operator :(x: [], type t:string) {
+    compilerError("Cannot cast an array to a string, use "+
+                  "'try! \"%?\".format(array)' from IO.FormattedIO instead");
+  }
+
   pragma "last resort"
   @chpldoc.nodoc
   operator :(in x: [] ?et, type t: et) where t == et {
