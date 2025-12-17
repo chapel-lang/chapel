@@ -62,24 +62,31 @@ static void testCoerceInCall() {
 
   auto vars = resolveTypesOfVariables(context,
       R"""(
+      class Parent {}
+      class Child : Parent {}
+
       var tmp1: sync int;
       var tmp2: sync real;
       var tmp3: sync bool;
+      var tmp4: sync owned Child?;
 
       proc foo1(x: int) { return x; }
       proc foo2(x: real) { return x; }
       proc foo3(x: bool) { return x; }
+      proc foo4(x: borrowed Parent?) { return x; }
 
       var x = foo1(tmp1);
       var y = foo2(tmp2);
       var z = foo3(tmp3);
-      )""", {"x", "y", "z"});
+      var w = foo4(tmp4);
+      )""", {"x", "y", "z", "w"});
 
   assert(vars.at("x").type()->isIntType());
   assert(vars.at("y").type()->isRealType());
   assert(vars.at("z").type()->isBoolType());
+  assert(vars.at("w").type()->isClassType());
 
-  assert(guard.numErrors() == 3);
+  assert(guard.numErrors() == 4);
   for (auto& err : guard.errors()) {
     assert(err->type() == ErrorType::DeprecatedSyncRead);
   }
