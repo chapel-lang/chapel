@@ -1075,6 +1075,13 @@ module OS {
     */
     pragma "fn synchronization free"
     inline proc memmove(dest:c_ptr(void), const src:c_ptr(void), n: c_size_t) {
+      if chpl_checkNilDereferences {
+        import HaltWrappers;
+        if dest == nil then
+          HaltWrappers.nilCheckHalt("dest argument to memmove is nil");
+        if src == nil then
+          HaltWrappers.nilCheckHalt("src argument to memmove is nil");
+      }
       pragma "fn synchronization free"
       extern proc memmove(dest: c_ptr(void), const src: c_ptr(void), n: c_size_t);
       memmove(dest, src, n);
@@ -1092,6 +1099,13 @@ module OS {
     */
     pragma "fn synchronization free"
     inline proc memcpy(dest:c_ptr(void), const src:c_ptr(void), n: c_size_t) {
+      if chpl_checkNilDereferences {
+        import HaltWrappers;
+        if dest == nil then
+          HaltWrappers.nilCheckHalt("dest argument to memcpy is nil");
+        if src == nil then
+          HaltWrappers.nilCheckHalt("src argument to memcpy is nil");
+      }
       pragma "fn synchronization free"
       extern proc memcpy(dest: c_ptr(void), const src: c_ptr(void), n: c_size_t);
       memcpy(dest, src, n);
@@ -1133,6 +1147,11 @@ module OS {
     */
     pragma "fn synchronization free"
     inline proc memset(s:c_ptr(void), c:integral, n: c_size_t) {
+      if chpl_checkNilDereferences {
+        import HaltWrappers;
+        if s == nil then
+          HaltWrappers.nilCheckHalt("first argument to memset is nil");
+      }
       pragma "fn synchronization free"
       extern proc memset(s: c_ptr(void), c: c_int, n: c_size_t): c_ptr(void);
       memset(s, c.safeCast(c_int), n);
