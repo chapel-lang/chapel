@@ -167,7 +167,7 @@ module ByteBufferHelpers {
     // these 3 conditionals prevent edge cases when a string buffer might be unallocated
     // this can occur with empty strings like `""`
     // see test/types/string/emptyString.chpl for an example
-    if (len1 == 0) & (2 == 0) then return 0;
+    if (len1 == 0) & (len2 == 0) then return 0;
     if buf1 == nil then return -1;
     if buf2 == nil then return 1;
     // Assumes a and b are on same locale and not empty.
