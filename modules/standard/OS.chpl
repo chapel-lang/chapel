@@ -1108,6 +1108,13 @@ module OS {
     */
     pragma "fn synchronization free"
     inline proc memcmp(const s1:c_ptr(void), const s2:c_ptr(void), n: c_size_t): int {
+      if chpl_checkNilDereferences {
+        import HaltWrappers;
+        if s1 == nil then
+          HaltWrappers.nilCheckHalt("first argument to memcmp is nil");
+        if s2 == nil then
+          HaltWrappers.nilCheckHalt("second argument to memcmp is nil");
+      }
       pragma "fn synchronization free"
       extern proc memcmp(const s1: c_ptr(void), const s2: c_ptr(void), n: c_size_t): c_int;
       return memcmp(s1, s2, n).safeCast(int);

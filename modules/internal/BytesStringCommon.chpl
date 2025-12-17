@@ -326,6 +326,7 @@ module BytesStringCommon {
   inline proc initWithNewBuffer(ref x: ?t, other: t) {
     assertArgType(t, "initWithNewBuffer");
 
+    // when `other` is an empty string, this may leave `x.buff` uninitialized!
     const otherRemote = other.locale_id != chpl_nodeID;
     const otherLen = other.numBytes;
     x.isOwned = true;
