@@ -32,15 +32,18 @@ if command -v module > /dev/null 2>&1 ; then
   fi
 fi
 
-COMPOPTS="--launcher=none --checks"
+COMPOPTS=""
+PRE_COMPOPTS="--launcher=none"
+POST_COMPOPTS="--checks"
 if [ "$DEBUG" == "1" ]; then
   # TODO add --debug-safe-optimizations-only once https://github.com/chapel-lang/chapel/issues/28165 is resolved
   COMPOPTS="$COMPOPTS -g --no-devel"
 else
   COMPOPTS="$COMPOPTS --fast --no-specialize"
 fi
+ALL_COMPOPTS="$PRE_COMPOPTS $COMPOPTS $POST_COMPOPTS"
 
-COMMAND="$chplBinDir/chpl $COMPOPTS mason.chpl -o $chplBinDir/mason"
+COMMAND="$chplBinDir/chpl $ALL_COMPOPTS mason.chpl -o $chplBinDir/mason"
 echo "Building Mason: $COMMAND"
 
 if ! $COMMAND; then
