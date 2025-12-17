@@ -992,7 +992,6 @@ static void test10() {
     R"""(
     module Lib {
       proc outermost(x) {
-        compilerWarning("In outermost with argument of type " + x.type:string);
         return x.type : string;
       }
     }
