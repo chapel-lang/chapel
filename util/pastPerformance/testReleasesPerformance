@@ -227,7 +227,7 @@ export CHPL_TEST_PERF_DATE="09/18/25"
 export CHPL_HOME=$chpl_release_home/chapel-2.6.0
 testReleasePerformance
 
-export CHPL_TEST_PERF_DATE="12/18/25"
+export CHPL_TEST_PERF_DATE="12/12/25"
 export CHPL_HOME=$chpl_release_home/chapel-2.7.0
 testReleasePerformance
 #
