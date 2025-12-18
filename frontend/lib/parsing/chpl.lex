@@ -158,7 +158,6 @@ implements       return processToken(yyscanner, TIMPLEMENTS);
 interface        return processToken(yyscanner, TINTERFACE);
 iter             return processToken(yyscanner, TITER);
 label            return processToken(yyscanner, TLABEL);
-lambda           return processToken(yyscanner, TLAMBDA);
 let              return processToken(yyscanner, TLET);
 lifetime         return processToken(yyscanner, TLIFETIME);
 local            return processToken(yyscanner, TLOCAL);

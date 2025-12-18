@@ -5462,9 +5462,6 @@ static void attachFunctionFlags(TConverter* tc, const Function* node,
   } else if (node->isAnonymous()) {
     fn->addFlag(FLAG_COMPILER_NESTED_FUNCTION);
     fn->addFlag(FLAG_ANONYMOUS_FN);
-    if (node->kind() == uast::Function::LAMBDA) {
-      fn->addFlag(FLAG_LEGACY_LAMBDA);
-    }
   }
 
   if (auto t = rf->returnType().type()) {
