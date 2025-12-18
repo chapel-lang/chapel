@@ -892,7 +892,10 @@ void CallInitDeinit::processInit(VarFrame* frame,
     } else {
       // it is copy initialization, so use init= for records
       // and assign for other stuff
-      if (lhsType.type() != nullptr && lhsType.type()->isRecordLike()) {
+      if (lhsType.type() != nullptr &&
+          (lhsType.type()->isRecordLike() ||
+           lhsType.type()->isArrayType() ||
+           lhsType.type()->isDomainType())) {
         resolveCopyInit(ast, rhsAst,
                         lhsType, rhsType,
                         /* forMoveInit */ false,
