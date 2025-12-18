@@ -281,6 +281,65 @@ index 20a3fa9871e..b5bc6cb0d1b 100644
  field-undefined.chpl:6: In initializer:
 -field-undefined.chpl:9: error: 'c' undeclared (first use this function)
 +field-undefined.chpl:9: error: 'c' cannot be found
+diff --git a/test/classes/initializers/generics/declarations/default_value_bad.good b/test/classes/initializers/generics/declarations/default_value_bad.good
+index d48d538b4d1..fbdaa1b41ca 100644
+--- a/test/classes/initializers/generics/declarations/default_value_bad.good
++++ b/test/classes/initializers/generics/declarations/default_value_bad.good
+@@ -1,4 +1,3 @@
+-default_value_bad.chpl:13: error: unresolved call 'Foo.init("blah")'
+-default_value_bad.chpl:7: note: this candidate did not match: Foo.init(xVal = 3)
+-default_value_bad.chpl:13: note: because actual argument #1 with type 'string'
+-default_value_bad.chpl:7: note: is passed to formal 'xVal: int(64)'
++default_value_bad.chpl:13: error: unable to resolve call to 'init': no matching candidates
++default_value_bad.chpl:7: note: the following candidate didn't match because an actual couldn't be passed to a formal
++default_value_bad.chpl:13: note: omitting 22 more candidates that didn't match
+diff --git a/test/classes/initializers/generics/explicitAssignment.good b/test/classes/initializers/generics/explicitAssignment.good
+index 2403097edb5..f7fc46c8246 100644
+--- a/test/classes/initializers/generics/explicitAssignment.good
++++ b/test/classes/initializers/generics/explicitAssignment.good
+@@ -1,2 +1,2 @@
+ explicitAssignment.chpl:17: In function 'main':
+-explicitAssignment.chpl:18: error: cannot initialize 'a' of type 'borrowed Foo(real(64))' from a 'borrowed Foo(int(64))'
++explicitAssignment.chpl:18: error: type mismatch between declared type of 'a' and initialization expression
+diff --git a/test/classes/initializers/generics/genericInitError.good b/test/classes/initializers/generics/genericInitError.good
+index 76a3cd6ac3b..2c1fc587f25 100644
+--- a/test/classes/initializers/generics/genericInitError.good
++++ b/test/classes/initializers/generics/genericInitError.good
+@@ -1,3 +1 @@
+-genericInitError.chpl:4: In initializer:
+-genericInitError.chpl:5: error: can't omit initialization of field "t", no type or default value provided
+-genericInitError.chpl:6: error: cannot update a type field, "t", in phase 2
++genericInitError.chpl:1: error: unable to instantiate generic type from initializer
+diff --git a/test/classes/initializers/generics/init-param-from-non-param.good b/test/classes/initializers/generics/init-param-from-non-param.good
+index 724e5efe877..8b7961e1560 100644
+--- a/test/classes/initializers/generics/init-param-from-non-param.good
++++ b/test/classes/initializers/generics/init-param-from-non-param.good
+@@ -1,2 +1,3 @@
+ init-param-from-non-param.chpl:3: In initializer:
+-init-param-from-non-param.chpl:5: error: Initializing parameter 'p' to value not known at compile time
++init-param-from-non-param.chpl:5: error: a 'param' cannot be initialized with a non-'param' value
++init-param-from-non-param.chpl:1: error: unable to instantiate generic type from initializer
+diff --git a/test/classes/initializers/generics/initAtomicsViaWrite.good b/test/classes/initializers/generics/initAtomicsViaWrite.good
+index dc65d3bab06..1028aac0f22 100644
+--- a/test/classes/initializers/generics/initAtomicsViaWrite.good
++++ b/test/classes/initializers/generics/initAtomicsViaWrite.good
+@@ -1,3 +1,5 @@
+ initAtomicsViaWrite.chpl:5: In initializer:
+-initAtomicsViaWrite.chpl:6: error: field "head" used before it is initialized
+-initAtomicsViaWrite.chpl:7: error: field "tail" used before it is initialized
++initAtomicsViaWrite.chpl:6: error: 'head' is used before it is initialized
++initAtomicsViaWrite.chpl:7: error: 'tail' is used before it is initialized
++initAtomicsViaWrite.chpl:6: error: 'head' is used before it is initialized
++initAtomicsViaWrite.chpl:7: error: 'tail' is used before it is initialized
+diff --git a/test/classes/initializers/generics/omittedGenerics2.good b/test/classes/initializers/generics/omittedGenerics2.good
+index 134894721d7..397f84c2e47 100644
+--- a/test/classes/initializers/generics/omittedGenerics2.good
++++ b/test/classes/initializers/generics/omittedGenerics2.good
+@@ -1,2 +1,2 @@
+-omittedGenerics2.chpl:9: In initializer:
+-omittedGenerics2.chpl:10: error: can't omit initialization of field "a", no type or default value provided
++omittedGenerics2.chpl:9: error: cannot implicitly initialize field 'a', which does not have a default value
++omittedGenerics2.chpl:5: error: unable to instantiate generic type from initializer
 diff --git a/test/types/POD/elliot/varNotPOD.good b/test/types/POD/elliot/varNotPOD.good
 index 66db8242dd1..1a9cf52c977 100644
 --- a/test/types/POD/elliot/varNotPOD.good
