@@ -1,1 +1,1 @@
-dmapped-new-error.chpl:14: error: dmapped initialization expression requires a value, not a type - did you mean to use 'new'?
+dmapped-new-error.chpl:14: error: dmapped initialization expression requires a value, not a type - did you mean to use '<domain> dmapped new <DistName>(<args>)'?
