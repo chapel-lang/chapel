@@ -2257,7 +2257,7 @@ class DumpCodePass ( Pass ):
     
     # inject helper module
     if helper_info.get("no-doc") == "all":
-      module_file.write( "pragma \"no doc\"\n" )
+      module_file.write( "@chpldoc.nodoc\n" )
     
     module_file.write( "/*\n" + helper_info.find( "./description" ).text + "\n*/\n" )
     module_file.write( "module " + helper_info.get("name") + " {\n" )
@@ -2272,13 +2272,13 @@ class DumpCodePass ( Pass ):
       code = proc.find( "./code/[@category='extern proc']")
       if code != None:
         if nodoc_helper_procs:
-          module_file.write( "pragma \"no doc\"\n" )
+          module_file.write( "@chpldoc.nodoc\n" )
         module_file.write( code.text + "\n" )
       
       code = proc.find( "./code/[@category='string wrapped']")
       if code != None:
         if nodoc_helper_procs:
-          module_file.write( "pragma \"no doc\"\n" )
+          module_file.write( "@chpldoc.nodoc\n" )
         module_file.write( code.text + "\n" )
     
     module_file.write( "} // " + helper_info.get("name") + "\n" )
