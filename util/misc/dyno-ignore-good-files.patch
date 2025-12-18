@@ -89,6 +89,62 @@ index 57b4b8d78b4..8da7750790b 100644
  
  
     *Example (split-cond-blocks-init.chpl)*
+diff --git a/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-const-err-1.good b/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-const-err-1.good
+index 353bc711b9b..8b73c9dc9a7 100644
+--- a/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-const-err-1.good
++++ b/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-const-err-1.good
+@@ -1,4 +1,4 @@
+-dflt-ctor-generic-uninit-field-const-err-1.chpl:7: error: unresolved call 'A.init()'
+-dflt-ctor-generic-uninit-field-const-err-1.chpl:3: note: this candidate did not match: A.init(c)
+-dflt-ctor-generic-uninit-field-const-err-1.chpl:7: note: because call does not supply enough arguments
+-dflt-ctor-generic-uninit-field-const-err-1.chpl:4: note: it is missing a value for formal 'in c'
++dflt-ctor-generic-uninit-field-const-err-1.chpl:7: error: unable to resolve call to 'init': no matching candidates
++$CHPL_HOME/modules/standard/ChapelIO.chpl:363: note: the following candidate didn't match
++$CHPL_HOME/modules/internal/ChapelRange.chpl:280: note: the following candidate didn't match
++dflt-ctor-generic-uninit-field-const-err-1.chpl:7: note: omitting 20 more candidates that didn't match
+diff --git a/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-param-err-1.good b/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-param-err-1.good
+index b006744280f..83610fec3b1 100644
+--- a/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-param-err-1.good
++++ b/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-param-err-1.good
+@@ -1,6 +1,4 @@
+-dflt-ctor-generic-uninit-field-param-err-1.chpl:7: error: unresolved call 'A.init()'
+-dflt-ctor-generic-uninit-field-param-err-1.chpl:3: note: this candidate did not match: A.init(param p)
+-dflt-ctor-generic-uninit-field-param-err-1.chpl:7: note: because call does not supply enough arguments
+-dflt-ctor-generic-uninit-field-param-err-1.chpl:4: note: it is missing a value for formal 'param p'
+-dflt-ctor-generic-uninit-field-param-err-1.chpl:7: note: other candidates are:
+-dflt-ctor-generic-uninit-field-param-err-1.chpl:3: note:   A.init(param p, reader, deserializer)
++dflt-ctor-generic-uninit-field-param-err-1.chpl:7: error: unable to resolve call to 'init': no matching candidates
++$CHPL_HOME/modules/standard/ChapelIO.chpl:363: note: the following candidate didn't match
++$CHPL_HOME/modules/internal/ChapelRange.chpl:280: note: the following candidate didn't match
++dflt-ctor-generic-uninit-field-param-err-1.chpl:7: note: omitting 20 more candidates that didn't match
+diff --git a/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-type-err-1.good b/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-type-err-1.good
+index e771412e0ba..ec28ed79c80 100644
+--- a/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-type-err-1.good
++++ b/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-type-err-1.good
+@@ -1,6 +1,4 @@
+-dflt-ctor-generic-uninit-field-type-err-1.chpl:7: error: unresolved call 'A.init()'
+-dflt-ctor-generic-uninit-field-type-err-1.chpl:3: note: this candidate did not match: A.init(type t)
+-dflt-ctor-generic-uninit-field-type-err-1.chpl:7: note: because call does not supply enough arguments
+-dflt-ctor-generic-uninit-field-type-err-1.chpl:4: note: it is missing a value for formal 't'
+-dflt-ctor-generic-uninit-field-type-err-1.chpl:7: note: other candidates are:
+-dflt-ctor-generic-uninit-field-type-err-1.chpl:3: note:   A.init(type t, reader, deserializer)
++dflt-ctor-generic-uninit-field-type-err-1.chpl:7: error: unable to resolve call to 'init': no matching candidates
++$CHPL_HOME/modules/standard/ChapelIO.chpl:363: note: the following candidate didn't match
++$CHPL_HOME/modules/internal/ChapelRange.chpl:280: note: the following candidate didn't match
++dflt-ctor-generic-uninit-field-type-err-1.chpl:7: note: omitting 20 more candidates that didn't match
+diff --git a/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-var-err-1.good b/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-var-err-1.good
+index 1e4db802fe4..66b5e8e2e20 100644
+--- a/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-var-err-1.good
++++ b/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-var-err-1.good
+@@ -1,4 +1,4 @@
+-dflt-ctor-generic-uninit-field-var-err-1.chpl:7: error: unresolved call 'A.init()'
+-dflt-ctor-generic-uninit-field-var-err-1.chpl:3: note: this candidate did not match: A.init(v)
+-dflt-ctor-generic-uninit-field-var-err-1.chpl:7: note: because call does not supply enough arguments
+-dflt-ctor-generic-uninit-field-var-err-1.chpl:4: note: it is missing a value for formal 'in v'
++dflt-ctor-generic-uninit-field-var-err-1.chpl:7: error: unable to resolve call to 'init': no matching candidates
++$CHPL_HOME/modules/standard/ChapelIO.chpl:363: note: the following candidate didn't match
++$CHPL_HOME/modules/internal/ChapelRange.chpl:280: note: the following candidate didn't match
++dflt-ctor-generic-uninit-field-var-err-1.chpl:7: note: omitting 20 more candidates that didn't match
 diff --git a/test/types/POD/elliot/varNotPOD.good b/test/types/POD/elliot/varNotPOD.good
 index 66db8242dd1..1a9cf52c977 100644
 --- a/test/types/POD/elliot/varNotPOD.good
