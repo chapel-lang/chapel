@@ -208,6 +208,45 @@ index e250981e770..ce1a696bbe8 100644
 +parent_inherits_initializer_bad.chpl:16: error: unable to resolve call to 'init': no matching candidates
 +parent_inherits_initializer_bad.chpl:10: note: the following candidate didn't match because it expects 2 actuals, but none were provided
 +parent_inherits_initializer_bad.chpl:16: note: omitting 22 more candidates that didn't match
+diff --git a/test/classes/initializers/errors/badThisType.good b/test/classes/initializers/errors/badThisType.good
+index 9d0259c63b1..6dc968f5fde 100644
+--- a/test/classes/initializers/errors/badThisType.good
++++ b/test/classes/initializers/errors/badThisType.good
+@@ -1,6 +1,4 @@
++badThisType.chpl:7: error: 'R' cannot be found (first mention this function)
+ badThisType.chpl:7: error: Attempt to 'new' a function or undefined symbol
++badThisType.chpl:8: error: 'R2' cannot be found (first mention this function)
+ badThisType.chpl:8: error: Attempt to 'new' a function or undefined symbol
+-badThisType.chpl:1: In initializer:
+-badThisType.chpl:1: error: 'R' undeclared (first use this function)
+-badThisType.chpl:4: In initializer:
+-badThisType.chpl:4: error: 'R2' undeclared (first use this function)
+diff --git a/test/classes/initializers/errors/fieldRecordTypeMismatch.good b/test/classes/initializers/errors/fieldRecordTypeMismatch.good
+index 825a1c0f347..a31be9e8996 100644
+--- a/test/classes/initializers/errors/fieldRecordTypeMismatch.good
++++ b/test/classes/initializers/errors/fieldRecordTypeMismatch.good
+@@ -1,2 +1,3 @@
+-fieldRecordTypeMismatch.chpl:12: In initializer:
+-fieldRecordTypeMismatch.chpl:10: error: 'R' undeclared (first use this function)
++fieldRecordTypeMismatch.chpl:17: error: unable to resolve call to 'init': no matching candidates
++fieldRecordTypeMismatch.chpl:12: note: the following candidate didn't match because an actual couldn't be passed to a formal
++fieldRecordTypeMismatch.chpl:17: note: omitting 22 more candidates that didn't match
+diff --git a/test/classes/initializers/errors/grandFieldInit.good b/test/classes/initializers/errors/grandFieldInit.good
+index 5bef47bef9b..a2de273ad12 100644
+--- a/test/classes/initializers/errors/grandFieldInit.good
++++ b/test/classes/initializers/errors/grandFieldInit.good
+@@ -1,2 +1,2 @@
+ grandFieldInit.chpl:13: In initializer:
+-grandFieldInit.chpl:14: error: can't set value of field "x" from parent type before calling this.init() or super.init()
++grandFieldInit.chpl:14: error: Cannot access parent field "x" before super.init() or this.init()
+diff --git a/test/classes/initializers/errors/grandFieldUse.good b/test/classes/initializers/errors/grandFieldUse.good
+index c000fcc24fd..b707e6ba409 100644
+--- a/test/classes/initializers/errors/grandFieldUse.good
++++ b/test/classes/initializers/errors/grandFieldUse.good
+@@ -1,2 +1,2 @@
+ grandFieldUse.chpl:13: In initializer:
+-grandFieldUse.chpl:14: error: cannot access parent field "x" before super.init() or this.init()
++grandFieldUse.chpl:14: error: Cannot access parent field "x" before super.init() or this.init()
 diff --git a/test/types/POD/elliot/varNotPOD.good b/test/types/POD/elliot/varNotPOD.good
 index 66db8242dd1..1a9cf52c977 100644
 --- a/test/types/POD/elliot/varNotPOD.good
