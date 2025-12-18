@@ -239,6 +239,41 @@ PyObject* ParamObject::str(ParamObject* self) {
   return Py_BuildValue("s", typeString.c_str());
 }
 
+PyObject* TypedSignatureObject::str(TypedSignatureObject* self) {
+  if (!self->value_) {
+    raiseExceptionForIncorrectlyConstructedType("TypedSignature");
+    return nullptr;
+  }
+  std::stringstream ss;
+  self->value_.signature->stringify(ss, CHPL_SYNTAX);
+  auto typeString = ss.str();
+  return Py_BuildValue("s", typeString.c_str());
+}
+PyObject* TypedSignatureObject::repr(TypedSignatureObject* self) {
+  if (!self->value_) {
+    raiseExceptionForIncorrectlyConstructedType("TypedSignature");
+    return nullptr;
+  }
+  std::stringstream ss;
+  self->value_.signature->stringify(ss, CHPL_SYNTAX);
+  self->value_.poiScope->stringify(ss, CHPL_SYNTAX);
+  auto typeString = ss.str();
+  return Py_BuildValue("s", typeString.c_str());
+}
+Py_hash_t TypedSignatureObject::hash(TypedSignatureObject* self) {
+  return chpl::hash(self->value_.signature, self->value_.poiScope);
+}
+PyObject* TypedSignatureObject::richcompare(TypedSignatureObject* self, PyObject* other, int op) {
+  if (other->ob_type != TypedSignatureObject::PythonType) {
+    Py_RETURN_NOTIMPLEMENTED;
+  }
+  auto otherCast = (TypedSignatureObject*) other;
+  auto selfVal = std::make_tuple(self->value_.signature, self->value_.poiScope);
+  auto otherVal = std::make_tuple(otherCast->value_.signature, otherCast->value_.poiScope);
+
+  Py_RETURN_RICHCOMPARE(selfVal, otherVal, op);
+}
+
 PyTypeObject* parentTypeFor(asttags::AstTag tag) {
 #define AST_NODE(NAME)
 #define AST_LEAF(NAME)
