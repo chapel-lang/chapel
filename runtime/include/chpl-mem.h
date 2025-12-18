@@ -162,6 +162,7 @@ static inline
 void* chpl_memcpy(void* dest, const void* src, size_t num)
 {
   assert(dest != src || num == 0);
+  assert(dest != NULL && src != NULL);
   return memcpy(dest, src, num);
 }
 
