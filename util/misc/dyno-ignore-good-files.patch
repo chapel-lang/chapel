@@ -145,6 +145,69 @@ index 1e4db802fe4..66b5e8e2e20 100644
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:363: note: the following candidate didn't match
 +$CHPL_HOME/modules/internal/ChapelRange.chpl:280: note: the following candidate didn't match
 +dflt-ctor-generic-uninit-field-var-err-1.chpl:7: note: omitting 20 more candidates that didn't match
+diff --git a/test/classes/initializers/compilerGenerated/generics/issue-16508-default-ok.good b/test/classes/initializers/compilerGenerated/generics/issue-16508-default-ok.good
+index e010eb041e0..a06343ef4fd 100644
+--- a/test/classes/initializers/compilerGenerated/generics/issue-16508-default-ok.good
++++ b/test/classes/initializers/compilerGenerated/generics/issue-16508-default-ok.good
+@@ -1,3 +1 @@
+-issue-16508-default-ok.chpl:5: error: default initialization with type 'TypelessField(int(64))' is not yet supported
+-issue-16508-default-ok.chpl:2: note: field 'field' is a generic value
+-issue-16508-default-ok.chpl:2: note: consider separately declaring a type field for it or using a 'new' call
++issue-16508-default-ok.chpl:5: error: unable to resolve call to 'init': no matching candidates
+diff --git a/test/classes/initializers/compilerGenerated/generics/withParamTypeNoDefNoArgsInCall.good b/test/classes/initializers/compilerGenerated/generics/withParamTypeNoDefNoArgsInCall.good
+index c4be8f5b2ff..00723855840 100644
+--- a/test/classes/initializers/compilerGenerated/generics/withParamTypeNoDefNoArgsInCall.good
++++ b/test/classes/initializers/compilerGenerated/generics/withParamTypeNoDefNoArgsInCall.good
+@@ -1,6 +1,4 @@
+-withParamTypeNoDefNoArgsInCall.chpl:5: error: unresolved call 'Foo.init()'
+-withParamTypeNoDefNoArgsInCall.chpl:1: note: this candidate did not match: Foo.init(param p: bool)
+-withParamTypeNoDefNoArgsInCall.chpl:5: note: because call does not supply enough arguments
+-withParamTypeNoDefNoArgsInCall.chpl:2: note: it is missing a value for formal 'param p: bool'
+-withParamTypeNoDefNoArgsInCall.chpl:5: note: other candidates are:
+-withParamTypeNoDefNoArgsInCall.chpl:1: note:   Foo.init(param p: bool, reader, deserializer)
++withParamTypeNoDefNoArgsInCall.chpl:5: error: unable to resolve call to 'init': no matching candidates
++$CHPL_HOME/modules/standard/ChapelIO.chpl:363: note: the following candidate didn't match
++$CHPL_HOME/modules/internal/ChapelRange.chpl:280: note: the following candidate didn't match
++withParamTypeNoDefNoArgsInCall.chpl:5: note: omitting 20 more candidates that didn't match
+diff --git a/test/classes/initializers/compilerGenerated/inherits_initializer_bad.good b/test/classes/initializers/compilerGenerated/inherits_initializer_bad.good
+index fe576424976..24d7cb22f0e 100644
+--- a/test/classes/initializers/compilerGenerated/inherits_initializer_bad.good
++++ b/test/classes/initializers/compilerGenerated/inherits_initializer_bad.good
+@@ -1,5 +1,4 @@
+-inherits_initializer_bad.chpl:20: In function 'main':
+-inherits_initializer_bad.chpl:21: error: unresolved call 'Parent.init()'
+-inherits_initializer_bad.chpl:10: note: this candidate did not match: Parent.init(x1: int, x2: int)
+-inherits_initializer_bad.chpl:16: note: because call does not supply enough arguments
+-inherits_initializer_bad.chpl:10: note: it is missing a value for formal 'x1: int(64)'
++inherits_initializer_bad.chpl:16: In initializer:
++inherits_initializer_bad.chpl:16: error: unable to resolve call to 'init': no matching candidates
++inherits_initializer_bad.chpl:10: note: the following candidate didn't match because it expects 2 actuals, but none were provided
++inherits_initializer_bad.chpl:16: note: omitting 22 more candidates that didn't match
+diff --git a/test/classes/initializers/compilerGenerated/outOfOrderFieldUse.good b/test/classes/initializers/compilerGenerated/outOfOrderFieldUse.good
+index 9a24ed9905b..64b45330b48 100644
+--- a/test/classes/initializers/compilerGenerated/outOfOrderFieldUse.good
++++ b/test/classes/initializers/compilerGenerated/outOfOrderFieldUse.good
+@@ -1,2 +1,4 @@
+-outOfOrderFieldUse.chpl:5: error: statement references variable 'y' before it is defined
+-outOfOrderFieldUse.chpl:6: note: the variable 'y' is defined here
++outOfOrderFieldUse.chpl:9: error: unable to resolve call to 'init': no matching candidates
++outOfOrderFieldUse.chpl:4: note: the following candidate didn't match
++$CHPL_HOME/modules/standard/ChapelIO.chpl:363: note: the following candidate didn't match
++outOfOrderFieldUse.chpl:9: note: omitting 21 more candidates that didn't match
+diff --git a/test/classes/initializers/compilerGenerated/parent_inherits_initializer_bad.good b/test/classes/initializers/compilerGenerated/parent_inherits_initializer_bad.good
+index e250981e770..ce1a696bbe8 100644
+--- a/test/classes/initializers/compilerGenerated/parent_inherits_initializer_bad.good
++++ b/test/classes/initializers/compilerGenerated/parent_inherits_initializer_bad.good
+@@ -1,5 +1,4 @@
+-parent_inherits_initializer_bad.chpl:24: In function 'main':
+-parent_inherits_initializer_bad.chpl:25: error: unresolved call 'GrandParent.init()'
+-parent_inherits_initializer_bad.chpl:10: note: this candidate did not match: GrandParent.init(x1: int, x2: int)
+-parent_inherits_initializer_bad.chpl:16: note: because call does not supply enough arguments
+-parent_inherits_initializer_bad.chpl:10: note: it is missing a value for formal 'x1: int(64)'
++parent_inherits_initializer_bad.chpl:16: In initializer:
++parent_inherits_initializer_bad.chpl:16: error: unable to resolve call to 'init': no matching candidates
++parent_inherits_initializer_bad.chpl:10: note: the following candidate didn't match because it expects 2 actuals, but none were provided
++parent_inherits_initializer_bad.chpl:16: note: omitting 22 more candidates that didn't match
 diff --git a/test/types/POD/elliot/varNotPOD.good b/test/types/POD/elliot/varNotPOD.good
 index 66db8242dd1..1a9cf52c977 100644
 --- a/test/types/POD/elliot/varNotPOD.good
