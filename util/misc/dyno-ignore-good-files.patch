@@ -340,6 +340,74 @@ index 134894721d7..397f84c2e47 100644
 -omittedGenerics2.chpl:10: error: can't omit initialization of field "a", no type or default value provided
 +omittedGenerics2.chpl:9: error: cannot implicitly initialize field 'a', which does not have a default value
 +omittedGenerics2.chpl:5: error: unable to instantiate generic type from initializer
+diff --git a/test/classes/initializers/generics/param-field-default-value-non-param-config-var.good b/test/classes/initializers/generics/param-field-default-value-non-param-config-var.good
+index 9f9db95737e..79874928df6 100644
+--- a/test/classes/initializers/generics/param-field-default-value-non-param-config-var.good
++++ b/test/classes/initializers/generics/param-field-default-value-non-param-config-var.good
+@@ -1,2 +1,2 @@
+-param-field-default-value-non-param-config-var.chpl:4: In initializer:
+-param-field-default-value-non-param-config-var.chpl:4: error: Initializing parameter 'p' to value not known at compile time
++param-field-default-value-non-param-config-var.chpl:3: error: a 'param' cannot be initialized with a non-'param' value
++param-field-default-value-non-param-config-var.chpl:2: error: unable to instantiate generic type from initializer
+diff --git a/test/classes/initializers/generics/param-field-default-value-non-param-field.good b/test/classes/initializers/generics/param-field-default-value-non-param-field.good
+index 1a3972bd555..18426ad319d 100644
+--- a/test/classes/initializers/generics/param-field-default-value-non-param-field.good
++++ b/test/classes/initializers/generics/param-field-default-value-non-param-field.good
+@@ -1,2 +1,2 @@
+-param-field-default-value-non-param-field.chpl:4: In initializer:
+-param-field-default-value-non-param-field.chpl:4: error: Initializing parameter 'p' to value not known at compile time
++param-field-default-value-non-param-field.chpl:3: error: a 'param' cannot be initialized with a non-'param' value
++param-field-default-value-non-param-field.chpl:1: error: unable to instantiate generic type from initializer
+diff --git a/test/classes/initializers/generics/param-record-field.good b/test/classes/initializers/generics/param-record-field.good
+index c535fd258b8..a05749ec7e8 100644
+--- a/test/classes/initializers/generics/param-record-field.good
++++ b/test/classes/initializers/generics/param-record-field.good
+@@ -1 +1,2 @@
+-param-record-field.chpl:4: error: 'r' is not of a supported param type
++param-record-field.chpl:5: error: cannot implicitly initialize field 'r', which does not have a default value
++param-record-field.chpl:3: error: unable to instantiate generic type from initializer
+diff --git a/test/classes/initializers/generics/phase1/badDependence.good b/test/classes/initializers/generics/phase1/badDependence.good
+index 14dd81d243e..8f4a321855b 100644
+--- a/test/classes/initializers/generics/phase1/badDependence.good
++++ b/test/classes/initializers/generics/phase1/badDependence.good
+@@ -1,3 +1,15 @@
+ badDependence.chpl:7: In initializer:
+-badDependence.chpl:8: error: field "f5" used before it is initialized
+-badDependence.chpl:9: error: field "f4" used before it is initialized
++badDependence.chpl:8: error: 'f5' is used before it is initialized
++badDependence.chpl:8: error: unable to resolve call to '+': no matching candidates
++$CHPL_HOME/modules/internal/ChapelDomain.chpl:438: note: the following candidate didn't match because an actual couldn't be passed to a formal
++$CHPL_HOME/modules/internal/ChapelDomain.chpl:428: note: the following candidate didn't match because an actual couldn't be passed to a formal
++badDependence.chpl:8: note: omitting 80 more candidates that didn't match
++badDependence.chpl:9: error: 'f4' is used before it is initialized
++badDependence.chpl:9: error: unable to resolve call to '-': no matching candidates
++$CHPL_HOME/modules/internal/ChapelDomain.chpl:585: note: the following candidate didn't match because an actual couldn't be passed to a formal
++$CHPL_HOME/modules/internal/ChapelDomain.chpl:469: note: the following candidate didn't match because an actual couldn't be passed to a formal
++badDependence.chpl:9: note: omitting 73 more candidates that didn't match
++badDependence.chpl:1: error: unable to instantiate generic type from initializer
++badDependence.chpl:1: error: unable to instantiate generic type from initializer
++badDependence.chpl:8: error: 'f5' is used before it is initialized
++badDependence.chpl:9: error: 'f4' is used before it is initialized
+diff --git a/test/classes/initializers/generics/phase1/badDependence2.good b/test/classes/initializers/generics/phase1/badDependence2.good
+index 2ad89df7ff9..3c003e78e5e 100644
+--- a/test/classes/initializers/generics/phase1/badDependence2.good
++++ b/test/classes/initializers/generics/phase1/badDependence2.good
+@@ -1,2 +1,6 @@
+ badDependence2.chpl:2: error: statement references variable 'f5' before it is defined
+ badDependence2.chpl:3: note: the variable 'f5' is defined here
++badDependence2.chpl:2: error: unable to resolve call to '*': no matching candidates
++$CHPL_HOME/modules/internal/ChapelTuple.chpl:758: note: the following candidate didn't match because an actual couldn't be passed to a formal
++$CHPL_HOME/modules/internal/ChapelTuple.chpl:750: note: the following candidate didn't match because an actual couldn't be passed to a formal
++badDependence2.chpl:2: note: omitting 59 more candidates that didn't match
+diff --git a/test/classes/initializers/generics/phase1/enumFieldNoUseBad.good b/test/classes/initializers/generics/phase1/enumFieldNoUseBad.good
+index a5ef234d971..ceb39fb24fa 100644
+--- a/test/classes/initializers/generics/phase1/enumFieldNoUseBad.good
++++ b/test/classes/initializers/generics/phase1/enumFieldNoUseBad.good
+@@ -1,2 +1,3 @@
+ enumFieldNoUseBad.chpl:8: In initializer:
+-enumFieldNoUseBad.chpl:9: error: 'blue' undeclared (first use this function)
++enumFieldNoUseBad.chpl:9: error: 'blue' cannot be found
++enumFieldNoUseBad.chpl:5: error: unable to instantiate generic type from initializer
 diff --git a/test/types/POD/elliot/varNotPOD.good b/test/types/POD/elliot/varNotPOD.good
 index 66db8242dd1..1a9cf52c977 100644
 --- a/test/types/POD/elliot/varNotPOD.good
