@@ -561,8 +561,9 @@ bool ParserContext::noteIsBuildingFormal(bool isBuildingFormal) {
   return this->isBuildingFormal;
 }
 
-bool ParserContext::noteIsVarDeclConfig(bool isConfig) {
+bool ParserContext::noteIsVarDeclConfig(bool isConfig, YYLTYPE loc) {
   this->isVarDeclConfig = isConfig;
+  this->configLoc = loc;
   return this->isVarDeclConfig;
 }
 
@@ -1263,7 +1264,8 @@ AstNode* ParserContext::buildManagerExpr(YYLTYPE location,
                                          Variable::Kind kind,
                                          YYLTYPE locResourceName,
                                          UniqueString resourceName) {
-  auto var = Variable::build(builder, convertLocation(locResourceName),
+  auto nameLoc = convertLocation(locResourceName);
+  auto var = Variable::build(builder, nameLoc, nameLoc,
                              nullptr,
                              Decl::DEFAULT_VISIBILITY,
                              Decl::DEFAULT_LINKAGE,
@@ -1271,6 +1273,7 @@ AstNode* ParserContext::buildManagerExpr(YYLTYPE location,
                              resourceName,
                              kind,
                              false,
+                             Location(),
                              false,
                              nullptr,
                              nullptr);
@@ -1933,7 +1936,8 @@ buildTupleComponent(YYLTYPE location, PODUniqueString name) {
                               /*initExpression*/ nullptr);
     ret = node.release();
   } else {
-    auto node = Variable::build(builder, convertLocation(location),
+    auto loc = convertLocation(location);
+    auto node = Variable::build(builder, loc, loc,
                                 /*attributeGroup*/ nullptr,
                                 visibility,
                                 linkage,
@@ -1941,6 +1945,7 @@ buildTupleComponent(YYLTYPE location, PODUniqueString name) {
                                 name,
                                 varDeclKind,
                                 isVarDeclConfig,
+                                convertLocation(configLoc),
                                 currentScopeIsAggregate(),
                                 /*typeExpression*/ nullptr,
                                 /*initExpression*/ nullptr);
@@ -1970,17 +1975,18 @@ owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
   auto convLoc = convertLocation(location);
 
   if (const Identifier* ident = e->toIdentifier()) {
-    auto var = Variable::build(builder, convLoc, /*attributeGroup*/ nullptr,
+    auto var = Variable::build(builder, convLoc, convLoc,
+                           /*attributeGroup*/ nullptr,
                            Decl::DEFAULT_VISIBILITY,
                            Decl::DEFAULT_LINKAGE,
                            /*linkageName*/ nullptr,
                            ident->name(),
                            Variable::INDEX,
                            /*isConfig*/ false,
+                           /*configLoc*/ Location(),
                            /*isField*/ false,
                            /*typeExpression*/ nullptr,
                            /*initExpression*/ nullptr);
-    builder->noteDeclNameLocation(var.get(), convLoc);
     builder->copyExprParenLocation(e, var.get());
     builder->deleteAllLocations(e);
     // Delete the location of 'e' because it's about to be deallocated;
@@ -2917,6 +2923,8 @@ ParserContext::buildVarOrMultiDeclStmt(YYLTYPE locEverything,
         error(locEverything, "only (multi)variable declarations can target a specific locale");
       }
     }
+    // fixup the decl location
+    builder->noteLocation(lastDecl, convertLocation(locEverything));
   } else {
 
     // TODO: Just embed and catch this in a tree-walk instead.

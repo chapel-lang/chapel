@@ -36,7 +36,7 @@ void Variable::dumpFieldsInner(const DumpSettings& s) const {
 }
 
 owned<Variable>
-Variable::build(Builder* builder, Location loc,
+Variable::build(Builder* builder, Location loc, Location nameLoc,
                 owned<AttributeGroup> attributeGroup,
                 Decl::Visibility vis,
                 Decl::Linkage linkage,
@@ -44,6 +44,7 @@ Variable::build(Builder* builder, Location loc,
                 UniqueString name,
                 Variable::Kind kind,
                 bool isConfig,
+                Location configLoc,
                 bool isField,
                 owned<AstNode> typeExpression,
                 owned<AstNode> initExpression) {
@@ -83,7 +84,10 @@ Variable::build(Builder* builder, Location loc,
                                isField,
                                typeExpressionChildNum,
                                initExpressionChildNum);
-  builder->noteLocation(ret, loc);
+  auto trueLoc = !isConfig ? loc :
+                             chpl::Location::spanned(configLoc, loc);
+  builder->noteLocation(ret, trueLoc);
+  builder->noteDeclNameLocation(ret, nameLoc);
   return toOwned(ret);
 }
 

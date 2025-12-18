@@ -125,7 +125,7 @@ class Variable final : public VarLikeDecl {
  public:
   ~Variable() override = default;
 
-  static owned<Variable> build(Builder* builder, Location loc,
+  static owned<Variable> build(Builder* builder, Location loc, Location nameLoc,
                                owned<AttributeGroup> attributeGroup,
                                Decl::Visibility vis,
                                Decl::Linkage linkage,
@@ -133,6 +133,7 @@ class Variable final : public VarLikeDecl {
                                UniqueString name,
                                Variable::Kind kind,
                                bool isConfig,
+                              Location configLoc,
                                bool isField,
                                owned<AstNode> typeExpression,
                                owned<AstNode> initExpression);
