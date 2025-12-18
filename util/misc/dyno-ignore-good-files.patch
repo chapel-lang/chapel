@@ -2066,7 +2066,7 @@ index 52c5ec8da66..519772fb03b 100644
 +rangeKeyword.chpl:5: note: redefined here
 +rangeKeyword.chpl:6: note: redefined here
 diff --git a/test/types/range/unbounded/noFirst-forallzip-down.good b/test/types/range/unbounded/noFirst-forallzip-down.good
-index 27232e52d56..59d408a31c4 100644
+index 27232e52d56..95126b0a448 100644
 --- a/test/types/range/unbounded/noFirst-forallzip-down.good
 +++ b/test/types/range/unbounded/noFirst-forallzip-down.good
 @@ -1 +1,9 @@
@@ -2075,7 +2075,7 @@ index 27232e52d56..59d408a31c4 100644
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to 'serialize': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 53 more candidates that didn't match
++$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 12 more candidates that didn't match
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: In method '_serializeOne':
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to '=': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: In method 'serialize':
@@ -2089,7 +2089,7 @@ index 00000000000..50247f550ee
 +../../../../util/test/prediff-obscure-module-linenos
 \ No newline at end of file
 diff --git a/test/types/range/unbounded/noFirst-forallzip-up.good b/test/types/range/unbounded/noFirst-forallzip-up.good
-index 1d35421b09b..59d408a31c4 100644
+index 1d35421b09b..95126b0a448 100644
 --- a/test/types/range/unbounded/noFirst-forallzip-up.good
 +++ b/test/types/range/unbounded/noFirst-forallzip-up.good
 @@ -1 +1,9 @@
@@ -2098,7 +2098,7 @@ index 1d35421b09b..59d408a31c4 100644
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to 'serialize': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 53 more candidates that didn't match
++$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 12 more candidates that didn't match
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: In method '_serializeOne':
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to '=': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: In method 'serialize':
@@ -2112,7 +2112,7 @@ index 00000000000..50247f550ee
 +../../../../util/test/prediff-obscure-module-linenos
 \ No newline at end of file
 diff --git a/test/types/range/unbounded/noFirst-forloop-down.good b/test/types/range/unbounded/noFirst-forloop-down.good
-index 8fdc8235a2e..5d1faea1c97 100644
+index 8fdc8235a2e..eaa3867558c 100644
 --- a/test/types/range/unbounded/noFirst-forloop-down.good
 +++ b/test/types/range/unbounded/noFirst-forloop-down.good
 @@ -1 +1,7 @@
@@ -2121,7 +2121,7 @@ index 8fdc8235a2e..5d1faea1c97 100644
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to 'serialize': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 39 more candidates that didn't match
++$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 12 more candidates that didn't match
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: In method '_serializeOne':
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to '=': no matching candidates
 diff --git a/test/types/range/unbounded/noFirst-forloop-down.prediff b/test/types/range/unbounded/noFirst-forloop-down.prediff
@@ -2133,7 +2133,7 @@ index 00000000000..50247f550ee
 +../../../../util/test/prediff-obscure-module-linenos
 \ No newline at end of file
 diff --git a/test/types/range/unbounded/noFirst-forloop-up.good b/test/types/range/unbounded/noFirst-forloop-up.good
-index b2d7ca49b86..5d1faea1c97 100644
+index b2d7ca49b86..eaa3867558c 100644
 --- a/test/types/range/unbounded/noFirst-forloop-up.good
 +++ b/test/types/range/unbounded/noFirst-forloop-up.good
 @@ -1 +1,7 @@
@@ -2142,7 +2142,7 @@ index b2d7ca49b86..5d1faea1c97 100644
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to 'serialize': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 39 more candidates that didn't match
++$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 12 more candidates that didn't match
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: In method '_serializeOne':
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to '=': no matching candidates
 diff --git a/test/types/range/unbounded/noFirst-forloop-up.prediff b/test/types/range/unbounded/noFirst-forloop-up.prediff
@@ -2154,7 +2154,7 @@ index 00000000000..50247f550ee
 +../../../../util/test/prediff-obscure-module-linenos
 \ No newline at end of file
 diff --git a/test/types/range/unbounded/noFirst-forzip-down.good b/test/types/range/unbounded/noFirst-forzip-down.good
-index d3361ae14a1..59d408a31c4 100644
+index d3361ae14a1..95126b0a448 100644
 --- a/test/types/range/unbounded/noFirst-forzip-down.good
 +++ b/test/types/range/unbounded/noFirst-forzip-down.good
 @@ -1 +1,9 @@
@@ -2163,7 +2163,7 @@ index d3361ae14a1..59d408a31c4 100644
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to 'serialize': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 53 more candidates that didn't match
++$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 12 more candidates that didn't match
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: In method '_serializeOne':
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to '=': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: In method 'serialize':
@@ -2177,7 +2177,7 @@ index 00000000000..50247f550ee
 +../../../../util/test/prediff-obscure-module-linenos
 \ No newline at end of file
 diff --git a/test/types/range/unbounded/noFirst-forzip-up.good b/test/types/range/unbounded/noFirst-forzip-up.good
-index e6151fc070d..59d408a31c4 100644
+index e6151fc070d..95126b0a448 100644
 --- a/test/types/range/unbounded/noFirst-forzip-up.good
 +++ b/test/types/range/unbounded/noFirst-forzip-up.good
 @@ -1 +1,9 @@
@@ -2186,7 +2186,7 @@ index e6151fc070d..59d408a31c4 100644
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to 'serialize': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 53 more candidates that didn't match
++$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 12 more candidates that didn't match
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: In method '_serializeOne':
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to '=': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: In method 'serialize':
@@ -3717,7 +3717,7 @@ index 00000000000..30607598fef
 +../../../../../util/test/prediff-obscure-module-linenos
 \ No newline at end of file
 diff --git a/test/types/tuple/heterogeneous/loops/zipHetTuple-1.good b/test/types/tuple/heterogeneous/loops/zipHetTuple-1.good
-index 1fe8cf4ad0a..59d408a31c4 100644
+index 1fe8cf4ad0a..95126b0a448 100644
 --- a/test/types/tuple/heterogeneous/loops/zipHetTuple-1.good
 +++ b/test/types/tuple/heterogeneous/loops/zipHetTuple-1.good
 @@ -1 +1,9 @@
@@ -3726,13 +3726,13 @@ index 1fe8cf4ad0a..59d408a31c4 100644
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to 'serialize': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 53 more candidates that didn't match
++$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 12 more candidates that didn't match
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: In method '_serializeOne':
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to '=': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: In method 'serialize':
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: error: unable to resolve call to '=': no matching candidates
 diff --git a/test/types/tuple/heterogeneous/loops/zipHetTuple-2.good b/test/types/tuple/heterogeneous/loops/zipHetTuple-2.good
-index 6542dea633c..59d408a31c4 100644
+index 6542dea633c..95126b0a448 100644
 --- a/test/types/tuple/heterogeneous/loops/zipHetTuple-2.good
 +++ b/test/types/tuple/heterogeneous/loops/zipHetTuple-2.good
 @@ -1 +1,9 @@
@@ -3741,13 +3741,13 @@ index 6542dea633c..59d408a31c4 100644
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to 'serialize': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 53 more candidates that didn't match
++$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 12 more candidates that didn't match
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: In method '_serializeOne':
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to '=': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: In method 'serialize':
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: error: unable to resolve call to '=': no matching candidates
 diff --git a/test/types/tuple/heterogeneous/loops/zipHetTuple-3.good b/test/types/tuple/heterogeneous/loops/zipHetTuple-3.good
-index 72585e8d53f..59d408a31c4 100644
+index 72585e8d53f..95126b0a448 100644
 --- a/test/types/tuple/heterogeneous/loops/zipHetTuple-3.good
 +++ b/test/types/tuple/heterogeneous/loops/zipHetTuple-3.good
 @@ -1 +1,9 @@
@@ -3756,13 +3756,13 @@ index 72585e8d53f..59d408a31c4 100644
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to 'serialize': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 53 more candidates that didn't match
++$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 12 more candidates that didn't match
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: In method '_serializeOne':
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to '=': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: In method 'serialize':
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: error: unable to resolve call to '=': no matching candidates
 diff --git a/test/types/tuple/heterogeneous/loops/zipHetTuple-4.good b/test/types/tuple/heterogeneous/loops/zipHetTuple-4.good
-index 2403e5601b2..59d408a31c4 100644
+index 2403e5601b2..95126b0a448 100644
 --- a/test/types/tuple/heterogeneous/loops/zipHetTuple-4.good
 +++ b/test/types/tuple/heterogeneous/loops/zipHetTuple-4.good
 @@ -1 +1,9 @@
@@ -3771,7 +3771,7 @@ index 2403e5601b2..59d408a31c4 100644
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to 'serialize': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 53 more candidates that didn't match
++$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 12 more candidates that didn't match
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: In method '_serializeOne':
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to '=': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: In method 'serialize':
@@ -3795,7 +3795,7 @@ index 1c099fde0a2..168daa95aeb 100644
 +$CHPL_HOME/modules/internal/ChapelTuple.chpl:nnnn: error: invalid access of non-homogeneous tuple by runtime value
 +zipHetTuple.chpl:40: error: cannot iterate over this loop's iterand
 diff --git a/test/types/tuple/heterogeneous/loops/zipHetTuple-7.good b/test/types/tuple/heterogeneous/loops/zipHetTuple-7.good
-index 8e8cc266fb1..59d408a31c4 100644
+index 8e8cc266fb1..95126b0a448 100644
 --- a/test/types/tuple/heterogeneous/loops/zipHetTuple-7.good
 +++ b/test/types/tuple/heterogeneous/loops/zipHetTuple-7.good
 @@ -1 +1,9 @@
@@ -3804,13 +3804,13 @@ index 8e8cc266fb1..59d408a31c4 100644
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to 'serialize': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 53 more candidates that didn't match
++$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 12 more candidates that didn't match
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: In method '_serializeOne':
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to '=': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: In method 'serialize':
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: error: unable to resolve call to '=': no matching candidates
 diff --git a/test/types/tuple/heterogeneous/loops/zipHetTuple-8.good b/test/types/tuple/heterogeneous/loops/zipHetTuple-8.good
-index 49d5282a326..59d408a31c4 100644
+index 49d5282a326..95126b0a448 100644
 --- a/test/types/tuple/heterogeneous/loops/zipHetTuple-8.good
 +++ b/test/types/tuple/heterogeneous/loops/zipHetTuple-8.good
 @@ -1 +1,9 @@
@@ -3819,7 +3819,7 @@ index 49d5282a326..59d408a31c4 100644
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to 'serialize': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 53 more candidates that didn't match
++$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 12 more candidates that didn't match
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: In method '_serializeOne':
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to '=': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: In method 'serialize':
