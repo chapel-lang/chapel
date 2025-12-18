@@ -240,7 +240,7 @@ PyObject* ParamObject::str(ParamObject* self) {
 }
 
 PyObject* TypedSignatureObject::str(TypedSignatureObject* self) {
-  if (!self->value_) {
+  if (!self->value_.signature) {
     raiseExceptionForIncorrectlyConstructedType("TypedSignature");
     return nullptr;
   }
@@ -250,7 +250,7 @@ PyObject* TypedSignatureObject::str(TypedSignatureObject* self) {
   return Py_BuildValue("s", typeString.c_str());
 }
 PyObject* TypedSignatureObject::repr(TypedSignatureObject* self) {
-  if (!self->value_) {
+  if (!self->value_.signature || !self->value_.poiScope) {
     raiseExceptionForIncorrectlyConstructedType("TypedSignature");
     return nullptr;
   }
