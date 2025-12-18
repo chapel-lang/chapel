@@ -1975,7 +1975,7 @@ index e9fb8a0f3f9..a48a43b86f8 100644
 -badRange-string-multi.chpl:2: error: param for-loops defined using bounds of type 'string' are not currently supported
 +badRange-string-multi.chpl:2: error: Ranges defined using bounds of type 'string' are not currently supported
 diff --git a/test/types/range/lydia/badRange-string-stride.good b/test/types/range/lydia/badRange-string-stride.good
-index b6cfc59548d..68b04350688 100644
+index b6cfc59548d..6765d8b28c0 100644
 --- a/test/types/range/lydia/badRange-string-stride.good
 +++ b/test/types/range/lydia/badRange-string-stride.good
 @@ -1,2 +1,19 @@
@@ -1985,7 +1985,7 @@ index b6cfc59548d..68b04350688 100644
 +$CHPL_HOME/modules/internal/ChapelRange.chpl:2279: error: unable to resolve call to 'numBits': no matching candidates
 +$CHPL_HOME/modules/standard/Types.chpl:804: note: the following candidate didn't match because the 'where' clause evaluated to 'false'
 +$CHPL_HOME/modules/standard/Types.chpl:802: note: the following candidate didn't match because the 'where' clause evaluated to 'false'
-+$CHPL_HOME/modules/internal/ChapelRange.chpl:2279: note: omitting 43 more candidates that didn't match
++$CHPL_HOME/modules/internal/ChapelRange.chpl:2279: note: omitting 13 more candidates that didn't match
 +$CHPL_HOME/modules/internal/ChapelRange.chpl:2279: error: cannot return it with provided return intent
 +$CHPL_HOME/modules/internal/ChapelRange.chpl:2300: In function 'chpl_range_check_stride':
 +$CHPL_HOME/modules/internal/ChapelRange.chpl:2308: error: Cannot establish type for call expression
@@ -1994,7 +1994,7 @@ index b6cfc59548d..68b04350688 100644
 +$CHPL_HOME/modules/internal/ChapelRange.chpl:2369: error: unable to resolve call to 'chpl_strideProduct': no matching candidates
 +$CHPL_HOME/modules/internal/ChapelRange.chpl:805: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +$CHPL_HOME/modules/internal/ChapelRange.chpl:802: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/internal/ChapelRange.chpl:2369: note: omitting 4 more candidates that didn't match
++$CHPL_HOME/modules/internal/ChapelRange.chpl:2369: note: omitting 1 more candidates that didn't match
  badRange-string-stride.chpl:1: In function 'main':
 -badRange-string-stride.chpl:2: error: Range stride must be an int
 +badRange-string-stride.chpl:2: error: Cannot establish type for call expression
@@ -3696,7 +3696,7 @@ index 19c22ac3ef0..e9ce7bc85e7 100644
 +$CHPL_HOME/modules/internal/ChapelTuple.chpl:266: error: invalid access of non-homogeneous tuple by runtime value
 +forallHetTuple.chpl:17: error: cannot iterate over a value of type '(int(64), real(64), string, R)'
 diff --git a/test/types/tuple/heterogeneous/loops/hetTupleOfTupleLoop.good b/test/types/tuple/heterogeneous/loops/hetTupleOfTupleLoop.good
-index ff86252d723..5d1faea1c97 100644
+index ff86252d723..eaa3867558c 100644
 --- a/test/types/tuple/heterogeneous/loops/hetTupleOfTupleLoop.good
 +++ b/test/types/tuple/heterogeneous/loops/hetTupleOfTupleLoop.good
 @@ -1 +1,7 @@
@@ -3705,7 +3705,7 @@ index ff86252d723..5d1faea1c97 100644
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to 'serialize': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 39 more candidates that didn't match
++$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 12 more candidates that didn't match
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: In method '_serializeOne':
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to '=': no matching candidates
 diff --git a/test/types/tuple/heterogeneous/loops/hetTupleOfTupleLoop.prediff b/test/types/tuple/heterogeneous/loops/hetTupleOfTupleLoop.prediff
@@ -4366,7 +4366,7 @@ index 5ce07a732d0..7a6de111ccf 100644
 +void-formal-3.chpl:8: error: unable to resolve call to 'f': no matching candidates
 +void-formal-3.chpl:5: note: the following candidate didn't match because an actual couldn't be passed to a formal
 diff --git a/test/types/void/void-promote.good b/test/types/void/void-promote.good
-index e5ff071a0fb..89e6fef10d0 100644
+index e5ff071a0fb..2e4a191ce47 100644
 --- a/test/types/void/void-promote.good
 +++ b/test/types/void/void-promote.good
 @@ -1 +1,51 @@
@@ -4409,7 +4409,7 @@ index e5ff071a0fb..89e6fef10d0 100644
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to 'serialize': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 96 more candidates that didn't match
++$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 13 more candidates that didn't match
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: In method '_serializeOne':
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to '=': no matching candidates
 +$CHPL_HOME/modules/internal/DefaultRectangular.chpl:nnnn: In function 'recursiveArrayReaderWriter':
