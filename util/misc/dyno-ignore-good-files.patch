@@ -1846,7 +1846,7 @@ index 0ea07ea9f8d..2b245380207 100644
 +$CHPL_HOME/modules/internal/ChapelRange.chpl:2357: In function 'by':
 +$CHPL_HOME/modules/internal/ChapelRange.chpl:2358: error: the step argument of the 'by' operator is too large and cannot be represented within the range's stride type int(64)
 diff --git a/test/types/range/deitz/test_range_iterate_error.good b/test/types/range/deitz/test_range_iterate_error.good
-index c5070275cc1..59d408a31c4 100644
+index c5070275cc1..95126b0a448 100644
 --- a/test/types/range/deitz/test_range_iterate_error.good
 +++ b/test/types/range/deitz/test_range_iterate_error.good
 @@ -1 +1,9 @@
@@ -1855,7 +1855,7 @@ index c5070275cc1..59d408a31c4 100644
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to 'serialize': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 53 more candidates that didn't match
++$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 12 more candidates that didn't match
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: In method '_serializeOne':
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to '=': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: In method 'serialize':
@@ -1915,7 +1915,7 @@ index efa1a94fdd1..6ea7dfe6dc4 100644
 -badCountedLowBoundedRange.chpl:3: error: can't apply '#' to a range with idxType int(64) using a count of type real(64)
 +badCountedLowBoundedRange.chpl:3: error: cannot apply '#' to 'range(int(64), low, one)'
 diff --git a/test/types/range/enum/castEnumRange2.good b/test/types/range/enum/castEnumRange2.good
-index 2b96d691ebb..72acbd76cb7 100644
+index 2b96d691ebb..e5fc6b3763b 100644
 --- a/test/types/range/enum/castEnumRange2.good
 +++ b/test/types/range/enum/castEnumRange2.good
 @@ -1,2 +1,10 @@
@@ -1926,11 +1926,11 @@ index 2b96d691ebb..72acbd76cb7 100644
 +$CHPL_HOME/modules/internal/ChapelRange.chpl:1708: error: unable to resolve call to ':': no matching candidates
 +$CHPL_HOME/modules/internal/ChapelArrayViewElision.chpl:352: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +$CHPL_HOME/modules/internal/ChapelTaskID.chpl:39: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/internal/ChapelRange.chpl:1708: note: omitting 250 more candidates that didn't match
++$CHPL_HOME/modules/internal/ChapelRange.chpl:1708: note: omitting 124 more candidates that didn't match
 +$CHPL_HOME/modules/internal/ChapelRange.chpl:1711: error: unable to resolve call to ':': no matching candidates
 +$CHPL_HOME/modules/internal/ChapelArrayViewElision.chpl:352: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +$CHPL_HOME/modules/internal/ChapelTaskID.chpl:39: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/internal/ChapelRange.chpl:1711: note: omitting 250 more candidates that didn't match
++$CHPL_HOME/modules/internal/ChapelRange.chpl:1711: note: omitting 124 more candidates that didn't match
 diff --git a/test/types/range/enum/singleValEnum-errors-offset.good b/test/types/range/enum/singleValEnum-errors-offset.good
 index 5cb8abe10d0..f27bed16399 100644
 --- a/test/types/range/enum/singleValEnum-errors-offset.good
