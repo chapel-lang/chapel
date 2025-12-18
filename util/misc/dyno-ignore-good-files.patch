@@ -459,6 +459,68 @@ index 51ee1a6a061..faf0c486b7a 100644
 +hasParallelBad.chpl:8: error: cannot initialize fields inside cobegin statements
 +hasParallelBad.chpl:7: error: cannot initialize fields inside cobegin statements
 +hasParallelBad.chpl:8: error: cannot initialize fields inside cobegin statements
+diff --git a/test/classes/initializers/generics/phase1/param-from-new.good b/test/classes/initializers/generics/phase1/param-from-new.good
+index 2926f99e3d0..4bde0d17c41 100644
+--- a/test/classes/initializers/generics/phase1/param-from-new.good
++++ b/test/classes/initializers/generics/phase1/param-from-new.good
+@@ -1 +1,3 @@
+-param-from-new.chpl:11: error: cannot initialize param field 't' with 'new' expression
++param-from-new.chpl:10: In initializer:
++param-from-new.chpl:11: error: a 'param' cannot be initialized with a non-'param' value
++param-from-new.chpl:6: error: unable to instantiate generic type from initializer
+diff --git a/test/classes/initializers/generics/phase1/reuse-field-accessor.good b/test/classes/initializers/generics/phase1/reuse-field-accessor.good
+index 2ed9d53eefa..621a1115051 100644
+--- a/test/classes/initializers/generics/phase1/reuse-field-accessor.good
++++ b/test/classes/initializers/generics/phase1/reuse-field-accessor.good
+@@ -1,4 +1,2 @@
+-reuse-field-accessor.chpl:11: In initializer:
+-reuse-field-accessor.chpl:12: error: cannot pass a record to a function before "init this"
+-reuse-field-accessor.chpl:13: error: can't omit initialization of field "x_", no type or default value provided
+-reuse-field-accessor.chpl:13: error: cannot pass a record to a function before "init this"
++reuse-field-accessor.chpl:2: error: unable to instantiate generic type from initializer
++reuse-field-accessor.chpl:2: error: unable to instantiate generic type from initializer
+diff --git a/test/classes/initializers/generics/phase1/setParentField.good b/test/classes/initializers/generics/phase1/setParentField.good
+index 2134695e8b2..7eaf4558e86 100644
+--- a/test/classes/initializers/generics/phase1/setParentField.good
++++ b/test/classes/initializers/generics/phase1/setParentField.good
+@@ -1,2 +1,3 @@
+ setParentField.chpl:9: In initializer:
+-setParentField.chpl:10: error: can't set value of field "f1" from parent type before calling this.init() or super.init()
++setParentField.chpl:10: error: Cannot access parent field "f1" before super.init() or this.init()
++setParentField.chpl:10: error: Cannot access parent field "f1" before super.init() or this.init()
+diff --git a/test/classes/initializers/generics/phase1/type-from-new.good b/test/classes/initializers/generics/phase1/type-from-new.good
+index e9127c1a910..9c70ee09485 100644
+--- a/test/classes/initializers/generics/phase1/type-from-new.good
++++ b/test/classes/initializers/generics/phase1/type-from-new.good
+@@ -1 +1,3 @@
+-type-from-new.chpl:11: error: cannot initialize type field 't' with 'new' expression
++type-from-new.chpl:10: In initializer:
++type-from-new.chpl:11: error: a type variable cannot be initialized with a regular value
++type-from-new.chpl:11: error: a type variable cannot be initialized with a regular value
+diff --git a/test/classes/initializers/generics/phase1/unorderedFields-preferred.good b/test/classes/initializers/generics/phase1/unorderedFields-preferred.good
+index 1076853d1ec..9c3e9cbdae3 100644
+--- a/test/classes/initializers/generics/phase1/unorderedFields-preferred.good
++++ b/test/classes/initializers/generics/phase1/unorderedFields-preferred.good
+@@ -1,3 +1,6 @@
+ unorderedFields-preferred.chpl:6: In initializer:
+ unorderedFields-preferred.chpl:9: error: Field "f2" initialized out of order
+-unorderedFields-preferred.chpl:9: note: initialization of fields before .init() call must be in field declaration order
++unorderedFields-preferred.chpl:13: In function 'main':
++unorderedFields-preferred.chpl:14: error: type mismatch between declared type of 'c' and initialization expression
++unorderedFields-preferred.chpl:6: In initializer:
++unorderedFields-preferred.chpl:9: error: Field "f2" initialized out of order
+diff --git a/test/classes/initializers/generics/phase1/unorderedFields.good b/test/classes/initializers/generics/phase1/unorderedFields.good
+index 7db5c2538ed..de85385e6d2 100644
+--- a/test/classes/initializers/generics/phase1/unorderedFields.good
++++ b/test/classes/initializers/generics/phase1/unorderedFields.good
+@@ -1,3 +1,6 @@
+ unorderedFields.chpl:6: In initializer:
+ unorderedFields.chpl:9: error: Field "f2" initialized out of order
+-unorderedFields.chpl:9: note: initialization of fields before .init() call must be in field declaration order
++unorderedFields.chpl:13: In function 'main':
++unorderedFields.chpl:14: error: type mismatch between declared type of 'c' and initialization expression
++unorderedFields.chpl:6: In initializer:
++unorderedFields.chpl:9: error: Field "f2" initialized out of order
 diff --git a/test/types/POD/elliot/varNotPOD.good b/test/types/POD/elliot/varNotPOD.good
 index 66db8242dd1..1a9cf52c977 100644
 --- a/test/types/POD/elliot/varNotPOD.good
