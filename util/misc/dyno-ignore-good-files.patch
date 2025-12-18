@@ -627,6 +627,56 @@ index 455767111a4..331ee6c7847 100644
  hasCobeginOnFieldInit.chpl:4: In initializer:
 -hasCobeginOnFieldInit.chpl:7: error: can't initialize field "x" inside a parallel statement during phase 1 of initialization
 +hasCobeginOnFieldInit.chpl:7: error: cannot initialize fields inside cobegin statements
+diff --git a/test/classes/initializers/phase1/hasLoopBad.good b/test/classes/initializers/phase1/hasLoopBad.good
+index 8592e882bb8..682fd3a0175 100644
+--- a/test/classes/initializers/phase1/hasLoopBad.good
++++ b/test/classes/initializers/phase1/hasLoopBad.good
+@@ -1,2 +1,4 @@
+ hasLoopBad.chpl:4: In initializer:
+-hasLoopBad.chpl:7: error: can't initialize field "highestNum" inside a loop during phase 1 of initialization
++hasLoopBad.chpl:7: error: cannot initialize fields inside of loops
++hasLoopBad.chpl:9: error: 'highestNum' is used before it is initialized
++hasLoopBad.chpl:10: error: cannot initialize fields inside of loops
+diff --git a/test/classes/initializers/phase1/hasLoopBad2.good b/test/classes/initializers/phase1/hasLoopBad2.good
+index 923b852d14a..7e8a832329e 100644
+--- a/test/classes/initializers/phase1/hasLoopBad2.good
++++ b/test/classes/initializers/phase1/hasLoopBad2.good
+@@ -1,2 +1,2 @@
+ hasLoopBad2.chpl:7: In initializer:
+-hasLoopBad2.chpl:9: error: can't initialize field "highestNum" inside a loop during phase 1 of initialization
++hasLoopBad2.chpl:9: error: cannot initialize fields inside of loops
+diff --git a/test/classes/initializers/phase1/hasLoopBadCoforall.good b/test/classes/initializers/phase1/hasLoopBadCoforall.good
+index 6fc285b5318..eb39b72ae82 100644
+--- a/test/classes/initializers/phase1/hasLoopBadCoforall.good
++++ b/test/classes/initializers/phase1/hasLoopBadCoforall.good
+@@ -1,2 +1,2 @@
+ hasLoopBadCoforall.chpl:4: In initializer:
+-hasLoopBadCoforall.chpl:10: error: can't initialize field "x" inside a coforall during phase 1 of initialization
++hasLoopBadCoforall.chpl:10: error: cannot initialize fields inside of loops
+diff --git a/test/classes/initializers/phase1/hasLoopBadDoWhile.good b/test/classes/initializers/phase1/hasLoopBadDoWhile.good
+index 24a06b1b7ae..f6c883375b6 100644
+--- a/test/classes/initializers/phase1/hasLoopBadDoWhile.good
++++ b/test/classes/initializers/phase1/hasLoopBadDoWhile.good
+@@ -1,2 +1,2 @@
+ hasLoopBadDoWhile.chpl:7: In initializer:
+-hasLoopBadDoWhile.chpl:10: error: can't initialize field "highestNum" inside a loop during phase 1 of initialization
++hasLoopBadDoWhile.chpl:10: error: cannot initialize fields inside of loops
+diff --git a/test/classes/initializers/phase1/hasLoopBadWhile.good b/test/classes/initializers/phase1/hasLoopBadWhile.good
+index 96b64eb39b7..3e87764a648 100644
+--- a/test/classes/initializers/phase1/hasLoopBadWhile.good
++++ b/test/classes/initializers/phase1/hasLoopBadWhile.good
+@@ -1,2 +1,2 @@
+ hasLoopBadWhile.chpl:7: In initializer:
+-hasLoopBadWhile.chpl:10: error: can't initialize field "highestNum" inside a loop during phase 1 of initialization
++hasLoopBadWhile.chpl:10: error: cannot initialize fields inside of loops
+diff --git a/test/classes/initializers/phase1/hasLoopForallBad.good b/test/classes/initializers/phase1/hasLoopForallBad.good
+index e4a9a63cabb..2847cb0c69c 100644
+--- a/test/classes/initializers/phase1/hasLoopForallBad.good
++++ b/test/classes/initializers/phase1/hasLoopForallBad.good
+@@ -1,2 +1,2 @@
+ hasLoopForallBad.chpl:4: In initializer:
+-hasLoopForallBad.chpl:9: error: can't initialize field "field" inside a forall during phase 1 of initialization
++hasLoopForallBad.chpl:9: error: cannot initialize fields inside of loops
 diff --git a/test/types/POD/elliot/varNotPOD.good b/test/types/POD/elliot/varNotPOD.good
 index 66db8242dd1..1a9cf52c977 100644
 --- a/test/types/POD/elliot/varNotPOD.good
