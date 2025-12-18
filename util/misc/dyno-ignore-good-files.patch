@@ -408,6 +408,57 @@ index a5ef234d971..ceb39fb24fa 100644
 -enumFieldNoUseBad.chpl:9: error: 'blue' undeclared (first use this function)
 +enumFieldNoUseBad.chpl:9: error: 'blue' cannot be found
 +enumFieldNoUseBad.chpl:5: error: unable to instantiate generic type from initializer
+diff --git a/test/classes/initializers/generics/phase1/hasLoopBad.good b/test/classes/initializers/generics/phase1/hasLoopBad.good
+index 8592e882bb8..c7b40cc11be 100644
+--- a/test/classes/initializers/generics/phase1/hasLoopBad.good
++++ b/test/classes/initializers/generics/phase1/hasLoopBad.good
+@@ -1,2 +1,7 @@
+ hasLoopBad.chpl:4: In initializer:
+-hasLoopBad.chpl:7: error: can't initialize field "highestNum" inside a loop during phase 1 of initialization
++hasLoopBad.chpl:7: error: cannot initialize fields inside of loops
++hasLoopBad.chpl:9: error: 'highestNum' is used before it is initialized
++hasLoopBad.chpl:10: error: cannot initialize fields inside of loops
++hasLoopBad.chpl:7: error: cannot initialize fields inside of loops
++hasLoopBad.chpl:9: error: 'highestNum' is used before it is initialized
++hasLoopBad.chpl:10: error: cannot initialize fields inside of loops
+diff --git a/test/classes/initializers/generics/phase1/hasLoopBad2.good b/test/classes/initializers/generics/phase1/hasLoopBad2.good
+index 923b852d14a..b5a4ce24b2d 100644
+--- a/test/classes/initializers/generics/phase1/hasLoopBad2.good
++++ b/test/classes/initializers/generics/phase1/hasLoopBad2.good
+@@ -1,2 +1,3 @@
+ hasLoopBad2.chpl:7: In initializer:
+-hasLoopBad2.chpl:9: error: can't initialize field "highestNum" inside a loop during phase 1 of initialization
++hasLoopBad2.chpl:9: error: cannot initialize fields inside of loops
++hasLoopBad2.chpl:9: error: cannot initialize fields inside of loops
+diff --git a/test/classes/initializers/generics/phase1/hasLoopBadDoWhile.good b/test/classes/initializers/generics/phase1/hasLoopBadDoWhile.good
+index 24a06b1b7ae..963bac6fa6b 100644
+--- a/test/classes/initializers/generics/phase1/hasLoopBadDoWhile.good
++++ b/test/classes/initializers/generics/phase1/hasLoopBadDoWhile.good
+@@ -1,2 +1,3 @@
+ hasLoopBadDoWhile.chpl:7: In initializer:
+-hasLoopBadDoWhile.chpl:10: error: can't initialize field "highestNum" inside a loop during phase 1 of initialization
++hasLoopBadDoWhile.chpl:10: error: cannot initialize fields inside of loops
++hasLoopBadDoWhile.chpl:10: error: cannot initialize fields inside of loops
+diff --git a/test/classes/initializers/generics/phase1/hasLoopBadWhile.good b/test/classes/initializers/generics/phase1/hasLoopBadWhile.good
+index 96b64eb39b7..6c8fba3f6dd 100644
+--- a/test/classes/initializers/generics/phase1/hasLoopBadWhile.good
++++ b/test/classes/initializers/generics/phase1/hasLoopBadWhile.good
+@@ -1,2 +1,3 @@
+ hasLoopBadWhile.chpl:7: In initializer:
+-hasLoopBadWhile.chpl:10: error: can't initialize field "highestNum" inside a loop during phase 1 of initialization
++hasLoopBadWhile.chpl:10: error: cannot initialize fields inside of loops
++hasLoopBadWhile.chpl:10: error: cannot initialize fields inside of loops
+diff --git a/test/classes/initializers/generics/phase1/hasParallelBad.good b/test/classes/initializers/generics/phase1/hasParallelBad.good
+index 51ee1a6a061..faf0c486b7a 100644
+--- a/test/classes/initializers/generics/phase1/hasParallelBad.good
++++ b/test/classes/initializers/generics/phase1/hasParallelBad.good
+@@ -1,2 +1,5 @@
+ hasParallelBad.chpl:5: In initializer:
+-hasParallelBad.chpl:7: error: can't initialize field "a" inside a parallel statement during phase 1 of initialization
++hasParallelBad.chpl:7: error: cannot initialize fields inside cobegin statements
++hasParallelBad.chpl:8: error: cannot initialize fields inside cobegin statements
++hasParallelBad.chpl:7: error: cannot initialize fields inside cobegin statements
++hasParallelBad.chpl:8: error: cannot initialize fields inside cobegin statements
 diff --git a/test/types/POD/elliot/varNotPOD.good b/test/types/POD/elliot/varNotPOD.good
 index 66db8242dd1..1a9cf52c977 100644
 --- a/test/types/POD/elliot/varNotPOD.good
