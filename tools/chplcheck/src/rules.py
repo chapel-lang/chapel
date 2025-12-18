@@ -320,6 +320,11 @@ def rules(driver: LintDriver):
         if isinstance(subject, Tuple):
             return True
 
+        # Try expressions need their parentheses.
+        # TODO: this needs to check for any try node
+        if isinstance(subject, Try) and subject.is_expression_level():
+            return True
+
         # No parentheses to speak of
         paren_loc = subject.paren_location()
         if paren_loc is None:
