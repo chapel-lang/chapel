@@ -247,6 +247,40 @@ index c000fcc24fd..b707e6ba409 100644
  grandFieldUse.chpl:13: In initializer:
 -grandFieldUse.chpl:14: error: cannot access parent field "x" before super.init() or this.init()
 +grandFieldUse.chpl:14: error: Cannot access parent field "x" before super.init() or this.init()
+diff --git a/test/classes/initializers/errors/iteratorEnterContextMethodCalled.good b/test/classes/initializers/errors/iteratorEnterContextMethodCalled.good
+index 4e5d8268770..25318c90e6e 100644
+--- a/test/classes/initializers/errors/iteratorEnterContextMethodCalled.good
++++ b/test/classes/initializers/errors/iteratorEnterContextMethodCalled.good
+@@ -1 +1,4 @@
+ iteratorEnterContextMethodCalled.chpl:2: error: iterators can't be the 'enterContext' method, please rename this iterator
++iteratorEnterContextMethodCalled.chpl:7: In function 'main':
++iteratorEnterContextMethodCalled.chpl:9: warning: owned IteratorEnterContext is being used in a 'manage' statement via its 'enterContext' and 'exitContext' methods. However, owned IteratorEnterContext does not implement contextManager. In the future, this will result in an error
++iteratorEnterContextMethodCalled.chpl:9: error: 'manage' statements are only for types implementing 'contextManager'
+diff --git a/test/classes/initializers/errors/iteratorExitContextMethodCalled.good b/test/classes/initializers/errors/iteratorExitContextMethodCalled.good
+index 29943f8d3c7..099b4f3ff9d 100644
+--- a/test/classes/initializers/errors/iteratorExitContextMethodCalled.good
++++ b/test/classes/initializers/errors/iteratorExitContextMethodCalled.good
+@@ -1 +1,4 @@
+ iteratorExitContextMethodCalled.chpl:4: error: iterators can't be the 'exitContext' method, please rename this iterator
++iteratorExitContextMethodCalled.chpl:7: In function 'main':
++iteratorExitContextMethodCalled.chpl:9: warning: owned IteratorExitContext is being used in a 'manage' statement via its 'enterContext' and 'exitContext' methods. However, owned IteratorExitContext does not implement contextManager. In the future, this will result in an error
++iteratorExitContextMethodCalled.chpl:9: error: 'manage' statements are only for types implementing 'contextManager'
+diff --git a/test/classes/initializers/errors/name-bad-field.good b/test/classes/initializers/errors/name-bad-field.good
+index 975294afb62..7d817ea7e9e 100644
+--- a/test/classes/initializers/errors/name-bad-field.good
++++ b/test/classes/initializers/errors/name-bad-field.good
+@@ -1,2 +1,2 @@
+ name-bad-field.chpl:6: In initializer:
+-name-bad-field.chpl:7: error: field "b" used before it is initialized
++name-bad-field.chpl:7: error: 'b' is used before it is initialized
+diff --git a/test/classes/initializers/field-undefined.good b/test/classes/initializers/field-undefined.good
+index 20a3fa9871e..b5bc6cb0d1b 100644
+--- a/test/classes/initializers/field-undefined.good
++++ b/test/classes/initializers/field-undefined.good
+@@ -1,2 +1,2 @@
+ field-undefined.chpl:6: In initializer:
+-field-undefined.chpl:9: error: 'c' undeclared (first use this function)
++field-undefined.chpl:9: error: 'c' cannot be found
 diff --git a/test/types/POD/elliot/varNotPOD.good b/test/types/POD/elliot/varNotPOD.good
 index 66db8242dd1..1a9cf52c977 100644
 --- a/test/types/POD/elliot/varNotPOD.good
