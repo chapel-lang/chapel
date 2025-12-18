@@ -805,6 +805,35 @@ index 94073f3a4f8..8fa89dc71b4 100644
 +where-clause4.chpl:11: error: unable to resolve call to 'init': no matching candidates
 +where-clause4.chpl:5: note: the following candidate didn't match because the 'where' clause evaluated to 'false'
 +where-clause4.chpl:11: note: omitting 22 more candidates that didn't match
+diff --git a/test/classes/initializers/siblingCall/endsInitBad.good b/test/classes/initializers/siblingCall/endsInitBad.good
+index 2fe65bf69a4..abdbe2af7b5 100644
+--- a/test/classes/initializers/siblingCall/endsInitBad.good
++++ b/test/classes/initializers/siblingCall/endsInitBad.good
+@@ -1,2 +1,3 @@
+ endsInitBad.chpl:5: In initializer:
+-endsInitBad.chpl:6: error: field initialization not allowed before super.init() or this.init()
++endsInitBad.chpl:7: error: field initialization not allowed before 'super.init()' or 'this.init()'
++endsInitBad.chpl:6: note: field 'f2' is initialized before the 'init' call here
+diff --git a/test/classes/initializers/siblingCall/middleBad.good b/test/classes/initializers/siblingCall/middleBad.good
+index 1fe81fdc1ca..b4850381fb6 100644
+--- a/test/classes/initializers/siblingCall/middleBad.good
++++ b/test/classes/initializers/siblingCall/middleBad.good
+@@ -1,2 +1,3 @@
+ middleBad.chpl:5: In initializer:
+-middleBad.chpl:6: error: field initialization not allowed before super.init() or this.init()
++middleBad.chpl:7: error: field initialization not allowed before 'super.init()' or 'this.init()'
++middleBad.chpl:6: note: field 'f2' is initialized before the 'init' call here
+diff --git a/test/classes/initializers/where-clause4.good b/test/classes/initializers/where-clause4.good
+index bcd82c29397..2b989de8c28 100644
+--- a/test/classes/initializers/where-clause4.good
++++ b/test/classes/initializers/where-clause4.good
+@@ -1,3 +1,3 @@
+-where-clause4.chpl:12: error: unresolved call 'Foo.init(3.4)'
+-where-clause4.chpl:5: note: this candidate did not match: Foo.init(xVal)
+-where-clause4.chpl:5: note: because where clause evaluated to false
++where-clause4.chpl:12: error: unable to resolve call to 'init': no matching candidates
++where-clause4.chpl:5: note: the following candidate didn't match because the 'where' clause evaluated to 'false'
++where-clause4.chpl:12: note: omitting 22 more candidates that didn't match
 diff --git a/test/types/POD/elliot/varNotPOD.good b/test/types/POD/elliot/varNotPOD.good
 index 66db8242dd1..1a9cf52c977 100644
 --- a/test/types/POD/elliot/varNotPOD.good
