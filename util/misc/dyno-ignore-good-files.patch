@@ -577,6 +577,56 @@ index 2074d426d27..1b96126e573 100644
 -  wrongType.chpl:13: called as (R(int(64))).init=(other: int(64))
 +wrongType.chpl:6: error: final result of initialization does not match the initial type
 +wrongType.chpl:3: note: field 'T' started with type 'int(64)', but had incompatible type '(int(64), int(64))' after initialization
+diff --git a/test/classes/initializers/phase1/badDependence.good b/test/classes/initializers/phase1/badDependence.good
+index 14dd81d243e..1423eff1497 100644
+--- a/test/classes/initializers/phase1/badDependence.good
++++ b/test/classes/initializers/phase1/badDependence.good
+@@ -1,3 +1,3 @@
+ badDependence.chpl:7: In initializer:
+-badDependence.chpl:8: error: field "f5" used before it is initialized
+-badDependence.chpl:9: error: field "f4" used before it is initialized
++badDependence.chpl:8: error: 'f5' is used before it is initialized
++badDependence.chpl:9: error: 'f4' is used before it is initialized
+diff --git a/test/classes/initializers/phase1/deeperOn.good b/test/classes/initializers/phase1/deeperOn.good
+index 68f48b95ef4..3e9ed68f90a 100644
+--- a/test/classes/initializers/phase1/deeperOn.good
++++ b/test/classes/initializers/phase1/deeperOn.good
+@@ -1,2 +1,2 @@
+ deeperOn.chpl:4: In initializer:
+-deeperOn.chpl:8: error: can't initialize field "x" inside a parallel statement during phase 1 of initialization
++deeperOn.chpl:8: error: cannot initialize fields inside cobegin statements
+diff --git a/test/classes/initializers/phase1/enumFieldNoUseBad.good b/test/classes/initializers/phase1/enumFieldNoUseBad.good
+index a5ef234d971..d1adb92aed0 100644
+--- a/test/classes/initializers/phase1/enumFieldNoUseBad.good
++++ b/test/classes/initializers/phase1/enumFieldNoUseBad.good
+@@ -1,2 +1,2 @@
+ enumFieldNoUseBad.chpl:8: In initializer:
+-enumFieldNoUseBad.chpl:9: error: 'blue' undeclared (first use this function)
++enumFieldNoUseBad.chpl:9: error: 'blue' cannot be found
+diff --git a/test/classes/initializers/phase1/grandparentAccess.good b/test/classes/initializers/phase1/grandparentAccess.good
+index a339080026c..b4148ab2672 100644
+--- a/test/classes/initializers/phase1/grandparentAccess.good
++++ b/test/classes/initializers/phase1/grandparentAccess.good
+@@ -1,2 +1,2 @@
+ grandparentAccess.chpl:21: In initializer:
+-grandparentAccess.chpl:24: error: cannot access parent field "a" before super.init() or this.init()
++grandparentAccess.chpl:24: error: Cannot access parent field "a" before super.init() or this.init()
+diff --git a/test/classes/initializers/phase1/hasBeginOnFieldInit.good b/test/classes/initializers/phase1/hasBeginOnFieldInit.good
+index 75909169c5c..adc7afd15f3 100644
+--- a/test/classes/initializers/phase1/hasBeginOnFieldInit.good
++++ b/test/classes/initializers/phase1/hasBeginOnFieldInit.good
+@@ -1,2 +1,2 @@
+ hasBeginOnFieldInit.chpl:4: In initializer:
+-hasBeginOnFieldInit.chpl:7: error: can't initialize field "x" inside a parallel statement during phase 1 of initialization
++hasBeginOnFieldInit.chpl:7: error: cannot initialize fields inside begin statements
+diff --git a/test/classes/initializers/phase1/hasCobeginOnFieldInit.good b/test/classes/initializers/phase1/hasCobeginOnFieldInit.good
+index 455767111a4..331ee6c7847 100644
+--- a/test/classes/initializers/phase1/hasCobeginOnFieldInit.good
++++ b/test/classes/initializers/phase1/hasCobeginOnFieldInit.good
+@@ -1,2 +1,2 @@
+ hasCobeginOnFieldInit.chpl:4: In initializer:
+-hasCobeginOnFieldInit.chpl:7: error: can't initialize field "x" inside a parallel statement during phase 1 of initialization
++hasCobeginOnFieldInit.chpl:7: error: cannot initialize fields inside cobegin statements
 diff --git a/test/types/POD/elliot/varNotPOD.good b/test/types/POD/elliot/varNotPOD.good
 index 66db8242dd1..1a9cf52c977 100644
 --- a/test/types/POD/elliot/varNotPOD.good
