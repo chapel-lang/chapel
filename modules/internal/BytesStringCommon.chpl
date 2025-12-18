@@ -1379,20 +1379,20 @@ module BytesStringCommon {
     return _strcmp(a.buff, a.buffLen, a.locale_id, b.buff, b.buffLen, b.locale_id) >= 0;
   }
 
-  inline proc getHash(x: ?t) {
+  inline proc getHash(x: ?t): uint(64) {
     assertArgType(t, "getHash");
 
-    var hash: int(64);
+    var hash: uint(64);
     on __primitive("chpl_on_locale_num",
                    chpl_buildLocaleID(x.locale_id, c_sublocid_none)) {
       // Use djb2 (Dan Bernstein in comp.lang.c), XOR version
-      var locHash: int(64) = 5381;
+      var locHash: uint(64) = 5381;
       for c in 0..#(x.numBytes) {
         locHash = ((locHash << 5) + locHash) ^ x.buff[c];
       }
       hash = locHash;
     }
-    return hash:uint;
+    return hash;
   }
 
   private proc incrementCodepoints(ref lhs: string, rhs: string) {
