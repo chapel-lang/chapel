@@ -7165,6 +7165,7 @@ proc readStringBytesData(ref s: ?t /*: string or bytes*/,
   // in the event that s.type == string.
 
   var len:c_ssize_t = nBytes.safeCast(c_ssize_t);
+  if len == 0 then return 0:errorCode;
   var err = qio_channel_read_amt(false, _channel_internal, sLocal.buff, len);
   if !err {
     sLocal.buffLen = nBytes;
