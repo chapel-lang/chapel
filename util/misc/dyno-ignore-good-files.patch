@@ -677,6 +677,64 @@ index e4a9a63cabb..2847cb0c69c 100644
  hasLoopForallBad.chpl:4: In initializer:
 -hasLoopForallBad.chpl:9: error: can't initialize field "field" inside a forall during phase 1 of initialization
 +hasLoopForallBad.chpl:9: error: cannot initialize fields inside of loops
+diff --git a/test/classes/initializers/phase1/hasOnCobeginFieldInit.good b/test/classes/initializers/phase1/hasOnCobeginFieldInit.good
+index 9f857a8b7fc..a72b70eaa7a 100644
+--- a/test/classes/initializers/phase1/hasOnCobeginFieldInit.good
++++ b/test/classes/initializers/phase1/hasOnCobeginFieldInit.good
+@@ -1,2 +1,2 @@
+ hasOnCobeginFieldInit.chpl:4: In initializer:
+-hasOnCobeginFieldInit.chpl:7: error: can't initialize field "x" inside a parallel statement during phase 1 of initialization
++hasOnCobeginFieldInit.chpl:7: error: cannot initialize fields inside cobegin statements
+diff --git a/test/classes/initializers/phase1/hasParallelBad.good b/test/classes/initializers/phase1/hasParallelBad.good
+index 51ee1a6a061..c06eb364495 100644
+--- a/test/classes/initializers/phase1/hasParallelBad.good
++++ b/test/classes/initializers/phase1/hasParallelBad.good
+@@ -1,2 +1,3 @@
+ hasParallelBad.chpl:5: In initializer:
+-hasParallelBad.chpl:7: error: can't initialize field "a" inside a parallel statement during phase 1 of initialization
++hasParallelBad.chpl:7: error: cannot initialize fields inside cobegin statements
++hasParallelBad.chpl:8: error: cannot initialize fields inside cobegin statements
+diff --git a/test/classes/initializers/phase1/outOfOrderCond.good b/test/classes/initializers/phase1/outOfOrderCond.good
+index 759c77cbaf7..95c05688981 100644
+--- a/test/classes/initializers/phase1/outOfOrderCond.good
++++ b/test/classes/initializers/phase1/outOfOrderCond.good
+@@ -1,3 +1,3 @@
+ outOfOrderCond.chpl:7: In initializer:
+ outOfOrderCond.chpl:10: error: Field "x" initialized out of order
+-outOfOrderCond.chpl:10: note: initialization of fields before .init() call must be in field declaration order
++outOfOrderCond.chpl:12: error: Field "y" initialized out of order
+diff --git a/test/classes/initializers/phase1/setParentField.good b/test/classes/initializers/phase1/setParentField.good
+index 86d91c0c40d..01ebd6f2be4 100644
+--- a/test/classes/initializers/phase1/setParentField.good
++++ b/test/classes/initializers/phase1/setParentField.good
+@@ -1,2 +1,2 @@
+ setParentField.chpl:8: In initializer:
+-setParentField.chpl:9: error: can't set value of field "f1" from parent type before calling this.init() or super.init()
++setParentField.chpl:9: error: Cannot access parent field "f1" before super.init() or this.init()
+diff --git a/test/classes/initializers/phase1/unorderedFields-preferred.good b/test/classes/initializers/phase1/unorderedFields-preferred.good
+index 1076853d1ec..0524b72ea4d 100644
+--- a/test/classes/initializers/phase1/unorderedFields-preferred.good
++++ b/test/classes/initializers/phase1/unorderedFields-preferred.good
+@@ -1,3 +1,2 @@
+ unorderedFields-preferred.chpl:6: In initializer:
+ unorderedFields-preferred.chpl:9: error: Field "f2" initialized out of order
+-unorderedFields-preferred.chpl:9: note: initialization of fields before .init() call must be in field declaration order
+diff --git a/test/classes/initializers/phase1/unorderedFields.good b/test/classes/initializers/phase1/unorderedFields.good
+index 7db5c2538ed..f2f0495e096 100644
+--- a/test/classes/initializers/phase1/unorderedFields.good
++++ b/test/classes/initializers/phase1/unorderedFields.good
+@@ -1,3 +1,2 @@
+ unorderedFields.chpl:6: In initializer:
+ unorderedFields.chpl:9: error: Field "f2" initialized out of order
+-unorderedFields.chpl:9: note: initialization of fields before .init() call must be in field declaration order
+diff --git a/test/classes/initializers/phase1/use-before-method.good b/test/classes/initializers/phase1/use-before-method.good
+index d780d088246..66709468dd4 100644
+--- a/test/classes/initializers/phase1/use-before-method.good
++++ b/test/classes/initializers/phase1/use-before-method.good
+@@ -1,2 +1,2 @@
+ use-before-method.chpl:13: In initializer:
+-use-before-method.chpl:14: error: field "b" used before it is initialized
++use-before-method.chpl:14: error: 'b' is used before it is initialized
 diff --git a/test/types/POD/elliot/varNotPOD.good b/test/types/POD/elliot/varNotPOD.good
 index 66db8242dd1..1a9cf52c977 100644
 --- a/test/types/POD/elliot/varNotPOD.good
