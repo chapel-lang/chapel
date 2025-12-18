@@ -1566,32 +1566,40 @@ index 1367bd320a6..d0f2b6f1207 100644
 +compareRecords.chpl:3: error: ordered comparisons not supported by default on records with array fields
 +compareRecords.chpl:3: error: ordered comparisons not supported by default on records with array fields
 diff --git a/test/types/records/const-checking/assignments.good b/test/types/records/const-checking/assignments.good
-index ff5667328c8..f59e361629a 100644
+index ff5667328c8..123f935bce9 100644
 --- a/test/types/records/const-checking/assignments.good
 +++ b/test/types/records/const-checking/assignments.good
-@@ -1,24 +1,14 @@
+@@ -1,24 +1,24 @@
 -assignments.chpl:11: In function 'TEST1':
 -assignments.chpl:13: error: cannot assign to a record of the type RECTYPE using the default assignment operator because it has 'const' field(s)
++assignments.chpl:3: In method '=':
++assignments.chpl:3: error: cannot pass const to non-const
  assignments.chpl:16: In function 'TEST2':
 -assignments.chpl:18: error: cannot assign to const variable
 +assignments.chpl:18: error: cannot pass const to non-const
  assignments.chpl:31: In function 'TEST5':
 -assignments.chpl:33: error: cannot assign to const variable
 -assignments.chpl:34: error: cannot assign to const variable
--assignments.chpl:37: In function 'TEST6':
++assignments.chpl:33: error: cannot pass const to non-const
++assignments.chpl:34: error: cannot pass const to non-const
+ assignments.chpl:37: In function 'TEST6':
 -assignments.chpl:40: error: cannot assign to const variable
 -assignments.chpl:56: error: const actual is passed to 'ref' formal 'arg' of TEST8()
 -assignments.chpl:70: In function 'quest1':
 -assignments.chpl:72: error: cannot assign to a record of the type OUTERREC using the default assignment operator because it has 'const' field(s)
-+assignments.chpl:33: error: cannot pass const to non-const
-+assignments.chpl:34: error: cannot pass const to non-const
++assignments.chpl:40: error: cannot pass const to non-const
++assignments.chpl:62: In method '=':
++assignments.chpl:62: error: cannot pass const to non-const
  assignments.chpl:75: In function 'quest2':
 -assignments.chpl:77: error: cannot assign to const variable
--assignments.chpl:89: In function 'quest5':
++assignments.chpl:77: error: cannot pass const to non-const
+ assignments.chpl:89: In function 'quest5':
 -assignments.chpl:92: error: cannot assign to const variable
 -assignments.chpl:93: error: cannot assign to const variable
 -assignments.chpl:94: error: cannot assign to const variable
-+assignments.chpl:77: error: cannot pass const to non-const
++assignments.chpl:92: error: cannot pass const to non-const
++assignments.chpl:93: error: cannot pass const to non-const
++assignments.chpl:94: error: cannot pass const to non-const
  assignments.chpl:97: In function 'quest6':
 -assignments.chpl:99: error: cannot assign to const variable
 -assignments.chpl:100: error: cannot assign to const variable
@@ -1613,11 +1621,19 @@ index 3f519f5fe3b..56a9a8a03a8 100644
 -todo-assign-to-record-formal-error.chpl:9: error: cannot assign to const variable
 +todo-assign-to-record-formal-error.chpl:9: error: cannot pass const to non-const
  todo-assign-to-record-formal-error.chpl:16: error: done
+diff --git a/test/types/records/const-checking/todo-linenumber-in-array-assignment-error.good b/test/types/records/const-checking/todo-linenumber-in-array-assignment-error.good
+index 5585ca1049a..e6f08ef2093 100644
+--- a/test/types/records/const-checking/todo-linenumber-in-array-assignment-error.good
++++ b/test/types/records/const-checking/todo-linenumber-in-array-assignment-error.good
+@@ -1 +1,2 @@
+-todo-linenumber-in-array-assignment-error.chpl:15: error: cannot assign to a record of the type RECTYPE using the default assignment operator because it has 'const' field(s)
++todo-linenumber-in-array-assignment-error.chpl:4: In method '=':
++todo-linenumber-in-array-assignment-error.chpl:4: error: cannot pass const to non-const
 diff --git a/test/types/records/const-checking/tuples-and-records.good b/test/types/records/const-checking/tuples-and-records.good
-index 0f54562c495..7a68bb6ac75 100644
+index 0f54562c495..324303b28b9 100644
 --- a/test/types/records/const-checking/tuples-and-records.good
 +++ b/test/types/records/const-checking/tuples-and-records.good
-@@ -1,12 +1,6 @@
+@@ -1,12 +1,7 @@
 +tuples-and-records.chpl:11: In initializer:
 +tuples-and-records.chpl:18: error: cannot pass const to non-const
  tuples-and-records.chpl:25: In function 'main':
@@ -1633,6 +1649,7 @@ index 0f54562c495..7a68bb6ac75 100644
 -tuples-and-records.chpl:38: error: cannot assign to const variable
 -tuples-and-records.chpl:39: error: cannot assign to const variable
 +tuples-and-records.chpl:26: error: cannot pass const to non-const
++tuples-and-records.chpl:33: error: cannot pass const to non-const
 +tuples-and-records.chpl:36: error: cannot pass const to non-const
 +tuples-and-records.chpl:39: error: cannot pass const to non-const
 diff --git a/test/types/records/ferguson/choose-record/choose-record10.good b/test/types/records/ferguson/choose-record/choose-record10.good
