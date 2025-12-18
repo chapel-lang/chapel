@@ -1101,20 +1101,28 @@ index 0ea07ea9f8d..2b245380207 100644
 +$CHPL_HOME/modules/internal/ChapelRange.chpl:2357: In function 'by':
 +$CHPL_HOME/modules/internal/ChapelRange.chpl:2358: error: the step argument of the 'by' operator is too large and cannot be represented within the range's stride type int(64)
 diff --git a/test/types/range/deitz/test_range_iterate_error.good b/test/types/range/deitz/test_range_iterate_error.good
-index c5070275cc1..d9ca82f231e 100644
+index c5070275cc1..59d408a31c4 100644
 --- a/test/types/range/deitz/test_range_iterate_error.good
 +++ b/test/types/range/deitz/test_range_iterate_error.good
 @@ -1 +1,9 @@
 -test_range_iterate_error.chpl:1: error: iteration over a range with no first index
-+$CHPL_HOME/modules/standard/IO.chpl:2316: In method 'serializeValue':
-+$CHPL_HOME/modules/standard/IO.chpl:2326: error: unable to resolve call to 'serialize': no matching candidates
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:385: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:374: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/standard/IO.chpl:2326: note: omitting 53 more candidates that didn't match
-+$CHPL_HOME/modules/standard/IO.chpl:6132: In method '_serializeOne':
-+$CHPL_HOME/modules/standard/IO.chpl:6150: error: unable to resolve call to '=': no matching candidates
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:219: In method 'serialize':
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:223: error: unable to resolve call to '=': no matching candidates
++$CHPL_HOME/modules/standard/IO.chpl:nnnn: In method 'serializeValue':
++$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to 'serialize': no matching candidates
++$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
++$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
++$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 53 more candidates that didn't match
++$CHPL_HOME/modules/standard/IO.chpl:nnnn: In method '_serializeOne':
++$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to '=': no matching candidates
++$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: In method 'serialize':
++$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/range/deitz/test_range_iterate_error.prediff b/test/types/range/deitz/test_range_iterate_error.prediff
+new file mode 120000
+index 00000000000..50247f550ee
+--- /dev/null
++++ b/test/types/range/deitz/test_range_iterate_error.prediff
+@@ -0,0 +1 @@
++../../../../util/test/prediff-obscure-module-linenos
+\ No newline at end of file
 diff --git a/test/types/range/diten/badRange.good b/test/types/range/diten/badRange.good
 index e9e8fff5529..5673cfca5b9 100644
 --- a/test/types/range/diten/badRange.good
@@ -2943,18 +2951,26 @@ index 19c22ac3ef0..e9ce7bc85e7 100644
 +$CHPL_HOME/modules/internal/ChapelTuple.chpl:266: error: invalid access of non-homogeneous tuple by runtime value
 +forallHetTuple.chpl:17: error: cannot iterate over a value of type '(int(64), real(64), string, R)'
 diff --git a/test/types/tuple/heterogeneous/loops/hetTupleOfTupleLoop.good b/test/types/tuple/heterogeneous/loops/hetTupleOfTupleLoop.good
-index ff86252d723..46a7e1c65d5 100644
+index ff86252d723..5d1faea1c97 100644
 --- a/test/types/tuple/heterogeneous/loops/hetTupleOfTupleLoop.good
 +++ b/test/types/tuple/heterogeneous/loops/hetTupleOfTupleLoop.good
 @@ -1 +1,7 @@
 -hetTupleOfTupleLoop.chpl:1: error: Heterogeneous tuples don't support this style of loop yet
-+$CHPL_HOME/modules/standard/IO.chpl:2316: In method 'serializeValue':
-+$CHPL_HOME/modules/standard/IO.chpl:2326: error: unable to resolve call to 'serialize': no matching candidates
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:385: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:374: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/standard/IO.chpl:2326: note: omitting 39 more candidates that didn't match
-+$CHPL_HOME/modules/standard/IO.chpl:6132: In method '_serializeOne':
-+$CHPL_HOME/modules/standard/IO.chpl:6150: error: unable to resolve call to '=': no matching candidates
++$CHPL_HOME/modules/standard/IO.chpl:nnnn: In method 'serializeValue':
++$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to 'serialize': no matching candidates
++$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
++$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
++$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 39 more candidates that didn't match
++$CHPL_HOME/modules/standard/IO.chpl:nnnn: In method '_serializeOne':
++$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/tuple/heterogeneous/loops/hetTupleOfTupleLoop.prediff b/test/types/tuple/heterogeneous/loops/hetTupleOfTupleLoop.prediff
+new file mode 120000
+index 00000000000..30607598fef
+--- /dev/null
++++ b/test/types/tuple/heterogeneous/loops/hetTupleOfTupleLoop.prediff
+@@ -0,0 +1 @@
++../../../../../util/test/prediff-obscure-module-linenos
+\ No newline at end of file
 diff --git a/test/types/tuple/heterogeneous/loops/zipHetTuple-1.good b/test/types/tuple/heterogeneous/loops/zipHetTuple-1.good
 index 1fe8cf4ad0a..59d408a31c4 100644
 --- a/test/types/tuple/heterogeneous/loops/zipHetTuple-1.good
