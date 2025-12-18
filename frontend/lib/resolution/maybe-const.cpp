@@ -211,6 +211,7 @@ bool AdjustMaybeRefs::deferErrorForMutatingConstfield(const AstNode* ref, RV& rv
     auto recv = dot->receiver();
     if (auto recvR = rv.byPostorder().byAstOrNull(recv)) {
       auto toId = recvR->toId();
+      if (toId.isEmpty()) return false; // not 'this'.
       auto toAst = parsing::idToAst(context, toId);
       if (toAst && toAst->isFormal() && toAst->toFormal()->name() == USTR("this")) {
         thisDot = true;
