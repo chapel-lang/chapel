@@ -1325,10 +1325,16 @@ static void processSyntacticDistributions(CallExpr* call) {
   if (call->isNamed("chpl__distributed")) {
     if (CallExpr* distCall = toCallExpr(call->get(1))) {
       if (SymExpr* distClass = toSymExpr(distCall->baseExpr)) {
-        if (expandTypeAlias(distClass) != nullptr) {
+        if (auto ts = expandTypeAlias(distClass)) {
+          const char* didYouMeanStr =
+            isDistClass(canonicalClassType(ts->type)) ?
+              "<domain> dmapped new dmap(new <DistName>(<args>))" :
+              "<domain> dmapped new <DistName>(<args>)";
           USR_FATAL(
             distCall,
-            "dmapped initialization expression requires a value, not a type - did you mean to use 'new'?"
+            "dmapped initialization expression requires a value, not a type "
+            "- did you mean to use '%s'?",
+            didYouMeanStr
           );
         }
       }
