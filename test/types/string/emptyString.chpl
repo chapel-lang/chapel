@@ -32,5 +32,5 @@ else
 use CTypes;
 extern proc printf(format: c_ptrConst(c_char), v...): c_int;
 // because s.buff is unallocated, its c_str() is nil too
-printf("'%s' %p\n", s.c_str(), s.c_str());
+printf("'%s' %d\n", s.c_str(), s.c_str():c_ptr(void):c_intptr:c_int);
 
