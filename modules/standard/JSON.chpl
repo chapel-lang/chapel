@@ -643,6 +643,8 @@ module JSON {
         return nil:readType;
       }
 
+      private use Reflection;
+
       // TODO:
       // - escaped strings
       if isNumericType(readType) || isBoolType(readType) {
@@ -688,6 +690,8 @@ module JSON {
       :arg val: The value into which this Deserializer will deserialize
     */
     proc ref deserializeValue(reader: jsonReader, ref val: ?readType) : void throws {
+      private use Reflection;
+
       if canResolveMethod(val, "deserialize", reader, this) {
         val.deserialize(reader=reader, deserializer=this);
       } else {
