@@ -1,0 +1,235 @@
+diff --git a/codeAnalysis/counting.chpl b/codeAnalysis/counting.chpl
+index 2bccc3a..49b3e7b 100644
+--- a/codeAnalysis/counting.chpl
++++ b/codeAnalysis/counting.chpl
+@@ -8,7 +8,7 @@ n_explorers = metrics[0]:int;
+ initial_tree_size = metrics[1];
+ metrics[0] = 0; //restarting for the parallel search_type
+ metrics[1] = 0;
+-var D: domain(1) dmapped Block(boundingBox = {0..#n_explorers}) = {0..#n_explorers};
++var D: domain(1) dmapped new blockDist(boundingBox = {0..#n_explorers}) = {0..#n_explorers};
+ var dist_vector_of_tree_size_h: [D] c_uint;
+ var dist_sols_h: [D] c_uint;
+ var dist_active_set_h: [D] queens_node;
+@@ -27,4 +27,4 @@ var DISTGPUWrapper = lambda (lo:int, hi: int, n_explorers: int) {
+ 		var dist_redTree = (+ reduce dist_vector_of_tree_size_h):uint(64);
+ 		var dist_redSol  = (+ reduce dist_sols_h):uint(64);
+ 		final_tree_size = dist_redTree + initial_tree_size;
+-		final_sol = dist_redSol;
+\ No newline at end of file
++		final_sol = dist_redSol;
+diff --git a/codeAnalysis/intermediateSearch.chpl b/codeAnalysis/intermediateSearch.chpl
+index 7290bb9..9e2f7d8 100644
+--- a/codeAnalysis/intermediateSearch.chpl
++++ b/codeAnalysis/intermediateSearch.chpl
+@@ -29,7 +29,7 @@ forall n in distributed_active_set with (+ reduce metrics) do  {var m1 = queens_
+         metrics[0] = 0; //restarting for the parallel search_type
+         metrics[1] = 0;
+         const Space = {0..(initial_num_prefixes-1):int}; //for distributing
+-        const D: domain(1) dmapped Block(boundingBox=Space) = Space; //1d block DISTRIBUTED
++        const D: domain(1) dmapped new blockDist(boundingBox=Space) = Space; //1d block DISTRIBUTED
+         var pgas_active_set: [D] queens_node; //1d block DISTRIBUTED
+         var centralized_active_set: [Space] queens_node; 
+         forall i in Space docentralized_active_set[i] = local_active_set[i:uint(64)];
+@@ -41,4 +41,4 @@ forall n in distributed_active_set with (+ reduce metrics) do  {var m1 = queens_
+             if(GPU_device_count()<num_gpus) then
+             for loc in Locales do{
+                 on loc do{GPU_id[here.id] = num_gpus:int;                               
+-       queens_mlocale_parameters_parser(size, scheduler, mode, mlsearch, initial_depth, second_depth, lchunk, mlchunk, slchunk, coordinated, centralized_active_set, Space, metrics,tree_each_locale,pgas,GPU_id,CPUP);
+\ No newline at end of file
++       queens_mlocale_parameters_parser(size, scheduler, mode, mlsearch, initial_depth, second_depth, lchunk, mlchunk, slchunk, coordinated, centralized_active_set, Space, metrics,tree_each_locale,pgas,GPU_id,CPUP);
+diff --git a/codeAnalysis/newMain.chpl b/codeAnalysis/newMain.chpl
+index 484abda..c2f9f9b 100644
+--- a/codeAnalysis/newMain.chpl
++++ b/codeAnalysis/newMain.chpl
+@@ -96,7 +96,7 @@ metrics[1] = 0;
+ 
+ writeln("Is distributed: ", distributed);
+ 
+-var D: domain(1) dmapped Block(boundingBox = {0..#n_explorers}) = {0..#n_explorers};
++var D: domain(1) dmapped new blockDist(boundingBox = {0..#n_explorers}) = {0..#n_explorers};
+ var dist_vector_of_tree_size_h: [D] c_uint;
+ var dist_sols_h: [D] c_uint;
+ var dist_active_set_h: [D] queens_node;
+diff --git a/codeAnalysis/singleLocale.chpl b/codeAnalysis/singleLocale.chpl
+index 1ebf0a3..845d52e 100644
+--- a/codeAnalysis/singleLocale.chpl
++++ b/codeAnalysis/singleLocale.chpl
+@@ -23,7 +23,7 @@ metrics[1] = 0;
+ ///////////////////////////////////////////////////////////////////////////
+ //Distributed -- generating distributed Pool
+ ///////////////////////////////////////////////////////////////////////////
+-var D: domain(1) dmapped Block(boundingBox = {0..#n_explorers}) = {0..#n_explorers};
++var D: domain(1) dmapped new blockDist(boundingBox = {0..#n_explorers}) = {0..#n_explorers};
+ var dist_vector_of_tree_size_h: [D] c_uint;
+ var dist_sols_h: [D] c_uint;
+ var dist_active_set_h: [D] queens_node;
+diff --git a/modules/fsp_johnson_call_initial_search.chpl b/modules/fsp_johnson_call_initial_search.chpl
+index 5c119ff..eadf80a 100644
+--- a/modules/fsp_johnson_call_initial_search.chpl
++++ b/modules/fsp_johnson_call_initial_search.chpl
+@@ -35,7 +35,7 @@ module fsp_johnson_call_initial_search{
+ 
+         var global_ub: atomic c_int;
+ 
+-        const PrivateSpace: domain(1) dmapped Private();
++        const PrivateSpace: domain(1) dmapped new privateDist();
+         var set_of_atomics: [PrivateSpace] atomic c_int;
+ 
+         var metrics: (uint(64),uint(64)) = (0:uint(64),0:uint(64));
+@@ -82,8 +82,8 @@ module fsp_johnson_call_initial_search{
+         distribution.start();
+         //Distributed range
+     	const Space = {0..(initial_num_prefixes-1):int}; //otherwise
+-		const D: domain(1) dmapped Block(boundingBox=Space) = Space; //1d block
+-    	//const D = Space dmapped Cyclic(startIdx=Space.low);
++		const D: domain(1) dmapped new blockDist(boundingBox=Space) = Space; //1d block
++    	//const D = Space dmapped new cyclicDist(startIdx=Space.low);
+         var distributed_active_set: [D] fsp_node;
+ 
+         //let's distribute the active set
+diff --git a/modules/fsp_johnson_call_multilocale_search.chpl b/modules/fsp_johnson_call_multilocale_search.chpl
+index e2423a9..eba1b35 100644
+--- a/modules/fsp_johnson_call_multilocale_search.chpl
++++ b/modules/fsp_johnson_call_multilocale_search.chpl
+@@ -52,7 +52,7 @@ module fsp_johnson_call_multilocale_search{
+ 
+ 
+         //one atomic for each node
+-        const PrivateSpace: domain(1) dmapped Private();
++        const PrivateSpace: domain(1) dmapped new privateDist();
+         var set_of_atomics: [PrivateSpace] atomic c_int;
+         var tree_each_locale: [PrivateSpace] uint(64);
+ 
+@@ -124,7 +124,7 @@ module fsp_johnson_call_multilocale_search{
+         }
+ 
+     	const Space = {0..(initial_num_prefixes-1):int}; //for distributing
+-        const D: domain(1) dmapped Block(boundingBox=Space) = Space; //1d block DISTRIBUTED
++        const D: domain(1) dmapped new blockDist(boundingBox=Space) = Space; //1d block DISTRIBUTED
+         var pgas_active_set: [D] fsp_node; //1d block DISTRIBUTED
+         var centralized_active_set: [Space] fsp_node; //on node 0
+ 
+diff --git a/modules/fsp_simple_call_inital_search.chpl b/modules/fsp_simple_call_inital_search.chpl
+index 43680ad..4fef126 100644
+--- a/modules/fsp_simple_call_inital_search.chpl
++++ b/modules/fsp_simple_call_inital_search.chpl
+@@ -35,7 +35,7 @@ module fsp_simple_call_inital_search{
+ 
+         var global_ub: atomic c_int;
+ 
+-        const PrivateSpace: domain(1) dmapped Private();
++        const PrivateSpace: domain(1) dmapped new privateDist();
+         var set_of_atomics: [PrivateSpace] atomic c_int;
+ 
+         var metrics: (uint(64),uint(64)) = (0:uint(64),0:uint(64));
+@@ -84,7 +84,7 @@ module fsp_simple_call_inital_search{
+         distribution.start();
+         //Distributed range
+     	const Space = {0..(initial_num_prefixes-1):int}; //otherwise
+-		const D: domain(1) dmapped Block(boundingBox=Space) = Space; //1d block
++		const D: domain(1) dmapped new blockDist(boundingBox=Space) = Space; //1d block
+         var distributed_active_set: [D] fsp_node;
+         //let's distribute the active set
+         forall i in Space do
+diff --git a/modules/queens_call_multilocale_search.chpl b/modules/queens_call_multilocale_search.chpl
+index 5d925be..565a72b 100644
+--- a/modules/queens_call_multilocale_search.chpl
++++ b/modules/queens_call_multilocale_search.chpl
+@@ -46,7 +46,7 @@ module queens_call_multilocale_search{
+         var return_total: real;
+ 
+ 
+-        const PrivateSpace: domain(1) dmapped Private();
++        const PrivateSpace: domain(1) dmapped new privateDist();
+         var tree_each_locale: [PrivateSpace] uint(64);
+         var GPU_id: [PrivateSpace] int;
+         var Locale_role: [PrivateSpace] int;
+@@ -93,7 +93,7 @@ module queens_call_multilocale_search{
+ 
+         //Distributer or centralized active set?
+         const Space = {0..(initial_num_prefixes-1):int}; //for distributing
+-        const D: domain(1) dmapped Block(boundingBox=Space) = Space; //1d block DISTRIBUTED
++        const D: domain(1) dmapped new blockDist(boundingBox=Space) = Space; //1d block DISTRIBUTED
+         var pgas_active_set: [D] queens_node; //1d block DISTRIBUTED
+         var centralized_active_set: [Space] queens_node; //on node 0
+ 
+diff --git a/other_codes/HPCS2020codeAnalysis/counting.chpl b/other_codes/HPCS2020codeAnalysis/counting.chpl
+index 2bccc3a..49b3e7b 100644
+--- a/other_codes/HPCS2020codeAnalysis/counting.chpl
++++ b/other_codes/HPCS2020codeAnalysis/counting.chpl
+@@ -8,7 +8,7 @@ n_explorers = metrics[0]:int;
+ initial_tree_size = metrics[1];
+ metrics[0] = 0; //restarting for the parallel search_type
+ metrics[1] = 0;
+-var D: domain(1) dmapped Block(boundingBox = {0..#n_explorers}) = {0..#n_explorers};
++var D: domain(1) dmapped new blockDist(boundingBox = {0..#n_explorers}) = {0..#n_explorers};
+ var dist_vector_of_tree_size_h: [D] c_uint;
+ var dist_sols_h: [D] c_uint;
+ var dist_active_set_h: [D] queens_node;
+@@ -27,4 +27,4 @@ var DISTGPUWrapper = lambda (lo:int, hi: int, n_explorers: int) {
+ 		var dist_redTree = (+ reduce dist_vector_of_tree_size_h):uint(64);
+ 		var dist_redSol  = (+ reduce dist_sols_h):uint(64);
+ 		final_tree_size = dist_redTree + initial_tree_size;
+-		final_sol = dist_redSol;
+\ No newline at end of file
++		final_sol = dist_redSol;
+diff --git a/other_codes/HPCS2020codeAnalysis/intermediateSearch.chpl b/other_codes/HPCS2020codeAnalysis/intermediateSearch.chpl
+index 7290bb9..9e2f7d8 100644
+--- a/other_codes/HPCS2020codeAnalysis/intermediateSearch.chpl
++++ b/other_codes/HPCS2020codeAnalysis/intermediateSearch.chpl
+@@ -29,7 +29,7 @@ forall n in distributed_active_set with (+ reduce metrics) do  {var m1 = queens_
+         metrics[0] = 0; //restarting for the parallel search_type
+         metrics[1] = 0;
+         const Space = {0..(initial_num_prefixes-1):int}; //for distributing
+-        const D: domain(1) dmapped Block(boundingBox=Space) = Space; //1d block DISTRIBUTED
++        const D: domain(1) dmapped new blockDist(boundingBox=Space) = Space; //1d block DISTRIBUTED
+         var pgas_active_set: [D] queens_node; //1d block DISTRIBUTED
+         var centralized_active_set: [Space] queens_node; 
+         forall i in Space docentralized_active_set[i] = local_active_set[i:uint(64)];
+@@ -41,4 +41,4 @@ forall n in distributed_active_set with (+ reduce metrics) do  {var m1 = queens_
+             if(GPU_device_count()<num_gpus) then
+             for loc in Locales do{
+                 on loc do{GPU_id[here.id] = num_gpus:int;                               
+-       queens_mlocale_parameters_parser(size, scheduler, mode, mlsearch, initial_depth, second_depth, lchunk, mlchunk, slchunk, coordinated, centralized_active_set, Space, metrics,tree_each_locale,pgas,GPU_id,CPUP);
+\ No newline at end of file
++       queens_mlocale_parameters_parser(size, scheduler, mode, mlsearch, initial_depth, second_depth, lchunk, mlchunk, slchunk, coordinated, centralized_active_set, Space, metrics,tree_each_locale,pgas,GPU_id,CPUP);
+diff --git a/other_codes/HPCS2020codeAnalysis/newMain.chpl b/other_codes/HPCS2020codeAnalysis/newMain.chpl
+index 484abda..c2f9f9b 100644
+--- a/other_codes/HPCS2020codeAnalysis/newMain.chpl
++++ b/other_codes/HPCS2020codeAnalysis/newMain.chpl
+@@ -96,7 +96,7 @@ metrics[1] = 0;
+ 
+ writeln("Is distributed: ", distributed);
+ 
+-var D: domain(1) dmapped Block(boundingBox = {0..#n_explorers}) = {0..#n_explorers};
++var D: domain(1) dmapped new blockDist(boundingBox = {0..#n_explorers}) = {0..#n_explorers};
+ var dist_vector_of_tree_size_h: [D] c_uint;
+ var dist_sols_h: [D] c_uint;
+ var dist_active_set_h: [D] queens_node;
+diff --git a/other_codes/HPCS2020codeAnalysis/singleLocale.chpl b/other_codes/HPCS2020codeAnalysis/singleLocale.chpl
+index 1ebf0a3..845d52e 100644
+--- a/other_codes/HPCS2020codeAnalysis/singleLocale.chpl
++++ b/other_codes/HPCS2020codeAnalysis/singleLocale.chpl
+@@ -23,7 +23,7 @@ metrics[1] = 0;
+ ///////////////////////////////////////////////////////////////////////////
+ //Distributed -- generating distributed Pool
+ ///////////////////////////////////////////////////////////////////////////
+-var D: domain(1) dmapped Block(boundingBox = {0..#n_explorers}) = {0..#n_explorers};
++var D: domain(1) dmapped new blockDist(boundingBox = {0..#n_explorers}) = {0..#n_explorers};
+ var dist_vector_of_tree_size_h: [D] c_uint;
+ var dist_sols_h: [D] c_uint;
+ var dist_active_set_h: [D] queens_node;
+diff --git a/other_codes/ITEqueens/itequeens.chpl b/other_codes/ITEqueens/itequeens.chpl
+index 3cb0c5b..44e5e33 100644
+--- a/other_codes/ITEqueens/itequeens.chpl
++++ b/other_codes/ITEqueens/itequeens.chpl
+@@ -98,7 +98,7 @@ metrics[1] = 0;
+ 
+ writeln("### Is the centralized pool distributed?: ", distributed);
+ 
+-var D: domain(1) dmapped Block(boundingBox = {0..#n_explorers}) = {0..#n_explorers};
++var D: domain(1) dmapped new blockDist(boundingBox = {0..#n_explorers}) = {0..#n_explorers};
+ var dist_vector_of_tree_size_h: [D] c_longlong;
+ var dist_sols_h: [D] c_longlong;
+ var dist_active_set_h: [D] queens_node;

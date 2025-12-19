@@ -10,5 +10,5 @@ var d2 = d dmapped bd;
 
 var d3: domain(2) dmapped new blockDist(d);
 
-// deprecated:
+// error:
 var d4 = d dmapped blockDist(d);

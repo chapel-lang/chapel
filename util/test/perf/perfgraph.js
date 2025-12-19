@@ -191,6 +191,10 @@ var branchInfo = [
                     "releaseDate": "2025-09-18",
                     "branchDate" : "2025-09-15",
                     "revision": -1},
+                  { "release": "2.7.0",
+                    "releaseDate": "2025-12-18",
+                    "branchDate" : "2025-12-12",
+                    "revision": -1},
                   ];
 
 var indexMap = {};

@@ -3,22 +3,20 @@ class Chapel < Formula
 
   desc "Programming language for productive parallel computing at scale"
   homepage "https://chapel-lang.org/"
-  url "https://github.com/chapel-lang/chapel/releases/download/2.6.0/chapel-2.6.0.tar.gz"
-  sha256 "e469c35be601cf1f59af542ab885e8a14aa2b087b79af0d5372a4421976c74b6"
+  url "https://github.com/chapel-lang/chapel/releases/download/2.7.0/chapel-2.7.0.tar.gz"
+  sha256 "5e3269babdae334c80fc3f25114698fdfe53e84ea06626af22d2b54eeb75bee6"
   license "Apache-2.0"
-  revision 1
   head "https://github.com/chapel-lang/chapel.git", branch: "main"
 
   no_autobump! because: :bumped_by_upstream
 
   bottle do
-    rebuild 1
-    sha256 arm64_tahoe:   "a92b26a348ec2ddb493ed332a170b57eed2b17eab774390b6aa8f242bcd4c2bd"
-    sha256 arm64_sequoia: "86a6958d62cc8fd122bfeb781812cf1df71f08c2cb956f0bf8a9ff945a4608f2"
-    sha256 arm64_sonoma:  "44e172c1d40ec21a7c8344ffb0b81ad22c2cb7f8920ba5a4db11a2b2fe543947"
-    sha256 sonoma:        "7b593fdea9a9da9357cc2f27753a81b2c241fb8cc326970c1de74af178567018"
-    sha256 arm64_linux:   "6bbc5a340c4d98538f0007bac67b7c60129746cbfbd9e639b258e588d4b36853"
-    sha256 x86_64_linux:  "c12cedbb7591a5fb87cb7f763d5ac078caff965d94326fe3f279470dacb49aab"
+    sha256 arm64_tahoe:   "82aae74accac4133783e73ba3b493c3c3c3ab52feab645cb50276469a98b348a"
+    sha256 arm64_sequoia: "080918e65887cecfe88ece72f28a8b455618fd7f52b1d44357ec63bba78ebda2"
+    sha256 arm64_sonoma:  "7f13698fd8a0aaa0a95d78daa1988764d444da247f74a1a317bcaf71cbc1fb15"
+    sha256 sonoma:        "c0905006d548fa3db07a946c92ee725d8742524416080716e39fda5ef96f4afb"
+    sha256 arm64_linux:   "2ee31f93c06a0550c453a913ffbc2f67e9a9de83236e73d55b678c9185aafcb2"
+    sha256 x86_64_linux:  "e1d4834cd0d3fa88b3c002ede65d40e1110e955b4bbe1007137824594aa04e49"
   end
 
   depends_on "cmake"
@@ -78,10 +76,9 @@ class Chapel < Formula
       CHPL_LLVM=system
       CHPL_LLVM_CONFIG=#{llvm.opt_bin}/llvm-config
       CHPL_LLVM_GCC_PREFIX=none
+      CHPL_RUNTIME_CPU=none
       CHPL_TARGET_CPU=native
     EOS
-    # NOTE: CHPL_TARGET_CPU=native could cause problems for users cross-compiling,
-    # should we only set this for CHPL_COMM=none?
 
     # Must be built from within CHPL_HOME to prevent build bugs.
     # https://github.com/Homebrew/legacy-homebrew/pull/35166

@@ -10662,14 +10662,12 @@ static bool errorIfFunctionCapturesAnyOuterVars(FnSymbol* fn, Expr* use) {
   // Check to make sure the function does not refer to any outer variables.
   if (!env.isEmpty()) {
     auto kindStr = FunctionType::kindToString(ft->kind());
-    if (fn->hasFlag(FLAG_LEGACY_LAMBDA)) kindStr = "lambda";
 
     if (fn->hasFlag(FLAG_ANONYMOUS_FN)) {
       USR_FATAL_CONT(use, "cannot capture %s because it refers to "
                           "outer variables",
                           kindStr);
     } else {
-      INT_ASSERT(!fn->hasFlag(FLAG_LEGACY_LAMBDA));
       USR_FATAL_CONT(use, "cannot capture %s '%s' because it refers "
                           "to outer variables",
                           kindStr,
@@ -10789,7 +10787,6 @@ static Expr* resolveFunctionCapture(FnSymbol* fn, Expr* use,
 
   if (ft->isGeneric() || ft->returnType() == dtUnknown) {
     auto kindStr = FunctionType::kindToString(ft->kind());
-    if (fn->hasFlag(FLAG_LEGACY_LAMBDA)) kindStr = "lambda";
 
     // TODO: Maybe use 'iterator'/'procedure' instead of 'proc'/'iter'?
     if (fn->hasFlag(FLAG_ANONYMOUS_FN)) {

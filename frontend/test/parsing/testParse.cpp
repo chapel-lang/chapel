@@ -846,33 +846,6 @@ static void testMultiAttributesAndPragma(Parser* parser) {
 }
 
 
-static void testAttributeAndPragmaLast(Parser* parser) {
-  // TODO: this test fails, currently the pragma must be first, before any
-  // attributes
-  // ErrorGuard guard(parser->context());
-  // auto parseResult = parser->parseString("testAttributeOnClass.chpl",
-  //                                        R""""(
-  //                                         @attribute(true)
-  //                                         pragma "no doc"
-  //                                         class MyClass { })"""");
-  // assert(!guard.realizeErrors());
-  // auto mod = parseResult.singleModule();
-  // assert(mod);
-  // assert(mod->numStmts() == 1);
-
-  // auto cls = mod->stmt(0)->toClass();
-  // assert(cls);
-  // assert(cls->attributeGroupChildNum() > -1);
-  // auto attrGrp = cls->attributeGroup()->toAttributeGroup();
-  // assert(attrGrp);
-  // assert(attrGrp->numAttributes() == 1);
-  // auto attr0 = attrGrp->child(0)->toAttribute();
-  // assert(attrGrp->hasPragma(PRAGMA_NO_DOC));
-  // assert(attr0);
-  // assert(attr0->name() == "attribute");
-}
-
-
 static void testAttributeAndUnstable(Parser* parser) {
  ErrorGuard guard(parser->context());
  auto parseResult = parser->parseString("testAttributeAndUnstable.chpl",
@@ -1416,7 +1389,6 @@ int main() {
   testAttributeOnClass(p);
   testMultiAttributesOnClass(p);
   testMultiAttributesAndPragma(p);
-  testAttributeAndPragmaLast(p);
   testAttributeAndUnstable(p);
   testAttributeAndUnstableLast(p);
   testAttributeAndDeprecated(p);

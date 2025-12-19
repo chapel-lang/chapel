@@ -201,6 +201,9 @@ proc compileSrc(lockFile: borrowed Toml, binLoc: string, show: bool,
     cmd.pushBack("chpl");
     cmd.pushBack(pathToProj);
     cmd.pushBack("-o " + moveTo);
+
+    cmd.pushBack(compopts);
+
     if release then cmd.pushBack("--fast");
     if sourceList.size > 0 then cmd.pushBack("--main-module " + project);
 

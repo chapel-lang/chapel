@@ -18,7 +18,7 @@
 /* This symbol is also not considered stable */
 @unstable("h is unstable, don't use it") var h: bool;
 
-// Ensures instability doesn't cause "no doc" symbols to turn up in
+// Ensures instability doesn't cause nodoc symbols to turn up in
 // documentation
 @chpldoc.nodoc
 @unstable var i: int;

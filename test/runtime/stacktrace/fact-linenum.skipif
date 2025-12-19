@@ -1,1 +1,2 @@
 COMPOPTS <= --baseline
+CHPL_TARGET_PLATFORM==linux32
