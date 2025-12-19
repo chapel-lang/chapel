@@ -51,11 +51,11 @@ TEST_NIGHTLY=1
 GITHUB_USER=chapel-lang
 GITHUB_BRANCH=main
 
-SHORT_NAME=negative-bigint
-START_DATE=11/17/25
+SHORT_NAME=negative-bigint-better-fix
+START_DATE=12/16/25
 
 export ARKOUDA_URL=https://github.com/1RyanK/arkouda.git
-export ARKOUDA_BRANCH=5043-Investigate_performance_loss_from_negative_bigint_changes
+export ARKOUDA_BRANCH=5150-Try_to_fix_bigint_performance_again
 
 if [[ "$TEST_NIGHTLY" == "1" ]]; then
   set -e
