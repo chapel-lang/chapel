@@ -68,6 +68,10 @@ Mason understands specific fields in the TOML file, which are described below.
      `SPDX License List <https://spdx.org/licenses/>`_ can be used for
      Mason packages. The license field defaults to ``None``.
 
+   * ``compopts``: array or string, if whitespace important, use string
+
+   * ``docops``: array or string
+
    * ``tests``: A list of test files that are part of the package. These files
      will be run when a user executes `mason test`.
      See :ref:`testing-with-mason` for more information.
