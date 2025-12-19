@@ -907,6 +907,25 @@ iter allFields(tomlTbl: Toml) {
   }
 }
 
+proc parseCompilerOptions(toml: Toml): list(string) throws {
+  var res = new list(string);
+  if toml.tomlType == "string" {
+    res.pushBack(toml.s.split(" "));
+  } else if toml.tomlType == "array" {
+    const tomlArr = toml.arr;
+    for f in tomlArr {
+      if f == nil || f!.tomlType != "string" {
+        throw new MasonError("unable to parse");
+      }
+      res.pushBack(f!.s);
+    }
+  } else {
+    throw new MasonError("unable to parse");
+  }
+  return res;
+}
+
+
 record chplOptions {
   var compopts: list(string);
   var execopts: list(string);

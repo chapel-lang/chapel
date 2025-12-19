@@ -87,7 +87,7 @@ module MasonLogger {
     }
 
     proc warnln(s: string) {
-      if doWarn then Safe.writeln(logWriter, addPrefix("%s"), s);
+      if doWarn then Safe.writeln(logWriter, addPrefix(s));
     }
 
     proc warnf(f: string, args...) {

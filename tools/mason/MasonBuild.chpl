@@ -370,9 +370,13 @@ proc getGitCode(gitList: list(gitSource), show) {
 proc getTomlCompopts(lock: borrowed Toml): list(string) {
   var compopts = new list(string);
   // Checks for compilation options are present in Mason.toml
-  if lock.pathExists('root.compopts') {
-    const cmpFlags = lock["root"]!["compopts"]!.s;
-    compopts.pushBack(cmpFlags.split(" "));
+  if lock.pathExists("root.compopts") {
+    const cmpFlags = lock["root"]!["compopts"]!;
+    try {
+      compopts.pushBack(parseCompilerOptions(cmpFlags));
+    } catch {
+      throw new MasonError("unable to parse compopts");
+    }
   }
 
   if lock.pathExists('external') {

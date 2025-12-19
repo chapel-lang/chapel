@@ -23,7 +23,10 @@ use FileSystem;
 use IO;
 use MasonHelp;
 use MasonUtils;
+import MasonLogger;
 use List only list;
+
+private var log = new MasonLogger.logger("mason doc");
 
 proc masonDoc(args: [] string) throws {
 
@@ -44,6 +47,8 @@ proc masonDoc(args: [] string) throws {
     const projectName = tomlFile["brick"]!["name"]!.s;
     const projectFile = projectName + '.chpl';
 
+    const version = tomlFile["brick"]!["version"]!.s;
+
     if isDir(projectHome + '/src/') &&
        isFile(projectHome + '/src/' + projectFile) {
       // Must use relative paths with chpldoc to prevent baking in abs paths
@@ -51,11 +56,14 @@ proc masonDoc(args: [] string) throws {
 
       var command = new list([
         "chpldoc",
-        "src/" + projectFile,
+        "--project-name=" + projectName,
+        "--project-version=" + version,
+        joinPath("src", projectFile),
         "-o",
         "doc/",
         "--process-used-modules"
       ]);
+      command.pushBack(getTomlDocopts(tomlFile));
       command.pushBack(passArgs.values());
       const commandArr = command.toArray();
       const commandStr = " ".join(commandArr);
@@ -63,7 +71,7 @@ proc masonDoc(args: [] string) throws {
       runCommand(commandArr);
     }
     else {
-      writeln('Mason could not find the project to document!');
+      log.warnln('Mason could not find the project to document!');
       var command = new list([
         "chpldoc",
       ]);
@@ -73,5 +81,22 @@ proc masonDoc(args: [] string) throws {
   }
   catch e: MasonError {
     stderr.writeln(e.message());
+    exit(1);
   }
+}
+
+proc getTomlDocopts(lock: borrowed Toml): list(string) throws {
+  var docopts: list(string);
+
+  // Checks for compilation options are present in Mason.toml
+  // TODO BEFORE MEGRE, add compopts and docopts to manifest.rst
+  if lock.pathExists("brick.docopts") {
+    try {
+      docopts.pushBack(parseCompilerOptions(lock["brick"]!["docopts"]!));
+    } catch {
+      throw new MasonError("unable to parse docopts");
+    }
+  }
+
+  return docopts;
 }
