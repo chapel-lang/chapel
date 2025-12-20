@@ -250,13 +250,15 @@ PyObject* TypedSignatureObject::str(TypedSignatureObject* self) {
   return Py_BuildValue("s", typeString.c_str());
 }
 PyObject* TypedSignatureObject::repr(TypedSignatureObject* self) {
-  if (!self->value_.signature || !self->value_.poiScope) {
+  if (!self->value_.signature) {
     raiseExceptionForIncorrectlyConstructedType("TypedSignature");
     return nullptr;
   }
   std::stringstream ss;
   self->value_.signature->stringify(ss, CHPL_SYNTAX);
-  self->value_.poiScope->stringify(ss, CHPL_SYNTAX);
+  if (auto poi = self->value_.poiScope) {
+    poi->stringify(ss, CHPL_SYNTAX);
+  }
   auto typeString = ss.str();
   return Py_BuildValue("s", typeString.c_str());
 }
