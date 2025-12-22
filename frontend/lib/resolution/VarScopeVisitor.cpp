@@ -428,16 +428,6 @@ bool VarScopeVisitor::enter(const TupleDecl* ast, RV& rv) {
 void VarScopeVisitor::exit(const TupleDecl* ast, RV& rv) {
   CHPL_ASSERT(!scopeStack.empty());
 
-  // Loop index variables don't need default-initialization and aren't
-  // subject to split init etc., so skip them.
-  //
-  // TODO: I think it's fine to skip this for all users of VarScopeVisitor;
-  //       is there an analysis that does need to handle loop indices?
-  // See also: skip for NamedDecl
-  // if (!isLoopIndex(outermostContainingTuple())) {
-  //   handleTupleDeclaration(ast, rv);
-  // }
-
   // Add tuple index info to AssociatedActions on contained decls
   for (int i = 0; i < ast->numDecls(); i++) {
     auto decl = ast->decl(i);
@@ -446,10 +436,6 @@ void VarScopeVisitor::exit(const TupleDecl* ast, RV& rv) {
     for (auto action : re.associatedActions()) {
       auto useId = action.id();
       auto useTupleEltIdx = i;
-      // if (rhsTupleAst) {
-      //   useId = rhsTupleAst->actual(i)->id();
-      //   useTupleEltIdx = -1;
-      // }
       auto actionWithIdx = new AssociatedAction(
           action.action(), action.fn(), useId, action.type(),
           /* tupleEltIdx */ useTupleEltIdx, action.subActions());

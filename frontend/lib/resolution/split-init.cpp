@@ -61,11 +61,6 @@ struct FindSplitInits : VarScopeVisitor {
 
   void propagateChildToParent(VarFrame* frame, VarFrame* parent, const AstNode* ast);
 
-  // void processSingleAssignHelper(const AstNode* lhsAst,
-  //                                const AstNode* rhsAst,
-  //                                const AstNode* ast,
-  //                                RV& rv);
-
   // overrides
   void handleDeclaration(const VarLikeDecl* ast,
                          const AstNode* parent,
@@ -199,31 +194,6 @@ void FindSplitInits::handleInitOrAssign(ID varId,
   }
 }
 
-// void FindSplitInits::processTupleDecl(const TupleDecl* ast,
-//                                       const TupleDecl* topLevelDeclAst,
-//                                       RV& rv) {
-//   auto topLevelInitExpr = topLevelDeclAst->initExpression();
-
-//   for (int i = 0; i < ast->numDecls(); i++) {
-//     auto decl = ast->decl(i);
-//     if (auto vld = decl->toVarLikeDecl()) {
-//       // Propagate formal-ness and intent from the tuple decl
-//       bool isFormal = ast->isTupleDeclFormal();
-//       Qualifier intentOrKind = (Qualifier)ast->intentOrKind();
-//       processSingleDeclHelper(vld, topLevelInitExpr, isFormal, intentOrKind, rv);
-//     } else if (auto td = decl->toTupleDecl()) {
-//       processTupleDecl(td, topLevelDeclAst, rv);
-//     } else {
-//       context->error(decl, "unexpected type of contained decl in tuple decl");
-//     }
-//   }
-// }
-
-// void FindSplitInits::handleTupleDeclaration(const TupleDecl* ast, RV& rv) {
-//   auto topLevelDeclAst = ast;
-//   processTupleDecl(ast, topLevelDeclAst, rv);
-// }
-
 void FindSplitInits::handleDeclaration(const VarLikeDecl* ast,
                                        const AstNode* parent,
                                        const AstNode* initExpr,
@@ -231,11 +201,6 @@ void FindSplitInits::handleDeclaration(const VarLikeDecl* ast,
                                        Qualifier intentOrKind,
                                        bool isFormal,
                                        RV& rv) {
-  // auto initExpr = ast->initExpression();
-  // bool isFormal = ast->isFormal() || ast->isVarArgFormal();
-  // Qualifier intentOrKind = ast->storageKind();
-  // processSingleDeclHelper(ast, initExpr, isFormal, intentOrKind, rv);
-
   VarFrame* frame = currentFrame();
   bool inserted = frame->addToDeclaredVars(ast->id());
   if (inserted) {
@@ -263,41 +228,14 @@ void FindSplitInits::handleMention(const Identifier* ast, ID varId, RV& rv) {
   }
 }
 
-// void FindSplitInits::processSingleAssignHelper(const AstNode* lhsAst,
-//                                                const AstNode* rhsAst,
-//                                                const AstNode* ast,
-//                                                RV& rv) {
-//   ID lhsVarId = refersToId(lhsAst, rv);
-//   if (!lhsVarId.isEmpty()) {
-//     // get the type for the rhs
-//     QualifiedType rhsType = rv.byAst(rhsAst).type();
-//     handleInitOrAssign(lhsVarId, rhsType, rv);
-//   } else {
-//     // visit the LHS to check for mentions
-//     lhsAst->traverse(rv);
-//   }
-// }
-
 void FindSplitInits::handleAssign(const AstNode* lhsAst,
                                   const AstNode* rhsAst,
                                   const types::QualifiedType& rhsType,
                                   const OpCall* opAst,
                                   RV& rv) {
-  // auto lhsAst = ast->actual(0);
-  // auto rhsAst = ast->actual(1);
-
-  // if (auto lhsTuple = lhsAst->toTuple()) {
-  //   for (auto elt : lhsTuple->actuals()) {
-  //     processSingleAssignHelper(elt, rhsAst, ast, rv);
-  //   }
-  // } else {
-  //   processSingleAssignHelper(lhsAst, rhsAst, ast, rv);
-  // }
-
   ID lhsVarId = refersToId(lhsAst, rv);
   if (!lhsVarId.isEmpty()) {
-    // // get the type for the rhs
-    // QualifiedType rhsType = rv.byAst(rhsAst).type();
+    // get the type for the rhs
     handleInitOrAssign(lhsVarId, rhsType, rv);
   } else {
     // visit the LHS to check for mentions
