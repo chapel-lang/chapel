@@ -2641,9 +2641,7 @@ class AssociatedAction {
     id_.mark(context);
     type_.mark(context);
     chpl::mark<decltype(tupleEltIdx_)>{}(context, tupleEltIdx_);
-    for (const auto& subAction : subActions_) {
-      subAction->mark(context);
-    }
+    chpl::mark<decltype(subActions_)>{}(context, subActions_);
   }
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
