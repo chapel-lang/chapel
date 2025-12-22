@@ -1604,7 +1604,7 @@ void AssociatedAction::stringify(std::ostream& ss,
   }
 
   ss << " sub-actions: {";
-  for (int i = 0; i < subActions_.size(); i++) {
+  for (size_t i = 0; i < subActions_.size(); i++) {
     ss << "";
     subActions_[i]->stringify(ss, stringKind);
     if (i < subActions_.size() - 1) {
