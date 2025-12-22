@@ -2079,7 +2079,7 @@ static void test27b() {
 }
 
 // Copying then moving tuple
-static void test27() {
+static void test27c() {
   testActions(__FUNCTION__,
     R""""(
       module M {
@@ -2446,7 +2446,7 @@ int main() {
 
   test27a();
   test27b();
-  test27();
+  test27c();
   test28();
   test29();
   test30();
