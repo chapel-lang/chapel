@@ -19,6 +19,7 @@
 
 #include "chpl/resolution/copy-elision.h"
 
+#include "chpl/resolution/can-pass.h"
 #include "chpl/resolution/ResolvedVisitor.h"
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/resolution-types.h"
@@ -389,26 +390,37 @@ void FindElidedCopies::handleDeclaration(const VarLikeDecl* ast,
   if (initExpr) {
     VarFrame* frame = currentFrame();
     ID lhsVarId = ast->id();
-    QualifiedType lhsType = rv.byId(lhsVarId).type();
     if (auto tupleExprInit = initExpr->toTuple()) {
       // handle init with tuple expression
+      QualifiedType lhsTupleType = initType;
+      CHPL_ASSERT(lhsTupleType.type() &&
+                  lhsTupleType.type()->isTupleType());
       for (int i = 0; i < tupleExprInit->numActuals(); i++) {
         auto eltExpr = tupleExprInit->actual(i);
+        QualifiedType eltLhsType =
+            lhsTupleType.type()->toTupleType()->elementType(i);
+        // Remove ref-ness from tuple elt since we are using it as a var, unless
+        // the whole tuple is ref
+        if (!lhsTupleType.isRef()) {
+          eltLhsType =
+              QualifiedType(KindProperties::removeRef(lhsTupleType.kind()),
+                            eltLhsType.type(), eltLhsType.param());
+        }
         if (eltExpr->isTuple()) {
-          handleDeclaration(ast, parent, eltExpr, QualifiedType(), intentOrKind,
-                            isFormal, rv);
+          handleDeclaration(ast, parent, eltExpr, /* initType */ eltLhsType,
+                            intentOrKind, isFormal, rv);
         } else {
           ID rhsVarId = refersToId(eltExpr, rv);
           QualifiedType rhsType = rv.byId(rhsVarId).type();
           if (!rhsVarId.isEmpty() && isEligibleVarInAnyFrame(rhsVarId)) {
-            // TODO: do we need to verify LHS and RHS type compatibility per element?
-            if (copyElisionAllowedForTypes(rhsType, rhsType, ast, rv)) {
+            if (copyElisionAllowedForTypes(eltLhsType, rhsType, ast, rv)) {
               addCopyInit(frame, rhsVarId, eltExpr->id());
             }
           }
         }
       }
     } else {
+      QualifiedType lhsType = rv.byId(lhsVarId).type();
       ID rhsVarId = refersToId(initExpr, rv);
       if (!rhsVarId.isEmpty() && isEligibleVarInAnyFrame(rhsVarId)) {
         // check that the types are the same

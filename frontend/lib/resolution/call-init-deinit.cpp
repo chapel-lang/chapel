@@ -1587,8 +1587,6 @@ void CallInitDeinit::handleAssign(const AstNode* lhsAst,
 
   // check for use of deinited variables
   processMentions(lhsAst, rv);
-  // TODO is this needed? I think so since previously we ran processMentions
-  // on the entire OpCall
   processMentions(rhsAst, rv);
 
   bool isInit = splitInited;
