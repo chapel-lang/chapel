@@ -231,6 +231,8 @@ void FindElidedCopies::addCopyInit(VarFrame* frame, ID fromVarId, ID point) {
   // get the map entry, default-initializing it if there was none
   CopyElisionState& state = frame->copyElisionState[fromVarId];
   state.lastIsCopy = true;
+  // Only clear previous points when not within a tuple, since they can cause
+  // multiple copy inits from the same variable.
   if (!outermostContainingTuple()) {
     state.points.clear();
   }
