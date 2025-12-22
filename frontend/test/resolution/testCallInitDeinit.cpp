@@ -21,20 +21,37 @@
 
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/resolution-queries.h"
-#include "chpl/resolution/scope-queries.h"
-#include "chpl/resolution/split-init.h"
-#include "chpl/uast/Call.h"
-#include "chpl/uast/Comment.h"
-#include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
-#include "chpl/uast/Variable.h"
 
 #include "./ErrorGuard.h"
 
-using ActionElt = std::tuple<AssociatedAction::Action,
-                             std::string, /* ID where action occurs */
-                             std::string /* ID acted upon (or second ID if present) */ >;
+struct ActionElt;
 using Actions = std::vector<ActionElt>;
+
+struct ActionElt {
+  AssociatedAction::Action actionType;
+  // ID where action occurs
+  std::string inId;
+  // ID acted upon
+  std::string actedUponId;
+  int tupleEltIdx;
+  std::vector<ActionElt> subActions;
+
+  ActionElt(AssociatedAction::Action actionType,
+            const std::string& inId,
+            const std::string& actedUponId,
+            int tupleEltIdx = -1,
+            const Actions& subActions = {})
+    : actionType(actionType),
+      inId(inId),
+      actedUponId(actedUponId),
+      tupleEltIdx(tupleEltIdx),
+      subActions(subActions) {}
+
+  ActionElt() = default;
+  ActionElt(const ActionElt&) = default;
+  ActionElt& operator=(const ActionElt&) = default;
+};
 
 static std::string idToStr(Context* context, ID id) {
   std::string name = id.str();
@@ -49,21 +66,16 @@ static std::string idToStr(Context* context, ID id) {
 
 static void addAction(Context* context, Actions& actions, const AstNode* ast,
                       const AssociatedAction* act) {
-  // HACK: Store tuple idx as the acted upon ID if it exists, otherwise use the
-  // actual acted upon ID.
-  std::string useActIdStr;
-  if (act->hasTupleEltIdx()) {
-    useActIdStr = std::to_string(act->tupleEltIndex());
-  } else {
-    useActIdStr = idToStr(context, act->id());
-  }
-
-  actions.emplace_back(act->action(), idToStr(context, ast->id()), useActIdStr);
-
-  // Add sub-actions (if any) flattened into the list.
+  Actions subActions;
   for (auto subAct : act->subActions()) {
-    addAction(context, actions, ast, subAct);
+    addAction(context, subActions, ast, subAct);
   }
+
+  actions.emplace_back(act->action(),
+                       idToStr(context, ast->id()),
+                       idToStr(context, act->id()),
+                       act->hasTupleEltIdx() ? act->tupleEltIndex() : -1,
+                       subActions);
 }
 
 static void gatherActions(Context* context, const AstNode* ast,
@@ -82,16 +94,17 @@ static void gatherActions(Context* context, const AstNode* ast,
   }
 }
 
-static void printAction(const ActionElt& a) {
+static void printAction(const ActionElt& a, int idx) {
   AssociatedAction::Action gotAction;
   std::string gotInId;
   std::string gotActId;
 
-  gotAction = std::get<0>(a);
-  gotInId = std::get<1>(a);
-  gotActId = std::get<2>(a);
+  gotAction = a.actionType;
+  gotInId = a.inId;
+  gotActId = a.actedUponId;
 
-  printf("  %s in %s",
+  printf("  %i: %s in %s",
+         idx,
          AssociatedAction::kindToString(gotAction),
          gotInId.c_str());
 
@@ -102,9 +115,68 @@ static void printAction(const ActionElt& a) {
 }
 
 static void printActions(const Actions& actions) {
-  for (auto act : actions) {
-    printAction(act);
+  for (int i = 0; i < actions.size(); i++) {
+    printAction(actions[i], i);
+    for (int j = 0; j < actions[i].subActions.size(); j++) {
+      printAction(actions[i].subActions[j], i);
+    }
   }
+}
+
+static std::string testAction(ActionElt expected, ActionElt got) {
+  std::string message;
+
+  AssociatedAction::Action gotAction, expectAction;
+  std::string gotInId, expectInId;
+  std::string gotActId, expectActId;
+  int gotTupleIdx, expectTupleIdx;
+  Actions gotSubActions, expectSubActions;
+
+  gotAction = got.actionType;
+  gotInId = got.inId;
+  gotActId = got.actedUponId;
+  gotTupleIdx = got.tupleEltIdx;
+  gotSubActions = got.subActions;
+
+  expectAction = expected.actionType;
+  expectInId = expected.inId;
+  expectActId = expected.actedUponId;
+  expectTupleIdx = expected.tupleEltIdx;
+  expectSubActions = expected.subActions;
+
+  // Allow leaving out expected act ID where it's redundant
+  if (expectActId.empty() && gotActId == gotInId) {
+    gotActId = "";
+  }
+
+  if (gotAction != expectAction) {
+    message = message + "Failure: mismatched action type (got '" +
+              AssociatedAction::kindToString(gotAction) + "', expected '" +
+              AssociatedAction::kindToString(expectAction) + "')";
+  } else if (gotInId != expectInId) {
+    message = message + "Failure: mismatched containing ID (got '" + gotInId +
+              "', expected '" + expectInId + "')";
+  } else if (gotActId != expectActId) {
+    message = message + "Failure: mismatched acted upon ID (got '" + gotActId +
+              "', expected '" + expectActId + "')";
+  } else if (gotTupleIdx != expectTupleIdx) {
+    message = message + "Failure: mismatched tuple element index (got '" +
+              std::to_string(gotTupleIdx) + "', expected '" +
+              std::to_string(expectTupleIdx) + "')";
+  }
+
+  int i = 0;
+  while (i < gotSubActions.size() && i < expectSubActions.size()) {
+    std::string subMessage = testAction(expectSubActions[i], gotSubActions[i]);
+    if (!subMessage.empty()) {
+      subMessage += " in sub-action " + std::to_string(i);
+      message = message + subMessage;
+    }
+
+    i++;
+  }
+
+  return message;
 }
 
 // resolves the last function
@@ -157,48 +229,22 @@ static void testActions(const char* test,
   printf("\n");
 
   size_t i = 0;
-  size_t j = 0;
-  while (i < actions.size() && j < expected.size()) {
-    AssociatedAction::Action gotAction, expectAction;
-    std::string gotInId, expectInId;
-    std::string gotActId, expectActId;
-
-    gotAction = std::get<0>(actions[i]);
-    gotInId = std::get<1>(actions[i]);
-    gotActId = std::get<2>(actions[i]);
-
-    expectAction = std::get<0>(expected[i]);
-    expectInId = std::get<1>(expected[i]);
-    expectActId = std::get<2>(expected[i]);
-    if (expectActId.empty()) {
-      if (gotActId == gotInId) {
-        gotActId = "";
-      }
-    }
-
-    if (gotAction != expectAction) {
-      assert(false && "Failure: mismatched action type");
-    }
-
-    if (gotInId != expectInId) {
-      assert(false && "Failure: mismatched containing ID");
-    }
-    if (gotActId != expectActId) {
-      assert(false && "Failure: mismatched acted upon ID");
+  while (i < actions.size() && i < expected.size()) {
+    std::string message = testAction(expected[i], actions[i]);
+    if (!message.empty()) {
+      message += " in action " + std::to_string(i);
+      printf("%s\n", message.c_str());
+      assert(false && "Action did not match expected");
     }
 
     i++;
-    j++;
   }
 
   if (i < actions.size()) {
-    assert(false && "Failure: extra action");
-  }
-
-  if (j < expected.size()) {
+    assert(false && "Failure: found extra action");
+  } else if (i < expected.size()) {
     assert(false && "Failure: expected action is missing");
   }
-
 
 }
 
@@ -1995,10 +2041,11 @@ static void test27a() {
     {
       {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
       {AssociatedAction::MOVE_INIT,  "r",           ""},
-      {AssociatedAction::INIT_OTHER, "x",           ""},
+      {AssociatedAction::INIT_OTHER, "x",           "", -1, {
         {AssociatedAction::ASSIGN,  "x",      "M.test@4"},
         {AssociatedAction::COPY_INIT,  "x",   "M.test@5"},
-      {AssociatedAction::DEINIT,     "M.test@9",   "r"}
+      }},
+      {AssociatedAction::DEINIT,     "M.test@9",   "r"},
     });
 }
 
@@ -2020,12 +2067,14 @@ static void test27b() {
     {
       {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
       {AssociatedAction::MOVE_INIT,  "r",           ""},
-      {AssociatedAction::INIT_OTHER, "tup",         ""},
+      {AssociatedAction::INIT_OTHER, "tup",         "", -1, {
         {AssociatedAction::ASSIGN,  "tup",      "M.test@4"},
         {AssociatedAction::MOVE_INIT,  "tup",   "M.test@5"},
-      {AssociatedAction::COPY_INIT, "x",            ""},
-        {AssociatedAction::ASSIGN,  "x",      "0"},
-        {AssociatedAction::COPY_INIT,  "x",   "1"},
+      }},
+      {AssociatedAction::COPY_INIT, "x",            "", -1, {
+        {AssociatedAction::ASSIGN,  "x",      "x", 0},
+        {AssociatedAction::COPY_INIT,  "x",   "x", 1},
+      }},
     });
 }
 
@@ -2046,9 +2095,10 @@ static void test27() {
     {
       {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
       {AssociatedAction::MOVE_INIT,  "r",           ""},
-      {AssociatedAction::INIT_OTHER, "x",           ""},
+      {AssociatedAction::INIT_OTHER, "x",           "", -1, {
         {AssociatedAction::ASSIGN,  "x",      "M.test@4"},
         {AssociatedAction::MOVE_INIT,  "x",   "M.test@5"},
+      }},
       {AssociatedAction::MOVE_INIT,  "y",           ""},
     });
 }
@@ -2071,12 +2121,14 @@ static void test28() {
     {
       {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
       {AssociatedAction::MOVE_INIT,  "r",           ""},
-      {AssociatedAction::INIT_OTHER, "x",           ""},
+      {AssociatedAction::INIT_OTHER, "x",           "", -1, {
         {AssociatedAction::ASSIGN,  "x",      "M.test@4"},
         {AssociatedAction::MOVE_INIT,  "x",   "M.test@5"},
-      {AssociatedAction::COPY_INIT,  "y",           ""},
-        {AssociatedAction::ASSIGN,  "y",      "0"},
-        {AssociatedAction::COPY_INIT,  "y",   "1"},
+      }},
+      {AssociatedAction::COPY_INIT,  "y",           "", -1, {
+        {AssociatedAction::ASSIGN,   "y",     "y", 0},
+        {AssociatedAction::COPY_INIT,  "y",   "y", 1},
+      }},
     });
 }
 
@@ -2098,9 +2150,10 @@ static void test29() {
     {
       {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
       {AssociatedAction::MOVE_INIT,  "r",           ""},
-      {AssociatedAction::INIT_OTHER, "y",           ""},
-        {AssociatedAction::ASSIGN,   "y",      "0"},
-        {AssociatedAction::COPY_INIT,  "y",   "1"},
+      {AssociatedAction::INIT_OTHER, "y",           "", -1, {
+        {AssociatedAction::ASSIGN,   "y",      "y", 0},
+        {AssociatedAction::COPY_INIT,  "y",    "y", 1},
+      }},
       {AssociatedAction::DEINIT,     "M.test@11",   "r"}
     });
 }
@@ -2117,9 +2170,10 @@ static void test30() {
       }
     )"""",
     {
-      {AssociatedAction::INIT_OTHER,  "M.test@5",   ""},
+      {AssociatedAction::INIT_OTHER,  "M.test@5",   "", -1, {
         {AssociatedAction::ASSIGN,    "M.test@5",   "M.test@2"},
         {AssociatedAction::COPY_INIT, "M.test@5",   "M.test@3"},
+      }},
     });
 }
 
@@ -2144,14 +2198,15 @@ static void test31() {
     {
       {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
       {AssociatedAction::MOVE_INIT,  "r",           ""},
-      {AssociatedAction::INIT_OTHER, "tup",         ""},
+      {AssociatedAction::INIT_OTHER, "tup",         "", -1, {
         {AssociatedAction::ASSIGN,    "tup",   "M.test@4"},
         {AssociatedAction::MOVE_INIT, "tup",   "M.test@5"},
+      }},
       {AssociatedAction::MOVE_INIT,  "a",           ""},
       {AssociatedAction::NEW_INIT,   "M.test@12",   ""},
       {AssociatedAction::MOVE_INIT,  "b",           ""},
-      {AssociatedAction::ASSIGN,     "M.test@18",   "0"},
-      {AssociatedAction::ASSIGN,     "M.test@18",   "1"},
+      {AssociatedAction::ASSIGN,     "M.test@18",  "M.test@18", 0},
+      {AssociatedAction::ASSIGN,     "M.test@18",  "M.test@18", 1},
       {AssociatedAction::DEINIT,     "M.test@20",   "b"},
     });
 }
@@ -2176,14 +2231,15 @@ static void test32() {
     {
       {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
       {AssociatedAction::MOVE_INIT,  "r",           ""},
-      {AssociatedAction::INIT_OTHER, "tup",         ""},
+      {AssociatedAction::INIT_OTHER, "tup",         "", -1, {
         {AssociatedAction::ASSIGN,    "tup",   "M.test@4"},
         {AssociatedAction::MOVE_INIT, "tup",   "M.test@5"},
+      }},
       {AssociatedAction::MOVE_INIT,  "a",           ""},
       {AssociatedAction::NEW_INIT,   "M.test@12",   ""},
       {AssociatedAction::MOVE_INIT,  "b",           ""},
-      {AssociatedAction::ASSIGN,     "M.test@18",   "0"},
-      {AssociatedAction::ASSIGN,     "M.test@18",   "1"},
+      {AssociatedAction::ASSIGN,     "M.test@18",  "M.test@18", 0},
+      {AssociatedAction::ASSIGN,     "M.test@18",  "M.test@18", 1},
       {AssociatedAction::DEINIT,     "M.test@19",   "b"},
     });
 }
@@ -2207,11 +2263,12 @@ static void test33() {
     {
       {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
       {AssociatedAction::MOVE_INIT,  "r",           ""},
-      {AssociatedAction::INIT_OTHER, "tup",         ""},
+      {AssociatedAction::INIT_OTHER, "tup",         "", -1, {
         {AssociatedAction::ASSIGN,    "tup",   "M.test@4"},
         {AssociatedAction::MOVE_INIT, "tup",   "M.test@5"},
-      {AssociatedAction::ASSIGN,    "a",   "0"},
-      {AssociatedAction::COPY_INIT, "b",   "1"},
+      }},
+      {AssociatedAction::ASSIGN,    "a",   "a", 0},
+      {AssociatedAction::COPY_INIT, "b",   "b", 1},
       {AssociatedAction::DEINIT,     "M.test@13",   "b"},
     });
 }
@@ -2234,11 +2291,12 @@ static void test34() {
     {
       {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
       {AssociatedAction::MOVE_INIT,  "r",           ""},
-      {AssociatedAction::INIT_OTHER, "tup",         ""},
+      {AssociatedAction::INIT_OTHER, "tup",         "", -1, {
         {AssociatedAction::ASSIGN,    "tup",   "M.test@4"},
         {AssociatedAction::MOVE_INIT, "tup",   "M.test@5"},
-      {AssociatedAction::MOVE_INIT, "a",   "0"},
-      {AssociatedAction::MOVE_INIT, "b",   "1"},
+      }},
+      {AssociatedAction::MOVE_INIT, "a",   "a", 0},
+      {AssociatedAction::MOVE_INIT, "b",   "b", 1},
       {AssociatedAction::DEINIT,    "M.test@12",   "b"},
     });
 }
@@ -2258,9 +2316,10 @@ static void test35() {
         }
       )"""",
       {
-        {AssociatedAction::INIT_OTHER, "x",         ""},
+        {AssociatedAction::INIT_OTHER, "x",         "", -1, {
           {AssociatedAction::MOVE_INIT, "x",   "M.test@6"},
           {AssociatedAction::MOVE_INIT, "x",   "M.test@7"},
+        }},
       });
   }
   {
@@ -2277,9 +2336,10 @@ static void test35() {
         }
       )"""",
       {
-        {AssociatedAction::INIT_OTHER, "x",         ""},
+        {AssociatedAction::INIT_OTHER, "x",         "", -1, {
           {AssociatedAction::MOVE_INIT, "x",   "M.test@8"},
           {AssociatedAction::MOVE_INIT, "x",   "M.test@9"},
+        }},
       });
   }
 }
