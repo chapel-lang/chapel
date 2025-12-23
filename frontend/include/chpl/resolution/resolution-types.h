@@ -2571,6 +2571,9 @@ class AssociatedAction {
 
   using ActionsList = llvm::SmallVector<const AssociatedAction*>;
 
+  // A tuple elt value of -1 indicates no associated tuple element.
+  static const int NO_TUPLE_ELT = -1;
+
  private:
   Action action_;
   const TypedFnSignature* fn_;
@@ -2579,17 +2582,16 @@ class AssociatedAction {
 
   // An index associated with some tuple per-element actions, where it is
   // necessary to keep track of which tuple element the action applies to.
-  // The sentinel value of -1 indicates no associated tuple element.
-  int tupleEltIdx_ = -1;
+  int tupleEltIdx_ = NO_TUPLE_ELT;
 
   // A list of actions contained within this one.
-  // Currently only used for tuple copy-init-deinit, where each element may
+  // Currently only used for tuple call-init-deinit, where each element may
   // have a sub-action.
   ActionsList subActions_;
 
  public:
   AssociatedAction(Action action, const TypedFnSignature* fn, ID id,
-                   types::QualifiedType type, int tupleEltIdx = -1,
+                   types::QualifiedType type, int tupleEltIdx = NO_TUPLE_ELT,
                    ActionsList subActions = {})
       : action_(action),
         fn_(fn),
@@ -2620,7 +2622,7 @@ class AssociatedAction {
   const types::QualifiedType type() const { return type_; }
 
   bool hasTupleEltIdx() const {
-    return tupleEltIdx_ != -1;
+    return tupleEltIdx_ != NO_TUPLE_ELT;
   }
 
   const int tupleEltIndex() const {

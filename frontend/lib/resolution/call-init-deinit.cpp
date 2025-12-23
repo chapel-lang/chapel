@@ -867,7 +867,7 @@ void CallInitDeinit::processInit(VarFrame* frame,
               auto useTupleEltIdx = i;
               if (actual) {
                 useId = actual->id();
-                useTupleEltIdx = -1;
+                useTupleEltIdx = AssociatedAction::NO_TUPLE_ELT;
               }
               auto actionWithIdx = new AssociatedAction(
                   action.action(), action.fn(), useId, action.type(),
@@ -879,8 +879,8 @@ void CallInitDeinit::processInit(VarFrame* frame,
           // Re-add the top-level action with the sub-actions.
           auto newTopLevelAction =
               AssociatedAction(topLevelAction.action(), topLevelAction.fn(),
-                                topLevelAction.id(), topLevelAction.type(),
-                                /* tupleEltIdx */ -1, subActions);
+                               topLevelAction.id(), topLevelAction.type(),
+                               AssociatedAction::NO_TUPLE_ELT, subActions);
           re.addAssociatedAction(std::move(newTopLevelAction));
         }
       } else {

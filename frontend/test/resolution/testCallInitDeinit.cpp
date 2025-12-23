@@ -27,6 +27,8 @@
 
 struct ActionElt;
 using Actions = std::vector<ActionElt>;
+decltype(AssociatedAction::NO_TUPLE_ELT) NO_TUPLE_ELT =
+    AssociatedAction::NO_TUPLE_ELT;
 
 struct ActionElt {
   AssociatedAction::Action actionType;
@@ -40,7 +42,7 @@ struct ActionElt {
   ActionElt(AssociatedAction::Action actionType,
             const std::string& inId,
             const std::string& actedUponId,
-            int tupleEltIdx = -1,
+            int tupleEltIdx = NO_TUPLE_ELT,
             const Actions& subActions = {})
     : actionType(actionType),
       inId(inId),
@@ -74,7 +76,7 @@ static void addAction(Context* context, Actions& actions, const AstNode* ast,
   actions.emplace_back(act->action(),
                        idToStr(context, ast->id()),
                        idToStr(context, act->id()),
-                       act->hasTupleEltIdx() ? act->tupleEltIndex() : -1,
+                       act->hasTupleEltIdx() ? act->tupleEltIndex() : NO_TUPLE_ELT,
                        subActions);
 }
 
@@ -202,7 +204,7 @@ static void testActions(const char* test,
   assert(M);
   assert(M->numStmts() >= 1);
 
-  const Function* func = M->stmt(M->numStmts()-1)->toFunction();
+  const Function* func = M->stmt(M->numStmts() - 1)->toFunction();
   assert(func);
 
   printf("uAST:\n");
@@ -2041,7 +2043,7 @@ static void test27a() {
     {
       {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
       {AssociatedAction::MOVE_INIT,  "r",           ""},
-      {AssociatedAction::INIT_OTHER, "x",           "", -1, {
+      {AssociatedAction::INIT_OTHER, "x",           "", NO_TUPLE_ELT, {
         {AssociatedAction::ASSIGN,  "x",      "M.test@4"},
         {AssociatedAction::COPY_INIT,  "x",   "M.test@5"},
       }},
@@ -2067,11 +2069,11 @@ static void test27b() {
     {
       {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
       {AssociatedAction::MOVE_INIT,  "r",           ""},
-      {AssociatedAction::INIT_OTHER, "tup",         "", -1, {
+      {AssociatedAction::INIT_OTHER, "tup",         "", NO_TUPLE_ELT, {
         {AssociatedAction::ASSIGN,  "tup",      "M.test@4"},
         {AssociatedAction::MOVE_INIT,  "tup",   "M.test@5"},
       }},
-      {AssociatedAction::COPY_INIT, "x",            "", -1, {
+      {AssociatedAction::COPY_INIT, "x",            "", NO_TUPLE_ELT, {
         {AssociatedAction::ASSIGN,  "x",      "x", 0},
         {AssociatedAction::COPY_INIT,  "x",   "x", 1},
       }},
@@ -2095,7 +2097,7 @@ static void test27c() {
     {
       {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
       {AssociatedAction::MOVE_INIT,  "r",           ""},
-      {AssociatedAction::INIT_OTHER, "x",           "", -1, {
+      {AssociatedAction::INIT_OTHER, "x",           "", NO_TUPLE_ELT, {
         {AssociatedAction::ASSIGN,  "x",      "M.test@4"},
         {AssociatedAction::MOVE_INIT,  "x",   "M.test@5"},
       }},
@@ -2121,11 +2123,11 @@ static void test28() {
     {
       {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
       {AssociatedAction::MOVE_INIT,  "r",           ""},
-      {AssociatedAction::INIT_OTHER, "x",           "", -1, {
+      {AssociatedAction::INIT_OTHER, "x",           "", NO_TUPLE_ELT, {
         {AssociatedAction::ASSIGN,  "x",      "M.test@4"},
         {AssociatedAction::MOVE_INIT,  "x",   "M.test@5"},
       }},
-      {AssociatedAction::COPY_INIT,  "y",           "", -1, {
+      {AssociatedAction::COPY_INIT,  "y",           "", NO_TUPLE_ELT, {
         {AssociatedAction::ASSIGN,   "y",     "y", 0},
         {AssociatedAction::COPY_INIT,  "y",   "y", 1},
       }},
@@ -2150,7 +2152,7 @@ static void test29() {
     {
       {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
       {AssociatedAction::MOVE_INIT,  "r",           ""},
-      {AssociatedAction::INIT_OTHER, "y",           "", -1, {
+      {AssociatedAction::INIT_OTHER, "y",           "", NO_TUPLE_ELT, {
         {AssociatedAction::ASSIGN,   "y",      "y", 0},
         {AssociatedAction::COPY_INIT,  "y",    "y", 1},
       }},
@@ -2170,7 +2172,7 @@ static void test30() {
       }
     )"""",
     {
-      {AssociatedAction::INIT_OTHER,  "M.test@5",   "", -1, {
+      {AssociatedAction::INIT_OTHER,  "M.test@5",   "", NO_TUPLE_ELT, {
         {AssociatedAction::ASSIGN,    "M.test@5",   "M.test@2"},
         {AssociatedAction::COPY_INIT, "M.test@5",   "M.test@3"},
       }},
@@ -2198,7 +2200,7 @@ static void test31() {
     {
       {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
       {AssociatedAction::MOVE_INIT,  "r",           ""},
-      {AssociatedAction::INIT_OTHER, "tup",         "", -1, {
+      {AssociatedAction::INIT_OTHER, "tup",         "", NO_TUPLE_ELT, {
         {AssociatedAction::ASSIGN,    "tup",   "M.test@4"},
         {AssociatedAction::MOVE_INIT, "tup",   "M.test@5"},
       }},
@@ -2231,7 +2233,7 @@ static void test32() {
     {
       {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
       {AssociatedAction::MOVE_INIT,  "r",           ""},
-      {AssociatedAction::INIT_OTHER, "tup",         "", -1, {
+      {AssociatedAction::INIT_OTHER, "tup",         "", NO_TUPLE_ELT, {
         {AssociatedAction::ASSIGN,    "tup",   "M.test@4"},
         {AssociatedAction::MOVE_INIT, "tup",   "M.test@5"},
       }},
@@ -2263,7 +2265,7 @@ static void test33() {
     {
       {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
       {AssociatedAction::MOVE_INIT,  "r",           ""},
-      {AssociatedAction::INIT_OTHER, "tup",         "", -1, {
+      {AssociatedAction::INIT_OTHER, "tup",         "", NO_TUPLE_ELT, {
         {AssociatedAction::ASSIGN,    "tup",   "M.test@4"},
         {AssociatedAction::MOVE_INIT, "tup",   "M.test@5"},
       }},
@@ -2291,7 +2293,7 @@ static void test34() {
     {
       {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
       {AssociatedAction::MOVE_INIT,  "r",           ""},
-      {AssociatedAction::INIT_OTHER, "tup",         "", -1, {
+      {AssociatedAction::INIT_OTHER, "tup",         "", NO_TUPLE_ELT, {
         {AssociatedAction::ASSIGN,    "tup",   "M.test@4"},
         {AssociatedAction::MOVE_INIT, "tup",   "M.test@5"},
       }},
@@ -2314,7 +2316,7 @@ static void test35a() {
       }
     )"""",
     {
-      {AssociatedAction::INIT_OTHER, "x",         "", -1, {
+      {AssociatedAction::INIT_OTHER, "x",         "", NO_TUPLE_ELT, {
         {AssociatedAction::MOVE_INIT, "x",   "M.test@6"},
         {AssociatedAction::MOVE_INIT, "x",   "M.test@7"},
       }},
@@ -2335,7 +2337,7 @@ static void test35b() {
       }
     )"""",
     {
-      {AssociatedAction::INIT_OTHER, "x",         "", -1, {
+      {AssociatedAction::INIT_OTHER, "x",         "", NO_TUPLE_ELT, {
         {AssociatedAction::MOVE_INIT, "x",   "M.test@8"},
         {AssociatedAction::MOVE_INIT, "x",   "M.test@9"},
       }},
