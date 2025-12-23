@@ -218,7 +218,7 @@ const CompositeType* helpGetTypeForDecl(Context* context,
       parentClassType = BasicClassType::getRootClassType(context);
     }
 
-    if (!parentClassType->isObjectType() && !substitutions.empty()) {
+    if (!parentClassType->isRootClass() && !substitutions.empty()) {
       // recompute the parent class type with substitutions
       auto parentAst = parsing::idToAst(context, parentClassType->id());
       CHPL_ASSERT(parentAst);

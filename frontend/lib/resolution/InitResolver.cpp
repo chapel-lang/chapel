@@ -120,7 +120,7 @@ void InitResolver::resolveImplicitSuperInit() {
   //       -- e.g. class Parent { type T; var x : T; }
 
   if (phase_ == PHASE_NEED_SUPER_INIT &&
-      superType_->isObjectType() == false) {
+      superType_->isRootClass() == false) {
     std::vector<CallInfoActual> actuals;
     auto superCT = ClassType::get(ctx_, superType_, nullptr,
                                   ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL));

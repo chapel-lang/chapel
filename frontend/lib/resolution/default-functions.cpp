@@ -576,7 +576,7 @@ static bool initHelper(Context* context,
     auto bct = t->getCompositeType()->toBasicClassType();
     auto pct = bct->parentClassType();
 
-    if (pct && !pct->isObjectType()) {
+    if (pct && !pct->isRootClass()) {
       addSuperInit = true;
 
       const Type* manager = nullptr;
@@ -792,7 +792,7 @@ static const TypedFnSignature*
 generateInitSignature(ResolutionContext* rc, const CompositeType* inCompType) {
   auto context = rc->context();
   if (auto ct = inCompType->getCompositeType()->toBasicClassType()) {
-    if (ct->isObjectType()) {
+    if (ct->isRootClass()) {
       return nullptr;
     }
   }
@@ -2468,7 +2468,7 @@ static owned<Function> typeConstructorFnForComposite(Context* context,
 
   if (auto bct = ct->toBasicClassType()) {
     auto parent = bct->parentClassType();
-    if (parent && !parent->isObjectType()) {
+    if (parent && !parent->isRootClass()) {
       auto& br = buildTypeConstructor(context, parent->id());
       auto fn = br.topLevelExpression(0)->toFunction();
 
