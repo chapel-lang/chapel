@@ -235,7 +235,6 @@ void FindSplitInits::handleAssign(const AstNode* lhsAst,
                                   RV& rv) {
   ID lhsVarId = refersToId(lhsAst, rv);
   if (!lhsVarId.isEmpty()) {
-    // get the type for the rhs
     handleInitOrAssign(lhsVarId, rhsType, rv);
   } else {
     // visit the LHS to check for mentions

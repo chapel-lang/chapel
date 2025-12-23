@@ -125,8 +125,6 @@ ID VarScopeVisitor::refersToId(const AstNode* ast, RV& rv) {
 }
 
 void VarScopeVisitor::processMentions(const AstNode* ast, RV& rv) {
-  if (!ast) return;
-
   // This could be its own ResolvedVisitor if it needs to handle
   // more complex forms. For now, this simple implementation should suffice
   // for expressions used as actuals etc.
@@ -196,13 +194,12 @@ const AstNode* VarScopeVisitor::outermostContainingTuple() const {
   CHPL_ASSERT(!inAstStack.empty());
   auto currentAst = inAstStack.back();
 
-  int offset = 0;
+  size_t distanceFromEnd = tupleInitTypesStack.size();
   if (!(currentAst->isTuple() || currentAst->isTupleDecl())) {
-    offset = 1;
+    distanceFromEnd += 1;
   }
 
-  CHPL_ASSERT(inAstStack.size() >= (tupleInitTypesStack.size() + offset));
-  return inAstStack[inAstStack.size() - (tupleInitTypesStack.size() + offset)];
+  return inAstStack.at(inAstStack.size() - distanceFromEnd);
 }
 
 int VarScopeVisitor::indexWithinContainingTuple(const AstNode* ast) const {
@@ -230,11 +227,10 @@ int VarScopeVisitor::indexWithinContainingTuple(const AstNode* ast) const {
 
 // Adjusts LHS tuple type so that its components are all values.
 // Does no sanity checks.
-static QualifiedType
-getLhsForTupleUnpackAssign(Context* context,
-                           const uast::AstNode* astForErr,
-                           const Tuple* lhsTuple,
-                           const QualifiedType& lhsType) {
+static QualifiedType getLhsForTupleUnpackAssign(Context* context,
+                                                const uast::AstNode* astForErr,
+                                                const Tuple* lhsTuple,
+                                                const QualifiedType& lhsType) {
   std::vector<QualifiedType> eltTypes;
 
   auto lhsT = lhsType.type() ? lhsType.type()->toTupleType() : nullptr;
@@ -248,13 +244,13 @@ getLhsForTupleUnpackAssign(Context* context,
     if (ident && ident->name() == USTR("_")) {
       // If the LHS actual is '_', then use the Nothing type. This is fine
       // since the '_' will never be set.
-      qt = { QualifiedType::VAR, NothingType::get(context) };
+      qt = {QualifiedType::VAR, NothingType::get(context)};
 
     } else {
       // Otherwise, turn its qualifier into 'var' / 'const var'
       auto eqt = lhsT->elementType(i);
       auto useKind = KindProperties::removeRef(eqt.kind());
-      qt = { useKind, eqt.type(), eqt.param() };
+      qt = {useKind, eqt.type(), eqt.param()};
     }
 
     eltTypes.push_back(std::move(qt));
@@ -263,7 +259,7 @@ getLhsForTupleUnpackAssign(Context* context,
   // Set the 'LHS' tuple type.
   auto k = QualifiedType::VAR;
   auto t = TupleType::getQualifiedTuple(context, std::move(eltTypes));
-  QualifiedType ret = { k, t };
+  QualifiedType ret = {k, t};
   return ret;
 }
 
@@ -364,14 +360,14 @@ bool VarScopeVisitor::enter(const TupleDecl* ast, RV& rv) {
   enterAst(ast);
   enterScope(ast, rv);
 
+  // Determine type part and init part for this decl, either directly for a
+  // top-level decl, or from the parent tuple decl in the case of nesting.
   QualifiedType initType;
   if (auto typeExpr = ast->typeExpression()) {
     initType = rv.byAst(typeExpr).type();
   } else if (auto initExpr = ast->initExpression()) {
     initType = rv.byAst(initExpr).type();
   } else if (outermostContainingTuple()) {
-    // Otherwise, see if we're nested in another tuple decl and can
-    // derive it from our parent's.
     CHPL_ASSERT(!tupleInitTypesStack.empty());
     if (auto parentInitType = tupleInitTypesStack.back().type()) {
       auto parentTupleType = parentInitType->toTupleType();
@@ -384,22 +380,15 @@ bool VarScopeVisitor::enter(const TupleDecl* ast, RV& rv) {
     CHPL_ASSERT(initTupleType);
     CHPL_ASSERT(ast->numDecls() == initTupleType->numElements());
   }
-
   const Tuple* initPart = nullptr;
   if (auto initExpr = ast->initExpression()) {
-    // Get init part (if any) directly, which is possible if this is a top level
-    // tuple decl.
     initPart = initExpr->toTuple();
   } else if (outermostContainingTuple()) {
-    // Otherwise, see if we're nested in another tuple decl and can
-    // derive it from our parent's.
     if (auto parentInit = tupleInitExprsStack.back()) {
       initPart = parentInit->actual(indexWithinContainingTuple(ast))->toTuple();
     }
   }
   if (initPart) CHPL_ASSERT(ast->numDecls() == initPart->numActuals());
-
-  // if (ast->initExpression()) ast->initExpression()->dump();
   tupleInitTypesStack.push_back(initType);
   tupleInitExprsStack.push_back(initPart);
 
@@ -412,6 +401,9 @@ bool VarScopeVisitor::enter(const TupleDecl* ast, RV& rv) {
   // See also: skip for NamedDecl
   // In this tuple decl case, also prevent descending into the contained decls.
   if (!isLoopIndex(outermostContainingTuple())) {
+    // Traversal order: contained decls must come after init expr, or variables
+    // mentioned in init expr may be incorrectly considered ineligible for
+    // copy elision in this statement.
     if (auto typeExpr = ast->typeExpression()) {
       typeExpr->traverse(rv);
     }
@@ -422,6 +414,8 @@ bool VarScopeVisitor::enter(const TupleDecl* ast, RV& rv) {
       decl->traverse(rv);
     }
   }
+
+  // Traversed explicitly above
   return false;
 }
 
@@ -437,8 +431,8 @@ void VarScopeVisitor::exit(const TupleDecl* ast, RV& rv) {
       auto useId = action.id();
       auto useTupleEltIdx = i;
       auto actionWithIdx = new AssociatedAction(
-          action.action(), action.fn(), useId, action.type(),
-          /* tupleEltIdx */ useTupleEltIdx, action.subActions());
+          action.action(), action.fn(), useId, action.type(), useTupleEltIdx,
+          action.subActions());
       subActions.push_back(actionWithIdx);
     }
 
@@ -548,6 +542,7 @@ bool VarScopeVisitor::enter(const OpCall* ast, RV& rv) {
       // Set containing tuple assignment only while traversing LHS
       inTupleAssignment = ast;
       lhsAst->traverse(rv);
+      inTupleAssignment = nullptr;
     } else {
       // visit the RHS first
       rhsAst->traverse(rv);
@@ -563,8 +558,6 @@ bool VarScopeVisitor::enter(const OpCall* ast, RV& rv) {
 }
 
 void VarScopeVisitor::exit(const OpCall* ast, RV& rv) {
-  if (inTupleAssignment) inTupleAssignment = nullptr;
-
   exitAst(ast);
 }
 
@@ -573,34 +566,33 @@ bool VarScopeVisitor::enter(const Tuple* ast, RV& rv) {
 
   if (!inTupleAssignment) return true;
 
-  // TODO: tests expect these kind adjustments to be done, but why here vs
-  // in resolution?
+  // TODO: Our tests expect these adjustments to the variable's kind, but should
+  // it be done here or in the resolver?
   auto lhsTupleType = rv.byAst(ast).type();
   auto adjustedLhsType =
       getLhsForTupleUnpackAssign(context, inTupleAssignment, ast, lhsTupleType);
   rv.byPostorder().byAst(ast).setType(adjustedLhsType);
 
   // Gather info for this assignment (at whatever level of nesting)
+  // Determine RHS (init expr) and type for this assign, either directly if
+  // in a top-level assign, or from parent tuple if nested.
   QualifiedType tupInitType = QualifiedType();
   const Tuple* tupInitPart = nullptr;
   auto parentAst = parsing::parentAst(context, ast);
   if (parentAst == inTupleAssignment) {
     CHPL_ASSERT(ast == inTupleAssignment->actual(0));
-
     auto rhsAst = inTupleAssignment->actual(1);
     tupInitType = rv.byAst(rhsAst).type();
     tupInitPart = rhsAst->toTuple();
   } else {
     CHPL_ASSERT(outermostContainingTuple());
     CHPL_ASSERT(parentAst->isTuple());
-
     if (auto parentInitType = tupleInitTypesStack.back().type()) {
       auto parentTupleType = parentInitType->toTupleType();
       CHPL_ASSERT(parentTupleType);
       tupInitType =
           parentTupleType->elementType(indexWithinContainingTuple(ast));
     }
-
     if (auto parentInit = tupleInitExprsStack.back()) {
       tupInitPart =
           parentInit->actual(indexWithinContainingTuple(ast))->toTuple();
@@ -642,7 +634,7 @@ bool VarScopeVisitor::enter(const Tuple* ast, RV& rv) {
       auto useTupleEltIdx = i;
       auto actionWithIdx = new AssociatedAction(
           action.action(), action.fn(), action.id(), action.type(),
-          /* tupleEltIdx */ useTupleEltIdx, action.subActions());
+          useTupleEltIdx, action.subActions());
       subActions.push_back(actionWithIdx);
     }
     re.clearAssociatedActions();

@@ -302,7 +302,7 @@ void FindElidedCopies::handleDeclaration(const VarLikeDecl* ast,
     VarFrame* frame = currentFrame();
     ID lhsVarId = ast->id();
     if (auto tupleExprInit = initExpr->toTuple()) {
-      // handle init with tuple expression
+      // handle init with tuple expression RHS
       QualifiedType lhsTupleType = initType;
       CHPL_ASSERT(lhsTupleType.type() &&
                   lhsTupleType.type()->isTupleType());
@@ -310,8 +310,8 @@ void FindElidedCopies::handleDeclaration(const VarLikeDecl* ast,
         auto eltExpr = tupleExprInit->actual(i);
         QualifiedType eltLhsType =
             lhsTupleType.type()->toTupleType()->elementType(i);
-        // Remove ref-ness from tuple elt since we are using it as a var, unless
-        // the whole tuple is ref
+        // Remove ref-ness from lhs tuple elt since we are using it as a var,
+        // unless the whole tuple itself is ref
         if (!lhsTupleType.isRef()) {
           eltLhsType =
               QualifiedType(KindProperties::removeRef(lhsTupleType.kind()),
@@ -375,7 +375,7 @@ void FindElidedCopies::handleAssign(const AstNode* lhsAst,
     auto tupleExprInit = rhsAst->toTuple();
     if (lhsType.type() && lhsType.type()->isTupleType() &&
         tupleExprInit) {
-      // handle assign with tuple expression
+      // handle assign with tuple expression RHS
       for (int i = 0; i < tupleExprInit->numActuals(); i++) {
         auto actual = tupleExprInit->actual(i);
         if (actual->isTuple()) {

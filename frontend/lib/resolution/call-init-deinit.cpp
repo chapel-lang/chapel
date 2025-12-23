@@ -32,7 +32,6 @@
 #include "Resolver.h"
 #include "VarScopeVisitor.h"
 #include <unordered_map>
-#include <unordered_set>
 
 namespace chpl {
 namespace resolution {
@@ -204,6 +203,7 @@ bool CallInitDeinit::isCallProducingValue(const AstNode* rhsAst,
   }
 
   bool isProbablyCall = rv.byAst(rhsAst).toId().isEmpty();
+
   // If we're in a tuple expr, we won't have an id, so the above check may give
   // a false positive.
   auto parentId = parsing::idToParentId(context, rhsAst->id());
@@ -763,8 +763,7 @@ void CallInitDeinit::processInit(VarFrame* frame,
                                  const QualifiedType& lhsType,
                                  const QualifiedType& rhsType,
                                  RV& rv,
-                                 const AstNode* rhsAst
-                                 ) {
+                                 const AstNode* rhsAst) {
   CHPL_ASSERT(ast);
 
   // ast should be:
@@ -772,8 +771,7 @@ void CallInitDeinit::processInit(VarFrame* frame,
   //  * a VarLikeDecl
   //  * an actual passed by 'in' intent
   //  * a Return or Yield
-  const AstNode* lhsAst = nullptr;
-  // const AstNode* rhsAst = nullptr;
+
   auto op = ast->toOpCall();
   if (!rhsAst) {
     if (op != nullptr && op->op() == USTR("=")) {
@@ -791,12 +789,12 @@ void CallInitDeinit::processInit(VarFrame* frame,
     }
   }
 
-  bool lhsIsTuple = false;
+  const AstNode* lhsAst = nullptr;
   if (op != nullptr && op->op() == USTR("=")) {
     lhsAst = op->actual(0);
-    lhsIsTuple = lhsAst && lhsAst->isTuple();
   }
-  if (lhsAst == nullptr) {
+  const bool lhsIsTuple = lhsAst && lhsAst->isTuple();
+  if (!lhsAst) {
     lhsAst = ast;
   }
 
@@ -871,7 +869,7 @@ void CallInitDeinit::processInit(VarFrame* frame,
               }
               auto actionWithIdx = new AssociatedAction(
                   action.action(), action.fn(), useId, action.type(),
-                  /* tupleEltIdx */ useTupleEltIdx, action.subActions());
+                  useTupleEltIdx, action.subActions());
               subActions.push_back(actionWithIdx);
             }
             re.clearAssociatedActions();
@@ -1074,8 +1072,7 @@ void CallInitDeinit::handleAssign(const AstNode* lhsAst,
                                   RV& rv) {
   VarFrame* frame = currentFrame();
 
-  ResolvedExpression& lhsRe = rv.byAst(lhsAst);
-  QualifiedType lhsType = lhsRe.type();
+  QualifiedType lhsType = rv.byAst(lhsAst).type();
 
   // update initedVars if it is initializing a variable
   bool splitInited = processSplitInitAssign(lhsAst, splitInitedVars, rv);
@@ -1136,6 +1133,7 @@ void CallInitDeinit::handleOutFormal(const Call* ast,
     resolveAssign(actual, actualType, formalType, rv);
   }
 }
+
 void CallInitDeinit::handleInFormal(const Call* ast, const AstNode* actual,
                                     const QualifiedType& formalType,
                                     const QualifiedType* actualScalarType,
@@ -1293,11 +1291,11 @@ void callInitDeinit(Resolver& resolver) {
                                                    resolver.byPostorder);
 
   auto elidedCopyFromIds = computeElidedCopies(resolver.context,
-                                                       resolver.symbol,
-                                                       resolver.byPostorder,
-                                                       resolver.poiScope,
-                                                       splitInitedVars,
-                                                       resolver.returnType);
+                                               resolver.symbol,
+                                               resolver.byPostorder,
+                                               resolver.poiScope,
+                                               splitInitedVars,
+                                               resolver.returnType);
 
   auto symName = UniqueString::get(resolver.context, "unknown");
   if (auto nd = resolver.symbol->toNamedDecl()) {
