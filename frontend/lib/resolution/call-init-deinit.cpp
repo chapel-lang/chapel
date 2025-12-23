@@ -118,10 +118,6 @@ struct CallInitDeinit : VarScopeVisitor {
                      const QualifiedType& type,
                      RV& rv);
 
-  void validateTypeAndInitExpr(const AstNode* typeExpression,
-                               const AstNode* initExpression,
-                               RV& rv);
-
   void processReturnThrowYield(const uast::AstNode* ast, RV& rv);
 
   // overrides
@@ -940,18 +936,6 @@ void CallInitDeinit::resolveDeinit(const AstNode* ast,
 
   ResolvedExpression& opR = rv.byAst(assocAst);
   c.noteResult(&opR, { { AssociatedAction::DEINIT, deinitedId } });
-}
-
-void CallInitDeinit::validateTypeAndInitExpr(const AstNode* typeExpression,
-                                             const AstNode* initExpression,
-                                             RV& rv) {
-  // check for use of deinited variables in type or init exprs
-  if (typeExpression) {
-    processMentions(typeExpression, rv);
-  }
-  if (initExpression) {
-    processMentions(initExpression, rv);
-  }
 }
 
 void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast,
