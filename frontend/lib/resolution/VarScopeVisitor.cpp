@@ -189,12 +189,12 @@ bool VarScopeVisitor::isLoopIndex(const AstNode* ast) const {
 }
 
 const AstNode* VarScopeVisitor::outermostContainingTuple() const {
-  if (tupleInitTypesStack.empty()) return nullptr;
+  if (nestedTupleInfoStack.empty()) return nullptr;
 
   CHPL_ASSERT(!inAstStack.empty());
   auto currentAst = inAstStack.back();
 
-  size_t distanceFromEnd = tupleInitTypesStack.size();
+  size_t distanceFromEnd = nestedTupleInfoStack.size();
   if (!(currentAst->isTuple() || currentAst->isTupleDecl())) {
     distanceFromEnd += 1;
   }
@@ -368,8 +368,8 @@ bool VarScopeVisitor::enter(const TupleDecl* ast, RV& rv) {
   } else if (auto initExpr = ast->initExpression()) {
     initType = rv.byAst(initExpr).type();
   } else if (outermostContainingTuple()) {
-    CHPL_ASSERT(!tupleInitTypesStack.empty());
-    if (auto parentInitType = tupleInitTypesStack.back().type()) {
+    CHPL_ASSERT(!nestedTupleInfoStack.empty());
+    if (auto parentInitType = nestedTupleInfoStack.back().first.type()) {
       auto parentTupleType = parentInitType->toTupleType();
       CHPL_ASSERT(parentTupleType);
       initType = parentTupleType->elementType(indexWithinContainingTuple(ast));
@@ -384,13 +384,12 @@ bool VarScopeVisitor::enter(const TupleDecl* ast, RV& rv) {
   if (auto initExpr = ast->initExpression()) {
     initPart = initExpr->toTuple();
   } else if (outermostContainingTuple()) {
-    if (auto parentInit = tupleInitExprsStack.back()) {
+    if (auto parentInit = nestedTupleInfoStack.back().second) {
       initPart = parentInit->actual(indexWithinContainingTuple(ast))->toTuple();
     }
   }
   if (initPart) CHPL_ASSERT(ast->numDecls() == initPart->numActuals());
-  tupleInitTypesStack.push_back(initType);
-  tupleInitExprsStack.push_back(initPart);
+  nestedTupleInfoStack.emplace_back(initType, initPart);
 
 
   // Loop index variables don't need default-initialization and aren't
@@ -442,9 +441,8 @@ void VarScopeVisitor::exit(const TupleDecl* ast, RV& rv) {
     }
   }
 
-  CHPL_ASSERT(!tupleInitTypesStack.empty() && !tupleInitExprsStack.empty());
-  tupleInitTypesStack.pop_back();
-  tupleInitExprsStack.pop_back();
+  CHPL_ASSERT(!nestedTupleInfoStack.empty());
+  nestedTupleInfoStack.pop_back();
 
   exitScope(ast, rv);
   exitAst(ast);
@@ -493,11 +491,11 @@ void VarScopeVisitor::exit(const NamedDecl* ast, RV& rv) {
               (maybeOuterTuple ? maybeOuterTuple->toTupleDecl() : nullptr)) {
         parent = parsing::parentAst(context, outerTuple);
         initExpr = outerTuple->initExpression();
-        auto parentInitExpr = tupleInitExprsStack.back();
+        auto parentInitExpr = nestedTupleInfoStack.back().second;
         if (parentInitExpr) {
           initExpr = parentInitExpr->actual(indexWithinContainingTuple(ast));
         }
-        auto parentInitType = tupleInitTypesStack.back();
+        auto parentInitType = nestedTupleInfoStack.back().first;
         if (!parentInitType.isUnknown()) {
           auto parentInitTupleType = parentInitType.type()->toTupleType();
           CHPL_ASSERT(parentInitTupleType);
@@ -587,13 +585,13 @@ bool VarScopeVisitor::enter(const Tuple* ast, RV& rv) {
   } else {
     CHPL_ASSERT(outermostContainingTuple());
     CHPL_ASSERT(parentAst->isTuple());
-    if (auto parentInitType = tupleInitTypesStack.back().type()) {
+    if (auto parentInitType = nestedTupleInfoStack.back().first.type()) {
       auto parentTupleType = parentInitType->toTupleType();
       CHPL_ASSERT(parentTupleType);
       tupInitType =
           parentTupleType->elementType(indexWithinContainingTuple(ast));
     }
-    if (auto parentInit = tupleInitExprsStack.back()) {
+    if (auto parentInit = nestedTupleInfoStack.back().second) {
       tupInitPart =
           parentInit->actual(indexWithinContainingTuple(ast))->toTuple();
     }
@@ -601,8 +599,7 @@ bool VarScopeVisitor::enter(const Tuple* ast, RV& rv) {
   if (tupInitPart) {
     CHPL_ASSERT(ast->numActuals() == tupInitPart->numActuals());
   }
-  tupleInitTypesStack.push_back(tupInitType);
-  tupleInitExprsStack.push_back(tupInitPart);
+  nestedTupleInfoStack.emplace_back(tupInitType, tupInitPart);
 
   // Traverse components in order and resolve assignments for each
   auto& re = rv.byPostorder().byAst(inTupleAssignment);
@@ -643,8 +640,7 @@ bool VarScopeVisitor::enter(const Tuple* ast, RV& rv) {
     re.addAssociatedAction(*action);
   }
 
-  tupleInitTypesStack.pop_back();
-  tupleInitExprsStack.pop_back();
+  nestedTupleInfoStack.pop_back();
 
   // Traversed explicitly above
   return false;
