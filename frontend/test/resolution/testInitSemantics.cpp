@@ -2536,6 +2536,28 @@ static void testInitWithGenericMultiDeclDefault() {
   });
 }
 
+// If a call to 'super.init' was skipepd, we shouldn't segfault.
+static void testSkippedSuperCall() {
+  std::string prog = R"""(
+    class Parent {}
+    class Child : Parent {
+      proc init(x: int, x: int) {
+        super.init(x);
+      }
+    }
+    var x = new Child(1, 2);
+  )""";
+
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+  std::ignore = resolveTypeOfXInit(context, prog);
+
+  // We should've gotten an error, not a segfault.
+  assert(guard.numErrors() == 1);
+  assert(guard.error(0)->type() == ErrorType::Redefinition);
+  guard.realizeErrors();
+}
+
 // TODO:
 // - test using defaults for types and params
 //   - also in conditionals
@@ -2607,6 +2629,8 @@ int main() {
 
   testInitWithGenericMultiDeclExplicit();
   testInitWithGenericMultiDeclDefault();
+
+  testSkippedSuperCall();
 
   return 0;
 }
