@@ -490,6 +490,8 @@ module ObjectSerialization {
       }
       // else: not nil, proceed to try initializing
 
+      private use Reflection;
+
       if isNumericType(readType) {
         var x : readType;
         var ret : bool;
@@ -536,6 +538,8 @@ module ObjectSerialization {
       :arg val: The value into which this Deserializer will deserialize.
     */
     proc ref deserializeValue(reader: fileReader(?), ref val: ?readType) : void throws {
+      private use Reflection;
+
       if canResolveMethod(val, "deserialize", reader, this) {
         // Skip owned/shared since we'll try again for 'borrowed'
         if isClassType(readType) && !isOwnedClassType(readType) &&

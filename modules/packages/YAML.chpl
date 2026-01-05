@@ -233,6 +233,8 @@ module YAML {
 
     /* called by a ``fileReader`` to parse into an existing Chapel value */
     proc ref deserializeValue(reader: yamlReader, ref val: ?t) throws {
+      private use Reflection;
+
       if canResolveMethod(val, "deserialize", reader, this) {
         val.deserialize(reader=reader, deserializer=this);
       } else {
@@ -243,6 +245,8 @@ module YAML {
     /* called by a ``fileReader`` to parse into a new Chapel value */
     proc ref deserializeType(reader: yamlReader, type t): t throws {
       if YamlVerbose then writeln("deserializing type: ", t:string);
+
+      private use Reflection;
 
       if _isIoPrimitiveType(t) && context.isBase {
         // parse primitive without context

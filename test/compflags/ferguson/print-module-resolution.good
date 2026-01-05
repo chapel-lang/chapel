@@ -80,6 +80,8 @@ ChapelRange
   from print-module-resolution.ChapelStandard.ChapelRange
 ChapelReduce
   from print-module-resolution.ChapelStandard.ChapelReduce
+Types
+  from print-module-resolution.ChapelStandard.ChapelSyncvar.AlignedTSupport.Types
 AlignedTSupport
   from print-module-resolution.ChapelStandard.ChapelSyncvar.AlignedTSupport
 SyncVarRuntimeSupport
@@ -108,8 +110,6 @@ ChapelIO
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.ChapelDomain.FormattedIO.IO.ChapelIO
 PrecisionSerializer
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.ChapelDomain.FormattedIO.IO.PrecisionSerializer
-Types
-  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.ChapelDomain.FormattedIO.IO.Types
 IO
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.ChapelDomain.FormattedIO.IO
 RegexIoSupport

@@ -859,6 +859,7 @@ private module SyncVarRuntimeSupport {
 // Support for aligned_t including the definition, casts, defaultValue, and
 // read/write routines. aligned_t is the type used by native qthreads sync vars
 private module AlignedTSupport {
+  private use Types;
 
   // Implemented in qthreads tasking layer
   extern type aligned_t;

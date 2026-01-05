@@ -1092,6 +1092,8 @@ proc _matmatMultHelper(AMat: [?Adom] ?eltType,
                        BMat : [?Bdom] eltType,
                        ref CMat : [] eltType)
 {
+  private use RangeChunk;
+
   // TODO - Add logic to calculate blockSize
   // based on eltType and L1 cache size
   const blockSize = 32;
