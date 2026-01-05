@@ -1143,16 +1143,13 @@ static int uniquifyNameNextCount(MapElem<const char*, int>*& elem,
 
 static void uniquifyName(Symbol* sym,
                          std::set<const char*>* set1,
-                         std::set<const char*>* set2 = NULL)
-{
+                         std::set<const char*>* set2 = NULL) {
   const char* name = sym->cname;
   const char* newName = name;
 
-  if (sym->isRenameable())
-  {
+  if (sym->isRenameable()) {
     if (fMaxCIdentLen > 0 &&
-        (int)(strlen(newName) + maxCNameAddedChars) > fMaxCIdentLen)
-    {
+        (int)(strlen(newName) + maxCNameAddedChars) > fMaxCIdentLen) {
       // how much of the name to preserve
       int prefixLen = fMaxCIdentLen - maxUniquifyAddedChars - maxCNameAddedChars;
       if (!longCNameReplacementBuffer) {
@@ -1180,9 +1177,7 @@ static void uniquifyName(Symbol* sym,
     }
 
     sym->cname = newName;
-  }
-  else
-  {
+  } else {
     // If we have already seen this name before, we need to go back
     // to that earlier-seen symbol, either renaming it or checking
     // that its type is the same. See also #9299.
@@ -1195,7 +1190,7 @@ static void uniquifyName(Symbol* sym,
     // be it a (possibly generic) function, type, variable.
     // Ex.: c_pointer_return, qbuffer_ptr_t, QBUFFER_PTR_NULL.
     //
-    if (set2 && (set1->find(name) != set1->end()) )
+    if (set2 && (set1->find(name) != set1->end()) && (set2->find(name) != set2->end()))
       INT_FATAL(sym, "name conflict with a non-renameable symbol");
   }
 
