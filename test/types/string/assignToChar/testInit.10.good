@@ -1,0 +1,3 @@
+Helpers.chpl:6: In function 'testInitVal':
+Helpers.chpl:7: error: cannot initialize 'x' of type 'uint(8)' from a 'string'
+  testInit.chpl:24: called as testInitVal(strBytes: string, type toType = uint(8))

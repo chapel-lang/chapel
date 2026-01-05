@@ -1238,6 +1238,8 @@ void explainCandidateRejection(CallInfo& info, FnSymbol* fn) {
           isNonNilableClassType(failingFormal->getValType()))
         USR_PRINT(call, "try to apply the postfix ! operator to %s",
                   failingActualDesc);
+      maybeSuggestToByteCall(failingActual, failingActual->type,
+                             failingFormal->type, call);
       break;
     case RESOLUTION_CANDIDATE_WHERE_FAILED:
       USR_PRINT(fn, "because where clause evaluated to false");
