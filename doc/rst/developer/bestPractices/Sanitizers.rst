@@ -66,7 +66,7 @@ debugging the Chapel compiler itself.
 UBSan
 -----
 
-We have also find utility in using an undefined behavior sanitizer (UBSan) to
+We have also found utility in using an undefined behavior sanitizer (UBSan) to
 help catch certain classes of bugs in the runtime resulting from undefined
 behavior in C/C++. This works best with the C backend.
 
