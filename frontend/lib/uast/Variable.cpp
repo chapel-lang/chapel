@@ -44,7 +44,6 @@ Variable::build(Builder* builder, Location loc, Location nameLoc,
                 UniqueString name,
                 Variable::Kind kind,
                 bool isConfig,
-                Location configLoc,
                 bool isField,
                 owned<AstNode> typeExpression,
                 owned<AstNode> initExpression) {
@@ -84,9 +83,7 @@ Variable::build(Builder* builder, Location loc, Location nameLoc,
                                isField,
                                typeExpressionChildNum,
                                initExpressionChildNum);
-  auto trueLoc = !isConfig ? loc :
-                             chpl::Location::spanned(configLoc, loc);
-  builder->noteLocation(ret, trueLoc);
+  builder->noteLocation(ret, loc);
   builder->noteDeclNameLocation(ret, nameLoc);
   return toOwned(ret);
 }

@@ -1498,12 +1498,14 @@ class_level_stmt:
            context->noteVisibility(Decl::PUBLIC);} inner_class_level_stmt
     {
       $$ = context->finishStmt($3);
+      context->adjustLocation($$, @1, @3);
       context->visibility = Decl::DEFAULT_VISIBILITY;
     }
 | TPRIVATE {context->noteDeclStartLoc(@1);
             context->noteVisibility(Decl::PRIVATE);} inner_class_level_stmt
     {
       $$ = context->finishStmt($3);
+      context->adjustLocation($$, @1, @3);
       context->visibility = Decl::DEFAULT_VISIBILITY;
     }
 ;
@@ -1615,7 +1617,7 @@ extern_export_decl_stmt:
   }
   var_decl_start var_decl_stmt_inner_ls TSEMI
   {
-    $$ = context->buildVarOrMultiDeclStmt(YLOC2(@1, @2), $4, $5);
+    $$ = context->buildVarOrMultiDeclStmt(YLOC2(@1, @5), $4, $5);
     context->resetDeclState();
   }
 | extern_export_decl_stmt_start opt_expr extern_export_kind_inner
@@ -1625,7 +1627,7 @@ extern_export_decl_stmt:
   }
   type_alias_decl_stmt_inner_ls TSEMI
   {
-    $$ = context->buildVarOrMultiDeclStmt(@1, $3, $5);
+    $$ = context->buildVarOrMultiDeclStmt(YLOC2(@1, @5), $3, $5);
     context->resetDeclState();
   }
 ;
@@ -1633,7 +1635,7 @@ extern_export_decl_stmt:
 extern_block_stmt:
   TEXTERN EXTERNCODE
   {
-    $$ = context->buildExternBlockStmt(@1, $2);
+    $$ = context->buildExternBlockStmt(@$, $2);
   }
 ;
 
@@ -1906,7 +1908,6 @@ ifvar:
                                    /*name*/ $2,
                                    Variable::VAR,
                                    /*isConfig*/ false,
-                                   /*configLoc*/ Location(),
                                    context->currentScopeIsAggregate(),
                                    /*typeExpression*/ nullptr,
                                    toOwned($4));
@@ -1922,7 +1923,6 @@ ifvar:
                                    /*name*/ $2,
                                    Variable::CONST,
                                    /*isConfig*/ false,
-                                   /*configLoc*/ Location(),
                                    context->currentScopeIsAggregate(),
                                    /*typeExpression*/ nullptr,
                                    toOwned($4));
@@ -2080,7 +2080,6 @@ catch_expr_inner:
                          /*name*/ $1,
                          Variable::VAR,
                          /*isConfig*/ false,
-                         /*configLoc*/ Location(),
                          /*isField*/ false,
                          /*typeExpression*/ nullptr,
                          /*initExpression*/ nullptr);
@@ -2096,7 +2095,6 @@ catch_expr_inner:
                          /*name*/ $1,
                          Variable::VAR,
                          /*isConfig*/ false,
-                         /*configLoc*/ Location(),
                          /*isField*/ false,
                          /*typeExpression*/ toOwned($3),
                          /*initExpression*/ nullptr);
@@ -2822,9 +2820,7 @@ type_alias_decl_stmt_inner:
   ident_def opt_init_type
   {
     // TODO (dlongnecke-cray): Add a helper to build this and var_decl_stmt.
-    auto varLoc = !context->isVarDeclConfig ? LOC(@$) :
-                                              LOC2(context->configLoc, @$);
-    auto node = Variable::build(BUILDER, varLoc, LOC(@1),
+    auto node = Variable::build(BUILDER, LOC(@$), LOC(@1),
                                 /*attributeGroup*/ nullptr,
                                 context->visibility,
                                 context->linkage,
@@ -2832,7 +2828,6 @@ type_alias_decl_stmt_inner:
                                 /*name*/ $1,
                                 context->varDeclKind,
                                 context->isVarDeclConfig,
-                                LOC(context->configLoc),
                                 context->currentScopeIsAggregate(),
                                 /*typeExpression*/ nullptr,
                                 toOwned($2));
@@ -2872,7 +2867,7 @@ var_decl_stmt:
   }
   var_decl_start var_decl_stmt_inner_ls TSEMI {
     CHPL_ASSERT(context->isVarDeclConfig);
-    $$ = context->buildVarOrMultiDeclStmt(YLOC2(context->configLoc, @2), $3, $4);
+    $$ = context->buildVarOrMultiDeclStmt(YLOC2(@1, @4), $3, $4);
     context->resetDeclState();
   }
 | TON expr
@@ -2882,7 +2877,7 @@ var_decl_stmt:
   }
   var_decl_start var_decl_stmt_inner_ls TSEMI
   {
-    $$ = context->buildVarOrMultiDeclStmt(YLOC2(@1, @2), $4, $5);
+    $$ = context->buildVarOrMultiDeclStmt(YLOC2(@1, @5), $4, $5);
     context->resetDeclState();
   }
 | var_decl_start var_decl_stmt_inner_ls TSEMI
@@ -2922,7 +2917,6 @@ var_decl_stmt_inner:
                                      /*name*/ $1,
                                      context->varDeclKind,
                                      context->isVarDeclConfig,
-                                     LOC(context->configLoc),
                                      context->currentScopeIsAggregate(),
                                      toOwned($2), toOwned($3));
       // gather the comments like a statement does

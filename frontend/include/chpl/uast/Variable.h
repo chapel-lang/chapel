@@ -133,7 +133,6 @@ class Variable final : public VarLikeDecl {
                                UniqueString name,
                                Variable::Kind kind,
                                bool isConfig,
-                              Location configLoc,
                                bool isField,
                                owned<AstNode> typeExpression,
                                owned<AstNode> initExpression);

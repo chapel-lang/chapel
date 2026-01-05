@@ -293,6 +293,14 @@ struct ParserContext {
     return this->finishStmt(e.release());
   }
 
+  void adjustLocation(CommentsAndStmt cs, YYLTYPE location) {
+    builder->noteLocation(cs.stmt, convertLocation(location));
+  }
+  void adjustLocation(CommentsAndStmt cs, YYLTYPE start, YYLTYPE end) {
+    builder->noteLocation(cs.stmt, convertLocation(
+      makeSpannedLocation(start, end)));
+  }
+
   // Create a ParserExprList containing the passed statements, and any
   // comments before the right brace brace location.
   ParserExprList* blockToParserExprList(YYLTYPE lbrLoc, YYLTYPE rbrLoc,

@@ -1273,7 +1273,6 @@ AstNode* ParserContext::buildManagerExpr(YYLTYPE location,
                              resourceName,
                              kind,
                              false,
-                             Location(),
                              false,
                              nullptr,
                              nullptr);
@@ -1945,7 +1944,6 @@ buildTupleComponent(YYLTYPE location, PODUniqueString name) {
                                 name,
                                 varDeclKind,
                                 isVarDeclConfig,
-                                convertLocation(configLoc),
                                 currentScopeIsAggregate(),
                                 /*typeExpression*/ nullptr,
                                 /*initExpression*/ nullptr);
@@ -1983,7 +1981,6 @@ owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
                            ident->name(),
                            Variable::INDEX,
                            /*isConfig*/ false,
-                           /*configLoc*/ Location(),
                            /*isField*/ false,
                            /*typeExpression*/ nullptr,
                            /*initExpression*/ nullptr);
@@ -2923,8 +2920,10 @@ ParserContext::buildVarOrMultiDeclStmt(YYLTYPE locEverything,
         error(locEverything, "only (multi)variable declarations can target a specific locale");
       }
     }
-    // fixup the decl location
-    builder->noteLocation(lastDecl, convertLocation(locEverything));
+    // fixup the existing decl location for configs
+    auto loc = !this->isVarDeclConfig ? locEverything :
+                                        makeSpannedLocation(this->configLoc, locEverything);
+    builder->noteLocation(lastDecl, convertLocation(loc));
   } else {
 
     // TODO: Just embed and catch this in a tree-walk instead.
@@ -2939,7 +2938,11 @@ ParserContext::buildVarOrMultiDeclStmt(YYLTYPE locEverything,
         CHPL_PARSER_REPORT(this, MultipleExternalRenaming, locEverything);
       }
     }
-    auto multi = MultiDecl::build(builder, convertLocation(locEverything),
+    // adjust the decl location for configs before building MultiDecl
+    auto loc = !this->isVarDeclConfig ? locEverything :
+                                        makeSpannedLocation(this->configLoc, locEverything);
+    auto multi = MultiDecl::build(builder,
+                                  convertLocation(loc),
                                   std::move(attributeGroup),
                                   visibility,
                                   linkage,
