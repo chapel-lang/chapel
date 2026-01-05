@@ -2114,6 +2114,11 @@ bool isUIntType(Type *t) {
     t == dtUInt[INT_SIZE_64];
 }
 
+bool isIntegralByteType(Type* t) {
+  return t == dtInt[INT_SIZE_8] ||
+         t == dtUInt[INT_SIZE_8];
+}
+
 bool isSignedType(Type *t) {
   if (isIntType(t) ||
       isRealType(t) ||
