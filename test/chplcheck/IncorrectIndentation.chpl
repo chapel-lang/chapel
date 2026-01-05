@@ -5,12 +5,12 @@ module IncorrectIndentation {
     writeln("??");
   }
 
-  proc f2()
+  private proc f2()
   {
   writeln("hi");
   }
 
-  proc f3() {
+  public proc f3() {
   writeln("hi");
   }
 
@@ -79,6 +79,7 @@ module IncorrectIndentation {
         proc firstProc() {}
          proc secondProc() {}
         proc thirdProc() {}
+         forwarding var foo = 10;
 
         proc nestedProcOuter() {
           proc nestedProcInner(x: int) do return x;
