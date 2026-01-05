@@ -561,7 +561,7 @@ static SizedStr eatExternCode(yyscan_t scanner) {
     }
 
     s += c;
-
+    nCols++;
     if (c == '\n') {
       nCols = 0;
       nLines++;
