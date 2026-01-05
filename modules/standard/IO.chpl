@@ -1175,7 +1175,6 @@ extern proc qio_channel_isclosed(threadsafe:c_int, ch:qio_channel_ptr_t):bool;
 
 private extern proc qio_channel_read(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr, len:c_ssize_t, ref amt_read:c_ssize_t):errorCode;
 private extern proc qio_channel_read_amt(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr, len:c_ssize_t):errorCode;
-@chpldoc.nodoc
 // A specialization is needed for _ddata as the value is the pointer its memory
 private extern proc qio_channel_read_amt(threadsafe:c_int, ch:qio_channel_ptr_t, ptr:_ddata, len:c_ssize_t):errorCode;
 // and for c_ptr
@@ -1184,7 +1183,6 @@ private extern proc qio_channel_read_byte(threadsafe:c_int, ch:qio_channel_ptr_t
 
 private extern proc qio_channel_write(threadsafe:c_int, ch:qio_channel_ptr_t, const ref ptr, len:c_ssize_t, ref amt_written:c_ssize_t):errorCode;
 private extern proc qio_channel_write_amt(threadsafe:c_int, ch:qio_channel_ptr_t, const ref ptr, len:c_ssize_t):errorCode;
-@chpldoc.nodoc
 // A specialization is needed for _ddata as the value is the pointer its memory
 private extern proc qio_channel_write_amt(threadsafe:c_int, ch:qio_channel_ptr_t, const ptr:_ddata, len:c_ssize_t):errorCode;
 private extern proc qio_channel_write_byte(threadsafe:c_int, ch:qio_channel_ptr_t, byte:uint(8)):errorCode;
@@ -7165,7 +7163,12 @@ proc readStringBytesData(ref s: ?t /*: string or bytes*/,
   // in the event that s.type == string.
 
   var len:c_ssize_t = nBytes.safeCast(c_ssize_t);
-  var err = qio_channel_read_amt(false, _channel_internal, sLocal.buff, len);
+  var err;
+  if len != 0 {
+    err = qio_channel_read_amt(false, _channel_internal, sLocal.buff, len);
+  } else {
+    err = 0:errorCode;
+  }
   if !err {
     sLocal.buffLen = nBytes;
     if nBytes != 0 then sLocal.buff[nBytes] = 0; // include null-byte
