@@ -5,12 +5,30 @@ module IncorrectIndentation {
     writeln("??");
   }
 
-  private proc f2()
+  public proc f1Pub()
+  {
+    writeln("hi");
+    writeln("??");
+  }
+
+  private proc f1Priv()
+  {
+    writeln("hi");
+    writeln("??");
+  }
+
+  export proc f1Exp()
+  {
+    writeln("hi");
+    writeln("??");
+  }
+
+  proc f2()
   {
   writeln("hi");
   }
 
-  public proc f3() {
+  proc f3() {
   writeln("hi");
   }
 
