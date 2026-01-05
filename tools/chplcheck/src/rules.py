@@ -726,6 +726,9 @@ def rules(driver: LintDriver):
             parent = formal.parent()
             if isinstance(parent, NamedDecl) and parent.linkage() == "extern":
                 continue
+            # skip formals that are part of function signatures
+            if isinstance(parent, FunctionSignature):
+                continue
 
             formals[formal.unique_id()] = formal
 
