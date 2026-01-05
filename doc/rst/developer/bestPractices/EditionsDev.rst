@@ -105,6 +105,9 @@ features.
     Later Chapel compiler releases may remove the warning and the feature.
     Unstable features should not be removed without warning.
 
+    When deprecating features, please refer to the guidelines in
+    :ref:`best-practices-deprecation`.
+
 * **Addition of a new feature** (`Non-Breaking Change`)
 
     New features may be added at any time without being associated with an

@@ -3,6 +3,13 @@
 Chapel's Deprecation Policy
 ===========================
 
+Deprecating Chapel features must be done in accordance with the edition process.
+Make sure to read the :ref:`best-practices-editions` document before proceeding.
+This document describes the mechanics of how to actually deprecate a feature,
+but not all features can be deprecated. Stable features must only be
+removed or changed in a new edition, while unstable features can be deprecated
+more freely.
+
 When removing a feature in Chapel, the feature is to be deprecated and
 supported for at least 1 release cycle.
 
