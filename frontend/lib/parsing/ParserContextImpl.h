@@ -563,7 +563,7 @@ bool ParserContext::noteIsBuildingFormal(bool isBuildingFormal) {
 
 bool ParserContext::noteIsVarDeclConfig(bool isConfig, YYLTYPE loc) {
   this->isVarDeclConfig = isConfig;
-  this->configLoc = loc;
+  this->configLoc = std::move(loc);
   return this->isVarDeclConfig;
 }
 
