@@ -1,8 +1,13 @@
 use MasonNew;
+use MasonUtils;
 
 config const name="";
 
-proc main() {
+proc main() throws {
   const args = ['new', name];
-  masonNew(args);
+  try {
+    masonNew(args);
+  } catch e: MasonError {
+    writeln(e.message());
+  }
 }

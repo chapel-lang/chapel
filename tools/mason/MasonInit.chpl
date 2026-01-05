@@ -70,65 +70,57 @@ proc masonInit(args: [] string) throws {
   // Default created mason project is a package (has a main func)
   var packageType = 'application';
 
-  try! {
-    var show = showFlag.valueAsBool();
-    if nameOpt.hasValue() then packageName = nameOpt.value();
-    if dirArg.hasValue() then dirName = dirArg.value();
-    if nameOpt.hasValue() {
-      packageName = nameOpt.value();
-    } else {
-      packageName = dirName;
-    }
-    if isApplication then
-      packageType = "application";
-    else if isLibrary then
-      packageType = "library";
-    else if isLightweight then
-      packageType = "light";
-
-    const cwd = here.cwd();
-    var name = if dirName == '' then basename(cwd) else basename(dirName);
-    const path = if dirName == '' then '.' else dirName;
-    if packageName.size > 0 then name = packageName;
-
-    if !isLightweight {
-      validatePackageName(dirName=name);
-    }
-
-
-    if dirName != '' then
-      if !isDir(path) then
-        throw new owned MasonError("Directory does not exist: " + path +
-                                   " Did you mean 'mason new' to create a " +
-                                   "new project from scratch?");
-
-    // If TOML file exists, send message that package is already
-    // initialized and give some info on what they might want to
-    // do instead.
-    if isFile(path + '/Mason.toml') {
-      throw new owned MasonError("Mason.toml already exists for current project. " +
-                                 "Remove or rename the existing manifest file and rerun " +
-                                 "`mason init` to initialize a new project.");
-    } else if isDir(path + '/src/') {
-      throw new owned MasonError("/src/ directory already exists for current project. " +
-                                 "Remove or rename the /src/ directory and rerun " +
-                                 "`mason init` to initialize a new project. " +
-                                 "Alternatively, run `mason new --light` to add only a " +
-                                 "manifest file.");
-    } else {
-      // We can create the /src/ dir and Mason.toml
-      if dirName == '' then
-        InitProject(cwd, name, vcs, show, version, chplVersion, license, packageType);
-      else
-        InitProject(path, name, vcs, show, version, chplVersion, license, packageType);
-    }
-    writeln("Tip: To convert existing code to a mason project, " +
-            "move the driver application to the `src/" + name + ".chpl`" +
-            " file. For adding other source code, using submodules is the " +
-            "recommended approach to avoid namespace collisions.");
+  if nameOpt.hasValue() then packageName = nameOpt.value();
+  if dirArg.hasValue() then dirName = dirArg.value();
+  if nameOpt.hasValue() {
+    packageName = nameOpt.value();
+  } else {
+    packageName = dirName;
   }
-  catch e: MasonError {
-    writeln(e.message());
-    exit(1);
+  if isApplication then
+    packageType = "application";
+  else if isLibrary then
+    packageType = "library";
+  else if isLightweight then
+    packageType = "light";
+
+  const cwd = here.cwd();
+  var name = if dirName == '' then basename(cwd) else basename(dirName);
+  const path = if dirName == '' then '.' else dirName;
+  if packageName.size > 0 then name = packageName;
+
+  if !isLightweight {
+    validatePackageName(dirName=name);
   }
+
+  if dirName != '' then
+    if !isDir(path) then
+      throw new owned MasonError("Directory does not exist: " + path +
+                                 " Did you mean 'mason new' to create a " +
+                                 "new project from scratch?");
+
+  // If TOML file exists, send message that package is already
+  // initialized and give some info on what they might want to
+  // do instead.
+  if isFile(path + '/Mason.toml') {
+    throw new owned MasonError("Mason.toml already exists for current project. " +
+                               "Remove or rename the existing manifest file and rerun " +
+                               "`mason init` to initialize a new project.");
+  } else if isDir(path + '/src/') {
+    throw new owned MasonError("/src/ directory already exists for current project. " +
+                               "Remove or rename the /src/ directory and rerun " +
+                               "`mason init` to initialize a new project. " +
+                               "Alternatively, run `mason new --light` to add only a " +
+                               "manifest file.");
+  } else {
+    // We can create the /src/ dir and Mason.toml
+    if dirName == '' then
+      InitProject(cwd, name, vcs, show, version, chplVersion, license, packageType);
+    else
+      InitProject(path, name, vcs, show, version, chplVersion, license, packageType);
+  }
+  writeln("Tip: To convert existing code to a mason project, " +
+          "move the driver application to the `src/" + name + ".chpl`" +
+          " file. For adding other source code, using submodules is the " +
+          "recommended approach to avoid namespace collisions.");
 }

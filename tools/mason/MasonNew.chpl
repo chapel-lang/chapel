@@ -70,33 +70,27 @@ proc masonNew(args: [] string) throws {
   // Default created mason project is a package (has a main func)
   var packageType = 'application';
 
-  try! {
-    if dirArg.hasValue() then dirName = dirArg.value();
-    else if !isLightweight then
-      throw new owned MasonError("A package name must be specified");
-    if nameOpt.hasValue() {
-      packageName = nameOpt.value();
-    } else {
-      packageName = dirName;
-    }
-    if isApplication then
-      packageType = "application";
-    else if isLibrary then
-      packageType = "library";
-    else if isLightweight then
-      packageType = "light";
+  if dirArg.hasValue() then dirName = dirArg.value();
+  else if !isLightweight then
+    throw new owned MasonError("A package name must be specified");
+  if nameOpt.hasValue() {
+    packageName = nameOpt.value();
+  } else {
+    packageName = dirName;
+  }
+  if isApplication then
+    packageType = "application";
+  else if isLibrary then
+    packageType = "library";
+  else if isLightweight then
+    packageType = "light";
 
-    if !isLightweight && validatePackageName(dirName=packageName) {
-      if isDir(dirName) {
-        throw new owned MasonError("A directory named '" + dirName + "' already exists");
-      }
+  if !isLightweight && validatePackageName(dirName=packageName) {
+    if isDir(dirName) {
+      throw new owned MasonError("A directory named '" + dirName + "' already exists");
     }
-    InitProject(dirName, packageName, vcs, show, version, chplVersion, license, packageType);
   }
-  catch e: MasonError {
-    writeln(e.message());
-    exit(1);
-  }
+  InitProject(dirName, packageName, vcs, show, version, chplVersion, license, packageType);
 }
 
 /* Exit terminal when CTRL + D is pressed */
