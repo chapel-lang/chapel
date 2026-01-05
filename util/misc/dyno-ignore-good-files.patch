@@ -89,6 +89,751 @@ index 57b4b8d78b4..8da7750790b 100644
  
  
     *Example (split-cond-blocks-init.chpl)*
+diff --git a/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-const-err-1.good b/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-const-err-1.good
+index 353bc711b9b..8b73c9dc9a7 100644
+--- a/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-const-err-1.good
++++ b/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-const-err-1.good
+@@ -1,4 +1,4 @@
+-dflt-ctor-generic-uninit-field-const-err-1.chpl:7: error: unresolved call 'A.init()'
+-dflt-ctor-generic-uninit-field-const-err-1.chpl:3: note: this candidate did not match: A.init(c)
+-dflt-ctor-generic-uninit-field-const-err-1.chpl:7: note: because call does not supply enough arguments
+-dflt-ctor-generic-uninit-field-const-err-1.chpl:4: note: it is missing a value for formal 'in c'
++dflt-ctor-generic-uninit-field-const-err-1.chpl:7: error: unable to resolve call to 'init': no matching candidates
++$CHPL_HOME/modules/standard/ChapelIO.chpl:363: note: the following candidate didn't match
++$CHPL_HOME/modules/internal/ChapelRange.chpl:280: note: the following candidate didn't match
++dflt-ctor-generic-uninit-field-const-err-1.chpl:7: note: omitting 20 more candidates that didn't match
+diff --git a/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-param-err-1.good b/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-param-err-1.good
+index b006744280f..83610fec3b1 100644
+--- a/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-param-err-1.good
++++ b/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-param-err-1.good
+@@ -1,6 +1,4 @@
+-dflt-ctor-generic-uninit-field-param-err-1.chpl:7: error: unresolved call 'A.init()'
+-dflt-ctor-generic-uninit-field-param-err-1.chpl:3: note: this candidate did not match: A.init(param p)
+-dflt-ctor-generic-uninit-field-param-err-1.chpl:7: note: because call does not supply enough arguments
+-dflt-ctor-generic-uninit-field-param-err-1.chpl:4: note: it is missing a value for formal 'param p'
+-dflt-ctor-generic-uninit-field-param-err-1.chpl:7: note: other candidates are:
+-dflt-ctor-generic-uninit-field-param-err-1.chpl:3: note:   A.init(param p, reader, deserializer)
++dflt-ctor-generic-uninit-field-param-err-1.chpl:7: error: unable to resolve call to 'init': no matching candidates
++$CHPL_HOME/modules/standard/ChapelIO.chpl:363: note: the following candidate didn't match
++$CHPL_HOME/modules/internal/ChapelRange.chpl:280: note: the following candidate didn't match
++dflt-ctor-generic-uninit-field-param-err-1.chpl:7: note: omitting 20 more candidates that didn't match
+diff --git a/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-type-err-1.good b/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-type-err-1.good
+index e771412e0ba..ec28ed79c80 100644
+--- a/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-type-err-1.good
++++ b/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-type-err-1.good
+@@ -1,6 +1,4 @@
+-dflt-ctor-generic-uninit-field-type-err-1.chpl:7: error: unresolved call 'A.init()'
+-dflt-ctor-generic-uninit-field-type-err-1.chpl:3: note: this candidate did not match: A.init(type t)
+-dflt-ctor-generic-uninit-field-type-err-1.chpl:7: note: because call does not supply enough arguments
+-dflt-ctor-generic-uninit-field-type-err-1.chpl:4: note: it is missing a value for formal 't'
+-dflt-ctor-generic-uninit-field-type-err-1.chpl:7: note: other candidates are:
+-dflt-ctor-generic-uninit-field-type-err-1.chpl:3: note:   A.init(type t, reader, deserializer)
++dflt-ctor-generic-uninit-field-type-err-1.chpl:7: error: unable to resolve call to 'init': no matching candidates
++$CHPL_HOME/modules/standard/ChapelIO.chpl:363: note: the following candidate didn't match
++$CHPL_HOME/modules/internal/ChapelRange.chpl:280: note: the following candidate didn't match
++dflt-ctor-generic-uninit-field-type-err-1.chpl:7: note: omitting 20 more candidates that didn't match
+diff --git a/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-var-err-1.good b/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-var-err-1.good
+index 1e4db802fe4..66b5e8e2e20 100644
+--- a/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-var-err-1.good
++++ b/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-var-err-1.good
+@@ -1,4 +1,4 @@
+-dflt-ctor-generic-uninit-field-var-err-1.chpl:7: error: unresolved call 'A.init()'
+-dflt-ctor-generic-uninit-field-var-err-1.chpl:3: note: this candidate did not match: A.init(v)
+-dflt-ctor-generic-uninit-field-var-err-1.chpl:7: note: because call does not supply enough arguments
+-dflt-ctor-generic-uninit-field-var-err-1.chpl:4: note: it is missing a value for formal 'in v'
++dflt-ctor-generic-uninit-field-var-err-1.chpl:7: error: unable to resolve call to 'init': no matching candidates
++$CHPL_HOME/modules/standard/ChapelIO.chpl:363: note: the following candidate didn't match
++$CHPL_HOME/modules/internal/ChapelRange.chpl:280: note: the following candidate didn't match
++dflt-ctor-generic-uninit-field-var-err-1.chpl:7: note: omitting 20 more candidates that didn't match
+diff --git a/test/classes/initializers/compilerGenerated/generics/issue-16508-default-ok.good b/test/classes/initializers/compilerGenerated/generics/issue-16508-default-ok.good
+index e010eb041e0..a06343ef4fd 100644
+--- a/test/classes/initializers/compilerGenerated/generics/issue-16508-default-ok.good
++++ b/test/classes/initializers/compilerGenerated/generics/issue-16508-default-ok.good
+@@ -1,3 +1 @@
+-issue-16508-default-ok.chpl:5: error: default initialization with type 'TypelessField(int(64))' is not yet supported
+-issue-16508-default-ok.chpl:2: note: field 'field' is a generic value
+-issue-16508-default-ok.chpl:2: note: consider separately declaring a type field for it or using a 'new' call
++issue-16508-default-ok.chpl:5: error: unable to resolve call to 'init': no matching candidates
+diff --git a/test/classes/initializers/compilerGenerated/generics/withParamTypeNoDefNoArgsInCall.good b/test/classes/initializers/compilerGenerated/generics/withParamTypeNoDefNoArgsInCall.good
+index c4be8f5b2ff..00723855840 100644
+--- a/test/classes/initializers/compilerGenerated/generics/withParamTypeNoDefNoArgsInCall.good
++++ b/test/classes/initializers/compilerGenerated/generics/withParamTypeNoDefNoArgsInCall.good
+@@ -1,6 +1,4 @@
+-withParamTypeNoDefNoArgsInCall.chpl:5: error: unresolved call 'Foo.init()'
+-withParamTypeNoDefNoArgsInCall.chpl:1: note: this candidate did not match: Foo.init(param p: bool)
+-withParamTypeNoDefNoArgsInCall.chpl:5: note: because call does not supply enough arguments
+-withParamTypeNoDefNoArgsInCall.chpl:2: note: it is missing a value for formal 'param p: bool'
+-withParamTypeNoDefNoArgsInCall.chpl:5: note: other candidates are:
+-withParamTypeNoDefNoArgsInCall.chpl:1: note:   Foo.init(param p: bool, reader, deserializer)
++withParamTypeNoDefNoArgsInCall.chpl:5: error: unable to resolve call to 'init': no matching candidates
++$CHPL_HOME/modules/standard/ChapelIO.chpl:363: note: the following candidate didn't match
++$CHPL_HOME/modules/internal/ChapelRange.chpl:280: note: the following candidate didn't match
++withParamTypeNoDefNoArgsInCall.chpl:5: note: omitting 20 more candidates that didn't match
+diff --git a/test/classes/initializers/compilerGenerated/inherits_initializer_bad.good b/test/classes/initializers/compilerGenerated/inherits_initializer_bad.good
+index fe576424976..24d7cb22f0e 100644
+--- a/test/classes/initializers/compilerGenerated/inherits_initializer_bad.good
++++ b/test/classes/initializers/compilerGenerated/inherits_initializer_bad.good
+@@ -1,5 +1,4 @@
+-inherits_initializer_bad.chpl:20: In function 'main':
+-inherits_initializer_bad.chpl:21: error: unresolved call 'Parent.init()'
+-inherits_initializer_bad.chpl:10: note: this candidate did not match: Parent.init(x1: int, x2: int)
+-inherits_initializer_bad.chpl:16: note: because call does not supply enough arguments
+-inherits_initializer_bad.chpl:10: note: it is missing a value for formal 'x1: int(64)'
++inherits_initializer_bad.chpl:16: In initializer:
++inherits_initializer_bad.chpl:16: error: unable to resolve call to 'init': no matching candidates
++inherits_initializer_bad.chpl:10: note: the following candidate didn't match because it expects 2 actuals, but none were provided
++inherits_initializer_bad.chpl:16: note: omitting 22 more candidates that didn't match
+diff --git a/test/classes/initializers/compilerGenerated/outOfOrderFieldUse.good b/test/classes/initializers/compilerGenerated/outOfOrderFieldUse.good
+index 9a24ed9905b..64b45330b48 100644
+--- a/test/classes/initializers/compilerGenerated/outOfOrderFieldUse.good
++++ b/test/classes/initializers/compilerGenerated/outOfOrderFieldUse.good
+@@ -1,2 +1,4 @@
+-outOfOrderFieldUse.chpl:5: error: statement references variable 'y' before it is defined
+-outOfOrderFieldUse.chpl:6: note: the variable 'y' is defined here
++outOfOrderFieldUse.chpl:9: error: unable to resolve call to 'init': no matching candidates
++outOfOrderFieldUse.chpl:4: note: the following candidate didn't match
++$CHPL_HOME/modules/standard/ChapelIO.chpl:363: note: the following candidate didn't match
++outOfOrderFieldUse.chpl:9: note: omitting 21 more candidates that didn't match
+diff --git a/test/classes/initializers/compilerGenerated/parent_inherits_initializer_bad.good b/test/classes/initializers/compilerGenerated/parent_inherits_initializer_bad.good
+index e250981e770..ce1a696bbe8 100644
+--- a/test/classes/initializers/compilerGenerated/parent_inherits_initializer_bad.good
++++ b/test/classes/initializers/compilerGenerated/parent_inherits_initializer_bad.good
+@@ -1,5 +1,4 @@
+-parent_inherits_initializer_bad.chpl:24: In function 'main':
+-parent_inherits_initializer_bad.chpl:25: error: unresolved call 'GrandParent.init()'
+-parent_inherits_initializer_bad.chpl:10: note: this candidate did not match: GrandParent.init(x1: int, x2: int)
+-parent_inherits_initializer_bad.chpl:16: note: because call does not supply enough arguments
+-parent_inherits_initializer_bad.chpl:10: note: it is missing a value for formal 'x1: int(64)'
++parent_inherits_initializer_bad.chpl:16: In initializer:
++parent_inherits_initializer_bad.chpl:16: error: unable to resolve call to 'init': no matching candidates
++parent_inherits_initializer_bad.chpl:10: note: the following candidate didn't match because it expects 2 actuals, but none were provided
++parent_inherits_initializer_bad.chpl:16: note: omitting 22 more candidates that didn't match
+diff --git a/test/classes/initializers/errors/badThisType.good b/test/classes/initializers/errors/badThisType.good
+index 9d0259c63b1..6dc968f5fde 100644
+--- a/test/classes/initializers/errors/badThisType.good
++++ b/test/classes/initializers/errors/badThisType.good
+@@ -1,6 +1,4 @@
++badThisType.chpl:7: error: 'R' cannot be found (first mention this function)
+ badThisType.chpl:7: error: Attempt to 'new' a function or undefined symbol
++badThisType.chpl:8: error: 'R2' cannot be found (first mention this function)
+ badThisType.chpl:8: error: Attempt to 'new' a function or undefined symbol
+-badThisType.chpl:1: In initializer:
+-badThisType.chpl:1: error: 'R' undeclared (first use this function)
+-badThisType.chpl:4: In initializer:
+-badThisType.chpl:4: error: 'R2' undeclared (first use this function)
+diff --git a/test/classes/initializers/errors/fieldRecordTypeMismatch.good b/test/classes/initializers/errors/fieldRecordTypeMismatch.good
+index 825a1c0f347..a31be9e8996 100644
+--- a/test/classes/initializers/errors/fieldRecordTypeMismatch.good
++++ b/test/classes/initializers/errors/fieldRecordTypeMismatch.good
+@@ -1,2 +1,3 @@
+-fieldRecordTypeMismatch.chpl:12: In initializer:
+-fieldRecordTypeMismatch.chpl:10: error: 'R' undeclared (first use this function)
++fieldRecordTypeMismatch.chpl:17: error: unable to resolve call to 'init': no matching candidates
++fieldRecordTypeMismatch.chpl:12: note: the following candidate didn't match because an actual couldn't be passed to a formal
++fieldRecordTypeMismatch.chpl:17: note: omitting 22 more candidates that didn't match
+diff --git a/test/classes/initializers/errors/grandFieldInit.good b/test/classes/initializers/errors/grandFieldInit.good
+index 5bef47bef9b..a2de273ad12 100644
+--- a/test/classes/initializers/errors/grandFieldInit.good
++++ b/test/classes/initializers/errors/grandFieldInit.good
+@@ -1,2 +1,2 @@
+ grandFieldInit.chpl:13: In initializer:
+-grandFieldInit.chpl:14: error: can't set value of field "x" from parent type before calling this.init() or super.init()
++grandFieldInit.chpl:14: error: Cannot access parent field "x" before super.init() or this.init()
+diff --git a/test/classes/initializers/errors/grandFieldUse.good b/test/classes/initializers/errors/grandFieldUse.good
+index c000fcc24fd..b707e6ba409 100644
+--- a/test/classes/initializers/errors/grandFieldUse.good
++++ b/test/classes/initializers/errors/grandFieldUse.good
+@@ -1,2 +1,2 @@
+ grandFieldUse.chpl:13: In initializer:
+-grandFieldUse.chpl:14: error: cannot access parent field "x" before super.init() or this.init()
++grandFieldUse.chpl:14: error: Cannot access parent field "x" before super.init() or this.init()
+diff --git a/test/classes/initializers/errors/iteratorEnterContextMethodCalled.good b/test/classes/initializers/errors/iteratorEnterContextMethodCalled.good
+index 4e5d8268770..25318c90e6e 100644
+--- a/test/classes/initializers/errors/iteratorEnterContextMethodCalled.good
++++ b/test/classes/initializers/errors/iteratorEnterContextMethodCalled.good
+@@ -1 +1,4 @@
+ iteratorEnterContextMethodCalled.chpl:2: error: iterators can't be the 'enterContext' method, please rename this iterator
++iteratorEnterContextMethodCalled.chpl:7: In function 'main':
++iteratorEnterContextMethodCalled.chpl:9: warning: owned IteratorEnterContext is being used in a 'manage' statement via its 'enterContext' and 'exitContext' methods. However, owned IteratorEnterContext does not implement contextManager. In the future, this will result in an error
++iteratorEnterContextMethodCalled.chpl:9: error: 'manage' statements are only for types implementing 'contextManager'
+diff --git a/test/classes/initializers/errors/iteratorExitContextMethodCalled.good b/test/classes/initializers/errors/iteratorExitContextMethodCalled.good
+index 29943f8d3c7..099b4f3ff9d 100644
+--- a/test/classes/initializers/errors/iteratorExitContextMethodCalled.good
++++ b/test/classes/initializers/errors/iteratorExitContextMethodCalled.good
+@@ -1 +1,4 @@
+ iteratorExitContextMethodCalled.chpl:4: error: iterators can't be the 'exitContext' method, please rename this iterator
++iteratorExitContextMethodCalled.chpl:7: In function 'main':
++iteratorExitContextMethodCalled.chpl:9: warning: owned IteratorExitContext is being used in a 'manage' statement via its 'enterContext' and 'exitContext' methods. However, owned IteratorExitContext does not implement contextManager. In the future, this will result in an error
++iteratorExitContextMethodCalled.chpl:9: error: 'manage' statements are only for types implementing 'contextManager'
+diff --git a/test/classes/initializers/errors/name-bad-field.good b/test/classes/initializers/errors/name-bad-field.good
+index 975294afb62..7d817ea7e9e 100644
+--- a/test/classes/initializers/errors/name-bad-field.good
++++ b/test/classes/initializers/errors/name-bad-field.good
+@@ -1,2 +1,2 @@
+ name-bad-field.chpl:6: In initializer:
+-name-bad-field.chpl:7: error: field "b" used before it is initialized
++name-bad-field.chpl:7: error: 'b' is used before it is initialized
+diff --git a/test/classes/initializers/field-undefined.good b/test/classes/initializers/field-undefined.good
+index 20a3fa9871e..b5bc6cb0d1b 100644
+--- a/test/classes/initializers/field-undefined.good
++++ b/test/classes/initializers/field-undefined.good
+@@ -1,2 +1,2 @@
+ field-undefined.chpl:6: In initializer:
+-field-undefined.chpl:9: error: 'c' undeclared (first use this function)
++field-undefined.chpl:9: error: 'c' cannot be found
+diff --git a/test/classes/initializers/generics/declarations/default_value_bad.good b/test/classes/initializers/generics/declarations/default_value_bad.good
+index d48d538b4d1..fbdaa1b41ca 100644
+--- a/test/classes/initializers/generics/declarations/default_value_bad.good
++++ b/test/classes/initializers/generics/declarations/default_value_bad.good
+@@ -1,4 +1,3 @@
+-default_value_bad.chpl:13: error: unresolved call 'Foo.init("blah")'
+-default_value_bad.chpl:7: note: this candidate did not match: Foo.init(xVal = 3)
+-default_value_bad.chpl:13: note: because actual argument #1 with type 'string'
+-default_value_bad.chpl:7: note: is passed to formal 'xVal: int(64)'
++default_value_bad.chpl:13: error: unable to resolve call to 'init': no matching candidates
++default_value_bad.chpl:7: note: the following candidate didn't match because an actual couldn't be passed to a formal
++default_value_bad.chpl:13: note: omitting 22 more candidates that didn't match
+diff --git a/test/classes/initializers/generics/explicitAssignment.good b/test/classes/initializers/generics/explicitAssignment.good
+index 2403097edb5..f7fc46c8246 100644
+--- a/test/classes/initializers/generics/explicitAssignment.good
++++ b/test/classes/initializers/generics/explicitAssignment.good
+@@ -1,2 +1,2 @@
+ explicitAssignment.chpl:17: In function 'main':
+-explicitAssignment.chpl:18: error: cannot initialize 'a' of type 'borrowed Foo(real(64))' from a 'borrowed Foo(int(64))'
++explicitAssignment.chpl:18: error: type mismatch between declared type of 'a' and initialization expression
+diff --git a/test/classes/initializers/generics/genericInitError.good b/test/classes/initializers/generics/genericInitError.good
+index 76a3cd6ac3b..2c1fc587f25 100644
+--- a/test/classes/initializers/generics/genericInitError.good
++++ b/test/classes/initializers/generics/genericInitError.good
+@@ -1,3 +1 @@
+-genericInitError.chpl:4: In initializer:
+-genericInitError.chpl:5: error: can't omit initialization of field "t", no type or default value provided
+-genericInitError.chpl:6: error: cannot update a type field, "t", in phase 2
++genericInitError.chpl:1: error: unable to instantiate generic type from initializer
+diff --git a/test/classes/initializers/generics/init-param-from-non-param.good b/test/classes/initializers/generics/init-param-from-non-param.good
+index 724e5efe877..8b7961e1560 100644
+--- a/test/classes/initializers/generics/init-param-from-non-param.good
++++ b/test/classes/initializers/generics/init-param-from-non-param.good
+@@ -1,2 +1,3 @@
+ init-param-from-non-param.chpl:3: In initializer:
+-init-param-from-non-param.chpl:5: error: Initializing parameter 'p' to value not known at compile time
++init-param-from-non-param.chpl:5: error: a 'param' cannot be initialized with a non-'param' value
++init-param-from-non-param.chpl:1: error: unable to instantiate generic type from initializer
+diff --git a/test/classes/initializers/generics/initAtomicsViaWrite.good b/test/classes/initializers/generics/initAtomicsViaWrite.good
+index dc65d3bab06..1028aac0f22 100644
+--- a/test/classes/initializers/generics/initAtomicsViaWrite.good
++++ b/test/classes/initializers/generics/initAtomicsViaWrite.good
+@@ -1,3 +1,5 @@
+ initAtomicsViaWrite.chpl:5: In initializer:
+-initAtomicsViaWrite.chpl:6: error: field "head" used before it is initialized
+-initAtomicsViaWrite.chpl:7: error: field "tail" used before it is initialized
++initAtomicsViaWrite.chpl:6: error: 'head' is used before it is initialized
++initAtomicsViaWrite.chpl:7: error: 'tail' is used before it is initialized
++initAtomicsViaWrite.chpl:6: error: 'head' is used before it is initialized
++initAtomicsViaWrite.chpl:7: error: 'tail' is used before it is initialized
+diff --git a/test/classes/initializers/generics/omittedGenerics2.good b/test/classes/initializers/generics/omittedGenerics2.good
+index 134894721d7..397f84c2e47 100644
+--- a/test/classes/initializers/generics/omittedGenerics2.good
++++ b/test/classes/initializers/generics/omittedGenerics2.good
+@@ -1,2 +1,2 @@
+-omittedGenerics2.chpl:9: In initializer:
+-omittedGenerics2.chpl:10: error: can't omit initialization of field "a", no type or default value provided
++omittedGenerics2.chpl:9: error: cannot implicitly initialize field 'a', which does not have a default value
++omittedGenerics2.chpl:5: error: unable to instantiate generic type from initializer
+diff --git a/test/classes/initializers/generics/param-field-default-value-non-param-config-var.good b/test/classes/initializers/generics/param-field-default-value-non-param-config-var.good
+index 9f9db95737e..79874928df6 100644
+--- a/test/classes/initializers/generics/param-field-default-value-non-param-config-var.good
++++ b/test/classes/initializers/generics/param-field-default-value-non-param-config-var.good
+@@ -1,2 +1,2 @@
+-param-field-default-value-non-param-config-var.chpl:4: In initializer:
+-param-field-default-value-non-param-config-var.chpl:4: error: Initializing parameter 'p' to value not known at compile time
++param-field-default-value-non-param-config-var.chpl:3: error: a 'param' cannot be initialized with a non-'param' value
++param-field-default-value-non-param-config-var.chpl:2: error: unable to instantiate generic type from initializer
+diff --git a/test/classes/initializers/generics/param-field-default-value-non-param-field.good b/test/classes/initializers/generics/param-field-default-value-non-param-field.good
+index 1a3972bd555..18426ad319d 100644
+--- a/test/classes/initializers/generics/param-field-default-value-non-param-field.good
++++ b/test/classes/initializers/generics/param-field-default-value-non-param-field.good
+@@ -1,2 +1,2 @@
+-param-field-default-value-non-param-field.chpl:4: In initializer:
+-param-field-default-value-non-param-field.chpl:4: error: Initializing parameter 'p' to value not known at compile time
++param-field-default-value-non-param-field.chpl:3: error: a 'param' cannot be initialized with a non-'param' value
++param-field-default-value-non-param-field.chpl:1: error: unable to instantiate generic type from initializer
+diff --git a/test/classes/initializers/generics/param-record-field.good b/test/classes/initializers/generics/param-record-field.good
+index c535fd258b8..a05749ec7e8 100644
+--- a/test/classes/initializers/generics/param-record-field.good
++++ b/test/classes/initializers/generics/param-record-field.good
+@@ -1 +1,2 @@
+-param-record-field.chpl:4: error: 'r' is not of a supported param type
++param-record-field.chpl:5: error: cannot implicitly initialize field 'r', which does not have a default value
++param-record-field.chpl:3: error: unable to instantiate generic type from initializer
+diff --git a/test/classes/initializers/generics/phase1/badDependence.good b/test/classes/initializers/generics/phase1/badDependence.good
+index 14dd81d243e..8f4a321855b 100644
+--- a/test/classes/initializers/generics/phase1/badDependence.good
++++ b/test/classes/initializers/generics/phase1/badDependence.good
+@@ -1,3 +1,15 @@
+ badDependence.chpl:7: In initializer:
+-badDependence.chpl:8: error: field "f5" used before it is initialized
+-badDependence.chpl:9: error: field "f4" used before it is initialized
++badDependence.chpl:8: error: 'f5' is used before it is initialized
++badDependence.chpl:8: error: unable to resolve call to '+': no matching candidates
++$CHPL_HOME/modules/internal/ChapelDomain.chpl:438: note: the following candidate didn't match because an actual couldn't be passed to a formal
++$CHPL_HOME/modules/internal/ChapelDomain.chpl:428: note: the following candidate didn't match because an actual couldn't be passed to a formal
++badDependence.chpl:8: note: omitting 80 more candidates that didn't match
++badDependence.chpl:9: error: 'f4' is used before it is initialized
++badDependence.chpl:9: error: unable to resolve call to '-': no matching candidates
++$CHPL_HOME/modules/internal/ChapelDomain.chpl:585: note: the following candidate didn't match because an actual couldn't be passed to a formal
++$CHPL_HOME/modules/internal/ChapelDomain.chpl:469: note: the following candidate didn't match because an actual couldn't be passed to a formal
++badDependence.chpl:9: note: omitting 73 more candidates that didn't match
++badDependence.chpl:1: error: unable to instantiate generic type from initializer
++badDependence.chpl:1: error: unable to instantiate generic type from initializer
++badDependence.chpl:8: error: 'f5' is used before it is initialized
++badDependence.chpl:9: error: 'f4' is used before it is initialized
+diff --git a/test/classes/initializers/generics/phase1/badDependence2.good b/test/classes/initializers/generics/phase1/badDependence2.good
+index 2ad89df7ff9..3c003e78e5e 100644
+--- a/test/classes/initializers/generics/phase1/badDependence2.good
++++ b/test/classes/initializers/generics/phase1/badDependence2.good
+@@ -1,2 +1,6 @@
+ badDependence2.chpl:2: error: statement references variable 'f5' before it is defined
+ badDependence2.chpl:3: note: the variable 'f5' is defined here
++badDependence2.chpl:2: error: unable to resolve call to '*': no matching candidates
++$CHPL_HOME/modules/internal/ChapelTuple.chpl:758: note: the following candidate didn't match because an actual couldn't be passed to a formal
++$CHPL_HOME/modules/internal/ChapelTuple.chpl:750: note: the following candidate didn't match because an actual couldn't be passed to a formal
++badDependence2.chpl:2: note: omitting 59 more candidates that didn't match
+diff --git a/test/classes/initializers/generics/phase1/enumFieldNoUseBad.good b/test/classes/initializers/generics/phase1/enumFieldNoUseBad.good
+index a5ef234d971..ceb39fb24fa 100644
+--- a/test/classes/initializers/generics/phase1/enumFieldNoUseBad.good
++++ b/test/classes/initializers/generics/phase1/enumFieldNoUseBad.good
+@@ -1,2 +1,3 @@
+ enumFieldNoUseBad.chpl:8: In initializer:
+-enumFieldNoUseBad.chpl:9: error: 'blue' undeclared (first use this function)
++enumFieldNoUseBad.chpl:9: error: 'blue' cannot be found
++enumFieldNoUseBad.chpl:5: error: unable to instantiate generic type from initializer
+diff --git a/test/classes/initializers/generics/phase1/hasLoopBad.good b/test/classes/initializers/generics/phase1/hasLoopBad.good
+index 8592e882bb8..c7b40cc11be 100644
+--- a/test/classes/initializers/generics/phase1/hasLoopBad.good
++++ b/test/classes/initializers/generics/phase1/hasLoopBad.good
+@@ -1,2 +1,7 @@
+ hasLoopBad.chpl:4: In initializer:
+-hasLoopBad.chpl:7: error: can't initialize field "highestNum" inside a loop during phase 1 of initialization
++hasLoopBad.chpl:7: error: cannot initialize fields inside of loops
++hasLoopBad.chpl:9: error: 'highestNum' is used before it is initialized
++hasLoopBad.chpl:10: error: cannot initialize fields inside of loops
++hasLoopBad.chpl:7: error: cannot initialize fields inside of loops
++hasLoopBad.chpl:9: error: 'highestNum' is used before it is initialized
++hasLoopBad.chpl:10: error: cannot initialize fields inside of loops
+diff --git a/test/classes/initializers/generics/phase1/hasLoopBad2.good b/test/classes/initializers/generics/phase1/hasLoopBad2.good
+index 923b852d14a..b5a4ce24b2d 100644
+--- a/test/classes/initializers/generics/phase1/hasLoopBad2.good
++++ b/test/classes/initializers/generics/phase1/hasLoopBad2.good
+@@ -1,2 +1,3 @@
+ hasLoopBad2.chpl:7: In initializer:
+-hasLoopBad2.chpl:9: error: can't initialize field "highestNum" inside a loop during phase 1 of initialization
++hasLoopBad2.chpl:9: error: cannot initialize fields inside of loops
++hasLoopBad2.chpl:9: error: cannot initialize fields inside of loops
+diff --git a/test/classes/initializers/generics/phase1/hasLoopBadDoWhile.good b/test/classes/initializers/generics/phase1/hasLoopBadDoWhile.good
+index 24a06b1b7ae..963bac6fa6b 100644
+--- a/test/classes/initializers/generics/phase1/hasLoopBadDoWhile.good
++++ b/test/classes/initializers/generics/phase1/hasLoopBadDoWhile.good
+@@ -1,2 +1,3 @@
+ hasLoopBadDoWhile.chpl:7: In initializer:
+-hasLoopBadDoWhile.chpl:10: error: can't initialize field "highestNum" inside a loop during phase 1 of initialization
++hasLoopBadDoWhile.chpl:10: error: cannot initialize fields inside of loops
++hasLoopBadDoWhile.chpl:10: error: cannot initialize fields inside of loops
+diff --git a/test/classes/initializers/generics/phase1/hasLoopBadWhile.good b/test/classes/initializers/generics/phase1/hasLoopBadWhile.good
+index 96b64eb39b7..6c8fba3f6dd 100644
+--- a/test/classes/initializers/generics/phase1/hasLoopBadWhile.good
++++ b/test/classes/initializers/generics/phase1/hasLoopBadWhile.good
+@@ -1,2 +1,3 @@
+ hasLoopBadWhile.chpl:7: In initializer:
+-hasLoopBadWhile.chpl:10: error: can't initialize field "highestNum" inside a loop during phase 1 of initialization
++hasLoopBadWhile.chpl:10: error: cannot initialize fields inside of loops
++hasLoopBadWhile.chpl:10: error: cannot initialize fields inside of loops
+diff --git a/test/classes/initializers/generics/phase1/hasParallelBad.good b/test/classes/initializers/generics/phase1/hasParallelBad.good
+index 51ee1a6a061..faf0c486b7a 100644
+--- a/test/classes/initializers/generics/phase1/hasParallelBad.good
++++ b/test/classes/initializers/generics/phase1/hasParallelBad.good
+@@ -1,2 +1,5 @@
+ hasParallelBad.chpl:5: In initializer:
+-hasParallelBad.chpl:7: error: can't initialize field "a" inside a parallel statement during phase 1 of initialization
++hasParallelBad.chpl:7: error: cannot initialize fields inside cobegin statements
++hasParallelBad.chpl:8: error: cannot initialize fields inside cobegin statements
++hasParallelBad.chpl:7: error: cannot initialize fields inside cobegin statements
++hasParallelBad.chpl:8: error: cannot initialize fields inside cobegin statements
+diff --git a/test/classes/initializers/generics/phase1/param-from-new.good b/test/classes/initializers/generics/phase1/param-from-new.good
+index 2926f99e3d0..4bde0d17c41 100644
+--- a/test/classes/initializers/generics/phase1/param-from-new.good
++++ b/test/classes/initializers/generics/phase1/param-from-new.good
+@@ -1 +1,3 @@
+-param-from-new.chpl:11: error: cannot initialize param field 't' with 'new' expression
++param-from-new.chpl:10: In initializer:
++param-from-new.chpl:11: error: a 'param' cannot be initialized with a non-'param' value
++param-from-new.chpl:6: error: unable to instantiate generic type from initializer
+diff --git a/test/classes/initializers/generics/phase1/reuse-field-accessor.good b/test/classes/initializers/generics/phase1/reuse-field-accessor.good
+index 2ed9d53eefa..621a1115051 100644
+--- a/test/classes/initializers/generics/phase1/reuse-field-accessor.good
++++ b/test/classes/initializers/generics/phase1/reuse-field-accessor.good
+@@ -1,4 +1,2 @@
+-reuse-field-accessor.chpl:11: In initializer:
+-reuse-field-accessor.chpl:12: error: cannot pass a record to a function before "init this"
+-reuse-field-accessor.chpl:13: error: can't omit initialization of field "x_", no type or default value provided
+-reuse-field-accessor.chpl:13: error: cannot pass a record to a function before "init this"
++reuse-field-accessor.chpl:2: error: unable to instantiate generic type from initializer
++reuse-field-accessor.chpl:2: error: unable to instantiate generic type from initializer
+diff --git a/test/classes/initializers/generics/phase1/setParentField.good b/test/classes/initializers/generics/phase1/setParentField.good
+index 2134695e8b2..7eaf4558e86 100644
+--- a/test/classes/initializers/generics/phase1/setParentField.good
++++ b/test/classes/initializers/generics/phase1/setParentField.good
+@@ -1,2 +1,3 @@
+ setParentField.chpl:9: In initializer:
+-setParentField.chpl:10: error: can't set value of field "f1" from parent type before calling this.init() or super.init()
++setParentField.chpl:10: error: Cannot access parent field "f1" before super.init() or this.init()
++setParentField.chpl:10: error: Cannot access parent field "f1" before super.init() or this.init()
+diff --git a/test/classes/initializers/generics/phase1/type-from-new.good b/test/classes/initializers/generics/phase1/type-from-new.good
+index e9127c1a910..9c70ee09485 100644
+--- a/test/classes/initializers/generics/phase1/type-from-new.good
++++ b/test/classes/initializers/generics/phase1/type-from-new.good
+@@ -1 +1,3 @@
+-type-from-new.chpl:11: error: cannot initialize type field 't' with 'new' expression
++type-from-new.chpl:10: In initializer:
++type-from-new.chpl:11: error: a type variable cannot be initialized with a regular value
++type-from-new.chpl:11: error: a type variable cannot be initialized with a regular value
+diff --git a/test/classes/initializers/generics/phase1/unorderedFields-preferred.good b/test/classes/initializers/generics/phase1/unorderedFields-preferred.good
+index 1076853d1ec..9c3e9cbdae3 100644
+--- a/test/classes/initializers/generics/phase1/unorderedFields-preferred.good
++++ b/test/classes/initializers/generics/phase1/unorderedFields-preferred.good
+@@ -1,3 +1,6 @@
+ unorderedFields-preferred.chpl:6: In initializer:
+ unorderedFields-preferred.chpl:9: error: Field "f2" initialized out of order
+-unorderedFields-preferred.chpl:9: note: initialization of fields before .init() call must be in field declaration order
++unorderedFields-preferred.chpl:13: In function 'main':
++unorderedFields-preferred.chpl:14: error: type mismatch between declared type of 'c' and initialization expression
++unorderedFields-preferred.chpl:6: In initializer:
++unorderedFields-preferred.chpl:9: error: Field "f2" initialized out of order
+diff --git a/test/classes/initializers/generics/phase1/unorderedFields.good b/test/classes/initializers/generics/phase1/unorderedFields.good
+index 7db5c2538ed..de85385e6d2 100644
+--- a/test/classes/initializers/generics/phase1/unorderedFields.good
++++ b/test/classes/initializers/generics/phase1/unorderedFields.good
+@@ -1,3 +1,6 @@
+ unorderedFields.chpl:6: In initializer:
+ unorderedFields.chpl:9: error: Field "f2" initialized out of order
+-unorderedFields.chpl:9: note: initialization of fields before .init() call must be in field declaration order
++unorderedFields.chpl:13: In function 'main':
++unorderedFields.chpl:14: error: type mismatch between declared type of 'c' and initialization expression
++unorderedFields.chpl:6: In initializer:
++unorderedFields.chpl:9: error: Field "f2" initialized out of order
+diff --git a/test/classes/initializers/generics/phase2-only-param-default-type.good b/test/classes/initializers/generics/phase2-only-param-default-type.good
+index f7458a833d1..396fa56c38e 100644
+--- a/test/classes/initializers/generics/phase2-only-param-default-type.good
++++ b/test/classes/initializers/generics/phase2-only-param-default-type.good
+@@ -1,2 +1 @@
+-phase2-only-param-default-type.chpl:7: In initializer:
+-phase2-only-param-default-type.chpl:9: error: cannot update a param field, "p", in phase 2
++phase2-only-param-default-type.chpl:4: error: unable to instantiate generic type from initializer
+diff --git a/test/classes/initializers/generics/typeAlias/errorNewExpr.baduser.good b/test/classes/initializers/generics/typeAlias/errorNewExpr.baduser.good
+index fae3e65a55c..e83838acc06 100644
+--- a/test/classes/initializers/generics/typeAlias/errorNewExpr.baduser.good
++++ b/test/classes/initializers/generics/typeAlias/errorNewExpr.baduser.good
+@@ -1,6 +1,4 @@
+ errorNewExpr.chpl:18: In function 'main':
+-errorNewExpr.chpl:28: error: Unable to resolve new-expression with type alias 'BadUserInit(int(64))'
+-errorNewExpr.chpl:28: error: unresolved call 'BadUserInit.init(T=type int(64), 5)'
+-errorNewExpr.chpl:12: note: this candidate did not match: BadUserInit.init(x: ?T)
+-errorNewExpr.chpl:28: note: because call uses named argument T
+-errorNewExpr.chpl:12: note: but function contains no formal named T
++errorNewExpr.chpl:28: error: unable to resolve call to 'init': no matching candidates
++errorNewExpr.chpl:12: note: the following candidate didn't match because actual 2 was named 'T', but no formal with that name was found
++errorNewExpr.chpl:28: note: omitting 22 more candidates that didn't match
+diff --git a/test/classes/initializers/inheritance/inheritedInitWrongName.good b/test/classes/initializers/inheritance/inheritedInitWrongName.good
+index c301d45971e..7cb83be2729 100644
+--- a/test/classes/initializers/inheritance/inheritedInitWrongName.good
++++ b/test/classes/initializers/inheritance/inheritedInitWrongName.good
+@@ -1,4 +1,3 @@
+-inheritedInitWrongName.chpl:20: error: unresolved call 'D.init(x=3, "hi", 4.6)'
+-inheritedInitWrongName.chpl:15: note: this candidate did not match: D.init(a, b, c)
+-inheritedInitWrongName.chpl:20: note: because call uses named argument x
+-inheritedInitWrongName.chpl:15: note: but function contains no formal named x
++inheritedInitWrongName.chpl:20: error: unable to resolve call to 'init': no matching candidates
++inheritedInitWrongName.chpl:15: note: the following candidate didn't match because actual 2 was named 'x', but no formal with that name was found
++inheritedInitWrongName.chpl:20: note: omitting 23 more candidates that didn't match
+diff --git a/test/classes/initializers/initequals/changing-param-field-error3.good b/test/classes/initializers/initequals/changing-param-field-error3.good
+index 2c897408c33..04010e17ef2 100644
+--- a/test/classes/initializers/initequals/changing-param-field-error3.good
++++ b/test/classes/initializers/initequals/changing-param-field-error3.good
+@@ -1,4 +1,2 @@
+-changing-param-field-error3.chpl:7: In method 'init=':
+-changing-param-field-error3.chpl:8: error: Cannot replace an instantiated param field with another value
+-changing-param-field-error3.chpl:8: note: field 'fixed' has value 'false' but is set to 'true'
+-  changing-param-field-error3.chpl:24: called as (R(false,false)).init=(rhs: R(true,true))
++changing-param-field-error3.chpl:7: error: final result of initialization does not match the initial type
++changing-param-field-error3.chpl:2: note: field 'fixed' started with type 'bool', but had incompatible type 'bool' after initialization
+diff --git a/test/classes/initializers/initequals/wrongType.good b/test/classes/initializers/initequals/wrongType.good
+index 2074d426d27..1b96126e573 100644
+--- a/test/classes/initializers/initequals/wrongType.good
++++ b/test/classes/initializers/initequals/wrongType.good
+@@ -1,4 +1,2 @@
+-wrongType.chpl:6: In method 'init=':
+-wrongType.chpl:7: error: Cannot replace an instantiated field with another type
+-wrongType.chpl:7: note: field 'T' has type 'int(64)' but is set to '2*int(64)'
+-  wrongType.chpl:13: called as (R(int(64))).init=(other: int(64))
++wrongType.chpl:6: error: final result of initialization does not match the initial type
++wrongType.chpl:3: note: field 'T' started with type 'int(64)', but had incompatible type '(int(64), int(64))' after initialization
+diff --git a/test/classes/initializers/phase1/badDependence.good b/test/classes/initializers/phase1/badDependence.good
+index 14dd81d243e..1423eff1497 100644
+--- a/test/classes/initializers/phase1/badDependence.good
++++ b/test/classes/initializers/phase1/badDependence.good
+@@ -1,3 +1,3 @@
+ badDependence.chpl:7: In initializer:
+-badDependence.chpl:8: error: field "f5" used before it is initialized
+-badDependence.chpl:9: error: field "f4" used before it is initialized
++badDependence.chpl:8: error: 'f5' is used before it is initialized
++badDependence.chpl:9: error: 'f4' is used before it is initialized
+diff --git a/test/classes/initializers/phase1/deeperOn.good b/test/classes/initializers/phase1/deeperOn.good
+index 68f48b95ef4..3e9ed68f90a 100644
+--- a/test/classes/initializers/phase1/deeperOn.good
++++ b/test/classes/initializers/phase1/deeperOn.good
+@@ -1,2 +1,2 @@
+ deeperOn.chpl:4: In initializer:
+-deeperOn.chpl:8: error: can't initialize field "x" inside a parallel statement during phase 1 of initialization
++deeperOn.chpl:8: error: cannot initialize fields inside cobegin statements
+diff --git a/test/classes/initializers/phase1/enumFieldNoUseBad.good b/test/classes/initializers/phase1/enumFieldNoUseBad.good
+index a5ef234d971..d1adb92aed0 100644
+--- a/test/classes/initializers/phase1/enumFieldNoUseBad.good
++++ b/test/classes/initializers/phase1/enumFieldNoUseBad.good
+@@ -1,2 +1,2 @@
+ enumFieldNoUseBad.chpl:8: In initializer:
+-enumFieldNoUseBad.chpl:9: error: 'blue' undeclared (first use this function)
++enumFieldNoUseBad.chpl:9: error: 'blue' cannot be found
+diff --git a/test/classes/initializers/phase1/grandparentAccess.good b/test/classes/initializers/phase1/grandparentAccess.good
+index a339080026c..b4148ab2672 100644
+--- a/test/classes/initializers/phase1/grandparentAccess.good
++++ b/test/classes/initializers/phase1/grandparentAccess.good
+@@ -1,2 +1,2 @@
+ grandparentAccess.chpl:21: In initializer:
+-grandparentAccess.chpl:24: error: cannot access parent field "a" before super.init() or this.init()
++grandparentAccess.chpl:24: error: Cannot access parent field "a" before super.init() or this.init()
+diff --git a/test/classes/initializers/phase1/hasBeginOnFieldInit.good b/test/classes/initializers/phase1/hasBeginOnFieldInit.good
+index 75909169c5c..adc7afd15f3 100644
+--- a/test/classes/initializers/phase1/hasBeginOnFieldInit.good
++++ b/test/classes/initializers/phase1/hasBeginOnFieldInit.good
+@@ -1,2 +1,2 @@
+ hasBeginOnFieldInit.chpl:4: In initializer:
+-hasBeginOnFieldInit.chpl:7: error: can't initialize field "x" inside a parallel statement during phase 1 of initialization
++hasBeginOnFieldInit.chpl:7: error: cannot initialize fields inside begin statements
+diff --git a/test/classes/initializers/phase1/hasCobeginOnFieldInit.good b/test/classes/initializers/phase1/hasCobeginOnFieldInit.good
+index 455767111a4..331ee6c7847 100644
+--- a/test/classes/initializers/phase1/hasCobeginOnFieldInit.good
++++ b/test/classes/initializers/phase1/hasCobeginOnFieldInit.good
+@@ -1,2 +1,2 @@
+ hasCobeginOnFieldInit.chpl:4: In initializer:
+-hasCobeginOnFieldInit.chpl:7: error: can't initialize field "x" inside a parallel statement during phase 1 of initialization
++hasCobeginOnFieldInit.chpl:7: error: cannot initialize fields inside cobegin statements
+diff --git a/test/classes/initializers/phase1/hasLoopBad.good b/test/classes/initializers/phase1/hasLoopBad.good
+index 8592e882bb8..682fd3a0175 100644
+--- a/test/classes/initializers/phase1/hasLoopBad.good
++++ b/test/classes/initializers/phase1/hasLoopBad.good
+@@ -1,2 +1,4 @@
+ hasLoopBad.chpl:4: In initializer:
+-hasLoopBad.chpl:7: error: can't initialize field "highestNum" inside a loop during phase 1 of initialization
++hasLoopBad.chpl:7: error: cannot initialize fields inside of loops
++hasLoopBad.chpl:9: error: 'highestNum' is used before it is initialized
++hasLoopBad.chpl:10: error: cannot initialize fields inside of loops
+diff --git a/test/classes/initializers/phase1/hasLoopBad2.good b/test/classes/initializers/phase1/hasLoopBad2.good
+index 923b852d14a..7e8a832329e 100644
+--- a/test/classes/initializers/phase1/hasLoopBad2.good
++++ b/test/classes/initializers/phase1/hasLoopBad2.good
+@@ -1,2 +1,2 @@
+ hasLoopBad2.chpl:7: In initializer:
+-hasLoopBad2.chpl:9: error: can't initialize field "highestNum" inside a loop during phase 1 of initialization
++hasLoopBad2.chpl:9: error: cannot initialize fields inside of loops
+diff --git a/test/classes/initializers/phase1/hasLoopBadCoforall.good b/test/classes/initializers/phase1/hasLoopBadCoforall.good
+index 6fc285b5318..eb39b72ae82 100644
+--- a/test/classes/initializers/phase1/hasLoopBadCoforall.good
++++ b/test/classes/initializers/phase1/hasLoopBadCoforall.good
+@@ -1,2 +1,2 @@
+ hasLoopBadCoforall.chpl:4: In initializer:
+-hasLoopBadCoforall.chpl:10: error: can't initialize field "x" inside a coforall during phase 1 of initialization
++hasLoopBadCoforall.chpl:10: error: cannot initialize fields inside of loops
+diff --git a/test/classes/initializers/phase1/hasLoopBadDoWhile.good b/test/classes/initializers/phase1/hasLoopBadDoWhile.good
+index 24a06b1b7ae..f6c883375b6 100644
+--- a/test/classes/initializers/phase1/hasLoopBadDoWhile.good
++++ b/test/classes/initializers/phase1/hasLoopBadDoWhile.good
+@@ -1,2 +1,2 @@
+ hasLoopBadDoWhile.chpl:7: In initializer:
+-hasLoopBadDoWhile.chpl:10: error: can't initialize field "highestNum" inside a loop during phase 1 of initialization
++hasLoopBadDoWhile.chpl:10: error: cannot initialize fields inside of loops
+diff --git a/test/classes/initializers/phase1/hasLoopBadWhile.good b/test/classes/initializers/phase1/hasLoopBadWhile.good
+index 96b64eb39b7..3e87764a648 100644
+--- a/test/classes/initializers/phase1/hasLoopBadWhile.good
++++ b/test/classes/initializers/phase1/hasLoopBadWhile.good
+@@ -1,2 +1,2 @@
+ hasLoopBadWhile.chpl:7: In initializer:
+-hasLoopBadWhile.chpl:10: error: can't initialize field "highestNum" inside a loop during phase 1 of initialization
++hasLoopBadWhile.chpl:10: error: cannot initialize fields inside of loops
+diff --git a/test/classes/initializers/phase1/hasLoopForallBad.good b/test/classes/initializers/phase1/hasLoopForallBad.good
+index e4a9a63cabb..2847cb0c69c 100644
+--- a/test/classes/initializers/phase1/hasLoopForallBad.good
++++ b/test/classes/initializers/phase1/hasLoopForallBad.good
+@@ -1,2 +1,2 @@
+ hasLoopForallBad.chpl:4: In initializer:
+-hasLoopForallBad.chpl:9: error: can't initialize field "field" inside a forall during phase 1 of initialization
++hasLoopForallBad.chpl:9: error: cannot initialize fields inside of loops
+diff --git a/test/classes/initializers/phase1/hasOnCobeginFieldInit.good b/test/classes/initializers/phase1/hasOnCobeginFieldInit.good
+index 9f857a8b7fc..a72b70eaa7a 100644
+--- a/test/classes/initializers/phase1/hasOnCobeginFieldInit.good
++++ b/test/classes/initializers/phase1/hasOnCobeginFieldInit.good
+@@ -1,2 +1,2 @@
+ hasOnCobeginFieldInit.chpl:4: In initializer:
+-hasOnCobeginFieldInit.chpl:7: error: can't initialize field "x" inside a parallel statement during phase 1 of initialization
++hasOnCobeginFieldInit.chpl:7: error: cannot initialize fields inside cobegin statements
+diff --git a/test/classes/initializers/phase1/hasParallelBad.good b/test/classes/initializers/phase1/hasParallelBad.good
+index 51ee1a6a061..c06eb364495 100644
+--- a/test/classes/initializers/phase1/hasParallelBad.good
++++ b/test/classes/initializers/phase1/hasParallelBad.good
+@@ -1,2 +1,3 @@
+ hasParallelBad.chpl:5: In initializer:
+-hasParallelBad.chpl:7: error: can't initialize field "a" inside a parallel statement during phase 1 of initialization
++hasParallelBad.chpl:7: error: cannot initialize fields inside cobegin statements
++hasParallelBad.chpl:8: error: cannot initialize fields inside cobegin statements
+diff --git a/test/classes/initializers/phase1/outOfOrderCond.good b/test/classes/initializers/phase1/outOfOrderCond.good
+index 759c77cbaf7..95c05688981 100644
+--- a/test/classes/initializers/phase1/outOfOrderCond.good
++++ b/test/classes/initializers/phase1/outOfOrderCond.good
+@@ -1,3 +1,3 @@
+ outOfOrderCond.chpl:7: In initializer:
+ outOfOrderCond.chpl:10: error: Field "x" initialized out of order
+-outOfOrderCond.chpl:10: note: initialization of fields before .init() call must be in field declaration order
++outOfOrderCond.chpl:12: error: Field "y" initialized out of order
+diff --git a/test/classes/initializers/phase1/setParentField.good b/test/classes/initializers/phase1/setParentField.good
+index 86d91c0c40d..01ebd6f2be4 100644
+--- a/test/classes/initializers/phase1/setParentField.good
++++ b/test/classes/initializers/phase1/setParentField.good
+@@ -1,2 +1,2 @@
+ setParentField.chpl:8: In initializer:
+-setParentField.chpl:9: error: can't set value of field "f1" from parent type before calling this.init() or super.init()
++setParentField.chpl:9: error: Cannot access parent field "f1" before super.init() or this.init()
+diff --git a/test/classes/initializers/phase1/unorderedFields-preferred.good b/test/classes/initializers/phase1/unorderedFields-preferred.good
+index 1076853d1ec..0524b72ea4d 100644
+--- a/test/classes/initializers/phase1/unorderedFields-preferred.good
++++ b/test/classes/initializers/phase1/unorderedFields-preferred.good
+@@ -1,3 +1,2 @@
+ unorderedFields-preferred.chpl:6: In initializer:
+ unorderedFields-preferred.chpl:9: error: Field "f2" initialized out of order
+-unorderedFields-preferred.chpl:9: note: initialization of fields before .init() call must be in field declaration order
+diff --git a/test/classes/initializers/phase1/unorderedFields.good b/test/classes/initializers/phase1/unorderedFields.good
+index 7db5c2538ed..f2f0495e096 100644
+--- a/test/classes/initializers/phase1/unorderedFields.good
++++ b/test/classes/initializers/phase1/unorderedFields.good
+@@ -1,3 +1,2 @@
+ unorderedFields.chpl:6: In initializer:
+ unorderedFields.chpl:9: error: Field "f2" initialized out of order
+-unorderedFields.chpl:9: note: initialization of fields before .init() call must be in field declaration order
+diff --git a/test/classes/initializers/phase1/use-before-method.good b/test/classes/initializers/phase1/use-before-method.good
+index d780d088246..66709468dd4 100644
+--- a/test/classes/initializers/phase1/use-before-method.good
++++ b/test/classes/initializers/phase1/use-before-method.good
+@@ -1,2 +1,2 @@
+ use-before-method.chpl:13: In initializer:
+-use-before-method.chpl:14: error: field "b" used before it is initialized
++use-before-method.chpl:14: error: 'b' is used before it is initialized
+diff --git a/test/classes/initializers/records/declaration.good b/test/classes/initializers/records/declaration.good
+index 9949e744e62..45138a81d88 100644
+--- a/test/classes/initializers/records/declaration.good
++++ b/test/classes/initializers/records/declaration.good
+@@ -1,4 +1 @@
+-declaration.chpl:11: error: unresolved call 'Foo.init()'
+-declaration.chpl:6: note: this candidate did not match: Foo.init(xVal)
+-declaration.chpl:11: note: because call does not supply enough arguments
+-declaration.chpl:6: note: it is missing a value for formal 'xVal'
++declaration.chpl:11: error: unable to resolve call to 'init': no matching candidates
+diff --git a/test/classes/initializers/records/declaration2.good b/test/classes/initializers/records/declaration2.good
+index b8b027291d9..9e5533b7e3f 100644
+--- a/test/classes/initializers/records/declaration2.good
++++ b/test/classes/initializers/records/declaration2.good
+@@ -1,4 +1 @@
+-declaration2.chpl:11: error: unresolved call 'Foo.init()'
+-declaration2.chpl:6: note: this candidate did not match: Foo.init(xVal: int)
+-declaration2.chpl:11: note: because call does not supply enough arguments
+-declaration2.chpl:6: note: it is missing a value for formal 'xVal: int(64)'
++declaration2.chpl:11: error: unable to resolve call to 'init': no matching candidates
+diff --git a/test/classes/initializers/records/generics/assignment/typeAliasError.good b/test/classes/initializers/records/generics/assignment/typeAliasError.good
+index 8f3960f430b..84c6ea9ad20 100644
+--- a/test/classes/initializers/records/generics/assignment/typeAliasError.good
++++ b/test/classes/initializers/records/generics/assignment/typeAliasError.good
+@@ -1,5 +1,3 @@
+-typeAliasError.chpl:13: error: Unable to resolve new-expression with type alias 'Generic(int(64))'
+-typeAliasError.chpl:13: error: unresolved call 'Generic.init(eltType=type int(64), "hello")'
+-typeAliasError.chpl:5: note: this candidate did not match: Generic.init(type eltType, value: eltType)
+-typeAliasError.chpl:13: note: because actual argument #2 with type 'string'
+-typeAliasError.chpl:5: note: is passed to formal 'value: int(64)'
++typeAliasError.chpl:13: error: unable to resolve call to 'init': no matching candidates
++typeAliasError.chpl:5: note: the following candidate didn't match because an actual couldn't be passed to a formal
++typeAliasError.chpl:13: note: omitting 22 more candidates that didn't match
+diff --git a/test/classes/initializers/records/generics/explicitAssignment.good b/test/classes/initializers/records/generics/explicitAssignment.good
+index 80104c2215f..48217bf39cf 100644
+--- a/test/classes/initializers/records/generics/explicitAssignment.good
++++ b/test/classes/initializers/records/generics/explicitAssignment.good
+@@ -1,5 +1,2 @@
+ explicitAssignment.chpl:15: In function 'main':
+-explicitAssignment.chpl:16: error: could not find a copy initializer ('init=') for type 'Foo(real(64))' from type 'Foo(int(64))'
+-explicitAssignment.chpl:3: note: this candidate did not match: Foo.init=(other: this.type)
+-explicitAssignment.chpl:16: note: because actual argument #1 with type 'Foo(int(64))'
+-explicitAssignment.chpl:3: note: is passed to formal 'other: Foo(real(64))'
++explicitAssignment.chpl:16: error: type mismatch between declared type of 'a' and initialization expression
+diff --git a/test/classes/initializers/records/generics/omittedGenerics2.good b/test/classes/initializers/records/generics/omittedGenerics2.good
+index 134894721d7..543bc3fc838 100644
+--- a/test/classes/initializers/records/generics/omittedGenerics2.good
++++ b/test/classes/initializers/records/generics/omittedGenerics2.good
+@@ -1,2 +1,8 @@
+-omittedGenerics2.chpl:9: In initializer:
+-omittedGenerics2.chpl:10: error: can't omit initialization of field "a", no type or default value provided
++omittedGenerics2.chpl:17: In function 'main':
++omittedGenerics2.chpl:19: error: unable to resolve call to 'writeln': no matching candidates
++$CHPL_HOME/modules/standard/ChapelIO.chpl:409: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++omittedGenerics2.chpl:18: note: The actual 'c' expects to be split-initialized because it is declared with a generic type and no initialization expression here
++omittedGenerics2.chpl:19: note: The call to 'writeln' occurs before any valid initialization points
++$CHPL_HOME/modules/standard/ChapelIO.chpl:403: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++omittedGenerics2.chpl:19: note: omitting 1 more candidates that didn't match
++omittedGenerics2.chpl:18: error: cannot default initialize variable using generic or unknown type
+diff --git a/test/classes/initializers/records/where-clause4.good b/test/classes/initializers/records/where-clause4.good
+index 94073f3a4f8..8fa89dc71b4 100644
+--- a/test/classes/initializers/records/where-clause4.good
++++ b/test/classes/initializers/records/where-clause4.good
+@@ -1,3 +1,3 @@
+-where-clause4.chpl:11: error: unresolved call 'Foo.init(3.4)'
+-where-clause4.chpl:5: note: this candidate did not match: Foo.init(xVal)
+-where-clause4.chpl:5: note: because where clause evaluated to false
++where-clause4.chpl:11: error: unable to resolve call to 'init': no matching candidates
++where-clause4.chpl:5: note: the following candidate didn't match because the 'where' clause evaluated to 'false'
++where-clause4.chpl:11: note: omitting 22 more candidates that didn't match
+diff --git a/test/classes/initializers/siblingCall/endsInitBad.good b/test/classes/initializers/siblingCall/endsInitBad.good
+index 2fe65bf69a4..abdbe2af7b5 100644
+--- a/test/classes/initializers/siblingCall/endsInitBad.good
++++ b/test/classes/initializers/siblingCall/endsInitBad.good
+@@ -1,2 +1,3 @@
+ endsInitBad.chpl:5: In initializer:
+-endsInitBad.chpl:6: error: field initialization not allowed before super.init() or this.init()
++endsInitBad.chpl:7: error: field initialization not allowed before 'super.init()' or 'this.init()'
++endsInitBad.chpl:6: note: field 'f2' is initialized before the 'init' call here
+diff --git a/test/classes/initializers/siblingCall/middleBad.good b/test/classes/initializers/siblingCall/middleBad.good
+index 1fe81fdc1ca..b4850381fb6 100644
+--- a/test/classes/initializers/siblingCall/middleBad.good
++++ b/test/classes/initializers/siblingCall/middleBad.good
+@@ -1,2 +1,3 @@
+ middleBad.chpl:5: In initializer:
+-middleBad.chpl:6: error: field initialization not allowed before super.init() or this.init()
++middleBad.chpl:7: error: field initialization not allowed before 'super.init()' or 'this.init()'
++middleBad.chpl:6: note: field 'f2' is initialized before the 'init' call here
+diff --git a/test/classes/initializers/where-clause4.good b/test/classes/initializers/where-clause4.good
+index bcd82c29397..2b989de8c28 100644
+--- a/test/classes/initializers/where-clause4.good
++++ b/test/classes/initializers/where-clause4.good
+@@ -1,3 +1,3 @@
+-where-clause4.chpl:12: error: unresolved call 'Foo.init(3.4)'
+-where-clause4.chpl:5: note: this candidate did not match: Foo.init(xVal)
+-where-clause4.chpl:5: note: because where clause evaluated to false
++where-clause4.chpl:12: error: unable to resolve call to 'init': no matching candidates
++where-clause4.chpl:5: note: the following candidate didn't match because the 'where' clause evaluated to 'false'
++where-clause4.chpl:12: note: omitting 22 more candidates that didn't match
 diff --git a/test/types/POD/elliot/varNotPOD.good b/test/types/POD/elliot/varNotPOD.good
 index 66db8242dd1..1a9cf52c977 100644
 --- a/test/types/POD/elliot/varNotPOD.good
