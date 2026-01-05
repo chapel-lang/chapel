@@ -355,7 +355,7 @@ static const char* errorBreakNonLoop = R"""(
   However, the target is declared as a value of type 'int(64)' here:
       |
     5 |      var outer = 42;
-      |          ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      |      ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
       |
 )""";
 
@@ -407,7 +407,7 @@ static const char* errorNotSplitInit = R"""(
   The actual 'x' expects to be split-initialized because it is declared with a generic type and no initialization expression here:
       |
     3 |   var x: numeric;
-      |       ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      |   ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
       |
   The call to 'foo' occurs before any valid initialization points:
       |
