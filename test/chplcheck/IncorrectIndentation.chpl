@@ -385,4 +385,20 @@ if 1 < 2 {
 
   }
   }
+
+  proc vars()
+  {
+    var a = 10;
+    var b = 20;
+  }
+  proc vars2()
+  {
+    var a = 10;
+     var b = 20;
+  }
+  proc vars3()
+  {
+  var a = 10;
+  var b = 20;
+  }
 }
