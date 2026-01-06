@@ -83,6 +83,11 @@ public:
     return std::make_tuple(lastLine(), lastColumn());
   }
 
+  static Location spanned(const Location& loc1, const Location& loc2) {
+    return Location(loc1.path_, loc1.firstLine_, loc1.firstColumn_,
+                    loc2.lastLine_, loc2.lastColumn_);
+  }
+
   inline bool operator==(const Location& other) const {
     return this->path_ == other.path_ &&
            this->firstLine_ == other.firstLine_ &&

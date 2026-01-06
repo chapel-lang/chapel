@@ -1095,15 +1095,18 @@ proc CyclicArr.dsiAccess(i:rank*idxType) ref {
           locRAD.unlockRAD(rlocIdx);
         }
       }
-      pragma "no copy" pragma "no auto destroy" var myLocRAD = myLocArr.locRAD;
-      pragma "no copy" pragma "no auto destroy" var radata = _to_nonnil(myLocRAD).RAD;
+      pragma "no copy" pragma "no auto destroy"
+      var myLocRAD = myLocArr.locRAD;
+      pragma "no copy" pragma "no auto destroy"
+      var radata = _to_nonnil(myLocRAD).RAD;
       if radata(rlocIdx).data != nil {
         const startIdx = _to_nonnil(myLocArr.locCyclicRAD).startIdx;
         const dimLength = _to_nonnil(myLocArr.locCyclicRAD).targetLocDomDimLength;
         type strType = chpl__signedType(idxType);
         var str: rank*strType;
         for param i in 0..rank-1 {
-          pragma "no copy" pragma "no auto destroy" var whole = dom.whole;
+          pragma "no copy" pragma "no auto destroy"
+          var whole = dom.whole;
           str(i) = whole.dim(i).stride;
         }
         var dataIdx = radata(rlocIdx).getDataIndex(strides, str, i, startIdx, dimLength);

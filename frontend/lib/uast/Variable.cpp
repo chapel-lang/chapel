@@ -36,7 +36,7 @@ void Variable::dumpFieldsInner(const DumpSettings& s) const {
 }
 
 owned<Variable>
-Variable::build(Builder* builder, Location loc,
+Variable::build(Builder* builder, Location loc, Location nameLoc,
                 owned<AttributeGroup> attributeGroup,
                 Decl::Visibility vis,
                 Decl::Linkage linkage,
@@ -84,6 +84,7 @@ Variable::build(Builder* builder, Location loc,
                                typeExpressionChildNum,
                                initExpressionChildNum);
   builder->noteLocation(ret, loc);
+  builder->noteDeclNameLocation(ret, nameLoc);
   return toOwned(ret);
 }
 

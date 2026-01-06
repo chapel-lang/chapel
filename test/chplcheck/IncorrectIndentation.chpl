@@ -5,6 +5,24 @@ module IncorrectIndentation {
     writeln("??");
   }
 
+  public proc f1Pub()
+  {
+    writeln("hi");
+    writeln("??");
+  }
+
+  private proc f1Priv()
+  {
+    writeln("hi");
+    writeln("??");
+  }
+
+  export proc f1Exp()
+  {
+    writeln("hi");
+    writeln("??");
+  }
+
   proc f2()
   {
   writeln("hi");
@@ -79,6 +97,7 @@ module IncorrectIndentation {
         proc firstProc() {}
          proc secondProc() {}
         proc thirdProc() {}
+         forwarding var foo = 10;
 
         proc nestedProcOuter() {
           proc nestedProcInner(x: int) do return x;
@@ -384,5 +403,21 @@ if 1 < 2 {
   if 3 < 4 {
 
   }
+  }
+
+  proc vars()
+  {
+    var a = 10;
+    var b = 20;
+  }
+  proc vars2()
+  {
+    var a = 10;
+     var b = 20;
+  }
+  proc vars3()
+  {
+  var a = 10;
+  var b = 20;
   }
 }

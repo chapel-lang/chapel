@@ -1498,12 +1498,14 @@ class_level_stmt:
            context->noteVisibility(Decl::PUBLIC);} inner_class_level_stmt
     {
       $$ = context->finishStmt($3);
+      context->adjustLocation($$, @1, @3);
       context->visibility = Decl::DEFAULT_VISIBILITY;
     }
 | TPRIVATE {context->noteDeclStartLoc(@1);
             context->noteVisibility(Decl::PRIVATE);} inner_class_level_stmt
     {
       $$ = context->finishStmt($3);
+      context->adjustLocation($$, @1, @3);
       context->visibility = Decl::DEFAULT_VISIBILITY;
     }
 ;
@@ -1615,7 +1617,7 @@ extern_export_decl_stmt:
   }
   var_decl_start var_decl_stmt_inner_ls TSEMI
   {
-    $$ = context->buildVarOrMultiDeclStmt(YLOC2(@1, @2), $4, $5);
+    $$ = context->buildVarOrMultiDeclStmt(YLOC2(@1, @5), $4, $5);
     context->resetDeclState();
   }
 | extern_export_decl_stmt_start opt_expr extern_export_kind_inner
@@ -1625,7 +1627,7 @@ extern_export_decl_stmt:
   }
   type_alias_decl_stmt_inner_ls TSEMI
   {
-    $$ = context->buildVarOrMultiDeclStmt(@1, $3, $5);
+    $$ = context->buildVarOrMultiDeclStmt(YLOC2(@1, @5), $3, $5);
     context->resetDeclState();
   }
 ;
@@ -1633,7 +1635,7 @@ extern_export_decl_stmt:
 extern_block_stmt:
   TEXTERN EXTERNCODE
   {
-    $$ = context->buildExternBlockStmt(@1, $2);
+    $$ = context->buildExternBlockStmt(@$, $2);
   }
 ;
 
@@ -1898,7 +1900,7 @@ if_stmt:
 ifvar:
   TVAR   ident_def TASSIGN expr
   {
-    auto varDecl = Variable::build(BUILDER, LOC(@$),
+    auto varDecl = Variable::build(BUILDER, LOC(@$), LOC(@2),
                                    /*attributeGroup*/ nullptr,
                                    Decl::DEFAULT_VISIBILITY,
                                    Decl::DEFAULT_LINKAGE,
@@ -1909,12 +1911,11 @@ ifvar:
                                    context->currentScopeIsAggregate(),
                                    /*typeExpression*/ nullptr,
                                    toOwned($4));
-    BUILDER->noteDeclNameLocation(varDecl.get(), LOC(@2));
     $$ = varDecl.release();
   }
 | TCONST ident_def TASSIGN expr
   {
-    auto varDecl = Variable::build(BUILDER, LOC(@$),
+    auto varDecl = Variable::build(BUILDER, LOC(@$), LOC(@2),
                                    /*attributeGroup*/ nullptr,
                                    Decl::DEFAULT_VISIBILITY,
                                    Decl::DEFAULT_LINKAGE,
@@ -1925,7 +1926,6 @@ ifvar:
                                    context->currentScopeIsAggregate(),
                                    /*typeExpression*/ nullptr,
                                    toOwned($4));
-    BUILDER->noteDeclNameLocation(varDecl.get(), LOC(@2));
     $$ = varDecl.release();
   }
 ;
@@ -2072,7 +2072,8 @@ catch_expr:
 catch_expr_inner:
   ident_def
   {
-    auto varDecl = Variable::build(BUILDER, LOC(@$), /*attributeGroup*/ nullptr,
+    auto varDecl = Variable::build(BUILDER, LOC(@$), LOC(@1),
+                         /*attributeGroup*/ nullptr,
                          Decl::DEFAULT_VISIBILITY,
                          Decl::DEFAULT_LINKAGE,
                          /*linkageName*/ nullptr,
@@ -2082,12 +2083,12 @@ catch_expr_inner:
                          /*isField*/ false,
                          /*typeExpression*/ nullptr,
                          /*initExpression*/ nullptr);
-    BUILDER->noteDeclNameLocation(varDecl.get(), LOC(@1));
     $$ = varDecl.release();
   }
 | ident_def TCOLON expr
   {
-    auto varDecl = Variable::build(BUILDER, LOC(@$), /*attributeGroup*/ nullptr,
+    auto varDecl = Variable::build(BUILDER, LOC(@$), LOC(@1),
+                         /*attributeGroup*/ nullptr,
                          Decl::DEFAULT_VISIBILITY,
                          Decl::DEFAULT_LINKAGE,
                          /*linkageName*/ nullptr,
@@ -2097,7 +2098,6 @@ catch_expr_inner:
                          /*isField*/ false,
                          /*typeExpression*/ toOwned($3),
                          /*initExpression*/ nullptr);
-    BUILDER->noteDeclNameLocation(varDecl.get(), LOC(@1));
     $$ = varDecl.release();
   }
 ;
@@ -2799,7 +2799,7 @@ type_alias_decl_stmt_start:
 | TCONFIG TTYPE
   {
     context->noteVarDeclKind(Variable::TYPE);
-    context->noteIsVarDeclConfig(true);
+    context->noteIsVarDeclConfig(true, @1);
     $$ = context->buildAttributeGroup(@$).release();
     context->resetAttributeGroupPartsState();
   }
@@ -2820,7 +2820,7 @@ type_alias_decl_stmt_inner:
   ident_def opt_init_type
   {
     // TODO (dlongnecke-cray): Add a helper to build this and var_decl_stmt.
-    auto node = Variable::build(BUILDER, LOC(@$),
+    auto node = Variable::build(BUILDER, LOC(@$), LOC(@1),
                                 /*attributeGroup*/ nullptr,
                                 context->visibility,
                                 context->linkage,
@@ -2831,7 +2831,6 @@ type_alias_decl_stmt_inner:
                                 context->currentScopeIsAggregate(),
                                 /*typeExpression*/ nullptr,
                                 toOwned($2));
-    BUILDER->noteDeclNameLocation(node.get(), LOC(@1));
     // Gather the comments like a statement does.
     $$ = STMT(@1, node.release());
     context->clearComments();
@@ -2864,10 +2863,11 @@ var_decl_stmt:
   TCONFIG
   {
     // Use a mid-rule action to thread along 'isVarDeclConfig'.
-    context->noteIsVarDeclConfig(true);
+    context->noteIsVarDeclConfig(true, @1);
   }
   var_decl_start var_decl_stmt_inner_ls TSEMI {
-    $$ = context->buildVarOrMultiDeclStmt(YLOC2(@1, @2), $3, $4);
+    CHPL_ASSERT(context->isVarDeclConfig);
+    $$ = context->buildVarOrMultiDeclStmt(YLOC2(@1, @4), $3, $4);
     context->resetDeclState();
   }
 | TON expr
@@ -2877,7 +2877,7 @@ var_decl_stmt:
   }
   var_decl_start var_decl_stmt_inner_ls TSEMI
   {
-    $$ = context->buildVarOrMultiDeclStmt(YLOC2(@1, @2), $4, $5);
+    $$ = context->buildVarOrMultiDeclStmt(YLOC2(@1, @5), $4, $5);
     context->resetDeclState();
   }
 | var_decl_start var_decl_stmt_inner_ls TSEMI
@@ -2909,7 +2909,7 @@ var_decl_stmt_inner:
     {
       // delay building the attributes for a variable, then update it later
       // in the context during the call to buildVarOrMultiDeclStmt
-      auto varDecl = Variable::build(BUILDER, LOC(@$),
+      auto varDecl = Variable::build(BUILDER, LOC(@$), LOC(@1),
                                      /*attributGroup*/nullptr,
                                      context->visibility,
                                      context->linkage,
@@ -2919,7 +2919,6 @@ var_decl_stmt_inner:
                                      context->isVarDeclConfig,
                                      context->currentScopeIsAggregate(),
                                      toOwned($2), toOwned($3));
-      BUILDER->noteDeclNameLocation(varDecl.get(), LOC(@1));
       // gather the comments like a statement does
       $$ = STMT(@1, varDecl.release());
       context->clearComments();
