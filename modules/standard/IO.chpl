@@ -2092,23 +2092,22 @@ class _serializeWrapper : writeSerializable {
 
   override proc serialize(writer, ref serializer) throws {
   }
-}
 
   /*
-@chpldoc.nodoc
-operator ==(lhs: _serializeWrapper(?), rhs: _serializeWrapper(?)) {
-  writeln((lhs.type:string, rhs.type:string));
-  writeln((c_ptrTo(lhs.member), c_ptrTo(rhs.member)));
-  return lhs.type == rhs.type && lhs.member == rhs.member;
+  operator ==(lhs: _serializeWrapper(?), rhs: _serializeWrapper(?)) {
+    writeln((lhs.type:string, rhs.type:string));
+    writeln((c_ptrTo(lhs.member), c_ptrTo(rhs.member)));
+    return lhs.type == rhs.type && lhs.member == rhs.member;
+  }
+
+  operator !=(lhs: _serializeWrapper(?), rhs: _serializeWrapper(?)) {
+    writeln((lhs.type:string, rhs.type:string));
+    writeln((c_ptrTo(lhs.member), c_ptrTo(rhs.member)));
+    return lhs.type != rhs.type || lhs.member != rhs.member;
+  }
+*/
 }
 
-@chpldoc.nodoc
-operator !=(lhs: _serializeWrapper(?), rhs: _serializeWrapper(?)) {
-  writeln((lhs.type:string, rhs.type:string));
-  writeln((c_ptrTo(lhs.member), c_ptrTo(rhs.member)));
-  return lhs.type != rhs.type || lhs.member != rhs.member;
-}
-*/
 
 // Get the internal file, bump its reference count, and wrap it in a 'file'.
 private inline
@@ -4277,8 +4276,10 @@ proc fileWriter.init=(x: fileWriter) {
   }
 }
 
+
+// TODO: Make into methods
 @chpldoc.nodoc
-operator ==(lhs: fileWriter(?), rhs: fileWriter(?)) {
+operator fileWriter.==(lhs: fileWriter(?), rhs: fileWriter(?)) {
   if lhs.type != rhs.type then return false;
   return (lhs._home == rhs._home &&
           lhs._channel_internal == rhs._channel_internal &&
@@ -4287,7 +4288,7 @@ operator ==(lhs: fileWriter(?), rhs: fileWriter(?)) {
 }
 
 @chpldoc.nodoc
-operator !=(lhs: fileWriter(?), rhs: fileWriter(?)) {
+operator fileWriter.!=(lhs: fileWriter(?), rhs: fileWriter(?)) {
   return !(lhs == rhs);
 }
   
