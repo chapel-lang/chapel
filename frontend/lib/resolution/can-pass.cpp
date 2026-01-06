@@ -790,6 +790,7 @@ CanPassResult CanPassResult::canConvert(Context* context,
                              /* promotes */ got.promotes(),
                              /* conversion kind */ got.conversionKind() | READS);
       }
+      break;
     }
   }
 
