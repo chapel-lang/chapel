@@ -4986,7 +4986,7 @@ Expr* TConverter::ActualConverter::convertActualWithArg(const FormalActual& fa) 
       fa.formalType().type() != fa.actualType().type()) {
     auto got = canPassScalar(context, fa.actualType(), fa.formalType());
     if (got.converts() &&
-        got.conversionKind() != CanPassResult::TO_REFERENTIAL_TUPLE) {
+        (got.conversionKind() & CanPassResult::TO_REFERENTIAL_TUPLE) == 0) {
       bool isExternFn = parsing::idIsExtern(context, tfs_->untyped()->id());
       if (isExternFn &&
           fa.formalType().type()->isCStringType() &&
@@ -5023,6 +5023,11 @@ Expr* TConverter::ActualConverter::convertActualWithArg(const FormalActual& fa) 
         }
       }
     }
+    // The code above does not expect referential tuple conversion in
+    // addition to other conversions.
+    CHPL_ASSERT(!got.converts() ||
+                (got.conversionKind() & CanPassResult::TO_REFERENTIAL_TUPLE) == 0 ||
+                got.conversionKind() == CanPassResult::TO_REFERENTIAL_TUPLE);
   } else if (SymExpr* se = toSymExpr(temp)) {
     // Insert dereference temps as-needed based on the formal/actual types
     //
