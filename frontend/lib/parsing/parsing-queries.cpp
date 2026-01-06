@@ -62,6 +62,24 @@ namespace parsing {
 
 using namespace uast;
 
+#define FALLBACK_INTERNAL_PREFIX "<chpl internal fallback>"
+
+static std::string getInternalFallbackFileContents(std::string fallbackName) {
+  if (false) {
+    // placeholder for easy code generation
+  }
+  #define START_INTERNAL_MODULE(name__) \
+    else if (fallbackName == std::string(#name__) + ".chpl") { \
+      return "module " #name__ "{\n"
+  #define INTERNAL_TYPE(name, contents__) "  " contents__ "\n"
+  #define END_INTERNAL_MODULE(name__) "}\n"; \
+    }
+  #include "chpl/resolution/all-internal-types-list.h"
+
+  CHPL_ASSERT(false && "unknown internal fallback file");
+  return std::string();
+}
+
 static
 const FileContents& fileTextQuery(Context* context, std::string path) {
   QUERY_BEGIN_INPUT(fileTextQuery, context, path);
@@ -69,7 +87,11 @@ const FileContents& fileTextQuery(Context* context, std::string path) {
   std::string text;
   std::string error;
   const ErrorBase* parseError = nullptr;
-  if (!readFile(path.c_str(), text, error)) {
+  if (path.find(FALLBACK_INTERNAL_PREFIX) == 0) {
+    // this is an internal fallback file
+    std::string fallbackName = path.substr(strlen(FALLBACK_INTERNAL_PREFIX));
+    text = getInternalFallbackFileContents(fallbackName);
+  } else if (!readFile(path.c_str(), text, error)) {
     // TODO does this need to be stored in FileContents?
     context->error(Location(), "error reading file: %s\n", error.c_str());
   }
@@ -1005,6 +1027,30 @@ static std::string getExistingFileInDirectory(Context* context,
   return "";
 }
 
+static std::string constructFallbackInternalPath(const char* modName) {
+  return std::string(FALLBACK_INTERNAL_PREFIX) + modName + ".chpl";
+}
+
+// For some modules that are hooked into by the compiler, provide a
+// (fake) path even if they are found in the module code (or if the module
+// code was not loaded).
+static const std::string& getFallbackInternalModulePath(Context* context, std::string fname) {
+  QUERY_BEGIN(getFallbackInternalModulePath, context, fname);
+
+  std::string result;
+
+  if (false) {
+    // placeholder for easy code generation
+  }
+  #define START_INTERNAL_MODULE(modName) \
+    else if (fname == std::string(#modName) + ".chpl") { \
+      result = constructFallbackInternalPath(#modName); \
+    }
+  #include "chpl/resolution/all-internal-types-list.h"
+
+  return QUERY_END(result);
+}
+
 std::string getExistingFileInModuleSearchPath(Context* context,
                                               const std::string& fname) {
   std::string check;
@@ -1046,6 +1092,11 @@ std::string getExistingFileInModuleSearchPath(Context* context,
       // note the first match that was found
       found = check;
     }
+  }
+
+  if (found.empty()) {
+    // check for internal module fallbacks
+    found = getFallbackInternalModulePath(context, fname);
   }
 
   return found;
