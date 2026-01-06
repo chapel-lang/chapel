@@ -45,6 +45,7 @@ CLASS_BEGIN(AstNode)
 
                auto id = node->id();
                auto parentId = id.parentSymbolId(context);
+               if (parentId.isEmpty()) return nullptr;
                return parsing::idToAst(context, parentId))
   PLAIN_GETTER(AstNode, pragmas, "Get the pragmas of this AST node",
                std::set<std::string>,
