@@ -2214,7 +2214,7 @@ bool scopeExposesAllContents(Context* context,
                              const Scope* checkScope,
                              const Scope* fromScope,
                              ScopeSet& checked,
-                             bool requirePublic = true) {
+                             bool requirePublic) {
   auto pair = checked.insert(fromScope);
   if (pair.second == false) {
     // scope has already been visited by this function,
@@ -2234,11 +2234,14 @@ bool scopeExposesAllContents(Context* context,
       const Scope* usedScope = is.scope();
       // if we just use'd it, yep, fromScope exposes all contents of checkScope
       if (usedScope == checkScope) return true;
-      // check it recursively
+      // check it recursively. At this point, require that the target modules
+      // make the contents public, since we're importing them, which only brings
+      // in public definitions.
       bool found = scopeExposesAllContents(context,
                                            checkScope,
                                            usedScope,
-                                           checked);
+                                           checked,
+                                           /* requirePublic */ true);
       if (found) {
         return true;
       }
