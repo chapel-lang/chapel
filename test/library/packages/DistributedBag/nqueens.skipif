@@ -4,4 +4,4 @@ CHPL_TEST_VGRND_EXE == on
 
 # we observed sporadic & frequent timeouts in oversubscribed runs 
 # captured in https://github.com/chapel-lang/chapel/issues/28261
-GASNET_SPAWNFN == L
+CHPL_RT_OVERSUBSCRIBED == yes
