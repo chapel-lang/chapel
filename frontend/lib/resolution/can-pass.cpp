@@ -767,7 +767,7 @@ CanPassResult CanPassResult::canConvert(Context* context,
   }
 
   // Note (D.F. Dec 1. 2025):
-  // sync int -> sync conversion is handled in production via
+  // sync int -> int conversion is handled in production via
   // canCoerceToCopyType. However, In Dyno, I'd like to make it its own thing,
   // since it's special (requiring resolution of `.readFF`), and since we'd
   // like to generate warnings for it.
