@@ -6392,8 +6392,15 @@ gatherAndFilterCandidates(ResolutionContext* rc,
           poiCandidates, lrcGroups.getForwardingGroups(),
           rejected);
 
-      // append candidates from forwarding
+      // append candidates from forwarding.
+      //
+      // To have arrived here, we must not have found any candidates before,
+      // and firstPoiCandidate = candidates.size() = 0. This would mark our
+      // nonPoiCandidates obtained via forwarding as being POI. Advance
+      // firstPoiCandidate accordingly to make sure non-POI forwarded
+      // methods are not considered POI.
       candidates.takeFromOther(nonPoiCandidates);
+      firstPoiCandidate = candidates.size();
       candidates.takeFromOther(poiCandidates);
     }
 
@@ -6404,6 +6411,7 @@ gatherAndFilterCandidates(ResolutionContext* rc,
       CandidatesAndForwardingInfo fieldCandidates;
       gatherAndFilterScalarFields(rc, ci, inScopes, visited, fieldCandidates);
       candidates.takeFromOther(fieldCandidates);
+      firstPoiCandidate = candidates.size();
     }
   }
 

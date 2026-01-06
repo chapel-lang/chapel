@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+#include "chpl/framework/ErrorBase.h"
 #include "test-resolution.h"
 
 #include "chpl/parsing/parsing-queries.h"
@@ -866,6 +867,125 @@ static void test8() {
   assert(rFoo.mostSpecific().only().fn()->id() == intFooDecl->id());
 }
 
+static void test9() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  // `foo` doesn't use POI, so it should be cacheable. Thus, even though
+  // there are two calls to `foo` (in `ctx`1 and `ctx2`) and even if they
+  // have different POI scopes (because of `unrelated`), they should use
+  // the same cache entry for `foo`, and the warning should only appear once.
+  //
+  // This is a regression test, because it used to be that forwarding
+  // variables (like `inner` in `Outer`) were counted as uses of POI.
+  std::string contents = R"""(
+    record Inner {
+      proc foo(x) {
+        compilerWarning("lol lmao", 1);
+      }
+    }
+
+    record Outer {
+      forwarding var inner: Inner;
+    }
+
+    proc foo(x) {
+      x.foo(42);
+    }
+
+    proc ctx1() {
+      proc unrelated() {}
+      foo(new Outer());
+    }
+
+    proc ctx2() {
+      proc unrelated() {}
+      foo(new Outer());
+    }
+
+    ctx1();
+    ctx2();
+    )""";
+
+
+  // just resolve the program, no intermediate variable info needed.
+  std::ignore = resolveTypesOfVariables(context, contents, {});
+
+  // there should've been exactly one warning.
+  int warnCount = 0;
+  for (auto& error : guard.errors()) {
+    // warnings are split in two ("encountered" and "emitted"). Count only
+    // the "emitted" ones.
+    if (error->type() == ErrorType::UserDiagnosticEncounterWarning) continue;
+
+    if (error->type() == ErrorType::UserDiagnosticEmitWarning) {
+      warnCount++;
+    } else {
+      assert(false && "unexpected error or warning type");
+    }
+  }
+  assert(warnCount == 1);
+
+  guard.realizeErrors();
+}
+
+static void test9b() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  // This time, `foo` does use POI, so it should be re-resolved separately.
+  std::string contents = R"""(
+    record Inner {
+      proc foo(x) {
+        related(x);
+        compilerWarning("lol lmao", 1);
+      }
+    }
+
+    record Outer {
+      forwarding var inner: Inner;
+    }
+
+    proc foo(x) {
+      x.foo(42);
+    }
+
+    proc ctx1() {
+      proc related(x: int) {}
+      foo(new Outer());
+    }
+
+    proc ctx2() {
+      proc related(x: int) {}
+      foo(new Outer());
+    }
+
+    ctx1();
+    ctx2();
+    )""";
+
+
+  // just resolve the program, no intermediate variable info needed.
+  std::ignore = resolveTypesOfVariables(context, contents, {});
+
+  // there should've been two warnings.
+  int warnCount = 0;
+  for (auto& error : guard.errors()) {
+    // warnings are split in two ("encountered" and "emitted"). Count only
+    // the "emitted" ones.
+    if (error->type() == ErrorType::UserDiagnosticEncounterWarning) continue;
+
+    if (error->type() == ErrorType::UserDiagnosticEmitWarning) {
+      warnCount++;
+    } else {
+      assert(false && "unexpected error or warning type");
+    }
+  }
+  assert(warnCount == 2);
+
+  guard.realizeErrors();
+}
+
 
 int main() {
   test1();
@@ -879,6 +999,8 @@ int main() {
   test6();
   test7();
   test8();
+  test9();
+  test9b();
 
   return 0;
 }
