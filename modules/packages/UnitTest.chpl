@@ -495,7 +495,7 @@ module UnitTest {
     :returns: True if within tolerance, else false
     :rtype: bool
 
-    :throws AssertionError: either tolerance is negative
+    :throws IllegalArgumentError: either tolerance is negative
     */
     pragma "insert line file info"
     pragma "always propagate line file info"
@@ -504,7 +504,7 @@ module UnitTest {
                    const in relTol: real=defaultRelTol,
                    const in absTol: real=defaultAbsTol) throws {
       if relTol < 0.0 || absTol < 0.0 {
-        throw new owned AssertionError(
+        throw new owned IllegalArgumentError(
           "relTol and absTol must both be nonnegative.");
       }
       return abs(actual - expected) <= absTol + relTol * abs(expected);
@@ -528,7 +528,8 @@ module UnitTest {
       :arg absTol: absolute tolerance
       :type absTol: real
 
-      :throws Error: If `actual` and `expected` are of different shape.
+      :throws IllegalArgumentError: If `actual` and `expected` are of different
+      shape.
 
       :throws AssertionError: If `actual` is not approximately equal to
       `expected` within the specified tolerance.
@@ -540,9 +541,10 @@ module UnitTest {
                      const in absTol: real=defaultAbsTol): void throws
                      where (isNumericType(T) && !isIntegralType(T)) {
       if actual.shape != expected.shape {
-        throw new owned Error("Actual array shape " + actual.shape:string
-                              + " does not match expected: "
-                              + expected.shape:string);
+        throw new owned IllegalArgumentError(
+          "Actual array shape " + actual.shape:string
+        + " does not match expected: " + expected.shape:string
+        );
       }
       const isWithinTol = withinTol(actual=actual, expected=expected,
                                     relTol=relTol, absTol=absTol);
