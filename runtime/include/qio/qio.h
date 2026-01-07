@@ -1077,7 +1077,7 @@ qioerr qio_channel_write_amt(const int threadsafe, qio_channel_t* restrict ch, c
   qioerr err = 0;
 
   if (len == 0) return err;
-  
+
   if( threadsafe ) {
     err = qio_lock(&ch->lock);
     if( err ) {
