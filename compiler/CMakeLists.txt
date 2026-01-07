@@ -84,7 +84,7 @@ add_custom_command(
   COMMAND ${CHPL_CMAKE_PYTHON}
           ${SRC_DIR}/../util/config/generate-reservedSymbolNames
           ${SRC_DIR}/codegen
-  DEPENDS ${SRC_DIR}/codegen/reservedSymbolNames
+  DEPENDS ${SRC_DIR}/codegen/reservedSymbolNames ${SRC_DIR}/../util/config/generate-reservedSymbolNames
   COMMENT "writing reservedSymbolNames.h file updates..."
   VERBATIM)
 
