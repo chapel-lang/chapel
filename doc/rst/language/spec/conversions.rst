@@ -729,6 +729,58 @@ zero.
 Explicitly converting between ``real(k)`` and ``imag(k)`` will copy the
 represented number while changing whether or not it is imaginary.
 
+Bitwise Numeric Conversions
+'''''''''''''''''''''''''''
+
+Some numeric types can also be explicitly converted using ``transmute``
+to perform a bitwise conversion, changing the type of the value without
+affecting the underlying bit representation.
+
+.. function:: proc real(?w).transmute(type t: uint(w)) : t
+
+.. function:: proc uint(?w).transmute(type t: real(w)) : t
+
+.. function:: proc param real(?w).transmute(type t: uint(w)) param : t
+
+.. function:: proc param uint(?w).transmute(type t: real(w)) param : t
+
+.. warning::
+
+   ``transmute`` is currently an unstable feature and may change in the future.
+
+..
+
+   *Example (transmute.chpl)*
+
+   Suppose that we want to extract the sign bit of a floating-point value.
+   We can use ``transmute`` to convert the floating point value to an
+   unsigned integer type of the same size, and then use bitwise operations
+   to extract the sign bit.
+
+   .. code-block:: chapel
+
+      proc getSignBit(x: real(?w)): uint(w) {
+        const asUInt = x.transmute(uint(w));
+        return asUInt >> (w - 1);
+      }
+
+   We can now use this function to get the sign bit of a ``real(32)`` value:
+
+   .. code-block:: chapel
+
+      var x = -3.14: real(32);
+      var signBit = getSignBit(x);
+
+   .. BLOCK-test-chapelnoprint
+
+      writeln("x is ", x, " : ", x.type:string);
+      writeln("signBit is ", signBit, " : ", signBit.type:string);
+
+   .. BLOCK-test-chapeloutput
+
+      x is -3.14 : real(32)
+      signBit is 1 : uint(32)
+
 .. index::
    single: casts; tuple to complex
 .. _Explicit_Tuple_to_Complex_Conversion:
