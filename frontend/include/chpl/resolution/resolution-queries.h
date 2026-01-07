@@ -384,6 +384,16 @@ const ResolvedFunction* resolveFunction(ResolutionContext* rc,
                                         const PoiScope* poiScope,
                                         bool skipIfRunning = false);
 
+/**
+  Same as resolveFunction, but checks for various cases that would make
+  the function unresolvable (eg, ASt-less compiler-generated fn,
+  not-fully-instantiated fn, etc.)
+
+  */
+const ResolvedFunction* resolveFunctionIfPossible(ResolutionContext* rc,
+                                                  const TypedFnSignature* sig,
+                                                  const PoiScope* poiScope);
+
 
 /**
   Given a scope corresponding to a module, find all visible

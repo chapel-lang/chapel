@@ -369,17 +369,26 @@ compositeTypeIsPod(resolution::ResolutionContext* rc, const Type* t) {
   const uast::AstNode* ast = nullptr;
   if (auto id = ct->id()) ast = parsing::idToAst(context, std::move(id));
 
-  if (auto tfs = tryResolveDeinit(context, ast, t)) {
-    if (!tfs->isCompilerGenerated()) return false;
-  }
-  if (auto tfs = tryResolveInitEq(context, ast, t, t)) {
-    if (!tfs->isCompilerGenerated()) return false;
-  }
-  if (auto tfs = tryResolveAssign(context, ast, t, t)) {
-    if (!tfs->isCompilerGenerated()) return false;
-  }
+  // Error messages issued as part of, e.g., resolving the body of `operator =`,
+  // are not relevant to whether the type has a user-defined init etc..
+  //
+  // As a concrete example, types with `const` fields have a compiler-generated
+  // `operator =` that errors if you use it (because `lhs.constField = rhs.constField`
+  // is not allowed). However, we still treat them as POD.
+  auto result = context->runAndDetectErrors([&](Context* context) {
+    if (auto tfs = tryResolveDeinit(context, ast, t)) {
+      if (!tfs->isCompilerGenerated()) return false;
+    }
+    if (auto tfs = tryResolveInitEq(context, ast, t, t)) {
+      if (!tfs->isCompilerGenerated()) return false;
+    }
+    if (auto tfs = tryResolveAssign(context, ast, t, t)) {
+      if (!tfs->isCompilerGenerated()) return false;
+    }
+    return true;
+  });
 
-  return true;
+  return result.result();
 }
 
 static const bool&
