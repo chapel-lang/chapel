@@ -190,6 +190,12 @@ bool AdjustMaybeRefs::deferErrorForMutatingConstfield(const AstNode* ref, RV& rv
   if (!ref->isIdentifier() && !ref->isDot()) return false;
   if (!mutatedConstFieldIds) return false;
 
+  // TODO: (D.F. Jan 6. 2026) The InitResolver has a very similar logic for
+  //       detecting field access. However, I find the implementation here
+  //       preferrable, since it does not re-search the composite type's fields,
+  //       and relies on toID instead of repeating a name-based lookup.
+  //       Perhaps we should re-integrate this back into InitResolver later.
+
   // Is it a field?
   ID fieldId;
   if (auto refR = rv.byPostorder().byAstOrNull(ref)) {
