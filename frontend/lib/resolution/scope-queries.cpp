@@ -2211,11 +2211,11 @@ getSymbolsAvailableInScope(Context* context,
 }
 
 static
-bool doIsWholeScopeVisibleFromScope(Context* context,
-                                   const Scope* checkScope,
-                                   const Scope* fromScope,
-                                   ScopeSet& checked) {
-
+bool scopeExposesAllContents(Context* context,
+                             const Scope* checkScope,
+                             const Scope* fromScope,
+                             ScopeSet& checked,
+                             bool requirePublic) {
   auto pair = checked.insert(fromScope);
   if (pair.second == false) {
     // scope has already been visited by this function,
@@ -2223,31 +2223,28 @@ bool doIsWholeScopeVisibleFromScope(Context* context,
     return false;
   }
 
-  // go through parent scopes checking for a match
-  for (const Scope* cur = fromScope; cur != nullptr; cur = cur->parentScope()) {
-    if (checkScope == cur) {
-      return true;
-    }
+  if (!fromScope->containsUseImport()) return false;
 
-    if (cur->containsUseImport()) {
-      const ResolvedVisibilityScope* r = resolveVisibilityStmts(context, cur);
+  const ResolvedVisibilityScope* r = resolveVisibilityStmts(context, fromScope);
+  if (r == nullptr) return false;
 
-      if (r != nullptr) {
-        // check for scope containment
-        for (const VisibilitySymbols& is: r->visibilityClauses()) {
-          if (is.kind() == VisibilitySymbols::ALL_CONTENTS) {
-            // find it in the contents
-            const Scope* usedScope = is.scope();
-            // check it recursively
-            bool found = doIsWholeScopeVisibleFromScope(context,
-                                                        checkScope,
-                                                        usedScope,
-                                                        checked);
-            if (found) {
-              return true;
-            }
-          }
-        }
+  // check for scope containment
+  for (const VisibilitySymbols& is: r->visibilityClauses()) {
+    if ((!requirePublic || !is.isPrivate()) && is.kind() == VisibilitySymbols::ALL_CONTENTS) {
+      // find it in the contents
+      const Scope* usedScope = is.scope();
+      // if we just use'd it, yep, fromScope exposes all contents of checkScope
+      if (usedScope == checkScope) return true;
+      // check it recursively. At this point, require that the target modules
+      // make the contents public, since we're importing them, which only brings
+      // in public definitions.
+      bool found = scopeExposesAllContents(context,
+                                           checkScope,
+                                           usedScope,
+                                           checked,
+                                           /* requirePublic */ true);
+      if (found) {
+        return true;
       }
     }
   }
@@ -2255,16 +2252,76 @@ bool doIsWholeScopeVisibleFromScope(Context* context,
   return false;
 }
 
+// If I 'public use' this scope, do I get every single thing that's visible
+// inside it?
+//
+// Fully importable module:
+//   module M1 { var x: int; proc foo() {}; public use Reflection; }
+//
+// Not fully importable modules:
+//   module M2 { private proc foo() {} }
+//   module M3 { use IO; } // IO not re-exported.
+static bool const& isScopeFullyImportable(Context* context,
+                                          const Scope* scope) {
+  QUERY_BEGIN(isScopeFullyImportable, context, scope);
+  bool fullyImportable = true;
+  if (scope->containsRequire()) {
+    // conservative (`require` can produce only public definitions),
+    // but hopefully niche.
+    fullyImportable = false;
+  } else {
+    const ResolvedVisibilityScope* r = resolveVisibilityStmts(context, scope);
+    if (r != nullptr) {
+      for (const VisibilitySymbols& is: r->visibilityClauses()) {
+        if (is.isPrivate() || is.kind() != VisibilitySymbols::ALL_CONTENTS) {
+          // Conservative: one can 'public use X only x; public use X except x'
+          // which together bring in all of X, but this will reject that
+          // since neither is ALL_CONTENTS.
+          fullyImportable = false;
+          break;
+        }
+      }
+    }
+  }
+  return QUERY_END(fullyImportable);
+}
+
 bool isWholeScopeVisibleFromScope(Context* context,
                                   const Scope* checkScope,
                                   const Scope* fromScope) {
 
   ScopeSet checked;
+  checked.insert(fromScope);
 
-  return doIsWholeScopeVisibleFromScope(context,
-                                        checkScope,
-                                        fromScope,
-                                        checked);
+  // There are two ways one scope can be wholly visible from another:
+  //
+  // 1. The 'fromScope' is the same as or a child of the 'checkScope'.
+  // 2. 'fromScope' or one of its parent scopes 'use's 'checkScope',
+  //    bringing in all its contents. However, this is only valid if
+  //    'checkScope' is fully importable (i.e., a 'public use' would
+  //    bring in everything visible in it). Otherwise, we can't replace it
+  //    with different scope that 'public use's it since that would change what
+  //    is visible.
+
+  bool checkScopeFullyImportable = isScopeFullyImportable(context, checkScope);
+  for (const Scope* cur = fromScope; cur != nullptr; cur = cur->parentScope()) {
+    if (checkScope == cur) {
+      return true; // case (1)
+    }
+
+    // here, in the exact scope we're checking, we don't need the 'use' to
+    // be public. We're not checking if fromScope / cur is exposing the whole
+    // of checkScope, just that it can see all of it.
+    if (checkScopeFullyImportable &&
+        scopeExposesAllContents(context,
+                                checkScope,
+                                cur,
+                                checked,
+                                /* requirePublic */ false)) {
+      return true; // case (2)
+    }
+  }
+  return false;
 }
 
 static const bool& isNameBuiltinType(Context* context, UniqueString name) {

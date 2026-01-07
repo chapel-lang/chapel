@@ -986,6 +986,50 @@ static void test9b() {
   guard.realizeErrors();
 }
 
+// regression test: collapsing POI scopes can be overzealous
+static void test10() {
+  std::string contents =
+    R"""(
+    module Lib {
+      proc outermost(x) {
+        return x.type : string;
+      }
+    }
+
+    module A {
+      proc a(x) {
+        return outermost(x);
+      }
+    }
+    module B {
+      private use C;
+      import A.a;
+
+      proc b(x) do return a(x);
+    }
+
+    module C {
+      private use Lib;
+      import B.b;
+
+      proc c(x) do return b(x);
+    }
+
+    module poichain {
+      import C.c;
+
+      record R {}
+
+      var tmp = c(new R());
+    })""";
+
+  auto ctx = buildStdContext();
+  ErrorGuard guard(ctx);
+  auto vars = resolveTypesOfVariables(ctx, contents, {"tmp"});
+
+  assert(vars.at("tmp").type()->isStringType());
+}
+
 
 int main() {
   test1();
@@ -1001,6 +1045,7 @@ int main() {
   test8();
   test9();
   test9b();
+  test10();
 
   return 0;
 }

@@ -1113,20 +1113,32 @@ handleRejectedCandidates(Resolver::CallResultWrapper& result,
   // By performing some processing in the resolver, we can issue a nicer error
   // explaining why each candidate was rejected.
   std::vector<const uast::VarLikeDecl*> actualDecls;
-  actualDecls.resize(rejected.size());
   std::stable_sort(rejected.begin(), rejected.end(),
             [](const ApplicabilityResult& a, const ApplicabilityResult& b) {
-    return a.reason() > b.reason();
+    return a.reason() <= b.reason();
   });
-  std::reverse(rejected.begin(), rejected.end());
+  std::vector<ApplicabilityResult> dedupedRejected;
+  std::unordered_set<const TypedFnSignature*> seenSigs;
+  std::unordered_set<ID> seenIds;
+
   // check each rejected candidate for uninitialized actuals
-  for (size_t i = 0; i < rejected.size(); i++) {
-    auto &candidate = rejected[i];
+  for (auto& candidate : rejected) {
+    if (auto sig = candidate.initialForErr()) {
+      auto result = seenSigs.insert(sig);
+      if (!result.second) continue; // already seen
+    } else {
+      auto result = seenIds.insert(candidate.idForErr());
+      if (!result.second) continue; // already seen
+    }
+    dedupedRejected.push_back(candidate);
+
     if (/* skip computing the formal-actual map because it will go poorly
            with an unknown formal. */
         !candidate.failedDueToWrongActual()) {
+      actualDecls.push_back(nullptr);
       continue;
     }
+
     const uast::AstNode *actualExpr = nullptr;
     const uast::VarLikeDecl *actualDecl = nullptr;
     size_t actualIdx = candidate.actualIdx();
@@ -1143,10 +1155,10 @@ handleRejectedCandidates(Resolver::CallResultWrapper& result,
         actualDecl = var->toVarLikeDecl();
       }
     }
-    actualDecls[i] = actualDecl;
+    actualDecls.push_back(actualDecl);
   }
-  CHPL_ASSERT(rejected.size() == actualDecls.size());
-  result.reportError(result, rejected, actualDecls);
+  CHPL_ASSERT(dedupedRejected.size() == actualDecls.size());
+  result.reportError(result, dedupedRejected, actualDecls);
 }
 
 static void varArgTypeQueryError(Resolver& rv,
