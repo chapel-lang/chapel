@@ -4233,6 +4233,19 @@ void Resolver::validateAndSetMostSpecific(ResolvedExpression& r,
     }
   }
 
+  for (auto msc : mostSpecific) {
+    if (msc.hasSyncReads()) {
+      for (auto& [formalIdx, actualIdx] : msc.syncReads()) {
+        const AstNode* readSource = nullptr;
+        std::ignore = actualIdx; // ideally, we should get the actual AST.
+                                 // In practice, they are tedious to thread through.
+        const AstNode* readDest = msc.fn()->untyped()->formalDecl(formalIdx);
+        reportDeprecatedSyncRead(context, msc.fn()->formalType(formalIdx).type(),
+                                 expr, readSource, readDest);
+      }
+    }
+  }
+
   r.setMostSpecific(mostSpecific);
 }
 

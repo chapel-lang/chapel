@@ -40,6 +40,7 @@ ERROR_CLASS(AmbiguousVisibilityIdentifier, UniqueString, ID, resolution::Matchin
 ERROR_CLASS(AsWithUseExcept, const uast::Use*, const uast::As*)
 ERROR_CLASS(AssignFieldBeforeInit, const uast::FnCall*, std::vector<std::pair<const uast::VarLikeDecl*, ID>>)
 ERROR_CLASS(ConstRefCoercion, const uast::AstNode*, resolution::MostSpecificCandidate)
+WARNING_CLASS(DeprecatedSyncRead, const types::Type*, const uast::AstNode*, const uast::AstNode*, const uast::AstNode*)
 WARNING_CLASS(Deprecation, std::string, const uast::AstNode*, const uast::NamedDecl*)
 ERROR_CLASS(DotExprInUseImport, const uast::VisibilityClause*, const uast::VisibilityClause::LimitationKind, const uast::Dot*)
 ERROR_CLASS(DotTypeOnType, const uast::Dot*, const types::Type*, ID)

@@ -232,6 +232,9 @@ class Type {
   /** returns true if this represents the locale type */
   bool isLocaleType() const;
 
+  /** returns true if this is the _syncvar record. */
+  bool isSyncType() const;
+
   /** returns true if it's string, bytes, or c_string type */
   bool isStringLikeType() const {
     return isStringType() || isBytesType() || isCStringType();

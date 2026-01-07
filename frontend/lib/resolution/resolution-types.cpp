@@ -1437,6 +1437,7 @@ MostSpecificCandidate::fromTypedFnSignature(ResolutionContext* rc,
 
   int coercionFormal = -1;
   int coercionActual = -1;
+  SyncReadsList syncReads;
   for (auto fa : faMap.byFormals()) {
     auto& formalType = fa.formalType();
     auto& actualType = fa.actualType();
@@ -1452,13 +1453,17 @@ MostSpecificCandidate::fromTypedFnSignature(ResolutionContext* rc,
     auto got = canPassFn(rc->context(), actualType, formalType);
     if (got.converts() && formalType.kind() == QualifiedType::CONST_REF &&
         got.conversionKind() != CanPassResult::TO_REFERENTIAL_TUPLE) {
-      coercionFormal = fa.formalIdx();
-      coercionActual = fa.actualIdx();
-      break;
+      if (coercionFormal == -1 && coercionActual == -1) {
+        coercionFormal = fa.formalIdx();
+        coercionActual = fa.actualIdx();
+      }
+    }
+    if (got.conversionKind() & CanPassResult::READS) {
+      syncReads.push_back(std::make_pair(fa.formalIdx(), fa.actualIdx()));
     }
   }
 
-  return MostSpecificCandidate(fn, std::move(newFaMap), promotedFormals, coercionFormal, coercionActual);
+  return MostSpecificCandidate(fn, std::move(newFaMap), promotedFormals, coercionFormal, coercionActual, syncReads);
 }
 
 MostSpecificCandidate

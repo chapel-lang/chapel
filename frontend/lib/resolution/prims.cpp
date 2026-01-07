@@ -881,11 +881,9 @@ static QualifiedType primFamilyIsSubtype(Context* context,
   } else {
     // TODO: Don't count borrowing conversion as implying subtype, since that's
     // not what the spec does.
-    bool isSubType = cpr.passes() &&
-                     (cpr.conversionKind() == CanPassResult::NONE ||
-                      cpr.conversionKind() == CanPassResult::SUBTYPE ||
-                      cpr.conversionKind() == CanPassResult::BORROWS ||
-                      cpr.conversionKind() == CanPassResult::BORROWS_SUBTYPE);
+    bool isSubType =
+      cpr.passes() &&
+      (cpr.conversionKind() & ~(CanPassResult::SUBTYPE | CanPassResult::BORROWS)) == 0;
     if (prim == PRIM_IS_SUBTYPE) {
       result = isSubType;
     } else {

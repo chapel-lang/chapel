@@ -108,7 +108,7 @@ struct TryCatchAnalyzer : BranchSensitiveVisitor<DefaultFrame, ResolvedVisitor<T
       auto resType = getClassTypeForError(context, err, rv);
       auto qt = QualifiedType(QualifiedType::VAR, resType);
       auto passResult = canPass(context, r.type(), qt);
-      using CPR = CanPassResult::ConversionKind;
+      using CPR = CanPassResult;
       if (passResult.passes() && passResult.conversionKind() == CPR::NONE) {
         catchAll = true;
       }
