@@ -28,10 +28,9 @@ proc testList(type R) {
   writeln("empty: ", empty);
 
   l.add(new R(1), "hi");
-  on Locales.last {
-    var arr = l.toArray();
-    writeln("arr: ", arr);
-  }
+
+  var arr = l.toArray();
+  writeln("arr: ", arr);
 }
 
 testList(R1);
