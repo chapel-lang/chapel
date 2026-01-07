@@ -3201,6 +3201,584 @@ index 5c879d8cb43..e18449cd03e 100644
 -floatingPointBadSize.chpl:1: error: illegal type index expression 'real(64)(27)'
 -floatingPointBadSize.chpl:1: note: primitive type 'real(64)' cannot be indexed in this manner
 +floatingPointBadSize.chpl:1: error: invalid numeric type construction
+diff --git a/test/types/string/assignToChar/testAssign.1.good b/test/types/string/assignToChar/testAssign.1.good
+index 3b968ba4f2f..d255937f9c6 100644
+--- a/test/types/string/assignToChar/testAssign.1.good
++++ b/test/types/string/assignToChar/testAssign.1.good
+@@ -1,4 +1,2 @@
+ Helpers.chpl:10: In function 'testAssign':
+-Helpers.chpl:12: error: Cannot assign to int(8) from string
+-Helpers.chpl:12: note: did you mean to call '.toByte()'?
+-  testAssign.chpl:6: called as testAssign(param strBytes = "a", type toType = int(8))
++Helpers.chpl:12: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testAssign.10.good b/test/types/string/assignToChar/testAssign.10.good
+index 9d8d04a093b..655e7c90cdf 100644
+--- a/test/types/string/assignToChar/testAssign.10.good
++++ b/test/types/string/assignToChar/testAssign.10.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:15: In function 'testAssignVal':
+-Helpers.chpl:17: error: Cannot assign to uint(8) from bytes
+-  testAssign.chpl:24: called as testAssignVal(strBytes: bytes, type toType = uint(8))
++Helpers.chpl:17: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testAssign.11.good b/test/types/string/assignToChar/testAssign.11.good
+index dc797458b44..d255937f9c6 100644
+--- a/test/types/string/assignToChar/testAssign.11.good
++++ b/test/types/string/assignToChar/testAssign.11.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:10: In function 'testAssign':
+-Helpers.chpl:12: error: Cannot assign to uint(8) from bytes
+-  testAssign.chpl:26: called as testAssign(param strBytes = b"hello", type toType = uint(8))
++Helpers.chpl:12: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testAssign.12.good b/test/types/string/assignToChar/testAssign.12.good
+index 19bc0950b32..655e7c90cdf 100644
+--- a/test/types/string/assignToChar/testAssign.12.good
++++ b/test/types/string/assignToChar/testAssign.12.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:15: In function 'testAssignVal':
+-Helpers.chpl:17: error: Cannot assign to uint(8) from bytes
+-  testAssign.chpl:28: called as testAssignVal(strBytes: bytes, type toType = uint(8))
++Helpers.chpl:17: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testAssign.13.good b/test/types/string/assignToChar/testAssign.13.good
+index a1e35dddc51..d255937f9c6 100644
+--- a/test/types/string/assignToChar/testAssign.13.good
++++ b/test/types/string/assignToChar/testAssign.13.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:10: In function 'testAssign':
+-Helpers.chpl:12: error: Cannot assign to uint(8) from string
+-  testAssign.chpl:30: called as testAssign(param strBytes = "", type toType = uint(8))
++Helpers.chpl:12: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testAssign.14.good b/test/types/string/assignToChar/testAssign.14.good
+index eb1a5447a89..655e7c90cdf 100644
+--- a/test/types/string/assignToChar/testAssign.14.good
++++ b/test/types/string/assignToChar/testAssign.14.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:15: In function 'testAssignVal':
+-Helpers.chpl:17: error: Cannot assign to uint(8) from string
+-  testAssign.chpl:32: called as testAssignVal(strBytes: string, type toType = uint(8))
++Helpers.chpl:17: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testAssign.2.good b/test/types/string/assignToChar/testAssign.2.good
+index 8d2ff39b70a..655e7c90cdf 100644
+--- a/test/types/string/assignToChar/testAssign.2.good
++++ b/test/types/string/assignToChar/testAssign.2.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:15: In function 'testAssignVal':
+-Helpers.chpl:17: error: Cannot assign to int(8) from string
+-  testAssign.chpl:8: called as testAssignVal(strBytes: string, type toType = int(8))
++Helpers.chpl:17: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testAssign.3.good b/test/types/string/assignToChar/testAssign.3.good
+index 367b9cdd174..d255937f9c6 100644
+--- a/test/types/string/assignToChar/testAssign.3.good
++++ b/test/types/string/assignToChar/testAssign.3.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:10: In function 'testAssign':
+-Helpers.chpl:12: error: Cannot assign to int(8) from string
+-  testAssign.chpl:10: called as testAssign(param strBytes = "hello", type toType = int(8))
++Helpers.chpl:12: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testAssign.4.good b/test/types/string/assignToChar/testAssign.4.good
+index 16c069e84d4..655e7c90cdf 100644
+--- a/test/types/string/assignToChar/testAssign.4.good
++++ b/test/types/string/assignToChar/testAssign.4.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:15: In function 'testAssignVal':
+-Helpers.chpl:17: error: Cannot assign to int(8) from string
+-  testAssign.chpl:12: called as testAssignVal(strBytes: string, type toType = int(8))
++Helpers.chpl:17: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testAssign.5.good b/test/types/string/assignToChar/testAssign.5.good
+index 8bd57e895f2..d255937f9c6 100644
+--- a/test/types/string/assignToChar/testAssign.5.good
++++ b/test/types/string/assignToChar/testAssign.5.good
+@@ -1,4 +1,2 @@
+ Helpers.chpl:10: In function 'testAssign':
+-Helpers.chpl:12: error: Cannot assign to int(8) from string
+-Helpers.chpl:12: note: did you mean to call '.toByte()'?
+-  testAssign.chpl:14: called as testAssign(param strBytes = "a", type toType = int(8))
++Helpers.chpl:12: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testAssign.6.good b/test/types/string/assignToChar/testAssign.6.good
+index 5d83c33c808..655e7c90cdf 100644
+--- a/test/types/string/assignToChar/testAssign.6.good
++++ b/test/types/string/assignToChar/testAssign.6.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:15: In function 'testAssignVal':
+-Helpers.chpl:17: error: Cannot assign to int(8) from string
+-  testAssign.chpl:16: called as testAssignVal(strBytes: string, type toType = int(8))
++Helpers.chpl:17: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testAssign.7.good b/test/types/string/assignToChar/testAssign.7.good
+index 5c4ddf7104f..d255937f9c6 100644
+--- a/test/types/string/assignToChar/testAssign.7.good
++++ b/test/types/string/assignToChar/testAssign.7.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:10: In function 'testAssign':
+-Helpers.chpl:12: error: Cannot assign to int(8) from string
+-  testAssign.chpl:18: called as testAssign(param strBytes = "hello", type toType = int(8))
++Helpers.chpl:12: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testAssign.8.good b/test/types/string/assignToChar/testAssign.8.good
+index 3b9f8998074..655e7c90cdf 100644
+--- a/test/types/string/assignToChar/testAssign.8.good
++++ b/test/types/string/assignToChar/testAssign.8.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:15: In function 'testAssignVal':
+-Helpers.chpl:17: error: Cannot assign to int(8) from string
+-  testAssign.chpl:20: called as testAssignVal(strBytes: string, type toType = int(8))
++Helpers.chpl:17: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testAssign.9.good b/test/types/string/assignToChar/testAssign.9.good
+index 294bb9caee1..d255937f9c6 100644
+--- a/test/types/string/assignToChar/testAssign.9.good
++++ b/test/types/string/assignToChar/testAssign.9.good
+@@ -1,4 +1,2 @@
+ Helpers.chpl:10: In function 'testAssign':
+-Helpers.chpl:12: error: Cannot assign to uint(8) from bytes
+-Helpers.chpl:12: note: did you mean to call '.toByte()'?
+-  testAssign.chpl:22: called as testAssign(param strBytes = b"a", type toType = uint(8))
++Helpers.chpl:12: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testCArray.1.good b/test/types/string/assignToChar/testCArray.1.good
+index 0d98493c2bc..503a2b667ba 100644
+--- a/test/types/string/assignToChar/testCArray.1.good
++++ b/test/types/string/assignToChar/testCArray.1.good
+@@ -1,4 +1,2 @@
+ Helpers.chpl:32: In function 'testCArray':
+-Helpers.chpl:36: error: Cannot assign to int(8) from string
+-Helpers.chpl:36: note: did you mean to call '.toByte()'?
+-  testCArray.chpl:6: called as testCArray(param strBytes = "a", type toType = int(8))
++Helpers.chpl:36: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testCArray.10.good b/test/types/string/assignToChar/testCArray.10.good
+index 6c795c3a7e6..9ca4cd13266 100644
+--- a/test/types/string/assignToChar/testCArray.10.good
++++ b/test/types/string/assignToChar/testCArray.10.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:39: In function 'testCArrayVal':
+-Helpers.chpl:42: error: Cannot assign to uint(8) from string
+-  testCArray.chpl:24: called as testCArrayVal(strBytes: string, type toType = uint(8))
++Helpers.chpl:42: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testCArray.11.good b/test/types/string/assignToChar/testCArray.11.good
+index 00f17b8ac68..7b210399225 100644
+--- a/test/types/string/assignToChar/testCArray.11.good
++++ b/test/types/string/assignToChar/testCArray.11.good
+@@ -1,4 +1,6 @@
+ Helpers.chpl:32: In function 'testCArray':
+-Helpers.chpl:36: error: Cannot assign to uint(8) from string
+-Helpers.chpl:36: note: did you mean to call '.toByte()'?
+-  testCArray.chpl:26: called as testCArray(param strBytes = "hello", type toType = uint(8))
++Helpers.chpl:36: error: unable to resolve call to '=': no matching candidates
++Helpers.chpl:36: error: unable to resolve call to '=': no matching candidates
++Helpers.chpl:36: error: unable to resolve call to '=': no matching candidates
++Helpers.chpl:36: error: unable to resolve call to '=': no matching candidates
++Helpers.chpl:36: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testCArray.12.good b/test/types/string/assignToChar/testCArray.12.good
+index b3fa7d4a28d..9ca4cd13266 100644
+--- a/test/types/string/assignToChar/testCArray.12.good
++++ b/test/types/string/assignToChar/testCArray.12.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:39: In function 'testCArrayVal':
+-Helpers.chpl:42: error: Cannot assign to uint(8) from string
+-  testCArray.chpl:28: called as testCArrayVal(strBytes: string, type toType = uint(8))
++Helpers.chpl:42: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testCArray.14.good b/test/types/string/assignToChar/testCArray.14.good
+index 9131c7dc1f6..9ca4cd13266 100644
+--- a/test/types/string/assignToChar/testCArray.14.good
++++ b/test/types/string/assignToChar/testCArray.14.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:39: In function 'testCArrayVal':
+-Helpers.chpl:42: error: Cannot assign to uint(8) from string
+-  testCArray.chpl:32: called as testCArrayVal(strBytes: string, type toType = uint(8))
++Helpers.chpl:42: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testCArray.2.good b/test/types/string/assignToChar/testCArray.2.good
+index 2a69937ddd7..9ca4cd13266 100644
+--- a/test/types/string/assignToChar/testCArray.2.good
++++ b/test/types/string/assignToChar/testCArray.2.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:39: In function 'testCArrayVal':
+-Helpers.chpl:42: error: Cannot assign to int(8) from string
+-  testCArray.chpl:8: called as testCArrayVal(strBytes: string, type toType = int(8))
++Helpers.chpl:42: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testCArray.3.good b/test/types/string/assignToChar/testCArray.3.good
+index dd2e73f278e..7b210399225 100644
+--- a/test/types/string/assignToChar/testCArray.3.good
++++ b/test/types/string/assignToChar/testCArray.3.good
+@@ -1,4 +1,6 @@
+ Helpers.chpl:32: In function 'testCArray':
+-Helpers.chpl:36: error: Cannot assign to int(8) from string
+-Helpers.chpl:36: note: did you mean to call '.toByte()'?
+-  testCArray.chpl:10: called as testCArray(param strBytes = "hello", type toType = int(8))
++Helpers.chpl:36: error: unable to resolve call to '=': no matching candidates
++Helpers.chpl:36: error: unable to resolve call to '=': no matching candidates
++Helpers.chpl:36: error: unable to resolve call to '=': no matching candidates
++Helpers.chpl:36: error: unable to resolve call to '=': no matching candidates
++Helpers.chpl:36: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testCArray.4.good b/test/types/string/assignToChar/testCArray.4.good
+index 859257463b8..9ca4cd13266 100644
+--- a/test/types/string/assignToChar/testCArray.4.good
++++ b/test/types/string/assignToChar/testCArray.4.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:39: In function 'testCArrayVal':
+-Helpers.chpl:42: error: Cannot assign to int(8) from string
+-  testCArray.chpl:12: called as testCArrayVal(strBytes: string, type toType = int(8))
++Helpers.chpl:42: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testCArray.5.good b/test/types/string/assignToChar/testCArray.5.good
+index 458bb9fef8a..503a2b667ba 100644
+--- a/test/types/string/assignToChar/testCArray.5.good
++++ b/test/types/string/assignToChar/testCArray.5.good
+@@ -1,4 +1,2 @@
+ Helpers.chpl:32: In function 'testCArray':
+-Helpers.chpl:36: error: Cannot assign to int(8) from string
+-Helpers.chpl:36: note: did you mean to call '.toByte()'?
+-  testCArray.chpl:14: called as testCArray(param strBytes = "a", type toType = int(8))
++Helpers.chpl:36: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testCArray.6.good b/test/types/string/assignToChar/testCArray.6.good
+index 75c04910ac6..9ca4cd13266 100644
+--- a/test/types/string/assignToChar/testCArray.6.good
++++ b/test/types/string/assignToChar/testCArray.6.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:39: In function 'testCArrayVal':
+-Helpers.chpl:42: error: Cannot assign to int(8) from string
+-  testCArray.chpl:16: called as testCArrayVal(strBytes: string, type toType = int(8))
++Helpers.chpl:42: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testCArray.7.good b/test/types/string/assignToChar/testCArray.7.good
+index 47a9c2fca83..7b210399225 100644
+--- a/test/types/string/assignToChar/testCArray.7.good
++++ b/test/types/string/assignToChar/testCArray.7.good
+@@ -1,4 +1,6 @@
+ Helpers.chpl:32: In function 'testCArray':
+-Helpers.chpl:36: error: Cannot assign to int(8) from string
+-Helpers.chpl:36: note: did you mean to call '.toByte()'?
+-  testCArray.chpl:18: called as testCArray(param strBytes = "hello", type toType = int(8))
++Helpers.chpl:36: error: unable to resolve call to '=': no matching candidates
++Helpers.chpl:36: error: unable to resolve call to '=': no matching candidates
++Helpers.chpl:36: error: unable to resolve call to '=': no matching candidates
++Helpers.chpl:36: error: unable to resolve call to '=': no matching candidates
++Helpers.chpl:36: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testCArray.8.good b/test/types/string/assignToChar/testCArray.8.good
+index e1f9b0e9a64..9ca4cd13266 100644
+--- a/test/types/string/assignToChar/testCArray.8.good
++++ b/test/types/string/assignToChar/testCArray.8.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:39: In function 'testCArrayVal':
+-Helpers.chpl:42: error: Cannot assign to int(8) from string
+-  testCArray.chpl:20: called as testCArrayVal(strBytes: string, type toType = int(8))
++Helpers.chpl:42: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testCArray.9.good b/test/types/string/assignToChar/testCArray.9.good
+index d003e14f06b..503a2b667ba 100644
+--- a/test/types/string/assignToChar/testCArray.9.good
++++ b/test/types/string/assignToChar/testCArray.9.good
+@@ -1,4 +1,2 @@
+ Helpers.chpl:32: In function 'testCArray':
+-Helpers.chpl:36: error: Cannot assign to uint(8) from string
+-Helpers.chpl:36: note: did you mean to call '.toByte()'?
+-  testCArray.chpl:22: called as testCArray(param strBytes = "a", type toType = uint(8))
++Helpers.chpl:36: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testCall.1.good b/test/types/string/assignToChar/testCall.1.good
+index 75f19921cb2..723e4c05f09 100644
+--- a/test/types/string/assignToChar/testCall.1.good
++++ b/test/types/string/assignToChar/testCall.1.good
+@@ -1,7 +1,3 @@
+ Helpers.chpl:20: In function 'testCall':
+-Helpers.chpl:24: error: unresolved call 'foo("a")'
+-Helpers.chpl:21: note: this candidate did not match: foo(y: int(8))
+-Helpers.chpl:24: note: because actual argument #1 with type 'string'
+-Helpers.chpl:21: note: is passed to formal 'y: int(8)'
+-Helpers.chpl:24: note: did you mean to call '.toByte()'?
+-  testCall.chpl:6: called as testCall(param strBytes = "a", type toType = int(8))
++Helpers.chpl:24: error: unable to resolve call to 'foo': no matching candidates
++Helpers.chpl:21: note: the following candidate didn't match because an actual couldn't be passed to a formal
+diff --git a/test/types/string/assignToChar/testCall.10.good b/test/types/string/assignToChar/testCall.10.good
+index 4d684f96d78..12d5c2a298b 100644
+--- a/test/types/string/assignToChar/testCall.10.good
++++ b/test/types/string/assignToChar/testCall.10.good
+@@ -1,6 +1,3 @@
+ Helpers.chpl:26: In function 'testCallVal':
+-Helpers.chpl:30: error: unresolved call 'foo(string)'
+-Helpers.chpl:27: note: this candidate did not match: foo(y: uint(8))
+-Helpers.chpl:30: note: because actual argument #1 with type 'string'
+-Helpers.chpl:27: note: is passed to formal 'y: uint(8)'
+-  testCall.chpl:24: called as testCallVal(strBytes: string, type toType = uint(8))
++Helpers.chpl:30: error: unable to resolve call to 'foo': no matching candidates
++Helpers.chpl:27: note: the following candidate didn't match because an actual couldn't be passed to a formal
+diff --git a/test/types/string/assignToChar/testCall.11.good b/test/types/string/assignToChar/testCall.11.good
+index e09d2322d54..723e4c05f09 100644
+--- a/test/types/string/assignToChar/testCall.11.good
++++ b/test/types/string/assignToChar/testCall.11.good
+@@ -1,6 +1,3 @@
+ Helpers.chpl:20: In function 'testCall':
+-Helpers.chpl:24: error: unresolved call 'foo("hello")'
+-Helpers.chpl:21: note: this candidate did not match: foo(y: uint(8))
+-Helpers.chpl:24: note: because actual argument #1 with type 'string'
+-Helpers.chpl:21: note: is passed to formal 'y: uint(8)'
+-  testCall.chpl:26: called as testCall(param strBytes = "hello", type toType = uint(8))
++Helpers.chpl:24: error: unable to resolve call to 'foo': no matching candidates
++Helpers.chpl:21: note: the following candidate didn't match because an actual couldn't be passed to a formal
+diff --git a/test/types/string/assignToChar/testCall.12.good b/test/types/string/assignToChar/testCall.12.good
+index 5594dadddbc..12d5c2a298b 100644
+--- a/test/types/string/assignToChar/testCall.12.good
++++ b/test/types/string/assignToChar/testCall.12.good
+@@ -1,6 +1,3 @@
+ Helpers.chpl:26: In function 'testCallVal':
+-Helpers.chpl:30: error: unresolved call 'foo(string)'
+-Helpers.chpl:27: note: this candidate did not match: foo(y: uint(8))
+-Helpers.chpl:30: note: because actual argument #1 with type 'string'
+-Helpers.chpl:27: note: is passed to formal 'y: uint(8)'
+-  testCall.chpl:28: called as testCallVal(strBytes: string, type toType = uint(8))
++Helpers.chpl:30: error: unable to resolve call to 'foo': no matching candidates
++Helpers.chpl:27: note: the following candidate didn't match because an actual couldn't be passed to a formal
+diff --git a/test/types/string/assignToChar/testCall.13.good b/test/types/string/assignToChar/testCall.13.good
+index 8656fd04f61..12d5c2a298b 100644
+--- a/test/types/string/assignToChar/testCall.13.good
++++ b/test/types/string/assignToChar/testCall.13.good
+@@ -1,6 +1,3 @@
+ Helpers.chpl:26: In function 'testCallVal':
+-Helpers.chpl:30: error: unresolved call 'foo(string)'
+-Helpers.chpl:27: note: this candidate did not match: foo(y: uint(8))
+-Helpers.chpl:30: note: because actual argument #1 with type 'string'
+-Helpers.chpl:27: note: is passed to formal 'y: uint(8)'
+-  testCall.chpl:30: called as testCallVal(strBytes: string, type toType = uint(8))
++Helpers.chpl:30: error: unable to resolve call to 'foo': no matching candidates
++Helpers.chpl:27: note: the following candidate didn't match because an actual couldn't be passed to a formal
+diff --git a/test/types/string/assignToChar/testCall.14.good b/test/types/string/assignToChar/testCall.14.good
+index 35a96ecbfe0..12d5c2a298b 100644
+--- a/test/types/string/assignToChar/testCall.14.good
++++ b/test/types/string/assignToChar/testCall.14.good
+@@ -1,6 +1,3 @@
+ Helpers.chpl:26: In function 'testCallVal':
+-Helpers.chpl:30: error: unresolved call 'foo(string)'
+-Helpers.chpl:27: note: this candidate did not match: foo(y: uint(8))
+-Helpers.chpl:30: note: because actual argument #1 with type 'string'
+-Helpers.chpl:27: note: is passed to formal 'y: uint(8)'
+-  testCall.chpl:32: called as testCallVal(strBytes: string, type toType = uint(8))
++Helpers.chpl:30: error: unable to resolve call to 'foo': no matching candidates
++Helpers.chpl:27: note: the following candidate didn't match because an actual couldn't be passed to a formal
+diff --git a/test/types/string/assignToChar/testCall.2.good b/test/types/string/assignToChar/testCall.2.good
+index d390c556b5c..12d5c2a298b 100644
+--- a/test/types/string/assignToChar/testCall.2.good
++++ b/test/types/string/assignToChar/testCall.2.good
+@@ -1,6 +1,3 @@
+ Helpers.chpl:26: In function 'testCallVal':
+-Helpers.chpl:30: error: unresolved call 'foo(string)'
+-Helpers.chpl:27: note: this candidate did not match: foo(y: int(8))
+-Helpers.chpl:30: note: because actual argument #1 with type 'string'
+-Helpers.chpl:27: note: is passed to formal 'y: int(8)'
+-  testCall.chpl:8: called as testCallVal(strBytes: string, type toType = int(8))
++Helpers.chpl:30: error: unable to resolve call to 'foo': no matching candidates
++Helpers.chpl:27: note: the following candidate didn't match because an actual couldn't be passed to a formal
+diff --git a/test/types/string/assignToChar/testCall.3.good b/test/types/string/assignToChar/testCall.3.good
+index 4d02907b74b..723e4c05f09 100644
+--- a/test/types/string/assignToChar/testCall.3.good
++++ b/test/types/string/assignToChar/testCall.3.good
+@@ -1,6 +1,3 @@
+ Helpers.chpl:20: In function 'testCall':
+-Helpers.chpl:24: error: unresolved call 'foo("hello")'
+-Helpers.chpl:21: note: this candidate did not match: foo(y: int(8))
+-Helpers.chpl:24: note: because actual argument #1 with type 'string'
+-Helpers.chpl:21: note: is passed to formal 'y: int(8)'
+-  testCall.chpl:10: called as testCall(param strBytes = "hello", type toType = int(8))
++Helpers.chpl:24: error: unable to resolve call to 'foo': no matching candidates
++Helpers.chpl:21: note: the following candidate didn't match because an actual couldn't be passed to a formal
+diff --git a/test/types/string/assignToChar/testCall.4.good b/test/types/string/assignToChar/testCall.4.good
+index 309361aa728..12d5c2a298b 100644
+--- a/test/types/string/assignToChar/testCall.4.good
++++ b/test/types/string/assignToChar/testCall.4.good
+@@ -1,6 +1,3 @@
+ Helpers.chpl:26: In function 'testCallVal':
+-Helpers.chpl:30: error: unresolved call 'foo(string)'
+-Helpers.chpl:27: note: this candidate did not match: foo(y: int(8))
+-Helpers.chpl:30: note: because actual argument #1 with type 'string'
+-Helpers.chpl:27: note: is passed to formal 'y: int(8)'
+-  testCall.chpl:12: called as testCallVal(strBytes: string, type toType = int(8))
++Helpers.chpl:30: error: unable to resolve call to 'foo': no matching candidates
++Helpers.chpl:27: note: the following candidate didn't match because an actual couldn't be passed to a formal
+diff --git a/test/types/string/assignToChar/testCall.5.good b/test/types/string/assignToChar/testCall.5.good
+index 5abb276c868..723e4c05f09 100644
+--- a/test/types/string/assignToChar/testCall.5.good
++++ b/test/types/string/assignToChar/testCall.5.good
+@@ -1,7 +1,3 @@
+ Helpers.chpl:20: In function 'testCall':
+-Helpers.chpl:24: error: unresolved call 'foo("a")'
+-Helpers.chpl:21: note: this candidate did not match: foo(y: int(8))
+-Helpers.chpl:24: note: because actual argument #1 with type 'string'
+-Helpers.chpl:21: note: is passed to formal 'y: int(8)'
+-Helpers.chpl:24: note: did you mean to call '.toByte()'?
+-  testCall.chpl:14: called as testCall(param strBytes = "a", type toType = int(8))
++Helpers.chpl:24: error: unable to resolve call to 'foo': no matching candidates
++Helpers.chpl:21: note: the following candidate didn't match because an actual couldn't be passed to a formal
+diff --git a/test/types/string/assignToChar/testCall.6.good b/test/types/string/assignToChar/testCall.6.good
+index 390f01c7d2c..12d5c2a298b 100644
+--- a/test/types/string/assignToChar/testCall.6.good
++++ b/test/types/string/assignToChar/testCall.6.good
+@@ -1,6 +1,3 @@
+ Helpers.chpl:26: In function 'testCallVal':
+-Helpers.chpl:30: error: unresolved call 'foo(string)'
+-Helpers.chpl:27: note: this candidate did not match: foo(y: int(8))
+-Helpers.chpl:30: note: because actual argument #1 with type 'string'
+-Helpers.chpl:27: note: is passed to formal 'y: int(8)'
+-  testCall.chpl:16: called as testCallVal(strBytes: string, type toType = int(8))
++Helpers.chpl:30: error: unable to resolve call to 'foo': no matching candidates
++Helpers.chpl:27: note: the following candidate didn't match because an actual couldn't be passed to a formal
+diff --git a/test/types/string/assignToChar/testCall.7.good b/test/types/string/assignToChar/testCall.7.good
+index 81880587b98..723e4c05f09 100644
+--- a/test/types/string/assignToChar/testCall.7.good
++++ b/test/types/string/assignToChar/testCall.7.good
+@@ -1,6 +1,3 @@
+ Helpers.chpl:20: In function 'testCall':
+-Helpers.chpl:24: error: unresolved call 'foo("hello")'
+-Helpers.chpl:21: note: this candidate did not match: foo(y: int(8))
+-Helpers.chpl:24: note: because actual argument #1 with type 'string'
+-Helpers.chpl:21: note: is passed to formal 'y: int(8)'
+-  testCall.chpl:18: called as testCall(param strBytes = "hello", type toType = int(8))
++Helpers.chpl:24: error: unable to resolve call to 'foo': no matching candidates
++Helpers.chpl:21: note: the following candidate didn't match because an actual couldn't be passed to a formal
+diff --git a/test/types/string/assignToChar/testCall.8.good b/test/types/string/assignToChar/testCall.8.good
+index df5fd920812..12d5c2a298b 100644
+--- a/test/types/string/assignToChar/testCall.8.good
++++ b/test/types/string/assignToChar/testCall.8.good
+@@ -1,6 +1,3 @@
+ Helpers.chpl:26: In function 'testCallVal':
+-Helpers.chpl:30: error: unresolved call 'foo(string)'
+-Helpers.chpl:27: note: this candidate did not match: foo(y: int(8))
+-Helpers.chpl:30: note: because actual argument #1 with type 'string'
+-Helpers.chpl:27: note: is passed to formal 'y: int(8)'
+-  testCall.chpl:20: called as testCallVal(strBytes: string, type toType = int(8))
++Helpers.chpl:30: error: unable to resolve call to 'foo': no matching candidates
++Helpers.chpl:27: note: the following candidate didn't match because an actual couldn't be passed to a formal
+diff --git a/test/types/string/assignToChar/testCall.9.good b/test/types/string/assignToChar/testCall.9.good
+index 2795637987c..723e4c05f09 100644
+--- a/test/types/string/assignToChar/testCall.9.good
++++ b/test/types/string/assignToChar/testCall.9.good
+@@ -1,7 +1,3 @@
+ Helpers.chpl:20: In function 'testCall':
+-Helpers.chpl:24: error: unresolved call 'foo("a")'
+-Helpers.chpl:21: note: this candidate did not match: foo(y: uint(8))
+-Helpers.chpl:24: note: because actual argument #1 with type 'string'
+-Helpers.chpl:21: note: is passed to formal 'y: uint(8)'
+-Helpers.chpl:24: note: did you mean to call '.toByte()'?
+-  testCall.chpl:22: called as testCall(param strBytes = "a", type toType = uint(8))
++Helpers.chpl:24: error: unable to resolve call to 'foo': no matching candidates
++Helpers.chpl:21: note: the following candidate didn't match because an actual couldn't be passed to a formal
+diff --git a/test/types/string/assignToChar/testInit.1.good b/test/types/string/assignToChar/testInit.1.good
+index 5a92d70f014..d2d7d3c7726 100644
+--- a/test/types/string/assignToChar/testInit.1.good
++++ b/test/types/string/assignToChar/testInit.1.good
+@@ -1,4 +1,2 @@
+ Helpers.chpl:2: In function 'testInit':
+-Helpers.chpl:3: error: cannot initialize 'x' of type 'int(8)' from '"a"'
+-Helpers.chpl:3: note: did you mean to call '.toByte()'?
+-  testInit.chpl:6: called as testInit(param strBytes = "a", type toType = int(8))
++Helpers.chpl:3: error: type mismatch between declared type of 'x' and initialization expression
+diff --git a/test/types/string/assignToChar/testInit.10.good b/test/types/string/assignToChar/testInit.10.good
+index caa0a51d961..8dfef28f07e 100644
+--- a/test/types/string/assignToChar/testInit.10.good
++++ b/test/types/string/assignToChar/testInit.10.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:6: In function 'testInitVal':
+-Helpers.chpl:7: error: cannot initialize 'x' of type 'uint(8)' from a 'string'
+-  testInit.chpl:24: called as testInitVal(strBytes: string, type toType = uint(8))
++Helpers.chpl:7: error: type mismatch between declared type of 'x' and initialization expression
+diff --git a/test/types/string/assignToChar/testInit.11.good b/test/types/string/assignToChar/testInit.11.good
+index 6b30edde85d..d2d7d3c7726 100644
+--- a/test/types/string/assignToChar/testInit.11.good
++++ b/test/types/string/assignToChar/testInit.11.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:2: In function 'testInit':
+-Helpers.chpl:3: error: cannot initialize 'x' of type 'uint(8)' from '"hello"'
+-  testInit.chpl:26: called as testInit(param strBytes = "hello", type toType = uint(8))
++Helpers.chpl:3: error: type mismatch between declared type of 'x' and initialization expression
+diff --git a/test/types/string/assignToChar/testInit.12.good b/test/types/string/assignToChar/testInit.12.good
+index 5f4e9ccfdff..8dfef28f07e 100644
+--- a/test/types/string/assignToChar/testInit.12.good
++++ b/test/types/string/assignToChar/testInit.12.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:6: In function 'testInitVal':
+-Helpers.chpl:7: error: cannot initialize 'x' of type 'uint(8)' from a 'string'
+-  testInit.chpl:28: called as testInitVal(strBytes: string, type toType = uint(8))
++Helpers.chpl:7: error: type mismatch between declared type of 'x' and initialization expression
+diff --git a/test/types/string/assignToChar/testInit.13.good b/test/types/string/assignToChar/testInit.13.good
+index 43c215d6901..d2d7d3c7726 100644
+--- a/test/types/string/assignToChar/testInit.13.good
++++ b/test/types/string/assignToChar/testInit.13.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:2: In function 'testInit':
+-Helpers.chpl:3: error: cannot initialize 'x' of type 'uint(8)' from '""'
+-  testInit.chpl:30: called as testInit(param strBytes = "", type toType = uint(8))
++Helpers.chpl:3: error: type mismatch between declared type of 'x' and initialization expression
+diff --git a/test/types/string/assignToChar/testInit.14.good b/test/types/string/assignToChar/testInit.14.good
+index 752369134dd..8dfef28f07e 100644
+--- a/test/types/string/assignToChar/testInit.14.good
++++ b/test/types/string/assignToChar/testInit.14.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:6: In function 'testInitVal':
+-Helpers.chpl:7: error: cannot initialize 'x' of type 'uint(8)' from a 'string'
+-  testInit.chpl:32: called as testInitVal(strBytes: string, type toType = uint(8))
++Helpers.chpl:7: error: type mismatch between declared type of 'x' and initialization expression
+diff --git a/test/types/string/assignToChar/testInit.2.good b/test/types/string/assignToChar/testInit.2.good
+index cf23bdb49c5..8dfef28f07e 100644
+--- a/test/types/string/assignToChar/testInit.2.good
++++ b/test/types/string/assignToChar/testInit.2.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:6: In function 'testInitVal':
+-Helpers.chpl:7: error: cannot initialize 'x' of type 'int(8)' from a 'string'
+-  testInit.chpl:8: called as testInitVal(strBytes: string, type toType = int(8))
++Helpers.chpl:7: error: type mismatch between declared type of 'x' and initialization expression
+diff --git a/test/types/string/assignToChar/testInit.3.good b/test/types/string/assignToChar/testInit.3.good
+index ff73bb67e43..d2d7d3c7726 100644
+--- a/test/types/string/assignToChar/testInit.3.good
++++ b/test/types/string/assignToChar/testInit.3.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:2: In function 'testInit':
+-Helpers.chpl:3: error: cannot initialize 'x' of type 'int(8)' from '"hello"'
+-  testInit.chpl:10: called as testInit(param strBytes = "hello", type toType = int(8))
++Helpers.chpl:3: error: type mismatch between declared type of 'x' and initialization expression
+diff --git a/test/types/string/assignToChar/testInit.4.good b/test/types/string/assignToChar/testInit.4.good
+index e43c3df7ec9..8dfef28f07e 100644
+--- a/test/types/string/assignToChar/testInit.4.good
++++ b/test/types/string/assignToChar/testInit.4.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:6: In function 'testInitVal':
+-Helpers.chpl:7: error: cannot initialize 'x' of type 'int(8)' from a 'string'
+-  testInit.chpl:12: called as testInitVal(strBytes: string, type toType = int(8))
++Helpers.chpl:7: error: type mismatch between declared type of 'x' and initialization expression
+diff --git a/test/types/string/assignToChar/testInit.5.good b/test/types/string/assignToChar/testInit.5.good
+index fcbf1bca1eb..d2d7d3c7726 100644
+--- a/test/types/string/assignToChar/testInit.5.good
++++ b/test/types/string/assignToChar/testInit.5.good
+@@ -1,4 +1,2 @@
+ Helpers.chpl:2: In function 'testInit':
+-Helpers.chpl:3: error: cannot initialize 'x' of type 'int(8)' from '"a"'
+-Helpers.chpl:3: note: did you mean to call '.toByte()'?
+-  testInit.chpl:14: called as testInit(param strBytes = "a", type toType = int(8))
++Helpers.chpl:3: error: type mismatch between declared type of 'x' and initialization expression
+diff --git a/test/types/string/assignToChar/testInit.6.good b/test/types/string/assignToChar/testInit.6.good
+index 0bb0dc29f44..8dfef28f07e 100644
+--- a/test/types/string/assignToChar/testInit.6.good
++++ b/test/types/string/assignToChar/testInit.6.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:6: In function 'testInitVal':
+-Helpers.chpl:7: error: cannot initialize 'x' of type 'int(8)' from a 'string'
+-  testInit.chpl:16: called as testInitVal(strBytes: string, type toType = int(8))
++Helpers.chpl:7: error: type mismatch between declared type of 'x' and initialization expression
+diff --git a/test/types/string/assignToChar/testInit.7.good b/test/types/string/assignToChar/testInit.7.good
+index 8d4d7d6d44e..d2d7d3c7726 100644
+--- a/test/types/string/assignToChar/testInit.7.good
++++ b/test/types/string/assignToChar/testInit.7.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:2: In function 'testInit':
+-Helpers.chpl:3: error: cannot initialize 'x' of type 'int(8)' from '"hello"'
+-  testInit.chpl:18: called as testInit(param strBytes = "hello", type toType = int(8))
++Helpers.chpl:3: error: type mismatch between declared type of 'x' and initialization expression
+diff --git a/test/types/string/assignToChar/testInit.8.good b/test/types/string/assignToChar/testInit.8.good
+index 5536f779d07..8dfef28f07e 100644
+--- a/test/types/string/assignToChar/testInit.8.good
++++ b/test/types/string/assignToChar/testInit.8.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:6: In function 'testInitVal':
+-Helpers.chpl:7: error: cannot initialize 'x' of type 'int(8)' from a 'string'
+-  testInit.chpl:20: called as testInitVal(strBytes: string, type toType = int(8))
++Helpers.chpl:7: error: type mismatch between declared type of 'x' and initialization expression
+diff --git a/test/types/string/assignToChar/testInit.9.good b/test/types/string/assignToChar/testInit.9.good
+index fdfde3e45a6..d2d7d3c7726 100644
+--- a/test/types/string/assignToChar/testInit.9.good
++++ b/test/types/string/assignToChar/testInit.9.good
+@@ -1,4 +1,2 @@
+ Helpers.chpl:2: In function 'testInit':
+-Helpers.chpl:3: error: cannot initialize 'x' of type 'uint(8)' from '"a"'
+-Helpers.chpl:3: note: did you mean to call '.toByte()'?
+-  testInit.chpl:22: called as testInit(param strBytes = "a", type toType = uint(8))
++Helpers.chpl:3: error: type mismatch between declared type of 'x' and initialization expression
 diff --git a/test/types/string/diten/multilineStringLineNumber.good b/test/types/string/diten/multilineStringLineNumber.good
 index fe1f3821a85..16a52c3ce0f 100644
 --- a/test/types/string/diten/multilineStringLineNumber.good
