@@ -710,7 +710,7 @@ module Set {
       var count = 0;
       var result: [0..<_htb.tableNumFullSlots] eltType
                 = for x in this do x;
-      
+
       return result;
     }
 
