@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+output=$2
+compopts=$4
+
+# if -st=1|2|3|4 in compopts, then prediff uint(8) to int(8)
+# these tests use char, but on some systems char is unsigned
+if [[ $compopts =~ -st=(1|2|3|4) ]]; then
+  sed 's/uint(8)/int(8)/g' $output > $output.prediff.tmp
+  mv $output.prediff.tmp $output
+fi
