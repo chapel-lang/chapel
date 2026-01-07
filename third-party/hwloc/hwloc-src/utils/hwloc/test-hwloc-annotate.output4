@@ -1,0 +1,435 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE topology SYSTEM "hwloc2.dtd">
+<topology version="2.0">
+  <object type="Machine" os_index="0" cpuset="0x03000003" complete_cpuset="0x03000003" allowed_cpuset="0x03000003" nodeset="0x00000003" complete_nodeset="0x00000003" allowed_nodeset="0x00000003" gp_index="1">
+    <info name="DMIProductName" value="NVIDIA DGX-2H"/>
+    <info name="DMIProductVersion" value="v1.0"/>
+    <info name="DMIBoardVendor" value="NVIDIA"/>
+    <info name="DMIBoardName" value="NVIDIA DGX-2H"/>
+    <info name="Architecture" value="x86_64"/>
+    <info name="hwlocVersion" value="PR-436-20201209.1647.gitfc946998"/>
+    <info name="ProcessName" value="lstopo-no-graphics"/>
+    <info name="Backend" value="NVML"/>
+    <object type="Package" os_index="0" cpuset="0x00000003" complete_cpuset="0x00000003" nodeset="0x00000001" complete_nodeset="0x00000001" gp_index="3">
+      <info name="CPUVendor" value="GenuineIntel"/>
+      <info name="CPUFamilyNumber" value="6"/>
+      <info name="CPUModelNumber" value="85"/>
+      <info name="CPUModel" value="Intel(R) Xeon(R) Platinum 8174 CPU @ 3.10GHz"/>
+      <info name="CPUStepping" value="4"/>
+      <object type="NUMANode" os_index="0" cpuset="0x00000003" complete_cpuset="0x00000003" nodeset="0x00000001" complete_nodeset="0x00000001" gp_index="294" local_memory="810234351616">
+        <page_type size="4096" count="197811121"/>
+        <page_type size="2097152" count="0"/>
+        <page_type size="1073741824" count="0"/>
+      </object>
+      <object type="L3Cache" cpuset="0x00000003" complete_cpuset="0x00000003" nodeset="0x00000001" complete_nodeset="0x00000001" gp_index="8" cache_size="34603008" depth="3" cache_linesize="64" cache_associativity="11" cache_type="0">
+        <info name="Inclusive" value="0"/>
+        <object type="L2Cache" cpuset="0x00000001" complete_cpuset="0x00000001" nodeset="0x00000001" complete_nodeset="0x00000001" gp_index="7" cache_size="1048576" depth="2" cache_linesize="64" cache_associativity="16" cache_type="0">
+          <info name="Inclusive" value="0"/>
+          <object type="L1Cache" cpuset="0x00000001" complete_cpuset="0x00000001" nodeset="0x00000001" complete_nodeset="0x00000001" gp_index="5" cache_size="32768" depth="1" cache_linesize="64" cache_associativity="8" cache_type="1">
+            <info name="Inclusive" value="0"/>
+            <object type="L1iCache" cpuset="0x00000001" complete_cpuset="0x00000001" nodeset="0x00000001" complete_nodeset="0x00000001" gp_index="6" cache_size="32768" depth="1" cache_linesize="64" cache_associativity="8" cache_type="2">
+              <info name="Inclusive" value="0"/>
+              <object type="Core" os_index="0" cpuset="0x00000001" complete_cpuset="0x00000001" nodeset="0x00000001" complete_nodeset="0x00000001" gp_index="2">
+                <object type="PU" os_index="0" cpuset="0x00000001" complete_cpuset="0x00000001" nodeset="0x00000001" complete_nodeset="0x00000001" gp_index="4"/>
+              </object>
+            </object>
+          </object>
+        </object>
+        <object type="L2Cache" cpuset="0x00000002" complete_cpuset="0x00000002" nodeset="0x00000001" complete_nodeset="0x00000001" gp_index="13" cache_size="1048576" depth="2" cache_linesize="64" cache_associativity="16" cache_type="0">
+          <info name="Inclusive" value="0"/>
+          <object type="L1Cache" cpuset="0x00000002" complete_cpuset="0x00000002" nodeset="0x00000001" complete_nodeset="0x00000001" gp_index="11" cache_size="32768" depth="1" cache_linesize="64" cache_associativity="8" cache_type="1">
+            <info name="Inclusive" value="0"/>
+            <object type="L1iCache" cpuset="0x00000002" complete_cpuset="0x00000002" nodeset="0x00000001" complete_nodeset="0x00000001" gp_index="12" cache_size="32768" depth="1" cache_linesize="64" cache_associativity="8" cache_type="2">
+              <info name="Inclusive" value="0"/>
+              <object type="Core" os_index="1" cpuset="0x00000002" complete_cpuset="0x00000002" nodeset="0x00000001" complete_nodeset="0x00000001" gp_index="9">
+                <object type="PU" os_index="1" cpuset="0x00000002" complete_cpuset="0x00000002" nodeset="0x00000001" complete_nodeset="0x00000001" gp_index="10"/>
+              </object>
+            </object>
+          </object>
+        </object>
+      </object>
+      <object type="Bridge" gp_index="713" bridge_type="0-1" depth="0" bridge_pci="0000:[2b-3b]">
+        <object type="Bridge" gp_index="604" bridge_type="1-1" depth="1" bridge_pci="0000:[2c-3b]" pci_busid="0000:2b:00.0" pci_type="0604 [8086:2030] [8086:0000] 04" pci_link_speed="15.753846">
+          <object type="Bridge" gp_index="538" bridge_type="1-1" depth="2" bridge_pci="0000:[2d-3b]" pci_busid="0000:2c:00.0" pci_type="0604 [10b5:9781] [10b5:9781] b0" pci_link_speed="15.753846">
+            <object type="Bridge" gp_index="387" bridge_type="1-1" depth="3" bridge_pci="0000:[32-36]" pci_busid="0000:2d:04.0" pci_type="0604 [10b5:9781] [10b5:9781] b0" pci_link_speed="15.753846">
+              <object type="Bridge" gp_index="709" bridge_type="1-1" depth="4" bridge_pci="0000:[33-36]" pci_busid="0000:32:00.0" pci_type="0604 [10b5:9781] [10b5:9781] b0" pci_link_speed="15.753846">
+                <object type="Bridge" gp_index="645" bridge_type="1-1" depth="5" bridge_pci="0000:[34-34]" pci_busid="0000:33:00.0" pci_type="0604 [10b5:9781] [10b5:9781] b0" pci_link_speed="15.753846">
+                  <object type="PCIDev" gp_index="581" pci_busid="0000:34:00.0" pci_type="0302 [10de:1db8] [10de:131d] a1" pci_link_speed="15.753846">
+                    <object type="OSDev" gp_index="802" name="nvml0" osdev_type="5">
+                      <info name="Backend" value="NVML"/>
+                      <info name="GPUVendor" value="NVIDIA Corporation"/>
+                      <info name="GPUModel" value="Tesla V100-SXM3-32GB-H"/>
+                      <info name="NVIDIASerial" value="0321019030775"/>
+                      <info name="NVIDIAUUID" value="GPU-d3977428-7a30-086b-2e20-5c1eeed647c6"/>
+                    </object>
+                  </object>
+                </object>
+                <object type="Bridge" gp_index="502" bridge_type="1-1" depth="5" bridge_pci="0000:[36-36]" pci_busid="0000:33:10.0" pci_type="0604 [10b5:9781] [10b5:9781] b0" pci_link_speed="15.753846">
+                  <object type="PCIDev" gp_index="452" pci_busid="0000:36:00.0" pci_type="0302 [10de:1db8] [10de:131d] a1" pci_link_speed="15.753846">
+                    <object type="OSDev" gp_index="803" name="nvml1" osdev_type="5">
+                      <info name="Backend" value="NVML"/>
+                      <info name="GPUVendor" value="NVIDIA Corporation"/>
+                      <info name="GPUModel" value="Tesla V100-SXM3-32GB-H"/>
+                      <info name="NVIDIASerial" value="0321019030507"/>
+                      <info name="NVIDIAUUID" value="GPU-5bfda7ef-6aec-a775-5ae1-a1c3dcaef094"/>
+                    </object>
+                  </object>
+                </object>
+              </object>
+            </object>
+            <object type="Bridge" gp_index="430" bridge_type="1-1" depth="3" bridge_pci="0000:[37-3b]" pci_busid="0000:2d:0c.0" pci_type="0604 [10b5:9781] [10b5:9781] b0" pci_link_speed="15.753846">
+              <object type="Bridge" gp_index="391" bridge_type="1-1" depth="4" bridge_pci="0000:[38-3b]" pci_busid="0000:37:00.0" pci_type="0604 [10b5:9781] [10b5:9781] b0" pci_link_speed="15.753846">
+                <object type="Bridge" gp_index="322" bridge_type="1-1" depth="5" bridge_pci="0000:[39-39]" pci_busid="0000:38:00.0" pci_type="0604 [10b5:9781] [10b5:9781] b0" pci_link_speed="15.753846">
+                  <object type="PCIDev" gp_index="669" pci_busid="0000:39:00.0" pci_type="0302 [10de:1db8] [10de:131d] a1" pci_link_speed="15.753846">
+                    <object type="OSDev" gp_index="804" name="nvml2" osdev_type="5">
+                      <info name="Backend" value="NVML"/>
+                      <info name="GPUVendor" value="NVIDIA Corporation"/>
+                      <info name="GPUModel" value="Tesla V100-SXM3-32GB-H"/>
+                      <info name="NVIDIASerial" value="0321019030580"/>
+                      <info name="NVIDIAUUID" value="GPU-22344fb6-c824-994f-a244-d6cc78506ee9"/>
+                    </object>
+                  </object>
+                </object>
+                <object type="Bridge" gp_index="594" bridge_type="1-1" depth="5" bridge_pci="0000:[3b-3b]" pci_busid="0000:38:10.0" pci_type="0604 [10b5:9781] [10b5:9781] b0" pci_link_speed="15.753846">
+                  <object type="PCIDev" gp_index="303" pci_busid="0000:3b:00.0" pci_type="0302 [10de:1db8] [10de:131d] a1" pci_link_speed="15.753846">
+                    <object type="OSDev" gp_index="805" name="nvml3" osdev_type="5">
+                      <info name="Backend" value="NVML"/>
+                      <info name="GPUVendor" value="NVIDIA Corporation"/>
+                      <info name="GPUModel" value="Tesla V100-SXM3-32GB-H"/>
+                      <info name="NVIDIASerial" value="0321019030531"/>
+                      <info name="NVIDIAUUID" value="GPU-76965b61-2da3-d640-e0fd-94e26018d1e8"/>
+                    </object>
+                  </object>
+                </object>
+              </object>
+            </object>
+          </object>
+        </object>
+      </object>
+      <object type="Bridge" gp_index="714" bridge_type="0-1" depth="0" bridge_pci="0000:[4e-67]">
+        <object type="Bridge" gp_index="634" bridge_type="1-1" depth="1" bridge_pci="0000:[4f-67]" pci_busid="0000:4e:00.0" pci_type="0604 [8086:2030] [8086:0000] 04" pci_link_speed="15.753846">
+          <object type="Bridge" gp_index="572" bridge_type="1-1" depth="2" bridge_pci="0000:[50-67]" pci_busid="0000:4f:00.0" pci_type="0604 [10b5:9781] [10b5:9781] b0" pci_link_speed="15.753846">
+            <object type="Bridge" gp_index="565" bridge_type="1-1" depth="3" bridge_pci="0000:[55-59]" pci_busid="0000:50:04.0" pci_type="0604 [10b5:9781] [10b5:9781] b0" pci_link_speed="15.753846">
+              <object type="Bridge" gp_index="332" bridge_type="1-1" depth="4" bridge_pci="0000:[56-59]" pci_busid="0000:55:00.0" pci_type="0604 [10b5:9781] [10b5:9781] b0" pci_link_speed="15.753846">
+                <object type="Bridge" gp_index="677" bridge_type="1-1" depth="5" bridge_pci="0000:[57-57]" pci_busid="0000:56:00.0" pci_type="0604 [10b5:9781] [10b5:9781] b0" pci_link_speed="15.753846">
+                  <object type="PCIDev" gp_index="619" pci_busid="0000:57:00.0" pci_type="0302 [10de:1db8] [10de:131d] a1" pci_link_speed="15.753846">
+                    <object type="OSDev" gp_index="806" name="nvml4" osdev_type="5">
+                      <info name="Backend" value="NVML"/>
+                      <info name="GPUVendor" value="NVIDIA Corporation"/>
+                      <info name="GPUModel" value="Tesla V100-SXM3-32GB-H"/>
+                      <info name="NVIDIASerial" value="0321019030761"/>
+                      <info name="NVIDIAUUID" value="GPU-d256cac8-f12b-b2a2-5487-ee294f6e4617"/>
+                    </object>
+                  </object>
+                </object>
+                <object type="Bridge" gp_index="541" bridge_type="1-1" depth="5" bridge_pci="0000:[59-59]" pci_busid="0000:56:10.0" pci_type="0604 [10b5:9781] [10b5:9781] b0" pci_link_speed="15.753846">
+                  <object type="PCIDev" gp_index="484" pci_busid="0000:59:00.0" pci_type="0302 [10de:1db8] [10de:131d] a1" pci_link_speed="15.753846">
+                    <object type="OSDev" gp_index="807" name="nvml5" osdev_type="5">
+                      <info name="Backend" value="NVML"/>
+                      <info name="GPUVendor" value="NVIDIA Corporation"/>
+                      <info name="GPUModel" value="Tesla V100-SXM3-32GB-H"/>
+                      <info name="NVIDIASerial" value="0321019030590"/>
+                      <info name="NVIDIAUUID" value="GPU-3ab2e4c8-b441-4ab5-a635-17539f9d44ea"/>
+                    </object>
+                  </object>
+                </object>
+              </object>
+            </object>
+            <object type="Bridge" gp_index="615" bridge_type="1-1" depth="3" bridge_pci="0000:[5a-5e]" pci_busid="0000:50:0c.0" pci_type="0604 [10b5:9781] [10b5:9781] b0" pci_link_speed="15.753846">
+              <object type="Bridge" gp_index="599" bridge_type="1-1" depth="4" bridge_pci="0000:[5b-5e]" pci_busid="0000:5a:00.0" pci_type="0604 [10b5:9781] [10b5:9781] b0" pci_link_speed="15.753846">
+                <object type="Bridge" gp_index="531" bridge_type="1-1" depth="5" bridge_pci="0000:[5c-5c]" pci_busid="0000:5b:00.0" pci_type="0604 [10b5:9781] [10b5:9781] b0" pci_link_speed="15.753846">
+                  <object type="PCIDev" gp_index="468" pci_busid="0000:5c:00.0" pci_type="0302 [10de:1db8] [10de:131d] a1" pci_link_speed="15.753846">
+                    <object type="OSDev" gp_index="808" name="nvml6" osdev_type="5">
+                      <info name="Backend" value="NVML"/>
+                      <info name="GPUVendor" value="NVIDIA Corporation"/>
+                      <info name="GPUModel" value="Tesla V100-SXM3-32GB-H"/>
+                      <info name="NVIDIASerial" value="0321019030511"/>
+                      <info name="NVIDIAUUID" value="GPU-38843a43-363a-17f6-2612-7d7403cf2427"/>
+                    </object>
+                  </object>
+                </object>
+                <object type="Bridge" gp_index="396" bridge_type="1-1" depth="5" bridge_pci="0000:[5e-5e]" pci_busid="0000:5b:10.0" pci_type="0604 [10b5:9781] [10b5:9781] b0" pci_link_speed="15.753846">
+                  <object type="PCIDev" gp_index="336" pci_busid="0000:5e:00.0" pci_type="0302 [10de:1db8] [10de:131d] a1" pci_link_speed="15.753846">
+                    <object type="OSDev" gp_index="809" name="nvml7" osdev_type="5">
+                      <info name="Backend" value="NVML"/>
+                      <info name="GPUVendor" value="NVIDIA Corporation"/>
+                      <info name="GPUModel" value="Tesla V100-SXM3-32GB-H"/>
+                      <info name="NVIDIASerial" value="0321019030763"/>
+                      <info name="NVIDIAUUID" value="GPU-7b229693-f79d-a1e4-5c0c-1bed435e7203"/>
+                    </object>
+                  </object>
+                </object>
+              </object>
+            </object>
+            <object type="Bridge" gp_index="512" bridge_type="1-1" depth="3" bridge_pci="0000:[5f-67]" pci_busid="0000:50:10.0" pci_type="0604 [10b5:9781] [10b5:9781] b0" pci_link_speed="3.938462">
+              <object type="Bridge" gp_index="688" bridge_type="1-1" depth="4" bridge_pci="0000:[60-67]" pci_busid="0000:5f:00.0" pci_type="0604 [10b5:8725] [10b5:8725] ca" pci_link_speed="3.938462">
+                <object type="Bridge" gp_index="516" bridge_type="1-1" depth="5" bridge_pci="0000:[61-61]" pci_busid="0000:60:02.0" pci_type="0604 [10b5:8725] [10b5:8725] ca" pci_link_speed="1.000000">
+                  <object type="PCIDev" gp_index="703" subtype="NVSwitch" pci_busid="0000:61:00.0" pci_type="0680 [10de:1ac2] [0000:0000] a1" pci_link_speed="1.000000"/>
+                </object>
+                <object type="Bridge" gp_index="398" bridge_type="1-1" depth="5" bridge_pci="0000:[62-62]" pci_busid="0000:60:03.0" pci_type="0604 [10b5:8725] [10b5:8725] ca" pci_link_speed="1.000000">
+                  <object type="PCIDev" gp_index="637" subtype="NVSwitch" pci_busid="0000:62:00.0" pci_type="0680 [10de:1ac2] [0000:0000] a1" pci_link_speed="1.000000"/>
+                </object>
+                <object type="Bridge" gp_index="678" bridge_type="1-1" depth="5" bridge_pci="0000:[63-63]" pci_busid="0000:60:04.0" pci_type="0604 [10b5:8725] [10b5:8725] ca" pci_link_speed="1.000000">
+                  <object type="PCIDev" gp_index="576" subtype="NVSwitch" pci_busid="0000:63:00.0" pci_type="0680 [10de:1ac2] [0000:0000] a1" pci_link_speed="1.000000"/>
+                </object>
+                <object type="Bridge" gp_index="560" bridge_type="1-1" depth="5" bridge_pci="0000:[65-65]" pci_busid="0000:60:0a.0" pci_type="0604 [10b5:8725] [10b5:8725] ca" pci_link_speed="1.000000">
+                  <object type="PCIDev" gp_index="449" subtype="NVSwitch" pci_busid="0000:65:00.0" pci_type="0680 [10de:1ac2] [0000:0000] a1" pci_link_speed="1.000000"/>
+                </object>
+                <object type="Bridge" gp_index="441" bridge_type="1-1" depth="5" bridge_pci="0000:[66-66]" pci_busid="0000:60:0b.0" pci_type="0604 [10b5:8725] [10b5:8725] ca" pci_link_speed="1.000000">
+                  <object type="PCIDev" gp_index="381" subtype="NVSwitch" pci_busid="0000:66:00.0" pci_type="0000 [0000:0000] [0000:0000] 00" pci_link_speed="1.000000"/>
+                </object>
+                <object type="Bridge" gp_index="313" bridge_type="1-1" depth="5" bridge_pci="0000:[67-67]" pci_busid="0000:60:0c.0" pci_type="0604 [10b5:8725] [10b5:8725] ca" pci_link_speed="1.000000">
+                  <object type="PCIDev" gp_index="317" subtype="NVSwitch" pci_busid="0000:67:00.0" pci_type="0680 [10de:1ac2] [0000:0000] a1" pci_link_speed="1.000000"/>
+                </object>
+              </object>
+            </object>
+          </object>
+        </object>
+      </object>
+    </object>
+    <object type="Package" os_index="1" cpuset="0x03000000" complete_cpuset="0x03000000" nodeset="0x00000002" complete_nodeset="0x00000002" gp_index="125">
+      <info name="CPUVendor" value="GenuineIntel"/>
+      <info name="CPUFamilyNumber" value="6"/>
+      <info name="CPUModelNumber" value="85"/>
+      <info name="CPUModel" value="Intel(R) Xeon(R) Platinum 8174 CPU @ 3.10GHz"/>
+      <info name="CPUStepping" value="4"/>
+      <object type="NUMANode" os_index="1" cpuset="0x03000000" complete_cpuset="0x03000000" nodeset="0x00000002" complete_nodeset="0x00000002" gp_index="295" local_memory="811737923584">
+        <page_type size="4096" count="198178204"/>
+        <page_type size="2097152" count="0"/>
+        <page_type size="1073741824" count="0"/>
+      </object>
+      <object type="L3Cache" cpuset="0x03000000" complete_cpuset="0x03000000" nodeset="0x00000002" complete_nodeset="0x00000002" gp_index="130" cache_size="34603008" depth="3" cache_linesize="64" cache_associativity="11" cache_type="0">
+        <info name="Inclusive" value="0"/>
+        <object type="L2Cache" cpuset="0x01000000" complete_cpuset="0x01000000" nodeset="0x00000002" complete_nodeset="0x00000002" gp_index="129" cache_size="1048576" depth="2" cache_linesize="64" cache_associativity="16" cache_type="0">
+          <info name="Inclusive" value="0"/>
+          <object type="L1Cache" cpuset="0x01000000" complete_cpuset="0x01000000" nodeset="0x00000002" complete_nodeset="0x00000002" gp_index="127" cache_size="32768" depth="1" cache_linesize="64" cache_associativity="8" cache_type="1">
+            <info name="Inclusive" value="0"/>
+            <object type="L1iCache" cpuset="0x01000000" complete_cpuset="0x01000000" nodeset="0x00000002" complete_nodeset="0x00000002" gp_index="128" cache_size="32768" depth="1" cache_linesize="64" cache_associativity="8" cache_type="2">
+              <info name="Inclusive" value="0"/>
+              <object type="Core" os_index="0" cpuset="0x01000000" complete_cpuset="0x01000000" nodeset="0x00000002" complete_nodeset="0x00000002" gp_index="124">
+                <object type="PU" os_index="24" cpuset="0x01000000" complete_cpuset="0x01000000" nodeset="0x00000002" complete_nodeset="0x00000002" gp_index="126"/>
+              </object>
+            </object>
+          </object>
+        </object>
+        <object type="L2Cache" cpuset="0x02000000" complete_cpuset="0x02000000" nodeset="0x00000002" complete_nodeset="0x00000002" gp_index="135" cache_size="1048576" depth="2" cache_linesize="64" cache_associativity="16" cache_type="0">
+          <info name="Inclusive" value="0"/>
+          <object type="L1Cache" cpuset="0x02000000" complete_cpuset="0x02000000" nodeset="0x00000002" complete_nodeset="0x00000002" gp_index="133" cache_size="32768" depth="1" cache_linesize="64" cache_associativity="8" cache_type="1">
+            <info name="Inclusive" value="0"/>
+            <object type="L1iCache" cpuset="0x02000000" complete_cpuset="0x02000000" nodeset="0x00000002" complete_nodeset="0x00000002" gp_index="134" cache_size="32768" depth="1" cache_linesize="64" cache_associativity="8" cache_type="2">
+              <info name="Inclusive" value="0"/>
+              <object type="Core" os_index="1" cpuset="0x02000000" complete_cpuset="0x02000000" nodeset="0x00000002" complete_nodeset="0x00000002" gp_index="131">
+                <object type="PU" os_index="25" cpuset="0x02000000" complete_cpuset="0x02000000" nodeset="0x00000002" complete_nodeset="0x00000002" gp_index="132"/>
+              </object>
+            </object>
+          </object>
+        </object>
+      </object>
+      <object type="Bridge" gp_index="717" bridge_type="0-1" depth="0" bridge_pci="0000:[ae-c7]">
+        <object type="Bridge" gp_index="367" bridge_type="1-1" depth="1" bridge_pci="0000:[af-c7]" pci_busid="0000:ae:00.0" pci_type="0604 [8086:2030] [8086:0000] 04" pci_link_speed="15.753846">
+          <object type="Bridge" gp_index="301" bridge_type="1-1" depth="2" bridge_pci="0000:[b0-c7]" pci_busid="0000:af:00.0" pci_type="0604 [10b5:9797] [10b5:9797] b0" pci_link_speed="15.753846">
+            <object type="Bridge" gp_index="710" bridge_type="1-1" depth="3" bridge_pci="0000:[b5-b9]" pci_busid="0000:b0:04.0" pci_type="0604 [10b5:9797] [10b5:9797] b0" pci_link_speed="15.753846">
+              <object type="Bridge" gp_index="475" bridge_type="1-1" depth="4" bridge_pci="0000:[b6-b9]" pci_busid="0000:b5:00.0" pci_type="0604 [10b5:9781] [10b5:9781] b0" pci_link_speed="15.753846">
+                <object type="Bridge" gp_index="412" bridge_type="1-1" depth="5" bridge_pci="0000:[b7-b7]" pci_busid="0000:b6:00.0" pci_type="0604 [10b5:9781] [10b5:9781] b0" pci_link_speed="15.753846">
+                  <object type="PCIDev" gp_index="348" pci_busid="0000:b7:00.0" pci_type="0302 [10de:1db8] [10de:131d] a1" pci_link_speed="15.753846">
+                    <object type="OSDev" gp_index="810" name="nvml8" osdev_type="5">
+                      <info name="Backend" value="NVML"/>
+                      <info name="GPUVendor" value="NVIDIA Corporation"/>
+                      <info name="GPUModel" value="Tesla V100-SXM3-32GB-H"/>
+                      <info name="NVIDIASerial" value="0321019030554"/>
+                      <info name="NVIDIAUUID" value="GPU-27ce06e8-97e8-a3d3-f1e7-f81e0dff7929"/>
+                    </object>
+                  </object>
+                </object>
+                <object type="Bridge" gp_index="682" bridge_type="1-1" depth="5" bridge_pci="0000:[b9-b9]" pci_busid="0000:b6:10.0" pci_type="0604 [10b5:9781] [10b5:9781] b0" pci_link_speed="15.753846">
+                  <object type="PCIDev" gp_index="628" pci_busid="0000:b9:00.0" pci_type="0302 [10de:1db8] [10de:131d] a1" pci_link_speed="15.753846">
+                    <object type="OSDev" gp_index="811" name="nvml9" osdev_type="5">
+                      <info name="Backend" value="NVML"/>
+                      <info name="GPUVendor" value="NVIDIA Corporation"/>
+                      <info name="GPUModel" value="Tesla V100-SXM3-32GB-H"/>
+                      <info name="NVIDIASerial" value="0321019030481"/>
+                      <info name="NVIDIAUUID" value="GPU-2273aee2-5e2e-6111-598f-936241f55b3a"/>
+                    </object>
+                  </object>
+                </object>
+              </object>
+            </object>
+            <object type="Bridge" gp_index="341" bridge_type="1-1" depth="3" bridge_pci="0000:[ba-be]" pci_busid="0000:b0:0c.0" pci_type="0604 [10b5:9797] [10b5:9797] b0" pci_link_speed="15.753846">
+              <object type="Bridge" gp_index="330" bridge_type="1-1" depth="4" bridge_pci="0000:[bb-be]" pci_busid="0000:ba:00.0" pci_type="0604 [10b5:9781] [10b5:9781] b0" pci_link_speed="15.753846">
+                <object type="Bridge" gp_index="673" bridge_type="1-1" depth="5" bridge_pci="0000:[bc-bc]" pci_busid="0000:bb:00.0" pci_type="0604 [10b5:9781] [10b5:9781] b0" pci_link_speed="15.753846">
+                  <object type="PCIDev" gp_index="613" pci_busid="0000:bc:00.0" pci_type="0302 [10de:1db8] [10de:131d] a1" pci_link_speed="15.753846">
+                    <object type="OSDev" gp_index="812" name="nvml10" osdev_type="5">
+                      <info name="Backend" value="NVML"/>
+                      <info name="GPUVendor" value="NVIDIA Corporation"/>
+                      <info name="GPUModel" value="Tesla V100-SXM3-32GB-H"/>
+                      <info name="NVIDIASerial" value="0321019030523"/>
+                      <info name="NVIDIAUUID" value="GPU-c6564b02-e380-0fc2-5578-3343846a933e"/>
+                    </object>
+                  </object>
+                </object>
+                <object type="Bridge" gp_index="536" bridge_type="1-1" depth="5" bridge_pci="0000:[be-be]" pci_busid="0000:bb:10.0" pci_type="0604 [10b5:9781] [10b5:9781] b0" pci_link_speed="15.753846">
+                  <object type="PCIDev" gp_index="481" pci_busid="0000:be:00.0" pci_type="0302 [10de:1db8] [10de:131d] a1" pci_link_speed="15.753846">
+                    <object type="OSDev" gp_index="813" name="nvml11" osdev_type="5">
+                      <info name="Backend" value="NVML"/>
+                      <info name="GPUVendor" value="NVIDIA Corporation"/>
+                      <info name="GPUModel" value="Tesla V100-SXM3-32GB-H"/>
+                      <info name="NVIDIASerial" value="0321019030513"/>
+                      <info name="NVIDIAUUID" value="GPU-ac01cf74-8232-439e-9722-6edc04a709f1"/>
+                    </object>
+                  </object>
+                </object>
+              </object>
+            </object>
+            <object type="Bridge" gp_index="657" bridge_type="1-1" depth="3" bridge_pci="0000:[bf-c7]" pci_busid="0000:b0:10.0" pci_type="0604 [10b5:9797] [10b5:9797] b0" pci_link_speed="3.938462">
+              <object type="Bridge" gp_index="417" bridge_type="1-1" depth="4" bridge_pci="0000:[c0-c7]" pci_busid="0000:bf:00.0" pci_type="0604 [10b5:8725] [10b5:8725] ca" pci_link_speed="3.938462">
+                <object type="Bridge" gp_index="660" bridge_type="1-1" depth="5" bridge_pci="0000:[c1-c1]" pci_busid="0000:c0:02.0" pci_type="0604 [10b5:8725] [10b5:8725] ca" pci_link_speed="1.000000">
+                  <object type="PCIDev" gp_index="438" subtype="NVSwitch" pci_busid="0000:c1:00.0" pci_type="0680 [10de:1ac2] [0000:0000] a1" pci_link_speed="1.000000"/>
+                </object>
+                <object type="Bridge" gp_index="537" bridge_type="1-1" depth="5" bridge_pci="0000:[c2-c2]" pci_busid="0000:c0:03.0" pci_type="0604 [10b5:8725] [10b5:8725] ca" pci_link_speed="1.000000">
+                  <object type="PCIDev" gp_index="372" subtype="NVSwitch" pci_busid="0000:c2:00.0" pci_type="0680 [10de:1ac2] [0000:0000] a1" pci_link_speed="1.000000"/>
+                </object>
+                <object type="Bridge" gp_index="413" bridge_type="1-1" depth="5" bridge_pci="0000:[c3-c3]" pci_busid="0000:c0:04.0" pci_type="0604 [10b5:8725] [10b5:8725] ca" pci_link_speed="1.000000">
+                  <object type="PCIDev" gp_index="305" subtype="NVSwitch" pci_busid="0000:c3:00.0" pci_type="0680 [10de:1ac2] [0000:0000] a1" pci_link_speed="1.000000"/>
+                </object>
+                <object type="Bridge" gp_index="708" bridge_type="1-1" depth="5" bridge_pci="0000:[c5-c5]" pci_busid="0000:c0:0a.0" pci_type="0604 [10b5:8725] [10b5:8725] ca" pci_link_speed="1.000000">
+                  <object type="PCIDev" gp_index="588" subtype="NVSwitch" pci_busid="0000:c5:00.0" pci_type="0680 [10de:1ac2] [0000:0000] a1" pci_link_speed="1.000000"/>
+                </object>
+                <object type="Bridge" gp_index="582" bridge_type="1-1" depth="5" bridge_pci="0000:[c6-c6]" pci_busid="0000:c0:0b.0" pci_type="0604 [10b5:8725] [10b5:8725] ca" pci_link_speed="1.000000">
+                  <object type="PCIDev" gp_index="521" subtype="NVSwitch" pci_busid="0000:c6:00.0" pci_type="0680 [10de:1ac2] [0000:0000] a1" pci_link_speed="1.000000"/>
+                </object>
+                <object type="Bridge" gp_index="458" bridge_type="1-1" depth="5" bridge_pci="0000:[c7-c7]" pci_busid="0000:c0:0c.0" pci_type="0604 [10b5:8725] [10b5:8725] ca" pci_link_speed="1.000000">
+                  <object type="PCIDev" gp_index="463" subtype="NVSwitch" pci_busid="0000:c7:00.0" pci_type="0680 [10de:1ac2] [0000:0000] a1" pci_link_speed="1.000000"/>
+                </object>
+              </object>
+            </object>
+          </object>
+        </object>
+      </object>
+      <object type="Bridge" gp_index="718" bridge_type="0-1" depth="0" bridge_pci="0000:[d7-e7]">
+        <object type="Bridge" gp_index="575" bridge_type="1-1" depth="1" bridge_pci="0000:[d8-e7]" pci_busid="0000:d7:00.0" pci_type="0604 [8086:2030] [8086:0000] 04" pci_link_speed="15.753846">
+          <object type="Bridge" gp_index="507" bridge_type="1-1" depth="2" bridge_pci="0000:[d9-e7]" pci_busid="0000:d8:00.0" pci_type="0604 [10b5:9781] [10b5:9781] b0" pci_link_speed="15.753846">
+            <object type="Bridge" gp_index="360" bridge_type="1-1" depth="3" bridge_pci="0000:[de-e2]" pci_busid="0000:d9:04.0" pci_type="0604 [10b5:9781] [10b5:9781] b0" pci_link_speed="15.753846">
+              <object type="Bridge" gp_index="296" bridge_type="1-1" depth="4" bridge_pci="0000:[df-e2]" pci_busid="0000:de:00.0" pci_type="0604 [10b5:9781] [10b5:9781] b0" pci_link_speed="15.753846">
+                <object type="Bridge" gp_index="649" bridge_type="1-1" depth="5" bridge_pci="0000:[e0-e0]" pci_busid="0000:df:00.0" pci_type="0604 [10b5:9781] [10b5:9781] b0" pci_link_speed="15.753846">
+                  <object type="PCIDev" gp_index="315" pci_busid="0000:e0:00.0" pci_type="0302 [10de:1db8] [10de:131d] a1" pci_link_speed="15.753846">
+                    <object type="OSDev" gp_index="814" name="nvml12" osdev_type="5">
+                      <info name="Backend" value="NVML"/>
+                      <info name="GPUVendor" value="NVIDIA Corporation"/>
+                      <info name="GPUModel" value="Tesla V100-SXM3-32GB-H"/>
+                      <info name="NVIDIASerial" value="0321019030586"/>
+                      <info name="NVIDIAUUID" value="GPU-ac1a8e86-5183-b838-64c9-71a0c82facc5"/>
+                    </object>
+                  </object>
+                </object>
+                <object type="Bridge" gp_index="504" bridge_type="1-1" depth="5" bridge_pci="0000:[e2-e2]" pci_busid="0000:df:10.0" pci_type="0604 [10b5:9781] [10b5:9781] b0" pci_link_speed="15.753846">
+                  <object type="PCIDev" gp_index="602" pci_busid="0000:e2:00.0" pci_type="0302 [10de:1db8] [10de:131d] a1" pci_link_speed="15.753846">
+                    <object type="OSDev" gp_index="815" name="nvml13" osdev_type="5">
+                      <info name="Backend" value="NVML"/>
+                      <info name="GPUVendor" value="NVIDIA Corporation"/>
+                      <info name="GPUModel" value="Tesla V100-SXM3-32GB-H"/>
+                      <info name="NVIDIASerial" value="0321019030538"/>
+                      <info name="NVIDIAUUID" value="GPU-117d7ff7-4a49-dbf9-f5a9-dc711bdae1f1"/>
+                    </object>
+                  </object>
+                </object>
+              </object>
+            </object>
+            <object type="Bridge" gp_index="400" bridge_type="1-1" depth="3" bridge_pci="0000:[e3-e7]" pci_busid="0000:d9:0c.0" pci_type="0604 [10b5:9781] [10b5:9781] b0" pci_link_speed="15.753846">
+              <object type="Bridge" gp_index="535" bridge_type="1-1" depth="4" bridge_pci="0000:[e4-e7]" pci_busid="0000:e3:00.0" pci_type="0604 [10b5:9781] [10b5:9781] b0" pci_link_speed="15.753846">
+                <object type="Bridge" gp_index="470" bridge_type="1-1" depth="5" bridge_pci="0000:[e5-e5]" pci_busid="0000:e4:00.0" pci_type="0604 [10b5:9781] [10b5:9781] b0" pci_link_speed="15.753846">
+                  <object type="PCIDev" gp_index="406" pci_busid="0000:e5:00.0" pci_type="0302 [10de:1db8] [10de:131d] a1" pci_link_speed="15.753846">
+                    <object type="OSDev" gp_index="816" name="nvml14" osdev_type="5">
+                      <info name="Backend" value="NVML"/>
+                      <info name="GPUVendor" value="NVIDIA Corporation"/>
+                      <info name="GPUModel" value="Tesla V100-SXM3-32GB-H"/>
+                      <info name="NVIDIASerial" value="0321019030537"/>
+                      <info name="NVIDIAUUID" value="GPU-a0d678a2-2f59-9091-84e4-bfc5961a195e"/>
+                    </object>
+                  </object>
+                </object>
+                <object type="Bridge" gp_index="331" bridge_type="1-1" depth="5" bridge_pci="0000:[e7-e7]" pci_busid="0000:e4:10.0" pci_type="0604 [10b5:9781] [10b5:9781] b0" pci_link_speed="15.753846">
+                  <object type="PCIDev" gp_index="690" pci_busid="0000:e7:00.0" pci_type="0302 [10de:1db8] [10de:131d] a1" pci_link_speed="15.753846">
+                    <object type="OSDev" gp_index="817" name="nvml15" osdev_type="5">
+                      <info name="Backend" value="NVML"/>
+                      <info name="GPUVendor" value="NVIDIA Corporation"/>
+                      <info name="GPUModel" value="Tesla V100-SXM3-32GB-H"/>
+                      <info name="NVIDIASerial" value="0321019030765"/>
+                      <info name="NVIDIAUUID" value="GPU-bb4648d3-e72b-4bac-a32f-4c9f3e4eb547"/>
+                    </object>
+                  </object>
+                </object>
+              </object>
+            </object>
+          </object>
+        </object>
+      </object>
+    </object>
+  </object>
+  <distances2 type="NUMANode" nbobjs="2" kind="5" name="NUMALatency" indexing="os">
+    <indexes length="4">0 1 </indexes>
+    <u64values length="12">10 21 21 10 </u64values>
+  </distances2>
+  <distances2hetero nbobjs="17" kind="25" name="NVLinkBandwidth">
+    <indexes length="100">OSDev:802 OSDev:803 OSDev:804 OSDev:805 OSDev:806 OSDev:807 OSDev:808 OSDev:809 OSDev:810 OSDev:811 </indexes>
+    <indexes length="71">OSDev:812 OSDev:813 OSDev:814 OSDev:815 OSDev:816 OSDev:817 PCIDev:449 </indexes>
+    <u64values length="20">0 0 0 0 0 0 0 0 0 0 </u64values>
+    <u64values length="25">0 0 0 0 0 0 150000 0 0 0 </u64values>
+    <u64values length="20">0 0 0 0 0 0 0 0 0 0 </u64values>
+    <u64values length="25">0 0 0 150000 0 0 0 0 0 0 </u64values>
+    <u64values length="20">0 0 0 0 0 0 0 0 0 0 </u64values>
+    <u64values length="25">150000 0 0 0 0 0 0 0 0 0 </u64values>
+    <u64values length="25">0 0 0 0 0 0 0 150000 0 0 </u64values>
+    <u64values length="20">0 0 0 0 0 0 0 0 0 0 </u64values>
+    <u64values length="25">0 0 0 0 150000 0 0 0 0 0 </u64values>
+    <u64values length="20">0 0 0 0 0 0 0 0 0 0 </u64values>
+    <u64values length="25">0 150000 0 0 0 0 0 0 0 0 </u64values>
+    <u64values length="25">0 0 0 0 0 0 0 0 150000 0 </u64values>
+    <u64values length="20">0 0 0 0 0 0 0 0 0 0 </u64values>
+    <u64values length="25">0 0 0 0 0 150000 0 0 0 0 </u64values>
+    <u64values length="20">0 0 0 0 0 0 0 0 0 0 </u64values>
+    <u64values length="25">0 0 150000 0 0 0 0 0 0 0 </u64values>
+    <u64values length="25">0 0 0 0 0 0 0 0 0 150000 </u64values>
+    <u64values length="20">0 0 0 0 0 0 0 0 0 0 </u64values>
+    <u64values length="25">0 0 0 0 0 0 150000 0 0 0 </u64values>
+    <u64values length="20">0 0 0 0 0 0 0 0 0 0 </u64values>
+    <u64values length="25">0 0 0 150000 0 0 0 0 0 0 </u64values>
+    <u64values length="20">0 0 0 0 0 0 0 0 0 0 </u64values>
+    <u64values length="25">150000 0 0 0 0 0 0 0 0 0 </u64values>
+    <u64values length="25">0 0 0 0 0 0 0 150000 0 0 </u64values>
+    <u64values length="20">0 0 0 0 0 0 0 0 0 0 </u64values>
+    <u64values length="25">0 0 0 0 150000 0 0 0 0 0 </u64values>
+    <u64values length="20">0 0 0 0 0 0 0 0 0 0 </u64values>
+    <u64values length="65">0 150000 150000 150000 150000 150000 150000 150000 150000 150000 </u64values>
+    <u64values length="58">150000 150000 150000 150000 150000 150000 150000 150000 0 </u64values>
+  </distances2hetero>
+  <support name="discovery.pu"/>
+  <support name="discovery.numa"/>
+  <support name="discovery.numa_memory"/>
+  <support name="discovery.disallowed_pu"/>
+  <support name="discovery.disallowed_numa"/>
+  <support name="cpubind.set_thisproc_cpubind"/>
+  <support name="cpubind.get_thisproc_cpubind"/>
+  <support name="cpubind.set_proc_cpubind"/>
+  <support name="cpubind.get_proc_cpubind"/>
+  <support name="cpubind.set_thisthread_cpubind"/>
+  <support name="cpubind.get_thisthread_cpubind"/>
+  <support name="cpubind.set_thread_cpubind"/>
+  <support name="cpubind.get_thread_cpubind"/>
+  <support name="cpubind.get_thisproc_last_cpu_location"/>
+  <support name="cpubind.get_proc_last_cpu_location"/>
+  <support name="cpubind.get_thisthread_last_cpu_location"/>
+  <support name="membind.set_thisthread_membind"/>
+  <support name="membind.get_thisthread_membind"/>
+  <support name="membind.set_area_membind"/>
+  <support name="membind.get_area_membind"/>
+  <support name="membind.alloc_membind"/>
+  <support name="membind.firsttouch_membind"/>
+  <support name="membind.bind_membind"/>
+  <support name="membind.interleave_membind"/>
+  <support name="membind.migrate_membind"/>
+  <support name="membind.get_area_memlocation"/>
+  <support name="custom.exported_support"/>
+  <cpukind cpuset="0x03000003">
+    <info name="FrequencyMaxMHz" value="3900"/>
+  </cpukind>
+</topology>

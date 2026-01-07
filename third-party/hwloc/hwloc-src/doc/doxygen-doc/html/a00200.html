@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Hardware Locality (hwloc): Remove distances between objects</title>
+<title>Hardware Locality (hwloc): Interoperability with OpenCL</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -18,7 +18,7 @@
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Hardware Locality (hwloc)<span id="projectnumber">&#160;2.11.2</span>
+   <div id="projectname">Hardware Locality (hwloc)<span id="projectnumber">&#160;2.12.2</span>
    </div>
   </td>
  </tr>
@@ -41,112 +41,27 @@ $(function() {
 <div class="header">
   <div class="summary">
 <a href="#func-members">Functions</a>  </div>
-  <div class="headertitle"><div class="title">Remove distances between objects</div></div>
+  <div class="headertitle"><div class="title">Interoperability with OpenCL</div></div>
 </div><!--header-->
 <div class="contents">
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:gac188d9b64d9560255ce5f6d0a20f9c0a" id="r_gac188d9b64d9560255ce5f6d0a20f9c0a"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00200.html#gac188d9b64d9560255ce5f6d0a20f9c0a">hwloc_distances_remove</a> (<a class="el" href="a00175.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology)</td></tr>
-<tr class="separator:gac188d9b64d9560255ce5f6d0a20f9c0a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaa642a4c1a21c84f38ae23fca8a27845d" id="r_gaa642a4c1a21c84f38ae23fca8a27845d"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00200.html#gaa642a4c1a21c84f38ae23fca8a27845d">hwloc_distances_remove_by_depth</a> (<a class="el" href="a00175.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, int depth)</td></tr>
-<tr class="separator:gaa642a4c1a21c84f38ae23fca8a27845d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga93db53773c96f5b83815e8441e2ebb93" id="r_ga93db53773c96f5b83815e8441e2ebb93"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00200.html#ga93db53773c96f5b83815e8441e2ebb93">hwloc_distances_remove_by_type</a> (<a class="el" href="a00175.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, <a class="el" href="a00173.html#gacd37bb612667dc437d66bfb175a8dc55">hwloc_obj_type_t</a> type)</td></tr>
-<tr class="separator:ga93db53773c96f5b83815e8441e2ebb93"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga80bbf6f0db9af48c61780dd5152664c2" id="r_ga80bbf6f0db9af48c61780dd5152664c2"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00200.html#ga80bbf6f0db9af48c61780dd5152664c2">hwloc_distances_release_remove</a> (<a class="el" href="a00175.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, struct <a class="el" href="a00302.html">hwloc_distances_s</a> *distances)</td></tr>
-<tr class="separator:ga80bbf6f0db9af48c61780dd5152664c2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga8517e9e9fbc25561bb82f591b2d4ec4f" id="r_ga8517e9e9fbc25561bb82f591b2d4ec4f"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00200.html#ga8517e9e9fbc25561bb82f591b2d4ec4f">hwloc_opencl_get_device_pci_busid</a> (cl_device_id device, unsigned *domain, unsigned *bus, unsigned *dev, unsigned *func)</td></tr>
+<tr class="separator:ga8517e9e9fbc25561bb82f591b2d4ec4f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga7a440bdd8015737c4970fdcd4349fe7f" id="r_ga7a440bdd8015737c4970fdcd4349fe7f"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00200.html#ga7a440bdd8015737c4970fdcd4349fe7f">hwloc_opencl_get_device_cpuset</a> (<a class="el" href="a00166.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, cl_device_id device, <a class="el" href="a00163.html#ga4bbf39b68b6f568fb92739e7c0ea7801">hwloc_cpuset_t</a> set)</td></tr>
+<tr class="separator:ga7a440bdd8015737c4970fdcd4349fe7f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae3d1e395ac0208c85860dfafe26c4dfc" id="r_gae3d1e395ac0208c85860dfafe26c4dfc"><td class="memItemLeft" align="right" valign="top"><a class="el" href="a00165.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00200.html#gae3d1e395ac0208c85860dfafe26c4dfc">hwloc_opencl_get_device_osdev_by_index</a> (<a class="el" href="a00166.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, unsigned platform_index, unsigned device_index)</td></tr>
+<tr class="separator:gae3d1e395ac0208c85860dfafe26c4dfc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae0c20d8b43763abaff74e500ed4f1162" id="r_gae0c20d8b43763abaff74e500ed4f1162"><td class="memItemLeft" align="right" valign="top"><a class="el" href="a00165.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00200.html#gae0c20d8b43763abaff74e500ed4f1162">hwloc_opencl_get_device_osdev</a> (<a class="el" href="a00166.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, cl_device_id device)</td></tr>
+<tr class="separator:gae0c20d8b43763abaff74e500ed4f1162"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<p>This interface offers ways to retrieve topology information about OpenCL devices.</p>
+<p>Only AMD and NVIDIA OpenCL implementations currently offer useful locality information about their devices. </p>
 <h2 class="groupheader">Function Documentation</h2>
-<a id="ga80bbf6f0db9af48c61780dd5152664c2" name="ga80bbf6f0db9af48c61780dd5152664c2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga80bbf6f0db9af48c61780dd5152664c2">&#9670;&#160;</a></span>hwloc_distances_release_remove()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">int hwloc_distances_release_remove </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="a00175.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
-          <td class="paramname"><em>topology</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">struct <a class="el" href="a00302.html">hwloc_distances_s</a> *&#160;</td>
-          <td class="paramname"><em>distances</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Release and remove the given distance matrice from the topology. </p>
-<p>This function includes a call to <a class="el" href="a00197.html#ga1dd78c1f9acd54f26aba0e284e97e51d" title="Release a distance matrix structure previously returned by hwloc_distances_get().">hwloc_distances_release()</a>.</p>
-<dl class="section return"><dt>Returns</dt><dd>0 on success, -1 on error. </dd></dl>
-
-</div>
-</div>
-<a id="gac188d9b64d9560255ce5f6d0a20f9c0a" name="gac188d9b64d9560255ce5f6d0a20f9c0a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gac188d9b64d9560255ce5f6d0a20f9c0a">&#9670;&#160;</a></span>hwloc_distances_remove()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">int hwloc_distances_remove </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="a00175.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
-          <td class="paramname"><em>topology</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Remove all distance matrices from a topology. </p>
-<p>Remove all distance matrices, either provided by the user or gathered through the OS.</p>
-<p>If these distances were used to group objects, these additional Group objects are not removed from the topology.</p>
-<dl class="section return"><dt>Returns</dt><dd>0 on success, -1 on error. </dd></dl>
-
-</div>
-</div>
-<a id="gaa642a4c1a21c84f38ae23fca8a27845d" name="gaa642a4c1a21c84f38ae23fca8a27845d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gaa642a4c1a21c84f38ae23fca8a27845d">&#9670;&#160;</a></span>hwloc_distances_remove_by_depth()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">int hwloc_distances_remove_by_depth </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="a00175.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
-          <td class="paramname"><em>topology</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>depth</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Remove distance matrices for objects at a specific depth in the topology. </p>
-<p>Identical to <a class="el" href="a00200.html#gac188d9b64d9560255ce5f6d0a20f9c0a" title="Remove all distance matrices from a topology.">hwloc_distances_remove()</a> but only applies to one level of the topology.</p>
-<dl class="section return"><dt>Returns</dt><dd>0 on success, -1 on error. </dd></dl>
-
-</div>
-</div>
-<a id="ga93db53773c96f5b83815e8441e2ebb93" name="ga93db53773c96f5b83815e8441e2ebb93"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga93db53773c96f5b83815e8441e2ebb93">&#9670;&#160;</a></span>hwloc_distances_remove_by_type()</h2>
+<a id="ga7a440bdd8015737c4970fdcd4349fe7f" name="ga7a440bdd8015737c4970fdcd4349fe7f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga7a440bdd8015737c4970fdcd4349fe7f">&#9670;&#160;</a></span>hwloc_opencl_get_device_cpuset()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -155,16 +70,22 @@ Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">static int hwloc_distances_remove_by_type </td>
+          <td class="memname">int hwloc_opencl_get_device_cpuset </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="a00175.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="a00166.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
           <td class="paramname"><em>topology</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="a00173.html#gacd37bb612667dc437d66bfb175a8dc55">hwloc_obj_type_t</a>&#160;</td>
-          <td class="paramname"><em>type</em>&#160;</td>
+          <td class="paramtype">cl_device_id&#160;</td>
+          <td class="paramname"><em>device</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="a00163.html#ga4bbf39b68b6f568fb92739e7c0ea7801">hwloc_cpuset_t</a>&#160;</td>
+          <td class="paramname"><em>set</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -174,14 +95,174 @@ Functions</h2></td></tr>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
-<p>Remove distance matrices for objects of a specific type in the topology. </p>
-<p>Identical to <a class="el" href="a00200.html#gac188d9b64d9560255ce5f6d0a20f9c0a" title="Remove all distance matrices from a topology.">hwloc_distances_remove()</a> but only applies to one level of the topology.</p>
-<dl class="section return"><dt>Returns</dt><dd>0 on success, -1 on error. </dd></dl>
+<p>Get the CPU set of processors that are physically close to OpenCL device <code>device</code>. </p>
+<p>Store in <code>set</code> the CPU-set describing the locality of the OpenCL device <code>device</code>.</p>
+<p>Topology <code>topology</code> and device <code>device</code> must match the local machine. I/O devices detection and the OpenCL component are not needed in the topology.</p>
+<p>The function only returns the locality of the device. If more information about the device is needed, OS objects should be used instead, see <a class="el" href="a00200.html#gae0c20d8b43763abaff74e500ed4f1162" title="Get the hwloc OS device object corresponding to OpenCL device deviceX.">hwloc_opencl_get_device_osdev()</a> and <a class="el" href="a00200.html#gae3d1e395ac0208c85860dfafe26c4dfc" title="Get the hwloc OS device object corresponding to the OpenCL device for the given indexes.">hwloc_opencl_get_device_osdev_by_index()</a>.</p>
+<p>This function is currently only implemented in a meaningful way for Linux with the AMD or NVIDIA OpenCL implementation; other systems will simply get a full cpuset.</p>
+<dl class="section return"><dt>Returns</dt><dd>0 on success. </dd>
+<dd>
+-1 on error, for instance if the device could not be found. </dd></dl>
+
+</div>
+</div>
+<a id="gae0c20d8b43763abaff74e500ed4f1162" name="gae0c20d8b43763abaff74e500ed4f1162"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gae0c20d8b43763abaff74e500ed4f1162">&#9670;&#160;</a></span>hwloc_opencl_get_device_osdev()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="a00165.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> hwloc_opencl_get_device_osdev </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="a00166.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
+          <td class="paramname"><em>topology</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">cl_device_id&#160;</td>
+          <td class="paramname"><em>device</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Get the hwloc OS device object corresponding to OpenCL device <code>deviceX</code>. </p>
+<dl class="section return"><dt>Returns</dt><dd>The hwloc OS device object corresponding to the given OpenCL device <code>device</code>. </dd>
+<dd>
+<code>NULL</code> if none could be found, for instance if required OpenCL attributes are not available.</dd></dl>
+<p>This function currently only works on AMD and NVIDIA OpenCL devices that support relevant OpenCL extensions. <a class="el" href="a00200.html#gae3d1e395ac0208c85860dfafe26c4dfc" title="Get the hwloc OS device object corresponding to the OpenCL device for the given indexes.">hwloc_opencl_get_device_osdev_by_index()</a> should be preferred whenever possible, i.e. when platform and device index are known.</p>
+<p>Topology <code>topology</code> and device <code>device</code> must match the local machine. I/O devices detection and the OpenCL component must be enabled in the topology. If not, the locality of the object may still be found using <a class="el" href="a00200.html#ga7a440bdd8015737c4970fdcd4349fe7f" title="Get the CPU set of processors that are physically close to OpenCL device device.">hwloc_opencl_get_device_cpuset()</a>.</p>
+<dl class="section note"><dt>Note</dt><dd>This function cannot work if PCI devices are filtered out.</dd>
+<dd>
+The corresponding hwloc PCI device may be found by looking at the result parent pointer (unless PCI devices are filtered out). </dd></dl>
+
+</div>
+</div>
+<a id="gae3d1e395ac0208c85860dfafe26c4dfc" name="gae3d1e395ac0208c85860dfafe26c4dfc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gae3d1e395ac0208c85860dfafe26c4dfc">&#9670;&#160;</a></span>hwloc_opencl_get_device_osdev_by_index()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="a00165.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> hwloc_opencl_get_device_osdev_by_index </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="a00166.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
+          <td class="paramname"><em>topology</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned&#160;</td>
+          <td class="paramname"><em>platform_index</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned&#160;</td>
+          <td class="paramname"><em>device_index</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Get the hwloc OS device object corresponding to the OpenCL device for the given indexes. </p>
+<dl class="section return"><dt>Returns</dt><dd>The hwloc OS device object describing the OpenCL device whose platform index is <code>platform_index</code>, and whose device index within this platform if <code>device_index</code>. </dd>
+<dd>
+<code>NULL</code> if there is none.</dd></dl>
+<p>The topology <code>topology</code> does not necessarily have to match the current machine. For instance the topology may be an XML import of a remote host. I/O devices detection and the OpenCL component must be enabled in the topology.</p>
+<dl class="section note"><dt>Note</dt><dd>The corresponding PCI device object can be obtained by looking at the OS device parent object (unless PCI devices are filtered out). </dd></dl>
+
+</div>
+</div>
+<a id="ga8517e9e9fbc25561bb82f591b2d4ec4f" name="ga8517e9e9fbc25561bb82f591b2d4ec4f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga8517e9e9fbc25561bb82f591b2d4ec4f">&#9670;&#160;</a></span>hwloc_opencl_get_device_pci_busid()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int hwloc_opencl_get_device_pci_busid </td>
+          <td>(</td>
+          <td class="paramtype">cl_device_id&#160;</td>
+          <td class="paramname"><em>device</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned *&#160;</td>
+          <td class="paramname"><em>domain</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned *&#160;</td>
+          <td class="paramname"><em>bus</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned *&#160;</td>
+          <td class="paramname"><em>dev</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned *&#160;</td>
+          <td class="paramname"><em>func</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Return the domain, bus and device IDs of the OpenCL device <code>device</code>. </p>
+<p>Device <code>device</code> must match the local machine.</p>
+<dl class="section return"><dt>Returns</dt><dd>0 on success. </dd>
+<dd>
+-1 on error, for instance if device information could not be found. </dd></dl>
 
 </div>
 </div>

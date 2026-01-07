@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020-2023 Inria.  All rights reserved.
+ * Copyright © 2020-2024 Inria.  All rights reserved.
  * See COPYING in top-level directory.
  */
 
@@ -10,7 +10,13 @@
 
 extern ze_result_t zesInit(int);
 
+typedef void * zes_driver_handle_t;
 typedef void * zes_device_handle_t;
+
+typedef ze_device_uuid_t zes_uuid_t;
+
+extern ze_result_t zesDriverGet(uint32_t *, zes_driver_handle_t *);
+extern ze_result_t zesDriverGetDeviceByUuidExp(zes_driver_handle_t, zes_uuid_t, zes_device_handle_t *, ze_bool_t *, uint32_t *);
 
 typedef struct {
   char *vendorName;
