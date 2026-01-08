@@ -1148,9 +1148,7 @@ public:
     symbols.insert(sym);
   }
   bool contains(const char* name) const {
-    return reserved.find(name) != reserved.end() ||
-           std::find_if(symbols.begin(), symbols.end(),
-                        [name](auto s) { return s->cname == name; }) != symbols.end();
+    return reserved.find(name) != reserved.end() || symbol(name) != nullptr;
   }
   Symbol* symbol(const char* name) const {
     auto it = std::find_if(symbols.begin(), symbols.end(),
