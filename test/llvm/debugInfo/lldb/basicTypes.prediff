@@ -2,7 +2,7 @@
 
 TESTNAME=$1
 OUTFILE=$2
-COMPOPTS=$3
+COMPOPTS=$4
 
 FILECHECK_OPTS=''
 if [[ "$CHPL_COMM" != 'none' || "$COMPOPTS" == *'--no-local'* ]]; then

@@ -3,7 +3,7 @@ const myGlobal = 42;
 proc foo(myFormal) {
   const localVar = myFormal + 1;
   writeln("printing from foo");
-  // CHECK: stop reason = breakpoint
+  // CHECK: stop reason = breakpoint 2
   // CHECK-NEXT: targetVar.chpl:5
   // CHECK: target var
   // CHECK: (int(64)) myGlobal_chpl = 42
@@ -15,8 +15,8 @@ proc foo(myFormal) {
 }
 
 proc bar(myFormal) {
-  // CHECK: stop reason = breakpoint
-  // CHECK-NEXT: targetVar.chpl:18
+  // CHECK: stop reason = breakpoint 3
+  // CHECK-NEXT: targetVar.chpl:17
   // CHECK: target var
   // CHECK: (int(64)) myGlobal_chpl = 42
   // CHECK: frame var
