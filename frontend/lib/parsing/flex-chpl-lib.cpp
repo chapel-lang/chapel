@@ -1020,7 +1020,7 @@ static const flex_int16_t yy_chk[840] =
 #define YY_RESTORE_YY_MORE_OFFSET
 #line 1 "chpl.lex"
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
