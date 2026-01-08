@@ -3988,7 +3988,7 @@ scopeResolveFunctionQueryBody(Context* context, ID id) {
                                         PoiInfo(),
                                         UniqueString(),
                                         QualifiedType(),
-                                        {}, {}, {}, {}));
+                                        {}, {}, {}, {}, {}));
   return result;
 }
 
