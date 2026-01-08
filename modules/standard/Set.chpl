@@ -707,7 +707,6 @@ module Set {
         compilerError('Cannot create array because set element type ' +
                       eltType:string + ' is not copyable');
 
-      var count = 0;
       var result: [0..<_htb.tableNumFullSlots] eltType
                 = for x in this do x;
 

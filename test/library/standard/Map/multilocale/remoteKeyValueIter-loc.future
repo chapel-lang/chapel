@@ -1,4 +1,6 @@
 bug: Iterating over a remote map's keys and values doesn't work
 
+#28266
+
 In practice, I either get no output for the loops over the remote
 map, or I get a GASNet crash

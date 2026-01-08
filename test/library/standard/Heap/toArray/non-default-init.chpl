@@ -24,7 +24,7 @@ record R3 {
   operator >(x: R3, y: R3) do return x.arr[1] > y.arr[1];
 }
 
-proc testList(type R) {
+proc test(type R) {
   var l = new heap(R);
   var empty = l.toArray();
   writeln("empty: ", empty);
@@ -38,7 +38,7 @@ proc testList(type R) {
   }
 }
 
-testList(R1);
-testList(R2);
-testList(R3);
+test(R1);
+test(R2);
+test(R3);
 
