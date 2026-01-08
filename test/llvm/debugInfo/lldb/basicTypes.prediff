@@ -1,15 +1,14 @@
 #!/usr/bin/env bash
 
-file=$2
+TESTNAME=$1
+OUTFILE=$2
+COMPOPTS=$3
 
-# remove cid
-sed -E -e 's/super = \(cid = [0-9]+\)/super = (cid = XXX)/' $file > $file.tmp
-mv $file.tmp $file
+FILECHECK_OPTS=''
+if [[ "$CHPL_COMM" != 'none' || "$COMPOPTS" == *'--no-local'* ]]; then
+  FILECHECK_OPTS+=' --check-prefixes CHECK,CHECK-NOLOCAL'
+else
+  FILECHECK_OPTS+=' --check-prefixes CHECK,CHECK-LOCAL'
+fi
 
-# clean garbage values
-sed -E -e 's/, x = [0-9][0-9][0-9]+, y/, x = uninit, y/' $file > $file.tmp
-mv $file.tmp $file
-
-# remove empty lines and space
-sed -e '/^[[:space:]]*$/d' -e 's/[[:space:]]*$//' $file > $file.tmp
-mv $file.tmp $file
+$CHPL_HOME/test/llvm/RunFileCheck "$TESTNAME" "$OUTFILE" "$FILECHECK_OPTS"
