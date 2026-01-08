@@ -431,7 +431,34 @@ is equivalent to
 
    var v: e.type = e;
 
-for an arbitrary expression ``e``.
+for an arbitrary expression ``e``, with two exceptions. First,
+iterator expressions (such as calls to an ``iter`` procedure), promoted
+function calls (see :ref:`Promotion`), and loop expressions (e.g.,
+:ref:`For_Expressions`), are converted into arrays. For iterators in
+particular, see also :ref:`Iterators_as_Arrays`.
+
+   *Example (iter-promo-loop-as-arrays.chpl)*.
+
+   For example, the following code:
+
+   .. code-block:: chapel
+
+      iter foo() { for i in 2..10 do yield i; }
+
+      var x = foo();
+      var y = foo() + 1;
+      var z = for i in 2..10 do i;
+      writeln(x.type : string);
+      writeln(y.type : string);
+      writeln(z.type : string);
+
+   prints three array types:
+
+   .. code-block:: printoutput
+
+      [domain(1,int(64),one)] int(64)
+      [domain(1,int(64),one)] int(64)
+      [domain(1,int(64),one)] int(64)
 
 .. index::
    single: declarations; multiple variables
