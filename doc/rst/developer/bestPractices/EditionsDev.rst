@@ -75,9 +75,8 @@ features.
 
 * **Removal of a stable feature** (`Breaking Change`)
 
-    A stable feature should only be removed in the ``preview`` edition. The
-    ``preview`` edition collects changes that will be included in the next
-    edition. The act of marking a stable feature as removed in a future edition
+    A stable feature should only be removed in the ``preview`` edition.
+    The act of marking a stable feature as removed in a future edition
     enables deprecation warnings for the feature in the current edition
     (when requested).
 
@@ -126,7 +125,7 @@ features.
 
 In summary, if a user is using only stable features of a given language
 edition, two different versions of the compiler that support that edition
-should behave the same way (barring bug fixes, performance improvements, etc).
+should have the same behavior (barring bugs).
 Breaking changes to stable features should be associated with a
 edition. Unstable features may be changed or removed at any time without being
 associated with an edition. New features should be added as unstable features or
