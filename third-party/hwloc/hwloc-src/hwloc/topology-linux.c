@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2024 Inria.  All rights reserved.
+ * Copyright © 2009-2025 Inria.  All rights reserved.
  * Copyright © 2009-2013, 2015, 2020 Université Bordeaux
  * Copyright © 2009-2018 Cisco Systems, Inc.  All rights reserved.
  * Copyright © 2015 Intel, Inc.  All rights reserved.
@@ -88,7 +88,7 @@ struct hwloc_linux_backend_data_s {
 #         define __NR_sched_setaffinity 211
 #       elif defined(__alpha__)
 #         define __NR_sched_setaffinity 395
-#       elif defined(__s390__)
+#       elif defined(__s390__) || defined(__s390x__)
 #         define __NR_sched_setaffinity 239
 #       elif defined(__sparc__)
 #         define __NR_sched_setaffinity 261
@@ -104,8 +104,14 @@ struct hwloc_linux_backend_data_s {
 #         define __NR_sched_setaffinity 241
 #       elif defined(__cris__)
 #         define __NR_sched_setaffinity 241
-/*#       elif defined(__mips__)
-  #         define __NR_sched_setaffinity TODO (32/64/nabi) */
+#       elif defined(__loongarch__)
+#         define __NR_sched_setaffinity 122
+#       elif defined(__mips__) && _MIPS_SIM == _ABI64
+#         define __NR_sched_setaffinity 5195
+#       elif defined(__mips__) && _MIPS_SIM == _ABIN32
+#         define __NR_sched_setaffinity 6195
+#       elif defined(__mips__) && _MIPS_SIM == _ABIO32
+#         define __NR_sched_setaffinity 4239
 #       else
 #         warning "don't know the syscall number for sched_setaffinity on this architecture, will not support binding"
 #         define sched_setaffinity(pid, lg, mask) (errno = ENOSYS, -1)
@@ -125,7 +131,7 @@ struct hwloc_linux_backend_data_s {
 #         define __NR_sched_getaffinity 212
 #       elif defined(__alpha__)
 #         define __NR_sched_getaffinity 396
-#       elif defined(__s390__)
+#       elif defined(__s390__) || defined(__s390x__)
 #         define __NR_sched_getaffinity 240
 #       elif defined(__sparc__)
 #         define __NR_sched_getaffinity 260
@@ -141,8 +147,14 @@ struct hwloc_linux_backend_data_s {
 #         define __NR_sched_getaffinity 242
 #       elif defined(__cris__)
 #         define __NR_sched_getaffinity 242
-/*#       elif defined(__mips__)
-  #         define __NR_sched_getaffinity TODO (32/64/nabi) */
+#       elif defined(__loongarch__)
+#         define __NR_sched_getaffinity 123
+#       elif defined(__mips__) && _MIPS_SIM == _ABI64
+#         define __NR_sched_getaffinity 5196
+#       elif defined(__mips__) && _MIPS_SIM == _ABIN32
+#         define __NR_sched_getaffinity 6196
+#       elif defined(__mips__) && _MIPS_SIM == _ABIO32
+#         define __NR_sched_getaffinity 4240
 #       else
 #         warning "don't know the syscall number for sched_getaffinity on this architecture, will not support getting binding"
 #         define sched_getaffinity(pid, lg, mask) (errno = ENOSYS, -1)
@@ -197,16 +209,34 @@ struct hwloc_linux_backend_data_s {
 #  define __NR_mbind 237
 # elif defined(__ia64__)
 #  define __NR_mbind 1259
-# elif defined(__powerpc__) || defined(__ppc__) || defined(__PPC__) || defined(__powerpc64__) || defined(__ppc64__)
-#  define __NR_mbind 259
+# elif defined(__hppa__)
+#  define __NR_mbind 260
+# elif defined(__alpha__)
+   /* sys_ni_syscall */
+# elif defined(__s390) || defined(__s390x__)
+#  define __NR_mbind 268
 # elif defined(__sparc__)
 #  define __NR_mbind 353
+# elif defined(__m68k__)
+#  define __NR_mbind 268
+# elif defined(__powerpc__) || defined(__ppc__) || defined(__PPC__) || defined(__powerpc64__) || defined(__ppc64__)
+#  define __NR_mbind 259
 # elif defined(__aarch64__)
 #  define __NR_mbind 235
 # elif defined(__riscv)
 #  define __NR_mbind 235
 # elif defined(__arm__)
 #  define __NR_mbind 319
+# elif defined(__cris__)
+   /* sys_ni_syscall when CRIS removed in 4.17 */
+# elif defined(__loongarch__)
+#  define __NR_mbind 235
+# elif defined(__mips__) && _MIPS_SIM == _ABI64
+#  define __NR_mbind 5227
+# elif defined(__mips__) && _MIPS_SIM == _ABIN32
+#  define __NR_mbind 6231
+# elif defined(__mips__) && _MIPS_SIM == _ABIO32
+#  define __NR_mbind 4268
 # endif
 #endif
 static __hwloc_inline long hwloc_mbind(void *addr __hwloc_attribute_unused,
@@ -229,19 +259,37 @@ static __hwloc_inline long hwloc_mbind(void *addr __hwloc_attribute_unused,
 # ifdef __i386__
 #  define __NR_set_mempolicy 276
 # elif defined(__x86_64__)
-#  define __NR_set_mempolicy 239
+#  define __NR_set_mempolicy 238
 # elif defined(__ia64__)
 #  define __NR_set_mempolicy 1261
-# elif defined(__powerpc__) || defined(__ppc__) || defined(__PPC__) || defined(__powerpc64__) || defined(__ppc64__)
-#  define __NR_set_mempolicy 261
+# elif defined(__hppa__)
+#  define __NR_set_mempolicy 262
+# elif defined(__alpha__)
+   /* sys_ni_syscall */
+# elif defined(__s390) || defined(__s390x__)
+#  define __NR_set_mempolicy 270
 # elif defined(__sparc__)
 #  define __NR_set_mempolicy 305
+# elif defined(__m68k__)
+#  define __NR_set_mempolicy 270
+# elif defined(__powerpc__) || defined(__ppc__) || defined(__PPC__) || defined(__powerpc64__) || defined(__ppc64__)
+#  define __NR_set_mempolicy 261
 # elif defined(__aarch64__)
 #  define __NR_set_mempolicy 237
 # elif defined(__riscv)
 #  define __NR_set_mempolicy 237
 # elif defined(__arm__)
 #  define __NR_set_mempolicy 321
+# elif defined(__cris__)
+   /* sys_ni_syscall when CRIS removed in 4.17 */
+# elif defined(__loongarch__)
+#  define __NR_set_mempolicy 237
+# elif defined(__mips__) && _MIPS_SIM == _ABI64
+#  define __NR_set_mempolicy 5229
+# elif defined(__mips__) && _MIPS_SIM == _ABIN32
+#  define __NR_set_mempolicy 6233
+# elif defined(__mips__) && _MIPS_SIM == _ABIO32
+#  define __NR_set_mempolicy 4270
 # endif
 #endif
 static __hwloc_inline long hwloc_set_mempolicy(int mode __hwloc_attribute_unused,
@@ -261,19 +309,37 @@ static __hwloc_inline long hwloc_set_mempolicy(int mode __hwloc_attribute_unused
 # ifdef __i386__
 #  define __NR_get_mempolicy 275
 # elif defined(__x86_64__)
-#  define __NR_get_mempolicy 238
+#  define __NR_get_mempolicy 239
 # elif defined(__ia64__)
 #  define __NR_get_mempolicy 1260
-# elif defined(__powerpc__) || defined(__ppc__) || defined(__PPC__) || defined(__powerpc64__) || defined(__ppc64__)
-#  define __NR_get_mempolicy 260
+# elif defined(__hppa__)
+#  define __NR_get_mempolicy 261
+# elif defined(__alpha__)
+   /* sys_ni_syscall */
+# elif defined(__s390) || defined(__s390x__)
+#  define __NR_get_mempolicy 269
 # elif defined(__sparc__)
 #  define __NR_get_mempolicy 304
+# elif defined(__m68k__)
+#  define __NR_get_mempolicy 269
+# elif defined(__powerpc__) || defined(__ppc__) || defined(__PPC__) || defined(__powerpc64__) || defined(__ppc64__)
+#  define __NR_get_mempolicy 260
 # elif defined(__aarch64__)
 #  define __NR_get_mempolicy 236
 # elif defined(__riscv)
 #  define __NR_get_mempolicy 236
 # elif defined(__arm__)
 #  define __NR_get_mempolicy 320
+# elif defined(__cris__)
+   /* sys_ni_syscall when CRIS removed in 4.17 */
+# elif defined(__loongarch__)
+#  define __NR_get_mempolicy 236
+# elif defined(__mips__) && _MIPS_SIM == _ABI64
+#  define __NR_get_mempolicy 5228
+# elif defined(__mips__) && _MIPS_SIM == _ABIN32
+#  define __NR_get_mempolicy 6232
+# elif defined(__mips__) && _MIPS_SIM == _ABIO32
+#  define __NR_get_mempolicy 4269
 # endif
 #endif
 static __hwloc_inline long hwloc_get_mempolicy(int *mode __hwloc_attribute_unused,
@@ -293,21 +359,39 @@ static __hwloc_inline long hwloc_get_mempolicy(int *mode __hwloc_attribute_unuse
 
 #ifndef __NR_migrate_pages
 # ifdef __i386__
-#  define __NR_migrate_pages 204
+#  define __NR_migrate_pages 294
 # elif defined(__x86_64__)
 #  define __NR_migrate_pages 256
 # elif defined(__ia64__)
 #  define __NR_migrate_pages 1280
-# elif defined(__powerpc__) || defined(__ppc__) || defined(__PPC__) || defined(__powerpc64__) || defined(__ppc64__)
-#  define __NR_migrate_pages 258
+# elif defined(__hppa__)
+#  define __NR_migrate_pages 272
+# elif defined(__alpha__)
+   /* sys_ni_syscall */
+# elif defined(__s390) || defined(__s390x__)
+#  define __NR_migrate_pages 287
 # elif defined(__sparc__)
 #  define __NR_migrate_pages 302
+# elif defined(__m68k__)
+#  define __NR_migrate_pages 287
+# elif defined(__powerpc__) || defined(__ppc__) || defined(__PPC__) || defined(__powerpc64__) || defined(__ppc64__)
+#  define __NR_migrate_pages 258
 # elif defined(__aarch64__)
 #  define __NR_migrate_pages 238
 # elif defined(__riscv)
 #  define __NR_migrate_pages 238
 # elif defined(__arm__)
 #  define __NR_migrate_pages 400
+# elif defined(__cris__)
+#  define __NR_migrate_pages 294
+# elif defined(__loongarch__)
+#  define __NR_migrate_pages 238
+# elif defined(__mips__) && _MIPS_SIM == _ABI64
+#  define __NR_migrate_pages 5246
+# elif defined(__mips__) && _MIPS_SIM == _ABIN32
+#  define __NR_migrate_pages 6250
+# elif defined(__mips__) && _MIPS_SIM == _ABIO32
+#  define __NR_migrate_pages 4287
 # endif
 #endif
 static __hwloc_inline long hwloc_migrate_pages(int pid __hwloc_attribute_unused,
@@ -331,16 +415,34 @@ static __hwloc_inline long hwloc_migrate_pages(int pid __hwloc_attribute_unused,
 #  define __NR_move_pages 279
 # elif defined(__ia64__)
 #  define __NR_move_pages 1276
-# elif defined(__powerpc__) || defined(__ppc__) || defined(__PPC__) || defined(__powerpc64__) || defined(__ppc64__)
-#  define __NR_move_pages 301
+# elif defined(__hppa__)
+#  define __NR_move_pages 295
+# elif defined(__alpha__)
+   /* sys_ni_syscall */
+# elif defined(__s390__) || defined(__s390x__)
+#  define __NR_move_pages 310
 # elif defined(__sparc__)
 #  define __NR_move_pages 307
+# elif defined(__m68k__)
+#  define __NR_move_pages 310
+# elif defined(__powerpc__) || defined(__ppc__) || defined(__PPC__) || defined(__powerpc64__) || defined(__ppc64__)
+#  define __NR_move_pages 301
 # elif defined(__aarch64__)
 #  define __NR_move_pages 239
 # elif defined(__riscv)
 #  define __NR_move_pages 239
 # elif defined(__arm__)
 #  define __NR_move_pages 344
+# elif defined(__cris__)
+#  define __NR_migrate_pages 317
+# elif defined(__loongarch__)
+#  define __NR_move_pages 239
+# elif defined(__mips__) && _MIPS_SIM == _ABI64
+#  define __NR_move_pages 5267
+# elif defined(__mips__) && _MIPS_SIM == _ABIN32
+#  define __NR_move_pages 6271
+# elif defined(__mips__) && _MIPS_SIM == _ABIO32
+#  define __NR_move_pages 4308
 # endif
 #endif
 static __hwloc_inline long hwloc_move_pages(int pid __hwloc_attribute_unused,
@@ -1749,7 +1851,17 @@ static __hwloc_inline void
 warn_preferred_many_fallback(hwloc_const_bitmap_t nodeset)
 {
   static int warned = 0;
-  if (!warned && HWLOC_SHOW_ALL_ERRORS() && hwloc_bitmap_weight(nodeset) > 1) {
+  static int checked_binding_error_env = 0;
+  static int warn_binding_errors = 0;
+  if (!checked_binding_error_env) {
+    char *env = getenv("HWLOC_SHOW_ERRORS");
+    if (env) {
+      if (strstr(env, "bind"))
+        warn_binding_errors = 1;
+    }
+    checked_binding_error_env = 1;
+  }
+  if (!warned && (warn_binding_errors || HWLOC_SHOW_ALL_ERRORS()) && hwloc_bitmap_weight(nodeset) > 1) {
     fprintf(stderr, "[hwloc/membind] MPOL_PREFERRED_MANY not supported by the kernel.\n");
     fprintf(stderr, "If *all* given nodes must be used, use strict binding or the interleave policy.\n");
     fprintf(stderr, "Otherwise the old MPOL_PREFERRED will only use the first given node.\n");
@@ -4712,7 +4824,7 @@ look_sysfscpukinds(struct hwloc_topology *topology,
   int max_without_basefreq = 0; /* any cpu where we have maxfreq without basefreq? */
   char str[293];
   char *env;
-  hwloc_bitmap_t atom_pmu_set, core_pmu_set;
+  hwloc_bitmap_t atom_pmu_set, core_pmu_set, lowp_pmu_set;
   int maxfreq_enabled = -1; /* -1 means adjust (default), 0 means ignore, 1 means enforce */
   int use_cppc_nominal_freq = -1; /* -1 means try, 0 no, 1 yes */
   unsigned adjust_max = 10;
@@ -4751,11 +4863,11 @@ look_sysfscpukinds(struct hwloc_topology *topology,
     by_pu[i].pu = pu;
 
     /* cpuinfo_max_freq is the hardware max. scaling_max_freq is the software policy current max */
-    sprintf(str, "/sys/devices/system/cpu/cpu%d/cpufreq/cpuinfo_max_freq", i);
+    sprintf(str, "/sys/devices/system/cpu/cpu%d/cpufreq/cpuinfo_max_freq", pu);
     if (hwloc_read_path_as_uint(str, &maxfreq, data->root_fd) >= 0)
       by_pu[i].max_freq = maxfreq;
     /* base_frequency is in intel_pstate and works fine */
-    sprintf(str, "/sys/devices/system/cpu/cpu%d/cpufreq/base_frequency", i);
+    sprintf(str, "/sys/devices/system/cpu/cpu%d/cpufreq/base_frequency", pu);
     if (hwloc_read_path_as_uint(str, &basefreq, data->root_fd) >= 0) {
       by_pu[i].base_freq = basefreq;
       use_cppc_nominal_freq = 0;
@@ -4766,7 +4878,7 @@ look_sysfscpukinds(struct hwloc_topology *topology,
      * maxfreq for E-cores and LP-E-cores but basefreq for P-cores on MTL.
      */
     if (use_cppc_nominal_freq != 0) {
-      sprintf(str, "/sys/devices/system/cpu/cpu%d/acpi_cppc/nominal_freq", i);
+      sprintf(str, "/sys/devices/system/cpu/cpu%d/acpi_cppc/nominal_freq", pu);
       if (hwloc_read_path_as_uint(str, &basefreq, data->root_fd) >= 0 && basefreq > 0) {
         by_pu[i].base_freq = basefreq * 1000; /* nominal_freq is already in MHz */
         use_cppc_nominal_freq = 1;
@@ -4832,6 +4944,7 @@ look_sysfscpukinds(struct hwloc_topology *topology,
   /* look at Intel core/atom PMUs */
   atom_pmu_set = hwloc__alloc_read_path_as_cpulist("/sys/devices/cpu_atom/cpus", data->root_fd);
   core_pmu_set = hwloc__alloc_read_path_as_cpulist("/sys/devices/cpu_core/cpus", data->root_fd);
+  lowp_pmu_set = hwloc__alloc_read_path_as_cpulist("/sys/devices/cpu_lowpower/cpus", data->root_fd);
   if (atom_pmu_set) {
     hwloc_linux_cpukinds_register_one(topology, atom_pmu_set,
                                       HWLOC_CPUKIND_EFFICIENCY_UNKNOWN,
@@ -4847,6 +4960,14 @@ look_sysfscpukinds(struct hwloc_topology *topology,
     /* the cpuset is given to the callee */
   } else {
     hwloc_bitmap_free(core_pmu_set);
+  }
+  if (lowp_pmu_set) {
+    hwloc_linux_cpukinds_register_one(topology, lowp_pmu_set,
+                                      HWLOC_CPUKIND_EFFICIENCY_UNKNOWN,
+                                      (char *) "CoreType", (char *) "IntelLowPower");
+    /* the cpuset is given to the callee */
+  } else {
+    hwloc_bitmap_free(lowp_pmu_set);
   }
 
   return 0;
@@ -5072,11 +5193,6 @@ look_sysfscpu(struct hwloc_topology *topology,
       packageset = hwloc__alloc_read_path_as_cpumask(str, data->root_fd);
       if (packageset) {
 	hwloc_bitmap_and(packageset, packageset, cpuset);
-	if (dieset && hwloc_bitmap_isequal(packageset, dieset)) {
-	  /* die is identical to package, ignore it */
-	  hwloc_bitmap_free(dieset);
-	  dieset = NULL;
-	}
 	if (clusterset && hwloc_bitmap_isequal(packageset, clusterset)) {
 	  /* cluster is identical to package, ignore it */
 	  hwloc_bitmap_free(clusterset);
@@ -5550,6 +5666,27 @@ hwloc_linux_parse_cpuinfo(struct hwloc_linux_backend_data_s *data,
       return -1;
     }
 
+  /* architecture specific or default routine for parsing cpumodel */
+  switch (data->arch) {
+  case HWLOC_LINUX_ARCH_X86:
+    parse_cpuinfo_func = hwloc_linux_parse_cpuinfo_x86;
+    break;
+  case HWLOC_LINUX_ARCH_ARM:
+    parse_cpuinfo_func = hwloc_linux_parse_cpuinfo_arm;
+    break;
+  case HWLOC_LINUX_ARCH_POWER:
+    parse_cpuinfo_func = hwloc_linux_parse_cpuinfo_ppc;
+    break;
+  case HWLOC_LINUX_ARCH_IA64:
+    parse_cpuinfo_func = hwloc_linux_parse_cpuinfo_ia64;
+    break;
+  case HWLOC_LINUX_ARCH_LOONGARCH:
+    parse_cpuinfo_func = hwloc_linux_parse_cpuinfo_loongarch;
+    break;
+  default:
+    parse_cpuinfo_func = hwloc_linux_parse_cpuinfo_generic;
+  }
+
 #      define PROCESSOR	"processor"
   hwloc_debug("\n\n * Topology extraction from %s *\n\n", path);
   while (fgets(str, sizeof(str), fd)!=NULL) {
@@ -5617,27 +5754,6 @@ hwloc_linux_parse_cpuinfo(struct hwloc_linux_backend_data_s *data,
     Lprocs[curproc].infos = NULL;
     Lprocs[curproc].infos_count = 0;
     getprocnb_end() else {
-
-      /* architecture specific or default routine for parsing cpumodel */
-      switch (data->arch) {
-      case HWLOC_LINUX_ARCH_X86:
-	parse_cpuinfo_func = hwloc_linux_parse_cpuinfo_x86;
-	break;
-      case HWLOC_LINUX_ARCH_ARM:
-	parse_cpuinfo_func = hwloc_linux_parse_cpuinfo_arm;
-	break;
-      case HWLOC_LINUX_ARCH_POWER:
-	parse_cpuinfo_func = hwloc_linux_parse_cpuinfo_ppc;
-	break;
-      case HWLOC_LINUX_ARCH_IA64:
-	parse_cpuinfo_func = hwloc_linux_parse_cpuinfo_ia64;
-	break;
-      case HWLOC_LINUX_ARCH_LOONGARCH:
-	parse_cpuinfo_func = hwloc_linux_parse_cpuinfo_loongarch;
-	break;
-      default:
-	parse_cpuinfo_func = hwloc_linux_parse_cpuinfo_generic;
-      }
 
       /* we can't assume that we already got a processor index line:
        * alpha/frv/h8300/m68k/microblaze/sparc have no processor lines at all, only a global entry.
@@ -6001,7 +6117,7 @@ hwloc_linuxfs_look_cpu(struct hwloc_backend *backend, struct hwloc_disc_status *
    * which requires the NUMA level to be connected.
    */
   if (already_numanodes)
-    hwloc_topology_reconnect(topology, 0);
+    hwloc__reconnect(topology, 0);
 
   hwloc_alloc_root_sets(topology->levels[0][0]);
 
@@ -6617,9 +6733,9 @@ hwloc_linuxfs_net_class_fillinfos(int root_fd,
       }
     }
   }
-  if (!strncmp(obj->name, "hsn", 3)) {
+  if (!strncmp(obj->name, "hs", 2)) {
     /* Cray Cassini HSN for Slingshot networks are Ethernet-based,
-     * named hsnX with a "cxi" (and "cxi_user") class.
+     * named "hsnX" or "hsiX" with a "cxi" (and "cxi_user") class.
      */
     snprintf(path, sizeof(path), "%s/device/cxi", osdevpath);
     if (!hwloc_access(path, R_OK|X_OK, root_fd)) {
@@ -7337,7 +7453,7 @@ hwloc__get_firmware_dmi_memory_info_one(struct hwloc_topology *topology,
     /* couldn't read a single full string from that buffer, we're screwed */
     if (!boff) {
       if (HWLOC_SHOW_CRITICAL_ERRORS())
-        fprintf(stderr, "hwloc/linux: hwloc could read a DMI firmware entry #%u in %s\n",
+        fprintf(stderr, "hwloc/linux: hwloc couldn't read a DMI firmware entry #%u in %s\n",
                 i, path);
       break;
     }

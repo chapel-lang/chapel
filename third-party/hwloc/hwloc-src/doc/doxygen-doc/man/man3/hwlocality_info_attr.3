@@ -1,4 +1,4 @@
-.TH "hwlocality_info_attr" 3 "Version 2.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_info_attr" 3 "Version 2.12.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -10,7 +10,7 @@ hwlocality_info_attr \- Consulting and Adding Info Attributes
 
 .in +1c
 .ti -1c
-.RI "static const char * \fBhwloc_obj_get_info_by_name\fP (\fBhwloc_obj_t\fP obj, const char *name)"
+.RI "const char * \fBhwloc_obj_get_info_by_name\fP (\fBhwloc_obj_t\fP obj, const char *name)"
 .br
 .ti -1c
 .RI "int \fBhwloc_obj_add_info\fP (\fBhwloc_obj_t\fP obj, const char *name, const char *value)"
@@ -44,7 +44,7 @@ If \fCname\fP or \fCvalue\fP contain some non-printable characters, they will be
 .RE
 .PP
 
-.SS "static const char * hwloc_obj_get_info_by_name (\fBhwloc_obj_t\fP obj, const char * name)\fC [inline]\fP, \fC [static]\fP"
+.SS "const char * hwloc_obj_get_info_by_name (\fBhwloc_obj_t\fP obj, const char * name)\fC [inline]\fP"
 
 .PP
 Search the given name in object infos and return the corresponding value\&. If multiple info attributes match the given name, only the first one is returned\&.
