@@ -23,5 +23,5 @@ with open(os.path.join(args.location, 'reservedSymbolNames.h'), 'w') as f:
         continue
       line = line.strip("\n")
       parts = line.partition('//')
-      line = '  cnames.insert(astr("{}")); {}{}\n'.format(parts[0].strip(),parts[1], parts[2])
-      f.write(line)
+      line = '  reserved.insert(astr("{}")); {}{}'.format(parts[0].strip(),parts[1], parts[2])
+      f.write(line.strip() + '\n')
