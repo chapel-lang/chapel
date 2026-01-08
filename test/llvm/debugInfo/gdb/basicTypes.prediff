@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+TESTNAME=$1
+OUTFILE=$2
+COMPOPTS=$4
+
+FILECHECK_OPTS=''
+if [[ "$CHPL_COMM" != 'none' || "$COMPOPTS" == *'--no-local'* ]]; then
+  FILECHECK_OPTS+=' --check-prefixes CHECK,CHECK-NOLOCAL'
+else
+  FILECHECK_OPTS+=' --check-prefixes CHECK,CHECK-LOCAL'
+fi
+
+$CHPL_HOME/test/llvm/RunFileCheck "$TESTNAME" "$OUTFILE" "$FILECHECK_OPTS"
