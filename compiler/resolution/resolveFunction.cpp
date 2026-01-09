@@ -2038,6 +2038,126 @@ static void checkInterfaceFunctionRetType(FnSymbol* fn, Type* retType,
   USR_PRINT(fn, "a non-void return type must be declared explicitly");
 }
 
+// Helper function to find a common parent type for class hierarchies.
+// Returns NULL if no common parent can be found.
+// This is used when return type inference has multiple return types that
+// are different subclasses of a common parent class.
+static Type* findCommonParentForClasses(Vec<Type*>& retTypes, Vec<Symbol*>& retSymbols, FnSymbol* fn) {
+  INT_ASSERT(retTypes.n > 1);
+
+  // Track the decorator (managed/borrowed/unmanaged) and nilability.
+  // If decorators don't match and one of them is borrowed, guess borrowed.
+  chpl::optional<ClassTypeDecoratorEnum> commonDecorator;
+  bool anyNilable = false, managerMismatch = false;
+  AggregateType* seenManager = nullptr;
+
+  // Extract canonical class types (strip decorators)
+  Vec<AggregateType*> canonicalClasses;
+
+  for (int i = 0; i < retTypes.n; i++) {
+    Type* t = retTypes.v[i];
+
+    // Determine the decorator for this type
+    ClassTypeDecoratorEnum decorator = ClassTypeDecorator::BORROWED;
+    AggregateType* manager = nullptr;
+
+    if (isManagedPtrType(t)) {
+      decorator = classTypeDecorator(t);
+      manager = getManagedPtrManagerType(t);
+    } else if (DecoratedClassType* dt = toDecoratedClassType(t)) {
+      decorator = dt->getDecorator();
+    } else if (isClass(t)) {
+      // Bare class type, use borrowed as default
+      decorator = ClassTypeDecorator::BORROWED;
+    } else {
+      // Not a class type
+      return nullptr;
+    }
+    anyNilable |= isDecoratorNilable(decorator);
+    decorator = removeNilableFromDecorator(decorator);
+
+    if (!commonDecorator || isDecoratorBorrowed(decorator)) commonDecorator = decorator;
+    if (manager) {
+      managerMismatch |= seenManager && seenManager != manager;
+      seenManager = manager;
+    }
+
+    if (commonDecorator && !isDecoratorBorrowed(*commonDecorator) &&
+        *commonDecorator != decorator) {
+      // Mixing owned/shared with unmanaged - cannot unify
+      return nullptr;
+    }
+
+    // Get the canonical class type (strips decorator)
+    Type* canonical = canonicalClassType(t);
+    AggregateType* at = toAggregateType(canonical);
+
+    if (at && isClass(at)) {
+      canonicalClasses.add(at);
+    } else {
+      // Not a class type
+      return nullptr;
+    }
+  }
+
+  INT_ASSERT(commonDecorator);
+  if (commonDecorator == ClassTypeDecorator::MANAGED && managerMismatch) {
+    // Cannot unify managed types with different managers
+    return nullptr;
+  }
+  if (anyNilable) *commonDecorator = addNilableToDecorator(*commonDecorator);
+
+  // All types should be canonical classes now
+  INT_ASSERT(canonicalClasses.n == retTypes.n);
+
+  // Build a list of ancestors for the first class
+  Vec<AggregateType*> ancestors;
+  AggregateType* current = canonicalClasses.v[0];
+  ancestors.add(current);
+
+  // Walk up the parent chain
+  while (current->dispatchParents.n > 0) {
+    current = current->dispatchParents.v[0];
+    if (current == dtObject) break;
+    ancestors.add(current);
+  }
+
+  // For each ancestor (starting from most specific), check if all
+  // return types are subclasses of it.
+  // Iterate over classes first, so that if one class doesn't find any ancestor,
+  // we can bail out early.
+  int ancestorIdx = -1;
+  for (int j = 0; j < canonicalClasses.n; j++) {
+    bool foundAncestor = false;
+    for (int i = 0; i < ancestors.n; i++) {
+      AggregateType* candidate = ancestors.v[i];
+      if (isSubClass(canonicalClasses.v[j], candidate)) {
+        ancestorIdx = std::max(ancestorIdx, i);
+        foundAncestor = true;
+        break;
+      }
+    }
+    if (!foundAncestor) {
+      // This class has no common ancestor with the first class
+      return nullptr;
+    }
+  }
+
+  INT_ASSERT(ancestorIdx >= 0);
+  auto candidate = ancestors.v[ancestorIdx];
+
+  // Found the common ancestor!
+  // Now apply the decorator back to get the unified type
+
+  if (seenManager && isDecoratorManaged(*commonDecorator)) {
+    // Use the function's definition point as context for type construction
+    Expr* ctx = fn->defPoint;
+    return computeDecoratedManagedType(candidate, *commonDecorator, seenManager, ctx);
+  } else {
+    return candidate->getDecoratedClass(*commonDecorator);
+  }
+}
+
 // Resolves an inferred return type.
 // resolveSpecifiedReturnType handles the case that the type is
 // specified explicitly.
@@ -2123,6 +2243,15 @@ void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
         if (best) {
           retType = retTypes.v[i];
           break;
+        }
+      }
+
+      // If we didn't find a best type via dispatch, try to find a common
+      // parent type for class hierarchies (addresses issue #14765).
+      if (retType == dtUnknown && retTypes.n > 1) {
+        Type* commonParent = findCommonParentForClasses(retTypes, retSymbols, fn);
+        if (commonParent != NULL) {
+          retType = commonParent;
         }
       }
     }
