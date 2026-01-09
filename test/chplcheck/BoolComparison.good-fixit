@@ -1,0 +1,42 @@
+module BoolComparison {
+  proc checkFlag(flag: bool) {
+    if flag {
+      writeln("Flag is true");
+    } else if !(flag) {
+      writeln("Flag is false");
+    }
+
+    var isTrue = flag;
+    var isFalse = !flag;
+  }
+
+  proc getBool(): bool {
+    return true;
+  }
+  record R {
+    proc type get(): bool do return false;
+  }
+  proc combos(flag1, flag2) {
+    if !(flag1 && flag2) {
+      writeln("flag1 is false");
+    }
+    if !(1 > 2) {
+      writeln("1 is greater than 2");
+    }
+    if !(2 < 1) {
+      writeln("2 is less than 1");
+    }
+    if !(flag2) {
+      writeln("flag2 is false");
+    }
+    while !(getBool()) {
+      writeln("In while loop");
+      break;
+    }
+    var arr: [1..10] bool;
+    var r1 = (!arr[1]);
+    var r2 = !(R.get() && R.get());
+    return !R.get();
+  }
+
+}
