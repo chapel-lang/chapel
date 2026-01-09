@@ -60,22 +60,25 @@ async def test_document_symbols(client: LanguageClient):
                 a,
                 b
               }
+              private proc privateFunc() { }
+              extern "myFunc" proc externalFunc();
+              public export inline proc publicFunc() { }
             }
             """
 
     symbols = [
-        (rng((0, 0), (23, 1)), "module M", SymbolKind.Module),
-        (rng((1, 8), (1, 14)), "const a = 10", SymbolKind.Constant),
-        (rng((2, 6), (2, 12)), "var b = 11", SymbolKind.Variable),
-        (rng((3, 8), (3, 14)), "param c = 12", SymbolKind.Constant),
-        (rng((4, 13), (4, 19)), "config var d = 13", SymbolKind.Variable),
-        (rng((5, 7), (5, 17)), "type T = string", SymbolKind.TypeParameter),
+        (rng((0, 0), (26, 1)), "module M", SymbolKind.Module),
+        (rng((1, 2), (1, 14)), "const a = 10", SymbolKind.Constant),
+        (rng((2, 2), (2, 12)), "var b = 11", SymbolKind.Variable),
+        (rng((3, 2), (3, 14)), "param c = 12", SymbolKind.Constant),
+        (rng((4, 2), (4, 19)), "config var d = 13", SymbolKind.Variable),
+        (rng((5, 2), (5, 17)), "type T = string", SymbolKind.TypeParameter),
         (rng((6, 2), (6, 23)), "proc foo(const a)", SymbolKind.Function),
         (rng((7, 2), (15, 3)), "record myRecord", SymbolKind.Struct),
-        (rng((8, 9), (8, 16)), "type t = int", SymbolKind.TypeParameter),
-        (rng((9, 10), (9, 16)), "param p = 17", SymbolKind.Constant),
-        (rng((10, 10), (10, 19)), "const c: t = 18", SymbolKind.Field),
-        (rng((11, 8), (11, 12)), "var x: t", SymbolKind.Field),
+        (rng((8, 4), (8, 16)), "type t = int", SymbolKind.TypeParameter),
+        (rng((9, 4), (9, 16)), "param p = 17", SymbolKind.Constant),
+        (rng((10, 4), (10, 19)), "const c: t = 18", SymbolKind.Field),
+        (rng((11, 4), (11, 12)), "var x: t", SymbolKind.Field),
         (rng((12, 4), (12, 19)), "proc init()", SymbolKind.Constructor),
         (rng((13, 4), (13, 18)), "proc foo()", SymbolKind.Method),
         (
@@ -88,6 +91,9 @@ async def test_document_symbols(client: LanguageClient):
         (rng((19, 2), (22, 3)), "enum myEnum", SymbolKind.Enum),
         (rng((20, 4), (20, 5)), "a", SymbolKind.EnumMember),
         (rng((21, 4), (21, 5)), "b", SymbolKind.EnumMember),
+        (rng((23, 2), (23, 32)), "private proc privateFunc()", SymbolKind.Function),
+        (rng((24, 2), (24, 38)), 'extern "myFunc" proc externalFunc()', SymbolKind.Function),
+        (rng((25, 2), (25, 44)), "public export inline proc publicFunc()", SymbolKind.Function),
     ]
 
     async with source_file(client, file) as doc:
@@ -95,7 +101,6 @@ async def test_document_symbols(client: LanguageClient):
 
 
 @pytest.mark.asyncio
-@pytest.mark.xfail
 async def test_document_symbols_var(client: LanguageClient):
     """
     Test that `var` is included in the location
@@ -122,7 +127,7 @@ async def test_document_symbols_deprecated(client: LanguageClient):
             var x = 10;
             """
 
-    symbols = [(rng((1, 4), (1, 10)), "var x = 10", SymbolKind.Variable)]
+    symbols = [(rng((1, 0), (1, 10)), "var x = 10", SymbolKind.Variable)]
 
     async with source_file(client, file) as doc:
         symbols = await check_symbol_information(client, doc, symbols)
@@ -193,7 +198,7 @@ async def test_document_symbols_exprs(client: LanguageClient):
     symbols = []
     for i, e in enumerate(exprs):
         exp_str = e.removesuffix(";")
-        exp_sym = (rng((i, 6), (i, len(exp_str))), exp_str, SymbolKind.Constant)
+        exp_sym = (rng((i, 0), (i, len(exp_str))), exp_str, SymbolKind.Constant)
         symbols.append(exp_sym)
 
     async with source_file(client, file) as doc:
