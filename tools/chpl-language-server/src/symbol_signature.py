@@ -329,6 +329,7 @@ def _proc_to_string(node: chapel.Function) -> List[Component]:
         comps.append(_wrap_str(f"{node.linkage()} "))
     if node.linkage_name():
         comps.extend(_node_to_string(node.linkage_name()))
+        comps.append(_wrap_str(" "))
     if node.is_override():
         comps.append(_wrap_str("override "))
     if node.is_inline():
