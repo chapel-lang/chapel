@@ -59,6 +59,7 @@ proc masonUpdate(args: [?d] string) {
   var parser = new argumentParser(helpHandler=new MasonUpdateHelpHandler());
 
   var updateFlag = parser.addFlag(name="update", flagInversion=true);
+  var forceFlag = parser.addFlag(name="force", defaultValue=false);
 
   parser.parseArgs(args);
 
@@ -66,12 +67,13 @@ proc masonUpdate(args: [?d] string) {
     skipUpdate = !updateFlag.valueAsBool();
   }
 
-  return updateLock(skipUpdate, tf, lf);
+  return updateLock(skipUpdate, tf, lf, force=forceFlag.valueAsBool());
 }
 
 /* Finds a Mason.toml file and updates the Mason.lock
    generating one if it doesnt exist */
-proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock", show=true) {
+proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock",
+                                  show=true, force=false) {
 
   try! {
     const cwd = here.cwd();
@@ -85,7 +87,7 @@ proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock", show=true) {
     var updated = false;
     if isFile(tomlPath) {
       if TomlFile.pathExists('dependencies') {
-        if TomlFile['dependencies']!.A.size > 0 {
+        if force || TomlFile['dependencies']!.A.size > 0 {
           log.infoln("Updating registry");
           updateRegistry(skipUpdate, show);
           updated = true;
@@ -172,14 +174,15 @@ proc checkRegistryChanged() {
 }
 
 /* Pulls the mason-registry. Cloning if !exist */
-proc updateRegistry(skipUpdate: bool, show=true) {
+proc updateRegistry(skipUpdate: bool, show=true) throws {
   if skipUpdate then return;
 
   checkRegistryChanged();
-  for ((name, registry), registryHome) in zip(MASON_REGISTRY, MASON_CACHED_REGISTRY) {
+  for ((name, registry), registryHome) in
+      zip(MASON_REGISTRY, MASON_CACHED_REGISTRY) {
 
     if isDir(registryHome) {
-      var pullRegistry = 'git pull -q origin master';
+      var pullRegistry = 'git pull -q origin';
       if show then writeln("Updating ", name);
       gitC(registryHome, pullRegistry);
     }
