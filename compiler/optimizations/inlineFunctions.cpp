@@ -150,13 +150,13 @@ static void simplifyBody(FnSymbol* fn) {
   removeUnnecessaryGotos(fn);
 
 #if DEBUG_CP < 2    // That is, disabled if DEBUG_CP >= 2
-  if (fNoCopyPropagation == false) {
+  if (!fNoCopyPropagation) {
     singleAssignmentRefPropagation(fn);
     localCopyPropagation(fn);
   }
 #endif
 
-  if (fNoDeadCodeElimination == false) {
+  if (!fNoDeadCodeElimination) {
     deadVariableElimination(fn);
     deadExpressionElimination(fn);
   }
