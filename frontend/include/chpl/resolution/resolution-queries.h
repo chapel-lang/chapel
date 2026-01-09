@@ -257,7 +257,8 @@ resolveFieldResults(ResolutionContext* rc,
                     const types::CompositeType* ct,
                     ID fieldId,
                     DefaultsPolicy defaultsPolicy,
-                    bool syntaxOnly = false);
+                    bool syntaxOnly = false,
+                    bool fieldTypesOnly = true);
 
 /**
   Creates a ResolvedFields from ResolvedFieldResults.

@@ -769,7 +769,9 @@ bool InitResolver::implicitlyResolveFieldType(ID id, const AstNode* initBefore) 
 
   auto ct = currentRecvType_->getCompositeType();
   auto& rr = resolveFieldResults(initResolver_.rc, ct, id,
-                                 DefaultsPolicy::USE_DEFAULTS);
+                                 DefaultsPolicy::USE_DEFAULTS,
+                                 /* syntaxOnly=*/ false,
+                                 /* fieldTypesOnly=*/ false);
   auto& rf = resolvedFieldsFromResults(initResolver_.rc, rr);
   for (int i = 0; i < rf.numFields(); i++) {
     auto id = rf.fieldDeclId(i);

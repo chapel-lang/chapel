@@ -3836,7 +3836,7 @@ Expr* TConverter::paramElideCallOrNull(const TypedFnSignature* sig,
 
 void TConverter::convertImplicitInit(const types::CompositeType* ct, ID id, RV& rv) {
   ResolutionContext rcval(context);
-  auto& results = resolution::resolveFieldResults(&rcval, ct, id, DefaultsPolicy::USE_DEFAULTS, false);
+  auto& results = resolution::resolveFieldResults(&rcval, ct, id, DefaultsPolicy::USE_DEFAULTS, false, false);
   auto var = results.fieldAst()->toVarLikeDecl();
   if (var->storageKind() == types::QualifiedType::TYPE ||
       var->storageKind() == types::QualifiedType::PARAM) {
