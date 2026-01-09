@@ -7377,7 +7377,7 @@ proc fileReader.readLine(ref b: bytes,
     }
 
     if err != 0 && err != EEOF {
-      try this._ch_ioerror(err, "in fileReader.readLine(ref s: string)");
+      try this._ch_ioerror(err, "in fileReader.readLine(ref b: bytes)");
     }
 
     // return 'true' if we read anything
