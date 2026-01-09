@@ -2981,6 +2981,8 @@ class ResolvedFunction {
   using PoiTraceToChildMap = std::unordered_map<PoiTrace, Child>;
   using SigAndInfo = std::tuple<const TypedFnSignature*, PoiInfo>;
   using SigAndInfoToChildPtrMap = std::unordered_map<SigAndInfo, ChildPtr>;
+  using ImplicitInitKey = std::pair<const types::CompositeType*, ID>;
+  using ImplicitInitMap = std::map<ID, std::vector<ImplicitInitKey>>;
 
  private:
   const TypedFnSignature* signature_ = nullptr;
@@ -3013,6 +3015,8 @@ class ResolvedFunction {
   PoiTraceToChildMap poiTraceToChild_;
   SigAndInfoToChildPtrMap sigAndInfoToChildPtr_;
 
+  ImplicitInitMap implicitInits_;
+
  public:
   ResolvedFunction(const TypedFnSignature *signature,
                    uast::Function::ReturnIntent returnIntent,
@@ -3023,7 +3027,8 @@ class ResolvedFunction {
                    std::vector<CompilerDiagnostic> diagnostics,
                    std::set<ID> mutatedConstFieldIds,
                    PoiTraceToChildMap poiTraceToChild,
-                   SigAndInfoToChildPtrMap sigAndInfoToChildPtr)
+                   SigAndInfoToChildPtrMap sigAndInfoToChildPtr,
+                   ImplicitInitMap implicitInits)
       : signature_(signature),
         returnIntent_(returnIntent),
         resolutionById_(std::move(resolutionById)),
@@ -3033,7 +3038,8 @@ class ResolvedFunction {
         diagnostics_(std::move(diagnostics)),
         mutatedConstFieldIds_(std::move(mutatedConstFieldIds)),
         poiTraceToChild_(std::move(poiTraceToChild)),
-        sigAndInfoToChildPtr_(std::move(sigAndInfoToChildPtr)) {}
+        sigAndInfoToChildPtr_(std::move(sigAndInfoToChildPtr)),
+        implicitInits_(std::move(implicitInits)) {}
  ~ResolvedFunction() = default;
   ResolvedFunction(const ResolvedFunction& rhs) = delete;
   ResolvedFunction(ResolvedFunction&& rhs) = default;
@@ -3082,6 +3088,10 @@ class ResolvedFunction {
     }
   }
 
+  const ImplicitInitMap& implicitInits() const {
+    return implicitInits_;
+  }
+
   bool operator==(const ResolvedFunction& other) const {
     return signature_ == other.signature_ &&
            returnIntent_ == other.returnIntent_ &&
@@ -3092,7 +3102,8 @@ class ResolvedFunction {
            diagnostics_ == other.diagnostics_ &&
            mutatedConstFieldIds_ == other.mutatedConstFieldIds_ &&
            poiTraceToChild_ == other.poiTraceToChild_ &&
-           sigAndInfoToChildPtr_ == other.sigAndInfoToChildPtr_;
+           sigAndInfoToChildPtr_ == other.sigAndInfoToChildPtr_ &&
+           implicitInits_ == other.implicitInits_;
   }
   bool operator!=(const ResolvedFunction& other) const {
     return !(*this == other);
@@ -3109,6 +3120,7 @@ class ResolvedFunction {
     std::swap(mutatedConstFieldIds_, other.mutatedConstFieldIds_);
     std::swap(poiTraceToChild_, other.poiTraceToChild_);
     std::swap(sigAndInfoToChildPtr_, other.sigAndInfoToChildPtr_);
+    std::swap(implicitInits_, other.implicitInits_);
   }
   static bool update(owned<ResolvedFunction>& keep,
                      owned<ResolvedFunction>& addin) {
@@ -3130,10 +3142,19 @@ class ResolvedFunction {
       chpl::mark<decltype(p.first)>{}(context, p.first);
       context->markPointer(p.second);
     }
+    for (auto& p : implicitInits_) {
+      p.first.mark(context);
+      for (auto& key : p.second) {
+        context->markPointer(key.first);
+        key.second.mark(context);
+      }
+    }
   }
   size_t hash() const {
     // Skip 'resolutionById_' since it can be quite large.
     std::ignore = resolutionById_;
+    // Skip 'implicitInits_' as it does not add any relevant information
+    std::ignore = implicitInits_;
     size_t ret = chpl::hash(signature_, returnIntent_, poiInfo_, linkageName_, returnType_, diagnostics_, mutatedConstFieldIds_);
     for (auto& p : poiTraceToChild_) {
       ret = hash_combine(ret, chpl::hash(p.first));
@@ -3228,6 +3249,69 @@ struct ForwardingDetail {
   }
 };
 /// \endcond DO_NOT_DOCUMENT
+
+class ResolvedFieldResults {
+  const types::CompositeType* type_ = nullptr;
+  ID fieldID_;
+  const uast::AstNode* fieldAst_ = nullptr;
+  ResolutionResultByPostorderID results_;
+  bool syntaxOnly_ = false;
+
+ public:
+  ResolvedFieldResults(
+      const types::CompositeType* type,
+      ID fieldID,
+      const uast::AstNode* fieldAst,
+      ResolutionResultByPostorderID results,
+      bool syntaxOnly) :
+        type_(type), fieldID_(fieldID),
+        fieldAst_(fieldAst), results_(std::move(results)),
+        syntaxOnly_(syntaxOnly)
+      { }
+  ResolvedFieldResults() {}
+
+  const types::CompositeType* type() const { return type_; }
+  const ID& fieldID() const { return fieldID_; }
+  const uast::AstNode* fieldAst() const { return fieldAst_; }
+  const ResolutionResultByPostorderID& results() const { return results_; }
+  bool syntaxOnly() const { return syntaxOnly_; }
+
+  bool operator==(const ResolvedFieldResults& other) const {
+    return type_ == other.type_ &&
+            fieldID_ == other.fieldID_ &&
+            fieldAst_ == other.fieldAst_ &&
+            results_ == other.results_ &&
+            syntaxOnly_ == other.syntaxOnly_;
+  }
+  bool operator!=(const ResolvedFieldResults& other) const {
+    return !(*this == other);
+  }
+  void swap(ResolvedFieldResults& other) {
+    std::swap(type_, other.type_);
+    fieldID_.swap(other.fieldID_);
+    std::swap(fieldAst_, other.fieldAst_);
+    results_.swap(other.results_);
+    std::swap(syntaxOnly_, other.syntaxOnly_);
+  }
+  static bool update(ResolvedFieldResults& keep,
+                     ResolvedFieldResults& addin) {
+    return defaultUpdate(keep, addin);
+  }
+  void mark(Context* context) const {
+    context->markPointer(type_);
+    fieldID_.mark(context);
+    context->markPointer(fieldAst_);
+    results_.mark(context);
+  }
+  size_t hash() const {
+    // Skip 'resolutionById_' since it can be quite large.
+    std::ignore = results_;
+    return chpl::hash(type_, fieldID_, fieldAst_, syntaxOnly_);
+  }
+
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
+  }
+};
 
 /** ResolvedFields represents the fully resolved fields for a
     class/record/union/tuple type.
@@ -3716,6 +3800,7 @@ CHPL_DEFINE_STD_HASH_(MostSpecificCandidate, (key.hash()));
 CHPL_DEFINE_STD_HASH_(MostSpecificCandidates, (key.hash()));
 CHPL_DEFINE_STD_HASH_(CallResolutionResult, (key.hash()));
 CHPL_DEFINE_STD_HASH_(TheseResolutionResult, (key.hash()));
+CHPL_DEFINE_STD_HASH_(ResolvedFieldResults, (key.hash()));
 CHPL_DEFINE_STD_HASH_(ResolvedFields, (key.hash()));
 CHPL_DEFINE_STD_HASH_(FieldDetail, (key.hash()));
 CHPL_DEFINE_STD_HASH_(ForwardingDetail, (key.hash()));

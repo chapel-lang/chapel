@@ -840,6 +840,8 @@ struct TConverter final : UastConverter,
                               Expr* fromExpr,
                               RV& rv);
 
+  void convertImplicitInit(const types::CompositeType* ct, ID id, RV& rv);
+
   // Convert move-init expressions
   Expr* convertMoveInitAssignOrNull(const Call* node, RV& rv);
   Expr* convertEnumIntegralCastOrNull(const Call* node, RV& rv);
@@ -1107,6 +1109,9 @@ struct TConverter final : UastConverter,
 
   bool enter(const For* node, RV& rv);
   void exit(const For* node, RV& rv);
+
+  bool enter(const Init* node, RV& rv);
+  void exit(const Init* node, RV& rv);
 
   bool enter(const AstNode* node, RV& rv);
   void exit(const AstNode* node, RV& rv);
@@ -3829,9 +3834,46 @@ Expr* TConverter::paramElideCallOrNull(const TypedFnSignature* sig,
   return ret;
 }
 
+void TConverter::convertImplicitInit(const types::CompositeType* ct, ID id, RV& rv) {
+  ResolutionContext rcval(context);
+  auto& results = resolution::resolveFieldResults(&rcval, ct, id, DefaultsPolicy::USE_DEFAULTS, false, false);
+  auto var = results.fieldAst()->toVarLikeDecl();
+  if (var->storageKind() == types::QualifiedType::TYPE ||
+      var->storageKind() == types::QualifiedType::PARAM) {
+    return;
+  } else if (results.results().byAst(results.fieldAst()).type().type()->isNothingType()) {
+    return;
+  }
+
+  ConvertedSymbolState calledFnState_ = cur;
+  std::swap(calledFnState_, cur);
+
+  RV fieldVis(rv.rc(), cur.symbol, *this, results.results());
+  results.fieldAst()->traverse(fieldVis);
+
+  auto sym = cur.localSyms[id];
+  types::QualifiedType outQt;
+  auto field = codegenGetField(nullptr, sym->name, rv, &outQt);
+  field = storeInTempIfNeeded(field, outQt);
+  insertStmt(new CallExpr(PRIM_MOVE, field, new SymExpr(sym)));
+
+  std::swap(calledFnState_, cur);
+}
+
 Expr* TConverter::convertMoveInitAssignOrNull(const Call* node, RV& rv) {
   auto op = node->toOpCall();
   if (!op || op->op() != USTR("=")) return nullptr;
+
+  if (cur.fnSymbol->isInitializer() ||
+      cur.fnSymbol->isCopyInit()) {
+    auto inits = cur.resolvedFunction->implicitInits();
+    if (auto it = inits.find(node->id()); it != inits.end()) {
+      auto& vec = it->second;
+      for (auto [ct, id] : vec) {
+        convertImplicitInit(ct, id, rv);
+      }
+    }
+  }
 
   auto re = rv.byAstOrNull(node);
   auto& candidate = re->mostSpecific().only();
@@ -5662,6 +5704,18 @@ bool TConverter::enter(const Function* node, RV& rv) {
       stmt->traverse(rv);
     }
 
+    if (cur.fnSymbol->isInitializer() ||
+        cur.fnSymbol->isCopyInit()) {
+      auto inits = cur.resolvedFunction->implicitInits();
+      if (auto it = inits.find(ID()); it != inits.end()) {
+        auto& vec = it->second;
+        for (auto [ct, id] : vec) {
+          convertImplicitInit(ct, id, rv);
+        }
+      }
+    }
+
+
     // add the epilogue label to the AST
     fn->insertAtTail(new DefExpr(cur.epilogueLabel));
 
@@ -6587,6 +6641,19 @@ bool TConverter::enter(const For* node, RV& rv) {
 }
 void TConverter::exit(const For* node, RV& rv) {
   exitScope(node, rv);
+}
+
+bool TConverter::enter(const Init* node, RV& rv) {
+  auto inits = cur.resolvedFunction->implicitInits();
+  if (auto it = inits.find(node->id()); it != inits.end()) {
+    auto& vec = it->second;
+    for (auto [ct, id] : vec) {
+      convertImplicitInit(ct, id, rv);
+    }
+  }
+  return false;
+}
+void TConverter::exit(const Init* node, RV& rv) {
 }
 
 bool TConverter::enter(const AstNode* node, RV& rv) {

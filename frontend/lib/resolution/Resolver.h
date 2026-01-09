@@ -234,6 +234,14 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
   Resolver(Resolver&& rhs) = default;
  ~Resolver();
 
+  const ResolvedFunction::ImplicitInitMap getImplicitInits() {
+    if (initResolver) {
+      return initResolver->implicitInits();
+    } else {
+      return ResolvedFunction::ImplicitInitMap();
+    }
+  }
+
   // set up Resolver to resolve a Module
   static Resolver
   createForModuleStmt(ResolutionContext* rc, const uast::Module* mod,
@@ -308,7 +316,8 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
                             const uast::AstNode* fieldStmt,
                             const types::CompositeType* compositeType,
                             ResolutionResultByPostorderID& byPostorder,
-                            DefaultsPolicy defaultsPolicy);
+                            DefaultsPolicy defaultsPolicy,
+                            bool fieldTypesOnly = true);
 
   // set up Resolver to resolve instantiated field declaration types
   static Resolver
@@ -318,7 +327,8 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
                                  const types::CompositeType* compositeType,
                                  const PoiScope* poiScope,
                                  ResolutionResultByPostorderID& byPostorder,
-                                 DefaultsPolicy defaultsPolicy);
+                                 DefaultsPolicy defaultsPolicy,
+                                 bool fieldTypesOnly = true);
 
   // Set up Resolver to resolve the numeric values of enum elements
   static Resolver
