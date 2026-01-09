@@ -381,6 +381,9 @@ Expr* getNextExpr(Expr* expr);
 Expr* new_Expr(const char* format, ...);
 Expr* new_Expr(const char* format, va_list vl);
 
+bool canSimplifyCallExpr(CallExpr* call);
+Expr* simplifyCallExpr(CallExpr* expr);
+
 // This mechanism allows storing optimization/analysis results
 // in case they need to be used by later passes.
 // The optimization/analysis result is stored in a PRIM_OPTIMIZATION_INFO
