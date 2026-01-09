@@ -611,8 +611,14 @@ static void setDebugSymbols(const ArgumentDescription* desc, const char* arg_unu
 static void setDebugSafeOptOnly(const ArgumentDescription* desc, const char* arg_unused) {
   // --no-copy-propagation
   fNoCopyPropagation = true;
+  // Dead code elimination (DCE) is made up of many different parts
+  // (dead var, dead expr, dead func, etc). DCE is needed by other parts of
+  // the compiler for proper compilation, so we can't fully disable it here.
+  // However, when debugging, we want to minimize the amount of code that
+  // is removed, so we disable as much of it as possible, controlled
+  // via fDebugSafeOptOnly directly
   // --no-dead-code-elimination
-  fNoDeadCodeElimination = true;
+  // fNoDeadCodeElimination = true;
   // --no-loop-invariant-code-motion
   fNoLoopInvariantCodeMotion = true;
   // --no-inline

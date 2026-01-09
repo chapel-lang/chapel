@@ -107,6 +107,10 @@ void deadVariableElimination(FnSymbol* fn) {
     if (!isVarSymbol(sym))
       continue;
 
+    // when debugging, we're only interested in compiler temps
+    if (fDebugSafeOptOnly && !sym->hasFlag(FLAG_TEMP))
+      continue;
+
     // A method must have a _this symbol, even if it is not used.
     if (sym == fn->_this)
       continue;
@@ -151,6 +155,9 @@ void deadVariableElimination(FnSymbol* fn) {
 // Removes expression statements that have no effect.
 //
 void deadExpressionElimination(FnSymbol* fn) {
+  // when debugging, skip this
+  if (fDebugSafeOptOnly) return;
+
   std::vector<BaseAST*> asts;
 
   collect_asts(fn, asts);
@@ -404,6 +411,9 @@ static bool isDeadModule(ModuleSymbol* mod) {
 
 // Eliminates all dead modules
 static void deadModuleElimination() {
+  // when debugging, skip this
+  if (fDebugSafeOptOnly) return;
+
   deadModuleCount = 0;
 
   forv_Vec(ModuleSymbol, mod, allModules) {
@@ -465,6 +475,8 @@ static bool removeVoidFunction(FnSymbol* fn) {
 }
 
 static void deadFunctionElimination() {
+  // when debugging, skip this
+  if (fDebugSafeOptOnly) return;
   // skip minimal modules, since many key functions are stubbed out and then get
   // removed, which breaks later passes
   if (fMinimalModules) return;
