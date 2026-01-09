@@ -372,12 +372,16 @@ proc getGitCode(gitListArg: list(4*string), show) {
 }
 
 // Retrieves root table compopts, external compopts, and system compopts
-proc getTomlCompopts(lock: borrowed Toml, ref compopts: list(string)) {
+proc getTomlCompopts(lock: borrowed Toml, ref compopts: list(string)) throws {
 
   // Checks for compilation options are present in Mason.toml
-  if lock.pathExists('root.compopts') {
-    const cmpFlags = lock["root"]!["compopts"]!.s;
-    compopts.pushBack(cmpFlags);
+  if lock.pathExists("root.compopts") {
+    const cmpFlags = lock["root"]!["compopts"]!;
+    try {
+      compopts.pushBack(parseCompilerOptions(cmpFlags));
+    } catch {
+      throw new MasonError("unable to parse compopts");
+    }
   }
 
   if lock.pathExists('external') {

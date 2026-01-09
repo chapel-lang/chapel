@@ -3,6 +3,8 @@
 Runtime/Compilation Arguments
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+ TODO FOR JADE: REWORK THIS AND LINK TO MANIFEST FILE FOR `compopts`
+
 For an example of forwarding arguments in a call to ``mason run``, a chapel program built in
 mason might have a ``config const number`` that corresponds to a value used in ``MyPackage.chpl``.
 To try out different values at runtime, pass the values for ``number`` to ``mason run`` as follows::
