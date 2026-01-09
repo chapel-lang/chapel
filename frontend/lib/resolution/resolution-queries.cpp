@@ -1102,8 +1102,9 @@ resolveFieldResults(ResolutionContext* rc,
                     const CompositeType* ct,
                     ID fieldId,
                     DefaultsPolicy defaultsPolicy,
-                    bool syntaxOnly) {
-  CHPL_RESOLUTION_QUERY_BEGIN(resolveFieldResults, rc, ct, fieldId, defaultsPolicy, syntaxOnly);
+                    bool syntaxOnly,
+                    bool fieldTypesOnly) {
+  CHPL_RESOLUTION_QUERY_BEGIN(resolveFieldResults, rc, ct, fieldId, defaultsPolicy, syntaxOnly, fieldTypesOnly);
 
   ResolutionResultByPostorderID rr;
   auto context = rc->context();
@@ -1129,7 +1130,8 @@ resolveFieldResults(ResolutionContext* rc,
     if (!syntaxOnly) {
       auto visitor =
         Resolver::createForInitialFieldStmt(rc, ad, fieldAst,
-                                            ct, rr, defaultsPolicy);
+                                            ct, rr, defaultsPolicy,
+                                            fieldTypesOnly);
 
       fieldAst->traverse(visitor);
     }
@@ -1143,7 +1145,8 @@ resolveFieldResults(ResolutionContext* rc,
       auto visitor =
         Resolver::createForInstantiatedFieldStmt(context, ad, fieldAst, ct,
                                                  poiScope, rr,
-                                                 defaultsPolicy);
+                                                 defaultsPolicy,
+                                                 fieldTypesOnly);
 
       fieldAst->traverse(visitor);
     }
