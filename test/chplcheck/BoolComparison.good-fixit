@@ -1,0 +1,12 @@
+module BoolComparison {
+  proc checkFlag(flag: bool) {
+    if flag {
+      writeln("Flag is true");
+    } else if !(flag) {
+      writeln("Flag is false");
+    }
+
+    var isTrue = flag;
+    var isFalse = !flag;
+  }
+}

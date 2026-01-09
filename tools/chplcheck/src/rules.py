@@ -347,6 +347,40 @@ def rules(driver: LintDriver):
 
         return [Fixit.build(Edit.build(paren_loc, new_text))]
 
+    @driver.basic_rule(chapel.OpCall)
+    def BoolComparison(context, node: chapel.OpCall):
+        """
+        Warn for comparing booleans to 'true' or 'false'.
+        """
+
+        op = node.op()
+        if op == "==" or op == "!=":
+            left = node.actual(0)
+            right = node.actual(1)
+            if isinstance(left, chapel.BoolLiteral):
+                return BasicRuleResult(node, data=(op, left, right))
+            elif isinstance(right, chapel.BoolLiteral):
+                return BasicRuleResult(node, data=(op, right, left))
+        return True
+
+    @driver.fixit(BoolComparison)
+    def FixBoolComparison(context, result: BasicRuleResult):
+        assert isinstance(result.data, tuple)
+        op, bool_lit, other = result.data
+        node = result.node
+        assert isinstance(node, chapel.OpCall)
+        lines = chapel.get_file_lines(context, node)
+
+        bool_value = bool_lit.value()
+        other_text = range_to_text(other.location(), lines)
+
+        if (op == "==" and bool_value) or (op == "!=" and not bool_value):
+            replacement = other_text
+        else:
+            replacement = "!(" + other_text + ")"
+
+        return [Fixit.build(Edit.build(node.location(), replacement))]
+
     @driver.basic_rule(chapel.Conditional)
     def SimpleBoolConditional(context, node: chapel.Conditional):
         """
