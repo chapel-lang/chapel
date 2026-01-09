@@ -377,7 +377,12 @@ def rules(driver: LintDriver):
         if (op == "==" and bool_value) or (op == "!=" and not bool_value):
             replacement = other_text
         else:
-            replacement = "!(" + other_text + ")"
+            already_has_parens = other.paren_location() is not None
+            needs_paren = not isinstance(
+                other, (chapel.FnCall, chapel.Identifier, chapel.Dot)
+            )
+            fmt = "!({0})" if needs_paren or already_has_parens else "!{0}"
+            replacement = fmt.format(other_text)
 
         return [Fixit.build(Edit.build(node.location(), replacement))]
 
