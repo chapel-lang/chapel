@@ -4186,7 +4186,7 @@ operator fileReader.=(ref lhs:fileReader, rhs:fileReader) {
   lhs._home = rhs._home;
   lhs._channel_internal = rhs._channel_internal;
   if rhs._deserializer != nil then
-    lhs._deserializer = new shared _serializeWrapper(rhs.deserializerType, rhs.deserializer);
+    lhs._deserializer = rhs._deserializer;
 }
 
 @chpldoc.nodoc
@@ -4203,7 +4203,7 @@ operator fileWriter.=(ref lhs:fileWriter, rhs:fileWriter) {
   lhs._home = rhs._home;
   lhs._channel_internal = rhs._channel_internal;
   if rhs._serializer != nil then
-    lhs._serializer = new shared _serializeWrapper(rhs.serializerType, rhs._serializer!.member);
+    lhs._serializer = rhs._serializer;
 }
 
 @chpldoc.nodoc
@@ -4235,7 +4235,7 @@ proc fileReader.init=(x: fileReader) {
   this.deserializerType = x.deserializerType;
   this._home = x._home;
   this._channel_internal = x._channel_internal;
-  this._deserializer = new shared _serializeWrapper(deserializerType, x._deserializer!.member);
+  this._deserializer = x._deserializer;
   this._readWriteThisFromLocale = x._readWriteThisFromLocale;
   init this;
   on x._home {
@@ -4253,7 +4253,7 @@ proc fileWriter.init=(x: fileWriter) {
   this.serializerType = x.serializerType;
   this._home = x._home;
   this._channel_internal = x._channel_internal;
-  this._serializer = new shared _serializeWrapper(serializerType, x._serializer!.member);
+  this._serializer = x._serializer;
   this._readWriteThisFromLocale = x._readWriteThisFromLocale;
   init this;
   on x._home {
