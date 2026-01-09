@@ -1,4 +1,5 @@
 Active rules:
+  BoolComparison               Warn for comparing booleans to 'true' or 'false'.
   BoolLitInCondStmt            Warn for boolean literals like 'true' in a conditional statement.
   CamelCaseFunctions           Warn for functions that are not 'camelCase'.
   CamelCaseRecords             Warn for records that are not 'camelCase'.
