@@ -1957,7 +1957,7 @@ proc BlockDom.numRemoteElems(viewDom, rlo, rid) {
 }
 
 private proc canDoAnyToBlock(Dest, destDom, Src, srcDom) param : bool {
-  if Src.doiCanBulkTransferRankChange() == false &&
+  if !Src.doiCanBulkTransferRankChange() &&
      Dest.rank != Src.rank then return false;
 
   use Reflection;
