@@ -118,8 +118,8 @@ features.
     edition. Then, when a new edition is created from the ``preview`` edition,
     the feature will be stable in that edition. Adding a new feature to the
     ``preview`` edition does not require removing the unstable version of the
-    feature; both versions can coexist until the edition containing the
-    unstable version is no longer supported.
+    feature from its current edition; both versions can coexist until the
+    edition containing the unstable version is no longer supported.
 
     Users who make use of the new feature will get an unstable warning if
     ``--warn-unstable`` is enabled (or by default when compiling with a
