@@ -732,9 +732,9 @@ represented number while changing whether or not it is imaginary.
 Bitwise Numeric Conversions
 '''''''''''''''''''''''''''
 
-Some numeric types can also be explicitly converted using ``transmute``
-to perform a bitwise conversion, changing the type of the value without
-affecting the underlying bit representation.
+Some numeric types can also be explicitly converted to other numeric types using
+``transmute``. ``transmute`` changes the type of the value without affecting
+the underlying bit representation.
 
 .. function:: proc real(?w).transmute(type t: uint(w)) : t
 
@@ -753,9 +753,9 @@ affecting the underlying bit representation.
    *Example (transmute.chpl)*
 
    Suppose that we want to extract the sign bit of a floating-point value.
-   We can use ``transmute`` to convert the floating point value to an
-   unsigned integer type of the same size, and then use bitwise operations
-   to extract the sign bit.
+   We can use ``transmute`` to convert the floating point value into an
+   unsigned integer of the same size, and then use bitwise operations
+   to extract the sign bit (which is the uppermost bit).
 
    .. code-block:: chapel
 
