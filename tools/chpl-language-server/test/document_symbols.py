@@ -91,9 +91,21 @@ async def test_document_symbols(client: LanguageClient):
         (rng((19, 2), (22, 3)), "enum myEnum", SymbolKind.Enum),
         (rng((20, 4), (20, 5)), "a", SymbolKind.EnumMember),
         (rng((21, 4), (21, 5)), "b", SymbolKind.EnumMember),
-        (rng((23, 2), (23, 32)), "private proc privateFunc()", SymbolKind.Function),
-        (rng((24, 2), (24, 38)), 'extern "myFunc" proc externalFunc()', SymbolKind.Function),
-        (rng((25, 2), (25, 44)), "public export inline proc publicFunc()", SymbolKind.Function),
+        (
+            rng((23, 2), (23, 32)),
+            "private proc privateFunc()",
+            SymbolKind.Function,
+        ),
+        (
+            rng((24, 2), (24, 38)),
+            'extern "myFunc" proc externalFunc()',
+            SymbolKind.Function,
+        ),
+        (
+            rng((25, 2), (25, 44)),
+            "public export inline proc publicFunc()",
+            SymbolKind.Function,
+        ),
     ]
 
     async with source_file(client, file) as doc:
