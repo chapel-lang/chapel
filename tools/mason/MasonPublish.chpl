@@ -459,11 +459,11 @@ private proc addPackageToBricks(projectLocal: string, safeDir: string,
                                 isLocal: bool) throws {
   const bricksDir = joinPath(safeDir, 'Bricks');
   const projectBrickDir = joinPath(bricksDir, name);
-  const versionToml = joinPath(projectBrickDir, versionNum + ".toml");
   try! {
-    const toParse = open(projectLocal + "/Mason.toml", ioMode.r);
+    const toParse = open(joinPath(projectLocal, "Mason.toml"), ioMode.r);
     var tomlFile = (parseToml(toParse));
     const versionNum = tomlFile!['brick.version']!.s;
+    const versionToml = joinPath(projectBrickDir, versionNum + ".toml");
     if !isLocal {
       if !exists(bricksDir) {
         throw new MasonError('Registry does not have the expected structure. ' +
@@ -487,8 +487,7 @@ private proc addPackageToBricks(projectLocal: string, safeDir: string,
                              'already exists in the Bricks.');
         exit(1);
       }
-    }
-    else {
+    } else {
       if !exists(joinPath(safeDir, '.git')) {
         throw new MasonError(
           'Unable to publish your package to the registry, ' +
@@ -510,7 +509,6 @@ private proc addPackageToBricks(projectLocal: string, safeDir: string,
       else {
         throw new MasonError('A package with that name and version '+
                              'already exists in the Bricks.');
-        exit(1);
       }
     }
   }
