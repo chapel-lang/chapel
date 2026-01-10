@@ -5,7 +5,7 @@ use MasonUtils;
 use TOML;
 use FileSystem;
 
-proc main() {
+proc main() throws {
   const basename = "addBadDep";
   mkdir('tmp/' + basename, parents=true);
 
@@ -19,7 +19,12 @@ proc main() {
   addCmd[0] = "add";
   addCmd[1] = "badDep@5.5.5";
   
-  masonModify(addCmd);
+
+  try {
+    masonModify(addCmd);
+  } catch e: MasonError {
+    writeln(e.message());
+  }
   showToml('Mason.toml');
 
   here.chdir('../../');
