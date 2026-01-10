@@ -180,7 +180,8 @@ private proc determineExamples(exampleNames: list(string),
 
 
 private proc runExamples(show: bool, run: bool, build: bool, release: bool,
-                         skipUpdate: bool, force: bool, examplesRequested: list(string)) throws {
+                         skipUpdate: bool, force: bool,
+                         examplesRequested: list(string)) throws {
 
   try! {
 
