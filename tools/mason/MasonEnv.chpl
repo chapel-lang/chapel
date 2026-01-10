@@ -179,7 +179,7 @@ proc masonEnv(args) {
   }
 }
 
-private proc getRegNameFromLoc(location: string): string {
+private proc getRegNameFromLoc(location: string): string throws {
   var strippedLoc  = location.strip("/", leading=false);
   var lastSlashPos = strippedLoc.rfind("/");
   if lastSlashPos == -1 {
