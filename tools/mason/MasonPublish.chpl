@@ -251,8 +251,7 @@ proc publishPackage(username: string,
       branchMasonReg(username, name, safeDir, registryPath);
     }
 
-    const version = addPackageToBricks(packageLocation, safeDir, name,
-                                       registryPath, isLocal);
+    const version = addPackageToBricks(packageLocation, safeDir, name, isLocal);
     const message =
       ' "Adding %s package to registry via mason publish"'.format(version);
     var command = ['git', 'commit', '-q', '-m', message];
@@ -355,9 +354,8 @@ proc cloneMasonReg(username: string,
       return ret;
     }
     else {
-      const gitRegistryPath =
-        'git clone --quiet ' + registryPath + ' mason-registry';
-      var gitCall = gitC(safeDir, gitRegistryPath, false);
+      const gitClone = 'git clone --quiet %s mason-registry';
+      var gitCall = gitC(safeDir, gitClone.format(registryPath), false);
       return gitCall;
     }
   }
@@ -455,8 +453,7 @@ proc getPackageName() throws {
   version.toml with the source url of the package's GitHub repo.
  */
 private proc addPackageToBricks(projectLocal: string, safeDir: string,
-                                name: string, registryPath: string,
-                                isLocal: bool) throws {
+                                name: string, isLocal: bool) throws {
   const bricksDir = joinPath(safeDir, 'Bricks');
   const projectBrickDir = joinPath(bricksDir, name);
   try! {
@@ -663,7 +660,8 @@ proc check(username: string, path: string, trueIfLocal: bool, ci: bool) throws {
        force = true
        opt = false
        example = false
-    If these are different than what is required to build your package you can disregard this check
+    If these are different than what is required to build your package
+    you can disregard this check
     """.dedent().strip();
     writeln(s);
     attemptToBuild();
@@ -852,7 +850,8 @@ private proc registryPathCheck(path: string,
  */
 private proc getRemoteOrigin() {
   const packageDir = here.cwd();
-  var gitRemoteOrigin = gitC(packageDir, 'git config --get remote.origin.url', true);
+  const gitRemoteOrigin =
+    gitC(packageDir, 'git config --get remote.origin.url', true);
   return gitRemoteOrigin;
 }
 
@@ -870,7 +869,8 @@ private proc ensureMasonProject(cwd : string, tomlName="Mason.toml") : string {
   return ensureMasonProject(dirname, tomlName);
 }
 
-/*Checks to make sure the package has a main module
+/*
+  Checks to make sure the package has a main module
 
   The source file for the main module should have the same name as the package.
   For example, `foo.chpl` is a valid main module for the following package:
@@ -878,12 +878,12 @@ private proc ensureMasonProject(cwd : string, tomlName="Mason.toml") : string {
     foo/
       Mason.toml
       src/
-        foo.chpl  # module foo { include module bar; use bar; proc main() { ... } }
+        foo.chpl # module foo { include module bar; use bar; proc main() {...} }
         foo/
           bar.chpl
       ...
 
- */
+*/
 private proc moduleCheck(projectHome : string) throws {
   const files = listDir(projectHome + '/src', dirs=false),
         modules = for f in files do if f.endsWith('.chpl') then f;
@@ -907,8 +907,7 @@ proc testCheck(projectHome: string) {
     return tests.size > 0;
   } else return false;
 }
-/* Returns the mason env
- */
+/* Returns the mason env */
 private proc returnMasonEnv() {
   const fakeArgs = ['env'];
   masonEnv(fakeArgs);
@@ -939,8 +938,10 @@ proc gitTagVersionCheck(projectHome: string) throws {
   return (false, allTags, version);
 }
 
-/* make sure directory created is same as that of package
-   name in manifest file */
+/*
+  make sure directory created is same as that of package
+  name in manifest file
+*/
 proc namespaceCollisionCheck(projectHome: string) throws {
   var directoryName = basename(projectHome);
   const toParse = open(projectHome + "/Mason.toml", ioMode.r);
