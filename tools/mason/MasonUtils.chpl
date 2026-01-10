@@ -151,7 +151,8 @@ proc runCommand(cmd: string, quiet=false) : string throws {
 /* Same as runCommand but for situations where an
    exit status is needed */
 proc runWithStatus(command: string, quiet=false): int {
-  return runWithStatus(command.split());
+  var cmd = command.split();
+  return runWithStatus(cmd);
 }
 proc runWithStatus(command: [] string, quiet=false): int {
 
