@@ -32,9 +32,10 @@ proc MASON_HOME : string {
   return masonHome;
 }
 
-/* Returns an array of directory strings corresponding to MASON_HOME/name for
-   each name in MASON_REGISTRY.
- */
+/*
+  Returns an array of directory strings corresponding to MASON_HOME/name for
+  each name in MASON_REGISTRY.
+*/
 proc MASON_CACHED_REGISTRY {
   const masonRegistry = MASON_REGISTRY;
   const masonHome = MASON_HOME;
@@ -45,14 +46,17 @@ proc MASON_CACHED_REGISTRY {
   return cachedRegistry;
 }
 
-/* Returns value of MASON_OFFLINE, environment variable that disales online access.
- */
+/*
+  Returns value of MASON_OFFLINE, environment variable that
+  disables online access.
+*/
 proc MASON_OFFLINE {
   const offlineEnv = getEnv('MASON_OFFLINE');
   const default = false;
   var offline = false;
 
-  if (offlineEnv == 'true') || (offlineEnv == 'True') || (offlineEnv == 'TRUE') || (offlineEnv == '1') {
+  if (offlineEnv == 'true') || (offlineEnv == 'True') ||
+     (offlineEnv == 'TRUE') || (offlineEnv == '1') {
     offline = true;
   }
   else offline = default;
@@ -101,7 +105,8 @@ proc MASON_REGISTRY {
     for i in registries.indices {
       for j in i+1..<registries.size {
         if registries(i)(0) == registries(j)(0) {
-          stderr.writeln("registry names specified in MASON_REGISTRY must be unique:");
+          stderr.writeln("registry names specified in " +
+                         "MASON_REGISTRY must be unique:");
           stderr.writeln(registries(i)(0), " - ", registries(i)(1));
           stderr.writeln(registries(j)(0), " - ", registries(j)(1));
           exit(1);
