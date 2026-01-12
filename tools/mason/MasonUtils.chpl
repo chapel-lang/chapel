@@ -540,7 +540,7 @@ proc getMasonDependencies(sourceList: list(3*string),
 
     // Add dependencies to project
     for (_, name, version) in sourceList {
-      const depSrc = joinPath(depPath, "%s?%s".format(name, version),
+      const depSrc = joinPath(depPath, "%s-%s".format(name, version),
                               "src", "%s.chpl".format(name));
       masonCompopts.pushBack(depSrc);
     }
@@ -550,7 +550,7 @@ proc getMasonDependencies(sourceList: list(3*string),
 
     // Add git dependencies
     for (_, name, branch, _) in gitList {
-      const gitDepSrc = joinPath(gitDepPath, "%s?%s".format(name, branch),
+      const gitDepSrc = joinPath(gitDepPath, "%s-%s".format(name, branch),
                                  "src", "%s.chpl".format(name));
       masonCompopts.pushBack(gitDepSrc);
     }
