@@ -152,11 +152,11 @@ proc runCommand(cmd: string, quiet=false) : string throws {
    exit status is needed */
 proc runWithStatus(command: string, quiet=false): int {
   var cmd = command.split();
-  return runWithStatus(cmd);
+  return runWithStatus(cmd, quiet=quiet);
 }
 proc runWithStatus(command: [] string, quiet=false): int {
-
   try {
+    log.debugf("runWithStatus: %?\n", command);
     var sub = spawn(command, stdout=pipeStyle.pipe, stderr=pipeStyle.pipe);
 
     var line:string;
@@ -166,24 +166,9 @@ proc runWithStatus(command: [] string, quiet=false): int {
     }
     sub.wait();
     return sub.exitCode;
-  }
-  catch {
-    return -1;
-  }
-}
-
-proc runWithProcess(command, quiet=false) throws {
-  try {
-    var cmd = command.split();
-    log.debugf("runWithProcess: %?\n", cmd);
-    var process = spawn(cmd, stdout=pipeStyle.pipe, stderr=pipeStyle.pipe);
-
-    return process;
-  }
-  catch e {
+  } catch e {
     log.debugf("Caught unknown error ('%?') for command: %?\n", e, command);
-    throw new owned MasonError("Internal mason error");
-    exit(0);
+    return -1;
   }
 }
 
@@ -543,27 +528,31 @@ proc isIdentifier(name:string) {
 
 proc getMasonDependencies(sourceList: list(3*string),
                           gitList: list(4*string),
-                          progName: string) {
+                          progName: string): list(string) {
 
   // Declare example to run as the main module
-  var masonCompopts = " ".join(" --main-module", progName, " ");
+  var masonCompopts: list(string);
+  masonCompopts.pushBack("--main-module");
+  masonCompopts.pushBack(progName);
 
   if sourceList.size > 0 {
-    const depPath = MASON_HOME + "/src/";
+    const depPath = joinPath(MASON_HOME, "src");
 
     // Add dependencies to project
     for (_, name, version) in sourceList {
-      var depSrc = "".join(' ',depPath, name, "-", version, '/src/', name, ".chpl");
-      masonCompopts += depSrc;
+      const depSrc = joinPath(depPath, "%s?%s".format(name, version),
+                              "src", "%s.chpl".format(name));
+      masonCompopts.pushBack(depSrc);
     }
   }
   if gitList.size > 0 {
-    const gitDepPath = MASON_HOME + '/git/';
+    const gitDepPath = joinPath(MASON_HOME, "git");
 
     // Add git dependencies
     for (_, name, branch, _) in gitList {
-      var gitDepSrc = ' ' + gitDepPath + name + "-" + branch + '/src/' + name + ".chpl";
-      masonCompopts += gitDepSrc;
+      const gitDepSrc = joinPath(gitDepPath, "%s?%s".format(name, branch),
+                                 "src", "%s.chpl".format(name));
+      masonCompopts.pushBack(gitDepSrc);
     }
   }
   return masonCompopts;
