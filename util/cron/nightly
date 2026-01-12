@@ -725,7 +725,7 @@ if ($fast == 1) {
     $testflags = "$testflags -compopts --fast";
 }
 if ($debug_symbols == 1) {
-    $testflags = "$testflags -compopts --debug -compopts --verify";
+    $testflags = "$testflags -compopts --debug-symbols";
 }
 if ($debug_optimizations == 1) {
     $testflags = "$testflags -compopts --debug-safe-optimizations-only";

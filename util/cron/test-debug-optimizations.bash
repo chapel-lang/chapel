@@ -8,4 +8,4 @@ source $UTIL_CRON_DIR/common-localnode-paratest.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="debug-optimizations"
 
-$UTIL_CRON_DIR/nightly -cron -no-local -debug-optimizations $(get_nightly_paratest_args)
+$UTIL_CRON_DIR/nightly -cron -no-local -debug-optimizations -debug-symbols $(get_nightly_paratest_args)
