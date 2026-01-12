@@ -576,7 +576,7 @@ static bool initHelper(Context* context,
     auto bct = t->getCompositeType()->toBasicClassType();
     auto pct = bct->parentClassType();
 
-    if (pct && !pct->isRootClass()) {
+    if (pct) {
       addSuperInit = true;
 
       const Type* manager = nullptr;
@@ -791,11 +791,6 @@ buildInitUfsFormals(const uast::Function* initFn) {
 static const TypedFnSignature*
 generateInitSignature(ResolutionContext* rc, const CompositeType* inCompType) {
   auto context = rc->context();
-  if (auto ct = inCompType->getCompositeType()->toBasicClassType()) {
-    if (ct->isRootClass()) {
-      return nullptr;
-    }
-  }
 
   auto& br = buildInitializer(context, inCompType->id());
 
