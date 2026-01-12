@@ -243,7 +243,7 @@ private proc runExamples(show: bool, run: bool, build: bool, release: bool,
             compCommand.pushBack(compopts);
             compCommand.pushBack(masonCompopts);
             compCommand.pushBack(exampleCompopts);
-            if show then writeln(" ".join(compCommand));
+            if show then writeln(" ".join(compCommand.these()));
             const compilation = runWithStatus(compCommand.toArray());
 
             if compilation != 0 {
