@@ -733,8 +733,8 @@ Bitwise Numeric Conversions
 '''''''''''''''''''''''''''
 
 Some numeric types can also be explicitly converted to other numeric types using
-``transmute``. ``transmute`` changes the type of the value without affecting
-the underlying bit representation.
+``transmute``. ``transmute`` returns a new value of the specified type, whose
+bit pattern is identical to that of the original value.
 
 .. function:: proc real(?w).transmute(type t: uint(w)) : t
 
