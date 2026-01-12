@@ -48,7 +48,7 @@ BasicClassType::get(Context* context, ID id, UniqueString name,
                     SubstitutionsMap subs) {
   // getRootClassType should be used to construct RootClass
   // everything else should have a parent type.
-  CHPL_ASSERT(parentType != nullptr);
+  CHPL_ASSERT(parentType != nullptr || name == USTR("RootClass"));
   auto linkage = parsing::idToDeclLinkage(context, id);
   return getBasicClassType(context, id, name,
                            parentType, instantiatedFrom,
@@ -58,11 +58,10 @@ BasicClassType::get(Context* context, ID id, UniqueString name,
 
 const BasicClassType*
 BasicClassType::getRootClassType(Context* context) {
-  ID emptyId;
-  auto name = UniqueString::get(context, "RootClass");
+  auto id = parsing::getRootClassIdFromTopLevelChapelBaseModule(context);
 
   auto linkage = uast::Decl::DEFAULT_LINKAGE;
-  return getBasicClassType(context, emptyId, name,
+  return getBasicClassType(context, id, USTR("RootClass"),
                            /* parentType */ nullptr,
                            /* instantiatedFrom */ nullptr,
                            SubstitutionsMap(),

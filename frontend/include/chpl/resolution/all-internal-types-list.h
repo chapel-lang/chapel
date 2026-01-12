@@ -40,6 +40,7 @@ END_INTERNAL_MODULE(Bytes)
 START_INTERNAL_MODULE(ChapelBase)
   INTERNAL_TYPE(ChapelBase, IterKind, iterKind, "enum iterKind { leader, follower, standalone }")
   INTERNAL_TYPE(ChapelBase, DData, _ddata, "record _ddata {}")
+  INTERNAL_TYPE(ChapelBase, RootClass, _object, "class _object {}")
 END_INTERNAL_MODULE(ChapelBase)
 
 START_INTERNAL_MODULE(ChapelContext)

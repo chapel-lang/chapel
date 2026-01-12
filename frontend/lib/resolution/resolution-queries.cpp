@@ -1619,6 +1619,10 @@ static Type::Genericity getFieldsGenericity(Context* context,
   Type::Genericity g = Type::CONCRETE;
 
   if (auto bct = ct->toBasicClassType()) {
+    // RootClass is concrete.
+    if (bct->parentClassType() == nullptr)
+      return Type::CONCRETE;
+
     g = getFieldsGenericity(context, bct->parentClassType(), ignore);
     CHPL_ASSERT(g != Type::MAYBE_GENERIC);
     if (g == Type::GENERIC)
