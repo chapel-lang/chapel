@@ -382,7 +382,7 @@ proc getGitCode(gitListArg: list(4*string), show) {
 }
 
 // Retrieves root table compopts, external compopts, and system compopts
-proc getTomlCompopts(lock: borrowed Toml) {
+proc getTomlCompopts(lock: borrowed Toml): list(string) {
   var compopts = new list(string);
   // Checks for compilation options are present in Mason.toml
   if lock.pathExists('root.compopts') {

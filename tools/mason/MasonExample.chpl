@@ -110,24 +110,28 @@ private proc getBuildInfo(projectHome: string, skipUpdate: bool) {
   toml.close();
 
 
-  return (sourceList, gitList, projectPath, compopts, exampleNames, perExampleOptions);
+  return (sourceList, gitList, projectPath,
+          compopts, exampleNames, perExampleOptions);
 }
 
 // retrieves compopts and execopts for each example.
-// returns assoc array of <example_name> -> <(compopts, execopts)>
-private proc getExampleOptions(toml: Toml, exampleNames: list(string)) {
-
-  var exampleOptions = new map(string, (string, string));
+private proc getExampleOptions(
+  toml: Toml,
+  exampleNames: list(string)
+): map(string, (list(string), list(string))) {
+  // TODO: handle compopts and execopts as either a list or string
+  var exampleOptions = new map(string, (list(string), list(string)));
   for example in exampleNames {
     const exampleName = basename(stripExt(example, ".chpl"));
-    exampleOptions[exampleName] = ("", "");
-    if toml.pathExists("".join("examples.", exampleName, ".compopts")) {
-      var compopts = toml["".join("examples.", exampleName)]!["compopts"]!.s;
-      exampleOptions[exampleName][0] = compopts;
+    exampleOptions[exampleName] = (new list(string), new list(string));
+    const examplePath = "examples." + exampleName;
+    if toml.pathExists(examplePath + ".compopts") {
+      var compopts = toml[examplePath]!["compopts"]!.s;
+      exampleOptions[exampleName][0] = new list(compopts.split(" "));
     }
-    if toml.pathExists("".join("examples.", exampleName, ".execopts")) {
-      var execopts = toml["".join("examples.", exampleName)]!["execopts"]!.s;
-      exampleOptions[exampleName][1] = execopts;
+    if toml.pathExists(examplePath + ".execopts") {
+      var execopts = toml[examplePath]!["execopts"]!.s;
+      exampleOptions[exampleName][1] =  new list(execopts.split(" "));
     }
   }
   return exampleOptions;
@@ -218,7 +222,7 @@ private proc runExamples(show: bool, run: bool, build: bool, release: bool,
         var exampleCompopts = optsFromToml[0];
         var exampleExecopts = optsFromToml[1];
 
-        if release then exampleCompopts += " --fast";
+        if release then exampleCompopts.pushBack("--fast");
 
         if build {
           if force || exampleModified(projectHome, projectName, example) {
@@ -239,25 +243,22 @@ private proc runExamples(show: bool, run: bool, build: bool, release: bool,
             compCommand.pushBack(compopts);
             compCommand.pushBack(masonCompopts);
             compCommand.pushBack(exampleCompopts);
-            if show then writeln(compCommand);
+            if show then writeln(" ".join(compCommand));
             const compilation = runWithStatus(compCommand.toArray());
 
             if compilation != 0 {
               stderr.writeln("compilation failed for " + example);
-            }
-            else {
-              if show || !run then writeln("compiled ", example, " successfully");
-              if run {
+            } else {
+              if show || !run then
+                writeln("compiled ", example, " successfully");
+              if run then
                 runExampleBinary(projectHome, exampleName, release, show, exampleExecopts);
-              }
             }
-          }
-          // build is skipped but examples still need to be run
-          else {
+          } else {
+            // build is skipped but examples still need to be run
             writeln("Skipping "+ example + ": no changes made to project or example");
-            if run {
+            if run then
               runExampleBinary(projectHome, exampleName, release, show, exampleExecopts);
-            }
           }
         }
         // just running the example
@@ -278,16 +279,22 @@ private proc runExamples(show: bool, run: bool, build: bool, release: bool,
 
 
 private proc runExampleBinary(projectHome: string, exampleName: string,
-                              release: bool, show: bool, execopts: string) throws {
-  const command = "".join(projectHome,'/target/example/', exampleName, " ", execopts);
+                              release: bool, show: bool,
+                              execopts: list(string)) throws {
+  const executable = joinPath(projectHome, "target", "example", exampleName);
+  var command: list(string);
+  command.pushBack(executable);
+  command.pushBack(execopts);
   if show {
-    if release then writeln("Executing [release] target: " + command);
-    else writeln("Executing [debug] target: " + command);
+    if release
+      then writeln("Executing [release] target: " + " ".join(command.these()));
+      else writeln("Executing [debug] target: " + " ".join(command.these()));
   }
 
-  const exampleResult = runWithStatus(command);
+  const exampleResult = runWithStatus(command.toArray());
   if exampleResult != 0 {
-    throw new owned MasonError("Example has not been compiled: " + exampleName + ".chpl\n" +
+    throw new MasonError(
+    "Example has not been compiled: " + exampleName + ".chpl\n" +
     "Try running: mason build --example " + exampleName + ".chpl\n" +
     "         or: mason run --example " + exampleName + ".chpl --build");
   }
