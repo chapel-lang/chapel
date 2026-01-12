@@ -15,7 +15,7 @@ proc main() {
   // generate includes to git repos
   const compopts = " ".join(getMasonDependencies(sourceList,
                                                  gitList,
-                                                 "gitTest"));
+                                                 "gitTest").these());
   // ensure the git path to the two dependencies exist
   writeln(compopts.find("/git/DummyRepo-master/src/DummyRepo.chpl") > 0);
   writeln(compopts.find("/git/SecondRepo-test-branch/src/SecondRepo.chpl") > 0);
