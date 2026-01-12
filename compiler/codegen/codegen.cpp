@@ -429,25 +429,31 @@ struct compareSymbolFunctor {
 // Visit class types in depth-first preorder order.
 // Assigns class IDs to classes in that order.
 static void preorderVisitClassesComputeIds(TypeSymbol* ts, int* nextNumber) {
-  std::set<TypeSymbol*, compareSymbolFunctor> children;
+  typedef std::set<TypeSymbol*, compareSymbolFunctor> children_set;
 
-  if (ts != nullptr) {
+  children_set children;
+
+  if (ts != NULL) {
     AggregateType* at   = toAggregateType(ts->type);
     int            myN1 = *nextNumber;
 
-    INT_ASSERT(at != nullptr);
+    INT_ASSERT(at != NULL);
 
     *nextNumber = *nextNumber + 1;
     at->classId = myN1;
 
     // visit children in order
     forv_Vec(AggregateType, child, at->dispatchChildren) {
-      if (child != nullptr) {
+      if (child != NULL) {
         children.insert(child->symbol);
       }
     }
 
-    for (auto child: children) {
+    for (children_set::iterator it = children.begin();
+         it != children.end();
+         ++it ) {
+      TypeSymbol* child = *it;
+
       preorderVisitClassesComputeIds(child, nextNumber);
     }
   }
@@ -1135,111 +1141,67 @@ static int uniquifyNameNextCount(MapElem<const char*, int>*& elem,
   return ++elem->value;
 }
 
-struct CNameList {
-private:
-  std::set<Symbol*> symbols;
-  std::set<const char*> reserved;
-public:
-  void populateReserved() {
-    // reserved symbol names that require renaming to compile
-#include "reservedSymbolNames.h"
-  }
-  void insert(Symbol* sym) {
-    symbols.insert(sym);
-  }
-  bool contains(const char* name) const {
-    return reserved.find(name) != reserved.end() || symbol(name) != nullptr;
-  }
-  Symbol* symbol(const char* name) const {
-    auto it = std::find_if(symbols.begin(), symbols.end(),
-                           [name](auto s) { return s->cname == name; });
-    if (it != symbols.end())
-      return *it;
-    return nullptr;
-  }
-  void clear() {
-    symbols.clear();
-  }
-};
-
-static inline void renameSymbol(Symbol* sym,
-                                CNameList* set1,
-                                CNameList* set2) {
+static void uniquifyName(Symbol* sym,
+                         std::set<const char*>* set1,
+                         std::set<const char*>* set2 = NULL)
+{
   const char* name = sym->cname;
   const char* newName = name;
-  if (fMaxCIdentLen > 0 &&
-      (int)(strlen(newName) + maxCNameAddedChars) > fMaxCIdentLen) {
-    // how much of the name to preserve
-    int prefixLen = fMaxCIdentLen - maxUniquifyAddedChars - maxCNameAddedChars;
-    if (!longCNameReplacementBuffer) {
-      longCNameReplacementBuffer = (char*)malloc(prefixLen+1);
-      longCNameReplacementBuffer[prefixLen] = '\0';
+
+  if (sym->isRenameable())
+  {
+    if (fMaxCIdentLen > 0 &&
+        (int)(strlen(newName) + maxCNameAddedChars) > fMaxCIdentLen)
+    {
+      // how much of the name to preserve
+      int prefixLen = fMaxCIdentLen - maxUniquifyAddedChars - maxCNameAddedChars;
+      if (!longCNameReplacementBuffer) {
+        longCNameReplacementBuffer = (char*)malloc(prefixLen+1);
+        longCNameReplacementBuffer[prefixLen] = '\0';
+      }
+      strncpy(longCNameReplacementBuffer, newName, prefixLen);
+      INT_ASSERT(longCNameReplacementBuffer[prefixLen] == '\0');
+      longCNameReplacementBuffer[prefixLen-1] = 'X'; //fyi truncation marker
+      name = newName = astr(longCNameReplacementBuffer);
     }
-    strncpy(longCNameReplacementBuffer, newName, prefixLen);
-    INT_ASSERT(longCNameReplacementBuffer[prefixLen] == '\0');
-    longCNameReplacementBuffer[prefixLen-1] = 'X'; //fyi truncation marker
-    name = newName = astr(longCNameReplacementBuffer);
-  }
 
-  MapElem<const char*, int>* elem = nullptr;
-  while (set1->contains(newName) ||
-          (set2 && set2->contains(newName))) {
-    char numberTmp[64];
-    snprintf(numberTmp, 64, "%d", uniquifyNameNextCount(elem, name));
-    if (fIdBasedMunging && !isVarSymbol(sym)) {
-      // use a special character to mark instantiations
-      // (but don't worry about it for local variables)
-      newName = astr(name, "`", numberTmp);
-    } else {
-      newName = astr(name, numberTmp);
+    MapElem<const char*, int>* elem = NULL;
+    while ((set1->find(newName)!=set1->end()) ||
+           (set2 && (set2->find(newName)!=set2->end()))) {
+      char numberTmp[64];
+      snprintf(numberTmp, 64, "%d", uniquifyNameNextCount(elem, name));
+      if (fIdBasedMunging && !isVarSymbol(sym)) {
+        // use a special character to mark instantiations
+        // (but don't worry about it for local variables)
+        newName = astr(name, "`", numberTmp);
+      } else {
+        newName = astr(name, numberTmp);
+      }
     }
+
+    sym->cname = newName;
   }
-
-  sym->cname = newName;
-}
-
-static void uniquifyName(Symbol* sym,
-                         CNameList* set1,
-                         CNameList* set2 = nullptr) {
-  const char* name = sym->cname;
-
-  if (sym->isRenameable()) {
-    renameSymbol(sym, set1, set2);
-  } else {
+  else
+  {
     // If we have already seen this name before, we need to go back
     // to that earlier-seen symbol, either renaming it or checking
-    // that its type is the same.
+    // that its type is the same. See also #9299.
+    //
+    // This is currently not implemented. For now, at least detect it
+    // to avoid generating erroneous C code silently.
     //
     // Do this only for things local to a function.
     // We use multiple Symbols for the same extern at the global scope,
     // be it a (possibly generic) function, type, variable.
     // Ex.: c_pointer_return, qbuffer_ptr_t, QBUFFER_PTR_NULL.
     //
-    if (set2 && set1->contains(name)) {
-      auto prevSym = set1->symbol(name);
-      // if we contain the name but don't have a symbol, its likely a reserved name
-      // its unlikely this code will ever be hit, but just in case we check instead of assert
-      if (!prevSym) {
-        INT_FATAL(sym, "name conflict with a non-renameable symbol");
-      }
-      // if prevSym and sym are both not renameable, allow it for now
-      // otherwise its a name conflict
-      INT_ASSERT(!sym->isRenameable());
-      if (prevSym->isRenameable()) {
-        // we can rename prevSym here instead of erroring out
-        // assuming sym and prevSym are the same type
-        if (prevSym->type == sym->type) {
-          renameSymbol(prevSym, set1, set2);
-        }
-        // don't handle the case of differing types here, that gets errors later
-      }
-
-    }
+    if (set2 && (set1->find(name) != set1->end()) )
+      INT_FATAL(sym, "name conflict with a non-renameable symbol");
   }
 
   // Record the name even if the symbol is not renameable.
   // This enables detection of like-named symbols encountered later.
-  set1->insert(sym);
+  set1->insert(newName);
 }
 
 static inline bool shouldCodegenAggregate(AggregateType* ct)
@@ -1671,10 +1633,13 @@ static void codegen_defn(std::set<const char*> & cnames, std::vector<TypeSymbol*
   }
 }
 
-static void uniquify_names(CNameList& cnames,
+static void uniquify_names(std::set<const char*> & cnames,
                            std::vector<TypeSymbol*> & types,
                            std::vector<FnSymbol*> & functions,
                            std::vector<VarSymbol*> & globals) {
+  // reserved symbol names that require renaming to compile
+#include "reservedSymbolNames.h"
+
   //
   // collect types and apply canonical sort
   //
@@ -1768,15 +1733,14 @@ static void uniquify_names(CNameList& cnames,
   // mangle field names if they clash with other fields in the same
   // class
   //
-  CNameList fieldNameSet;
   forv_Vec(TypeSymbol, ts, types) {
     if (ts->defPoint->parentExpr != rootModule->block) {
       if (AggregateType* ct = toAggregateType(ts->type)) {
+        std::set<const char*> fieldNameSet;
         for_fields(field, ct) {
           legalizeSymbolName(field);
           uniquifyName(field, &fieldNameSet);
         }
-        fieldNameSet.clear();
         uniquifyNameCounts.clear();
       }
     }
@@ -1805,13 +1769,12 @@ static void uniquify_names(CNameList& cnames,
   // constants, global variables, functions, or earlier formal
   // arguments in the same function
   //
-  CNameList formalNameSet;
   forv_Vec(FnSymbol, fn, gFnSymbols) {
+    std::set<const char*> formalNameSet;
     for_formals(formal, fn) {
       legalizeSymbolName(formal);
       uniquifyName(formal, &formalNameSet, &cnames);
     }
-    formalNameSet.clear();
     uniquifyNameCounts.clear();
   }
 
@@ -1820,10 +1783,11 @@ static void uniquify_names(CNameList& cnames,
   // variables, functions, formal arguments of their function, or
   // other local variables in the same function
   //
-  CNameList local;
   forv_Vec(FnSymbol, fn, gFnSymbols) {
+    std::set<const char*> local;
+
     for_formals(formal, fn) {
-      local.insert(formal);
+      local.insert(formal->cname);
     }
 
     std::vector<DefExpr*> defs;
@@ -1844,7 +1808,6 @@ static void uniquify_names(CNameList& cnames,
       }
       uniquifyName(def->sym, &local, &cnames);
     }
-    local.clear();
     uniquifyNameCounts.clear();
   }
 }
@@ -2795,8 +2758,7 @@ static void codegenPartOne() {
 #endif
 
   // Vectors to store different symbol names to be used while uniquifying
-  CNameList cnames;
-  cnames.populateReserved();
+  std::set<const char*> cnames;
   std::vector<TypeSymbol*> types;
   std::vector<FnSymbol*> functions;
   std::vector<VarSymbol*> globals;
