@@ -71,7 +71,7 @@ static std::string getInternalFallbackFileContents(std::string fallbackName) {
   #define START_INTERNAL_MODULE(name__) \
     else if (fallbackName == std::string(#name__) + ".chpl") { \
       return "module " #name__ "{\n"
-  #define INTERNAL_TYPE(name, contents__) "  " contents__ "\n"
+  #define INTERNAL_TYPE(modname__, camelname__, name__, contents__) "  " contents__ "\n"
   #define END_INTERNAL_MODULE(name__) "}\n"; \
     }
   #include "chpl/resolution/all-internal-types-list.h"
@@ -1161,9 +1161,9 @@ const Module* getToplevelModule(Context* context, UniqueString name) {
   return getToplevelModuleQuery(context, name);
 }
 
-ID getSymbolIdFromTopLevelModule(Context* context,
-                                 const char* modName,
-                                 const char* symName) {
+static ID getSymbolIdFromTopLevelModule(Context* context,
+                                        const char* modName,
+                                        const char* symName) {
   std::ignore = getToplevelModule(context, UniqueString::get(context, modName));
 
   // Performance: this has to concatenate the two strings at runtime.
@@ -1179,9 +1179,9 @@ ID getSymbolIdFromTopLevelModule(Context* context,
   return ID(UniqueString::get(context, fullPath));
 }
 
-IdAndName getSymbolFromTopLevelModule(Context* context,
-                               const char* modName,
-                               const char* symName) {
+static IdAndName getSymbolFromTopLevelModule(Context* context,
+                                             const char* modName,
+                                             const char* symName) {
   return {getSymbolIdFromTopLevelModule(context, modName, symName),
           UniqueString::get(context, symName)};
 }
@@ -2264,6 +2264,15 @@ bool isCallToClassManager(const uast::FnCall* call) {
 
   return false;
 }
+
+#define INTERNAL_TYPE(modname__, camelname__, name__, content__)\
+  ID get##camelname__##IdFromTopLevel##modname__##Module(Context* context) { \
+    return getSymbolIdFromTopLevelModule(context, #modname__, #name__); \
+  } \
+  IdAndName get##camelname__##TypeFromTopLevel##modname__##Module(Context* context) { \
+    return getSymbolFromTopLevelModule(context, #modname__, #name__); \
+  }
+#include "chpl/resolution/all-internal-types-list.h"
 
 } // end namespace parsing
 } // end namespace chpl

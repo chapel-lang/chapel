@@ -475,24 +475,6 @@ struct IdAndName {
 
 
 /**
- Given a particular (presumably standard) module, return the ID of a
- symbol with the given name in that module. Beyond creating the ID, this also
- ensures that the standard module is parsed, and thus, that 'idToAst' on the
- returned ID will return a non-null value.
- */
-ID getSymbolIdFromTopLevelModule(Context* context,
-                                 const char* modName,
-                                 const char* symName);
-
-/**
- Like getSymbolId..., but return also contains the name of the given symbol for
- convenience.
- */
-IdAndName getSymbolFromTopLevelModule(Context* context,
-                                      const char* modName,
-                                      const char* symName);
-
-/**
  This query parses a submodule for 'include submodule'.
  The ID passed should be the ID of an Include statement.
  Returns nullptr if no such file can be found.
@@ -780,6 +762,23 @@ bool isSpecialMethodName(UniqueString name);
   Given a function call, determine if it is a call to a class manager.
 */
 bool isCallToClassManager(const uast::FnCall* call);
+
+/*
+ For all internal types required by the compiler, define getters that produce
+ their ID and UniqueString name.
+
+ Given a particular standard module, return the ID of a
+ symbol with the given name in that module. Beyond creating the ID, this also
+ ensures that the standard module is parsed, and thus, that 'idToAst' on the
+ returned ID will return a non-null value.
+
+ This is guaranteed to succeed, even if modules haven't been configured,
+ because Dyno provides stubs for all internal types.
+ */
+#define INTERNAL_TYPE(modname__, camelname__, name__, content__)\
+  ID get##camelname__##IdFromTopLevel##modname__##Module(Context* context); \
+  IdAndName get##camelname__##TypeFromTopLevel##modname__##Module(Context* context);
+#include "chpl/resolution/all-internal-types-list.h"
 
 } // end namespace parsing
 } // end namespace chpl

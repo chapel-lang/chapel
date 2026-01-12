@@ -71,8 +71,7 @@ BasicClassType::getRootClassType(Context* context) {
 
 const BasicClassType*
 BasicClassType::getReduceScanOpType(Context* context) {
-  auto [id, name] = parsing::getSymbolFromTopLevelModule(
-      context, "ChapelReduce", "ReduceScanOp");
+  auto [id, name] = parsing::getReduceScanOpTypeFromTopLevelChapelReduceModule(context);
   auto objectType = getRootClassType(context);
 
   auto linkage = uast::Decl::DEFAULT_LINKAGE;
