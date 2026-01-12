@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 #
 # Test --verify configuration on full suite on linux64.
+# also enables debug symbols to make sure there are no regressions
 
 UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $UTIL_CRON_DIR/common.bash
