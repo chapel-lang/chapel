@@ -1,4 +1,3 @@
-ld: warning: building for macOS-16.0, but linking with dylib '/opt/homebrew/opt/hwloc/lib/libhwloc.15.dylib' which was built for newer version 26.0
 simpleOutput()
 Running command: [./runCommandHelper, -nl1]
 Flavour: OK
