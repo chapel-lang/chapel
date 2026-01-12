@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -71,6 +71,7 @@ struct ParserContext {
   bool hasNotedVarDeclKind;
   Variable::Kind varDeclKind;
   bool isVarDeclConfig;
+  YYLTYPE configLoc;
   bool isBuildingFormal;
   AstNode* varDestinationExpr;
   AttributeGroupParts attributeGroupParts;
@@ -100,6 +101,7 @@ struct ParserContext {
                 parsing::ParserStats* parseStats)
   {
     auto uniqueFilename = UniqueString::get(builder->context(), filename);
+    YYLTYPE emptyLoc = {0};
 
     this->scanner                 = nullptr;
     this->filename                = uniqueFilename;
@@ -113,13 +115,13 @@ struct ParserContext {
     this->varDeclKind             = Variable::VAR;
     this->isBuildingFormal        = false;
     this->isVarDeclConfig         = false;
+    this->configLoc               = emptyLoc;
     this->varDestinationExpr      = nullptr;
     this->attributeGroupParts     = {nullptr, nullptr, false, false, false, false, false, UniqueString(), UniqueString(), UniqueString(), UniqueString(), UniqueString() };
     this->hasAttributeGroupParts  = false;
     this->numAttributesBuilt      = 0;
-    YYLTYPE emptyLoc = {0};
     this->declStartLocation       = emptyLoc;
-    this->curlyBraceLocation       = emptyLoc;
+    this->curlyBraceLocation      = emptyLoc;
     this->atEOF                   = false;
     this->includeComments =
       builder->context()->configuration().includeComments;
@@ -169,7 +171,7 @@ struct ParserContext {
   CommentsAndStmt buildPragmaStmt(YYLTYPE loc, CommentsAndStmt stmt);
 
   bool noteIsBuildingFormal(bool isBuildingFormal);
-  bool noteIsVarDeclConfig(bool isConfig);
+  bool noteIsVarDeclConfig(bool isConfig, YYLTYPE loc);
   void noteVarDestinationExpr(AstNode* targetExpr);
   owned<AstNode> consumeVarDestinationExpr();
   YYLTYPE declStartLoc(YYLTYPE curLoc);
@@ -289,6 +291,14 @@ struct ParserContext {
   CommentsAndStmt finishStmt(AstNode* e);
   CommentsAndStmt finishStmt(owned<AstNode> e) {
     return this->finishStmt(e.release());
+  }
+
+  void adjustLocation(CommentsAndStmt cs, YYLTYPE location) {
+    builder->noteLocation(cs.stmt, convertLocation(location));
+  }
+  void adjustLocation(CommentsAndStmt cs, YYLTYPE start, YYLTYPE end) {
+    builder->noteLocation(cs.stmt, convertLocation(
+      makeSpannedLocation(start, end)));
   }
 
   // Create a ParserExprList containing the passed statements, and any

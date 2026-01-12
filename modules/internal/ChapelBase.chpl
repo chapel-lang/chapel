@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1382,15 +1382,10 @@ module ChapelBase {
     }
   }
 
-  proc _cond_invalid(x: sync(?)) param do return false;
   proc _cond_invalid(x: borrowed RootClass?) param do return false;
   proc _cond_invalid(x: bool) param do return false;
   proc _cond_invalid(x: int) param do return false;
   proc _cond_invalid(x: uint) param do return false;
-  proc _cond_invalid(x: c_ptr) param do return false;
-  proc _cond_invalid(x: ?t) param where __primitive("method call and fn resolves", x, "chpl_cond_test_method") {
-    return false;
-  }
   pragma "last resort"
   proc _cond_invalid(x) param do return true;
 

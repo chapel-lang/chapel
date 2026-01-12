@@ -139,6 +139,10 @@
    0 if you don't. */
 #undef HAVE_DECL_PTHREAD_SETAFFINITY_NP
 
+/* Define to 1 if you have the declaration of 'rsmi_dev_partition_id_get', and
+   to 0 if you don't. */
+#undef HAVE_DECL_RSMI_DEV_PARTITION_ID_GET
+
 /* Embedded mode; just assume we do not have Valgrind support */
 #undef HAVE_DECL_RUNNING_ON_VALGRIND
 
@@ -340,6 +344,9 @@
 
 /* Define to 1 if you have the 'putwc' function. */
 #undef HAVE_PUTWC
+
+/* Define to 1 if the system has the type 'RelationProcessorDie'. */
+#undef HAVE_RELATIONPROCESSORDIE
 
 /* Define to 1 if the system has the type 'RelationProcessorPackage'. */
 #undef HAVE_RELATIONPROCESSORPACKAGE
@@ -687,9 +694,6 @@
 
 /* Define to 1 if zeDevicePciGetPropertiesExt is available */
 #undef HWLOC_HAVE_ZEDEVICEPCIGETPROPERTIESEXT
-
-/* Define to 1 if zesInit is available */
-#undef HWLOC_HAVE_ZESINIT
 
 /* Define to 1 on HP-UX */
 #undef HWLOC_HPUX_SYS

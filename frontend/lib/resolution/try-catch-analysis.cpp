@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -108,7 +108,7 @@ struct TryCatchAnalyzer : BranchSensitiveVisitor<DefaultFrame, ResolvedVisitor<T
       auto resType = getClassTypeForError(context, err, rv);
       auto qt = QualifiedType(QualifiedType::VAR, resType);
       auto passResult = canPass(context, r.type(), qt);
-      using CPR = CanPassResult::ConversionKind;
+      using CPR = CanPassResult;
       if (passResult.passes() && passResult.conversionKind() == CPR::NONE) {
         catchAll = true;
       }

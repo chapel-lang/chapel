@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -81,6 +81,11 @@ public:
   }
   std::tuple<int, int> end() const {
     return std::make_tuple(lastLine(), lastColumn());
+  }
+
+  static Location spanned(const Location& loc1, const Location& loc2) {
+    return Location(loc1.path_, loc1.firstLine_, loc1.firstColumn_,
+                    loc2.lastLine_, loc2.lastColumn_);
   }
 
   inline bool operator==(const Location& other) const {

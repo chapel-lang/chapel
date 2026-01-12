@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -7370,7 +7370,7 @@ proc fileReader.readLine(ref b: bytes,
     }
 
     if err != 0 && err != EEOF {
-      try this._ch_ioerror(err, "in fileReader.readLine(ref s: string)");
+      try this._ch_ioerror(err, "in fileReader.readLine(ref b: bytes)");
     }
 
     // return 'true' if we read anything

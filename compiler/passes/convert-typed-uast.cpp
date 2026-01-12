@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -4990,7 +4990,7 @@ Expr* TConverter::ActualConverter::convertActualWithArg(const FormalActual& fa) 
       fa.formalType().type() != fa.actualType().type()) {
     auto got = canPassScalar(context, fa.actualType(), fa.formalType());
     if (got.converts() &&
-        got.conversionKind() != CanPassResult::ConversionKind::TO_REFERENTIAL_TUPLE) {
+        (got.conversionKind() & CanPassResult::TO_REFERENTIAL_TUPLE) == 0) {
       bool isExternFn = parsing::idIsExtern(context, tfs_->untyped()->id());
       if (isExternFn &&
           fa.formalType().type()->isCStringType() &&
@@ -5003,8 +5003,7 @@ Expr* TConverter::ActualConverter::convertActualWithArg(const FormalActual& fa) 
         temp = new SymExpr(sym);
       } else {
         auto kind = got.conversionKind();
-        if (kind == CanPassResult::ConversionKind::BORROWS ||
-            kind == CanPassResult::ConversionKind::BORROWS_SUBTYPE) {
+        if (kind & CanPassResult::BORROWS) {
           auto ct = fa.actualType().type()->toClassType();
           Expr* borrow = nullptr;
 
@@ -5029,6 +5028,11 @@ Expr* TConverter::ActualConverter::convertActualWithArg(const FormalActual& fa) 
         }
       }
     }
+    // The code above does not expect referential tuple conversion in
+    // addition to other conversions.
+    CHPL_ASSERT(!got.converts() ||
+                (got.conversionKind() & CanPassResult::TO_REFERENTIAL_TUPLE) == 0 ||
+                got.conversionKind() == CanPassResult::TO_REFERENTIAL_TUPLE);
   } else if (SymExpr* se = toSymExpr(temp)) {
     // Insert dereference temps as-needed based on the formal/actual types
     //

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -139,6 +139,7 @@ X(uint_               , "uint")
 X(unmanaged           , "unmanaged")
 X(void_               , "void")
 X(range               , "range")
+X(valType             , "valType")
 
 X(atMark              , "@")
 X(equals              , "=")
@@ -206,6 +207,7 @@ X(stringId            , "String._string")
 X(bytesId             , "Bytes._bytes")
 X(localeId            , "ChapelLocale._locale")
 X(rangeId             , "ChapelRange._range")
+X(syncvarId           , "ChapelSyncvar._syncvar")
 
 /* A string too long is checked at compile time */
 /* X(somethingtoolong      , "somethingtoolongforthemacro") */

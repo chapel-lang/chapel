@@ -1846,7 +1846,7 @@ index 0ea07ea9f8d..2b245380207 100644
 +$CHPL_HOME/modules/internal/ChapelRange.chpl:2357: In function 'by':
 +$CHPL_HOME/modules/internal/ChapelRange.chpl:2358: error: the step argument of the 'by' operator is too large and cannot be represented within the range's stride type int(64)
 diff --git a/test/types/range/deitz/test_range_iterate_error.good b/test/types/range/deitz/test_range_iterate_error.good
-index c5070275cc1..59d408a31c4 100644
+index c5070275cc1..95126b0a448 100644
 --- a/test/types/range/deitz/test_range_iterate_error.good
 +++ b/test/types/range/deitz/test_range_iterate_error.good
 @@ -1 +1,9 @@
@@ -1855,7 +1855,7 @@ index c5070275cc1..59d408a31c4 100644
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to 'serialize': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 53 more candidates that didn't match
++$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 12 more candidates that didn't match
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: In method '_serializeOne':
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to '=': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: In method 'serialize':
@@ -1915,7 +1915,7 @@ index efa1a94fdd1..6ea7dfe6dc4 100644
 -badCountedLowBoundedRange.chpl:3: error: can't apply '#' to a range with idxType int(64) using a count of type real(64)
 +badCountedLowBoundedRange.chpl:3: error: cannot apply '#' to 'range(int(64), low, one)'
 diff --git a/test/types/range/enum/castEnumRange2.good b/test/types/range/enum/castEnumRange2.good
-index 2b96d691ebb..72acbd76cb7 100644
+index 2b96d691ebb..e5fc6b3763b 100644
 --- a/test/types/range/enum/castEnumRange2.good
 +++ b/test/types/range/enum/castEnumRange2.good
 @@ -1,2 +1,10 @@
@@ -1926,11 +1926,11 @@ index 2b96d691ebb..72acbd76cb7 100644
 +$CHPL_HOME/modules/internal/ChapelRange.chpl:1708: error: unable to resolve call to ':': no matching candidates
 +$CHPL_HOME/modules/internal/ChapelArrayViewElision.chpl:352: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +$CHPL_HOME/modules/internal/ChapelTaskID.chpl:39: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/internal/ChapelRange.chpl:1708: note: omitting 250 more candidates that didn't match
++$CHPL_HOME/modules/internal/ChapelRange.chpl:1708: note: omitting 124 more candidates that didn't match
 +$CHPL_HOME/modules/internal/ChapelRange.chpl:1711: error: unable to resolve call to ':': no matching candidates
 +$CHPL_HOME/modules/internal/ChapelArrayViewElision.chpl:352: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +$CHPL_HOME/modules/internal/ChapelTaskID.chpl:39: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/internal/ChapelRange.chpl:1711: note: omitting 250 more candidates that didn't match
++$CHPL_HOME/modules/internal/ChapelRange.chpl:1711: note: omitting 124 more candidates that didn't match
 diff --git a/test/types/range/enum/singleValEnum-errors-offset.good b/test/types/range/enum/singleValEnum-errors-offset.good
 index 5cb8abe10d0..f27bed16399 100644
 --- a/test/types/range/enum/singleValEnum-errors-offset.good
@@ -1975,7 +1975,7 @@ index e9fb8a0f3f9..a48a43b86f8 100644
 -badRange-string-multi.chpl:2: error: param for-loops defined using bounds of type 'string' are not currently supported
 +badRange-string-multi.chpl:2: error: Ranges defined using bounds of type 'string' are not currently supported
 diff --git a/test/types/range/lydia/badRange-string-stride.good b/test/types/range/lydia/badRange-string-stride.good
-index b6cfc59548d..68b04350688 100644
+index b6cfc59548d..6765d8b28c0 100644
 --- a/test/types/range/lydia/badRange-string-stride.good
 +++ b/test/types/range/lydia/badRange-string-stride.good
 @@ -1,2 +1,19 @@
@@ -1985,7 +1985,7 @@ index b6cfc59548d..68b04350688 100644
 +$CHPL_HOME/modules/internal/ChapelRange.chpl:2279: error: unable to resolve call to 'numBits': no matching candidates
 +$CHPL_HOME/modules/standard/Types.chpl:804: note: the following candidate didn't match because the 'where' clause evaluated to 'false'
 +$CHPL_HOME/modules/standard/Types.chpl:802: note: the following candidate didn't match because the 'where' clause evaluated to 'false'
-+$CHPL_HOME/modules/internal/ChapelRange.chpl:2279: note: omitting 43 more candidates that didn't match
++$CHPL_HOME/modules/internal/ChapelRange.chpl:2279: note: omitting 13 more candidates that didn't match
 +$CHPL_HOME/modules/internal/ChapelRange.chpl:2279: error: cannot return it with provided return intent
 +$CHPL_HOME/modules/internal/ChapelRange.chpl:2300: In function 'chpl_range_check_stride':
 +$CHPL_HOME/modules/internal/ChapelRange.chpl:2308: error: Cannot establish type for call expression
@@ -1994,7 +1994,7 @@ index b6cfc59548d..68b04350688 100644
 +$CHPL_HOME/modules/internal/ChapelRange.chpl:2369: error: unable to resolve call to 'chpl_strideProduct': no matching candidates
 +$CHPL_HOME/modules/internal/ChapelRange.chpl:805: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +$CHPL_HOME/modules/internal/ChapelRange.chpl:802: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/internal/ChapelRange.chpl:2369: note: omitting 4 more candidates that didn't match
++$CHPL_HOME/modules/internal/ChapelRange.chpl:2369: note: omitting 1 more candidates that didn't match
  badRange-string-stride.chpl:1: In function 'main':
 -badRange-string-stride.chpl:2: error: Range stride must be an int
 +badRange-string-stride.chpl:2: error: Cannot establish type for call expression
@@ -2066,7 +2066,7 @@ index 52c5ec8da66..519772fb03b 100644
 +rangeKeyword.chpl:5: note: redefined here
 +rangeKeyword.chpl:6: note: redefined here
 diff --git a/test/types/range/unbounded/noFirst-forallzip-down.good b/test/types/range/unbounded/noFirst-forallzip-down.good
-index 27232e52d56..59d408a31c4 100644
+index 27232e52d56..95126b0a448 100644
 --- a/test/types/range/unbounded/noFirst-forallzip-down.good
 +++ b/test/types/range/unbounded/noFirst-forallzip-down.good
 @@ -1 +1,9 @@
@@ -2075,7 +2075,7 @@ index 27232e52d56..59d408a31c4 100644
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to 'serialize': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 53 more candidates that didn't match
++$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 12 more candidates that didn't match
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: In method '_serializeOne':
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to '=': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: In method 'serialize':
@@ -2089,7 +2089,7 @@ index 00000000000..50247f550ee
 +../../../../util/test/prediff-obscure-module-linenos
 \ No newline at end of file
 diff --git a/test/types/range/unbounded/noFirst-forallzip-up.good b/test/types/range/unbounded/noFirst-forallzip-up.good
-index 1d35421b09b..59d408a31c4 100644
+index 1d35421b09b..95126b0a448 100644
 --- a/test/types/range/unbounded/noFirst-forallzip-up.good
 +++ b/test/types/range/unbounded/noFirst-forallzip-up.good
 @@ -1 +1,9 @@
@@ -2098,7 +2098,7 @@ index 1d35421b09b..59d408a31c4 100644
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to 'serialize': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 53 more candidates that didn't match
++$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 12 more candidates that didn't match
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: In method '_serializeOne':
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to '=': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: In method 'serialize':
@@ -2112,7 +2112,7 @@ index 00000000000..50247f550ee
 +../../../../util/test/prediff-obscure-module-linenos
 \ No newline at end of file
 diff --git a/test/types/range/unbounded/noFirst-forloop-down.good b/test/types/range/unbounded/noFirst-forloop-down.good
-index 8fdc8235a2e..5d1faea1c97 100644
+index 8fdc8235a2e..eaa3867558c 100644
 --- a/test/types/range/unbounded/noFirst-forloop-down.good
 +++ b/test/types/range/unbounded/noFirst-forloop-down.good
 @@ -1 +1,7 @@
@@ -2121,7 +2121,7 @@ index 8fdc8235a2e..5d1faea1c97 100644
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to 'serialize': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 39 more candidates that didn't match
++$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 12 more candidates that didn't match
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: In method '_serializeOne':
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to '=': no matching candidates
 diff --git a/test/types/range/unbounded/noFirst-forloop-down.prediff b/test/types/range/unbounded/noFirst-forloop-down.prediff
@@ -2133,7 +2133,7 @@ index 00000000000..50247f550ee
 +../../../../util/test/prediff-obscure-module-linenos
 \ No newline at end of file
 diff --git a/test/types/range/unbounded/noFirst-forloop-up.good b/test/types/range/unbounded/noFirst-forloop-up.good
-index b2d7ca49b86..5d1faea1c97 100644
+index b2d7ca49b86..eaa3867558c 100644
 --- a/test/types/range/unbounded/noFirst-forloop-up.good
 +++ b/test/types/range/unbounded/noFirst-forloop-up.good
 @@ -1 +1,7 @@
@@ -2142,7 +2142,7 @@ index b2d7ca49b86..5d1faea1c97 100644
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to 'serialize': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 39 more candidates that didn't match
++$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 12 more candidates that didn't match
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: In method '_serializeOne':
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to '=': no matching candidates
 diff --git a/test/types/range/unbounded/noFirst-forloop-up.prediff b/test/types/range/unbounded/noFirst-forloop-up.prediff
@@ -2154,7 +2154,7 @@ index 00000000000..50247f550ee
 +../../../../util/test/prediff-obscure-module-linenos
 \ No newline at end of file
 diff --git a/test/types/range/unbounded/noFirst-forzip-down.good b/test/types/range/unbounded/noFirst-forzip-down.good
-index d3361ae14a1..59d408a31c4 100644
+index d3361ae14a1..95126b0a448 100644
 --- a/test/types/range/unbounded/noFirst-forzip-down.good
 +++ b/test/types/range/unbounded/noFirst-forzip-down.good
 @@ -1 +1,9 @@
@@ -2163,7 +2163,7 @@ index d3361ae14a1..59d408a31c4 100644
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to 'serialize': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 53 more candidates that didn't match
++$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 12 more candidates that didn't match
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: In method '_serializeOne':
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to '=': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: In method 'serialize':
@@ -2177,7 +2177,7 @@ index 00000000000..50247f550ee
 +../../../../util/test/prediff-obscure-module-linenos
 \ No newline at end of file
 diff --git a/test/types/range/unbounded/noFirst-forzip-up.good b/test/types/range/unbounded/noFirst-forzip-up.good
-index e6151fc070d..59d408a31c4 100644
+index e6151fc070d..95126b0a448 100644
 --- a/test/types/range/unbounded/noFirst-forzip-up.good
 +++ b/test/types/range/unbounded/noFirst-forzip-up.good
 @@ -1 +1,9 @@
@@ -2186,7 +2186,7 @@ index e6151fc070d..59d408a31c4 100644
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to 'serialize': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 53 more candidates that didn't match
++$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 12 more candidates that didn't match
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: In method '_serializeOne':
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to '=': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: In method 'serialize':
@@ -2382,32 +2382,40 @@ index 1367bd320a6..d0f2b6f1207 100644
 +compareRecords.chpl:3: error: ordered comparisons not supported by default on records with array fields
 +compareRecords.chpl:3: error: ordered comparisons not supported by default on records with array fields
 diff --git a/test/types/records/const-checking/assignments.good b/test/types/records/const-checking/assignments.good
-index ff5667328c8..f59e361629a 100644
+index ff5667328c8..123f935bce9 100644
 --- a/test/types/records/const-checking/assignments.good
 +++ b/test/types/records/const-checking/assignments.good
-@@ -1,24 +1,14 @@
+@@ -1,24 +1,24 @@
 -assignments.chpl:11: In function 'TEST1':
 -assignments.chpl:13: error: cannot assign to a record of the type RECTYPE using the default assignment operator because it has 'const' field(s)
++assignments.chpl:3: In method '=':
++assignments.chpl:3: error: cannot pass const to non-const
  assignments.chpl:16: In function 'TEST2':
 -assignments.chpl:18: error: cannot assign to const variable
 +assignments.chpl:18: error: cannot pass const to non-const
  assignments.chpl:31: In function 'TEST5':
 -assignments.chpl:33: error: cannot assign to const variable
 -assignments.chpl:34: error: cannot assign to const variable
--assignments.chpl:37: In function 'TEST6':
++assignments.chpl:33: error: cannot pass const to non-const
++assignments.chpl:34: error: cannot pass const to non-const
+ assignments.chpl:37: In function 'TEST6':
 -assignments.chpl:40: error: cannot assign to const variable
 -assignments.chpl:56: error: const actual is passed to 'ref' formal 'arg' of TEST8()
 -assignments.chpl:70: In function 'quest1':
 -assignments.chpl:72: error: cannot assign to a record of the type OUTERREC using the default assignment operator because it has 'const' field(s)
-+assignments.chpl:33: error: cannot pass const to non-const
-+assignments.chpl:34: error: cannot pass const to non-const
++assignments.chpl:40: error: cannot pass const to non-const
++assignments.chpl:62: In method '=':
++assignments.chpl:62: error: cannot pass const to non-const
  assignments.chpl:75: In function 'quest2':
 -assignments.chpl:77: error: cannot assign to const variable
--assignments.chpl:89: In function 'quest5':
++assignments.chpl:77: error: cannot pass const to non-const
+ assignments.chpl:89: In function 'quest5':
 -assignments.chpl:92: error: cannot assign to const variable
 -assignments.chpl:93: error: cannot assign to const variable
 -assignments.chpl:94: error: cannot assign to const variable
-+assignments.chpl:77: error: cannot pass const to non-const
++assignments.chpl:92: error: cannot pass const to non-const
++assignments.chpl:93: error: cannot pass const to non-const
++assignments.chpl:94: error: cannot pass const to non-const
  assignments.chpl:97: In function 'quest6':
 -assignments.chpl:99: error: cannot assign to const variable
 -assignments.chpl:100: error: cannot assign to const variable
@@ -2429,11 +2437,19 @@ index 3f519f5fe3b..56a9a8a03a8 100644
 -todo-assign-to-record-formal-error.chpl:9: error: cannot assign to const variable
 +todo-assign-to-record-formal-error.chpl:9: error: cannot pass const to non-const
  todo-assign-to-record-formal-error.chpl:16: error: done
+diff --git a/test/types/records/const-checking/todo-linenumber-in-array-assignment-error.good b/test/types/records/const-checking/todo-linenumber-in-array-assignment-error.good
+index 5585ca1049a..e6f08ef2093 100644
+--- a/test/types/records/const-checking/todo-linenumber-in-array-assignment-error.good
++++ b/test/types/records/const-checking/todo-linenumber-in-array-assignment-error.good
+@@ -1 +1,2 @@
+-todo-linenumber-in-array-assignment-error.chpl:15: error: cannot assign to a record of the type RECTYPE using the default assignment operator because it has 'const' field(s)
++todo-linenumber-in-array-assignment-error.chpl:4: In method '=':
++todo-linenumber-in-array-assignment-error.chpl:4: error: cannot pass const to non-const
 diff --git a/test/types/records/const-checking/tuples-and-records.good b/test/types/records/const-checking/tuples-and-records.good
-index 0f54562c495..7a68bb6ac75 100644
+index 0f54562c495..324303b28b9 100644
 --- a/test/types/records/const-checking/tuples-and-records.good
 +++ b/test/types/records/const-checking/tuples-and-records.good
-@@ -1,12 +1,6 @@
+@@ -1,12 +1,7 @@
 +tuples-and-records.chpl:11: In initializer:
 +tuples-and-records.chpl:18: error: cannot pass const to non-const
  tuples-and-records.chpl:25: In function 'main':
@@ -2449,6 +2465,7 @@ index 0f54562c495..7a68bb6ac75 100644
 -tuples-and-records.chpl:38: error: cannot assign to const variable
 -tuples-and-records.chpl:39: error: cannot assign to const variable
 +tuples-and-records.chpl:26: error: cannot pass const to non-const
++tuples-and-records.chpl:33: error: cannot pass const to non-const
 +tuples-and-records.chpl:36: error: cannot pass const to non-const
 +tuples-and-records.chpl:39: error: cannot pass const to non-const
 diff --git a/test/types/records/ferguson/choose-record/choose-record10.good b/test/types/records/ferguson/choose-record/choose-record10.good
@@ -3201,6 +3218,584 @@ index 5c879d8cb43..e18449cd03e 100644
 -floatingPointBadSize.chpl:1: error: illegal type index expression 'real(64)(27)'
 -floatingPointBadSize.chpl:1: note: primitive type 'real(64)' cannot be indexed in this manner
 +floatingPointBadSize.chpl:1: error: invalid numeric type construction
+diff --git a/test/types/string/assignToChar/testAssign.1.good b/test/types/string/assignToChar/testAssign.1.good
+index 3b968ba4f2f..d255937f9c6 100644
+--- a/test/types/string/assignToChar/testAssign.1.good
++++ b/test/types/string/assignToChar/testAssign.1.good
+@@ -1,4 +1,2 @@
+ Helpers.chpl:10: In function 'testAssign':
+-Helpers.chpl:12: error: Cannot assign to int(8) from string
+-Helpers.chpl:12: note: did you mean to call '.toByte()'?
+-  testAssign.chpl:6: called as testAssign(param strBytes = "a", type toType = int(8))
++Helpers.chpl:12: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testAssign.10.good b/test/types/string/assignToChar/testAssign.10.good
+index 9d8d04a093b..655e7c90cdf 100644
+--- a/test/types/string/assignToChar/testAssign.10.good
++++ b/test/types/string/assignToChar/testAssign.10.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:15: In function 'testAssignVal':
+-Helpers.chpl:17: error: Cannot assign to uint(8) from bytes
+-  testAssign.chpl:24: called as testAssignVal(strBytes: bytes, type toType = uint(8))
++Helpers.chpl:17: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testAssign.11.good b/test/types/string/assignToChar/testAssign.11.good
+index dc797458b44..d255937f9c6 100644
+--- a/test/types/string/assignToChar/testAssign.11.good
++++ b/test/types/string/assignToChar/testAssign.11.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:10: In function 'testAssign':
+-Helpers.chpl:12: error: Cannot assign to uint(8) from bytes
+-  testAssign.chpl:26: called as testAssign(param strBytes = b"hello", type toType = uint(8))
++Helpers.chpl:12: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testAssign.12.good b/test/types/string/assignToChar/testAssign.12.good
+index 19bc0950b32..655e7c90cdf 100644
+--- a/test/types/string/assignToChar/testAssign.12.good
++++ b/test/types/string/assignToChar/testAssign.12.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:15: In function 'testAssignVal':
+-Helpers.chpl:17: error: Cannot assign to uint(8) from bytes
+-  testAssign.chpl:28: called as testAssignVal(strBytes: bytes, type toType = uint(8))
++Helpers.chpl:17: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testAssign.13.good b/test/types/string/assignToChar/testAssign.13.good
+index a1e35dddc51..d255937f9c6 100644
+--- a/test/types/string/assignToChar/testAssign.13.good
++++ b/test/types/string/assignToChar/testAssign.13.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:10: In function 'testAssign':
+-Helpers.chpl:12: error: Cannot assign to uint(8) from string
+-  testAssign.chpl:30: called as testAssign(param strBytes = "", type toType = uint(8))
++Helpers.chpl:12: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testAssign.14.good b/test/types/string/assignToChar/testAssign.14.good
+index eb1a5447a89..655e7c90cdf 100644
+--- a/test/types/string/assignToChar/testAssign.14.good
++++ b/test/types/string/assignToChar/testAssign.14.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:15: In function 'testAssignVal':
+-Helpers.chpl:17: error: Cannot assign to uint(8) from string
+-  testAssign.chpl:32: called as testAssignVal(strBytes: string, type toType = uint(8))
++Helpers.chpl:17: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testAssign.2.good b/test/types/string/assignToChar/testAssign.2.good
+index 8d2ff39b70a..655e7c90cdf 100644
+--- a/test/types/string/assignToChar/testAssign.2.good
++++ b/test/types/string/assignToChar/testAssign.2.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:15: In function 'testAssignVal':
+-Helpers.chpl:17: error: Cannot assign to int(8) from string
+-  testAssign.chpl:8: called as testAssignVal(strBytes: string, type toType = int(8))
++Helpers.chpl:17: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testAssign.3.good b/test/types/string/assignToChar/testAssign.3.good
+index 367b9cdd174..d255937f9c6 100644
+--- a/test/types/string/assignToChar/testAssign.3.good
++++ b/test/types/string/assignToChar/testAssign.3.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:10: In function 'testAssign':
+-Helpers.chpl:12: error: Cannot assign to int(8) from string
+-  testAssign.chpl:10: called as testAssign(param strBytes = "hello", type toType = int(8))
++Helpers.chpl:12: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testAssign.4.good b/test/types/string/assignToChar/testAssign.4.good
+index 16c069e84d4..655e7c90cdf 100644
+--- a/test/types/string/assignToChar/testAssign.4.good
++++ b/test/types/string/assignToChar/testAssign.4.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:15: In function 'testAssignVal':
+-Helpers.chpl:17: error: Cannot assign to int(8) from string
+-  testAssign.chpl:12: called as testAssignVal(strBytes: string, type toType = int(8))
++Helpers.chpl:17: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testAssign.5.good b/test/types/string/assignToChar/testAssign.5.good
+index 8bd57e895f2..d255937f9c6 100644
+--- a/test/types/string/assignToChar/testAssign.5.good
++++ b/test/types/string/assignToChar/testAssign.5.good
+@@ -1,4 +1,2 @@
+ Helpers.chpl:10: In function 'testAssign':
+-Helpers.chpl:12: error: Cannot assign to int(8) from string
+-Helpers.chpl:12: note: did you mean to call '.toByte()'?
+-  testAssign.chpl:14: called as testAssign(param strBytes = "a", type toType = int(8))
++Helpers.chpl:12: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testAssign.6.good b/test/types/string/assignToChar/testAssign.6.good
+index 5d83c33c808..655e7c90cdf 100644
+--- a/test/types/string/assignToChar/testAssign.6.good
++++ b/test/types/string/assignToChar/testAssign.6.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:15: In function 'testAssignVal':
+-Helpers.chpl:17: error: Cannot assign to int(8) from string
+-  testAssign.chpl:16: called as testAssignVal(strBytes: string, type toType = int(8))
++Helpers.chpl:17: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testAssign.7.good b/test/types/string/assignToChar/testAssign.7.good
+index 5c4ddf7104f..d255937f9c6 100644
+--- a/test/types/string/assignToChar/testAssign.7.good
++++ b/test/types/string/assignToChar/testAssign.7.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:10: In function 'testAssign':
+-Helpers.chpl:12: error: Cannot assign to int(8) from string
+-  testAssign.chpl:18: called as testAssign(param strBytes = "hello", type toType = int(8))
++Helpers.chpl:12: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testAssign.8.good b/test/types/string/assignToChar/testAssign.8.good
+index 3b9f8998074..655e7c90cdf 100644
+--- a/test/types/string/assignToChar/testAssign.8.good
++++ b/test/types/string/assignToChar/testAssign.8.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:15: In function 'testAssignVal':
+-Helpers.chpl:17: error: Cannot assign to int(8) from string
+-  testAssign.chpl:20: called as testAssignVal(strBytes: string, type toType = int(8))
++Helpers.chpl:17: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testAssign.9.good b/test/types/string/assignToChar/testAssign.9.good
+index 294bb9caee1..d255937f9c6 100644
+--- a/test/types/string/assignToChar/testAssign.9.good
++++ b/test/types/string/assignToChar/testAssign.9.good
+@@ -1,4 +1,2 @@
+ Helpers.chpl:10: In function 'testAssign':
+-Helpers.chpl:12: error: Cannot assign to uint(8) from bytes
+-Helpers.chpl:12: note: did you mean to call '.toByte()'?
+-  testAssign.chpl:22: called as testAssign(param strBytes = b"a", type toType = uint(8))
++Helpers.chpl:12: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testCArray.1.good b/test/types/string/assignToChar/testCArray.1.good
+index 0d98493c2bc..503a2b667ba 100644
+--- a/test/types/string/assignToChar/testCArray.1.good
++++ b/test/types/string/assignToChar/testCArray.1.good
+@@ -1,4 +1,2 @@
+ Helpers.chpl:32: In function 'testCArray':
+-Helpers.chpl:36: error: Cannot assign to int(8) from string
+-Helpers.chpl:36: note: did you mean to call '.toByte()'?
+-  testCArray.chpl:6: called as testCArray(param strBytes = "a", type toType = int(8))
++Helpers.chpl:36: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testCArray.10.good b/test/types/string/assignToChar/testCArray.10.good
+index 6c795c3a7e6..9ca4cd13266 100644
+--- a/test/types/string/assignToChar/testCArray.10.good
++++ b/test/types/string/assignToChar/testCArray.10.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:39: In function 'testCArrayVal':
+-Helpers.chpl:42: error: Cannot assign to uint(8) from string
+-  testCArray.chpl:24: called as testCArrayVal(strBytes: string, type toType = uint(8))
++Helpers.chpl:42: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testCArray.11.good b/test/types/string/assignToChar/testCArray.11.good
+index 00f17b8ac68..7b210399225 100644
+--- a/test/types/string/assignToChar/testCArray.11.good
++++ b/test/types/string/assignToChar/testCArray.11.good
+@@ -1,4 +1,6 @@
+ Helpers.chpl:32: In function 'testCArray':
+-Helpers.chpl:36: error: Cannot assign to uint(8) from string
+-Helpers.chpl:36: note: did you mean to call '.toByte()'?
+-  testCArray.chpl:26: called as testCArray(param strBytes = "hello", type toType = uint(8))
++Helpers.chpl:36: error: unable to resolve call to '=': no matching candidates
++Helpers.chpl:36: error: unable to resolve call to '=': no matching candidates
++Helpers.chpl:36: error: unable to resolve call to '=': no matching candidates
++Helpers.chpl:36: error: unable to resolve call to '=': no matching candidates
++Helpers.chpl:36: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testCArray.12.good b/test/types/string/assignToChar/testCArray.12.good
+index b3fa7d4a28d..9ca4cd13266 100644
+--- a/test/types/string/assignToChar/testCArray.12.good
++++ b/test/types/string/assignToChar/testCArray.12.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:39: In function 'testCArrayVal':
+-Helpers.chpl:42: error: Cannot assign to uint(8) from string
+-  testCArray.chpl:28: called as testCArrayVal(strBytes: string, type toType = uint(8))
++Helpers.chpl:42: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testCArray.14.good b/test/types/string/assignToChar/testCArray.14.good
+index 9131c7dc1f6..9ca4cd13266 100644
+--- a/test/types/string/assignToChar/testCArray.14.good
++++ b/test/types/string/assignToChar/testCArray.14.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:39: In function 'testCArrayVal':
+-Helpers.chpl:42: error: Cannot assign to uint(8) from string
+-  testCArray.chpl:32: called as testCArrayVal(strBytes: string, type toType = uint(8))
++Helpers.chpl:42: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testCArray.2.good b/test/types/string/assignToChar/testCArray.2.good
+index 2a69937ddd7..9ca4cd13266 100644
+--- a/test/types/string/assignToChar/testCArray.2.good
++++ b/test/types/string/assignToChar/testCArray.2.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:39: In function 'testCArrayVal':
+-Helpers.chpl:42: error: Cannot assign to int(8) from string
+-  testCArray.chpl:8: called as testCArrayVal(strBytes: string, type toType = int(8))
++Helpers.chpl:42: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testCArray.3.good b/test/types/string/assignToChar/testCArray.3.good
+index dd2e73f278e..7b210399225 100644
+--- a/test/types/string/assignToChar/testCArray.3.good
++++ b/test/types/string/assignToChar/testCArray.3.good
+@@ -1,4 +1,6 @@
+ Helpers.chpl:32: In function 'testCArray':
+-Helpers.chpl:36: error: Cannot assign to int(8) from string
+-Helpers.chpl:36: note: did you mean to call '.toByte()'?
+-  testCArray.chpl:10: called as testCArray(param strBytes = "hello", type toType = int(8))
++Helpers.chpl:36: error: unable to resolve call to '=': no matching candidates
++Helpers.chpl:36: error: unable to resolve call to '=': no matching candidates
++Helpers.chpl:36: error: unable to resolve call to '=': no matching candidates
++Helpers.chpl:36: error: unable to resolve call to '=': no matching candidates
++Helpers.chpl:36: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testCArray.4.good b/test/types/string/assignToChar/testCArray.4.good
+index 859257463b8..9ca4cd13266 100644
+--- a/test/types/string/assignToChar/testCArray.4.good
++++ b/test/types/string/assignToChar/testCArray.4.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:39: In function 'testCArrayVal':
+-Helpers.chpl:42: error: Cannot assign to int(8) from string
+-  testCArray.chpl:12: called as testCArrayVal(strBytes: string, type toType = int(8))
++Helpers.chpl:42: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testCArray.5.good b/test/types/string/assignToChar/testCArray.5.good
+index 458bb9fef8a..503a2b667ba 100644
+--- a/test/types/string/assignToChar/testCArray.5.good
++++ b/test/types/string/assignToChar/testCArray.5.good
+@@ -1,4 +1,2 @@
+ Helpers.chpl:32: In function 'testCArray':
+-Helpers.chpl:36: error: Cannot assign to int(8) from string
+-Helpers.chpl:36: note: did you mean to call '.toByte()'?
+-  testCArray.chpl:14: called as testCArray(param strBytes = "a", type toType = int(8))
++Helpers.chpl:36: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testCArray.6.good b/test/types/string/assignToChar/testCArray.6.good
+index 75c04910ac6..9ca4cd13266 100644
+--- a/test/types/string/assignToChar/testCArray.6.good
++++ b/test/types/string/assignToChar/testCArray.6.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:39: In function 'testCArrayVal':
+-Helpers.chpl:42: error: Cannot assign to int(8) from string
+-  testCArray.chpl:16: called as testCArrayVal(strBytes: string, type toType = int(8))
++Helpers.chpl:42: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testCArray.7.good b/test/types/string/assignToChar/testCArray.7.good
+index 47a9c2fca83..7b210399225 100644
+--- a/test/types/string/assignToChar/testCArray.7.good
++++ b/test/types/string/assignToChar/testCArray.7.good
+@@ -1,4 +1,6 @@
+ Helpers.chpl:32: In function 'testCArray':
+-Helpers.chpl:36: error: Cannot assign to int(8) from string
+-Helpers.chpl:36: note: did you mean to call '.toByte()'?
+-  testCArray.chpl:18: called as testCArray(param strBytes = "hello", type toType = int(8))
++Helpers.chpl:36: error: unable to resolve call to '=': no matching candidates
++Helpers.chpl:36: error: unable to resolve call to '=': no matching candidates
++Helpers.chpl:36: error: unable to resolve call to '=': no matching candidates
++Helpers.chpl:36: error: unable to resolve call to '=': no matching candidates
++Helpers.chpl:36: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testCArray.8.good b/test/types/string/assignToChar/testCArray.8.good
+index e1f9b0e9a64..9ca4cd13266 100644
+--- a/test/types/string/assignToChar/testCArray.8.good
++++ b/test/types/string/assignToChar/testCArray.8.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:39: In function 'testCArrayVal':
+-Helpers.chpl:42: error: Cannot assign to int(8) from string
+-  testCArray.chpl:20: called as testCArrayVal(strBytes: string, type toType = int(8))
++Helpers.chpl:42: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testCArray.9.good b/test/types/string/assignToChar/testCArray.9.good
+index d003e14f06b..503a2b667ba 100644
+--- a/test/types/string/assignToChar/testCArray.9.good
++++ b/test/types/string/assignToChar/testCArray.9.good
+@@ -1,4 +1,2 @@
+ Helpers.chpl:32: In function 'testCArray':
+-Helpers.chpl:36: error: Cannot assign to uint(8) from string
+-Helpers.chpl:36: note: did you mean to call '.toByte()'?
+-  testCArray.chpl:22: called as testCArray(param strBytes = "a", type toType = uint(8))
++Helpers.chpl:36: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testCall.1.good b/test/types/string/assignToChar/testCall.1.good
+index 75f19921cb2..723e4c05f09 100644
+--- a/test/types/string/assignToChar/testCall.1.good
++++ b/test/types/string/assignToChar/testCall.1.good
+@@ -1,7 +1,3 @@
+ Helpers.chpl:20: In function 'testCall':
+-Helpers.chpl:24: error: unresolved call 'foo("a")'
+-Helpers.chpl:21: note: this candidate did not match: foo(y: int(8))
+-Helpers.chpl:24: note: because actual argument #1 with type 'string'
+-Helpers.chpl:21: note: is passed to formal 'y: int(8)'
+-Helpers.chpl:24: note: did you mean to call '.toByte()'?
+-  testCall.chpl:6: called as testCall(param strBytes = "a", type toType = int(8))
++Helpers.chpl:24: error: unable to resolve call to 'foo': no matching candidates
++Helpers.chpl:21: note: the following candidate didn't match because an actual couldn't be passed to a formal
+diff --git a/test/types/string/assignToChar/testCall.10.good b/test/types/string/assignToChar/testCall.10.good
+index 4d684f96d78..12d5c2a298b 100644
+--- a/test/types/string/assignToChar/testCall.10.good
++++ b/test/types/string/assignToChar/testCall.10.good
+@@ -1,6 +1,3 @@
+ Helpers.chpl:26: In function 'testCallVal':
+-Helpers.chpl:30: error: unresolved call 'foo(string)'
+-Helpers.chpl:27: note: this candidate did not match: foo(y: uint(8))
+-Helpers.chpl:30: note: because actual argument #1 with type 'string'
+-Helpers.chpl:27: note: is passed to formal 'y: uint(8)'
+-  testCall.chpl:24: called as testCallVal(strBytes: string, type toType = uint(8))
++Helpers.chpl:30: error: unable to resolve call to 'foo': no matching candidates
++Helpers.chpl:27: note: the following candidate didn't match because an actual couldn't be passed to a formal
+diff --git a/test/types/string/assignToChar/testCall.11.good b/test/types/string/assignToChar/testCall.11.good
+index e09d2322d54..723e4c05f09 100644
+--- a/test/types/string/assignToChar/testCall.11.good
++++ b/test/types/string/assignToChar/testCall.11.good
+@@ -1,6 +1,3 @@
+ Helpers.chpl:20: In function 'testCall':
+-Helpers.chpl:24: error: unresolved call 'foo("hello")'
+-Helpers.chpl:21: note: this candidate did not match: foo(y: uint(8))
+-Helpers.chpl:24: note: because actual argument #1 with type 'string'
+-Helpers.chpl:21: note: is passed to formal 'y: uint(8)'
+-  testCall.chpl:26: called as testCall(param strBytes = "hello", type toType = uint(8))
++Helpers.chpl:24: error: unable to resolve call to 'foo': no matching candidates
++Helpers.chpl:21: note: the following candidate didn't match because an actual couldn't be passed to a formal
+diff --git a/test/types/string/assignToChar/testCall.12.good b/test/types/string/assignToChar/testCall.12.good
+index 5594dadddbc..12d5c2a298b 100644
+--- a/test/types/string/assignToChar/testCall.12.good
++++ b/test/types/string/assignToChar/testCall.12.good
+@@ -1,6 +1,3 @@
+ Helpers.chpl:26: In function 'testCallVal':
+-Helpers.chpl:30: error: unresolved call 'foo(string)'
+-Helpers.chpl:27: note: this candidate did not match: foo(y: uint(8))
+-Helpers.chpl:30: note: because actual argument #1 with type 'string'
+-Helpers.chpl:27: note: is passed to formal 'y: uint(8)'
+-  testCall.chpl:28: called as testCallVal(strBytes: string, type toType = uint(8))
++Helpers.chpl:30: error: unable to resolve call to 'foo': no matching candidates
++Helpers.chpl:27: note: the following candidate didn't match because an actual couldn't be passed to a formal
+diff --git a/test/types/string/assignToChar/testCall.13.good b/test/types/string/assignToChar/testCall.13.good
+index 8656fd04f61..12d5c2a298b 100644
+--- a/test/types/string/assignToChar/testCall.13.good
++++ b/test/types/string/assignToChar/testCall.13.good
+@@ -1,6 +1,3 @@
+ Helpers.chpl:26: In function 'testCallVal':
+-Helpers.chpl:30: error: unresolved call 'foo(string)'
+-Helpers.chpl:27: note: this candidate did not match: foo(y: uint(8))
+-Helpers.chpl:30: note: because actual argument #1 with type 'string'
+-Helpers.chpl:27: note: is passed to formal 'y: uint(8)'
+-  testCall.chpl:30: called as testCallVal(strBytes: string, type toType = uint(8))
++Helpers.chpl:30: error: unable to resolve call to 'foo': no matching candidates
++Helpers.chpl:27: note: the following candidate didn't match because an actual couldn't be passed to a formal
+diff --git a/test/types/string/assignToChar/testCall.14.good b/test/types/string/assignToChar/testCall.14.good
+index 35a96ecbfe0..12d5c2a298b 100644
+--- a/test/types/string/assignToChar/testCall.14.good
++++ b/test/types/string/assignToChar/testCall.14.good
+@@ -1,6 +1,3 @@
+ Helpers.chpl:26: In function 'testCallVal':
+-Helpers.chpl:30: error: unresolved call 'foo(string)'
+-Helpers.chpl:27: note: this candidate did not match: foo(y: uint(8))
+-Helpers.chpl:30: note: because actual argument #1 with type 'string'
+-Helpers.chpl:27: note: is passed to formal 'y: uint(8)'
+-  testCall.chpl:32: called as testCallVal(strBytes: string, type toType = uint(8))
++Helpers.chpl:30: error: unable to resolve call to 'foo': no matching candidates
++Helpers.chpl:27: note: the following candidate didn't match because an actual couldn't be passed to a formal
+diff --git a/test/types/string/assignToChar/testCall.2.good b/test/types/string/assignToChar/testCall.2.good
+index d390c556b5c..12d5c2a298b 100644
+--- a/test/types/string/assignToChar/testCall.2.good
++++ b/test/types/string/assignToChar/testCall.2.good
+@@ -1,6 +1,3 @@
+ Helpers.chpl:26: In function 'testCallVal':
+-Helpers.chpl:30: error: unresolved call 'foo(string)'
+-Helpers.chpl:27: note: this candidate did not match: foo(y: int(8))
+-Helpers.chpl:30: note: because actual argument #1 with type 'string'
+-Helpers.chpl:27: note: is passed to formal 'y: int(8)'
+-  testCall.chpl:8: called as testCallVal(strBytes: string, type toType = int(8))
++Helpers.chpl:30: error: unable to resolve call to 'foo': no matching candidates
++Helpers.chpl:27: note: the following candidate didn't match because an actual couldn't be passed to a formal
+diff --git a/test/types/string/assignToChar/testCall.3.good b/test/types/string/assignToChar/testCall.3.good
+index 4d02907b74b..723e4c05f09 100644
+--- a/test/types/string/assignToChar/testCall.3.good
++++ b/test/types/string/assignToChar/testCall.3.good
+@@ -1,6 +1,3 @@
+ Helpers.chpl:20: In function 'testCall':
+-Helpers.chpl:24: error: unresolved call 'foo("hello")'
+-Helpers.chpl:21: note: this candidate did not match: foo(y: int(8))
+-Helpers.chpl:24: note: because actual argument #1 with type 'string'
+-Helpers.chpl:21: note: is passed to formal 'y: int(8)'
+-  testCall.chpl:10: called as testCall(param strBytes = "hello", type toType = int(8))
++Helpers.chpl:24: error: unable to resolve call to 'foo': no matching candidates
++Helpers.chpl:21: note: the following candidate didn't match because an actual couldn't be passed to a formal
+diff --git a/test/types/string/assignToChar/testCall.4.good b/test/types/string/assignToChar/testCall.4.good
+index 309361aa728..12d5c2a298b 100644
+--- a/test/types/string/assignToChar/testCall.4.good
++++ b/test/types/string/assignToChar/testCall.4.good
+@@ -1,6 +1,3 @@
+ Helpers.chpl:26: In function 'testCallVal':
+-Helpers.chpl:30: error: unresolved call 'foo(string)'
+-Helpers.chpl:27: note: this candidate did not match: foo(y: int(8))
+-Helpers.chpl:30: note: because actual argument #1 with type 'string'
+-Helpers.chpl:27: note: is passed to formal 'y: int(8)'
+-  testCall.chpl:12: called as testCallVal(strBytes: string, type toType = int(8))
++Helpers.chpl:30: error: unable to resolve call to 'foo': no matching candidates
++Helpers.chpl:27: note: the following candidate didn't match because an actual couldn't be passed to a formal
+diff --git a/test/types/string/assignToChar/testCall.5.good b/test/types/string/assignToChar/testCall.5.good
+index 5abb276c868..723e4c05f09 100644
+--- a/test/types/string/assignToChar/testCall.5.good
++++ b/test/types/string/assignToChar/testCall.5.good
+@@ -1,7 +1,3 @@
+ Helpers.chpl:20: In function 'testCall':
+-Helpers.chpl:24: error: unresolved call 'foo("a")'
+-Helpers.chpl:21: note: this candidate did not match: foo(y: int(8))
+-Helpers.chpl:24: note: because actual argument #1 with type 'string'
+-Helpers.chpl:21: note: is passed to formal 'y: int(8)'
+-Helpers.chpl:24: note: did you mean to call '.toByte()'?
+-  testCall.chpl:14: called as testCall(param strBytes = "a", type toType = int(8))
++Helpers.chpl:24: error: unable to resolve call to 'foo': no matching candidates
++Helpers.chpl:21: note: the following candidate didn't match because an actual couldn't be passed to a formal
+diff --git a/test/types/string/assignToChar/testCall.6.good b/test/types/string/assignToChar/testCall.6.good
+index 390f01c7d2c..12d5c2a298b 100644
+--- a/test/types/string/assignToChar/testCall.6.good
++++ b/test/types/string/assignToChar/testCall.6.good
+@@ -1,6 +1,3 @@
+ Helpers.chpl:26: In function 'testCallVal':
+-Helpers.chpl:30: error: unresolved call 'foo(string)'
+-Helpers.chpl:27: note: this candidate did not match: foo(y: int(8))
+-Helpers.chpl:30: note: because actual argument #1 with type 'string'
+-Helpers.chpl:27: note: is passed to formal 'y: int(8)'
+-  testCall.chpl:16: called as testCallVal(strBytes: string, type toType = int(8))
++Helpers.chpl:30: error: unable to resolve call to 'foo': no matching candidates
++Helpers.chpl:27: note: the following candidate didn't match because an actual couldn't be passed to a formal
+diff --git a/test/types/string/assignToChar/testCall.7.good b/test/types/string/assignToChar/testCall.7.good
+index 81880587b98..723e4c05f09 100644
+--- a/test/types/string/assignToChar/testCall.7.good
++++ b/test/types/string/assignToChar/testCall.7.good
+@@ -1,6 +1,3 @@
+ Helpers.chpl:20: In function 'testCall':
+-Helpers.chpl:24: error: unresolved call 'foo("hello")'
+-Helpers.chpl:21: note: this candidate did not match: foo(y: int(8))
+-Helpers.chpl:24: note: because actual argument #1 with type 'string'
+-Helpers.chpl:21: note: is passed to formal 'y: int(8)'
+-  testCall.chpl:18: called as testCall(param strBytes = "hello", type toType = int(8))
++Helpers.chpl:24: error: unable to resolve call to 'foo': no matching candidates
++Helpers.chpl:21: note: the following candidate didn't match because an actual couldn't be passed to a formal
+diff --git a/test/types/string/assignToChar/testCall.8.good b/test/types/string/assignToChar/testCall.8.good
+index df5fd920812..12d5c2a298b 100644
+--- a/test/types/string/assignToChar/testCall.8.good
++++ b/test/types/string/assignToChar/testCall.8.good
+@@ -1,6 +1,3 @@
+ Helpers.chpl:26: In function 'testCallVal':
+-Helpers.chpl:30: error: unresolved call 'foo(string)'
+-Helpers.chpl:27: note: this candidate did not match: foo(y: int(8))
+-Helpers.chpl:30: note: because actual argument #1 with type 'string'
+-Helpers.chpl:27: note: is passed to formal 'y: int(8)'
+-  testCall.chpl:20: called as testCallVal(strBytes: string, type toType = int(8))
++Helpers.chpl:30: error: unable to resolve call to 'foo': no matching candidates
++Helpers.chpl:27: note: the following candidate didn't match because an actual couldn't be passed to a formal
+diff --git a/test/types/string/assignToChar/testCall.9.good b/test/types/string/assignToChar/testCall.9.good
+index 2795637987c..723e4c05f09 100644
+--- a/test/types/string/assignToChar/testCall.9.good
++++ b/test/types/string/assignToChar/testCall.9.good
+@@ -1,7 +1,3 @@
+ Helpers.chpl:20: In function 'testCall':
+-Helpers.chpl:24: error: unresolved call 'foo("a")'
+-Helpers.chpl:21: note: this candidate did not match: foo(y: uint(8))
+-Helpers.chpl:24: note: because actual argument #1 with type 'string'
+-Helpers.chpl:21: note: is passed to formal 'y: uint(8)'
+-Helpers.chpl:24: note: did you mean to call '.toByte()'?
+-  testCall.chpl:22: called as testCall(param strBytes = "a", type toType = uint(8))
++Helpers.chpl:24: error: unable to resolve call to 'foo': no matching candidates
++Helpers.chpl:21: note: the following candidate didn't match because an actual couldn't be passed to a formal
+diff --git a/test/types/string/assignToChar/testInit.1.good b/test/types/string/assignToChar/testInit.1.good
+index 5a92d70f014..d2d7d3c7726 100644
+--- a/test/types/string/assignToChar/testInit.1.good
++++ b/test/types/string/assignToChar/testInit.1.good
+@@ -1,4 +1,2 @@
+ Helpers.chpl:2: In function 'testInit':
+-Helpers.chpl:3: error: cannot initialize 'x' of type 'int(8)' from '"a"'
+-Helpers.chpl:3: note: did you mean to call '.toByte()'?
+-  testInit.chpl:6: called as testInit(param strBytes = "a", type toType = int(8))
++Helpers.chpl:3: error: type mismatch between declared type of 'x' and initialization expression
+diff --git a/test/types/string/assignToChar/testInit.10.good b/test/types/string/assignToChar/testInit.10.good
+index caa0a51d961..8dfef28f07e 100644
+--- a/test/types/string/assignToChar/testInit.10.good
++++ b/test/types/string/assignToChar/testInit.10.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:6: In function 'testInitVal':
+-Helpers.chpl:7: error: cannot initialize 'x' of type 'uint(8)' from a 'string'
+-  testInit.chpl:24: called as testInitVal(strBytes: string, type toType = uint(8))
++Helpers.chpl:7: error: type mismatch between declared type of 'x' and initialization expression
+diff --git a/test/types/string/assignToChar/testInit.11.good b/test/types/string/assignToChar/testInit.11.good
+index 6b30edde85d..d2d7d3c7726 100644
+--- a/test/types/string/assignToChar/testInit.11.good
++++ b/test/types/string/assignToChar/testInit.11.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:2: In function 'testInit':
+-Helpers.chpl:3: error: cannot initialize 'x' of type 'uint(8)' from '"hello"'
+-  testInit.chpl:26: called as testInit(param strBytes = "hello", type toType = uint(8))
++Helpers.chpl:3: error: type mismatch between declared type of 'x' and initialization expression
+diff --git a/test/types/string/assignToChar/testInit.12.good b/test/types/string/assignToChar/testInit.12.good
+index 5f4e9ccfdff..8dfef28f07e 100644
+--- a/test/types/string/assignToChar/testInit.12.good
++++ b/test/types/string/assignToChar/testInit.12.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:6: In function 'testInitVal':
+-Helpers.chpl:7: error: cannot initialize 'x' of type 'uint(8)' from a 'string'
+-  testInit.chpl:28: called as testInitVal(strBytes: string, type toType = uint(8))
++Helpers.chpl:7: error: type mismatch between declared type of 'x' and initialization expression
+diff --git a/test/types/string/assignToChar/testInit.13.good b/test/types/string/assignToChar/testInit.13.good
+index 43c215d6901..d2d7d3c7726 100644
+--- a/test/types/string/assignToChar/testInit.13.good
++++ b/test/types/string/assignToChar/testInit.13.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:2: In function 'testInit':
+-Helpers.chpl:3: error: cannot initialize 'x' of type 'uint(8)' from '""'
+-  testInit.chpl:30: called as testInit(param strBytes = "", type toType = uint(8))
++Helpers.chpl:3: error: type mismatch between declared type of 'x' and initialization expression
+diff --git a/test/types/string/assignToChar/testInit.14.good b/test/types/string/assignToChar/testInit.14.good
+index 752369134dd..8dfef28f07e 100644
+--- a/test/types/string/assignToChar/testInit.14.good
++++ b/test/types/string/assignToChar/testInit.14.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:6: In function 'testInitVal':
+-Helpers.chpl:7: error: cannot initialize 'x' of type 'uint(8)' from a 'string'
+-  testInit.chpl:32: called as testInitVal(strBytes: string, type toType = uint(8))
++Helpers.chpl:7: error: type mismatch between declared type of 'x' and initialization expression
+diff --git a/test/types/string/assignToChar/testInit.2.good b/test/types/string/assignToChar/testInit.2.good
+index cf23bdb49c5..8dfef28f07e 100644
+--- a/test/types/string/assignToChar/testInit.2.good
++++ b/test/types/string/assignToChar/testInit.2.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:6: In function 'testInitVal':
+-Helpers.chpl:7: error: cannot initialize 'x' of type 'int(8)' from a 'string'
+-  testInit.chpl:8: called as testInitVal(strBytes: string, type toType = int(8))
++Helpers.chpl:7: error: type mismatch between declared type of 'x' and initialization expression
+diff --git a/test/types/string/assignToChar/testInit.3.good b/test/types/string/assignToChar/testInit.3.good
+index ff73bb67e43..d2d7d3c7726 100644
+--- a/test/types/string/assignToChar/testInit.3.good
++++ b/test/types/string/assignToChar/testInit.3.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:2: In function 'testInit':
+-Helpers.chpl:3: error: cannot initialize 'x' of type 'int(8)' from '"hello"'
+-  testInit.chpl:10: called as testInit(param strBytes = "hello", type toType = int(8))
++Helpers.chpl:3: error: type mismatch between declared type of 'x' and initialization expression
+diff --git a/test/types/string/assignToChar/testInit.4.good b/test/types/string/assignToChar/testInit.4.good
+index e43c3df7ec9..8dfef28f07e 100644
+--- a/test/types/string/assignToChar/testInit.4.good
++++ b/test/types/string/assignToChar/testInit.4.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:6: In function 'testInitVal':
+-Helpers.chpl:7: error: cannot initialize 'x' of type 'int(8)' from a 'string'
+-  testInit.chpl:12: called as testInitVal(strBytes: string, type toType = int(8))
++Helpers.chpl:7: error: type mismatch between declared type of 'x' and initialization expression
+diff --git a/test/types/string/assignToChar/testInit.5.good b/test/types/string/assignToChar/testInit.5.good
+index fcbf1bca1eb..d2d7d3c7726 100644
+--- a/test/types/string/assignToChar/testInit.5.good
++++ b/test/types/string/assignToChar/testInit.5.good
+@@ -1,4 +1,2 @@
+ Helpers.chpl:2: In function 'testInit':
+-Helpers.chpl:3: error: cannot initialize 'x' of type 'int(8)' from '"a"'
+-Helpers.chpl:3: note: did you mean to call '.toByte()'?
+-  testInit.chpl:14: called as testInit(param strBytes = "a", type toType = int(8))
++Helpers.chpl:3: error: type mismatch between declared type of 'x' and initialization expression
+diff --git a/test/types/string/assignToChar/testInit.6.good b/test/types/string/assignToChar/testInit.6.good
+index 0bb0dc29f44..8dfef28f07e 100644
+--- a/test/types/string/assignToChar/testInit.6.good
++++ b/test/types/string/assignToChar/testInit.6.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:6: In function 'testInitVal':
+-Helpers.chpl:7: error: cannot initialize 'x' of type 'int(8)' from a 'string'
+-  testInit.chpl:16: called as testInitVal(strBytes: string, type toType = int(8))
++Helpers.chpl:7: error: type mismatch between declared type of 'x' and initialization expression
+diff --git a/test/types/string/assignToChar/testInit.7.good b/test/types/string/assignToChar/testInit.7.good
+index 8d4d7d6d44e..d2d7d3c7726 100644
+--- a/test/types/string/assignToChar/testInit.7.good
++++ b/test/types/string/assignToChar/testInit.7.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:2: In function 'testInit':
+-Helpers.chpl:3: error: cannot initialize 'x' of type 'int(8)' from '"hello"'
+-  testInit.chpl:18: called as testInit(param strBytes = "hello", type toType = int(8))
++Helpers.chpl:3: error: type mismatch between declared type of 'x' and initialization expression
+diff --git a/test/types/string/assignToChar/testInit.8.good b/test/types/string/assignToChar/testInit.8.good
+index 5536f779d07..8dfef28f07e 100644
+--- a/test/types/string/assignToChar/testInit.8.good
++++ b/test/types/string/assignToChar/testInit.8.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:6: In function 'testInitVal':
+-Helpers.chpl:7: error: cannot initialize 'x' of type 'int(8)' from a 'string'
+-  testInit.chpl:20: called as testInitVal(strBytes: string, type toType = int(8))
++Helpers.chpl:7: error: type mismatch between declared type of 'x' and initialization expression
+diff --git a/test/types/string/assignToChar/testInit.9.good b/test/types/string/assignToChar/testInit.9.good
+index fdfde3e45a6..d2d7d3c7726 100644
+--- a/test/types/string/assignToChar/testInit.9.good
++++ b/test/types/string/assignToChar/testInit.9.good
+@@ -1,4 +1,2 @@
+ Helpers.chpl:2: In function 'testInit':
+-Helpers.chpl:3: error: cannot initialize 'x' of type 'uint(8)' from '"a"'
+-Helpers.chpl:3: note: did you mean to call '.toByte()'?
+-  testInit.chpl:22: called as testInit(param strBytes = "a", type toType = uint(8))
++Helpers.chpl:3: error: type mismatch between declared type of 'x' and initialization expression
 diff --git a/test/types/string/diten/multilineStringLineNumber.good b/test/types/string/diten/multilineStringLineNumber.good
 index fe1f3821a85..16a52c3ce0f 100644
 --- a/test/types/string/diten/multilineStringLineNumber.good
@@ -3259,14 +3854,14 @@ index a4b94a943b3..ec8832818fc 100644
 +sync-coerce-to-ref.chpl:10: error: unable to resolve call to 'acceptRef': no matching candidates
 +sync-coerce-to-ref.chpl:1: note: the following candidate didn't match because an actual couldn't be passed to a formal
 diff --git a/test/types/sync/ferguson/sync-copy-init-cannot-coerce.good b/test/types/sync/ferguson/sync-copy-init-cannot-coerce.good
-index 59a40747e9f..d47b6a4f576 100644
+index 59a40747e9f..659b363b671 100644
 --- a/test/types/sync/ferguson/sync-copy-init-cannot-coerce.good
 +++ b/test/types/sync/ferguson/sync-copy-init-cannot-coerce.good
 @@ -1,3 +1,2 @@
 -sync-copy-init-cannot-coerce.chpl:3: warning: Initializing a type-inferred variable from a 'sync' is deprecated; apply a 'read??()' method to the right-hand side
 -sync-copy-init-cannot-coerce.chpl:3: error: cannot initialize 'sync int(64)' from 'sync real(64)' because 'real(64)' is not coercible to 'int(64)'
 -note: An additional error is hidden. Use --print-additional-errors to see it.
-+$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:162: error: cannot implicitly initialize field 'valType', which does not have a default value
++$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:163: error: cannot implicitly initialize field 'valType', which does not have a default value
 +sync-copy-init-cannot-coerce.chpl:3: error: cannot initialize '_syncvar(int(64))' from '_syncvar(real(64))' because 'real(64)' is not coercible to 'int(64)'
 diff --git a/test/types/sync/ferguson/sync-copy-init-cannot-coerce2.good b/test/types/sync/ferguson/sync-copy-init-cannot-coerce2.good
 index 5b41c272b9a..f867649e208 100644
@@ -3281,22 +3876,22 @@ index 5b41c272b9a..f867649e208 100644
 -$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:nnnn: note:   _syncvar.init=(in other: this.type.valType)
 +sync-copy-init-cannot-coerce2.chpl:3: error: type mismatch between declared type of 's' and initialization expression
 diff --git a/test/types/sync/ferguson/sync-owned-nilable-readFF.good b/test/types/sync/ferguson/sync-owned-nilable-readFF.good
-index 39f8fe696d3..f4e1265eea7 100644
+index 39f8fe696d3..284cb360835 100644
 --- a/test/types/sync/ferguson/sync-owned-nilable-readFF.good
 +++ b/test/types/sync/ferguson/sync-owned-nilable-readFF.good
 @@ -1 +1,3 @@
 -sync-owned-nilable-readFF.chpl:6: error: readFF requires that the type contained in the sync variable be const-copyable and const-assignable
-+$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:223: In method 'readFF':
-+$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:224: error: readFF requires that the type contained in the sync variable be const-copyable and const-assignable
++$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:226: In method 'readFF':
++$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:227: error: readFF requires that the type contained in the sync variable be const-copyable and const-assignable
 +sync-owned-nilable-readFF.chpl:6: error: Cannot establish type for call expression
 diff --git a/test/types/sync/syncNothing.good b/test/types/sync/syncNothing.good
-index cae16bb0a2c..51c58dd1dff 100644
+index cae16bb0a2c..bc934c0b150 100644
 --- a/test/types/sync/syncNothing.good
 +++ b/test/types/sync/syncNothing.good
 @@ -1 +1,2 @@
 -syncNothing.chpl:5: error: sync types cannot contain type 'nothing'
-+$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:130: In initializer:
-+$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:131: error: sync types cannot contain type 'nothing'
++$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:131: In initializer:
++$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:132: error: sync types cannot contain type 'nothing'
 diff --git a/test/types/sync/vass/readThis.good b/test/types/sync/vass/readThis.good
 index 95a0b001533..c8f7bc9ef78 100644
 --- a/test/types/sync/vass/readThis.good
@@ -3696,7 +4291,7 @@ index 19c22ac3ef0..e9ce7bc85e7 100644
 +$CHPL_HOME/modules/internal/ChapelTuple.chpl:266: error: invalid access of non-homogeneous tuple by runtime value
 +forallHetTuple.chpl:17: error: cannot iterate over a value of type '(int(64), real(64), string, R)'
 diff --git a/test/types/tuple/heterogeneous/loops/hetTupleOfTupleLoop.good b/test/types/tuple/heterogeneous/loops/hetTupleOfTupleLoop.good
-index ff86252d723..5d1faea1c97 100644
+index ff86252d723..eaa3867558c 100644
 --- a/test/types/tuple/heterogeneous/loops/hetTupleOfTupleLoop.good
 +++ b/test/types/tuple/heterogeneous/loops/hetTupleOfTupleLoop.good
 @@ -1 +1,7 @@
@@ -3705,7 +4300,7 @@ index ff86252d723..5d1faea1c97 100644
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to 'serialize': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 39 more candidates that didn't match
++$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 12 more candidates that didn't match
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: In method '_serializeOne':
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to '=': no matching candidates
 diff --git a/test/types/tuple/heterogeneous/loops/hetTupleOfTupleLoop.prediff b/test/types/tuple/heterogeneous/loops/hetTupleOfTupleLoop.prediff
@@ -3717,7 +4312,7 @@ index 00000000000..30607598fef
 +../../../../../util/test/prediff-obscure-module-linenos
 \ No newline at end of file
 diff --git a/test/types/tuple/heterogeneous/loops/zipHetTuple-1.good b/test/types/tuple/heterogeneous/loops/zipHetTuple-1.good
-index 1fe8cf4ad0a..59d408a31c4 100644
+index 1fe8cf4ad0a..95126b0a448 100644
 --- a/test/types/tuple/heterogeneous/loops/zipHetTuple-1.good
 +++ b/test/types/tuple/heterogeneous/loops/zipHetTuple-1.good
 @@ -1 +1,9 @@
@@ -3726,13 +4321,13 @@ index 1fe8cf4ad0a..59d408a31c4 100644
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to 'serialize': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 53 more candidates that didn't match
++$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 12 more candidates that didn't match
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: In method '_serializeOne':
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to '=': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: In method 'serialize':
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: error: unable to resolve call to '=': no matching candidates
 diff --git a/test/types/tuple/heterogeneous/loops/zipHetTuple-2.good b/test/types/tuple/heterogeneous/loops/zipHetTuple-2.good
-index 6542dea633c..59d408a31c4 100644
+index 6542dea633c..95126b0a448 100644
 --- a/test/types/tuple/heterogeneous/loops/zipHetTuple-2.good
 +++ b/test/types/tuple/heterogeneous/loops/zipHetTuple-2.good
 @@ -1 +1,9 @@
@@ -3741,13 +4336,13 @@ index 6542dea633c..59d408a31c4 100644
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to 'serialize': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 53 more candidates that didn't match
++$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 12 more candidates that didn't match
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: In method '_serializeOne':
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to '=': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: In method 'serialize':
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: error: unable to resolve call to '=': no matching candidates
 diff --git a/test/types/tuple/heterogeneous/loops/zipHetTuple-3.good b/test/types/tuple/heterogeneous/loops/zipHetTuple-3.good
-index 72585e8d53f..59d408a31c4 100644
+index 72585e8d53f..95126b0a448 100644
 --- a/test/types/tuple/heterogeneous/loops/zipHetTuple-3.good
 +++ b/test/types/tuple/heterogeneous/loops/zipHetTuple-3.good
 @@ -1 +1,9 @@
@@ -3756,13 +4351,13 @@ index 72585e8d53f..59d408a31c4 100644
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to 'serialize': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 53 more candidates that didn't match
++$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 12 more candidates that didn't match
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: In method '_serializeOne':
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to '=': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: In method 'serialize':
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: error: unable to resolve call to '=': no matching candidates
 diff --git a/test/types/tuple/heterogeneous/loops/zipHetTuple-4.good b/test/types/tuple/heterogeneous/loops/zipHetTuple-4.good
-index 2403e5601b2..59d408a31c4 100644
+index 2403e5601b2..95126b0a448 100644
 --- a/test/types/tuple/heterogeneous/loops/zipHetTuple-4.good
 +++ b/test/types/tuple/heterogeneous/loops/zipHetTuple-4.good
 @@ -1 +1,9 @@
@@ -3771,7 +4366,7 @@ index 2403e5601b2..59d408a31c4 100644
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to 'serialize': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 53 more candidates that didn't match
++$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 12 more candidates that didn't match
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: In method '_serializeOne':
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to '=': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: In method 'serialize':
@@ -3795,7 +4390,7 @@ index 1c099fde0a2..168daa95aeb 100644
 +$CHPL_HOME/modules/internal/ChapelTuple.chpl:nnnn: error: invalid access of non-homogeneous tuple by runtime value
 +zipHetTuple.chpl:40: error: cannot iterate over this loop's iterand
 diff --git a/test/types/tuple/heterogeneous/loops/zipHetTuple-7.good b/test/types/tuple/heterogeneous/loops/zipHetTuple-7.good
-index 8e8cc266fb1..59d408a31c4 100644
+index 8e8cc266fb1..95126b0a448 100644
 --- a/test/types/tuple/heterogeneous/loops/zipHetTuple-7.good
 +++ b/test/types/tuple/heterogeneous/loops/zipHetTuple-7.good
 @@ -1 +1,9 @@
@@ -3804,13 +4399,13 @@ index 8e8cc266fb1..59d408a31c4 100644
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to 'serialize': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 53 more candidates that didn't match
++$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 12 more candidates that didn't match
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: In method '_serializeOne':
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to '=': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: In method 'serialize':
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: error: unable to resolve call to '=': no matching candidates
 diff --git a/test/types/tuple/heterogeneous/loops/zipHetTuple-8.good b/test/types/tuple/heterogeneous/loops/zipHetTuple-8.good
-index 49d5282a326..59d408a31c4 100644
+index 49d5282a326..95126b0a448 100644
 --- a/test/types/tuple/heterogeneous/loops/zipHetTuple-8.good
 +++ b/test/types/tuple/heterogeneous/loops/zipHetTuple-8.good
 @@ -1 +1,9 @@
@@ -3819,7 +4414,7 @@ index 49d5282a326..59d408a31c4 100644
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to 'serialize': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 53 more candidates that didn't match
++$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 12 more candidates that didn't match
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: In method '_serializeOne':
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to '=': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: In method 'serialize':
@@ -4366,7 +4961,7 @@ index 5ce07a732d0..7a6de111ccf 100644
 +void-formal-3.chpl:8: error: unable to resolve call to 'f': no matching candidates
 +void-formal-3.chpl:5: note: the following candidate didn't match because an actual couldn't be passed to a formal
 diff --git a/test/types/void/void-promote.good b/test/types/void/void-promote.good
-index e5ff071a0fb..89e6fef10d0 100644
+index e5ff071a0fb..2e4a191ce47 100644
 --- a/test/types/void/void-promote.good
 +++ b/test/types/void/void-promote.good
 @@ -1 +1,51 @@
@@ -4409,7 +5004,7 @@ index e5ff071a0fb..89e6fef10d0 100644
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to 'serialize': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 96 more candidates that didn't match
++$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 13 more candidates that didn't match
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: In method '_serializeOne':
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to '=': no matching candidates
 +$CHPL_HOME/modules/internal/DefaultRectangular.chpl:nnnn: In function 'recursiveArrayReaderWriter':

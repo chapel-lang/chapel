@@ -1,4 +1,4 @@
-# Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+# Copyright 2021-2026 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -93,6 +93,7 @@ comp_unit_test(testScopeTypes)
 comp_unit_test(testSplitInit)
 comp_unit_test(testSubtypePrimitives)
 comp_unit_test(testSuper)
+comp_unit_test(testSyncs)
 comp_unit_test(testTaskIntents)
 comp_unit_test(testTertiaryImport)
 comp_unit_test(testTestPrimitives)

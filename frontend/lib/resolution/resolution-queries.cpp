@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -3330,7 +3330,8 @@ resolveFunctionByInfoImpl(ResolutionContext* rc, const TypedFnSignature* sig,
   callInitDeinit(visitor);
 
   // then, handle return intent overloads and maybe-const formals
-  adjustReturnIntentOverloadsAndMaybeConstRefs(visitor);
+  std::set<ID> mutatedConstFieldIds;
+  adjustReturnIntentOverloadsAndMaybeConstRefs(visitor, &mutatedConstFieldIds);
 
   // check that throws are handled or forwarded
   // TODO: Call for initializers as well, and remove checks in the resolver.
@@ -3350,6 +3351,7 @@ resolveFunctionByInfoImpl(ResolutionContext* rc, const TypedFnSignature* sig,
                                   linkageNameStr,
                                   std::move(visitor.returnType),
                                   std::move(visitor.userDiagnostics),
+                                  std::move(mutatedConstFieldIds),
                                   std::move(visitor.poiTraceToChild),
                                   std::move(visitor.sigAndInfoToChildPtr)));
   return ret;
@@ -3733,6 +3735,25 @@ const ResolvedFunction* resolveFunction(ResolutionContext* rc,
   return helpResolveFunction(rc, sig, poiScope, skipIfRunning);
 }
 
+const ResolvedFunction* resolveFunctionIfPossible(ResolutionContext* rc,
+                                                  const TypedFnSignature* sig,
+                                                  const PoiScope* poiScope) {
+  // compiler-generated fns don't always have ASTs, so we can't resolve them.
+  // If it has a fabricated ID, then we generated an AST body, so don't skip it.
+  if (sig->isCompilerGenerated()) {
+    auto& id = sig->id();
+    if (!id.isFabricatedId() || id.fabricatedIdKind() != ID::Generated ||
+        !parsing::idIsFunction(rc->context(), id)) {
+      return nullptr;
+    }
+  }
+
+  // shouldn't happen, but it currently does in some cases.
+  if (sig->needsInstantiation()) return nullptr;
+
+  return resolveFunction(rc, sig, poiScope, /* skipIfRunning */ true);
+}
+
 static const ImplementationPoint* const&
 resolveImplementsStmtQuery(Context* context, ID id) {
   QUERY_BEGIN(resolveImplementsStmtQuery, context, id);
@@ -3942,7 +3963,7 @@ scopeResolveFunctionQueryBody(Context* context, ID id) {
                                         PoiInfo(),
                                         UniqueString(),
                                         QualifiedType(),
-                                        {}, {}, {}));
+                                        {}, {}, {}, {}));
   return result;
 }
 
@@ -6392,8 +6413,15 @@ gatherAndFilterCandidates(ResolutionContext* rc,
           poiCandidates, lrcGroups.getForwardingGroups(),
           rejected);
 
-      // append candidates from forwarding
+      // append candidates from forwarding.
+      //
+      // To have arrived here, we must not have found any candidates before,
+      // and firstPoiCandidate = candidates.size() = 0. This would mark our
+      // nonPoiCandidates obtained via forwarding as being POI. Advance
+      // firstPoiCandidate accordingly to make sure non-POI forwarded
+      // methods are not considered POI.
       candidates.takeFromOther(nonPoiCandidates);
+      firstPoiCandidate = candidates.size();
       candidates.takeFromOther(poiCandidates);
     }
 
@@ -6404,6 +6432,7 @@ gatherAndFilterCandidates(ResolutionContext* rc,
       CandidatesAndForwardingInfo fieldCandidates;
       gatherAndFilterScalarFields(rc, ci, inScopes, visited, fieldCandidates);
       candidates.takeFromOther(fieldCandidates);
+      firstPoiCandidate = candidates.size();
     }
   }
 
@@ -6690,9 +6719,9 @@ static void adjustConstnessBasedOnReceiver(Context* context,
   }
 
   if (adjustConst) {
-    auto kp = KindProperties::fromKind(rt.kind());
-    kp.setConst(ci.methodReceiverType().isConst());
-    rt = QualifiedType(kp.toKind(), rt.type());
+    if (ci.methodReceiverType().isConst()) {
+      rt = QualifiedType(KindProperties::addConstness(rt.kind()), rt.type());
+    }
   }
 }
 
@@ -8114,6 +8143,26 @@ reportInvalidMultipleInheritance(Context* context,
 
   std::ignore = reportInvalidMultipleInheritanceImpl(context, node,
                                                      firstParent, secondParent);
+}
+
+static const bool&
+reportDeprecatedSyncReadImpl(Context* context,
+                             const Type* syncT,
+                             const AstNode* astForErr,
+                             const AstNode* source,
+                             const AstNode* dest) {
+  QUERY_BEGIN(reportDeprecatedSyncReadImpl, context, syncT, astForErr, source, dest);
+  CHPL_REPORT(context, DeprecatedSyncRead, syncT, astForErr, source, dest);
+  auto result = false;
+  return QUERY_END(result);
+}
+
+void reportDeprecatedSyncRead(Context* context,
+                              const Type* syncT,
+                              const AstNode* astForErr,
+                              const AstNode* source,
+                              const AstNode* dest) {
+  std::ignore = reportDeprecatedSyncReadImpl(context, syncT, astForErr, source, dest);
 }
 
 const Decl* findFieldByName(Context* context,

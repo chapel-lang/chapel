@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -1846,6 +1846,8 @@ size_t hashPromotedFormalMap(const PromotedFormalMap& map);
   the spec, but is not allowed in practice due to the aliasing rules of C.
   */
 class MostSpecificCandidate {
+ public:
+   using SyncReadsList = llvm::SmallVector<std::tuple<int, int>, 2>;
  private:
   friend class MostSpecificCandidates;
 
@@ -1854,22 +1856,26 @@ class MostSpecificCandidate {
   owned<PromotedFormalMap> promotedFormals_;
   int constRefCoercionFormal_;
   int constRefCoercionActual_;
+  SyncReadsList syncReads_;
 
   MostSpecificCandidate(const TypedFnSignature* fn,
                         FormalActualMap faMap,
                         PromotedFormalMap promotedFormals,
                         int constRefCoercionFormal,
-                        int constRefCoercionActual)
+                        int constRefCoercionActual,
+                        SyncReadsList syncReads)
     : fn_(fn), faMap_(new FormalActualMap(std::move(faMap))),
       promotedFormals_(new PromotedFormalMap(std::move(promotedFormals))),
       constRefCoercionFormal_(constRefCoercionFormal),
-      constRefCoercionActual_(constRefCoercionActual) {}
+      constRefCoercionActual_(constRefCoercionActual),
+      syncReads_(std::move(syncReads)) {}
 
  public:
   MostSpecificCandidate()
     : fn_(nullptr), faMap_(), promotedFormals_(),
       constRefCoercionFormal_(-1),
-      constRefCoercionActual_(-1) {}
+      constRefCoercionActual_(-1),
+      syncReads_() {}
 
   MostSpecificCandidate& operator=(MostSpecificCandidate&& other) = default;
   MostSpecificCandidate& operator=(const MostSpecificCandidate& other) {
@@ -1882,6 +1888,7 @@ class MostSpecificCandidate {
     }
     constRefCoercionFormal_ = other.constRefCoercionFormal_;
     constRefCoercionActual_ = other.constRefCoercionActual_;
+    syncReads_ = other.syncReads_;
     return *this;
   }
 
@@ -1914,8 +1921,12 @@ class MostSpecificCandidate {
 
   bool hasConstRefCoercion() const { return constRefCoercionFormal_ != -1; }
 
+  bool hasSyncReads() const { return !syncReads_.empty(); }
+
+  SyncReadsList const& syncReads() const { return syncReads_; }
+
   operator bool() const {
-    CHPL_ASSERT(fn_ || (constRefCoercionFormal_ == -1 && constRefCoercionActual_ == -1));
+    CHPL_ASSERT(fn_ || (constRefCoercionFormal_ == -1 && constRefCoercionActual_ == -1 && hasSyncReads() == false));
     return fn_ != nullptr;
   }
 
@@ -1937,7 +1948,8 @@ class MostSpecificCandidate {
     return fn_ == other.fn_ &&
            faMapsEqual &&
            constRefCoercionFormal_ == other.constRefCoercionFormal_ &&
-           constRefCoercionActual_ == other.constRefCoercionActual_;
+           constRefCoercionActual_ == other.constRefCoercionActual_ &&
+           syncReads_ == other.syncReads_;
   }
 
   bool operator!=(const MostSpecificCandidate& other) const {
@@ -1952,10 +1964,11 @@ class MostSpecificCandidate {
     }
     (void) constRefCoercionFormal_; // nothing to mark
     (void) constRefCoercionActual_; // nothing to mark
+    (void) syncReads_; // nothing to mark
   }
 
   size_t hash() const {
-    return chpl::hash(fn_, faMap_, promotedFormals_, constRefCoercionFormal_, constRefCoercionActual_);
+    return chpl::hash(fn_, faMap_, promotedFormals_, constRefCoercionFormal_, constRefCoercionActual_, syncReads_);
   }
 
   static bool update(MostSpecificCandidate& keep,
@@ -1969,6 +1982,7 @@ class MostSpecificCandidate {
     std::swap(promotedFormals_, other.promotedFormals_);
     std::swap(constRefCoercionFormal_, other.constRefCoercionFormal_);
     std::swap(constRefCoercionActual_, other.constRefCoercionActual_);
+    std::swap(syncReads_, other.syncReads_);
   }
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
@@ -2989,6 +3003,8 @@ class ResolvedFunction {
   // diagnostics that callers of this function should emit
   std::vector<CompilerDiagnostic> diagnostics_;
 
+  std::set<ID> mutatedConstFieldIds_;
+
   // These two maps attempt to mimick what is done to cache generic
   // instantiations in the queries 'resolveFunctionByInfo' and
   // 'resolveFunctionByPois'. The maps take the place of the query cache
@@ -3005,6 +3021,7 @@ class ResolvedFunction {
                    UniqueString linkageName,
                    types::QualifiedType returnType,
                    std::vector<CompilerDiagnostic> diagnostics,
+                   std::set<ID> mutatedConstFieldIds,
                    PoiTraceToChildMap poiTraceToChild,
                    SigAndInfoToChildPtrMap sigAndInfoToChildPtr)
       : signature_(signature),
@@ -3014,6 +3031,7 @@ class ResolvedFunction {
         linkageName_(linkageName),
         returnType_(std::move(returnType)),
         diagnostics_(std::move(diagnostics)),
+        mutatedConstFieldIds_(std::move(mutatedConstFieldIds)),
         poiTraceToChild_(std::move(poiTraceToChild)),
         sigAndInfoToChildPtr_(std::move(sigAndInfoToChildPtr)) {}
  ~ResolvedFunction() = default;
@@ -3037,6 +3055,12 @@ class ResolvedFunction {
   /** the diagnostic incurred by this function */
   const std::vector<CompilerDiagnostic>& diagnostics() const {
     return diagnostics_;
+  }
+
+  /** the IDs of const fields that were mutated within this function.
+      This might be allowed if the function was called from a constructor. */
+  const std::set<ID>& mutatedConstFieldIds() const {
+    return mutatedConstFieldIds_;
   }
 
   /** this is the output of the resolution process */
@@ -3066,6 +3090,7 @@ class ResolvedFunction {
            linkageName_ == other.linkageName_ &&
            returnType_ == other.returnType_ &&
            diagnostics_ == other.diagnostics_ &&
+           mutatedConstFieldIds_ == other.mutatedConstFieldIds_ &&
            poiTraceToChild_ == other.poiTraceToChild_ &&
            sigAndInfoToChildPtr_ == other.sigAndInfoToChildPtr_;
   }
@@ -3081,6 +3106,7 @@ class ResolvedFunction {
     linkageName_.swap(other.linkageName_);
     returnType_.swap(other.returnType_);
     std::swap(diagnostics_, other.diagnostics_);
+    std::swap(mutatedConstFieldIds_, other.mutatedConstFieldIds_);
     std::swap(poiTraceToChild_, other.poiTraceToChild_);
     std::swap(sigAndInfoToChildPtr_, other.sigAndInfoToChildPtr_);
   }
@@ -3095,6 +3121,7 @@ class ResolvedFunction {
     linkageName_.mark(context);
     returnType_.mark(context);
     chpl::mark<decltype(diagnostics_)>{}(context, diagnostics_);
+    chpl::mark<decltype(mutatedConstFieldIds_)>{}(context, mutatedConstFieldIds_);
     for (auto& p : poiTraceToChild_) {
       chpl::mark<decltype(p.first)>{}(context, p.first);
       context->markPointer(p.second);
@@ -3107,7 +3134,7 @@ class ResolvedFunction {
   size_t hash() const {
     // Skip 'resolutionById_' since it can be quite large.
     std::ignore = resolutionById_;
-    size_t ret = chpl::hash(signature_, returnIntent_, poiInfo_, linkageName_, returnType_, diagnostics_);
+    size_t ret = chpl::hash(signature_, returnIntent_, poiInfo_, linkageName_, returnType_, diagnostics_, mutatedConstFieldIds_);
     for (auto& p : poiTraceToChild_) {
       ret = hash_combine(ret, chpl::hash(p.first));
       ret = hash_combine(ret, chpl::hash(p.second));
