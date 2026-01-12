@@ -822,6 +822,10 @@ filePathIsInInternalModule(Context* context, UniqueString filePath) {
 
 bool
 filePathIsInBundledModule(Context* context, UniqueString filePath) {
+  if (filePath.startsWith(FALLBACK_INTERNAL_PREFIX)) {
+    return true;
+  }
+
   UniqueString prefix = bundledModulePath(context);
   if (!prefix.isEmpty() && filePathInDirPath(filePath, prefix))
     return true;
