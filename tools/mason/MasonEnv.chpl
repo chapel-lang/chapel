@@ -78,8 +78,8 @@ proc MASON_REGISTRY throws {
     for str in env.split(',') {
       const regArr = str.split('|');
       if regArr.size > 2 || regArr.size < 1 {
-        var msg = "expected MASON_REGISTRY to contain a comma separated list of locations or 'name|location' pairs\n" + str;
-        throw new owned MasonError(msg);
+        const msg = "expected MASON_REGISTRY to contain a comma separated list of locations or 'name|location' pairs\n" + str;
+        throw new MasonError(msg);
       } else {
         var regTup: 2*string;
 
@@ -99,10 +99,10 @@ proc MASON_REGISTRY throws {
     for i in registries.indices {
       for j in i+1..<registries.size {
         if registries(i)(0) == registries(j)(0) {
-          var msg = "registry names specified in MASON_REGISTRY must be unique:\n" +
+          const msg = "registry names specified in MASON_REGISTRY must be unique:\n" +
                     registries(i)(0) + " - " + registries(i)(1) + "\n" +
                     registries(j)(0) + " - " + registries(j)(1);
-          throw new owned MasonError(msg);
+          throw new MasonError(msg);
         }
       }
     }
@@ -183,7 +183,7 @@ private proc getRegNameFromLoc(location: string): string throws {
   var strippedLoc  = location.strip("/", leading=false);
   var lastSlashPos = strippedLoc.rfind("/");
   if lastSlashPos == -1 {
-    throw new owned MasonError("location should be an absolute path or URL");
+    throw new MasonError("location should be an absolute path or URL");
   }
   const gitExtension = ".git";
   if strippedLoc.endsWith(gitExtension) {

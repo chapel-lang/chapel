@@ -68,7 +68,6 @@ proc modifyToml(add: bool, spec: string, external: bool, system: bool,
   const toml = parseToml(openFile);
   var newToml: shared Toml?;
 
-  // Removed try! block to allow MasonError to propagate for better testability
   // Adding a dependency
   if add {
     if spec.find("@") == -1 {
