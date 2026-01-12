@@ -22,38 +22,15 @@
  */
 
 
-
-use ArgumentParser;
-use FileSystem;
-use Map;
-use MasonBuild;
-use MasonDoc;
-use MasonEnv;
-use MasonExternal;
-use MasonHelp;
-use MasonInit;
-use MasonModify;
-use MasonNew;
-use MasonPublish;
-use MasonRun;
-use MasonSearch;
-use MasonSystem;
-use MasonTest;
-use MasonUpdate;
-use MasonUtils;
-use MasonModules;
-
-import MasonLogger;
-use List;
 /*
 
 The Design of Mason
 ===================
 
-  Mason is a command line tool for building chapel programs to provide users with
-       a consistent way of building applications and libraries. Mason uses
-       a four state pipeline to go from start to finish in a project. The
-       four states are listed below.
+  Mason is a command line tool for building chapel programs to provide users
+  with a consistent way of building applications and libraries. Mason uses
+  a four state pipeline to go from start to finish in a project. The
+  four states are listed below.
 
 
   Four States:
@@ -64,111 +41,130 @@ The Design of Mason
            Toml file containing metadata and dependencies
            Builds dependency directed acyclic graph (DAG) to be
            serialized into lock file
-  3) Lock File:  ``Mason.lock``
+  3) Lock File: ``Mason.lock``
            Contains necessary build information
            Serialized directed acyclic graph of the dependencies build options
            from the manifest
-  4) Dependency Code:  ``$MASON_HOME/src``
+  4) Dependency Code: ``$MASON_HOME/src``
            Local dependencies downloaded by mason after the user lists them in
            a project manifest.
 
-Full documentation is located in the chapel release in $CHPL_HOME/doc/rst/tools/mason/mason.rst
+Full documentation is located in the chapel release in
+$CHPL_HOME/doc/rst/tools/mason/mason.rst
 
 */
+module Mason {
+  use ArgumentParser;
+  use FileSystem;
+  use Map;
+  use MasonBuild;
+  use MasonDoc;
+  use MasonEnv;
+  use MasonExternal;
+  use MasonHelp;
+  use MasonInit;
+  use MasonModify;
+  use MasonNew;
+  use MasonPublish;
+  use MasonRun;
+  use MasonSearch;
+  use MasonSystem;
+  use MasonTest;
+  use MasonUpdate;
+  use MasonUtils;
+  use MasonModules;
 
+  import MasonLogger;
+  use List;
 
-proc main(args: [] string) throws {
+  proc main(args: [] string) throws {
 
-  var parser = new argumentParser(helpHandler = new MasonHelpHandler());
+    var parser = new argumentParser(helpHandler = new MasonHelpHandler());
 
-  var subCmds = new map(string, shared Argument);
+    var subCmds = new map(string, shared Argument);
 
-  // define all the supported subcommand strings here
-  var cmds = ["add","build","clean","doc","env","external","init","publish",
-              "new","rm","run","search","system","test","update",
-              "help","version","modules"];
-  for cmd in cmds {
-    subCmds.add(cmd,parser.addSubCommand(cmd));
-  }
-
-  var versionFlag = parser.addFlag(name="versionFlag",
-                                   opts=["-V","--version"],
-                                   defaultValue=false);
-
-  var noColorFlag = parser.addFlag(name="noColorFlag",
-                                   opts=["--no-color"],
-                                   defaultValue=false);
-
-  parser.parseArgs(args);
-
-  // TODO: Can printVersion take an exit code?
-  if versionFlag.valueAsBool() {
-    printVersion();
-    exit(0);
-  }
-
-  MasonLogger.setColor(noColorFlag.valueAsBool());
-
-  var usedCmd:string;
-  var cmdList:list(string);
-  // identify which, if any, subcommand was used and collect its arguments
-  for (cmd, arg) in zip(subCmds.keys(), subCmds.values()) {
-    if arg.hasValue() {
-      usedCmd = cmd;
-      cmdList = new list(arg.values());
-      break;
+    // define all the supported subcommand strings here
+    var cmds = ["add","build","clean","doc","env","external","init","publish",
+                "new","rm","run","search","system","test","update",
+                "help","version","modules"];
+    for cmd in cmds {
+      subCmds.add(cmd,parser.addSubCommand(cmd));
     }
-  }
-  var cmdArgs = cmdList.toArray();
-  // pass the arguments to the appropriate subcommand
-  try! {
-    select (usedCmd) {
-      when "add" do masonModify(cmdArgs);
-      when "build" do masonBuild(cmdArgs);
-      when "clean" do masonClean(cmdArgs);
-      when "doc" do masonDoc(cmdArgs);
-      when "env" do masonEnv(cmdArgs);
-      when "external" do masonExternal(cmdArgs);
-      when "help" do masonHelp();
-      when "init" do masonInit(cmdArgs);
-      when "new" do masonNew(cmdArgs);
-      when "publish" do masonPublish(cmdArgs);
-      when "rm" do masonModify(cmdArgs);
-      when "run" do masonRun(cmdArgs);
-      when "search" do masonSearch(cmdArgs);
-      when "system" do masonSystem(cmdArgs);
-      when "test" do masonTest(cmdArgs);
-      when "update" do masonUpdate(cmdArgs);
-      when "modules" do masonModules(cmdArgs);
-      when "version" do printVersion();
-      otherwise {
-        throw new owned MasonError("No such subcommand '%s'\ntry mason --help"
-                                   .format(usedCmd));
+
+    var versionFlag = parser.addFlag(name="versionFlag",
+                                    opts=["-V","--version"],
+                                    defaultValue=false);
+
+    var noColorFlag = parser.addFlag(name="noColorFlag",
+                                    opts=["--no-color"],
+                                    defaultValue=false);
+
+    parser.parseArgs(args);
+
+    // TODO: Can printVersion take an exit code?
+    if versionFlag.valueAsBool() {
+      printVersion();
+      exit(0);
+    }
+
+    MasonLogger.setColor(noColorFlag.valueAsBool());
+
+    var usedCmd:string;
+    var cmdList:list(string);
+    // identify which, if any, subcommand was used and collect its arguments
+    for (cmd, arg) in zip(subCmds.keys(), subCmds.values()) {
+      if arg.hasValue() {
+        usedCmd = cmd;
+        cmdList = new list(arg.values());
+        break;
       }
     }
-  } catch ex : MasonError {
-    stderr.writeln(ex.message());
-    exit(1);
+    var cmdArgs = cmdList.toArray();
+    // pass the arguments to the appropriate subcommand
+    try! {
+      select (usedCmd) {
+        when "add" do masonModify(cmdArgs);
+        when "build" do masonBuild(cmdArgs);
+        when "clean" do masonClean(cmdArgs);
+        when "doc" do masonDoc(cmdArgs);
+        when "env" do masonEnv(cmdArgs);
+        when "external" do masonExternal(cmdArgs);
+        when "help" do masonHelp();
+        when "init" do masonInit(cmdArgs);
+        when "new" do masonNew(cmdArgs);
+        when "publish" do masonPublish(cmdArgs);
+        when "rm" do masonModify(cmdArgs);
+        when "run" do masonRun(cmdArgs);
+        when "search" do masonSearch(cmdArgs);
+        when "system" do masonSystem(cmdArgs);
+        when "test" do masonTest(cmdArgs);
+        when "update" do masonUpdate(cmdArgs);
+        when "modules" do masonModules(cmdArgs);
+        when "version" do printVersion();
+        otherwise {
+          throw new owned MasonError("No such subcommand '%s'\ntry mason --help"
+                                    .format(usedCmd));
+        }
+      }
+    } catch ex : MasonError {
+      stderr.writeln(ex.message());
+      exit(1);
+    }
   }
-}
 
 
-proc masonClean(args) {
-  var parser = new argumentParser(helpHandler=new MasonCleanHelpHandler());
+  proc masonClean(args) throws {
+    var parser = new argumentParser(helpHandler=new MasonCleanHelpHandler());
 
-  parser.parseArgs(args);
-  try! {
+    parser.parseArgs(args);
     const cwd = here.cwd();
 
     const projectHome = getProjectHome(cwd);
     runCommand("rm -rf " + projectHome + "/target");
   }
-  catch e: MasonError {
-    stderr.writeln(e.message());
+
+
+  proc printVersion() {
+    writeln("mason 0.2.0");
   }
-}
-
-
-proc printVersion() {
-  writeln("mason 0.2.0");
 }
