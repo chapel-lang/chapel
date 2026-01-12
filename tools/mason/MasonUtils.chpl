@@ -107,17 +107,17 @@ proc runCommand(cmd: [] string, quiet=false) : string throws {
     log.debugf("runCommand: %?\n", cmd);
     var process = spawn(cmd, stdout=pipeStyle.pipe, stderr=pipeStyle.pipe);
 
-    var line:string;
 
     log.debugln("stdout:");
-    while process.stdout.readLine(line) {
+    // use .lines() to avoid https://github.com/chapel-lang/chapel/issues/28211
+    for line in process.stdout.lines() {
       ret += line;
       if quiet then log.debug(line); else log.info(line);
     }
     log.debugln("end stdout");
 
     log.debugln("stderr:");
-    while process.stderr.readLine(line) {
+    for line in process.stderr.lines() {
       log.warn(line);
     }
     log.debugln("end stderr.");
