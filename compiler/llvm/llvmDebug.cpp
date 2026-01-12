@@ -186,6 +186,15 @@ removePointersAndQualifiers(llvm::DIType* N, int numLevels = -1) {
   return std::make_pair(res, count);
 }
 
+static bool isNonCodegenType(Type* type) {
+  if (type == dtVoid || type == dtNothing) return true;
+  if (auto valType = type->getValType()) {
+    if (type == valType) return false;
+    return isNonCodegenType(valType);
+  }
+  return false;
+}
+
 void DebugData::finalize() {
 
   // if there are any types that weren't fully codegenned before, do it now
@@ -356,6 +365,13 @@ llvm::DIType* DebugData::constructTypeForAggregate(llvm::StructType* ty,
       }
 
       llvm::DIType* fditype = getType(field->type);
+      if (!fditype && isNonCodegenType(field->type)) {
+        if (developer || fVerify) {
+          INT_FATAL("Cannot determine the debug type for type %s with a non-codegen field %s",
+                    type->symbol->name, field->name);
+        }
+        return nullptr;
+      }
       if (!fditype) {
         // if we can't determine the field type yet, create a forward decl
         // then later, the forward decl will be replaced with the actual type
@@ -822,15 +838,6 @@ llvm::DIType* DebugData::constructTypeFromChplType(llvm::Type* ty, Type* type) {
   }
   return nullptr;
 
-}
-
-static bool isNonCodegenType(Type* type) {
-  if (type == dtVoid || type == dtNothing) return true;
-  if (auto valType = type->getValType()) {
-    if (type == valType) return false;
-    return isNonCodegenType(valType);
-  }
-  return false;
 }
 
 llvm::DIType* DebugData::constructType(Type *type) {
