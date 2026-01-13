@@ -781,6 +781,15 @@ struct ConstructComplex : public ConstructDIType {
   }
 };
 
+struct ConstructEnum : public ConstructDIType {
+  bool shouldConstruct(DebugData* debugData, llvm::Type* llvmImplType, Type* chplType) const override {
+    return isEnumType(chplType);
+  }
+  llvm::DIType* getDIType(DebugData* debugData, llvm::Type* llvmImplType, Type* chplType) const override {
+    return debugData->constructTypeForEnum(llvmImplType, toEnumType(chplType));
+  }
+};
+
 #define DI_TYPE_FOR_CHPL_TYPE(V) \
   V(ConstructRef) \
   V(ConstructLocaleID) \
@@ -788,7 +797,8 @@ struct ConstructComplex : public ConstructDIType {
   V(ConstructBool) \
   V(ConstructInteger) \
   V(ConstructReal) \
-  V(ConstructComplex)
+  V(ConstructComplex) \
+  V(ConstructEnum)
 
 #define KNOWN_TYPES_ENTRY(Builder) std::make_unique<Builder>(),
 
@@ -817,9 +827,7 @@ llvm::DIType* DebugData::constructTypeFromChplType(llvm::Type* ty, Type* type) {
   }
 
 
-  if (isEnumType(type)) {
-    return constructTypeForEnum(ty, toEnumType(type));
-  } else if (isAtomicType(type)) {
+  if (isAtomicType(type)) {
     AggregateType* at = toAggregateType(type);
     INT_ASSERT(at);
     Type* valType = nullptr;
