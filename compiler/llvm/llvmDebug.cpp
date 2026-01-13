@@ -827,6 +827,38 @@ struct ConstructSync : public ConstructDIType {
   }
 };
 
+struct ConstructCArray : public ConstructDIType {
+  bool shouldConstruct(DebugData* debugData, llvm::Type* llvmImplType, Type* chplType) const override {
+    return chplType->symbol->hasFlag(FLAG_C_ARRAY);
+  }
+  llvm::DIType* getDIType(DebugData* debugData, llvm::Type* llvmImplType, Type* chplType) const override {
+    auto dibuilder = chplType->symbol->getModule()->llvmDIBuilder;
+    GenInfo* info = gGenInfo;
+    const llvm::DataLayout& layout = info->module->getDataLayout();
+    const char* name = chplType->symbol->name;
+
+    auto at = toAggregateType(chplType);
+    INT_ASSERT(at);
+
+    llvm::SmallVector<llvm::Metadata *> Subscripts;
+    auto arraySize = at->cArrayLength();
+    Subscripts.push_back(dibuilder->getOrCreateSubrange(0, arraySize));
+    Type *elmType = at->cArrayElementType();
+    auto elmDiType = debugData->getType(elmType);
+    if (!elmDiType) {
+      return nullptr;
+    }
+    llvm::DIType* N = dibuilder->createArrayType(
+      arraySize,
+      8*layout.getABITypeAlign(llvmImplType).value(),
+      elmDiType,
+      dibuilder->getOrCreateArray(Subscripts));
+    N = dibuilder->createTypedef(N, name, nullptr, 0, nullptr);
+    chplType->symbol->llvmDIType = N;
+    return N;
+  }
+};
+
 #define DI_TYPE_FOR_CHPL_TYPE(V) \
   V(ConstructRef) \
   V(ConstructLocaleID) \
@@ -837,7 +869,8 @@ struct ConstructSync : public ConstructDIType {
   V(ConstructComplex) \
   V(ConstructEnum) \
   V(ConstructAtomic) \
-  V(ConstructSync)
+  V(ConstructSync) \
+  V(ConstructCArray)
 
 #define KNOWN_TYPES_ENTRY(Builder) std::make_unique<Builder>(),
 
@@ -866,28 +899,7 @@ llvm::DIType* DebugData::constructTypeFromChplType(llvm::Type* ty, Type* type) {
   }
 
 
-  if (type->symbol->hasFlag(FLAG_C_ARRAY)) {
-    auto at = toAggregateType(type);
-    INT_ASSERT(at);
-
-    llvm::SmallVector<llvm::Metadata *> Subscripts;
-    auto arraySize = at->cArrayLength();
-    Subscripts.push_back(dibuilder->getOrCreateSubrange(0, arraySize));
-    Type *elmType = at->cArrayElementType();
-    auto elmDiType = getType(elmType);
-    if (!elmDiType) {
-      return nullptr;
-    }
-    llvm::DIType* N = dibuilder->createArrayType(
-      arraySize,
-      8*layout.getABITypeAlign(ty).value(),
-      elmDiType,
-      dibuilder->getOrCreateArray(Subscripts));
-    N = dibuilder->createTypedef(N, name, nullptr, 0, nullptr);
-    type->symbol->llvmDIType = N;
-    return N;
-
-  } else if (type == dtStringC) {
+  if (type == dtStringC) {
     llvm::DIType* N = dibuilder->createPointerType(
       getType(dt_c_char),
       layout.getPointerSizeInBits(),
