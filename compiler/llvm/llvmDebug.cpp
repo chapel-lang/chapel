@@ -544,6 +544,54 @@ llvm::DIType* DebugData::constructTypeForPointer(llvm::Type* ty, Type* type) {
   return nullptr;
 }
 
+struct ConstructDIType {
+public:
+  virtual ~ConstructDIType() = default;
+protected:
+  llvm::DIBuilder* dibuilder(Type* chplType) const {
+    return chplType->symbol->getModule()->llvmDIBuilder;
+  }
+  DefinitionInfo defInfo(DebugData* debugData, Type* chplType) const {
+    return DefinitionInfo(debugData, chplType->symbol);
+  }
+public:
+  virtual bool shouldConstruct(DebugData* debugData,
+                               llvm::Type* llvmImplType,
+                               Type* chplType) const = 0;
+  virtual llvm::DIType* getDIType(DebugData* debugData,
+                                  llvm::Type* llvmImplType,
+                                  Type* chplType) const = 0;
+};
+
+struct ConstructRef : public ConstructDIType {
+  bool shouldConstruct(DebugData* debugData, llvm::Type* llvmImplType, Type* chplType) const override {
+    return chplType->isRef();
+  }
+  llvm::DIType* getDIType(DebugData* debugData, llvm::Type* llvmImplType, Type* chplType) const override {
+    auto valType = chplType->getValType();
+    auto diType = debugData->getType(valType);
+    if (!diType) {
+      return nullptr;
+    }
+    auto DIB = dibuilder(chplType);
+    auto N = DIB->createReferenceType(llvm::dwarf::DW_TAG_reference_type, diType);
+    N = DIB->createTypedef(N, chplType->symbol->name, nullptr, 0, nullptr);
+    chplType->symbol->llvmDIType = N;
+    return N;
+  }
+};
+
+#define DI_TYPE_FOR_CHPL_TYPE(V) \
+  V(ConstructRef)
+
+#define KNOWN_TYPES_ENTRY(Builder) std::make_unique<Builder>(),
+
+auto knownTypeBuilders = std::array{
+  DI_TYPE_FOR_CHPL_TYPE(KNOWN_TYPES_ENTRY)
+};
+#undef KNOWN_TYPES_ENTRY
+#undef DI_TYPE_FOR_CHPL_TYPE
+
 llvm::DIType* DebugData::constructTypeFromChplType(llvm::Type* ty, Type* type) {
 
   // TODO: this function is getting quite large with many if/else branches
@@ -556,19 +604,14 @@ llvm::DIType* DebugData::constructTypeFromChplType(llvm::Type* ty, Type* type) {
   DefinitionInfo defInfo(this, type->symbol);
   auto dibuilder = type->symbol->getModule()->llvmDIBuilder;
 
-
-  if (type->isRef()) {
-    auto valType = type->getValType();
-    auto diType = getType(valType);
-    if (!diType) {
-      return nullptr;
+  for (const auto& builderPtr : knownTypeBuilders) {
+    if (builderPtr->shouldConstruct(this, ty, type)) {
+      return builderPtr->getDIType(this, ty, type);
     }
-    auto N = dibuilder->createReferenceType(llvm::dwarf::DW_TAG_reference_type, diType);
-    N = dibuilder->createTypedef(N, name, nullptr, 0, nullptr);
-    type->symbol->llvmDIType = N;
-    return N;
+  }
 
-  } else if (type == dtLocaleID) {
+
+  if (type == dtLocaleID) {
     // handle locale types
     llvm::SmallVector<llvm::Metadata *, 1> EltTys;
     llvm::Type* nodeTy = info->lvt->getType("c_nodeid_t");

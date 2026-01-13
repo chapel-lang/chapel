@@ -77,10 +77,6 @@ class DebugData {
 
   llvm::DIType* maybeWrapTypeInPointer(llvm::DIType* N, Type* type);
 
-  // TODO: use this to setup a nicer framework for constructTypeFromChplType
-  // std::unordered_map<Type*, llvm::DIType* (*)(llvm::Type*, Type*)> typeMap;
-  // void registerKnownTypeTable();
-
 };
 
 extern DebugData *debugInfo;
