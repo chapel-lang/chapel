@@ -882,6 +882,16 @@ struct ConstructStringC : public ConstructDIType {
   }
 };
 
+struct ConstructNullPointer : public ConstructDIType {
+  bool shouldConstruct(DebugData* debugData, llvm::Type* llvmImplType, Type* chplType) const override {
+    return chplType == dtNil || chplType == dtCFnPtr || chplType == dtCVoidPtr;
+  }
+  llvm::DIType* getDIType(DebugData* debugData, llvm::Type* llvmImplType, Type* chplType) const override {
+    auto dibuilder = chplType->symbol->getModule()->llvmDIBuilder;
+    return dibuilder->createNullPtrType();
+  }
+};
+
 #define DI_TYPE_FOR_CHPL_TYPE(V) \
   V(ConstructRef) \
   V(ConstructLocaleID) \
@@ -894,7 +904,8 @@ struct ConstructStringC : public ConstructDIType {
   V(ConstructAtomic) \
   V(ConstructSync) \
   V(ConstructCArray) \
-  V(ConstructStringC)
+  V(ConstructStringC) \
+  V(ConstructNullPointer)
 
 #define KNOWN_TYPES_ENTRY(Builder) std::make_unique<Builder>(),
 
@@ -923,9 +934,7 @@ llvm::DIType* DebugData::constructTypeFromChplType(llvm::Type* ty, Type* type) {
   }
 
 
-  if (type == dtNil || type == dtCFnPtr || type == dtCVoidPtr) {
-    return dibuilder->createNullPtrType();
-  } else if (toPrimitiveType(type) != nullptr &&
+  if (toPrimitiveType(type) != nullptr &&
              type->symbol->hasFlag(FLAG_EXTERN)) {
     // if its a non-opaque struct, fill in the debug info based on those fields
     // if its an opaque struct, just create a forward decl
