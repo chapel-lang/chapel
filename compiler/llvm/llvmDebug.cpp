@@ -679,10 +679,25 @@ struct ConstructObject : public ConstructDIType {
   }
 };
 
+struct ConstructBool : public ConstructDIType {
+  bool shouldConstruct(DebugData* debugData, llvm::Type* llvmImplType, Type* chplType) const override {
+    return isBoolType(chplType);
+  }
+  llvm::DIType* getDIType(DebugData* debugData, llvm::Type* llvmImplType, Type* chplType) const override {
+    const llvm::DataLayout& layout = gGenInfo->module->getDataLayout();
+    auto DIB = dibuilder(chplType);
+    auto size = layout.getTypeSizeInBits(llvmImplType);
+    auto N = DIB->createBasicType(chplType->symbol->name, size, llvm::dwarf::DW_ATE_boolean);
+    chplType->symbol->llvmDIType = N;
+    return N;
+  }
+};
+
 #define DI_TYPE_FOR_CHPL_TYPE(V) \
   V(ConstructRef) \
   V(ConstructLocaleID) \
-  V(ConstructObject)
+  V(ConstructObject) \
+  V(ConstructBool)
 
 #define KNOWN_TYPES_ENTRY(Builder) std::make_unique<Builder>(),
 
@@ -711,13 +726,7 @@ llvm::DIType* DebugData::constructTypeFromChplType(llvm::Type* ty, Type* type) {
   }
 
 
-  if (isBoolType(type)) {
-    auto size = layout.getTypeSizeInBits(ty);
-    auto N = dibuilder->createBasicType(name, size, llvm::dwarf::DW_ATE_boolean);
-    type->symbol->llvmDIType = N;
-    return N;
-
-  } else if (isIntType(type) || isUIntType(type)) {
+  if (isIntType(type) || isUIntType(type)) {
     auto encoding = isSignedType(type) ? llvm::dwarf::DW_ATE_signed :
                                          llvm::dwarf::DW_ATE_unsigned;
     auto size = layout.getTypeSizeInBits(ty);
