@@ -9,7 +9,7 @@
 
   * Alpine 3.20, 3.21, 3.22::
 
-      sudo apk add gcc g++ m4 perl python3 python3-dev bash make gawk git cmake libunwind-dev
+      sudo apk add gcc g++ m4 perl python3 python3-dev bash make gawk git cmake libunwind-dev coreutils
       sudo apk add llvm-dev clang-dev clang-static llvm-static
 
 
