@@ -1,5 +1,7 @@
 
+
 use MasonEnv;
+use MasonUtils;
 
 use FileSystem, CTypes;
 
@@ -34,6 +36,21 @@ proc main() {
   setEnv("MASON_REGISTRY", "foobar|foobar");
   masonEnv(args);
   writeln("----------");
+
+  // Test: Duplicate registry names should trigger error
+  setEnv("MASON_REGISTRY", "foo|/tmp/registry1,foo|/tmp/registry2");
+  try {
+    var regs = MASON_REGISTRY;
+    writeln("Test failed: No error thrown for duplicate registry names");
+  } catch e: MasonError {
+    if e.message().find("must be unique") >= 0 {
+      writeln("Test passed: Caught expected error for duplicate registry names");
+    } else {
+      writeln("Test failed: Unexpected MasonError: ", e.message());
+    }
+  } catch {
+    writeln("Test failed: Unexpected error type");
+  }
   unsetEnv("MASON_REGISTRY");
 
   setEnv("MASON_OFFLINE", "true");

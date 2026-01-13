@@ -8,6 +8,7 @@ MASON_REGISTRY: foobar|foobar *
 MASON_OFFLINE: false
 SPACK_ROOT: $PWD/mason_home/spack *
 ----------
+Test passed: Caught expected error for duplicate registry names
 MASON_HOME: $PWD *
 MASON_REGISTRY: mason-registry|https://github.com/chapel-lang/mason-registry
 MASON_OFFLINE: true *
