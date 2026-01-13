@@ -786,8 +786,43 @@ struct ConstructEnum : public ConstructDIType {
     return isEnumType(chplType);
   }
   llvm::DIType* getDIType(DebugData* debugData, llvm::Type* llvmImplType, Type* chplType) const override {
-    return debugData->constructTypeForEnum(llvmImplType, toEnumType(chplType));
-  }
+    const llvm::DataLayout& layout = gGenInfo->module->getDataLayout();
+    DefinitionInfo defInfo = this->defInfo(debugData, chplType);
+    auto DIB = dibuilder(chplType);
+
+    EnumType* enumType = toEnumType(chplType);
+    INT_ASSERT(enumType);
+
+    Type* bt = enumType->getIntegerType();
+    auto diBT = debugData->getType(bt);
+    if (!diBT) {
+      return nullptr;
+    }
+    llvm::SmallVector<llvm::Metadata *> Elements;
+    for (auto [sym, var] : enumType->getConstantMap()) {
+      INT_ASSERT(var && var->immediate);
+      auto ev =
+        DIB->createEnumerator(sym->name, var->immediate->aps_int());
+      Elements.push_back(ev);
+    }
+    auto N = DIB->createEnumerationType(
+      defInfo.maybeScope(),
+      enumType->symbol->name,
+      defInfo.file(),
+      defInfo.line(),
+      layout.getTypeSizeInBits(llvmImplType),
+      8*layout.getABITypeAlign(llvmImplType).value(),
+      DIB->getOrCreateArray(Elements),
+      diBT,
+#if LLVM_VERSION_MAJOR >= 18
+    RuntimeLang,
+#endif
+      "", /* UniqueIdentifer */
+      true /* isScoped */
+    );
+    enumType->symbol->llvmDIType = N;
+    return N;
+}
 };
 
 struct ConstructAtomic : public ConstructDIType {
@@ -832,9 +867,8 @@ struct ConstructCArray : public ConstructDIType {
     return chplType->symbol->hasFlag(FLAG_C_ARRAY);
   }
   llvm::DIType* getDIType(DebugData* debugData, llvm::Type* llvmImplType, Type* chplType) const override {
-    auto dibuilder = chplType->symbol->getModule()->llvmDIBuilder;
-    GenInfo* info = gGenInfo;
-    const llvm::DataLayout& layout = info->module->getDataLayout();
+    auto DIB = dibuilder(chplType);
+    const llvm::DataLayout& layout = gGenInfo->module->getDataLayout();
     const char* name = chplType->symbol->name;
 
     auto at = toAggregateType(chplType);
@@ -842,18 +876,18 @@ struct ConstructCArray : public ConstructDIType {
 
     llvm::SmallVector<llvm::Metadata *> Subscripts;
     auto arraySize = at->cArrayLength();
-    Subscripts.push_back(dibuilder->getOrCreateSubrange(0, arraySize));
+    Subscripts.push_back(DIB->getOrCreateSubrange(0, arraySize));
     Type *elmType = at->cArrayElementType();
     auto elmDiType = debugData->getType(elmType);
     if (!elmDiType) {
       return nullptr;
     }
-    llvm::DIType* N = dibuilder->createArrayType(
+    llvm::DIType* N = DIB->createArrayType(
       arraySize,
       8*layout.getABITypeAlign(llvmImplType).value(),
       elmDiType,
-      dibuilder->getOrCreateArray(Subscripts));
-    N = dibuilder->createTypedef(N, name, nullptr, 0, nullptr);
+      DIB->getOrCreateArray(Subscripts));
+    N = DIB->createTypedef(N, name, nullptr, 0, nullptr);
     chplType->symbol->llvmDIType = N;
     return N;
   }
@@ -864,19 +898,18 @@ struct ConstructStringC : public ConstructDIType {
     return chplType == dtStringC;
   }
   llvm::DIType* getDIType(DebugData* debugData, llvm::Type* llvmImplType, Type* chplType) const override {
-    auto dibuilder = chplType->symbol->getModule()->llvmDIBuilder;
-    GenInfo* info = gGenInfo;
-    const llvm::DataLayout& layout = info->module->getDataLayout();
+    auto DIB = dibuilder(chplType);
+    const llvm::DataLayout& layout = gGenInfo->module->getDataLayout();
     const char* name = chplType->symbol->name;
 
-    llvm::DIType* N = dibuilder->createPointerType(
+    llvm::DIType* N = DIB->createPointerType(
       debugData->getType(dt_c_char),
       layout.getPointerSizeInBits(),
       0, /* alignment */
       chpl::empty,
       name);
-    N = dibuilder->createQualifiedType(llvm::dwarf::DW_TAG_const_type, N);
-    N = dibuilder->createTypedef(N, name, nullptr, 0, nullptr);
+    N = DIB->createQualifiedType(llvm::dwarf::DW_TAG_const_type, N);
+    N = DIB->createTypedef(N, name, nullptr, 0, nullptr);
     chplType->symbol->llvmDIType = N;
     return N;
   }
@@ -887,8 +920,7 @@ struct ConstructNullPointer : public ConstructDIType {
     return chplType == dtNil || chplType == dtCFnPtr || chplType == dtCVoidPtr;
   }
   llvm::DIType* getDIType(DebugData* debugData, llvm::Type* llvmImplType, Type* chplType) const override {
-    auto dibuilder = chplType->symbol->getModule()->llvmDIBuilder;
-    return dibuilder->createNullPtrType();
+    return dibuilder(chplType)->createNullPtrType();
   }
 };
 
@@ -897,7 +929,7 @@ struct ConstructExternPrimitive : public ConstructDIType {
     return toPrimitiveType(chplType) != nullptr && chplType->symbol->hasFlag(FLAG_EXTERN);
   }
   llvm::DIType* getDIType(DebugData* debugData, llvm::Type* llvmImplType, Type* chplType) const override {
-    auto dibuilder = chplType->symbol->getModule()->llvmDIBuilder;
+    auto DIB = dibuilder(chplType);
     const char* name = chplType->symbol->name;
     DefinitionInfo defInfo(debugData, chplType->symbol);
 
@@ -906,7 +938,7 @@ struct ConstructExternPrimitive : public ConstructDIType {
     // otherwise, create an unspecified type
     if (llvmImplType->isStructTy()) {
       // if (llvm::cast<llvm::StructType>(llvmImplType)->isOpaque()) {
-        llvm::DIType* N = dibuilder->createForwardDecl(
+        llvm::DIType* N = DIB->createForwardDecl(
           llvm::dwarf::DW_TAG_structure_type,
           name,
           defInfo.maybeScope(),
@@ -916,7 +948,7 @@ struct ConstructExternPrimitive : public ConstructDIType {
           0, /* SizeInBits */
           0  /* AlignInBits */
         );
-        N = dibuilder->createTypedef(N, name, nullptr, 0, nullptr);
+        N = DIB->createTypedef(N, name, nullptr, 0, nullptr);
         chplType->symbol->llvmDIType = N;
         return N;
       // } else {
@@ -924,7 +956,7 @@ struct ConstructExternPrimitive : public ConstructDIType {
         // auto slayout = layout.getStructLayout(llvm::cast<llvm::StructType>(llvmImplType));
         for (unsigned i = 0; i < llvmImplType->getStructNumElements(); i++) {
           // llvm::Type* fty = llvmImplType->getStructElementType(i);
-          // EltTys.push_back(dibuilder->createMemberType(
+          // EltTys.push_back(DIB->createMemberType(
           //   nullptr,
           //   "field", // TODO: we don't have the field name here
           //   nullptr,
@@ -938,7 +970,7 @@ struct ConstructExternPrimitive : public ConstructDIType {
         }
       // }
     } else {
-      return dibuilder->createUnspecifiedType(name);
+      return DIB->createUnspecifiedType(name);
     }
     return nullptr;
   }
@@ -960,7 +992,8 @@ struct ConstructExternPrimitive : public ConstructDIType {
   V(ConstructNullPointer) \
   V(ConstructExternPrimitive)
 
-#define KNOWN_TYPES_ENTRY(Builder) std::make_unique<Builder>(),
+#define KNOWN_TYPES_ENTRY(Builder) \
+  ((std::unique_ptr<ConstructDIType>)std::make_unique<Builder>()),
 
 auto knownTypeBuilders = std::array{
   DI_TYPE_FOR_CHPL_TYPE(KNOWN_TYPES_ENTRY)
@@ -969,25 +1002,12 @@ auto knownTypeBuilders = std::array{
 #undef DI_TYPE_FOR_CHPL_TYPE
 
 llvm::DIType* DebugData::constructTypeFromChplType(llvm::Type* ty, Type* type) {
-
-  // TODO: this function is getting quite large with many if/else branches
-  // a better design might be a table of callback functions or something
-
-  GenInfo* info = gGenInfo;
-  const llvm::DataLayout& layout = info->module->getDataLayout();
-
-  const char* name = type->symbol->name;
-  DefinitionInfo defInfo(this, type->symbol);
-  auto dibuilder = type->symbol->getModule()->llvmDIBuilder;
-
   for (const auto& builderPtr : knownTypeBuilders) {
     if (builderPtr->shouldConstruct(this, ty, type)) {
       return builderPtr->getDIType(this, ty, type);
     }
   }
-
   return nullptr;
-
 }
 
 static bool isNonCodegenType(Type* type) {
@@ -1104,45 +1124,6 @@ llvm::DIType* DebugData::constructType(Type *type) {
   }
 
   return nullptr;
-}
-
-llvm::DIType* DebugData::constructTypeForEnum(llvm::Type* ty, EnumType* type) {
-  GenInfo* info = gGenInfo;
-  const llvm::DataLayout& layout = info->module->getDataLayout();
-
-  const char* name = type->symbol->name;
-  DefinitionInfo defInfo(this, type->symbol);
-  auto dibuilder = type->symbol->getModule()->llvmDIBuilder;
-
-  Type* bt = type->getIntegerType();
-  auto diBT = getType(bt);
-  if (!diBT) {
-    return nullptr;
-  }
-  llvm::SmallVector<llvm::Metadata *> Elements;
-  for (auto [sym, var] : type->getConstantMap()) {
-    INT_ASSERT(var && var->immediate);
-    auto ev =
-      dibuilder->createEnumerator(sym->name, var->immediate->aps_int());
-    Elements.push_back(ev);
-  }
-  auto N = dibuilder->createEnumerationType(
-    defInfo.maybeScope(),
-    name,
-    defInfo.file(),
-    defInfo.line(),
-    layout.getTypeSizeInBits(ty), /* SizeInBits */
-    8*layout.getABITypeAlign(ty).value(), /* AlignInBits */
-    dibuilder->getOrCreateArray(Elements),
-    diBT,
-#if LLVM_VERSION_MAJOR >= 18
-   RuntimeLang,
-#endif
-    "", /* UniqueIdentifer */
-    true /* isScoped */
-  );
-  type->symbol->llvmDIType = N;
-  return N;
 }
 
 llvm::DIType* DebugData::getType(Type *type) {
