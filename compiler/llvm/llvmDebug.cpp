@@ -790,6 +790,33 @@ struct ConstructEnum : public ConstructDIType {
   }
 };
 
+struct ConstructAtomic : public ConstructDIType {
+  bool shouldConstruct(DebugData* debugData, llvm::Type* llvmImplType, Type* chplType) const override {
+    return isAtomicType(chplType);
+  }
+  llvm::DIType* getDIType(DebugData* debugData, llvm::Type* llvmImplType, Type* chplType) const override {
+    auto DIB = dibuilder(chplType);
+    AggregateType* at = toAggregateType(chplType);
+    INT_ASSERT(at);
+    Type* valType = nullptr;
+    if (auto valTypeField = at->getSubstitution(astr("valType"))) {
+      valType = valTypeField->type;
+    } else if (chplType->symbol->name == astr("atomic bool") ||
+               chplType->symbol->name == astr("AtomicBool")) {
+      valType = dtBool;
+    } else {
+      if (developer || fVerify) {
+        INT_FATAL("Unable to find valType for atomic type %s", chplType->symbol->name);
+      }
+      return nullptr;
+    }
+    llvm::DIType* N = DIB->createQualifiedType(llvm::dwarf::DW_TAG_atomic_type, debugData->getType(valType));
+    N = DIB->createTypedef(N, chplType->symbol->name, nullptr, 0, nullptr);
+    chplType->symbol->llvmDIType = N;
+    return N;
+  }
+};
+
 #define DI_TYPE_FOR_CHPL_TYPE(V) \
   V(ConstructRef) \
   V(ConstructLocaleID) \
@@ -798,7 +825,8 @@ struct ConstructEnum : public ConstructDIType {
   V(ConstructInteger) \
   V(ConstructReal) \
   V(ConstructComplex) \
-  V(ConstructEnum)
+  V(ConstructEnum) \
+  V(ConstructAtomic)
 
 #define KNOWN_TYPES_ENTRY(Builder) std::make_unique<Builder>(),
 
@@ -827,30 +855,7 @@ llvm::DIType* DebugData::constructTypeFromChplType(llvm::Type* ty, Type* type) {
   }
 
 
-  if (isAtomicType(type)) {
-    AggregateType* at = toAggregateType(type);
-    INT_ASSERT(at);
-    Type* valType = nullptr;
-    if (auto valTypeField = at->getSubstitution(astr("valType"))) {
-      valType = valTypeField->type;
-    } else if (type->symbol->name == astr("atomic bool") ||
-               type->symbol->name == astr("AtomicBool")) {
-      valType = dtBool;
-    } else {
-      if (developer || fVerify) {
-        INT_FATAL("Unable to find valType for atomic type %s",
-                  type->symbol->name);
-      }
-      return nullptr;
-    }
-    llvm::DIType* N = dibuilder->createQualifiedType(
-      llvm::dwarf::DW_TAG_atomic_type, getType(valType)
-    );
-    N = dibuilder->createTypedef(N, name, nullptr, 0, nullptr);
-    type->symbol->llvmDIType = N;
-    return N;
-
-  } else if (isSyncType(type)) {
+  if (isSyncType(type)) {
     // TODO:
     return nullptr;
   } else if (type->symbol->hasFlag(FLAG_C_ARRAY)) {
