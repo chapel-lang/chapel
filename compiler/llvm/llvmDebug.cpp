@@ -859,6 +859,29 @@ struct ConstructCArray : public ConstructDIType {
   }
 };
 
+struct ConstructStringC : public ConstructDIType {
+  bool shouldConstruct(DebugData* debugData, llvm::Type* llvmImplType, Type* chplType) const override {
+    return chplType == dtStringC;
+  }
+  llvm::DIType* getDIType(DebugData* debugData, llvm::Type* llvmImplType, Type* chplType) const override {
+    auto dibuilder = chplType->symbol->getModule()->llvmDIBuilder;
+    GenInfo* info = gGenInfo;
+    const llvm::DataLayout& layout = info->module->getDataLayout();
+    const char* name = chplType->symbol->name;
+
+    llvm::DIType* N = dibuilder->createPointerType(
+      debugData->getType(dt_c_char),
+      layout.getPointerSizeInBits(),
+      0, /* alignment */
+      chpl::empty,
+      name);
+    N = dibuilder->createQualifiedType(llvm::dwarf::DW_TAG_const_type, N);
+    N = dibuilder->createTypedef(N, name, nullptr, 0, nullptr);
+    chplType->symbol->llvmDIType = N;
+    return N;
+  }
+};
+
 #define DI_TYPE_FOR_CHPL_TYPE(V) \
   V(ConstructRef) \
   V(ConstructLocaleID) \
@@ -870,7 +893,8 @@ struct ConstructCArray : public ConstructDIType {
   V(ConstructEnum) \
   V(ConstructAtomic) \
   V(ConstructSync) \
-  V(ConstructCArray)
+  V(ConstructCArray) \
+  V(ConstructStringC)
 
 #define KNOWN_TYPES_ENTRY(Builder) std::make_unique<Builder>(),
 
@@ -899,19 +923,7 @@ llvm::DIType* DebugData::constructTypeFromChplType(llvm::Type* ty, Type* type) {
   }
 
 
-  if (type == dtStringC) {
-    llvm::DIType* N = dibuilder->createPointerType(
-      getType(dt_c_char),
-      layout.getPointerSizeInBits(),
-      0, /* alignment */
-      chpl::empty,
-      name);
-    N = dibuilder->createQualifiedType(llvm::dwarf::DW_TAG_const_type, N);
-    N = dibuilder->createTypedef(N, name, nullptr, 0, nullptr);
-    type->symbol->llvmDIType = N;
-    return N;
-
-  } else if (type == dtNil || type == dtCFnPtr || type == dtCVoidPtr) {
+  if (type == dtNil || type == dtCFnPtr || type == dtCVoidPtr) {
     return dibuilder->createNullPtrType();
   } else if (toPrimitiveType(type) != nullptr &&
              type->symbol->hasFlag(FLAG_EXTERN)) {
