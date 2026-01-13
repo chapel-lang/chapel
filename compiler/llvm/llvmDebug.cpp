@@ -892,6 +892,58 @@ struct ConstructNullPointer : public ConstructDIType {
   }
 };
 
+struct ConstructExternPrimitive : public ConstructDIType {
+  bool shouldConstruct(DebugData* debugData, llvm::Type* llvmImplType, Type* chplType) const override {
+    return toPrimitiveType(chplType) != nullptr && chplType->symbol->hasFlag(FLAG_EXTERN);
+  }
+  llvm::DIType* getDIType(DebugData* debugData, llvm::Type* llvmImplType, Type* chplType) const override {
+    auto dibuilder = chplType->symbol->getModule()->llvmDIBuilder;
+    const char* name = chplType->symbol->name;
+    DefinitionInfo defInfo(debugData, chplType->symbol);
+
+    // if its a non-opaque struct, fill in the debug info based on those fields
+    // if its an opaque struct, just create a forward decl
+    // otherwise, create an unspecified type
+    if (llvmImplType->isStructTy()) {
+      // if (llvm::cast<llvm::StructType>(llvmImplType)->isOpaque()) {
+        llvm::DIType* N = dibuilder->createForwardDecl(
+          llvm::dwarf::DW_TAG_structure_type,
+          name,
+          defInfo.maybeScope(),
+          defInfo.file(),
+          defInfo.line(),
+          RuntimeLang,
+          0, /* SizeInBits */
+          0  /* AlignInBits */
+        );
+        N = dibuilder->createTypedef(N, name, nullptr, 0, nullptr);
+        chplType->symbol->llvmDIType = N;
+        return N;
+      // } else {
+        // llvm::SmallVector<llvm::Metadata *, 8> EltTys;
+        // auto slayout = layout.getStructLayout(llvm::cast<llvm::StructType>(llvmImplType));
+        for (unsigned i = 0; i < llvmImplType->getStructNumElements(); i++) {
+          // llvm::Type* fty = llvmImplType->getStructElementType(i);
+          // EltTys.push_back(dibuilder->createMemberType(
+          //   nullptr,
+          //   "field", // TODO: we don't have the field name here
+          //   nullptr,
+          //   0,
+          //   layout.getTypeSizeInBits(fty),
+          //   8*layout.getABITypeAlign(fty).value(),
+          //   slayout->getElementOffsetInBits(i),
+          //   llvm::DINode::FlagZero,
+          //   getType(fty)
+          // ));
+        }
+      // }
+    } else {
+      return dibuilder->createUnspecifiedType(name);
+    }
+    return nullptr;
+  }
+};
+
 #define DI_TYPE_FOR_CHPL_TYPE(V) \
   V(ConstructRef) \
   V(ConstructLocaleID) \
@@ -905,7 +957,8 @@ struct ConstructNullPointer : public ConstructDIType {
   V(ConstructSync) \
   V(ConstructCArray) \
   V(ConstructStringC) \
-  V(ConstructNullPointer)
+  V(ConstructNullPointer) \
+  V(ConstructExternPrimitive)
 
 #define KNOWN_TYPES_ENTRY(Builder) std::make_unique<Builder>(),
 
@@ -933,49 +986,6 @@ llvm::DIType* DebugData::constructTypeFromChplType(llvm::Type* ty, Type* type) {
     }
   }
 
-
-  if (toPrimitiveType(type) != nullptr &&
-             type->symbol->hasFlag(FLAG_EXTERN)) {
-    // if its a non-opaque struct, fill in the debug info based on those fields
-    // if its an opaque struct, just create a forward decl
-    // otherwise, create an unspecified type
-    if (ty->isStructTy()) {
-      // if (llvm::cast<llvm::StructType>(ty)->isOpaque()) {
-        llvm::DIType* N = dibuilder->createForwardDecl(
-          llvm::dwarf::DW_TAG_structure_type,
-          name,
-          defInfo.maybeScope(),
-          defInfo.file(),
-          defInfo.line(),
-          RuntimeLang,
-          0, /* SizeInBits */
-          0  /* AlignInBits */
-        );
-        N = dibuilder->createTypedef(N, name, nullptr, 0, nullptr);
-        type->symbol->llvmDIType = N;
-        return N;
-      // } else {
-        // llvm::SmallVector<llvm::Metadata *, 8> EltTys;
-        // auto slayout = layout.getStructLayout(llvm::cast<llvm::StructType>(ty));
-        for (unsigned i = 0; i < ty->getStructNumElements(); i++) {
-          // llvm::Type* fty = ty->getStructElementType(i);
-          // EltTys.push_back(dibuilder->createMemberType(
-          //   nullptr,
-          //   "field", // TODO: we don't have the field name here
-          //   nullptr,
-          //   0,
-          //   layout.getTypeSizeInBits(fty),
-          //   8*layout.getABITypeAlign(fty).value(),
-          //   slayout->getElementOffsetInBits(i),
-          //   llvm::DINode::FlagZero,
-          //   getType(fty)
-          // ));
-        }
-      // }
-    } else {
-      return dibuilder->createUnspecifiedType(name);
-    }
-  }
   return nullptr;
 
 }
