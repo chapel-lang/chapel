@@ -709,12 +709,31 @@ struct ConstructInteger : public ConstructDIType {
   }
 };
 
+struct ConstructReal : public ConstructDIType {
+  bool shouldConstruct(DebugData* debugData, llvm::Type* llvmImplType, Type* chplType) const override {
+    return isRealType(chplType) || isImagType(chplType);
+  }
+  llvm::DIType* getDIType(DebugData* debugData, llvm::Type* llvmImplType, Type* chplType) const override {
+    const llvm::DataLayout& layout = gGenInfo->module->getDataLayout();
+    auto DIB = dibuilder(chplType);
+    // TODO: eventually, it would be nice to use DW_ATE_imaginary_float
+    // for imaginary types, but lldb doesn't seem to understand that today
+    auto encoding = llvm::dwarf::DW_ATE_float;
+    auto size = layout.getTypeSizeInBits(llvmImplType);
+    llvm::DIType* N = DIB->createBasicType(chplType->symbol->name, size, encoding);
+    N = DIB->createTypedef(N, chplType->symbol->name, nullptr, 0, nullptr);
+    chplType->symbol->llvmDIType = N;
+    return N;
+  }
+};
+
 #define DI_TYPE_FOR_CHPL_TYPE(V) \
   V(ConstructRef) \
   V(ConstructLocaleID) \
   V(ConstructObject) \
   V(ConstructBool) \
-  V(ConstructInteger)
+  V(ConstructInteger) \
+  V(ConstructReal)
 
 #define KNOWN_TYPES_ENTRY(Builder) std::make_unique<Builder>(),
 
@@ -743,17 +762,7 @@ llvm::DIType* DebugData::constructTypeFromChplType(llvm::Type* ty, Type* type) {
   }
 
 
-  if (isRealType(type) || isImagType(type)) {
-    // TODO: eventually, it would be nice to use DW_ATE_imaginary_float
-    // for imaginary types, but lldb doesn't seem to understand that today
-    auto encoding = llvm::dwarf::DW_ATE_float;
-    auto size = layout.getTypeSizeInBits(ty);
-    llvm::DIType* N = dibuilder->createBasicType(name, size, encoding);
-    N = dibuilder->createTypedef(N, name, nullptr, 0, nullptr);
-    type->symbol->llvmDIType = N;
-    return N;
-
-  } else if (isComplexType(type)) {
+  if (isComplexType(type)) {
     // we could codegen this as DW_ATE_complex_float, but then we
     // wouldn't have the real and imaginary parts as members
     // but it would give us a pretty-printer for free
