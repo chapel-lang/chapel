@@ -817,6 +817,16 @@ struct ConstructAtomic : public ConstructDIType {
   }
 };
 
+struct ConstructSync : public ConstructDIType {
+  bool shouldConstruct(DebugData* debugData, llvm::Type* llvmImplType, Type* chplType) const override {
+    return isSyncType(chplType);
+  }
+  llvm::DIType* getDIType(DebugData* debugData, llvm::Type* llvmImplType, Type* chplType) const override {
+    // TODO:
+    return nullptr;
+  }
+};
+
 #define DI_TYPE_FOR_CHPL_TYPE(V) \
   V(ConstructRef) \
   V(ConstructLocaleID) \
@@ -826,7 +836,8 @@ struct ConstructAtomic : public ConstructDIType {
   V(ConstructReal) \
   V(ConstructComplex) \
   V(ConstructEnum) \
-  V(ConstructAtomic)
+  V(ConstructAtomic) \
+  V(ConstructSync)
 
 #define KNOWN_TYPES_ENTRY(Builder) std::make_unique<Builder>(),
 
@@ -855,10 +866,7 @@ llvm::DIType* DebugData::constructTypeFromChplType(llvm::Type* ty, Type* type) {
   }
 
 
-  if (isSyncType(type)) {
-    // TODO:
-    return nullptr;
-  } else if (type->symbol->hasFlag(FLAG_C_ARRAY)) {
+  if (type->symbol->hasFlag(FLAG_C_ARRAY)) {
     auto at = toAggregateType(type);
     INT_ASSERT(at);
 
