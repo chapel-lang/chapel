@@ -636,9 +636,53 @@ struct ConstructLocaleID : public ConstructDIType {
   }
 };
 
+struct ConstructObject : public ConstructDIType {
+  bool shouldConstruct(DebugData* debugData, llvm::Type* llvmImplType, Type* chplType) const override {
+    return chplType == dtObject;
+  }
+  llvm::DIType* getDIType(DebugData* debugData, llvm::Type* llvmImplType, Type* chplType) const override {
+    GenInfo* info = gGenInfo;
+    const llvm::DataLayout& layout = info->module->getDataLayout();
+    DefinitionInfo defInfo = this->defInfo(debugData, chplType);
+    auto DIB = dibuilder(chplType);
+
+    llvm::SmallVector<llvm::Metadata *, 1> EltTys;
+    llvm::Type* cidType = info->lvt->getType("chpl__class_id");
+    auto cidDITy = DIB->createMemberType(
+      defInfo.maybeScope(),
+      "cid",
+      defInfo.file(),
+      defInfo.line(),
+      layout.getTypeSizeInBits(cidType),
+      8*layout.getABITypeAlign(cidType).value(),
+      0, /* offset, assume its zero */
+      llvm::DINode::FlagZero,
+      debugData->getType(CLASS_ID_TYPE)
+    );
+    EltTys.push_back(cidDITy);
+    // since dtObject has a single field, we can directly assume the size and alignent to
+    // be the same as its single field
+    llvm::DIType* N = DIB->createStructType(
+      defInfo.maybeScope(),
+      chplType->symbol->name,
+      defInfo.file(),
+      defInfo.line(),
+      layout.getTypeSizeInBits(cidType), /* SizeInBits */
+      8*layout.getABITypeAlign(cidType).value(), /* AlignInBits */
+      llvm::DINode::FlagZero, /* Flags */
+      nullptr,
+      DIB->getOrCreateArray(EltTys) /* Elements */
+    );
+    N = debugData->maybeWrapTypeInPointer(N, chplType);
+    chplType->symbol->llvmDIType = N;
+    return N;
+  }
+};
+
 #define DI_TYPE_FOR_CHPL_TYPE(V) \
   V(ConstructRef) \
-  V(ConstructLocaleID)
+  V(ConstructLocaleID) \
+  V(ConstructObject)
 
 #define KNOWN_TYPES_ENTRY(Builder) std::make_unique<Builder>(),
 
@@ -667,39 +711,7 @@ llvm::DIType* DebugData::constructTypeFromChplType(llvm::Type* ty, Type* type) {
   }
 
 
-  if (type == dtObject) {
-    llvm::SmallVector<llvm::Metadata *, 1> EltTys;
-    llvm::Type* cidType = info->lvt->getType("chpl__class_id");
-    auto cidDITy = dibuilder->createMemberType(
-      defInfo.maybeScope(),
-      "cid",
-      defInfo.file(),
-      defInfo.line(),
-      layout.getTypeSizeInBits(cidType),
-      8*layout.getABITypeAlign(cidType).value(),
-      0, /* offset, assume its zero */
-      llvm::DINode::FlagZero,
-      getType(CLASS_ID_TYPE)
-    );
-    EltTys.push_back(cidDITy);
-    // since dtOject has a single field, we can directly assume the size and alignent to
-    // be the same as its single field
-    llvm::DIType* N = dibuilder->createStructType(
-      defInfo.maybeScope(),
-      name,
-      defInfo.file(),
-      defInfo.line(),
-      layout.getTypeSizeInBits(cidType), /* SizeInBits */
-      8*layout.getABITypeAlign(cidType).value(), /* AlignInBits */
-      llvm::DINode::FlagZero, /* Flags */
-      nullptr,
-      dibuilder->getOrCreateArray(EltTys) /* Elements */
-    );
-    N = maybeWrapTypeInPointer(N, type);
-    type->symbol->llvmDIType = N;
-    return N;
-
-  } else if (isBoolType(type)) {
+  if (isBoolType(type)) {
     auto size = layout.getTypeSizeInBits(ty);
     auto N = dibuilder->createBasicType(name, size, llvm::dwarf::DW_ATE_boolean);
     type->symbol->llvmDIType = N;
