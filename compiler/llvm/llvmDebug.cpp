@@ -727,13 +727,68 @@ struct ConstructReal : public ConstructDIType {
   }
 };
 
+struct ConstructComplex : public ConstructDIType {
+  bool shouldConstruct(DebugData* debugData, llvm::Type* llvmImplType, Type* chplType) const override {
+    return isComplexType(chplType);
+  }
+  llvm::DIType* getDIType(DebugData* debugData, llvm::Type* llvmImplType, Type* chplType) const override {
+    const llvm::DataLayout& layout = gGenInfo->module->getDataLayout();
+    DefinitionInfo defInfo = this->defInfo(debugData, chplType);
+    auto DIB = dibuilder(chplType);
+
+    // we could codegen this as DW_ATE_complex_float, but then we
+    // wouldn't have the real and imaginary parts as members
+    // but it would give us a pretty-printer for free
+    llvm::SmallVector<llvm::Metadata *, 1> EltTys;
+    auto fpSize = chplType == dtComplex[COMPLEX_SIZE_64] ? FLOAT_SIZE_32 : FLOAT_SIZE_64;
+    llvm::Type* reType = dtReal[fpSize]->getLLVMType();
+    llvm::Type* imType = dtImag[fpSize]->getLLVMType();
+    EltTys.push_back(DIB->createMemberType(
+      defInfo.maybeScope(),
+      "re",
+      defInfo.file(),
+      defInfo.line(),
+      layout.getTypeSizeInBits(reType),
+      8*layout.getABITypeAlign(reType).value(),
+      0, /* offset, assume its zero */
+      llvm::DINode::FlagZero,
+      debugData->getType(dtReal[fpSize])
+    ));
+    EltTys.push_back(DIB->createMemberType(
+      defInfo.maybeScope(),
+      "im",
+      defInfo.file(),
+      defInfo.line(),
+      layout.getTypeSizeInBits(imType),
+      8*layout.getABITypeAlign(imType).value(),
+      layout.getTypeSizeInBits(reType), /* offset, assume after re */
+      llvm::DINode::FlagZero,
+      debugData->getType(dtImag[fpSize])
+    ));
+    llvm::DIType* N = DIB->createStructType(
+      defInfo.maybeScope(),
+      chplType->symbol->name,
+      defInfo.file(),
+      defInfo.line(),
+      layout.getTypeSizeInBits(llvmImplType), /* SizeInBits */
+      8*layout.getABITypeAlign(llvmImplType).value(), /* AlignInBits */
+      llvm::DINode::FlagZero, /* Flags */
+      nullptr,
+      DIB->getOrCreateArray(EltTys) /* Elements */
+    );
+    chplType->symbol->llvmDIType = N;
+    return N;
+  }
+};
+
 #define DI_TYPE_FOR_CHPL_TYPE(V) \
   V(ConstructRef) \
   V(ConstructLocaleID) \
   V(ConstructObject) \
   V(ConstructBool) \
   V(ConstructInteger) \
-  V(ConstructReal)
+  V(ConstructReal) \
+  V(ConstructComplex)
 
 #define KNOWN_TYPES_ENTRY(Builder) std::make_unique<Builder>(),
 
@@ -762,52 +817,7 @@ llvm::DIType* DebugData::constructTypeFromChplType(llvm::Type* ty, Type* type) {
   }
 
 
-  if (isComplexType(type)) {
-    // we could codegen this as DW_ATE_complex_float, but then we
-    // wouldn't have the real and imaginary parts as members
-    // but it would give us a pretty-printer for free
-    llvm::SmallVector<llvm::Metadata *, 1> EltTys;
-    auto fpSize = type == dtComplex[COMPLEX_SIZE_64] ? FLOAT_SIZE_32 :
-                                                       FLOAT_SIZE_64;
-    llvm::Type* reType = dtReal[fpSize]->getLLVMType();
-    llvm::Type* imType = dtImag[fpSize]->getLLVMType();
-    EltTys.push_back(dibuilder->createMemberType(
-      defInfo.maybeScope(),
-      "re",
-      defInfo.file(),
-      defInfo.line(),
-      layout.getTypeSizeInBits(reType),
-      8*layout.getABITypeAlign(reType).value(),
-      0, /* offset, assume its zero */
-      llvm::DINode::FlagZero,
-      getType(dtReal[fpSize])
-    ));
-    EltTys.push_back(dibuilder->createMemberType(
-      defInfo.maybeScope(),
-      "im",
-      defInfo.file(),
-      defInfo.line(),
-      layout.getTypeSizeInBits(imType),
-      8*layout.getABITypeAlign(imType).value(),
-      layout.getTypeSizeInBits(reType), /* offset, assume after re */
-      llvm::DINode::FlagZero,
-      getType(dtImag[fpSize])
-    ));
-    llvm::DIType* N = dibuilder->createStructType(
-      defInfo.maybeScope(),
-      name,
-      defInfo.file(),
-      defInfo.line(),
-      layout.getTypeSizeInBits(ty), /* SizeInBits */
-      8*layout.getABITypeAlign(ty).value(), /* AlignInBits */
-      llvm::DINode::FlagZero, /* Flags */
-      nullptr,
-      dibuilder->getOrCreateArray(EltTys) /* Elements */
-    );
-    type->symbol->llvmDIType = N;
-    return N;
-
-  } else if (isEnumType(type)) {
+  if (isEnumType(type)) {
     return constructTypeForEnum(ty, toEnumType(type));
   } else if (isAtomicType(type)) {
     AggregateType* at = toAggregateType(type);
