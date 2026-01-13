@@ -693,11 +693,28 @@ struct ConstructBool : public ConstructDIType {
   }
 };
 
+struct ConstructInteger : public ConstructDIType {
+  bool shouldConstruct(DebugData* debugData, llvm::Type* llvmImplType, Type* chplType) const override {
+    return isIntType(chplType) || isUIntType(chplType);
+  }
+  llvm::DIType* getDIType(DebugData* debugData, llvm::Type* llvmImplType, Type* chplType) const override {
+    const llvm::DataLayout& layout = gGenInfo->module->getDataLayout();
+    auto DIB = dibuilder(chplType);
+    auto encoding = isSignedType(chplType) ? llvm::dwarf::DW_ATE_signed : llvm::dwarf::DW_ATE_unsigned;
+    auto size = layout.getTypeSizeInBits(llvmImplType);
+    llvm::DIType* N = DIB->createBasicType(chplType->symbol->name, size, encoding);
+    N = DIB->createTypedef(N, chplType->symbol->name, nullptr, 0, nullptr);
+    chplType->symbol->llvmDIType = N;
+    return N;
+  }
+};
+
 #define DI_TYPE_FOR_CHPL_TYPE(V) \
   V(ConstructRef) \
   V(ConstructLocaleID) \
   V(ConstructObject) \
-  V(ConstructBool)
+  V(ConstructBool) \
+  V(ConstructInteger)
 
 #define KNOWN_TYPES_ENTRY(Builder) std::make_unique<Builder>(),
 
@@ -726,16 +743,7 @@ llvm::DIType* DebugData::constructTypeFromChplType(llvm::Type* ty, Type* type) {
   }
 
 
-  if (isIntType(type) || isUIntType(type)) {
-    auto encoding = isSignedType(type) ? llvm::dwarf::DW_ATE_signed :
-                                         llvm::dwarf::DW_ATE_unsigned;
-    auto size = layout.getTypeSizeInBits(ty);
-    llvm::DIType* N = dibuilder->createBasicType(name, size, encoding);
-    N = dibuilder->createTypedef(N, name, nullptr, 0, nullptr);
-    type->symbol->llvmDIType = N;
-    return N;
-
-  } else if (isRealType(type) || isImagType(type)) {
+  if (isRealType(type) || isImagType(type)) {
     // TODO: eventually, it would be nice to use DW_ATE_imaginary_float
     // for imaginary types, but lldb doesn't seem to understand that today
     auto encoding = llvm::dwarf::DW_ATE_float;
