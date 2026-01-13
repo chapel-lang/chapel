@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -765,11 +765,8 @@ module Map {
       if !isCopyableType(keyType) || !isCopyableType(valType) then
         compilerError("toArray requires copyable key and value types");
 
-      var A: [0..#_size] (keyType, valType);
-
-      for (a, k, v) in zip(A, keys(), values()) {
-        a = (k, v);
-      }
+      var A: [0..#_size] (keyType, valType)
+          = for (k, v) in zip(keys(), values()) do (k, v);
 
       return A;
     }

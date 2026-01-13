@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2025-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -196,7 +196,7 @@ static void testRunAndTrackErrors() {
     return resolveConcreteFunction(ctx, modules[0]->stmt(0)->id());
   });
   assert(!result.ranWithoutErrors());
-  assert(result.errors().size() == 2);
+  assert(result.errors().size() == 3);
   ensureErrorInErrorsModule(ctx, result.errors(), ErrorType::UserDiagnosticEncounterError);
 }
 

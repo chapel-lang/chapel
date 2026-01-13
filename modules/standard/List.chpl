@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1897,20 +1897,11 @@ module List {
                       " with elements of a non-nilable owned type, here: ",
                       eltType:string);
 
-      // Once GitHub Issue #7704 is resolved, replace pragma "unsafe"
-      // with a remote var declaration.
-      pragma "unsafe" var result: [0..#_size] eltType;
+      _enter();
 
-      on this {
-        _enter();
+      var result: [0..#_size] eltType = forall i in 0..#_size do _getRef(i);
 
-        var tmp: [0..#_size] eltType =
-          forall i in 0..#_size do _getRef(i);
-
-        result = tmp;
-
-        _leave();
-      }
+      _leave();
 
       return result;
     }

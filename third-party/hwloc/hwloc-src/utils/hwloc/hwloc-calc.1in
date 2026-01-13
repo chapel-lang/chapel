@@ -1,5 +1,5 @@
 .\" -*- nroff -*-
-.\" Copyright © 2010-2024 Inria.  All rights reserved.
+.\" Copyright © 2010-2025 Inria.  All rights reserved.
 .\" Copyright © 2009-2020 Cisco Systems, Inc.  All rights reserved.
 .\" Copyright © 2024 CNRS
 .\" See COPYING in top-level directory.
@@ -61,6 +61,20 @@ combine invocations:
   hwloc-calc --restrict $(hwloc-calc --cpukind 0 all) core:1
 
 .TP
+\fB\-\-default\-nodes\fR
+Only keep NUMA nodes that are considered default nodes on
+heterogeneous memory platforms.
+This usually includes DRAM memory nodes (or nodes of the
+same memory tier) rather than nodes with specific characteristics
+(HBM, NVM, CXL, etc).
+
+This option is useful for splitting the topology by NUMA domain
+when binding one task per domain even if some NUMA domains have the
+same locality (e.g. one DRAM and one HBM node per socket).
+
+See hwloc_topology_get_default_nodeset() for details.
+
+.TP
 \fB\-\-restrict\fR <cpuset>
 Restrict the topology to the given cpuset.
 This removes some PUs and their now-child-less parents.
@@ -116,54 +130,18 @@ The <specification> string must end with a number of PUs.
 Enforce the input in the given format, among \fBxml\fR, \fBfsroot\fR,
 \fBcpuid\fR and \fBsynthetic\fR.
 .
-.SH OPTIONS
+.SH OUTPUT CONVERSION OPTIONS
 .
+By default, the output is a CPU set (or nodeset).
+These options convert this set into objects, count them, etc.
+
 All these options must be given after all topology options above.
 .
-.TP 10
-\fB\-p\fR \fB\-\-physical\fR
-Use OS/physical indexes instead of logical indexes for both input and output.
-.TP
-\fB\-l\fR \fB\-\-logical\fR
-Use logical indexes instead of physical/OS indexes for both input and output (default).
-.TP
-\fB\-\-pi\fR \fB\-\-physical\-input\fR
-Use OS/physical indexes instead of logical indexes for input.
-.TP
-\fB\-\-li\fR \fB\-\-logical\-input\fR
-Use logical indexes instead of physical/OS indexes for input (default).
-.TP
-\fB\-\-po\fR \fB\-\-physical\-output\fR
-Use OS/physical indexes instead of logical indexes for output.
-.TP
-\fB\-\-lo\fR \fB\-\-logical\-output\fR
-Use logical indexes instead of physical/OS indexes for output (default, except for cpusets which are always physical).
-.TP
-\fB\-n\fR \fB\-\-nodeset\fR
-Interpret both input and output sets as nodesets instead of CPU sets.
-See \fB\-\-nodeset\-output\fR and \fB\-\-nodeset\-input\fR below for details.
-.TP
-\fB\-\-no\fR \fB\-\-nodeset\-output\fR
-Report nodesets instead of CPU sets.
-This output is more precise than the default CPU set output when memory
-locality matters because it properly describes CPU-less NUMA nodes,
-as well as NUMA-nodes that are local to multiple CPUs.
-.TP
-\fB\-\-ni\fR \fB\-\-nodeset\-input\fR
-Interpret input sets as nodesets instead of CPU sets.
-.TP
-\fB\-\-oo\fR \fB\-\-object\-output\fR
-When reporting object indexes (e.g. with \fB\-I\fR or \fB\-\-local\-memory\fR),
-this option prefixes these indexes with types (e.g. \fICore:0\fR instead of \fI0\fR).
 .TP
 \fB\-N \-\-number\-of <type|depth>\fR
 Report the number of objects of the given type or depth that intersect the CPU set.
 This is convenient for finding how many cores, NUMA nodes or PUs are available
 in a machine.
-
-When combined with \fB\-\-nodeset\fR or \fB\-\-nodeset-output\fR,
-the nodeset is considered instead of the CPU set for finding matching objects.
-This is useful when reporting the output as a number or set of NUMA nodes.
 
 \fI<type\fR may contain a filter to select specific objects among
 the type. For instance \fB\-N "numa[hbm]"\fR counts NUMA nodes marked with subtype "HBM",
@@ -171,6 +149,9 @@ while \fB\-N "numa[mcdram]"\fR only counts MCDRAM NUMA nodes on KNL.
 
 If an OS device subtype such as \fIgpu\fR  is given instead of \fIosdev\fR,
 only the os devices of that subtype will be counted.
+
+Special values such as \fIcpukind\fR and \fImemorytier\fR may be given
+to return the number of cpukinds or memory tiers matching the input location.
 .TP
 \fB\-I \-\-intersect <type|depth>\fR
 Find the list of objects of the given type or depth that intersect the CPU set and
@@ -183,16 +164,17 @@ tools such as taskset or numactl \fB\-\-physcpubind\fR or \fB\-\-membind\fR.
 This is different from \-\-largest since the latter requires that all reported
 objects are strictly included inside the input objects.
 
-When combined with \fB\-\-nodeset\fR or \fB\-\-nodeset-output\fR,
-the nodeset is considered instead of the CPU set for finding matching objects.
-This is useful when reporting the output as a number or set of NUMA nodes.
-
 \fI<type\fR may contain a filter to select specific objects among
 the type. For instance \fB\-N "numa[hbm]"\fR lists NUMA nodes marked with subtype "HBM",
 while \fB\-N "numa[mcdram]"\fR only lists MCDRAM NUMA nodes on KNL.
+Note that this filter applies when selecting objects, but not when outputting them,
+e.g. MCDRAM NUMA node #3 is outputted as 7 (NUMA node #7) instead of 3.
 
 If an OS device subtype such as \fIgpu\fR is given instead of \fIosdev\fR,
 only the os devices of that subtype will be returned.
+
+Special values such as \fIcpukind\fR and \fImemorytier\fR may be given
+to return the list of cpukind or memory tier indexes matching the input location.
 
 If combined with \fB\-\-object\-output\fR, object indexes are prefixed
 with types (e.g. \fICore:0\fR instead of \fI0\fR).
@@ -240,10 +222,10 @@ Change the flags used to select local NUMA nodes.
 Flags may be given as numeric values or as a comma-separated list of flag names
 that are passed to \fIhwloc_get_local_numanode_objs()\fR.
 Those names may be substrings of actual flag names as long as a single one matches.
-The default is \fB3\fR (or \fBsmaller,larger\fR)
+The default is \f0xb\fR (or \fBsmaller,larger,intersects\fR)
 which means NUMA nodes are displayed
-if their locality either contains or is contained
-in the locality of the given object.
+if their locality either contains, is contained, or intersects
+the locality of the given object.
 
 This option enables \fB\-\-local\-memory\fR.
 .TP
@@ -266,12 +248,64 @@ with its type (e.g. \fINUMANode:0\fR instead of \fI0\fR).
 
 \fI<name>\fR may be suffixed with flags to tune the selection of best nodes,
 for instance as \fBbandwidth,strict,default\fR.
-\fBdefault\fR means that all local nodes are reported if no best could be found.
+
+\fBdefault\fR means that default nodes are reported if no best could
+be found (see \fI\--default-nodes\fR). If neither best nor default nodes
+could be found, all local nodes are reported.
+
 \fBstrict\fR means that nodes are selected only if their performance is the best
 for all the input CPUs. On a dual-socket machine with HBM in each socket,
 both HBMs are the best for their local socket, but not for the remote socket.
 Hence both HBM are also considered best for the entire machine by default,
 but none if \fBstrict\fR.
+.
+.SH INPUT / OUTPUT SET AND OBJECT OPTIONS
+.
+These options configure how objects and CPU/node sets are parsed
+on input and formatted on output.
+
+All these options must be given after all topology options above.
+.
+.TP 10
+\fB\-p\fR \fB\-\-physical\fR
+Use OS/physical indexes instead of logical indexes for both input and output.
+.TP
+\fB\-l\fR \fB\-\-logical\fR
+Use logical indexes instead of physical/OS indexes for both input and output (default).
+.TP
+\fB\-\-pi\fR \fB\-\-physical\-input\fR
+Use OS/physical indexes instead of logical indexes for input.
+.TP
+\fB\-\-li\fR \fB\-\-logical\-input\fR
+Use logical indexes instead of physical/OS indexes for input (default).
+.TP
+\fB\-\-po\fR \fB\-\-physical\-output\fR
+Use OS/physical indexes instead of logical indexes for output.
+.TP
+\fB\-\-lo\fR \fB\-\-logical\-output\fR
+Use logical indexes instead of physical/OS indexes for output (default, except for cpusets which are always physical).
+.TP
+\fB\-n\fR \fB\-\-nodeset\fR
+Interpret both input and output sets as nodesets instead of CPU sets.
+See \fB\-\-nodeset\-output\fR and \fB\-\-nodeset\-input\fR below for details.
+.TP
+\fB\-\-no\fR \fB\-\-nodeset\-output\fR
+Report nodesets instead of CPU sets.
+This output is more precise than the default CPU set output when memory
+locality matters because it properly describes CPU-less NUMA nodes,
+as well as NUMA-nodes that are local to multiple CPUs.
+.TP
+\fB\-\-ni\fR \fB\-\-nodeset\-input\fR
+Interpret input sets as nodesets instead of CPU sets.
+.
+.SH FORMATTING OPTIONS
+.
+All these options must be given after all topology options above.
+.
+.TP
+\fB\-\-oo\fR \fB\-\-object\-output\fR
+When reporting object indexes (e.g. with \fB\-I\fR or \fB\-\-local\-memory\fR),
+this option prefixes these indexes with types (e.g. \fICore:0\fR instead of \fI0\fR).
 .TP
 \fB\-\-sep <sep>\fR
 Change the field separator in the output.
@@ -284,20 +318,23 @@ while a comma is used to separate indexes
 Singlify the output to a single CPU.
 .TP
 \fB\-\-cpuset\-output\-format\fR <hwloc|list|taskset|systemd-dbus-api> \fB\-\-cof\fR <hwloc|list|taskset|systemd-dbus-api>
-Change the format of displayed CPU set strings.
+Change the format of displayed bitmap strings (CPU set or nodeset).
 By default, the hwloc-specific format is used.
 If \fIlist\fR is given, the output is a comma-separated of numbers or ranges,
 e.g. 2,4-5,8 .
 If \fItaskset\fR is given, the output is compatible with the taskset program
 (replaces the former \fB--taskset\fR option).
 If \fIsystemd-dbus-api\fR is given, the output is compatible with systemd's D-Bus API,
-e.g. "AllowedCPUs ay 0x0002 0x78 0x04" for the CPU set list "3-6,10".
+e.g. "ay 0x0002 0x78 0x04" for the CPU set list "3-6,10".
+
+For convenience, \fB\-\-nodeset\-output\-format\fR (or \fB\-\-nof\fR)
+behaves the same but also implies \fB\-\-nodeset\-output\fR.
 
 This option has no impact on the format of input CPU set strings,
 see \fB\-\-cpuset\-input\-format\fR.
 .TP
 \fB\-\-cpuset\-input\-format\fR <hwloc|list|taskset> \fB\-\-cif\fR <hwloc|list|taskset>
-Change the format of input CPU set strings.
+Change the format of input bitmap strings (CPU set or nodeset).
 By default, the tool tries to guess the type automatically between hwloc, list or taskset
 formats.
 This option forces the parsing format to avoid ambiguity for instance when "1,3,5" may
@@ -447,6 +484,11 @@ To get the set of first threads of all cores:
     $ hwloc-calc --no-smt all -I pu
     0,2,4,6,8,10,12,14
 
+To get the number of cpukinds inside a package:
+
+    $ hwloc-calc -N cpukind package:0
+    2
+
 .
 .\" **************************
 .\"    Examples of listing or counting NUMA nodes
@@ -458,6 +500,12 @@ whose locality is exactly equal to a Package:
 
     $ hwloc-calc --local-memory-flags 0 --physical-output pack:1
     4,7
+
+To display the list of default NUMA nodes, by logical indexes,
+in the entire machine:
+
+    $ hwloc-calc --default-nodes -I numa all
+    0,2,4,6
 
 To display the best-capacity NUMA node(s), by physical indexes,
 whose locality is exactly equal to a Package:
@@ -478,7 +526,12 @@ To find the number of NUMA nodes in memory tier 1
 
 To find the NUMA node of subtype MCDRAM (on KNL) near a PU:
 
-    $ hwloc-calc -I "numa[mcdram]" pu:157
+    $ hwloc-calc -I "numa[mcdram]" --oo pu:157
+    NUMANode:1
+
+To find the memory tier of a NUMA node:
+
+    $ hwloc-calc -I memorytier node:2
     1
 
 .
@@ -496,13 +549,12 @@ may be performed with \fB--intersect\fR combined with either \fB--physical-outpu
     $ hwloc-calc --physical-input PU:3 --intersect PU
     2
 
-One should add \fB--nodeset\fR when converting indexes of memory objects
-to make sure a single NUMA node index is returned on platforms
-with heterogeneous memory:
+This may also be used for converting indexes of memory objects,
+even with heterogeneous memory:
 
-    $ hwloc-calc --nodeset --physical-output node:2 --intersect node
+    $ hwloc-calc --physical-output node:2 --intersect node
     3
-    $ hwloc-calc --nodeset --physical-input node:3 --intersect node
+    $ hwloc-calc --physical-input node:3 --intersect node
     2
 
 To combine both physical and logical indexes as input:
@@ -565,11 +617,11 @@ To export bitmask in a format that is acceptable by the resctrl Linux subsystem
 
 .
 .\" **************************
-.\"    Example of use of the systemd-dbus-api cpuset output format
+.\"    Example of use of the systemd-dbus-api cpuset and nodeset outputs format
 .\" **************************
-.SH Example of use of the systemd-dbus-api cpuset output format
+.SH Example of use of the systemd-dbus-api cpuset and nodeset outputs format
 .PP
-hwloc-calc allows one to generate the very cryptic AllowedCPUs string, which the D-Bus API of systemd expects, from other supported CPU set representations. This is especially useful when the systemd-run command, which understands CPU set provided as list, cannot be used.
+hwloc-calc allows one to generate the very cryptic AllowedCPUs and AllowedMemoryNodes strings, which the D-Bus API of systemd expects, from other hwloc representations. This is especially useful when the systemd-run command, which understands numeric lists, cannot be used.
 .
 .PP
 First, create a systemd slice:
@@ -578,10 +630,11 @@ First, create a systemd slice:
     $ busctl call org.freedesktop.systemd1 /org/freedesktop/systemd1 org.freedesktop.systemd1.Manager StartUnit ss my_slice.slice fail
 .EE
 
-Then, configure the CPU set of the slice, using hwloc-calc to translate the syntax:
+Then, configure the CPU and Node sets of the slice, using hwloc-calc to translate the syntax:
 
 .EX
-    $ busctl call org.freedesktop.systemd1 /org/freedesktop/systemd1 org.freedesktop.systemd1.Manager SetUnitProperties 'sba(sv)' my_slice.slice 1 1 $(hwloc-calc pu:0 pu:31 pu:32 pu:63 pu:64 pu:77 --cpuset-output-format systemd-dbus-api)
+    $ busctl call org.freedesktop.systemd1 /org/freedesktop/systemd1 org.freedesktop.systemd1.Manager SetUnitProperties 'sba(sv)' my_slice.slice 1 1 AllowedCPUs $(hwloc-calc pu:0 pu:31 pu:32 pu:63 pu:64 pu:77 --cpuset-output-format systemd-dbus-api)
+    $ busctl call org.freedesktop.systemd1 /org/freedesktop/systemd1 org.freedesktop.systemd1.Manager SetUnitProperties 'sba(sv)' my_slice.slice 1 1 AllowedMemoryNodes $(hwloc-calc pu:0 pu:31 pu:32 pu:63 pu:64 pu:77 --nodeset-output-format systemd-dbus-api)
 .EE
 
 Finally, add the current process to the slice:

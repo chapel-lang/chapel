@@ -1,4 +1,4 @@
-.TH "hwlocality_distances_remove" 3 "Version 2.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_distances_remove" 3 "Version 2.12.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -16,7 +16,7 @@ hwlocality_distances_remove \- Remove distances between objects
 .RI "int \fBhwloc_distances_remove_by_depth\fP (\fBhwloc_topology_t\fP topology, int depth)"
 .br
 .ti -1c
-.RI "static int \fBhwloc_distances_remove_by_type\fP (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_type_t\fP type)"
+.RI "int \fBhwloc_distances_remove_by_type\fP (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_type_t\fP type)"
 .br
 .ti -1c
 .RI "int \fBhwloc_distances_release_remove\fP (\fBhwloc_topology_t\fP topology, struct \fBhwloc_distances_s\fP *distances)"
@@ -62,7 +62,7 @@ Remove distance matrices for objects at a specific depth in the topology\&. Iden
 .RE
 .PP
 
-.SS "static int hwloc_distances_remove_by_type (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_type_t\fP type)\fC [inline]\fP, \fC [static]\fP"
+.SS "int hwloc_distances_remove_by_type (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_type_t\fP type)\fC [inline]\fP"
 
 .PP
 Remove distance matrices for objects of a specific type in the topology\&. Identical to \fBhwloc_distances_remove()\fP but only applies to one level of the topology\&.

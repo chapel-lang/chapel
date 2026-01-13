@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -723,8 +723,8 @@ void CallInitDeinit::resolveMoveInit(const AstNode* ast,
     }
     if (canPassResult.passes() &&
         (!canPassResult.converts() ||
-         (!isManagedClass && canPassResult.conversionKind() ==
-             CanPassResult::ConversionKind::SUBTYPE))) {
+         (!isManagedClass && canPassResult.conversionKind() &
+          CanPassResult::SUBTYPE))) {
       // Future TODO: might need to call something provided by the record
       // author to be a hook for move initialization across locales
       // (see issue #15676).
@@ -833,9 +833,14 @@ void CallInitDeinit::processInit(VarFrame* frame,
     } else {
       // it is copy initialization, so use init= for records
       // and assign for other stuff
-      if (lhsType.type() != nullptr && lhsType.type()->isRecordLike()) {
-        resolveCopyInit(ast, rhsAst, lhsType, rhsType,
-                        /* forMoveInit */ false, rv);
+      if (lhsType.type() != nullptr &&
+          (lhsType.type()->isRecordLike() ||
+           lhsType.type()->isArrayType() ||
+           lhsType.type()->isDomainType())) {
+        resolveCopyInit(ast, rhsAst,
+                        lhsType, rhsType,
+                        /* forMoveInit */ false,
+                        rv);
 
 
         // special handling for tuple expr RHS: process init for each element,

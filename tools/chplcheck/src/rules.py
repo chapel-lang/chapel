@@ -1,5 +1,5 @@
 #
-# Copyright 2023-2025 Hewlett Packard Enterprise Development LP
+# Copyright 2023-2026 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -49,24 +49,10 @@ def might_incorrectly_report_location(node: AstNode) -> bool:
     indentation should leave these variables alone.
     """
 
-    # some NamedDecl nodes currently use the name as the location, which
-    # does not indicate their actual indentation.
-    #
-    # https://github.com/chapel-lang/chapel/issues/25208
-    if isinstance(node, (VarLikeDecl, TupleDecl, ForwardingDecl)):
-        return True
-
-    # private function locations are bugged and don't include the 'private'
-    # keyword.
-    #
-    # https://github.com/chapel-lang/chapel/issues/24818
-    elif isinstance(node, (Function, Use, Import)) and node.visibility() != "":
-        return True
-
     # 'else if' statements do not have proper locations
     #
     # https://github.com/chapel-lang/chapel/issues/25256
-    elif isinstance(node, Conditional):
+    if isinstance(node, Conditional):
         parent = node.parent()
         grandparent = parent.parent() if parent else None
         if (
@@ -725,6 +711,9 @@ def rules(driver: LintDriver):
             # extern functions have no bodies that can use their formals.
             parent = formal.parent()
             if isinstance(parent, NamedDecl) and parent.linkage() == "extern":
+                continue
+            # skip formals that are part of function signatures
+            if isinstance(parent, FunctionSignature):
                 continue
 
             formals[formal.unique_id()] = formal

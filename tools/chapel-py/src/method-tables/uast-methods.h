@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2023-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -45,6 +45,7 @@ CLASS_BEGIN(AstNode)
 
                auto id = node->id();
                auto parentId = id.parentSymbolId(context);
+               if (parentId.isEmpty()) return nullptr;
                return parsing::idToAst(context, parentId))
   PLAIN_GETTER(AstNode, pragmas, "Get the pragmas of this AST node",
                std::set<std::string>,

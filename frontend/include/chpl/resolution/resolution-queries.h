@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -384,6 +384,16 @@ const ResolvedFunction* resolveFunction(ResolutionContext* rc,
                                         const PoiScope* poiScope,
                                         bool skipIfRunning = false);
 
+/**
+  Same as resolveFunction, but checks for various cases that would make
+  the function unresolvable (eg, ASt-less compiler-generated fn,
+  not-fully-instantiated fn, etc.)
+
+  */
+const ResolvedFunction* resolveFunctionIfPossible(ResolutionContext* rc,
+                                                  const TypedFnSignature* sig,
+                                                  const PoiScope* poiScope);
+
 
 /**
   Given a scope corresponding to a module, find all visible
@@ -669,6 +679,12 @@ reportInvalidMultipleInheritance(Context* context,
                                  const uast::Class* node,
                                  const uast::AstNode* firstParent,
                                  const uast::AstNode* secondParent);
+
+void reportDeprecatedSyncRead(Context* context,
+                              const types::Type* syncT,
+                              const uast::AstNode* astForErr,
+                              const uast::AstNode* source,
+                              const uast::AstNode* dest);
 
 /**
   One of the compiler primitives has the side effect of collecting all

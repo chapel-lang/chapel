@@ -89,6 +89,751 @@ index 57b4b8d78b4..8da7750790b 100644
  
  
     *Example (split-cond-blocks-init.chpl)*
+diff --git a/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-const-err-1.good b/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-const-err-1.good
+index 353bc711b9b..8b73c9dc9a7 100644
+--- a/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-const-err-1.good
++++ b/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-const-err-1.good
+@@ -1,4 +1,4 @@
+-dflt-ctor-generic-uninit-field-const-err-1.chpl:7: error: unresolved call 'A.init()'
+-dflt-ctor-generic-uninit-field-const-err-1.chpl:3: note: this candidate did not match: A.init(c)
+-dflt-ctor-generic-uninit-field-const-err-1.chpl:7: note: because call does not supply enough arguments
+-dflt-ctor-generic-uninit-field-const-err-1.chpl:4: note: it is missing a value for formal 'in c'
++dflt-ctor-generic-uninit-field-const-err-1.chpl:7: error: unable to resolve call to 'init': no matching candidates
++$CHPL_HOME/modules/standard/ChapelIO.chpl:363: note: the following candidate didn't match
++$CHPL_HOME/modules/internal/ChapelRange.chpl:280: note: the following candidate didn't match
++dflt-ctor-generic-uninit-field-const-err-1.chpl:7: note: omitting 20 more candidates that didn't match
+diff --git a/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-param-err-1.good b/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-param-err-1.good
+index b006744280f..83610fec3b1 100644
+--- a/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-param-err-1.good
++++ b/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-param-err-1.good
+@@ -1,6 +1,4 @@
+-dflt-ctor-generic-uninit-field-param-err-1.chpl:7: error: unresolved call 'A.init()'
+-dflt-ctor-generic-uninit-field-param-err-1.chpl:3: note: this candidate did not match: A.init(param p)
+-dflt-ctor-generic-uninit-field-param-err-1.chpl:7: note: because call does not supply enough arguments
+-dflt-ctor-generic-uninit-field-param-err-1.chpl:4: note: it is missing a value for formal 'param p'
+-dflt-ctor-generic-uninit-field-param-err-1.chpl:7: note: other candidates are:
+-dflt-ctor-generic-uninit-field-param-err-1.chpl:3: note:   A.init(param p, reader, deserializer)
++dflt-ctor-generic-uninit-field-param-err-1.chpl:7: error: unable to resolve call to 'init': no matching candidates
++$CHPL_HOME/modules/standard/ChapelIO.chpl:363: note: the following candidate didn't match
++$CHPL_HOME/modules/internal/ChapelRange.chpl:280: note: the following candidate didn't match
++dflt-ctor-generic-uninit-field-param-err-1.chpl:7: note: omitting 20 more candidates that didn't match
+diff --git a/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-type-err-1.good b/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-type-err-1.good
+index e771412e0ba..ec28ed79c80 100644
+--- a/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-type-err-1.good
++++ b/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-type-err-1.good
+@@ -1,6 +1,4 @@
+-dflt-ctor-generic-uninit-field-type-err-1.chpl:7: error: unresolved call 'A.init()'
+-dflt-ctor-generic-uninit-field-type-err-1.chpl:3: note: this candidate did not match: A.init(type t)
+-dflt-ctor-generic-uninit-field-type-err-1.chpl:7: note: because call does not supply enough arguments
+-dflt-ctor-generic-uninit-field-type-err-1.chpl:4: note: it is missing a value for formal 't'
+-dflt-ctor-generic-uninit-field-type-err-1.chpl:7: note: other candidates are:
+-dflt-ctor-generic-uninit-field-type-err-1.chpl:3: note:   A.init(type t, reader, deserializer)
++dflt-ctor-generic-uninit-field-type-err-1.chpl:7: error: unable to resolve call to 'init': no matching candidates
++$CHPL_HOME/modules/standard/ChapelIO.chpl:363: note: the following candidate didn't match
++$CHPL_HOME/modules/internal/ChapelRange.chpl:280: note: the following candidate didn't match
++dflt-ctor-generic-uninit-field-type-err-1.chpl:7: note: omitting 20 more candidates that didn't match
+diff --git a/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-var-err-1.good b/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-var-err-1.good
+index 1e4db802fe4..66b5e8e2e20 100644
+--- a/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-var-err-1.good
++++ b/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-var-err-1.good
+@@ -1,4 +1,4 @@
+-dflt-ctor-generic-uninit-field-var-err-1.chpl:7: error: unresolved call 'A.init()'
+-dflt-ctor-generic-uninit-field-var-err-1.chpl:3: note: this candidate did not match: A.init(v)
+-dflt-ctor-generic-uninit-field-var-err-1.chpl:7: note: because call does not supply enough arguments
+-dflt-ctor-generic-uninit-field-var-err-1.chpl:4: note: it is missing a value for formal 'in v'
++dflt-ctor-generic-uninit-field-var-err-1.chpl:7: error: unable to resolve call to 'init': no matching candidates
++$CHPL_HOME/modules/standard/ChapelIO.chpl:363: note: the following candidate didn't match
++$CHPL_HOME/modules/internal/ChapelRange.chpl:280: note: the following candidate didn't match
++dflt-ctor-generic-uninit-field-var-err-1.chpl:7: note: omitting 20 more candidates that didn't match
+diff --git a/test/classes/initializers/compilerGenerated/generics/issue-16508-default-ok.good b/test/classes/initializers/compilerGenerated/generics/issue-16508-default-ok.good
+index e010eb041e0..a06343ef4fd 100644
+--- a/test/classes/initializers/compilerGenerated/generics/issue-16508-default-ok.good
++++ b/test/classes/initializers/compilerGenerated/generics/issue-16508-default-ok.good
+@@ -1,3 +1 @@
+-issue-16508-default-ok.chpl:5: error: default initialization with type 'TypelessField(int(64))' is not yet supported
+-issue-16508-default-ok.chpl:2: note: field 'field' is a generic value
+-issue-16508-default-ok.chpl:2: note: consider separately declaring a type field for it or using a 'new' call
++issue-16508-default-ok.chpl:5: error: unable to resolve call to 'init': no matching candidates
+diff --git a/test/classes/initializers/compilerGenerated/generics/withParamTypeNoDefNoArgsInCall.good b/test/classes/initializers/compilerGenerated/generics/withParamTypeNoDefNoArgsInCall.good
+index c4be8f5b2ff..00723855840 100644
+--- a/test/classes/initializers/compilerGenerated/generics/withParamTypeNoDefNoArgsInCall.good
++++ b/test/classes/initializers/compilerGenerated/generics/withParamTypeNoDefNoArgsInCall.good
+@@ -1,6 +1,4 @@
+-withParamTypeNoDefNoArgsInCall.chpl:5: error: unresolved call 'Foo.init()'
+-withParamTypeNoDefNoArgsInCall.chpl:1: note: this candidate did not match: Foo.init(param p: bool)
+-withParamTypeNoDefNoArgsInCall.chpl:5: note: because call does not supply enough arguments
+-withParamTypeNoDefNoArgsInCall.chpl:2: note: it is missing a value for formal 'param p: bool'
+-withParamTypeNoDefNoArgsInCall.chpl:5: note: other candidates are:
+-withParamTypeNoDefNoArgsInCall.chpl:1: note:   Foo.init(param p: bool, reader, deserializer)
++withParamTypeNoDefNoArgsInCall.chpl:5: error: unable to resolve call to 'init': no matching candidates
++$CHPL_HOME/modules/standard/ChapelIO.chpl:363: note: the following candidate didn't match
++$CHPL_HOME/modules/internal/ChapelRange.chpl:280: note: the following candidate didn't match
++withParamTypeNoDefNoArgsInCall.chpl:5: note: omitting 20 more candidates that didn't match
+diff --git a/test/classes/initializers/compilerGenerated/inherits_initializer_bad.good b/test/classes/initializers/compilerGenerated/inherits_initializer_bad.good
+index fe576424976..24d7cb22f0e 100644
+--- a/test/classes/initializers/compilerGenerated/inherits_initializer_bad.good
++++ b/test/classes/initializers/compilerGenerated/inherits_initializer_bad.good
+@@ -1,5 +1,4 @@
+-inherits_initializer_bad.chpl:20: In function 'main':
+-inherits_initializer_bad.chpl:21: error: unresolved call 'Parent.init()'
+-inherits_initializer_bad.chpl:10: note: this candidate did not match: Parent.init(x1: int, x2: int)
+-inherits_initializer_bad.chpl:16: note: because call does not supply enough arguments
+-inherits_initializer_bad.chpl:10: note: it is missing a value for formal 'x1: int(64)'
++inherits_initializer_bad.chpl:16: In initializer:
++inherits_initializer_bad.chpl:16: error: unable to resolve call to 'init': no matching candidates
++inherits_initializer_bad.chpl:10: note: the following candidate didn't match because it expects 2 actuals, but none were provided
++inherits_initializer_bad.chpl:16: note: omitting 22 more candidates that didn't match
+diff --git a/test/classes/initializers/compilerGenerated/outOfOrderFieldUse.good b/test/classes/initializers/compilerGenerated/outOfOrderFieldUse.good
+index 9a24ed9905b..64b45330b48 100644
+--- a/test/classes/initializers/compilerGenerated/outOfOrderFieldUse.good
++++ b/test/classes/initializers/compilerGenerated/outOfOrderFieldUse.good
+@@ -1,2 +1,4 @@
+-outOfOrderFieldUse.chpl:5: error: statement references variable 'y' before it is defined
+-outOfOrderFieldUse.chpl:6: note: the variable 'y' is defined here
++outOfOrderFieldUse.chpl:9: error: unable to resolve call to 'init': no matching candidates
++outOfOrderFieldUse.chpl:4: note: the following candidate didn't match
++$CHPL_HOME/modules/standard/ChapelIO.chpl:363: note: the following candidate didn't match
++outOfOrderFieldUse.chpl:9: note: omitting 21 more candidates that didn't match
+diff --git a/test/classes/initializers/compilerGenerated/parent_inherits_initializer_bad.good b/test/classes/initializers/compilerGenerated/parent_inherits_initializer_bad.good
+index e250981e770..ce1a696bbe8 100644
+--- a/test/classes/initializers/compilerGenerated/parent_inherits_initializer_bad.good
++++ b/test/classes/initializers/compilerGenerated/parent_inherits_initializer_bad.good
+@@ -1,5 +1,4 @@
+-parent_inherits_initializer_bad.chpl:24: In function 'main':
+-parent_inherits_initializer_bad.chpl:25: error: unresolved call 'GrandParent.init()'
+-parent_inherits_initializer_bad.chpl:10: note: this candidate did not match: GrandParent.init(x1: int, x2: int)
+-parent_inherits_initializer_bad.chpl:16: note: because call does not supply enough arguments
+-parent_inherits_initializer_bad.chpl:10: note: it is missing a value for formal 'x1: int(64)'
++parent_inherits_initializer_bad.chpl:16: In initializer:
++parent_inherits_initializer_bad.chpl:16: error: unable to resolve call to 'init': no matching candidates
++parent_inherits_initializer_bad.chpl:10: note: the following candidate didn't match because it expects 2 actuals, but none were provided
++parent_inherits_initializer_bad.chpl:16: note: omitting 22 more candidates that didn't match
+diff --git a/test/classes/initializers/errors/badThisType.good b/test/classes/initializers/errors/badThisType.good
+index 9d0259c63b1..6dc968f5fde 100644
+--- a/test/classes/initializers/errors/badThisType.good
++++ b/test/classes/initializers/errors/badThisType.good
+@@ -1,6 +1,4 @@
++badThisType.chpl:7: error: 'R' cannot be found (first mention this function)
+ badThisType.chpl:7: error: Attempt to 'new' a function or undefined symbol
++badThisType.chpl:8: error: 'R2' cannot be found (first mention this function)
+ badThisType.chpl:8: error: Attempt to 'new' a function or undefined symbol
+-badThisType.chpl:1: In initializer:
+-badThisType.chpl:1: error: 'R' undeclared (first use this function)
+-badThisType.chpl:4: In initializer:
+-badThisType.chpl:4: error: 'R2' undeclared (first use this function)
+diff --git a/test/classes/initializers/errors/fieldRecordTypeMismatch.good b/test/classes/initializers/errors/fieldRecordTypeMismatch.good
+index 825a1c0f347..a31be9e8996 100644
+--- a/test/classes/initializers/errors/fieldRecordTypeMismatch.good
++++ b/test/classes/initializers/errors/fieldRecordTypeMismatch.good
+@@ -1,2 +1,3 @@
+-fieldRecordTypeMismatch.chpl:12: In initializer:
+-fieldRecordTypeMismatch.chpl:10: error: 'R' undeclared (first use this function)
++fieldRecordTypeMismatch.chpl:17: error: unable to resolve call to 'init': no matching candidates
++fieldRecordTypeMismatch.chpl:12: note: the following candidate didn't match because an actual couldn't be passed to a formal
++fieldRecordTypeMismatch.chpl:17: note: omitting 22 more candidates that didn't match
+diff --git a/test/classes/initializers/errors/grandFieldInit.good b/test/classes/initializers/errors/grandFieldInit.good
+index 5bef47bef9b..a2de273ad12 100644
+--- a/test/classes/initializers/errors/grandFieldInit.good
++++ b/test/classes/initializers/errors/grandFieldInit.good
+@@ -1,2 +1,2 @@
+ grandFieldInit.chpl:13: In initializer:
+-grandFieldInit.chpl:14: error: can't set value of field "x" from parent type before calling this.init() or super.init()
++grandFieldInit.chpl:14: error: Cannot access parent field "x" before super.init() or this.init()
+diff --git a/test/classes/initializers/errors/grandFieldUse.good b/test/classes/initializers/errors/grandFieldUse.good
+index c000fcc24fd..b707e6ba409 100644
+--- a/test/classes/initializers/errors/grandFieldUse.good
++++ b/test/classes/initializers/errors/grandFieldUse.good
+@@ -1,2 +1,2 @@
+ grandFieldUse.chpl:13: In initializer:
+-grandFieldUse.chpl:14: error: cannot access parent field "x" before super.init() or this.init()
++grandFieldUse.chpl:14: error: Cannot access parent field "x" before super.init() or this.init()
+diff --git a/test/classes/initializers/errors/iteratorEnterContextMethodCalled.good b/test/classes/initializers/errors/iteratorEnterContextMethodCalled.good
+index 4e5d8268770..25318c90e6e 100644
+--- a/test/classes/initializers/errors/iteratorEnterContextMethodCalled.good
++++ b/test/classes/initializers/errors/iteratorEnterContextMethodCalled.good
+@@ -1 +1,4 @@
+ iteratorEnterContextMethodCalled.chpl:2: error: iterators can't be the 'enterContext' method, please rename this iterator
++iteratorEnterContextMethodCalled.chpl:7: In function 'main':
++iteratorEnterContextMethodCalled.chpl:9: warning: owned IteratorEnterContext is being used in a 'manage' statement via its 'enterContext' and 'exitContext' methods. However, owned IteratorEnterContext does not implement contextManager. In the future, this will result in an error
++iteratorEnterContextMethodCalled.chpl:9: error: 'manage' statements are only for types implementing 'contextManager'
+diff --git a/test/classes/initializers/errors/iteratorExitContextMethodCalled.good b/test/classes/initializers/errors/iteratorExitContextMethodCalled.good
+index 29943f8d3c7..099b4f3ff9d 100644
+--- a/test/classes/initializers/errors/iteratorExitContextMethodCalled.good
++++ b/test/classes/initializers/errors/iteratorExitContextMethodCalled.good
+@@ -1 +1,4 @@
+ iteratorExitContextMethodCalled.chpl:4: error: iterators can't be the 'exitContext' method, please rename this iterator
++iteratorExitContextMethodCalled.chpl:7: In function 'main':
++iteratorExitContextMethodCalled.chpl:9: warning: owned IteratorExitContext is being used in a 'manage' statement via its 'enterContext' and 'exitContext' methods. However, owned IteratorExitContext does not implement contextManager. In the future, this will result in an error
++iteratorExitContextMethodCalled.chpl:9: error: 'manage' statements are only for types implementing 'contextManager'
+diff --git a/test/classes/initializers/errors/name-bad-field.good b/test/classes/initializers/errors/name-bad-field.good
+index 975294afb62..7d817ea7e9e 100644
+--- a/test/classes/initializers/errors/name-bad-field.good
++++ b/test/classes/initializers/errors/name-bad-field.good
+@@ -1,2 +1,2 @@
+ name-bad-field.chpl:6: In initializer:
+-name-bad-field.chpl:7: error: field "b" used before it is initialized
++name-bad-field.chpl:7: error: 'b' is used before it is initialized
+diff --git a/test/classes/initializers/field-undefined.good b/test/classes/initializers/field-undefined.good
+index 20a3fa9871e..b5bc6cb0d1b 100644
+--- a/test/classes/initializers/field-undefined.good
++++ b/test/classes/initializers/field-undefined.good
+@@ -1,2 +1,2 @@
+ field-undefined.chpl:6: In initializer:
+-field-undefined.chpl:9: error: 'c' undeclared (first use this function)
++field-undefined.chpl:9: error: 'c' cannot be found
+diff --git a/test/classes/initializers/generics/declarations/default_value_bad.good b/test/classes/initializers/generics/declarations/default_value_bad.good
+index d48d538b4d1..fbdaa1b41ca 100644
+--- a/test/classes/initializers/generics/declarations/default_value_bad.good
++++ b/test/classes/initializers/generics/declarations/default_value_bad.good
+@@ -1,4 +1,3 @@
+-default_value_bad.chpl:13: error: unresolved call 'Foo.init("blah")'
+-default_value_bad.chpl:7: note: this candidate did not match: Foo.init(xVal = 3)
+-default_value_bad.chpl:13: note: because actual argument #1 with type 'string'
+-default_value_bad.chpl:7: note: is passed to formal 'xVal: int(64)'
++default_value_bad.chpl:13: error: unable to resolve call to 'init': no matching candidates
++default_value_bad.chpl:7: note: the following candidate didn't match because an actual couldn't be passed to a formal
++default_value_bad.chpl:13: note: omitting 22 more candidates that didn't match
+diff --git a/test/classes/initializers/generics/explicitAssignment.good b/test/classes/initializers/generics/explicitAssignment.good
+index 2403097edb5..f7fc46c8246 100644
+--- a/test/classes/initializers/generics/explicitAssignment.good
++++ b/test/classes/initializers/generics/explicitAssignment.good
+@@ -1,2 +1,2 @@
+ explicitAssignment.chpl:17: In function 'main':
+-explicitAssignment.chpl:18: error: cannot initialize 'a' of type 'borrowed Foo(real(64))' from a 'borrowed Foo(int(64))'
++explicitAssignment.chpl:18: error: type mismatch between declared type of 'a' and initialization expression
+diff --git a/test/classes/initializers/generics/genericInitError.good b/test/classes/initializers/generics/genericInitError.good
+index 76a3cd6ac3b..2c1fc587f25 100644
+--- a/test/classes/initializers/generics/genericInitError.good
++++ b/test/classes/initializers/generics/genericInitError.good
+@@ -1,3 +1 @@
+-genericInitError.chpl:4: In initializer:
+-genericInitError.chpl:5: error: can't omit initialization of field "t", no type or default value provided
+-genericInitError.chpl:6: error: cannot update a type field, "t", in phase 2
++genericInitError.chpl:1: error: unable to instantiate generic type from initializer
+diff --git a/test/classes/initializers/generics/init-param-from-non-param.good b/test/classes/initializers/generics/init-param-from-non-param.good
+index 724e5efe877..8b7961e1560 100644
+--- a/test/classes/initializers/generics/init-param-from-non-param.good
++++ b/test/classes/initializers/generics/init-param-from-non-param.good
+@@ -1,2 +1,3 @@
+ init-param-from-non-param.chpl:3: In initializer:
+-init-param-from-non-param.chpl:5: error: Initializing parameter 'p' to value not known at compile time
++init-param-from-non-param.chpl:5: error: a 'param' cannot be initialized with a non-'param' value
++init-param-from-non-param.chpl:1: error: unable to instantiate generic type from initializer
+diff --git a/test/classes/initializers/generics/initAtomicsViaWrite.good b/test/classes/initializers/generics/initAtomicsViaWrite.good
+index dc65d3bab06..1028aac0f22 100644
+--- a/test/classes/initializers/generics/initAtomicsViaWrite.good
++++ b/test/classes/initializers/generics/initAtomicsViaWrite.good
+@@ -1,3 +1,5 @@
+ initAtomicsViaWrite.chpl:5: In initializer:
+-initAtomicsViaWrite.chpl:6: error: field "head" used before it is initialized
+-initAtomicsViaWrite.chpl:7: error: field "tail" used before it is initialized
++initAtomicsViaWrite.chpl:6: error: 'head' is used before it is initialized
++initAtomicsViaWrite.chpl:7: error: 'tail' is used before it is initialized
++initAtomicsViaWrite.chpl:6: error: 'head' is used before it is initialized
++initAtomicsViaWrite.chpl:7: error: 'tail' is used before it is initialized
+diff --git a/test/classes/initializers/generics/omittedGenerics2.good b/test/classes/initializers/generics/omittedGenerics2.good
+index 134894721d7..397f84c2e47 100644
+--- a/test/classes/initializers/generics/omittedGenerics2.good
++++ b/test/classes/initializers/generics/omittedGenerics2.good
+@@ -1,2 +1,2 @@
+-omittedGenerics2.chpl:9: In initializer:
+-omittedGenerics2.chpl:10: error: can't omit initialization of field "a", no type or default value provided
++omittedGenerics2.chpl:9: error: cannot implicitly initialize field 'a', which does not have a default value
++omittedGenerics2.chpl:5: error: unable to instantiate generic type from initializer
+diff --git a/test/classes/initializers/generics/param-field-default-value-non-param-config-var.good b/test/classes/initializers/generics/param-field-default-value-non-param-config-var.good
+index 9f9db95737e..79874928df6 100644
+--- a/test/classes/initializers/generics/param-field-default-value-non-param-config-var.good
++++ b/test/classes/initializers/generics/param-field-default-value-non-param-config-var.good
+@@ -1,2 +1,2 @@
+-param-field-default-value-non-param-config-var.chpl:4: In initializer:
+-param-field-default-value-non-param-config-var.chpl:4: error: Initializing parameter 'p' to value not known at compile time
++param-field-default-value-non-param-config-var.chpl:3: error: a 'param' cannot be initialized with a non-'param' value
++param-field-default-value-non-param-config-var.chpl:2: error: unable to instantiate generic type from initializer
+diff --git a/test/classes/initializers/generics/param-field-default-value-non-param-field.good b/test/classes/initializers/generics/param-field-default-value-non-param-field.good
+index 1a3972bd555..18426ad319d 100644
+--- a/test/classes/initializers/generics/param-field-default-value-non-param-field.good
++++ b/test/classes/initializers/generics/param-field-default-value-non-param-field.good
+@@ -1,2 +1,2 @@
+-param-field-default-value-non-param-field.chpl:4: In initializer:
+-param-field-default-value-non-param-field.chpl:4: error: Initializing parameter 'p' to value not known at compile time
++param-field-default-value-non-param-field.chpl:3: error: a 'param' cannot be initialized with a non-'param' value
++param-field-default-value-non-param-field.chpl:1: error: unable to instantiate generic type from initializer
+diff --git a/test/classes/initializers/generics/param-record-field.good b/test/classes/initializers/generics/param-record-field.good
+index c535fd258b8..a05749ec7e8 100644
+--- a/test/classes/initializers/generics/param-record-field.good
++++ b/test/classes/initializers/generics/param-record-field.good
+@@ -1 +1,2 @@
+-param-record-field.chpl:4: error: 'r' is not of a supported param type
++param-record-field.chpl:5: error: cannot implicitly initialize field 'r', which does not have a default value
++param-record-field.chpl:3: error: unable to instantiate generic type from initializer
+diff --git a/test/classes/initializers/generics/phase1/badDependence.good b/test/classes/initializers/generics/phase1/badDependence.good
+index 14dd81d243e..8f4a321855b 100644
+--- a/test/classes/initializers/generics/phase1/badDependence.good
++++ b/test/classes/initializers/generics/phase1/badDependence.good
+@@ -1,3 +1,15 @@
+ badDependence.chpl:7: In initializer:
+-badDependence.chpl:8: error: field "f5" used before it is initialized
+-badDependence.chpl:9: error: field "f4" used before it is initialized
++badDependence.chpl:8: error: 'f5' is used before it is initialized
++badDependence.chpl:8: error: unable to resolve call to '+': no matching candidates
++$CHPL_HOME/modules/internal/ChapelDomain.chpl:438: note: the following candidate didn't match because an actual couldn't be passed to a formal
++$CHPL_HOME/modules/internal/ChapelDomain.chpl:428: note: the following candidate didn't match because an actual couldn't be passed to a formal
++badDependence.chpl:8: note: omitting 80 more candidates that didn't match
++badDependence.chpl:9: error: 'f4' is used before it is initialized
++badDependence.chpl:9: error: unable to resolve call to '-': no matching candidates
++$CHPL_HOME/modules/internal/ChapelDomain.chpl:585: note: the following candidate didn't match because an actual couldn't be passed to a formal
++$CHPL_HOME/modules/internal/ChapelDomain.chpl:469: note: the following candidate didn't match because an actual couldn't be passed to a formal
++badDependence.chpl:9: note: omitting 73 more candidates that didn't match
++badDependence.chpl:1: error: unable to instantiate generic type from initializer
++badDependence.chpl:1: error: unable to instantiate generic type from initializer
++badDependence.chpl:8: error: 'f5' is used before it is initialized
++badDependence.chpl:9: error: 'f4' is used before it is initialized
+diff --git a/test/classes/initializers/generics/phase1/badDependence2.good b/test/classes/initializers/generics/phase1/badDependence2.good
+index 2ad89df7ff9..3c003e78e5e 100644
+--- a/test/classes/initializers/generics/phase1/badDependence2.good
++++ b/test/classes/initializers/generics/phase1/badDependence2.good
+@@ -1,2 +1,6 @@
+ badDependence2.chpl:2: error: statement references variable 'f5' before it is defined
+ badDependence2.chpl:3: note: the variable 'f5' is defined here
++badDependence2.chpl:2: error: unable to resolve call to '*': no matching candidates
++$CHPL_HOME/modules/internal/ChapelTuple.chpl:758: note: the following candidate didn't match because an actual couldn't be passed to a formal
++$CHPL_HOME/modules/internal/ChapelTuple.chpl:750: note: the following candidate didn't match because an actual couldn't be passed to a formal
++badDependence2.chpl:2: note: omitting 59 more candidates that didn't match
+diff --git a/test/classes/initializers/generics/phase1/enumFieldNoUseBad.good b/test/classes/initializers/generics/phase1/enumFieldNoUseBad.good
+index a5ef234d971..ceb39fb24fa 100644
+--- a/test/classes/initializers/generics/phase1/enumFieldNoUseBad.good
++++ b/test/classes/initializers/generics/phase1/enumFieldNoUseBad.good
+@@ -1,2 +1,3 @@
+ enumFieldNoUseBad.chpl:8: In initializer:
+-enumFieldNoUseBad.chpl:9: error: 'blue' undeclared (first use this function)
++enumFieldNoUseBad.chpl:9: error: 'blue' cannot be found
++enumFieldNoUseBad.chpl:5: error: unable to instantiate generic type from initializer
+diff --git a/test/classes/initializers/generics/phase1/hasLoopBad.good b/test/classes/initializers/generics/phase1/hasLoopBad.good
+index 8592e882bb8..c7b40cc11be 100644
+--- a/test/classes/initializers/generics/phase1/hasLoopBad.good
++++ b/test/classes/initializers/generics/phase1/hasLoopBad.good
+@@ -1,2 +1,7 @@
+ hasLoopBad.chpl:4: In initializer:
+-hasLoopBad.chpl:7: error: can't initialize field "highestNum" inside a loop during phase 1 of initialization
++hasLoopBad.chpl:7: error: cannot initialize fields inside of loops
++hasLoopBad.chpl:9: error: 'highestNum' is used before it is initialized
++hasLoopBad.chpl:10: error: cannot initialize fields inside of loops
++hasLoopBad.chpl:7: error: cannot initialize fields inside of loops
++hasLoopBad.chpl:9: error: 'highestNum' is used before it is initialized
++hasLoopBad.chpl:10: error: cannot initialize fields inside of loops
+diff --git a/test/classes/initializers/generics/phase1/hasLoopBad2.good b/test/classes/initializers/generics/phase1/hasLoopBad2.good
+index 923b852d14a..b5a4ce24b2d 100644
+--- a/test/classes/initializers/generics/phase1/hasLoopBad2.good
++++ b/test/classes/initializers/generics/phase1/hasLoopBad2.good
+@@ -1,2 +1,3 @@
+ hasLoopBad2.chpl:7: In initializer:
+-hasLoopBad2.chpl:9: error: can't initialize field "highestNum" inside a loop during phase 1 of initialization
++hasLoopBad2.chpl:9: error: cannot initialize fields inside of loops
++hasLoopBad2.chpl:9: error: cannot initialize fields inside of loops
+diff --git a/test/classes/initializers/generics/phase1/hasLoopBadDoWhile.good b/test/classes/initializers/generics/phase1/hasLoopBadDoWhile.good
+index 24a06b1b7ae..963bac6fa6b 100644
+--- a/test/classes/initializers/generics/phase1/hasLoopBadDoWhile.good
++++ b/test/classes/initializers/generics/phase1/hasLoopBadDoWhile.good
+@@ -1,2 +1,3 @@
+ hasLoopBadDoWhile.chpl:7: In initializer:
+-hasLoopBadDoWhile.chpl:10: error: can't initialize field "highestNum" inside a loop during phase 1 of initialization
++hasLoopBadDoWhile.chpl:10: error: cannot initialize fields inside of loops
++hasLoopBadDoWhile.chpl:10: error: cannot initialize fields inside of loops
+diff --git a/test/classes/initializers/generics/phase1/hasLoopBadWhile.good b/test/classes/initializers/generics/phase1/hasLoopBadWhile.good
+index 96b64eb39b7..6c8fba3f6dd 100644
+--- a/test/classes/initializers/generics/phase1/hasLoopBadWhile.good
++++ b/test/classes/initializers/generics/phase1/hasLoopBadWhile.good
+@@ -1,2 +1,3 @@
+ hasLoopBadWhile.chpl:7: In initializer:
+-hasLoopBadWhile.chpl:10: error: can't initialize field "highestNum" inside a loop during phase 1 of initialization
++hasLoopBadWhile.chpl:10: error: cannot initialize fields inside of loops
++hasLoopBadWhile.chpl:10: error: cannot initialize fields inside of loops
+diff --git a/test/classes/initializers/generics/phase1/hasParallelBad.good b/test/classes/initializers/generics/phase1/hasParallelBad.good
+index 51ee1a6a061..faf0c486b7a 100644
+--- a/test/classes/initializers/generics/phase1/hasParallelBad.good
++++ b/test/classes/initializers/generics/phase1/hasParallelBad.good
+@@ -1,2 +1,5 @@
+ hasParallelBad.chpl:5: In initializer:
+-hasParallelBad.chpl:7: error: can't initialize field "a" inside a parallel statement during phase 1 of initialization
++hasParallelBad.chpl:7: error: cannot initialize fields inside cobegin statements
++hasParallelBad.chpl:8: error: cannot initialize fields inside cobegin statements
++hasParallelBad.chpl:7: error: cannot initialize fields inside cobegin statements
++hasParallelBad.chpl:8: error: cannot initialize fields inside cobegin statements
+diff --git a/test/classes/initializers/generics/phase1/param-from-new.good b/test/classes/initializers/generics/phase1/param-from-new.good
+index 2926f99e3d0..4bde0d17c41 100644
+--- a/test/classes/initializers/generics/phase1/param-from-new.good
++++ b/test/classes/initializers/generics/phase1/param-from-new.good
+@@ -1 +1,3 @@
+-param-from-new.chpl:11: error: cannot initialize param field 't' with 'new' expression
++param-from-new.chpl:10: In initializer:
++param-from-new.chpl:11: error: a 'param' cannot be initialized with a non-'param' value
++param-from-new.chpl:6: error: unable to instantiate generic type from initializer
+diff --git a/test/classes/initializers/generics/phase1/reuse-field-accessor.good b/test/classes/initializers/generics/phase1/reuse-field-accessor.good
+index 2ed9d53eefa..621a1115051 100644
+--- a/test/classes/initializers/generics/phase1/reuse-field-accessor.good
++++ b/test/classes/initializers/generics/phase1/reuse-field-accessor.good
+@@ -1,4 +1,2 @@
+-reuse-field-accessor.chpl:11: In initializer:
+-reuse-field-accessor.chpl:12: error: cannot pass a record to a function before "init this"
+-reuse-field-accessor.chpl:13: error: can't omit initialization of field "x_", no type or default value provided
+-reuse-field-accessor.chpl:13: error: cannot pass a record to a function before "init this"
++reuse-field-accessor.chpl:2: error: unable to instantiate generic type from initializer
++reuse-field-accessor.chpl:2: error: unable to instantiate generic type from initializer
+diff --git a/test/classes/initializers/generics/phase1/setParentField.good b/test/classes/initializers/generics/phase1/setParentField.good
+index 2134695e8b2..7eaf4558e86 100644
+--- a/test/classes/initializers/generics/phase1/setParentField.good
++++ b/test/classes/initializers/generics/phase1/setParentField.good
+@@ -1,2 +1,3 @@
+ setParentField.chpl:9: In initializer:
+-setParentField.chpl:10: error: can't set value of field "f1" from parent type before calling this.init() or super.init()
++setParentField.chpl:10: error: Cannot access parent field "f1" before super.init() or this.init()
++setParentField.chpl:10: error: Cannot access parent field "f1" before super.init() or this.init()
+diff --git a/test/classes/initializers/generics/phase1/type-from-new.good b/test/classes/initializers/generics/phase1/type-from-new.good
+index e9127c1a910..9c70ee09485 100644
+--- a/test/classes/initializers/generics/phase1/type-from-new.good
++++ b/test/classes/initializers/generics/phase1/type-from-new.good
+@@ -1 +1,3 @@
+-type-from-new.chpl:11: error: cannot initialize type field 't' with 'new' expression
++type-from-new.chpl:10: In initializer:
++type-from-new.chpl:11: error: a type variable cannot be initialized with a regular value
++type-from-new.chpl:11: error: a type variable cannot be initialized with a regular value
+diff --git a/test/classes/initializers/generics/phase1/unorderedFields-preferred.good b/test/classes/initializers/generics/phase1/unorderedFields-preferred.good
+index 1076853d1ec..9c3e9cbdae3 100644
+--- a/test/classes/initializers/generics/phase1/unorderedFields-preferred.good
++++ b/test/classes/initializers/generics/phase1/unorderedFields-preferred.good
+@@ -1,3 +1,6 @@
+ unorderedFields-preferred.chpl:6: In initializer:
+ unorderedFields-preferred.chpl:9: error: Field "f2" initialized out of order
+-unorderedFields-preferred.chpl:9: note: initialization of fields before .init() call must be in field declaration order
++unorderedFields-preferred.chpl:13: In function 'main':
++unorderedFields-preferred.chpl:14: error: type mismatch between declared type of 'c' and initialization expression
++unorderedFields-preferred.chpl:6: In initializer:
++unorderedFields-preferred.chpl:9: error: Field "f2" initialized out of order
+diff --git a/test/classes/initializers/generics/phase1/unorderedFields.good b/test/classes/initializers/generics/phase1/unorderedFields.good
+index 7db5c2538ed..de85385e6d2 100644
+--- a/test/classes/initializers/generics/phase1/unorderedFields.good
++++ b/test/classes/initializers/generics/phase1/unorderedFields.good
+@@ -1,3 +1,6 @@
+ unorderedFields.chpl:6: In initializer:
+ unorderedFields.chpl:9: error: Field "f2" initialized out of order
+-unorderedFields.chpl:9: note: initialization of fields before .init() call must be in field declaration order
++unorderedFields.chpl:13: In function 'main':
++unorderedFields.chpl:14: error: type mismatch between declared type of 'c' and initialization expression
++unorderedFields.chpl:6: In initializer:
++unorderedFields.chpl:9: error: Field "f2" initialized out of order
+diff --git a/test/classes/initializers/generics/phase2-only-param-default-type.good b/test/classes/initializers/generics/phase2-only-param-default-type.good
+index f7458a833d1..396fa56c38e 100644
+--- a/test/classes/initializers/generics/phase2-only-param-default-type.good
++++ b/test/classes/initializers/generics/phase2-only-param-default-type.good
+@@ -1,2 +1 @@
+-phase2-only-param-default-type.chpl:7: In initializer:
+-phase2-only-param-default-type.chpl:9: error: cannot update a param field, "p", in phase 2
++phase2-only-param-default-type.chpl:4: error: unable to instantiate generic type from initializer
+diff --git a/test/classes/initializers/generics/typeAlias/errorNewExpr.baduser.good b/test/classes/initializers/generics/typeAlias/errorNewExpr.baduser.good
+index fae3e65a55c..e83838acc06 100644
+--- a/test/classes/initializers/generics/typeAlias/errorNewExpr.baduser.good
++++ b/test/classes/initializers/generics/typeAlias/errorNewExpr.baduser.good
+@@ -1,6 +1,4 @@
+ errorNewExpr.chpl:18: In function 'main':
+-errorNewExpr.chpl:28: error: Unable to resolve new-expression with type alias 'BadUserInit(int(64))'
+-errorNewExpr.chpl:28: error: unresolved call 'BadUserInit.init(T=type int(64), 5)'
+-errorNewExpr.chpl:12: note: this candidate did not match: BadUserInit.init(x: ?T)
+-errorNewExpr.chpl:28: note: because call uses named argument T
+-errorNewExpr.chpl:12: note: but function contains no formal named T
++errorNewExpr.chpl:28: error: unable to resolve call to 'init': no matching candidates
++errorNewExpr.chpl:12: note: the following candidate didn't match because actual 2 was named 'T', but no formal with that name was found
++errorNewExpr.chpl:28: note: omitting 22 more candidates that didn't match
+diff --git a/test/classes/initializers/inheritance/inheritedInitWrongName.good b/test/classes/initializers/inheritance/inheritedInitWrongName.good
+index c301d45971e..7cb83be2729 100644
+--- a/test/classes/initializers/inheritance/inheritedInitWrongName.good
++++ b/test/classes/initializers/inheritance/inheritedInitWrongName.good
+@@ -1,4 +1,3 @@
+-inheritedInitWrongName.chpl:20: error: unresolved call 'D.init(x=3, "hi", 4.6)'
+-inheritedInitWrongName.chpl:15: note: this candidate did not match: D.init(a, b, c)
+-inheritedInitWrongName.chpl:20: note: because call uses named argument x
+-inheritedInitWrongName.chpl:15: note: but function contains no formal named x
++inheritedInitWrongName.chpl:20: error: unable to resolve call to 'init': no matching candidates
++inheritedInitWrongName.chpl:15: note: the following candidate didn't match because actual 2 was named 'x', but no formal with that name was found
++inheritedInitWrongName.chpl:20: note: omitting 23 more candidates that didn't match
+diff --git a/test/classes/initializers/initequals/changing-param-field-error3.good b/test/classes/initializers/initequals/changing-param-field-error3.good
+index 2c897408c33..04010e17ef2 100644
+--- a/test/classes/initializers/initequals/changing-param-field-error3.good
++++ b/test/classes/initializers/initequals/changing-param-field-error3.good
+@@ -1,4 +1,2 @@
+-changing-param-field-error3.chpl:7: In method 'init=':
+-changing-param-field-error3.chpl:8: error: Cannot replace an instantiated param field with another value
+-changing-param-field-error3.chpl:8: note: field 'fixed' has value 'false' but is set to 'true'
+-  changing-param-field-error3.chpl:24: called as (R(false,false)).init=(rhs: R(true,true))
++changing-param-field-error3.chpl:7: error: final result of initialization does not match the initial type
++changing-param-field-error3.chpl:2: note: field 'fixed' started with type 'bool', but had incompatible type 'bool' after initialization
+diff --git a/test/classes/initializers/initequals/wrongType.good b/test/classes/initializers/initequals/wrongType.good
+index 2074d426d27..1b96126e573 100644
+--- a/test/classes/initializers/initequals/wrongType.good
++++ b/test/classes/initializers/initequals/wrongType.good
+@@ -1,4 +1,2 @@
+-wrongType.chpl:6: In method 'init=':
+-wrongType.chpl:7: error: Cannot replace an instantiated field with another type
+-wrongType.chpl:7: note: field 'T' has type 'int(64)' but is set to '2*int(64)'
+-  wrongType.chpl:13: called as (R(int(64))).init=(other: int(64))
++wrongType.chpl:6: error: final result of initialization does not match the initial type
++wrongType.chpl:3: note: field 'T' started with type 'int(64)', but had incompatible type '(int(64), int(64))' after initialization
+diff --git a/test/classes/initializers/phase1/badDependence.good b/test/classes/initializers/phase1/badDependence.good
+index 14dd81d243e..1423eff1497 100644
+--- a/test/classes/initializers/phase1/badDependence.good
++++ b/test/classes/initializers/phase1/badDependence.good
+@@ -1,3 +1,3 @@
+ badDependence.chpl:7: In initializer:
+-badDependence.chpl:8: error: field "f5" used before it is initialized
+-badDependence.chpl:9: error: field "f4" used before it is initialized
++badDependence.chpl:8: error: 'f5' is used before it is initialized
++badDependence.chpl:9: error: 'f4' is used before it is initialized
+diff --git a/test/classes/initializers/phase1/deeperOn.good b/test/classes/initializers/phase1/deeperOn.good
+index 68f48b95ef4..3e9ed68f90a 100644
+--- a/test/classes/initializers/phase1/deeperOn.good
++++ b/test/classes/initializers/phase1/deeperOn.good
+@@ -1,2 +1,2 @@
+ deeperOn.chpl:4: In initializer:
+-deeperOn.chpl:8: error: can't initialize field "x" inside a parallel statement during phase 1 of initialization
++deeperOn.chpl:8: error: cannot initialize fields inside cobegin statements
+diff --git a/test/classes/initializers/phase1/enumFieldNoUseBad.good b/test/classes/initializers/phase1/enumFieldNoUseBad.good
+index a5ef234d971..d1adb92aed0 100644
+--- a/test/classes/initializers/phase1/enumFieldNoUseBad.good
++++ b/test/classes/initializers/phase1/enumFieldNoUseBad.good
+@@ -1,2 +1,2 @@
+ enumFieldNoUseBad.chpl:8: In initializer:
+-enumFieldNoUseBad.chpl:9: error: 'blue' undeclared (first use this function)
++enumFieldNoUseBad.chpl:9: error: 'blue' cannot be found
+diff --git a/test/classes/initializers/phase1/grandparentAccess.good b/test/classes/initializers/phase1/grandparentAccess.good
+index a339080026c..b4148ab2672 100644
+--- a/test/classes/initializers/phase1/grandparentAccess.good
++++ b/test/classes/initializers/phase1/grandparentAccess.good
+@@ -1,2 +1,2 @@
+ grandparentAccess.chpl:21: In initializer:
+-grandparentAccess.chpl:24: error: cannot access parent field "a" before super.init() or this.init()
++grandparentAccess.chpl:24: error: Cannot access parent field "a" before super.init() or this.init()
+diff --git a/test/classes/initializers/phase1/hasBeginOnFieldInit.good b/test/classes/initializers/phase1/hasBeginOnFieldInit.good
+index 75909169c5c..adc7afd15f3 100644
+--- a/test/classes/initializers/phase1/hasBeginOnFieldInit.good
++++ b/test/classes/initializers/phase1/hasBeginOnFieldInit.good
+@@ -1,2 +1,2 @@
+ hasBeginOnFieldInit.chpl:4: In initializer:
+-hasBeginOnFieldInit.chpl:7: error: can't initialize field "x" inside a parallel statement during phase 1 of initialization
++hasBeginOnFieldInit.chpl:7: error: cannot initialize fields inside begin statements
+diff --git a/test/classes/initializers/phase1/hasCobeginOnFieldInit.good b/test/classes/initializers/phase1/hasCobeginOnFieldInit.good
+index 455767111a4..331ee6c7847 100644
+--- a/test/classes/initializers/phase1/hasCobeginOnFieldInit.good
++++ b/test/classes/initializers/phase1/hasCobeginOnFieldInit.good
+@@ -1,2 +1,2 @@
+ hasCobeginOnFieldInit.chpl:4: In initializer:
+-hasCobeginOnFieldInit.chpl:7: error: can't initialize field "x" inside a parallel statement during phase 1 of initialization
++hasCobeginOnFieldInit.chpl:7: error: cannot initialize fields inside cobegin statements
+diff --git a/test/classes/initializers/phase1/hasLoopBad.good b/test/classes/initializers/phase1/hasLoopBad.good
+index 8592e882bb8..682fd3a0175 100644
+--- a/test/classes/initializers/phase1/hasLoopBad.good
++++ b/test/classes/initializers/phase1/hasLoopBad.good
+@@ -1,2 +1,4 @@
+ hasLoopBad.chpl:4: In initializer:
+-hasLoopBad.chpl:7: error: can't initialize field "highestNum" inside a loop during phase 1 of initialization
++hasLoopBad.chpl:7: error: cannot initialize fields inside of loops
++hasLoopBad.chpl:9: error: 'highestNum' is used before it is initialized
++hasLoopBad.chpl:10: error: cannot initialize fields inside of loops
+diff --git a/test/classes/initializers/phase1/hasLoopBad2.good b/test/classes/initializers/phase1/hasLoopBad2.good
+index 923b852d14a..7e8a832329e 100644
+--- a/test/classes/initializers/phase1/hasLoopBad2.good
++++ b/test/classes/initializers/phase1/hasLoopBad2.good
+@@ -1,2 +1,2 @@
+ hasLoopBad2.chpl:7: In initializer:
+-hasLoopBad2.chpl:9: error: can't initialize field "highestNum" inside a loop during phase 1 of initialization
++hasLoopBad2.chpl:9: error: cannot initialize fields inside of loops
+diff --git a/test/classes/initializers/phase1/hasLoopBadCoforall.good b/test/classes/initializers/phase1/hasLoopBadCoforall.good
+index 6fc285b5318..eb39b72ae82 100644
+--- a/test/classes/initializers/phase1/hasLoopBadCoforall.good
++++ b/test/classes/initializers/phase1/hasLoopBadCoforall.good
+@@ -1,2 +1,2 @@
+ hasLoopBadCoforall.chpl:4: In initializer:
+-hasLoopBadCoforall.chpl:10: error: can't initialize field "x" inside a coforall during phase 1 of initialization
++hasLoopBadCoforall.chpl:10: error: cannot initialize fields inside of loops
+diff --git a/test/classes/initializers/phase1/hasLoopBadDoWhile.good b/test/classes/initializers/phase1/hasLoopBadDoWhile.good
+index 24a06b1b7ae..f6c883375b6 100644
+--- a/test/classes/initializers/phase1/hasLoopBadDoWhile.good
++++ b/test/classes/initializers/phase1/hasLoopBadDoWhile.good
+@@ -1,2 +1,2 @@
+ hasLoopBadDoWhile.chpl:7: In initializer:
+-hasLoopBadDoWhile.chpl:10: error: can't initialize field "highestNum" inside a loop during phase 1 of initialization
++hasLoopBadDoWhile.chpl:10: error: cannot initialize fields inside of loops
+diff --git a/test/classes/initializers/phase1/hasLoopBadWhile.good b/test/classes/initializers/phase1/hasLoopBadWhile.good
+index 96b64eb39b7..3e87764a648 100644
+--- a/test/classes/initializers/phase1/hasLoopBadWhile.good
++++ b/test/classes/initializers/phase1/hasLoopBadWhile.good
+@@ -1,2 +1,2 @@
+ hasLoopBadWhile.chpl:7: In initializer:
+-hasLoopBadWhile.chpl:10: error: can't initialize field "highestNum" inside a loop during phase 1 of initialization
++hasLoopBadWhile.chpl:10: error: cannot initialize fields inside of loops
+diff --git a/test/classes/initializers/phase1/hasLoopForallBad.good b/test/classes/initializers/phase1/hasLoopForallBad.good
+index e4a9a63cabb..2847cb0c69c 100644
+--- a/test/classes/initializers/phase1/hasLoopForallBad.good
++++ b/test/classes/initializers/phase1/hasLoopForallBad.good
+@@ -1,2 +1,2 @@
+ hasLoopForallBad.chpl:4: In initializer:
+-hasLoopForallBad.chpl:9: error: can't initialize field "field" inside a forall during phase 1 of initialization
++hasLoopForallBad.chpl:9: error: cannot initialize fields inside of loops
+diff --git a/test/classes/initializers/phase1/hasOnCobeginFieldInit.good b/test/classes/initializers/phase1/hasOnCobeginFieldInit.good
+index 9f857a8b7fc..a72b70eaa7a 100644
+--- a/test/classes/initializers/phase1/hasOnCobeginFieldInit.good
++++ b/test/classes/initializers/phase1/hasOnCobeginFieldInit.good
+@@ -1,2 +1,2 @@
+ hasOnCobeginFieldInit.chpl:4: In initializer:
+-hasOnCobeginFieldInit.chpl:7: error: can't initialize field "x" inside a parallel statement during phase 1 of initialization
++hasOnCobeginFieldInit.chpl:7: error: cannot initialize fields inside cobegin statements
+diff --git a/test/classes/initializers/phase1/hasParallelBad.good b/test/classes/initializers/phase1/hasParallelBad.good
+index 51ee1a6a061..c06eb364495 100644
+--- a/test/classes/initializers/phase1/hasParallelBad.good
++++ b/test/classes/initializers/phase1/hasParallelBad.good
+@@ -1,2 +1,3 @@
+ hasParallelBad.chpl:5: In initializer:
+-hasParallelBad.chpl:7: error: can't initialize field "a" inside a parallel statement during phase 1 of initialization
++hasParallelBad.chpl:7: error: cannot initialize fields inside cobegin statements
++hasParallelBad.chpl:8: error: cannot initialize fields inside cobegin statements
+diff --git a/test/classes/initializers/phase1/outOfOrderCond.good b/test/classes/initializers/phase1/outOfOrderCond.good
+index 759c77cbaf7..95c05688981 100644
+--- a/test/classes/initializers/phase1/outOfOrderCond.good
++++ b/test/classes/initializers/phase1/outOfOrderCond.good
+@@ -1,3 +1,3 @@
+ outOfOrderCond.chpl:7: In initializer:
+ outOfOrderCond.chpl:10: error: Field "x" initialized out of order
+-outOfOrderCond.chpl:10: note: initialization of fields before .init() call must be in field declaration order
++outOfOrderCond.chpl:12: error: Field "y" initialized out of order
+diff --git a/test/classes/initializers/phase1/setParentField.good b/test/classes/initializers/phase1/setParentField.good
+index 86d91c0c40d..01ebd6f2be4 100644
+--- a/test/classes/initializers/phase1/setParentField.good
++++ b/test/classes/initializers/phase1/setParentField.good
+@@ -1,2 +1,2 @@
+ setParentField.chpl:8: In initializer:
+-setParentField.chpl:9: error: can't set value of field "f1" from parent type before calling this.init() or super.init()
++setParentField.chpl:9: error: Cannot access parent field "f1" before super.init() or this.init()
+diff --git a/test/classes/initializers/phase1/unorderedFields-preferred.good b/test/classes/initializers/phase1/unorderedFields-preferred.good
+index 1076853d1ec..0524b72ea4d 100644
+--- a/test/classes/initializers/phase1/unorderedFields-preferred.good
++++ b/test/classes/initializers/phase1/unorderedFields-preferred.good
+@@ -1,3 +1,2 @@
+ unorderedFields-preferred.chpl:6: In initializer:
+ unorderedFields-preferred.chpl:9: error: Field "f2" initialized out of order
+-unorderedFields-preferred.chpl:9: note: initialization of fields before .init() call must be in field declaration order
+diff --git a/test/classes/initializers/phase1/unorderedFields.good b/test/classes/initializers/phase1/unorderedFields.good
+index 7db5c2538ed..f2f0495e096 100644
+--- a/test/classes/initializers/phase1/unorderedFields.good
++++ b/test/classes/initializers/phase1/unorderedFields.good
+@@ -1,3 +1,2 @@
+ unorderedFields.chpl:6: In initializer:
+ unorderedFields.chpl:9: error: Field "f2" initialized out of order
+-unorderedFields.chpl:9: note: initialization of fields before .init() call must be in field declaration order
+diff --git a/test/classes/initializers/phase1/use-before-method.good b/test/classes/initializers/phase1/use-before-method.good
+index d780d088246..66709468dd4 100644
+--- a/test/classes/initializers/phase1/use-before-method.good
++++ b/test/classes/initializers/phase1/use-before-method.good
+@@ -1,2 +1,2 @@
+ use-before-method.chpl:13: In initializer:
+-use-before-method.chpl:14: error: field "b" used before it is initialized
++use-before-method.chpl:14: error: 'b' is used before it is initialized
+diff --git a/test/classes/initializers/records/declaration.good b/test/classes/initializers/records/declaration.good
+index 9949e744e62..45138a81d88 100644
+--- a/test/classes/initializers/records/declaration.good
++++ b/test/classes/initializers/records/declaration.good
+@@ -1,4 +1 @@
+-declaration.chpl:11: error: unresolved call 'Foo.init()'
+-declaration.chpl:6: note: this candidate did not match: Foo.init(xVal)
+-declaration.chpl:11: note: because call does not supply enough arguments
+-declaration.chpl:6: note: it is missing a value for formal 'xVal'
++declaration.chpl:11: error: unable to resolve call to 'init': no matching candidates
+diff --git a/test/classes/initializers/records/declaration2.good b/test/classes/initializers/records/declaration2.good
+index b8b027291d9..9e5533b7e3f 100644
+--- a/test/classes/initializers/records/declaration2.good
++++ b/test/classes/initializers/records/declaration2.good
+@@ -1,4 +1 @@
+-declaration2.chpl:11: error: unresolved call 'Foo.init()'
+-declaration2.chpl:6: note: this candidate did not match: Foo.init(xVal: int)
+-declaration2.chpl:11: note: because call does not supply enough arguments
+-declaration2.chpl:6: note: it is missing a value for formal 'xVal: int(64)'
++declaration2.chpl:11: error: unable to resolve call to 'init': no matching candidates
+diff --git a/test/classes/initializers/records/generics/assignment/typeAliasError.good b/test/classes/initializers/records/generics/assignment/typeAliasError.good
+index 8f3960f430b..84c6ea9ad20 100644
+--- a/test/classes/initializers/records/generics/assignment/typeAliasError.good
++++ b/test/classes/initializers/records/generics/assignment/typeAliasError.good
+@@ -1,5 +1,3 @@
+-typeAliasError.chpl:13: error: Unable to resolve new-expression with type alias 'Generic(int(64))'
+-typeAliasError.chpl:13: error: unresolved call 'Generic.init(eltType=type int(64), "hello")'
+-typeAliasError.chpl:5: note: this candidate did not match: Generic.init(type eltType, value: eltType)
+-typeAliasError.chpl:13: note: because actual argument #2 with type 'string'
+-typeAliasError.chpl:5: note: is passed to formal 'value: int(64)'
++typeAliasError.chpl:13: error: unable to resolve call to 'init': no matching candidates
++typeAliasError.chpl:5: note: the following candidate didn't match because an actual couldn't be passed to a formal
++typeAliasError.chpl:13: note: omitting 22 more candidates that didn't match
+diff --git a/test/classes/initializers/records/generics/explicitAssignment.good b/test/classes/initializers/records/generics/explicitAssignment.good
+index 80104c2215f..48217bf39cf 100644
+--- a/test/classes/initializers/records/generics/explicitAssignment.good
++++ b/test/classes/initializers/records/generics/explicitAssignment.good
+@@ -1,5 +1,2 @@
+ explicitAssignment.chpl:15: In function 'main':
+-explicitAssignment.chpl:16: error: could not find a copy initializer ('init=') for type 'Foo(real(64))' from type 'Foo(int(64))'
+-explicitAssignment.chpl:3: note: this candidate did not match: Foo.init=(other: this.type)
+-explicitAssignment.chpl:16: note: because actual argument #1 with type 'Foo(int(64))'
+-explicitAssignment.chpl:3: note: is passed to formal 'other: Foo(real(64))'
++explicitAssignment.chpl:16: error: type mismatch between declared type of 'a' and initialization expression
+diff --git a/test/classes/initializers/records/generics/omittedGenerics2.good b/test/classes/initializers/records/generics/omittedGenerics2.good
+index 134894721d7..543bc3fc838 100644
+--- a/test/classes/initializers/records/generics/omittedGenerics2.good
++++ b/test/classes/initializers/records/generics/omittedGenerics2.good
+@@ -1,2 +1,8 @@
+-omittedGenerics2.chpl:9: In initializer:
+-omittedGenerics2.chpl:10: error: can't omit initialization of field "a", no type or default value provided
++omittedGenerics2.chpl:17: In function 'main':
++omittedGenerics2.chpl:19: error: unable to resolve call to 'writeln': no matching candidates
++$CHPL_HOME/modules/standard/ChapelIO.chpl:409: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++omittedGenerics2.chpl:18: note: The actual 'c' expects to be split-initialized because it is declared with a generic type and no initialization expression here
++omittedGenerics2.chpl:19: note: The call to 'writeln' occurs before any valid initialization points
++$CHPL_HOME/modules/standard/ChapelIO.chpl:403: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++omittedGenerics2.chpl:19: note: omitting 1 more candidates that didn't match
++omittedGenerics2.chpl:18: error: cannot default initialize variable using generic or unknown type
+diff --git a/test/classes/initializers/records/where-clause4.good b/test/classes/initializers/records/where-clause4.good
+index 94073f3a4f8..8fa89dc71b4 100644
+--- a/test/classes/initializers/records/where-clause4.good
++++ b/test/classes/initializers/records/where-clause4.good
+@@ -1,3 +1,3 @@
+-where-clause4.chpl:11: error: unresolved call 'Foo.init(3.4)'
+-where-clause4.chpl:5: note: this candidate did not match: Foo.init(xVal)
+-where-clause4.chpl:5: note: because where clause evaluated to false
++where-clause4.chpl:11: error: unable to resolve call to 'init': no matching candidates
++where-clause4.chpl:5: note: the following candidate didn't match because the 'where' clause evaluated to 'false'
++where-clause4.chpl:11: note: omitting 22 more candidates that didn't match
+diff --git a/test/classes/initializers/siblingCall/endsInitBad.good b/test/classes/initializers/siblingCall/endsInitBad.good
+index 2fe65bf69a4..abdbe2af7b5 100644
+--- a/test/classes/initializers/siblingCall/endsInitBad.good
++++ b/test/classes/initializers/siblingCall/endsInitBad.good
+@@ -1,2 +1,3 @@
+ endsInitBad.chpl:5: In initializer:
+-endsInitBad.chpl:6: error: field initialization not allowed before super.init() or this.init()
++endsInitBad.chpl:7: error: field initialization not allowed before 'super.init()' or 'this.init()'
++endsInitBad.chpl:6: note: field 'f2' is initialized before the 'init' call here
+diff --git a/test/classes/initializers/siblingCall/middleBad.good b/test/classes/initializers/siblingCall/middleBad.good
+index 1fe81fdc1ca..b4850381fb6 100644
+--- a/test/classes/initializers/siblingCall/middleBad.good
++++ b/test/classes/initializers/siblingCall/middleBad.good
+@@ -1,2 +1,3 @@
+ middleBad.chpl:5: In initializer:
+-middleBad.chpl:6: error: field initialization not allowed before super.init() or this.init()
++middleBad.chpl:7: error: field initialization not allowed before 'super.init()' or 'this.init()'
++middleBad.chpl:6: note: field 'f2' is initialized before the 'init' call here
+diff --git a/test/classes/initializers/where-clause4.good b/test/classes/initializers/where-clause4.good
+index bcd82c29397..2b989de8c28 100644
+--- a/test/classes/initializers/where-clause4.good
++++ b/test/classes/initializers/where-clause4.good
+@@ -1,3 +1,3 @@
+-where-clause4.chpl:12: error: unresolved call 'Foo.init(3.4)'
+-where-clause4.chpl:5: note: this candidate did not match: Foo.init(xVal)
+-where-clause4.chpl:5: note: because where clause evaluated to false
++where-clause4.chpl:12: error: unable to resolve call to 'init': no matching candidates
++where-clause4.chpl:5: note: the following candidate didn't match because the 'where' clause evaluated to 'false'
++where-clause4.chpl:12: note: omitting 22 more candidates that didn't match
 diff --git a/test/types/POD/elliot/varNotPOD.good b/test/types/POD/elliot/varNotPOD.good
 index 66db8242dd1..1a9cf52c977 100644
 --- a/test/types/POD/elliot/varNotPOD.good
@@ -1101,7 +1846,7 @@ index 0ea07ea9f8d..2b245380207 100644
 +$CHPL_HOME/modules/internal/ChapelRange.chpl:2357: In function 'by':
 +$CHPL_HOME/modules/internal/ChapelRange.chpl:2358: error: the step argument of the 'by' operator is too large and cannot be represented within the range's stride type int(64)
 diff --git a/test/types/range/deitz/test_range_iterate_error.good b/test/types/range/deitz/test_range_iterate_error.good
-index c5070275cc1..59d408a31c4 100644
+index c5070275cc1..95126b0a448 100644
 --- a/test/types/range/deitz/test_range_iterate_error.good
 +++ b/test/types/range/deitz/test_range_iterate_error.good
 @@ -1 +1,9 @@
@@ -1110,7 +1855,7 @@ index c5070275cc1..59d408a31c4 100644
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to 'serialize': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 53 more candidates that didn't match
++$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 12 more candidates that didn't match
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: In method '_serializeOne':
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to '=': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: In method 'serialize':
@@ -1170,7 +1915,7 @@ index efa1a94fdd1..6ea7dfe6dc4 100644
 -badCountedLowBoundedRange.chpl:3: error: can't apply '#' to a range with idxType int(64) using a count of type real(64)
 +badCountedLowBoundedRange.chpl:3: error: cannot apply '#' to 'range(int(64), low, one)'
 diff --git a/test/types/range/enum/castEnumRange2.good b/test/types/range/enum/castEnumRange2.good
-index 2b96d691ebb..72acbd76cb7 100644
+index 2b96d691ebb..e5fc6b3763b 100644
 --- a/test/types/range/enum/castEnumRange2.good
 +++ b/test/types/range/enum/castEnumRange2.good
 @@ -1,2 +1,10 @@
@@ -1181,11 +1926,11 @@ index 2b96d691ebb..72acbd76cb7 100644
 +$CHPL_HOME/modules/internal/ChapelRange.chpl:1708: error: unable to resolve call to ':': no matching candidates
 +$CHPL_HOME/modules/internal/ChapelArrayViewElision.chpl:352: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +$CHPL_HOME/modules/internal/ChapelTaskID.chpl:39: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/internal/ChapelRange.chpl:1708: note: omitting 250 more candidates that didn't match
++$CHPL_HOME/modules/internal/ChapelRange.chpl:1708: note: omitting 124 more candidates that didn't match
 +$CHPL_HOME/modules/internal/ChapelRange.chpl:1711: error: unable to resolve call to ':': no matching candidates
 +$CHPL_HOME/modules/internal/ChapelArrayViewElision.chpl:352: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +$CHPL_HOME/modules/internal/ChapelTaskID.chpl:39: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/internal/ChapelRange.chpl:1711: note: omitting 250 more candidates that didn't match
++$CHPL_HOME/modules/internal/ChapelRange.chpl:1711: note: omitting 124 more candidates that didn't match
 diff --git a/test/types/range/enum/singleValEnum-errors-offset.good b/test/types/range/enum/singleValEnum-errors-offset.good
 index 5cb8abe10d0..f27bed16399 100644
 --- a/test/types/range/enum/singleValEnum-errors-offset.good
@@ -1230,7 +1975,7 @@ index e9fb8a0f3f9..a48a43b86f8 100644
 -badRange-string-multi.chpl:2: error: param for-loops defined using bounds of type 'string' are not currently supported
 +badRange-string-multi.chpl:2: error: Ranges defined using bounds of type 'string' are not currently supported
 diff --git a/test/types/range/lydia/badRange-string-stride.good b/test/types/range/lydia/badRange-string-stride.good
-index b6cfc59548d..68b04350688 100644
+index b6cfc59548d..6765d8b28c0 100644
 --- a/test/types/range/lydia/badRange-string-stride.good
 +++ b/test/types/range/lydia/badRange-string-stride.good
 @@ -1,2 +1,19 @@
@@ -1240,7 +1985,7 @@ index b6cfc59548d..68b04350688 100644
 +$CHPL_HOME/modules/internal/ChapelRange.chpl:2279: error: unable to resolve call to 'numBits': no matching candidates
 +$CHPL_HOME/modules/standard/Types.chpl:804: note: the following candidate didn't match because the 'where' clause evaluated to 'false'
 +$CHPL_HOME/modules/standard/Types.chpl:802: note: the following candidate didn't match because the 'where' clause evaluated to 'false'
-+$CHPL_HOME/modules/internal/ChapelRange.chpl:2279: note: omitting 43 more candidates that didn't match
++$CHPL_HOME/modules/internal/ChapelRange.chpl:2279: note: omitting 13 more candidates that didn't match
 +$CHPL_HOME/modules/internal/ChapelRange.chpl:2279: error: cannot return it with provided return intent
 +$CHPL_HOME/modules/internal/ChapelRange.chpl:2300: In function 'chpl_range_check_stride':
 +$CHPL_HOME/modules/internal/ChapelRange.chpl:2308: error: Cannot establish type for call expression
@@ -1249,7 +1994,7 @@ index b6cfc59548d..68b04350688 100644
 +$CHPL_HOME/modules/internal/ChapelRange.chpl:2369: error: unable to resolve call to 'chpl_strideProduct': no matching candidates
 +$CHPL_HOME/modules/internal/ChapelRange.chpl:805: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +$CHPL_HOME/modules/internal/ChapelRange.chpl:802: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/internal/ChapelRange.chpl:2369: note: omitting 4 more candidates that didn't match
++$CHPL_HOME/modules/internal/ChapelRange.chpl:2369: note: omitting 1 more candidates that didn't match
  badRange-string-stride.chpl:1: In function 'main':
 -badRange-string-stride.chpl:2: error: Range stride must be an int
 +badRange-string-stride.chpl:2: error: Cannot establish type for call expression
@@ -1321,7 +2066,7 @@ index 52c5ec8da66..519772fb03b 100644
 +rangeKeyword.chpl:5: note: redefined here
 +rangeKeyword.chpl:6: note: redefined here
 diff --git a/test/types/range/unbounded/noFirst-forallzip-down.good b/test/types/range/unbounded/noFirst-forallzip-down.good
-index 27232e52d56..59d408a31c4 100644
+index 27232e52d56..95126b0a448 100644
 --- a/test/types/range/unbounded/noFirst-forallzip-down.good
 +++ b/test/types/range/unbounded/noFirst-forallzip-down.good
 @@ -1 +1,9 @@
@@ -1330,7 +2075,7 @@ index 27232e52d56..59d408a31c4 100644
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to 'serialize': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 53 more candidates that didn't match
++$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 12 more candidates that didn't match
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: In method '_serializeOne':
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to '=': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: In method 'serialize':
@@ -1344,7 +2089,7 @@ index 00000000000..50247f550ee
 +../../../../util/test/prediff-obscure-module-linenos
 \ No newline at end of file
 diff --git a/test/types/range/unbounded/noFirst-forallzip-up.good b/test/types/range/unbounded/noFirst-forallzip-up.good
-index 1d35421b09b..59d408a31c4 100644
+index 1d35421b09b..95126b0a448 100644
 --- a/test/types/range/unbounded/noFirst-forallzip-up.good
 +++ b/test/types/range/unbounded/noFirst-forallzip-up.good
 @@ -1 +1,9 @@
@@ -1353,7 +2098,7 @@ index 1d35421b09b..59d408a31c4 100644
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to 'serialize': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 53 more candidates that didn't match
++$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 12 more candidates that didn't match
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: In method '_serializeOne':
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to '=': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: In method 'serialize':
@@ -1367,7 +2112,7 @@ index 00000000000..50247f550ee
 +../../../../util/test/prediff-obscure-module-linenos
 \ No newline at end of file
 diff --git a/test/types/range/unbounded/noFirst-forloop-down.good b/test/types/range/unbounded/noFirst-forloop-down.good
-index 8fdc8235a2e..5d1faea1c97 100644
+index 8fdc8235a2e..eaa3867558c 100644
 --- a/test/types/range/unbounded/noFirst-forloop-down.good
 +++ b/test/types/range/unbounded/noFirst-forloop-down.good
 @@ -1 +1,7 @@
@@ -1376,7 +2121,7 @@ index 8fdc8235a2e..5d1faea1c97 100644
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to 'serialize': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 39 more candidates that didn't match
++$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 12 more candidates that didn't match
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: In method '_serializeOne':
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to '=': no matching candidates
 diff --git a/test/types/range/unbounded/noFirst-forloop-down.prediff b/test/types/range/unbounded/noFirst-forloop-down.prediff
@@ -1388,7 +2133,7 @@ index 00000000000..50247f550ee
 +../../../../util/test/prediff-obscure-module-linenos
 \ No newline at end of file
 diff --git a/test/types/range/unbounded/noFirst-forloop-up.good b/test/types/range/unbounded/noFirst-forloop-up.good
-index b2d7ca49b86..5d1faea1c97 100644
+index b2d7ca49b86..eaa3867558c 100644
 --- a/test/types/range/unbounded/noFirst-forloop-up.good
 +++ b/test/types/range/unbounded/noFirst-forloop-up.good
 @@ -1 +1,7 @@
@@ -1397,7 +2142,7 @@ index b2d7ca49b86..5d1faea1c97 100644
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to 'serialize': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 39 more candidates that didn't match
++$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 12 more candidates that didn't match
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: In method '_serializeOne':
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to '=': no matching candidates
 diff --git a/test/types/range/unbounded/noFirst-forloop-up.prediff b/test/types/range/unbounded/noFirst-forloop-up.prediff
@@ -1409,7 +2154,7 @@ index 00000000000..50247f550ee
 +../../../../util/test/prediff-obscure-module-linenos
 \ No newline at end of file
 diff --git a/test/types/range/unbounded/noFirst-forzip-down.good b/test/types/range/unbounded/noFirst-forzip-down.good
-index d3361ae14a1..59d408a31c4 100644
+index d3361ae14a1..95126b0a448 100644
 --- a/test/types/range/unbounded/noFirst-forzip-down.good
 +++ b/test/types/range/unbounded/noFirst-forzip-down.good
 @@ -1 +1,9 @@
@@ -1418,7 +2163,7 @@ index d3361ae14a1..59d408a31c4 100644
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to 'serialize': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 53 more candidates that didn't match
++$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 12 more candidates that didn't match
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: In method '_serializeOne':
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to '=': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: In method 'serialize':
@@ -1432,7 +2177,7 @@ index 00000000000..50247f550ee
 +../../../../util/test/prediff-obscure-module-linenos
 \ No newline at end of file
 diff --git a/test/types/range/unbounded/noFirst-forzip-up.good b/test/types/range/unbounded/noFirst-forzip-up.good
-index e6151fc070d..59d408a31c4 100644
+index e6151fc070d..95126b0a448 100644
 --- a/test/types/range/unbounded/noFirst-forzip-up.good
 +++ b/test/types/range/unbounded/noFirst-forzip-up.good
 @@ -1 +1,9 @@
@@ -1441,7 +2186,7 @@ index e6151fc070d..59d408a31c4 100644
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to 'serialize': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 53 more candidates that didn't match
++$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 12 more candidates that didn't match
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: In method '_serializeOne':
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to '=': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: In method 'serialize':
@@ -1637,32 +2382,40 @@ index 1367bd320a6..d0f2b6f1207 100644
 +compareRecords.chpl:3: error: ordered comparisons not supported by default on records with array fields
 +compareRecords.chpl:3: error: ordered comparisons not supported by default on records with array fields
 diff --git a/test/types/records/const-checking/assignments.good b/test/types/records/const-checking/assignments.good
-index ff5667328c8..f59e361629a 100644
+index ff5667328c8..123f935bce9 100644
 --- a/test/types/records/const-checking/assignments.good
 +++ b/test/types/records/const-checking/assignments.good
-@@ -1,24 +1,14 @@
+@@ -1,24 +1,24 @@
 -assignments.chpl:11: In function 'TEST1':
 -assignments.chpl:13: error: cannot assign to a record of the type RECTYPE using the default assignment operator because it has 'const' field(s)
++assignments.chpl:3: In method '=':
++assignments.chpl:3: error: cannot pass const to non-const
  assignments.chpl:16: In function 'TEST2':
 -assignments.chpl:18: error: cannot assign to const variable
 +assignments.chpl:18: error: cannot pass const to non-const
  assignments.chpl:31: In function 'TEST5':
 -assignments.chpl:33: error: cannot assign to const variable
 -assignments.chpl:34: error: cannot assign to const variable
--assignments.chpl:37: In function 'TEST6':
++assignments.chpl:33: error: cannot pass const to non-const
++assignments.chpl:34: error: cannot pass const to non-const
+ assignments.chpl:37: In function 'TEST6':
 -assignments.chpl:40: error: cannot assign to const variable
 -assignments.chpl:56: error: const actual is passed to 'ref' formal 'arg' of TEST8()
 -assignments.chpl:70: In function 'quest1':
 -assignments.chpl:72: error: cannot assign to a record of the type OUTERREC using the default assignment operator because it has 'const' field(s)
-+assignments.chpl:33: error: cannot pass const to non-const
-+assignments.chpl:34: error: cannot pass const to non-const
++assignments.chpl:40: error: cannot pass const to non-const
++assignments.chpl:62: In method '=':
++assignments.chpl:62: error: cannot pass const to non-const
  assignments.chpl:75: In function 'quest2':
 -assignments.chpl:77: error: cannot assign to const variable
--assignments.chpl:89: In function 'quest5':
++assignments.chpl:77: error: cannot pass const to non-const
+ assignments.chpl:89: In function 'quest5':
 -assignments.chpl:92: error: cannot assign to const variable
 -assignments.chpl:93: error: cannot assign to const variable
 -assignments.chpl:94: error: cannot assign to const variable
-+assignments.chpl:77: error: cannot pass const to non-const
++assignments.chpl:92: error: cannot pass const to non-const
++assignments.chpl:93: error: cannot pass const to non-const
++assignments.chpl:94: error: cannot pass const to non-const
  assignments.chpl:97: In function 'quest6':
 -assignments.chpl:99: error: cannot assign to const variable
 -assignments.chpl:100: error: cannot assign to const variable
@@ -1684,11 +2437,19 @@ index 3f519f5fe3b..56a9a8a03a8 100644
 -todo-assign-to-record-formal-error.chpl:9: error: cannot assign to const variable
 +todo-assign-to-record-formal-error.chpl:9: error: cannot pass const to non-const
  todo-assign-to-record-formal-error.chpl:16: error: done
+diff --git a/test/types/records/const-checking/todo-linenumber-in-array-assignment-error.good b/test/types/records/const-checking/todo-linenumber-in-array-assignment-error.good
+index 5585ca1049a..e6f08ef2093 100644
+--- a/test/types/records/const-checking/todo-linenumber-in-array-assignment-error.good
++++ b/test/types/records/const-checking/todo-linenumber-in-array-assignment-error.good
+@@ -1 +1,2 @@
+-todo-linenumber-in-array-assignment-error.chpl:15: error: cannot assign to a record of the type RECTYPE using the default assignment operator because it has 'const' field(s)
++todo-linenumber-in-array-assignment-error.chpl:4: In method '=':
++todo-linenumber-in-array-assignment-error.chpl:4: error: cannot pass const to non-const
 diff --git a/test/types/records/const-checking/tuples-and-records.good b/test/types/records/const-checking/tuples-and-records.good
-index 0f54562c495..7a68bb6ac75 100644
+index 0f54562c495..324303b28b9 100644
 --- a/test/types/records/const-checking/tuples-and-records.good
 +++ b/test/types/records/const-checking/tuples-and-records.good
-@@ -1,12 +1,6 @@
+@@ -1,12 +1,7 @@
 +tuples-and-records.chpl:11: In initializer:
 +tuples-and-records.chpl:18: error: cannot pass const to non-const
  tuples-and-records.chpl:25: In function 'main':
@@ -1704,6 +2465,7 @@ index 0f54562c495..7a68bb6ac75 100644
 -tuples-and-records.chpl:38: error: cannot assign to const variable
 -tuples-and-records.chpl:39: error: cannot assign to const variable
 +tuples-and-records.chpl:26: error: cannot pass const to non-const
++tuples-and-records.chpl:33: error: cannot pass const to non-const
 +tuples-and-records.chpl:36: error: cannot pass const to non-const
 +tuples-and-records.chpl:39: error: cannot pass const to non-const
 diff --git a/test/types/records/ferguson/choose-record/choose-record10.good b/test/types/records/ferguson/choose-record/choose-record10.good
@@ -2456,6 +3218,584 @@ index 5c879d8cb43..e18449cd03e 100644
 -floatingPointBadSize.chpl:1: error: illegal type index expression 'real(64)(27)'
 -floatingPointBadSize.chpl:1: note: primitive type 'real(64)' cannot be indexed in this manner
 +floatingPointBadSize.chpl:1: error: invalid numeric type construction
+diff --git a/test/types/string/assignToChar/testAssign.1.good b/test/types/string/assignToChar/testAssign.1.good
+index 3b968ba4f2f..d255937f9c6 100644
+--- a/test/types/string/assignToChar/testAssign.1.good
++++ b/test/types/string/assignToChar/testAssign.1.good
+@@ -1,4 +1,2 @@
+ Helpers.chpl:10: In function 'testAssign':
+-Helpers.chpl:12: error: Cannot assign to int(8) from string
+-Helpers.chpl:12: note: did you mean to call '.toByte()'?
+-  testAssign.chpl:6: called as testAssign(param strBytes = "a", type toType = int(8))
++Helpers.chpl:12: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testAssign.10.good b/test/types/string/assignToChar/testAssign.10.good
+index 9d8d04a093b..655e7c90cdf 100644
+--- a/test/types/string/assignToChar/testAssign.10.good
++++ b/test/types/string/assignToChar/testAssign.10.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:15: In function 'testAssignVal':
+-Helpers.chpl:17: error: Cannot assign to uint(8) from bytes
+-  testAssign.chpl:24: called as testAssignVal(strBytes: bytes, type toType = uint(8))
++Helpers.chpl:17: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testAssign.11.good b/test/types/string/assignToChar/testAssign.11.good
+index dc797458b44..d255937f9c6 100644
+--- a/test/types/string/assignToChar/testAssign.11.good
++++ b/test/types/string/assignToChar/testAssign.11.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:10: In function 'testAssign':
+-Helpers.chpl:12: error: Cannot assign to uint(8) from bytes
+-  testAssign.chpl:26: called as testAssign(param strBytes = b"hello", type toType = uint(8))
++Helpers.chpl:12: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testAssign.12.good b/test/types/string/assignToChar/testAssign.12.good
+index 19bc0950b32..655e7c90cdf 100644
+--- a/test/types/string/assignToChar/testAssign.12.good
++++ b/test/types/string/assignToChar/testAssign.12.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:15: In function 'testAssignVal':
+-Helpers.chpl:17: error: Cannot assign to uint(8) from bytes
+-  testAssign.chpl:28: called as testAssignVal(strBytes: bytes, type toType = uint(8))
++Helpers.chpl:17: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testAssign.13.good b/test/types/string/assignToChar/testAssign.13.good
+index a1e35dddc51..d255937f9c6 100644
+--- a/test/types/string/assignToChar/testAssign.13.good
++++ b/test/types/string/assignToChar/testAssign.13.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:10: In function 'testAssign':
+-Helpers.chpl:12: error: Cannot assign to uint(8) from string
+-  testAssign.chpl:30: called as testAssign(param strBytes = "", type toType = uint(8))
++Helpers.chpl:12: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testAssign.14.good b/test/types/string/assignToChar/testAssign.14.good
+index eb1a5447a89..655e7c90cdf 100644
+--- a/test/types/string/assignToChar/testAssign.14.good
++++ b/test/types/string/assignToChar/testAssign.14.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:15: In function 'testAssignVal':
+-Helpers.chpl:17: error: Cannot assign to uint(8) from string
+-  testAssign.chpl:32: called as testAssignVal(strBytes: string, type toType = uint(8))
++Helpers.chpl:17: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testAssign.2.good b/test/types/string/assignToChar/testAssign.2.good
+index 8d2ff39b70a..655e7c90cdf 100644
+--- a/test/types/string/assignToChar/testAssign.2.good
++++ b/test/types/string/assignToChar/testAssign.2.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:15: In function 'testAssignVal':
+-Helpers.chpl:17: error: Cannot assign to int(8) from string
+-  testAssign.chpl:8: called as testAssignVal(strBytes: string, type toType = int(8))
++Helpers.chpl:17: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testAssign.3.good b/test/types/string/assignToChar/testAssign.3.good
+index 367b9cdd174..d255937f9c6 100644
+--- a/test/types/string/assignToChar/testAssign.3.good
++++ b/test/types/string/assignToChar/testAssign.3.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:10: In function 'testAssign':
+-Helpers.chpl:12: error: Cannot assign to int(8) from string
+-  testAssign.chpl:10: called as testAssign(param strBytes = "hello", type toType = int(8))
++Helpers.chpl:12: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testAssign.4.good b/test/types/string/assignToChar/testAssign.4.good
+index 16c069e84d4..655e7c90cdf 100644
+--- a/test/types/string/assignToChar/testAssign.4.good
++++ b/test/types/string/assignToChar/testAssign.4.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:15: In function 'testAssignVal':
+-Helpers.chpl:17: error: Cannot assign to int(8) from string
+-  testAssign.chpl:12: called as testAssignVal(strBytes: string, type toType = int(8))
++Helpers.chpl:17: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testAssign.5.good b/test/types/string/assignToChar/testAssign.5.good
+index 8bd57e895f2..d255937f9c6 100644
+--- a/test/types/string/assignToChar/testAssign.5.good
++++ b/test/types/string/assignToChar/testAssign.5.good
+@@ -1,4 +1,2 @@
+ Helpers.chpl:10: In function 'testAssign':
+-Helpers.chpl:12: error: Cannot assign to int(8) from string
+-Helpers.chpl:12: note: did you mean to call '.toByte()'?
+-  testAssign.chpl:14: called as testAssign(param strBytes = "a", type toType = int(8))
++Helpers.chpl:12: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testAssign.6.good b/test/types/string/assignToChar/testAssign.6.good
+index 5d83c33c808..655e7c90cdf 100644
+--- a/test/types/string/assignToChar/testAssign.6.good
++++ b/test/types/string/assignToChar/testAssign.6.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:15: In function 'testAssignVal':
+-Helpers.chpl:17: error: Cannot assign to int(8) from string
+-  testAssign.chpl:16: called as testAssignVal(strBytes: string, type toType = int(8))
++Helpers.chpl:17: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testAssign.7.good b/test/types/string/assignToChar/testAssign.7.good
+index 5c4ddf7104f..d255937f9c6 100644
+--- a/test/types/string/assignToChar/testAssign.7.good
++++ b/test/types/string/assignToChar/testAssign.7.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:10: In function 'testAssign':
+-Helpers.chpl:12: error: Cannot assign to int(8) from string
+-  testAssign.chpl:18: called as testAssign(param strBytes = "hello", type toType = int(8))
++Helpers.chpl:12: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testAssign.8.good b/test/types/string/assignToChar/testAssign.8.good
+index 3b9f8998074..655e7c90cdf 100644
+--- a/test/types/string/assignToChar/testAssign.8.good
++++ b/test/types/string/assignToChar/testAssign.8.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:15: In function 'testAssignVal':
+-Helpers.chpl:17: error: Cannot assign to int(8) from string
+-  testAssign.chpl:20: called as testAssignVal(strBytes: string, type toType = int(8))
++Helpers.chpl:17: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testAssign.9.good b/test/types/string/assignToChar/testAssign.9.good
+index 294bb9caee1..d255937f9c6 100644
+--- a/test/types/string/assignToChar/testAssign.9.good
++++ b/test/types/string/assignToChar/testAssign.9.good
+@@ -1,4 +1,2 @@
+ Helpers.chpl:10: In function 'testAssign':
+-Helpers.chpl:12: error: Cannot assign to uint(8) from bytes
+-Helpers.chpl:12: note: did you mean to call '.toByte()'?
+-  testAssign.chpl:22: called as testAssign(param strBytes = b"a", type toType = uint(8))
++Helpers.chpl:12: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testCArray.1.good b/test/types/string/assignToChar/testCArray.1.good
+index 0d98493c2bc..503a2b667ba 100644
+--- a/test/types/string/assignToChar/testCArray.1.good
++++ b/test/types/string/assignToChar/testCArray.1.good
+@@ -1,4 +1,2 @@
+ Helpers.chpl:32: In function 'testCArray':
+-Helpers.chpl:36: error: Cannot assign to int(8) from string
+-Helpers.chpl:36: note: did you mean to call '.toByte()'?
+-  testCArray.chpl:6: called as testCArray(param strBytes = "a", type toType = int(8))
++Helpers.chpl:36: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testCArray.10.good b/test/types/string/assignToChar/testCArray.10.good
+index 6c795c3a7e6..9ca4cd13266 100644
+--- a/test/types/string/assignToChar/testCArray.10.good
++++ b/test/types/string/assignToChar/testCArray.10.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:39: In function 'testCArrayVal':
+-Helpers.chpl:42: error: Cannot assign to uint(8) from string
+-  testCArray.chpl:24: called as testCArrayVal(strBytes: string, type toType = uint(8))
++Helpers.chpl:42: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testCArray.11.good b/test/types/string/assignToChar/testCArray.11.good
+index 00f17b8ac68..7b210399225 100644
+--- a/test/types/string/assignToChar/testCArray.11.good
++++ b/test/types/string/assignToChar/testCArray.11.good
+@@ -1,4 +1,6 @@
+ Helpers.chpl:32: In function 'testCArray':
+-Helpers.chpl:36: error: Cannot assign to uint(8) from string
+-Helpers.chpl:36: note: did you mean to call '.toByte()'?
+-  testCArray.chpl:26: called as testCArray(param strBytes = "hello", type toType = uint(8))
++Helpers.chpl:36: error: unable to resolve call to '=': no matching candidates
++Helpers.chpl:36: error: unable to resolve call to '=': no matching candidates
++Helpers.chpl:36: error: unable to resolve call to '=': no matching candidates
++Helpers.chpl:36: error: unable to resolve call to '=': no matching candidates
++Helpers.chpl:36: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testCArray.12.good b/test/types/string/assignToChar/testCArray.12.good
+index b3fa7d4a28d..9ca4cd13266 100644
+--- a/test/types/string/assignToChar/testCArray.12.good
++++ b/test/types/string/assignToChar/testCArray.12.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:39: In function 'testCArrayVal':
+-Helpers.chpl:42: error: Cannot assign to uint(8) from string
+-  testCArray.chpl:28: called as testCArrayVal(strBytes: string, type toType = uint(8))
++Helpers.chpl:42: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testCArray.14.good b/test/types/string/assignToChar/testCArray.14.good
+index 9131c7dc1f6..9ca4cd13266 100644
+--- a/test/types/string/assignToChar/testCArray.14.good
++++ b/test/types/string/assignToChar/testCArray.14.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:39: In function 'testCArrayVal':
+-Helpers.chpl:42: error: Cannot assign to uint(8) from string
+-  testCArray.chpl:32: called as testCArrayVal(strBytes: string, type toType = uint(8))
++Helpers.chpl:42: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testCArray.2.good b/test/types/string/assignToChar/testCArray.2.good
+index 2a69937ddd7..9ca4cd13266 100644
+--- a/test/types/string/assignToChar/testCArray.2.good
++++ b/test/types/string/assignToChar/testCArray.2.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:39: In function 'testCArrayVal':
+-Helpers.chpl:42: error: Cannot assign to int(8) from string
+-  testCArray.chpl:8: called as testCArrayVal(strBytes: string, type toType = int(8))
++Helpers.chpl:42: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testCArray.3.good b/test/types/string/assignToChar/testCArray.3.good
+index dd2e73f278e..7b210399225 100644
+--- a/test/types/string/assignToChar/testCArray.3.good
++++ b/test/types/string/assignToChar/testCArray.3.good
+@@ -1,4 +1,6 @@
+ Helpers.chpl:32: In function 'testCArray':
+-Helpers.chpl:36: error: Cannot assign to int(8) from string
+-Helpers.chpl:36: note: did you mean to call '.toByte()'?
+-  testCArray.chpl:10: called as testCArray(param strBytes = "hello", type toType = int(8))
++Helpers.chpl:36: error: unable to resolve call to '=': no matching candidates
++Helpers.chpl:36: error: unable to resolve call to '=': no matching candidates
++Helpers.chpl:36: error: unable to resolve call to '=': no matching candidates
++Helpers.chpl:36: error: unable to resolve call to '=': no matching candidates
++Helpers.chpl:36: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testCArray.4.good b/test/types/string/assignToChar/testCArray.4.good
+index 859257463b8..9ca4cd13266 100644
+--- a/test/types/string/assignToChar/testCArray.4.good
++++ b/test/types/string/assignToChar/testCArray.4.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:39: In function 'testCArrayVal':
+-Helpers.chpl:42: error: Cannot assign to int(8) from string
+-  testCArray.chpl:12: called as testCArrayVal(strBytes: string, type toType = int(8))
++Helpers.chpl:42: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testCArray.5.good b/test/types/string/assignToChar/testCArray.5.good
+index 458bb9fef8a..503a2b667ba 100644
+--- a/test/types/string/assignToChar/testCArray.5.good
++++ b/test/types/string/assignToChar/testCArray.5.good
+@@ -1,4 +1,2 @@
+ Helpers.chpl:32: In function 'testCArray':
+-Helpers.chpl:36: error: Cannot assign to int(8) from string
+-Helpers.chpl:36: note: did you mean to call '.toByte()'?
+-  testCArray.chpl:14: called as testCArray(param strBytes = "a", type toType = int(8))
++Helpers.chpl:36: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testCArray.6.good b/test/types/string/assignToChar/testCArray.6.good
+index 75c04910ac6..9ca4cd13266 100644
+--- a/test/types/string/assignToChar/testCArray.6.good
++++ b/test/types/string/assignToChar/testCArray.6.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:39: In function 'testCArrayVal':
+-Helpers.chpl:42: error: Cannot assign to int(8) from string
+-  testCArray.chpl:16: called as testCArrayVal(strBytes: string, type toType = int(8))
++Helpers.chpl:42: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testCArray.7.good b/test/types/string/assignToChar/testCArray.7.good
+index 47a9c2fca83..7b210399225 100644
+--- a/test/types/string/assignToChar/testCArray.7.good
++++ b/test/types/string/assignToChar/testCArray.7.good
+@@ -1,4 +1,6 @@
+ Helpers.chpl:32: In function 'testCArray':
+-Helpers.chpl:36: error: Cannot assign to int(8) from string
+-Helpers.chpl:36: note: did you mean to call '.toByte()'?
+-  testCArray.chpl:18: called as testCArray(param strBytes = "hello", type toType = int(8))
++Helpers.chpl:36: error: unable to resolve call to '=': no matching candidates
++Helpers.chpl:36: error: unable to resolve call to '=': no matching candidates
++Helpers.chpl:36: error: unable to resolve call to '=': no matching candidates
++Helpers.chpl:36: error: unable to resolve call to '=': no matching candidates
++Helpers.chpl:36: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testCArray.8.good b/test/types/string/assignToChar/testCArray.8.good
+index e1f9b0e9a64..9ca4cd13266 100644
+--- a/test/types/string/assignToChar/testCArray.8.good
++++ b/test/types/string/assignToChar/testCArray.8.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:39: In function 'testCArrayVal':
+-Helpers.chpl:42: error: Cannot assign to int(8) from string
+-  testCArray.chpl:20: called as testCArrayVal(strBytes: string, type toType = int(8))
++Helpers.chpl:42: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testCArray.9.good b/test/types/string/assignToChar/testCArray.9.good
+index d003e14f06b..503a2b667ba 100644
+--- a/test/types/string/assignToChar/testCArray.9.good
++++ b/test/types/string/assignToChar/testCArray.9.good
+@@ -1,4 +1,2 @@
+ Helpers.chpl:32: In function 'testCArray':
+-Helpers.chpl:36: error: Cannot assign to uint(8) from string
+-Helpers.chpl:36: note: did you mean to call '.toByte()'?
+-  testCArray.chpl:22: called as testCArray(param strBytes = "a", type toType = uint(8))
++Helpers.chpl:36: error: unable to resolve call to '=': no matching candidates
+diff --git a/test/types/string/assignToChar/testCall.1.good b/test/types/string/assignToChar/testCall.1.good
+index 75f19921cb2..723e4c05f09 100644
+--- a/test/types/string/assignToChar/testCall.1.good
++++ b/test/types/string/assignToChar/testCall.1.good
+@@ -1,7 +1,3 @@
+ Helpers.chpl:20: In function 'testCall':
+-Helpers.chpl:24: error: unresolved call 'foo("a")'
+-Helpers.chpl:21: note: this candidate did not match: foo(y: int(8))
+-Helpers.chpl:24: note: because actual argument #1 with type 'string'
+-Helpers.chpl:21: note: is passed to formal 'y: int(8)'
+-Helpers.chpl:24: note: did you mean to call '.toByte()'?
+-  testCall.chpl:6: called as testCall(param strBytes = "a", type toType = int(8))
++Helpers.chpl:24: error: unable to resolve call to 'foo': no matching candidates
++Helpers.chpl:21: note: the following candidate didn't match because an actual couldn't be passed to a formal
+diff --git a/test/types/string/assignToChar/testCall.10.good b/test/types/string/assignToChar/testCall.10.good
+index 4d684f96d78..12d5c2a298b 100644
+--- a/test/types/string/assignToChar/testCall.10.good
++++ b/test/types/string/assignToChar/testCall.10.good
+@@ -1,6 +1,3 @@
+ Helpers.chpl:26: In function 'testCallVal':
+-Helpers.chpl:30: error: unresolved call 'foo(string)'
+-Helpers.chpl:27: note: this candidate did not match: foo(y: uint(8))
+-Helpers.chpl:30: note: because actual argument #1 with type 'string'
+-Helpers.chpl:27: note: is passed to formal 'y: uint(8)'
+-  testCall.chpl:24: called as testCallVal(strBytes: string, type toType = uint(8))
++Helpers.chpl:30: error: unable to resolve call to 'foo': no matching candidates
++Helpers.chpl:27: note: the following candidate didn't match because an actual couldn't be passed to a formal
+diff --git a/test/types/string/assignToChar/testCall.11.good b/test/types/string/assignToChar/testCall.11.good
+index e09d2322d54..723e4c05f09 100644
+--- a/test/types/string/assignToChar/testCall.11.good
++++ b/test/types/string/assignToChar/testCall.11.good
+@@ -1,6 +1,3 @@
+ Helpers.chpl:20: In function 'testCall':
+-Helpers.chpl:24: error: unresolved call 'foo("hello")'
+-Helpers.chpl:21: note: this candidate did not match: foo(y: uint(8))
+-Helpers.chpl:24: note: because actual argument #1 with type 'string'
+-Helpers.chpl:21: note: is passed to formal 'y: uint(8)'
+-  testCall.chpl:26: called as testCall(param strBytes = "hello", type toType = uint(8))
++Helpers.chpl:24: error: unable to resolve call to 'foo': no matching candidates
++Helpers.chpl:21: note: the following candidate didn't match because an actual couldn't be passed to a formal
+diff --git a/test/types/string/assignToChar/testCall.12.good b/test/types/string/assignToChar/testCall.12.good
+index 5594dadddbc..12d5c2a298b 100644
+--- a/test/types/string/assignToChar/testCall.12.good
++++ b/test/types/string/assignToChar/testCall.12.good
+@@ -1,6 +1,3 @@
+ Helpers.chpl:26: In function 'testCallVal':
+-Helpers.chpl:30: error: unresolved call 'foo(string)'
+-Helpers.chpl:27: note: this candidate did not match: foo(y: uint(8))
+-Helpers.chpl:30: note: because actual argument #1 with type 'string'
+-Helpers.chpl:27: note: is passed to formal 'y: uint(8)'
+-  testCall.chpl:28: called as testCallVal(strBytes: string, type toType = uint(8))
++Helpers.chpl:30: error: unable to resolve call to 'foo': no matching candidates
++Helpers.chpl:27: note: the following candidate didn't match because an actual couldn't be passed to a formal
+diff --git a/test/types/string/assignToChar/testCall.13.good b/test/types/string/assignToChar/testCall.13.good
+index 8656fd04f61..12d5c2a298b 100644
+--- a/test/types/string/assignToChar/testCall.13.good
++++ b/test/types/string/assignToChar/testCall.13.good
+@@ -1,6 +1,3 @@
+ Helpers.chpl:26: In function 'testCallVal':
+-Helpers.chpl:30: error: unresolved call 'foo(string)'
+-Helpers.chpl:27: note: this candidate did not match: foo(y: uint(8))
+-Helpers.chpl:30: note: because actual argument #1 with type 'string'
+-Helpers.chpl:27: note: is passed to formal 'y: uint(8)'
+-  testCall.chpl:30: called as testCallVal(strBytes: string, type toType = uint(8))
++Helpers.chpl:30: error: unable to resolve call to 'foo': no matching candidates
++Helpers.chpl:27: note: the following candidate didn't match because an actual couldn't be passed to a formal
+diff --git a/test/types/string/assignToChar/testCall.14.good b/test/types/string/assignToChar/testCall.14.good
+index 35a96ecbfe0..12d5c2a298b 100644
+--- a/test/types/string/assignToChar/testCall.14.good
++++ b/test/types/string/assignToChar/testCall.14.good
+@@ -1,6 +1,3 @@
+ Helpers.chpl:26: In function 'testCallVal':
+-Helpers.chpl:30: error: unresolved call 'foo(string)'
+-Helpers.chpl:27: note: this candidate did not match: foo(y: uint(8))
+-Helpers.chpl:30: note: because actual argument #1 with type 'string'
+-Helpers.chpl:27: note: is passed to formal 'y: uint(8)'
+-  testCall.chpl:32: called as testCallVal(strBytes: string, type toType = uint(8))
++Helpers.chpl:30: error: unable to resolve call to 'foo': no matching candidates
++Helpers.chpl:27: note: the following candidate didn't match because an actual couldn't be passed to a formal
+diff --git a/test/types/string/assignToChar/testCall.2.good b/test/types/string/assignToChar/testCall.2.good
+index d390c556b5c..12d5c2a298b 100644
+--- a/test/types/string/assignToChar/testCall.2.good
++++ b/test/types/string/assignToChar/testCall.2.good
+@@ -1,6 +1,3 @@
+ Helpers.chpl:26: In function 'testCallVal':
+-Helpers.chpl:30: error: unresolved call 'foo(string)'
+-Helpers.chpl:27: note: this candidate did not match: foo(y: int(8))
+-Helpers.chpl:30: note: because actual argument #1 with type 'string'
+-Helpers.chpl:27: note: is passed to formal 'y: int(8)'
+-  testCall.chpl:8: called as testCallVal(strBytes: string, type toType = int(8))
++Helpers.chpl:30: error: unable to resolve call to 'foo': no matching candidates
++Helpers.chpl:27: note: the following candidate didn't match because an actual couldn't be passed to a formal
+diff --git a/test/types/string/assignToChar/testCall.3.good b/test/types/string/assignToChar/testCall.3.good
+index 4d02907b74b..723e4c05f09 100644
+--- a/test/types/string/assignToChar/testCall.3.good
++++ b/test/types/string/assignToChar/testCall.3.good
+@@ -1,6 +1,3 @@
+ Helpers.chpl:20: In function 'testCall':
+-Helpers.chpl:24: error: unresolved call 'foo("hello")'
+-Helpers.chpl:21: note: this candidate did not match: foo(y: int(8))
+-Helpers.chpl:24: note: because actual argument #1 with type 'string'
+-Helpers.chpl:21: note: is passed to formal 'y: int(8)'
+-  testCall.chpl:10: called as testCall(param strBytes = "hello", type toType = int(8))
++Helpers.chpl:24: error: unable to resolve call to 'foo': no matching candidates
++Helpers.chpl:21: note: the following candidate didn't match because an actual couldn't be passed to a formal
+diff --git a/test/types/string/assignToChar/testCall.4.good b/test/types/string/assignToChar/testCall.4.good
+index 309361aa728..12d5c2a298b 100644
+--- a/test/types/string/assignToChar/testCall.4.good
++++ b/test/types/string/assignToChar/testCall.4.good
+@@ -1,6 +1,3 @@
+ Helpers.chpl:26: In function 'testCallVal':
+-Helpers.chpl:30: error: unresolved call 'foo(string)'
+-Helpers.chpl:27: note: this candidate did not match: foo(y: int(8))
+-Helpers.chpl:30: note: because actual argument #1 with type 'string'
+-Helpers.chpl:27: note: is passed to formal 'y: int(8)'
+-  testCall.chpl:12: called as testCallVal(strBytes: string, type toType = int(8))
++Helpers.chpl:30: error: unable to resolve call to 'foo': no matching candidates
++Helpers.chpl:27: note: the following candidate didn't match because an actual couldn't be passed to a formal
+diff --git a/test/types/string/assignToChar/testCall.5.good b/test/types/string/assignToChar/testCall.5.good
+index 5abb276c868..723e4c05f09 100644
+--- a/test/types/string/assignToChar/testCall.5.good
++++ b/test/types/string/assignToChar/testCall.5.good
+@@ -1,7 +1,3 @@
+ Helpers.chpl:20: In function 'testCall':
+-Helpers.chpl:24: error: unresolved call 'foo("a")'
+-Helpers.chpl:21: note: this candidate did not match: foo(y: int(8))
+-Helpers.chpl:24: note: because actual argument #1 with type 'string'
+-Helpers.chpl:21: note: is passed to formal 'y: int(8)'
+-Helpers.chpl:24: note: did you mean to call '.toByte()'?
+-  testCall.chpl:14: called as testCall(param strBytes = "a", type toType = int(8))
++Helpers.chpl:24: error: unable to resolve call to 'foo': no matching candidates
++Helpers.chpl:21: note: the following candidate didn't match because an actual couldn't be passed to a formal
+diff --git a/test/types/string/assignToChar/testCall.6.good b/test/types/string/assignToChar/testCall.6.good
+index 390f01c7d2c..12d5c2a298b 100644
+--- a/test/types/string/assignToChar/testCall.6.good
++++ b/test/types/string/assignToChar/testCall.6.good
+@@ -1,6 +1,3 @@
+ Helpers.chpl:26: In function 'testCallVal':
+-Helpers.chpl:30: error: unresolved call 'foo(string)'
+-Helpers.chpl:27: note: this candidate did not match: foo(y: int(8))
+-Helpers.chpl:30: note: because actual argument #1 with type 'string'
+-Helpers.chpl:27: note: is passed to formal 'y: int(8)'
+-  testCall.chpl:16: called as testCallVal(strBytes: string, type toType = int(8))
++Helpers.chpl:30: error: unable to resolve call to 'foo': no matching candidates
++Helpers.chpl:27: note: the following candidate didn't match because an actual couldn't be passed to a formal
+diff --git a/test/types/string/assignToChar/testCall.7.good b/test/types/string/assignToChar/testCall.7.good
+index 81880587b98..723e4c05f09 100644
+--- a/test/types/string/assignToChar/testCall.7.good
++++ b/test/types/string/assignToChar/testCall.7.good
+@@ -1,6 +1,3 @@
+ Helpers.chpl:20: In function 'testCall':
+-Helpers.chpl:24: error: unresolved call 'foo("hello")'
+-Helpers.chpl:21: note: this candidate did not match: foo(y: int(8))
+-Helpers.chpl:24: note: because actual argument #1 with type 'string'
+-Helpers.chpl:21: note: is passed to formal 'y: int(8)'
+-  testCall.chpl:18: called as testCall(param strBytes = "hello", type toType = int(8))
++Helpers.chpl:24: error: unable to resolve call to 'foo': no matching candidates
++Helpers.chpl:21: note: the following candidate didn't match because an actual couldn't be passed to a formal
+diff --git a/test/types/string/assignToChar/testCall.8.good b/test/types/string/assignToChar/testCall.8.good
+index df5fd920812..12d5c2a298b 100644
+--- a/test/types/string/assignToChar/testCall.8.good
++++ b/test/types/string/assignToChar/testCall.8.good
+@@ -1,6 +1,3 @@
+ Helpers.chpl:26: In function 'testCallVal':
+-Helpers.chpl:30: error: unresolved call 'foo(string)'
+-Helpers.chpl:27: note: this candidate did not match: foo(y: int(8))
+-Helpers.chpl:30: note: because actual argument #1 with type 'string'
+-Helpers.chpl:27: note: is passed to formal 'y: int(8)'
+-  testCall.chpl:20: called as testCallVal(strBytes: string, type toType = int(8))
++Helpers.chpl:30: error: unable to resolve call to 'foo': no matching candidates
++Helpers.chpl:27: note: the following candidate didn't match because an actual couldn't be passed to a formal
+diff --git a/test/types/string/assignToChar/testCall.9.good b/test/types/string/assignToChar/testCall.9.good
+index 2795637987c..723e4c05f09 100644
+--- a/test/types/string/assignToChar/testCall.9.good
++++ b/test/types/string/assignToChar/testCall.9.good
+@@ -1,7 +1,3 @@
+ Helpers.chpl:20: In function 'testCall':
+-Helpers.chpl:24: error: unresolved call 'foo("a")'
+-Helpers.chpl:21: note: this candidate did not match: foo(y: uint(8))
+-Helpers.chpl:24: note: because actual argument #1 with type 'string'
+-Helpers.chpl:21: note: is passed to formal 'y: uint(8)'
+-Helpers.chpl:24: note: did you mean to call '.toByte()'?
+-  testCall.chpl:22: called as testCall(param strBytes = "a", type toType = uint(8))
++Helpers.chpl:24: error: unable to resolve call to 'foo': no matching candidates
++Helpers.chpl:21: note: the following candidate didn't match because an actual couldn't be passed to a formal
+diff --git a/test/types/string/assignToChar/testInit.1.good b/test/types/string/assignToChar/testInit.1.good
+index 5a92d70f014..d2d7d3c7726 100644
+--- a/test/types/string/assignToChar/testInit.1.good
++++ b/test/types/string/assignToChar/testInit.1.good
+@@ -1,4 +1,2 @@
+ Helpers.chpl:2: In function 'testInit':
+-Helpers.chpl:3: error: cannot initialize 'x' of type 'int(8)' from '"a"'
+-Helpers.chpl:3: note: did you mean to call '.toByte()'?
+-  testInit.chpl:6: called as testInit(param strBytes = "a", type toType = int(8))
++Helpers.chpl:3: error: type mismatch between declared type of 'x' and initialization expression
+diff --git a/test/types/string/assignToChar/testInit.10.good b/test/types/string/assignToChar/testInit.10.good
+index caa0a51d961..8dfef28f07e 100644
+--- a/test/types/string/assignToChar/testInit.10.good
++++ b/test/types/string/assignToChar/testInit.10.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:6: In function 'testInitVal':
+-Helpers.chpl:7: error: cannot initialize 'x' of type 'uint(8)' from a 'string'
+-  testInit.chpl:24: called as testInitVal(strBytes: string, type toType = uint(8))
++Helpers.chpl:7: error: type mismatch between declared type of 'x' and initialization expression
+diff --git a/test/types/string/assignToChar/testInit.11.good b/test/types/string/assignToChar/testInit.11.good
+index 6b30edde85d..d2d7d3c7726 100644
+--- a/test/types/string/assignToChar/testInit.11.good
++++ b/test/types/string/assignToChar/testInit.11.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:2: In function 'testInit':
+-Helpers.chpl:3: error: cannot initialize 'x' of type 'uint(8)' from '"hello"'
+-  testInit.chpl:26: called as testInit(param strBytes = "hello", type toType = uint(8))
++Helpers.chpl:3: error: type mismatch between declared type of 'x' and initialization expression
+diff --git a/test/types/string/assignToChar/testInit.12.good b/test/types/string/assignToChar/testInit.12.good
+index 5f4e9ccfdff..8dfef28f07e 100644
+--- a/test/types/string/assignToChar/testInit.12.good
++++ b/test/types/string/assignToChar/testInit.12.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:6: In function 'testInitVal':
+-Helpers.chpl:7: error: cannot initialize 'x' of type 'uint(8)' from a 'string'
+-  testInit.chpl:28: called as testInitVal(strBytes: string, type toType = uint(8))
++Helpers.chpl:7: error: type mismatch between declared type of 'x' and initialization expression
+diff --git a/test/types/string/assignToChar/testInit.13.good b/test/types/string/assignToChar/testInit.13.good
+index 43c215d6901..d2d7d3c7726 100644
+--- a/test/types/string/assignToChar/testInit.13.good
++++ b/test/types/string/assignToChar/testInit.13.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:2: In function 'testInit':
+-Helpers.chpl:3: error: cannot initialize 'x' of type 'uint(8)' from '""'
+-  testInit.chpl:30: called as testInit(param strBytes = "", type toType = uint(8))
++Helpers.chpl:3: error: type mismatch between declared type of 'x' and initialization expression
+diff --git a/test/types/string/assignToChar/testInit.14.good b/test/types/string/assignToChar/testInit.14.good
+index 752369134dd..8dfef28f07e 100644
+--- a/test/types/string/assignToChar/testInit.14.good
++++ b/test/types/string/assignToChar/testInit.14.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:6: In function 'testInitVal':
+-Helpers.chpl:7: error: cannot initialize 'x' of type 'uint(8)' from a 'string'
+-  testInit.chpl:32: called as testInitVal(strBytes: string, type toType = uint(8))
++Helpers.chpl:7: error: type mismatch between declared type of 'x' and initialization expression
+diff --git a/test/types/string/assignToChar/testInit.2.good b/test/types/string/assignToChar/testInit.2.good
+index cf23bdb49c5..8dfef28f07e 100644
+--- a/test/types/string/assignToChar/testInit.2.good
++++ b/test/types/string/assignToChar/testInit.2.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:6: In function 'testInitVal':
+-Helpers.chpl:7: error: cannot initialize 'x' of type 'int(8)' from a 'string'
+-  testInit.chpl:8: called as testInitVal(strBytes: string, type toType = int(8))
++Helpers.chpl:7: error: type mismatch between declared type of 'x' and initialization expression
+diff --git a/test/types/string/assignToChar/testInit.3.good b/test/types/string/assignToChar/testInit.3.good
+index ff73bb67e43..d2d7d3c7726 100644
+--- a/test/types/string/assignToChar/testInit.3.good
++++ b/test/types/string/assignToChar/testInit.3.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:2: In function 'testInit':
+-Helpers.chpl:3: error: cannot initialize 'x' of type 'int(8)' from '"hello"'
+-  testInit.chpl:10: called as testInit(param strBytes = "hello", type toType = int(8))
++Helpers.chpl:3: error: type mismatch between declared type of 'x' and initialization expression
+diff --git a/test/types/string/assignToChar/testInit.4.good b/test/types/string/assignToChar/testInit.4.good
+index e43c3df7ec9..8dfef28f07e 100644
+--- a/test/types/string/assignToChar/testInit.4.good
++++ b/test/types/string/assignToChar/testInit.4.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:6: In function 'testInitVal':
+-Helpers.chpl:7: error: cannot initialize 'x' of type 'int(8)' from a 'string'
+-  testInit.chpl:12: called as testInitVal(strBytes: string, type toType = int(8))
++Helpers.chpl:7: error: type mismatch between declared type of 'x' and initialization expression
+diff --git a/test/types/string/assignToChar/testInit.5.good b/test/types/string/assignToChar/testInit.5.good
+index fcbf1bca1eb..d2d7d3c7726 100644
+--- a/test/types/string/assignToChar/testInit.5.good
++++ b/test/types/string/assignToChar/testInit.5.good
+@@ -1,4 +1,2 @@
+ Helpers.chpl:2: In function 'testInit':
+-Helpers.chpl:3: error: cannot initialize 'x' of type 'int(8)' from '"a"'
+-Helpers.chpl:3: note: did you mean to call '.toByte()'?
+-  testInit.chpl:14: called as testInit(param strBytes = "a", type toType = int(8))
++Helpers.chpl:3: error: type mismatch between declared type of 'x' and initialization expression
+diff --git a/test/types/string/assignToChar/testInit.6.good b/test/types/string/assignToChar/testInit.6.good
+index 0bb0dc29f44..8dfef28f07e 100644
+--- a/test/types/string/assignToChar/testInit.6.good
++++ b/test/types/string/assignToChar/testInit.6.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:6: In function 'testInitVal':
+-Helpers.chpl:7: error: cannot initialize 'x' of type 'int(8)' from a 'string'
+-  testInit.chpl:16: called as testInitVal(strBytes: string, type toType = int(8))
++Helpers.chpl:7: error: type mismatch between declared type of 'x' and initialization expression
+diff --git a/test/types/string/assignToChar/testInit.7.good b/test/types/string/assignToChar/testInit.7.good
+index 8d4d7d6d44e..d2d7d3c7726 100644
+--- a/test/types/string/assignToChar/testInit.7.good
++++ b/test/types/string/assignToChar/testInit.7.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:2: In function 'testInit':
+-Helpers.chpl:3: error: cannot initialize 'x' of type 'int(8)' from '"hello"'
+-  testInit.chpl:18: called as testInit(param strBytes = "hello", type toType = int(8))
++Helpers.chpl:3: error: type mismatch between declared type of 'x' and initialization expression
+diff --git a/test/types/string/assignToChar/testInit.8.good b/test/types/string/assignToChar/testInit.8.good
+index 5536f779d07..8dfef28f07e 100644
+--- a/test/types/string/assignToChar/testInit.8.good
++++ b/test/types/string/assignToChar/testInit.8.good
+@@ -1,3 +1,2 @@
+ Helpers.chpl:6: In function 'testInitVal':
+-Helpers.chpl:7: error: cannot initialize 'x' of type 'int(8)' from a 'string'
+-  testInit.chpl:20: called as testInitVal(strBytes: string, type toType = int(8))
++Helpers.chpl:7: error: type mismatch between declared type of 'x' and initialization expression
+diff --git a/test/types/string/assignToChar/testInit.9.good b/test/types/string/assignToChar/testInit.9.good
+index fdfde3e45a6..d2d7d3c7726 100644
+--- a/test/types/string/assignToChar/testInit.9.good
++++ b/test/types/string/assignToChar/testInit.9.good
+@@ -1,4 +1,2 @@
+ Helpers.chpl:2: In function 'testInit':
+-Helpers.chpl:3: error: cannot initialize 'x' of type 'uint(8)' from '"a"'
+-Helpers.chpl:3: note: did you mean to call '.toByte()'?
+-  testInit.chpl:22: called as testInit(param strBytes = "a", type toType = uint(8))
++Helpers.chpl:3: error: type mismatch between declared type of 'x' and initialization expression
 diff --git a/test/types/string/diten/multilineStringLineNumber.good b/test/types/string/diten/multilineStringLineNumber.good
 index fe1f3821a85..16a52c3ce0f 100644
 --- a/test/types/string/diten/multilineStringLineNumber.good
@@ -2514,14 +3854,14 @@ index a4b94a943b3..ec8832818fc 100644
 +sync-coerce-to-ref.chpl:10: error: unable to resolve call to 'acceptRef': no matching candidates
 +sync-coerce-to-ref.chpl:1: note: the following candidate didn't match because an actual couldn't be passed to a formal
 diff --git a/test/types/sync/ferguson/sync-copy-init-cannot-coerce.good b/test/types/sync/ferguson/sync-copy-init-cannot-coerce.good
-index 59a40747e9f..d47b6a4f576 100644
+index 59a40747e9f..659b363b671 100644
 --- a/test/types/sync/ferguson/sync-copy-init-cannot-coerce.good
 +++ b/test/types/sync/ferguson/sync-copy-init-cannot-coerce.good
 @@ -1,3 +1,2 @@
 -sync-copy-init-cannot-coerce.chpl:3: warning: Initializing a type-inferred variable from a 'sync' is deprecated; apply a 'read??()' method to the right-hand side
 -sync-copy-init-cannot-coerce.chpl:3: error: cannot initialize 'sync int(64)' from 'sync real(64)' because 'real(64)' is not coercible to 'int(64)'
 -note: An additional error is hidden. Use --print-additional-errors to see it.
-+$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:162: error: cannot implicitly initialize field 'valType', which does not have a default value
++$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:163: error: cannot implicitly initialize field 'valType', which does not have a default value
 +sync-copy-init-cannot-coerce.chpl:3: error: cannot initialize '_syncvar(int(64))' from '_syncvar(real(64))' because 'real(64)' is not coercible to 'int(64)'
 diff --git a/test/types/sync/ferguson/sync-copy-init-cannot-coerce2.good b/test/types/sync/ferguson/sync-copy-init-cannot-coerce2.good
 index 5b41c272b9a..f867649e208 100644
@@ -2536,22 +3876,22 @@ index 5b41c272b9a..f867649e208 100644
 -$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:nnnn: note:   _syncvar.init=(in other: this.type.valType)
 +sync-copy-init-cannot-coerce2.chpl:3: error: type mismatch between declared type of 's' and initialization expression
 diff --git a/test/types/sync/ferguson/sync-owned-nilable-readFF.good b/test/types/sync/ferguson/sync-owned-nilable-readFF.good
-index 39f8fe696d3..f4e1265eea7 100644
+index 39f8fe696d3..284cb360835 100644
 --- a/test/types/sync/ferguson/sync-owned-nilable-readFF.good
 +++ b/test/types/sync/ferguson/sync-owned-nilable-readFF.good
 @@ -1 +1,3 @@
 -sync-owned-nilable-readFF.chpl:6: error: readFF requires that the type contained in the sync variable be const-copyable and const-assignable
-+$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:223: In method 'readFF':
-+$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:224: error: readFF requires that the type contained in the sync variable be const-copyable and const-assignable
++$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:226: In method 'readFF':
++$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:227: error: readFF requires that the type contained in the sync variable be const-copyable and const-assignable
 +sync-owned-nilable-readFF.chpl:6: error: Cannot establish type for call expression
 diff --git a/test/types/sync/syncNothing.good b/test/types/sync/syncNothing.good
-index cae16bb0a2c..51c58dd1dff 100644
+index cae16bb0a2c..bc934c0b150 100644
 --- a/test/types/sync/syncNothing.good
 +++ b/test/types/sync/syncNothing.good
 @@ -1 +1,2 @@
 -syncNothing.chpl:5: error: sync types cannot contain type 'nothing'
-+$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:130: In initializer:
-+$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:131: error: sync types cannot contain type 'nothing'
++$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:131: In initializer:
++$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:132: error: sync types cannot contain type 'nothing'
 diff --git a/test/types/sync/vass/readThis.good b/test/types/sync/vass/readThis.good
 index 95a0b001533..c8f7bc9ef78 100644
 --- a/test/types/sync/vass/readThis.good
@@ -2951,7 +4291,7 @@ index 19c22ac3ef0..e9ce7bc85e7 100644
 +$CHPL_HOME/modules/internal/ChapelTuple.chpl:266: error: invalid access of non-homogeneous tuple by runtime value
 +forallHetTuple.chpl:17: error: cannot iterate over a value of type '(int(64), real(64), string, R)'
 diff --git a/test/types/tuple/heterogeneous/loops/hetTupleOfTupleLoop.good b/test/types/tuple/heterogeneous/loops/hetTupleOfTupleLoop.good
-index ff86252d723..5d1faea1c97 100644
+index ff86252d723..eaa3867558c 100644
 --- a/test/types/tuple/heterogeneous/loops/hetTupleOfTupleLoop.good
 +++ b/test/types/tuple/heterogeneous/loops/hetTupleOfTupleLoop.good
 @@ -1 +1,7 @@
@@ -2960,7 +4300,7 @@ index ff86252d723..5d1faea1c97 100644
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to 'serialize': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 39 more candidates that didn't match
++$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 12 more candidates that didn't match
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: In method '_serializeOne':
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to '=': no matching candidates
 diff --git a/test/types/tuple/heterogeneous/loops/hetTupleOfTupleLoop.prediff b/test/types/tuple/heterogeneous/loops/hetTupleOfTupleLoop.prediff
@@ -2972,7 +4312,7 @@ index 00000000000..30607598fef
 +../../../../../util/test/prediff-obscure-module-linenos
 \ No newline at end of file
 diff --git a/test/types/tuple/heterogeneous/loops/zipHetTuple-1.good b/test/types/tuple/heterogeneous/loops/zipHetTuple-1.good
-index 1fe8cf4ad0a..59d408a31c4 100644
+index 1fe8cf4ad0a..95126b0a448 100644
 --- a/test/types/tuple/heterogeneous/loops/zipHetTuple-1.good
 +++ b/test/types/tuple/heterogeneous/loops/zipHetTuple-1.good
 @@ -1 +1,9 @@
@@ -2981,13 +4321,13 @@ index 1fe8cf4ad0a..59d408a31c4 100644
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to 'serialize': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 53 more candidates that didn't match
++$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 12 more candidates that didn't match
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: In method '_serializeOne':
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to '=': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: In method 'serialize':
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: error: unable to resolve call to '=': no matching candidates
 diff --git a/test/types/tuple/heterogeneous/loops/zipHetTuple-2.good b/test/types/tuple/heterogeneous/loops/zipHetTuple-2.good
-index 6542dea633c..59d408a31c4 100644
+index 6542dea633c..95126b0a448 100644
 --- a/test/types/tuple/heterogeneous/loops/zipHetTuple-2.good
 +++ b/test/types/tuple/heterogeneous/loops/zipHetTuple-2.good
 @@ -1 +1,9 @@
@@ -2996,13 +4336,13 @@ index 6542dea633c..59d408a31c4 100644
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to 'serialize': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 53 more candidates that didn't match
++$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 12 more candidates that didn't match
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: In method '_serializeOne':
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to '=': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: In method 'serialize':
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: error: unable to resolve call to '=': no matching candidates
 diff --git a/test/types/tuple/heterogeneous/loops/zipHetTuple-3.good b/test/types/tuple/heterogeneous/loops/zipHetTuple-3.good
-index 72585e8d53f..59d408a31c4 100644
+index 72585e8d53f..95126b0a448 100644
 --- a/test/types/tuple/heterogeneous/loops/zipHetTuple-3.good
 +++ b/test/types/tuple/heterogeneous/loops/zipHetTuple-3.good
 @@ -1 +1,9 @@
@@ -3011,13 +4351,13 @@ index 72585e8d53f..59d408a31c4 100644
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to 'serialize': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 53 more candidates that didn't match
++$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 12 more candidates that didn't match
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: In method '_serializeOne':
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to '=': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: In method 'serialize':
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: error: unable to resolve call to '=': no matching candidates
 diff --git a/test/types/tuple/heterogeneous/loops/zipHetTuple-4.good b/test/types/tuple/heterogeneous/loops/zipHetTuple-4.good
-index 2403e5601b2..59d408a31c4 100644
+index 2403e5601b2..95126b0a448 100644
 --- a/test/types/tuple/heterogeneous/loops/zipHetTuple-4.good
 +++ b/test/types/tuple/heterogeneous/loops/zipHetTuple-4.good
 @@ -1 +1,9 @@
@@ -3026,7 +4366,7 @@ index 2403e5601b2..59d408a31c4 100644
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to 'serialize': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 53 more candidates that didn't match
++$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 12 more candidates that didn't match
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: In method '_serializeOne':
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to '=': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: In method 'serialize':
@@ -3050,7 +4390,7 @@ index 1c099fde0a2..168daa95aeb 100644
 +$CHPL_HOME/modules/internal/ChapelTuple.chpl:nnnn: error: invalid access of non-homogeneous tuple by runtime value
 +zipHetTuple.chpl:40: error: cannot iterate over this loop's iterand
 diff --git a/test/types/tuple/heterogeneous/loops/zipHetTuple-7.good b/test/types/tuple/heterogeneous/loops/zipHetTuple-7.good
-index 8e8cc266fb1..59d408a31c4 100644
+index 8e8cc266fb1..95126b0a448 100644
 --- a/test/types/tuple/heterogeneous/loops/zipHetTuple-7.good
 +++ b/test/types/tuple/heterogeneous/loops/zipHetTuple-7.good
 @@ -1 +1,9 @@
@@ -3059,13 +4399,13 @@ index 8e8cc266fb1..59d408a31c4 100644
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to 'serialize': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 53 more candidates that didn't match
++$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 12 more candidates that didn't match
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: In method '_serializeOne':
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to '=': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: In method 'serialize':
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: error: unable to resolve call to '=': no matching candidates
 diff --git a/test/types/tuple/heterogeneous/loops/zipHetTuple-8.good b/test/types/tuple/heterogeneous/loops/zipHetTuple-8.good
-index 49d5282a326..59d408a31c4 100644
+index 49d5282a326..95126b0a448 100644
 --- a/test/types/tuple/heterogeneous/loops/zipHetTuple-8.good
 +++ b/test/types/tuple/heterogeneous/loops/zipHetTuple-8.good
 @@ -1 +1,9 @@
@@ -3074,7 +4414,7 @@ index 49d5282a326..59d408a31c4 100644
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to 'serialize': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 53 more candidates that didn't match
++$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 12 more candidates that didn't match
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: In method '_serializeOne':
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to '=': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: In method 'serialize':
@@ -3621,7 +4961,7 @@ index 5ce07a732d0..7a6de111ccf 100644
 +void-formal-3.chpl:8: error: unable to resolve call to 'f': no matching candidates
 +void-formal-3.chpl:5: note: the following candidate didn't match because an actual couldn't be passed to a formal
 diff --git a/test/types/void/void-promote.good b/test/types/void/void-promote.good
-index e5ff071a0fb..89e6fef10d0 100644
+index e5ff071a0fb..2e4a191ce47 100644
 --- a/test/types/void/void-promote.good
 +++ b/test/types/void/void-promote.good
 @@ -1 +1,51 @@
@@ -3664,7 +5004,7 @@ index e5ff071a0fb..89e6fef10d0 100644
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to 'serialize': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 96 more candidates that didn't match
++$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: omitting 13 more candidates that didn't match
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: In method '_serializeOne':
 +$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unable to resolve call to '=': no matching candidates
 +$CHPL_HOME/modules/internal/DefaultRectangular.chpl:nnnn: In function 'recursiveArrayReaderWriter':

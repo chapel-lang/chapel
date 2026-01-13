@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -119,6 +119,7 @@ module ChapelSyncvar {
 
   pragma "sync"
   pragma "default intent is ref"
+  pragma "infer custom type"
   @chpldoc.nodoc
   record _syncvar : writeSerializable, readDeserializable {
     type valType;                              // The compiler knows this name
@@ -199,6 +200,8 @@ module ChapelSyncvar {
     proc serialize(writer, ref serializer) throws {
       compilerError("sync variables cannot currently be written - apply readFE/readFF() to those variables first");
     }
+
+    proc chpl__inferCopyType() type do return valType;
   }
 
   /*
@@ -859,6 +862,7 @@ private module SyncVarRuntimeSupport {
 // Support for aligned_t including the definition, casts, defaultValue, and
 // read/write routines. aligned_t is the type used by native qthreads sync vars
 private module AlignedTSupport {
+  private use Types;
 
   // Implemented in qthreads tasking layer
   extern type aligned_t;

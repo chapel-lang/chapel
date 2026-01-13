@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1039,6 +1039,9 @@ qioerr qio_channel_write(const int threadsafe, qio_channel_t* restrict ch, const
 }
 
 
+// passing len=0 will result in errors for the fast path and is not handled by
+// this function. there are probably other functions in qio.h that misbehave
+// with len=0 as well.
 static inline
 qioerr qio_channel_read_amt(const int threadsafe, qio_channel_t* restrict ch, void* restrict ptr, ssize_t len) {
   qioerr err;
@@ -1071,7 +1074,9 @@ qioerr qio_channel_read_amt(const int threadsafe, qio_channel_t* restrict ch, vo
 
 static inline
 qioerr qio_channel_write_amt(const int threadsafe, qio_channel_t* restrict ch, const void* restrict ptr, ssize_t len) {
-  qioerr err;
+  qioerr err = 0;
+
+  if (len == 0) return err;
 
   if( threadsafe ) {
     err = qio_lock(&ch->lock);

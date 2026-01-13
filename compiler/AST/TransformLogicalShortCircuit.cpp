@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -59,12 +59,12 @@ bool TransformLogicalShortCircuit::enterCallExpr(CallExpr* call)
 
     if (isLogicalAnd) {
       eMsg = new_StringSymbol("cannot promote short-circuiting && operator");
-      ife = new IfExpr(new CallExpr("_cond_test", lvar),
-                       new CallExpr("_cond_test", right), new SymExpr(gFalse));
+      ife = new IfExpr(new CallExpr("isTrue", lvar),
+                       new CallExpr("isTrue", right), new SymExpr(gFalse));
     } else {
       eMsg = new_StringSymbol("cannot promote short-circuiting || operator");
-      ife = new IfExpr(new CallExpr("_cond_test", lvar), new SymExpr(gTrue),
-                       new CallExpr("_cond_test", right));
+      ife = new IfExpr(new CallExpr("isTrue", lvar), new SymExpr(gTrue),
+                       new CallExpr("isTrue", right));
     }
 
     //

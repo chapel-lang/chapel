@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -315,6 +315,30 @@ void ErrorConstRefCoercion::write(ErrorWriterBase& wr) const {
     wr.message("The formal was declared 'const ref' here:");
     wr.code(fmlDecl, { fmlDecl });
   }
+}
+
+void ErrorDeprecatedSyncRead::write(ErrorWriterBase& wr) const {
+  auto type = std::get<0>(info_);
+  auto astForErr = std::get<1>(info_);
+  auto source = std::get<2>(info_);
+  auto dest = std::get<3>(info_);
+
+  // For now, the type prints ugly ('_syncvar(bla)'), so don't show it.
+  std::ignore = type;
+
+  wr.heading(kind_, type_, astForErr, "implicitly reading from a 'sync' value is deprecated.");
+  wr.codeForLocation(astForErr);
+  if (dest != astForErr && dest) {
+    wr.note(dest, "encountered while trying to pass a 'sync' value to this non-'sync' destination");
+    wr.code(dest, { dest });
+  }
+  if (source) {
+    wr.note(source, "to silence this warning, please explicitly call '.read\?\?' on the 'sync' value here:");
+    wr.code(source, { source });
+  } else {
+    wr.note(astForErr, "to silence this warning, please explicitly call '.read\?\?'");
+  }
+  return;
 }
 
 void ErrorDeprecation::write(ErrorWriterBase& wr) const {

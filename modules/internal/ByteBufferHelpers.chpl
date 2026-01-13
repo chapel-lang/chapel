@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -164,14 +164,20 @@ module ByteBufferHelpers {
 
   private inline proc _strcmp_local(buf1: bufferType, len1: int,
                                     buf2: bufferType, len2: int) : int {
+    // these 3 conditionals prevent edge cases when a string buffer might be unallocated
+    // this can occur with empty strings like `""`
+    // see test/types/string/emptyString.chpl for an example
+    if (len1 == 0) & (len2 == 0) then return 0;
+    if buf1 == nil then return -1;
+    if buf2 == nil then return 1;
     // Assumes a and b are on same locale and not empty.
     const size = min(len1, len2);
-    const result =  memcmp(buf1, buf2, size.safeCast(c_size_t));
+    const result = memcmp(buf1, buf2, size.safeCast(c_size_t));
 
-    if (result == 0) {
+    if result == 0 {
       // Handle cases where one string is the beginning of the other
-      if (size < len1) then return 1;
-      if (size < len2) then return -1;
+      if size < len1 then return 1;
+      if size < len2 then return -1;
     }
     return result;
   }

@@ -1,4 +1,4 @@
-.TH "hwlocality_cuda" 3 "Version 2.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_cuda" 3 "Version 2.12.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -10,19 +10,19 @@ hwlocality_cuda \- Interoperability with the CUDA Driver API
 
 .in +1c
 .ti -1c
-.RI "static int \fBhwloc_cuda_get_device_pci_ids\fP (\fBhwloc_topology_t\fP topology, CUdevice cudevice, int *domain, int *bus, int *dev)"
+.RI "int \fBhwloc_cuda_get_device_pci_ids\fP (\fBhwloc_topology_t\fP topology, CUdevice cudevice, int *domain, int *bus, int *dev)"
 .br
 .ti -1c
-.RI "static int \fBhwloc_cuda_get_device_cpuset\fP (\fBhwloc_topology_t\fP topology, CUdevice cudevice, \fBhwloc_cpuset_t\fP set)"
+.RI "int \fBhwloc_cuda_get_device_cpuset\fP (\fBhwloc_topology_t\fP topology, CUdevice cudevice, \fBhwloc_cpuset_t\fP set)"
 .br
 .ti -1c
-.RI "static \fBhwloc_obj_t\fP \fBhwloc_cuda_get_device_pcidev\fP (\fBhwloc_topology_t\fP topology, CUdevice cudevice)"
+.RI "\fBhwloc_obj_t\fP \fBhwloc_cuda_get_device_pcidev\fP (\fBhwloc_topology_t\fP topology, CUdevice cudevice)"
 .br
 .ti -1c
-.RI "static \fBhwloc_obj_t\fP \fBhwloc_cuda_get_device_osdev\fP (\fBhwloc_topology_t\fP topology, CUdevice cudevice)"
+.RI "\fBhwloc_obj_t\fP \fBhwloc_cuda_get_device_osdev\fP (\fBhwloc_topology_t\fP topology, CUdevice cudevice)"
 .br
 .ti -1c
-.RI "static \fBhwloc_obj_t\fP \fBhwloc_cuda_get_device_osdev_by_index\fP (\fBhwloc_topology_t\fP topology, unsigned idx)"
+.RI "\fBhwloc_obj_t\fP \fBhwloc_cuda_get_device_osdev_by_index\fP (\fBhwloc_topology_t\fP topology, unsigned idx)"
 .br
 .in -1c
 .SH "Detailed Description"
@@ -30,7 +30,7 @@ hwlocality_cuda \- Interoperability with the CUDA Driver API
 This interface offers ways to retrieve topology information about CUDA devices when using the CUDA Driver API\&. 
 .SH "Function Documentation"
 .PP 
-.SS "static int hwloc_cuda_get_device_cpuset (\fBhwloc_topology_t\fP topology, CUdevice cudevice, \fBhwloc_cpuset_t\fP set)\fC [inline]\fP, \fC [static]\fP"
+.SS "int hwloc_cuda_get_device_cpuset (\fBhwloc_topology_t\fP topology, CUdevice cudevice, \fBhwloc_cpuset_t\fP set)\fC [inline]\fP"
 
 .PP
 Get the CPU set of processors that are physically close to device \fCcudevice\fP\&. Store in \fCset\fP the CPU-set describing the locality of the CUDA device \fCcudevice\fP\&.
@@ -49,7 +49,7 @@ This function is currently only implemented in a meaningful way for Linux; other
 .RE
 .PP
 
-.SS "static \fBhwloc_obj_t\fP hwloc_cuda_get_device_osdev (\fBhwloc_topology_t\fP topology, CUdevice cudevice)\fC [inline]\fP, \fC [static]\fP"
+.SS "\fBhwloc_obj_t\fP hwloc_cuda_get_device_osdev (\fBhwloc_topology_t\fP topology, CUdevice cudevice)\fC [inline]\fP"
 
 .PP
 Get the hwloc OS device object corresponding to CUDA device \fCcudevice\fP\&. 
@@ -71,7 +71,7 @@ The corresponding hwloc PCI device may be found by looking at the result parent 
 .RE
 .PP
 
-.SS "static \fBhwloc_obj_t\fP hwloc_cuda_get_device_osdev_by_index (\fBhwloc_topology_t\fP topology, unsigned idx)\fC [inline]\fP, \fC [static]\fP"
+.SS "\fBhwloc_obj_t\fP hwloc_cuda_get_device_osdev_by_index (\fBhwloc_topology_t\fP topology, unsigned idx)\fC [inline]\fP"
 
 .PP
 Get the hwloc OS device object corresponding to the CUDA device whose index is \fCidx\fP\&. 
@@ -93,7 +93,7 @@ This function is identical to \fBhwloc_cudart_get_device_osdev_by_index()\fP\&.
 .RE
 .PP
 
-.SS "static int hwloc_cuda_get_device_pci_ids (\fBhwloc_topology_t\fP topology, CUdevice cudevice, int * domain, int * bus, int * dev)\fC [inline]\fP, \fC [static]\fP"
+.SS "int hwloc_cuda_get_device_pci_ids (\fBhwloc_topology_t\fP topology, CUdevice cudevice, int * domain, int * bus, int * dev)\fC [inline]\fP"
 
 .PP
 Return the domain, bus and device IDs of the CUDA device \fCcudevice\fP\&. Device \fCcudevice\fP must match the local machine\&.
@@ -106,7 +106,7 @@ Return the domain, bus and device IDs of the CUDA device \fCcudevice\fP\&. Devic
 .RE
 .PP
 
-.SS "static \fBhwloc_obj_t\fP hwloc_cuda_get_device_pcidev (\fBhwloc_topology_t\fP topology, CUdevice cudevice)\fC [inline]\fP, \fC [static]\fP"
+.SS "\fBhwloc_obj_t\fP hwloc_cuda_get_device_pcidev (\fBhwloc_topology_t\fP topology, CUdevice cudevice)\fC [inline]\fP"
 
 .PP
 Get the hwloc PCI device object corresponding to the CUDA device \fCcudevice\fP\&. 

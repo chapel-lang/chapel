@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -561,8 +561,9 @@ bool ParserContext::noteIsBuildingFormal(bool isBuildingFormal) {
   return this->isBuildingFormal;
 }
 
-bool ParserContext::noteIsVarDeclConfig(bool isConfig) {
+bool ParserContext::noteIsVarDeclConfig(bool isConfig, YYLTYPE loc) {
   this->isVarDeclConfig = isConfig;
+  this->configLoc = std::move(loc);
   return this->isVarDeclConfig;
 }
 
@@ -1263,7 +1264,8 @@ AstNode* ParserContext::buildManagerExpr(YYLTYPE location,
                                          Variable::Kind kind,
                                          YYLTYPE locResourceName,
                                          UniqueString resourceName) {
-  auto var = Variable::build(builder, convertLocation(locResourceName),
+  auto nameLoc = convertLocation(locResourceName);
+  auto var = Variable::build(builder, nameLoc, nameLoc,
                              nullptr,
                              Decl::DEFAULT_VISIBILITY,
                              Decl::DEFAULT_LINKAGE,
@@ -1933,7 +1935,8 @@ buildTupleComponent(YYLTYPE location, PODUniqueString name) {
                               /*initExpression*/ nullptr);
     ret = node.release();
   } else {
-    auto node = Variable::build(builder, convertLocation(location),
+    auto loc = convertLocation(location);
+    auto node = Variable::build(builder, loc, loc,
                                 /*attributeGroup*/ nullptr,
                                 visibility,
                                 linkage,
@@ -1970,7 +1973,8 @@ owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
   auto convLoc = convertLocation(location);
 
   if (const Identifier* ident = e->toIdentifier()) {
-    auto var = Variable::build(builder, convLoc, /*attributeGroup*/ nullptr,
+    auto var = Variable::build(builder, convLoc, convLoc,
+                           /*attributeGroup*/ nullptr,
                            Decl::DEFAULT_VISIBILITY,
                            Decl::DEFAULT_LINKAGE,
                            /*linkageName*/ nullptr,
@@ -1980,7 +1984,6 @@ owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
                            /*isField*/ false,
                            /*typeExpression*/ nullptr,
                            /*initExpression*/ nullptr);
-    builder->noteDeclNameLocation(var.get(), convLoc);
     builder->copyExprParenLocation(e, var.get());
     builder->deleteAllLocations(e);
     // Delete the location of 'e' because it's about to be deallocated;
@@ -2917,6 +2920,10 @@ ParserContext::buildVarOrMultiDeclStmt(YYLTYPE locEverything,
         error(locEverything, "only (multi)variable declarations can target a specific locale");
       }
     }
+    // fixup the existing decl location for configs
+    auto loc = !this->isVarDeclConfig ? locEverything :
+                                        makeSpannedLocation(this->configLoc, locEverything);
+    builder->noteLocation(lastDecl, convertLocation(loc));
   } else {
 
     // TODO: Just embed and catch this in a tree-walk instead.
@@ -2931,7 +2938,11 @@ ParserContext::buildVarOrMultiDeclStmt(YYLTYPE locEverything,
         CHPL_PARSER_REPORT(this, MultipleExternalRenaming, locEverything);
       }
     }
-    auto multi = MultiDecl::build(builder, convertLocation(locEverything),
+    // adjust the decl location for configs before building MultiDecl
+    auto loc = !this->isVarDeclConfig ? locEverything :
+                                        makeSpannedLocation(this->configLoc, locEverything);
+    auto multi = MultiDecl::build(builder,
+                                  convertLocation(loc),
                                   std::move(attributeGroup),
                                   visibility,
                                   linkage,

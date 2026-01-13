@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1175,7 +1175,6 @@ extern proc qio_channel_isclosed(threadsafe:c_int, ch:qio_channel_ptr_t):bool;
 
 private extern proc qio_channel_read(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr, len:c_ssize_t, ref amt_read:c_ssize_t):errorCode;
 private extern proc qio_channel_read_amt(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr, len:c_ssize_t):errorCode;
-@chpldoc.nodoc
 // A specialization is needed for _ddata as the value is the pointer its memory
 private extern proc qio_channel_read_amt(threadsafe:c_int, ch:qio_channel_ptr_t, ptr:_ddata, len:c_ssize_t):errorCode;
 // and for c_ptr
@@ -1184,7 +1183,6 @@ private extern proc qio_channel_read_byte(threadsafe:c_int, ch:qio_channel_ptr_t
 
 private extern proc qio_channel_write(threadsafe:c_int, ch:qio_channel_ptr_t, const ref ptr, len:c_ssize_t, ref amt_written:c_ssize_t):errorCode;
 private extern proc qio_channel_write_amt(threadsafe:c_int, ch:qio_channel_ptr_t, const ref ptr, len:c_ssize_t):errorCode;
-@chpldoc.nodoc
 // A specialization is needed for _ddata as the value is the pointer its memory
 private extern proc qio_channel_write_amt(threadsafe:c_int, ch:qio_channel_ptr_t, const ptr:_ddata, len:c_ssize_t):errorCode;
 private extern proc qio_channel_write_byte(threadsafe:c_int, ch:qio_channel_ptr_t, byte:uint(8)):errorCode;
@@ -2146,7 +2144,7 @@ record fileReader {
   var _channel_internal:qio_channel_ptr_t = QIO_CHANNEL_PTR_NULL;
 
   @chpldoc.nodoc
-  var _deserializer : shared _serializeWrapper?(deserializerType);
+  var _deserializer : shared _serializeWrapper(deserializerType);
 
   // The member variable _readWriteThisFromLocale is used to support
   // writeThis needing to know where the I/O started. It is a member
@@ -2214,7 +2212,7 @@ record fileWriter {
   var _channel_internal:qio_channel_ptr_t = QIO_CHANNEL_PTR_NULL;
 
   @chpldoc.nodoc
-  var _serializer : shared _serializeWrapper?(serializerType);
+  var _serializer : shared _serializeWrapper(serializerType);
 
   // The member variable _readWriteThisFromLocale is used to support
   // writeThis needing to know where the I/O started. It is a member
@@ -4187,8 +4185,7 @@ operator fileReader.=(ref lhs:fileReader, rhs:fileReader) {
 
   lhs._home = rhs._home;
   lhs._channel_internal = rhs._channel_internal;
-  if rhs._deserializer != nil then
-    lhs._deserializer = new shared _serializeWrapper(rhs.deserializerType, rhs.deserializer);
+  lhs._deserializer = rhs._deserializer;
 }
 
 @chpldoc.nodoc
@@ -4204,27 +4201,21 @@ operator fileWriter.=(ref lhs:fileWriter, rhs:fileWriter) {
 
   lhs._home = rhs._home;
   lhs._channel_internal = rhs._channel_internal;
-  if rhs._serializer != nil then
-    lhs._serializer = new shared _serializeWrapper(rhs.serializerType, rhs._serializer!.member);
+  lhs._serializer = rhs._serializer;
 }
 
 @chpldoc.nodoc
 proc fileReader.init(param locking:bool, type deserializerType) {
   this.locking = locking;
   this.deserializerType = deserializerType;
+  this._deserializer = new shared _serializeWrapper(deserializerType);
 }
 
 @chpldoc.nodoc
 proc fileWriter.init(param locking:bool, type serializerType) {
   this.locking = locking;
   this.serializerType = serializerType;
-  if __primitive("get compiler variable", "CHPL_DYNO") == "on" {
-    pragma "no auto destroy"
-    var _serializer : shared _serializeWrapper?(serializerType);
-    this._serializer = _serializer;
-  } else {
-    this._serializer = nil;
-  }
+  this._serializer = new shared _serializeWrapper(serializerType);
 }
 
 @chpldoc.nodoc
@@ -4237,7 +4228,7 @@ proc fileReader.init=(x: fileReader) {
   this.deserializerType = x.deserializerType;
   this._home = x._home;
   this._channel_internal = x._channel_internal;
-  this._deserializer = new shared _serializeWrapper(deserializerType, x._deserializer!.member);
+  this._deserializer = x._deserializer;
   this._readWriteThisFromLocale = x._readWriteThisFromLocale;
   init this;
   on x._home {
@@ -4255,7 +4246,7 @@ proc fileWriter.init=(x: fileWriter) {
   this.serializerType = x.serializerType;
   this._home = x._home;
   this._channel_internal = x._channel_internal;
-  this._serializer = new shared _serializeWrapper(serializerType, x._serializer!.member);
+  this._serializer = x._serializer;
   this._readWriteThisFromLocale = x._readWriteThisFromLocale;
   init this;
   on x._home {
@@ -4279,7 +4270,7 @@ operator :(rhs: fileWriter, type t: fileWriter) {
 proc fileReader.init(param locking:bool,
                      home: locale, _channel_internal:qio_channel_ptr_t,
                      _readWriteThisFromLocale: locale,
-                     _deserializer: shared _serializeWrapper?(?dt)) {
+                     _deserializer: shared _serializeWrapper(?dt)) {
   this.locking = locking;
   this.deserializerType = dt;
   this._home = home;
@@ -4310,7 +4301,7 @@ proc fileReader.init(param locking:bool, in deserializer:?,
 proc fileWriter.init(param locking:bool,
                      home: locale, _channel_internal:qio_channel_ptr_t,
                      _readWriteThisFromLocale: locale,
-                     _serializer: shared _serializeWrapper(?st)?) {
+                     _serializer: shared _serializeWrapper(?st)) {
   this.locking = locking;
   this.serializerType = st;
   this._home = home;
@@ -6257,7 +6248,7 @@ private proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
   // Create a new fileReader that borrows the pointer in the
   // existing fileReader so we can avoid locking (because we
   // already have the lock)
-  var temp : shared _serializeWrapper?(nothing);
+  var temp : shared _serializeWrapper(nothing);
   var reader = new fileReader(locking=false,
                               _deserializer=temp,
                               home=here,
@@ -6310,7 +6301,7 @@ private proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
   // Create a new fileWriter that borrows the pointer in the
   // existing fileWriter so we can avoid locking (because we
   // already have the lock)
-  var temp : shared _serializeWrapper?(nothing);
+  var temp : shared _serializeWrapper(nothing);
   var writer = new fileWriter(locking=false,
                               _serializer=temp,
                               home=here,
@@ -7165,7 +7156,12 @@ proc readStringBytesData(ref s: ?t /*: string or bytes*/,
   // in the event that s.type == string.
 
   var len:c_ssize_t = nBytes.safeCast(c_ssize_t);
-  var err = qio_channel_read_amt(false, _channel_internal, sLocal.buff, len);
+  var err;
+  if len != 0 {
+    err = qio_channel_read_amt(false, _channel_internal, sLocal.buff, len);
+  } else {
+    err = 0:errorCode;
+  }
   if !err {
     sLocal.buffLen = nBytes;
     if nBytes != 0 then sLocal.buff[nBytes] = 0; // include null-byte
@@ -7374,7 +7370,7 @@ proc fileReader.readLine(ref b: bytes,
     }
 
     if err != 0 && err != EEOF {
-      try this._ch_ioerror(err, "in fileReader.readLine(ref s: string)");
+      try this._ch_ioerror(err, "in fileReader.readLine(ref b: bytes)");
     }
 
     // return 'true' if we read anything

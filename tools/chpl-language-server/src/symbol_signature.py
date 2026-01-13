@@ -1,5 +1,5 @@
 #
-# Copyright 2024-2025 Hewlett Packard Enterprise Development LP
+# Copyright 2024-2026 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -329,6 +329,7 @@ def _proc_to_string(node: chapel.Function) -> List[Component]:
         comps.append(_wrap_str(f"{node.linkage()} "))
     if node.linkage_name():
         comps.extend(_node_to_string(node.linkage_name()))
+        comps.append(_wrap_str(" "))
     if node.is_override():
         comps.append(_wrap_str("override "))
     if node.is_inline():

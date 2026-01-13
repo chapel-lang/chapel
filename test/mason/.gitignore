@@ -2,3 +2,5 @@ mason_home
 project
 tmp/
 masonGitDeps
+runCommandHelper
+runCommandHelper_real

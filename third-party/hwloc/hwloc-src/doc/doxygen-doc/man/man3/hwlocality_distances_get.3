@@ -1,4 +1,4 @@
-.TH "hwlocality_distances_get" 3 "Version 2.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_distances_get" 3 "Version 2.12.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -100,10 +100,14 @@ Values on the diagonal are set to \fC0\fP\&.
 This transformation only applies to bandwidth matrices\&. 
 .TP
 \fB\fIHWLOC_DISTANCES_TRANSFORM_MERGE_SWITCH_PORTS \fP\fP
-Merge switches with multiple ports into a single object\&. This currently only applies to NVSwitches where GPUs seem connected to different separate switch ports in the NVLinkBandwidth matrix\&. This transformation will replace all of them with the same port connected to all GPUs\&. Other ports are removed by applying \fBHWLOC_DISTANCES_TRANSFORM_REMOVE_NULL\fP internally\&. 
+Merge switches with multiple ports into a single object\&. This currently only applies to NVSwitches where GPUs seem connected to different switch ports\&. Switch ports must be objects with subtype 'NVSwitch' as in the NVLinkBandwidth matrix\&.
+.PP
+This transformation will replace all ports with only the first one, now connected to all GPUs\&. Other ports are removed by applying \fBHWLOC_DISTANCES_TRANSFORM_REMOVE_NULL\fP internally\&. 
 .TP
 \fB\fIHWLOC_DISTANCES_TRANSFORM_TRANSITIVE_CLOSURE \fP\fP
-Apply a transitive closure to the matrix to connect objects across switches\&. This currently only applies to GPUs and NVSwitches in the NVLinkBandwidth matrix\&. All pairs of GPUs will be reported as directly connected\&. 
+Apply a transitive closure to the matrix to connect objects across switches\&. All pairs of GPUs will be reported as directly connected instead GPUs being only connected to switches\&.
+.PP
+Switch ports must be objects with subtype 'NVSwitch' as in the NVLinkBandwidth matrix\&. 
 .SH "Function Documentation"
 .PP 
 .SS "int hwloc_distances_get (\fBhwloc_topology_t\fP topology, unsigned * nr, struct \fBhwloc_distances_s\fP ** distances, unsigned long kind, unsigned long flags)"
