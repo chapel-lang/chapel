@@ -581,8 +581,64 @@ struct ConstructRef : public ConstructDIType {
   }
 };
 
+struct ConstructLocaleID : public ConstructDIType {
+  bool shouldConstruct(DebugData* debugData, llvm::Type* llvmImplType, Type* chplType) const override {
+    return chplType == dtLocaleID;
+  }
+  llvm::DIType* getDIType(DebugData* debugData, llvm::Type* llvmImplType, Type* chplType) const override {
+    GenInfo* info = gGenInfo;
+    const llvm::DataLayout& layout = info->module->getDataLayout();
+    DefinitionInfo defInfo = this->defInfo(debugData, chplType);
+    auto DIB = dibuilder(chplType);
+
+    llvm::SmallVector<llvm::Metadata *, 1> EltTys;
+    llvm::Type* nodeTy = info->lvt->getType("c_nodeid_t");
+    EltTys.push_back(DIB->createMemberType(
+      defInfo.maybeScope(),
+      "node",
+      defInfo.file(),
+      defInfo.line(),
+      layout.getTypeSizeInBits(nodeTy),
+      8*layout.getABITypeAlign(nodeTy).value(),
+      0, /* offset, assume its zero */
+      llvm::DINode::FlagZero,
+      debugData->getType(dtInt[INT_SIZE_32])
+    ));
+    // TODO: we should more directly check for sublocales, not just use
+    // the gpu locale model as a proxy for that
+    if (usingGpuLocaleModel()) {
+      llvm::Type* subnodeTy = info->lvt->getType("c_sublocid_t");
+      EltTys.push_back(DIB->createMemberType(
+        defInfo.maybeScope(),
+        "subloc",
+        defInfo.file(),
+        defInfo.line(),
+        layout.getTypeSizeInBits(subnodeTy),
+        8*layout.getABITypeAlign(subnodeTy).value(),
+        layout.getTypeSizeInBits(nodeTy), /* offset, assume after node */
+        llvm::DINode::FlagZero,
+        debugData->getType(dtInt[INT_SIZE_32])
+      ));
+    }
+    llvm::DIType* N = DIB->createStructType(
+      defInfo.maybeScope(),
+      chplType->symbol->name,
+      defInfo.file(),
+      defInfo.line(),
+      layout.getTypeSizeInBits(llvmImplType), /* SizeInBits */
+      8*layout.getABITypeAlign(llvmImplType).value(), /* AlignInBits */
+      llvm::DINode::FlagZero, /* Flags */
+      nullptr,
+      DIB->getOrCreateArray(EltTys) /* Elements */
+    );
+    chplType->symbol->llvmDIType = N;
+    return N;
+  }
+};
+
 #define DI_TYPE_FOR_CHPL_TYPE(V) \
-  V(ConstructRef)
+  V(ConstructRef) \
+  V(ConstructLocaleID)
 
 #define KNOWN_TYPES_ENTRY(Builder) std::make_unique<Builder>(),
 
@@ -611,52 +667,7 @@ llvm::DIType* DebugData::constructTypeFromChplType(llvm::Type* ty, Type* type) {
   }
 
 
-  if (type == dtLocaleID) {
-    // handle locale types
-    llvm::SmallVector<llvm::Metadata *, 1> EltTys;
-    llvm::Type* nodeTy = info->lvt->getType("c_nodeid_t");
-    EltTys.push_back(dibuilder->createMemberType(
-      defInfo.maybeScope(),
-      "node",
-      defInfo.file(),
-      defInfo.line(),
-      layout.getTypeSizeInBits(nodeTy),
-      8*layout.getABITypeAlign(nodeTy).value(),
-      0, /* offset, assume its zero */
-      llvm::DINode::FlagZero,
-      getType(dtInt[INT_SIZE_32])
-    ));
-    // TODO: we should more directly check for sublocales, not just use
-    // the gpu locale model as a proxy for that
-    if (usingGpuLocaleModel()) {
-      llvm::Type* subnodeTy = info->lvt->getType("c_sublocid_t");
-      EltTys.push_back(dibuilder->createMemberType(
-        defInfo.maybeScope(),
-        "subloc",
-        defInfo.file(),
-        defInfo.line(),
-        layout.getTypeSizeInBits(subnodeTy),
-        8*layout.getABITypeAlign(subnodeTy).value(),
-        layout.getTypeSizeInBits(nodeTy), /* offset, assume after node */
-        llvm::DINode::FlagZero,
-        getType(dtInt[INT_SIZE_32])
-      ));
-    }
-    llvm::DIType* N = dibuilder->createStructType(
-      defInfo.maybeScope(),
-      name,
-      defInfo.file(),
-      defInfo.line(),
-      layout.getTypeSizeInBits(ty), /* SizeInBits */
-      8*layout.getABITypeAlign(ty).value(), /* AlignInBits */
-      llvm::DINode::FlagZero, /* Flags */
-      nullptr,
-      dibuilder->getOrCreateArray(EltTys) /* Elements */
-    );
-    type->symbol->llvmDIType = N;
-    return N;
-
-  } else if (type == dtObject) {
+  if (type == dtObject) {
     llvm::SmallVector<llvm::Metadata *, 1> EltTys;
     llvm::Type* cidType = info->lvt->getType("chpl__class_id");
     auto cidDITy = dibuilder->createMemberType(
