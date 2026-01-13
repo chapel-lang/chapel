@@ -53,6 +53,25 @@ proc main() {
   }
   unsetEnv("MASON_REGISTRY");
 
+  // Test: Malformed MASON_REGISTRY format should trigger error
+  setEnv("MASON_REGISTRY", "foo|bar|baz");
+
+  try {
+    var regs = MASON_REGISTRY;
+    writeln("Test failed: No error thrown for malformed MASON_REGISTRY");
+  } catch e: MasonError {
+    if e.message().find("expected MASON_REGISTRY to contain") >= 0 {
+      writeln("Test passed: Caught expected format error");
+    } else {
+      writeln("Test failed: Unexpected MasonError: ", e.message());
+    }
+  } catch {
+    writeln("Test failed: Unexpected error type");
+  }
+
+  unsetEnv("MASON_REGISTRY");
+
+
   setEnv("MASON_OFFLINE", "true");
 	masonEnv(args);
   writeln("---------");
