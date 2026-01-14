@@ -2039,7 +2039,7 @@ static void checkInterfaceFunctionRetType(FnSymbol* fn, Type* retType,
 }
 
 // Helper function to find a common parent type for class hierarchies.
-// Returns NULL if no common parent can be found.
+// Returns nullptr if no common parent can be found.
 // This is used when return type inference has multiple return types that
 // are different subclasses of a common parent class.
 static Type* findCommonParentForClasses(Vec<Type*>& retTypes, Vec<Symbol*>& retSymbols, FnSymbol* fn) {
@@ -2048,11 +2048,11 @@ static Type* findCommonParentForClasses(Vec<Type*>& retTypes, Vec<Symbol*>& retS
   // Track the decorator (managed/borrowed/unmanaged) and nilability.
   // If decorators don't match and one of them is borrowed, guess borrowed.
   chpl::optional<ClassTypeDecoratorEnum> commonDecorator;
-  bool anyNilable = false, managerMismatch = false;
+  bool anyNilable = false, managerMismatch = false, decoratorMismatch = false;
   AggregateType* seenManager = nullptr;
 
   // Extract canonical class types (strip decorators)
-  Vec<AggregateType*> canonicalClasses;
+  llvm::SmallVector<AggregateType*> canonicalClasses;
 
   for (int i = 0; i < retTypes.n; i++) {
     Type* t = retTypes.v[i];
@@ -2076,24 +2076,32 @@ static Type* findCommonParentForClasses(Vec<Type*>& retTypes, Vec<Symbol*>& retS
     anyNilable |= isDecoratorNilable(decorator);
     decorator = removeNilableFromDecorator(decorator);
 
-    if (!commonDecorator || isDecoratorBorrowed(decorator)) commonDecorator = decorator;
+    // use this if we wanted to allow borrowing conversions (currently not allowed in spec)
+    // if (!commonDecorator || isDecoratorBorrowed(decorator)) commonDecorator = decorator;
+    if (!commonDecorator) {
+      commonDecorator = decorator;
+    } else if (*commonDecorator != decorator) {
+      decoratorMismatch = true;
+    }
+
     if (manager) {
       managerMismatch |= seenManager && seenManager != manager;
       seenManager = manager;
     }
 
-    if (commonDecorator && !isDecoratorBorrowed(*commonDecorator) &&
-        *commonDecorator != decorator) {
-      // Mixing owned/shared with unmanaged - cannot unify
-      return nullptr;
-    }
+    // use this if we wanted to allow borrowing conversions (currently not allowed in spec)
+    // if (commonDecorator && !isDecoratorBorrowed(*commonDecorator) &&
+    //     *commonDecorator != decorator) {
+    //   // Mixing owned/shared with unmanaged - cannot unify
+    //   return nullptr;
+    // }
 
     // Get the canonical class type (strips decorator)
     Type* canonical = canonicalClassType(t);
     AggregateType* at = toAggregateType(canonical);
 
     if (at && isClass(at)) {
-      canonicalClasses.add(at);
+      canonicalClasses.push_back(at);
     } else {
       // Not a class type
       return nullptr;
@@ -2101,37 +2109,37 @@ static Type* findCommonParentForClasses(Vec<Type*>& retTypes, Vec<Symbol*>& retS
   }
 
   INT_ASSERT(commonDecorator);
-  if (commonDecorator == ClassTypeDecorator::MANAGED && managerMismatch) {
-    // Cannot unify managed types with different managers
+  if (managerMismatch || decoratorMismatch) {
+    // Cannot unify managed types with different managers, or e.g. owned with borrowed
     return nullptr;
   }
   if (anyNilable) *commonDecorator = addNilableToDecorator(*commonDecorator);
 
   // All types should be canonical classes now
-  INT_ASSERT(canonicalClasses.n == retTypes.n);
+  INT_ASSERT(canonicalClasses.size() == retTypes.n);
 
   // Build a list of ancestors for the first class
-  Vec<AggregateType*> ancestors;
-  AggregateType* current = canonicalClasses.v[0];
-  ancestors.add(current);
+  llvm::SmallVector<AggregateType*> ancestors;
+  AggregateType* current = canonicalClasses.front();
+  ancestors.push_back(current);
 
   // Walk up the parent chain
   while (current->dispatchParents.n > 0) {
     current = current->dispatchParents.v[0];
     if (current == dtObject) break;
-    ancestors.add(current);
+    ancestors.push_back(current);
   }
 
   // For each ancestor (starting from most specific), check if all
   // return types are subclasses of it.
   // Iterate over classes first, so that if one class doesn't find any ancestor,
   // we can bail out early.
-  int ancestorIdx = -1;
-  for (int j = 0; j < canonicalClasses.n; j++) {
+  ssize_t ancestorIdx = -1;
+  for (auto canonicalClass : canonicalClasses) {
     bool foundAncestor = false;
-    for (int i = 0; i < ancestors.n; i++) {
-      AggregateType* candidate = ancestors.v[i];
-      if (isSubClass(canonicalClasses.v[j], candidate)) {
+    for (ssize_t i = 0; i < ancestors.size(); i++) {
+      AggregateType* candidate = ancestors[i];
+      if (isSubClass(canonicalClass, candidate)) {
         ancestorIdx = std::max(ancestorIdx, i);
         foundAncestor = true;
         break;
@@ -2144,7 +2152,7 @@ static Type* findCommonParentForClasses(Vec<Type*>& retTypes, Vec<Symbol*>& retS
   }
 
   INT_ASSERT(ancestorIdx >= 0);
-  auto candidate = ancestors.v[ancestorIdx];
+  auto candidate = ancestors[ancestorIdx];
 
   // Found the common ancestor!
   // Now apply the decorator back to get the unified type
@@ -2248,10 +2256,14 @@ void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
 
       // If we didn't find a best type via dispatch, try to find a common
       // parent type for class hierarchies (addresses issue #14765).
-      if (retType == dtUnknown && retTypes.n > 1) {
-        Type* commonParent = findCommonParentForClasses(retTypes, retSymbols, fn);
-        if (commonParent != NULL) {
-          retType = commonParent;
+      //
+      // This is a new feature, currently only in the preview edition.
+      if (isEditionApplicable("preview", "preview", fn)) {
+        if (retType == dtUnknown && retTypes.n > 1) {
+          Type* commonParent = findCommonParentForClasses(retTypes, retSymbols, fn);
+          if (commonParent != nullptr) {
+            retType = commonParent;
+          }
         }
       }
     }
