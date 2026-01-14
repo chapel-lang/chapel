@@ -1388,44 +1388,11 @@ statements include an expression, the return type is ``void``.
 Otherwise, the types of the expressions in all of the procedure’s return
 statements are considered. If a function has a ``ref`` return intent
 (:ref:`Ref_Return_Intent`), they all must be the same exact
-type, which becomes the inferred return type. Otherwise, there must
-exist one type such that an implicit conversion is allowed
-between every other type and that type, and such that it can be implicitly
-converted into any other type that satisfies the previous condition. That
-type becomes the inferred return type. If the above requirements are not
-satisfied, it is an error.
-
-   *Example (infer-parent-type-from-classes.chpl)*.
-
-   In this example, two classes ``Child1`` and ``Child2`` inherit from
-   a parent class ``Parent``, which in turn inherits from the class
-   ``Grandparent``. The function ``getChild`` returns either a
-   ``Child1`` or a ``Child2`` based upon the value of its argument.
-   Both ``Child1`` and ``Child2`` can be implicitly converted to
-   ``Parent``. The same is true for ``Grandparent``, however, ``Parent``
-   can be implicitly converted to ``Grandparent`` but not vice versa.
-   Therefore, the inferred return type of ``getChild`` is ``Parent``.
-
-   .. code-block:: chapel
-
-      class Grandparent { }
-      class Parent : Grandparent { }
-      class Child1 : Parent { }
-      class Child2 : Parent { }
-
-      proc getChild(which: bool) {
-        if which then return new Child1();
-        else return new Child2();
-      }
-
-   .. BLOCK-test-chapelpost
-
-      writeln(getChild(true).type:string);
-
-   .. BLOCK-test-chapeloutput
-
-      owned Parent
-
+type, which becomes the inferred return type. Otherwise, one of the return
+statements must have a type :math:`T` such that an implicit conversion is allowed
+between every other return type and :math:`T`. Then, :math:`T` becomes the
+inferred return type. If the above requirements are not satisfied, it is
+an error.
 
 .. index::
    single: where
