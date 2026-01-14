@@ -624,7 +624,10 @@ static void setDebugSafeOptOnly(const ArgumentDescription* desc, const char* arg
   // --no-tuple-copy-opt
   fNoTupleCopyOpt = true;
   // --no-denormalize
-  fDenormalize = false;
+  // we want denormalize off for the most part, but need parts of it
+  // (e.g., need denormalize to undo return-by-ref), so this is controlled in
+  // the denormalize pass with fDebugSafeOptOnly
+  // fDenormalize = false;
   // --no-return-by-ref
   fReturnByRef = false;
   // --no-replace-array-accesses-with-ref-temps
@@ -640,6 +643,7 @@ static void setDebug(const ArgumentDescription* desc, const char* arg_unused) {
   printCppLineno = true;
 
   // --debug-safe-optimizations-only
+  fDebugSafeOptOnly = true;
   setDebugSafeOptOnly(nullptr, nullptr); // nullptr since args unused
 }
 
