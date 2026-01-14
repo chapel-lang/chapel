@@ -976,6 +976,11 @@ struct ConstructExternPrimitive : public ConstructDIType {
   }
 };
 
+// Each subclass of ConstructDIType should be added here
+// DI_TYPE_FOR_CHPL_TYPE is used to build an array of
+// object pointers (in knownTypeBuilders) to each of these subclasses
+// which is used to attempt to construct a DIType for a given Chapel type
+
 #define DI_TYPE_FOR_CHPL_TYPE(V) \
   V(ConstructRef) \
   V(ConstructLocaleID) \
