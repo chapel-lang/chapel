@@ -2317,7 +2317,6 @@ codegenFunctionTypeLLVMImpl(
               // because retArg must be either the first or second arg
               // this will require more investigation
               // if (formalInfo->isRetArg() &&
-              //    isAggregateType(formalInfo->type()) &&
               //    llvm::isa<llvm::StructType>(valType)) {
               //   auto ptrType = formalInfo->type()->codegen().type;
               //   llvmAttachStructRetAttr(b, ptrType);
@@ -2368,7 +2367,6 @@ codegenFunctionTypeLLVMImpl(
         // because retArg must be either the first or second arg
         // this will require more investigation
         // if (formalInfo->isRetArg() &&
-        //     isAggregateType(formalInfo->type()) &&
         //     llvm::isa<llvm::StructType>(valType)) {
         //   auto ptrType = formalInfo->type()->codegen().type;
         //   llvmAttachStructRetAttr(b, ptrType);

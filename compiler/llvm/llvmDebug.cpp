@@ -1238,11 +1238,11 @@ llvm::DISubroutineType* DebugData::getFunctionType(FnSymbol *function) {
     if (arg->name == astr__ln || arg->name == astr__fn)
       continue;
 
-    auto ty = getType(arg->type);
     if (isReturnByRef && arg->hasFlag(FLAG_RETARG)) {
-      retType = ty;
+      retType = getType(arg->type->getValType());
       continue;
     }
+    auto ty = getType(arg->type);
     if (isMethod && arg->name == astrThis) {
       auto NewTy = ty->cloneWithFlags(ty->getFlags() |
                                       llvm::DINode::FlagObjectPointer |
@@ -1419,6 +1419,14 @@ llvm::DIVariable* DebugData::constructFormalArg(ArgSymbol *argSym, unsigned ArgN
   auto isMethod = isMethodSym(funcSym);
   if (isMethod && argSym->name == astrThis) {
     flags |= llvm::DINode::FlagObjectPointer | llvm::DINode::FlagArtificial;
+  }
+
+  if (argSym->name == astr__ln ||
+      argSym->name == astr__fn) {
+    return nullptr;
+  }
+  if (argSym->hasFlag(FLAG_RETARG)) {
+    return nullptr;
   }
 
   auto diParameterVariable = dibuilder->createParameterVariable(
