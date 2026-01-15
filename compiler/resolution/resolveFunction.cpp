@@ -2042,7 +2042,7 @@ static void checkInterfaceFunctionRetType(FnSymbol* fn, Type* retType,
 // Returns nullptr if no common parent can be found.
 // This is used when return type inference has multiple return types that
 // are different subclasses of a common parent class.
-static Type* findCommonParentForClasses(Vec<Type*>& retTypes, Vec<Symbol*>& retSymbols, FnSymbol* fn) {
+static Type* findCommonParentForClasses(Vec<Type*>& retTypes, Vec<Symbol*>& retSymbols, FnSymbol* fn, const char*& errorContext) {
   INT_ASSERT(retTypes.n > 1);
 
   // Track the decorator (managed/borrowed/unmanaged) and nilability.
@@ -2071,6 +2071,7 @@ static Type* findCommonParentForClasses(Vec<Type*>& retTypes, Vec<Symbol*>& retS
       decorator = ClassTypeDecorator::BORROWED;
     } else {
       // Not a class type
+      errorContext = nullptr;
       return nullptr;
     }
     anyNilable |= isDecoratorNilable(decorator);
@@ -2081,11 +2082,27 @@ static Type* findCommonParentForClasses(Vec<Type*>& retTypes, Vec<Symbol*>& retS
     if (!commonDecorator) {
       commonDecorator = decorator;
     } else if (*commonDecorator != decorator) {
-      decoratorMismatch = true;
+      if (!decoratorMismatch) {
+        decoratorMismatch = true;
+        errorContext =
+          astr("did not attempt to find common parent type because some return types are ",
+                decoratorToString(*commonDecorator),
+                " while others are ",
+                decoratorToString(decorator));
+      }
     }
 
     if (manager) {
-      managerMismatch |= seenManager && seenManager != manager;
+      if (seenManager && seenManager != manager && !managerMismatch) {
+        managerMismatch = true;
+        if (!decoratorMismatch) {
+          errorContext =
+            astr("did not attempt to find common parent type because some return types are ",
+                  toString(seenManager),
+                  " while others are ",
+                  toString(manager));
+        }
+      }
       seenManager = manager;
     }
 
@@ -2104,6 +2121,7 @@ static Type* findCommonParentForClasses(Vec<Type*>& retTypes, Vec<Symbol*>& retS
       canonicalClasses.push_back(at);
     } else {
       // Not a class type
+      errorContext = nullptr;
       return nullptr;
     }
   }
@@ -2147,6 +2165,7 @@ static Type* findCommonParentForClasses(Vec<Type*>& retTypes, Vec<Symbol*>& retS
     }
     if (!foundAncestor) {
       // This class has no common ancestor with the first class
+      errorContext = "could not find a common parent type for the returned class types";
       return nullptr;
     }
   }
@@ -2197,6 +2216,7 @@ void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
   Vec<Type*>   retTypes;
   Vec<Symbol*> retSymbols;
 
+  const char* errorContext = nullptr;
   if (isUnresolvedOrGenericReturnType(retType)) {
 
     computeReturnTypeParamVectors(fn, ret, retTypes, retSymbols);
@@ -2261,7 +2281,7 @@ void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
       if (isEditionApplicable("preview", "preview", fn)) {
         if (retType == dtUnknown && retTypes.n > 1) {
           if (auto commonParent =
-                findCommonParentForClasses(retTypes, retSymbols, fn)) {
+                findCommonParentForClasses(retTypes, retSymbols, fn, errorContext)) {
             retType = commonParent;
           }
         }
@@ -2303,7 +2323,9 @@ void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
         USR_FATAL(callStack.v[callStack.n-2],
                   "can't compute a unified element type for this array");
       } else {
-        USR_FATAL(fn, "unable to resolve return type");
+        USR_FATAL_CONT(fn, "unable to resolve return type");
+        if (errorContext) USR_PRINT(fn, "%s", errorContext);
+        USR_STOP();
       }
     }
 

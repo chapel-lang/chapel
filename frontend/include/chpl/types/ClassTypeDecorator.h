@@ -87,6 +87,7 @@ class ClassTypeDecorator final {
     CHPL_ASSERT(false && "case not handled");
     return BORROWED_NONNIL;
   }
+  static const char* decoratorToString(ClassTypeDecoratorEnum d);
   static
   ClassTypeDecoratorEnum removeNilableFromDecorator(ClassTypeDecoratorEnum d) {
     int tmp = d;
