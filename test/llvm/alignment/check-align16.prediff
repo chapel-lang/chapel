@@ -6,7 +6,8 @@ TMPFILE="$outfile.prediff.tmp"
 mv $OUTFILE $TMPFILE
 cat $TMPFILE | grep aligned16test | grep alloca | \
                grep -ve 'struct.aligned16test[*]' | \
-               sed 's/%.* = /%r = /' |
+               sed 's/%.* = /%r = /' | \
+               sed -E 's/ !dbg ![[:digit:]]+//' | \
                sort -u > $OUTFILE
 grep ^arg $TMPFILE >> $OUTFILE
 rm $TMPFILE
