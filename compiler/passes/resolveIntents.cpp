@@ -485,7 +485,7 @@ static FunctionType* computeConcreteIntentsForFunctionType(FunctionType* ft) {
 
     if (newIntent != formal.intent() || newQual != formal.qual()) {
       FunctionType::Formal newFormal(newQual, formal.type(), newIntent,
-                                     formal.name());
+                                     formal.name(), formal.flags());
       newFormals.push_back(std::move(newFormal));
       changed = true;
 
