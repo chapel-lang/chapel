@@ -146,3 +146,10 @@ remain in the preview until they are deemed sufficiently complete.
 - Casts and printing of complex numbers involving ``nan`` have been adjusted to
   reflect the values of individual components instead of making the entire value
   be ``nan``.
+
+- Return type inference attempts to compute a common parent class type when
+  all branches return a class. This way, two sibling classes ``Child1`` and
+  ``Child2`` can be returned from two different branches, and the return type
+  will be inferred as their parent class ``Parent`` instead of producing
+  an error. See the note in the :ref:`Implicit_Return_Types` section for
+  more details.
