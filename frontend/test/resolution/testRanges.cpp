@@ -75,9 +75,8 @@ static void test1() {
 }
 
 
-static void test2(Context* context) {
-  context->advanceToNextRevision(false);
-  setupModuleSearchPaths(context, false, false, {}, {});
+static void test2() {
+  auto context = buildStdContext();
   QualifiedType qt =  resolveTypeOfXInit(context,
                          R""""(
                          var y : int;
@@ -92,10 +91,9 @@ static void test2(Context* context) {
   assert(idxTypeInt->bitwidth() == 64);
 }
 
-static void test3(Context* context) {
+static void test3() {
+  auto context = buildStdContext();
   // test coercion
-  context->advanceToNextRevision(false);
-  setupModuleSearchPaths(context, false, false, {}, {});
   QualifiedType qt =  resolveTypeOfXInit(context,
                          R""""(
                          var y : int;
@@ -112,10 +110,9 @@ static void test3(Context* context) {
   assert(idxTypeInt->bitwidth() == 32);
 }
 
-static void test4(Context* context) {
+static void test4() {
+  auto context = buildStdContext();
   // test range without upper bound
-  context->advanceToNextRevision(false);
-  setupModuleSearchPaths(context, false, false, {}, {});
   QualifiedType qt =  resolveTypeOfXInit(context,
                          R""""(
                          var y : int;
@@ -131,10 +128,9 @@ static void test4(Context* context) {
   assert(idxTypeInt->bitwidth() == 32);
 }
 
-static void test5(Context* context) {
+static void test5() {
+  auto context = buildStdContext();
   // test range without lower bound
-  context->advanceToNextRevision(false);
-  setupModuleSearchPaths(context, false, false, {}, {});
   QualifiedType qt =  resolveTypeOfXInit(context,
                          R""""(
                          var y : int;
@@ -150,10 +146,9 @@ static void test5(Context* context) {
   assert(idxTypeInt->bitwidth() == 16);
 }
 
-static void test6(Context* context) {
+static void test6() {
+  auto context = buildStdContext();
   // test range without bound
-  context->advanceToNextRevision(false);
-  setupModuleSearchPaths(context, false, false, {}, {});
   QualifiedType qt =  resolveTypeOfXInit(context,
                          R""""(
                          var y : int;
@@ -168,11 +163,10 @@ static void test6(Context* context) {
   assert(idxTypeInt->bitwidth() == 64);
 }
 
-static void test7(Context* context) {
+static void test7() {
+  auto context = buildStdContext();
   // test range without bound
   ErrorGuard guard(context);
-  context->advanceToNextRevision(false);
-  setupModuleSearchPaths(context, false, false, {}, {});
   QualifiedType qt =  resolveTypeOfXInit(context,
                          R""""(
                          proc f(r: range(?)) do return 42;
@@ -183,11 +177,10 @@ static void test7(Context* context) {
   assert(qt.type()->toIntType()->isDefaultWidth());
 }
 
-static void test8(Context* context) {
+static void test8() {
+  auto context = buildStdContext();
   // test range without bound
   ErrorGuard guard(context);
-  context->advanceToNextRevision(false);
-  setupModuleSearchPaths(context, false, false, {}, {});
   QualifiedType qt =  resolveTypeOfXInit(context,
                          R""""(
                          var x = new range(int, 0, 10);
@@ -200,11 +193,10 @@ static void test8(Context* context) {
   assert(idxTypeInt->bitwidth() == 64);
 }
 
-static void test9(Context* context) {
+static void test9() {
+  auto context = buildStdContext();
   // test the count operator on a bounded range
   ErrorGuard guard(context);
-  context->advanceToNextRevision(false);
-  setupModuleSearchPaths(context, false, false, {}, {});
   auto qts =  resolveTypesOfVariables(context,
       R""""(
       var y : int;
@@ -237,11 +229,10 @@ static void test9(Context* context) {
   }
 }
 
-static void test10(Context* context) {
+static void test10() {
+  auto context = buildStdContext();
   // test the count operator on a bounded range
   ErrorGuard guard(context);
-  context->advanceToNextRevision(false);
-  setupModuleSearchPaths(context, false, false, {}, {});
   auto qts =  resolveTypesOfVariables(context,
       R""""(
       var y : int;
@@ -274,11 +265,10 @@ static void test10(Context* context) {
   }
 }
 
-static void test11(Context* context) {
+static void test11() {
+  auto context = buildStdContext();
   // test the by operator on a bounded range
   ErrorGuard guard(context);
-  context->advanceToNextRevision(false);
-  setupModuleSearchPaths(context, false, false, {}, {});
   auto qts =  resolveTypesOfVariables(context,
       R""""(
       var x1 = 1..10;
@@ -323,9 +313,8 @@ static void test11(Context* context) {
   check("y5", "positive");
 }
 
-static void test12(Context* context) {
-  context->advanceToNextRevision(false);
-  setupModuleSearchPaths(context, false, false, {}, {});
+static void test12() {
+  auto context = buildStdContext();
   QualifiedType qt =  resolveTypeOfXInit(context,
                          R""""(
                          proc foo(arg: range(?) = 0..) do return arg;
@@ -342,9 +331,8 @@ static void test12(Context* context) {
 
 // check that we do partial instantiations of range and use them on the
 // left hand side of a variable declaration.
-static void test13(Context* context) {
-  context->advanceToNextRevision(false);
-  setupModuleSearchPaths(context, false, false, {}, {});
+static void test13() {
+  auto context = buildStdContext();
   ErrorGuard guard(context);
   auto qts = resolveTypesOfVariables(context,
     R""""(
@@ -381,21 +369,17 @@ int main() {
   // first test runs without environment and stdlib.
   test1();
 
-  Context::Configuration config;
-  config.chplHome = getenv("CHPL_HOME");
-  Context context(config);
-  auto ctx = &context;
-  test2(ctx);
-  test3(ctx);
-  test4(ctx);
-  test5(ctx);
-  test6(ctx);
-  test7(ctx);
-  test8(ctx);
-  test9(ctx);
-  test10(ctx);
-  test11(ctx);
-  test12(ctx);
-  test13(ctx);
+  test2();
+  test3();
+  test4();
+  test5();
+  test6();
+  test7();
+  test8();
+  test9();
+  test10();
+  test11();
+  test12();
+  test13();
   return 0;
 }

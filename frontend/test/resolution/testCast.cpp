@@ -463,14 +463,10 @@ static void test44() {
 
 static void test45() {
   printf("test45\n");
-  auto config = getConfigWithHome();
-  Context ctx(config);
-  Context* context = &ctx;
 
   // Non-nilable
   {
-    context->advanceToNextRevision(false);
-    setupModuleSearchPaths(context, false, false, {}, {});
+    auto context = buildStdContext();
 
     std::string program =
       R"""(
@@ -501,8 +497,7 @@ static void test45() {
 
   // Nilable
   {
-    context->advanceToNextRevision(false);
-    setupModuleSearchPaths(context, false, false, {}, {});
+    auto context = buildStdContext();
 
     std::string program =
       R"""(
