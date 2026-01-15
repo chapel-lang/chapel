@@ -2116,7 +2116,7 @@ static Type* findCommonParentForClasses(Vec<Type*>& retTypes, Vec<Symbol*>& retS
   if (anyNilable) *commonDecorator = addNilableToDecorator(*commonDecorator);
 
   // All types should be canonical classes now
-  INT_ASSERT(canonicalClasses.size() == retTypes.n);
+  INT_ASSERT(canonicalClasses.size() == (size_t) retTypes.n);
 
   // Build a list of ancestors for the first class
   llvm::SmallVector<AggregateType*> ancestors;
@@ -2137,7 +2137,7 @@ static Type* findCommonParentForClasses(Vec<Type*>& retTypes, Vec<Symbol*>& retS
   ssize_t ancestorIdx = -1;
   for (auto canonicalClass : canonicalClasses) {
     bool foundAncestor = false;
-    for (ssize_t i = 0; i < ancestors.size(); i++) {
+    for (ssize_t i = 0; i < (ssize_t) ancestors.size(); i++) {
       AggregateType* candidate = ancestors[i];
       if (isSubClass(canonicalClass, candidate)) {
         ancestorIdx = std::max(ancestorIdx, i);
@@ -2260,8 +2260,8 @@ void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
       // This is a new feature, currently only in the preview edition.
       if (isEditionApplicable("preview", "preview", fn)) {
         if (retType == dtUnknown && retTypes.n > 1) {
-          Type* commonParent = findCommonParentForClasses(retTypes, retSymbols, fn);
-          if (commonParent != nullptr) {
+          if (auto commonParent =
+                findCommonParentForClasses(retTypes, retSymbols, fn)) {
             retType = commonParent;
           }
         }
