@@ -49,7 +49,7 @@ CLASS_BEGIN(Context)
 
          auto& paths = std::get<0>(args);
          auto& filenames = std::get<1>(args);
-         parsing::setupModuleSearchPaths(node, false, false, paths, filenames);
+         parsing::setupModuleSearchPaths(node, false, paths, filenames);
          if (auto autoUseScope = resolution::scopeForAutoModule(node)) {
            std::ignore = resolution::resolveVisibilityStmts(node, autoUseScope, false);
          })
@@ -59,7 +59,7 @@ CLASS_BEGIN(Context)
           auto& modRoot = std::get<0>(args);
           auto& paths = std::get<1>(args);
           auto& filenames = std::get<2>(args);
-          parsing::setupModuleSearchPaths(node, modRoot, false, false, paths, filenames);
+          parsing::setupModuleSearchPaths(node, modRoot, false, paths, filenames);
           if (auto autoUseScope = resolution::scopeForAutoModule(node)) {
             std::ignore = resolution::resolveVisibilityStmts(node, autoUseScope, false);
           })
