@@ -1394,6 +1394,17 @@ between every other return type and :math:`T`. Then, :math:`T` becomes the
 inferred return type. If the above requirements are not satisfied, it is
 an error.
 
+.. note::
+
+  In the ``preview`` :ref:`edition of Chapel <readme-editions>`, an
+  additional rule applies when inferring the return type where all
+  returned types are classes. In this case, the most specific common
+  parent class is chosen as the return type, if one exists. This class is
+  nilable if any of the returned types are nilable. For this rule to apply,
+  all returned types must be of the same management
+  (e.g., all ``owned`` or all ``borrowed``). Also, the :ref:`root class <The_Root_Class>`
+  will never be chosen as the common parent.
+
 .. index::
    single: where
    single: functions; where
