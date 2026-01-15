@@ -1,1 +1,2 @@
 shared-child1-borrowed-child2.chpl:7: error: unable to resolve return type
+shared-child1-borrowed-child2.chpl:7: note: did not attempt to find common parent type because some return types are managed while others are borrowed
