@@ -1,6 +1,6 @@
 // see issue #24593
 // classes have the same issue
-// can compile with --minimal-modules upon removal of writeln()
+
 
 record SymEntry1 {
   var a: real;
