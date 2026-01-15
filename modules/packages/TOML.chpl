@@ -99,10 +99,9 @@ proc parseToml(input: string) : shared Toml {
   var D: domain(string);
   var table: [D] shared Toml?;
   var rootTable = new shared Toml(table);
-  const source = new shared Source(input);
-  const parser = new unmanaged Parser(source, rootTable);
+  const source = new Source(input);
+  const parser = new Parser(source, rootTable);
   const tomlData = parser.parseLoop();
-  delete parser;
   return tomlData;
 }
 
@@ -159,7 +158,7 @@ module TomlParser {
   @chpldoc.nodoc
   class Parser {
 
-    var source: shared Source;
+    var source: borrowed Source;
     var rootTable: shared Toml;
     var curTable: string;
 
@@ -1068,10 +1067,8 @@ module TomlReader {
   proc skipLine(source) {
     var emptyList: list(string);
     var emptyCurrent = new unmanaged Tokens(emptyList);
-    var ptrhold = source.currentLine;
     source.currentLine = emptyCurrent;
     var readNextLine = readLine(source);
-    delete ptrhold;
   }
 
   /* retrieves the next token in currentLine */
@@ -1166,7 +1163,7 @@ module TomlReader {
       }
 
       // If no non-empty-chars => token is a blank line
-      if(nonEmptyChar == false){
+      if !nonEmptyChar {
         linetokens.pushBack("\n");
       }
 
@@ -1225,7 +1222,7 @@ module TomlReader {
       for token in tokenlist {
         delete token;
       }
-     }
+    }
   }
 
 
