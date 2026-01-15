@@ -26,6 +26,7 @@
 #include "alist.h"
 #include "genret.h"
 #include "intents.h"
+#include "flags.h"
 
 #include "../../frontend/lib/immediates/num.h"
 
@@ -459,8 +460,10 @@ class FunctionType final : public Type {
     Type* type_;
     IntentTag intent_ = INTENT_BLANK;
     const char* name_ = nullptr;
+    FlagSet flags_ = 0;
    public:
-    Formal(Qualifier qual, Type* type, IntentTag intent, const char* name);
+    Formal(Qualifier qual, Type* type, IntentTag intent,
+           const char* name, FlagSet flags);
     bool operator==(const Formal& other) const;
     size_t hash() const;
     bool isGeneric() const;
@@ -471,6 +474,8 @@ class FunctionType final : public Type {
     QualifiedType qualType() const;
     bool isNamed() const;
     bool isRef() const;
+    FlagSet flags() const;
+    bool isRetArg() const;
   };
 
   using Formals = std::vector<Formal>;

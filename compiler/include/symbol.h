@@ -60,8 +60,6 @@ class Stmt;
 class SymExpr;
 struct InterfaceReps;
 
-typedef std::bitset<NUM_FLAGS> FlagSet;
-
 // for task intents and forall intents
 ArgSymbol* tiMarkForForallIntent(ShadowVarSymbol* svar);
 
@@ -881,6 +879,8 @@ extern const char* astr_coerceCopy;
 extern const char* astr_coerceCopy;
 extern const char* astr_coerceMove;
 extern const char* astr_autoDestroy;
+extern const char* astr__fn;
+extern const char* astr__ln;
 
 bool isAstrOpName(const char* name);
 
