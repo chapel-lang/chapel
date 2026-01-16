@@ -567,8 +567,12 @@ module UnitTest {
         + " does not match expected: " + expected.shape:string
         );
       }
-      const isWithinTol = withinTol(actual=actual, expected=expected,
+      var isWithinTol = withinTol(actual=actual, expected=expected,
                                     relTol=relTol, absTol=absTol);
+
+      if equalNan then [(idx, a,e) in zip(isWithinTol.domain, actual, expected)]
+        isWithinTol[idx] ||= compareNan(a, e);
+
       const passes = && reduce isWithinTol;
       if !passes {
         const numFailed: int = isWithinTol.count(false);
