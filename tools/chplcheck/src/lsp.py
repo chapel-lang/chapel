@@ -43,8 +43,10 @@ from lsprotocol.types import (
 from fixits import Fixit, Edit
 from driver import LintDriver
 
+
 def log(*args, **kwargs):
     print(*args, **kwargs, file=sys.stderr)
+
 
 def get_lint_diagnostics(
     context: chapel.Context, driver: LintDriver, asts: List[chapel.AstNode]
@@ -198,9 +200,7 @@ def run_lsp(driver: LintDriver):
         ls.publish_diagnostics(text_doc.uri, build_diagnostics(text_doc.uri))
 
     @server.feature(TEXT_DOCUMENT_DID_CLOSE)
-    async def did_close(
-        ls: LanguageServer, params: DidCloseTextDocumentParams
-    ):
+    async def did_close(ls: LanguageServer, params: DidCloseTextDocumentParams):
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
         del contexts[text_doc.uri]
         ls.publish_diagnostics(text_doc.uri, [])
