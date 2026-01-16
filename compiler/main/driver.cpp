@@ -1511,6 +1511,7 @@ static ArgumentDescription arg_desc[] = {
  {"make", ' ', "<make utility>", "Make utility for generated code", "S", NULL, "_CHPL_MAKE", setChplEnv},
  {"target-mem", ' ', "<mem-impl>", "Specify the memory manager", "S", NULL, "_CHPL_TARGET_MEM", setChplEnv},
  {"re2", ' ', "<re2-version>", "Specify RE2 library", "S", NULL, "_CHPL_RE2", setChplEnv},
+ {"sanitize-exe", ' ', "<sanitizer>", "Specify the sanitizer to use for the executable/runtime", "S", NULL, "_CHPL_SANITIZE_EXE", setChplEnv},
  {"target-arch", ' ', "<architecture>", "Target architecture / machine type", "S", NULL, "_CHPL_TARGET_ARCH", setChplEnv},
  {"target-compiler", ' ', "<compiler>", "Compiler for generated code", "S", NULL, "_CHPL_TARGET_COMPILER", setChplEnv},
  {"target-cpu", ' ', "<cpu>", "Target cpu model for specialization", "S", NULL, "_CHPL_TARGET_CPU", setChplEnv},

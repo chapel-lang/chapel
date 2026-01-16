@@ -392,6 +392,7 @@ _chpl ()
 --report-vectorized-loops \
 --resolve-concrete-fns \
 --return-by-ref \
+--sanitize-exe \
 --savec \
 --scalar-replace-limit \
 --scalar-replacement \
@@ -615,6 +616,7 @@ _chpl ()
 --remote-serialization \
 --remote-value-forwarding \
 --remove-copy-calls \
+--sanitize-exe \
 --savec \
 --scalar-replace-limit \
 --scalar-replacement \
