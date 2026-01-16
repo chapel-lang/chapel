@@ -43,6 +43,7 @@ from lsprotocol.types import (
 )
 from lsprotocol.types import TEXT_DOCUMENT_DID_OPEN, DidOpenTextDocumentParams
 from lsprotocol.types import TEXT_DOCUMENT_DID_SAVE, DidSaveTextDocumentParams
+from lsprotocol.types import TEXT_DOCUMENT_DID_CLOSE, DidCloseTextDocumentParams
 from lsprotocol.types import TEXT_DOCUMENT_DEFINITION, DefinitionParams
 from lsprotocol.types import TEXT_DOCUMENT_TYPE_DEFINITION, TypeDefinitionParams
 from lsprotocol.types import TEXT_DOCUMENT_DECLARATION, DeclarationParams
@@ -307,6 +308,17 @@ class ChapelLanguageServer(LanguageServer):
         errors = [e for e in errors if e.location().path() == cur_path]
 
         return (file_info, errors)
+
+    def clear_file_info(self, uri: str):
+        """
+        Clear any cached FileInfo for a given URI
+        """
+
+        keys_to_delete = [
+            key for key in self.file_infos.keys() if key[0] == uri
+        ]
+        for key in keys_to_delete:
+            del self.file_infos[key]
 
     def build_diagnostics(self, uri: str) -> List[Diagnostic]:
         """
@@ -792,6 +804,14 @@ def run_lsp():
         ls.publish_diagnostics(text_doc.uri, diag)
         ls.lsp.send_request_async(WORKSPACE_INLAY_HINT_REFRESH)
         ls.lsp.send_request_async(WORKSPACE_SEMANTIC_TOKENS_REFRESH)
+
+    @server.feature(TEXT_DOCUMENT_DID_CLOSE)
+    async def did_close(
+        ls: ChapelLanguageServer, params: DidCloseTextDocumentParams
+    ):
+        text_doc = ls.workspace.get_text_document(params.text_document.uri)
+        ls.clear_file_info(text_doc.uri)
+        ls.publish_diagnostics(text_doc.uri, [])
 
     @server.feature(TEXT_DOCUMENT_DECLARATION)
     @server.feature(TEXT_DOCUMENT_DEFINITION)
