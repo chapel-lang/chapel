@@ -411,13 +411,17 @@ proc getTomlCompopts(lock: borrowed Toml, ref compopts: list(string)) {
   return compopts;
 }
 
-proc sha256(s): string {
-  use Crypto;
-  var hasher = new Hash(Digest.SHA256);
-  var buffer = new CryptoBuffer(s);
-  var digest = hasher.getDigest(buffer);
-  return digest.toHexString();
-}
+
+
+// TODO: ideally fingerprinting uses a checksum, but that requires adding
+// a new dependency to mason (openssl) which is overkill for now
+// proc sha256(s): string {
+//   use Crypto;
+//   var hasher = new Hash(Digest.SHA256);
+//   var buffer = new CryptoBuffer(s);
+//   var digest = hasher.getDigest(buffer);
+//   return digest.toHexString();
+// }
 
 proc printChplEnv(): string {
   const printchplenv = joinPath(MasonUtils.CHPL_HOME, "util", "printchplenv");
@@ -461,7 +465,8 @@ proc computeFingerprint(
   fingerprint += getInterestingEnvVars();
   fingerprint += "cmdline_compopts=" +
                  (" ".join(commandLineCompopts.these())) + "\n";
-  return sha256(fingerprint);
+  // return sha256(fingerprint);
+  return fingerprint;
 }
 
 /*
@@ -472,7 +477,7 @@ proc checkFingerprint(projectName:string,
                       fingerprintDir: string,
                       fingerprint: string): bool {
   const fingerprintFile = joinPath(fingerprintDir,
-                                   "%s-%s".format(projectName, fingerprint));
+                                   "%s-%s".format(projectName, "fingerprint"));
   if !isFile(fingerprintFile) {
     if !isDir(fingerprintDir) then
       mkdir(fingerprintDir, parents=true);
@@ -483,9 +488,20 @@ proc checkFingerprint(projectName:string,
       }
     }
     const writer = openWriter(fingerprintFile);
-    writer.write("fingerprint=" + fingerprint + "\n");
+    writer.write(fingerprint);
     return false;
   } else {
-    return true;
+    const reader = openReader(fingerprintFile);
+    const old = reader.readAll();
+    reader.close();
+    if old != fingerprint {
+      // update fingerprint
+      reader.close();
+      const writer = openWriter(fingerprintFile);
+      writer.write(fingerprint);
+      return false;
+    } else {
+      return true;
+    }
   }
 }
