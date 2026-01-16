@@ -536,11 +536,17 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
     const manifestResults = masonTomlFileCheck(projectCheckHome);
     if manifestResults[0] {
       writeln('   All fields present in manifest file, can be published to a registry. (PASSED)');
-    } else {
+    } else if manifestResults[1].size > 0 {
       writeln('   Missing fields in manifest file (Mason.toml). (FAILED)');
       writeln('   The missing fields are as follows: ');
       const missingFields = manifestResults[1];
       for field in missingFields do writeln('   %s'.format(field));
+      masonFieldsTest = false;
+    } else if manifestResults[2].size > 0 {
+      writeln('   Mismatched field types in manifest file (Mason.toml). (FAILED)');
+      writeln('   The fields with mismatched types are as follows: ');
+      const mismatchedTypes = manifestResults[2];
+      for field in mismatchedTypes do writeln('   %s'.format(field));
       masonFieldsTest = false;
     }
     writeln(spacer);
@@ -889,20 +895,46 @@ proc namespaceCollisionCheck(projectHome: string) throws {
   else return false;
 }
 
-/* Mason toml file formatting */
-proc masonTomlFileCheck(projectHome: string) {
-  const toParse = open(projectHome + "/Mason.toml", ioMode.r);
-  const tomlFile = (parseToml(toParse));
-  var missingFields : list(string);
-  var name, chplVersion, version, source, author, license = false;
-  // TODO: check the type of these!
-  if tomlFile.pathExists("brick.name") then name = true; else missingFields.pushBack('name');
-  if tomlFile.pathExists("brick.version") then version = true; else missingFields.pushBack('version');
-  if tomlFile.pathExists("brick.chplVersion") then chplVersion = true; else missingFields.pushBack('chplVersion');
-  if tomlFile.pathExists("brick.source") then source = true; else missingFields.pushBack('source');
-  if tomlFile.pathExists("brick.license") then license = true; else missingFields.pushBack('license');
-  if tomlFile.pathExists("brick.authors") then author = true; else missingFields.pushBack('authors');
-  if name && version && chplVersion && source
-    && author && license then return (true, missingFields);
-  else return (false, missingFields);
+/*
+  Mason.toml file formatting. registry file must have the following fields:
+    name: string
+    version: string
+    chplVersion: string
+    source: string
+    authors: string or list(string)
+    license: string
+
+  Returns (isValid, missingFields, mismatchedTypes)
+*/
+proc masonTomlFileCheck(
+  projectHome: string
+): (bool, list(string), list(string)) {
+  const toParse = open(joinPath(projectHome, "Mason.toml"), ioMode.r);
+  const tomlFile = parseToml(toParse);
+  var missingFields: list(string);
+  var mismatchedTypes: list(string);
+
+  const requireStringFields = ('name', 'version', 'chplVersion',
+                               'source', 'license');
+  const requireStringOrListFields = ('authors',);
+  for field in requireStringFields {
+    if !tomlFile.pathExists("brick." + field) then
+      missingFields.pushBack(field);
+    else if tomlFile["brick"]![field]!.tomlType != "string" then
+      mismatchedTypes.pushBack(field);
+  }
+  for field in requireStringOrListFields {
+    if !tomlFile.pathExists("brick." + field) then
+      missingFields.pushBack(field);
+    else if !isStringOrStringArray(tomlFile["brick"]![field]!) then
+      mismatchedTypes.pushBack(field);
+  }
+
+  if !tomlFile.pathExists("brick.name") then
+    missingFields.pushBack('name');
+  else if tomlFile["brick"]!["name"]!.tomlType != "string" then
+    mismatchedTypes.pushBack('name');
+
+  const valid = missingFields.size == 0 && mismatchedTypes.size == 0;
+  return (valid, missingFields, mismatchedTypes);
 }
