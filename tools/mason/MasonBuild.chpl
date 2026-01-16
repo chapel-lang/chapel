@@ -443,10 +443,10 @@ proc printChplEnv(): string {
   may affect the build process, but is intended to capture the most common
 */
 proc getInterestingEnvVars(): string {
-  const vars = ["CHPL_HOME",
+  const vars = ("CHPL_HOME",
                 "CHPL_MODULE_PATH",
                 "CHPL_CC_FLAGS", "CHPL_INCLUDE_PATH",
-                "CHPL_LD_FLAGS", "CHPL_LIB_NAME", "CHPL_LIB_PATH"];
+                "CHPL_LD_FLAGS", "CHPL_LIB_NAME", "CHPL_LIB_PATH");
   var output = "";
   for v in vars {
     const val = getEnv(v);
@@ -481,12 +481,6 @@ proc checkFingerprint(projectName:string,
   if !isFile(fingerprintFile) {
     if !isDir(fingerprintDir) then
       mkdir(fingerprintDir, parents=true);
-    // remove any old fingerprint files for this project
-    for f in listDir(fingerprintDir) {
-      if f.startsWith(projectName + "-") {
-        remove(joinPath(fingerprintDir, f));
-      }
-    }
     log.debugln("No previous fingerprint found, creating new fingerprint");
     const writer = openWriter(fingerprintFile);
     writer.write(fingerprint);
