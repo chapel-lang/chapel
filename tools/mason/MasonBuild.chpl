@@ -492,7 +492,7 @@ proc checkFingerprint(projectName:string,
     return false;
   } else {
     const reader = openReader(fingerprintFile);
-    const old = reader.readAll();
+    const old = reader.readAll(string);
     reader.close();
     if old != fingerprint {
       // update fingerprint
