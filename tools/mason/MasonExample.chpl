@@ -364,8 +364,9 @@ proc exampleModified(projectHome: string, projectName: string,
   // check for changes to Mason.toml and src code
   const fingerprintDir =
     joinPath(projectHome, "target", "example", ".fingerprint");
-  if projectModified(projectHome, example, "example") ||
-     !checkFingerprint(projectName, fingerprintDir, computeFingerprint()) {
+  const fingerprintChanged =
+    !checkFingerprint(projectName, fingerprintDir, computeFingerprint());
+  if projectModified(projectHome, example, "example") || fingerprintChanged {
       return true;
   }
   else {

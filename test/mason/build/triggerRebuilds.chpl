@@ -1,8 +1,9 @@
 use FileSystem, Path, IO, Time, CTypes;
 use MasonBuild;
 
-proc setEnv(name : string, val : string) {
-  extern proc setenv(name : c_ptrConst(c_char), val : c_ptrConst(c_char), overwrite : c_int) : c_int;
+proc setEnv(name: string, val: string) {
+  extern proc setenv(name: c_ptrConst(c_char),
+                     val: c_ptrConst(c_char), overwrite: c_int): c_int;
 
   const ret = setenv(name.c_str(), val.c_str(), 1);
   assert(ret == 0);

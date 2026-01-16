@@ -139,11 +139,11 @@ proc buildProgram(release: bool, show: bool, force: bool, skipUpdate: bool,
   // build on last modification
   const fingerprintDir =
     joinPath(projectHome, "target", binLoc, ".fingerprint");
+  const fingerprintChanged =
+    !checkFingerprint(projectName, fingerprintDir,
+                      computeFingerprint(cmdLineCompopts));
   if force ||
-     projectModified(projectHome, projectName, binLoc) ||
-     !checkFingerprint(projectName,
-                       fingerprintDir,
-                       computeFingerprint(cmdLineCompopts)) {
+     projectModified(projectHome, projectName, binLoc) || fingerprintChanged {
 
     // Make build files and check chapel version
     makeTargetFiles(binLoc, projectHome);
@@ -487,6 +487,7 @@ proc checkFingerprint(projectName:string,
         remove(joinPath(fingerprintDir, f));
       }
     }
+    log.debugln("No previous fingerprint found, creating new fingerprint");
     const writer = openWriter(fingerprintFile);
     writer.write(fingerprint);
     return false;
@@ -495,12 +496,14 @@ proc checkFingerprint(projectName:string,
     const old = reader.readAll(string);
     reader.close();
     if old != fingerprint {
+      log.debugln("Fingerprints do not match, rebuild required");
       // update fingerprint
       reader.close();
       const writer = openWriter(fingerprintFile);
       writer.write(fingerprint);
       return false;
     } else {
+      log.debugln("Fingerprints match, no rebuild required");
       return true;
     }
   }
