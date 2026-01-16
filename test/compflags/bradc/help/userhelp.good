@@ -217,6 +217,8 @@ Compiler Configuration Options:
       --make <make utility>           Make utility for generated code
       --target-mem <mem-impl>         Specify the memory manager
       --re2 <re2-version>             Specify RE2 library
+      --sanitize-exe <sanitizer>      Specify the sanitizer to use for the
+                                      executable/runtime
       --target-arch <architecture>    Target architecture / machine type
       --target-compiler <compiler>    Compiler for generated code
       --target-cpu <cpu>              Target cpu model for specialization
