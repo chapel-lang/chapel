@@ -102,7 +102,7 @@ reStructuredText as an intermediate format.
 
     Sets the documentation project description to *projectdescription*
     (documentation project description defaults to an empty string if
-    unspecified). Not all Sphinx output formats display the project description.
+    unspecified).
 
 .. _man-chpldoc-project-version:
 
