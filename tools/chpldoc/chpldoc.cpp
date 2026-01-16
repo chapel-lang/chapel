@@ -142,13 +142,13 @@ static void addModulePath(const ArgumentDescription* desc, const char* newpath) 
 
 static void checkProjectVersion(const ArgumentDescription* desc, const char* arg_unused) {
   size_t length = fDocsProjectVersion.length();
-  auto i = 0;
+  size_t i = 0;
   int numDots = 0;
   bool check = true;
   int tagIndex = 0;
 
   // Supported version tags
-  std::array<std::string, 3> tags = {"alpha", "beta", "rc"};
+  std::array<std::string, 3> tags = {{"alpha", "beta", "rc"}};
   const char * error = "";
   for (i = 0; i < length; i++) {
     if (fDocsProjectVersion[i] == '.') {
