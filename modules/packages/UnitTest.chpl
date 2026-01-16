@@ -511,10 +511,23 @@ module UnitTest {
       return abs(actual - expected) <= absTol + relTol * abs(expected);
     }
 
+    /*
+    Check if a scalar or array NaN values match.
+
+    :arg actual: actual value
+    :type actual: ?T
+
+    :arg expected: expected value
+    :type expected: T
+
+    :returns: True if NaN are at the same indices
+    :rtype: bool
+    */
     pragma "insert line file info"
     pragma "always propagate line file info"
     @chpldoc.nodoc
-    proc compareNan(const actual: ?T, const expected: T) {
+    proc compareNan(const actual: ?T, const expected: T)
+             where (isNumericType(T) && !isIntegralType(T)) {
       if isComplexType(T) {
         // does not support partial NaN equality:
         // actual=nan+0i, expected=nan+0i returns false
