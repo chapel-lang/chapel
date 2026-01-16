@@ -3,19 +3,31 @@
 Runtime/Compilation Arguments
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
- TODO FOR JADE: REWORK THIS AND LINK TO MANIFEST FILE FOR `compopts`
+Runtime and compilation options can be passed to a mason-built Chapel program
+or the Chapel compiler via ``mason run`` and ``mason build``, respectively.
+Note that any options not intended for ``mason`` itself must be separated from
+the ``mason`` command by a ``--``. This indicates to ``mason`` that the
+following arguments should be forwarded to the Chapel program or Chapel
+compiler.
 
-For an example of forwarding arguments in a call to ``mason run``, a chapel program built in
-mason might have a ``config const number`` that corresponds to a value used in ``MyPackage.chpl``.
-To try out different values at runtime, pass the values for ``number`` to ``mason run`` as follows::
+For an example of forwarding arguments in a call to ``mason run``, a Chapel
+program built in mason might have a ``config const number`` that corresponds to
+a value used in ``MyPackage.chpl``. To try out different values at runtime,
+pass the values for ``number`` to ``mason run`` as follows:
 
-      mason run -- --number=100
-      mason run -- --number=1000
+.. code-block:: bash
+
+   mason run -- --number=100
+   mason run -- --number=1000
 
 
-.. note::
+Similarly, compilation options can be passed to the Chapel compiler via ``mason
+build``. For example, to disable the remote cache when building a package, use:
 
-   Previous releases allowed flags meant for the compiler or chapel program to be mixed with
-   those meant for ``mason build`` or ``mason run``, respectively. As of Chapel 1.25 and
-   mason 0.2.0, flags not intended for ``mason`` must follow a double dash ``--`` regardless
-   of if they conflict or not.
+.. code-block:: bash
+
+   mason build -- --no-remote-cache
+
+Compilation options can also be specified for the entire package in the
+``Mason.toml`` manifest file. See :ref:`mason-manifest-file` for more
+information.

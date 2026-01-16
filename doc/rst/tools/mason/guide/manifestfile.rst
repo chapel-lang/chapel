@@ -1,5 +1,7 @@
 :title: Mason Guide: *Manifest*
 
+.. _mason-manifest-file:
+
 The Manifest File
 =================
 
