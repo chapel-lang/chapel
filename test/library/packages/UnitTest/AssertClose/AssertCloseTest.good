@@ -27,6 +27,11 @@ AssertionError: in AssertCloseTest.chpl:7 - assert failed for actual=nan, expect
 Rel. Error: nan %
 Abs. Error: nan
 ================================================================================
+Error Caught in Unequal real array NaN
+AssertionError: in AssertCloseTest.chpl:7 - assert failed for 1/3 elements (33.3333%)
+Max Rel. Error: nan%
+Max Abs. Error: nan
+================================================================================
 Error Caught in Unequal real NaN
 AssertionError: in AssertCloseTest.chpl:7 - assert failed for actual=-1, expected=nan
 Rel. Error: nan %
@@ -42,6 +47,11 @@ AssertionError: in AssertCloseTest.chpl:7 - assert failed for actual=nani, expec
 Rel. Error: nan %
 Abs. Error: nan
 ================================================================================
+Error Caught in Unequal imag array NaN
+AssertionError: in AssertCloseTest.chpl:7 - assert failed for 1/3 elements (33.3333%)
+Max Rel. Error: nan%
+Max Abs. Error: nan
+================================================================================
 Error Caught in Unequal complex NaN
 AssertionError: in AssertCloseTest.chpl:7 - assert failed for actual=nan, expected=2.5 + 2i
 Rel. Error: nan %
@@ -49,6 +59,11 @@ Abs. Error: nan
 ================================================================================
 Error Caught in Unequal complex NaN
 AssertionError: in AssertCloseTest.chpl:7 - assert failed for actual=nan, expected=1 + 2.5i
+Rel. Error: nan %
+Abs. Error: nan
+================================================================================
+Error Caught in Unequal complex NaN
+AssertionError: in AssertCloseTest.chpl:7 - assert failed for actual=nan, expected=nan
 Rel. Error: nan %
 Abs. Error: nan
 ================================================================================

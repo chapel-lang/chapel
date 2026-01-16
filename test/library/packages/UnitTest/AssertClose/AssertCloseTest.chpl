@@ -67,23 +67,34 @@ proc unequalComplex() {
 proc unequalNanRealImag() {
   testAssert(nan, 2.5, 0.0, 1e-15, reason="Unequal real NaN");
   testAssert(nan, 2.5, 0.0, 1e-15, equalNan=false, reason="Unequal real NaN");
+  testAssert([3.1, nan, 6.5], [4.1, nan, 6.5], 1.0, 0.0, equalNan=false,
+             reason="Unequal real array NaN");
   testAssert(-1.0, nan, 0.0, 1e-15, reason="Unequal real NaN");
   testAssert(0.0, nan, 0.0, 1e-15, equalNan=false, reason="Unequal real NaN");
   testAssert(nan*1i, nan*1i, 0.0, 1e-15, equalNan=false,
              reason="Unequal imag NaN");
+  testAssert([3.1i, 14i, 6.5i], [4.1i, nan*1i, 6.5i], 1.0, 0.0,
+             reason="Unequal imag array NaN");
 }
 proc unequalNanComplex() {
   testAssert(nan+2.0i, 2.5+2.0i, 0.0, 1e-15, reason="Unequal complex NaN");
   testAssert(1.0+nan*1i, 1.0+2.5i, 0.0, 1e-15, reason="Unequal complex NaN");
+  testAssert(1.0+nan*1i, 1.0+nan*1i, 0.0, 1e-15, reason="Unequal complex NaN");
   testAssert(nan+nan*1i, nan+nan*1i, 0.0, 1e-15, equalNan=false,
              reason="Unequal complex NaN");
 }
 proc equalNanReal() {
   testAssert(nan, nan, 3.0, 5.0, reason="Equal real NaN");
+  testAssert([3.1, nan, 6.5], [4.1, nan, 6.5], 1.0, 0.0,
+             reason="Equal real NaN");
 }
 proc equalNanImag() {
   testAssert(nan*1i, nan*1i, 0.0, 1e-15, reason="Equal imag NaN");
+  testAssert([nan*1i, 3.5i], [nan*1i, 3.9i], 0.5, 0.0,
+             reason="Equal imag array NaN");
 }
 proc equalNanComplex() {
   testAssert(nan+nan*1i, nan+nan*1i, 0.0, 1e-15, reason="Equal complex NaN");
+  testAssert([nan+nan*1i, 14+9i], [nan+nan*1i, 16+9i], 2.0, 0.0,
+             reason="Equal complex array NaN");
 }
