@@ -49,7 +49,6 @@ proc masonDoc(args: [] string) throws {
 
     const version = tomlFile["brick"]!["version"]!.s;
 
-    // TODO: doc that authors should either be string or array of strings
     var authors: string;
     if tomlFile.pathExists("brick.authors") {
       const authorsToml: Toml = tomlFile["brick"]!["authors"]!;
@@ -62,7 +61,6 @@ proc masonDoc(args: [] string) throws {
         authors = ", ".join(authorsToml.arr!.s);
       }
     }
-    // TODO: premerge document this!
     var copyright: string;
     if tomlFile.pathExists("brick.copyright") {
       copyright = tomlFile["brick"]!["copyright"]!.s;
@@ -116,7 +114,6 @@ proc getTomlDocopts(lock: borrowed Toml): list(string) throws {
   var docopts: list(string);
 
   // Checks for compilation options are present in Mason.toml
-  // TODO BEFORE MEGRE, add compopts and docopts to manifest.rst
   if lock.pathExists("brick.docopts") {
     try {
       docopts.pushBack(parseCompilerOptions(lock["brick"]!["docopts"]!));
