@@ -177,6 +177,7 @@ module UnitTest {
   use TestError;
   use List, Map;
   private use IO, IO.FormattedIO;
+  private use Math;
 
   @chpldoc.nodoc
   config const testNames: string = "None";
@@ -510,6 +511,22 @@ module UnitTest {
       return abs(actual - expected) <= absTol + relTol * abs(expected);
     }
 
+    pragma "insert line file info"
+    pragma "always propagate line file info"
+    @chpldoc.nodoc
+    proc compareNan(const actual: ?T, const expected: T) {
+      if isComplexType(T) {
+        // does not support partial NaN equality:
+        // actual=nan+0i, expected=nan+0i returns false
+        return isNan(actual.re) && isNan(expected.re)
+            && isNan(actual.im) && isNan(expected.im);
+      }
+      else if isImagType(T) {
+        return isNan(actual:real) && isNan(expected:real);
+      }
+      return isNan(actual) && isNan(expected);
+    }
+
     /*
       Assert that two arrays are, element-wise, approximately equal to within
       the specified tolerances.
@@ -528,6 +545,9 @@ module UnitTest {
       :arg absTol: absolute tolerance
       :type absTol: real
 
+      :arg equalNan: whether or not NaN should compare equal, defaults to true
+      :type equalNan: bool
+
       :throws IllegalArgumentError: If `actual` and `expected` are of different
       shape.
 
@@ -538,7 +558,8 @@ module UnitTest {
     pragma "always propagate line file info"
     proc assertClose(const actual: [] ?T, const expected: [] T,
                      const in relTol: real=defaultRelTol,
-                     const in absTol: real=defaultAbsTol): void throws
+                     const in absTol: real=defaultAbsTol,
+                     const in equalNan:bool=true): void throws
                      where (isNumericType(T) && !isIntegralType(T)) {
       if actual.shape != expected.shape {
         throw new owned IllegalArgumentError(
@@ -590,6 +611,9 @@ module UnitTest {
       :arg absTol: absolute tolerance
       :type absTol: real
 
+      :arg equalNan: whether or not NaN should compare equal, defaults to true
+      :type equalNan: bool
+
       :throws AssertionError: If `actual` is not approximately equal to
       `expected` within the specified tolerance.
     */
@@ -597,10 +621,12 @@ module UnitTest {
     pragma "always propagate line file info"
     proc assertClose(const in actual: ?T, const in expected: T,
                      const in relTol: real=defaultRelTol,
-                     const in absTol: real=defaultAbsTol):void throws
+                     const in absTol: real=defaultAbsTol,
+                     const in equalNan: bool=true):void throws
                      where (isNumericType(T) && !isIntegralType(T)) {
-      const isWithinTol = withinTol(actual=actual, expected=expected,
+      var isWithinTol = withinTol(actual=actual, expected=expected,
                                     relTol=relTol, absTol=absTol);
+      if equalNan then isWithinTol ||= compareNan(actual, expected);
       if !isWithinTol {
         const absErr: real = abs(actual - expected);
         const relErr = absErr / abs(expected);

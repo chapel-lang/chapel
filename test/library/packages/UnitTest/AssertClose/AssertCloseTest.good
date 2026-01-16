@@ -17,3 +17,43 @@ AssertionError: in AssertCloseTest.chpl:7 - assert failed for actual=1.8 + 3i, e
 Rel. Error: 2.85831e-05 %
 Abs. Error: 1e-06
 ================================================================================
+Error Caught in Unequal real NaN
+AssertionError: in AssertCloseTest.chpl:7 - assert failed for actual=nan, expected=2.5
+Rel. Error: nan %
+Abs. Error: nan
+================================================================================
+Error Caught in Unequal real NaN
+AssertionError: in AssertCloseTest.chpl:7 - assert failed for actual=nan, expected=2.5
+Rel. Error: nan %
+Abs. Error: nan
+================================================================================
+Error Caught in Unequal real NaN
+AssertionError: in AssertCloseTest.chpl:7 - assert failed for actual=-1, expected=nan
+Rel. Error: nan %
+Abs. Error: nan
+================================================================================
+Error Caught in Unequal real NaN
+AssertionError: in AssertCloseTest.chpl:7 - assert failed for actual=0, expected=nan
+Rel. Error: nan %
+Abs. Error: nan
+================================================================================
+Error Caught in Unequal imag NaN
+AssertionError: in AssertCloseTest.chpl:7 - assert failed for actual=nani, expected=nani
+Rel. Error: nan %
+Abs. Error: nan
+================================================================================
+Error Caught in Unequal complex NaN
+AssertionError: in AssertCloseTest.chpl:7 - assert failed for actual=nan, expected=2.5 + 2i
+Rel. Error: nan %
+Abs. Error: nan
+================================================================================
+Error Caught in Unequal complex NaN
+AssertionError: in AssertCloseTest.chpl:7 - assert failed for actual=nan, expected=1 + 2.5i
+Rel. Error: nan %
+Abs. Error: nan
+================================================================================
+Error Caught in Unequal complex NaN
+AssertionError: in AssertCloseTest.chpl:7 - assert failed for actual=nan, expected=nan
+Rel. Error: nan %
+Abs. Error: nan
+================================================================================
