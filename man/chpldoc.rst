@@ -24,21 +24,21 @@ reStructuredText as an intermediate format.
 
 *Documentation Options*
 
-.. _man-output-dir:
+.. _man-chpldoc-output-dir:
 
 **-o, \--output-dir <dirname>**
 
     Specify the *directory* name into which documentation should be saved
     (defaults to 'docs' if unspecified).
 
-.. _man-author:
+.. _man-chpldoc-author:
 
 **\--author <**\ *authortext*\ **>**
 
     Documentation author string. *authortext* becomes the copyright and
     author in the output documentation.
 
-.. _man-comment-style:
+.. _man-chpldoc-comment-style:
 
 **\--comment-style <string>**
 
@@ -54,7 +54,7 @@ reStructuredText as an intermediate format.
     search path is used to satisfy module 'use' and 'import' statements.
     See the :ref:`man page for chpl <man-module-dir>` for further details.
 
-.. _man-process-used-modules:
+.. _man-chpldoc-process-used-modules:
 
 **\--process-used-modules**
 
@@ -62,47 +62,77 @@ reStructuredText as an intermediate format.
     **file**\ (s) named on the command-line. When this flag is thrown,
     modules that it 'use's are also parsed and processed.
 
-.. _man-save-sphinx:
+.. _man-chpldoc-save-sphinx:
 
 **\--save-sphinx <**\ *directory*\ **>**
 
     Save generated Sphinx project in *directory*.
 
-.. _man-text-only:
+.. _man-chpldoc-text-only:
 
 **\--text-only**
 
     Generate text-based documentation instead of HTML. Takes precedence over
     \--[no-]html
 
-.. _man-html:
+.. _man-chpldoc-html:
 
 **\--[no-]html**
 
     [Don't] generate HTML-based documentation (on by default)
 
-.. _man-project-version:
+.. _man-chpldoc-index:
+
+**\--[no-]index**
+
+    Specify a path to a custom index.rst file to be used as the main page of
+    the generated documentation. If this option is not provided, a default
+    index.rst file will be generated.
+
+.. _man-chpldoc-project-name:
+
+**\--project-name <**\ *projectname*\ **>**
+
+    Sets the documentation project name to *projectname*
+    (documentation project name defaults to 'Project Name' if unspecified).
+
+.. _man-chpldoc-project-description:
+
+**\--project-description <**\ *projectdescription*\ **>**
+
+    Sets the documentation project description to *projectdescription*
+    (documentation project description defaults to an empty string if
+    unspecified). Not all Sphinx output formats display the project description.
+
+.. _man-chpldoc-project-version:
 
 **\--project-version <**\ *projectversion*\ **>**
 
     Sets the documentation version to *projectversion*
     (documentation version defaults to '0.0.1' if unspecified).
 
-.. _man-print-commands:
+.. _man-chpldoc-project-copyright:
+
+**\--project-copyright <**\ *projectcopyright*\ **>**
+
+    Sets the documentation copyright to *projectcopyright*
+    (documentation copyright defaults to '2015' if unspecified).
+
+.. _man-chpldoc-print-commands:
 
 **\--[no-]print-commands**
 
     Prints the system commands that **chpldoc** executes in order to create
     the documentation.
 
-.. _man-warn-unknown-attribute-toolname:
+.. _man-chpldoc-warn-unknown-attribute-toolname:
 
 **\--[no-]warn-unknown-attribute-toolname**
 
     [Don't] warn about attribute tool names that aren't recognized. Without this
     warning, attributes belonging to unknown tools will be silently ignored.
 
-.. _man-using-attribute-toolname:
+.. _man-chpldoc-using-attribute-toolname:
 
 **\--using-attribute-toolname <**\ *toolname*\ **>**
 
@@ -112,14 +142,14 @@ reStructuredText as an intermediate format.
 
 *Information Options*
 
-.. _man-help:
+.. _man-chpldoc-help:
 
 **-h, \--help**
 
     Print a list of the command line options, indicating the arguments that
     they expect and a brief summary of their purpose.
 
-.. _man-help-env:
+.. _man-chpldoc-help-env:
 
 **\--help-env**
 
@@ -127,7 +157,7 @@ reStructuredText as an intermediate format.
     variable equivalent for each flag, if applicable (see ENVIRONMENT), and
     its current value.
 
-.. _man-help-settings:
+.. _man-chpldoc-help-settings:
 
 **\--help-settings**
 
@@ -135,13 +165,13 @@ reStructuredText as an intermediate format.
     of each option as specified by environment variables and other flags on
     the command line.
 
-.. _man-version:
+.. _man-chpldoc-version:
 
 **\--version**
 
     Print **chpldoc**\ 's version number.
 
-.. _man-copyright:
+.. _man-chpldoc-copyright:
 
 **\--copyright**
 
