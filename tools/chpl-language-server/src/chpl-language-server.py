@@ -312,13 +312,13 @@ class ChapelLanguageServer(LanguageServer):
     def clear_file_info(self, uri: str):
         """
         Clear any cached FileInfo for a given URI
+
+        Currently only handles the default context, contexts paired
+        with a specific context ID are not cleared.
         """
 
-        keys_to_delete = [
-            key for key in self.file_infos.keys() if key[0] == uri
-        ]
-        for key in keys_to_delete:
-            del self.file_infos[key]
+        to_delete = (uri, None)
+        del self.file_infos[to_delete]
 
     def build_diagnostics(self, uri: str) -> List[Diagnostic]:
         """
