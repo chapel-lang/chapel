@@ -24,6 +24,26 @@ namespace types {
 
 using ClassTypeDecoratorEnum = ClassTypeDecorator::ClassTypeDecoratorEnum;
 
+const char*
+ClassTypeDecorator::decoratorToString(ClassTypeDecoratorEnum d) {
+  switch (d) {
+    case BORROWED:          return "borrowed";
+    case BORROWED_NONNIL:   return "borrowed non-nilable";
+    case BORROWED_NILABLE:  return "borrowed nilable";
+    case UNMANAGED:         return "unmanaged";
+    case UNMANAGED_NONNIL:  return "unmanaged non-nilable";
+    case UNMANAGED_NILABLE: return "unmanaged nilable";
+    case MANAGED:           return "managed";
+    case MANAGED_NONNIL:    return "managed non-nilable";
+    case MANAGED_NILABLE:   return "managed nilable";
+    case GENERIC:           return "generic";
+    case GENERIC_NONNIL:    return "generic non-nilable";
+    case GENERIC_NILABLE:   return "generic nilable";
+  }
+  CHPL_ASSERT(false && "case not handled");
+  return "";
+}
+
 ClassTypeDecoratorEnum
 ClassTypeDecorator::combineDecorators(ClassTypeDecoratorEnum formalDecorator,
                                       ClassTypeDecoratorEnum actualDecorator) {

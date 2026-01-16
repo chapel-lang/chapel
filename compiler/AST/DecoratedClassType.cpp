@@ -35,6 +35,10 @@ static const char* nameForUser(const char* className) {
   return className;
 }
 
+const char* decoratorToString(ClassTypeDecoratorEnum d) {
+  return ClassTypeDecorator::decoratorToString(d);
+}
+
 const char* decoratedTypeAstr(ClassTypeDecoratorEnum d, const char* className) {
   switch (d) {
     case ClassTypeDecorator::BORROWED:

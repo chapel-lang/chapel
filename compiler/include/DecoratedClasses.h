@@ -67,6 +67,7 @@ ClassTypeDecoratorEnum combineDecorators(ClassTypeDecoratorEnum formalD,
   return ClassTypeDecorator::combineDecorators(formalD, actualD);
 }
 
+const char* decoratorToString(ClassTypeDecoratorEnum d);
 const char* decoratedTypeAstr(ClassTypeDecoratorEnum d, const char* className);
 
 #endif
