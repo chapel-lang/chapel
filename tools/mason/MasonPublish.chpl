@@ -895,6 +895,7 @@ proc masonTomlFileCheck(projectHome: string) {
   const tomlFile = (parseToml(toParse));
   var missingFields : list(string);
   var name, chplVersion, version, source, author, license = false;
+  // TODO: check the type of these!
   if tomlFile.pathExists("brick.name") then name = true; else missingFields.pushBack('name');
   if tomlFile.pathExists("brick.version") then version = true; else missingFields.pushBack('version');
   if tomlFile.pathExists("brick.chplVersion") then chplVersion = true; else missingFields.pushBack('chplVersion');

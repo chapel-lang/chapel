@@ -49,6 +49,25 @@ proc masonDoc(args: [] string) throws {
 
     const version = tomlFile["brick"]!["version"]!.s;
 
+    // TODO: doc that authors should either be string or array of strings
+    var authors: string;
+    if tomlFile.pathExists("brick.authors") {
+      const authorsToml: Toml = tomlFile["brick"]!["authors"]!;
+      if !isStringOrStringArray(authorsToml) {
+        throw new MasonError("unable to parse authors");
+      }
+      if authorsToml.tomlType == "string" {
+        authors = authorsToml.s;
+      } else if authorsToml.tomlType == "array" {
+        authors = ", ".join(authorsToml.arr!.s);
+      }
+    }
+    // TODO: premerge document this!
+    var copyright: string;
+    if tomlFile.pathExists("brick.copyright") {
+      copyright = tomlFile["brick"]!["copyright"]!.s;
+    }
+
     if isDir(projectHome + '/src/') &&
        isFile(projectHome + '/src/' + projectFile) {
       // Must use relative paths with chpldoc to prevent baking in abs paths
@@ -58,6 +77,14 @@ proc masonDoc(args: [] string) throws {
         "chpldoc",
         "--project-name=" + projectName,
         "--project-version=" + version,
+      ]);
+      if authors != "" {
+        command.pushBack("--author=" + authors);
+      }
+      if copyright != "" {
+        command.pushBack("--project-copyright=" + copyright);
+      }
+      command.pushBack([
         joinPath("src", projectFile),
         "-o",
         "doc/",

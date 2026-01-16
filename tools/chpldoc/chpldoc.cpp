@@ -75,6 +75,7 @@ std::string fIndexPath = "";
 std::string fDocsProjectName = "chpldoc";
 std::string fDocsProjectDescription = "One line description of project.";
 std::string fDocsProjectVersion = "0.0.1";
+std::string fDocsProjectCopyright = "2015";
 bool printSystemCommands = false;
 bool fWarnUnknownAttributeToolname = true;
 std::vector<UniqueString> usingAttributeToolNames;
@@ -258,6 +259,7 @@ ArgumentDescription docs_arg_desc[] = {
  {"project-name", ' ', "<projectname>", "Sets the name of project in the documentation", "P", &fDocsProjectName, "CHPLDOC_PROJECT_NAME", NULL},
  {"project-description", ' ', "<projectdescription>", "Sets the project description in the documentation", "P", &fDocsProjectDescription, "CHPLDOC_PROJECT_DESCRIPTION", NULL},
  {"project-version", ' ', "<projectversion>", "Sets the documentation version to <projectversion>", "P", &fDocsProjectVersion, "CHPLDOC_PROJECT_VERSION", checkProjectVersion},
+ {"project-copyright", ' ', "projectcopyright", "Sets the project copyright string in the documentation", "P", &fDocsProjectCopyright, "CHPLDOC_PROJECT_COPYRIGHT", NULL},
 
  {"print-commands", ' ', NULL, "[Don't] print system commands", "N", &printSystemCommands, "CHPL_PRINT_COMMANDS", NULL},
  {"warn-unknown-attribute-toolname", ' ', NULL, "Enable warnings when an unknown tool name is found in an attribute", "N", &fWarnUnknownAttributeToolname, "CHPL_WARN_UNKNOWN_ATTRIBUTE_TOOLNAME", NULL},
@@ -2252,7 +2254,8 @@ std::string generateSphinxProject(std::string dirpath,
 static
 void generateSphinxOutput(std::string sphinxDir, std::string outputDir,
                           std::string projectName, std::string projectDescription,
-                          std::string projectVersion, std::string author,
+                          std::string projectVersion, std::string projectCopyright,
+                          std::string author,
                           bool printSystemCommands) {
   std::string sphinxBuild = "python3 " + getChplDepsApp() + " sphinx-build";
 
@@ -2260,7 +2263,8 @@ void generateSphinxOutput(std::string sphinxDir, std::string outputDir,
     "export CHPLDOC_AUTHOR='" + author + "' && " +
     "export CHPLDOC_PROJECT_NAME='" + projectName + "' && " +
     "export CHPLDOC_PROJECT_DESCRIPTION='" + projectDescription +"' && " +
-    "export CHPLDOC_PROJECT_VERSION='" + projectVersion + "'";
+    "export CHPLDOC_PROJECT_VERSION='" + projectVersion + "' && " +
+    "export CHPLDOC_PROJECT_COPYRIGHT='" + projectCopyright + "'";
 
 
   // Run:
@@ -2565,7 +2569,8 @@ int main(int argc, char** argv) {
   if (!fDocsTextOnly && fDocsHTML) {
     generateSphinxOutput(docsSphinxDir, docsOutputDir,
                          fDocsProjectName, fDocsProjectVersion,
-                         fDocsProjectDescription, fDocsAuthor,
+                         fDocsProjectDescription, fDocsProjectCopyright,
+                         fDocsAuthor,
                          printSystemCommands);
   }
 

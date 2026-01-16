@@ -907,6 +907,22 @@ iter allFields(tomlTbl: Toml) {
   }
 }
 
+proc isStringOrStringArray(toml: Toml) : bool {
+  if toml.tomlType == "string" {
+    return true;
+  } else if toml.tomlType == "array" {
+    const tomlArr = toml.arr;
+    for f in tomlArr {
+      if f == nil || f!.tomlType != "string" {
+        return false;
+      }
+    }
+    return true;
+  } else {
+    return false;
+  }
+}
+
 proc parseCompilerOptions(toml: Toml): list(string) throws {
   var res = new list(string);
   if toml.tomlType == "string" {

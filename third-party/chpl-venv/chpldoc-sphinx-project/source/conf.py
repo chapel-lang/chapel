@@ -52,12 +52,13 @@ root_doc = 'index'
 project = os.environ.get('CHPLDOC_PROJECT_NAME', 'PROJECT NAME')
 project_description = os.environ.get('CHPLDOC_PROJECT_DESCRIPTION', 'One line description of project.')
 
-author_text = os.environ.get('CHPLDOC_AUTHOR', 'AUTHOR TEXT')
+copyright_text = os.environ.get('CHPLDOC_PROJECT_COPYRIGHT', '2015')
+author_text = os.environ.get('CHPLDOC_AUTHOR', None)
 
-if len(author_text):
-    copyright = u'2015, {0}'.format(author_text)
+if author_text:
+    copyright = u'{0}, {1}'.format(copyright_text, author_text)
 else:
-    copyright = u'2015'
+    copyright = u'{0}'.format(copyright_text)
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
