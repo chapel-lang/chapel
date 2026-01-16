@@ -393,59 +393,49 @@ operator VersionInfo.<(a:VersionInfo, b:VersionInfo) : bool {
 private var chplVersionInfo = new VersionInfo(-1, -1, -1);
 /*
    Returns a tuple containing information about the `chpl --version`:
-   (major, minor, bugFix, isMaster)
+   (major, minor, bugFix, isMain)
 */
-proc getChapelVersionInfo(): VersionInfo {
+proc getChapelVersionInfo(): VersionInfo throws {
   use Regex;
 
   if chplVersionInfo(0) == -1 {
+
+    var output : string;
     try {
-
-      var ret : VersionInfo;
-
-      var process = spawn(["chpl", "--version"], stdout=pipeStyle.pipe);
-      process.wait();
-      if process.exitCode != 0 {
-        throw new owned MasonError("Failed to run 'chpl --version'");
-      }
-
-
-      var output : string;
-      for line in process.stdout.lines() {
-        output += line;
-      }
-
-      const semverPattern = "(\\d+\\.\\d+\\.\\d+)";
-      var master  = new regex(semverPattern + " pre-release (\\([a-z0-9]+\\))");
-      var release = new regex(semverPattern);
-
-      var semver, sha : string;
-      var isMaster: bool;
-      if master.search(output, semver, sha) {
-        isMaster = true;
-      } else if release.search(output, semver) {
-        isMaster = false;
-      } else {
-        throw new owned MasonError("Failed to match output of 'chpl --version':\n" + output);
-      }
-
-      const split = semver.split(".");
-      chplVersionInfo = new VersionInfo(split[0]:int, split[1]:int, split[2]:int);
-    } catch e : Error {
-      stderr.writeln("Error while getting Chapel version:");
-      stderr.writeln(e.message());
-      exit(1);
+      output = runCommand(["chpl", "--version"], quiet=true);
+    } catch {
+      throw new MasonError("Failed to run 'chpl --version'");
     }
+
+    const semverPattern = "(\\d+\\.\\d+\\.\\d+)";
+    var main  = new regex(semverPattern + " pre-release (\\([a-z0-9]+\\))");
+    var release = new regex(semverPattern);
+
+    var semver, sha : string;
+    var isMain: bool;
+    if main.search(output, semver, sha) {
+      isMain = true;
+    } else if release.search(output, semver) {
+      isMain = false;
+    } else {
+      throw new MasonError("Failed to match output of 'chpl --version':\n" +
+                            output);
+    }
+
+    const split = semver.split(".");
+    chplVersionInfo = new VersionInfo(split[0]:int, split[1]:int, split[2]:int);
   }
 
   return chplVersionInfo;
 }
 
 private var chplVersion = "";
-proc getChapelVersionStr() {
+proc getChapelVersionStr() throws {
   if chplVersion == "" {
     const version = getChapelVersionInfo();
-    chplVersion = version(0):string + "." + version(1):string + "." + version(2):string;
+    chplVersion = version(0):string + "." +
+                  version(1):string + "." +
+                  version(2):string;
   }
   return chplVersion;
 }
@@ -836,4 +826,8 @@ iter allFields(tomlTbl: Toml) {
       continue;
     else yield(k,v);
   }
+}
+
+proc MASON_VERSION : string {
+  return "0.2.0";
 }

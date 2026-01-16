@@ -137,7 +137,13 @@ proc buildProgram(release: bool, show: bool, force: bool, skipUpdate: bool,
 
 
   // build on last modification
-  if force || projectModified(projectHome, projectName, binLoc) {
+  const fingerprintDir =
+    joinPath(projectHome, "target", binLoc, ".fingerprint");
+  if force ||
+     projectModified(projectHome, projectName, binLoc) ||
+     !checkFingerprint(projectName,
+                       fingerprintDir,
+                       computeFingerprint(cmdLineCompopts)) {
 
     // Make build files and check chapel version
     makeTargetFiles(binLoc, projectHome);
@@ -403,4 +409,83 @@ proc getTomlCompopts(lock: borrowed Toml, ref compopts: list(string)) {
     }
   }
   return compopts;
+}
+
+proc sha256(s): string {
+  use Crypto;
+  var hasher = new Hash(Digest.SHA256);
+  var buffer = new CryptoBuffer(s);
+  var digest = hasher.getDigest(buffer);
+  return digest.toHexString();
+}
+
+proc printChplEnv(): string {
+  const printchplenv = joinPath(MasonUtils.CHPL_HOME, "util", "printchplenv");
+  var output = "";
+  try {
+    output = runCommand([printchplenv, "--all", "--internal", "--simple"],
+                         quiet=true);
+  } catch e {
+    log.errorln("Could not run printchplenv to " +
+                "get Chapel environment variables");
+  }
+  return output;
+}
+/*
+  Returns the environment variables (and their values) which may affect
+  the build process.
+
+  This is not an exhaustive list of all environment variables which
+  may affect the build process, but is intended to capture the most common
+*/
+proc getInterestingEnvVars(): string {
+  const vars = ["CHPL_HOME",
+                "CHPL_MODULE_PATH",
+                "CHPL_CC_FLAGS", "CHPL_INCLUDE_PATH",
+                "CHPL_LD_FLAGS", "CHPL_LIB_NAME", "CHPL_LIB_PATH"];
+  var output = "";
+  for v in vars {
+    const val = getEnv(v);
+    output += v + "=" + val + "\n";
+  }
+  return output;
+}
+
+proc computeFingerprint(
+  commandLineCompopts: list(string) = new list(string)
+): string {
+  var fingerprint = "";
+  fingerprint += "MasonVersion=" + MASON_VERSION + "\n";
+  fingerprint += "ChapelVersion=" + getChapelVersionStr() + "\n";
+  fingerprint += printChplEnv();
+  fingerprint += getInterestingEnvVars();
+  fingerprint += "cmdline_compopts=" +
+                 (" ".join(commandLineCompopts.these())) + "\n";
+  return sha256(fingerprint);
+}
+
+/*
+  Returns true if the fingerprint matches the stored fingerprint for the
+  project, false otherwise. If no stored fingerprint exists, one is created.
+*/
+proc checkFingerprint(projectName:string,
+                      fingerprintDir: string,
+                      fingerprint: string): bool {
+  const fingerprintFile = joinPath(fingerprintDir,
+                                   "%s-%s".format(projectName, fingerprint));
+  if !isFile(fingerprintFile) {
+    if !isDir(fingerprintDir) then
+      mkdir(fingerprintDir, parents=true);
+    // remove any old fingerprint files for this project
+    for f in listDir(fingerprintDir) {
+      if f.startsWith(projectName + "-") {
+        remove(joinPath(fingerprintDir, f));
+      }
+    }
+    const writer = openWriter(fingerprintFile);
+    writer.write("fingerprint=" + fingerprint + "\n");
+    return false;
+  } else {
+    return true;
+  }
 }

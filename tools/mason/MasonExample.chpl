@@ -223,7 +223,7 @@ private proc runExamples(show: bool, run: bool, build: bool, release: bool,
         if release then exampleCompopts += " --fast";
 
         if build {
-          if exampleModified(projectHome, projectName, example) || force {
+          if force || exampleModified(projectHome, projectName, example) {
 
             // remove old binary
             removeExampleBinary(projectHome, exampleName);
@@ -362,20 +362,20 @@ proc exampleModified(projectHome: string, projectName: string,
   const examplePath = joinPath(projectHome, "example");
 
   // check for changes to Mason.toml and src code
-  if projectModified(projectHome, example, "example") {
+  const fingerprintDir =
+    joinPath(projectHome, "target", "example", ".fingerprint");
+  if projectModified(projectHome, example, "example") ||
+     !checkFingerprint(projectName, fingerprintDir, computeFingerprint()) {
       return true;
   }
   else {
-    // check for binary existence
-     if isFile(exampleBinPath) {
-      // check for changes to example
-       const exModTime = getLastModified(joinPath(examplePath, exampleName));
-       const exBinModTime = getLastModified(exampleBinPath);
-      if exModTime > exBinModTime {
+      // check for binary existence
+      if isFile(exampleBinPath) {
+        // check for changes to example
+        const exModTime = getLastModified(joinPath(examplePath, exampleName));
+        const exBinModTime = getLastModified(exampleBinPath);
+        return exModTime > exBinModTime;
+      } else
         return true;
-      }
-      else return false;
-    }
-    else return true;
   }
 }
