@@ -170,7 +170,7 @@ gpu_cpu_config = {
     "CHPL_TARGET_MEM": "jemalloc",
     "CHPL_ATOMICS": "cstdlib",
     "CHPL_GMP": "system",
-    "CHPL_HWLOC": "bundled",
+    "CHPL_HWLOC": "system",
     "CHPL_RE2": "bundled",
     "CHPL_LLVM": "system",
     "CHPL_LIB_PIC": "none",
