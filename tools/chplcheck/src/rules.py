@@ -486,9 +486,13 @@ def rules(driver: LintDriver):
         Warn for empty statements (i.e., unnecessary semicolons).
         """
         p = node.parent()
-        if p and isinstance(p, SimpleBlockLike) and len(list(p.stmts())) == 1:
-            # dont warn if the EmptyStmt is the only statement in a block
-            return True
+        if p:
+            if isinstance(p, SimpleBlockLike) and len(list(p.stmts())) == 1:
+                # dont warn if the EmptyStmt is the only statement in a block
+                return True
+            if isinstance(p, Module) and p.kind() == "implicit" and len(list(p)) == 1:
+                # dont warn if the EmptyStmt is the only statement in an implicit module
+                return True
 
         return BasicRuleResult(
             node, fixits=Fixit.build(Edit.build(node.location(), ""))
