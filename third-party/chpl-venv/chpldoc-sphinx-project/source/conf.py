@@ -50,7 +50,7 @@ root_doc = 'index'
 
 # General information about the project.
 project = os.environ.get('CHPLDOC_PROJECT_NAME', 'PROJECT NAME')
-project_description = os.environ.get('CHPLDOC_PROJECT_DESCRIPTION', 'One line description of project.')
+project_description = os.environ.get('CHPLDOC_PROJECT_DESCRIPTION', '')
 
 copyright_text = os.environ.get('CHPLDOC_PROJECT_COPYRIGHT', '2015')
 author_text = os.environ.get('CHPLDOC_AUTHOR', None)
