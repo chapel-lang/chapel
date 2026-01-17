@@ -619,7 +619,6 @@ class WidePointerProvider:
         )
 
 
-# needs method calls implemented
 list_regex_llvm = re.compile(r"^(List::list\((?P<eltType>[a-zA-Z0-9_()]+)(,(?P<parSafe>(true|false)))?\))$")
 
 def ListRecognizer(sbtype, internal_dict):
@@ -637,7 +636,6 @@ class ListProvider:
 
         self.synthetic_children = {}
         size = self.valobj.GetNonSyntheticValue().GetChildMemberWithName("_size").GetValueAsUnsigned()
-        # call the _getRef(idx, 0, 0) method on valobj to get each element
         for i in range(size):
             element_name = f"[{i}]"
             element = self.valobj.CreateValueFromExpression(element_name, f"({self.valobj.GetName()})._getRef({i})")
