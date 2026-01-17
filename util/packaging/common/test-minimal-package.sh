@@ -21,7 +21,7 @@ chpl helloWorld.chpl --comm=gasnet --comm-substrate=udp -o helloWorld
 gasnet_udp_shim ./helloWorld -nl 2
 
 chpl helloWorld.chpl --comm=gasnet --comm-substrate=smp -o helloWorld
-./helloWorld -nl 2
+./helloWorld -nl 1
 
 chpl helloWorld.chpl --target-compiler=clang -o helloWorld
 ./helloWorld -nl 1
@@ -30,9 +30,9 @@ chpl helloWorld.chpl --target-compiler=clang --comm=gasnet --comm-substrate=udp 
 gasnet_udp_shim ./helloWorld -nl 2
 
 chpl helloWorld.chpl --target-compiler=clang --comm=gasnet --comm-substrate=smp -o helloWorld
-./helloWorld -nl 2
+./helloWorld -nl 1
 
-chpl helloWorld.chpl --local-model=gpu --gpu=cpu -o helloWorld
+chpl helloWorld.chpl --locale-model=gpu --gpu=cpu -o helloWorld
 ./helloWorld -nl 1
 
 # TODO: shallow clone start_test and some tests to run in a few configs
