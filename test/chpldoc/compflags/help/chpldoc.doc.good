@@ -13,9 +13,18 @@ Documentation Options:
       --text-only                     Generate text documentation only
       --[no-]html                     [Don't] generate html documentation (on
                                       by default)
+      --index <index>                 Path to the index.rst to use
+      --project-name <projectname>    Sets the name of project in the
+                                      documentation
+      --project-description <projectdescription>
+                                      Sets the project description in the
+                                      documentation
       --project-version <projectversion>
                                       Sets the documentation version to
                                       <projectversion>
+      --project-copyright projectcopyright
+                                      Sets the project copyright string in the
+                                      documentation
       --[no-]print-commands           [Don't] print system commands
       --[no-]warn-unknown-attribute-toolname
                                       Enable warnings when an unknown tool
