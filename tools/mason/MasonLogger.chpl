@@ -106,6 +106,18 @@ module MasonLogger {
       if doDebug then Safe.writef(logWriter, addPrefix(f), (...args));
     }
 
+    proc error(s: string) {
+      if doError then Safe.writef(logWriter, addPrefix("%s"), s);
+    }
+
+    proc errorln(s: string) {
+      if doError then Safe.writeln(logWriter, addPrefix(s));
+    }
+
+    proc errorf(f: string, args...) {
+      if doError then Safe.writef(logWriter, addPrefix(f), (...args));
+    }
+
     proc addPrefix(f) {
       proc bold(s) {
         if noColor then return s;
