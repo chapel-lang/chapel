@@ -43,7 +43,7 @@ proc main() {
 
   // CHECK-LOCAL: $2 = (struct MyClass *) [[MYFIELD_ADDR]]
   // CHECK-LOCAL-NEXT: type = struct MyClass {
-  // CHECK-LOCAL-NEXT: struct RootClass super;
+  // CHECK-LOCAL-NEXT: struct RootClass super
   // CHECK-LOCAL-NEXT: int(64) x;
   // CHECK-LOCAL-NEXT: real(64) y;
   // CHECK-LOCAL-NEXT: } *
@@ -76,7 +76,7 @@ proc main() {
 
   // CHECK-LOCAL: $6 = (struct MyClass *) 0x0
   // CHECK-LOCAL-NEXT: type = struct MyClass {
-  // CHECK-LOCAL-NEXT: struct RootClass super;
+  // CHECK-LOCAL-NEXT: struct RootClass super
   // CHECK-LOCAL-NEXT: int(64) x;
   // CHECK-LOCAL-NEXT: real(64) y;
   // CHECK-LOCAL-NEXT: } *
@@ -96,7 +96,7 @@ proc main() {
 
   // CHECK: $8 = (struct MyClass *) [[MYUNMANAGED_ADDR:0x[0-9a-f]+]]
   // CHECK-NEXT: type = struct MyClass {
-  // CHECK-NEXT: struct RootClass super;
+  // CHECK-NEXT: struct RootClass super
   // CHECK-NEXT: int(64) x;
   // CHECK-NEXT: real(64) y;
   // CHECK-NEXT: } *

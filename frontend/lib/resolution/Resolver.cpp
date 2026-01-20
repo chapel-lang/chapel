@@ -1653,6 +1653,27 @@ static QualifiedType::Kind adjustDeclKindForFormalWithInitExpr(const AstNode* de
   return KindProperties::removeRef(declKind);
 }
 
+static const Type* speciallyComputeDeclTypeFromInit(Resolver& rv,
+                                                    const AstNode* decl,
+                                                    const QualifiedType& initExprType,
+                                                    QualifiedType::Kind declKind,
+                                                    Context* context) {
+  if (declKind == QualifiedType::TYPE) {
+    // `type x = iterator`; should not turn into an array type etc.
+    return nullptr;
+  }
+
+  // Iterators are 'materialized' into arrays
+  if (initExprType.type()->isIteratorType()) {
+    return rv.computeChplCopyInit(decl, declKind, initExprType);
+  // Check if this type requires custom type inference
+  } else if (auto rec = getTypeWithCustomInfer(context, initExprType.type())) {
+    return rv.computeCustomInferType(decl, rec);
+  }
+
+  return nullptr;
+}
+
 QualifiedType Resolver::getTypeForDecl(const AstNode* decl,
                                        const AstNode* typeExpr,
                                        const AstNode* initExpr,
@@ -1683,12 +1704,10 @@ QualifiedType Resolver::getTypeForDecl(const AstNode* decl,
     // declared type but no init, so use declared type
     typePtr = declaredType.type();
   } else if (!declaredType.hasTypePtr() && initExprType.hasTypePtr()) {
-    // Iterators are 'materialized' into arrays
-    if (initExprType.type()->isIteratorType()) {
-      typePtr = computeChplCopyInit(decl, declKind, initExprType);
-    // Check if this type requires custom type inference
-    } else if (auto rec = getTypeWithCustomInfer(context, initExprType.type())) {
-      typePtr = computeCustomInferType(decl, rec);
+    if (auto customType =
+          speciallyComputeDeclTypeFromInit(*this, decl, initExprType,
+                                           declKind, context)) {
+      typePtr = customType;
     } else {
       // init but no declared type, so use init type
       typePtr = initExprType.type();

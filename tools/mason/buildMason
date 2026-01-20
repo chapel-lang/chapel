@@ -46,7 +46,7 @@ else
 fi
 ALL_COMPOPTS="$PRE_COMPOPTS $COMPOPTS $POST_COMPOPTS"
 
-COMMAND="$chplBinDir/chpl $ALL_COMPOPTS mason.chpl -o $chplBinDir/mason"
+COMMAND="$chplBinDir/chpl $ALL_COMPOPTS Mason.chpl -o $chplBinDir/mason"
 echo "Building Mason: $COMMAND"
 
 if ! $COMMAND; then

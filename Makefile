@@ -61,6 +61,7 @@ comprt: FORCE
 	@$(MAKE) third-party-try-opt
 	@$(MAKE) always-build-test-venv
 	@$(MAKE) always-build-chpldoc
+	@$(MAKE) always-build-mason
 	@$(MAKE) always-build-chapel-py
 	@$(MAKE) always-build-chplcheck
 	@$(MAKE) always-build-cls
@@ -153,6 +154,11 @@ always-build-test-venv: FORCE
 always-build-chpldoc: FORCE
 	-@if [ -n "$$CHPL_ALWAYS_BUILD_CHPLDOC" ]; then \
 	$(MAKE) chpldoc; \
+	fi
+
+always-build-mason: FORCE
+	-@if [ -n "$$CHPL_ALWAYS_BUILD_MASON" ]; then \
+	$(MAKE) mason; \
 	fi
 
 always-build-chapel-py: FORCE
