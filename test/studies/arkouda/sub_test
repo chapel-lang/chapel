@@ -234,6 +234,9 @@ if [ ${CHPL_TEST_ARKOUDA_STOP_AFTER_BUILD} = "false" ]; then
     if [[ -n $CHPL_TEST_ARKOUDA_REFORMAT_BENCHMARKS_V2 ]]; then
       reformat_benchmark_opts="${reformat_benchmark_opts} $CHPL_TEST_ARKOUDA_REFORMAT_BENCHMARKS_V2"
     fi
+    if [[ -n $CHPL_TEST_ARKOUDA_TEMP_DIR ]]; then
+      reformat_benchmark_opts="${reformat_benchmark_opts} --basetemp $CHPL_TEST_ARKOUDA_TEMP_DIR"
+    fi
 
     # benchmark_size=$((10**8))
     benchmark_size=$((10**2))
