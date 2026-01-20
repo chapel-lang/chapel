@@ -194,7 +194,7 @@ GenRet SymExpr::codegen() {
 
   if (getStmtExpr() == this)
     codegenStmt(this);
-  
+
 
   if (auto fn = toFnSymbol(var)) {
     if (shouldGenerateAsIfCallingDirectly(this, fn)) {
