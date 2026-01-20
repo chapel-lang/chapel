@@ -2568,8 +2568,8 @@ int main(int argc, char** argv) {
 
   if (!fDocsTextOnly && fDocsHTML) {
     generateSphinxOutput(docsSphinxDir, docsOutputDir,
-                         fDocsProjectName, fDocsProjectVersion,
-                         fDocsProjectDescription, fDocsProjectCopyright,
+                         fDocsProjectName, fDocsProjectDescription,
+                         fDocsProjectVersion, fDocsProjectCopyright,
                          fDocsAuthor,
                          printSystemCommands);
   }
