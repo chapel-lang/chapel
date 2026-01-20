@@ -352,11 +352,8 @@ static void test5() {
 
 static void test6() {
   printf("test6\n");
-  auto config = getConfigWithHome();
-  Context ctx(config);
-  Context* context = &ctx;
-  Context* c = context;
-  setupModuleSearchPaths(context, false, false, {}, {});
+  Context* context = buildStdContext();
+  auto c = context;
 
   // test that we can pass param string c_string or c_ptrConst(c_char)
   // but we can't pass param string to bytes

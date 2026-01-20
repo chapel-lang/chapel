@@ -255,7 +255,6 @@ bool fNoPrivatization = false;
 bool fNoOptimizeOnClauses = false;
 bool fNoRemoveEmptyRecords = true;
 bool fRemoveUnreachableBlocks = true;
-bool fMinimalModules = false;
 int fParMake = 0;
 bool fIncrementalCompilation = false;
 bool fNoOptimizeForallUnordered = false;
@@ -1650,7 +1649,6 @@ static ArgumentDescription arg_desc[] = {
  {"replace-array-accesses-with-ref-temps", ' ', NULL, "Enable [disable] replacing array accesses with reference temps (experimental)", "N", &fReplaceArrayAccessesWithRefTemps, NULL, NULL },
  {"return-by-ref", ' ', NULL, "Enable return-by-ref of structs in the generated code", "N", &fReturnByRef, NULL, NULL},
  {"incremental", ' ', NULL, "Enable [disable] using incremental compilation", "N", &fIncrementalCompilation, "CHPL_INCREMENTAL_COMP", NULL},
- {"minimal-modules", ' ', NULL, "Enable [disable] using minimal modules",               "N", &fMinimalModules, "CHPL_MINIMAL_MODULES", NULL},
  {"parallel-make", 'j', NULL, "Specify degree of parallelism for C back-end", "I", &fParMake, "CHPL_PAR_MAKE", &turnIncrementalOn},
  {"print-chpl-settings", ' ', NULL, "Print current chapel settings and exit", "F", &fPrintChplSettings, NULL,NULL},
  {"print-additional-errors", ' ', NULL, "Print additional errors", "F", &fPrintAdditionalErrors, NULL,NULL},
@@ -2383,15 +2381,6 @@ static void checkLibraryPythonAndLibmode(void) {
   }
 }
 
-static void checkNotLibraryAndMinimalModules(void) {
-  const bool isLibraryCompile = fLibraryCompile || fMultiLocaleInterop;
-  if (isLibraryCompile && fMinimalModules) {
-    USR_FATAL("Libraries do not currently support \'--minimal-modules\'");
-  }
-
-  return;
-}
-
 
 // Take actions for which settings are inferred based on other arguments
 // or CHPL_ settings
@@ -2444,8 +2433,6 @@ static void postprocess_args() {
 // chplconfig-style environment variables checks could/should be done in the
 // chplenv scripts; otherwise put the checks here.
 static void validateSettings() {
-  checkNotLibraryAndMinimalModules();
-
   checkLLVMCodeGen();
 
   checkDebugFlag();
@@ -2580,7 +2567,6 @@ static void dynoConfigureContext(std::string chpl_module_path) {
   chpl::parsing::setupModuleSearchPaths(gContext,
                                         CHPL_HOME,
                                         "", //moduleRoot
-                                        fMinimalModules,
                                         CHPL_LOCALE_MODEL,
                                         fEnableTaskTracking,
                                         CHPL_TASKS,

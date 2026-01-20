@@ -317,10 +317,6 @@ bool isValidEdition(std::string maybeEdition);
 void checkEditionRangeValid(std::string first, std::string last, BaseAST* loc);
 bool isEditionApplicable(std::string first, std::string last, BaseAST* loc);
 
-// This flag is useful for testing
-// the compiler but breaks the language!
-extern bool fMinimalModules;
-
 // This flag sets the make -j value
 // <=0 == don't use -j
 //        (in the future, we may want to make < 0 mean "#cores")

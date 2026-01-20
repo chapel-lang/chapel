@@ -189,11 +189,8 @@ static void test4() {
 // test that we can map _owned to owned
 static void test5() {
   printf("test5\n");
-  auto config = getConfigWithHome();
-  Context ctx(config);
-  Context* context = &ctx;
+  Context* context = buildStdContext();
   ErrorGuard guard(context);
-  setupModuleSearchPaths(context, false, false, {}, {});
 
   std::string program = R"""(
     class C { var y : int; }
@@ -262,11 +259,8 @@ static void test5() {
 // test that we can map _shared to shared
 static void test6() {
   printf("test6\n");
-  auto config = getConfigWithHome();
-  Context ctx(config);
-  Context* context = &ctx;
+  Context* context = buildStdContext();
   ErrorGuard guard(context);
-  setupModuleSearchPaths(context, false, false, {}, {});
 
   std::string program = R"""(
     class C { var y : int; }

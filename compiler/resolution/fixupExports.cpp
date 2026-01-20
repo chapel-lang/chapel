@@ -103,9 +103,6 @@ static void resolveExportWrapperTypeAliases(void) {
 
 void fixupExportedFunctions(const std::vector<FnSymbol*>& fns) {
 
-  if (fMinimalModules)
-    return;
-
   //
   // We have to resolve type aliases for export wrapper types even if we
   // don't need to perform any fixups. This is because some of these

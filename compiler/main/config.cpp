@@ -40,10 +40,8 @@ bool                           mainHasArgs;
 bool                           mainPreserveDelimiter;
 
 void checkConfigs() {
-  if (fMinimalModules == false) {
-    if (uast::Builder::checkAllConfigVarsAssigned(gContext)) {
-      USR_STOP();
-    }
+  if (uast::Builder::checkAllConfigVarsAssigned(gContext)) {
+    USR_STOP();
   }
 }
 

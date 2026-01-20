@@ -81,7 +81,7 @@ computeAndPrintStuff(Context* context,
 static void setupSearchPaths(Context* ctx,
                              const std::vector<std::string>& cmdLinePaths,
                              const std::vector<std::string>& files) {
-  setupModuleSearchPaths(ctx, false, false, cmdLinePaths, files);
+  setupModuleSearchPaths(ctx, false, cmdLinePaths, files);
 }
 
 int main(int argc, char** argv) {

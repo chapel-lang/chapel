@@ -1618,8 +1618,7 @@ static void adjustFunctionTypesToBeNonThrowing() {
 }
 
 void lowerErrorHandling() {
-  if (!fMinimalModules)
-    INT_ASSERT(dtError->inTree());
+  INT_ASSERT(dtError->inTree());
 
   std::set<FnSymbol*> visited;
   implicitThrowsReasons_t reasons;

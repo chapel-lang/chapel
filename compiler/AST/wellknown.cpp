@@ -292,20 +292,6 @@ AggregateType* shouldWireWellKnownType(const char* name) {
   return nullptr;
 }
 
-static void removeIfUndefinedGlobalType(AggregateType*& t) {
-  if (t->symbol == NULL || t->symbol->defPoint == NULL) {
-    // This means there was no declaration of this type
-    if (t->symbol)
-      gTypeSymbols.remove(gTypeSymbols.index(t->symbol));
-
-    gAggregateTypes.remove(gAggregateTypes.index(t));
-
-    delete t;
-
-    t = NULL;
-  }
-}
-
 static void multipleDefinedTypeError(Symbol* sym, const char* name) {
   USR_WARN(sym,
            "'%s' defined more than once in Chapel internal modules.",
@@ -353,8 +339,6 @@ void gatherWellKnownTypes() {
   int nTypes = sizeof(sWellKnownTypes) / sizeof(sWellKnownTypes[0]);
   int nAggregate = sizeof(sWellKnownAggregateTypes) /
                    sizeof(sWellKnownAggregateTypes[0]);
-  int nEarlyAggregate = sizeof(sWellKnownAggregateTypesNeededEarly) /
-                        sizeof(sWellKnownAggregateTypesNeededEarly[0]);
 
   // Check type aliases (for e.g. extern type c_int = int(32) )
   forv_Vec(VarSymbol, var, gVarSymbols) {
@@ -391,43 +375,32 @@ void gatherWellKnownTypes() {
     }
   }
 
-  if (fMinimalModules == false) {
-    // Make sure all well-known types are defined.
-    for (int i = 0; i < nTypes; ++i) {
-      WellKnownType& wkt = sWellKnownTypes[i];
+  // Make sure all well-known types are defined.
+  for (int i = 0; i < nTypes; ++i) {
+    WellKnownType& wkt = sWellKnownTypes[i];
 
-      if (*wkt.type_ == NULL) {
+    if (*wkt.type_ == NULL) {
+      USR_FATAL_CONT("Type '%s' must be defined in the "
+                     "Chapel internal modules.",
+                     wkt.name);
+    }
+  }
+
+  for (int i = 0; i < nAggregate; ++i) {
+    WellKnownAggregateType& wkt = sWellKnownAggregateTypes[i];
+
+    if (*wkt.type_ == NULL) {
+      if (wkt.type_ == &dtCFI_cdesc_t && !fLibraryFortran) {
+        // This should only be defined when --library-fortran is used
+      } else {
         USR_FATAL_CONT("Type '%s' must be defined in the "
                        "Chapel internal modules.",
                        wkt.name);
       }
     }
-
-    for (int i = 0; i < nAggregate; ++i) {
-      WellKnownAggregateType& wkt = sWellKnownAggregateTypes[i];
-
-      if (*wkt.type_ == NULL) {
-        if (wkt.type_ == &dtCFI_cdesc_t && !fLibraryFortran) {
-          // This should only be defined when --library-fortran is used
-        } else {
-          USR_FATAL_CONT("Type '%s' must be defined in the "
-                         "Chapel internal modules.",
-                         wkt.name);
-        }
-      }
-    }
-
-    USR_STOP();
-
-  } else {
-    // remove types that were defined with a dummy value if
-    // we never encountered their defining record/class
-    for (int i = 0; i < nEarlyAggregate; i++) {
-      WellKnownAggregateTypeNeededEarly& wkt =
-        sWellKnownAggregateTypesNeededEarly[i];
-      removeIfUndefinedGlobalType(*wkt.type_);
-    }
   }
+
+  USR_STOP();
 }
 
 std::vector<Type*> getWellKnownTypes()
@@ -694,26 +667,24 @@ void gatherWellKnownFns() {
     }
   }
 
-  if (fMinimalModules == false) {
-    for (int i = 0; i < nEntries; ++i) {
-      WellKnownFn& wkfn        = sWellKnownFns[i];
-      FnSymbol*    lastMatched = wkfn.lastNameMatchedFn;
-      FnSymbol*    fn          = *wkfn.fn;
+  for (int i = 0; i < nEntries; ++i) {
+    WellKnownFn& wkfn        = sWellKnownFns[i];
+    FnSymbol*    lastMatched = wkfn.lastNameMatchedFn;
+    FnSymbol*    fn          = *wkfn.fn;
 
-      if (lastMatched == NULL) {
-        USR_FATAL_CONT("Function '%s' must be defined in the "
-                       "Chapel internal modules.",
-                       wkfn.name);
+    if (lastMatched == NULL) {
+      USR_FATAL_CONT("Function '%s' must be defined in the "
+                     "Chapel internal modules.",
+                     wkfn.name);
 
-      } else if (fn == NULL) {
-        USR_FATAL_CONT(fn,
-                       "The '%s' function is missing a required flag.",
-                       wkfn.name);
-      }
+    } else if (fn == NULL) {
+      USR_FATAL_CONT(fn,
+                     "The '%s' function is missing a required flag.",
+                     wkfn.name);
     }
-
-    USR_STOP();
   }
+
+  USR_STOP();
 }
 
 std::vector<FnSymbol*> getWellKnownFunctions()

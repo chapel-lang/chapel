@@ -1,5 +1,5 @@
 // a small reproducer for #24591
-// can compile with or without --minimal-modules
+
 
 record RR {
   param p1 = 5;

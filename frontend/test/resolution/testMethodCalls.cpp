@@ -837,11 +837,8 @@ static void test17() {
 static void test18() {
   // test sync var method call isFull
   printf("test6\n");
-  auto config = getConfigWithHome();
-  Context ctx(config);
-  Context* context = &ctx;
+  Context* context = buildStdContext();
   ErrorGuard guard(context);
-  setupModuleSearchPaths(context, false, false, {}, {});
 
   std::string program = R"""(
       var x : sync int;

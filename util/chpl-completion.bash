@@ -175,7 +175,6 @@ _chpl ()
 --make \
 --max-c-ident-len \
 --memory-frees \
---minimal-modules \
 --mllvm \
 --module-dir \
 --munge-user-idents \
@@ -256,7 +255,6 @@ _chpl ()
 --no-log-ids \
 --no-loop-invariant-code-motion \
 --no-memory-frees \
---no-minimal-modules \
 --no-munge-user-idents \
 --no-munge-with-ids \
 --no-nil-checks \
