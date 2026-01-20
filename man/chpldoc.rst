@@ -83,7 +83,7 @@ reStructuredText as an intermediate format.
 
 .. _man-chpldoc-index:
 
-**\--[no-]index**
+**\--index**
 
     Specify a path to a custom index.rst file to be used as the main page of
     the generated documentation. If this option is not provided, a default
