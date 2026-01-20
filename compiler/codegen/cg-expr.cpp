@@ -2204,11 +2204,7 @@ GenRet codegenMod(GenRet a, GenRet b)
 static llvm::CallInst* CreateIntrinsic(llvm::Intrinsic::ID id,
                                         llvm::ArrayRef<llvm::Type*> tys,
                                         llvm::ArrayRef<llvm::Value*> args) {
-#if LLVM_VERSION_MAJOR >= 21
-  auto call = gGenInfo->irBuilder->CreateIntrinsic(id, tys, args, {});
-#else
   auto call = gGenInfo->irBuilder->CreateIntrinsic(id, tys, args);
-#endif
   trackLLVMValue(call);
   return call;
 }
