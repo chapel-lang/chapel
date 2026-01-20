@@ -73,6 +73,9 @@ release = os.environ.get('CHPLDOC_PROJECT_VERSION', '')
 
 rst_prolog = f"""
 .. |project_name| replace:: {project}
+"""
+if project_description:
+    rst_prolog += f"""
 .. |project_description| replace:: {project_description}
 """
 
