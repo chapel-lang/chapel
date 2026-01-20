@@ -3,6 +3,8 @@
 # Custom sub_test to run Arkouda testing. Clones, installs dependencies, builds
 # Arkouda and runs testing.
 
+export CHPL_TEST_ARKOUDA_SKIP_BUILD=1
+
 ARKOUDA_URL=${ARKOUDA_URL:-https://github.com/Bears-R-Us/arkouda.git}
 ARKOUDA_BRANCH=${ARKOUDA_BRANCH:-main}
 
