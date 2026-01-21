@@ -1,0 +1,8 @@
+0 (gpu 0): diagsGridSize.chpl:7: kernel launch (grid size: 12x1x1, block size: 128x1x1)
+0 (gpu 0): diagsGridSize.chpl:7: kernel launch (grid size: 6x1x1, block size: 256x1x1)
+0 (gpu 0): diagsGridSize.chpl:7: kernel launch (grid size: 4x1x1, block size: 384x1x1)
+0 (gpu 0): diagsGridSize.chpl:7: kernel launch (grid size: 3x1x1, block size: 512x1x1)
+0 (gpu 0): diagsGridSize.chpl:7: kernel launch (grid size: 3x1x1, block size: 640x1x1)
+0 (gpu 0): diagsGridSize.chpl:7: kernel launch (grid size: 2x1x1, block size: 768x1x1)
+0 (gpu 0): diagsGridSize.chpl:7: kernel launch (grid size: 2x1x1, block size: 896x1x1)
+0 (gpu 0): diagsGridSize.chpl:7: kernel launch (grid size: 2x1x1, block size: 1024x1x1)
