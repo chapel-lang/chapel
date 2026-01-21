@@ -2079,7 +2079,7 @@ static void checkClientServerLibrary() {
 
   if (!strcmp(CHPL_COMM, "none")) {
     USR_FATAL("Client-server libraries cannot currently be compiled "
-              "with \'CHPL_COMM=none\'");
+              "with 'CHPL_COMM=none'");
   }
 
   if (fLibraryFortran) {
