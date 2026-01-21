@@ -224,7 +224,7 @@ proc compileSrc(lockFile: borrowed Toml, binLoc: string, show: bool,
 
     log.debugf("Base command: %?\n", cmd);
 
-    for (_, name, version) in sourceList {
+    for (_, name, version) in srcSource.iterList(sourceList) {
       const nameVer = "%s-%s".format(name, version);
       // version of -1 specifies a git dep
       if version != "-1" {
@@ -242,7 +242,7 @@ proc compileSrc(lockFile: borrowed Toml, binLoc: string, show: bool,
       }
     }
 
-    for (_, name, branch, _) in gitList {
+    for (_, name, branch, _) in gitSource.iterList(gitList) {
       var gitDepSrc = ' ' + gitDepPath + name + "-" + branch + '/src/' + name + ".chpl";
       cmd.pushBack(gitDepSrc);
     }
@@ -270,8 +270,8 @@ proc compileSrc(lockFile: borrowed Toml, binLoc: string, show: bool,
 /* Generates a list of tuples that holds the git repo
    url and the name for local mason dependency pool */
 proc genSourceList(lockFile: borrowed Toml) {
-  var sourceList: list((string, string, string));
-  var gitList: list((string, string, string, string));
+  var sourceList: list(srcSource);
+  var gitList: list(gitSource);
   log.infoln("Generating source list");
   for (name, package) in zip(lockFile.A.keys(), lockFile.A.values()) {
     log.debugln("name: "+name);
@@ -293,11 +293,11 @@ proc genSourceList(lockFile: borrowed Toml) {
             branch = "HEAD";
           }
           log.debugln("adding to gitList: "+name);
-          gitList.pushBack((url, name, branch, revision));
+          gitList.pushBack(new gitSource(url, name, branch, revision));
         } else if toml.pathExists("source") {
           var source = toml["source"]!.s;
           log.debugln("adding to sourceList: "+name);
-          sourceList.pushBack((source, name, version));
+          sourceList.pushBack(new srcSource(source, name, version));
         }
       }
     }
@@ -307,23 +307,16 @@ proc genSourceList(lockFile: borrowed Toml) {
 
 /* Clones the git repository of each dependency into
    the src code dependency pool */
-proc getSrcCode(sourceListArg: list(3*string), skipUpdate, show) throws {
-  //
-  // TODO: Temporarily use `toArray` here because `list` does not yet
-  // support parallel iteration, which the `getSrcCode` method _must_
-  // have for good performance.
-  //
-  var sourceList = sourceListArg.toArray();
-
+proc getSrcCode(sourceList: list(srcSource), skipUpdate, show) throws {
   var baseDir = MASON_HOME +'/src/';
-  forall (srcURL, name, version) in sourceList {
+  forall (srcURL, name, version) in srcSource.iterList(sourceList) {
     // version of -1 specifies a git dep
     if version != "-1" {
       const nameVers = name + "-" + version;
       const destination = baseDir + nameVers;
       if !depExists(nameVers) {
         if skipUpdate then
-          throw new owned MasonError("Dependency cannot be installed when MASON_OFFLINE is set.");
+          throw new MasonError("Dependency cannot be installed when MASON_OFFLINE is set.");
         writeln("Downloading dependency: " + nameVers);
         var getDependency = "git clone -qn "+ srcURL + ' ' + destination +'/';
         var checkout = "git checkout -q v" + version;
@@ -343,20 +336,12 @@ proc getSrcCode(sourceListArg: list(3*string), skipUpdate, show) throws {
   }
 }
 
-proc getGitCode(gitListArg: list(4*string), show) {
+proc getGitCode(gitList: list(gitSource), show) {
   if !isDir(MASON_HOME + '/git/') {
     mkdir(MASON_HOME + '/git/', parents=true);
   }
-
-  //
-  // TODO: Temporarily use `toArray` here because `list` does not yet
-  // support parallel iteration, which the `getSrcCode` method _must_
-  // have for good performance.
-  //
-  var gitList = gitListArg.toArray();
-
   var baseDir = MASON_HOME +'/git/';
-  forall (srcURL, name, branch, revision) in gitList {
+  forall (srcURL, name, branch, revision) in gitSource.iterList(gitList) {
     const nameVers = name + "-" + branch;
     const destination = baseDir + nameVers;
     if !depExists(nameVers, '/git/') {

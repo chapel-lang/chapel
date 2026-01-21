@@ -526,8 +526,46 @@ proc isIdentifier(name:string) {
 }
 
 
-proc getMasonDependencies(sourceList: list(3*string),
-                          gitList: list(4*string),
+record gitSource {
+  var url: string;
+  var name: string;
+  var branch: string;
+  var revision: string;
+
+  iter type iterList(x: list(gitSource)) {
+    for item in x {
+      yield (item.url, item.name, item.branch, item.revision);
+    }
+  }
+  iter type iterList(x: list(gitSource), param tag: iterKind)
+  where tag == iterKind.standalone {
+    foreach idx in 0..#x.size {
+      const item = x[idx];
+      yield (item.url, item.name, item.branch, item.revision);
+    }
+  }
+}
+record srcSource {
+  var url: string;
+  var name: string;
+  var version: string;
+
+  iter type iterList(x: list(srcSource)) {
+    for item in x {
+      yield (item.url, item.name, item.version);
+    }
+  }
+  iter type iterList(x: list(srcSource), param tag: iterKind)
+  where tag == iterKind.standalone {
+    foreach idx in 0..#x.size {
+      const item = x[idx];
+      yield (item.url, item.name, item.version);
+    }
+  }
+}
+
+proc getMasonDependencies(sourceList: list(srcSource),
+                          gitList: list(gitSource),
                           progName: string): list(string) {
 
   // Declare example to run as the main module
@@ -539,7 +577,7 @@ proc getMasonDependencies(sourceList: list(3*string),
     const depPath = joinPath(MASON_HOME, "src");
 
     // Add dependencies to project
-    for (_, name, version) in sourceList {
+    for (_, name, version) in srcSource.iterList(sourceList) {
       const depSrc = joinPath(depPath, "%s-%s".format(name, version),
                               "src", "%s.chpl".format(name));
       masonCompopts.pushBack(depSrc);
@@ -549,7 +587,7 @@ proc getMasonDependencies(sourceList: list(3*string),
     const gitDepPath = joinPath(MASON_HOME, "git");
 
     // Add git dependencies
-    for (_, name, branch, _) in gitList {
+    for (_, name, branch, _) in gitSource.iterList(gitList) {
       const gitDepSrc = joinPath(gitDepPath, "%s-%s".format(name, branch),
                                  "src", "%s.chpl".format(name));
       masonCompopts.pushBack(gitDepSrc);
@@ -818,6 +856,11 @@ iter allFields(tomlTbl: Toml) {
       continue;
     else yield(k,v);
   }
+}
+
+record chplOptions {
+  var compopts: list(string);
+  var execopts: list(string);
 }
 
 proc MASON_VERSION : string {
