@@ -139,6 +139,7 @@ module DefaultRectangular {
   // model initialization
   //
   pragma "locale private"
+  @unstable("defaultDist is unstable and may change in the future")
   var defaultDist = new chpl_dmap(new unmanaged DefaultDist());
 
   proc chpl_defaultDistInitPrivate() {
