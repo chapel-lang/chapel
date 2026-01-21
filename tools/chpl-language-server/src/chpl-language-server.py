@@ -318,7 +318,11 @@ class ChapelLanguageServer(LanguageServer):
         """
 
         to_delete = (uri, None)
-        del self.file_infos[to_delete]
+        path = uri[len("file://") :]
+        container = self.contexts.get(path, None)
+        if container and len(container.file_infos) == 1:
+            del self.file_infos[to_delete]
+            del self.contexts[path]
 
     def build_diagnostics(self, uri: str) -> List[Diagnostic]:
         """
