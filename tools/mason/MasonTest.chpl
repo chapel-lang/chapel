@@ -96,7 +96,8 @@ proc masonTest(args: [] string) throws {
   if isMasonProject {
     const projectType = getProjectType();
     if projectType == "light" then
-      throw new owned MasonError("Mason light projects do not currently support 'mason test'");
+      throw new MasonError("Mason light projects do not " +
+                           "currently support 'mason test'");
   }
 
 
@@ -148,7 +149,7 @@ proc masonTest(args: [] string) throws {
       }
 
       var tests = findFiles(startdir=subTestPath, recursive=true, hidden=false);
-      for test in tests{
+      for test in tests {
         if test.endsWith(".chpl"){
           if inProjectDir{
             testNames.pushBack(getTestPath(test));
@@ -157,7 +158,8 @@ proc masonTest(args: [] string) throws {
             var testLoc = "";
             while test!=subTestPath{
               var split = splitPath(test);
-              testLoc = if !testLoc.isEmpty() then joinPath(split[1], testLoc) else split[1];
+              testLoc = if !testLoc.isEmpty() then joinPath(split[1], testLoc)
+                                              else split[1];
               test = split[0];
             }
             testNames.pushBack(testLoc);
@@ -219,7 +221,7 @@ proc masonTest(args: [] string) throws {
 }
 
 private proc runTests(show: bool, run: bool, parallel: bool, filter: string,
-                      skipUpdate: bool, ref cmdLineCompopts: list(string)) throws {
+                      skipUpdate: bool, cmdLineCompopts: list(string)) throws {
 
   try! {
 
@@ -239,10 +241,9 @@ private proc runTests(show: bool, run: bool, parallel: bool, filter: string,
     const project = lockFile["root"]!["name"]!.s;
     const projectPath = "".join(projectHome, "/src/", project, ".chpl");
 
-    // TODO Unfortunately, get TomlCompopts modifies its second argument and
-    // then returns it. We need to fix that.
     // Get system, and external compopts
-    var compopts = getTomlCompopts(lockFile, cmdLineCompopts);
+    var compopts = cmdLineCompopts;
+    compopts.pushBack(getTomlCompopts(lockFile));
     log.debugf("compopts from Mason.toml: %?\n", compopts);
 
     log.debugln("Adding prerequisite flags");
@@ -261,9 +262,9 @@ private proc runTests(show: bool, run: bool, parallel: bool, filter: string,
     var numTests: int;
     var testNames: list(string);
     // names of tests that compiled
-    var testsCompiled: list(string);
+    var testsCompiled: list(string, parSafe=true);
     // get the test names from lockfile or from test directory
-    if (files.size == 0 && dirs.size == 0) {
+    if files.size == 0 && dirs.size == 0 {
       testNames = getTests(lockFile.borrow(), projectHome);
       numTests = testNames.size;
     }
@@ -285,38 +286,41 @@ private proc runTests(show: bool, run: bool, parallel: bool, filter: string,
     if numTests > 0 {
 
       var result =  new TestResult();
-      var timeElapsed = new stopwatch();
-      timeElapsed.start();
-      for test in testNames {
+
+      proc compile(test: string,
+                   ref result: TestResult,
+                   ref testsCompiled: list(?)): (string, bool) {
         var testPath: string;
         if isAbsPath(test) {
           testPath = test;
         } else {
-          if customTest {
+          if customTest then
             testPath = "".join(cwd,"/",test);
-          }
-          else {
+          else
             testPath = "".join('test/', test);
-          }
         }
         log.infof("Testing %s\n", testPath);
         const testName = basename(stripExt(test, ".chpl"));
 
         // get the string of dependencies for compilation
         // also names test as --main-module
-        const masonCompopts = getMasonDependencies(sourceList, gitList, testName);
-        const allCompOpts = "".join(" ".join(compopts.these()), masonCompopts);
+        const masonCompopts =
+          getMasonDependencies(sourceList, gitList, testName);
         var testTemp: string = test;
         if cwd == projectHome && customTest {
-          testTemp = relPath(testTemp,"test/");
+          testTemp = relPath(testTemp, "test/");
         }
-        const outputLoc = projectHome + "/target/test/" + stripExt(testTemp, ".chpl");
-        const moveTo = "-o " + outputLoc;
-        const compCommand = " ".join("chpl",testPath, projectPath, moveTo, allCompOpts);
-        log.debugf("\t%s\n", compCommand);
-        const compilation = runWithStatus(compCommand, !show);
+        const outputLoc =
+          joinPath(projectHome, "target", "test", stripExt(testTemp, ".chpl"));
+        var compCommand = new list(string);
+        compCommand.pushBack(["chpl", testPath, projectPath, "-o", outputLoc]);
+        compCommand.pushBack(compopts);
+        compCommand.pushBack(masonCompopts);
+        log.debugf("\t%?\n", compCommand);
+        const compilation = runWithStatus(compCommand.toArray(), !show);
+        const success = compilation == 0;
 
-        if compilation != 0 {
+        if !success {
           stderr.writeln("compilation failed for " + test);
           var errMsg = test + " failed to compile";
           if !show then
@@ -326,14 +330,35 @@ private proc runTests(show: bool, run: bool, parallel: bool, filter: string,
         else {
           testsCompiled.pushBack(test);
           if show || !run then writeln("Compiled '", test, "' successfully");
-          if parallel {
+        }
+        return (outputLoc, success);
+      }
+
+
+      var timeElapsed = new stopwatch();
+      timeElapsed.start();
+      if parallel {
+        // list.these does throttling for lists < 64 elements, so we won't get
+        // parallelism for "small" test suites.
+        // Use range as a fragile workaround instead.
+        // we could also get fancy and use some kind of work queue, because
+        // some test files could be huge and others could be tiny
+        forall testIdx in 0..#testNames.size with (ref result,
+                                                  ref testsCompiled) {
+          const testName = testNames[testIdx];
+          const (outputLoc, success) = compile(testName, result, testsCompiled);
+          if success && run {
             runTestBinary(projectHome, outputLoc, testName,
                           filter, result, show);
           }
         }
-      }
-      if run && !parallel {
-        runTestBinaries(projectHome, testsCompiled, filter, result, show);
+      } else {
+        for testName in testNames {
+         const (outputLoc, success) = compile(testName, result, testsCompiled);
+        }
+        if run {
+          runTestBinaries(projectHome, testsCompiled, filter, result, show);
+        }
       }
       timeElapsed.stop();
       if run {
@@ -404,12 +429,7 @@ private proc printTestResults(ref result, timeElapsed) {
   result.printErrors();
   writeln(result.separator2);
   result.printResult(timeElapsed.elapsed());
-  if (result.testsRun - result.testsPassed) == 0 {
-    exit(0);
-  }
-  else {
-    exit(1);
-  }
+  exit(!result.wasSuccessful():int);
 }
 
 
@@ -485,10 +505,10 @@ proc getRuntimeComm() throws {
   }
 }
 
-proc runUnitTest(ref cmdLineCompopts: list(string), filter: string, show: bool) {
+proc runUnitTest(cmdLineCompopts: list(string), filter: string, show: bool) {
   var comm_c: c_ptrConst(c_char);
   try! {
-    var checkChpl = spawn(["which","chpl"],stdout = pipeStyle.pipe);
+    var checkChpl = spawn(["which", "chpl"], stdout = pipeStyle.pipe);
     checkChpl.wait();
     var line: string;
     if checkChpl.stdout.readLine(line) {
@@ -547,11 +567,10 @@ proc testFile(file, const ref compopts: list(string),
     FileSystem.remove(executableReal);
   }
 
-  const moveTo = "-o " + executable;
-  const allCompOpts = "--comm " + comm;
-  const compCommand = " ".join("chpl",file, moveTo, allCompOpts) + " " +
-                      " ".join(compopts.these());
-  const compilation = runWithStatus(compCommand, !show);
+  var compCommand = new list(string);
+  compCommand.pushBack(["chpl", file, "-o", executable, "--comm", comm]);
+  compCommand.pushBack(compopts);
+  const compilation = runWithStatus(compCommand.toArray(), !show);
 
   if compilation != 0 {
     stderr.writeln("compilation failed for " + fileName);

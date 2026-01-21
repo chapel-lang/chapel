@@ -77,7 +77,17 @@ proc masonExample(args: [] string) throws {
 }
 
 
-private proc getBuildInfo(projectHome: string, skipUpdate: bool) {
+record examplesBuildInfo {
+  var sourceList: list(srcSource);
+  var gitList: list(gitSource);
+  var projectPath: string;
+  var compopts: list(string);
+  var exampleNames: list(string);
+  var perExampleOptions: map(string, chplOptions);
+}
+
+private proc getBuildInfo(projectHome: string,
+                          skipUpdate: bool): examplesBuildInfo {
 
   // parse lock and toml(examples dont make it to lock file)
   const lock = open(projectHome + "/Mason.lock", ioMode.r);
@@ -101,11 +111,8 @@ private proc getBuildInfo(projectHome: string, skipUpdate: bool) {
   // get the example names from lockfile or from example directory
   const exampleNames = getExamples(tomlFile.borrow(), projectHome);
 
-  var emptyCompopts = new list(string);
-  emptyCompopts.pushBack("");
-
   // Get system, and external compopts
-  const compopts = getTomlCompopts(lockFile.borrow(), emptyCompopts);
+  const compopts = getTomlCompopts(lockFile.borrow());
   var perExampleOptions = getExampleOptions(tomlFile.borrow(), exampleNames);
 
   // Close lock and toml
@@ -113,24 +120,28 @@ private proc getBuildInfo(projectHome: string, skipUpdate: bool) {
   toml.close();
 
 
-  return (sourceList, gitList, projectPath, compopts, exampleNames, perExampleOptions);
+  return new examplesBuildInfo(sourceList, gitList, projectPath,
+                               compopts, exampleNames, perExampleOptions);
 }
 
 // retrieves compopts and execopts for each example.
-// returns assoc array of <example_name> -> <(compopts, execopts)>
-private proc getExampleOptions(toml: Toml, exampleNames: list(string)) {
-
-  var exampleOptions = new map(string, (string, string));
+private proc getExampleOptions(
+  toml: Toml,
+  exampleNames: list(string)
+): map(string, chplOptions) {
+  // TODO: handle compopts and execopts as either a list or string
+  var exampleOptions = new map(string, chplOptions);
   for example in exampleNames {
     const exampleName = basename(stripExt(example, ".chpl"));
-    exampleOptions[exampleName] = ("", "");
-    if toml.pathExists("".join("examples.", exampleName, ".compopts")) {
-      var compopts = toml["".join("examples.", exampleName)]!["compopts"]!.s;
-      exampleOptions[exampleName][0] = compopts;
+    exampleOptions[exampleName] = new chplOptions();
+    const examplePath = "examples." + exampleName;
+    if toml.pathExists(examplePath + ".compopts") {
+      var compopts = toml[examplePath]!["compopts"]!.s;
+      exampleOptions[exampleName].compopts = new list(compopts.split(" "));
     }
-    if toml.pathExists("".join("examples.", exampleName, ".execopts")) {
-      var execopts = toml["".join("examples.", exampleName)]!["execopts"]!.s;
-      exampleOptions[exampleName][1] = execopts;
+    if toml.pathExists(examplePath + ".execopts") {
+      var execopts = toml[examplePath]!["execopts"]!.s;
+      exampleOptions[exampleName].execopts =  new list(execopts.split(" "));
     }
   }
   return exampleOptions;
@@ -183,7 +194,8 @@ private proc determineExamples(exampleNames: list(string),
 
 
 private proc runExamples(show: bool, run: bool, build: bool, release: bool,
-                         skipUpdate: bool, force: bool, examplesRequested: list(string)) throws {
+                         skipUpdate: bool, force: bool,
+                         examplesRequested: list(string)) throws {
 
   try! {
 
@@ -193,18 +205,14 @@ private proc runExamples(show: bool, run: bool, build: bool, release: bool,
     // Get buildInfo: dependencies, path to src code, compopts,
     // names of examples, example compopts
     var buildInfo = getBuildInfo(projectHome, skipUpdate);
-    const sourceList = buildInfo[0];
-    const gitList = buildInfo[1];
-    const projectPath = buildInfo[2];
-    const compopts = buildInfo[3];
-    const exampleNames = buildInfo[4];
-    const perExampleOptions = buildInfo[5];
-    const projectName = basename(stripExt(projectPath, ".chpl"));
+    const projectName = basename(stripExt(buildInfo.projectPath, ".chpl"));
     //TODO: This build info is weird and only used here, we should
     //      move away from this
+    //      alternatively, should we use this more generally?
 
-    var numExamples = exampleNames.size;
-    var examplesToRun = determineExamples(exampleNames, examplesRequested);
+    var numExamples = buildInfo.exampleNames.size;
+    var examplesToRun =
+      determineExamples(buildInfo.exampleNames, examplesRequested);
 
     // Clean out example binaries from previous runs
     if build then setupExampleDir(projectHome);
@@ -216,11 +224,11 @@ private proc runExamples(show: bool, run: bool, build: bool, release: bool,
         const exampleName = basename(stripExt(example, ".chpl"));
 
         // retrieves compopts and execopts found per example in the toml file
-        const optsFromToml = perExampleOptions[exampleName];
-        var exampleCompopts = optsFromToml[0];
-        var exampleExecopts = optsFromToml[1];
+        const optsFromToml = buildInfo.perExampleOptions[exampleName];
+        var exampleCompopts = optsFromToml.compopts;
+        var exampleExecopts = optsFromToml.execopts;
 
-        if release then exampleCompopts += " --fast";
+        if release then exampleCompopts.pushBack("--fast");
 
         if build {
           if force || exampleModified(projectHome, projectName, example) {
@@ -230,32 +238,36 @@ private proc runExamples(show: bool, run: bool, build: bool, release: bool,
 
             // get the string of dependencies for compilation
             // also names example as --main-module
-            const masonCompopts = getMasonDependencies(sourceList, gitList, exampleName);
-            var allCompOpts = " ".join(" ".join(compopts.these()), masonCompopts,
-                                       exampleCompopts);
-
-            const moveTo = "-o " + projectHome + "/target/example/" + exampleName;
-            const compCommand = " ".join("chpl",examplePath, projectPath,
-                                         moveTo, allCompOpts);
-            if show then writeln(compCommand);
-            const compilation = runWithStatus(compCommand);
+            const masonCompopts =
+              getMasonDependencies(buildInfo.sourceList,
+                                   buildInfo.gitList,
+                                   exampleName);
+            const outputName =
+              joinPath(projectHome, "target", "example", exampleName);
+            var compCommand = new list(string);
+            compCommand.pushBack(["chpl", examplePath, buildInfo.projectPath,
+                                  "-o", outputName]);
+            // TODO: prereqs go here, or maybe in getBuildInfo?
+            compCommand.pushBack(buildInfo.compopts);
+            compCommand.pushBack(masonCompopts);
+            compCommand.pushBack(exampleCompopts);
+            if show then writeln(" ".join(compCommand.these()));
+            const compilation = runWithStatus(compCommand.toArray());
 
             if compilation != 0 {
               stderr.writeln("compilation failed for " + example);
+            } else {
+              if show || !run then
+                writeln("compiled ", example, " successfully");
+              if run then
+                runExampleBinary(projectHome, exampleName,
+                                 release, show, exampleExecopts);
             }
-            else {
-              if show || !run then writeln("compiled ", example, " successfully");
-              if run {
-                runExampleBinary(projectHome, exampleName, release, show, exampleExecopts);
-              }
-            }
-          }
-          // build is skipped but examples still need to be run
-          else {
+          } else {
+            // build is skipped but examples still need to be run
             writeln("Skipping "+ example + ": no changes made to project or example");
-            if run {
+            if run then
               runExampleBinary(projectHome, exampleName, release, show, exampleExecopts);
-            }
           }
         }
         // just running the example
@@ -276,16 +288,21 @@ private proc runExamples(show: bool, run: bool, build: bool, release: bool,
 
 
 private proc runExampleBinary(projectHome: string, exampleName: string,
-                              release: bool, show: bool, execopts: string) throws {
-  const command = "".join(projectHome,'/target/example/', exampleName, " ", execopts);
-  if show {
-    if release then writeln("Executing [release] target: " + command);
-    else writeln("Executing [debug] target: " + command);
-  }
+                              release: bool, show: bool,
+                              execopts: list(string)) throws {
+  const executable = joinPath(projectHome, "target", "example", exampleName);
+  var command: list(string);
+  command.pushBack(executable);
+  command.pushBack(execopts);
+  if show then
+    writef("Executing [%s] target: %s\n",
+           if release then "release" else "debug",
+           " ".join(command.these()));
 
-  const exampleResult = runWithStatus(command);
+  const exampleResult = runWithStatus(command.toArray());
   if exampleResult != 0 {
-    throw new owned MasonError("Example has not been compiled: " + exampleName + ".chpl\n" +
+    throw new MasonError(
+    "Example has not been compiled: " + exampleName + ".chpl\n" +
     "Try running: mason build --example " + exampleName + ".chpl\n" +
     "         or: mason run --example " + exampleName + ".chpl --build");
   }

@@ -150,11 +150,14 @@ proc runCommand(cmd: string, quiet=false) : string throws {
 
 /* Same as runCommand but for situations where an
    exit status is needed */
-proc runWithStatus(command, quiet=false): int {
-
+proc runWithStatus(command: string, quiet=false): int {
+  var cmd = command.split();
+  return runWithStatus(cmd, quiet=quiet);
+}
+proc runWithStatus(command: [] string, quiet=false): int {
   try {
-    var cmd = command.split();
-    var sub = spawn(cmd, stdout=pipeStyle.pipe, stderr=pipeStyle.pipe);
+    log.debugf("runWithStatus: %?\n", command);
+    var sub = spawn(command, stdout=pipeStyle.pipe, stderr=pipeStyle.pipe);
 
     var line:string;
     if !quiet {
@@ -163,24 +166,9 @@ proc runWithStatus(command, quiet=false): int {
     }
     sub.wait();
     return sub.exitCode;
-  }
-  catch {
-    return -1;
-  }
-}
-
-proc runWithProcess(command, quiet=false) throws {
-  try {
-    var cmd = command.split();
-    log.debugf("runWithProcess: %?\n", cmd);
-    var process = spawn(cmd, stdout=pipeStyle.pipe, stderr=pipeStyle.pipe);
-
-    return process;
-  }
-  catch e {
+  } catch e {
     log.debugf("Caught unknown error ('%?') for command: %?\n", e, command);
-    throw new owned MasonError("Internal mason error");
-    exit(0);
+    return -1;
   }
 }
 
@@ -538,29 +526,71 @@ proc isIdentifier(name:string) {
 }
 
 
-proc getMasonDependencies(sourceList: list(3*string),
-                          gitList: list(4*string),
-                          progName: string) {
+record gitSource {
+  var url: string;
+  var name: string;
+  var branch: string;
+  var revision: string;
+
+  iter type iterList(x: list(gitSource)) {
+    for item in x {
+      yield (item.url, item.name, item.branch, item.revision);
+    }
+  }
+  iter type iterList(x: list(gitSource), param tag: iterKind)
+  where tag == iterKind.standalone {
+    foreach idx in 0..#x.size {
+      const item = x[idx];
+      yield (item.url, item.name, item.branch, item.revision);
+    }
+  }
+}
+record srcSource {
+  var url: string;
+  var name: string;
+  var version: string;
+
+  iter type iterList(x: list(srcSource)) {
+    for item in x {
+      yield (item.url, item.name, item.version);
+    }
+  }
+  iter type iterList(x: list(srcSource), param tag: iterKind)
+  where tag == iterKind.standalone {
+    foreach idx in 0..#x.size {
+      const item = x[idx];
+      yield (item.url, item.name, item.version);
+    }
+  }
+}
+
+proc getMasonDependencies(sourceList: list(srcSource),
+                          gitList: list(gitSource),
+                          progName: string): list(string) {
 
   // Declare example to run as the main module
-  var masonCompopts = " ".join(" --main-module", progName, " ");
+  var masonCompopts: list(string);
+  masonCompopts.pushBack("--main-module");
+  masonCompopts.pushBack(progName);
 
   if sourceList.size > 0 {
-    const depPath = MASON_HOME + "/src/";
+    const depPath = joinPath(MASON_HOME, "src");
 
     // Add dependencies to project
-    for (_, name, version) in sourceList {
-      var depSrc = "".join(' ',depPath, name, "-", version, '/src/', name, ".chpl");
-      masonCompopts += depSrc;
+    for (_, name, version) in srcSource.iterList(sourceList) {
+      const depSrc = joinPath(depPath, "%s-%s".format(name, version),
+                              "src", "%s.chpl".format(name));
+      masonCompopts.pushBack(depSrc);
     }
   }
   if gitList.size > 0 {
-    const gitDepPath = MASON_HOME + '/git/';
+    const gitDepPath = joinPath(MASON_HOME, "git");
 
     // Add git dependencies
-    for (_, name, branch, _) in gitList {
-      var gitDepSrc = ' ' + gitDepPath + name + "-" + branch + '/src/' + name + ".chpl";
-      masonCompopts += gitDepSrc;
+    for (_, name, branch, _) in gitSource.iterList(gitList) {
+      const gitDepSrc = joinPath(gitDepPath, "%s-%s".format(name, branch),
+                                 "src", "%s.chpl".format(name));
+      masonCompopts.pushBack(gitDepSrc);
     }
   }
   return masonCompopts;
@@ -826,6 +856,11 @@ iter allFields(tomlTbl: Toml) {
       continue;
     else yield(k,v);
   }
+}
+
+record chplOptions {
+  var compopts: list(string);
+  var execopts: list(string);
 }
 
 proc MASON_VERSION : string {

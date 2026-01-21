@@ -73,12 +73,12 @@ proc masonModules(args: [] string) throws {
   const depPath = MASON_HOME + '/src/';
   const gitDepPath = MASON_HOME + '/git/';
   var modules: string;
-  for (_, name, version) in sourceList {
+  for (_, name, version) in srcSource.iterList(sourceList) {
     var depM = ' ' + depPath + name + "-" + version + '/src/' + name + ".chpl";;
     modules += depM;
   }
 
-  for (_, name, branch, _) in gitList {
+  for (_, name, branch, _) in gitSource.iterList(gitList) {
     var gitDepSrc = ' ' + gitDepPath + name + "-" + branch + '/src/' + name + ".chpl";
     modules += gitDepSrc;
   }
