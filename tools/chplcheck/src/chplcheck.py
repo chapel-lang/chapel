@@ -211,6 +211,11 @@ def main():
         ),
         args_for_setting_config_path=["--config", "-c"],
     )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"chplcheck {chapel.Context().get_compiler_version()}",
+    )
     parser.add_argument("filenames", nargs="*")
     parser.add_argument(
         "--file",
