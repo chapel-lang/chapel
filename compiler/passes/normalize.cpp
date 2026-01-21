@@ -2621,6 +2621,9 @@ static void applyGetterTransform(CallExpr* call) {
         call->baseExpr->replace(new SymExpr(type));
         call->insertAtHead(gMethodToken);
 
+      } else if (UnresolvedSymExpr* unres=toUnresolvedSymExpr(call->get(2))) {
+        USR_FATAL(call, "cannot apply '.' to the first-class function '%s'",
+                  unres->unresolved);
       } else {
         INT_FATAL(call, "unexpected case");
       }
