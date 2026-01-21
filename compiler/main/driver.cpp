@@ -2020,7 +2020,7 @@ static void checkMultiLocaleLibraryConstraints() {
   if (fLinkStyle == LS_STATIC || fLinkStyle == LS_DEFAULT) {
     if (fLinkStyle == LS_STATIC) {
       USR_WARN("static linking of multi-locale libraries is not "
-               "currently supported, defaulting to '--dynamic'");
+               "currently supported, switching to '--dynamic'");
     }
 
     // Force dynamic linking if it is not already.
@@ -2029,12 +2029,14 @@ static void checkMultiLocaleLibraryConstraints() {
 
   if (fLibraryFortran) {
     USR_FATAL("multi-locale libraries do not currently support "
-              "--library-fortran");
+              "'--library-fortran', you may want to try throwing the flag "
+              "'--client-server-library' instead");
   }
 
   if (fLibraryPython) {
     USR_FATAL("multi-locale libraries do not currently support "
-              "--library-python");
+              "'--library-python', you may want to try throwing the flag "
+              "'--client-server-library' instead");
   }
 }
 
@@ -2087,6 +2089,9 @@ static void checkClientServerLibrary() {
   if (fClientServerLibraryDebug) {
     fClientServerLibrary = true;
   }
+
+  // To get things to work right, consider this a type of library.
+  fLibraryCompile = true;
 }
 
 static void setMaxCIdentLen() {

@@ -5233,11 +5233,11 @@ void makeBinaryLLVM(void) {
 
     if (fClientServerLibrary) {
       codegen_makefile(&mainfile, &tmpbinname, &tmpservername, true);
-      INT_ASSERT(tmpservername);
-      INT_ASSERT(tmpbinname);
+      INT_ASSERT(tmpservername && strlen(tmpservername) > 0);
+      INT_ASSERT(tmpbinname && strlen(tmpbinname) > 0);
     } else {
       codegen_makefile(&mainfile, &tmpbinname, NULL, true);
-      INT_ASSERT(tmpbinname);
+      INT_ASSERT(tmpbinname && strlen(tmpbinname) > 0);
     }
 
     if (fLibraryCompile && !fClientServerLibrary) {

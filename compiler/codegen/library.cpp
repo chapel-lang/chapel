@@ -1037,7 +1037,7 @@ bool isUserRoutine(FnSymbol* fn) {
 
 bool isMultiLocaleLibrary() {
   bool isCommNone = !strcmp(CHPL_COMM, "none");
-  return fLibraryCompile && !isCommNone;
+  return fLibraryCompile && !isClientServerLibrary() && !isCommNone;
 }
 
 bool isClientServerLibrary() {
