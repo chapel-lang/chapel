@@ -221,6 +221,8 @@ extern bool fAllowExternC;
 extern char breakOnCodegenCname[256];
 extern int breakOnCodegenID;
 
+extern bool fBuiltinRuntime;
+
 enum { LS_DEFAULT=0, LS_STATIC, LS_DYNAMIC };
 
 extern int  fLinkStyle;
@@ -233,8 +235,8 @@ extern bool fLibraryMakefile;
 extern bool fLibraryCMakeLists;
 extern bool fLibraryPython;
 
-extern bool fMultiLocaleInterop;
-extern bool fMultiLocaleLibraryDebug;
+extern bool fClientServerLibrary;
+extern bool fClientServerLibraryDebug;
 
 extern bool no_codegen;
 extern bool developer;
