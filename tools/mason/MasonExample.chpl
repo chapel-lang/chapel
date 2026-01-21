@@ -294,11 +294,10 @@ private proc runExampleBinary(projectHome: string, exampleName: string,
   var command: list(string);
   command.pushBack(executable);
   command.pushBack(execopts);
-  if show {
-    if release
-      then writeln("Executing [release] target: " + " ".join(command.these()));
-      else writeln("Executing [debug] target: " + " ".join(command.these()));
-  }
+  if show then
+    writef("Executing [%s] target: %s\n",
+           if release then "release" else "debug",
+           " ".join(command.these()));
 
   const exampleResult = runWithStatus(command.toArray());
   if exampleResult != 0 {
