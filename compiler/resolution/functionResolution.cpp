@@ -2500,42 +2500,6 @@ static bool isInConstructorLikeFunction(CallExpr* call) {
   return parent && isConstructorLikeFunction(parent);
 }
 
-// Is the function of interest invoked from a constructor
-// or initialize(), with the constructor's or initialize's 'this'
-// as the receiver actual.
-static bool isInvokedFromConstructorLikeFunction(int stackIdx) {
-  if (stackIdx > 0) {
-    CallExpr* call2 = callStack.v[stackIdx - 1];
-    if (FnSymbol* parent2 = toFnSymbol(call2->parentSymbol))
-     if (isConstructorLikeFunction(parent2))
-      if (call2->numActuals() >= 2)
-        if (SymExpr* thisArg2 = toSymExpr(call2->get(2)))
-          if (thisArg2->symbol()->hasFlag(FLAG_ARG_THIS))
-            return true;
-  }
-  return false;
-}
-
-// Check whether the actual comes from accessing a const field of 'this'
-// and the call is in a function invoked directly from this's constructor.
-// In such case, fields of 'this' are not considered 'const',
-// so we remove the const-ness flag.
-static bool checkAndUpdateIfLegalFieldOfThis(CallExpr* call, Expr* actual,
-                                             FnSymbol*& nonTaskFnParent) {
-  int stackIdx;
-  findNonTaskFnParent(call, nonTaskFnParent, stackIdx); // sets the args
-
-  if (SymExpr* se = toSymExpr(actual))
-    if (se->symbol()->hasFlag(FLAG_REF_FOR_CONST_FIELD_OF_THIS))
-      if (isInvokedFromConstructorLikeFunction(stackIdx)) {
-          // Yes, this is the case we are looking for.
-          se->symbol()->removeFlag(FLAG_REF_TO_CONST);
-          return true;
-      }
-
-  return false;
-}
-
 
 // little helper
 static Symbol* getBaseSymForConstCheck(CallExpr* call) {
@@ -4697,18 +4661,6 @@ static void checkDefaultNonnilableArrayArg(CallExpr* call, FnSymbol* fn) {
 
 static void resolveNormalCallFinalChecks(CallExpr* call) {
   FnSymbol* fn = call->resolvedFunction();
-
-  if (fn->hasFlag(FLAG_MODIFIES_CONST_FIELDS) == true) {
-    // Not allowed if it is not called directly from a constructor.
-    if (isInConstructorLikeFunction(call)                     == false ||
-        getBaseSymForConstCheck(call)->hasFlag(FLAG_ARG_THIS) == false) {
-      USR_FATAL_CONT(call,
-                     "illegal call to %s() - it modifies 'const' fields "
-                     "of 'this', therefore it can be invoked only directly "
-                     "from a constructor on the object being constructed",
-                     fn->name);
-    }
-  }
 
   lvalueCheck(call);
 
@@ -7737,13 +7689,8 @@ static void lvalueCheckActual(CallExpr* call, Expr* actual, IntentTag intent, Ar
 
   FnSymbol* nonTaskFnParent = NULL;
 
-  if (errorMsg &&
-      // sets nonTaskFnParent
-      checkAndUpdateIfLegalFieldOfThis(call, actual, nonTaskFnParent)) {
-    errorMsg = false;
-
-    nonTaskFnParent->addFlag(FLAG_MODIFIES_CONST_FIELDS);
-  }
+  int ignoredStackIdx;
+  findNonTaskFnParent(call, nonTaskFnParent, ignoredStackIdx); // sets the args
 
   if (errorMsg == true) {
     if (nonTaskFnParent &&
