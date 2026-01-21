@@ -1,0 +1,2 @@
+--m=1000 --iters=100 #norm-1000x1000
+--m=1000 --iters=100 --testMatrixNorm=false #norm-1000
