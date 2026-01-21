@@ -1928,7 +1928,7 @@ static void normalizeReturns(FnSymbol* fn) {
   if (fn->hasFlag(FLAG_NO_FN_BODY)) return;
   if (shouldSkipNormalizing(fn)) return;
 
-  SET_LINENO(fn);
+  SET_LINENO((fn->body->body.tail ? (BaseAST*)fn->body->body.tail : (BaseAST*)fn));
 
   fixupExportedArrayReturns(fn);
   fixupGenericReturnTypes(fn);
