@@ -142,10 +142,15 @@ module ChapelTuple {
     return false;
   }
 
+  pragma "compiler generated"
+  pragma "last resort"
+  pragma "no array view elision"
+  @chpldoc.nodoc
+  proc _tuple.init=(pragma "intent ref maybe const formal" other: _tuple) {
+    this.size = other.size;
+    this = other;
+  }
 
-  //
-  // tuple assignment
-  //
   pragma "compiler generated"
   pragma "last resort"
   pragma "no array view elision"
