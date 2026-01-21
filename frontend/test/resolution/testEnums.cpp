@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -663,7 +663,6 @@ static void test18internal() {
     setupModuleSearchPaths(context,
                            chplHomeStr,
                            "",
-                           false,
                            chplEnv->at("CHPL_LOCALE_MODEL"),
                            false,
                            chplEnv->at("CHPL_TASKS"),
@@ -741,6 +740,32 @@ static void test18internal() {
   assert(vars.at("j").type()->isEnumType());
 
   assert(guard.realizeErrors() == 1);
+}
+
+// regression test: we used to generate `e : e` formals, which was not valid.
+static void test18e() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context,
+      R"""(
+      enum e {
+        red, green, blue
+      }
+      var tmp = e.red;
+      param tmpParam = e.red;
+      var a = chpl__enumToOrder(tmp);
+      param c = chpl__enumToOrder(tmpParam);
+      )""", {"a","c" });
+
+  assert(vars.at("a").type());
+  assert(vars.at("a").type()->isIntType());
+  assert(!vars.at("a").param());
+  assert(vars.at("c").type());
+  assert(vars.at("c").type()->isIntType());
+  assert(vars.at("c").param());
+  assert(vars.at("c").param()->isIntParam());
+  assert(vars.at("c").param()->toIntParam()->value() == 0);
 }
 
 static void test19() {
@@ -1136,6 +1161,7 @@ int main() {
   test17();
   test18();
   test18internal();
+  test18e();
   test19();
   test20();
   test21();

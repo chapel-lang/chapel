@@ -3,8 +3,7 @@ p myRec
 ptype myRec
 p myRec.myField
 ptype myRec.myField
-# TODO: don't print this for now, it messes up the formatting for the .good file
-#p myRec2
+p myRec2
 ptype myRec2
 p myRec2.myFieldC
 ptype myRec2.myFieldC
@@ -33,9 +32,9 @@ ptype myInt
 p myReal
 ptype myReal
 p myEnumVal
-#ptype myEnumVal
+ptype myEnumVal
 p myEnumRef
-#ptype myEnumRef
+ptype myEnumRef
 p myTuple
 ptype myTuple
 quit

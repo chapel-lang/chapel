@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -54,8 +54,7 @@ class Function final : public NamedDecl {
   enum Kind {
     PROC,
     ITER,
-    OPERATOR,
-    LAMBDA
+    OPERATOR
   };
 
   enum IteratorKind {
@@ -275,7 +274,7 @@ class Function final : public NamedDecl {
   bool isParenless() const { return parenless_; }
 
   bool isAnonymous() const {
-    bool ret = name().isEmpty() || kind() == LAMBDA;
+    bool ret = name().isEmpty();
     return ret;
   }
 

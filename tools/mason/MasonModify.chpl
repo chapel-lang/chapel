@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -68,79 +68,72 @@ proc modifyToml(add: bool, spec: string, external: bool, system: bool,
   const toml = parseToml(openFile);
   var newToml: shared Toml?;
 
-  try! {
+  // Adding a dependency
+  if add {
+    if spec.find("@") == -1 {
+      throw new owned MasonError("Dependency formatted incorrectly.\nFormat: package@version");
+    }
+    const split = spec.split('@');
+    const dependency = split[0];
+    const version = split[1];
 
-    // Adding a dependency
-    if add {
-      if spec.find("@") == -1 {
-        throw new owned MasonError("Dependency formatted incorrectly.\nFormat: package@version");
-      }
-      const split = spec.split('@');
-      const dependency = split[0];
-      const version = split[1];
+    // Name and version checks are only valid for mason packages
+    if !external && !system {
+      checkDepName(dependency);
+      checkVersion(version);
+    }
 
-      // Name and version checks are only valid for mason packages
-      if !external && !system {
-        checkDepName(dependency);
-        checkVersion(version);
-      }
+    if system && add {
+      writeln(" ".join("Adding system dependency", dependency, "version", version));
+      newToml = masonSystemAdd(toml, dependency, version);
+    }
+    else if external && add {
+      writeln(" ".join("Adding external dependency with spec", spec));
+      newToml = masonExternalAdd(toml, dependency, spec);
+    }
+    else {
 
-      if system && add {
-        writeln(" ".join("Adding system dependency", dependency, "version", version));
-        newToml = masonSystemAdd(toml, dependency, version);
-      }
-      else if external && add {
-        writeln(" ".join("Adding external dependency with spec", spec));
-        newToml = masonExternalAdd(toml, dependency, spec);
-      }
-      else {
+      if !skipCheck {
+        // ensure that dependency exists and check package type
+        const depToml = getDepToml(dependency, version);
 
-        if !skipCheck {
-          // ensure that dependency exists and check package type
-          const depToml = getDepToml(dependency, version);
-
-          // Ensure path exists to maintain compatibility with old
-          // versions of TOML files which did not require the type tag.
-          if depToml.pathExists("brick.type") {
-            if depToml["brick.type"]!.s != "library" {
-              throw new owned MasonError("Only mason libraries can be added as dependencies");
-            }
+        // Ensure path exists to maintain compatibility with old
+        // versions of TOML files which did not require the type tag.
+        if depToml.pathExists("brick.type") {
+          if depToml["brick.type"]!.s != "library" {
+            throw new owned MasonError("Only mason libraries can be added as dependencies");
           }
         }
+      }
 
-        writeln(" ".join("Adding Mason dependency", dependency, "version", version));
-        newToml = masonAdd(toml, dependency, version);
-      }
-    }
-
-    // Removing a dependency
-    else {
-      var depName: string;
-      if spec.find('@') != -1 {
-        const split = spec.split('@');
-        depName = split[0];
-      }
-      else depName = spec;
-      const dependency = depName;
-      checkDepName(depName);
-
-      if !system && !external {
-        writeln("Removing Mason dependency " + dependency);
-        newToml = masonRemove(toml, dependency);
-      }
-      else if system{
-        writeln("Removing system dependency " + dependency);
-        newToml = masonSystemRemove(toml, dependency);
-      }
-      else if external{
-        writeln("Removing external dependency " + dependency);
-        newToml = masonExternalRemove(toml, dependency);
-      }
+      writeln(" ".join("Adding Mason dependency", dependency, "version", version));
+      newToml = masonAdd(toml, dependency, version);
     }
   }
-  catch e: MasonError {
-    writeln(e.message());
-    exit(1);
+
+  // Removing a dependency
+  else {
+    var depName: string;
+    if spec.find('@') != -1 {
+      const split = spec.split('@');
+      depName = split[0];
+    }
+    else depName = spec;
+    const dependency = depName;
+    checkDepName(depName);
+
+    if !system && !external {
+      writeln("Removing Mason dependency " + dependency);
+      newToml = masonRemove(toml, dependency);
+    }
+    else if system{
+      writeln("Removing system dependency " + dependency);
+      newToml = masonSystemRemove(toml, dependency);
+    }
+    else if external{
+      writeln("Removing external dependency " + dependency);
+      newToml = masonExternalRemove(toml, dependency);
+    }
   }
   return (newToml, tomlPath);
 }

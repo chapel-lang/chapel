@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -223,10 +223,8 @@ static void checkCanLoadBundledModules() {
   // make sure that we can load important internal / standard modules
   checkCanLoadBundledModule("ChapelBase");
   checkCanLoadBundledModule("ChapelStandard");
-  if (fMinimalModules == false) {
-    checkCanLoadBundledModule("ChapelSysCTypes");
-    checkCanLoadBundledModule("Errors");
-  }
+  checkCanLoadBundledModule("ChapelSysCTypes");
+  checkCanLoadBundledModule("Errors");
 }
 
 static void checkCanLoadCommandLineFile(const char* path) {

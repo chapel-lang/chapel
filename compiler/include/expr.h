@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -301,11 +301,6 @@ static inline bool isAlive(Symbol* symbol) {
 }
 
 static inline bool isAlive(Type* type) {
-  if (fMinimalModules) {
-    if(type == dtBytes || type == dtString) {
-      return false;
-    }
-  }
   return isAlive(type->symbol->defPoint);
 }
 

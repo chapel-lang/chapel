@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -993,12 +993,7 @@ module List {
       :return: A reference to the first item in this list.
       :rtype: `ref eltType`
     */
-    @deprecated(parenful=true, notes="`list.first()` is deprecated; please use the parenless version `list.first` instead")
-    proc ref first ref {
-      if parSafe then
-        compilerWarning('Calling `first()` on a list initialized with ' +
-                        '`parSafe=true` has been deprecated, consider ' +
-                        'using `set()` or `update()` instead');
+    proc ref first ref where parSafe == false {
       _enter();
 
       if boundsChecking && _size == 0 {
@@ -1011,6 +1006,13 @@ module List {
       _leave();
 
       return result;
+    }
+    @chpldoc.nodoc
+    proc ref first ref where parSafe {
+      compilerError(
+        'Cannot call `first()` on a list initialized with `parSafe=true`, ' +
+        'consider using `update()`, `getValue()`, or '+
+        '`getBorrowed()` instead', 2);
     }
 
     /*
@@ -1025,12 +1027,7 @@ module List {
       :return: A reference to the last item in this list.
       :rtype: `ref eltType`
     */
-    @deprecated(parenful=true, notes="`list.last()` is deprecated; please use the parenless version `list.last` instead")
-    proc ref last ref {
-      if parSafe then
-        compilerWarning('Calling `last()` on a list initialized with ' +
-                        '`parSafe=true` has been deprecated, consider ' +
-                        'using `set()` or `update()` instead');
+    proc ref last ref where parSafe == false {
       _enter();
 
       if boundsChecking && _size == 0 {
@@ -1043,6 +1040,13 @@ module List {
       _leave();
 
       return result;
+    }
+    @chpldoc.nodoc
+    proc ref last ref where parSafe {
+      compilerError(
+        'Cannot call `last()` on a list initialized with `parSafe=true`, ' +
+        'consider using `update()`, `getValue()`, or '+
+        '`getBorrowed()` instead', 2);
     }
 
     /*
@@ -1652,15 +1656,6 @@ module List {
       return updater(i, slot);
     }
 
-    @chpldoc.nodoc
-    inline proc _warnForParSafeIndexing() {
-      if parSafe then
-        compilerWarning('Indexing a list initialized with `parSafe=true` ' +
-                        'has been deprecated, consider using `set()` ' +
-                        'or `update()` instead', 2);
-      return;
-    }
-
     /*
       Index this list via subscript. Returns a reference to the element at a
       given index in this list.
@@ -1681,9 +1676,7 @@ module List {
 
       :return: A reference to an element in this list
     */
-    proc ref this(i: int) ref {
-      _warnForParSafeIndexing();
-
+    proc ref this(i: int) ref where parSafe == false {
       if boundsChecking && !_withinBounds(i) {
         const msg = "Invalid list index: " + i:string;
         boundsCheckHalt(msg);
@@ -1692,11 +1685,15 @@ module List {
       ref result = _getRef(i);
       return result;
     }
+    @chpldoc.nodoc
+    proc ref this(i: int) ref where parSafe {
+      compilerError(
+        'Cannot index a list initialized with `parSafe=true`, ' +
+        'use `update()` to modify the list', 2);
+    }
 
     @chpldoc.nodoc
-    proc const ref this(i: int) const ref {
-      _warnForParSafeIndexing();
-
+    proc const ref this(i: int) const ref where parSafe == false {
       if boundsChecking && !_withinBounds(i) {
         const msg = "Invalid list index: " + i:string;
         halt(msg);
@@ -1704,6 +1701,12 @@ module List {
 
       const ref result = _getRef(i);
       return result;
+    }
+    @chpldoc.nodoc
+    proc const ref this(i: int) const ref where parSafe {
+      compilerError(
+        'Cannot index a list initialized with `parSafe=true`, ' +
+        'use `getValue()`/`getBorrowed()` to get values from the list', 2);
     }
 
     // TODO - make const ref return intent overloads for `these`
@@ -1897,20 +1900,11 @@ module List {
                       " with elements of a non-nilable owned type, here: ",
                       eltType:string);
 
-      // Once GitHub Issue #7704 is resolved, replace pragma "unsafe"
-      // with a remote var declaration.
-      pragma "unsafe" var result: [0..#_size] eltType;
+      _enter();
 
-      on this {
-        _enter();
+      var result: [0..#_size] eltType = forall i in 0..#_size do _getRef(i);
 
-        var tmp: [0..#_size] eltType =
-          forall i in 0..#_size do _getRef(i);
-
-        result = tmp;
-
-        _leave();
-      }
+      _leave();
 
       return result;
     }

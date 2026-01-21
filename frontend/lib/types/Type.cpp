@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -237,6 +237,15 @@ bool Type::isLocaleType() const {
   return false;
 }
 
+bool Type::isSyncType() const {
+  if (auto rec = toRecordType()) {
+    if (rec->id().symbolPath() == USTR("ChapelSyncvar._syncvar")) {
+      return true;
+    }
+  }
+  return false;
+}
+
 bool Type::isNilablePtrType() const {
   if (isPointerLikeType()) {
 
@@ -360,17 +369,26 @@ compositeTypeIsPod(resolution::ResolutionContext* rc, const Type* t) {
   const uast::AstNode* ast = nullptr;
   if (auto id = ct->id()) ast = parsing::idToAst(context, std::move(id));
 
-  if (auto tfs = tryResolveDeinit(context, ast, t)) {
-    if (!tfs->isCompilerGenerated()) return false;
-  }
-  if (auto tfs = tryResolveInitEq(context, ast, t, t)) {
-    if (!tfs->isCompilerGenerated()) return false;
-  }
-  if (auto tfs = tryResolveAssign(context, ast, t, t)) {
-    if (!tfs->isCompilerGenerated()) return false;
-  }
+  // Error messages issued as part of, e.g., resolving the body of `operator =`,
+  // are not relevant to whether the type has a user-defined init etc..
+  //
+  // As a concrete example, types with `const` fields have a compiler-generated
+  // `operator =` that errors if you use it (because `lhs.constField = rhs.constField`
+  // is not allowed). However, we still treat them as POD.
+  auto result = context->runAndDetectErrors([&](Context* context) {
+    if (auto tfs = tryResolveDeinit(context, ast, t)) {
+      if (!tfs->isCompilerGenerated()) return false;
+    }
+    if (auto tfs = tryResolveInitEq(context, ast, t, t)) {
+      if (!tfs->isCompilerGenerated()) return false;
+    }
+    if (auto tfs = tryResolveAssign(context, ast, t, t)) {
+      if (!tfs->isCompilerGenerated()) return false;
+    }
+    return true;
+  });
 
-  return true;
+  return result.result();
 }
 
 static const bool&

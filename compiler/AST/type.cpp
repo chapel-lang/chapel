@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -2112,6 +2112,11 @@ bool isUIntType(Type *t) {
     t == dtUInt[INT_SIZE_16] ||
     t == dtUInt[INT_SIZE_32] ||
     t == dtUInt[INT_SIZE_64];
+}
+
+bool isIntegralByteType(Type* t) {
+  return t == dtInt[INT_SIZE_8] ||
+         t == dtUInt[INT_SIZE_8];
 }
 
 bool isSignedType(Type *t) {

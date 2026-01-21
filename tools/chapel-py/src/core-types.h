@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -223,27 +223,18 @@ struct TypedSignatureObject : public PythonClassWithContext<TypedSignatureObject
   static constexpr const char* Name = "TypedSignature";
   static constexpr const char* DocStr = "The signature of a particular function. Could include types gathered when instantiating the function";
 
-  static Py_hash_t hash(TypedSignatureObject* self) {
-    return chpl::hash(self->value_.signature, self->value_.poiScope);
-  }
-
-  // Define a rich comparison function, too
-  static PyObject* richcompare(TypedSignatureObject* self, PyObject* other, int op) {
-    if (other->ob_type != TypedSignatureObject::PythonType) {
-      Py_RETURN_NOTIMPLEMENTED;
-    }
-    auto otherCast = (TypedSignatureObject*) other;
-    auto selfVal = std::make_tuple(self->value_.signature, self->value_.poiScope);
-    auto otherVal = std::make_tuple(otherCast->value_.signature, otherCast->value_.poiScope);
-
-    Py_RETURN_RICHCOMPARE(selfVal, otherVal, op);
-  }
+  static PyObject* str(TypedSignatureObject* self);
+  static PyObject* repr(TypedSignatureObject* self);
+  static Py_hash_t hash(TypedSignatureObject* self);
+  static PyObject* richcompare(TypedSignatureObject* self, PyObject* other, int op);
 
   static PyTypeObject* configurePythonType() {
     // Configure the necessary methods to make inserting into sets working:
-    std::array<PyType_Slot, 2> extraSlots = {
-      PyType_Slot{Py_tp_hash, (void*) hash},
-      {Py_tp_richcompare, (void*) richcompare},
+    std::array<PyType_Slot, 4> extraSlots = {
+      PyType_Slot{Py_tp_str, (void*) TypedSignatureObject::str},
+      PyType_Slot{Py_tp_repr, (void*) TypedSignatureObject::repr},
+      PyType_Slot{Py_tp_hash, (void*) TypedSignatureObject::hash},
+      PyType_Slot{Py_tp_richcompare, (void*) TypedSignatureObject::richcompare},
     };
     PyTypeObject* configuring = PythonClassWithContext<TypedSignatureObject, TypedSignatureAndPoiScope>::configurePythonType(Py_TPFLAGS_DEFAULT, extraSlots);
     return configuring;

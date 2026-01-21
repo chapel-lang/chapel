@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -104,21 +104,20 @@ proc stripExt(toStrip: string, ext: string) : string {
 proc runCommand(cmd: [] string, quiet=false) : string throws {
   var ret : string;
   try {
+    log.debugf("runCommand: %?\n", cmd);
     var process = spawn(cmd, stdout=pipeStyle.pipe, stderr=pipeStyle.pipe);
 
-    log.debugf("runCommand: %?\n", cmd);
-
-    var line:string;
 
     log.debugln("stdout:");
-    while process.stdout.readLine(line) {
+    // use .lines() to avoid https://github.com/chapel-lang/chapel/issues/28211
+    for line in process.stdout.lines() {
       ret += line;
       if quiet then log.debug(line); else log.info(line);
     }
     log.debugln("end stdout");
 
     log.debugln("stderr:");
-    while process.stderr.readLine(line) {
+    for line in process.stderr.lines() {
       log.warn(line);
     }
     log.debugln("end stderr.");
@@ -131,11 +130,13 @@ proc runCommand(cmd: [] string, quiet=false) : string throws {
       throw new owned MasonError("Command failed: '" + cmdStr + "'");
     }
   } catch e: FileNotFoundError {
+    log.debugf("Caught FileNotFoundError for command: %?\n", cmd);
     var cmdStr = " ".join(cmd);
     throw new owned MasonError("Command not found: '" + cmdStr + "'");
   } catch e: MasonError {
     throw e;
-  } catch {
+  } catch e {
+    log.debugf("Caught unknown error ('%?') for command: %?\n", e, cmd);
     throw new owned MasonError("Internal mason error");
   }
   return ret;
@@ -171,11 +172,13 @@ proc runWithStatus(command, quiet=false): int {
 proc runWithProcess(command, quiet=false) throws {
   try {
     var cmd = command.split();
+    log.debugf("runWithProcess: %?\n", cmd);
     var process = spawn(cmd, stdout=pipeStyle.pipe, stderr=pipeStyle.pipe);
 
     return process;
   }
-  catch {
+  catch e {
+    log.debugf("Caught unknown error ('%?') for command: %?\n", e, command);
     throw new owned MasonError("Internal mason error");
     exit(0);
   }
@@ -239,11 +242,11 @@ proc getSpackRegistry : string {
    TODO: get to work with Subprocess */
 proc getSpackResult(cmd, quiet=false) : string throws {
   var ret : string;
+  var prefix = "export SPACK_ROOT=" + SPACK_ROOT +
+               " && export PATH=\"$SPACK_ROOT/bin:$PATH\"" +
+               " && . $SPACK_ROOT/share/spack/setup-env.sh && ";
+  var splitCmd = prefix + cmd;
   try {
-    var prefix = "export SPACK_ROOT=" + SPACK_ROOT +
-    " && export PATH=\"$SPACK_ROOT/bin:$PATH\"" +
-    " && . $SPACK_ROOT/share/spack/setup-env.sh && ";
-    var splitCmd = prefix + cmd;
     log.debugf("running spack command %s\n", splitCmd);
     var process = spawnshell(splitCmd, stdout=pipeStyle.pipe, executable="bash");
 
@@ -255,7 +258,8 @@ proc getSpackResult(cmd, quiet=false) : string throws {
     }
     process.wait();
   }
-  catch {
+  catch e {
+    log.debugf("Caught unknown error ('%?') for command: %?\n", e, splitCmd);
     throw new owned MasonError("Internal mason error");
   }
   return ret;
@@ -389,59 +393,49 @@ operator VersionInfo.<(a:VersionInfo, b:VersionInfo) : bool {
 private var chplVersionInfo = new VersionInfo(-1, -1, -1);
 /*
    Returns a tuple containing information about the `chpl --version`:
-   (major, minor, bugFix, isMaster)
+   (major, minor, bugFix, isMain)
 */
-proc getChapelVersionInfo(): VersionInfo {
+proc getChapelVersionInfo(): VersionInfo throws {
   use Regex;
 
   if chplVersionInfo(0) == -1 {
+
+    var output : string;
     try {
-
-      var ret : VersionInfo;
-
-      var process = spawn(["chpl", "--version"], stdout=pipeStyle.pipe);
-      process.wait();
-      if process.exitCode != 0 {
-        throw new owned MasonError("Failed to run 'chpl --version'");
-      }
-
-
-      var output : string;
-      for line in process.stdout.lines() {
-        output += line;
-      }
-
-      const semverPattern = "(\\d+\\.\\d+\\.\\d+)";
-      var master  = new regex(semverPattern + " pre-release (\\([a-z0-9]+\\))");
-      var release = new regex(semverPattern);
-
-      var semver, sha : string;
-      var isMaster: bool;
-      if master.search(output, semver, sha) {
-        isMaster = true;
-      } else if release.search(output, semver) {
-        isMaster = false;
-      } else {
-        throw new owned MasonError("Failed to match output of 'chpl --version':\n" + output);
-      }
-
-      const split = semver.split(".");
-      chplVersionInfo = new VersionInfo(split[0]:int, split[1]:int, split[2]:int);
-    } catch e : Error {
-      stderr.writeln("Error while getting Chapel version:");
-      stderr.writeln(e.message());
-      exit(1);
+      output = runCommand(["chpl", "--version"], quiet=true);
+    } catch {
+      throw new MasonError("Failed to run 'chpl --version'");
     }
+
+    const semverPattern = "(\\d+\\.\\d+\\.\\d+)";
+    var main  = new regex(semverPattern + " pre-release (\\([a-z0-9]+\\))");
+    var release = new regex(semverPattern);
+
+    var semver, sha : string;
+    var isMain: bool;
+    if main.search(output, semver, sha) {
+      isMain = true;
+    } else if release.search(output, semver) {
+      isMain = false;
+    } else {
+      throw new MasonError("Failed to match output of 'chpl --version':\n" +
+                            output);
+    }
+
+    const split = semver.split(".");
+    chplVersionInfo = new VersionInfo(split[0]:int, split[1]:int, split[2]:int);
   }
 
   return chplVersionInfo;
 }
 
 private var chplVersion = "";
-proc getChapelVersionStr() {
+proc getChapelVersionStr() throws {
   if chplVersion == "" {
     const version = getChapelVersionInfo();
-    chplVersion = version(0):string + "." + version(1):string + "." + version(2):string;
+    chplVersion = version(0):string + "." +
+                  version(1):string + "." +
+                  version(2):string;
   }
   return chplVersion;
 }
@@ -832,4 +826,8 @@ iter allFields(tomlTbl: Toml) {
       continue;
     else yield(k,v);
   }
+}
+
+proc MASON_VERSION : string {
+  return "0.2.0";
 }

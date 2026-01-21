@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -162,6 +162,7 @@ static inline
 void* chpl_memcpy(void* dest, const void* src, size_t num)
 {
   assert(dest != src || num == 0);
+  assert(dest != NULL && src != NULL);
   return memcpy(dest, src, num);
 }
 

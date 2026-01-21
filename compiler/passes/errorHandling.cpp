@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1618,8 +1618,7 @@ static void adjustFunctionTypesToBeNonThrowing() {
 }
 
 void lowerErrorHandling() {
-  if (!fMinimalModules)
-    INT_ASSERT(dtError->inTree());
+  INT_ASSERT(dtError->inTree());
 
   std::set<FnSymbol*> visited;
   implicitThrowsReasons_t reasons;

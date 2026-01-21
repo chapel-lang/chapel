@@ -1,4 +1,4 @@
-# Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+# Copyright 2021-2026 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -61,7 +61,7 @@ add_custom_command(
           ${SRC_DIR}/../util/config/generate-license
           ${SRC_DIR}/../
           ${SRC_DIR}/main
-  DEPENDS ${SRC_DIR}/../LICENSE
+  DEPENDS ${SRC_DIR}/../LICENSE ${SRC_DIR}/../util/config/generate-license
   COMMENT "writing LICENSE file updates..."
   VERBATIM)
 
@@ -73,7 +73,7 @@ add_custom_command(
           ${SRC_DIR}/../util/config/generate-copyright
           ${SRC_DIR}/../
           ${SRC_DIR}/main
-  DEPENDS ${SRC_DIR}/../COPYRIGHT
+  DEPENDS ${SRC_DIR}/../COPYRIGHT ${SRC_DIR}/../util/config/generate-copyright
   COMMENT "writing COPYRIGHT file updates..."
   VERBATIM)
 
@@ -84,7 +84,7 @@ add_custom_command(
   COMMAND ${CHPL_CMAKE_PYTHON}
           ${SRC_DIR}/../util/config/generate-reservedSymbolNames
           ${SRC_DIR}/codegen
-  DEPENDS ${SRC_DIR}/codegen/reservedSymbolNames
+  DEPENDS ${SRC_DIR}/codegen/reservedSymbolNames ${SRC_DIR}/../util/config/generate-reservedSymbolNames
   COMMENT "writing reservedSymbolNames.h file updates..."
   VERBATIM)
 

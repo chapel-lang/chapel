@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -23,12 +23,6 @@
 #include "test-parsing.h"
 
 #include "chpl/resolution/resolution-types.h"
-
-#define ADVANCE_PRESERVING_STANDARD_MODULES_(ctx__) \
-  do { \
-    ctx__->advanceToNextRevision(false); \
-    setupModuleSearchPaths(ctx__, false, false, {}, {}); \
-  } while (0)
 
 // forward declare classes and namespaces
 namespace chpl {
@@ -116,13 +110,13 @@ QualifiedType findVarType(const Module* m,
 /**
   Test resolution of a domain literal.
  */
-void testDomainLiteral(Context* context, std::string domainLiteral,
+void testDomainLiteral(std::string domainLiteral,
                        DomainType::Kind domainKind);
 
-void testDomainIndex(Context* context, std::string domainType,
+void testDomainIndex(std::string domainType,
                      std::string expectedType);
 
-void testDomainBadPass(Context* context, std::string argType,
+void testDomainBadPass(std::string argType,
                        std::string actualType);
 
 /**

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.15)
 project(hwloc
     LANGUAGES C
-    VERSION 2.11.2)
+    VERSION 2.12.2)
 
 enable_testing()
 
@@ -50,15 +50,20 @@ set(SIZEOF_VOID_P ${CMAKE_SIZEOF_VOID_P})
 set(HWLOC_X86_32_ARCH)
 set(HWLOC_X86_64_ARCH)
 set(HWLOC_HAVE_X86_CPUID 1)
-if (CMAKE_SYSTEM_PROCESSOR MATCHES "(^AMD64$|^x86_64$)")
-    # "AMD64" on Windows, "x86_64" on Linux
+if(CMAKE_C_COMPILER_ARCHITECTURE_ID MATCHES "^(x64|x86_64)$")
+    # "x64"    for Windows (MSVC)
+    # "x86_64" for Windows (MinGW), Linux, macOS
     set(HWLOC_X86_64_ARCH 1)
-elseif (CMAKE_SYSTEM_PROCESSOR MATCHES "(^x86$|i.86)")
-    # "x86" on Windows, "i.86" on Linux
+elseif(CMAKE_C_COMPILER_ARCHITECTURE_ID MATCHES "^(X86|i[3-6]86)$")
+    # "X86"      for Windows (MSVC)
+    # "i[3-6]86" for Windows (MinGW), Linux, macOS
     set(HWLOC_X86_32_ARCH 1)
 else()
+    # For "arm64", "aarch64", "ARM64"...
     set(HWLOC_HAVE_X86_CPUID 0)
 endif()
+message(STATUS "Target Arch ID = ${CMAKE_C_COMPILER_ARCHITECTURE_ID}")
+message(STATUS "HWLOC_HAVE_X86_CPUID = ${HWLOC_HAVE_X86_CPUID}")
 
 check_c_source_compiles("int main(void) {int cpuinfo[4]; __cpuidex(cpuinfo,0,0); return 0;}"
 HWLOC_HAVE_MSVC_CPUIDEX
@@ -122,7 +127,7 @@ add_library(hwloc
     ${TOPDIR}/hwloc/topology-xml.c
     ${TOPDIR}/hwloc/topology-xml-nolibxml.c
     ${TOPDIR}/hwloc/topology-windows.c
-    ${TOPDIR}/hwloc/topology-x86.c
+    $<$<BOOL:${HWLOC_HAVE_X86_CPUID}>:${TOPDIR}/hwloc/topology-x86.c>
     $<$<BOOL:${HWLOC_HAVE_LIBXML2}>:${TOPDIR}/hwloc/topology-xml-libxml.c>
     $<$<BOOL:${HWLOC_HAVE_OPENCL}>:${TOPDIR}/hwloc/topology-opencl.c>
     $<$<BOOL:${HAVE_CUDA}>:${TOPDIR}/hwloc/topology-cuda.c>

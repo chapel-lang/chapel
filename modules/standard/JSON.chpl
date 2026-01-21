@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -643,6 +643,8 @@ module JSON {
         return nil:readType;
       }
 
+      private use Reflection;
+
       // TODO:
       // - escaped strings
       if isNumericType(readType) || isBoolType(readType) {
@@ -688,6 +690,8 @@ module JSON {
       :arg val: The value into which this Deserializer will deserialize
     */
     proc ref deserializeValue(reader: jsonReader, ref val: ?readType) : void throws {
+      private use Reflection;
+
       if canResolveMethod(val, "deserialize", reader, this) {
         val.deserialize(reader=reader, deserializer=this);
       } else {

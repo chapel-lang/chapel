@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1977,12 +1977,10 @@ module ChapelArray {
     return result;
   }
 
-  // How to cast arrays to strings
   @chpldoc.nodoc
-  @deprecated(notes="casting arrays to string is deprecated; please use 'try! \"%?\".format()' from IO.FormattedIO instead")
   operator :(x: [], type t:string) {
-    import IO.FormattedIO.string;
-    return try! "%?".format(x);
+    compilerError("Cannot cast an array to a string, use "+
+                  "'try! \"%?\".format(array)' from IO.FormattedIO instead");
   }
 
   pragma "last resort"

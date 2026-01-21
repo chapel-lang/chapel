@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -239,28 +239,26 @@ void normalize() {
 
   moveGlobalDeclarationsToModuleScope();
 
-  if (!fMinimalModules) {
-    // Calls to chpl_statementLevelSymbol() are inserted here and in
-    // function resolution to ensure that sync vars are in the correct
-    // state (empty) if they are used but not assigned to anything.
-    forv_Vec(SymExpr, se, gSymExprs) {
-      if (shouldSkipNormalizing(se)) continue;
+  // Calls to chpl_statementLevelSymbol() are inserted here and in
+  // function resolution to ensure that sync vars are in the correct
+  // state (empty) if they are used but not assigned to anything.
+  forv_Vec(SymExpr, se, gSymExprs) {
+    if (shouldSkipNormalizing(se)) continue;
 
-      if (FnSymbol* parentFn = toFnSymbol(se->parentSymbol)) {
-        if (se == se->getStmtExpr()) {
-          // Don't add these calls for the return type, since
-          // chpl_statementLevelSymbol would do nothing in that case
-          // anyway, and it contributes to order-of-resolution issues for
-          // extern functions with declared return type.
-          if (parentFn->retExprType != se->parentExpr) {
-            SET_LINENO(se);
+    if (FnSymbol* parentFn = toFnSymbol(se->parentSymbol)) {
+      if (se == se->getStmtExpr()) {
+        // Don't add these calls for the return type, since
+        // chpl_statementLevelSymbol would do nothing in that case
+        // anyway, and it contributes to order-of-resolution issues for
+        // extern functions with declared return type.
+        if (parentFn->retExprType != se->parentExpr) {
+          SET_LINENO(se);
 
-            CallExpr* call = new CallExpr(astr_chpl_statementLevelSymbol);
+          CallExpr* call = new CallExpr(astr_chpl_statementLevelSymbol);
 
-            se->insertBefore(call);
+          se->insertBefore(call);
 
-            call->insertAtTail(se->remove());
-          }
+          call->insertAtTail(se->remove());
         }
       }
     }
@@ -1325,27 +1323,17 @@ static void processSyntacticDistributions(CallExpr* call) {
   if (call->isNamed("chpl__distributed")) {
     if (CallExpr* distCall = toCallExpr(call->get(1))) {
       if (SymExpr* distClass = toSymExpr(distCall->baseExpr)) {
-        if (TypeSymbol* ts = expandTypeAlias(distClass)) {
-          USR_WARN(
+        if (auto ts = expandTypeAlias(distClass)) {
+          const char* didYouMeanStr =
+            isDistClass(canonicalClassType(ts->type)) ?
+              "<domain> dmapped new dmap(new <DistName>(<args>))" :
+              "<domain> dmapped new <DistName>(<args>)";
+          USR_FATAL(
             distCall,
-            "omitting 'new' in a dmapped initialization expression is deprecated; please use '<domain> dmapped new <DistName>(<args>)'"
+            "dmapped initialization expression requires a value, not a type "
+            "- did you mean to use '%s'?",
+            didYouMeanStr
           );
-          if (isDistClass(canonicalClassType(ts->type)) == true) {
-            CallExpr* newExpr = new CallExpr(PRIM_NEW,
-                new NamedExpr(astr_chpl_manager,
-                              new SymExpr(dtUnmanaged->symbol)),
-                distCall->remove());
-
-            call->insertAtHead(new CallExpr("chpl__buildDistValue", newExpr));
-
-            processManagedNew(newExpr);
-          } else {  // handle new cases where we use a record instead
-            CallExpr* newExpr = new CallExpr(PRIM_NEW, distCall->remove());
-
-            call->insertAtHead(new CallExpr("chpl__buildDistValue", newExpr));
-
-            processManagedNew(newExpr);
-          }
         }
       }
     }
@@ -1940,7 +1928,7 @@ static void normalizeReturns(FnSymbol* fn) {
   if (fn->hasFlag(FLAG_NO_FN_BODY)) return;
   if (shouldSkipNormalizing(fn)) return;
 
-  SET_LINENO(fn);
+  SET_LINENO((fn->body->body.tail ? (BaseAST*)fn->body->body.tail : (BaseAST*)fn));
 
   fixupExportedArrayReturns(fn);
   fixupGenericReturnTypes(fn);
@@ -5208,9 +5196,9 @@ static void updateInitMethod(FnSymbol* fn) {
 ************************************** | *************************************/
 
 static TypeSymbol* expandTypeAlias(SymExpr* se) {
-  TypeSymbol* retval = NULL;
+  TypeSymbol* retval = nullptr;
 
-  while (se != NULL && retval == NULL) {
+  while (se != nullptr && retval == nullptr) {
     Symbol* sym = se->symbol();
 
     if (TypeSymbol* ts = toTypeSymbol(sym)) {
@@ -5224,11 +5212,11 @@ static TypeSymbol* expandTypeAlias(SymExpr* se) {
         se = toSymExpr(def->init);
 
       } else {
-        se = NULL;
+        se = nullptr;
       }
 
     } else {
-      se = NULL;
+      se = nullptr;
     }
   }
 
@@ -5260,8 +5248,6 @@ static void find_printModuleInit_stuff() {
       // so the number of symbols is small
     }
   }
-  // assert that we actually found such a symbol unless in minimal modules mode
-  if (!fMinimalModules) {
-    INT_ASSERT(gModuleInitIndentLevel);
-  }
+  // assert that we actually found such a symbol
+  INT_ASSERT(gModuleInitIndentLevel);
 }

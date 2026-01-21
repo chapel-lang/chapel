@@ -52,4 +52,6 @@ module Unused {
   proc tup4((x, y)) {
     return (1, 2);
   }
+
+  var myFCP: proc(x: int): int;
 }

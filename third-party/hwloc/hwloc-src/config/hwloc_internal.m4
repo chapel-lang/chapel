@@ -1,6 +1,6 @@
 dnl -*- Autoconf -*-
 dnl
-dnl Copyright © 2010-2024 Inria.  All rights reserved.
+dnl Copyright © 2010-2025 Inria.  All rights reserved.
 dnl Copyright © 2009, 2011 Université Bordeaux
 dnl Copyright © 2004-2005 The Trustees of Indiana University and Indiana
 dnl                         University Research and Technology
@@ -32,7 +32,10 @@ AC_DEFUN([HWLOC_DEFINE_ARGS],[
     # Change the symbol prefix?
     AC_ARG_WITH([hwloc-symbol-prefix],
                 AS_HELP_STRING([--with-hwloc-symbol-prefix=STRING],
-                               [STRING can be any valid C symbol name.  It will be prefixed to all public HWLOC symbols.  Default: "" (no prefix)]))
+                               [STRING can be any valid C symbol name.  It will be prefixed to all public HWLOC symbols.  Default: "" (no prefix)]),
+		[AS_IF([test "x$withval" = xyes -o "x$withval" = x],
+		       [AC_MSG_ERROR([--with-hwloc-symbol-prefix=<prefix> missing the prefix string])])]
+		)
 
     # For the windows build
     AC_ARG_VAR([HWLOC_MS_LIB], [Path to Microsoft's Visual Studio `lib' tool])
@@ -104,12 +107,18 @@ AC_DEFUN([HWLOC_DEFINE_ARGS],[
     # CUDA version (for using its pkg-config cuda-x.y.pc)
     AC_ARG_WITH([cuda-version],
                 AS_HELP_STRING([--with-cuda-version=<version>],
-		               [Specify the CUDA version (e.g. 11.2) for selecting the appropriate pkg-config file]))
+		               [Specify the CUDA version (e.g. 11.2) for selecting the appropriate pkg-config file]),
+		[AS_IF([test "x$withval" = xyes -o "x$withval" = x],
+		       [AC_MSG_ERROR([--with-cuda-version=<version> missing the version value])])]
+		)
     AC_ARG_VAR([CUDA_VERSION], [The CUDA version (e.g. 11.2) for selecting the appropriate pkg-config file])
     # CUDA install path (and NVML and OpenCL)
     AC_ARG_WITH([cuda],
                 AS_HELP_STRING([--with-cuda=<dir>],
-                               [Specify the CUDA installation directory, used for NVIDIA NVML and OpenCL too. If a non-existent directory is given, all dependencies installed by CUDA are disabled (CUDA, NVML and NVIDIA OpenCL).]))
+                               [Specify the CUDA installation directory, used for NVIDIA NVML and OpenCL too. If a non-existent directory is given, all dependencies installed by CUDA are disabled (CUDA, NVML and NVIDIA OpenCL).]),
+		[AS_IF([test "x$withval" = xyes -o "x$withval" = x],
+		       [AC_MSG_ERROR([--with-cuda=<dir> missing the installation directory])])]
+	        )
 
     # RSMI?
     AC_ARG_ENABLE([rsmi],
@@ -118,12 +127,18 @@ AC_DEFUN([HWLOC_DEFINE_ARGS],[
     # ROCm version (for selecting /opt/rocm-x.y/)
     AC_ARG_WITH([rocm-version],
                 AS_HELP_STRING([--with-rocm-version=<version>],
-		               [Specify the ROCm version (e.g. 4.2.0) for selecting the default ROCm installation path (e.g. /opt/rocm-4.2.0)]))
+		               [Specify the ROCm version (e.g. 4.2.0) for selecting the default ROCm installation path (e.g. /opt/rocm-4.2.0)]),
+		[AS_IF([test "x$withval" = xyes -o "x$withval" = x],
+		       [AC_MSG_ERROR([--with-rocm-version=<version> missing the version value])])]
+		)
     AC_ARG_VAR([ROCM_VERSION], [The ROCm version (e.g. 4.2.0) for selecting the default ROCm installation path (e.g. /opt/rocm-4.2.0)])
     # ROCm install path
     AC_ARG_WITH([rocm],
                 AS_HELP_STRING([--with-rocm=<dir>],
-		               [Specify the ROCm installation directory]))
+		               [Specify the ROCm installation directory]),
+		[AS_IF([test "x$withval" = xyes -o "x$withval" = x],
+		       [AC_MSG_ERROR([--with-rocm=<dir> missing the installation directory])])]
+		)
 
     # LevelZero
     AC_ARG_ENABLE([levelzero],
@@ -148,7 +163,9 @@ AC_DEFUN([HWLOC_DEFINE_ARGS],[
     AC_ARG_WITH([hwloc-plugins-path],
 		AS_HELP_STRING([--with-hwloc-plugins-path=dir:...],
                                [Colon-separated list of plugin directories. Default: "$prefix/lib/hwloc". Plugins will be installed in the first directory. They will be loaded from all of them, in order.]),
-		[HWLOC_PLUGINS_PATH="$with_hwloc_plugins_path"],
+		[AS_IF([test "x$withval" = xyes -o "x$withval" = x],
+		       [AC_MSG_ERROR([--with-hwloc-plugins-path=<dir:...> missing the plugin directories])])
+		 HWLOC_PLUGINS_PATH="$with_hwloc_plugins_path"],
 		[HWLOC_PLUGINS_PATH="\$(libdir)/hwloc"])
 
     # Look for dlopen

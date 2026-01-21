@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -436,7 +436,7 @@
 %token <uniqueStr> TIF TIMAG TIMPORT TIN TINCLUDE
 %token <uniqueStr> TINDEX TINLINE TINOUT TINT TITER TINIT TINITEQUALS
 %token <uniqueStr> TIMPLEMENTS TINTERFACE
-%token <uniqueStr> TLABEL TLAMBDA TLET TLIFETIME TLOCAL TLOCALE
+%token <uniqueStr> TLABEL TLET TLIFETIME TLOCAL TLOCALE
 %token <uniqueStr> TMANAGE TMINUSMINUS TMODULE
 %token <uniqueStr> TNEW TNIL TNOINIT TNONE TNOTHING
 %token <uniqueStr> TON TONLY TOPERATOR TOTHERWISE TOUT TOVERRIDE TOWNED
@@ -629,8 +629,6 @@
 %type <expr> opt_colon_formal_type
 %type <expr> colon_formal_type
 %type <expr> formal_type
-%type <functionParts> lambda_decl_start
-%type <expr> lambda_decl_expr
 %type <typeDeclParts> enum_header
 %type <exprList> enum_ls
 
@@ -671,7 +669,7 @@
 %type <functionParts> fn_type fn_expr
 %type <exprList> fn_type_formal_ls opt_fn_type_formal_ls
 %type <expr> fn_type_formal
-%type <exprList> opt_formal_ls req_formal_ls formal_ls formal_ls_inner
+%type <exprList> opt_formal_ls formal_ls formal_ls_inner
 %type <expr> fn_decl_receiver_expr
 %type <functionKind> proc_iter_or_op
 %type <functionParts> linkage_spec
@@ -1500,12 +1498,14 @@ class_level_stmt:
            context->noteVisibility(Decl::PUBLIC);} inner_class_level_stmt
     {
       $$ = context->finishStmt($3);
+      context->adjustLocation($$, @1, @3);
       context->visibility = Decl::DEFAULT_VISIBILITY;
     }
 | TPRIVATE {context->noteDeclStartLoc(@1);
             context->noteVisibility(Decl::PRIVATE);} inner_class_level_stmt
     {
       $$ = context->finishStmt($3);
+      context->adjustLocation($$, @1, @3);
       context->visibility = Decl::DEFAULT_VISIBILITY;
     }
 ;
@@ -1617,7 +1617,7 @@ extern_export_decl_stmt:
   }
   var_decl_start var_decl_stmt_inner_ls TSEMI
   {
-    $$ = context->buildVarOrMultiDeclStmt(YLOC2(@1, @2), $4, $5);
+    $$ = context->buildVarOrMultiDeclStmt(YLOC2(@1, @5), $4, $5);
     context->resetDeclState();
   }
 | extern_export_decl_stmt_start opt_expr extern_export_kind_inner
@@ -1627,7 +1627,7 @@ extern_export_decl_stmt:
   }
   type_alias_decl_stmt_inner_ls TSEMI
   {
-    $$ = context->buildVarOrMultiDeclStmt(@1, $3, $5);
+    $$ = context->buildVarOrMultiDeclStmt(YLOC2(@1, @5), $3, $5);
     context->resetDeclState();
   }
 ;
@@ -1635,7 +1635,7 @@ extern_export_decl_stmt:
 extern_block_stmt:
   TEXTERN EXTERNCODE
   {
-    $$ = context->buildExternBlockStmt(@1, $2);
+    $$ = context->buildExternBlockStmt(@$, $2);
   }
 ;
 
@@ -1900,7 +1900,7 @@ if_stmt:
 ifvar:
   TVAR   ident_def TASSIGN expr
   {
-    auto varDecl = Variable::build(BUILDER, LOC(@$),
+    auto varDecl = Variable::build(BUILDER, LOC(@$), LOC(@2),
                                    /*attributeGroup*/ nullptr,
                                    Decl::DEFAULT_VISIBILITY,
                                    Decl::DEFAULT_LINKAGE,
@@ -1911,12 +1911,11 @@ ifvar:
                                    context->currentScopeIsAggregate(),
                                    /*typeExpression*/ nullptr,
                                    toOwned($4));
-    BUILDER->noteDeclNameLocation(varDecl.get(), LOC(@2));
     $$ = varDecl.release();
   }
 | TCONST ident_def TASSIGN expr
   {
-    auto varDecl = Variable::build(BUILDER, LOC(@$),
+    auto varDecl = Variable::build(BUILDER, LOC(@$), LOC(@2),
                                    /*attributeGroup*/ nullptr,
                                    Decl::DEFAULT_VISIBILITY,
                                    Decl::DEFAULT_LINKAGE,
@@ -1927,7 +1926,6 @@ ifvar:
                                    context->currentScopeIsAggregate(),
                                    /*typeExpression*/ nullptr,
                                    toOwned($4));
-    BUILDER->noteDeclNameLocation(varDecl.get(), LOC(@2));
     $$ = varDecl.release();
   }
 ;
@@ -2074,7 +2072,8 @@ catch_expr:
 catch_expr_inner:
   ident_def
   {
-    auto varDecl = Variable::build(BUILDER, LOC(@$), /*attributeGroup*/ nullptr,
+    auto varDecl = Variable::build(BUILDER, LOC(@$), LOC(@1),
+                         /*attributeGroup*/ nullptr,
                          Decl::DEFAULT_VISIBILITY,
                          Decl::DEFAULT_LINKAGE,
                          /*linkageName*/ nullptr,
@@ -2084,12 +2083,12 @@ catch_expr_inner:
                          /*isField*/ false,
                          /*typeExpression*/ nullptr,
                          /*initExpression*/ nullptr);
-    BUILDER->noteDeclNameLocation(varDecl.get(), LOC(@1));
     $$ = varDecl.release();
   }
 | ident_def TCOLON expr
   {
-    auto varDecl = Variable::build(BUILDER, LOC(@$), /*attributeGroup*/ nullptr,
+    auto varDecl = Variable::build(BUILDER, LOC(@$), LOC(@1),
+                         /*attributeGroup*/ nullptr,
                          Decl::DEFAULT_VISIBILITY,
                          Decl::DEFAULT_LINKAGE,
                          /*linkageName*/ nullptr,
@@ -2099,7 +2098,6 @@ catch_expr_inner:
                          /*isField*/ false,
                          /*typeExpression*/ toOwned($3),
                          /*initExpression*/ nullptr);
-    BUILDER->noteDeclNameLocation(varDecl.get(), LOC(@1));
     $$ = varDecl.release();
   }
 ;
@@ -2339,51 +2337,6 @@ enum_item:
       BUILDER->noteDeclNameLocation(decl.get(), LOC(@1));
       $$ = STMT(@$, decl.release());
       context->clearCommentsBefore(@3);
-    }
-;
-
-lambda_decl_start:
-  TLAMBDA
-    {
-      FunctionParts fp = context->makeFunctionParts(false, false);
-      context->noteDeclStartLoc(@1);
-      auto loc = context->declStartLoc(@$);
-      fp.comments = context->gatherComments(loc);
-      fp.attributeGroup = context->buildAttributeGroup(@$).release();
-      fp.visibility = context->visibility;
-      context->resetAttributeGroupPartsState();
-      fp.kind = Function::PROC;
-      $$ = fp;
-    }
-;
-
-lambda_decl_expr:
-  lambda_decl_start req_formal_ls opt_ret_tag opt_type
-  opt_throws_error
-  opt_lifetime_where
-    {
-      context->clearComments();
-      context->resetDeclState();
-      context->enterScope(asttags::Function, STR("lambda"));
-    }
-  function_body_stmt
-    {
-      FunctionParts fp = $1;
-      fp.name = context->buildIdent(@1, STR("lambda"));
-      fp.formals = $2;
-      fp.returnIntent = $3;
-      fp.returnIntentLoc = @3;
-      fp.returnType = $4;
-      fp.throws = ($5 == ThrowsTag_THROWS);
-      WhereAndLifetime wl = $6;
-      fp.lifetime = wl.lifetime;
-      fp.where = wl.where;
-      fp.body = $8;
-
-      context->clearComments();
-      context->exitScope(asttags::Function, STR("lambda"));
-
-      $$ = context->buildLambda(@$, fp);
     }
 ;
 
@@ -2661,11 +2614,6 @@ opt_formal_ls:
 | TLP formal_ls TRP  { $$ = $2; }
 ;
 
-req_formal_ls:
-  TLP TRP                   { $$ = context->makeList(); }
-| TLP formal_ls_inner TRP   { $$ = $2; }
-;
-
 formal_ls_inner:
   formal                         { $$ = context->makeList($1); }
 | formal_ls_inner TCOMMA formal  { $$ = context->appendList($1, $3); }
@@ -2851,7 +2799,7 @@ type_alias_decl_stmt_start:
 | TCONFIG TTYPE
   {
     context->noteVarDeclKind(Variable::TYPE);
-    context->noteIsVarDeclConfig(true);
+    context->noteIsVarDeclConfig(true, @1);
     $$ = context->buildAttributeGroup(@$).release();
     context->resetAttributeGroupPartsState();
   }
@@ -2872,7 +2820,7 @@ type_alias_decl_stmt_inner:
   ident_def opt_init_type
   {
     // TODO (dlongnecke-cray): Add a helper to build this and var_decl_stmt.
-    auto node = Variable::build(BUILDER, LOC(@$),
+    auto node = Variable::build(BUILDER, LOC(@$), LOC(@1),
                                 /*attributeGroup*/ nullptr,
                                 context->visibility,
                                 context->linkage,
@@ -2883,7 +2831,6 @@ type_alias_decl_stmt_inner:
                                 context->currentScopeIsAggregate(),
                                 /*typeExpression*/ nullptr,
                                 toOwned($2));
-    BUILDER->noteDeclNameLocation(node.get(), LOC(@1));
     // Gather the comments like a statement does.
     $$ = STMT(@1, node.release());
     context->clearComments();
@@ -2916,10 +2863,11 @@ var_decl_stmt:
   TCONFIG
   {
     // Use a mid-rule action to thread along 'isVarDeclConfig'.
-    context->noteIsVarDeclConfig(true);
+    context->noteIsVarDeclConfig(true, @1);
   }
   var_decl_start var_decl_stmt_inner_ls TSEMI {
-    $$ = context->buildVarOrMultiDeclStmt(YLOC2(@1, @2), $3, $4);
+    CHPL_ASSERT(context->isVarDeclConfig);
+    $$ = context->buildVarOrMultiDeclStmt(YLOC2(@1, @4), $3, $4);
     context->resetDeclState();
   }
 | TON expr
@@ -2929,7 +2877,7 @@ var_decl_stmt:
   }
   var_decl_start var_decl_stmt_inner_ls TSEMI
   {
-    $$ = context->buildVarOrMultiDeclStmt(YLOC2(@1, @2), $4, $5);
+    $$ = context->buildVarOrMultiDeclStmt(YLOC2(@1, @5), $4, $5);
     context->resetDeclState();
   }
 | var_decl_start var_decl_stmt_inner_ls TSEMI
@@ -2961,7 +2909,7 @@ var_decl_stmt_inner:
     {
       // delay building the attributes for a variable, then update it later
       // in the context during the call to buildVarOrMultiDeclStmt
-      auto varDecl = Variable::build(BUILDER, LOC(@$),
+      auto varDecl = Variable::build(BUILDER, LOC(@$), LOC(@1),
                                      /*attributGroup*/nullptr,
                                      context->visibility,
                                      context->linkage,
@@ -2971,7 +2919,6 @@ var_decl_stmt_inner:
                                      context->isVarDeclConfig,
                                      context->currentScopeIsAggregate(),
                                      toOwned($2), toOwned($3));
-      BUILDER->noteDeclNameLocation(varDecl.get(), LOC(@1));
       // gather the comments like a statement does
       $$ = STMT(@1, varDecl.release());
       context->clearComments();
@@ -3312,7 +3259,6 @@ stmt_level_expr:
 | ident_expr
 | dot_expr
 | call_expr
-| lambda_decl_expr
 | new_expr
 | let_expr
 ;
@@ -3561,7 +3507,6 @@ expr:
 /** -- 'type_level_expr' -- **/
 | reduce_expr
 | scan_expr
-| lambda_decl_expr
 | new_expr
 | let_expr
 | ifc_constraint
@@ -3599,7 +3544,6 @@ call_base_expr:
                                                              STR("postfix!"),
                                                              $1); }
 | sub_type_level_expr TQUESTION { $$ = context->buildUnaryOp(@$, $2, $1); }
-| lambda_decl_expr
 | str_bytes_literal
 ;
 

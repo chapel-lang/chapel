@@ -1,4 +1,4 @@
-# Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2026 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -21,6 +21,13 @@ export CHPL_MAKE_HOME=$(realpath $(shell pwd)/../..)
 endif
 
 include $(CHPL_MAKE_HOME)/make/Makefile.base
+CHPL_DEVELOPER ?= 0
+include $(CHPL_MAKE_HOME)/make/Makefile.isTrue
+ifneq (, $(call isTrue, $(CHPL_DEVELOPER)))
+DEBUG=1
+else
+DEBUG=0
+endif
 
 unexport CHPL_MAKE_CHPLENV_CACHE
 
@@ -36,9 +43,9 @@ mason: $(bdir)/mason FORCE
 
 install: $(bdir)/mason FORCE
 
-$(bdir)/mason: $(MASON_SOURCES)
+$(bdir)/mason: $(MASON_SOURCES) buildMason
 	@echo "Building Mason..."
-	@chplBinDir=$(bdir) ./buildMason
+	@chplBinDir=$(bdir) DEBUG=$(DEBUG) ./buildMason
 
 clean: FORCE
 	@echo "Removing Mason..."

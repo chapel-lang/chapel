@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -729,7 +729,6 @@ static const char* kindToRstString(bool isMethod, Function::Kind kind) {
   case Function::Kind::PROC: return isMethod ? "method" : "function";
   case Function::Kind::ITER: return isMethod ? "itermethod" : "iterfunction";
   case Function::Kind::OPERATOR: return isMethod ? "method" : "function";
-  case Function::Kind::LAMBDA: return "lambda";
   }
   assert(false);
   return "";
@@ -750,7 +749,6 @@ static const char* kindToString(Function::Kind kind) {
   case Function::Kind::PROC: return "proc";
   case Function::Kind::ITER: return "iter";
   case Function::Kind::OPERATOR: return "operator";
-  case Function::Kind::LAMBDA: return "lambda";
   }
   assert(false);
   return "";
@@ -2455,7 +2453,6 @@ int main(int argc, char** argv) {
   setupModuleSearchPaths(gContext,
                          CHPL_HOME,
                          "", //moduleRoot
-                         false, //minimal modules
                          chplEnv->at("CHPL_LOCALE_MODEL"),
                          false, //task tracking
                          chplEnv->at("CHPL_TASKS"),

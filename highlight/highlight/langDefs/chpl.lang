@@ -19,7 +19,7 @@ Keywords={
          "else", "enum", "except", "export", "extern",
          "false", "for", "forall",
          "if", "import", "in", "index", "inline", "inout", "iter",
-         "label", "lambda", "let", "lifetime", "local",
+         "label", "let", "lifetime", "local",
          "module",
          "new", "nil", "noinit",
          "on", "only", "otherwise", "out", "override", "owned",

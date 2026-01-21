@@ -1,0 +1,1 @@
+listFirstParSafeError.chpl:9: error: Cannot call `first()` on a list initialized with `parSafe=true`, consider using `update()`, `getValue()`, or `getBorrowed()` instead

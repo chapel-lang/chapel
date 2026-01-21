@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1105,15 +1105,18 @@ module Curl {
       // curl_easy_setopt(curl, CURLOPT_POSTFIELDS, "name=daniel&project=curl");
 
       // Save the url requested
-      var url_c = allocate(uint(8), url.size:c_size_t+1, clear=true);
-      memcpy(url_c:c_ptr(void), url.localize().c_str():c_ptr(void), url.size.safeCast(c_size_t));
+      var url_c_len = url.size.safeCast(c_size_t);
+      var url_c = allocate(uint(8), url_c_len+1, clear=true);
+      if url_c_len != 0 then
+        memcpy(url_c: c_ptr(void),
+               url.localize().c_str(): c_ptr(void), url_c_len);
 
       fl.url_c = url_c:c_ptrConst(c_char);
 
       // Read the header in order to get the length of the thing we are reading
       // If we are writing, we can't really get this information (even if we try
       // to do a 0 length read).
-      if (mode == ioMode.cw || mode == ioMode.cwr) {
+      if mode == ioMode.cw || mode == ioMode.cwr {
         fl.length = -1;
         fl.seekable = false;
       } else {

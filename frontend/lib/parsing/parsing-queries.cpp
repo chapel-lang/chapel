@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -639,7 +639,6 @@ void setupModuleSearchPaths(
                   Context* context,
                   const std::string& chplHome,
                   const std::string& moduleRoot,
-                  bool minimalModules,
                   const std::string& chplLocaleModel,
                   bool enableTaskTracking,
                   const std::string& chplTasks,
@@ -659,9 +658,6 @@ void setupModuleSearchPaths(
     modRoot = chplHome + "/modules";
   } else {
     modRoot = moduleRoot;
-  }
-  if (minimalModules) {
-    modRoot += "/minimal";
   }
 
   std::string internal = modRoot + "/internal";
@@ -747,7 +743,6 @@ void setupModuleSearchPaths(
 
 void setupModuleSearchPaths(Context* context,
                             const std::string& moduleRoot,
-                            bool minimalModules,
                             bool enableTaskTracking,
                             const std::vector<std::string>& cmdLinePaths,
                             const std::vector<std::string>& inputFilenames) {
@@ -762,7 +757,6 @@ void setupModuleSearchPaths(Context* context,
   setupModuleSearchPaths(context,
                          chplHomeStr,
                          moduleRoot,
-                         minimalModules,
                          chplEnv->at("CHPL_LOCALE_MODEL"),
                          false,
                          chplEnv->at("CHPL_TASKS"),
@@ -776,11 +770,10 @@ void setupModuleSearchPaths(Context* context,
 }
 
 void setupModuleSearchPaths(Context* context,
-                            bool minimalModules,
                             bool enableTaskTracking,
                             const std::vector<std::string>& cmdLinePaths,
                             const std::vector<std::string>& inputFilenames) {
-  setupModuleSearchPaths(context, "", minimalModules, enableTaskTracking,
+  setupModuleSearchPaths(context, "", enableTaskTracking,
                                       cmdLinePaths, inputFilenames);
 }
 

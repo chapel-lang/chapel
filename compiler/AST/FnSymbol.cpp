@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1039,7 +1039,7 @@ bool FnSymbol::isSignature() const {
 }
 
 bool FnSymbol::isAnonymous() const {
-  return hasFlag(FLAG_ANONYMOUS_FN) || hasFlag(FLAG_LEGACY_LAMBDA);
+  return hasFlag(FLAG_ANONYMOUS_FN);
 }
 
 void FnSymbol::accept(AstVisitor* visitor) {

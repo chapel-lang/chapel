@@ -1,5 +1,5 @@
 #
-# Copyright 2024-2025 Hewlett Packard Enterprise Development LP
+# Copyright 2024-2026 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -218,6 +218,16 @@ def location_to_location(loc) -> Location:
     return Location(
         "file://" + os.path.abspath(loc.path()), location_to_range(loc)
     )
+
+
+def min_pos(a: Position, b: Optional[Position]) -> Position:
+    if b is None:
+        return a
+    return min(a, b)
+
+
+def range_overlap(r1: Range, r2: Range) -> bool:
+    return not (r1.end <= r2.start or r1.start >= r2.end)
 
 
 def get_symbol_information(
@@ -709,6 +719,7 @@ class FileInfo:
         Dict[chapel.TypedSignature, CallsInTypeContext],
     ] = field(init=False)
     siblings: chapel.SiblingMap = field(init=False)
+    earliest_changed_pos: Optional[Position] = None
 
     def __post_init__(self):
         self.use_segments = PositionList(lambda x: x.ident.rng)
@@ -1007,6 +1018,18 @@ class FileInfo:
 
             self._search_instantiations(fn, via=sig)
 
+    def _invalidate_inst_segments(
+        self,
+    ):
+        """
+        Once we've collected new instantiations, remove any instantiation
+        segments that were built with instantiations we no longer have.
+        """
+        for decl, inst in self.instantiation_segments.elts:
+            available_insts = self.instantiations.get(decl.node.unique_id())
+            if not available_insts or inst not in available_insts:
+                self.instantiation_segments.clear_range(decl.rng)
+
     def find_decl_by_unique_id(self, unique_id: str) -> Optional[NodeAndRange]:
         """
         Traverse the (location-key'ed) definition segment table and
@@ -1120,6 +1143,7 @@ class FileInfo:
         if self.use_resolver:
             for ast in asts:
                 self._search_instantiations(ast)
+                self._invalidate_inst_segments()
             self.call_segments.sort()
 
     def called_function_at_position(

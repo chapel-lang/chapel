@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -881,11 +881,9 @@ static QualifiedType primFamilyIsSubtype(Context* context,
   } else {
     // TODO: Don't count borrowing conversion as implying subtype, since that's
     // not what the spec does.
-    bool isSubType = cpr.passes() &&
-                     (cpr.conversionKind() == CanPassResult::NONE ||
-                      cpr.conversionKind() == CanPassResult::SUBTYPE ||
-                      cpr.conversionKind() == CanPassResult::BORROWS ||
-                      cpr.conversionKind() == CanPassResult::BORROWS_SUBTYPE);
+    bool isSubType =
+      cpr.passes() &&
+      (cpr.conversionKind() & ~(CanPassResult::SUBTYPE | CanPassResult::BORROWS)) == 0;
     if (prim == PRIM_IS_SUBTYPE) {
       result = isSubType;
     } else {

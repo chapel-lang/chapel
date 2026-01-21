@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Hardware Locality (hwloc): Managing memory attributes</title>
+<title>Hardware Locality (hwloc): Interoperability with the CUDA Runtime API</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -18,7 +18,7 @@
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Hardware Locality (hwloc)<span id="projectnumber">&#160;2.11.2</span>
+   <div id="projectname">Hardware Locality (hwloc)<span id="projectnumber">&#160;2.12.2</span>
    </div>
   </td>
  </tr>
@@ -40,85 +40,51 @@ $(function() {
 </div><!-- top -->
 <div class="header">
   <div class="summary">
-<a href="#enum-members">Enumerations</a> &#124;
 <a href="#func-members">Functions</a>  </div>
-  <div class="headertitle"><div class="title">Managing memory attributes</div></div>
+  <div class="headertitle"><div class="title">Interoperability with the CUDA Runtime API</div></div>
 </div><!--header-->
 <div class="contents">
 <table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="enum-members" name="enum-members"></a>
-Enumerations</h2></td></tr>
-<tr class="memitem:ga78aceb4cac4d614c0f5e82dbfeb779e5" id="r_ga78aceb4cac4d614c0f5e82dbfeb779e5"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00202.html#ga78aceb4cac4d614c0f5e82dbfeb779e5">hwloc_memattr_flag_e</a> { <a class="el" href="a00202.html#gga78aceb4cac4d614c0f5e82dbfeb779e5af29e65444a6ed00f5cc246df06f65815">HWLOC_MEMATTR_FLAG_HIGHER_FIRST</a> = (1UL&lt;&lt;0)
-, <a class="el" href="a00202.html#gga78aceb4cac4d614c0f5e82dbfeb779e5a9601b5b0e1e68635e7e9901f28bd93bf">HWLOC_MEMATTR_FLAG_LOWER_FIRST</a> = (1UL&lt;&lt;1)
-, <a class="el" href="a00202.html#gga78aceb4cac4d614c0f5e82dbfeb779e5a9d16523e285b2e22cfc78cc84dce8c96">HWLOC_MEMATTR_FLAG_NEED_INITIATOR</a> = (1UL&lt;&lt;2)
- }</td></tr>
-<tr class="separator:ga78aceb4cac4d614c0f5e82dbfeb779e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:ga5300e9be1abdea2e00c18492148aecd0" id="r_ga5300e9be1abdea2e00c18492148aecd0"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00202.html#ga5300e9be1abdea2e00c18492148aecd0">hwloc_memattr_get_name</a> (<a class="el" href="a00175.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, <a class="el" href="a00201.html#gacc82003a8610be554615995f0996c888">hwloc_memattr_id_t</a> attribute, const char **name)</td></tr>
-<tr class="separator:ga5300e9be1abdea2e00c18492148aecd0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga4c62b626085adeaffb233e5f2a03a5eb" id="r_ga4c62b626085adeaffb233e5f2a03a5eb"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00202.html#ga4c62b626085adeaffb233e5f2a03a5eb">hwloc_memattr_get_flags</a> (<a class="el" href="a00175.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, <a class="el" href="a00201.html#gacc82003a8610be554615995f0996c888">hwloc_memattr_id_t</a> attribute, unsigned long *flags)</td></tr>
-<tr class="separator:ga4c62b626085adeaffb233e5f2a03a5eb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga770657d1e44b09e93e09f623936c1e5f" id="r_ga770657d1e44b09e93e09f623936c1e5f"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00202.html#ga770657d1e44b09e93e09f623936c1e5f">hwloc_memattr_register</a> (<a class="el" href="a00175.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, const char *name, unsigned long flags, <a class="el" href="a00201.html#gacc82003a8610be554615995f0996c888">hwloc_memattr_id_t</a> *id)</td></tr>
-<tr class="separator:ga770657d1e44b09e93e09f623936c1e5f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga960529c08b25cf15825e0f72ecceb504" id="r_ga960529c08b25cf15825e0f72ecceb504"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00202.html#ga960529c08b25cf15825e0f72ecceb504">hwloc_memattr_set_value</a> (<a class="el" href="a00175.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, <a class="el" href="a00201.html#gacc82003a8610be554615995f0996c888">hwloc_memattr_id_t</a> attribute, <a class="el" href="a00174.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> target_node, struct <a class="el" href="a00306.html">hwloc_location</a> *initiator, unsigned long flags, hwloc_uint64_t value)</td></tr>
-<tr class="separator:ga960529c08b25cf15825e0f72ecceb504"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga3cb11734dfd875e0ada63dcb3d456983" id="r_ga3cb11734dfd875e0ada63dcb3d456983"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00202.html#ga3cb11734dfd875e0ada63dcb3d456983">hwloc_cudart_get_device_pci_ids</a> (<a class="el" href="a00166.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, int idx, int *domain, int *bus, int *dev)</td></tr>
+<tr class="separator:ga3cb11734dfd875e0ada63dcb3d456983"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga1ff00f06220c2103c78ace35c7285d37" id="r_ga1ff00f06220c2103c78ace35c7285d37"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00202.html#ga1ff00f06220c2103c78ace35c7285d37">hwloc_cudart_get_device_cpuset</a> (<a class="el" href="a00166.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, int idx, <a class="el" href="a00163.html#ga4bbf39b68b6f568fb92739e7c0ea7801">hwloc_cpuset_t</a> set)</td></tr>
+<tr class="separator:ga1ff00f06220c2103c78ace35c7285d37"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga9e539c59b3b935561a1c08f18dacf144" id="r_ga9e539c59b3b935561a1c08f18dacf144"><td class="memItemLeft" align="right" valign="top"><a class="el" href="a00165.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00202.html#ga9e539c59b3b935561a1c08f18dacf144">hwloc_cudart_get_device_pcidev</a> (<a class="el" href="a00166.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, int idx)</td></tr>
+<tr class="separator:ga9e539c59b3b935561a1c08f18dacf144"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga959b08bcbaa77d39a79cfbb5b4883349" id="r_ga959b08bcbaa77d39a79cfbb5b4883349"><td class="memItemLeft" align="right" valign="top"><a class="el" href="a00165.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00202.html#ga959b08bcbaa77d39a79cfbb5b4883349">hwloc_cudart_get_device_osdev_by_index</a> (<a class="el" href="a00166.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, unsigned idx)</td></tr>
+<tr class="separator:ga959b08bcbaa77d39a79cfbb5b4883349"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<p>Memory attribues are identified by an ID (<a class="el" href="a00201.html#gacc82003a8610be554615995f0996c888" title="A memory attribute identifier.">hwloc_memattr_id_t</a>) and a name. <a class="el" href="a00202.html#ga5300e9be1abdea2e00c18492148aecd0" title="Return the name of a memory attribute.">hwloc_memattr_get_name()</a> and <a class="el" href="a00201.html#ga79f44f8e1cfd2f97a19171417a75a137" title="Return the identifier of the memory attribute with the given name.">hwloc_memattr_get_by_name()</a> convert between them (or return error if the attribute does not exist).</p>
-<p>The set of valid <a class="el" href="a00201.html#gacc82003a8610be554615995f0996c888" title="A memory attribute identifier.">hwloc_memattr_id_t</a> is a contigous set starting at <code>0</code>. It first contains predefined attributes, as listed in <a class="el" href="a00201.html#gab4bde745db676fc2ea4b47011cd9a80e" title="Predefined memory attribute IDs. See hwloc_memattr_id_t for the generic definition of IDs for predefi...">hwloc_memattr_id_e</a> (from <code>0</code> to <code>HWLOC_MEMATTR_ID_MAX-1</code>). Then custom attributes may be dynamically registered with <a class="el" href="a00202.html#ga770657d1e44b09e93e09f623936c1e5f" title="Register a new memory attribute.">hwloc_memattr_register()</a>. They will get the following IDs (<code>HWLOC_MEMATTR_ID_MAX</code> for the first one, etc.).</p>
-<p>To iterate over all valid attributes (either predefined or dynamically registered custom ones), one may iterate over IDs starting from <code>0</code> until <a class="el" href="a00202.html#ga5300e9be1abdea2e00c18492148aecd0" title="Return the name of a memory attribute.">hwloc_memattr_get_name()</a> or <a class="el" href="a00202.html#ga4c62b626085adeaffb233e5f2a03a5eb" title="Return the flags of the given attribute.">hwloc_memattr_get_flags()</a> returns an error.</p>
-<p>The values for an existing attribute or for custom dynamically registered ones may be set or modified with <a class="el" href="a00202.html#ga960529c08b25cf15825e0f72ecceb504" title="Set an attribute value for a specific target NUMA node.">hwloc_memattr_set_value()</a>. </p>
-<h2 class="groupheader">Enumeration Type Documentation</h2>
-<a id="ga78aceb4cac4d614c0f5e82dbfeb779e5" name="ga78aceb4cac4d614c0f5e82dbfeb779e5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga78aceb4cac4d614c0f5e82dbfeb779e5">&#9670;&#160;</a></span>hwloc_memattr_flag_e</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">enum <a class="el" href="a00202.html#ga78aceb4cac4d614c0f5e82dbfeb779e5">hwloc_memattr_flag_e</a></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Memory attribute flags. Given to <a class="el" href="a00202.html#ga770657d1e44b09e93e09f623936c1e5f" title="Register a new memory attribute.">hwloc_memattr_register()</a> and returned by <a class="el" href="a00202.html#ga4c62b626085adeaffb233e5f2a03a5eb" title="Return the flags of the given attribute.">hwloc_memattr_get_flags()</a>. </p>
-<table class="fieldtable">
-<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="gga78aceb4cac4d614c0f5e82dbfeb779e5af29e65444a6ed00f5cc246df06f65815" name="gga78aceb4cac4d614c0f5e82dbfeb779e5af29e65444a6ed00f5cc246df06f65815"></a>HWLOC_MEMATTR_FLAG_HIGHER_FIRST&#160;</td><td class="fielddoc"><p>The best nodes for this memory attribute are those with the higher values. For instance Bandwidth. </p>
-</td></tr>
-<tr><td class="fieldname"><a id="gga78aceb4cac4d614c0f5e82dbfeb779e5a9601b5b0e1e68635e7e9901f28bd93bf" name="gga78aceb4cac4d614c0f5e82dbfeb779e5a9601b5b0e1e68635e7e9901f28bd93bf"></a>HWLOC_MEMATTR_FLAG_LOWER_FIRST&#160;</td><td class="fielddoc"><p>The best nodes for this memory attribute are those with the lower values. For instance Latency. </p>
-</td></tr>
-<tr><td class="fieldname"><a id="gga78aceb4cac4d614c0f5e82dbfeb779e5a9d16523e285b2e22cfc78cc84dce8c96" name="gga78aceb4cac4d614c0f5e82dbfeb779e5a9d16523e285b2e22cfc78cc84dce8c96"></a>HWLOC_MEMATTR_FLAG_NEED_INITIATOR&#160;</td><td class="fielddoc"><p>The value returned for this memory attribute depends on the given initiator. For instance Bandwidth and Latency, but not Capacity. </p>
-</td></tr>
-</table>
-
-</div>
-</div>
+<p>This interface offers ways to retrieve topology information about CUDA devices when using the CUDA Runtime API. </p>
 <h2 class="groupheader">Function Documentation</h2>
-<a id="ga4c62b626085adeaffb233e5f2a03a5eb" name="ga4c62b626085adeaffb233e5f2a03a5eb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga4c62b626085adeaffb233e5f2a03a5eb">&#9670;&#160;</a></span>hwloc_memattr_get_flags()</h2>
+<a id="ga1ff00f06220c2103c78ace35c7285d37" name="ga1ff00f06220c2103c78ace35c7285d37"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga1ff00f06220c2103c78ace35c7285d37">&#9670;&#160;</a></span>hwloc_cudart_get_device_cpuset()</h2>
 
 <div class="memitem">
 <div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">int hwloc_memattr_get_flags </td>
+          <td class="memname">int hwloc_cudart_get_device_cpuset </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="a00175.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="a00166.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
           <td class="paramname"><em>topology</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="a00201.html#gacc82003a8610be554615995f0996c888">hwloc_memattr_id_t</a>&#160;</td>
-          <td class="paramname"><em>attribute</em>, </td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>idx</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">unsigned long *&#160;</td>
-          <td class="paramname"><em>flags</em>&#160;</td>
+          <td class="paramtype"><a class="el" href="a00163.html#ga4bbf39b68b6f568fb92739e7c0ea7801">hwloc_cpuset_t</a>&#160;</td>
+          <td class="paramname"><em>set</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -126,40 +92,44 @@ Functions</h2></td></tr>
           <td></td><td></td>
         </tr>
       </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 
-<p>Return the flags of the given attribute. </p>
-<p>Flags are a OR'ed set of <a class="el" href="a00202.html#ga78aceb4cac4d614c0f5e82dbfeb779e5" title="Memory attribute flags. Given to hwloc_memattr_register() and returned by hwloc_memattr_get_flags().">hwloc_memattr_flag_e</a>.</p>
-<p>The output pointer <code>flags</code> cannot be <code>NULL</code>.</p>
+<p>Get the CPU set of processors that are physically close to device <code>idx</code>. </p>
+<p>Store in <code>set</code> the CPU-set describing the locality of the CUDA device whose index is <code>idx</code>.</p>
+<p>Topology <code>topology</code> and device <code>idx</code> must match the local machine. I/O devices detection and the CUDA component are not needed in the topology.</p>
+<p>The function only returns the locality of the device. If more information about the device is needed, OS objects should be used instead, see <a class="el" href="a00202.html#ga959b08bcbaa77d39a79cfbb5b4883349" title="Get the hwloc OS device object corresponding to the CUDA device whose index is idx.">hwloc_cudart_get_device_osdev_by_index()</a>.</p>
+<p>This function is currently only implemented in a meaningful way for Linux; other systems will simply get a full cpuset.</p>
 <dl class="section return"><dt>Returns</dt><dd>0 on success. </dd>
 <dd>
--1 with errno set to <code>EINVAL</code> if the attribute does not exist. </dd></dl>
+-1 on error, for instance if device information could not be found. </dd></dl>
 
 </div>
 </div>
-<a id="ga5300e9be1abdea2e00c18492148aecd0" name="ga5300e9be1abdea2e00c18492148aecd0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga5300e9be1abdea2e00c18492148aecd0">&#9670;&#160;</a></span>hwloc_memattr_get_name()</h2>
+<a id="ga959b08bcbaa77d39a79cfbb5b4883349" name="ga959b08bcbaa77d39a79cfbb5b4883349"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga959b08bcbaa77d39a79cfbb5b4883349">&#9670;&#160;</a></span>hwloc_cudart_get_device_osdev_by_index()</h2>
 
 <div class="memitem">
 <div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">int hwloc_memattr_get_name </td>
+          <td class="memname"><a class="el" href="a00165.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> hwloc_cudart_get_device_osdev_by_index </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="a00175.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="a00166.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
           <td class="paramname"><em>topology</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="a00201.html#gacc82003a8610be554615995f0996c888">hwloc_memattr_id_t</a>&#160;</td>
-          <td class="paramname"><em>attribute</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const char **&#160;</td>
-          <td class="paramname"><em>name</em>&#160;</td>
+          <td class="paramtype">unsigned&#160;</td>
+          <td class="paramname"><em>idx</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -167,45 +137,104 @@ Functions</h2></td></tr>
           <td></td><td></td>
         </tr>
       </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 
-<p>Return the name of a memory attribute. </p>
-<p>The output pointer <code>name</code> cannot be <code>NULL</code>.</p>
+<p>Get the hwloc OS device object corresponding to the CUDA device whose index is <code>idx</code>. </p>
+<dl class="section return"><dt>Returns</dt><dd>The hwloc OS device object describing the CUDA device whose index is <code>idx</code>. </dd>
+<dd>
+<code>NULL</code> if none could be found.</dd></dl>
+<p>The topology <code>topology</code> does not necessarily have to match the current machine. For instance the topology may be an XML import of a remote host. I/O devices detection and the CUDA component must be enabled in the topology. If not, the locality of the object may still be found using <a class="el" href="a00202.html#ga1ff00f06220c2103c78ace35c7285d37" title="Get the CPU set of processors that are physically close to device idx.">hwloc_cudart_get_device_cpuset()</a>.</p>
+<dl class="section note"><dt>Note</dt><dd>The corresponding PCI device object can be obtained by looking at the OS device parent object (unless PCI devices are filtered out).</dd>
+<dd>
+This function is identical to <a class="el" href="a00201.html#ga94bd22defc09e07bd122ade707fef620" title="Get the hwloc OS device object corresponding to the CUDA device whose index is idx.">hwloc_cuda_get_device_osdev_by_index()</a>. </dd></dl>
+
+</div>
+</div>
+<a id="ga3cb11734dfd875e0ada63dcb3d456983" name="ga3cb11734dfd875e0ada63dcb3d456983"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga3cb11734dfd875e0ada63dcb3d456983">&#9670;&#160;</a></span>hwloc_cudart_get_device_pci_ids()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int hwloc_cudart_get_device_pci_ids </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="a00166.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
+          <td class="paramname"><em>topology</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>idx</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int *&#160;</td>
+          <td class="paramname"><em>domain</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int *&#160;</td>
+          <td class="paramname"><em>bus</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int *&#160;</td>
+          <td class="paramname"><em>dev</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Return the domain, bus and device IDs of the CUDA device whose index is <code>idx</code>. </p>
+<p>Device index <code>idx</code> must match the local machine.</p>
 <dl class="section return"><dt>Returns</dt><dd>0 on success. </dd>
 <dd>
--1 with errno set to <code>EINVAL</code> if the attribute does not exist. </dd></dl>
+-1 on error, for instance if device information could not be found. </dd></dl>
 
 </div>
 </div>
-<a id="ga770657d1e44b09e93e09f623936c1e5f" name="ga770657d1e44b09e93e09f623936c1e5f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga770657d1e44b09e93e09f623936c1e5f">&#9670;&#160;</a></span>hwloc_memattr_register()</h2>
+<a id="ga9e539c59b3b935561a1c08f18dacf144" name="ga9e539c59b3b935561a1c08f18dacf144"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga9e539c59b3b935561a1c08f18dacf144">&#9670;&#160;</a></span>hwloc_cudart_get_device_pcidev()</h2>
 
 <div class="memitem">
 <div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">int hwloc_memattr_register </td>
+          <td class="memname"><a class="el" href="a00165.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> hwloc_cudart_get_device_pcidev </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="a00175.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="a00166.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
           <td class="paramname"><em>topology</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>name</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">unsigned long&#160;</td>
-          <td class="paramname"><em>flags</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="a00201.html#gacc82003a8610be554615995f0996c888">hwloc_memattr_id_t</a> *&#160;</td>
-          <td class="paramname"><em>id</em>&#160;</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>idx</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -213,77 +242,18 @@ Functions</h2></td></tr>
           <td></td><td></td>
         </tr>
       </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 
-<p>Register a new memory attribute. </p>
-<p>Add a new custom memory attribute. Flags are a OR'ed set of <a class="el" href="a00202.html#ga78aceb4cac4d614c0f5e82dbfeb779e5" title="Memory attribute flags. Given to hwloc_memattr_register() and returned by hwloc_memattr_get_flags().">hwloc_memattr_flag_e</a>. It must contain one of <a class="el" href="a00202.html#gga78aceb4cac4d614c0f5e82dbfeb779e5af29e65444a6ed00f5cc246df06f65815" title="The best nodes for this memory attribute are those with the higher values. For instance Bandwidth.">HWLOC_MEMATTR_FLAG_HIGHER_FIRST</a> or <a class="el" href="a00202.html#gga78aceb4cac4d614c0f5e82dbfeb779e5a9601b5b0e1e68635e7e9901f28bd93bf" title="The best nodes for this memory attribute are those with the lower values. For instance Latency.">HWLOC_MEMATTR_FLAG_LOWER_FIRST</a> but not both.</p>
-<p>The new attribute <code>id</code> is immediately after the last existing attribute ID (which is either the ID of the last registered attribute if any, or the ID of the last predefined attribute in <a class="el" href="a00201.html#gab4bde745db676fc2ea4b47011cd9a80e" title="Predefined memory attribute IDs. See hwloc_memattr_id_t for the generic definition of IDs for predefi...">hwloc_memattr_id_e</a>).</p>
-<dl class="section return"><dt>Returns</dt><dd>0 on success. </dd>
+<p>Get the hwloc PCI device object corresponding to the CUDA device whose index is <code>idx</code>. </p>
+<dl class="section return"><dt>Returns</dt><dd>The hwloc PCI device object describing the CUDA device whose index is <code>idx</code>. </dd>
 <dd>
--1 with errno set to <code>EINVAL</code> if an invalid set of flags is given. </dd>
-<dd>
--1 with errno set to <code>EBUSY</code> if another attribute already uses this name. </dd></dl>
-
-</div>
-</div>
-<a id="ga960529c08b25cf15825e0f72ecceb504" name="ga960529c08b25cf15825e0f72ecceb504"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga960529c08b25cf15825e0f72ecceb504">&#9670;&#160;</a></span>hwloc_memattr_set_value()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">int hwloc_memattr_set_value </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="a00175.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
-          <td class="paramname"><em>topology</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="a00201.html#gacc82003a8610be554615995f0996c888">hwloc_memattr_id_t</a>&#160;</td>
-          <td class="paramname"><em>attribute</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="a00174.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td>
-          <td class="paramname"><em>target_node</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">struct <a class="el" href="a00306.html">hwloc_location</a> *&#160;</td>
-          <td class="paramname"><em>initiator</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">unsigned long&#160;</td>
-          <td class="paramname"><em>flags</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">hwloc_uint64_t&#160;</td>
-          <td class="paramname"><em>value</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Set an attribute value for a specific target NUMA node. </p>
-<p>If the attribute does not relate to a specific initiator (it does not have the flag <a class="el" href="a00202.html#gga78aceb4cac4d614c0f5e82dbfeb779e5a9d16523e285b2e22cfc78cc84dce8c96" title="The value returned for this memory attribute depends on the given initiator. For instance Bandwidth a...">HWLOC_MEMATTR_FLAG_NEED_INITIATOR</a>), location <code>initiator</code> is ignored and may be <code>NULL</code>.</p>
-<p>The initiator will be copied into the topology, the caller should free anything allocated to store the initiator, for instance the cpuset.</p>
-<p><code>target_node</code> cannot be <code>NULL</code>.</p>
-<p><code>attribute</code> cannot be ::HWLOC_MEMATTR_FLAG_ID_CAPACITY or ::HWLOC_MEMATTR_FLAG_ID_LOCALITY.</p>
-<p><code>flags</code> must be <code>0</code> for now.</p>
-<dl class="section note"><dt>Note</dt><dd>The initiator <code>initiator</code> should be of type <a class="el" href="a00201.html#gga33099ba58f607fc70925da3777688586a7135318a86361ad75fd1648e6bf6d174" title="Location is given as a cpuset, in the location cpuset union field.">HWLOC_LOCATION_TYPE_CPUSET</a> when referring to accesses performed by CPU cores. <a class="el" href="a00201.html#gga33099ba58f607fc70925da3777688586af637c39b23d48cff15ddb008644aaa84" title="Location is given as an object, in the location object union field.">HWLOC_LOCATION_TYPE_OBJECT</a> is currently unused internally by hwloc, but users may for instance use it to provide custom information about host memory accesses performed by GPUs.</dd></dl>
-<dl class="section return"><dt>Returns</dt><dd>0 on success or -1 on error. </dd></dl>
+<code>NULL</code> if none could be found.</dd></dl>
+<p>Topology <code>topology</code> and device <code>idx</code> must match the local machine. I/O devices detection must be enabled in topology <code>topology</code>. The CUDA component is not needed in the topology. </p>
 
 </div>
 </div>

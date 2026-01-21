@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -67,7 +67,7 @@ proc MASON_OFFLINE {
    trailing slashes. e.g. if location is "/path/to/my/local_registry//"
    then the default name is "local_registry".
  */
-proc MASON_REGISTRY {
+proc MASON_REGISTRY throws {
   const env = getEnv("MASON_REGISTRY");
   const default = ("mason-registry",regUrl);
   var registries: list(2*string);
@@ -78,10 +78,8 @@ proc MASON_REGISTRY {
     for str in env.split(',') {
       const regArr = str.split('|');
       if regArr.size > 2 || regArr.size < 1 {
-        stderr.writeln("expected MASON_REGISTRY to contain a comma " +
-                       "separated list of locations or 'name|location' pairs");
-        stderr.writeln(str);
-        exit(1);
+        const msg = "expected MASON_REGISTRY to contain a comma separated list of locations or 'name|location' pairs\n" + str;
+        throw new MasonError(msg);
       } else {
         var regTup: 2*string;
 
@@ -101,10 +99,10 @@ proc MASON_REGISTRY {
     for i in registries.indices {
       for j in i+1..<registries.size {
         if registries(i)(0) == registries(j)(0) {
-          stderr.writeln("registry names specified in MASON_REGISTRY must be unique:");
-          stderr.writeln(registries(i)(0), " - ", registries(i)(1));
-          stderr.writeln(registries(j)(0), " - ", registries(j)(1));
-          exit(1);
+          const msg = "registry names specified in MASON_REGISTRY must be unique:\n" +
+                    registries(i)(0) + " - " + registries(i)(1) + "\n" +
+                    registries(j)(0) + " - " + registries(j)(1);
+          throw new MasonError(msg);
         }
       }
     }
@@ -181,12 +179,11 @@ proc masonEnv(args) {
   }
 }
 
-private proc getRegNameFromLoc(location: string): string {
+private proc getRegNameFromLoc(location: string): string throws {
   var strippedLoc  = location.strip("/", leading=false);
   var lastSlashPos = strippedLoc.rfind("/");
   if lastSlashPos == -1 {
-    stderr.writeln("location should be an absolute path or URL");
-    exit(1);
+    throw new MasonError("location should be an absolute path or URL");
   }
   const gitExtension = ".git";
   if strippedLoc.endsWith(gitExtension) {

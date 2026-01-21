@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -26,14 +26,25 @@ module MasonLogger {
   // Note: we use >= to determine whether we should output something. So, if you
   // change enum values, make sure to put things in order, where the lower
   // values mean lower verbosity.
-  enum logLevel { no, error, warn, info, debug };
+  enum logLevel { no, error, warn, info, debug }
 
   var logs = getDefaultLogs();
 
   private proc getDefaultLogs() {
     import OS, OS.POSIX;
     const envChar = OS.POSIX.getenv("MASON_QUIET");
-    return if envChar == nil then logLevel.info else logLevel.no;
+    if envChar == nil {
+      // this is in lieu of proper mason log level control
+      // https://github.com/chapel-lang/chapel/issues/28163
+      const logLevelChar = OS.POSIX.getenv("MASON_LOG_LEVEL");
+      try {
+        const ll = string.createCopyingBuffer(logLevelChar).toLower():logLevel;
+        return ll;
+      } catch {
+        return logLevel.info;
+      }
+    } else
+      return logLevel.no;
   }
 
   private proc doDebug do return logs>=logLevel.debug;
@@ -93,6 +104,18 @@ module MasonLogger {
 
     proc debugf(f: string, args...) {
       if doDebug then Safe.writef(logWriter, addPrefix(f), (...args));
+    }
+
+    proc error(s: string) {
+      if doError then Safe.writef(logWriter, addPrefix("%s"), s);
+    }
+
+    proc errorln(s: string) {
+      if doError then Safe.writeln(logWriter, addPrefix(s));
+    }
+
+    proc errorf(f: string, args...) {
+      if doError then Safe.writef(logWriter, addPrefix(f), (...args));
     }
 
     proc addPrefix(f) {

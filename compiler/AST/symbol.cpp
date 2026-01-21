@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1517,10 +1517,6 @@ void createInitStringLiterals() {
   stringLiteralModule->block->insertAtTail(new DefExpr(initStringLiterals));
 
   initStringLiteralsEpilogue = initStringLiterals->getOrCreateEpilogueLabel();
-
-  if (fMinimalModules) {
-    return;
-  }
 
   // accumulate the string/bytes and prepare to sort them
   std::vector<std::pair<std::string, VarSymbol*>> literals;

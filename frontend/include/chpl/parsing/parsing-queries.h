@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -302,8 +302,7 @@ void setBundledModulePath(Context* context, UniqueString path);
 
   The 'moduleRoot' argument allows overriding the default module root. If
   'moduleRoot' is the empty string, then the default of 'CHPL_HOME/modules' is
-  used. Regardless, if 'minimalModules' is true '/minimal' is appended to the
-  'moduleRoot'.
+  used.
 
   The arguments 'prependInternalModulePaths' and 'prependStandardModulePaths',
   if non-empty, allow one to override where the context will search for
@@ -319,7 +318,6 @@ void setupModuleSearchPaths(
                   Context* context,
                   const std::string& chplHome,
                   const std::string& moduleRoot,
-                  bool minimalModules,
                   const std::string& chplLocaleModel,
                   bool enableTaskTracking,
                   const std::string& chplTasks,
@@ -338,7 +336,6 @@ void setupModuleSearchPaths(
 */
 void setupModuleSearchPaths(Context* context,
                             const std::string& moduleRoot,
-                            bool minimalModules,
                             bool enableTaskTracking,
                             const std::vector<std::string>& cmdLinePaths,
                             const std::vector<std::string>& inputFilenames);
@@ -349,7 +346,6 @@ void setupModuleSearchPaths(Context* context,
   arguments.
 */
 void setupModuleSearchPaths(Context* context,
-                            bool minimalModules,
                             bool enableTaskTracking,
                             const std::vector<std::string>& cmdLinePaths,
                             const std::vector<std::string>& inputFilenames);

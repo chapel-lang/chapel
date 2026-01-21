@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2023-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -237,6 +237,43 @@ PyObject* ParamObject::str(ParamObject* self) {
   self->value_->stringify(ss, CHPL_SYNTAX);
   auto typeString = ss.str();
   return Py_BuildValue("s", typeString.c_str());
+}
+
+PyObject* TypedSignatureObject::str(TypedSignatureObject* self) {
+  if (!self->value_.signature) {
+    raiseExceptionForIncorrectlyConstructedType("TypedSignature");
+    return nullptr;
+  }
+  std::stringstream ss;
+  self->value_.signature->stringify(ss, CHPL_SYNTAX);
+  auto typeString = ss.str();
+  return Py_BuildValue("s", typeString.c_str());
+}
+PyObject* TypedSignatureObject::repr(TypedSignatureObject* self) {
+  if (!self->value_.signature) {
+    raiseExceptionForIncorrectlyConstructedType("TypedSignature");
+    return nullptr;
+  }
+  std::stringstream ss;
+  self->value_.signature->stringify(ss, CHPL_SYNTAX);
+  if (auto poi = self->value_.poiScope) {
+    poi->stringify(ss, CHPL_SYNTAX);
+  }
+  auto typeString = ss.str();
+  return Py_BuildValue("s", typeString.c_str());
+}
+Py_hash_t TypedSignatureObject::hash(TypedSignatureObject* self) {
+  return chpl::hash(self->value_.signature, self->value_.poiScope);
+}
+PyObject* TypedSignatureObject::richcompare(TypedSignatureObject* self, PyObject* other, int op) {
+  if (other->ob_type != TypedSignatureObject::PythonType) {
+    Py_RETURN_NOTIMPLEMENTED;
+  }
+  auto otherCast = (TypedSignatureObject*) other;
+  auto selfVal = std::make_tuple(self->value_.signature, self->value_.poiScope);
+  auto otherVal = std::make_tuple(otherCast->value_.signature, otherCast->value_.poiScope);
+
+  Py_RETURN_RICHCOMPARE(selfVal, otherVal, op);
 }
 
 PyTypeObject* parentTypeFor(asttags::AstTag tag) {

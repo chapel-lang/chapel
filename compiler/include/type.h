@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -679,6 +679,7 @@ void     initCompilerGlobals();
 bool isBoolType(Type*);
 bool isIntType(Type*);
 bool isUIntType(Type*);
+bool isIntegralByteType(Type*);
 bool isSignedType(Type*);
 bool isRealType(Type*);
 bool isImagType(Type*);

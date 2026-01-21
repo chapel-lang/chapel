@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -282,6 +282,8 @@ extern bool fReportGpuTransformTime;
 extern bool fPermitUnhandledModuleErrors;
 
 extern bool fDebugSymbols;
+extern bool fDebugSafeOptOnly;
+
 extern bool optimizeCCode;
 extern bool specializeCCode;
 
@@ -314,10 +316,6 @@ extern std::string fEdition;
 bool isValidEdition(std::string maybeEdition);
 void checkEditionRangeValid(std::string first, std::string last, BaseAST* loc);
 bool isEditionApplicable(std::string first, std::string last, BaseAST* loc);
-
-// This flag is useful for testing
-// the compiler but breaks the language!
-extern bool fMinimalModules;
 
 // This flag sets the make -j value
 // <=0 == don't use -j

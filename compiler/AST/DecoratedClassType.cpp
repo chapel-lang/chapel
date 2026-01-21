@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -33,6 +33,10 @@ static const char* nameForUser(const char* className) {
     return className+1;
 
   return className;
+}
+
+const char* decoratorToString(ClassTypeDecoratorEnum d) {
+  return ClassTypeDecorator::decoratorToString(d);
 }
 
 const char* decoratedTypeAstr(ClassTypeDecoratorEnum d, const char* className) {

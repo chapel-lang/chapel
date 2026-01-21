@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -427,12 +427,11 @@ QualifiedType findVarType(const Module* m,
   return rr.byAst(var).type();
 }
 
-void testDomainLiteral(Context* context, std::string domainLiteral,
+void testDomainLiteral(std::string domainLiteral,
                        DomainType::Kind domainKind) {
   printf("Testing: %s\n", domainLiteral.c_str());
 
-  context->advanceToNextRevision(false);
-  setupModuleSearchPaths(context, false, false, {}, {});
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string program =
@@ -474,13 +473,12 @@ module M {
   assert(guard.realizeErrors() == 0);
 }
 
-void testDomainIndex(Context* context, std::string domainType,
+void testDomainIndex(std::string domainType,
                      std::string expectedType) {
   printf("Testing: index(%s) == %s\n", domainType.c_str(),
          expectedType.c_str());
 
-  context->advanceToNextRevision(false);
-  setupModuleSearchPaths(context, false, false, {}, {});
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string program =
@@ -513,13 +511,12 @@ module M {
   assert(guard.realizeErrors() == 0);
 }
 
-void testDomainBadPass(Context* context, std::string argType,
+void testDomainBadPass(std::string argType,
                        std::string actualType) {
   printf("Testing: cannot pass %s to %s\n", actualType.c_str(),
          argType.c_str());
 
-  context->advanceToNextRevision(false);
-  setupModuleSearchPaths(context, false, false, {}, {});
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string program =

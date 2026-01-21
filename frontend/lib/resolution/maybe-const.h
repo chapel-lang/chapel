@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -20,6 +20,9 @@
 #ifndef MAYBE_CONST_H
 #define MAYBE_CONST_H
 
+#include <set>
+#include "chpl/framework/ID.h"
+
 namespace chpl {
 namespace resolution {
 
@@ -27,7 +30,7 @@ struct Resolver;
 
 /* Adjusts the Resolver's results to account for return intent
    overloading & ref-maybe-const-ref formals. */
-void adjustReturnIntentOverloadsAndMaybeConstRefs(Resolver& resolver);
+void adjustReturnIntentOverloadsAndMaybeConstRefs(Resolver& resolver, std::set<ID>* mutatedConstFieldIds = nullptr);
 
 
 } // end namespace resolution

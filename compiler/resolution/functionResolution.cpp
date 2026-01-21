@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -4925,6 +4925,8 @@ void printResolutionErrorUnresolved(CallInfo&       info,
                          "Cannot assign to %s from %s",
                          toString(info.actuals.v[0]->type),
                          toString(info.actuals.v[1]->type));
+          maybeSuggestToByteCall(info.actuals.v[1], info.actuals.v[1]->type,
+                                 info.actuals.v[0]->type, call);
         }
       }
 
@@ -10662,14 +10664,12 @@ static bool errorIfFunctionCapturesAnyOuterVars(FnSymbol* fn, Expr* use) {
   // Check to make sure the function does not refer to any outer variables.
   if (!env.isEmpty()) {
     auto kindStr = FunctionType::kindToString(ft->kind());
-    if (fn->hasFlag(FLAG_LEGACY_LAMBDA)) kindStr = "lambda";
 
     if (fn->hasFlag(FLAG_ANONYMOUS_FN)) {
       USR_FATAL_CONT(use, "cannot capture %s because it refers to "
                           "outer variables",
                           kindStr);
     } else {
-      INT_ASSERT(!fn->hasFlag(FLAG_LEGACY_LAMBDA));
       USR_FATAL_CONT(use, "cannot capture %s '%s' because it refers "
                           "to outer variables",
                           kindStr,
@@ -10789,7 +10789,6 @@ static Expr* resolveFunctionCapture(FnSymbol* fn, Expr* use,
 
   if (ft->isGeneric() || ft->returnType() == dtUnknown) {
     auto kindStr = FunctionType::kindToString(ft->kind());
-    if (fn->hasFlag(FLAG_LEGACY_LAMBDA)) kindStr = "lambda";
 
     // TODO: Maybe use 'iterator'/'procedure' instead of 'proc'/'iter'?
     if (fn->hasFlag(FLAG_ANONYMOUS_FN)) {
@@ -12216,8 +12215,7 @@ static void resolveExportsEtc() {
   std::vector<FnSymbol*> exps;
 
   // try to resolve concrete functions when using --dyno-gen-lib
-  bool alsoConcrete = (fResolveConcreteFns || fDynoGenLib) &&
-                      !fMinimalModules;
+  bool alsoConcrete = (fResolveConcreteFns || fDynoGenLib);
 
   // We need to resolve any additional functions that will be exported.
   forv_expanding_Vec(FnSymbol, fn, gFnSymbols) {
@@ -12795,9 +12793,8 @@ static void resolveAutoCopyEtc(AggregateType* at) {
   // resolve autoDestroy
   if (autoDestroyMap.get(at) == NULL) {
     FnSymbol* fn = autoMemoryFunction(at, astr_autoDestroy);
-    // If --minimal-modules is used, `chpl_autoDestroy` won't be defined
-    if (fn)
-      fn->addFlag(FLAG_AUTO_DESTROY_FN);
+    INT_ASSERT(fn);
+    fn->addFlag(FLAG_AUTO_DESTROY_FN);
     autoDestroyMap.put(at, fn);
   }
 }
@@ -12968,14 +12965,9 @@ static bool isCompilerGenerated(FnSymbol* fn) {
 ************************************** | *************************************/
 
 static void resolveOther() {
-  //
-  // When compiling with --minimal-modules, gPrintModuleInitFn is not
-  // defined.
-  //
-  if (gPrintModuleInitFn) {
-    // Resolve the function that will print module init order
-    resolveFunction(gPrintModuleInitFn);
-  }
+  // Resolve the function that will print module init order
+  INT_ASSERT(gPrintModuleInitFn);
+  resolveFunction(gPrintModuleInitFn);
 
   std::vector<FnSymbol*> fns = getWellKnownFunctions();
 
@@ -13099,21 +13091,19 @@ static void insertReturnTemps() {
                                           tmp,
                                           contextCallOrCall->remove()));
 
-            if (fMinimalModules == false) {
-              if (isIteratorOrForwarder(fn)) {
-                handleStatementLevelIteratorCall(def, tmp);
+            if (isIteratorOrForwarder(fn)) {
+              handleStatementLevelIteratorCall(def, tmp);
 
-              } else
-              if ((fn->retType->getValType() &&
-                   isSyncType(fn->retType->getValType())) ||
-                  isSyncType(fn->retType))
-              {
-                CallExpr* sls = new CallExpr(
-                    astr_chpl_statementLevelSymbol, tmp);
+            } else
+            if ((fn->retType->getValType() &&
+                 isSyncType(fn->retType->getValType())) ||
+                isSyncType(fn->retType))
+            {
+              CallExpr* sls = new CallExpr(
+                  astr_chpl_statementLevelSymbol, tmp);
 
-                def->next->insertAfter(sls);
-                resolveCallAndCallee(sls);
-              }
+              def->next->insertAfter(sls);
+              resolveCallAndCallee(sls);
             }
 
             if (isTypeExpr(contextCallOrCall)) {

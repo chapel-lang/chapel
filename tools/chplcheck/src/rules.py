@@ -1,5 +1,5 @@
 #
-# Copyright 2023-2025 Hewlett Packard Enterprise Development LP
+# Copyright 2023-2026 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -49,24 +49,10 @@ def might_incorrectly_report_location(node: AstNode) -> bool:
     indentation should leave these variables alone.
     """
 
-    # some NamedDecl nodes currently use the name as the location, which
-    # does not indicate their actual indentation.
-    #
-    # https://github.com/chapel-lang/chapel/issues/25208
-    if isinstance(node, (VarLikeDecl, TupleDecl, ForwardingDecl)):
-        return True
-
-    # private function locations are bugged and don't include the 'private'
-    # keyword.
-    #
-    # https://github.com/chapel-lang/chapel/issues/24818
-    elif isinstance(node, (Function, Use, Import)) and node.visibility() != "":
-        return True
-
     # 'else if' statements do not have proper locations
     #
     # https://github.com/chapel-lang/chapel/issues/25256
-    elif isinstance(node, Conditional):
+    if isinstance(node, Conditional):
         parent = node.parent()
         grandparent = parent.parent() if parent else None
         if (
@@ -360,6 +346,45 @@ def rules(driver: LintDriver):
             new_text += " "
 
         return [Fixit.build(Edit.build(paren_loc, new_text))]
+
+    @driver.basic_rule(chapel.OpCall)
+    def BoolComparison(context, node: chapel.OpCall):
+        """
+        Warn for comparing booleans to 'true' or 'false'.
+        """
+
+        op = node.op()
+        if op == "==" or op == "!=":
+            left = node.actual(0)
+            right = node.actual(1)
+            if isinstance(left, chapel.BoolLiteral):
+                return BasicRuleResult(node, data=(op, left, right))
+            elif isinstance(right, chapel.BoolLiteral):
+                return BasicRuleResult(node, data=(op, right, left))
+        return True
+
+    @driver.fixit(BoolComparison)
+    def FixBoolComparison(context, result: BasicRuleResult):
+        assert isinstance(result.data, tuple)
+        op, bool_lit, other = result.data
+        node = result.node
+        assert isinstance(node, chapel.OpCall)
+        lines = chapel.get_file_lines(context, node)
+
+        bool_value = bool_lit.value()
+        other_text = range_to_text(other.location(), lines)
+
+        if (op == "==" and bool_value) or (op == "!=" and not bool_value):
+            replacement = other_text
+        else:
+            already_has_parens = other.paren_location() is not None
+            needs_paren = not isinstance(
+                other, (chapel.FnCall, chapel.Identifier, chapel.Dot)
+            )
+            fmt = "!({0})" if needs_paren or already_has_parens else "!{0}"
+            replacement = fmt.format(other_text)
+
+        return [Fixit.build(Edit.build(node.location(), replacement))]
 
     @driver.basic_rule(chapel.Conditional)
     def SimpleBoolConditional(context, node: chapel.Conditional):
@@ -725,6 +750,9 @@ def rules(driver: LintDriver):
             # extern functions have no bodies that can use their formals.
             parent = formal.parent()
             if isinstance(parent, NamedDecl) and parent.linkage() == "extern":
+                continue
+            # skip formals that are part of function signatures
+            if isinstance(parent, FunctionSignature):
                 continue
 
             formals[formal.unique_id()] = formal

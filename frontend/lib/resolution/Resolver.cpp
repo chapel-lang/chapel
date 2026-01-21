@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -1113,20 +1113,32 @@ handleRejectedCandidates(Resolver::CallResultWrapper& result,
   // By performing some processing in the resolver, we can issue a nicer error
   // explaining why each candidate was rejected.
   std::vector<const uast::VarLikeDecl*> actualDecls;
-  actualDecls.resize(rejected.size());
   std::stable_sort(rejected.begin(), rejected.end(),
             [](const ApplicabilityResult& a, const ApplicabilityResult& b) {
-    return a.reason() > b.reason();
+    return a.reason() <= b.reason();
   });
-  std::reverse(rejected.begin(), rejected.end());
+  std::vector<ApplicabilityResult> dedupedRejected;
+  std::unordered_set<const TypedFnSignature*> seenSigs;
+  std::unordered_set<ID> seenIds;
+
   // check each rejected candidate for uninitialized actuals
-  for (size_t i = 0; i < rejected.size(); i++) {
-    auto &candidate = rejected[i];
+  for (auto& candidate : rejected) {
+    if (auto sig = candidate.initialForErr()) {
+      auto result = seenSigs.insert(sig);
+      if (!result.second) continue; // already seen
+    } else {
+      auto result = seenIds.insert(candidate.idForErr());
+      if (!result.second) continue; // already seen
+    }
+    dedupedRejected.push_back(candidate);
+
     if (/* skip computing the formal-actual map because it will go poorly
            with an unknown formal. */
         !candidate.failedDueToWrongActual()) {
+      actualDecls.push_back(nullptr);
       continue;
     }
+
     const uast::AstNode *actualExpr = nullptr;
     const uast::VarLikeDecl *actualDecl = nullptr;
     size_t actualIdx = candidate.actualIdx();
@@ -1143,10 +1155,10 @@ handleRejectedCandidates(Resolver::CallResultWrapper& result,
         actualDecl = var->toVarLikeDecl();
       }
     }
-    actualDecls[i] = actualDecl;
+    actualDecls.push_back(actualDecl);
   }
-  CHPL_ASSERT(rejected.size() == actualDecls.size());
-  result.reportError(result, rejected, actualDecls);
+  CHPL_ASSERT(dedupedRejected.size() == actualDecls.size());
+  result.reportError(result, dedupedRejected, actualDecls);
 }
 
 static void varArgTypeQueryError(Resolver& rv,
@@ -1641,6 +1653,27 @@ static QualifiedType::Kind adjustDeclKindForFormalWithInitExpr(const AstNode* de
   return KindProperties::removeRef(declKind);
 }
 
+static const Type* speciallyComputeDeclTypeFromInit(Resolver& rv,
+                                                    const AstNode* decl,
+                                                    const QualifiedType& initExprType,
+                                                    QualifiedType::Kind declKind,
+                                                    Context* context) {
+  if (declKind == QualifiedType::TYPE) {
+    // `type x = iterator`; should not turn into an array type etc.
+    return nullptr;
+  }
+
+  // Iterators are 'materialized' into arrays
+  if (initExprType.type()->isIteratorType()) {
+    return rv.computeChplCopyInit(decl, declKind, initExprType);
+  // Check if this type requires custom type inference
+  } else if (auto rec = getTypeWithCustomInfer(context, initExprType.type())) {
+    return rv.computeCustomInferType(decl, rec);
+  }
+
+  return nullptr;
+}
+
 QualifiedType Resolver::getTypeForDecl(const AstNode* decl,
                                        const AstNode* typeExpr,
                                        const AstNode* initExpr,
@@ -1671,12 +1704,10 @@ QualifiedType Resolver::getTypeForDecl(const AstNode* decl,
     // declared type but no init, so use declared type
     typePtr = declaredType.type();
   } else if (!declaredType.hasTypePtr() && initExprType.hasTypePtr()) {
-    // Iterators are 'materialized' into arrays
-    if (initExprType.type()->isIteratorType()) {
-      typePtr = computeChplCopyInit(decl, declKind, initExprType);
-    // Check if this type requires custom type inference
-    } else if (auto rec = getTypeWithCustomInfer(context, initExprType.type())) {
-      typePtr = computeCustomInferType(decl, rec);
+    if (auto customType =
+          speciallyComputeDeclTypeFromInit(*this, decl, initExprType,
+                                           declKind, context)) {
+      typePtr = customType;
     } else {
       // init but no declared type, so use init type
       typePtr = initExprType.type();
@@ -2217,20 +2248,7 @@ gatherUserDiagnostics(ResolutionContext* rc,
   for (auto& msc : c.mostSpecific()) {
     if (!msc) continue;
 
-    // compiler-generated fns don't always have ASTs, so we can't resolve them.
-    // If it has a fabricated ID, then we generated an AST body, so don't skip it.
-    if (msc.fn()->isCompilerGenerated()) {
-      auto& id = msc.fn()->id();
-      if (!id.isFabricatedId() || id.fabricatedIdKind() != ID::Generated ||
-          !parsing::idIsFunction(rc->context(), id)) {
-        continue;
-      }
-    }
-
-    // shouldn't happen, but it currently does in some cases.
-    if (msc.fn()->needsInstantiation()) continue;
-
-    auto resolvedFn = resolveFunction(rc, msc.fn(), c.poiInfo().poiScope(), /* skipIfRunning */ true);
+    auto resolvedFn = resolveFunctionIfPossible(rc, msc.fn(), c.poiInfo().poiScope());
     if (!resolvedFn) continue;
 
     into.insert(into.end(), resolvedFn->diagnostics().begin(),
@@ -4230,6 +4248,19 @@ void Resolver::validateAndSetMostSpecific(ResolvedExpression& r,
 
     if (only.hasConstRefCoercion()) {
       r.setType(RESOLVER_TYPE_ERROR(*this, ConstRefCoercion, expr, only));
+    }
+  }
+
+  for (auto msc : mostSpecific) {
+    if (msc.hasSyncReads()) {
+      for (auto& [formalIdx, actualIdx] : msc.syncReads()) {
+        const AstNode* readSource = nullptr;
+        std::ignore = actualIdx; // ideally, we should get the actual AST.
+                                 // In practice, they are tedious to thread through.
+        const AstNode* readDest = msc.fn()->untyped()->formalDecl(formalIdx);
+        reportDeprecatedSyncRead(context, msc.fn()->formalType(formalIdx).type(),
+                                 expr, readSource, readDest);
+      }
     }
   }
 

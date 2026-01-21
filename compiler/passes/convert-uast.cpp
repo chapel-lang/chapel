@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -2760,9 +2760,6 @@ struct Converter final : UastConverter {
     } else if (node->isAnonymous()) {
       fn->addFlag(FLAG_COMPILER_NESTED_FUNCTION);
       fn->addFlag(FLAG_ANONYMOUS_FN);
-      if (node->kind() == uast::Function::LAMBDA) {
-        fn->addFlag(FLAG_LEGACY_LAMBDA);
-      }
     }
 
     Expr* retType = convertTypeExpressionOrNull(node->returnType());

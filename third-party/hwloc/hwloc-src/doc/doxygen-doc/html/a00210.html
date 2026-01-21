@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Hardware Locality (hwloc): Interoperability with the CUDA Driver API</title>
+<title>Hardware Locality (hwloc): Components and Plugins: Discovery components and backends</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -18,7 +18,7 @@
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Hardware Locality (hwloc)<span id="projectnumber">&#160;2.11.2</span>
+   <div id="projectname">Hardware Locality (hwloc)<span id="projectnumber">&#160;2.12.2</span>
    </div>
   </td>
  </tr>
@@ -40,53 +40,146 @@ $(function() {
 </div><!-- top -->
 <div class="header">
   <div class="summary">
+<a href="#nested-classes">Data Structures</a> &#124;
+<a href="#typedef-members">Typedefs</a> &#124;
+<a href="#enum-members">Enumerations</a> &#124;
 <a href="#func-members">Functions</a>  </div>
-  <div class="headertitle"><div class="title">Interoperability with the CUDA Driver API</div></div>
+  <div class="headertitle"><div class="title">Components and Plugins: Discovery components and backends</div></div>
 </div><!--header-->
 <div class="contents">
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
+Data Structures</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00352.html">hwloc_disc_component</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00356.html">hwloc_disc_status</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00360.html">hwloc_backend</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="typedef-members" name="typedef-members"></a>
+Typedefs</h2></td></tr>
+<tr class="memitem:ga600bba1a62022d5f516800649b1edb61" id="r_ga600bba1a62022d5f516800649b1edb61"><td class="memItemLeft" align="right" valign="top">typedef enum <a class="el" href="a00210.html#ga8c314121c2fc478161bcce758688b9a1">hwloc_disc_phase_e</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00210.html#ga600bba1a62022d5f516800649b1edb61">hwloc_disc_phase_t</a></td></tr>
+<tr class="separator:ga600bba1a62022d5f516800649b1edb61"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="enum-members" name="enum-members"></a>
+Enumerations</h2></td></tr>
+<tr class="memitem:ga8c314121c2fc478161bcce758688b9a1" id="r_ga8c314121c2fc478161bcce758688b9a1"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00210.html#ga8c314121c2fc478161bcce758688b9a1">hwloc_disc_phase_e</a> { <br />
+&#160;&#160;<a class="el" href="a00210.html#gga8c314121c2fc478161bcce758688b9a1ab41c626c79e9ccb1e7d41e7076972283">HWLOC_DISC_PHASE_GLOBAL</a>
+, <a class="el" href="a00210.html#gga8c314121c2fc478161bcce758688b9a1a6360474df197027761a69bd5fc620250">HWLOC_DISC_PHASE_CPU</a>
+, <a class="el" href="a00210.html#gga8c314121c2fc478161bcce758688b9a1ac4264a243844c5fbbff495cdb1b4d51d">HWLOC_DISC_PHASE_MEMORY</a>
+, <a class="el" href="a00210.html#gga8c314121c2fc478161bcce758688b9a1a677c52064dd987af4988346319b3675a">HWLOC_DISC_PHASE_PCI</a>
+, <br />
+&#160;&#160;<a class="el" href="a00210.html#gga8c314121c2fc478161bcce758688b9a1aa8e10626cba9af72f5605a1acbdc0015">HWLOC_DISC_PHASE_IO</a>
+, <a class="el" href="a00210.html#gga8c314121c2fc478161bcce758688b9a1a8a7cde9bff0ab0d085b102a3e934939b">HWLOC_DISC_PHASE_MISC</a>
+, <a class="el" href="a00210.html#gga8c314121c2fc478161bcce758688b9a1a68ca5c7ad75a6d9e5355689411621773">HWLOC_DISC_PHASE_ANNOTATE</a>
+, <a class="el" href="a00210.html#gga8c314121c2fc478161bcce758688b9a1ada3ed3f00e74909353d6ea4a96cde5ad">HWLOC_DISC_PHASE_TWEAK</a>
+<br />
+ }</td></tr>
+<tr class="separator:ga8c314121c2fc478161bcce758688b9a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaae1b38cf9b12e489884ce2a07275964b" id="r_gaae1b38cf9b12e489884ce2a07275964b"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00210.html#gaae1b38cf9b12e489884ce2a07275964b">hwloc_disc_status_flag_e</a> { <a class="el" href="a00210.html#ggaae1b38cf9b12e489884ce2a07275964ba205d644d54a0840bd9165fce7d19e6b1">HWLOC_DISC_STATUS_FLAG_GOT_ALLOWED_RESOURCES</a>
+ }</td></tr>
+<tr class="separator:gaae1b38cf9b12e489884ce2a07275964b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:ga1084285e8ff8b7df91c28917637481c6" id="r_ga1084285e8ff8b7df91c28917637481c6"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00210.html#ga1084285e8ff8b7df91c28917637481c6">hwloc_cuda_get_device_pci_ids</a> (<a class="el" href="a00175.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, CUdevice cudevice, int *domain, int *bus, int *dev)</td></tr>
-<tr class="separator:ga1084285e8ff8b7df91c28917637481c6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaec41c6b4dc3361156beb7dea2a74f5a3" id="r_gaec41c6b4dc3361156beb7dea2a74f5a3"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00210.html#gaec41c6b4dc3361156beb7dea2a74f5a3">hwloc_cuda_get_device_cpuset</a> (<a class="el" href="a00175.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, CUdevice cudevice, <a class="el" href="a00172.html#ga4bbf39b68b6f568fb92739e7c0ea7801">hwloc_cpuset_t</a> set)</td></tr>
-<tr class="separator:gaec41c6b4dc3361156beb7dea2a74f5a3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga11fed607fa404e29e8da010f3ec128e4" id="r_ga11fed607fa404e29e8da010f3ec128e4"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="a00174.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00210.html#ga11fed607fa404e29e8da010f3ec128e4">hwloc_cuda_get_device_pcidev</a> (<a class="el" href="a00175.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, CUdevice cudevice)</td></tr>
-<tr class="separator:ga11fed607fa404e29e8da010f3ec128e4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga252cb72175f1a2d682f883a0add80a66" id="r_ga252cb72175f1a2d682f883a0add80a66"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="a00174.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00210.html#ga252cb72175f1a2d682f883a0add80a66">hwloc_cuda_get_device_osdev</a> (<a class="el" href="a00175.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, CUdevice cudevice)</td></tr>
-<tr class="separator:ga252cb72175f1a2d682f883a0add80a66"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga12ee892994ed037e8f64bbffda02cf2e" id="r_ga12ee892994ed037e8f64bbffda02cf2e"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="a00174.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00210.html#ga12ee892994ed037e8f64bbffda02cf2e">hwloc_cuda_get_device_osdev_by_index</a> (<a class="el" href="a00175.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, unsigned idx)</td></tr>
-<tr class="separator:ga12ee892994ed037e8f64bbffda02cf2e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga6118a1009aa390c13255a330ccf253cf" id="r_ga6118a1009aa390c13255a330ccf253cf"><td class="memItemLeft" align="right" valign="top">struct <a class="el" href="a00360.html">hwloc_backend</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00210.html#ga6118a1009aa390c13255a330ccf253cf">hwloc_backend_alloc</a> (struct hwloc_topology *topology, struct <a class="el" href="a00352.html">hwloc_disc_component</a> *component)</td></tr>
+<tr class="separator:ga6118a1009aa390c13255a330ccf253cf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga4715779d7191833e9b1a7490989a7497" id="r_ga4715779d7191833e9b1a7490989a7497"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00210.html#ga4715779d7191833e9b1a7490989a7497">hwloc_backend_enable</a> (struct <a class="el" href="a00360.html">hwloc_backend</a> *backend)</td></tr>
+<tr class="separator:ga4715779d7191833e9b1a7490989a7497"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<p>This interface offers ways to retrieve topology information about CUDA devices when using the CUDA Driver API. </p>
+<dl class="section note"><dt>Note</dt><dd>These structures and functions may change when <a class="el" href="a00162.html#gaac5bc1f46f55e10ef0141a68ce70e21f" title="Current component and plugin ABI version (see hwloc/plugins.h)">HWLOC_COMPONENT_ABI</a> is modified. </dd></dl>
+<h2 class="groupheader">Typedef Documentation</h2>
+<a id="ga600bba1a62022d5f516800649b1edb61" name="ga600bba1a62022d5f516800649b1edb61"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga600bba1a62022d5f516800649b1edb61">&#9670;&#160;</a></span>hwloc_disc_phase_t</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef enum <a class="el" href="a00210.html#ga8c314121c2fc478161bcce758688b9a1">hwloc_disc_phase_e</a> <a class="el" href="a00210.html#ga600bba1a62022d5f516800649b1edb61">hwloc_disc_phase_t</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Discovery phase. </p>
+
+</div>
+</div>
+<h2 class="groupheader">Enumeration Type Documentation</h2>
+<a id="ga8c314121c2fc478161bcce758688b9a1" name="ga8c314121c2fc478161bcce758688b9a1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga8c314121c2fc478161bcce758688b9a1">&#9670;&#160;</a></span>hwloc_disc_phase_e</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum <a class="el" href="a00210.html#ga8c314121c2fc478161bcce758688b9a1">hwloc_disc_phase_e</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Discovery phase. </p>
+<table class="fieldtable">
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="gga8c314121c2fc478161bcce758688b9a1ab41c626c79e9ccb1e7d41e7076972283" name="gga8c314121c2fc478161bcce758688b9a1ab41c626c79e9ccb1e7d41e7076972283"></a>HWLOC_DISC_PHASE_GLOBAL&#160;</td><td class="fielddoc"><p>xml or synthetic, platform-specific components such as bgq. Discovers everything including CPU, memory, I/O and everything else. A component with a Global phase usually excludes all other phases. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="gga8c314121c2fc478161bcce758688b9a1a6360474df197027761a69bd5fc620250" name="gga8c314121c2fc478161bcce758688b9a1a6360474df197027761a69bd5fc620250"></a>HWLOC_DISC_PHASE_CPU&#160;</td><td class="fielddoc"><p>CPU discovery. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="gga8c314121c2fc478161bcce758688b9a1ac4264a243844c5fbbff495cdb1b4d51d" name="gga8c314121c2fc478161bcce758688b9a1ac4264a243844c5fbbff495cdb1b4d51d"></a>HWLOC_DISC_PHASE_MEMORY&#160;</td><td class="fielddoc"><p>Attach memory to existing CPU objects. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="gga8c314121c2fc478161bcce758688b9a1a677c52064dd987af4988346319b3675a" name="gga8c314121c2fc478161bcce758688b9a1a677c52064dd987af4988346319b3675a"></a>HWLOC_DISC_PHASE_PCI&#160;</td><td class="fielddoc"><p>Attach PCI devices and bridges to existing CPU objects. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="gga8c314121c2fc478161bcce758688b9a1aa8e10626cba9af72f5605a1acbdc0015" name="gga8c314121c2fc478161bcce758688b9a1aa8e10626cba9af72f5605a1acbdc0015"></a>HWLOC_DISC_PHASE_IO&#160;</td><td class="fielddoc"><p>I/O discovery that requires PCI devices (OS devices such as OpenCL, CUDA, etc.). </p>
+</td></tr>
+<tr><td class="fieldname"><a id="gga8c314121c2fc478161bcce758688b9a1a8a7cde9bff0ab0d085b102a3e934939b" name="gga8c314121c2fc478161bcce758688b9a1a8a7cde9bff0ab0d085b102a3e934939b"></a>HWLOC_DISC_PHASE_MISC&#160;</td><td class="fielddoc"><p>Misc objects that gets added below anything else. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="gga8c314121c2fc478161bcce758688b9a1a68ca5c7ad75a6d9e5355689411621773" name="gga8c314121c2fc478161bcce758688b9a1a68ca5c7ad75a6d9e5355689411621773"></a>HWLOC_DISC_PHASE_ANNOTATE&#160;</td><td class="fielddoc"><p>Annotating existing objects, adding distances, etc. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="gga8c314121c2fc478161bcce758688b9a1ada3ed3f00e74909353d6ea4a96cde5ad" name="gga8c314121c2fc478161bcce758688b9a1ada3ed3f00e74909353d6ea4a96cde5ad"></a>HWLOC_DISC_PHASE_TWEAK&#160;</td><td class="fielddoc"><p>Final tweaks to a ready-to-use topology. This phase runs once the topology is loaded, before it is returned to the topology. Hence it may only use the main hwloc API for modifying the topology, for instance by restricting it, adding info attributes, etc. </p>
+</td></tr>
+</table>
+
+</div>
+</div>
+<a id="gaae1b38cf9b12e489884ce2a07275964b" name="gaae1b38cf9b12e489884ce2a07275964b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaae1b38cf9b12e489884ce2a07275964b">&#9670;&#160;</a></span>hwloc_disc_status_flag_e</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum <a class="el" href="a00210.html#gaae1b38cf9b12e489884ce2a07275964b">hwloc_disc_status_flag_e</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Discovery status flags. </p>
+<table class="fieldtable">
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="ggaae1b38cf9b12e489884ce2a07275964ba205d644d54a0840bd9165fce7d19e6b1" name="ggaae1b38cf9b12e489884ce2a07275964ba205d644d54a0840bd9165fce7d19e6b1"></a>HWLOC_DISC_STATUS_FLAG_GOT_ALLOWED_RESOURCES&#160;</td><td class="fielddoc"><p>The sets of allowed resources were already retrieved. </p>
+</td></tr>
+</table>
+
+</div>
+</div>
 <h2 class="groupheader">Function Documentation</h2>
-<a id="gaec41c6b4dc3361156beb7dea2a74f5a3" name="gaec41c6b4dc3361156beb7dea2a74f5a3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gaec41c6b4dc3361156beb7dea2a74f5a3">&#9670;&#160;</a></span>hwloc_cuda_get_device_cpuset()</h2>
+<a id="ga6118a1009aa390c13255a330ccf253cf" name="ga6118a1009aa390c13255a330ccf253cf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga6118a1009aa390c13255a330ccf253cf">&#9670;&#160;</a></span>hwloc_backend_alloc()</h2>
 
 <div class="memitem">
 <div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">static int hwloc_cuda_get_device_cpuset </td>
+          <td class="memname">struct <a class="el" href="a00360.html">hwloc_backend</a> * hwloc_backend_alloc </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="a00175.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
+          <td class="paramtype">struct hwloc_topology *&#160;</td>
           <td class="paramname"><em>topology</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">CUdevice&#160;</td>
-          <td class="paramname"><em>cudevice</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="a00172.html#ga4bbf39b68b6f568fb92739e7c0ea7801">hwloc_cpuset_t</a>&#160;</td>
-          <td class="paramname"><em>set</em>&#160;</td>
+          <td class="paramtype">struct <a class="el" href="a00352.html">hwloc_disc_component</a> *&#160;</td>
+          <td class="paramname"><em>component</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -94,213 +187,29 @@ Functions</h2></td></tr>
           <td></td><td></td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
 
-<p>Get the CPU set of processors that are physically close to device <code>cudevice</code>. </p>
-<p>Store in <code>set</code> the CPU-set describing the locality of the CUDA device <code>cudevice</code>.</p>
-<p>Topology <code>topology</code> and device <code>cudevice</code> must match the local machine. I/O devices detection and the CUDA component are not needed in the topology.</p>
-<p>The function only returns the locality of the device. If more information about the device is needed, OS objects should be used instead, see <a class="el" href="a00210.html#ga252cb72175f1a2d682f883a0add80a66" title="Get the hwloc OS device object corresponding to CUDA device cudevice.">hwloc_cuda_get_device_osdev()</a> and <a class="el" href="a00210.html#ga12ee892994ed037e8f64bbffda02cf2e" title="Get the hwloc OS device object corresponding to the CUDA device whose index is idx.">hwloc_cuda_get_device_osdev_by_index()</a>.</p>
-<p>This function is currently only implemented in a meaningful way for Linux; other systems will simply get a full cpuset.</p>
-<dl class="section return"><dt>Returns</dt><dd>0 on success. </dd>
-<dd>
--1 on error, for instance if device information could not be found. </dd></dl>
+<p>Allocate a backend structure, set good default values, initialize backend-&gt;component and topology, etc. The caller will then modify whatever needed, and call <a class="el" href="a00210.html#ga4715779d7191833e9b1a7490989a7497" title="Enable a previously allocated and setup backend.">hwloc_backend_enable()</a>. </p>
 
 </div>
 </div>
-<a id="ga252cb72175f1a2d682f883a0add80a66" name="ga252cb72175f1a2d682f883a0add80a66"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga252cb72175f1a2d682f883a0add80a66">&#9670;&#160;</a></span>hwloc_cuda_get_device_osdev()</h2>
+<a id="ga4715779d7191833e9b1a7490989a7497" name="ga4715779d7191833e9b1a7490989a7497"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga4715779d7191833e9b1a7490989a7497">&#9670;&#160;</a></span>hwloc_backend_enable()</h2>
 
 <div class="memitem">
 <div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">static <a class="el" href="a00174.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> hwloc_cuda_get_device_osdev </td>
+          <td class="memname">int hwloc_backend_enable </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="a00175.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
-          <td class="paramname"><em>topology</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
+          <td class="paramtype">struct <a class="el" href="a00360.html">hwloc_backend</a> *&#160;</td>
+          <td class="paramname"><em>backend</em></td><td>)</td>
           <td></td>
-          <td class="paramtype">CUdevice&#160;</td>
-          <td class="paramname"><em>cudevice</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
 
-<p>Get the hwloc OS device object corresponding to CUDA device <code>cudevice</code>. </p>
-<dl class="section return"><dt>Returns</dt><dd>The hwloc OS device object that describes the given CUDA device <code>cudevice</code>. </dd>
-<dd>
-<code>NULL</code> if none could be found.</dd></dl>
-<p>Topology <code>topology</code> and device <code>cudevice</code> must match the local machine. I/O devices detection and the CUDA component must be enabled in the topology. If not, the locality of the object may still be found using <a class="el" href="a00210.html#gaec41c6b4dc3361156beb7dea2a74f5a3" title="Get the CPU set of processors that are physically close to device cudevice.">hwloc_cuda_get_device_cpuset()</a>.</p>
-<dl class="section note"><dt>Note</dt><dd>This function cannot work if PCI devices are filtered out.</dd>
-<dd>
-The corresponding hwloc PCI device may be found by looking at the result parent pointer (unless PCI devices are filtered out). </dd></dl>
-
-</div>
-</div>
-<a id="ga12ee892994ed037e8f64bbffda02cf2e" name="ga12ee892994ed037e8f64bbffda02cf2e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga12ee892994ed037e8f64bbffda02cf2e">&#9670;&#160;</a></span>hwloc_cuda_get_device_osdev_by_index()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static <a class="el" href="a00174.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> hwloc_cuda_get_device_osdev_by_index </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="a00175.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
-          <td class="paramname"><em>topology</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">unsigned&#160;</td>
-          <td class="paramname"><em>idx</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Get the hwloc OS device object corresponding to the CUDA device whose index is <code>idx</code>. </p>
-<dl class="section return"><dt>Returns</dt><dd>The hwloc OS device object describing the CUDA device whose index is <code>idx</code>. </dd>
-<dd>
-<code>NULL</code> if none could be found.</dd></dl>
-<p>The topology <code>topology</code> does not necessarily have to match the current machine. For instance the topology may be an XML import of a remote host. I/O devices detection and the CUDA component must be enabled in the topology.</p>
-<dl class="section note"><dt>Note</dt><dd>The corresponding PCI device object can be obtained by looking at the OS device parent object (unless PCI devices are filtered out).</dd>
-<dd>
-This function is identical to <a class="el" href="a00211.html#gac0f3eeaf7712919f298097b1a21307b0" title="Get the hwloc OS device object corresponding to the CUDA device whose index is idx.">hwloc_cudart_get_device_osdev_by_index()</a>. </dd></dl>
-
-</div>
-</div>
-<a id="ga1084285e8ff8b7df91c28917637481c6" name="ga1084285e8ff8b7df91c28917637481c6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga1084285e8ff8b7df91c28917637481c6">&#9670;&#160;</a></span>hwloc_cuda_get_device_pci_ids()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static int hwloc_cuda_get_device_pci_ids </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="a00175.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
-          <td class="paramname"><em>topology</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">CUdevice&#160;</td>
-          <td class="paramname"><em>cudevice</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int *&#160;</td>
-          <td class="paramname"><em>domain</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int *&#160;</td>
-          <td class="paramname"><em>bus</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int *&#160;</td>
-          <td class="paramname"><em>dev</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Return the domain, bus and device IDs of the CUDA device <code>cudevice</code>. </p>
-<p>Device <code>cudevice</code> must match the local machine.</p>
-<dl class="section return"><dt>Returns</dt><dd>0 on success. </dd>
-<dd>
--1 on error, for instance if device information could not be found. </dd></dl>
-
-</div>
-</div>
-<a id="ga11fed607fa404e29e8da010f3ec128e4" name="ga11fed607fa404e29e8da010f3ec128e4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga11fed607fa404e29e8da010f3ec128e4">&#9670;&#160;</a></span>hwloc_cuda_get_device_pcidev()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static <a class="el" href="a00174.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> hwloc_cuda_get_device_pcidev </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="a00175.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
-          <td class="paramname"><em>topology</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">CUdevice&#160;</td>
-          <td class="paramname"><em>cudevice</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Get the hwloc PCI device object corresponding to the CUDA device <code>cudevice</code>. </p>
-<dl class="section return"><dt>Returns</dt><dd>The hwloc PCI device object describing the CUDA device <code>cudevice</code>. </dd>
-<dd>
-<code>NULL</code> if none could be found.</dd></dl>
-<p>Topology <code>topology</code> and device <code>cudevice</code> must match the local machine. I/O devices detection must be enabled in topology <code>topology</code>. The CUDA component is not needed in the topology. </p>
+<p>Enable a previously allocated and setup backend. </p>
 
 </div>
 </div>

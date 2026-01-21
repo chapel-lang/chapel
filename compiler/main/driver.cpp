@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -255,7 +255,6 @@ bool fNoPrivatization = false;
 bool fNoOptimizeOnClauses = false;
 bool fNoRemoveEmptyRecords = true;
 bool fRemoveUnreachableBlocks = true;
-bool fMinimalModules = false;
 int fParMake = 0;
 bool fIncrementalCompilation = false;
 bool fNoOptimizeForallUnordered = false;
@@ -357,6 +356,7 @@ char compileVersion[64];
 
 std::array<std::string, 2> editions ({{"2.0", "preview"}});
 std::string fEdition = "2.0";
+std::string defaultEdition = fEdition;
 bool fUserSetPreEdition = false;
 
 static bool fPrintCopyright = false;
@@ -623,7 +623,10 @@ static void setDebugSafeOptOnly(const ArgumentDescription* desc, const char* arg
   // --no-tuple-copy-opt
   fNoTupleCopyOpt = true;
   // --no-denormalize
-  fDenormalize = false;
+  // we want denormalize off for the most part, but need parts of it
+  // (e.g., need denormalize to undo return-by-ref), so this is controlled in
+  // the denormalize pass with fDebugSafeOptOnly
+  // fDenormalize = false;
   // --no-return-by-ref
   fReturnByRef = false;
   // --no-replace-array-accesses-with-ref-temps
@@ -639,6 +642,7 @@ static void setDebug(const ArgumentDescription* desc, const char* arg_unused) {
   printCppLineno = true;
 
   // --debug-safe-optimizations-only
+  fDebugSafeOptOnly = true;
   setDebugSafeOptOnly(nullptr, nullptr); // nullptr since args unused
 }
 
@@ -961,6 +965,10 @@ static void setEdition(const ArgumentDescription* desc, const char* arg) {
     clean_exit(1);
   } else {
     fEdition = val;
+  }
+  // when using a non-default edition (and not preview), warn about unstable features
+  if (defaultEdition != fEdition && fEdition != "preview") {
+    fWarnUnstable = true;
   }
 }
 
@@ -1641,7 +1649,6 @@ static ArgumentDescription arg_desc[] = {
  {"replace-array-accesses-with-ref-temps", ' ', NULL, "Enable [disable] replacing array accesses with reference temps (experimental)", "N", &fReplaceArrayAccessesWithRefTemps, NULL, NULL },
  {"return-by-ref", ' ', NULL, "Enable return-by-ref of structs in the generated code", "N", &fReturnByRef, NULL, NULL},
  {"incremental", ' ', NULL, "Enable [disable] using incremental compilation", "N", &fIncrementalCompilation, "CHPL_INCREMENTAL_COMP", NULL},
- {"minimal-modules", ' ', NULL, "Enable [disable] using minimal modules",               "N", &fMinimalModules, "CHPL_MINIMAL_MODULES", NULL},
  {"parallel-make", 'j', NULL, "Specify degree of parallelism for C back-end", "I", &fParMake, "CHPL_PAR_MAKE", &turnIncrementalOn},
  {"print-chpl-settings", ' ', NULL, "Print current chapel settings and exit", "F", &fPrintChplSettings, NULL,NULL},
  {"print-additional-errors", ' ', NULL, "Print additional errors", "F", &fPrintAdditionalErrors, NULL,NULL},
@@ -2374,15 +2381,6 @@ static void checkLibraryPythonAndLibmode(void) {
   }
 }
 
-static void checkNotLibraryAndMinimalModules(void) {
-  const bool isLibraryCompile = fLibraryCompile || fMultiLocaleInterop;
-  if (isLibraryCompile && fMinimalModules) {
-    USR_FATAL("Libraries do not currently support \'--minimal-modules\'");
-  }
-
-  return;
-}
-
 
 // Take actions for which settings are inferred based on other arguments
 // or CHPL_ settings
@@ -2435,8 +2433,6 @@ static void postprocess_args() {
 // chplconfig-style environment variables checks could/should be done in the
 // chplenv scripts; otherwise put the checks here.
 static void validateSettings() {
-  checkNotLibraryAndMinimalModules();
-
   checkLLVMCodeGen();
 
   checkDebugFlag();
@@ -2571,7 +2567,6 @@ static void dynoConfigureContext(std::string chpl_module_path) {
   chpl::parsing::setupModuleSearchPaths(gContext,
                                         CHPL_HOME,
                                         "", //moduleRoot
-                                        fMinimalModules,
                                         CHPL_LOCALE_MODEL,
                                         fEnableTaskTracking,
                                         CHPL_TASKS,

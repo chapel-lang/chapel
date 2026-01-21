@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -88,8 +88,52 @@ module M {
   assert(foundAction);
 }
 
+static void testTypeAlias() {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  std::string program =
+R"""(
+module M {
+  pragma "infer custom type"
+  record R {
+    var val : int;
+  }
+
+  proc R.chpl__inferCopyType() type {
+    return int;
+  }
+
+  operator =(ref lhs: int, const rhs: int) {}
+  operator =(ref lhs: int, const rhs: R) {
+    lhs = rhs.val;
+  }
+
+  type MyAlias = R;
+  var x : MyAlias;
+}
+)""";
+
+  auto path = UniqueString::get(context, "input.chpl");
+  setFileText(context, path, std::move(program));
+
+  const ModuleVec& vec = parseToplevel(context, path);
+  const Module* m = vec[0];
+
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+
+  QualifiedType myAlias = findVarType(m, rr, "MyAlias");
+  assert(myAlias.type()->isRecordType() && myAlias.type()->toRecordType()->name() == "R");
+
+  QualifiedType x = findVarType(m, rr, "x");
+  // x should also be of type R
+  assert(x.type() == myAlias.type());
+}
+
 int main() {
   testRecordInt();
+  testTypeAlias();
 
   return 0;
 }

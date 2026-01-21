@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1189,11 +1189,9 @@ visitVisibleFunctions(Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types)
   if (chpl_gen_main)
     pruneVisit(chpl_gen_main, fns, types);
 
-  // When present, the printModuleInitOrder function is always visible;
-  // it will be NULL for --minimal-modules compilations
-  if (gPrintModuleInitFn) {
-    pruneVisit(gPrintModuleInitFn, fns, types);
-  }
+  // printModuleInitOrder function is always visible
+  INT_ASSERT(gPrintModuleInitFn);
+  pruneVisit(gPrintModuleInitFn, fns, types);
 
   // Functions appearing the function pointer table are visible.
   // These are blocks that can be started through a forall, coforall,

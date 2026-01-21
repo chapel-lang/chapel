@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -31,18 +31,9 @@
 
 #include <sstream>
 
-static Context* context;
-
-// Use a single context with revisions to get this test running faster.
-static void setupContext() {
-  auto config = getConfigWithHome();
-  context = new Context(config);
-}
-
 template <typename F>
 void testCPtrArg(const char* formalType, const char* actualType, F&& test) {
-  context->advanceToNextRevision(false);
-  setupModuleSearchPaths(context, false, false, {}, {});
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   std::stringstream ss;
@@ -304,6 +295,7 @@ static void test22() {
 }
 
 static void test23() {
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string program = R"""(
@@ -336,8 +328,6 @@ static void test24() {
 }
 
 int main() {
-  setupContext();
-
   test1();
   test2();
   test3();
@@ -360,12 +350,8 @@ int main() {
   test20();
   test21();
   test22();
-
   test23();
-
   test24();
-
-  delete context;
 
   return 0;
 }

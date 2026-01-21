@@ -132,19 +132,19 @@ master_doc = 'index'
 # 'version' adds a redundant version number onto the top of the sidebar
 # automatically (rtd-theme). We also don't use |version| anywhere in rst
 
-chplversion = '2.7'
+chplversion = '2.8'
 shortversion = chplversion.replace('-', '&#8209') # prevent line-break at hyphen, if any
 html_context = {"chplversion":chplversion}
 
 # The full version, including alpha/beta/rc tags.
-release = '2.7.0'
+release = '2.8.0 (pre-release)'
 
 # General information about the project.
 project = u'Chapel Documentation'
 
 author_text = os.environ.get('CHPLDOC_AUTHOR', '')
 
-copyright_year = 2025
+copyright_year = 2026
 copyright = u'{0}, {1}'.format(copyright_year, author_text)
 
 
