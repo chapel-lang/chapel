@@ -211,12 +211,6 @@ PyObject* AstNodeObject::richcompare(AstNodeObject *self, PyObject *other, int o
   Py_RETURN_RICHCOMPARE(selfId, otherId, op);
 }
 
-
-void ChapelTypeObject_dealloc(ChapelTypeObject* self) {
-  Py_XDECREF(self->contextObject);
-  callPyTypeSlot_tp_free(ChapelTypeObject::PythonType, (PyObject*) self);
-}
-
 PyObject* ChapelTypeObject::str(ChapelTypeObject* self) {
   if (!self->value_) {
     raiseExceptionForIncorrectlyConstructedType("Type");
