@@ -52,7 +52,7 @@ export CHPL_MAKE_PYTHON := $(shell $(CHPL_MAKE_HOME)/util/config/find-python.sh)
 
 default: all
 
-all: comprt
+all: $(CHPL_AUTO_MAKE_TARGETS) comprt
 	@test -r Makefile.devel && $(MAKE) develall || echo ""
 
 comprt: FORCE
