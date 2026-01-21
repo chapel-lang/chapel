@@ -101,7 +101,7 @@ proc stripExt(toStrip: string, ext: string) : string {
 
 
 /* Uses the Subprocess module to create a subprocess */
-proc runCommand(cmd: [] string, quiet=false) : string throws {
+proc runCommand(cmd: [] string, quiet=false, errorOk=false) : string throws {
   var ret : string;
   try {
     log.debugf("runCommand: %?\n", cmd);
@@ -125,7 +125,7 @@ proc runCommand(cmd: [] string, quiet=false) : string throws {
     process.wait();
 
     log.debugf("exitCode: %i\n", process.exitCode);
-    if process.exitCode != 0 {
+    if !errorOk && process.exitCode != 0 {
       var cmdStr = " ".join(cmd);
       throw new owned MasonError("Command failed: '" + cmdStr + "'");
     }
@@ -141,10 +141,10 @@ proc runCommand(cmd: [] string, quiet=false) : string throws {
   }
   return ret;
 }
-proc runCommand(cmd: string, quiet=false) : string throws {
+proc runCommand(cmd: string, quiet=false, errorOk=false) : string throws {
   // temporary is a workaround for #27504
   const cmds = cmd.split();
-  return runCommand(cmds, quiet=quiet);
+  return runCommand(cmds, quiet=quiet, errorOk=errorOk);
 }
 
 
