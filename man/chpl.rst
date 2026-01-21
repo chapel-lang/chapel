@@ -1177,6 +1177,16 @@ doc/rst/usingchapel/chplenv.rst in your Chapel installation.
     the $CHPL\_RE2 environment variable (defaults to 'none' or 'bundled' if
     you've installed the re2 package in the third-party *directory*).
 
+.. _man-sanitize-exe:
+.. index:: --sanitize-exe
+
+**\--sanitize-exe <sanitizer>**
+
+    Specify the sanitizer to use for the generated executable and runtime. This
+    flag corresponds with and overrides the $CHPL\_SANITIZE\_EXE environment
+    variable.
+
+
 .. _man-target-arch:
 .. index:: --target-arch
 
