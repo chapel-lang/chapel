@@ -2846,7 +2846,7 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
     initReceiverType = clsType->withDecorator(context, newDecor);
   } else if (auto recordType = qtNewExpr.type()->toRecordType()) {
     // Rewrite 'new dmap' to 'new _distribution'
-    if (recordType->id().symbolPath() == "ChapelArray.dmap") {
+    if (recordType->id().symbolPath() == "ChapelArray.chpl_dmap") {
       initReceiverType = CompositeType::getDistributionType(context);
     }
   }
