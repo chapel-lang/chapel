@@ -1,8 +1,8 @@
 use List;
 use MasonSearch;
+import MasonLogger;
 
 proc main() {
-  var args: list(string);
-  for x in ["search", "--no-update"] do args.pushBack(x);
-  masonSearch(args);
+  MasonLogger.setNoColor(true);
+  masonSearch(["search", "--no-update"]);
 }

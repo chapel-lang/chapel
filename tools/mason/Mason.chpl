@@ -107,7 +107,7 @@ module Mason {
       exit(0);
     }
 
-    MasonLogger.setColor(noColorFlag.valueAsBool());
+    MasonLogger.setNoColor(noColorFlag.valueAsBool());
 
     var usedCmd:string;
     var cmdList:list(string);
@@ -120,6 +120,7 @@ module Mason {
       }
     }
     var cmdArgs = cmdList.toArray();
+    var retCode = 0;
     // pass the arguments to the appropriate subcommand
     try! {
       select (usedCmd) {
@@ -135,21 +136,22 @@ module Mason {
         when "publish" do masonPublish(cmdArgs);
         when "rm" do masonModify(cmdArgs);
         when "run" do masonRun(cmdArgs);
-        when "search" do masonSearch(cmdArgs);
+        when "search" do retCode = masonSearch(cmdArgs);
         when "system" do masonSystem(cmdArgs);
         when "test" do masonTest(cmdArgs);
         when "update" do masonUpdate(cmdArgs);
         when "modules" do masonModules(cmdArgs);
         when "version" do printVersion();
         otherwise {
-          throw new owned MasonError("No such subcommand '%s'\ntry mason --help"
-                                    .format(usedCmd));
+          throw new MasonError("No such subcommand '%s'\ntry mason --help"
+                               .format(usedCmd));
         }
       }
-    } catch ex : MasonError {
+    } catch ex: MasonError {
       stderr.writeln(ex.message());
       exit(1);
     }
+    return retCode;
   }
 
 

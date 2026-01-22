@@ -147,7 +147,6 @@ proc runCommand(cmd: string, quiet=false) : string throws {
   return runCommand(cmds, quiet=quiet);
 }
 
-
 /* Same as runCommand but for situations where an
    exit status is needed */
 proc runWithStatus(command: string, quiet=false): int {
@@ -351,6 +350,10 @@ record VersionInfo {
     return this.major == other.major
            && this.minor == other.minor
            && this.bug <= other.bug;
+  }
+
+  proc type zero() : VersionInfo {
+    return new VersionInfo(0, 0, 0);
   }
 }
 
@@ -567,9 +570,8 @@ record srcSource {
 proc getMasonDependencies(sourceList: list(srcSource),
                           gitList: list(gitSource),
                           progName: string): list(string) {
-
   // Declare example to run as the main module
-  var masonCompopts: list(string);
+  var masonCompopts = new list(string);
   masonCompopts.pushBack("--main-module");
   masonCompopts.pushBack(progName);
 
@@ -619,44 +621,108 @@ proc getProjectType(): string throws {
   return tomlFile["brick"]!["type"]!.s;
 }
 
-/* Return parsed TOML file of name depName if it is located
-   in a registry in MASON_CACHED_REGISTRY. If dependency is
-   not found, throw an error. TODO: Currently does not check
-   on the version. */
-proc getDepToml(depName: string, depVersion: string) throws {
-  const pattern = new regex(depName, ignoreCase=true);
+record package {
+  var name: string;
+  var version: VersionInfo;
+  var registry: string;
 
-  var packages: list(string);
-  var versions: list(string);
-  var registries: list(string);
-  var results: list(string);
+  proc brickPath() {
+    const tomlName = version.str() + ".toml";
+    return joinPath(registry, "Bricks", name, tomlName);
+  }
+
+  proc type nullPackage() {
+    return new package("", VersionInfo.zero(), "");
+  }
+
+  operator <(a: package, b: package) : bool {
+    if a.name < b.name then
+      return true;
+    else if a.name.toLower() == b.name.toLower() then
+      return a.version < b.version;
+    else
+      return false;
+  }
+}
+
+use Sort;
+record pkgComparator: relativeComparator {
+  var query: string;
+  proc compare(a: package, b: package) {
+    if query != "" {
+      if a.name.toLower().startsWith(query.toLower()) &&
+         !b.name.toLower().startsWith(query.toLower()) then
+        return -1;
+      else if !a.name.toLower().startsWith(query.toLower()) &&
+              b.name.toLower().startsWith(query.toLower()) then
+        return 1;
+    }
+
+    if a < b then
+      return -1;
+    else if b < a then
+      return 1;
+    else
+      return 0;
+  }
+}
+
+proc isHidden(name: string) : bool {
+  return name.startsWith("_");
+}
+proc searchDependencies(pattern: regex(string)): list(package) throws {
+  var pkgs: list(package);
   for registry in MASON_CACHED_REGISTRY {
-    const searchDir = registry + "/Bricks/";
+    const searchDir = joinPath(registry, "Bricks");
+    if !isDir(searchDir) then
+      throw new MasonError("Registry path '" + registry +
+                           "' does not exist.\n" +
+                           "Try running 'mason update --force' or "+
+                           "'mason search --update'.");
 
     for dir in listDir(searchDir, files=false, dirs=true) {
       const name = dir.replace("/", "");
       if pattern.search(name) {
-        const ver = findLatest(searchDir + dir);
-        const versionZero = new VersionInfo(0, 0, 0);
-        if ver != versionZero {
-          results.pushBack(name + " (" + ver.str() + ")");
-          packages.pushBack(name);
-          versions.pushBack(ver.str());
-          registries.pushBack(registry);
+        if isHidden(name) {
+          log.debugln("found hidden package: " + name);
+        } else {
+          const ver = findLatest(joinPath(searchDir, dir));
+          if ver != VersionInfo.zero() {
+            pkgs.pushBack(new package(name, ver, registry));
+          }
         }
       }
     }
   }
+  return pkgs;
+}
 
-  if results.size > 0 {
-    const brickPath = '/'.join(registries[0], 'Bricks', packages[0], versions[0]) + '.toml';
-    const openFile = openReader(brickPath, locking=false);
-    const toml = parseToml(openFile);
+/* Return parsed TOML file of name depName if it is located
+   in a registry in MASON_CACHED_REGISTRY. If dependency is
+   not found, throw an error. */
+proc getDepToml(depName: string, depVersion: string) throws {
+  const pattern = new regex(depName, ignoreCase=true);
 
-    return toml;
-  } else {
-    throw new owned MasonError("No TOML file in registry for " + depName);
+  var pkgs = searchDependencies(pattern);
+
+  var foundDep = package.nullPackage();
+  for pkg in pkgs {
+    if pkg.name == depName && pkg.version.str() == depVersion {
+      foundDep = pkg;
+      break;
+    }
   }
+
+  if foundDep.name == "" {
+    throw new MasonError("No TOML file in registry for " +
+                         depName + "@" + depVersion);
+  }
+
+  const brickPath = foundDep.brickPath();
+  const openFile = openReader(brickPath, locking=false);
+  const toml = parseToml(openFile);
+  return toml;
+
 }
 
 
@@ -665,22 +731,22 @@ proc getDepToml(depName: string, depVersion: string) throws {
 proc findLatest(packageDir: string): VersionInfo {
   use Path;
 
-  var ret = new VersionInfo(0, 0, 0);
+  var ret = VersionInfo.zero();
   const suffix = ".toml";
   const packageName = basename(packageDir);
   for manifest in listDir(packageDir, files=true, dirs=false) {
     // Check that it is a valid TOML file
     if !manifest.endsWith(suffix) {
-      var warningStr = "File without '.toml' extension encountered - skipping ";
-      warningStr += packageName + " " + manifest;
-      stderr.writeln(warningStr);
+      log.warnf("File without '.toml' extension encountered - skipping %s %s\n",
+                packageName, manifest);
       continue;
     }
 
     // Skip packages that are out of version bounds
     const chplVersion = getChapelVersionInfo();
 
-    const manifestReader = openReader(packageDir + '/' + manifest, locking=false);
+    const manifestReader = openReader(joinPath(packageDir, manifest),
+                                      locking=false);
     const manifestToml = parseToml(manifestReader);
     const brick = manifestToml['brick'];
     var (low, high) = parseChplVersion(brick);
@@ -783,23 +849,6 @@ proc checkChplVersion(chplVersion, low, high) throws {
       throw new owned MasonError("Lower bound of chplVersion must be <= upper bound: " + lo.str() + " > " + hi.str());
 
       return (lo, hi);
-}
-
-/* Split pkg.0_1_0 to (pkg, 0.1.0) & viceversa */
-proc splitNameVersion(ref package: string, original: bool) {
-  if original {
-    var res = package.split('.');
-    var name = res[0];
-    var version = res[1];
-    version = version.replace('_', '.');
-    return name + ' (' + version + ')';
-  }
-  else {
-    package = package.replace('.', '_');
-    package = package.replace(' (', '.');
-    package = package.replace(')', '');
-    return package;
-  }
 }
 
 /* Print a TOML file. Expects full path. */
