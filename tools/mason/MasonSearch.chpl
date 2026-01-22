@@ -39,7 +39,7 @@ use Map;
 
 
 
-proc masonSearch(args: [] string) throws {
+proc masonSearch(args: [] string): int throws {
 
   var parser = new argumentParser(helpHandler=new MasonSearchHelpHandler());
 
@@ -92,5 +92,7 @@ proc masonSearch(args: [] string) throws {
       throw new MasonError(msg);
     }
   }
+
+  return if pkgs.size == 0 then 1 else 0;
 }
 
