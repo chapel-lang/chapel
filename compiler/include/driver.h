@@ -221,8 +221,6 @@ extern bool fAllowExternC;
 extern char breakOnCodegenCname[256];
 extern int breakOnCodegenID;
 
-extern bool fBuiltinRuntime;
-
 enum { LS_DEFAULT=0, LS_STATIC, LS_DYNAMIC };
 
 extern int  fLinkStyle;

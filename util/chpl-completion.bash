@@ -35,7 +35,6 @@ _chpl ()
 --break-on-id \
 --break-on-remove-id \
 --break-on-resolve-id \
---builtin-runtime \
 --cache-remote \
 --cast-checks \
 --cc-warnings \
@@ -188,7 +187,6 @@ _chpl ()
 --no-auto-aggregation \
 --no-auto-local-access \
 --no-bounds-checks \
---no-builtin-runtime \
 --no-cache-remote \
 --no-cast-checks \
 --no-cc-warnings \
