@@ -1123,32 +1123,28 @@ resolveFieldResults(ResolutionContext* rc,
   // resolve elements of a multiDecl
   auto stmtId = parsing::idToContainingMultiDeclId(context, fieldId);
   auto fieldAst = parsing::idToAst(context, stmtId);
+  bool isInstantiated = ct->instantiatedFromCompositeType() == nullptr;
 
-  if (ct->instantiatedFromCompositeType() == nullptr) {
-    // handle resolving a not-yet-instantiated type
+  if (!syntaxOnly) {
+    // use nullptr for POI scope because POI is not considered
+    // when resolving the fields when constructing a type..
+    const PoiScope* poiScope = nullptr;
+    auto visitor = isInstantiated ?
+      Resolver::createForInstantiatedFieldStmt(context, ad, fieldAst, ct,
+                                               poiScope, rr,
+                                               defaultsPolicy,
+                                               fieldTypesOnly) :
+      Resolver::createForInitialFieldStmt(rc, ad, fieldAst,
+                                          ct, rr, defaultsPolicy,
+                                          fieldTypesOnly);
 
-    if (!syntaxOnly) {
-      auto visitor =
-        Resolver::createForInitialFieldStmt(rc, ad, fieldAst,
-                                            ct, rr, defaultsPolicy,
-                                            fieldTypesOnly);
+    fieldAst->traverse(visitor);
 
-      fieldAst->traverse(visitor);
-    }
-  } else {
-    // handle resolving an instantiated type
+    if (!fieldTypesOnly) {
+      callInitDeinit(visitor);
 
-    if (!syntaxOnly) {
-      // use nullptr for POI scope because POI is not considered
-      // when resolving the fields when constructing a type..
-      const PoiScope* poiScope = nullptr;
-      auto visitor =
-        Resolver::createForInstantiatedFieldStmt(context, ad, fieldAst, ct,
-                                                 poiScope, rr,
-                                                 defaultsPolicy,
-                                                 fieldTypesOnly);
-
-      fieldAst->traverse(visitor);
+      // then, handle return intent overloads and maybe-const formals
+      adjustReturnIntentOverloadsAndMaybeConstRefs(visitor);
     }
   }
 

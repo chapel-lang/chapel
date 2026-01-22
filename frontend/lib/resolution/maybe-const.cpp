@@ -122,7 +122,7 @@ void AdjustMaybeRefs::process(const uast::AstNode* symbol,
       child->traverse(rv);
     }
   } else {
-    CHPL_ASSERT(false && "should not be reached");
+    CHPL_ASSERT(parsing::idIsField(context, symbol->id()));
     symbol->traverse(rv);
   }
 
