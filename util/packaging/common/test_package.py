@@ -118,9 +118,11 @@ def build_docker(test_dir, package_path, package_name, docker_os):
 
     test_full_package = """
         COPY --chown=user --chmod=0755 ./common/test-package.sh /home/user/test-package.sh
+        COPY --chown=user --chmod=0755 ./common/test-minimal-package.sh /home/user/test-minimal-package.sh
         RUN /home/user/test-package.sh
     """
     test_minimal_package = """
+        COPY --chown=user --chmod=0755 ./common/test-package.sh /home/user/test-package.sh
         COPY --chown=user --chmod=0755 ./common/test-minimal-package.sh /home/user/test-minimal-package.sh
         RUN /home/user/test-minimal-package.sh
     """

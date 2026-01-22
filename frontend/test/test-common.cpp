@@ -103,7 +103,7 @@ chpl::Context* buildStdContext(chpl::CompilerFlags flags) {
     _reusedContext->advanceToNextRevision(false);
   }
 
-  parsing::setupModuleSearchPaths(_reusedContext.get(), false, false, {}, {});
+  parsing::setupModuleSearchPaths(_reusedContext.get(), false, {}, {});
   setCompilerFlags(_reusedContext.get(), flags);
 
   // resolve the standard modules from the same "usual" predefined point.

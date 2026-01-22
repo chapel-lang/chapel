@@ -196,7 +196,7 @@ static void testRunAndTrackErrors() {
     return resolveConcreteFunction(ctx, modules[0]->stmt(0)->id());
   });
   assert(!result.ranWithoutErrors());
-  assert(result.errors().size() == 3);
+  assert(result.errors().size() == 2);
   ensureErrorInErrorsModule(ctx, result.errors(), ErrorType::UserDiagnosticEncounterError);
 }
 

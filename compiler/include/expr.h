@@ -301,11 +301,6 @@ static inline bool isAlive(Symbol* symbol) {
 }
 
 static inline bool isAlive(Type* type) {
-  if (fMinimalModules) {
-    if(type == dtBytes || type == dtString) {
-      return false;
-    }
-  }
   return isAlive(type->symbol->defPoint);
 }
 

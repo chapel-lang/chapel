@@ -215,7 +215,7 @@ static void setupSearchPaths(Context* ctx, bool enableStdLib,
                              const std::vector<std::string>& cmdLinePaths,
                              const std::vector<std::string>& files) {
   if (enableStdLib) {
-    setupModuleSearchPaths(ctx, false, false, cmdLinePaths, files);
+    setupModuleSearchPaths(ctx, false, cmdLinePaths, files);
   } else {
     std::vector<UniqueString> uPaths;
     for (auto p: cmdLinePaths) {

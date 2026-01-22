@@ -188,7 +188,6 @@ static void checkManagedClassKinds(CallExpr* call) {
 static VarSymbol*  deinitStrLiteral;
 
 static void setupForCheckExplicitDeinitCalls() {
-  SET_LINENO(rootModule); // for --minimal-modules
   deinitStrLiteral = new_CStringSymbol("deinit");
 }
 

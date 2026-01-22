@@ -43,6 +43,7 @@ from lsprotocol.types import (
 )
 from lsprotocol.types import TEXT_DOCUMENT_DID_OPEN, DidOpenTextDocumentParams
 from lsprotocol.types import TEXT_DOCUMENT_DID_SAVE, DidSaveTextDocumentParams
+from lsprotocol.types import TEXT_DOCUMENT_DID_CLOSE, DidCloseTextDocumentParams
 from lsprotocol.types import TEXT_DOCUMENT_DEFINITION, DefinitionParams
 from lsprotocol.types import TEXT_DOCUMENT_TYPE_DEFINITION, TypeDefinitionParams
 from lsprotocol.types import TEXT_DOCUMENT_DECLARATION, DeclarationParams
@@ -307,6 +308,21 @@ class ChapelLanguageServer(LanguageServer):
         errors = [e for e in errors if e.location().path() == cur_path]
 
         return (file_info, errors)
+
+    def clear_file_info(self, uri: str):
+        """
+        Clear any cached FileInfo for a given URI
+
+        Currently only handles the default context, contexts paired
+        with a specific context ID are not cleared.
+        """
+
+        to_delete = (uri, None)
+        path = uri[len("file://") :]
+        container = self.contexts.get(path, None)
+        if container and len(container.file_infos) == 1:
+            del self.file_infos[to_delete]
+            del self.contexts[path]
 
     def build_diagnostics(self, uri: str) -> List[Diagnostic]:
         """
@@ -792,6 +808,14 @@ def run_lsp():
         ls.publish_diagnostics(text_doc.uri, diag)
         ls.lsp.send_request_async(WORKSPACE_INLAY_HINT_REFRESH)
         ls.lsp.send_request_async(WORKSPACE_SEMANTIC_TOKENS_REFRESH)
+
+    @server.feature(TEXT_DOCUMENT_DID_CLOSE)
+    async def did_close(
+        ls: ChapelLanguageServer, params: DidCloseTextDocumentParams
+    ):
+        text_doc = ls.workspace.get_text_document(params.text_document.uri)
+        ls.clear_file_info(text_doc.uri)
+        ls.publish_diagnostics(text_doc.uri, [])
 
     @server.feature(TEXT_DOCUMENT_DECLARATION)
     @server.feature(TEXT_DOCUMENT_DEFINITION)

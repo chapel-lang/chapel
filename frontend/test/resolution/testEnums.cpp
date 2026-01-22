@@ -663,7 +663,6 @@ static void test18internal() {
     setupModuleSearchPaths(context,
                            chplHomeStr,
                            "",
-                           false,
                            chplEnv->at("CHPL_LOCALE_MODEL"),
                            false,
                            chplEnv->at("CHPL_TASKS"),

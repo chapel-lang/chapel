@@ -150,11 +150,14 @@ proc runCommand(cmd: string, quiet=false) : string throws {
 
 /* Same as runCommand but for situations where an
    exit status is needed */
-proc runWithStatus(command, quiet=false): int {
-
+proc runWithStatus(command: string, quiet=false): int {
+  var cmd = command.split();
+  return runWithStatus(cmd, quiet=quiet);
+}
+proc runWithStatus(command: [] string, quiet=false): int {
   try {
-    var cmd = command.split();
-    var sub = spawn(cmd, stdout=pipeStyle.pipe, stderr=pipeStyle.pipe);
+    log.debugf("runWithStatus: %?\n", command);
+    var sub = spawn(command, stdout=pipeStyle.pipe, stderr=pipeStyle.pipe);
 
     var line:string;
     if !quiet {
@@ -163,24 +166,9 @@ proc runWithStatus(command, quiet=false): int {
     }
     sub.wait();
     return sub.exitCode;
-  }
-  catch {
-    return -1;
-  }
-}
-
-proc runWithProcess(command, quiet=false) throws {
-  try {
-    var cmd = command.split();
-    log.debugf("runWithProcess: %?\n", cmd);
-    var process = spawn(cmd, stdout=pipeStyle.pipe, stderr=pipeStyle.pipe);
-
-    return process;
-  }
-  catch e {
+  } catch e {
     log.debugf("Caught unknown error ('%?') for command: %?\n", e, command);
-    throw new owned MasonError("Internal mason error");
-    exit(0);
+    return -1;
   }
 }
 
@@ -393,59 +381,49 @@ operator VersionInfo.<(a:VersionInfo, b:VersionInfo) : bool {
 private var chplVersionInfo = new VersionInfo(-1, -1, -1);
 /*
    Returns a tuple containing information about the `chpl --version`:
-   (major, minor, bugFix, isMaster)
+   (major, minor, bugFix, isMain)
 */
-proc getChapelVersionInfo(): VersionInfo {
+proc getChapelVersionInfo(): VersionInfo throws {
   use Regex;
 
   if chplVersionInfo(0) == -1 {
+
+    var output : string;
     try {
-
-      var ret : VersionInfo;
-
-      var process = spawn(["chpl", "--version"], stdout=pipeStyle.pipe);
-      process.wait();
-      if process.exitCode != 0 {
-        throw new owned MasonError("Failed to run 'chpl --version'");
-      }
-
-
-      var output : string;
-      for line in process.stdout.lines() {
-        output += line;
-      }
-
-      const semverPattern = "(\\d+\\.\\d+\\.\\d+)";
-      var master  = new regex(semverPattern + " pre-release (\\([a-z0-9]+\\))");
-      var release = new regex(semverPattern);
-
-      var semver, sha : string;
-      var isMaster: bool;
-      if master.search(output, semver, sha) {
-        isMaster = true;
-      } else if release.search(output, semver) {
-        isMaster = false;
-      } else {
-        throw new owned MasonError("Failed to match output of 'chpl --version':\n" + output);
-      }
-
-      const split = semver.split(".");
-      chplVersionInfo = new VersionInfo(split[0]:int, split[1]:int, split[2]:int);
-    } catch e : Error {
-      stderr.writeln("Error while getting Chapel version:");
-      stderr.writeln(e.message());
-      exit(1);
+      output = runCommand(["chpl", "--version"], quiet=true);
+    } catch {
+      throw new MasonError("Failed to run 'chpl --version'");
     }
+
+    const semverPattern = "(\\d+\\.\\d+\\.\\d+)";
+    var main  = new regex(semverPattern + " pre-release (\\([a-z0-9]+\\))");
+    var release = new regex(semverPattern);
+
+    var semver, sha : string;
+    var isMain: bool;
+    if main.search(output, semver, sha) {
+      isMain = true;
+    } else if release.search(output, semver) {
+      isMain = false;
+    } else {
+      throw new MasonError("Failed to match output of 'chpl --version':\n" +
+                            output);
+    }
+
+    const split = semver.split(".");
+    chplVersionInfo = new VersionInfo(split[0]:int, split[1]:int, split[2]:int);
   }
 
   return chplVersionInfo;
 }
 
 private var chplVersion = "";
-proc getChapelVersionStr() {
+proc getChapelVersionStr() throws {
   if chplVersion == "" {
     const version = getChapelVersionInfo();
-    chplVersion = version(0):string + "." + version(1):string + "." + version(2):string;
+    chplVersion = version(0):string + "." +
+                  version(1):string + "." +
+                  version(2):string;
   }
   return chplVersion;
 }
@@ -548,29 +526,71 @@ proc isIdentifier(name:string) {
 }
 
 
-proc getMasonDependencies(sourceList: list(3*string),
-                          gitList: list(4*string),
-                          progName: string) {
+record gitSource {
+  var url: string;
+  var name: string;
+  var branch: string;
+  var revision: string;
+
+  iter type iterList(x: list(gitSource)) {
+    for item in x {
+      yield (item.url, item.name, item.branch, item.revision);
+    }
+  }
+  iter type iterList(x: list(gitSource), param tag: iterKind)
+  where tag == iterKind.standalone {
+    foreach idx in 0..#x.size {
+      const item = x[idx];
+      yield (item.url, item.name, item.branch, item.revision);
+    }
+  }
+}
+record srcSource {
+  var url: string;
+  var name: string;
+  var version: string;
+
+  iter type iterList(x: list(srcSource)) {
+    for item in x {
+      yield (item.url, item.name, item.version);
+    }
+  }
+  iter type iterList(x: list(srcSource), param tag: iterKind)
+  where tag == iterKind.standalone {
+    foreach idx in 0..#x.size {
+      const item = x[idx];
+      yield (item.url, item.name, item.version);
+    }
+  }
+}
+
+proc getMasonDependencies(sourceList: list(srcSource),
+                          gitList: list(gitSource),
+                          progName: string): list(string) {
 
   // Declare example to run as the main module
-  var masonCompopts = " ".join(" --main-module", progName, " ");
+  var masonCompopts: list(string);
+  masonCompopts.pushBack("--main-module");
+  masonCompopts.pushBack(progName);
 
   if sourceList.size > 0 {
-    const depPath = MASON_HOME + "/src/";
+    const depPath = joinPath(MASON_HOME, "src");
 
     // Add dependencies to project
-    for (_, name, version) in sourceList {
-      var depSrc = "".join(' ',depPath, name, "-", version, '/src/', name, ".chpl");
-      masonCompopts += depSrc;
+    for (_, name, version) in srcSource.iterList(sourceList) {
+      const depSrc = joinPath(depPath, "%s-%s".format(name, version),
+                              "src", "%s.chpl".format(name));
+      masonCompopts.pushBack(depSrc);
     }
   }
   if gitList.size > 0 {
-    const gitDepPath = MASON_HOME + '/git/';
+    const gitDepPath = joinPath(MASON_HOME, "git");
 
     // Add git dependencies
-    for (_, name, branch, _) in gitList {
-      var gitDepSrc = ' ' + gitDepPath + name + "-" + branch + '/src/' + name + ".chpl";
-      masonCompopts += gitDepSrc;
+    for (_, name, branch, _) in gitSource.iterList(gitList) {
+      const gitDepSrc = joinPath(gitDepPath, "%s-%s".format(name, branch),
+                                 "src", "%s.chpl".format(name));
+      masonCompopts.pushBack(gitDepSrc);
     }
   }
   return masonCompopts;
@@ -836,4 +856,13 @@ iter allFields(tomlTbl: Toml) {
       continue;
     else yield(k,v);
   }
+}
+
+record chplOptions {
+  var compopts: list(string);
+  var execopts: list(string);
+}
+
+proc MASON_VERSION : string {
+  return "0.2.0";
 }

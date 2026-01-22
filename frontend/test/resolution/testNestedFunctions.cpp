@@ -27,31 +27,18 @@
 #include "chpl/uast/all-uast.h"
 #include "./ErrorGuard.h"
 
-#define ADVANCE_PRESERVING_STANDARD_MODULES_(ctx__) \
-  do { \
-    ctx__->advanceToNextRevision(false); \
-    setupModuleSearchPaths(ctx__, false, false, {}, {}); \
-  } while (0)
-
 static Context*
-turnOnWarnUnstable(Context* ctx) {
-  // TODO: Turn on after infinite cycle bug in 'recomputeIfNeeded' is fixed,
-  // see private issue #6721.
-  /*
-  ADVANCE_PRESERVING_STANDARD_MODULES_(ctx);
+turnOnWarnUnstable() {
   CompilerFlags flags;
   flags.set(CompilerFlags::WARN_UNSTABLE, true);
-  setCompilerFlags(ctx, std::move(flags));
-  assert(isCompilerFlagSet(ctx, CompilerFlags::WARN_UNSTABLE));
-  */
-  return ctx;
+  return buildStdContext(std::move(flags));
 }
 
 // This test demonstrates that it is safe to resolve a nested function like
 // normal if the function does not refer to outer variables, regardless of
 // whether or not the function is generic or concrete.
-static void test0(Context* ctx) {
-  ADVANCE_PRESERVING_STANDARD_MODULES_(ctx);
+static void test0() {
+  auto ctx = turnOnWarnUnstable();
   ErrorGuard guard(ctx);
 
   // This snippet is a mockup of code from the internal modules.
@@ -84,8 +71,8 @@ static void test0(Context* ctx) {
 }
 
 // Very simple test exercising nested functions with outer variables.
-static void test1(Context* ctx) {
-  ADVANCE_PRESERVING_STANDARD_MODULES_(ctx);
+static void test1() {
+  auto ctx = turnOnWarnUnstable();
   ErrorGuard guard(ctx);
 
   std::string program =
@@ -107,8 +94,8 @@ static void test1(Context* ctx) {
 // We should be able to call the sibling nested function 'ding' within the
 // child nested function 'baz'. The nested functions use outer variables in
 // their bodies _and_ their signatures.
-static void test2(Context* ctx) {
-  ADVANCE_PRESERVING_STANDARD_MODULES_(ctx);
+static void test2() {
+  auto ctx = turnOnWarnUnstable();
   ErrorGuard guard(ctx);
 
   std::string program =
@@ -164,8 +151,8 @@ static void test2(Context* ctx) {
 // behave properly. The outermost function 'foo' has multiple instantiations,
 // which 'baz' is indirectly dependent on (uses of the outer variable 'a').
 // Then 'baz' is used to instantiate the nested function 'bar'.
-static void test3(Context* ctx) {
-  ADVANCE_PRESERVING_STANDARD_MODULES_(ctx);
+static void test3() {
+  auto ctx = turnOnWarnUnstable();
   ErrorGuard guard(ctx);
 
   std::string program =
@@ -226,8 +213,8 @@ static void test3(Context* ctx) {
 }
 
 // Interaction between outer variables and generic constraints.
-static void test4(Context* ctx) {
-  ADVANCE_PRESERVING_STANDARD_MODULES_(ctx);
+static void test4() {
+  auto ctx = turnOnWarnUnstable();
   ErrorGuard guard(ctx);
 
   std::string program =
@@ -267,8 +254,8 @@ static void test4(Context* ctx) {
 
 // This is private issue #6022. It tests a case where a nested function uses
 // a field accessible through a outer method's receiver.
-static void test5a(Context* ctx) {
-  ADVANCE_PRESERVING_STANDARD_MODULES_(ctx);
+static void test5a() {
+  auto ctx = turnOnWarnUnstable();
   ErrorGuard guard(ctx);
 
   std::string program =
@@ -294,8 +281,8 @@ static void test5a(Context* ctx) {
   assert(m["r"].type()->isRecordType());
 }
 
-static void test5b(Context* ctx) {
-  ADVANCE_PRESERVING_STANDARD_MODULES_(ctx);
+static void test5b() {
+  auto ctx = turnOnWarnUnstable();
   ErrorGuard guard(ctx);
 
   std::string program =
@@ -323,8 +310,8 @@ static void test5b(Context* ctx) {
   assert(qt.type() && qt.type()->isIntType());
 }
 
-static void test5c(Context* ctx) {
-  ADVANCE_PRESERVING_STANDARD_MODULES_(ctx);
+static void test5c() {
+  auto ctx = turnOnWarnUnstable();
   ErrorGuard guard(ctx);
 
   std::string program =
@@ -355,8 +342,8 @@ static void test5c(Context* ctx) {
   assert(qt["z"].type() && qt["z"].type()->isStringType());
 }
 
-static void test5d(Context* ctx) {
-  ADVANCE_PRESERVING_STANDARD_MODULES_(ctx);
+static void test5d() {
+  auto ctx = turnOnWarnUnstable();
   ErrorGuard guard(ctx);
 
   std::string program =
@@ -382,8 +369,8 @@ static void test5d(Context* ctx) {
 }
 
 // Similar to the other 5x cases, but with a secondary method
-static void test5e(Context* ctx) {
-  ADVANCE_PRESERVING_STANDARD_MODULES_(ctx);
+static void test5e() {
+  auto ctx = turnOnWarnUnstable();
   {
     ErrorGuard guard(ctx);
 
@@ -441,8 +428,8 @@ static void test5e(Context* ctx) {
 }
 
 // Same as test5 but with a nested method instead of a nested function.
-static void test6(Context* ctx) {
-  ADVANCE_PRESERVING_STANDARD_MODULES_(ctx);
+static void test6() {
+  auto ctx = turnOnWarnUnstable();
   ErrorGuard guard(ctx);
 
   std::string program =
@@ -470,8 +457,8 @@ static void test6(Context* ctx) {
 // This is not legal, but we should still perform the correct name resolution.
 // TODO: Right now, mentions of 'T' in 'helper' are not resolved to the field.
 /**
-static void test7(Context* ctx) {
-  ADVANCE_PRESERVING_STANDARD_MODULES_(ctx);
+static void test7() {
+auto ctx = turnOnWarnUnstable();
   ErrorGuard guard(ctx);
 
   std::string program =
@@ -507,8 +494,8 @@ static void test7(Context* ctx) {
 // this program still type as though it would work? Right now it can't
 // be typed because the lookup fails.
 /*
-static void test8(Context* ctx) {
-  ADVANCE_PRESERVING_STANDARD_MODULES_(ctx);
+static void test8() {
+auto ctx = turnOnWarnUnstable();
   ErrorGuard guard(ctx);
 
   std::string program =
@@ -538,8 +525,8 @@ static void test8(Context* ctx) {
 }
 */
 
-static void test9(Context* ctx) {
-  ADVANCE_PRESERVING_STANDARD_MODULES_(ctx);
+static void test9() {
+  auto ctx = turnOnWarnUnstable();
   ErrorGuard guard(ctx);
 
   std::string program =
@@ -577,8 +564,8 @@ static void test9(Context* ctx) {
 }
 
 // This is private issue #6123.
-static void test10(Context* ctx) {
-  ADVANCE_PRESERVING_STANDARD_MODULES_(ctx);
+static void test10() {
+  auto ctx = turnOnWarnUnstable();
   ErrorGuard guard(ctx);
 
   std::string program =
@@ -608,8 +595,8 @@ static void test10(Context* ctx) {
 }
 
 
-static void test11(Context* ctx) {
-  ADVANCE_PRESERVING_STANDARD_MODULES_(ctx);
+static void test11() {
+  auto ctx = turnOnWarnUnstable();
   ErrorGuard guard(ctx);
 
   std::string program =
@@ -633,9 +620,9 @@ static void test11(Context* ctx) {
   assert(x.type()->isStringType());
 }
 
-static void test12(Context* ctx) {
+static void test12() {
   // Test ambiguity emitted between nested function and method.
-  ADVANCE_PRESERVING_STANDARD_MODULES_(ctx);
+  auto ctx = turnOnWarnUnstable();
   ErrorGuard guard(ctx);
 
   std::string program = R"""(
@@ -660,9 +647,9 @@ static void test12(Context* ctx) {
   assert(guard.realizeErrors());
 }
 
-static void test12b(Context* ctx) {
+static void test12b() {
   // Test ambiguity emitted between nested function and method.
-  ADVANCE_PRESERVING_STANDARD_MODULES_(ctx);
+  auto ctx = turnOnWarnUnstable();
   ErrorGuard guard(ctx);
 
   std::string program = R"""(
@@ -690,8 +677,8 @@ static void test12b(Context* ctx) {
 }
 
 
-static void test13(Context* ctx) {
-  ADVANCE_PRESERVING_STANDARD_MODULES_(ctx);
+static void test13() {
+  auto ctx = turnOnWarnUnstable();
   ErrorGuard guard(ctx);
 
   std::string program =
@@ -716,8 +703,8 @@ static void test13(Context* ctx) {
   assert(qt.type() && qt.type()->isIntType());
 }
 
-static void test14(Context* ctx) {
-  ADVANCE_PRESERVING_STANDARD_MODULES_(ctx);
+static void test14() {
+  auto ctx = turnOnWarnUnstable();
   ErrorGuard guard(ctx);
 
   std::string program =
@@ -742,8 +729,8 @@ static void test14(Context* ctx) {
   std::ignore = resolveTypeOfX(ctx, program);
 }
 
-static void test15(Context* ctx) {
-  ADVANCE_PRESERVING_STANDARD_MODULES_(ctx);
+static void test15() {
+  auto ctx = turnOnWarnUnstable();
   ErrorGuard guard(ctx);
 
   std::string program =
@@ -780,8 +767,8 @@ static void test15(Context* ctx) {
   std::ignore = gatherTransitiveFnsCalledByModInit(ctx, m->id(), called);
 }
 
-static void test16(Context* ctx) {
-  ADVANCE_PRESERVING_STANDARD_MODULES_(ctx);
+static void test16() {
+  auto ctx = turnOnWarnUnstable();
   ErrorGuard guard(ctx);
 
   std::string program =
@@ -812,31 +799,28 @@ static void test16(Context* ctx) {
 }
 
 int main() {
-  auto context = buildStdContext();
-  Context* ctx = turnOnWarnUnstable(context);
-
-  test0(ctx);
-  test1(ctx);
-  test2(ctx);
-  test3(ctx);
-  test4(ctx);
-  test5a(ctx);
-  test5b(ctx);
-  test5c(ctx);
-  test5d(ctx);
-  test5e(ctx);
-  test6(ctx);
+  test0();
+  test1();
+  test2();
+  test3();
+  test4();
+  test5a();
+  test5b();
+  test5c();
+  test5d();
+  test5e();
+  test6();
   // test7(ctx);
   // test8(ctx);
-  test9(ctx);
-  test10(ctx);
-  test11(ctx);
-  test12(ctx);
-  test12b(ctx);
-  test13(ctx);
-  test14(ctx);
-  test15(ctx);
-  test16(ctx);
+  test9();
+  test10();
+  test11();
+  test12();
+  test12b();
+  test13();
+  test14();
+  test15();
+  test16();
 
   return 0;
 }

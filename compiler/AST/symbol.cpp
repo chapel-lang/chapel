@@ -1518,10 +1518,6 @@ void createInitStringLiterals() {
 
   initStringLiteralsEpilogue = initStringLiterals->getOrCreateEpilogueLabel();
 
-  if (fMinimalModules) {
-    return;
-  }
-
   // accumulate the string/bytes and prepare to sort them
   std::vector<std::pair<std::string, VarSymbol*>> literals;
 

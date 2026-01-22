@@ -2500,42 +2500,6 @@ static bool isInConstructorLikeFunction(CallExpr* call) {
   return parent && isConstructorLikeFunction(parent);
 }
 
-// Is the function of interest invoked from a constructor
-// or initialize(), with the constructor's or initialize's 'this'
-// as the receiver actual.
-static bool isInvokedFromConstructorLikeFunction(int stackIdx) {
-  if (stackIdx > 0) {
-    CallExpr* call2 = callStack.v[stackIdx - 1];
-    if (FnSymbol* parent2 = toFnSymbol(call2->parentSymbol))
-     if (isConstructorLikeFunction(parent2))
-      if (call2->numActuals() >= 2)
-        if (SymExpr* thisArg2 = toSymExpr(call2->get(2)))
-          if (thisArg2->symbol()->hasFlag(FLAG_ARG_THIS))
-            return true;
-  }
-  return false;
-}
-
-// Check whether the actual comes from accessing a const field of 'this'
-// and the call is in a function invoked directly from this's constructor.
-// In such case, fields of 'this' are not considered 'const',
-// so we remove the const-ness flag.
-static bool checkAndUpdateIfLegalFieldOfThis(CallExpr* call, Expr* actual,
-                                             FnSymbol*& nonTaskFnParent) {
-  int stackIdx;
-  findNonTaskFnParent(call, nonTaskFnParent, stackIdx); // sets the args
-
-  if (SymExpr* se = toSymExpr(actual))
-    if (se->symbol()->hasFlag(FLAG_REF_FOR_CONST_FIELD_OF_THIS))
-      if (isInvokedFromConstructorLikeFunction(stackIdx)) {
-          // Yes, this is the case we are looking for.
-          se->symbol()->removeFlag(FLAG_REF_TO_CONST);
-          return true;
-      }
-
-  return false;
-}
-
 
 // little helper
 static Symbol* getBaseSymForConstCheck(CallExpr* call) {
@@ -4697,18 +4661,6 @@ static void checkDefaultNonnilableArrayArg(CallExpr* call, FnSymbol* fn) {
 
 static void resolveNormalCallFinalChecks(CallExpr* call) {
   FnSymbol* fn = call->resolvedFunction();
-
-  if (fn->hasFlag(FLAG_MODIFIES_CONST_FIELDS) == true) {
-    // Not allowed if it is not called directly from a constructor.
-    if (isInConstructorLikeFunction(call)                     == false ||
-        getBaseSymForConstCheck(call)->hasFlag(FLAG_ARG_THIS) == false) {
-      USR_FATAL_CONT(call,
-                     "illegal call to %s() - it modifies 'const' fields "
-                     "of 'this', therefore it can be invoked only directly "
-                     "from a constructor on the object being constructed",
-                     fn->name);
-    }
-  }
 
   lvalueCheck(call);
 
@@ -7737,13 +7689,8 @@ static void lvalueCheckActual(CallExpr* call, Expr* actual, IntentTag intent, Ar
 
   FnSymbol* nonTaskFnParent = NULL;
 
-  if (errorMsg &&
-      // sets nonTaskFnParent
-      checkAndUpdateIfLegalFieldOfThis(call, actual, nonTaskFnParent)) {
-    errorMsg = false;
-
-    nonTaskFnParent->addFlag(FLAG_MODIFIES_CONST_FIELDS);
-  }
+  int ignoredStackIdx;
+  findNonTaskFnParent(call, nonTaskFnParent, ignoredStackIdx); // sets the args
 
   if (errorMsg == true) {
     if (nonTaskFnParent &&
@@ -12215,8 +12162,7 @@ static void resolveExportsEtc() {
   std::vector<FnSymbol*> exps;
 
   // try to resolve concrete functions when using --dyno-gen-lib
-  bool alsoConcrete = (fResolveConcreteFns || fDynoGenLib) &&
-                      !fMinimalModules;
+  bool alsoConcrete = (fResolveConcreteFns || fDynoGenLib);
 
   // We need to resolve any additional functions that will be exported.
   forv_expanding_Vec(FnSymbol, fn, gFnSymbols) {
@@ -12794,9 +12740,8 @@ static void resolveAutoCopyEtc(AggregateType* at) {
   // resolve autoDestroy
   if (autoDestroyMap.get(at) == NULL) {
     FnSymbol* fn = autoMemoryFunction(at, astr_autoDestroy);
-    // If --minimal-modules is used, `chpl_autoDestroy` won't be defined
-    if (fn)
-      fn->addFlag(FLAG_AUTO_DESTROY_FN);
+    INT_ASSERT(fn);
+    fn->addFlag(FLAG_AUTO_DESTROY_FN);
     autoDestroyMap.put(at, fn);
   }
 }
@@ -12967,14 +12912,9 @@ static bool isCompilerGenerated(FnSymbol* fn) {
 ************************************** | *************************************/
 
 static void resolveOther() {
-  //
-  // When compiling with --minimal-modules, gPrintModuleInitFn is not
-  // defined.
-  //
-  if (gPrintModuleInitFn) {
-    // Resolve the function that will print module init order
-    resolveFunction(gPrintModuleInitFn);
-  }
+  // Resolve the function that will print module init order
+  INT_ASSERT(gPrintModuleInitFn);
+  resolveFunction(gPrintModuleInitFn);
 
   std::vector<FnSymbol*> fns = getWellKnownFunctions();
 
@@ -13098,21 +13038,19 @@ static void insertReturnTemps() {
                                           tmp,
                                           contextCallOrCall->remove()));
 
-            if (fMinimalModules == false) {
-              if (isIteratorOrForwarder(fn)) {
-                handleStatementLevelIteratorCall(def, tmp);
+            if (isIteratorOrForwarder(fn)) {
+              handleStatementLevelIteratorCall(def, tmp);
 
-              } else
-              if ((fn->retType->getValType() &&
-                   isSyncType(fn->retType->getValType())) ||
-                  isSyncType(fn->retType))
-              {
-                CallExpr* sls = new CallExpr(
-                    astr_chpl_statementLevelSymbol, tmp);
+            } else
+            if ((fn->retType->getValType() &&
+                 isSyncType(fn->retType->getValType())) ||
+                isSyncType(fn->retType))
+            {
+              CallExpr* sls = new CallExpr(
+                  astr_chpl_statementLevelSymbol, tmp);
 
-                def->next->insertAfter(sls);
-                resolveCallAndCallee(sls);
-              }
+              def->next->insertAfter(sls);
+              resolveCallAndCallee(sls);
             }
 
             if (isTypeExpr(contextCallOrCall)) {

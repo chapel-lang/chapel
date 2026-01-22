@@ -311,11 +311,9 @@ static void deadStringLiteralElimination() {
     // A quick review of a portion of test/release/examples shows that
     // this pass removes 85 - 95% of the string literals.  Signal an
     // error if this pass doesn't reclaim at least 10% of all string
-    // literals unless this is minimal modules
+    // literals
     //
-    if (fMinimalModules == false) {
-      INT_ASSERT((1.0 * numDeadLiteral) / numStmt > 0.10);
-    }
+    INT_ASSERT((1.0 * numDeadLiteral) / numStmt > 0.10);
   }
 }
 
@@ -465,10 +463,6 @@ static bool removeVoidFunction(FnSymbol* fn) {
 }
 
 static void deadFunctionElimination() {
-  // skip minimal modules, since many key functions are stubbed out and then get
-  // removed, which breaks later passes
-  if (fMinimalModules) return;
-
   bool changed;
   do {
     changed = false;

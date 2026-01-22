@@ -819,27 +819,19 @@ static void buildChplEntryPoints() {
 
   chpl_gen_main->insertAtTail(new DefExpr(main_ret));
 
-  //
-  // In --minimal-modules compilation mode, we won't have any
-  // parallelism, so no need for end counts (or atomic/sync types to
-  // support them).
-  //
-  if (fMinimalModules == false) {
-    endCount = newTemp("_endCount");
-    chpl_gen_main->insertAtTail(new DefExpr(endCount));
-    chpl_gen_main->insertAtTail(new CallExpr(PRIM_MOVE,
-                                             endCount,
-                                             new CallExpr("_endCountAlloc",
-                                                          gFalse)));
+  endCount = newTemp("_endCount");
+  chpl_gen_main->insertAtTail(new DefExpr(endCount));
+  chpl_gen_main->insertAtTail(new CallExpr(PRIM_MOVE,
+                                           endCount,
+                                           new CallExpr("_endCountAlloc",
+                                                        gFalse)));
 
-    chpl_gen_main->insertAtTail(new CallExpr(PRIM_SET_DYNAMIC_END_COUNT, endCount));
-  }
-
+  chpl_gen_main->insertAtTail(new CallExpr(PRIM_SET_DYNAMIC_END_COUNT, endCount));
   chpl_gen_main->insertAtTail(new CallExpr("chpl_rt_preUserCodeHook"));
 
   // We have to initialize the main module explicitly.
   // It will initialize all the modules it uses, recursively.
-  if (!fMultiLocaleInterop) {
+  if (!fClientServerLibrary) {
     chpl_gen_main->insertAtTail(new CallExpr(mainModule->initFn));
     // also init other modules mentioned on command line
     forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
@@ -917,16 +909,8 @@ static void buildChplEntryPoints() {
   }
 
   chpl_gen_main->insertAtTail(new CallExpr("chpl_rt_postUserCodeHook"));
-
-  //
-  // In --minimal-modules compilation mode, we won't be waiting on an
-  // endcount (see comment above)
-  //
-  if (fMinimalModules == false) {
-    chpl_gen_main->insertAtTail(new CallExpr("_waitEndCount", endCount));
-    chpl_gen_main->insertAtTail(new CallExpr("chpl_deinitModules"));
-  }
-
+  chpl_gen_main->insertAtTail(new CallExpr("_waitEndCount", endCount));
+  chpl_gen_main->insertAtTail(new CallExpr("chpl_deinitModules"));
   chpl_gen_main->insertAtTail(new CallExpr(PRIM_RETURN, main_ret));
 
   normalize(chpl_gen_main);
@@ -1851,14 +1835,6 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
 
   // Always build for 'object' to satisfy 'override' keyword in some cases.
   bool makeSerialize            = ct == dtObject || !fNoIOGenSerialization;
-
-  //
-  // We have no QIO when compiling with --minimal-modules, so no need
-  // to build default R/W functions.
-  //
-  if (fMinimalModules == true) {
-    return;
-  }
 
   // This is a workaround - want Error objects to overload message()
   // to build their own description.

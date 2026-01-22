@@ -67,9 +67,6 @@ struct AdjustMaybeRefs {
   std::set<ID> refMaybeConstFormalsUsedRef;
   std::vector<ExprStackEntry> exprStack;
 
-  // outputs
-  std::set<ID>* mutatedConstFieldIds = nullptr;
-
   // methods
   AdjustMaybeRefs(ResolutionContext* rc, Resolver& resolver)
     : rc(rc), resolver(resolver)
@@ -81,17 +78,6 @@ struct AdjustMaybeRefs {
   Access currentAccess();
 
   void constCheckAssociatedActions(const AstNode* ast, RV& rv);
-
-  /*
-   In production, we allow methods called directly from the initializer
-   to mutate const fields of 'this', to help set up complicated types.
-   Since Dyno has no notion of a call stack, instead, always defer errors
-   in this pass, track a set of accessed fields, and then have the caller
-   issue errors if the caller is not a constructor.
-
-   Returns true if this is such a field access.
-  */
-  bool deferErrorForMutatingConstfield(const AstNode* ref, RV& rv);
 
   bool enter(const VarLikeDecl* ast, RV& rv);
   void exit(const VarLikeDecl* ast, RV& rv);
@@ -184,57 +170,6 @@ void AdjustMaybeRefs::constCheckAssociatedActions(const AstNode* ast, RV& rv) {
   // consider each associated action
 }
 
-bool AdjustMaybeRefs::deferErrorForMutatingConstfield(const AstNode* ref, RV& rv) {
-  // Do a bit of pattern matching. Only 'myField' (implicit 'this') and
-  // 'this.myField' are supported for now.
-  if (!ref->isIdentifier() && !ref->isDot()) return false;
-  if (!mutatedConstFieldIds) return false;
-
-  // TODO: (D.F. Jan 6. 2026) The InitResolver has a very similar logic for
-  //       detecting field access. However, I find the implementation here
-  //       preferrable, since it does not re-search the composite type's fields,
-  //       and relies on toID instead of repeating a name-based lookup.
-  //       Perhaps we should re-integrate this back into InitResolver later.
-
-  // Is it a field?
-  ID fieldId;
-  if (auto refR = rv.byPostorder().byAstOrNull(ref)) {
-    auto toId = refR->toId();
-    if (toId.isEmpty()) {
-      if (refR->mostSpecific().numBest() == 1) {
-        toId = refR->mostSpecific().only().fn()->id();
-      }
-    }
-    if (parsing::idIsField(context, toId)) {
-      fieldId = toId;
-    }
-  }
-  if (fieldId.isEmpty()) return false;
-
-  // if it's a dot, check that the lhs refers to 'this':
-  if (auto dot = ref->toDot()) {
-    bool thisDot = false;
-    auto recv = dot->receiver();
-    if (auto recvR = rv.byPostorder().byAstOrNull(recv)) {
-      auto toId = recvR->toId();
-      if (toId.isEmpty()) return false; // not 'this'.
-      auto toAst = parsing::idToAst(context, toId);
-      if (toAst && toAst->isFormal() && toAst->toFormal()->name() == USTR("this")) {
-        thisDot = true;
-      }
-    }
-    if (!thisDot) return false;
-
-    // Performance: The above is a more robust check for the following, which
-    // might be faster.
-    CHPL_ASSERT(recv->isIdentifier() && recv->toIdentifier()->name() == USTR("this"));
-  }
-
-  // ok, this is a field of 'this'. Defer the error.
-  mutatedConstFieldIds->insert(fieldId);
-  return true;
-}
-
 bool AdjustMaybeRefs::enter(const VarLikeDecl* ast, RV& rv) {
   // visit the type expression, if any
   if (auto typeExpr = ast->typeExpression()) {
@@ -321,52 +256,6 @@ bool AdjustMaybeRefs::enter(const Call* ast, RV& rv) {
   // there should be only one candidate at this point
   CHPL_ASSERT(candidates.numBest() <= 1);
 
-  // Now, emit deferred constness errors from inside the function we called,
-  // if any. See deferErrorForMutatingConstfield.
-  if (candidates.numBest() == 1) {
-    const auto& best = candidates.only();
-    auto resolvedFn = resolveFunctionIfPossible(rc, best.fn(), re.poiScope());
-
-    if (resolvedFn) {
-      for (const auto& id : resolvedFn->mutatedConstFieldIds()) {
-        (void) id;
-        // The only way for the 'mutatedConstFieldIds' to be non-empty
-        // is if we deferred errors in the called function, which we could
-        // only do for methods.
-        CHPL_ASSERT(best.fn()->isMethod());
-
-        // Note: this pattern matching here is more fragile than I would like,
-        // but is there a better way to detect a call on 'this' specifically?
-        bool isValidCallOnThis = false;
-        if (!resolver.initResolver) {
-          // we're not in an initializer, so we can't mutate const fields.
-        } else if (auto fnCall = ast->toFnCall()) {
-          // call like 'method()', implicit receiver.
-          if (auto ident = fnCall->calledExpression()->toIdentifier()) {
-            if (ident->name() == best.fn()->untyped()->name()) {
-              isValidCallOnThis = true;
-            }
-          // call like 'this.method()'
-          } else if (auto dot = fnCall->calledExpression()->toDot()) {
-            if (auto recvIdent = dot->receiver()->toIdentifier()) {
-              if (recvIdent->name() == USTR("this") &&
-                  dot->field() == best.fn()->untyped()->name()) {
-                isValidCallOnThis = true;
-              }
-            }
-          }
-        }
-
-        if (isValidCallOnThis) {
-          continue;
-        } else {
-          context->error(ast, "function '%s' mutates const fields of its receiver",
-                         best.fn()->untyped()->name().c_str());
-        }
-      }
-    }
-  }
-
   // then, traverse nested call-expressions
   if (auto msc = candidates.only()) {
     auto fn = msc.fn();
@@ -442,7 +331,7 @@ bool AdjustMaybeRefs::enter(const Call* ast, RV& rv) {
         // nothing to do regardless of access
       } else if (access == REF) {
         bool isConst = actualRe.type().isConst();
-        if (isConst && !deferErrorForMutatingConstfield(actualAst, rv)) {
+        if (isConst) {
           context->error(actualAst, "cannot pass const to non-const");
         }
       }
@@ -475,9 +364,8 @@ bool AdjustMaybeRefs::enter(const uast::AstNode* node, RV& rv) {
 void AdjustMaybeRefs::exit(const uast::AstNode* node, RV& rv) {
 }
 
-void adjustReturnIntentOverloadsAndMaybeConstRefs(Resolver& resolver, std::set<ID>* mutatedConstFieldIds) {
+void adjustReturnIntentOverloadsAndMaybeConstRefs(Resolver& resolver) {
   AdjustMaybeRefs uv(resolver.rc, resolver);
-  uv.mutatedConstFieldIds = mutatedConstFieldIds;
   uv.process(resolver.symbol, resolver.byPostorder);
 }
 

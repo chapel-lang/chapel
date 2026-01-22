@@ -223,10 +223,8 @@ static void checkCanLoadBundledModules() {
   // make sure that we can load important internal / standard modules
   checkCanLoadBundledModule("ChapelBase");
   checkCanLoadBundledModule("ChapelStandard");
-  if (fMinimalModules == false) {
-    checkCanLoadBundledModule("ChapelSysCTypes");
-    checkCanLoadBundledModule("Errors");
-  }
+  checkCanLoadBundledModule("ChapelSysCTypes");
+  checkCanLoadBundledModule("Errors");
 }
 
 static void checkCanLoadCommandLineFile(const char* path) {

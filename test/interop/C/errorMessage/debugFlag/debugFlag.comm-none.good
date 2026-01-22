@@ -1,1 +1,1 @@
-warning: Compiling a single locale library because CHPL_COMM is none.
+error: Client-server libraries cannot currently be compiled with 'CHPL_COMM=none'

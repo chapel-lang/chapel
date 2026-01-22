@@ -3330,8 +3330,7 @@ resolveFunctionByInfoImpl(ResolutionContext* rc, const TypedFnSignature* sig,
   callInitDeinit(visitor);
 
   // then, handle return intent overloads and maybe-const formals
-  std::set<ID> mutatedConstFieldIds;
-  adjustReturnIntentOverloadsAndMaybeConstRefs(visitor, &mutatedConstFieldIds);
+  adjustReturnIntentOverloadsAndMaybeConstRefs(visitor);
 
   // check that throws are handled or forwarded
   // TODO: Call for initializers as well, and remove checks in the resolver.
@@ -3351,7 +3350,6 @@ resolveFunctionByInfoImpl(ResolutionContext* rc, const TypedFnSignature* sig,
                                   linkageNameStr,
                                   std::move(visitor.returnType),
                                   std::move(visitor.userDiagnostics),
-                                  std::move(mutatedConstFieldIds),
                                   std::move(visitor.poiTraceToChild),
                                   std::move(visitor.sigAndInfoToChildPtr)));
   return ret;
@@ -3963,7 +3961,7 @@ scopeResolveFunctionQueryBody(Context* context, ID id) {
                                         PoiInfo(),
                                         UniqueString(),
                                         QualifiedType(),
-                                        {}, {}, {}, {}));
+                                        {}, {}, {}));
   return result;
 }
 

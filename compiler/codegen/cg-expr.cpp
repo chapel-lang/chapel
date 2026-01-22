@@ -192,9 +192,9 @@ GenRet SymExpr::codegen() {
   if (id == breakOnCodegenID)
     debuggerBreakHere();
 
-  if (outfile) {
-    if (getStmtExpr() && getStmtExpr() == this) codegenStmt(this);
-  }
+  if (getStmtExpr() == this)
+    codegenStmt(this);
+
 
   if (auto fn = toFnSymbol(var)) {
     if (shouldGenerateAsIfCallingDirectly(this, fn)) {
@@ -4393,7 +4393,8 @@ GenRet CallExpr::codegen() {
   // Note (for debugging), function name is in parentSymbol->cname.
   if (id == breakOnCodegenID) debuggerBreakHere();
 
-  if (getStmtExpr() == this) codegenStmt(this);
+  if (getStmtExpr() == this)
+    codegenStmt(this);
 
   INT_ASSERT(fn || primitive != nullptr || this->isIndirectCall());
   bool canGenerate = (fn && !fn->hasFlag(FLAG_NO_CODEGEN)) ||

@@ -24,12 +24,6 @@
 
 #include "chpl/resolution/resolution-types.h"
 
-#define ADVANCE_PRESERVING_STANDARD_MODULES_(ctx__) \
-  do { \
-    ctx__->advanceToNextRevision(false); \
-    setupModuleSearchPaths(ctx__, false, false, {}, {}); \
-  } while (0)
-
 // forward declare classes and namespaces
 namespace chpl {
   namespace resolution {
@@ -116,13 +110,13 @@ QualifiedType findVarType(const Module* m,
 /**
   Test resolution of a domain literal.
  */
-void testDomainLiteral(Context* context, std::string domainLiteral,
+void testDomainLiteral(std::string domainLiteral,
                        DomainType::Kind domainKind);
 
-void testDomainIndex(Context* context, std::string domainType,
+void testDomainIndex(std::string domainType,
                      std::string expectedType);
 
-void testDomainBadPass(Context* context, std::string argType,
+void testDomainBadPass(std::string argType,
                        std::string actualType);
 
 /**

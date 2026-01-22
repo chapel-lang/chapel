@@ -24,11 +24,11 @@
 using namespace chpl;
 using namespace resolution;
 
-static void testStandaloneWithoutSerial(Context* context) {
+static void testStandaloneWithoutSerial() {
   // Test that if we fail to resolve a call to an iterator, but there's
   // a tagged overload (e.g., a leader or a follower), that we find the tagged
   // overload instead.
-  ADVANCE_PRESERVING_STANDARD_MODULES_(context);
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string prog =
@@ -53,11 +53,10 @@ static void testStandaloneWithoutSerial(Context* context) {
   CHPL_ASSERT(vars.at("i") == vars.at("j"));
 }
 
-static void testLeaderFollowerWithoutSerial(Context* context) {
+static void testLeaderFollowerWithoutSerial() {
   // Test that if we fail to resolve a call to a non-iterator, but there's
   // a tagged overload (e.g., a leader or a follower), that we _don't_ find
   // the tagged overload, since procs can't be tagged.
-  ADVANCE_PRESERVING_STANDARD_MODULES_(context);
 
   std::string prog =
     R"""(
@@ -71,16 +70,16 @@ static void testLeaderFollowerWithoutSerial(Context* context) {
       forall j in foo() {}
     )""";
 
+  auto context = buildStdContext();
   auto vars = resolveTypesOfVariables(context, prog, {"loop", "i", "j"});
   for (auto var : vars) {
     CHPL_ASSERT(var.second.isUnknownOrErroneous());
   }
 }
 
-static void testIncompatibleYieldTypes(Context* context) {
+static void testIncompatibleYieldTypes() {
   // test that various incompatible iterator type cases are caught (or not).
-  ErrorGuard guard(context);
-  auto assertIncompatibleYieldError = [&]() {
+  auto assertIncompatibleYieldError = [&](ErrorGuard& guard) {
     assert(guard.numErrors() >= 1);
     for (auto& error : guard.errors()) {
       if (error->type() == ErrorType::IncompatibleYieldTypes) {
@@ -93,7 +92,8 @@ static void testIncompatibleYieldTypes(Context* context) {
   };
 
   {
-    ADVANCE_PRESERVING_STANDARD_MODULES_(context);
+    auto context = buildStdContext();
+    ErrorGuard guard(context);
     std::string prog =
       R"""(
       iter i1() { yield 0.0; }
@@ -102,11 +102,12 @@ static void testIncompatibleYieldTypes(Context* context) {
       )""";
 
     auto vars = resolveTypesOfVariables(context, prog, {"l"});
-    assertIncompatibleYieldError();
+    assertIncompatibleYieldError(guard);
   }
 
   {
-    ADVANCE_PRESERVING_STANDARD_MODULES_(context);
+    auto context = buildStdContext();
+    ErrorGuard guard(context);
     std::string prog =
       R"""(
       iter i1() { yield 0.0; }
@@ -116,11 +117,12 @@ static void testIncompatibleYieldTypes(Context* context) {
       )""";
 
     auto vars = resolveTypesOfVariables(context, prog, {"l"});
-    assertIncompatibleYieldError();
+    assertIncompatibleYieldError(guard);
   }
 
   {
-    ADVANCE_PRESERVING_STANDARD_MODULES_(context);
+    auto context = buildStdContext();
+    ErrorGuard guard(context);
     std::string prog =
       R"""(
       iter i1(param tag: iterKind) where tag == iterKind.standalone { yield 0; }
@@ -130,14 +132,15 @@ static void testIncompatibleYieldTypes(Context* context) {
       )""";
 
     auto vars = resolveTypesOfVariables(context, prog, {"l"});
-    assertIncompatibleYieldError();
+    assertIncompatibleYieldError(guard);
   }
 
   {
     // No leader means we can't invoke a follower, so the follower type is not
     // considered and no error is emitted.
 
-    ADVANCE_PRESERVING_STANDARD_MODULES_(context);
+    auto context = buildStdContext();
+    ErrorGuard guard(context);
     std::string prog =
       R"""(
       iter i1() { yield 0.0; }
@@ -152,7 +155,8 @@ static void testIncompatibleYieldTypes(Context* context) {
   {
     // No follower means we can't check the follower's type.
 
-    ADVANCE_PRESERVING_STANDARD_MODULES_(context);
+    auto context = buildStdContext();
+    ErrorGuard guard(context);
     std::string prog =
       R"""(
       iter i1() { yield 0.0; }
@@ -165,10 +169,10 @@ static void testIncompatibleYieldTypes(Context* context) {
   }
 }
 
-static void testIteratorFnPoi(Context* context) {
+static void testIteratorFnPoi() {
   // Tests generic iterator producers + PoI
 
-  ADVANCE_PRESERVING_STANDARD_MODULES_(context);
+  auto context = buildStdContext();
   ErrorGuard guard(context);
   std::string prog =
     R"""(
@@ -236,10 +240,10 @@ static void testIteratorFnPoi(Context* context) {
   assert(vars.at("j3").type()->isStringType());
 }
 
-static void testIteratorFnPoiIgnoresIterationScope(Context* context) {
+static void testIteratorFnPoiIgnoresIterationScope() {
   // Tests generic iterator producers + PoI
 
-  ADVANCE_PRESERVING_STANDARD_MODULES_(context);
+  auto context = buildStdContext();
   ErrorGuard guard(context);
   std::string prog =
     R"""(
@@ -283,8 +287,8 @@ static void testIteratorFnPoiIgnoresIterationScope(Context* context) {
   assert(guard.realizeErrors() >= 1);
 }
 
-static void testLoopExprIteratorPoi(Context* context) {
-  ADVANCE_PRESERVING_STANDARD_MODULES_(context);
+static void testLoopExprIteratorPoi() {
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   // Same as test31, but with loop expressions (which require leader/follower).
@@ -394,11 +398,11 @@ static void testLoopExprIteratorPoi(Context* context) {
   assert(vars.at("j3").type()->toTupleType()->elementType(1).type()->isBoolType());
 }
 
-static void testNewShadowCandidates(Context* context) {
+static void testNewShadowCandidates() {
   // tests that PoI is not used to find new iterator overloads,
   // and that if we do find others, we error.
 
-  ADVANCE_PRESERVING_STANDARD_MODULES_(context);
+  auto context = buildStdContext();
   ErrorGuard guard(context);
   std::string prog =
     R"""(
@@ -430,7 +434,7 @@ static void testNewShadowCandidates(Context* context) {
 // This happened because vararg formals are instantiated with the tuple of
 // arguments passed to then, and subsequent re-runs just passed that tuple
 // directly instead of expanding it.
-static void testVarArgIterator(Context* context) {
+static void testVarArgIterator() {
   std::string prog =
     R"""(
     iter foo(fml...) {
@@ -442,7 +446,7 @@ static void testVarArgIterator(Context* context) {
     var x = + reduce tmp;
     )""";
 
-  ADVANCE_PRESERVING_STANDARD_MODULES_(context);
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context, prog, {"x"});
@@ -451,13 +455,12 @@ static void testVarArgIterator(Context* context) {
 }
 
 int main() {
-  auto context = buildStdContext();
-  testStandaloneWithoutSerial(context);
-  testLeaderFollowerWithoutSerial(context);
-  testIncompatibleYieldTypes(context);
-  testIteratorFnPoi(context);
-  testIteratorFnPoiIgnoresIterationScope(context);
-  testLoopExprIteratorPoi(context);
-  testNewShadowCandidates(context);
-  testVarArgIterator(context);
+  testStandaloneWithoutSerial();
+  testLeaderFollowerWithoutSerial();
+  testIncompatibleYieldTypes();
+  testIteratorFnPoi();
+  testIteratorFnPoiIgnoresIterationScope();
+  testLoopExprIteratorPoi();
+  testNewShadowCandidates();
+  testVarArgIterator();
 }

@@ -239,28 +239,26 @@ void normalize() {
 
   moveGlobalDeclarationsToModuleScope();
 
-  if (!fMinimalModules) {
-    // Calls to chpl_statementLevelSymbol() are inserted here and in
-    // function resolution to ensure that sync vars are in the correct
-    // state (empty) if they are used but not assigned to anything.
-    forv_Vec(SymExpr, se, gSymExprs) {
-      if (shouldSkipNormalizing(se)) continue;
+  // Calls to chpl_statementLevelSymbol() are inserted here and in
+  // function resolution to ensure that sync vars are in the correct
+  // state (empty) if they are used but not assigned to anything.
+  forv_Vec(SymExpr, se, gSymExprs) {
+    if (shouldSkipNormalizing(se)) continue;
 
-      if (FnSymbol* parentFn = toFnSymbol(se->parentSymbol)) {
-        if (se == se->getStmtExpr()) {
-          // Don't add these calls for the return type, since
-          // chpl_statementLevelSymbol would do nothing in that case
-          // anyway, and it contributes to order-of-resolution issues for
-          // extern functions with declared return type.
-          if (parentFn->retExprType != se->parentExpr) {
-            SET_LINENO(se);
+    if (FnSymbol* parentFn = toFnSymbol(se->parentSymbol)) {
+      if (se == se->getStmtExpr()) {
+        // Don't add these calls for the return type, since
+        // chpl_statementLevelSymbol would do nothing in that case
+        // anyway, and it contributes to order-of-resolution issues for
+        // extern functions with declared return type.
+        if (parentFn->retExprType != se->parentExpr) {
+          SET_LINENO(se);
 
-            CallExpr* call = new CallExpr(astr_chpl_statementLevelSymbol);
+          CallExpr* call = new CallExpr(astr_chpl_statementLevelSymbol);
 
-            se->insertBefore(call);
+          se->insertBefore(call);
 
-            call->insertAtTail(se->remove());
-          }
+          call->insertAtTail(se->remove());
         }
       }
     }
@@ -1930,7 +1928,7 @@ static void normalizeReturns(FnSymbol* fn) {
   if (fn->hasFlag(FLAG_NO_FN_BODY)) return;
   if (shouldSkipNormalizing(fn)) return;
 
-  SET_LINENO(fn);
+  SET_LINENO((fn->body->body.tail ? (BaseAST*)fn->body->body.tail : (BaseAST*)fn));
 
   fixupExportedArrayReturns(fn);
   fixupGenericReturnTypes(fn);
@@ -5250,8 +5248,6 @@ static void find_printModuleInit_stuff() {
       // so the number of symbols is small
     }
   }
-  // assert that we actually found such a symbol unless in minimal modules mode
-  if (!fMinimalModules) {
-    INT_ASSERT(gModuleInitIndentLevel);
-  }
+  // assert that we actually found such a symbol
+  INT_ASSERT(gModuleInitIndentLevel);
 }
