@@ -365,8 +365,9 @@ void AdjustMaybeRefs::exit(const uast::AstNode* node, RV& rv) {
 }
 
 void adjustReturnIntentOverloadsAndMaybeConstRefs(Resolver& resolver) {
+  const AstNode* node = resolver.curStmt? resolver.curStmt : resolver.symbol;
   AdjustMaybeRefs uv(resolver.rc, resolver);
-  uv.process(resolver.symbol, resolver.byPostorder);
+  uv.process(node, resolver.byPostorder);
 }
 
 
