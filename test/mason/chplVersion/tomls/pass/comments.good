@@ -1,7 +1,7 @@
 ----- lock file -----
 
 [root]
-chplVersion = "2.8.0..2.8.0"
+chplVersion = "CHPL_CUR_FULL..CHPL_CUR_FULL"
 name = "dummy"
 type = "library"
 version = "1.0.0"
