@@ -2352,14 +2352,14 @@ int main(int argc, char** argv) {
   }
 
   if (fDocsHTML) {
-    if (outputDir_.empty() && fDocsSphinxDir == "docs") {
+    if (fDocsFolder.empty() && fDocsSphinxDir == "docs") {
       std::cerr << "error: using same directory for '--save-sphinx' as default "
                 << "output directory, please either use a different directory "
                 << "for '--save-sphinx' or override the default output "
                 << "directory with '--output-dir'" << std::endl;
       return 1;
 
-    } else if (fDocsSphinxDir == outputDir_ &&
+    } else if (fDocsSphinxDir == fDocsFolder &&
                !fDocsSphinxDir.empty()) {
       std::cerr << "error: using same directory for '--save-sphinx' and "
                 << "'--output-dir' causes issues, please use a different "
