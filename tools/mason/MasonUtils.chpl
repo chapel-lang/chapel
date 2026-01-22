@@ -170,10 +170,6 @@ proc runWithStatus(command: [] string, quiet=false): int {
     return -1;
   }
 }
-proc runWithStatus(cmd: string, quiet=false): int {
-  var cmds = cmd.split();
-  return runWithStatus(cmds, quiet=quiet);
-}
 
 proc SPACK_ROOT : string {
   const envHome = getEnv("SPACK_ROOT");
