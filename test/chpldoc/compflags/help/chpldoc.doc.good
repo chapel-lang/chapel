@@ -22,8 +22,8 @@ Documentation Options:
       --project-version <projectversion>
                                       Sets the documentation version to
                                       <projectversion>
-      --project-copyright projectcopyright
-                                      Sets the project copyright string in the
+      --project-copyright-year projectcopyrightyear
+                                      Sets the project copyright year in the
                                       documentation
       --[no-]print-commands           [Don't] print system commands
       --[no-]warn-unknown-attribute-toolname

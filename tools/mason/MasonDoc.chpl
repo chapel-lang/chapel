@@ -60,9 +60,9 @@ proc masonDoc(args: [] string) throws {
       authors = ", ".join(authorsToml.arr!.s);
     }
   }
-  var copyright: string;
-  if tomlFile.pathExists("brick.copyright") {
-    copyright = tomlFile["brick"]!["copyright"]!.s;
+  var copyrightYear: string;
+  if tomlFile.pathExists("brick.copyrightYear") {
+    copyrightYear = tomlFile["brick"]!["copyrightYear"]!.s;
   }
 
   if isDir(projectHome + '/src/') &&
@@ -78,8 +78,8 @@ proc masonDoc(args: [] string) throws {
     if authors != "" {
       command.pushBack("--author=" + authors);
     }
-    if copyright != "" {
-      command.pushBack("--project-copyright=" + copyright);
+    if copyrightYear != "" {
+      command.pushBack("--project-copyright-year=" + copyrightYear);
     }
     command.pushBack([
       joinPath("src", projectFile),

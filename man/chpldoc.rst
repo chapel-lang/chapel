@@ -35,7 +35,7 @@ reStructuredText as an intermediate format.
 
 **\--author <**\ *authortext*\ **>**
 
-    Documentation author string. *authortext* becomes the copyright and
+    Documentation author string. *authortext* becomes the
     author in the output documentation.
 
 .. _man-chpldoc-comment-style:
@@ -111,12 +111,12 @@ reStructuredText as an intermediate format.
     Sets the documentation version to *projectversion*
     (documentation version defaults to '0.0.1' if unspecified).
 
-.. _man-chpldoc-project-copyright:
+.. _man-chpldoc-project-copyright-year:
 
-**\--project-copyright <**\ *projectcopyright*\ **>**
+**\--project-copyright-year <**\ *projectcopyrightyear*\ **>**
 
-    Sets the documentation copyright to *projectcopyright*
-    (documentation copyright defaults to '2015' if unspecified).
+    Sets the documentation copyright to *projectcopyrightyear*
+    (documentation copyright defaults to the current year if unspecified).
 
 .. _man-chpldoc-print-commands:
 

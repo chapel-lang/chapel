@@ -70,7 +70,7 @@ Mason understands specific fields in the TOML file, which are described below.
      `SPDX License List <https://spdx.org/licenses/>`_ can be used for
      Mason packages. The license field defaults to ``None``.
 
-    * ``copyright``: An optional string indicating the copyright year
+    * ``copyrightYear``: An optional string indicating the copyright year
       for the package.
 
    * ``compopts``: Indicates default compile-time options to be used when

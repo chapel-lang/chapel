@@ -248,7 +248,7 @@ static ArgumentState sArgState = {
 ArgumentDescription docs_arg_desc[] = {
  {"", ' ', NULL, "Documentation Options", NULL, NULL, NULL, NULL},
  {"output-dir", 'o', "<dirname>", "Sets the documentation directory to <dirname>", "P", &fDocsFolder, NULL, NULL},
- {"author", ' ', "<author>", "Documentation author string.", "P", &fDocsAuthor, "CHPLDOC_AUTHOR", NULL},
+ {"author", ' ', "<author>", "Documentation author string", "P", &fDocsAuthor, "CHPLDOC_AUTHOR", NULL},
  {"comment-style", ' ', "<indicator>", "Only includes comments that start with <indicator>", "P", &fDocsCommentLabel, NULL, NULL},
  {"module-dir", 'M', "<directory>", "Add directory to module search path", "P", NULL, NULL, addModulePath},
  {"process-used-modules", ' ', NULL, "Also parse and document 'use'd modules", "F", &fDocsProcessUsedModules, NULL, NULL},
@@ -259,7 +259,7 @@ ArgumentDescription docs_arg_desc[] = {
  {"project-name", ' ', "<projectname>", "Sets the name of project in the documentation", "P", &fDocsProjectName, "CHPLDOC_PROJECT_NAME", NULL},
  {"project-description", ' ', "<projectdescription>", "Sets the project description in the documentation", "P", &fDocsProjectDescription, "CHPLDOC_PROJECT_DESCRIPTION", NULL},
  {"project-version", ' ', "<projectversion>", "Sets the documentation version to <projectversion>", "P", &fDocsProjectVersion, "CHPLDOC_PROJECT_VERSION", checkProjectVersion},
- {"project-copyright", ' ', "projectcopyright", "Sets the project copyright string in the documentation", "P", &fDocsProjectCopyright, "CHPLDOC_PROJECT_COPYRIGHT", NULL},
+ {"project-copyright-year", ' ', "<projectcopyrightyear>", "Sets the project copyright year in the documentation", "P", &fDocsProjectCopyright, "CHPLDOC_PROJECT_COPYRIGHT", NULL},
 
  {"print-commands", ' ', NULL, "[Don't] print system commands", "N", &printSystemCommands, "CHPL_PRINT_COMMANDS", NULL},
  {"warn-unknown-attribute-toolname", ' ', NULL, "Enable warnings when an unknown tool name is found in an attribute", "N", &fWarnUnknownAttributeToolname, "CHPL_WARN_UNKNOWN_ATTRIBUTE_TOOLNAME", NULL},
