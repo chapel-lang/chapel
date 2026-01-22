@@ -75,7 +75,7 @@ std::string fIndexPath = "";
 std::string fDocsProjectName = "Project Name";
 std::string fDocsProjectDescription = "";
 std::string fDocsProjectVersion = "0.0.1";
-std::string fDocsProjectCopyright = "2015";
+std::string fDocsProjectCopyrightYear = "";
 bool printSystemCommands = false;
 bool fWarnUnknownAttributeToolname = true;
 std::vector<UniqueString> usingAttributeToolNames;
@@ -259,7 +259,7 @@ ArgumentDescription docs_arg_desc[] = {
  {"project-name", ' ', "<projectname>", "Sets the name of project in the documentation", "P", &fDocsProjectName, "CHPLDOC_PROJECT_NAME", NULL},
  {"project-description", ' ', "<projectdescription>", "Sets the project description in the documentation", "P", &fDocsProjectDescription, "CHPLDOC_PROJECT_DESCRIPTION", NULL},
  {"project-version", ' ', "<projectversion>", "Sets the documentation version to <projectversion>", "P", &fDocsProjectVersion, "CHPLDOC_PROJECT_VERSION", checkProjectVersion},
- {"project-copyright-year", ' ', "<projectcopyrightyear>", "Sets the project copyright year in the documentation", "P", &fDocsProjectCopyright, "CHPLDOC_PROJECT_COPYRIGHT", NULL},
+ {"project-copyright-year", ' ', "<projectcopyrightyear>", "Sets the project copyright year in the documentation", "P", &fDocsProjectCopyrightYear, "CHPLDOC_PROJECT_COPYRIGHT", NULL},
 
  {"print-commands", ' ', NULL, "[Don't] print system commands", "N", &printSystemCommands, "CHPL_PRINT_COMMANDS", NULL},
  {"warn-unknown-attribute-toolname", ' ', NULL, "Enable warnings when an unknown tool name is found in an attribute", "N", &fWarnUnknownAttributeToolname, "CHPL_WARN_UNKNOWN_ATTRIBUTE_TOOLNAME", NULL},
@@ -2424,6 +2424,15 @@ int main(int argc, char** argv) {
     return 1;
   }
 
+  // determine the year for copyrightYear
+  if (fDocsProjectCopyrightYear.empty()) {
+    auto t = std::time(nullptr);
+    auto tm = *std::localtime(&t);
+    std::ostringstream oss;
+    oss << std::put_time(&tm, "%Y");
+    fDocsProjectCopyrightYear = oss.str();
+  }
+
   // Determine the path for the index.rst
   std::optional<std::string> indexPath = std::nullopt;
   if (!fIndexPath.empty()) {
@@ -2569,7 +2578,7 @@ int main(int argc, char** argv) {
   if (!fDocsTextOnly && fDocsHTML) {
     generateSphinxOutput(docsSphinxDir, docsOutputDir,
                          fDocsProjectName, fDocsProjectDescription,
-                         fDocsProjectVersion, fDocsProjectCopyright,
+                         fDocsProjectVersion, fDocsProjectCopyrightYear,
                          fDocsAuthor,
                          printSystemCommands);
   }
