@@ -612,10 +612,7 @@ void CallInitDeinit::resolveAssign(const AstNode* ast,
   ResolvedExpression& opR = rv.byAst(ast);
 
   auto op = ast->toOpCall();
-  bool inTupleAssignModuleCode =
-      parsing::idToParentModule(context, ast->id()).str() == "ChapelTuple";
-  if (op != nullptr && op->op() == USTR("=") && !op->child(0)->isTuple() &&
-      !inTupleAssignModuleCode) {
+  if (op != nullptr && op->op() == USTR("=") && !op->child(0)->isTuple()) {
     // if the syntax shows a '=' call (except tuple unpacking assign),
     // resolve that into the assign
     c.noteResult(&opR);
