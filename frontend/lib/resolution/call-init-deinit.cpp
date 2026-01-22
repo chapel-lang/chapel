@@ -842,10 +842,12 @@ void CallInitDeinit::processInit(VarFrame* frame,
                         /* forMoveInit */ false,
                         rv);
 
-
-        // special handling for tuple expr RHS: process init for each element,
-        // subsuming associated actions for each as sub-actions of the top-level
-        // init=
+        // TODO/HACK: Special handling for tuple var LHS = tuple expr RHS case:
+        // Explicitly process init for each element, subsuming associated
+        // actions for each as sub-actions of the top-level init=.
+        // This will be obviated by just invoking `_tuple.init=` once we can
+        // properly handle VarScopeVisitor analyses over the param for loop it
+        // contains.
         if (auto lhsTupleType =
                 lhsType.type() ? lhsType.type()->toTupleType() : nullptr) {
           auto rhsTupleType =

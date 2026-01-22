@@ -302,7 +302,11 @@ void FindElidedCopies::handleDeclaration(const VarLikeDecl* ast,
     VarFrame* frame = currentFrame();
     ID lhsVarId = ast->id();
     if (auto tupleExprInit = initExpr->toTuple()) {
-      // handle init with tuple expression RHS
+      // TODO/HACK: Special handling for tuple var LHS = tuple expr RHS case,
+      // explicitly processing each RHS element.
+      // This will be obviated by just invoking `_tuple.init=` once we can
+      // properly handle VarScopeVisitor analyses over the param for loop it
+      // contains.
       QualifiedType lhsTupleType = initType;
       CHPL_ASSERT(lhsTupleType.type() &&
                   lhsTupleType.type()->isTupleType());
