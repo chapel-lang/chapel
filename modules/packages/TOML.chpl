@@ -594,9 +594,8 @@ module TomlParser {
 
 
     /*
-       Returns the element at the given table path
-
-       :throws TomlError: If no index could be found for the given table path.
+      Returns the element at the given table path. Returns nil if the table path
+      does not exist.
     */
     proc this(tblpath: string) ref : shared Toml? {
       const indx = tblpath.split('.');
