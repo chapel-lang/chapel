@@ -188,6 +188,7 @@ struct Visitor {
   // Warnings.
   void warnUnstableUnions(const Union* node);
   void warnUnstableForeachLoops(const Foreach* node);
+  void warnUnstableForwardingDecls(const ForwardingDecl* node);
   void warnUnstableSymbolNames(const NamedDecl* node);
 
   // Visitors.
@@ -1561,6 +1562,12 @@ void Visitor::warnUnstableForeachLoops(const Foreach* node) {
              "in ways that may break some of their current uses.");
 }
 
+void Visitor::warnUnstableForwardingDecls(const ForwardingDecl* node) {
+  if (!shouldEmitUnstableWarning(node)) return;
+  warn(node, "forwarding is currently unstable and may change "
+             "in ways that will break some of its current uses.");
+}
+
 void Visitor::warnUnstableSymbolNames(const NamedDecl* node) {
   if (!shouldEmitUnstableWarning(node)) return;
   if (!isUserCode()) return;
@@ -1797,6 +1804,7 @@ void Visitor::visit(const Foreach* node) {
 }
 
 void Visitor::visit(const ForwardingDecl* node) {
+  warnUnstableForwardingDecls(node);
   checkForwardingInNonRecordOrClass(node);
 }
 
