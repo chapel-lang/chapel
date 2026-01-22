@@ -29,24 +29,17 @@ use MasonUtils;
 use Regex;
 use Sort;
 use TOML;
+use Map;
 
 //
 // TODO:
 // - order results by some kind of 'best match' metric
-// - allow regex searches
 // - allow for exclusion of a pattern
 //
 
-//
-// Temporary passthrough transforming array to list to appease the compiler.
-//
-proc masonSearch(args: [?d] string) {
-  var listArgs: list(string);
-  for x in args do listArgs.pushBack(x);
-  masonSearch(listArgs);
-}
 
-proc masonSearch(ref args: list(string)) throws {
+
+proc masonSearch(args: [] string) throws {
 
   var parser = new argumentParser(helpHandler=new MasonSearchHelpHandler());
 
@@ -55,15 +48,12 @@ proc masonSearch(ref args: list(string)) throws {
                                     numArgs=0..1,
                                     defaultValue=".*");
 
-  // TODO: Is the debug flag supposed to be documented in help or not?
-  var debugFlag = parser.addFlag("debug", defaultValue=false);
   var showFlag = parser.addFlag(name="show", defaultValue=false);
   var updateFlag = parser.addFlag(name="update", flagInversion=true);
 
-  parser.parseArgs(args.toArray());
+  parser.parseArgs(args);
 
   const show = showFlag.valueAsBool();
-  const debug = debugFlag.valueAsBool();
   var skipUpdate = MASON_OFFLINE;
   if updateFlag.hasValue() {
     skipUpdate = !updateFlag.valueAsBool();
@@ -71,155 +61,36 @@ proc masonSearch(ref args: list(string)) throws {
 
   updateRegistry(skipUpdate);
 
-  const query = queryArg.value().toLower();
+  const query = queryArg.value();
   const pattern = new regex(query, ignoreCase=true);
-  var results: list(string);
-  var packages: list(string);
-  var versions: list(string);
-  var registries: list(string);
-  for registry in MASON_CACHED_REGISTRY {
-    const searchDir = registry + "/Bricks/";
-    if !isDir(searchDir) then
-      throw new MasonError("Registry path '" + registry +
-                           "' does not exist.\n" +
-                           "Try running 'mason update --force'.");
+  var pkgs = searchDependencies(pattern);
 
-    for dir in listDir(searchDir, files=false, dirs=true) {
-      const name = dir.replace("/", "");
-      if pattern.search(name) {
-        if isHidden(name) {
-          if debug {
-            writeln("[DEBUG] found hidden package: ", name);
-          }
-        } else {
-          const ver = findLatest(searchDir + dir);
-          const versionZero = new VersionInfo(0, 0, 0);
-          if ver != versionZero {
-            results.pushBack(name + " (" + ver.str() + ")");
-            packages.pushBack(name);
-            versions.pushBack(ver.str());
-            registries.pushBack(registry);
-          }
-        }
-      }
-    }
-  }
-
-  var res = rankResults(results, query);
-  for package in res {
-    const pkgName = splitNameVersion(package, true);
-    writeln(pkgName);
+  for package in pkgs {
+    writeln(package.name + "@" + package.version.str());
   }
 
   // Handle --show flag
   if show {
-    if results.size == 1 {
-      writeln('Displaying the latest version: ' + packages[0] + '@' + versions[0]);
-      const brickPath = '/'.join(registries[0], 'Bricks', packages[0], versions[0]) + '.toml';
+    if pkgs.size == 1 {
+      const pkg = pkgs[0];
+      writeln('Displaying the latest version: ' +
+              pkg.name + '@' + pkg.version.str());
+      const brickPath = joinPath(pkg.registry, 'Bricks',
+                                 pkg.name, pkg.version.str() + '.toml');
       showToml(brickPath);
-      exit(0);
-    } else if results.size == 0 {
-      writeln('"' + query + '" returned no packages');
-      writeln('--show requires the search to return one package');
-      exit(1);
-    } else if results.size > 1 {
+    } else if pkgs.size == 0 {
+      throw new MasonError('"%s" returned no packages\n'.format(query) +
+                           '--show requires the search to return one package');
+    } else if pkgs.size > 1 {
+      var msg = '';
       if query == '.*' {
-        writeln('You must specify a package to show the manifest');
+        msg += 'You must specify a package to show the manifest\n';
       } else {
-        writeln('"' + query + '"  returned more than one package.');
+        msg += '"%s"  returned more than one package.\n'.format(query);
       }
-      writeln("--show requires the search to return one package.");
-      exit(1);
+      msg += "--show requires the search to return one package.";
+      throw new MasonError(msg);
     }
   }
-
-  if results.size == 0 {
-    exit(1);
-  }
 }
 
-record RankResultsComparator: relativeComparator {
-  var query: string;
-  var packageScores;
-  proc compare(a, b) {
-    // starting with the query puts it first, if query is not ""
-    if query != "" {
-      if a.toLower().startsWith(query) &&
-         !b.toLower().startsWith(query) {
-        return -1;
-      } else if !a.toLower().startsWith(query) &&
-                b.toLower().startsWith(query) {
-        return 1;
-      }
-    }
-
-    // then sort by score
-    var scoreA = packageScores[a];
-    var scoreB = packageScores[b];
-    if scoreA > scoreB {
-      return -1;
-    } else if scoreA < scoreB {
-      return 1;
-    }
-
-    // then sort by name
-    if a < b {
-      return -1;
-    } else if a > b {
-      return 1;
-    }
-
-    // consider them the same
-    return 0;
-  }
-}
-
-/* Sort the results in a order such that results that startWith needle
-   are displayed first */
-proc rankResults(results: list(string), query: string): [] string {
-  use Sort;
-  var r = results.toArray();
-  var q = query;
-  if query == ".*" then
-    q = "";
-
-  var cmp = new RankResultsComparator(q, getPackageScores(r));
-  sort(r, comparator=cmp);
-  return r;
-}
-
-/* Creates an empty cache file if its not found in registry */
-proc touch(pathToReg: string) {
-  const fileWriter = open(pathToReg, ioMode.cw).writer(locking=false);
-  fileWriter.write("");
-  fileWriter.close();
-}
-
-/* Returns a map of packages found in cache along with their scores */
-proc getPackageScores(ref res: [] string) {
-  use Map;
-  const pathToReg = MASON_HOME + "/mason-registry/cache.toml";
-  var cacheExists = false;
-  if isFile(pathToReg) then cacheExists = true;
-  if !cacheExists then touch(pathToReg);
-  const parse = open(pathToReg, ioMode.r);
-  const cacheFile = parseToml(parse);
-  var packageScores: map(string, int);
-  var packageName: string;
-  // defaultScore = (8/12 * 100) = 66
-  const defaultScore = 66;
-  var packageScore: int;
-  for r in res {
-    r = splitNameVersion(r, false);
-    packageName = r;
-    if cacheExists && cacheFile.pathExists(packageName) {
-      packageScore = cacheFile[r]!['score']!.s : int;
-      packageScores.add(packageName, packageScore);
-    } else packageScores.add(packageName, defaultScore);
-  }
-  return packageScores;
-}
-
-proc isHidden(name : string) : bool {
-  return name.startsWith("_");
-}

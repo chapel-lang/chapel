@@ -281,26 +281,25 @@ proc masonInitHelp(){
 }
 
 proc masonSearchHelp() {
-  const desc =
-"When no query is provided, all packages in the registry will be listed. The\n" +
-"query will be used in a case-insensitive search of all packages in the\n" +
-"registry.\n" +
-"\n" +
-"Packages will be listed regardless of their chplVersion compatibility.";
 
-  writeln("Search the registry for a package");
-  writeln();
-  writeln("Usage:");
-  writeln("    mason search [options] <query>");
-  if developerMode {
-    writeln('        --debug                 Print debug information');
-  }
-  writeln();
-  writeln("Options:");
-  writeln("    -h, --help                  Display this message");
-  writeln("    --show                      Display the manifest of a package");
-  writeln();
-  writeln(desc);
+  const s = """
+  Search the registry for a package
+
+  Usage:
+      mason search [options] <query>
+
+  Options:
+      -h, --help                  Display this message
+      --show                      Display the manifest of a package
+      --[no-]update               [Do not] update the mason registry before
+                                  searching the registry
+
+  When no query is provided, all packages in the registry will be listed. The
+  query will be used in a case-insensitive search of all packages in the
+  registry. Packages will be listed regardless of their chplVersion
+  compatibility.
+  """.dedent().strip();
+  writeln(s);
 }
 
 proc masonModifyHelp() {

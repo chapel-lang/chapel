@@ -11,5 +11,6 @@ proc main() {
     if arg != "" then args.pushBack(arg);
   }
 
-  masonSearch(args);
+  masonSearch(args.toArray());
+
 }
