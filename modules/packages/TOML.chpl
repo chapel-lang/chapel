@@ -594,26 +594,20 @@ module TomlParser {
 
 
     /*
-       Returns the index of the table path given as a parameter.
+       Returns the element at the given table path
 
        :throws TomlError: If no index could be found for the given table path.
     */
-    proc this(tbl: string) ref : shared Toml? throws {
-      const indx = tbl.split('.');
+    proc this(tblpath: string) ref : shared Toml? {
+      const indx = tblpath.split('.');
       var top = indx.domain.first;
 
-      //
-      // TODO: This is a bug when the return type of this routine is a
-      // non-nilable class, see #14367/#14861. So for now, we have to make
-      // `Toml.this` return `Toml?`, which makes it a lot less pleasant
-      // to use.
-      //
       if indx.size < 2 {
-        return this.A[tbl];
+        return this.A[tblpath];
       } else {
         var next = '.'.join(indx[top+1..]);
         if !this.A.contains(indx[top]) {
-          throw new owned TomlError("No index found for " + tbl);
+          return nil;
         }
         return this.A[indx[top]]![next];
       }
@@ -621,19 +615,13 @@ module TomlParser {
 
     @chpldoc.nodoc
     /* Returns true if table path exists in rootTable */
-    proc pathExists(tblpath: string) : bool {
+    proc pathExists(tblpath: string): bool {
       try! {
         var path = tblpath.split('.');
         var top = path.domain.first;
         if path.size < 2 {
-          if this.A.contains(tblpath) == false {
-            return false;
-          }
-          else {
-            return true;
-          }
-        }
-        else {
+          return this.A.contains(tblpath);
+        } else {
           var next = '.'.join(path[top+1..]);
           if this.A.contains(path[top]) {
             return this.A[path[top]]!.pathExists(next);
