@@ -1,0 +1,6 @@
+bug: Inconsistent iteration over array with negative-strided domain
+#15174
+
+The negative stride of A's domain here is ignored by most everything
+except the explicit for loop over it, and by the .first and .last
+methods on the domain and array.
