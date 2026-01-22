@@ -228,11 +228,11 @@ void InitResolver::merge(owned<InitResolver>& A, owned<InitResolver>& B) {
       std::ignore = behind.implicitlyResolveFieldType(id, nullptr);
     }
 
-    for (auto [id, keys] : A->implicitInits_) {
+    for (auto& [id, keys] : A->implicitInits_) {
       auto& vec = implicitInits_[id];
       vec.insert(vec.end(), keys.begin(), keys.end());
     }
-    for (auto [id, keys] : B->implicitInits_) {
+    for (auto& [id, keys] : B->implicitInits_) {
       auto& vec = implicitInits_[id];
       vec.insert(vec.end(), keys.begin(), keys.end());
     }
@@ -770,8 +770,8 @@ bool InitResolver::implicitlyResolveFieldType(ID id, const AstNode* initBefore) 
   auto ct = currentRecvType_->getCompositeType();
   auto& rr = resolveFieldResults(initResolver_.rc, ct, id,
                                  DefaultsPolicy::USE_DEFAULTS,
-                                 /* syntaxOnly=*/ false,
-                                 /* fieldTypesOnly=*/ false);
+                                 /* syntaxOnly */ false,
+                                 /* fieldTypesOnly */ false);
   auto& rf = resolvedFieldsFromResults(initResolver_.rc, rr);
   for (int i = 0; i < rf.numFields(); i++) {
     auto id = rf.fieldDeclId(i);

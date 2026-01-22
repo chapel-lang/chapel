@@ -3375,6 +3375,9 @@ resolveFunctionByInfoImpl(ResolutionContext* rc, const TypedFnSignature* sig,
                                   std::move(visitor.userDiagnostics),
                                   std::move(visitor.poiTraceToChild),
                                   std::move(visitor.sigAndInfoToChildPtr),
+                                  // Performance: should this be heap-allocated
+                                  // in the event that the function is not an
+                                  // initializer?
                                   visitor.getImplicitInits()));
   return ret;
 }

@@ -3129,13 +3129,7 @@ class ResolvedFunction {
       chpl::mark<decltype(p.first)>{}(context, p.first);
       context->markPointer(p.second);
     }
-    for (auto& p : implicitInits_) {
-      p.first.mark(context);
-      for (auto& key : p.second) {
-        context->markPointer(key.first);
-        key.second.mark(context);
-      }
-    }
+    chpl::mark<decltype(implicitInits_)>{}(context, implicitInits_);
   }
   size_t hash() const {
     // Skip 'resolutionById_' since it can be quite large.

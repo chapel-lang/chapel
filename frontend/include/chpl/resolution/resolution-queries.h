@@ -251,6 +251,9 @@ const ResolvedFields& resolveFieldDecl(ResolutionContext* rc,
 
   If syntaxOnly is set, computes basic information (field order, IDs)
   but does not compute types.
+
+  If fieldTypesOnly is true, only resolves the type expressions of the fields
+  when possible (e.g. if the field has a type expression).
  */
 const ResolvedFieldResults&
 resolveFieldResults(ResolutionContext* rc,

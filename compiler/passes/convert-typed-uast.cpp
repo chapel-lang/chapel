@@ -3845,8 +3845,7 @@ void TConverter::convertImplicitInit(const types::CompositeType* ct, ID id, RV& 
     return;
   }
 
-  ConvertedSymbolState calledFnState_ = cur;
-  std::swap(calledFnState_, cur);
+  ConvertedSymbolState orig = cur;
 
   RV fieldVis(rv.rc(), cur.symbol, *this, results.results());
   results.fieldAst()->traverse(fieldVis);
@@ -3857,7 +3856,7 @@ void TConverter::convertImplicitInit(const types::CompositeType* ct, ID id, RV& 
   field = storeInTempIfNeeded(field, outQt);
   insertStmt(new CallExpr(PRIM_MOVE, field, new SymExpr(sym)));
 
-  std::swap(calledFnState_, cur);
+  std::swap(orig, cur);
 }
 
 Expr* TConverter::convertMoveInitAssignOrNull(const Call* node, RV& rv) {
