@@ -979,7 +979,7 @@ The normal comparison operators are also available to compare types:
  * ``!=`` checks if two types are different
 
 It is possible to cast a type to a ``param`` string. This allows a type
-to be printed out.
+name to be printed out.
 
   *Example (type-to-string.chpl)*.
 
