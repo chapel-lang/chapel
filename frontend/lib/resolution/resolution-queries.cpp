@@ -1123,7 +1123,7 @@ resolveFieldResults(ResolutionContext* rc,
   // resolve elements of a multiDecl
   auto stmtId = parsing::idToContainingMultiDeclId(context, fieldId);
   auto fieldAst = parsing::idToAst(context, stmtId);
-  bool isInstantiated = ct->instantiatedFromCompositeType() == nullptr;
+  bool isInstantiated = ct->instantiatedFromCompositeType() != nullptr;
 
   if (!syntaxOnly) {
     // use nullptr for POI scope because POI is not considered
