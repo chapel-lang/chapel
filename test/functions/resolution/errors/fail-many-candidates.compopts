@@ -1,0 +1,4 @@
+ # fail-many-candidates.default.good
+--describe-candidates # fail-many-candidates.describe.good
+--print-all-candidates # fail-many-candidates.all.good
+--describe-candidates --print-all-candidates # fail-many-candidates.describe-all.good
