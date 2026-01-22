@@ -210,7 +210,7 @@ static void attemptFixups(FnSymbol* fn) {
 
   if (needsFixup(fn->retType) && validateReturnIntent(fn)) {
     if (wrapper == NULL) { wrapper = createWrapper(fn); }
-    if (fMultiLocaleInterop) {
+    if (fClientServerLibrary) {
       exportedStrRets.insert(wrapper);
     }
     changeRetType(wrapper);
@@ -256,7 +256,7 @@ static bool validateFormalIntent(FnSymbol* fn, ArgSymbol* as) {
                    || t == dtExternalArray || isCPtrConstChar(t)) {
     IntentTag tag = as->originalIntent;
 
-    bool multiloc = fMultiLocaleInterop || strcmp(CHPL_COMM, "none");
+    bool multiloc = fClientServerLibrary || strcmp(CHPL_COMM, "none");
 
     if ((multiloc || fLibraryPython) && isUserRoutine(fn)) {
       // TODO: After resolution, have abstract intents been normalized?

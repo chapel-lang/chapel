@@ -1,1 +1,2 @@
-error: Python libraries require position independent code, recompile Chapel with CHPL_LIB_PIC=pic
+warning: The behavior when compiling a multi-locale library has changed. For the old behavior, throw '--client-server-library'
+error: multi-locale libraries do not currently support '--library-python', you may want to try throwing the flag '--client-server-library' instead

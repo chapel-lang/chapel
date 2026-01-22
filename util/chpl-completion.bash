@@ -40,6 +40,8 @@ _chpl ()
 --cc-warnings \
 --ccflags \
 --checks \
+--client-server-library \
+--client-server-library-debug \
 --codegen \
 --comm \
 --comm-substrate \
@@ -144,7 +146,6 @@ _chpl ()
 --library-fortran-name \
 --library-header \
 --library-makefile \
---library-ml-debug \
 --library-python \
 --library-python-name \
 --license \
@@ -190,6 +191,8 @@ _chpl ()
 --no-cast-checks \
 --no-cc-warnings \
 --no-checks \
+--no-client-server-library \
+--no-client-server-library-debug \
 --no-codegen \
 --no-compile-time-nil-checking \
 --no-compiler-driver \
@@ -244,7 +247,6 @@ _chpl ()
 --no-io-gen-serialization \
 --no-io-serialize-writeThis \
 --no-iterator-contexts \
---no-library-ml-debug \
 --no-lifetime-checking \
 --no-live-analysis \
 --no-llvm-wide-opt \

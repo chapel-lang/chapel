@@ -806,7 +806,7 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
     // name with a trailing underscore just to guarantee that it's different
     // from the file name.
     //
-    if (fMultiLocaleInterop) {
+    if (fClientServerLibrary) {
       server = astr(executableFilename.c_str(), "_server");
       fprintf(makefile.fptr, "SERVERNAME = %s\n\n", server);
     }
@@ -823,7 +823,7 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
     const char* pfx = startsWithLib ? "/" : "/lib";
     tmpbin = astr(tmpDirName, pfx, strippedExeFilename, ".tmp", exeExt);
 
-    if (fMultiLocaleInterop) {
+    if (fClientServerLibrary) {
       tmpserver = astr(tmpDirName, "/", strippedExeFilename, "_server");
     }
   } else {
@@ -847,7 +847,7 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
   //
   fprintf(makefile.fptr, "TMPBINNAME = %s\n", tmpbin);
 
-  if (fMultiLocaleInterop) {
+  if (fClientServerLibrary) {
     fprintf(makefile.fptr, "TMPSERVERNAME = %s\n\n", tmpserver);
   }
 
@@ -858,7 +858,7 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
   fprintf(makefile.fptr, "COMP_GEN_SPECIALIZE = %i\n", specializeCCode);
   fprintf(makefile.fptr, "COMP_GEN_FLOAT_OPT = %i\n", ffloatOpt);
 
-  if (fMultiLocaleInterop) {
+  if (fClientServerLibrary) {
     const char* loc = "$(CHPL_MAKE_HOME)/runtime/etc/src";
     fprintf(makefile.fptr, "COMP_GEN_MLI_EXTRA_INCLUDES = -I%s\n", loc);
   }
@@ -872,7 +872,7 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
 
   // Compiler flags for each deliverable.
   fprintf(makefile.fptr, "COMP_GEN_USER_CFLAGS = ");
-  if (fLibraryCompile && !fMultiLocaleInterop && dyn) {
+  if (fLibraryCompile && !fClientServerLibrary && dyn) {
     fprintf(makefile.fptr, "$(SHARED_LIB_CFLAGS) ");
   }
   fprintf(makefile.fptr, "%s %s%s\n",
@@ -894,7 +894,7 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
     case LS_STATIC:
       lmode = "$(GEN_STATIC_FLAG)"; break;
     }
-  } else if (fLibraryCompile && !fMultiLocaleInterop) {
+  } else if (fLibraryCompile && !fClientServerLibrary) {
     lmode = dyn ? "$(LIB_DYNAMIC_FLAG)" : "$(LIB_STATIC_FLAG)";
   }
 
@@ -919,7 +919,7 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
   fprintf(makefile.fptr, "\n\n");
 
   // List source files needed to compile this deliverable.
-  if (fMultiLocaleInterop) {
+  if (fClientServerLibrary) {
 
     const char* client = genIntermediateFilename(gMultiLocaleLibClientFile);
     const char* server = genIntermediateFilename(gMultiLocaleLibServerFile);
@@ -983,7 +983,7 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
 
   // Figure out the appropriate base Makefile to include.
   std::string incpath = "include $(CHPL_MAKE_HOME)/runtime/etc/";
-  if (fMultiLocaleInterop) {
+  if (fClientServerLibrary) {
     incpath += dyn ? "Makefile.mli-shared" : "Makefile.mli-static";
   } else if (fLibraryCompile) {
     incpath += dyn ? "Makefile.shared" : "Makefile.static";

@@ -1,0 +1,1 @@
+warning: The behavior when compiling a multi-locale library has changed. For the old behavior, throw '--client-server-library'

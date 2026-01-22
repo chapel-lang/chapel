@@ -3169,8 +3169,8 @@ void linkInDynoFiles() {
 static void codegenPartTwo() {
   initializeGenInfo();
 
-  if (fMultiLocaleInterop) {
-    codegenMultiLocaleInteropWrappers();
+  if (fClientServerLibrary) {
+    codegenClientServerLibraryWrappers();
   }
 
 #ifdef HAVE_LLVM
@@ -3355,8 +3355,8 @@ static void codegenPartTwo() {
         fprintf(mainfile.fptr, "#include \"%s%s\"\n", filename, ".c");
     }
 
-    if (fMultiLocaleInterop) {
-      codegenMultiLocaleInteropWrappers();
+    if (fClientServerLibrary) {
+      codegenClientServerLibraryWrappers();
     }
 
     fprintf(strconfig.fptr, "#include \"chpl-string.h\"\n");

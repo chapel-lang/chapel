@@ -233,8 +233,8 @@ extern bool fLibraryMakefile;
 extern bool fLibraryCMakeLists;
 extern bool fLibraryPython;
 
-extern bool fMultiLocaleInterop;
-extern bool fMultiLocaleLibraryDebug;
+extern bool fClientServerLibrary;
+extern bool fClientServerLibraryDebug;
 
 extern bool no_codegen;
 extern bool developer;
