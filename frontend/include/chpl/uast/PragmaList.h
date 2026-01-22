@@ -411,7 +411,6 @@ PRAGMA(MEMORY_ORDER_TYPE, ypr, "memory order type", "type implementing chpl memo
 PRAGMA(C_MEMORY_ORDER_TYPE, ypr, "c memory order type", "type implementing c memory order (normally called memory_order)")
 PRAGMA(METHOD, npr, "method", "function that is a method")
 PRAGMA(METHOD_PRIMARY, npr, "primary method", "function that is a method and defined in type declaration")
-PRAGMA(MODIFIES_CONST_FIELDS, npr, "modifies const fields", "... of 'this' argument")
 
 // marks top-level modules mentioned on the compiler command line
 PRAGMA(MODULE_FROM_COMMAND_LINE_FILE, npr, "module from command line file", "This is a module that came from a file named on the compiler command line")

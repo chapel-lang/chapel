@@ -20,9 +20,6 @@
 #ifndef MAYBE_CONST_H
 #define MAYBE_CONST_H
 
-#include <set>
-#include "chpl/framework/ID.h"
-
 namespace chpl {
 namespace resolution {
 
@@ -30,7 +27,7 @@ struct Resolver;
 
 /* Adjusts the Resolver's results to account for return intent
    overloading & ref-maybe-const-ref formals. */
-void adjustReturnIntentOverloadsAndMaybeConstRefs(Resolver& resolver, std::set<ID>* mutatedConstFieldIds = nullptr);
+void adjustReturnIntentOverloadsAndMaybeConstRefs(Resolver& resolver);
 
 
 } // end namespace resolution

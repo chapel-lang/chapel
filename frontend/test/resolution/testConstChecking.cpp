@@ -360,8 +360,9 @@ static void test7a() {
 }
 
 
-// modifying a const field in a method can be okay, but only if
-// that method is called directly from the initializer.
+// modifying a const field in a method used to be okay, in some contexts,
+// but we decided (https://github.com/chapel-lang/chapel/discussions/28306?notification_referrer_id=NT_kwHOAEKMQtoAJlJlcG9zaXRvcnk7MjE2NjMyODU7RGlzY3Vzc2lvbjs5MzM5NTI0#discussioncomment-15553885)
+// that this is not the case. This test locks down the updated behavior.
 static void test8() {
   testConstChecking("test8-1",
       R"""(
@@ -381,7 +382,7 @@ static void test8() {
         }
       }
     )""",
-    {});
+    {7});
 
   testConstChecking("test8-2",
       R"""(
@@ -402,7 +403,7 @@ static void test8() {
         }
       }
     )""",
-    {15});
+    {7});
 
   // same as the previous two cases, but use 'out' formals
   testConstChecking("test8-3",
@@ -425,7 +426,7 @@ static void test8() {
         }
       }
     )""",
-    {});
+    {9});
 
   testConstChecking("test8-4",
       R"""(
@@ -448,7 +449,7 @@ static void test8() {
         }
       }
     )""",
-    {17});
+    {9});
 
   // same as above, but use 'this.x' instead of 'x'.
   testConstChecking("test8-5",
@@ -469,7 +470,7 @@ static void test8() {
         }
       }
     )""",
-    {});
+    {7});
 
   testConstChecking("test8-6",
       R"""(
@@ -490,7 +491,7 @@ static void test8() {
         }
       }
     )""",
-    {15});
+    {7});
 
   // same as the previous two cases, but use 'out' formals
   testConstChecking("test8-7",
@@ -513,7 +514,7 @@ static void test8() {
         }
       }
     )""",
-    {});
+    {9});
 
   testConstChecking("test8-8",
       R"""(
@@ -536,7 +537,7 @@ static void test8() {
         }
       }
     )""",
-    {17});
+    {9});
 }
 
 // TODO: test const checking for associated functions
