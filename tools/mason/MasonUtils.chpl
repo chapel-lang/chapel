@@ -634,7 +634,39 @@ record package {
   proc type nullPackage() {
     return new package("", VersionInfo.zero(), "");
   }
+
+  operator <(a: package, b: package) : bool {
+    if a.name < b.name then
+      return true;
+    else if a.name.toLower() == b.name.toLower() then
+      return a.version < b.version;
+    else
+      return false;
+  }
 }
+
+use Sort;
+record pkgComparator: relativeComparator {
+  var query: string;
+  proc compare(a: package, b: package) {
+    if query != "" {
+      if a.name.toLower().startsWith(query.toLower()) &&
+         !b.name.toLower().startsWith(query.toLower()) then
+        return -1;
+      else if !a.name.toLower().startsWith(query.toLower()) &&
+              b.name.toLower().startsWith(query.toLower()) then
+        return 1;
+    }
+
+    if a < b then
+      return -1;
+    else if b < a then
+      return 1;
+    else
+      return 0;
+  }
+}
+
 proc isHidden(name: string) : bool {
   return name.startsWith("_");
 }

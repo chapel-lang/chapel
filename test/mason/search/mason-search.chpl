@@ -1,7 +1,10 @@
 use List;
 use MasonSearch;
+use MasonUtils;
+import MasonLogger;
 
 config const pattern = "";
+config const debug = false;
 
 proc main() {
   var args: list(string);
@@ -11,6 +14,15 @@ proc main() {
     if arg != "" then args.pushBack(arg);
   }
 
-  masonSearch(args.toArray());
+  if debug {
+    MasonLogger.logs = MasonLogger.logLevel.debug;
+    MasonLogger.setNoColor(true);
+  }
+
+  try! {
+    masonSearch(args.toArray());
+  } catch e: MasonError {
+    writeln(e.message());
+  }
 
 }

@@ -65,8 +65,11 @@ proc masonSearch(args: [] string): int throws {
   const pattern = new regex(query, ignoreCase=true);
   var pkgs = searchDependencies(pattern);
 
+  // sort packages: sorted based on lexicographic order of name, then version
+  sort(pkgs, comparator=new pkgComparator(query));
+
   for package in pkgs {
-    writeln(package.name + "@" + package.version.str());
+    writef("%s (%s)\n", package.name, package.version.str());
   }
 
   // Handle --show flag

@@ -296,8 +296,9 @@ proc masonSearchHelp() {
 
   When no query is provided, all packages in the registry will be listed. The
   query will be used in a case-insensitive search of all packages in the
-  registry. Packages will be listed regardless of their chplVersion
-  compatibility.
+  registry.
+
+  Packages will be listed regardless of their chplVersion compatibility.
   """.dedent().strip();
   writeln(s);
 }
