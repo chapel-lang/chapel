@@ -1,3 +1,0 @@
-#!/bin/sh
-grep -o 'I am the description' $2 > $2.prediff.tmp
-mv $2.prediff.tmp $2
