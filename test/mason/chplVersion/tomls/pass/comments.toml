@@ -1,0 +1,6 @@
+[brick]
+name = "dummy"
+version = "1.0.0"
+type = "library"
+chplVersion = "2.6.0..2.8.0"
+# comment with no newline
