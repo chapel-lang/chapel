@@ -1159,7 +1159,6 @@ const ResolvedFields& resolveFieldDecl(ResolutionContext* rc,
                                        DefaultsPolicy defaultsPolicy,
                                        bool syntaxOnly) {
   CHPL_RESOLUTION_QUERY_BEGIN(resolveFieldDecl, rc, ct, fieldId, defaultsPolicy, syntaxOnly);
-  auto context = rc->context();
 
   ResolvedFields result;
   bool isObjectType = false;
@@ -1174,11 +1173,10 @@ const ResolvedFields& resolveFieldDecl(ResolutionContext* rc,
   } else {
     auto& r = resolveFieldResults(rc, ct, fieldId, defaultsPolicy, syntaxOnly);
 
-    helpSetFieldTypes(ct, r.fieldAst(), r.results(), /* initedInParent */ false,
-                      result, syntaxOnly);
+    // Invoke other query to eliminate duplicate error messages from the
+    // call to ``validateFieldGenericity``.
+    result = resolvedFieldsFromResults(rc, r);
   }
-
-  if (!syntaxOnly) result.validateFieldGenericity(context, ct);
 
   return CHPL_RESOLUTION_QUERY_END(result);
 }
