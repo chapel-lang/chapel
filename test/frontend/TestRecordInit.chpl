@@ -20,6 +20,33 @@ record ExplicitInit {
   }
 }
 
+proc helper() {
+  return "bye";
+}
+
+record SomeImplicit {
+  var first : int;
+  var a = "hello";
+  var b = 3.14;
+  var c = 42;
+  var d = helper();
+  var last : int;
+
+  proc init() {
+    this.first = 1;
+    this.last = 100;
+  }
+
+  proc printMe() {
+    println(this.first);
+    println(this.a);
+    println(this.b);
+    println(this.c);
+    println(this.d);
+    println(this.last);
+  }
+}
+
 proc println(r: R) {
   println(r.x);
   println(r.y);
@@ -37,4 +64,7 @@ proc main() {
 
   var z = new R(100, 200);
   println(z);
+
+  var s = new SomeImplicit();
+  s.printMe();
 }
