@@ -534,19 +534,19 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
   if package {
     writeln('Checking for fields in manifest file:');
     const manifestResults = masonTomlFileCheck(projectCheckHome);
-    if manifestResults[0] {
+    if manifestResults.isValid() {
       writeln('   All fields present in manifest file, can be published to a registry. (PASSED)');
-    } else if manifestResults[1].size > 0 {
+    } else if manifestResults.missingFields.size > 0 {
       writeln('   Missing fields in manifest file (Mason.toml). (FAILED)');
       writeln('   The missing fields are as follows: ');
-      const missingFields = manifestResults[1];
-      for field in missingFields do writeln('   %s'.format(field));
+      for field in manifestResults.missingFields do
+        writeln('   %s'.format(field));
       masonFieldsTest = false;
-    } else if manifestResults[2].size > 0 {
+    } else if manifestResults.mismatchedTypes.size > 0 {
       writeln('   Mismatched field types in manifest file (Mason.toml). (FAILED)');
       writeln('   The fields with mismatched types are as follows: ');
-      const mismatchedTypes = manifestResults[2];
-      for field in mismatchedTypes do writeln('   %s'.format(field));
+      for field in mismatchedTypes.mismatchedTypes do
+        writeln('   %s'.format(field));
       masonFieldsTest = false;
     }
     writeln(spacer);
@@ -894,6 +894,13 @@ proc namespaceCollisionCheck(projectHome: string) throws {
   return packageName == directoryName;
 }
 
+record tomlCheckResult {
+  var missingFields: list(string);
+  var mismatchedTypes: list(string);
+  proc isValid(): bool {
+    return missingFields.size == 0 && mismatchedTypes.size == 0;
+  }
+}
 /*
   Mason.toml file formatting. registry file must have the following fields:
     name: string
@@ -905,9 +912,7 @@ proc namespaceCollisionCheck(projectHome: string) throws {
 
   Returns (isValid, missingFields, mismatchedTypes)
 */
-proc masonTomlFileCheck(
-  projectHome: string
-): (bool, list(string), list(string)) {
+proc masonTomlFileCheck(projectHome: string): tomlCheckResult {
   const toParse = open(joinPath(projectHome, "Mason.toml"), ioMode.r);
   const tomlFile = parseToml(toParse);
   var missingFields: list(string);
@@ -928,7 +933,5 @@ proc masonTomlFileCheck(
     else if !isStringOrStringArray(tomlFile["brick"]![field]!) then
       mismatchedTypes.pushBack(field);
   }
-
-  const valid = missingFields.size == 0 && mismatchedTypes.size == 0;
-  return (valid, missingFields, mismatchedTypes);
+  return new tomlCheckResult(missingFields, mismatchedTypes);
 }
