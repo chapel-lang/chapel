@@ -54,7 +54,7 @@ proc masonSystem(args: [] string) throws {
     }
   }
   catch e: MasonError {
-    throw e; 
+  throw e;  
   }
 }
 
