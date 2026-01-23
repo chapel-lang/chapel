@@ -112,6 +112,9 @@ struct CallInitDeinit : VarScopeVisitor {
                              const TupleType* lhsTupleType,
                              const TupleType* rhsTupleType,
                              RV& rv);
+  bool initIsCopyElidedFrom(const AstNode* lhsAst,
+                            const AstNode* rhsAst,
+                            const ID& rhsDeclId);
   void processInit(VarFrame* frame,
                    const AstNode* ast,
                    const QualifiedType& lhsType,
@@ -813,6 +816,23 @@ void CallInitDeinit::processTupleRhsHelper(VarFrame* frame,
   re.addAssociatedAction(std::move(newTopLevelAction));
 }
 
+bool CallInitDeinit::initIsCopyElidedFrom(const AstNode* lhsAst,
+                                          const AstNode* rhsAst,
+                                          const ID& rhsDeclId) {
+  for (const ID& id : {lhsAst->id(), rhsAst->id()}) {
+    auto it = elidedCopyFromIds.find(id);
+    if (it != elidedCopyFromIds.end()) {
+      const ID& fromId = it->second;
+      if (fromId == rhsDeclId) {
+        // copy elision with '=' should only apply to myVar = myOtherVar
+        CHPL_ASSERT(!rhsDeclId.isEmpty());
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 void CallInitDeinit::processInit(VarFrame* frame,
                                  const AstNode* ast,
                                  const QualifiedType& lhsType,
@@ -870,15 +890,10 @@ void CallInitDeinit::processInit(VarFrame* frame,
       if (isCallProducingValue(rhsAst, rhsType, rv)) {
         resolveDeinit(ast, rhsAst->id(), rhsType, rv);
       }
-    } else if ((elidedCopyFromIds.count(lhsAst->id()) > 0 &&
-                elidedCopyFromIds.at(lhsAst->id()) == rhsDeclId) ||
-               (elidedCopyFromIds.count(rhsAst->id()) > 0 &&
-                elidedCopyFromIds.at(rhsAst->id()) == rhsDeclId)) {
+    } else if (initIsCopyElidedFrom(lhsAst, rhsAst, rhsDeclId)) {
       // it is move initialization
       resolveMoveInit(ast, rhsAst, lhsType, rhsType, rv);
 
-      // copy elision with '=' should only apply to myVar = myOtherVar
-      CHPL_ASSERT(!rhsDeclId.isEmpty());
       // The RHS must represent a variable that is now dead,
       // so note that in deinitedVars.
       frame->deinitedVars.emplace(rhsDeclId, currentStatement()->id());
