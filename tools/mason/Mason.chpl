@@ -121,7 +121,7 @@ module Mason {
     }
     var cmdArgs = cmdList.toArray();
     // pass the arguments to the appropriate subcommand
-    try! {
+    try {
       select (usedCmd) {
         when "add" do masonModify(cmdArgs);
         when "build" do masonBuild(cmdArgs);
@@ -147,8 +147,7 @@ module Mason {
         }
       }
     } catch ex : MasonError {
-      stderr.writeln(ex.message());
-      exit(1);
+      throw ex;
     }
   }
 

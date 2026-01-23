@@ -71,9 +71,9 @@ proc masonUpdate(args: [?d] string) {
 
 /* Finds a Mason.toml file and updates the Mason.lock
    generating one if it doesnt exist */
-proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock", show=true) {
+proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock", show=true) throws {
 
-  try! {
+  try {
     const cwd = here.cwd();
     const projectHome = getProjectHome(cwd, tf);
     const tomlPath = projectHome + "/" + Path.relPath(tf);
@@ -126,8 +126,7 @@ proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock", show=true) {
 
   }
   catch e: MasonError {
-    stderr.writeln(e.message());
-    exit(1);
+    throw e;
   }
   log.debugln("updateLock returning");
   return (tf, lf);
@@ -232,7 +231,7 @@ proc chplVersionError(brick:borrowed Toml) {
    from the Mason.toml. Starts at the root of the
    project and continues down dep tree recursively
    until each dep is recorded */
-private proc createDepTree(root: Toml) {
+private proc createDepTree(root: Toml) throws {
   var dp: domain(string, parSafe=false);
   var dps: [dp] shared Toml?;
   var depTree = new shared Toml(dps);

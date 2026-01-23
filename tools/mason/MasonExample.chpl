@@ -185,7 +185,7 @@ private proc determineExamples(exampleNames: list(string),
 private proc runExamples(show: bool, run: bool, build: bool, release: bool,
                          skipUpdate: bool, force: bool, examplesRequested: list(string)) throws {
 
-  try! {
+  try {
 
     const cwd = here.cwd();
     const projectHome = getProjectHome(cwd);
@@ -269,8 +269,7 @@ private proc runExamples(show: bool, run: bool, build: bool, release: bool,
     }
   }
   catch e: MasonError {
-    stderr.writeln(e.message());
-    exit(1);
+    throw e;
   }
 }
 
@@ -336,7 +335,7 @@ proc getExamplePath(fullPath: string, examplePath = "") : string {
 
 // used when user calls `mason run --example` without argument
 proc printAvailableExamples() {
-  try! {
+  try {
     const cwd = here.cwd();
     const projectHome = getProjectHome(cwd);
     const toParse = open(projectHome + "/Mason.toml", ioMode.r);
@@ -349,8 +348,7 @@ proc printAvailableExamples() {
     writeln("--------------------------");
   }
   catch e: MasonError {
-    stderr.writeln(e.message());
-    exit(1);
+    throw e;
   }
 }
 

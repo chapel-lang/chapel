@@ -93,7 +93,7 @@ proc masonPublish(ref args: list(string)) throws {
 
     if createReg {
       var pathReg = registryPath;
-      try! {
+      try {
         if !isDir(pathReg) then mkdir(pathReg);
         else throw new owned MasonError("Registry already exists at %s".format(pathReg));
         if !isDir(pathReg + '/Bricks') then mkdir(pathReg + '/Bricks');
@@ -110,8 +110,7 @@ proc masonPublish(ref args: list(string)) throws {
         exit(0);
       }
       catch e: MasonError {
-        writeln(e.message());
-        exit(1);
+        throw e;
       }
     }
 
@@ -154,8 +153,7 @@ proc masonPublish(ref args: list(string)) throws {
     }
   }
   catch e : MasonError {
-    writeln(e.message());
-    exit(1);
+    throw e;
   }
 }
 

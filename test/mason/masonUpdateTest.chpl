@@ -8,7 +8,7 @@ use FileSystem;
 config const goodLock: string;
 config const tf: string;
 
-proc main() {
+proc main() throws {
   // In order to avoid updating the .good/lock file every release we store
   // a sentinel 'CHPL_CUR_FULL' representing the current Chapel version. Before
   // passing anything to UpdateLock we need to replace that sentinel with the
@@ -26,11 +26,15 @@ proc main() {
     w.close();
   }
 
-  var configs = updateLock(true, tf=tf, lf=temp.path);
-  var lock = open(temp.path, ioMode.r);
-  var lockFile = parseToml(lock);
-  writeln(lockFile);
-  remove(lf);
-  temp.close();
-  lock.close();
+  try {
+    var configs = updateLock(true, tf=tf, lf=temp.path);
+    var lock = open(temp.path, ioMode.r);
+    var lockFile = parseToml(lock);
+    writeln(lockFile);
+    remove(lf);
+    temp.close();
+    lock.close();
+  } catch e: MasonError {
+    writeln(e.message());
+  }
 }
