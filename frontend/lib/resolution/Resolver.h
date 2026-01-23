@@ -234,11 +234,12 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
   Resolver(Resolver&& rhs) = default;
  ~Resolver();
 
-  const ResolvedFunction::ImplicitInitMap getImplicitInits() {
+  const ResolvedFunction::ImplicitInitMap& getImplicitInits() {
+    static ResolvedFunction::ImplicitInitMap empty;
     if (initResolver) {
       return initResolver->implicitInits();
     } else {
-      return ResolvedFunction::ImplicitInitMap();
+      return empty;
     }
   }
 

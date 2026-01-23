@@ -107,7 +107,7 @@ class InitResolver {
 
 
   void updateResolverVisibleReceiverType(void);
-  bool implicitlyResolveFieldType(ID id, const uast::AstNode* initBefore);
+  bool implicitlyResolveFieldType(ID id, const ID initBefore = ID());
 
   bool applyResolvedInitCallToState(const uast::FnCall* node,
                                     const CallResolutionResult* c);

@@ -225,7 +225,7 @@ void InitResolver::merge(owned<InitResolver>& A, owned<InitResolver>& B) {
     InitResolver& behind = A->currentFieldIndex_ < B->currentFieldIndex_ ? *A : *B;
     for (auto i = behind.currentFieldIndex_; i < curMax; i++) {
       auto& id = behind.fieldIdsByOrdinal_[i];
-      std::ignore = behind.implicitlyResolveFieldType(id, nullptr);
+      std::ignore = behind.implicitlyResolveFieldType(id);
     }
 
     for (auto& [id, keys] : A->implicitInits_) {
@@ -724,7 +724,7 @@ const TypedFnSignature* InitResolver::finalize(void) {
     int stop = fieldIdsByOrdinal_.size();
     for (int i = start; i < stop; i++) {
       auto id = fieldIdsByOrdinal_[i];
-      bool handled = implicitlyResolveFieldType(id, nullptr);
+      bool handled = implicitlyResolveFieldType(id);
       if (!handled) {
         CHPL_ASSERT(false && "Not handled yet!");
       }
@@ -763,7 +763,7 @@ void InitResolver::updateResolverVisibleReceiverType(void) {
   }
 }
 
-bool InitResolver::implicitlyResolveFieldType(ID id, const AstNode* initBefore) {
+bool InitResolver::implicitlyResolveFieldType(ID id, const ID initBefore) {
   auto state = fieldStateFromId(id);
   if (!state || !state->initPointId.isEmpty()) return false;
 
@@ -793,11 +793,7 @@ bool InitResolver::implicitlyResolveFieldType(ID id, const AstNode* initBefore) 
     state->isInitialized = true;
   }
 
-  if (initBefore) {
-    implicitInits_[initBefore->id()].push_back(std::make_pair(ct, id));
-  } else {
-    implicitInits_[ID()].push_back(std::make_pair(ct, id));
-  }
+  implicitInits_[initBefore].push_back(std::make_pair(ct, id));
 
   return true;
 }
@@ -878,7 +874,7 @@ void InitResolver::handleInitMarker(const uast::AstNode* node) {
   int stop = fieldIdsByOrdinal_.size();
   for (int i = start; i < stop; i++) {
     auto id = fieldIdsByOrdinal_[i];
-    std::ignore = implicitlyResolveFieldType(id, node);
+    std::ignore = implicitlyResolveFieldType(id, node->id());
   }
 
   // TODO: Better/more appropriate user facing error message for this?
@@ -1068,7 +1064,7 @@ bool InitResolver::handleAssignmentToField(const OpCall* node) {
     currentFieldIndex_ = state->ordinalPos + 1;
     for (int i = old; i < state->ordinalPos; i++) {
         auto id = fieldIdsByOrdinal_[i];
-        std::ignore = implicitlyResolveFieldType(id, node);
+        std::ignore = implicitlyResolveFieldType(id, node->id());
     }
 
     // TODO: Anything to do if the opposite is true?

@@ -3838,11 +3838,14 @@ Expr* TConverter::paramElideCallOrNull(const TypedFnSignature* sig,
 void TConverter::convertImplicitInit(const types::CompositeType* ct, ID id, RV& rv) {
   ResolutionContext rcval(context);
   auto& results = resolution::resolveFieldResults(&rcval, ct, id, DefaultsPolicy::USE_DEFAULTS, false, false);
+  // TODO: handle MultiDecl
   auto var = results.fieldAst()->toVarLikeDecl();
   if (var->storageKind() == types::QualifiedType::TYPE ||
       var->storageKind() == types::QualifiedType::PARAM) {
     return;
-  } else if (results.results().byAst(results.fieldAst()).type().type()->isNothingType()) {
+  } else if (auto qt = results.results().byAst(results.fieldAst()).type();
+             qt.isUnknown() ||
+             qt.type()->isNothingType()) {
     return;
   }
 

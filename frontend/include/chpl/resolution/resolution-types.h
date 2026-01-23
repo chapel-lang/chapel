@@ -2981,8 +2981,10 @@ class ResolvedFunction {
   using PoiTraceToChildMap = std::unordered_map<PoiTrace, Child>;
   using SigAndInfo = std::tuple<const TypedFnSignature*, PoiInfo>;
   using SigAndInfoToChildPtrMap = std::unordered_map<SigAndInfo, ChildPtr>;
+
+  // TODO: Can we get away with using a single CompositeType instead?
   using ImplicitInitKey = std::pair<const types::CompositeType*, ID>;
-  using ImplicitInitMap = std::map<ID, std::vector<ImplicitInitKey>>;
+  using ImplicitInitMap = std::unordered_map<ID, std::vector<ImplicitInitKey>>;
 
  private:
   const TypedFnSignature* signature_ = nullptr;
