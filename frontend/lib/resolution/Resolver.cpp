@@ -4651,7 +4651,9 @@ void Resolver::resolveIdentifier(const Identifier* ident) {
     // in field types, don't try an implicit receiver, because the
     // implicit receiver is the class/record, which is not fully constructed
     // when the field type is being resolved.
-    bool skipImplicitParenless = fieldTypesOnly;
+    //
+    // Assumes that curStmt being non-nullptr implies we're in a field type.
+    bool skipImplicitParenless = curStmt != nullptr;
 
     if (receiverInfo && receiverType.type() && !skipImplicitParenless) {
       std::vector<CallInfoActual> actuals;
