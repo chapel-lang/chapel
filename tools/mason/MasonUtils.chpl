@@ -147,14 +147,16 @@ proc runCommand(cmd: string, quiet=false) : string throws {
   return runCommand(cmds, quiet=quiet);
 }
 
-
 /* Same as runCommand but for situations where an
    exit status is needed */
-proc runWithStatus(command, quiet=false): int {
-
+proc runWithStatus(command: string, quiet=false): int {
+  var cmd = command.split();
+  return runWithStatus(cmd, quiet=quiet);
+}
+proc runWithStatus(command: [] string, quiet=false): int {
   try {
-    var cmd = command.split();
-    var sub = spawn(cmd, stdout=pipeStyle.pipe, stderr=pipeStyle.pipe);
+    log.debugf("runWithStatus: %?\n", command);
+    var sub = spawn(command, stdout=pipeStyle.pipe, stderr=pipeStyle.pipe);
 
     var line:string;
     if !quiet {
@@ -163,24 +165,9 @@ proc runWithStatus(command, quiet=false): int {
     }
     sub.wait();
     return sub.exitCode;
-  }
-  catch {
-    return -1;
-  }
-}
-
-proc runWithProcess(command, quiet=false) throws {
-  try {
-    var cmd = command.split();
-    log.debugf("runWithProcess: %?\n", cmd);
-    var process = spawn(cmd, stdout=pipeStyle.pipe, stderr=pipeStyle.pipe);
-
-    return process;
-  }
-  catch e {
+  } catch e {
     log.debugf("Caught unknown error ('%?') for command: %?\n", e, command);
-    throw new owned MasonError("Internal mason error");
-    exit(0);
+    return -1;
   }
 }
 
@@ -364,6 +351,10 @@ record VersionInfo {
            && this.minor == other.minor
            && this.bug <= other.bug;
   }
+
+  proc type zero() : VersionInfo {
+    return new VersionInfo(0, 0, 0);
+  }
 }
 
 operator VersionInfo.=(ref lhs:VersionInfo, const ref rhs:VersionInfo) {
@@ -538,29 +529,70 @@ proc isIdentifier(name:string) {
 }
 
 
-proc getMasonDependencies(sourceList: list(3*string),
-                          gitList: list(4*string),
-                          progName: string) {
+record gitSource {
+  var url: string;
+  var name: string;
+  var branch: string;
+  var revision: string;
 
+  iter type iterList(x: list(gitSource)) {
+    for item in x {
+      yield (item.url, item.name, item.branch, item.revision);
+    }
+  }
+  iter type iterList(x: list(gitSource), param tag: iterKind)
+  where tag == iterKind.standalone {
+    foreach idx in 0..#x.size {
+      const item = x[idx];
+      yield (item.url, item.name, item.branch, item.revision);
+    }
+  }
+}
+record srcSource {
+  var url: string;
+  var name: string;
+  var version: string;
+
+  iter type iterList(x: list(srcSource)) {
+    for item in x {
+      yield (item.url, item.name, item.version);
+    }
+  }
+  iter type iterList(x: list(srcSource), param tag: iterKind)
+  where tag == iterKind.standalone {
+    foreach idx in 0..#x.size {
+      const item = x[idx];
+      yield (item.url, item.name, item.version);
+    }
+  }
+}
+
+proc getMasonDependencies(sourceList: list(srcSource),
+                          gitList: list(gitSource),
+                          progName: string): list(string) {
   // Declare example to run as the main module
-  var masonCompopts = " ".join(" --main-module", progName, " ");
+  var masonCompopts = new list(string);
+  masonCompopts.pushBack("--main-module");
+  masonCompopts.pushBack(progName);
 
   if sourceList.size > 0 {
-    const depPath = MASON_HOME + "/src/";
+    const depPath = joinPath(MASON_HOME, "src");
 
     // Add dependencies to project
-    for (_, name, version) in sourceList {
-      var depSrc = "".join(' ',depPath, name, "-", version, '/src/', name, ".chpl");
-      masonCompopts += depSrc;
+    for (_, name, version) in srcSource.iterList(sourceList) {
+      const depSrc = joinPath(depPath, "%s-%s".format(name, version),
+                              "src", "%s.chpl".format(name));
+      masonCompopts.pushBack(depSrc);
     }
   }
   if gitList.size > 0 {
-    const gitDepPath = MASON_HOME + '/git/';
+    const gitDepPath = joinPath(MASON_HOME, "git");
 
     // Add git dependencies
-    for (_, name, branch, _) in gitList {
-      var gitDepSrc = ' ' + gitDepPath + name + "-" + branch + '/src/' + name + ".chpl";
-      masonCompopts += gitDepSrc;
+    for (_, name, branch, _) in gitSource.iterList(gitList) {
+      const gitDepSrc = joinPath(gitDepPath, "%s-%s".format(name, branch),
+                                 "src", "%s.chpl".format(name));
+      masonCompopts.pushBack(gitDepSrc);
     }
   }
   return masonCompopts;
@@ -589,44 +621,108 @@ proc getProjectType(): string throws {
   return tomlFile["brick"]!["type"]!.s;
 }
 
-/* Return parsed TOML file of name depName if it is located
-   in a registry in MASON_CACHED_REGISTRY. If dependency is
-   not found, throw an error. TODO: Currently does not check
-   on the version. */
-proc getDepToml(depName: string, depVersion: string) throws {
-  const pattern = new regex(depName, ignoreCase=true);
+record package {
+  var name: string;
+  var version: VersionInfo;
+  var registry: string;
 
-  var packages: list(string);
-  var versions: list(string);
-  var registries: list(string);
-  var results: list(string);
+  proc brickPath() {
+    const tomlName = version.str() + ".toml";
+    return joinPath(registry, "Bricks", name, tomlName);
+  }
+
+  proc type nullPackage() {
+    return new package("", VersionInfo.zero(), "");
+  }
+
+  operator <(a: package, b: package) : bool {
+    if a.name < b.name then
+      return true;
+    else if a.name.toLower() == b.name.toLower() then
+      return a.version < b.version;
+    else
+      return false;
+  }
+}
+
+use Sort;
+record pkgComparator: relativeComparator {
+  var query: string;
+  proc compare(a: package, b: package) {
+    if query != "" {
+      if a.name.toLower().startsWith(query.toLower()) &&
+         !b.name.toLower().startsWith(query.toLower()) then
+        return -1;
+      else if !a.name.toLower().startsWith(query.toLower()) &&
+              b.name.toLower().startsWith(query.toLower()) then
+        return 1;
+    }
+
+    if a < b then
+      return -1;
+    else if b < a then
+      return 1;
+    else
+      return 0;
+  }
+}
+
+proc isHidden(name: string) : bool {
+  return name.startsWith("_");
+}
+proc searchDependencies(pattern: regex(string)): list(package) throws {
+  var pkgs: list(package);
   for registry in MASON_CACHED_REGISTRY {
-    const searchDir = registry + "/Bricks/";
+    const searchDir = joinPath(registry, "Bricks");
+    if !isDir(searchDir) then
+      throw new MasonError("Registry path '" + registry +
+                           "' does not exist.\n" +
+                           "Try running 'mason update --force' or "+
+                           "'mason search --update'.");
 
     for dir in listDir(searchDir, files=false, dirs=true) {
       const name = dir.replace("/", "");
       if pattern.search(name) {
-        const ver = findLatest(searchDir + dir);
-        const versionZero = new VersionInfo(0, 0, 0);
-        if ver != versionZero {
-          results.pushBack(name + " (" + ver.str() + ")");
-          packages.pushBack(name);
-          versions.pushBack(ver.str());
-          registries.pushBack(registry);
+        if isHidden(name) {
+          log.debugln("found hidden package: " + name);
+        } else {
+          const ver = findLatest(joinPath(searchDir, dir));
+          if ver != VersionInfo.zero() {
+            pkgs.pushBack(new package(name, ver, registry));
+          }
         }
       }
     }
   }
+  return pkgs;
+}
 
-  if results.size > 0 {
-    const brickPath = '/'.join(registries[0], 'Bricks', packages[0], versions[0]) + '.toml';
-    const openFile = openReader(brickPath, locking=false);
-    const toml = parseToml(openFile);
+/* Return parsed TOML file of name depName if it is located
+   in a registry in MASON_CACHED_REGISTRY. If dependency is
+   not found, throw an error. */
+proc getDepToml(depName: string, depVersion: string) throws {
+  const pattern = new regex(depName, ignoreCase=true);
 
-    return toml;
-  } else {
-    throw new owned MasonError("No TOML file in registry for " + depName);
+  var pkgs = searchDependencies(pattern);
+
+  var foundDep = package.nullPackage();
+  for pkg in pkgs {
+    if pkg.name == depName && pkg.version.str() == depVersion {
+      foundDep = pkg;
+      break;
+    }
   }
+
+  if foundDep.name == "" {
+    throw new MasonError("No TOML file in registry for " +
+                         depName + "@" + depVersion);
+  }
+
+  const brickPath = foundDep.brickPath();
+  const openFile = openReader(brickPath, locking=false);
+  const toml = parseToml(openFile);
+  return toml;
+
 }
 
 
@@ -635,22 +731,22 @@ proc getDepToml(depName: string, depVersion: string) throws {
 proc findLatest(packageDir: string): VersionInfo {
   use Path;
 
-  var ret = new VersionInfo(0, 0, 0);
+  var ret = VersionInfo.zero();
   const suffix = ".toml";
   const packageName = basename(packageDir);
   for manifest in listDir(packageDir, files=true, dirs=false) {
     // Check that it is a valid TOML file
     if !manifest.endsWith(suffix) {
-      var warningStr = "File without '.toml' extension encountered - skipping ";
-      warningStr += packageName + " " + manifest;
-      stderr.writeln(warningStr);
+      log.warnf("File without '.toml' extension encountered - skipping %s %s\n",
+                packageName, manifest);
       continue;
     }
 
     // Skip packages that are out of version bounds
     const chplVersion = getChapelVersionInfo();
 
-    const manifestReader = openReader(packageDir + '/' + manifest, locking=false);
+    const manifestReader = openReader(joinPath(packageDir, manifest),
+                                      locking=false);
     const manifestToml = parseToml(manifestReader);
     const brick = manifestToml['brick'];
     var (low, high) = parseChplVersion(brick);
@@ -755,23 +851,6 @@ proc checkChplVersion(chplVersion, low, high) throws {
       return (lo, hi);
 }
 
-/* Split pkg.0_1_0 to (pkg, 0.1.0) & viceversa */
-proc splitNameVersion(ref package: string, original: bool) {
-  if original {
-    var res = package.split('.');
-    var name = res[0];
-    var version = res[1];
-    version = version.replace('_', '.');
-    return name + ' (' + version + ')';
-  }
-  else {
-    package = package.replace('.', '_');
-    package = package.replace(' (', '.');
-    package = package.replace(')', '');
-    return package;
-  }
-}
-
 /* Print a TOML file. Expects full path. */
 proc showToml(tomlFile : string) {
   const openFile = openReader(tomlFile, locking=false);
@@ -826,6 +905,11 @@ iter allFields(tomlTbl: Toml) {
       continue;
     else yield(k,v);
   }
+}
+
+record chplOptions {
+  var compopts: list(string);
+  var execopts: list(string);
 }
 
 proc MASON_VERSION : string {

@@ -3075,7 +3075,7 @@ static void helpComputeClangArgs(std::string& clangCC,
   // Library directories/files and ldflags are handled during linking later.
   // Skip this in multi-locale libraries because the C blob that is built
   // already defines this.
-  if (!fMultiLocaleInterop) {
+  if (!fClientServerLibrary) {
     clangCCArgs.push_back("-DCHPL_GEN_CODE");
   }
 
@@ -3194,7 +3194,7 @@ void runClang(const char* just_parse_filename) {
     }
 
     // Include a few extra things if generating a multi-locale library.
-    if (fMultiLocaleInterop) {
+    if (fClientServerLibrary) {
 
       // Include the contents of the server bundle...
       clangOtherArgs.push_back("-include");
@@ -5135,7 +5135,7 @@ void makeBinaryLLVM(void) {
     splitStringWhitespace(CHPL_TARGET_SYSTEM_LINK_ARGS, clangLDArgs);
 
     // Grab extra dependencies for multilocale libraries if needed.
-    if (fMultiLocaleInterop) {
+    if (fClientServerLibrary) {
       std::string cmd = std::string(CHPL_HOME);
       cmd += "/util/config/compileline --multilocale-lib-deps";
       std::string libs = runCommand(cmd,
@@ -5231,16 +5231,16 @@ void makeBinaryLLVM(void) {
     const char* tmpbinname = NULL;
     const char* tmpservername = NULL;
 
-    if (fMultiLocaleInterop) {
+    if (fClientServerLibrary) {
       codegen_makefile(&mainfile, &tmpbinname, &tmpservername, true);
-      INT_ASSERT(tmpservername);
-      INT_ASSERT(tmpbinname);
+      INT_ASSERT(tmpservername && strlen(tmpservername) > 0);
+      INT_ASSERT(tmpbinname && strlen(tmpbinname) > 0);
     } else {
       codegen_makefile(&mainfile, &tmpbinname, NULL, true);
-      INT_ASSERT(tmpbinname);
+      INT_ASSERT(tmpbinname && strlen(tmpbinname) > 0);
     }
 
-    if (fLibraryCompile && !fMultiLocaleInterop) {
+    if (fLibraryCompile && !fClientServerLibrary) {
       switch (fLinkStyle) {
       // The default library link style for Chapel is _static_.
       case LS_DEFAULT:
@@ -5256,7 +5256,7 @@ void makeBinaryLLVM(void) {
         break;
       }
     } else {
-      const char* outbin = fMultiLocaleInterop ? tmpservername : tmpbinname;
+      const char* outbin = fClientServerLibrary ? tmpservername : tmpbinname;
 
       // Runs the LLVM link command for executables.
       runLLVMLinking(useLinkCXX, options, filenames->moduleFilename, maino, outbin,
@@ -5281,8 +5281,11 @@ void makeBinaryLLVM(void) {
       mysystem(cmd, "Make Binary - Generating OSX .dSYM Archive");
     }
 
-    // If we're not using a launcher, copy the program here
-    if (0 == strcmp(CHPL_LAUNCHER, "none")) {
+    bool isLauncherNone = !strcmp(CHPL_LAUNCHER, "none");
+    bool needLauncher = !isLauncherNone && !isMultiLocaleLibrary();
+
+    if (!needLauncher) {
+      // If we're not using a launcher, copy the program here
 
       if (fLibraryCompile) {
         moveGeneratedLibraryFile(tmpbinname);
@@ -5737,7 +5740,7 @@ static std::string buildLLVMLinkCommand(std::string useLinkCXX,
   // that cannot be built with `-static`, because because it depends on
   // dynamic libraries. So even if the client library is being built as
   // static, the server cannot be.
-  if (fLinkStyle == LS_STATIC && !fMultiLocaleInterop) {
+  if (fLinkStyle == LS_STATIC && !fClientServerLibrary) {
     command += " -static";
   }
 

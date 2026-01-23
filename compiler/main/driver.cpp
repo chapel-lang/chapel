@@ -155,8 +155,8 @@ bool fLibraryFortran = false;
 bool fLibraryMakefile = false;
 bool fLibraryCMakeLists = false;
 bool fLibraryPython = false;
-bool fMultiLocaleInterop = false;
-bool fMultiLocaleLibraryDebug = false;
+bool fClientServerLibrary = false;
+bool fClientServerLibraryDebug = false;
 
 bool driverInSubInvocation = false;
 bool driverDebugCompilation = true;
@@ -1514,6 +1514,7 @@ static ArgumentDescription arg_desc[] = {
  {"make", ' ', "<make utility>", "Make utility for generated code", "S", NULL, "_CHPL_MAKE", setChplEnv},
  {"target-mem", ' ', "<mem-impl>", "Specify the memory manager", "S", NULL, "_CHPL_TARGET_MEM", setChplEnv},
  {"re2", ' ', "<re2-version>", "Specify RE2 library", "S", NULL, "_CHPL_RE2", setChplEnv},
+ {"sanitize-exe", ' ', "<sanitizer>", "Specify the sanitizer to use for the executable/runtime", "S", NULL, "_CHPL_SANITIZE_EXE", setChplEnv},
  {"target-arch", ' ', "<architecture>", "Target architecture / machine type", "S", NULL, "_CHPL_TARGET_ARCH", setChplEnv},
  {"target-compiler", ' ', "<compiler>", "Compiler for generated code", "S", NULL, "_CHPL_TARGET_COMPILER", setChplEnv},
  {"target-cpu", ' ', "<cpu>", "Target cpu model for specialization", "S", NULL, "_CHPL_TARGET_CPU", setChplEnv},
@@ -1628,7 +1629,8 @@ static ArgumentDescription arg_desc[] = {
  {"library-fortran-name", ' ', "<modulename>", "Name generated Fortran module", "P", &fortranModulename, NULL, setFortranAndLibmode},
  {"library-python", ' ', NULL, "Generate a module compatible with Python", "F", &fLibraryPython, NULL, setLibmode},
  {"library-python-name", ' ', "<filename>", "Name generated Python module", "P", &pythonModulename, NULL, setPythonAndLibmode},
- {"library-ml-debug", ' ', NULL, "Enable [disable] generation of debug messages in multi-locale libraries", "N", &fMultiLocaleLibraryDebug, NULL, NULL},
+ {"client-server-library", ' ', NULL, "Enable [disable] generation of multi-locale client-server libraries", "N", &fClientServerLibrary, NULL, NULL},
+ {"client-server-library-debug", ' ', NULL, "Enable [disable] generation of debug messages in multi-locale client-server libraries", "N", &fClientServerLibraryDebug, NULL, NULL},
  {"localize-global-consts", ' ', NULL, "Enable [disable] optimization of global constants", "n", &fNoGlobalConstOpt, "CHPL_DISABLE_GLOBAL_CONST_OPT", NULL},
  {"munge-with-ids", ' ', NULL, "[Don't] use ID-based munging", "N", &fIdBasedMunging, NULL, NULL},
  {"local-temp-names", ' ', NULL, "[Don't] Generate locally-unique temp names", "N", &localTempNames, "CHPL_LOCAL_TEMP_NAMES", NULL},
@@ -1998,13 +2000,42 @@ static void postTaskTracking() {
   }
 }
 
-static void postStaticLink() {
-  if (!strcmp(CHPL_TARGET_PLATFORM, "darwin")) {
+static void checkMacOsxLinkStyle() {
+  if (fLinkStyle == LS_STATIC && !strcmp(CHPL_TARGET_PLATFORM, "darwin")) {
+    USR_WARN("Static compilation is not supported on OS X, ignoring flag.");
+    // To handle linker errors and relocations in the client library.
+    fLinkStyle = fClientServerLibrary ? LS_DYNAMIC : LS_DEFAULT;
+  }
+}
+
+static void checkMultiLocaleLibraryConstraints() {
+  if (!isMultiLocaleLibrary()) return;
+
+  //
+  // These checks are "constraints" because they are only current limitations
+  // and could potentially be dropped in the future.
+  //
+
+  if (fLinkStyle == LS_STATIC || fLinkStyle == LS_DEFAULT) {
     if (fLinkStyle == LS_STATIC) {
-      USR_WARN("Static compilation is not supported on OS X, ignoring flag.");
-      // To handle linker errors and relocations in the client library.
-      fLinkStyle = fMultiLocaleInterop ? LS_DYNAMIC : LS_DEFAULT;
+      USR_WARN("static linking of multi-locale libraries is not "
+               "currently supported, switching to '--dynamic'");
     }
+
+    // Force dynamic linking if it is not already.
+    fLinkStyle = LS_DYNAMIC;
+  }
+
+  if (fLibraryFortran) {
+    USR_FATAL("multi-locale libraries do not currently support "
+              "'--library-fortran', you may want to try throwing the flag "
+              "'--client-server-library' instead");
+  }
+
+  if (fLibraryPython) {
+    USR_FATAL("multi-locale libraries do not currently support "
+              "'--library-python', you may want to try throwing the flag "
+              "'--client-server-library' instead");
   }
 }
 
@@ -2035,17 +2066,31 @@ static void postVectorize() {
   }
 }
 
-static void setMultiLocaleInterop() {
-  // We must be compiling a multi-locale library to be eligible for MLI.
-  if (!fLibraryCompile || !strcmp(CHPL_COMM, "none")) {
-    return;
+static void checkClientServerLibrary() {
+  if (isMultiLocaleLibrary()) {
+    // If we're compiling a "regular old" multi-locale library, gently warn...
+    USR_WARN("The behavior when compiling a multi-locale library has changed. "
+             "For the old behavior, throw '--client-server-library'");
+  }
+
+  // Neither flag is thrown, so just return.
+  if (!isClientServerLibrary()) return;
+
+  if (!strcmp(CHPL_COMM, "none")) {
+    USR_FATAL("Client-server libraries cannot currently be compiled "
+              "with 'CHPL_COMM=none'");
   }
 
   if (fLibraryFortran) {
-    USR_FATAL("Multi-locale libraries do not support --library-fortran");
+    USR_FATAL("Client-server libraries do not support --library-fortran");
   }
 
-  fMultiLocaleInterop = true;
+  if (fClientServerLibraryDebug) {
+    fClientServerLibrary = true;
+  }
+
+  // To get things to work right, consider this a type of library.
+  fLibraryCompile = true;
 }
 
 static void setMaxCIdentLen() {
@@ -2335,22 +2380,6 @@ static void checkRuntimeBuilt(void) {
   }
 }
 
-static void checkMLDebugAndLibmode(void) {
-  if (!fMultiLocaleLibraryDebug) { return; }
-
-  // This flag implies compilation of a library.
-  fLibraryCompile = true;
-
-  if (!strcmp(CHPL_COMM, "none")) {
-    fMultiLocaleLibraryDebug = false;
-    USR_WARN("Compiling a single locale library because CHPL_COMM is none.");
-  } else {
-    fMultiLocaleInterop = true;
-  }
-
-  return;
-}
-
 static void checkLibraryPythonAndLibmode(void) {
   if (!fLibraryPython) return;
 
@@ -2363,8 +2392,8 @@ static void checkLibraryPythonAndLibmode(void) {
   }
 
   if (fLinkStyle == LS_STATIC) {
-    const char* libKindMsg = fMultiLocaleInterop
-        ? "Multi-locale Python libraries"
+    const char* libKindMsg = fClientServerLibrary
+        ? "Multi-locale Python client-server libraries"
         : "Python libraries";
     USR_WARN("%s cannot be compiled with -static, ignoring flag",
              libKindMsg);
@@ -2373,14 +2402,13 @@ static void checkLibraryPythonAndLibmode(void) {
 
   INT_ASSERT(fLinkStyle == LS_DEFAULT || fLinkStyle == LS_DYNAMIC);
 
-  // For single-locale libraries LS_DEFAULT may work, but for multi-locale
+  // For single-locale libraries LS_DEFAULT may work, but for client-server
   // libraries we need to force dynamic linking in order to prevent
   // relocations in the client library.
-  if (fMultiLocaleInterop) {
+  if (fClientServerLibrary) {
     fLinkStyle = LS_DYNAMIC;
   }
 }
-
 
 // Take actions for which settings are inferred based on other arguments
 // or CHPL_ settings
@@ -2401,11 +2429,11 @@ static void postprocess_args() {
 
   postTaskTracking();
 
-  setMultiLocaleInterop();
+  checkClientServerLibrary();
 
-  postStaticLink();
+  checkMacOsxLinkStyle();
 
-  checkMLDebugAndLibmode();
+  checkMultiLocaleLibraryConstraints();
 
   checkLibraryPythonAndLibmode();
 

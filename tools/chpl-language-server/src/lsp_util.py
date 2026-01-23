@@ -1358,6 +1358,11 @@ class CLSConfig:
             ),
             args_for_setting_config_path=["--config", "-c"],
         )
+        self.parser.add_argument(
+            "--version",
+            action="version",
+            version=f"chpl-language-server {chapel.Context().get_compiler_version()}",
+        )
 
         chplcheck().config.add_bool_flag(
             self.parser, "resolver", "resolver", False

@@ -1929,7 +1929,7 @@ void TConverter::createMainFunctions() {
 
   // We have to initialize the main module explicitly.
   // It will initialize all the modules it uses, recursively.
-  if (!fMultiLocaleInterop) {
+  if (!fClientServerLibrary) {
     chpl_gen_main->insertAtTail(new CallExpr(mainModule->initFn));
     // also init other modules mentioned on command line
     forv_Vec(ModuleSymbol, mod, gModuleSymbols) {

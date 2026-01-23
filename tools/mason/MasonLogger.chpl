@@ -53,7 +53,7 @@ module MasonLogger {
   private proc doError do return logs>=logLevel.error;
 
   private var noColor = false;
-  proc setColor(flag: bool) throws {
+  proc setNoColor(flag: bool) throws {
     noColor = flag;
   }
 

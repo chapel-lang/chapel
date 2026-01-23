@@ -27,6 +27,6 @@ extern const char* gMultiLocaleLibMarshallingFile;
 extern const char* gMultiLocaleLibClientFile;
 extern const char* gMultiLocaleLibServerFile;
 
-void codegenMultiLocaleInteropWrappers(void);
+void codegenClientServerLibraryWrappers(void);
 
 #endif
