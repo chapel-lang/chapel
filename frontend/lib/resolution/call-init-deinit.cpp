@@ -106,6 +106,12 @@ struct CallInitDeinit : VarScopeVisitor {
                        const QualifiedType& lhsType,
                        const QualifiedType& rhsType,
                        RV& rv);
+  void processTupleRhsHelper(VarFrame* frame,
+                             const AstNode* ast,
+                             const Tuple* rhsTupleExpr,
+                             const TupleType* lhsTupleType,
+                             const TupleType* rhsTupleType,
+                             RV& rv);
   void processInit(VarFrame* frame,
                    const AstNode* ast,
                    const QualifiedType& lhsType,
@@ -761,6 +767,46 @@ void CallInitDeinit::resolveMoveInit(const AstNode* ast,
   }
 }
 
+void CallInitDeinit::processTupleRhsHelper(VarFrame* frame,
+                                           const AstNode* ast,
+                                           const Tuple* rhsTupleExpr,
+                                           const TupleType* lhsTupleType,
+                                           const TupleType* rhsTupleType,
+                                           RV& rv) {
+  auto& re = rv.byAst(ast);
+  auto topLevelAction = re.associatedActions().front();
+  re.clearAssociatedActions();
+  AssociatedAction::ActionsList subActions;
+
+  for (int i = 0; i < lhsTupleType->numElements(); i++) {
+    auto actual = rhsTupleExpr->actual(i);
+    auto lhsEltType = lhsTupleType->elementType(i);
+    auto rhsEltType = actual ? rv.byPostorder().byAst(actual).type()
+                             : rhsTupleType->elementType(i);
+    processInit(frame, ast, lhsEltType,
+                rhsEltType, rv, actual);
+    for (auto action : re.associatedActions()) {
+      auto useId = action.id();
+      auto useTupleEltIdx = i;
+      if (actual) {
+        useId = actual->id();
+        useTupleEltIdx = AssociatedAction::NO_TUPLE_ELT;
+      }
+      auto actionWithIdx = new AssociatedAction(
+          action.action(), action.fn(), useId, action.type(),
+          useTupleEltIdx, action.subActions());
+      subActions.push_back(actionWithIdx);
+    }
+    re.clearAssociatedActions();
+  }
+  // Re-add the top-level action with the sub-actions.
+  auto newTopLevelAction =
+      AssociatedAction(topLevelAction.action(), topLevelAction.fn(),
+                       topLevelAction.id(), topLevelAction.type(),
+                       AssociatedAction::NO_TUPLE_ELT, subActions);
+  re.addAssociatedAction(std::move(newTopLevelAction));
+}
+
 void CallInitDeinit::processInit(VarFrame* frame,
                                  const AstNode* ast,
                                  const QualifiedType& lhsType,
@@ -858,39 +904,8 @@ void CallInitDeinit::processInit(VarFrame* frame,
           CHPL_ASSERT(rhsType.type());
           auto rhsTupleType = rhsType.type()->toTupleType();
           CHPL_ASSERT(rhsTupleType);
-
-          auto& re = rv.byAst(ast);
-          auto topLevelAction = re.associatedActions().front();
-          re.clearAssociatedActions();
-          AssociatedAction::ActionsList subActions;
-
-          for (int i = 0; i < lhsTupleType->numElements(); i++) {
-            auto actual = rhsTupleExpr->actual(i);
-            auto lhsEltType = lhsTupleType->elementType(i);
-            auto rhsEltType = actual ? rv.byPostorder().byAst(actual).type()
-                                     : rhsTupleType->elementType(i);
-            processInit(frame, ast, lhsEltType,
-                        rhsEltType, rv, actual);
-            for (auto action : re.associatedActions()) {
-              auto useId = action.id();
-              auto useTupleEltIdx = i;
-              if (actual) {
-                useId = actual->id();
-                useTupleEltIdx = AssociatedAction::NO_TUPLE_ELT;
-              }
-              auto actionWithIdx = new AssociatedAction(
-                  action.action(), action.fn(), useId, action.type(),
-                  useTupleEltIdx, action.subActions());
-              subActions.push_back(actionWithIdx);
-            }
-            re.clearAssociatedActions();
-          }
-          // Re-add the top-level action with the sub-actions.
-          auto newTopLevelAction =
-              AssociatedAction(topLevelAction.action(), topLevelAction.fn(),
-                               topLevelAction.id(), topLevelAction.type(),
-                               AssociatedAction::NO_TUPLE_ELT, subActions);
-          re.addAssociatedAction(std::move(newTopLevelAction));
+          processTupleRhsHelper(frame, ast, rhsTupleExpr, lhsTupleType,
+                                rhsTupleType, rv);
         }
       } else {
         resolveAssign(ast, lhsType, rhsType, rv);
