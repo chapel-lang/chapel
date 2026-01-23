@@ -29,6 +29,7 @@
 #include <unordered_map>
 #include <queue>
 #include <iomanip>
+#include <ctime>
 
 #include "arg.h"
 #include "arg-helpers.h"
