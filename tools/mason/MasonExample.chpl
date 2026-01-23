@@ -351,7 +351,7 @@ proc getExamplePath(fullPath: string, examplePath = "") : string {
 }
 
 // used when user calls `mason run --example` without argument
-proc printAvailableExamples() {
+proc printAvailableExamples() throws {
   try {
     const cwd = here.cwd();
     const projectHome = getProjectHome(cwd);
