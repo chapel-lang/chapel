@@ -287,7 +287,7 @@ proc genSourceList(lockFile: borrowed Toml) {
 
           var branch: string;
           // use branch if specified, else default to HEAD
-          if toml["branch"] != nil {
+          if toml.pathExists("branch") {
             branch = toml["branch"]!.s;
           } else {
             branch = "HEAD";

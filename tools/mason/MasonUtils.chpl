@@ -771,12 +771,12 @@ proc parseChplVersion(brick: borrowed Toml?): (VersionInfo, VersionInfo) {
   }
 
   // Assert some expected fields are not nil
-  if brick!['name'] == nil || brick!['version'] == nil{
+  if brick!.get['name'] == nil || brick!.get['version'] == nil {
     stderr.writeln("Error: Unable to parse manifest file");
     exit(1);
   }
 
-  if brick!['chplVersion'] == nil {
+  if brick!.get['chplVersion'] == nil {
     const name = brick!["name"]!.s + "-" + brick!["version"]!.s;
     stderr.writeln("Brick '", name, "' missing required 'chplVersion' field");
     exit(1);
