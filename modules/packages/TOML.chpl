@@ -602,7 +602,17 @@ module TomlParser {
 
 
     /*
-       Returns the table element at the given table path
+       Returns the table element at the given table path.
+
+       Since this method throws if the table path does not exist, it cannot
+       be use to assign new values to new table paths. For that, use `set`.
+
+       .. code-block:: chapel
+
+          assert(myToml.pathExists("A"));
+          myToml["A"] = ...; // OK, since "A" exists already
+          myToml["B"] = ...; // ERROR, since "B" does not exist
+          myToml.set("B", ...); // OK, since `set` creates "B"
 
        :throws TomlError: If the table path does not exist.
     */
