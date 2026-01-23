@@ -5125,21 +5125,23 @@ void makeBinaryLLVM(void) {
     if (useLinkCXX != clangCXX)
       clangLDArgs.clear();
 
-    // Add runtime libs arguments
-    //readArgsFromFile(runtime_libs, clangLDArgs);
-
-    // add the bundled program link args from printchplenv
-    splitStringWhitespace(CHPL_TARGET_BUNDLED_PROGRAM_LINK_ARGS, clangLDArgs);
-
-    // add the system program link args from printchplenv
-    splitStringWhitespace(CHPL_TARGET_SYSTEM_PROGRAM_LINK_ARGS, clangLDArgs);
+    //
+    // Add link args. Order is runtime > program && bundled > system.
+    //
 
     if (fBuiltinRuntime) {
       splitStringWhitespace(CHPL_TARGET_BUNDLED_RUNTIME_LINK_ARGS,
                             clangLDArgs);
+    }
+
+    splitStringWhitespace(CHPL_TARGET_BUNDLED_PROGRAM_LINK_ARGS, clangLDArgs);
+
+    if (fBuiltinRuntime) {
       splitStringWhitespace(CHPL_TARGET_SYSTEM_RUNTIME_LINK_ARGS,
                             clangLDArgs);
     }
+
+    splitStringWhitespace(CHPL_TARGET_SYSTEM_PROGRAM_LINK_ARGS, clangLDArgs);
 
     // Grab extra dependencies for multilocale libraries if needed.
     if (fClientServerLibrary) {
