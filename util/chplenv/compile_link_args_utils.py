@@ -105,7 +105,7 @@ def get_runtime_link_args(runtime_subdir):
 # "libunwind"                   -> rt
 # "jemalloc"                    -> rt
 # "mimalloc"                    -> rt
-# "re2"                         -> program (?)
+# "re2"                         -> rt (qio/regex/bundled/re2-interface.cc)
 # "ofi + libfabric"             -> rt
 # "gasnet"                      -> rt
 # "ugni"                        -> rt
@@ -163,7 +163,7 @@ def compute_internal_compile_link_args(runtime_subdir):
 
     if chpl_re2.get() != 'none':
         extend2(tgt_compile, chpl_re2.get_compile_args())
-        extend2(tgt_program_link, chpl_re2.get_link_args())
+        extend2(tgt_runtime_link, chpl_re2.get_link_args())
 
     # The following communication-oriented options have been moved to
     # the end of this sequence of third-party package options because
