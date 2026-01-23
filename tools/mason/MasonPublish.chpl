@@ -494,7 +494,7 @@ private proc addPackageToBricks(projectLocal: string, safeDir: string, name : st
 /* check is a function to run a quick list of checks of the package, the registry path, and other issues that may
    prevent a package from being published to a registry.
  */
-proc check(username : string, path : string, trueIfLocal : bool, ci : bool) throws {
+proc check(username: string, path: string, trueIfLocal: bool, ci: bool) throws {
   const spacer = '------------------------------------------------------';
   const package = (ensureMasonProject(here.cwd(), 'Mason.toml') == 'true');
   const projectCheckHome = here.cwd();
@@ -545,7 +545,7 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
     } else if manifestResults.mismatchedTypes.size > 0 {
       writeln('   Mismatched field types in manifest file (Mason.toml). (FAILED)');
       writeln('   The fields with mismatched types are as follows: ');
-      for field in mismatchedTypes.mismatchedTypes do
+      for field in manifestResults.mismatchedTypes do
         writeln('   %s'.format(field));
       masonFieldsTest = false;
     }
@@ -671,9 +671,10 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
   writeln(spacer);
 
   if ci {
-    if package && moduleCheck(projectCheckHome) && testCheck(projectCheckHome)
-    && checkLicense(projectCheckHome)[0] && masonTomlFileCheck(projectCheckHome)[0]
-    && gitTagVersionCheck(projectCheckHome)[0] {
+    if package && moduleCheck(projectCheckHome) &&
+       testCheck(projectCheckHome) && checkLicense(projectCheckHome)[0] &&
+       masonTomlFileCheck(projectCheckHome).isValid() &&
+       gitTagVersionCheck(projectCheckHome)[0] {
       attemptToBuild();
       exit(0);
     }
