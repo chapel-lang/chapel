@@ -3233,6 +3233,8 @@ struct ForwardingDetail {
 };
 /// \endcond DO_NOT_DOCUMENT
 
+// TODO: If we support returning a ResolutionResultByPostorderID from a
+// resolution query, we can probably get rid of this type.
 class ResolvedFieldResults {
   const types::CompositeType* type_ = nullptr;
   ID fieldID_;
