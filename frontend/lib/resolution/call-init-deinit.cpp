@@ -774,10 +774,16 @@ void CallInitDeinit::processTupleRhsHelper(VarFrame* frame,
                                            const TupleType* rhsTupleType,
                                            RV& rv) {
   auto& re = rv.byAst(ast);
+
+  // Save the AssociatedAction from the init of the tuple as a whole, under
+  // which the per-element actions will be nested.
+  CHPL_ASSERT(re.associatedActions().size() == 1);
   auto topLevelAction = re.associatedActions().front();
+  CHPL_ASSERT(topLevelAction.action() == AssociatedAction::COPY_INIT ||
+              topLevelAction.action() == AssociatedAction::INIT_OTHER);
+
   re.clearAssociatedActions();
   AssociatedAction::ActionsList subActions;
-
   for (int i = 0; i < lhsTupleType->numElements(); i++) {
     auto actual = rhsTupleExpr->actual(i);
     auto lhsEltType = lhsTupleType->elementType(i);
