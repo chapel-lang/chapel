@@ -2992,13 +2992,13 @@ static void resolveRefDeserialization(CallExpr* call) {
   lhsSE->symbol()->type = typeSE->symbol()->getRefType();
 }
 
-static FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState);
+static FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState, bool considerPoi=true);
 
 FnSymbol* resolveNormalCall(CallExpr* call) {
   return resolveNormalCall(call, CHECK_NORMAL_CALL);
 }
 
-FnSymbol* tryResolveCall(CallExpr* call, bool checkWithin) {
+FnSymbol* tryResolveCall(CallExpr* call, bool checkWithin, bool considerPoi) {
   check_state_t checkState = CHECK_CALLABLE_ONLY;
   if (checkWithin)
       checkState = CHECK_BODY_RESOLVES;
@@ -3528,9 +3528,13 @@ static void resolveCoerceCopyMove(CallExpr* call) {
 
 static bool      isGenericRecordInit(CallExpr* call);
 
-static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState);
-static FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState);
+static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState, bool considerPoi = true);
+static FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState, bool considerPoi);
 
+static BlockStmt* tryFindVisibileCandidatesForExplicitFn(CallInfo& info,
+                                                         VisibilityInfo& visInfo,
+                                                         Vec<FnSymbol*>& mostApplicable,
+                                                         Vec<ResolutionCandidate*>& candidates);
 static BlockStmt* findVisibleFunctionsAndCandidates(
                                      CallInfo&                  info,
                                      VisibilityInfo&            visInfo,
@@ -3991,7 +3995,7 @@ static void maybeWarnGenericActuals(CallExpr* call) {
 }
 
 static
-FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState) {
+FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState, bool considerPoi) {
   CallInfo  info;
   FnSymbol* retval = NULL;
 
@@ -4017,7 +4021,7 @@ FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState) {
     if (isTypeConstructionCall(call)) {
       resolveTypeSpecifier(info);
     } else {
-      retval = resolveNormalCall(info, checkState);
+      retval = resolveNormalCall(info, checkState, considerPoi);
     }
 
   } else if (checkState != CHECK_NORMAL_CALL) {
@@ -4255,10 +4259,10 @@ static bool overloadSetsOK(CallExpr* call,
 }
 
 
-static FnSymbol* resolveForwardedCall(CallInfo& info, check_state_t checkState);
+static FnSymbol* resolveForwardedCall(CallInfo& info, check_state_t checkState, bool considerPoi = true);
 static bool typeUsesForwarding(Type* t);
 
-static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState) {
+static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState, bool considerPoi) {
   Vec<FnSymbol*>            mostApplicable;
   Vec<ResolutionCandidate*> candidates;
 
@@ -4273,8 +4277,14 @@ static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState) {
 
   BlockStmt* scopeUsed = nullptr;
 
-  scopeUsed = findVisibleFunctionsAndCandidates(info, visInfo,
-                                                mostApplicable, candidates);
+  if ((scopeUsed = tryFindVisibileCandidatesForExplicitFn(info, visInfo, mostApplicable, candidates))) {
+    /* the function was explicitly specified via FnSymbol*. Don't search
+       for others and don't consider POI */
+    considerPoi = false;
+  } else {
+    scopeUsed = findVisibleFunctionsAndCandidates(info, visInfo,
+                                                  mostApplicable, candidates);
+  }
 
   numMatches = disambiguateByMatch(info, scopeUsed, candidates,
                                    bestRef, bestCref, bestVal);
@@ -4284,18 +4294,41 @@ static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState) {
                              bestRef, bestCref, bestVal);
 
   // If no candidates were found and it's a method, try forwarding
-  if (candidates.n                  == 0 &&
-      info.call->numActuals()       >= 1 &&
-      info.call->get(1)->typeInfo() == dtMethodToken &&
-      isUnresolvedSymExpr(info.call->baseExpr)) {
-    Type* receiverType = canonicalDecoratedClassType(info.call->get(2)->getValType());
-    if (typeUsesForwarding(receiverType)) {
-      FnSymbol* fn = resolveForwardedCall(info, checkState);
+  bool forwardingEligible =
+    candidates.n                  == 0 &&
+    info.call->numActuals()       >= 1 &&
+    info.call->get(1)->typeInfo() == dtMethodToken &&
+    isUnresolvedSymExpr(info.call->baseExpr);
+  Type* receiverType;
+  bool usesForwarding = false;
+
+  // For now, do not consider POI. This way, if/when we recurse, we first
+  // check all forwarding statements without POI, and only then go back
+  // to POI. This is crucial for correctness. See
+  //
+  // https://github.com/chapel-lang/chapel/issues/28246
+  if (forwardingEligible) {
+    receiverType = canonicalDecoratedClassType(info.call->get(2)->getValType());
+    if ((usesForwarding = typeUsesForwarding(receiverType))) {
+      FnSymbol* fn = resolveForwardedCall(info, checkState, /* conisiderPoi */ false);
       if (fn) {
         return fn;
       }
       // otherwise error is printed below
     }
+  }
+
+  if (considerPoi) {
+    // TODO: consider POI
+  }
+
+  // Now, try forwarding again, this time considering POI
+  if (candidates.n == 0 && forwardingEligible && usesForwarding && considerPoi) {
+    FnSymbol* fn = resolveForwardedCall(info, checkState, /* conisiderPoi */ true);
+    if (fn) {
+      return fn;
+    }
+    // otherwise error is printed below
   }
 
   if (numMatches > 0) {
@@ -5513,17 +5546,14 @@ void advanceCurrStart(VisibilityInfo& visInfo) {
   visInfo.nextPOI = NULL;
 }
 
-// Returns the POI scope used to find the candidates
-static BlockStmt* findVisibleFunctionsAndCandidates(
-                                CallInfo&                  info,
-                                VisibilityInfo&            visInfo,
-                                Vec<FnSymbol*>&            mostApplicable,
-                                Vec<ResolutionCandidate*>& candidates) {
+static BlockStmt* tryFindVisibileCandidatesForExplicitFn(CallInfo& info,
+                                                         VisibilityInfo& visInfo,
+                                                         Vec<FnSymbol*>& mostApplicable,
+                                                         Vec<ResolutionCandidate*>& candidates) {
   CallExpr* call = info.call;
   FnSymbol* fn   = call->resolvedFunction();
   Vec<FnSymbol*> visibleFns;
-
-  if (fn != NULL) {
+  if (fn != nullptr) {
     visibleFns.add(fn);
     mostApplicable.add(fn); // for better error reporting
 
@@ -5536,6 +5566,17 @@ static BlockStmt* findVisibleFunctionsAndCandidates(
 
     return getVisibilityScope(call);
   }
+  return nullptr;
+}
+
+// Returns the POI scope used to find the candidates
+static BlockStmt* findVisibleFunctionsAndCandidates(
+                                CallInfo&                  info,
+                                VisibilityInfo&            visInfo,
+                                Vec<FnSymbol*>&            mostApplicable,
+                                Vec<ResolutionCandidate*>& candidates) {
+  CallExpr* call = info.call;
+  Vec<FnSymbol*> visibleFns;
 
   // CG TODO: pull all visible interface functions, if within a CG context
 
@@ -5738,7 +5779,7 @@ static const char* getForwardedMethodName(const char* calledName,
   return methodName;
 }
 
-static FnSymbol* adjustAndResolveForwardedCall(CallExpr* call, ForwardingStmt* delegate, const char* methodName) {
+static FnSymbol* adjustAndResolveForwardedCall(CallExpr* call, ForwardingStmt* delegate, const char* methodName, bool considerPoi) {
 
   FnSymbol* ret = NULL;
   const char* fnGetTgt   = delegate->fnReturningForwarding;
@@ -5780,7 +5821,7 @@ static FnSymbol* adjustAndResolveForwardedCall(CallExpr* call, ForwardingStmt* d
     }
 
     resolveCall(setTgt);
-    ret = tryResolveCall(call);
+    ret = tryResolveCall(call, /* checkWithin */ false, considerPoi);
   }
 
   return ret;
@@ -5789,7 +5830,7 @@ static FnSymbol* adjustAndResolveForwardedCall(CallExpr* call, ForwardingStmt* d
 llvm::SmallVector<std::tuple<AggregateType*, const char*, const char*>, 4> forwardCallCycleSet;
 
 // Returns a relevant FnSymbol if it worked
-static FnSymbol* resolveForwardedCall(CallInfo& info, check_state_t checkState) {
+static FnSymbol* resolveForwardedCall(CallInfo& info, check_state_t checkState, bool considerPoi) {
   CallExpr* call = info.call;
   const char* calledName = astr(info.name);
   const char* inFnName = astr(call->getFunction()->name);
@@ -5871,7 +5912,7 @@ static FnSymbol* resolveForwardedCall(CallInfo& info, check_state_t checkState) 
     BlockStmt* block = new BlockStmt(forwardedCall, BLOCK_SCOPELESS);
     call->getStmtExpr()->insertBefore(block);
 
-    auto fn = adjustAndResolveForwardedCall(forwardedCall, delegate, methodName);
+    auto fn = adjustAndResolveForwardedCall(forwardedCall, delegate, methodName, considerPoi);
     if (fn) {
       if (bestFn == NULL) {
         bestFn = fn;
@@ -5903,7 +5944,7 @@ static FnSymbol* resolveForwardedCall(CallInfo& info, check_state_t checkState) 
       const char* methodName = getForwardedMethodName(calledName, bestDelegate);
       INT_ASSERT(methodName);
 
-      bestFn = adjustAndResolveForwardedCall(call, bestDelegate, methodName);
+      bestFn = adjustAndResolveForwardedCall(call, bestDelegate, methodName, considerPoi);
     } else {
       // Replace actuals in call with those from bestCall
       // Note that the above path could be used instead, but

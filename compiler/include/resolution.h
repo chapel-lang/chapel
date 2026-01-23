@@ -257,7 +257,7 @@ void      resolveCallAndCallee(CallExpr* call, bool allowUnresolved = false);
 Type*     resolveDefaultGenericTypeSymExpr(SymExpr* se);
 Type*     resolveTypeAlias(SymExpr* se);
 
-FnSymbol* tryResolveCall(CallExpr* call, bool checkWithin=false);
+FnSymbol* tryResolveCall(CallExpr* call, bool checkWithin=false, bool considerPoi=true);
 void      makeRefType(Type* type);
 
 // FnSymbol changes
