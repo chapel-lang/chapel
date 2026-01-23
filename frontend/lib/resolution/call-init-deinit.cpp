@@ -194,12 +194,15 @@ static bool isTypeParam(QualifiedType::Kind kind) {
 bool CallInitDeinit::isCallProducingValue(const AstNode* rhsAst,
                                           const QualifiedType& rhsType,
                                           RV& rv) {
-  if (rhsAst->isTuple() && rhsType.type() && rhsType.type()->isTupleType()) {
-    if (auto asTupleType = rhsType.type()->toTupleType()) {
-      // Consider a tuple expression to be a call producing a value (for the
-      // purposes of call-init-deinit) iff it contains only value elements.
-      return asTupleType == asTupleType->toValueTuple(context);
-    }
+  CHPL_ASSERT(rhsAst);
+  CHPL_ASSERT(rhsType.type());
+
+  if (rhsAst->isTuple()) {
+    auto asTupleType = rhsType.type()->toTupleType();
+    CHPL_ASSERT(asTupleType);
+    // Consider a tuple expression to be a call producing a value (for the
+    // purposes of call-init-deinit) iff it contains only value elements.
+    return asTupleType == asTupleType->toValueTuple(context);
   }
 
   bool isProbablyCall = rv.byAst(rhsAst).toId().isEmpty();
@@ -848,12 +851,13 @@ void CallInitDeinit::processInit(VarFrame* frame,
         // This will be obviated by just invoking `_tuple.init=` once we can
         // properly handle VarScopeVisitor analyses over the param for loop it
         // contains.
-        if (auto lhsTupleType =
-                lhsType.type() ? lhsType.type()->toTupleType() : nullptr) {
-          auto rhsTupleType =
-              rhsType.type() ? rhsType.type()->toTupleType() : nullptr;
+        auto lhsTupleType =
+            lhsType.type() ? lhsType.type()->toTupleType() : nullptr;
+        auto rhsTupleExpr = rhsAst->toTuple();
+        if (lhsTupleType && rhsTupleExpr) {
+          CHPL_ASSERT(rhsType.type());
+          auto rhsTupleType = rhsType.type()->toTupleType();
           CHPL_ASSERT(rhsTupleType);
-          auto rhsTupleExpr = rhsAst->toTuple();
 
           auto& re = rv.byAst(ast);
           auto topLevelAction = re.associatedActions().front();
@@ -861,7 +865,7 @@ void CallInitDeinit::processInit(VarFrame* frame,
           AssociatedAction::ActionsList subActions;
 
           for (int i = 0; i < lhsTupleType->numElements(); i++) {
-            auto actual = rhsTupleExpr ? rhsTupleExpr->actual(i) : nullptr;
+            auto actual = rhsTupleExpr->actual(i);
             auto lhsEltType = lhsTupleType->elementType(i);
             auto rhsEltType = actual ? rv.byPostorder().byAst(actual).type()
                                      : rhsTupleType->elementType(i);
