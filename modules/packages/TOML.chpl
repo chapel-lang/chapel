@@ -1064,10 +1064,15 @@ module TomlReader {
     }
   }
 
+  // This is a nasty hack to avoid issues with either memleaks or double frees
+  // we only want to set currentLine to an empty Tokens object, but someone
+  // has to own it. There is no obvious owner, so just keeping an empty one
+  // at global scope and borrowing it when needed.
+  // this is not a great implementation of `skipLine` and this is a
+  // bandaid on top of more bandaids, and should be revisited in the future
+  private var emptyCurrent = new Tokens(new list(string));
   proc skipLine(source) {
-    var emptyList: list(string);
-    var emptyCurrent = new unmanaged Tokens(emptyList);
-    source.currentLine = emptyCurrent;
+    source.currentLine = emptyCurrent.borrow();
     var readNextLine = readLine(source);
   }
 
@@ -1086,8 +1091,8 @@ module TomlReader {
   class Source {
 
     var tomlStr: string;
-    var tokenlist: list(unmanaged Tokens);
-    var currentLine: unmanaged Tokens?;
+    var tokenlist: list(owned Tokens);
+    var currentLine: borrowed Tokens?;
 
 
     proc init(tomlStr: string) {
@@ -1168,7 +1173,7 @@ module TomlReader {
       }
 
       if !linetokens.isEmpty() {
-        var tokens = new unmanaged Tokens(linetokens);
+        var tokens = new Tokens(linetokens);
         tokenlist.pushBack(tokens);
       }
     }
@@ -1180,10 +1185,8 @@ module TomlReader {
           return false;
         }
         else {
-          var ptrhold = currentLine;
           tokenlist.getAndRemove(0);
           currentLine = tokenlist[0];
-          delete ptrhold;
           return true;
         }
       }
@@ -1214,13 +1217,6 @@ module TomlReader {
           }
           writeln();
         }
-      }
-    }
-
-
-    proc deinit() {
-      for token in tokenlist {
-        delete token;
       }
     }
   }

@@ -76,6 +76,7 @@ proc MASON_REGISTRY throws {
     registries.pushBack(default);
   } else {
     for str in env.split(',') {
+      if str.strip().isEmpty() then continue;
       const regArr = str.split('|');
       if regArr.size > 2 || regArr.size < 1 {
         const msg = "expected MASON_REGISTRY to contain a comma separated list of locations or 'name|location' pairs\n" + str;

@@ -1,4 +1,4 @@
-No TOML file in registry for badDep
+No TOML file in registry for badDep@5.5.5
 
 [root]
 name = "Tester"

@@ -224,7 +224,9 @@ proc compileSrc(lockFile: borrowed Toml, binLoc: string, show: bool,
 
     log.debugf("Base command: %?\n", cmd);
 
-    for (_, name, version) in srcSource.iterList(sourceList) {
+    // can't use _ since it will leak
+    // see https://github.com/chapel-lang/chapel/issues/25926
+    for (_x, name, version) in srcSource.iterList(sourceList) {
       const nameVer = "%s-%s".format(name, version);
       // version of -1 specifies a git dep
       if version != "-1" {
@@ -242,7 +244,9 @@ proc compileSrc(lockFile: borrowed Toml, binLoc: string, show: bool,
       }
     }
 
-    for (_, name, branch, _) in gitSource.iterList(gitList) {
+    // can't use _ since it will leak
+    // see https://github.com/chapel-lang/chapel/issues/25926
+    for (_x, name, branch, _y) in gitSource.iterList(gitList) {
       var gitDepSrc = ' ' + gitDepPath + name + "-" + branch + '/src/' + name + ".chpl";
       cmd.pushBack(gitDepSrc);
     }
