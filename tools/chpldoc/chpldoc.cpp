@@ -28,6 +28,7 @@
 #include <regex>
 #include <unordered_map>
 #include <queue>
+#include <iomanip>
 
 #include "arg.h"
 #include "arg-helpers.h"
