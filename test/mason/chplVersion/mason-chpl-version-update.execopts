@@ -15,4 +15,5 @@
 --toml tomls/pass/ivrsChooses.toml      # tomls/pass/ivrsChooses.good
 --toml tomls/pass/simpleDep.toml        # tomls/pass/simpleDep.good
 --toml tomls/pass/simpleSolo.toml       # tomls/pass/simpleSolo.good
+--toml tomls/pass/comments.toml         # tomls/pass/comments.good
 --toml tomls/fail/depWantsLaterUnbounded.toml # tomls/fail/depWantsLaterUnbounded.good
