@@ -841,6 +841,7 @@ struct TConverter final : UastConverter,
                               RV& rv);
 
   void convertImplicitInit(const types::CompositeType* ct, ID id, RV& rv);
+  void implicitlyInitUpTo(ID initBefore, RV& rv);
 
   // Convert move-init expressions
   Expr* convertMoveInitAssignOrNull(const Call* node, RV& rv);
@@ -3859,19 +3860,23 @@ void TConverter::convertImplicitInit(const types::CompositeType* ct, ID id, RV& 
   std::swap(orig, cur);
 }
 
+void TConverter::implicitlyInitUpTo(ID initBefore, RV& rv) {
+  auto inits = cur.resolvedFunction->implicitInits();
+  if (auto it = inits.find(initBefore); it != inits.end()) {
+    auto& vec = it->second;
+    for (auto& [ct, id] : vec) {
+      convertImplicitInit(ct, id, rv);
+    }
+  }
+}
+
 Expr* TConverter::convertMoveInitAssignOrNull(const Call* node, RV& rv) {
   auto op = node->toOpCall();
   if (!op || op->op() != USTR("=")) return nullptr;
 
   if (cur.fnSymbol->isInitializer() ||
       cur.fnSymbol->isCopyInit()) {
-    auto inits = cur.resolvedFunction->implicitInits();
-    if (auto it = inits.find(node->id()); it != inits.end()) {
-      auto& vec = it->second;
-      for (auto [ct, id] : vec) {
-        convertImplicitInit(ct, id, rv);
-      }
-    }
+    implicitlyInitUpTo(node->id(), rv);
   }
 
   auto re = rv.byAstOrNull(node);
@@ -5705,13 +5710,7 @@ bool TConverter::enter(const Function* node, RV& rv) {
 
     if (cur.fnSymbol->isInitializer() ||
         cur.fnSymbol->isCopyInit()) {
-      auto inits = cur.resolvedFunction->implicitInits();
-      if (auto it = inits.find(ID()); it != inits.end()) {
-        auto& vec = it->second;
-        for (auto [ct, id] : vec) {
-          convertImplicitInit(ct, id, rv);
-        }
-      }
+      implicitlyInitUpTo(ID(), rv);
     }
 
 
@@ -6643,13 +6642,7 @@ void TConverter::exit(const For* node, RV& rv) {
 }
 
 bool TConverter::enter(const Init* node, RV& rv) {
-  auto inits = cur.resolvedFunction->implicitInits();
-  if (auto it = inits.find(node->id()); it != inits.end()) {
-    auto& vec = it->second;
-    for (auto [ct, id] : vec) {
-      convertImplicitInit(ct, id, rv);
-    }
-  }
+  implicitlyInitUpTo(node->id(), rv);
   return false;
 }
 void TConverter::exit(const Init* node, RV& rv) {
