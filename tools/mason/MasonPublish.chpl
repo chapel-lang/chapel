@@ -421,7 +421,7 @@ proc getPackageName() throws {
   try! {
     const toParse = open("Mason.toml", ioMode.r);
     var tomlFile = (parseToml(toParse));
-    const name = tomlFile['brick']!['name']!.s;
+    const name = tomlFile['brick.name']!.s;
     return name;
   }
   catch {
@@ -437,7 +437,7 @@ private proc addPackageToBricks(projectLocal: string, safeDir: string, name : st
   try! {
     const toParse = open(projectLocal+ "/Mason.toml", ioMode.r);
     var tomlFile = (parseToml(toParse));
-    const versionNum = tomlFile!['brick']!['version']!.s;
+    const versionNum = tomlFile!['brick.version']!.s;
     if !isLocal {
       if !exists(safeDir + '/mason-registry/Bricks/') {
         throw new owned MasonError('Registry does not have the expected structure. Ensure your registry has a Bricks directory.');
@@ -724,7 +724,7 @@ private proc checkLicense(projectHome: string) throws {
     const toParse = open(joinPath(projectHome, "Mason.toml"), ioMode.r);
     const tomlFile = (parseToml(toParse));
     if tomlFile.pathExists("brick.license") {
-      defaultLicense = tomlFile["brick"]!["license"]!.s;
+      defaultLicense = tomlFile["brick.license"]!.s;
     }
     // get the license list and validate license identifier
     const licenseList = refreshLicenseList();
@@ -875,7 +875,7 @@ proc gitTagVersionCheck(projectHome: string) throws {
   var allTags = tags.split("\n");
   const toParse = open(projectHome + "/Mason.toml", ioMode.r);
   const tomlFile = (parseToml(toParse));
-  var version = "v" + tomlFile["brick"]!["version"]!.s;
+  var version = "v" + tomlFile["brick.version"]!.s;
   for tag in allTags {
     if tag == version {
       return (true, allTags, version);
@@ -890,9 +890,8 @@ proc namespaceCollisionCheck(projectHome: string) throws {
   var directoryName = basename(projectHome);
   const toParse = open(projectHome + "/Mason.toml", ioMode.r);
   const tomlFile = (parseToml(toParse));
-  var packageName = tomlFile["brick"]!["name"]!.s;
-  if packageName == directoryName then return true;
-  else return false;
+  var packageName = tomlFile["brick.name"]!.s;
+  return packageName == directoryName;
 }
 
 /*
@@ -929,11 +928,6 @@ proc masonTomlFileCheck(
     else if !isStringOrStringArray(tomlFile["brick"]![field]!) then
       mismatchedTypes.pushBack(field);
   }
-
-  if !tomlFile.pathExists("brick.name") then
-    missingFields.pushBack('name');
-  else if tomlFile["brick"]!["name"]!.tomlType != "string" then
-    mismatchedTypes.pushBack('name');
 
   const valid = missingFields.size == 0 && mismatchedTypes.size == 0;
   return (valid, missingFields, mismatchedTypes);

@@ -616,9 +616,9 @@ proc getProjectType(): string throws {
   const projectHome = getProjectHome(cwd);
   const toParse = open(projectHome + "/Mason.toml", ioMode.r);
   const tomlFile = parseToml(toParse);
-  if !tomlFile.pathExists("brick.type") then
-    throw new owned MasonError('Type not found in TOML file; please add a type="application" key');
-  return tomlFile["brick"]!["type"]!.s;
+  if const type_ = tomlFile.get("brick.type") then
+    return type_.s;
+  throw new MasonError('Type not found in TOML file; please add a type="application" key');
 }
 
 record package {

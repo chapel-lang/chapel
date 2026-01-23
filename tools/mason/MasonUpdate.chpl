@@ -497,8 +497,9 @@ private proc getDependencies(tomlTbl: Toml) {
 
 private proc getGitDeps(tomlTbl: Toml) {
   var gitDeps: list((string, string, shared Toml?));
-  for k in tomlTbl["dependencies"]!.A.keys() {
-    for (a, d) in allFields(tomlTbl["dependencies"]![k]!) {
+  const dependencies = tomlTbl["dependencies"]!;
+  for k in dependencies.A.keys() {
+    for (a, d) in allFields(dependencies[k]!) {
       // name, type of field (url, branch, etc.), toml that it is set to
       gitDeps.pushBack((k, a, d));
     }

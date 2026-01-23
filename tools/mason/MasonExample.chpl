@@ -105,7 +105,7 @@ private proc getBuildInfo(projectHome: string,
   //
   getSrcCode(sourceList, skipUpdate, false);
   getGitCode(gitList, false);
-  const project = lockFile["root"]!["name"]!.s;
+  const project = lockFile["root.name"]!.s;
   const projectPath = "".join(projectHome, "/src/", project, ".chpl");
 
   // get the example names from lockfile or from example directory
@@ -135,13 +135,11 @@ private proc getExampleOptions(
     const exampleName = basename(stripExt(example, ".chpl"));
     exampleOptions[exampleName] = new chplOptions();
     const examplePath = "examples." + exampleName;
-    if toml.pathExists(examplePath + ".compopts") {
-      var compopts = toml[examplePath]!["compopts"]!.s;
-      exampleOptions[exampleName].compopts = new list(compopts.split(" "));
+    if const compopts = toml.get(examplePath + ".compopts") {
+      exampleOptions[exampleName].compopts = new list(compopts.s.split(" "));
     }
-    if toml.pathExists(examplePath + ".execopts") {
-      var execopts = toml[examplePath]!["execopts"]!.s;
-      exampleOptions[exampleName].execopts =  new list(execopts.split(" "));
+    if const execopts = toml.get(examplePath + ".execopts") {
+      exampleOptions[exampleName].execopts =  new list(execopts.s.split(" "));
     }
   }
   return exampleOptions;
@@ -312,9 +310,8 @@ private proc getExamples(toml: Toml, projectHome: string) {
   var exampleNames: list(string);
   const examplePath = joinPath(projectHome, "example");
 
-  if toml.pathExists("examples.examples") {
-
-    var examples = toml["examples"]!["examples"]!.toString();
+  if const examplesToml = toml.get("examples.examples") {
+    var examples = examplesToml.toString();
     var strippedExamples = examples.split(',').strip('[]');
     for example in strippedExamples {
       const t = example.strip().strip('"');
@@ -323,7 +320,8 @@ private proc getExamples(toml: Toml, projectHome: string) {
     return exampleNames;
   }
   else if isDir(examplePath) {
-    var examples = findFiles(startdir=examplePath, recursive=true, hidden=false);
+    var examples = findFiles(startdir=examplePath,
+                             recursive=true, hidden=false);
     for example in examples {
       if example.endsWith(".chpl") {
         exampleNames.pushBack(getExamplePath(example));

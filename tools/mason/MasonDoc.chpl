@@ -43,14 +43,13 @@ proc masonDoc(args: [] string) throws {
   const toParse = open(projectHome + "/" + tomlName, ioMode.r);
   var tomlFile = parseToml(toParse);
 
-  const projectName = tomlFile["brick"]!["name"]!.s;
+  const projectName = tomlFile["brick.name"]!.s;
   const projectFile = projectName + '.chpl';
 
-  const version = tomlFile["brick"]!["version"]!.s;
+  const version = tomlFile["brick.version"]!.s;
 
   var authors: string;
-  if tomlFile.pathExists("brick.authors") {
-    const authorsToml: Toml = tomlFile["brick"]!["authors"]!;
+  if const authorsToml = tomlFile.get["brick.authors"] {
     if !isStringOrStringArray(authorsToml) {
       throw new MasonError("unable to parse authors");
     }
@@ -61,8 +60,8 @@ proc masonDoc(args: [] string) throws {
     }
   }
   var copyrightYear: string;
-  if tomlFile.pathExists("brick.copyrightYear") {
-    copyrightYear = tomlFile["brick"]!["copyrightYear"]!.s;
+  if const copyrightToml = tomlFile.get["brick.copyrightYear"] {
+    copyrightYear = copyrightToml.s;
   }
 
   if isDir(projectHome + '/src/') &&
@@ -108,9 +107,9 @@ proc getTomlDocopts(lock: borrowed Toml): list(string) throws {
   var docopts: list(string);
 
   // Checks for compilation options are present in Mason.toml
-  if lock.pathExists("brick.docopts") {
+  if const docoptsToml = lock.get("brick.docopts") {
     try {
-      docopts.pushBack(parseCompilerOptions(lock["brick"]!["docopts"]!));
+      docopts.pushBack(parseCompilerOptions(docoptsToml));
     } catch {
       throw new MasonError("unable to parse docopts");
     }
