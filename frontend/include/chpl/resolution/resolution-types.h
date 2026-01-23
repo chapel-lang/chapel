@@ -3290,8 +3290,7 @@ class ResolvedFieldResults {
     return chpl::hash(type_, fieldID_, fieldAst_, syntaxOnly_);
   }
 
-  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
-  }
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 };
 
 /** ResolvedFields represents the fully resolved fields for a

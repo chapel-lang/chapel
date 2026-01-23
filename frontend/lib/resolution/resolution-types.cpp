@@ -1680,6 +1680,26 @@ ResolvedFunction::stringify(std::ostream& ss,
   ss << "----- end resolution results -----" << std::endl;
 }
 
+void ResolvedFieldResults::stringify(std::ostream& ss,
+                                   chpl::StringifyKind stringKind) const {
+  ss << "ResolvedFieldResults: " << std::endl;
+
+  ss << "type: ";
+  type_->stringify(ss, chpl::StringifyKind::CHPL_SYNTAX);
+  ss << std::endl;
+
+  ss << "field ID: ";
+  fieldID_.stringify(ss, chpl::StringifyKind::CHPL_SYNTAX);
+  ss << std::endl;
+
+  ss << "syntax only?: ";
+  ss << (syntaxOnly_ ? "true" : "false") << std::endl;
+
+  ss << "----- resolution results -----" << std::endl;
+  results_.stringify(ss, chpl::StringifyKind::CHPL_SYNTAX);
+  ss << "----- end resolution results -----" << std::endl;
+}
+
 
 /**
   Find method receiver aggregate decl ID (for use when scope resolving).
