@@ -3,7 +3,7 @@ Usage: chpldoc [flags] [source files]
 Documentation Options:
   -o, --output-dir <dirname>          Sets the documentation directory to
                                       <dirname>
-      --author <author>               Documentation author string.
+      --author <author>               Documentation author string
       --comment-style <indicator>     Only includes comments that start with
                                       <indicator>
   -M, --module-dir <directory>        Add directory to module search path
@@ -22,7 +22,7 @@ Documentation Options:
       --project-version <projectversion>
                                       Sets the documentation version to
                                       <projectversion>
-      --project-copyright-year projectcopyrightyear
+      --project-copyright-year <projectcopyrightyear>
                                       Sets the project copyright year in the
                                       documentation
       --[no-]print-commands           [Don't] print system commands
