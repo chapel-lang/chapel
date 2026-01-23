@@ -579,7 +579,9 @@ proc getMasonDependencies(sourceList: list(srcSource),
     const depPath = joinPath(MASON_HOME, "src");
 
     // Add dependencies to project
-    for (_, name, version) in srcSource.iterList(sourceList) {
+    // can't use _ since it will leak
+    // see https://github.com/chapel-lang/chapel/issues/25926
+    for (_x, name, version) in srcSource.iterList(sourceList) {
       const depSrc = joinPath(depPath, "%s-%s".format(name, version),
                               "src", "%s.chpl".format(name));
       masonCompopts.pushBack(depSrc);
@@ -589,7 +591,9 @@ proc getMasonDependencies(sourceList: list(srcSource),
     const gitDepPath = joinPath(MASON_HOME, "git");
 
     // Add git dependencies
-    for (_, name, branch, _) in gitSource.iterList(gitList) {
+    // can't use _ since it will leak
+    // see https://github.com/chapel-lang/chapel/issues/25926
+    for (_x, name, branch, _y) in gitSource.iterList(gitList) {
       const gitDepSrc = joinPath(gitDepPath, "%s-%s".format(name, branch),
                                  "src", "%s.chpl".format(name));
       masonCompopts.pushBack(gitDepSrc);
