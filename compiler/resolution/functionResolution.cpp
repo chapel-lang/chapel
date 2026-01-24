@@ -3576,6 +3576,7 @@ struct CandidateSearchState {
   bool tryFindVisibileCandidatesForExplicitFn();
   void searchOnePoiLevel();
   void findVisibleFunctionsAndCandidates();
+  void considerLastResortCandidates();
 };
 
 static int       disambiguateByMatch(CallInfo&                  info,
@@ -4319,7 +4320,52 @@ static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState, boo
        for others and don't consider POI */
     considerPoi = false;
   } else {
-    searchState.findVisibleFunctionsAndCandidates();
+    /* At this point, the top-level POI level is the regular scope of the call
+       (so it's not really POI). This was configured as part of searchState's
+       constructor. So, this brach is the non-POI candidate search, which
+       always happens. */
+    searchState.searchOnePoiLevel();
+  }
+
+  // If no non-POI candidates were found and it's a method, try forwarding.
+  // Forwarded methods are treated as if they were defined directly on the type,
+  // so they take precedence over POI candidates. This is crucial for correctness.
+  //
+  // See https://github.com/chapel-lang/chapel/issues/28246
+  bool forwardingEligible =
+    candidates.n                  == 0 &&
+    info.call->numActuals()       >= 1 &&
+    info.call->get(1)->typeInfo() == dtMethodToken &&
+    isUnresolvedSymExpr(info.call->baseExpr);
+  Type* receiverType;
+  bool usesForwarding = false;
+
+  // While searching for forwarding candidates, do not consider _their_ POI.
+  // That's because we haven't looked at the POI candidates for the original type,
+  // and returning the impl type's POI candidates here would be strange.
+  if (forwardingEligible) {
+    receiverType = canonicalDecoratedClassType(info.call->get(2)->getValType());
+    if ((usesForwarding = typeUsesForwarding(receiverType))) {
+      if (auto fn = resolveForwardedCall(info, checkState, /* conisiderPoi */ false)) {
+        return fn;
+      }
+    }
+  }
+
+  // At this point, we have found no non-POI candidates, neither in the
+  // original type nor in any fields it forwards. Time to move on to POI.
+  if (considerPoi) {
+    // Ok, no forwaring candidates found without POI. Now move on to
+    // our POI candidates.
+    if (candidates.n == 0 && visInfo.currStart != nullptr && scopeUsed != visInfo.currStart) {
+      searchState.findVisibleFunctionsAndCandidates();
+    }
+
+    // If we have not found any candidates after traversing all POIs,
+    // look at "last resort" candidates, if any.
+    if (candidates.n == 0) {
+      searchState.considerLastResortCandidates();
+    }
   }
 
   numMatches = disambiguateByMatch(info, scopeUsed, candidates,
@@ -4329,39 +4375,9 @@ static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState, boo
     updateCacheInfosForACall(visInfo,
                              bestRef, bestCref, bestVal);
 
-  // If no candidates were found and it's a method, try forwarding
-  bool forwardingEligible =
-    candidates.n                  == 0 &&
-    info.call->numActuals()       >= 1 &&
-    info.call->get(1)->typeInfo() == dtMethodToken &&
-    isUnresolvedSymExpr(info.call->baseExpr);
-  Type* receiverType;
-  bool usesForwarding = false;
-
-  // For now, do not consider POI. This way, if/when we recurse, we first
-  // check all forwarding statements without POI, and only then go back
-  // to POI. This is crucial for correctness. See
-  //
-  // https://github.com/chapel-lang/chapel/issues/28246
-  if (forwardingEligible) {
-    receiverType = canonicalDecoratedClassType(info.call->get(2)->getValType());
-    if ((usesForwarding = typeUsesForwarding(receiverType))) {
-      FnSymbol* fn = resolveForwardedCall(info, checkState, /* conisiderPoi */ false);
-      if (fn) {
-        return fn;
-      }
-      // otherwise error is printed below
-    }
-  }
-
-  if (considerPoi) {
-    // TODO: consider POI
-  }
-
   // Now, try forwarding again, this time considering POI
   if (candidates.n == 0 && forwardingEligible && usesForwarding && considerPoi) {
-    FnSymbol* fn = resolveForwardedCall(info, checkState, /* conisiderPoi */ true);
-    if (fn) {
+    if (auto fn = resolveForwardedCall(info, checkState, /* conisiderPoi */ true)) {
       return fn;
     }
     // otherwise error is printed below
@@ -5639,9 +5655,9 @@ void CandidateSearchState::findVisibleFunctionsAndCandidates() {
   }
   while
     (candidates.n == 0 && visInfo.currStart != NULL);
+}
 
-  // If we have not found any candidates after traversing all POIs,
-  // look at "last resort" candidates, if any.
+void CandidateSearchState::considerLastResortCandidates() {
   if (candidates.n == 0 && haveAnyLRCs(lrc, visInfo.poiDepth)) {
     visInfo.poiDepth = -1;
     int numVisitedLRC = 0;
