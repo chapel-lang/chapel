@@ -67,8 +67,3 @@ AssertionError: in AssertCloseTest.chpl:8 - assert failed for actual=nan, expect
 Rel. Error: nan %
 Abs. Error: nan
 ================================================================================
-Error Caught in Unequal complex NaN
-AssertionError: in AssertCloseTest.chpl:8 - assert failed for actual=nan, expected=nan
-Rel. Error: nan %
-Abs. Error: nan
-================================================================================
