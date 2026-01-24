@@ -482,10 +482,10 @@ module UnitTest {
     Check if a scalar or array is within tolerance of the expected value.
 
     :arg actual: actual value
-    :type actual: ?T
+    :type actual: ?T or [] ?T
 
     :arg expected: expected value
-    :type expected: T
+    :type expected: T or [] T
 
     :arg relTol: relative tolerance
     :type relTol: real
@@ -493,8 +493,11 @@ module UnitTest {
     :arg absTol: absolute tolerance
     :type absTol: real
 
+    :arg equalNan: whether or not NaN should compare equal, defaults to true
+    :type equalNan: bool
+
     :returns: True if within tolerance, else false
-    :rtype: bool
+    :rtype: bool or [] bool
 
     :throws IllegalArgumentError: either tolerance is negative
     */
@@ -503,41 +506,56 @@ module UnitTest {
     @chpldoc.nodoc
     proc withinTol(const actual: ?T, const expected: T,
                    const in relTol: real=defaultRelTol,
-                   const in absTol: real=defaultAbsTol) throws {
+                   const in absTol: real=defaultAbsTol,
+                   const in equalNan: bool=true) throws {
       if relTol < 0.0 || absTol < 0.0 {
         throw new owned IllegalArgumentError(
           "relTol and absTol must both be nonnegative.");
       }
-      return abs(actual - expected) <= absTol + relTol * abs(expected);
-    }
 
-    /*
-    Check if a scalar or array NaN values match.
-
-    :arg actual: actual value
-    :type actual: ?T
-
-    :arg expected: expected value
-    :type expected: T
-
-    :returns: True if NaN are at the same indices
-    :rtype: bool
-    */
-    pragma "insert line file info"
-    pragma "always propagate line file info"
-    @chpldoc.nodoc
-    proc compareNan(const actual: ?T, const expected: T)
-             where (isNumericType(T) && !isIntegralType(T)) {
-      if isComplexType(T) {
-        // does not support partial NaN equality:
-        // actual=nan+0i, expected=nan+0i returns false
-        return isNan(actual.re) && isNan(expected.re)
-            && isNan(actual.im) && isNan(expected.im);
+      proc compareNanFalse(const actual_, const expected_) {
+        // NaN compare false
+        return abs(actual_ - expected_) <= absTol + relTol * abs(expected_);
       }
-      else if isImagType(T) {
-        return isNan(actual:real) && isNan(expected:real);
+
+      proc compareNanTrue(const actual_: real, const expected_: real): bool {
+        // NaN compare true
+        return compareNanFalse(actual_, expected_) || (isNan(actual_) &&
+                                                       isNan(expected_));
       }
-      return isNan(actual) && isNan(expected);
+      proc compareNanTrue(const actual_: [] real,
+                          const expected_: [] real): [] bool {
+        return [(a, e) in zip(actual_, expected_)] compareNanTrue(a, e);
+      }
+
+      proc compareComplex(const actual_: complex,
+                          const expected_: complex): bool {
+        // if real/imag part of either complex value is NaN, compare real
+        // and imaginary parts separately, such that, e.g., nan+0i == nan+0i
+        if isNan(actual_.re) || isNan(actual_.im)
+        || isNan(expected_.re) || isNan(expected_.im) {
+          return compareNanTrue(actual_.re, expected_.re)
+              && compareNanTrue(actual_.im, expected_.im);
+        }
+        // else compare complex numbers standard way, with absolute values
+        return compareNanFalse(actual_, expected_);
+      }
+
+      if equalNan {
+        if isComplexType(T) {
+          return compareComplex(actual, expected);
+        }
+        if isArrayType(T) && isComplexType(actual.eltType) {
+          return [(a, e) in zip(actual, expected)] compareComplex(a, e);
+        }
+        if isImagType(T)
+        || isArrayType(T) && isImagType(actual.eltType) {
+          // no imaginary NaN, must cast to real
+          return compareNanTrue(actual:real, expected:real);
+        }
+        return compareNanTrue(actual, expected);
+      }
+      return compareNanFalse(actual, expected);
     }
 
     /*
@@ -546,10 +564,10 @@ module UnitTest {
 
       It asserts that actual <= absTol + relTol*expected for each element.
 
-      :arg actual: The user-computed value.
+      :arg actual: actual, user-computed value
       :type actual: [] ?T
 
-      :arg expected: The expected or desired value.
+      :arg expected: expected or desired value
       :type expected: [] T
 
       :arg relTol: relative tolerance
@@ -572,7 +590,7 @@ module UnitTest {
     proc assertClose(const actual: [] ?T, const expected: [] T,
                      const in relTol: real=defaultRelTol,
                      const in absTol: real=defaultAbsTol,
-                     const in equalNan:bool=true): void throws
+                     const in equalNan: bool=true): void throws
                      where (isNumericType(T) && !isIntegralType(T)) {
       if actual.shape != expected.shape {
         throw new owned IllegalArgumentError(
@@ -581,11 +599,8 @@ module UnitTest {
         );
       }
       var isWithinTol = withinTol(actual=actual, expected=expected,
-                                    relTol=relTol, absTol=absTol);
-
-      if equalNan then [(idx, a,e) in zip(isWithinTol.domain, actual, expected)]
-        isWithinTol[idx] ||= compareNan(a, e);
-
+                                  relTol=relTol, absTol=absTol,
+                                  equalNan=equalNan);
       const passes = && reduce isWithinTol;
       if !passes {
         const numFailed: int = isWithinTol.count(false);
@@ -616,10 +631,10 @@ module UnitTest {
 
       It asserts that actual <= absTol + relTol*expected.
 
-      :arg actual: The user-computed value (real or complex).
+      :arg actual: actual, user-computed value
       :type actual: T
 
-      :arg expected: The expected or desired value (real or complex).
+      :arg expected: expected or desired value
       :type expected: T
 
       :arg relTol: relative tolerance
@@ -642,8 +657,8 @@ module UnitTest {
                      const in equalNan: bool=true):void throws
                      where (isNumericType(T) && !isIntegralType(T)) {
       var isWithinTol = withinTol(actual=actual, expected=expected,
-                                    relTol=relTol, absTol=absTol);
-      if equalNan then isWithinTol ||= compareNan(actual, expected);
+                                  relTol=relTol, absTol=absTol,
+                                  equalNan=equalNan);
       if !isWithinTol {
         const absErr: real = abs(actual - expected);
         const relErr = absErr / abs(expected);
