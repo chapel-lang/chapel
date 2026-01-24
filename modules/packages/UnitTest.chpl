@@ -248,6 +248,33 @@ module UnitTest {
     }
 
     /*
+      Assert that ``test`` is `true`. If it is false, prints
+      'assert failed' along with any additional arguments provided.
+
+      :arg test: the boolean condition
+      :type test: `bool`
+      :arg args: additional values to print on failure
+    */
+    pragma "insert line file info"
+    pragma "always propagate line file info"
+    proc assertTrue(test: bool, args...?n) throws {
+      if !test {
+        var msg = "assertTrue failed. Given expression is False";
+        
+        // Append additional arguments to error message
+        if n > 0 {
+          msg += " - ";
+          for param i in 0..<n {
+            msg += args(i): string;
+            if i < n-1 then msg += " ";
+          }
+        }
+        
+        throw new owned AssertionError(msg);
+      }
+    }
+
+    /*
       Assert that ``test`` is `false`.
 
       :arg test: the boolean condition
@@ -258,6 +285,32 @@ module UnitTest {
     proc assertFalse(test: bool) throws {
       if test then
         throw new owned AssertionError("assertFalse failed. Given expression is True");
+    }
+
+    /*
+      Assert that ``test`` is `false`. If it is true, prints
+      'assert failed' along with any additional arguments provided.
+
+      :arg test: the boolean condition
+      :type test: `bool`
+      :arg args: additional values to print on failure
+    */
+    pragma "insert line file info"
+    pragma "always propagate line file info"
+    proc assertFalse(test: bool, args...?n) throws {
+      if test {
+        var msg = "assertFalse failed. Given expression is True";
+        
+        if n > 0 {
+          msg += " - ";
+          for param i in 0..<n {
+            msg += args(i): string;
+            if i < n-1 then msg += " ";
+          }
+        }
+        
+        throw new owned AssertionError(msg);
+      }
     }
 
     pragma "insert line file info"
@@ -475,6 +528,32 @@ module UnitTest {
     }
 
     /*
+      Assert that ``first == second``. If they are not equal,
+      prints the two values along with any additional arguments provided.
+
+      :arg first: The first object to compare
+      :arg second: The second object to compare
+      :arg args: additional values to print on failure
+    */
+    proc assertEqual(first, second, args...?n) throws {
+      try {
+        checkAssertEquality(first, second);
+      } catch e: AssertionError {
+        var msg = e.message();
+        
+        if n > 0 {
+          msg += " - ";
+          for param i in 0..<n {
+            msg += args(i): string;
+            if i < n-1 then msg += " ";
+          }
+        }
+        
+        throw new owned AssertionError(msg);
+      }
+    }
+
+    /*
       Assert that x matches the regular expression pattern.
 
       .. warning::
@@ -563,6 +642,34 @@ module UnitTest {
     }
 
     /*
+      Assert that ``first != second``. If they are equal,
+      prints the two values along with any additional arguments provided.
+
+      :arg first: The first object to compare
+      :arg second: The second object to compare
+      :arg args: additional values to print on failure
+    */
+    proc assertNotEqual(first, second, args...?n) throws {
+      if first.type == second.type {
+        if all(first == second) {
+          var tmpString = "assert failed - \n" + stringify(first) + 
+                          "\nequals \n" + stringify(second);
+          
+          if n > 0 {
+            tmpString += " - ";
+            for param i in 0..<n {
+              tmpString += args(i): string;
+              if i < n-1 then tmpString += " ";
+            }
+          }
+          
+          throw new owned AssertionError(tmpString);
+        }
+      }
+    }
+
+
+    /*
       Assert that ``first > second``.
 
       :arg first: The first object to compare.
@@ -580,6 +687,34 @@ module UnitTest {
         throw new owned AssertionError(errorMsg);
       }
     }
+
+    /*
+      Assert that ``first > second``. If ``first <= second``,
+      prints the two values along with any additional arguments provided.
+
+      :arg first: The first object to compare
+      :arg second: The second object to compare
+      :arg args: additional values to print on failure
+    */
+    proc assertGreaterThan(first, second, args...?n) throws {
+      if first.type == second.type {
+        if first <= second {
+          var tmpString = "assert failed - " + stringify(first) + 
+                          " <= " + stringify(second);
+          
+          if n > 0 {
+            tmpString += " - ";
+            for param i in 0..<n {
+              tmpString += args(i): string;
+              if i < n-1 then tmpString += " ";
+            }
+          }
+          
+          throw new owned AssertionError(tmpString);
+        }
+      }
+    }
+
 
     pragma "insert line file info"
     pragma "always propagate line file info"
@@ -798,6 +933,33 @@ module UnitTest {
       else {
         const errorMsg = "assert failed - First element is of type %? and Second is of type %?".format(first.type:string, second.type:string);
         throw new owned AssertionError(errorMsg);
+      }
+    }
+
+    /*
+      Assert that ``first < second``. If ``first >= second``,
+      prints the two values along with any additional arguments provided.
+
+      :arg first: The first object to compare
+      :arg second: The second object to compare
+      :arg args: additional values to print on failure
+    */
+    proc assertLessThan(first, second, args...?n) throws {
+      if first.type == second.type {
+        if first >= second {
+          var tmpString = "assert failed - " + stringify(first) + 
+                          " >= " + stringify(second);
+          
+          if n > 0 {
+            tmpString += " - ";
+            for param i in 0..<n {
+              tmpString += args(i): string;
+              if i < n-1 then tmpString += " ";
+            }
+          }
+          
+          throw new owned AssertionError(tmpString);
+        }
       }
     }
 
