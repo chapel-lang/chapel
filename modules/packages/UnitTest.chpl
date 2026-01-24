@@ -652,9 +652,11 @@ module UnitTest {
     proc assertNotEqual(first, second, args...?n) throws {
       if first.type == second.type {
         if all(first == second) {
-          var tmpString = "assert failed - \n" + stringify(first) + 
-                          "\nequals \n" + stringify(second);
+          // Build the base error message
+          var tmpString = "assert failed - \n" + first:string + 
+                          "\nequals \n" + second:string;
           
+          // Append additional arguments
           if n > 0 {
             tmpString += " - ";
             for param i in 0..<n {
@@ -699,8 +701,8 @@ module UnitTest {
     proc assertGreaterThan(first, second, args...?n) throws {
       if first.type == second.type {
         if first <= second {
-          var tmpString = "assert failed - " + stringify(first) + 
-                          " <= " + stringify(second);
+          var tmpString = "assert failed - " + first:string + 
+                " <= " + second:string;
           
           if n > 0 {
             tmpString += " - ";
@@ -947,8 +949,8 @@ module UnitTest {
     proc assertLessThan(first, second, args...?n) throws {
       if first.type == second.type {
         if first >= second {
-          var tmpString = "assert failed - " + stringify(first) + 
-                          " >= " + stringify(second);
+          var tmpString = "assert failed - " + first:string + 
+                " >= " + second:string;
           
           if n > 0 {
             tmpString += " - ";
