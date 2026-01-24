@@ -707,6 +707,7 @@ module ChapelArray {
     return new _distribution(owned.release(x));
   }
 
+
   @chpldoc.nodoc
   inline operator ==(d1: _distribution(?), d2: _distribution(?)) {
     if (d1._value == d2._value) then
