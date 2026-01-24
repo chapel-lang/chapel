@@ -5,6 +5,24 @@ if [[ "$CHPL_COMM" != "none" ]]; then
   exit 0
 fi
 
+# this can remove too much of the debug info
+if [[ "$COMPOPTS" == *"--fast"* ]]; then
+  echo "True"
+  exit 0
+fi
+
+# baseline testing has extra call_temps left behind that mess up the good file
+if [[ "$COMPOPTS" == *"--baseline"* ]]; then
+  echo "True"
+  exit 0
+fi
+
+# valgrind messes up output
+if [[ "$CHPL_TEST_VGRND_EXE" == "on" ]]; then
+  echo "True"
+  exit 0
+fi
+
 if command -v lldb >/dev/null ; then
 
   # Sept 10, 2025: skip if lldb does not have python support
