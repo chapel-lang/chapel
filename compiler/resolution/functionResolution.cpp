@@ -3526,20 +3526,57 @@ static void resolveCoerceCopyMove(CallExpr* call) {
 *                                                                             *
 ************************************** | *************************************/
 
+//
+// We gather a list of last-resort candidates as we go.
+// The last-resort candidates visible from the call are followed by a NULL
+// to separate them from those visible from the point of instantiation.
+//
+using LastResortCandidates = std::vector<FnSymbol*>;
+
 static bool      isGenericRecordInit(CallExpr* call);
 
 static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState, bool considerPoi = true);
 static FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState, bool considerPoi);
 
-static BlockStmt* tryFindVisibileCandidatesForExplicitFn(CallInfo& info,
-                                                         VisibilityInfo& visInfo,
-                                                         Vec<FnSymbol*>& mostApplicable,
-                                                         Vec<ResolutionCandidate*>& candidates);
-static BlockStmt* findVisibleFunctionsAndCandidates(
-                                     CallInfo&                  info,
-                                     VisibilityInfo&            visInfo,
-                                     Vec<FnSymbol*>&            visibleFns,
-                                     Vec<ResolutionCandidate*>& candidates);
+// State for candidate search. Tracks seen, most applicable, etc. candidates,
+// and other information like the current POI scope.
+struct CandidateSearchState {
+  CallInfo& info;
+  VisibilityInfo visInfo; // note: contains state as to the current POI scope.
+  PtrSet<BlockStmt*> visited;
+  BlockStmt* scopeUsed = nullptr; // scope last searched for candidates
+
+  // Keep *all* discovered functions in 'visibleFns' and 'mostApplicable'
+  // so that we can revisit them for error reporting. The lists (
+  // visible -> most applicable -> candidates) trickle down into the next.
+  // All of them only every grow, with numVisitedVis and numVisitedMA tracking
+  // the point up all candiddates have been moved to the successive list if
+  // they needed to be. The flow is as follows:
+  //   1. In each potential scope (call and POI(s)), visible functions get
+  //      placed into `visibleFns`.
+  //   2. From those, we find the most applicable functions (coarse, early
+  //      filtering, which removes functions on unrelated objects as best as
+  //      I can tell) and move them into `mostApplicable`.
+  //   3. From those, we either move candidates into the last resort group
+  //      (if they are last resort candidates) or into `candidates`.
+  // In this way, 'numVisited*' keeps track of where we left off with the
+  // previous POI / scope to avoid revisiting those functions for the next POI.
+  int numVisitedVis = 0, numVisitedMA = 0;
+  Vec<FnSymbol*> visibleFns;
+  Vec<FnSymbol*> mostApplicable;
+  Vec<ResolutionCandidate*> candidates;
+  LastResortCandidates lrc;
+
+  CandidateSearchState(CallInfo& info)
+    : info(info), visInfo(info) {
+    visInfo.currStart = getVisibilityScope(info.call);
+    INT_ASSERT(visInfo.poiDepth == -1); // we have not used it
+  }
+
+  bool tryFindVisibileCandidatesForExplicitFn();
+  void searchOnePoiLevel();
+  void findVisibleFunctionsAndCandidates();
+};
 
 static int       disambiguateByMatch(CallInfo&                  info,
                                      BlockStmt*                 searchScope,
@@ -4263,27 +4300,26 @@ static FnSymbol* resolveForwardedCall(CallInfo& info, check_state_t checkState, 
 static bool typeUsesForwarding(Type* t);
 
 static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState, bool considerPoi) {
-  Vec<FnSymbol*>            mostApplicable;
-  Vec<ResolutionCandidate*> candidates;
-
   ResolutionCandidate*      bestRef    = NULL;
   ResolutionCandidate*      bestCref   = NULL;
   ResolutionCandidate*      bestVal    = NULL;
 
-  VisibilityInfo            visInfo(info);
   int                       numMatches = 0;
 
   FnSymbol*                 retval     = NULL;
 
-  BlockStmt* scopeUsed = nullptr;
+  CandidateSearchState searchState(info);
+  auto& visInfo = searchState.visInfo;
+  auto& mostApplicable = searchState.mostApplicable;
+  auto& candidates = searchState.candidates;
+  auto& scopeUsed = searchState.scopeUsed;
 
-  if ((scopeUsed = tryFindVisibileCandidatesForExplicitFn(info, visInfo, mostApplicable, candidates))) {
+  if (searchState.tryFindVisibileCandidatesForExplicitFn()) {
     /* the function was explicitly specified via FnSymbol*. Don't search
        for others and don't consider POI */
     considerPoi = false;
   } else {
-    scopeUsed = findVisibleFunctionsAndCandidates(info, visInfo,
-                                                  mostApplicable, candidates);
+    searchState.findVisibleFunctionsAndCandidates();
   }
 
   numMatches = disambiguateByMatch(info, scopeUsed, candidates,
@@ -5400,13 +5436,6 @@ static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
 *                                                                             *
 ************************************** | *************************************/
 
-//
-// We gather a list of last-resort candidates as we go.
-// The last-resort candidates visible from the call are followed by a NULL
-// to separate them from those visible from the point of instantiation.
-//
-typedef std::vector<FnSymbol*> LastResortCandidates;
-
 // add a null separator
 static void markEndOfPOI(LastResortCandidates& lrc) {
   lrc.push_back(NULL);
@@ -5546,10 +5575,7 @@ void advanceCurrStart(VisibilityInfo& visInfo) {
   visInfo.nextPOI = NULL;
 }
 
-static BlockStmt* tryFindVisibileCandidatesForExplicitFn(CallInfo& info,
-                                                         VisibilityInfo& visInfo,
-                                                         Vec<FnSymbol*>& mostApplicable,
-                                                         Vec<ResolutionCandidate*>& candidates) {
+bool CandidateSearchState::tryFindVisibileCandidatesForExplicitFn() {
   CallExpr* call = info.call;
   FnSymbol* fn   = call->resolvedFunction();
   Vec<FnSymbol*> visibleFns;
@@ -5564,50 +5590,47 @@ static BlockStmt* tryFindVisibileCandidatesForExplicitFn(CallInfo& info,
 
     explainGatherCandidate(info, candidates);
 
-    return getVisibilityScope(call);
+    scopeUsed = getVisibilityScope(call);
+    return true;
   }
-  return nullptr;
+  return false;
 }
 
-// Returns the POI scope used to find the candidates
-static BlockStmt* findVisibleFunctionsAndCandidates(
-                                CallInfo&                  info,
-                                VisibilityInfo&            visInfo,
-                                Vec<FnSymbol*>&            mostApplicable,
-                                Vec<ResolutionCandidate*>& candidates) {
-  CallExpr* call = info.call;
-  Vec<FnSymbol*> visibleFns;
+// when looking for function candidates, we first check the current scope,
+// then walk through the POI scopes. For each scope, we execute searchOnePoiLevel(),
+// which checks for visible functions and gathers candidates. We stop if
+// we find any candidates.
+void CandidateSearchState::searchOnePoiLevel() {
+  // CG TODO: no POI for CG functions
+  visInfo.poiDepth++;
 
+  findVisibleFunctions(info, &visInfo, &visited,
+                       &numVisitedVis, visibleFns);
+
+  trimVisibleCandidates(info, mostApplicable,
+                        numVisitedVis, visibleFns);
+
+  gatherCandidatesAndLastResort(info, visInfo, mostApplicable, numVisitedMA,
+                                lrc, candidates);
+
+  // save the scope used for disambiguation
+  scopeUsed = visInfo.currStart;
+
+  advanceCurrStart(visInfo);
+}
+// static BlockStmt* findVisibleFunctionsAndCandidatesWithoutPoi();
+// static BlockStmt* findVisibleFunctionsAndCandidatesPoi();
+
+// Returns the POI scope used to find the candidates
+void CandidateSearchState::findVisibleFunctionsAndCandidates() {
   // CG TODO: pull all visible interface functions, if within a CG context
 
-  // Keep *all* discovered functions in 'visibleFns' and 'mostApplicable'
-  // so that we can revisit them for error reporting.
-  // Keep track in 'numVisited*' of where we left off with the previous POI
-  // to avoid revisiting those functions for the next POI.
-  int numVisitedVis = 0, numVisitedMA = 0;
-  LastResortCandidates lrc;
-  PtrSet<BlockStmt*> visited;
-  visInfo.currStart = getVisibilityScope(call);
-  INT_ASSERT(visInfo.poiDepth == -1); // we have not used it
   BlockStmt* scopeUsed = nullptr;
 
   do {
     // CG TODO: no POI for CG functions
-    visInfo.poiDepth++;
 
-    findVisibleFunctions(info, &visInfo, &visited,
-                         &numVisitedVis, visibleFns);
-
-    trimVisibleCandidates(info, mostApplicable,
-                          numVisitedVis, visibleFns);
-
-    gatherCandidatesAndLastResort(info, visInfo, mostApplicable, numVisitedMA,
-                                  lrc, candidates);
-
-    // save the scope used for disambiguation
-    scopeUsed = visInfo.currStart;
-
-    advanceCurrStart(visInfo);
+    searchOnePoiLevel();
 
     // prevent infinite loop
     if (scopeUsed == visInfo.currStart) {
@@ -5631,8 +5654,6 @@ static BlockStmt* findVisibleFunctionsAndCandidates(
   }
 
   explainGatherCandidate(info, candidates);
-
-  return scopeUsed;
 }
 
 // run filterCandidate() on 'fn' if appropriate
