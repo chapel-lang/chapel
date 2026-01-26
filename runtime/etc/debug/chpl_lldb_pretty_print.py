@@ -619,6 +619,49 @@ class WidePointerProvider:
         )
 
 
+list_regex_llvm = re.compile(r"^(List::list\((?P<eltType>[a-zA-Z0-9_()]+)(,(?P<parSafe>(true|false)))?\))$")
+
+def ListRecognizer(sbtype, internal_dict):
+    typename = sbtype.GetName()
+    match = list_regex_llvm.match(typename)
+    return match is not None
+
+def ListSummary(valobj, internal_dict):
+    size = valobj.GetNonSyntheticValue().GetChildMemberWithName("_size").GetValueAsUnsigned()
+    return f"size = {size}"
+
+class ListProvider:
+    def __init__(self, valobj, internal_dict):
+        self.valobj = valobj
+
+        self.synthetic_children = {}
+        size = self.valobj.GetNonSyntheticValue().GetChildMemberWithName("_size").GetValueAsUnsigned()
+        for i in range(size):
+            element_name = f"[{i}]"
+            element = self.valobj.CreateValueFromExpression(element_name, f"({self.valobj.GetName()})._getRef({i})")
+            if element.IsValid():
+                self.synthetic_children[f"[{i}]"] = element
+
+    def has_children(self):
+        return self.num_children() > 0
+
+    def num_children(self):
+        return len(self.synthetic_children)
+
+    def get_child_index(self, name):
+        if name in self.synthetic_children:
+            return list(self.synthetic_children.keys()).index(name)
+        else:
+            return -1
+
+    def get_child_at_index(self, index):
+        if index < 0 or index >= self.num_children():
+            return None
+        key = list(self.synthetic_children.keys())[index]
+        child_obj = self.synthetic_children[key]
+        return child_obj
+
+
 def DebugFunc_ResolveWidePointer(debugger, command, result, internal_dict):
     """Resolve a wide pointer manually.
     Usage: RWP <wide pointer variable> [size]
@@ -689,11 +732,14 @@ def __lldb_init_module(debugger, internal_dict):
         "ManagedObjectProvider",
         recognizer("ManagedObjectRecognizer"),
     )
+
+    register("ListSummary", "ListProvider", recognizer("ListRecognizer"))
+
     # TODO: I can't decide if having a wide pointer summary/provider is useful
     # or just confusing
     # register("WidePointerSummary", "WidePointerProvider", regex("wide\\(.+\\)"))
     debugger.HandleCommand(
-        "command script add -f chpl_lldb_pretty_print.DebugFunc_ResolveWidePointer RWP"
+        "command script add --overwrite -f chpl_lldb_pretty_print.DebugFunc_ResolveWidePointer RWP"
     )
 
     # make sure int(8) and uint(8) show up as numbers, not characters
