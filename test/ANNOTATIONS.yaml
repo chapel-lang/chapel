@@ -639,6 +639,8 @@ all:
   10/22/25:
     - text: End of noise due node now having full memory
       config: 16-node-apollo-hdr
+  01/06/26:
+    - Add undefined behavior guardrails to strings, IO, and hashing (#28227)
 
 # End all
 
@@ -2019,6 +2021,8 @@ revcomp: &revcomp-base
     - Improve performance of readBinary and writeBinary for dense arrays (#23162)
   12/12/24:
     - Remove check on 'log' input with --no-checks (#26368)
+  01/08/26:
+    - Fix 'toArray()' for standard collections of non-default initializable records (#28259)
 
 revcomp-submitted:
   06/07/22:
@@ -2072,6 +2076,8 @@ search:
     - Allow messages in new Errors (#14545)
   09/03/20:
     - Improve string to numerical casts' compilation and execution performance (#16278)
+  01/13/20:
+    - Noted regression, did not investigate. Possibly due to serializer changes (#28280)
 
 search-throughput:
   07/29/20:
