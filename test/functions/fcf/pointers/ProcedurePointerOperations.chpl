@@ -87,6 +87,24 @@ proc test2() {
 
   assert(x4 == nil);
   dupAndAssignTo(x4);
+
+  var y1 = foo;
+  var y2 = chpl_toLocalProc(y1);
+
+  assert(chpl_isWideProc(y1));
+  assert(chpl_isLocalProc(y2));
+  assert(chpl_isWideProc(y1.type));
+  assert(chpl_isLocalProc(y2.type));
+
+  assert(y1 != nil);
+  const y1c = y1;
+  dupAndAssignTo(y1);
+  assert(y1c == y1);
+
+  assert(y2 != nil);
+  const y2c = y2;
+  dupAndAssignTo(y2);
+  assert(y2c == y2);
 }
 
 
