@@ -292,7 +292,9 @@ def DomainSummary(valobj, internal_dict):
     _instance = MaybeResolveWidePointer(
         valobj.GetNonSyntheticValue().GetChildMemberWithName("_instance")
     )
-    ranges = _instance.get().GetNonSyntheticValue().GetChildMemberWithName("ranges")
+    ranges = (
+        _instance.get().GetNonSyntheticValue().GetChildMemberWithName("ranges")
+    )
     return "{" + RangesToString(ranges) + "}"
 
 
@@ -305,7 +307,11 @@ class DomainProvider:
         _instance = MaybeResolveWidePointer(
             valobj.GetNonSyntheticValue().GetChildMemberWithName("_instance")
         )
-        ranges = _instance.get().GetNonSyntheticValue().GetChildMemberWithName("ranges")
+        ranges = (
+            _instance.get()
+            .GetNonSyntheticValue()
+            .GetChildMemberWithName("ranges")
+        )
         self.synthetic_children["dim"] = ranges
 
     def has_children(self):
@@ -347,12 +353,14 @@ def IsChapelArrayType(sbtype):
     match = array_regex_c.match(typename) or array_regex_llvm.match(typename)
     return match is not None
 
+
 def GetArrayRank(sbtype):
     typename = sbtype.GetName()
     if sbtype.IsReferenceType():
         typename = sbtype.GetPointeeType().GetName()
     match = array_regex_c.match(typename) or array_regex_llvm.match(typename)
     return int(match.group("rank"))
+
 
 def ArrayRecognizer(sbtype, internal_dict):
     return IsChapelArrayType(sbtype)
@@ -370,8 +378,12 @@ def ArraySummary(valobj, internal_dict):
     domClass = MaybeResolveWidePointer(
         _instance.get().GetChildMemberWithName("dom")
     )
-    ranges = domClass.get().GetNonSyntheticValue().GetChildMemberWithName("ranges")
-    return f"[{RangesToString(ranges)}] {GetArrayType(_instance.get()).GetName()}"
+    ranges = (
+        domClass.get().GetNonSyntheticValue().GetChildMemberWithName("ranges")
+    )
+    return (
+        f"[{RangesToString(ranges)}] {GetArrayType(_instance.get()).GetName()}"
+    )
 
 
 def GetArrayType(_instance):
@@ -523,7 +535,9 @@ def ManagedObjectRecognizer(sbtype, internal_dict):
 
 
 def ManagedObjectSummary(valobj, internal_dict):
-    chpl_p = MaybeResolveWidePointer(valobj.GetNonSyntheticValue().GetChildMemberWithName("chpl_p"))
+    chpl_p = MaybeResolveWidePointer(
+        valobj.GetNonSyntheticValue().GetChildMemberWithName("chpl_p")
+    )
 
     if chpl_p.get().GetValueAsUnsigned() == 0:
         return "nil"
@@ -535,9 +549,9 @@ class ManagedObjectProvider:
     def __init__(self, valobj, internal_dict):
         self.valobj = valobj
 
-        chpl_p = MaybeResolveWidePointer(self.valobj.GetNonSyntheticValue().GetChildMemberWithName(
-            "chpl_p"
-        ))
+        chpl_p = MaybeResolveWidePointer(
+            self.valobj.GetNonSyntheticValue().GetChildMemberWithName("chpl_p")
+        )
         if chpl_p.get().GetValueAsUnsigned() == 0:
             self.synthetic_children = {}
         else:
@@ -619,28 +633,107 @@ class WidePointerProvider:
         )
 
 
-list_regex_llvm = re.compile(r"^(List::list\((?P<eltType>[a-zA-Z0-9_()]+)(,(?P<parSafe>(true|false)))?\))$")
+# TODO: fix List's of owned
 
-def ListRecognizer(sbtype, internal_dict):
+hashtable_entry_regex_llvm = re.compile(
+    r"^(ChapelHashtable::chpl_TableEntry\((?P<keyType>[a-zA-Z0-9_()? ]+),(?P<valType>[a-zA-Z0-9_()? ]+)\))$"
+)
+hashtable_regex_llvm = re.compile(
+    r"^(ChapelHashtable::chpl__hashtable\((?P<keyType>[a-zA-Z0-9_()? ]+),(?P<valType>[a-zA-Z0-9_()? ]+)\))$"
+)
+
+
+def HashTableEntryRecognizer(sbtype, internal_dict):
     typename = sbtype.GetName()
-    match = list_regex_llvm.match(typename)
+    match = hashtable_entry_regex_llvm.match(typename)
     return match is not None
 
-def ListSummary(valobj, internal_dict):
-    size = valobj.GetNonSyntheticValue().GetChildMemberWithName("_size").GetValueAsUnsigned()
+
+def IsValidHashTableEntryType(valobj):
+    target = valobj.GetTarget()
+    full_enum = target.EvaluateExpression(
+        "ChapelHashtable::chpl__hash_status::full"
+    )
+    status = valobj.GetNonSyntheticValue().GetChildMemberWithName("status")
+    return status.GetValueAsUnsigned() == full_enum.GetValueAsUnsigned()
+
+
+def HashTableEntrySummary(valobj, internal_dict):
+    if not IsValidHashTableEntryType(valobj):
+        return "<empty>"
+    key = valobj.GetNonSyntheticValue().GetChildMemberWithName("key")
+    val = valobj.GetNonSyntheticValue().GetChildMemberWithName("val")
+    if val.IsValid():
+        return f"{key.GetSummary() or key.GetValue() or ''} => {val.GetSummary() or val.GetValue() or ''}"
+    else:
+        return f"{key.GetSummary() or key.GetValue() or ''}"
+
+
+def GetHashTableElements(valobj):
+    tablePtr = valobj.GetNonSyntheticValue().GetChildMemberWithName("table")
+    tableSize = (
+        valobj.GetNonSyntheticValue()
+        .GetChildMemberWithName("tableSize")
+        .GetValueAsUnsigned()
+    )
+    hashTableEntryType = (
+        MaybeResolveWidePointer(tablePtr).get().GetType().GetPointeeType()
+    )
+    hashTableEntrySize = hashTableEntryType.GetByteSize()
+    resolved_table = MaybeResolveWidePointer(
+        tablePtr, tableSize * hashTableEntrySize
+    )
+    elements = []
+    table_address = resolved_table.get().GetValueAsUnsigned()
+    idx = 0
+    for i in range(tableSize):
+        offset = i * hashTableEntrySize
+        element = valobj.CreateValueFromAddress(
+            f"[{i}]", table_address + offset, hashTableEntryType
+        )
+        if IsValidHashTableEntryType(element):
+            elements.append((idx, element))
+            idx += 1
+    return elements
+
+
+def HashTableRecognizer(sbtype, internal_dict):
+    typename = sbtype.GetName()
+    match = hashtable_regex_llvm.match(typename)
+    return match is not None
+
+
+def HashTableSummary(valobj, internal_dict):
+    size = (
+        valobj.GetNonSyntheticValue()
+        .GetChildMemberWithName("tableNumFullSlots")
+        .GetValueAsUnsigned()
+    )
     return f"size = {size}"
 
-class ListProvider:
+
+class HashTableProvider:
     def __init__(self, valobj, internal_dict):
         self.valobj = valobj
+        self.tablePtr = valobj.GetNonSyntheticValue().GetChildMemberWithName(
+            "table"
+        )
+        self.size = (
+            valobj.GetNonSyntheticValue()
+            .GetChildMemberWithName("tableNumFullSlots")
+            .GetValueAsUnsigned()
+        )
+        self.capacity = (
+            valobj.GetNonSyntheticValue()
+            .GetChildMemberWithName("tableSize")
+            .GetValueAsUnsigned()
+        )
 
         self.synthetic_children = {}
-        size = self.valobj.GetNonSyntheticValue().GetChildMemberWithName("_size").GetValueAsUnsigned()
-        for i in range(size):
-            element_name = f"[{i}]"
-            element = self.valobj.CreateValueFromExpression(element_name, f"({self.valobj.GetName()})._getRef({i})")
-            if element.IsValid():
-                self.synthetic_children[f"[{i}]"] = element
+
+        elements = GetHashTableElements(self.valobj)
+        for index, element in elements:
+            self.synthetic_children[f"[{index}]"] = element
 
     def has_children(self):
         return self.num_children() > 0
@@ -659,7 +752,9 @@ class ListProvider:
             return None
         key = list(self.synthetic_children.keys())[index]
         child_obj = self.synthetic_children[key]
-        return child_obj
+        return self.valobj.CreateValueFromAddress(
+            key, child_obj.GetLoadAddress(), child_obj.GetType()
+        )
 
 
 def DebugFunc_ResolveWidePointer(debugger, command, result, internal_dict):
@@ -709,9 +804,10 @@ def __lldb_init_module(debugger, internal_dict):
         debugger.HandleCommand(
             f"type summary add --skip-pointers --expand --python-function chpl_lldb_pretty_print.{summary_function} {recognizer_str}"
         )
-        debugger.HandleCommand(
-            f"type synth add --skip-pointers --python-class chpl_lldb_pretty_print.{provider_class} {recognizer_str}"
-        )
+        if provider_class is not None:
+            debugger.HandleCommand(
+                f"type synth add --skip-pointers --python-class chpl_lldb_pretty_print.{provider_class} {recognizer_str}"
+            )
 
     def regex(type_regex):
         return f"-x '^({type_regex})$'"
@@ -732,8 +828,14 @@ def __lldb_init_module(debugger, internal_dict):
         "ManagedObjectProvider",
         recognizer("ManagedObjectRecognizer"),
     )
-
-    register("ListSummary", "ListProvider", recognizer("ListRecognizer"))
+    register(
+        "HashTableEntrySummary", None, recognizer("HashTableEntryRecognizer")
+    )
+    register(
+        "HashTableSummary",
+        "HashTableProvider",
+        recognizer("HashTableRecognizer"),
+    )
 
     # TODO: I can't decide if having a wide pointer summary/provider is useful
     # or just confusing
