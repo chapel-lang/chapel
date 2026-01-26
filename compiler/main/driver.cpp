@@ -122,8 +122,10 @@ const char* CHPL_LLVM_CLANG_CXX = NULL;
 const char* CHPL_TARGET_BUNDLED_COMPILE_ARGS = NULL;
 const char* CHPL_TARGET_SYSTEM_COMPILE_ARGS = NULL;
 const char* CHPL_TARGET_LD = NULL;
-const char* CHPL_TARGET_BUNDLED_LINK_ARGS = NULL;
-const char* CHPL_TARGET_SYSTEM_LINK_ARGS = NULL;
+const char* CHPL_TARGET_BUNDLED_RUNTIME_LINK_ARGS = NULL;
+const char* CHPL_TARGET_BUNDLED_PROGRAM_LINK_ARGS = NULL;
+const char* CHPL_TARGET_SYSTEM_RUNTIME_LINK_ARGS = NULL;
+const char* CHPL_TARGET_SYSTEM_PROGRAM_LINK_ARGS = NULL;
 
 const char* CHPL_CUDA_LIBDEVICE_PATH = NULL;
 const char* CHPL_ROCM_LLVM_PATH = NULL;
@@ -150,6 +152,7 @@ bool driverDebugPhaseSpecified = false;
 // Tmp dir path managed by compiler driver
 std::string driverTmpDir;
 bool fExitLeaks = false;
+bool fBuiltinRuntime = true;
 bool fLibraryCompile = false;
 bool fLibraryFortran = false;
 bool fLibraryMakefile = false;
@@ -1620,6 +1623,7 @@ static ArgumentDescription arg_desc[] = {
  {"gpu-arch", ' ', "<cuda-architecture>", "CUDA architecture to use", "S16", &fGpuArch, "_CHPL_GPU_ARCH", setChplEnv},
  {"gpu-ptxas-enforce-optimization", ' ', NULL, "Modify generated .ptxas file to enable optimizations", "F", &fGpuPtxasEnforceOpt, NULL, NULL},
  {"gpu-specialization", ' ', NULL, "Enable [disable] an optimization that clones functions into copies assumed to run on a GPU locale.", "N", &fGpuSpecialization, "CHPL_GPU_SPECIALIZATION", NULL},
+ {"builtin-runtime", ' ', NULL, "[Don't] add a copy of the Chapel runtime to your compiled program", "N", &fBuiltinRuntime, NULL, NULL},
  {"library", ' ', NULL, "Generate a Chapel library file", "F", &fLibraryCompile, NULL, NULL},
  {"library-dir", ' ', "<directory>", "Save generated library helper files in directory", "P", &libDir, "CHPL_LIB_SAVE_DIR", verifySaveLibDir},
  {"library-header", ' ', "<filename>", "Name generated header file", "P", &libmodeHeadername, NULL, setLibmode},
@@ -1819,8 +1823,10 @@ bool useDefaultEnv(std::string key, bool isCrayPrgEnv) {
       key == "CHPL_HOST_SYSTEM_LINK_ARGS" ||
       key == "CHPL_TARGET_BUNDLED_COMPILE_ARGS" ||
       key == "CHPL_TARGET_SYSTEM_COMPILE_ARGS" ||
-      key == "CHPL_TARGET_BUNDLED_LINK_ARGS" ||
-      key == "CHPL_TARGET_SYSTEM_LINK_ARGS") {
+      key == "CHPL_TARGET_BUNDLED_RUNTIME_LINK_ARGS" ||
+      key == "CHPL_TARGET_BUNDLED_PROGRAM_LINK_ARGS" ||
+      key == "CHPL_TARGET_SYSTEM_RUNTIME_LINK_ARGS" ||
+      key == "CHPL_TARGET_SYSTEM_PROGRAM_LINK_ARGS") {
     return true;
   }
 
@@ -1941,8 +1947,11 @@ static void setChapelEnvs() {
   CHPL_TARGET_BUNDLED_COMPILE_ARGS = envMap["CHPL_TARGET_BUNDLED_COMPILE_ARGS"];
   CHPL_TARGET_SYSTEM_COMPILE_ARGS = envMap["CHPL_TARGET_SYSTEM_COMPILE_ARGS"];
   CHPL_TARGET_LD = envMap["CHPL_TARGET_LD"];
-  CHPL_TARGET_BUNDLED_LINK_ARGS = envMap["CHPL_TARGET_BUNDLED_LINK_ARGS"];
-  CHPL_TARGET_SYSTEM_LINK_ARGS = envMap["CHPL_TARGET_SYSTEM_LINK_ARGS"];
+
+  CHPL_TARGET_BUNDLED_RUNTIME_LINK_ARGS = envMap["CHPL_TARGET_BUNDLED_RUNTIME_LINK_ARGS"];
+  CHPL_TARGET_BUNDLED_PROGRAM_LINK_ARGS = envMap["CHPL_TARGET_BUNDLED_PROGRAM_LINK_ARGS"];
+  CHPL_TARGET_SYSTEM_RUNTIME_LINK_ARGS = envMap["CHPL_TARGET_SYSTEM_RUNTIME_LINK_ARGS"];
+  CHPL_TARGET_SYSTEM_PROGRAM_LINK_ARGS = envMap["CHPL_TARGET_SYSTEM_PROGRAM_LINK_ARGS"];
 
   if (usingGpuLocaleModel()) {
     CHPL_CUDA_LIBDEVICE_PATH = envMap["CHPL_CUDA_LIBDEVICE_PATH"];

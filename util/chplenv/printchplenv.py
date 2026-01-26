@@ -95,8 +95,10 @@ CHPL_ENVS = [
     ChapelEnv('  CHPL_TARGET_BUNDLED_COMPILE_ARGS', INTERNAL),
     ChapelEnv('  CHPL_TARGET_SYSTEM_COMPILE_ARGS', INTERNAL),
     ChapelEnv('  CHPL_TARGET_LD', RUNTIME | NOPATH),
-    ChapelEnv('  CHPL_TARGET_BUNDLED_LINK_ARGS', INTERNAL),
-    ChapelEnv('  CHPL_TARGET_SYSTEM_LINK_ARGS', INTERNAL),
+    ChapelEnv('  CHPL_TARGET_BUNDLED_RUNTIME_LINK_ARGS', INTERNAL),
+    ChapelEnv('  CHPL_TARGET_BUNDLED_PROGRAM_LINK_ARGS', INTERNAL),
+    ChapelEnv('  CHPL_TARGET_SYSTEM_RUNTIME_LINK_ARGS', INTERNAL),
+    ChapelEnv('  CHPL_TARGET_SYSTEM_PROGRAM_LINK_ARGS', INTERNAL),
     ChapelEnv('CHPL_TARGET_ARCH', RUNTIME | DEFAULT),
     ChapelEnv('CHPL_TARGET_CPU', RUNTIME | DEFAULT, 'cpu'),
     ChapelEnv('CHPL_RUNTIME_CPU', INTERNAL),
@@ -319,7 +321,8 @@ def compute_internal_values():
     host_compile = d['host_compile']
     host_link = d['host_link']
     tgt_compile = d['target_compile']
-    tgt_link = d['target_link']
+    tgt_runtime_link = d['target_runtime_link']
+    tgt_program_link = d['target_program_link']
 
     ENV_VALS['  CHPL_HOST_BUNDLED_COMPILE_ARGS'] = " ".join(host_compile[0])
     ENV_VALS['  CHPL_HOST_SYSTEM_COMPILE_ARGS'] = " ".join(host_compile[1])
@@ -328,8 +331,10 @@ def compute_internal_values():
 
     ENV_VALS['  CHPL_TARGET_BUNDLED_COMPILE_ARGS'] = " ".join(tgt_compile[0])
     ENV_VALS['  CHPL_TARGET_SYSTEM_COMPILE_ARGS'] = " ".join(tgt_compile[1])
-    ENV_VALS['  CHPL_TARGET_BUNDLED_LINK_ARGS'] = " ".join(tgt_link[0])
-    ENV_VALS['  CHPL_TARGET_SYSTEM_LINK_ARGS'] = " ".join(tgt_link[1])
+    ENV_VALS['  CHPL_TARGET_BUNDLED_RUNTIME_LINK_ARGS'] = " ".join(tgt_runtime_link[0])
+    ENV_VALS['  CHPL_TARGET_BUNDLED_PROGRAM_LINK_ARGS'] = " ".join(tgt_program_link[0])
+    ENV_VALS['  CHPL_TARGET_SYSTEM_RUNTIME_LINK_ARGS'] = " ".join(tgt_runtime_link[1])
+    ENV_VALS['  CHPL_TARGET_SYSTEM_PROGRAM_LINK_ARGS'] = " ".join(tgt_program_link[1])
 
     ENV_VALS['  CHPL_GPU_ARCH'] = chpl_gpu.get_arch()
     ENV_VALS['  CHPL_CUDA_PATH'] = chpl_gpu.get_sdk_path("nvidia")

@@ -119,8 +119,11 @@ printlinkershared:
 # sense longer term because it's actually a C compiler flag rather
 # than an ld flag.
 printlibraries:
-	@echo $(SANITIZER_LDFLAGS) $(CHPL_MAKE_TARGET_BUNDLED_LINK_ARGS) \
-	      $(CHPL_MAKE_TARGET_SYSTEM_LINK_ARGS)
+	@echo $(SANITIZER_LDFLAGS) \
+	      $(CHPL_MAKE_TARGET_BUNDLED_RUNTIME_LINK_ARGS) \
+	      $(CHPL_MAKE_TARGET_BUNDLED_PROGRAM_LINK_ARGS) \
+	      $(CHPL_MAKE_TARGET_SYSTEM_RUNTIME_LINK_ARGS) \
+	      $(CHPL_MAKE_TARGET_SYSTEM_PROGRAM_LINK_ARGS)
 
 printlinker:
 	@echo $(LD)
@@ -129,10 +132,10 @@ printlinkline:
 	@echo $(LD) $(CHPL_MAKE_BASE_LFLAGS) \
               $(COMP_GEN_USER_LDFLAGS) $(COMP_GEN_LFLAGS) \
 	      $(CHPL_MAKE_TARGET_SYSTEM_COMPILE_ARGS) \
-	      $(CHPL_MAKE_TARGET_BUNDLED_LINK_ARGS) \
-	      $(CHPL_MAKE_TARGET_SYSTEM_LINK_ARGS)
-
-
+	      $(CHPL_MAKE_TARGET_BUNDLED_RUNTIME_LINK_ARGS) \
+	      $(CHPL_MAKE_TARGET_BUNDLED_PROGRAM_LINK_ARGS) \
+	      $(CHPL_MAKE_TARGET_SYSTEM_RUNTIME_LINK_ARGS) \
+	      $(CHPL_MAKE_TARGET_SYSTEM_PROGRAM_LINK_ARGS)
 
 printoverrideld:
 	@echo $(LD)
