@@ -75,6 +75,16 @@ class Verifier:
                 for line in output
             ]
 
+            # initializers can have different names, so sanitize them
+            output = [
+                re.sub(r'DW_AT_linkage_name\s+\("init_chpl\d+"\)', 'DW_AT_linkage_name ("init_chpl")', line) for line in output
+            ]
+
+            # remove DW_AT_APPLE
+            output = [line for line in output if "DW_AT_APPLE" not in line]
+            # remove DW_AT_frame_base
+            output = [line for line in output if "DW_AT_frame_base" not in line]
+
             # DW_TAG_enumeration_type can print in any order, so sanitize
             # DW_AT_const_value and DW_AT_name lines to a deterministic order
             if any("DW_TAG_enumeration_type" in line for line in output):
