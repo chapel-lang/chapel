@@ -5130,6 +5130,8 @@ void makeBinaryLLVM(void) {
     //
 
     if (fBuiltinRuntime) {
+      splitStringWhitespace(CHPL_TARGET_USE_RUNTIME_LINK_ARGS,
+                            clangLDArgs);
       splitStringWhitespace(CHPL_TARGET_BUNDLED_RUNTIME_LINK_ARGS,
                             clangLDArgs);
     }

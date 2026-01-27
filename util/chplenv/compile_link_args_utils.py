@@ -68,11 +68,6 @@ def get_runtime_link_args(runtime_subdir):
     bundled = [ ]
     system = [ ]
 
-    lib = chpl_home_utils.get_chpl_runtime_lib()
-
-    bundled.append("-L" + os.path.join(lib, runtime_subdir))
-    bundled.append("-lchpl")
-
     gpu_bundled, gpu_system = chpl_gpu.get_runtime_link_args()
     bundled.extend(gpu_bundled)
     system.extend(gpu_system)
@@ -85,6 +80,14 @@ def get_runtime_link_args(runtime_subdir):
     system.append("-ldl")
 
     return (bundled, system)
+
+# Returns a list of strings representing linker arguments.
+def compute_use_runtime_link_args(runtime_subdir):
+    ret = []
+    lib = chpl_home_utils.get_chpl_runtime_lib()
+    ret.append("-L" + os.path.join(lib, runtime_subdir))
+    ret.append("-lchpl")
+    return ret
 
 # Returns a dictionary containing keys
 #   'host_compile'
