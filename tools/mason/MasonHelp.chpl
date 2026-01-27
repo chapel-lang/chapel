@@ -171,34 +171,37 @@ class MasonModulesHelpHandler : HelpHandler {
 }
 
 proc masonHelp() {
-  writeln("Chapel's package manager");
-  writeln();
-  writeln('Usage:');
-  writeln('    mason <command> [<args>...]');
-  writeln('    mason [options]');
-  writeln();
-  writeln('Options:');
-  writeln('    -h, --help          Display this message');
-  writeln('    -V, --version       Print version info and exit');
-  writeln('    --no-color          Do not format text printed on console');
-  writeln();
-  writeln('Mason commands:');
-  writeln('    new         Create a new mason project');
-  writeln('    init        Initialize a mason project inside an existing directory');
-  writeln('    add         Add a dependency to Mason.toml');
-  writeln('    rm          Remove a dependency from Mason.toml');
-  writeln('    update      Update/Generate Mason.lock');
-  writeln('    build       Compile the current project');
-  writeln('    run         Build and execute src/<project name>.chpl');
-  writeln('    search      Search the registry for packages');
-  writeln('    env         Print environment variables recognized by mason');
-  writeln('    clean       Remove the target directory');
-  writeln('    doc         Build this project\'s documentation');
-  writeln('    system      Integrate with system packages found via pkg-config');
-  writeln('    test        Compile and run tests found in /test');
-  writeln('    external    Integrate external dependencies into mason packages');
-  writeln('    publish     Publish package to mason-registry');
-  writeln('    modules     Print flags for including mason dependencies from TOML file');
+  const s = """
+  Chapel's package manager
+
+  Usage:
+      mason <command> [<args>...]
+      mason [options]
+
+  Options:
+      -h, --help          Display this message
+      -V, --version       Print version info and exit
+      --no-color          Do not format text printed on console
+
+  Mason commands:
+      new         Create a new mason project
+      init        Initialize a mason project inside an existing directory
+      add         Add a dependency to Mason.toml
+      rm          Remove a dependency from Mason.toml
+      update      Update/Generate Mason.lock
+      build       Compile the current project
+      run         Build and execute src/<project name>.chpl
+      search      Search the registry for packages
+      env         Print environment variables recognized by mason
+      clean       Remove the target directory
+      doc         Build this project\'s documentation
+      system      Integrate with system packages found via pkg-config
+      test        Compile and run tests found in /test
+      external    Integrate external dependencies into mason packages
+      publish     Publish package to mason-registry
+      modules     Print flags for including mason dependencies from TOML file
+  """.dedent().strip();
+  writeln(s);
 }
 
 proc masonRunHelp() {
@@ -615,9 +618,11 @@ proc masonDocHelp() {
 }
 
 proc masonModulesHelp() {
-  writeln("Print flags to include modules from a toml file");
-  writeln();
-  writeln('Usage:');
-  writeln('    mason modules');
-  writeln();
+  const s = """
+  Print flags to include modules from a toml file
+
+  Usage:
+      mason modules
+  """.dedent().strip();
+  writeln(s);
 }
