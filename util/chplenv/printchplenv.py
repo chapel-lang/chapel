@@ -99,6 +99,7 @@ CHPL_ENVS = [
     ChapelEnv('  CHPL_TARGET_BUNDLED_PROGRAM_LINK_ARGS', INTERNAL),
     ChapelEnv('  CHPL_TARGET_SYSTEM_RUNTIME_LINK_ARGS', INTERNAL),
     ChapelEnv('  CHPL_TARGET_SYSTEM_PROGRAM_LINK_ARGS', INTERNAL),
+    ChapelEnv('  CHPL_TARGET_USE_RUNTIME_LINK_ARGS', INTERNAL),
     ChapelEnv('CHPL_TARGET_ARCH', RUNTIME | DEFAULT),
     ChapelEnv('CHPL_TARGET_CPU', RUNTIME | DEFAULT, 'cpu'),
     ChapelEnv('CHPL_RUNTIME_CPU', INTERNAL),
@@ -335,6 +336,9 @@ def compute_internal_values():
     ENV_VALS['  CHPL_TARGET_BUNDLED_PROGRAM_LINK_ARGS'] = " ".join(tgt_program_link[0])
     ENV_VALS['  CHPL_TARGET_SYSTEM_RUNTIME_LINK_ARGS'] = " ".join(tgt_runtime_link[1])
     ENV_VALS['  CHPL_TARGET_SYSTEM_PROGRAM_LINK_ARGS'] = " ".join(tgt_program_link[1])
+
+    args = compile_link_args_utils.compute_use_runtime_link_args(r_subdir)
+    ENV_VALS['  CHPL_TARGET_USE_RUNTIME_LINK_ARGS'] = " ".join(args)
 
     ENV_VALS['  CHPL_GPU_ARCH'] = chpl_gpu.get_arch()
     ENV_VALS['  CHPL_CUDA_PATH'] = chpl_gpu.get_sdk_path("nvidia")
