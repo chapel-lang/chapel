@@ -8,7 +8,9 @@ From: quay.io/centos/centos:stream10
     /provision-scripts/dnf-upgrade.sh
     /provision-scripts/dnf-epel.sh
     /provision-scripts/dnf-deps.sh
-    /provision-scripts/dnf-llvm.sh
+    # installing llvm-devel installs LLVM 21
+    # this relies on epel being enabled
+    /provision-scripts/dnf-llvm19.sh
 
 %runscript
     ../../provision-scripts/run.sh "$@"
