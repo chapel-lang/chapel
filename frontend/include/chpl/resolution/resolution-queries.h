@@ -243,6 +243,36 @@ const ResolvedFields& resolveFieldDecl(ResolutionContext* rc,
                                        bool syntaxOnly = false);
 
 /**
+  Resolve a single field decl (which could be e.g. a MultiDecl)
+  within a CompositeType.
+
+  The results can be used to examine detailed information about the field,
+  its type expression, and its initialization expression.
+
+  If syntaxOnly is set, computes basic information (field order, IDs)
+  but does not compute types.
+
+  If fieldTypesOnly is true, only resolves the type expressions of the fields
+  when possible (e.g. if the field has a type expression).
+ */
+const ResolvedFieldResults&
+resolveFieldResults(ResolutionContext* rc,
+                    const types::CompositeType* ct,
+                    ID fieldId,
+                    DefaultsPolicy defaultsPolicy,
+                    bool syntaxOnly = false,
+                    bool fieldTypesOnly = true);
+
+/**
+  Creates a ResolvedFields from ResolvedFieldResults.
+
+  When combined with ``resolveFieldResults``, it has the same effect as
+  having called ``resolveFieldDecl``.
+*/
+const ResolvedFields& resolvedFieldsFromResults(ResolutionContext* rc,
+                                                const ResolvedFieldResults& results);
+
+/**
   Compute the fields and their types for a CompositeType
   (such as one returned by initialTypeForTypeDecl).
 

@@ -1799,8 +1799,10 @@ static void testInitGenericAfterConcrete() {
     assert(t);
     assert(t->isUnknownType());
 
-    assert(guard.errors().size() == 1);
+    assert(guard.errors().size() == 2);
     assert(guard.error(0)->message() ==
+        "cannot default initialize variable using generic or unknown type");
+    assert(guard.error(1)->message() ==
            "unable to instantiate generic type from initializer");
     assert(guard.realizeErrors());
   }

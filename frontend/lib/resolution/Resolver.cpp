@@ -570,14 +570,15 @@ Resolver::createForInitialFieldStmt(ResolutionContext* rc,
                                     const AstNode* fieldStmt,
                                     const CompositeType* compositeType,
                                     ResolutionResultByPostorderID& byId,
-                                    DefaultsPolicy defaultsPolicy) {
+                                    DefaultsPolicy defaultsPolicy,
+                                    bool fieldTypesOnly) {
   auto ret = Resolver(rc->context(), decl, byId, nullptr);
   ret.rc = rc;
   ret.curStmt = fieldStmt;
   ret.inCompositeType = compositeType;
   ret.defaultsPolicy = defaultsPolicy;
   ret.byPostorder.setupForSymbol(decl);
-  ret.fieldTypesOnly = true;
+  ret.fieldTypesOnly = fieldTypesOnly;
   ret.allowReceiverScopes = true;
   ret.callEagerness = CallResolutionEagerness::LAZY;
   return ret;
@@ -591,14 +592,15 @@ Resolver::createForInstantiatedFieldStmt(Context* context,
                                          const CompositeType* compositeType,
                                          const PoiScope* poiScope,
                                          ResolutionResultByPostorderID& byId,
-                                         DefaultsPolicy defaultsPolicy) {
+                                         DefaultsPolicy defaultsPolicy,
+                                         bool fieldTypesOnly) {
   auto ret = Resolver(context, decl, byId, poiScope);
   ret.curStmt = fieldStmt;
   ret.inCompositeType = compositeType;
   ret.substitutions = &compositeType->substitutions();
   ret.defaultsPolicy = defaultsPolicy;
   ret.byPostorder.setupForSymbol(decl);
-  ret.fieldTypesOnly = true;
+  ret.fieldTypesOnly = fieldTypesOnly;
   ret.allowReceiverScopes = true;
   ret.callEagerness = CallResolutionEagerness::LAZY;
   return ret;
@@ -4649,7 +4651,9 @@ void Resolver::resolveIdentifier(const Identifier* ident) {
     // in field types, don't try an implicit receiver, because the
     // implicit receiver is the class/record, which is not fully constructed
     // when the field type is being resolved.
-    bool skipImplicitParenless = fieldTypesOnly;
+    //
+    // Assumes that curStmt being non-nullptr implies we're in a field type.
+    bool skipImplicitParenless = curStmt != nullptr;
 
     if (receiverInfo && receiverType.type() && !skipImplicitParenless) {
       std::vector<CallInfoActual> actuals;

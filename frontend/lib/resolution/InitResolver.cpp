@@ -180,6 +180,7 @@ void InitResolver::copyState(InitResolver& other) {
   isDescendingIntoAssignment_ = other.isDescendingIntoAssignment_;
   currentRecvType_ = other.currentRecvType_;
   superType_ = other.superType_;
+  implicitInits_ = other.implicitInits_;
 }
 
 InitResolver::Phase InitResolver::getMaxPhase(Phase A, Phase B) {
@@ -225,6 +226,15 @@ void InitResolver::merge(owned<InitResolver>& A, owned<InitResolver>& B) {
     for (auto i = behind.currentFieldIndex_; i < curMax; i++) {
       auto& id = behind.fieldIdsByOrdinal_[i];
       std::ignore = behind.implicitlyResolveFieldType(id);
+    }
+
+    for (auto& [id, keys] : A->implicitInits_) {
+      auto& vec = implicitInits_[id];
+      vec.insert(vec.end(), keys.begin(), keys.end());
+    }
+    for (auto& [id, keys] : B->implicitInits_) {
+      auto& vec = implicitInits_[id];
+      vec.insert(vec.end(), keys.begin(), keys.end());
     }
 
     // Update field states
@@ -753,12 +763,16 @@ void InitResolver::updateResolverVisibleReceiverType(void) {
   }
 }
 
-bool InitResolver::implicitlyResolveFieldType(ID id) {
+bool InitResolver::implicitlyResolveFieldType(ID id, const ID initBefore) {
   auto state = fieldStateFromId(id);
   if (!state || !state->initPointId.isEmpty()) return false;
 
   auto ct = currentRecvType_->getCompositeType();
-  auto& rf = resolveFieldDecl(initResolver_.rc, ct, id, DefaultsPolicy::USE_DEFAULTS);
+  auto& rr = resolveFieldResults(initResolver_.rc, ct, id,
+                                 DefaultsPolicy::USE_DEFAULTS,
+                                 /* syntaxOnly */ false,
+                                 /* fieldTypesOnly */ false);
+  auto& rf = resolvedFieldsFromResults(initResolver_.rc, rr);
   for (int i = 0; i < rf.numFields(); i++) {
     auto id = rf.fieldDeclId(i);
     auto state = fieldStateFromId(id);
@@ -778,6 +792,8 @@ bool InitResolver::implicitlyResolveFieldType(ID id) {
     state->qt = rf.fieldType(i);
     state->isInitialized = true;
   }
+
+  implicitInits_[initBefore].push_back(std::make_pair(ct, id));
 
   return true;
 }
@@ -854,6 +870,13 @@ bool InitResolver::isFieldInitialized(ID fieldId) {
 }
 
 void InitResolver::handleInitMarker(const uast::AstNode* node) {
+  int start = currentFieldIndex_;
+  int stop = fieldIdsByOrdinal_.size();
+  for (int i = start; i < stop; i++) {
+    auto id = fieldIdsByOrdinal_[i];
+    std::ignore = implicitlyResolveFieldType(id, node->id());
+  }
+
   // TODO: Better/more appropriate user facing error message for this?
   if (thisCompleteIds_.size() > 0) {
     CHPL_ASSERT(phase_ == PHASE_COMPLETE);
@@ -1041,9 +1064,7 @@ bool InitResolver::handleAssignmentToField(const OpCall* node) {
     currentFieldIndex_ = state->ordinalPos + 1;
     for (int i = old; i < state->ordinalPos; i++) {
         auto id = fieldIdsByOrdinal_[i];
-
-        // TODO: Anything to do if this doesn't hold?
-        std::ignore = implicitlyResolveFieldType(id);
+        std::ignore = implicitlyResolveFieldType(id, node->id());
     }
 
     // TODO: Anything to do if the opposite is true?

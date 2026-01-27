@@ -87,7 +87,16 @@ VarScopeVisitor::process(const uast::AstNode* symbol,
 
     exitScope(mod, rv);
   } else {
+    const AstNode* parent = nullptr;
+    if (parsing::idIsField(context, symbol->id())) {
+      parent = parsing::idToAst(context, symbol->id().parentSymbolId(context));
+    }
+
+    if (parent) enterScope(parent, rv);
+
     symbol->traverse(rv);
+
+    if (parent) exitScope(parent, rv);
   }
 }
 
