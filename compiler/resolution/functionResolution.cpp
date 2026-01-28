@@ -3003,7 +3003,7 @@ FnSymbol* tryResolveCall(CallExpr* call, bool checkWithin, bool considerPoi) {
   if (checkWithin)
       checkState = CHECK_BODY_RESOLVES;
 
-  return resolveNormalCall(call, checkState);
+  return resolveNormalCall(call, checkState, considerPoi);
 }
 
 static Type* resolveGenericActual(SymExpr* se, CallExpr* inCall,
