@@ -178,7 +178,7 @@ static std::pair<llvm::DIType*, int>
 removePointersAndQualifiers(llvm::DIType* N, int numLevels = -1) {
   auto res = N;
   int count = 0;
-  while (llvm::isa<llvm::DIDerivedType>(res) &&
+  while (res && llvm::isa<llvm::DIDerivedType>(res) &&
          (numLevels < 0 || count < numLevels)) {
     auto derived = llvm::cast<llvm::DIDerivedType>(res);
     res = derived->getBaseType();
@@ -1276,10 +1276,18 @@ llvm::DISubprogram* DebugData::constructFunction(FnSymbol* function) {
   Symbol* scopeSym = isMethod ?
                       methodReceiverType->symbol :
                       (Symbol*)modSym;
-  llvm::DIScope* diScope =
-    isMethod ?
-      (llvm::DIScope*)getType(methodReceiverType) :
-      (llvm::DIScope*)getModuleScope(modSym);
+  llvm::DIScope* diScope = nullptr;
+  if (isMethod) {
+    auto scopeTy = getType(methodReceiverType);
+    diScope = std::get<0>(removePointersAndQualifiers(scopeTy));
+    if (scopeTy && !diScope) {
+      // couldn't find a base type, this can happen with something like c_ptr(void)
+      // for now, just use the ptr type itself
+      diScope = scopeTy;
+    }
+  } else {
+    diScope = getModuleScope(modSym);
+  }
   DefinitionInfo defInfo(diScope,
                          getFile(DIB, function->fname()),
                          function->linenum());
