@@ -538,11 +538,9 @@ module UnitTest {
       }
 
       if equalNan {
-        if isComplexType(T) {
+        if isComplexType(T) ||
+          (isArrayType(T) && isComplexType(actual.eltType)) {
           return compareComplex(actual, expected);
-        }
-        if isArrayType(T) && isComplexType(actual.eltType) {
-          return [(a, e) in zip(actual, expected)] compareComplex(a, e);
         }
         if isImagType(T) || (isArrayType(T) && isImagType(actual.eltType)) {
           // no imaginary NaN, must cast to real
