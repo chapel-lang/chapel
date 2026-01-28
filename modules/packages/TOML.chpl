@@ -300,8 +300,8 @@ module TomlParser {
         }
         else {
           var value = parseValue();
-          if curTable.isEmpty() then rootTable[key] = value;
-          else rootTable[curTable]![key] = value;
+          if curTable.isEmpty() then rootTable.getThis(key) = value;
+          else rootTable.getThis(curTable)!.getThis(key) = value;
         }
       }
       catch e: TomlError {
@@ -512,6 +512,14 @@ module TomlParser {
       this.tag = fieldToml;
     }
 
+
+    @chpldoc.nodoc
+    proc init(A: map(string, shared Toml?)) {
+      init this;
+      this.A = A;
+      this.tag = fieldToml;
+    }
+
     // Date
     proc init(ld: date) {
       this.ld = ld;
@@ -549,14 +557,14 @@ module TomlParser {
     }
 
     // Array
-    proc init(arr: [?dom] shared Toml) where dom.isAssociative() == false  {
+    proc init(arr: [?dom] shared Toml) where !dom.isAssociative()  {
       this.dom = dom;
       this.arr = arr;
       this.tag = fieldArr;
     }
 
     @chpldoc.nodoc
-    proc init(arr: [?dom] shared Toml?) where dom.isAssociative() == false  {
+    proc init(arr: [?dom] shared Toml?) where !dom.isAssociative()  {
       this.dom = dom;
       this.arr = arr;
       this.tag = fieldArr;
@@ -594,13 +602,22 @@ module TomlParser {
 
 
     /*
-       Returns the index of the table path given as a parameter.
+       Returns the table element at the given table path.
 
-       :throws TomlError: If no index could be found for the given table path.
+       Since this method throws if the table path does not exist, it cannot
+       be use to assign new values to new table paths. For that, use `set`.
+
+       .. code-block:: chapel
+
+          assert(myToml.pathExists("A"));
+          myToml["A"] = ...; // OK, since "A" exists already
+          myToml["B"] = ...; // ERROR, since "B" does not exist
+          myToml.set("B", ...); // OK, since `set` creates "B"
+
+       :throws TomlError: If the table path does not exist.
     */
-    proc this(tbl: string) ref : shared Toml? throws {
-      const indx = tbl.split('.');
-      var top = indx.domain.first;
+    proc this(tblpath: string) ref : shared Toml? throws {
+      const indx = tblpath.split('.', maxsplit=1);
 
       //
       // TODO: This is a bug when the return type of this routine is a
@@ -608,54 +625,74 @@ module TomlParser {
       // `Toml.this` return `Toml?`, which makes it a lot less pleasant
       // to use.
       //
+
       if indx.size < 2 {
-        return this.A[tbl];
-      } else {
-        var next = '.'.join(indx[top+1..]);
-        if !this.A.contains(indx[top]) {
-          throw new owned TomlError("No index found for " + tbl);
+        if !this.A.contains(tblpath) {
+          throw new TomlError("No index found for " + tblpath);
         }
-        return this.A[indx[top]]![next];
+        return this.A[tblpath];
+      } else {
+        if !this.A.contains(indx[0]) {
+          throw new TomlError("No index found for " + tblpath);
+        }
+        return this.A[indx[0]]![indx[1]];
+      }
+    }
+
+    // this is basically the same as `proc this`, but doesn't throw on
+    // a missing simple path (no '.'). This is a helper for `set`
+    @chpldoc.nodoc
+    proc getThis(tblpath: string) ref : shared Toml? throws {
+      const indx = tblpath.split('.', maxsplit=1);
+      if indx.size < 2 {
+        return this.A[tblpath];
+      } else {
+        if !this.A.contains(indx[0]) {
+          throw new TomlError("No index found for " + tblpath);
+        }
+        return this.A[indx[0]]!.getThis(indx[1]);
+      }
+    }
+
+    /*
+      Returns the table element at the given table path,
+      or the default value if not found.
+    */
+    proc get(tblpath: string, const in default: shared Toml? = nil: shared Toml?): shared Toml? {
+      const indx = tblpath.split('.', maxsplit=1);
+
+      if indx.size < 2 {
+        return this.A.get(tblpath, default:shared Toml?);
+      } else {
+        if var nextTbl = this.A.get(indx[0], nil:shared Toml?) {
+          return nextTbl.get(indx[1], default:shared Toml?);
+        } else {
+          return default:shared Toml?;
+        }
       }
     }
 
     @chpldoc.nodoc
     /* Returns true if table path exists in rootTable */
-    proc pathExists(tblpath: string) : bool {
-      try! {
-        var path = tblpath.split('.');
-        var top = path.domain.first;
-        if path.size < 2 {
-          if this.A.contains(tblpath) == false {
-            return false;
-          }
-          else {
-            return true;
-          }
-        }
-        else {
-          var next = '.'.join(path[top+1..]);
-          if this.A.contains(path[top]) {
-            return this.A[path[top]]!.pathExists(next);
-          }
-          else {
-            return false;
-          }
-        }
-      }
-      catch e: TomlError {
-        writeln(e.message());
-      }
-      return false;
+    proc pathExists(tblpath: string): bool {
+      var elm = this.get(tblpath, nil:shared Toml?);
+      return elm != nil;
     }
 
-    proc set(tbl: string, toml: Toml) {
-      ref t = this(tbl);
+    /*
+      Set the table element at the given table path to the given value.
+
+      :throws TomlError: If the parent table path does not exist. For example,
+                         setting "a.b" when "a" does not exist will throw an
+                         error.
+    */
+    proc set(tbl: string, toml: Toml) throws {
+      ref t = getThis(tbl);
       t = new shared Toml(toml);
     }
 
-    proc set(tbl: string, s: string) {
-      ref t = this(tbl);
+    proc set(tbl: string, s: string) throws {
+      ref t = getThis(tbl);
       if t == nil {
         t = new shared Toml(s);
       } else {
@@ -663,8 +700,8 @@ module TomlParser {
         t!.s = s;
       }
     }
-    proc set(tbl: string, i: int) {
-      ref t = this(tbl);
+    proc set(tbl: string, i: int) throws {
+      ref t = getThis(tbl);
       if t == nil {
         t = new shared Toml(i);
       } else {
@@ -672,8 +709,8 @@ module TomlParser {
         t!.i = i;
       }
     }
-    proc set(tbl: string, b: bool) {
-      ref t = this(tbl);
+    proc set(tbl: string, b: bool) throws {
+      ref t = getThis(tbl);
       if t == nil {
         t = new shared Toml(b);
       } else {
@@ -681,8 +718,8 @@ module TomlParser {
         t!.boo = b;
       }
     }
-    proc set(tbl: string, r: real) {
-      ref t = this(tbl);
+    proc set(tbl: string, r: real) throws {
+      ref t = getThis(tbl);
       if t == nil {
         t = new shared Toml(r);
       } else {
@@ -690,8 +727,8 @@ module TomlParser {
         t!.re = r;
       }
     }
-    proc set(tbl: string, ld: date) {
-      ref t = this(tbl);
+    proc set(tbl: string, ld: date) throws {
+      ref t = getThis(tbl);
       if t == nil {
         t = new shared Toml(ld);
       } else {
@@ -699,8 +736,8 @@ module TomlParser {
         t!.ld = ld;
       }
     }
-    proc set(tbl: string, ti: time) {
-      ref t = this(tbl);
+    proc set(tbl: string, ti: time) throws {
+      ref t = getThis(tbl);
       if t == nil {
         t = new shared Toml(ti);
       } else {
@@ -708,8 +745,8 @@ module TomlParser {
         t!.ti = ti;
       }
     }
-    proc set(tbl: string, dt: dateTime) {
-      ref t = this(tbl);
+    proc set(tbl: string, dt: dateTime) throws {
+      ref t = getThis(tbl);
       if t == nil {
         t = new shared Toml(dt);
       } else {
@@ -717,8 +754,8 @@ module TomlParser {
         t!.dt = dt;
       }
     }
-    proc set(tbl: string, A: [?D] shared Toml?) where D.isAssociative() {
-      ref t = this(tbl);
+    proc set(tbl: string, A: [?D] shared Toml?) throws where D.isAssociative() {
+      ref t = getThis(tbl);
       if t == nil {
         t = new shared Toml(A);
       } else {
@@ -726,8 +763,8 @@ module TomlParser {
         for i in D do t!.A[i] = A[i];
       }
     }
-    proc set(tbl: string, arr: [?dom] shared Toml?) where !dom.isAssociative() {
-      ref t = this(tbl);
+    proc set(tbl: string, arr: [?dom] shared Toml?) throws where !dom.isAssociative() {
+      ref t = getThis(tbl);
       if t == nil {
         t = new shared Toml(arr);
       } else {
@@ -843,7 +880,8 @@ module TomlParser {
             f.write(key, ' = ');
             final += '[';
             for k in value.arr {
-              if value.arr.domain.size == 1 || k == value.arr[value.arr.domain.last] {
+              if value.arr.domain.size == 1 ||
+                 k == value.arr[value.arr.domain.last] {
                 final += toString(k!);
               }
               else {
@@ -890,10 +928,12 @@ module TomlParser {
         select value.tag {
           when fieldToml do continue; // Table
           when fieldBool {
-            f.writef('%s"%s": {"type": "%s", "value": "%s"}', ' '*indent, key, value.tomlType, toString(value));
+            f.writef('%s"%s": {"type": "%s", "value": "%s"}',
+                     ' '*indent, key, value.tomlType, toString(value));
           }
           when fieldInt {
-            f.writef('%s"%s": {"type": "%s", "value": "%s"}', ' '*indent, key, value.tomlType, toString(value));
+            f.writef('%s"%s": {"type": "%s", "value": "%s"}',
+                     ' '*indent, key, value.tomlType, toString(value));
           }
           when fieldArr {
             f.writef('%s"%s": {\n', ' '*indent, key);
@@ -904,7 +944,8 @@ module TomlParser {
             var arrayElements: string;
             for i in value.arr.domain {
               ref k = value.arr[i];
-              f.writef('%s{"type": "%s", "value": "%s"}', ' '*indent, k!.tomlType, toString(k!));
+              f.writef('%s{"type": "%s", "value": "%s"}',
+                       ' '*indent, k!.tomlType, toString(k!));
               if i != value.arr.domain.last {
                 f.writef(',');
               }
@@ -916,22 +957,27 @@ module TomlParser {
             f.writef('%s}\n', ' '*indent);
           }
           when fieldReal {
-            f.writef('%s"%s": {"type": "%s", "value": "%s"}', ' '*indent, key, value.tomlType, toString(value));
+            f.writef('%s"%s": {"type": "%s", "value": "%s"}',
+                     ' '*indent, key, value.tomlType, toString(value));
           }
           when fieldString {
-            f.writef('%s"%s": {"type": "%s", "value": "%s"}', ' '*indent, key, value.tomlType, toString(value));
+            f.writef('%s"%s": {"type": "%s", "value": "%s"}',
+                     ' '*indent, key, value.tomlType, toString(value));
           }
           when fieldEmpty {
             throw new owned TomlError("Keys must have a value");
           }
           when fieldDate {
-            f.writef('%s"%s": {"type": "%s", "value": "%s"}', ' '*indent, key, value.tomlType, toString(value));
+            f.writef('%s"%s": {"type": "%s", "value": "%s"}',
+                     ' '*indent, key, value.tomlType, toString(value));
           }
           when fieldTime {
-            f.writef('%s"%s": {"type": "%s", "value": "%s"}', ' '*indent, key, value.tomlType, toString(value));
+            f.writef('%s"%s": {"type": "%s", "value": "%s"}',
+                     ' '*indent, key, value.tomlType, toString(value));
           }
           when fieldDateTime {
-            f.writef('%s"%s": {"type": "%s", "value": "%s"}', ' '*indent, key, value.tomlType, toString(value));
+            f.writef('%s"%s": {"type": "%s", "value": "%s"}',
+                     ' '*indent, key, value.tomlType, toString(value));
           }
           otherwise {
             throw new owned TomlError("Not yet supported");
@@ -1017,6 +1063,11 @@ module TomlParser {
           throw new owned TomlError("Unknown type");
         }
       }
+    }
+
+    @chpldoc.nodoc
+    proc empty(): bool {
+      return this.tag == fieldEmpty;
     }
   }
 }

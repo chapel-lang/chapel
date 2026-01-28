@@ -620,9 +620,9 @@ proc getProjectType(): string throws {
   const projectHome = getProjectHome(cwd);
   const toParse = open(projectHome + "/Mason.toml", ioMode.r);
   const tomlFile = parseToml(toParse);
-  if !tomlFile.pathExists("brick.type") then
-    throw new owned MasonError('Type not found in TOML file; please add a type="application" key');
-  return tomlFile["brick"]!["type"]!.s;
+  if const type_ = tomlFile.get("brick.type") then
+    return type_.s;
+  throw new MasonError('Type not found in TOML file; please add a type="application" key');
 }
 
 record package {
@@ -775,12 +775,12 @@ proc parseChplVersion(brick: borrowed Toml?): (VersionInfo, VersionInfo) {
   }
 
   // Assert some expected fields are not nil
-  if brick!['name'] == nil || brick!['version'] == nil{
+  if brick!.get['name'] == nil || brick!.get['version'] == nil {
     stderr.writeln("Error: Unable to parse manifest file");
     exit(1);
   }
 
-  if brick!['chplVersion'] == nil {
+  if brick!.get['chplVersion'] == nil {
     const name = brick!["name"]!.s + "-" + brick!["version"]!.s;
     stderr.writeln("Brick '", name, "' missing required 'chplVersion' field");
     exit(1);
@@ -910,6 +910,40 @@ iter allFields(tomlTbl: Toml) {
     else yield(k,v);
   }
 }
+
+proc isStringOrStringArray(toml: Toml) : bool {
+  if toml.tomlType == "string" {
+    return true;
+  } else if toml.tomlType == "array" {
+    const tomlArr = toml.arr;
+    for f in tomlArr {
+      if f == nil || f!.tomlType != "string" {
+        return false;
+      }
+    }
+    return true;
+  } else {
+    return false;
+  }
+}
+
+proc parseCompilerOptions(toml: Toml): list(string) throws {
+  var res = new list(string);
+  if !isStringOrStringArray(toml) {
+    throw new MasonError("unable to parse: "+
+                         "expected a string or an array of strings");
+  }
+
+  if toml.tomlType == "string" {
+    res.pushBack(toml.s.split(" "));
+  } else {
+    for f in toml.arr {
+      res.pushBack(f!.s);
+    }
+  }
+  return res;
+}
+
 
 record chplOptions {
   var compopts: list(string);

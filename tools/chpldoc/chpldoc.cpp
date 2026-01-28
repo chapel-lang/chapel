@@ -28,6 +28,8 @@
 #include <regex>
 #include <unordered_map>
 #include <queue>
+#include <iomanip>
+#include <ctime>
 
 #include "arg.h"
 #include "arg-helpers.h"
@@ -53,6 +55,9 @@
 #include "llvm/Support/FileSystem.h"
 #include "chpl/util/version-info.h"
 
+#include "llvm/Config/llvm-config.h"
+
+#define HAVE_LLVM_VER (LLVM_VERSION_MAJOR*10 + LLVM_VERSION_MINOR)
 
 using namespace chpl;
 using namespace uast;
@@ -60,52 +65,39 @@ using namespace parsing;
 
 using CommentMap = std::unordered_map<ID, const Comment*>;
 
-char fDocsAuthor[256] = "";
-bool fDocsAlphabetize = false;
-char fDocsCommentLabel[256] = "";
-char fDocsFolder[256] = "";
+std::string fDocsFolder = "";
+std::string fDocsAuthor = "";
+std::string fDocsCommentLabel = "/*";
+std::vector<std::string> cmdLineModPaths;
+bool fDocsProcessUsedModules = false;
+std::string fDocsSphinxDir = "";
 bool fDocsTextOnly = false;
-char fDocsSphinxDir[256] = "";
 bool fDocsHTML = true;
-char fDocsProjectVersion[256] = "0.0.1";
+std::string fIndexPath = "";
+std::string fDocsProjectName = "Project Name";
+std::string fDocsProjectDescription = "";
+std::string fDocsProjectVersion = "0.0.1";
+std::string fDocsProjectCopyrightYear = "";
 bool printSystemCommands = false;
+bool fWarnUnknownAttributeToolname = true;
+std::vector<UniqueString> usingAttributeToolNames;
+std::vector<std::string> usingAttributeToolNamesStr;
+
 bool fPrintCopyright = false;
 bool fPrintHelp = false;
 bool fPrintEnvHelp = false;
 bool fPrintSettingsHelp = false;
 bool fPrintChplHome = false;
 bool fPrintVersion = false;
-bool fWarnUnknownAttributeToolname = true;
-std::string CHPL_THIRD_PARTY;
 
-std::vector<UniqueString> usingAttributeToolNames;
-std::vector<std::string> usingAttributeToolNamesStr;
-std::vector<std::string> cmdLineModPaths;
+std::vector<std::string> files;
 
 Context* gContext;
 
-
 static const int indentPerDepth = 3;
-std::string commentStyle_;
 std::string outputDir_;
-bool textOnly_ = false;
 std::string CHPL_HOME;
-bool processUsedModules_ = false;
-bool fDocsProcessUsedModules = false;
-
-static
-void docsArgSetCommentLabel(const ArgumentDescription* desc, const char* label) {
-  assert(label != NULL);
-  size_t len = strlen(label);
-  if (len != 0) {
-    if (len > sizeof(fDocsCommentLabel)) {
-      std::cerr << "error: the label is too large!" << std::endl;
-      clean_exit(1);
-    } else {
-      strcpy(fDocsCommentLabel, label);
-    }
-  }
-}
+std::string CHPL_THIRD_PARTY;
 
 
 static
@@ -142,12 +134,85 @@ static void promoteAttributeToolNameStrToUniqueString() {
 */
 static void addUsingAttributeToolNameStr(const ArgumentDescription* desc,
                                          const char* arg) {
-  std::string name = std::string(arg);
-  usingAttributeToolNamesStr.push_back(name);
+  usingAttributeToolNamesStr.push_back(std::string(arg));
 }
 
 static void addModulePath(const ArgumentDescription* desc, const char* newpath) {
   cmdLineModPaths.push_back(std::string(newpath));
+}
+
+
+static void checkProjectVersion(const ArgumentDescription* desc, const char* arg_unused) {
+  size_t length = fDocsProjectVersion.length();
+  size_t i = 0;
+  int numDots = 0;
+  bool check = true;
+  int tagIndex = 0;
+
+  // Supported version tags
+  std::array<std::string, 3> tags = {{"alpha", "beta", "rc"}};
+  const char * error = "";
+  for (i = 0; i < length; i++) {
+    if (fDocsProjectVersion[i] == '.') {
+      if (i == 0) {
+        error = "Cannot start with a dot";
+        check = false;
+        break;
+      }
+      if (fDocsProjectVersion[i-1] != '.') {
+        numDots++;
+        if (numDots > 2) {
+          error = "Required only two dots which separates three numbers";
+          check = false;
+          break;
+        }
+        if (i == length-1) {
+          error = "Cannot end with dot, can end with either number or tag";
+          check = false;
+          break;
+        }
+      } else {
+        error = "Missing number between dots";
+        check = false;
+        break;
+      }
+    } else if (fDocsProjectVersion[i] == '-' && numDots == 2) {
+      if (fDocsProjectVersion[i-1] != '.') {
+        tagIndex = i+1;
+        break;
+      } else {
+        error = "Missing number before tag";
+        check = false;
+        break;
+      }
+    } else if (fDocsProjectVersion[i] == '-' && numDots != 2) {
+      error = "Required only two dots which separates three numbers";
+      check = false;
+      break;
+    } else if ((int)fDocsProjectVersion[i] > (int)'9' ||
+               (int)fDocsProjectVersion[i] < (int)'0') {
+      error = "Invalid Characters, only digits and dots permitted before a hyphen";
+      check = false;
+      break;
+    }
+  }
+  if (numDots != 2 && i == length) {
+    error = "Required two dots which separates three numbers";
+    check = false;
+  }
+  if (check && tagIndex > 0) {
+    auto view = std::string_view(fDocsProjectVersion);
+    auto tag = view.substr(tagIndex);
+    if (std::find(tags.begin(), tags.end(), tag) == tags.end()) {
+      error = "Tag not supported, supported tags are alpha/beta/rc";
+      check = false;
+    }
+  }
+  if (!check) {
+    std::cerr << "error: Invalid version format: "
+              << fDocsProjectVersion << " due to: " << error << std::endl;
+    clean_exit(1);
+  }
 }
 
 #define DRIVER_ARG_COPYRIGHT \
@@ -184,15 +249,19 @@ static ArgumentState sArgState = {
 
 ArgumentDescription docs_arg_desc[] = {
  {"", ' ', NULL, "Documentation Options", NULL, NULL, NULL, NULL},
- {"output-dir", 'o', "<dirname>", "Sets the documentation directory to <dirname>", "S256", fDocsFolder, NULL, NULL},
- {"author", ' ', "<author>", "Documentation author string.", "S256", fDocsAuthor, "CHPLDOC_AUTHOR", NULL},
- {"comment-style", ' ', "<indicator>", "Only includes comments that start with <indicator>", "S256", fDocsCommentLabel, NULL, docsArgSetCommentLabel},
+ {"output-dir", 'o', "<dirname>", "Sets the documentation directory to <dirname>", "P", &fDocsFolder, NULL, NULL},
+ {"author", ' ', "<author>", "Documentation author string", "P", &fDocsAuthor, "CHPLDOC_AUTHOR", NULL},
+ {"comment-style", ' ', "<indicator>", "Only includes comments that start with <indicator>", "P", &fDocsCommentLabel, NULL, NULL},
  {"module-dir", 'M', "<directory>", "Add directory to module search path", "P", NULL, NULL, addModulePath},
  {"process-used-modules", ' ', NULL, "Also parse and document 'use'd modules", "F", &fDocsProcessUsedModules, NULL, NULL},
- {"save-sphinx",  ' ', "<directory>", "Save generated Sphinx project in directory", "S256", fDocsSphinxDir, NULL, NULL},
+ {"save-sphinx",  ' ', "<directory>", "Save generated Sphinx project in directory", "P", &fDocsSphinxDir, NULL, NULL},
  {"text-only", ' ', NULL, "Generate text documentation only", "F", &fDocsTextOnly, NULL, NULL},
  {"html", ' ', NULL, "[Don't] generate html documentation (on by default)", "N", &fDocsHTML, NULL, NULL},
- {"project-version", ' ', "<projectversion>", "Sets the documentation version to <projectversion>", "S256", fDocsProjectVersion, "CHPLDOC_PROJECT_VERSION", NULL},
+ {"index", ' ', "<index>", "Path to the index.rst to use", "P", &fIndexPath, NULL, NULL},
+ {"project-name", ' ', "<projectname>", "Sets the name of project in the documentation", "P", &fDocsProjectName, "CHPLDOC_PROJECT_NAME", NULL},
+ {"project-description", ' ', "<projectdescription>", "Sets the project description in the documentation", "P", &fDocsProjectDescription, "CHPLDOC_PROJECT_DESCRIPTION", NULL},
+ {"project-version", ' ', "<projectversion>", "Sets the documentation version to <projectversion>", "P", &fDocsProjectVersion, "CHPLDOC_PROJECT_VERSION", checkProjectVersion},
+ {"project-copyright-year", ' ', "<projectcopyrightyear>", "Sets the project copyright year in the documentation", "P", &fDocsProjectCopyrightYear, "CHPLDOC_PROJECT_COPYRIGHT", NULL},
 
  {"print-commands", ' ', NULL, "[Don't] print system commands", "N", &printSystemCommands, "CHPL_PRINT_COMMANDS", NULL},
  {"warn-unknown-attribute-toolname", ' ', NULL, "Enable warnings when an unknown tool name is found in an attribute", "N", &fWarnUnknownAttributeToolname, "CHPL_WARN_UNKNOWN_ATTRIBUTE_TOOLNAME", NULL},
@@ -398,6 +467,24 @@ static std::vector<std::string> splitLines(const std::string& s) {
   return ret;
 }
 
+// helper for starts_with since starts_with doesn't exist till C++20
+static bool starts_with(llvm::StringRef a, llvm::StringRef b) {
+#if HAVE_LLVM_VER >= 180
+    return a.starts_with(b);
+#else
+    return a.startswith(b);
+#endif
+}
+
+// helper for ends_with since ends_with doesn't exist till C++20
+static bool ends_with(llvm::StringRef a, llvm::StringRef b) {
+#if HAVE_LLVM_VER >= 180
+    return a.ends_with(b);
+#else
+    return a.endswith(b);
+#endif
+}
+
 static std::string filenameFromModuleName(std::string name,
                                           std::string docsWorkDir) {
   // Borrowed from chpldoc
@@ -542,81 +629,6 @@ std::string getChplDepsApp() {
   venvDir.erase(venvDir.find_last_not_of("\n\r")+1);
 
   return venvDir;
-}
-
-static char* checkProjectVersion(char* projectVersion) {
-  int length = strlen(projectVersion);
-  int i = 0;
-  int dot = 0;
-  bool check = true;
-  int tagIndex = 0;
-
-  // Supported version tags
-  const char * tags[] = {"alpha", "beta", "rc"};
-  const char * error = "";
-  for(i=0; i<length; i++) {
-    if(i>0 && projectVersion[i] == '.') {
-      if(projectVersion[i-1] != '.') {
-        dot++;
-        if(dot>2) {
-          error = "Required only two dots which separates three numbers";
-          check = false;
-          break;
-        }
-        if(i == length-1) {
-          error = "Cannot end with dot, can end with either number or tag";
-          check = false;
-          break;
-        }
-      } else {
-        error = "Missing number between dots";
-        check = false;
-        break;
-      }
-    } else if(projectVersion[i] == '-' && dot == 2) {
-      if(projectVersion[i-1] != '.') {
-        tagIndex = i+1;
-        break;
-      } else {
-        error = "Missing number before tag";
-        check = false;
-        break;
-      }
-    } else if(projectVersion[i] == '-' && dot != 2) {
-      error = "Required only two dots which separates three numbers";
-      check = false;
-      break;
-    } else if((int)projectVersion[i] > (int)'9' ||
-              (int)projectVersion[i] < (int)'0') {
-      error = "Invalid Characters, only digits and dots permitted before a hyphen";
-      check = false;
-      break;
-    }
-  }
-  if(dot != 2 && i == length) {
-    error = "Required two dots which separates three numbers";
-    check = false;
-  }
-  if(check && tagIndex>0) {
-    int count = sizeof(tags)/sizeof(*tags);
-    for(int i=0; i<count; i++) {
-      if(strcmp(projectVersion+tagIndex,tags[i]) == 0) {
-        check = true;
-        break;
-      } else {
-        error = "Tag not supported, supported tags are alpha/beta/rc";
-        check = false;
-      }
-    }
-  }
-  if(check) {
-    return projectVersion;
-  } else {
-    std::cerr << "error: Invalid version format: "
-              << projectVersion << " due to: " << error << std::endl;
-    clean_exit(1);
-  }
-  return NULL;
 }
 
 static std::string indentLines(const std::string& s, int count) {
@@ -1258,7 +1270,7 @@ struct RstSignatureVisitor {
 
   bool enter(const Record* r) {
     // TODO: Shouldn't this be record, not Record?
-    if (textOnly_) os_ << "Record: ";
+    if (fDocsTextOnly) os_ << "Record: ";
     os_ << r->name().c_str();
 
     if (r->numInheritExprs() > 0) {
@@ -1393,7 +1405,7 @@ struct RstResult {
   void mark(const Context *c) const {}
 
   void outputModule(std::string outDir, std::string name, int indentPerDepth) {
-    std::string ext = textOnly_ ? ".txt" : ".rst";
+    std::string ext = fDocsTextOnly ? ".txt" : ".rst";
     auto outpath = outDir + "/" + name + ext;
 
     std::error_code err = makeDir(outDir, true);
@@ -1433,7 +1445,7 @@ struct RstResultBuilder {
   Context* context_;
   std::stringstream os_;
   std::vector<RstResult*> children_;
-  const std::string commentStyle = commentStyle_;
+  const std::string commentStyle = fDocsCommentLabel;
   static const int commentIndent = 3;
   int indentDepth_ = 1;
 
@@ -1448,7 +1460,7 @@ struct RstResultBuilder {
 
     // Note: RstResult::output currently does not indent comments, so we have
     // to manually keep track of the indent depth.
-    int addDepth = textOnly_ ? 1 : 0;
+    int addDepth = fDocsTextOnly ? 1 : 0;
     int indentChars = indent ? (addDepth + indentDepth_) * commentIndent : 0;
     std::vector<std::string> lines;
     errMsg = prettifyComment(comment->str(), commentStyle, lines);
@@ -1481,7 +1493,7 @@ struct RstResultBuilder {
     // TODO: The presence of these node exceptions means we're probably missing
     //  something from the old implementation
     if (commentShown &&
-       ((textOnly_ && !node->isModule() && !node->isVariable()) || !textOnly_)) {
+       ((fDocsTextOnly && !node->isModule() && !node->isVariable()) || !fDocsTextOnly)) {
       os_ << "\n";
     }
     return commentShown;
@@ -1494,7 +1506,7 @@ struct RstResultBuilder {
     std::string useKind = kind;
     if (isHideImplType(node)) useKind = "type";
 
-    if (!textOnly_) os_ << ".. " << useKind << ":: ";
+    if (!fDocsTextOnly) os_ << ".. " << useKind << ":: ";
     RstSignatureVisitor ppv{os_};
 
     if (node->isEnumElement()) {
@@ -1502,7 +1514,7 @@ struct RstResultBuilder {
     }
 
     node->traverse(ppv);
-    if (!textOnly_) os_ << "\n";
+    if (!fDocsTextOnly) os_ << "\n";
 
     showDeprecationMessage(node, indentComment);
     // TODO: how do deprecation and unstable messages interplay?
@@ -1511,7 +1523,7 @@ struct RstResultBuilder {
     bool commentShown = showComment(node, indentComment);
     // TODO: Fix all this because why are we checking for specific node types
     //  just to add a newline?
-    if (commentShown && !textOnly_ && node->isModule()) {
+    if (commentShown && !fDocsTextOnly && node->isModule()) {
       os_ << "\n";
     }
 
@@ -1552,7 +1564,7 @@ struct RstResultBuilder {
 
   void showDeprecationMessage(const Decl* node, bool indentComment=true) {
     if (auto attrs = node->attributeGroup()) {
-      if (attrs->isDeprecated() && !textOnly_) {
+      if (attrs->isDeprecated() && !fDocsTextOnly) {
         auto comment = previousComment(context_, node->id());
         if (comment && !comment->str().empty() &&
             comment->str().substr(0, 2) == "/*" &&
@@ -1615,7 +1627,7 @@ struct RstResultBuilder {
 
   owned<RstResult> visit(const Class* c) {
     if (isNoDoc(c) || c->visibility() == chpl::uast::Decl::PRIVATE) return {};
-    if (textOnly_) os_ << "Class: ";
+    if (fDocsTextOnly) os_ << "Class: ";
 
     auto parent = parentAst(context_, c);
     bool isNested = parent->isRecord() || parent->isClass();
@@ -1702,14 +1714,14 @@ struct RstResultBuilder {
       includedByDefault = true;
     }
     // header
-    if (!textOnly_) {
+    if (!fDocsTextOnly) {
       os_ << ".. default-domain:: chpl\n\n";
       // This is hard coded in chpldoc to recognize ChapelSysCTypes like this
       //  the comment indicates it prevents sphinx from complaining about
       //  duplicate definitions.
       if (moduleName == "ChapelSysCTypes") {
         visitChildren(m);
-        return getResult(textOnly_);
+        return getResult(fDocsTextOnly);
       }
       os_ << ".. module:: " << m->name().c_str() << '\n';
       // Don't index internal modules since that will make them show up
@@ -1766,7 +1778,7 @@ struct RstResultBuilder {
 
     if (hasSubmodule(m) || hasIncludes) {
       moduleName = m->name().c_str();
-      if (!textOnly_) {
+      if (!fDocsTextOnly) {
         os_ << "\n";
         os_ << "**Submodules**" << std::endl << std::endl;
 
@@ -1785,15 +1797,15 @@ struct RstResultBuilder {
         os_ << moduleName << "/ directory" << std::endl;
       }
     }
-    if (textOnly_) indentDepth_ --;
+    if (fDocsTextOnly) indentDepth_ --;
     showDeprecationMessage(m, false);
     showUnstableWarning(m, false);
-    showComment(m, textOnly_);
-    if (textOnly_) indentDepth_ ++;
+    showComment(m, fDocsTextOnly);
+    if (fDocsTextOnly) indentDepth_ ++;
 
     visitChildren(m);
 
-    return getResult(textOnly_);
+    return getResult(fDocsTextOnly);
   }
 
   owned<RstResult> visit(const MultiDecl* md) {
@@ -1818,7 +1830,7 @@ struct RstResultBuilder {
         indentStream(os_, 1 * indentPerDepth);
       }
       // write kind
-      if (!textOnly_) os_ << ".. " << kind << ":: ";
+      if (!fDocsTextOnly) os_ << ".. " << kind << ":: ";
       if (decl->toVariable()->kind() != Variable::Kind::INDEX) {
         os_ << kindToString((Qualifier) decl->toVariable()->kind()) << " ";
       }
@@ -1868,7 +1880,7 @@ struct RstResultBuilder {
       showComment(md, true);
 
       if (auto attrs = md->attributeGroup()) {
-        if (attrs->isDeprecated() && !textOnly_) {
+        if (attrs->isDeprecated() && !fDocsTextOnly) {
           indentStream(os_, 1 * indentPerDepth) << ".. warning::\n";
           indentStream(os_, 2 * indentPerDepth) << attrs->deprecationMessage();
           os_ << "\n\n";
@@ -2193,44 +2205,17 @@ module N { }
   //   var nestedX = 22;
   // }
 
-// Command line options and some defaults for dyno-chpldoc
-struct Args {
-  std::string saveSphinx = "";
-  bool textOnly = false;
-  std::string outputDir;
-  bool processUsedModules = false;
-  std::string author;
-  std::string commentStyle =  "/*";
-  std::string projectVersion = "0.0.1";
-  std::vector<std::string> files;
-  bool printSystemCommands = false;
-  bool noHTML = false;
-};
-
-static Args parseArgs(int argc, char **argv, void* mainAddr) {
-  Args ret;
+static void parseArgs(int argc, char **argv, void* mainAddr) {
   init_args(&sArgState, argv[0], mainAddr);
   init_arg_desc(&sArgState, docs_arg_desc);
   if(!process_args(&sArgState, argc, argv)) {
     clean_exit(1);
   }
-  ret.author = std::string(fDocsAuthor);
-  if (fDocsCommentLabel[0] != '\0') {
-    ret.commentStyle = std::string(fDocsCommentLabel);
-  }
-  ret.outputDir = std::string(fDocsFolder);
-  ret.processUsedModules = fDocsProcessUsedModules;
-  ret.textOnly = fDocsTextOnly;
-  ret.saveSphinx = std::string(fDocsSphinxDir);
-  ret.printSystemCommands = printSystemCommands;
-  ret.projectVersion = checkProjectVersion(fDocsProjectVersion);
-  ret.noHTML = !fDocsHTML;
   // add source files
   // TODO: Check for proper file type, duplicate file names, was file found, etc.
   for (int i = 0; i < sArgState.nfile_arguments; i++) {
-    ret.files.push_back(std::string(sArgState.file_argument[i]));
+    files.push_back(std::string(sArgState.file_argument[i]));
   }
-  return ret;
 }
 
 
@@ -2239,18 +2224,26 @@ static Args parseArgs(int argc, char **argv, void* mainAddr) {
  * should be placed.
  */
 static
-std::string generateSphinxProject(std::string dirpath, bool printSystemCommands) {
+std::string generateSphinxProject(std::string dirpath,
+                                  std::optional<std::string> indexPath,
+                                  bool printSystemCommands) {
   // Create the output dir under the docs output dir.
   std::string sphinxDir = dirpath;
   // Copy the sphinx template into the output dir.
   std::string sphinxTemplate = CHPL_HOME +
                                "/third-party/chpl-venv/chpldoc-sphinx-project/*";
   std::string cmd = "cp -r " + sphinxTemplate + " " + sphinxDir + "/";
-  if( printSystemCommands ) {
+  if (printSystemCommands) {
     printf("%s\n", cmd.c_str());
   }
-  myshell(cmd, "copying chpldoc sphinx template", false, false,
-          printSystemCommands);
+  myshell(cmd, "copying chpldoc sphinx template", false, false, printSystemCommands);
+  if (indexPath) {
+    std::string cmd = "cp " + *indexPath + " " + sphinxDir + "/source/index.rst";
+    if (printSystemCommands) {
+      printf("%s\n", cmd.c_str());
+    }
+    myshell(cmd, "copying index.rst", false, false, printSystemCommands);
+  }
 
   std::string moddir = sphinxDir + "/source/modules";
   return moddir;
@@ -2262,14 +2255,19 @@ std::string generateSphinxProject(std::string dirpath, bool printSystemCommands)
  */
 static
 void generateSphinxOutput(std::string sphinxDir, std::string outputDir,
-                          std::string projectVersion, std::string author,
+                          std::string projectName, std::string projectDescription,
+                          std::string projectVersion, std::string projectCopyright,
+                          std::string author,
                           bool printSystemCommands) {
   std::string sphinxBuild = "python3 " + getChplDepsApp() + " sphinx-build";
-  std::string venvProjectVersion = projectVersion;
 
-  std::string envVars = "export CHPLDOC_AUTHOR='" + author + "' && " +
-                        "export CHPLDOC_PROJECT_VERSION='"
-                        + venvProjectVersion + "'";
+  std::string envVars =
+    "export CHPLDOC_AUTHOR='" + author + "' && " +
+    "export CHPLDOC_PROJECT_NAME='" + projectName + "' && " +
+    "export CHPLDOC_PROJECT_DESCRIPTION='" + projectDescription +"' && " +
+    "export CHPLDOC_PROJECT_VERSION='" + projectVersion + "' && " +
+    "export CHPLDOC_PROJECT_COPYRIGHT='" + projectCopyright + "'";
+
 
   // Run:
   //   $envVars &&
@@ -2280,7 +2278,7 @@ void generateSphinxOutput(std::string sphinxDir, std::string outputDir,
   std::string cmd = cmdPrefix + sphinxBuild + " -b html -d " +
                     sphinxDir + "/build/doctrees" + " -W " +
                     sphinxDir + "/source " + outputDir;
-  if( printSystemCommands ) {
+  if (printSystemCommands) {
     printf("%s\n", cmd.c_str());
   }
   if (myshell(cmd, "building html output from chpldoc sphinx project") == 0) {
@@ -2324,7 +2322,7 @@ class ChpldocErrorHandler : public Context::ErrorHandler {
 };
 
 int main(int argc, char** argv) {
-  Args args = parseArgs(argc, argv, (void*)main);
+  parseArgs(argc, argv, (void*)main);
   std::string diagnosticMsg;
   bool foundEnv = false;
   bool installed = false;
@@ -2355,16 +2353,16 @@ int main(int argc, char** argv) {
     }
   }
 
-  if (args.noHTML == false) {
-    if (args.outputDir.length() == 0 && args.saveSphinx == "docs") {
+  if (fDocsHTML) {
+    if (fDocsFolder.empty() && fDocsSphinxDir == "docs") {
       std::cerr << "error: using same directory for '--save-sphinx' as default "
                 << "output directory, please either use a different directory "
                 << "for '--save-sphinx' or override the default output "
                 << "directory with '--output-dir'" << std::endl;
       return 1;
 
-    } else if (args.saveSphinx == args.outputDir &&
-               args.saveSphinx.length() != 0) {
+    } else if (fDocsSphinxDir == fDocsFolder &&
+               !fDocsSphinxDir.empty()) {
       std::cerr << "error: using same directory for '--save-sphinx' and "
                 << "'--output-dir' causes issues, please use a different "
                 << "location for one of these flags" << std::endl;
@@ -2372,13 +2370,10 @@ int main(int argc, char** argv) {
     }
   }
 
-  textOnly_ = args.textOnly;
-  if (args.commentStyle.substr(0,2) != "/*") {
+  if (!starts_with(fDocsCommentLabel, "/*")) {
     std::cerr << "error: comment label should start with /*" << std::endl;
     return 1;
   }
-  commentStyle_ = args.commentStyle;
-  processUsedModules_ = args.processUsedModules;
 
 
   Context::Configuration config;
@@ -2402,46 +2397,67 @@ int main(int argc, char** argv) {
   chpl::setCompilerFlags(gContext, flags);
   // This is the final location for the output format (e.g. the html files.).
   std::string docsOutputDir;
-  if (args.outputDir.length() > 0) {
-    docsOutputDir = args.outputDir;
+  if (!fDocsFolder.empty()) {
+    docsOutputDir = fDocsFolder;
   } else {
     docsOutputDir = getCwd() + "/docs";
   }
 
   // Root of the sphinx project and generated rst files. If
-  // --docs-save-sphinx is not specified, it will be a temp dir.
+  // --save-sphinx is not specified, it will be a temp dir.
   std::string docsSphinxDir;
-  if (!args.saveSphinx.empty()) {
-    docsSphinxDir = args.saveSphinx;
+  if (!fDocsSphinxDir.empty()) {
+    docsSphinxDir = fDocsSphinxDir;
   } else {
     docsSphinxDir = gContext->tmpDir();
   }
 
   // Make the intermediate dir and output dir.
-   if (auto err = makeDir(docsSphinxDir)) {
-      std::cerr << "error: Failed to create directory: "
-                << docsSphinxDir << " due to: "
-                << err.message() << std::endl;
-      return 1;
-   }
-   if (auto err = makeDir(docsOutputDir)) {
-      std::cerr << "error: Failed to create directory: "
-                << docsOutputDir << " due to: "
-                << err.message() << std::endl;
-      return 1;
-   }
-
-  // The location of intermediate rst files.
-  std::string docsRstDir;
-  if (textOnly_) {
-    // For text-only mode, the output and working location is the same.
-    docsRstDir = docsOutputDir;
-  } else {
-    // For rst mode, the working location is somewhere inside the temp dir.
-    docsRstDir = generateSphinxProject(docsSphinxDir, args.printSystemCommands);
+  if (auto err = makeDir(docsSphinxDir)) {
+    std::cerr << "error: Failed to create directory: "
+              << docsSphinxDir << " due to: "
+              << err.message() << std::endl;
+    return 1;
+  }
+  if (auto err = makeDir(docsOutputDir)) {
+    std::cerr << "error: Failed to create directory: "
+              << docsOutputDir << " due to: "
+              << err.message() << std::endl;
+    return 1;
   }
 
-  outputDir_ = docsRstDir;
+  // determine the year for copyrightYear
+  if (fDocsProjectCopyrightYear.empty()) {
+    auto t = std::time(nullptr);
+    auto tm = *std::localtime(&t);
+    std::ostringstream oss;
+    oss << std::put_time(&tm, "%Y");
+    fDocsProjectCopyrightYear = oss.str();
+  }
+
+  // Determine the path for the index.rst
+  std::optional<std::string> indexPath = std::nullopt;
+  if (!fIndexPath.empty()) {
+    // make sure fIndexPath exists and ends with .rst
+    if (!llvm::sys::fs::exists(fIndexPath)) {
+      std::cerr << "the index.rst specified as '" << fIndexPath << "' does not exist\n";
+      clean_exit(1);
+    }
+    if (!ends_with(fIndexPath, ".rst")) {
+      std::cerr << "the index.rst specified must end with '.rst'\n";
+      clean_exit(1);
+    }
+    indexPath = fIndexPath;
+  }
+
+  // Determine the location of intermediate rst files.
+  if (fDocsTextOnly) {
+    // For text-only mode, the output and working location is the same.
+    outputDir_ = docsOutputDir;
+  } else {
+    // For rst mode, the working location is somewhere inside the temp dir.
+    outputDir_ = generateSphinxProject(docsSphinxDir, indexPath, printSystemCommands);
+  }
 
   std::string modRoot = CHPL_HOME + "/modules";
   std::string internal = modRoot + "/internal";
@@ -2462,12 +2478,12 @@ int main(int argc, char** argv) {
                          {}, //prependInternalModulePaths,
                          {}, //prependStandardModulePaths,
                          cmdLineModPaths, // -M etc
-                         args.files);
+                         files);
   printStuff(argv[0], (void*)main);
 
   // gather command line files as unique strings
   std::vector<UniqueString> commandLineModulePaths;
-  for (auto path : args.files) {
+  for (auto path : files) {
     auto cleanPath = chpl::cleanLocalPath(path);
     auto uPath = UniqueString::get(gContext, cleanPath);
     commandLineModulePaths.push_back(uPath);
@@ -2490,7 +2506,7 @@ int main(int argc, char** argv) {
   //  finds the modules used/imported, transitively)
   std::vector<ID> modIds;
 
-  if (processUsedModules_) {
+  if (fDocsProcessUsedModules) {
     // backup strategy for finding the main module
     // (the main module should not be relevant for chpldoc)
     if (mainModule.isEmpty() && commandLineModuleIDs.size() > 0) {
@@ -2561,9 +2577,12 @@ int main(int argc, char** argv) {
   // chpldoc-specific warnings could've been issued, make sure they're printed.
   erroHandler->printAndExitIfError(gContext);
 
-  if (!textOnly_ && !args.noHTML) {
-    generateSphinxOutput(docsSphinxDir, docsOutputDir,args.projectVersion,
-                         args.author, args.printSystemCommands);
+  if (!fDocsTextOnly && fDocsHTML) {
+    generateSphinxOutput(docsSphinxDir, docsOutputDir,
+                         fDocsProjectName, fDocsProjectDescription,
+                         fDocsProjectVersion, fDocsProjectCopyrightYear,
+                         fDocsAuthor,
+                         printSystemCommands);
   }
 
   return 0;

@@ -421,7 +421,7 @@ proc getPackageName() throws {
   try! {
     const toParse = open("Mason.toml", ioMode.r);
     var tomlFile = (parseToml(toParse));
-    const name = tomlFile['brick']!['name']!.s;
+    const name = tomlFile['brick.name']!.s;
     return name;
   }
   catch {
@@ -437,7 +437,7 @@ private proc addPackageToBricks(projectLocal: string, safeDir: string, name : st
   try! {
     const toParse = open(projectLocal+ "/Mason.toml", ioMode.r);
     var tomlFile = (parseToml(toParse));
-    const versionNum = tomlFile!['brick']!['version']!.s;
+    const versionNum = tomlFile!['brick.version']!.s;
     if !isLocal {
       if !exists(safeDir + '/mason-registry/Bricks/') {
         throw new owned MasonError('Registry does not have the expected structure. Ensure your registry has a Bricks directory.');
@@ -494,7 +494,7 @@ private proc addPackageToBricks(projectLocal: string, safeDir: string, name : st
 /* check is a function to run a quick list of checks of the package, the registry path, and other issues that may
    prevent a package from being published to a registry.
  */
-proc check(username : string, path : string, trueIfLocal : bool, ci : bool) throws {
+proc check(username: string, path: string, trueIfLocal: bool, ci: bool) throws {
   const spacer = '------------------------------------------------------';
   const package = (ensureMasonProject(here.cwd(), 'Mason.toml') == 'true');
   const projectCheckHome = here.cwd();
@@ -534,13 +534,19 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
   if package {
     writeln('Checking for fields in manifest file:');
     const manifestResults = masonTomlFileCheck(projectCheckHome);
-    if manifestResults[0] {
+    if manifestResults.isValid() {
       writeln('   All fields present in manifest file, can be published to a registry. (PASSED)');
-    } else {
+    } else if manifestResults.missingFields.size > 0 {
       writeln('   Missing fields in manifest file (Mason.toml). (FAILED)');
       writeln('   The missing fields are as follows: ');
-      const missingFields = manifestResults[1];
-      for field in missingFields do writeln('   %s'.format(field));
+      for field in manifestResults.missingFields do
+        writeln('   %s'.format(field));
+      masonFieldsTest = false;
+    } else if manifestResults.mismatchedTypes.size > 0 {
+      writeln('   Mismatched field types in manifest file (Mason.toml). (FAILED)');
+      writeln('   The fields with mismatched types are as follows: ');
+      for field in manifestResults.mismatchedTypes do
+        writeln('   %s'.format(field));
       masonFieldsTest = false;
     }
     writeln(spacer);
@@ -665,9 +671,10 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
   writeln(spacer);
 
   if ci {
-    if package && moduleCheck(projectCheckHome) && testCheck(projectCheckHome)
-    && checkLicense(projectCheckHome)[0] && masonTomlFileCheck(projectCheckHome)[0]
-    && gitTagVersionCheck(projectCheckHome)[0] {
+    if package && moduleCheck(projectCheckHome) &&
+       testCheck(projectCheckHome) && checkLicense(projectCheckHome)[0] &&
+       masonTomlFileCheck(projectCheckHome).isValid() &&
+       gitTagVersionCheck(projectCheckHome)[0] {
       attemptToBuild();
       exit(0);
     }
@@ -718,7 +725,7 @@ private proc checkLicense(projectHome: string) throws {
     const toParse = open(joinPath(projectHome, "Mason.toml"), ioMode.r);
     const tomlFile = (parseToml(toParse));
     if tomlFile.pathExists("brick.license") {
-      defaultLicense = tomlFile["brick"]!["license"]!.s;
+      defaultLicense = tomlFile["brick.license"]!.s;
     }
     // get the license list and validate license identifier
     const licenseList = refreshLicenseList();
@@ -869,7 +876,7 @@ proc gitTagVersionCheck(projectHome: string) throws {
   var allTags = tags.split("\n");
   const toParse = open(projectHome + "/Mason.toml", ioMode.r);
   const tomlFile = (parseToml(toParse));
-  var version = "v" + tomlFile["brick"]!["version"]!.s;
+  var version = "v" + tomlFile["brick.version"]!.s;
   for tag in allTags {
     if tag == version {
       return (true, allTags, version);
@@ -884,24 +891,48 @@ proc namespaceCollisionCheck(projectHome: string) throws {
   var directoryName = basename(projectHome);
   const toParse = open(projectHome + "/Mason.toml", ioMode.r);
   const tomlFile = (parseToml(toParse));
-  var packageName = tomlFile["brick"]!["name"]!.s;
-  if packageName == directoryName then return true;
-  else return false;
+  var packageName = tomlFile["brick.name"]!.s;
+  return packageName == directoryName;
 }
 
-/* Mason toml file formatting */
-proc masonTomlFileCheck(projectHome: string) {
-  const toParse = open(projectHome + "/Mason.toml", ioMode.r);
-  const tomlFile = (parseToml(toParse));
-  var missingFields : list(string);
-  var name, chplVersion, version, source, author, license = false;
-  if tomlFile.pathExists("brick.name") then name = true; else missingFields.pushBack('name');
-  if tomlFile.pathExists("brick.version") then version = true; else missingFields.pushBack('version');
-  if tomlFile.pathExists("brick.chplVersion") then chplVersion = true; else missingFields.pushBack('chplVersion');
-  if tomlFile.pathExists("brick.source") then source = true; else missingFields.pushBack('source');
-  if tomlFile.pathExists("brick.license") then license = true; else missingFields.pushBack('license');
-  if tomlFile.pathExists("brick.authors") then author = true; else missingFields.pushBack('authors');
-  if name && version && chplVersion && source
-    && author && license then return (true, missingFields);
-  else return (false, missingFields);
+record tomlCheckResult {
+  var missingFields: list(string);
+  var mismatchedTypes: list(string);
+  proc isValid(): bool {
+    return missingFields.size == 0 && mismatchedTypes.size == 0;
+  }
+}
+/*
+  Mason.toml file formatting. registry file must have the following fields:
+    name: string
+    version: string
+    chplVersion: string
+    source: string
+    authors: string or list(string)
+    license: string
+
+  Returns (isValid, missingFields, mismatchedTypes)
+*/
+proc masonTomlFileCheck(projectHome: string): tomlCheckResult {
+  const toParse = open(joinPath(projectHome, "Mason.toml"), ioMode.r);
+  const tomlFile = parseToml(toParse);
+  var missingFields: list(string);
+  var mismatchedTypes: list(string);
+
+  const requireStringFields = ('name', 'version', 'chplVersion',
+                               'source', 'license');
+  const requireStringOrListFields = ('authors',);
+  for field in requireStringFields {
+    if !tomlFile.pathExists("brick." + field) then
+      missingFields.pushBack(field);
+    else if tomlFile["brick"]![field]!.tomlType != "string" then
+      mismatchedTypes.pushBack(field);
+  }
+  for field in requireStringOrListFields {
+    if !tomlFile.pathExists("brick." + field) then
+      missingFields.pushBack(field);
+    else if !isStringOrStringArray(tomlFile["brick"]![field]!) then
+      mismatchedTypes.pushBack(field);
+  }
+  return new tomlCheckResult(missingFields, mismatchedTypes);
 }

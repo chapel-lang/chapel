@@ -160,17 +160,10 @@ private proc masonAdd(toml: shared Toml, toAdd: string, version: string) throws 
 
 /* Remove a mason dependency from Mason.toml */
 private proc masonRemove(toml: shared Toml, toRm: string) throws {
-  if toml.pathExists("dependencies") {
-    if toml.pathExists("dependencies." + toRm) {
-      var old = toml["dependencies"]![toRm]!;
-      toml["dependencies"]!.A.remove(toRm);
-    }
-    else {
-      throw new owned MasonError("No dependency exists by that name");
-    }
-  }
-  else {
-    throw new owned MasonError("No dependencies");
+  if const old = toml.get("dependencies." + toRm) {
+    toml["dependencies"]!.A.remove(toRm);
+  } else {
+    throw new MasonError("No dependency exists by that name");
   }
   return toml;
 }
@@ -180,7 +173,7 @@ private proc masonSystemAdd(toml: shared Toml, toAdd: string, version: string) t
 
   if toml.pathExists("system") {
     if toml.pathExists("system." + toAdd) {
-      throw new owned MasonError("A dependency by that name already exists in Mason.toml");
+      throw new MasonError("A dependency by that name already exists in Mason.toml");
     }
     else {
       toml["system"]!.set(toAdd, version);

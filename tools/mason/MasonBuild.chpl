@@ -129,7 +129,7 @@ proc buildProgram(release: bool, show: bool, force: bool, skipUpdate: bool,
   const toParse = open(lockPath, ioMode.r);
   defer toParse.close();
   var lockFile = parseToml(toParse);
-  const projectName = lockFile["root"]!["name"]!.s;
+  const projectName = lockFile["root.name"]!.s;
 
   var binLoc = 'debug';
   if release then
@@ -191,7 +191,7 @@ proc compileSrc(lockFile: borrowed Toml, binLoc: string, show: bool,
   const (sourceList, gitList) = genSourceList(lockFile);
   const depPath = Path.joinPath(MASON_HOME, 'src');
   const gitDepPath = Path.joinPath(MASON_HOME, 'git');
-  const project = lockFile["root"]!["name"]!.s;
+  const project = lockFile["root.name"]!.s;
   const pathToProj = Path.replaceExt(Path.joinPath(projectHome,
                                                    'src',
                                                    project), 'chpl');
@@ -291,7 +291,7 @@ proc genSourceList(lockFile: borrowed Toml) {
 
           var branch: string;
           // use branch if specified, else default to HEAD
-          if toml["branch"] != nil {
+          if toml.pathExists("branch") {
             branch = toml["branch"]!.s;
           } else {
             branch = "HEAD";
@@ -371,16 +371,18 @@ proc getGitCode(gitList: list(gitSource), show) {
 }
 
 // Retrieves root table compopts, external compopts, and system compopts
-proc getTomlCompopts(lock: borrowed Toml): list(string) {
+proc getTomlCompopts(lock: borrowed Toml): list(string) throws {
   var compopts = new list(string);
   // Checks for compilation options are present in Mason.toml
-  if lock.pathExists('root.compopts') {
-    const cmpFlags = lock["root"]!["compopts"]!.s;
-    compopts.pushBack(cmpFlags.split(" "));
+  if const cmpFlags = lock.get["root.compopts"] {
+    try {
+      compopts.pushBack(parseCompilerOptions(cmpFlags));
+    } catch {
+      throw new MasonError("unable to parse compopts");
+    }
   }
 
-  if lock.pathExists('external') {
-    const exDeps = lock['external']!;
+  if const exDeps = lock.get['external'] {
     for (name, depInfo) in zip(exDeps.A.keys(), exDeps.A.values()) {
       for (k,v) in allFields(depInfo!) {
         var val = v!;
@@ -393,8 +395,7 @@ proc getTomlCompopts(lock: borrowed Toml): list(string) {
       }
     }
   }
-  if lock.pathExists('system') {
-    const pkgDeps = lock['system']!;
+  if const pkgDeps = lock.get['system'] {
     for (name, dep) in zip(pkgDeps.A.keys(), pkgDeps.A.values()) {
       var depInfo = dep!;
       compopts.pushBack(depInfo["libs"]!.s);
