@@ -73,62 +73,56 @@ proc masonUpdate(args: [?d] string) {
 /* Finds a Mason.toml file and updates the Mason.lock
    generating one if it doesnt exist */
 proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock", show=true, force=false) throws {
+  const cwd = here.cwd();
+  const projectHome = getProjectHome(cwd, tf);
+  const tomlPath = projectHome + "/" + Path.relPath(tf);
+  const lockPath = projectHome + "/" + Path.relPath(lf);
+  const openFile = openReader(tomlPath, locking=false);
+  const TomlFile = parseToml(openFile);
+  log.debugf("Parsed %s\n", tomlPath);
 
-  try {
-    const cwd = here.cwd();
-    const projectHome = getProjectHome(cwd, tf);
-    const tomlPath = projectHome + "/" + Path.relPath(tf);
-    const lockPath = projectHome + "/" + Path.relPath(lf);
-    const openFile = openReader(tomlPath, locking=false);
-    const TomlFile = parseToml(openFile);
-    log.debugf("Parsed %s\n", tomlPath);
-
-    var updated = false;
-    if isFile(tomlPath) {
-      if TomlFile.pathExists('dependencies') {
-        if force || TomlFile['dependencies']!.A.size > 0 {
-          log.infoln("Updating registry");
-          updateRegistry(skipUpdate, show);
-          updated = true;
-        }
-      }
-      if !updated && show {
-        log.infoln("Skipping registry update since no dependency found in " +
-                   "manifest file.");
+  var updated = false;
+  if isFile(tomlPath) {
+    if TomlFile.pathExists('dependencies') {
+      if force || TomlFile['dependencies']!.A.size > 0 {
+        log.infoln("Updating registry");
+        updateRegistry(skipUpdate, show);
+        updated = true;
       }
     }
-
-    log.infoln("Will do external update");
-    if isDir(SPACK_ROOT) && TomlFile.pathExists('external') {
-      if getSpackVersion() < minSpackVersion then
-        throw new owned MasonError("Mason has been updated. " +
-                    "To install Spack, run: mason external --setup.");
+    if !updated && show {
+      log.infoln("Skipping registry update since no dependency found in " +
+                 "manifest file.");
     }
-
-    log.debugln("Will do createDepTree");
-    const lockFile = createDepTree(TomlFile);
-    if failedChapelVersion.size > 0 {
-      const prefix = if failedChapelVersion.size == 1
-        then "The following package is"
-        else "The following packages are";
-      stderr.writeln(prefix, " incompatible with your version of Chapel (", getChapelVersionStr(), ")");
-      for msg in failedChapelVersion do
-        stderr.writeln("  ", msg);
-      exit(1);
-    }
-    // Generate Lock File
-    log.debugln("Generating lock file");
-    genLock(lockFile, lockPath);
-
-    log.infoln("Installing prerequisites");
-    MasonPrereqs.install();
-    // Close Memory
-    openFile.close();
-
   }
-  catch e: MasonError {
-    throw e;
+
+  log.infoln("Will do external update");
+  if isDir(SPACK_ROOT) && TomlFile.pathExists('external') {
+    if getSpackVersion() < minSpackVersion then
+      throw new owned MasonError("Mason has been updated. " +
+                  "To install Spack, run: mason external --setup.");
   }
+
+  log.debugln("Will do createDepTree");
+  const lockFile = createDepTree(TomlFile);
+  if failedChapelVersion.size > 0 {
+    const prefix = if failedChapelVersion.size == 1
+      then "The following package is"
+      else "The following packages are";
+    stderr.writeln(prefix, " incompatible with your version of Chapel (", getChapelVersionStr(), ")");
+    for msg in failedChapelVersion do
+      stderr.writeln("  ", msg);
+    exit(1);
+  }
+  // Generate Lock File
+  log.debugln("Generating lock file");
+  genLock(lockFile, lockPath);
+
+  log.infoln("Installing prerequisites");
+  MasonPrereqs.install();
+  // Close Memory
+  openFile.close();
+
   log.debugln("updateLock returning");
   return (tf, lf);
 }

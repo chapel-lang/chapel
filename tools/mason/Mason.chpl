@@ -122,7 +122,7 @@ module Mason {
     var cmdArgs = cmdList.toArray();
     var retCode = 0;
     // pass the arguments to the appropriate subcommand
-    try {
+    try! {
       select (usedCmd) {
         when "add" do masonModify(cmdArgs);
         when "build" do masonBuild(cmdArgs);
@@ -148,7 +148,8 @@ module Mason {
         }
       }
     } catch ex: MasonError {
-      throw ex;
+      stderr.writeln(ex.message());
+      exit(1);
     }
     return retCode;
   }

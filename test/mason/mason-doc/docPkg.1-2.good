@@ -1,5 +1,5 @@
 Success: docs generated
-Error: doc/_sources/modules/src/Pkg.rst.txt not generated
-Error: doc/_sources/modules/src/SubPkg.rst.txt not generated
+Success: doc/_sources/modules/src/Pkg.rst.txt was generated
+Success: doc/_sources/modules/src/SubPkg.rst.txt was generated
 Success: doc/_sources/modules/src/FileSystem.rst.txt was not generated
-Error: doc/index.html not generated
+Success: Author 'Billy' was added to index.html

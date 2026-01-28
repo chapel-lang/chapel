@@ -37,24 +37,18 @@ proc masonSystem(args: [] string) throws {
 
   parser.parseArgs(args);
 
-  try {
-    if pcCmd.hasValue() {
-      pkgConfigExists();
-      var pcArgs = pcCmd.values();
-      printPkgPc(pcArgs);
-    }
-    else if searchCmd.hasValue() {
-      pkgConfigExists();
-      var searchArgs = searchCmd.values();
-      pkgSearch(searchArgs);
-    }
-    else { // no valid sub-command given
-      masonSystemHelp();
-      exit(0);
-    }
+  if pcCmd.hasValue() {
+    pkgConfigExists();
+    var pcArgs = pcCmd.values();
+    printPkgPc(pcArgs);
   }
-  catch e: MasonError {
-   throw e;
+  else if searchCmd.hasValue() {
+    pkgConfigExists();
+    var searchArgs = searchCmd.values();
+    pkgSearch(searchArgs);
+  }
+  else { // no valid sub-command given
+    masonSystemHelp();
   }
 }
 
@@ -162,9 +156,7 @@ proc printPkgPc(args) throws {
   catch e: FileNotFoundError {
     throw new owned MasonError("Package exists but Mason could not find its .pc file");
   }
-  catch e: MasonError {
-    throw e;
-  }
+
 }
 
 
@@ -236,15 +228,10 @@ proc getPCDeps(exDeps: Toml) throws {
   var exDepTree: [exDom] shared Toml?;
 
   for (name, vers) in zip(exDeps.A.keys(), exDeps.A.values()) {
-    try {
-      if pkgConfigExists() {
-        const pkgInfo = getPkgInfo(name, vers!.s);
-        exDom += name;
-        exDepTree[name] = pkgInfo;
-      }
-    }
-    catch e: MasonError {
-      throw e;
+    if pkgConfigExists() {
+      const pkgInfo = getPkgInfo(name, vers!.s);
+      exDom += name;
+      exDepTree[name] = pkgInfo;
     }
   }
   return exDepTree;

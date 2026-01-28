@@ -4,11 +4,7 @@ use MasonUtils;
 
 proc main() throws {
   var args = ['new', 'Test'];
-  try {
-    masonNew(args);
-  } catch e: MasonError {
-    writeln(e.message());
-  }
+  try! masonNew(args);
 
   // Confirm structure
   var pwd = here.cwd();
