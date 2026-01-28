@@ -322,6 +322,14 @@ bool DebugData::shouldAddDebugInfoFor(Symbol* sym) {
   // skip non-user variables
   if (sym->hasFlag(FLAG_NO_USER_DEBUG_INFO)) return false;
 
+
+  // skip functions that are field accessors or anything inside of them
+  if (auto fn = sym->getFunction()) {
+    if (fn->hasFlag(FLAG_FIELD_ACCESSOR)) {
+      return false;
+    }
+  }
+
   // default to adding debug info
   return true;
 }
