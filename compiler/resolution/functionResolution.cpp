@@ -3577,6 +3577,7 @@ struct CandidateSearchState {
   void searchOnePoiLevel();
   void findVisibleFunctionsAndCandidates();
   void considerLastResortCandidates();
+  void explainGatherCandidate();
 };
 
 static int       disambiguateByMatch(CallInfo&                  info,
@@ -4367,6 +4368,7 @@ static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState, boo
       searchState.considerLastResortCandidates();
     }
   }
+  searchState.explainGatherCandidate();
 
   numMatches = disambiguateByMatch(info, scopeUsed, candidates,
                                    bestRef, bestCref, bestVal);
@@ -5604,8 +5606,6 @@ bool CandidateSearchState::tryFindVisibileCandidatesForExplicitFn() {
     // no need for trimVisibleCandidates() and findVisibleCandidates()
     gatherCandidates(info, visInfo, fn, candidates);
 
-    explainGatherCandidate(info, candidates);
-
     scopeUsed = getVisibilityScope(call);
     return true;
   }
@@ -5668,8 +5668,10 @@ void CandidateSearchState::considerLastResortCandidates() {
     while
       (candidates.n == 0 && haveMoreLRCs(lrc, numVisitedLRC));
   }
+}
 
-  explainGatherCandidate(info, candidates);
+void CandidateSearchState::explainGatherCandidate() {
+  ::explainGatherCandidate(info, candidates);
 }
 
 // run filterCandidate() on 'fn' if appropriate
