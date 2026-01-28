@@ -2909,7 +2909,7 @@ void FnSymbol::codegenDef() {
 
     info->lvt->addLayer();
 
-    if(debugInfo) {
+    if (debugInfo && debugInfo->shouldAddDebugInfoFor(this)) {
       llvm::DISubprogram* dbgScope = debugInfo->getFunction(this);
       info->irBuilder->SetCurrentDebugLocation(
         llvm::DILocation::get(dbgScope->getContext(), linenum(), 0,
