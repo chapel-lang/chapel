@@ -76,8 +76,7 @@ void DomainType::stringify(std::ostream& ss,
 }
 
 static ID getDomainID(Context* context) {
-  return parsing::getSymbolIdFromTopLevelModule(context, "ChapelDomain",
-                                                "_domain");
+  return parsing::getDomainIdFromTopLevelChapelDomainModule(context);
 }
 
 const owned<DomainType>&

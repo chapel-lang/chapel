@@ -120,7 +120,7 @@ void InitResolver::resolveImplicitSuperInit() {
   //       -- e.g. class Parent { type T; var x : T; }
 
   if (phase_ == PHASE_NEED_SUPER_INIT &&
-      superType_->isObjectType() == false) {
+      superType_->isRootClass() == false) {
     std::vector<CallInfoActual> actuals;
     auto superCT = ClassType::get(ctx_, superType_, nullptr,
                                   ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL));
@@ -931,14 +931,16 @@ bool InitResolver::handleCallToSuperInit(const FnCall* node,
 }
 
 void InitResolver::updateSuperType(const CallResolutionResult* c) {
-  if (auto& msc = c->mostSpecific().only()) {
-    auto superThis = msc.formalActualMap().byFormalIdx(0).formalType().type();
+  if (c) {
+    if (auto& msc = c->mostSpecific().only()) {
+      auto superThis = msc.formalActualMap().byFormalIdx(0).formalType().type();
 
-    this->superType_ = superThis->getCompositeType()->toBasicClassType();
+      this->superType_ = superThis->getCompositeType()->toBasicClassType();
 
-    // Only update the current receiver if the parent was generic.
-    if (superType_->instantiatedFromCompositeType() != nullptr) {
-      updateResolverVisibleReceiverType();
+      // Only update the current receiver if the parent was generic.
+      if (superType_->instantiatedFromCompositeType() != nullptr) {
+        updateResolverVisibleReceiverType();
+      }
     }
   }
 

@@ -1161,12 +1161,12 @@ const ResolvedFields& resolveFieldDecl(ResolutionContext* rc,
   CHPL_RESOLUTION_QUERY_BEGIN(resolveFieldDecl, rc, ct, fieldId, defaultsPolicy, syntaxOnly);
 
   ResolvedFields result;
-  bool isObjectType = false;
+  bool isRootClass = false;
   if (auto bct = ct->toBasicClassType()) {
-    isObjectType = bct->isObjectType();
+    isRootClass = bct->isRootClass();
   }
 
-  if (isObjectType) {
+  if (isRootClass) {
     // no need to try to resolve the fields for the object type,
     // which doesn't have a real uAST ID.
 
@@ -1214,11 +1214,11 @@ const ResolvedFields& fieldsForTypeDeclQuery(ResolutionContext* rc,
   CHPL_ASSERT(ct);
   result.setType(ct);
 
-  bool isObjectType = false;
+  bool isRootClass = false;
   if (auto bct = ct->toBasicClassType()) {
-    isObjectType = bct->isObjectType();
+    isRootClass = bct->isRootClass();
   }
-  if (isObjectType) {
+  if (isRootClass) {
     // no need to try to resolve the fields for the object type,
     // which doesn't have a real uAST ID.
     // for built-in types like Errors when we didn't parse the standard library
@@ -1315,11 +1315,11 @@ const ResolvedFields& resolveForwardingExprs(ResolutionContext* rc,
   CHPL_ASSERT(ct);
   result.setType(ct);
 
-  bool isObjectType = false;
+  bool isRootClass = false;
   if (auto bct = ct->toBasicClassType()) {
-    isObjectType = bct->isObjectType();
+    isRootClass = bct->isRootClass();
   }
-  if (isObjectType) {
+  if (isRootClass) {
     // no need to try to resolve the fields for the object type,
     // which doesn't have a real uAST ID.
     // for built-in types like Errors when we didn't parse the standard library
@@ -1640,6 +1640,10 @@ static Type::Genericity getFieldsGenericity(Context* context,
   Type::Genericity g = Type::CONCRETE;
 
   if (auto bct = ct->toBasicClassType()) {
+    // RootClass is concrete.
+    if (bct->parentClassType() == nullptr)
+      return Type::CONCRETE;
+
     g = getFieldsGenericity(context, bct->parentClassType(), ignore);
     CHPL_ASSERT(g != Type::MAYBE_GENERIC);
     if (g == Type::GENERIC)
@@ -7978,7 +7982,7 @@ const CompositeType* isNameOfField(Context* context,
   }
 
   if (auto bct = ct->toBasicClassType()) {
-    if (bct->isObjectType()) {
+    if (bct->isRootClass()) {
       return nullptr;
     }
   }
@@ -8222,7 +8226,7 @@ const Decl* findFieldByName(Context* context,
   if (ret == nullptr && ct != nullptr) {
     if (auto bct = ct->toBasicClassType()) {
       if (auto parent = bct->parentClassType()) {
-        if (parent->isObjectType() == false) {
+        if (parent->isRootClass() == false) {
           auto parentAD = parsing::idToAst(context, parent->id())->toAggregateDecl();
           ret = findFieldByName(context, parentAD, parent, name);
         }

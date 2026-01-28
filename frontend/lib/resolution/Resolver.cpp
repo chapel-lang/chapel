@@ -298,7 +298,7 @@ static void setInitResolverSuper(Resolver& r, const Function* fn) {
 
     if (auto bct = ct->toBasicClassType()) {
       if (auto parent = bct->parentClassType()) {
-        if (!parent->isObjectType()) {
+        if (!parent->isRootClass()) {
           r.superInitClassType = parent;
         }
       }
@@ -7925,7 +7925,7 @@ bool Resolver::enter(const Catch* node) {
         isBasicClass = true;
         if (!bct->isSubtypeOf(context, CompositeType::getErrorType(context)->basicClassType(), converts, instantiates)) {
           // get the penultimate type in the chain
-          while (!bct->parentClassType()->isObjectType()) {
+          while (!bct->parentClassType()->isRootClass()) {
             bct = bct->parentClassType();
           }
           error(errVar, "catch variable '%s' must be a class that inherits from Error, not '%s'", errVar->name().c_str(), bct->name().c_str());

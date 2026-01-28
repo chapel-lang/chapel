@@ -101,7 +101,7 @@ class BasicClassType final : public ManageableType {
   }
 
   /** Return true if this type is the 'object' type. */
-  bool isObjectType() const {
+  bool isRootClass() const {
     return parentType_ == nullptr;
   }
 

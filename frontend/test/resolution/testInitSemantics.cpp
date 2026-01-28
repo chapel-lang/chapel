@@ -2538,6 +2538,47 @@ static void testInitWithGenericMultiDeclDefault() {
   });
 }
 
+// If a call to 'super.init' was skipepd, we shouldn't segfault.
+static void testSkippedSuperCall() {
+  std::string prog = R"""(
+    class Parent {}
+    class Child : Parent {
+      proc init(x: int, x: int) {
+        super.init(x);
+      }
+    }
+    var x = new Child(1, 2);
+  )""";
+
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+  std::ignore = resolveTypeOfXInit(context, prog);
+
+  // We should've gotten an error, not a segfault.
+  assert(guard.numErrors() == 1);
+  assert(guard.error(0)->type() == ErrorType::Redefinition);
+  guard.realizeErrors();
+}
+
+// We can invoke super.init in any class, even if it doesn't have a marked
+// parent, in which case the implicit root class's super.init should be called.
+static void testSuperInitForRootClass() {
+  std::string prog = R"""(
+    class MyClass {
+      proc init() {
+        super.init();
+      }
+    }
+    var x = new MyClass();
+  )""";
+
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+  auto x = resolveTypeOfXInit(context, prog);
+  assert(x.type()->isClassType());
+  assert(x.type()->toClassType()->basicClassType()->name() == "MyClass");
+}
+
 // TODO:
 // - test using defaults for types and params
 //   - also in conditionals
@@ -2609,6 +2650,9 @@ int main() {
 
   testInitWithGenericMultiDeclExplicit();
   testInitWithGenericMultiDeclDefault();
+
+  testSkippedSuperCall();
+  testSuperInitForRootClass();
 
   return 0;
 }

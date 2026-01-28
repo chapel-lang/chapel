@@ -2679,7 +2679,7 @@ struct ConvertTypeHelper {
   }
 
   Type* visit(const types::BasicClassType* bct) {
-    if (bct->isObjectType()) {
+    if (bct->isRootClass()) {
       return dtObject;
     }
 

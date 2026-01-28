@@ -55,7 +55,7 @@ const HeapBufferType* HeapBufferType::get(Context* context,
 const ID& HeapBufferType::getId(Context* context) {
   QUERY_BEGIN(getId, context);
   ID result =
-      parsing::getSymbolIdFromTopLevelModule(context, "ChapelBase", "_ddata");
+      parsing::getDDataIdFromTopLevelChapelBaseModule(context);
   return QUERY_END(result);
 }
 
