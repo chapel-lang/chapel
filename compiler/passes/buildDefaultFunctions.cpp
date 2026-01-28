@@ -1743,7 +1743,6 @@ FnSymbol* buildSerializeFnSymbol(AggregateType* ct, ArgSymbol** filearg) {
   FnSymbol* fn = new FnSymbol("serialize");
 
   fn->addFlag(FLAG_COMPILER_GENERATED);
-  fn->addFlag(FLAG_LAST_RESORT);
   if (ct->isClass() && ct != dtObject) {
     fn->addFlag(FLAG_OVERRIDE);
   } else {
@@ -1788,7 +1787,6 @@ static FnSymbol* buildDeserializeFnSymbol(AggregateType* ct, ArgSymbol** filearg
   FnSymbol* fn = new FnSymbol("deserialize");
 
   fn->addFlag(FLAG_COMPILER_GENERATED);
-  fn->addFlag(FLAG_LAST_RESORT);
   if (ct->isClass() && ct != dtObject)
     fn->addFlag(FLAG_OVERRIDE);
   else
