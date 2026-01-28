@@ -514,18 +514,14 @@ module UnitTest {
       }
 
       proc compareNanFalse(const actual_, const expected_) {
-        // NaN compare false
+        // Compare two values, returning false if at least one is NaN
         return abs(actual_ - expected_) <= absTol + relTol * abs(expected_);
       }
 
       proc compareNanTrue(const actual_: real, const expected_: real): bool {
-        // NaN compare true
+        // Compare two values, returning true if both are NaN
         return compareNanFalse(actual_, expected_) || (isNan(actual_) &&
                                                        isNan(expected_));
-      }
-      proc compareNanTrue(const actual_: [] real,
-                          const expected_: [] real): [] bool {
-        return [(a, e) in zip(actual_, expected_)] compareNanTrue(a, e);
       }
 
       proc compareComplex(const actual_: complex,
@@ -548,8 +544,7 @@ module UnitTest {
         if isArrayType(T) && isComplexType(actual.eltType) {
           return [(a, e) in zip(actual, expected)] compareComplex(a, e);
         }
-        if isImagType(T)
-        || isArrayType(T) && isImagType(actual.eltType) {
+        if isImagType(T) || (isArrayType(T) && isImagType(actual.eltType)) {
           // no imaginary NaN, must cast to real
           return compareNanTrue(actual:real, expected:real);
         }
