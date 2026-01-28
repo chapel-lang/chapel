@@ -4373,7 +4373,7 @@ static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState, boo
   numMatches = disambiguateByMatch(info, scopeUsed, candidates,
                                    bestRef, bestCref, bestVal);
 
-  if (checkState == CHECK_NORMAL_CALL && numMatches > 0 && visInfo.inPOI())
+  if (numMatches > 0 && visInfo.inPOI())
     updateCacheInfosForACall(visInfo,
                              bestRef, bestCref, bestVal);
 
