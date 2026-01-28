@@ -12,7 +12,9 @@ class Chapel < Formula
 
   # Don't include real bottle information here, to avoid accidentally testing
   # off of a published bottle.
+  bottle do
   <bottle-block-placeholder-injected-during-testing>
+  # Intentionally not `end`ed so if insertion fails the test will break
 
   depends_on "cmake"
   depends_on "gmp"
