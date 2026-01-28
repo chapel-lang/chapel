@@ -31,7 +31,7 @@ uv4ae.deinit UC
   LocaleModel
   DefaultRectangular
   ChapelArray
-  Time
   CompressedSparseLayout
+  Time
   IO
   ChapelLocale

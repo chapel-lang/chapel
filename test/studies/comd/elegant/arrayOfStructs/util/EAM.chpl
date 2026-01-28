@@ -54,8 +54,8 @@ class PotentialEAM : BasePotential {
   var phiIO, rhoIO, fIO : unmanaged InterpolationObject;
 
   var rhoDom : domain(3);
-  var rhoSpace = rhoDom dmapped new dmap(new AccumStencil(rhoDom)); // basically BlockDist
-  var dfSpace  = rhoDom dmapped new dmap(new AccumStencil(rhoDom, fluff=(1,1,1), periodic=true));
+  var rhoSpace = rhoDom dmapped new accumStencil(rhoDom); // basically BlockDist
+  var dfSpace  = rhoDom dmapped new accumStencil(rhoDom, fluff=(1,1,1), periodic=true);
   var rhoBar  : [rhoSpace] [1..MAXATOMS] real;
   var dfEmbed : [dfSpace] [1..MAXATOMS] real;
 

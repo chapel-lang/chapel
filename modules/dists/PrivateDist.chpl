@@ -150,10 +150,6 @@ operator =(ref a: privateDist, b: privateDist) {
 }
 
 
-@deprecated("'Private' is deprecated, please use 'privateDist' instead")
-type Private = privateDist;
-
-
 @chpldoc.nodoc
 class PrivateImpl: BaseDist, writeSerializable {
   override proc dsiNewRectangularDom(param rank: int, type idxType,
