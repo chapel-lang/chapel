@@ -10,9 +10,9 @@ class Chapel < Formula
 
   no_autobump! because: :bumped_by_upstream
 
-  # Don't include the bottle information in chapel-main.rb deliberately. The
-  # idea is that we don't want to accidentally use a published bottle in our testing,
-  # which would always report passing.
+  # Don't include real bottle information here, to avoid accidentally testing
+  # off of a published bottle.
+  <bottle-block-placeholder-injected-during-testing>
 
   depends_on "cmake"
   depends_on "gmp"
