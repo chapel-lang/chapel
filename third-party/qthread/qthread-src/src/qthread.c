@@ -999,7 +999,8 @@ void API_FUNC qthread_finalize(void) {
       qt_threadqueue_enqueue(qlib->shepherds[i].ready, t);
       if (!atomic_load_explicit(&qlib->shepherds[i].workers[j].active,
                                 memory_order_relaxed)) {
-        (void)QT_CAS(qlib->shepherds[i].workers[j].active, 0, 1);
+        atomic_store_explicit(
+          &qlib->shepherds[i].workers[j].active, 1, memory_order_relaxed);
       }
     }
   }

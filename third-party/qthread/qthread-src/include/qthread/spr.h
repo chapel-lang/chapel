@@ -14,8 +14,7 @@ Q_STARTCXX /* */
 #define SPR_IGN -2     /* The call was ignored. */
 #define SPR_NOINIT -3  /* SPR environment was not initialized. */
 
-int spr_init(unsigned int flags,
-             qthread_f   *regs);
+  int spr_init(unsigned int flags, qthread_f *regs);
 int spr_fini(void);
 int spr_register_actions(qthread_f *actions, size_t count, size_t base);
 int spr_unify(void);
