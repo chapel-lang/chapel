@@ -141,7 +141,7 @@ message:
 
 .. code-block:: bash
 
-     git rebase --signoff $(git merge-base HEAD main)
+     git rebase --signoff $(git merge-base HEAD upstream/main)
      git push origin --force-with-lease
 
 Note that, in general, rewriting history in this way may introduce
