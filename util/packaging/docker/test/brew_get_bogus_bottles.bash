@@ -11,7 +11,7 @@ HOMEBREW_NO_INSTALL_FROM_API=
 # downloading metadata.
 brew info &> /dev/null
 
-platforms=$(brew info --json=v1 chapel | jq ".[0].bottle.stable.files | keys[]" -r)
+platforms=$(brew info --json=v1 chapel | jq ".[0].bottle.stable.files | keys_unsorted[]" -r)
 
 max_length=$(echo "$platforms" | awk ' { if ( length > x ) { x = length; y = $0 } }END{ print x+1 }')
 
