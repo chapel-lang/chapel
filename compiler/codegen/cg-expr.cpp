@@ -2930,7 +2930,7 @@ static GenRet codegenCallExprInner(GenRet function,
       }
     }
 
-    if (CGI == nullptr && fnType != nullptr &&
+   if (CGI == nullptr && fnType != nullptr &&
         fnType->getReturnType()->isVoidTy() &&
         fnType->getNumParams() >= 1 &&
         func && func->hasStructRetAttr())
