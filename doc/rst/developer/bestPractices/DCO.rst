@@ -155,6 +155,5 @@ DCO mistake. In more detail:
 
 * Their dates will be updated.
 
-If someone else, for example your reviewer, had checked off your branch before
-you rebase, they may have to do a rebase on their end. It is a good practice to
-inform your reviewer of your rebase and force-push.
+It is a good practice to inform your reviewer of your rebase and force-push.
+Particularly if they had started reviewing already.
