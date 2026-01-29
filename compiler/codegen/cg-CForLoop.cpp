@@ -206,7 +206,7 @@ static llvm::MDNode* generateLoopMetadata(LoopStmt* loop,
 
   std::vector<llvm::Metadata*> args;
   // Resolve operand 0 for the loop id self reference
-  auto tmpNode        = llvm::MDNode::getTemporary(ctx, chpl::empty);
+  auto tmpNode        = llvm::MDNode::getTemporary(ctx, {});
   args.push_back(tmpNode.get());
 
   if(fNoVectorize == false && loop->isVectorizable()) {
