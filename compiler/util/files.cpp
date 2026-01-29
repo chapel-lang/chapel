@@ -737,7 +737,8 @@ void genIncludeCommandLineHeaders(FILE* outfile) {
 
 static bool omitMakefileEnvCacheValue(const std::string& key) {
   if (!fBuiltinRuntime) {
-    if (key == "CHPL_TARGET_BUNDLED_RUNTIME_LINK_ARGS" ||
+    if (key == "CHPL_TARGET_USE_RUNTIME_LINK_ARGS" ||
+        key == "CHPL_TARGET_BUNDLED_RUNTIME_LINK_ARGS" ||
         key == "CHPL_TARGET_SYSTEM_RUNTIME_LINK_ARGS") {
       // Omit these from the Makefile if we should not be adding the runtime.
       return true;
