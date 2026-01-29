@@ -2,6 +2,12 @@
 
 set -ex
 
+# Hack to inject bogus bottle block into chapel.rb for testing purposes.
+cd /home/linuxbrew/.linuxbrew/Homebrew/Library/Taps/homebrew/homebrew-core
+/home/linuxbrew/brew_get_bogus_bottles.bash | sed -i -e '/<bottle-block-placeholder-injected-during-testing>/r /dev/stdin' -e '/<bottle-block-placeholder-injected-during-testing>/d' Formula/c/chapel.rb
+git add Formula/c/chapel.rb && git commit -m "update chapel.rb for nightly testing" && PAGER=cat git show
+cd /home/linuxbrew
+
 # Important to set HOMEBREW_NO_INSTALL_FROM_API to actually test changes
 export HOMEBREW_NO_INSTALL_FROM_API=1
 # Might not be needed, but also doesn't hurt and matches homebrew CI

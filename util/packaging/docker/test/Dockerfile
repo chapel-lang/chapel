@@ -30,13 +30,8 @@ COPY chapel.rb /home/linuxbrew/.linuxbrew/Homebrew/Library/Taps/homebrew/homebre
 COPY chapel*.tar.gz /home/linuxbrew/
 WORKDIR /home/linuxbrew/.linuxbrew/Homebrew/Library/Taps/homebrew/homebrew-core/
 
-# Hack: Insert bogus bottle information into the formula, which is required for
-# `brew test-bot` to not ignore install failures (see
-# https://github.com/Homebrew/homebrew-test-bot/issues/791).
-COPY brew_get_bogus_bottles.bash brew_get_bogus_bottles.bash
-RUN brew_get_bogus_bottles.bash | sed -i -e '/<bottle-block-placeholder-injected-during-testing>/r /dev/stdin' -e '/<bottle-block-placeholder-injected-during-testing>/d' Formula/c/chapel.rb
-RUN rm brew_get_bogus_bottles.bash
-
 # must commit the change or brew doctor will complain
 RUN git add Formula/c/chapel.rb && git commit -m "update chapel.rb for nightly testing"
 WORKDIR /home/linuxbrew/
+
+COPY brew_get_bogus_bottles.bash brew_get_bogus_bottles.bash
