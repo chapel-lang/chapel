@@ -2992,18 +2992,18 @@ static void resolveRefDeserialization(CallExpr* call) {
   lhsSE->symbol()->type = typeSE->symbol()->getRefType();
 }
 
-static FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState, bool considerPoi=true);
+static FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState, PoiSearchMode poiMode=PoiSearchMode::NORMAL);
 
 FnSymbol* resolveNormalCall(CallExpr* call) {
   return resolveNormalCall(call, CHECK_NORMAL_CALL);
 }
 
-FnSymbol* tryResolveCall(CallExpr* call, bool checkWithin, bool considerPoi) {
+FnSymbol* tryResolveCall(CallExpr* call, bool checkWithin, PoiSearchMode poiMode) {
   check_state_t checkState = CHECK_CALLABLE_ONLY;
   if (checkWithin)
       checkState = CHECK_BODY_RESOLVES;
 
-  return resolveNormalCall(call, checkState, considerPoi);
+  return resolveNormalCall(call, checkState, poiMode);
 }
 
 static Type* resolveGenericActual(SymExpr* se, CallExpr* inCall,
@@ -3535,8 +3535,8 @@ using LastResortCandidates = std::vector<FnSymbol*>;
 
 static bool      isGenericRecordInit(CallExpr* call);
 
-static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState, bool considerPoi = true);
-static FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState, bool considerPoi);
+static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState, PoiSearchMode poiMode = PoiSearchMode::NORMAL);
+static FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState, PoiSearchMode poiMode);
 
 // State for candidate search. Tracks seen, most applicable, etc. candidates,
 // and other information like the current POI scope.
@@ -3575,6 +3575,7 @@ struct CandidateSearchState {
 
   bool tryFindVisibileCandidatesForExplicitFn();
   void searchOnePoiLevel();
+  void skipOnePoiLevel();
   void findVisibleFunctionsAndCandidates();
   void considerLastResortCandidates();
   void explainGatherCandidate();
@@ -4034,7 +4035,7 @@ static void maybeWarnGenericActuals(CallExpr* call) {
 }
 
 static
-FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState, bool considerPoi) {
+FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState, PoiSearchMode poiMode) {
   CallInfo  info;
   FnSymbol* retval = NULL;
 
@@ -4060,7 +4061,7 @@ FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState, bool consi
     if (isTypeConstructionCall(call)) {
       resolveTypeSpecifier(info);
     } else {
-      retval = resolveNormalCall(info, checkState, considerPoi);
+      retval = resolveNormalCall(info, checkState, poiMode);
     }
 
   } else if (checkState != CHECK_NORMAL_CALL) {
@@ -4298,10 +4299,10 @@ static bool overloadSetsOK(CallExpr* call,
 }
 
 
-static FnSymbol* resolveForwardedCall(CallInfo& info, check_state_t checkState, bool considerPoi = true);
+static FnSymbol* resolveForwardedCall(CallInfo& info, check_state_t checkState, PoiSearchMode poiMode = PoiSearchMode::NORMAL);
 static bool typeUsesForwarding(Type* t);
 
-static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState, bool considerPoi) {
+static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState, PoiSearchMode poiMode) {
   ResolutionCandidate*      bestRef    = NULL;
   ResolutionCandidate*      bestCref   = NULL;
   ResolutionCandidate*      bestVal    = NULL;
@@ -4316,10 +4317,21 @@ static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState, boo
   auto& candidates = searchState.candidates;
   auto& scopeUsed = searchState.scopeUsed;
 
+  bool considerNonPoi = (poiMode != PoiSearchMode::POI_ONLY);
+  bool considerPoi = (poiMode != PoiSearchMode::NON_POI_ONLY);
+
+  if (auto use = toUnresolvedSymExpr(info.call->baseExpr)) {
+    if (strcmp(use->unresolved, "foo") == 0) debuggerBreakHere();
+  }
+
   if (searchState.tryFindVisibileCandidatesForExplicitFn()) {
     /* the function was explicitly specified via FnSymbol*. Don't search
        for others and don't consider POI */
-    considerPoi = false;
+    poiMode = PoiSearchMode::NON_POI_ONLY;
+  } else if (!considerNonPoi) {
+    /* This function was previously used to search for non-POI, and now, it's
+       being used to search for only POI. Skip past the non-POI scope. */
+    searchState.skipOnePoiLevel();
   } else {
     /* At this point, the top-level POI level is the regular scope of the call
        (so it's not really POI). This was configured as part of searchState's
@@ -4347,8 +4359,10 @@ static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState, boo
   if (forwardingEligible) {
     receiverType = canonicalDecoratedClassType(info.call->get(2)->getValType());
     if ((usesForwarding = typeUsesForwarding(receiverType))) {
-      if (auto fn = resolveForwardedCall(info, checkState, /* conisiderPoi */ false)) {
-        return fn;
+      if (considerNonPoi) {
+        if (auto fn = resolveForwardedCall(info, checkState, PoiSearchMode::NON_POI_ONLY)) {
+          return fn;
+        }
       }
     }
   }
@@ -4379,7 +4393,7 @@ static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState, boo
 
   // Now, try forwarding again, this time considering POI
   if (candidates.n == 0 && forwardingEligible && usesForwarding && considerPoi) {
-    if (auto fn = resolveForwardedCall(info, checkState, /* conisiderPoi */ true)) {
+    if (auto fn = resolveForwardedCall(info, checkState, PoiSearchMode::POI_ONLY)) {
       return fn;
     }
     // otherwise error is printed below
@@ -5634,8 +5648,15 @@ void CandidateSearchState::searchOnePoiLevel() {
 
   advanceCurrStart(visInfo);
 }
-// static BlockStmt* findVisibleFunctionsAndCandidatesWithoutPoi();
-// static BlockStmt* findVisibleFunctionsAndCandidatesPoi();
+
+void CandidateSearchState::skipOnePoiLevel() {
+  visInfo.poiDepth++;
+  scopeUsed = visInfo.currStart;
+  visInfo.nextPOI = getVisibleFnsInstantiationPt(scopeUsed);
+  visInfo.visitedScopes.push_back(scopeUsed);
+  visited.insert(scopeUsed);
+  advanceCurrStart(visInfo);
+}
 
 // Returns the POI scope used to find the candidates
 void CandidateSearchState::findVisibleFunctionsAndCandidates() {
@@ -5818,7 +5839,7 @@ static const char* getForwardedMethodName(const char* calledName,
   return methodName;
 }
 
-static FnSymbol* adjustAndResolveForwardedCall(CallExpr* call, ForwardingStmt* delegate, const char* methodName, bool considerPoi) {
+static FnSymbol* adjustAndResolveForwardedCall(CallExpr* call, ForwardingStmt* delegate, const char* methodName, PoiSearchMode poiMode) {
 
   FnSymbol* ret = NULL;
   const char* fnGetTgt   = delegate->fnReturningForwarding;
@@ -5860,7 +5881,7 @@ static FnSymbol* adjustAndResolveForwardedCall(CallExpr* call, ForwardingStmt* d
     }
 
     resolveCall(setTgt);
-    ret = tryResolveCall(call, /* checkWithin */ false, considerPoi);
+    ret = tryResolveCall(call, /* checkWithin */ false, poiMode);
   }
 
   return ret;
@@ -5869,7 +5890,7 @@ static FnSymbol* adjustAndResolveForwardedCall(CallExpr* call, ForwardingStmt* d
 llvm::SmallVector<std::tuple<AggregateType*, const char*, const char*>, 4> forwardCallCycleSet;
 
 // Returns a relevant FnSymbol if it worked
-static FnSymbol* resolveForwardedCall(CallInfo& info, check_state_t checkState, bool considerPoi) {
+static FnSymbol* resolveForwardedCall(CallInfo& info, check_state_t checkState, PoiSearchMode poiMode) {
   CallExpr* call = info.call;
   const char* calledName = astr(info.name);
   const char* inFnName = astr(call->getFunction()->name);
@@ -5951,7 +5972,7 @@ static FnSymbol* resolveForwardedCall(CallInfo& info, check_state_t checkState, 
     BlockStmt* block = new BlockStmt(forwardedCall, BLOCK_SCOPELESS);
     call->getStmtExpr()->insertBefore(block);
 
-    auto fn = adjustAndResolveForwardedCall(forwardedCall, delegate, methodName, considerPoi);
+    auto fn = adjustAndResolveForwardedCall(forwardedCall, delegate, methodName, poiMode);
     if (fn) {
       if (bestFn == NULL) {
         bestFn = fn;
@@ -5983,7 +6004,7 @@ static FnSymbol* resolveForwardedCall(CallInfo& info, check_state_t checkState, 
       const char* methodName = getForwardedMethodName(calledName, bestDelegate);
       INT_ASSERT(methodName);
 
-      bestFn = adjustAndResolveForwardedCall(call, bestDelegate, methodName, considerPoi);
+      bestFn = adjustAndResolveForwardedCall(call, bestDelegate, methodName, poiMode);
     } else {
       // Replace actuals in call with those from bestCall
       // Note that the above path could be used instead, but
