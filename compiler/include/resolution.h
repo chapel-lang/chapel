@@ -257,7 +257,13 @@ void      resolveCallAndCallee(CallExpr* call, bool allowUnresolved = false);
 Type*     resolveDefaultGenericTypeSymExpr(SymExpr* se);
 Type*     resolveTypeAlias(SymExpr* se);
 
-FnSymbol* tryResolveCall(CallExpr* call, bool checkWithin=false);
+enum class PoiSearchMode {
+  NORMAL,
+  NON_POI_ONLY,
+  POI_ONLY,
+};
+
+FnSymbol* tryResolveCall(CallExpr* call, bool checkWithin=false, PoiSearchMode poiMode = PoiSearchMode::NORMAL);
 void      makeRefType(Type* type);
 
 // FnSymbol changes
