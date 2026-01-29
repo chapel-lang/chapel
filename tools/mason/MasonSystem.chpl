@@ -28,7 +28,7 @@ use Path;
 use Regex;
 
 /* Entry point for mason system commands */
-proc masonSystem(args: [] string) {
+proc masonSystem(args: [] string) throws {
 
   var parser = new argumentParser(helpHandler=new MasonSystemHelpHandler());
 
@@ -37,25 +37,18 @@ proc masonSystem(args: [] string) {
 
   parser.parseArgs(args);
 
-  try! {
-    if pcCmd.hasValue() {
-      pkgConfigExists();
-      var pcArgs = pcCmd.values();
-      printPkgPc(pcArgs);
-    }
-    else if searchCmd.hasValue() {
-      pkgConfigExists();
-      var searchArgs = searchCmd.values();
-      pkgSearch(searchArgs);
-    }
-    else { // no valid sub-command given
-      masonSystemHelp();
-      exit(0);
-    }
+  if pcCmd.hasValue() {
+    pkgConfigExists();
+    var pcArgs = pcCmd.values();
+    printPkgPc(pcArgs);
   }
-  catch e: MasonError { // likely pkg-config wasn't found on system
-    stderr.writeln(e.message());
-    exit(1);
+  else if searchCmd.hasValue() {
+    pkgConfigExists();
+    var searchArgs = searchCmd.values();
+    pkgSearch(searchArgs);
+  }
+  else { // no valid sub-command given
+    masonSystemHelp();
   }
 }
 
@@ -138,9 +131,9 @@ proc printPkgPc(args) throws {
 
   if !pkgNameArg.hasValue() {
     masonSystemPcHelp();
-    exit(1);
+    throw new owned MasonError("No package name provided to printPkgPc");
   }
-  try! {
+  try {
     const pkgName = pkgNameArg.value();
     if pkgExists(pkgName) {
       //
@@ -161,13 +154,9 @@ proc printPkgPc(args) throws {
     }
   }
   catch e: FileNotFoundError {
-    stderr.writeln("Package exists but Mason could not find it's .pc file");
-    exit(1);
+    throw new owned MasonError("Package exists but Mason could not find its .pc file");
   }
-  catch e: MasonError {
-    stderr.writeln(e.message());
-    exit(1);
-  }
+
 }
 
 
@@ -233,22 +222,16 @@ proc getPkgInfo(pkgName: string, version: string) throws {
 
 /* Given a toml of external dependencies returns
    the dependencies in a toml */
-proc getPCDeps(exDeps: Toml) {
+proc getPCDeps(exDeps: Toml) throws {
 
   var exDom: domain(string, parSafe=false);
   var exDepTree: [exDom] shared Toml?;
 
   for (name, vers) in zip(exDeps.A.keys(), exDeps.A.values()) {
-    try! {
-      if pkgConfigExists() {
-        const pkgInfo = getPkgInfo(name, vers!.s);
-        exDom += name;
-        exDepTree[name] = pkgInfo;
-      }
-    }
-    catch e: MasonError {
-      stderr.writeln(e.message());
-      exit(1);
+    if pkgConfigExists() {
+      const pkgInfo = getPkgInfo(name, vers!.s);
+      exDom += name;
+      exDepTree[name] = pkgInfo;
     }
   }
   return exDepTree;

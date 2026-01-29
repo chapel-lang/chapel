@@ -195,7 +195,7 @@ private proc runExamples(show: bool, run: bool, build: bool, release: bool,
                          skipUpdate: bool, force: bool,
                          examplesRequested: list(string)) throws {
 
-  try! {
+  try {
 
     const cwd = here.cwd();
     const projectHome = getProjectHome(cwd);
@@ -279,8 +279,7 @@ private proc runExamples(show: bool, run: bool, build: bool, release: bool,
     }
   }
   catch e: MasonError {
-    stderr.writeln(e.message());
-    exit(1);
+    throw e;
   }
 }
 
@@ -350,23 +349,17 @@ proc getExamplePath(fullPath: string, examplePath = "") : string {
 }
 
 // used when user calls `mason run --example` without argument
-proc printAvailableExamples() {
-  try! {
-    const cwd = here.cwd();
-    const projectHome = getProjectHome(cwd);
-    const toParse = open(projectHome + "/Mason.toml", ioMode.r);
-    const toml = parseToml(toParse);
-    const examples = getExamples(toml, projectHome);
-    writeln("--- available examples ---");
-    for example in examples {
-      writeln(" --- " + example);
-    }
-    writeln("--------------------------");
+proc printAvailableExamples() throws {
+  const cwd = here.cwd();
+  const projectHome = getProjectHome(cwd);
+  const toParse = open(projectHome + "/Mason.toml", ioMode.r);
+  const toml = parseToml(toParse);
+  const examples = getExamples(toml, projectHome);
+  writeln("--- available examples ---");
+  for example in examples {
+    writeln(" --- " + example);
   }
-  catch e: MasonError {
-    stderr.writeln(e.message());
-    exit(1);
-  }
+  writeln("--------------------------");
 }
 
 // Checks to see if an example, source code, or Mason.toml has been modified
