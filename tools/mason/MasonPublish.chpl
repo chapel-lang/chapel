@@ -57,7 +57,7 @@ proc masonPublish(args: [] string) throws {
   var refreshLicenseFlag = parser.addFlag(name="refresh-licenses",
                                           defaultValue=false);
 
-  parser.parseArgs(args.toArray());
+  parser.parseArgs(args);
 
   try! {
     var dry = dryFlag.valueAsBool();
