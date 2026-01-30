@@ -71,7 +71,8 @@ proc modifyToml(add: bool, spec: string, external: bool, system: bool,
   // Adding a dependency
   if add {
     if spec.find("@") == -1 {
-      throw new owned MasonError("Dependency formatted incorrectly.\nFormat: package@version");
+      throw new MasonError("Dependency formatted incorrectly.\n"+
+                           "Format: package@version");
     }
     const split = spec.split('@');
     const dependency = split[0];
@@ -84,11 +85,12 @@ proc modifyToml(add: bool, spec: string, external: bool, system: bool,
     }
 
     if system && add {
-      writeln(" ".join("Adding system dependency", dependency, "version", version));
+      writeln("Adding system dependency", dependency,
+              "version", version, sep=" ");
       newToml = masonSystemAdd(toml, dependency, version);
     }
     else if external && add {
-      writeln(" ".join("Adding external dependency with spec", spec));
+      writeln("Adding external dependency with spec", spec, sep=" ");
       newToml = masonExternalAdd(toml, dependency, spec);
     }
     else {
@@ -99,14 +101,15 @@ proc modifyToml(add: bool, spec: string, external: bool, system: bool,
 
         // Ensure path exists to maintain compatibility with old
         // versions of TOML files which did not require the type tag.
-        if depToml.pathExists("brick.type") {
-          if depToml["brick.type"]!.s != "library" {
-            throw new owned MasonError("Only mason libraries can be added as dependencies");
-          }
+        if depToml.pathExists("brick.type") &&
+           depToml["brick.type"]!.s != "library" {
+          throw new MasonError("Only mason libraries can be " +
+                                "added as dependencies");
         }
       }
 
-      writeln(" ".join("Adding Mason dependency", dependency, "version", version));
+      writeln("Adding Mason dependency", dependency,
+              "version", version, sep=" ");
       newToml = masonAdd(toml, dependency, version);
     }
   }
@@ -139,12 +142,13 @@ proc modifyToml(add: bool, spec: string, external: bool, system: bool,
 }
 
 /* Add a mason dependency to Mason.toml */
-private proc masonAdd(toml: shared Toml, toAdd: string, version: string) throws {
+private proc masonAdd(toml: shared Toml,
+                      toAdd: string, version: string) throws {
   if toml.pathExists("dependencies") {
     if toml.pathExists("dependencies." + toAdd) {
-      throw new owned MasonError("A dependency by that name already exists in Mason.toml");
-    }
-    else {
+      throw new MasonError("A dependency by that name already " +
+                           "exists in Mason.toml");
+    } else {
       toml["dependencies"]!.set(toAdd, version);
     }
   }
@@ -169,13 +173,14 @@ private proc masonRemove(toml: shared Toml, toRm: string) throws {
 }
 
 /* Add a system dependency to Mason.toml */
-private proc masonSystemAdd(toml: shared Toml, toAdd: string, version: string) throws {
+private proc masonSystemAdd(toml: shared Toml,
+                            toAdd: string, version: string) throws {
 
   if toml.pathExists("system") {
     if toml.pathExists("system." + toAdd) {
-      throw new MasonError("A dependency by that name already exists in Mason.toml");
-    }
-    else {
+      throw new MasonError("A dependency by that name already " +
+                           "exists in Mason.toml");
+    } else {
       toml["system"]!.set(toAdd, version);
     }
   }
@@ -194,13 +199,11 @@ private proc masonSystemRemove(toml: shared Toml, toRm: string) throws {
     if toml.pathExists("system." + toRm) {
       var old = toml["system"]![toRm]!;
       toml["system"]!.A.remove(toRm);
+    } else {
+      throw new MasonError("No system dependency exists by " + toRm);
     }
-    else {
-      throw new owned MasonError("No system dependency exists by " + toRm);
-    }
-  }
-  else {
-    throw new owned MasonError("No system dependency exists by " + toRm);
+  } else {
+    throw new MasonError("No system dependency exists by " + toRm);
   }
   return toml;
 }
@@ -212,12 +215,10 @@ private proc masonExternalAdd(toml: shared Toml,
     if toml.pathExists("external." + toAdd) {
       throw new MasonError("An external dependency by that name " +
                            "already exists in Mason.toml");
-    }
-    else {
+    } else {
       toml["external"]!.set(toAdd, spec);
     }
-  }
-  else {
+  } else {
     var exdom: domain(string, parSafe=false);
     var exdeps: [exdom] shared Toml?;
     toml.set("external", exdeps);
@@ -232,12 +233,10 @@ private proc masonExternalRemove(toml: shared Toml, toRm: string) throws {
     if toml.pathExists("external." + toRm) {
       var old = toml["external"]![toRm]!;
       toml["external"]!.A.remove(toRm);
-    }
-    else {
+    } else {
       throw new owned MasonError("No external dependency exists by that name");
     }
-  }
-  else {
+  } else {
     throw new owned MasonError("No external dependency exists by that name");
   }
   return toml;
@@ -258,13 +257,13 @@ proc checkVersion(version: string) throws {
   const PLUS = "(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*)?)";
   const pattern = new regex("^" + BASENUMS + DASH + PLUS + "$");
   if !pattern.match(version) {
-    throw new owned MasonError("Version formatting incorrect. ex. 1.2.3");
+    throw new MasonError("Version formatting incorrect. ex. 1.2.3");
   }
 }
 
 private proc checkDepName(dep: string) throws {
   if !isIdentifier(dep) {
-      throw new owned MasonError("Bad package name '" + dep +
-                             "' - only Chapel identifiers are legal package names");
+    throw new MasonError("Bad package name '" + dep +
+                         "' - only Chapel identifiers are legal package names");
   }
 }

@@ -38,14 +38,8 @@ import Path;
   from command line. If --dry-run is passed then it checks to see if the package
   is able to be published. Takes in the username of the package owner as an
   argument
- */
-proc masonPublish(args: [] string) {
-  var listArgs: list(string);
-    for x in args do listArgs.pushBack(x);
-    masonPublish(listArgs);
-}
-
-proc masonPublish(ref args: list(string)) throws {
+*/
+proc masonPublish(args: [] string) throws {
 
   var parser = new argumentParser(helpHandler=new MasonPublishHelpHandler());
 

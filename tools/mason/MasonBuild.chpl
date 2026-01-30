@@ -170,14 +170,12 @@ proc buildProgram(release: bool, show: bool, force: bool, skipUpdate: bool,
     var compopts = cmdLineCompopts;
     compopts.pushBack(getTomlCompopts(lockFile));
     // Compile Program
-    if compileSrc(lockFile, binLoc, show, release, compopts, projectHome) {
+    if compileSrc(lockFile, binLoc, release, compopts, projectHome) {
       writeln("Build Successful\n");
+    } else {
+      throw new MasonError("Build Failed");
     }
-    else {
-      throw new owned MasonError("Build Failed");
-    }
-  }
-  else {
+  } else {
     writeln("Skipping Build... No changes to project");
   }
 }
@@ -187,7 +185,7 @@ proc buildProgram(release: bool, show: bool, force: bool, skipUpdate: bool,
    folder. Requires that the main library file be
    named after the project folder in which it is
    contained */
-proc compileSrc(lockFile: borrowed Toml, binLoc: string, show: bool,
+proc compileSrc(lockFile: borrowed Toml, binLoc: string,
                 release: bool, compopts: list(string),
                 projectHome: string) : bool throws {
 
@@ -202,9 +200,8 @@ proc compileSrc(lockFile: borrowed Toml, binLoc: string, show: bool,
   const moveTo = Path.joinPath(projectHome, 'target', binLoc, project);
 
   if !isFile(pathToProj) {
-    throw new owned MasonError("Mason could not find your project");
-  }
-  else {
+    throw new MasonError("Mason could not find your project");
+  } else {
     log.debugln("Starting to create compilation command");
 
     var cmd: list(string);

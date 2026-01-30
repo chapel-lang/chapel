@@ -152,7 +152,8 @@ proc checkRegistryChanged() {
       return;
     }
 
-    const oldRegistry = gitC(cached, "git config --get remote.origin.url", quiet=true).strip();
+    const oldRegistry =
+      gitC(cached, "git config --get remote.origin.url", quiet=true).strip();
 
     if oldRegistry != registry {
       writeln("MASON_REGISTRY changed since last update:");
@@ -285,7 +286,9 @@ private proc createDepTree(root: Toml) throws {
     if brick.pathExists("dependencies") {
       for item in brick["dependencies"]!.arr {
         const brick = depTree[item!.s]!;
-        item!.s = brick["name"]!.s + " " + brick["version"]!.s + " " + brick["source"]!.s;
+        item!.s = brick["name"]!.s + " " +
+                  brick["version"]!.s + " " +
+                  brick["source"]!.s;
       }
     }
   }
