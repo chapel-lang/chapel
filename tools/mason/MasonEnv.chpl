@@ -24,6 +24,7 @@ use MasonUtils;
 public use MasonHelp;
 const regUrl: string = "https://github.com/chapel-lang/mason-registry";
 
+@chplcheck.ignore("CamelCaseFunctions")
 proc MASON_HOME : string {
   const envHome = getEnv("MASON_HOME");
   const default = getEnv('HOME') + "/.mason";
@@ -36,6 +37,7 @@ proc MASON_HOME : string {
   Returns an array of directory strings corresponding to MASON_HOME/name for
   each name in MASON_REGISTRY.
 */
+@chplcheck.ignore("CamelCaseFunctions")
 proc MASON_CACHED_REGISTRY {
   const masonRegistry = MASON_REGISTRY;
   const masonHome = MASON_HOME;
@@ -50,6 +52,7 @@ proc MASON_CACHED_REGISTRY {
   Returns value of MASON_OFFLINE, environment variable that
   disables online access.
 */
+@chplcheck.ignore("CamelCaseFunctions")
 proc MASON_OFFLINE {
   const offlineEnv = getEnv('MASON_OFFLINE');
   const default = false;
@@ -64,13 +67,15 @@ proc MASON_OFFLINE {
   return offline;
 }
 
-/* Read the MASON_REGISTRY environment variable.  It should be a comma
-   separated list of registry 'name|location' pairs. Returns an array of
-   tuples containing (name, location). If 'name|' is omitted, it defaults
-   to the text following the final slash in 'location' after removing any
-   trailing slashes. e.g. if location is "/path/to/my/local_registry//"
-   then the default name is "local_registry".
- */
+/*
+  Read the MASON_REGISTRY environment variable.  It should be a comma
+  separated list of registry 'name|location' pairs. Returns an array of
+  tuples containing (name, location). If 'name|' is omitted, it defaults
+  to the text following the final slash in 'location' after removing any
+  trailing slashes. e.g. if location is "/path/to/my/local_registry//"
+  then the default name is "local_registry".
+*/
+@chplcheck.ignore("CamelCaseFunctions")
 proc MASON_REGISTRY throws {
   const env = getEnv("MASON_REGISTRY");
   const default = ("mason-registry",regUrl);
@@ -83,7 +88,8 @@ proc MASON_REGISTRY throws {
       if str.strip().isEmpty() then continue;
       const regArr = str.split('|');
       if regArr.size > 2 || regArr.size < 1 {
-        const msg = "expected MASON_REGISTRY to contain a comma separated list of locations or 'name|location' pairs\n" + str;
+        const msg = "expected MASON_REGISTRY to contain a comma separated " +
+                    "list of locations or 'name|location' pairs\n" + str;
         throw new MasonError(msg);
       } else {
         var regTup: 2*string;
@@ -116,10 +122,12 @@ proc MASON_REGISTRY throws {
   return registries;
 }
 
-/* Returns the path to use when caching the list of licenses, if provided by the
-   user.  This is useful for systems where internet connectivity can be erratic
-   or slow.
- */
+/*
+  Returns the path to use when caching the list of licenses, if provided by the
+  user. This is useful for systems where internet connectivity can be erratic
+  or slow.
+*/
+@chplcheck.ignore("CamelCaseFunctions")
 proc MASON_LICENSE_CACHE_PATH: string {
   const licenseCache = getEnv("MASON_LICENSE_CACHE_PATH");
 
