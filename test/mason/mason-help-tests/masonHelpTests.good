@@ -6,13 +6,15 @@ Options:
     -h, --help                   Display this message
         --show                   Increase verbosity
         --no-vcs                 Do not initialize a git repository
-        --app                    Create a Mason "application" (package with main function)
-        --lib                    Create a Mason "library" (package without main function)
-        --light                  Create a Mason "lightweight" project (place a TOML file in current directory)
-    --name <legalName>           Specify package name different from directory name
+        --app                    Create a Mason "application"
+        --lib                    Create a Mason "library"
+        --light                  Create a Mason "lightweight" project
+        --name <legalName>       Specify package name different from directory
+                                 name
 ********************************************************************************
 $ mason init -h
 Initializes a library project inside a given directory or path.
+
 Usage:
     mason init [options] <directory name>
     mason init [options]
@@ -21,10 +23,11 @@ Options:
     -h, --help                   Display this message
         --show                   Increase verbosity
         --no-vcs                 Do not initialize a git repository
-        --app                    Create a Mason "application" (package with main function)
-        --lib                    Create a Mason "library" (package without main function)
-        --light                  Create a Mason "lightweight" project (place a TOML file in current directory)
-    --name <legalName>           Specify package name different from directory name
+        --app                    Create a Mason "application"
+        --lib                    Create a Mason "library"
+        --light                  Create a Mason "lightweight" project
+        --name <legalName>       Specify package name different from directory
+                                 name
 ********************************************************************************
 $ mason add -h
 Modify a Mason package's Mason.toml
@@ -38,8 +41,10 @@ Options:
         --external              Add/Remove dependency from external dependencies
         --system                Add/Remove dependency from system dependencies
 
-Not listing an option will add/remove the dependency from the Mason [dependencies] table
-Versions are necessary for adding dependencies, but not for removing dependencies
+Not listing an option will add/remove the dependency from the Mason
+[dependencies] table
+Versions are necessary for adding dependencies, but not for removing
+dependencies
 Manually edit the Mason.toml if multiple versions of the same package are listed
 Package names and versions are not validated upon adding
 ********************************************************************************
@@ -55,8 +60,10 @@ Options:
         --external              Add/Remove dependency from external dependencies
         --system                Add/Remove dependency from system dependencies
 
-Not listing an option will add/remove the dependency from the Mason [dependencies] table
-Versions are necessary for adding dependencies, but not for removing dependencies
+Not listing an option will add/remove the dependency from the Mason
+[dependencies] table
+Versions are necessary for adding dependencies, but not for removing
+dependencies
 Manually edit the Mason.toml if multiple versions of the same package are listed
 Package names and versions are not validated upon adding
 ********************************************************************************
@@ -69,20 +76,23 @@ Usage:
 Options:
     -h, --help                   Display this message
         --show                   Increase verbosity
-        --release                Compile to target/release with optimizations (--fast)
+        --release                Compile to target/release with optimizations
+                                 (--fast)
         --force                  Force Mason to build the project
         --example <example>      Build an example from the example/ directory
-        --[no-]update            [Do not] update the mason registry before building
-        --dependent-modules      Print the include paths to the dependent modules to be integrated into build step
+        --[no-]update            [Do not] update the mason registry before
+                                 building
+        --dependent-modules      Print the include paths to the dependent
+                                 modules to be integrated into build step
 
 When --example is thrown without an example, all examples will be built
 When no options are provided, the following will take place:
    - Build from mason project if Mason.lock present
 
 Compilation flags and arguments can be included after mason arguments.
-To ensure compilation flags and mason arguments to not conflict, separate them with a
-double dash(`--`). For example
-   e.g. mason build --force -- --savec tmpdir
+To ensure compilation flags and mason arguments to not conflict, separate them
+with a double dash(`--`). For example
+   mason build --force -- --savec tmpdir
 ********************************************************************************
 $ mason run -h
 Run the compiled project and output to standard output
@@ -96,16 +106,17 @@ Options:
         --show                   Increase verbosity
         --example <example>      Run an example
 
-When --example is thrown without an example, all available examples will be listed
+When --example is thrown without an example, all available examples
+will be listed
 
 When no options are provided, the following will take place:
    - Execute binary from mason project if target/ is present
-   - If no target directory, build and run is Mason.toml is present
+   - If no target directory, build and run if Mason.toml is present
 
 Runtime arguments can be included after mason arguments.
-To ensure that runtime arguments and mason arguments do not conflict, separate them
-with a double dash(`--`). For example
-   e.g. mason run --build -- --runtimeArg=true
+To ensure that runtime arguments and mason arguments do not conflict, separate
+them with a double dash(`--`). For example
+   mason run --build -- --runtimeArg=true
 ********************************************************************************
 $ mason search -h
 Search the registry for a package
@@ -115,8 +126,8 @@ Usage:
 
 Options:
     -h, --help                  Display this message
-    --show                      Display the manifest of a package
-    --[no-]update               [Do not] update the mason registry before
+        --show                  Display the manifest of a package
+        --[no-]update           [Do not] update the mason registry before
                                 searching the registry
 
 When no query is provided, all packages in the registry will be listed. The
@@ -145,7 +156,6 @@ Usage:
 
 Options:
     -h, --help                  Display this message
-
 ********************************************************************************
 $ mason doc -h
 Generate documentation for a mason package using chpldoc
@@ -159,7 +169,6 @@ Options:
 Will generate documentation when ran inside a mason package.
 Requires that chpldoc is set up in order to work.
 For instructions on setting up chpldoc, please view its documentation.
-
 ********************************************************************************
 $ mason system -h
 Integrate a Mason package with system packages found via pkg-config
@@ -185,7 +194,6 @@ Usage:
 
 Options:
     -h, --help                  Display this message
-
 ********************************************************************************
 $ mason system search -h
 Search for packages on system found via pkg-config
@@ -196,13 +204,14 @@ Usage:
 Options:
     -h, --help                  Display this message
         --no-show-desc          Only display package name
-        --desc                  Parse descriptions of package to include more search results
-
+        --desc                  Parse descriptions of package to include more
+                                search results
 ********************************************************************************
 $ mason test -h
 mason test works inside and outside of mason packages.
 Inside a mason package: run test files found in test/
-Outside of a mason package: run test files found in the provided path (defaults to '.').
+Outside of a mason package: run test files found in the provided path
+                            (defaults to '.').
 
 Usage:
     mason test [options] <path>
@@ -212,11 +221,14 @@ Options:
         --show                  Direct output of tests to stdout
         --no-run                Compile tests without running them
         --keep-binary           Doesn't delete the binaries after running
-        --recursive             Descend recursively into subdirectories of given directories
-        --parallel              Run tests in parallel(sequential by default)
+        --recursive             Descend recursively into subdirectories of
+                                given directories
+        --parallel              Run tests in parallel (sequential by default)
         --[no]-update           [Do not] update the mason-registry when testing
-        --setComm               Set the CHPL_COMM value for running the tests,  e.g. none, gasnet, ugni
-        --filter=FILTER         Filter the tests to run in each file by a regular expression
+        --setComm               Set the CHPL_COMM value for running the tests
+                                e.g. none, gasnet, ofi
+        --filter=FILTER         Filter the tests to run in each file by a
+                                regular expression
 
 Test configuration is up to the user
 Tests pass if they exit with status code 0
@@ -234,13 +246,15 @@ Options:
     install                     Install an external package
     uninstall                   Uninstall an external package
     info                        Show information about an external package
-    find                        Find information about installed external packages
+    find                        Find information about installed external
+                                packages
     -V, --version               Display Spack version
     -h, --help                  Display this message
         --setup                 Download and install Spack backend
         --spec                  Display Spack specification help
 
-Please see Mason documentation for more instructions on using external packages
+Please see Mason documentation for more instructions on using external
+packages
 ********************************************************************************
 Installing Spack backend ...
 $ mason external search -h
@@ -251,8 +265,8 @@ Usage:
 
 Options:
     -h, --help                  Display this message
-    -d, --desc                  Parse descriptions of package to include more search results
-
+    -d, --desc                  Parse descriptions of package to include more
+                                search results
 ********************************************************************************
 $ mason external compiler -h
 Find and view compilers on your system
@@ -263,9 +277,9 @@ Usage:
 Options:
     -h, --help                  Display this message
         --find                  Find compilers on your system
-        --edit                  Open the compilers configuration file in $EDITOR
+        --edit                  Open the compilers configuration file in
+                                $EDITOR
         --list                  List the compilers on your system
-
 ********************************************************************************
 $ mason external install -h
 Install external packages onto your system
@@ -277,38 +291,50 @@ Usage:
 
 Options:
     -h, --help                     Display this message
-    --only {package,dependencies}  Select the mode of installation. the default is to
-                                   install the package along with all its dependencies.
-                                   alternatively one can decide to install only the
-                                   package or only the dependencies
-    --jobs JOBS                    Explicitly set number of make jobs. default is #cpus
-    --overwrite                    reinstall an existing spec, even if it has dependents
-    --keep-prefix                  Don't remove the install prefix if installation fails
-    --keep-stage                   Don't remove the build stage if installation succeeds
-    --restage                      If a partial install is detected, delete prior state
+    --only {package,dependencies}  Select the mode of installation. The default
+                                   is to install the package along with all its
+                                   dependencies. Alternatively one can decide to
+                                   install only the package or only the
+                                   dependencies
+    --jobs JOBS                    Explicitly set number of make jobs. Default
+                                   is #cpus
+    --overwrite                    Reinstall an existing spec, even if it has
+                                   dependents
+    --keep-prefix                  Don't remove the install prefix if
+                                   installation fails
+    --keep-stage                   Don't remove the build stage if installation
+                                   succeeds
+    --restage                      If a partial install is detected, delete
+                                   prior state
     --use-cache                    Check for pre-built packages in mirrors
     --show-log-on-error            Print full build log to stderr if build fails
     --source                       Install source files in prefix
     --no-checksum                  Do not check packages against checksum
     --fake                         Fake install for debug purposes.
-    --file                         Install from file. Read specs to install from .yaml
-    --clean                        Sanitize the environment from variables that can
-                                   affect how packages find libraries or headers
-    --dirty                        Maintain the current environment without trying to
+    --file                         Install from file. Read specs to install from
+                                   .yaml
+    --clean                        Sanitize the environment from variables that
+                                   can affect how packages find libraries or
+                                   headers
+    --dirty                        Maintain the current environment without
+                                   trying to
                                    sanitize it
     --test {root,all}              If 'root' is chosen, run package tests during
-                                   installation for top-level packages (but skip tests
-                                   for dependencies). if 'all' is chosen, run package
-                                   tests during installation for all packages. If neither
-                                   are chosen, don't run tests for any packages.
-    --run-tests                    Run package tests during installation (same as --test=all)
+                                   installation for top-level packages (but skip
+                                   tests for dependencies). If 'all' is chosen,
+                                   run package tests during installation for all
+                                   packages. If neither are chosen, don't run
+                                   tests for any packages.
+    --run-tests                    Run package tests during installation
+                                   (same as --test=all)
     --log-format {junit}           Format to be used for log files
-    --log-file LOG_FILE            Filename for the log file. if not passed a default will be used
-    --yes-to-all                   Assume 'yes' is the answer to every confirmation request
+    --log-file LOG_FILE            Filename for the log file. If not passed a
+                                   default will be used
+    --yes-to-all                   Assume 'yes' is the answer to every
+                                   confirmation request
 
 External Mason packages can be installed as follows:
     mason external install <full Spack spec expression>
-
 ********************************************************************************
 $ mason external uninstall -h
 Uninstall external packages on your system
@@ -321,12 +347,12 @@ Usage:
 Options:
     -h, --help                  Display this message
         --force                 Remove regardless of dependents
-        --all                   USE CAREFULLY. remove ALL installed packages that match supplied spec
+        --all                   USE CAREFULLY. remove ALL installed packages
+                                that match supplied spec
         --dependents            Also uninstall any dependent packages
 
 External Mason packages can be uninstalled as follows:
     mason external uninstall <full Spack spec expression>
-
 ********************************************************************************
 $ mason external info -h
 Get information about external packages and system architecture
@@ -334,10 +360,11 @@ Get information about external packages and system architecture
 Usage:
     mason external info [options] <package>
 
-    <package>: a Spack spec expression indicating the package to retrieve information on
+    <package>: a Spack spec expression indicating the package to retrieve
+               information on
 
 Options:
     -h, --help                  Display this message
-        --arch                  Print architecture information about current system
-
+        --arch                  Print architecture information about current
+                                system
 ********************************************************************************
