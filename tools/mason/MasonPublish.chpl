@@ -564,7 +564,8 @@ proc check(username: string, path: string, trueIfLocal: bool, ci: bool) throws {
         writeln('   %s'.format(field));
       masonFieldsTest = false;
     } else if manifestResults.mismatchedTypes.size > 0 {
-      writeln('   Mismatched field types in manifest file (Mason.toml). (FAILED)');
+      writeln('   Mismatched field types in manifest file (Mason.toml). ',
+              '(FAILED)');
       writeln('   The fields with mismatched types are as follows: ');
       for field in manifestResults.mismatchedTypes do
         writeln('   %s'.format(field));
@@ -576,7 +577,8 @@ proc check(username: string, path: string, trueIfLocal: bool, ci: bool) throws {
   if package {
     writeln('Checking for examples:');
     if exampleCheck(projectCheckHome) {
-      writeln('   Found examples in the package, can be published to a registry. (PASSED)');
+      writeln('   Found examples in the package, ',
+              'can be published to a registry. (PASSED)');
     } else {
       writeln('   No examples found in package. (WARNING)');
       exampleTest = false;
@@ -838,8 +840,7 @@ private proc registryPathCheck(path: string,
   }
 }
 
-/* Grabs the remote origin of the package
- */
+/* Grabs the remote origin of the package */
 private proc getRemoteOrigin() {
   const packageDir = here.cwd();
   const gitRemoteOrigin =
@@ -847,8 +848,10 @@ private proc getRemoteOrigin() {
   return gitRemoteOrigin;
 }
 
-/* Makes sure that the directory `mason publish --check is called in is a mason package
- */
+/*
+  Makes sure that the directory `mason publish --check`
+  is called in is a mason package
+*/
 private proc ensureMasonProject(cwd : string, tomlName="Mason.toml") : string {
   const (dirname, basename) = splitPath(cwd);
   if dirname == '/' {
