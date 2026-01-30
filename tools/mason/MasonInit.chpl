@@ -95,29 +95,29 @@ proc masonInit(args: [] string) throws {
 
   if dirName != '' then
     if !isDir(path) then
-      throw new owned MasonError("Directory does not exist: " + path +
-                                 " Did you mean 'mason new' to create a " +
-                                 "new project from scratch?");
+      throw new  MasonError("Directory does not exist: " + path +
+                            " Did you mean 'mason new' to create a " +
+                            "new project from scratch?");
 
   // If TOML file exists, send message that package is already
   // initialized and give some info on what they might want to
   // do instead.
   if isFile(path + '/Mason.toml') {
-    throw new owned MasonError("Mason.toml already exists for current project. " +
-                               "Remove or rename the existing manifest file and rerun " +
-                               "`mason init` to initialize a new project.");
+    throw new MasonError(
+      "Mason.toml already exists for current project. " +
+      "Remove or rename the existing manifest file and rerun " +
+      "`mason init` to initialize a new project.");
   } else if isDir(path + '/src/') {
-    throw new owned MasonError("/src/ directory already exists for current project. " +
-                               "Remove or rename the /src/ directory and rerun " +
-                               "`mason init` to initialize a new project. " +
-                               "Alternatively, run `mason new --light` to add only a " +
-                               "manifest file.");
+    throw new MasonError(
+      "/src/ directory already exists for current project. " +
+      "Remove or rename the /src/ directory and rerun " +
+      "`mason init` to initialize a new project. " +
+      "Alternatively, run `mason new --light` to add only a " +
+      "manifest file.");
   } else {
     // We can create the /src/ dir and Mason.toml
-    if dirName == '' then
-      initProject(cwd, name, vcs, show, version, chplVersion, license, packageType);
-    else
-      initProject(path, name, vcs, show, version, chplVersion, license, packageType);
+    initProject(cwd, name, vcs, show, version, chplVersion,
+                license, packageType);
   }
   writeln("Tip: To convert existing code to a mason project, " +
           "move the driver application to the `src/" + name + ".chpl`" +

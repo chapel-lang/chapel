@@ -53,7 +53,8 @@ proc masonExample(args: [] string) throws {
 
   const projectType = getProjectType();
   if projectType == "light" then
-    throw new owned MasonError("Mason light projects do not currently support 'mason example'");
+    throw new MasonError("Mason light projects do not currently " +
+                         "support 'mason example'");
 
   try! {
     parser.parseArgs(args);
@@ -263,19 +264,22 @@ private proc runExamples(show: bool, run: bool, build: bool, release: bool,
             }
           } else {
             // build is skipped but examples still need to be run
-            writeln("Skipping "+ example + ": no changes made to project or example");
+            writeln("Skipping ", example,
+                    ": no changes made to project or example");
             if run then
-              runExampleBinary(projectHome, exampleName, release, show, exampleExecopts);
+              runExampleBinary(projectHome, exampleName,
+                               release, show, exampleExecopts);
           }
         }
         // just running the example
         else {
-          runExampleBinary(projectHome, exampleName, release, show, exampleExecopts);
+          runExampleBinary(projectHome, exampleName,
+                           release, show, exampleExecopts);
         }
       }
     }
     else {
-      throw new owned MasonError("No examples were found in /example");
+      throw new MasonError("No examples were found in /example");
     }
   }
   catch e: MasonError {
@@ -300,9 +304,9 @@ private proc runExampleBinary(projectHome: string, exampleName: string,
   const exampleResult = runWithStatus(command.toArray());
   if exampleResult != 0 {
     throw new MasonError(
-    "Example has not been compiled: " + exampleName + ".chpl\n" +
-    "Try running: mason build --example " + exampleName + ".chpl\n" +
-    "         or: mason run --example " + exampleName + ".chpl --build");
+      "Example has not been compiled: " + exampleName + ".chpl\n" +
+      "Try running: mason build --example " + exampleName + ".chpl\n" +
+      "         or: mason run --example " + exampleName + ".chpl --build");
   }
 }
 

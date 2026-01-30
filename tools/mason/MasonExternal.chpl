@@ -74,10 +74,11 @@ proc masonExternal(args: [] string) {
     if setupFlag.valueAsBool() {
       // if MASON_OFFLINE is set, then cannot install spack
       if MASON_OFFLINE {
-        throw new owned MasonError('Cannot setup Spack when MASON_OFFLINE is set to true');
+        throw new MasonError('Cannot setup Spack when MASON_OFFLINE ' +
+                             'is set to true');
       }
 
-      // If spack and spack registry is present with latest version, print message
+      // If spack and spack registry is present with latest version, print
       if isDir(SPACK_ROOT) &&
          isDir(spackRegistryDefaultPath) &&
          getSpackVersion() == minSpackVersion &&
@@ -131,9 +132,10 @@ proc masonExternal(args: [] string) {
       }
       // check that after all this, the version of spack is as we expect it
       if getSpackVersion() <= minSpackVersion then
-        throw new owned MasonError("Spack update or installation failed. \
-                                    Expected v%s, got v%s".format(minSpackVersion.str(),
-                                                                  getSpackVersion().str()));
+        throw new MasonError("Spack update or installation failed. " +
+                             "Expected v%s, got v%s".format(
+                                minSpackVersion.str(),
+                                getSpackVersion().str()));
       exit(0);
     }
     if spackInstalled() {
@@ -218,7 +220,8 @@ proc setupSpack() throws {
 proc cloneSpackRepository(branch : string, dest: string) {
   const repo = "https://github.com/spack/spack ";
   const depth = '--depth 1 ';
-  const command = 'git clone -q -c advice.detachedHead=false ' + branch + depth + repo + dest;
+  const command = 'git clone -q -c advice.detachedHead=false ' +
+                  branch + depth + repo + dest;
   const statusPackages = runWithStatus(command);
   if statusPackages != 0 then return -1;
   else return 0;
@@ -485,7 +488,7 @@ proc getExternalPackages(exDeps: Toml) /* [domain(string)] shared Toml? */ {
 
 
 /* Retrieves build information for MasonUpdate */
-proc getSpkgInfo(spec: string, ref dependencies: list(string)): shared Toml throws {
+proc getSpkgInfo(spec: string, dependencies: list(string)): shared Toml throws {
 
   var depList: list(shared Toml);
   var spkgDom: domain(string, parSafe=false);
@@ -516,8 +519,7 @@ proc getSpkgInfo(spec: string, ref dependencies: list(string)): shared Toml thro
       spkgInfo.set("libs", libs);
       spkgInfo.set("include", includePath);
 
-      while dependencies.size > 0 {
-        var dep = dependencies[0];
+      for dep in dependencies {
         var depSpec = dep.split("@", 1);
         var name = depSpec[0];
 
@@ -530,9 +532,6 @@ proc getSpkgInfo(spec: string, ref dependencies: list(string)): shared Toml thro
         // get a toml that contains the dependency info and put it
         // in a subtable of the current dependencies table
         spkgInfo.set(name, getSpkgInfo(dep, depsOfDep));
-
-        // remove dep for recursion
-        dependencies.getAndRemove(0);
       }
       if depList.size > 0 {
         // Temporarily use toArray here to avoid supporting list.
