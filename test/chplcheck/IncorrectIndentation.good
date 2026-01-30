@@ -91,4 +91,9 @@ IncorrectIndentation.chpl:416: node violates rule IncorrectIndentation
 IncorrectIndentation.chpl:420: node violates rule IncorrectIndentation
 IncorrectIndentation.chpl:421: node violates rule ConsecutiveDecls
 IncorrectIndentation.chpl:421: node violates rule IncorrectIndentation
+IncorrectIndentation.chpl:444: node violates rule ConsecutiveDecls
+IncorrectIndentation.chpl:444: node violates rule IncorrectIndentation
+IncorrectIndentation.chpl:451: node violates rule ConsecutiveDecls
+IncorrectIndentation.chpl:452: node violates rule IncorrectIndentation
+IncorrectIndentation.chpl:453: node violates rule IncorrectIndentation
 [Success matching fixit for IncorrectIndentation]

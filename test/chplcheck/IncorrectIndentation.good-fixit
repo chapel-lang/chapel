@@ -440,4 +440,38 @@ if 1 < 2 {
   var a = 10;
   var b = 20;
   }
+
+ proc ifElse() {
+    if 1 < 5 {
+      writeln("whee");
+    } else if 2 > 3 {
+      writeln("whoopie");
+    } else if 11 > 3 {
+      writeln("wooooow");
+    }
+
+    if 1 < 5 then
+      writeln("whee");
+    else if 2 > 3 then
+      writeln("whoopie");
+    else if 11 > 3 then
+      writeln("wooooow");
+
+    if 1 < 5 {
+      writeln("whee");
+    } else if 11 > 3 {
+        var x = 10;
+          var y = 20;
+    }
+
+    if 1 < 5 {
+      writeln("whee");
+    } else if 11 > 3 {
+      var x = 10;
+      var y = 20;
+        if 1 {
+        writeln("nested");
+      }
+    }
+  }
 }
