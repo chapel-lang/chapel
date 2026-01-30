@@ -178,12 +178,30 @@ CLASS_END(Cobegin)
 CLASS_BEGIN(Conditional)
   PLAIN_GETTER(Conditional, condition, "Get the condition of this Conditional node",
                const chpl::uast::AstNode*, return node->condition())
-  PLAIN_GETTER(Conditional, else_block, "Get the else block of this Conditional node or None if no else block",
-               Nilable<const chpl::uast::Block*>, return node->elseBlock())
-  PLAIN_GETTER(Conditional, is_expression_level, "Checks if this Conditional node is expression-level",
-               bool, return node->isExpressionLevel())
   PLAIN_GETTER(Conditional, then_block, "Get the then block of this Conditional node",
                const chpl::uast::Block*, return node->thenBlock())
+  PLAIN_GETTER(Conditional, then_stmts, "Get the statements in the then block of this Conditional node",
+               IterAdapterBase*, return mkIterPair(node->thenStmts()))
+  PLAIN_GETTER(Conditional, num_then_stmts, "Get the number of statements in the then block of this Conditional node",
+               int, return node->numThenStmts())
+  METHOD(Conditional, then_stmt, "Get the i'th statement in the then block of this Conditional node",
+         const chpl::uast::AstNode*(int), return node->thenStmt(std::get<0>(args)))
+  PLAIN_GETTER(Conditional, then_block_style, "Get the block style of the then block of this Conditional node",
+               const char*, return blockStyleToString(node->thenBlockStyle()))
+  PLAIN_GETTER(Conditional, has_else_block, "Check if this Conditional node has an else block",
+               bool, return node->hasElseBlock())
+  PLAIN_GETTER(Conditional, else_block, "Get the else block of this Conditional node or None if no else block",
+               Nilable<const chpl::uast::Block*>, return node->elseBlock())
+  PLAIN_GETTER(Conditional, else_stmts, "Get the statements in the else block of this Conditional node",
+               IterAdapterBase*, return mkIterPair(node->elseStmts()))
+  PLAIN_GETTER(Conditional, num_else_stmts, "Get the number of statements in the else block of this Conditional node",
+               int, return node->numElseStmts())
+  METHOD(Conditional, else_stmt, "Get the i'th statement in the else block of this Conditional node",
+         const chpl::uast::AstNode*(int), return node->elseStmt(std::get<0>(args)))
+  PLAIN_GETTER(Conditional, else_block_style, "Get the block style of the else block of this Conditional node",
+               const char*, return blockStyleToString(node->elseBlockStyle()))
+  PLAIN_GETTER(Conditional, is_expression_level, "Checks if this Conditional node is expression-level",
+               bool, return node->isExpressionLevel())
 CLASS_END(Conditional)
 
 CLASS_BEGIN(Comment)
@@ -369,10 +387,14 @@ CLASS_BEGIN(Yield)
 CLASS_END(Yield)
 
 CLASS_BEGIN(SimpleBlockLike)
-  PLAIN_GETTER(SimpleBlockLike, block_style, "Get the block style of this SimpleBlockLike node",
-               const char*, return blockStyleToString(node->blockStyle()))
   PLAIN_GETTER(SimpleBlockLike, stmts, "Get the statements contained in this SimpleBlockLike.",
                IterAdapterBase*, return mkIterPair(node->stmts()))
+  PLAIN_GETTER(SimpleBlockLike, num_stmts, "Get the number of statements contained in this SimpleBlockLike.",
+               int, return node->numStmts())
+  METHOD(SimpleBlockLike, stmt, "Get the i'th statement contained in this SimpleBlockLike.",
+         const chpl::uast::AstNode*(int), return node->stmt(std::get<0>(args)))
+  PLAIN_GETTER(SimpleBlockLike, block_style, "Get the block style of this SimpleBlockLike node",
+               const char*, return blockStyleToString(node->blockStyle()))
 CLASS_END(SimpleBlockLike)
 
 CLASS_BEGIN(Begin)
