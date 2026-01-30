@@ -51,7 +51,7 @@ The current resolution strategy for Mason 0.1.0 is the IVRS as described below:
 private var failedChapelVersion: list(string);
 private var log = new logger("mason update");
 
-proc masonUpdate(args: [?d] string) {
+proc masonUpdate(args: [] string) {
   var tf = "Mason.toml";
   var lf = "Mason.lock";
   var skipUpdate = MASON_OFFLINE;
@@ -222,7 +222,7 @@ proc prettyVersionRange(low, hi) {
 
 proc chplVersionError(brick:borrowed Toml) {
   const info = verifyChapelVersion(brick);
-  if info(0) == false {
+  if !info(0) {
     const low  = info(1);
     const hi   = info(2);
     const name = brick["name"]!.s + "-" + brick["version"]!.s;
@@ -325,7 +325,7 @@ private proc createDepTrees(depTree: Toml,
 
     depList.pushBack(new shared Toml(package));
 
-    if depTree.pathExists(package) == false {
+    if !depTree.pathExists(package) {
       var dt: domain(string, parSafe=false);
       var depTbl: [dt] shared Toml?;
       depTree.set(package, depTbl);
