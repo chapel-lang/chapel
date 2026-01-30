@@ -87,10 +87,12 @@ proc masonNew(args: [] string) throws {
 
   if !isLightweight && validatePackageName(dirName=packageName) {
     if isDir(dirName) {
-      throw new owned MasonError("A directory named '" + dirName + "' already exists");
+      throw new MasonError("A directory named '" +
+                            dirName + "' already exists");
     }
   }
-  InitProject(dirName, packageName, vcs, show, version, chplVersion, license, packageType);
+  initProject(dirName, packageName, vcs, show, version, chplVersion,
+              license, packageType);
 }
 
 /* Exit terminal when CTRL + D is pressed */
@@ -104,11 +106,13 @@ proc exitOnEOF(parameter) {
 /* Previews the Mason.toml file that is going to be created */
 proc previewMasonFile(packageName, version, chapelVersion, license) {
   // TODO: update hardcode
-  const baseToml = getBaseTomlString(packageName, version, chapelVersion, license, "application");
+  const baseToml = getBaseTomlString(packageName, version, chapelVersion,
+                                     license, "application");
   writeln();
   writeln(baseToml);
 }
 
+// TODO: this function is completely unused - remove or use it?
 /* Perform validation checks on Chapel Version */
 proc validateChplVersion(chapelVersion) throws {
   var low, hi : VersionInfo;
@@ -117,19 +121,23 @@ proc validateChplVersion(chapelVersion) throws {
   var ret = false;
   (low, hi) = checkChplVersion(chapelVersion, low, hi);
   ret = low <= current && current <= hi;
-  if !ret then throw new owned MasonError("Your current " +
-    "Chapel version ( " + getChapelVersionStr() + " ) is not compatible with this chplVersion.");
-  else return true;
+  if !ret {
+    throw new MasonError("Your current Chapel version ( " +
+                          getChapelVersionStr() +
+                          " ) is not compatible with this chplVersion.");
+  } else
+    return true;
 }
 
 /* Checks for illegal package names */
 proc validatePackageName(dirName) throws {
   if dirName == '' {
-    throw new owned MasonError("No package name specified");
+    throw new MasonError("No package name specified");
   } else if !isIdentifier(dirName) {
-    throw new owned MasonError("Bad package name '" + dirName +
-                        "' - only Chapel identifiers are legal package names.\n" +
-                        "Please use mason new %s --name <LegalName>".format(dirName));
+    throw new MasonError(
+      "Bad package name '" + dirName +
+      "' - only Chapel identifiers are legal package names.\n" +
+      "Please use mason new %s --name <LegalName>".format(dirName));
   } else {
     return true;
   }
@@ -151,7 +159,8 @@ proc addGitIgnore(dirName: string) {
   GIwriter.close();
 }
 
-proc getBaseTomlString(packageName: string, version: string, chapelVersion: string,
+proc getBaseTomlString(packageName: string, version: string,
+                       chapelVersion: string,
                        license: string, packageType: string) {
   const baseToml = """[brick]
 name="%s"
@@ -178,7 +187,8 @@ proc makeBasicToml(dirName: string, path: string, version: string,
     then defaultChplVersion = chplVersion;
   if !license.isEmpty()
     then defaultLicense = license;
-  const baseToml = getBaseTomlString(dirName, defaultVersion, defaultChplVersion,
+  const baseToml = getBaseTomlString(dirName, defaultVersion,
+                                     defaultChplVersion,
                                      defaultLicense, packageType);
   var tomlFile = open(path+"/Mason.toml", ioMode.cw);
   var tomlWriter = tomlFile.writer(locking=false);
@@ -195,11 +205,21 @@ proc makeSrcDir(path:string) {
 proc makeModule(path:string, fileName:string, packageType="application") {
   var libTemplate: string;
   if packageType == "application" {
-    libTemplate = '/* Documentation for ' + fileName +
-      ' */\nmodule '+ fileName + ' {\n  proc main() {\n    writeln("New mason package: '+ fileName +'");\n  }\n}';
+    libTemplate = """
+      /* Documentation for %s */
+      module %s {
+        proc main() {
+          writeln("New mason package: %s");
+        }
+      }
+    """.format(fileName, fileName, fileName).dedent().strip();
   } else if packageType == "library" {
-    libTemplate = '/* Documentation for ' + fileName +
-      ' */\nmodule '+ fileName + ' {\n  // Your library here\n}';
+    libTemplate = """
+      /* Documentation for %s */
+      module %s {
+        // Your library here
+      }
+    """.format(fileName, fileName).dedent().strip();
   }
   var lib = open(path+'/src/'+fileName+'.chpl', ioMode.cw);
   var libWriter = lib.writer(locking=false);

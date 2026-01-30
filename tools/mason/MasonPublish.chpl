@@ -287,15 +287,9 @@ proc publishPackage(username: string,
  */
 proc dryRun(username: string, registryPath : string, isLocal : bool) throws {
   if !isLocal {
-    var fork = true;
     var remoteCheck = checkIfForkExists(username: string);
-    if remoteCheck == 1 {
-      fork = false;
-    }
-    var git = false;
-    if doesGitOriginExist() {
-      git = true;
-    }
+    const fork = remoteCheck != 1;
+    const git = doesGitOriginExist();
     if git && fork {
       const s = """
       Package can be published to the mason-registry
@@ -309,15 +303,13 @@ proc dryRun(username: string, registryPath : string, isLocal : bool) throws {
       """.dedent().strip();
       writeln(s);
       exit(0);
-    }
-    else {
+    } else {
       if !fork then
         throw new MasonError('mason-registry is not forked on your GitHub');
       else
         throw new MasonError('Package does not gave a git origin');
     }
-  }
-  else {
+  } else {
     const spacer = '------------------------------------------------------';
     writeln('Checking Registry with ' + registryPath + ' path.');
     var registryTest = registryPathCheck(registryPath, username, false);
@@ -390,8 +382,8 @@ private proc usernameCheck(username: string) {
  */
 private proc checkIfForkExists(username: string) {
   var getFork = 'git ls-remote https://github.com/%s/mason-registry';
-  var p = runWithProcess(getFork.format(username), false);
-  return p.exitCode;
+  var status = runWithStatus(getFork.format(username), false);
+  return status;
 }
 
 /* Gets the GitHub username of the user, by parsing from the remote origin url.

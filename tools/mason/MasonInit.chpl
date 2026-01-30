@@ -115,9 +115,9 @@ proc masonInit(args: [] string) throws {
   } else {
     // We can create the /src/ dir and Mason.toml
     if dirName == '' then
-      InitProject(cwd, name, vcs, show, version, chplVersion, license, packageType);
+      initProject(cwd, name, vcs, show, version, chplVersion, license, packageType);
     else
-      InitProject(path, name, vcs, show, version, chplVersion, license, packageType);
+      initProject(path, name, vcs, show, version, chplVersion, license, packageType);
   }
   writeln("Tip: To convert existing code to a mason project, " +
           "move the driver application to the `src/" + name + ".chpl`" +
