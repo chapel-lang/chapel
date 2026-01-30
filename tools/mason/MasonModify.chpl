@@ -206,10 +206,12 @@ private proc masonSystemRemove(toml: shared Toml, toRm: string) throws {
 }
 
 /* Add an external dependency to Mason.toml */
-private proc masonExternalAdd(toml: shared Toml, toAdd: string, spec: string) throws {
+private proc masonExternalAdd(toml: shared Toml,
+                              toAdd: string, spec: string) throws {
   if toml.pathExists("external") {
     if toml.pathExists("external." + toAdd) {
-      throw new owned MasonError("An external dependency by that name already exists in Mason.toml");
+      throw new MasonError("An external dependency by that name " +
+                           "already exists in Mason.toml");
     }
     else {
       toml["external"]!.set(toAdd, spec);

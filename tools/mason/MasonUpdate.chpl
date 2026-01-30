@@ -112,7 +112,8 @@ proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock",
       const prefix = if failedChapelVersion.size == 1
         then "The following package is"
         else "The following packages are";
-      stderr.writeln(prefix, " incompatible with your version of Chapel (", getChapelVersionStr(), ")");
+      stderr.writeln(prefix, " incompatible with your version of Chapel (",
+                     getChapelVersionStr(), ")");
       for msg in failedChapelVersion do
         stderr.writeln("  ", msg);
       exit(1);
@@ -480,7 +481,8 @@ private proc retrieveGitDep(name: string, branch: string) {
     return depToml;
   }
 
-  stderr.writeln("No toml file found in git dependency for " + name +'-'+ branch);
+  stderr.writeln("No toml file found in git dependency for " +
+                 name + '-' + branch);
   exit(1);
 }
 
