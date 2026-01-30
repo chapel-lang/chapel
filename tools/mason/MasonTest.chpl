@@ -401,7 +401,7 @@ private proc runTestBinary(projectHome: string, outputLoc: string,
       result.addFailure(testName, testName+".chpl", errMsg);
     }
     else {
-      result.addSuccess(testName, testName+".chpl");
+      result.addSuccess();
     }
   }
 }
@@ -596,7 +596,7 @@ proc testFile(file, const ref compopts: list(string),
         result.addFailure(executable, fileName, errMsg);
       }
       else {
-        result.addSuccess(executable, fileName);
+        result.addSuccess();
       }
     }
     if !keepExec {
@@ -754,7 +754,7 @@ proc addTestResult(ref result, ref localesCountMap, ref testNames,
   select flavour {
     when "OK" {
       if show then writeln("Ran ",testName," ",flavour);
-      result.addSuccess(testName, fileName);
+      result.addSuccess();
       testsPassed.pushBack(testName);
     }
     when "ERROR" {
