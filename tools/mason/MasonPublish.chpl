@@ -123,9 +123,9 @@ proc masonPublish(args: [] string) throws {
     }
 
     if checkFlag || ci {
-      if ci then check(username, registryPath, isLocal, ci);
+      if ci then check(registryPath, ci);
       else {
-        check(username, registryPath, isLocal, ci);
+        check(registryPath, ci);
       }
     }
 
@@ -242,7 +242,7 @@ proc publishPackage(username: string,
 
     if !isLocal {
       cloneMasonReg(username, safeDir, registryPath);
-      branchMasonReg(username, name, safeDir, registryPath);
+      branchMasonReg(name, safeDir);
     }
 
     const version = addPackageToBricks(packageLocation, safeDir, name, isLocal);
@@ -406,8 +406,7 @@ private proc gitUrl() {
   Takes the git username and creates a new branch of the mason registry users
   fork, name or branch is taken from the Mason.toml of the mason package.
  */
-proc branchMasonReg(username: string, name: string,
-                    safeDir: string, registryPath : string) throws {
+proc branchMasonReg(name: string, safeDir: string) throws {
   try! {
     const branchCommand = "git checkout --quiet -b  "+ name: string;
     var ret = gitC(safeDir + '/mason-registry', branchCommand, false);
@@ -506,7 +505,7 @@ private proc addPackageToBricks(projectLocal: string, safeDir: string,
   registry path, and other issues that may prevent a package from being
   published to a registry.
  */
-proc check(username: string, path: string, trueIfLocal: bool, ci: bool) throws {
+proc check(path: string, ci: bool) throws {
   const spacer = '------------------------------------------------------';
   const package = (ensureMasonProject(here.cwd(), 'Mason.toml') == 'true');
   const projectCheckHome = here.cwd();
@@ -525,8 +524,7 @@ proc check(username: string, path: string, trueIfLocal: bool, ci: bool) throws {
     writeln('   Could not find your configuration file (Mason.toml) (FAILED)');
     writeln('   Ensure your project is a mason package');
     packageTest = false;
-    }
-  else {
+  } else {
     writeln('   Package is a Mason package and has a Mason.toml (PASSED)');
   }
   writeln(spacer);
@@ -536,8 +534,7 @@ proc check(username: string, path: string, trueIfLocal: bool, ci: bool) throws {
     if moduleCheck(projectCheckHome) {
       writeln('   Your package has one main module whose name matches ' +
               'the package name. (PASSED)');
-    }
-    else {
+    } else {
       writeln('   Packages must have a single main module whose name matches ' +
               'the package name. (FAILED)');
       moduleTest = false;
@@ -630,8 +627,7 @@ proc check(username: string, path: string, trueIfLocal: bool, ci: bool) throws {
       writeln('   Package has a git remote origin and can be published ' +
               'to a remote registry (PASSED)');
       writeln('   Remote Origin: ' + getRemoteOrigin());
-    }
-    else {
+    } else {
       writeln('   Package has no remote origin and cannot be publish to a ' +
               'registry with path:' + path + ' (FAILED)');
       remoteTest = false;
@@ -666,8 +662,7 @@ proc check(username: string, path: string, trueIfLocal: bool, ci: bool) throws {
   if packageTest && remoteTest && moduleTest && testTest &&
     licenseTest && gitTagTest && masonFieldsTest {
     writeln('(PASSED) Your package is ready to publish');
-  }
-  else {
+  } else {
     if !packageTest {
       writeln(
         '(FAILED) Your package does not have to proper package structure');
