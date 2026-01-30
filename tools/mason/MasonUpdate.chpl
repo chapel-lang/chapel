@@ -235,16 +235,14 @@ proc chplVersionError(brick:borrowed Toml) {
    from the Mason.toml. Starts at the root of the
    project and continues down dep tree recursively
    until each dep is recorded */
-private proc createDepTree(root: Toml) {
+private proc createDepTree(root: Toml) throws {
   var dp: domain(string, parSafe=false);
   var dps: [dp] shared Toml?;
   var depTree = new shared Toml(dps);
   if root.pathExists("brick") {
     depTree.set("root", new shared Toml(root["brick"]!));
-  }
-  else {
-    stderr.writeln("Could not find brick; Mason cannot update");
-    exit(1);
+  } else {
+    throw new MasonError("Could not find brick; Mason cannot update");
   }
 
   log.debugln("Setting depTree for Chapel dependencies");
@@ -307,10 +305,11 @@ private proc createDepTree(root: Toml) {
   return depTree;
 }
 
-private proc createDepTrees(depTree: Toml, ref deps: list(shared Toml), name: string) : shared Toml {
+private proc createDepTrees(depTree: Toml,
+                            deps: list(shared Toml),
+                            name: string): shared Toml throws {
   var depList: list(shared Toml?);
-  while deps.size > 0 {
-    var dep = deps[0];
+  for dep in deps {
 
     var brick       = dep["brick"]!;
     var package     = brick["name"]!.s;
@@ -341,7 +340,6 @@ private proc createDepTrees(depTree: Toml, ref deps: list(shared Toml), name: st
       var manifests = getManifests(subDeps);
       var dependency = createDepTrees(depTree, manifests, package);
     }
-    deps.getAndRemove(0);
   }
   // Use toArray here to avoid making Toml aware of `list`, for now.
   if depList.size > 0 then
@@ -382,14 +380,18 @@ private proc IVRS(A: borrowed Toml, B: borrowed Toml) {
   const (okB, Blo, Bhi) = verifyChapelVersion(B);
   const version1 = A["version"]!.s;
   const version2 = B["version"]!.s;
-  if okA == false && okB == false {
-    stderr.writeln("Dependency resolution error: unable to find version of '", name, "' compatible with your version of Chapel (", getChapelVersionStr(), "):");
-    stderr.writeln("  v", version1, " expecting ", prettyVersionRange(Alo, Ahi));
-    stderr.writeln("  v", version2, " expecting ", prettyVersionRange(Blo, Bhi));
+  if !okA && !okB {
+    stderr.writeln("Dependency resolution error: unable to find version of '",
+                   name, "' compatible with your version of Chapel (",
+                   getChapelVersionStr(), "):");
+    stderr.writeln("  v", version1, " expecting ",
+                   prettyVersionRange(Alo, Ahi));
+    stderr.writeln("  v", version2, " expecting ",
+                   prettyVersionRange(Blo, Bhi));
     exit(1);
-  } else if okA == true && okB == false {
+  } else if okA && !okB {
     return A;
-  } else if okA == false && okB == true {
+  } else if !okA && okB {
     return B;
   }
 
@@ -400,7 +402,9 @@ private proc IVRS(A: borrowed Toml, B: borrowed Toml) {
   var v1 = vers1(0): int;
   var v2 = vers2(0): int;
   if vers1(0) != vers2(0) {
-    stderr.writeln("Dependency resolution error: package '", name, "' used by multiple packages expecting different major versions:");
+    stderr.writeln(
+      "Dependency resolution error: package '", name,
+      "' used by multiple packages expecting different major versions:");
     stderr.writeln("  v", version1);
     stderr.writeln("  v", version2);
     exit(1);
@@ -427,7 +431,7 @@ private proc IVRS(A: borrowed Toml, B: borrowed Toml) {
 
 
 /* Returns the Mason.toml for each dep listed as a Toml */
-private proc getManifests(deps: list((string, shared Toml?))) {
+private proc getManifests(deps: list((string, shared Toml?))) throws {
   var manifests: list(shared Toml);
   for dep in deps {
     var name = dep(0);
@@ -441,9 +445,9 @@ private proc getManifests(deps: list((string, shared Toml?))) {
 
 /* Responsible for parsing the Mason.toml to be given
    back to a call from getManifests */
-private proc retrieveDep(name: string, version: string) {
+private proc retrieveDep(name: string, version: string) throws {
   for cached in MASON_CACHED_REGISTRY {
-    const tomlPath = cached + "/Bricks/"+name+"/"+version+".toml";
+    const tomlPath = joinPath(cached, "Bricks", name, version + ".toml");
     if isFile(tomlPath) {
       var tomlFile = open(tomlPath, ioMode.r);
       var depToml = parseToml(tomlFile);
@@ -451,8 +455,8 @@ private proc retrieveDep(name: string, version: string) {
     }
   }
 
-  stderr.writeln("No toml file found in mason-registry for " + name +'-'+ version);
-  exit(1);
+  throw new MasonError("No toml file found in mason-registry for " +
+                       name +'-'+ version);
 }
 
 /* Returns the Mason.toml for each dep listed as a Toml */

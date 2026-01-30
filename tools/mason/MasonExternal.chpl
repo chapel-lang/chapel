@@ -639,7 +639,7 @@ proc installSpkg(args: [?d] string) throws {
 
 
 /* Uninstall an external package */
-proc uninstallSpkg(args: [?d] string) throws {
+proc uninstallSpkg(args: [] string) throws {
 
   var parser = new argumentParser(helpHandler=new MasonUninstallHelpHandler());
 
