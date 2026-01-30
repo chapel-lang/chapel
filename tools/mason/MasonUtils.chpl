@@ -287,7 +287,7 @@ proc runSpackCommand(command, quiet=false) {
 }
 
 // TODO: Can we get away with the Chapel Version object instead?
-record VersionInfo {
+record versionInfo {
   var major = -1, minor = -1, bug = 0;
 
   proc init() {
@@ -296,20 +296,20 @@ record VersionInfo {
     bug = 0;
   }
 
-  proc init=(other:VersionInfo) {
+  proc init=(other: versionInfo) {
     this.major = other.major;
     this.minor = other.minor;
     this.bug   = other.bug;
   }
 
-  proc init(maj : int, min : int, bug: int) {
+  proc init(maj: int, min: int, bug: int) {
     this.major = maj;
     this.minor = min;
     this.bug   = bug;
   }
 
-  proc init(str:string) {
-    const s : [1..3] string = str.split(".");
+  proc init(str: string) {
+    const s: [1..3] string = str.split(".");
     assert(s.size == 3);
 
     major = s[1]:int;
@@ -321,7 +321,7 @@ record VersionInfo {
     return major:string + "." + minor:string + "." + bug:string;
   }
 
-  proc cmp(other:VersionInfo) {
+  proc cmp(other: versionInfo) {
     const A = (major, minor, bug);
     const B = (other.major, other.minor, other.bug);
     for i in 0..2 {
@@ -340,7 +340,7 @@ record VersionInfo {
       when 2 do
         return this.bug;
       otherwise
-        halt('Out of bounds access of VersionInfo');
+        halt('Out of bounds access of versionInfo');
     }
   }
 
@@ -350,7 +350,7 @@ record VersionInfo {
            this.bug == max(int);
   }
 
-  proc isCompatible(other:VersionInfo) : bool {
+  proc isCompatible(other: versionInfo) : bool {
     // checks that a version is compatible with this version
     // versions are assumed compatible if major and minor versions match
     // and patch/bug level is the same or greater
@@ -359,41 +359,41 @@ record VersionInfo {
            && this.bug <= other.bug;
   }
 
-  proc type zero() : VersionInfo {
-    return new VersionInfo(0, 0, 0);
+  proc type zero(): versionInfo {
+    return new versionInfo(0, 0, 0);
   }
 }
 
-operator VersionInfo.=(ref lhs:VersionInfo, const ref rhs:VersionInfo) {
+operator versionInfo.=(ref lhs: versionInfo, const ref rhs: versionInfo) {
   lhs.major = rhs.major;
   lhs.minor = rhs.minor;
   lhs.bug   = rhs.bug;
 }
 
-operator VersionInfo.>=(a:VersionInfo, b:VersionInfo) : bool {
+operator versionInfo.>=(a: versionInfo, b: versionInfo) : bool {
   return a.cmp(b) >= 0;
 }
-operator VersionInfo.<=(a:VersionInfo, b:VersionInfo) : bool {
+operator versionInfo.<=(a: versionInfo, b: versionInfo) : bool {
   return a.cmp(b) <= 0;
 }
-operator ==(a:VersionInfo, b:VersionInfo) : bool {
+operator ==(a: versionInfo, b: versionInfo) : bool {
   return a.cmp(b) == 0;
 }
-operator VersionInfo.>(a:VersionInfo, b:VersionInfo) : bool {
+operator versionInfo.>(a: versionInfo, b: versionInfo) : bool {
   return a.cmp(b) > 0;
 }
 
-operator VersionInfo.<(a:VersionInfo, b:VersionInfo) : bool {
+operator versionInfo.<(a: versionInfo, b: versionInfo) : bool {
   return a.cmp(b) < 0;
 }
 
 
-private var chplVersionInfo = new VersionInfo(-1, -1, -1);
+private var chplVersionInfo = new versionInfo(-1, -1, -1);
 /*
    Returns a tuple containing information about the `chpl --version`:
    (major, minor, bugFix, isMain)
 */
-proc getChapelVersionInfo(): VersionInfo throws {
+proc getChapelVersionInfo(): versionInfo throws {
   use Regex;
 
   if chplVersionInfo(0) == -1 {
@@ -421,7 +421,7 @@ proc getChapelVersionInfo(): VersionInfo throws {
     }
 
     const split = semver.split(".");
-    chplVersionInfo = new VersionInfo(split[0]:int, split[1]:int, split[2]:int);
+    chplVersionInfo = new versionInfo(split[0]:int, split[1]:int, split[2]:int);
   }
 
   return chplVersionInfo;
@@ -626,7 +626,7 @@ proc getProjectType(): string throws {
 
 record package {
   var name: string;
-  var version: VersionInfo;
+  var version: versionInfo;
   var registry: string;
 
   proc brickPath() {
@@ -635,7 +635,7 @@ record package {
   }
 
   proc type nullPackage() {
-    return new package("", VersionInfo.zero(), "");
+    return new package("", versionInfo.zero(), "");
   }
 
   operator <(a: package, b: package) : bool {
@@ -690,7 +690,7 @@ proc searchDependencies(pattern: regex(string)): list(package) throws {
           log.debugln("found hidden package: " + name);
         } else {
           const ver = findLatest(joinPath(searchDir, dir));
-          if ver != VersionInfo.zero() {
+          if ver != versionInfo.zero() {
             pkgs.pushBack(new package(name, ver, registry));
           }
         }
@@ -731,10 +731,10 @@ proc getDepToml(depName: string, depVersion: string) throws {
 
 /* Search TOML files within a package directory to find the latest package
    version number that is supported with current Chapel version */
-proc findLatest(packageDir: string): VersionInfo {
+proc findLatest(packageDir: string): versionInfo {
   use Path;
 
-  var ret = VersionInfo.zero();
+  var ret = versionInfo.zero();
   const suffix = ".toml";
   const packageName = basename(packageDir);
   for manifest in listDir(packageDir, files=true, dirs=false) {
@@ -757,7 +757,7 @@ proc findLatest(packageDir: string): VersionInfo {
 
     // Check that Chapel version is supported
     const end = manifest.size - suffix.size;
-    const ver = new VersionInfo(manifest[0..<end]);
+    const ver = new versionInfo(manifest[0..<end]);
     if ver > ret then ret = ver;
   }
   return ret;
@@ -765,7 +765,7 @@ proc findLatest(packageDir: string): VersionInfo {
 
 /* Reads the Chapel version specified by a mason project's
    TOML file and returns the min and max compatible versions */
-proc parseChplVersion(brick: borrowed Toml?): (VersionInfo, VersionInfo) {
+proc parseChplVersion(brick: borrowed Toml?): (versionInfo, versionInfo) {
   use Regex;
 
   if brick == nil {
@@ -786,7 +786,7 @@ proc parseChplVersion(brick: borrowed Toml?): (VersionInfo, VersionInfo) {
   }
 
   const chplVersion = brick!["chplVersion"]!.s;
-  var low, high: VersionInfo;
+  var low, high: versionInfo;
 
   try {
     (low, high) = checkChplVersion(chplVersion);
@@ -805,7 +805,7 @@ proc parseChplVersion(brick: borrowed Toml?): (VersionInfo, VersionInfo) {
    a tuple of the low, high supported verisons.*/
 proc checkChplVersion(chplVersion) throws {
   use Regex;
-  var lo, hi : VersionInfo;
+  var lo, hi : versionInfo;
   const formatMessage = "\n\n" +
     "chplVersion format must be '<version>..<version>' or '<version>'\n" +
     "A <version> must be in one of the following formats:\n" +
@@ -825,8 +825,8 @@ proc checkChplVersion(chplVersion) throws {
                          formatMessage);
   }
 
-  proc parseString(ver:string): VersionInfo throws {
-    var ret : VersionInfo;
+  proc parseString(ver:string): versionInfo throws {
+    var ret : versionInfo;
 
     // Finds 'x.x' or 'x.x.x' where x is a positive number
     const pattern = new regex("^(\\d+\\.\\d+(\\.\\d+)?)$");
@@ -846,7 +846,7 @@ proc checkChplVersion(chplVersion) throws {
   lo = parseString(versions[0]);
 
   if versions.size == 1 {
-    hi = new VersionInfo(max(int), max(int), max(int));
+    hi = new versionInfo(max(int), max(int), max(int));
   } else {
     hi = parseString(versions[1]);
   }

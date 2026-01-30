@@ -33,7 +33,7 @@ use TOML;
 var log = new logger("mason external");
 
 // We could consider bumping this version up as needed.
-const minSpackVersion = new VersionInfo('1.0.0');
+const minSpackVersion = new versionInfo('1.0.0');
 const major = minSpackVersion.major:string;
 const minor = minSpackVersion.minor:string;
 const spackBranch = 'releases/v' + '.'.join(major, minor);
@@ -285,7 +285,7 @@ private proc printSpackVersion() {
 }
 
 /* Returns spack version */
-proc getSpackVersion() : VersionInfo {
+proc getSpackVersion(): versionInfo {
   const command = "spack --version";
   @functionStatic
   ref tmpVersion = getSpackResult(command,true).strip();
@@ -294,7 +294,7 @@ proc getSpackVersion() : VersionInfo {
   // partitioning the string allows us to separate the major.minor.bug
   // from the remaining values
   const version = tmpVersion.partition(" ");
-  return new VersionInfo(version[0]);
+  return new versionInfo(version[0]);
 }
 
 /* Lists available spack packages */

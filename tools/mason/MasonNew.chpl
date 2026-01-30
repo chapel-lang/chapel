@@ -115,13 +115,11 @@ proc previewMasonFile(packageName, version, chapelVersion, license) {
 // TODO: this function is completely unused - remove or use it?
 /* Perform validation checks on Chapel Version */
 proc validateChplVersion(chapelVersion) throws {
-  var low, hi : VersionInfo;
+  var low, hi: versionInfo;
   const tInfo = getChapelVersionInfo();
-  const current = new VersionInfo(tInfo(0), tInfo(1), tInfo(2));
-  var ret = false;
+  const current = new versionInfo(tInfo(0), tInfo(1), tInfo(2));
   (low, hi) = checkChplVersion(chapelVersion, low, hi);
-  ret = low <= current && current <= hi;
-  if !ret {
+  if !(low <= current && current <= hi) {
     throw new MasonError("Your current Chapel version ( " +
                           getChapelVersionStr() +
                           " ) is not compatible with this chplVersion.");

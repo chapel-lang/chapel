@@ -202,13 +202,10 @@ proc updateRegistry(skipUpdate: bool, show=true) throws {
 
 proc verifyChapelVersion(brick:borrowed Toml) {
   const tupInfo = getChapelVersionInfo();
-  const current = new VersionInfo(tupInfo(0), tupInfo(1), tupInfo(2));
-  var low, hi : VersionInfo;
-
-  var ret = false;
-
-  (low, hi) = parseChplVersion(brick);
-  ret = low <= current && current <= hi;
+  const current = new versionInfo(tupInfo(0), tupInfo(1), tupInfo(2));
+  
+  var (low, hi) = parseChplVersion(brick);
+  var ret = low <= current && current <= hi;
 
   return (ret, low, hi);
 }
