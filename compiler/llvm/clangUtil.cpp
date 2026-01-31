@@ -5157,8 +5157,21 @@ void makeBinaryLLVM(void) {
     //
 
     if (fBuiltinRuntime) {
-      splitStringWhitespace(CHPL_TARGET_USE_RUNTIME_LINK_ARGS,
+      // We are embedding a copy of the runtime, so link against 'libchpl.a'.
+      splitStringWhitespace(CHPL_TARGET_USE_STATIC_RUNTIME_LINK_ARGS,
                             clangLDArgs);
+    } else {
+      // Even without a builtin runtime, we still need to pass in the
+      // shared library containing the runtime so that the linker will
+      // not complain about undefined symbols. This can happen on OSX.
+      //
+      // Link against 'libchpl.so'/'libchpl.dylib':
+      splitStringWhitespace(CHPL_TARGET_USE_SHARED_RUNTIME_LINK_ARGS,
+                            clangLDArgs);
+    }
+
+    if (fBuiltinRuntime) {
+      // If embedding, we need to also link against runtime dependencies.
       splitStringWhitespace(CHPL_TARGET_BUNDLED_RUNTIME_LINK_ARGS,
                             clangLDArgs);
     }
@@ -5166,6 +5179,7 @@ void makeBinaryLLVM(void) {
     splitStringWhitespace(CHPL_TARGET_BUNDLED_PROGRAM_LINK_ARGS, clangLDArgs);
 
     if (fBuiltinRuntime) {
+      // If embedding, we need to also link against runtime dependencies.
       splitStringWhitespace(CHPL_TARGET_SYSTEM_RUNTIME_LINK_ARGS,
                             clangLDArgs);
     }

@@ -81,12 +81,48 @@ def get_runtime_link_args(runtime_subdir):
 
     return (bundled, system)
 
+def path_to_runtime_libs(runtime_subdir):
+  lib = chpl_home_utils.get_chpl_runtime_lib()
+  ret = os.path.join(lib, runtime_subdir)
+  return ret
+
+def static_runtime_lib_name():
+  return 'libchpl.a'
+
+def shared_runtime_lib_ext():
+  platform = chpl_platform.get('target')
+  if platform == 'darwin':
+    return 'dylib'
+  return 'so'
+
+def shared_runtime_lib_name():
+  return 'libchpl.' + shared_runtime_lib_ext()
+
 # Returns a list of strings representing linker arguments.
-def compute_use_runtime_link_args(runtime_subdir):
+def compute_use_static_runtime_link_args(runtime_subdir):
     ret = []
-    lib = chpl_home_utils.get_chpl_runtime_lib()
-    ret.append("-L" + os.path.join(lib, runtime_subdir))
-    ret.append("-lchpl")
+    # Direct link against the static archive.
+    ret.append(compute_static_runtime_lib_path(runtime_subdir))
+    return ret
+
+def compute_use_shared_runtime_link_args(runtime_subdir):
+    ret = []
+    # Set the '-rpath' just in case.
+    ret.append('-Wl,-rpath,' + path_to_runtime_libs(runtime_subdir))
+    # Direct link against the shared library.
+    ret.append(compute_shared_runtime_lib_path(runtime_subdir))
+    return ret
+
+def compute_static_runtime_lib_path(runtime_subdir):
+    lib_name = static_runtime_lib_name()
+    path_to_lib = path_to_runtime_libs(runtime_subdir)
+    ret = os.path.join(path_to_lib, lib_name)
+    return ret
+
+def compute_shared_runtime_lib_path(runtime_subdir):
+    lib_name = shared_runtime_lib_name()
+    path_to_lib = path_to_runtime_libs(runtime_subdir)
+    ret = os.path.join(path_to_lib, lib_name)
     return ret
 
 # Returns a dictionary containing keys
