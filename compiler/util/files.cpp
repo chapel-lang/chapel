@@ -735,33 +735,19 @@ void genIncludeCommandLineHeaders(FILE* outfile) {
   }
 }
 
-static bool omitMakefileEnvCacheValue(const std::string& key) {
-  if (!fBuiltinRuntime) {
-    if (key == "CHPL_TARGET_USE_RUNTIME_LINK_ARGS" ||
-        key == "CHPL_TARGET_BUNDLED_RUNTIME_LINK_ARGS" ||
-        key == "CHPL_TARGET_SYSTEM_RUNTIME_LINK_ARGS") {
-      // Omit these from the Makefile if we should not be adding the runtime.
-      return true;
-    }
-  }
-  return false;
-}
-
 static std::string genMakefileEnvCache() {
   std::string result;
   std::map<std::string, const char*>::iterator env;
 
   for (env = envMap.begin(); env != envMap.end(); ++env) {
     const std::string& key = env->first;
-    const bool omitValue = omitMakefileEnvCacheValue(key);
-
     const char* oldPrefix = "CHPL_";
     const char* newPrefix = "CHPL_MAKE_";
     INT_ASSERT(key.substr(0, strlen(oldPrefix)) == oldPrefix);
     std::string keySuffix = key.substr(strlen(oldPrefix), std::string::npos);
     std::string chpl_make_key = newPrefix + keySuffix;
     result += chpl_make_key + "=";
-    if (!omitValue) result += std::string(env->second);
+    result += std::string(env->second);
     result += "|";
   }
 
@@ -791,6 +777,13 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
   fprintf(makefile.fptr, "CHPL_MAKE_RUNTIME_INCL = %s\n\n", CHPL_RUNTIME_INCL.c_str());
   fprintf(makefile.fptr, "CHPL_MAKE_THIRD_PARTY = %s\n\n", CHPL_THIRD_PARTY.c_str());
   fprintf(makefile.fptr, "TMPDIRNAME = %s\n\n", tmpDirName);
+
+  const char* runtimeLinkStyle = "static";
+  if (!fBuiltinRuntime) {
+    runtimeLinkStyle = "shared";
+  }
+
+  fprintf(makefile.fptr, "RUNTIME_LINK_STYLE = %s\n\n", runtimeLinkStyle);
 
   // Store chapel environment variables in a cache.
   makeallvars = genMakefileEnvCache();
