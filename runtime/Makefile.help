@@ -113,6 +113,7 @@ LAUNCH_LIB_OBJS = \
 RUNTIME_DIR = $(CHPL_MAKE_HOME)/lib/$(CHPL_MAKE_RUNTIME_SUBDIR)
 RUNTIME_STATIC_LIB = $(CHPL_MAKE_TARGET_STATIC_RUNTIME_LIB_PATH)
 RUNTIME_SHARED_LIB = $(CHPL_MAKE_TARGET_SHARED_RUNTIME_LIB_PATH)
+RUNTIME_SHARED_LIB_NAME = $(notdir $(RUNTIME_SHARED_LIB))
 
 RUNTIME_DIR_TIMESTAMP = $(RUNTIME_DIR)/.timestamp
 
@@ -162,15 +163,24 @@ RUNTIME_LIST_LIBRARIES = $(RUNTIME_DIR)/list-libraries
 RUNTIME_OVERRIDE_LD = $(RUNTIME_DIR)/override-ld
 
 ifeq ($(CHPL_MAKE_PLATFORM),darwin)
-  RUNTIME_SHARED_LIB_CXX_LINK_FLAGS=
+  # NOTE: Comment out / remove when direct references to program symbols in
+  # the runtime have all been removed. By default, the OSX linker will emit
+  # an error if any symbol does not have a definition at link time.
+  RUNTIME_SHARED_LIB_CXX_LINK_FLAGS=-Wl,-undefined,dynamic_lookup
 else
-  RUNTIME_SHARED_LIB_CXX_LINK_FLAGS=-Wl,--no-undefined
+  # NOTE: Uncomment when direct references to program symbols in the runtime
+  # have all been removed. By default, the linux linker will mark unresolved
+  # symbols at link-time to use dynamic resolution.
+  # RUNTIME_SHARED_LIB_CXX_LINK_FLAGS=-Wl,--no-undefined
 endif
 
 $(RUNTIME_SHARED_LIB): $(RUNTIME_OBJS) $(RUNTIME_DIR_TIMESTAMP) \
                        $(RUNTIME_LIST_INCLUDESANDDEFINES) \
                        $(RUNTIME_LIST_LIBRARIES) \
                        $(RUNTIME_OVERRIDE_LD)
+ifneq ($(CHPL_MAKE_LIB_PIC),pic)
+	@echo "note: Skipping creation of '$(RUNTIME_SHARED_LIB_NAME)' because 'CHPL_LIB_PIC' != 'pic'"
+else
 	@rm -f $@
 	$(CHPL_MAKE_TARGET_CXX) -shared -o $@ $(RUNTIME_OBJS) $(LIBS) \
 		$(RUNTIME_SHARED_LIB_CXX_LINK_FLAGS) \
@@ -184,6 +194,7 @@ $(RUNTIME_SHARED_LIB): $(RUNTIME_OBJS) $(RUNTIME_DIR_TIMESTAMP) \
 	CHPL_TARGET_CC='$(CHPL_MAKE_TARGET_CC)' \
 	CHPL_TARGET_CXX='$(CHPL_MAKE_TARGET_CXX)' \
 	../util/printchplenv --runtime --no-tidy --anonymize --simple > $(RUNTIME_CHPLCONFIG)
+endif
 
 $(RUNTIME_STATIC_LIB): $(RUNTIME_OBJS) $(RUNTIME_DIR_TIMESTAMP) \
                        $(RUNTIME_LIST_INCLUDESANDDEFINES) \
