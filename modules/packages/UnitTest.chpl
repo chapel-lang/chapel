@@ -650,19 +650,15 @@ module UnitTest {
     */
     pragma "insert line file info"
     pragma "always propagate line file info"
-    proc assertGreaterThan(first, second, args...?n) throws {
-      if canResolve(">=", first, second) {
-        try {
-          checkGreaterThan(first, second);  // Changed from checkGreater
-        } catch e: AssertionError {
-          throw new owned AssertionError(e.message() + " - " + chpl_stringify_wrapper((...args)));
-        }
+    proc assertGreaterThan(first, second) throws {
+      if canResolve(">=",first, second) {
+        checkGreater(first, second);
       }
       else {
-        throw new owned AssertionError("assert failed - First element is of type %? and Second is of type %? - ".format(first.type:string, second.type:string) + 
-                                      chpl_stringify_wrapper((...args)));
+        const errorMsg = "assert failed - First element is of type %? and Second is of type %?".format(first.type:string, second.type:string);
+        throw new owned AssertionError(errorMsg);
       }
-}
+    }
 
     /*
       Assert that ``first > second``. If ``first <= second``, adds the ``args`` 
