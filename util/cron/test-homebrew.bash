@@ -70,7 +70,8 @@ brew uninstall --force chapel
 # Remove the cached chapel tar file before running brew install --build-from-source chapel.rb
 rm -f $HOME/Library/Caches/Homebrew/downloads/*--chapel-${short_version}.tar.gz
 
-HOMEBREW_DEVELOPER=1 HOMEBREW_NO_INSTALL_FROM_API=1 brew install -v --build-from-source ./chapel.rb
+HOMEBREW_DEVELOPER=1 HOMEBREW_NO_INSTALL_FROM_API=1 brew install -v --build-from-source ./chapel.rb \
+  | awk 'tolower($0)~/failed steps? ignored/{r=1} 1; END{exit(r)}'
 chpl --version
 
 # Run pidigits and see if it works
