@@ -830,8 +830,8 @@ static bool shouldSkipMakeBinary(bool warnIfSkipping = true) {
 static void warnMaybeOomKilled(int sig) {
   if (sig == SIGKILL) {
     USR_WARN(
-        "Compilation phase was killed by signal SIGKILL -- possibly out of "
-        "memory?");
+        "A driver phase was killed by signal SIGKILL -- possibly due to "
+        "running out of memory");
   }
 }
 
