@@ -168,7 +168,10 @@ def compute_internal_compile_link_args(runtime_subdir):
     extend2(tgt_compile, get_runtime_includes_and_defines())
     extend2(tgt_runtime_link, get_runtime_link_args(runtime_subdir))
 
-    # add 3p arguments
+    # For the program, add visibility into runtime lib folder for linker.
+    # We do NOT link directly against '-lchpl', but we do let the linker
+    # see into the folder so that users can link '-lchplmalloc'.
+    tgt_program_link[0].append('-L' + path_to_runtime_libs(runtime_subdir))
 
     # add args from chpl_llvm
     if not skip_host:
