@@ -237,7 +237,6 @@ values for these arguments are set to the corresponding global
 configuration constants.
 
 
-
 -------------------------------------------------
 Environment Variable Control over Chapel Behavior
 -------------------------------------------------

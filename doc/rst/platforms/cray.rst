@@ -495,13 +495,14 @@ all sharing a single NIC, and therefore hit this error.
 
 Two ways to resolve this error are:
 
-1) If the compute node has multiple NICs, run using co-locales such
-   that each gets its own NIC and uses a fraction of the cores.  For
-   example, if the node above had 4 NICs, switching the command line
-   from ``-nl 8`` to ``-nl 8x4`` would run four co-locales per node
-   such that each would get its own NIC and create 80 endpoints on it,
-   well below the limit.  Moreover, running with co-locales typically
-   has other benefits in terms of NUMA affinity benefits.
+1) If the compute node has multiple NICs, run using :ref:`co-locales
+   <readme-colocale>` such that each gets its own NIC and uses a
+   fraction of the cores.  For example, if the node above had 4 NICs,
+   switching the command line from ``-nl 8`` to ``-nl 8x4`` would run
+   four co-locales per node such that each would get its own NIC and
+   create 80 endpoints on it, well below the limit.  Moreover, running
+   with co-locales typically has other benefits in terms of NUMA
+   affinity benefits.
 
 2) The other alternative is to cap the maximum number of endpoints
    created by setting the environment variable
