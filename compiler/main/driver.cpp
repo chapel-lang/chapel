@@ -56,6 +56,7 @@
 #include <string>
 #include <map>
 #include <regex>
+#include <csignal>
 #include <numeric>
 
 #ifdef HAVE_LLVM
