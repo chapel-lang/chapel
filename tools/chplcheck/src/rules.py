@@ -976,6 +976,17 @@ def rules(driver: LintDriver):
                 return None if parent.is_expression_level() else parent
             return node
 
+        def is_block_in_else_if_chain(
+            block: AstNode, parent: Optional[AstNode]
+        ) -> bool:
+            return (
+                isinstance(parent, Conditional)
+                and parent.has_else_block()
+                and parent.num_else_stmts() == 1
+                and parent.else_stmt(0).unique_id() == block.unique_id()
+                and parent.else_block_style() == "implicit"
+            )
+
         # If root is something else (e.g., function call), do not
         # apply indentation rules; only apply them to things that contain
         # a list of statements.
@@ -1053,14 +1064,7 @@ def rules(driver: LintDriver):
             #   var x: int;
             #   }
             elif parent_depth and depth == parent_depth:
-                if (
-                    isinstance(parent_for_indentation, Conditional)
-                    and parent_for_indentation.has_else_block()
-                    and parent_for_indentation.num_else_stmts() == 1
-                    and parent_for_indentation.else_stmt(0).unique_id()
-                    == child.unique_id()
-                    and parent_for_indentation.else_block_style() == "implicit"
-                ):
+                if is_block_in_else_if_chain(child, parent_for_indentation):
                     # don't warn if the child is the only statement in an else implicit block
                     prev_line = line
                     prev = child
