@@ -409,12 +409,10 @@ for demands from other (system) programs running there.  Advanced users
 may want to make the heap smaller than the default.  Programs start more
 quickly with a smaller heap, and in the unfortunate event that you need
 to produce core files, those will be written more quickly if the heap is
-smaller.  Specify the heap size using the ``CHPL_RT_MAX_HEAP_SIZE``
-environment variable, as discussed in :ref:`ugni-and-the-heap`.
-But be aware that just as in the ``CHPL_COMM=ugni``
-case, if you reduce the heap size to less than the amount your program
-actually needs and then run it, it will terminate prematurely due to not
-having enough memory.
+smaller.  Specify the heap size using the :literalref:`CHPL_RT_MAX_HEAP_SIZE`
+environment variable.  But be aware that if you reduce the heap size
+to less than the amount your program actually needs and then run it,
+it will terminate prematurely due to not having enough memory.
 
 Note that for ``CHPL_COMM=gasnet``, ``CHPL_RT_MAX_HEAP_SIZE`` is
 synonymous with ``GASNET_MAX_SEGSIZE``, and the former overrides the
