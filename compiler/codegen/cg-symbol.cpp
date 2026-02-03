@@ -80,7 +80,11 @@
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Verifier.h"
+#if LLVM_VERSION_MAJOR >= 21
+#include "llvm/IR/Intrinsics.h"
+#else
 #include "llvm/Target/TargetIntrinsicInfo.h"
+#endif
 #include "clang/CodeGen/CGFunctionInfo.h"
 #endif
 
@@ -1907,7 +1911,7 @@ llvm::Type* TypeSymbol::getLLVMType() {
   if (auto* stype = llvm::dyn_cast_or_null<llvm::StructType>(llvmImplType)) {
     if (auto* aggType = toAggregateType(this->type)) {
       if (aggType->isClass()) {
-        return llvm::PointerType::getUnqual(stype);
+        return getPointerType(stype);
       }
     }
   }
@@ -2047,7 +2051,7 @@ llvmAttachReturnInfo(llvm::LLVMContext& ctx,
 
     case clang::CodeGen::ABIArgInfo::Kind::InAlloca: {
       if (returnInfo.getInAllocaSRet()) {
-        returnTy = llvm::PointerType::get(returnTy, stackSpace);
+        returnTy = getPointerType(returnTy, stackSpace);
       } else {
         returnTy = llvm::Type::getVoidTy(ctx);
       }
@@ -2073,7 +2077,7 @@ llvmAttachReturnInfo(llvm::LLVMContext& ctx,
     }
 
     // returnTy is void, so use chapelReturnTy
-    argTys.push_back(llvm::PointerType::get(chapelReturnTy, stackSpace));
+    argTys.push_back(getPointerType(chapelReturnTy, stackSpace));
     argNames.push_back("indirect_return");
 
     // Adjust attributes for sret argument
@@ -2192,7 +2196,7 @@ codegenFunctionTypeLLVMImpl(
     // Add type for inalloca argument
     if (CGI->usesInAlloca()) {
       auto argStruct = CGI->getArgStruct();
-      argTys.push_back(llvm::PointerType::getUnqual(argStruct));
+      argTys.push_back(getPointerType(argStruct));
       outArgNames.push_back("inalloca_arg");
 
       // Adjust attributes for inalloca argument
@@ -2251,7 +2255,7 @@ codegenFunctionTypeLLVMImpl(
 
         case clang::CodeGen::ABIArgInfo::Kind::Indirect: {
           // Emit indirect argument
-          argTys.push_back(llvm::PointerType::get(argTy, stackSpace));
+          argTys.push_back(getPointerType(argTy, stackSpace));
           outArgNames.push_back(astr(cname, ".indirect"));
 
           // Adjust attributes for indirect argument
@@ -2467,7 +2471,7 @@ GenRet FnSymbol::codegenCast(GenRet fnPtr) {
 #ifdef HAVE_LLVM
     // now cast to correct function type
     llvm::FunctionType* fnType = llvm::cast<llvm::FunctionType>(t.type);
-    llvm::PointerType *ptrToFnType = llvm::PointerType::getUnqual(fnType);
+    auto ptrToFnType = getPointerType(fnType);
     fngen.val = info->irBuilder->CreateBitCast(fnPtr.val, ptrToFnType);
     trackLLVMValue(fngen.val);
 #endif
@@ -3030,9 +3034,9 @@ void FnSymbol::codegenDef() {
             // Create a temp variable to store into
             GenRet tmp = createTempVar(argType);
             llvm::Value* ptr = tmp.val;
-            llvm::Type* ptrEltTy = chapelArgTy;
-            llvm::Type* i8PtrTy = getPointerType(irBuilder);
-            llvm::Type* coercePtrTy = llvm::PointerType::get(sTy, stackSpace);
+            auto ptrEltTy = chapelArgTy;
+            auto i8PtrTy = getPointerType(irBuilder);
+            auto coercePtrTy = getPointerType(sTy, stackSpace);
 
             // handle offset
             if (unsigned offset = argInfo->getDirectOffset()) {
@@ -3270,14 +3274,22 @@ GenRet FnSymbol::codegenAsCallBaseExpr() {
       INT_ASSERT(ty.type);
       llvm::Type* Types[] = {ty.type};
 
+#if LLVM_VERSION_MAJOR < 21
+      // TargetIntrinsics where removed in LLVM 21
+      // we just access them like normal intrinsics
       const llvm::TargetIntrinsicInfo *TII = info->targetMachine->getIntrinsicInfo();
+#endif
 #if LLVM_VERSION_MAJOR >= 20
       llvm::Intrinsic::ID ID = llvm::Intrinsic::lookupIntrinsicID(cname);
 #else
       llvm::Intrinsic::ID ID = llvm::Function::lookupIntrinsicID(cname);
 #endif
+#if LLVM_VERSION_MAJOR < 21
       if (ID == llvm::Intrinsic::not_intrinsic && TII)
         ID = static_cast<llvm::Intrinsic::ID>(TII->lookupName(cname));
+#endif
+      if (ID == llvm::Intrinsic::not_intrinsic)
+        USR_FATAL("Could not find LLVM intrinsic %s", cname);
 #if LLVM_VERSION_MAJOR >= 20
       ret.val = llvm::Intrinsic::getOrInsertDeclaration(info->module, ID, Types);
 #else
