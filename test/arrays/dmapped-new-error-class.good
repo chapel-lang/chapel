@@ -1,1 +1,0 @@
-dmapped-new-error-class.chpl:20: error: dmapped initialization expression requires a value, not a type - did you mean to use '<domain> dmapped new dmap(new <DistName>(<args>))'?
