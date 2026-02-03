@@ -24,7 +24,13 @@ if [[ "$CHPL_TEST_VGRND_EXE" == "on" ]]; then
 fi
 
 if command -v gdb >/dev/null ; then
-  echo "False"
+
+  # skip for gdb pre version 16
+  if [[ $(gdb --version | head -n 1 | awk '{print $NF}' | cut -d. -f1) -lt 16 ]]; then
+    echo "True"
+  else
+    echo "False"
+  fi
 else
   echo "True"
 fi
