@@ -100,39 +100,49 @@ Phase 1: The Essentials
 ======================================
 
 
-class ``GlobalDistribution``
+record ``GlobalDistribution``
 ----------------------------
 
-  This class is visible to the users of the domain map: the ``dmap`` wrapper
-  in Chapel's `dmapped` clauses wraps instances of this class.
-  This class must be a subclass of ``BaseDist``.
+  This record is visible to the users of the domain map in that
+  Chapel's `dmapped` clauses will take an instance of this record as
+  its argument expression.
 
-.. method:: proc GlobalDistribution.GlobalDistribution() // or with arguments
+.. method:: proc GlobalDistribution.init() // or with arguments
 
-  Constructor(s)  These are not regulated by DSI - their specifics are
+  Initializer(s)  These are not regulated by DSI - their specifics are
   at the domain map implementor's discretion.
 
-  We suggest providing constructor(s) that accept, as an argument,
+  We suggest providing initializer(s) that accept, as an argument,
   an array of locales over which to distribute, with ``Locales``
   as the default value.
 
-.. method:: proc GlobalDistribution.dsiClone(): GlobalDistribution
+  Most domain maps will also implement one of the following routines
+  depending on whether they support rectangular or associative
+  domains:
 
-  Returns a duplicate of `this`.
+.. method:: proc GlobalDistribution.newRectangularDom(param rank: int,
+                                                      type idxType,
+                                                      param strides: strideKind,
+                                                      ranges: rank*range(idxType, boundKind.both, strides),
+                                                      definedConst: bool = false)
 
-.. [TODO: the specifics. E.g. we need to specify when it is not enough
-   simply to return `this`. (Cf. the default domain map returns `this`.)]
+   (as well as a second overload with the same signature minus the
+   `ranges` argument).
 
-.. method:: proc GlobalDistribution.dsiDisplayRepresentation(): void
+   This method creates and returns a new instance of ``GlobalDomain``
+   representing a rectangular domain with the specified rank, index
+   type, stride kind, per-dimension ranges (if specified), and
+   const-ness (provided to support execution-time optimizations).
 
-  A debugging method. It implements displayRepresentation()
-  on the dmap wrapper.
 
-.. method:: proc GlobalDistribution.dsiEqualDMaps(that: /*some other GlobalDistribution*/): bool
+.. method:: proc GlobalDistribution.newAssociativeDom(type idxType,
+                                                      param parSafe: bool=true)
 
-  Return whether or not the two domain maps are "equal" (specify the
-  same distribution).  This is invoked when ``==`` is applied to two
-  domain maps.
+   This method creates and returns a new instance of ``GlobalDomain``
+   representing an associative domain with the specified index type
+   and parallel-safety.
+
+
 
 
 class ``GlobalDomain``
@@ -153,9 +163,9 @@ class ``GlobalDomain``
     ===========   ========================    ===================
     domain kind   creating method             required superclass
     ===========   ========================    ===================
-    rectangular   ``dsiNewRectangularDom``    ``BaseRectangularDom``
-    associative   ``dsiNewAssociativeDom``    ``BaseAssociativeDom``
-    sparse        ``dsiNewSparseDom``         ``BaseSparseDom``
+    rectangular   ``newRectangularDom``       ``BaseRectangularDom``
+    associative   ``newAssociativeDom``       ``BaseAssociativeDom``
+    sparse        ``newSparseDom``            ``BaseSparseDom``
     ===========   ========================    ===================
 
   It is legal for these methods to return instances of different classes
@@ -200,7 +210,7 @@ class ``GlobalDomain``
   Returns this domain's domain map. This procedure should be provided as shown.
   (Exception: see ``dsiLinksDistribution()``.)
 
-.. method:: proc GlobalDistribution.dsiNewRectangularDom(param rank: int, type idxType, param strides: strideKind, inds) : GlobalDomain(rank, idxType, strides)
+.. method:: proc GlobalDistribution.newRectangularDom(param rank: int, type idxType, param strides: strideKind, inds) : GlobalDomain(rank, idxType, strides)
 
   This method is invoked when the Chapel program is creating a domain
   value of the type domain(rank, idxType, strides) mapped using the
@@ -236,7 +246,7 @@ class ``GlobalDomain``
     { dsiSetIndices([(...rangesArg)]); }
 
   It is used to initialize the index set of the object returned by
-  ``dsiNewRectangularDom()`` to the index set of the corresponding Chapel
+  ``newRectangularDom()`` to the index set of the corresponding Chapel
   domain value.
 
 .. method:: proc GlobalDomain.dsiAssignDomain(rhs: domain, lhsPrivate:bool): void
@@ -586,11 +596,10 @@ each of them could be implemented later, when the need arises.
 The "unresolved call" compilation errors could be used
 as an indication of what procedure(s) need to be defined.
 
-.. method:: proc GlobalDistribution.dsiIndexToLocale(indexx): locale
+.. method:: proc GlobalDistribution.indexToLocale(indexx): locale
 
   Given an index ``indexx``, returns the locale that "owns" that index,
   i.e. on which the corresponding data is located.
-  This is used to implement ``idxToLocale()`` on the ``dmap`` wrapper.
 
   The domain map implementer is allowed to restrict the type of ``indexx``
   that this method accepts.
@@ -695,9 +704,6 @@ The Chapel implementation:
 
 The Chapel implementation creates privatized copies (over *all* locales)
 greedily as follows (if that class supports privatization):
-
-* of a ``GlobalDistribution`` - when it is wrapped in ``new dmap()``
-  and when that wrapper is copied;
 
 * of a ``GlobalDomain`` or ``GlobalArray`` - when the corresponding
   Chapel domain or array is created.
