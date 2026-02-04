@@ -253,7 +253,7 @@ proc generateToml(toml: borrowed Toml, tomlPath: string) {
 
 proc checkVersion(version: string) throws {
   const BASENUMS = "([0-9]+)\\.([0-9]+)\\.([0-9]+)";
-  const DASH = "(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)";
+  const DASH = "(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*)?)";
   const PLUS = "(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*)?)";
   const pattern = new regex("^" + BASENUMS + DASH + PLUS + "$");
   if !pattern.match(version) {

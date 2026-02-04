@@ -150,8 +150,12 @@ proc gitInit(dirName: string, show: bool) throws {
 
 /* Adds .gitignore to library project */
 proc addGitIgnore(dirName: string) {
-  var toIgnore = "target/\nMason.lock\ndoc/\n";
-  var gitIgnore = open(dirName+"/.gitignore", ioMode.cw);
+  var toIgnore = """
+  target/
+  Mason.lock
+  doc/
+  """.dedent().strip() + "\n";
+  var gitIgnore = open(joinPath(dirName, ".gitignore"), ioMode.cw);
   var GIwriter = gitIgnore.writer(locking=false);
   GIwriter.write(toIgnore);
   GIwriter.close();
@@ -188,7 +192,7 @@ proc makeBasicToml(dirName: string, path: string, version: string,
   const baseToml = getBaseTomlString(dirName, defaultVersion,
                                      defaultChplVersion,
                                      defaultLicense, packageType);
-  var tomlFile = open(path+"/Mason.toml", ioMode.cw);
+  var tomlFile = open(joinPath(path, "Mason.toml"), ioMode.cw);
   var tomlWriter = tomlFile.writer(locking=false);
   tomlWriter.write(baseToml);
   tomlWriter.close();
@@ -196,7 +200,7 @@ proc makeBasicToml(dirName: string, path: string, version: string,
 
 /* Creates the src directory */
 proc makeSrcDir(path:string) {
-  mkdir(path + "/src");
+  mkdir(joinPath(path, "src"));
 }
 
 /* Makes module file inside src/ */
@@ -219,7 +223,7 @@ proc makeModule(path:string, fileName:string, packageType="application") {
       }
     """.format(fileName, fileName).dedent().strip();
   }
-  var lib = open(path+'/src/'+fileName+'.chpl', ioMode.cw);
+  var lib = open(joinPath(path, "src", fileName+'.chpl'), ioMode.cw);
   var libWriter = lib.writer(locking=false);
   libWriter.write(libTemplate + '\n');
   libWriter.close();
@@ -227,10 +231,10 @@ proc makeModule(path:string, fileName:string, packageType="application") {
 
 /* Creates the test directory */
 proc makeTestDir(path:string) {
-  mkdir(path + "/test");
+  mkdir(joinPath(path, "test"));
 }
 
 /* Creates the example directory */
 proc makeExampleDir(path:string) {
-  mkdir(path + "/example");
+  mkdir(joinPath(path, "example"));
 }

@@ -102,12 +102,12 @@ proc masonInit(args: [] string) throws {
   // If TOML file exists, send message that package is already
   // initialized and give some info on what they might want to
   // do instead.
-  if isFile(path + '/Mason.toml') {
+  if isFile(joinPath(path, 'Mason.toml')) {
     throw new MasonError(
       "Mason.toml already exists for current project. " +
       "Remove or rename the existing manifest file and rerun " +
       "`mason init` to initialize a new project.");
-  } else if isDir(path + '/src/') {
+  } else if isDir(joinPath(path, 'src')) {
     throw new MasonError(
       "/src/ directory already exists for current project. " +
       "Remove or rename the /src/ directory and rerun " +

@@ -886,8 +886,7 @@ proc initProject(dirName, packageName, vcs, show,
     if vcs {
       gitInit(dirName, show);
       addGitIgnore(dirName);
-    }
-    else {
+    } else {
       mkdir(dirName);
     }
     // Confirm git init before creating files
@@ -896,8 +895,7 @@ proc initProject(dirName, packageName, vcs, show,
                     license, packageType);
       makeSrcDir(dirName);
       makeModule(dirName, fileName=packageName, packageType);
-    }
-    else {
+    } else {
       throw new MasonError("Failed to create project");
     }
   }
