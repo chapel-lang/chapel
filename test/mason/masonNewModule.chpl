@@ -1,11 +1,12 @@
 use FileSystem;
 use MasonNew;
+use MasonUtils;
 
 
-proc main() {
+proc main() throws {
   const args : [0..3] string;
   args = ['new', 'project-testSrc', '--name', 'project'];
-  masonNew(args);
+  try! masonNew(args);
   if isFile("./project-testSrc/src/project.chpl") {
     writeln("Project.chpl has been successfully created");
   }

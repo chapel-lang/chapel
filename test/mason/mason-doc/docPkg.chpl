@@ -69,5 +69,6 @@ if testcase == tests.withAuthor {
   }
 }
 
-if !keep then
+if !keep && isDir('doc') {
   FileSystem.rmTree('doc');
+}
