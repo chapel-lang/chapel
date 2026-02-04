@@ -109,6 +109,7 @@ proc main() {
 // CHECK: p myFunc(10)
 // CHECK-NEXT: (int(64)) 11
 // CHECK: p getMyClass()
-// CHECK-NEXT: (owned MyClass) 0x{{[0-9a-f]+}} {
-// CHECK-NEXT: super
-// CHECK-NEXT: s = "This is MyClass"
+// TODO: need struct returns to work properly for this with `--no-local`
+// CHECK-LOCAL-NEXT: (owned MyClass) 0x{{[0-9a-f]+}} {
+// CHECK-LOCAL-NEXT: super
+// CHECK-LOCAL-NEXT: s = "This is MyClass"

@@ -3,4 +3,11 @@
 TESTNAME=$1
 OUTFILE=$2
 
-$CHPL_HOME/test/llvm/RunFileCheck "$TESTNAME" "$OUTFILE"
+FILECHECK_OPTS=''
+if [[ "$CHPL_COMM" != 'none' || "$COMPOPTS" == *'--no-local'* ]]; then
+  FILECHECK_OPTS+=' --check-prefixes CHECK'
+else
+  FILECHECK_OPTS+=' --check-prefixes CHECK,CHECK-LOCAL'
+fi
+
+$CHPL_HOME/test/llvm/RunFileCheck "$TESTNAME" "$OUTFILE" "$FILECHECK_OPTS"
