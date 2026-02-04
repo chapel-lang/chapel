@@ -45,8 +45,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(5)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x10)
-  NULL
-================================================================================
 ===================================MyRecord1====================================
 DW_TAG_structure_type
               DW_AT_name	("MyRecord1")
@@ -61,9 +59,7 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(10)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
-  NULL
 ================================================================================
-===================================MyRecord2====================================
 DW_TAG_structure_type
               DW_AT_name	("MyRecord2")
               DW_AT_byte_size	(0x78)
@@ -112,10 +108,8 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(26)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x58)
-  NULL
 ================================================================================
 =====================================myEnum=====================================
-DW_TAG_enumeration_type
               DW_AT_type	("int(64)")
               DW_AT_enum_class	(true)
               DW_AT_name	("ENUM_NAME")
@@ -132,11 +126,9 @@ DW_TAG_enumeration_type
   DW_TAG_enumerator
                 DW_AT_name	("ENUM_NAME")
                 DW_AT_const_value	(ENUM_VAL)
-  NULL
 ================================================================================
 =====================================myRec======================================
 DW_TAG_variable
-              DW_AT_name	("myRec")
               DW_AT_decl_file	("./basicTypes.chpl")
               DW_AT_decl_line	(38)
               DW_AT_type	("basicTypes::MyRecord1")
@@ -340,12 +332,10 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(1064)
                 DW_AT_alignment	(1)
                 DW_AT_data_member_location	(0xa3)
-  NULL
 DW_TAG_structure_type
               DW_AT_name	("[domain(1,int(64),one)] int(64)")
               DW_AT_byte_size	(0x20)
               DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelArray.chpl")
-              DW_AT_decl_line	(781)
               DW_AT_alignment	(8)
   DW_TAG_member
                 DW_AT_name	("_pid")
@@ -368,13 +358,11 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(786)
                 DW_AT_alignment	(1)
                 DW_AT_data_member_location	(0x18)
-  NULL
 ================================================================================
 ===========================domain(2,int(64),positive)===========================
 DW_TAG_pointer_type
               DW_AT_type	("DefaultRectangular::domain(2,int(64),positive)")
               DW_AT_name	("domain(2,int(64),positive)")
-DW_TAG_structure_type
               DW_AT_name	("domain(2,int(64),positive)")
               DW_AT_byte_size	(0x88)
               DW_AT_decl_file	("$CHPL_HOME/modules/internal/DefaultRectangular.chpl")
@@ -401,14 +389,12 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(152)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x48)
-  NULL
 DW_TAG_structure_type
               DW_AT_name	("domain(2,int(64),positive)")
               DW_AT_byte_size	(0x20)
               DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelDomain.chpl")
               DW_AT_decl_line	(1053)
               DW_AT_alignment	(8)
-  DW_TAG_member
                 DW_AT_name	("_pid")
                 DW_AT_type	("int(64)")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelDomain.chpl")
@@ -429,6 +415,5 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(1057)
                 DW_AT_alignment	(1)
                 DW_AT_data_member_location	(0x18)
-  NULL
 ================================================================================
 Success!!

@@ -24,8 +24,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(23)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
-  NULL
-================================================================================
 ============================myRec(unmanaged MyClass)============================
 DW_TAG_structure_type
               DW_AT_name	("myRec(unmanaged MyClass)")
@@ -40,9 +38,7 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(23)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
-  NULL
 ================================================================================
-==============================myRec(owned MyClass)==============================
 DW_TAG_structure_type
               DW_AT_name	("myRec(owned MyClass)")
               DW_AT_byte_size	(0x10)
@@ -56,10 +52,8 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(23)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
-  NULL
 ================================================================================
 =============================myRec(shared MyClass)==============================
-DW_TAG_structure_type
               DW_AT_name	("myRec(shared MyClass)")
               DW_AT_byte_size	(0x20)
               DW_AT_decl_file	("./classes.chpl")
@@ -72,11 +66,9 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(23)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
-  NULL
 ================================================================================
 ============================myRec(borrowed MyClass)=============================
 
-================================================================================
 ===========================myRec(unmanaged MyClass?)============================
 DW_TAG_structure_type
               DW_AT_name	("myRec(unmanaged MyClass?)")
@@ -91,12 +83,10 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(23)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
-  NULL
 ================================================================================
 =============================myRec(owned MyClass?)==============================
 DW_TAG_structure_type
               DW_AT_name	("myRec(owned MyClass?)")
-              DW_AT_byte_size	(0x10)
               DW_AT_decl_file	("./classes.chpl")
               DW_AT_decl_line	(22)
               DW_AT_alignment	(8)
@@ -107,13 +97,11 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(23)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
-  NULL
 ================================================================================
 =============================myRec(shared MyClass?)=============================
 DW_TAG_structure_type
               DW_AT_name	("myRec(shared MyClass?)")
               DW_AT_byte_size	(0x20)
-              DW_AT_decl_file	("./classes.chpl")
               DW_AT_decl_line	(22)
               DW_AT_alignment	(8)
   DW_TAG_member
@@ -123,14 +111,12 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(23)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
-  NULL
 ================================================================================
 ============================myRec(borrowed MyClass?)============================
 DW_TAG_structure_type
               DW_AT_name	("myRec(borrowed MyClass?)")
               DW_AT_byte_size	(0x10)
               DW_AT_decl_file	("./classes.chpl")
-              DW_AT_decl_line	(22)
               DW_AT_alignment	(8)
   DW_TAG_member
                 DW_AT_name	("x")
@@ -139,7 +125,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(23)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
-  NULL
 ================================================================================
 ==============================myRec(MyChildClass)===============================
 DW_TAG_structure_type
@@ -147,7 +132,6 @@ DW_TAG_structure_type
               DW_AT_byte_size	(0x10)
               DW_AT_decl_file	("./classes.chpl")
               DW_AT_decl_line	(22)
-              DW_AT_alignment	(8)
   DW_TAG_member
                 DW_AT_name	("x")
                 DW_AT_type	("wide(MyChildClass)")
@@ -155,7 +139,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(23)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
-  NULL
 ================================================================================
 =========================myRec(unmanaged MyChildClass)==========================
 DW_TAG_structure_type
@@ -164,14 +147,12 @@ DW_TAG_structure_type
               DW_AT_decl_file	("./classes.chpl")
               DW_AT_decl_line	(22)
               DW_AT_alignment	(8)
-  DW_TAG_member
                 DW_AT_name	("x")
                 DW_AT_type	("wide(MyChildClass)")
                 DW_AT_decl_file	("./classes.chpl")
                 DW_AT_decl_line	(23)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
-  NULL
 ================================================================================
 ===========================myRec(owned MyChildClass)============================
 DW_TAG_structure_type
@@ -181,13 +162,11 @@ DW_TAG_structure_type
               DW_AT_decl_line	(22)
               DW_AT_alignment	(8)
   DW_TAG_member
-                DW_AT_name	("x")
                 DW_AT_type	("owned MyChildClass")
                 DW_AT_decl_file	("./classes.chpl")
                 DW_AT_decl_line	(23)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
-  NULL
 ================================================================================
 ===========================myRec(shared MyChildClass)===========================
 DW_TAG_structure_type
@@ -198,12 +177,10 @@ DW_TAG_structure_type
               DW_AT_alignment	(8)
   DW_TAG_member
                 DW_AT_name	("x")
-                DW_AT_type	("shared MyChildClass")
                 DW_AT_decl_file	("./classes.chpl")
                 DW_AT_decl_line	(23)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
-  NULL
 ================================================================================
 ==========================myRec(borrowed MyChildClass)==========================
 
@@ -215,14 +192,12 @@ DW_TAG_structure_type
               DW_AT_decl_file	("./classes.chpl")
               DW_AT_decl_line	(22)
               DW_AT_alignment	(8)
-  DW_TAG_member
                 DW_AT_name	("x")
                 DW_AT_type	("wide(MyChildClass)")
                 DW_AT_decl_file	("./classes.chpl")
                 DW_AT_decl_line	(23)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
-  NULL
 ================================================================================
 ===========================myRec(owned MyChildClass?)===========================
 DW_TAG_structure_type
@@ -235,10 +210,8 @@ DW_TAG_structure_type
                 DW_AT_name	("x")
                 DW_AT_type	("owned MyChildClass?")
                 DW_AT_decl_file	("./classes.chpl")
-                DW_AT_decl_line	(23)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
-  NULL
 ================================================================================
 ==========================myRec(shared MyChildClass?)===========================
 DW_TAG_structure_type
@@ -252,9 +225,7 @@ DW_TAG_structure_type
                 DW_AT_type	("shared MyChildClass?")
                 DW_AT_decl_file	("./classes.chpl")
                 DW_AT_decl_line	(23)
-                DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
-  NULL
 ================================================================================
 =========================myRec(borrowed MyChildClass?)==========================
 DW_TAG_structure_type
@@ -269,8 +240,6 @@ DW_TAG_structure_type
                 DW_AT_decl_file	("./classes.chpl")
                 DW_AT_decl_line	(23)
                 DW_AT_alignment	(8)
-                DW_AT_data_member_location	(0x00)
-  NULL
 ================================================================================
 ====================================MyClass=====================================
 DW_TAG_pointer_type
@@ -286,7 +255,6 @@ DW_TAG_structure_type
                 DW_AT_name	("super")
                 DW_AT_type	("RootClass")
                 DW_AT_decl_file	("./classes.chpl")
-                DW_AT_decl_line	(26)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
   DW_TAG_member
@@ -296,7 +264,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(27)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x08)
-  NULL
 ================================================================================
 ==================================MyChildClass==================================
 DW_TAG_pointer_type
@@ -313,7 +280,6 @@ DW_TAG_structure_type
                 DW_AT_type	("classes::MyClass")
                 DW_AT_decl_file	("./classes.chpl")
                 DW_AT_decl_line	(30)
-                DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
   DW_TAG_member
                 DW_AT_name	("y")
@@ -322,7 +288,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(31)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x10)
-  NULL
 ================================================================================
 =================================wide(MyClass)==================================
 DW_TAG_structure_type
@@ -340,10 +305,8 @@ DW_TAG_structure_type
                 DW_AT_name	("addr")
                 DW_AT_type	("classes::MyClass *")
                 DW_AT_decl_file	("./classes.chpl")
-                DW_AT_decl_line	(26)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x08)
-  NULL
 ================================================================================
 ===============================wide(MyChildClass)===============================
 DW_TAG_structure_type
@@ -362,9 +325,7 @@ DW_TAG_structure_type
                 DW_AT_type	("classes::MyChildClass *")
                 DW_AT_decl_file	("./classes.chpl")
                 DW_AT_decl_line	(30)
-                DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x08)
-  NULL
 ================================================================================
 ======================wide(_ref(myRec(unmanaged MyClass)))======================
 DW_TAG_structure_type
@@ -384,8 +345,6 @@ DW_TAG_structure_type
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelBase.chpl")
                 DW_AT_decl_line	(1858)
                 DW_AT_alignment	(8)
-                DW_AT_data_member_location	(0x08)
-  NULL
 ================================================================================
 =========================_ref(myRec(unmanaged MyClass))=========================
 DW_TAG_typedef
@@ -406,12 +365,10 @@ DW_TAG_structure_type
                 DW_AT_data_member_location	(0x00)
   DW_TAG_member
                 DW_AT_name	("addr")
-                DW_AT_type	("_ref(myRec(unmanaged MyClass?))")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelBase.chpl")
                 DW_AT_decl_line	(1858)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x08)
-  NULL
 ================================================================================
 ========================_ref(myRec(unmanaged MyClass?))=========================
 DW_TAG_typedef
@@ -433,11 +390,9 @@ DW_TAG_structure_type
   DW_TAG_member
                 DW_AT_name	("addr")
                 DW_AT_type	("_ref(myRec(unmanaged MyChildClass?))")
-                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelBase.chpl")
                 DW_AT_decl_line	(1858)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x08)
-  NULL
 ================================================================================
 ======================_ref(myRec(unmanaged MyChildClass?))======================
 DW_TAG_typedef
@@ -460,10 +415,8 @@ DW_TAG_structure_type
                 DW_AT_name	("addr")
                 DW_AT_type	("_ref(myRec(unmanaged MyChildClass?))")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelBase.chpl")
-                DW_AT_decl_line	(1858)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x08)
-  NULL
 ================================================================================
 ======================_ref(myRec(unmanaged MyChildClass?))======================
 DW_TAG_typedef
@@ -487,7 +440,6 @@ DW_TAG_formal_parameter
               DW_AT_name	("myOwnedClass")
               DW_AT_decl_file	("./classes.chpl")
               DW_AT_decl_line	(52)
-              DW_AT_type	("_ref(owned MyClass)")
 DW_TAG_variable
               DW_AT_name	("myOwnedClass")
               DW_AT_decl_file	("./classes.chpl")

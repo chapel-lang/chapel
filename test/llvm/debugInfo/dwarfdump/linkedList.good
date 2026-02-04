@@ -34,8 +34,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(6)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x10)
-  NULL
-================================================================================
 ==================================myLinkedList==================================
 DW_TAG_structure_type
               DW_AT_name	("myLinkedList")
@@ -50,9 +48,7 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(19)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
-  NULL
 ================================================================================
-=================================thisIsTheList==================================
 DW_TAG_variable
               DW_AT_name	("thisIsTheList")
               DW_AT_decl_file	("./linkedList.chpl")

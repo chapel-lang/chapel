@@ -31,8 +31,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(89)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x08)
-  NULL
-================================================================================
 ===================================myNegRange===================================
 DW_TAG_variable
               DW_AT_name	("myNegRange")
@@ -59,9 +57,7 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(89)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x08)
-  NULL
 ================================================================================
-=================================myStridedRange=================================
 DW_TAG_variable
               DW_AT_name	("myStridedRange")
               DW_AT_decl_file	("./ranges.chpl")
@@ -101,10 +97,8 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(92)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x18)
-  NULL
 ================================================================================
 =============================myStridedNegativeRange=============================
-DW_TAG_variable
               DW_AT_name	("myStridedNegativeRange")
               DW_AT_decl_file	("./ranges.chpl")
               DW_AT_decl_line	(19)
@@ -143,11 +137,9 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(92)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x18)
-  NULL
 ================================================================================
 =================================myAlignedRange=================================
 DW_TAG_variable
-              DW_AT_name	("myAlignedRange")
               DW_AT_decl_file	("./ranges.chpl")
               DW_AT_decl_line	(20)
               DW_AT_type	("range(int(64),both,one)")
@@ -185,12 +177,10 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(89)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x08)
-  NULL
 ================================================================================
 ===================================myLowRange===================================
 DW_TAG_variable
               DW_AT_name	("myLowRange")
-              DW_AT_decl_file	("./ranges.chpl")
               DW_AT_decl_line	(36)
               DW_AT_type	("range(int(64),low,one)")
 ================================================================================
@@ -213,13 +203,11 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(89)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x08)
-  NULL
 ================================================================================
 ==================================myHighRange===================================
 DW_TAG_variable
               DW_AT_name	("myHighRange")
               DW_AT_decl_file	("./ranges.chpl")
-              DW_AT_decl_line	(37)
               DW_AT_type	("range(int(64),high,one)")
 ================================================================================
 ============================range(int(64),high,one)=============================
@@ -241,14 +229,12 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(89)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x08)
-  NULL
 ================================================================================
 ============================myStridedUnboundedRange=============================
 DW_TAG_variable
               DW_AT_name	("myStridedUnboundedRange")
               DW_AT_decl_file	("./ranges.chpl")
               DW_AT_decl_line	(38)
-              DW_AT_type	("range(int(64),neither,positive)")
 ================================================================================
 ========================range(int(64),neither,positive)=========================
 DW_TAG_structure_type
@@ -283,7 +269,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(92)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x18)
-  NULL
 ================================================================================
 ===============================myStridedLowRange================================
 DW_TAG_variable
@@ -291,7 +276,6 @@ DW_TAG_variable
               DW_AT_decl_file	("./ranges.chpl")
               DW_AT_decl_line	(39)
               DW_AT_type	("range(int(64),low,positive)")
-================================================================================
 ==========================range(int(64),low,positive)===========================
 DW_TAG_structure_type
               DW_AT_name	("range(int(64),low,positive)")
@@ -325,7 +309,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(92)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x18)
-  NULL
 ================================================================================
 ===============================myStridedHighRange===============================
 DW_TAG_variable
@@ -334,7 +317,6 @@ DW_TAG_variable
               DW_AT_decl_line	(40)
               DW_AT_type	("range(int(64),high,positive)")
 ================================================================================
-==========================range(int(64),high,positive)==========================
 DW_TAG_structure_type
               DW_AT_name	("range(int(64),high,positive)")
               DW_AT_byte_size	(0x20)
@@ -367,7 +349,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(92)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x18)
-  NULL
 ================================================================================
 ==================================myInt32Range==================================
 DW_TAG_variable
@@ -377,7 +358,6 @@ DW_TAG_variable
               DW_AT_type	("range(int(32),both,positive)")
 ================================================================================
 ==========================range(int(32),both,positive)==========================
-DW_TAG_structure_type
               DW_AT_name	("range(int(32),both,positive)")
               DW_AT_byte_size	(0x10)
               DW_AT_alignment	(4)
@@ -409,7 +389,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(92)
                 DW_AT_alignment	(4)
                 DW_AT_data_member_location	(0x0c)
-  NULL
 ================================================================================
 ==================================myUint8Range==================================
 DW_TAG_variable
@@ -420,7 +399,6 @@ DW_TAG_variable
 ================================================================================
 ============================range(uint(8),both,one)=============================
 DW_TAG_structure_type
-              DW_AT_name	("range(uint(8),both,one)")
               DW_AT_byte_size	(0x02)
               DW_AT_alignment	(1)
   DW_TAG_member
@@ -437,6 +415,5 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(89)
                 DW_AT_alignment	(1)
                 DW_AT_data_member_location	(0x01)
-  NULL
 ================================================================================
 Success!!

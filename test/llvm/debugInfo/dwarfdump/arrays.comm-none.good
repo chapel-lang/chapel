@@ -164,7 +164,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(786)
                 DW_AT_alignment	(1)
                 DW_AT_data_member_location	(0x10)
-  NULL
 ================================================================================
 =============================wide(_ddata(int(64)))==============================
 
@@ -191,7 +190,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(1134)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
-  NULL
 ================================================================================
 ====================BaseArrOverRectangularDom(1,int(64),one)====================
 DW_TAG_pointer_type
@@ -210,7 +208,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(1109)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
-  NULL
 ================================================================================
 =============================chpl_ddataResizePolicy=============================
 DW_TAG_enumeration_type
@@ -228,7 +225,6 @@ DW_TAG_enumeration_type
   DW_TAG_enumerator
                 DW_AT_name	("ENUM_NAME")
                 DW_AT_const_value	(ENUM_VAL)
-  NULL
 ================================================================================
 ====================================BaseArr=====================================
 DW_TAG_pointer_type
@@ -282,7 +278,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(913)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x28)
-  NULL
 ================================================================================
 ====================================myArr2D=====================================
 DW_TAG_variable
@@ -427,7 +422,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(786)
                 DW_AT_alignment	(1)
                 DW_AT_data_member_location	(0x10)
-  NULL
 ================================================================================
 =============================wide(_ddata(real(32)))=============================
 
@@ -454,7 +448,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(1134)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
-  NULL
 ================================================================================
 ====================BaseArrOverRectangularDom(2,int(64),one)====================
 DW_TAG_pointer_type
@@ -473,7 +466,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(1109)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
-  NULL
 ================================================================================
 ==================================myArr2DBlock==================================
 DW_TAG_variable
@@ -562,7 +554,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(786)
                 DW_AT_alignment	(1)
                 DW_AT_data_member_location	(0x10)
-  NULL
 ================================================================================
 ======[domain(2,int(64),one)] unmanaged LocBlockArr(int(64),2,int(64),one)======
 DW_TAG_pointer_type
@@ -700,7 +691,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(786)
                 DW_AT_alignment	(1)
                 DW_AT_data_member_location	(0x10)
-  NULL
 ================================================================================
 ====================wide(LocBlockArr(int(64),2,int(64),one))====================
 
@@ -750,7 +740,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(589)
                 DW_AT_alignment	(1)
                 DW_AT_data_member_location	(0x30)
-  NULL
 ================================================================================
 =================================myArr1DCyclic==================================
 DW_TAG_variable
@@ -839,6 +828,5 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(786)
                 DW_AT_alignment	(1)
                 DW_AT_data_member_location	(0x10)
-  NULL
 ================================================================================
 Success!!

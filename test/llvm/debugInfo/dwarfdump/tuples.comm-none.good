@@ -58,7 +58,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(26)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x10)
-  NULL
 DW_TAG_structure_type
               DW_AT_name	("(int(64),real(64),string)")
               DW_AT_byte_size	(0x18)
@@ -84,7 +83,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(26)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x10)
-  NULL
 ================================================================================
 ==================================myHeteroTup2==================================
 DW_TAG_variable
@@ -140,7 +138,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(26)
                 DW_AT_alignment	(4)
                 DW_AT_data_member_location	(0x78)
-  NULL
 DW_TAG_structure_type
               DW_AT_name	("(int(64),real(64),string,bool,(int(64),real(64),string),3*int(32))")
               DW_AT_byte_size	(0x30)
@@ -187,7 +184,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(26)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x28)
-  NULL
 DW_TAG_structure_type
               DW_AT_name	("(int(64),real(64),string,bool,(int(64),real(64),string),3*int(32))")
               DW_AT_byte_size	(0x30)
@@ -234,6 +230,5 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(26)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x28)
-  NULL
 ================================================================================
 Success!!

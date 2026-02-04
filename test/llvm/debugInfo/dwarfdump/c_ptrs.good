@@ -18,8 +18,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(11)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
-  NULL
-================================================================================
 ====================================MyClass=====================================
 DW_TAG_pointer_type
               DW_AT_type	("c_ptrs::MyClass")
@@ -44,9 +42,7 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(15)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x08)
-  NULL
 ================================================================================
-=====================================myInt======================================
 DW_TAG_variable
               DW_AT_name	("myInt")
               DW_AT_decl_file	("./c_ptrs.chpl")

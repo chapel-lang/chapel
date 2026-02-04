@@ -25,8 +25,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(100)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
-  NULL
-DW_TAG_structure_type
               DW_AT_name	("DefaultDist")
               DW_AT_byte_size	(0x20)
               DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelDistribution.chpl")
@@ -53,9 +51,7 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(37)
                 DW_AT_alignment	(1)
                 DW_AT_data_member_location	(0x18)
-  NULL
 ================================================================================
-====================================BaseDist====================================
 DW_TAG_pointer_type
               DW_AT_type	("ChapelDistribution::BaseDist")
               DW_AT_name	("BaseDist")
@@ -100,10 +96,8 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(168)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x18)
-  NULL
 ================================================================================
 ===================================myDomain1D===================================
-DW_TAG_variable
               DW_AT_name	("myDomain1D")
               DW_AT_decl_file	("./domains.chpl")
               DW_AT_decl_line	(15)
@@ -140,11 +134,9 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(152)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x48)
-  NULL
 DW_TAG_structure_type
               DW_AT_name	("domain(1,int(64),one)")
               DW_AT_byte_size	(0x20)
-              DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelDomain.chpl")
               DW_AT_decl_line	(1053)
               DW_AT_alignment	(8)
   DW_TAG_member
@@ -168,12 +160,10 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(1057)
                 DW_AT_alignment	(1)
                 DW_AT_data_member_location	(0x18)
-  NULL
 ================================================================================
 =======================BaseRectangularDom(1,int(64),one)========================
 DW_TAG_pointer_type
               DW_AT_type	("ChapelDistribution::BaseRectangularDom(1,int(64),one)")
-              DW_AT_name	("BaseRectangularDom(1,int(64),one)")
 DW_TAG_structure_type
               DW_AT_name	("BaseRectangularDom(1,int(64),one)")
               DW_AT_byte_size	(0x38)
@@ -187,13 +177,11 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(560)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
-  NULL
 ================================================================================
 ===================================myDomain2D===================================
 DW_TAG_variable
               DW_AT_name	("myDomain2D")
               DW_AT_decl_file	("./domains.chpl")
-              DW_AT_decl_line	(19)
               DW_AT_type	("ChapelDomain::domain(2,int(64),one)")
 ================================================================================
 =============================domain(2,int(64),one)==============================
@@ -227,14 +215,12 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(152)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x48)
-  NULL
 DW_TAG_structure_type
               DW_AT_name	("domain(2,int(64),one)")
               DW_AT_byte_size	(0x20)
               DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelDomain.chpl")
               DW_AT_decl_line	(1053)
               DW_AT_alignment	(8)
-  DW_TAG_member
                 DW_AT_name	("_pid")
                 DW_AT_type	("int(64)")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelDomain.chpl")
@@ -255,7 +241,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(1057)
                 DW_AT_alignment	(1)
                 DW_AT_data_member_location	(0x18)
-  NULL
 ================================================================================
 =======================BaseRectangularDom(2,int(64),one)========================
 DW_TAG_pointer_type
@@ -263,7 +248,6 @@ DW_TAG_pointer_type
               DW_AT_name	("BaseRectangularDom(2,int(64),one)")
 DW_TAG_structure_type
               DW_AT_name	("BaseRectangularDom(2,int(64),one)")
-              DW_AT_byte_size	(0x38)
               DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelDistribution.chpl")
               DW_AT_decl_line	(560)
               DW_AT_alignment	(8)
@@ -274,7 +258,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(560)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
-  NULL
 ================================================================================
 ==================================myStridedDom==================================
 DW_TAG_variable
@@ -283,7 +266,6 @@ DW_TAG_variable
               DW_AT_decl_line	(23)
               DW_AT_type	("ChapelDomain::domain(1,int(64),positive)")
 ================================================================================
-===========================domain(1,int(64),positive)===========================
 DW_TAG_pointer_type
               DW_AT_type	("DefaultRectangular::domain(1,int(64),positive)")
               DW_AT_name	("domain(1,int(64),positive)")
@@ -314,7 +296,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(152)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x48)
-  NULL
 DW_TAG_structure_type
               DW_AT_name	("domain(1,int(64),positive)")
               DW_AT_byte_size	(0x20)
@@ -324,7 +305,6 @@ DW_TAG_structure_type
   DW_TAG_member
                 DW_AT_name	("_pid")
                 DW_AT_type	("int(64)")
-                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelDomain.chpl")
                 DW_AT_decl_line	(1054)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
@@ -342,7 +322,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(1057)
                 DW_AT_alignment	(1)
                 DW_AT_data_member_location	(0x18)
-  NULL
 ================================================================================
 =====================BaseRectangularDom(1,int(64),positive)=====================
 DW_TAG_pointer_type
@@ -353,7 +332,6 @@ DW_TAG_structure_type
               DW_AT_byte_size	(0x38)
               DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelDistribution.chpl")
               DW_AT_decl_line	(560)
-              DW_AT_alignment	(8)
   DW_TAG_member
                 DW_AT_name	("super")
                 DW_AT_type	("ChapelDistribution::BaseDom")
@@ -361,7 +339,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(560)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
-  NULL
 ================================================================================
 ==================================myReverseDom==================================
 DW_TAG_variable
@@ -373,7 +350,6 @@ DW_TAG_variable
 ============================domain(1,int(64),negOne)============================
 DW_TAG_pointer_type
               DW_AT_type	("DefaultRectangular::domain(1,int(64),negOne)")
-              DW_AT_name	("domain(1,int(64),negOne)")
 DW_TAG_structure_type
               DW_AT_name	("domain(1,int(64),negOne)")
               DW_AT_byte_size	(0x58)
@@ -401,7 +377,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(152)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x48)
-  NULL
 DW_TAG_structure_type
               DW_AT_name	("domain(1,int(64),negOne)")
               DW_AT_byte_size	(0x20)
@@ -414,7 +389,6 @@ DW_TAG_structure_type
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelDomain.chpl")
                 DW_AT_decl_line	(1054)
                 DW_AT_alignment	(8)
-                DW_AT_data_member_location	(0x00)
   DW_TAG_member
                 DW_AT_name	("_instance")
                 DW_AT_type	("wide(domain(1,int(64),negOne))")
@@ -429,7 +403,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(1057)
                 DW_AT_alignment	(1)
                 DW_AT_data_member_location	(0x18)
-  NULL
 ================================================================================
 ======================BaseRectangularDom(1,int(64),negOne)======================
 DW_TAG_pointer_type
@@ -443,12 +416,10 @@ DW_TAG_structure_type
               DW_AT_alignment	(8)
   DW_TAG_member
                 DW_AT_name	("super")
-                DW_AT_type	("ChapelDistribution::BaseDom")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelDistribution.chpl")
                 DW_AT_decl_line	(560)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
-  NULL
 ================================================================================
 ===================================myEmptyDom===================================
 DW_TAG_variable
@@ -463,7 +434,6 @@ DW_TAG_variable
               DW_AT_decl_file	("./domains.chpl")
               DW_AT_decl_line	(33)
               DW_AT_type	("ChapelDomain::domain(1,uint(32),one)")
-================================================================================
 =============================domain(1,uint(32),one)=============================
 DW_TAG_pointer_type
               DW_AT_type	("DefaultRectangular::domain(1,uint(32),one)")
@@ -495,7 +465,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(152)
                 DW_AT_alignment	(4)
                 DW_AT_data_member_location	(0x48)
-  NULL
 DW_TAG_structure_type
               DW_AT_name	("domain(1,uint(32),one)")
               DW_AT_byte_size	(0x20)
@@ -511,7 +480,6 @@ DW_TAG_structure_type
                 DW_AT_data_member_location	(0x00)
   DW_TAG_member
                 DW_AT_name	("_instance")
-                DW_AT_type	("wide(domain(1,uint(32),one))")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelDomain.chpl")
                 DW_AT_decl_line	(1056)
                 DW_AT_alignment	(8)
@@ -523,7 +491,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(1057)
                 DW_AT_alignment	(1)
                 DW_AT_data_member_location	(0x18)
-  NULL
 ================================================================================
 =======================BaseRectangularDom(1,uint(32),one)=======================
 DW_TAG_pointer_type
@@ -540,9 +507,7 @@ DW_TAG_structure_type
                 DW_AT_type	("ChapelDistribution::BaseDom")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelDistribution.chpl")
                 DW_AT_decl_line	(560)
-                DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
-  NULL
 ================================================================================
 ===================================myAssocDom===================================
 DW_TAG_variable
@@ -560,7 +525,6 @@ DW_TAG_variable
 ================================================================================
 ==================================mySparseDom===================================
 DW_TAG_variable
-              DW_AT_name	("mySparseDom")
               DW_AT_decl_file	("./domains.chpl")
               DW_AT_decl_line	(52)
               DW_AT_type	("ChapelDomain::DefaultSparseDom(1,int(64),domain(1,int(64),one))")
@@ -603,7 +567,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(40)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x90)
-  NULL
 DW_TAG_structure_type
               DW_AT_name	("DefaultSparseDom(1,int(64),domain(1,int(64),one))")
               DW_AT_byte_size	(0x20)
@@ -622,7 +585,6 @@ DW_TAG_structure_type
                 DW_AT_type	("wide(DefaultSparseDom(1,int(64),domain(1,int(64),one)))")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelDomain.chpl")
                 DW_AT_decl_line	(1056)
-                DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x08)
   DW_TAG_member
                 DW_AT_name	("_unowned")
@@ -631,7 +593,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(1057)
                 DW_AT_alignment	(1)
                 DW_AT_data_member_location	(0x18)
-  NULL
 ================================================================================
 ==================================myBlockDist===================================
 DW_TAG_variable
@@ -651,7 +612,6 @@ DW_TAG_structure_type
               DW_AT_decl_line	(525)
               DW_AT_alignment	(8)
   DW_TAG_member
-                DW_AT_name	("super")
                 DW_AT_type	("ChapelDistribution::BaseRectangularDom(1,int(64),one)")
                 DW_AT_decl_file	("$CHPL_HOME/modules/dists/BlockDist.chpl")
                 DW_AT_decl_line	(525)
@@ -678,7 +638,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(529)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x68)
-  NULL
 DW_TAG_structure_type
               DW_AT_name	("BlockDom(1,int(64),one,unmanaged DefaultDist)")
               DW_AT_byte_size	(0x20)
@@ -699,14 +658,12 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(1056)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x08)
-  DW_TAG_member
                 DW_AT_name	("_unowned")
                 DW_AT_type	("bool")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelDomain.chpl")
                 DW_AT_decl_line	(1057)
                 DW_AT_alignment	(1)
                 DW_AT_data_member_location	(0x18)
-  NULL
 ================================================================================
 ===========================LocBlockDom(1,int(64),one)===========================
 DW_TAG_pointer_type
@@ -728,11 +685,9 @@ DW_TAG_structure_type
   DW_TAG_member
                 DW_AT_name	("myBlock")
                 DW_AT_type	("ChapelDomain::domain(1,int(64),one)")
-                DW_AT_decl_file	("$CHPL_HOME/modules/dists/BlockDist.chpl")
                 DW_AT_decl_line	(544)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x08)
-  NULL
 ================================================================================
 ===================BlockImpl(1,int(64),unmanaged DefaultDist)===================
 DW_TAG_pointer_type
@@ -755,7 +710,6 @@ DW_TAG_structure_type
                 DW_AT_name	("boundingBox")
                 DW_AT_type	("ChapelDomain::domain(1,int(64),one)")
                 DW_AT_decl_file	("$CHPL_HOME/modules/dists/BlockDist.chpl")
-                DW_AT_decl_line	(492)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x20)
   DW_TAG_member
@@ -800,7 +754,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(498)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0xb0)
-  NULL
 ================================================================================
 =================================myBlockDist2D==================================
 DW_TAG_variable
@@ -824,7 +777,6 @@ DW_TAG_structure_type
                 DW_AT_type	("ChapelDistribution::BaseRectangularDom(2,int(64),positive)")
                 DW_AT_decl_file	("$CHPL_HOME/modules/dists/BlockDist.chpl")
                 DW_AT_decl_line	(525)
-                DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
   DW_TAG_member
                 DW_AT_name	("dist")
@@ -847,7 +799,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(529)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x68)
-  NULL
 DW_TAG_structure_type
               DW_AT_name	("BlockDom(2,int(64),positive,unmanaged DefaultDist)")
               DW_AT_byte_size	(0x20)
@@ -872,10 +823,8 @@ DW_TAG_structure_type
                 DW_AT_name	("_unowned")
                 DW_AT_type	("bool")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelDomain.chpl")
-                DW_AT_decl_line	(1057)
                 DW_AT_alignment	(1)
                 DW_AT_data_member_location	(0x18)
-  NULL
 ================================================================================
 ========================LocBlockDom(2,int(64),positive)=========================
 DW_TAG_pointer_type
@@ -901,8 +850,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(544)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x08)
-  NULL
-================================================================================
 ===================BlockImpl(2,int(64),unmanaged DefaultDist)===================
 DW_TAG_pointer_type
               DW_AT_type	("BlockDist::BlockImpl(2,int(64),unmanaged DefaultDist)")
@@ -928,7 +875,6 @@ DW_TAG_structure_type
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x20)
   DW_TAG_member
-                DW_AT_name	("targetLocDom")
                 DW_AT_type	("ChapelDomain::domain(2,int(64),one)")
                 DW_AT_decl_file	("$CHPL_HOME/modules/dists/BlockDist.chpl")
                 DW_AT_decl_line	(493)
@@ -969,7 +915,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(498)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0xb0)
-  NULL
 ================================================================================
 ==============================LocBlock(2,int(64))===============================
 DW_TAG_pointer_type
@@ -995,10 +940,8 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(512)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x08)
-  NULL
 ================================================================================
 ================================myBlockDistInt16================================
-DW_TAG_variable
               DW_AT_name	("myBlockDistInt16")
               DW_AT_decl_file	("./domains.chpl")
               DW_AT_decl_line	(76)
@@ -1024,7 +967,6 @@ DW_TAG_structure_type
   DW_TAG_member
                 DW_AT_name	("dist")
                 DW_AT_type	("wide(BlockImpl(1,int(16),unmanaged DefaultDist))")
-                DW_AT_decl_file	("$CHPL_HOME/modules/dists/BlockDist.chpl")
                 DW_AT_decl_line	(527)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x38)
@@ -1042,7 +984,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(529)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x68)
-  NULL
 DW_TAG_structure_type
               DW_AT_name	("BlockDom(1,int(16),one,unmanaged DefaultDist)")
               DW_AT_byte_size	(0x20)
@@ -1070,10 +1011,8 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(1057)
                 DW_AT_alignment	(1)
                 DW_AT_data_member_location	(0x18)
-  NULL
 ================================================================================
 ===========================LocBlockDom(1,int(16),one)===========================
-DW_TAG_pointer_type
               DW_AT_type	("BlockDist::LocBlockDom(1,int(16),one)")
               DW_AT_name	("LocBlockDom(1,int(16),one)")
 DW_TAG_structure_type
@@ -1096,13 +1035,11 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(544)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x08)
-  NULL
 ================================================================================
 ===================BlockImpl(1,int(16),unmanaged DefaultDist)===================
 DW_TAG_pointer_type
               DW_AT_type	("BlockDist::BlockImpl(1,int(16),unmanaged DefaultDist)")
               DW_AT_name	("BlockImpl(1,int(16),unmanaged DefaultDist)")
-DW_TAG_structure_type
               DW_AT_name	("BlockImpl(1,int(16),unmanaged DefaultDist)")
               DW_AT_byte_size	(0xb8)
               DW_AT_decl_file	("$CHPL_HOME/modules/dists/BlockDist.chpl")
@@ -1128,7 +1065,6 @@ DW_TAG_structure_type
                 DW_AT_decl_file	("$CHPL_HOME/modules/dists/BlockDist.chpl")
                 DW_AT_decl_line	(493)
                 DW_AT_alignment	(8)
-                DW_AT_data_member_location	(0x40)
   DW_TAG_member
                 DW_AT_name	("targetLocales")
                 DW_AT_type	("ChapelArray::[domain(1,int(64),one)] locale")
@@ -1164,7 +1100,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(498)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0xb0)
-  NULL
 ================================================================================
 ==================================myCyclicDist==================================
 DW_TAG_variable
@@ -1197,7 +1132,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(665)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x38)
-  DW_TAG_member
                 DW_AT_name	("locDoms")
                 DW_AT_type	("ChapelArray::[domain(1,int(64),one)] unmanaged LocCyclicDom(1,int(64))")
                 DW_AT_decl_file	("$CHPL_HOME/modules/dists/CyclicDist.chpl")
@@ -1211,7 +1145,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(669)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x68)
-  NULL
 DW_TAG_structure_type
               DW_AT_name	("CyclicDom(1,int(64),one)")
               DW_AT_byte_size	(0x20)
@@ -1239,14 +1172,12 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(1057)
                 DW_AT_alignment	(1)
                 DW_AT_data_member_location	(0x18)
-  NULL
 ================================================================================
 ============================LocCyclicDom(1,int(64))=============================
 DW_TAG_pointer_type
               DW_AT_type	("CyclicDist::LocCyclicDom(1,int(64))")
               DW_AT_name	("LocCyclicDom(1,int(64))")
 DW_TAG_structure_type
-              DW_AT_name	("LocCyclicDom(1,int(64))")
               DW_AT_byte_size	(0x28)
               DW_AT_decl_file	("$CHPL_HOME/modules/dists/CyclicDist.chpl")
               DW_AT_decl_line	(901)
@@ -1265,7 +1196,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(907)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x08)
-  NULL
 ================================================================================
 =================================myCyclicDist2D=================================
 DW_TAG_variable
@@ -1275,7 +1205,6 @@ DW_TAG_variable
               DW_AT_type	("ChapelDomain::CyclicDom(2,int(64),positive)")
 ================================================================================
 =========================CyclicDom(2,int(64),positive)==========================
-DW_TAG_pointer_type
               DW_AT_type	("CyclicDist::CyclicDom(2,int(64),positive)")
               DW_AT_name	("CyclicDom(2,int(64),positive)")
 DW_TAG_structure_type
@@ -1301,7 +1230,6 @@ DW_TAG_structure_type
   DW_TAG_member
                 DW_AT_name	("locDoms")
                 DW_AT_type	("ChapelArray::[domain(2,int(64),one)] unmanaged LocCyclicDom(2,int(64))")
-                DW_AT_decl_file	("$CHPL_HOME/modules/dists/CyclicDist.chpl")
                 DW_AT_decl_line	(667)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x48)
@@ -1312,7 +1240,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(669)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x68)
-  NULL
 DW_TAG_structure_type
               DW_AT_name	("CyclicDom(2,int(64),positive)")
               DW_AT_byte_size	(0x20)
@@ -1340,7 +1267,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(1057)
                 DW_AT_alignment	(1)
                 DW_AT_data_member_location	(0x18)
-  NULL
 ================================================================================
 ============================LocCyclicDom(2,int(64))=============================
 DW_TAG_pointer_type
@@ -1350,7 +1276,6 @@ DW_TAG_structure_type
               DW_AT_name	("LocCyclicDom(2,int(64))")
               DW_AT_byte_size	(0x28)
               DW_AT_decl_file	("$CHPL_HOME/modules/dists/CyclicDist.chpl")
-              DW_AT_decl_line	(901)
               DW_AT_alignment	(8)
   DW_TAG_member
                 DW_AT_name	("super")
@@ -1366,7 +1291,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(907)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x08)
-  NULL
 ================================================================================
 ================================myCyclicDistUint================================
 DW_TAG_variable
@@ -1379,7 +1303,6 @@ DW_TAG_variable
 DW_TAG_pointer_type
               DW_AT_type	("CyclicDist::CyclicDom(1,uint(32),one)")
               DW_AT_name	("CyclicDom(1,uint(32),one)")
-DW_TAG_structure_type
               DW_AT_name	("CyclicDom(1,uint(32),one)")
               DW_AT_byte_size	(0x88)
               DW_AT_decl_file	("$CHPL_HOME/modules/dists/CyclicDist.chpl")
@@ -1405,7 +1328,6 @@ DW_TAG_structure_type
                 DW_AT_decl_file	("$CHPL_HOME/modules/dists/CyclicDist.chpl")
                 DW_AT_decl_line	(667)
                 DW_AT_alignment	(8)
-                DW_AT_data_member_location	(0x48)
   DW_TAG_member
                 DW_AT_name	("whole")
                 DW_AT_type	("ChapelDomain::domain(1,uint(32),one)")
@@ -1413,7 +1335,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(669)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x68)
-  NULL
 DW_TAG_structure_type
               DW_AT_name	("CyclicDom(1,uint(32),one)")
               DW_AT_byte_size	(0x20)
@@ -1441,7 +1362,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(1057)
                 DW_AT_alignment	(1)
                 DW_AT_data_member_location	(0x18)
-  NULL
 ================================================================================
 ============================LocCyclicDom(1,uint(32))============================
 DW_TAG_pointer_type
@@ -1454,7 +1374,6 @@ DW_TAG_structure_type
               DW_AT_decl_line	(901)
               DW_AT_alignment	(8)
   DW_TAG_member
-                DW_AT_name	("super")
                 DW_AT_type	("RootClass")
                 DW_AT_decl_file	("$CHPL_HOME/modules/dists/CyclicDist.chpl")
                 DW_AT_decl_line	(901)
@@ -1467,7 +1386,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(907)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x08)
-  NULL
 ================================================================================
 ===============================myBlockCyclicDist================================
 DW_TAG_variable
@@ -1483,7 +1401,6 @@ DW_TAG_pointer_type
 DW_TAG_structure_type
               DW_AT_name	("BlockCyclicDom(1,int(64),one)")
               DW_AT_byte_size	(0x88)
-              DW_AT_decl_file	("$CHPL_HOME/modules/dists/BlockCycDist.chpl")
               DW_AT_decl_line	(584)
               DW_AT_alignment	(8)
   DW_TAG_member
@@ -1509,12 +1426,10 @@ DW_TAG_structure_type
                 DW_AT_data_member_location	(0x48)
   DW_TAG_member
                 DW_AT_name	("whole")
-                DW_AT_type	("ChapelDomain::domain(1,int(64),one)")
                 DW_AT_decl_file	("$CHPL_HOME/modules/dists/BlockCycDist.chpl")
                 DW_AT_decl_line	(602)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x68)
-  NULL
 DW_TAG_structure_type
               DW_AT_name	("BlockCyclicDom(1,int(64),one)")
               DW_AT_byte_size	(0x20)
@@ -1542,7 +1457,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(1057)
                 DW_AT_alignment	(1)
                 DW_AT_data_member_location	(0x18)
-  NULL
 ================================================================================
 ========================LocBlockCyclicDom(1,int(64),one)========================
 DW_TAG_pointer_type
@@ -1558,7 +1472,6 @@ DW_TAG_structure_type
                 DW_AT_name	("super")
                 DW_AT_type	("RootClass")
                 DW_AT_decl_file	("$CHPL_HOME/modules/dists/BlockCycDist.chpl")
-                DW_AT_decl_line	(836)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
   DW_TAG_member
@@ -1582,12 +1495,10 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(854)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x38)
-  NULL
 ================================================================================
 ===========================BlockCyclicImpl(1,int(64))===========================
 DW_TAG_pointer_type
               DW_AT_type	("BlockCycDist::BlockCyclicImpl(1,int(64))")
-              DW_AT_name	("BlockCyclicImpl(1,int(64))")
 DW_TAG_structure_type
               DW_AT_name	("BlockCyclicImpl(1,int(64))")
               DW_AT_byte_size	(0x98)
@@ -1627,7 +1538,6 @@ DW_TAG_structure_type
                 DW_AT_type	("ChapelArray::[domain(1,int(64),one)] locale")
                 DW_AT_decl_file	("$CHPL_HOME/modules/dists/BlockCycDist.chpl")
                 DW_AT_decl_line	(270)
-                DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x50)
   DW_TAG_member
                 DW_AT_name	("locDist")
@@ -1643,7 +1553,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(273)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x90)
-  NULL
 ================================================================================
 ==============================myBlockCyclicDist2D===============================
 DW_TAG_variable
@@ -1689,8 +1598,6 @@ DW_TAG_structure_type
                 DW_AT_decl_file	("$CHPL_HOME/modules/dists/BlockCycDist.chpl")
                 DW_AT_decl_line	(602)
                 DW_AT_alignment	(8)
-                DW_AT_data_member_location	(0x68)
-  NULL
 DW_TAG_structure_type
               DW_AT_name	("BlockCyclicDom(2,int(64),positive)")
               DW_AT_byte_size	(0x20)
@@ -1718,7 +1625,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(1057)
                 DW_AT_alignment	(1)
                 DW_AT_data_member_location	(0x18)
-  NULL
 ================================================================================
 =====================LocBlockCyclicDom(2,int(64),positive)======================
 DW_TAG_pointer_type
@@ -1738,7 +1644,6 @@ DW_TAG_structure_type
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
   DW_TAG_member
-                DW_AT_name	("globDom")
                 DW_AT_type	("wide(BlockCyclicDom(2,int(64),positive))")
                 DW_AT_decl_file	("$CHPL_HOME/modules/dists/BlockCycDist.chpl")
                 DW_AT_decl_line	(844)
@@ -1758,7 +1663,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(854)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x38)
-  NULL
 ================================================================================
 ===========================BlockCyclicImpl(2,int(64))===========================
 DW_TAG_pointer_type
@@ -1767,7 +1671,6 @@ DW_TAG_pointer_type
 DW_TAG_structure_type
               DW_AT_name	("BlockCyclicImpl(2,int(64))")
               DW_AT_byte_size	(0xa8)
-              DW_AT_decl_file	("$CHPL_HOME/modules/dists/BlockCycDist.chpl")
               DW_AT_decl_line	(261)
               DW_AT_alignment	(8)
   DW_TAG_member
@@ -1807,7 +1710,6 @@ DW_TAG_structure_type
                 DW_AT_data_member_location	(0x60)
   DW_TAG_member
                 DW_AT_name	("locDist")
-                DW_AT_type	("ChapelArray::[domain(2,int(64),one)] unmanaged LocBlockCyclic(2,int(64))")
                 DW_AT_decl_file	("$CHPL_HOME/modules/dists/BlockCycDist.chpl")
                 DW_AT_decl_line	(271)
                 DW_AT_alignment	(8)
@@ -1819,6 +1721,5 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(273)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0xa0)
-  NULL
 ================================================================================
 Success!!

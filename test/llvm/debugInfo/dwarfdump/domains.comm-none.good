@@ -53,7 +53,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(37)
                 DW_AT_alignment	(1)
                 DW_AT_data_member_location	(0x10)
-  NULL
 ================================================================================
 ====================================BaseDist====================================
 DW_TAG_pointer_type
@@ -100,7 +99,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(168)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x18)
-  NULL
 ================================================================================
 ===================================myDomain1D===================================
 DW_TAG_variable
@@ -168,7 +166,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(1057)
                 DW_AT_alignment	(1)
                 DW_AT_data_member_location	(0x10)
-  NULL
 ================================================================================
 =======================BaseRectangularDom(1,int(64),one)========================
 DW_TAG_pointer_type
@@ -187,7 +184,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(560)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
-  NULL
 ================================================================================
 ===================================myDomain2D===================================
 DW_TAG_variable
@@ -255,7 +251,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(1057)
                 DW_AT_alignment	(1)
                 DW_AT_data_member_location	(0x10)
-  NULL
 ================================================================================
 =======================BaseRectangularDom(2,int(64),one)========================
 DW_TAG_pointer_type
@@ -274,7 +269,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(560)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
-  NULL
 ================================================================================
 ==================================myStridedDom==================================
 DW_TAG_variable
@@ -342,7 +336,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(1057)
                 DW_AT_alignment	(1)
                 DW_AT_data_member_location	(0x10)
-  NULL
 ================================================================================
 =====================BaseRectangularDom(1,int(64),positive)=====================
 DW_TAG_pointer_type
@@ -361,7 +354,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(560)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
-  NULL
 ================================================================================
 ==================================myReverseDom==================================
 DW_TAG_variable
@@ -429,7 +421,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(1057)
                 DW_AT_alignment	(1)
                 DW_AT_data_member_location	(0x10)
-  NULL
 ================================================================================
 ======================BaseRectangularDom(1,int(64),negOne)======================
 DW_TAG_pointer_type
@@ -448,7 +439,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(560)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
-  NULL
 ================================================================================
 ===================================myEmptyDom===================================
 DW_TAG_variable
@@ -523,7 +513,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(1057)
                 DW_AT_alignment	(1)
                 DW_AT_data_member_location	(0x10)
-  NULL
 ================================================================================
 =======================BaseRectangularDom(1,uint(32),one)=======================
 DW_TAG_pointer_type
@@ -542,7 +531,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(560)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
-  NULL
 ================================================================================
 ===================================myAssocDom===================================
 DW_TAG_variable
@@ -631,7 +619,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(1057)
                 DW_AT_alignment	(1)
                 DW_AT_data_member_location	(0x10)
-  NULL
 ================================================================================
 ==================================myBlockDist===================================
 DW_TAG_variable
@@ -706,7 +693,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(1057)
                 DW_AT_alignment	(1)
                 DW_AT_data_member_location	(0x10)
-  NULL
 ================================================================================
 ===========================LocBlockDom(1,int(64),one)===========================
 DW_TAG_pointer_type
@@ -732,7 +718,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(544)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x08)
-  NULL
 ================================================================================
 ===================BlockImpl(1,int(64),unmanaged DefaultDist)===================
 DW_TAG_pointer_type
@@ -800,7 +785,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(498)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x90)
-  NULL
 ================================================================================
 =================================myBlockDist2D==================================
 DW_TAG_variable
@@ -875,7 +859,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(1057)
                 DW_AT_alignment	(1)
                 DW_AT_data_member_location	(0x10)
-  NULL
 ================================================================================
 ========================LocBlockDom(2,int(64),positive)=========================
 DW_TAG_pointer_type
@@ -901,7 +884,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(544)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x08)
-  NULL
 ================================================================================
 ===================BlockImpl(2,int(64),unmanaged DefaultDist)===================
 DW_TAG_pointer_type
@@ -969,7 +951,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(498)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x90)
-  NULL
 ================================================================================
 ==============================LocBlock(2,int(64))===============================
 DW_TAG_pointer_type
@@ -995,7 +976,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(512)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x08)
-  NULL
 ================================================================================
 ================================myBlockDistInt16================================
 DW_TAG_variable
@@ -1070,7 +1050,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(1057)
                 DW_AT_alignment	(1)
                 DW_AT_data_member_location	(0x10)
-  NULL
 ================================================================================
 ===========================LocBlockDom(1,int(16),one)===========================
 DW_TAG_pointer_type
@@ -1096,7 +1075,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(544)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x08)
-  NULL
 ================================================================================
 ===================BlockImpl(1,int(16),unmanaged DefaultDist)===================
 DW_TAG_pointer_type
@@ -1164,7 +1142,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(498)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x90)
-  NULL
 ================================================================================
 ==================================myCyclicDist==================================
 DW_TAG_variable
@@ -1239,7 +1216,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(1057)
                 DW_AT_alignment	(1)
                 DW_AT_data_member_location	(0x10)
-  NULL
 ================================================================================
 ============================LocCyclicDom(1,int(64))=============================
 DW_TAG_pointer_type
@@ -1265,7 +1241,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(907)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x08)
-  NULL
 ================================================================================
 =================================myCyclicDist2D=================================
 DW_TAG_variable
@@ -1340,7 +1315,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(1057)
                 DW_AT_alignment	(1)
                 DW_AT_data_member_location	(0x10)
-  NULL
 ================================================================================
 ============================LocCyclicDom(2,int(64))=============================
 DW_TAG_pointer_type
@@ -1366,7 +1340,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(907)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x08)
-  NULL
 ================================================================================
 ================================myCyclicDistUint================================
 DW_TAG_variable
@@ -1441,7 +1414,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(1057)
                 DW_AT_alignment	(1)
                 DW_AT_data_member_location	(0x10)
-  NULL
 ================================================================================
 ============================LocCyclicDom(1,uint(32))============================
 DW_TAG_pointer_type
@@ -1467,7 +1439,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(907)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x08)
-  NULL
 ================================================================================
 ===============================myBlockCyclicDist================================
 DW_TAG_variable
@@ -1542,7 +1513,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(1057)
                 DW_AT_alignment	(1)
                 DW_AT_data_member_location	(0x10)
-  NULL
 ================================================================================
 ========================LocBlockCyclicDom(1,int(64),one)========================
 DW_TAG_pointer_type
@@ -1582,7 +1552,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(854)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x28)
-  NULL
 ================================================================================
 ===========================BlockCyclicImpl(1,int(64))===========================
 DW_TAG_pointer_type
@@ -1643,7 +1612,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(273)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x78)
-  NULL
 ================================================================================
 ==============================myBlockCyclicDist2D===============================
 DW_TAG_variable
@@ -1718,7 +1686,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(1057)
                 DW_AT_alignment	(1)
                 DW_AT_data_member_location	(0x10)
-  NULL
 ================================================================================
 =====================LocBlockCyclicDom(2,int(64),positive)======================
 DW_TAG_pointer_type
@@ -1758,7 +1725,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(854)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x28)
-  NULL
 ================================================================================
 ===========================BlockCyclicImpl(2,int(64))===========================
 DW_TAG_pointer_type
@@ -1819,6 +1785,5 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(273)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x88)
-  NULL
 ================================================================================
 Success!!
