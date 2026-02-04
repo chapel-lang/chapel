@@ -109,9 +109,11 @@ class Verifier:
                         modify=lambda line: re.sub(
                             r"DW_AT_decl_line\s+\([0-9]+\)",
                             "DW_AT_decl_line (INTERNAL_LINENO)",
-                            line)
+                            line,
+                        )
                     )
                 return block
+
             blocks = pdd.filter_per_block(
                 blocks, modify=sanitize_internal_lineno
             )
@@ -163,9 +165,6 @@ class Verifier:
                 print("FAIL", file=f)
             else:
                 print("Success!!", file=f)
-
-
-# grep -n 'class _qthreads' modules/internal/ChapelSyncvar.chpl -A 10 | grep aligned | head -n1 | awk '{match($0, /[0-9]+/); print substr($0, RSTART, RLENGTH)}'
 
 
 if __name__ == "__main__":
