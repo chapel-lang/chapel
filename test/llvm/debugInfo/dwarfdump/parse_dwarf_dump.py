@@ -3,7 +3,7 @@ from typing import List, Tuple, Optional, Callable
 import re
 
 
-@dataclass
+@dataclass(order=False, eq=False)
 class DwarfTableEntry:
     entries: List[str] = field(default_factory=list)
     children: List["DwarfTableEntry"] = field(default_factory=list)
@@ -33,13 +33,13 @@ class DwarfTableEntry:
     def name(self):
         name_entry = self.get_entry(r'DW_AT_name\s+\("([^"]+)"\)')
         if name_entry:
-            return name_entry[1].group(1)
+            return name_entry[1].group(1).strip()
         return None
 
     def type_(self):
         type_entry = self.get_entry(r'DW_AT_type\s+\("([^"]+)"\)')
         if type_entry:
-            return type_entry[1].group(1)
+            return type_entry[1].group(1).strip()
         return None
 
     def tag(self):
@@ -51,6 +51,25 @@ class DwarfTableEntry:
     def sort_key(self):
         """sort based on name, tag, and type"""
         return (self.name() or "", self.tag() or "", self.type_() or "")
+
+    def __lt__(self, other):
+        return self.sort_key() < other.sort_key()
+
+    def sort(self):
+        # Separate members from other children
+        members = [
+            child for child in self.children if child.tag() == "DW_TAG_member"
+        ]
+        non_members = [
+            child for child in self.children if child.tag() != "DW_TAG_member"
+        ]
+        # only sort non-members
+        non_members.sort()
+
+        # reconstruct children and recurse
+        self.children = members + non_members
+        for child in self.children:
+            child.sort()
 
 
 def filter_per_line(
@@ -88,21 +107,21 @@ def filter_per_block(
 
 
 def dump_blocks(blocks: List[DwarfTableEntry]) -> str:
-    output = ""
-    for block in blocks:
-        for entry in block.entries:
-            output += entry + "\n"
-        if block.children:
-            output += dump_blocks(block.children) + "\n"
-    return output
+    def dump_to_lines(blocks: List[DwarfTableEntry]) -> List[str]:
+        output = []
+        for block in blocks:
+            output += block.entries
+            output += dump_to_lines(block.children)
+        return output
+
+    return "\n".join(dump_to_lines(blocks))
 
 
-def sort_blocks(blocks: List[DwarfTableEntry]) -> List[DwarfTableEntry]:
-    sorted_blocks = sorted(blocks, key=lambda b: b.sort_key())
-    for block in sorted_blocks:
-        if block.children:
-            block.children = sort_blocks(block.children)
-    return sorted_blocks
+# def sort_blocks(blocks: List[DwarfTableEntry]) -> List[DwarfTableEntry]:
+#     sorted_blocks = sorted(blocks, key=lambda b: b.sort_key())
+#     for block in sorted_blocks:
+#         block.sort()
+#     return sorted_blocks
 
 
 def parse_dwarf_dump(output: str) -> List[DwarfTableEntry]:
@@ -167,5 +186,5 @@ def parse_dwarf_dump(output: str) -> List[DwarfTableEntry]:
     # Remove the first line which is just the filename
     lines = output.splitlines(keepends=False)[1:]
     blocks, _ = parse_block(lines)
-    sorted_blocks = sort_blocks(blocks)
-    return sorted_blocks
+    blocks.sort()
+    return blocks
