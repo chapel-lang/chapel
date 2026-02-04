@@ -530,8 +530,8 @@ module UnitTest {
       } catch e: AssertionError {
         var msg = e.message() + " - " + chpl_stringify_wrapper((...args));
         throw new owned AssertionError(msg);
-      } 
-  }
+        }
+    }
 
     /*
       Assert that x matches the regular expression pattern.
@@ -638,7 +638,7 @@ module UnitTest {
                                         chpl_stringify_wrapper((...args)));
         }
       }
-}
+    }
 
 
     /*
@@ -682,7 +682,7 @@ module UnitTest {
         throw new owned AssertionError("assert failed - First element is of type %? and Second is of type %? - ".format(first.type:string, second.type:string) + 
                                       chpl_stringify_wrapper((...args)));
       }
-}
+    }
 
 
     pragma "insert line file info"
@@ -918,7 +918,7 @@ module UnitTest {
     proc assertLessThan(first, second, args...?n) throws {
       if canResolve("<=", first, second) {
         try {
-          checkLessThan(first, second);  // Changed from checkLess
+          checkLessThan(first, second);
         } catch e: AssertionError {
           throw new owned AssertionError(e.message() + " - " + chpl_stringify_wrapper((...args)));
         }
@@ -927,7 +927,7 @@ module UnitTest {
         throw new owned AssertionError("assert failed - First element is of type %? and Second is of type %? - ".format(first.type:string, second.type:string) + 
                                       chpl_stringify_wrapper((...args)));
       }
-}
+    }
 
     pragma "insert line file info"
     pragma "always propagate line file info"
