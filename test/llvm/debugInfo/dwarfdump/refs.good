@@ -18,6 +18,7 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(6)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
+================================================================================
 ====================================MyClass=====================================
 DW_TAG_pointer_type
               DW_AT_type	("refs::MyClass")
@@ -43,6 +44,7 @@ DW_TAG_structure_type
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x08)
 ================================================================================
+=====================================myInt======================================
 DW_TAG_variable
               DW_AT_name	("myInt")
               DW_AT_decl_file	("./refs.chpl")
