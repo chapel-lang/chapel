@@ -121,14 +121,14 @@ DW_TAG_enumeration_type
               DW_AT_decl_line	(30)
               DW_AT_alignment	(8)
   DW_TAG_enumerator
-                DW_AT_name	("e3")
-                DW_AT_const_value	(2)
+                DW_AT_name	("e1")
+                DW_AT_const_value	(0)
   DW_TAG_enumerator
                 DW_AT_name	("e2")
                 DW_AT_const_value	(1)
   DW_TAG_enumerator
-                DW_AT_name	("e1")
-                DW_AT_const_value	(0)
+                DW_AT_name	("e3")
+                DW_AT_const_value	(2)
 ================================================================================
 =====================================myRec======================================
 DW_TAG_variable
