@@ -4,6 +4,8 @@ import subprocess as sp
 import sys
 import re
 
+import parse_dwarf_dump as pdd
+
 
 class Verifier:
     def __init__(self, target, llvm_dwarfdump, chplenv):
@@ -51,83 +53,71 @@ class Verifier:
                 "--show-children",
                 "--diff",
             ]
-            output = sp.check_output(cmd).decode().strip()
-            # Remove the first line which is just the filename
-            output = output.splitlines(keepends=True)[1:]
+            blocks = pdd.parse_dwarf_dump(sp.check_output(cmd).decode().strip())
+
             # remove any line with DW_AT_location
-            output = [line for line in output if "DW_AT_location" not in line]
+            blocks = pdd.filter_per_line(
+                blocks, condition=lambda line: "DW_AT_location" not in line
+            )
 
             # replace anything that looks like CHPL_HOME with CHPL_HOME
             chpl_home = self.chplenv.get("CHPL_HOME", "")
-            output = [
-                re.sub(re.escape(chpl_home), "$CHPL_HOME", line)
-                for line in output
-            ]
+            blocks = pdd.filter_per_line(
+                blocks,
+                modify=lambda line: re.sub(
+                    re.escape(chpl_home), "$CHPL_HOME", line
+                ),
+            )
 
             # replace anything that looks like `$CHPL_HOME/runtime/src/comm/<>`
             # with `$CHPL_HOME/runtime/src/comm/COMM_IMPL`
-            output = [
-                re.sub(
+            blocks = pdd.filter_per_line(
+                blocks,
+                modify=lambda line: re.sub(
                     r"\$CHPL_HOME/runtime/src/comm/[^/\s]+",
                     "$CHPL_HOME/runtime/src/comm/COMM_IMPL",
                     line,
-                )
-                for line in output
-            ]
+                ),
+            )
 
-            # DW_TAG_enumeration_type can print in any order, so sanitize
-            # DW_AT_const_value and DW_AT_name lines to a deterministic order
-            if any("DW_TAG_enumeration_type" in line for line in output):
-                output = [
-                    (
-                        re.sub(r"\d+", "ENUM_VAL", line)
-                        if "DW_AT_const_value" in line
-                        else line
+            # sanitize linkage names ending with _chpl\d+
+            blocks = pdd.filter_per_line(
+                blocks,
+                modify=lambda line: re.sub(
+                    r'DW_AT_linkage_name\s+\("(.+)_chpl\d+"\)',
+                    'DW_AT_linkage_name ("\\1_chplN")',
+                    line,
+                ),
+            )
+
+            # remove DW_AT_APPLE
+            blocks = pdd.filter_per_line(
+                blocks, condition=lambda line: "DW_AT_APPLE" not in line
+            )
+            # remove DW_AT_frame_base
+            blocks = pdd.filter_per_line(
+                blocks, condition=lambda line: "DW_AT_frame_base" not in line
+            )
+
+            # filter out internal module line numbers
+            def sanitize_internal_lineno(
+                block: pdd.DwarfTagBlock,
+            ) -> pdd.DwarfTagBlock:
+                if block.get_entry(r"\$CHPL_HOME/modules/internal") is not None:
+                    # remove lineno info
+                    block.filter_entries(
+                        modify=lambda line: re.sub(
+                            r"DW_AT_decl_line\s+\([0-9]+\)",
+                            "DW_AT_decl_line (INTERNAL_LINENO)",
+                            line)
                     )
-                    for line in output
-                ]
-                output = [
-                    (
-                        re.sub(r'\(".*"\)', '("ENUM_NAME")', line)
-                        if "DW_AT_name" in line
-                        else line
-                    )
-                    for line in output
-                ]
-
-            # parse toplevel blocks of DW_TAG_ and sort them by DW_AT_name, tag, and type
-            blocks = []
-            current_block = []
-            for line in output:
-                if line.startswith("DW_TAG_"):
-                    if current_block:
-                        blocks.append(current_block)
-                    current_block = [line]
-                else:
-                    current_block.append(line)
-            if current_block:
-                blocks.append(current_block)
-
-            def get_block_sort_key(block):
-                tag = block[0].strip()
-                name = ""
-                type_ = ""
-                for line in block:
-                    match = re.search(r'DW_AT_name\s+\("([^"]+)"\)', line)
-                    if match and not name:
-                        name = match.group(1)
-                    match = re.search(r'DW_AT_type\s+\("([^"]+)"\)', line)
-                    if match and not type_:
-                        type_ = match.group(1)
-                return (name, tag, type_)
-            blocks.sort(key=get_block_sort_key)
+                return block
+            blocks = pdd.filter_per_block(
+                blocks, modify=sanitize_internal_lineno
+            )
 
             # expand blocks back into output
-            output = ""
-            for block in blocks:
-                output += "".join(block).strip() + "\n"
-
-            output = output.strip()
+            output = pdd.dump_blocks(blocks).strip()
             return True, output
         except sp.CalledProcessError as e:
             return (
@@ -148,7 +138,7 @@ class Verifier:
         return symbols
 
     def test(self, outfile):
-        with open(output_file, "a") as f:
+        with open(outfile, "a") as f:
             print("Running DWARF verification...", file=f)
             verify_errors = self.verify()
             if verify_errors:
@@ -173,6 +163,9 @@ class Verifier:
                 print("FAIL", file=f)
             else:
                 print("Success!!", file=f)
+
+
+# grep -n 'class _qthreads' modules/internal/ChapelSyncvar.chpl -A 10 | grep aligned | head -n1 | awk '{match($0, /[0-9]+/); print substr($0, RSTART, RLENGTH)}'
 
 
 if __name__ == "__main__":
