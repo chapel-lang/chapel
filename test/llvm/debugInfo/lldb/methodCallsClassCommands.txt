@@ -1,0 +1,33 @@
+b methodCallsClass.chpl:8
+b methodCallsClass.chpl:11
+b methodCallsClass.chpl:14
+r
+# testing breaking in myMethod
+p this
+c
+# testing breaking in setter
+p *this
+c
+# testing breaking in toString
+p this->a
+p ret
+c
+# testing breaking in myMethod
+c
+# testing breaking in setter
+c
+# testing breaking in toString
+frame var
+c
+# testing calls
+p myOwnedObj
+# p myOwnedObj.chpl_p->toString()
+p myOwnedObj.chpl_p->myMethod(2)
+p myOwnedObj.chpl_p->setter(8.1)
+p myOwnedObj
+p *myUnmanagedObj
+# p myUnmanagedObj->toString()
+p myUnmanagedObj->myMethod(3)
+p myUnmanagedObj->setter(9.2)
+p *myUnmanagedObj
+q
