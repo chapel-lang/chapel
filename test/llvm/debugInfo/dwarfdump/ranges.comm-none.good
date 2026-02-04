@@ -21,17 +21,16 @@ DW_TAG_structure_type
                 DW_AT_name	("_low")
                 DW_AT_type	("int(64)")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelRange.chpl")
-                DW_AT_decl_line	(88)
+                DW_AT_decl_line (INTERNAL_LINENO)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
   DW_TAG_member
                 DW_AT_name	("_high")
                 DW_AT_type	("int(64)")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelRange.chpl")
-                DW_AT_decl_line	(89)
+                DW_AT_decl_line (INTERNAL_LINENO)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x08)
-  NULL
 ================================================================================
 ===================================myNegRange===================================
 DW_TAG_variable
@@ -49,17 +48,16 @@ DW_TAG_structure_type
                 DW_AT_name	("_low")
                 DW_AT_type	("int(64)")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelRange.chpl")
-                DW_AT_decl_line	(88)
+                DW_AT_decl_line (INTERNAL_LINENO)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
   DW_TAG_member
                 DW_AT_name	("_high")
                 DW_AT_type	("int(64)")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelRange.chpl")
-                DW_AT_decl_line	(89)
+                DW_AT_decl_line (INTERNAL_LINENO)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x08)
-  NULL
 ================================================================================
 =================================myStridedRange=================================
 DW_TAG_variable
@@ -77,31 +75,30 @@ DW_TAG_structure_type
                 DW_AT_name	("_low")
                 DW_AT_type	("int(64)")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelRange.chpl")
-                DW_AT_decl_line	(88)
+                DW_AT_decl_line (INTERNAL_LINENO)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
   DW_TAG_member
                 DW_AT_name	("_high")
                 DW_AT_type	("int(64)")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelRange.chpl")
-                DW_AT_decl_line	(89)
+                DW_AT_decl_line (INTERNAL_LINENO)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x08)
   DW_TAG_member
                 DW_AT_name	("_stride")
                 DW_AT_type	("int(64)")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelRange.chpl")
-                DW_AT_decl_line	(90)
+                DW_AT_decl_line (INTERNAL_LINENO)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x10)
   DW_TAG_member
                 DW_AT_name	("_alignment")
                 DW_AT_type	("int(64)")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelRange.chpl")
-                DW_AT_decl_line	(92)
+                DW_AT_decl_line (INTERNAL_LINENO)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x18)
-  NULL
 ================================================================================
 =============================myStridedNegativeRange=============================
 DW_TAG_variable
@@ -119,31 +116,30 @@ DW_TAG_structure_type
                 DW_AT_name	("_low")
                 DW_AT_type	("int(64)")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelRange.chpl")
-                DW_AT_decl_line	(88)
+                DW_AT_decl_line (INTERNAL_LINENO)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
   DW_TAG_member
                 DW_AT_name	("_high")
                 DW_AT_type	("int(64)")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelRange.chpl")
-                DW_AT_decl_line	(89)
+                DW_AT_decl_line (INTERNAL_LINENO)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x08)
   DW_TAG_member
                 DW_AT_name	("_stride")
                 DW_AT_type	("int(64)")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelRange.chpl")
-                DW_AT_decl_line	(90)
+                DW_AT_decl_line (INTERNAL_LINENO)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x10)
   DW_TAG_member
                 DW_AT_name	("_alignment")
                 DW_AT_type	("int(64)")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelRange.chpl")
-                DW_AT_decl_line	(92)
+                DW_AT_decl_line (INTERNAL_LINENO)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x18)
-  NULL
 ================================================================================
 =================================myAlignedRange=================================
 DW_TAG_variable
@@ -175,17 +171,16 @@ DW_TAG_structure_type
                 DW_AT_name	("_low")
                 DW_AT_type	("int(64)")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelRange.chpl")
-                DW_AT_decl_line	(88)
+                DW_AT_decl_line (INTERNAL_LINENO)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
   DW_TAG_member
                 DW_AT_name	("_high")
                 DW_AT_type	("int(64)")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelRange.chpl")
-                DW_AT_decl_line	(89)
+                DW_AT_decl_line (INTERNAL_LINENO)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x08)
-  NULL
 ================================================================================
 ===================================myLowRange===================================
 DW_TAG_variable
@@ -203,17 +198,16 @@ DW_TAG_structure_type
                 DW_AT_name	("_low")
                 DW_AT_type	("int(64)")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelRange.chpl")
-                DW_AT_decl_line	(88)
+                DW_AT_decl_line (INTERNAL_LINENO)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
   DW_TAG_member
                 DW_AT_name	("_high")
                 DW_AT_type	("int(64)")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelRange.chpl")
-                DW_AT_decl_line	(89)
+                DW_AT_decl_line (INTERNAL_LINENO)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x08)
-  NULL
 ================================================================================
 ==================================myHighRange===================================
 DW_TAG_variable
@@ -231,17 +225,16 @@ DW_TAG_structure_type
                 DW_AT_name	("_low")
                 DW_AT_type	("int(64)")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelRange.chpl")
-                DW_AT_decl_line	(88)
+                DW_AT_decl_line (INTERNAL_LINENO)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
   DW_TAG_member
                 DW_AT_name	("_high")
                 DW_AT_type	("int(64)")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelRange.chpl")
-                DW_AT_decl_line	(89)
+                DW_AT_decl_line (INTERNAL_LINENO)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x08)
-  NULL
 ================================================================================
 ============================myStridedUnboundedRange=============================
 DW_TAG_variable
@@ -259,31 +252,30 @@ DW_TAG_structure_type
                 DW_AT_name	("_low")
                 DW_AT_type	("int(64)")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelRange.chpl")
-                DW_AT_decl_line	(88)
+                DW_AT_decl_line (INTERNAL_LINENO)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
   DW_TAG_member
                 DW_AT_name	("_high")
                 DW_AT_type	("int(64)")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelRange.chpl")
-                DW_AT_decl_line	(89)
+                DW_AT_decl_line (INTERNAL_LINENO)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x08)
   DW_TAG_member
                 DW_AT_name	("_stride")
                 DW_AT_type	("int(64)")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelRange.chpl")
-                DW_AT_decl_line	(90)
+                DW_AT_decl_line (INTERNAL_LINENO)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x10)
   DW_TAG_member
                 DW_AT_name	("_alignment")
                 DW_AT_type	("int(64)")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelRange.chpl")
-                DW_AT_decl_line	(92)
+                DW_AT_decl_line (INTERNAL_LINENO)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x18)
-  NULL
 ================================================================================
 ===============================myStridedLowRange================================
 DW_TAG_variable
@@ -301,31 +293,30 @@ DW_TAG_structure_type
                 DW_AT_name	("_low")
                 DW_AT_type	("int(64)")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelRange.chpl")
-                DW_AT_decl_line	(88)
+                DW_AT_decl_line (INTERNAL_LINENO)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
   DW_TAG_member
                 DW_AT_name	("_high")
                 DW_AT_type	("int(64)")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelRange.chpl")
-                DW_AT_decl_line	(89)
+                DW_AT_decl_line (INTERNAL_LINENO)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x08)
   DW_TAG_member
                 DW_AT_name	("_stride")
                 DW_AT_type	("int(64)")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelRange.chpl")
-                DW_AT_decl_line	(90)
+                DW_AT_decl_line (INTERNAL_LINENO)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x10)
   DW_TAG_member
                 DW_AT_name	("_alignment")
                 DW_AT_type	("int(64)")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelRange.chpl")
-                DW_AT_decl_line	(92)
+                DW_AT_decl_line (INTERNAL_LINENO)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x18)
-  NULL
 ================================================================================
 ===============================myStridedHighRange===============================
 DW_TAG_variable
@@ -343,31 +334,30 @@ DW_TAG_structure_type
                 DW_AT_name	("_low")
                 DW_AT_type	("int(64)")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelRange.chpl")
-                DW_AT_decl_line	(88)
+                DW_AT_decl_line (INTERNAL_LINENO)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
   DW_TAG_member
                 DW_AT_name	("_high")
                 DW_AT_type	("int(64)")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelRange.chpl")
-                DW_AT_decl_line	(89)
+                DW_AT_decl_line (INTERNAL_LINENO)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x08)
   DW_TAG_member
                 DW_AT_name	("_stride")
                 DW_AT_type	("int(64)")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelRange.chpl")
-                DW_AT_decl_line	(90)
+                DW_AT_decl_line (INTERNAL_LINENO)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x10)
   DW_TAG_member
                 DW_AT_name	("_alignment")
                 DW_AT_type	("int(64)")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelRange.chpl")
-                DW_AT_decl_line	(92)
+                DW_AT_decl_line (INTERNAL_LINENO)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x18)
-  NULL
 ================================================================================
 ==================================myInt32Range==================================
 DW_TAG_variable
@@ -385,31 +375,30 @@ DW_TAG_structure_type
                 DW_AT_name	("_low")
                 DW_AT_type	("int(32)")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelRange.chpl")
-                DW_AT_decl_line	(88)
+                DW_AT_decl_line (INTERNAL_LINENO)
                 DW_AT_alignment	(4)
                 DW_AT_data_member_location	(0x00)
   DW_TAG_member
                 DW_AT_name	("_high")
                 DW_AT_type	("int(32)")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelRange.chpl")
-                DW_AT_decl_line	(89)
+                DW_AT_decl_line (INTERNAL_LINENO)
                 DW_AT_alignment	(4)
                 DW_AT_data_member_location	(0x04)
   DW_TAG_member
                 DW_AT_name	("_stride")
                 DW_AT_type	("int(32)")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelRange.chpl")
-                DW_AT_decl_line	(90)
+                DW_AT_decl_line (INTERNAL_LINENO)
                 DW_AT_alignment	(4)
                 DW_AT_data_member_location	(0x08)
   DW_TAG_member
                 DW_AT_name	("_alignment")
                 DW_AT_type	("int(32)")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelRange.chpl")
-                DW_AT_decl_line	(92)
+                DW_AT_decl_line (INTERNAL_LINENO)
                 DW_AT_alignment	(4)
                 DW_AT_data_member_location	(0x0c)
-  NULL
 ================================================================================
 ==================================myUint8Range==================================
 DW_TAG_variable
@@ -427,16 +416,15 @@ DW_TAG_structure_type
                 DW_AT_name	("_low")
                 DW_AT_type	("uint(8)")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelRange.chpl")
-                DW_AT_decl_line	(88)
+                DW_AT_decl_line (INTERNAL_LINENO)
                 DW_AT_alignment	(1)
                 DW_AT_data_member_location	(0x00)
   DW_TAG_member
                 DW_AT_name	("_high")
                 DW_AT_type	("uint(8)")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelRange.chpl")
-                DW_AT_decl_line	(89)
+                DW_AT_decl_line (INTERNAL_LINENO)
                 DW_AT_alignment	(1)
                 DW_AT_data_member_location	(0x01)
-  NULL
 ================================================================================
 Success!!

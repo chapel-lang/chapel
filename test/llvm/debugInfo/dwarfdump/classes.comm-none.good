@@ -24,7 +24,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(23)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
-  NULL
 ================================================================================
 ============================myRec(unmanaged MyClass)============================
 DW_TAG_structure_type
@@ -40,7 +39,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(23)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
-  NULL
 ================================================================================
 ==============================myRec(owned MyClass)==============================
 DW_TAG_structure_type
@@ -56,7 +54,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(23)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
-  NULL
 ================================================================================
 =============================myRec(shared MyClass)==============================
 DW_TAG_structure_type
@@ -72,7 +69,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(23)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
-  NULL
 ================================================================================
 ============================myRec(borrowed MyClass)=============================
 
@@ -91,7 +87,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(23)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
-  NULL
 ================================================================================
 =============================myRec(owned MyClass?)==============================
 DW_TAG_structure_type
@@ -107,7 +102,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(23)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
-  NULL
 ================================================================================
 =============================myRec(shared MyClass?)=============================
 DW_TAG_structure_type
@@ -123,7 +117,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(23)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
-  NULL
 ================================================================================
 ============================myRec(borrowed MyClass?)============================
 DW_TAG_structure_type
@@ -139,7 +132,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(23)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
-  NULL
 ================================================================================
 ==============================myRec(MyChildClass)===============================
 DW_TAG_structure_type
@@ -155,7 +147,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(23)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
-  NULL
 ================================================================================
 =========================myRec(unmanaged MyChildClass)==========================
 DW_TAG_structure_type
@@ -171,7 +162,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(23)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
-  NULL
 ================================================================================
 ===========================myRec(owned MyChildClass)============================
 DW_TAG_structure_type
@@ -187,7 +177,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(23)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
-  NULL
 ================================================================================
 ===========================myRec(shared MyChildClass)===========================
 DW_TAG_structure_type
@@ -203,7 +192,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(23)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
-  NULL
 ================================================================================
 ==========================myRec(borrowed MyChildClass)==========================
 
@@ -222,7 +210,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(23)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
-  NULL
 ================================================================================
 ===========================myRec(owned MyChildClass?)===========================
 DW_TAG_structure_type
@@ -238,7 +225,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(23)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
-  NULL
 ================================================================================
 ==========================myRec(shared MyChildClass?)===========================
 DW_TAG_structure_type
@@ -254,7 +240,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(23)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
-  NULL
 ================================================================================
 =========================myRec(borrowed MyChildClass?)==========================
 DW_TAG_structure_type
@@ -270,7 +255,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(23)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
-  NULL
 ================================================================================
 ====================================MyClass=====================================
 DW_TAG_pointer_type
@@ -296,7 +280,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(27)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x08)
-  NULL
 ================================================================================
 ==================================MyChildClass==================================
 DW_TAG_pointer_type
@@ -322,7 +305,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(31)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x10)
-  NULL
 ================================================================================
 =================================wide(MyClass)==================================
 

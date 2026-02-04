@@ -13,6 +13,5 @@ DW_TAG_structure_type
                 DW_AT_type	("int(32)")
                 DW_AT_alignment	(4)
                 DW_AT_data_member_location	(0x00)
-  NULL
 ================================================================================
 Success!!
