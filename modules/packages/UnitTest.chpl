@@ -528,8 +528,8 @@ module UnitTest {
       try {
         checkAssertEquality(first, second);
       } catch e: AssertionError {
-        var msg = e.message() + " - " + chpl_stringify_wrapper((...args));
-        throw new owned AssertionError(msg);
+          var msg = e.message() + " - " + chpl_stringify_wrapper((...args));
+          throw new owned AssertionError(msg);
         }
     }
 
