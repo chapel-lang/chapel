@@ -1,0 +1,22 @@
+b methodCallsRec.chpl:8
+b methodCallsRec.chpl:12
+b methodCallsRec.chpl:15
+r
+# testing breaking in myMethod
+p this
+c
+# testing breaking in setter
+p *this
+c
+# testing breaking in toString
+p this->a
+p this.a
+frame var
+p ret
+c
+# testing calls
+p myObj
+# p myObj.toString()
+p myObj.myMethod(2)
+p myObj.setter(8.1)
+p myObj
