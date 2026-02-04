@@ -116,7 +116,8 @@ proc masonInit(args: [] string) throws {
       "manifest file.");
   } else {
     // We can create the /src/ dir and Mason.toml
-    initProject(cwd, name, vcs, show, version, chplVersion,
+    const pathStr = if dirName == '' then cwd else path;
+    initProject(pathStr, name, vcs, show, version, chplVersion,
                 license, packageType);
   }
   writeln("Tip: To convert existing code to a mason project, " +
