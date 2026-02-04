@@ -4,9 +4,9 @@ import re
 
 
 @dataclass(order=False, eq=False)
-class DwarfTableEntry:
+class DwarfTagBlock:
     entries: List[str] = field(default_factory=list)
-    children: List["DwarfTableEntry"] = field(default_factory=list)
+    children: List["DwarfTagBlock"] = field(default_factory=list)
 
     def empty(self):
         return not self.entries and not self.children
@@ -73,10 +73,10 @@ class DwarfTableEntry:
 
 
 def filter_per_line(
-    blocks: List[DwarfTableEntry],
+    blocks: List[DwarfTagBlock],
     condition: Optional[Callable[[str], bool]] = None,
     modify: Optional[Callable[[str], str]] = None,
-) -> List[DwarfTableEntry]:
+) -> List[DwarfTagBlock]:
     filtered_blocks = []
     for block in blocks:
         new_block = block
@@ -89,10 +89,10 @@ def filter_per_line(
 
 
 def filter_per_block(
-    blocks: List[DwarfTableEntry],
-    condition: Optional[Callable[[DwarfTableEntry], DwarfTableEntry]] = None,
-    modify: Optional[Callable[[DwarfTableEntry], DwarfTableEntry]] = None,
-) -> List[DwarfTableEntry]:
+    blocks: List[DwarfTagBlock],
+    condition: Optional[Callable[[DwarfTagBlock], DwarfTagBlock]] = None,
+    modify: Optional[Callable[[DwarfTagBlock], DwarfTagBlock]] = None,
+) -> List[DwarfTagBlock]:
     filtered_blocks = []
     for block in blocks:
         new_block = block
@@ -106,8 +106,8 @@ def filter_per_block(
     return filtered_blocks
 
 
-def dump_blocks(blocks: List[DwarfTableEntry]) -> str:
-    def dump_to_lines(blocks: List[DwarfTableEntry]) -> List[str]:
+def dump_blocks(blocks: List[DwarfTagBlock]) -> str:
+    def dump_to_lines(blocks: List[DwarfTagBlock]) -> List[str]:
         output = []
         for block in blocks:
             output += block.entries
@@ -117,21 +117,21 @@ def dump_blocks(blocks: List[DwarfTableEntry]) -> str:
     return "\n".join(dump_to_lines(blocks))
 
 
-# def sort_blocks(blocks: List[DwarfTableEntry]) -> List[DwarfTableEntry]:
+# def sort_blocks(blocks: List[DwarfTagBlock]) -> List[DwarfTagBlock]:
 #     sorted_blocks = sorted(blocks, key=lambda b: b.sort_key())
 #     for block in sorted_blocks:
 #         block.sort()
 #     return sorted_blocks
 
 
-def parse_dwarf_dump(output: str) -> List[DwarfTableEntry]:
+def parse_dwarf_dump(output: str) -> List[DwarfTagBlock]:
     def parse_block(
         lines: List[str], indent: int = 0, start_idx: int = 0
-    ) -> Tuple[List[DwarfTableEntry], int]:
+    ) -> Tuple[List[DwarfTagBlock], int]:
 
         idx = start_idx
         blocks = []
-        current_block = DwarfTableEntry()
+        current_block = DwarfTagBlock()
 
         while idx < len(lines):
             line = lines[idx]
@@ -145,7 +145,7 @@ def parse_dwarf_dump(output: str) -> List[DwarfTableEntry]:
             if line.strip() == "NULL":
                 if not current_block.empty():
                     blocks.append(current_block)
-                    current_block = DwarfTableEntry()
+                    current_block = DwarfTagBlock()
                 idx += 1
                 continue
 
@@ -170,7 +170,7 @@ def parse_dwarf_dump(output: str) -> List[DwarfTableEntry]:
                     # Same level - start new block
                     if not current_block.empty():
                         blocks.append(current_block)
-                        current_block = DwarfTableEntry()
+                        current_block = DwarfTagBlock()
                     current_block.entries.append(line)
             else:
                 # Add all non-DW_TAG lines to current block
