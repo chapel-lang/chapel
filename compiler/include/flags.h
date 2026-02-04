@@ -42,6 +42,7 @@
 
 
 #include "chpl.h"
+#include <bitset>
 
 
 class BaseAST;
