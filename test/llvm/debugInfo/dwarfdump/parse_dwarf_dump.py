@@ -52,25 +52,20 @@ class DwarfTagBlock:
         """sort based on name, tag, and type"""
         return (self.name() or "", self.tag() or "", self.type_() or "")
 
-    def __lt__(self, other):
-        return self.sort_key() < other.sort_key()
-
-    def sort(self):
-        # Separate members from other children
+def blocks_sorted(blocks: List[DwarfTagBlock]) -> List[DwarfTagBlock]:
+    sorted_blocks = sorted(blocks, key=lambda b: b.sort_key())
+    for block in sorted_blocks:
+        # Separate members from other children, only sort the non-members
         members = [
-            child for child in self.children if child.tag() == "DW_TAG_member"
+            child for child in block.children if child.tag() == "DW_TAG_member"
         ]
         non_members = [
-            child for child in self.children if child.tag() != "DW_TAG_member"
+            child for child in block.children if child.tag() != "DW_TAG_member"
         ]
-        # only sort non-members
-        non_members.sort()
+        non_members = blocks_sorted(non_members)
+        block.children = members + non_members
 
-        # reconstruct children and recurse
-        self.children = members + non_members
-        for child in self.children:
-            child.sort()
-
+    return sorted_blocks
 
 def filter_per_line(
     blocks: List[DwarfTagBlock],
@@ -115,13 +110,6 @@ def dump_blocks(blocks: List[DwarfTagBlock]) -> str:
         return output
 
     return "\n".join(dump_to_lines(blocks))
-
-
-# def sort_blocks(blocks: List[DwarfTagBlock]) -> List[DwarfTagBlock]:
-#     sorted_blocks = sorted(blocks, key=lambda b: b.sort_key())
-#     for block in sorted_blocks:
-#         block.sort()
-#     return sorted_blocks
 
 
 def parse_dwarf_dump(output: str) -> List[DwarfTagBlock]:
@@ -186,5 +174,5 @@ def parse_dwarf_dump(output: str) -> List[DwarfTagBlock]:
     # Remove the first line which is just the filename
     lines = output.splitlines(keepends=False)[1:]
     blocks, _ = parse_block(lines)
-    blocks.sort()
+    blocks = blocks_sorted(blocks)
     return blocks
