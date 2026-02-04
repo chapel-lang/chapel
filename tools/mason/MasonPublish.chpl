@@ -439,7 +439,7 @@ proc getPackageName() throws {
  */
 private proc addPackageToBricks(projectLocal: string, safeDir: string,
                                 name: string, isLocal: bool) throws {
-  const bricksDir = joinPath(safeDir, 'Bricks');
+  const bricksDir = joinPath(safeDir, 'mason-registry', 'Bricks');
   const projectBrickDir = joinPath(bricksDir, name);
   try! {
     const toParse = open(joinPath(projectLocal, "Mason.toml"), ioMode.r);
@@ -463,8 +463,7 @@ private proc addPackageToBricks(projectLocal: string, safeDir: string,
         tomlWriter.write(baseToml);
         tomlWriter.close();
         return name + '@' + versionNum;
-      }
-      else {
+      } else {
         throw new MasonError('A package with that name and version number ' +
                              'already exists in the Bricks.');
         exit(1);
@@ -487,14 +486,12 @@ private proc addPackageToBricks(projectLocal: string, safeDir: string,
         tomlWriter.close();
         gitC(projectLocal, ['git', 'tag', '-a', 'v' + versionNum, '-m', name]);
         return name + '@' + versionNum;
-      }
-      else {
+      } else {
         throw new MasonError('A package with that name and version '+
                              'already exists in the Bricks.');
       }
     }
-  }
-  catch e {
+  } catch e {
     writeln(e.message());
     exit(1);
   }
