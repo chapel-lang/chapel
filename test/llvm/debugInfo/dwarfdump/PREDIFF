@@ -103,7 +103,7 @@ class Verifier:
             def sanitize_internal_lineno(
                 block: pdd.DwarfTagBlock,
             ) -> pdd.DwarfTagBlock:
-                if block.get_entry(r"\$CHPL_HOME/modules/internal") is not None:
+                if block.get_entry(r"\$CHPL_HOME/modules") is not None:
                     # remove lineno info
                     block.filter_entries(
                         modify=lambda line: re.sub(
