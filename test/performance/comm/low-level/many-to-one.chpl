@@ -32,6 +32,7 @@ config const doWarmupPass = true;
 config const printWarmupTiming = false;
 config const printTimings = false;
 config const printCommDiags = false;
+config const printSplits = false;
 
 const remoteVarSpace = LocaleSpace dmapped new blockDist(LocaleSpace);
 var remoteVar: [remoteVarSpace] int;
@@ -107,11 +108,12 @@ proc main() {
         var timeOnTasks: [1..numTasksPerNode] real;
 
         coforall taskIdx in 1..numTasksPerNode with (ref x, ref xAtomic, ref numOpsOnTasks, ref timeOnTasks, ref numOpsOnNodes, ref timeOnNodes) {
+
           var nopsAtCheck = minOpsPerTimerCheck;
           var nops: int;
 
           var t: stopwatch;
-          var tElapsed: real;
+          var tElapsed, split1, split2: real;
 
           allLocalesBarrier.barrier();
 
@@ -126,12 +128,27 @@ proc main() {
             if nops == nopsAtCheck {
               tElapsed = t.elapsed();
               if tElapsed >= runSecs then break;
-              nopsAtCheck += (0.99 * nops * (runSecs / tElapsed - 1)):int;
-              if nopsAtCheck - nops < minOpsPerTimerCheck then
-                nopsAtCheck = nops + minOpsPerTimerCheck;
+              if tElapsed * 2 < runSecs then
+                // if we've used less than half the time, run as many ops again
+                nopsAtCheck *= 2;
+              else
+                // otherwise, scale what we've done by the fraction of time
+                // remaining
+                nopsAtCheck += max(1, (nops * ((runSecs/tElapsed) - 1.0)): int);
+
+              if nops == minOpsPerTimerCheck {
+                split1 = tElapsed;
+              } else if nops == 2*minOpsPerTimerCheck {
+                split2 = tElapsed;
+              }
+
             }
             doOneOp(nops, x, xAtomic);
             nops += 1;
+          }
+          if printSplits {
+            extern proc printf(x...);
+            printf("[%ld,%ld] splits=(%lf, %lf)\n", locIdx, taskIdx, split1, split2);
           }
 
           numOpsOnTasks(taskIdx) = nops;
