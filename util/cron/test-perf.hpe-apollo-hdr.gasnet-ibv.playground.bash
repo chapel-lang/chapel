@@ -33,10 +33,10 @@ if [[ "$SKIP_ML_PLAYGROUND" == "1" ]]; then
   exit
 fi
 
-GITHUB_USER=jabraham17
-GITHUB_BRANCH=better-licm
-SHORT_NAME=better-licm
-START_DATE=11/19/25
+GITHUB_USER=insertinterestingnamehere
+GITHUB_BRANCH=qthreads-1.23
+SHORT_NAME=qthreads123
+START_DATE=2/5/26
 
 set -e
 checkout_branch $GITHUB_USER $GITHUB_BRANCH
