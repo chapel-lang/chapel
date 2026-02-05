@@ -37,7 +37,7 @@ proc main() {
   // CHECK-LOCAL: $1 = {myField = [[MYFIELD_ADDR:0x[0-9a-f]+]]}
   // CHECK-NOLOCAL: $1 = {myField = {locale = {node = 0}, addr = [[MYFIELD_ADDR:0x[0-9a-f]+]]}}
 
-  // CHECK-LOCAL: $2 = (struct MyClass *) [[MYFIELD_ADDR]]
+  // CHECK-LOCAL: $2 = (basicTypes::MyClass *) [[MYFIELD_ADDR]]
   // CHECK-NOLOCAL: $2 = {locale = {node = 0}, addr = [[MYFIELD_ADDR]]}
   var myRec = new MyRecord1();
 
@@ -47,7 +47,7 @@ proc main() {
 
   // CHECK: $5 = {buffLen = 0,
 
-  // CHECK-LOCAL: $6 = (struct MyClass *) 0x0
+  // CHECK-LOCAL: $6 = (basicTypes::MyClass *) 0x0
   // CHECK-NOLOCAL: $6 = {locale = {node = 0}, addr = 0x0}
 
   // CHECK: $7 = {
@@ -55,7 +55,7 @@ proc main() {
   // CHECK-NOLOCAL-SAME: _instance = {locale = {node = 0}, addr = [[MYARRF_ADDR:0x[0-9a-f]+]]}
   var myRec2 = new MyRecord2();
 
-  // CHECK: $8 = (struct MyClass *) [[MYUNMANAGED_ADDR:0x[0-9a-f]+]]
+  // CHECK: $8 = (basicTypes::MyClass *) [[MYUNMANAGED_ADDR:0x[0-9a-f]+]]
   var myUnmanagedClass = new unmanaged MyClass();
   defer { delete myUnmanagedClass; }
 
@@ -91,11 +91,11 @@ proc main() {
   // CHECK: $16 = 3.14
   const myReal: real = 3.14;
 
-  // CHECK: $17 = e2
+  // CHECK: $17 = basicTypes::myEnum::e2
   const myEnumVal = myEnum.e2;
 
   // CHECK: $18 =
-  // CHECK-SAME: e2
+  // CHECK-SAME: basicTypes::myEnum::e2
   const ref myEnumRef = myEnumVal;
 
   // CHECK: $19 = {x0 = 1,
