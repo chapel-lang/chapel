@@ -84,18 +84,25 @@ int executeAndWait(const std::vector<std::string>& commandVec,
       // indicate problem with waiting
       return -1;
     }
+    int code;
     if (!WIFEXITED(status)) {
-      // indicate program did not exit normally
-      if (printSystemCommands) {
-        printf("child process did not exit normally\n");
+      if (WIFSIGNALED(status)) {
+        code = WTERMSIG(status);
+        if (printSystemCommands) {
+          printf("child process killed by signal %i\n", WTERMSIG(status));
+        }
+      } else {
+        code = -1;
+        if (printSystemCommands) {
+          printf("child process did not exit normally\n");
+        }
       }
-      // indicate program did not exit normally
-      return -1;
-    }
-    // filter status down to key bits
-    int code = WEXITSTATUS(status);
-    if (printSystemCommands && code != 0) {
-      printf("child process exited with code %i\n", code);
+    } else {
+      // filter status down to key bits
+      code = WEXITSTATUS(status);
+      if (printSystemCommands && code != 0) {
+        printf("child process exited with code %i\n", code);
+      }
     }
     return code;
   }

@@ -1,0 +1,68 @@
+#!/usr/bin/env python3
+
+# Custom sub_test which runs chpl, SIGKILLs the driver compilation phase to
+# mimic being OOM killed, and checks for the presence of the expected OOM
+# warning message.
+
+import os
+import signal
+import subprocess
+import sys
+
+
+oom_message = "warning: A driver phase was killed by signal SIGKILL -- possibly due to running out of memory"
+phase_invocation_message = "invoking driver compilation phase"
+phase_arg = "driver-compilation-phase"
+chpl_file = "oom.chpl"
+
+
+def kill_subphase(ppid):
+    ps_output = subprocess.check_output(
+        f"ps -o pid,ppid,cmd | grep chpl | grep {phase_arg}",
+        universal_newlines=True,
+        shell=True,
+    )
+
+    for line in ps_output.splitlines():
+        split_line = line.split(" ")
+        if str(ppid) in split_line[1]:
+            child_pid = int(split_line[0])
+            print(f"Killing subphase with PID {child_pid}...", end="")
+            os.kill(child_pid, signal.SIGKILL)
+            print("killed.")
+            return
+
+
+def main():
+    assert len(sys.argv) == 2
+    chpl_cmd = sys.argv[1]
+
+    cmd = [chpl_cmd, "--print-commands", chpl_file]
+    process = subprocess.Popen(
+        cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True
+    )
+
+    encountered_subphase = False
+    killed_subphase = False
+    oom_message_found = False
+    for line in process.stdout:
+        print(line, end="")
+        if not encountered_subphase and phase_invocation_message in line:
+            encountered_subphase = True
+        elif encountered_subphase and not killed_subphase:
+            kill_subphase(process.pid)
+            killed_subphase = True
+        elif killed_subphase:
+            if oom_message in line:
+                oom_message_found = True
+
+    if not killed_subphase:
+        sys.exit("Did not encounter and kill the expected subphase.")
+    elif not oom_message_found:
+        sys.exit("Did not find expected OOM message in output after killing subphase.")
+    else:
+        print("Found expected OOM warning message after killing subphase.")
+
+
+if __name__ == "__main__":
+    main()
