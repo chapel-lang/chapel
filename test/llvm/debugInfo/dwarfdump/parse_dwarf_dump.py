@@ -52,20 +52,36 @@ class DwarfTagBlock:
         """sort based on name, tag, and type"""
         return (self.name() or "", self.tag() or "", self.type_() or "")
 
+    def to_hashable_str(self) -> str:
+        child_strs = [child.to_hashable_str() for child in self.children]
+        return "\n".join(self.entries + child_strs)
+
 def blocks_sorted(blocks: List[DwarfTagBlock]) -> List[DwarfTagBlock]:
     sorted_blocks = sorted(blocks, key=lambda b: b.sort_key())
     for block in sorted_blocks:
-        # Separate members from other children, only sort the non-members
-        members = [
-            child for child in block.children if child.tag() == "DW_TAG_member"
+        # Separate non-sortables from sortables
+        non_sortable_tags = {"DW_TAG_member", "DW_TAG_formal_parameter"}
+        non_sortable = [
+            child for child in block.children if child.tag() in non_sortable_tags
         ]
-        non_members = [
-            child for child in block.children if child.tag() != "DW_TAG_member"
+        sortable = [
+            child for child in block.children if child.tag() not in non_sortable_tags
         ]
-        non_members = blocks_sorted(non_members)
-        block.children = members + non_members
+        sortable = blocks_sorted(sortable)
+        block.children = non_sortable + sortable
 
     return sorted_blocks
+
+def deduplicate_blocks(blocks: List[DwarfTagBlock]) -> List[DwarfTagBlock]:
+    deduped_blocks = []
+    seen = set()
+    for block in blocks:
+        key = block.to_hashable_str()
+        if key not in seen:
+            seen.add(key)
+            block.children = deduplicate_blocks(block.children)
+            deduped_blocks.append(block)
+    return deduped_blocks
 
 def filter_per_line(
     blocks: List[DwarfTagBlock],
@@ -85,7 +101,7 @@ def filter_per_line(
 
 def filter_per_block(
     blocks: List[DwarfTagBlock],
-    condition: Optional[Callable[[DwarfTagBlock], DwarfTagBlock]] = None,
+    condition: Optional[Callable[[DwarfTagBlock], bool]] = None,
     modify: Optional[Callable[[DwarfTagBlock], DwarfTagBlock]] = None,
 ) -> List[DwarfTagBlock]:
     filtered_blocks = []

@@ -1,60 +1,60 @@
 
-// DWARFDUMP: myFunc
+// DWARFDUMP(skip_subprograms=False): myFunc
 proc myFunc(x: int) {
   const ret = x + 1;
   return ret;
 }
 
-// DWARFDUMP: getString
+// DWARFDUMP(skip_subprograms=False): getString
 proc getString() {
   const ret = "Hello from getString!";
   return ret;
 }
 
-// DWARFDUMP: myRec
+// DWARFDUMP(skip_subprograms=False): myRec
 record myRec {
   var a: int;
   var b: real;
-  // DWARFDUMP: toStringRec
+  // DWARFDUMP(skip_subprograms=False): toStringRec
   proc toStringRec() {
     const ret = "myRec(" + a:string + ", " + b:string + ")";
     return ret;
   }
 }
-// DWARFDUMP: myMethodRec
+// DWARFDUMP(skip_subprograms=False): myMethodRec
 proc myRec.myMethodRec(y: int): int {
   return a + y;
 }
-// DWARFDUMP: setterRec
+// DWARFDUMP(skip_subprograms=False): setterRec
 proc ref myRec.setterRec(b: real) {
   this.b = b;
 }
-// DWARFDUMP: getMyRec
+// DWARFDUMP(skip_subprograms=False): getMyRec
 proc getMyRec(x: int, y: real) {
   const ret = new myRec(x, y);
   return ret;
 }
 
-// DWARFDUMP: myClass
+// DWARFDUMP(skip_subprograms=False): myClass
 class myClass {
   var a: int;
   var b: bool;
   var c: string;
-  // DWARFDUMP: toStringCls
+  // DWARFDUMP(skip_subprograms=False): toStringCls
   proc toStringCls() {
     const ret = "myClass(" + a:string + ", " + b:string + ", " + c:string + ")";
     return ret;
   }
 }
-// DWARFDUMP: myMethodCls
+// DWARFDUMP(skip_subprograms=False): myMethodCls
 proc myClass.myMethodCls(y: int): int {
   return a + y;
 }
-// DWARFDUMP: setterCls
+// DWARFDUMP(skip_subprograms=False): setterCls
 proc ref myClass.setterCls(b: bool) {
   this.b = b;
 }
-// DWARFDUMP: getMyClass
+// DWARFDUMP(skip_subprograms=False): getMyClass
 proc getMyClass(a: int, b: bool, c: string) {
   const ret = new myClass(a, b, c);
   return ret;
