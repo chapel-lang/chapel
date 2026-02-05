@@ -127,6 +127,13 @@ proc main() {
             //
             if nops == nopsAtCheck {
               tElapsed = t.elapsed();
+
+              if nops == minOpsPerTimerCheck {
+                split1 = tElapsed;
+              } else if nops == 2*minOpsPerTimerCheck {
+                split2 = tElapsed;
+              }
+
               if tElapsed >= runSecs then break;
               if tElapsed * 2 < runSecs then
                 // if we've used less than half the time, run as many ops again
@@ -135,12 +142,6 @@ proc main() {
                 // otherwise, scale what we've done by the fraction of time
                 // remaining
                 nopsAtCheck += max(1, (nops * ((runSecs/tElapsed) - 1.0)): int);
-
-              if nops == minOpsPerTimerCheck {
-                split1 = tElapsed;
-              } else if nops == 2*minOpsPerTimerCheck {
-                split2 = tElapsed;
-              }
 
             }
             doOneOp(nops, x, xAtomic);
