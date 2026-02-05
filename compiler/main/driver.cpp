@@ -2737,7 +2737,6 @@ int main(int argc, char* argv[]) {
   if (!driverInSubInvocation) {
     printStuff(argv[0]);
     validateSettings();
-
   }
 
   if (fDynoTimingPath[0] != '\0' &&
