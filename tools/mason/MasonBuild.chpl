@@ -60,7 +60,8 @@ proc masonBuild(args: [] string) throws {
 
   const projectType = getProjectType();
   if projectType == "light" then
-    throw new owned MasonError("Mason light projects do not currently support 'mason build'");
+    throw new MasonError("Mason light projects do not " +
+                         "currently support 'mason build'");
 
   log.debugln("Project type acquired");
 
@@ -103,16 +104,18 @@ proc masonBuild(args: [] string) throws {
     const tomlName = configNames[0];
     const lockName = configNames[1];
     log.debugln("About to build program");
-    buildProgram(release, show, force, skipUpdate, compopts, tomlName, lockName);
+    buildProgram(release, show, force, skipUpdate,
+                 compopts, tomlName, lockName);
   }
 }
 
-private proc checkChplVersion(lockFile : borrowed Toml) throws {
+private proc checkChplVersion(lockFile: borrowed Toml) throws {
   const root = lockFile["root"]!;
   const (success, low, hi) = verifyChapelVersion(root);
 
   if !success {
-    throw new owned MasonError("Build failure: lock file expecting chplVersion " + prettyVersionRange(low, hi));
+    throw new MasonError("Build failure: lock file expecting chplVersion " +
+                         prettyVersionRange(low, hi));
   }
 }
 
@@ -167,14 +170,12 @@ proc buildProgram(release: bool, show: bool, force: bool, skipUpdate: bool,
     var compopts = cmdLineCompopts;
     compopts.pushBack(getTomlCompopts(lockFile));
     // Compile Program
-    if compileSrc(lockFile, binLoc, show, release, compopts, projectHome) {
+    if compileSrc(lockFile, binLoc, release, compopts, projectHome) {
       writeln("Build Successful\n");
+    } else {
+      throw new MasonError("Build Failed");
     }
-    else {
-      throw new owned MasonError("Build Failed");
-    }
-  }
-  else {
+  } else {
     writeln("Skipping Build... No changes to project");
   }
 }
@@ -184,7 +185,7 @@ proc buildProgram(release: bool, show: bool, force: bool, skipUpdate: bool,
    folder. Requires that the main library file be
    named after the project folder in which it is
    contained */
-proc compileSrc(lockFile: borrowed Toml, binLoc: string, show: bool,
+proc compileSrc(lockFile: borrowed Toml, binLoc: string,
                 release: bool, compopts: list(string),
                 projectHome: string) : bool throws {
 
@@ -199,9 +200,8 @@ proc compileSrc(lockFile: borrowed Toml, binLoc: string, show: bool,
   const moveTo = Path.joinPath(projectHome, 'target', binLoc, project);
 
   if !isFile(pathToProj) {
-    throw new owned MasonError("Mason could not find your project");
-  }
-  else {
+    throw new MasonError("Mason could not find your project");
+  } else {
     log.debugln("Starting to create compilation command");
 
     var cmd: list(string);
@@ -226,6 +226,7 @@ proc compileSrc(lockFile: borrowed Toml, binLoc: string, show: bool,
 
     // can't use _ since it will leak
     // see https://github.com/chapel-lang/chapel/issues/25926
+    @chplcheck.ignore("UnusedLoopIndex")
     for (_x, name, version) in srcSource.iterList(sourceList) {
       const nameVer = "%s-%s".format(name, version);
       // version of -1 specifies a git dep
@@ -246,8 +247,10 @@ proc compileSrc(lockFile: borrowed Toml, binLoc: string, show: bool,
 
     // can't use _ since it will leak
     // see https://github.com/chapel-lang/chapel/issues/25926
+    @chplcheck.ignore("UnusedLoopIndex")
     for (_x, name, branch, _y) in gitSource.iterList(gitList) {
-      var gitDepSrc = ' ' + gitDepPath + name + "-" + branch + '/src/' + name + ".chpl";
+      const gitDepSrc = Path.joinPath(gitDepPath, name + "-" + branch,
+                                      'src', name + ".chpl");
       cmd.pushBack(gitDepSrc);
     }
 
@@ -263,9 +266,7 @@ proc compileSrc(lockFile: borrowed Toml, binLoc: string, show: bool,
     }
 
     // Confirming File Structure
-    if isFile(projectHome + '/target/' + binLoc + '/' + project) then
-      return true;
-    else return false;
+    return isFile(Path.joinPath(projectHome, 'target', binLoc, project));
   }
   return false;
 }
@@ -320,7 +321,8 @@ proc getSrcCode(sourceList: list(srcSource), skipUpdate, show) throws {
       const destination = baseDir + nameVers;
       if !depExists(nameVers) {
         if skipUpdate then
-          throw new MasonError("Dependency cannot be installed when MASON_OFFLINE is set.");
+          throw new MasonError("Dependency cannot be installed when " +
+                               "MASON_OFFLINE is set.");
         writeln("Downloading dependency: " + nameVers);
         var getDependency = "git clone -qn "+ srcURL + ' ' + destination +'/';
         var checkout = "git checkout -q v" + version;
@@ -383,7 +385,7 @@ proc getTomlCompopts(lock: borrowed Toml): list(string) throws {
   }
 
   if const exDeps = lock.get['external'] {
-    for (name, depInfo) in zip(exDeps.A.keys(), exDeps.A.values()) {
+    for (_, depInfo) in zip(exDeps.A.keys(), exDeps.A.values()) {
       for (k,v) in allFields(depInfo!) {
         var val = v!;
         select k {
@@ -396,7 +398,7 @@ proc getTomlCompopts(lock: borrowed Toml): list(string) throws {
     }
   }
   if const pkgDeps = lock.get['system'] {
-    for (name, dep) in zip(pkgDeps.A.keys(), pkgDeps.A.values()) {
+    for (_, dep) in zip(pkgDeps.A.keys(), pkgDeps.A.values()) {
       var depInfo = dep!;
       compopts.pushBack(depInfo["libs"]!.s);
       compopts.pushBack("-I" + depInfo["include"]!.s);

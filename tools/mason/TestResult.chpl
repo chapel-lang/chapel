@@ -46,14 +46,14 @@ module TestResult {
     var lock = new ChapelLocks.chpl_LocalSpinlock();
 
     // called when a test ran
-    proc _testRan() {
+    proc testRan() {
       this.testsRun += 1;
     }
 
     /*Called when an error has occurred.*/
     proc addError(testName: string, fileName: string, errMsg: string) {
       manage lock {
-        this._testRan();
+        this.testRan();
         var fileAdd = fileName + ": " + testName;
         this.errors.pushBack((fileAdd, errMsg));
       }
@@ -62,16 +62,16 @@ module TestResult {
     /*called when error occured */
     proc addFailure(testName: string, fileName: string, errMsg: string) {
       manage lock {
-        this._testRan();
+        this.testRan();
         var fileAdd = fileName + ": " + testName;
         this.failures.pushBack((fileAdd, errMsg));
       }
     }
 
     /*Called when a test has completed successfully*/
-    proc addSuccess(testName: string, fileName: string) {
+    proc addSuccess() {
       manage lock {
-        this._testRan();
+        this.testRan();
         this.testsPassed += 1;
       }
     }
@@ -79,7 +79,7 @@ module TestResult {
     /*Called when a test is skipped.*/
     proc addSkip(testName: string, fileName: string, errMsg: string) {
       manage lock {
-        this._testRan();
+        this.testRan();
         var fileAdd = fileName + ": " + testName;
         this.skipped.pushBack((fileAdd, errMsg));
       }
