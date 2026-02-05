@@ -76,10 +76,10 @@ def deduplicate_blocks(blocks: List[DwarfTagBlock]) -> List[DwarfTagBlock]:
     deduped_blocks = []
     seen = set()
     for block in blocks:
+        block.children = deduplicate_blocks(block.children)
         key = block.to_hashable_str()
         if key not in seen:
             seen.add(key)
-            block.children = deduplicate_blocks(block.children)
             deduped_blocks.append(block)
     return deduped_blocks
 

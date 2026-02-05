@@ -119,14 +119,14 @@ class Verifier:
                 blocks, modify=sanitize_internal_lineno
             )
 
-            blocks = pdd.deduplicate_blocks(blocks)
-
             if skip_subprograms:
                 # filter out all DW_TAG_subprogram blocks
                 blocks = pdd.filter_per_block(
                     blocks,
                     condition=lambda block: block.tag() != "DW_TAG_subprogram",
                 )
+
+            blocks = pdd.deduplicate_blocks(blocks)
 
             # expand blocks back into output
             output = pdd.dump_blocks(blocks).strip()
