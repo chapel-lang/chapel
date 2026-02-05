@@ -44,7 +44,6 @@ DW_TAG_subprogram
                 DW_AT_decl_file	("./callables.chpl")
                 DW_AT_decl_line	(10)
                 DW_AT_type	("string")
-  NULL
 ================================================================================
 =====================================myRec======================================
 DW_TAG_structure_type
@@ -127,7 +126,6 @@ DW_TAG_structure_type
                   DW_AT_artificial	(true)
     DW_TAG_formal_parameter
                   DW_AT_type	("real(64)")
-  NULL
 ================================================================================
 ==================================toStringRec===================================
 DW_TAG_subprogram
