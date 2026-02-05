@@ -48,13 +48,31 @@ class DwarfTagBlock:
             return tag_entry[0].strip()
         return None
 
+    def lineno(self):
+        lineno_entry = self.get_entry(r"DW_AT_decl_line\s+\((\d+)\)")
+        if lineno_entry:
+            return int(lineno_entry[1].group(1))
+        return None
+
+    def filename(self):
+        file_entry = self.get_entry(r'DW_AT_decl_file\s+\("([^"]+)"\)')
+        if file_entry:
+            return file_entry[1].group(1).strip()
+        return None
+
     def sort_key(self):
-        """sort based on name, tag, and type"""
-        return (self.name() or "", self.tag() or "", self.type_() or "")
+        """sort based on name, tag, type, filename"""
+        return (
+            self.name() or "",
+            self.tag() or "",
+            self.type_() or "",
+            self.filename() or ""
+        )
 
     def to_hashable_str(self) -> str:
         child_strs = [child.to_hashable_str() for child in self.children]
         return "\n".join(self.entries + child_strs)
+
 
 def blocks_sorted(blocks: List[DwarfTagBlock]) -> List[DwarfTagBlock]:
     sorted_blocks = sorted(blocks, key=lambda b: b.sort_key())
@@ -62,15 +80,20 @@ def blocks_sorted(blocks: List[DwarfTagBlock]) -> List[DwarfTagBlock]:
         # Separate non-sortables from sortables
         non_sortable_tags = {"DW_TAG_member", "DW_TAG_formal_parameter"}
         non_sortable = [
-            child for child in block.children if child.tag() in non_sortable_tags
+            child
+            for child in block.children
+            if child.tag() in non_sortable_tags
         ]
         sortable = [
-            child for child in block.children if child.tag() not in non_sortable_tags
+            child
+            for child in block.children
+            if child.tag() not in non_sortable_tags
         ]
         sortable = blocks_sorted(sortable)
         block.children = non_sortable + sortable
 
     return sorted_blocks
+
 
 def deduplicate_blocks(blocks: List[DwarfTagBlock]) -> List[DwarfTagBlock]:
     deduped_blocks = []
@@ -82,6 +105,7 @@ def deduplicate_blocks(blocks: List[DwarfTagBlock]) -> List[DwarfTagBlock]:
             seen.add(key)
             deduped_blocks.append(block)
     return deduped_blocks
+
 
 def filter_per_line(
     blocks: List[DwarfTagBlock],
