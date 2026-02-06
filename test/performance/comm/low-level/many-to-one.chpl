@@ -32,7 +32,6 @@ config const doWarmupPass = true;
 config const printWarmupTiming = false;
 config const printTimings = false;
 config const printCommDiags = false;
-config const printSplits = false;
 
 const remoteVarSpace = LocaleSpace dmapped new blockDist(LocaleSpace);
 var remoteVar: [remoteVarSpace] int;
@@ -108,12 +107,11 @@ proc main() {
         var timeOnTasks: [1..numTasksPerNode] real;
 
         coforall taskIdx in 1..numTasksPerNode with (ref x, ref xAtomic, ref numOpsOnTasks, ref timeOnTasks, ref numOpsOnNodes, ref timeOnNodes) {
-
           var nopsAtCheck = minOpsPerTimerCheck;
           var nops: int;
 
           var t: stopwatch;
-          var tElapsed, split1, split2: real;
+          var tElapsed: real;
 
           allLocalesBarrier.barrier();
 
@@ -127,13 +125,6 @@ proc main() {
             //
             if nops == nopsAtCheck {
               tElapsed = t.elapsed();
-
-              if nops == minOpsPerTimerCheck {
-                split1 = tElapsed;
-              } else if nops == 2*minOpsPerTimerCheck {
-                split2 = tElapsed;
-              }
-
               if tElapsed >= runSecs then break;
               if tElapsed * 2 < runSecs then
                 // if we've used less than half the time, run as many ops again
@@ -146,10 +137,6 @@ proc main() {
             }
             doOneOp(nops, x, xAtomic);
             nops += 1;
-          }
-          if printSplits {
-            extern proc printf(x...);
-            printf("[%ld,%ld] splits=(%lf, %lf)\n", locIdx, taskIdx, split1, split2);
           }
 
           numOpsOnTasks(taskIdx) = nops;
