@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12...3.31)
+cmake_minimum_required(VERSION 3.12...4.1)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
@@ -7,12 +7,12 @@ set(BUILD_SHARED_LIBS ON CACHE BOOL "Build using shared libraries.")
 
 if(CMAKE_VERSION VERSION_LESS "3.9.0")
   project(qthreads
-    VERSION 1.22
+    VERSION 1.23
     DESCRIPTION "A user-level threading library"
     LANGUAGES C ASM CXX)
 else()
   project(qthreads
-    VERSION 1.22
+    VERSION 1.23
     LANGUAGES C ASM CXX)
 endif()
 
@@ -22,6 +22,7 @@ if(APPLE)
 endif()
 
 include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
