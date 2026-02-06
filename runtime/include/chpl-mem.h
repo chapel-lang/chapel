@@ -159,11 +159,19 @@ void chpl_mem_free(void* memAlloc, int32_t lineno, int32_t filename) {
 
 // Provide handles to instrument Chapel calls to memcpy and memmove
 static inline
-void* chpl_memcpy(void* dest, const void* src, size_t num)
-{
+void* chpl_memcpy(void* dest, const void* src, size_t num) {
   assert(dest != src || num == 0);
   assert(dest != NULL && src != NULL);
   return memcpy(dest, src, num);
+}
+
+static inline
+char* chpl_strdup(const char* s) {
+  size_t len = strlen(s) + 1;
+  char* ret = (char*) chpl_mem_allocMany(sizeof(char), len,
+                                          CHPL_RT_MD_STR_COPY_DATA, -1, 0);
+  if (ret) chpl_memcpy(ret, s, len);
+  return ret;
 }
 
 // Query the allocator to ask for a good size to allocate that is at least
