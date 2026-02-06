@@ -1,0 +1,2 @@
+COMPOPTS <= -g
+COMPOPTS <= --debug-symbols
