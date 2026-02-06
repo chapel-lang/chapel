@@ -1288,18 +1288,19 @@ static void lowerIfExprs(BaseAST* base) {
 /************************************* | **************************************
 *                                                                             *
 * Two cases are handled here:                                                 *
-*    1. ('new' (dmap arg)) ==> (chpl__buildDistValue arg)                     *
+*    1. ('new' (chpl_dmap arg)) ==> (chpl__buildDistValue arg)                *
 *    2. (chpl__distributed (Dist args)) ==>                                   *
 *       (chpl__distributed (chpl__buildDistValue ('new' (Dist args)))),       *
 *        where isDistClass(Dist).                                             *
 *                                                                             *
-*  In 1., the only type that has FLAG_SYNTACTIC_DISTRIBUTION on it is "dmap". *
-*  This is a dummy record type that must be replaced.  The call to            *
-*  chpl__buildDistValue() performs this task, returning _newDistribution(x),  *
-*  where x is a distribution.                                                 *
+*  In 1., the only type that has FLAG_SYNTACTIC_DISTRIBUTION on it is         *
+*  "chpl_dmap". This is a dummy record type that must be replaced.  The call  *
+*  to chpl__buildDistValue() performs this task, returning                    *
+*  _newDistribution(x), where x is a distribution.  At present, this pattern  *
+*  should only still be in use for the creation of 'defaultDist'.*
 *                                                                             *
-*    1. supports e.g.  var x = new dmap(new Block(...));                      *
-*    2. supports e.g.  var y = space dmapped Block (...);                     *
+*    1. supports e.g.  var x = new chpl_dmap(new blockDist(...));             *
+*    2. supports e.g.  var y = space dmapped new blockDist(...);              *
 *                                                                             *
 ************************************** | *************************************/
 
@@ -1324,15 +1325,10 @@ static void processSyntacticDistributions(CallExpr* call) {
     if (CallExpr* distCall = toCallExpr(call->get(1))) {
       if (SymExpr* distClass = toSymExpr(distCall->baseExpr)) {
         if (auto ts = expandTypeAlias(distClass)) {
-          const char* didYouMeanStr =
-            isDistClass(canonicalClassType(ts->type)) ?
-              "<domain> dmapped new dmap(new <DistName>(<args>))" :
-              "<domain> dmapped new <DistName>(<args>)";
           USR_FATAL(
             distCall,
             "dmapped initialization expression requires a value, not a type "
-            "- did you mean to use '%s'?",
-            didYouMeanStr
+            "- did you mean to use '<domain> dmapped new %s(<args>)'?", ts->name
           );
         }
       }

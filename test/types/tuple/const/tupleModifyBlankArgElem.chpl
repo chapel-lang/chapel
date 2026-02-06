@@ -62,7 +62,7 @@ proc modifyBlankArgElement(tup: (u,)) {
 }
 
 proc modifyBlankArgElement(tup: (?t,)) where isDmapType(t) {
-  // TODO: dmap
+  // TODO: domain map
 }
 
 proc modifyBlankArgElement(tup: (?t,)) where isDomainType(t) {
@@ -168,7 +168,7 @@ proc test() {
   // union, OK
   run(new u());
 
-  // TODO: dmap
+  // TODO: domain map
 
   // domain, OK
   run({0..0});

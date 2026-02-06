@@ -803,3 +803,99 @@ record chpl_PrivatizedDistHelper : writeSerializable {
     return _value.dsiTargetLocales();
   }
 }
+
+/*
+   a utility wrapper record for turning old rectangular layout classes
+   into values, similar to chpl_PrivatizedDistHelper for distributions
+*/
+record chpl__rectLayoutHelper {
+  forwarding var _value;
+
+  proc newRectangularDom(param rank: int, type idxType,
+                         param strides: strideKind,
+                         ranges: rank*range(idxType, boundKind.both, strides),
+                         definedConst: bool = false) {
+    var x = _value.dsiNewRectangularDom(rank, idxType, strides, ranges);
+
+    x.definedConst = definedConst;
+
+    if x.linksDistribution() {
+      _value.add_dom(x);
+    }
+    return x;
+  }
+
+  proc newRectangularDom(param rank: int, type idxType,
+                         param strides: strideKind,
+                         definedConst: bool = false) {
+    var ranges: rank*range(idxType, boundKind.both, strides);
+    return newRectangularDom(rank, idxType, strides, ranges, definedConst);
+  }
+
+  proc newSparseDom(param rank: int, type idxType, dom: domain) {
+    compilerError("sparse domains not supported by this distribution");
+  }
+
+  proc newAssociativeDom(type idxType, param parSafe: bool=true) {
+    compilerError("associative domains not supported by this distribution");
+  }
+
+  proc deinit() {
+    on _value {
+      // Count the number of domains that refer to this distribution.
+      // and mark the distribution to be freed when that number reaches 0.
+      // If the number is 0, .remove() returns the distribution
+      // that should be freed.
+      var distToFree = _value.remove();
+      if distToFree != nil {
+        _delete_dist(distToFree!, false);
+      }
+    }
+  }
+}
+
+/*
+   a utility wrapper record for turning old associative layout classes
+   into values, similar to chpl_PrivatizedDistHelper for distributions
+*/
+record chpl__assocLayoutHelper {
+  forwarding var _value;
+
+  proc newRectangularDom(param rank: int, type idxType,
+                         param strides: strideKind,
+                         ranges: rank*range(idxType, boundKind.both, strides),
+                         definedConst: bool = false) {
+    compilerError("rectangular domains not supported by this distribution");
+  }
+
+  proc newRectangularDom(param rank: int, type idxType,
+                         param strides: strideKind,
+                         definedConst: bool = false) {
+    compilerError("rectangular domains not supported by this distribution");
+  }
+
+  proc newSparseDom(param rank: int, type idxType, dom: domain) {
+    compilerError("sparse domains not supported by this distribution");
+  }
+
+  proc newAssociativeDom(type idxType, param parSafe: bool=true) {
+      var x = _value.dsiNewAssociativeDom(idxType, parSafe);
+      if x.linksDistribution() {
+        _value.add_dom(x);
+      }
+      return x;
+  }
+
+  proc deinit() {
+    on _value {
+      // Count the number of domains that refer to this distribution.
+      // and mark the distribution to be freed when that number reaches 0.
+      // If the number is 0, .remove() returns the distribution
+      // that should be freed.
+      var distToFree = _value.remove();
+      if distToFree != nil {
+        _delete_dist(distToFree!, false);
+      }
+    }
+  }
+}

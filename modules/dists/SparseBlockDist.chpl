@@ -358,7 +358,7 @@ private proc getDefaultSparseDist(type sparseLayoutType) {
   } else if isRecord(sparseLayoutType) {
     return new sparseLayoutType();
   } else {
-    return new dmap(new sparseLayoutType());
+    halt("Unexpected type in getDefaultSparseDist()");
   }
 }
 

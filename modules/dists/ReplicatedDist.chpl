@@ -168,11 +168,6 @@ record replicatedDist : writeSerializable {
 }
 
 
-@deprecated("'Replicated' is deprecated, please use 'replicatedDist' instead")
-type Replicated = replicatedDist;
-
-
-
 @chpldoc.nodoc
 class ReplicatedImpl : BaseDist {
   var targetLocDom : domain(here.id.type);
@@ -362,7 +357,7 @@ override proc ReplicatedImpl.dsiNewRectangularDom(param rank: int,
 }
 
 // Given an index, this should return the locale that owns that index.
-// (This is the implementation of dmap.idxToLocale().)
+// (This is the implementation of distribution.idxToLocale().)
 // For Replicated, we point it to the current locale.
 proc ReplicatedImpl.dsiIndexToLocale(indexx): locale {
   return here;
