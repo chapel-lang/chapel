@@ -47,6 +47,7 @@
 #define CHPL_PARTITION_FLAG "--partition"
 #define CHPL_EXCLUDE_FLAG "--exclude"
 #define CHPL_GPUS_PER_NODE_FLAG "--gpus-per-node"
+#define CHPL_LAUNCHER_PASSTHROUGH_FLAG "--launcher-flags"
 
 #define CHPL_LPN_VAR "LOCALES_PER_NODE"
 
@@ -56,6 +57,8 @@ static char* nodelist = NULL;
 static char* partition = NULL;
 static char* exclude = NULL;
 static char* gpusPerNode = NULL;
+static char** launcherPassthroughFlags = NULL;
+static int numLauncherPassthroughFlags = 0;
 char* slurmFilename = NULL;
 
 /* copies of binary to run per node */
@@ -69,6 +72,18 @@ typedef enum {
 } sbatchVersion;
 
 static const char* nodeAccessStr = NULL;
+
+static void appendPassthroughFlag(char*** array, int* size, const char* flag) {
+  if (*array == NULL) {
+    *array = (char**)chpl_mem_allocMany(1, sizeof(char*),
+                                        CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
+  } else {
+    *array = (char**)chpl_mem_realloc(*array, (*size + 1) * sizeof(char*),
+                                      CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
+  }
+  (*array)[*size] = chpl_strdup(flag);
+  (*size)++;
+}
 
 // Check what version of slurm is on the system
 static sbatchVersion determineSlurmVersion(void) {
@@ -171,6 +186,7 @@ static void genNumLocalesOptions(FILE* slurmFile, sbatchVersion sbatch,
   default:
     break;
   }
+  if ()
 }
 
 // Append environment variables using chpl_append_to_cmd.
@@ -257,6 +273,12 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     gpusPerNode = getenv("CHPL_LAUNCHER_GPUS_PER_NODE");
   }
 
+  // append any user specified passthrough flags to the list of flags to pass through
+  char* passthroughFlagsEnv = getenv("CHPL_LAUNCHER_PASSTHROUGH_FLAGS");
+  if (passthroughFlagsEnv) {
+    appendPassthroughFlag(&launcherPassthroughFlags, &numLauncherPassthroughFlags, passthroughFlagsEnv);
+  }
+
   // request exclusive node access by default, but allow user to override
   nodeAccessEnv = getenv("CHPL_LAUNCHER_NODE_ACCESS");
   if (nodeAccessEnv == NULL || strcmp(nodeAccessEnv, "exclusive") == 0) {
@@ -294,6 +316,13 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 
     if (projectString && strlen(projectString) > 0)
       fprintf(slurmFile, "#SBATCH -A %s\n", projectString);
+
+    // add any additional flags
+    if (launcherPassthroughFlags != NULL) {
+      for (int i = 0; i < numLauncherPassthroughFlags; i++) {
+        fprintf(slurmFile, "#SBATCH %s\n", launcherPassthroughFlags[i]);
+      }
+    }
 
     if (outputfn != NULL)
       fprintf(slurmFile, "#SBATCH -o %s\n", outputfn);
@@ -345,6 +374,12 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     if (projectString && strlen(projectString) > 0)
       chpl_append_to_cmd(&iCom, &len, "--account=%s ", projectString);
     if (constraint) chpl_append_to_cmd(&iCom, &len, "-C %s", constraint);
+    // add any additional flags
+    if (launcherPassthroughFlags != NULL) {
+      for (int i = 0; i < numLauncherPassthroughFlags; i++) {
+        chpl_append_to_cmd(&iCom, &len, " %s", launcherPassthroughFlags[i]);
+      }
+    }
     chpl_append_to_cmd(&iCom, &len, " %s/%s/%s -n %d -N %d -c 0",
                    CHPL_THIRD_PARTY, WRAP_TO_STR(LAUNCH_PATH),
                    GASNETRUN_LAUNCHER, numLocales, numNodes);
@@ -448,6 +483,15 @@ int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
     return 1;
   }
 
+  // handle --launcher-flags <flags> or --launcher-flags=<flags>
+  if (!strcmp(argv[argNum], CHPL_LAUNCHER_PASSTHROUGH_FLAG)) {
+    appendPassthroughFlag(&launcherPassthroughFlags, &numLauncherPassthroughFlags, argv[argNum+1]);
+    return 2;
+  } else if (!strncmp(argv[argNum], CHPL_LAUNCHER_PASSTHROUGH_FLAG"=", strlen(CHPL_LAUNCHER_PASSTHROUGH_FLAG))) {
+    appendPassthroughFlag(&launcherPassthroughFlags, &numLauncherPassthroughFlags, &(argv[argNum][strlen(CHPL_LAUNCHER_PASSTHROUGH_FLAG)+1]));
+    return 1;
+  }
+
   return 0;
 }
 
@@ -485,6 +529,13 @@ const argDescTuple_t* chpl_launch_get_help(void) {
       },
       { "",
         "(or use $CHPL_LAUNCHER_GPUS_PER_NODE)"
+      },
+      {
+        CHPL_LAUNCHER_PASSTHROUGH_FLAG " <flags>",
+        "specify additional flags to pass through to the launcher"
+      },
+      { "",
+        "(or use $CHPL_LAUNCHER_PASSTHROUGH_FLAGS)"
       },
       { NULL, NULL },
     };
