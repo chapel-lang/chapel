@@ -99,6 +99,10 @@ class Verifier:
             blocks = pdd.filter_per_line(
                 blocks, condition=lambda line: "DW_AT_frame_base" not in line
             )
+            # remove DW_AT_object_pointer
+            blocks = pdd.filter_per_line(
+                blocks, condition=lambda line: "DW_AT_object_pointer" not in line
+            )
 
             # filter out internal module line numbers
             def sanitize_internal_lineno(
