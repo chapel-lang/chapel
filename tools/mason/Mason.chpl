@@ -63,6 +63,7 @@ module Mason {
   use MasonExternal;
   use MasonHelp;
   use MasonInit;
+  use MasonLint;
   use MasonModify;
   use MasonNew;
   use MasonPublish;
@@ -84,9 +85,9 @@ module Mason {
     var subCmds = new map(string, shared Argument);
 
     // define all the supported subcommand strings here
-    var cmds = ["add","build","clean","doc","env","external","init","publish",
-                "new","rm","run","search","system","test","update",
-                "help","version","modules"];
+    const cmds = ["add","build","clean","doc","env","external","init","lint",
+                  "publish","new","rm","run","search","system","test","update",
+                  "help","version","modules"];
     for cmd in cmds {
       subCmds.add(cmd,parser.addSubCommand(cmd));
     }
@@ -132,6 +133,7 @@ module Mason {
         when "external" do masonExternal(cmdArgs);
         when "help" do masonHelp();
         when "init" do masonInit(cmdArgs);
+        when "lint" do masonLint(cmdArgs);
         when "new" do masonNew(cmdArgs);
         when "publish" do masonPublish(cmdArgs);
         when "rm" do masonModify(cmdArgs);
