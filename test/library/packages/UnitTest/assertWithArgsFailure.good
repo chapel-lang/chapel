@@ -1,0 +1,5 @@
+testFailureMessage()
+Flavour: FAIL
+======================================================================
+AssertionError: in assertWithArgsFailure.chpl:6 - in assertWithArgsFailure.chpl:6 - assert failed - '5' != '10' - Expected x=5to equal y=10
+----------------------------------------------------------------------

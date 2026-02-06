@@ -248,6 +248,27 @@ module UnitTest {
     }
 
     /*
+      Assert that ``test`` is `true`. If it is false, adds the ``args`` to 
+      the thrown error's ``message`` as if those args were printed using 
+      :proc:`~IO.write()`.
+
+      :arg test: the boolean condition
+      :type test: `bool`
+      :arg args: additional values to print on failure
+      :throws: AssertionError if the assertion fails
+    */
+    pragma "insert line file info"
+    pragma "always propagate line file info"
+    pragma "insert line file info"
+    pragma "always propagate line file info"
+    proc assertTrue(test: bool, args...?n) throws {
+      if !test {
+        var msg = "assertTrue failed. Given expression is False - " + chpl_stringify_wrapper((...args));
+        throw new owned AssertionError(msg);
+      }
+    }
+
+    /*
       Assert that ``test`` is `false`.
 
       :arg test: the boolean condition
@@ -258,6 +279,25 @@ module UnitTest {
     proc assertFalse(test: bool) throws {
       if test then
         throw new owned AssertionError("assertFalse failed. Given expression is True");
+    }
+
+    /*
+      Assert that ``test`` is `false`. If it is true, adds the ``args`` to 
+      the thrown error's ``message`` as if those args were printed using 
+      :proc:`~IO.write()`.
+
+      :arg test: the boolean condition
+      :type test: `bool`
+      :arg args: additional values to print on failure
+      :throws: AssertionError if the assertion fails
+    */
+    pragma "insert line file info"
+    pragma "always propagate line file info"
+    proc assertFalse(test: bool, args...?n) throws {
+      if test {
+        var msg = "assertFalse failed. Given expression is True - " + chpl_stringify_wrapper((...args));
+        throw new owned AssertionError(msg);
+      }
     }
 
     pragma "insert line file info"
@@ -475,6 +515,25 @@ module UnitTest {
     }
 
     /*
+      Assert that ``first == second``. If they are not equal, adds the ``args`` 
+      to the thrown error's ``message`` as if those args were printed using 
+      :proc:`~IO.write()`.
+
+      :arg first: The first object to compare
+      :arg second: The second object to compare
+      :arg args: additional values to print on failure
+      :throws: AssertionError if the assertion fails
+    */
+    proc assertEqual(first, second, args...?n) throws {
+      try {
+        checkAssertEquality(first, second);
+      } catch e: AssertionError {
+          var msg = e.message() + " - " + chpl_stringify_wrapper((...args));
+          throw new owned AssertionError(msg);
+        }
+    }
+
+    /*
       Assert that x matches the regular expression pattern.
 
       .. warning::
@@ -563,6 +622,26 @@ module UnitTest {
     }
 
     /*
+      Assert that ``first != second``. If they are equal, adds the ``args``
+      to the thrown error's ``message`` as if those args were printed using
+      :proc:`~IO.write()`.
+
+      :arg first: The first object to compare
+      :arg second: The second object to compare
+      :arg args: additional values to print on failure
+      :throws: AssertionError if the assertion fails
+    */
+    proc assertNotEqual(first, second, args...?n) throws {
+      if canResolve("!=", first, second) {
+        if !checkAssertInequality(first, second) {
+          throw new owned AssertionError("assert failed -\n'%?'\n==\n'%?' - ".format(first, second) + 
+                                        chpl_stringify_wrapper((...args)));
+        }
+      }
+    }
+
+
+    /*
       Assert that ``first > second``.
 
       :arg first: The first object to compare.
@@ -580,6 +659,31 @@ module UnitTest {
         throw new owned AssertionError(errorMsg);
       }
     }
+
+    /*
+      Assert that ``first > second``. If ``first <= second``, adds the ``args`` 
+      to the thrown error's ``message`` as if those args were printed using 
+      :proc:`~IO.write()`.
+
+      :arg first: The first object to compare
+      :arg second: The second object to compare
+      :arg args: additional values to print on failure
+      :throws: AssertionError if the assertion fails
+    */
+    proc assertGreaterThan(first, second, args...?n) throws {
+      if canResolve(">=", first, second) {
+        try {
+          checkGreater(first, second);
+        } catch e: AssertionError {
+          throw new owned AssertionError(e.message() + " - " + chpl_stringify_wrapper((...args)));
+        }
+      }
+      else {
+        throw new owned AssertionError("assert failed - First element is of type %? and Second is of type %? - ".format(first.type:string, second.type:string) + 
+                                      chpl_stringify_wrapper((...args)));
+      }
+    }
+
 
     pragma "insert line file info"
     pragma "always propagate line file info"
@@ -798,6 +902,30 @@ module UnitTest {
       else {
         const errorMsg = "assert failed - First element is of type %? and Second is of type %?".format(first.type:string, second.type:string);
         throw new owned AssertionError(errorMsg);
+      }
+    }
+
+    /*
+      Assert that ``first < second``. If ``first >= second``, adds the ``args`` 
+      to the thrown error's ``message`` as if those args were printed using 
+      :proc:`~IO.write()`.
+
+      :arg first: The first object to compare
+      :arg second: The second object to compare
+      :arg args: additional values to print on failure
+      :throws: AssertionError if the assertion fails
+    */
+    proc assertLessThan(first, second, args...?n) throws {
+      if canResolve("<=", first, second) {
+        try {
+          checkLessThan(first, second);
+        } catch e: AssertionError {
+          throw new owned AssertionError(e.message() + " - " + chpl_stringify_wrapper((...args)));
+        }
+      }
+      else {
+        throw new owned AssertionError("assert failed - First element is of type %? and Second is of type %? - ".format(first.type:string, second.type:string) + 
+                                      chpl_stringify_wrapper((...args)));
       }
     }
 
