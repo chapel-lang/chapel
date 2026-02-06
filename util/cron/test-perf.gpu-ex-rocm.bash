@@ -11,8 +11,8 @@ source $UTIL_CRON_DIR/common-native-gpu-perf.bash
 source $UTIL_CRON_DIR/common-perf.bash
 
 # module load rocm # load the default version of ROCm
-# pin to rocm 6.2 for now, https://github.com/chapel-lang/chapel/issues/26934
-module load rocm/6.2.0
+# load rocm 6.3, because 6.4 has issues with libc++
+module load rocm/6.3.0
 
 export CHPL_COMM=none
 export CHPL_LLVM=bundled

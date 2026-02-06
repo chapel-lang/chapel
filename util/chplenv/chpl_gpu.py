@@ -475,6 +475,7 @@ def _validate_rocm_llvm_version_impl(gpu: gpu_type):
         # 'CHPL_LLVM_65188_PATCH' is a temporary escape hatch to enable system
         # llvm with rocm 6.x if the user knows what they are doing
         error("Cannot target AMD GPUs with ROCm 6.x without CHPL_LLVM=bundled")
+        # TODO: can we use LLVM 20 with ROCm 6.3?
     elif (
         major_version == "6"
         and chpl_llvm.get() == "system"
@@ -549,8 +550,8 @@ def _validate_rocm_version_impl():
     MAX_REQ_VERSION_NICE = "5.4.x"
 
     MIN_ROCM6_REQ_VERSION = "6.0"
-    MAX_ROCM6_REQ_VERSION = "6.3" # upper bound non-inclusive
-    MAX_ROCM6_REQ_VERSION_NICE = "6.2.x"
+    MAX_ROCM6_REQ_VERSION = "6.4" # upper bound non-inclusive
+    MAX_ROCM6_REQ_VERSION_NICE = "6.3.x"
 
     rocm_version = get_sdk_version()
 
