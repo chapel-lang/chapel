@@ -101,7 +101,7 @@ Phase 1: The Essentials
 
 
 record ``GlobalDistribution``
-----------------------------
+-----------------------------
 
   This record is visible to the users of the domain map in that
   Chapel's `dmapped` clauses will take an instance of this record as
@@ -120,11 +120,7 @@ record ``GlobalDistribution``
   depending on whether they support rectangular or associative
   domains:
 
-.. method:: proc GlobalDistribution.newRectangularDom(param rank: int,
-                                                      type idxType,
-                                                      param strides: strideKind,
-                                                      ranges: rank*range(idxType, boundKind.both, strides),
-                                                      definedConst: bool = false)
+.. method:: proc GlobalDistribution.newRectangularDom(param rank: int, type idxType, param strides: strideKind, ranges: rank*range(idxType, boundKind.both, strides), definedConst: bool = false)
 
    (as well as a second overload with the same signature minus the
    `ranges` argument).
@@ -135,8 +131,7 @@ record ``GlobalDistribution``
    const-ness (provided to support execution-time optimizations).
 
 
-.. method:: proc GlobalDistribution.newAssociativeDom(type idxType,
-                                                      param parSafe: bool=true)
+.. method:: proc GlobalDistribution.newAssociativeDom(type idxType, param parSafe: bool=true)
 
    This method creates and returns a new instance of ``GlobalDomain``
    representing an associative domain with the specified index type
