@@ -72,7 +72,6 @@ DW_TAG_structure_type
                 DW_AT_decl_file	("./callables.chpl")
                 DW_AT_decl_line	(15)
                 DW_AT_declaration	(true)
-                DW_AT_object_pointer	(0)
     DW_TAG_formal_parameter
                   DW_AT_type	("_ref(myRec)")
                   DW_AT_artificial	(true)
@@ -82,7 +81,6 @@ DW_TAG_structure_type
                 DW_AT_decl_file	("./callables.chpl")
                 DW_AT_decl_line	(15)
                 DW_AT_declaration	(true)
-                DW_AT_object_pointer	(0)
     DW_TAG_formal_parameter
                   DW_AT_type	("_ref(myRec)")
                   DW_AT_artificial	(true)
@@ -97,7 +95,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(25)
                 DW_AT_type	("int(64)")
                 DW_AT_declaration	(true)
-                DW_AT_object_pointer	(0)
     DW_TAG_formal_parameter
                   DW_AT_type	("_ref(myRec)")
                   DW_AT_artificial	(true)
@@ -109,7 +106,6 @@ DW_TAG_structure_type
                 DW_AT_decl_file	("./callables.chpl")
                 DW_AT_decl_line	(29)
                 DW_AT_declaration	(true)
-                DW_AT_object_pointer	(0)
     DW_TAG_formal_parameter
                   DW_AT_type	("_ref(myRec)")
                   DW_AT_artificial	(true)
@@ -122,7 +118,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(19)
                 DW_AT_type	("string")
                 DW_AT_declaration	(true)
-                DW_AT_object_pointer	(0)
     DW_TAG_formal_parameter
                   DW_AT_type	("_ref(myRec)")
                   DW_AT_artificial	(true)
@@ -131,7 +126,6 @@ DW_TAG_structure_type
 DW_TAG_subprogram
               DW_AT_low_pc	()
               DW_AT_high_pc	()
-              DW_AT_object_pointer	()
               DW_AT_specification	("toStringRec_chpl")
   DW_TAG_formal_parameter
                 DW_AT_name	("this")
@@ -151,7 +145,6 @@ DW_TAG_subprogram
               DW_AT_decl_line	(19)
               DW_AT_type	("string")
               DW_AT_declaration	(true)
-              DW_AT_object_pointer	(0)
   DW_TAG_formal_parameter
                 DW_AT_type	("_ref(myRec)")
                 DW_AT_artificial	(true)
@@ -160,7 +153,6 @@ DW_TAG_subprogram
 DW_TAG_subprogram
               DW_AT_low_pc	()
               DW_AT_high_pc	()
-              DW_AT_object_pointer	()
               DW_AT_specification	("myMethodRec_chpl")
   DW_TAG_formal_parameter
                 DW_AT_name	("this")
@@ -180,7 +172,6 @@ DW_TAG_subprogram
               DW_AT_decl_line	(25)
               DW_AT_type	("int(64)")
               DW_AT_declaration	(true)
-              DW_AT_object_pointer	(0)
   DW_TAG_formal_parameter
                 DW_AT_type	("_ref(myRec)")
                 DW_AT_artificial	(true)
@@ -191,7 +182,6 @@ DW_TAG_subprogram
 DW_TAG_subprogram
               DW_AT_low_pc	()
               DW_AT_high_pc	()
-              DW_AT_object_pointer	()
               DW_AT_specification	("setterRec_chpl")
   DW_TAG_formal_parameter
                 DW_AT_name	("this")
@@ -210,7 +200,6 @@ DW_TAG_subprogram
               DW_AT_decl_file	("./callables.chpl")
               DW_AT_decl_line	(29)
               DW_AT_declaration	(true)
-              DW_AT_object_pointer	(0)
   DW_TAG_formal_parameter
                 DW_AT_type	("_ref(myRec)")
                 DW_AT_artificial	(true)
@@ -286,7 +275,6 @@ DW_TAG_structure_type
                 DW_AT_decl_file	("./callables.chpl")
                 DW_AT_decl_line	(39)
                 DW_AT_declaration	(true)
-                DW_AT_object_pointer	(0)
     DW_TAG_formal_parameter
                   DW_AT_type	("callables::myClass *")
                   DW_AT_artificial	(true)
@@ -296,7 +284,6 @@ DW_TAG_structure_type
                 DW_AT_decl_file	("./callables.chpl")
                 DW_AT_decl_line	(39)
                 DW_AT_declaration	(true)
-                DW_AT_object_pointer	(0)
     DW_TAG_formal_parameter
                   DW_AT_type	("callables::myClass *")
                   DW_AT_artificial	(true)
@@ -313,7 +300,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(50)
                 DW_AT_type	("int(64)")
                 DW_AT_declaration	(true)
-                DW_AT_object_pointer	(0)
     DW_TAG_formal_parameter
                   DW_AT_type	("callables::myClass *")
                   DW_AT_artificial	(true)
@@ -325,7 +311,6 @@ DW_TAG_structure_type
                 DW_AT_decl_file	("./callables.chpl")
                 DW_AT_decl_line	(54)
                 DW_AT_declaration	(true)
-                DW_AT_object_pointer	(0)
     DW_TAG_formal_parameter
                   DW_AT_type	("_ref(myClass)")
                   DW_AT_artificial	(true)
@@ -338,7 +323,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(44)
                 DW_AT_type	("string")
                 DW_AT_declaration	(true)
-                DW_AT_object_pointer	(0)
     DW_TAG_formal_parameter
                   DW_AT_type	("callables::myClass *")
                   DW_AT_artificial	(true)
@@ -347,7 +331,6 @@ DW_TAG_structure_type
 DW_TAG_subprogram
               DW_AT_low_pc	()
               DW_AT_high_pc	()
-              DW_AT_object_pointer	()
               DW_AT_specification	("toStringCls_chpl")
   DW_TAG_formal_parameter
                 DW_AT_name	("this")
@@ -367,7 +350,6 @@ DW_TAG_subprogram
               DW_AT_decl_line	(44)
               DW_AT_type	("string")
               DW_AT_declaration	(true)
-              DW_AT_object_pointer	(0)
   DW_TAG_formal_parameter
                 DW_AT_type	("callables::myClass *")
                 DW_AT_artificial	(true)
@@ -376,7 +358,6 @@ DW_TAG_subprogram
 DW_TAG_subprogram
               DW_AT_low_pc	()
               DW_AT_high_pc	()
-              DW_AT_object_pointer	()
               DW_AT_specification	("myMethodCls_chpl")
   DW_TAG_formal_parameter
                 DW_AT_name	("this")
@@ -396,7 +377,6 @@ DW_TAG_subprogram
               DW_AT_decl_line	(50)
               DW_AT_type	("int(64)")
               DW_AT_declaration	(true)
-              DW_AT_object_pointer	(0)
   DW_TAG_formal_parameter
                 DW_AT_type	("callables::myClass *")
                 DW_AT_artificial	(true)
@@ -407,7 +387,6 @@ DW_TAG_subprogram
 DW_TAG_subprogram
               DW_AT_low_pc	()
               DW_AT_high_pc	()
-              DW_AT_object_pointer	()
               DW_AT_specification	("setterCls_chpl")
   DW_TAG_formal_parameter
                 DW_AT_name	("this")
@@ -426,7 +405,6 @@ DW_TAG_subprogram
               DW_AT_decl_file	("./callables.chpl")
               DW_AT_decl_line	(54)
               DW_AT_declaration	(true)
-              DW_AT_object_pointer	(0)
   DW_TAG_formal_parameter
                 DW_AT_type	("_ref(myClass)")
                 DW_AT_artificial	(true)

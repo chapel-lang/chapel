@@ -1,6 +1,6 @@
 b methodCallsClass.chpl:8
-b methodCallsClass.chpl:11
-b methodCallsClass.chpl:14
+b methodCallsClass.chpl:12
+b methodCallsClass.chpl:15
 r
 # testing breaking in myMethod
 p this

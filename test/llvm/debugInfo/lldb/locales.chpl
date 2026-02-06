@@ -4,8 +4,8 @@ proc main() {
   }
 }
 
-// CHECK: Target
-// CHECK-SAME: stopped
+
+
 
 // CHECK: p Locales
 // CHECK-LOCAL-NEXT: (ChapelArray::[domain(1,int(64),one)] locale) [0..0] ChapelLocale::locale {

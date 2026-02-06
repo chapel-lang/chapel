@@ -31,12 +31,12 @@ proc main() {
 // CHECK: b methodCallsClass.chpl:8
 // CHECK-NEXT: methodCallsClass`toString
 // CHECK-SAME: methodCallsClass.chpl:8
-// CHECK: b methodCallsClass.chpl:11
+// CHECK: b methodCallsClass.chpl:12
 // CHECK-NEXT: methodCallsClass`myMethod
-// CHECK-SAME: methodCallsClass.chpl:11
-// CHECK: b methodCallsClass.chpl:14
+// CHECK-SAME: methodCallsClass.chpl:12
+// CHECK: b methodCallsClass.chpl:15
 // CHECK-NEXT: methodCallsClass`setter
-// CHECK-SAME: methodCallsClass.chpl:14
+// CHECK-SAME: methodCallsClass.chpl:15
 
 // CHECK: stop reason = breakpoint 3
 // CHECK: p this
