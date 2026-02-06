@@ -2672,6 +2672,10 @@ arkouda-bigint:
     - Closes 4984 ak.array with negative numbers still has problems (Bears-R-Us/arkouda#4985)
   11/21/25:
     - Closes 4569 Simplify and extend logic in doBigIntBinOpvv and doBigIntBinOpvvBoolReturn (Bears-R-Us/arkouda#4593)
+  01/14/26:
+    - Closes 5150 Try to fix bigint performance again (Bears-R-Us/arkouda#5151)
+  02/05/26:
+    - Closes 5330 Improve ak.array Bigint array transfer performance (Bears-R-Us/arkouda#5334)
 
 arkouda-comp:
   <<: *arkouda-base
