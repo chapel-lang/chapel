@@ -1,0 +1,15 @@
+b main
+b locales.chpl:3
+r
+c
+p Locales
+target var Locales
+target var Locales[0]
+target var *Locales[0]._instance
+c
+p l
+p *l._instance
+p l.id()
+p l.maxTaskPar()
+p here().maxTaskPar()
+q

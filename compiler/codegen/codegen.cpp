@@ -3229,20 +3229,14 @@ static void codegenPartTwo() {
     if (fDebugSymbols) {
       debugInfo = new DebugData(/*optimized*/false);
     }
-    if(debugInfo) {
+    if (debugInfo) {
       // every module gets its own compile unit
       forv_Vec(ModuleSymbol, currentModule, allModules) {
         // So, this is pretty quick. I'm assuming that the main module is in the current dir, no optimization (need to figure out how to get this)
         // and no compile flags, since I can't figure out how to get that either.
-        const char *current_dir = "./";
-        const char *empty_string = "";
-        debugInfo->createCompileUnit(currentModule,
-          currentModule->astloc.filename(), current_dir, empty_string
-        );
+        debugInfo->createCompileUnit(currentModule, currentModule->fname(), "./", "");
       }
-      debugInfo->createCompileUnit(rootModule,
-        rootModule->astloc.filename(), "./", ""
-      );
+      debugInfo->createCompileUnit(rootModule, rootModule->fname(), "./", "");
     }
 
     // When doing codegen for programs that have GPU kernels we fork the

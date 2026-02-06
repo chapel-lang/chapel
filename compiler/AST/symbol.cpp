@@ -2149,6 +2149,8 @@ const char* astr_initCopy = NULL;
 const char* astr_coerceCopy = NULL;
 const char* astr_coerceMove = NULL;
 const char* astr_autoDestroy = NULL;
+const char* astr__ln = NULL;
+const char* astr__fn = NULL;
 
 void initAstrConsts() {
   astrSassign = astr("=");
@@ -2196,6 +2198,9 @@ void initAstrConsts() {
   astr_coerceMove = astr("chpl__coerceMove");
 
   astr_autoDestroy = astr("chpl__autoDestroy");
+
+  astr__ln = astr("_ln");
+  astr__fn = astr("_fn");
 }
 
 bool isAstrOpName(const char* name) {

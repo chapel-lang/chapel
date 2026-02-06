@@ -2313,6 +2313,14 @@ codegenFunctionTypeLLVMImpl(
               auto valType = formalInfo->type()->getValType()->codegen().type;
               int64_t sz = getTypeSizeInBytes(layout, valType);
               b.addDereferenceableAttr(sz);
+              // TODO: we should be marking retArg as sret, but can't
+              // because retArg must be either the first or second arg
+              // this will require more investigation
+              // if (formalInfo->isRetArg() &&
+              //    llvm::isa<llvm::StructType>(valType)) {
+              //   auto ptrType = formalInfo->type()->codegen().type;
+              //   llvmAttachStructRetAttr(b, ptrType);
+              // }
             }
             if (argInfo->isExtend()) {
               if (argInfo->isSignExt()) {
@@ -2355,6 +2363,14 @@ codegenFunctionTypeLLVMImpl(
         auto valType = formalInfo->type()->getValType()->codegen().type;
         int64_t sz = getTypeSizeInBytes(layout, valType);
         b.addDereferenceableAttr(sz);
+        // TODO: we should be marking retArg as sret, but can't
+        // because retArg must be either the first or second arg
+        // this will require more investigation
+        // if (formalInfo->isRetArg() &&
+        //     llvm::isa<llvm::StructType>(valType)) {
+        //   auto ptrType = formalInfo->type()->codegen().type;
+        //   llvmAttachStructRetAttr(b, ptrType);
+        // }
         llvmAddAttr(ctx, outAttrs, argTys.size(), b);
       }
     }
@@ -2893,7 +2909,7 @@ void FnSymbol::codegenDef() {
 
     info->lvt->addLayer();
 
-    if(debugInfo) {
+    if (debugInfo && debugInfo->shouldAddDebugInfoFor(this)) {
       llvm::DISubprogram* dbgScope = debugInfo->getFunction(this);
       info->irBuilder->SetCurrentDebugLocation(
         llvm::DILocation::get(dbgScope->getContext(), linenum(), 0,

@@ -370,33 +370,6 @@ DW_TAG_pointer_type
               DW_AT_name	("domain(2,int(64),positive)")
 DW_TAG_structure_type
               DW_AT_name	("domain(2,int(64),positive)")
-              DW_AT_byte_size	(0x78)
-              DW_AT_decl_file	("$CHPL_HOME/modules/internal/DefaultRectangular.chpl")
-              DW_AT_decl_line (INTERNAL_LINENO)
-              DW_AT_alignment	(8)
-  DW_TAG_member
-                DW_AT_name	("super")
-                DW_AT_type	("ChapelDistribution::BaseRectangularDom(2,int(64),positive)")
-                DW_AT_decl_file	("$CHPL_HOME/modules/internal/DefaultRectangular.chpl")
-                DW_AT_decl_line (INTERNAL_LINENO)
-                DW_AT_alignment	(8)
-                DW_AT_data_member_location	(0x00)
-  DW_TAG_member
-                DW_AT_name	("dist")
-                DW_AT_type	("DefaultRectangular::DefaultDist *")
-                DW_AT_decl_file	("$CHPL_HOME/modules/internal/DefaultRectangular.chpl")
-                DW_AT_decl_line (INTERNAL_LINENO)
-                DW_AT_alignment	(8)
-                DW_AT_data_member_location	(0x30)
-  DW_TAG_member
-                DW_AT_name	("ranges")
-                DW_AT_type	("range(int(64),both,positive)[2]")
-                DW_AT_decl_file	("$CHPL_HOME/modules/internal/DefaultRectangular.chpl")
-                DW_AT_decl_line (INTERNAL_LINENO)
-                DW_AT_alignment	(8)
-                DW_AT_data_member_location	(0x38)
-DW_TAG_structure_type
-              DW_AT_name	("domain(2,int(64),positive)")
               DW_AT_byte_size	(0x18)
               DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelDomain.chpl")
               DW_AT_decl_line (INTERNAL_LINENO)
@@ -422,5 +395,32 @@ DW_TAG_structure_type
                 DW_AT_decl_line (INTERNAL_LINENO)
                 DW_AT_alignment	(1)
                 DW_AT_data_member_location	(0x10)
+DW_TAG_structure_type
+              DW_AT_name	("domain(2,int(64),positive)")
+              DW_AT_byte_size	(0x78)
+              DW_AT_decl_file	("$CHPL_HOME/modules/internal/DefaultRectangular.chpl")
+              DW_AT_decl_line (INTERNAL_LINENO)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("super")
+                DW_AT_type	("ChapelDistribution::BaseRectangularDom(2,int(64),positive)")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/DefaultRectangular.chpl")
+                DW_AT_decl_line (INTERNAL_LINENO)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  DW_TAG_member
+                DW_AT_name	("dist")
+                DW_AT_type	("DefaultRectangular::DefaultDist *")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/DefaultRectangular.chpl")
+                DW_AT_decl_line (INTERNAL_LINENO)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x30)
+  DW_TAG_member
+                DW_AT_name	("ranges")
+                DW_AT_type	("range(int(64),both,positive)[2]")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/DefaultRectangular.chpl")
+                DW_AT_decl_line (INTERNAL_LINENO)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x38)
 ================================================================================
 Success!!
