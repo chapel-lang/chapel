@@ -39,6 +39,7 @@
 #define CHPL_PARTITION_FLAG "--partition"
 #define CHPL_EXCLUDE_FLAG "--exclude"
 #define CHPL_GPUS_PER_NODE_FLAG "--gpus-per-node"
+#define CHPL_LAUNCHER_PASSTHROUGH_FLAG "--launcher-flags"
 
 
 static char* debug = NULL;
@@ -49,6 +50,8 @@ static char* partition = NULL;
 static char* reservation = NULL;
 static char* exclude = NULL;
 static char* gpusPerNode = NULL;
+static char** launcherPassthroughFlags = NULL;
+static int numLauncherPassthroughFlags = 0;
 
 char* slurmFilename = NULL;
 
@@ -92,6 +95,18 @@ static int nomultithread(int batch) {
   if (batch && (hint = getenv("SBATCH_HINT")) && strcmp(hint, "nomultithread") == 0)
     return 1;
   return 0;
+}
+
+static void appendPassthroughFlag(char*** array, int* size, const char* flag) {
+  if (*array == NULL) {
+    *array = (char**)chpl_mem_allocMany(1, sizeof(char*),
+                                        CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
+  } else {
+    *array = (char**)chpl_mem_realloc(*array, (*size + 1) * sizeof(char*),
+                                      CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
+  }
+  (*array)[*size] = chpl_strdup(flag);
+  (*size)++;
 }
 
 
@@ -310,6 +325,12 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     gpusPerNode = getenv("CHPL_LAUNCHER_GPUS_PER_NODE");
   }
 
+  // append any user specified passthrough flags to the list of flags to pass through
+  char* passthroughFlagsEnv = getenv("CHPL_LAUNCHER_PASSTHROUGH_FLAGS");
+  if (passthroughFlagsEnv) {
+    appendPassthroughFlag(&launcherPassthroughFlags, &numLauncherPassthroughFlags, passthroughFlagsEnv);
+  }
+
   reservation = getenv("SLURM_RESERVATION");
 
   // request exclusive node access by default, but allow user to override
@@ -444,6 +465,13 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     // set the account name if one was provided
     if (account && strlen(account) > 0) {
       fprintf(slurmFile, "#SBATCH --account=%s\n", account);
+    }
+
+    // add any additional flags
+    if (launcherPassthroughFlags != NULL) {
+      for (i = 0; i < numLauncherPassthroughFlags; i++) {
+        fprintf(slurmFile, "#SBATCH %s\n", launcherPassthroughFlags[i]);
+      }
     }
 
     // set the output file name to either the user specified
@@ -616,6 +644,13 @@ static char* chpl_launch_create_command(int argc, char* argv[],
       chpl_append_to_cmd(&iCom, &len, "--account=%s ", account);
     }
 
+    // add any additional flags
+    if (launcherPassthroughFlags != NULL) {
+      for (i = 0; i < numLauncherPassthroughFlags; i++) {
+        chpl_append_to_cmd(&iCom, &len, "%s ", launcherPassthroughFlags[i]);
+      }
+    }
+
     // add the (possibly wrapped) binary name
     chpl_append_to_cmd(&iCom, &len, "%s %s ",
         chpl_get_real_binary_wrapper(), chpl_get_real_binary_name());
@@ -750,6 +785,15 @@ int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
     return 2;
   } else if (!strncmp(argv[argNum], CHPL_GPUS_PER_NODE_FLAG"=", strlen(CHPL_GPUS_PER_NODE_FLAG))) {
     gpusPerNode = &(argv[argNum][strlen(CHPL_GPUS_PER_NODE_FLAG)+1]);
+    return 1;
+  }
+
+  // handle --launcher-flags <flags> or --launcher-flags=<flags>
+  if (!strcmp(argv[argNum], CHPL_LAUNCHER_PASSTHROUGH_FLAG)) {
+    appendPassthroughFlag(&launcherPassthroughFlags, &numLauncherPassthroughFlags, argv[argNum+1]);
+    return 2;
+  } else if (!strncmp(argv[argNum], CHPL_LAUNCHER_PASSTHROUGH_FLAG"=", strlen(CHPL_LAUNCHER_PASSTHROUGH_FLAG))) {
+    appendPassthroughFlag(&launcherPassthroughFlags, &numLauncherPassthroughFlags, &(argv[argNum][strlen(CHPL_LAUNCHER_PASSTHROUGH_FLAG)+1]));
     return 1;
   }
 
