@@ -105,7 +105,7 @@ static void appendPassthroughFlag(char*** array, int* size, const char* flag) {
     *array = (char**)chpl_mem_realloc(*array, (*size + 1) * sizeof(char*),
                                       CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
   }
-  (*array)[*size] = chpl_strdup(flag);
+  (*array)[*size] = (char*)string_copy((char*)flag, -1, 0);
   (*size)++;
 }
 

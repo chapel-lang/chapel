@@ -165,15 +165,6 @@ void* chpl_memcpy(void* dest, const void* src, size_t num) {
   return memcpy(dest, src, num);
 }
 
-static inline
-char* chpl_strdup(const char* s) {
-  size_t len = strlen(s) + 1;
-  char* ret = (char*) chpl_mem_allocMany(sizeof(char), len,
-                                          CHPL_RT_MD_STR_COPY_DATA, -1, 0);
-  if (ret) chpl_memcpy(ret, s, len);
-  return ret;
-}
-
 // Query the allocator to ask for a good size to allocate that is at least
 // minSize. One example where this is useful is to grow a vector while
 // minimizing memory wasted by overallocation.
