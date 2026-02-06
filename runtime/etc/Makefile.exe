@@ -66,8 +66,10 @@ ifneq ($(TMPBINNAME),$(BINNAME))
 ifeq ($(COMP_GEN_DEBUG),1)
 ifeq ($(CHPL_MAKE_TARGET_PLATFORM),darwin)
 ifneq ($(CHPL_MAKE_TARGET_COMPILER),llvm)
+ifeq ($(CHPL_MAKE_LAUNCHER),none)
 	rm -rf $(BINNAME).dSYM
 	mv $(TMPBINNAME).dSYM $(BINNAME).dSYM
+endif
 endif
 endif
 endif
