@@ -409,7 +409,7 @@ for demands from other (system) programs running there.  Advanced users
 may want to make the heap smaller than the default.  Programs start more
 quickly with a smaller heap, and in the unfortunate event that you need
 to produce core files, those will be written more quickly if the heap is
-smaller.  Specify the heap size using the :literalref:`CHPL_RT_MAX_HEAP_SIZE`
+smaller.  Specify the heap size using the :ref:`CHPL_RT_MAX_HEAP_SIZE`
 environment variable.  But be aware that if you reduce the heap size
 to less than the amount your program actually needs and then run it,
 it will terminate prematurely due to not having enough memory.
@@ -453,20 +453,21 @@ Known Constraints and Bugs
 Troubleshooting
 ---------------
 
-
-error: Unable to allocate resources: Memory required by task is not available
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-If you receive this error message, try setting ``export
-CHPL_LAUNCHER_MEM=unset`` to work around it.
-
-Note that changing this environment variable, as with any
-``CHPL_LAUNCHER_*`` variable does not require rebuilding Chapel or
-recompiling your program.
+Each of the following subsection headers is an error message that you
+may receive in practice, followed by steps that can be taken to work
+around it.
 
 
-OFI error: fi_mr_reg(...): Cannot allocate memory
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+srun: error: Unable to allocate resources: Memory required by task is not available
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+See this :ref:`Slurm troubleshooting section <mem-not-avail>` for help
+with this error.
+
+
+
+OFI error: fi_mr_reg(ofi_domain, ...): Cannot allocate memory
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This error suggests that the Chapel runtime is being too aggressive in
 registering memory with the network, or that something else is going
@@ -522,8 +523,19 @@ use one of these two mechanisms to specify the partition even if it is
 the default partition.
 
 Note that changing the ``CHPL_LAUNCHER_PARTITION`` environment
-variable, as with any ``CHPL_LAUNCHER_*`` variable does not require
+variable, as with any ``CHPL_LAUNCHER_*`` variable, does not require
 rebuilding Chapel or recompiling your program.
+
+
+OFI error: fi_domain(ofi_fabric, ofi_info, ...): Function not implemented
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+We encounter this error on some systems when trying to execute on a
+single node using co-locales (e.g., `-nl 1x4`).
+
+When this happens, our experience is that ``export
+SLURM_NETWORK=single_node_vni`` can be set as a workaround with no
+need to recompile.
 
 
 .. |reg|    unicode:: U+000AE .. REGISTERED SIGN
