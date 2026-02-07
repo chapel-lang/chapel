@@ -409,12 +409,10 @@ for demands from other (system) programs running there.  Advanced users
 may want to make the heap smaller than the default.  Programs start more
 quickly with a smaller heap, and in the unfortunate event that you need
 to produce core files, those will be written more quickly if the heap is
-smaller.  Specify the heap size using the ``CHPL_RT_MAX_HEAP_SIZE``
-environment variable, as discussed in :ref:`ugni-and-the-heap`.
-But be aware that just as in the ``CHPL_COMM=ugni``
-case, if you reduce the heap size to less than the amount your program
-actually needs and then run it, it will terminate prematurely due to not
-having enough memory.
+smaller.  Specify the heap size using the :ref:`CHPL_RT_MAX_HEAP_SIZE`
+environment variable.  But be aware that if you reduce the heap size
+to less than the amount your program actually needs and then run it,
+it will terminate prematurely due to not having enough memory.
 
 Note that for ``CHPL_COMM=gasnet``, ``CHPL_RT_MAX_HEAP_SIZE`` is
 synonymous with ``GASNET_MAX_SEGSIZE``, and the former overrides the
@@ -450,21 +448,95 @@ Known Constraints and Bugs
   variable affects all MPI programs, so remember to unset it after
   running your Chapel program.
 
-* The amount of memory available to a Chapel program running over
-  GASNet with the aries conduit is allocated at program start up.  The
-  default memory segment size may be too high on some platforms,
-  resulting in an internal Chapel error or a GASNet initialization
-  error such as::
 
-     node 1 log gasnetc_init_segment() at $CHPL_HOME/third-party/gasnet/gasnet-src/aries-conduit/gasnet_aries.c:<line#>: MemRegister segment fault 8 at  0x2aab6ae00000 60000000, code GNI_RC_ERROR_RESOURCE
+---------------
+Troubleshooting
+---------------
 
-  If your Chapel program exits with such an error, try setting the
-  environment variable ``CHPL_RT_MAX_HEAP_SIZE`` or ``GASNET_MAX_SEGSIZE`` to a
-  lower value than the default (say 1G) and re-running your program.
-  For more information, refer to the discussion of ``CHPL_RT_MAX_HEAP_SIZE``
-  above and/or the discussion of ``GASNET_MAX_SEGSIZE`` here::
+Each of the following subsection headers is an error message that you
+may receive in practice, followed by steps that can be taken to work
+around it.
 
-     $CHPL_HOME/third-party/gasnet/gasnet-src/README
+
+srun: error: Unable to allocate resources: Memory required by task is not available
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+See this :ref:`Slurm troubleshooting section <mem-not-avail>` for help
+with this error.
+
+
+
+OFI error: fi_mr_reg(ofi_domain, ...): Cannot allocate memory
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This error suggests that the Chapel runtime is being too aggressive in
+registering memory with the network, or that something else is going
+wrong in the memory registration.  The typical workaround is to cap
+the amount of memory registered by using :ref:`CHPL_RT_MAX_HEAP_SIZE`,
+for example ``export CHPL_RT_MAX_HEAP_SIZE=50%`` will limit it to 50%
+of the available memory and is generally sufficient to get programs
+running.
+
+Note that changing this environment variable, as with any
+``CHPL_RT_*`` variable, does not require rebuilding Chapel or
+recompiling your program.
+
+
+OFI error: fi_enable(tcip->txCtx): Invalid resource domain
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+We have seen this error message when running on compute nodes where
+the number of cores sharing a single NIC is greater than ~255.  For
+example, if running on a system where each compute node has four
+80-core processors, when running on more than one node (e.g., -nl 8),
+by default Chapel would attempt to create 320 endpoints per locale,
+all sharing a single NIC, and therefore hit this error.
+
+Two ways to resolve this error are:
+
+1) If the compute node has multiple NICs, run using :ref:`co-locales
+   <readme-colocale>` such that each gets its own NIC and uses a
+   fraction of the cores.  For example, if the node above had 4 NICs,
+   switching the command line from ``-nl 8`` to ``-nl 8x4`` would run
+   four co-locales per node such that each would get its own NIC and
+   create 80 endpoints on it, well below the limit.  Moreover, running
+   with co-locales typically has other benefits in terms of NUMA
+   affinity benefits.
+
+2) The other alternative is to cap the maximum number of endpoints
+   created by setting the environment variable
+   ``CHPL_RT_COMM_OFI_EP_CNT``.  For example.  ``export
+   CHPL_RT_COMM_OFI_EP_CNT=254``.  The impact of this approach is that
+   each core will not get its own endpoint, which could impact
+   performance.
+
+
+warning: The node has more locales (5) than co-locales (2)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In some cases, this warning can be indicative of an erroneous
+condition in which the Chapel launcher is not correctly comprehending
+the compute node structure.  This can happen on systems with multiple
+partitions if no partition is explicitly specified using
+``CHPL_LAUNCHER_PARTITION`` or ``--partition``.  The typical fix is to
+use one of these two mechanisms to specify the partition even if it is
+the default partition.
+
+Note that changing the ``CHPL_LAUNCHER_PARTITION`` environment
+variable, as with any ``CHPL_LAUNCHER_*`` variable, does not require
+rebuilding Chapel or recompiling your program.
+
+
+OFI error: fi_domain(ofi_fabric, ofi_info, ...): Function not implemented
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+We encounter this error on some systems when trying to execute on a
+single node using co-locales (e.g., `-nl 1x4`).
+
+When this happens, our experience is that ``export
+SLURM_NETWORK=single_node_vni`` can be set as a workaround with no
+need to recompile.
+
 
 .. |reg|    unicode:: U+000AE .. REGISTERED SIGN
 .. |trade|  unicode:: U+02122 .. TRADE MARK SIGN
