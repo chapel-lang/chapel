@@ -1,5 +1,7 @@
 
 // A should get LICMed, Res should NOT get LICMed
+// A is passed by default intent (const), so its metadata can be LICMed
+// Res is passed by ref, so its metadata cannot be LICMed
 proc mulScalar1(ref Res, A, scalar) {
   // CHECK-LABEL: mulScalar1_chpl
   // CHECK-SAME: %Res,
@@ -36,7 +38,10 @@ proc mulScalar1(ref Res, A, scalar) {
     // CHECK: br i1 {{.+}} label %[[LOOP]]
   }
 }
+
 // A should get LICMed, Res should NOT get LICMed
+// A is passed by const, so its metadata can be LICMed
+// Res is passed by ref, so its metadata cannot be LICMed
 proc mulScalar2(ref Res, const A, scalar) {
   // CHECK-LABEL: mulScalar2_chpl
   // CHECK-SAME: %Res,
@@ -73,7 +78,10 @@ proc mulScalar2(ref Res, const A, scalar) {
     // CHECK: br i1 {{.+}} label %[[LOOP]]
   }
 }
+
 // A should NOT get LICMed, Res should NOT get LICMed
+// A is passed by const ref, so its metadata cannot be LICMed
+// Res is passed by ref, so its metadata cannot be LICMed
 proc mulScalar3(ref Res, const ref A, scalar) {
   // CHECK-LABEL: mulScalar3_chpl
   // CHECK-SAME: %Res,
@@ -111,6 +119,8 @@ proc mulScalar3(ref Res, const ref A, scalar) {
   }
 }
 // A should NOT get LICMed, Res should NOT get LICMed
+// A is passed by ref, so its metadata cannot be LICMed
+// Res is passed by ref, so its metadata cannot be LICMed
 proc mulScalar4(ref Res, ref A, scalar) {
   // CHECK-LABEL: mulScalar4_chpl
   // CHECK-SAME: %Res,
