@@ -847,6 +847,13 @@ const argDescTuple_t* chpl_launch_get_help(void) {
       { "",
         "(or use $CHPL_LAUNCHER_GPUS_PER_NODE)"
       },
+      {
+        CHPL_LAUNCHER_PASSTHROUGH_FLAG " <flags>",
+        "specify additional flags to pass through to the launcher"
+      },
+      { "",
+        "(or use $CHPL_LAUNCHER_PASSTHROUGH_FLAGS)"
+      },
       { NULL, NULL },
     };
   return args;
