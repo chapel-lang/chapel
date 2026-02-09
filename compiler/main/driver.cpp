@@ -2234,7 +2234,7 @@ static void setVectorLib() {
 
   std::string flagValue = fVectorLib;
   auto knownLib = VectorLibraryInfo::getKnownVectorLib(fVectorLib);
-  if (knownLib.has_value()) {
+  if (knownLib.has_value() && knownLib->getBackendName() != "") {
     flagValue = knownLib->getBackendName();
   } else {
     USR_WARN("Unknown vector library '%s' specified - "
