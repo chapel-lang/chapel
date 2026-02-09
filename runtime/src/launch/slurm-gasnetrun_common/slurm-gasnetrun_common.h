@@ -74,13 +74,8 @@ typedef enum {
 static const char* nodeAccessStr = NULL;
 
 static void appendPassthroughFlag(char*** array, int* size, const char* flag) {
-  if (*array == NULL) {
-    *array = (char**)chpl_mem_allocMany(1, sizeof(char*),
-                                        CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
-  } else {
-    *array = (char**)chpl_mem_realloc(*array, (*size + 1) * sizeof(char*),
-                                      CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
-  }
+  *array = (char**)chpl_mem_realloc(*array, (*size + 1) * sizeof(char*),
+                                    CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
   (*array)[*size] = (char*)string_copy((char*)flag, -1, 0);
   (*size)++;
 }
