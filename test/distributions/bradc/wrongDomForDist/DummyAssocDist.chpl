@@ -1,3 +1,9 @@
+use DSIUtil;
+
+record myDist {
+  forwarding const myDistHelp = new chpl__assocLayoutHelper(new MyDist());
+}
+
 class MyDist : BaseDist {
   proc init() { }
 
