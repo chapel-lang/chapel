@@ -45,13 +45,14 @@ public:
   DebugData(bool optimized): optimized(optimized) {}
   void finalize();
   void createCompileUnit(ModuleSymbol* modSym,
-                         const char *file, const char *directory,
-                         const char *flags);
+                         const char* file,
+                         const char* directory,
+                         const char* flags);
 
   bool shouldAddDebugInfoFor(Symbol* sym);
 
-  llvm::DIType* getType(Type *type);
-  llvm::DIFile* getFile(ModuleSymbol* modSym, const char *file);
+  llvm::DIType* getType(Type* type);
+  llvm::DIFile* getFile(llvm::DIBuilder* DIB, const char* file);
   llvm::DINamespace* getModuleScope(ModuleSymbol* modSym);
 
   llvm::DISubroutineType* getFunctionType(FnSymbol* function);
@@ -63,7 +64,7 @@ public:
 
 private:
   llvm::DIType* constructType(Type* type);
-  llvm::DIFile* constructFile(ModuleSymbol* modSym, const char *file);
+  llvm::DIFile* constructFile(llvm::DIBuilder* DIB, const char* file);
   llvm::DINamespace* constructModuleScope(ModuleSymbol* modSym);
   llvm::DISubprogram* constructFunction(FnSymbol* function);
   llvm::DIGlobalVariableExpression* constructGlobalVariable(VarSymbol* gVarSym);

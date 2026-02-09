@@ -219,8 +219,8 @@ void Pass::insertLineNumber(CallExpr* call, LineAndFile lineAndFile) {
       DefExpr* bundleArg = toDefExpr(fn->formals.tail);
       Expr* bundleActual = call->argList.tail;
       AggregateType* bundleType = toAggregateType(bundleArg->sym->typeInfo());
-      Symbol* lineField = bundleType->getField("_ln");
-      Symbol* fileField = bundleType->getField("_fn");
+      Symbol* lineField = bundleType->getField(astr__ln);
+      Symbol* fileField = bundleType->getField(astr__fn);
       call->insertBefore(new CallExpr(PRIM_SET_MEMBER, bundleActual->copy(),
                                       lineField, lineAndFile.line));
       call->insertBefore(new CallExpr(PRIM_SET_MEMBER, bundleActual->copy(),

@@ -1,0 +1,435 @@
+warning: '--debug' now implies '--debug-safe-optimizations-only'. If you only want debug symbols, use '-g' or '--debug-symbols'.
+Calling myFunc(5): 6
+Hello from getString!
+myRec: myRec(10, 3.14)
+myRec.myMethodRec(5): 15
+After setterRec, myRec: myRec(10, 2.71)
+myClass: myClass(42, true, Chapel)
+myClass.myMethodCls(8): 50
+After setterCls, myClass: myClass(42, false, Chapel)
+Running DWARF verification...
+Success!!
+Running DWARF dump checks...
+=====================================myFunc=====================================
+DW_TAG_subprogram
+              DW_AT_low_pc	()
+              DW_AT_high_pc	()
+              DW_AT_linkage_name	("myFunc_chpl")
+              DW_AT_name	("myFunc")
+              DW_AT_decl_file	("./callables.chpl")
+              DW_AT_decl_line	(3)
+              DW_AT_type	("int(64)")
+  DW_TAG_formal_parameter
+                DW_AT_name	("x")
+                DW_AT_decl_file	("./callables.chpl")
+                DW_AT_decl_line	(3)
+                DW_AT_type	("int(64)")
+  DW_TAG_variable
+                DW_AT_name	("ret")
+                DW_AT_decl_file	("./callables.chpl")
+                DW_AT_decl_line	(4)
+                DW_AT_type	("int(64)")
+================================================================================
+===================================getString====================================
+DW_TAG_subprogram
+              DW_AT_low_pc	()
+              DW_AT_high_pc	()
+              DW_AT_linkage_name	("getString_chpl")
+              DW_AT_name	("getString")
+              DW_AT_decl_file	("./callables.chpl")
+              DW_AT_decl_line	(9)
+              DW_AT_type	("string")
+  DW_TAG_variable
+                DW_AT_name	("ret")
+                DW_AT_decl_file	("./callables.chpl")
+                DW_AT_decl_line	(10)
+                DW_AT_type	("string")
+================================================================================
+=====================================myRec======================================
+DW_TAG_structure_type
+              DW_AT_name	("myRec")
+              DW_AT_byte_size	(0x10)
+              DW_AT_decl_file	("./callables.chpl")
+              DW_AT_decl_line	(15)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("a")
+                DW_AT_type	("int(64)")
+                DW_AT_decl_file	("./callables.chpl")
+                DW_AT_decl_line	(16)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  DW_TAG_member
+                DW_AT_name	("b")
+                DW_AT_type	("real(64)")
+                DW_AT_decl_file	("./callables.chpl")
+                DW_AT_decl_line	(17)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x08)
+  DW_TAG_subprogram
+                DW_AT_linkage_name	("chpl__auto_destroy_myRec")
+                DW_AT_name	("deinit")
+                DW_AT_decl_file	("./callables.chpl")
+                DW_AT_decl_line	(15)
+                DW_AT_declaration	(true)
+    DW_TAG_formal_parameter
+                  DW_AT_type	("_ref(myRec)")
+                  DW_AT_artificial	(true)
+  DW_TAG_subprogram
+                DW_AT_linkage_name ("init_chplN")
+                DW_AT_name	("init")
+                DW_AT_decl_file	("./callables.chpl")
+                DW_AT_decl_line	(15)
+                DW_AT_declaration	(true)
+    DW_TAG_formal_parameter
+                  DW_AT_type	("_ref(myRec)")
+                  DW_AT_artificial	(true)
+    DW_TAG_formal_parameter
+                  DW_AT_type	("int(64)")
+    DW_TAG_formal_parameter
+                  DW_AT_type	("real(64)")
+  DW_TAG_subprogram
+                DW_AT_linkage_name	("myMethodRec_chpl")
+                DW_AT_name	("myMethodRec")
+                DW_AT_decl_file	("./callables.chpl")
+                DW_AT_decl_line	(25)
+                DW_AT_type	("int(64)")
+                DW_AT_declaration	(true)
+    DW_TAG_formal_parameter
+                  DW_AT_type	("_ref(myRec)")
+                  DW_AT_artificial	(true)
+    DW_TAG_formal_parameter
+                  DW_AT_type	("int(64)")
+  DW_TAG_subprogram
+                DW_AT_linkage_name	("setterRec_chpl")
+                DW_AT_name	("setterRec")
+                DW_AT_decl_file	("./callables.chpl")
+                DW_AT_decl_line	(29)
+                DW_AT_declaration	(true)
+    DW_TAG_formal_parameter
+                  DW_AT_type	("_ref(myRec)")
+                  DW_AT_artificial	(true)
+    DW_TAG_formal_parameter
+                  DW_AT_type	("real(64)")
+  DW_TAG_subprogram
+                DW_AT_linkage_name	("toStringRec_chpl")
+                DW_AT_name	("toStringRec")
+                DW_AT_decl_file	("./callables.chpl")
+                DW_AT_decl_line	(19)
+                DW_AT_type	("string")
+                DW_AT_declaration	(true)
+    DW_TAG_formal_parameter
+                  DW_AT_type	("_ref(myRec)")
+                  DW_AT_artificial	(true)
+================================================================================
+==================================toStringRec===================================
+DW_TAG_subprogram
+              DW_AT_low_pc	()
+              DW_AT_high_pc	()
+              DW_AT_specification	("toStringRec_chpl")
+  DW_TAG_formal_parameter
+                DW_AT_name	("this")
+                DW_AT_decl_file	("./callables.chpl")
+                DW_AT_decl_line	(19)
+                DW_AT_type	("_ref(myRec)")
+                DW_AT_artificial	(true)
+  DW_TAG_variable
+                DW_AT_name	("ret")
+                DW_AT_decl_file	("./callables.chpl")
+                DW_AT_decl_line	(20)
+                DW_AT_type	("string")
+DW_TAG_subprogram
+              DW_AT_linkage_name	("toStringRec_chpl")
+              DW_AT_name	("toStringRec")
+              DW_AT_decl_file	("./callables.chpl")
+              DW_AT_decl_line	(19)
+              DW_AT_type	("string")
+              DW_AT_declaration	(true)
+  DW_TAG_formal_parameter
+                DW_AT_type	("_ref(myRec)")
+                DW_AT_artificial	(true)
+================================================================================
+==================================myMethodRec===================================
+DW_TAG_subprogram
+              DW_AT_low_pc	()
+              DW_AT_high_pc	()
+              DW_AT_specification	("myMethodRec_chpl")
+  DW_TAG_formal_parameter
+                DW_AT_name	("this")
+                DW_AT_decl_file	("./callables.chpl")
+                DW_AT_decl_line	(25)
+                DW_AT_type	("_ref(myRec)")
+                DW_AT_artificial	(true)
+  DW_TAG_formal_parameter
+                DW_AT_name	("y")
+                DW_AT_decl_file	("./callables.chpl")
+                DW_AT_decl_line	(25)
+                DW_AT_type	("int(64)")
+DW_TAG_subprogram
+              DW_AT_linkage_name	("myMethodRec_chpl")
+              DW_AT_name	("myMethodRec")
+              DW_AT_decl_file	("./callables.chpl")
+              DW_AT_decl_line	(25)
+              DW_AT_type	("int(64)")
+              DW_AT_declaration	(true)
+  DW_TAG_formal_parameter
+                DW_AT_type	("_ref(myRec)")
+                DW_AT_artificial	(true)
+  DW_TAG_formal_parameter
+                DW_AT_type	("int(64)")
+================================================================================
+===================================setterRec====================================
+DW_TAG_subprogram
+              DW_AT_low_pc	()
+              DW_AT_high_pc	()
+              DW_AT_specification	("setterRec_chpl")
+  DW_TAG_formal_parameter
+                DW_AT_name	("this")
+                DW_AT_decl_file	("./callables.chpl")
+                DW_AT_decl_line	(29)
+                DW_AT_type	("_ref(myRec)")
+                DW_AT_artificial	(true)
+  DW_TAG_formal_parameter
+                DW_AT_name	("b")
+                DW_AT_decl_file	("./callables.chpl")
+                DW_AT_decl_line	(29)
+                DW_AT_type	("real(64)")
+DW_TAG_subprogram
+              DW_AT_linkage_name	("setterRec_chpl")
+              DW_AT_name	("setterRec")
+              DW_AT_decl_file	("./callables.chpl")
+              DW_AT_decl_line	(29)
+              DW_AT_declaration	(true)
+  DW_TAG_formal_parameter
+                DW_AT_type	("_ref(myRec)")
+                DW_AT_artificial	(true)
+  DW_TAG_formal_parameter
+                DW_AT_type	("real(64)")
+================================================================================
+====================================getMyRec====================================
+DW_TAG_subprogram
+              DW_AT_low_pc	()
+              DW_AT_high_pc	()
+              DW_AT_linkage_name	("getMyRec_chpl")
+              DW_AT_name	("getMyRec")
+              DW_AT_decl_file	("./callables.chpl")
+              DW_AT_decl_line	(33)
+              DW_AT_type	("callables::myRec")
+  DW_TAG_formal_parameter
+                DW_AT_name	("x")
+                DW_AT_decl_file	("./callables.chpl")
+                DW_AT_decl_line	(33)
+                DW_AT_type	("int(64)")
+  DW_TAG_formal_parameter
+                DW_AT_name	("y")
+                DW_AT_decl_file	("./callables.chpl")
+                DW_AT_decl_line	(33)
+                DW_AT_type	("real(64)")
+  DW_TAG_variable
+                DW_AT_name	("ret")
+                DW_AT_decl_file	("./callables.chpl")
+                DW_AT_decl_line	(34)
+                DW_AT_type	("callables::myRec")
+================================================================================
+====================================myClass=====================================
+DW_TAG_pointer_type
+              DW_AT_type	("callables::myClass")
+              DW_AT_name	("myClass")
+DW_TAG_structure_type
+              DW_AT_name	("myClass")
+              DW_AT_byte_size	(0x40)
+              DW_AT_decl_file	("./callables.chpl")
+              DW_AT_decl_line	(39)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("super")
+                DW_AT_type	("RootClass")
+                DW_AT_decl_file	("./callables.chpl")
+                DW_AT_decl_line	(39)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  DW_TAG_member
+                DW_AT_name	("a")
+                DW_AT_type	("int(64)")
+                DW_AT_decl_file	("./callables.chpl")
+                DW_AT_decl_line	(40)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x08)
+  DW_TAG_member
+                DW_AT_name	("b")
+                DW_AT_type	("bool")
+                DW_AT_decl_file	("./callables.chpl")
+                DW_AT_decl_line	(41)
+                DW_AT_alignment	(1)
+                DW_AT_data_member_location	(0x10)
+  DW_TAG_member
+                DW_AT_name	("c")
+                DW_AT_type	("string")
+                DW_AT_decl_file	("./callables.chpl")
+                DW_AT_decl_line	(42)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x18)
+  DW_TAG_subprogram
+                DW_AT_linkage_name ("init_chplN")
+                DW_AT_name	("init")
+                DW_AT_decl_file	("./callables.chpl")
+                DW_AT_decl_line	(39)
+                DW_AT_declaration	(true)
+    DW_TAG_formal_parameter
+                  DW_AT_type	("callables::myClass *")
+                  DW_AT_artificial	(true)
+    DW_TAG_formal_parameter
+                  DW_AT_type	("int(64)")
+    DW_TAG_formal_parameter
+                  DW_AT_type	("bool")
+    DW_TAG_formal_parameter
+                  DW_AT_type	("_ref(string)")
+  DW_TAG_subprogram
+                DW_AT_linkage_name	("myMethodCls_chpl")
+                DW_AT_name	("myMethodCls")
+                DW_AT_decl_file	("./callables.chpl")
+                DW_AT_decl_line	(50)
+                DW_AT_type	("int(64)")
+                DW_AT_declaration	(true)
+    DW_TAG_formal_parameter
+                  DW_AT_type	("callables::myClass *")
+                  DW_AT_artificial	(true)
+    DW_TAG_formal_parameter
+                  DW_AT_type	("int(64)")
+  DW_TAG_subprogram
+                DW_AT_linkage_name	("setterCls_chpl")
+                DW_AT_name	("setterCls")
+                DW_AT_decl_file	("./callables.chpl")
+                DW_AT_decl_line	(54)
+                DW_AT_declaration	(true)
+    DW_TAG_formal_parameter
+                  DW_AT_type	("_ref(myClass)")
+                  DW_AT_artificial	(true)
+    DW_TAG_formal_parameter
+                  DW_AT_type	("bool")
+  DW_TAG_subprogram
+                DW_AT_linkage_name	("toStringCls_chpl")
+                DW_AT_name	("toStringCls")
+                DW_AT_decl_file	("./callables.chpl")
+                DW_AT_decl_line	(44)
+                DW_AT_type	("string")
+                DW_AT_declaration	(true)
+    DW_TAG_formal_parameter
+                  DW_AT_type	("callables::myClass *")
+                  DW_AT_artificial	(true)
+================================================================================
+==================================toStringCls===================================
+DW_TAG_subprogram
+              DW_AT_low_pc	()
+              DW_AT_high_pc	()
+              DW_AT_specification	("toStringCls_chpl")
+  DW_TAG_formal_parameter
+                DW_AT_name	("this")
+                DW_AT_decl_file	("./callables.chpl")
+                DW_AT_decl_line	(44)
+                DW_AT_type	("callables::myClass *")
+                DW_AT_artificial	(true)
+  DW_TAG_variable
+                DW_AT_name	("ret")
+                DW_AT_decl_file	("./callables.chpl")
+                DW_AT_decl_line	(45)
+                DW_AT_type	("string")
+DW_TAG_subprogram
+              DW_AT_linkage_name	("toStringCls_chpl")
+              DW_AT_name	("toStringCls")
+              DW_AT_decl_file	("./callables.chpl")
+              DW_AT_decl_line	(44)
+              DW_AT_type	("string")
+              DW_AT_declaration	(true)
+  DW_TAG_formal_parameter
+                DW_AT_type	("callables::myClass *")
+                DW_AT_artificial	(true)
+================================================================================
+==================================myMethodCls===================================
+DW_TAG_subprogram
+              DW_AT_low_pc	()
+              DW_AT_high_pc	()
+              DW_AT_specification	("myMethodCls_chpl")
+  DW_TAG_formal_parameter
+                DW_AT_name	("this")
+                DW_AT_decl_file	("./callables.chpl")
+                DW_AT_decl_line	(50)
+                DW_AT_type	("callables::myClass *")
+                DW_AT_artificial	(true)
+  DW_TAG_formal_parameter
+                DW_AT_name	("y")
+                DW_AT_decl_file	("./callables.chpl")
+                DW_AT_decl_line	(50)
+                DW_AT_type	("int(64)")
+DW_TAG_subprogram
+              DW_AT_linkage_name	("myMethodCls_chpl")
+              DW_AT_name	("myMethodCls")
+              DW_AT_decl_file	("./callables.chpl")
+              DW_AT_decl_line	(50)
+              DW_AT_type	("int(64)")
+              DW_AT_declaration	(true)
+  DW_TAG_formal_parameter
+                DW_AT_type	("callables::myClass *")
+                DW_AT_artificial	(true)
+  DW_TAG_formal_parameter
+                DW_AT_type	("int(64)")
+================================================================================
+===================================setterCls====================================
+DW_TAG_subprogram
+              DW_AT_low_pc	()
+              DW_AT_high_pc	()
+              DW_AT_specification	("setterCls_chpl")
+  DW_TAG_formal_parameter
+                DW_AT_name	("this")
+                DW_AT_decl_file	("./callables.chpl")
+                DW_AT_decl_line	(54)
+                DW_AT_type	("_ref(myClass)")
+                DW_AT_artificial	(true)
+  DW_TAG_formal_parameter
+                DW_AT_name	("b")
+                DW_AT_decl_file	("./callables.chpl")
+                DW_AT_decl_line	(54)
+                DW_AT_type	("bool")
+DW_TAG_subprogram
+              DW_AT_linkage_name	("setterCls_chpl")
+              DW_AT_name	("setterCls")
+              DW_AT_decl_file	("./callables.chpl")
+              DW_AT_decl_line	(54)
+              DW_AT_declaration	(true)
+  DW_TAG_formal_parameter
+                DW_AT_type	("_ref(myClass)")
+                DW_AT_artificial	(true)
+  DW_TAG_formal_parameter
+                DW_AT_type	("bool")
+================================================================================
+===================================getMyClass===================================
+DW_TAG_subprogram
+              DW_AT_low_pc	()
+              DW_AT_high_pc	()
+              DW_AT_linkage_name	("getMyClass_chpl")
+              DW_AT_name	("getMyClass")
+              DW_AT_decl_file	("./callables.chpl")
+              DW_AT_decl_line	(58)
+              DW_AT_type	("owned myClass")
+  DW_TAG_formal_parameter
+                DW_AT_name	("a")
+                DW_AT_decl_file	("./callables.chpl")
+                DW_AT_decl_line	(58)
+                DW_AT_type	("int(64)")
+  DW_TAG_formal_parameter
+                DW_AT_name	("b")
+                DW_AT_decl_file	("./callables.chpl")
+                DW_AT_decl_line	(58)
+                DW_AT_type	("bool")
+  DW_TAG_formal_parameter
+                DW_AT_name	("c")
+                DW_AT_decl_file	("./callables.chpl")
+                DW_AT_decl_line	(58)
+                DW_AT_type	("_ref(string)")
+  DW_TAG_variable
+                DW_AT_name	("ret")
+                DW_AT_decl_file	("./callables.chpl")
+                DW_AT_decl_line	(59)
+                DW_AT_type	("owned myClass")
+================================================================================
+Success!!
