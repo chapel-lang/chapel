@@ -453,9 +453,12 @@ OPTIONS
 **\--vector-library <lib>**
 
     Select a vectorization library to use. Supported values are `none` (the
-    default) or a valid vectorization library for the current backend. This
-    option is only supported with the LLVM backend, or when using the
-    C backend with Clang or GCC.
+    default), `libmvec`, `darwinLibSystemM`, or a valid vectorization library
+    for the current backend. This option is only supported with the
+    LLVM backend, or when using the C backend with Clang or GCC.
+
+    If an unsupported/unknown library is used, the compiler will just pass the
+    flag through to the backend compiler.
 
     When using the LLVM backend or Clang, see
     https://clang.llvm.org/docs/ClangCommandLineReference.html#cmdoption-clang-fveclib

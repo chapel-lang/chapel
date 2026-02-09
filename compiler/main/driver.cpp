@@ -2171,37 +2171,88 @@ static void setGPUFlags() {
 
 }
 
+struct VectorLibraryInfo {
+  struct KnownVectorLib {
+    std::string name;
+    std::string llvmBackendName;
+    std::string clangBackendName;
+    std::string gccBackendName;
+    KnownVectorLib(std::string name, std::string llvmBackendName,
+                   std::string clangBackendName, std::string gccBackendName)
+      : name(name), llvmBackendName(llvmBackendName),
+        clangBackendName(clangBackendName), gccBackendName(gccBackendName) {}
+    std::string getBackendName() {
+      if (0 == strcmp(CHPL_TARGET_COMPILER, "llvm")) {
+        return llvmBackendName;
+      } else if (0 == strcmp(CHPL_TARGET_COMPILER, "clang")) {
+        return clangBackendName;
+      } else if (0 == strcmp(CHPL_TARGET_COMPILER, "gnu")) {
+        return gccBackendName;
+      } else {
+        return "";
+      }
+    }
+  };
+
+#if HAVE_LLVM_VER < 210
+  static inline const auto libmvec = KnownVectorLib("libmvec", "LIBMVEC-X86", "libmvec", "");
+#else
+  static inline const auto libmvec = KnownVectorLib("libmvec", "LIBMVEC", "libmvec", "");
+#endif
+  static inline const auto darwinLibSystemM = KnownVectorLib("darwinLibSystemM", "Darwin_libsystem_m", "Darwin_libsystem_m", "");
+
+  static std::optional<KnownVectorLib> getKnownVectorLib(const std::string& vecLib) {
+    static std::array<KnownVectorLib, 2> knownVectorLibs = {libmvec, darwinLibSystemM};
+    for (const auto& knownLib : knownVectorLibs) {
+      if (vecLib == knownLib.name) {
+        return knownLib;
+      }
+    }
+    return std::nullopt;
+  }
+  static std::optional<std::string> getBackendVectorLibFlag() {
+    if (0 == strcmp(CHPL_TARGET_COMPILER, "llvm")) {
+      return "-vector-library=";
+    } else if (0 == strcmp(CHPL_TARGET_COMPILER, "clang")) {
+      return "-fveclib=";
+    } else if (0 == strcmp(CHPL_TARGET_COMPILER, "gnu")) {
+      return "-mveclibabi=";
+    } else {
+      return std::nullopt;
+    }
+  }
+};
+
 static void setVectorLib() {
   if (fVectorLib == "") return; // nothing to do
 
-  // check that we are using a supported backend
-  if ((0 == strcmp(CHPL_TARGET_COMPILER, "llvm")) ||
-      (0 == strcmp(CHPL_TARGET_COMPILER, "clang")) ||
-      (0 == strcmp(CHPL_TARGET_COMPILER, "gnu"))) {
-    // ok
-  } else {
+  auto flagName = VectorLibraryInfo::getBackendVectorLibFlag();
+  if (!flagName.has_value()) {
     USR_FATAL("--vector-library is not supported with the %s backend",
               CHPL_TARGET_COMPILER);
   }
 
-  // add -vector-library= to llvmFlags for LLVM, otherwise add to ccflags
+  std::string flagValue = fVectorLib;
+  auto knownLib = VectorLibraryInfo::getKnownVectorLib(fVectorLib);
+  if (knownLib.has_value()) {
+    flagValue = knownLib->getBackendName();
+  } else {
+    USR_WARN("Unknown vector library '%s' specified - "
+             "this will be passed to the backend as '%s=%s'",
+             fVectorLib.c_str(), flagName.value().c_str(), flagValue.c_str());
+  }
+
+
   if (0 == strcmp(CHPL_TARGET_COMPILER, "llvm")) {
     if (llvmFlags.length() > 0)
       llvmFlags += ' ';
-    llvmFlags += "-vector-library=";
-    llvmFlags += fVectorLib;
-  } else if (0 == strcmp(CHPL_TARGET_COMPILER, "clang")) {
-    if (ccflags.length() > 0)
-      ccflags += ' ';
-    ccflags += "-fveclib=";
-    ccflags += fVectorLib;
-  } else if (0 == strcmp(CHPL_TARGET_COMPILER, "gnu")) {
-    if (ccflags.length() > 0)
-      ccflags += ' ';
-    ccflags += "-mveclibabi=";
-    ccflags += fVectorLib;
+    llvmFlags += flagName.value();
+    llvmFlags += flagValue;
   } else {
-    INT_FATAL("unexpected compiler in setVectorLib");
+    if (ccflags.length() > 0)
+      ccflags += ' ';
+    ccflags += flagName.value();
+    ccflags += flagValue;
   }
 }
 
