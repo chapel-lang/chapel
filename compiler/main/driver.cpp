@@ -2238,7 +2238,7 @@ static void setVectorLib() {
     flagValue = knownLib->getBackendName();
   } else {
     USR_WARN("Unknown vector library '%s' specified - "
-             "this will be passed to the backend as '%s=%s'",
+             "this will be passed to the backend as '%s%s'",
              fVectorLib.c_str(), flagName.value().c_str(), flagValue.c_str());
   }
 
