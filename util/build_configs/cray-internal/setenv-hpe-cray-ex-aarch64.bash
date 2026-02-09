@@ -4,6 +4,6 @@ set -ex
 
 CRAY_INTERNAL_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 
-export target_cpu_module=craype-x86-rome
+export target_cpu_module=craype-arm-grace
 
 $CRAY_INTERNAL_DIR/setenv-hpe-cray-ex.bash "$@"
