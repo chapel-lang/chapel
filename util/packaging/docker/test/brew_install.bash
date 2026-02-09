@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -ex
+set -exo pipefail
 
 # Hack to inject bogus bottle block into chapel.rb for testing purposes.
 cd /home/linuxbrew/.linuxbrew/Homebrew/Library/Taps/homebrew/homebrew-core
