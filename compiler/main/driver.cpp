@@ -56,6 +56,7 @@
 #include <string>
 #include <map>
 #include <regex>
+#include <csignal>
 #include <numeric>
 
 #ifdef HAVE_LLVM
@@ -826,6 +827,14 @@ static bool shouldSkipMakeBinary(bool warnIfSkipping = true) {
   return shouldSkipMakeBinary;
 }
 
+static void warnMaybeOomKilled(int sig) {
+  if (sig == SIGKILL) {
+    USR_WARN(
+        "A driver phase was killed by signal SIGKILL -- possibly due to "
+        "running out of memory");
+  }
+}
+
 // Use 'chpl' executable as a compiler-driver, re-invoking itself with flags
 // that trigger components of the actual compilation work to be performed.
 // Exits if a phase fails.
@@ -837,12 +846,14 @@ static void runAsCompilerDriver(int argc, char* argv[]) {
 
   // invoke compilation phase
   if ((status = runDriverCompilationPhase(argc, argv)) != 0) {
+    warnMaybeOomKilled(status);
     clean_exit(status);
   }
 
   if (!shouldSkipMakeBinary()) {
     // invoke makeBinary phase
     if ((status = runDriverMakeBinaryPhase(argc, argv)) != 0) {
+      warnMaybeOomKilled(status);
       clean_exit(status);
     }
   }
@@ -2726,7 +2737,6 @@ int main(int argc, char* argv[]) {
   if (!driverInSubInvocation) {
     printStuff(argv[0]);
     validateSettings();
-
   }
 
   if (fDynoTimingPath[0] != '\0' &&
