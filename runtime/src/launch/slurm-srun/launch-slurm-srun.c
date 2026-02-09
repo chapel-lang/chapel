@@ -742,8 +742,8 @@ int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
   if (!strcmp(argv[argNum], CHPL_WALLTIME_FLAG)) {
     walltime = argv[argNum+1];
     return 2;
-  } else if (!strncmp(argv[argNum], CHPL_WALLTIME_FLAG"=", strlen(CHPL_WALLTIME_FLAG))) {
-    walltime = &(argv[argNum][strlen(CHPL_WALLTIME_FLAG)+1]);
+  } else if (!strncmp(argv[argNum], CHPL_WALLTIME_FLAG"=", strlen(CHPL_WALLTIME_FLAG"="))) {
+    walltime = &(argv[argNum][strlen(CHPL_WALLTIME_FLAG"=")]);
     return 1;
   }
 
@@ -751,8 +751,8 @@ int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
   if (!strcmp(argv[argNum], CHPL_NODELIST_FLAG)) {
     nodelist = argv[argNum+1];
     return 2;
-  } else if (!strncmp(argv[argNum], CHPL_NODELIST_FLAG"=", strlen(CHPL_NODELIST_FLAG))) {
-    nodelist = &(argv[argNum][strlen(CHPL_NODELIST_FLAG)+1]);
+  } else if (!strncmp(argv[argNum], CHPL_NODELIST_FLAG"=", strlen(CHPL_NODELIST_FLAG"="))) {
+    nodelist = &(argv[argNum][strlen(CHPL_NODELIST_FLAG"=")]);
     return 1;
   }
 
@@ -760,8 +760,8 @@ int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
   if (!strcmp(argv[argNum], CHPL_PARTITION_FLAG)) {
     partition = argv[argNum+1];
     return 2;
-  } else if (!strncmp(argv[argNum], CHPL_PARTITION_FLAG"=", strlen(CHPL_PARTITION_FLAG))) {
-    partition = &(argv[argNum][strlen(CHPL_PARTITION_FLAG)+1]);
+  } else if (!strncmp(argv[argNum], CHPL_PARTITION_FLAG"=", strlen(CHPL_PARTITION_FLAG"="))) {
+    partition = &(argv[argNum][strlen(CHPL_PARTITION_FLAG"=")]);
     return 1;
   }
 
@@ -769,8 +769,8 @@ int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
   if (!strcmp(argv[argNum], CHPL_EXCLUDE_FLAG)) {
     exclude = argv[argNum+1];
     return 2;
-  } else if (!strncmp(argv[argNum], CHPL_EXCLUDE_FLAG"=", strlen(CHPL_EXCLUDE_FLAG))) {
-    exclude = &(argv[argNum][strlen(CHPL_EXCLUDE_FLAG)+1]);
+  } else if (!strncmp(argv[argNum], CHPL_EXCLUDE_FLAG"=", strlen(CHPL_EXCLUDE_FLAG"="))) {
+    exclude = &(argv[argNum][strlen(CHPL_EXCLUDE_FLAG"=")]);
     return 1;
   }
 
@@ -778,8 +778,8 @@ int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
   if (!strcmp(argv[argNum], CHPL_GPUS_PER_NODE_FLAG)) {
     gpusPerNode = argv[argNum+1];
     return 2;
-  } else if (!strncmp(argv[argNum], CHPL_GPUS_PER_NODE_FLAG"=", strlen(CHPL_GPUS_PER_NODE_FLAG))) {
-    gpusPerNode = &(argv[argNum][strlen(CHPL_GPUS_PER_NODE_FLAG)+1]);
+  } else if (!strncmp(argv[argNum], CHPL_GPUS_PER_NODE_FLAG"=", strlen(CHPL_GPUS_PER_NODE_FLAG"="))) {
+    gpusPerNode = &(argv[argNum][strlen(CHPL_GPUS_PER_NODE_FLAG"=")]);
     return 1;
   }
 
@@ -787,8 +787,8 @@ int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
   if (!strcmp(argv[argNum], CHPL_LAUNCHER_PASSTHROUGH_FLAG)) {
     appendPassthroughFlag(&launcherPassthroughFlags, &numLauncherPassthroughFlags, argv[argNum+1]);
     return 2;
-  } else if (!strncmp(argv[argNum], CHPL_LAUNCHER_PASSTHROUGH_FLAG"=", strlen(CHPL_LAUNCHER_PASSTHROUGH_FLAG))) {
-    appendPassthroughFlag(&launcherPassthroughFlags, &numLauncherPassthroughFlags, &(argv[argNum][strlen(CHPL_LAUNCHER_PASSTHROUGH_FLAG)+1]));
+  } else if (!strncmp(argv[argNum], CHPL_LAUNCHER_PASSTHROUGH_FLAG"=", strlen(CHPL_LAUNCHER_PASSTHROUGH_FLAG"="))) {
+    appendPassthroughFlag(&launcherPassthroughFlags, &numLauncherPassthroughFlags, &(argv[argNum][strlen(CHPL_LAUNCHER_PASSTHROUGH_FLAG"=")]));
     return 1;
   }
 
