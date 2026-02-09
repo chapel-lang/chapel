@@ -423,12 +423,18 @@ def get_configs(opts):
         else:
             dimension_values.append(values)
 
-    # Create the cross product of all dimension values.
+    # Create the Cartesian product of all dimension values.
     config_strings = itertools.product(*dimension_values)
 
     configs = []
     for config_tuple in config_strings:
-        configs.append(Config(*config_tuple))
+        config = Config(*config_tuple)
+        if (config.host_machine == "aarch64" and
+            config.host_compiler == "cray" and
+            config.unwind == "bundled"):
+            config.unwind = "none"
+            logging.warning("Forcing libunwind=none for aarch64 CCE build, to work around build failure with bundled libunwind, in config: {0}".format(config))
+        configs.append(config)
 
     return configs
 
