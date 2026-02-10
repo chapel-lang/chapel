@@ -99,16 +99,17 @@ proc pkgSearch(args) throws {
       if pattern.search(line) {
         if quiet {
           writeln(toSearch[1]);
+        } else {
+          write(line);
         }
-        else write(line);
       }
-    }
-    else {
+    } else {
       if pattern.search(toSearch[1]) {
         if quiet {
           writeln(toSearch[1]);
+        } else {
+          write(line);
         }
-        else write(line);
       }
     }
   }
