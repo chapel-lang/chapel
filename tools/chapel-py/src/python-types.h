@@ -43,12 +43,15 @@
    the Python type string and `wrap`/`unwrap`. */
 
 template <typename CppType>
-struct PythonReturnTypeInfo {};
+struct PythonReturnTypeInfo {
+  static constexpr bool supports_wrap = false;
+};
 
 /** This macro is used to help define template specializations for PythonReturnTypeInfo.
     It just hides some of the boilerplate. */
 #define T_DEFINE_INOUT_TYPE(TYPE, TYPESTR, WRAP, UNWRAP) \
   struct PythonReturnTypeInfo<TYPE> { \
+    static constexpr bool supports_wrap = true; \
     static std::string typeString() { return TYPESTR; } \
   \
     static PyObject* wrap(ContextObject* CONTEXT, const typename std::remove_const<TYPE>::type& TO_WRAP) { \
