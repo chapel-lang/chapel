@@ -247,14 +247,20 @@ std::string nilableTypeString() {
     not all of which can be converetd to Python. Also, the C preprocessor
     doesn't allow us to use commas in macro arguments, so we can't just write
     std::tuple<EINFO> to get a tuple of an error's info. Instead, use template
-    specialization here to define a ErrorInfoBundle with a ::FilteredType
-    that only includes the types from the error info that can be converted to
-    Python.
+    specialization here to define a ErrorInfoBundle with a type alias that
+    is fully convertible.
+
+    It seems to be a good idea to keep the tuple returned by Python's
+    version of `->info()` always the same size as the original tuple. This
+    way, as more components of the error info become convertible,
+    they can be added to the returned tuple without changing user code that
+    unpacks the tuple. Thus, we pad the tuple with 'dummy' elements for
+    non-convertible types.
 
     To try to decide if a type is convertable to Python, and then use that
     decision to define a Python conversion, causes infinite recursion
     and 'explicit specialization after instantiation' errors. Thus, manually
-    list compatible types.
+    list compatible types via `CanConvert` template specialization.
   */
 
 namespace detail {
@@ -269,53 +275,38 @@ template <> struct CanConvert<const chpl::types::Type*> : std::true_type {};
 template <> struct CanConvert<const chpl::types::Param*> : std::true_type {};
 template <> struct CanConvert<chpl::Location> : std::true_type {};
 
-// For an element of a tuple at the given index, produces either the
-// single-element index sequence {Idx} if the tuple type is convertible to Python,
-// or the empty index sequence {} if it is not.
-// See https://stackoverflow.com/questions/41723704/how-to-filter-a-stdinteger-sequence.
 template <typename Tuple, size_t Idx>
-struct Selector {
-  using IdxSequence =
-    std::conditional_t<
-        CanConvert<std::remove_reference_t<decltype(std::get<Idx>(std::declval<Tuple>()))>>::value,
-        std::index_sequence<Idx>,
-        std::index_sequence<>
-    >;
-};
-
-// Fold operations (used in the next template) only work on binary operators,
-// so define a binary operator concatenating two index sequences.
-template <size_t ... Idxs1, size_t ... Idxs2>
-constexpr auto operator +(std::index_sequence<Idxs1...>, std::index_sequence<Idxs2...>) {
-    return std::index_sequence<Idxs1..., Idxs2 ...>();
+auto getOrReturnDummyAtIdx(const Tuple& tup) {
+  using ElementType = std::decay_t<decltype(std::get<Idx>(tup))>;
+  if constexpr (CanConvert<ElementType>::value) {
+    return std::get<Idx>(tup);
+  } else {
+    return std::make_tuple();
+  }
 }
 
-// Filter an index sequence such that only indices corresponding to tuple
-// elements that can be converted to Python are kept.
-// Proceeds by constructing a pack of index sequences like {{0}, {}, {2}, ...},
-// then flattening them into a single index sequence using the binary operator
-// defined above.
-template <typename Tuple, size_t ... Idxs>
-constexpr auto filterIndices(std::index_sequence<Idxs...>) {
-    return ((typename Selector<Tuple, Idxs>::IdxSequence{}) + ...);
+template <typename Tuple, size_t ... Idx>
+auto getDummyfiedImpl(const Tuple& tup, std::index_sequence<Idx...>) {
+  return std::make_tuple(getOrReturnDummyAtIdx<Tuple, Idx>(tup)...);
 }
 
-// Given a particular index sequence, extract only those elements that
-// are listed in the index sequence.
-template <typename Tuple, size_t... Idxs>
-auto getIndices(const Tuple& getFrom, std::index_sequence<Idxs...>) {
-  return std::make_tuple(std::get<Idxs>(getFrom)...);
+template <typename Tuple>
+auto getDummyfied(const Tuple& tup) {
+  return getDummyfiedImpl(tup, std::make_index_sequence<std::tuple_size_v<Tuple>>());
 }
+
+template <typename Tuple>
+using DummifiedType = decltype(getDummyfied(std::declval<Tuple>()));
 
 template <typename ErrorType>
-struct ErrorInfoBundle {};
+struct ErrorInfoBundleImpl {};
 
 #define DIAGNOSTIC_CLASS(NAME, KIND, EINFO...) \
   template <> \
-  struct ErrorInfoBundle<chpl::Error##NAME> { \
-    using IdxSequence = decltype(filterIndices<std::tuple<EINFO>>(std::make_index_sequence<std::tuple_size_v<std::tuple<EINFO>>>{})); \
-    using ExtractedData = decltype(getIndices(std::declval<std::tuple<EINFO>>(), IdxSequence{})); \
+  struct ErrorInfoBundleImpl<chpl::Error##NAME> { \
+    using ExtractedData = DummifiedType<std::tuple<EINFO>>; \
     ExtractedData data; \
+    ErrorInfoBundleImpl(const std::tuple<EINFO>& originalData) : data(getDummyfied(originalData)) {} \
 \
     static std::string typeString() { \
       return TupleTypeStringify<ExtractedData>::typeString(); \
@@ -327,7 +318,7 @@ struct ErrorInfoBundle {};
 } // end namespace detail
 
 template <typename ErrorType>
-using ErrorInfoBundleT = detail::ErrorInfoBundle<ErrorType>;
+using ErrorInfoBundle = detail::ErrorInfoBundleImpl<ErrorType>;
 
 
 
@@ -365,7 +356,7 @@ T_DEFINE_INOUT_TYPE(std::tuple<Elems...>, tupleTypeString<Elems...>(), wrapTuple
 template <typename ElemType>
 T_DEFINE_INOUT_TYPE(TypedIterAdapterBase<ElemType>*, iteratorTypeString<ElemType>(), wrapIterAdapter(CONTEXT, TO_WRAP), (TypedIterAdapterBase<ElemType>*) ((AstIterObject*) TO_UNWRAP)->iterAdapter);
 template <typename ErrorType>
-T_DEFINE_INOUT_TYPE(ErrorInfoBundleT<ErrorType>, ErrorInfoBundleT<ErrorType>::typeString(), wrapTuple(CONTEXT, TO_WRAP.data), ErrorInfoBundleT<ErrorType>{});
+T_DEFINE_INOUT_TYPE(ErrorInfoBundle<ErrorType>, ErrorInfoBundle<ErrorType>::typeString(), wrapTuple(CONTEXT, TO_WRAP.data), ErrorInfoBundle<ErrorType>{});
 
 #define GENERATED_TYPE(ROOT, ROOT_TYPE, NAME, TYPE, TAG, FLAGS) \
   DEFINE_INOUT_TYPE(const TYPE*, #NAME, wrapGeneratedType(CONTEXT, (ROOT_TYPE*) TO_WRAP), ((ROOT##Object*) TO_UNWRAP)->value_->to##NAME());

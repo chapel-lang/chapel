@@ -66,7 +66,7 @@ CLASS_END(ErrorManager)
 
 #define DIAGNOSTIC_CLASS(NAME, ERROR, EINFO...) \
   CLASS_BEGIN(NAME) \
-    PLAIN_GETTER(NAME, info, "Return the additional data associated with this " #NAME " error", ErrorInfoBundleT<chpl::Error##NAME>, return ErrorInfoBundleT<chpl::Error##NAME>()) \
+    PLAIN_GETTER(NAME, info, "Return the additional data associated with this " #NAME " error", ErrorInfoBundle<chpl::Error##NAME>, return ErrorInfoBundle<chpl::Error##NAME>(node->info())) \
   CLASS_END(NAME)
 #include "chpl/framework/error-classes-list.h"
 #undef DIAGNOSTIC_CLASS
