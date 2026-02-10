@@ -41,31 +41,6 @@ def variables(node: AstNode):
             yield from variables(child)
 
 
-def might_incorrectly_report_location(node: AstNode) -> bool:
-    """
-    Some Dyno AST nodes do not return locations in the way that we expect.
-    For instance, some NamedDecl nodes currently use the name as the location,
-    which does not indicate their actual indentation. Rules that depend on
-    indentation should leave these variables alone.
-    """
-
-    # 'else if' statements do not have proper locations
-    #
-    # https://github.com/chapel-lang/chapel/issues/25256
-    if isinstance(node, Conditional):
-        parent = node.parent()
-        grandparent = parent.parent() if parent else None
-        if (
-            isinstance(parent, Block)
-            and parent.block_style() == "implicit"
-            and grandparent
-            and isinstance(grandparent, Conditional)
-        ):
-            return True
-
-    return False
-
-
 def fixit_remove_unused_node(
     node: AstNode,
     lines: Optional[List[str]] = None,
@@ -677,8 +652,6 @@ def rules(driver: LintDriver):
         for child in root:
             if isinstance(child, Comment):
                 continue
-            if might_incorrectly_report_location(child):
-                continue
             yield from MisleadingIndentation(context, child)
 
             if prev and any(
@@ -702,8 +675,6 @@ def rules(driver: LintDriver):
             return None
         for stmt in inblock:
             if isinstance(stmt, Comment):
-                continue
-            if might_incorrectly_report_location(stmt):
                 continue
             prev.append(stmt)
             append_nested_single_stmt(stmt, prev)
@@ -1005,6 +976,17 @@ def rules(driver: LintDriver):
                 return None if parent.is_expression_level() else parent
             return node
 
+        def is_block_in_else_if_chain(
+            block: AstNode, parent: Optional[AstNode]
+        ) -> bool:
+            return (
+                isinstance(parent, Conditional)
+                and parent.has_else_block()
+                and parent.num_else_stmts() == 1
+                and parent.else_stmt(0).unique_id() == block.unique_id()
+                and parent.else_block_style() == "implicit"
+            )
+
         # If root is something else (e.g., function call), do not
         # apply indentation rules; only apply them to things that contain
         # a list of statements.
@@ -1045,10 +1027,8 @@ def rules(driver: LintDriver):
             if isinstance(child, Comment):
                 continue
 
-            if might_incorrectly_report_location(child):
-                continue
             # Empty statements get their own warnings, no need to warn here.
-            elif isinstance(child, EmptyStmt):
+            if isinstance(child, EmptyStmt):
                 continue
 
             line, depth = child.location().start()
@@ -1084,6 +1064,11 @@ def rules(driver: LintDriver):
             #   var x: int;
             #   }
             elif parent_depth and depth == parent_depth:
+                if is_block_in_else_if_chain(child, parent_for_indentation):
+                    # don't warn if the child is the only statement in an else implicit block
+                    prev_line = line
+                    prev = child
+                    continue
                 # only loops and NamedDecls can be anchors for indentation
                 anchor = (
                     parent_for_indentation

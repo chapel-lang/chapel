@@ -57,10 +57,10 @@ proc main() {
   // CHECK-NEXT: myFieldB = 0
   // CHECK-NEXT: myFieldC = (x0 = 0, x1 = 0)
   // CHECK-NEXT: myFieldD = ""
-  // CHECK-LOCAL: myFieldE = NULL
+  // CHECK-LOCAL: myFieldE = nullptr
   // CHECK-NOLOCAL: myFieldE = {
   // CHECK-NOLOCAL-NEXT: locale = (node = 0)
-  // CHECK-NOLOCAL-NEXT: addr = NULL
+  // CHECK-NOLOCAL-NEXT: addr = nullptr
   // CHECK-NOLOCAL-NEXT: }
   // CHECK-NEXT: myFieldF = [1..10] int(64)
   // CHECK-NEXT: [1] = 0
@@ -80,10 +80,10 @@ proc main() {
   // CHECK-NEXT: (string) ""
 
   // CHECK: p myRec2.myFieldE
-  // CHECK-LOCAL-NEXT: (basicTypes::MyClass *) NULL
+  // CHECK-LOCAL-NEXT: (basicTypes::MyClass *) nullptr
   // CHECK-NOLOCAL-NEXT: (wide(MyClass)) {
   // CHECK-NOLOCAL-NEXT: locale = (node = 0)
-  // CHECK-NOLOCAL-NEXT: addr = NULL
+  // CHECK-NOLOCAL-NEXT: addr = nullptr
   // CHECK-NOLOCAL-NEXT: }
 
   // CHECK: p myRec2.myFieldF

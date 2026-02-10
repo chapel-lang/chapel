@@ -65,7 +65,8 @@ proc pkgConfigExists() throws {
 /* Searches available system packages */
 proc pkgSearch(args) throws {
 
-  var parser = new argumentParser(helpHandler=new MasonSystemSearchHelpHandler());
+  var parser =
+    new argumentParser(helpHandler=new MasonSystemSearchHelpHandler());
 
   var quietFlag = parser.addFlag(name="no-show-desc", defaultValue=false);
   var descFlag = parser.addFlag(name="desc", defaultValue=false);
@@ -140,7 +141,9 @@ proc printPkgPc(args) throws {
       // Add a these call, since `string.join` has an iterator overload but
       // not one for list.
       //
-      var pcDir = "".join(getPkgVariable(pkgName, "--variable=pcfiledir").these()).strip();
+      var pcDir = "".join(
+        getPkgVariable(pkgName, "--variable=pcfiledir").these()
+      ).strip();
       var pcFile = joinPath(pcDir, pkgName + ".pc");
       var pc = openReader(pcFile, locking=false);
       writeln("\n------- " + pkgName + ".pc -------\n");
@@ -150,7 +153,8 @@ proc printPkgPc(args) throws {
       writeln("\n-------------------\n");
     }
     else {
-      throw new owned MasonError("Mason could not find " + pkgName + " on your system");
+      throw new MasonError("Mason could not find " +
+                           pkgName + " on your system");
     }
   }
   catch e: FileNotFoundError {
@@ -201,9 +205,13 @@ proc getPkgInfo(pkgName: string, version: string) throws {
 
   if pkgExists(pkgName) {
     // Pass "these" to join instead of converting the list to an array.
-    const pcVersion = "".join(getPkgVariable(pkgName, "--modversion").these()).strip();
+    const pcVersion = "".join(
+      getPkgVariable(pkgName, "--modversion").these()
+    ).strip();
     const libs = "".join(getPkgVariable(pkgName, "--libs").these()).strip();
-    const includePath = "".join(getPkgVariable(pkgName, "--variable=includedir").these()).strip();
+    const includePath = "".join(
+      getPkgVariable(pkgName, "--variable=includedir").these()
+    ).strip();
 
     pkgInfo.set("name", pkgName);
     pkgInfo.set("version", pcVersion);
@@ -211,11 +219,12 @@ proc getPkgInfo(pkgName: string, version: string) throws {
     pkgInfo.set("include", includePath);
 
     if pcVersion != version && version != "*" {
-      throw new owned MasonError("Unable to locate " + pkgName + ": " +version + "\n Found " + pcVersion);
+      throw new MasonError("Unable to locate " + pkgName +
+                           ": " +version + "\n Found " + pcVersion);
     }
   }
   else {
-    throw new owned MasonError("No pkg-config package by the name of: " + pkgName);
+    throw new MasonError("No pkg-config package by the name of: " + pkgName);
   }
   return pkgInfo;
 }

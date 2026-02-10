@@ -436,10 +436,6 @@ operator =(ref a: stencilDist(?), b: stencilDist(?)) {
 }
 
 
-@deprecated("'Stencil' is deprecated, please use 'stencilDist' instead")
-type Stencil = stencilDist;
-
-
 class StencilImpl : BaseDist, writeSerializable {
   param rank: int;
   type idxType = int;

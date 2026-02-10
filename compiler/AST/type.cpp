@@ -990,7 +990,7 @@ FunctionType::Linkage FunctionType::determineLinkage(FnSymbol* fn) {
 static FormalVec collectFormals(FnSymbol* fn) {
   FormalVec ret;
   for_formals(f, fn) {
-    FunctionType::Formal info = { f->qual, f->type, f->intent, f->name };
+    FunctionType::Formal info = { f->qual, f->type, f->intent, f->name, f->flags };
     ret.push_back(std::move(info));
   }
   return ret;
@@ -1047,14 +1047,14 @@ FunctionType* FunctionType::getAsExtern() const {
 
 FunctionType::Formal FunctionType::constructErrorHandlingFormal() {
   auto t = getDecoratedClass(dtError, ClassTypeDecorator::UNMANAGED_NILABLE);
-  return { QUAL_REF, t, INTENT_REF, "error_out" };
+  return { QUAL_REF, t, INTENT_REF, "error_out", 0 };
 }
 
 std::array<FunctionType::Formal, 2>
 FunctionType::constructLineFileInfoFormals() {
   std::array<Formal, 2> ret = {{
-    Formal(QUAL_CONST_VAL, dtInt[INT_SIZE_DEFAULT], INTENT_CONST_IN, "_ln"),
-    Formal(QUAL_CONST_VAL, dtInt[INT_SIZE_32], INTENT_CONST_IN, "_fn")
+    Formal(QUAL_CONST_VAL, dtInt[INT_SIZE_DEFAULT], INTENT_CONST_IN, astr__ln, 0),
+    Formal(QUAL_CONST_VAL, dtInt[INT_SIZE_32], INTENT_CONST_IN, astr__fn, 0),
   }};
 
   return ret;
@@ -1193,7 +1193,7 @@ functionTypeStreamlineFormal(const FunctionType::Formal& f) {
   auto type = functionTypeStreamlineType(qual, f.type());
   const char* name = "";
 
-  return { qual, type, intent, name };
+  return { qual, type, intent, name, f.flags() };
 }
 
 static void
@@ -1300,7 +1300,7 @@ FunctionType* FunctionType::getWithWidenedComponents() const {
     auto qt1 = f->qualType();
     auto qt2 = widenType(qt1);
 
-    Formal newFormal = { qt2.getQual(), qt2.type(), f->intent(), f->name() };
+    Formal newFormal = { qt2.getQual(), qt2.type(), f->intent(), f->name(), f->flags() };
     newFormals.push_back(std::move(newFormal));
     change = change || qt1 != qt2;
   }
@@ -1570,8 +1570,8 @@ size_t FunctionType::hash() const {
 }
 
 FunctionType::Formal::Formal(Qualifier qual, Type* type, IntentTag intent,
-                             const char* name)
-    : qual_(qual), type_(type), intent_(intent) {
+                             const char* name, FlagSet flags)
+    : qual_(qual), type_(type), intent_(intent), name_(nullptr), flags_(flags) {
   name_ = (name && 0 != strcmp(name, "")) ? astr(name) : astr("_");
 }
 
@@ -1618,6 +1618,13 @@ QualifiedType FunctionType::Formal::qualType() const {
 
 bool FunctionType::Formal::isRef() const {
   return qualType().isRef();
+}
+
+bool FunctionType::Formal::isRetArg() const {
+  return flags_[FLAG_RETARG];
+}
+FlagSet FunctionType::Formal::flags() const {
+  return flags_;
 }
 
 bool FunctionType::Formal::isNamed() const {

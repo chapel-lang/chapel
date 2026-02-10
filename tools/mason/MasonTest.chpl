@@ -238,7 +238,7 @@ private proc runTests(show: bool, run: bool, parallel: bool, filter: string,
     getSrcCode(sourceList, skipUpdate, show);
     getGitCode(gitList, show);
 
-    const project = lockFile["root"]!["name"]!.s;
+    const project = lockFile["root.name"]!.s;
     const projectPath = "".join(projectHome, "/src/", project, ".chpl");
 
     // Get system, and external compopts
@@ -348,8 +348,7 @@ private proc runTests(show: bool, run: bool, parallel: bool, filter: string,
           const testName = testNames[testIdx];
           const (outputLoc, success) = compile(testName, result, testsCompiled);
           if success && run {
-            runTestBinary(projectHome, outputLoc, testName,
-                          filter, result, show);
+            runTestBinary(outputLoc, testName, filter, result, show);
           }
         }
       } else {
@@ -377,8 +376,7 @@ private proc runTests(show: bool, run: bool, parallel: bool, filter: string,
 }
 
 
-private proc runTestBinary(projectHome: string, outputLoc: string,
-                           testName: string, filter: string,
+private proc runTestBinary(outputLoc: string, testName: string, filter: string,
                            ref result, show: bool) {
   const command = outputLoc;
   var testNames: list(string),
@@ -388,8 +386,8 @@ private proc runTestBinary(projectHome: string, outputLoc: string,
       skippedTestNames: list(string);
   var localesCountMap: map(int, int, parSafe=false);
   const exitCode =
-    runAndLog(command, testName+".chpl", filter, result, numLocales, testsPassed,
-              testNames, localesCountMap,
+    runAndLog(command, testName + ".chpl", filter, result, numLocales,
+              testsPassed, testNames, localesCountMap,
               failedTestNames, erroredTestNames, skippedTestNames, show);
   if exitCode != 0 {
     var newCommand = " ".join(command,"-nl","1");
@@ -401,7 +399,7 @@ private proc runTestBinary(projectHome: string, outputLoc: string,
       result.addFailure(testName, testName+".chpl", errMsg);
     }
     else {
-      result.addSuccess(testName, testName+".chpl");
+      result.addSuccess();
     }
   }
 }
@@ -419,7 +417,7 @@ private proc runTestBinaries(projectHome: string, testNames: list(string),
     const outputLoc = projectHome +
                       "/target/test/" + stripExt(testTemp, ".chpl");
     const testName = basename(stripExt(test, ".chpl"));
-    runTestBinary(projectHome, outputLoc, testName, filter, result, show);
+    runTestBinary(outputLoc, testName, filter, result, show);
   }
 }
 
@@ -437,8 +435,8 @@ private proc getTests(lock: borrowed Toml, projectHome: string) {
   var testNames: list(string);
   const testPath = joinPath(projectHome, "test");
 
-  if lock.pathExists("root.tests") {
-    var tests = lock["root"]!["tests"]!.toString();
+  if const testsToml = lock.get("root.tests") {
+    var tests = testsToml.toString();
     var strippedTests = tests.split(',').strip('[]');
     for test in strippedTests {
       const t = test.strip().strip('"');
@@ -585,18 +583,21 @@ proc testFile(file, const ref compopts: list(string),
         testsPassed: list(string),
         skippedTestNames: list(string);
     var localesCountMap: map(int, int, parSafe=false);
-    const exitCode = runAndLog("./"+executable, fileName, filter, result, numLocales, testsPassed,
-              testNames, localesCountMap, failedTestNames, erroredTestNames, skippedTestNames, show);
+    const exitCode =
+      runAndLog("./" + executable, fileName, filter, result,
+                numLocales, testsPassed, testNames, localesCountMap,
+                failedTestNames, erroredTestNames, skippedTestNames, show);
     if exitCode != 0 {
-      var command = " ".join("./"+executable,"-nl","1");
+      var command = " ".join("./" + executable,"-nl","1");
       if filter != "" then command += " --filter=" + filter;
       const testResult = runWithStatus(command, !show);
       if testResult != 0 {
-        const errMsg = executable: string +" returned exitCode = "+testResult: string;
+        const errMsg =
+          executable:string + " returned exitCode = " + testResult:string;
         result.addFailure(executable, fileName, errMsg);
       }
       else {
-        result.addSuccess(executable, fileName);
+        result.addSuccess();
       }
     }
     if !keepExec {
@@ -754,7 +755,7 @@ proc addTestResult(ref result, ref localesCountMap, ref testNames,
   select flavour {
     when "OK" {
       if show then writeln("Ran ",testName," ",flavour);
-      result.addSuccess(testName, fileName);
+      result.addSuccess();
       testsPassed.pushBack(testName);
     }
     when "ERROR" {
@@ -784,8 +785,8 @@ proc addTestResult(ref result, ref localesCountMap, ref testNames,
         testNames.pushBack(testName);
       }
       else {
-        var locErrMsg = "Not a MultiLocale Environment. $CHPL_COMM = " + comm + "\n";
-        locErrMsg += errMsg;
+        const locErrMsg =
+          "Not a MultiLocale Environment. $CHPL_COMM = " + comm + "\n" + errMsg;
         result.addSkip(testName, fileName, locErrMsg);
         skippedTestNames.pushBack(testName);
       }

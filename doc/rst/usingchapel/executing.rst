@@ -262,9 +262,41 @@ are as follows:
   ``CHPL_RT_CALL_STACK_SIZE``
     size of the call stack for a task
 
+  .. _CHPL_RT_MAX_HEAP_SIZE:
+
   ``CHPL_RT_MAX_HEAP_SIZE``
     per-locale size of the heap used for dynamic allocation in
     multilocale programs
+
+    The value of this variable can use any of the following formats,
+    where *num* is a positive integer number:
+
+      ======= ==========================================
+      Format  Resulting Heap Size
+      ======= ==========================================
+      num     num bytes
+      num[kK] num * 2**10 bytes
+      num[mM] num * 2**20 bytes
+      num[gG] num * 2**30 bytes
+      num%    percentage of compute node physical memory
+      ======= ==========================================
+
+    Any of the following would specify an approximately 1 GiB heap on
+    a 128-GiB compute node, for example:
+
+      .. code-block:: sh
+
+        export CHPL_RT_MAX_HEAP_SIZE=1073741824
+        export CHPL_RT_MAX_HEAP_SIZE=1048576k
+        export CHPL_RT_MAX_HEAP_SIZE=1024m
+        export CHPL_RT_MAX_HEAP_SIZE=1g
+        export CHPL_RT_MAX_HEAP_SIZE=1% # 1.28 GiB, really
+
+    Note that the resulting heap size may get rounded up to match the
+    page alignment.  How much this will add, if any, depends on the
+    hugepage size in use when executing the program.  It may also be
+    reduced, if some resource limitation prevents making the heap as
+    large as requested.
 
   ``CHPL_RT_NUM_THREADS_PER_LOCALE``
     number of threads used to execute tasks

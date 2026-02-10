@@ -67,12 +67,6 @@ http://llvm.org/docs/SourceLevelDebugging.html
 for more information on LLVM debug information.
 */
 
-// Note: All char strings must be the same size
-// Very hacky, but completely legal and functional. Only issue is that file_name
-// will have garbage from beyond full_path.
-// garbage issue could be solved with scrubbing, if it matters.
-
-char current_dir[128];
 constexpr int RuntimeLang = 0;
 
 struct DefinitionInfo {
@@ -90,11 +84,11 @@ struct DefinitionInfo {
                  const char*   filename,
                  unsigned int  line):
     sym_(nullptr), scope_(debugData->getModuleScope(defMod)),
-    file_(debugData->getFile(defMod, filename)), line_(line) {}
+    file_(debugData->getFile(defMod->llvmDIBuilder, filename)), line_(line) {}
   DefinitionInfo(DebugData* debugData, Symbol* sym) : sym_(sym) {
     ModuleSymbol* defMod = sym->getModule();
     this->scope_ = debugData->getModuleScope(defMod);
-    this->file_ = debugData->getFile(defMod, sym->fname());
+    this->file_ = debugData->getFile(defMod->llvmDIBuilder, sym->fname());
     this->line_ = sym->linenum();
   }
 
@@ -146,11 +140,18 @@ struct DefinitionInfo {
     return !skipInfo() ? scope_ : nullptr;
   }
   llvm::DIFile* file() const {
+    return file_;
+  }
+  llvm::DIFile* maybeFile() const {
     return !skipInfo() ? file_ : nullptr;
   }
   unsigned int line() const {
+    return line_;
+  }
+  unsigned int maybeLine() const {
     return !skipInfo() ? line_ : 0;
   }
+
 };
 
 
@@ -177,7 +178,7 @@ static std::pair<llvm::DIType*, int>
 removePointersAndQualifiers(llvm::DIType* N, int numLevels = -1) {
   auto res = N;
   int count = 0;
-  while (llvm::isa<llvm::DIDerivedType>(res) &&
+  while (res && llvm::isa<llvm::DIDerivedType>(res) &&
          (numLevels < 0 || count < numLevels)) {
     auto derived = llvm::cast<llvm::DIDerivedType>(res);
     res = derived->getBaseType();
@@ -191,6 +192,14 @@ static bool isNonCodegenType(Type* type) {
   if (auto valType = type->getValType()) {
     if (type == valType) return false;
     return isNonCodegenType(valType);
+  }
+  return false;
+}
+
+// For the purposes of debug info generation, is this symbol a method?
+static bool isMethodSym(Symbol* sym) {
+  if (auto fn = toFnSymbol(sym)) {
+    return fn->isMethod() && fn->getReceiverType() != nullptr;
   }
   return false;
 }
@@ -222,19 +231,28 @@ void DebugData::finalize() {
 }
 
 void DebugData::createCompileUnit(ModuleSymbol* modSym,
-                                  const char *file, const char *directory,
-                                  const char *flags) {
+                                  const char* file,
+                                  const char* directory,
+                                  const char* flags) {
   char version[128];
   char chapel_string[256];
   get_version(version, sizeof(version));
   snprintf(chapel_string, 256, "Chapel version %s", version);
-  strncpy(current_dir, directory,sizeof(current_dir)-1);
 
   GenInfo* info = gGenInfo;
   modSym->llvmDIBuilder = new llvm::DIBuilder(*info->module);
+  // TODO: this should just use getFile to avoid duplicates
+  // resolve https://github.com/chapel-lang/chapel/issues/28310 first
+  // auto llvmFile = getFile(modSym->llvmDIBuilder, file);
   auto llvmFile = modSym->llvmDIBuilder->createFile(file, directory);
+  // Generated Chapel code is closest to C99
+  // we used to use DW_LANG_C99, but when debugging that prevents us from
+  // evaluating expressions like method calls and it messes with name mangling
+  // when calling functions in general
+  // because of this, we use C++ as the language now
+  // (at least until we get a DW_LANG_CHPL)
   modSym->llvmDICompileUnit =
-    modSym->llvmDIBuilder->createCompileUnit(llvm::dwarf::DW_LANG_C99, /* Lang */
+    modSym->llvmDIBuilder->createCompileUnit(llvm::dwarf::DW_LANG_C_plus_plus, /* Lang */
                                              llvmFile, /* File */
                                              chapel_string, /* Producer */
                                              this->optimized, /* isOptimized */
@@ -304,6 +322,14 @@ bool DebugData::shouldAddDebugInfoFor(Symbol* sym) {
   // skip non-user variables
   if (sym->hasFlag(FLAG_NO_USER_DEBUG_INFO)) return false;
 
+
+  // skip functions that are field accessors or anything inside of them
+  if (auto fn = sym->getFunction()) {
+    if (fn->hasFlag(FLAG_FIELD_ACCESSOR)) {
+      return false;
+    }
+  }
+
   // default to adding debug info
   return true;
 }
@@ -328,8 +354,8 @@ llvm::DIType* DebugData::constructTypeForAggregate(llvm::StructType* ty,
     llvm::dwarf::DW_TAG_structure_type,
     name,
     defInfo.maybeScope(),
-    defInfo.file(),
-    defInfo.line(),
+    defInfo.maybeFile(),
+    defInfo.maybeLine(),
     RuntimeLang,
     !ty->isOpaque() ? layout.getTypeSizeInBits(ty) : 0,
     !ty->isOpaque() ? 8*layout.getABITypeAlign(ty).value() : 0
@@ -382,8 +408,8 @@ llvm::DIType* DebugData::constructTypeForAggregate(llvm::StructType* ty,
           llvm::dwarf::DW_TAG_structure_type,
           fts->name,
           fieldTypeDefInfo.maybeScope(),
-          fieldTypeDefInfo.file(),
-          fieldTypeDefInfo.line(),
+          fieldTypeDefInfo.maybeFile(),
+          fieldTypeDefInfo.maybeLine(),
           RuntimeLang,
           layout.getTypeSizeInBits(fty),
           8*layout.getABITypeAlign(fty).value()
@@ -402,8 +428,8 @@ llvm::DIType* DebugData::constructTypeForAggregate(llvm::StructType* ty,
       auto mty = dibuilder->createMemberType(
         fieldDefInfo.maybeScope(),
         field->name,
-        fieldDefInfo.file(),
-        fieldDefInfo.line(),
+        fieldDefInfo.maybeFile(),
+        fieldDefInfo.maybeLine(),
         layout.getTypeSizeInBits(fty),
         8*layout.getABITypeAlign(fty).value(),
         slayout->getElementOffsetInBits(type->getMemberGEP(field->cname, unused)),
@@ -417,8 +443,8 @@ llvm::DIType* DebugData::constructTypeForAggregate(llvm::StructType* ty,
     N = dibuilder->createStructType(
       defInfo.maybeScope(),
       name,
-      defInfo.file(),
-      defInfo.line(),
+      defInfo.maybeFile(),
+      defInfo.maybeLine(),
       layout.getTypeSizeInBits(ty),
       8*layout.getABITypeAlign(ty).value(),
       llvm::DINode::FlagZero,
@@ -487,8 +513,8 @@ llvm::DIType* DebugData::constructTypeForPointer(llvm::Type* ty, Type* type) {
         auto pteStrDIType = dibuilder->createStructType(
           defInfo.maybeScope(),
           PointeeTy->getStructName(),
-          defInfo.file(),
-          defInfo.line(),
+          defInfo.maybeFile(),
+          defInfo.maybeLine(),
           (PointeeTy->isSized() ? layout.getTypeSizeInBits(PointeeTy) : 8), /* SizeInBits */
           (PointeeTy->isSized() ? 8*layout.getABITypeAlign(PointeeTy).value() : 8), /* AlignInBits */
           llvm::DINode::FlagZero,
@@ -612,8 +638,8 @@ struct ConstructLocaleID : public ConstructDIType {
     EltTys.push_back(DIB->createMemberType(
       defInfo.maybeScope(),
       "node",
-      defInfo.file(),
-      defInfo.line(),
+      defInfo.maybeFile(),
+      defInfo.maybeLine(),
       layout.getTypeSizeInBits(nodeTy),
       8*layout.getABITypeAlign(nodeTy).value(),
       0, /* offset, assume its zero */
@@ -627,8 +653,8 @@ struct ConstructLocaleID : public ConstructDIType {
       EltTys.push_back(DIB->createMemberType(
         defInfo.maybeScope(),
         "subloc",
-        defInfo.file(),
-        defInfo.line(),
+        defInfo.maybeFile(),
+        defInfo.maybeLine(),
         layout.getTypeSizeInBits(subnodeTy),
         8*layout.getABITypeAlign(subnodeTy).value(),
         layout.getTypeSizeInBits(nodeTy), /* offset, assume after node */
@@ -639,8 +665,8 @@ struct ConstructLocaleID : public ConstructDIType {
     llvm::DIType* N = DIB->createStructType(
       defInfo.maybeScope(),
       chplType->symbol->name,
-      defInfo.file(),
-      defInfo.line(),
+      defInfo.maybeFile(),
+      defInfo.maybeLine(),
       layout.getTypeSizeInBits(llvmImplType), /* SizeInBits */
       8*layout.getABITypeAlign(llvmImplType).value(), /* AlignInBits */
       llvm::DINode::FlagZero, /* Flags */
@@ -667,8 +693,8 @@ struct ConstructObject : public ConstructDIType {
     auto cidDITy = DIB->createMemberType(
       defInfo.maybeScope(),
       "cid",
-      defInfo.file(),
-      defInfo.line(),
+      defInfo.maybeFile(),
+      defInfo.maybeLine(),
       layout.getTypeSizeInBits(cidType),
       8*layout.getABITypeAlign(cidType).value(),
       0, /* offset, assume its zero */
@@ -681,8 +707,8 @@ struct ConstructObject : public ConstructDIType {
     llvm::DIType* N = DIB->createStructType(
       defInfo.maybeScope(),
       chplType->symbol->name,
-      defInfo.file(),
-      defInfo.line(),
+      defInfo.maybeFile(),
+      defInfo.maybeLine(),
       layout.getTypeSizeInBits(cidType), /* SizeInBits */
       8*layout.getABITypeAlign(cidType).value(), /* AlignInBits */
       llvm::DINode::FlagZero, /* Flags */
@@ -762,8 +788,8 @@ struct ConstructComplex : public ConstructDIType {
     EltTys.push_back(DIB->createMemberType(
       defInfo.maybeScope(),
       "re",
-      defInfo.file(),
-      defInfo.line(),
+      defInfo.maybeFile(),
+      defInfo.maybeLine(),
       layout.getTypeSizeInBits(reType),
       8*layout.getABITypeAlign(reType).value(),
       0, /* offset, assume its zero */
@@ -773,8 +799,8 @@ struct ConstructComplex : public ConstructDIType {
     EltTys.push_back(DIB->createMemberType(
       defInfo.maybeScope(),
       "im",
-      defInfo.file(),
-      defInfo.line(),
+      defInfo.maybeFile(),
+      defInfo.maybeLine(),
       layout.getTypeSizeInBits(imType),
       8*layout.getABITypeAlign(imType).value(),
       layout.getTypeSizeInBits(reType), /* offset, assume after re */
@@ -784,8 +810,8 @@ struct ConstructComplex : public ConstructDIType {
     llvm::DIType* N = DIB->createStructType(
       defInfo.maybeScope(),
       chplType->symbol->name,
-      defInfo.file(),
-      defInfo.line(),
+      defInfo.maybeFile(),
+      defInfo.maybeLine(),
       layout.getTypeSizeInBits(llvmImplType), /* SizeInBits */
       8*layout.getABITypeAlign(llvmImplType).value(), /* AlignInBits */
       llvm::DINode::FlagZero, /* Flags */
@@ -824,8 +850,8 @@ struct ConstructEnum : public ConstructDIType {
     auto N = DIB->createEnumerationType(
       defInfo.maybeScope(),
       enumType->symbol->name,
-      defInfo.file(),
-      defInfo.line(),
+      defInfo.maybeFile(),
+      defInfo.maybeLine(),
       layout.getTypeSizeInBits(llvmImplType),
       8*layout.getABITypeAlign(llvmImplType).value(),
       DIB->getOrCreateArray(Elements),
@@ -958,8 +984,8 @@ struct ConstructExternPrimitive : public ConstructDIType {
           llvm::dwarf::DW_TAG_structure_type,
           name,
           defInfo.maybeScope(),
-          defInfo.file(),
-          defInfo.line(),
+          defInfo.maybeFile(),
+          defInfo.maybeLine(),
           RuntimeLang,
           0, /* SizeInBits */
           0  /* AlignInBits */
@@ -1077,8 +1103,8 @@ llvm::DIType* DebugData::constructType(Type *type) {
         llvm::dwarf::DW_TAG_structure_type,
         name,
         defInfo.maybeScope(),
-        defInfo.file(),
-        defInfo.line(),
+        defInfo.maybeFile(),
+        defInfo.maybeLine(),
         RuntimeLang,
         typeSize,
         typeAlign
@@ -1162,146 +1188,194 @@ llvm::DIType* DebugData::getType(Type *type) {
   return nullptr;
 }
 
-llvm::DIFile* DebugData::constructFile(ModuleSymbol* modSym, const char *fpath) {
+llvm::DIFile* DebugData::constructFile(llvm::DIBuilder* DIB, const char* fpath) {
   // Create strings for the directory and file.
   const char* last_slash;
   const char* file;
   const char* directory;
 
   last_slash = strrchr(fpath, '/');
-  if( last_slash ) {
+  if (last_slash) {
     file = astr(last_slash+1);
     directory = asubstr(fpath, last_slash);
-  }
-  else {
+  } else {
     file = fpath;
-    directory = astr(current_dir);
+    // assume current directory
+    directory = astr("./");
   }
 
-  return modSym->llvmDIBuilder->createFile(file, directory);
+  return DIB->createFile(file, directory);
 }
 
-llvm::DIFile* DebugData::getFile(ModuleSymbol* modSym, const char *fpath) {
-  // First, check to see if it's already a in our hashtable.
-  if( this->filesByName.count(fpath) > 0 ) {
-    return this->filesByName[fpath];
+llvm::DIFile* DebugData::getFile(llvm::DIBuilder* DIB, const char* fpath) {
+  // check to see if it's already in our hashtable.
+  if (auto it = this->filesByName.find(fpath); it != this->filesByName.end()) {
+    return it->second;
   }
 
   // Otherwise, construct the type, add it to the map,and return it
-  llvm::DIFile* dif = constructFile(modSym, fpath);
+  llvm::DIFile* dif = constructFile(DIB, fpath);
   this->filesByName[fpath] = dif;
   return dif;
 }
 
-llvm::DINamespace* DebugData::constructModuleScope(ModuleSymbol* modSym)
-{
-  const char* fname = modSym->fname();
-  llvm::DIFile* file = getFile(modSym, fname);
-  return modSym->llvmDIBuilder->createNameSpace(file, /* Scope */
-                                         modSym->name, /* Name */
-                                         false /* ExportSymbols */
-                                        );
+llvm::DINamespace* DebugData::constructModuleScope(ModuleSymbol* modSym) {
+  auto DIB = modSym->llvmDIBuilder;
+  llvm::DIFile* file = getFile(DIB, modSym->fname());
+  return DIB->createNameSpace(file, modSym->name, false /* ExportSymbols */);
 }
 
-llvm::DINamespace* DebugData::getModuleScope(ModuleSymbol* modSym)
-{
-  if( nullptr == modSym->llvmDINameSpace ) {
+llvm::DINamespace* DebugData::getModuleScope(ModuleSymbol* modSym) {
+  if (!modSym->llvmDINameSpace) {
     modSym->llvmDINameSpace = constructModuleScope(modSym);
   }
   return llvm::cast_or_null<llvm::DINamespace>(modSym->llvmDINameSpace);
 }
 
-llvm::DISubroutineType* DebugData::getFunctionType(FnSymbol *function)
-{
-  ModuleSymbol* modSym = function->getModule();
+llvm::DISubroutineType* DebugData::getFunctionType(FnSymbol *function) {
+  auto DIB = function->getModule()->llvmDIBuilder;
   llvm::SmallVector<llvm::Metadata *,16> ret_arg_types;
 
-  ret_arg_types.push_back(getType(function->retType));
+  auto isMethod = isMethodSym(function);
+  auto isReturnByRef = function->hasFlag(FLAG_FN_RETARG);
+
+  auto retType = isReturnByRef ? nullptr : getType(function->retType);
+
   for_formals(arg, function) {
-    ret_arg_types.push_back(getType(arg->type));
+    // skip _ln and _fn
+    if (arg->name == astr__ln || arg->name == astr__fn)
+      continue;
+
+    if (isReturnByRef && arg->hasFlag(FLAG_RETARG)) {
+      retType = getType(arg->type->getValType());
+      continue;
+    }
+    auto ty = getType(arg->type);
+    if (isMethod && arg->name == astrThis) {
+      auto NewTy = ty->cloneWithFlags(ty->getFlags() |
+                                      llvm::DINode::FlagObjectPointer |
+                                      llvm::DINode::FlagArtificial);
+      ty = llvm::MDNode::replaceWithDistinct(std::move(NewTy));
+    }
+    ret_arg_types.push_back(ty);
   }
-  llvm::DITypeRefArray ret_arg_arr = modSym->llvmDIBuilder->getOrCreateTypeArray(ret_arg_types);
-  return modSym->llvmDIBuilder->createSubroutineType(ret_arg_arr);
+  // return type goes first
+  ret_arg_types.insert(ret_arg_types.begin(), retType);
+  llvm::DITypeRefArray ret_arg_arr = DIB->getOrCreateTypeArray(ret_arg_types);
+  return DIB->createSubroutineType(ret_arg_arr);
 }
 
-llvm::DISubprogram* DebugData::constructFunction(FnSymbol *function)
-{
+llvm::DISubprogram* DebugData::constructFunction(FnSymbol* function) {
   const char *name = function->name;
   const char *cname = function->cname;
   ModuleSymbol* modSym = (ModuleSymbol*) function->defPoint->parentSymbol;
-  DefinitionInfo defInfo(this, modSym, function->astloc.filename(), function->astloc.lineno());
-  // Get the function using the cname since that is how it is
-  // stored in the generated code. The name is just used within Chapel.
+  auto DIB = modSym->llvmDIBuilder;
+
+  bool isMethod = isMethodSym(function);
+  auto methodReceiverType = function->getReceiverType();
+  Symbol* scopeSym = isMethod ?
+                      methodReceiverType->symbol :
+                      (Symbol*)modSym;
+  llvm::DIScope* diScope = nullptr;
+  if (isMethod) {
+    auto scopeTy = getType(methodReceiverType);
+    diScope = std::get<0>(removePointersAndQualifiers(scopeTy));
+    if (scopeTy && !diScope) {
+      // couldn't find a base type, this can happen with something like c_ptr(void)
+      // for now, just use the ptr type itself
+      diScope = scopeTy;
+    }
+  } else {
+    diScope = getModuleScope(modSym);
+  }
+  DefinitionInfo defInfo(diScope,
+                         getFile(DIB, function->fname()),
+                         function->linenum());
+  defInfo.sym_ = scopeSym;
 
   llvm::DISubroutineType* function_type = getFunctionType(function);
 
-  llvm::DISubprogram::DISPFlags SPFlags = llvm::DISubprogram::SPFlagDefinition;
+  llvm::DISubprogram::DISPFlags SPFlags = llvm::DISubprogram::SPFlagZero;
   if (!function->hasFlag(FLAG_EXPORT))
     SPFlags |= llvm::DISubprogram::SPFlagLocalToUnit;
   if (optimized)
     SPFlags |= llvm::DISubprogram::SPFlagOptimized;
 
-  llvm::DISubprogram* ret = modSym->llvmDIBuilder->createFunction(
+  // TODO: add handling for TParams (template parameters) to encode generics
+  // TODO: add handling for ThrownTypes
+  llvm::DISubprogram* Decl = nullptr;
+  if (isMethod) {
+    // TODO: special handling for virtual methods
+    auto diReceiverType = (llvm::DIType*)diScope;
+    Decl = DIB->createMethod(
+      defInfo.scope(),
+      name,
+      cname,
+      defInfo.file(), defInfo.line(),
+      function_type,
+      -1, /* VTableIndex */
+      0, /* ThisAdjustment */
+      diReceiverType,
+      llvm::DINode::FlagZero,
+      SPFlags
+    );
+  }
+  auto ret = DIB->createFunction(
     defInfo.maybeScope(),
     name,
     cname,
-    defInfo.file(), defInfo.line(), function_type,
-    defInfo.line(), /* beginning of scope we start */
+    defInfo.maybeFile(), defInfo.maybeLine(), function_type,
+    defInfo.maybeLine(), /* beginning of scope we start */
     llvm::DINode::FlagZero,
-    SPFlags
-    );
+    SPFlags | llvm::DISubprogram::SPFlagDefinition,
+    nullptr /* TParams */,
+    Decl
+  );
   return ret;
 }
 
-llvm::DISubprogram* DebugData::getFunction(FnSymbol *function)
-{
-  if( nullptr == function->llvmDISubprogram ) {
+llvm::DISubprogram* DebugData::getFunction(FnSymbol* function) {
+  if (!function->llvmDISubprogram) {
     function->llvmDISubprogram = constructFunction(function);
   }
   return llvm::cast_or_null<llvm::DISubprogram>(function->llvmDISubprogram);
 }
 
 
-llvm::DIGlobalVariableExpression* DebugData::constructGlobalVariable(VarSymbol *gVarSym)
-{
+llvm::DIGlobalVariableExpression* DebugData::constructGlobalVariable(VarSymbol* gVarSym) {
   const char *name = gVarSym->name;
   const char *cname = gVarSym->cname;
 
   DefinitionInfo defInfo(this, gVarSym);
   ModuleSymbol* modSym = gVarSym->getModule();
-  defInfo.scope_ = modSym->llvmDICompileUnit;
-  auto dibuilder = modSym->llvmDIBuilder;
+  defInfo.scope_ = getModuleScope(modSym);
+  auto DIB = modSym->llvmDIBuilder;
 
   llvm::DIType* gVarSym_type = getType(gVarSym->type); // type is member of Symbol
-
-  if(gVarSym_type)
-    return dibuilder->createGlobalVariableExpression
-     (
-      defInfo.maybeScope(), /* Context */
-      name, /* name */
-      cname, /* linkage name */
-      defInfo.file(), /* File */
-      defInfo.line(), /* LineNo */
-      gVarSym_type, /* Ty */
-      !gVarSym->hasFlag(FLAG_EXPORT) /* is local to unit */
-     );
-  else {
-    //return an Empty dbg node if the symbol type is unresolved
-    return nullptr;
+  if (!gVarSym_type) {
+    gVarSym_type = DIB->createNullPtrType();
   }
+
+  return DIB->createGlobalVariableExpression(
+    defInfo.maybeScope(),
+    name,
+    cname,
+    defInfo.maybeFile(),
+    defInfo.maybeLine(),
+    gVarSym_type,
+    !gVarSym->hasFlag(FLAG_EXPORT)
+  );
 }
 
-llvm::DIGlobalVariableExpression* DebugData::getGlobalVariable(VarSymbol *gVarSym)
-{
-  if( nullptr == gVarSym->llvmDIGlobalVariable ) {
+llvm::DIGlobalVariableExpression* DebugData::getGlobalVariable(VarSymbol* gVarSym) {
+  if (!gVarSym->llvmDIGlobalVariable) {
     gVarSym->llvmDIGlobalVariable = constructGlobalVariable(gVarSym);
   }
   return llvm::cast_or_null<llvm::DIGlobalVariableExpression>(
               gVarSym->llvmDIGlobalVariable);
 }
 
-llvm::DIVariable* DebugData::constructVariable(VarSymbol *varSym)
-{
+llvm::DIVariable* DebugData::constructVariable(VarSymbol* varSym) {
   const char *name = varSym->name;
   FnSymbol *funcSym = varSym->defPoint->getFunction();
   ModuleSymbol* modSym = varSym->getModule();
@@ -1333,19 +1407,17 @@ llvm::DIVariable* DebugData::constructVariable(VarSymbol *varSym)
 
 }
 
-llvm::DIVariable* DebugData::getVariable(VarSymbol *varSym)
-{
-  if( nullptr == varSym->llvmDIVariable ){
+llvm::DIVariable* DebugData::getVariable(VarSymbol* varSym) {
+  if (!varSym->llvmDIVariable) {
     varSym->llvmDIVariable = constructVariable(varSym);
   }
   return llvm::cast_or_null<llvm::DIVariable>(varSym->llvmDIVariable);
 }
 
-llvm::DIVariable* DebugData::constructFormalArg(ArgSymbol *argSym, unsigned ArgNo)
-{
+llvm::DIVariable* DebugData::constructFormalArg(ArgSymbol *argSym, unsigned ArgNo) {
   const char *name = argSym->name;
   FnSymbol *funcSym = nullptr;
-  if(isFnSymbol(argSym->defPoint->parentSymbol))
+  if (isFnSymbol(argSym->defPoint->parentSymbol))
     funcSym = (FnSymbol*)argSym->defPoint->parentSymbol;
   else
     printf("Couldn't find the function parent of param: %s!\n",name);
@@ -1358,6 +1430,21 @@ llvm::DIVariable* DebugData::constructFormalArg(ArgSymbol *argSym, unsigned ArgN
   if (!argSym_type) {
     argSym_type = dibuilder->createNullPtrType();
   }
+  auto flags = llvm::DINode::FlagZero;
+
+  auto isMethod = isMethodSym(funcSym);
+  if (isMethod && argSym->name == astrThis) {
+    flags |= llvm::DINode::FlagObjectPointer | llvm::DINode::FlagArtificial;
+  }
+
+  if (argSym->name == astr__ln ||
+      argSym->name == astr__fn) {
+    return nullptr;
+  }
+  if (argSym->hasFlag(FLAG_RETARG)) {
+    return nullptr;
+  }
+
   auto diParameterVariable = dibuilder->createParameterVariable(
     defInfo.scope(),
     name,
@@ -1365,9 +1452,9 @@ llvm::DIVariable* DebugData::constructFormalArg(ArgSymbol *argSym, unsigned ArgN
     defInfo.file(),
     defInfo.line(),
     argSym_type,
-    true,/*AlwaysPreserve, won't be removed when optimized*/
-    llvm::DINode::FlagZero /*Flags*/
-    );
+    true, /*AlwaysPreserve, won't be removed when optimized*/
+    flags
+  );
   auto Storage = gGenInfo->lvt->getValue(argSym->cname);
   auto& ctx = gGenInfo->irBuilder->getContext();
   dibuilder->insertDeclare(Storage.val, diParameterVariable,
@@ -1377,9 +1464,8 @@ llvm::DIVariable* DebugData::constructFormalArg(ArgSymbol *argSym, unsigned ArgN
   return diParameterVariable;
 }
 
-llvm::DIVariable* DebugData::getFormalArg(ArgSymbol *argSym, unsigned int ArgNo)
-{
-  if( nullptr == argSym->llvmDIFormal ){
+llvm::DIVariable* DebugData::getFormalArg(ArgSymbol *argSym, unsigned int ArgNo) {
+  if (!argSym->llvmDIFormal) {
     argSym->llvmDIFormal = constructFormalArg(argSym, ArgNo);
   }
   return llvm::cast_or_null<llvm::DIVariable>(argSym->llvmDIFormal);

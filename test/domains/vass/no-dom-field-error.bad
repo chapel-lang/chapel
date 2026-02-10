@@ -1,1 +1,1 @@
-no-dom-field-error.chpl:5: error: unresolved call 'unmanaged GlobalArray.eltType'
+no-dom-field-error.chpl:7: error: unresolved call 'unmanaged GlobalArray.eltType'

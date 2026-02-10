@@ -35,14 +35,13 @@ Initializing Modules:
           RadixSortHelp
           Partitioning
            PartitioningUtility
-            BlockDist
-             ChapelUtil
-             CompressedSparseLayout
-              RangeChunk
             CopyAggregation
              AggregationPrimitives
+            RangeChunk
             Time
              ChapelHashtable
+            ChapelUtil
+            CompressedSparseLayout
            Random
             PCGRandomLib
            Collectives

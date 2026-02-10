@@ -18,7 +18,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(6)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
-  NULL
 ================================================================================
 ===================================myArrayInt===================================
 DW_TAG_variable

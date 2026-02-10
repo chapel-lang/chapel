@@ -10,6 +10,7 @@ proc main() {
   checkOutput('mason rm -h');
   checkOutput('mason build -h');
   checkOutput('mason run -h');
+  checkOutput('mason publish -h');
   checkOutput('mason search -h');
   checkOutput('mason env -h');
   checkOutput('mason clean -h');

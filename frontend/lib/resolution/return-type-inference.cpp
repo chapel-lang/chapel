@@ -207,18 +207,27 @@ const CompositeType* helpGetTypeForDecl(Context* context,
   const CompositeType* ret = nullptr;
 
   if (const Class* c = ad->toClass()) {
+    UniqueString name = c->name();
+
     const BasicClassType* parentClassType =
       processInheritanceExpressionsForAggregateQuery(context, ad,
                                                      substitutions,
                                                      poiScope).first;
 
     // All the parent expressions could've been interfaces, and we just
-    // inherit from object.
+    // inherit from object. Unless we are object itself.
     if (!parentClassType) {
-      parentClassType = BasicClassType::getRootClassType(context);
+      auto rootClass = BasicClassType::getRootClassType(context);
+      if (ad->id() != rootClass->id()) {
+        parentClassType = rootClass;
+      } else {
+        /* the object is '_object' in standard modules, but rename it to
+           RootClass. */
+        name = USTR("RootClass");
+      }
     }
 
-    if (!parentClassType->isObjectType() && !substitutions.empty()) {
+    if (parentClassType && !parentClassType->isRootClass() && !substitutions.empty()) {
       // recompute the parent class type with substitutions
       auto parentAst = parsing::idToAst(context, parentClassType->id());
       CHPL_ASSERT(parentAst);
@@ -238,7 +247,7 @@ const CompositeType* helpGetTypeForDecl(Context* context,
     // even if the filtered substitutions are empty. Keep that invariant
     // here, and set instantiatedFrom for this class because its parent
     // was instantiated.
-    if (parentClassType->instantiatedFrom() && !instantiatedFrom) {
+    if (parentClassType && parentClassType->instantiatedFrom() && !instantiatedFrom) {
       instantiatedFrom = initialTypeForTypeDecl(context, ad->id());
     }
 
@@ -256,7 +265,7 @@ const CompositeType* helpGetTypeForDecl(Context* context,
       }
     }
 
-    ret = BasicClassType::get(context, c->id(), c->name(),
+    ret = BasicClassType::get(context, c->id(), name,
                               parentClassType,
                               insnFromBct, std::move(filteredSubs));
 

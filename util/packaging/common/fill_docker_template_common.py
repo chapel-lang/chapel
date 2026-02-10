@@ -39,7 +39,7 @@ def common_substitutions(osname: str):
     """
 
     # generate_run_command_default_config must go last to ensure the package's
-    # default configuration is the chapel default configuration, which all the
+    # default configuration is the chapel default configuration, with all the
     # necessary tools.
     substitutions[
         "BUILD_DEFAULT"
@@ -54,6 +54,8 @@ WORKDIR /home/user/chapel-$CHAPEL_VERSION
 
     # build the minimal configuration
     # which is only the Chapel compiler and runtime
+    # still call generate_run_command_default_config to ensure
+    # the default config is the default configuration, just don't build tools
     substitutions[
         "BUILD_ONLY_COMPILER"
     ] = f"""
@@ -62,6 +64,7 @@ WORKDIR /home/user/chapel-$CHAPEL_VERSION
 {generate_run_command(gasnet_config, osname)}
 {generate_run_command(ofi_pmi2_config, osname)}
 {generate_run_command(gpu_cpu_config, osname)}
+{generate_run_command_default_config(osname, include_tools=False)}
     """
 
     substitutions[
@@ -203,7 +206,7 @@ def generate_configs(base_config: Dict[str, Union[str,List[str]]], osname: str) 
         configs.append(perm)
     return configs
 
-def generate_run_command_default_config(osname) -> str:
+def generate_run_command_default_config(osname, include_tools=True) -> str:
     """
     Generate a default configuration string for Chapel. This only has 1 runtime
     """
@@ -212,7 +215,10 @@ def generate_run_command_default_config(osname) -> str:
         if isinstance(value, list):
             value = value[0]
         config[key] = value
-    return generate_run_command(config, osname, build_cmd="nice make all chpldoc mason chplcheck chpl-language-server -j$PARALLEL")
+    build_cmd = "nice make all -j$PARALLEL"
+    if include_tools:
+        build_cmd = "nice make all chpldoc mason chplcheck chpl-language-server -j$PARALLEL"
+    return generate_run_command(config, osname, build_cmd=build_cmd)
 
 def generate_run_command(base_config: Dict[str, Union[str,List[str]]], osname: str, build_cmd="nice make all -j$PARALLEL") -> str:
     configs = generate_configs(base_config, osname)

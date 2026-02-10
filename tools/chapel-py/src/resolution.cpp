@@ -297,12 +297,19 @@ static inline ID parseAndGetSymbolIdFromTopLevelModule(Context* context,
                                                        const char* symName) {
   using namespace parsing;
   // make sure the module is parsed before we try to look up the symbol
-  if (!getToplevelModule(context, UniqueString::get(context, modName))) {
+  auto topLevelMod = getToplevelModule(context, UniqueString::get(context, modName));
+  if (!topLevelMod) {
     return ID();
   }
-  if (auto TestID = getSymbolIdFromTopLevelModule(context, modName, symName)) {
-    return TestID;
+
+  for (auto stmt : topLevelMod->stmts()) {
+    if (auto decl = stmt->toNamedDecl()) {
+      if (decl->name() == symName) {
+        return decl->id();
+      }
+    }
   }
+
   return ID();
 }
 

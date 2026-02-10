@@ -5,11 +5,10 @@ use MasonUtils;
 
 
 proc main() {
-  var args: list(string);
-  args.pushBack('publish');
   here.chdir('offlinePackage');
+
   try {
-    masonPublish(args);
+   masonPublish(["publish"]);
   } catch e: MasonError {
       writeln(e.message());
   } catch {

@@ -1,5 +1,7 @@
 :title: Mason Guide: *Manifest*
 
+.. _mason-manifest-file:
+
 The Manifest File
 =================
 
@@ -67,6 +69,21 @@ Mason understands specific fields in the TOML file, which are described below.
      distributed. Any of the licenses available at the
      `SPDX License List <https://spdx.org/licenses/>`_ can be used for
      Mason packages. The license field defaults to ``None``.
+
+    * ``copyrightYear``: An optional string indicating the copyright year
+      for the package.
+
+   * ``compopts``: Indicates default compile-time options to be used when
+     building the package. ``compopts`` can either be a single string or an
+     array of strings. If its a single string, ``mason`` will attempt to split
+     it into multiple options based on whitespace. If this is not desired, use
+     an array of strings.
+
+   * ``docopts``: Indicates default options to be passed to ``chpldoc`` when
+     generating documentation for the package. ``docopts`` can either be a single
+     string or an array of strings. If its a single string, ``mason`` will
+     attempt to split it into multiple options based on whitespace. If this is
+     not desired, use an array of strings.
 
    * ``tests``: A list of test files that are part of the package. These files
      will be run when a user executes `mason test`.

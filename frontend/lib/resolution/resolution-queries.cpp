@@ -1003,7 +1003,7 @@ typedSignatureTemplateForId(ResolutionContext* rc, ID id) {
 // uast node.  This comes up for TupleDecls.
 static void helpSetFieldTypes(const CompositeType* ct,
                               const AstNode* ast,
-                              ResolutionResultByPostorderID& r,
+                              const ResolutionResultByPostorderID& r,
                               bool initedInParent,
                               ResolvedFields& fields,
                               bool syntaxOnly) {
@@ -1041,7 +1041,8 @@ static void helpSetFieldTypes(const CompositeType* ct,
       auto fwdToSymbol = fwdTo->isVisibilityClause()
                              ? fwdTo->toVisibilityClause()->symbol()
                              : fwdTo;
-      fields.addForwarding(fwd->id(), r.byAst(fwdToSymbol).type());
+      auto type = syntaxOnly ? QualifiedType() : r.byAst(fwdToSymbol).type();
+      fields.addForwarding(fwd->id(), type);
     }
   }
 
@@ -1096,78 +1097,98 @@ const Type* initialTypeForInterface(Context* context, ID declId) {
   return initialTypeForInterfaceQuery(context, declId);
 }
 
+const ResolvedFieldResults&
+resolveFieldResults(ResolutionContext* rc,
+                    const CompositeType* ct,
+                    ID fieldId,
+                    DefaultsPolicy defaultsPolicy,
+                    bool syntaxOnly,
+                    bool fieldTypesOnly) {
+  CHPL_RESOLUTION_QUERY_BEGIN(resolveFieldResults, rc, ct, fieldId, defaultsPolicy, syntaxOnly, fieldTypesOnly);
+
+  ResolutionResultByPostorderID rr;
+  auto context = rc->context();
+
+  auto typeAst = parsing::idToAst(context, ct->id());
+  CHPL_ASSERT(typeAst && typeAst->isAggregateDecl());
+  auto ad = typeAst->toAggregateDecl();
+
+  // normalize ids in the case they are contained within another decl
+  // this is so we don't try to resolve the type of an individual element without
+  // the context of its container
+  // TODO: This could become a performance concern as it gets called for each
+  // element of a multiDecl and the way multiDecl elements are resolved involves
+  // resolving all of the elements of the multiDecl each time, resulting in
+  // quadratic time complexity.  We should consider a more efficient way to
+  // resolve elements of a multiDecl
+  auto stmtId = parsing::idToContainingMultiDeclId(context, fieldId);
+  auto fieldAst = parsing::idToAst(context, stmtId);
+  bool isInstantiated = ct->instantiatedFromCompositeType() != nullptr;
+
+  if (!syntaxOnly) {
+    // use nullptr for POI scope because POI is not considered
+    // when resolving the fields when constructing a type..
+    const PoiScope* poiScope = nullptr;
+    auto visitor = isInstantiated ?
+      Resolver::createForInstantiatedFieldStmt(context, ad, fieldAst, ct,
+                                               poiScope, rr,
+                                               defaultsPolicy,
+                                               fieldTypesOnly) :
+      Resolver::createForInitialFieldStmt(rc, ad, fieldAst,
+                                          ct, rr, defaultsPolicy,
+                                          fieldTypesOnly);
+
+    fieldAst->traverse(visitor);
+
+    if (!fieldTypesOnly) {
+      callInitDeinit(visitor);
+
+      // then, handle return intent overloads and maybe-const formals
+      adjustReturnIntentOverloadsAndMaybeConstRefs(visitor);
+    }
+  }
+
+  ResolvedFieldResults result(ct, fieldId, fieldAst, rr, syntaxOnly);
+
+  return CHPL_RESOLUTION_QUERY_END(result);
+}
+
 const ResolvedFields& resolveFieldDecl(ResolutionContext* rc,
                                        const CompositeType* ct,
                                        ID fieldId,
                                        DefaultsPolicy defaultsPolicy,
                                        bool syntaxOnly) {
   CHPL_RESOLUTION_QUERY_BEGIN(resolveFieldDecl, rc, ct, fieldId, defaultsPolicy, syntaxOnly);
-  auto context = rc->context();
 
   ResolvedFields result;
-  bool isObjectType = false;
+  bool isRootClass = false;
   if (auto bct = ct->toBasicClassType()) {
-    isObjectType = bct->isObjectType();
+    isRootClass = bct->isRootClass();
   }
 
-  if (isObjectType) {
+  if (isRootClass) {
     // no need to try to resolve the fields for the object type,
     // which doesn't have a real uAST ID.
 
   } else {
-    auto typeAst = parsing::idToAst(context, ct->id());
-    CHPL_ASSERT(typeAst && typeAst->isAggregateDecl());
-    auto ad = typeAst->toAggregateDecl();
+    auto& r = resolveFieldResults(rc, ct, fieldId, defaultsPolicy, syntaxOnly);
 
-    // normalize ids in the case they are contained within another decl
-    // this is so we don't try to resolve the type of an individual element without
-    // the context of its container
-    // TODO: This could become a performance concern as it gets called for each
-    // element of a multiDecl and the way multiDecl elements are resolved involves
-    // resolving all of the elements of the multiDecl each time, resulting in
-    // quadratic time complexity.  We should consider a more efficient way to
-    // resolve elements of a multiDecl
-    auto stmtId = parsing::idToContainingMultiDeclId(context, fieldId);
-    auto fieldAst = parsing::idToAst(context, stmtId);
-    CHPL_ASSERT(fieldAst);
-
-    if (ct->instantiatedFromCompositeType() == nullptr) {
-      // handle resolving a not-yet-instantiated type
-      ResolutionResultByPostorderID r;
-
-      if (!syntaxOnly) {
-        auto visitor =
-          Resolver::createForInitialFieldStmt(rc, ad, fieldAst,
-                                              ct, r, defaultsPolicy);
-
-        // resolve the field types and set them in 'result'
-        fieldAst->traverse(visitor);
-      }
-
-      helpSetFieldTypes(ct, fieldAst, r, /* initedInParent */ false, result, syntaxOnly);
-    } else {
-      // handle resolving an instantiated type
-      ResolutionResultByPostorderID r;
-
-      if (!syntaxOnly) {
-        // use nullptr for POI scope because POI is not considered
-        // when resolving the fields when constructing a type..
-        const PoiScope* poiScope = nullptr;
-        auto visitor =
-          Resolver::createForInstantiatedFieldStmt(context, ad, fieldAst, ct,
-                                                   poiScope, r,
-                                                   defaultsPolicy);
-
-        // resolve the field types and set them in 'result'
-        fieldAst->traverse(visitor);
-      }
-
-      helpSetFieldTypes(ct, fieldAst, r, /* initedInParent */ false, result, syntaxOnly);
-    }
+    // Invoke other query to eliminate duplicate error messages from the
+    // call to ``validateFieldGenericity``.
+    result = resolvedFieldsFromResults(rc, r);
   }
 
-  if (!syntaxOnly) result.validateFieldGenericity(context, ct);
+  return CHPL_RESOLUTION_QUERY_END(result);
+}
 
+const ResolvedFields&
+resolvedFieldsFromResults(ResolutionContext* rc,
+                         const ResolvedFieldResults& r) {
+  CHPL_RESOLUTION_QUERY_BEGIN(resolvedFieldsFromResults, rc, r);
+  ResolvedFields result;
+  helpSetFieldTypes(r.type(), r.fieldAst(), r.results(), /* initedInParent */ false,
+                    result, r.syntaxOnly());
+  if (!r.syntaxOnly()) result.validateFieldGenericity(rc->context(), r.type());
   return CHPL_RESOLUTION_QUERY_END(result);
 }
 
@@ -1193,11 +1214,11 @@ const ResolvedFields& fieldsForTypeDeclQuery(ResolutionContext* rc,
   CHPL_ASSERT(ct);
   result.setType(ct);
 
-  bool isObjectType = false;
+  bool isRootClass = false;
   if (auto bct = ct->toBasicClassType()) {
-    isObjectType = bct->isObjectType();
+    isRootClass = bct->isRootClass();
   }
-  if (isObjectType) {
+  if (isRootClass) {
     // no need to try to resolve the fields for the object type,
     // which doesn't have a real uAST ID.
     // for built-in types like Errors when we didn't parse the standard library
@@ -1294,11 +1315,11 @@ const ResolvedFields& resolveForwardingExprs(ResolutionContext* rc,
   CHPL_ASSERT(ct);
   result.setType(ct);
 
-  bool isObjectType = false;
+  bool isRootClass = false;
   if (auto bct = ct->toBasicClassType()) {
-    isObjectType = bct->isObjectType();
+    isRootClass = bct->isRootClass();
   }
-  if (isObjectType) {
+  if (isRootClass) {
     // no need to try to resolve the fields for the object type,
     // which doesn't have a real uAST ID.
     // for built-in types like Errors when we didn't parse the standard library
@@ -1619,6 +1640,10 @@ static Type::Genericity getFieldsGenericity(Context* context,
   Type::Genericity g = Type::CONCRETE;
 
   if (auto bct = ct->toBasicClassType()) {
+    // RootClass is concrete.
+    if (bct->parentClassType() == nullptr)
+      return Type::CONCRETE;
+
     g = getFieldsGenericity(context, bct->parentClassType(), ignore);
     CHPL_ASSERT(g != Type::MAYBE_GENERIC);
     if (g == Type::GENERIC)
@@ -3351,7 +3376,11 @@ resolveFunctionByInfoImpl(ResolutionContext* rc, const TypedFnSignature* sig,
                                   std::move(visitor.returnType),
                                   std::move(visitor.userDiagnostics),
                                   std::move(visitor.poiTraceToChild),
-                                  std::move(visitor.sigAndInfoToChildPtr)));
+                                  std::move(visitor.sigAndInfoToChildPtr),
+                                  // Performance: should this be heap-allocated
+                                  // in the event that the function is not an
+                                  // initializer?
+                                  visitor.getImplicitInits()));
   return ret;
 }
 
@@ -3961,7 +3990,7 @@ scopeResolveFunctionQueryBody(Context* context, ID id) {
                                         PoiInfo(),
                                         UniqueString(),
                                         QualifiedType(),
-                                        {}, {}, {}));
+                                        {}, {}, {}, {}));
   return result;
 }
 
@@ -7953,7 +7982,7 @@ const CompositeType* isNameOfField(Context* context,
   }
 
   if (auto bct = ct->toBasicClassType()) {
-    if (bct->isObjectType()) {
+    if (bct->isRootClass()) {
       return nullptr;
     }
   }
@@ -8197,7 +8226,7 @@ const Decl* findFieldByName(Context* context,
   if (ret == nullptr && ct != nullptr) {
     if (auto bct = ct->toBasicClassType()) {
       if (auto parent = bct->parentClassType()) {
-        if (parent->isObjectType() == false) {
+        if (parent->isRootClass() == false) {
           auto parentAD = parsing::idToAst(context, parent->id())->toAggregateDecl();
           ret = findFieldByName(context, parentAD, parent, name);
         }

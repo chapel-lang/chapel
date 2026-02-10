@@ -71,7 +71,7 @@ module MasonLogger {
 
     // TODO make all variadic
     proc info(s: string) {
-      if doInfo then Safe.writef(logWriter, addPrefix("%s"), s); ;
+      if doInfo then Safe.writef(logWriter, addPrefix("%s"), s);
     }
 
     proc infoln(s: string) {
@@ -87,7 +87,7 @@ module MasonLogger {
     }
 
     proc warnln(s: string) {
-      if doWarn then Safe.writeln(logWriter, addPrefix("%s"), s);
+      if doWarn then Safe.writeln(logWriter, addPrefix(s));
     }
 
     proc warnf(f: string, args...) {

@@ -50,7 +50,7 @@ def get(flag='host'):
                     platform_val = "linux64_32"
                 else:
                     platform_val = "linux64"
-            elif machine == 'aarch64' or machine == 'arm64':
+            elif machine in ['aarch64', 'arm64', 'riscv64']:
                 platform_val = "linux64"
             else:
                 platform_val = "linux32"

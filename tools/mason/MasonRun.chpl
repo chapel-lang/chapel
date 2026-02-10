@@ -72,13 +72,14 @@ proc masonRun(args: [] string) throws {
   runProjectBinary(show, release, execopts);
 }
 
-proc runProjectBinary(show: bool, release: bool, execopts: list(string)) throws {
+proc runProjectBinary(show: bool, release: bool,
+                      execopts: list(string)) throws {
 
   const cwd = here.cwd();
   const projectHome = getProjectHome(cwd);
   const toParse = open(projectHome + "/Mason.toml", ioMode.r);
   const tomlFile = parseToml(toParse);
-  const project = tomlFile["brick"]!["name"]!.s;
+  const project = tomlFile["brick.name"]!.s;
 
   // Find the Binary and execute
   if isDir(joinPath(projectHome, 'target')) {
@@ -130,7 +131,7 @@ proc runProjectBinary(show: bool, release: bool, execopts: list(string)) throws 
 
 
 /* Builds program before running. */
-private proc masonBuildRun(args: [?d] string) throws {
+private proc masonBuildRun(args: [] string) throws {
 
   var parser = new argumentParser(helpHandler=new MasonRunHelpHandler());
 

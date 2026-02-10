@@ -2,7 +2,7 @@ use CompressedSparseLayout;
 
 config const N=8;
 config type layoutType = DefaultDist;
-const layout = if layoutType == DefaultDist then new dmap(new unmanaged layoutType())
+const layout = if layoutType == DefaultDist then defaultDist
                                             else new layoutType();
 
 const ParentDom = {0..#N, 0..#N};

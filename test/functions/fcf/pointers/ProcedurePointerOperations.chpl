@@ -60,7 +60,56 @@ proc test1() {
   assert(!(nil == p4));
 }
 
+proc dupAndAssignTo(ref x) {
+  var dup: x.type = x;
+  x = dup;
+  assert(x == dup);
+}
+
+proc test2() {
+  writeln(getRoutineName());
+
+  type T = proc(): void;
+
+  var x1: T;                              // wide
+  var x2: chpl_toLocalProcType(T);        // local
+  var x3: chpl_toExternProcType(T);       // extern wide
+  var x4: chpl_toExternProcType(x2.type); // extern local
+
+  assert(x1 == nil);
+  dupAndAssignTo(x1);
+
+  assert(x2 == nil);
+  dupAndAssignTo(x2);
+
+  assert(x3 == nil);
+  dupAndAssignTo(x3);
+
+  assert(x4 == nil);
+  dupAndAssignTo(x4);
+
+  var y1 = foo;
+  var y2 = chpl_toLocalProc(y1);
+
+  assert(chpl_isWideProc(y1));
+  assert(chpl_isLocalProc(y2));
+  assert(chpl_isWideProc(y1.type));
+  assert(chpl_isLocalProc(y2.type));
+
+  assert(y1 != nil);
+  const y1c = y1;
+  dupAndAssignTo(y1);
+  assert(y1c == y1);
+
+  assert(y2 != nil);
+  const y2c = y2;
+  dupAndAssignTo(y2);
+  assert(y2c == y2);
+}
+
+
 proc main() {
   test0();
   test1();
+  test2();
 }
