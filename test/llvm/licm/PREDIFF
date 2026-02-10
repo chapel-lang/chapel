@@ -2,12 +2,6 @@
 TESTNAME=$1
 OUTFILE=$2
 
-# If the test failed to compile, fail
-HAS_COMPILE_ERROR=`grep "error:" $OUTFILE`
-if [ -n "$HAS_COMPILE_ERROR" ]; then
-  exit 0
-fi
-
 LL_FILE=$TESTNAME.ll
 if [ ! -f "$LL_FILE" ]; then
   echo "Expected LLVM IR file $LL_FILE not found!" >> $OUTFILE
@@ -17,18 +11,10 @@ LL_FILE_SIMPLIFIED=$TESTNAME.simple.ll
 
 LLVM_CONFIG=`${CHPL_HOME}/util/chplenv/chpl_llvm.py --llvm-config`
 BINDIR=`${LLVM_CONFIG} --bindir`
-FILECHECK="${BINDIR}/FileCheck"
-if command -v $FILECHECK >/dev/null; then
-  FILECHECK=`command -v $FILECHECK`
-else
-  PREFIX=`${LLVM_CONFIG} --prefix`
-  FILECHECK="${PREFIX}/libexec/llvm/FileCheck"
-fi
-
 OPT="${BINDIR}/opt"
+
 # run some passes to simplify the IR for easier checking
 $OPT -S -passes='mem2reg,simplifycfg' $LL_FILE -o $LL_FILE_SIMPLIFIED
-
-$FILECHECK --enable-var-scope --input-file $LL_FILE_SIMPLIFIED $TESTNAME.chpl 2> $OUTFILE.tmp
-cat $OUTFILE.tmp >> $OUTFILE
-rm $OUTFILE.tmp
+# run FileCheck
+$CHPL_HOME/test/llvm/RunFileCheck "$TESTNAME" "$LL_FILE_SIMPLIFIED" "--enable-var-scope"
+cat $LL_FILE_SIMPLIFIED >> $OUTFILE
