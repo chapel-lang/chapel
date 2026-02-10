@@ -43,15 +43,12 @@
    the Python type string and `wrap`/`unwrap`. */
 
 template <typename CppType>
-struct PythonReturnTypeInfo {
-  static constexpr bool supports_wrap = false;
-};
+struct PythonReturnTypeInfo {};
 
 /** This macro is used to help define template specializations for PythonReturnTypeInfo.
     It just hides some of the boilerplate. */
 #define T_DEFINE_INOUT_TYPE(TYPE, TYPESTR, WRAP, UNWRAP) \
   struct PythonReturnTypeInfo<TYPE> { \
-    static constexpr bool supports_wrap = true; \
     static std::string typeString() { return TYPESTR; } \
   \
     static PyObject* wrap(ContextObject* CONTEXT, const typename std::remove_const<TYPE>::type& TO_WRAP) { \
@@ -261,6 +258,11 @@ std::string nilableTypeString() {
     decision to define a Python conversion, causes infinite recursion
     and 'explicit specialization after instantiation' errors. Thus, manually
     list compatible types via `CanConvert` template specialization.
+
+    All, because error info tuples don't have many guarantees about
+    nullability, we treat all pointer types as nilable, which requires
+    a recursive transformation of the tuple to replace pointer types with their
+    nilable equivalents.
   */
 
 namespace detail {
@@ -270,20 +272,63 @@ using namespace chpl;
 template <typename T>
 struct CanConvert : std::false_type {};
 
-template <> struct CanConvert<const chpl::uast::AstNode*> : std::true_type {};
-template <> struct CanConvert<const chpl::types::Type*> : std::true_type {};
-template <> struct CanConvert<const chpl::types::Param*> : std::true_type {};
-template <> struct CanConvert<chpl::Location> : std::true_type {};
-template <> struct CanConvert<chpl::resolution::ApplicabilityResult> : std::true_type {};
-template <typename T> struct CanConvert<std::vector<T>> : CanConvert<T> {};
-template <typename T> struct CanConvert<std::set<T>> : CanConvert<T> {};
-template <typename T> struct CanConvert<std::optional<T>> : CanConvert<T> {};
+template <> struct CanConvert<const chpl::uast::AstNode*> : std::true_type {
+  // Most error message arguments (as AST nodes) can be null. Mark them
+  // as such so that they can be converted to Python (as None) even when null.
+  static auto transform(const chpl::uast::AstNode* node) {
+    return Nilable(node);
+  }
+};
+template <> struct CanConvert<const chpl::types::Type*> : std::true_type {
+  static auto transform(const chpl::types::Type* typ) { return Nilable(typ);}
+};
+template <> struct CanConvert<const chpl::types::Param*> : std::true_type {
+  static auto transform(const chpl::types::Param* param) { return Nilable(param); }
+};
+template <> struct CanConvert<chpl::Location> : std::true_type {
+  static auto transform(const chpl::Location& loc) { return loc; }
+};
+template <> struct CanConvert<chpl::resolution::ApplicabilityResult> : std::true_type {
+  static auto transform(const chpl::resolution::ApplicabilityResult& ar) { return ar; }
+};
+template <typename T> struct CanConvert<std::vector<T>> : CanConvert<T> {
+  static auto transform(const std::vector<T>& vec) {
+    std::vector<decltype(CanConvert<T>::transform(std::declval<T>()))> toReturn;
+    for (const auto& elem : vec) {
+      toReturn.push_back(CanConvert<T>::transform(elem));
+    }
+    return toReturn;
+  }
+};
+template <typename T> struct CanConvert<std::set<T>> : CanConvert<T> {
+  static auto transform(const std::set<T>& set) {
+    std::set<decltype(CanConvert<T>::transform(std::declval<T>()))> toReturn;
+    for (const auto& elem : set) {
+      toReturn.insert(CanConvert<T>::transform(elem));
+    }
+    return toReturn;
+  }
+};
+template <typename T> struct CanConvert<std::optional<T>> : CanConvert<T> {
+  static auto transform(const std::optional<T>& opt) {
+    if (opt) {
+      return CanConvert<T>::transform(*opt);
+    } else {
+      return std::optional<decltype(CanConvert<T>::transform(std::declval<T>()))>{};
+    }
+  }
+};
+#define GENERATED_TYPE(ROOT, ROOT_TYPE, NAME, TYPE, TAG, FLAGS) \
+  template <> struct CanConvert<const TYPE*> : std::true_type { \
+    static auto transform(const TYPE* val) { return Nilable(val); } \
+  };
+#include "generated-types-list.h"
 
 template <typename Tuple, size_t Idx>
 auto getOrReturnDummyAtIdx(const Tuple& tup) {
   using ElementType = std::decay_t<decltype(std::get<Idx>(tup))>;
   if constexpr (CanConvert<ElementType>::value) {
-    return std::get<Idx>(tup);
+    return CanConvert<ElementType>::transform(std::get<Idx>(tup));
   } else {
     return std::make_tuple();
   }
