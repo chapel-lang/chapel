@@ -320,7 +320,17 @@ struct ErrorInfoBundleImpl {};
 template <typename ErrorType>
 using ErrorInfoBundle = detail::ErrorInfoBundleImpl<ErrorType>;
 
-
+template <typename T>
+static T unwrapUnsupported() {
+  assert(false && "attempt to unwrap type from Python object that doesn't support unwrapping");
+  // there's no way for a user to trigger this issue if the implementation
+  // of chapel-py is correct. This is because "unwrapping" is always
+  // triggered when a chapel-py developer attempts to define a method in
+  // method-tables.h that accepts a Python argument of an unsupported type.
+  // If the developer doesn't do so, there's no way for this function to be
+  // called. Seems reasonable to exit.
+  exit(1);
+}
 
 /* Invoke the DEFINE_INOUT_TYPE macro for each type we want to support.
    New types should be added here. We might consider performing these invocations
@@ -356,7 +366,7 @@ T_DEFINE_INOUT_TYPE(std::tuple<Elems...>, tupleTypeString<Elems...>(), wrapTuple
 template <typename ElemType>
 T_DEFINE_INOUT_TYPE(TypedIterAdapterBase<ElemType>*, iteratorTypeString<ElemType>(), wrapIterAdapter(CONTEXT, TO_WRAP), (TypedIterAdapterBase<ElemType>*) ((AstIterObject*) TO_UNWRAP)->iterAdapter);
 template <typename ErrorType>
-T_DEFINE_INOUT_TYPE(ErrorInfoBundle<ErrorType>, ErrorInfoBundle<ErrorType>::typeString(), wrapTuple(CONTEXT, TO_WRAP.data), ErrorInfoBundle<ErrorType>{});
+T_DEFINE_INOUT_TYPE(ErrorInfoBundle<ErrorType>, ErrorInfoBundle<ErrorType>::typeString(), wrapTuple(CONTEXT, TO_WRAP.data), unwrapUnsupported<ErrorInfoBundle<ErrorType>>());
 
 #define GENERATED_TYPE(ROOT, ROOT_TYPE, NAME, TYPE, TAG, FLAGS) \
   DEFINE_INOUT_TYPE(const TYPE*, #NAME, wrapGeneratedType(CONTEXT, (ROOT_TYPE*) TO_WRAP), ((ROOT##Object*) TO_UNWRAP)->value_->to##NAME());
