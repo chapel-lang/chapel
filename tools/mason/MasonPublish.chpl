@@ -93,7 +93,7 @@ proc masonPublish(args: [] string) throws {
     if !isDir(pathReg + '/.git') {
       gitC(pathReg, 'git init -q');
       gitC(pathReg, 'git add .');
-      commitSubProcess(pathReg, ['git','commit', '-q', '-m',' "initialized registry"']);
+      gitC(pathReg, ['git','commit', '-q', '-m',' "initialized registry"']);
     }
     const absPathReg = Path.absPath(pathReg);
     writeln("Initialized local registry at %s".format(pathReg));
