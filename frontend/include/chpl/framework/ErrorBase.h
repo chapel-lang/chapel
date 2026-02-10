@@ -67,6 +67,12 @@ enum ErrorType {
 #undef DIAGNOSTIC_CLASS
 };
 
+/* Forward-declare subclasses of ErrorBase, so that we can use them in
+   ErrorBase::toBla() methods. */
+#define DIAGNOSTIC_CLASS(NAME, KIND, EINFO...) class Error##NAME;
+#include "chpl/framework/error-classes-list.h"
+#undef DIAGNOSTIC_CLASS
+
 /**
   Parent class for all errors in Dyno.
 
@@ -152,6 +158,17 @@ class ErrorBase {
   virtual void write(ErrorWriterBase& wr) const = 0;
   virtual void mark(Context* context) const = 0;
   virtual owned<ErrorBase> clone() const = 0;
+
+  #define DIAGNOSTIC_CLASS(NAME, KIND, EINFO...) \
+    bool is##NAME() const { return type_ == ErrorType::NAME; } \
+    const Error##NAME* to##NAME() const { \
+      return is##NAME() ? (const Error##NAME*)(this) : nullptr; \
+    } \
+    Error##NAME* to##NAME() { \
+      return is##NAME() ? (Error##NAME*)(this) : nullptr; \
+    }
+  #include "chpl/framework/error-classes-list.h"
+  #undef DIAGNOSTIC_CLASS
 };
 
 /* Converts a given ErrorType to its corresponding ErrorBase::Kind */
