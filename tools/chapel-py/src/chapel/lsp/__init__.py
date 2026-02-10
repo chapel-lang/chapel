@@ -27,6 +27,7 @@ and the Language Server Protocol.
 """
 
 from lsprotocol.types import Position, Range, Diagnostic, DiagnosticSeverity
+import chapel
 
 
 def location_to_range(location) -> Range:
@@ -61,8 +62,30 @@ def error_to_diagnostic(error) -> Diagnostic:
         )
     else:
         message = "{}: {}".format(error.kind().capitalize(), error.message())
+
+    location = error.location()
+    if isinstance(error, chapel.NoMatchingCandidates):
+        (call, _, appress, _) = error.info()
+
+        # Check if all candidates were rejected due to a particular candidate.
+        # In that case, highlight the specific candidate as the location of the error.
+        actuals_set = set()
+        for appres in appress:
+            idx = appres.actual_idx()
+            if appres.candidate_failure_reason() != "FAIL_CANNOT_PASS":
+                idx = -1
+            actuals_set.add(idx)
+
+        if len(actuals_set) == 1 and -1 not in actuals_set and isinstance(call, chapel.FnCall):
+            # All candidates were rejected due to the same candidate, so highlight that candidate.
+            location = call.actual(actuals_set.pop()).location()
+            assert type_ is not None
+            message = "{}: [{}]: this actual could not be passed to a corresponding formal".format(
+                error.kind().capitalize(), type_
+            )
+
     diagnostic = Diagnostic(
-        range=location_to_range(error.location()),
+        range=location_to_range(location),
         message=message,
         severity=kind_to_severity[error.kind()],
     )
