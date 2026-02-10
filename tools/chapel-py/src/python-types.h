@@ -350,6 +350,7 @@ DEFINE_INOUT_TYPE(chpl::Location, "Location", (PyObject*) LocationObject::create
 DEFINE_INOUT_TYPE(IterAdapterBase*, "typing.Iterator[AstNode]", wrapIterAdapter(CONTEXT, TO_WRAP), ((AstIterObject*) TO_UNWRAP)->iterAdapter);
 DEFINE_INOUT_TYPE(PyObject*, "typing.Any", TO_WRAP, TO_UNWRAP);
 DEFINE_INOUT_TYPE(const chpl::resolution::Scope*, "Scope", (PyObject*) ScopeObject::create(CONTEXT, TO_WRAP), ((ScopeObject*) TO_UNWRAP)->value_);
+DEFINE_INOUT_TYPE(chpl::resolution::ApplicabilityResult, "ApplicabilityResult", (PyObject*) ApplicabilityResultObject::create(CONTEXT, TO_WRAP), ((ApplicabilityResultObject*) TO_UNWRAP)->value_);
 
 template <typename T>
 T_DEFINE_INOUT_TYPE(T*, T::Name, (PyObject*) TO_WRAP, (T*) TO_UNWRAP);

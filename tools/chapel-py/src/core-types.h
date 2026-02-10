@@ -242,6 +242,12 @@ struct TypedSignatureObject : public PythonClassWithContext<TypedSignatureObject
   }
 };
 
+struct ApplicabilityResultObject : public PythonClassWithContext<ApplicabilityResultObject, chpl::resolution::ApplicabilityResult> {
+  static constexpr const char* QualifiedName = "chapel.ApplicabilityResult";
+  static constexpr const char* Name = "ApplicabilityResult";
+  static constexpr const char* DocStr = "The result of checking whether a particular function candidate is applicable to a call.";
+};
+
 template<typename IntentType>
 const char* intentToString(IntentType intent) {
   return qualifierToString(chpl::uast::Qualifier(int(intent)));

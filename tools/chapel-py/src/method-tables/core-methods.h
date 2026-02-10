@@ -200,3 +200,6 @@ CLASS_BEGIN(TypedSignature)
   PLAIN_GETTER(TypedSignature, ast, "Get the AST from which this function signature is computed",
                Nilable<const chpl::uast::AstNode*>, return chpl::parsing::idToAst(context, node->signature->id()))
 CLASS_END(TypedSignature)
+
+CLASS_BEGIN(ApplicabilityResult)
+CLASS_END(ApplicabilityResult)
