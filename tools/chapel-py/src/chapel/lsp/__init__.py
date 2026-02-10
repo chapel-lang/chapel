@@ -83,6 +83,10 @@ def error_to_diagnostic(error) -> Diagnostic:
             message = "{}: [{}]: this actual could not be passed to a corresponding formal".format(
                 error.kind().capitalize(), type_
             )
+    elif isinstance(error, chapel.AsWithUseExcept):
+        (_, as_) = error.info()
+        if as_ is not None:
+            location = as_.location()
 
     diagnostic = Diagnostic(
         range=location_to_range(location),
