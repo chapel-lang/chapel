@@ -274,6 +274,10 @@ template <> struct CanConvert<const chpl::uast::AstNode*> : std::true_type {};
 template <> struct CanConvert<const chpl::types::Type*> : std::true_type {};
 template <> struct CanConvert<const chpl::types::Param*> : std::true_type {};
 template <> struct CanConvert<chpl::Location> : std::true_type {};
+template <> struct CanConvert<chpl::resolution::ApplicabilityResult> : std::true_type {};
+template <typename T> struct CanConvert<std::vector<T>> : CanConvert<T> {};
+template <typename T> struct CanConvert<std::set<T>> : CanConvert<T> {};
+template <typename T> struct CanConvert<std::optional<T>> : CanConvert<T> {};
 
 template <typename Tuple, size_t Idx>
 auto getOrReturnDummyAtIdx(const Tuple& tup) {
