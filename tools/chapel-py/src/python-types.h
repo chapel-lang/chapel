@@ -206,6 +206,16 @@ std::string tupleTypeString() {
 }
 
 template <typename T>
+struct TupleTypeStringify {};
+
+template <typename ... Ts>
+struct TupleTypeStringify<std::tuple<Ts...>> {
+  static std::string typeString() {
+    return tupleTypeString<Ts...>();
+  }
+};
+
+template <typename T>
 std::string iteratorTypeString() {
   return std::string("typing.Iterator[") + PythonReturnTypeInfo<T>::typeString() + "]";
 }
@@ -232,6 +242,78 @@ template <typename T>
 std::string nilableTypeString() {
   return std::string("typing.Optional[") + PythonReturnTypeInfo<T>::typeString() + "]";
 }
+
+/** Different error types have different arguments in their '->info()' tuple,
+    not all of which can be converetd to Python. Also, the C preprocessor
+    doesn't allow us to use commas in macro arguments, so we can't just write
+    std::tuple<EINFO> to get a tuple of an error's info. Instead, use template
+    specialization here to define a ErrorInfoBundle with a ::FilteredType
+    that only includes the types from the error info that can be converted to
+    Python.
+
+    To try to decide if a type is convertable to Python, and then use that
+    decision to define a Python conversion, causes infinite recursion
+    and 'explicit specialization after instantiation' errors. Thus, manually
+    list compatible types.
+  */
+
+namespace detail {
+
+using namespace chpl;
+
+template <typename T>
+struct CanConvert : std::false_type {};
+
+template <> struct CanConvert<const chpl::uast::AstNode*> : std::true_type {};
+template <> struct CanConvert<const chpl::types::Type*> : std::true_type {};
+template <> struct CanConvert<const chpl::types::Param*> : std::true_type {};
+template <> struct CanConvert<chpl::Location> : std::true_type {};
+
+template<typename T, typename Tuple>
+struct PrependElement;
+
+template<typename T, typename... Ts>
+struct PrependElement<T, std::tuple<Ts...>> {
+    using Type = std::tuple<T, Ts...>;
+};
+
+template <typename ... Ts>
+struct FilterAllowed;
+
+template <>
+struct FilterAllowed<> {
+  using Type = std::tuple<>;
+};
+
+template <typename T, typename ... Ts>
+struct FilterAllowed<T, Ts...> {
+  using Type = std::conditional_t<
+    CanConvert<T>::value,
+    typename PrependElement<T, typename FilterAllowed<Ts...>::Type>::Type,
+    typename FilterAllowed<Ts...>::Type
+  >;
+};
+
+template <typename ErrorType>
+struct ErrorInfoBundle {};
+
+#define DIAGNOSTIC_CLASS(NAME, KIND, EINFO...) \
+  template <> \
+  struct ErrorInfoBundle<chpl::Error##NAME> { \
+    using FilteredType = typename FilterAllowed<EINFO>::Type; \
+\
+    static std::string typeString() { \
+      return TupleTypeStringify<FilteredType>::typeString(); \
+    } \
+  };
+#include "chpl/framework/error-classes-list.h"
+#undef DIAGNOSTIC_CLASS
+
+} // end namespace detail
+
+template <typename ErrorType>
+using ErrorInfoBundleT = detail::ErrorInfoBundle<ErrorType>;
+
 
 
 /* Invoke the DEFINE_INOUT_TYPE macro for each type we want to support.
@@ -267,6 +349,8 @@ template <typename ... Elems>
 T_DEFINE_INOUT_TYPE(std::tuple<Elems...>, tupleTypeString<Elems...>(), wrapTuple(CONTEXT, TO_WRAP), unwrapTuple<Elems...>(CONTEXT, TO_UNWRAP));
 template <typename ElemType>
 T_DEFINE_INOUT_TYPE(TypedIterAdapterBase<ElemType>*, iteratorTypeString<ElemType>(), wrapIterAdapter(CONTEXT, TO_WRAP), (TypedIterAdapterBase<ElemType>*) ((AstIterObject*) TO_UNWRAP)->iterAdapter);
+template <typename ErrorType>
+T_DEFINE_INOUT_TYPE(ErrorInfoBundleT<ErrorType>, ErrorInfoBundleT<ErrorType>::typeString(), nullptr, ErrorInfoBundleT<ErrorType>{});
 
 #define GENERATED_TYPE(ROOT, ROOT_TYPE, NAME, TYPE, TAG, FLAGS) \
   DEFINE_INOUT_TYPE(const TYPE*, #NAME, wrapGeneratedType(CONTEXT, (ROOT_TYPE*) TO_WRAP), ((ROOT##Object*) TO_UNWRAP)->value_->to##NAME());

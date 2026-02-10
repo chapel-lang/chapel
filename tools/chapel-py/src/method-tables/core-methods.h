@@ -135,53 +135,6 @@ CLASS_BEGIN(Scope)
                return toReturn)
 CLASS_END(Scope)
 
-CLASS_BEGIN(Error)
-  PLAIN_GETTER(Error, code_snippets, "Get the locations of code snippets printed by this error",
-               std::vector<chpl::ErrorCodeSnippet>,
-
-               CompatibilityWriter writer(context);
-               (*node)->write(writer);
-               return writer.codeSnippets())
-  PLAIN_GETTER(Error, location, "Get the location at which this error occurred",
-               chpl::Location, return (*node)->location(context))
-  PLAIN_GETTER(Error, message, "Retrieve the contents of this error message",
-               std::string, return (*node)->message())
-  PLAIN_GETTER(Error, notes, "Get the locations and text of additional notes printed by this error",
-               std::vector<LocationAndNote>,
-
-               std::vector<LocationAndNote> toReturn;
-               CompatibilityWriter writer(context);
-               (*node)->write(writer);
-               for (auto& note : writer.notes()) {
-                 toReturn.push_back(std::make_tuple(std::get<0>(note).computeLocation(context),
-                                                    std::get<1>(note)));
-               }
-               return toReturn)
-  PLAIN_GETTER(Error, kind, "Retrieve the kind ('error', 'warning') of this type of error",
-               const char*, return chpl::ErrorBase::getKindName((*node)->kind()))
-  PLAIN_GETTER(Error, type, "Retrieve the unique name of this type of error",
-               std::optional<const char*>,
-               const char* name = chpl::ErrorBase::getTypeName((*node)->type());
-               return name ? std::optional(name) : std::nullopt;
-               )
-CLASS_END(Error)
-
-CLASS_BEGIN(ErrorManager)
-  PLAIN_GETTER(ErrorManager, __enter__, "The context manager 'enter' method for this ErrorManager object",
-               PyObject*,
-
-               std::ignore = node;
-               auto list = ((PythonErrorHandler*) context->errorHandler())->pushList();
-               Py_INCREF(list);
-               return list)
-
-  METHOD(ErrorManager, __exit__, "The context manager 'enter' method for this ErrorManager object",
-         void(PyObject*, PyObject*, PyObject*),
-
-         std::ignore = node;
-         ((PythonErrorHandler*) context->errorHandler())->popList())
-CLASS_END(ErrorManager)
-
 CLASS_BEGIN(ResolvedExpression)
   PLAIN_GETTER(ResolvedExpression, most_specific_candidate, "If this node is a call, return the most specific overload selected by call resolution.",
                std::optional<MostSpecificCandidateObject*>,

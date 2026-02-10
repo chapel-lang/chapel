@@ -398,7 +398,7 @@ PyObject* wrapGeneratedType(ContextObject* context, const chpl::ErrorBase* node)
   }
   PyObject* args = Py_BuildValue("(O)", (PyObject*) context);
   switch (node->type()) {
-#define DIAGNOSTIC_CLASS(NAME, ERROR, EINFO...) \
+#define DIAGNOSTIC_CLASS(NAME, KIND, EINFO...) \
     case chpl::ErrorType::NAME: \
       toReturn = PyObject_CallObject((PyObject*) NAME##Type, args); \
       ((NAME##Object*) toReturn)->parent.value_ = node->clone(); \

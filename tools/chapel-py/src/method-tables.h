@@ -79,6 +79,7 @@
 #include "method-tables/param-methods.h"
 #include "method-tables/type-methods.h"
 #include "method-tables/uast-methods.h"
+#include "method-tables/error-methods.h"
 
 //
 // Cleanup and undefine all macros
