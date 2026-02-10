@@ -1287,6 +1287,48 @@ void CandidatesAndForwardingInfo::stringify(
   }
 }
 
+const char* candidateFailureReasonToString(CandidateFailureReason reason) {
+  switch(reason) {
+    case FAIL_ERRORS_THROWN: return "FAIL_ERRORS_THROWN";
+    case FAIL_NO_DEFAULT_VALUE_FOR_GENERIC_FIELD: return "FAIL_NO_DEFAULT_VALUE_FOR_GENERIC_FIELD";
+    case FAIL_VARARG_MISMATCH: return "FAIL_VARARG_MISMATCH";
+    case FAIL_INTERFACE_NOT_TYPE_INTENT: return "FAIL_INTERFACE_NOT_TYPE_INTENT";
+    case FAIL_WHERE_CLAUSE: return "FAIL_WHERE_CLAUSE";
+    case FAIL_CANNOT_PASS: return "FAIL_CANNOT_PASS";
+    case FAIL_NO_TYPE_CONSTRUCTOR: return "FAIL_NO_TYPE_CONSTRUCTOR";
+    case FAIL_FORMAL_ACTUAL_MISMATCH: return "FAIL_FORMAL_ACTUAL_MISMATCH";
+    case FAIL_FORMAL_ACTUAL_MISMATCH_ITERATOR_API: return "FAIL_FORMAL_ACTUAL_MISMATCH_ITERATOR_API";
+    case FAIL_PARENLESS_MISMATCH: return "FAIL_PARENLESS_MISMATCH";
+    case FAIL_CANDIDATE_OTHER: return "FAIL_CANDIDATE_OTHER";
+  }
+  CHPL_ASSERT(false && "missing case for candidate failure reason");
+  return "<unknown reason>";
+}
+
+const char* passingFailureReasonToString(PassingFailureReason reason) {
+  switch (reason) {
+    case FAIL_INCOMPATIBLE_NILABILITY: return "FAIL_INCOMPATIBLE_NILABILITY";
+    case FAIL_INCOMPATIBLE_MGMT: return "FAIL_INCOMPATIBLE_MGMT";
+    case FAIL_INCOMPATIBLE_MGR: return "FAIL_INCOMPATIBLE_MGR";
+    case FAIL_EXPECTED_SUBTYPE: return "FAIL_EXPECTED_SUBTYPE";
+    case FAIL_INCOMPATIBLE_TUPLE_SIZE: return "FAIL_INCOMPATIBLE_TUPLE_SIZE";
+    case FAIL_INCOMPATIBLE_TUPLE_STAR: return "FAIL_INCOMPATIBLE_TUPLE_STAR";
+    case FAIL_CANNOT_CONVERT: return "FAIL_CANNOT_CONVERT";
+    case FAIL_CANNOT_INSTANTIATE: return "FAIL_CANNOT_INSTANTIATE";
+    case FAIL_DID_NOT_INSTANTIATE: return "FAIL_DID_NOT_INSTANTIATE";
+    case FAIL_TYPE_VS_NONTYPE: return "FAIL_TYPE_VS_NONTYPE";
+    case FAIL_NOT_PARAM: return "FAIL_NOT_PARAM";
+    case FAIL_MISMATCHED_PARAM: return "FAIL_MISMATCHED_PARAM";
+    case FAIL_UNKNOWN_ACTUAL_TYPE: return "FAIL_UNKNOWN_ACTUAL_TYPE";
+    case FAIL_UNKNOWN_FORMAL_TYPE: return "FAIL_UNKNOWN_FORMAL_TYPE";
+    case FAIL_GENERIC_TO_NONTYPE: return "FAIL_GENERIC_TO_NONTYPE";
+    case FAIL_NOT_EXACT_MATCH: return "FAIL_NOT_EXACT_MATCH";
+    case FAIL_VARARG_TQ_MISMATCH: return "FAIL_VARARG_TQ_MISMATCH";
+    case FAIL_FORMAL_OTHER: return "FAIL_FORMAL_OTHER";
+  }
+  CHPL_ASSERT(false && "missing case for passing failure reason");
+  return "<unknown reason>";
+}
 
 // Note (Daniel): the code for 'overloaded' below comes from cppreference:
 //   https://en.cppreference.com/w/cpp/utility/variant/visit2
