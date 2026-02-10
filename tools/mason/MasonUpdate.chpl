@@ -72,7 +72,11 @@ proc masonUpdate(args: [] string) {
 
 /* Finds a Mason.toml file and updates the Mason.lock
    generating one if it doesnt exist */
-proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock", show=true, force=false) throws {
+proc updateLock(skipUpdate: bool,
+                tf="Mason.toml",
+                lf="Mason.lock",
+                show=true,
+                force=false) throws {
   const cwd = here.cwd();
   const projectHome = getProjectHome(cwd, tf);
   const tomlPath = projectHome + "/" + Path.relPath(tf);
