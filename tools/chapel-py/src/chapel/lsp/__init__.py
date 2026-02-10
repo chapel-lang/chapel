@@ -87,6 +87,18 @@ def error_to_diagnostic(error) -> Diagnostic:
         (_, as_) = error.info()
         if as_ is not None:
             location = as_.location()
+    elif isinstance(error, chapel.TertiaryUseImportUnstable):
+        node = error.info()[1]
+        if node is not None:
+            location = node.location()
+    elif isinstance(error, chapel.TupleExpansionNamedArgs):
+        (tup, _) = error.info()
+        if tup is not None:
+            location = tup.location()
+    elif isinstance(error, chapel.TupleExpansionNonTuple):
+        (_, tup, _) = error.info()
+        if tup is not None:
+            location = tup.location()
 
     diagnostic = Diagnostic(
         range=location_to_range(location),
