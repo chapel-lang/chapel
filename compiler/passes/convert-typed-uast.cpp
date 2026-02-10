@@ -5951,29 +5951,28 @@ Expr* TConverter::convertParenlessCallOrNull(const AstNode* node, RV& rv) {
   }
 
   auto calledFn = findOrConvertFunction(rf);
-  Expr* ret = nullptr;
+  CallExpr* ret = nullptr;
+
 
   if (sig->isMethod()) {
-    if (node->isIdentifier()) {
-      ret = new CallExpr(calledFn, codegenImplicitThis(rv));
-    } else {
-      auto [recvAst, fieldName] = accessExpressionDetails(node);
-      std::ignore = fieldName;
-      auto thisType = rf->signature()->formalType(0);
-      if (!thisType.isType()) {
-        types::QualifiedType qtRecv;
-        auto recv = recvAst ? convertExpr(recvAst, rv, &qtRecv) : nullptr;
-        ret = new CallExpr(calledFn, storeInTempIfNeeded(recv, qtRecv));
-      } else {
-        ret = new CallExpr(calledFn);
-      }
+    ret = new CallExpr(calledFn);
+    auto& fam = candidate.formalActualMap();
+    auto [recvAst, fieldName] = accessExpressionDetails(node);
+    std::ignore = fieldName;
+    if (recvAst == nullptr) {
+      const Function* fn = cur.symbol->toFunction();
+      recvAst = fn->thisFormal();
     }
+    const std::vector<const AstNode*> actualAsts = {recvAst};
+
+    // Rely on this helper to handle any complications around the receiver,
+    // such as if it's implicit or if it needs to be converted.
+    convertAndInsertActuals(ret, node, actualAsts, sig, fam, rv);
   } else {
     ret = new CallExpr(calledFn);
   }
 
-  ret = storeInTempIfNeeded(ret, re->type());
-  return ret;
+  return storeInTempIfNeeded(ret, re->type());
 }
 
 bool TConverter::enter(const Dot* node, RV& rv) {
