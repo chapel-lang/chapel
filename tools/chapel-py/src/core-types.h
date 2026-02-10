@@ -42,6 +42,7 @@ struct Nilable {
 PyTypeObject* parentTypeFor(chpl::uast::asttags::AstTag tag);
 PyTypeObject* parentTypeFor(chpl::types::typetags::TypeTag tag);
 PyTypeObject* parentTypeFor(chpl::types::paramtags::ParamTag tag);
+PyTypeObject* parentTypeFor(chpl::ErrorType tag);
 
 using LineColumnPair = std::tuple<int, int>;
 
@@ -268,5 +269,14 @@ PyObject* wrapGeneratedType(ContextObject* context, const chpl::types::Type* nod
   Creates a Python object of the class corresponding to the given Param*.
  */
 PyObject* wrapGeneratedType(ContextObject* context, const chpl::types::Param* node);
+
+/**
+  Creates a Python object of the class corresponding to the given ErrorBase*.
+
+  Note: unlike all other generated objects at the type of writing, Errors
+  aren't owned by the context (and borrowed by Python). Instead, they are
+  owned by the Python object that contains them. So, here, we clone them.
+ */
+PyObject* wrapGeneratedType(ContextObject* context, const chpl::ErrorBase* node);
 
 #endif
