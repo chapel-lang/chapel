@@ -202,4 +202,12 @@ CLASS_BEGIN(TypedSignature)
 CLASS_END(TypedSignature)
 
 CLASS_BEGIN(ApplicabilityResult)
+  PLAIN_GETTER(ApplicabilityResult, candidate_failure_reason, "If this candidate was inapplicable, the reason why",
+               const char*, return resolution::candidateFailureReasonToString(node->reason()))
+  PLAIN_GETTER(ApplicabilityResult, formal_failure_reason, "If this candidate was inapplicable due to a particular formal parameter, the reason why",
+               const char*, return resolution::passingFailureReasonToString(node->formalReason()))
+  PLAIN_GETTER(ApplicabilityResult, formal_idx, "If this candidate was inapplicable due to a particular formal parameter, the index of that formal parameter",
+               int, return node->formalIdx())
+  PLAIN_GETTER(ApplicabilityResult, actual_idx, "If this candidate was inapplicable due to a particular formal parameter, the index of the corresponding actual parameter",
+               int, return node->actualIdx())
 CLASS_END(ApplicabilityResult)
