@@ -269,30 +269,43 @@ template <> struct CanConvert<const chpl::types::Type*> : std::true_type {};
 template <> struct CanConvert<const chpl::types::Param*> : std::true_type {};
 template <> struct CanConvert<chpl::Location> : std::true_type {};
 
-template<typename T, typename Tuple>
-struct PrependElement;
-
-template<typename T, typename... Ts>
-struct PrependElement<T, std::tuple<Ts...>> {
-    using Type = std::tuple<T, Ts...>;
+// For an element of a tuple at the given index, produces either the
+// single-element index sequence {Idx} if the tuple type is convertible to Python,
+// or the empty index sequence {} if it is not.
+// See https://stackoverflow.com/questions/41723704/how-to-filter-a-stdinteger-sequence.
+template <typename Tuple, size_t Idx>
+struct Selector {
+  using IdxSequence =
+    std::conditional_t<
+        CanConvert<std::remove_reference_t<decltype(std::get<Idx>(std::declval<Tuple>()))>>::value,
+        std::index_sequence<Idx>,
+        std::index_sequence<>
+    >;
 };
 
-template <typename ... Ts>
-struct FilterAllowed;
+// Fold operations (used in the next template) only work on binary operators,
+// so define a binary operator concatenating two index sequences.
+template <size_t ... Idxs1, size_t ... Idxs2>
+constexpr auto operator +(std::index_sequence<Idxs1...>, std::index_sequence<Idxs2...>) {
+    return std::index_sequence<Idxs1..., Idxs2 ...>();
+}
 
-template <>
-struct FilterAllowed<> {
-  using Type = std::tuple<>;
-};
+// Filter an index sequence such that only indices corresponding to tuple
+// elements that can be converted to Python are kept.
+// Proceeds by constructing a pack of index sequences like {{0}, {}, {2}, ...},
+// then flattening them into a single index sequence using the binary operator
+// defined above.
+template <typename Tuple, size_t ... Idxs>
+constexpr auto filterIndices(std::index_sequence<Idxs...>) {
+    return ((typename Selector<Tuple, Idxs>::IdxSequence{}) + ...);
+}
 
-template <typename T, typename ... Ts>
-struct FilterAllowed<T, Ts...> {
-  using Type = std::conditional_t<
-    CanConvert<T>::value,
-    typename PrependElement<T, typename FilterAllowed<Ts...>::Type>::Type,
-    typename FilterAllowed<Ts...>::Type
-  >;
-};
+// Given a particular index sequence, extract only those elements that
+// are listed in the index sequence.
+template <typename Tuple, size_t... Idxs>
+auto getIndices(const Tuple& getFrom, std::index_sequence<Idxs...>) {
+  return std::make_tuple(std::get<Idxs>(getFrom)...);
+}
 
 template <typename ErrorType>
 struct ErrorInfoBundle {};
@@ -300,10 +313,12 @@ struct ErrorInfoBundle {};
 #define DIAGNOSTIC_CLASS(NAME, KIND, EINFO...) \
   template <> \
   struct ErrorInfoBundle<chpl::Error##NAME> { \
-    using FilteredType = typename FilterAllowed<EINFO>::Type; \
+    using IdxSequence = decltype(filterIndices<std::tuple<EINFO>>(std::make_index_sequence<std::tuple_size_v<std::tuple<EINFO>>>{})); \
+    using ExtractedData = decltype(getIndices(std::declval<std::tuple<EINFO>>(), IdxSequence{})); \
+    ExtractedData data; \
 \
     static std::string typeString() { \
-      return TupleTypeStringify<FilteredType>::typeString(); \
+      return TupleTypeStringify<ExtractedData>::typeString(); \
     } \
   };
 #include "chpl/framework/error-classes-list.h"
@@ -350,7 +365,7 @@ T_DEFINE_INOUT_TYPE(std::tuple<Elems...>, tupleTypeString<Elems...>(), wrapTuple
 template <typename ElemType>
 T_DEFINE_INOUT_TYPE(TypedIterAdapterBase<ElemType>*, iteratorTypeString<ElemType>(), wrapIterAdapter(CONTEXT, TO_WRAP), (TypedIterAdapterBase<ElemType>*) ((AstIterObject*) TO_UNWRAP)->iterAdapter);
 template <typename ErrorType>
-T_DEFINE_INOUT_TYPE(ErrorInfoBundleT<ErrorType>, ErrorInfoBundleT<ErrorType>::typeString(), nullptr, ErrorInfoBundleT<ErrorType>{});
+T_DEFINE_INOUT_TYPE(ErrorInfoBundleT<ErrorType>, ErrorInfoBundleT<ErrorType>::typeString(), wrapTuple(CONTEXT, TO_WRAP.data), ErrorInfoBundleT<ErrorType>{});
 
 #define GENERATED_TYPE(ROOT, ROOT_TYPE, NAME, TYPE, TAG, FLAGS) \
   DEFINE_INOUT_TYPE(const TYPE*, #NAME, wrapGeneratedType(CONTEXT, (ROOT_TYPE*) TO_WRAP), ((ROOT##Object*) TO_UNWRAP)->value_->to##NAME());
