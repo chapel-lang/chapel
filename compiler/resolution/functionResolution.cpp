@@ -4320,10 +4320,6 @@ static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState, Poi
   bool considerNonPoi = (poiMode != PoiSearchMode::POI_ONLY);
   bool considerPoi = (poiMode != PoiSearchMode::NON_POI_ONLY);
 
-  if (auto use = toUnresolvedSymExpr(info.call->baseExpr)) {
-    if (strcmp(use->unresolved, "foo") == 0) debuggerBreakHere();
-  }
-
   if (searchState.tryFindVisibileCandidatesForExplicitFn()) {
     /* the function was explicitly specified via FnSymbol*. Don't search
        for others and don't consider POI */
