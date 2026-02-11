@@ -306,24 +306,6 @@ template <typename T> struct CanConvert<std::vector<T>> : CanConvert<T> {
     return toReturn;
   }
 };
-template <typename T> struct CanConvert<std::set<T>> : CanConvert<T> {
-  static auto transform(const std::set<T>& set) {
-    std::set<decltype(CanConvert<T>::transform(std::declval<T>()))> toReturn;
-    for (const auto& elem : set) {
-      toReturn.insert(CanConvert<T>::transform(elem));
-    }
-    return toReturn;
-  }
-};
-template <typename T> struct CanConvert<std::optional<T>> : CanConvert<T> {
-  static auto transform(const std::optional<T>& opt) {
-    if (opt) {
-      return CanConvert<T>::transform(*opt);
-    } else {
-      return std::optional<decltype(CanConvert<T>::transform(std::declval<T>()))>{};
-    }
-  }
-};
 #define GENERATED_TYPE(ROOT, ROOT_TYPE, NAME, TYPE, TAG, FLAGS) \
   template <> struct CanConvert<const TYPE*> { \
     static auto transform(const TYPE* val) { return Nilable(val); } \
