@@ -335,12 +335,13 @@ class ChapelLanguageServer(LanguageServer):
         diagnostics = []
         for e in errors:
             diag = error_to_diagnostic(e)
-            diag.related_information = [
-                DiagnosticRelatedInformation(
-                    location_to_location(note_loc), note_msg
-                )
-                for (note_loc, note_msg) in e.notes()
-            ]
+            if diag.related_information is None:
+                diag.related_information = [
+                    DiagnosticRelatedInformation(
+                        location_to_location(note_loc), note_msg
+                    )
+                    for (note_loc, note_msg) in e.notes()
+                ]
             diagnostics.append(diag)
 
         # get lint diagnostics if applicable

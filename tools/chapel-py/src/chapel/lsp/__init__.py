@@ -26,7 +26,7 @@ This module contains utility functions for working with Chapel compiler types
 and the Language Server Protocol.
 """
 
-from lsprotocol.types import Position, Range, Diagnostic, DiagnosticSeverity
+from lsprotocol.types import Position, Range, Diagnostic, DiagnosticRelatedInformation, DiagnosticSeverity
 import chapel
 
 
@@ -63,6 +63,7 @@ def error_to_diagnostic(error) -> Diagnostic:
     else:
         message = "{}: {}".format(error.kind().capitalize(), error.message())
 
+    related_info = None
     location = error.location()
     if isinstance(error, chapel.NoMatchingCandidates):
         (call, _, appress, _) = error.info()
@@ -99,10 +100,19 @@ def error_to_diagnostic(error) -> Diagnostic:
         (_, tup, _) = error.info()
         if tup is not None:
             location = tup.location()
+    elif isinstance(error, chapel.MultipleQuestionArgs):
+        (_, arg1, arg2) = error.info()
+        assert arg1 is not None and arg2 is not None
+
+        # TODO: it would be nice to use additional related info to highlight
+        # both arguments, but we currently don't assume a URI encoding
+        # scheme so can't construct a Position := Tuple[URI, Range] for the related info.
+        location = arg2.location()
 
     diagnostic = Diagnostic(
         range=location_to_range(location),
         message=message,
         severity=kind_to_severity[error.kind()],
+        related_information=related_info,
     )
     return diagnostic
