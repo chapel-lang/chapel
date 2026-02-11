@@ -379,18 +379,16 @@ def compute_internal_values():
         tgt_program_link[1]
     )
 
-    utils = compile_link_args_utils
-
-    static_args = utils.compute_use_static_runtime_link_args(r_subdir)
+    static_args = compile_link_args_utils.compute_use_static_runtime_link_args(r_subdir)
     ENV_VALS['  CHPL_TARGET_USE_STATIC_RUNTIME_LINK_ARGS'] = " ".join(static_args)
 
-    shared_args = utils.compute_use_shared_runtime_link_args(r_subdir)
+    shared_args = compile_link_args_utils.compute_use_shared_runtime_link_args(r_subdir)
     ENV_VALS['  CHPL_TARGET_USE_SHARED_RUNTIME_LINK_ARGS'] = " ".join(shared_args)
 
-    static_path = utils.compute_static_runtime_lib_path(r_subdir)
+    static_path = compile_link_args_utils.compute_static_runtime_lib_path(r_subdir)
     ENV_VALS['  CHPL_TARGET_STATIC_RUNTIME_LIB_PATH'] = static_path
 
-    shared_path = utils.compute_shared_runtime_lib_path(r_subdir)
+    shared_path = compile_link_args_utils.compute_shared_runtime_lib_path(r_subdir)
     ENV_VALS['  CHPL_TARGET_SHARED_RUNTIME_LIB_PATH'] = shared_path
 
     ENV_VALS['  CHPL_GPU_ARCH'] = chpl_gpu.get_arch()
