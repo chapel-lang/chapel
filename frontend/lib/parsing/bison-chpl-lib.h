@@ -126,17 +126,23 @@ extern int yychpl_debug;
   struct CommentsAndStmt {
     std::vector<ParserComment>* comments;
     AstNode* stmt;
+    TextLocation curlyLoc;
   };
   static inline
   CommentsAndStmt makeCommentsAndStmt(std::vector<ParserComment>* comments,
-                                      AstNode* stmt) {
-    CommentsAndStmt ret = {comments, stmt};
+                                      AstNode* stmt, TextLocation curlyLoc) {
+    CommentsAndStmt ret = {comments, stmt, curlyLoc};
     return ret;
   }
   static inline
   CommentsAndStmt makeCommentsAndStmt(std::vector<ParserComment>* comments,
+                                      AstNode* stmt) {
+    return makeCommentsAndStmt(comments, stmt, TextLocation::create());
+  }
+  static inline
+  CommentsAndStmt makeCommentsAndStmt(std::vector<ParserComment>* comments,
                                       owned<AstNode> stmt) {
-    return makeCommentsAndStmt(comments, stmt.release());
+    return makeCommentsAndStmt(comments, stmt.release(), TextLocation::create());
   }
 
   struct MaybeIntent {
@@ -194,6 +200,7 @@ extern int yychpl_debug;
     ParserExprList* lifetime;
     ParserExprList* body;
     TextLocation headerLoc;
+    TextLocation curlyLoc;
   };
 
   // A struct to thread along some pieces of a module before it is built.
@@ -314,12 +321,12 @@ extern int yychpl_debug;
   #define YYSTYPE_IS_TRIVIAL 1
 
   #endif
-#line 350 "chpl.ypp"
+#line 357 "chpl.ypp"
 
   // forward declare ParserContext
   struct ParserContext;
 
-#line 323 "bison-chpl-lib.h"
+#line 330 "bison-chpl-lib.h"
 
 /* Token kinds.  */
 #ifndef YYCHPL_TOKENTYPE
@@ -544,14 +551,14 @@ yychpl_pstate *yychpl_pstate_new (void);
 void yychpl_pstate_delete (yychpl_pstate *ps);
 
 /* "%code provides" blocks.  */
-#line 358 "chpl.ypp"
+#line 365 "chpl.ypp"
 
   extern int yychpl_debug;
 
   void yychpl_error(YYLTYPE*       loc,
                     ParserContext* context,
                     const char*    errorMessage);
-#line 366 "chpl.ypp"
+#line 373 "chpl.ypp"
 
   // include ParserContext.h here because it depends
   // upon YYLTYPE and other types defined by the generated parser
@@ -560,6 +567,6 @@ void yychpl_pstate_delete (yychpl_pstate *ps);
   // include override of macro used to compute locations
   #include "parser-yylloc-default.h"
 
-#line 564 "bison-chpl-lib.h"
+#line 571 "bison-chpl-lib.h"
 
 #endif /* !YY_YYCHPL_BISON_CHPL_LIB_H_INCLUDED  */

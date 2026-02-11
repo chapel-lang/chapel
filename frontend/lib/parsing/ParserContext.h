@@ -735,7 +735,8 @@ struct ParserContext {
 
   AstNode* buildCatch(YYLTYPE location, AstNode* error,
                       CommentsAndStmt block,
-                      bool hasParensAroundError);
+                      bool hasParensAroundError,
+                      YYLTYPE parenLocation);
 
   CommentsAndStmt buildWhenStmt(YYLTYPE location,
                                 YYLTYPE headerLocation,
