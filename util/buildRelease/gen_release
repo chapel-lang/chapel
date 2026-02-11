@@ -31,8 +31,13 @@ def run(*args, **kwargs):
     return result
 
 
+def get_make_threads():
+    result = run("util/buildRelease/chpl-make-cpu_count", stdout=subprocess.PIPE)
+    return int(result.stdout.decode().strip())
+
+
 def make(*args, **kwargs):
-    return run("make", *args, **kwargs)
+    return run("make", f"-j{get_make_threads()}", *args, **kwargs)
 
 
 pjoin = os.path.join
