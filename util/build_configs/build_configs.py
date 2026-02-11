@@ -15,6 +15,7 @@ import multiprocessing
 import operator
 import optparse
 import os
+import platform
 import shlex
 import subprocess
 import sys
@@ -429,8 +430,8 @@ def get_configs(opts):
     configs = []
     for config_tuple in config_strings:
         config = Config(*config_tuple)
-        if (config.host_machine == "aarch64" and
-            config.host_compiler == "cray" and
+        if (platform.machine() in ("aarch64", "arm64") and
+            "cray" in (config.target_compiler, config.host_compiler) and
             config.unwind == "bundled"):
             config.unwind = "none"
             logging.warning("Forcing libunwind=none for aarch64 CCE build, to work around build failure with bundled libunwind, in config: {0}".format(config))
