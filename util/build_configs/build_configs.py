@@ -427,15 +427,21 @@ def get_configs(opts):
     # Create the Cartesian product of all dimension values.
     config_strings = itertools.product(*dimension_values)
 
+    libunwind_hack_configs = []
     configs = []
     for config_num, config_tuple in enumerate(config_strings):
         config = Config(*config_tuple)
-        if (platform.machine() in ("aarch64", "arm64") and
-            "cray" in (config.target_compiler, config.host_compiler) and
-            config.unwind == "bundled"):
+        if (
+            platform.machine() in ("aarch64", "arm64")
+            and (config.target_compiler == "cray" or config.host_compiler == "cray")
+            and config.unwind == "bundled"
+        ):
             config.unwind = "none"
-            logging.warning("Forcing unwind=none for aarch64 CCE build to work around bundled build failure, in config {0}".format(config_num))
+            libunwind_hack_configs.append(config_num)
         configs.append(config)
+    if libunwind_hack_configs:
+        logging.warning("Replacing unwind=bundled with unwind=none to work around bundled build failure on CCE aarch64. The following configs are affected: {0}".format(", ".join(map(str, libunwind_hack_configs))))
+
 
     return configs
 
