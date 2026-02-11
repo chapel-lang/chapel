@@ -210,6 +210,16 @@ CLASS_BEGIN(ApplicabilityResult)
                int, return node->formalIdx())
   PLAIN_GETTER(ApplicabilityResult, actual_idx, "If this candidate was inapplicable due to a particular formal parameter, the index of the corresponding actual parameter",
                int, return node->actualIdx())
+  PLAIN_GETTER(ApplicabilityResult, candidate_is_method, "Check whether this candidate is a method",
+               bool,
+
+               auto errId = node->idForErr();
+               if (!errId.isEmpty()) return parsing::idIsMethod(context, errId);
+
+               if (auto candidate = node->candidate()) {
+                 return candidate->isMethod();
+               }
+               return false)
 CLASS_END(ApplicabilityResult)
 
 CLASS_BEGIN(CallInfo)
