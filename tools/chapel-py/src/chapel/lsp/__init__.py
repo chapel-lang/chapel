@@ -33,6 +33,7 @@ from lsprotocol.types import (
     DiagnosticRelatedInformation,
     DiagnosticSeverity,
 )
+import typing
 import chapel
 
 
@@ -50,38 +51,37 @@ def location_to_range(location) -> Range:
     )
 
 
-def error_to_diagnostic(error) -> Diagnostic:
-    """
-    Convert a Chapel error into a lsprotocol.types Diagnostic
-    """
-    kind_to_severity = {
-        "error": DiagnosticSeverity.Error,
-        "syntax": DiagnosticSeverity.Error,
-        "note": DiagnosticSeverity.Information,
-        "warning": DiagnosticSeverity.Warning,
-    }
-
-    type_ = error.type()
-    if type_ is not None:
-        message = "{}: [{}]: {}".format(
-            error.kind().capitalize(), type_, error.message()
-        )
-    else:
-        message = "{}: {}".format(error.kind().capitalize(), error.message())
-
+def error_to_location_and_info(error) -> typing.Tuple[chapel.Location, typing.Optional[DiagnosticRelatedInformation], typing.Optional[str]]:
     related_info = None
     location = error.location()
+    type_ = error.type()
+    new_message = None
     if isinstance(error, chapel.NoMatchingCandidates):
-        (call, _, app_results, _) = error.info()
+        (call, call_info, app_results, _) = error.info()
 
         # Check if all candidates were rejected due to a particular candidate.
         # In that case, highlight the specific candidate as the location of the error.
         actuals_set = set()
+
+        # question args violate the correspondence between indices into the
+        # call and indices into the call_info. The former are needed to get
+        # an AST for the location, while the latter are provided by
+        # app_results. Thus, do not include the indexing.
+        if call_info.has_question_arg():
+            return (location, related_info, new_message)
+
+        # 'this' formals are inserted into the call info but aren't in the
+        # call's actual list, so the reported indices are one higher than
+        # we should use to index into the call's actuals.
+        offset = 0
+        if call_info.is_method_call():
+            offset = 1
+
         for app_result in app_results:
             idx = app_result.actual_idx()
             if app_result.candidate_failure_reason() != "FAIL_CANNOT_PASS":
                 idx = -1
-            actuals_set.add(idx)
+            actuals_set.add(idx - offset)
 
         if (
             len(actuals_set) == 1
@@ -91,7 +91,7 @@ def error_to_diagnostic(error) -> Diagnostic:
             # All candidates were rejected due to the same candidate, so highlight that candidate.
             location = call.actual(actuals_set.pop()).location()
             assert type_ is not None
-            message = "{}: [{}]: this actual could not be passed to a corresponding formal".format(
+            new_message = "{}: [{}]: this actual could not be passed to a corresponding formal".format(
                 error.kind().capitalize(), type_
             )
     elif isinstance(error, chapel.AsWithUseExcept):
@@ -118,6 +118,32 @@ def error_to_diagnostic(error) -> Diagnostic:
         # both arguments, but we currently don't assume a URI encoding
         # scheme so can't construct a Position := Tuple[URI, Range] for the related info.
         location = arg2.location()
+
+    return (location, related_info, new_message)
+
+
+def error_to_diagnostic(error) -> Diagnostic:
+    """
+    Convert a Chapel error into a lsprotocol.types Diagnostic
+    """
+    kind_to_severity = {
+        "error": DiagnosticSeverity.Error,
+        "syntax": DiagnosticSeverity.Error,
+        "note": DiagnosticSeverity.Information,
+        "warning": DiagnosticSeverity.Warning,
+    }
+
+    type_ = error.type()
+    if type_ is not None:
+        message = "{}: [{}]: {}".format(
+            error.kind().capitalize(), type_, error.message()
+        )
+    else:
+        message = "{}: {}".format(error.kind().capitalize(), error.message())
+
+    (location, related_info, new_message) = error_to_location_and_info(error)
+    if new_message is not None:
+        message = new_message
 
     diagnostic = Diagnostic(
         range=location_to_range(location),
