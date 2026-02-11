@@ -234,23 +234,19 @@ if [ ${CHPL_TEST_ARKOUDA_STOP_AFTER_BUILD} = "false" ]; then
       reformat_benchmark_opts="${reformat_benchmark_opts} $CHPL_TEST_ARKOUDA_REFORMAT_BENCHMARKS_V2"
     fi
 
-    # TODO: the full problem size causes the following to crash
-    # * array_transfer
-    # skip them for now
-    # small size of 10**5 works for everything
-    sed '/array_transfer_benchmark.py/d' benchmark.ini > benchmark.ini.tmp && mv benchmark.ini.tmp benchmark.ini
     benchmark_size=$((10**8))
 
     benchmark_data=benchmark_v2/data/benchmark_stats_$(date +%Y%m%d_%H%M%S).json
     mkdir -p benchmark_v2/data
-    benchmark_opts="--benchmark-autosave --benchmark-storage=file://benchmark_v2/.benchmarks --size=$benchmark_size --benchmark-json=$benchmark_data"
+    benchmark_opts="--benchmark-autosave --benchmark-storage=file://benchmark_v2/.benchmarks --size=$benchmark_size --benchmark-json=$benchmark_data --benchmark-min-rounds=1 --benchmark-warmup=off"
     if [[ -n "$CHPL_TEST_ARKOUDA_TEMP_DIR" ]]; then
       benchmark_opts="${benchmark_opts} --basetemp=$CHPL_TEST_ARKOUDA_TEMP_DIR --io_path=$CHPL_TEST_ARKOUDA_TEMP_DIR/ak_io_benchmark "
     fi
-    # TODO why doesn't trials work?
-    # if [[ -n $CHPL_TEST_NUM_TRIALS ]]; then
-    #   benchmark_opts="${benchmark_opts} --trials $CHPL_TEST_NUM_TRIALS"
-    # fi
+    if [[ -n $CHPL_TEST_NUM_TRIALS ]]; then
+      export ARKOUDA_NUM_PERF_TRIALS=$CHPL_TEST_NUM_TRIALS
+      # TODO: for now, 1 trial no matter what
+      export ARKOUDA_NUM_PERF_TRIALS=1
+    fi
     if [[ -n $CHPL_TEST_ARKOUDA_BENCHMARKS_V2 ]]; then
       benchmark_opts="${benchmark_opts} $CHPL_TEST_ARKOUDA_BENCHMARKS_V2"
     fi
