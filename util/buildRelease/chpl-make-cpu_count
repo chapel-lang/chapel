@@ -8,9 +8,9 @@ import multiprocessing
 
 cpus = multiprocessing.cpu_count()
 try:
-    max = os.getenv("CHPL_MAKE_MAX_CPU_COUNT", "0")
-    if int(max) > 0:
-        cpus = min(int(max), cpus)
+    max_cpus = os.getenv("CHPL_MAKE_MAX_CPU_COUNT", "0")
+    if int(max_cpus) > 0:
+        cpus = min(int(max_cpus), cpus)
 except:
     pass
 
