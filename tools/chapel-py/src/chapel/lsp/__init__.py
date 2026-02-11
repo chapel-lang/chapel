@@ -30,7 +30,6 @@ from lsprotocol.types import (
     Position,
     Range,
     Diagnostic,
-    DiagnosticRelatedInformation,
     DiagnosticSeverity,
 )
 import typing
@@ -55,10 +54,8 @@ def error_to_location_and_info(
     error,
 ) -> typing.Tuple[
     chapel.Location,
-    typing.Optional[DiagnosticRelatedInformation],
     typing.Optional[str],
 ]:
-    related_info = None
     location = error.location()
     type_ = error.type()
     new_message = None
@@ -74,7 +71,7 @@ def error_to_location_and_info(
         # an AST for the location, while the latter are provided by
         # app_results. Thus, do not include the indexing.
         if call_info.has_question_arg():
-            return (location, related_info, new_message)
+            return (location, new_message)
 
         for app_result in app_results:
             idx = app_result.actual_idx()
@@ -126,7 +123,7 @@ def error_to_location_and_info(
         # scheme so can't construct a Position := Tuple[URI, Range] for the related info.
         location = arg2.location()
 
-    return (location, related_info, new_message)
+    return (location, new_message)
 
 
 def error_to_diagnostic(error) -> Diagnostic:
@@ -148,7 +145,8 @@ def error_to_diagnostic(error) -> Diagnostic:
     else:
         message = "{}: {}".format(error.kind().capitalize(), error.message())
 
-    (location, related_info, new_message) = error_to_location_and_info(error)
+    (location, new_message) = error_to_location_and_info(error)
+    related_info = None
     if new_message is not None:
         message = new_message
 
