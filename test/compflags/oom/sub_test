@@ -16,7 +16,7 @@ oom_message = "warning: A driver phase was killed by signal SIGKILL -- possibly 
 phase_invocation_message = "invoking driver compilation phase"
 phase_arg = "driver-compilation-phase"
 chpl_file = "oom.chpl"
-pid_command = "ps -o pid,ppid,cmd"
+ps_base_command = "ps -o pid,ppid,cmd"
 
 subtest_start_time = None
 subtest_test_name = '"compflags/oom"'
@@ -41,11 +41,14 @@ def subtest_error(msg):
     sys.exit(1)
 
 def kill_subphase(ppid):
+    ps_cmd = f"{ps_base_command} | grep chpl | grep {phase_arg}"
+    print(f"Finding subphase with parent PID {ppid} using command: {ps_cmd}")
     ps_output = subprocess.check_output(
-        f"{pid_command} | grep chpl | grep {phase_arg}",
+        ps_cmd,
         universal_newlines=True,
         shell=True,
     )
+    print(ps_output)
 
     for line in ps_output.splitlines():
         split_line = line.split(" ")
