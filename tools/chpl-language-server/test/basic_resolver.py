@@ -161,6 +161,13 @@ async def test_error_location_specific(client: LanguageClient):
 
            foo(ok1=(...(1,)), 1, 1, 1);
            foo((...(1)), 1, 1, 1);
+
+           proc int.beep(ok1: int, ok2: int, x: int, ok3: int) {}
+           42.beep(0, 0, 1.0, 0);
+
+           proc int.test() {
+             beep(0, 0, 1.0, 0);
+           }
            """
 
     def check_location(diagnostic, name, start_pos, end_pos):
@@ -170,7 +177,7 @@ async def test_error_location_specific(client: LanguageClient):
         assert diagnostic.range.end.line == end_pos[0]
         assert diagnostic.range.end.character == end_pos[1]
 
-    async with source_file(client, file, num_errors=6) as doc:
+    async with source_file(client, file, num_errors=8) as doc:
         await save_file(client, doc)
         diags = client.diagnostics[doc.uri]
         diags = sorted(diags, key=lambda d: d.range.start.line)
@@ -182,3 +189,5 @@ async def test_error_location_specific(client: LanguageClient):
         check_location(diags[3], "NoMatchingCandidates", (10, 0), (10, 13))
         check_location(diags[4], "TupleExpansionNamedArgs", (12, 8), (12, 17))
         check_location(diags[5], "TupleExpansionNonTuple", (13, 4), (13, 12))
+        check_location(diags[6], "NoMatchingCandidates", (16, 14), (16, 17))
+        check_location(diags[7], "NoMatchingCandidates", (19, 13), (19, 16))
