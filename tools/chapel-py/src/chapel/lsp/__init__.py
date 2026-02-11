@@ -72,14 +72,14 @@ def error_to_diagnostic(error) -> Diagnostic:
     related_info = None
     location = error.location()
     if isinstance(error, chapel.NoMatchingCandidates):
-        (call, _, appress, _) = error.info()
+        (call, _, app_results, _) = error.info()
 
         # Check if all candidates were rejected due to a particular candidate.
         # In that case, highlight the specific candidate as the location of the error.
         actuals_set = set()
-        for appres in appress:
-            idx = appres.actual_idx()
-            if appres.candidate_failure_reason() != "FAIL_CANNOT_PASS":
+        for app_result in app_results:
+            idx = app_result.actual_idx()
+            if app_result.candidate_failure_reason() != "FAIL_CANNOT_PASS":
                 idx = -1
             actuals_set.add(idx)
 
@@ -99,7 +99,7 @@ def error_to_diagnostic(error) -> Diagnostic:
         if as_ is not None:
             location = as_.location()
     elif isinstance(error, chapel.TertiaryUseImportUnstable):
-        node = error.info()[1]
+        (_, node, _, _, _) = error.info()
         if node is not None:
             location = node.location()
     elif isinstance(error, chapel.TupleExpansionNamedArgs):
