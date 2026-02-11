@@ -1,3 +1,9 @@
+--- 1.23 ---
+Improvements:
+- Support for 64-bit RISC-V architecture
+- Improved robustness of new CMake Build system
+- Various additional bugfixes
+
 --- 1.22 ---
 Improvements:
 - Support for building and testing using CMake

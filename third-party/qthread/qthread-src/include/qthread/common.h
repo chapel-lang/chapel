@@ -4,6 +4,9 @@
  * ------------------------------------------------------------------
  */
 
+/* Portions of this file are Copyright (c) 2025 Tactical Computing Labs, LLC;
+ * see COPYING */
+
 #ifndef QTHREAD_COMMON_H
 #define QTHREAD_COMMON_H
 
@@ -40,6 +43,7 @@
 #define QTHREAD_POWERPC64 7
 #define QTHREAD_ARM 12
 #define QTHREAD_ARMV8_A64 13
+#define QTHREAD_RISCV 14
 
 #if defined(__amd64__) || defined(_M_AMD_64)
 #define QTHREAD_ASSEMBLY_ARCH QTHREAD_AMD64
@@ -53,6 +57,8 @@
 #define QTHREAD_ASSEMBLY_ARCH QTHREAD_ARM
 #elif defined(_ARCHPPC)
 #define QTHREAD_ASSEMBLY_ARCH QTHREAD_POWERPC32
+#elif defined(__riscv)
+#define QTHREAD_ASSEMBLY_ARCH QTHREAD_RISCV
 #else
 #error "Unsupported architecture"
 #endif

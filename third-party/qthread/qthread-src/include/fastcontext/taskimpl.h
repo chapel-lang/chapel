@@ -1,3 +1,6 @@
+/* Portions of this file are Copyright (c) 2025 Tactical Computing Labs, LLC;
+ * see COPYING */
+
 #ifndef TASKIMPL_H
 #define TASKIMPL_H
 
@@ -22,6 +25,11 @@
 #define NEEDARMMAKECONTEXT
 #define NEEDSWAPCONTEXT
 #include "arm-ucontext.h"
+#elif (QTHREAD_ASSEMBLY_ARCH == QTHREAD_RISCV)
+#include <stdarg.h>
+#define NEEDRISCVMAKECONTEXT
+#define NEEDSWAPCONTEXT
+#include "riscv-ucontext.h"
 #elif (QTHREAD_ASSEMBLY_ARCH == QTHREAD_ARMV8_A64)
 #include <stdarg.h>
 #define NEEDARMA64MAKECONTEXT
