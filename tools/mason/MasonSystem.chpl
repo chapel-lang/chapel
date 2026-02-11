@@ -152,18 +152,17 @@ proc printPkgPc(args) throws {
         write(line);
       }
       writeln("\n-------------------\n");
+    } else {
+      throw new MasonError(
+        "Mason could not find " + pkgName + " on your system"
+      );
     }
-    else {
-      throw new MasonError("Mason could not find " +
-                           pkgName + " on your system");
-    }
+  } catch e: FileNotFoundError {
+    throw new owned MasonError(
+      "Package exists but Mason could not find its .pc file"
+    );
   }
-  catch e: FileNotFoundError {
-    throw new owned MasonError("Package exists but Mason could not find its .pc file");
-  }
-
 }
-
 
 /* Gets a single variable from pkg-config
    given package name and variable */
@@ -176,14 +175,15 @@ proc getPkgVariable(pkgName: string, option: string) {
   var sub = spawn(cmd, stdout=pipeStyle.pipe);
   sub.wait();
 
-  var line:string;
+  var line: string;
   for line in sub.stdout.lines() {
     if line.size > 1 then
       lines.pushBack(line);
   }
 
   return lines;
- }
+}
+
 
 /* Queries pkg-config for package existence */
 proc pkgExists(pkgName: string) : bool {

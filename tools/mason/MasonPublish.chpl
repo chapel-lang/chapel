@@ -44,7 +44,9 @@ proc masonPublish(args: [] string) throws {
   var parser = new argumentParser(helpHandler=new MasonPublishHelpHandler());
 
   var dryFlag = parser.addFlag(name="dry-run", defaultValue=false);
-  var createFlag = parser.addFlag(name="create-registry", opts=["-c","--create-registry"], defaultValue=false);
+  var createFlag = parser.addFlag(name="create-registry",
+                                opts=["-c", "--create-registry"],
+                                defaultValue=false);
   var checkArg = parser.addFlag(name="check", defaultValue=false);
   var ciFlag = parser.addFlag(name="ci-check", defaultValue=false);
   var updateFlag = parser.addFlag(name="update", flagInversion=true);
@@ -70,8 +72,9 @@ proc masonPublish(args: [] string) throws {
   }
   var createReg = createFlag.valueAsBool();
 
-    const badSyntaxMessage =
-      'Arguments do not follow "mason publish [options] <registry>" syntax';
+  const badSyntaxMessage =
+  'Arguments do not follow "mason publish [options] <registry>" syntax';
+
 
   if refreshLicenses {
     writeln("Force updating list of valid license names from SPDX repo...");
@@ -85,7 +88,8 @@ proc masonPublish(args: [] string) throws {
     if !isDir(pathReg) then
       mkdir(pathReg);
     else
-      throw new owned MasonError("Registry already exists at %s".format(pathReg));
+      throw new owned MasonError("Registry already exists at %s"
+                                .format(pathReg));
     if !isDir(pathReg + '/Bricks') then
       mkdir(pathReg + '/Bricks');
     if !isDir(pathReg + '/README.md') then
@@ -98,9 +102,15 @@ proc masonPublish(args: [] string) throws {
     }
     const absPathReg = Path.absPath(pathReg);
     writeln("Initialized local registry at %s".format(pathReg));
-    writeln("Add this registry to MASON_REGISTRY environment variable to include it in search path:");
-    writeln('   export MASON_REGISTRY="%s|%s,%s|%s"'.format("mason-registry",regUrl, basename(pathReg), absPathReg));
-    exit(0);
+    writeln("Add this registry to MASON_REGISTRY environment variable "
+        + "to include it in search path:");
+
+    writeln('   export MASON_REGISTRY="%s|%s,%s|%s"'
+        .format("mason-registry",
+                regUrl,
+                basename(pathReg),
+                absPathReg));
+
   }
 
   if registryPath.isEmpty() {
@@ -109,26 +119,26 @@ proc masonPublish(args: [] string) throws {
     isLocal = isRegistryPathLocal(registryPath);
   }
 
-    if checkFlag || ci {
-      if ci then check(registryPath, ci);
-      else {
-        check(registryPath, ci);
-      }
+  if checkFlag || ci {
+    if ci then check(registryPath, ci);
+    else {
+      check(registryPath, ci);
     }
+  }
 
-    if ((MASON_OFFLINE  && !update) || noUpdate) && !falseIfRemotePath() {
-      if !isLocal then
-        throw new MasonError('You cannot publish to a remote repository ' +
-                             'when MASON_OFFLINE is set to true or ' +
-                             '"--no-update" is passed, override with --update');
-      else
-        updateRegistry(skipUpdate);
-    }
+  if ((MASON_OFFLINE  && !update) || noUpdate) && !falseIfRemotePath() {
+    if !isLocal then
+      throw new MasonError('You cannot publish to a remote repository ' +
+                           'when MASON_OFFLINE is set to true or ' +
+                           '"--no-update" is passed, override with --update');
+    else
+      updateRegistry(skipUpdate);
+  }
 
-    if !isLocal && !doesGitOriginExist() && !dry {
-      throw new MasonError('Your package must have a git origin remote ' +
-                           'in order to publish to a remote registry.');
-    }
+  if !isLocal && !doesGitOriginExist() && !dry {
+    throw new MasonError('Your package must have a git origin remote ' +
+                         'in order to publish to a remote registry.');
+  }
 
   if checkRegistryPath(registryPath, isLocal) {
     if dry {

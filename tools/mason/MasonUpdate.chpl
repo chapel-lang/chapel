@@ -107,21 +107,24 @@ proc updateLock(skipUpdate: bool,
                   "To install Spack, run: mason external --setup.");
   }
 
-    log.debugln("Will do createDepTree");
-    const lockFile = createDepTree(TomlFile);
-    if failedChapelVersion.size > 0 {
-      const prefix = if failedChapelVersion.size == 1
-        then "The following package is"
-        else "The following packages are";
-      stderr.writeln(prefix, " incompatible with your version of Chapel (",
-                     getChapelVersionStr(), ")");
-      for msg in failedChapelVersion do
-        stderr.writeln("  ", msg);
-      exit(1);
-    }
-    // Generate Lock File
-    log.debugln("Generating lock file");
-    genLock(lockFile, lockPath);
+  log.debugln("Will do createDepTree");
+  const lockFile = createDepTree(TomlFile);
+  if failedChapelVersion.size > 0 {
+    const prefix = if failedChapelVersion.size == 1
+                 then "The following package is"
+                 else "The following packages are";
+
+    stderr.writeln(prefix,
+                 " incompatible with your version of Chapel (",
+                 getChapelVersionStr(),
+                 ")");
+    for msg in failedChapelVersion do
+      stderr.writeln("  ", msg);
+    exit(1);
+  }
+  // Generate Lock File
+  log.debugln("Generating lock file");
+  genLock(lockFile, lockPath);
 
   log.infoln("Installing prerequisites");
   MasonPrereqs.install();
