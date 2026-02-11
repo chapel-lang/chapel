@@ -3549,9 +3549,9 @@ struct CandidateSearchState {
   // Keep *all* discovered functions in 'visibleFns' and 'mostApplicable'
   // so that we can revisit them for error reporting. The lists (
   // visible -> most applicable -> candidates) trickle down into the next.
-  // All of them only every grow, with numVisitedVis and numVisitedMA tracking
-  // the point up all candiddates have been moved to the successive list if
-  // they needed to be. The flow is as follows:
+  // All of them only ever grow, with numVisitedVis and numVisitedMA tracking
+  // the point up to which all candiddates have been moved to the successive list
+  // if they needed to be. The flow is as follows:
   //   1. In each potential scope (call and POI(s)), visible functions get
   //      placed into `visibleFns`.
   //   2. From those, we find the most applicable functions (coarse, early
