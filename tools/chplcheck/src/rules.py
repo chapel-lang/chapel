@@ -322,6 +322,217 @@ def rules(driver: LintDriver):
 
         return [Fixit.build(Edit.build(paren_loc, new_text))]
 
+    @driver.basic_rule(chapel.Conditional)
+    def UnattachedElse(context: Context, node: chapel.Conditional):
+        """
+        Warn for 'else' blocks that do not start on the same line as the closing brace of the 'then' block.
+        """
+
+        then_block_loc = node.then_block().location()
+        else_kw_loc = node.else_keyword_location()
+        if else_kw_loc is None:
+            return True
+
+        else_block = node.else_block()
+        assert else_block is not None
+
+        full_loc = then_block_loc + else_kw_loc
+        blank_loc = full_loc - else_kw_loc - then_block_loc
+        blank_text = range_to_text(blank_loc, chapel.get_file_lines(context, node))
+        fixit = None
+        if blank_text.strip() == "":
+            fixit = Fixit.build(Edit.build(blank_loc, " "))
+
+        # the lines must be the same
+        if then_block_loc.end()[0] != else_kw_loc.start()[0]:
+            return BasicRuleResult(else_block, ignorable=False, fixits=fixit)
+        elif then_block_loc.end()[1] != else_kw_loc.start()[1] - 1:
+            return BasicRuleResult(else_block, ignorable=False, fixits=fixit)
+
+        return True
+
+    @driver.basic_rule(chapel.Catch)
+    def UnattachedCatch(context: Context, node: chapel.Catch):
+        """
+        Warn for 'catch' blocks that do not start on the same line as the closing brace of the 'try' block.
+        """
+
+        try_stmt = node.parent()
+        if not isinstance(try_stmt, chapel.Try):
+            return True
+
+        catch_loc = node.location()
+
+        # find the block of the try before this catch. its either try.body()
+        # for the first catch, or the previous catch
+        prev = try_stmt.body()
+        for prev_catch in try_stmt.handlers():
+            if prev_catch.unique_id() == node.unique_id():
+                break
+            prev = prev_catch
+        prev_loc = prev.location()
+
+        # the lines must be the same
+        if prev_loc.end()[0] != catch_loc.start()[0]:
+            return BasicRuleResult(node, ignorable=False)
+        elif prev_loc.end()[1] != catch_loc.start()[1] - 1:
+            return BasicRuleResult(node, ignorable=False)
+
+        return True
+
+    @driver.advanced_rule
+    def UnattachedCurly(context: Context, root: AstNode):
+        """
+        Warn for blocks that do not have their opening curly brace on the same line as the controlling statement.
+        """
+
+        # block types
+        # nameddecl
+        # conditional
+        # try/catch
+        # loops
+        # select
+
+        def check_conditional(node: chapel.Conditional):
+            then_block = node.then_block()
+            if curly_loc := then_block.curly_braces_location():
+                # the curly block start should be just after the location of the condition
+                condition_loc = node.condition().location()
+                if condition_loc.end()[0] != curly_loc.start()[0]:
+                    yield AdvancedRuleResult(then_block)
+                elif condition_loc.end()[1] != curly_loc.start()[1] - 1:
+                    yield AdvancedRuleResult(then_block)
+            if else_block := node.else_block():
+                if curly_loc := else_block.curly_braces_location():
+                    else_kw_loc = node.else_keyword_location()
+                    assert else_kw_loc is not None
+                    # the curly block start should be just after the location of the else keyword
+                    if else_kw_loc.end()[0] != curly_loc.start()[0]:
+                        yield AdvancedRuleResult(else_block)
+                    elif else_kw_loc.end()[1] != curly_loc.start()[1] - 1:
+                        yield AdvancedRuleResult(else_block)
+
+        def check_try(node: chapel.Try):
+            body = node.body()
+            if curly_loc := body.curly_braces_location():
+                try_loc = node.location()
+                # the curly block start should be just after the location of the try keyword
+                len_of_keyword = len("try") if not node.is_try_bang() else len("try!")
+                if try_loc.start()[0] != curly_loc.start()[0]:
+                    yield AdvancedRuleResult(body)
+                elif try_loc.start()[1] + len_of_keyword != curly_loc.start()[1] - 1:
+                    yield AdvancedRuleResult(body)
+
+        def check_catch(node: chapel.Catch):
+            body = node.body()
+            if curly_loc := body.curly_braces_location():
+                if tgt := node.target():
+                    tgt_loc = tgt.location()
+                    tgt_loc = tgt.paren_location() if node.has_parens_around_error() else tgt_loc
+                    # the curly block start should be just after the target
+                    if tgt_loc.end()[0] != curly_loc.start()[0]:
+                        yield AdvancedRuleResult(body)
+                    elif tgt_loc.end()[1] != curly_loc.start()[1] - 1:
+                        yield AdvancedRuleResult(body)
+                else:
+                    # if there is no target, the curly block start should be just after the catch keyword
+                    catch_loc = node.location()
+                    len_of_keyword = len("catch")
+                    if catch_loc.start()[0] != curly_loc.start()[0]:
+                        yield AdvancedRuleResult(body)
+                    elif catch_loc.start()[1] + len_of_keyword != curly_loc.start()[1] - 1:
+                        yield AdvancedRuleResult(body)
+
+        def check_loop(node: chapel.Loop):
+            # TODO: for now, ignore DoWhile and BracketLoop
+            if isinstance(node, (chapel.DoWhile, chapel.BracketLoop)):
+                return
+
+            if curly_loc := node.curly_braces_location():
+                header_loc = node.header_location()
+                if isinstance(node, IndexableLoop) and node.with_clause():
+                    with_ = node.with_clause()
+                    assert with_ is not None
+                    header_loc = with_.location()
+                if not header_loc:
+                    return
+                # the curly block start should be just after the location of the header
+                if header_loc.end()[0] != curly_loc.start()[0]:
+                    yield AdvancedRuleResult(node)
+                elif header_loc.end()[1] != curly_loc.start()[1] - 1:
+                    yield AdvancedRuleResult(node)
+
+        def check_named_decl(node: chapel.NamedDecl):
+            if curly_loc := node.curly_braces_location():
+                header_loc = node.header_location()
+                if not header_loc:
+                    return
+                # the curly block start should be just after the location of the header
+                if header_loc.end()[0] != curly_loc.start()[0]:
+                    yield AdvancedRuleResult(node)
+                elif header_loc.end()[1] != curly_loc.start()[1] - 1:
+                    yield AdvancedRuleResult(node)
+
+        def check_simple_block_like(node):
+            if curly_loc := node.curly_braces_location():
+                header_loc = node.block_header()
+                if isinstance(node, (chapel.Begin, chapel.Cobegin)) and node.with_clause():
+                    with_ = node.with_clause()
+                    assert with_ is not None
+                    header_loc = with_.location()
+                if not header_loc:
+                    return
+
+                # the curly block start should be just after the location of the header
+                if header_loc.end()[0] != curly_loc.start()[0]:
+                    yield AdvancedRuleResult(node)
+                elif header_loc.end()[1] != curly_loc.start()[1] - 1:
+                    yield AdvancedRuleResult(node)
+
+        for node, _ in chapel.each_matching(root, set([
+            chapel.Conditional,
+            chapel.Try,
+            chapel.Catch,
+            chapel.Loop,
+            chapel.NamedDecl,
+            chapel.On,
+            chapel.Cobegin,
+            chapel.Begin,
+            chapel.Defer,
+            chapel.Serial,
+            chapel.Sync,
+            chapel.Local,
+            chapel.Manage,
+            chapel.Select,
+            chapel.When,
+        ])):
+            if isinstance(node, chapel.Conditional):
+                yield from check_conditional(node)
+            elif isinstance(node, chapel.Try):
+                yield from check_try(node)
+            elif isinstance(node, chapel.Catch):
+                yield from check_catch(node)
+            elif isinstance(node, chapel.Loop):
+                yield from check_loop(node)
+            elif isinstance(node, chapel.NamedDecl):
+                yield from check_named_decl(node)
+            elif isinstance(
+                node,
+                (
+                    chapel.On,
+                    chapel.Cobegin,
+                    chapel.Begin,
+                    chapel.Defer,
+                    chapel.Serial,
+                    chapel.Sync,
+                    chapel.Local,
+                    chapel.Manage,
+                    chapel.Select,
+                    chapel.When,
+                ),
+            ):
+                yield from check_simple_block_like(node)
+
     @driver.basic_rule(chapel.OpCall)
     def BoolComparison(context, node: chapel.OpCall):
         """
