@@ -56,6 +56,7 @@ def kill_subphase(ppid):
             print("killed.")
             return
 
+    subtest_error("Could not find PID of subphase to kill.")
 
 def main():
     subtest_start()
