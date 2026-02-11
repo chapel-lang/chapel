@@ -273,25 +273,28 @@ namespace detail {
 using namespace chpl;
 
 template <typename T>
-struct CanConvert : std::false_type {};
+struct CanConvert {
+  // For unsupported types, just return an empty tuple.
+  static auto transform(const T& node) { return std::make_tuple(); }
+};
 
-template <> struct CanConvert<const chpl::uast::AstNode*> : std::true_type {
+template <> struct CanConvert<const chpl::uast::AstNode*> {
   // Most error message arguments (as AST nodes) can be null. Mark them
   // as such so that they can be converted to Python (as None) even when null.
   static auto transform(const chpl::uast::AstNode* node) {
     return Nilable(node);
   }
 };
-template <> struct CanConvert<const chpl::types::Type*> : std::true_type {
+template <> struct CanConvert<const chpl::types::Type*> {
   static auto transform(const chpl::types::Type* typ) { return Nilable(typ);}
 };
-template <> struct CanConvert<const chpl::types::Param*> : std::true_type {
+template <> struct CanConvert<const chpl::types::Param*> {
   static auto transform(const chpl::types::Param* param) { return Nilable(param); }
 };
-template <> struct CanConvert<chpl::Location> : std::true_type {
+template <> struct CanConvert<chpl::Location> {
   static auto transform(const chpl::Location& loc) { return loc; }
 };
-template <> struct CanConvert<chpl::resolution::ApplicabilityResult> : std::true_type {
+template <> struct CanConvert<chpl::resolution::ApplicabilityResult> {
   static auto transform(const chpl::resolution::ApplicabilityResult& ar) { return ar; }
 };
 template <typename T> struct CanConvert<std::vector<T>> : CanConvert<T> {
@@ -322,7 +325,7 @@ template <typename T> struct CanConvert<std::optional<T>> : CanConvert<T> {
   }
 };
 #define GENERATED_TYPE(ROOT, ROOT_TYPE, NAME, TYPE, TAG, FLAGS) \
-  template <> struct CanConvert<const TYPE*> : std::true_type { \
+  template <> struct CanConvert<const TYPE*> { \
     static auto transform(const TYPE* val) { return Nilable(val); } \
   };
 #include "generated-types-list.h"
@@ -330,11 +333,7 @@ template <typename T> struct CanConvert<std::optional<T>> : CanConvert<T> {
 template <typename Tuple, size_t Idx>
 auto getOrReturnDummyAtIdx(const Tuple& tup) {
   using ElementType = std::decay_t<decltype(std::get<Idx>(tup))>;
-  if constexpr (CanConvert<ElementType>::value) {
-    return CanConvert<ElementType>::transform(std::get<Idx>(tup));
-  } else {
-    return std::make_tuple();
-  }
+  return CanConvert<ElementType>::transform(std::get<Idx>(tup));
 }
 
 template <typename Tuple, size_t ... Idx>
