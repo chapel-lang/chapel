@@ -76,6 +76,7 @@ void       getMoreVisibleFunctionsOrMethods(const char*  name,
 void       getVisibleFunctions(const char*      name,
                                CallExpr*        call,
                                Vec<FnSymbol*>&  visibleFns);
+BlockStmt* getVisibleFnsInstantiationPt(BlockStmt* block);
 
 BlockStmt* getVisibilityScope(Expr* expr);
 BlockStmt* getInstantiationPoint(Expr* expr);

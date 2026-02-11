@@ -411,8 +411,6 @@ static void lookAtTypeFirst(const char* name, CallExpr* call, BlockStmt* block,
                             PtrSet<BlockStmt*>& visited,
                             Vec<FnSymbol*>&       visibleFns);
 
-static BlockStmt* getVisibleFnsInstantiationPt(BlockStmt* block);
-
 static void getVisibleFnsShowBlock(const char* context, BlockStmt* block,
                                    BlockStmt* instantiationPt);
 
@@ -1039,7 +1037,7 @@ void getVisibleFunctions(const char*      name,
                           visited, visibleFns, false);
 }
 
-static BlockStmt* getVisibleFnsInstantiationPt(BlockStmt* block) {
+BlockStmt* getVisibleFnsInstantiationPt(BlockStmt* block) {
   BlockStmt* instantiationPt = NULL;
 
   // We check for an instantiation point only at FnSymbols'
