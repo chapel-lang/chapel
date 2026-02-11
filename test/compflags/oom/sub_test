@@ -83,9 +83,9 @@ def main():
                 oom_message_found = True
 
     if not killed_subphase:
-        sys.exit("Did not encounter and kill the expected subphase.")
+        subtest_error("Expected subphase was not found in compiler output.")
     elif not oom_message_found:
-        sys.exit("Did not find expected OOM message in output after killing subphase.")
+        subtest_error("Did not find expected OOM message in output after killing subphase.")
     else:
         print("Found expected OOM warning message after killing subphase.")
 
