@@ -78,7 +78,11 @@ class Chapel < Formula
     EOS
 
     on_linux do
-    # we get strange build erros with the bundled lobunwind onc
+      # we get strange build errors when trying to build with libunwind on linux
+      # the bundled build gets weird linking errors. this seems to be the fault
+      # of the homebrew build environment. we also cant use the system libunwind
+      # due to it being keg-only and not found by default.
+      # for now, disable stack unwinding with linuxbrew
       (libexec/"chplconfig").append_lines <<~EOS
         CHPL_UNWIND=none
       EOS
