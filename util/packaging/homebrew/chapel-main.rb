@@ -77,6 +77,13 @@ class Chapel < Formula
       CHPL_TARGET_CPU=native
     EOS
 
+    on_linux do
+    # we get strange build erros with the bundled lobunwind onc
+      (libexec/"chplconfig").append_lines <<~EOS
+        CHPL_UNWIND=none
+      EOS
+    end
+
     # Must be built from within CHPL_HOME to prevent build bugs.
     # https://github.com/Homebrew/legacy-homebrew/pull/35166
     cd libexec do
