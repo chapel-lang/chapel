@@ -297,6 +297,9 @@ template <> struct CanConvert<chpl::Location> {
 template <> struct CanConvert<chpl::resolution::ApplicabilityResult> {
   static auto transform(const chpl::resolution::ApplicabilityResult& ar) { return ar; }
 };
+template <> struct CanConvert<chpl::resolution::CallInfo> {
+  static auto transform(const chpl::resolution::CallInfo& ar) { return ar; }
+};
 template <typename T> struct CanConvert<std::vector<T>> : CanConvert<T> {
   static auto transform(const std::vector<T>& vec) {
     std::vector<decltype(CanConvert<T>::transform(std::declval<T>()))> toReturn;
@@ -384,6 +387,7 @@ DEFINE_INOUT_TYPE(IterAdapterBase*, "typing.Iterator[AstNode]", wrapIterAdapter(
 DEFINE_INOUT_TYPE(PyObject*, "typing.Any", TO_WRAP, TO_UNWRAP);
 DEFINE_INOUT_TYPE(const chpl::resolution::Scope*, "Scope", (PyObject*) ScopeObject::create(CONTEXT, TO_WRAP), ((ScopeObject*) TO_UNWRAP)->value_);
 DEFINE_INOUT_TYPE(chpl::resolution::ApplicabilityResult, "ApplicabilityResult", (PyObject*) ApplicabilityResultObject::create(CONTEXT, TO_WRAP), ((ApplicabilityResultObject*) TO_UNWRAP)->value_);
+DEFINE_INOUT_TYPE(chpl::resolution::CallInfo, "CallInfo", (PyObject*) CallInfoObject::create(CONTEXT, TO_WRAP), ((CallInfoObject*) TO_UNWRAP)->value_);
 
 template <typename T>
 T_DEFINE_INOUT_TYPE(T*, T::Name, (PyObject*) TO_WRAP, (T*) TO_UNWRAP);

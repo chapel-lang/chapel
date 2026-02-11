@@ -248,6 +248,12 @@ struct ApplicabilityResultObject : public PythonClassWithContext<ApplicabilityRe
   static constexpr const char* DocStr = "The result of checking whether a particular function candidate is applicable to a call.";
 };
 
+struct CallInfoObject : public PythonClassWithContext<CallInfoObject, chpl::resolution::CallInfo> {
+  static constexpr const char* QualifiedName = "chapel.CallInfo";
+  static constexpr const char* Name = "CallInfo";
+  static constexpr const char* DocStr = "Information about a particular call, including the actuals usded for the resolution";
+};
+
 template<typename IntentType>
 const char* intentToString(IntentType intent) {
   return qualifierToString(chpl::uast::Qualifier(int(intent)));

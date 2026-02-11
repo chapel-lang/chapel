@@ -211,3 +211,10 @@ CLASS_BEGIN(ApplicabilityResult)
   PLAIN_GETTER(ApplicabilityResult, actual_idx, "If this candidate was inapplicable due to a particular formal parameter, the index of the corresponding actual parameter",
                int, return node->actualIdx())
 CLASS_END(ApplicabilityResult)
+
+CLASS_BEGIN(CallInfo)
+  PLAIN_GETTER(CallInfo, is_method_call, "Check if this CallInfo represents a method call",
+               bool, return node->isMethodCall())
+  PLAIN_GETTER(CallInfo, has_question_arg, "Check if this CallInfo represents a call with a question argument",
+               bool, return node->hasQuestionArg())
+CLASS_END(CallInfo)
