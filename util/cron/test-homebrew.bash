@@ -70,7 +70,12 @@ brew uninstall --force chapel
 # Remove the cached chapel tar file before running brew install --build-from-source chapel.rb
 rm -f $HOME/Library/Caches/Homebrew/downloads/*--chapel-${short_version}.tar.gz
 
-HOMEBREW_DEVELOPER=1 HOMEBREW_NO_INSTALL_FROM_API=1 brew install -v --build-from-source ./chapel.rb \
+# install chapel.rb to the core tap
+cp ./chapel.rb $(brew --repository homebrew/core)/Formula/c/chapel.rb
+# install chapel
+# per the docs, HOMEBREW_NO_INSTALL_FROM_API must be set
+# https://docs.brew.sh/FAQ#can-i-edit-formulae-myself
+HOMEBREW_NO_INSTALL_FROM_API=1 brew install -v --build-from-source ./chapel.rb \
   | awk 'tolower($0)~/failed steps? ignored/{r=1} 1; END{exit(r)}'
 chpl --version
 
