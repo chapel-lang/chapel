@@ -428,13 +428,13 @@ def get_configs(opts):
     config_strings = itertools.product(*dimension_values)
 
     configs = []
-    for config_tuple in config_strings:
+    for config_num, config_tuple in enumerate(config_strings):
         config = Config(*config_tuple)
         if (platform.machine() in ("aarch64", "arm64") and
             "cray" in (config.target_compiler, config.host_compiler) and
             config.unwind == "bundled"):
             config.unwind = "none"
-            logging.warning("Forcing libunwind=none for aarch64 CCE build, to work around build failure with bundled libunwind, in config: {0}".format(config))
+            logging.warning("Forcing unwind=none for aarch64 CCE build to work around bundled build failure, in config {0}".format(config_num))
         configs.append(config)
 
     return configs
