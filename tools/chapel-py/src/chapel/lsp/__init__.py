@@ -26,7 +26,13 @@ This module contains utility functions for working with Chapel compiler types
 and the Language Server Protocol.
 """
 
-from lsprotocol.types import Position, Range, Diagnostic, DiagnosticRelatedInformation, DiagnosticSeverity
+from lsprotocol.types import (
+    Position,
+    Range,
+    Diagnostic,
+    DiagnosticRelatedInformation,
+    DiagnosticSeverity,
+)
 import chapel
 
 
@@ -77,7 +83,11 @@ def error_to_diagnostic(error) -> Diagnostic:
                 idx = -1
             actuals_set.add(idx)
 
-        if len(actuals_set) == 1 and -1 not in actuals_set and isinstance(call, chapel.FnCall):
+        if (
+            len(actuals_set) == 1
+            and -1 not in actuals_set
+            and isinstance(call, chapel.FnCall)
+        ):
             # All candidates were rejected due to the same candidate, so highlight that candidate.
             location = call.actual(actuals_set.pop()).location()
             assert type_ is not None
