@@ -398,6 +398,10 @@ PyObject* wrapGeneratedType(ContextObject* context, const chpl::ErrorBase* node)
   }
   PyObject* args = Py_BuildValue("(O)", (PyObject*) context);
   switch (node->type()) {
+    case chpl::ErrorType::General:
+      toReturn = PyObject_CallObject((PyObject*) GeneralErrorType, args);
+      ((GeneralErrorObject*) toReturn)->parent.value_ = node->clone();
+      break;
 #define DIAGNOSTIC_CLASS(NAME, KIND, EINFO...) \
     case chpl::ErrorType::NAME: \
       toReturn = PyObject_CallObject((PyObject*) NAME##Type, args); \

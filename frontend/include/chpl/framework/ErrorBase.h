@@ -69,6 +69,7 @@ enum ErrorType {
 
 /* Forward-declare subclasses of ErrorBase, so that we can use them in
    ErrorBase::toBla() methods. */
+class GeneralError;
 #define DIAGNOSTIC_CLASS(NAME, KIND, EINFO...) class Error##NAME;
 #include "chpl/framework/error-classes-list.h"
 #undef DIAGNOSTIC_CLASS
@@ -158,6 +159,14 @@ class ErrorBase {
   virtual void write(ErrorWriterBase& wr) const = 0;
   virtual void mark(Context* context) const = 0;
   virtual owned<ErrorBase> clone() const = 0;
+
+  bool isGeneralError() const { return type_ == ErrorType::General; }
+  const GeneralError* toGeneralError() const {
+    return isGeneralError() ? (const GeneralError*)(this) : nullptr;
+  }
+  GeneralError* toGeneralError() {
+    return isGeneralError() ? (GeneralError*)(this) : nullptr;
+  }
 
   #define DIAGNOSTIC_CLASS(NAME, KIND, EINFO...) \
     bool is##NAME() const { return type_ == ErrorType::NAME; } \
