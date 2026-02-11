@@ -7,7 +7,6 @@ FROM ghcr.io/homebrew/ubuntu22.04:main
 # which can be ran without brew_install.bash
 ENV HOMEBREW_NO_AUTO_UPDATE=1
 ENV HOMEBREW_NO_INSTALL_FROM_API=1
-ENV HOMEBREW_DEVELOPER=1
 
 RUN mkdir -p /home/linuxbrew
 # only really needed for interactive debugging
