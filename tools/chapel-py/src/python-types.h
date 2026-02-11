@@ -192,6 +192,9 @@ std::string tupleTypeStringImpl(std::index_sequence<Is...>) {
   };
 
   (printElem(std::get<Is>(std::tuple<Elems...>())), ...);
+  if constexpr (sizeof...(Elems) == 0) {
+    toReturn += "()";
+  }
   toReturn += "]";
 
   return toReturn;
