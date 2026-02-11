@@ -138,6 +138,7 @@ async def test_string(client: LanguageClient):
             client, doc, pos((0, 12)), string_loc, "record _string"
         )
 
+
 @pytest.mark.asyncio
 async def test_error_location_specific(client: LanguageClient):
     """
