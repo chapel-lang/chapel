@@ -8,6 +8,8 @@ import os
 import signal
 import subprocess
 import sys
+import time
+from datetime import datetime
 
 
 oom_message = "warning: A driver phase was killed by signal SIGKILL -- possibly due to running out of memory"
@@ -15,6 +17,27 @@ phase_invocation_message = "invoking driver compilation phase"
 phase_arg = "driver-compilation-phase"
 chpl_file = "oom.chpl"
 
+subtest_start_time = None
+subtest_test_name = '"compflags/oom"'
+
+
+def subtest_start():
+    global subtest_start_time
+    subtest_start_time = datetime.now()
+
+    print(f"[Starting subtest - {datetime.now().strftime('%c')}]")
+    print(f"[test: {subtest_test_name}]")
+
+def subtest_end():
+    subtest_end_time = datetime.now()
+    elapsed_time = (subtest_end_time - subtest_start_time).total_seconds()
+
+    print(f"[Elapsed time to compile and execute all versions of {subtest_test_name} - {elapsed_time} seconds]")
+    print(f"[Finished subtest {subtest_test_name} - {elapsed_time} seconds]")
+
+def subtest_error(msg):
+    print(f"[Error running sub_test {subtest_test_name} - {msg}]")
+    sys.exit(1)
 
 def kill_subphase(ppid):
     ps_output = subprocess.check_output(
@@ -34,6 +57,8 @@ def kill_subphase(ppid):
 
 
 def main():
+    subtest_start()
+
     assert len(sys.argv) == 2
     chpl_cmd = sys.argv[1]
 
@@ -62,6 +87,8 @@ def main():
         sys.exit("Did not find expected OOM message in output after killing subphase.")
     else:
         print("Found expected OOM warning message after killing subphase.")
+
+    subtest_end()
 
 
 if __name__ == "__main__":
