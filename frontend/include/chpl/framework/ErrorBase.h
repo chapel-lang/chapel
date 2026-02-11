@@ -168,6 +168,7 @@ class ErrorBase {
     return isGeneralError() ? (GeneralError*)(this) : nullptr;
   }
 
+  /// \cond DO_NOT_DOCUMENT
   #define DIAGNOSTIC_CLASS(NAME, KIND, EINFO...) \
     bool is##NAME() const { return type_ == ErrorType::NAME; } \
     const Error##NAME* to##NAME() const { \
@@ -178,6 +179,7 @@ class ErrorBase {
     }
   #include "chpl/framework/error-classes-list.h"
   #undef DIAGNOSTIC_CLASS
+  /// \endcond DO_NOT_DOCUMENT
 };
 
 /* Converts a given ErrorType to its corresponding ErrorBase::Kind */
