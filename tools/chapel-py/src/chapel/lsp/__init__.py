@@ -51,7 +51,13 @@ def location_to_range(location) -> Range:
     )
 
 
-def error_to_location_and_info(error) -> typing.Tuple[chapel.Location, typing.Optional[DiagnosticRelatedInformation], typing.Optional[str]]:
+def error_to_location_and_info(
+    error,
+) -> typing.Tuple[
+    chapel.Location,
+    typing.Optional[DiagnosticRelatedInformation],
+    typing.Optional[str],
+]:
     related_info = None
     location = error.location()
     type_ = error.type()
