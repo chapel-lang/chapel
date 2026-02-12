@@ -269,6 +269,9 @@ void MatchingIdsWithName::removeDuplicateIds(std::vector<ResultVisibilityTrace>*
       // by storing it into the element 'cur'
       if (i != cur) {
         idvs_[cur] = idvs_[i];
+        if (traces) {
+          (*traces)[cur] = (*traces)[i];
+        }
       }
       cur++;
     }
@@ -277,6 +280,9 @@ void MatchingIdsWithName::removeDuplicateIds(std::vector<ResultVisibilityTrace>*
   if (cur != end) {
 #if LLVM_VERSION_MAJOR >= 14
     idvs_.truncate(cur);
+    if (traces) {
+      traces->resize(cur);
+    }
 #else
     idvs_.resize(cur);
 #endif
