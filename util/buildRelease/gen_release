@@ -35,8 +35,8 @@ make_threads = 1
 
 pjoin = os.path.join
 
-def set_make_threads(rootdir):
-    with cd(rootdir):
+def set_make_threads(home_dir):
+    with cd(home_dir):
         result = run("util/buildRelease/chpl-make-cpu_count", stdout=subprocess.PIPE)
         make_threads = int(result.stdout.decode().strip())
         return make_threads
@@ -134,6 +134,8 @@ def main():
         "CHPL_HOME", os.path.abspath(os.path.join(__file__, "..", "..", ".."))
     )
 
+    set_make_threads(chplhome)
+
     # pointers to temporary directory where chapel will be built
     basetmpdir = os.getenv("CHPL_GEN_RELEASE_TMPDIR", tempfile.gettempdir())
     user = getpass.getuser()
@@ -142,7 +144,6 @@ def main():
     )
     archive_dir = pjoin(tmpdir, reldir)
     rootdir = pjoin(tmpdir, "chpl_home")
-    set_make_threads(rootdir)
 
     rm_rf(tmpdir)
     os.makedirs(archive_dir, exist_ok=True)
