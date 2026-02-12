@@ -135,53 +135,6 @@ CLASS_BEGIN(Scope)
                return toReturn)
 CLASS_END(Scope)
 
-CLASS_BEGIN(Error)
-  PLAIN_GETTER(Error, code_snippets, "Get the locations of code snippets printed by this error",
-               std::vector<chpl::ErrorCodeSnippet>,
-
-               CompatibilityWriter writer(context);
-               (*node)->write(writer);
-               return writer.codeSnippets())
-  PLAIN_GETTER(Error, location, "Get the location at which this error occurred",
-               chpl::Location, return (*node)->location(context))
-  PLAIN_GETTER(Error, message, "Retrieve the contents of this error message",
-               std::string, return (*node)->message())
-  PLAIN_GETTER(Error, notes, "Get the locations and text of additional notes printed by this error",
-               std::vector<LocationAndNote>,
-
-               std::vector<LocationAndNote> toReturn;
-               CompatibilityWriter writer(context);
-               (*node)->write(writer);
-               for (auto& note : writer.notes()) {
-                 toReturn.push_back(std::make_tuple(std::get<0>(note).computeLocation(context),
-                                                    std::get<1>(note)));
-               }
-               return toReturn)
-  PLAIN_GETTER(Error, kind, "Retrieve the kind ('error', 'warning') of this type of error",
-               const char*, return chpl::ErrorBase::getKindName((*node)->kind()))
-  PLAIN_GETTER(Error, type, "Retrieve the unique name of this type of error",
-               std::optional<const char*>,
-               const char* name = chpl::ErrorBase::getTypeName((*node)->type());
-               return name ? std::optional(name) : std::nullopt;
-               )
-CLASS_END(Error)
-
-CLASS_BEGIN(ErrorManager)
-  PLAIN_GETTER(ErrorManager, __enter__, "The context manager 'enter' method for this ErrorManager object",
-               PyObject*,
-
-               std::ignore = node;
-               auto list = ((PythonErrorHandler*) context->errorHandler())->pushList();
-               Py_INCREF(list);
-               return list)
-
-  METHOD(ErrorManager, __exit__, "The context manager 'enter' method for this ErrorManager object",
-         void(PyObject*, PyObject*, PyObject*),
-
-         std::ignore = node;
-         ((PythonErrorHandler*) context->errorHandler())->popList())
-CLASS_END(ErrorManager)
-
 CLASS_BEGIN(ResolvedExpression)
   PLAIN_GETTER(ResolvedExpression, most_specific_candidate, "If this node is a call, return the most specific overload selected by call resolution.",
                std::optional<MostSpecificCandidateObject*>,
@@ -247,3 +200,31 @@ CLASS_BEGIN(TypedSignature)
   PLAIN_GETTER(TypedSignature, ast, "Get the AST from which this function signature is computed",
                Nilable<const chpl::uast::AstNode*>, return chpl::parsing::idToAst(context, node->signature->id()))
 CLASS_END(TypedSignature)
+
+CLASS_BEGIN(ApplicabilityResult)
+  PLAIN_GETTER(ApplicabilityResult, candidate_failure_reason, "If this candidate was inapplicable, the reason why",
+               const char*, return resolution::candidateFailureReasonToString(node->reason()))
+  PLAIN_GETTER(ApplicabilityResult, formal_failure_reason, "If this candidate was inapplicable due to a particular formal parameter, the reason why",
+               const char*, return resolution::passingFailureReasonToString(node->formalReason()))
+  PLAIN_GETTER(ApplicabilityResult, formal_idx, "If this candidate was inapplicable due to a particular formal parameter, the index of that formal parameter",
+               int, return node->formalIdx())
+  PLAIN_GETTER(ApplicabilityResult, actual_idx, "If this candidate was inapplicable due to a particular formal parameter, the index of the corresponding actual parameter",
+               int, return node->actualIdx())
+  PLAIN_GETTER(ApplicabilityResult, candidate_is_method, "Check whether this candidate is a method",
+               bool,
+
+               auto errId = node->idForErr();
+               if (!errId.isEmpty()) return parsing::idIsMethod(context, errId);
+
+               if (auto candidate = node->candidate()) {
+                 return candidate->isMethod();
+               }
+               return false)
+CLASS_END(ApplicabilityResult)
+
+CLASS_BEGIN(CallInfo)
+  PLAIN_GETTER(CallInfo, is_method_call, "Check if this CallInfo represents a method call",
+               bool, return node->isMethodCall())
+  PLAIN_GETTER(CallInfo, has_question_arg, "Check if this CallInfo represents a call with a question argument",
+               bool, return node->hasQuestionArg())
+CLASS_END(CallInfo)

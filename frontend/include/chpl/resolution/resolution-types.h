@@ -1451,6 +1451,8 @@ enum CandidateFailureReason {
   FAIL_CANDIDATE_OTHER,
 };
 
+const char* candidateFailureReasonToString(CandidateFailureReason reason);
+
 /**
   An enum that represents the reason why an actual couldn't be passed
   to a formal.
@@ -1494,6 +1496,8 @@ enum PassingFailureReason {
   /* Some other, generic reason. */
   FAIL_FORMAL_OTHER,
 };
+
+const char* passingFailureReasonToString(PassingFailureReason reason);
 
 /**
   Represents either a function that was accepted during call resolution, or

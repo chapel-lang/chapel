@@ -64,6 +64,11 @@
 #include "chpl/types/param-classes-list.h"
 #undef PARAM_NODE
 
+#define DIAGNOSTIC_CLASS(NAME, KIND, EINFO...) GENERATED_TYPE(Error, chpl::ErrorBase, NAME, chpl::Error##NAME, chpl::ErrorType::NAME, Py_TPFLAGS_DEFAULT)
+GENERATED_TYPE(Error, chpl::ErrorBase, GeneralError, chpl::GeneralError, chpl::ErrorType::General, Py_TPFLAGS_DEFAULT)
+#include "chpl/framework/error-classes-list.h"
+#undef DIAGNOSTIC_CLASS
+
 #undef GENERATED_TYPE
 #undef GENERATED_TYPE_BEGIN
 #undef GENERATED_TYPE_END

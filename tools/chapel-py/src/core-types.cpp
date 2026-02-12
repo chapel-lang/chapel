@@ -306,6 +306,10 @@ PyTypeObject* parentTypeFor(chpl::types::paramtags::ParamTag tag) {
   return ParamObject::PythonType;
 }
 
+PyTypeObject* parentTypeFor(chpl::ErrorType tag) {
+  return ErrorObject::PythonType;
+}
+
 PyObject* wrapGeneratedType(ContextObject* context, const AstNode* node) {
   PyObject* toReturn = nullptr;
   if (node == nullptr) {
@@ -381,6 +385,30 @@ PyObject* wrapGeneratedType(ContextObject* context, const chpl::types::Param* no
       break;
 #include "chpl/types/param-classes-list.h"
 #undef PARAM_NODE
+  }
+  Py_XDECREF(args);
+  return toReturn;
+}
+
+PyObject* wrapGeneratedType(ContextObject* context, const chpl::ErrorBase* node) {
+  PyObject* toReturn = nullptr;
+  if (node == nullptr) {
+    PyErr_SetString(PyExc_RuntimeError, "implementation attempted to wrap a null pointer");
+    return nullptr;
+  }
+  PyObject* args = Py_BuildValue("(O)", (PyObject*) context);
+  switch (node->type()) {
+    case chpl::ErrorType::General:
+      toReturn = PyObject_CallObject((PyObject*) GeneralErrorType, args);
+      ((GeneralErrorObject*) toReturn)->parent.value_ = node->clone();
+      break;
+#define DIAGNOSTIC_CLASS(NAME, KIND, EINFO...) \
+    case chpl::ErrorType::NAME: \
+      toReturn = PyObject_CallObject((PyObject*) NAME##Type, args); \
+      ((NAME##Object*) toReturn)->parent.value_ = node->clone(); \
+      break;
+#include "chpl/framework/error-classes-list.h"
+#undef DIAGNOSTIC_CLASS
   }
   Py_XDECREF(args);
   return toReturn;
