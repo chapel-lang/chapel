@@ -475,7 +475,18 @@ module UnitTest {
       checkAssertEquality(first, second);
     }
 
+    /*
+     Default relative tolerance for assertClose
+
+     :returns: 1.0e-5
+     */
     proc defaultRelTol param : real do return 1e-5;
+
+    /*
+     Default absolute tolerance for assertClose
+
+     :returns: 0.0
+     */
     proc defaultAbsTol param : real do return 0.0;
 
     /*
