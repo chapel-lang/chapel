@@ -77,6 +77,17 @@ class Chapel < Formula
       CHPL_TARGET_CPU=native
     EOS
 
+    on_linux do
+      # we get strange build errors when trying to build with libunwind on linux
+      # the bundled build gets weird linking errors. this seems to be the fault
+      # of the homebrew build environment. we also cant use the system libunwind
+      # due to it being keg-only and not found by default.
+      # for now, disable stack unwinding with linuxbrew
+      (libexec/"chplconfig").append_lines <<~EOS
+        CHPL_UNWIND=none
+      EOS
+    end
+
     # Must be built from within CHPL_HOME to prevent build bugs.
     # https://github.com/Homebrew/legacy-homebrew/pull/35166
     cd libexec do
