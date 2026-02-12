@@ -18,9 +18,15 @@ phase_arg = "driver-compilation-phase"
 chpl_file = "oom.chpl"
 ps_base_command = "ps -o pid,ppid,cmd"
 
+
+### BEGIN sub_test output helper functions ###
+
+# The output from these functions is expected by our test infrastructure
+# to determine whether the sub_test run succeeded or failed, gather timings,
+# and detect the individual test run under the sub_test.
+
 subtest_start_time = None
 subtest_test_name = '"compflags/oom"'
-
 
 def subtest_start():
     global subtest_start_time
@@ -39,6 +45,9 @@ def subtest_end():
 def subtest_error(msg):
     print(f"[Error running sub_test {subtest_test_name} - {msg}]")
     sys.exit(1)
+
+### END sub_test output helper functions ###
+
 
 def kill_subphase(ppid):
     ps_cmd = f"{ps_base_command} | grep chpl | grep {phase_arg}"
