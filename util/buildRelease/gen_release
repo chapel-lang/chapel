@@ -36,6 +36,7 @@ make_threads = 1
 pjoin = os.path.join
 
 def set_make_threads(home_dir):
+    global make_threads
     with cd(home_dir):
         result = run("util/buildRelease/chpl-make-cpu_count", stdout=subprocess.PIPE)
         make_threads = int(result.stdout.decode().strip())
