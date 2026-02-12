@@ -31,16 +31,20 @@ def run(*args, **kwargs):
     return result
 
 
-def get_make_threads():
-    result = run("util/buildRelease/chpl-make-cpu_count", stdout=subprocess.PIPE)
-    return int(result.stdout.decode().strip())
+make_threads = 1
+
+pjoin = os.path.join
+
+def set_make_threads(rootdir):
+    with cd(rootdir):
+        result = run("util/buildRelease/chpl-make-cpu_count", stdout=subprocess.PIPE)
+        make_threads = int(result.stdout.decode().strip())
+        return make_threads
 
 
 def make(*args, **kwargs):
-    return run("make", f"-j{get_make_threads()}", *args, **kwargs)
+    return run("make", f"-j{make_threads}", *args, **kwargs)
 
-
-pjoin = os.path.join
 
 def log(*args, **kwargs):
     _kwargs = {'flush': True}
@@ -138,6 +142,7 @@ def main():
     )
     archive_dir = pjoin(tmpdir, reldir)
     rootdir = pjoin(tmpdir, "chpl_home")
+    set_make_threads(rootdir)
 
     rm_rf(tmpdir)
     os.makedirs(archive_dir, exist_ok=True)
