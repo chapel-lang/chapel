@@ -31,11 +31,21 @@ def run(*args, **kwargs):
     return result
 
 
-def make(*args, **kwargs):
-    return run("make", *args, **kwargs)
-
+make_threads = 1
 
 pjoin = os.path.join
+
+def set_make_threads(home_dir):
+    global make_threads
+    with cd(home_dir):
+        result = run("util/buildRelease/chpl-make-cpu_count", stdout=subprocess.PIPE)
+        make_threads = int(result.stdout.decode().strip())
+        return make_threads
+
+
+def make(*args, **kwargs):
+    return run("make", f"-j{make_threads}", *args, **kwargs)
+
 
 def log(*args, **kwargs):
     _kwargs = {'flush': True}
@@ -124,6 +134,8 @@ def main():
     chplhome = os.getenv(
         "CHPL_HOME", os.path.abspath(os.path.join(__file__, "..", "..", ".."))
     )
+
+    set_make_threads(chplhome)
 
     # pointers to temporary directory where chapel will be built
     basetmpdir = os.getenv("CHPL_GEN_RELEASE_TMPDIR", tempfile.gettempdir())
