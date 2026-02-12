@@ -75,7 +75,7 @@ cp ./chapel.rb $(brew --repository homebrew/core)/Formula/c/chapel.rb
 # install chapel
 # per the docs, HOMEBREW_NO_INSTALL_FROM_API must be set
 # https://docs.brew.sh/FAQ#can-i-edit-formulae-myself
-HOMEBREW_NO_INSTALL_FROM_API=1 brew install -v --build-from-source ./chapel.rb \
+HOMEBREW_NO_INSTALL_FROM_API=1 brew install -v --build-from-source chapel \
   | awk 'tolower($0)~/failed steps? ignored/{r=1} 1; END{exit(r)}'
 chpl --version
 
