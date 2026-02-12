@@ -76,15 +76,24 @@ def get_module_lcd_cpu(platform_val, cpu):
         else:
             return "sandybridge"
     elif chpl_platform.is_hpe_cray('target'):
+        cray_network = os.environ.get('CRAYPE_NETWORK_TARGET', 'none')
+        # TODO: This is not always true, we could be on an EX system with
+        # slingshot and CRAYPE_NETWORK_TARGET could not be set
+        ex = cray_network.startswith("slingshot") or cray_network == "ofi"
         if is_known_arm(cpu):
-            return "none"    # we don't know what we need here yet
-        else:
-            cray_network = os.environ.get('CRAYPE_NETWORK_TARGET', 'none')
-            if cray_network.startswith("slingshot") or cray_network == "ofi":
-                # TODO: this is not always true, it just means this has a PrgEnv module
-                return "x86-rome"       # We're building on an HPE Cray EX system!
+            if ex:
+                # As far as we can tell, this is the first (and currently only)
+                # ARM architecture that has been used in an EX.
+                # Anna, 2026-02-05
+                return "arm-grace"
             else:
-                return "sandybridge"    # We're still building on an XC.
+                # We don't know what we need here yet
+                return "none"
+        else:
+            if ex:
+                return "x86-rome"
+            else:
+                return "sandybridge"
     elif platform_val == "aarch64":
         return "arm-thunderx"
     else:
