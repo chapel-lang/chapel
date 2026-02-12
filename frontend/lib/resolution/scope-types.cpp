@@ -253,8 +253,10 @@ void OwnedIdsWithName::stringify(std::ostream& ss,
   }
 }
 
-void MatchingIdsWithName::removeDuplicateIds() {
+void MatchingIdsWithName::removeDuplicateIds(std::vector<ResultVisibilityTrace>* traces) {
   std::unordered_set<IdAndFlags> s;
+
+  CHPL_ASSERT(!traces || traces->size() == idvs_.size());
 
   // remove duplicate IDs in the idvs_ vector
   size_t end = idvs_.size();

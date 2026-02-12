@@ -1849,7 +1849,7 @@ helpLookupInScope(Context* context,
   // TODO: check for "last resort" symbols here, as well
 
   // Deduplicate
-  result.removeDuplicateIds();
+  result.removeDuplicateIds(traceResult);
 
   return got;
 }
