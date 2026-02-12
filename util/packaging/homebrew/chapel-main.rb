@@ -77,7 +77,7 @@ class Chapel < Formula
       CHPL_TARGET_CPU=native
     EOS
 
-    on_linux do
+    if OS.linux?
       # we get strange build errors when trying to build with libunwind on linux
       # the bundled build gets weird linking errors. this seems to be the fault
       # of the homebrew build environment. we also cant use the system libunwind
