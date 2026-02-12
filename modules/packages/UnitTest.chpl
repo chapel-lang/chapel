@@ -482,19 +482,14 @@ module UnitTest {
     Check if a scalar or array is within tolerance of the expected value.
 
     :arg actual: actual value
-    :type actual: ?T or [] ?T
 
     :arg expected: expected value
-    :type expected: T or [] T
 
     :arg relTol: relative tolerance
-    :type relTol: real
 
     :arg absTol: absolute tolerance
-    :type absTol: real
 
     :arg equalNan: whether or not NaN should compare equal, defaults to true
-    :type equalNan: bool
 
     :returns: True if within tolerance, else false
     :rtype: bool or [] bool
@@ -558,25 +553,20 @@ module UnitTest {
       It asserts that actual <= absTol + relTol*expected for each element.
 
       :arg actual: actual, user-computed value
-      :type actual: [] ?T
 
       :arg expected: expected or desired value
-      :type expected: [] T
 
       :arg relTol: relative tolerance
-      :type relTol: real
 
       :arg absTol: absolute tolerance
-      :type absTol: real
 
       :arg equalNan: whether or not NaN should compare equal, defaults to true
-      :type equalNan: bool
 
       :throws IllegalArgumentError: If `actual` and `expected` are of different
-      shape.
+                                    shape.
 
       :throws AssertionError: If `actual` is not approximately equal to
-      `expected` within the specified tolerance.
+                              `expected` within the specified tolerance.
     */
     pragma "insert line file info"
     pragma "always propagate line file info"
@@ -625,22 +615,17 @@ module UnitTest {
       It asserts that actual <= absTol + relTol*expected.
 
       :arg actual: actual, user-computed value
-      :type actual: T
 
       :arg expected: expected or desired value
-      :type expected: T
 
       :arg relTol: relative tolerance
-      :type relTol: real
 
       :arg absTol: absolute tolerance
-      :type absTol: real
 
       :arg equalNan: whether or not NaN should compare equal, defaults to true
-      :type equalNan: bool
 
       :throws AssertionError: If `actual` is not approximately equal to
-      `expected` within the specified tolerance.
+                              `expected` within the specified tolerance.
     */
     pragma "insert line file info"
     pragma "always propagate line file info"
