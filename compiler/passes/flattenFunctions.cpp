@@ -144,6 +144,8 @@ shouldPropagateOuterArg(Symbol* sym, FnSymbol* parentFn, FnSymbol* calledFn) {
 // Does this look like an outer variable, but won't end up being one?
 // Specifcially, toLeader and toFollower might insert references to
 // the iterator fn's formals, but those will turn into field access and
+// stop being outer uses. Replacing them with an alias when flattening
+// would preclude this eventual transformation and cause issues.
 static bool isTemporaryOuterUse(SymExpr* symExpr) {
   if (auto call = toCallExpr(symExpr->parentExpr)) {
     if (call->isPrimitive(PRIM_ITERATOR_RECORD_FIELD_VALUE_BY_FORMAL) &&
