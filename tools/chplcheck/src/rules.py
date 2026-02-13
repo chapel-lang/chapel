@@ -369,6 +369,14 @@ def rules(driver: LintDriver):
         Warn for 'else' blocks that do not start on the same line as the closing brace of the 'then' block.
         """
 
+        # skip if the if statement has no braces
+        if node.then_block().curly_braces_location() is None:
+            return True
+
+        # skip expressions
+        if node.is_expression_level():
+            return True
+
         then_block_loc = node.then_block().location()
         else_kw_loc = node.else_keyword_location()
         if else_kw_loc is None:
@@ -425,6 +433,9 @@ def rules(driver: LintDriver):
             if curly_loc := then_block.curly_braces_location():
                 # the curly block start should be just after the location of the condition
                 condition_loc = node.condition().location()
+                # add the then keyword location
+                if then_kw_loc := node.then_keyword_location():
+                    condition_loc += then_kw_loc
                 res = check_for_unattached(context, then_block, condition_loc, curly_loc, AdvancedRuleResult)
                 if res is not None:
                     yield res
@@ -534,15 +545,6 @@ def rules(driver: LintDriver):
                     with_ = node.where_clause()
                     assert with_ is not None
                     header_loc += with_.location()
-                # the curly block start should be just after the location of the header
-                # if (
-                #     header_loc.end()[0] != curly_loc.start()[0]
-                #     or header_loc.end()[1] != curly_loc.start()[1] - 1
-                # ):
-                #     fixit = build_unattached_fixit(
-                #         lines, (header_loc, curly_loc)
-                #     )
-                #     yield AdvancedRuleResult(node, fixits=fixit)
                 res = check_for_unattached(context, node, header_loc, curly_loc, AdvancedRuleResult)
                 if res is not None:
                     yield res
