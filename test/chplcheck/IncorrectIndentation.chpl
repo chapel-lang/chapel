@@ -454,4 +454,22 @@ if 1 < 2 {
       }
     }
   }
+
+  begin with (var x = 1)
+  {
+    writeln("hi");
+    writeln("??");
+  }
+
+  record R { }
+  manage new R()
+  {
+    var x = 1;
+    var y = 2;
+  }
+  manage new R()
+  {
+     var x = 1;
+    var y = 2;
+  }
 }
