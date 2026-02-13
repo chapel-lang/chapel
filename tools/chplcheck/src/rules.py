@@ -1323,6 +1323,8 @@ def rules(driver: LintDriver):
             iterable = root.stmts()
         elif isinstance(root, Interface):
             iterable = root.stmts()
+        elif isinstance(root, Cobegin):
+            iterable = root.task_bodies()
         elif isinstance(root, Module) and root.attribute_group() is not None:
             # attribute group is the first child, skip it
             iterable = list(root)[1:]
