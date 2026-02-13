@@ -1321,6 +1321,8 @@ def rules(driver: LintDriver):
             iterable = root.decls_or_comments()
         elif isinstance(root, SimpleBlockLike):
             iterable = root.stmts()
+        elif isinstance(root, Interface):
+            iterable = root.stmts()
         elif isinstance(root, Module) and root.attribute_group() is not None:
             # attribute group is the first child, skip it
             iterable = list(root)[1:]
