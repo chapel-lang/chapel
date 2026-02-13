@@ -1197,10 +1197,6 @@ block_stmt:
 
     // Create the BlockStmt
     auto blockstmt = Block::build(BUILDER, LOC(@$), context->consumeList($1));
-    // if (context->hasCurlyBracesLoc()) {
-    //   BUILDER->tryNoteCurlyBracesLocation(blockstmt.get(), LOC(context->curlyBracesLoc()));
-    //   context->resetCurlyBracesLoc();
-    // }
     cs.stmt = blockstmt.release();
     if (context->hasCurlyBracesLoc()) {
       cs.curlyLoc = context->curlyBracesLoc();
@@ -1977,12 +1973,14 @@ interface_stmt:
   {
     TypeDeclParts parts = $1;
     $$ = context->buildInterfaceStmt(@$, @1, parts, $3, @5, $5);
+    BUILDER->noteCurlyBracesLocation($$.stmt, LOC($5.curlyLoc));
     context->exitScope(asttags::Interface, parts.name);
   }
 | interface_start                       block_stmt
   {
     TypeDeclParts parts = $1;
     $$ = context->buildInterfaceStmt(@$, @1, parts, nullptr, @2, $2);
+    BUILDER->noteCurlyBracesLocation($$.stmt, LOC($2.curlyLoc));
     context->exitScope(asttags::Interface, parts.name);
   }
 ;
