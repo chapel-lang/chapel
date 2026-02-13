@@ -1023,6 +1023,11 @@ def rules(driver: LintDriver):
             if formal.name() == "_":
                 continue
 
+            # skip formals named Self that have no name location
+            # (they are compiler generated)
+            if formal.name() == "Self" and formal.name_location().start() == (0, 0) and formal.name_location().end() == (0, 0):
+                continue
+
             # extern functions have no bodies that can use their formals.
             parent = formal.parent()
             if isinstance(parent, NamedDecl) and parent.linkage() == "extern":
