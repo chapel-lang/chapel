@@ -76,4 +76,8 @@ module UnattachedCurly {
 
   }
 
+  proc foo() throws { return 5; }
+  var x = try! foo(),
+      y = try foo();
+
 }
