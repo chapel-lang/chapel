@@ -372,11 +372,18 @@ def rules(driver: LintDriver):
             prev = prev_catch
         prev_loc = prev.location()
 
+        full_loc = catch_loc + prev_loc
+        blank_loc = full_loc - catch_loc - prev_loc
+        blank_text = range_to_text(blank_loc, chapel.get_file_lines(context, node))
+        fixit = None
+        if blank_text.strip() == "":
+            fixit = Fixit.build(Edit.build(blank_loc, " "))
+
         # the lines must be the same
         if prev_loc.end()[0] != catch_loc.start()[0]:
-            return BasicRuleResult(node, ignorable=False)
+            return BasicRuleResult(node, ignorable=False, fixits=fixit)
         elif prev_loc.end()[1] != catch_loc.start()[1] - 1:
-            return BasicRuleResult(node, ignorable=False)
+            return BasicRuleResult(node, ignorable=False, fixits=fixit)
 
         return True
 
