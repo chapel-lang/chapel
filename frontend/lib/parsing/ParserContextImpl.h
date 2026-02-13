@@ -1307,7 +1307,7 @@ CommentsAndStmt ParserContext::buildManageStmt(YYLTYPE location,
                     blockOrDo);
 
   AstList managers = consumeList(managerExprs);
-  AstList stmts = consumeList(stmtExprList);
+  AstList stmts = consumeAndFlattenTopLevelBlocks(stmtExprList);
 
   auto node = Manage::build(builder, convertLocation(location),
                             std::move(managers),
