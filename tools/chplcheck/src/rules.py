@@ -19,6 +19,7 @@
 
 import re
 import typing
+import functools
 
 import chapel
 from chapel import *
@@ -322,6 +323,46 @@ def rules(driver: LintDriver):
 
         return [Fixit.build(Edit.build(paren_loc, new_text))]
 
+    def build_unattached_fixit(
+        lines: List[str],
+        loc: typing.Union[
+            Location, typing.Tuple[chapel.Location, chapel.Location]
+        ],
+    ):
+        if isinstance(loc, Location):
+            blank_loc = loc
+        else:
+            assert isinstance(loc, tuple) and len(loc) == 2
+            before_loc, after_loc = loc
+            full_loc = before_loc + after_loc
+            blank_loc = full_loc - after_loc - before_loc
+
+        blank_text = range_to_text(blank_loc, lines)
+        if blank_text.strip() == "":
+            return Fixit.build(Edit.build(blank_loc, " "))
+        else:
+            return None
+
+    def check_for_unattached(
+        context: chapel.Context,
+        node: chapel.AstNode,
+        before_loc: chapel.Location,
+        after_loc: chapel.Location,
+        ResultType: typing.Callable,
+        lines: typing.Optional[List[str]] = None,
+    ):
+        if lines is None:
+            lines = chapel.get_file_lines(context, node)
+        res = None
+        # the lines must be the same or on the same line with only 1 space in between
+        if (
+            before_loc.end()[0] != after_loc.start()[0]
+            or before_loc.end()[1] != after_loc.start()[1] - 1
+        ):
+            fixit = build_unattached_fixit(lines, (before_loc, after_loc))
+            res = ResultType(node, fixits=fixit)
+        return res
+
     @driver.basic_rule(chapel.Conditional)
     def UnattachedElse(context: Context, node: chapel.Conditional):
         """
@@ -336,20 +377,9 @@ def rules(driver: LintDriver):
         else_block = node.else_block()
         assert else_block is not None
 
-        full_loc = then_block_loc + else_kw_loc
-        blank_loc = full_loc - else_kw_loc - then_block_loc
-        blank_text = range_to_text(blank_loc, chapel.get_file_lines(context, node))
-        fixit = None
-        if blank_text.strip() == "":
-            fixit = Fixit.build(Edit.build(blank_loc, " "))
+        res = check_for_unattached(context, else_block, then_block_loc, else_kw_loc, functools.partial(BasicRuleResult, ignorable=False))
+        return res if res is not None else True
 
-        # the lines must be the same
-        if then_block_loc.end()[0] != else_kw_loc.start()[0]:
-            return BasicRuleResult(else_block, ignorable=False, fixits=fixit)
-        elif then_block_loc.end()[1] != else_kw_loc.start()[1] - 1:
-            return BasicRuleResult(else_block, ignorable=False, fixits=fixit)
-
-        return True
 
     @driver.basic_rule(chapel.Catch)
     def UnattachedCatch(context: Context, node: chapel.Catch):
@@ -358,7 +388,10 @@ def rules(driver: LintDriver):
         """
 
         try_stmt = node.parent()
-        if not isinstance(try_stmt, chapel.Try):
+        if (
+            not isinstance(try_stmt, chapel.Try)
+            or try_stmt.is_expression_level()
+        ):
             return True
 
         catch_loc = node.location()
@@ -370,22 +403,12 @@ def rules(driver: LintDriver):
             if prev_catch.unique_id() == node.unique_id():
                 break
             prev = prev_catch
+        if prev is None:
+            return True
         prev_loc = prev.location()
 
-        full_loc = catch_loc + prev_loc
-        blank_loc = full_loc - catch_loc - prev_loc
-        blank_text = range_to_text(blank_loc, chapel.get_file_lines(context, node))
-        fixit = None
-        if blank_text.strip() == "":
-            fixit = Fixit.build(Edit.build(blank_loc, " "))
-
-        # the lines must be the same
-        if prev_loc.end()[0] != catch_loc.start()[0]:
-            return BasicRuleResult(node, ignorable=False, fixits=fixit)
-        elif prev_loc.end()[1] != catch_loc.start()[1] - 1:
-            return BasicRuleResult(node, ignorable=False, fixits=fixit)
-
-        return True
+        res = check_for_unattached(context, node, prev_loc, catch_loc, functools.partial(BasicRuleResult, ignorable=False))
+        return res if res is not None else True
 
     @driver.advanced_rule
     def UnattachedCurly(context: Context, root: AstNode):
@@ -393,62 +416,91 @@ def rules(driver: LintDriver):
         Warn for blocks that do not have their opening curly brace on the same line as the controlling statement.
         """
 
-        # block types
-        # nameddecl
-        # conditional
-        # try/catch
-        # loops
-        # select
+        if isinstance(root, Comment):
+            return
+        lines = chapel.get_file_lines(context, root)
 
         def check_conditional(node: chapel.Conditional):
             then_block = node.then_block()
             if curly_loc := then_block.curly_braces_location():
                 # the curly block start should be just after the location of the condition
                 condition_loc = node.condition().location()
-                if condition_loc.end()[0] != curly_loc.start()[0]:
-                    yield AdvancedRuleResult(then_block)
-                elif condition_loc.end()[1] != curly_loc.start()[1] - 1:
-                    yield AdvancedRuleResult(then_block)
+                res = check_for_unattached(context, then_block, condition_loc, curly_loc, AdvancedRuleResult)
+                if res is not None:
+                    yield res
             if else_block := node.else_block():
                 if curly_loc := else_block.curly_braces_location():
                     else_kw_loc = node.else_keyword_location()
                     assert else_kw_loc is not None
                     # the curly block start should be just after the location of the else keyword
-                    if else_kw_loc.end()[0] != curly_loc.start()[0]:
-                        yield AdvancedRuleResult(else_block)
-                    elif else_kw_loc.end()[1] != curly_loc.start()[1] - 1:
-                        yield AdvancedRuleResult(else_block)
+                    # if (
+                    #     else_kw_loc.end()[0] != curly_loc.start()[0]
+                    #     or else_kw_loc.end()[1] != curly_loc.start()[1] - 1
+                    # ):
+                    #     fixit = build_unattached_fixit(
+                    #         lines, (else_kw_loc, curly_loc)
+                    #     )
+                    #     yield AdvancedRuleResult(else_block, fixits=fixit)
+                    res = check_for_unattached(context, else_block, else_kw_loc, curly_loc, AdvancedRuleResult)
+                    if res is not None:
+                        yield res
 
         def check_try(node: chapel.Try):
             body = node.body()
+            if body is None:
+                return
             if curly_loc := body.curly_braces_location():
                 try_loc = node.location()
                 # the curly block start should be just after the location of the try keyword
-                len_of_keyword = len("try") if not node.is_try_bang() else len("try!")
-                if try_loc.start()[0] != curly_loc.start()[0]:
-                    yield AdvancedRuleResult(body)
-                elif try_loc.start()[1] + len_of_keyword != curly_loc.start()[1] - 1:
-                    yield AdvancedRuleResult(body)
+                len_of_keyword = (
+                    len("try") if not node.is_try_bang() else len("try!")
+                )
+                # adjust the location to be just the keyword
+                try_loc = try_loc - try_loc.adjust_start((0, len_of_keyword))
+                # if (
+                #     try_loc.start()[0] != curly_loc.start()[0]
+                #     or try_loc.start()[1] != curly_loc.start()[1] - 1
+                # ):
+                #     fixit = build_unattached_fixit(lines, (try_loc, curly_loc))
+                #     yield AdvancedRuleResult(body)
+                res = check_for_unattached(context, body, try_loc, curly_loc, AdvancedRuleResult)
+                if res is not None:
+                    yield res
 
         def check_catch(node: chapel.Catch):
             body = node.body()
             if curly_loc := body.curly_braces_location():
                 if tgt := node.target():
                     tgt_loc = tgt.location()
-                    tgt_loc = tgt.paren_location() if node.has_parens_around_error() else tgt_loc
-                    # the curly block start should be just after the target
-                    if tgt_loc.end()[0] != curly_loc.start()[0]:
-                        yield AdvancedRuleResult(body)
-                    elif tgt_loc.end()[1] != curly_loc.start()[1] - 1:
-                        yield AdvancedRuleResult(body)
+                    before_loc = (
+                        tgt.paren_location()
+                        if node.has_parens_around_error()
+                        else tgt_loc
+                    )
+                    # res = check_for_unattached(context, body, tgt_loc, curly_loc, AdvancedRuleResult)
+                    # if res is not None:
+                    #     yield res
+                    # if (
+                    #     tgt_loc.end()[0] != curly_loc.start()[0]
+                    #     or tgt_loc.end()[1] != curly_loc.start()[1] - 1
+                    # ):
+                    #     yield AdvancedRuleResult(body)
                 else:
                     # if there is no target, the curly block start should be just after the catch keyword
                     catch_loc = node.location()
                     len_of_keyword = len("catch")
-                    if catch_loc.start()[0] != curly_loc.start()[0]:
-                        yield AdvancedRuleResult(body)
-                    elif catch_loc.start()[1] + len_of_keyword != curly_loc.start()[1] - 1:
-                        yield AdvancedRuleResult(body)
+                    # adjust the location to be just the keyword
+                    before_loc = catch_loc - catch_loc.adjust_start((0, len_of_keyword))
+                if before_loc is None:
+                    return
+                res = check_for_unattached(context, body, before_loc, curly_loc, AdvancedRuleResult)
+                if res is not None:
+                    yield res
+                    # if catch_loc.start()[0] != curly_loc.start()[0] or (
+                    #     catch_loc.start()[1] + len_of_keyword
+                    #     != curly_loc.start()[1] - 1
+                    # ):
+                    #     yield AdvancedRuleResult(body)
 
         def check_loop(node: chapel.Loop):
             # TODO: for now, ignore DoWhile and BracketLoop
@@ -464,55 +516,82 @@ def rules(driver: LintDriver):
                 if not header_loc:
                     return
                 # the curly block start should be just after the location of the header
-                if header_loc.end()[0] != curly_loc.start()[0]:
-                    yield AdvancedRuleResult(node)
-                elif header_loc.end()[1] != curly_loc.start()[1] - 1:
-                    yield AdvancedRuleResult(node)
+                # if (
+                #     header_loc.end()[0] != curly_loc.start()[0]
+                #     or header_loc.end()[1] != curly_loc.start()[1] - 1
+                # ):
+                #     yield AdvancedRuleResult(node)
+                res = check_for_unattached(context, node, header_loc, curly_loc, AdvancedRuleResult)
+                if res is not None:
+                    yield res
 
         def check_named_decl(node: chapel.NamedDecl):
             if curly_loc := node.curly_braces_location():
                 header_loc = node.header_location()
                 if not header_loc:
                     return
+                if isinstance(node, chapel.Function) and node.where_clause():
+                    with_ = node.where_clause()
+                    assert with_ is not None
+                    header_loc += with_.location()
                 # the curly block start should be just after the location of the header
-                if header_loc.end()[0] != curly_loc.start()[0]:
-                    yield AdvancedRuleResult(node)
-                elif header_loc.end()[1] != curly_loc.start()[1] - 1:
-                    yield AdvancedRuleResult(node)
+                # if (
+                #     header_loc.end()[0] != curly_loc.start()[0]
+                #     or header_loc.end()[1] != curly_loc.start()[1] - 1
+                # ):
+                #     fixit = build_unattached_fixit(
+                #         lines, (header_loc, curly_loc)
+                #     )
+                #     yield AdvancedRuleResult(node, fixits=fixit)
+                res = check_for_unattached(context, node, header_loc, curly_loc, AdvancedRuleResult)
+                if res is not None:
+                    yield res
 
         def check_simple_block_like(node):
             if curly_loc := node.curly_braces_location():
                 header_loc = node.block_header()
-                if isinstance(node, (chapel.Begin, chapel.Cobegin)) and node.with_clause():
+                if (
+                    isinstance(node, (chapel.Begin, chapel.Cobegin))
+                    and node.with_clause()
+                ):
                     with_ = node.with_clause()
                     assert with_ is not None
-                    header_loc = with_.location()
+                    header_loc += with_.location()
                 if not header_loc:
                     return
 
                 # the curly block start should be just after the location of the header
-                if header_loc.end()[0] != curly_loc.start()[0]:
-                    yield AdvancedRuleResult(node)
-                elif header_loc.end()[1] != curly_loc.start()[1] - 1:
-                    yield AdvancedRuleResult(node)
+                # if (
+                #     header_loc.end()[0] != curly_loc.start()[0]
+                #     or header_loc.end()[1] != curly_loc.start()[1] - 1
+                # ):
+                #     yield AdvancedRuleResult(node)
+                res = check_for_unattached(context, node, header_loc, curly_loc, AdvancedRuleResult)
+                if res is not None:
+                    yield res
 
-        for node, _ in chapel.each_matching(root, set([
-            chapel.Conditional,
-            chapel.Try,
-            chapel.Catch,
-            chapel.Loop,
-            chapel.NamedDecl,
-            chapel.On,
-            chapel.Cobegin,
-            chapel.Begin,
-            chapel.Defer,
-            chapel.Serial,
-            chapel.Sync,
-            chapel.Local,
-            chapel.Manage,
-            chapel.Select,
-            chapel.When,
-        ])):
+        for node, _ in chapel.each_matching(
+            root,
+            set(
+                [
+                    chapel.Conditional,
+                    chapel.Try,
+                    chapel.Catch,
+                    chapel.Loop,
+                    chapel.NamedDecl,
+                    chapel.On,
+                    chapel.Cobegin,
+                    chapel.Begin,
+                    chapel.Defer,
+                    chapel.Serial,
+                    chapel.Sync,
+                    chapel.Local,
+                    chapel.Manage,
+                    chapel.Select,
+                    chapel.When,
+                ]
+            ),
+        ):
             if isinstance(node, chapel.Conditional):
                 yield from check_conditional(node)
             elif isinstance(node, chapel.Try):

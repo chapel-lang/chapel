@@ -359,7 +359,7 @@ CLASS_END(Throw)
 
 CLASS_BEGIN(Try)
   PLAIN_GETTER(Try, body, "Get the body of this Try node",
-               const chpl::uast::Block*, return node->body())
+               Nilable<const chpl::uast::Block*>, return node->body())
   PLAIN_GETTER(Try, handlers, "Get the Catch node handlers of this Try node",
                TypedIterAdapterBase<const chpl::uast::Catch*>*, return mkIterPair(node->handlers()))
   PLAIN_GETTER(Try, is_expression_level, "Check if this Try node is expression level",
