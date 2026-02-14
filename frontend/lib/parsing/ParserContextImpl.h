@@ -2527,7 +2527,8 @@ ParserContext::buildConditionalStmt(bool usesThenKeyword, YYLTYPE locIf,
                                  thenBlockStyle,
                                  std::move(thenBlock),
                                  /*isExpressionLevel*/ false);
-  builder->noteThenKeywordLocation(node.get(), convertLocation(locThenKw));
+  if (usesThenKeyword)
+    builder->noteThenKeywordLocation(node.get(), convertLocation(locThenKw));
 
   // Do NOT clear comments here! Due to lookahead we might clear a valid
   // comment that has already been stored.
@@ -2585,7 +2586,8 @@ ParserContext::buildConditionalStmt(bool usesThenKeyword, YYLTYPE locIf,
                                  elseBlockStyle,
                                  std::move(elseBlock),
                                  /*isExpressionLevel*/ false);
-  builder->noteThenKeywordLocation(node.get(), convertLocation(locThenKw));
+  if (usesThenKeyword)  
+    builder->noteThenKeywordLocation(node.get(), convertLocation(locThenKw));
   builder->noteElseKeywordLocation(node.get(), convertLocation(locElseKw));
 
   return makeCommentsAndStmt(comments, node.release());
