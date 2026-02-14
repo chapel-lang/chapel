@@ -2506,7 +2506,7 @@ fn_decl_stmt:
     fp.lifetime = wl.lifetime;
     fp.where = wl.where;
     // conditionals are needed since bison has weird behavior when the rule is empty
-    fp.headerLoc = context->makeSpannedLocation(@1,
+    fp.headerLoc = context->makeSpannedLocation(fp.headerLoc,
       $4 != ThrowsTag_DEFAULT ? @4 :
         ($3 != nullptr ? @3 :
           ($2.isValid && (Function::ReturnIntent)$2.intent != Function::DEFAULT_RETURN_INTENT ? @2 : @1)));
@@ -2523,6 +2523,10 @@ fn_decl_stmt_inner:
       fp.thisIntentLoc = @2;
       fp.name = context->buildIdent(@3, $3);
       fp.formals = $4;
+      // store location of the header to handle weird bison location issues
+      // with empty rules
+      fp.headerLoc =
+        context->makeSpannedLocation(@1, $4 != context->parenlessMarker ? @4 : @3);
       $$ = fp;
     }
 | fn_decl_stmt_start opt_this_intent_tag assignop_ident opt_formal_ls
@@ -2532,6 +2536,10 @@ fn_decl_stmt_inner:
       fp.thisIntentLoc = @2;
       fp.name = context->buildIdent(@3, $3);
       fp.formals = $4;
+      // store location of the header to handle weird bison location issues
+      // with empty rules
+      fp.headerLoc =
+        context->makeSpannedLocation(@1, $4 != context->parenlessMarker ? @4 : @3);
       $$ = fp;
     }
 | fn_decl_stmt_start opt_this_intent_tag fn_decl_receiver_expr TDOT fn_ident opt_formal_ls
@@ -2542,6 +2550,10 @@ fn_decl_stmt_inner:
       fp.receiver = context->buildThisFormal(@3, @2, $2, $3, /*initExpr*/ nullptr);
       fp.name = context->buildIdent(@5, $5);
       fp.formals = $6;
+      // store location of the header to handle weird bison location issues
+      // with empty rules
+      fp.headerLoc =
+        context->makeSpannedLocation(@1, $6 != context->parenlessMarker ? @6 : @5);
       $$ = fp;
     }
 | fn_decl_stmt_start opt_this_intent_tag fn_decl_receiver_expr TDOT assignop_ident opt_formal_ls
@@ -2552,12 +2564,20 @@ fn_decl_stmt_inner:
       fp.receiver = context->buildThisFormal(@3, @2, $2, $3, /*initExpr*/ nullptr);
       fp.name = context->buildIdent(@5, $5);
       fp.formals = $6;
+      // store location of the header to handle weird bison location issues
+      // with empty rules
+      fp.headerLoc =
+        context->makeSpannedLocation(@1, $6 != context->parenlessMarker ? @6 : @5);
       $$ = fp;
     }
 | fn_decl_stmt_start opt_this_intent_tag error opt_formal_ls
     {
       FunctionParts fp = $1;
       fp.errorExpr = ErroneousExpression::build(BUILDER, LOC(@$)).release();
+      // store location of the header to handle weird bison location issues
+      // with empty rules
+      fp.headerLoc =
+        context->makeSpannedLocation(@1, $4 != context->parenlessMarker ? @4 : @3);
       $$ = fp;
     }
 ;
@@ -2654,7 +2674,7 @@ formal_var_arg_expr:
 ;
 
 opt_formal_ls:
-                     { $$ = context->parenlessMarker; }
+                     { $$ = context->parenlessMarker; CHPL_NULL_YYLLOC(@$); }
 | TLP formal_ls TRP  { $$ = $2; }
 ;
 
