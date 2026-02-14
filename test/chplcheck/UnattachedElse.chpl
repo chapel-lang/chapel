@@ -72,4 +72,22 @@ module UnattachedElse {
 
   }
 
+  if condA then {
+
+  } else if condB then {
+
+  } else {
+
+  }
+
+  if condA then
+    ;
+  else if condB then
+    ;
+  else
+    ;
+
+  var x = if condA then 1
+    else 2;
+
 }
