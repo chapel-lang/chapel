@@ -327,8 +327,8 @@ module IncorrectIndentation {
   // semicolon warning does not issue bad indentation
   enum color { red, green, blue };
 
-  // Since locations are incorrectly reported with 'public' and 'private',
-  // these shouldn't warn.
+
+
   module M7 {
     proc f1 {}
       proc g1 {}
@@ -455,7 +455,8 @@ if 1 < 2 {
     }
   }
 
-  begin with (var x = 1)
+  var arr: [1..10] int;
+  begin with (ref arr)
   {
     writeln("hi");
     writeln("??");
