@@ -540,10 +540,11 @@ def rules(driver: LintDriver):
                 header_loc = node.header_location()
                 if not header_loc:
                     return
-                if isinstance(node, chapel.Function) and node.where_clause():
-                    with_ = node.where_clause()
-                    assert with_ is not None
-                    header_loc += with_.location()
+                if isinstance(node, chapel.Function):
+                    if where_ := node.where_clause():
+                        header_loc += where_.location()
+                    for lifetime in node.lifetime_clauses():
+                        header_loc += lifetime.location()
                 res = check_for_unattached(context, node, header_loc, curly_loc, AdvancedRuleResult)
                 if res is not None:
                     yield res
