@@ -388,7 +388,6 @@ def rules(driver: LintDriver):
         res = check_for_unattached(context, else_block, then_block_loc, else_kw_loc, functools.partial(BasicRuleResult, ignorable=False))
         return res if res is not None else True
 
-
     @driver.basic_rule(chapel.Catch)
     def UnattachedCatch(context: Context, node: chapel.Catch):
         """
@@ -1291,6 +1290,11 @@ def rules(driver: LintDriver):
                 and parent.else_block_style() == "implicit"
             )
 
+        def find_anchor(node: Optional[AstNode]) -> Optional[AstNode]:
+            # only loops and NamedDecls can be anchors for indentation
+            anchor = node if isinstance(node, (Loop, NamedDecl)) else None
+            return anchor
+
         # If root is something else (e.g., function call), do not
         # apply indentation rules; only apply them to things that contain
         # a list of statements.
@@ -1347,7 +1351,7 @@ def rules(driver: LintDriver):
                 # Exception for enums, which are allowed to be on the same line.
                 #   enum color { red, green, blue }
                 if not isinstance(child, EnumElement):
-                    yield child
+                    yield AdvancedRuleResult(child, anchor=find_anchor(parent_for_indentation))
             # Warn for misaligned siblings:
             #   var x: int;
             #     var y: int;
@@ -1359,7 +1363,7 @@ def rules(driver: LintDriver):
                     and (isinstance(prev, Loop) or isinstance(prev, On))
                     and prev.block_style() == "implicit"
                 ):
-                    yield child
+                    yield AdvancedRuleResult(child, anchor=find_anchor(parent_for_indentation))
 
                 # Do not update 'prev_depth'; use original prev_depth as
                 # reference for next sibling.
@@ -1377,13 +1381,7 @@ def rules(driver: LintDriver):
                     prev_line = line
                     prev = child
                     continue
-                # only loops and NamedDecls can be anchors for indentation
-                anchor = (
-                    parent_for_indentation
-                    if isinstance(parent_for_indentation, (Loop, NamedDecl))
-                    else None
-                )
-                yield AdvancedRuleResult(child, anchor=anchor)
+                yield AdvancedRuleResult(child, anchor=find_anchor(parent_for_indentation))
 
             prev_depth = depth
             prev = child
