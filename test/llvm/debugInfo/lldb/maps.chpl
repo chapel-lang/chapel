@@ -5,7 +5,7 @@ record myRec {
   var x: int;
   var y: real;
 }
-class myClass {
+class MyClass {
   var a: int;
   var b: real;
 }
@@ -42,19 +42,135 @@ proc main() {
   breakpoint;
   writeln("String Map Again: ", myStrMap);
 
-  var myOwnedClassMap = createMap(map(string, owned myClass?, true),
-                              "first", new myClass(1, 1.1),
-                              "second", new myClass(2, 2.2),
-                              "third", new myClass(3, 3.3));
+  var myOwnedClassMap = createMap(map(string, owned MyClass?, true),
+                              "first", new MyClass(1, 1.1),
+                              "second", new MyClass(2, 2.2),
+                              "third", new MyClass(3, 3.3));
   writeln("Class Map: ", myOwnedClassMap);
   breakpoint;
   writeln("Class Map Again: ", myOwnedClassMap);
 
-  var myClassMap = createMap(map(int, unmanaged myClass?, true),
-                              1, new unmanaged myClass(1, 1.1),
-                              2, new unmanaged myClass(2, 2.2),
-                              3, new unmanaged myClass(3, 3.3));
+  var myClassMap = createMap(map(int, unmanaged MyClass?, true),
+                              1, new unmanaged MyClass(1, 1.1),
+                              2, new unmanaged MyClass(2, 2.2),
+                              3, new unmanaged MyClass(3, 3.3));
   writeln("Class Map: ", myClassMap);
   breakpoint;
   writeln("Class Map Again: ", myClassMap);
 }
+
+
+// CHECK: p myIntMap
+// CHECK-NEXT: (Map::map(int(64),int(64)
+// CHECK-SAME: size = 3
+// CHECK-NEXT: [0] = (key = 1, val = 11)
+// CHECK-NEXT: [1] = (key = 6, val = 16)
+// CHECK-NEXT: [2] = (key = 3, val = 13)
+
+// CHECK: v myIntMap[1]
+// CHECK: = (key = 6, val = 16)
+
+// CHECK: e -- myIntMap.add(8, 9)
+// CHECK: p myIntMap
+// CHECK-NEXT: (Map::map(int(64),int(64)
+// CHECK-SAME: size = 4
+// CHECK-NEXT: [0] = (key = 8, val = 9)
+// CHECK-NEXT: [1] = (key = 1, val = 11)
+// CHECK-NEXT: [2] = (key = 6, val = 16)
+// CHECK-NEXT: [3] = (key = 3, val = 13)
+// CHECK: Integer Map Again: {8: 9, 1: 11, 6: 16, 3: 13}
+
+// CHECK: p myRealMap
+// CHECK-NEXT: (Map::map(string,real(64)
+// CHECK-SAME: size = 3
+// CHECK: key = "1.1"
+// CHECK: val = 1.
+// CHECK: key = "2.2"
+// CHECK: val = 2.
+// CHECK: key = "3.3"
+// CHECK: val = 3.
+
+// CHECK: v myRealMap[1]
+// CHECK: key = "2.2"
+// CHECK: val = 2.
+
+// CHECK: v myRealMap[1].key
+// CHECK: (string) key = "2.2"
+
+// CHECK: v myRealMap[1].val
+// CHECK-NEXT: (real(64)) val = 2.
+
+// CHECK: p myRecMap
+// CHECK-NEXT: (Map::map(int(64),myRec
+// CHECK-SAME: size = 3
+// CHECK: key = 1
+// CHECK-NEXT: val = (x = 10, y = 20.5)
+// CHECK: key = 2
+// CHECK-NEXT: val = (x = 30, y = 40.5)
+// CHECK: key = 3
+// CHECK-NEXT: val = (x = 50, y = 60.5)
+
+// CHECK: v myRecMap[2]
+// CHECK: key = 3
+// CHECK-NEXT: val = (x = 50, y = 60.5)
+
+// CHECK: v myRecMap[2].val.y
+// CHECK-NEXT: {{.*}} = 60.5
+
+// CHECK: p myStrMap
+// CHECK-NEXT: (Map::map(string,string
+// CHECK-SAME: size = 3
+// CHECK: key = "1"
+// CHECK: val = "one"
+// CHECK: key = "3"
+// CHECK: val = "three"
+// CHECK: key = "2"
+// CHECK: val = "two"
+
+// CHECK: v myStrMap[0]
+// CHECK: key = "1"
+// CHECK: val = "one"
+
+// CHECK: p myOwnedClassMap
+// CHECK-NEXT: (Map::map(string,owned MyClass?
+// CHECK-SAME: size = 3
+// CHECK: key = "third"
+// CHECK: val = 0x{{[0-9a-f]+}}
+// CHECK: a = 3
+// CHECK: key = "second"
+// CHECK: val = 0x{{[0-9a-f]+}}
+// CHECK: a = 2
+// CHECK: key = "first"
+// CHECK: val = 0x{{[0-9a-f]+}}
+// CHECK: a = 1
+
+// CHECK: v myOwnedClassMap[2]
+// CHECK: key = "first"
+// CHECK: val = 0x{{[0-9a-f]+}}
+// CHECK: a = 1
+
+// CHECK: v myOwnedClassMap[2].key
+// CHECK: (string) key = "first"
+
+// CHECK: v myOwnedClassMap[2].val.a
+// CHECK-NEXT: (int(64)) a = 1
+
+// CHECK: p myClassMap
+// CHECK-NEXT: (Map::map(int(64),unmanaged MyClass?
+// CHECK-SAME: size = 3
+// CHECK: key = 1
+// CHECK-NEXT: val = 0x{{[0-9a-f]+}}
+// CHECK: key = 2
+// CHECK-NEXT: val = 0x{{[0-9a-f]+}}
+// CHECK: key = 3
+// CHECK-NEXT: val = 0x{{[0-9a-f]+}}
+
+// CHECK: v myClassMap[2]
+// CHECK: key = 3
+// CHECK-NEXT: val = 0x{{[0-9a-f]+}}
+
+// CHECK: v *myClassMap[2].val
+// CHECK: a = 3
+// CHECK-NEXT: b = 3.
+// CHECK: v myClassMap[2].val->b
+// CHECK-NEXT: {{.*}} = 3.
