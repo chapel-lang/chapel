@@ -446,14 +446,6 @@ def rules(driver: LintDriver):
                     else_kw_loc = node.else_keyword_location()
                     assert else_kw_loc is not None
                     # the curly block start should be just after the location of the else keyword
-                    # if (
-                    #     else_kw_loc.end()[0] != curly_loc.start()[0]
-                    #     or else_kw_loc.end()[1] != curly_loc.start()[1] - 1
-                    # ):
-                    #     fixit = build_unattached_fixit(
-                    #         lines, (else_kw_loc, curly_loc)
-                    #     )
-                    #     yield AdvancedRuleResult(else_block, fixits=fixit)
                     res = check_for_unattached(context, else_block, else_kw_loc, curly_loc, AdvancedRuleResult)
                     if res is not None:
                         yield res
@@ -470,12 +462,6 @@ def rules(driver: LintDriver):
                 )
                 # adjust the location to be just the keyword
                 try_loc = try_loc - try_loc.adjust_start((0, len_of_keyword))
-                # if (
-                #     try_loc.start()[0] != curly_loc.start()[0]
-                #     or try_loc.start()[1] != curly_loc.start()[1] - 1
-                # ):
-                #     fixit = build_unattached_fixit(lines, (try_loc, curly_loc))
-                #     yield AdvancedRuleResult(body)
                 res = check_for_unattached(context, body, try_loc, curly_loc, AdvancedRuleResult)
                 if res is not None:
                     yield res
@@ -490,14 +476,6 @@ def rules(driver: LintDriver):
                         if node.has_parens_around_error()
                         else tgt_loc
                     )
-                    # res = check_for_unattached(context, body, tgt_loc, curly_loc, AdvancedRuleResult)
-                    # if res is not None:
-                    #     yield res
-                    # if (
-                    #     tgt_loc.end()[0] != curly_loc.start()[0]
-                    #     or tgt_loc.end()[1] != curly_loc.start()[1] - 1
-                    # ):
-                    #     yield AdvancedRuleResult(body)
                 else:
                     # if there is no target, the curly block start should be just after the catch keyword
                     catch_loc = node.location()
@@ -509,11 +487,6 @@ def rules(driver: LintDriver):
                 res = check_for_unattached(context, body, before_loc, curly_loc, AdvancedRuleResult)
                 if res is not None:
                     yield res
-                    # if catch_loc.start()[0] != curly_loc.start()[0] or (
-                    #     catch_loc.start()[1] + len_of_keyword
-                    #     != curly_loc.start()[1] - 1
-                    # ):
-                    #     yield AdvancedRuleResult(body)
 
         def check_loop(node: chapel.Loop):
             # TODO: for now, ignore DoWhile and BracketLoop
@@ -529,11 +502,6 @@ def rules(driver: LintDriver):
                 if not header_loc:
                     return
                 # the curly block start should be just after the location of the header
-                # if (
-                #     header_loc.end()[0] != curly_loc.start()[0]
-                #     or header_loc.end()[1] != curly_loc.start()[1] - 1
-                # ):
-                #     yield AdvancedRuleResult(node)
                 res = check_for_unattached(context, node, header_loc, curly_loc, AdvancedRuleResult)
                 if res is not None:
                     yield res
@@ -566,11 +534,6 @@ def rules(driver: LintDriver):
                     return
 
                 # the curly block start should be just after the location of the header
-                # if (
-                #     header_loc.end()[0] != curly_loc.start()[0]
-                #     or header_loc.end()[1] != curly_loc.start()[1] - 1
-                # ):
-                #     yield AdvancedRuleResult(node)
                 res = check_for_unattached(context, node, header_loc, curly_loc, AdvancedRuleResult)
                 if res is not None:
                     yield res
