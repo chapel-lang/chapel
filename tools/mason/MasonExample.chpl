@@ -31,6 +31,8 @@ use MasonUtils;
 use Path;
 use Subprocess;
 use TOML;
+import MasonLogger;
+import MasonPrereqs;
 
 private var log = new MasonLogger.logger("mason example");
 
