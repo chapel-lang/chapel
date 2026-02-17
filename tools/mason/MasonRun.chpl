@@ -109,7 +109,7 @@ proc runProjectBinary(show: bool, release: bool,
 
     // Build if not built, throwing error if Mason.toml doesnt exist
     if isFile(joinPath(projectHome, "Mason.lock")) && built {
-      const output = runCommand(command);
+      const output = runCommand(command, quiet=true);
       write(output);
     }
     else if isFile(joinPath(projectHome, "Mason.toml")) {
