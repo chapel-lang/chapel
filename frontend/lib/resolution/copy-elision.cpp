@@ -248,7 +248,7 @@ void FindElidedCopies::saveElidedCopies(VarFrame* frame) {
   for (const auto& pair : frame->copyElisionState) {
     const CopyElisionState& state = pair.second;
     if (state.lastIsCopy) {
-      for (auto point : state.points) {
+      for (const auto& point : state.points) {
         allElidedCopyFromIds.emplace(point, pair.first);
       }
     }
@@ -260,7 +260,7 @@ void FindElidedCopies::saveLocalVarElidedCopies(VarFrame* frame) {
     CHPL_ASSERT(frame->declaredVars.count(id) > 0);
     if (lastMentionIsCopy(frame, id)) {
       const CopyElisionState& state = frame->copyElisionState[id];
-      for (auto point : state.points) {
+      for (const auto& point : state.points) {
         allElidedCopyFromIds.emplace(point, id);
       }
     }
