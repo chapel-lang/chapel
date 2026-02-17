@@ -217,7 +217,7 @@ def rules(driver: LintDriver):
     @driver.basic_rule(SimpleBlockLike)
     @driver.basic_rule(When)
     def DoKeywordAndBlock(
-        context: Context, node: typing.Union[Loop, SimpleBlockLike]
+        context: Context, node: typing.Union[Loop, SimpleBlockLike, When]
     ):
         """
         Warn for redundant 'do' keyword before a curly brace '{'.
@@ -489,6 +489,8 @@ def rules(driver: LintDriver):
                     yield res
 
         def check_loop(node: chapel.Loop):
+            if node.block_style() != "unnecessary":
+                return
             # TODO: for now, ignore DoWhile and BracketLoop
             if isinstance(node, (chapel.DoWhile, chapel.BracketLoop)):
                 return
@@ -521,8 +523,15 @@ def rules(driver: LintDriver):
                     yield res
 
         def check_simple_block_like(node):
+            if (
+                isinstance(node, (chapel.SimpleBlockLike, chapel.When))
+                and node.block_style() != "unnecessary"
+            ):
+                return
             if curly_loc := node.curly_braces_location():
                 header_loc = node.block_header()
+                if not header_loc:
+                    return
                 if (
                     isinstance(node, (chapel.Begin, chapel.Cobegin))
                     and node.with_clause()
