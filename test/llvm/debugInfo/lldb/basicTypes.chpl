@@ -119,7 +119,7 @@ proc main() {
   const myStr = "Hello, world!";
 
   // CHECK: p myDom
-  // CHECK-NEXT: (ChapelDomain::domain(2,int(64),positive)) {1..10 by 1, 1..10 by 2} {
+  // CHECK-NEXT: (domain(2,int(64),positive)) {1..10 by 1, 1..10 by 2} {
   // CHECK-NEXT: dim = {
   // CHECK-NEXT: [0] = 1..10 by 1 {
   // CHECK-NEXT: low = 1
