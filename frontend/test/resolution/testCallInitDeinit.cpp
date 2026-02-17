@@ -170,8 +170,9 @@ static std::string testAction(ActionElt expected, ActionElt got) {
   while (i < gotSubActions.size() && i < expectSubActions.size()) {
     std::string subMessage = testAction(expectSubActions[i], gotSubActions[i]);
     if (!subMessage.empty()) {
-      subMessage += " in sub-action " + std::to_string(i);
-      message = message + subMessage;
+      subMessage =
+          "\t" + subMessage + " in sub-action " + std::to_string(i) + "\n";
+      message += subMessage;
     }
 
     i++;
@@ -233,7 +234,7 @@ static void testActions(const char* test,
   while (i < actions.size() && i < expected.size()) {
     std::string message = testAction(expected[i], actions[i]);
     if (!message.empty()) {
-      message += " in action " + std::to_string(i);
+      message = "Failure in action " + std::to_string(i) + ":\n" + message;
       printf("%s\n", message.c_str());
       assert(false && "Action did not match expected");
     }
