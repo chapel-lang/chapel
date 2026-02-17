@@ -18,6 +18,7 @@ ControlFlowParentheses.chpl:29: node violates rule ControlFlowParentheses
 ControlFlowParentheses.chpl:30: node violates rule ControlFlowParentheses
 ControlFlowParentheses.chpl:31: node violates rule ControlFlowParentheses
 ControlFlowParentheses.chpl:33: node violates rule ControlFlowParentheses
+ControlFlowParentheses.chpl:33: node violates rule UnattachedCurly
 ControlFlowParentheses.chpl:34: node violates rule ControlFlowParentheses
 ControlFlowParentheses.chpl:35: node violates rule ControlFlowParentheses
 ControlFlowParentheses.chpl:36: node violates rule ControlFlowParentheses
