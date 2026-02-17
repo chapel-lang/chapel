@@ -185,24 +185,24 @@ else
     chmod 644 "$rpmbuild_dir/release_info"
 fi
 
-# Generate modulefile, w versions
-
-log_debug "Generate modulefile-$pkg_version ..."
-$cwd/process-template.py pkg_version="$pkg_version" \
-			 --template $cwd/chapel.modulefile.tcl.template \
-			 --output $rpmbuild_dir/modulefile-$pkg_version
-chmod 644 "$rpmbuild_dir/modulefile-$pkg_version"
-
-# Generate Lua modulefile for PE Lmod Hierarchy.
-
-log_debug "Generate Lua modulefile ..."
-
+# Generate modulefiles
 (
     if [ "$chpl_platform" = hpe-cray-ex ]; then
         platform_prefix=/opt/cray
     else
         platform_prefix=/opt
     fi
+
+    # Generate modulefile, w versions
+    log_debug "Generate modulefile-$pkg_version ..."
+    $cwd/process-template.py pkg_version="$pkg_version" \
+                             platform_prefix="$platform_prefix" \
+                 --template $cwd/chapel.modulefile.tcl.template \
+                 --output $rpmbuild_dir/modulefile-$pkg_version
+    chmod 644 "$rpmbuild_dir/modulefile-$pkg_version"
+
+    # Generate Lua modulefile for PE Lmod Hierarchy.
+    log_debug "Generate Lua modulefile ..."
     $cwd/process-template.py pkg_version="$pkg_version" \
                              platform_prefix="$platform_prefix" \
         --template $cwd/chapel.modulefile.lua.template \

@@ -23,6 +23,11 @@
 #define QTHREAD_MSAN
 #endif
 #endif
+#ifdef QTHREAD_MSAN
+#define QTHREAD_SUPPRESS_MSAN __attribute__((no_sanitize("memory")))
+#else
+#define QTHREAD_SUPPRESS_MSAN
+#endif
 
 #define TLS_DECL(type, name) thread_local type name
 #define TLS_DECL_INIT(type, name) thread_local type name = 0

@@ -298,7 +298,7 @@ static void setInitResolverSuper(Resolver& r, const Function* fn) {
 
     if (auto bct = ct->toBasicClassType()) {
       if (auto parent = bct->parentClassType()) {
-        if (!parent->isObjectType()) {
+        if (!parent->isRootClass()) {
           r.superInitClassType = parent;
         }
       }
@@ -570,14 +570,15 @@ Resolver::createForInitialFieldStmt(ResolutionContext* rc,
                                     const AstNode* fieldStmt,
                                     const CompositeType* compositeType,
                                     ResolutionResultByPostorderID& byId,
-                                    DefaultsPolicy defaultsPolicy) {
+                                    DefaultsPolicy defaultsPolicy,
+                                    bool fieldTypesOnly) {
   auto ret = Resolver(rc->context(), decl, byId, nullptr);
   ret.rc = rc;
   ret.curStmt = fieldStmt;
   ret.inCompositeType = compositeType;
   ret.defaultsPolicy = defaultsPolicy;
   ret.byPostorder.setupForSymbol(decl);
-  ret.fieldTypesOnly = true;
+  ret.fieldTypesOnly = fieldTypesOnly;
   ret.allowReceiverScopes = true;
   ret.callEagerness = CallResolutionEagerness::LAZY;
   return ret;
@@ -591,14 +592,15 @@ Resolver::createForInstantiatedFieldStmt(Context* context,
                                          const CompositeType* compositeType,
                                          const PoiScope* poiScope,
                                          ResolutionResultByPostorderID& byId,
-                                         DefaultsPolicy defaultsPolicy) {
+                                         DefaultsPolicy defaultsPolicy,
+                                         bool fieldTypesOnly) {
   auto ret = Resolver(context, decl, byId, poiScope);
   ret.curStmt = fieldStmt;
   ret.inCompositeType = compositeType;
   ret.substitutions = &compositeType->substitutions();
   ret.defaultsPolicy = defaultsPolicy;
   ret.byPostorder.setupForSymbol(decl);
-  ret.fieldTypesOnly = true;
+  ret.fieldTypesOnly = fieldTypesOnly;
   ret.allowReceiverScopes = true;
   ret.callEagerness = CallResolutionEagerness::LAZY;
   return ret;
@@ -2845,8 +2847,8 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
     auto newDecor = ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL);
     initReceiverType = clsType->withDecorator(context, newDecor);
   } else if (auto recordType = qtNewExpr.type()->toRecordType()) {
-    // Rewrite 'new dmap' to 'new _distribution'
-    if (recordType->id().symbolPath() == "ChapelArray.dmap") {
+    // Rewrite 'new chpl_dmap' to 'new _distribution'
+    if (recordType->id().symbolPath() == "ChapelArray.chpl_dmap") {
       initReceiverType = CompositeType::getDistributionType(context);
     }
   }
@@ -4660,7 +4662,9 @@ void Resolver::resolveIdentifier(const Identifier* ident) {
     // in field types, don't try an implicit receiver, because the
     // implicit receiver is the class/record, which is not fully constructed
     // when the field type is being resolved.
-    bool skipImplicitParenless = fieldTypesOnly;
+    //
+    // Assumes that curStmt being non-nullptr implies we're in a field type.
+    bool skipImplicitParenless = curStmt != nullptr;
 
     if (receiverInfo && receiverType.type() && !skipImplicitParenless) {
       std::vector<CallInfoActual> actuals;
@@ -7932,7 +7936,7 @@ bool Resolver::enter(const Catch* node) {
         isBasicClass = true;
         if (!bct->isSubtypeOf(context, CompositeType::getErrorType(context)->basicClassType(), converts, instantiates)) {
           // get the penultimate type in the chain
-          while (!bct->parentClassType()->isObjectType()) {
+          while (!bct->parentClassType()->isRootClass()) {
             bct = bct->parentClassType();
           }
           error(errVar, "catch variable '%s' must be a class that inherits from Error, not '%s'", errVar->name().c_str(), bct->name().c_str());

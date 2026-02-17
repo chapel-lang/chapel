@@ -60,7 +60,7 @@ const InterfaceType* InterfaceType::get(Context* context, ID id, UniqueString na
 
 const InterfaceType* InterfaceType::getContextManagerType(Context* context) {
   auto [id, name] =
-      parsing::getSymbolFromTopLevelModule(context, "ChapelContext", "contextManager");
+      parsing::getContextManagerTypeFromTopLevelChapelContextModule(context);
   return InterfaceType::get(context, id, name, SubstitutionsMap());
 }
 

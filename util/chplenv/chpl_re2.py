@@ -46,19 +46,50 @@ def get_compile_args():
 
     return ([ ], [ ])
 
+
 # returns 2-tuple of lists
 #  (linker_bundled_args, linker_system_args)
 @memoize
 def get_link_args():
+    bundled, system = [], []
     re2_val = get()
-    if re2_val == 'bundled':
-        return third_party_utils.pkgconfig_get_bundled_link_args('re2')
-    return ([ ], [ ])
+    if re2_val == "bundled":
+        bundled, system = third_party_utils.pkgconfig_get_bundled_link_args("re2")
+
+        import chpl_llvm
+        import chpl_platform
+        if (
+            chpl_platform.get("target") == "darwin"
+            and chpl_llvm.get() != "none"
+            and chpl_llvm.get_llvm_version() == "21"
+        ):
+            # workaround upstream LLVM/homebrew bug
+            # https://github.com/llvm/llvm-project/issues/77653
+            # https://github.com/Homebrew/homebrew-core/issues/235411
+            libdir = chpl_llvm.get_llvm_config_libdir()
+            if libdir:
+                libcxxdir = os.path.join(libdir, "c++")
+                if os.path.isdir(libcxxdir):
+                    bundled = ["-L" + libcxxdir, "-Wl,-rpath," + libcxxdir] + bundled
+
+    return (bundled, system)
 
 
 def _main():
-    sys.stdout.write("{0}\n".format(get()))
-
+    import optparse
+    parser = optparse.OptionParser(usage='usage: %prog [options]')
+    parser.add_option('--compile', dest='which', action='store_const',
+                      const='compile', default=None)
+    parser.add_option('--link', dest='which', action='store_const',
+                      const='link')
+    options, args = parser.parse_args()
+    if options.which == 'compile':
+        val = get_compile_args()
+    elif options.which == 'link':
+        val = get_link_args()
+    else:
+        val = get()
+    sys.stdout.write("{0}\n".format(val))
 
 if __name__ == '__main__':
     _main()

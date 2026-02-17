@@ -146,6 +146,10 @@ module ChapelBase {
   // This needs to be param so calls to it are removed after they are resolved
   inline operator =(ref a: nothing, b: nothing) param { }
 
+  inline operator =(ref a: ?t, b: t) where chpl_enableProcPtrs(t) {
+    __primitive("=", a, b);
+  }
+
   //
   // equality comparison on primitive types
   //

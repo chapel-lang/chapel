@@ -1,6 +1,7 @@
 --project-version 21.0.3-invalid    # projectVersion.invalidTag.doc.good
 --project-version 21.0-alpha    # projectVersion.lessDots.doc.good
 --project-version 21.0. # projectVersion.dotEnd.doc.good
+--project-version .0.2.3 # projectVersion.dotBegin.doc.good
 --project-version 21..3 # projectVersion.missingNumbers.doc.good
 --project-version a.c.d # projectVersion.invalidCharacter.doc.good
 --project-version 21.0.3 # projectVersion.no-tag.doc.good

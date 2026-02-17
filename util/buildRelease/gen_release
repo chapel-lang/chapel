@@ -31,11 +31,20 @@ def run(*args, **kwargs):
     return result
 
 
-def make(*args, **kwargs):
-    return run("make", *args, **kwargs)
-
+make_threads = 1
 
 pjoin = os.path.join
+
+def set_make_threads():
+    global make_threads
+    cpu_count = run("util/buildRelease/chpl-make-cpu_count", stdout=subprocess.PIPE)
+    make_threads = int(cpu_count.stdout.decode().strip())
+    return make_threads
+
+
+def make(*args, **kwargs):
+    return run("make", f"-j{make_threads}", *args, **kwargs)
+
 
 def log(*args, **kwargs):
     _kwargs = {'flush': True}
@@ -218,6 +227,7 @@ def main():
             resultdir = basetmpdir
 
     with cd(archive_dir):
+        set_make_threads()
 
         log("Creating the spec tests...")
         make("spectests")

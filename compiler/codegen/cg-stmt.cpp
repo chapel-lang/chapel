@@ -58,7 +58,10 @@ void codegenStmt(Expr* stmt) {
       info->cStatements.push_back(idCommentTemp(stmt));
   } else {
 #ifdef HAVE_LLVM
-    if (debugInfo && stmt->linenum() > 0) {
+    if (debugInfo &&
+        stmt->linenum() > 0 &&
+        (!stmt->parentSymbol ||
+          debugInfo->shouldAddDebugInfoFor(stmt->parentSymbol))) {
       // Adjust the current line number, but leave the scope alone.
       llvm::MDNode* scope;
 

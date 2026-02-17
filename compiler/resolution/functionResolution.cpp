@@ -2956,18 +2956,18 @@ static void resolveRefDeserialization(CallExpr* call) {
   lhsSE->symbol()->type = typeSE->symbol()->getRefType();
 }
 
-static FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState);
+static FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState, PoiSearchMode poiMode=PoiSearchMode::NORMAL);
 
 FnSymbol* resolveNormalCall(CallExpr* call) {
   return resolveNormalCall(call, CHECK_NORMAL_CALL);
 }
 
-FnSymbol* tryResolveCall(CallExpr* call, bool checkWithin) {
+FnSymbol* tryResolveCall(CallExpr* call, bool checkWithin, PoiSearchMode poiMode) {
   check_state_t checkState = CHECK_CALLABLE_ONLY;
   if (checkWithin)
       checkState = CHECK_BODY_RESOLVES;
 
-  return resolveNormalCall(call, checkState);
+  return resolveNormalCall(call, checkState, poiMode);
 }
 
 static Type* resolveGenericActual(SymExpr* se, CallExpr* inCall,
@@ -3490,16 +3490,60 @@ static void resolveCoerceCopyMove(CallExpr* call) {
 *                                                                             *
 ************************************** | *************************************/
 
+//
+// We gather a list of last-resort candidates as we go.
+// The last-resort candidates visible from the call are followed by a NULL
+// to separate them from those visible from the point of instantiation.
+//
+using LastResortCandidates = std::vector<FnSymbol*>;
+
 static bool      isGenericRecordInit(CallExpr* call);
 
-static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState);
-static FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState);
+static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState, PoiSearchMode poiMode = PoiSearchMode::NORMAL);
+static FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState, PoiSearchMode poiMode);
 
-static BlockStmt* findVisibleFunctionsAndCandidates(
-                                     CallInfo&                  info,
-                                     VisibilityInfo&            visInfo,
-                                     Vec<FnSymbol*>&            visibleFns,
-                                     Vec<ResolutionCandidate*>& candidates);
+// State for candidate search. Tracks seen, most applicable, etc. candidates,
+// and other information like the current POI scope.
+struct CandidateSearchState {
+  CallInfo& info;
+  VisibilityInfo visInfo; // note: contains state as to the current POI scope.
+  PtrSet<BlockStmt*> visited;
+  BlockStmt* scopeUsed = nullptr; // scope last searched for candidates
+
+  // Keep *all* discovered functions in 'visibleFns' and 'mostApplicable'
+  // so that we can revisit them for error reporting. The lists (
+  // visible -> most applicable -> candidates) trickle down into the next.
+  // All of them only ever grow, with numVisitedVis and numVisitedMA tracking
+  // the point up to which all candiddates have been moved to the successive list
+  // if they needed to be. The flow is as follows:
+  //   1. In each potential scope (call and POI(s)), visible functions get
+  //      placed into `visibleFns`.
+  //   2. From those, we find the most applicable functions (coarse, early
+  //      filtering, which removes functions on unrelated objects as best as
+  //      I can tell) and move them into `mostApplicable`.
+  //   3. From those, we either move candidates into the last resort group
+  //      (if they are last resort candidates) or into `candidates`.
+  // In this way, 'numVisited*' keeps track of where we left off with the
+  // previous POI / scope to avoid revisiting those functions for the next POI.
+  int numVisitedVis = 0, numVisitedMA = 0;
+  Vec<FnSymbol*> visibleFns;
+  Vec<FnSymbol*> mostApplicable;
+  Vec<ResolutionCandidate*> candidates;
+  LastResortCandidates lrc;
+
+  CandidateSearchState(CallInfo& info)
+    : info(info), visInfo(info) {
+    visInfo.currStart = getVisibilityScope(info.call);
+    INT_ASSERT(visInfo.poiDepth == -1); // we have not used it
+  }
+
+  bool tryFindVisibileCandidatesForExplicitFn();
+  void searchOnePoiLevel();
+  void skipOnePoiLevel();
+  void findVisibleFunctionsAndCandidates();
+  void considerLastResortCandidates();
+  void explainGatherCandidate();
+};
 
 static int       disambiguateByMatch(CallInfo&                  info,
                                      BlockStmt*                 searchScope,
@@ -3955,7 +3999,7 @@ static void maybeWarnGenericActuals(CallExpr* call) {
 }
 
 static
-FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState) {
+FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState, PoiSearchMode poiMode) {
   CallInfo  info;
   FnSymbol* retval = NULL;
 
@@ -3981,7 +4025,7 @@ FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState) {
     if (isTypeConstructionCall(call)) {
       resolveTypeSpecifier(info);
     } else {
-      retval = resolveNormalCall(info, checkState);
+      retval = resolveNormalCall(info, checkState, poiMode);
     }
 
   } else if (checkState != CHECK_NORMAL_CALL) {
@@ -4219,47 +4263,100 @@ static bool overloadSetsOK(CallExpr* call,
 }
 
 
-static FnSymbol* resolveForwardedCall(CallInfo& info, check_state_t checkState);
+static FnSymbol* resolveForwardedCall(CallInfo& info, check_state_t checkState, PoiSearchMode poiMode = PoiSearchMode::NORMAL);
 static bool typeUsesForwarding(Type* t);
 
-static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState) {
-  Vec<FnSymbol*>            mostApplicable;
-  Vec<ResolutionCandidate*> candidates;
-
+static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState, PoiSearchMode poiMode) {
   ResolutionCandidate*      bestRef    = NULL;
   ResolutionCandidate*      bestCref   = NULL;
   ResolutionCandidate*      bestVal    = NULL;
 
-  VisibilityInfo            visInfo(info);
   int                       numMatches = 0;
 
   FnSymbol*                 retval     = NULL;
 
-  BlockStmt* scopeUsed = nullptr;
+  CandidateSearchState searchState(info);
+  auto& visInfo = searchState.visInfo;
+  auto& mostApplicable = searchState.mostApplicable;
+  auto& candidates = searchState.candidates;
+  auto& scopeUsed = searchState.scopeUsed;
 
-  scopeUsed = findVisibleFunctionsAndCandidates(info, visInfo,
-                                                mostApplicable, candidates);
+  bool considerNonPoi = (poiMode != PoiSearchMode::POI_ONLY);
+  bool considerPoi = (poiMode != PoiSearchMode::NON_POI_ONLY);
+
+  if (searchState.tryFindVisibileCandidatesForExplicitFn()) {
+    /* the function was explicitly specified via FnSymbol*. Don't search
+       for others and don't consider POI */
+    poiMode = PoiSearchMode::NON_POI_ONLY;
+  } else if (!considerNonPoi) {
+    /* This function was previously used to search for non-POI, and now, it's
+       being used to search for only POI. Skip past the non-POI scope. */
+    searchState.skipOnePoiLevel();
+  } else {
+    /* At this point, the top-level POI level is the regular scope of the call
+       (so it's not really POI). This was configured as part of searchState's
+       constructor. So, this brach is the non-POI candidate search, which
+       always happens. */
+    searchState.searchOnePoiLevel();
+  }
+
+  // If no non-POI candidates were found and it's a method, try forwarding.
+  // Forwarded methods are treated as if they were defined directly on the type,
+  // so they take precedence over POI candidates. This is crucial for correctness.
+  //
+  // See https://github.com/chapel-lang/chapel/issues/28246
+  bool forwardingEligible =
+    candidates.n                  == 0 &&
+    info.call->numActuals()       >= 1 &&
+    info.call->get(1)->typeInfo() == dtMethodToken &&
+    isUnresolvedSymExpr(info.call->baseExpr);
+  Type* receiverType;
+  bool usesForwarding = false;
+
+  // While searching for forwarding candidates, do not consider _their_ POI.
+  // That's because we haven't looked at the POI candidates for the original type,
+  // and returning the impl type's POI candidates here would be strange.
+  if (forwardingEligible) {
+    receiverType = canonicalDecoratedClassType(info.call->get(2)->getValType());
+    if ((usesForwarding = typeUsesForwarding(receiverType))) {
+      if (considerNonPoi) {
+        if (auto fn = resolveForwardedCall(info, checkState, PoiSearchMode::NON_POI_ONLY)) {
+          return fn;
+        }
+      }
+    }
+  }
+
+  // At this point, we have found no non-POI candidates, neither in the
+  // original type nor in any fields it forwards. Time to move on to POI.
+  if (considerPoi) {
+    // Ok, no forwaring candidates found without POI. Now move on to
+    // our POI candidates.
+    if (candidates.n == 0 && visInfo.currStart != nullptr && scopeUsed != visInfo.currStart) {
+      searchState.findVisibleFunctionsAndCandidates();
+    }
+
+    // If we have not found any candidates after traversing all POIs,
+    // look at "last resort" candidates, if any.
+    if (candidates.n == 0) {
+      searchState.considerLastResortCandidates();
+    }
+  }
+  searchState.explainGatherCandidate();
 
   numMatches = disambiguateByMatch(info, scopeUsed, candidates,
                                    bestRef, bestCref, bestVal);
 
-  if (checkState == CHECK_NORMAL_CALL && numMatches > 0 && visInfo.inPOI())
+  if (numMatches > 0 && visInfo.inPOI())
     updateCacheInfosForACall(visInfo,
                              bestRef, bestCref, bestVal);
 
-  // If no candidates were found and it's a method, try forwarding
-  if (candidates.n                  == 0 &&
-      info.call->numActuals()       >= 1 &&
-      info.call->get(1)->typeInfo() == dtMethodToken &&
-      isUnresolvedSymExpr(info.call->baseExpr)) {
-    Type* receiverType = canonicalDecoratedClassType(info.call->get(2)->getValType());
-    if (typeUsesForwarding(receiverType)) {
-      FnSymbol* fn = resolveForwardedCall(info, checkState);
-      if (fn) {
-        return fn;
-      }
-      // otherwise error is printed below
+  // Now, try forwarding again, this time considering POI
+  if (candidates.n == 0 && forwardingEligible && usesForwarding && considerPoi) {
+    if (auto fn = resolveForwardedCall(info, checkState, PoiSearchMode::POI_ONLY)) {
+      return fn;
     }
+    // otherwise error is printed below
   }
 
   if (numMatches > 0) {
@@ -5319,13 +5416,6 @@ static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
 *                                                                             *
 ************************************** | *************************************/
 
-//
-// We gather a list of last-resort candidates as we go.
-// The last-resort candidates visible from the call are followed by a NULL
-// to separate them from those visible from the point of instantiation.
-//
-typedef std::vector<FnSymbol*> LastResortCandidates;
-
 // add a null separator
 static void markEndOfPOI(LastResortCandidates& lrc) {
   lrc.push_back(NULL);
@@ -5465,17 +5555,11 @@ void advanceCurrStart(VisibilityInfo& visInfo) {
   visInfo.nextPOI = NULL;
 }
 
-// Returns the POI scope used to find the candidates
-static BlockStmt* findVisibleFunctionsAndCandidates(
-                                CallInfo&                  info,
-                                VisibilityInfo&            visInfo,
-                                Vec<FnSymbol*>&            mostApplicable,
-                                Vec<ResolutionCandidate*>& candidates) {
+bool CandidateSearchState::tryFindVisibileCandidatesForExplicitFn() {
   CallExpr* call = info.call;
   FnSymbol* fn   = call->resolvedFunction();
   Vec<FnSymbol*> visibleFns;
-
-  if (fn != NULL) {
+  if (fn != nullptr) {
     visibleFns.add(fn);
     mostApplicable.add(fn); // for better error reporting
 
@@ -5484,41 +5568,54 @@ static BlockStmt* findVisibleFunctionsAndCandidates(
     // no need for trimVisibleCandidates() and findVisibleCandidates()
     gatherCandidates(info, visInfo, fn, candidates);
 
-    explainGatherCandidate(info, candidates);
-
-    return getVisibilityScope(call);
+    scopeUsed = getVisibilityScope(call);
+    return true;
   }
+  return false;
+}
 
+// when looking for function candidates, we first check the current scope,
+// then walk through the POI scopes. For each scope, we execute searchOnePoiLevel(),
+// which checks for visible functions and gathers candidates. We stop if
+// we find any candidates.
+void CandidateSearchState::searchOnePoiLevel() {
+  // CG TODO: no POI for CG functions
+  visInfo.poiDepth++;
+
+  findVisibleFunctions(info, &visInfo, &visited,
+                       &numVisitedVis, visibleFns);
+
+  trimVisibleCandidates(info, mostApplicable,
+                        numVisitedVis, visibleFns);
+
+  gatherCandidatesAndLastResort(info, visInfo, mostApplicable, numVisitedMA,
+                                lrc, candidates);
+
+  // save the scope used for disambiguation
+  scopeUsed = visInfo.currStart;
+
+  advanceCurrStart(visInfo);
+}
+
+void CandidateSearchState::skipOnePoiLevel() {
+  visInfo.poiDepth++;
+  scopeUsed = visInfo.currStart;
+  visInfo.nextPOI = getVisibleFnsInstantiationPt(scopeUsed);
+  visInfo.visitedScopes.push_back(scopeUsed);
+  visited.insert(scopeUsed);
+  advanceCurrStart(visInfo);
+}
+
+// Returns the POI scope used to find the candidates
+void CandidateSearchState::findVisibleFunctionsAndCandidates() {
   // CG TODO: pull all visible interface functions, if within a CG context
 
-  // Keep *all* discovered functions in 'visibleFns' and 'mostApplicable'
-  // so that we can revisit them for error reporting.
-  // Keep track in 'numVisited*' of where we left off with the previous POI
-  // to avoid revisiting those functions for the next POI.
-  int numVisitedVis = 0, numVisitedMA = 0;
-  LastResortCandidates lrc;
-  PtrSet<BlockStmt*> visited;
-  visInfo.currStart = getVisibilityScope(call);
-  INT_ASSERT(visInfo.poiDepth == -1); // we have not used it
   BlockStmt* scopeUsed = nullptr;
 
   do {
     // CG TODO: no POI for CG functions
-    visInfo.poiDepth++;
 
-    findVisibleFunctions(info, &visInfo, &visited,
-                         &numVisitedVis, visibleFns);
-
-    trimVisibleCandidates(info, mostApplicable,
-                          numVisitedVis, visibleFns);
-
-    gatherCandidatesAndLastResort(info, visInfo, mostApplicable, numVisitedMA,
-                                  lrc, candidates);
-
-    // save the scope used for disambiguation
-    scopeUsed = visInfo.currStart;
-
-    advanceCurrStart(visInfo);
+    searchOnePoiLevel();
 
     // prevent infinite loop
     if (scopeUsed == visInfo.currStart) {
@@ -5527,9 +5624,9 @@ static BlockStmt* findVisibleFunctionsAndCandidates(
   }
   while
     (candidates.n == 0 && visInfo.currStart != NULL);
+}
 
-  // If we have not found any candidates after traversing all POIs,
-  // look at "last resort" candidates, if any.
+void CandidateSearchState::considerLastResortCandidates() {
   if (candidates.n == 0 && haveAnyLRCs(lrc, visInfo.poiDepth)) {
     visInfo.poiDepth = -1;
     int numVisitedLRC = 0;
@@ -5540,10 +5637,10 @@ static BlockStmt* findVisibleFunctionsAndCandidates(
     while
       (candidates.n == 0 && haveMoreLRCs(lrc, numVisitedLRC));
   }
+}
 
-  explainGatherCandidate(info, candidates);
-
-  return scopeUsed;
+void CandidateSearchState::explainGatherCandidate() {
+  ::explainGatherCandidate(info, candidates);
 }
 
 // run filterCandidate() on 'fn' if appropriate
@@ -5690,7 +5787,7 @@ static const char* getForwardedMethodName(const char* calledName,
   return methodName;
 }
 
-static FnSymbol* adjustAndResolveForwardedCall(CallExpr* call, ForwardingStmt* delegate, const char* methodName) {
+static FnSymbol* adjustAndResolveForwardedCall(CallExpr* call, ForwardingStmt* delegate, const char* methodName, PoiSearchMode poiMode) {
 
   FnSymbol* ret = NULL;
   const char* fnGetTgt   = delegate->fnReturningForwarding;
@@ -5732,7 +5829,7 @@ static FnSymbol* adjustAndResolveForwardedCall(CallExpr* call, ForwardingStmt* d
     }
 
     resolveCall(setTgt);
-    ret = tryResolveCall(call);
+    ret = tryResolveCall(call, /* checkWithin */ false, poiMode);
   }
 
   return ret;
@@ -5741,7 +5838,7 @@ static FnSymbol* adjustAndResolveForwardedCall(CallExpr* call, ForwardingStmt* d
 llvm::SmallVector<std::tuple<AggregateType*, const char*, const char*>, 4> forwardCallCycleSet;
 
 // Returns a relevant FnSymbol if it worked
-static FnSymbol* resolveForwardedCall(CallInfo& info, check_state_t checkState) {
+static FnSymbol* resolveForwardedCall(CallInfo& info, check_state_t checkState, PoiSearchMode poiMode) {
   CallExpr* call = info.call;
   const char* calledName = astr(info.name);
   const char* inFnName = astr(call->getFunction()->name);
@@ -5823,7 +5920,7 @@ static FnSymbol* resolveForwardedCall(CallInfo& info, check_state_t checkState) 
     BlockStmt* block = new BlockStmt(forwardedCall, BLOCK_SCOPELESS);
     call->getStmtExpr()->insertBefore(block);
 
-    auto fn = adjustAndResolveForwardedCall(forwardedCall, delegate, methodName);
+    auto fn = adjustAndResolveForwardedCall(forwardedCall, delegate, methodName, poiMode);
     if (fn) {
       if (bestFn == NULL) {
         bestFn = fn;
@@ -5855,7 +5952,7 @@ static FnSymbol* resolveForwardedCall(CallInfo& info, check_state_t checkState) 
       const char* methodName = getForwardedMethodName(calledName, bestDelegate);
       INT_ASSERT(methodName);
 
-      bestFn = adjustAndResolveForwardedCall(call, bestDelegate, methodName);
+      bestFn = adjustAndResolveForwardedCall(call, bestDelegate, methodName, poiMode);
     } else {
       // Replace actuals in call with those from bestCall
       // Note that the above path could be used instead, but

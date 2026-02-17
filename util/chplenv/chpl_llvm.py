@@ -17,7 +17,7 @@ def llvm_versions():
     # Which major release - only need one number for that with current
     # llvm (since LLVM 4.0).
     # These will be tried in order.
-    return ('20','19','18','17','16','15','14',)
+    return ('21','20','19','18','17','16','15','14',)
 
 @memoize
 def get_uniq_cfg_path_for(llvm_val, llvm_support_val):
@@ -204,7 +204,7 @@ def check_llvm_packages(llvm_config):
                         usr_include_clang_ok = True
                         clang_include_ok = True
 
-    llvm_lib_dir = run_command([llvm_config, '--libdir']).strip()
+    llvm_lib_dir = _get_llvm_config_libdir(llvm_config)
 
     clang_lib_name = None
     if sys.platform == "darwin":
@@ -441,6 +441,19 @@ def _get_llvm_config_bindir(llvm_config):
     found_version, found_config_err = check_llvm_config(llvm_config)
     if llvm_config and found_version and not found_config_err:
         return run_command([llvm_config, '--bindir']).strip()
+    else:
+        return None
+
+@memoize
+def get_llvm_config_libdir():
+    llvm_config = get_llvm_config()
+    return _get_llvm_config_libdir(llvm_config)
+
+@memoize
+def _get_llvm_config_libdir(llvm_config):
+    found_version, found_config_err = check_llvm_config(llvm_config)
+    if llvm_config and found_version and not found_config_err:
+        return run_command([llvm_config, '--libdir']).strip()
     else:
         return None
 
@@ -1413,9 +1426,8 @@ def compute_host_link_settings():
         if shared_mode.strip() == 'static':
             llvm_dynamic = False
 
-        libdir = run_command([llvm_config, '--libdir'])
+        libdir = _get_llvm_config_libdir(llvm_config)
         if libdir:
-            libdir = libdir.strip()
             system.append('-L' + libdir)
             system.append('-Wl,-rpath,' + libdir)
 
@@ -1443,7 +1455,7 @@ def compute_host_link_settings():
         # don't try to run llvm-config if it's not built yet
         if is_included_llvm_built(llvm_val):
 
-            libdir = run_command([llvm_config, '--libdir'])
+            libdir = _get_llvm_config_libdir(llvm_config)
             if libdir:
                 libdir = libdir.strip()
                 bundled.append('-L' + libdir)

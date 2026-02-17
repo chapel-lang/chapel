@@ -1555,7 +1555,7 @@ static optional<QualifiedType> findByAncestor(
     if (!bct) return chpl::empty;
     auto pct = bct->parentClassType();
     // don't consider the root of the class hierarchy for a common type
-    if (!pct || pct->isObjectType()) return chpl::empty;
+    if (!pct || pct->isRootClass()) return chpl::empty;
 
     parentTypes.emplace_back(QualifiedType(
         type.kind(),

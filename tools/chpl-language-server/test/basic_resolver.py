@@ -137,3 +137,57 @@ async def test_string(client: LanguageClient):
         await check_goto_type_def(
             client, doc, pos((0, 12)), string_loc, "record _string"
         )
+
+
+@pytest.mark.asyncio
+async def test_error_location_specific(client: LanguageClient):
+    """
+    Lock down that LSP errors for failed call resolution occur at the
+    failed actual, if there is one.
+    """
+
+    file = """
+           use IO except ioMode as iomode;
+
+           proc foo(ok1: int, ok2: int, x: int, ok3: int) {}
+           proc bar(ok1: int, ok2: int, x: int, ok3: int) {}
+           proc bar(ok1: int, ok2: int, x: bool, ok3: int) {}
+           foo(0, 0, 1.0, 0);
+           bar(0, 0, 1.0, 0);
+
+           proc baz(a: real, b: int) {}
+           proc baz(a: int, b: real) {}
+           baz(1.0, 1.0);
+
+           foo(ok1=(...(1,)), 1, 1, 1);
+           foo((...(1)), 1, 1, 1);
+
+           proc int.beep(ok1: int, ok2: int, x: int, ok3: int) {}
+           42.beep(0, 0, 1.0, 0);
+
+           proc int.test() {
+             beep(0, 0, 1.0, 0);
+           }
+           """
+
+    def check_location(diagnostic, name, start_pos, end_pos):
+        assert "[{}]".format(name) in diagnostic.message
+        assert diagnostic.range.start.line == start_pos[0]
+        assert diagnostic.range.start.character == start_pos[1]
+        assert diagnostic.range.end.line == end_pos[0]
+        assert diagnostic.range.end.character == end_pos[1]
+
+    async with source_file(client, file, num_errors=8) as doc:
+        await save_file(client, doc)
+        diags = client.diagnostics[doc.uri]
+        diags = sorted(diags, key=lambda d: d.range.start.line)
+
+        # Using check_location
+        check_location(diags[0], "AsWithUseExcept", (0, 14), (0, 30))
+        check_location(diags[1], "NoMatchingCandidates", (5, 10), (5, 13))
+        check_location(diags[2], "NoMatchingCandidates", (6, 10), (6, 13))
+        check_location(diags[3], "NoMatchingCandidates", (10, 0), (10, 13))
+        check_location(diags[4], "TupleExpansionNamedArgs", (12, 8), (12, 17))
+        check_location(diags[5], "TupleExpansionNonTuple", (13, 4), (13, 12))
+        check_location(diags[6], "NoMatchingCandidates", (16, 14), (16, 17))
+        check_location(diags[7], "NoMatchingCandidates", (19, 13), (19, 16))

@@ -305,7 +305,7 @@ static void genGlobalRawString(const char *cname, std::string &value, size_t len
 static void
 genGlobalVoidPtr(const char* cname, bool isHeader, bool isConstant=true) {
   GenInfo* info = gGenInfo;
-  llvm::Type* voidPtrTy = getPointerType(info->module->getContext(), 1);
+  auto voidPtrTy = getPointerType(info->module->getContext(), 1);
   llvm::GlobalVariable *global = llvm::cast<llvm::GlobalVariable>(
       info->module->getOrInsertGlobal(cname, voidPtrTy));
   global->setInitializer(llvm::Constant::getNullValue(voidPtrTy));
@@ -1506,7 +1506,7 @@ static void genGlobalSerializeTable(GenInfo* info) {
     fprintf(hdrfile, "\n};\n");
   } else if (!gCodegenGPU) {
 #ifdef HAVE_LLVM
-    llvm::Type *global_serializeTableEntryType =
+    auto global_serializeTableEntryType =
       getPointerType(info->module->getContext());
 
     std::vector<llvm::Constant *> global_serializeTable;
@@ -2124,7 +2124,7 @@ static void codegen_header(std::set<const char*> & cnames,
     fprintf(hdrfile, "\nextern void* const chpl_private_broadcast_table[];\n");
   } else if(!gCodegenGPU) {
 #ifdef HAVE_LLVM
-    llvm::Type *private_broadcastTableEntryType =
+    auto private_broadcastTableEntryType =
       getPointerType(info->module->getContext());
 
     std::vector<llvm::Constant *> private_broadcastTable;
@@ -3229,20 +3229,14 @@ static void codegenPartTwo() {
     if (fDebugSymbols) {
       debugInfo = new DebugData(/*optimized*/false);
     }
-    if(debugInfo) {
+    if (debugInfo) {
       // every module gets its own compile unit
       forv_Vec(ModuleSymbol, currentModule, allModules) {
         // So, this is pretty quick. I'm assuming that the main module is in the current dir, no optimization (need to figure out how to get this)
         // and no compile flags, since I can't figure out how to get that either.
-        const char *current_dir = "./";
-        const char *empty_string = "";
-        debugInfo->createCompileUnit(currentModule,
-          currentModule->astloc.filename(), current_dir, empty_string
-        );
+        debugInfo->createCompileUnit(currentModule, currentModule->fname(), "./", "");
       }
-      debugInfo->createCompileUnit(rootModule,
-        rootModule->astloc.filename(), "./", ""
-      );
+      debugInfo->createCompileUnit(rootModule, rootModule->fname(), "./", "");
     }
 
     // When doing codegen for programs that have GPU kernels we fork the

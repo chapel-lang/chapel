@@ -231,32 +231,49 @@ static void markGenerics() {
       }
 
       // don't try to mark generic again
-      if (!at->isGeneric()) {
+      if (at->isGeneric()) {
+        continue;
+      }
 
-        bool anyGeneric = false;
-        bool anyNonDefaultedGeneric = false;
-        bool anyDefaultedGeneric = false;
-        for_fields(field, at) {
-          bool hasDefault = false;
-          if (at->fieldIsGeneric(field, hasDefault)) {
-            anyGeneric = true;
-            if (hasDefault == false)
-              anyNonDefaultedGeneric = true;
-            else
-              anyDefaultedGeneric = true;
+      bool anyGeneric = false;
+      bool anyNonDefaultedGeneric = false;
+      bool anyDefaultedGeneric = false;
+
+      for (auto dispatchParent : at->dispatchParents) {
+        if (dispatchParent->isGeneric()) {
+          anyGeneric = true;
+
+          if (dispatchParent->isGenericWithDefaults()) {
+            anyDefaultedGeneric = true;
+          } else if (dispatchParent->isGenericWithSomeDefaults()) {
+            anyDefaultedGeneric = true;
+            anyNonDefaultedGeneric = true;
+          } else {
+            anyNonDefaultedGeneric = true;
           }
         }
+      }
 
-        if (anyGeneric) {
-          at->markAsGeneric();
-          if (anyNonDefaultedGeneric == false)
-            at->markAsGenericWithDefaults();
-          else if (anyDefaultedGeneric == true &&
-                   anyNonDefaultedGeneric == true)
-            at->markAsGenericWithSomeDefaults();
-
-          changed = true;
+      for_fields(field, at) {
+        bool hasDefault = false;
+        if (at->fieldIsGeneric(field, hasDefault)) {
+          anyGeneric = true;
+          if (hasDefault == false)
+            anyNonDefaultedGeneric = true;
+          else
+            anyDefaultedGeneric = true;
         }
+      }
+
+      if (anyGeneric) {
+        at->markAsGeneric();
+        if (anyNonDefaultedGeneric == false)
+          at->markAsGenericWithDefaults();
+        else if (anyDefaultedGeneric == true &&
+                 anyNonDefaultedGeneric == true)
+          at->markAsGenericWithSomeDefaults();
+
+        changed = true;
       }
     }
   } while (changed);

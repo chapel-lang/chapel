@@ -1,0 +1,109 @@
+#!/usr/bin/env python3
+
+# Custom sub_test which runs chpl, SIGKILLs the driver compilation phase to
+# mimic being OOM killed, and checks for the presence of the expected OOM
+# warning message.
+
+import os
+import signal
+import subprocess
+import sys
+import time
+from datetime import datetime
+
+
+oom_message = "warning: A driver phase was killed by signal SIGKILL -- possibly due to running out of memory"
+phase_invocation_message = "invoking driver compilation phase"
+phase_arg = "driver-compilation-phase"
+chpl_file = "oom.chpl"
+ps_base_command = "ps -o pid,ppid,cmd"
+
+
+### BEGIN sub_test output helper functions ###
+
+# The output from these functions is expected by our test infrastructure
+# to determine whether the sub_test run succeeded or failed, gather timings,
+# and detect the individual test run under the sub_test.
+
+subtest_start_time = None
+subtest_test_name = '"compflags/oom"'
+
+def subtest_start():
+    global subtest_start_time
+    subtest_start_time = datetime.now()
+
+    print(f"[Starting subtest - {datetime.now().strftime('%c')}]")
+    print(f"[test: {subtest_test_name}]")
+
+def subtest_end():
+    subtest_end_time = datetime.now()
+    elapsed_time = (subtest_end_time - subtest_start_time).total_seconds()
+
+    print(f"[Elapsed time to compile and execute all versions of {subtest_test_name} - {elapsed_time} seconds]")
+    print(f"[Finished subtest {subtest_test_name} - {elapsed_time} seconds]")
+
+def subtest_error(msg):
+    print(f"[Error running sub_test {subtest_test_name} - {msg}]")
+    sys.exit(1)
+
+### END sub_test output helper functions ###
+
+
+def kill_subphase(ppid):
+    ps_cmd = f"{ps_base_command} | grep chpl | grep {phase_arg}"
+    print(f"Finding subphase with parent PID {ppid} using command: {ps_cmd}")
+    ps_output = subprocess.check_output(
+        ps_cmd,
+        universal_newlines=True,
+        shell=True,
+    )
+    print(ps_output)
+
+    for line in ps_output.splitlines():
+        split_line = line.split(" ")
+        if str(ppid) in split_line[1]:
+            child_pid = int(split_line[0])
+            print(f"Killing subphase with PID {child_pid}...", end="")
+            os.kill(child_pid, signal.SIGKILL)
+            print("killed.")
+            return
+
+    subtest_error("Could not find PID of subphase to kill.")
+
+def main():
+    subtest_start()
+
+    assert len(sys.argv) == 2
+    chpl_cmd = sys.argv[1]
+
+    cmd = [chpl_cmd, "--print-commands", chpl_file]
+    process = subprocess.Popen(
+        cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True
+    )
+
+    encountered_subphase = False
+    killed_subphase = False
+    oom_message_found = False
+    for line in process.stdout:
+        print(line, end="")
+        if not encountered_subphase and phase_invocation_message in line:
+            encountered_subphase = True
+        elif encountered_subphase and not killed_subphase:
+            kill_subphase(process.pid)
+            killed_subphase = True
+        elif killed_subphase:
+            if oom_message in line:
+                oom_message_found = True
+
+    if not killed_subphase:
+        subtest_error("Expected subphase was not found in compiler output.")
+    elif not oom_message_found:
+        subtest_error("Did not find expected OOM message in output after killing subphase.")
+    else:
+        print("Found expected OOM warning message after killing subphase.")
+
+    subtest_end()
+
+
+if __name__ == "__main__":
+    main()

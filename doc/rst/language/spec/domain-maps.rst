@@ -48,9 +48,7 @@ Distributions are presented as follows:
 .. index::
    single: domain maps for domain types
    single: domains; domain maps for
-   single: dmap value
    single: dmapped clause
-   single: domain maps; dmap value
    single: domain maps; dmapped clause
 .. _Domain_Maps_For_Types:
 
@@ -160,7 +158,7 @@ type. The type inferred for a domain literal
 
       use BlockDist;
       var MyDomLiteral = {1..2,1..3};
-      var MyBlockedDom: domain(2) dmapped blockDist({1..5,1..6}) = MyDomLiteral;
+      var MyBlockedDom: domain(2) dmapped new blockDist({1..5,1..6}) = MyDomLiteral;
 
    ``MyDomLiteral`` is a domain literal and so will be mapped using
    a default distribution. MyBlockedDom is given a type explicitly,
@@ -205,7 +203,7 @@ array was declared.
    .. code-block:: chapel
 
       use BlockDist;
-      var Dom: domain(2) dmapped blockDist({1..5,1..6}) = {1..5,1..6};
+      var Dom: domain(2) dmapped new blockDist({1..5,1..6}) = {1..5,1..6};
       var MyArray: [Dom] real;
 
    the distribution used for ``MyArray`` is the Block distribution from
@@ -240,7 +238,7 @@ determined by its type and so does not change upon a domain assignment.
    .. code-block:: chapel
 
       use BlockDist;
-      var Dom1: domain(2) dmapped blockDist({1..5,1..6}) = {1..5,1..6};
+      var Dom1: domain(2) dmapped new blockDist({1..5,1..6}) = {1..5,1..6};
       var Dom2: domain(2) = Dom1;
 
    ``Dom2`` is mapped using a default distribution, despite ``Dom1``
@@ -264,7 +262,7 @@ determined by its type and so does not change upon a domain assignment.
    .. code-block:: chapel
 
       use BlockDist;
-      var Dom1: domain(2) dmapped blockDist({1..5,1..6}) = {1..5,1..6};
+      var Dom1: domain(2) dmapped new blockDist({1..5,1..6}) = {1..5,1..6};
       var Dom2 = Dom1;
 
    ``Dom2`` is mapped using the same distribution as ``Dom1``. This is

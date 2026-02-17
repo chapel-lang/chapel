@@ -29,6 +29,7 @@ use MasonEnv;
 use MasonBuild;
 use Subprocess;
 use TOML;
+import Path.joinPath;
 
 // A call to `mason modules` will print to screen the flags that are
 // required to include the mason packages specified in the TOML file
@@ -54,7 +55,7 @@ proc masonModules(args: [] string) throws {
     skipUpdate = !updateFlag.valueAsBool();
   }
 
-  if isDir(MASON_HOME) == false {
+  if !isDir(MASON_HOME) {
     mkdir(MASON_HOME, parents=true);
   }
   const configNames = updateLock(skipUpdate, show=false);
@@ -70,21 +71,24 @@ proc masonModules(args: [] string) throws {
   getSrcCode(sourceList, skipUpdate, false);
   getGitCode(gitList, false);
 
-  const depPath = MASON_HOME + '/src/';
-  const gitDepPath = MASON_HOME + '/git/';
+  const depPath = joinPath(MASON_HOME, 'src');
+  const gitDepPath = joinPath(MASON_HOME, 'git');
   var modules: string;
   // can't use _ since it will leak
   // see https://github.com/chapel-lang/chapel/issues/25926
+  @chplcheck.ignore("UnusedLoopIndex")
   for (_x, name, version) in srcSource.iterList(sourceList) {
-    var depM = ' ' + depPath + name + "-" + version + '/src/' + name + ".chpl";;
-    modules += depM;
+    const depM = joinPath(depPath, name + "-" + version, 'src', name + ".chpl");
+    modules += ' ' + depM;
   }
 
   // can't use _ since it will leak
   // see https://github.com/chapel-lang/chapel/issues/25926
+  @chplcheck.ignore("UnusedLoopIndex")
   for (_x, name, branch, _y) in gitSource.iterList(gitList) {
-    var gitDepSrc = ' ' + gitDepPath + name + "-" + branch + '/src/' + name + ".chpl";
-    modules += gitDepSrc;
+    const gitDepSrc =
+      joinPath(gitDepPath, name + "-" + branch, 'src', name + ".chpl");
+    modules += ' ' + gitDepSrc;
   }
 
   writeln(modules);

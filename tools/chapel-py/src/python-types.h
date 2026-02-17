@@ -192,6 +192,9 @@ std::string tupleTypeStringImpl(std::index_sequence<Is...>) {
   };
 
   (printElem(std::get<Is>(std::tuple<Elems...>())), ...);
+  if constexpr (sizeof...(Elems) == 0) {
+    toReturn += "()";
+  }
   toReturn += "]";
 
   return toReturn;
@@ -201,6 +204,16 @@ template <typename ... Elems>
 std::string tupleTypeString() {
   return tupleTypeStringImpl<Elems...>(std::make_index_sequence<sizeof...(Elems)>());
 }
+
+template <typename T>
+struct TupleTypeStringify {};
+
+template <typename ... Ts>
+struct TupleTypeStringify<std::tuple<Ts...>> {
+  static std::string typeString() {
+    return tupleTypeString<Ts...>();
+  }
+};
 
 template <typename T>
 std::string iteratorTypeString() {
@@ -230,6 +243,130 @@ std::string nilableTypeString() {
   return std::string("typing.Optional[") + PythonReturnTypeInfo<T>::typeString() + "]";
 }
 
+/** Different error types have different arguments in their '->info()' tuple,
+    not all of which can be converetd to Python. Also, the C preprocessor
+    doesn't allow us to use commas in macro arguments, so we can't just write
+    std::tuple<EINFO> to get a tuple of an error's info. Instead, use template
+    specialization here to define a ErrorInfoBundle with a type alias that
+    is fully convertible.
+
+    It seems to be a good idea to keep the tuple returned by Python's
+    version of `->info()` always the same size as the original tuple. This
+    way, as more components of the error info become convertible,
+    they can be added to the returned tuple without changing user code that
+    unpacks the tuple. Thus, we pad the tuple with 'dummy' elements for
+    non-convertible types.
+
+    To try to decide if a type is convertable to Python, and then use that
+    decision to define a Python conversion, causes infinite recursion
+    and 'explicit specialization after instantiation' errors. Thus, manually
+    list compatible types via `CanConvert` template specialization.
+
+    All, because error info tuples don't have many guarantees about
+    nullability, we treat all pointer types as nilable, which requires
+    a recursive transformation of the tuple to replace pointer types with their
+    nilable equivalents.
+  */
+
+namespace detail {
+
+using namespace chpl;
+
+template <typename T>
+struct CanConvert {
+  // For unsupported types, just return an empty tuple.
+  static auto transform(const T& node) { return std::make_tuple(); }
+};
+
+template <> struct CanConvert<const chpl::uast::AstNode*> {
+  // Most error message arguments (as AST nodes) can be null. Mark them
+  // as such so that they can be converted to Python (as None) even when null.
+  static auto transform(const chpl::uast::AstNode* node) {
+    return Nilable(node);
+  }
+};
+template <> struct CanConvert<const chpl::types::Type*> {
+  static auto transform(const chpl::types::Type* typ) { return Nilable(typ);}
+};
+template <> struct CanConvert<const chpl::types::Param*> {
+  static auto transform(const chpl::types::Param* param) { return Nilable(param); }
+};
+template <> struct CanConvert<chpl::Location> {
+  static auto transform(const chpl::Location& loc) { return loc; }
+};
+template <> struct CanConvert<chpl::resolution::ApplicabilityResult> {
+  static auto transform(const chpl::resolution::ApplicabilityResult& ar) { return ar; }
+};
+template <> struct CanConvert<chpl::resolution::CallInfo> {
+  static auto transform(const chpl::resolution::CallInfo& ar) { return ar; }
+};
+template <typename T> struct CanConvert<std::vector<T>> : CanConvert<T> {
+  static auto transform(const std::vector<T>& vec) {
+    std::vector<decltype(CanConvert<T>::transform(std::declval<T>()))> toReturn;
+    for (const auto& elem : vec) {
+      toReturn.push_back(CanConvert<T>::transform(elem));
+    }
+    return toReturn;
+  }
+};
+#define GENERATED_TYPE(ROOT, ROOT_TYPE, NAME, TYPE, TAG, FLAGS) \
+  template <> struct CanConvert<const TYPE*> { \
+    static auto transform(const TYPE* val) { return Nilable(val); } \
+  };
+#include "generated-types-list.h"
+
+template <typename Tuple, size_t Idx>
+auto getOrReturnDummyAtIdx(const Tuple& tup) {
+  using ElementType = std::decay_t<decltype(std::get<Idx>(tup))>;
+  return CanConvert<ElementType>::transform(std::get<Idx>(tup));
+}
+
+template <typename Tuple, size_t ... Idx>
+auto getDummyfiedImpl(const Tuple& tup, std::index_sequence<Idx...>) {
+  return std::make_tuple(getOrReturnDummyAtIdx<Tuple, Idx>(tup)...);
+}
+
+template <typename Tuple>
+auto getDummyfied(const Tuple& tup) {
+  return getDummyfiedImpl(tup, std::make_index_sequence<std::tuple_size_v<Tuple>>());
+}
+
+template <typename Tuple>
+using DummifiedType = decltype(getDummyfied(std::declval<Tuple>()));
+
+template <typename ErrorType>
+struct ErrorInfoBundleImpl {};
+
+#define DIAGNOSTIC_CLASS(NAME, KIND, EINFO...) \
+  template <> \
+  struct ErrorInfoBundleImpl<chpl::Error##NAME> { \
+    using ExtractedData = DummifiedType<std::tuple<EINFO>>; \
+    ExtractedData data; \
+    ErrorInfoBundleImpl(const std::tuple<EINFO>& originalData) : data(getDummyfied(originalData)) {} \
+\
+    static std::string typeString() { \
+      return TupleTypeStringify<ExtractedData>::typeString(); \
+    } \
+  };
+#include "chpl/framework/error-classes-list.h"
+#undef DIAGNOSTIC_CLASS
+
+} // end namespace detail
+
+template <typename ErrorType>
+using ErrorInfoBundle = detail::ErrorInfoBundleImpl<ErrorType>;
+
+template <typename T>
+static T unwrapUnsupported() {
+  assert(false && "attempt to unwrap type from Python object that doesn't support unwrapping");
+  // there's no way for a user to trigger this issue if the implementation
+  // of chapel-py is correct. This is because "unwrapping" is always
+  // triggered when a chapel-py developer attempts to define a method in
+  // method-tables.h that accepts a Python argument of an unsupported type.
+  // If the developer doesn't do so, there's no way for this function to be
+  // called. Seems reasonable to exit.
+  exit(1);
+}
 
 /* Invoke the DEFINE_INOUT_TYPE macro for each type we want to support.
    New types should be added here. We might consider performing these invocations
@@ -249,6 +386,8 @@ DEFINE_INOUT_TYPE(chpl::Location, "Location", (PyObject*) LocationObject::create
 DEFINE_INOUT_TYPE(IterAdapterBase*, "typing.Iterator[AstNode]", wrapIterAdapter(CONTEXT, TO_WRAP), ((AstIterObject*) TO_UNWRAP)->iterAdapter);
 DEFINE_INOUT_TYPE(PyObject*, "typing.Any", TO_WRAP, TO_UNWRAP);
 DEFINE_INOUT_TYPE(const chpl::resolution::Scope*, "Scope", (PyObject*) ScopeObject::create(CONTEXT, TO_WRAP), ((ScopeObject*) TO_UNWRAP)->value_);
+DEFINE_INOUT_TYPE(chpl::resolution::ApplicabilityResult, "ApplicabilityResult", (PyObject*) ApplicabilityResultObject::create(CONTEXT, TO_WRAP), ((ApplicabilityResultObject*) TO_UNWRAP)->value_);
+DEFINE_INOUT_TYPE(chpl::resolution::CallInfo, "CallInfo", (PyObject*) CallInfoObject::create(CONTEXT, TO_WRAP), ((CallInfoObject*) TO_UNWRAP)->value_);
 
 template <typename T>
 T_DEFINE_INOUT_TYPE(T*, T::Name, (PyObject*) TO_WRAP, (T*) TO_UNWRAP);
@@ -264,6 +403,8 @@ template <typename ... Elems>
 T_DEFINE_INOUT_TYPE(std::tuple<Elems...>, tupleTypeString<Elems...>(), wrapTuple(CONTEXT, TO_WRAP), unwrapTuple<Elems...>(CONTEXT, TO_UNWRAP));
 template <typename ElemType>
 T_DEFINE_INOUT_TYPE(TypedIterAdapterBase<ElemType>*, iteratorTypeString<ElemType>(), wrapIterAdapter(CONTEXT, TO_WRAP), (TypedIterAdapterBase<ElemType>*) ((AstIterObject*) TO_UNWRAP)->iterAdapter);
+template <typename ErrorType>
+T_DEFINE_INOUT_TYPE(ErrorInfoBundle<ErrorType>, ErrorInfoBundle<ErrorType>::typeString(), wrapTuple(CONTEXT, TO_WRAP.data), unwrapUnsupported<ErrorInfoBundle<ErrorType>>());
 
 #define GENERATED_TYPE(ROOT, ROOT_TYPE, NAME, TYPE, TAG, FLAGS) \
   DEFINE_INOUT_TYPE(const TYPE*, #NAME, wrapGeneratedType(CONTEXT, (ROOT_TYPE*) TO_WRAP), ((ROOT##Object*) TO_UNWRAP)->value_->to##NAME());

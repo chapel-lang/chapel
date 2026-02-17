@@ -10,15 +10,17 @@ class Chapel < Formula
 
   no_autobump! because: :bumped_by_upstream
 
-  # Don't include the bottle information in chapel-main.rb deliberately. The
-  # idea is that we don't want to accidentally use a published bottle in our testing,
-  # which would always report passing.
+  # Don't include real bottle information here, to avoid accidentally testing
+  # off of a published bottle.
+  bottle do
+  <bottle-block-placeholder-injected-during-testing>
+  # Intentionally not `end`ed so if insertion fails the test will break
 
   depends_on "cmake"
   depends_on "gmp"
   depends_on "hwloc"
   depends_on "jemalloc"
-  depends_on "llvm@20"
+  depends_on "llvm"
   depends_on "pkgconf"
   depends_on "python@3.14"
 
@@ -74,6 +76,17 @@ class Chapel < Formula
       CHPL_RUNTIME_CPU=none
       CHPL_TARGET_CPU=native
     EOS
+
+    if OS.linux?
+      # we get strange build errors when trying to build with libunwind on linux
+      # the bundled build gets weird linking errors. this seems to be the fault
+      # of the homebrew build environment. we also cant use the system libunwind
+      # due to it being keg-only and not found by default.
+      # for now, disable stack unwinding with linuxbrew
+      (libexec/"chplconfig").append_lines <<~EOS
+        CHPL_UNWIND=none
+      EOS
+    end
 
     # Must be built from within CHPL_HOME to prevent build bugs.
     # https://github.com/Homebrew/legacy-homebrew/pull/35166
@@ -173,9 +186,6 @@ class Chapel < Formula
   end
 
   test do
-    # Hide ld warning until formula uses LLVM 21+ or if we apply backports to `llvm@20`
-    ENV["MACOSX_DEPLOYMENT_TARGET"] = MacOS.version.to_s if OS.mac? && MacOS.version >= :tahoe
-
     ENV["CHPL_HOME"] = libexec
     ENV["CHPL_INCLUDE_PATH"] = HOMEBREW_PREFIX/"include"
     ENV["CHPL_LIB_PATH"] = HOMEBREW_PREFIX/"lib"

@@ -156,5 +156,6 @@ private proc parseSpec(ref tokenList: list(string)): 4*string throws {
       variants.pushBack(toke);
     }
   }
-  return (package, packageVersion, compiler, " ".join(variants.these()).strip());
+  return (package, packageVersion, compiler,
+          " ".join(variants.these()).strip());
 }

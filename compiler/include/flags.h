@@ -42,6 +42,7 @@
 
 
 #include "chpl.h"
+#include <bitset>
 
 
 class BaseAST;
@@ -59,6 +60,7 @@ enum Flag {
   FLAG_FIRST = FLAG_UNKNOWN + 1, // index of the first flag
   FLAG_LAST  = NUM_FLAGS - 1     // index of the last flag
 };
+typedef std::bitset<NUM_FLAGS> FlagSet;
 
 // only meaningful flags are allowed
 #define CHECK_FLAG(FLAG) \

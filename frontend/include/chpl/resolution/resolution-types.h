@@ -1451,6 +1451,8 @@ enum CandidateFailureReason {
   FAIL_CANDIDATE_OTHER,
 };
 
+const char* candidateFailureReasonToString(CandidateFailureReason reason);
+
 /**
   An enum that represents the reason why an actual couldn't be passed
   to a formal.
@@ -1494,6 +1496,8 @@ enum PassingFailureReason {
   /* Some other, generic reason. */
   FAIL_FORMAL_OTHER,
 };
+
+const char* passingFailureReasonToString(PassingFailureReason reason);
 
 /**
   Represents either a function that was accepted during call resolution, or
@@ -3034,6 +3038,10 @@ class ResolvedFunction {
   using SigAndInfo = std::tuple<const TypedFnSignature*, PoiInfo>;
   using SigAndInfoToChildPtrMap = std::unordered_map<SigAndInfo, ChildPtr>;
 
+  // TODO: Can we get away with using a single CompositeType instead?
+  using ImplicitInitKey = std::pair<const types::CompositeType*, ID>;
+  using ImplicitInitMap = std::unordered_map<ID, std::vector<ImplicitInitKey>>;
+
  private:
   const TypedFnSignature* signature_ = nullptr;
 
@@ -3063,6 +3071,8 @@ class ResolvedFunction {
   PoiTraceToChildMap poiTraceToChild_;
   SigAndInfoToChildPtrMap sigAndInfoToChildPtr_;
 
+  ImplicitInitMap implicitInits_;
+
  public:
   ResolvedFunction(const TypedFnSignature *signature,
                    uast::Function::ReturnIntent returnIntent,
@@ -3072,7 +3082,8 @@ class ResolvedFunction {
                    types::QualifiedType returnType,
                    std::vector<CompilerDiagnostic> diagnostics,
                    PoiTraceToChildMap poiTraceToChild,
-                   SigAndInfoToChildPtrMap sigAndInfoToChildPtr)
+                   SigAndInfoToChildPtrMap sigAndInfoToChildPtr,
+                   ImplicitInitMap implicitInits)
       : signature_(signature),
         returnIntent_(returnIntent),
         resolutionById_(std::move(resolutionById)),
@@ -3081,7 +3092,8 @@ class ResolvedFunction {
         returnType_(std::move(returnType)),
         diagnostics_(std::move(diagnostics)),
         poiTraceToChild_(std::move(poiTraceToChild)),
-        sigAndInfoToChildPtr_(std::move(sigAndInfoToChildPtr)) {}
+        sigAndInfoToChildPtr_(std::move(sigAndInfoToChildPtr)),
+        implicitInits_(std::move(implicitInits)) {}
  ~ResolvedFunction() = default;
   ResolvedFunction(const ResolvedFunction& rhs) = delete;
   ResolvedFunction(ResolvedFunction&& rhs) = default;
@@ -3124,6 +3136,10 @@ class ResolvedFunction {
     }
   }
 
+  const ImplicitInitMap& implicitInits() const {
+    return implicitInits_;
+  }
+
   bool operator==(const ResolvedFunction& other) const {
     return signature_ == other.signature_ &&
            returnIntent_ == other.returnIntent_ &&
@@ -3133,7 +3149,8 @@ class ResolvedFunction {
            returnType_ == other.returnType_ &&
            diagnostics_ == other.diagnostics_ &&
            poiTraceToChild_ == other.poiTraceToChild_ &&
-           sigAndInfoToChildPtr_ == other.sigAndInfoToChildPtr_;
+           sigAndInfoToChildPtr_ == other.sigAndInfoToChildPtr_ &&
+           implicitInits_ == other.implicitInits_;
   }
   bool operator!=(const ResolvedFunction& other) const {
     return !(*this == other);
@@ -3149,6 +3166,7 @@ class ResolvedFunction {
     std::swap(diagnostics_, other.diagnostics_);
     std::swap(poiTraceToChild_, other.poiTraceToChild_);
     std::swap(sigAndInfoToChildPtr_, other.sigAndInfoToChildPtr_);
+    std::swap(implicitInits_, other.implicitInits_);
   }
   static bool update(owned<ResolvedFunction>& keep,
                      owned<ResolvedFunction>& addin) {
@@ -3169,10 +3187,13 @@ class ResolvedFunction {
       chpl::mark<decltype(p.first)>{}(context, p.first);
       context->markPointer(p.second);
     }
+    chpl::mark<decltype(implicitInits_)>{}(context, implicitInits_);
   }
   size_t hash() const {
     // Skip 'resolutionById_' since it can be quite large.
     std::ignore = resolutionById_;
+    // Skip 'implicitInits_' as it does not add any relevant information
+    std::ignore = implicitInits_;
     size_t ret = chpl::hash(signature_, returnIntent_, poiInfo_, linkageName_, returnType_, diagnostics_);
     for (auto& p : poiTraceToChild_) {
       ret = hash_combine(ret, chpl::hash(p.first));
@@ -3267,6 +3288,70 @@ struct ForwardingDetail {
   }
 };
 /// \endcond DO_NOT_DOCUMENT
+
+// TODO: If we support returning a ResolutionResultByPostorderID from a
+// resolution query, we can probably get rid of this type.
+class ResolvedFieldResults {
+  const types::CompositeType* type_ = nullptr;
+  ID fieldID_;
+  const uast::AstNode* fieldAst_ = nullptr;
+  ResolutionResultByPostorderID results_;
+  bool syntaxOnly_ = false;
+
+ public:
+  ResolvedFieldResults(
+      const types::CompositeType* type,
+      ID fieldID,
+      const uast::AstNode* fieldAst,
+      ResolutionResultByPostorderID results,
+      bool syntaxOnly) :
+        type_(type), fieldID_(fieldID),
+        fieldAst_(fieldAst), results_(std::move(results)),
+        syntaxOnly_(syntaxOnly)
+      { }
+  ResolvedFieldResults() {}
+
+  const types::CompositeType* type() const { return type_; }
+  const ID& fieldID() const { return fieldID_; }
+  const uast::AstNode* fieldAst() const { return fieldAst_; }
+  const ResolutionResultByPostorderID& results() const { return results_; }
+  bool syntaxOnly() const { return syntaxOnly_; }
+
+  bool operator==(const ResolvedFieldResults& other) const {
+    return type_ == other.type_ &&
+            fieldID_ == other.fieldID_ &&
+            fieldAst_ == other.fieldAst_ &&
+            results_ == other.results_ &&
+            syntaxOnly_ == other.syntaxOnly_;
+  }
+  bool operator!=(const ResolvedFieldResults& other) const {
+    return !(*this == other);
+  }
+  void swap(ResolvedFieldResults& other) {
+    std::swap(type_, other.type_);
+    fieldID_.swap(other.fieldID_);
+    std::swap(fieldAst_, other.fieldAst_);
+    results_.swap(other.results_);
+    std::swap(syntaxOnly_, other.syntaxOnly_);
+  }
+  static bool update(ResolvedFieldResults& keep,
+                     ResolvedFieldResults& addin) {
+    return defaultUpdate(keep, addin);
+  }
+  void mark(Context* context) const {
+    context->markPointer(type_);
+    fieldID_.mark(context);
+    context->markPointer(fieldAst_);
+    results_.mark(context);
+  }
+  size_t hash() const {
+    // Skip 'resolutionById_' since it can be quite large.
+    std::ignore = results_;
+    return chpl::hash(type_, fieldID_, fieldAst_, syntaxOnly_);
+  }
+
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
+};
 
 /** ResolvedFields represents the fully resolved fields for a
     class/record/union/tuple type.
@@ -3756,6 +3841,7 @@ CHPL_DEFINE_STD_HASH_(MostSpecificCandidates, (key.hash()));
 CHPL_DEFINE_STD_HASH_(CallResolutionResult, (key.hash()));
 CHPL_DEFINE_STD_HASH_(TheseResolutionResult, (key.hash()));
 CHPL_DEFINE_STD_HASH_(AssociatedAction, (key.hash()));
+CHPL_DEFINE_STD_HASH_(ResolvedFieldResults, (key.hash()));
 CHPL_DEFINE_STD_HASH_(ResolvedFields, (key.hash()));
 CHPL_DEFINE_STD_HASH_(FieldDetail, (key.hash()));
 CHPL_DEFINE_STD_HASH_(ForwardingDetail, (key.hash()));

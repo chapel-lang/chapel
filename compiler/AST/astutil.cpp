@@ -1604,7 +1604,7 @@ static FunctionType* flattenRefsForFunctionTypes(FunctionType* ft) {
 
     newFormals.push_back({ qt2.getQual(), qt2.type(),
                            formal.intent(),
-                           formal.name() });
+                           formal.name(), formal.flags() });
     changed = changed || qt1 != qt2;
   }
 
@@ -1772,7 +1772,7 @@ computeNewSymbolType(std::unordered_map<Type*, Type*>& alreadyAdjusted,
                                        preserveRefLevels,
                                        f->type());
       if (newT != f->type()) {
-        newFormals.push_back({ f->qual(), newT, f->intent(), f->name() });
+        newFormals.push_back({ f->qual(), newT, f->intent(), f->name(), f->flags() });
         anyChanged = true;
       } else {
         newFormals.push_back(*f);

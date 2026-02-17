@@ -122,7 +122,7 @@ void AdjustMaybeRefs::process(const uast::AstNode* symbol,
       child->traverse(rv);
     }
   } else {
-    CHPL_ASSERT(false && "should not be reached");
+    CHPL_ASSERT(parsing::idIsField(context, symbol->id()));
     symbol->traverse(rv);
   }
 
@@ -365,8 +365,9 @@ void AdjustMaybeRefs::exit(const uast::AstNode* node, RV& rv) {
 }
 
 void adjustReturnIntentOverloadsAndMaybeConstRefs(Resolver& resolver) {
+  const AstNode* node = resolver.curStmt? resolver.curStmt : resolver.symbol;
   AdjustMaybeRefs uv(resolver.rc, resolver);
-  uv.process(resolver.symbol, resolver.byPostorder);
+  uv.process(node, resolver.byPostorder);
 }
 
 

@@ -15,6 +15,7 @@ import multiprocessing
 import operator
 import optparse
 import os
+import platform
 import shlex
 import subprocess
 import sys
@@ -423,12 +424,24 @@ def get_configs(opts):
         else:
             dimension_values.append(values)
 
-    # Create the cross product of all dimension values.
+    # Create the Cartesian product of all dimension values.
     config_strings = itertools.product(*dimension_values)
 
+    libunwind_hack_configs = []
     configs = []
-    for config_tuple in config_strings:
-        configs.append(Config(*config_tuple))
+    for config_num, config_tuple in enumerate(config_strings):
+        config = Config(*config_tuple)
+        if (
+            platform.machine() in ("aarch64", "arm64")
+            and (config.target_compiler == "cray" or config.host_compiler == "cray")
+            and config.unwind == "bundled"
+        ):
+            config.unwind = "none"
+            libunwind_hack_configs.append(config_num)
+        configs.append(config)
+    if libunwind_hack_configs:
+        logging.warning("Replacing unwind=bundled with unwind=none to work around bundled build failure on CCE aarch64. The following configs are affected: {0}".format(", ".join(map(str, libunwind_hack_configs))))
+
 
     return configs
 

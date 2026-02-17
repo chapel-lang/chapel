@@ -35,7 +35,7 @@ proc test(param msg, v) {
   compilerWarning(msg + " is a union:  " + isUnionType(v.type):string);
   if isRangeType(v.type)  then compilerWarning(msg + " is a range");
   if isTupleType(v.type)  then compilerWarning(msg + " is a tuple");
-  if isDmapType(v.type)   then compilerWarning(msg + " is a dmap");
+  if isDmapType(v.type)   then compilerWarning(msg + " is a domain map");
   if isDomainType(v.type) then compilerWarning(msg + " is a domain");
   if isArrayType(v.type)  then compilerWarning(msg + " is an array");
   if isAtomicType(v.type) then compilerWarning(msg + " is an atomic");

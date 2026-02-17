@@ -83,7 +83,7 @@ proc makeTargetFiles(binLoc: string, projectHome: string) {
     }
   }
   const test = joinPath(target, 'test');
-  if(!isDir(test)) {
+  if !isDir(test) {
     mkdir(test);
   }
 }
@@ -171,6 +171,7 @@ proc runWithStatus(command: [] string, quiet=false): int {
   }
 }
 
+@chplcheck.ignore("CamelCaseFunctions")
 proc SPACK_ROOT : string {
   const envHome = getEnv("SPACK_ROOT");
   const default = MASON_HOME + "/spack";
@@ -186,8 +187,10 @@ proc SPACK_ROOT : string {
   2. Using the `chpl` in PATH to print CHPL_HOME
   3. The CHPL_HOME of the chpl that built this mason (`ChplConfig.CHPL_HOME`)
 */
+@chplcheck.ignore("CamelCaseFunctions")
 proc CHPL_HOME : string {
 
+  @chplcheck.ignore("CamelCaseFunctions")
   proc CHPL_HOME_inner() : string {
     proc getChplHomeFromChpl(): string {
       var chplHome = "";
@@ -235,11 +238,12 @@ proc getSpackResult(cmd, quiet=false) : string throws {
   var splitCmd = prefix + cmd;
   try {
     log.debugf("running spack command %s\n", splitCmd);
-    var process = spawnshell(splitCmd, stdout=pipeStyle.pipe, executable="bash");
+    var process = spawnshell(splitCmd,
+                             stdout=pipeStyle.pipe, executable="bash");
 
     for line in process.stdout.lines() {
       ret += line;
-      if quiet == false {
+      if !quiet {
         write(line);
       }
     }
@@ -263,7 +267,8 @@ proc runSpackCommand(command, quiet=false) {
     " && . $SPACK_ROOT/share/spack/setup-env.sh && ";
 
   var cmd = (prefix + command);
-  var sub = spawnshell(cmd, stdout=pipeStyle.pipe, stderr=pipeStyle.pipe, executable="bash");
+  var sub = spawnshell(cmd, stdout=pipeStyle.pipe,
+                            stderr=pipeStyle.pipe, executable="bash");
 
   // quiet flag necessary for tests to be portable
   if !quiet {
@@ -282,7 +287,7 @@ proc runSpackCommand(command, quiet=false) {
 }
 
 // TODO: Can we get away with the Chapel Version object instead?
-record VersionInfo {
+record versionInfo {
   var major = -1, minor = -1, bug = 0;
 
   proc init() {
@@ -291,20 +296,20 @@ record VersionInfo {
     bug = 0;
   }
 
-  proc init=(other:VersionInfo) {
+  proc init=(other: versionInfo) {
     this.major = other.major;
     this.minor = other.minor;
     this.bug   = other.bug;
   }
 
-  proc init(maj : int, min : int, bug: int) {
+  proc init(maj: int, min: int, bug: int) {
     this.major = maj;
     this.minor = min;
     this.bug   = bug;
   }
 
-  proc init(str:string) {
-    const s : [1..3] string = str.split(".");
+  proc init(str: string) {
+    const s: [1..3] string = str.split(".");
     assert(s.size == 3);
 
     major = s[1]:int;
@@ -316,7 +321,7 @@ record VersionInfo {
     return major:string + "." + minor:string + "." + bug:string;
   }
 
-  proc cmp(other:VersionInfo) {
+  proc cmp(other: versionInfo) {
     const A = (major, minor, bug);
     const B = (other.major, other.minor, other.bug);
     for i in 0..2 {
@@ -335,15 +340,17 @@ record VersionInfo {
       when 2 do
         return this.bug;
       otherwise
-        halt('Out of bounds access of VersionInfo');
+        halt('Out of bounds access of versionInfo');
     }
   }
 
   proc containsMax() {
-    return this.major == max(int) || this.minor == max(int) || this.bug == max(int);
+    return this.major == max(int) ||
+           this.minor == max(int) ||
+           this.bug == max(int);
   }
 
-  proc isCompatible(other:VersionInfo) : bool {
+  proc isCompatible(other: versionInfo) : bool {
     // checks that a version is compatible with this version
     // versions are assumed compatible if major and minor versions match
     // and patch/bug level is the same or greater
@@ -352,41 +359,41 @@ record VersionInfo {
            && this.bug <= other.bug;
   }
 
-  proc type zero() : VersionInfo {
-    return new VersionInfo(0, 0, 0);
+  proc type zero(): versionInfo {
+    return new versionInfo(0, 0, 0);
   }
 }
 
-operator VersionInfo.=(ref lhs:VersionInfo, const ref rhs:VersionInfo) {
+operator versionInfo.=(ref lhs: versionInfo, const ref rhs: versionInfo) {
   lhs.major = rhs.major;
   lhs.minor = rhs.minor;
   lhs.bug   = rhs.bug;
 }
 
-operator VersionInfo.>=(a:VersionInfo, b:VersionInfo) : bool {
+operator versionInfo.>=(a: versionInfo, b: versionInfo) : bool {
   return a.cmp(b) >= 0;
 }
-operator VersionInfo.<=(a:VersionInfo, b:VersionInfo) : bool {
+operator versionInfo.<=(a: versionInfo, b: versionInfo) : bool {
   return a.cmp(b) <= 0;
 }
-operator ==(a:VersionInfo, b:VersionInfo) : bool {
+operator ==(a: versionInfo, b: versionInfo) : bool {
   return a.cmp(b) == 0;
 }
-operator VersionInfo.>(a:VersionInfo, b:VersionInfo) : bool {
+operator versionInfo.>(a: versionInfo, b: versionInfo) : bool {
   return a.cmp(b) > 0;
 }
 
-operator VersionInfo.<(a:VersionInfo, b:VersionInfo) : bool {
+operator versionInfo.<(a: versionInfo, b: versionInfo) : bool {
   return a.cmp(b) < 0;
 }
 
 
-private var chplVersionInfo = new VersionInfo(-1, -1, -1);
+private var chplVersionInfo = new versionInfo(-1, -1, -1);
 /*
    Returns a tuple containing information about the `chpl --version`:
    (major, minor, bugFix, isMain)
 */
-proc getChapelVersionInfo(): VersionInfo throws {
+proc getChapelVersionInfo(): versionInfo throws {
   use Regex;
 
   if chplVersionInfo(0) == -1 {
@@ -414,7 +421,7 @@ proc getChapelVersionInfo(): VersionInfo throws {
     }
 
     const split = semver.split(".");
-    chplVersionInfo = new VersionInfo(split[0]:int, split[1]:int, split[2]:int);
+    chplVersionInfo = new versionInfo(split[0]:int, split[1]:int, split[2]:int);
   }
 
   return chplVersionInfo;
@@ -450,7 +457,8 @@ proc developerMode: bool {
 proc getProjectHome(cwd: string, tomlName="Mason.toml") : string throws {
   const (dirname, basename) = splitPath(cwd);
   if dirname == '/' {
-    throw new owned MasonError("Mason could not find your configuration file (Mason.toml)");
+    throw new MasonError("Mason could not find your " +
+                         "configuration file (Mason.toml)");
   }
   const tomlFile = joinPath(cwd, tomlName);
   if exists(tomlFile) {
@@ -459,28 +467,16 @@ proc getProjectHome(cwd: string, tomlName="Mason.toml") : string throws {
   return getProjectHome(dirname, tomlName);
 }
 
-
-extern "struct sys_stat_s" record chpl_stat {
-  var st_mtim: chpl_timespec;
-}
-
-extern "struct timespec" record chpl_timespec {
-  var tv_sec: int;
-  var tv_nsec: int;
-}
-
 proc getLastModified(filename: string) : int {
-  use CTypes;
+  use CTypes, OS.POSIX;
 
-  extern proc sys_stat(filename: c_ptrConst(c_char), ref chpl_stat): c_int;
-
-  var file_buf: chpl_stat;
+  var file_buf: struct_stat;
   var file_path = filename.c_str();
 
-  if (sys_stat(file_path, file_buf) == 0) {
+  if stat(file_path, c_ptrTo(file_buf)) == 0 then
     return file_buf.st_mtim.tv_sec;
-    }
-  return -1;
+  else
+    return -1;
 }
 
 proc projectModified(projectHome, projectName, binLocation) : bool {
@@ -581,6 +577,7 @@ proc getMasonDependencies(sourceList: list(srcSource),
     // Add dependencies to project
     // can't use _ since it will leak
     // see https://github.com/chapel-lang/chapel/issues/25926
+    @chplcheck.ignore("UnusedLoopIndex")
     for (_x, name, version) in srcSource.iterList(sourceList) {
       const depSrc = joinPath(depPath, "%s-%s".format(name, version),
                               "src", "%s.chpl".format(name));
@@ -593,6 +590,7 @@ proc getMasonDependencies(sourceList: list(srcSource),
     // Add git dependencies
     // can't use _ since it will leak
     // see https://github.com/chapel-lang/chapel/issues/25926
+    @chplcheck.ignore("UnusedLoopIndex")
     for (_x, name, branch, _y) in gitSource.iterList(gitList) {
       const gitDepSrc = joinPath(gitDepPath, "%s-%s".format(name, branch),
                                  "src", "%s.chpl".format(name));
@@ -620,14 +618,15 @@ proc getProjectType(): string throws {
   const projectHome = getProjectHome(cwd);
   const toParse = open(projectHome + "/Mason.toml", ioMode.r);
   const tomlFile = parseToml(toParse);
-  if !tomlFile.pathExists("brick.type") then
-    throw new owned MasonError('Type not found in TOML file; please add a type="application" key');
-  return tomlFile["brick"]!["type"]!.s;
+  if const type_ = tomlFile.get("brick.type") then
+    return type_.s;
+  throw new MasonError('Type not found in TOML file; '+
+                       'please add a type="application" key');
 }
 
 record package {
   var name: string;
-  var version: VersionInfo;
+  var version: versionInfo;
   var registry: string;
 
   proc brickPath() {
@@ -636,7 +635,7 @@ record package {
   }
 
   proc type nullPackage() {
-    return new package("", VersionInfo.zero(), "");
+    return new package("", versionInfo.zero(), "");
   }
 
   operator <(a: package, b: package) : bool {
@@ -691,7 +690,7 @@ proc searchDependencies(pattern: regex(string)): list(package) throws {
           log.debugln("found hidden package: " + name);
         } else {
           const ver = findLatest(joinPath(searchDir, dir));
-          if ver != VersionInfo.zero() {
+          if ver != versionInfo.zero() {
             pkgs.pushBack(new package(name, ver, registry));
           }
         }
@@ -732,10 +731,10 @@ proc getDepToml(depName: string, depVersion: string) throws {
 
 /* Search TOML files within a package directory to find the latest package
    version number that is supported with current Chapel version */
-proc findLatest(packageDir: string): VersionInfo {
+proc findLatest(packageDir: string): versionInfo {
   use Path;
 
-  var ret = VersionInfo.zero();
+  var ret = versionInfo.zero();
   const suffix = ".toml";
   const packageName = basename(packageDir);
   for manifest in listDir(packageDir, files=true, dirs=false) {
@@ -758,7 +757,7 @@ proc findLatest(packageDir: string): VersionInfo {
 
     // Check that Chapel version is supported
     const end = manifest.size - suffix.size;
-    const ver = new VersionInfo(manifest[0..<end]);
+    const ver = new versionInfo(manifest[0..<end]);
     if ver > ret then ret = ver;
   }
   return ret;
@@ -766,7 +765,7 @@ proc findLatest(packageDir: string): VersionInfo {
 
 /* Reads the Chapel version specified by a mason project's
    TOML file and returns the min and max compatible versions */
-proc parseChplVersion(brick: borrowed Toml?): (VersionInfo, VersionInfo) {
+proc parseChplVersion(brick: borrowed Toml?): (versionInfo, versionInfo) {
   use Regex;
 
   if brick == nil {
@@ -775,27 +774,26 @@ proc parseChplVersion(brick: borrowed Toml?): (VersionInfo, VersionInfo) {
   }
 
   // Assert some expected fields are not nil
-  if brick!['name'] == nil || brick!['version'] == nil{
+  if brick!.get['name'] == nil || brick!.get['version'] == nil {
     stderr.writeln("Error: Unable to parse manifest file");
     exit(1);
   }
 
-  if brick!['chplVersion'] == nil {
+  if brick!.get['chplVersion'] == nil {
     const name = brick!["name"]!.s + "-" + brick!["version"]!.s;
     stderr.writeln("Brick '", name, "' missing required 'chplVersion' field");
     exit(1);
   }
 
   const chplVersion = brick!["chplVersion"]!.s;
-  var low, high : VersionInfo;
+  var low, high: versionInfo;
 
   try {
-    var res = checkChplVersion(chplVersion, low, high);
-    low = res[0];
-    high = res[1];
+    (low, high) = checkChplVersion(chplVersion);
   } catch e : Error {
     const name = brick!["name"]!.s + "-" + brick!["version"]!.s;
-    stderr.writeln("Invalid chplVersion in package '", name, "': ", chplVersion);
+    stderr.writeln("Invalid chplVersion in package '",
+                   name, "': ", chplVersion);
     stderr.writeln("Details: ", e.message());
     exit(1);
   }
@@ -805,9 +803,9 @@ proc parseChplVersion(brick: borrowed Toml?): (VersionInfo, VersionInfo) {
 
 /* Ensure that Chapel version is properly formatted. Returns
    a tuple of the low, high supported verisons.*/
-proc checkChplVersion(chplVersion, low, high) throws {
+proc checkChplVersion(chplVersion) throws {
   use Regex;
-  var lo, hi : VersionInfo;
+  var lo, hi : versionInfo;
   const formatMessage = "\n\n" +
     "chplVersion format must be '<version>..<version>' or '<version>'\n" +
     "A <version> must be in one of the following formats:\n" +
@@ -815,44 +813,48 @@ proc checkChplVersion(chplVersion, low, high) throws {
     "  x.x\n" +
     "where 'x' is a positive integer.\n";
 
-    var versions = chplVersion.split("..");
-    [v in versions] v = v.strip();
+  var versions = chplVersion.split("..");
+  [v in versions] v = v.strip();
 
-    // Expecting 1 or 2 version strings
-    if versions.size > 2 || versions.size < 1 {
-      throw new owned MasonError("Expecting 1 or 2 versions in chplVersion range." + formatMessage);
-    } else if versions.size == 2 && (versions[0] == "" || versions[1] == "") {
-      throw new owned MasonError("Unbounded chplVersion ranges are not allowed." + formatMessage);
+  // Expecting 1 or 2 version strings
+  if versions.size > 2 || versions.size < 1 {
+    throw new MasonError("Expecting 1 or 2 versions in chplVersion range." +
+                          formatMessage);
+  } else if versions.size == 2 && (versions[0] == "" || versions[1] == "") {
+    throw new MasonError("Unbounded chplVersion ranges are not allowed." +
+                         formatMessage);
+  }
+
+  proc parseString(ver:string): versionInfo throws {
+    var ret : versionInfo;
+
+    // Finds 'x.x' or 'x.x.x' where x is a positive number
+    const pattern = new regex("^(\\d+\\.\\d+(\\.\\d+)?)$");
+    var semver : string;
+    if !pattern.match(ver, semver).matched {
+      throw new MasonError("Invalid Chapel version format: " + ver +
+                            formatMessage);
     }
+    const nums = for s in semver.split(".") do s:int;
+    ret.major = nums[0];
+    ret.minor = nums[1];
+    if nums.size == 3 then ret.bug = nums[2];
 
-    proc parseString(ver:string): VersionInfo throws {
-      var ret : VersionInfo;
+    return ret;
+  }
 
-      // Finds 'x.x' or 'x.x.x' where x is a positive number
-      const pattern = new regex("^(\\d+\\.\\d+(\\.\\d+)?)$");
-      var semver : string;
-      if pattern.match(ver, semver).matched == false {
-        throw new owned MasonError("Invalid Chapel version format: " + ver + formatMessage);
-      }
-      const nums = for s in semver.split(".") do s:int;
-      ret.major = nums[0];
-      ret.minor = nums[1];
-      if nums.size == 3 then ret.bug = nums[2];
+  lo = parseString(versions[0]);
 
-      return ret;
-    }
+  if versions.size == 1 {
+    hi = new versionInfo(max(int), max(int), max(int));
+  } else {
+    hi = parseString(versions[1]);
+  }
+  if lo > hi then
+    throw new MasonError("Lower bound of chplVersion must be <= upper bound: " +
+                          lo.str() + " > " + hi.str());
 
-    lo = parseString(versions[0]);
-
-    if (versions.size == 1) {
-      hi = new VersionInfo(max(int), max(int), max(int));
-    } else {
-      hi = parseString(versions[1]);
-    }
-     if (lo <= hi) == false then
-      throw new owned MasonError("Lower bound of chplVersion must be <= upper bound: " + lo.str() + " > " + hi.str());
-
-      return (lo, hi);
+  return (lo, hi);
 }
 
 /* Print a TOML file. Expects full path. */
@@ -869,30 +871,32 @@ proc showToml(tomlFile : string) {
   A library project consists of .gitignore file, Mason.toml file, and
   directories such as .git, src, example, test
 */
-proc InitProject(dirName, packageName, vcs, show,
+proc initProject(dirName, packageName, vcs, show,
                  version: string, chplVersion: string, license: string,
                  packageType: string) throws {
   if packageType == "light" {
     const path = if dirName == "" then here.cwd() else dirName;
-    const lightName = if packageName == "" then basename(here.cwd()) else packageName;
+    const lightName = if packageName == ""
+                        then basename(here.cwd())
+                        else packageName;
     mkdir(dirName);
-    makeBasicToml(dirName=lightName, path=path, version, chplVersion, license, packageType);
+    makeBasicToml(dirName=lightName, path=path, version, chplVersion,
+                  license, packageType);
   } else {
     if vcs {
       gitInit(dirName, show);
       addGitIgnore(dirName);
-    }
-    else {
+    } else {
       mkdir(dirName);
     }
     // Confirm git init before creating files
     if isDir(dirName) {
-      makeBasicToml(dirName=packageName, path=dirName, version, chplVersion, license, packageType);
+      makeBasicToml(dirName=packageName, path=dirName, version, chplVersion,
+                    license, packageType);
       makeSrcDir(dirName);
       makeModule(dirName, fileName=packageName, packageType);
-    }
-    else {
-      throw new owned MasonError("Failed to create project");
+    } else {
+      throw new MasonError("Failed to create project");
     }
   }
   if packageName != "" then
@@ -911,11 +915,46 @@ iter allFields(tomlTbl: Toml) {
   }
 }
 
+proc isStringOrStringArray(toml: Toml) : bool {
+  if toml.tomlType == "string" {
+    return true;
+  } else if toml.tomlType == "array" {
+    const tomlArr = toml.arr;
+    for f in tomlArr {
+      if f == nil || f!.tomlType != "string" {
+        return false;
+      }
+    }
+    return true;
+  } else {
+    return false;
+  }
+}
+
+proc parseCompilerOptions(toml: Toml): list(string) throws {
+  var res = new list(string);
+  if !isStringOrStringArray(toml) {
+    throw new MasonError("unable to parse: "+
+                         "expected a string or an array of strings");
+  }
+
+  if toml.tomlType == "string" {
+    res.pushBack(toml.s.split(" "));
+  } else {
+    for f in toml.arr {
+      res.pushBack(f!.s);
+    }
+  }
+  return res;
+}
+
+
 record chplOptions {
   var compopts: list(string);
   var execopts: list(string);
 }
 
+@chplcheck.ignore("CamelCaseFunctions")
 proc MASON_VERSION : string {
   return "0.2.0";
 }

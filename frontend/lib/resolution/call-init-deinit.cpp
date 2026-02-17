@@ -1333,12 +1333,13 @@ void CallInitDeinit::handleScope(const AstNode* ast, RV& rv) {
 }
 
 void callInitDeinit(Resolver& resolver) {
+  const AstNode* node = resolver.curStmt? resolver.curStmt : resolver.symbol;
   std::set<ID> splitInitedVars = computeSplitInits(resolver.context,
-                                                   resolver.symbol,
+                                                   node,
                                                    resolver.byPostorder);
 
   auto elidedCopyFromIds = computeElidedCopies(resolver.context,
-                                               resolver.symbol,
+                                               node,
                                                resolver.byPostorder,
                                                resolver.poiScope,
                                                splitInitedVars,
@@ -1351,7 +1352,7 @@ void callInitDeinit(Resolver& resolver) {
 
   CallInitDeinit uv(resolver.context, resolver,
                     splitInitedVars, elidedCopyFromIds);
-  uv.process(resolver.symbol, resolver.byPostorder);
+  uv.process(node, resolver.byPostorder);
 }
 
 

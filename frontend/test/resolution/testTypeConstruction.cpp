@@ -1024,7 +1024,7 @@ static void test36() {
 
   auto bct = ct->basicClassType();
   assert(bct);
-  assert(bct->parentClassType()->isObjectType());
+  assert(bct->parentClassType()->isRootClass());
 
   auto fields = p.second;
   assert(fields);
@@ -1059,7 +1059,7 @@ static void test37() {
 
   auto bct = ct->basicClassType();
   assert(bct);
-  assert(bct->parentClassType()->isObjectType());
+  assert(bct->parentClassType()->isRootClass());
 
   auto fields = p.second;
   assert(fields);
@@ -1094,7 +1094,7 @@ static void test38() {
 
   auto bct = ct->basicClassType();
   assert(bct);
-  assert(!bct->parentClassType()->isObjectType());
+  assert(!bct->parentClassType()->isRootClass());
 
   auto fields = p.second;
   assert(fields);
@@ -1111,7 +1111,7 @@ static void test38() {
 
   auto pct = bct->parentClassType()->toBasicClassType();
   assert(pct);
-  assert(pct->parentClassType()->isObjectType());
+  assert(pct->parentClassType()->isRootClass());
   assert(pct->parentClassType() == BasicClassType::getRootClassType(context));
 
   auto rc = createDummyRC(context);
@@ -1141,7 +1141,7 @@ static void test39() {
   assert(bct);
   auto pct = bct->parentClassType()->toBasicClassType();
   assert(pct);
-  assert(pct->isObjectType());
+  assert(pct->isRootClass());
 
   auto fields = p.second;
   assert(fields);

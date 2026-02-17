@@ -42,14 +42,27 @@ if exists(FS) then
 else
   writeln("Success: ", FS, " was not generated");
 
-if testcase == tests.withAuthor {
+if testcase == tests.base {
   // confirm author was added to index.html
   const indexHtml = 'doc/index.html';
   if !exists(indexHtml) then
     writeln('Error: ', indexHtml, ' not generated');
   else {
     const indexContent = IO.openReader(indexHtml).readAll(string);
-    if indexContent.find('Billy') != -1 then
+    if indexContent.find('2025, Caroline') != -1 then
+      writeln("Success: Author 'Caroline' was added to index.html");
+    else
+      writeln("Error: Author 'Caroline' was not added to index.html");
+  }
+}
+if testcase == tests.withAuthor {
+  // confirm author was added to index.html and overrode Mason.toml author
+  const indexHtml = 'doc/index.html';
+  if !exists(indexHtml) then
+    writeln('Error: ', indexHtml, ' not generated');
+  else {
+    const indexContent = IO.openReader(indexHtml).readAll(string);
+    if indexContent.find('2025, Billy') != -1 then
       writeln("Success: Author 'Billy' was added to index.html");
     else
       writeln("Error: Author 'Billy' was not added to index.html");

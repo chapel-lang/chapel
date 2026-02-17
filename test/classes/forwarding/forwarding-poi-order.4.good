@@ -1,0 +1,4 @@
+forwarding-poi-order.chpl:34: In function 'generic':
+forwarding-poi-order.chpl:35: error: unresolved call 'Outermost.foo()'
+forwarding-poi-order.chpl:35: note: because no functions named foo found in scope
+  forwarding-poi-order.chpl:40: called as generic(x: Outermost)
