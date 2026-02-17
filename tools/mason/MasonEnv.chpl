@@ -61,8 +61,7 @@ proc MASON_OFFLINE {
   if (offlineEnv == 'true') || (offlineEnv == 'True') ||
      (offlineEnv == 'TRUE') || (offlineEnv == '1') {
     offline = true;
-  }
-  else offline = default;
+  } else offline = default;
 
   return offline;
 }

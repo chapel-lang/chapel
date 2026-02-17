@@ -58,8 +58,7 @@ proc masonExample(args: [] string) throws {
 
   try! {
     parser.parseArgs(args);
-  }
-  catch ex : ArgumentError {
+  } catch ex : ArgumentError {
     stderr.writeln(ex.message());
     exit(1);
   }
@@ -180,15 +179,12 @@ private proc determineExamples(exampleNames: list(string),
     for example in examplesRequested {
       if exampleNames.count(example) == 0 {
         throw new owned MasonError("Mason could not find example: " + example);
-      }
-      else {
+      } else {
         examplesToRun.pushBack(example);
       }
     }
     return examplesToRun;
-  }
-  // user didnt list any examples, run all examples
-  else return exampleNames;
+  } else return exampleNames;
 }
 
 
@@ -270,19 +266,16 @@ private proc runExamples(show: bool, run: bool, build: bool, release: bool,
               runExampleBinary(projectHome, exampleName,
                                release, show, exampleExecopts);
           }
-        }
-        // just running the example
-        else {
+        } else {
+          // just running the example
           runExampleBinary(projectHome, exampleName,
                            release, show, exampleExecopts);
         }
       }
-    }
-    else {
+    } else {
       throw new MasonError("No examples were found in /example");
     }
-  }
-  catch e: MasonError {
+  } catch e: MasonError {
     stderr.writeln(e.message());
     exit(1);
   }
@@ -322,8 +315,7 @@ private proc getExamples(toml: Toml, projectHome: string) {
       exampleNames.pushBack(t);
     }
     return exampleNames;
-  }
-  else if isDir(examplePath) {
+  } else if isDir(examplePath) {
     var examples = findFiles(startdir=examplePath,
                              recursive=true, hidden=false);
     for example in examples {
@@ -341,12 +333,10 @@ proc getExamplePath(fullPath: string, examplePath = "") : string {
   var split = splitPath(fullPath);
   if split[1] == "example" {
     return examplePath;
-  }
-  else {
+  } else {
     if examplePath == "" {
       return getExamplePath(split[0], split[1]);
-    }
-    else {
+    } else {
       var appendedPath = joinPath(split[1], examplePath);
       return getExamplePath(split[0], appendedPath);
     }
@@ -366,8 +356,7 @@ proc printAvailableExamples() {
       writeln(" --- " + example);
     }
     writeln("--------------------------");
-  }
-  catch e: MasonError {
+  } catch e: MasonError {
     stderr.writeln(e.message());
     exit(1);
   }
@@ -387,8 +376,7 @@ proc exampleModified(projectHome: string, projectName: string,
     !checkFingerprint(projectName, fingerprintDir, computeFingerprint());
   if projectModified(projectHome, example, "example") || fingerprintChanged {
       return true;
-  }
-  else {
+  } else {
       // check for binary existence
       if isFile(exampleBinPath) {
         // check for changes to example

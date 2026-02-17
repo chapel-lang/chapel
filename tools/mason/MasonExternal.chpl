@@ -100,8 +100,7 @@ proc masonExternal(args: [] string) {
         const status = cloneSpackRepository(branch, dest);
         if status != 0 then
           throw new owned MasonError("Spack registry installation failed.");
-      }
-      else {
+      } else {
         log.infof("Using existing Spack Registry at %s\n",
                   spackRegistryDefaultPath);
       }
@@ -164,8 +163,7 @@ proc masonExternal(args: [] string) {
         }
       }
     }
-  }
-  catch e: MasonError {
+  } catch e: MasonError {
     writeln(e.message());
     exit(1);
   }
@@ -442,9 +440,13 @@ private proc editCompilers() {
 }
 
 
-/* Given a toml of external dependencies returns
-   the dependencies in a toml in lock file format */
-proc getExternalPackages(exDeps: Toml) /* [domain(string)] shared Toml? */ {
+/*
+  Given a toml of external dependencies returns
+  the dependencies in a toml in lock file format
+
+  Returns an associative array of tomls
+*/
+proc getExternalPackages(exDeps: Toml) {
 
   var exDom: domain(string, parSafe=false);
   var exDepTree: [exDom] shared Toml?;
@@ -477,8 +479,7 @@ proc getExternalPackages(exDeps: Toml) /* [domain(string)] shared Toml? */ {
             exDepTree[name] = pkgInfo;
           }
         }
-    }
-    catch e: MasonError {
+    } catch e: MasonError {
       writeln(e.message());
       exit(1);
     }
@@ -537,12 +538,10 @@ proc getSpkgInfo(spec: string, dependencies: list(string)): shared Toml throws {
         // Temporarily use toArray here to avoid supporting list.
         spkgInfo.set("dependencies", depList.toArray());
       }
-    }
-    else {
+    } else {
       throw new MasonError("No package installed by the name of: " + pkgName);
     }
-  }
-  catch e: MasonError {
+  } catch e: MasonError {
     writeln(e.message());
   }
   return spkgInfo;
@@ -571,8 +570,7 @@ proc getSpkgDependencies(spec: string): list(string) throws {
     if item.rfind(name) != -1 {
       found = true;
       log.debugln("Found");
-    }
-    else if found {
+    } else if found {
       const dep = item.strip("^");
       log.debugf("Had found already, adding %s\n", dep);
       dependencies.pushBack(dep);
@@ -628,8 +626,7 @@ proc installSpkg(args: [] string) throws {
       return;
     }
     spec = " ".join(specArr);
-  }
-  else {
+  } else {
     masonInstallHelp();
     exit(1);
   }
@@ -662,7 +659,7 @@ proc uninstallSpkg(args: [] string) throws {
   if forceFlag.valueAsBool() then uninstallArgs += "--force ";
   if allFlag.valueAsBool() then uninstallArgs += "--all ";
   if depFlag.valueAsBool() then uninstallArgs += "--dependents ";
-  if pkgArg.hasValue() then {
+  if pkgArg.hasValue() {
     var pkgArr = pkgArg.values();
     pkgName = "".join(pkgArr);
   } else {

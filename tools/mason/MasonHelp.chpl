@@ -281,7 +281,7 @@ proc masonNewHelp() {
   writeln(s);
 }
 
-proc masonInitHelp(){
+proc masonInitHelp() {
   const s = """
   Initializes a library project inside a given directory or path.
 
@@ -669,7 +669,7 @@ proc masonCleanHelp() {
 }
 
 
-proc masonPublishHelp(){
+proc masonPublishHelp() {
   const s = """
 Publish a package to the mason-registry repository
 
