@@ -133,7 +133,7 @@ module UnattachedCurly{
         if a < b
         {
 
-        } else if b > a
+        } else if (b > a)
         {
 
         }

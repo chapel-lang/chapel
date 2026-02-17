@@ -432,7 +432,10 @@ def rules(driver: LintDriver):
             if curly_loc := then_block.curly_braces_location():
                 # the curly block start should be just after the location of the condition
                 condition_loc = node.condition().location()
-                # add the then keyword location
+                # add the parentheses location if it exists
+                if paren_loc := node.condition().paren_location():
+                    condition_loc += paren_loc
+                # add the then keyword location if it exists
                 if then_kw_loc := node.then_keyword_location():
                     condition_loc += then_kw_loc
                 res = check_for_unattached(context, then_block, condition_loc, curly_loc, AdvancedRuleResult)

@@ -33,6 +33,7 @@ UnattachedCurly.chpl:118: node violates rule UnattachedCurly
 UnattachedCurly.chpl:121: node violates rule UnattachedCurly
 UnattachedCurly.chpl:123: node violates rule UnattachedCurly
 UnattachedCurly.chpl:134: node violates rule UnattachedCurly
+UnattachedCurly.chpl:136: node violates rule ControlFlowParentheses
 UnattachedCurly.chpl:137: node violates rule UnattachedCurly
 UnattachedCurly.chpl:140: node violates rule UnattachedElse
 UnattachedCurly.chpl:140: node violates rule UnattachedCurly
