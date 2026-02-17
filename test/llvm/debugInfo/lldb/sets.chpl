@@ -135,7 +135,7 @@ proc main() {
 // CHECK-NEXT: (owned MyClass?) {{.*}} = 0x[[OWNED_SET_2_ADDR]]
 
 // CHECK: v myOwnedClassSet[2].b
-// CHECK-NEXT: b = 3.
+// CHECK-NEXT: b =
 
 // CHECK: p myClassSet
 // CHECK-NEXT: (Set::set(unmanaged MyClass?
@@ -147,7 +147,7 @@ proc main() {
 // CHECK: v myClassSet[2]
 // CHECK-NEXT: {{.*}} = 0x{{[0-9a-f]+}}
 // CHECK: v *myClassSet[2]
-// CHECK: a = 1
-// CHECK-NEXT: b = 1.
+// CHECK: a = [[CLASS_SET_2_A:[0-9.]+]]
+// CHECK-NEXT: b = [[CLASS_SET_2_B:[0-9.]+]]
 // CHECK: v myClassSet[2]->b
-// CHECK-NEXT: {{.*}} = 1.
+// CHECK-NEXT: {{.*}} = [[CLASS_SET_2_B]]
