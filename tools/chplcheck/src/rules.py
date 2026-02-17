@@ -260,6 +260,40 @@ def rules(driver: LintDriver):
         fixit = Fixit.build(Edit.build(node.location(), new_text))
         return fixit
 
+    @driver.basic_rule(Conditional)
+    def ThenKeywordAndBlock(context: Context, node: Conditional):
+        """
+        Warn for redundant 'then' keyword before a curly brace '{'.
+        """
+
+        if (
+            node.then_keyword_location() is not None
+            and node.then_block().curly_braces_location() is not None
+        ):
+            return BasicRuleResult(node, ignorable=False)
+        return True
+
+    @driver.fixit(ThenKeywordAndBlock)
+    def RemoveUnnecessaryThen(context: Context, result: BasicRuleResult):
+        """
+        Remove the redundant 'then' keyword before a curly brace '{'.
+        """
+        node = result.node
+        assert isinstance(node, Conditional)
+        lines = chapel.get_file_lines(context, node)
+
+        len_kw_loc = node.then_keyword_location()
+        curly_loc = node.then_block().curly_braces_location()
+        assert len_kw_loc is not None and curly_loc is not None
+
+        loc = len_kw_loc + curly_loc - curly_loc
+        text = range_to_text(loc, lines)
+        if text.strip() != "then":
+            # if the text in this location isn't just 'then', other text
+            # is in the way (ie a comment)
+            return None
+        return Fixit.build(Edit.build(loc, ""))
+
     @driver.basic_rule(set((Loop, Conditional)))
     def ControlFlowParentheses(
         context: Context, node: typing.Union[Loop, Conditional]
