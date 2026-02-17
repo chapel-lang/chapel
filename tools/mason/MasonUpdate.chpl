@@ -336,6 +336,8 @@ private proc createDepTrees(depTree: Toml,
     depTree[package]!.set("version", version);
     depTree[package]!.set("chplVersion", chplVersion);
     depTree[package]!.set("source", source);
+    if compopts then
+      depTree[package]!.set("compopts", compopts!);
 
     if dep!.pathExists("dependencies") {
       var subDeps = getDependencies(dep);
