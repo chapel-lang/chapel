@@ -32,6 +32,7 @@ use Path;
 use Subprocess;
 use TOML;
 
+private var log = new MasonLogger.logger("mason example");
 
 /* Runs the .chpl files found within the /example directory */
 proc masonExample(args: [] string) throws {
