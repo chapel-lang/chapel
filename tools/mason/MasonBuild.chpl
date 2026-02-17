@@ -384,6 +384,20 @@ proc getTomlCompopts(lock: borrowed Toml): list(string) throws {
     }
   }
 
+  // get the dependencies, if they exist
+  for (name, package) in zip(lock.A.keys(), lock.A.values()) {
+    log.debugln("name: "+name);
+    if package!.tag != fieldtag.fieldToml then continue;
+    if name == "root" || name == "system" || name == "external" then continue;
+    if const depFlags = package!.get["compopts"] {
+      try {
+        compopts.pushBack(parseCompilerOptions(depFlags));
+      } catch {
+        throw new MasonError("unable to parse compopts for dependency " + name);
+      }
+    }
+  }
+
   if const exDeps = lock.get['external'] {
     for (_, depInfo) in zip(exDeps.A.keys(), exDeps.A.values()) {
       for (k,v) in allFields(depInfo!) {

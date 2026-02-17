@@ -317,6 +317,7 @@ private proc createDepTrees(depTree: Toml,
     var version     = brick["version"]!.s;
     var chplVersion = brick["chplVersion"]!.s;
     var source      = brick["source"]!.s;
+    var compopts    = if brick.pathExists("compopts") then brick["compopts"] else nil;
 
     if depTree.pathExists(package) {
       var verToUse = IVRS(brick, depTree[package]!);
