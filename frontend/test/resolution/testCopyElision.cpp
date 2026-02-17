@@ -68,7 +68,7 @@ static void testCopyElision(const char* test,
   }
 
   std::set<ID> splitIds;
-  std::unordered_map<ID, ID> elisionPoints;
+  ElidedCopyInfo elisionPoints;
 
   if (testModule == false) {
     assert(func);

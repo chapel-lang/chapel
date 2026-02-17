@@ -29,6 +29,7 @@
 namespace chpl {
 namespace resolution {
 
+using ElidedCopyInfo = std::unordered_map<ID, ID>;
 
 /* Computes the IDs of initialization points
    that can be 'move's rather than '=' or 'copy-init'.
@@ -51,7 +52,7 @@ namespace resolution {
 
    allSplitInitedVars can be computed by computeSplitInits.
  */
-std::unordered_map<ID, ID>
+ElidedCopyInfo
 computeElidedCopies(Context* context,
                     const uast::AstNode* symbol,
                     const ResolutionResultByPostorderID& byPostorder,

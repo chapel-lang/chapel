@@ -54,7 +54,7 @@ struct CallInitDeinit : VarScopeVisitor {
   // inputs to the process
   Resolver& resolver;
   const std::set<ID>& splitInitedVars;
-  const std::unordered_map<ID, ID>& elidedCopyFromIds;
+  const ElidedCopyInfo& elidedCopyFromIds;
 
   // local state
   std::set<ID> outOrInoutFormals;
@@ -63,7 +63,7 @@ struct CallInitDeinit : VarScopeVisitor {
   CallInitDeinit(Context* context,
                  Resolver& resolver,
                  const std::set<ID>& splitInitedVars,
-                 const std::unordered_map<ID, ID>& elidedCopyFromIds)
+                 const ElidedCopyInfo& elidedCopyFromIds)
     : VarScopeVisitor(context, resolver.returnType),
       resolver(resolver),
       splitInitedVars(splitInitedVars),
@@ -1336,12 +1336,12 @@ void callInitDeinit(Resolver& resolver) {
                                                    node,
                                                    resolver.byPostorder);
 
-  auto elidedCopyFromIds = computeElidedCopies(resolver.context,
-                                               node,
-                                               resolver.byPostorder,
-                                               resolver.poiScope,
-                                               splitInitedVars,
-                                               resolver.returnType);
+  ElidedCopyInfo elidedCopyFromIds = computeElidedCopies(resolver.context,
+                                                         node,
+                                                         resolver.byPostorder,
+                                                         resolver.poiScope,
+                                                         splitInitedVars,
+                                                         resolver.returnType);
 
   auto symName = UniqueString::get(resolver.context, "unknown");
   if (auto nd = resolver.symbol->toNamedDecl()) {

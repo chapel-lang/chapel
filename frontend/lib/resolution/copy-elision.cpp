@@ -48,7 +48,7 @@ struct FindElidedCopies : VarScopeVisitor {
   std::set<ID> outOrInoutFormals;
 
   // result of the process
-  std::unordered_map<ID, ID> allElidedCopyFromIds;
+  ElidedCopyInfo allElidedCopyFromIds;
 
   // methods
   FindElidedCopies(Context* context,
@@ -738,14 +738,14 @@ void FindElidedCopies::handleScope(const AstNode* ast, RV& rv) {
   propagateChildToParent(frame, parent, ast);
 }
 
-std::unordered_map<ID, ID>
+ElidedCopyInfo
 computeElidedCopies(Context* context,
                     const uast::AstNode* symbol,
                     const ResolutionResultByPostorderID& byPostorder,
                     const PoiScope* poiScope,
                     const std::set<ID>& allSplitInitedVars,
                     QualifiedType fnYieldedType) {
-  std::unordered_map<ID, ID> elidedCopyFromIds;
+  ElidedCopyInfo elidedCopyFromIds;
 
   auto fn = symbol->toFunction();
 
