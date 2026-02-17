@@ -1138,7 +1138,7 @@ def PrintType(debugger, command, result, internal_dict):
         result.PutCString(str(evaled_expr.error))
         result.SetStatus(lldb.eReturnStatusFailed)
         return
-    ty = evaled_expr.GetCanonicalType()
+    ty = evaled_expr.GetType().GetCanonicalType()
     s = str(ty)
     if ty.IsPointerType():
         ty = ty.GetPointeeType()
