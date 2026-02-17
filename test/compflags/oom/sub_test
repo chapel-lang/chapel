@@ -12,10 +12,17 @@ import time
 from datetime import datetime
 
 
+# Expected OOM warning message
 oom_message = "warning: A driver phase was killed by signal SIGKILL -- possibly due to running out of memory"
+# Substring of message announcing phase start to search for
 phase_invocation_message = "invoking driver compilation phase"
+# Substring of phase flag that will be present in child process
 phase_arg = "driver-compilation-phase"
+# Time to wait between detecting phase start and searching for child to kill
+phase_start_wait_time = 2
+# Name of .chpl file to compile for this test
 chpl_file = "oom.chpl"
+# `ps` command to run to find child process by PPID (to be narrowed by grepping)
 ps_base_command = "ps -o pid,ppid,cmd"
 
 
@@ -27,6 +34,8 @@ ps_base_command = "ps -o pid,ppid,cmd"
 
 subtest_start_time = None
 subtest_test_name = '"compflags/oom"'
+
+errored = False
 
 def subtest_start():
     global subtest_start_time
@@ -43,8 +52,11 @@ def subtest_end():
     print(f"[Finished subtest {subtest_test_name} - {elapsed_time} seconds]")
 
 def subtest_error(msg):
-    print(f"[Error running sub_test {subtest_test_name} - {msg}]")
-    sys.exit(1)
+    global errored
+    # Only print first error
+    if not errored:
+        errored = True
+        print(f"[Error running sub_test {subtest_test_name} - {msg}]")
 
 ### END sub_test output helper functions ###
 
@@ -89,6 +101,7 @@ def main():
         if not encountered_subphase and phase_invocation_message in line:
             encountered_subphase = True
         elif encountered_subphase and not killed_subphase:
+            time.sleep(phase_start_wait_time)
             kill_subphase(process.pid)
             killed_subphase = True
         elif killed_subphase:
