@@ -55,7 +55,7 @@ proc ifmaskOverDomainWithCPtr(A: [?D] ?eltTy, B, ref C) {
   var Cp = c_ptrTo(C);
   var Ap = c_ptrToConst(A);
   var Bp = c_ptrToConst(B);
-  foreach i in D {
+  foreach i in 0..<D.size {
     const a = Ap[i];
     const b = Bp[i];
     Cp[i] = if a >= 0:eltTy then b else 0:eltTy;
