@@ -32,7 +32,7 @@ coforall myIdx in 1..10 do writeln(myIdx);
 
 if b  {}
 if b then writeln("Hello");
-while b {}
+while b  {}
 while b do writeln("Hello");
 do {} while b;
 for myIdx in 1..10 do writeln(myIdx);
