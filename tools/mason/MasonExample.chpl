@@ -112,8 +112,13 @@ private proc getBuildInfo(projectHome: string,
   // get the example names from lockfile or from example directory
   const exampleNames = getExamples(tomlFile.borrow(), projectHome);
 
-  // Get system, and external compopts
-  const compopts = getTomlCompopts(lockFile.borrow());
+  var compopts = getTomlCompopts(lockFile.borrow());
+  log.debugln("Adding prerequisite flags");
+  // add prerequisite compopts
+  for flag in MasonPrereqs.chplFlags() {
+    log.debugf("+compflag %s\n", flag);
+    compopts.pushBack(flag);
+  }
   var perExampleOptions = getExampleOptions(tomlFile.borrow(), exampleNames);
 
   // Close lock and toml
@@ -234,7 +239,6 @@ private proc runExamples(show: bool, run: bool, build: bool, release: bool,
 
             // remove old binary
             removeExampleBinary(projectHome, exampleName);
-
             // get the string of dependencies for compilation
             // also names example as --main-module
             const masonCompopts =
