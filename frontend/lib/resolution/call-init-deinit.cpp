@@ -781,7 +781,7 @@ void CallInitDeinit::processTupleRhsHelper(VarFrame* frame,
   // Save the AssociatedAction from the init of the tuple as a whole, under
   // which the per-element actions will be nested.
   CHPL_ASSERT(re.associatedActions().size() == 1);
-  auto topLevelAction = re.associatedActions().front();
+  auto topLevelAction = std::move(re.associatedActions().front());
   CHPL_ASSERT(topLevelAction.action() == AssociatedAction::COPY_INIT ||
               topLevelAction.action() == AssociatedAction::INIT_OTHER);
 
@@ -802,18 +802,16 @@ void CallInitDeinit::processTupleRhsHelper(VarFrame* frame,
         useTupleEltIdx = {};
       }
       auto actionWithIdx = new AssociatedAction(
-          action.action(), action.fn(), useId, action.type(),
+          action.action(), action.fn(), std::move(useId), action.type(),
           useTupleEltIdx, action.subActions());
       subActions.push_back(actionWithIdx);
     }
     re.clearAssociatedActions();
   }
   // Re-add the top-level action with the sub-actions.
-  auto newTopLevelAction =
-      AssociatedAction(topLevelAction.action(), topLevelAction.fn(),
-                       topLevelAction.id(), topLevelAction.type(),
-                       {}, subActions);
-  re.addAssociatedAction(std::move(newTopLevelAction));
+  re.addAssociatedAction(topLevelAction.action(), topLevelAction.fn(),
+                            topLevelAction.id(), topLevelAction.type(),
+                            chpl::optional<int>{}, subActions);
 }
 
 bool CallInitDeinit::initIsCopyElidedFrom(const AstNode* lhsAst,

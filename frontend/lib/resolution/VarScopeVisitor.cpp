@@ -434,19 +434,18 @@ void VarScopeVisitor::exit(const TupleDecl* ast, RV& rv) {
   for (int i = 0; i < ast->numDecls(); i++) {
     auto decl = ast->decl(i);
     auto& re = rv.byPostorder().byAst(decl);
-    AssociatedAction::ActionsList subActions;
+    llvm::SmallVector<AssociatedAction> subActions;
     for (auto action : re.associatedActions()) {
       auto useId = action.id();
       auto useTupleEltIdx = i;
-      auto actionWithIdx = new AssociatedAction(
-          action.action(), action.fn(), useId, action.type(), useTupleEltIdx,
-          action.subActions());
-      subActions.push_back(actionWithIdx);
+      subActions.emplace_back(action.action(), action.fn(), useId,
+                              action.type(), useTupleEltIdx,
+                              action.subActions());
     }
 
     re.clearAssociatedActions();
     for (auto action : subActions) {
-      re.addAssociatedAction(*action);
+      re.addAssociatedAction(std::move(action));
     }
   }
 
@@ -612,7 +611,7 @@ bool VarScopeVisitor::enter(const Tuple* ast, RV& rv) {
 
   // Traverse components in order and resolve assignments for each
   auto& re = rv.byPostorder().byAst(inTupleAssignment);
-  AssociatedAction::ActionsList subActions;
+  llvm::SmallVector<AssociatedAction> subActions;
   for (int i = 0; i < ast->numActuals(); i++) {
     auto elt = ast->actual(i);
 
@@ -638,15 +637,14 @@ bool VarScopeVisitor::enter(const Tuple* ast, RV& rv) {
 
     for (auto action : re.associatedActions()) {
       auto useTupleEltIdx = i;
-      auto actionWithIdx = new AssociatedAction(
-          action.action(), action.fn(), action.id(), action.type(),
-          useTupleEltIdx, action.subActions());
-      subActions.push_back(actionWithIdx);
+      subActions.emplace_back(action.action(), action.fn(), action.id(),
+                              action.type(), useTupleEltIdx,
+                              action.subActions());
     }
     re.clearAssociatedActions();
   }
   for (auto action : subActions) {
-    re.addAssociatedAction(*action);
+    re.addAssociatedAction(std::move(action));
   }
 
   nestedTupleInfoStack.pop_back();

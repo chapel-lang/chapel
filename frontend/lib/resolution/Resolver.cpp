@@ -5084,8 +5084,10 @@ bool Resolver::enter(const uast::Manage* manage) {
       }
     }
     CHPL_ASSERT(enterSig && exitSig);
-    rr.addAssociatedAction(AssociatedAction::ENTER_CONTEXT, enterSig, manage->id(), {});
-    rr.addAssociatedAction(AssociatedAction::EXIT_CONTEXT, exitSig, manage->id(), {});
+    rr.addAssociatedAction(AssociatedAction::ENTER_CONTEXT, enterSig,
+                           manage->id(), QualifiedType());
+    rr.addAssociatedAction(AssociatedAction::EXIT_CONTEXT, exitSig,
+                           manage->id(), QualifiedType());
   }
 
   enterScope(manage);
@@ -5627,7 +5629,8 @@ rerunCallInfoWithIteratorTag(ResolutionContext* rc,
   if (!newC.mostSpecific().isEmpty()) {
     for (auto sig : newC.mostSpecific()) {
       if (!sig) continue;
-      r.addAssociatedAction(AssociatedAction::ITERATE, sig.fn(), call->id(), {});
+      r.addAssociatedAction(AssociatedAction::ITERATE, sig.fn(), call->id(),
+                            QualifiedType());
     }
 
     return newC;

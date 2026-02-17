@@ -2790,14 +2790,12 @@ class ResolvedExpression {
   }
 
   /** add an associated action */
-  void addAssociatedAction(AssociatedAction::Action action,
-                           const TypedFnSignature* fn,
-                           ID id,
-                           types::QualifiedType type) {
-    addAssociatedAction(AssociatedAction(action, fn, id, type));
+  template <typename ...Params>
+  void addAssociatedAction(Params&&... params) {
+    associatedActions_.emplace_back(std::forward<Params>(params)...);
   }
-  void addAssociatedAction(AssociatedAction action) {
-    associatedActions_.push_back(action);
+  void addAssociatedAction(AssociatedAction&& action) {
+    associatedActions_.push_back(std::move(action));
   }
 
   void setParamLoop(const ResolvedParamLoop* paramLoop) { paramLoop_ = paramLoop; }
