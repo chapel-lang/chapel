@@ -152,7 +152,7 @@ proc masonTest(args: [] string) throws {
             testNames.pushBack(getTestPath(test));
           } else {
             var testLoc = "";
-            while test!=subTestPath{
+            while test!=subTestPath {
               var split = splitPath(test);
               testLoc = if !testLoc.isEmpty() then joinPath(split[1], testLoc)
                                               else split[1];
