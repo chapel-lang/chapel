@@ -35,6 +35,8 @@ ps_base_command = "ps -o pid,ppid,cmd"
 subtest_start_time = None
 subtest_test_name = '"compflags/oom"'
 
+errored = False
+
 def subtest_start():
     global subtest_start_time
     subtest_start_time = datetime.now()
@@ -50,8 +52,11 @@ def subtest_end():
     print(f"[Finished subtest {subtest_test_name} - {elapsed_time} seconds]")
 
 def subtest_error(msg):
-    print(f"[Error running sub_test {subtest_test_name} - {msg}]")
-    sys.exit(1)
+    global errored
+    # Only print first error
+    if not errored:
+        errored = True
+        print(f"[Error running sub_test {subtest_test_name} - {msg}]")
 
 ### END sub_test output helper functions ###
 
