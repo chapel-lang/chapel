@@ -385,7 +385,13 @@ def rules(driver: LintDriver):
         else_block = node.else_block()
         assert else_block is not None
 
-        res = check_for_unattached(context, else_block, then_block_loc, else_kw_loc, functools.partial(BasicRuleResult, ignorable=False))
+        res = check_for_unattached(
+            context,
+            else_block,
+            then_block_loc,
+            else_kw_loc,
+            functools.partial(BasicRuleResult, ignorable=False),
+        )
         return res if res is not None else True
 
     @driver.basic_rule(chapel.Catch)
@@ -414,7 +420,13 @@ def rules(driver: LintDriver):
             return True
         prev_loc = prev.location()
 
-        res = check_for_unattached(context, node, prev_loc, catch_loc, functools.partial(BasicRuleResult, ignorable=False))
+        res = check_for_unattached(
+            context,
+            node,
+            prev_loc,
+            catch_loc,
+            functools.partial(BasicRuleResult, ignorable=False),
+        )
         return res if res is not None else True
 
     @driver.advanced_rule
@@ -438,7 +450,13 @@ def rules(driver: LintDriver):
                 # add the then keyword location if it exists
                 if then_kw_loc := node.then_keyword_location():
                     condition_loc += then_kw_loc
-                res = check_for_unattached(context, then_block, condition_loc, curly_loc, AdvancedRuleResult)
+                res = check_for_unattached(
+                    context,
+                    then_block,
+                    condition_loc,
+                    curly_loc,
+                    AdvancedRuleResult,
+                )
                 if res is not None:
                     yield res
             if else_block := node.else_block():
@@ -446,7 +464,13 @@ def rules(driver: LintDriver):
                     else_kw_loc = node.else_keyword_location()
                     assert else_kw_loc is not None
                     # the curly block start should be just after the location of the else keyword
-                    res = check_for_unattached(context, else_block, else_kw_loc, curly_loc, AdvancedRuleResult)
+                    res = check_for_unattached(
+                        context,
+                        else_block,
+                        else_kw_loc,
+                        curly_loc,
+                        AdvancedRuleResult,
+                    )
                     if res is not None:
                         yield res
 
@@ -462,7 +486,9 @@ def rules(driver: LintDriver):
                 )
                 # adjust the location to be just the keyword
                 try_loc = try_loc - try_loc.adjust_start((0, len_of_keyword))
-                res = check_for_unattached(context, body, try_loc, curly_loc, AdvancedRuleResult)
+                res = check_for_unattached(
+                    context, body, try_loc, curly_loc, AdvancedRuleResult
+                )
                 if res is not None:
                     yield res
 
@@ -481,10 +507,14 @@ def rules(driver: LintDriver):
                     catch_loc = node.location()
                     len_of_keyword = len("catch")
                     # adjust the location to be just the keyword
-                    before_loc = catch_loc - catch_loc.adjust_start((0, len_of_keyword))
+                    before_loc = catch_loc - catch_loc.adjust_start(
+                        (0, len_of_keyword)
+                    )
                 if before_loc is None:
                     return
-                res = check_for_unattached(context, body, before_loc, curly_loc, AdvancedRuleResult)
+                res = check_for_unattached(
+                    context, body, before_loc, curly_loc, AdvancedRuleResult
+                )
                 if res is not None:
                     yield res
 
@@ -504,7 +534,9 @@ def rules(driver: LintDriver):
                 if not header_loc:
                     return
                 # the curly block start should be just after the location of the header
-                res = check_for_unattached(context, node, header_loc, curly_loc, AdvancedRuleResult)
+                res = check_for_unattached(
+                    context, node, header_loc, curly_loc, AdvancedRuleResult
+                )
                 if res is not None:
                     yield res
 
@@ -518,7 +550,9 @@ def rules(driver: LintDriver):
                         header_loc += where_.location()
                     for lifetime in node.lifetime_clauses():
                         header_loc += lifetime.location()
-                res = check_for_unattached(context, node, header_loc, curly_loc, AdvancedRuleResult)
+                res = check_for_unattached(
+                    context, node, header_loc, curly_loc, AdvancedRuleResult
+                )
                 if res is not None:
                     yield res
 
@@ -539,11 +573,11 @@ def rules(driver: LintDriver):
                     with_ = node.with_clause()
                     assert with_ is not None
                     header_loc += with_.location()
-                if not header_loc:
-                    return
 
                 # the curly block start should be just after the location of the header
-                res = check_for_unattached(context, node, header_loc, curly_loc, AdvancedRuleResult)
+                res = check_for_unattached(
+                    context, node, header_loc, curly_loc, AdvancedRuleResult
+                )
                 if res is not None:
                     yield res
 
@@ -1011,7 +1045,11 @@ def rules(driver: LintDriver):
 
             # skip formals named Self that have no name location
             # (they are compiler generated)
-            if formal.name() == "Self" and formal.name_location().start() == (0, 0) and formal.name_location().end() == (0, 0):
+            if (
+                formal.name() == "Self"
+                and formal.name_location().start() == (0, 0)
+                and formal.name_location().end() == (0, 0)
+            ):
                 continue
 
             # extern functions have no bodies that can use their formals.
@@ -1336,7 +1374,9 @@ def rules(driver: LintDriver):
                 # Exception for enums, which are allowed to be on the same line.
                 #   enum color { red, green, blue }
                 if not isinstance(child, EnumElement):
-                    yield AdvancedRuleResult(child, anchor=find_anchor(parent_for_indentation))
+                    yield AdvancedRuleResult(
+                        child, anchor=find_anchor(parent_for_indentation)
+                    )
             # Warn for misaligned siblings:
             #   var x: int;
             #     var y: int;
@@ -1348,7 +1388,9 @@ def rules(driver: LintDriver):
                     and (isinstance(prev, Loop) or isinstance(prev, On))
                     and prev.block_style() == "implicit"
                 ):
-                    yield AdvancedRuleResult(child, anchor=find_anchor(parent_for_indentation))
+                    yield AdvancedRuleResult(
+                        child, anchor=find_anchor(parent_for_indentation)
+                    )
 
                 # Do not update 'prev_depth'; use original prev_depth as
                 # reference for next sibling.
@@ -1366,7 +1408,9 @@ def rules(driver: LintDriver):
                     prev_line = line
                     prev = child
                     continue
-                yield AdvancedRuleResult(child, anchor=find_anchor(parent_for_indentation))
+                yield AdvancedRuleResult(
+                    child, anchor=find_anchor(parent_for_indentation)
+                )
 
             prev_depth = depth
             prev = child
