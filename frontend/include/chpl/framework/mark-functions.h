@@ -90,8 +90,8 @@ template<typename T> struct mark<std::vector<T>> {
   }
 };
 
-template<typename T> struct mark<llvm::SmallVector<T>> {
-  void operator()(Context* context, const llvm::SmallVector<T>& keep) const {
+template<typename T, size_t i> struct mark<llvm::SmallVector<T, i>> {
+  void operator()(Context* context, const llvm::SmallVector<T, i>& keep) const {
     for (auto const &elt : keep) {
       chpl::mark<T> marker;
       marker(context, elt);
