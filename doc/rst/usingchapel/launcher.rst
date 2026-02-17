@@ -295,30 +295,30 @@ Common Slurm Settings
 
 * If you need to pass more arguments to slurm, you can use the slurm environment
   variable for the option. Alternatibvey, you can pass extra arguments through
-  the ``--launcher-flags`` flag. For example, to pass ``--account=acct`` to
+  the ``--system-launcher-flags`` flag. For example, to pass ``--account=acct`` to
   slurm, you can use:
 
   .. code-block:: bash
 
-     ./myprogram --launcher-flags="--account=acct"
+     ./myprogram --system-launcher-flags="--account=acct"
 
   Multiple arguments can be passed by passing them as a single single string, or
-  by specifying ``--launcher-flags`` multiple times. For example:
+  by specifying ``--system-launcher-flags`` multiple times. For example:
 
   .. code-block:: bash
 
-     ./myprogram --launcher-flags="--account=acct --partition=debug"
+     ./myprogram --system-launcher-flags="--account=acct --partition=debug"
 
      # or equivalently
 
-     ./myprogram --launcher-flags="--account=acct" --launcher-flags="--partition=debug"
+     ./myprogram --system-launcher-flags="--account=acct" --system-launcher-flags="--partition=debug"
 
   .. note::
 
      If you plan to use submit a batch script via ``CHPL_LAUNCHER_USE_SBATCH``
      or ``--generate-sbatch-script``, you should prefer passing only a single
-     argument per ``--launcher-flags`` flag, as multiple flags passed as a
-     single string will not be parsed correctly in the generated batch script.
+     argument per ``--system-launcher-flags`` flag, as multiple flags passed as
+     a single string will not be parsed correctly in the generated batch script.
 
 .. _ssh-launchers-with-slurm:
 

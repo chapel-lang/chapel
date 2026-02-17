@@ -39,7 +39,7 @@
 #define CHPL_PARTITION_FLAG "--partition"
 #define CHPL_EXCLUDE_FLAG "--exclude"
 #define CHPL_GPUS_PER_NODE_FLAG "--gpus-per-node"
-#define CHPL_LAUNCHER_PASSTHROUGH_FLAG "--launcher-flags"
+#define CHPL_LAUNCHER_PASSTHROUGH_FLAG "--system-launcher-flags"
 
 
 static char* debug = NULL;
@@ -783,7 +783,7 @@ int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
     return 1;
   }
 
-  // handle --launcher-flags <flags> or --launcher-flags=<flags>
+  // handle --system-launcher-flags <flags> or --system-launcher-flags=<flags>
   if (!strcmp(argv[argNum], CHPL_LAUNCHER_PASSTHROUGH_FLAG)) {
     appendPassthroughFlag(&launcherPassthroughFlags, &numLauncherPassthroughFlags, argv[argNum+1]);
     return 2;
