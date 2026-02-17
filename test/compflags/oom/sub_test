@@ -12,11 +12,17 @@ import time
 from datetime import datetime
 
 
+# Expected OOM warning message
 oom_message = "warning: A driver phase was killed by signal SIGKILL -- possibly due to running out of memory"
+# Substring of message announcing phase start to search for
 phase_invocation_message = "invoking driver compilation phase"
+# Substring of phase flag that will be present in child process
 phase_arg = "driver-compilation-phase"
+# Time to wait between detecting phase start and searching for child to kill
 phase_start_wait_time = 2
+# Name of .chpl file to compile for this test
 chpl_file = "oom.chpl"
+# `ps` command to run to find child process by PPID (to be narrowed by grepping)
 ps_base_command = "ps -o pid,ppid,cmd"
 
 
