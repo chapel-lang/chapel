@@ -795,15 +795,13 @@ void CallInitDeinit::processTupleRhsHelper(VarFrame* frame,
     processInit(frame, ast, lhsEltType,
                 rhsEltType, rv, actual);
     for (auto action : re.associatedActions()) {
-      auto useId = action.id();
-      chpl::optional<int> useTupleEltIdx = i;
-      if (actual) {
-        useId = actual->id();
-        useTupleEltIdx = {};
-      }
       auto actionWithIdx = new AssociatedAction(
-          action.action(), action.fn(), std::move(useId), action.type(),
-          useTupleEltIdx, action.subActions());
+          action.action(),
+          action.fn(),
+          /* id */ (actual ? actual->id() : action.id()),
+          action.type(),
+          /* tupleEltIdx */ i,
+          action.subActions());
       subActions.push_back(actionWithIdx);
     }
     re.clearAssociatedActions();

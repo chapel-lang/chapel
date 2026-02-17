@@ -2044,8 +2044,8 @@ static void test27a() {
       {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
       {AssociatedAction::MOVE_INIT,  "r",           ""},
       {AssociatedAction::INIT_OTHER, "x",           "", {}, {
-        {AssociatedAction::ASSIGN,  "x",      "M.test@4"},
-        {AssociatedAction::COPY_INIT,  "x",   "M.test@5"},
+        {AssociatedAction::ASSIGN,     "x",   "M.test@4", 0},
+        {AssociatedAction::COPY_INIT,  "x",   "M.test@5", 1},
       }},
       {AssociatedAction::DEINIT,     "M.test@9",   "r"},
     });
@@ -2070,12 +2070,12 @@ static void test27b() {
       {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
       {AssociatedAction::MOVE_INIT,  "r",           ""},
       {AssociatedAction::INIT_OTHER, "tup",         "", {}, {
-        {AssociatedAction::ASSIGN,  "tup",      "M.test@4"},
-        {AssociatedAction::MOVE_INIT,  "tup",   "M.test@5"},
+        {AssociatedAction::ASSIGN,     "tup",   "M.test@4", 0},
+        {AssociatedAction::MOVE_INIT,  "tup",   "M.test@5", 1},
       }},
       {AssociatedAction::COPY_INIT, "x",            "", {}, {
-        {AssociatedAction::ASSIGN,  "x",      "x", 0},
-        {AssociatedAction::COPY_INIT,  "x",   "x", 1},
+        {AssociatedAction::ASSIGN,    "x",   "x", 0},
+        {AssociatedAction::COPY_INIT, "x",   "x", 1},
       }},
     });
 }
@@ -2098,8 +2098,8 @@ static void test27c() {
       {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
       {AssociatedAction::MOVE_INIT,  "r",           ""},
       {AssociatedAction::INIT_OTHER, "x",           "", {}, {
-        {AssociatedAction::ASSIGN,  "x",      "M.test@4"},
-        {AssociatedAction::MOVE_INIT,  "x",   "M.test@5"},
+        {AssociatedAction::ASSIGN,     "x",   "M.test@4", 0},
+        {AssociatedAction::MOVE_INIT,  "x",   "M.test@5", 1},
       }},
       {AssociatedAction::MOVE_INIT,  "y",           ""},
     });
@@ -2124,11 +2124,11 @@ static void test28() {
       {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
       {AssociatedAction::MOVE_INIT,  "r",           ""},
       {AssociatedAction::INIT_OTHER, "x",           "", {}, {
-        {AssociatedAction::ASSIGN,  "x",      "M.test@4"},
-        {AssociatedAction::MOVE_INIT,  "x",   "M.test@5"},
+        {AssociatedAction::ASSIGN,     "x",   "M.test@4", 0},
+        {AssociatedAction::MOVE_INIT,  "x",   "M.test@5", 1},
       }},
       {AssociatedAction::COPY_INIT,  "y",           "", {}, {
-        {AssociatedAction::ASSIGN,   "y",     "y", 0},
+        {AssociatedAction::ASSIGN,     "y",   "y", 0},
         {AssociatedAction::COPY_INIT,  "y",   "y", 1},
       }},
     });
@@ -2153,7 +2153,7 @@ static void test29() {
       {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
       {AssociatedAction::MOVE_INIT,  "r",           ""},
       {AssociatedAction::INIT_OTHER, "y",           "", {}, {
-        {AssociatedAction::ASSIGN,   "y",      "y", 0},
+        {AssociatedAction::ASSIGN,     "y",    "y", 0},
         {AssociatedAction::COPY_INIT,  "y",    "y", 1},
       }},
       {AssociatedAction::DEINIT,     "M.test@11",   "r"}
@@ -2173,8 +2173,8 @@ static void test30() {
     )"""",
     {
       {AssociatedAction::INIT_OTHER,  "M.test@5",   "", {}, {
-        {AssociatedAction::ASSIGN,    "M.test@5",   "M.test@2"},
-        {AssociatedAction::COPY_INIT, "M.test@5",   "M.test@3"},
+        {AssociatedAction::ASSIGN,      "M.test@5",   "M.test@2", 0},
+        {AssociatedAction::COPY_INIT,   "M.test@5",   "M.test@3", 1},
       }},
     });
 }
@@ -2201,8 +2201,8 @@ static void test31() {
       {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
       {AssociatedAction::MOVE_INIT,  "r",           ""},
       {AssociatedAction::INIT_OTHER, "tup",         "", {}, {
-        {AssociatedAction::ASSIGN,    "tup",   "M.test@4"},
-        {AssociatedAction::MOVE_INIT, "tup",   "M.test@5"},
+        {AssociatedAction::ASSIGN,     "tup",   "M.test@4", 0},
+        {AssociatedAction::MOVE_INIT,  "tup",   "M.test@5", 1},
       }},
       {AssociatedAction::MOVE_INIT,  "a",           ""},
       {AssociatedAction::NEW_INIT,   "M.test@12",   ""},
@@ -2234,8 +2234,8 @@ static void test32() {
       {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
       {AssociatedAction::MOVE_INIT,  "r",           ""},
       {AssociatedAction::INIT_OTHER, "tup",         "", {}, {
-        {AssociatedAction::ASSIGN,    "tup",   "M.test@4"},
-        {AssociatedAction::MOVE_INIT, "tup",   "M.test@5"},
+        {AssociatedAction::ASSIGN,     "tup",   "M.test@4", 0},
+        {AssociatedAction::MOVE_INIT,  "tup",   "M.test@5", 1},
       }},
       {AssociatedAction::MOVE_INIT,  "a",           ""},
       {AssociatedAction::NEW_INIT,   "M.test@12",   ""},
@@ -2266,8 +2266,8 @@ static void test33() {
       {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
       {AssociatedAction::MOVE_INIT,  "r",           ""},
       {AssociatedAction::INIT_OTHER, "tup",         "", {}, {
-        {AssociatedAction::ASSIGN,    "tup",   "M.test@4"},
-        {AssociatedAction::MOVE_INIT, "tup",   "M.test@5"},
+        {AssociatedAction::ASSIGN,     "tup",   "M.test@4", 0},
+        {AssociatedAction::MOVE_INIT,  "tup",   "M.test@5", 1},
       }},
       {AssociatedAction::ASSIGN,    "a",   "a", 0},
       {AssociatedAction::COPY_INIT, "b",   "b", 1},
@@ -2294,8 +2294,8 @@ static void test34() {
       {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
       {AssociatedAction::MOVE_INIT,  "r",           ""},
       {AssociatedAction::INIT_OTHER, "tup",         "", {}, {
-        {AssociatedAction::ASSIGN,    "tup",   "M.test@4"},
-        {AssociatedAction::MOVE_INIT, "tup",   "M.test@5"},
+        {AssociatedAction::ASSIGN,     "tup",   "M.test@4", 0},
+        {AssociatedAction::MOVE_INIT,  "tup",   "M.test@5", 1},
       }},
       {AssociatedAction::MOVE_INIT, "a",   "a", 0},
       {AssociatedAction::MOVE_INIT, "b",   "b", 1},
@@ -2317,8 +2317,8 @@ static void test35a() {
     )"""",
     {
       {AssociatedAction::INIT_OTHER, "x",         "", {}, {
-        {AssociatedAction::MOVE_INIT, "x",   "M.test@6"},
-        {AssociatedAction::MOVE_INIT, "x",   "M.test@7"},
+        {AssociatedAction::MOVE_INIT,  "x",   "M.test@6", 0},
+        {AssociatedAction::MOVE_INIT,  "x",   "M.test@7", 1},
       }},
     });
 }
@@ -2338,8 +2338,8 @@ static void test35b() {
     )"""",
     {
       {AssociatedAction::INIT_OTHER, "x",         "", {}, {
-        {AssociatedAction::MOVE_INIT, "x",   "M.test@8"},
-        {AssociatedAction::MOVE_INIT, "x",   "M.test@9"},
+        {AssociatedAction::MOVE_INIT,  "x",   "M.test@8", 0},
+        {AssociatedAction::MOVE_INIT,  "x",   "M.test@9", 1},
       }},
     });
 }
