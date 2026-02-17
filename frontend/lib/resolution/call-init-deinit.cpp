@@ -796,10 +796,10 @@ void CallInitDeinit::processTupleRhsHelper(VarFrame* frame,
                 rhsEltType, rv, actual);
     for (auto action : re.associatedActions()) {
       auto useId = action.id();
-      auto useTupleEltIdx = i;
+      chpl::optional<int> useTupleEltIdx = i;
       if (actual) {
         useId = actual->id();
-        useTupleEltIdx = AssociatedAction::NO_TUPLE_ELT;
+        useTupleEltIdx = {};
       }
       auto actionWithIdx = new AssociatedAction(
           action.action(), action.fn(), useId, action.type(),
@@ -812,7 +812,7 @@ void CallInitDeinit::processTupleRhsHelper(VarFrame* frame,
   auto newTopLevelAction =
       AssociatedAction(topLevelAction.action(), topLevelAction.fn(),
                        topLevelAction.id(), topLevelAction.type(),
-                       AssociatedAction::NO_TUPLE_ELT, subActions);
+                       {}, subActions);
   re.addAssociatedAction(std::move(newTopLevelAction));
 }
 

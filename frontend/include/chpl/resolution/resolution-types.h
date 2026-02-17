@@ -2589,9 +2589,6 @@ class AssociatedAction {
 
   using ActionsList = llvm::SmallVector<const AssociatedAction*>;
 
-  // A tuple elt value of -1 indicates no associated tuple element.
-  static const int NO_TUPLE_ELT = -1;
-
  private:
   Action action_;
   const TypedFnSignature* fn_;
@@ -2600,7 +2597,7 @@ class AssociatedAction {
 
   // An index associated with some tuple per-element actions, where it is
   // necessary to keep track of which tuple element the action applies to.
-  int tupleEltIdx_ = NO_TUPLE_ELT;
+  chpl::optional<int> tupleEltIdx_;
 
   // A list of actions contained within this one.
   // Currently only used for tuple call-init-deinit, where each element may
@@ -2609,7 +2606,8 @@ class AssociatedAction {
 
  public:
   AssociatedAction(Action action, const TypedFnSignature* fn, ID id,
-                   types::QualifiedType type, int tupleEltIdx = NO_TUPLE_ELT,
+                   types::QualifiedType type,
+                   chpl::optional<int> tupleEltIdx = {},
                    ActionsList subActions = {})
       : action_(action),
         fn_(fn),
@@ -2639,12 +2637,7 @@ class AssociatedAction {
 
   const types::QualifiedType type() const { return type_; }
 
-  bool hasTupleEltIdx() const {
-    return tupleEltIdx_ != NO_TUPLE_ELT;
-  }
-
-  const int tupleEltIndex() const {
-    CHPL_ASSERT(hasTupleEltIdx());
+  const chpl::optional<int> tupleEltIdx() const {
     return tupleEltIdx_;
   }
 

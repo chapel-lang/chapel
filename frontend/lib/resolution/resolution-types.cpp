@@ -1646,8 +1646,8 @@ void AssociatedAction::stringify(std::ostream& ss,
     ss << " type=";
     type_.stringify(ss, stringKind);
   }
-  if (hasTupleEltIdx()) {
-    ss << " tuple-elt-idx=" << tupleEltIdx_;
+  if (tupleEltIdx_) {
+    ss << " tuple-elt-idx=" << *tupleEltIdx_;
   }
 
   ss << " sub-actions: {";

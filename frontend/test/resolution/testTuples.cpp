@@ -1092,7 +1092,7 @@ static void test24() {
   auto& actions = fnRR.byAst(astOp).associatedActions();
   assert(actions.size() == 1 &&
          actions[0].action() == AssociatedAction::ASSIGN &&
-         actions[0].hasTupleEltIdx() && actions[0].tupleEltIndex() == 0);
+         actions[0].tupleEltIdx() && actions[0].tupleEltIdx() == 0);
 }
 
 static void test25() {
