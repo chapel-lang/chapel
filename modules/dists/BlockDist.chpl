@@ -393,8 +393,7 @@ record blockDist : writeSerializable {
   }
 
   proc init(boundingBox: domain,
-            targetLocales: [] locale = Locales)
-  {
+            targetLocales: [] locale = Locales) {
     this.init(boundingBox, targetLocales,
               /* by specifying even one unstable argument, this should select
                  the whole unstable constructor, which has defaults for everything
@@ -435,7 +434,7 @@ record blockDist : writeSerializable {
 
   @chpldoc.nodoc
   inline operator ==(d1: blockDist(?), d2: blockDist(?)) {
-    if (d1._value == d2._value) then
+    if d1._value == d2._value then
       return true;
     return d1._value.dsiEqualDMaps(d2._value);
   }
@@ -724,8 +723,8 @@ proc BlockImpl.redistribute(const in newBbox) {
 
 
 proc BlockImpl.dsiAssign(other: this.type) {
-  if (this.targetLocDom != other.targetLocDom ||
-      || reduce (this.targetLocales != other.targetLocales)) {
+  if this.targetLocDom != other.targetLocDom ||
+     || reduce (this.targetLocales != other.targetLocales) {
     halt("'blockDist' assignments currently require the target locale arrays to match");
   }
 
@@ -990,8 +989,7 @@ proc type blockDist.createArray(
   type eltType,
   initExpr: ?t,
   targetLocales: [] locale = Locales
-) where isSubtype(t, _iteratorRecord) || isCoercible(t, eltType)
-{
+) where isSubtype(t, _iteratorRecord) || isCoercible(t, eltType) {
   var D = createDomain(dom, targetLocales);
   var A: [D] eltType;
   A = initExpr;
@@ -1006,8 +1004,7 @@ proc type blockDist.createArray(
   type eltType,
   initExpr: [?arrayDom] ?arrayEltType,
   targetLocales: [] locale = Locales
-) where dom.rank == arrayDom.rank && isCoercible(arrayEltType, eltType)
-{
+) where dom.rank == arrayDom.rank && isCoercible(arrayEltType, eltType) {
   if boundsChecking then
     for (d, ad, i) in zip(dom.dims(), arrayDom.dims(), 0..) do
       if d.size != ad.size then halt("Domain size mismatch in 'blockDist.createArray' dimension " + i:string);
@@ -1042,16 +1039,14 @@ proc type blockDist.createArray(
   rng: range(?)...,
   type eltType, initExpr: ?t,
   targetLocales: [] locale = Locales
-) where isSubtype(t, _iteratorRecord) || isCoercible(t, eltType)
-{
+) where isSubtype(t, _iteratorRecord) || isCoercible(t, eltType) {
   return createArray({(...rng)}, eltType, initExpr, targetLocales);
 }
 
 pragma "no copy return"
 @unstable("'blockDist.createArray' with an 'initExpr' formal is unstable and may change in a future release")
 proc type blockDist.createArray(rng: range(?)..., type eltType, initExpr: ?t)
-  where isSubtype(t, _iteratorRecord) || isCoercible(t, eltType)
-{
+  where isSubtype(t, _iteratorRecord) || isCoercible(t, eltType) {
   return createArray({(...rng)}, eltType, initExpr);
 }
 
@@ -1065,8 +1060,7 @@ proc type blockDist.createArray(
   type eltType,
   initExpr: [?arrayDom] ?arrayEltType,
   targetLocales: [] locale = Locales
-) where rng.size == arrayDom.rank && isCoercible(arrayEltType, eltType)
-{
+) where rng.size == arrayDom.rank && isCoercible(arrayEltType, eltType) {
   return createArray({(...rng)}, eltType, initExpr, targetLocales);
 }
 
@@ -1076,8 +1070,7 @@ proc type blockDist.createArray(
   rng: range(?)...,
   type eltType,
   initExpr: [?arrayDom] ?arrayEltType
-) where rng.size == arrayDom.rank && isCoercible(arrayEltType, eltType)
-{
+) where rng.size == arrayDom.rank && isCoercible(arrayEltType, eltType) {
   return createArray({(...rng)}, eltType, initExpr);
 }
 
@@ -1689,8 +1682,7 @@ proc _extendTuple(type t, idx, args) {
   return tup;
 }
 
-override proc BlockArr.dsiReallocate(bounds:rank*range(idxType,boundKind.both,strides))
-{
+override proc BlockArr.dsiReallocate(bounds:rank*range(idxType,boundKind.both,strides)) {
   //
   // For the default rectangular array, this function changes the data
   // vector in the array class so that it is setup once the default

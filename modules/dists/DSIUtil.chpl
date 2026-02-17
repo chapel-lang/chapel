@@ -143,7 +143,7 @@ proc _computeChunkStartEnd(nElems, nChunks, myCnk): 2*nElems.type {
   // Caller's responsibility.
   assert(1 <= myChunk && myChunk <= numChunks);
 
-  if myChunk <= rem then {
+  if myChunk <= rem {
     // (div+1) elements per chunk
     var endIx = myChunk * (div + 1);
     //writeln("_computeChunkStartEnd", (numElems, numChunks, myChunk),
@@ -265,9 +265,9 @@ private proc densiResult(arg: range(?), whole: range(?)) type
 // or with assert() (if false).
 //
 
-proc densify(sub: domain, whole: domain, userErrors = true
-             ) : densiResult(sub, whole)
-{
+proc densify(sub: domain,
+             whole: domain,
+             userErrors = true): densiResult(sub, whole) {
   type argtypes = (sub, whole).type;
   _densiCheck(sub.rank == whole.rank, argtypes);
   _densiIdxCheck(sub.idxType, whole.idxType,  argtypes);
@@ -276,8 +276,7 @@ proc densify(sub: domain, whole: domain, userErrors = true
 
 // the desired type of 'wholes': ?rank * range(?IT,?,?)
 proc densify(subs, wholes, userErrors = true)
-  where isTuple(subs) && isTuple(wholes)
-{
+  where isTuple(subs) && isTuple(wholes) {
   type argtypes = (subs, wholes).type;
   _densiCheck(wholes.size == subs.size, argtypes);
   _densiCheck(isRange(subs(0)), argtypes);
@@ -301,15 +300,17 @@ proc densify(subs, wholes, userErrors = true)
   return result;
 }
 
-proc densify(s: range(?,bounds=?), w: range(?IT,?), userErrors=true
-             ) : densiResult(s, w)
-{
+proc densify(s: range(?,bounds=?),
+             w: range(?IT,?),
+             userErrors=true): densiResult(s, w) {
   _densiEnsureBounded(s);
   _densiIdxCheck(s.idxType, IT, (s,w).type);
 
   proc ensure(cond, args...) {
-    if userErrors then { if !cond then halt((...args)); }
-    else                               assert(cond, (...args));
+    if userErrors {
+      if !cond then halt((...args));
+    } else
+      assert(cond, (...args));
   }
 
   if s.sizeAs(int) == 0 {
@@ -345,15 +346,18 @@ proc densify(s: range(?,bounds=?), w: range(?IT,?), userErrors=true
 
 // w.strides==one
 // in this case densiResult(sArg,w) == range(IT,B,S)
-proc densify(sArg: range(?,bounds=?B,strides=?S), w: range(?IT,?,strides=strideKind.one), userErrors=true) : range(IT,B,S)
-{
+proc densify(sArg: range(?,bounds=?B,strides=?S),
+             w: range(?IT,?,strides=strideKind.one),
+             userErrors=true) : range(IT,B,S) {
   _densiEnsureBounded(sArg);
   _densiIdxCheck(sArg.idxType, IT, (sArg,w).type);
   const s = sArg:range(IT,B,S);
 
   proc ensure(cond) {
-    if userErrors then { if !cond then halt(); }
-    else                               assert(cond);
+    if userErrors {
+      if !cond then halt();
+    } else
+      assert(cond);
   }
 
   // todo: account for the case ! s.isAligned()
@@ -392,9 +396,9 @@ proc _densiCheck(param cond, type argtypes, param errlevel = 2) {
 // at compile time that they won't be.
 //
 
-proc unDensify(dense: domain, whole: domain, userErrors = true
-               ) : densiResult(dense, whole)
-{
+proc unDensify(dense: domain,
+               whole: domain,
+               userErrors = true): densiResult(dense, whole) {
   type argtypes = (dense, whole).type;
   _undensCheck(dense.rank == whole.rank, argtypes);
   return {(...unDensify(dense.dims(), whole.dims(), userErrors))};
@@ -402,8 +406,7 @@ proc unDensify(dense: domain, whole: domain, userErrors = true
 
 // the desired type of 'wholes': ?rank * range(?IT,?,?)
 proc unDensify(denses, wholes, userErrors = true)
-  where isTuple(denses) && isTuple(wholes)
-{
+  where isTuple(denses) && isTuple(wholes) {
   type argtypes = (denses, wholes).type;
   _undensCheck(wholes.size == denses.size, argtypes);
   _undensCheck(isRange(denses(0)), argtypes);
@@ -425,9 +428,8 @@ proc unDensify(denses, wholes, userErrors = true)
   return result;
 }
 
-proc unDensify(dense: range(?dIT,bounds=?), whole: range(?IT,?)
-               ) : densiResult(dense, whole)
-{
+proc unDensify(dense: range(?dIT,bounds=?),
+               whole: range(?IT,?)) : densiResult(dense, whole) {
   _undensEnsureBounded(dense);
   if whole.bounds == boundKind.neither then
     compilerError("unDensify(): the 'whole' argument must have at least one bound");
@@ -452,8 +454,8 @@ proc unDensify(dense: range(?dIT,bounds=?), whole: range(?IT,?)
 }
 
 // whole.strides==one
-proc unDensify(dense: range(?,bounds=?B,strides=?S), whole: range(?IT,?,strides=strideKind.one)) : range(IT,B,S)
-{
+proc unDensify(dense: range(?,bounds=?B,strides=?S),
+               whole: range(?IT,?,strides=strideKind.one)) : range(IT,B,S) {
   if !whole.hasLowBound() then
     compilerError("unDensify(): the 'whole' argument, when not stridable, must have a low bound");
 
@@ -678,8 +680,7 @@ proc bulkCommTranslateDomain(srcSlice : domain, srcView : range(?),
 // TODO: If we wanted to be more general, the domain args could turn into
 //       tuples of ranges
 //
-proc bulkCommConvertCoordinate(ind, bView:domain, aView:domain)
-{
+proc bulkCommConvertCoordinate(ind, bView:domain, aView:domain) {
   if bView.rank != aView.rank {
     compilerError("Invalid arguments passed to bulkCommConvertCoordinate - domain ranks must match: bView.rank = ", bView.rank:string, ", aView.rank = ", aView.rank:string);
   }
@@ -703,8 +704,7 @@ proc bulkCommConvertCoordinate(ind, bView:domain, aView:domain)
 
 // this is a 1D, range-based version of the above. It is used by AVE, which
 // tries to avoid creating domains for views.
-proc bulkCommConvertCoordinate(ind, bView:range(?), aView:range(?))
-{
+proc bulkCommConvertCoordinate(ind, bView:range(?), aView:range(?)) {
   if boundsChecking then
     assert(bView.contains(ind));
 

@@ -239,8 +239,7 @@ record cyclicDist : writeSerializable {
             dataParMinGranularity=getDataParMinGranularity(),
             param rank = _determineRankFromStartIdx(startIdx),
             type idxType = _determineIdxTypeFromStartIdx(startIdx))
-    where isTuple(startIdx) || isIntegral(startIdx)
-  {
+  where isTuple(startIdx) || isIntegral(startIdx) {
     const value = new unmanaged CyclicImpl(startIdx, targetLocales,
                                            dataParTasksPerLocale,
                                            dataParIgnoreRunningTasks,
@@ -259,8 +258,7 @@ record cyclicDist : writeSerializable {
 
   proc init(startIdx,
             targetLocales: [] locale = Locales)
-    where isTuple(startIdx) || isIntegral(startIdx)
-  {
+  where isTuple(startIdx) || isIntegral(startIdx) {
     this.init(startIdx, targetLocales,
               /* by specifying even one unstable argument, this should select
                  the whole unstable constructor, which has defaults for everything
@@ -356,8 +354,7 @@ class CyclicImpl: BaseDist, writeSerializable {
             dataParMinGranularity=getDataParMinGranularity(),
             param rank: int = _determineRankFromStartIdx(startIdx),
             type idxType = _determineIdxTypeFromStartIdx(startIdx))
-    where isTuple(startIdx) || isIntegral(startIdx)
-  {
+  where isTuple(startIdx) || isIntegral(startIdx) {
     this.rank = rank;
     this.idxType = idxType;
 
@@ -1273,7 +1270,7 @@ iter LocCyclicArr.these() ref {
 // NOTE: I'd rather have this be a subclass of LocRADCache, but I
 // couldn't find a way to use rank (param) and idxType (type) from the
 // parent class in declarations in the subclass does not work.
-class LocCyclicRADCache /* : LocRADCache */ {
+class LocCyclicRADCache { /* : LocRADCache */
   param rank: int;
   type idxType;
   var startIdx: rank*idxType;
@@ -1452,14 +1449,15 @@ proc cyclicDist.createDomain(rng: range(?)...) {
 }
 
 // create a domain over a Cyclic Distribution
-proc type cyclicDist.createDomain(dom: domain(?), targetLocales: [] locale = Locales)
-{
+proc type cyclicDist.createDomain(dom: domain(?),
+                                  targetLocales: [] locale = Locales) {
   return dom dmapped new cyclicDist(startIdx=dom.lowBound, targetLocales);
 }
 
 // create a domain over a Cyclic Distribution constructed from a series of ranges
 pragma "last resort"
-proc type cyclicDist.createDomain(rng: range(?)..., targetLocales: [] locale = Locales) {
+proc type cyclicDist.createDomain(rng: range(?)...,
+                                  targetLocales: [] locale = Locales) {
   return createDomain({(...rng)}, targetLocales);
 }
 
@@ -1487,8 +1485,7 @@ proc type cyclicDist.createArray(
   type eltType,
   initExpr: ?t,
   targetLocales: [] locale = Locales
-) where isSubtype(t, _iteratorRecord) || isCoercible(t, eltType)
-{
+) where isSubtype(t, _iteratorRecord) || isCoercible(t, eltType) {
   var D = createDomain(dom, targetLocales);
   var A: [D] eltType;
   A = initExpr;
@@ -1502,8 +1499,7 @@ proc type cyclicDist.createArray(
   type eltType,
   initExpr: [?arrayDom] ?arrayEltType,
   targetLocales: [] locale = Locales
-) where dom.rank == arrayDom.rank && isCoercible(arrayEltType, eltType)
-{
+) where dom.rank == arrayDom.rank && isCoercible(arrayEltType, eltType) {
   if boundsChecking then
     for (d, ad, i) in zip(dom.dims(), arrayDom.dims(), 0..) do
       if d.size != ad.size then halt("Domain size mismatch in 'cyclicDist.createArray' dimension " + i:string);
@@ -1537,15 +1533,13 @@ proc type cyclicDist.createArray(
   type eltType,
   initExpr: ?t,
   targetLocales: [] locale = Locales
-) where isSubtype(t, _iteratorRecord) || isCoercible(t, eltType)
-{
+) where isSubtype(t, _iteratorRecord) || isCoercible(t, eltType) {
   return createArray({(...rng)}, eltType, initExpr, targetLocales);
 }
 
 pragma "no copy return"
 proc type cyclicDist.createArray(rng: range(?)..., type eltType, initExpr: ?t)
-  where isSubtype(t, _iteratorRecord) || isCoercible(t, eltType)
-{
+where isSubtype(t, _iteratorRecord) || isCoercible(t, eltType) {
   return createArray({(...rng)}, eltType, initExpr);
 }
 
@@ -1557,8 +1551,7 @@ proc type cyclicDist.createArray(
   type eltType,
   initExpr: [?arrayDom] ?arrayEltType,
   targetLocales: [] locale = Locales
-) where rng.size == arrayDom.rank && isCoercible(arrayEltType, eltType)
-{
+) where rng.size == arrayDom.rank && isCoercible(arrayEltType, eltType) {
   return createArray({(...rng)}, eltType, initExpr, targetLocales);
 }
 
@@ -1567,8 +1560,7 @@ proc type cyclicDist.createArray(
   rng: range(?)...,
   type eltType,
   initExpr: [?arrayDom] ?arrayEltType
-) where rng.size == arrayDom.rank && isCoercible(arrayEltType, eltType)
-{
+) where rng.size == arrayDom.rank && isCoercible(arrayEltType, eltType) {
   return createArray({(...rng)}, eltType, initExpr);
 }
 
@@ -1578,7 +1570,7 @@ proc CyclicArr.dsiHasSingleLocalSubdomain() param do return !allowDuplicateTarge
 proc CyclicDom.dsiHasSingleLocalSubdomain() param do return !allowDuplicateTargetLocales;
 
 proc CyclicArr.dsiLocalSubdomain(loc: locale) {
-  if (loc == here) {
+  if loc == here {
     // quick solution if we have a local array
     if const myLocArrNN = myLocArr then
       return myLocArrNN.locDom.myBlock;
@@ -1591,7 +1583,7 @@ proc CyclicArr.dsiLocalSubdomain(loc: locale) {
 }
 proc CyclicDom.dsiLocalSubdomain(loc: locale) {
   const (gotit, locid) = dist.chpl__locToLocIdx(loc);
-  if (gotit) {
+  if gotit {
     return whole[(...(chpl__computeCyclic(idxType, locid, dist.targetLocDom.dims(), dist.startIdx)))] : myBlockType(rank, idxType);
   } else {
     var d: myBlockType(rank, idxType);
