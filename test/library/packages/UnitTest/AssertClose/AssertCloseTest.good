@@ -1,0 +1,64 @@
+Error Caught in Negative relative tolerance
+IllegalArgumentError: relTol and absTol must both be nonnegative.
+================================================================================
+Error Caught in Negative absolute tolerance
+IllegalArgumentError: relTol and absTol must both be nonnegative.
+================================================================================
+Error Caught in Mismatched array sizes
+IllegalArgumentError: Actual array shape (5,) does not match expected: (4,)
+================================================================================
+Error Caught in Unequal real numbers
+AssertionError: in AssertCloseTest.chpl:8 - assert failed for actual=0, expected=1e-06
+Rel. Error: 100 %
+Abs. Error: 1e-06
+================================================================================
+Error Caught in Unequal complex numbers
+AssertionError: in AssertCloseTest.chpl:8 - assert failed for actual=1.8 + 3i, expected=1.8 + 3i
+Rel. Error: 2.85831e-05 %
+Abs. Error: 1e-06
+================================================================================
+Error Caught in Unequal complex 1D arrays
+AssertionError: in AssertCloseTest.chpl:8 - assert failed for 1/2 elements (50%)
+Max Rel. Error: 39.2232%
+Max Abs. Error: 1.41421
+================================================================================
+Error Caught in Unequal real NaN, equalNan true
+AssertionError: in AssertCloseTest.chpl:8 - assert failed for actual=nan, expected=2.5
+Rel. Error: nan %
+Abs. Error: nan
+================================================================================
+Error Caught in Unequal real NaN, equalNan false
+AssertionError: in AssertCloseTest.chpl:8 - assert failed for actual=nan, expected=2.5
+Rel. Error: nan %
+Abs. Error: nan
+================================================================================
+Error Caught in Unequal real array NaN
+AssertionError: in AssertCloseTest.chpl:8 - assert failed for 1/3 elements (33.3333%)
+Max Rel. Error: nan%
+Max Abs. Error: nan
+================================================================================
+Error Caught in Unequal imag NaN
+AssertionError: in AssertCloseTest.chpl:8 - assert failed for actual=nani, expected=nani
+Rel. Error: nan %
+Abs. Error: nan
+================================================================================
+Error Caught in Unequal imag array NaN
+AssertionError: in AssertCloseTest.chpl:8 - assert failed for 1/3 elements (33.3333%)
+Max Rel. Error: nan%
+Max Abs. Error: nan
+================================================================================
+Error Caught in Unequal complex partial NaN, real
+AssertionError: in AssertCloseTest.chpl:8 - assert failed for actual=nan, expected=2.5 + 2i
+Rel. Error: nan %
+Abs. Error: nan
+================================================================================
+Error Caught in Unequal complex partial NaN, imag
+AssertionError: in AssertCloseTest.chpl:8 - assert failed for actual=nan, expected=1 + 2.5i
+Rel. Error: nan %
+Abs. Error: nan
+================================================================================
+Error Caught in Unequal complex NaN
+AssertionError: in AssertCloseTest.chpl:8 - assert failed for actual=nan, expected=nan
+Rel. Error: nan %
+Abs. Error: nan
+================================================================================
