@@ -1995,12 +1995,22 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
   case PRIM_TO_FOLLOWER: {
     FnSymbol* iterator     = getTheIteratorFn(call->get(1)->typeInfo());
+    ModuleSymbol* parentMod = toModuleSymbol(iterator->defPoint->parentSymbol);
     CallExpr* followerCall = NULL;
 
     if (FnSymbol* f2 = findForallexprFollower(iterator)) {
       followerCall = new CallExpr(f2);
     } else {
       followerCall = new CallExpr(iterator->name);
+
+      if (parentMod && !iterator->isMethod()) {
+        // The "to follower" call can be happening outside of the scope in which
+        // the original iterator is defined, so we may not be able to find the
+        // corresponding leader function in the current scope. To make sure it's
+        // found, explicitly add the module of the original iterator.
+        followerCall->insertAtTail(gModuleToken);
+        followerCall->insertAtTail(parentMod);
+      }
     }
 
     for_formals(formal, iterator) {
@@ -2038,7 +2048,16 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
   case PRIM_TO_LEADER: {
     FnSymbol* iterator   = getTheIteratorFn(call->get(1)->typeInfo());
+    ModuleSymbol* parentMod = toModuleSymbol(iterator->defPoint->parentSymbol);
     CallExpr* leaderCall = new CallExpr(iterator->name);
+    if (parentMod && !iterator->isMethod()) {
+      // The "to leader" call can be happening outside of the scope in which
+      // the original iterator is defined, so we may not be able to find the
+      // corresponding leader function in the current scope. To make sure it's
+      // found, explicitly add the module of the original iterator.
+      leaderCall->insertAtTail(gModuleToken);
+      leaderCall->insertAtTail(parentMod);
+    }
 
     for_formals(formal, iterator) {
       // Note: this can add a use formal outside of its function
@@ -2064,7 +2083,16 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
   case PRIM_TO_STANDALONE: {
     FnSymbol* iterator       = getTheIteratorFn(call->get(1)->typeInfo());
+    ModuleSymbol* parentMod = toModuleSymbol(iterator->defPoint->parentSymbol);
     CallExpr* standaloneCall = new CallExpr(iterator->name);
+    if (parentMod && !iterator->isMethod()) {
+      // The "to standalone" call can be happening outside of the scope in which
+      // the original iterator is defined, so we may not be able to find the
+      // corresponding leader function in the current scope. To make sure it's
+      // found, explicitly add the module of the original iterator.
+      standaloneCall->insertAtTail(gModuleToken);
+      standaloneCall->insertAtTail(parentMod);
+    }
 
     for_formals(formal, iterator) {
       // Note: this can add a use formal outside of its function
