@@ -15,6 +15,7 @@ from datetime import datetime
 oom_message = "warning: A driver phase was killed by signal SIGKILL -- possibly due to running out of memory"
 phase_invocation_message = "invoking driver compilation phase"
 phase_arg = "driver-compilation-phase"
+phase_start_wait_time = 2
 chpl_file = "oom.chpl"
 ps_base_command = "ps -o pid,ppid,cmd"
 
@@ -89,6 +90,7 @@ def main():
         if not encountered_subphase and phase_invocation_message in line:
             encountered_subphase = True
         elif encountered_subphase and not killed_subphase:
+            time.sleep(phase_start_wait_time)
             kill_subphase(process.pid)
             killed_subphase = True
         elif killed_subphase:
