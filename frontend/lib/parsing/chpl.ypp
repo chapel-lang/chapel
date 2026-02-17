@@ -759,9 +759,8 @@ stmt_base:
     auto node = Defer::build(BUILDER, LOC(@$), blockStyle,
                              std::move(stmts));
     BUILDER->noteBlockHeaderLocation(node.get(), LOC(@1));
-    if (context->hasCurlyBracesLoc()) {
-      BUILDER->noteCurlyBracesLocation(node.get(), LOC(context->curlyBracesLoc()));
-      context->resetCurlyBracesLoc();
+    if (context->isValidCurlyBracesLoc($2.curlyLoc)) {
+      BUILDER->noteCurlyBracesLocation(node.get(), LOC($2.curlyLoc));
     }
     CommentsAndStmt ret = makeCommentsAndStmt(comments, node.release());
     $$ = context->finishStmt(ret);
@@ -835,9 +834,8 @@ tryable_stmt:
     auto node = Cobegin::build(BUILDER, LOC(@$), toOwned($2),
                                std::move(taskBodies));
     BUILDER->noteBlockHeaderLocation(node.get(), LOC(@1));
-    if (context->hasCurlyBracesLoc()) {
-      BUILDER->noteCurlyBracesLocation(node.get(), LOC(context->curlyBracesLoc()));
-      context->resetCurlyBracesLoc();
+    if (context->isValidCurlyBracesLoc($3.curlyLoc)) {
+      BUILDER->noteCurlyBracesLocation(node.get(), LOC($3.curlyLoc));
     }
     CommentsAndStmt ret = makeCommentsAndStmt(comments, node.release());
     $$ = context->finishStmt(ret);
@@ -860,9 +858,8 @@ tryable_stmt:
     auto node = Local::build(BUILDER, LOC(@$), toOwned($2), blockStyle,
                              std::move(stmts));
     BUILDER->noteBlockHeaderLocation(node.get(), LOC2(@1, @2));
-    if (context->hasCurlyBracesLoc()) {
-      BUILDER->noteCurlyBracesLocation(node.get(), LOC(context->curlyBracesLoc()));
-      context->resetCurlyBracesLoc();
+    if (context->isValidCurlyBracesLoc($3.cs.curlyLoc)) {
+      BUILDER->noteCurlyBracesLocation(node.get(), LOC($3.cs.curlyLoc));
     }
     CommentsAndStmt cs = makeCommentsAndStmt(comments, node.release());
     $$ = context->finishStmt(cs);
@@ -876,9 +873,8 @@ tryable_stmt:
     auto stmts = context->consumeAndFlattenTopLevelBlocks(exprLst);
     auto node = Local::build(BUILDER, LOC(@$), blockStyle, std::move(stmts));
     BUILDER->noteBlockHeaderLocation(node.get(), LOC(@1));
-    if (context->hasCurlyBracesLoc()) {
-      BUILDER->noteCurlyBracesLocation(node.get(), LOC(context->curlyBracesLoc()));
-      context->resetCurlyBracesLoc();
+    if (context->isValidCurlyBracesLoc($2.cs.curlyLoc)) {
+      BUILDER->noteCurlyBracesLocation(node.get(), LOC($2.cs.curlyLoc));
     }
     CommentsAndStmt cs = makeCommentsAndStmt(comments, node.release());
     $$ = context->finishStmt(cs);
@@ -893,9 +889,8 @@ tryable_stmt:
     auto node = On::build(BUILDER, LOC(@$), toOwned($2), blockStyle,
                           std::move(stmts));
     BUILDER->noteBlockHeaderLocation(node.get(), LOC2(@1, @2));
-    if (context->hasCurlyBracesLoc()) {
-      BUILDER->noteCurlyBracesLocation(node.get(), LOC(context->curlyBracesLoc()));
-      context->resetCurlyBracesLoc();
+    if (context->isValidCurlyBracesLoc($3.cs.curlyLoc)) {
+      BUILDER->noteCurlyBracesLocation(node.get(), LOC($3.cs.curlyLoc));
     }
     CommentsAndStmt cs = makeCommentsAndStmt(comments, node.release());
     $$ = context->finishStmt(cs);
@@ -910,9 +905,8 @@ tryable_stmt:
     auto node = Serial::build(BUILDER, LOC(@$), toOwned($2), blockStyle,
                               std::move(stmts));
     BUILDER->noteBlockHeaderLocation(node.get(), LOC2(@1, @2));
-    if (context->hasCurlyBracesLoc()) {
-      BUILDER->noteCurlyBracesLocation(node.get(), LOC(context->curlyBracesLoc()));
-      context->resetCurlyBracesLoc();
+    if (context->isValidCurlyBracesLoc($3.cs.curlyLoc)) {
+      BUILDER->noteCurlyBracesLocation(node.get(), LOC($3.cs.curlyLoc));
     }
     CommentsAndStmt cs = makeCommentsAndStmt(comments, node.release());
     $$ = context->finishStmt(cs);
@@ -926,9 +920,8 @@ tryable_stmt:
     auto stmts = context->consumeAndFlattenTopLevelBlocks(exprLst);
     auto node = Serial::build(BUILDER, LOC(@$), blockStyle, std::move(stmts));
     BUILDER->noteBlockHeaderLocation(node.get(), LOC(@1));
-    if (context->hasCurlyBracesLoc()) {
-      BUILDER->noteCurlyBracesLocation(node.get(), LOC(context->curlyBracesLoc()));
-      context->resetCurlyBracesLoc();
+    if (context->isValidCurlyBracesLoc($2.cs.curlyLoc)) {
+      BUILDER->noteCurlyBracesLocation(node.get(), LOC($2.cs.curlyLoc));
     }
     CommentsAndStmt cs = makeCommentsAndStmt(comments, node.release());
     $$ = context->finishStmt(cs);
@@ -944,9 +937,8 @@ tryable_stmt:
     auto node = Sync::build(BUILDER, LOC(@$), blockStyle,
                             std::move(stmts));
     BUILDER->noteBlockHeaderLocation(node.get(), LOC(@1));
-    if (context->hasCurlyBracesLoc()) {
-      BUILDER->noteCurlyBracesLocation(node.get(), LOC(context->curlyBracesLoc()));
-      context->resetCurlyBracesLoc();
+    if (context->isValidCurlyBracesLoc($2.curlyLoc)) {
+      BUILDER->noteCurlyBracesLocation(node.get(), LOC($2.curlyLoc));
     }
     CommentsAndStmt ret = makeCommentsAndStmt(comments, node.release());
     $$ = context->finishStmt(ret);
@@ -1184,6 +1176,7 @@ block_stmt:
     cs.stmt = blockstmt.release();
     if (context->hasCurlyBracesLoc()) {
       cs.curlyLoc = context->curlyBracesLoc();
+      context->resetCurlyBracesLoc();
     }
     $$ = cs;
   }
@@ -1694,9 +1687,8 @@ loop_stmt_base:
                                std::move(body),
                                toOwned($4),
                                context->popLoopAttributeGroup());
-    if (context->hasCurlyBracesLoc()) {
-      BUILDER->noteCurlyBracesLocation(node.get(), LOC(context->curlyBracesLoc()));
-      context->resetCurlyBracesLoc();
+    if (context->isValidCurlyBracesLoc($2.curlyLoc)) {
+      BUILDER->noteCurlyBracesLocation(node.get(), LOC($2.curlyLoc));
     }
     CommentsAndStmt cs = makeCommentsAndStmt(comments, node.release());
     $$ = context->finishStmt(cs);
@@ -1713,9 +1705,8 @@ loop_stmt_base:
                              std::move(body),
                              context->popLoopAttributeGroup());
     BUILDER->noteLoopHeaderLocation(node.get(), LOC2(@1, @2));
-    if (context->hasCurlyBracesLoc()) {
-      BUILDER->noteCurlyBracesLocation(node.get(), LOC(context->curlyBracesLoc()));
-      context->resetCurlyBracesLoc();
+    if (context->isValidCurlyBracesLoc($3.cs.curlyLoc)) {
+      BUILDER->noteCurlyBracesLocation(node.get(), LOC($3.cs.curlyLoc));
     }
     CommentsAndStmt cs = makeCommentsAndStmt(comments, node.release());
     $$ = context->finishStmt(cs);
@@ -1732,9 +1723,8 @@ loop_stmt_base:
                              std::move(body),
                              context->popLoopAttributeGroup());
     BUILDER->noteLoopHeaderLocation(node.get(), LOC2(@1, @2));
-    if (context->hasCurlyBracesLoc()) {
-      BUILDER->noteCurlyBracesLocation(node.get(), LOC(context->curlyBracesLoc()));
-      context->resetCurlyBracesLoc();
+    if (context->isValidCurlyBracesLoc($3.cs.curlyLoc)) {
+      BUILDER->noteCurlyBracesLocation(node.get(), LOC($3.cs.curlyLoc));
     }
     CommentsAndStmt cs = makeCommentsAndStmt(comments, node.release());
     $$ = context->finishStmt(cs);
@@ -1756,9 +1746,8 @@ loop_stmt_base:
                            /*isParam*/ true,
                            context->popLoopAttributeGroup());
     BUILDER->noteLoopHeaderLocation(node.get(), LOC2(@1, @5));
-    if (context->hasCurlyBracesLoc()) {
-      BUILDER->noteCurlyBracesLocation(node.get(), LOC(context->curlyBracesLoc()));
-      context->resetCurlyBracesLoc();
+    if (context->isValidCurlyBracesLoc($6.cs.curlyLoc)) {
+      BUILDER->noteCurlyBracesLocation(node.get(), LOC($6.cs.curlyLoc));
     }
     CommentsAndStmt cs = makeCommentsAndStmt(comments, node.release());
     context->resetAttributeGroupPartsState();

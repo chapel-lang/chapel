@@ -184,6 +184,7 @@ struct ParserContext {
   void exitScope(asttags::AstTag tag, UniqueString name);
 
   void noteCurlyBraces(YYLTYPE left, YYLTYPE right);
+  bool isValidCurlyBracesLoc(YYLTYPE loc);
   bool hasCurlyBracesLoc();
   YYLTYPE curlyBracesLoc();
   void resetCurlyBracesLoc();

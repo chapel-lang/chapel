@@ -631,8 +631,11 @@ void ParserContext::exitScope(asttags::AstTag tag, UniqueString name) {
 void ParserContext::noteCurlyBraces(YYLTYPE left, YYLTYPE right) {
   this->curlyBraceLocation = makeSpannedLocation(left, right);
 }
+bool ParserContext::isValidCurlyBracesLoc(YYLTYPE loc) {
+  return loc.first_line > 0;
+}
 bool ParserContext::hasCurlyBracesLoc() {
-  return this->curlyBraceLocation.first_line > 0;
+  return isValidCurlyBracesLoc(this->curlyBraceLocation);
 }
 YYLTYPE ParserContext::curlyBracesLoc() {
   return this->curlyBraceLocation;
@@ -1153,9 +1156,8 @@ ParserContext::buildBeginStmt(YYLTYPE location, YYLTYPE locBegin,
                            blockStyle,
                            std::move(stmts));
   builder->noteBlockHeaderLocation(node.get(), convertLocation(locBegin));
-  if (hasCurlyBracesLoc()) {
-    builder->noteCurlyBracesLocation(node.get(), convertLocation(curlyBracesLoc()));
-    resetCurlyBracesLoc();
+  if (isValidCurlyBracesLoc(stmt.curlyLoc)) {
+    builder->noteCurlyBracesLocation(node.get(), convertLocation(stmt.curlyLoc));
   }
   CommentsAndStmt ret = makeCommentsAndStmt(comments, node.release());
   return finishStmt(ret);
@@ -1312,11 +1314,9 @@ CommentsAndStmt ParserContext::buildManageStmt(YYLTYPE location,
                             blockStyle,
                             std::move(stmts));
   builder->noteBlockHeaderLocation(node.get(), convertLocation(locHeader));
-  if (hasCurlyBracesLoc()) {
-    builder->noteCurlyBracesLocation(node.get(), convertLocation(curlyBracesLoc()));
-    resetCurlyBracesLoc();
+  if (isValidCurlyBracesLoc(blockOrDo.cs.curlyLoc)) {
+    builder->noteCurlyBracesLocation(node.get(), convertLocation(blockOrDo.cs.curlyLoc));
   }
-
   CommentsAndStmt ret = makeCommentsAndStmt(comments, node.release());
 
   return ret;
@@ -2268,9 +2268,8 @@ ParserContext::buildBracketLoopStmt(YYLTYPE locLoop,
                                  /*isExpressionLevel*/ false,
                                  this->popLoopAttributeGroup());
   builder->noteLoopHeaderLocation(node.get(), convertLocation(locHeader));
-  if (hasCurlyBracesLoc()) {
-    builder->noteCurlyBracesLocation(node.get(), convertLocation(curlyBracesLoc()));
-    resetCurlyBracesLoc();
+  if (isValidCurlyBracesLoc(cs.curlyLoc)) {
+    builder->noteCurlyBracesLocation(node.get(), convertLocation(cs.curlyLoc));
   }
   return makeCommentsAndStmt(comments, node.release());
 }
@@ -2316,9 +2315,8 @@ CommentsAndStmt ParserContext::buildBracketLoopStmt(YYLTYPE locLoop,
                                  /*isExpressionLevel*/ false,
                                  this->popLoopAttributeGroup());
   builder->noteLoopHeaderLocation(node.get(), convertLocation(locHeader));
-  if (hasCurlyBracesLoc()) {
-    builder->noteCurlyBracesLocation(node.get(), convertLocation(curlyBracesLoc()));
-    resetCurlyBracesLoc();
+  if (isValidCurlyBracesLoc(cs.curlyLoc)) {
+    builder->noteCurlyBracesLocation(node.get(), convertLocation(cs.curlyLoc));
   }
   return makeCommentsAndStmt(comments, node.release());
 }
@@ -2404,9 +2402,8 @@ CommentsAndStmt ParserContext::buildGeneralLoopStmt(YYLTYPE locLoop,
   } else {
     CHPL_ASSERT(result);
     builder->noteLoopHeaderLocation(result, convertLocation(locHeader));
-    if (hasCurlyBracesLoc()) {
-      builder->noteCurlyBracesLocation(result, convertLocation(curlyBracesLoc()));
-      resetCurlyBracesLoc();
+    if (isValidCurlyBracesLoc(blockOrDo.cs.curlyLoc)) {
+      builder->noteCurlyBracesLocation(result, convertLocation(blockOrDo.cs.curlyLoc));
     }
     return makeCommentsAndStmt(comments, result);
   }
@@ -2491,9 +2488,8 @@ CommentsAndStmt ParserContext::buildCoforallLoopStmt(YYLTYPE locCoforall,
                               std::move(body),
                               this->popLoopAttributeGroup());
   builder->noteLoopHeaderLocation(node.get(), convertLocation(locHeader));
-  if (hasCurlyBracesLoc()) {
-    builder->noteCurlyBracesLocation(node.get(), convertLocation(curlyBracesLoc()));
-    resetCurlyBracesLoc();
+  if (isValidCurlyBracesLoc(blockOrDo.cs.curlyLoc)) {
+    builder->noteCurlyBracesLocation(node.get(), convertLocation(blockOrDo.cs.curlyLoc));
   }
 
   return makeCommentsAndStmt(comments, node.release());
@@ -3365,9 +3361,8 @@ ParserContext::buildWhenStmt(YYLTYPE location,
                           blockStyle,
                           std::move(stmtList));
   builder->noteBlockHeaderLocation(node.get(), convertLocation(headerLocation));
-  if (hasCurlyBracesLoc()) {
-    builder->noteCurlyBracesLocation(node.get(), convertLocation(curlyBracesLoc()));
-    resetCurlyBracesLoc();
+  if (isValidCurlyBracesLoc(blockOrDo.cs.curlyLoc)) {
+    builder->noteCurlyBracesLocation(node.get(), convertLocation(blockOrDo.cs.curlyLoc));
   }
 
   CommentsAndStmt cs = makeCommentsAndStmt(comments, node.release());
