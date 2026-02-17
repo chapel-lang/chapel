@@ -1156,8 +1156,6 @@ ParserContext::buildBeginStmt(YYLTYPE location, YYLTYPE locBegin,
   if (hasCurlyBracesLoc()) {
     builder->noteCurlyBracesLocation(node.get(), convertLocation(curlyBracesLoc()));
     resetCurlyBracesLoc();
-  } else {
-    // builder->copyCurlyBracesLocation(stmt.stmt, node.get());
   }
   CommentsAndStmt ret = makeCommentsAndStmt(comments, node.release());
   return finishStmt(ret);
@@ -1317,8 +1315,6 @@ CommentsAndStmt ParserContext::buildManageStmt(YYLTYPE location,
   if (hasCurlyBracesLoc()) {
     builder->noteCurlyBracesLocation(node.get(), convertLocation(curlyBracesLoc()));
     resetCurlyBracesLoc();
-  } else if (!blockOrDo.usesDo) {
-    // builder->copyCurlyBracesLocation(blockOrDo.cs.stmt, node.get());
   }
 
   CommentsAndStmt ret = makeCommentsAndStmt(comments, node.release());
@@ -3372,8 +3368,6 @@ ParserContext::buildWhenStmt(YYLTYPE location,
   if (hasCurlyBracesLoc()) {
     builder->noteCurlyBracesLocation(node.get(), convertLocation(curlyBracesLoc()));
     resetCurlyBracesLoc();
-  } else if (!blockOrDo.usesDo) {
-    // builder->copyCurlyBracesLocation(blockOrDo.cs.stmt, node.get());
   }
 
   CommentsAndStmt cs = makeCommentsAndStmt(comments, node.release());

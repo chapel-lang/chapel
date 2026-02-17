@@ -762,8 +762,6 @@ stmt_base:
     if (context->hasCurlyBracesLoc()) {
       BUILDER->noteCurlyBracesLocation(node.get(), LOC(context->curlyBracesLoc()));
       context->resetCurlyBracesLoc();
-    } else {
-      // BUILDER->copyCurlyBracesLocation($2.stmt, node.get());
     }
     CommentsAndStmt ret = makeCommentsAndStmt(comments, node.release());
     $$ = context->finishStmt(ret);
@@ -840,8 +838,6 @@ tryable_stmt:
     if (context->hasCurlyBracesLoc()) {
       BUILDER->noteCurlyBracesLocation(node.get(), LOC(context->curlyBracesLoc()));
       context->resetCurlyBracesLoc();
-    } else {
-      // BUILDER->copyCurlyBracesLocation($3.stmt, node.get());
     }
     CommentsAndStmt ret = makeCommentsAndStmt(comments, node.release());
     $$ = context->finishStmt(ret);
@@ -867,8 +863,6 @@ tryable_stmt:
     if (context->hasCurlyBracesLoc()) {
       BUILDER->noteCurlyBracesLocation(node.get(), LOC(context->curlyBracesLoc()));
       context->resetCurlyBracesLoc();
-    } else if (!$3.usesDo){
-      // BUILDER->copyCurlyBracesLocation($3.cs.stmt, node.get());
     }
     CommentsAndStmt cs = makeCommentsAndStmt(comments, node.release());
     $$ = context->finishStmt(cs);
@@ -885,8 +879,6 @@ tryable_stmt:
     if (context->hasCurlyBracesLoc()) {
       BUILDER->noteCurlyBracesLocation(node.get(), LOC(context->curlyBracesLoc()));
       context->resetCurlyBracesLoc();
-    } else if (!$2.usesDo){
-      // BUILDER->copyCurlyBracesLocation($2.cs.stmt, node.get());
     }
     CommentsAndStmt cs = makeCommentsAndStmt(comments, node.release());
     $$ = context->finishStmt(cs);
@@ -904,8 +896,6 @@ tryable_stmt:
     if (context->hasCurlyBracesLoc()) {
       BUILDER->noteCurlyBracesLocation(node.get(), LOC(context->curlyBracesLoc()));
       context->resetCurlyBracesLoc();
-    } else if (!$3.usesDo){
-      // BUILDER->copyCurlyBracesLocation($3.cs.stmt, node.get());
     }
     CommentsAndStmt cs = makeCommentsAndStmt(comments, node.release());
     $$ = context->finishStmt(cs);
@@ -923,8 +913,6 @@ tryable_stmt:
     if (context->hasCurlyBracesLoc()) {
       BUILDER->noteCurlyBracesLocation(node.get(), LOC(context->curlyBracesLoc()));
       context->resetCurlyBracesLoc();
-    } else if (!$3.usesDo){
-      // BUILDER->copyCurlyBracesLocation($3.cs.stmt, node.get());
     }
     CommentsAndStmt cs = makeCommentsAndStmt(comments, node.release());
     $$ = context->finishStmt(cs);
@@ -941,8 +929,6 @@ tryable_stmt:
     if (context->hasCurlyBracesLoc()) {
       BUILDER->noteCurlyBracesLocation(node.get(), LOC(context->curlyBracesLoc()));
       context->resetCurlyBracesLoc();
-    } else if (!$2.usesDo){
-      // BUILDER->copyCurlyBracesLocation($2.cs.stmt, node.get());
     }
     CommentsAndStmt cs = makeCommentsAndStmt(comments, node.release());
     $$ = context->finishStmt(cs);
@@ -961,8 +947,6 @@ tryable_stmt:
     if (context->hasCurlyBracesLoc()) {
       BUILDER->noteCurlyBracesLocation(node.get(), LOC(context->curlyBracesLoc()));
       context->resetCurlyBracesLoc();
-    } else {
-      // BUILDER->copyCurlyBracesLocation($2.stmt, node.get());
     }
     CommentsAndStmt ret = makeCommentsAndStmt(comments, node.release());
     $$ = context->finishStmt(ret);
