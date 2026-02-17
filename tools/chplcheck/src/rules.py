@@ -722,7 +722,16 @@ def rules(driver: LintDriver):
         else:
             else_block = node.else_block()
             if else_block is not None:
-                text = range_to_text(else_block.location(), lines)
+                if curly_loc := else_block.curly_braces_location():
+                    loc = curly_loc
+                else:
+                    loc = else_block.location()
+                    if else_kw_loc := node.else_keyword_location():
+                        loc -= else_kw_loc
+                    if else_block.num_stmts() > 0:
+                        # clamp left to the start of the else block statements
+                        loc = loc.clamp_left(else_block.stmt(0).location())
+                text = range_to_text(loc, lines)
             else:
                 text = ""
         # should be set in all branches
