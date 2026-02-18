@@ -96,7 +96,9 @@ chmod 644 $RPM_INSTALL_PREFIX/modulefiles/%{real_name}/.version
 fi
 chmod 755 $RPM_INSTALL_PREFIX/%{set_def_subdir}/set_default_%{real_name}_%{pkg_version}
 
+# Set prefix in TCL modulefile
 sed --in-place "s:\[BASE_INSTALL_DIR\]:$RPM_INSTALL_PREFIX:g" $RPM_INSTALL_PREFIX/modulefiles/%{real_name}/%{pkg_version}
+
 %postun
 if [ $1 == 1 ]
 then
