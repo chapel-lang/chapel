@@ -1,5 +1,6 @@
 import os
 import glob
+import shlex
 import chpl_locale_model
 import chpl_platform
 import chpl_llvm
@@ -79,25 +80,21 @@ def gpu_compiler_basic_compile(compiler: str, lang: str):
     # all we care about is the output
     return stdout
 
-
-def _find_cuda_sdk_path(compiler: str):
+def _find_cuda_variable(compiler: str, variable_name: str):
     out = gpu_compiler_basic_compile(compiler, "cu")
     if not out:
         return None
-    regex = r"^#\$ TOP=(.+)$"
+    regex = r"^#\$ {}=(.+)$".format(variable_name)
     match = re.search(regex, out, re.MULTILINE)
     return match.group(1) if match else None
 
+def _find_cuda_sdk_path(compiler: str):
+    return _find_cuda_variable(compiler, "TOP")
 
 def find_cuda_libdevice_path(compiler: str):
-    out = gpu_compiler_basic_compile(compiler, "cu")
-    if not out:
+    libdevice_path = _find_cuda_variable(compiler, "NVVMIR_LIBRARY_DIR")
+    if not libdevice_path:
         return None
-    regex = r"^#\$ NVVMIR_LIBRARY_DIR=(.+)$"
-    match = re.search(regex, out, re.MULTILINE)
-    if not match:
-        return None
-    libdevice_path = match.group(1)
     # there can be multiple libdevices for multiple compute architectures. Not
     # sure how realistic that is, nor I see multiple instances in the systems I
     # have access to. They are always named `libdevice.10.bc`, but I just want
@@ -424,6 +421,15 @@ def get_runtime_compile_args():
 
         # workaround an issue with __float128 not being supported by clang in device code
         system.append("-D__STRICT_ANSI__=1")
+
+        # add includes and system includes from nvcc
+        gpu = GPU_TYPES[gpu_type]
+        includes = _find_cuda_variable(gpu.compiler, "INCLUDES")
+        if includes:
+            system.append(shlex.split(includes))
+        system_includes = _find_cuda_variable(gpu.compiler, "SYSTEM_INCLUDES")
+        if system_includes:
+            system.append(shlex.split(system_includes))
 
         major_version, minor_version = get_sdk_version().split(".")[:2]
         bundled.append("-DCHPL_CUDA_VERSION_MAJOR=" + major_version)
