@@ -560,7 +560,7 @@ def _validate_rocm_version_impl():
         return False
 
     if not is_ver_in_range(rocm_version, MIN_REQ_VERSION, MAX_REQ_VERSION) and not is_ver_in_range(rocm_version, MIN_ROCM6_REQ_VERSION, MAX_ROCM6_REQ_VERSION):
-        _reportMissingGpuReq(
+        warning(
             "Chapel requires ROCm versions %s to %s or %s to %s, "
             "detected version %s on system." %
             (MIN_REQ_VERSION, MAX_REQ_VERSION_NICE, MIN_ROCM6_REQ_VERSION, MAX_ROCM6_REQ_VERSION_NICE, rocm_version))
