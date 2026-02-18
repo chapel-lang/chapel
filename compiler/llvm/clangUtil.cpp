@@ -4966,7 +4966,7 @@ static void makeBinaryLLVMForHIP(const std::string& artifactFilename,
   // So this loop should run exactly one iteration.
   INT_ASSERT(gpuArches.size() == 1);
 
-  std::string targets = "-targets=host-x86_64-unknown-linux";
+  std::string targets = "-targets=host-x86_64-unknown-linux-unknown";
 #if HAVE_LLVM_VER >= 150
   std::string inputs = "-input=/dev/null ";
   std::string outputs = "-output=" + fatbinFilename;
