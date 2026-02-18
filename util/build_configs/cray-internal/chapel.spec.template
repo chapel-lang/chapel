@@ -99,8 +99,8 @@ chmod 755 $RPM_INSTALL_PREFIX/%{set_def_subdir}/set_default_%{real_name}_%{pkg_v
 # Set prefix in TCL modulefile
 sed --in-place "s:\[BASE_INSTALL_DIR\]:$RPM_INSTALL_PREFIX:g" $RPM_INSTALL_PREFIX/modulefiles/%{real_name}/%{pkg_version}
 # Set prefix in Lua modulefiles
-for lmod_compiler in %{lmod_tgt_compilers} ; do
-  sed --in-place "s:\[BASE_INSTALL_DIR\]:$RPM_INSTALL_PREFIX:g" $RPM_BUILD_ROOT/%{lmod_prefix}/$lmod_compiler/%{lmod_suffix}/%{real_name}/%{pkg_version}.lua
+for f in %{lmod_prefix}/*/*/%{lmod_suffix}/%{real_name}/%{pkg_version}.lua ; do
+  sed --in-place "s:\[BASE_INSTALL_DIR\]:$RPM_INSTALL_PREFIX:g" $f
 done
 
 %postun
