@@ -39,6 +39,7 @@
 #define CHPL_PARTITION_FLAG "--partition"
 #define CHPL_EXCLUDE_FLAG "--exclude"
 #define CHPL_GPUS_PER_NODE_FLAG "--gpus-per-node"
+#define CHPL_LAUNCHER_PASSTHROUGH_FLAG "--system-launcher-flags"
 
 
 static char* debug = NULL;
@@ -49,6 +50,8 @@ static char* partition = NULL;
 static char* reservation = NULL;
 static char* exclude = NULL;
 static char* gpusPerNode = NULL;
+static char** launcherPassthroughFlags = NULL;
+static int numLauncherPassthroughFlags = 0;
 
 char* slurmFilename = NULL;
 
@@ -92,6 +95,13 @@ static int nomultithread(int batch) {
   if (batch && (hint = getenv("SBATCH_HINT")) && strcmp(hint, "nomultithread") == 0)
     return 1;
   return 0;
+}
+
+static void appendPassthroughFlag(char*** array, int* size, const char* flag) {
+  *array = (char**)chpl_mem_realloc(*array, (*size + 1) * sizeof(char*),
+                                    CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
+  (*array)[*size] = (char*)string_copy((char*)flag, -1, 0);
+  (*size)++;
 }
 
 
@@ -310,6 +320,12 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     gpusPerNode = getenv("CHPL_LAUNCHER_GPUS_PER_NODE");
   }
 
+  // append any user specified passthrough flags to the list of flags to pass through
+  char* passthroughFlagsEnv = getenv("CHPL_LAUNCHER_PASSTHROUGH_FLAGS");
+  if (passthroughFlagsEnv) {
+    appendPassthroughFlag(&launcherPassthroughFlags, &numLauncherPassthroughFlags, passthroughFlagsEnv);
+  }
+
   reservation = getenv("SLURM_RESERVATION");
 
   // request exclusive node access by default, but allow user to override
@@ -444,6 +460,13 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     // set the account name if one was provided
     if (account && strlen(account) > 0) {
       fprintf(slurmFile, "#SBATCH --account=%s\n", account);
+    }
+
+    // add any additional flags
+    if (launcherPassthroughFlags != NULL) {
+      for (i = 0; i < numLauncherPassthroughFlags; i++) {
+        fprintf(slurmFile, "#SBATCH %s\n", launcherPassthroughFlags[i]);
+      }
     }
 
     // set the output file name to either the user specified
@@ -616,6 +639,13 @@ static char* chpl_launch_create_command(int argc, char* argv[],
       chpl_append_to_cmd(&iCom, &len, "--account=%s ", account);
     }
 
+    // add any additional flags
+    if (launcherPassthroughFlags != NULL) {
+      for (i = 0; i < numLauncherPassthroughFlags; i++) {
+        chpl_append_to_cmd(&iCom, &len, "%s ", launcherPassthroughFlags[i]);
+      }
+    }
+
     // add the (possibly wrapped) binary name
     chpl_append_to_cmd(&iCom, &len, "%s %s ",
         chpl_get_real_binary_wrapper(), chpl_get_real_binary_name());
@@ -712,8 +742,8 @@ int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
   if (!strcmp(argv[argNum], CHPL_WALLTIME_FLAG)) {
     walltime = argv[argNum+1];
     return 2;
-  } else if (!strncmp(argv[argNum], CHPL_WALLTIME_FLAG"=", strlen(CHPL_WALLTIME_FLAG))) {
-    walltime = &(argv[argNum][strlen(CHPL_WALLTIME_FLAG)+1]);
+  } else if (!strncmp(argv[argNum], CHPL_WALLTIME_FLAG"=", strlen(CHPL_WALLTIME_FLAG"="))) {
+    walltime = &(argv[argNum][strlen(CHPL_WALLTIME_FLAG"=")]);
     return 1;
   }
 
@@ -721,8 +751,8 @@ int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
   if (!strcmp(argv[argNum], CHPL_NODELIST_FLAG)) {
     nodelist = argv[argNum+1];
     return 2;
-  } else if (!strncmp(argv[argNum], CHPL_NODELIST_FLAG"=", strlen(CHPL_NODELIST_FLAG))) {
-    nodelist = &(argv[argNum][strlen(CHPL_NODELIST_FLAG)+1]);
+  } else if (!strncmp(argv[argNum], CHPL_NODELIST_FLAG"=", strlen(CHPL_NODELIST_FLAG"="))) {
+    nodelist = &(argv[argNum][strlen(CHPL_NODELIST_FLAG"=")]);
     return 1;
   }
 
@@ -730,8 +760,8 @@ int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
   if (!strcmp(argv[argNum], CHPL_PARTITION_FLAG)) {
     partition = argv[argNum+1];
     return 2;
-  } else if (!strncmp(argv[argNum], CHPL_PARTITION_FLAG"=", strlen(CHPL_PARTITION_FLAG))) {
-    partition = &(argv[argNum][strlen(CHPL_PARTITION_FLAG)+1]);
+  } else if (!strncmp(argv[argNum], CHPL_PARTITION_FLAG"=", strlen(CHPL_PARTITION_FLAG"="))) {
+    partition = &(argv[argNum][strlen(CHPL_PARTITION_FLAG"=")]);
     return 1;
   }
 
@@ -739,8 +769,8 @@ int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
   if (!strcmp(argv[argNum], CHPL_EXCLUDE_FLAG)) {
     exclude = argv[argNum+1];
     return 2;
-  } else if (!strncmp(argv[argNum], CHPL_EXCLUDE_FLAG"=", strlen(CHPL_EXCLUDE_FLAG))) {
-    exclude = &(argv[argNum][strlen(CHPL_EXCLUDE_FLAG)+1]);
+  } else if (!strncmp(argv[argNum], CHPL_EXCLUDE_FLAG"=", strlen(CHPL_EXCLUDE_FLAG"="))) {
+    exclude = &(argv[argNum][strlen(CHPL_EXCLUDE_FLAG"=")]);
     return 1;
   }
 
@@ -748,8 +778,17 @@ int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
   if (!strcmp(argv[argNum], CHPL_GPUS_PER_NODE_FLAG)) {
     gpusPerNode = argv[argNum+1];
     return 2;
-  } else if (!strncmp(argv[argNum], CHPL_GPUS_PER_NODE_FLAG"=", strlen(CHPL_GPUS_PER_NODE_FLAG))) {
-    gpusPerNode = &(argv[argNum][strlen(CHPL_GPUS_PER_NODE_FLAG)+1]);
+  } else if (!strncmp(argv[argNum], CHPL_GPUS_PER_NODE_FLAG"=", strlen(CHPL_GPUS_PER_NODE_FLAG"="))) {
+    gpusPerNode = &(argv[argNum][strlen(CHPL_GPUS_PER_NODE_FLAG"=")]);
+    return 1;
+  }
+
+  // handle --system-launcher-flags <flags> or --system-launcher-flags=<flags>
+  if (!strcmp(argv[argNum], CHPL_LAUNCHER_PASSTHROUGH_FLAG)) {
+    appendPassthroughFlag(&launcherPassthroughFlags, &numLauncherPassthroughFlags, argv[argNum+1]);
+    return 2;
+  } else if (!strncmp(argv[argNum], CHPL_LAUNCHER_PASSTHROUGH_FLAG"=", strlen(CHPL_LAUNCHER_PASSTHROUGH_FLAG"="))) {
+    appendPassthroughFlag(&launcherPassthroughFlags, &numLauncherPassthroughFlags, &(argv[argNum][strlen(CHPL_LAUNCHER_PASSTHROUGH_FLAG"=")]));
     return 1;
   }
 
@@ -802,6 +841,13 @@ const argDescTuple_t* chpl_launch_get_help(void) {
       },
       { "",
         "(or use $CHPL_LAUNCHER_GPUS_PER_NODE)"
+      },
+      {
+        CHPL_LAUNCHER_PASSTHROUGH_FLAG " <flags>",
+        "specify additional flags to pass through to the launcher"
+      },
+      { "",
+        "(or use $CHPL_LAUNCHER_PASSTHROUGH_FLAGS)"
       },
       { NULL, NULL },
     };

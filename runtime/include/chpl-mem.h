@@ -159,8 +159,7 @@ void chpl_mem_free(void* memAlloc, int32_t lineno, int32_t filename) {
 
 // Provide handles to instrument Chapel calls to memcpy and memmove
 static inline
-void* chpl_memcpy(void* dest, const void* src, size_t num)
-{
+void* chpl_memcpy(void* dest, const void* src, size_t num) {
   assert(dest != src || num == 0);
   assert(dest != NULL && src != NULL);
   return memcpy(dest, src, num);
