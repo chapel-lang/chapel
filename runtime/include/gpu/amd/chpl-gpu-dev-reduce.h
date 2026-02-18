@@ -30,6 +30,14 @@
 // if we include this all the time, we get unused function errors
 #include <hipcub/hipcub.hpp>
 
+#if (ROCM_VERSION_MAJOR == 6 && ROCM_VERSION_MINOR >= 3) || ROCM_VERSION_MAJOR > 6
+// TempStorage is marked deprecated, but I can't seem to find an alternative
+// the rocm docs do not mention the deprecation and I can't find proper docs
+// for the new API that the warning refers to
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+#endif
+
 //
 // TODO use chpl-gpu-reduce-util instead, or add these there
 #define GPU_DEV_REDUCE_SPECS(MACRO, impl_kind, chpl_kind, data_type) \
@@ -90,5 +98,9 @@ GPU_DEV_REDUCE(DEF_ONE_DEV_REDUCE_RET_VAL, Min, min);
 GPU_DEV_REDUCE(DEF_ONE_DEV_REDUCE_RET_VAL, Max, max);
 
 #undef DEF_ONE_DEV_REDUCE_RET_VAL
+
+#if (ROCM_VERSION_MAJOR == 6 && ROCM_VERSION_MINOR >= 3) || ROCM_VERSION_MAJOR > 6
+#pragma clang diagnostic pop
+#endif
 
 #endif  // _CHPL_GPU_DEV_REDUCE_H
