@@ -59,17 +59,16 @@ proc masonRun(args: [] string) throws {
   var execopts = new list(passArgs.values());
 
 
-  if exampleOpts._present && !exampleOpts.hasValue()
-    && args.size == 2 {
+  if exampleOpts._present &&
+    (!exampleOpts.hasValue() || exampleOpts.value().startsWith("-")) {
     // when mason run --example called
     printAvailableExamples();
-    exit(0);
   } else if exampleOpts._present || buildFlag.valueAsBool() {
     // --example with value or build flag
     masonBuildRun(args);
-    exit(0);
+  } else {
+    runProjectBinary(show, release, execopts);
   }
-  runProjectBinary(show, release, execopts);
 }
 
 proc runProjectBinary(show: bool, release: bool,
@@ -173,7 +172,7 @@ private proc masonBuildRun(args: [] string) throws {
 
   if example {
     // add expected arguments for masonExample
-    execopts.insert(0,["example", "--example"]);
+    execopts.insert(0, ["example", "--example"]);
     for val in exampleOpts.values() do execopts.pushBack(val);
     if !buildExample then execopts.pushBack("--no-build");
     if release then execopts.pushBack("--release");

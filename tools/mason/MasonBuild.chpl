@@ -73,7 +73,14 @@ proc masonBuild(args: [] string) throws {
   var skipUpdate = MASON_OFFLINE;
 
   // when --example provided with or without a value
-  if exampleOpts._present then example = true;
+  if exampleOpts._present {
+    example = true;
+    if !exampleOpts.hasValue() || exampleOpts.value().startsWith("-") {
+      // when mason build --example called
+      printAvailableExamples();
+      return;
+    }
+  }
 
   if updateFlag.hasValue() {
     if updateFlag.valueAsBool() then skipUpdate = false;
@@ -93,7 +100,7 @@ proc masonBuild(args: [] string) throws {
     if release then compopts.pushBack("--release");
     if force then compopts.pushBack("--force");
     // add expected arguments for masonExample
-    compopts.insert(0,["example", "--example"]);
+    compopts.insert(0, ["example", "--example"]);
     masonExample(compopts.toArray());
   }
   else {
