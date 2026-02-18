@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+# asserts in a GPU kernel may segfault on exit
+grep -v 'Segmentation fault' $2 >$2.tmp
+mv $2.tmp $2
