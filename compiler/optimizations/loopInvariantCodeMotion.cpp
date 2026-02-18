@@ -935,10 +935,21 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants,
     // For GPU-bound loops, relax this restriction and say that changing things
     // passed to a kernel by reference from underneath the kernel is undefined
     // behavior.
+    //
+    // For anything with intent 'const' where that 'const' is concretized to
+    // 'const ref', we can relax this restriction and say that changing things
+    // from underneath it are undefined behavior
+    // https://chapel-lang.org/docs/language/spec/procedures.html#the-const-intent
     auto isArray = symExpr->typeInfo() &&
                    (symExpr->typeInfo()->symbol->hasFlag(FLAG_ARRAY) ||
                     isArrayClass(symExpr->typeInfo()));
-    if (!isGpuBound || !isArray) {
+    bool declaredWithConstIntent = false;
+    if (auto argSym = toArgSymbol(symExpr->symbol())) {
+      declaredWithConstIntent = argSym->intent == INTENT_CONST_REF &&
+                                (argSym->originalIntent == INTENT_CONST ||
+                                 argSym->originalIntent == INTENT_BLANK);
+    }
+    if (!declaredWithConstIntent && (!isGpuBound || !isArray)) {
       if (isArgSymbol(symExpr->symbol()) &&
           symExpr->getValType()->symbol->hasFlag(FLAG_ITERATOR_CLASS) == false) {
         if(ArgSymbol* argSymbol = toArgSymbol(symExpr->symbol())) {
@@ -1093,16 +1104,11 @@ static bool defDominatesAllUses(Loop* loop, SymExpr* def, std::vector<BitVec*>& 
  *
  */
 static bool defDominatesAllExits(Loop* loop, SymExpr* def, std::vector<BitVec*>& dominators, std::map<SymExpr*, int>& localMap) {
-  // Strictly speaking, the below early return is equally valid off-GPU.
-  // However, just for the time being, only apply it to GPUs to minimize
-  // the possible negative impact.
-  if (loop->isGpuBound()) {
-    if (def->symbol()->defPoint != nullptr &&
-        LoopStmt::findEnclosingLoop(def->symbol()->defPoint) == loop->getLoopAST()) {
-      // If the symbol-to-hoist is defined inside a loop, no reason to worry about
-      // loop exits, since it can't be referenced outside.
-      return true;
-    }
+  if (def->symbol()->defPoint != nullptr &&
+      LoopStmt::findEnclosingLoop(def->symbol()->defPoint) == loop->getLoopAST()) {
+    // If the symbol-to-hoist is defined inside a loop, no reason to worry about
+    // loop exits, since it can't be referenced outside.
+    return true;
   }
 
   int defBlock = localMap[def];
