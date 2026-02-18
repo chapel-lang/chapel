@@ -35,7 +35,7 @@
 // the rocm docs do not mention the deprecation and I can't find proper docs
 // for the new API that the warning refers to
 #pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+#pragma clang diagnostic ignored "-Wno-deprecated-declarations"
 #endif
 
 //
