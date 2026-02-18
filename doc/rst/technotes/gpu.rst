@@ -710,7 +710,7 @@ marked with * are covered in our nightly testing configurations.
 
   * Hardware: MI60, MI100 and MI250X*
 
-  * Software:ROCm 5.4, 6.0, 6.1, 6.2*
+  * Software:ROCm 5.4, 6.0, 6.1, 6.2*, 6.3*
 
 
 GPU Support on Windows Subsystem for Linux
