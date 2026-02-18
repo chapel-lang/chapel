@@ -3029,6 +3029,17 @@ static void helpComputeClangArgs(std::string& clangCC,
   }
 #endif
 
+#if HAVE_LLVM_VER >= 210
+  if (usingGpuLocaleModel() &&
+      getGpuCodegenType() == GpuCodegenType::GPU_CG_AMD_HIP) {
+    // this is need to make hipcub wrappers work since
+    // TempStorage is marked deprecated, but I can't seem to find an alternative
+    // the rocm docs do not mention the deprecation and I can't find proper docs
+    // for the new API that the warning refers to
+    clangCCArgs.push_back("-Wno-deprecated-declarations");
+  }
+#endif
+
   // Add debug flags
   if (fDebugSymbols) {
     clangCCArgs.push_back("-g");
