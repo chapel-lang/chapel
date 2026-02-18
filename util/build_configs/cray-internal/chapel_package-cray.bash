@@ -189,7 +189,6 @@ fi
 
 log_debug "Generate modulefile-$pkg_version ..."
 $cwd/process-template.py pkg_version="$pkg_version" \
-                         platform_prefix="$platform_prefix" \
 			 --template $cwd/chapel.modulefile.tcl.template \
 			 --output $rpmbuild_dir/modulefile-$pkg_version
 chmod 644 "$rpmbuild_dir/modulefile-$pkg_version"
