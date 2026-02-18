@@ -1,1 +1,3 @@
 COMPOPTS <= --baseline
+COMPOPTS <= --fast
+CHPL_COMM!=none
