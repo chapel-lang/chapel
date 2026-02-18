@@ -589,11 +589,10 @@ def _validate_cuda_version_impl():
         return False
 
     if not is_ver_in_range(cuda_version, MIN_REQ_VERSION, MAX_REQ_VERSION):
-        _reportMissingGpuReq(
+        warning(
             "Chapel requires a CUDA version between %s and %s, "
-            "detected version %s on system."
-            % (MIN_REQ_VERSION, MAX_REQ_VERSION, cuda_version)
-        )
+            "detected version %s on system." %
+            (MIN_REQ_VERSION, MAX_REQ_VERSION, cuda_version))
         return False
 
     # CUDA 12 requires the bundled LLVM or the major LLVM version must be >15
@@ -614,6 +613,19 @@ def _validate_cuda_version_impl():
                     allowExempt=False,
                 )
                 return False
+
+    # CUDA 13 requires LLVM 21+
+    if is_ver_in_range(cuda_version, "13", "14"):
+        llvm_ver_str = int(chpl_llvm.get_llvm_version())
+        if llvm_ver_str < 21:
+            _reportMissingGpuReq(
+                "LLVM versions before 21 do not support CUDA 13. "
+                "Your LLVM version is {}".format(llvm_ver_str),
+                suggestNone=False,
+                allowExempt=False,
+            )
+            return False
+
 
     return True
 
