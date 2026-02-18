@@ -426,10 +426,10 @@ def get_runtime_compile_args():
         gpu = GPU_TYPES[gpu_type]
         includes = _find_cuda_variable(gpu.compiler, "INCLUDES")
         if includes:
-            system.append(shlex.split(includes))
+            system.extend(shlex.split(includes))
         system_includes = _find_cuda_variable(gpu.compiler, "SYSTEM_INCLUDES")
         if system_includes:
-            system.append(shlex.split(system_includes))
+            system.extend(shlex.split(system_includes))
 
         major_version, minor_version = get_sdk_version().split(".")[:2]
         bundled.append("-DCHPL_CUDA_VERSION_MAJOR=" + major_version)
