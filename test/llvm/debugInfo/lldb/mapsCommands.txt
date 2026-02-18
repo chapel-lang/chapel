@@ -1,0 +1,36 @@
+r
+
+p myIntMap
+v myIntMap[1]
+e -- myIntMap.add(8, 9)
+p myIntMap
+c
+
+p myRealMap
+v myRealMap[1]
+v myRealMap[1].key
+v myRealMap[1].val
+c
+
+p myRecMap
+v myRecMap[2]
+v myRecMap[2].val.y
+c
+
+p myStrMap
+v myStrMap[0]
+c
+
+p myOwnedClassMap
+v myOwnedClassMap[2]
+v myOwnedClassMap[2].key
+v myOwnedClassMap[2].val.a
+c
+
+p myClassMap
+v myClassMap[2]
+v *myClassMap[2].val
+v myClassMap[2].val->b
+c
+
+q
