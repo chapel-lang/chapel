@@ -1,5 +1,5 @@
 
-proc loop (A, B, C, D, E, F, n) {
+proc loop (ref A, B, ref C, D, ref E, F, n) {
   foreach i in 1..n {
     A[i] = 3*B[i];
     foreach j in 1..n {

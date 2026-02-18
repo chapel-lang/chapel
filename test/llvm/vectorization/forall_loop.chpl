@@ -1,5 +1,5 @@
 //Check whether vectorization occurs for forall loop
-proc loop (A, B) {
+proc loop (ref A, B) {
   forall i in 0..511 {
       A[i] = B[i]*3;
   }
