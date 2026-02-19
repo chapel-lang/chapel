@@ -43,124 +43,117 @@ proc masonPublish(args: [] string) throws {
 
   var parser = new argumentParser(helpHandler=new MasonPublishHelpHandler());
 
-  var dryFlag = parser.addFlag(name="dry-run",
-                               defaultValue=false);
+  var dryFlag = parser.addFlag(name="dry-run", defaultValue=false);
   var createFlag = parser.addFlag(name="create-registry",
-                                  opts=["-c","--create-registry"],
-                                  defaultValue=false);
-
+                                opts=["-c", "--create-registry"],
+                                defaultValue=false);
   var checkArg = parser.addFlag(name="check", defaultValue=false);
   var ciFlag = parser.addFlag(name="ci-check", defaultValue=false);
   var updateFlag = parser.addFlag(name="update", flagInversion=true);
   var registryArg = parser.addArgument(name="registry", numArgs=0..1);
-
   var refreshLicenseFlag = parser.addFlag(name="refresh-licenses",
                                           defaultValue=false);
-
   parser.parseArgs(args);
+  var dry = dryFlag.valueAsBool();
+  var checkFlag = checkArg.valueAsBool();
+  var refreshLicenses = refreshLicenseFlag.valueAsBool();
+  var registryPath = "";
+  if registryArg.hasValue() then registryPath = registryArg.value();
+  var username = getUsername();
+  var isLocal = false;
+  var ci = ciFlag.valueAsBool();
+  var update = false;
+  var noUpdate = false;
+  var skipUpdate = MASON_OFFLINE;
+  if updateFlag.hasValue() {
+    update = updateFlag.valueAsBool();
+    noUpdate = !update;
+    skipUpdate = !update;
+  }
+  var createReg = createFlag.valueAsBool();
 
-  try! {
-    var dry = dryFlag.valueAsBool();
-    var checkFlag = checkArg.valueAsBool();
-    var refreshLicenses = refreshLicenseFlag.valueAsBool();
-    var registryPath = "";
-    if registryArg.hasValue() then registryPath = registryArg.value();
-    var username = getUsername();
-    var isLocal = false;
-    var ci = ciFlag.valueAsBool();
-    var update = false;
-    var noUpdate = false;
-    var skipUpdate = MASON_OFFLINE;
-    if updateFlag.hasValue() {
-      update = updateFlag.valueAsBool();
-      noUpdate = !update;
-      skipUpdate = !update;
+  const badSyntaxMessage =
+  'Arguments do not follow "mason publish [options] <registry>" syntax';
+
+
+  if refreshLicenses {
+    writeln("Force updating list of valid license names from SPDX repo...");
+    refreshLicenseList(true);
+    writeln("Done updating license list");
+    exit(0);
+  }
+
+  if createReg {
+    var pathReg = registryPath;
+    if !isDir(pathReg) then
+      mkdir(pathReg);
+    else
+      throw new owned MasonError("Registry already exists at %s"
+                                .format(pathReg));
+    if !isDir(pathReg + '/Bricks') then
+      mkdir(pathReg + '/Bricks');
+    if !isDir(pathReg + '/README.md') then
+      touch(pathReg + '/README.md');
+    if !isDir(pathReg + '/.git') {
+      gitC(pathReg, 'git init -q');
+      gitC(pathReg, 'git add .');
+      gitC(pathReg,
+           'git commit -q -m "initialized registry"');
     }
-    var createReg = createFlag.valueAsBool();
+    const absPathReg = Path.absPath(pathReg);
+    writeln("Initialized local registry at %s".format(pathReg));
+    writeln("Add this registry to MASON_REGISTRY environment variable "
+        + "to include it in search path:");
 
-    const badSyntaxMessage =
-      'Arguments do not follow "mason publish [options] <registry>" syntax';
+    writeln('   export MASON_REGISTRY="%s|%s,%s|%s"'
+        .format("mason-registry",
+                regUrl,
+                basename(pathReg),
+                absPathReg));
 
-    if refreshLicenses {
-      writeln("Force updating list of valid license names from SPDX repo...");
-      refreshLicenseList(true);
-      writeln("Done updating license list");
-      exit(0);
+  }
+
+  if registryPath.isEmpty() {
+    registryPath = MASON_HOME;
+  } else {
+    isLocal = isRegistryPathLocal(registryPath);
+  }
+
+  if checkFlag || ci {
+    if ci then check(registryPath, ci);
+    else {
+      check(registryPath, ci);
     }
+  }
 
-    if createReg {
-      var pathReg = registryPath;
-      try! {
-        if !isDir(pathReg)
-          then mkdir(pathReg);
-        else
-          throw new MasonError("Registry already exists at %s".format(pathReg));
-        if !isDir(pathReg + '/Bricks') then mkdir(pathReg + '/Bricks');
-        if !isDir(pathReg + '/README.md') then touch(pathReg + '/README.md');
-        if !isDir(pathReg + '/.git') {
-          gitC(pathReg, 'git init -q');
-          gitC(pathReg, 'git add .');
-          gitC(pathReg, ['git','commit', '-q', '-m',' "initialized registry"']);
-        }
-        const absPathReg = Path.absPath(pathReg);
-        writeln("Initialized local registry at %s".format(pathReg));
-        writeln("Add this registry to MASON_REGISTRY environment variable to " +
-                "include it in search path:");
-        writeln('   export MASON_REGISTRY="%s|%s,%s|%s"'
-          .format("mason-registry",regUrl, basename(pathReg), absPathReg));
-        exit(0);
-      }
-      catch e: MasonError {
-        writeln(e.message());
-        exit(1);
-      }
-    }
+  if ((MASON_OFFLINE  && !update) || noUpdate) && !falseIfRemotePath() {
+    if !isLocal then
+      throw new MasonError('You cannot publish to a remote repository ' +
+                           'when MASON_OFFLINE is set to true or ' +
+                           '"--no-update" is passed, override with --update');
+    else
+      updateRegistry(skipUpdate);
+  }
 
-    if registryPath.isEmpty() {
-      registryPath = MASON_HOME;
-    } else {
-      isLocal = isRegistryPathLocal(registryPath);
-    }
+  if !isLocal && !doesGitOriginExist() && !dry {
+    throw new MasonError('Your package must have a git origin remote ' +
+                         'in order to publish to a remote registry.');
+  }
 
-    if checkFlag || ci {
-      if ci then check(registryPath, ci);
-      else {
-        check(registryPath, ci);
-      }
-    }
-
-    if ((MASON_OFFLINE  && !update) || noUpdate) && !falseIfRemotePath() {
-      if !isLocal then
-        throw new MasonError('You cannot publish to a remote repository ' +
-                             'when MASON_OFFLINE is set to true or ' +
-                             '"--no-update" is passed, override with --update');
-      else
-        updateRegistry(skipUpdate);
-    }
-
-    if !isLocal && !doesGitOriginExist() && !dry {
-      throw new MasonError('Your package must have a git origin remote ' +
-                           'in order to publish to a remote registry.');
-    }
-
-    if checkRegistryPath(registryPath, isLocal) {
-      if dry {
-        dryRun(username, registryPath, true);
-      }
-      else {
-        publishPackage(username, registryPath, isLocal);
-      }
+  if checkRegistryPath(registryPath, isLocal) {
+    if dry {
+      dryRun(username, registryPath, true);
     }
     else {
-      writeln(badSyntaxMessage);
-      writeln('See "mason publish -h" for more details');
-      exit(0);
+      publishPackage(username, registryPath, isLocal);
     }
   }
-  catch e : MasonError {
-    writeln(e.message());
-    exit(1);
+  else {
+    writeln(badSyntaxMessage);
+    writeln('See "mason publish -h" for more details');
+    exit(0);
   }
+
 }
 
 /* creates a file at a given path */
