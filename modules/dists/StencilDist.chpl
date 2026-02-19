@@ -1340,7 +1340,7 @@ proc StencilDom.setup() {
 
       myLocDom.myBlock = dist.getChunk(whole, localeIdx);
 
-      if !isZeroTuple(fluff) && myLocDom.myBlock.sizeAs(int) != 0 then {
+      if !isZeroTuple(fluff) && myLocDom.myBlock.sizeAs(int) != 0 {
         myLocDom.myFluff = myLocDom.myBlock.expand(fluff*abstr);
       } else {
         myLocDom.myFluff = myLocDom.myBlock;
