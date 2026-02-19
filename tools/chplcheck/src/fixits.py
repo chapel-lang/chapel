@@ -66,6 +66,9 @@ class Edit:
             location["path"], location["start"], location["end"], data["text"]
         )
 
+    def __str__(self) -> str:
+        return f"Edit(location='{self.path}:{self.start[0]}:{self.start[1]}-{self.end[0]}:{self.end[1]}', text='{self.text}')"
+
 
 @dataclass
 class Fixit:

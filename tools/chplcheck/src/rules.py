@@ -19,6 +19,7 @@
 
 import re
 import typing
+import functools
 
 import chapel
 from chapel import *
@@ -216,7 +217,7 @@ def rules(driver: LintDriver):
     @driver.basic_rule(SimpleBlockLike)
     @driver.basic_rule(When)
     def DoKeywordAndBlock(
-        context: Context, node: typing.Union[Loop, SimpleBlockLike]
+        context: Context, node: typing.Union[Loop, SimpleBlockLike, When]
     ):
         """
         Warn for redundant 'do' keyword before a curly brace '{'.
@@ -258,6 +259,40 @@ def rules(driver: LintDriver):
         new_text = header_text + sep + body_text
         fixit = Fixit.build(Edit.build(node.location(), new_text))
         return fixit
+
+    @driver.basic_rule(Conditional)
+    def ThenKeywordAndBlock(context: Context, node: Conditional):
+        """
+        Warn for redundant 'then' keyword before a curly brace '{'.
+        """
+
+        if (
+            node.then_keyword_location() is not None
+            and node.then_block().curly_braces_location() is not None
+        ):
+            return BasicRuleResult(node, ignorable=False)
+        return True
+
+    @driver.fixit(ThenKeywordAndBlock)
+    def RemoveUnnecessaryThen(context: Context, result: BasicRuleResult):
+        """
+        Remove the redundant 'then' keyword before a curly brace '{'.
+        """
+        node = result.node
+        assert isinstance(node, Conditional)
+        lines = chapel.get_file_lines(context, node)
+
+        len_kw_loc = node.then_keyword_location()
+        curly_loc = node.then_block().curly_braces_location()
+        assert len_kw_loc is not None and curly_loc is not None
+
+        loc = len_kw_loc + curly_loc - curly_loc
+        text = range_to_text(loc, lines)
+        if text.strip() != "then":
+            # if the text in this location isn't just 'then', other text
+            # is in the way (ie a comment)
+            return None
+        return Fixit.build(Edit.build(loc, ""))
 
     @driver.basic_rule(set((Loop, Conditional)))
     def ControlFlowParentheses(
@@ -321,6 +356,313 @@ def rules(driver: LintDriver):
             new_text += " "
 
         return [Fixit.build(Edit.build(paren_loc, new_text))]
+
+    def build_unattached_fixit(
+        lines: List[str],
+        loc: typing.Union[
+            Location, typing.Tuple[chapel.Location, chapel.Location]
+        ],
+    ):
+        if isinstance(loc, Location):
+            blank_loc = loc
+        else:
+            assert isinstance(loc, tuple) and len(loc) == 2
+            before_loc, after_loc = loc
+            full_loc = before_loc + after_loc
+            blank_loc = full_loc - after_loc - before_loc
+
+        blank_text = range_to_text(blank_loc, lines)
+        if blank_text.strip() == "":
+            return Fixit.build(Edit.build(blank_loc, " "))
+        else:
+            return None
+
+    def check_for_unattached(
+        context: chapel.Context,
+        node: chapel.AstNode,
+        before_loc: chapel.Location,
+        after_loc: chapel.Location,
+        ResultType: typing.Callable,
+        lines: typing.Optional[List[str]] = None,
+    ):
+        if lines is None:
+            lines = chapel.get_file_lines(context, node)
+        res = None
+        # the lines must be the same or on the same line with only 1 space in between
+        if (
+            before_loc.end()[0] != after_loc.start()[0]
+            or before_loc.end()[1] != after_loc.start()[1] - 1
+        ):
+            fixit = build_unattached_fixit(lines, (before_loc, after_loc))
+            res = ResultType(node, fixits=fixit)
+        return res
+
+    @driver.basic_rule(chapel.Conditional)
+    def UnattachedElse(context: Context, node: chapel.Conditional):
+        """
+        Warn for 'else' blocks that do not start on the same line as the closing brace of the 'then' block.
+        """
+
+        # skip if the if statement has no braces
+        if node.then_block().curly_braces_location() is None:
+            return True
+
+        # skip expressions
+        if node.is_expression_level():
+            return True
+
+        then_block_loc = node.then_block().location()
+        else_kw_loc = node.else_keyword_location()
+        if else_kw_loc is None:
+            return True
+
+        else_block = node.else_block()
+        assert else_block is not None
+
+        res = check_for_unattached(
+            context,
+            else_block,
+            then_block_loc,
+            else_kw_loc,
+            functools.partial(BasicRuleResult, ignorable=False),
+        )
+        return res if res is not None else True
+
+    @driver.basic_rule(chapel.Catch)
+    def UnattachedCatch(context: Context, node: chapel.Catch):
+        """
+        Warn for 'catch' blocks that do not start on the same line as the closing brace of the 'try' block.
+        """
+
+        try_stmt = node.parent()
+        if (
+            not isinstance(try_stmt, chapel.Try)
+            or try_stmt.is_expression_level()
+        ):
+            return True
+
+        catch_loc = node.location()
+
+        # find the block of the try before this catch. its either try.body()
+        # for the first catch, or the previous catch
+        prev = try_stmt.body()
+        for prev_catch in try_stmt.handlers():
+            if prev_catch.unique_id() == node.unique_id():
+                break
+            prev = prev_catch
+        if prev is None:
+            return True
+        prev_loc = prev.location()
+
+        res = check_for_unattached(
+            context,
+            node,
+            prev_loc,
+            catch_loc,
+            functools.partial(BasicRuleResult, ignorable=False),
+        )
+        return res if res is not None else True
+
+    @driver.advanced_rule
+    def UnattachedCurly(context: Context, root: AstNode):
+        """
+        Warn for blocks that do not have their opening curly brace on the same line as the controlling statement.
+        """
+
+        if isinstance(root, Comment):
+            return
+        lines = chapel.get_file_lines(context, root)
+
+        def check_conditional(node: chapel.Conditional):
+            then_block = node.then_block()
+            if curly_loc := then_block.curly_braces_location():
+                # the curly block start should be just after the location of the condition
+                condition_loc = node.condition().location()
+                # add the parentheses location if it exists
+                if paren_loc := node.condition().paren_location():
+                    condition_loc += paren_loc
+                # add the then keyword location if it exists
+                if then_kw_loc := node.then_keyword_location():
+                    condition_loc += then_kw_loc
+                res = check_for_unattached(
+                    context,
+                    then_block,
+                    condition_loc,
+                    curly_loc,
+                    AdvancedRuleResult,
+                )
+                if res is not None:
+                    yield res
+            if else_block := node.else_block():
+                if curly_loc := else_block.curly_braces_location():
+                    else_kw_loc = node.else_keyword_location()
+                    assert else_kw_loc is not None
+                    # the curly block start should be just after the location of the else keyword
+                    res = check_for_unattached(
+                        context,
+                        else_block,
+                        else_kw_loc,
+                        curly_loc,
+                        AdvancedRuleResult,
+                    )
+                    if res is not None:
+                        yield res
+
+        def check_try(node: chapel.Try):
+            body = node.body()
+            if body is None:
+                return
+            if curly_loc := body.curly_braces_location():
+                try_loc = node.location()
+                # the curly block start should be just after the location of the try keyword
+                len_of_keyword = (
+                    len("try") if not node.is_try_bang() else len("try!")
+                )
+                # adjust the location to be just the keyword
+                try_loc = try_loc - try_loc.adjust_start((0, len_of_keyword))
+                res = check_for_unattached(
+                    context, body, try_loc, curly_loc, AdvancedRuleResult
+                )
+                if res is not None:
+                    yield res
+
+        def check_catch(node: chapel.Catch):
+            body = node.body()
+            if curly_loc := body.curly_braces_location():
+                if tgt := node.target():
+                    tgt_loc = tgt.location()
+                    before_loc = (
+                        tgt.paren_location()
+                        if node.has_parens_around_error()
+                        else tgt_loc
+                    )
+                else:
+                    # if there is no target, the curly block start should be just after the catch keyword
+                    catch_loc = node.location()
+                    len_of_keyword = len("catch")
+                    # adjust the location to be just the keyword
+                    before_loc = catch_loc - catch_loc.adjust_start(
+                        (0, len_of_keyword)
+                    )
+                if before_loc is None:
+                    return
+                res = check_for_unattached(
+                    context, body, before_loc, curly_loc, AdvancedRuleResult
+                )
+                if res is not None:
+                    yield res
+
+        def check_loop(node: chapel.Loop):
+            if node.block_style() == "unnecessary":
+                return
+            # TODO: for now, ignore DoWhile and BracketLoop
+            if isinstance(node, (chapel.DoWhile, chapel.BracketLoop)):
+                return
+
+            if curly_loc := node.curly_braces_location():
+                header_loc = node.header_location()
+                if isinstance(node, IndexableLoop) and node.with_clause():
+                    with_ = node.with_clause()
+                    assert with_ is not None
+                    header_loc = with_.location()
+                if not header_loc:
+                    return
+                # the curly block start should be just after the location of the header
+                res = check_for_unattached(
+                    context, node, header_loc, curly_loc, AdvancedRuleResult
+                )
+                if res is not None:
+                    yield res
+
+        def check_named_decl(node: chapel.NamedDecl):
+            if curly_loc := node.curly_braces_location():
+                header_loc = node.header_location()
+                if not header_loc:
+                    return
+                if isinstance(node, chapel.Function):
+                    if where_ := node.where_clause():
+                        header_loc += where_.location()
+                    for lifetime in node.lifetime_clauses():
+                        header_loc += lifetime.location()
+                res = check_for_unattached(
+                    context, node, header_loc, curly_loc, AdvancedRuleResult
+                )
+                if res is not None:
+                    yield res
+
+        def check_simple_block_like(node):
+            if (
+                isinstance(node, (chapel.SimpleBlockLike, chapel.When))
+                and node.block_style() == "unnecessary"
+            ):
+                return
+            if curly_loc := node.curly_braces_location():
+                header_loc = node.block_header()
+                if not header_loc:
+                    return
+                if (
+                    isinstance(node, (chapel.Begin, chapel.Cobegin))
+                    and node.with_clause()
+                ):
+                    with_ = node.with_clause()
+                    assert with_ is not None
+                    header_loc += with_.location()
+
+                # the curly block start should be just after the location of the header
+                res = check_for_unattached(
+                    context, node, header_loc, curly_loc, AdvancedRuleResult
+                )
+                if res is not None:
+                    yield res
+
+        for node, _ in chapel.each_matching(
+            root,
+            set(
+                [
+                    chapel.Conditional,
+                    chapel.Try,
+                    chapel.Catch,
+                    chapel.Loop,
+                    chapel.NamedDecl,
+                    chapel.On,
+                    chapel.Cobegin,
+                    chapel.Begin,
+                    chapel.Defer,
+                    chapel.Serial,
+                    chapel.Sync,
+                    chapel.Local,
+                    chapel.Manage,
+                    chapel.Select,
+                    chapel.When,
+                ]
+            ),
+        ):
+            if isinstance(node, chapel.Conditional):
+                yield from check_conditional(node)
+            elif isinstance(node, chapel.Try):
+                yield from check_try(node)
+            elif isinstance(node, chapel.Catch):
+                yield from check_catch(node)
+            elif isinstance(node, chapel.Loop):
+                yield from check_loop(node)
+            elif isinstance(node, chapel.NamedDecl):
+                yield from check_named_decl(node)
+            elif isinstance(
+                node,
+                (
+                    chapel.On,
+                    chapel.Cobegin,
+                    chapel.Begin,
+                    chapel.Defer,
+                    chapel.Serial,
+                    chapel.Sync,
+                    chapel.Local,
+                    chapel.Manage,
+                    chapel.Select,
+                    chapel.When,
+                ),
+            ):
+                yield from check_simple_block_like(node)
 
     @driver.basic_rule(chapel.OpCall)
     def BoolComparison(context, node: chapel.OpCall):
@@ -457,7 +799,16 @@ def rules(driver: LintDriver):
         else:
             else_block = node.else_block()
             if else_block is not None:
-                text = range_to_text(else_block.location(), lines)
+                if curly_loc := else_block.curly_braces_location():
+                    loc = curly_loc
+                else:
+                    loc = else_block.location()
+                    if else_kw_loc := node.else_keyword_location():
+                        loc -= else_kw_loc
+                    if else_block.num_stmts() > 0:
+                        # clamp left to the start of the else block statements
+                        loc = loc.clamp_left(else_block.stmt(0).location())
+                text = range_to_text(loc, lines)
             else:
                 text = ""
         # should be set in all branches
@@ -726,6 +1077,15 @@ def rules(driver: LintDriver):
             if formal.name() == "_":
                 continue
 
+            # skip formals named Self that have no name location
+            # (they are compiler generated)
+            if (
+                formal.name() == "Self"
+                and formal.name_location().start() == (0, 0)
+                and formal.name_location().end() == (0, 0)
+            ):
+                continue
+
             # extern functions have no bodies that can use their formals.
             parent = formal.parent()
             if isinstance(parent, NamedDecl) and parent.linkage() == "extern":
@@ -987,6 +1347,11 @@ def rules(driver: LintDriver):
                 and parent.else_block_style() == "implicit"
             )
 
+        def find_anchor(node: Optional[AstNode]) -> Optional[AstNode]:
+            # only loops and NamedDecls can be anchors for indentation
+            anchor = node if isinstance(node, (Loop, NamedDecl)) else None
+            return anchor
+
         # If root is something else (e.g., function call), do not
         # apply indentation rules; only apply them to things that contain
         # a list of statements.
@@ -1019,6 +1384,10 @@ def rules(driver: LintDriver):
             iterable = root.decls_or_comments()
         elif isinstance(root, SimpleBlockLike):
             iterable = root.stmts()
+        elif isinstance(root, Interface):
+            iterable = root.stmts()
+        elif isinstance(root, Cobegin):
+            iterable = root.task_bodies()
         elif isinstance(root, Module) and root.attribute_group() is not None:
             # attribute group is the first child, skip it
             iterable = list(root)[1:]
@@ -1039,7 +1408,9 @@ def rules(driver: LintDriver):
                 # Exception for enums, which are allowed to be on the same line.
                 #   enum color { red, green, blue }
                 if not isinstance(child, EnumElement):
-                    yield child
+                    yield AdvancedRuleResult(
+                        child, anchor=find_anchor(parent_for_indentation)
+                    )
             # Warn for misaligned siblings:
             #   var x: int;
             #     var y: int;
@@ -1051,7 +1422,9 @@ def rules(driver: LintDriver):
                     and (isinstance(prev, Loop) or isinstance(prev, On))
                     and prev.block_style() == "implicit"
                 ):
-                    yield child
+                    yield AdvancedRuleResult(
+                        child, anchor=find_anchor(parent_for_indentation)
+                    )
 
                 # Do not update 'prev_depth'; use original prev_depth as
                 # reference for next sibling.
@@ -1069,13 +1442,9 @@ def rules(driver: LintDriver):
                     prev_line = line
                     prev = child
                     continue
-                # only loops and NamedDecls can be anchors for indentation
-                anchor = (
-                    parent_for_indentation
-                    if isinstance(parent_for_indentation, (Loop, NamedDecl))
-                    else None
+                yield AdvancedRuleResult(
+                    child, anchor=find_anchor(parent_for_indentation)
                 )
-                yield AdvancedRuleResult(child, anchor=anchor)
 
             prev_depth = depth
             prev = child

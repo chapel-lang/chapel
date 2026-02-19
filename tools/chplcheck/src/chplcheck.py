@@ -146,12 +146,12 @@ def apply_edits(edits: List[Edit], suffix: Optional[str]):
     # Apply edits in reverse order to avoid invalidating the locations of
     # subsequent edits
     for file, edits in edits_per_file.items():
-        edits.sort(key=lambda f: f.start, reverse=True)
+        sorted_edits = sorted(edits, key=lambda f: f.start, reverse=True)
         with open(file, "r") as f:
             lines = f.readlines()
 
         prev_start = None
-        for edit in edits:
+        for edit in sorted_edits:
             line_start, char_start = edit.start
             line_end, char_end = edit.end
 

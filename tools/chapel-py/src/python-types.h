@@ -45,6 +45,23 @@
 template <typename CppType>
 struct PythonReturnTypeInfo {};
 
+template <typename CppType, typename = void>
+struct HasPythonType : std::false_type {};
+template <typename CppType>
+struct HasPythonType<CppType, std::void_t<decltype(std::remove_pointer_t<std::remove_reference_t<std::remove_cv_t<CppType>>>::PythonType)>> : std::true_type {};
+
+// Helper template to safely get PythonType when it exists
+template<typename T, bool HasType = HasPythonType<T>::value>
+struct SafePythonTypeGetter {
+    static PyTypeObject* get() { return nullptr; }
+};
+
+template<typename T>
+struct SafePythonTypeGetter<T, true> {
+    using CleanType = std::remove_pointer_t<std::remove_reference_t<std::remove_cv_t<T>>>;
+    static PyTypeObject* get() { return CleanType::PythonType; }
+};
+
 /** This macro is used to help define template specializations for PythonReturnTypeInfo.
     It just hides some of the boilerplate. */
 #define T_DEFINE_INOUT_TYPE(TYPE, TYPESTR, WRAP, UNWRAP) \
@@ -59,6 +76,13 @@ struct PythonReturnTypeInfo {};
       return UNWRAP; \
     } \
   \
+    static bool objIsType(PyObject* obj) { \
+      if constexpr (HasPythonType<TYPE>::value) { \
+        return obj->ob_type == SafePythonTypeGetter<TYPE>::get(); \
+      } else { \
+        return false; \
+      } \
+    } \
   }
 
 #define DEFINE_INOUT_TYPE(TYPE, TYPESTR, WRAP, UNWRAP) \
@@ -175,7 +199,7 @@ PyObject* wrapTuple(ContextObject* context, const std::tuple<Elems...>& tup) {
 
 template <typename ... Elems>
 std::tuple<Elems...> unwrapTuple(ContextObject* context, PyObject* tup) {
-  return detail::unwrapArgsHelper(context, tup, std::make_index_sequence<sizeof...(Elems)>());
+  return detail::unwrapArgsHelper<std::tuple<Elems...>>(context, tup, std::make_index_sequence<sizeof...(Elems)>());
 }
 
 template <typename ... Elems, size_t ... Is>

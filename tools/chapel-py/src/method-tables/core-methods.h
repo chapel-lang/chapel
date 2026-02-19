@@ -97,6 +97,24 @@ CLASS_BEGIN(Location)
 
          return Location(left->path(), std::max(left->start(), right.start()), left->end());
   )
+  METHOD(Location, adjust_start, "Get a new Location with the same end as this Location but with the start adjusted by the given line and column offsets",
+         chpl::Location(LineColumnPair),
+         auto start = std::get<0>(args);
+         auto newStart = std::make_tuple(node->firstLine() + std::get<0>(start),
+                                         node->firstColumn() + std::get<1>(start));
+         return Location(node->path(), newStart, node->end());
+  )
+  METHOD(Location, modify_end, "Get a new Location with the same start as this Location but with the end adjusted by the given line and column offsets",
+         chpl::Location(LineColumnPair),
+         auto end = std::get<0>(args);
+         auto newEnd = std::make_tuple(node->lastLine() + std::get<0>(end),
+                                       node->lastColumn() + std::get<1>(end));
+         return Location(node->path(), node->start(), newEnd);
+  )
+  OPERATOR_PROTOTYPE(Location, __add__, "Get a new Location that spans from the start of this Location to the end of another Location", chpl::Location(chpl::Location))
+  OPERATOR_PROTOTYPE(Location, __iadd__, "", chpl::Location(chpl::Location))
+  OPERATOR_PROTOTYPE(Location, __sub__, "Get a new Location is the result of removing the part of this Location that overlaps with another Location", chpl::Location(chpl::Location))
+  OPERATOR_PROTOTYPE(Location, __isub__, "", chpl::Location(chpl::Location))
 CLASS_END(Location)
 
 CLASS_BEGIN(Scope)

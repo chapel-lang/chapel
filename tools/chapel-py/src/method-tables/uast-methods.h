@@ -188,6 +188,10 @@ CLASS_BEGIN(Conditional)
          const chpl::uast::AstNode*(int), return node->thenStmt(std::get<0>(args)))
   PLAIN_GETTER(Conditional, then_block_style, "Get the block style of the then block of this Conditional node",
                const char*, return blockStyleToString(node->thenBlockStyle()))
+  PLAIN_GETTER(Conditional, then_keyword_location, "Get the Location of the 'then' keyword of this Conditional node",
+               std::optional<chpl::Location>,
+               auto loc = chpl::parsing::locateThenKeywordWithAst(context, node);
+               return getValidLocation(loc))
   PLAIN_GETTER(Conditional, has_else_block, "Check if this Conditional node has an else block",
                bool, return node->hasElseBlock())
   PLAIN_GETTER(Conditional, else_block, "Get the else block of this Conditional node or None if no else block",
@@ -200,6 +204,10 @@ CLASS_BEGIN(Conditional)
          const chpl::uast::AstNode*(int), return node->elseStmt(std::get<0>(args)))
   PLAIN_GETTER(Conditional, else_block_style, "Get the block style of the else block of this Conditional node",
                const char*, return blockStyleToString(node->elseBlockStyle()))
+  PLAIN_GETTER(Conditional, else_keyword_location, "Get the Location of the 'else' keyword of this Conditional node",
+               std::optional<chpl::Location>,
+               auto loc = chpl::parsing::locateElseKeywordWithAst(context, node);
+               return getValidLocation(loc))
   PLAIN_GETTER(Conditional, is_expression_level, "Checks if this Conditional node is expression-level",
                bool, return node->isExpressionLevel())
 CLASS_END(Conditional)
@@ -351,7 +359,7 @@ CLASS_END(Throw)
 
 CLASS_BEGIN(Try)
   PLAIN_GETTER(Try, body, "Get the body of this Try node",
-               const chpl::uast::Block*, return node->body())
+               Nilable<const chpl::uast::Block*>, return node->body())
   PLAIN_GETTER(Try, handlers, "Get the Catch node handlers of this Try node",
                TypedIterAdapterBase<const chpl::uast::Catch*>*, return mkIterPair(node->handlers()))
   PLAIN_GETTER(Try, is_expression_level, "Check if this Try node is expression level",

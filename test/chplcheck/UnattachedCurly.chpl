@@ -1,0 +1,524 @@
+module UnattachedCurly{
+
+  module M1  {
+
+    interface I
+    {
+
+    }
+    interface I2{ }
+
+    record myRec {
+      enum foo // my comment
+      {
+        a, b, c
+      }
+    }
+    record myRecBad
+    {
+      enum bar
+      {
+        a, b, c
+      }
+      enum other{
+        d, e, f
+      }
+    }
+    record myRecWithI : I, I2{
+      record nested{ }
+    }
+    record myRecWithIBad : I, I2
+    {
+      proc foo()
+      {
+
+      }
+    }
+    proc myRecWithI.mySecondary() where false
+    {
+
+    }
+    proc myRecWithI.mySecondary()
+    where true{
+
+    }
+
+    proc myParenless {
+
+    }
+
+    proc myParenlessBad
+    {
+
+    }
+
+    proc myParenlessWhere{
+
+    }
+    proc myRecWithI.myParenless { }
+
+
+    proc withLifetime(ref lhs, ref rhs) lifetime lhs=rhs { }
+    proc withLifetime2(ref lhs, ref rhs) lifetime lhs=rhs where true
+    {
+
+    }
+    proc withLifetime3(ref lhs, ref rhs) where true lifetime lhs=rhs,rhs=lhs{
+
+    }
+
+    class MyClass
+    {
+
+    }
+    class MyInherits /*yay inheritance*/ : MyClass{
+
+    }
+
+    class AnotherChild : MyClass {
+      proc myFunc()
+      {
+
+      }
+    }
+
+  }
+  module M2
+  {
+    proc foo(a)  {
+      if a < 5
+      {
+
+      } else
+      {
+
+      }
+    }
+  }
+  module M3 // start the module
+  {
+    proc myFunc()
+    {
+
+    }
+    proc someOtherFunc() // I weirdly commented this
+    {
+
+    }
+    proc iHaveIntents() type{
+      return int;
+    }
+    proc iHaveThrows() : int throws{
+      return 1;
+    }
+    proc someFuncWithArgs(a: int, b: int) where a.type == b.type {
+
+    }
+    proc someFuncWithArgsP2(a: int, b: int) where a.type == b.type{
+      proc myNestedFunc() const : int throws
+      {
+        if a < b
+        {
+
+        } else
+        {
+
+        }
+        return 1;
+      }
+    }
+    proc someFuncWithArgsP3(a: int, b: int)
+    where a.type == b.type {
+      proc myNestedFunc where true {
+        if a < b
+        {
+
+        } else if (b > a)
+        {
+
+        }
+        else // what a silly conditional
+        {
+
+        }
+      }
+      proc dontBreakIt() { return 5; }
+      proc myNestedFunc where false{
+        try!
+        {
+
+        }
+        catch e: Error
+        {
+
+        }
+        catch (e: Error)
+        {
+
+        }
+        catch
+        {
+
+        }
+        try!{
+
+        }
+        catch e: Error{
+
+        }
+        catch (e: Error){ // this is fine
+
+        }
+        catch{
+
+        }
+        var y = try! dontBreakIt();
+      }
+    }
+    proc someFuncWithArgsP4(a: int, b: int)
+      where a.type == b.type
+      {
+      try{
+
+      } catch // NO
+      {
+        halt("oops");
+      }
+    }
+  }
+
+  module SerialBlocks {
+    proc testSerial(a: bool) {
+      serial {
+        var x = 1;
+      }
+
+      serial
+      {
+        var x = 2;
+      }
+
+      serial{
+        var x = 3;
+      }
+
+      serial a {
+        var x = 4;
+      }
+
+      serial a
+      {
+        var x = 5;
+      }
+
+      serial a{
+        var x = 6;
+      }
+    }
+  }
+
+  module LocalBlocks {
+    proc testLocal(flag: bool) {
+      local {
+        var x = 1;
+      }
+
+      local
+      {
+        var x = 2;
+      }
+
+      local{
+        var x = 3;
+      }
+
+      local flag {
+        var x = 4;
+      }
+
+      local flag
+      {
+        var x = 5;
+      }
+
+      local flag{
+        var x = 6;
+      }
+    }
+  }
+
+  module OnBlocks {
+    proc testOn() {
+      on Locales[0] {
+        var x = 1;
+      }
+
+      on Locales[0]
+      {
+        var x = 2;
+      }
+
+      on Locales[0]{
+        var x = 3;
+      }
+    }
+  }
+
+  module SyncBlocks {
+    proc testSync() {
+      sync {
+        var x = 1;
+      }
+
+      sync
+      {
+        var x = 2;
+      }
+
+      sync{
+        var x = 3;
+      }
+    }
+  }
+
+  module DeferBlocks {
+    proc testDefer() {
+      defer {
+        var x = 1;
+      }
+
+      defer
+      {
+        var x = 2;
+      }
+
+      defer{
+        var x = 3;
+      }
+    }
+  }
+
+  module ManageBlocks {
+    record R { }
+    proc testManage() {
+      manage new R() {
+        var x = 1;
+      }
+
+      manage new R()
+      {
+        var x = 2;
+      }
+
+      manage new R(){
+        var x = 3;
+      }
+    }
+  }
+
+  module SelectBlocks {
+    proc testSelect(x: int) {
+      select x {
+        when 1 {
+          var a = 1;
+        }
+        when 2 {
+          var b = 2;
+        }
+        otherwise {
+          var c = 3;
+        }
+      }
+
+      select x
+      {
+
+        when 1
+        {
+          var a = 1;
+        }
+
+        when 2{
+          var b = 2;
+        }
+
+        otherwise
+        {
+          var c = 3;
+        }
+      }
+
+      select x{
+        when 1 {
+          var a = 1;
+        }
+
+        otherwise {
+          var c = 3;
+        }
+      }
+    }
+  }
+
+  module ForLoops {
+    proc testFor() {
+      for i in 1..10 {
+        var x = i;
+      }
+
+      for i in 1..10
+      {
+        var x = i;
+      }
+
+      for i in 1..10{
+        var x = i;
+      }
+    }
+  }
+
+  module WhileLoops {
+    proc testWhile() {
+      var done = false;
+
+      while !done {
+        done = true;
+      }
+
+      while !done
+      {
+        done = true;
+      }
+
+      while !done{
+        done = true;
+      }
+    }
+  }
+
+  module CoforallLoops {
+    proc testCoforall() {
+      coforall i in 1..10 {
+        var x = i;
+      }
+
+      coforall i in 1..10
+      {
+        var x = i;
+      }
+
+      coforall i in 1..10{
+        var x = i;
+      }
+
+      coforall i in 1..10 with (var x = i) {
+        var y = x;
+      }
+
+      coforall i in 1..10 with (var x = i)
+      {
+        var y = x;
+      }
+
+      coforall i in 1..10 with (var x = i){
+        var y = x;
+      }
+    }
+  }
+
+  module ForallLoops {
+    proc testForall() {
+      forall i in 1..10 {
+        var x = i;
+      }
+
+      forall i in 1..10
+      {
+        var x = i;
+      }
+
+      forall i in 1..10{
+        var x = i;
+      }
+
+      forall i in 1..10 with (var x = i) {
+        var y = x;
+      }
+
+      forall i in 1..10 with (var x = i)
+      {
+        var y = x;
+      }
+
+      forall i in 1..10 with (var x = i){
+        var y = x;
+      }
+    }
+  }
+
+  module BeginBlocks {
+    proc testBegin(a: int) {
+      begin {
+        var x = a;
+      }
+
+      begin
+      {
+        var x = a;
+      }
+
+      begin{
+        var x = a;
+      }
+
+      begin with (var x = a) {
+        var y = x;
+      }
+
+      begin with (var x = a)
+      {
+        var y = x;
+      }
+
+      begin with (var x = a){
+        var y = x;
+      }
+    }
+  }
+
+  module CobeginBlocks {
+    proc testCobegin(a: int) {
+      cobegin {
+        var x = a;
+        var y = a;
+      }
+
+      cobegin
+      {
+        var x = a;
+        var y = a;
+      }
+
+      cobegin{
+        var x = a;
+        var y = a;
+      }
+
+      cobegin with (var z = a) {
+        var x = z;
+        var y = z;
+      }
+
+      cobegin with (var z = a)
+      {
+        var x = z;
+        var y = z;
+      }
+
+      cobegin with (var z = a){
+        var x = z;
+        var y = z;
+      }
+    }
+  }
+}
