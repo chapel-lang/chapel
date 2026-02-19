@@ -465,23 +465,19 @@ def _validate_cuda_llvm_version_impl(gpu: gpu_type):
         )
 
 def _validate_rocm_llvm_version_impl(gpu: gpu_type):
-    major_version = get_sdk_version().split('.')[0]
+    major_version, minor_version = get_sdk_version().split('.')[:2]
 
     if major_version in ('5',) and chpl_llvm.get() == 'bundled':
         error("Cannot target AMD GPUs with CHPL_LLVM=bundled")
-    elif major_version == '6' and chpl_llvm.get() != 'bundled' and os.environ.get("CHPL_LLVM_65188_PATCH", "0") != "1":
-        # once https://github.com/llvm/llvm-project/issues/65188 is resolved,
-        # this check can removed
-        # 'CHPL_LLVM_65188_PATCH' is a temporary escape hatch to enable system
-        # llvm with rocm 6.x if the user knows what they are doing
-        error("Cannot target AMD GPUs with ROCm 6.x without CHPL_LLVM=bundled")
-        # TODO: can we use LLVM 20 with ROCm 6.3?
-    elif (
-        major_version == "6"
-        and chpl_llvm.get() == "system"
-        and int(chpl_llvm.get_llvm_version()) < 18
-    ):
-        error("Cannot target AMD GPUs with ROCm 6.x without LLVM 18+")
+    elif major_version == '6':
+        if int(minor_version) < 3:
+            # it must be bundled LLVM or patched
+            if chpl_llvm.get() != 'bundled' and os.environ.get("CHPL_LLVM_65188_PATCH", "0") != "1":
+                error("Cannot target AMD GPUs with ROCm 6.0-6.2 without CHPL_LLVM=bundled")
+        else:
+            # it must be LLVM 21+ or the bundled LLVM
+            if chpl_llvm.get() != 'bundled' and int(chpl_llvm.get_llvm_version()) < 21:
+                error("Cannot target AMD GPUs with ROCm 6.3 without CHPL_LLVM=bundled or LLVM 21+")
     elif not validateLlvmBuiltForTgt(gpu.llvm_target):
         _reportMissingGpuReq(
             "LLVM not built for %s." % gpu.llvm_target, allowExempt=False
