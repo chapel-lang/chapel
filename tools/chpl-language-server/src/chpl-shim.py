@@ -204,6 +204,16 @@ def run_chpl_shim():
         files += list_parsed_files(files, args.module_dirs)
         files = list(set(files))
 
+        # Detect symlinks in the form '.chpl.chpl'. These are produced by
+        # our current CMake support. Instead, resolve the symlink to the real
+        # file to avoid confusion.
+        for i in range(len(files)):
+            file = files[i]
+            if file.endswith(".chpl.chpl") and os.path.islink(file):
+                real_file = os.path.realpath(file)
+                assert real_file.endswith(".chpl")
+                files[i] = real_file
+
         commands = {}
         invocation = " ".join(sys.argv).replace(__file__, real_compiler)
         commands["invocation"] = invocation
