@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+set -exo pipefail
+
+mason build
+mason test
+mason build --example
+mason build --example Ex1.chpl
+mason build --example Ex2.chpl
+mason run --example Ex1.chpl
+mason run --example Ex2.chpl
