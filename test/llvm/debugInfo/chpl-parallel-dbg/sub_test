@@ -152,7 +152,7 @@ class Test:
             sys.stdout.flush()
             sp.check_call(cmd)
         except sp.CalledProcessError as e:
-            sys.stdout.write(f"[Error compiling {self.source_file}]\n")
+            sys.stdout.write(f"[Error compiling {self.source_file.stem}]\n")
             return False
         return True
 
@@ -234,11 +234,11 @@ class Test:
         # check executable output
         self._run_prediff(executable_output)
         if sub_test_util.DiffFiles(str(self.good_file), str(executable_output)) != 0:
-            sys.stdout.write(f"[Error matching executable output for {self.source_file}]\n")
+            sys.stdout.write(f"[Error matching executable output for {self.source_file.stem}]\n")
             return False
         # check debugger output with FileCheck
         if FileCheckFiles(debugger_output, self.source_file) != 0:
-            sys.stdout.write(f"[Error matching debugger output for {self.source_file}]\n")
+            sys.stdout.write(f"[Error matching debugger output for {self.source_file.stem}]\n")
             return False
         return True
 
