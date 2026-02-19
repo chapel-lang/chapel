@@ -1,3 +1,4 @@
 COMPOPTS <= --baseline
 COMPOPTS <= --fast
+COMPOPTS <= --no-local
 CHPL_COMM!=none
