@@ -43,7 +43,7 @@ class Test:
 
     @classmethod
     def find_tests(cls, directory: Path) -> Iterator["Test"]:
-        for f in directory.glob("*.masontest"):
+        for f in sorted(directory.glob("*.masontest")):
             if test := cls.test_factory(f):
                 yield test
 
@@ -140,7 +140,7 @@ class Test:
             != 0
         ):
             sys.stdout.write(
-                f"[Error matching executable output for {self.source_file}]\n"
+                f"[Error matching executable output for {self.source_file.stem}]\n"
             )
             return False
         return True
@@ -157,10 +157,17 @@ class Test:
 
             if retcode != 0:
                 sys.stdout.write(
-                    f"[Error matching output {self.source_file} - got non-zero return code]\n"
+                    "[Error matching output for {} (exited with exit code {})]\n".format(self.source_file.stem, retcode)
+                )
+            elif self.good_file is None:
+                self._cleanup(executable_output)
+                sys.stdout.write(
+                    "[Success matching output for {}]\n".format(
+                        self.source_file.stem
+                    )
                 )
             else:
-                if self.good_file is not None and self._compare_output(
+                if self._compare_output(
                     executable_output
                 ):
                     self._cleanup(executable_output)

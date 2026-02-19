@@ -1,3 +1,4 @@
++ cd prereq2
 + mason build
 Compiling [debug] target: prereq2
 Build Successful

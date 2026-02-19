@@ -2,6 +2,8 @@
 
 set -exo pipefail
 
+cd prereq2
+
 mason build
 mason test
 mason build --example
