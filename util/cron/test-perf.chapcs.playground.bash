@@ -28,10 +28,13 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 # 4) Update START_DATE to be today, using the format mm/dd/yy
 #
 
-GITHUB_USER=insertinterestingnamehere
-GITHUB_BRANCH=qthreads-1.23
-SHORT_NAME=qthreads123
-START_DATE=2/5/26
+# Test what happens to performance if we disable the
+# --interprocedural-alias-analysis pass by default
+
+GITHUB_USER=bradcray
+GITHUB_BRANCH=no-noAliasSets2
+SHORT_NAME=noAliasAnalysis
+START_DATE=2/19/26
 
 set -e
 checkout_branch $GITHUB_USER $GITHUB_BRANCH
