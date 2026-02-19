@@ -21,7 +21,8 @@
 set(CMAKE_CHPL_COMPILE_OBJECT "test -f <OBJECT> || ln -s <SOURCE> <OBJECT>")
 
 # Support for CMAKE_EXPORT_CHPL_COMMANDS (similar to CMAKE_EXPORT_COMPILE_COMMANDS)
-set(CMAKE_CHPL_LINK_EXECUTABLE "<CMAKE_CHPL_COMPILER> -o <TARGET> <OBJECTS> <FLAGS> <LINK_FLAGS> <LINK_LIBRARIES>")
+set(CHPL_COMPILER_FLAGS "-o <TARGET> <OBJECTS> <FLAGS> <LINK_FLAGS> <LINK_LIBRARIES>")
+set(CMAKE_CHPL_LINK_EXECUTABLE "<CMAKE_CHPL_COMPILER> ${CHPL_COMPILER_FLAGS}")
 if(CMAKE_EXPORT_CHPL_COMMANDS)
   # Get the directory containing the chpl compiler to find chpl-shim
   get_filename_component(CHPL_BIN_DIR "${CMAKE_CHPL_COMPILER}" DIRECTORY)
@@ -32,8 +33,8 @@ if(CMAKE_EXPORT_CHPL_COMMANDS)
   if(EXISTS "${CHPL_SHIM_SCRIPT}")
     # Use chpl-shim as a wrapper to generate .cls-commands.json
     # Note: chpl-shim expects to be called as 'chpl-shim chpl <args>', not with full path
-    message(STATUS "Using chpl-shim to generate .cls-commands.json")
-    set(CMAKE_CHPL_LINK_EXECUTABLE "<CMAKE_COMMAND> -E env CHPL_SHIM_REAL_COMPILER_PATH=${CMAKE_CHPL_COMPILER} ${CHPL_SHIM_SCRIPT} chpl -o <TARGET> <OBJECTS> <FLAGS> <LINK_FLAGS> <LINK_LIBRARIES>")
+    message(STATUS "Found chpl-shim. Configuring build command to use chpl-shim to generate .cls-commands.json")
+    set(CMAKE_CHPL_LINK_EXECUTABLE "<CMAKE_COMMAND> -E env CHPL_SHIM_REAL_COMPILER_PATH=${CMAKE_CHPL_COMPILER} ${CHPL_SHIM_SCRIPT} chpl ${CHPL_COMPILER_FLAGS}")
   else()
     message(WARNING "CMAKE_EXPORT_CHPL_COMMANDS is set but chpl-shim not found at ${CHPL_SHIM_SCRIPT}")
   endif()

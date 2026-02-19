@@ -253,4 +253,4 @@ the module structure of the project. For example:
    mkdir build && cd build
    cmake .. -CMAKE_EXPORT_CHPL_COMMANDS=ON
    cmake --build .
-   cd .. && ln -s build/.cls_commands.json .cls_commands.json
+   cd .. && ln -s build/.cls-commands.json .cls-commands.json
