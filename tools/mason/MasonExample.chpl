@@ -91,7 +91,7 @@ record examplesBuildInfo {
 }
 
 private proc getBuildInfo(projectHome: string,
-                          skipUpdate: bool): examplesBuildInfo {
+                          skipUpdate: bool): examplesBuildInfo throws {
 
   // parse lock and toml(examples dont make it to lock file)
   const lock = open(projectHome + "/Mason.lock", ioMode.r);
@@ -137,7 +137,7 @@ private proc getBuildInfo(projectHome: string,
 private proc getExampleOptions(
   toml: Toml,
   exampleNames: list(string)
-): map(string, chplOptions) {
+): map(string, chplOptions) throws {
   // TODO: handle compopts and execopts as either a list or string
   var exampleOptions = new map(string, chplOptions);
   for example in exampleNames {
@@ -145,10 +145,18 @@ private proc getExampleOptions(
     exampleOptions[exampleName] = new chplOptions();
     const examplePath = "examples." + exampleName;
     if const compopts = toml.get(examplePath + ".compopts") {
-      exampleOptions[exampleName].compopts = new list(compopts.s.split(" "));
+      try {
+        exampleOptions[exampleName].compopts = parseCompilerOptions(compopts);
+      } catch {
+        throw new MasonError("unable to parse compopts");
+      }
     }
     if const execopts = toml.get(examplePath + ".execopts") {
-      exampleOptions[exampleName].execopts =  new list(execopts.s.split(" "));
+      try {
+        exampleOptions[exampleName].execopts = parseCompilerOptions(execopts);
+      } catch {
+        throw new MasonError("unable to parse execopts");
+      }
     }
   }
   return exampleOptions;
