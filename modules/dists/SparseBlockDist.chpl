@@ -65,7 +65,8 @@ record targetLocaleComparator: keyComparator {
         return (dist.targetLocsIdx(a), a[1], a[0]);
       else
         return (dist.targetLocsIdx(a), a[0], a[1]);
-    } else {
+    }
+    else {
       return (dist.targetLocsIdx(a), a);
     }
   }
@@ -167,7 +168,8 @@ class SparseBlockDom: BaseSparseDomImpl(?) {
       on addOn {
         if inds.locale == here {
           retval = _bulkAddHere_help(inds, dataSorted, isUnique);
-        } else {
+        }
+        else {
           var _local_inds: [indsDom] index(rank, idxType);
           _local_inds = inds;
           retval = _bulkAddHere_help(_local_inds, dataSorted, isUnique);
@@ -946,7 +948,7 @@ proc SparseBlockArr.dsiTargetLocales() const ref {
 
 
 
-proc SparseBlockDom.numRemoteElems(rlo,rid) {
+proc SparseBlockDom.numRemoteElems(rlo,rid){
   var blo,bhi:dist.idxType;
   if rid==(dist.targetLocDom.dim(rank-1).size - 1) then
     bhi=whole.dim(rank-1).highBound;
