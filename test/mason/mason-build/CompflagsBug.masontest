@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+set -exo pipefail
+
+cd CompflagsBug
+
+mason build -- -stestFlagCmdLine=1
+mason run -- --testExecFlagCmdLine=bar
