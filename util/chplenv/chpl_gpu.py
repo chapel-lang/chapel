@@ -478,6 +478,10 @@ def _validate_rocm_llvm_version_impl(gpu: gpu_type):
             # it must be LLVM 21+ or the bundled LLVM
             if chpl_llvm.get() != 'bundled' and int(chpl_llvm.get_llvm_version()) < 21:
                 error("Cannot target AMD GPUs with ROCm 6.3 without CHPL_LLVM=bundled or LLVM 21+")
+    elif major_version == '7':
+        # requires LLVM 21+
+        if int(chpl_llvm.get_llvm_version()) < 21:
+            error("Cannot target AMD GPUs with ROCm 7.x without LLVM 21+")
     elif not validateLlvmBuiltForTgt(gpu.llvm_target):
         _reportMissingGpuReq(
             "LLVM not built for %s." % gpu.llvm_target, allowExempt=False
@@ -549,17 +553,38 @@ def _validate_rocm_version_impl():
     MAX_ROCM6_REQ_VERSION = "6.4" # upper bound non-inclusive
     MAX_ROCM6_REQ_VERSION_NICE = "6.3.x"
 
+    MIN_ROCM7_REQ_VERSION = "7.0"
+    MAX_ROCM7_REQ_VERSION = "8.0" # upper bound non-inclusive
+    MAX_ROCM7_REQ_VERSION_NICE = "7.x"
+
     rocm_version = get_sdk_version()
 
     if rocm_version == 'none':
         _reportMissingGpuReq("Unable to determine ROCm version.")
         return False
 
-    if not is_ver_in_range(rocm_version, MIN_REQ_VERSION, MAX_REQ_VERSION) and not is_ver_in_range(rocm_version, MIN_ROCM6_REQ_VERSION, MAX_ROCM6_REQ_VERSION):
+    if (
+        not is_ver_in_range(rocm_version, MIN_REQ_VERSION, MAX_REQ_VERSION)
+        and not is_ver_in_range(
+            rocm_version, MIN_ROCM6_REQ_VERSION, MAX_ROCM6_REQ_VERSION
+        )
+        and not is_ver_in_range(
+            rocm_version, MIN_ROCM7_REQ_VERSION, MAX_ROCM7_REQ_VERSION
+        )
+    ):
         warning(
-            "Chapel requires ROCm versions %s to %s or %s to %s, "
-            "detected version %s on system." %
-            (MIN_REQ_VERSION, MAX_REQ_VERSION_NICE, MIN_ROCM6_REQ_VERSION, MAX_ROCM6_REQ_VERSION_NICE, rocm_version))
+            "Chapel requires ROCm versions %s to %s, %s to %s, or %s to %s, "
+            "detected version %s on system."
+            % (
+                MIN_REQ_VERSION,
+                MAX_REQ_VERSION_NICE,
+                MIN_ROCM6_REQ_VERSION,
+                MAX_ROCM6_REQ_VERSION_NICE,
+                MIN_ROCM7_REQ_VERSION,
+                MAX_ROCM7_REQ_VERSION_NICE,
+                rocm_version,
+            )
+        )
         return False
 
     return True
