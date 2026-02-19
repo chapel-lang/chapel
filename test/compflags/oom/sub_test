@@ -56,7 +56,7 @@ def subtest_error(msg):
     # Only print first error
     if not errored:
         errored = True
-        print(f"[Error running sub_test {subtest_test_name} - {msg}]")
+        print(f"[Error running out-of-memory test {subtest_test_name} - {msg}]")
 
 ### END sub_test output helper functions ###
 
