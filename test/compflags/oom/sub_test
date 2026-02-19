@@ -35,7 +35,7 @@ ps_base_command = "ps -o pid,ppid,cmd"
 subtest_start_time = None
 subtest_test_name = '"compflags/oom"'
 
-error_msg = ""
+errored = False
 
 def subtest_start():
     global subtest_start_time
@@ -50,14 +50,13 @@ def subtest_end():
 
     print(f"[Elapsed time to compile and execute all versions of {subtest_test_name} - {elapsed_time} seconds]")
     print(f"[Finished subtest {subtest_test_name} - {elapsed_time} seconds]")
-    if error_msg:
-        print(f"[Error running sub_test {subtest_test_name} - {error_msg}]")
 
 def subtest_error(msg):
-    global error_msg
+    global errored
     # Only print first error
-    if not error_msg:
-        error_msg = msg
+    if not errored:
+        errored = True
+        print(f"[Error running sub_test {subtest_test_name} - {msg}]")
 
 ### END sub_test output helper functions ###
 
