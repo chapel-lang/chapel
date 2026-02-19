@@ -73,8 +73,8 @@ def kill_subphase(ppid):
     print(ps_output)
 
     for line in ps_output.splitlines():
-        split_line = line.split(" ")
-        if str(ppid) in split_line[1]:
+        split_line = line.split()
+        if str(ppid) in split_line:
             child_pid = int(split_line[0])
             print(f"Killing subphase with PID {child_pid}...", end="")
             os.kill(child_pid, signal.SIGKILL)
