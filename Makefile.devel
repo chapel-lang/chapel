@@ -107,7 +107,7 @@ lint-standard-modules: chplcheck FORCE
 		--disable-rule LineLength \
 		--disable-rule UnattachedElse \
 		--disable-rule UnattachedCatch \
-		--disable-rule UnattachedCurly
+		--disable-rule UnattachedCurly \
 		$(MODULES_TO_LINT)
 
 MASON_MODULES_TO_LINT = $(shell find $(CHPL_MAKE_HOME)/tools/mason -name '*.chpl')
