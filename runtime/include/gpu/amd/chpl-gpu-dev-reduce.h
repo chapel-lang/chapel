@@ -91,8 +91,4 @@ GPU_DEV_REDUCE(DEF_ONE_DEV_REDUCE_RET_VAL, Max, max);
 
 #undef DEF_ONE_DEV_REDUCE_RET_VAL
 
-#if (ROCM_VERSION_MAJOR == 6 && ROCM_VERSION_MINOR >= 3) || ROCM_VERSION_MAJOR > 6
-#pragma clang diagnostic pop
-#endif
-
 #endif  // _CHPL_GPU_DEV_REDUCE_H
