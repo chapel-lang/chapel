@@ -21,20 +21,37 @@
 
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/resolution-queries.h"
-#include "chpl/resolution/scope-queries.h"
-#include "chpl/resolution/split-init.h"
-#include "chpl/uast/Call.h"
-#include "chpl/uast/Comment.h"
-#include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
-#include "chpl/uast/Variable.h"
 
 #include "./ErrorGuard.h"
 
-using ActionElt = std::tuple<AssociatedAction::Action,
-                             std::string, /* ID where action occurs */
-                             std::string /* ID acted upon or "" */ >;
+struct ActionElt;
 using Actions = std::vector<ActionElt>;
+
+struct ActionElt {
+  AssociatedAction::Action actionType;
+  // ID where action occurs
+  std::string inId;
+  // ID acted upon
+  std::string actedUponId;
+  chpl::optional<int> tupleEltIdx;
+  std::vector<ActionElt> subActions;
+
+  ActionElt(AssociatedAction::Action actionType,
+            const std::string& inId,
+            const std::string& actedUponId,
+            chpl::optional<int> tupleEltIdx = {},
+            const Actions& subActions = {})
+    : actionType(actionType),
+      inId(inId),
+      actedUponId(actedUponId),
+      tupleEltIdx(tupleEltIdx),
+      subActions(subActions) {}
+
+  ActionElt() = default;
+  ActionElt(const ActionElt&) = default;
+  ActionElt& operator=(const ActionElt&) = default;
+};
 
 static std::string idToStr(Context* context, ID id) {
   std::string name = id.str();
@@ -47,11 +64,22 @@ static std::string idToStr(Context* context, ID id) {
   return name;
 }
 
-static void gatherActions(Context* context,
-                          const AstNode* ast,
-                          const ResolvedFunction* r,
-                          Actions& actions) {
+static void addAction(Context* context, Actions& actions, const AstNode* ast,
+                      const AssociatedAction* act) {
+  Actions subActions;
+  for (auto subAct : act->subActions()) {
+    addAction(context, subActions, ast, subAct);
+  }
 
+  actions.emplace_back(act->action(),
+                       idToStr(context, ast->id()),
+                       idToStr(context, act->id()),
+                       act->tupleEltIdx(),
+                       subActions);
+}
+
+static void gatherActions(Context* context, const AstNode* ast,
+                          const ResolvedFunction* r, Actions& actions) {
   // gather actions for child nodes
   for (auto child : ast->children()) {
     gatherActions(context, child, r, actions);
@@ -60,32 +88,23 @@ static void gatherActions(Context* context,
   // gather actions for this node
   const ResolvedExpression* re = r->resolutionById().byAstOrNull(ast);
   if (re != nullptr) {
-    for (auto act: re->associatedActions()) {
-      if (act.action() == AssociatedAction::DEINIT) {
-        actions.push_back(std::make_tuple(act.action(),
-                                          idToStr(context, ast->id()),
-                                          idToStr(context, act.id())));
-      } else {
-        // ignore acted-upon ID expect for DEINIT
-        actions.push_back(std::make_tuple(act.action(),
-                                          idToStr(context, ast->id()),
-                                          ""));
-      }
+    for (auto act : re->associatedActions()) {
+      addAction(context, actions, ast, &act);
     }
   }
 }
 
-
-static void printAction(const ActionElt& a) {
+static void printAction(const ActionElt& a, int idx) {
   AssociatedAction::Action gotAction;
   std::string gotInId;
   std::string gotActId;
 
-  gotAction = std::get<0>(a);
-  gotInId = std::get<1>(a);
-  gotActId = std::get<2>(a);
+  gotAction = a.actionType;
+  gotInId = a.inId;
+  gotActId = a.actedUponId;
 
-  printf("  %s in %s",
+  printf("  %i: %s in %s",
+         idx,
          AssociatedAction::kindToString(gotAction),
          gotInId.c_str());
 
@@ -96,9 +115,70 @@ static void printAction(const ActionElt& a) {
 }
 
 static void printActions(const Actions& actions) {
-  for (auto act : actions) {
-    printAction(act);
+  for (int i = 0; i < actions.size(); i++) {
+    printAction(actions[i], i);
+    for (int j = 0; j < actions[i].subActions.size(); j++) {
+      printAction(actions[i].subActions[j], i);
+    }
   }
+}
+
+static std::string testAction(ActionElt expected, ActionElt got) {
+  std::string message;
+
+  AssociatedAction::Action gotAction, expectAction;
+  std::string gotInId, expectInId;
+  std::string gotActId, expectActId;
+  chpl::optional<int> gotTupleIdx, expectTupleIdx;
+  Actions gotSubActions, expectSubActions;
+
+  gotAction = got.actionType;
+  gotInId = got.inId;
+  gotActId = got.actedUponId;
+  gotTupleIdx = got.tupleEltIdx;
+  gotSubActions = got.subActions;
+
+  expectAction = expected.actionType;
+  expectInId = expected.inId;
+  expectActId = expected.actedUponId;
+  expectTupleIdx = expected.tupleEltIdx;
+  expectSubActions = expected.subActions;
+
+  // Allow leaving out expected act ID where it's redundant
+  if (expectActId.empty() && gotActId == gotInId) {
+    gotActId = "";
+  }
+
+  if (gotAction != expectAction) {
+    message = message + "Failure: mismatched action type (got '" +
+              AssociatedAction::kindToString(gotAction) + "', expected '" +
+              AssociatedAction::kindToString(expectAction) + "')";
+  } else if (gotInId != expectInId) {
+    message = message + "Failure: mismatched containing ID (got '" + gotInId +
+              "', expected '" + expectInId + "')";
+  } else if (gotActId != expectActId) {
+    message = message + "Failure: mismatched acted upon ID (got '" + gotActId +
+              "', expected '" + expectActId + "')";
+  } else if (gotTupleIdx != expectTupleIdx) {
+    std::string gotStr = gotTupleIdx ? std::to_string(*gotTupleIdx) : "[none]";
+    std::string expectStr = expectTupleIdx ? std::to_string(*expectTupleIdx) : "[none]";
+    message = message + "Failure: mismatched tuple element index (got '" +
+              gotStr + "', expected '" + expectStr + "')";
+  }
+
+  int i = 0;
+  while (i < gotSubActions.size() && i < expectSubActions.size()) {
+    std::string subMessage = testAction(expectSubActions[i], gotSubActions[i]);
+    if (!subMessage.empty()) {
+      subMessage =
+          "\t" + subMessage + " in sub-action " + std::to_string(i) + "\n";
+      message += subMessage;
+    }
+
+    i++;
+  }
+
+  return message;
 }
 
 // resolves the last function
@@ -124,7 +204,7 @@ static void testActions(const char* test,
   assert(M);
   assert(M->numStmts() >= 1);
 
-  const Function* func = M->stmt(M->numStmts()-1)->toFunction();
+  const Function* func = M->stmt(M->numStmts() - 1)->toFunction();
   assert(func);
 
   printf("uAST:\n");
@@ -151,49 +231,28 @@ static void testActions(const char* test,
   printf("\n");
 
   size_t i = 0;
-  size_t j = 0;
-  while (i < actions.size() && j < expected.size()) {
-    AssociatedAction::Action gotAction, expectAction;
-    std::string gotInId, expectInId;
-    std::string gotActId, expectActId;
-
-    gotAction = std::get<0>(actions[i]);
-    gotInId = std::get<1>(actions[i]);
-    gotActId = std::get<2>(actions[i]);
-
-    expectAction = std::get<0>(expected[i]);
-    expectInId = std::get<1>(expected[i]);
-    expectActId = std::get<2>(expected[i]);
-
-    if (gotAction != expectAction) {
-      assert(false && "Failure: mismatched action type");
-    }
-
-    if (gotInId != expectInId) {
-      assert(false && "Failure: mismatched containing ID");
-    }
-    if (gotActId != expectActId) {
-      assert(false && "Failure: mismatched acted upon ID");
+  while (i < actions.size() && i < expected.size()) {
+    std::string message = testAction(expected[i], actions[i]);
+    if (!message.empty()) {
+      message = "Failure in action " + std::to_string(i) + ":\n" + message;
+      printf("%s\n", message.c_str());
+      assert(false && "Action did not match expected");
     }
 
     i++;
-    j++;
   }
 
   if (i < actions.size()) {
-    assert(false && "Failure: extra action");
-  }
-
-  if (j < expected.size()) {
+    assert(false && "Failure: found extra action");
+  } else if (i < expected.size()) {
     assert(false && "Failure: expected action is missing");
   }
-
 
 }
 
 // test very basic default init & deinit
 static void test1() {
-  testActions("test1",
+  testActions(__FUNCTION__,
     R""""(
       module M {
         record R { }
@@ -212,7 +271,7 @@ static void test1() {
 
 // test deinit order when split initing & move from value call
 static void test2a() {
-  testActions("test2a",
+  testActions(__FUNCTION__,
     R""""(
       module M {
         record R { }
@@ -240,7 +299,7 @@ static void test2a() {
 
 // test deinit order when split initing
 static void test2b() {
-  testActions("test2b",
+  testActions(__FUNCTION__,
     R""""(
       module M {
         record R { }
@@ -268,7 +327,7 @@ static void test2b() {
 
 // test deinit order when split initing
 static void test2c() {
-  testActions("test2c",
+  testActions(__FUNCTION__,
     R""""(
       module M {
         record R { }
@@ -299,7 +358,7 @@ static void test2c() {
 // test assignment between values
 // this one has no split init and no copy elision
 static void test3a() {
-  testActions("test3a",
+  testActions(__FUNCTION__,
     R""""(
       module M {
         record R { }
@@ -328,7 +387,7 @@ static void test3a() {
 }
 
 static void test3b() {
-  testActions("test3b",
+  testActions(__FUNCTION__,
     R""""(
       module M {
         record R { }
@@ -356,7 +415,7 @@ static void test3b() {
 }
 
 static void test3c() {
-  testActions("test3c",
+  testActions(__FUNCTION__,
     R""""(
       module M {
         record R { }
@@ -382,7 +441,7 @@ static void test3c() {
 }
 
 static void test3d() {
-  testActions("test3d",
+  testActions(__FUNCTION__,
     R""""(
       module M {
         record R { }
@@ -412,7 +471,7 @@ static void test3d() {
 // test copy-initialization from variable decl with init
 // variable initialization from a value call
 static void test4a() {
-  testActions("test4a",
+  testActions(__FUNCTION__,
     R""""(
       module M {
         record R { }
@@ -436,7 +495,7 @@ static void test4a() {
 
 // variable initialization from a local var mentioned again
 static void test4b() {
-  testActions("test4b",
+  testActions(__FUNCTION__,
     R""""(
       module M {
         record R { }
@@ -464,7 +523,7 @@ static void test4b() {
 
 // variable initialization from a local var last mention
 static void test4c() {
-  testActions("test4c",
+  testActions(__FUNCTION__,
     R""""(
       module M {
         record R { }
@@ -490,7 +549,7 @@ static void test4c() {
 
 // test cross-type variable init from an integer
 static void test5a() {
-  testActions("test5a",
+  testActions(__FUNCTION__,
     R""""(
       module M {
         record R { }
@@ -512,7 +571,7 @@ static void test5a() {
 }
 
 static void test5b() {
-  testActions("test5b",
+  testActions(__FUNCTION__,
     R""""(
       module M {
         record R { }
@@ -535,7 +594,7 @@ static void test5b() {
 }
 
 static void test5c() {
-  testActions("test5c",
+  testActions(__FUNCTION__,
     R""""(
       module M {
         record R { }
@@ -559,7 +618,7 @@ static void test5c() {
 }
 
 static void test5d() {
-  testActions("test5d",
+  testActions(__FUNCTION__,
     R""""(
       module M {
         record R { type T; var field : T; }
@@ -591,7 +650,7 @@ static void test5d() {
 
 // test cross-type variable init from another record
 static void test6a() {
-  testActions("test6a",
+  testActions(__FUNCTION__,
     R""""(
       module M {
         record R { }
@@ -620,7 +679,7 @@ static void test6a() {
 }
 
 static void test6b() {
-  testActions("test6b",
+  testActions(__FUNCTION__,
     R""""(
       module M {
         record R { }
@@ -652,7 +711,7 @@ static void test6b() {
 }
 
 static void test6c() {
-  testActions("test6c",
+  testActions(__FUNCTION__,
     R""""(
       module M {
         record R { }
@@ -685,7 +744,7 @@ static void test6c() {
 
 // testing cross-type init= with 'in' intent
 static void test7a() {
-  testActions("test7a",
+  testActions(__FUNCTION__,
     R""""(
       module M {
         record R { }
@@ -713,7 +772,7 @@ static void test7a() {
 }
 
 static void test7b() {
-  testActions("test7b",
+  testActions(__FUNCTION__,
     R""""(
       module M {
         record R { }
@@ -743,7 +802,7 @@ static void test7b() {
 }
 
 static void test7c() {
-  testActions("test7c",
+  testActions(__FUNCTION__,
     R""""(
       module M {
         record R { }
@@ -778,7 +837,7 @@ static void test7c() {
 
 // variable initialization from a module-scope variable
 static void test8a() {
-  testActions("test8a",
+  testActions(__FUNCTION__,
     R""""(
       module M {
         record R { }
@@ -800,7 +859,7 @@ static void test8a() {
 }
 // variable initialization from a ref variable
 static void test8b() {
-  testActions("test8b",
+  testActions(__FUNCTION__,
     R""""(
       module M {
         record R { }
@@ -827,7 +886,7 @@ static void test8b() {
 
 // value return from a value call (no return type declared)
 static void test9a() {
-  testActions("test9a",
+  testActions(__FUNCTION__,
     R""""(
       module M {
         record R { }
@@ -850,7 +909,7 @@ static void test9a() {
 
 // value return from a value call (return type declared)
 static void test9b() {
-  testActions("test9b",
+  testActions(__FUNCTION__,
     R""""(
       module M {
         record R { }
@@ -873,7 +932,7 @@ static void test9b() {
 
 // value return from a 'new' record construction call
 static void test9c() {
-  testActions("test9c",
+  testActions(__FUNCTION__,
     R""""(
       module M {
         record R { }
@@ -894,7 +953,7 @@ static void test9c() {
 
 // value return from a local variable's last mention (no return type)
 static void test10a() {
-  testActions("test10a",
+  testActions(__FUNCTION__,
     R""""(
       module M {
         record R { }
@@ -917,7 +976,7 @@ static void test10a() {
 
 // value return from a local variable's last mention (declared return type)
 static void test10b() {
-  testActions("test10b",
+  testActions(__FUNCTION__,
     R""""(
       module M {
         record R { }
@@ -941,7 +1000,7 @@ static void test10b() {
 
 // similar, but checks that other locals are deinited at return
 static void test10c() {
-  testActions("test10c",
+  testActions(__FUNCTION__,
     R""""(
       module M {
         record R { }
@@ -969,7 +1028,7 @@ static void test10c() {
 
 // similar, but returns in a conditional
 static void test10d() {
-  testActions("test10d",
+  testActions(__FUNCTION__,
     R""""(
       module M {
         record R { }
@@ -1008,7 +1067,7 @@ static void test10d() {
 
 // value return from a local variable that isn't last mention
 static void test10e() {
-  testActions("test10e",
+  testActions(__FUNCTION__,
     R""""(
       module M {
         record R { }
@@ -1033,7 +1092,7 @@ static void test10e() {
 
 // return a module-scope variable, inferred return type
 static void test11a() {
-  testActions("test11a",
+  testActions(__FUNCTION__,
     R""""(
       module M {
         record R { }
@@ -1056,7 +1115,7 @@ static void test11a() {
 
 // return a module-scope variable, declared return type
 static void test11b() {
-  testActions("test11b",
+  testActions(__FUNCTION__,
     R""""(
       module M {
         record R { }
@@ -1079,7 +1138,7 @@ static void test11b() {
 
 // return a reference variable by value
 static void test12a() {
-  testActions("test12a",
+  testActions(__FUNCTION__,
     R""""(
       module M {
         record R { }
@@ -1103,7 +1162,7 @@ static void test12a() {
     });
 }
 static void test12b() {
-  testActions("test12b",
+  testActions(__FUNCTION__,
     R""""(
       module M {
         record R { }
@@ -1128,7 +1187,7 @@ static void test12b() {
 }
 // and with inferred return type
 static void test12c() {
-  testActions("test12c",
+  testActions(__FUNCTION__,
     R""""(
       module M {
         record R { }
@@ -1155,7 +1214,7 @@ static void test12c() {
 
 // test with a return before a split-inited var is initialized
 static void test13a() {
-  testActions("test13a",
+  testActions(__FUNCTION__,
     R""""(
       module M {
         record R { }
@@ -1184,7 +1243,7 @@ static void test13a() {
 
 // test a few patterns with 'yield'
 static void test14a() {
-  testActions("test14a",
+  testActions(__FUNCTION__,
     R""""(
       module M {
         record R { }
@@ -1207,7 +1266,7 @@ static void test14a() {
     });
 }
 static void test14b() {
-  testActions("test14b",
+  testActions(__FUNCTION__,
     R""""(
       module M {
         record R { }
@@ -1232,7 +1291,7 @@ static void test14b() {
     });
 }
 static void test14c() {
-  testActions("test14c",
+  testActions(__FUNCTION__,
     R""""(
       module M {
         record R { }
@@ -1259,7 +1318,7 @@ static void test14c() {
 
 // returning by 'ref'
 static void test15a() {
-  testActions("test15a",
+  testActions(__FUNCTION__,
     R""""(
       module M {
         record R { }
@@ -1281,7 +1340,7 @@ static void test15a() {
 
 // yielding by 'ref'
 static void test15b() {
-  testActions("test15b",
+  testActions(__FUNCTION__,
     R""""(
       module M {
         record R { }
@@ -1303,7 +1362,7 @@ static void test15b() {
 
 // 'in' intent : formal handling
 static void test16a() {
-  testActions("test16a",
+  testActions(__FUNCTION__,
     R""""(
       module M {
         record R { }
@@ -1321,7 +1380,7 @@ static void test16a() {
     });
 }
 static void test16b() {
-  testActions("test16b",
+  testActions(__FUNCTION__,
     R""""(
       module M {
         record R { }
@@ -1340,7 +1399,7 @@ static void test16b() {
 }
 // calling a function using 'in' intent with copy elision
 static void test16c() {
-  testActions("test16c",
+  testActions(__FUNCTION__,
     R""""(
       module M {
         record R { }
@@ -1365,7 +1424,7 @@ static void test16c() {
 }
 // calling a function using 'in' intent without copy elision
 static void test16d() {
-  testActions("test16d",
+  testActions(__FUNCTION__,
     R""""(
       module M {
         record R { }
@@ -1391,7 +1450,7 @@ static void test16d() {
 }
 // calling a function using 'in' intent with nested call
 static void test16e() {
-  testActions("test16e",
+  testActions(__FUNCTION__,
     R""""(
       module M {
         record R { }
@@ -1414,7 +1473,7 @@ static void test16e() {
 }
 // calling a function using 'in' intent with nested call returning ref
 static void test16f() {
-  testActions("test16f",
+  testActions(__FUNCTION__,
     R""""(
       module M {
         record R { }
@@ -1438,7 +1497,7 @@ static void test16f() {
 }
 // 'in' intent argument passed to 'in' intent function
 static void test16g() {
-  testActions("test16g",
+  testActions(__FUNCTION__,
     R""""(
       module M {
         record R { }
@@ -1460,7 +1519,7 @@ static void test16g() {
 }
 // 'in' intent argument returned
 static void test16h() {
-  testActions("test16h",
+  testActions(__FUNCTION__,
     R""""(
       module M {
         record R { }
@@ -1481,7 +1540,7 @@ static void test16h() {
 }
 // performing a redundant cast to the same type (treated as 'in' intent) without copy elision
 static void test16i() {
-  testActions("test16i",
+  testActions(__FUNCTION__,
     R""""(
       module M {
         record R { }
@@ -1508,7 +1567,7 @@ static void test16i() {
 
 // 'out' intent: formal not deinitialized (deinited at call site)
 static void test17a() {
-  testActions("test17a",
+  testActions(__FUNCTION__,
     R""""(
       module M {
         record R { }
@@ -1526,7 +1585,7 @@ static void test17a() {
     });
 }
 static void test17b() {
-  testActions("test17b",
+  testActions(__FUNCTION__,
     R""""(
       module M {
         record R { }
@@ -1549,7 +1608,7 @@ static void test17b() {
 }
 
 static void test18a() {
-  testActions("test18a",
+  testActions(__FUNCTION__,
     R""""(
       module M {
         record R { }
@@ -1569,7 +1628,7 @@ static void test18a() {
 }
 
 static void test18b() {
-  testActions("test18b",
+  testActions(__FUNCTION__,
     R""""(
       module M {
         record R { }
@@ -1588,7 +1647,7 @@ static void test18b() {
 }
 
 static void test19() {
-  testActions("test19",
+  testActions(__FUNCTION__,
       R"""(
       record G {
         type T;
@@ -1615,7 +1674,7 @@ static void test19() {
 
 // Returning a non-nilable 'new' local variable
 static void test20a() {
-  testActions("test20a",
+  testActions(__FUNCTION__,
     R""""(
       module M {
         class C {}
@@ -1640,7 +1699,7 @@ static void test20a() {
 // TODO: Uncomment once we support init of generic types. May need to update
 // expected associated actions as well.
 /* static void test20b() { */
-/*   testActions("test20b", */
+/*   testActions(__FUNCTION__, */
 /*     R""""( */
 /*       module M { */
 /*         class C { */
@@ -1665,7 +1724,7 @@ static void test20a() {
 
 // Nilable version
 static void test20c() {
-  testActions("test20c",
+  testActions(__FUNCTION__,
     R""""(
       module M {
         class C {}
@@ -1688,7 +1747,7 @@ static void test20c() {
 
 static void test21() {
   // Make sure primitive/builtin types don't trigger dead-variable tracking
-  testActions("test21",
+  testActions(__FUNCTION__,
       R"""(
       module M {
         proc take(arg: int) {
@@ -1720,7 +1779,7 @@ static void test22() {
   // Make sure that call-init-deinit doesn't try to process an initialization
   // by mistakenly passing 'R' to 'helper' instead of passing the forwarded
   // value 'R.c'
-  testActions("test22",
+  testActions(__FUNCTION__,
       R"""(
       module M {
         // call-init-deinit wants this to transmute R.c into the reciever of C.helper
@@ -1757,7 +1816,7 @@ static void test22() {
 
 static void test23a() {
   // Ensure the copy-elided in formal doesn't error for its final use.
-  testActions("test23a",
+  testActions(__FUNCTION__,
       R"""(
       module M {
         record Foo {}
@@ -1785,7 +1844,7 @@ static void test23a() {
 static void test23b() {
   // Ensure the copy-elided in formal doesn't error for multiple uses in the
   // same call.
-  testActions("test23b",
+  testActions(__FUNCTION__,
       R"""(
       module M {
         record Foo {}
@@ -1813,7 +1872,7 @@ static void test23b() {
 static void test23c() {
   // Ensure the copy-elided in formal doesn't error for uses across multiple
   // calls in the same statement.
-  testActions("test23c",
+  testActions(__FUNCTION__,
       R"""(
       module M {
         // necessary to resolve + operator
@@ -1844,7 +1903,7 @@ static void test23c() {
 static void test23d() {
   // Ensure the copy-elided in formal doesn't error when used in nested function
   // calls.
-  testActions("test23d",
+  testActions(__FUNCTION__,
       R"""(
       module M {
         record Foo {}
@@ -1879,7 +1938,7 @@ static void test23d() {
 
 // Test if var declaration
 static void test24() {
-  testActions("test24",
+  testActions(__FUNCTION__,
     R""""(
       module M {
         class R { }
@@ -1900,7 +1959,7 @@ static void test24() {
 
 // test that we don't invoke code after continue / break (including initializers)
 static void test25(const std::string& controlModifier) {
-  testActions("test25",
+  testActions(__FUNCTION__,
     (
     R"""(
       module M {
@@ -1931,7 +1990,7 @@ static void test26(const std::string& controlModifier1, const std::string& contr
     expectedActions.push_back({AssociatedAction::DEFAULT_INIT, "x", ""});
     expectedActions.push_back({AssociatedAction::DEINIT, "M.test@14", "x"});
   }
-  testActions("test26",
+  testActions(__FUNCTION__,
     (
     R"""(
       module M {
@@ -1967,9 +2026,63 @@ static void test26() {
   */
 }
 
+// Copying tuple expr
+static void test27a() {
+  testActions(__FUNCTION__,
+    R""""(
+      module M {
+        record R { }
+        proc test() {
+          var r = new R();
+
+          var x = (1, r);
+          r;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
+      {AssociatedAction::MOVE_INIT,  "r",           ""},
+      {AssociatedAction::INIT_OTHER, "x",           "", {}, {
+        {AssociatedAction::ASSIGN,     "x",   "M.test@4", 0},
+        {AssociatedAction::COPY_INIT,  "x",   "M.test@5", 1},
+      }},
+      {AssociatedAction::DEINIT,     "M.test@9",   "r"},
+    });
+}
+
+// Copying tuple variable
+static void test27b() {
+  testActions(__FUNCTION__,
+    R""""(
+      module M {
+        record R { }
+        proc test() {
+          var r = new R();
+          var tup = (1, r);
+
+          var x = tup;
+          tup;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
+      {AssociatedAction::MOVE_INIT,  "r",           ""},
+      {AssociatedAction::INIT_OTHER, "tup",         "", {}, {
+        {AssociatedAction::ASSIGN,     "tup",   "M.test@4", 0},
+        {AssociatedAction::MOVE_INIT,  "tup",   "M.test@5", 1},
+      }},
+      {AssociatedAction::COPY_INIT, "x",            "", {}, {
+        {AssociatedAction::ASSIGN,    "x",   "x", 0},
+        {AssociatedAction::COPY_INIT, "x",   "x", 1},
+      }},
+    });
+}
+
 // Copying then moving tuple
-static void test27() {
-  testActions("test27",
+static void test27c() {
+  testActions(__FUNCTION__,
     R""""(
       module M {
         record R { }
@@ -1984,15 +2097,17 @@ static void test27() {
     {
       {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
       {AssociatedAction::MOVE_INIT,  "r",           ""},
-      {AssociatedAction::INIT_OTHER, "x",           ""},
+      {AssociatedAction::INIT_OTHER, "x",           "", {}, {
+        {AssociatedAction::ASSIGN,     "x",   "M.test@4", 0},
+        {AssociatedAction::MOVE_INIT,  "x",   "M.test@5", 1},
+      }},
       {AssociatedAction::MOVE_INIT,  "y",           ""},
-      {AssociatedAction::DEINIT,     "M.test@10",   "r"}
     });
 }
 
 // Copying tuple twice
 static void test28() {
-  testActions("test28",
+  testActions(__FUNCTION__,
     R""""(
       module M {
         record R { }
@@ -2008,15 +2123,20 @@ static void test28() {
     {
       {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
       {AssociatedAction::MOVE_INIT,  "r",           ""},
-      {AssociatedAction::INIT_OTHER, "x",           ""},
-      {AssociatedAction::COPY_INIT,  "y",           ""},
-      {AssociatedAction::DEINIT,     "M.test@11",   "r"}
+      {AssociatedAction::INIT_OTHER, "x",           "", {}, {
+        {AssociatedAction::ASSIGN,     "x",   "M.test@4", 0},
+        {AssociatedAction::MOVE_INIT,  "x",   "M.test@5", 1},
+      }},
+      {AssociatedAction::COPY_INIT,  "y",           "", {}, {
+        {AssociatedAction::ASSIGN,     "y",   "y", 0},
+        {AssociatedAction::COPY_INIT,  "y",   "y", 1},
+      }},
     });
 }
 
 // Creating reference to tuple, then copying from it
 static void test29() {
-  testActions("test29",
+  testActions(__FUNCTION__,
     R""""(
       module M {
         record R { }
@@ -2032,14 +2152,17 @@ static void test29() {
     {
       {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
       {AssociatedAction::MOVE_INIT,  "r",           ""},
-      {AssociatedAction::INIT_OTHER, "y",           ""},
+      {AssociatedAction::INIT_OTHER, "y",           "", {}, {
+        {AssociatedAction::ASSIGN,     "y",    "y", 0},
+        {AssociatedAction::COPY_INIT,  "y",    "y", 1},
+      }},
       {AssociatedAction::DEINIT,     "M.test@11",   "r"}
     });
 }
 
 // Returning a tuple expression (ref tuple) converted to value tuple
 static void test30() {
-  testActions("test30",
+  testActions(__FUNCTION__,
     R""""(
       module M {
         record R { }
@@ -2049,7 +2172,175 @@ static void test30() {
       }
     )"""",
     {
-      {AssociatedAction::INIT_OTHER, "M.test@5", ""},
+      {AssociatedAction::INIT_OTHER,  "M.test@5",   "", {}, {
+        {AssociatedAction::ASSIGN,      "M.test@5",   "M.test@2", 0},
+        {AssociatedAction::COPY_INIT,   "M.test@5",   "M.test@3", 1},
+      }},
+    });
+}
+
+// Assignment with tuple destructuring, copying out of tuple
+static void test31() {
+  testActions(__FUNCTION__,
+    R""""(
+      module M {
+        record R { }
+        proc test() {
+          var r = new R();
+
+          var tup = (1, r);
+
+          var a = 1;
+          var b = new R();
+          (a, b) = tup;
+          tup;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
+      {AssociatedAction::MOVE_INIT,  "r",           ""},
+      {AssociatedAction::INIT_OTHER, "tup",         "", {}, {
+        {AssociatedAction::ASSIGN,     "tup",   "M.test@4", 0},
+        {AssociatedAction::MOVE_INIT,  "tup",   "M.test@5", 1},
+      }},
+      {AssociatedAction::MOVE_INIT,  "a",           ""},
+      {AssociatedAction::NEW_INIT,   "M.test@12",   ""},
+      {AssociatedAction::MOVE_INIT,  "b",           ""},
+      {AssociatedAction::ASSIGN,     "M.test@18",  "M.test@18", 0},
+      {AssociatedAction::ASSIGN,     "M.test@18",  "M.test@18", 1},
+      {AssociatedAction::DEINIT,     "M.test@20",   "b"},
+    });
+}
+
+// Assignment with tuple destructuring, moving out of tuple
+static void test32() {
+  testActions(__FUNCTION__,
+    R""""(
+      module M {
+        record R { }
+        proc test() {
+          var r = new R();
+
+          var tup = (1, r);
+
+          var a = 1;
+          var b = new R();
+          (a, b) = tup;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
+      {AssociatedAction::MOVE_INIT,  "r",           ""},
+      {AssociatedAction::INIT_OTHER, "tup",         "", {}, {
+        {AssociatedAction::ASSIGN,     "tup",   "M.test@4", 0},
+        {AssociatedAction::MOVE_INIT,  "tup",   "M.test@5", 1},
+      }},
+      {AssociatedAction::MOVE_INIT,  "a",           ""},
+      {AssociatedAction::NEW_INIT,   "M.test@12",   ""},
+      {AssociatedAction::MOVE_INIT,  "b",           ""},
+      {AssociatedAction::ASSIGN,     "M.test@18",  "M.test@18", 0},
+      {AssociatedAction::ASSIGN,     "M.test@18",  "M.test@18", 1},
+      {AssociatedAction::DEINIT,     "M.test@19",   "b"},
+    });
+}
+
+// Init with tuple destructuring, copying out of tuple
+static void test33() {
+  testActions(__FUNCTION__,
+    R""""(
+      module M {
+        record R { }
+        proc test() {
+          var r = new R();
+
+          var tup = (1, r);
+
+          var (a, b) = tup;
+          tup;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
+      {AssociatedAction::MOVE_INIT,  "r",           ""},
+      {AssociatedAction::INIT_OTHER, "tup",         "", {}, {
+        {AssociatedAction::ASSIGN,     "tup",   "M.test@4", 0},
+        {AssociatedAction::MOVE_INIT,  "tup",   "M.test@5", 1},
+      }},
+      {AssociatedAction::ASSIGN,    "a",   "a", 0},
+      {AssociatedAction::COPY_INIT, "b",   "b", 1},
+      {AssociatedAction::DEINIT,     "M.test@13",   "b"},
+    });
+}
+
+// Init with tuple destructuring, moving out of tuple
+static void test34() {
+  testActions(__FUNCTION__,
+    R""""(
+      module M {
+        record R { }
+        proc test() {
+          var r = new R();
+
+          var tup = (1, r);
+
+          var (a, b) = tup;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
+      {AssociatedAction::MOVE_INIT,  "r",           ""},
+      {AssociatedAction::INIT_OTHER, "tup",         "", {}, {
+        {AssociatedAction::ASSIGN,     "tup",   "M.test@4", 0},
+        {AssociatedAction::MOVE_INIT,  "tup",   "M.test@5", 1},
+      }},
+      {AssociatedAction::MOVE_INIT, "a",   "a", 0},
+      {AssociatedAction::MOVE_INIT, "b",   "b", 1},
+      {AssociatedAction::DEINIT,    "M.test@12",   "b"},
+    });
+}
+
+// Tuple expr containing tuple variables, inner tuples of same type
+static void test35a() {
+  testActions(__FUNCTION__,
+    R""""(
+      module M {
+        record R { }
+        proc test() {
+          var tup, tup2 : 2 * int;
+          var x = (tup, tup2);
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::INIT_OTHER, "x",         "", {}, {
+        {AssociatedAction::MOVE_INIT,  "x",   "M.test@6", 0},
+        {AssociatedAction::MOVE_INIT,  "x",   "M.test@7", 1},
+      }},
+    });
+}
+
+// Like previous, but with inner tuples of different type
+static void test35b() {
+  testActions(__FUNCTION__,
+    R""""(
+      module M {
+        record R { }
+        proc test() {
+          var tup : 2 * int;
+          var tup2 : 3 * int;
+          var x = (tup, tup2);
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::INIT_OTHER, "x",         "", {}, {
+        {AssociatedAction::MOVE_INIT,  "x",   "M.test@8", 0},
+        {AssociatedAction::MOVE_INIT,  "x",   "M.test@9", 1},
+      }},
     });
 }
 
@@ -2155,10 +2446,18 @@ int main() {
   test25();
   test26();
 
-  test27();
+  test27a();
+  test27b();
+  test27c();
   test28();
   test29();
   test30();
+  test31();
+  test32();
+  test33();
+  test34();
+  test35a();
+  test35b();
 
   return 0;
 }

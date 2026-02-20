@@ -31,6 +31,7 @@
 
 #include "Resolver.h"
 #include "VarScopeVisitor.h"
+#include <unordered_map>
 
 namespace chpl {
 namespace resolution {
@@ -53,7 +54,7 @@ struct CallInitDeinit : VarScopeVisitor {
   // inputs to the process
   Resolver& resolver;
   const std::set<ID>& splitInitedVars;
-  const std::set<ID>& elidedCopyFromIds;
+  const ElidedCopyInfo& elidedCopyFromIds;
 
   // local state
   std::set<ID> outOrInoutFormals;
@@ -62,7 +63,7 @@ struct CallInitDeinit : VarScopeVisitor {
   CallInitDeinit(Context* context,
                  Resolver& resolver,
                  const std::set<ID>& splitInitedVars,
-                 const std::set<ID>& elidedCopyFromIds)
+                 const ElidedCopyInfo& elidedCopyFromIds)
     : VarScopeVisitor(context, resolver.returnType),
       resolver(resolver),
       splitInitedVars(splitInitedVars),
@@ -87,7 +88,9 @@ struct CallInitDeinit : VarScopeVisitor {
                                RV& rv);
   void processDeinitsAndPropagate(VarFrame* frame, VarFrame* parent, RV& rv);
 
-  void resolveDefaultInit(const VarLikeDecl* ast, RV& rv);
+  void resolveDefaultInit(const NamedDecl* ast,
+                          Qualifier intentOrKind,
+                          RV& rv);
   void resolveAssign(const AstNode* ast,
                      const QualifiedType& lhsType,
                      const QualifiedType& rhsType,
@@ -103,29 +106,42 @@ struct CallInitDeinit : VarScopeVisitor {
                        const QualifiedType& lhsType,
                        const QualifiedType& rhsType,
                        RV& rv);
+  void processTupleRhsHelper(VarFrame* frame,
+                             const AstNode* ast,
+                             const Tuple* rhsTupleExpr,
+                             const TupleType* lhsTupleType,
+                             const TupleType* rhsTupleType,
+                             RV& rv);
+  bool initIsCopyElidedFrom(const AstNode* lhsAst,
+                            const AstNode* rhsAst,
+                            const ID& rhsDeclId);
   void processInit(VarFrame* frame,
                    const AstNode* ast,
                    const QualifiedType& lhsType,
                    const QualifiedType& rhsType,
-                   RV& rv);
-
+                   RV& rv,
+                   const AstNode* rhsAst = nullptr);
   void resolveDeinit(const AstNode* ast,
                      ID deinitedId,
                      const QualifiedType& type,
                      RV& rv);
-  void resolveTupleUnpackAssign(const Tuple* lhsTuple,
-                                const AstNode* astForErr,
-                                const QualifiedType& initialLhsType,
-                                const QualifiedType& rhsType,
-                                RV& rv);
-
 
   void processReturnThrowYield(const uast::AstNode* ast, RV& rv);
 
   // overrides
-  void handleDeclaration(const VarLikeDecl* ast, RV& rv) override;
+  void handleDeclaration(const VarLikeDecl* ast,
+                         const AstNode* parent,
+                         const AstNode* initExpr,
+                         const QualifiedType& initType,
+                         Qualifier intentOrKind,
+                         bool isFormal,
+                         RV& rv) override;
   void handleMention(const Identifier* ast, ID varId, RV& rv) override;
-  void handleAssign(const OpCall* ast, RV& rv) override;
+  void handleAssign(const AstNode* lhsAst,
+                    const AstNode* rhsAst,
+                    const types::QualifiedType& rhsType,
+                    const OpCall* opAst,
+                    RV& rv) override;
   void handleOutFormal(const Call* ast, const AstNode* actual,
                        const QualifiedType& formalType,
                        RV& rv) override;
@@ -187,7 +203,29 @@ static bool isTypeParam(QualifiedType::Kind kind) {
 bool CallInitDeinit::isCallProducingValue(const AstNode* rhsAst,
                                           const QualifiedType& rhsType,
                                           RV& rv) {
-  return rv.byAst(rhsAst).toId().isEmpty() && !isRef(rhsType.kind());
+  CHPL_ASSERT(rhsAst);
+  CHPL_ASSERT(rhsType.type());
+
+  if (rhsAst->isTuple()) {
+    auto asTupleType = rhsType.type()->toTupleType();
+    CHPL_ASSERT(asTupleType);
+    // Consider a tuple expression to be a call producing a value (for the
+    // purposes of call-init-deinit) iff it contains only value elements.
+    return asTupleType == asTupleType->toValueTuple(context);
+  }
+
+  bool isProbablyCall = rv.byAst(rhsAst).toId().isEmpty();
+
+  // If we're in a tuple expr, we won't have an id, so the above check may give
+  // a false positive.
+  auto parentId = parsing::idToParentId(context, rhsAst->id());
+  if (auto parentAst = parsing::idToAst(context, parentId)) {
+    if (parentAst->isTuple() || parentAst->isTupleDecl()) {
+      isProbablyCall = false;
+    }
+  }
+
+  return isProbablyCall && !isRef(rhsType.kind());
 }
 
 std::tuple<CallInfo, CallScopeInfo>
@@ -441,11 +479,11 @@ void CallInitDeinit::processDeinitsAndPropagate(VarFrame* frame,
   }
 }
 
-void CallInitDeinit::resolveDefaultInit(const VarLikeDecl* ast, RV& rv) {
+void CallInitDeinit::resolveDefaultInit(const NamedDecl* ast, Qualifier intentOrKind, RV& rv) {
   // Type variables do not need default init.
-  if (ast->storageKind() == Qualifier::TYPE) return;
+  if (intentOrKind == Qualifier::TYPE) return;
 
-  if (isRef(ast->storageKind())) {
+  if (isRef(intentOrKind)) {
     context->error(ast, "cannot default initialize references");
   }
 
@@ -543,110 +581,6 @@ void CallInitDeinit::resolveDefaultInit(const VarLikeDecl* ast, RV& rv) {
   }
 }
 
-// Adjusts LHS tuple type so that its components are all references.
-// Does no sanity checks.
-static QualifiedType
-getLhsForTupleUnpackAssign(Context* context,
-                           const uast::AstNode* astForErr,
-                           const Tuple* lhsTuple,
-                           const QualifiedType& lhsType) {
-  std::vector<QualifiedType> eltTypes;
-
-  auto lhsT = lhsType.type() ? lhsType.type()->toTupleType() : nullptr;
-  if (!lhsT || lhsT->numElements() != lhsTuple->numActuals()) return lhsType;
-
-  for (int i = 0; i < lhsTuple->numActuals(); i++) {
-    auto actual = lhsTuple->actual(i);
-    auto ident = actual->toIdentifier();
-    QualifiedType qt;
-
-    if (ident && ident->name() == USTR("_")) {
-      // If the LHS actual is '_', then use the Nothing type. This is fine
-      // since the '_' will never be set.
-      qt = { QualifiedType::VAR, NothingType::get(context) };
-
-    } else {
-      // Otherwise, turn its qualifier into 'ref' / 'const ref'
-      auto eqt = lhsT->elementType(i);
-      auto kind = KindProperties::addRefness(eqt.kind());
-      qt = { kind, eqt.type(), eqt.param() };
-    }
-
-    eltTypes.push_back(std::move(qt));
-  }
-
-  // Set the 'LHS' tuple type.
-  auto k = QualifiedType::VAR;
-  auto t = TupleType::getQualifiedTuple(context, std::move(eltTypes));
-  QualifiedType ret = { k, t };
-  return ret;
-}
-
-
-void CallInitDeinit::resolveTupleUnpackAssign(const Tuple* lhsTuple,
-                                              const AstNode* astForErr,
-                                              const QualifiedType& initialLhsType,
-                                              const QualifiedType& rhsType,
-                                              RV& rv) {
-  // Make sure that both the LHS and RHS have types
-  if (!initialLhsType.hasTypePtr()) {
-    context->error(lhsTuple, "Unknown lhs tuple type in split tuple assign");
-    return;
-  }
-  if (!rhsType.hasTypePtr()) {
-    context->error(lhsTuple, "Unknown rhs tuple type in split tuple assign");
-    return;
-  }
-
-  // Then, check that lhsType and rhsType are tuples
-  const TupleType* initialLhsT = initialLhsType.type()->toTupleType();
-  const TupleType* rhsT = rhsType.type()->toTupleType();
-
-  if (initialLhsT == nullptr) {
-    context->error(lhsTuple, "lhs type is not tuple in split tuple assign");
-    return;
-  }
-  if (rhsT == nullptr) {
-    context->error(lhsTuple, "rhs type is not tuple in split tuple assign");
-    return;
-  }
-
-  // Then, check that they have the same size
-  if (lhsTuple->numActuals() != rhsT->numElements() ||
-      initialLhsT->numElements() != rhsT->numElements()) {
-    context->error(lhsTuple, "tuple size mismatch in split tuple assign");
-    return;
-  }
-
-  // Then, make sure that the LHS is valid and adjust its intent.
-  // It recomputes the LHS tuple type and sets it in 'byPostorder'.
-  // It does not recompute intents for component sub-expressions.
-  auto lhsType = getLhsForTupleUnpackAssign(context, astForErr, lhsTuple,
-                                            initialLhsType);
-  rv.byPostorder().byAst(lhsTuple).setType(lhsType);
-
-  auto lhsT = lhsType.type()->toTupleType();
-
-  for (int i = 0; i < lhsTuple->numActuals(); i++) {
-    auto actual = lhsTuple->actual(i);
-
-    QualifiedType lhsEltType = lhsT->elementType(i);
-    QualifiedType rhsEltType = rhsT->elementType(i);
-    auto ident = actual->toIdentifier();
-
-    // Do not perform an assignment in the case of a '_' variable.
-    if (ident && ident->name() == USTR("_")) continue;
-
-    if (auto innerTuple = actual->toTuple()) {
-      // Recurse if the element is a tuple.
-      resolveTupleUnpackAssign(innerTuple, astForErr, lhsEltType, rhsEltType, rv);
-      continue;
-    }
-
-    resolveAssign(actual, lhsEltType, rhsEltType, rv);
-  }
-}
-
 void CallInitDeinit::resolveAssign(const AstNode* ast,
                                    const QualifiedType& lhsType,
                                    const QualifiedType& rhsTypeIn,
@@ -659,17 +593,6 @@ void CallInitDeinit::resolveAssign(const AstNode* ast,
     return;
   }
 
-  if (auto call = ast->toOpCall()) {
-    if (call->op() == "=" && call->child(0)->isTuple()) {
-      // Tuple unpacking assignment
-      // (a, b, c) = foo();
-      auto lhsTuple = call->actual(0)->toTuple();
-      auto& lhsType = rv.byPostorder().byAst(call->actual(0)).type();
-      auto& rhsType = rv.byPostorder().byAst(call->actual(1)).type();
-      resolveTupleUnpackAssign(lhsTuple, call, lhsType, rhsType, rv);
-      return;
-    }
-  }
   // In an 'if var' decl, resolve assign as though the RHS is non-nil.
   // We'll verify it is at runtime.
   if (auto conditional = frame->scopeAst->toConditional()) {
@@ -701,8 +624,9 @@ void CallInitDeinit::resolveAssign(const AstNode* ast,
   ResolvedExpression& opR = rv.byAst(ast);
 
   auto op = ast->toOpCall();
-  if (op != nullptr && op->op() == USTR("=")) {
-    // if the syntax shows a '=' call, resolve that into the assign
+  if (op != nullptr && op->op() == USTR("=") && !op->child(0)->isTuple()) {
+    // if the syntax shows a '=' call (except tuple unpacking assign),
+    // resolve that into the assign
     c.noteResult(&opR);
   } else {
     // otherwise, add an associated action
@@ -846,30 +770,103 @@ void CallInitDeinit::resolveMoveInit(const AstNode* ast,
   }
 }
 
+void CallInitDeinit::processTupleRhsHelper(VarFrame* frame,
+                                           const AstNode* ast,
+                                           const Tuple* rhsTupleExpr,
+                                           const TupleType* lhsTupleType,
+                                           const TupleType* rhsTupleType,
+                                           RV& rv) {
+  auto& re = rv.byAst(ast);
+
+  // Save the AssociatedAction from the init of the tuple as a whole, under
+  // which the per-element actions will be nested.
+  CHPL_ASSERT(re.associatedActions().size() == 1);
+  auto topLevelAction = std::move(re.associatedActions().front());
+  CHPL_ASSERT(topLevelAction.action() == AssociatedAction::COPY_INIT ||
+              topLevelAction.action() == AssociatedAction::INIT_OTHER);
+
+  re.clearAssociatedActions();
+  AssociatedAction::ActionsList subActions;
+  for (int i = 0; i < lhsTupleType->numElements(); i++) {
+    auto actual = rhsTupleExpr->actual(i);
+    auto lhsEltType = lhsTupleType->elementType(i);
+    auto rhsEltType = actual ? rv.byPostorder().byAst(actual).type()
+                             : rhsTupleType->elementType(i);
+    processInit(frame, ast, lhsEltType,
+                rhsEltType, rv, actual);
+    for (auto action : re.associatedActions()) {
+      auto actionWithIdx = new AssociatedAction(
+          action.action(),
+          action.fn(),
+          /* id */ (actual ? actual->id() : action.id()),
+          action.type(),
+          /* tupleEltIdx */ i,
+          action.subActions());
+      subActions.push_back(actionWithIdx);
+    }
+    re.clearAssociatedActions();
+  }
+  // Re-add the top-level action with the sub-actions.
+  re.addAssociatedAction(topLevelAction.action(), topLevelAction.fn(),
+                            topLevelAction.id(), topLevelAction.type(),
+                            chpl::optional<int>{}, subActions);
+}
+
+bool CallInitDeinit::initIsCopyElidedFrom(const AstNode* lhsAst,
+                                          const AstNode* rhsAst,
+                                          const ID& rhsDeclId) {
+  for (const ID& id : {lhsAst->id(), rhsAst->id()}) {
+    auto it = elidedCopyFromIds.find(id);
+    if (it != elidedCopyFromIds.end()) {
+      const ID& fromId = it->second;
+      if (fromId == rhsDeclId) {
+        // copy elision with '=' should only apply to myVar = myOtherVar
+        CHPL_ASSERT(!rhsDeclId.isEmpty());
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 void CallInitDeinit::processInit(VarFrame* frame,
                                  const AstNode* ast,
                                  const QualifiedType& lhsType,
                                  const QualifiedType& rhsType,
-                                 RV& rv) {
+                                 RV& rv,
+                                 const AstNode* rhsAst) {
+  CHPL_ASSERT(ast);
+
   // ast should be:
   //  * a '=' call
   //  * a VarLikeDecl
   //  * an actual passed by 'in' intent
   //  * a Return or Yield
-  const AstNode* rhsAst = nullptr;
+
   auto op = ast->toOpCall();
-  if (op != nullptr && op->op() == USTR("=")) {
-    rhsAst = op->actual(1);
-  } else if (auto vd = ast->toVarLikeDecl()) {
-    rhsAst = vd->initExpression();
-  } else if (auto r = ast->toReturn()) {
-    rhsAst = r->value();
-  } else if (auto y = ast->toYield()) {
-    rhsAst = y->value();
+  if (!rhsAst) {
+    if (op != nullptr && op->op() == USTR("=")) {
+      rhsAst = op->actual(1);
+    } else if (auto vd = ast->toVarLikeDecl()) {
+      rhsAst = vd->initExpression();
+    } else if (auto r = ast->toReturn()) {
+      rhsAst = r->value();
+    } else if (auto y = ast->toYield()) {
+      rhsAst = y->value();
+    }
+
+    if (rhsAst == nullptr) {
+      rhsAst = ast;
+    }
   }
 
-  if (rhsAst == nullptr) {
-    rhsAst = ast;
+  const AstNode* lhsAst = nullptr;
+  if (op != nullptr && op->op() == USTR("=")) {
+    lhsAst = op->actual(0);
+  }
+  const bool lhsIsTuple = lhsAst && lhsAst->isTuple();
+  if (!lhsAst) {
+    lhsAst = ast;
   }
 
   if (lhsType.isType() || lhsType.isParam()) {
@@ -882,23 +879,21 @@ void CallInitDeinit::processInit(VarFrame* frame,
       return;
     }
 
+    ID rhsDeclId = refersToId(rhsAst, rv);
     if (isRef(lhsType.kind())) {
       // e.g. ref x = localVariable;
       //  or  ref y = returnAValue();
       if (isCallProducingValue(rhsAst, rhsType, rv)) {
         resolveDeinit(ast, rhsAst->id(), rhsType, rv);
       }
-    } else if (elidedCopyFromIds.count(ast->id()) > 0) {
+    } else if (initIsCopyElidedFrom(lhsAst, rhsAst, rhsDeclId)) {
       // it is move initialization
       resolveMoveInit(ast, rhsAst, lhsType, rhsType, rv);
 
       // The RHS must represent a variable that is now dead,
       // so note that in deinitedVars.
-      ID rhsDeclId = refersToId(rhsAst, rv);
-      // copy elision with '=' should only apply to myVar = myOtherVar
-      CHPL_ASSERT(!rhsDeclId.isEmpty());
       frame->deinitedVars.emplace(rhsDeclId, currentStatement()->id());
-    } else if (isCallProducingValue(rhsAst, rhsType, rv)) {
+    } else if (isCallProducingValue(rhsAst, rhsType, rv) && !lhsIsTuple) {
       // e.g. var x; x = callReturningValue();
       resolveMoveInit(ast, rhsAst, lhsType, rhsType, rv);
     } else {
@@ -912,13 +907,29 @@ void CallInitDeinit::processInit(VarFrame* frame,
                         lhsType, rhsType,
                         /* forMoveInit */ false,
                         rv);
+
+        // TODO/HACK: Special handling for tuple var LHS = tuple expr RHS case:
+        // Explicitly process init for each element, subsuming associated
+        // actions for each as sub-actions of the top-level init=.
+        // This will be obviated by just invoking `_tuple.init=` once we can
+        // properly handle VarScopeVisitor analyses over the param for loop it
+        // contains.
+        auto lhsTupleType =
+            lhsType.type() ? lhsType.type()->toTupleType() : nullptr;
+        auto rhsTupleExpr = rhsAst->toTuple();
+        if (lhsTupleType && rhsTupleExpr) {
+          CHPL_ASSERT(rhsType.type());
+          auto rhsTupleType = rhsType.type()->toTupleType();
+          CHPL_ASSERT(rhsTupleType);
+          processTupleRhsHelper(frame, ast, rhsTupleExpr, lhsTupleType,
+                                rhsTupleType, rv);
+        }
       } else {
         resolveAssign(ast, lhsType, rhsType, rv);
       }
     }
   }
 }
-
 
 void CallInitDeinit::resolveDeinit(const AstNode* ast,
                                    ID deinitedId,
@@ -968,18 +979,16 @@ void CallInitDeinit::resolveDeinit(const AstNode* ast,
   c.noteResult(&opR, { { AssociatedAction::DEINIT, deinitedId } });
 }
 
-void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
+void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast,
+                                       const AstNode* parent,
+                                       const AstNode* initExpr,
+                                       const QualifiedType& initType,
+                                       Qualifier intentOrKind,
+                                       bool isFormal,
+                                       RV& rv) {
   VarFrame* frame = currentFrame();
 
-  // check for use of deinited variables in type or init exprs
-  if (auto type = ast->typeExpression()) {
-    processMentions(type, rv);
-  }
-  if (auto init = ast->initExpression()) {
-    processMentions(init, rv);
-  }
-
-  bool inited = processDeclarationInit(ast, rv);
+  bool inited = processDeclarationInit(ast, initExpr, rv);
   bool splitInited = (splitInitedVars.count(ast->id()) > 0);
 
   bool handledFormal = false;
@@ -988,8 +997,7 @@ void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
   bool isRefLoopIntent = false;
   bool isResource = false;
 
-  if (ast->isFormal() || ast->isVarArgFormal()) {
-
+  if (isFormal) {
     // consider the formal's intent
     ResolvedExpression& formalRe = rv.byAst(ast);
     QualifiedType formalType = formalRe.type();
@@ -1017,7 +1025,6 @@ void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
     }
   }
 
-  auto parent = parsing::parentAst(context, ast);
   if (parent) {
     // Errors in Catch statements will be instantiated by the throwing function
     // in the Try block
@@ -1033,7 +1040,7 @@ void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
         // Any other declaration (with type, with init) is just a task variable.
         if (!tv->initExpression() && !tv->typeExpression()) {
           isLoopIntent = true;
-          if (isRef(ast->storageKind())) {
+          if (isRef(intentOrKind)) {
             isRefLoopIntent = true;
           }
         }
@@ -1054,7 +1061,7 @@ void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
     // Will be inited later, don't default init,
     // and also don't try to deinit it on e.g. a return before that point
 
-  } else if (isLoopIntent && !isRefLoopIntent ) {
+  } else if (isLoopIntent && !isRefLoopIntent) {
     // loop intent variables don't have a RHS, but are implicitly initialized
     // from the outer variable they correspond to. Handle that initialization
     // here.
@@ -1062,18 +1069,15 @@ void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
     auto& lhsType = rv.byAst(ast).type();
     auto rhsType = lhsType;
 
-    processInit(frame, ast, lhsType, rhsType, rv);
+    processInit(frame, ast, lhsType, rhsType, rv, initExpr);
   } else if (inited) {
     auto lhsAst = ast;
-    auto rhsAst = ast->initExpression();
-
     ResolvedExpression& lhsRe = rv.byAst(lhsAst);
     QualifiedType lhsType = lhsRe.type();
 
-    ResolvedExpression& rhsRe = rv.byAst(rhsAst);
-    QualifiedType rhsType = rhsRe.type();
+    QualifiedType rhsType = initType;
 
-    processInit(frame, ast, lhsType, rhsType, rv);
+    processInit(frame, ast, lhsType, rhsType, rv, initExpr);
     // note that the variable is now initialized
     ID id = ast->id();
     frame->addToInitedVars(id);
@@ -1088,7 +1092,7 @@ void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
              ast->attributeGroup()->hasPragma(uast::pragmatags::PRAGMA_NO_INIT) == false) {
     // default init it
     // not inited here and not split-inited, so default-initialize it
-    resolveDefaultInit(ast, rv);
+    resolveDefaultInit(ast, intentOrKind, rv);
     // note that the variable is now initialized
     ID id = ast->id();
     frame->addToInitedVars(id);
@@ -1104,21 +1108,17 @@ void CallInitDeinit::handleMention(const Identifier* ast, ID varId, RV& rv) {
   checkUseOfDeinited(ast, varId);
 }
 
-void CallInitDeinit::handleAssign(const OpCall* ast, RV& rv) {
+void CallInitDeinit::handleAssign(const AstNode* lhsAst,
+                                  const AstNode* rhsAst,
+                                  const types::QualifiedType& rhsType,
+                                  const OpCall* opAst,
+                                  RV& rv) {
   VarFrame* frame = currentFrame();
 
-  // What is the RHS and LHS of the '=' call?
-  auto lhsAst = ast->actual(0);
-  auto rhsAst = ast->actual(1);
-
-  ResolvedExpression& lhsRe = rv.byAst(lhsAst);
-  QualifiedType lhsType = lhsRe.type();
-
-  ResolvedExpression& rhsRe = rv.byAst(rhsAst);
-  QualifiedType rhsType = rhsRe.type();
+  QualifiedType lhsType = rv.byAst(lhsAst).type();
 
   // update initedVars if it is initializing a variable
-  bool splitInited = processSplitInitAssign(ast, splitInitedVars, rv);
+  bool splitInited = processSplitInitAssign(lhsAst, splitInitedVars, rv);
 
   if (splitInited) {
     // if initializing a variable, update localsAndDefers or initedOuterVars
@@ -1127,21 +1127,23 @@ void CallInitDeinit::handleAssign(const OpCall* ast, RV& rv) {
   }
 
   // check for use of deinited variables
-  processMentions(ast, rv);
+  processMentions(lhsAst, rv);
+  processMentions(rhsAst, rv);
 
   bool isInit = splitInited;
-  isInit |= resolver.initResolver && resolver.initResolver->isInitPoint(ast);
+  isInit |= resolver.initResolver && resolver.initResolver->isInitPoint(opAst);
 
   if (lhsType.isType() || lhsType.isParam()) {
     // these are basically 'move' initialization
-    resolveMoveInit(ast, rhsAst, lhsType, rhsType, rv);
+    resolveMoveInit(opAst, rhsAst, lhsType, rhsType, rv);
   } else if (isInit) {
-    processInit(frame, ast, lhsType, rhsType, rv);
+    processInit(frame, opAst, lhsType, rhsType, rv, rhsAst);
   } else {
     // it is assignment, so resolve the '=' call
-    resolveAssign(ast, lhsType, rhsType, rv);
+    resolveAssign(opAst, lhsType, rhsType, rv);
   }
 }
+
 void CallInitDeinit::handleOutFormal(const Call* ast,
                                      const AstNode* actual,
                                      const QualifiedType& formalType,
@@ -1174,6 +1176,7 @@ void CallInitDeinit::handleOutFormal(const Call* ast,
     resolveAssign(actual, actualType, formalType, rv);
   }
 }
+
 void CallInitDeinit::handleInFormal(const Call* ast, const AstNode* actual,
                                     const QualifiedType& formalType,
                                     const QualifiedType* actualScalarType,
@@ -1331,12 +1334,12 @@ void callInitDeinit(Resolver& resolver) {
                                                    node,
                                                    resolver.byPostorder);
 
-  std::set<ID> elidedCopyFromIds = computeElidedCopies(resolver.context,
-                                                       node,
-                                                       resolver.byPostorder,
-                                                       resolver.poiScope,
-                                                       splitInitedVars,
-                                                       resolver.returnType);
+  ElidedCopyInfo elidedCopyFromIds = computeElidedCopies(resolver.context,
+                                                         node,
+                                                         resolver.byPostorder,
+                                                         resolver.poiScope,
+                                                         splitInitedVars,
+                                                         resolver.returnType);
 
   auto symName = UniqueString::get(resolver.context, "unknown");
   if (auto nd = resolver.symbol->toNamedDecl()) {

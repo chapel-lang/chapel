@@ -3271,6 +3271,17 @@ bool Resolver::resolveSpecialOpCall(const Call* call) {
     if (op->numActuals() == 2) {
       // Update a generic/unknown type when split-init is used.
       adjustTypesOnAssign(op->actual(0), op->actual(1));
+
+      if (auto lhsTuple = op->actual(0)->toTuple()) {
+        auto rhsQt = byPostorder.byAst(op->actual(1)).type();
+        if (auto rhsTupleType = rhsQt.type()->toTupleType()) {
+          if (lhsTuple->numActuals() != rhsTupleType->numElements()) {
+            context->error(call, "tuple size mismatch in split tuple assign");
+            byPostorder.byAst(call).setType(QualifiedType(
+                QualifiedType::UNKNOWN, ErroneousType::get(context)));
+          }
+        }
+      }
     }
   } else if (op->op() == USTR("...")) {
     // just leave it unknown -- tuple expansion only makes sense
@@ -5073,8 +5084,10 @@ bool Resolver::enter(const uast::Manage* manage) {
       }
     }
     CHPL_ASSERT(enterSig && exitSig);
-    rr.addAssociatedAction(AssociatedAction::ENTER_CONTEXT, enterSig, manage->id(), {});
-    rr.addAssociatedAction(AssociatedAction::EXIT_CONTEXT, exitSig, manage->id(), {});
+    rr.addAssociatedAction(AssociatedAction::ENTER_CONTEXT, enterSig,
+                           manage->id(), QualifiedType());
+    rr.addAssociatedAction(AssociatedAction::EXIT_CONTEXT, exitSig,
+                           manage->id(), QualifiedType());
   }
 
   enterScope(manage);
@@ -5616,7 +5629,8 @@ rerunCallInfoWithIteratorTag(ResolutionContext* rc,
   if (!newC.mostSpecific().isEmpty()) {
     for (auto sig : newC.mostSpecific()) {
       if (!sig) continue;
-      r.addAssociatedAction(AssociatedAction::ITERATE, sig.fn(), call->id(), {});
+      r.addAssociatedAction(AssociatedAction::ITERATE, sig.fn(), call->id(),
+                            QualifiedType());
     }
 
     return newC;
