@@ -170,6 +170,12 @@ class MasonModulesHelpHandler : HelpHandler {
   }
 }
 
+class MasonLintHelpHandler: HelpHandler {
+  override proc printHelp() {
+    masonLintHelp();
+  }
+}
+
 proc masonHelp() {
   const s = """
   Chapel's package manager
@@ -724,4 +730,25 @@ proc masonModulesHelp() {
       mason modules
   """.dedent().strip();
   writeln(s);
+}
+
+proc masonLintHelp() {
+  const s = """
+  Check the mason package for any style or formatting issues"
+
+  Usage:
+      mason doc [options] [-- <chplcheck options>...]
+
+  Options:
+      -h, --help                  Display this message
+
+  Extra options can be passed to chplcheck after a double dash (`--`).
+  Alternatively, chplcheck can be configured in the Mason.toml file under
+  the [tool.chplcheck] table.
+
+  Requires that chplcheck is set up in order to work.
+  For instructions on setting up chplcheck, please view its documentation.
+  """.dedent().strip();
+  writeln(s);
+  writeln();
 }

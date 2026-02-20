@@ -1,0 +1,6 @@
+src/Pkg.chpl:3: node violates rule CamelCaseFunctions
+example/myExample.chpl:3: node violates rule BoolComparison
+Got Lints as expected - chplcheck found issues
+test/myTest.chpl:5: node violates rule IncorrectIndentation
+example/myExample.chpl:3: node violates rule BoolComparison
+Got Lints as expected - chplcheck found issues
