@@ -1,9 +1,9 @@
 
 proc ifMask(ref Res, A, B) {
   // CHECK-LABEL: @ifMask_chpl
-  // CHECK-SAME: %Res,
-  // CHECK-SAME: %A,
-  // CHECK-SAME: %B)
+  // CHECK-SAME: %Res{{[0-9a-zA-Z_.]*}},
+  // CHECK-SAME: %A{{[0-9a-zA-Z_.]*}},
+  // CHECK-SAME: %B{{[0-9a-zA-Z_.]*}})
 
   foreach i in A.domain {
     // CHECK: tail call <{{[0-9]+}} x double> @llvm.masked.load
