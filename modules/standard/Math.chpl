@@ -1438,6 +1438,54 @@ module Math {
     return x;
   }
 
+  /* Returns the least common multiple of the integer arguments `x`
+     and `y`. */
+  proc lcm(x: int, y: int): int {
+    return x / gcd(x,y) * y;
+  }
+
+  /* Returns the least common multiple of the integer arguments `x`
+     and `y`. */
+  proc lcm(x: int(32), y: int(32)): int(32) {
+    return x / gcd(x,y) * y;
+  }
+
+  /* Returns the least common multiple of the integer arguments `x`
+     and `y`. */
+  proc lcm(x: int(16), y: int(16)): int(16) {
+    return x / gcd(x,y) * y;
+  }
+
+  /* Returns the least common multiple of the integer arguments `x`
+     and `y`. */
+  proc lcm(x: int(8), y: int(8)): int(8) {
+    return x / gcd(x,y) * y;
+  }
+
+  /* Returns the least common multiple of the unsigned integer arguments `x`
+     and `y`. */
+  proc lcm(x: uint, y: uint): uint {
+    return x / gcd(x,y) * y;
+  }
+
+  /* Returns the least common multiple of the unsigned integer arguments `x`
+     and `y`. */
+  proc lcm(x: uint(32), y: uint(32)): uint(32) {
+    return x / gcd(x,y) * y;
+  }
+
+  /* Returns the least common multiple of the unsigned integer arguments `x`
+     and `y`. */
+  proc lcm(x: uint(16), y: uint(16)): uint(16) {
+    return x / gcd(x,y) * y;
+  }
+
+  /* Returns the least common multiple of the unsigned integer arguments `x`
+     and `y`. */
+  proc lcm(x: uint(8), y: uint(8)): uint(8) {
+    return x / gcd(x,y) * y;
+  }
+
   /* Returns the Bessel function of the first kind of order `0` of `x`. */
   @unstable("'j0' is unstable and may be renamed or moved to a different module in the future")
   inline proc j0(x: real(32)): real(32) {
