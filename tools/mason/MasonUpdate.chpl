@@ -536,6 +536,8 @@ private proc pullGitDeps(gitDeps, show=false) {
   var baseDir = MASON_HOME +'/git/';
   for val in gitDepMap.keys() {
     var (srcURL, origBranch, revision) = gitDepMap[val];
+    log.debugf("Processing dependency %s: url: '%s', branch: '%s', rev='%s'\n",
+                val, srcURL, origBranch, revision);
 
     // Default to head if branch isn't specified
     var branch = if origBranch == "" then "HEAD" else origBranch;
