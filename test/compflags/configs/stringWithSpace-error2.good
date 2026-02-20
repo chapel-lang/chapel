@@ -1,0 +1,3 @@
+Command-line arg (x):1: syntax error: invalid token: \
+Command-line arg (x):1: syntax error: end-of-file in string literal
+error: Error while trying to set config 'x'
