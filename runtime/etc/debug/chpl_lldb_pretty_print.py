@@ -423,6 +423,10 @@ def GetArrayType(_instance):
         myLocArr = (
             data.get().GetNonSyntheticValue().GetChildMemberWithName("myLocArr")
         )
+        if not myLocArr.IsValid():
+            # TODO: ideally this returns some sort of unknown string
+            nullptr = data.get().GetTarget().FindFirstType("nullptr_t")
+            return nullptr
         myLocArr_addr = MaybeResolveWidePointer(myLocArr)
         myElems_instance = (
             myLocArr_addr.get()
@@ -431,6 +435,10 @@ def GetArrayType(_instance):
             .GetNonSyntheticValue()
             .GetChildMemberWithName("_instance")
         )
+        if not myElems_instance.IsValid():
+            # TODO: ideally this returns some sort of unknown string
+            nullptr = data.get().GetTarget().FindFirstType("nullptr_t")
+            return nullptr
         myElems_instance_addr = MaybeResolveWidePointer(myElems_instance)
         ddata = (
             myElems_instance_addr.get()
@@ -438,9 +446,10 @@ def GetArrayType(_instance):
             .GetChildMemberWithName("data")
         )
 
-        if ddata is None:
-            print(myLocArr)
-
+    if not ddata.IsValid():
+        # TODO: ideally this returns some sort of unknown string
+        nullptr = data.get().GetTarget().FindFirstType("nullptr_t")
+        return nullptr
     ddata_addr = MaybeResolveWidePointer(ddata)
     return ddata_addr.get().GetType().GetPointeeType()
 
@@ -588,6 +597,8 @@ class ArrayProvider:
         whole_instance = whole.GetNonSyntheticValue().GetChildMemberWithName(
             "_instance"
         )
+        if not whole_instance.IsValid():
+            return
         whole_instance_addr = MaybeResolveWidePointer(whole_instance)
         ranges = (
             whole_instance_addr.get()
@@ -788,9 +799,12 @@ class ListProvider:
         )
         for i in range(size):
             element_name = f"[{i}]"
-            element = self.valobj.CreateValueFromExpression(
-                element_name, f"({self.valobj.GetName()})._getRef({i})"
-            )
+            try:
+                element = self.valobj.CreateValueFromExpression(
+                    element_name, f"({self.valobj.GetName()})._getRef({i})"
+                )
+            except:
+                continue
             if element.IsValid():
                 self.synthetic_children[f"[{i}]"] = element
 
