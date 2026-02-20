@@ -1,0 +1,7 @@
+mason clean
+mason build --example withOpts.chpl
+mason run --example withOpts.chpl
+
+# rebuild
+mason build --example withOpts.chpl --force --no-update
+mason run --example withOpts.chpl

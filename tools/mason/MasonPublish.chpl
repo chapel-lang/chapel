@@ -425,61 +425,51 @@ proc getPackageName() throws {
  */
 private proc addPackageToBricks(projectLocal: string, safeDir: string,
                                 name: string, isLocal: bool) throws {
-  const bricksDir = joinPath(safeDir, 'mason-registry', 'Bricks');
+  if isLocal && !exists(joinPath(safeDir, '.git')) {
+    throw new MasonError(
+      'Unable to publish your package to the registry, ' +
+      'make sure your package is a git repository.');
+  }
+
+  const bricksDir = if !isLocal
+                      then joinPath(safeDir, 'mason-registry', 'Bricks')
+                      else joinPath(safeDir, 'Bricks');
+
+  if !isLocal && !exists(bricksDir) {
+    throw new MasonError('Registry does not have the expected structure. ' +
+                         'Ensure your registry has a Bricks directory.');
+  }
+
   const projectBrickDir = joinPath(bricksDir, name);
-  try! {
-    const toParse = open(joinPath(projectLocal, "Mason.toml"), ioMode.r);
-    var tomlFile = (parseToml(toParse));
-    const versionNum = tomlFile!['brick.version']!.s;
-    const versionToml = joinPath(projectBrickDir, versionNum + ".toml");
-    if !isLocal {
-      if !exists(bricksDir) {
-        throw new MasonError('Registry does not have the expected structure. ' +
-                             'Ensure your registry has a Bricks directory.');
-      }
-      if !exists(projectBrickDir) {
-        mkdir(projectBrickDir);
-      }
-      if !exists(versionToml) {
-        const baseToml = tomlFile;
-        var newToml = open(versionToml, ioMode.cw);
-        var tomlWriter = newToml.writer(locking=false);
-        const url = gitUrl();
-        baseToml["brick"]!.set("source", url[0..<url.size-1]);
-        tomlWriter.write(baseToml);
-        tomlWriter.close();
-        return name + '@' + versionNum;
-      } else {
-        throw new MasonError('A package with that name and version number ' +
-                             'already exists in the Bricks.');
-        exit(1);
-      }
-    } else {
-      if !exists(joinPath(safeDir, '.git')) {
-        throw new MasonError(
-          'Unable to publish your package to the registry, ' +
-          'make sure your package is a git repository.');
-      }
-      if !exists(projectBrickDir) {
-        mkdir(projectBrickDir);
-      }
-      if !exists(versionToml) {
-        const baseToml = tomlFile;
-        var newToml = open(versionToml, ioMode.cw);
-        var tomlWriter = newToml.writer(locking=false);
-        baseToml["brick"]!.set("source", projectLocal);
-        tomlWriter.write(baseToml);
-        tomlWriter.close();
-        gitC(projectLocal, ['git', 'tag', '-a', 'v' + versionNum, '-m', name]);
-        return name + '@' + versionNum;
-      } else {
-        throw new MasonError('A package with that name and version '+
-                             'already exists in the Bricks.');
-      }
-    }
-  } catch e {
-    writeln(e.message());
-    exit(1);
+  const toParse = open(joinPath(projectLocal, "Mason.toml"), ioMode.r);
+  var tomlFile = (parseToml(toParse));
+  const versionNum = tomlFile!['brick.version']!.s;
+  const versionToml = joinPath(projectBrickDir, versionNum + ".toml");
+
+  if !exists(projectBrickDir) {
+    mkdir(projectBrickDir);
+  }
+  if exists(versionToml) {
+    throw new MasonError('A package with that name and version number ' +
+                         'already exists in the Bricks.');
+  }
+
+  if !isLocal {
+    const baseToml = tomlFile;
+    const url = gitUrl();
+    baseToml["brick"]!.set("source", url[0..<url.size-1]);
+    var tomlWriter = openWriter(versionToml);
+    tomlWriter.write(baseToml);
+    tomlWriter.close();
+    return name + '@' + versionNum;
+  } else {
+    const baseToml = tomlFile;
+    baseToml["brick"]!.set("source", projectLocal);
+    var tomlWriter = openWriter(versionToml);
+    tomlWriter.write(baseToml);
+    tomlWriter.close();
+    gitC(projectLocal, ['git', 'tag', '-a', 'v' + versionNum, '-m', name]);
+    return name + '@' + versionNum;
   }
 }
 

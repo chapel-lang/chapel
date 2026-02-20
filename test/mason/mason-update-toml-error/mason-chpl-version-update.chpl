@@ -9,7 +9,7 @@ use FileSystem;
 config const toml = "";
 
 proc main() {
-  updateLock(true, tf=toml);
+  try! updateLock(true, tf=toml);
 
   if exists("Mason.lock") {
     writeln("----- lock file -----");
