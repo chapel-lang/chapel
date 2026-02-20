@@ -1026,6 +1026,16 @@ module CTypes {
     return c_pointer_return(x);
   }
 
+  // Special handling for unmanaged classes to work with wide pointers
+  // In a wide pointer context, unmanaged class variables are stored as
+  // narrow pointers, but c_pointer_return would try to take the address
+  // of the variable itself, treating it incorrectly as a wide pointer.
+  // Use c_ptrTo instead to get the actual pointer value.
+  @chpldoc.nodoc
+  inline proc c_addrOf(const x: ?t): c_ptr(void) where isUnmanagedClass(t) {
+    return c_ptrTo(x);
+  }
+
   // Added as unstable for 2.4, can be merged into stable version once we're
   // confident in it.
   @chpldoc.nodoc
@@ -1042,6 +1052,12 @@ module CTypes {
     if isDomainType(t) then
       compilerError("c_addrOfConst domain type not supported");
     return c_pointer_return_const(x);
+  }
+
+  // Special handling for unmanaged classes - see corresponding c_addrOf overload
+  @chpldoc.nodoc
+  inline proc c_addrOfConst(const x: ?t): c_ptrConst(void) where isUnmanagedClass(t) {
+    return c_ptrToConst(x);
   }
 
   // See note on corresponding c_addrOf overload
