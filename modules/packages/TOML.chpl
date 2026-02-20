@@ -122,7 +122,7 @@ class TomlError : Error {
 */
 @chpldoc.nodoc
 param doubleQuotesPattern =  '"(?:[^"\\\\]|\\\\.)*"',
-  singleQuotesPattern = "'(?:[^'\\\\]|\\\\.)*'",
+  singleQuotesPattern = "'(?:[^'])*'",
   commentPattern = '\\#',
   commaPattern = '\\,',
   equalsPattern = '\\=',
@@ -364,7 +364,30 @@ module TomlParser {
             return new shared Toml(toStr.strip("'''"));
           }
           else {
-            toStr = getToken(source).strip('"').strip("'");
+            const delim = if val.startsWith("'") then "'" else '"';
+            toStr = getToken(source);
+            // it should start with delim and end with delim, strip only that
+            var start = 0, end = toStr.size - 1;
+            if toStr.startsWith(delim) then start += 1;
+            if toStr.endsWith(delim) then end -= 1;
+            toStr = if start <= end then toStr[start..end] else "";
+
+            // https://toml.io/en/v1.0.0#string
+            // per toml spec, in non-literal strings we can/should process
+            // escape sequences, but in literal strings we should not.
+            if delim == '"' {
+              // these are the escape sequences defined in the TOML spec.
+              // note we do not currently handle unicode escape sequences,
+              // which are of the form \uXXXX or \UXXXXXXXX
+              toStr = toStr.replace("\\\"", "\"");
+              toStr = toStr.replace("\\\\", "\\");
+              toStr = toStr.replace("\\b", "\b");
+              toStr = toStr.replace("\\f", "\f");
+              toStr = toStr.replace("\\n", "\n");
+              toStr = toStr.replace("\\r", "\r");
+              toStr = toStr.replace("\\t", "\t");
+            }
+
             return new shared Toml(toStr);
           }
         }
@@ -816,12 +839,17 @@ module TomlParser {
           printValuesJSON(f, flat['root']!, indent=indent);
           flat.remove('root');
         }
-        for k in sorted(flat.keysToArray()) {
+        var flatSorted = sorted(flat.keysToArray());
+        for (k, i) in zip(flatSorted, 1..flatSorted.size) {
           f.writef('%s"%s": {\n', ' '*indent, k);
           indent += tabSpace;
           printValuesJSON(f, flat[k]!, indent=indent);
           indent -= tabSpace;
-          f.writef('%s}\n', ' '*indent);
+          f.writef('%s}', ' '*indent);
+          if i != flatSorted.size {
+            f.writef(',');
+          }
+          f.writef('\n');
         }
         indent -= tabSpace;
         f.writeln('}');
@@ -927,14 +955,6 @@ module TomlParser {
         var value = v.A[key]!;
         select value.tag {
           when fieldToml do continue; // Table
-          when fieldBool {
-            f.writef('%s"%s": {"type": "%s", "value": "%s"}',
-                     ' '*indent, key, value.tomlType, toString(value));
-          }
-          when fieldInt {
-            f.writef('%s"%s": {"type": "%s", "value": "%s"}',
-                     ' '*indent, key, value.tomlType, toString(value));
-          }
           when fieldArr {
             f.writef('%s"%s": {\n', ' '*indent, key);
             indent += tabSpace;
@@ -944,7 +964,12 @@ module TomlParser {
             var arrayElements: string;
             for i in value.arr.domain {
               ref k = value.arr[i];
-              f.writef('%s{"type": "%s", "value": "%s"}',
+
+              const fmt =
+                if k!.tag != fieldString
+                  then '%s{"type": "%s", "value": "%s"}'
+                  else '%s{"type": "%s", "value": %s}';
+              f.writef(fmt,
                        ' '*indent, k!.tomlType, toString(k!));
               if i != value.arr.domain.last {
                 f.writef(',');
@@ -954,30 +979,19 @@ module TomlParser {
             indent -= tabSpace;
             f.writef('%s]\n', ' '*indent);
             indent -= tabSpace;
-            f.writef('%s}\n', ' '*indent);
+            f.writef('%s}', ' '*indent);
           }
-          when fieldReal {
+          when fieldReal, fieldInt, fieldBool,
+               fieldDate, fieldTime, fieldDateTime {
             f.writef('%s"%s": {"type": "%s", "value": "%s"}',
                      ' '*indent, key, value.tomlType, toString(value));
           }
           when fieldString {
-            f.writef('%s"%s": {"type": "%s", "value": "%s"}',
+            f.writef('%s"%s": {"type": "%s", "value": %s}',
                      ' '*indent, key, value.tomlType, toString(value));
           }
           when fieldEmpty {
             throw new owned TomlError("Keys must have a value");
-          }
-          when fieldDate {
-            f.writef('%s"%s": {"type": "%s", "value": "%s"}',
-                     ' '*indent, key, value.tomlType, toString(value));
-          }
-          when fieldTime {
-            f.writef('%s"%s": {"type": "%s", "value": "%s"}',
-                     ' '*indent, key, value.tomlType, toString(value));
-          }
-          when fieldDateTime {
-            f.writef('%s"%s": {"type": "%s", "value": "%s"}',
-                     ' '*indent, key, value.tomlType, toString(value));
           }
           otherwise {
             throw new owned TomlError("Not yet supported");
@@ -994,6 +1008,7 @@ module TomlParser {
     @chpldoc.nodoc
     /* Return String representation of a value in a node */
     proc toString(val: borrowed Toml) : string throws {
+      private use IO;
       select val.tag {
         when fieldBool do return val.boo:string;
         when fieldInt do return val.i:string;
@@ -1012,7 +1027,45 @@ module TomlParser {
           return final;
         }
         when fieldReal do return val.re:string;
-        when fieldString do return ('"' + val.s + '"');
+        when fieldString {
+          var buf: string;
+          var i = 0;
+          while i < val.s.size {
+            const c = val.s[i];
+            if c == '"' {
+              buf += "\\\"";
+            } else if c == '\\' {
+              // if the next char is b, t, n, f, r, or \,
+              // we need to escape the backslash as well
+              if i + 1 < val.s.size {
+                const nextChar = val.s[i + 1];
+                if nextChar == 'b' || nextChar == 't' || nextChar == 'n' ||
+                   nextChar == 'f' || nextChar == 'r' {
+                  buf += "\\\\" + nextChar;
+                  i += 1;
+                } else {
+                  buf += "\\\\";
+                }
+              } else {
+                buf += "\\\\";
+              }
+            } else if c == '\b' {
+              buf += "\\b";
+            } else if c == '\f' {
+              buf += "\\f";
+            } else if c == '\n' {
+              buf += "\\n";
+            } else if c == '\r' {
+              buf += "\\r";
+            } else if c == '\t' {
+              buf += "\\t";
+            } else {
+              buf += c;
+            }
+            i += 1;
+          }
+          return '"' + buf + '"';
+        }
         when fieldEmpty do return ""; // empty
         when fieldDate do return val.ld:string;
         when fieldTime do return val.ti:string;
