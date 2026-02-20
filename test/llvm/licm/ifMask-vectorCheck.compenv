@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+echo "CHPL_RUNTIME_CPU=$CHPL_TARGET_CPU"
