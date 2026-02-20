@@ -85,8 +85,7 @@ proc masonBuild(args: [] string) throws {
     runExamples(show=show, run=false, build=true, release=release,
                 skipUpdate=skipUpdate, force=force,
                 examplesRequested=examples);
-  }
-  else {
+  } else {
     if passArgs.hasValue() {
       for val in passArgs.values() do compopts.pushBack(val);
     }
