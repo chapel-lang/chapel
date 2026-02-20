@@ -112,15 +112,13 @@ proc runExamples(show: bool, run: bool, build: bool, release: bool,
             runExampleBinary(projectHome, exampleName,
                               release, show, exampleExecopts);
         }
-      }
-      // just running the example
-      else {
+      } else {
+        // just running the example
         runExampleBinary(projectHome, exampleName,
                           release, show, exampleExecopts);
       }
     }
-  }
-  else {
+  } else {
     throw new MasonError("No examples were found in /example");
   }
 }

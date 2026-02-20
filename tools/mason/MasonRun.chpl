@@ -64,7 +64,7 @@ proc masonRun(args: [] string) throws {
   }
 
   // don't specify build flags unless we are actually building
-  if !buildFlag.valueAsBool() then{
+  if !buildFlag.valueAsBool() {
     if forceFlag._present then
       throw new MasonError("The --force flag is only valid " +
                            "when used with --build");
@@ -188,8 +188,7 @@ private proc masonBuildRun(args: [] string) throws {
     runExamples(show=show, run=true, build=buildExample, release=release,
                 skipUpdate=skipUpdate, force=force,
                 examplesRequested=examples);
-  }
-  else {
+  } else {
     var buildArgs: list(string);
     buildArgs.pushBack("build");
     if skipUpdate then buildArgs.pushBack("--no-update");
