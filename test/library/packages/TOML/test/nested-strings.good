@@ -1,0 +1,61 @@
+toml output
+myStr1 = ""
+myStr2 = ""
+myStr3 = "'"
+myStr4 = "\""
+
+[myTbl]
+myArr = ["isn't this fun", "\"quotes galore\"", "''", "\"\"", "", ""]
+myQuotedStr1 = "I have a 'quoted string'"
+myQuotedStr2 = "I have a \"quoted string\""
+myQuotedStr3 = "'quotes at the beginning' for fun"
+myQuotedStr4 = "\"quotes at the beginning\" for fun"
+
+[someOtherTable]
+key = "value"
+
+
+json output
+{
+    "myStr1": {"type": "string", "value": ""},
+    "myStr2": {"type": "string", "value": ""},
+    "myStr3": {"type": "string", "value": "'"},
+    "myStr4": {"type": "string", "value": "\""},
+    "myTbl": {
+        "myArr": {
+            "toml": "type",
+            "value": [
+                {"type": "string", "value": "isn't this fun"},
+                {"type": "string", "value": "\"quotes galore\""},
+                {"type": "string", "value": "''"},
+                {"type": "string", "value": "\"\""},
+                {"type": "string", "value": ""},
+                {"type": "string", "value": ""}
+            ]
+        },
+        "myQuotedStr1": {"type": "string", "value": "I have a 'quoted string'"},
+        "myQuotedStr2": {"type": "string", "value": "I have a \"quoted string\""},
+        "myQuotedStr3": {"type": "string", "value": "'quotes at the beginning' for fun"},
+        "myQuotedStr4": {"type": "string", "value": "\"quotes at the beginning\" for fun"}
+    },
+    "someOtherTable": {
+        "key": {"type": "string", "value": "value"}
+    }
+}
+round-tripped toml output
+myStr1 = ""
+myStr2 = ""
+myStr3 = "'"
+myStr4 = "\""
+
+[myTbl]
+myArr = ["isn't this fun", "\"quotes galore\"", "''", "\"\"", "", ""]
+myQuotedStr1 = "I have a 'quoted string'"
+myQuotedStr2 = "I have a \"quoted string\""
+myQuotedStr3 = "'quotes at the beginning' for fun"
+myQuotedStr4 = "\"quotes at the beginning\" for fun"
+
+[someOtherTable]
+key = "value"
+
+
