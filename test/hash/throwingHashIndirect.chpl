@@ -4,7 +4,7 @@ record myRec: hashable {
   var x: int;
 
   proc checkSaltArg(salt) throws {
-    if (salt == 0) then throw new IllegalArgumentError("salt too obvious!");
+    if salt == 0 then throw new IllegalArgumentError("salt too obvious!");
   }
 
   proc hash(salt = 0): uint throws {

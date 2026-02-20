@@ -10,7 +10,7 @@ record myRec: hashable {
   proc ref hash(salt = 0): uint throws {
     // This is not meant to be a good hash function, just to test throwing and
     // ref
-    if (salt == 0) then throw new IllegalArgumentError("salt too obvious!");
+    if salt == 0 then throw new IllegalArgumentError("salt too obvious!");
     else return getAndSetX()*salt;
   }
 }

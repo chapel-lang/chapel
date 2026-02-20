@@ -7,11 +7,10 @@ record myRec: hashable {
     return x;
   }
 
-  // This should warn - it's calling a `ref` thing but its intent isn't `ref`.
   proc hash(salt = 0): uint throws {
     // This is not meant to be a good hash function, just to test throwing and
     // ref
-    if (salt == 0) then throw new IllegalArgumentError("salt too obvious!");
+    if salt == 0 then throw new IllegalArgumentError("salt too obvious!");
     else return getAndSetX()*salt;
   }
 }
