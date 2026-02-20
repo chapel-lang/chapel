@@ -59,6 +59,7 @@ proc main() {
   writeln("Class List: ", myClassList);
   breakpoint;
   writeln("Class List Again: ", myClassList);
+  for x in myClassList do delete x;
 }
 
 

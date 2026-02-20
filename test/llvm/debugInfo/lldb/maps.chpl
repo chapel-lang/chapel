@@ -57,6 +57,7 @@ proc main() {
   writeln("Class Map: ", myClassMap);
   breakpoint;
   writeln("Class Map Again: ", myClassMap);
+  for x in myClassMap.values() do delete x;
 }
 
 

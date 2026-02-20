@@ -58,6 +58,7 @@ proc main() {
   writeln("Class Set: ", myClassSet);
   breakpoint;
   writeln("Class Set Again: ", myClassSet);
+  for x in myClassSet do delete x;
 }
 
 
