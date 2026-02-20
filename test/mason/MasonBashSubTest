@@ -102,6 +102,11 @@ class Test:
                 return path
         return None
 
+    def _nice_output_name(self) -> str:
+        testdir = sub_test_util.get_test_dir(str(chpl_home))
+        localdir = sub_test_util.get_local_dir(testdir)
+        return f"{localdir}/{self.source_file.stem}"
+
     def _execute(self) -> Tuple[Optional[int], Optional[Path]]:
         executable = self.source_file
 
@@ -167,7 +172,7 @@ class Test:
             != 0
         ):
             sys.stdout.write(
-                f"[Error matching executable output for {self.source_file.stem}]\n"
+                f"[Error matching executable output for {self._nice_output_name()}]\n"
             )
             return False
         return True
@@ -184,13 +189,13 @@ class Test:
 
             if retcode != 0:
                 sys.stdout.write(
-                    "[Error matching output for {} (exited with exit code {})]\n".format(self.source_file.stem, retcode)
+                    "[Error matching output for {} (exited with exit code {})]\n".format(self._nice_output_name(), retcode)
                 )
             elif self.good_file is None:
                 self._cleanup(executable_output)
                 sys.stdout.write(
                     "[Success matching output for {}]\n".format(
-                        self.source_file.stem
+                        self._nice_output_name()
                     )
                 )
             else:
@@ -200,7 +205,7 @@ class Test:
                     self._cleanup(executable_output)
                     sys.stdout.write(
                         "[Success matching output for {}]\n".format(
-                            self.source_file.stem
+                            self._nice_output_name()
                         )
                     )
         elapsed = time.time() - start_time
@@ -232,6 +237,14 @@ def dirSkipIf(d: Path):
 
 def main():
     sub_test_util.printStartOfTestMsg(time.localtime())
+
+
+    compiler=sys.argv[1]
+    chpl_base = sub_test_util.get_chpl_base(compiler)
+    chpl_home_from_chpl = sub_test_util.get_chpl_home(chpl_base)
+    if Path(chpl_home_from_chpl).resolve() != chpl_home.resolve():
+        sys.stdout.write(f"[Error: chpl_home from chpl {chpl_home_from_chpl} does not match expected {chpl_home}]\n")
+        sys.exit(1)
 
     d = Path(os.path.dirname(os.path.abspath(__file__)))
 
