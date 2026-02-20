@@ -9,7 +9,7 @@ Build Successful
 Ran 1 test in n seconds
 
 OK (passed = 1 )
-+ mason build --example
++ mason run --example
 --- available examples ---
  --- Ex1.chpl
  --- Ex2.chpl
