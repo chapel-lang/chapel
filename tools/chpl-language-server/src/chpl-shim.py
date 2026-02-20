@@ -64,22 +64,25 @@ def run_toplevel():
     # TODO: this only works when chpl is not passed as a path and we rely on
     # the PATH to find it. i.e. `./bin/chpl-shim ./bin/chpl` will not work.
 
+    newenv = os.environ.copy()
+
     # Create a temporary directory to add the 'chpl' wrapper script
     tempdir = tempfile.TemporaryDirectory()
     wrapper = os.path.join(tempdir.name, "chpl")
     os.symlink(__file__, wrapper)
 
-    # Modify path to include the wrapper script at the front
-    chpl = (
-        subprocess.check_output(["which", "chpl"])
-        .decode(sys.stdout.encoding)
-        .strip()
-    )
-    newpath = os.pathsep.join([tempdir.name, os.environ["PATH"]])
+    if "CHPL_SHIM_TARGET_PATH" not in newenv:
+        newenv["CHPL_SHIM_TARGET_PATH"] = tempdir.name
+    if "CHPL_SHIM_REAL_COMPILER_PATH" not in newenv:
+        chpl = (
+            subprocess.check_output(["which", "chpl"])
+            .decode(sys.stdout.encoding)
+            .strip()
+        )
+        newenv["CHPL_SHIM_REAL_COMPILER_PATH"] = chpl
 
-    newenv = os.environ.copy()
-    newenv["CHPL_SHIM_TARGET_PATH"] = tempdir.name
-    newenv["CHPL_SHIM_REAL_COMPILER_PATH"] = chpl
+    # Modify path to include the wrapper script at the front
+    newpath = os.pathsep.join([tempdir.name, os.environ["PATH"]])
     newenv["PATH"] = newpath
 
     # Invoke the script I was asked to invoke
@@ -204,6 +207,16 @@ def run_chpl_shim():
         files += list_parsed_files(files, args.module_dirs)
         files = list(set(files))
 
+        # Detect symlinks in the form '.chpl.chpl'. These are produced by
+        # our current CMake support. Instead, resolve the symlink to the real
+        # file to avoid confusion.
+        for i in range(len(files)):
+            file = files[i]
+            if file.endswith(".chpl.chpl") and os.path.islink(file):
+                real_file = os.path.realpath(file)
+                assert real_file.endswith(".chpl")
+                files[i] = real_file
+
         commands = {}
         invocation = " ".join(sys.argv).replace(__file__, real_compiler)
         commands["invocation"] = invocation
@@ -227,6 +240,22 @@ def run_chpl_shim():
 
 
 if __name__ == "__main__":
+    """
+    The normal flow is as follows:
+      1. The shim is invoked as the driver, where the rest of the arguments
+         are the command that ends up building a Chapel program.
+      2. Assuming that the comamnd refers to "just" 'chpl' (i.e. not a path to chpl),
+         the shim creates a temporary directory, links itself as 'chpl' in that directory,
+         and modifies the PATH to include that directory at the front.
+         This way, when the command invokes 'chpl', it will invoke the shim again,
+         but this time as the wrapper.
+      3. When this happens, the shim receives all the arguments the command
+         would've provided to the real 'chpl' compiler. The shim then extracts
+         the .chpl files and other data needed for .cls-commands.json, writes
+         that data to a temporary file, and then invokes the real 'chpl'
+         compiler with the same arguments it received.
+    """
+
     if sys.argv[0].endswith("chpl-shim.py"):
         run_toplevel()
     else:
