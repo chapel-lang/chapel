@@ -1,0 +1,2 @@
+error-const-use-as-ref-2.chpl:2: error: args is const by default, but code attempted to modify it.
+note: If you intended to modify args, use an explicit 'ref' intent for the argument 'args'.

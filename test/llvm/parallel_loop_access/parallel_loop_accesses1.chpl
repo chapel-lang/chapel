@@ -2,7 +2,7 @@ config const n = 11;
 // check for correct access.group and llvm.loop.parallel_accesses hinting
 
 // CHECK: void @loop1
-proc loop1 (A, B) {
+proc loop1 (ref A, B) {
   foreach i in 0..n {
     // CHECK: load i32,
     // CHECK-SAME: !llvm.access.group ![[GROUP:[0-9]+]]
