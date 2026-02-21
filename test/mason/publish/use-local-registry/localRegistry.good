@@ -1,27 +1,27 @@
-+++ dirname /Users/jade/Development/chapel-lang/chapel/test/mason/publish/use-local-registry/localRegistry.masontest
-++ cd /Users/jade/Development/chapel-lang/chapel/test/mason/publish/use-local-registry
++++ dirname $CHPL_HOME/test/mason/publish/use-local-registry/localRegistry.masontest
+++ cd $CHPL_HOME/test/mason/publish/use-local-registry
 ++ pwd
-+ CWD=/Users/jade/Development/chapel-lang/chapel/test/mason/publish/use-local-registry
-+ REG=/Users/jade/Development/chapel-lang/chapel/test/mason/publish/use-local-registry/local-reg
++ CWD=$CHPL_HOME/test/mason/publish/use-local-registry
++ REG=$CHPL_HOME/test/mason/publish/use-local-registry/local-reg
 + cd myDep
-+ git init
-Initialized empty Git repository in /Users/jade/Development/chapel-lang/chapel/test/mason/publish/use-local-registry/myDep/.git/
++ git init -b main
+Initialized empty Git repository in $CHPL_HOME/test/mason/publish/use-local-registry/myDep/.git/
 + git add .
 + git commit -m 'initial commit'
-+ mason publish --create-registry /Users/jade/Development/chapel-lang/chapel/test/mason/publish/use-local-registry/local-reg
-Initialized local registry at /Users/jade/Development/chapel-lang/chapel/test/mason/publish/use-local-registry/local-reg
++ mason publish --create-registry $CHPL_HOME/test/mason/publish/use-local-registry/local-reg
+Initialized local registry at $CHPL_HOME/test/mason/publish/use-local-registry/local-reg
 Add this registry to MASON_REGISTRY environment variable to include it in search path:
-   export MASON_REGISTRY="mason-registry|https://github.com/chapel-lang/mason-registry,local-reg|/Users/jade/Development/chapel-lang/chapel/test/mason/publish/use-local-registry/local-reg"
-+ mason publish --create-registry /Users/jade/Development/chapel-lang/chapel/test/mason/publish/use-local-registry/local-reg
-Registry already exists at /Users/jade/Development/chapel-lang/chapel/test/mason/publish/use-local-registry/local-reg
+   export MASON_REGISTRY="mason-registry|https://github.com/chapel-lang/mason-registry,local-reg|$CHPL_HOME/test/mason/publish/use-local-registry/local-reg"
++ mason publish --create-registry $CHPL_HOME/test/mason/publish/use-local-registry/local-reg
+Registry already exists at $CHPL_HOME/test/mason/publish/use-local-registry/local-reg
 + echo 'error as expected: 1'
 error as expected: 1
-+ mason publish /Users/jade/Development/chapel-lang/chapel/test/mason/publish/use-local-registry/local-reg
-Successfully published package to /Users/jade/Development/chapel-lang/chapel/test/mason/publish/use-local-registry/local-reg
-+ mason publish /Users/jade/Development/chapel-lang/chapel/test/mason/publish/use-local-registry/local-reg
++ mason publish $CHPL_HOME/test/mason/publish/use-local-registry/local-reg
+Successfully published package to $CHPL_HOME/test/mason/publish/use-local-registry/local-reg
++ mason publish $CHPL_HOME/test/mason/publish/use-local-registry/local-reg
 A package with that name and version number already exists in the Bricks.
-+ export 'MASON_REGISTRY=my-local-registry|/Users/jade/Development/chapel-lang/chapel/test/mason/publish/use-local-registry/local-reg'
-+ MASON_REGISTRY='my-local-registry|/Users/jade/Development/chapel-lang/chapel/test/mason/publish/use-local-registry/local-reg'
++ export 'MASON_REGISTRY=my-local-registry|$CHPL_HOME/test/mason/publish/use-local-registry/local-reg'
++ MASON_REGISTRY='my-local-registry|$CHPL_HOME/test/mason/publish/use-local-registry/local-reg'
 + mason search
 Updating my-local-registry
 myDep (0.1.0)

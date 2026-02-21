@@ -5,7 +5,7 @@ REG="$CWD/local-reg"
 cd myDep
 
 # make a local repo so the dep can be published
-git init
+git init -b main
 git add .
 git commit -m "initial commit"
 
