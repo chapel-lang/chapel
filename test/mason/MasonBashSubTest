@@ -1,0 +1,268 @@
+#!/usr/bin/env python3
+
+import os
+import sys
+import subprocess as sp
+import shutil
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, Dict, Optional, List, Iterator, Tuple
+import time
+import signal
+from contextlib import contextmanager
+
+chpl_home = Path(os.environ.get("CHPL_HOME", ""))
+if not chpl_home.exists():
+    sys.stdout.write("[Error: CHPL_HOME not set or does not exist]\n")
+    sys.exit(1)
+sys.path.insert(0, str(chpl_home / "util" / "test"))
+import sub_test as sub_test_util
+
+sub_test_util.utildir = str(chpl_home / "util")
+
+
+@contextmanager
+def cd(d: Optional[Path]):
+    if d is not None:
+        old_dir = Path.cwd()
+        os.chdir(d)
+    try:
+        yield
+    finally:
+        if d is not None:
+            os.chdir(old_dir)
+
+def mason() -> Path:
+    sub_dir = chpl_home / "util" / "chplenv" / "chpl_bin_subdir.py"
+    result = sp.check_output(
+        [sys.executable, str(sub_dir), "--host"],
+        encoding="utf-8",
+        stderr=sp.STDOUT,
+    ).strip()
+    return chpl_home / "bin" / result / "mason"
+
+
+@dataclass
+class Test:
+    """
+    The script file describes a series of commands to run
+    the optional good file contains the expected output of the executable
+    if no good file is provided, only the exit code of the script is checked
+    """
+
+    source_file: Path
+    good_file: Optional[Path] = None
+
+    @classmethod
+    def find_tests(cls, directory: Path) -> Iterator["Test"]:
+        for f in sorted(directory.glob("*.masontest")):
+            if test := cls.test_factory(f):
+                yield test
+
+    @classmethod
+    def test_factory(cls, source_file: Path):
+        good_file = source_file.with_suffix(".good")
+        if not good_file.exists():
+            good_file = None
+        return cls(source_file, good_file=good_file)
+
+    def _compute_env(self) -> Dict[str, str]:
+        testenv = {}
+
+        def parse_env(lines: List[str]) -> Dict[str, str]:
+            env = {}
+            for l in lines:
+                if l.startswith("unset "):
+                    var = l.split(" ", 1)[1]
+                    env[var.strip()] = None
+                else:
+                    var, val = l.split("=", 1)
+                    env[var.strip()] = val.strip()
+            return env
+
+        EXECENV = self.source_file.parent / "EXECENV"
+        if EXECENV.exists():
+            globalExecenv = sub_test_util.ReadFileWithComments(str(EXECENV))
+            testenv.update(parse_env(globalExecenv))
+        execenv = self.source_file.with_suffix(".execenv")
+        if execenv.exists():
+            testExecenv = sub_test_util.ReadFileWithComments(str(execenv))
+            testenv.update(parse_env(testExecenv))
+
+        return sub_test_util.get_process_env(testenv)
+
+    def _compute_working_dir(self) -> Optional[Path]:
+        MASONTEST_DIR = self.source_file.parent / "MASONTEST_DIR"
+        if MASONTEST_DIR.exists():
+            with open(MASONTEST_DIR, "r") as f:
+                path = Path(f.read().strip())
+                # if its not absolute, make it relative to the test file
+                if not path.is_absolute():
+                    path = self.source_file.parent / path
+                return path
+        return None
+
+    def _nice_output_name(self) -> str:
+        testdir = sub_test_util.get_test_dir(str(chpl_home))
+        localdir = sub_test_util.get_local_dir(testdir)
+        return f"{localdir}/{self.source_file.stem}"
+
+    def _execute(self) -> Tuple[Optional[int], Optional[Path]]:
+        executable = self.source_file
+
+        executable_output = self.source_file.with_suffix(".exec.out.tmp")
+        executable_fp = open(executable_output, "w")
+
+        cmd = [str(executable.absolute())]
+        if not os.access(executable, os.X_OK):
+            # if the file is not executable, run it with bash with decent defaults
+            cmd = ["bash", "-exo", "pipefail"] + cmd
+        sys.stdout.write("[Executing program: {}]\n".format(" ".join(cmd)))
+        sys.stdout.flush()
+        with cd(self._compute_working_dir()):
+            retcode, stdout, _ = sub_test_util.run_process(
+                cmd,
+                stdout=sp.PIPE,
+                stderr=sp.STDOUT,
+                env=self._compute_env(),
+            )
+        executable_fp.write(stdout)
+        executable_fp.close()
+
+        return retcode, executable_output
+
+    def _run_prediff(self, output_file: Path):
+        PREDIFF = self.source_file.parent / "PREDIFF"
+        if PREDIFF.exists():
+            sys.stdout.write("[Executing ./PREDIFF]\n")
+            sys.stdout.flush()
+            stdout = sub_test_util.run_process(
+                [
+                    str(PREDIFF.absolute()),
+                    self.source_file.stem,
+                    str(output_file),
+                ],
+                stdout=sp.PIPE,
+                stderr=sp.STDOUT,
+            )[1]
+            sys.stdout.write(stdout)
+            sys.stdout.flush()
+
+        prediff = self.source_file.with_suffix(".prediff")
+        if prediff.exists():
+            sys.stdout.write(f"[Executing {prediff.name}]\n")
+            sys.stdout.flush()
+            stdout = sub_test_util.run_process(
+                [
+                    str(prediff.absolute()),
+                    self.source_file.stem,
+                    str(output_file),
+                ],
+                stdout=sp.PIPE,
+                stderr=sp.STDOUT,
+            )[1]
+            sys.stdout.write(stdout)
+            sys.stdout.flush()
+
+    def _compare_output(self, executable_output: Path) -> bool:
+        # check executable output
+        self._run_prediff(executable_output)
+        if (
+            sub_test_util.DiffFiles(str(self.good_file), str(executable_output))
+            != 0
+        ):
+            sys.stdout.write(
+                f"[Error matching executable output for {self._nice_output_name()}]\n"
+            )
+            return False
+        return True
+
+    def _cleanup(self, executable_output: Path):
+        if executable_output.exists():
+            executable_output.unlink()
+
+    def test(self):
+        start_time = time.time()
+        sub_test_util.printTestName(self.source_file)
+        retcode, executable_output = self._execute()
+        if executable_output is not None:
+
+            if retcode != 0:
+                sys.stdout.write(
+                    "[Error matching output for {} (exited with exit code {})]\n".format(self._nice_output_name(), retcode)
+                )
+            elif self.good_file is None:
+                self._cleanup(executable_output)
+                sys.stdout.write(
+                    "[Success matching output for {}]\n".format(
+                        self._nice_output_name()
+                    )
+                )
+            else:
+                if self._compare_output(
+                    executable_output
+                ):
+                    self._cleanup(executable_output)
+                    sys.stdout.write(
+                        "[Success matching output for {}]\n".format(
+                            self._nice_output_name()
+                        )
+                    )
+        elapsed = time.time() - start_time
+        sub_test_util.printEndOfTestMsg(self.source_file, elapsed)
+
+
+def dirSkipIf(d: Path):
+    skipif_file = d / "SKIPIF"
+    if skipif_file.exists() and os.getenv("CHPL_TEST_SINGLES") == "0":
+        sys.stdout.write("[Checking SKIPIF]\n")
+        sys.stdout.flush()
+        do_not_test = False
+        try:
+            skipme = False
+            skiptest = sub_test_util.runSkipIf(str(skipif_file.name))
+            if skiptest.strip() != "False":
+                skipme = skiptest.strip() == "True" or int(skiptest) == 1
+            if skipme:
+                sys.stdout.write("[Skipping test based on SKIPIF]\n")
+                do_not_test = True
+        except (ValueError, RuntimeError) as e:
+            sys.stdout.write(str(e) + "\n")
+            sys.stdout.write("[Error processing SKIPIF file]\n")
+            do_not_test = True
+        if do_not_test:
+            return True
+    return False
+
+
+def main():
+    sub_test_util.printStartOfTestMsg(time.localtime())
+
+
+    compiler=sys.argv[1]
+    chpl_base = sub_test_util.get_chpl_base(compiler)
+    chpl_home_from_chpl = sub_test_util.get_chpl_home(chpl_base)
+    if Path(chpl_home_from_chpl).resolve() != chpl_home.resolve():
+        sys.stdout.write(f"[Error: chpl_home from chpl {chpl_home_from_chpl} does not match expected {chpl_home}]\n")
+        sys.exit(1)
+
+    d = Path(os.path.dirname(os.path.abspath(__file__)))
+
+    if dirSkipIf(d):
+        return
+
+    if not mason().exists():
+        sys.stdout.write("[Skipping test based on missing mason]\n")
+
+    if onetest := os.environ.get("CHPL_ONETEST"):
+        if t := Test.test_factory(Path(onetest)):
+            t.test()
+    else:
+        for t in Test.find_tests(d):
+            t.test()
+
+    sys.stdout.write("[Finished subtest {}]\n".format(d))
+
+
+if __name__ == "__main__":
+    main()

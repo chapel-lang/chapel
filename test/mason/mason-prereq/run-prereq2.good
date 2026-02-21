@@ -1,0 +1,28 @@
++ cd prereq2
++ mason build
+Compiling [debug] target: prereq2
+Build Successful
+
++ mason test
+
+----------------------------------------------------------------------
+Ran 1 test in n seconds
+
+OK (passed = 1 )
++ mason run --example
+--- available examples ---
+ --- Ex1.chpl
+ --- Ex2.chpl
+--------------------------
++ mason build --example Ex1.chpl
+compiled Ex1.chpl successfully
++ mason build --example Ex2.chpl
+compiled Ex2.chpl successfully
++ mason run --example Ex1.chpl
+hello from Ex1
+Hello world!
+myParam is: 2
++ mason run --example Ex2.chpl
+hello from Ex2
+Hello world!
+myParam is: 3

@@ -248,8 +248,6 @@ proc masonBuildHelp() {
           --example <example>      Build an example from the example/ directory
           --[no-]update            [Do not] update the mason registry before
                                    building
-          --dependent-modules      Print the include paths to the dependent
-                                   modules to be integrated into build step
 
   When --example is thrown without an example, all examples will be built
   When no options are provided, the following will take place:

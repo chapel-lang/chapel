@@ -1,0 +1,16 @@
++ mason clean
++ mason build --example withOpts.chpl
+Updating registry
+compiled withOpts.chpl successfully
++ mason run --example withOpts.chpl
+Updating registry
+Passed!
+2
+I have spaces!
++ mason build --example withOpts.chpl --force --no-update
+compiled withOpts.chpl successfully
++ mason run --example withOpts.chpl
+Updating registry
+Passed!
+2
+I have spaces!

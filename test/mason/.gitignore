@@ -1,4 +1,6 @@
 mason_home
+Mason.lock
+target
 project
 tmp/
 masonGitDeps

@@ -123,6 +123,15 @@ In this setup, `mason build` will roughly do the following:
 4. Run ``chpl prereqs/some-c-lib/hello.h prereqs/some-c-lib/hello.o src/Hello.chpl``
 
 
+Special Variables
+~~~~~~~~~~~~~~~~~
+
+Mason will pass some information to the prereqs through environment variables.
+This allows the prereqs to be more flexible and dynamic. The following list of variables is available:
+
+* ``MASON_PACKAGE_HOME``: The absolute path to the root of the package. In the
+  example above, it will be the absolute path to the ``Hello`` directory.
+
 Next Steps
 ~~~~~~~~~~
 

@@ -11,7 +11,5 @@ proc main() {
     } catch e {
       writeln(e.message());
     }
-  } else if testcase == 2 {
-    masonRun(["run", "--build", "--force", "--example"]); // should run all examples
   }
 }

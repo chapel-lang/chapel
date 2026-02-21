@@ -1,0 +1,4 @@
+mason clean
+mason run --build --example withOpts.chpl
+# rebuild
+mason run --force --build --example withOpts.chpl

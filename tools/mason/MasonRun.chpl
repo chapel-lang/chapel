@@ -39,7 +39,12 @@ proc masonRun(args: [] string) throws {
   var buildFlag = parser.addFlag(name="build", defaultValue=false);
 
   // not actually flags for Run, but rather for build
-  var forceFlag = parser.addFlag(name="force", defaultValue=false);
+  // TODO: I'm failure certain _present being true when defaultValue is set
+  // is a bug in ArgumentParser, but changing that may have wider impacts
+  // for now, use not default so _present is meaningful
+  // for the purposes of this function, the value of forceFlag isn't used
+  // anyways
+  var forceFlag = parser.addFlag(name="force" /*defaultValue=false*/);
   var updateFlag = parser.addFlag(name="update", flagInversion=true);
 
   var exampleOpts = parser.addOption(name="example",
@@ -54,22 +59,35 @@ proc masonRun(args: [] string) throws {
     throw new MasonError(
       "Only mason applications can be run, but this is a Mason " + projectType);
 
+  if exampleOpts._present && passArgs.hasValue() {
+    throw new MasonError("Examples do not support `--` syntax");
+  }
+
+  // don't specify build flags unless we are actually building
+  if !buildFlag.valueAsBool() {
+    if forceFlag._present then
+      throw new MasonError("The --force flag is only valid " +
+                           "when used with --build");
+    if updateFlag._present then
+      throw new MasonError("The --[no]-update flag is only valid " +
+                           "when used with --build");
+  }
+
   var show = showFlag.valueAsBool();
   var release = releaseFlag.valueAsBool();
   var execopts = new list(passArgs.values());
 
 
-  if exampleOpts._present && !exampleOpts.hasValue()
-    && args.size == 2 {
+  if exampleOpts._present &&
+    (!exampleOpts.hasValue() || exampleOpts.value().startsWith("-")) {
     // when mason run --example called
     printAvailableExamples();
-    exit(0);
   } else if exampleOpts._present || buildFlag.valueAsBool() {
     // --example with value or build flag
     masonBuildRun(args);
-    exit(0);
+  } else {
+    runProjectBinary(show, release, execopts);
   }
-  runProjectBinary(show, release, execopts);
 }
 
 proc runProjectBinary(show: bool, release: bool,
@@ -108,7 +126,7 @@ proc runProjectBinary(show: bool, release: bool,
 
     // Build if not built, throwing error if Mason.toml doesnt exist
     if isFile(joinPath(projectHome, "Mason.lock")) && built {
-      const output = runCommand(command);
+      const output = runCommand(command, quiet=true);
       write(output);
     } else if isFile(joinPath(projectHome, "Mason.toml")) {
       const msg = "Mason could not find your Mason.lock.\n";
@@ -126,6 +144,9 @@ proc runProjectBinary(show: bool, release: bool,
 }
 
 
+// FIXME: this function reparses args to then pass calls to `masonBuild`. Why!?
+// We should just restructure `masonBuild` so that it can be callable directly
+// since we already parsed the args
 /* Builds program before running. */
 private proc masonBuildRun(args: [] string) throws {
 
@@ -154,13 +175,8 @@ private proc masonBuildRun(args: [] string) throws {
   var buildExample = buildFlag.valueAsBool();
   var skipUpdate = MASON_OFFLINE;
   var execopts: list(string);
-  var exampleProgram='';
 
   if exampleOpts._present then example = true;
-
-  if passArgs.hasValue() && example {
-    throw new owned MasonError("Examples do not support `--` syntax");
-  }
 
   if updateFlag.hasValue() {
     if updateFlag.valueAsBool() then skipUpdate = false;
@@ -168,14 +184,10 @@ private proc masonBuildRun(args: [] string) throws {
   }
 
   if example {
-    // add expected arguments for masonExample
-    execopts.insert(0,["example", "--example"]);
-    for val in exampleOpts.values() do execopts.pushBack(val);
-    if !buildExample then execopts.pushBack("--no-build");
-    if release then execopts.pushBack("--release");
-    if force then execopts.pushBack("--force");
-    if show then execopts.pushBack("--show");
-    masonExample(execopts.toArray());
+    var examples = new list(exampleOpts.values());
+    runExamples(show=show, run=true, build=buildExample, release=release,
+                skipUpdate=skipUpdate, force=force,
+                examplesRequested=examples);
   } else {
     var buildArgs: list(string);
     buildArgs.pushBack("build");

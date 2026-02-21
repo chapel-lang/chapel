@@ -1,0 +1,14 @@
+[brick]
+name="myPackage"
+version="0.1.0"
+chplVersion="2.8.0"
+license="None"
+type="application"
+
+tests = ["Test.chpl"]
+
+[examples]
+examples = ["Ex.chpl"]
+
+[dependencies]
+myDep = "0.1.0"
