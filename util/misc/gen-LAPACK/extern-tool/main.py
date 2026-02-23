@@ -8,10 +8,10 @@ root = None
 
 def main():
   if len( sys.argv ) < 2:
-    print "Path to LAPACK required"
+    print("Path to LAPACK required")
     exit(-1)
   elif len( sys.argv ) > 2:
-    print "Too many arguments. Only path to LAPACK required"
+    print("Too many arguments. Only path to LAPACK required")
     exit(-1)
     
   Passes.lapack_root = sys.argv[1]  # root directory of LAPACK

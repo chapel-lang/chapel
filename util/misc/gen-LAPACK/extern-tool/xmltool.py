@@ -1,7 +1,8 @@
 import fnmatch
 import os
 import sys
-reload(sys)
+import importlib
+importlib.reload(sys)
 sys.setdefaultencoding("utf-8")
 
 import re
@@ -18,7 +19,7 @@ def prettystringxml( element ):
   return xml.dom.minidom.parseString( ET.tostring(element) ).toprettyxml()
 
 def prettyprintxml( element ):
-  print prettystringxml( element );
+  print(prettystringxml( element ));
 
 def prettywritexml( element, filename ):
   file = open( filename, "w" );

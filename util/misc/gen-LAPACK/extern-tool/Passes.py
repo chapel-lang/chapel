@@ -192,14 +192,14 @@ class Pass:
   
   @staticmethod
   def resolve( staticclass, xml_tree ):
-    print "Resolving", staticclass, "Dependencies"
+    print("Resolving", staticclass, "Dependencies")
     for dep in staticclass.dependencies:
       if not dep.complete:
         dep.apply( xml_tree )
         if not dep.complete:
           raise ResolutionFailure( dep )
           
-    print "Resolved", staticclass, "Dependencies"
+    print("Resolved", staticclass, "Dependencies")
   
   @staticmethod
   def apply( xml_tree ):
@@ -219,13 +219,13 @@ class CreateTreePass ( Pass ):
   def apply( xml_tree ):
     selfname = CreateTreePass
     Pass.resolve( selfname, xml_tree )
-    print "[",selfname,"]"
+    print("[",selfname,"]")
 
     SubElement( xml_tree, "LAPACK" )
     SubElement( xml_tree, "LAPACKE" )
     
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
  
 '''
 class DocumentSplitPass ( Pass )
@@ -242,7 +242,7 @@ class DocumentSplitPass ( Pass ):
   def apply( xml_tree ):
     selfname = DocumentSplitPass
     Pass.resolve( selfname, xml_tree )
-    print "[",selfname,"]"
+    print("[",selfname,"]")
     
     text_node = SubElement( xml_tree.find( "./LAPACK" ), "text" )
     
@@ -283,7 +283,7 @@ class DocumentSplitPass ( Pass ):
     sys.stdout.flush()
       
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 '''
 class LAPACKFunctionDefinePass ( Pass )
@@ -300,7 +300,7 @@ class LAPACKFunctionDefinePass ( Pass ):
   def apply( xml_tree ):
     selfname = LAPACKFunctionDefinePass
     Pass.resolve( selfname, xml_tree ) 
-    print "[",selfname,"]"
+    print("[",selfname,"]")
     
     lapack_node = xml_tree.find( "./LAPACK" )
     text_node = lapack_node.find( "./text" )
@@ -341,7 +341,7 @@ class LAPACKFunctionDefinePass ( Pass ):
       sys.stdout.write("                                                                           \r")
       sys.stdout.flush()
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 '''
 class FuncPurposeDocPass ( Pass )
@@ -357,7 +357,7 @@ class FuncPurposeDocPass ( Pass ):
   def apply( xml_tree ):
     selfname = FuncPurposeDocPass
     Pass.resolve( selfname, xml_tree )
-    print "[",selfname,"]"
+    print("[",selfname,"]")
     
     lapack_node = xml_tree.find( "./LAPACK" )
     text_node = lapack_node.find( "./text" )
@@ -374,7 +374,7 @@ class FuncPurposeDocPass ( Pass ):
       
       
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 '''
 class FuncArgsDocPass ( Pass ):
@@ -390,7 +390,7 @@ class FuncArgsDocPass ( Pass ):
   def apply( xml_tree ):
     selfname = FuncArgsDocPass
     Pass.resolve( selfname, xml_tree ) 
-    print "[",selfname,"]"
+    print("[",selfname,"]")
 
     lapack_node = xml_tree.find( "./LAPACK" )
     text_node = lapack_node.find( "./text" )
@@ -414,7 +414,7 @@ class FuncArgsDocPass ( Pass ):
         SubElement( arg_node, "documentation" ).text = arg_match.group( "body" )
           
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 '''
 class FuncArgsTypePass ( Pass )
@@ -433,7 +433,7 @@ class FuncArgsTypePass ( Pass ):
   def apply( xml_tree ):
     selfname = FuncArgsTypePass
     Pass.resolve( selfname, xml_tree ) 
-    print "[",selfname,"]"
+    print("[",selfname,"]")
     
     lapack_node = xml_tree.find( "./LAPACK" )
     text_node = lapack_node.find( "./text" )
@@ -513,7 +513,7 @@ class FuncArgsTypePass ( Pass ):
             arg_node.set( "type", type )
             arg_node.set( "semantic", "function" )
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 '''
 class AssociateArgsToArrayPass ( Pass ):
@@ -529,7 +529,7 @@ class AssociateArgsToArrayPass ( Pass ):
   def apply( xml_tree ):
     selfname = AssociateArgsToArrayPass
     Pass.resolve( selfname, xml_tree ) 
-    print "[",selfname,"]"
+    print("[",selfname,"]")
 
     lapack_node = xml_tree.find( "./LAPACK" )
     text_node = lapack_node.find( "./text" )
@@ -626,7 +626,7 @@ class AssociateArgsToArrayPass ( Pass ):
         arg_node.set( "associate-field", associate_field )
 
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 '''
 class BaseLAPACKPass ( Pass )
@@ -643,10 +643,10 @@ class BaseLAPACKPass ( Pass ):
   def apply( xml_tree ):
     selfname = BaseLAPACKPass
     Pass.resolve( selfname, xml_tree )
-    print "[",selfname,"]"
+    print("[",selfname,"]")
         
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 '''
 class LAPACKEFunctionDefinePass ( Pass ):
@@ -663,7 +663,7 @@ class LAPACKEFunctionDefinePass ( Pass ):
   def apply( xml_tree ):
     selfname = LAPACKEFunctionDefinePass
     Pass.resolve( selfname, xml_tree )
-    print "[",selfname,"]"
+    print("[",selfname,"]")
     
     lapacke_root = xml_tree.find( "./LAPACKE" )
     procs_node = SubElement( lapacke_root, "procedures" )
@@ -696,7 +696,7 @@ class LAPACKEFunctionDefinePass ( Pass ):
         arg_count += 1
         
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 '''
 class BaseLAPACKEPass ( Pass )
@@ -713,9 +713,9 @@ class BaseLAPACKEPass ( Pass ):
   def apply( xml_tree ):
     selfname = BaseLAPACKEPass
     Pass.resolve( selfname, xml_tree )
-    print "[",selfname,"]"
+    print("[",selfname,"]")
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 '''
 class CharacterArraySemanticsCorrectionPass ( Pass )
@@ -732,7 +732,7 @@ class CharacterArraySemanticsCorrectionPass ( Pass ):
   def apply( xml_tree ):
     selfname = CharacterArraySemanticsCorrectionPass
     Pass.resolve( selfname, xml_tree )
-    print "[",selfname,"]"
+    print("[",selfname,"]")
     
     lapack_f_procs = xml_tree.find( "./LAPACK/procedures" )
 
@@ -751,7 +751,7 @@ class CharacterArraySemanticsCorrectionPass ( Pass ):
               f_arg.unset( "dimensions" )
               
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 '''
 class ArgumentSemanticsBucketingPass ( Pass )
@@ -770,7 +770,7 @@ class ArgumentSemanticsBucketingPass ( Pass ):
   def apply( xml_tree ):
     selfname = BucketArgumentsSemanticsPass
     Pass.resolve( selfname, xml_tree )
-    print "[",selfname,"]"
+    print("[",selfname,"]")
     
     lapack_f_procs = xml_tree.find( "./LAPACK/procedures" )
     
@@ -791,12 +791,12 @@ class ArgumentSemanticsBucketingPass ( Pass ):
 
     for arg in variables:
       if len( variables[ arg ] ) > 2:
-        print arg
+        print(arg)
         for semantic in variables[ arg ]:
-          print "  \"" + semantic + "\"", ":",variables[ arg ][ semantic ]
+          print("  \"" + semantic + "\"", ":",variables[ arg ][ semantic ])
 
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 '''
 class AssociateLAPACKtoLAPACKEPASS ( Pass )
@@ -813,7 +813,7 @@ class AssociateFunctionsLAPACKtoLAPACKEPass ( Pass ):
   def apply( xml_tree ):
     selfname = AssociateFunctionsLAPACKtoLAPACKEPass
     Pass.resolve( selfname, xml_tree ) 
-    print "[",selfname,"]"
+    print("[",selfname,"]")
 
     lapack_c_root = xml_tree.find( "./LAPACKE" )
     lapack_c_procs = lapack_c_root.find( "./procedures" )
@@ -831,7 +831,7 @@ class AssociateFunctionsLAPACKtoLAPACKEPass ( Pass ):
       elif proc_name.startswith( "lapacke_" ):
         base_name = proc_name.replace( "lapacke_", "" )
       else:
-        print "Unknown root of name:", lapack_c_proc.get( "name" )
+        print("Unknown root of name:", lapack_c_proc.get( "name" ))
         continue
       base_name = base_name.replace( "_work", "" )  
       base_name = base_name.upper()
@@ -873,7 +873,7 @@ class AssociateFunctionsLAPACKtoLAPACKEPass ( Pass ):
       '''    
       
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 '''
 class DestroyUnassociatedCFunctionsTreePass ( Pass )
@@ -891,7 +891,7 @@ class DestroyUnassociatedCFunctionsTreePass ( Pass ):
   def apply( xml_tree ):
     selfname = DestroyUnassociatedCFunctionsTreePass
     Pass.resolve( selfname, xml_tree ) 
-    print "[",selfname,"]"
+    print("[",selfname,"]")
 
     lapack_f_root = xml_tree.find( "./LAPACKE" )
     lapack_f_procs = lapack_f_root.find( "./procedures" )
@@ -902,7 +902,7 @@ class DestroyUnassociatedCFunctionsTreePass ( Pass ):
         
     
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 '''
 class DestroyUnassociatedFortranFunctionsTreePass ( Pass )
@@ -918,7 +918,7 @@ class DestroyUnassociatedFortranFunctionsTreePass ( Pass ):
   def apply( xml_tree ):
     selfname = DestroyUnassociatedFortranFunctionsTreePass
     Pass.resolve( selfname, xml_tree ) 
-    print "[",selfname,"]"
+    print("[",selfname,"]")
 
     lapack_f_root = xml_tree.find( "./LAPACK" )
     lapack_f_procs = lapack_f_root.find( "./procedures" )
@@ -929,7 +929,7 @@ class DestroyUnassociatedFortranFunctionsTreePass ( Pass ):
         
     
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 '''
 class EasyAssociateArgsPass ( Pass )
@@ -946,7 +946,7 @@ class EasyAssociateArgsPass ( Pass ):
   def apply( xml_tree ):
     selfname = EasyAssociateArgsPass
     Pass.resolve( selfname, xml_tree ) 
-    print "[",selfname,"]"
+    print("[",selfname,"]")
 
     c_procs = xml_tree.find( "./LAPACKE/procedures" )
     for c_proc in c_procs.findall( "./procedure" ):
@@ -960,7 +960,7 @@ class EasyAssociateArgsPass ( Pass ):
         
       f_proc = xml_tree.find( supposed_f_ana_node.text )
       if f_proc == None:
-        print "BAD! No analogue where analogue should exist"
+        print("BAD! No analogue where analogue should exist")
         return
         #continue
 
@@ -986,7 +986,7 @@ class EasyAssociateArgsPass ( Pass ):
         f_ana_node.set( "name", c_arg.get( "name" ) )
     
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 '''
 class ImportArgumentAnaloguesPass ( Pass )
@@ -1003,7 +1003,7 @@ class ImportArgumentAssociationsPass ( Pass ):
   def apply( xml_tree ):
     selfname = ImportArgumentAssociationsPass
     Pass.resolve( selfname, xml_tree ) 
-    print "[",selfname,"]"
+    print("[",selfname,"]")
 
     c_procs = xml_tree.find( "./LAPACKE/procedures" )
     pass_input = Pass.input_xml.find( "./pass/[@name='ImportArgumentAnaloguesPass']" )
@@ -1032,7 +1032,7 @@ class ImportArgumentAssociationsPass ( Pass ):
       #prettyprintxml( c_proc )
     
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 '''
 class BaseAssociatePass ( Pass )
@@ -1048,9 +1048,9 @@ class BaseAssociatePass ( Pass ):
   def apply( xml_tree ):
     selfname = BaseAssociatePass
     Pass.resolve( selfname, xml_tree )
-    print "[",selfname,"]"
+    print("[",selfname,"]")
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 '''
 class FoldLAPACKtoLAPACKEPass ( Pass ):
@@ -1071,7 +1071,7 @@ class FoldLAPACKSemanticsIntentsToLAPACKEPass ( Pass ):
   def apply( xml_tree ):
     selfname = FoldLAPACKSemanticsIntentsToLAPACKEPass
     Pass.resolve( selfname, xml_tree ) 
-    print "[",selfname,"]"
+    print("[",selfname,"]")
 
     lapack_c_root = xml_tree.find( "./LAPACKE" )
     lapack_c_procs = lapack_c_root.find( "./procedures" )
@@ -1125,7 +1125,7 @@ class FoldLAPACKSemanticsIntentsToLAPACKEPass ( Pass ):
           c_arg.set( "associate-field", associate_field )
         
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 '''
 class ImportLAPACKESemanticsIntentsPass ( Pass )
@@ -1145,7 +1145,7 @@ class ImportLAPACKESemanticsIntentsPass ( Pass ):
   def apply( xml_tree ):
     selfname = ImportLAPACKESemanticsIntentsPass
     Pass.resolve( selfname, xml_tree ) 
-    print "[",selfname,"]"
+    print("[",selfname,"]")
 
     pass_input = Pass.input_xml.find( "./pass/[@name='ImportLAPACKESemanticsIntentsPass']" )
     for assign in pass_input.findall( "./assign" ):
@@ -1164,7 +1164,7 @@ class ImportLAPACKESemanticsIntentsPass ( Pass ):
     
     
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 '''
 class TypeSubstitutionPass ( Pass )
@@ -1192,7 +1192,7 @@ class TypeSubstitutionPass ( Pass ):
   def apply( xml_tree ):
     selfname = TypeSubstitutionPass
     Pass.resolve( selfname, xml_tree )
-    print "[",selfname,"]"
+    print("[",selfname,"]")
 
     pass_input = Pass.input_xml.find( "./pass/[@name='TypeSubstitutionPass']" )
     procs = xml_tree.find( "./LAPACKE/procedures" )
@@ -1216,7 +1216,7 @@ class TypeSubstitutionPass ( Pass ):
           arg.set( "type",  subs[ arg_type ] )
 
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 '''
 class ImportTypeArgumentPass ( Pass )
@@ -1235,7 +1235,7 @@ class ImportArgumentTypePass ( Pass ):
   def apply( xml_tree ):
     selfname = ImportArgumentTypePass
     Pass.resolve( selfname, xml_tree )
-    print "[",selfname,"]"
+    print("[",selfname,"]")
 
     pass_input = Pass.input_xml.find( "./pass/[@name='ImportArgumentTypePass']" )
     
@@ -1247,7 +1247,7 @@ class ImportArgumentTypePass ( Pass ):
         arg.set("type", find.get("type" ) )
     
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
     
 '''
 class BaseTransformLAPACKEPass ( Pass )
@@ -1269,9 +1269,9 @@ class BaseTransformLAPACKEPass( Pass ):
   def apply( xml_tree ):
     selfname = BaseTransformLAPACKEPass
     Pass.resolve( selfname, xml_tree )
-    print "[",selfname,"]"
+    print("[",selfname,"]")
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 '''
 class CreateChapelModuleTreePass ( Pass )
@@ -1288,7 +1288,7 @@ class CreateChapelModuleTreePass ( Pass ):
   def apply( xml_tree ):
     selfname = CreateChapelModuleTreePass
     Pass.resolve( selfname, xml_tree )
-    print "[",selfname,"]"
+    print("[",selfname,"]")
     
     chpl_module = SubElement( xml_tree, "chapel-module" )
     procedures = SubElement( chpl_module, "procedures" )
@@ -1297,7 +1297,7 @@ class CreateChapelModuleTreePass ( Pass ):
     enums = SubElement( chpl_module, "enum-defines")
     
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 '''
 class ChapelizeLAPACKE_FunctionsPass ( Pass )
@@ -1315,7 +1315,7 @@ class ChapelizeLAPACKEFunctionsPass ( Pass ):
   def apply( xml_tree ):
     selfname = ChapelizeLAPACKEFunctionsPass
     Pass.resolve( selfname, xml_tree )
-    print "[",selfname,"]"
+    print("[",selfname,"]")
     
     lapacke_root = xml_tree.find( "./LAPACKE" )
     lapacke_procs = lapacke_root.find( "./procedures" )
@@ -1383,10 +1383,10 @@ class ChapelizeLAPACKEFunctionsPass ( Pass ):
       #module_proc.set( "category", "direct" )
       proc_count += 1
     
-    print "Chapelized", proc_count, "LAPACKE functions"
+    print("Chapelized", proc_count, "LAPACKE functions")
     
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 '''
 class TranslateChapelKeywordsPass ( Pass ):
@@ -1404,7 +1404,7 @@ class TranslateChapelKeywordsPass ( Pass ):
   def apply( xml_tree ):
     selfname = TranslateChapelKeywordsPass
     Pass.resolve( selfname, xml_tree )
-    print "[",selfname,"]"
+    print("[",selfname,"]")
     
     pass_input = Pass.input_xml.find( "./pass/[@name='TranslateChapelKeywordsPass']" )
     global_info = pass_input.find( "./global" )
@@ -1458,7 +1458,7 @@ class TranslateChapelKeywordsPass ( Pass ):
         
     
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 '''
 class ChapelerrificLAPACKEFunctionsPass ( Pass ):
@@ -1475,7 +1475,7 @@ class ChapelerrificLAPACKEFunctionsPass ( Pass ):
   def apply( xml_tree ):
     selfname = ChapelerrificLAPACKEFunctionsPass
     Pass.resolve( selfname, xml_tree ) 
-    print "[",selfname,"]"
+    print("[",selfname,"]")
 
     chapel_module = xml_tree.find( "./chapel-module" )
     chapel_procedures = chapel_module.find( "./procedures" )
@@ -1622,7 +1622,7 @@ class ChapelerrificLAPACKEFunctionsPass ( Pass ):
       #chapel_procedures.append( proc )
 
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 '''
 class BaseChapelizePass ( Pass )
@@ -1640,9 +1640,9 @@ class BaseChapelizePass ( Pass ):
   def apply( xml_tree ):
     selfname = BaseChapelizePass
     Pass.resolve( selfname, xml_tree )
-    print "[",selfname,"]"
+    print("[",selfname,"]")
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 '''
 class ImportTypeDefinesPass ( Pass )
@@ -1659,7 +1659,7 @@ class ImportTypeDefinesPass ( Pass ):
   def apply( xml_tree ):
     selfname = ImportTypeDefinesPass
     Pass.resolve( selfname, xml_tree )
-    print "[",selfname,"]"
+    print("[",selfname,"]")
     
     pass_input = Pass.input_xml.find( "./pass/[@name='ImportTypeDefinesPass']" )
     module_types = xml_tree.find( "./chapel-module/type-defines" )
@@ -1668,7 +1668,7 @@ class ImportTypeDefinesPass ( Pass ):
       module_types.append( define )
     
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 '''
 class ImportExternConstDefinesPass ( Pass )
@@ -1685,7 +1685,7 @@ class ImportExternConstDefinesPass ( Pass ):
   def apply( xml_tree ):
     selfname = ImportExternConstDefinesPass
     Pass.resolve( selfname, xml_tree )
-    print "[",selfname,"]"
+    print("[",selfname,"]")
     
     pass_input = Pass.input_xml.find( "./pass/[@name='ImportExternConstDefinesPass']" )
     module_defs = xml_tree.find( "./chapel-module/const-defines" )
@@ -1694,7 +1694,7 @@ class ImportExternConstDefinesPass ( Pass ):
       module_defs.append( define )
     
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 ''' 
 class ImportEnumeratedTypeDefinesPass ( Pass )
@@ -1711,7 +1711,7 @@ class ImportEnumeratedTypeDefinesPass ( Pass ):
   def apply( xml_tree ):
     selfname = ImportEnumeratedTypeDefinesPass
     Pass.resolve( selfname, xml_tree )
-    print "[",selfname,"]"
+    print("[",selfname,"]")
     
     pass_input = Pass.input_xml.find( "./pass/[@name='ImportEnumeratedTypeDefinesPass']" )
     module_defs = xml_tree.find( "./chapel-module/enum-defines" )
@@ -1720,7 +1720,7 @@ class ImportEnumeratedTypeDefinesPass ( Pass ):
       module_defs.append( enumeration )
     
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 '''
 class BaseImportPass ( Pass )
@@ -1736,9 +1736,9 @@ class BaseImportPass ( Pass ):
   def apply( xml_tree ):
     selfname = BaseImportPass
     Pass.resolve( selfname, xml_tree )
-    print "[",selfname,"]"
+    print("[",selfname,"]")
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 '''
 class BaseCodegenReadyPass ( Pass )
@@ -1754,9 +1754,9 @@ class BaseCodegenReadyPass ( Pass ):
   def apply( xml_tree ):
     selfname = BaseCodegenReadyPass
     Pass.resolve( selfname, xml_tree )
-    print "[",selfname,"]"
+    print("[",selfname,"]")
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 '''
 class ChapelModuleExternProcPass ( Pass )
@@ -1774,7 +1774,7 @@ class ChapelModuleExternProcPass ( Pass ):
   def apply( xml_tree ):
     selfname = ChapelModuleExternProcPass
     Pass.resolve( selfname, xml_tree )
-    print "[",selfname,"]"
+    print("[",selfname,"]")
     
     lapacke_root = xml_tree.find( "./LAPACKE" )
     lapacke_procs = lapacke_root.find( "./procedures" )
@@ -1835,10 +1835,10 @@ class ChapelModuleExternProcPass ( Pass ):
       
       proc_count += 1
 
-    print "Generated code for", proc_count, "functions"
+    print("Generated code for", proc_count, "functions")
     
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 '''
 class ChapelModuleStringToCharWraperProcPass ( Pass )
@@ -1854,7 +1854,7 @@ class ChapelModuleStringToCharWraperProcPass ( Pass ):
   def apply( xml_tree ):
     selfname = ChapelModuleStringToCharWraperProcPass
     Pass.resolve( selfname, xml_tree ) 
-    print "[",selfname,"]"
+    print("[",selfname,"]")
     
     module_root = xml_tree.find( "./chapel-module" )
     module_procs = module_root.find( "./procedures" )
@@ -1911,10 +1911,10 @@ class ChapelModuleStringToCharWraperProcPass ( Pass ):
       
       proc_count += 1
     
-    print "Generated code for", proc_count, "functions"
+    print("Generated code for", proc_count, "functions")
     
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 '''
 class ChapelModuleChapelerrificProcPass ( Pass )
@@ -1930,7 +1930,7 @@ class ChapelModuleChapelerrificProcPass ( Pass ):
   def apply( xml_tree ):
     selfname = ChapelModuleChapelerrificProcPass
     Pass.resolve( selfname, xml_tree ) 
-    print "[",selfname,"]"
+    print("[",selfname,"]")
 
     module_root = xml_tree.find( "./chapel-module" )
     module_procs = module_root.find( "./procedures" )
@@ -2069,10 +2069,10 @@ class ChapelModuleChapelerrificProcPass ( Pass ):
         no_repeat.add( proc_name )
         proc_count += 1  
 
-    print "Generated code for", proc_count, "functions"
+    print("Generated code for", proc_count, "functions")
     
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 '''
 class ChapelModuleExternTypeDefinesPass ( Pass )
@@ -2089,7 +2089,7 @@ class ChapelModuleExternTypeDefinesPass ( Pass ):
   def apply( xml_tree ):
     selfname = ChapelModuleExternTypeDefinesPass
     Pass.resolve( selfname, xml_tree ) 
-    print "[",selfname,"]"
+    print("[",selfname,"]")
     
     module_defs = xml_tree.find( "./chapel-module/type-defines" )
     
@@ -2111,7 +2111,7 @@ class ChapelModuleExternTypeDefinesPass ( Pass ):
     #prettyprintxml( module_defs )
     
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 '''
 class ChapelModuleExternConstDefinesPass ( Pass ):
@@ -2128,7 +2128,7 @@ class ChapelModuleExternConstDefinesPass ( Pass ):
   def apply( xml_tree ):
     selfname = ChapelModuleExternConstDefinesPass
     Pass.resolve( selfname, xml_tree ) 
-    print "[",selfname,"]"
+    print("[",selfname,"]")
 
     module_defs = xml_tree.find( "./chapel-module/const-defines" )
     
@@ -2148,7 +2148,7 @@ class ChapelModuleExternConstDefinesPass ( Pass ):
       SubElement( define, "code" ).text = def_str 
     
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 '''
 class ChapelModuleEnumDefinesPass ( Pass ):
@@ -2165,7 +2165,7 @@ class ChapelModuleEnumDefinesPass ( Pass ):
   def apply( xml_tree ):
     selfname = ChapelModuleEnumDefinesPass
     Pass.resolve( selfname, xml_tree ) 
-    print "[",selfname,"]"
+    print("[",selfname,"]")
 
     module_defs = xml_tree.find( "./chapel-module/enum-defines" )
     
@@ -2185,7 +2185,7 @@ class ChapelModuleEnumDefinesPass ( Pass ):
     #prettyprintxml( module_defs )
     
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 ''' 
 class BaseCodeGenerationPass ( Pass )
@@ -2202,9 +2202,9 @@ class BaseCodeGenerationPass ( Pass ):
   def apply( xml_tree ):
     selfname = BaseCodeGenerationPass
     Pass.resolve( selfname, xml_tree )
-    print "[",selfname,"]"
+    print("[",selfname,"]")
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 '''
 class DumpCodePass ( Pass )
@@ -2222,7 +2222,7 @@ class DumpCodePass ( Pass ):
   def apply( xml_tree ):
     selfname = DumpCodePass
     Pass.resolve( selfname, xml_tree ) 
-    print "[",selfname,"]"
+    print("[",selfname,"]")
 
     pass_input = Pass.input_xml.find( "./pass/[@name='DumpCodePass']" )
     module_root = xml_tree.find( "./chapel-module" )
@@ -2292,7 +2292,7 @@ class DumpCodePass ( Pass ):
     module_file.close()
     
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 
 
@@ -2312,7 +2312,7 @@ class CountFunctions( Pass ):
   def apply( xml_tree ):
     selfname = CountFunctions
     Pass.resolve( selfname, xml_tree ) 
-    print "[",selfname,"]"
+    print("[",selfname,"]")
     
     lapack = 0
     for proc in xml_tree.findall( "./LAPACK/procedures/procedure" ):
@@ -2322,10 +2322,10 @@ class CountFunctions( Pass ):
     for proc in xml_tree.findall( "./LAPACKE/procedures/procedure" ):
       lapacke += 1
     
-    print "LAPACK", lapack, "LAPACKE", lapacke
+    print("LAPACK", lapack, "LAPACKE", lapacke)
     
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 '''
 class CreateAbstractLAPACKTreePass ( Pass )
@@ -2341,12 +2341,12 @@ class CreateAbstractLAPACKTreePass ( Pass ):
   def apply( xml_tree ):
     selfname = CreateAbstractLAPACKTreePass
     Pass.resolve( selfname, xml_tree ) 
-    print "[",selfname,"]"
+    print("[",selfname,"]")
     
     abstract_lapack = SubElement( xml_tree, "Abstract-LAPACK" )
     
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
     
 '''
 class BucketLAPACKFunctionGroups ( Pass )
@@ -2362,7 +2362,7 @@ class BucketLAPACKFunctionGroupsPass ( Pass ):
   def apply( xml_tree ):
     selfname = BucketLAPACKFunctionGroupsPass
     Pass.resolve( selfname, xml_tree ) 
-    print "[",selfname,"]"
+    print("[",selfname,"]")
     
     abstract_lapack = xml_tree.find( "./Abstract-LAPACK" )
     
@@ -2388,7 +2388,7 @@ class BucketLAPACKFunctionGroupsPass ( Pass ):
       match = func_name_group_regex.search( base_name )
       
       if match == None:
-        print proc_name, "(", base_name, ") does not match regex"
+        print(proc_name, "(", base_name, ") does not match regex")
         continue
       
       func = match.group( "function" )
@@ -2409,7 +2409,7 @@ class BucketLAPACKFunctionGroupsPass ( Pass ):
         config_node.set( "name", config )
       
       if config_node.find( "./types/type/[@name='" + type + "']" ) != None:
-        print "Double declaration of abstract LAPACK function", type, config, func, base_name, proc_name
+        print("Double declaration of abstract LAPACK function", type, config, func, base_name, proc_name)
         continue
         #prettyprintxml( config_node.find( "./type/[@name='" + type + "']" ) )
       types_node = SubElementUnique( config_node, "types" )
@@ -2419,7 +2419,7 @@ class BucketLAPACKFunctionGroupsPass ( Pass ):
       
     #prettyprintxml( abstract_lapack )      
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 
 class ImportAbstractLAPACKFunctionsPass ( Pass ):
@@ -2430,7 +2430,7 @@ class ImportAbstractLAPACKFunctionsPass ( Pass ):
   def apply( xml_tree ):
     selfname = ImportAbstractLAPACKFunctionsPass
     Pass.resolve( selfname, xml_tree ) 
-    print "[",selfname,"]"
+    print("[",selfname,"]")
 
     module_defs = xml_tree.find( "./chapel-module/procedures" )
     group_input = Pass.input_xml.find( "./pass/[@name='ImportAbstractLAPACKFunctionsPass']" )
@@ -2513,10 +2513,10 @@ class ImportAbstractLAPACKFunctionsPass ( Pass ):
         
         proc_count += 1
         
-    print "Generated", proc_count, "procedures"
+    print("Generated", proc_count, "procedures")
     
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 '''
 class GroupsArgumentCollectionPass ( Pass )
@@ -2532,7 +2532,7 @@ class CommonArgumentCollectionPass ( Pass ):
   def apply( xml_tree ):
     selfname = CommonArgumentCollectionPass
     Pass.resolve( selfname, xml_tree )
-    print "[",selfname,"]"
+    print("[",selfname,"]")
     
     abstract_lapack = xml_tree.find( "./Abstract-LAPACK" )
 
@@ -2603,7 +2603,7 @@ class CommonArgumentCollectionPass ( Pass ):
         
     #prettyprintxml( abstract_lapack.find( "./group/[@name='sv']" ) )
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 ''' 
 class BaseLAPACKAbstractPass ( Pass )
@@ -2620,9 +2620,9 @@ class BaseAbstractLAPACKPass ( Pass ):
   def apply( xml_tree ):
     selfname = BaseAbstractLAPACKPass
     Pass.resolve( selfname, xml_tree )
-    print "[",selfname,"]"
+    print("[",selfname,"]")
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 
 class DropAttemptedAssociations ( Pass ):
@@ -2633,7 +2633,7 @@ class DropAttemptedAssociations ( Pass ):
   def apply( xml_tree ):
     selfname = DropAttemptedAssociations
     Pass.resolve( selfname, xml_tree ) 
-    print "[",selfname,"]"
+    print("[",selfname,"]")
     
     output_xml = ET.Element( "pass" )
     output_xml.set( "name", "DropAttemptedAssociations" )
@@ -2649,7 +2649,7 @@ class DropAttemptedAssociations ( Pass ):
       match = func_name_group_regex.search( base_name )
       
       if match == None:
-        print proc_name, "(", base_name, ") does not match regex"
+        print(proc_name, "(", base_name, ") does not match regex")
         continue
       
       func = match.group( "function" )
@@ -2660,7 +2660,7 @@ class DropAttemptedAssociations ( Pass ):
         continue
         
       proc = copy.deepcopy( chpl_proc )
-      print proc.get( "name" )
+      print(proc.get( "name" ))
       #prettyprintxml( proc )
       args_node = proc.find( "./arguments-list" )
       args_list = [ ]
@@ -2696,7 +2696,7 @@ class DropAttemptedAssociations ( Pass ):
               pass_through[ dimension ] = arg.get("name") + ".domain.dim("+str(i+1)+").size"
               
             else:
-              print ( dimension + " is not described in the arguments of "+proc.get( "name" ) )
+              print(( dimension + " is not described in the arguments of "+proc.get( "name" ) ))
               
         if arg.get( "matrix-size" ) != None: 
           matrix_size = arg.get( "matrix-size" ).lower()
@@ -2719,7 +2719,7 @@ class DropAttemptedAssociations ( Pass ):
             remove_list.add( removeCols )
           
           else:
-            print ( rows + " and " + cols + " are not described in the arguments of "+proc.get( "name" ) )
+            print(( rows + " and " + cols + " are not described in the arguments of "+proc.get( "name" ) ))
       
       for arg in args_list:
         if arg.get( "semantic" ) != "scalar" :
@@ -2785,7 +2785,7 @@ class DropAttemptedAssociations ( Pass ):
 
     prettywritexml( output_xml, "DropAttemptedAssociations_output.xml" )
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 
 class AbstractDropAttemptedAssociations ( Pass ):
@@ -2796,14 +2796,14 @@ class AbstractDropAttemptedAssociations ( Pass ):
   def apply( xml_tree ):
     selfname = DropAttemptedAssociations
     Pass.resolve( selfname, xml_tree ) 
-    print "[",selfname,"]"
+    print("[",selfname,"]")
 
     abstract_lapack = xml_tree.find( "./Abstract-LAPACK" )
     
     for group_node in abstract_lapack.findall( "./group" ):
       for config_node in group_node.findall( "./matrix-configuration" ):
         if config_node.findall( "./types/type/arguments-list" ) != [] :
-          print config_node.get("name") + group_node.get("name"), " has typed functions with non common arguments. Skipping."
+          print(config_node.get("name") + group_node.get("name"), " has typed functions with non common arguments. Skipping.")
           continue
         
         full_func_name = config_node.get("name") + group_node.get("name")
@@ -2879,7 +2879,7 @@ class AbstractDropAttemptedAssociations ( Pass ):
     
     prettywritexml( abstract_lapack, "AbstractDropAttemptedAssociations_output.xml" )
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 '''
 class FindNeedsArgsDocPatchPass ( Pass )
@@ -2896,7 +2896,7 @@ class FindNeedsArgsDocPatchPass ( Pass ):
   def apply( xml_tree ):
     selfname = FindNeedsArgsDocPatchPass
     Pass.resolve( selfname, xml_tree ) 
-    print "[",selfname,"]"
+    print("[",selfname,"]")
 
     lapack_root_procs = xml_tree.find( "./LAPACK/procedures" )
     patch = []
@@ -2907,15 +2907,15 @@ class FindNeedsArgsDocPatchPass ( Pass ):
       for arg in proc.findall( "./arguments-list/argument" ):
         if arg.find( "./documentation" ) == None:
           if not printed:
-            print proc.get( "name" ), proc.get( "file-name" )
+            print(proc.get( "name" ), proc.get( "file-name" ))
             printed = True
-          print arg.get( "name" ), "MISSING"
+          print(arg.get( "name" ), "MISSING")
           patch.append( (proc.get("name"), proc.get("file-name"), arg.get("name") ) )
 
-    print patch
+    print(patch)
 
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 '''
 class FindNeedsFuncArgsTypePatchPass ( Pass )
@@ -2932,7 +2932,7 @@ class FindNeedsFuncArgsTypePatchPass ( Pass ):
   def apply( xml_tree ):
     selfname = FindNeedsFuncArgsTypePatchPass
     Pass.resolve( selfname, xml_tree ) 
-    print "[",selfname,"]"
+    print("[",selfname,"]")
 
     lapack_node = xml_tree.find( "./LAPACK" )
     text_node = lapack_node.find( "./text" )
@@ -2951,21 +2951,21 @@ class FindNeedsFuncArgsTypePatchPass ( Pass ):
       if arrays == None:
         none_array.append( (proc_node.get( "name"), proc_file_name) )
       
-    print "none_scalars", none_scalar,"\n\nnone_arrays", none_array
-    print "="*100
+    print("none_scalars", none_scalar,"\n\nnone_arrays", none_array)
+    print("="*100)
     
     for i in none_scalar:
       sys.stdout.write( i[1] + "," )
     
-    print "\n"*2
+    print("\n"*2)
     
     for i in none_array:
       sys.stdout.write( i[1] + "," )
     
-    print "\n"*2
+    print("\n"*2)
     
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 '''
 class FindAllLAPACKETypesPass ( Pass )
@@ -2982,7 +2982,7 @@ class FindAllLAPACKETypesPass ( Pass ):
   def apply( xml_tree ):
     selfname = FindAllLAPACKETypesPass
     Pass.resolve( selfname, xml_tree ) 
-    print "[",selfname,"]"
+    print("[",selfname,"]")
 
     lapacke_procs_root = xml_tree.find( "./LAPACKE/procedures" )
     
@@ -2993,10 +2993,10 @@ class FindAllLAPACKETypesPass ( Pass ):
       for arg in proc.findall( "./arguments-list/argument" ):
         types.add( arg.get( "type" ) )
         
-    print types
+    print(types)
     
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 '''
 class FindScalarOutIntentsPass ( Pass )
@@ -3014,10 +3014,10 @@ class FindScalarOutIntentsPass ( Pass ):
   def apply( xml_tree ):
     selfname = FindScalarOutIntentsPass
     Pass.resolve( selfname, xml_tree ) 
-    print "[",selfname,"]"
+    print("[",selfname,"]")
 
     lapack_procs_root = xml_tree.find( "./LAPACK/procedures" )
-    print lapack_procs_root
+    print(lapack_procs_root)
     outs = []
        
     for proc in lapack_procs_root.findall( "./procedure" ):
@@ -3027,10 +3027,10 @@ class FindScalarOutIntentsPass ( Pass ):
            and arg.get("name").lower() != "info":
           outs.append( (proc.get( "name" ), arg.get( "name" ), proc.get( "file-name" ) ) )
             
-    print outs
+    print(outs)
     
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 '''
 class FindIntentSetPass ( Pass ):
@@ -3046,7 +3046,7 @@ class FindIntentSetPass ( Pass ):
   def apply( xml_tree ):
     selfname = FindIntentSetPass
     Pass.resolve( selfname, xml_tree ) 
-    print "[",selfname,"]"
+    print("[",selfname,"]")
 
     lapack_procs_root = xml_tree.find( "./LAPACKE/procedures" )
     
@@ -3060,10 +3060,10 @@ class FindIntentSetPass ( Pass ):
         if arg.get( "intent" ) != None:
           intents.add( arg.get( "intent" ) )
             
-    print intents
+    print(intents)
     
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 '''
 class FindIntentSemanticsRefsSetPass ( Pass ):
@@ -3079,7 +3079,7 @@ class FindIntentSemanticsRefsSetPass ( Pass ):
   def apply( xml_tree ):
     selfname = FindIntentSemanticsRefsSetPass
     Pass.resolve( selfname, xml_tree ) 
-    print "[",selfname,"]"
+    print("[",selfname,"]")
 
     lapack_procs_root = xml_tree.find( "./LAPACKE/procedures" )
     
@@ -3095,10 +3095,10 @@ class FindIntentSemanticsRefsSetPass ( Pass ):
         
         
     for key in combos:
-      print key, "(", combos[ key ][0].get( "name" ), combos[key][1].get( "name" ), ")"
+      print(key, "(", combos[ key ][0].get( "name" ), combos[key][1].get( "name" ), ")")
     
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 '''
 class FindBadIntentSemanticsCodePass ( Pass ):
@@ -3114,7 +3114,7 @@ class FindBadIntentSemanticsCodePass ( Pass ):
   def apply( xml_tree ):
     selfname = FindBadIntentSemanticsCodePass
     Pass.resolve( selfname, xml_tree ) 
-    print "[",selfname,"]"
+    print("[",selfname,"]")
 
     lapack_procs_root = xml_tree.find( "./LAPACKE/procedures" )
     
@@ -3140,17 +3140,17 @@ class FindBadIntentSemanticsCodePass ( Pass ):
       
       files_str += analogue.get( "file-name" ) + ","
       
-      print key, analogue_txt, analogue.get( "file-name" )
+      print(key, analogue_txt, analogue.get( "file-name" ))
       #prettyprintxml( proc )
       #prettyprintxml( analogue )
       for elem in list[key]:
-        print "\t",elem
-      print ""
+        print("\t",elem)
+      print("")
       
-    print files_str
+    print(files_str)
     
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 '''
 class FindNonAnalouges ( Pass ):
@@ -3166,7 +3166,7 @@ class FindPassByRefNonAnalouges ( Pass ):
   def apply( xml_tree ):
     selfname = FindPassByRefNonAnalouges
     Pass.resolve( selfname, xml_tree ) 
-    print "[",selfname,"]"
+    print("[",selfname,"]")
 
     lapack_procs_root = xml_tree.find( "./LAPACKE/procedures" )
     
@@ -3176,7 +3176,7 @@ class FindPassByRefNonAnalouges ( Pass ):
       proc_name = proc.get( "name" )
       if proc.find( "./analogues" ) == None:
         #list.add( proc.get( "name" ) )
-        print "Function", proc_name, "has no fortran analogue"
+        print("Function", proc_name, "has no fortran analogue")
         continue
       printed = False
       for arg in proc.findall( "./arguments-list/argument" ):
@@ -3184,14 +3184,14 @@ class FindPassByRefNonAnalouges ( Pass ):
            int(arg.get( "refdepth" )) > 0  :
           if not printed:
             printed = True
-            print "In function", proc_name, ":"
-          print "\tArgument", arg.get( "name" ), "of refdepth", int(arg.get( "refdepth" )), "has no fortran analogue"
+            print("In function", proc_name, ":")
+          print("\tArgument", arg.get( "name" ), "of refdepth", int(arg.get( "refdepth" )), "has no fortran analogue")
       if printed:
-        print ""  
+        print("")  
     
     
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 '''
 class FindFortranNoTypes ( Pass )
@@ -3207,17 +3207,17 @@ class FindFortranNoTypes ( Pass ):
   def apply( xml_tree ):
     selfname = FindFortranNoTypes
     Pass.resolve( selfname, xml_tree )
-    print "[",selfname,"]"
+    print("[",selfname,"]")
     
     lapack_f_procs = xml_tree.find( "./LAPACK/procedures" )
-    print lapack_f_procs
+    print(lapack_f_procs)
     for f_proc in lapack_f_procs.findall( "./procedure" ):
       for f_arg in f_proc.findall( "./arguments-list/argument" ):
         if f_arg.get( "type" ) == None:
-          print f_proc.get( "name" ), f_proc.get( "file-name" ), f_arg.get( "name" )
+          print(f_proc.get( "name" ), f_proc.get( "file-name" ), f_arg.get( "name" ))
     
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 '''
 class BucketVariblesSemanticsPass ( Pass )
@@ -3233,7 +3233,7 @@ class BucketArgumentsSemanticsPass ( Pass ):
   def apply( xml_tree ):
     selfname = BucketArgumentsSemanticsPass
     Pass.resolve( selfname, xml_tree )
-    print "[",selfname,"]"
+    print("[",selfname,"]")
     
     lapack_f_procs = xml_tree.find( "./LAPACKE/procedures" )
     
@@ -3254,12 +3254,12 @@ class BucketArgumentsSemanticsPass ( Pass ):
 
     for arg in variables:
       if len( variables[ arg ] ) > 2:
-        print arg
+        print(arg)
         for semantic in variables[ arg ]:
-          print "  \"" + semantic + "\"", ":", len( variables[ arg ][ semantic ] )
+          print("  \"" + semantic + "\"", ":", len( variables[ arg ][ semantic ] ))
 
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 '''
 class BucketFortranTypes ( Pass )
@@ -3275,7 +3275,7 @@ class BucketFortranTypes ( Pass ):
   def apply( xml_tree ):
     selfname = BucketFortranTypes
     Pass.resolve( selfname, xml_tree )
-    print "[",selfname,"]"
+    print("[",selfname,"]")
     
     
     lapack_f_procs = xml_tree.find( "./LAPACK/procedures" )
@@ -3301,11 +3301,11 @@ class BucketFortranTypes ( Pass ):
         else:
           c_types.add( "~BAD. None for type~" )
     
-    print "C types", c_types
-    print "Fortran types", f_types,"\n"
+    print("C types", c_types)
+    print("Fortran types", f_types,"\n")
 
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 '''
 class FindAFortranType ( Pass )
@@ -3321,7 +3321,7 @@ class FindAFortranType ( Pass ):
   def apply( xml_tree ):
     selfname = FindAFortranType
     Pass.resolve( selfname, xml_tree )
-    print "[",selfname,"]"
+    print("[",selfname,"]")
     
     
     lapack_f_procs = xml_tree.find( "./LAPACK/procedures" )
@@ -3331,18 +3331,18 @@ class FindAFortranType ( Pass ):
     find = "RECURSIVE"
     for f_proc in lapack_f_procs.findall( "./procedure" ):
       if f_proc.get( "return-type" ) == find:
-        print f_proc.get( "name" )
+        print(f_proc.get( "name" ))
         #return
         
       for f_arg in f_proc.findall( "./arguments-list/argument" ):
         if f_arg.get( "type" ) == find:
-          print f_proc.get( "name" ), f_arg.get( "name" )
+          print(f_proc.get( "name" ), f_arg.get( "name" ))
           #return
 
     
 
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 '''
 class FindUnmatchedArgsPass ( Pass )
@@ -3358,7 +3358,7 @@ class FindUnmatchedArgsPass ( Pass ):
   def apply( xml_tree ):
     selfname = FindUnmatchedArgsPass
     Pass.resolve( selfname, xml_tree ) 
-    print "[",selfname,"]"
+    print("[",selfname,"]")
 
     lapack_c_root = xml_tree.find( "./LAPACKE" )
     lapack_c_procs = lapack_c_root.find( "./procedures" )
@@ -3401,21 +3401,21 @@ class FindUnmatchedArgsPass ( Pass ):
           
       if c_no_match == []: continue
         
-      print c_proc.get( "name" ), ":", f_proc.get( "name" )
-      print "+",c_proc.get( "name" )
+      print(c_proc.get( "name" ), ":", f_proc.get( "name" ))
+      print("+",c_proc.get( "name" ))
       for m in c_no_match:
         #prettyprintxml( m )
-        print "\t-", m.get( "name" )
+        print("\t-", m.get( "name" ))
         
-      print "+",f_proc.get( "name" )
+      print("+",f_proc.get( "name" ))
       for m in f_no_match:
         #prettyprintxml( m )
-        print "\t-", m.get( "name" )
+        print("\t-", m.get( "name" ))
       
-      print "\n"
+      print("\n")
         
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 '''
 class FindNoneLAPACKESementicsPass ( Pass )
@@ -3433,7 +3433,7 @@ class FindNoneLAPACKESementicsPass ( Pass ):
   def apply( xml_tree ):
     selfname = FindNoneLAPACKESementicsPass
     Pass.resolve( selfname, xml_tree ) 
-    print "[",selfname,"]"
+    print("[",selfname,"]")
 
     lapack_c_root = xml_tree.find( "./LAPACKE" )
     lapack_c_procs = lapack_c_root.find( "./procedures" )
@@ -3445,14 +3445,14 @@ class FindNoneLAPACKESementicsPass ( Pass ):
       for c_arg in c_proc.findall( "./arguments-list/argument" ):
         if c_arg.get( "semantic" ) == None:
           if not printed:
-            print c_proc.get( "name" )
+            print(c_proc.get( "name" ))
             printed = True
-          print "Missing sementic on", c_arg.get( "name" )
+          print("Missing sementic on", c_arg.get( "name" ))
       if printed:
-        print ""
+        print("")
         
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 class FindHasNoFortranAnaloguePass ( Pass ):
   dependencies = [BaseAssociatePass]
@@ -3462,7 +3462,7 @@ class FindHasNoFortranAnaloguePass ( Pass ):
   def apply( xml_tree ):
     selfname = FindHasNoFortranAnaloguePass
     Pass.resolve( selfname, xml_tree ) 
-    print "[",selfname,"]"
+    print("[",selfname,"]")
 
     lapack_c_root = xml_tree.find( "./LAPACKE" )
     lapack_c_procs = lapack_c_root.find( "./procedures" )
@@ -3470,13 +3470,13 @@ class FindHasNoFortranAnaloguePass ( Pass ):
     for c_proc in lapack_c_procs.findall( "./procedure" ):
       if c_proc.find( "./analogues/analogue" ) == None: 
         #list.add( c_proc.get("name").replace( "LAPACKE_", "" ).replace( "LAPACK_", "" ).replace( "_work", "" ) )
-        print c_proc.get( "name" )
+        print(c_proc.get( "name" ))
     for i in list:
-      print i
+      print(i)
       
         
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 '''
 class DropFileOfCTreeUnmatchedArgsPass ( Pass )
@@ -3493,7 +3493,7 @@ class DropFileOfCTreeUnmatchedArgsPass ( Pass ):
   def apply( xml_tree ):
     selfname = DropFileOfCTreeUnmatchedArgsPass
     Pass.resolve( selfname, xml_tree ) 
-    print "[",selfname,"]"
+    print("[",selfname,"]")
 
     lapack_c_root = xml_tree.find( "./LAPACKE" )
     lapack_c_procs = lapack_c_root.find( "./procedures" )
@@ -3553,7 +3553,7 @@ class DropFileOfCTreeUnmatchedArgsPass ( Pass ):
       prettywritexml( output_tree, "DropFileOfCTreeUnmatchedArgsPass_output.xml" )
       
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 '''
 class DropFileOfCTreeUnmatchedArgsWithSuggestionsPass ( Pass )
@@ -3573,7 +3573,7 @@ class DropFileOfCTreeUnmatchedArgsWithSuggestionsPass ( Pass ):
   def apply( xml_tree ):
     selfname = DropFileOfCTreeUnmatchedArgsWithSuggestionsPass
     Pass.resolve( selfname, xml_tree ) 
-    print "[",selfname,"]"
+    print("[",selfname,"]")
     
     output_tree = ET.Element( "pass-output" )
     pass_output = SubElement( output_tree, "pass" )
@@ -3646,7 +3646,7 @@ class DropFileOfCTreeUnmatchedArgsWithSuggestionsPass ( Pass ):
             possible.set( "type", f_arg.get( "type" ) )
       
       
-      print c_proc.get( "name" ), f_proc.get( "name" )
+      print(c_proc.get( "name" ), f_proc.get( "name" ))
       
       type_map = { 
                   "LOGICAL" : "booelan",
@@ -3697,7 +3697,7 @@ class DropFileOfCTreeUnmatchedArgsWithSuggestionsPass ( Pass ):
             c_arg = arg_1 if arg_1 in c_no_match else arg_2
             f_arg = arg_2 if arg_2 in f_no_match else arg_1
             
-            print "match", c_arg.get("name"), "to", f_arg.get("name"),"unique type union"
+            print("match", c_arg.get("name"), "to", f_arg.get("name"),"unique type union")
 
             # ?_ana_node is the analogue record under ? language (ie c_ana_node notes the argument in the fortran tree, but lives in the C tree)
             # Note that it is totally possible to create the path string from the two atributes of the tag.
@@ -3728,7 +3728,7 @@ class DropFileOfCTreeUnmatchedArgsWithSuggestionsPass ( Pass ):
           change = True # True to emulate do-while
           iter = 1
           while change:
-            print "Iteration:", iter
+            print("Iteration:", iter)
             change = False
             c_removes = []
             f_removes = []
@@ -3747,20 +3747,20 @@ class DropFileOfCTreeUnmatchedArgsWithSuggestionsPass ( Pass ):
 
             
               if len( min_list ) >1 :
-                print "BOTCHED matching for", c_arg.get("name"),": args",
+                print("BOTCHED matching for", c_arg.get("name"),": args", end=' ')
                 for arg in min_list:
-                  print arg.get("name"),",",
-                print "have same score", min_score
+                  print(arg.get("name"),",", end=' ')
+                print("have same score", min_score)
                 continue
               
               min = min_list[0]
               if min_score > 2:
-                print "FAILED to match", c_arg.get("name"), "to", min.get("name"), "score", min_score, "was too bad"
+                print("FAILED to match", c_arg.get("name"), "to", min.get("name"), "score", min_score, "was too bad")
                 continue
               
               change = True
               
-              print "match", c_arg.get("name"), "to", min.get("name"), "score", min_score 
+              print("match", c_arg.get("name"), "to", min.get("name"), "score", min_score) 
               f_arg = min
               # ?_ana_node is the analogue record under ? language (ie c_ana_node notes the argument in the fortran tree, but lives in the C tree)
               # Note that it is totally possible to create the path string from the two atributes of the tag.
@@ -3794,21 +3794,21 @@ class DropFileOfCTreeUnmatchedArgsWithSuggestionsPass ( Pass ):
               f_no_match.remove( r )
             
             iter += 1
-          print "No changes"
+          print("No changes")
       
         
       for c_arg in c_no_match:
-        print "Could not match", c_arg.get( "name" )
+        print("Could not match", c_arg.get( "name" ))
       
       for f_arg in f_no_match:
-        print "Could not match", f_arg.get( "name" )
+        print("Could not match", f_arg.get( "name" ))
         
-      print ""
+      print("")
         
       prettywritexml( output_tree, "DropFileOfCTreeUnmatchedArgsPass_output.xml" )
       
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 class FindLAPACKFunctionGroups ( Pass ):
   dependencies = [ChapelizeLAPACKEFunctionsPass]
@@ -3818,7 +3818,7 @@ class FindLAPACKFunctionGroups ( Pass ):
   def apply( xml_tree ):
     selfname = FindLAPACKFunctionGroups
     Pass.resolve( selfname, xml_tree ) 
-    print "[",selfname,"]"
+    print("[",selfname,"]")
 
     lapacke_root = xml_tree.find( "./LAPACKE" )
     lapacke_procs = lapacke_root.find( "./procedures" )
@@ -3836,7 +3836,7 @@ class FindLAPACKFunctionGroups ( Pass ):
       match = func_name_group_regex.search( base_name )
       
       if match == None:
-        print proc_name, "ie", base_name, "does not match regex"
+        print(proc_name, "ie", base_name, "does not match regex")
         continue
       
       #names.add( base_name )
@@ -3855,19 +3855,19 @@ class FindLAPACKFunctionGroups ( Pass ):
     config_count = 0
     type_counts = 0
     for func in groups:
-      print func
+      print(func)
       group_counts += 1
       for config in groups[func]:
-        print "\t", config
+        print("\t", config)
         config_counts += 1
         for name in groups[func][config]:
-          print "\t\t", name
+          print("\t\t", name)
           type_counts += 1
           
-    print group_counts, config_counts, type_counts
+    print(group_counts, config_counts, type_counts)
     
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 class FindDuplicateLAPACKEFunctions ( Pass ):
   dependencies = [BaseLAPACKEPass]
@@ -3877,7 +3877,7 @@ class FindDuplicateLAPACKEFunctions ( Pass ):
   def apply( xml_tree ):
     selfname = FindDuplicateLAPACKEFunctions
     Pass.resolve( selfname, xml_tree ) 
-    print "[",selfname,"]"
+    print("[",selfname,"]")
 
     root_procs = xml_tree.find( "./LAPACKE/procedures" )
     proc_names = set()
@@ -3890,7 +3890,7 @@ class FindDuplicateLAPACKEFunctions ( Pass ):
         proc_names.add( proc_name )
     
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 class PrintArgDoc ( Pass ):
   dependencies = [FuncArgsDocPass, FuncArgsTypePass]
@@ -3900,7 +3900,7 @@ class PrintArgDoc ( Pass ):
   def apply( xml_tree ):
     selfname = PrintArgDoc
     Pass.resolve( selfname, xml_tree ) 
-    print "[",selfname,"]"
+    print("[",selfname,"]")
 
     lapack_node = xml_tree.find( "./LAPACK" )
     text_node = lapack_node.find( "./text" )
@@ -3915,7 +3915,7 @@ class PrintArgDoc ( Pass ):
         doc_node = arg_node.find( "documentation" )
         total += 1
         if doc_node == None:
-          print proc_node.get( "name" ), "/", arg, "has no documentation"
+          print(proc_node.get( "name" ), "/", arg, "has no documentation")
           continue
           
         doc = doc_node.text.lower()
@@ -3928,12 +3928,12 @@ class PrintArgDoc ( Pass ):
     
     doc_list = sorted( list( doc_set ), key=len )
     for i in doc_list:
-      print i
+      print(i)
       
-    print len( doc_list ), "/", docked, "/", total
+    print(len( doc_list ), "/", docked, "/", total)
     
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 class FindDifferenArgumentsPass ( Pass ):
   dependencies = [BucketLAPACKFunctionGroupsPass]
@@ -3943,7 +3943,7 @@ class FindDifferenArgumentsPass ( Pass ):
   def apply( xml_tree ):
     selfname = FindDifferenArgumentsPass
     Pass.resolve( selfname, xml_tree )
-    print "[",selfname,"]"
+    print("[",selfname,"]")
     
     abstract_lapack = xml_tree.find( "./Abstract-LAPACK" )
     
@@ -3960,10 +3960,10 @@ class FindDifferenArgumentsPass ( Pass ):
         
         all_same = True
         all_count = 0
-        names = name_to_counts.keys()
+        names = list(name_to_counts.keys())
         for i in range( len( names ) - 1 ):
           all_same = all_same and ( name_to_counts[ names[i] ] == name_to_counts[ names[i+1] ] )
-        print all_same
+        print(all_same)
         all_count = name_to_counts[ names[1] ] # grab arbitrary count if all the same
         
         for pos in range( all_count ):
@@ -3972,12 +3972,12 @@ class FindDifferenArgumentsPass ( Pass ):
             is_same = is_same and ( name_to_args[names[i]].get("name")     == name_to_args[names[i+1]].get("name") ) \
                               and ( name_to_args[names[i]].get("semantic") == name_to_args[names[i+1]].get("semantic") ) \
                               and ( name_to_args[names[i]].get("intent")   == name_to_args[names[i+1]].get("intent") )
-          print pos, is_same
+          print(pos, is_same)
           if not is_same:
             return
         
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
     
 class CountGroups ( Pass ):
   dependencies = [BucketLAPACKFunctionGroupsPass]
@@ -3987,7 +3987,7 @@ class CountGroups ( Pass ):
   def apply( xml_tree ):
     selfname = FindDifferenArgumentsPass
     Pass.resolve( selfname, xml_tree )
-    print "[",selfname,"]"
+    print("[",selfname,"]")
     
     abstract_lapack = xml_tree.find( "./Abstract-LAPACK" )
     groups = 0
@@ -4001,10 +4001,10 @@ class CountGroups ( Pass ):
         for type_node in config_node.findall( "./type" ):
           types += 1
     
-    print groups, configs, types
+    print(groups, configs, types)
     
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 class DropFileOfGroups ( Pass ):
   dependencies = [BaseAbstractLAPACKPass]
@@ -4014,7 +4014,7 @@ class DropFileOfGroups ( Pass ):
   def apply( xml_tree ):
     selfname = DropFileOfGroups
     Pass.resolve( selfname, xml_tree ) 
-    print "[",selfname,"]"
+    print("[",selfname,"]")
 
     abstract_lapack = xml_tree.find( "./Abstract-LAPACK" )
 
@@ -4040,7 +4040,7 @@ class DropFileOfGroups ( Pass ):
     prettyprintxml( abstract_lapack)
     prettywritexml( abstract_lapack, "DropFilesOfGroups.xml" )
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 class TryMatrixArgsUnion ( Pass ):
   dependencies = [BaseAbstractLAPACKPass]
@@ -4050,7 +4050,7 @@ class TryMatrixArgsUnion ( Pass ):
   def apply( xml_tree ):
     selfname = TryMatrixArgsUnion
     Pass.resolve( selfname, xml_tree ) 
-    print "[",selfname,"]"
+    print("[",selfname,"]")
 
     abstract_lapack = xml_tree.find( "./Abstract-LAPACK" )
    
@@ -4060,7 +4060,7 @@ class TryMatrixArgsUnion ( Pass ):
           pass
      
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 class SolveArgsUnionFor ( Pass ):
   dependencies = [BaseAbstractLAPACKPass]
@@ -4070,7 +4070,7 @@ class SolveArgsUnionFor ( Pass ):
   def apply( xml_tree ):
     selfname = SolveArgsUnionFor
     Pass.resolve( selfname, xml_tree ) 
-    print "[",selfname,"]"
+    print("[",selfname,"]")
 
     abstract_lapack = xml_tree.find( "./Abstract-LAPACK" )
     
@@ -4080,7 +4080,7 @@ class SolveArgsUnionFor ( Pass ):
     unset = True
     for group_node in abstract_lapack.findall( "./group" ):
       for config_node in group_node.findall( "./matrix-configuration" ):
-        print config_node.get( "name" ) + group_node.get( "name" )
+        print(config_node.get( "name" ) + group_node.get( "name" ))
         config_args = set()
         array_args = set()
         array_dims = {}
@@ -4091,22 +4091,22 @@ class SolveArgsUnionFor ( Pass ):
             #prettyprintxml( arg )
              
         if "m" in config_args:
-          print array_args
+          print(array_args)
           for elem in array_args:
-            print elem
+            print(elem)
           co |= array_args
           if unset:
             unique |= array_args
             unset = False
           else:
             unique &= array_args
-          print unique, "\n"
-    print "="*10        
-    print unique, "\n"
-    print co, "\n"
+          print(unique, "\n")
+    print("="*10)        
+    print(unique, "\n")
+    print(co, "\n")
     
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 class FindDifferentLengthCalls ( Pass ):
   dependencies = [BaseLAPACKEPass]
@@ -4116,7 +4116,7 @@ class FindDifferentLengthCalls ( Pass ):
   def apply( xml_tree ):
     selfname = FindDifferentLengthCalls
     Pass.resolve( selfname, xml_tree ) 
-    print "[",selfname,"]"
+    print("[",selfname,"]")
 
     procs_dict = {}
     fams = set()
@@ -4146,9 +4146,9 @@ class FindDifferentLengthCalls ( Pass ):
         #return
     #print procs_dict  
     for fam in fams:
-      print fam
+      print(fam)
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 class IsNOrMEverTheSame ( Pass ):
   dependencies = [BaseLAPACKPass]
@@ -4158,7 +4158,7 @@ class IsNOrMEverTheSame ( Pass ):
   def apply( xml_tree ):
     selfname = IsNorMEverTheSame
     Pass.resolve( selfname, xml_tree ) 
-    print "[",selfname,"]"
+    print("[",selfname,"]")
 
     lapack_node = xml_tree.find( "./LAPACK" )
     text_node = lapack_node.find( "./text" )
@@ -4210,7 +4210,7 @@ class IsNOrMEverTheSame ( Pass ):
               break
           
           if nameHasSpace:
-            print names, " contains non names. Skipping."
+            print(names, " contains non names. Skipping.")
             continue
           
           removes = []
@@ -4222,7 +4222,7 @@ class IsNOrMEverTheSame ( Pass ):
             names_list.remove( rm )
 
           if len( names_list ) == 0:
-            print "Names list had no argument names. Skipping" 
+            print("Names list had no argument names. Skipping") 
             continue
           
           what.append( m.group( "what" ) )
@@ -4264,7 +4264,7 @@ class IsNOrMEverTheSame ( Pass ):
           
     
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 class FindGroupsWithUncommon ( Pass ):
   dependencies = [BaseAbstractLAPACKPass]
@@ -4274,7 +4274,7 @@ class FindGroupsWithUncommon ( Pass ):
   def apply( xml_tree ):
     selfname = PretendCreate
     Pass.resolve( selfname, xml_tree ) 
-    print "[",selfname,"]"
+    print("[",selfname,"]")
 
     abstract_lapack = xml_tree.find( "./Abstract-LAPACK" )
 
@@ -4284,13 +4284,13 @@ class FindGroupsWithUncommon ( Pass ):
         for type in config_node.findall( "./types/type" ):
           if type.find( "./arguments-list" ) != None:
             if not printed:
-              print config_node.get("name") + group_node.get("name")
+              print(config_node.get("name") + group_node.get("name"))
               printed = True
-            print "\t", type.get("name")
+            print("\t", type.get("name"))
           
          
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
 
 class TestInputGroupsGen ( Pass ):
   dependencies = [BaseCodegenReadyPass]
@@ -4300,7 +4300,7 @@ class TestInputGroupsGen ( Pass ):
   def apply( xml_tree ):
     selfname = TestInputGroupsGen
     Pass.resolve( selfname, xml_tree ) 
-    print "[",selfname,"]"
+    print("[",selfname,"]")
 
     #abstract_lapack = xml_tree.find( "./Abstract-LAPACK" )
     group_input = loadxml( "DropAttemptedAssociations_input.xml" )
@@ -4308,7 +4308,7 @@ class TestInputGroupsGen ( Pass ):
     for group in group_input.findall( "./group" ):
       for config in group.findall( "./matrix-configuration" ):
         code = SequenceOfProducers()
-        print config.get( "name" ) + group.get( "name" )
+        print(config.get( "name" ) + group.get( "name" ))
         code.append( SegmentProducer( "proc " + config.get( "name" ) + group.get( "name" ) ) )
 
         args_producer = ListProducer(", ", "(", ")")
@@ -4372,8 +4372,8 @@ class TestInputGroupsGen ( Pass ):
         func_body.append( LineProducer( "return " + info_var + ";" ) )
         
         code.append( func_body )
-        print code.generate()
+        print(code.generate())
         
                 
     selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+    print("[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n")
