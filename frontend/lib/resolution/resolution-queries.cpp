@@ -8205,7 +8205,7 @@ const Decl* findFieldByName(Context* context,
         break;
       }
     } else if (auto named = decl->toMultiDecl()) {
-      for (auto md : named->children()) {
+      for (auto md : named->decls()) {
         auto nmd = md->toNamedDecl();
         if (nmd->name() == name) {
           ret = nmd;
