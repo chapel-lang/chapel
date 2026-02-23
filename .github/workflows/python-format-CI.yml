@@ -1,8 +1,6 @@
 name: CI Format Check
 
-on:
-  pull_request:
-  workflow_dispatch:
+on: [push, pull_request, workflow_dispatch]
 
 jobs:
   check-format:
