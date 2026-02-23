@@ -1,0 +1,83 @@
+module UnattachedCurly {
+
+  try {
+
+  }
+  catch e: Error {
+
+  }
+  catch (e: Error) {
+
+  }
+  catch {
+
+  }
+
+  try! {
+
+  }
+  catch e: Error {
+
+  }
+
+  try! {
+
+  }
+  catch (e: Error) {
+
+  }
+
+  try! {
+
+  }
+  catch {
+
+  }
+
+  try {
+
+  }  catch e: Error {
+
+  }catch (e: Error) {
+
+  }   catch {
+
+  }
+
+  try {
+
+  } // this comment should prevent the fixit
+  catch e: Error {
+
+  }
+  // this comment should prevent the fixit
+  catch (e: Error) {
+
+  }
+  catch {
+
+  }
+
+  try {
+
+  }
+  catch e: Error {
+
+  } /*this comment should prevent a fixit*/ catch (e: Error) {
+
+  }
+  catch {
+
+  }
+
+  try {
+
+  } /*this comment should prevent fixits*/ catch {
+
+  }
+
+  proc foo() throws { return 5; }
+  var x = try! foo(),
+      y = try foo();
+
+}

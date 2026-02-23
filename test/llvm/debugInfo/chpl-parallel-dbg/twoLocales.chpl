@@ -29,7 +29,7 @@ proc main() {
     // CHECK-NEXT: [10] = 10
 
     // CHECK: {{^}}(lldb) p localArr
-    // CHECK-NEXT: (ChapelArray::[domain(1,int(64),one)] int(64)) [1..10] int(64) 
+    // CHECK-NEXT: ([domain(1,int(64),one)] int(64)) [1..10] int(64)
     // CHECK-NEXT: [1] = 2
     // CHECK-NEXT: [2] = 3
     // CHECK-NEXT: [3] = 4

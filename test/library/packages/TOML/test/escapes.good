@@ -1,0 +1,24 @@
+toml output
+
+[myTbl]
+endsWithBackslash = "This string ends with a backslash\\"
+endsWithBackslashRaw = "This raw string ends with a backslash\\"
+iHaveTabLiteral = "This string has a tab\tin it"
+iHaveTabLiteralRaw = "This string has a tab\tin it"
+myArr = ["Lets do it again: \\, \", \b, \t, \n, \f, \r. And some quotes: '", "And again: \\, \", \\b, \\t, \\n, \\f, \\r"]
+myRawStr = "This is a raw string that can have backslashes and quotes without needing to escape them: \\, \", \\b, \\t, \\n, \\f, \\r. It can`t have single quotes"
+myStr = "This is a normal string that can have escapes like this: \\, \", \b, \t, \n, \f, \r. It can also have quotes like: '"
+
+
+round-tripped toml output
+
+[myTbl]
+endsWithBackslash = "This string ends with a backslash\\"
+endsWithBackslashRaw = "This raw string ends with a backslash\\"
+iHaveTabLiteral = "This string has a tab\tin it"
+iHaveTabLiteralRaw = "This string has a tab\tin it"
+myArr = ["Lets do it again: \\, \", \b, \t, \n, \f, \r. And some quotes: '", "And again: \\, \", \b, \t, \n, \f, \r"]
+myRawStr = "This is a raw string that can have backslashes and quotes without needing to escape them: \\, \", \b, \t, \n, \f, \r. It can`t have single quotes"
+myStr = "This is a normal string that can have escapes like this: \\, \", \b, \t, \n, \f, \r. It can also have quotes like: '"
+
+

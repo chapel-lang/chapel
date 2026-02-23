@@ -136,10 +136,18 @@ std::string generatePyiFile() {
     ss << "        " << DOCSTR << std::endl; \
     ss << "        \"\"\"" << std::endl; \
     ss << "        ..." << std::endl << std::endl;
+  #define METHOD_PROTOTYPE(NODE, NAME, DOCSTR) \
+    printedAnything = true; \
+    ss << "    def " << #NAME << "(self):" << std::endl; \
+    ss << "        \"\"\"" << std::endl; \
+    ss << "        " << DOCSTR << std::endl; \
+    ss << "        \"\"\"" << std::endl; \
+    ss << "        ..." << std::endl << std::endl;
   #define ITER_PROTOTYPE(NODE, TYPE) \
     printedAnything = true; \
     ss << "    def __iter__(self) -> typing.Iterator[" << PythonReturnTypeInfo<TYPE>::typeString() << "]:" << std::endl; \
     ss << "        ..." << std::endl << std::endl;
+  #define OPERATOR_PROTOTYPE(NODE, NAME, DOCSTR, TYPEFN) METHOD(NODE, NAME, DOCSTR, TYPEFN, /*BODY*/)
   #define CLASS_END(NODE) \
     if (!printedAnything) { \
       ss << "    pass" << std::endl; \

@@ -20,6 +20,10 @@ Available rules (default rules marked with *):
   * PascalCaseModules            Warn for modules that are not 'PascalCase'.
   * SimpleBoolConditional        Warn for boolean conditionals that can be simplified.
   * SimpleDomainAsRange          Warn for simple domains in loops that can be ranges.
+  * ThenKeywordAndBlock          Warn for redundant 'then' keyword before a curly brace '{'.
+  * UnattachedCatch              Warn for 'catch' blocks that do not start on the same line as the closing brace of the 'try' block.
+  * UnattachedCurly              Warn for blocks that do not have their opening curly brace on the same line as the controlling statement.
+  * UnattachedElse               Warn for 'else' blocks that do not start on the same line as the closing brace of the 'then' block.
   * UnusedFormal                 Warn for unused formals in functions.
   * UnusedLoopIndex              Warn for unused index variables in loops.
   * UnusedTaskIntent             Warn for unused task intents in functions.

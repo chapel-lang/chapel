@@ -143,7 +143,7 @@ proc _computeChunkStartEnd(nElems, nChunks, myCnk): 2*nElems.type {
   // Caller's responsibility.
   assert(1 <= myChunk && myChunk <= numChunks);
 
-  if myChunk <= rem then {
+  if myChunk <= rem {
     // (div+1) elements per chunk
     var endIx = myChunk * (div + 1);
     //writeln("_computeChunkStartEnd", (numElems, numChunks, myChunk),
@@ -308,7 +308,7 @@ proc densify(s: range(?,bounds=?), w: range(?IT,?), userErrors=true
   _densiIdxCheck(s.idxType, IT, (s,w).type);
 
   proc ensure(cond, args...) {
-    if userErrors then { if !cond then halt((...args)); }
+    if userErrors { if !cond then halt((...args)); }
     else                               assert(cond, (...args));
   }
 
@@ -352,7 +352,7 @@ proc densify(sArg: range(?,bounds=?B,strides=?S), w: range(?IT,?,strides=strideK
   const s = sArg:range(IT,B,S);
 
   proc ensure(cond) {
-    if userErrors then { if !cond then halt(); }
+    if userErrors { if !cond then halt(); }
     else                               assert(cond);
   }
 

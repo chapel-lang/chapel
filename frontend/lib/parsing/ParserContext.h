@@ -184,6 +184,7 @@ struct ParserContext {
   void exitScope(asttags::AstTag tag, UniqueString name);
 
   void noteCurlyBraces(YYLTYPE left, YYLTYPE right);
+  bool isValidCurlyBracesLoc(YYLTYPE loc);
   bool hasCurlyBracesLoc();
   YYLTYPE curlyBracesLoc();
   void resetCurlyBracesLoc();
@@ -735,7 +736,8 @@ struct ParserContext {
 
   AstNode* buildCatch(YYLTYPE location, AstNode* error,
                       CommentsAndStmt block,
-                      bool hasParensAroundError);
+                      bool hasParensAroundError,
+                      YYLTYPE parenLocation);
 
   CommentsAndStmt buildWhenStmt(YYLTYPE location,
                                 YYLTYPE headerLocation,

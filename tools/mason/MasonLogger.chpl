@@ -139,8 +139,7 @@ module MasonLogger {
     proc format(fmt:string, args...) {
       try {
         return fmt.format((...args));
-      }
-      catch e {
+      } catch e {
         try! stderr.writeln("Error formatting string\n", e);
         return "Unable to format";
       }
@@ -149,8 +148,7 @@ module MasonLogger {
     proc writef(writer, fmt: string, args...) {
       try {
         writer.writef(fmt, (...args));
-      }
-      catch e {
+      } catch e {
         try! stderr.writeln("Error writing formatted debug output\n", e);
       }
     }
@@ -158,8 +156,7 @@ module MasonLogger {
     proc writeln(writer, s: string) {
       try {
         writer.writeln(s);
-      }
-      catch e {
+      } catch e {
         try! stderr.writeln("Error writing debug output\n", e);
       }
     }

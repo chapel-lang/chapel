@@ -144,8 +144,7 @@ module TestResult {
             infos.pushBack("failures = " + failed: string);
           if errored then
             infos.pushBack("errors = " + errored: string);
-        }
-        else
+        } else
           write("OK");
         if skipped then
           infos.pushBack("skipped = " + skipped: string);
@@ -154,8 +153,7 @@ module TestResult {
           for info in infos do write(info, " ");
           writeln(")");
         }
-      }
-      else {
+      } else {
         writeln("No Tests Found");
       }
     }

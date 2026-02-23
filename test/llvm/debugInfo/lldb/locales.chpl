@@ -8,7 +8,7 @@ proc main() {
 
 
 // CHECK: p Locales
-// CHECK-LOCAL-NEXT: (ChapelArray::[domain(1,int(64),one)] locale) [0..0] ChapelLocale::locale {
+// CHECK-LOCAL-NEXT: ([domain(1,int(64),one)] locale) [0..0] ChapelLocale::locale {
 // CHECK-LOCAL-NEXT: [0] = {
 // CHECK-LOCAL-NEXT: _instance = 0x{{0*[0-9a-fA-F]+}}
 // CHECK-LOCAL-NEXT: }

@@ -127,8 +127,7 @@ proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock",
     // Close Memory
     openFile.close();
 
-  }
-  catch e: MasonError {
+  } catch e: MasonError {
     stderr.writeln(e.message());
     exit(1);
   }
@@ -187,9 +186,8 @@ proc updateRegistry(skipUpdate: bool, show=true) throws {
       var pullRegistry = 'git pull -q origin';
       if show then writeln("Updating ", name);
       gitC(registryHome, pullRegistry);
-    }
-    // Registry has moved or does not exist
-    else {
+    } else {
+      // Registry has moved or does not exist
       mkdir(MASON_HOME + '/src', parents=true);
       const localRegistry = registryHome;
       mkdir(localRegistry, parents=true);
@@ -409,22 +407,18 @@ private proc IVRS(A: borrowed Toml, B: borrowed Toml) {
     stderr.writeln("  v", version1);
     stderr.writeln("  v", version2);
     exit(1);
-  }
-  else if vers1(1) != vers2(1) {
+  } else if vers1(1) != vers2(1) {
     v1 = vers1(1): int;
     v2 = vers2(1): int;
     if v1 > v2 {
       return A;
-    }
-    else return B;
-  }
-  else {
+    } else return B;
+  } else {
     v1 = vers1(2): int;
     v2 = vers2(2): int;
     if v1 > v2 {
       return A;
-    }
-    else return B;
+    } else return B;
   }
 }
 

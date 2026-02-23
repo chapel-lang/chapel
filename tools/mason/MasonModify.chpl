@@ -88,12 +88,10 @@ proc modifyToml(add: bool, spec: string, external: bool, system: bool,
       writeln("Adding system dependency", dependency,
               "version", version, sep=" ");
       newToml = masonSystemAdd(toml, dependency, version);
-    }
-    else if external && add {
+    } else if external && add {
       writeln("Adding external dependency with spec", spec, sep=" ");
       newToml = masonExternalAdd(toml, dependency, spec);
-    }
-    else {
+    } else {
 
       if !skipCheck {
         // ensure that dependency exists and check package type
@@ -112,28 +110,23 @@ proc modifyToml(add: bool, spec: string, external: bool, system: bool,
               "version", version, sep=" ");
       newToml = masonAdd(toml, dependency, version);
     }
-  }
-
-  // Removing a dependency
-  else {
+  } else {
+    // Removing a dependency
     var depName: string;
     if spec.find('@') != -1 {
       const split = spec.split('@');
       depName = split[0];
-    }
-    else depName = spec;
+    } else depName = spec;
     const dependency = depName;
     checkDepName(depName);
 
     if !system && !external {
       writeln("Removing Mason dependency " + dependency);
       newToml = masonRemove(toml, dependency);
-    }
-    else if system{
+    } else if system {
       writeln("Removing system dependency " + dependency);
       newToml = masonSystemRemove(toml, dependency);
-    }
-    else if external{
+    } else if external {
       writeln("Removing external dependency " + dependency);
       newToml = masonExternalRemove(toml, dependency);
     }
@@ -151,9 +144,8 @@ private proc masonAdd(toml: shared Toml,
     } else {
       toml["dependencies"]!.set(toAdd, version);
     }
-  }
-  // Create dependency table if it doesnt exist
-  else {
+  } else {
+    // Create dependency table if it doesnt exist
     var tdom: domain(string, parSafe=false);
     var deps: [tdom] shared Toml?;
     toml.set("dependencies", deps);
@@ -183,8 +175,7 @@ private proc masonSystemAdd(toml: shared Toml,
     } else {
       toml["system"]!.set(toAdd, version);
     }
-  }
-  else {
+  } else {
     var pkgdom: domain(string, parSafe=false);
     var pkgdeps: [pkgdom] shared Toml?;
     toml.set("system", pkgdeps);

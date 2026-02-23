@@ -94,19 +94,16 @@ iter prereqs(const baseDir = here.cwd()) {
       for dir in dirs[1..] {
         if dirHasMakefile(dir) {
           yield dir;
-        }
-        else {
+        } else {
           log.warnf("%s is in prereqs directory. But doesn't have a Makefile." +
                     " Ignoring.", dir);
         }
       }
-    }
-    else {
+    } else {
       log.infof("%s is supposed to be directory with prerequisites " +
                 "but it looks to be a file. It will be ignored.", prereqsDir);
     }
-  }
-  else {
+  } else {
     log.debugf("%s doesn't exist.\n", prereqsDir);
   }
 }

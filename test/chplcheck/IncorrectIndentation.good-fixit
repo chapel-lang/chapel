@@ -34,11 +34,13 @@ module IncorrectIndentation {
   writeln("hi");
   }
 
+  @chplcheck.ignore("IncorrectIndentation")
   proc f4() {
     writeln("hi");
       writeln("hi");
   }
 
+  @chplcheck.ignore("IncorrectIndentation")
   proc f5() {
     writeln("hi"); writeln("hi");
   }
@@ -66,11 +68,13 @@ module IncorrectIndentation {
   writeln("hi");
   }
 
+  @chplcheck.ignore("IncorrectIndentation")
   module M4 {
     writeln("hi");
       writeln("hi");
   }
 
+  @chplcheck.ignore("IncorrectIndentation")
   module M5 {
     writeln("hi"); writeln("hi");
   }
@@ -109,6 +113,7 @@ module IncorrectIndentation {
 
         proc nestedProcOuter() {
           proc nestedProcInner(x: int) do return x;
+            @chplcheck.ignore("IncorrectIndentation")
             proc nestedProcInner(x: string) {
               writeln(x);
                writeln(x);
@@ -298,6 +303,7 @@ module IncorrectIndentation {
   first
   }
 
+  @chplcheck.ignore("IncorrectIndentation")
   enum e4 {
     first,
       second
@@ -328,6 +334,7 @@ module IncorrectIndentation {
   proc firstProc() {}
   }
 
+  @chplcheck.ignore("IncorrectIndentation")
   union u4 {
     var element: int;
 
@@ -335,6 +342,7 @@ module IncorrectIndentation {
       proc secondProc() {}
   }
 
+  @chplcheck.ignore("IncorrectIndentation")
   union u5 {
     var element: int;
 
@@ -344,8 +352,9 @@ module IncorrectIndentation {
   // semicolon warning does not issue bad indentation
   enum color { red, green, blue }
 
-  // Since locations are incorrectly reported with 'public' and 'private',
-  // these shouldn't warn.
+
+
+  @chplcheck.ignore("IncorrectIndentation")
   module M7 {
     proc f1 {}
       proc g1 {}
@@ -382,11 +391,13 @@ module IncorrectIndentation {
   writeln("hi");
   }
 
+  @chplcheck.ignore("IncorrectIndentation")
   proc f4() {
     writeln("hi");
       writeln("hi");
   }
 
+  @chplcheck.ignore("IncorrectIndentation")
   proc f5() {
     writeln("hi"); writeln("hi");
   }
@@ -429,6 +440,7 @@ if 1 < 2 {
     var a = 10;
     var b = 20;
   }
+  @chplcheck.ignore("IncorrectIndentation")
   proc vars2()
   {
     var a = 10;
@@ -441,7 +453,7 @@ if 1 < 2 {
   var b = 20;
   }
 
- proc ifElse() {
+  proc ifElse() {
     if 1 < 5 {
       writeln("whee");
     } else if 2 > 3 {
@@ -473,5 +485,24 @@ if 1 < 2 {
         writeln("nested");
       }
     }
+  }
+
+  var arr: [1..10] int;
+  begin
+  {
+    writeln("hi");
+    writeln("??");
+  }
+
+  record R { }
+  manage new R()
+  {
+    var x = 1;
+    var y = 2;
+  }
+  manage new R()
+  {
+     var x = 1;
+    var y = 2;
   }
 }

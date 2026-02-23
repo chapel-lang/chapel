@@ -465,22 +465,19 @@ def _validate_cuda_llvm_version_impl(gpu: gpu_type):
         )
 
 def _validate_rocm_llvm_version_impl(gpu: gpu_type):
-    major_version = get_sdk_version().split('.')[0]
+    major_version, minor_version = get_sdk_version().split('.')[:2]
 
     if major_version in ('5',) and chpl_llvm.get() == 'bundled':
         error("Cannot target AMD GPUs with CHPL_LLVM=bundled")
-    elif major_version == '6' and chpl_llvm.get() != 'bundled' and os.environ.get("CHPL_LLVM_65188_PATCH", "0") != "1":
-        # once https://github.com/llvm/llvm-project/issues/65188 is resolved,
-        # this check can removed
-        # 'CHPL_LLVM_65188_PATCH' is a temporary escape hatch to enable system
-        # llvm with rocm 6.x if the user knows what they are doing
-        error("Cannot target AMD GPUs with ROCm 6.x without CHPL_LLVM=bundled")
-    elif (
-        major_version == "6"
-        and chpl_llvm.get() == "system"
-        and int(chpl_llvm.get_llvm_version()) < 18
-    ):
-        error("Cannot target AMD GPUs with ROCm 6.x without LLVM 18+")
+    elif major_version == '6':
+        if int(minor_version) < 3:
+            # it must be bundled LLVM or patched
+            if chpl_llvm.get() != 'bundled' and os.environ.get("CHPL_LLVM_65188_PATCH", "0") != "1":
+                error("Cannot target AMD GPUs with ROCm 6.0-6.2 without CHPL_LLVM=bundled")
+        else:
+            # it must be LLVM 21+ or the bundled LLVM
+            if chpl_llvm.get() != 'bundled' and int(chpl_llvm.get_llvm_version()) < 21:
+                error("Cannot target AMD GPUs with ROCm 6.3 without CHPL_LLVM=bundled or LLVM 21+")
     elif not validateLlvmBuiltForTgt(gpu.llvm_target):
         _reportMissingGpuReq(
             "LLVM not built for %s." % gpu.llvm_target, allowExempt=False
@@ -549,8 +546,8 @@ def _validate_rocm_version_impl():
     MAX_REQ_VERSION_NICE = "5.4.x"
 
     MIN_ROCM6_REQ_VERSION = "6.0"
-    MAX_ROCM6_REQ_VERSION = "6.3" # upper bound non-inclusive
-    MAX_ROCM6_REQ_VERSION_NICE = "6.2.x"
+    MAX_ROCM6_REQ_VERSION = "6.4" # upper bound non-inclusive
+    MAX_ROCM6_REQ_VERSION_NICE = "6.3.x"
 
     rocm_version = get_sdk_version()
 
@@ -559,7 +556,7 @@ def _validate_rocm_version_impl():
         return False
 
     if not is_ver_in_range(rocm_version, MIN_REQ_VERSION, MAX_REQ_VERSION) and not is_ver_in_range(rocm_version, MIN_ROCM6_REQ_VERSION, MAX_ROCM6_REQ_VERSION):
-        _reportMissingGpuReq(
+        warning(
             "Chapel requires ROCm versions %s to %s or %s to %s, "
             "detected version %s on system." %
             (MIN_REQ_VERSION, MAX_REQ_VERSION_NICE, MIN_ROCM6_REQ_VERSION, MAX_ROCM6_REQ_VERSION_NICE, rocm_version))

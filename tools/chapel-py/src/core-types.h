@@ -68,6 +68,9 @@ struct LocationObject : public PythonClass<LocationObject, chpl::Location> {
                     std::max(self->value_.end(), otherCast->value_.end()));
     return (PyObject*) LocationObject::create(newLoc);
   }
+  static PyObject* iadd(LocationObject* self, PyObject* other) {
+    return add(self, other);
+  }
 
   static PyObject* subtract(LocationObject* self, PyObject* other) {
     if (other->ob_type != LocationObject::PythonType) {
@@ -104,6 +107,9 @@ struct LocationObject : public PythonClass<LocationObject, chpl::Location> {
       return (PyObject*) LocationObject::create(newLoc);
     }
   }
+  static PyObject* isub(LocationObject* self, PyObject* other) {
+    return subtract(self, other);
+  }
 
   static PyObject* str(LocationObject* self) {
     return PyUnicode_FromFormat("%s:%d:%d-%d:%d",
@@ -117,10 +123,12 @@ struct LocationObject : public PythonClass<LocationObject, chpl::Location> {
   static PyTypeObject* configurePythonType() {
     // Configure the necessary methods to make inserting into sets working:
 
-    std::array<PyType_Slot, 3> extraSlots = {
+    std::array<PyType_Slot, 5> extraSlots = {
       PyType_Slot{Py_tp_str, (void*) str},
       {Py_nb_add, (void*) add},
+      {Py_nb_inplace_add, (void*) iadd},
       {Py_nb_subtract, (void*) subtract},
+      {Py_nb_inplace_subtract, (void*) isub},
     };
     PyTypeObject* configuring = PythonClassWithContext<LocationObject, chpl::Location>::configurePythonType(Py_TPFLAGS_DEFAULT, extraSlots);
     return configuring;

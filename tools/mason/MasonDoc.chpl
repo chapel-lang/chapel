@@ -92,8 +92,7 @@ proc masonDoc(args: [] string) throws {
     const commandStr = " ".join(commandArr);
     writeln(commandStr);
     runCommand(commandArr);
-  }
-  else {
+  } else {
     log.warnln('Mason could not find the project to document!');
     var command = new list([
       "chpldoc",

@@ -62,8 +62,7 @@ proc getSpecFields(spec: string) {
     }
     specFields = (specInfo[0], specInfo[1], compiler,
                   specInfo[3]);
-  }
-  catch e: MasonError {
+  } catch e: MasonError {
     stderr.writeln(e.message());
   }
   return specFields;
@@ -151,8 +150,7 @@ private proc parseSpec(ref tokenList: list(string)): 4*string throws {
         // Note: This is currently unused
         compilerVersion = compilerSplit[1];
       }
-    }
-    else {
+    } else {
       variants.pushBack(toke);
     }
   }

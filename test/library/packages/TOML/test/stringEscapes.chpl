@@ -11,6 +11,10 @@ const str4 = """
 [table]
 key = %sFoo \'\"\\ Bar%s
 """;
+const str4_raw = """
+[table]
+key = %sFoo \"\\ Bar%s
+""";
 const str5 = '[table]\nkey = "Foo, \' Bar"';
 const str6 = "[table]\nkey = 'Foo, \" Bar'";
 
@@ -20,16 +24,17 @@ proc test(s, quoteType="") {
     then str = s;
     else str = s.format(quoteType, quoteType);
   var TomlData = parseToml(str);
-  var value = TomlData["table"]!["key"];
-  writeln(value!.toString());
+  var value = TomlData["table.key"]!;
+  writef("toString  : %s\nraw string: '%s'\n=====\n",
+          value.toString(), value.s);
 }
 
 proc main() {
-  writeln("Test with single quotes:");
+  writeln("Test with single quotes (raw strings):");
   test(str1, "'");
   test(str2, "'");
   test(str3, "'");
-  test(str4, "'");
+  test(str4_raw, "'");
 
   writeln("Test with double quotes:");
   test(str1, '"');

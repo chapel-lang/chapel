@@ -24,10 +24,11 @@ def slurp_file(filename):
 
 
 def diff(file1, file2):
-    return difflib.unified_diff(
+    d = difflib.unified_diff(
         slurp_file(file1).splitlines(keepends=True),
         slurp_file(file2).splitlines(keepends=True),
     )
+    return not any(d)
 
 
 def run_chplcheck(filename, flags, header=None):
@@ -90,7 +91,7 @@ def main():
     # currently the way we handle this is for each set of flags, we run --fixit.
     # this is slightly unintuitive, but so far in practice we only specify one
     # set of flags when testing fixits
-    def run_fixit(out, file, flags, suffix):
+    def run_fixit(out, good_fixit, file, flags, suffix):
         run_chplcheck(file, f"{flags} --fixit --fixit-suffix {suffix}")
         if diff(good_fixit, f"{file}{suffix}"):
             out.write(f"[Success matching fixit for {file.with_suffix('')}]\n")
@@ -102,9 +103,9 @@ def main():
         with open(outfile, "a") as out:
             if len(allFlags) > 1:
                 for idx, (_, flags) in enumerate(allFlags):
-                    run_fixit(out, file, flags, f".fixed.{idx+1}")
+                    run_fixit(out, good_fixit, file, flags, f".fixed.{idx+1}")
             else:
-                run_fixit(out, file, allFlags[0][1], ".fixed")
+                run_fixit(out, good_fixit, file, allFlags[0][1], ".fixed")
 
 
 if __name__ == "__main__":

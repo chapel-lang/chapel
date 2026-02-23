@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+TESTNAME=$1
+OUTFILE=$2
+
+$CHPL_HOME/test/llvm/RunFileCheck "$TESTNAME" "$OUTFILE"

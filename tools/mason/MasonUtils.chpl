@@ -93,8 +93,7 @@ proc stripExt(toStrip: string, ext: string) : string {
   if toStrip.endsWith(ext) {
     var stripped = toStrip[..<(toStrip.size - ext.size)];
     return stripped;
-  }
-  else {
+  } else {
     return toStrip;
   }
 }
@@ -248,8 +247,7 @@ proc getSpackResult(cmd, quiet=false) : string throws {
       }
     }
     process.wait();
-  }
-  catch e {
+  } catch e {
     log.debugf("Caught unknown error ('%?') for command: %?\n", e, splitCmd);
     throw new owned MasonError("Internal mason error");
   }

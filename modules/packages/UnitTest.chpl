@@ -177,6 +177,7 @@ module UnitTest {
   use TestError;
   use List, Map;
   private use IO, IO.FormattedIO;
+  private use Math;
 
   @chpldoc.nodoc
   config const testNames: string = "None";
@@ -473,6 +474,191 @@ module UnitTest {
     proc assertEqual(first, second) throws {
       checkAssertEquality(first, second);
     }
+
+    /*
+     Default relative tolerance for assertClose
+
+     :returns: 1.0e-5
+     */
+    proc defaultRelTol param : real do return 1e-5;
+
+    /*
+     Default absolute tolerance for assertClose
+
+     :returns: 0.0
+     */
+    proc defaultAbsTol param : real do return 0.0;
+
+    /*
+    Check if a scalar or array is within tolerance of the expected value.
+
+    :arg actual: actual value
+
+    :arg expected: expected value
+
+    :arg relTol: relative tolerance
+
+    :arg absTol: absolute tolerance
+
+    :arg equalNan: whether or not NaN should compare equal, defaults to true
+
+    :returns: True if within tolerance, else false
+    :rtype: bool or [] bool
+
+    :throws IllegalArgumentError: either tolerance is negative
+    */
+    pragma "insert line file info"
+    pragma "always propagate line file info"
+    @chpldoc.nodoc
+    proc withinTol(const actual: ?T, const expected: T,
+                   const in relTol: real=defaultRelTol,
+                   const in absTol: real=defaultAbsTol,
+                   const in equalNan: bool=true) throws {
+      if relTol < 0.0 || absTol < 0.0 {
+        throw new owned IllegalArgumentError(
+          "relTol and absTol must both be nonnegative.");
+      }
+
+      proc compareNanFalse(const actual_, const expected_) {
+        // Compare two values, returning false if at least one is NaN
+        return abs(actual_ - expected_) <= absTol + relTol * abs(expected_);
+      }
+
+      proc compareNanTrue(const actual_: real, const expected_: real): bool {
+        // Compare two values, returning true if both are NaN
+        return compareNanFalse(actual_, expected_) || (isNan(actual_) &&
+                                                       isNan(expected_));
+      }
+
+      proc compareComplex(const actual_: complex,
+                          const expected_: complex): bool {
+        // if real/imag part of either complex value is NaN, compare real
+        // and imaginary parts separately, such that, e.g., nan+0i == nan+0i
+        if isNan(actual_.re) || isNan(actual_.im)
+        || isNan(expected_.re) || isNan(expected_.im) {
+          return compareNanTrue(actual_.re, expected_.re)
+              && compareNanTrue(actual_.im, expected_.im);
+        }
+        // else compare complex numbers standard way, with absolute values
+        return compareNanFalse(actual_, expected_);
+      }
+
+      if equalNan {
+        if isComplexType(T) ||
+          (isArrayType(T) && isComplexType(actual.eltType)) {
+          return compareComplex(actual, expected);
+        }
+        if isImagType(T) || (isArrayType(T) && isImagType(actual.eltType)) {
+          // no imaginary NaN, must cast to real
+          return compareNanTrue(actual:real, expected:real);
+        }
+        return compareNanTrue(actual, expected);
+      }
+      return compareNanFalse(actual, expected);
+    }
+
+    /*
+      Assert that two arrays are, element-wise, approximately equal to within
+      the specified tolerances.
+
+      It asserts that actual <= absTol + relTol*expected for each element.
+
+      :arg actual: actual, user-computed value
+
+      :arg expected: expected or desired value
+
+      :arg relTol: relative tolerance
+
+      :arg absTol: absolute tolerance
+
+      :arg equalNan: whether or not NaN should compare equal, defaults to true
+
+      :throws IllegalArgumentError: If `actual` and `expected` are of different
+                                    shape.
+
+      :throws AssertionError: If `actual` is not approximately equal to
+                              `expected` within the specified tolerance.
+    */
+    pragma "insert line file info"
+    pragma "always propagate line file info"
+    proc assertClose(const actual: [] ?T, const expected: [] T,
+                     const in relTol: real=defaultRelTol,
+                     const in absTol: real=defaultAbsTol,
+                     const in equalNan: bool=true): void throws
+                     where (isNumericType(T) && !isIntegralType(T)) {
+      if actual.shape != expected.shape {
+        throw new owned IllegalArgumentError(
+          "Actual array shape " + actual.shape:string
+        + " does not match expected: " + expected.shape:string
+        );
+      }
+      var isWithinTol = withinTol(actual=actual, expected=expected,
+                                  relTol=relTol, absTol=absTol,
+                                  equalNan=equalNan);
+      const passes = && reduce isWithinTol;
+      if !passes {
+        const numFailed: int = isWithinTol.count(false);
+        const numTotal: int = isWithinTol.size;
+        const percFailed: real = 100.0 * numFailed / numTotal;
+
+        var maxAbsErr = min(real);
+        var maxRelErr = min(real);
+        forall (a, e) in zip(actual, expected) with (max reduce maxAbsErr,
+                                                     max reduce maxRelErr) {
+          const absErr = abs(a - e);
+          const relErr = absErr / abs(e);
+          maxAbsErr reduce= absErr;
+          maxRelErr reduce= relErr;
+        }
+        throw new owned AssertionError(
+          "assert failed for %i/%i elements (%r%%)\n".format(numFailed,
+            numTotal, percFailed)
+          + "Max Rel. Error: %r%%\n".format(maxRelErr*100.0)
+          + "Max Abs. Error: %r".format(maxAbsErr)
+        );
+      }
+    }
+
+    /*
+      Assert that two numeric types are approximately equal to within
+      the specified tolerances.
+
+      It asserts that actual <= absTol + relTol*expected.
+
+      :arg actual: actual, user-computed value
+
+      :arg expected: expected or desired value
+
+      :arg relTol: relative tolerance
+
+      :arg absTol: absolute tolerance
+
+      :arg equalNan: whether or not NaN should compare equal, defaults to true
+
+      :throws AssertionError: If `actual` is not approximately equal to
+                              `expected` within the specified tolerance.
+    */
+    pragma "insert line file info"
+    pragma "always propagate line file info"
+    proc assertClose(const in actual: ?T, const in expected: T,
+                     const in relTol: real=defaultRelTol,
+                     const in absTol: real=defaultAbsTol,
+                     const in equalNan: bool=true):void throws
+                     where (isNumericType(T) && !isIntegralType(T)) {
+      var isWithinTol = withinTol(actual=actual, expected=expected,
+                                  relTol=relTol, absTol=absTol,
+                                  equalNan=equalNan);
+      if !isWithinTol {
+        const absErr: real = abs(actual - expected);
+        const relErr = absErr / abs(expected);
+        throw new owned UnitTest.TestError.AssertionError(
+          "assert failed for actual=%n, expected=%n\n".format(actual, expected)
+          + "Rel. Error: %r %%\n".format(relErr*100.0)
+          + "Abs. Error: %r".format(absErr)
+        );
+      }
+    }
+
 
     /*
       Assert that x matches the regular expression pattern.

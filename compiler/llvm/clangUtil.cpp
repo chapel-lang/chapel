@@ -3029,6 +3029,17 @@ static void helpComputeClangArgs(std::string& clangCC,
   }
 #endif
 
+#if HAVE_LLVM_VER >= 210
+  if (usingGpuLocaleModel() &&
+      getGpuCodegenType() == GpuCodegenType::GPU_CG_AMD_HIP) {
+    // this is need to make hipcub wrappers work since
+    // TempStorage is marked deprecated, but I can't seem to find an alternative
+    // the rocm docs do not mention the deprecation and I can't find proper docs
+    // for the new API that the warning refers to
+    clangCCArgs.push_back("-Wno-deprecated-declarations");
+  }
+#endif
+
   // Add debug flags
   if (fDebugSymbols) {
     clangCCArgs.push_back("-g");
@@ -4966,7 +4977,7 @@ static void makeBinaryLLVMForHIP(const std::string& artifactFilename,
   // So this loop should run exactly one iteration.
   INT_ASSERT(gpuArches.size() == 1);
 
-  std::string targets = "-targets=host-x86_64-unknown-linux";
+  std::string targets = "-targets=host-x86_64-unknown-linux-unknown";
 #if HAVE_LLVM_VER >= 150
   std::string inputs = "-input=/dev/null ";
   std::string outputs = "-output=" + fatbinFilename;

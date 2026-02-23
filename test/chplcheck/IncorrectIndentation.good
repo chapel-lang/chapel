@@ -44,8 +44,6 @@ IncorrectIndentation.chpl:226: node violates rule IncorrectIndentation
 IncorrectIndentation.chpl:230: node violates rule IncorrectIndentation
 IncorrectIndentation.chpl:236: node violates rule IncorrectIndentation
 IncorrectIndentation.chpl:239: node violates rule UnusedTaskIntent
-IncorrectIndentation.chpl:241: node violates rule IncorrectIndentation
-IncorrectIndentation.chpl:242: node violates rule IncorrectIndentation
 IncorrectIndentation.chpl:245: node violates rule UnusedTaskIntent
 IncorrectIndentation.chpl:247: node violates rule IncorrectIndentation
 IncorrectIndentation.chpl:248: node violates rule IncorrectIndentation
@@ -53,14 +51,10 @@ IncorrectIndentation.chpl:251: node violates rule UnusedTaskIntent
 IncorrectIndentation.chpl:252: node violates rule IncorrectIndentation
 IncorrectIndentation.chpl:253: node violates rule IncorrectIndentation
 IncorrectIndentation.chpl:256: node violates rule UnusedTaskIntent
-IncorrectIndentation.chpl:257: node violates rule IncorrectIndentation
 IncorrectIndentation.chpl:258: node violates rule IncorrectIndentation
 IncorrectIndentation.chpl:261: node violates rule UnusedTaskIntent
 IncorrectIndentation.chpl:262: node violates rule IncorrectIndentation
-IncorrectIndentation.chpl:262: node violates rule IncorrectIndentation
 IncorrectIndentation.chpl:265: node violates rule UnusedTaskIntent
-IncorrectIndentation.chpl:266: node violates rule IncorrectIndentation
-IncorrectIndentation.chpl:267: node violates rule IncorrectIndentation
 IncorrectIndentation.chpl:268: node violates rule IncorrectIndentation
 IncorrectIndentation.chpl:279: node violates rule IncorrectIndentation
 IncorrectIndentation.chpl:283: node violates rule IncorrectIndentation
@@ -96,4 +90,8 @@ IncorrectIndentation.chpl:444: node violates rule IncorrectIndentation
 IncorrectIndentation.chpl:451: node violates rule ConsecutiveDecls
 IncorrectIndentation.chpl:452: node violates rule IncorrectIndentation
 IncorrectIndentation.chpl:453: node violates rule IncorrectIndentation
+IncorrectIndentation.chpl:459: node violates rule UnusedTaskIntent
+IncorrectIndentation.chpl:469: node violates rule ConsecutiveDecls
+IncorrectIndentation.chpl:474: node violates rule ConsecutiveDecls
+IncorrectIndentation.chpl:474: node violates rule IncorrectIndentation
 [Success matching fixit for IncorrectIndentation]

@@ -2,4 +2,9 @@
 
 exec_name=$1
 
-echo "CHPL_RT_DEBUGGER_CMD_FILE=${exec_name}Commands.txt"
+cmd_file="${exec_name}Commands.txt"
+if [[ ("$CHPL_COMM" != 'none' || "$COMPOPTS" == *'--no-local'*) && -f "${exec_name}NoLocalCommands.txt" ]]; then
+  cmd_file="${exec_name}NoLocalCommands.txt"
+fi
+echo "CHPL_RT_DEBUGGER_CMD_FILE=${cmd_file}"
+

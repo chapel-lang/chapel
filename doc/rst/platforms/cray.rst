@@ -465,6 +465,7 @@ See this :ref:`Slurm troubleshooting section <mem-not-avail>` for help
 with this error.
 
 
+.. _ex-register-too-much-mem:
 
 OFI error: fi_mr_reg(ofi_domain, ...): Cannot allocate memory
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -481,6 +482,16 @@ Note that changing this environment variable, as with any
 ``CHPL_RT_*`` variable, does not require rebuilding Chapel or
 recompiling your program.
 
+
+Detected 1 oom_kill event in StepId=.... Some of the step tasks have been OOM Killed
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This error is also a sign that the Chapel runtime is being too aggressive in
+registering memory, or that something else is going wrong in the memory
+registration.
+
+See :ref:`the previous section <ex-register-too-much-mem>` for steps to work
+around this error.
 
 OFI error: fi_enable(tcip->txCtx): Invalid resource domain
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

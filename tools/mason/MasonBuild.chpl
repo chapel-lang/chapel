@@ -95,8 +95,7 @@ proc masonBuild(args: [] string) throws {
     // add expected arguments for masonExample
     compopts.insert(0,["example", "--example"]);
     masonExample(compopts.toArray());
-  }
-  else {
+  } else {
     if passArgs.hasValue() {
       for val in passArgs.values() do compopts.pushBack(val);
     }

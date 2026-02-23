@@ -91,8 +91,7 @@ proc runProjectBinary(show: bool, release: bool,
       if isDir(joinPath(projectHome, 'target/release')) {
         command = joinPath(projectHome, "target/release", project);
       }
-    }
-    else {
+    } else {
       command = joinPath(projectHome, "target/debug", project);
     }
 
@@ -111,20 +110,17 @@ proc runProjectBinary(show: bool, release: bool,
     if isFile(joinPath(projectHome, "Mason.lock")) && built {
       const output = runCommand(command);
       write(output);
-    }
-    else if isFile(joinPath(projectHome, "Mason.toml")) {
+    } else if isFile(joinPath(projectHome, "Mason.toml")) {
       const msg = "Mason could not find your Mason.lock.\n";
       const help = "To build and run your project use: mason run --build";
       throw new owned MasonError(msg + help);
-    }
-    else {
+    } else {
       throw new owned MasonError("Mason could not find your Mason.toml file");
     }
 
     // Close memory
     toParse.close();
-  }
-  else {
+  } else {
     throw new owned MasonError("Mason could not find the compiled program");
   }
 }
@@ -180,8 +176,7 @@ private proc masonBuildRun(args: [] string) throws {
     if force then execopts.pushBack("--force");
     if show then execopts.pushBack("--show");
     masonExample(execopts.toArray());
-  }
-  else {
+  } else {
     var buildArgs: list(string);
     buildArgs.pushBack("build");
     if skipUpdate then buildArgs.pushBack("--no-update");

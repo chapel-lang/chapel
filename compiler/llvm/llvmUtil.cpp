@@ -21,6 +21,7 @@
 #include "chpl/util/break.h"
 #include "llvmTracker.h"
 #include "llvmUtil.h"
+#include "llvmDebug.h"
 #include "symbol.h"
 #include "llvm/Support/Format.h"
 
@@ -114,9 +115,19 @@ llvm::AllocaInst* createAllocaInFunctionEntry(llvm::IRBuilder<>* irBuilder,
     irBuilder->SetInsertPoint(&func->getEntryBlock());
   }
 
+  // reset the current debug location to avoid accidentally attaching it to the alloca
+  llvm::DebugLoc currentDebugLocation;
+  if (debugInfo) {
+    currentDebugLocation = irBuilder->getCurrentDebugLocation();
+    irBuilder->SetCurrentDebugLocation(llvm::DebugLoc());
+  }
+
   llvm::AllocaInst *tempVar = irBuilder->CreateAlloca(type, nullptr, name);
   trackLLVMValue(tempVar);
+
   irBuilder->SetInsertPoint(&func->back());
+  if (debugInfo)
+    irBuilder->SetCurrentDebugLocation(currentDebugLocation);
   return tempVar;
 }
 

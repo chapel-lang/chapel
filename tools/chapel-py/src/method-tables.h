@@ -75,6 +75,15 @@
 #define ITER_PROTOTYPE(NODE, TYPE)
 #endif
 
+//
+// Forward declares a prototype for an operator method, which due to current
+//  limitations cannot be implemented in method tables.
+// The TYPEFN argument is the full C++ function type of the operator,
+// including the receiver.
+#ifndef OPERATOR_PROTOTYPE
+#define OPERATOR_PROTOTYPE(NODE, NAME, DOCSTR, TYPEFN)
+#endif
+
 #include "method-tables/core-methods.h"
 #include "method-tables/param-methods.h"
 #include "method-tables/type-methods.h"
@@ -90,3 +99,4 @@
 #undef PLAIN_GETTER
 #undef METHOD_PROTOTYPE
 #undef ITER_PROTOTYPE
+#undef OPERATOR_PROTOTYPE

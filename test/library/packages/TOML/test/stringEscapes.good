@@ -1,13 +1,33 @@
-Test with single quotes:
-"Foo, Bar"
-"Foo 	\ Bar"
-"Foo \ Bar"
-"Foo \'\"\\ Bar"
+Test with single quotes (raw strings):
+toString  : "Foo, Bar"
+raw string: 'Foo, Bar'
+=====
+toString  : "Foo \t\\ Bar"
+raw string: 'Foo 	\ Bar'
+=====
+toString  : "Foo \\ Bar"
+raw string: 'Foo \ Bar'
+=====
+toString  : "Foo \\\"\\\\ Bar"
+raw string: 'Foo \"\\ Bar'
+=====
 Test with double quotes:
-"Foo, Bar"
-"Foo 	\ Bar"
-"Foo \ Bar"
-"Foo \'\"\\ Bar"
+toString  : "Foo, Bar"
+raw string: 'Foo, Bar'
+=====
+toString  : "Foo \t\\ Bar"
+raw string: 'Foo 	\ Bar'
+=====
+toString  : "Foo \\ Bar"
+raw string: 'Foo \ Bar'
+=====
+toString  : "Foo \\'\"\\ Bar"
+raw string: 'Foo \'"\ Bar'
+=====
 Test with escaped quotes:
-"Foo, ' Bar"
-"Foo, " Bar"
+toString  : "Foo, ' Bar"
+raw string: 'Foo, ' Bar'
+=====
+toString  : "Foo, \" Bar"
+raw string: 'Foo, " Bar'
+=====
