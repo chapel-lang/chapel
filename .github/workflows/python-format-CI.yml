@@ -13,4 +13,4 @@ jobs:
         with:
           options: "--check --verbose --line-length 80 --extend-exclude '(third-party/|test/)'"
           src: "."
-          version: "24.4.0"
+          version: "26.1.0"
