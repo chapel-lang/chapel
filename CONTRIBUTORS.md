@@ -3,22 +3,23 @@ Chapel Contributors
 
 The following people have contributed to Chapel releases:
 
-Contributors to the Chapel 2.7 release
+Contributors to the Chapel 2.8 release
 --------------------------------------
 * Jade Abraham, [HPE]
 * [Dan Bonachea], [Lawrence Berkeley National Laboratory]
 * [Brad Chamberlain], [HPE]
 * Soohoon Choi, [HPE]
-* Lydia Duncan, [HPE]
 * Daniel Fedorin, [HPE]
-* Rohith Gurram, individual contributor
 * [Paul H. Hargrove], [Lawrence Berkeley National Laboratory]
 * Ben Harshbarger, [HPE]
-* Guillaume Helbecque, individual contributor
+* Ian Henriksen, [Sandia National Laboratories]
 * Engin Kayraklioglu, [HPE]
 * David Longnecker, [HPE]
-* Benson Muite, individual contributor
+* Jared Magnusson, individual contributor
+* Tausif Mujawar, individual contributor
+* Hicham Omari, individual contributor
 * Anna Rift, [HPE]
+* Sebastian Schnorbus, [HPE]
 
 Contributors to previous releases
 ---------------------------------
@@ -67,6 +68,7 @@ Contributors to previous releases
 * Nelson Luís Dias, individual contributor
 * James Dinan, [Cray Inc.] intern from [The Ohio State University]
 * Martha Dumler, [Cray Inc.]
+* Lydia Duncan, [HPE]
 * Prasanth Duvvuri, [GSoC 2021] student from [Northeastern University] (former individual contributor)
 * Saliya Ekanayake, [Indiana University]
 * Omar Elawady, individual contributor
@@ -78,11 +80,12 @@ Contributors to previous releases
 * Rahul Ghangas, [GSoC 2020] student from [Australian National University]
 * Alexey Gokhberg, [Unicorn Enterprises SA]
 * Piyush Gupta, individual contributor
+* Rohith Gurram, individual contributor
 * John Hartman, [HPE]
 * Akihiro Hayashi, [Rice University]
+* Guillaume Helbecque, individual contributor
 * Hannah Hemmaplardh, [Cray Inc.] intern from [University of Washington]
 * Steven Hemmy, [Cray Inc.] intern from [University of Wisconsin]
-* Ian Henriksen, [Sandia National Laboratories]
 * Tom Hildebrandt, [Cray Inc.]
 * Shannon Hoffswell[*](#footnote), [Cray Inc.]
 * Samuel Howard, individual contributor
@@ -132,6 +135,7 @@ Contributors to previous releases
 * Barry Moore, [University of Pittsburgh]
 * Fábio Malacco Moreira, individual contributor
 * Eduardo Morras, individual contributor
+* Benson Muite, individual contributor
 * Sarthak Munshi, individual contributor / [GSoC 2017] student from [Pune Institute of Computer Technology]
 * Ram Nad, individual contributor
 * Mohammed Nafees, [GSoC 2019] student from [University of Waterloo]
