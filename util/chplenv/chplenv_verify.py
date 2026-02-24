@@ -193,15 +193,17 @@ int main() {
 }
 """
 
+
 def missing_llvm(chplenv):
     """
     Check if LLVM is missing or not
     if CHPL_LLVM is bundled, return True if its has not been built
     if CHPL_LLVM is none and CHPL_LLVM_SUPPORT is bundled, return True if has not been built
     """
-    if (chplenv.get("CHPL_LLVM") == "bundled" or
-        (chplenv.get("CHPL_LLVM") == "none" and
-        chplenv.get("CHPL_LLVM_SUPPORT") == "bundled")):
+    if chplenv.get("CHPL_LLVM") == "bundled" or (
+        chplenv.get("CHPL_LLVM") == "none"
+        and chplenv.get("CHPL_LLVM_SUPPORT") == "bundled"
+    ):
         llvm_config = chplenv.get("CHPL_LLVM_CONFIG")
         if not llvm_config or not os.path.exists(llvm_config):
             return True
@@ -211,9 +213,12 @@ def missing_llvm(chplenv):
 class TestTargetCompile(TestCompile):
 
     def skipif(self):
-        if self.chplenv.get("CHPL_TARGET_COMPILER") == "llvm" and missing_llvm(self.chplenv):
+        if self.chplenv.get("CHPL_TARGET_COMPILER") == "llvm" and missing_llvm(
+            self.chplenv
+        ):
             return True
         return super().skipif()
+
 
 class TestTargetCompileCC(TestTargetCompile):
     """
@@ -286,12 +291,14 @@ class TestHostCanFindLLVM(TestCompile):
 
     def _compiler_args(self):
         comp_args = (
-            self.chplenv.get("CHPL_HOST_BUNDLED_COMPILE_ARGS", "") + " " +
-            self.chplenv.get("CHPL_HOST_SYSTEM_COMPILE_ARGS", "")
+            self.chplenv.get("CHPL_HOST_BUNDLED_COMPILE_ARGS", "")
+            + " "
+            + self.chplenv.get("CHPL_HOST_SYSTEM_COMPILE_ARGS", "")
         )
         link_args = (
-            self.chplenv.get("CHPL_HOST_BUNDLED_LINK_ARGS", "") + " " +
-            self.chplenv.get("CHPL_HOST_SYSTEM_LINK_ARGS", "")
+            self.chplenv.get("CHPL_HOST_BUNDLED_LINK_ARGS", "")
+            + " "
+            + self.chplenv.get("CHPL_HOST_SYSTEM_LINK_ARGS", "")
         )
 
         # strip out jemalloc to avoid linker warnings on some systems
@@ -338,13 +345,13 @@ int main() {{
 }}
 """
 
-
     def explain(self):
         compiler = self._compiler()
         if not compiler:
             return "No compiler found"
         return "{}{}{} cannot find LLVM headers".format(
-            super().explain(), os.linesep, compiler[0])
+            super().explain(), os.linesep, compiler[0]
+        )
 
 
 passes = [

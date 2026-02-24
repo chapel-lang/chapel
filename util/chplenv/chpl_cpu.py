@@ -14,24 +14,25 @@ from utils import memoize, run_command, warning
 # It is intended to map from PrgEnv target cpus (e.g. craype-sandybridge)
 # when these names differ from the LLVM ones.
 cpu_llvm_synonyms = {
-  'arm-thunderx':    'thunderx',
-  'arm-thunderx2':   'thunderx2t99',
-  'arm-grace':       'grace',
-  'knc':             'none',
-  'mic-knl':         'knl',
-  'x86-cascadelake': 'cascadelake',
-  'x86-icelake':     'icelake-server',
-  'x86-milan':       'znver3',
-  'x86-milan-x':     'znver3',
-  'x86-rome':        'znver2',
-  'x86-skylake':     'skylake-avx512',
-  'x86-spr':         'sapphirerapids',
-  'x86-spr-hbm':     'sapphirerapids',
-  'x86-trento':      'znver3',
-  'x86-genoa':       'znver4',
-  'x86-turin':       'znver5',
-  'x86-emr':         'emeraldrapids',
+    "arm-thunderx": "thunderx",
+    "arm-thunderx2": "thunderx2t99",
+    "arm-grace": "grace",
+    "knc": "none",
+    "mic-knl": "knl",
+    "x86-cascadelake": "cascadelake",
+    "x86-icelake": "icelake-server",
+    "x86-milan": "znver3",
+    "x86-milan-x": "znver3",
+    "x86-rome": "znver2",
+    "x86-skylake": "skylake-avx512",
+    "x86-spr": "sapphirerapids",
+    "x86-spr-hbm": "sapphirerapids",
+    "x86-trento": "znver3",
+    "x86-genoa": "znver4",
+    "x86-turin": "znver5",
+    "x86-emr": "emeraldrapids",
 }
+
 
 # This gets the generic machine type, e.g. x86_64, i686, aarch64, arm64.
 # Since uname returns the host machine type, we currently assume that
@@ -42,25 +43,29 @@ cpu_llvm_synonyms = {
 def get_native_machine():
     return platform.uname()[4]
 
+
 @memoize
 def is_known_arm(cpu):
-    if cpu.startswith("arm") or ('aarch64' in cpu) or ('thunderx' in cpu):
+    if cpu.startswith("arm") or ("aarch64" in cpu) or ("thunderx" in cpu):
         return True
     else:
         return False
+
 
 # Take a machine name in the same format as uname -m and answer
 # whether or not it is in the x86 family.
 @memoize
 def is_x86_variant(machine):
-    if machine.startswith('i') and machine.endswith('86'):  # e.g. i686
+    if machine.startswith("i") and machine.endswith("86"):  # e.g. i686
         return True
-    if machine in ['amd64', 'x64', 'x86', 'x86-64', 'x86_64']:
+    if machine in ["amd64", "x64", "x86", "x86-64", "x86_64"]:
         return True
     return False
 
+
 class InvalidLocationError(ValueError):
     pass
+
 
 # We build the module with the lowest common denominator cpu architecture for
 # each platform. This is so that end users can build programs with any
@@ -75,8 +80,8 @@ def get_module_lcd_cpu(platform_val, cpu):
             return "arm-thunderx2"
         else:
             return "sandybridge"
-    elif chpl_platform.is_hpe_cray('target'):
-        cray_network = os.environ.get('CRAYPE_NETWORK_TARGET', 'none')
+    elif chpl_platform.is_hpe_cray("target"):
+        cray_network = os.environ.get("CRAYPE_NETWORK_TARGET", "none")
         # TODO: This is not always true, we could be on an EX system with
         # slingshot and CRAYPE_NETWORK_TARGET could not be set
         ex = cray_network.startswith("slingshot") or cray_network == "ofi"
@@ -97,7 +102,8 @@ def get_module_lcd_cpu(platform_val, cpu):
     elif platform_val == "aarch64":
         return "arm-thunderx"
     else:
-        return 'none'
+        return "none"
+
 
 # Adjust the cpu based upon compiler support
 @memoize
@@ -105,13 +111,13 @@ def adjust_cpu_for_compiler(cpu, flag, get_lcd):
     compiler_val = chpl_compiler.get(flag)
     platform_val = chpl_platform.get(flag)
 
-    isprgenv = flag == 'target' and target_compiler_is_prgenv()
+    isprgenv = flag == "target" and target_compiler_is_prgenv()
 
     if isprgenv:
-        cray_cpu = os.environ.get('CRAY_CPU_TARGET', 'none')
-        has_cpu = cpu and cpu != 'none' and cpu != 'unknown'
-        has_cray_cpu = cray_cpu and cray_cpu != 'none' and cray_cpu != 'unknown'
-        if compiler_val == 'llvm':
+        cray_cpu = os.environ.get("CRAY_CPU_TARGET", "none")
+        has_cpu = cpu and cpu != "none" and cpu != "unknown"
+        has_cray_cpu = cray_cpu and cray_cpu != "none" and cray_cpu != "unknown"
+        if compiler_val == "llvm":
             # if the CPU type is not set, use the cray_cpu,
             # but allow overriding it with CHPL_TARGET_CPU.
             if has_cray_cpu and not has_cpu:
@@ -120,31 +126,38 @@ def adjust_cpu_for_compiler(cpu, flag, get_lcd):
             # for C compilation, CPU needs to be set by cray-prgenv-*
             # and not by e.g. CHPL_TARGET_CPU.
             if has_cpu and cpu != cray_cpu:
-                warning("Setting the processor type through environment "
-                        "variables is not supported for cray-prgenv-*. "
-                        "Please use the appropriate craype-* module for your "
-                        "processor type.")
+                warning(
+                    "Setting the processor type through environment "
+                    "variables is not supported for cray-prgenv-*. "
+                    "Please use the appropriate craype-* module for your "
+                    "processor type."
+                )
             if not has_cray_cpu:
-                warning("No craype-* processor type module was detected, "
-                        "please load the appropriate one if you want any "
-                        "specialization to occur.")
+                warning(
+                    "No craype-* processor type module was detected, "
+                    "please load the appropriate one if you want any "
+                    "specialization to occur."
+                )
             cpu = cray_cpu
 
         if get_lcd:
             cpu = get_module_lcd_cpu(platform_val, cpu)
-            if cpu == 'none':
-                warning("Could not detect the lowest common denominator "
-                        "processor type for this platform. You may be unable "
-                        "to use the Chapel compiler")
+            if cpu == "none":
+                warning(
+                    "Could not detect the lowest common denominator "
+                    "processor type for this platform. You may be unable "
+                    "to use the Chapel compiler"
+                )
         return cpu
-    elif 'pgi' in compiler_val:
-        return 'none'
-    elif 'cray' in compiler_val:
-        return 'none'
-    elif 'ibm' in compiler_val:
-        return 'none'
+    elif "pgi" in compiler_val:
+        return "none"
+    elif "cray" in compiler_val:
+        return "none"
+    elif "ibm" in compiler_val:
+        return "none"
 
     return cpu
+
 
 @memoize
 def default_cpu(flag):
@@ -152,50 +165,55 @@ def default_cpu(flag):
     compiler_val = chpl_compiler.get(flag)
     platform_val = chpl_platform.get(flag)
 
-    cpu = 'unknown'
+    cpu = "unknown"
 
-    if comm_val == 'none' and ('linux' in platform_val or
-                               platform_val == 'darwin' or
-                               platform_val.startswith('cygwin')):
-        cpu = 'native'
+    if comm_val == "none" and (
+        "linux" in platform_val
+        or platform_val == "darwin"
+        or platform_val.startswith("cygwin")
+    ):
+        cpu = "native"
 
     return cpu
+
 
 # get_lcd has no effect on non cray systems and is intended to be used to get
 # the correct runtime and gen directory.
 @memoize
 def get(flag, map_to_compiler=False, get_lcd=False, prefer_runtime_cpu=False):
 
-    cpu_tuple = collections.namedtuple('cpu_tuple', ['flag', 'cpu'])
+    cpu_tuple = collections.namedtuple("cpu_tuple", ["flag", "cpu"])
 
-    if not flag or flag == 'host':
-        cpu = overrides.get('CHPL_HOST_CPU', '')
-    elif flag == 'target':
+    if not flag or flag == "host":
+        cpu = overrides.get("CHPL_HOST_CPU", "")
+    elif flag == "target":
         # For target, we default to CHPL_RUNTIME_CPU when CHPL_TARGET_CPU is not
         # specified. this lets us specify the runtime build of `CHPL_TARGET_CPU=none`
         # but still get user code specialization if desired
-        runtime_cpu = overrides.get('CHPL_RUNTIME_CPU', None)
+        runtime_cpu = overrides.get("CHPL_RUNTIME_CPU", None)
         if prefer_runtime_cpu and runtime_cpu is not None:
             cpu = runtime_cpu
         else:
-            cpu = overrides.get('CHPL_TARGET_CPU', )
+            cpu = overrides.get(
+                "CHPL_TARGET_CPU",
+            )
 
     else:
         raise InvalidLocationError(flag)
 
     # fast path out for when the user has set arch=none
-    if cpu == 'none' or (flag == 'host' and not cpu):
-        return cpu_tuple('none', 'none')
+    if cpu == "none" or (flag == "host" and not cpu):
+        return cpu_tuple("none", "none")
 
     compiler_val = chpl_compiler.get(flag)
 
     # Adjust cpu for compiler (not all compilers support all cpu
     # settings; PrgEnv might override cpu, etc)
-    cpu = adjust_cpu_for_compiler (cpu, flag, get_lcd)
+    cpu = adjust_cpu_for_compiler(cpu, flag, get_lcd)
 
-     # support additional cpu synonyms for llvm/gcc/clang
+    # support additional cpu synonyms for llvm/gcc/clang
     if map_to_compiler:
-        if compiler_val in ('llvm', 'gnu', 'clang'):
+        if compiler_val in ("llvm", "gnu", "clang"):
             if cpu in cpu_llvm_synonyms:
                 cpu = cpu_llvm_synonyms[cpu]
 
@@ -204,28 +222,30 @@ def get(flag, map_to_compiler=False, get_lcd=False, prefer_runtime_cpu=False):
         cpu = default_cpu(flag)
 
     argname = None
-    if cpu and cpu != 'none' and cpu != 'unknown':
+    if cpu and cpu != "none" and cpu != "unknown":
         # x86 uses -march= where the others use -mcpu=
         if is_x86_variant(get_native_machine()):
-            argname = 'arch'
+            argname = "arch"
         else:
-            argname = 'cpu'
+            argname = "cpu"
     else:
-        argname = 'none'
+        argname = "none"
 
-    return cpu_tuple(argname or 'none', cpu or 'unknown')
+    return cpu_tuple(argname or "none", cpu or "unknown")
+
 
 @memoize
 def get_llvm_target_cpu():
-    cpu_tuple = collections.namedtuple('cpu_tuple', ['flag', 'cpu'])
+    cpu_tuple = collections.namedtuple("cpu_tuple", ["flag", "cpu"])
 
-    x = get('target')
+    x = get("target")
     cpu = x.cpu
     argname = x.flag
     # support additional cpu synonyms for llvm
     if cpu in cpu_llvm_synonyms:
         cpu = cpu_llvm_synonyms[cpu]
-    return cpu_tuple(argname or 'none', cpu or 'unknown')
+    return cpu_tuple(argname or "none", cpu or "unknown")
+
 
 # Returns the default machine.  The flag argument is 'host' or 'target'.
 #
@@ -247,27 +267,36 @@ def get_default_machine(flag):
 
 
 def _main():
-    parser = optparse.OptionParser(usage="usage: %prog [--host|target] "
-                                         "[--compflag] [--lcdflag] "
-                                         "[--specialize]")
-    parser.add_option('--target', dest='flag', action='store_const',
-                      const='target', default='target')
-    parser.add_option('--host', dest='flag', action='store_const',
-                      const='host')
-    parser.add_option('--comparch', dest='map_to_compiler',
-                      action='store_true', default=False)
-    parser.add_option('--compflag', dest='compflag', action='store_true',
-                      default=False)
-    parser.add_option('--lcdflag', dest = 'get_lcd', action='store_true',
-                      default=False)
-    (options, args) = parser.parse_args()
+    parser = optparse.OptionParser(
+        usage="usage: %prog [--host|target] "
+        "[--compflag] [--lcdflag] "
+        "[--specialize]"
+    )
+    parser.add_option(
+        "--target",
+        dest="flag",
+        action="store_const",
+        const="target",
+        default="target",
+    )
+    parser.add_option("--host", dest="flag", action="store_const", const="host")
+    parser.add_option(
+        "--comparch", dest="map_to_compiler", action="store_true", default=False
+    )
+    parser.add_option(
+        "--compflag", dest="compflag", action="store_true", default=False
+    )
+    parser.add_option(
+        "--lcdflag", dest="get_lcd", action="store_true", default=False
+    )
+    options, args = parser.parse_args()
 
-    (flag, cpu) = get(options.flag, options.map_to_compiler,
-                      options.get_lcd)
+    flag, cpu = get(options.flag, options.map_to_compiler, options.get_lcd)
 
     if options.compflag:
         sys.stdout.write("{0}=".format(flag))
     sys.stdout.write("{0}\n".format(cpu))
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     _main()

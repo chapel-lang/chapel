@@ -9,20 +9,23 @@ if chpl_home is None:
     raise ValueError("CHPL_HOME is not set")
 sys.path.append(os.path.join(chpl_home, "util", "packaging", "common"))
 try:
-    from fill_docker_template_common import common_substitutions, filter_substitutions
+    from fill_docker_template_common import (
+        common_substitutions,
+        filter_substitutions,
+    )
 except ImportError:
     raise ImportError("fill_docker_template_common.py not found")
 
+
 class MyTemplate(Template):
     delimiter = "@@"
+
 
 def get_substitutions(osname):
 
     substitutions = common_substitutions(osname)
 
-    substitutions[
-        "USER_CREATION"
-    ] = """
+    substitutions["USER_CREATION"] = """
     RUN useradd -ms /bin/bash user && \\
         usermod -aG wheel user && \\
         echo "user:password" | chpasswd && \\
@@ -31,7 +34,6 @@ def get_substitutions(osname):
     USER user
     WORKDIR /home/user
     """
-
 
     substitutions["PACKAGE_SETUP"] = """
     WORKDIR /home/user
@@ -55,9 +57,7 @@ def get_substitutions(osname):
     USER user
     """
 
-    substitutions[
-        "PACKAGE_BUILD"
-    ] = """
+    substitutions["PACKAGE_BUILD"] = """
     RUN rpmbuild -ba $BASENAME.spec && \\
         cp $(rpm --eval '%{_rpmdir}')/$(rpm --eval '%{_arch}')/*.rpm .
 
@@ -92,7 +92,9 @@ def fill_docker_template(template_file, osname):
 def main():
     parser = argparse.ArgumentParser(description="Fill Docker template")
     parser.add_argument("template_file", type=str, help="Template file to fill")
-    parser.add_argument("--osname", type=str, required=True, help="Target OS for the Dockerfile")
+    parser.add_argument(
+        "--osname", type=str, required=True, help="Target OS for the Dockerfile"
+    )
     args = parser.parse_args()
     template_file = os.path.abspath(os.path.expanduser(args.template_file))
     fill_docker_template(template_file, osname=args.osname)
