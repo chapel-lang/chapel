@@ -16,7 +16,7 @@ Contributors to the Chapel 2.8 release
 * Engin Kayraklioglu, [HPE]
 * David Longnecker, [HPE]
 * Jared Magnusson, individual contributor
-* Tausif Mujawar, individual contributor
+* Tausif Mujawar, [HPE]
 * Hicham Omari, individual contributor
 * Anna Rift, [HPE]
 * Sebastian Schnorbus, [HPE]
