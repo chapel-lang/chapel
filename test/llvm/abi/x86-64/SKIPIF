@@ -3,3 +3,5 @@ CHPL_LLVM_VERSION==14
 CHPL_LIB_PIC==pic
 CHPL_TARGET_ARCH!=x86_64
 COMPOPTS <= --baseline
+COMPOPTS <= -g
+COMPOPTS <= --debug-symbols
