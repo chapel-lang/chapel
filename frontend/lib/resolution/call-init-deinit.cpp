@@ -810,6 +810,9 @@ void CallInitDeinit::processTupleRhsHelper(VarFrame* frame,
   re.addAssociatedAction(topLevelAction.action(), topLevelAction.fn(),
                             topLevelAction.id(), topLevelAction.type(),
                             chpl::optional<int>{}, subActions);
+  for (auto subAction : subActions) {
+    delete subAction;
+  }
 }
 
 bool CallInitDeinit::initIsCopyElidedFrom(const AstNode* lhsAst,
