@@ -65,16 +65,16 @@ static std::string idToStr(Context* context, ID id) {
 }
 
 static void addAction(Context* context, Actions& actions, const AstNode* ast,
-                      const AssociatedAction* act) {
+                      const AssociatedAction& act) {
   Actions subActions;
-  for (auto subAct : act->subActions()) {
-    addAction(context, subActions, ast, subAct);
+  for (const auto& subAct : act.subActions()) {
+    addAction(context, subActions, ast, *subAct);
   }
 
-  actions.emplace_back(act->action(),
+  actions.emplace_back(act.action(),
                        idToStr(context, ast->id()),
-                       idToStr(context, act->id()),
-                       act->tupleEltIdx(),
+                       idToStr(context, act.id()),
+                       act.tupleEltIdx(),
                        subActions);
 }
 
@@ -88,8 +88,8 @@ static void gatherActions(Context* context, const AstNode* ast,
   // gather actions for this node
   const ResolvedExpression* re = r->resolutionById().byAstOrNull(ast);
   if (re != nullptr) {
-    for (auto act : re->associatedActions()) {
-      addAction(context, actions, ast, &act);
+    for (const auto &act : re->associatedActions()) {
+      addAction(context, actions, ast, act);
     }
   }
 }
