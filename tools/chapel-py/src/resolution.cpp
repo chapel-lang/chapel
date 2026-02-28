@@ -552,12 +552,10 @@ static QualifiedType const& computeDefaultRectangularArray(chpl::Context* contex
                      /* hasQuestionArg */ false,
                      /* isParenless */ false,
                      /* actuals */ std::move(arrayActuals));
-  ci.dump();
   auto& [ast, scope] = getScopeForDefaultResolution(context);
   auto rc = createDummyRC(context);
   auto c = resolveGeneratedCall(&rc, /* astForScopeOrErr */ ast, ci, CallScopeInfo::forNormalCall(scope, nullptr));
 
-  c.dump();
   if (c.mostSpecific().isEmpty() || c.exprType().isUnknownOrErroneous()) {
     /* do nothing */
   } else {
