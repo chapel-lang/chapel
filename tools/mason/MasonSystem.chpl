@@ -122,28 +122,6 @@ proc pkgSearch(args) throws {
       }
     }
   }
-
-
-  // const pattern = new regex(pkgName, ignoreCase=true);
-
-
-  // // TODO: Test if this ever worked
-  // for line in sub.stdout.lines() {
-  //   const toSearch = line.partition(" ");
-  //   if desc {
-  //     if pattern.search(line) {
-  //       if quiet {
-  //         writeln(toSearch[1]);
-  //       } else write(line);
-  //     }
-  //   } else {
-  //     if pattern.search(toSearch[1]) {
-  //       if quiet {
-  //         writeln(toSearch[1]);
-  //       } else write(line);
-  //     }
-  //   }
-  // }
 }
 
 /* Prints a pc for user debugging */
