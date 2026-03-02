@@ -778,7 +778,15 @@ class CallInfo {
     return actuals_[i];
   }
 
+  /* converts the CallInfo's index into one that's compatible with
+     the original call. This can be needed if the resolution machinery
+     auto-adds an argument for an implicit method call.
+  */
   int originalActualIdx(int idx) const {
+    // Note: if the current actual is 'this', it doesn't have a corresponding
+    // actual in the original. Since the 'this' actual is first, this
+    // method returns -1 in that case, which matches the existing signaling
+    // for 'no corresponding actual'.
     return isImplicitMethodCall_ ? idx - 1 : idx;
   }
 
