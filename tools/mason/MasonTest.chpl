@@ -280,6 +280,21 @@ private proc runTests(show: bool, run: bool, parallel: bool, filter: string,
       compopts.pushBack(gitDepSrc);
     }
 
+    // get system deps
+    if const pkgDeps = lockFile.get['system'] {
+      for (_, depInfo) in zip(pkgDeps.A.keys(), pkgDeps.A.values()) {
+        for (k,v) in allFields(depInfo!) {
+          var val = v!;
+          select k {
+            when "libs" do compopts.pushBack(parseCompilerOptions(val));
+            when "include" do
+              if val.s != "" then compopts.pushBack("-I" + val.s);
+            otherwise continue;
+          }
+        }
+      }
+    }
+
     if isDir(joinPath(projectHome, "target/test/")) {
       rmTree(joinPath(projectHome, "target/test/"));
     }

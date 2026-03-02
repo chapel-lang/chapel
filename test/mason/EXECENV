@@ -5,7 +5,7 @@ print('PATH=$CHPL_HOME/bin/$CHPL_HOST_BIN_SUBDIR:$PATH')
 
 # Mason envs
 print('MASON_HOME=$PWD/mason_home')
-print('MASON_QUIET=1')
+print('MASON_LOG_LEVEL=none')
 
 # Note, this registry should only ever be used by mason update tests
 

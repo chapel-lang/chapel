@@ -1,0 +1,41 @@
++ export PKG_CONFIG_LIBDIR=
++ PKG_CONFIG_LIBDIR=
++ export PKG_CONFIG_PATH=$CHPL_HOME/test/mason/mason-system/myPackages
++ PKG_CONFIG_PATH=$CHPL_HOME/test/mason/mason-system/myPackages
++ mason system pc dummy
+
+------- dummy.pc -------
+
+prefix=/my/usr
+exec_prefix=/my/usr
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: dummy
+Description: A dummy package to support testing mason
+URL: https://example.com
+Version: 10.9.8
+Cflags: -I${includedir}
+Libs: -L${libdir} -ldummy
+
+-------------------
+
++ mason system pc myWeirdPackage
+
+------- myWeirdPackage.pc -------
+
+Name: myWeirdPackage
+Description: My weird package which abuses pkg-config to pass Chapel flags
+Version: 1
+Libs: -sMyChapelFlag=2
+
+-------------------
+
++ mason system pc unknownPackage
+Mason could not find unknownPackage on your system
++ echo 'Expected failure for unknown package'
+Expected failure for unknown package
++ mason system pc dummy.pc
+Mason could not find dummy.pc on your system
++ echo 'Expected failure for dummy.pc not found'
+Expected failure for dummy.pc not found

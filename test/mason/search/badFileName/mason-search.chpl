@@ -3,6 +3,6 @@ use MasonSearch;
 import MasonLogger;
 
 proc main() {
-  MasonLogger.setNoColor(true);
+  MasonLogger.setUseColorOutput(false);
   masonSearch(["search", "--no-update"]);
 }

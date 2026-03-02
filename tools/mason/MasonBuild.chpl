@@ -157,7 +157,8 @@ proc buildProgram(release: bool, show: bool, force: bool, skipUpdate: bool,
     var compopts = cmdLineCompopts;
     compopts.pushBack(getTomlCompopts(lockFile));
     // Compile Program
-    if compileSrc(lockFile, binLoc, release, compopts, projectHome) {
+    if compileSrc(lockFile, binLoc, release, compopts,
+                  projectHome, sourceList, gitList) {
       writeln("Build Successful\n");
     } else {
       throw new MasonError("Build Failed");
@@ -174,9 +175,10 @@ proc buildProgram(release: bool, show: bool, force: bool, skipUpdate: bool,
    contained */
 proc compileSrc(lockFile: borrowed Toml, binLoc: string,
                 release: bool, compopts: list(string),
-                projectHome: string) : bool throws {
+                projectHome: string,
+                sourceList: list(srcSource),
+                gitList: list(gitSource)) : bool throws {
 
-  const (sourceList, gitList) = genSourceList(lockFile);
   const depPath = Path.joinPath(MASON_HOME, 'src');
   const gitDepPath = Path.joinPath(MASON_HOME, 'git');
   const project = lockFile["root.name"]!.s;
@@ -383,6 +385,19 @@ proc getTomlCompopts(lock: borrowed Toml): list(string) throws {
         throw new MasonError("unable to parse compopts for dependency " + name);
       }
     }
+    if const system = package!.get["system"] {
+        for (_, depInfo) in zip(system.A.keys(), system.A.values()) {
+          for (k,v) in allFields(depInfo!) {
+            var val = v!;
+            select k {
+              when "libs" do compopts.pushBack(parseCompilerOptions(val));
+              when "include" do
+                if val.s != "" then compopts.pushBack("-I" + val.s);
+              otherwise continue;
+            }
+          }
+        }
+      }
   }
 
   if const exDeps = lock.get['external'] {
@@ -399,10 +414,15 @@ proc getTomlCompopts(lock: borrowed Toml): list(string) throws {
     }
   }
   if const pkgDeps = lock.get['system'] {
-    for (_, dep) in zip(pkgDeps.A.keys(), pkgDeps.A.values()) {
-      var depInfo = dep!;
-      compopts.pushBack(depInfo["libs"]!.s);
-      compopts.pushBack("-I" + depInfo["include"]!.s);
+    for (_, depInfo) in zip(pkgDeps.A.keys(), pkgDeps.A.values()) {
+      for (k,v) in allFields(depInfo!) {
+        var val = v!;
+        select k {
+          when "libs" do compopts.pushBack(parseCompilerOptions(val));
+          when "include" do if val.s != "" then compopts.pushBack("-I" + val.s);
+          otherwise continue;
+        }
+      }
     }
   }
   return compopts;

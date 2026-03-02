@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+host_sub_dir=$($CHPL_HOME/util/chplenv/chpl_bin_subdir.py --host)
+
+# replace CHPL_HOME and CHPL_HOST_BIN_SUBDIR
+sed -e "s|$CHPL_HOME|\$CHPL_HOME|g" -e "s|$host_sub_dir|\$CHPL_HOST_BIN_SUBDIR|" $2 > $2.prediff.tmp
+mv $2.prediff.tmp $2
+
+# depending on the platform, the error message may be different
+sed 's/Command not found:/Command failed:/' $2 > $2.prediff.tmp
+mv $2.prediff.tmp $2

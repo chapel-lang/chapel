@@ -1,0 +1,130 @@
+checktoml() {
+  DIRNAME=$1
+  PKGNAME=$2
+  TYPE=$3
+  grep "name=" $DIRNAME/Mason.toml | grep "\"$PKGNAME\""
+  grep "version=" $DIRNAME/Mason.toml | grep "\"0.1.0\""
+  grep "type=" $DIRNAME/Mason.toml | grep "\"$TYPE\""
+}
+checkappsrc() {
+  DIRNAME=$1
+  PKGNAME=$2
+  grep "module $PKGNAME" $DIRNAME/src/$PKGNAME.chpl
+  grep "proc main()" $DIRNAME/src/$PKGNAME.chpl
+}
+checklibsrc() {
+  DIRNAME=$1
+  PKGNAME=$2
+  grep "module $PKGNAME" $DIRNAME/src/$PKGNAME.chpl
+  grep -v "proc main()" $DIRNAME/src/$PKGNAME.chpl
+}
+checklight() {
+  test ! -d $1/src
+}
+checkgitfiles() {
+  test -d $1/.git
+  grep "target/" $1/.gitignore
+  grep "Mason.lock" $1/.gitignore
+  grep "doc/" $1/.gitignore
+}
+checknogitfiles() {
+  test ! -d $1/.git
+  test ! -f $1/.gitignore
+}
+runindir() {
+  DIR=$1
+  shift
+  pushd $DIR
+  "$@"
+  popd
+}
+
+rm -rf testingPkg
+
+#
+# test basic new
+#
+mason new testingPkg
+checktoml "testingPkg" "testingPkg" "application"
+checkappsrc testingPkg testingPkg
+checkgitfiles testingPkg
+runindir testingPkg mason run --build
+rm -rf testingPkg
+
+
+#
+# test basic new with app
+#
+mason new testingPkg --app
+checktoml "testingPkg" "testingPkg" "application"
+checkappsrc testingPkg testingPkg
+checkgitfiles testingPkg
+runindir testingPkg mason run --build
+rm -rf testingPkg
+
+
+
+#
+# test new with lib
+#
+mason new testingPkg --lib
+checktoml "testingPkg" "testingPkg" "library"
+checklibsrc testingPkg testingPkg
+checkgitfiles testingPkg
+runindir testingPkg mason build
+rm -rf testingPkg
+
+
+#
+# test new with light
+#
+mason new testingPkg --light
+checktoml "testingPkg" "testingPkg" "light"
+checklight testingPkg testingPkg
+checknogitfiles testingPkg
+rm -rf testingPkg
+
+
+#
+# test new with no git
+#
+mason new testingPkg --no-vcs
+checktoml "testingPkg" "testingPkg" "application"
+checkappsrc testingPkg testingPkg
+checknogitfiles testingPkg
+runindir testingPkg mason run --build
+rm -rf testingPkg
+
+
+#
+# test new with a different name
+#
+mason new testingPkg --name myNewPkg --lib
+checktoml "testingPkg" "myNewPkg" "library"
+checklibsrc testingPkg myNewPkg
+checkgitfiles testingPkg
+runindir testingPkg mason build
+rm -rf testingPkg
+
+
+#
+# test init with a different name and no git
+#
+mason new testingPkg --name=myNewPkg --lib --no-vcs
+checktoml "testingPkg" "myNewPkg" "library"
+checklibsrc testingPkg myNewPkg
+checknogitfiles testingPkg
+runindir testingPkg mason build
+rm -rf testingPkg
+
+
+
+#
+# test new with a different name
+#
+mason new testingPkg --name=myNewPkg --light
+checktoml "testingPkg" "myNewPkg" "light"
+checklight testingPkg myNewPkg
+checknogitfiles testingPkg
+rm -rf testingPkg
+

@@ -263,6 +263,8 @@ proc masonBuildHelp() {
 
 proc masonNewHelp() {
   const s = """
+  Creates a new Mason project in a new directory with the given project name.
+
   Usage:
       mason new [options] <project name>
 
@@ -281,7 +283,7 @@ proc masonNewHelp() {
 
 proc masonInitHelp() {
   const s = """
-  Initializes a library project inside a given directory or path.
+  Initializes a Mason project inside a given directory or path.
 
   Usage:
       mason init [options] <directory name>
@@ -609,7 +611,7 @@ proc masonSystemHelp() {
   Integrate a Mason package with system packages found via pkg-config
 
   Usage:
-      mason system [options] [<args>...]
+      mason system <command> [<args>...]
       mason system [options]
 
   Options:
@@ -617,25 +619,24 @@ proc masonSystemHelp() {
       search                      Search all packages available on the system
       -h, --help                  Display this message
 
-  The pc command sometimes has trouble finding a .pc file if the file is named
-  something other than <package name>.pc  Use -i to ensure package exists
-  For more information on using system dependencies see Mason documentation
+  For more information on using system dependencies see the Mason documentation
   """.dedent().strip();
   writeln(s);
 }
 
 proc masonSystemSearchHelp() {
   const s = """
-  Search for packages on system found via pkg-config
+  Search for packages on system found via pkg-config.
+  Packages are searched by name via the passed query.
 
   Usage:
+      mason system search [options] <query>
       mason system search [options]
 
   Options:
       -h, --help                  Display this message
           --no-show-desc          Only display package name
-          --desc                  Parse descriptions of package to include more
-                                  search results
+          --desc                  Search package descriptions as well as names
   """.dedent().strip();
   writeln(s);
 }
@@ -645,10 +646,14 @@ proc masonSystemPcHelp() {
   Print a package's .pc file (pkg-config file)
 
   Usage:
-      mason system pc [options]
+      mason system pc [options] <package name>
 
   Options:
       -h, --help                  Display this message
+
+  The pc command sometimes has trouble finding a .pc file if the file is named
+  something other than '<package name>.pc'. If this is the case,
+  try searching for the package with 'mason system search'
   """.dedent().strip();
   writeln(s);
 }

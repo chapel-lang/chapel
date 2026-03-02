@@ -100,18 +100,25 @@ proc stripExt(toStrip: string, ext: string) : string {
 
 
 /* Uses the Subprocess module to create a subprocess */
-proc runCommand(cmd: [] string, quiet=false) : string throws {
-  var ret : string;
+proc runCommand(cmd: [] string, quiet=false,
+                type retType=string): retType throws {
+  if retType != string && !isSubtype(retType, list(string)) {
+    compilerError("Improper usage of runCommand");
+  }
+  var ret: retType;
   try {
     log.debugf("runCommand: %?\n", cmd);
     var process = spawn(cmd, stdout=pipeStyle.pipe, stderr=pipeStyle.pipe);
 
-
     log.debugln("stdout:");
     // use .lines() to avoid https://github.com/chapel-lang/chapel/issues/28211
-    for line in process.stdout.lines() {
-      ret += line;
-      if quiet then log.debug(line); else log.info(line);
+    for line in process.stdout.lines(stripNewline=true) {
+      if retType == string then
+        ret += line + "\n";
+      else
+        ret.pushBack(line);
+
+      if quiet then log.debugln(line); else log.infoln(line);
     }
     log.debugln("end stdout");
 
@@ -143,7 +150,7 @@ proc runCommand(cmd: [] string, quiet=false) : string throws {
 proc runCommand(cmd: string, quiet=false) : string throws {
   // temporary is a workaround for #27504
   const cmds = cmd.split();
-  return runCommand(cmds, quiet=quiet);
+  return runCommand(cmds, quiet=quiet, retType=string);
 }
 
 /* Same as runCommand but for situations where an
@@ -871,21 +878,43 @@ proc showToml(tomlFile : string) {
 */
 proc initProject(dirName, packageName, vcs, show,
                  version: string, chplVersion: string, license: string,
-                 packageType: string) throws {
+                 packageType: string, isNew: bool) throws {
   if packageType == "light" {
     const path = if dirName == "" then here.cwd() else dirName;
     const lightName = if packageName == ""
                         then basename(here.cwd())
                         else packageName;
-    mkdir(dirName);
+
+    if isNew {
+      mkdir(dirName);
+    } else {
+      // only create the directory if it doesn't exist,
+      if !exists(dirName) then
+        mkdir(dirName);
+    }
     makeBasicToml(dirName=lightName, path=path, version, chplVersion,
                   license, packageType);
   } else {
     if vcs {
+      if !isNew {
+        if isDir(joinPath(dirName, ".git")) {
+          throw new MasonError("'" + dirName +
+                               "' is already a git repository. " +
+                               "Use `--no-vcs` to create a project " +
+                               "without initializing a git repository.");
+        }
+      }
+
       gitInit(dirName, show);
       addGitIgnore(dirName);
     } else {
-      mkdir(dirName);
+      if isNew {
+        mkdir(dirName);
+      } else {
+        // only create the directory if it doesn't exist,
+        if !exists(dirName) then
+          mkdir(dirName);
+      }
     }
     // Confirm git init before creating files
     if isDir(dirName) {
@@ -937,7 +966,8 @@ proc parseCompilerOptions(toml: Toml): list(string) throws {
   }
 
   if toml.tomlType == "string" {
-    res.pushBack(toml.s.split(" "));
+    if toml.s != "" then
+      res.pushBack(toml.s.split(" "));
   } else {
     for f in toml.arr {
       res.pushBack(f!.s);

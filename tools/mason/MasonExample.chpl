@@ -201,6 +201,20 @@ private proc getBuildInfo(projectHome: string,
     compopts.pushBack(gitDepSrc);
   }
 
+  // get system deps
+  if const pkgDeps = lockFile.get['system'] {
+    for (_, depInfo) in zip(pkgDeps.A.keys(), pkgDeps.A.values()) {
+      for (k,v) in allFields(depInfo!) {
+        var val = v!;
+        select k {
+          when "libs" do compopts.pushBack(parseCompilerOptions(val));
+          when "include" do if val.s != "" then compopts.pushBack("-I" + val.s);
+          otherwise continue;
+        }
+      }
+    }
+  }
+
   var perExampleOptions = getExampleOptions(tomlFile.borrow(), exampleNames);
 
   // Close lock and toml

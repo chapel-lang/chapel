@@ -140,6 +140,7 @@ class Test:
         if PREDIFF.exists():
             sys.stdout.write("[Executing ./PREDIFF]\n")
             sys.stdout.flush()
+            env = self._compute_env()
             stdout = sub_test_util.run_process(
                 [
                     str(PREDIFF.absolute()),
@@ -148,6 +149,7 @@ class Test:
                 ],
                 stdout=sp.PIPE,
                 stderr=sp.STDOUT,
+                env=env,
             )[1]
             sys.stdout.write(stdout)
             sys.stdout.flush()
@@ -156,6 +158,7 @@ class Test:
         if prediff.exists():
             sys.stdout.write(f"[Executing {prediff.name}]\n")
             sys.stdout.flush()
+            env = self._compute_env()
             stdout = sub_test_util.run_process(
                 [
                     str(prediff.absolute()),
@@ -164,6 +167,7 @@ class Test:
                 ],
                 stdout=sp.PIPE,
                 stderr=sp.STDOUT,
+                env=env,
             )[1]
             sys.stdout.write(stdout)
             sys.stdout.flush()

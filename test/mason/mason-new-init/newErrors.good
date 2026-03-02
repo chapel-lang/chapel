@@ -1,0 +1,175 @@
++ rm -rf testingPkg
++ mkdir testingPkg
++ mason new testingPkg
+A directory named 'testingPkg' already exists
++ true
++ mason new testingPkg --name myNewPkg
+A directory named 'testingPkg' already exists
++ true
++ mason new testingPkg --lib
+A directory named 'testingPkg' already exists
++ true
++ mason new testingPkg --light
+A directory named 'testingPkg' already exists
++ true
++ mason new testingPkg --no-vcs --app
+A directory named 'testingPkg' already exists
++ true
++ rm -rf testingPkg
++ mason new
+project name Required value missing
+Creates a new Mason project in a new directory with the given project name.
+
+Usage:
+    mason new [options] <project name>
+
+Options:
+    -h, --help                   Display this message
+        --show                   Increase verbosity
+        --no-vcs                 Do not initialize a git repository
+        --app                    Create a Mason "application"
+        --lib                    Create a Mason "library"
+        --light                  Create a Mason "lightweight" project
+        --name <legalName>       Specify package name different from directory
+                                 name
++ true
++ mason new --app
+project name Required value missing
+Creates a new Mason project in a new directory with the given project name.
+
+Usage:
+    mason new [options] <project name>
+
+Options:
+    -h, --help                   Display this message
+        --show                   Increase verbosity
+        --no-vcs                 Do not initialize a git repository
+        --app                    Create a Mason "application"
+        --lib                    Create a Mason "library"
+        --light                  Create a Mason "lightweight" project
+        --name <legalName>       Specify package name different from directory
+                                 name
++ true
++ mason new --lib
+project name Required value missing
+Creates a new Mason project in a new directory with the given project name.
+
+Usage:
+    mason new [options] <project name>
+
+Options:
+    -h, --help                   Display this message
+        --show                   Increase verbosity
+        --no-vcs                 Do not initialize a git repository
+        --app                    Create a Mason "application"
+        --lib                    Create a Mason "library"
+        --light                  Create a Mason "lightweight" project
+        --name <legalName>       Specify package name different from directory
+                                 name
++ true
++ mason new --light
+project name Required value missing
+Creates a new Mason project in a new directory with the given project name.
+
+Usage:
+    mason new [options] <project name>
+
+Options:
+    -h, --help                   Display this message
+        --show                   Increase verbosity
+        --no-vcs                 Do not initialize a git repository
+        --app                    Create a Mason "application"
+        --lib                    Create a Mason "library"
+        --light                  Create a Mason "lightweight" project
+        --name <legalName>       Specify package name different from directory
+                                 name
++ true
++ mason new --no-vcs
+project name Required value missing
+Creates a new Mason project in a new directory with the given project name.
+
+Usage:
+    mason new [options] <project name>
+
+Options:
+    -h, --help                   Display this message
+        --show                   Increase verbosity
+        --no-vcs                 Do not initialize a git repository
+        --app                    Create a Mason "application"
+        --lib                    Create a Mason "library"
+        --light                  Create a Mason "lightweight" project
+        --name <legalName>       Specify package name different from directory
+                                 name
++ true
++ mason new --app --name=myNewPkg
+project name Required value missing
+Creates a new Mason project in a new directory with the given project name.
+
+Usage:
+    mason new [options] <project name>
+
+Options:
+    -h, --help                   Display this message
+        --show                   Increase verbosity
+        --no-vcs                 Do not initialize a git repository
+        --app                    Create a Mason "application"
+        --lib                    Create a Mason "library"
+        --light                  Create a Mason "lightweight" project
+        --name <legalName>       Specify package name different from directory
+                                 name
++ true
++ mason new --name=myNewPkg
+project name Required value missing
+Creates a new Mason project in a new directory with the given project name.
+
+Usage:
+    mason new [options] <project name>
+
+Options:
+    -h, --help                   Display this message
+        --show                   Increase verbosity
+        --no-vcs                 Do not initialize a git repository
+        --app                    Create a Mason "application"
+        --lib                    Create a Mason "library"
+        --light                  Create a Mason "lightweight" project
+        --name <legalName>       Specify package name different from directory
+                                 name
++ true
++ mason new --name myNewPkg
+project name Required value missing
+Creates a new Mason project in a new directory with the given project name.
+
+Usage:
+    mason new [options] <project name>
+
+Options:
+    -h, --help                   Display this message
+        --show                   Increase verbosity
+        --no-vcs                 Do not initialize a git repository
+        --app                    Create a Mason "application"
+        --lib                    Create a Mason "library"
+        --light                  Create a Mason "lightweight" project
+        --name <legalName>       Specify package name different from directory
+                                 name
++ true
++ mason new --application
+Bad package name '--application' - only Chapel identifiers are legal package names.
+Please use mason new --application --name <LegalName>
++ true
++ mason new foo --application
+Found some unrecognizable arguments: --application
+Creates a new Mason project in a new directory with the given project name.
+
+Usage:
+    mason new [options] <project name>
+
+Options:
+    -h, --help                   Display this message
+        --show                   Increase verbosity
+        --no-vcs                 Do not initialize a git repository
+        --app                    Create a Mason "application"
+        --lib                    Create a Mason "library"
+        --light                  Create a Mason "lightweight" project
+        --name <legalName>       Specify package name different from directory
+                                 name
++ true

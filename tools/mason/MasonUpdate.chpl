@@ -318,6 +318,7 @@ private proc createDepTrees(depTree: Toml,
     var chplVersion = brick["chplVersion"]!.s;
     var source      = brick["source"]!.s;
     var compopts    = brick.get["compopts"];
+    var system      = dep.get["system"];
 
     if depTree.pathExists(package) {
       var verToUse = IVRS(brick, depTree[package]!);
@@ -338,6 +339,10 @@ private proc createDepTrees(depTree: Toml,
     depTree[package]!.set("source", source);
     if compopts then
       depTree[package]!.set("compopts", compopts!);
+    if system {
+      const exDeps = getPCDeps(system!);
+      depTree[package]!.set("system", exDeps);
+    }
 
     if dep!.pathExists("dependencies") {
       var subDeps = getDependencies(dep);
@@ -544,7 +549,7 @@ private proc pullGitDeps(gitDeps, show=false) {
     const nameVers = val + "-" + branch;
     const destination = baseDir + nameVers;
     if !depExists(nameVers, '/git/') {
-      writeln("Downloading dependency: %s\n", nameVers);
+      writef("Downloading dependency: %s\n", nameVers);
       var getDependency = "git clone -q "+ srcURL + ' ' + destination +'/';
       runCommand(getDependency);
 
