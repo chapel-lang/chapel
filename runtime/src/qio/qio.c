@@ -1342,6 +1342,11 @@ qioerr qio_file_length(qio_file_t* f, int64_t *len_out)
   return err;
 }
 
+bool qio_isatty(qio_file_t* file)
+{
+  return (file->fd != -1) && isatty(file->fd);
+}
+
 /* CHANNELS ----------------------------- */
 static
 qioerr _qio_channel_init(qio_channel_t* ch, qio_chtype_t type)
