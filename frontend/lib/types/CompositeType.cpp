@@ -54,6 +54,21 @@ CompositeType::~CompositeType() {
 
 using SubstitutionPair = CompositeType::SubstitutionPair;
 
+void CompositeType::stringifyParamSubstitution(std::ostream& ss,
+                                               const QualifiedType& qt) {
+  CHPL_ASSERT(qt.isParam() && qt.param() != nullptr);
+  if (qt.param()->isEnumParam()) {
+    // Normally, enum params are stringified as just their value,
+    // like 'red'. However, for displaying composite types, the convention is to
+    // display the qualified name of the param, like 'color.red'. So,
+    // for CHPL_SYNTAX, do that.
+    if (auto et = qt.type()->toEnumType()) {
+      ss << et->name().c_str() << ".";
+    }
+  }
+  qt.param()->stringify(ss, StringifyKind::CHPL_SYNTAX);
+}
+
 static void stringifySortedSubstitutions(std::ostream& ss,
                                          chpl::StringifyKind stringKind,
                                          const std::vector<SubstitutionPair>& sorted,
@@ -76,7 +91,7 @@ static void stringifySortedSubstitutions(std::ostream& ss,
       if (sub.second.isType()) {
         sub.second.type()->stringify(ss, stringKind);
       } else if (sub.second.isParam()) {
-        sub.second.param()->stringify(ss, stringKind);
+        CompositeType::stringifyParamSubstitution(ss, sub.second);
       } else {
         // Some odd configuration; fall back to printing the qualified type.
         CHPL_UNIMPL("attempting to stringify odd type representation as Chapel syntax");
