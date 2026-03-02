@@ -1,2 +1,1 @@
-# no need to test these in most configs
-CHPL_TARGET_PLATFORM!=linux64
+../../SKIPIF
