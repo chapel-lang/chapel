@@ -15,6 +15,7 @@ Updates to Chapel Prerequisites
 
 Configuration / Build Changes
 -----------------------------
+* updated the `util/chplenv/` configuration scripts to support RISC-V CPUs
 
 Updates to Chapel's Release Formats
 -----------------------------------
@@ -42,6 +43,7 @@ New Standard Library Features
 
 Changes / Feature Improvements in Standard Libraries
 ----------------------------------------------------
+* extended `.toArray()` on lists/sets/maps to support types w/ no default inits
 
 New Package Module Features
 ---------------------------
@@ -60,6 +62,11 @@ Name Changes in Libraries
 
 Deprecated / Unstable / Removed Library Features
 ------------------------------------------------
+* removed the deprecated `dmap` type
+* removed distributions that had been deprecated due to renaming  
+  (e.g., removed `Block`, `Cyclic`, `Private`, `Replicated`, `Stencil`)
+* removed the previously deprecated `LayoutCS` module
+* removed the deprecated `BlockDist.disableAliasedBulkTransfer` `config const`
 
 Compiler Flags
 --------------
@@ -84,6 +91,7 @@ Documentation Improvements
 
 Language Specification Improvements
 -----------------------------------
+* fixed incorrect `dmapped` expressions in the language specification
 
 Documentation Improvements for Libraries
 ----------------------------------------
@@ -96,6 +104,8 @@ Documentation Improvements to the 'man' Pages
 
 Platform-Specific Documentation Improvements
 --------------------------------------------
+* added a "Troubleshooting" section to the HPE Cray EX documentation  
+  (see https://chapel-lang.org/docs/2.8/platforms/cray.html#troubleshooting)
 
 Technical Note Improvements
 ---------------------------
@@ -105,6 +115,7 @@ Example Codes
 
 Performance Optimizations / Improvements
 ----------------------------------------
+* improved the implementation of (de)serializers, which can reduce I/O overhead
 
 Improvements to Compile Times
 -----------------------------
@@ -177,6 +188,7 @@ Developer-oriented changes: Performance improvements
 
 Developer-oriented changes: Makefile / Build-time changes
 ---------------------------------------------------------
+* removed the long-deprecated top-level `make depend` rule
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
