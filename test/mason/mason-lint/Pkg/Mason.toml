@@ -1,0 +1,9 @@
+[brick]
+name = "Pkg"
+version = "0.1.0"
+chplVersion = "1.20.0"
+
+[dependencies]
+
+[tool.chplcheck]
+disable-rule = ["IncorrectIndentation"]
