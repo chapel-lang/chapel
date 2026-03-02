@@ -13,7 +13,7 @@ Adding system dependency forGoodMeasure version *
 + mason add unknown --system
 Adding system dependency unknown version *
 + mason add myWeirdPackage@1 --system
-A dependency by that name already exists in Mason.toml
+A dependency by the name 'myWeirdPackage' already exists in Mason.toml
 Adding system dependency myWeirdPackage version 1
 + echo 'Expected failure for already added package'
 Expected failure for already added package
@@ -144,7 +144,7 @@ version = "0.1.0"
 
 
 + mason rm unknown --system
-No system dependency exists by that name
+No system dependency exists by the name 'unknown'
 Removing system dependency unknown
 + echo 'Expected failure for unknown package'
 Expected failure for unknown package
