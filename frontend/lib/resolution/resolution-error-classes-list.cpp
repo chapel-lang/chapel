@@ -754,7 +754,15 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
       // of a freestanding call 'foo()' in a method context.
       if (candidate.actualIdx() != -1) {
         actualExpr = getActual(candidate.actualIdx());
-        badSplitInit = ci.actual(candidate.actualIdx()).expectSplitInit();
+
+        // at this time, 'getActual' may not be total. In particular, it might
+        // return nullptr for the call receiver, since it's relatively
+        // hard to retrieve from the call expression. Only try to report
+        // a split init error if we have an actual expression to point to,
+        // since right now the error message heavily relies on pointing to the actual.
+        if (actualExpr) {
+          badSplitInit = ci.actual(candidate.actualIdx()).expectSplitInit();
+        }
       }
 
       // formalDecl can be null if the function is in an 'extern' block, in which
