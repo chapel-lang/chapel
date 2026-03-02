@@ -1417,16 +1417,16 @@ void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
     }
   } else if (auto op = formalTypeExpr->toOpCall()) {
     if (op->op() == USTR("*") && !actualType.isUnknownOrErroneous()) {
-      CHPL_ASSERT(op->numActuals() == 2);
+      CHPL_ASSERT(op->isBinaryOp());
       if (auto tup = actualType.type()->toTupleType();
           tup && tup->isStarTuple()) {
         auto size = QualifiedType(QualifiedType::PARAM,
                                   IntType::get(context, 0),
                                   IntParam::get(context, tup->numElements()));
         auto starType = QualifiedType(QualifiedType::TYPE, tup->starType().type());
-        resolveTypeQueries(op->actual(0), size,
+        resolveTypeQueries(op->lhs(), size,
                            isNonStarVarArg, /* isTopLevel */ false);
-        resolveTypeQueries(op->actual(1), starType,
+        resolveTypeQueries(op->rhs(), starType,
                            isNonStarVarArg, /* isTopLevel */ false);
       }
     }
@@ -2934,8 +2934,8 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
 }
 
 static void resolveReduceAssign(Resolver& rv, const OpCall* op) {
-  auto lhs = op->actual(0);
-  auto rhs = op->actual(1);
+  auto lhs = op->lhs();
+  auto rhs = op->rhs();
 
   // rhs is easy; it's just whatever expression we're assigning. find its type.
   auto rhsType = rv.byPostorder.byAst(rhs).type();
@@ -3268,12 +3268,12 @@ bool Resolver::resolveSpecialOpCall(const Call* call) {
   auto op = call->toOpCall();
 
   if (op->op() == USTR("=")) {
-    if (op->numActuals() == 2) {
+    if (op->isBinaryOp()) {
       // Update a generic/unknown type when split-init is used.
-      adjustTypesOnAssign(op->actual(0), op->actual(1));
+      adjustTypesOnAssign(op->lhs(), op->rhs());
 
-      if (auto lhsTuple = op->actual(0)->toTuple()) {
-        auto rhsQt = byPostorder.byAst(op->actual(1)).type();
+      if (auto lhsTuple = op->lhs()->toTuple()) {
+        auto rhsQt = byPostorder.byAst(op->rhs()).type();
         if (auto rhsTupleType = rhsQt.type()->toTupleType()) {
           if (lhsTuple->numActuals() != rhsTupleType->numElements()) {
             context->error(call, "tuple size mismatch in split tuple assign");
@@ -5332,10 +5332,10 @@ void Resolver::exit(const uast::Array* decl) {
       auto arrowOp = expr->toOpCall();
       // this should be enforced by the parser
       CHPL_ASSERT(arrowOp && arrowOp->op() == USTR("=>") &&
-                  arrowOp->numActuals() == 2 &&
+                  arrowOp->isBinaryOp() &&
                   "invalid associative array expr");
-      auto lhs = arrowOp->actual(0);
-      auto rhs = arrowOp->actual(1);
+      auto lhs = arrowOp->lhs();
+      auto rhs = arrowOp->rhs();
       actualAsts.push_back(lhs);
       actuals.emplace_back(byPostorder.byAst(lhs).type(), UniqueString());
       actualAsts.push_back(rhs);
@@ -5453,15 +5453,15 @@ void Resolver::exit(const uast::Domain* decl) {
 }
 
 types::QualifiedType Resolver::typeForBooleanOp(const uast::OpCall* op) {
-  if (op->numActuals() != 2) {
+  if (!op->isBinaryOp()) {
     return typeErr(op, "invalid op call");
   }
 
   bool isAnd = op->op() == USTR("&&");
   // visit the LHS
-  op->actual(0)->traverse(*this);
+  op->lhs()->traverse(*this);
   // look at the LHS type. Is it param?
-  const QualifiedType& lhs = byPostorder.byAst(op->actual(0)).type();
+  const QualifiedType& lhs = byPostorder.byAst(op->lhs()).type();
   // can we short circuit? e.g., is this false && x, or true || y?
   bool shortCircuit = isAnd ? lhs.isParamFalse() : lhs.isParamTrue();
   if (shortCircuit) {
@@ -5470,9 +5470,9 @@ types::QualifiedType Resolver::typeForBooleanOp(const uast::OpCall* op) {
   }
 
   // go ahead and evaluate the RHS
-  op->actual(1)->traverse(*this);
+  op->rhs()->traverse(*this);
   // look at the RHS type.
-  const QualifiedType& rhs = byPostorder.byAst(op->actual(1)).type();
+  const QualifiedType& rhs = byPostorder.byAst(op->rhs()).type();
 
   // are we looking at true && true or false || false?
   bool bothIdentity = isAnd

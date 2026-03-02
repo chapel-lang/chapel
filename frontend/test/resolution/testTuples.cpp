@@ -1072,7 +1072,7 @@ static void test24() {
   auto testFn = mod->stmt(3)->toFunction();
   auto astOp = testFn->stmt(1)->toOpCall();
   assert(astOp);
-  auto astTup = astOp->actual(0)->toTuple();
+  auto astTup = astOp->lhs()->toTuple();
   assert(astTup);
   auto& qtTup = fnRR.byAst(astTup).type();
 

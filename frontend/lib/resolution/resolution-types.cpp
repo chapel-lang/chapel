@@ -338,7 +338,7 @@ void CallInfo::prepareActual(Context* context,
     bool handledTupleExpansion = false;
     if (auto op = actual->toOpCall()) {
       if (op->op() == USTR("...")) {
-        if (op->numActuals() != 1) {
+        if (!op->isUnaryOp()) {
           if (raiseErrors) {
             context->error(op, "tuple expansion can only accept one argument");
           }

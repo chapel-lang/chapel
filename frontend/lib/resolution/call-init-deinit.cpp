@@ -624,7 +624,7 @@ void CallInitDeinit::resolveAssign(const AstNode* ast,
   ResolvedExpression& opR = rv.byAst(ast);
 
   auto op = ast->toOpCall();
-  if (op != nullptr && op->op() == USTR("=") && !op->child(0)->isTuple()) {
+  if (op && op->op() == USTR("=") && !op->lhs()->isTuple()) {
     // if the syntax shows a '=' call (except tuple unpacking assign),
     // resolve that into the assign
     c.noteResult(&opR);
@@ -844,8 +844,8 @@ void CallInitDeinit::processInit(VarFrame* frame,
 
   auto op = ast->toOpCall();
   if (!rhsAst) {
-    if (op != nullptr && op->op() == USTR("=")) {
-      rhsAst = op->actual(1);
+    if (op && op->op() == USTR("=")) {
+      rhsAst = op->rhs();
     } else if (auto vd = ast->toVarLikeDecl()) {
       rhsAst = vd->initExpression();
     } else if (auto r = ast->toReturn()) {
@@ -860,8 +860,8 @@ void CallInitDeinit::processInit(VarFrame* frame,
   }
 
   const AstNode* lhsAst = nullptr;
-  if (op != nullptr && op->op() == USTR("=")) {
-    lhsAst = op->actual(0);
+  if (op && op->op() == USTR("=")) {
+    lhsAst = op->lhs();
   }
   const bool lhsIsTuple = lhsAst && lhsAst->isTuple();
   if (!lhsAst) {

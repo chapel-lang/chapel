@@ -537,8 +537,8 @@ bool VarScopeVisitor::enter(const OpCall* ast, RV& rv) {
   enterAst(ast);
 
   if (ast->op() == USTR("=")) {
-    auto lhsAst = ast->actual(0);
-    auto rhsAst = ast->actual(1);
+    auto lhsAst = ast->lhs();
+    auto rhsAst = ast->rhs();
 
     if (lhsAst->isTuple()) {
       // Tuple destructuring assignment
@@ -709,7 +709,7 @@ bool VarScopeVisitor::resolvedCallHelper(const Call* callAst, RV& rv) {
     // the special case. - D.F.
     if (auto op = callAst->toOpCall()) {
       if (op->op() == USTR(":")) {
-        CHPL_ASSERT(op->numActuals() == 2);
+        CHPL_ASSERT(op->isBinaryOp());
         auto lhs = op->actual(0);
         auto lhsRr = rv.byPostorder().byAst(lhs);
         if (!rr->type().isUnknownOrErroneous() &&

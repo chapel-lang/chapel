@@ -828,7 +828,7 @@ bool InitResolver::isMentionOfNodeInLhsOfAssign(const AstNode* node) {
 
     if (auto opCall = parent->toOpCall())
       if (opCall->op() == USTR("="))
-        if (prior && opCall->actual(0) == prior)
+        if (prior && opCall->lhs() == prior)
           return true;
     prior = parent;
   }
