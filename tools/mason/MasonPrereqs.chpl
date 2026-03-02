@@ -107,6 +107,6 @@ iter prereqs(const baseDir = here.cwd()) {
                 "but it looks to be a file. It will be ignored.", prereqsDir);
     }
   } else {
-    log.debugf("%s doesn't exist.\n", prereqsDir);
+    log.debugf("%s don't exist.\n", prereqsDir);
   }
 }

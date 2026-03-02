@@ -101,6 +101,9 @@ proc runExamples(show: bool, run: bool, build: bool, release: bool,
           const compilation = runWithStatus(compCommand.toArray());
 
           if compilation != 0 {
+            const fingerprintDir =
+              joinPath(projectHome, "target", "example", ".fingerprint");
+            invalidateFingerprint(projectName, fingerprintDir);
             stderr.writeln("compilation failed for " + example);
           } else {
             if show || !run then
