@@ -57,15 +57,15 @@ void DomainType::stringify(std::ostream& ss,
   } else if (kind_ == Kind::Rectangular) {
     ss << "domain(";
     rank().param()->stringify(ss, stringKind);
-    ss << ",";
+    ss << ", ";
     idxType().type()->stringify(ss, stringKind);
-    ss << ",";
+    ss << ", ";
     strides().param()->stringify(ss, stringKind);
     ss << ")";
   } else if (kind_ == Kind::Associative) {
     ss << "domain(";
     idxType().type()->stringify(ss, stringKind);
-    ss << ",";
+    ss << ", ";
     parSafe().param()->stringify(ss, stringKind);
     ss << ")";
   } else if (kind_ == Kind::Unknown) {
