@@ -1658,7 +1658,11 @@ void ErrorNoMatchingCandidates::write(ErrorWriterBase& wr) const {
   wr.heading(kind_, type_, node, "unable to resolve call to '", ci.name(), "': no matching candidates.");
   wr.code(node);
 
-  printRejectedCandidates(wr, node->id(), ci, rejected, "an", "actual", "a", "formal", [call](int idx) -> const uast::AstNode* {
+  printRejectedCandidates(wr, node->id(), ci, rejected, "an", "actual", "a", "formal", [call, &ci](int idx) -> const uast::AstNode* {
+    // in x.foo(a, b, c), the CI actuals are [x, a, b, c] but the call expression
+    // only has the actuals [a, b, c]. Adjust the index to account for this.
+    if (ci.isMethodCall()) idx -= 1;
+
     if (call && 0 <= idx && idx < call->numActuals()) {
       return call->actual(idx);
     }
