@@ -41,7 +41,7 @@ Debugging
 ---------
 
 Chapel provides a few tools to help with debugging Chapel code. While Chapel
-code can be directly debugged inside of standard tools like lldb and gdb, this
+code can be directly debugged inside of standard tools like LLDB and GDB, this
 can become challenging when debugging multilocale code. ``chpl-parallel-dbg``
 is a wrapper around lldb that makes it easier to debug multilocale code. When
 debugging communication issues, ``chplvis`` can be used to visualize the
@@ -75,12 +75,14 @@ easily serialize and deserialize structured data in Chapel.
 Other
 -----
 
-Chapel provides many other tools as well. ``chapel-py`` is an extremly powerful
+Chapel provides many other tools as well. ``chapel-py`` is an extremely powerful
 tool that provides a Python interface to the Chapel frontend compiler library.
 This lets you write custom Python tools that leverage the existing Chapel
 compiler infrastructure. Several of the tools mentioned here are powered by
-``chapel-py``. The Unstable Warning Anonymizer is a tool that can analyze the
-output of your Chapel program to generate reports on the use of unstable
+``chapel-py``.
+
+The Unstable Warning Anonymizer is a script written in Chapel that can analyze
+the output of your Chapel program to generate reports on the use of unstable
 warnings in your code. This is useful for users to share what unstable features
 they rely on without sharing any implementation details of their code to Chapel
 developers to help prioritize stabilization efforts.

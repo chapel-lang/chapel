@@ -16,7 +16,8 @@ chpl-parallel-dbg
 -----------------
 
 :ref:`chpl-parallel-dbg <readme-chpl-parallel-dbg>` is a wrapper around ``lldb``
-that makes it easier to debug multilocale code.
+that makes it easier to debug multilocale code. Check the documentation page of
+the tool for more information on its usage and best practices.
 
 gdb4hpc
 -------
