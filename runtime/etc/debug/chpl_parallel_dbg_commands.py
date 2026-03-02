@@ -21,6 +21,7 @@ import shlex
 import lldb
 import os
 
+
 def parse_command(command):
     command = shlex.split(command.strip())
     return command
@@ -35,7 +36,6 @@ def run_command(debugger: lldb.SBDebugger, command: str):
     return result.GetOutput()
 
 
-
 """
 command script import chpldbg.py
 command script add -f chpldbg.on on
@@ -43,10 +43,11 @@ command script add -f chpldbg.connect connect
 
 lldb -o "command script import chpldbg_cmds.py" -o "command script add -f chpldbg.on on" -o "command script add -f chpldbg.connect connect"
 """
+
+
 def on(debugger: lldb.SBDebugger, command, result, internal_dict):
     # get a list of targets
     current_locale = debugger.GetSelectedTarget()
-
 
     locales = []
     command = parse_command(command)
@@ -85,12 +86,17 @@ def on(debugger: lldb.SBDebugger, command, result, internal_dict):
         prev = debugger.GetSelectedTarget()
         for t in locales:
             debugger.SetSelectedTarget(t)
-            c = ' '.join(command[1:])
-            print("Running command on locale %d: %s" % (t.GetProcess().GetProcessID(), c))
+            c = " ".join(command[1:])
+            print(
+                "Running command on locale %d: %s"
+                % (t.GetProcess().GetProcessID(), c)
+            )
             try:
                 run_command(debugger, c)
             except RuntimeError as e:
-                print(f"Error running command on locale {t.GetProcess().GetProcessID()}: {e}")
+                print(
+                    f"Error running command on locale {t.GetProcess().GetProcessID()}: {e}"
+                )
         if prev.IsValid():
             debugger.SetSelectedTarget(prev)
     else:
@@ -99,6 +105,7 @@ def on(debugger: lldb.SBDebugger, command, result, internal_dict):
             return
         target = locales[0]
         debugger.SetSelectedTarget(target)
+
 
 def connect(debugger: lldb.SBDebugger, command, result, internal_dict):
     command = parse_command(command)
@@ -125,7 +132,9 @@ def connect(debugger: lldb.SBDebugger, command, result, internal_dict):
     BASE_PORT = int(os.environ.get("CHPL_RT_DEBUG_SERVER_BASE_PORT", "5000"))
     targets = []
     for i in range(num_locales):
-        target = debugger.CreateTargetWithFileAndArch(binary, lldb.LLDB_ARCH_DEFAULT)
+        target = debugger.CreateTargetWithFileAndArch(
+            binary, lldb.LLDB_ARCH_DEFAULT
+        )
         if not target.IsValid():
             print(f"Failed to create target for locale {i}")
             return
@@ -140,10 +149,15 @@ def __lldb_init_module(debugger, internal_dict):
     directory = os.path.dirname(os.path.abspath(__file__))
     pretty_printer_file = os.path.join(directory, "chpl_lldb_pretty_print.py")
     lldb_commands_file = os.path.join(directory, "lldb.commands")
-    debuggerBreakHere_file = os.path.join(directory, "chpl_lldb_debuggerBreakHere.py")
+    debuggerBreakHere_file = os.path.join(
+        directory, "chpl_lldb_debuggerBreakHere.py"
+    )
     debugger.HandleCommand(f'command source "{lldb_commands_file}"')
     debugger.HandleCommand(f'command script import "{debuggerBreakHere_file}"')
     debugger.HandleCommand(f'command script import "{pretty_printer_file}"')
-    debugger.HandleCommand("command script add -f chpl_parallel_dbg_commands.on on")
-    debugger.HandleCommand("command script add -f chpl_parallel_dbg_commands.connect connect")
-
+    debugger.HandleCommand(
+        "command script add -f chpl_parallel_dbg_commands.on on"
+    )
+    debugger.HandleCommand(
+        "command script add -f chpl_parallel_dbg_commands.connect connect"
+    )

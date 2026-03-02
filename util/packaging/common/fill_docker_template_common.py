@@ -7,16 +7,12 @@ import textwrap
 def common_substitutions(osname: str):
     substitutions = dict()
 
-    substitutions[
-    "FROM"
-    ] = """
+    substitutions["FROM"] = """
     ARG DOCKER_IMAGE_NAME_FULL=scratch
     FROM $DOCKER_IMAGE_NAME_FULL AS build
     """
 
-    substitutions[
-        "ARGUMENTS"
-    ] = """
+    substitutions["ARGUMENTS"] = """
     ARG BASENAME=chapel
     ARG CHAPEL_VERSION=2.1.0
     ARG PACKAGE_VERSION=1
@@ -31,9 +27,7 @@ def common_substitutions(osname: str):
     if inject is not None:
         substitutions["INJECT_BEFORE_DEPS"] = inject
 
-    substitutions[
-        "GET_CHAPEL"
-    ] = """
+    substitutions["GET_CHAPEL"] = """
     COPY --chown=user ./tarballs/chapel-$CHAPEL_VERSION.tar.gz /home/user/chapel-$CHAPEL_VERSION.tar.gz
     RUN tar xf chapel-$CHAPEL_VERSION.tar.gz
     """
@@ -41,9 +35,7 @@ def common_substitutions(osname: str):
     # generate_run_command_default_config must go last to ensure the package's
     # default configuration is the chapel default configuration, with all the
     # necessary tools.
-    substitutions[
-        "BUILD_DEFAULT"
-    ] = f"""
+    substitutions["BUILD_DEFAULT"] = f"""
 WORKDIR /home/user/chapel-$CHAPEL_VERSION
 {generate_run_command(default_config, osname)}
 {generate_run_command(gasnet_config, osname)}
@@ -56,9 +48,7 @@ WORKDIR /home/user/chapel-$CHAPEL_VERSION
     # which is only the Chapel compiler and runtime
     # still call generate_run_command_default_config to ensure
     # the default config is the default configuration, just don't build tools
-    substitutions[
-        "BUILD_ONLY_COMPILER"
-    ] = f"""
+    substitutions["BUILD_ONLY_COMPILER"] = f"""
 WORKDIR /home/user/chapel-$CHAPEL_VERSION
 {generate_run_command(default_config, osname)}
 {generate_run_command(gasnet_config, osname)}
@@ -67,16 +57,14 @@ WORKDIR /home/user/chapel-$CHAPEL_VERSION
 {generate_run_command_default_config(osname, include_tools=False)}
     """
 
-    substitutions[
-        "INSTALL"
-    ] = """
+    substitutions["INSTALL"] = """
     USER root
     RUN make install
     USER user
     """
 
-
     return substitutions
+
 
 def filter_substitutions(substitutions: Dict[str, str]) -> Dict[str, str]:
     filtered_substitutions = {}
@@ -86,6 +74,7 @@ def filter_substitutions(substitutions: Dict[str, str]) -> Dict[str, str]:
         else:
             filtered_substitutions[key] = value
     return filtered_substitutions
+
 
 default_config = {
     "CHPL_HOST_PLATFORM": "linux64",
@@ -107,7 +96,7 @@ default_config = {
     "CHPL_LLVM": "system",
     "CHPL_LIB_PIC": "none",
     "CHPL_SANITIZE": "none",
-    "CHPL_SANITIZE_EXE": ["none", "address"]
+    "CHPL_SANITIZE_EXE": ["none", "address"],
 }
 gasnet_config = {
     "CHPL_HOST_PLATFORM": "linux64",
@@ -131,7 +120,7 @@ gasnet_config = {
     "CHPL_LLVM": "system",
     "CHPL_LIB_PIC": "none",
     "CHPL_SANITIZE": "none",
-    "CHPL_SANITIZE_EXE": ["none", "address"]
+    "CHPL_SANITIZE_EXE": ["none", "address"],
 }
 ofi_pmi2_config = {
     "CHPL_HOST_PLATFORM": "linux64",
@@ -156,7 +145,7 @@ ofi_pmi2_config = {
     "CHPL_LLVM": "system",
     "CHPL_LIB_PIC": "none",
     "CHPL_SANITIZE": "none",
-    "CHPL_SANITIZE_EXE": ["none", "address"]
+    "CHPL_SANITIZE_EXE": ["none", "address"],
 }
 gpu_cpu_config = {
     "CHPL_HOST_PLATFORM": "linux64",
@@ -178,11 +167,13 @@ gpu_cpu_config = {
     "CHPL_LLVM": "system",
     "CHPL_LIB_PIC": "none",
     "CHPL_SANITIZE": "none",
-    "CHPL_SANITIZE_EXE": "none"
+    "CHPL_SANITIZE_EXE": "none",
 }
 
 
-def generate_configs(base_config: Dict[str, Union[str,List[str]]], osname: str) -> List[Dict[str, str]]:
+def generate_configs(
+    base_config: Dict[str, Union[str, List[str]]], osname: str
+) -> List[Dict[str, str]]:
     incompatibilities = [
         lambda cfg: cfg.get("CHPL_TARGET_MEM") == "jemalloc"
         and cfg.get("CHPL_SANITIZE_EXE") != "none",
@@ -191,20 +182,30 @@ def generate_configs(base_config: Dict[str, Union[str,List[str]]], osname: str) 
         and cfg.get("CHPL_GASNET_SEGMENT") == "everything",
         lambda cfg: cfg.get("CHPL_GASNET_SEGMENT") != "everything"
         and cfg.get("CHPL_TARGET_MEM") == "cstdlib",
-    lambda cfg: cfg.get("CHPL_TARGET_COMPILER") == "llvm"
-    and cfg.get("CHPL_SANITIZE_EXE") != "none"
+        lambda cfg: cfg.get("CHPL_TARGET_COMPILER") == "llvm"
+        and cfg.get("CHPL_SANITIZE_EXE") != "none"
         and osname in ("amzn2023", "ubuntu22", "debian12"),
     ]
     keys = list(base_config.keys())
 
     # generate all combinations of values for the keys in base_config
     configs = []
-    for values in itertools.product(*[base_config[key] if isinstance(base_config[key], list) else [base_config[key]] for key in keys]):
+    for values in itertools.product(
+        *[
+            (
+                base_config[key]
+                if isinstance(base_config[key], list)
+                else [base_config[key]]
+            )
+            for key in keys
+        ]
+    ):
         perm = dict(zip(keys, values))
         if any(incompatibility(perm) for incompatibility in incompatibilities):
             continue
         configs.append(perm)
     return configs
+
 
 def generate_run_command_default_config(osname, include_tools=True) -> str:
     """
@@ -220,25 +221,36 @@ def generate_run_command_default_config(osname, include_tools=True) -> str:
         build_cmd = "nice make all chpldoc mason chplcheck chpl-language-server -j$PARALLEL"
     return generate_run_command(config, osname, build_cmd=build_cmd)
 
-def generate_run_command(base_config: Dict[str, Union[str,List[str]]], osname: str, build_cmd="nice make all -j$PARALLEL") -> str:
+
+def generate_run_command(
+    base_config: Dict[str, Union[str, List[str]]],
+    osname: str,
+    build_cmd="nice make all -j$PARALLEL",
+) -> str:
     configs = generate_configs(base_config, osname)
 
     run_commands = []
     for config in configs:
-            command_prefix = textwrap.dedent(f"""
+        command_prefix = textwrap.dedent(
+            f"""
             RUN export CHPL_HOME=/home/user/chapel-$CHAPEL_VERSION && \\
-              rm -f $CHPL_HOME/chplconfig && touch $CHPL_HOME/chplconfig && \\""").strip()
+              rm -f $CHPL_HOME/chplconfig && touch $CHPL_HOME/chplconfig && \\"""
+        ).strip()
 
-            command_postfix = textwrap.indent(textwrap.dedent(f"""
+        command_postfix = textwrap.indent(
+            textwrap.dedent(f"""
             echo "CHPL_LLVM_CONFIG=$(which llvm-config)" >>$CHPL_HOME/chplconfig && \\
             ./configure --prefix=/usr && \\
             {build_cmd} && \\
-            unset CHPL_HOME""").strip(), "  ")
+            unset CHPL_HOME""").strip(),
+            "  ",
+        )
 
-            command_body = "\n".join(
-                f'  echo "{key}={value}" >> $CHPL_HOME/chplconfig && \\'
-                for key, value in config.items() if value is not None
-            )
-            run_command = f"{command_prefix}\n{command_body}\n{command_postfix}"
-            run_commands.append(run_command)
+        command_body = "\n".join(
+            f'  echo "{key}={value}" >> $CHPL_HOME/chplconfig && \\'
+            for key, value in config.items()
+            if value is not None
+        )
+        run_command = f"{command_prefix}\n{command_body}\n{command_postfix}"
+        run_commands.append(run_command)
     return "\n\n".join(run_commands) + "\n"

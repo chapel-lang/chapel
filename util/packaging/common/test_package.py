@@ -2,6 +2,7 @@
 """
 Run tests on built packages
 """
+
 import sys
 import argparse
 import os
@@ -21,10 +22,12 @@ verbose = False
 global chpl_home
 chpl_home = os.environ.get("CHPL_HOME", "")
 
+
 def run_command(cmd, **kwargs):
     if verbose:
         print(f"Running command: \"{' '.join(cmd)}\"")
     return sp.check_output(cmd, **kwargs)
+
 
 def determine_arch(package):
     # if the arch is aarch64 or arm64, return arm64
@@ -42,6 +45,7 @@ def determine_arch(package):
 
 def is_minimal_package(package):
     return "chapel-minimal" in os.path.basename(package)
+
 
 def infer_docker_os(package):
     os_tag_to_docker = {
@@ -64,6 +68,7 @@ def infer_docker_os(package):
 
     return ValueError(f"Could not infer docker image from package {package}")
 
+
 def infer_docker_os_tag(package):
     prefixes = ("el", "amzn", "ubuntu", "debian", "fc")
     regex = r"\.((?:" + "|".join(prefixes) + r")\d+)\."
@@ -71,7 +76,9 @@ def infer_docker_os_tag(package):
     if m:
         return m.group(1)
     else:
-        raise ValueError(f"Could not infer docker os tag from package {package}")
+        raise ValueError(
+            f"Could not infer docker os tag from package {package}"
+        )
 
 
 def add_digest_to_image(docker_os):
@@ -79,9 +86,10 @@ def add_digest_to_image(docker_os):
         "docker",
         "inspect",
         "--format='{{index .RepoDigests 0}}'",
-        docker_os
+        docker_os,
     ]
     return run_command(cmd).decode("utf-8").strip()
+
 
 def infer_env_vars(package):
     if "gasnet-udp" in package:
@@ -96,10 +104,12 @@ ENV CHPL_RT_OVERSUBSCRIBED=yes
 
     return ""
 
+
 def pre_install_commands(package):
     if ".el" in package:
         return "RUN dnf install -y epel-release\n"
     return ""
+
 
 def infer_pkg_type(package):
     if package.endswith(".deb"):
@@ -127,7 +137,10 @@ def build_docker(test_dir, package_path, package_name, docker_os):
         RUN /home/user/test-minimal-package.sh
     """
     test_package = textwrap.dedent(
-        test_full_package if not is_minimal_package(package_name) else test_minimal_package).strip()
+        test_full_package
+        if not is_minimal_package(package_name)
+        else test_minimal_package
+    ).strip()
 
     pre_install = pre_install_commands(package_name)
 
@@ -149,7 +162,9 @@ def build_docker(test_dir, package_path, package_name, docker_os):
 
     # now invoke the proper script to fill in the rest of the Dockerfile
     pkg_type = infer_pkg_type(package_name)
-    fill_script = "{}/util/packaging/{}/common/fill_docker_template.py".format(chpl_home, pkg_type)
+    fill_script = "{}/util/packaging/{}/common/fill_docker_template.py".format(
+        chpl_home, pkg_type
+    )
     os_tag = infer_docker_os_tag(package_name)
     run_command(["python3", fill_script, output_file, "--osname", os_tag])
 

@@ -8,17 +8,17 @@ deb_name = package_name(basename, chapel_version, pkg_version, os_name, arch)
 
 is_minimal = "-minimal" in basename
 
-files = [
-    "/usr/bin/chpl"
-]
+files = ["/usr/bin/chpl"]
 if not is_minimal:
-    files.extend([
-        "/usr/bin/chpldoc",
-        "/usr/bin/mason",
-        "/usr/bin/chplcheck",
-        "/usr/bin/chpl-language-server",
-        "/usr/bin/chpl-shim",
-    ])
+    files.extend(
+        [
+            "/usr/bin/chpldoc",
+            "/usr/bin/mason",
+            "/usr/bin/chplcheck",
+            "/usr/bin/chpl-language-server",
+            "/usr/bin/chpl-shim",
+        ]
+    )
 dirs = [
     "/usr/lib/chapel",
     "/usr/lib/cmake/chpl",

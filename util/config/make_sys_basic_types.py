@@ -22,7 +22,6 @@ import re
 import subprocess
 import sys
 
-
 # List of C types. The items in each element are:
 #
 #  * C macro for maximum value for type
@@ -30,35 +29,35 @@ import sys
 #  * Name of C type
 #  * Unstable
 _types = [
-    ('INT_MAX', 'c_int', 'int', False),
-    ('UINT_MAX', 'c_uint', 'uint', False),
-    ('LONG_MAX', 'c_long', 'long', False),
-    ('ULONG_MAX', 'c_ulong', 'unsigned long', False),
-    ('LLONG_MAX', 'c_longlong', 'long long', False),
-    ('ULLONG_MAX', 'c_ulonglong', 'unsigned long long', False),
-    ('CHAR_MAX', 'c_char', 'char', False),
-    ('SCHAR_MAX', 'c_schar', 'signed char', False),
-    ('UCHAR_MAX', 'c_uchar', 'unsigned char', False),
-    ('SHRT_MAX', 'c_short', 'short', False),
-    ('USHRT_MAX', 'c_ushort', 'unsigned short', False),
-    ('INTPTR_MAX', 'c_intptr', 'intptr_t', False),
-    ('UINTPTR_MAX', 'c_uintptr', 'uintptr_t', False),
-    ('PTRDIFF_MAX', 'c_ptrdiff', 'ptrdiff_t', False),
-    ('SIZE_MAX', 'c_size_t', 'size_t', False),
-    ('SSIZE_MAX', 'c_ssize_t', 'ssize_t', False),
-    ('WCHAR_MAX', 'c_wchar_t', 'wchar_t', True),
+    ("INT_MAX", "c_int", "int", False),
+    ("UINT_MAX", "c_uint", "uint", False),
+    ("LONG_MAX", "c_long", "long", False),
+    ("ULONG_MAX", "c_ulong", "unsigned long", False),
+    ("LLONG_MAX", "c_longlong", "long long", False),
+    ("ULLONG_MAX", "c_ulonglong", "unsigned long long", False),
+    ("CHAR_MAX", "c_char", "char", False),
+    ("SCHAR_MAX", "c_schar", "signed char", False),
+    ("UCHAR_MAX", "c_uchar", "unsigned char", False),
+    ("SHRT_MAX", "c_short", "short", False),
+    ("USHRT_MAX", "c_ushort", "unsigned short", False),
+    ("INTPTR_MAX", "c_intptr", "intptr_t", False),
+    ("UINTPTR_MAX", "c_uintptr", "uintptr_t", False),
+    ("PTRDIFF_MAX", "c_ptrdiff", "ptrdiff_t", False),
+    ("SIZE_MAX", "c_size_t", "size_t", False),
+    ("SSIZE_MAX", "c_ssize_t", "ssize_t", False),
+    ("WCHAR_MAX", "c_wchar_t", "wchar_t", True),
 ]
 
 # Map of max values to chapel types.
 _max_value_to_chpl_type = {
-    '127': 'int(8)',
-    '255': 'uint(8)',
-    '32767': 'int(16)',
-    '65535': 'uint(16)',
-    '2147483647': 'int(32)',
-    '4294967295': 'uint(32)',
-    '9223372036854775807': 'int(64)',
-    '18446744073709551615': 'uint(64)',
+    "127": "int(8)",
+    "255": "uint(8)",
+    "32767": "int(16)",
+    "65535": "uint(16)",
+    "2147483647": "int(32)",
+    "4294967295": "uint(32)",
+    "9223372036854775807": "int(64)",
+    "18446744073709551615": "uint(64)",
 }
 
 _h_file_header = """
@@ -81,10 +80,10 @@ def main():
     # Get the module content first, since it can lead to errors/early exits if
     # something goes wrong.
     module_content = get_sys_c_types(args.doc)
-    with open(args.output_file, 'w') as fp:
+    with open(args.output_file, "w") as fp:
         fp.write(module_content)
-        fp.write('\n')
-    logging.debug('Wrote module to: {0}'.format(args.output_file))
+        fp.write("\n")
+    logging.debug("Wrote module to: {0}".format(args.output_file))
 
 
 def get_sys_c_types(docs=False):
@@ -92,41 +91,48 @@ def get_sys_c_types(docs=False):
 
     # Find the $CHPL_HOME/util/config/ dir.
     util_cfg_dir = os.path.abspath(os.path.dirname(__file__))
-    logging.debug('Util config dir: {0}'.format(util_cfg_dir))
+    logging.debug("Util config dir: {0}".format(util_cfg_dir))
 
     # Get the C compile line.
-    compileline_cmd = os.path.join(util_cfg_dir, 'compileline')
+    compileline_cmd = os.path.join(util_cfg_dir, "compileline")
 
     compileline_env = os.environ.copy()
     # Make CHPL_COMM=none for the compile line command, we dont want any of the
     # stuff from gasnet (we dont want to require gasnet to be built)
-    compileline_env['CHPL_COMM'] = 'none'
+    compileline_env["CHPL_COMM"] = "none"
     # We need to clear CHPL_MAKE_CHPLENV_CACHE for our change to
     # CHPL_COMM to actually work
-    compileline_env.pop('CHPL_MAKE_CHPLENV_CACHE', None)
-    compileline_proc = subprocess.Popen([compileline_cmd, '--compile'],
-        stdout=subprocess.PIPE, env=compileline_env)
+    compileline_env.pop("CHPL_MAKE_CHPLENV_CACHE", None)
+    compileline_proc = subprocess.Popen(
+        [compileline_cmd, "--compile"],
+        stdout=subprocess.PIPE,
+        env=compileline_env,
+    )
     compileline = compileline_proc.communicate()[0].decode("utf-8").strip()
-    compileline += ' ' + os.environ.get('CFLAGS', '')
-    logging.debug('Compile line: {0}'.format(compileline))
+    compileline += " " + os.environ.get("CFLAGS", "")
+    logging.debug("Compile line: {0}".format(compileline))
 
     # Create temp header file with *_MAX macros, then run it through the C
     # preprocessor using the C compile line found above.
-    h_file = 'find_int_sizes_tmp.h'
+    h_file = "find_int_sizes_tmp.h"
     with _ensure_deleted(h_file):
-        logging.debug('Creating temp header: {0}'.format(h_file))
-        with open(h_file, 'w') as fp:
+        logging.debug("Creating temp header: {0}".format(h_file))
+        with open(h_file, "w") as fp:
             fp.write(_h_file_header)
 
             for max_macro, _, _, _ in _types:
-                fp.write('{0}\n'.format(max_macro))
-            logging.debug('Wrote {0} max types to {1}'.format(len(_types), h_file))
+                fp.write("{0}\n".format(max_macro))
+            logging.debug(
+                "Wrote {0} max types to {1}".format(len(_types), h_file)
+            )
 
-        compile_cmd = '{compileline} -E {h_file}'.format(**locals())
-        logging.debug('Preprocessor command: {0}'.format(compile_cmd))
+        compile_cmd = "{compileline} -E {h_file}".format(**locals())
+        logging.debug("Preprocessor command: {0}".format(compile_cmd))
         compile_result = os.popen(compile_cmd).read()
-        logging.debug('Captured preprocessor output with {0} '
-                      'characters.'.format(len(compile_result)))
+        logging.debug(
+            "Captured preprocessor output with {0} "
+            "characters.".format(len(compile_result))
+        )
 
     # Iterate through the preprocessor output, find the max value expressions,
     # and record them in a list.
@@ -134,12 +140,12 @@ def get_sys_c_types(docs=False):
     keep = False
     for line in compile_result.splitlines():
         # Skip lines until the start macro is found.
-        if not keep and 'FIND_INT_SIZES_START' not in line:
+        if not keep and "FIND_INT_SIZES_START" not in line:
             continue
 
         # Found the start of the max macros. All subsequent lines will be
         # recorded.
-        elif 'FIND_INT_SIZES_START' in line:
+        elif "FIND_INT_SIZES_START" in line:
             keep = True
 
         # Ignore lines starting with # since they could be #line
@@ -148,27 +154,30 @@ def get_sys_c_types(docs=False):
             continue
 
         # Ignore blank lines
-        elif line.strip() == '':
+        elif line.strip() == "":
             continue
 
         # The start of the max macros has already been found. Record every
         # line, stripping it of whitespace.
         else:
             max_exprs.append(line.strip())
-    logging.debug('Found {0} lines of max type '
-                  'values.'.format(len(max_exprs)))
+    logging.debug(
+        "Found {0} lines of max type " "values.".format(len(max_exprs))
+    )
 
     if len(max_exprs) != len(_types):
-        logging.error('Found {0} max values, but {1} types were '
-                      'expected.'.format(len(max_exprs), len(_types)))
+        logging.error(
+            "Found {0} max values, but {1} types were "
+            "expected.".format(len(max_exprs), len(_types))
+        )
         sys.exit(1)
 
     # Iterate through the max value expressions, evaluate each one, and store
     # it in a list. Python deals with arbitrarily large integers, so there is
     # no fear of overflow.
     replace_patterns = [
-        (re.compile(r'[UL]', re.IGNORECASE), ''),
-        (re.compile(r"'\\0'", re.IGNORECASE), '0'),
+        (re.compile(r"[UL]", re.IGNORECASE), ""),
+        (re.compile(r"'\\0'", re.IGNORECASE), "0"),
     ]
     max_values = []
     for expr in max_exprs:
@@ -176,10 +185,12 @@ def get_sys_c_types(docs=False):
         for pattern, repl in replace_patterns:
             ex = pattern.sub(repl, ex)
         value = eval(ex)
-        logging.debug('{0} -> {1}'.format(expr, value))
+        logging.debug("{0} -> {1}".format(expr, value))
         max_values.append(value)
-    logging.debug('Evaluated all {0} expressions from '
-                  'preprocessor.'.format(len(max_values)))
+    logging.debug(
+        "Evaluated all {0} expressions from "
+        "preprocessor.".format(len(max_values))
+    )
 
     # Iterate through the chapel types/max values and print out the
     # ChapelSysCTypes module code. Each line takes the form
@@ -192,23 +203,29 @@ def get_sys_c_types(docs=False):
         max_macro, chpl_type, c_type, is_unstable = _types[i]
         chpl_value = _max_value_to_chpl_type.get(str(max_value))
         if chpl_value is None:
-            logging.error('Unknown numeric limit {0} in '
-                          '_max_value_to_chpl_type dict.'.format(max_value))
+            logging.error(
+                "Unknown numeric limit {0} in "
+                "_max_value_to_chpl_type dict.".format(max_value)
+            )
             sys.exit(1)
 
-        sys_c_types.append('/* The Chapel type corresponding to the C \'{c_type}\' type'
-                           ' */'.format(**locals()))
+        sys_c_types.append(
+            "/* The Chapel type corresponding to the C '{c_type}' type"
+            " */".format(**locals())
+        )
         if is_unstable:
-            sys_c_types.append('@unstable("\'{c_type}\' is unstable")'.format(**locals()))
-        stmt = 'extern type {chpl_type}= '.format(**locals())
+            sys_c_types.append(
+                "@unstable(\"'{c_type}' is unstable\")".format(**locals())
+            )
+        stmt = "extern type {chpl_type}= ".format(**locals())
         if docs:
-            stmt += 'integral'
+            stmt += "integral"
         else:
             stmt += chpl_value
-        stmt += ';'
+        stmt += ";"
         sys_c_types.append(stmt)
 
-        if chpl_type == 'c_ptr':
+        if chpl_type == "c_ptr":
             handled_c_ptr = True
 
     # Finally, print out set of asserts for module. They assert that the
@@ -222,13 +239,15 @@ def get_sys_c_types(docs=False):
 """)
     for i, max_value in enumerate(max_values):
         _, chpl_type, _, _ = _types[i]
-        if chpl_type.startswith('c_'):
+        if chpl_type.startswith("c_"):
             chpl_value = _max_value_to_chpl_type.get(str(max_value))
-            sys_c_types.append('  assert(sizeof({chpl_type}) == sizeof({chpl_value}))'
-                               ';'.format(**locals()))
-    sys_c_types.append('}')
+            sys_c_types.append(
+                "  assert(sizeof({chpl_type}) == sizeof({chpl_value}))"
+                ";".format(**locals())
+            )
+    sys_c_types.append("}")
 
-    return '\n'.join(sys_c_types)
+    return "\n".join(sys_c_types)
 
 
 @contextlib.contextmanager
@@ -238,12 +257,13 @@ def _ensure_deleted(filename):
         yield
     finally:
         if os.path.exists(filename):
-            logging.debug('Deleting: {0}'.format(filename))
+            logging.debug("Deleting: {0}".format(filename))
             os.unlink(filename)
 
 
 def _parse_args():
     """Parse and return command line args."""
+
     class NoWrapHelpFormatter(optparse.IndentedHelpFormatter):
         """Help formatter that does not wrap the description text."""
 
@@ -251,18 +271,18 @@ def _parse_args():
             return text
 
     parser = optparse.OptionParser(
-        usage='usage: %prog [--doc] [--verbose] <ChapelSysCTypes_filename>',
+        usage="usage: %prog [--doc] [--verbose] <ChapelSysCTypes_filename>",
         description=__doc__,
-        formatter=NoWrapHelpFormatter()
+        formatter=NoWrapHelpFormatter(),
     )
 
     parser.add_option(
-        '-v', '--verbose', action='store_true',
-        help='Enable verbose output.'
+        "-v", "--verbose", action="store_true", help="Enable verbose output."
     )
     parser.add_option(
-        '--doc', action='store_true',
-        help='Build ChapelSysCTypes module for chpldoc.'
+        "--doc",
+        action="store_true",
+        help="Build ChapelSysCTypes module for chpldoc.",
     )
 
     opts, args = parser.parse_args()
@@ -283,10 +303,9 @@ def _setup_logging(verbose=False):
     :arg verbose: When True, set log level to DEBUG.
     """
     log_level = logging.DEBUG if verbose else logging.WARNING
-    logging.basicConfig(format='%(levelname)s: %(message)s',
-                        level=log_level)
-    logging.debug('Verbose output enabled.')
+    logging.basicConfig(format="%(levelname)s: %(message)s", level=log_level)
+    logging.debug("Verbose output enabled.")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

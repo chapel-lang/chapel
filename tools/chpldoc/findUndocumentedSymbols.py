@@ -78,7 +78,6 @@ import glob
 import chapel
 from chapel import each_matching, files_with_contexts
 
-
 """
 helpers
 """
@@ -195,7 +194,9 @@ def get_node_name(node: chapel.AstNode) -> List[str]:
             and node.this_formal()
             and node.this_formal().type_expression()
         ):
-            aggregate_name = get_single_name(node.this_formal().type_expression())
+            aggregate_name = get_single_name(
+                node.this_formal().type_expression()
+            )
             name = f"{aggregate_name}.{name}"
         # handles primary methods and fields
         elif node.parent() and (
@@ -245,10 +246,14 @@ class FindUndocumentedSymbols:
         "function": (
             chapel.Function,
             lambda node, match: isinstance(
-                node.parent(), (chapel.Module, chapel.AggregateDecl, chapel.Interface)
+                node.parent(),
+                (chapel.Module, chapel.AggregateDecl, chapel.Interface),
             ),
         ),
-        "module": (chapel.Module, lambda node, match: node.kind() != "implicit"),
+        "module": (
+            chapel.Module,
+            lambda node, match: node.kind() != "implicit",
+        ),
         "aggregate_decl": (
             chapel.AggregateDecl,
             _parent_is_module_or_aggregate,
@@ -390,7 +395,7 @@ def main(raw_args: List[str]) -> int:
         syms = sorted(fus(), key=lambda s: s.location().start())
         for sym in syms:
             loc = sym.location()
-            (line, col) = loc.start()
+            line, col = loc.start()
             path = os.path.relpath(loc.path(), curdir)
             names = get_node_name(sym)
             for name in names:
