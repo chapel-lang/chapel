@@ -2424,6 +2424,30 @@ static void testReindexingForErrors() {
   assert(guard.realizeErrors() == 1);
 }
 
+// regression test. In certain errors that tried to print a particular
+// actual, we assumed that CallInfo actual indices match the call expression.
+// However, CallInfo actuals have an extra 'this' argument, which meant
+// that for method calls, the indexing broke.
+//
+// Trigger this by trying to split-init a method receiver.
+static void testReindexingForErrors2() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::ignore = resolveTypesOfVariables(context,
+    R"""(
+    proc int.bar(arg: int) {}
+
+    proc foo() {
+      var y;
+      y.bar(10);
+      10.bar(y);
+    }
+    var tmp = foo();
+    )""", {});
+  assert(guard.realizeErrors());
+}
+
 int main() {
   test1();
   test2();
@@ -2492,6 +2516,7 @@ int main() {
   testTypeProcOnGenericReceiver();
 
   testReindexingForErrors();
+  testReindexingForErrors2();
 
   return 0;
 }
