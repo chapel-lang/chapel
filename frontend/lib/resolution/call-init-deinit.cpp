@@ -776,6 +776,9 @@ void CallInitDeinit::processTupleRhsHelper(VarFrame* frame,
                                            const TupleType* lhsTupleType,
                                            const TupleType* rhsTupleType,
                                            RV& rv) {
+  CHPL_ASSERT(ast);
+  CHPL_ASSERT(rhsTupleExpr);
+
   auto& re = rv.byAst(ast);
 
   // Save the AssociatedAction from the init of the tuple as a whole, under
@@ -790,15 +793,14 @@ void CallInitDeinit::processTupleRhsHelper(VarFrame* frame,
   for (int i = 0; i < lhsTupleType->numElements(); i++) {
     auto actual = rhsTupleExpr->actual(i);
     auto lhsEltType = lhsTupleType->elementType(i);
-    auto rhsEltType = actual ? rv.byPostorder().byAst(actual).type()
-                             : rhsTupleType->elementType(i);
+    auto rhsEltType = rv.byPostorder().byAst(actual).type();
     processInit(frame, ast, lhsEltType,
                 rhsEltType, rv, actual);
     for (const auto& action : re.associatedActions()) {
       subActions.push_back(std::make_unique<AssociatedAction>(
           action.action(),
           action.fn(),
-          /* id */ (actual ? actual->id() : action.id()),
+          /* id */ actual->id(),
           action.type(),
           /* tupleEltIdx */ i,
           action.subActions()));
