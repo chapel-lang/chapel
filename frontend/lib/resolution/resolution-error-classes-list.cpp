@@ -747,8 +747,15 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
       resolution::FormalActualMap fa(fn, ci);
       auto badPass = fa.byFormalIdx(candidate.formalIdx());
       auto formalDecl = badPass.formal();
-      const uast::AstNode* actualExpr = getActual(candidate.actualIdx());
-      bool badSplitInit = ci.actual(candidate.actualIdx()).expectSplitInit();
+      const uast::AstNode* actualExpr = nullptr;
+      bool badSplitInit = false;
+
+      // Can be -1 if the candidate is a method which we tried because
+      // of a freestanding call 'foo()' in a method context.
+      if (candidate.actualIdx() != -1) {
+        actualExpr = getActual(candidate.actualIdx());
+        badSplitInit = ci.actual(candidate.actualIdx()).expectSplitInit();
+      }
 
       // formalDecl can be null if the function is in an 'extern' block, in which
       // case there is no Chapel AST corresponding to the formal.
@@ -807,7 +814,7 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
         // and say something nicer.
         wr.message("The instantiated type of ", expectedThing, " ", formalName,
                    " does not allow ", passedThing, "s of type '", badPass.actualType().type(), "'.");
-      } else if (ci.actual(candidate.actualIdx()).expectSplitInit()) {
+      } else if (badSplitInit) {
         auto formalKind = badPass.formalType().kind();
         auto actualName = "'" + actualExpr->toIdentifier()->name().str() + "'";
 

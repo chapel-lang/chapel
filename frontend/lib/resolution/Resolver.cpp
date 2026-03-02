@@ -1143,9 +1143,17 @@ handleRejectedCandidates(Resolver::CallResultWrapper& result,
 
     const uast::AstNode *actualExpr = nullptr;
     const uast::VarLikeDecl *actualDecl = nullptr;
-    size_t actualIdx = candidate.actualIdx();
-    CHPL_ASSERT(0 <= actualIdx && actualIdx < actualAsts.size());
-    actualExpr = actualAsts[actualIdx];
+    int actualIdx = candidate.actualIdx();
+    if (actualIdx == -1) {
+      // Can happen, if we resolved 'foo()', tried 'x.foo()', and 'x' didn't
+      // match the candidate's receiver. In that case, the 'decl' is
+      // the 'this' formal. We could in theory spend more work here to identify
+      // this formal and place it in `actualDecls`, but it will be a decent
+      // amount of work and lead to few error message benefits. - Daniel F.
+    } else {
+      CHPL_ASSERT(0 <= actualIdx && actualIdx < actualAsts.size());
+      actualExpr = actualAsts[actualIdx];
+    }
 
     // look for a definition point of the actual for error reporting of
     // uninitialized vars typically in the case of bad split-initialization
