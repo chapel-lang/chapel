@@ -257,6 +257,15 @@ class ChapelLanguageServer(LanguageServer):
         cfg = context.config
         if cfg:
             for file in cfg.files:
+                # Invocation records the compiler call, and is not really
+                # a file.
+                #
+                # TODO: deprecate current structure in favor of more explicit
+                # files key and invocation key, so files aren't mixed
+                # with non-files in the config.
+                if file == "invocation":
+                    continue
+
                 self.get_file_info("file://" + file, do_update=False)
 
     def get_file_info(
