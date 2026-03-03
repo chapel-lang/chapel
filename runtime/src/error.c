@@ -500,7 +500,7 @@ void msg_explicit_vs(char *restrict str, size_t size,
 }
 
 
-__attribute__ ((format (printf, 5, 0)));
+__attribute__ ((format (printf, 5, 0)))
 static
 void msg_explicit_v(FILE* f,
                     int32_t lineno, const char *restrict filename,
