@@ -35,6 +35,7 @@ use Subprocess;
 use TOML;
 
 import Path;
+import FileSystem;
 import MasonPrereqs;
 
 private var log = new logger("mason build");
@@ -161,6 +162,7 @@ proc buildProgram(release: bool, show: bool, force: bool, skipUpdate: bool,
                   projectHome, sourceList, gitList) {
       writeln("Build Successful\n");
     } else {
+      invalidateFingerprint(projectName, fingerprintDir);
       throw new MasonError("Build Failed");
     }
   } else {
@@ -196,7 +198,8 @@ proc compileSrc(lockFile: borrowed Toml, binLoc: string,
     var cmd: list(string);
     cmd.pushBack("chpl");
     cmd.pushBack(pathToProj);
-    cmd.pushBack("-o " + moveTo);
+    cmd.pushBack("-o");
+    cmd.pushBack(moveTo);
 
     cmd.pushBack(compopts);
 
@@ -247,8 +250,8 @@ proc compileSrc(lockFile: borrowed Toml, binLoc: string,
             if release then "release" else "debug", project);
 
     // compile Program with deps
-    const command = " ".join(cmd.these());
-    log.debugln("Compilation command: " + command);
+    const command = cmd.toArray();
+    log.debugln("Compilation command: " + " ".join(command));
     var compilation = runWithStatus(command);
     if compilation != 0 {
       return false;
@@ -517,5 +520,14 @@ proc checkFingerprint(projectName:string,
       log.debugln("Fingerprints match, no rebuild required");
       return true;
     }
+  }
+}
+
+proc invalidateFingerprint(projectName:string, fingerprintDir: string) {
+  const fingerprintFile = joinPath(fingerprintDir,
+                                   "%s-%s".format(projectName, "fingerprint"));
+  log.debugf("Invalidating fingerprint '%s'\n", fingerprintFile);
+  if isFile(fingerprintFile) {
+    FileSystem.remove(fingerprintFile);
   }
 }
