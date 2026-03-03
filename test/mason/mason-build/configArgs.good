@@ -1,0 +1,49 @@
++ cd SwitchTypes
++ mason build -- -smyType=myRec '-smyString1='\''hello world'\'''
+Compiling [debug] target: SwitchTypes
+Build Successful
+
++ mason run -- '--myString2='\''goodbye world'\'''
+myRec (x = hello world, y = 'goodbye world')
++ mason build -- --set myType=myRec --set 'myString1='\''hello world'\'''
+Compiling [debug] target: SwitchTypes
+Build Successful
+
++ mason run -- '--myString2='\''goodbye world'\'''
+myRec (x = hello world, y = 'goodbye world')
++ mason build -- '-smyType=owned MyClass' '-smyString1='\''hello world'\'''
+Compiling [debug] target: SwitchTypes
+Build Successful
+
++ mason run -- '--myString2='\''goodbye world'\'''
+owned MyClass {x = hello world, y = 'goodbye world'}
++ mason build -- --set 'myType=owned MyClass' --set 'myString1='\''hello world'\'''
+Compiling [debug] target: SwitchTypes
+Build Successful
+
++ mason run -- '--myString2='\''goodbye world'\'''
+owned MyClass {x = hello world, y = 'goodbye world'}
++ mason build -- '-smyType=shared MyClass?' '-smyString1='\''hello world'\'''
+Compiling [debug] target: SwitchTypes
+Build Successful
+
++ mason run -- '--myString2='\''goodbye world'\'''
+shared MyClass? {x = hello world, y = 'goodbye world'}
++ mason build -- --set 'myType=shared MyClass?' --set 'myString1='\''hello world'\'''
+Compiling [debug] target: SwitchTypes
+Build Successful
+
++ mason run -- '--myString2='\''goodbye world'\'''
+shared MyClass? {x = hello world, y = 'goodbye world'}
++ mason build -- '-smyType=unmanaged MyClass' '-smyString1='\''hello world'\'''
+Compiling [debug] target: SwitchTypes
+Build Successful
+
++ mason run -- '--myString2='\''goodbye world'\'''
+unmanaged MyClass {x = hello world, y = 'goodbye world'}
++ mason build -- --set 'myType=unmanaged MyClass' --set 'myString1='\''hello world'\'''
+Compiling [debug] target: SwitchTypes
+Build Successful
+
++ mason run -- '--myString2='\''goodbye world'\'''
+unmanaged MyClass (x = hello world, y = 'goodbye world')
