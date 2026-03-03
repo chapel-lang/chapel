@@ -421,12 +421,14 @@ findUnitTestMainForModule(Context* context, const Module* mod) {
 std::pair<const AstNode*, const Scope*> const& getScopeForDefaultResolution(Context* context) {
   QUERY_BEGIN(getScopeForDefaultResolution, context);
 
-  auto moduleScope = resolution::scopeForAutoModule(context);
-  auto moduleId = moduleScope->id();
+  std::pair<const AstNode*, const Scope*> result = {nullptr, nullptr};
+  if (auto moduleScope = resolution::scopeForAutoModule(context)) {
+    auto moduleId = moduleScope->id();
+    result = {parsing::idToAst(context, moduleId), moduleScope};
+  }
 
-  auto res = std::make_pair(parsing::idToAst(context, moduleId), moduleScope);
 
-  return QUERY_END(res);
+  return QUERY_END(result);
 }
 
 static QualifiedType const& computeDefaultBoundedRange(chpl::Context* context) {
@@ -445,13 +447,15 @@ static QualifiedType const& computeDefaultBoundedRange(chpl::Context* context) {
                      /* actuals */ std::move(rangeActuals));
 
   auto& [ast, scope] = getScopeForDefaultResolution(context);
-  auto rc = createDummyRC(context);
-  auto c = resolveGeneratedCall(&rc, /* astForScopeOrErr */ ast, ci, CallScopeInfo::forNormalCall(scope, nullptr));
+  if (ast && scope) {
+    auto rc = createDummyRC(context);
+    auto c = resolveGeneratedCall(&rc, /* astForScopeOrErr */ ast, ci, CallScopeInfo::forNormalCall(scope, nullptr));
 
-  if (c.mostSpecific().isEmpty() || c.exprType().isUnknownOrErroneous()) {
-    /* do nothing */
-  } else {
-    result = c.exprType();
+    if (c.mostSpecific().isEmpty() || c.exprType().isUnknownOrErroneous()) {
+      /* do nothing */
+    } else {
+      result = c.exprType();
+    }
   }
 
   return QUERY_END(result);
@@ -477,14 +481,16 @@ static QualifiedType const& computeDefaultRectangularDomain(chpl::Context* conte
                        /* actuals */ std::move(domainActuals));
 
     auto& [ast, scope] = getScopeForDefaultResolution(context);
-    auto rc = createDummyRC(context);
-    auto c = resolveGeneratedCall(&rc, /* astForScopeOrErr */ ast, ci, CallScopeInfo::forNormalCall(scope, nullptr));
+    if (ast && scope){
+      auto rc = createDummyRC(context);
+      auto c = resolveGeneratedCall(&rc, /* astForScopeOrErr */ ast, ci, CallScopeInfo::forNormalCall(scope, nullptr));
 
-    if (c.mostSpecific().isEmpty() || c.exprType().isUnknownOrErroneous()) {
-      /* do nothing */
-    } else {
-      result = c.exprType();
-      CHPL_ASSERT(result.type()->isDomainType());
+      if (c.mostSpecific().isEmpty() || c.exprType().isUnknownOrErroneous()) {
+        /* do nothing */
+      } else {
+        result = c.exprType();
+        CHPL_ASSERT(result.type()->isDomainType());
+      }
     }
   }
 
@@ -517,18 +523,20 @@ static QualifiedType const& rebuildDomainInstance(chpl::Context* context, const 
                          /* isParenless */ false,
                          /* actuals */ std::move(typeConstructorActuals));
       auto& [ast, scope] = getScopeForDefaultResolution(context);
-      auto rc = createDummyRC(context);
-      auto c = resolveGeneratedCall(&rc, /* astForScopeOrErr */ ast, ci, CallScopeInfo::forNormalCall(scope, nullptr));
-      if (c.mostSpecific().isEmpty() || c.exprType().isUnknownOrErroneous()) {
-        /* do nothing */
-      } else {
-        if (auto instanceCt = c.exprType().type()->toClassType()) {
-          // Make it 'shared'
-          instanceCt = ClassType::get(context, instanceCt->manageableType(), AnySharedType::get(context), ClassTypeDecorator(ClassTypeDecorator::MANAGED_NONNIL));
-          auto instance = QualifiedType(QualifiedType::VAR, instanceCt);
+      if (ast && scope) {
+        auto rc = createDummyRC(context);
+        auto c = resolveGeneratedCall(&rc, /* astForScopeOrErr */ ast, ci, CallScopeInfo::forNormalCall(scope, nullptr));
+        if (c.mostSpecific().isEmpty() || c.exprType().isUnknownOrErroneous()) {
+          /* do nothing */
+        } else {
+          if (auto instanceCt = c.exprType().type()->toClassType()) {
+            // Make it 'shared'
+            instanceCt = ClassType::get(context, instanceCt->manageableType(), AnySharedType::get(context), ClassTypeDecorator(ClassTypeDecorator::MANAGED_NONNIL));
+            auto instance = QualifiedType(QualifiedType::VAR, instanceCt);
 
-          auto finalDom = DomainType::getRectangularType(context, instance, dom->rank(), dom->idxType(), dom->strides());
-          result = QualifiedType(QualifiedType::TYPE, finalDom);
+            auto finalDom = DomainType::getRectangularType(context, instance, dom->rank(), dom->idxType(), dom->strides());
+            result = QualifiedType(QualifiedType::TYPE, finalDom);
+          }
         }
       }
     }
@@ -553,14 +561,16 @@ static QualifiedType const& computeDefaultRectangularArray(chpl::Context* contex
                      /* isParenless */ false,
                      /* actuals */ std::move(arrayActuals));
   auto& [ast, scope] = getScopeForDefaultResolution(context);
-  auto rc = createDummyRC(context);
-  auto c = resolveGeneratedCall(&rc, /* astForScopeOrErr */ ast, ci, CallScopeInfo::forNormalCall(scope, nullptr));
+  if (ast && scope) {
+    auto rc = createDummyRC(context);
+    auto c = resolveGeneratedCall(&rc, /* astForScopeOrErr */ ast, ci, CallScopeInfo::forNormalCall(scope, nullptr));
 
-  if (c.mostSpecific().isEmpty() || c.exprType().isUnknownOrErroneous()) {
-    /* do nothing */
-  } else {
-    result = c.exprType();
-    CHPL_ASSERT(result.type()->isArrayType());
+    if (c.mostSpecific().isEmpty() || c.exprType().isUnknownOrErroneous()) {
+      /* do nothing */
+    } else {
+      result = c.exprType();
+      CHPL_ASSERT(result.type()->isArrayType());
+    }
   }
 
   return QUERY_END(result);
