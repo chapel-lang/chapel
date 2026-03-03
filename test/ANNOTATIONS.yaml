@@ -640,6 +640,9 @@ all:
       config: 16-node-apollo-hdr
   01/06/26:
     - Add undefined behavior guardrails to strings, IO, and hashing (#28227)
+  02/17/26:
+    - text: Added new LICM optimizations for arrays passed by const (#28091)
+      config: chapcs, 16-node-apollo-hdr, 16-node-hpe-cray-ex, 1-node-a100, 1-node-mi250x
 
 # End all
 
