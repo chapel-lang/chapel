@@ -470,13 +470,7 @@ void chpl_error_explicit(const char *message, int32_t lineno,
 }
 
 
-static
-void msg_explicit_vs(char *restrict, size_t,
-                     int32_t, const char *restrict,
-                     const char *restrict,
-                     const char *restrict, va_list)
-       __attribute__((format(printf, 5, 0)));
-
+__attribute__ ((format (printf, 6, 0)))
 static
 void msg_explicit_vs(char *restrict str, size_t size,
                      int32_t lineno, const char *restrict filename,
@@ -506,13 +500,7 @@ void msg_explicit_vs(char *restrict str, size_t size,
 }
 
 
-static
-void msg_explicit_v(FILE*,
-                    int32_t, const char *restrict,
-                    const char *restrict,
-                    const char *restrict, va_list)
-       __attribute__((format(printf, 5, 0)));
-
+__attribute__ ((format (printf, 5, 0)));
 static
 void msg_explicit_v(FILE* f,
                     int32_t lineno, const char *restrict filename,

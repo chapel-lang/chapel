@@ -127,9 +127,9 @@ void        setupError(const char* subdir, const char* filename, int lineno, int
 void        setupDynoError(chpl::ErrorBase::Kind errKind);
 
 void        handleError(const char* fmt, ...) __attribute__ ((format (printf, 1, 2)));
-void        handleError(const BaseAST* ast, const char* fmt, ...)__attribute__ ((format (printf, 2, 3)));
-void        handleError(astlocT astloc, const char* fmt, ...)__attribute__ ((format (printf, 2, 3)));
-void        handleError(chpl::Location, const char* fmt, ...)__attribute__ ((format (printf, 2, 3)));
+void        handleError(const BaseAST* ast, const char* fmt, ...) __attribute__ ((format (printf, 2, 3)));
+void        handleError(astlocT astloc, const char* fmt, ...) __attribute__ ((format (printf, 2, 3)));
+void        handleError(chpl::Location, const char* fmt, ...) __attribute__ ((format (printf, 2, 3)));
 
 void        exitIfFatalErrorsEncountered();
 
