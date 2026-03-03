@@ -1222,10 +1222,14 @@ def run_lsp():
                     if not inst.is_instantiation():
                         continue
 
+                    label = "Show Instantiation"
+                    if not insts[inst]:
+                        label += " (Default-Rectangular)"
+
                     action = CodeLens(
                         data=(decl.node.unique_id(), i),
                         command=Command(
-                            "Show Instantiation",
+                            label,
                             "chpl-language-server/showInstantiation",
                             [
                                 params.text_document.uri,
