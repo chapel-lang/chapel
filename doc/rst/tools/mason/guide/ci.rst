@@ -3,19 +3,28 @@
 Setting up Automated Testing
 ----------------------------
 
-Mason packages can be easily integrated into automated testing pipelines, such as those used in continuous integration (CI) systems. For the most part, all that is needed is a working install of Chapel/mason, and then the standard ``mason test`` command can be used to run the tests for a package.
+Mason packages can be easily integrated into automated testing pipelines, such
+as those used in continuous integration (CI) systems. For the most part, all
+that is needed is a working install of Chapel/mason, and then the standard
+``mason test`` command can be used to run the tests for a package.
 
-There are two recommended approaches for setting up CI testing of mason packages:
+There are two recommended approaches for setting up CI testing of mason
+packages:
 
-* Using the published Dockerhub images for Chapel, which come with mason pre-installed.
+* Using the published Dockerhub images for Chapel, which come with mason
+  pre-installed
 * Installing Chapel/mason in the CI environment through binary packages
 
-These docs provide some examples of setting up the CI for a mason package using both of these approaches in GitHub Actions. However, the same principles can be applied to other CI systems as well.
+These docs provide some examples of setting up the CI for a mason package using
+both of these approaches in GitHub Actions. However, the same principles can be
+applied to other CI systems as well.
 
 Using Containers
 ~~~~~~~~~~~~~~~~
 
-Using the prebuild Chapel Dockerhub images is a very easy way to get started with CI testing of mason packages. A very simple CI workflow using the Dockerhub images might look like the following:
+Using the prebuild Chapel Dockerhub images is a very easy way to get started
+with CI testing of mason packages. A very simple CI workflow using the
+Dockerhub images might look like the following:
 
 .. code-block:: yaml
 
@@ -48,15 +57,27 @@ Using the prebuild Chapel Dockerhub images is a very easy way to get started wit
             run: |
               chplcheck src/**/*.chpl
 
-This should go in your mason package's repository under ``.github/workflows/ci.yml``. This workflow will run on every pull request and push to main. It will try and build the project, run the tests, build the examples, and run chplcheck on all source files. If any of these steps fail, the CI will be marked as failed.
+This should go in your mason package's repository under
+``.github/workflows/ci.yml``. This workflow will run on every pull request and
+push to main. It will try and build the project, run the tests, build the
+examples, and run chplcheck on all source files. If any of these steps fail,
+the CI will be marked as failed.
 
-This is the fastest way to get started with CI testing for mason packages, since it requires no setup beyond writing the workflow file.
+This is the fastest way to get started with CI testing for mason packages,
+since it requires no setup beyond writing the workflow file.
 
 
 Using setup-chpl
 ~~~~~~~~~~~~~~~~
 
-While using containers is the easiest way to get started with CI testing, it does have some limitations. The biggest one is if you are already using a container for your CI for some other dependency and can't easily switch to using the Chapel Dockerhub images. You could build a custom container that includes both your dependencies and Chapel/mason, but that can be a lot of work to set up and maintain. An alternative to using containers is to use the ``setup-chpl`` GitHub Action to install Chapel and mason in your CI environment.
+While using containers is the easiest way to get started with CI testing, it
+does have some limitations. The biggest one is if you are already using a
+container for your CI for some other dependency and can't easily switch to
+using the Chapel Dockerhub images. You could build a custom container that
+includes both your dependencies and Chapel/mason, but that can be a lot of work
+to set up and maintain. An alternative to using containers is to use the
+``setup-chpl`` GitHub Action to install Chapel and mason in your CI
+environment.
 
 .. code-block:: yaml
 
@@ -91,18 +112,28 @@ While using containers is the easiest way to get started with CI testing, it doe
             run: |
               chplcheck src/**/*.chpl
 
-This should go in your mason package's repository under ``.github/workflows/ci.yml``. This workflow will run on every pull request and push to main. It will try and build the project, run the tests, build the examples, and run chplcheck on all source files. If any of these steps fail, the CI will be marked as failed.
+This should go in your mason package's repository under
+``.github/workflows/ci.yml``. This workflow will run on every pull request and
+push to main. It will try and build the project, run the tests, build the
+examples, and run chplcheck on all source files. If any of these steps fail,
+the CI will be marked as failed.
 
 For more options to configure the ``setup-chpl`` action, see the `setup-chpl documentation <https://github.com/jabraham17/setup-chpl>`_.
 
 .. warning::
 
-   The ``setup-chpl`` action currently is not kept as up to date with the latest Chapel releases, so it may not always have the latest version of Chapel available. We recommend using the container-based approach for CI testing until the ``setup-chpl`` action is updated to support the latest Chapel releases.
+   The ``setup-chpl`` action currently is not kept as up to date with the
+   latest Chapel releases, so it may not always have the latest version of
+   Chapel available. We recommend using the container-based approach for CI
+   testing until the ``setup-chpl`` action is updated to support the latest
+   Chapel releases.
 
 More advanced CI setups
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-The above examples are very basic CI workflows that should work for most mason packages. However, there are many ways to customize and enhance your CI workflow beyond the basics. For example, you could:
+The above examples are very basic CI workflows that should work for most mason
+packages. However, there are many ways to customize and enhance your CI
+workflow beyond the basics. For example, you could:
 
 * Test multiple versions of Chapel
 
