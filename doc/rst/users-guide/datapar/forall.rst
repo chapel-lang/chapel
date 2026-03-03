@@ -1,5 +1,3 @@
-:title: Users Guide: **forall** loops
-
 .. _ug-forall:
 
 **forall**-loops: data-parallel loops
