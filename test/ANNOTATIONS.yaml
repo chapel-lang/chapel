@@ -643,6 +643,12 @@ all:
   02/17/26:
     - text: Added new LICM optimizations for arrays passed by const (#28091)
       config: chapcs, 16-node-apollo-hdr, 16-node-hpe-cray-ex, 1-node-a100, 1-node-mi250x
+  12/21/25:
+    - text: System hardware/software change
+      config: chapcs
+  02/23/26:
+    - text: System hardware/software change
+      config: 1-node-a100, 1-node-mi250x
 
 # End all
 
@@ -1045,6 +1051,8 @@ fastaredux:
     - Propagate user thrown errors out of IO routines (#14739)
   01/06/21:
     - Remove lots of inlines in IO.chpl for non-trivial procedures (#16887)
+  01/12/26:
+    - Simplify sharing of serializers in fileReader/Writer (#28275)
 
 fft:
   05/15/19:
@@ -2045,6 +2053,8 @@ revcomp: &revcomp-base
     - Remove check on 'log' input with --no-checks (#26368)
   01/08/26:
     - Fix 'toArray()' for standard collections of non-default initializable records (#28259)
+  01/13/26:
+    - (no-local) Make serializer/deserializer fields non-nilable (#28280)
 
 revcomp-submitted:
   06/07/22:
