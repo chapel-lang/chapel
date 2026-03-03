@@ -46,4 +46,4 @@ Compiling [debug] target: SwitchTypes
 Build Successful
 
 + mason run -- '--myString2='\''goodbye world'\'''
-unmanaged MyClass (x = hello world, y = 'goodbye world')
+unmanaged MyClass {x = hello world, y = 'goodbye world'}
