@@ -6,15 +6,16 @@ Building and Running
 When invoked, ``mason build [ options ]`` will do the following:
 
     * Run update to make sure any manual manifest edits are reflected in the
-    dependency code.
+      dependency code.
 
     * Build ``MyPackage.chpl`` in the ``src/`` directory.
 
     * All packages are compiled into binaries and placed into ``target/``.
 
-    * To forward options to the Chapel compiler(``chpl``), separate them with a double dash.
+    * To forward options to the Chapel compiler(``chpl``), separate them with a
+      double dash.
 
-       * e.g., ``mason build --force -- --savec tmpdir``
+        * e.g., ``mason build --force -- --savec tmpdir``
 
 ``mason run [ options ]`` will, in turn:
 
@@ -22,7 +23,7 @@ When invoked, ``mason build [ options ]`` will do the following:
 
     * To forward options to the executable, separate them with a double dash.
 
-       * e.g., ``mason run -- --myConfig=2``
+        * e.g., ``mason run -- --myConfig=2``
 
 For example, after ``mason run --build [ options ]``, the package directory appears as follows:
 
@@ -61,7 +62,7 @@ produced, the ``--release`` flag can be thrown as follows:
 
    mason build --release --force
 
-   OR
+   # OR
 
    mason run --build --release --force
 
