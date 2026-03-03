@@ -1,5 +1,3 @@
-:title: Mason Guide: *Building Larger Packages*
-
 Building Larger Packages
 ~~~~~~~~~~~~~~~~~~~~~~~~
 

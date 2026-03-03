@@ -1,7 +1,5 @@
-:title: Mason Guide: *Examples*
-
 .. _mason-examples:
-        
+
 Creating and Running Examples
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

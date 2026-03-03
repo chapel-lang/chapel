@@ -1,5 +1,3 @@
-:title: Mason Guide: *Building Code in Other Languages*
-
 Building Code in Other Languages
 ================================
 

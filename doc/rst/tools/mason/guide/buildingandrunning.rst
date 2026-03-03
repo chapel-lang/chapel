@@ -1,9 +1,7 @@
-:title: Mason Guide: *Building and Running*
-
 .. _building-and-running:
 
 Building and Running
-~~~~~~~~~~~~~~~~~~~~
+--------------------
 
 When invoked, ``mason build [ options ]`` will do the following:
 

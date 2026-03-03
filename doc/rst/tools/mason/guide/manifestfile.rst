@@ -1,5 +1,3 @@
-:title: Mason Guide: *Manifest*
-
 .. _mason-manifest-file:
 
 The Manifest File
@@ -72,6 +70,9 @@ Mason understands specific fields in the TOML file, which are described below.
 
     * ``copyrightYear``: An optional string indicating the copyright year
       for the package.
+
+    * ``source``: An optional string indicating the URL for the source code of
+      the package. This is required for publishing packages to a registry, but is optional for local applications.
 
    * ``compopts``: Indicates default compile-time options to be used when
      building the package. ``compopts`` can either be a single string or an
@@ -157,6 +158,13 @@ Mason understands specific fields in the TOML file, which are described below.
 
    * ``execopts``: A list of runtime arguments to be passed to the example when
      it is run.
+
+   .. note::
+
+      ``compopts`` and ``execopts`` can either be a single string or an array
+      of strings. If its a single string, ``mason`` will attempt to split it
+      into multiple options based on whitespace. If this is not desired, use an
+      array of strings.
 
   See :ref:`mason-examples` for more information.
 
