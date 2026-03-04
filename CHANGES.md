@@ -129,6 +129,7 @@ Platform-Specific Documentation Improvements
 Technical Note Improvements
 ---------------------------
 * updated the 'Forwarding Method Calls' tech note to mention its instability
+* updated the 'Domain Map Standard Interface' tech note w.r.t. current practice
 * fixed several typos in the 'Compiler Driver Mode' tech note
 
 Example Codes
