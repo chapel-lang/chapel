@@ -1,5 +1,3 @@
-:title: Users Guide: Basic Types
-
 .. _ug-basicTypes:
 
 Basic Types: booleans, numbers, and strings

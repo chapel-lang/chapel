@@ -628,7 +628,8 @@ module TomlParser {
        Returns the table element at the given table path.
 
        Since this method throws if the table path does not exist, it cannot
-       be use to assign new values to new table paths. For that, use `set`.
+       be used to assign new values to new table paths.
+       For that, use :proc:`set`.
 
        .. code-block:: chapel
 

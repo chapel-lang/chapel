@@ -1,4 +1,3 @@
-:title: Mason Guide: *Why mason?*
         
 Why would I want to use mason?
 ==============================
@@ -11,15 +10,15 @@ Using mason brings with it a number of valuable features that are not available
 to users of the old-fashioned ``chpl`` command. Some of these are:
 
 * access to libraries contributed by the Chapel community (see :ref:`using-a-package`)
-  
+
 * portable, simple build commands (see :ref:`building-and-running`)
-  
+
 * a built-in testing framework to help test your code (see :ref:`testing-with-mason`)
-  
+
 * make your code easily shareable on GitHub (see :ref:`mason-git-dependencies`)
-  
+
 * contribute your own libraries and help the Chapel community grow (see :ref:`submit-a-package`)
-  
+
 
 So, you see, a better question would be "Why not use mason?" instead of "Why use mason?"
 
@@ -85,7 +84,7 @@ Some examples of when you would want to create a mason library as opposed to an 
 * You want to provide a linear algebra library for other Chapel programs
 
 * You have multiple Chapel projects that depend on a common set of functionality you wish to centralize
-  
+
 * You found some functionality missing from Chapel, and think others could benefit from your solution
 
 

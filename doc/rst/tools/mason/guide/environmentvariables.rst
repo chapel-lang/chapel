@@ -1,5 +1,3 @@
-:title: Mason Guide: *Environment*
-
 Environment Variables
 =====================
 

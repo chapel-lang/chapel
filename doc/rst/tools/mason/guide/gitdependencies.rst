@@ -1,5 +1,3 @@
-:title: Mason Guide: *Git Dependencies*
-
 .. _mason-git-dependencies:
 
 Specifying Dependencies from ``git`` Repositories
