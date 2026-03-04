@@ -203,9 +203,12 @@ Developer-oriented changes: Compiler Flags
 
 Developer-oriented changes: Compiler improvements / changes
 -----------------------------------------------------------
+* fixed several internal compiler errors related to enabling procedure pointers
 
 Developer-oriented changes: Dyno Compiler improvements / changes
 ----------------------------------------------------------------
+* added support for implicitly initializing fields within initializers
+* fixed a bug when invoking a parenless method on a class
 
 Developer-oriented changes: GPU support
 ---------------------------------------
