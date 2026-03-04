@@ -177,14 +177,18 @@ Documentation Improvements for Tools
 * improved the accuracy of Mason's help output
 * expanded the documentation for the `chapel-py` API  
   (see https://chapel-lang.org/docs/2.8/tools/chapel-py/chapel-py.html#module-chapel)
+* added new documentation for writing CI tests for mason  
+  (see https://chapel-lang.org/docs/2.8/tools/mason/guide/ci.html)
+* refactored Mason documentation to reflect the tool's current state
 
-* TODO: mason docs improvements
 
 Documentation Improvements to the 'man' Pages
 ---------------------------------------------
 
 Platform-Specific Documentation Improvements
 --------------------------------------------
+* added a new documentation page for using Chapel on RISC-V architectures  
+  (https://chapel-lang.org/docs/2.8/platforms/riscv.html#using-chapel-on-risc-v)
 * added a "Troubleshooting" section to the HPE Cray EX documentation  
   (see https://chapel-lang.org/docs/2.8/platforms/cray.html#troubleshooting)
 * added `coreutils` to the list of required packages for Alpine Linux  
@@ -309,6 +313,7 @@ Bug Fixes for Tools
 * fixed `mason search` and `mason system search` not working correctly
 * fixed `mason build --example` to respect prereqs
 * fixed duplicate output from `mason run`
+* fixed passing command-line arguments with spaces to Mason
 * fixed Mason not properly propagating compopts for package dependencies
 * fixed Mason prereqs not working properly when used via a package dependency
 * fixed `mason publish` to a local registry
@@ -328,6 +333,7 @@ Bug Fixes for Build Issues
 
 Bug Fixes for the Runtime
 -------------------------
+* fixed an incorrect printf format attribute in the runtime
 
 Developer-oriented changes: Process
 -----------------------------------
