@@ -710,7 +710,7 @@ bool VarScopeVisitor::resolvedCallHelper(const Call* callAst, RV& rv) {
     if (auto op = callAst->toOpCall()) {
       if (op->op() == USTR(":")) {
         CHPL_ASSERT(op->isBinaryOp());
-        auto lhs = op->actual(0);
+        auto lhs = op->lhs();
         auto lhsRr = rv.byPostorder().byAst(lhs);
         if (!rr->type().isUnknownOrErroneous() &&
             rr->type().type() == lhsRr.type().type()) {
