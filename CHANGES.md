@@ -54,7 +54,9 @@ New Package Module Features
 
 Changes / Feature Improvements in Package Modules
 -------------------------------------------------
-
+* added an `assertClose()` procedure to the `UnitTest` module  
+  (see https://chapel-lang.org/docs/2.8/modules/packages/UnitTest.html#UnitTest.Test.assertClose)
+  
 New Standard Layout and Distribution Features
 ---------------------------------------------
 
@@ -207,6 +209,8 @@ Developer-oriented changes: Process
 
 Developer-oriented changes: Documentation
 -----------------------------------------
+* improved the recommended fix for commits without DCO  
+  (see https://chapel-lang.org/docs/2.8/developer/bestPractices/DCO.html#troubleshooting-dcos)
 
 Developer-oriented changes: Syntactic / Naming Changes
 ------------------------------------------------------
