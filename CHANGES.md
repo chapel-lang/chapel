@@ -19,6 +19,7 @@ Configuration / Build Changes
 
 Updates to Chapel's Release Formats
 -----------------------------------
+* added an aarch64 RPM for HPE Cray EX systems, built using SLES 15
 
 Syntactic / Naming Changes
 --------------------------
@@ -73,6 +74,7 @@ Compiler Flags
 
 Compiler Improvements
 ---------------------
+* added a warning when the compiler is SIGKILLed that it may be out of memory
 
 GPU Computing
 -------------
@@ -88,6 +90,8 @@ Syntax Highlighters
 
 Documentation Improvements
 --------------------------
+* fixed a broken link to the `LICENSE` file from the top-level README  
+  (see https://github.com/chapel-lang/chapel#readme)
 
 Language Specification Improvements
 -----------------------------------
@@ -109,6 +113,7 @@ Platform-Specific Documentation Improvements
 
 Technical Note Improvements
 ---------------------------
+* fixed several typos in the 'Compiler Driver Mode' tech note  
 
 Example Codes
 -------------
@@ -128,6 +133,8 @@ Memory Improvements
 
 Portability / Platform-specific Improvements
 --------------------------------------------
+* fixed an HPE Cray EX RPM install CPU failure on RHEL due to CPU detection
+* fixed a hard-coded install prefix in HPE Cray EX RPM Lmod Modulefiles
 
 Portability / Build Improvements for GPUs
 -----------------------------------------
@@ -173,6 +180,7 @@ Bug Fixes for the Runtime
 
 Developer-oriented changes: Process
 -----------------------------------
+* enforced `black` formatting on all Python source files except tests
 
 Developer-oriented changes: Documentation
 -----------------------------------------
@@ -210,13 +218,14 @@ Developer-oriented changes: Platform-specific bug fixes
 
 Developer-oriented changes: Testing System
 ------------------------------------------
+* fixed a Homebrew test script bug which caused some failures to be ignored
 
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
 
 Developer-oriented changes: Utilities
 -------------------------------------
-
+* added parallel jobs for `make` in `gen_release` to speed up tarball creation
 
 
 version 2.7
