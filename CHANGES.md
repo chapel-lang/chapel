@@ -26,6 +26,8 @@ Syntactic / Naming Changes
 
 New Language Features
 ---------------------
+* return type inference now computes parent classes in the 'preview' edition  
+  (see note in https://chapel-lang.org/docs/2.8/language/spec/procedures.html#implicit-return-types)
 
 Language Feature Improvements
 -----------------------------
@@ -35,6 +37,7 @@ Semantic Changes / Changes to the Language Definition
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
+* removed an exception for re-assigning `const` fields via methods in `init()`
 
 Namespace Changes
 -----------------
@@ -75,6 +78,7 @@ Compiler Flags
 Compiler Improvements
 ---------------------
 * added a warning when the compiler is SIGKILLed that it may be out of memory
+* made the compiler properly flag `forwarding` declarations as unstable
 
 GPU Computing
 -------------
@@ -84,17 +88,26 @@ Debugging Improvements
 
 Tool Improvements
 -----------------
+* improved the ergonomics of the `chpl-language-server` (CLS)
+  - improved hiding of stale inlays while editing code
+  - improved the precision of certain error messages in the editor
+* enabled Chapel CMake files to generate CLS `.cls-commands.json` files  
+  (see https://chapel-lang.org/docs/2.8/usingchapel/compiling.html#cmake)
+* exposed the compiler front-end's error message hierarchy to `chapel-py`  
+  (see TODO)
 
 Syntax Highlighters
 -------------------
 
 Documentation Improvements
 --------------------------
+* explicitly noted that forwarding declarations are an unstable feature
 * fixed a broken link to the `LICENSE` file from the top-level README  
   (see https://github.com/chapel-lang/chapel#readme)
 
 Language Specification Improvements
 -----------------------------------
+* explicitly noted that remote variable declarations are an unstable feature
 * fixed incorrect `dmapped` expressions in the language specification
 
 Documentation Improvements for Libraries
@@ -113,6 +126,7 @@ Platform-Specific Documentation Improvements
 
 Technical Note Improvements
 ---------------------------
+* updated the 'Forwarding Method Calls' tech note to mention its instability
 * fixed several typos in the 'Compiler Driver Mode' tech note  
 
 Example Codes
@@ -162,6 +176,14 @@ Third-Party Software Changes
 
 Bug Fixes
 ---------
+* fixed an internal error due to parallel reductions in nested `forall` loops
+* fixed code generation for programs with copy-elision and `throw` statements
+* fixed an internal error due to complex expressions in `catch` statements
+* fixed an internal error for type-generic `catch` statements
+* fixed compiler error for classes whose parents have generic `owned` fields
+* fixed order-dependent compilation behavior due to uses of reflection
+* fixed order-dependent compilation behavior due to `forwarding` methods
+* fixed a bug in which POI candidates had been preferred over forwarded methods
 
 Bug Fixes for Libraries
 -----------------------
@@ -171,6 +193,7 @@ Bug Fixes for GPU Computing
 
 Bug Fixes for Tools
 -------------------
+* fixed a `chapel-py` assertion when trying to access parents of top-level ASTs
 
 Bug Fixes for Build Issues
 --------------------------
@@ -200,6 +223,7 @@ Developer-oriented changes: Makefile / Build-time changes
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
+* removed support for the `--minimal-modules` compiler flag
 
 Developer-oriented changes: Compiler improvements / changes
 -----------------------------------------------------------
@@ -209,6 +233,15 @@ Developer-oriented changes: Dyno Compiler improvements / changes
 ----------------------------------------------------------------
 * added support for implicitly initializing fields within initializers
 * fixed a bug when invoking a parenless method on a class
+* made numerous improvements to the Dyno resolver for types and calls:
+  - fixed compiler-generated enum-to-order conversion for enums named `e`
+  - fixed bug in which setting type aliases could result in a differing type
+  - implemented calls to `RootObject.init` via `super.init`
+  - improved handling of required internal types when they are not provided
+  - fixed a bug in which forwarded methods were treated as POI candidates
+  - fixed bug in which POI scopes were missed while resolving functions
+  - implemented deprecation warnings for implicitly reading from `sync` vars
+
 
 Developer-oriented changes: GPU support
 ---------------------------------------
