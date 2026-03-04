@@ -2,8 +2,25 @@ Release Changes List
 ====================
 
 TODO:
-- [ ] split up tool improvements section
-- [ ] mason -> Mason when used as noun
+o '(http:' -> '(see http:'
+o sort items within categories
+o check placement of items into categories
+o check for ' vs `
+o fulfill TODOs
+o check man page or util/chpl-completion.bash for new compiler flags
+o check test/release/examples
+o check for docs/2.4/ links
+o check forced linebreaks
+o check initial '*'
+o check for initial 'A-Z'
+o check for 'see:'
+o check for changes put too far down in file
+o add highlights
+o mason -> Mason when used as noun
+o spellcheck
+o remove empty sections
+o check ordering of categories relative to one another
+o check links
 
 version 2.8
 ===========
@@ -88,6 +105,7 @@ Deprecated / Unstable / Removed Library Features
 
 Compiler Flags
 --------------
+* added a new compiler flag, `--compiler-server-library`
 * added a new `--sanitize-exe` flag, similar to `CHPL_SANITIZE_EXE`  
   (see https://chapel-lang.org/docs/2.8/usingchapel/man.html#man-sanitize-exe)
 * started supporting friendly `--vector-library` names across LLVM versions  
@@ -109,32 +127,28 @@ Debugging Improvements
 * improved debugger support for single-stepping
 * added LLDB pretty printers for `list`, `set`, `map`, and distributed arrays
 
-Tool Improvements
------------------
-* improved the ergonomics of the `chpl-language-server` (CLS)
-  - improved hiding of stale inlays while editing code
-  - improved the precision of certain error messages in the editor
+VSCode / `chpl-language-server` (CLS) / Editor Improvements
+-----------------------------------------------------------
+* improved hiding of stale inlays while editing code
+* improved the precision of certain error messages within the editor
 * enabled Chapel CMake files to generate CLS `.cls-commands.json` files  
   (see https://chapel-lang.org/docs/2.8/usingchapel/compiling.html#cmake)
-* exposed the compiler front-end's error message hierarchy to `chapel-py`  
-  (see TODO)
-* improved the `IncorrectIndentation` lint rule to handle more syntax
-* added many new `chapel-py` accessors for working with the uast  
-  (see https://chapel-lang.org/docs/2.8/tools/chapel-py/chapel-py.html#module-chapel)
-* added new `chapel-py` methods for manipulating `Location` objects  
-  (see https://chapel-lang.org/docs/2.8/tools/chapel-py/chapel-py.html#chapel.Location)
+* added a `--version` flag to CLS
+* improved printing of param strings with escapes and param bytes in CLS
+
+Linter / `chplcheck` Improvements
+---------------------------------
 * added a new lint rule `BoolComparison`  
   (see https://chapel-lang.org/docs/2.8/tools/chplcheck/chplcheck.html#boolcomparison)
 * added a new lint rule `ThenKeywordAndBlock`  
   (see https://chapel-lang.org/docs/2.8/tools/chplcheck/chplcheck.html#thenkeywordandblock)
 * added new lint rules `Unattached[Else|Catch|Curly]`  
   (see https://chapel-lang.org/docs/2.8/tools/chplcheck/chplcheck.html#unattachedelse)
-* added `--version` flags to `chplcheck` and `CLS`
-* improved printing of param strings with escapes and param bytes in `CLS`
-* added several new `chpldoc` `--project-*` flags for customizing docs  
-  (see https://chapel-lang.org/docs/2.8/tools/chpldoc/man.html#man-chpldoc-project-name)
-* added an option to use a custom `index.rst` file as the main `chpldoc` page  
-  (see https://chapel-lang.org/docs/2.8/tools/chpldoc/man.html#man-chpldoc-index)
+* improved the `IncorrectIndentation` lint rule to handle more syntax
+* added a `--version` flag to `chplcheck`
+
+Package Manager / Mason Improvements
+------------------------------------
 * improved `mason doc` to pass project metadata to `chpldoc`
 * added `docopts`/`copyrightYear` fields to `Mason.toml`  
   (see https://chapel-lang.org/docs/2.8/tools/mason/guide/manifestfile.html#format)
@@ -142,6 +156,25 @@ Tool Improvements
   (see https://chapel-lang.org/docs/2.8/tools/mason/guide/manifestfile.html#format)
 * updated `mason [build|run] --example` to support passing extra options
 * improved the rebuild detection for Mason projects
+
+`chpldoc` Improvements
+----------------------
+* added several new `chpldoc` `--project-*` flags for customizing docs  
+  (see https://chapel-lang.org/docs/2.8/tools/chpldoc/man.html#man-chpldoc-project-name)
+* added an option to use a custom `index.rst` file as the main `chpldoc` page  
+  (see https://chapel-lang.org/docs/2.8/tools/chpldoc/man.html#man-chpldoc-index)
+
+`chapel-py` Improvements
+------------------------
+* exposed the compiler front-end's error message hierarchy to `chapel-py`  
+  (see TODO)
+* added many new `chapel-py` accessors for working with the uast  
+  (see https://chapel-lang.org/docs/2.8/tools/chapel-py/chapel-py.html#module-chapel)
+* added new `chapel-py` methods for manipulating `Location` objects  
+  (see https://chapel-lang.org/docs/2.8/tools/chapel-py/chapel-py.html#chapel.Location)
+
+Other Tool Improvements
+-----------------------
 
 Syntax Highlighters
 -------------------
@@ -177,7 +210,7 @@ Documentation Improvements for Tools
 * improved the accuracy of Mason's help output
 * expanded the documentation for the `chapel-py` API  
   (see https://chapel-lang.org/docs/2.8/tools/chapel-py/chapel-py.html#module-chapel)
-* added new documentation for writing CI tests for mason  
+* added new documentation for writing CI tests for Mason  
   (see https://chapel-lang.org/docs/2.8/tools/mason/guide/ci.html)
 * refactored Mason documentation to reflect the tool's current state
 
@@ -289,20 +322,8 @@ Bug Fixes for Libraries
 Bug Fixes for GPU Computing
 ---------------------------
 
-Bug Fixes for Tools
+Bug Fixes for Mason
 -------------------
-* fixed a `chapel-py` assertion when trying to access parents of top-level ASTs
-
-* fixed incorrect `UnusedFormal` lint warnings on first-class procedure types
-* fixed incorrect `IncorrectIndentation` lint warnings for else/if chains
-* fixed incorrect `UnusedFormal` lint warning with interfaces
-* fixed a segfault on invalid usage of `Try.body()` in `chapel-py`
-* fixed the header locations of parenless functions in `chapel-py`
-* removed linter warnings for `UnusedFormal` on serializer/deserializer methods
-* fixed bad fixits for `IncorrectIndentation` warnings in implicit modules
-* fixed incorrect `UnusedTaskIntent` lint warning for `this`
-* fixed `EmptyStmt` lint warnings when the only statement in a file is `;`
-* fixed bad stringification of `extern` symbols with linkage names in CLS
 * fixed `mason test --parallel` so that it runs tests in parallel
 * fixed `mason run` crashing when running programs that generate big outputs
 * fixed `mason run` not working by default on multilocale projects
@@ -320,6 +341,20 @@ Bug Fixes for Tools
 * fixed Mason compiling/running examples to match compiling/running apps
 * fixed `mason new`/`mason init` edge cases causing crashes
 * fixed Mason system dependencies not working
+
+Bug Fixes for Other Tools
+-------------------------
+* fixed a `chapel-py` assertion when trying to access parents of top-level ASTs
+* fixed incorrect `UnusedFormal` lint warnings on first-class procedure types
+* fixed incorrect `IncorrectIndentation` lint warnings for else/if chains
+* fixed incorrect `UnusedFormal` lint warning with interfaces
+* fixed a segfault on invalid usage of `Try.body()` in `chapel-py`
+* fixed the header locations of parenless functions in `chapel-py`
+* removed linter warnings for `UnusedFormal` on serializer/deserializer methods
+* fixed bad fixits for `IncorrectIndentation` warnings in implicit modules
+* fixed incorrect `UnusedTaskIntent` lint warning for `this`
+* fixed `EmptyStmt` lint warnings when the only statement in a file is `;`
+* fixed bad stringification of `extern` symbols with linkage names in CLS
 
 Bug Fixes for Release Formats
 -----------------------------
@@ -352,6 +387,7 @@ Developer-oriented changes: Module changes
 ------------------------------------------
 * adjusted some definitions in the `IO` module for clarity
 * removed the internal `_abspath` function from the `IO` module
+* added assignment for procedure pointer types
 
 Developer-oriented changes: Performance improvements
 ----------------------------------------------------
@@ -363,6 +399,7 @@ Developer-oriented changes: Makefile / Build-time changes
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
+* added a flag '--[no-]builtin-runtime' to support dynamically loaded runtimes
 * removed support for the `--minimal-modules` compiler flag
 
 Developer-oriented changes: Compiler improvements / changes
@@ -401,7 +438,7 @@ Developer-oriented changes: Testing System
 
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
-* added `CHPL_ALWAYS_BUILD_MASON` to force mason to always be built
+* added `CHPL_ALWAYS_BUILD_MASON` to force Mason to always be built
 * replaced `MASON_QUIET` w/ `MASON_LOG_LEVEL` to control Mason's logging level
 * switched Mason to build with debug flags when `CHPL_DEVELOPER` is set
 * added more logging for unknown Mason errors
