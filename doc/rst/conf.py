@@ -149,7 +149,7 @@ shortversion = chplversion.replace(
 html_context = {"chplversion": chplversion}
 
 # The full version, including alpha/beta/rc tags.
-release = "2.8.0 (pre-release)"
+release = "2.8.0"
 
 # General information about the project.
 project = "Chapel Documentation"
