@@ -1,6 +1,9 @@
 Release Changes List
 ====================
 
+TODO:
+- [ ] split up tool improvements section
+- [ ] mason -> Mason when used as noun
 
 version 2.8
 ===========
@@ -20,6 +23,7 @@ Configuration / Build Changes
 Updates to Chapel's Release Formats
 -----------------------------------
 * added an aarch64 RPM for HPE Cray EX systems, built using SLES 15
+* changed the default for Linuxbrew to build without libunwind
 
 Syntactic / Naming Changes
 --------------------------
@@ -38,6 +42,9 @@ Semantic Changes / Changes to the Language Definition
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
 * removed an exception for re-assigning `const` fields via methods in `init()`
+* removed deprecated support for casting arrays to strings
+* removed deprecated support for `lambda` expressions
+* removed deprecated support for omitting `new` in `dmapped` expressions
 
 Namespace Changes
 -----------------
@@ -51,6 +58,8 @@ Changes / Feature Improvements in Standard Libraries
 
 New Package Module Features
 ---------------------------
+* added `TOML.Toml.get()` to read a field's [default] value  
+  (see TODO, there are no TOML docs at all!?)
 
 Changes / Feature Improvements in Package Modules
 -------------------------------------------------
@@ -73,13 +82,22 @@ Deprecated / Unstable / Removed Library Features
   (e.g., removed `Block`, `Cyclic`, `Private`, `Replicated`, `Stencil`)
 * removed the previously deprecated `LayoutCS` module
 * removed the deprecated `BlockDist.disableAliasedBulkTransfer` `config const`
+* removed the deprecated `parSafe` list access from `List`
+* removed the deprecated parenless `first`/`last` methods from `List`
+* removed the deprecated `Toml.=` assignments
 
 Compiler Flags
 --------------
+* added a new `--sanitize-exe` flag, similar to `CHPL_SANITIZE_EXE`  
+  (see https://chapel-lang.org/docs/2.8/usingchapel/man.html#man-sanitize-exe)
+* started supporting friendly `--vector-library` names across LLVM versions  
+  (see https://chapel-lang.org/docs/2.8/usingchapel/man.html#man-vector-library)
 
 Compiler Improvements
 ---------------------
+* added support for LLVM 21
 * added a warning when the compiler is SIGKILLed that it may be out of memory
+* enabled unstable warnings when requesting a non-default edition
 * made the compiler properly flag `forwarding` declarations as unstable
 
 GPU Computing
@@ -87,6 +105,9 @@ GPU Computing
 
 Debugging Improvements
 ----------------------
+* improved debugger support for procedures, methods, and some expressions
+* improved debugger support for single-stepping
+* added LLDB pretty printers for `list`, `set`, `map`, and distributed arrays
 
 Tool Improvements
 -----------------
@@ -97,26 +118,67 @@ Tool Improvements
   (see https://chapel-lang.org/docs/2.8/usingchapel/compiling.html#cmake)
 * exposed the compiler front-end's error message hierarchy to `chapel-py`  
   (see TODO)
+* improved the `IncorrectIndentation` lint rule to handle more syntax
+* added many new `chapel-py` accessors for working with the uast  
+  (see https://chapel-lang.org/docs/2.8/tools/chapel-py/chapel-py.html#module-chapel)
+* added new `chapel-py` methods for manipulating `Location` objects  
+  (see https://chapel-lang.org/docs/2.8/tools/chapel-py/chapel-py.html#chapel.Location)
+* added a new lint rule `BoolComparison`  
+  (see https://chapel-lang.org/docs/2.8/tools/chplcheck/chplcheck.html#boolcomparison)
+* added a new lint rule `ThenKeywordAndBlock`  
+  (see https://chapel-lang.org/docs/2.8/tools/chplcheck/chplcheck.html#thenkeywordandblock)
+* added new lint rules `Unattached[Else|Catch|Curly]`  
+  (see https://chapel-lang.org/docs/2.8/tools/chplcheck/chplcheck.html#unattachedelse)
+* added `--version` flags to `chplcheck` and `CLS`
+* improved printing of param strings with escapes and param bytes in `CLS`
+* added several new `chpldoc` `--project-*` flags for customizing docs  
+  (see https://chapel-lang.org/docs/2.8/tools/chpldoc/man.html#man-chpldoc-project-name)
+* added an option to use a custom `index.rst` file as the main `chpldoc` page  
+  (see https://chapel-lang.org/docs/2.8/tools/chpldoc/man.html#man-chpldoc-index)
+* improved `mason doc` to pass project metadata to `chpldoc`
+* added `docopts`/`copyrightYear` fields to `Mason.toml`  
+  (see https://chapel-lang.org/docs/2.8/tools/mason/guide/manifestfile.html#format)
+* extended `compopts`/`execopts` in `Mason.toml` to take lists of strings  
+  (see https://chapel-lang.org/docs/2.8/tools/mason/guide/manifestfile.html#format)
+* updated `mason [build|run] --example` to support passing extra options
+* improved the rebuild detection for Mason projects
 
 Syntax Highlighters
 -------------------
 
 Documentation Improvements
 --------------------------
+* expanded editions docs for what is considered for inclusion in an edition  
+  (see https://chapel-lang.org/docs/2.8/developer/bestPractices/EditionsDev.html#what-goes-in-an-edition)
 * explicitly noted that forwarding declarations are an unstable feature
 * fixed a broken link to the `LICENSE` file from the top-level README  
   (see https://github.com/chapel-lang/chapel#readme)
+* removed lingering mentions of `pragma "no doc"` (removed in version 1.33)
 
 Language Specification Improvements
 -----------------------------------
+* documented the `transmute` method  
+  (see https://chapel-lang.org/docs/2.8/language/spec/conversions.html#bitwise-numeric-conversions)
 * explicitly noted that remote variable declarations are an unstable feature
 * fixed incorrect `dmapped` expressions in the language specification
 
 Documentation Improvements for Libraries
 ----------------------------------------
+* updated the `Python` module docs to reflect multidimensional array support  
+  (see https://chapel-lang.org/docs/2.8/modules/packages/Python.html#Python.Array)
+
 
 Documentation Improvements for Tools
 ------------------------------------
+* expanded the tools docs landing page to describe the available tools  
+  (see https://chapel-lang.org/docs/2.8/tools/index.html)
+* moved the debugging documentation for `chpl-parallel-dbg` to its own page  
+  (see https://chapel-lang.org/docs/2.8/tools/chpl-parallel-dbg/chpl-parallel-dbg.html)
+* improved the accuracy of Mason's help output
+* expanded the documentation for the `chapel-py` API  
+  (see https://chapel-lang.org/docs/2.8/tools/chapel-py/chapel-py.html#module-chapel)
+
+* TODO: mason docs improvements
 
 Documentation Improvements to the 'man' Pages
 ---------------------------------------------
@@ -125,6 +187,8 @@ Platform-Specific Documentation Improvements
 --------------------------------------------
 * added a "Troubleshooting" section to the HPE Cray EX documentation  
   (see https://chapel-lang.org/docs/2.8/platforms/cray.html#troubleshooting)
+* added `coreutils` to the list of required packages for Alpine Linux  
+  (see https://chapel-lang.org/docs/2.8/usingchapel/prereqs.html#installation)
 
 Technical Note Improvements
 ---------------------------
@@ -137,6 +201,7 @@ Example Codes
 
 Performance Optimizations / Improvements
 ----------------------------------------
+* improved loop-invariant code motion for`const`-intent arrays
 * improved the implementation of (de)serializers, which can reduce I/O overhead
 
 Improvements to Compile Times
@@ -152,15 +217,20 @@ Portability / Platform-specific Improvements
 --------------------------------------------
 * fixed an HPE Cray EX RPM install CPU failure on RHEL due to CPU detection
 * fixed a hard-coded install prefix in HPE Cray EX RPM Lmod Modulefiles
+* dropped support for Fedora 41 due to it being end-of-lifed
 
 Portability / Build Improvements for GPUs
 -----------------------------------------
+* added support for ROCm 6.3 and initial support for ROCm 7
+* relaxed ROCm 6 restrictions for building with LLVM 21
 
 Generated Executable Flags
 --------------------------
 
 Error Messages / Semantic Checks
 --------------------------------
+* improved the error when attempting to assign from a `string` to an `int`
+* added more bounds-checking to prevent potential undefined behavior
 
 Error Messages / Semantic Checks for Libraries
 ----------------------------------------------
@@ -170,16 +240,26 @@ Error Messages for Build Issues
 
 Launchers
 ---------
+* added `--system-launcher-flags` flag to pass arbitrary flags to Slurm  
+  (see https://chapel-lang.org/docs/2.8/usingchapel/launcher.html#common-slurm-settings)
+* fixed a bug in which Slurm-based launchers accepted poorly formatted flags
 
 Runtime Library Improvements
 ----------------------------
 
 Third-Party Software Changes
 ----------------------------
+* updated the bundled version of hwloc to 2.12.2
+* updated the bundled version of Qthreads to 1.23
 
 Bug Fixes
 ---------
+* fixed parser text locations for many syntactic constructs
+* fixed an internal error when setting configs to bad strings at compile time
 * fixed an internal error due to parallel reductions in nested `forall` loops
+* fixed string comparisons with empty strings resulting in undefined behavior
+* fixed IO reads of length zero resulting in undefined behavior
+* fixed potential signed int overflow in default hash functions
 * fixed code generation for programs with copy-elision and `throw` statements
 * fixed an internal error due to complex expressions in `catch` statements
 * fixed an internal error for type-generic `catch` statements
@@ -187,9 +267,20 @@ Bug Fixes
 * fixed order-dependent compilation behavior due to uses of reflection
 * fixed order-dependent compilation behavior due to `forwarding` methods
 * fixed a bug in which POI candidates had been preferred over forwarded methods
+* fixed debug line info for return statements
+* fixed dSYM generation with the C backend and `CHPL_LAUNCHER!=none`
+* fixed a bug in which `--debug` did not turn off return-by-ref as intended
+* fixed compilation with `-g` breaking on non-codegen types
 
 Bug Fixes for Libraries
 -----------------------
+* fixed passing length-zero buffers to `memcpy` in the `Curl` module
+* fixed non-existent accesses of `TOML.Toml` creating invalid TOML objects
+* fixed `TOML.toml.set()` crashing when setting a field in a table
+* fixed a double free in the TOML parser
+* fixed the TOML module's handling of strings with quotes and escaped chars
+* fixed the TOML module's handling of raw strings
+* fixed the TOML module's JSON printer
 
 Bug Fixes for GPU Computing
 ---------------------------
@@ -198,8 +289,42 @@ Bug Fixes for Tools
 -------------------
 * fixed a `chapel-py` assertion when trying to access parents of top-level ASTs
 
+* fixed incorrect `UnusedFormal` lint warnings on first-class procedure types
+* fixed incorrect `IncorrectIndentation` lint warnings for else/if chains
+* fixed incorrect `UnusedFormal` lint warning with interfaces
+* fixed a segfault on invalid usage of `Try.body()` in `chapel-py`
+* fixed the header locations of parenless functions in `chapel-py`
+* removed linter warnings for `UnusedFormal` on serializer/deserializer methods
+* fixed bad fixits for `IncorrectIndentation` warnings in implicit modules
+* fixed incorrect `UnusedTaskIntent` lint warning for `this`
+* fixed `EmptyStmt` lint warnings when the only statement in a file is `;`
+* fixed bad stringification of `extern` symbols with linkage names in CLS
+* fixed `mason test --parallel` so that it runs tests in parallel
+* fixed `mason run` crashing when running programs that generate big outputs
+* fixed `mason run` not working by default on multilocale projects
+* fixed bad error messages when `mason run --example` exits with an error code
+* fixed `MASON_REGISTRY` not allowing trailing commas and crashing
+* fixed a bad error message when a new registry is added but not yet cloned
+* fixed `mason update` assuming an incorrect branch name
+* fixed `mason search` and `mason system search` not working correctly
+* fixed `mason build --example` to respect prereqs
+* fixed duplicate output from `mason run`
+* fixed Mason not properly propagating compopts for package dependencies
+* fixed Mason prereqs not working properly when used via a package dependency
+* fixed `mason publish` to a local registry
+* fixed Mason compiling/running examples to match compiling/running apps
+* fixed `mason new`/`mason init` edge cases causing crashes
+* fixed Mason system dependencies not working
+
+Bug Fixes for Release Formats
+-----------------------------
+* fixed the default chplenv values for minimal Linux packages (sans tools)
+* fixed the `CHPL_LAUNCHER` value for `smp` configs in the Linux package builds
+
 Bug Fixes for Build Issues
 --------------------------
+* ensured user-specified `make` is used when building mimalloc
+* fixed the dependencies for generated files when building the compiler
 
 Bug Fixes for the Runtime
 -------------------------
@@ -212,18 +337,22 @@ Developer-oriented changes: Documentation
 -----------------------------------------
 * improved the recommended fix for commits without DCO  
   (see https://chapel-lang.org/docs/2.8/developer/bestPractices/DCO.html#troubleshooting-dcos)
+* extended developer sanitizer docs for undefined-behavior sanitizers
 
 Developer-oriented changes: Syntactic / Naming Changes
 ------------------------------------------------------
 
 Developer-oriented changes: Module changes
 ------------------------------------------
+* adjusted some definitions in the `IO` module for clarity
+* removed the internal `_abspath` function from the `IO` module
 
 Developer-oriented changes: Performance improvements
 ----------------------------------------------------
 
 Developer-oriented changes: Makefile / Build-time changes
 ---------------------------------------------------------
+* added `chplcheck` linting to Mason sources
 * removed the long-deprecated top-level `make depend` rule
 
 Developer-oriented changes: Compiler Flags
@@ -233,6 +362,7 @@ Developer-oriented changes: Compiler Flags
 Developer-oriented changes: Compiler improvements / changes
 -----------------------------------------------------------
 * fixed several internal compiler errors related to enabling procedure pointers
+* removed an extraneous scope created for `manage` statements
 
 Developer-oriented changes: Dyno Compiler improvements / changes
 ----------------------------------------------------------------
@@ -259,10 +389,19 @@ Developer-oriented changes: Platform-specific bug fixes
 
 Developer-oriented changes: Testing System
 ------------------------------------------
+* added a `--keep-executable` flag to `start_test` to preserve binaries
+* added a nicer error when `start_test` is given a bad test name
 * fixed a Homebrew test script bug which caused some failures to be ignored
 
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
+* added `CHPL_ALWAYS_BUILD_MASON` to force mason to always be built
+* replaced `MASON_QUIET` w/ `MASON_LOG_LEVEL` to control Mason's logging level
+* switched Mason to build with debug flags when `CHPL_DEVELOPER` is set
+* added more logging for unknown Mason errors
+* refactored error propagation in Mason for better error-handling and testing
+* added `str`/`repr` methods for `TypedSignature` in `chapel-py`
+* removed unused Dyno contexts when a file is closed in CLS/chplcheck
 
 Developer-oriented changes: Utilities
 -------------------------------------
