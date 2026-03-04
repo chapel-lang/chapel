@@ -2398,6 +2398,56 @@ static void testTypeProcOnGenericReceiver() {
   assert(qt.type()->isIntType());
 }
 
+// regression test. We previously hit bugs in which:
+// * The user wrote a free-standing call 'foo()' in a method context.
+// * The resolution machinery attempted to resolve 'this.foo()'.
+// * A candidate was rejected because its receiver was not applicable.
+// * The reported actual index was 0 (for the 'this' argument), but this
+//   is out of bounds of the original `foo()`.actuals(). This caused an
+//   assertion error.
+//
+// Test that triggering a resolution error in this case does not cause an
+// assertion failure.
+static void testReindexingForErrors() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::ignore = resolveTypesOfVariables(context,
+    R"""(
+    record R {}
+    proc int.foo() {}
+    proc R.bar() {
+      foo();
+    }
+    (new R()).bar();
+    )""", {});
+  assert(guard.realizeErrors() == 1);
+}
+
+// regression test. In certain errors that tried to print a particular
+// actual, we assumed that CallInfo actual indices match the call expression.
+// However, CallInfo actuals have an extra 'this' argument, which meant
+// that for method calls, the indexing broke.
+//
+// Trigger this by trying to split-init a method receiver.
+static void testReindexingForErrors2() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::ignore = resolveTypesOfVariables(context,
+    R"""(
+    proc int.bar(arg: int) {}
+
+    proc foo() {
+      var y;
+      y.bar(10);
+      10.bar(y);
+    }
+    var tmp = foo();
+    )""", {});
+  assert(guard.realizeErrors());
+}
+
 int main() {
   test1();
   test2();
@@ -2464,6 +2514,9 @@ int main() {
   testSkipUnknownInNew();
 
   testTypeProcOnGenericReceiver();
+
+  testReindexingForErrors();
+  testReindexingForErrors2();
 
   return 0;
 }

@@ -577,6 +577,8 @@ class CallInfo {
   UniqueString name_;                   // the name of the called thing
   types::QualifiedType calledType_;     // the type of the called thing
   bool isMethodCall_ = false;           // then actuals[0] is receiver
+  bool isImplicitMethodCall_ = false;   // if method call, did we auto-add the receiver based on context?
+                                        // set ONLY if this was auto-added by 'resolveCall'.
   bool isOpCall_ = false;               // is an operator call
   bool hasQuestionArg_ = false;         // includes ? arg for type constructor
   bool isParenless_ = false;            // is a parenless call
@@ -593,15 +595,20 @@ class CallInfo {
   /** Construct a CallInfo that contains QualifiedTypes for actuals */
   CallInfo(UniqueString name, types::QualifiedType calledType,
            bool isMethodCall,
+           bool isImplicitMethodCall,
            bool hasQuestionArg,
            bool isParenless,
            std::vector<CallInfoActual> actuals)
       : name_(name), calledType_(calledType),
         isMethodCall_(isMethodCall),
+        isImplicitMethodCall_(isImplicitMethodCall),
         hasQuestionArg_(hasQuestionArg),
         isParenless_(isParenless),
         actuals_(std::move(actuals)) {
     #ifndef NDEBUG
+    if (isImplicitMethodCall) {
+      CHPL_ASSERT(isMethodCall);
+    }
     if (isMethodCall) {
       CHPL_ASSERT(numActuals() >= 1);
       CHPL_ASSERT(this->actual(0).byName() == "this");
@@ -617,6 +624,17 @@ class CallInfo {
     #endif
     isOpCall_ = uast::isOpName(name);
   }
+
+  // Convenience overload. The 'isImplicitMethodCall' argument is false
+  // every time EXCEPT when we re-attempt to resolve a call that looks
+  // like a function but might be implicitly invoking a method of the receiver type.
+  // Since this is so uncommon, avoid polluting every constructor call for CallInfo.
+  CallInfo(UniqueString name, types::QualifiedType calledType,
+           bool isMethodCall,
+           bool hasQuestionArg,
+           bool isParenless,
+           std::vector<CallInfoActual> actuals)
+    : CallInfo(name, calledType, isMethodCall, false, hasQuestionArg, isParenless, std::move(actuals)) {}
 
   /** Construct a CallInfo with no arguments, for calling a regular function
       by name. Does not handle methods. */
@@ -679,7 +697,8 @@ class CallInfo {
       the passed CallInfo. */
   static CallInfo createWithReceiver(const CallInfo& ci,
                                      types::QualifiedType receiverType,
-                                     UniqueString rename=UniqueString());
+                                     UniqueString rename=UniqueString(),
+                                     bool isImplicitMethodCall=false);
 
   /** Copy and rename a CallInfo. */
   static CallInfo copyAndRename(const CallInfo& ci, UniqueString rename);
@@ -759,6 +778,18 @@ class CallInfo {
     return actuals_[i];
   }
 
+  /* converts the CallInfo's index into one that's compatible with
+     the original call. This can be needed if the resolution machinery
+     auto-adds an argument for an implicit method call.
+  */
+  int originalActualIdx(int idx) const {
+    // Note: if the current actual is 'this', it doesn't have a corresponding
+    // actual in the original. Since the 'this' actual is first, this
+    // method returns -1 in that case, which matches the existing signaling
+    // for 'no corresponding actual'.
+    return isImplicitMethodCall_ ? idx - 1 : idx;
+  }
+
   /** return the number of actuals */
   size_t numActuals() const { return actuals_.size(); }
 
@@ -766,6 +797,7 @@ class CallInfo {
     return name_ == other.name_ &&
            calledType_ == other.calledType_ &&
            isMethodCall_ == other.isMethodCall_ &&
+           isImplicitMethodCall_ == other.isImplicitMethodCall_ &&
            isOpCall_ == other.isOpCall_ &&
            hasQuestionArg_ == other.hasQuestionArg_ &&
            isParenless_ == other.isParenless_ &&
@@ -782,8 +814,8 @@ class CallInfo {
     }
   }
   size_t hash() const {
-    return chpl::hash(name_, calledType_, isMethodCall_, isOpCall_,
-                      hasQuestionArg_, isParenless_,
+    return chpl::hash(name_, calledType_, isMethodCall_, isImplicitMethodCall_,
+                      isOpCall_, hasQuestionArg_, isParenless_,
                       actuals_);
   }
   static bool update(CallInfo& keep,
@@ -795,6 +827,7 @@ class CallInfo {
     std::swap(name_, other.name_);
     std::swap(calledType_, other.calledType_);
     std::swap(isMethodCall_, other.isMethodCall_);
+    std::swap(isImplicitMethodCall_, other.isImplicitMethodCall_);
     std::swap(isOpCall_, other.isOpCall_);
     std::swap(hasQuestionArg_, other.hasQuestionArg_);
     std::swap(isParenless_, other.isParenless_);

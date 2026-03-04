@@ -76,10 +76,11 @@ def error_to_location_and_info(
         for app_result in app_results:
             idx = app_result.actual_idx()
 
-            # 'this' formals are inserted into the call info but aren't in the
-            # call's actual list, so the reported indices are one higher than
-            # we should use to index into the call's actuals.
-            if app_result.candidate_is_method():
+            # If this is an explicit method call, 'this' formals are inserted
+            # into the call info but aren't in the call's actual list, so the
+            # reported indices are one higher than we should use to index into
+            # the call's actuals.
+            if call_info.is_method_call():
                 idx -= 1
 
             if app_result.candidate_failure_reason() != "FAIL_CANNOT_PASS":

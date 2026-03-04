@@ -747,8 +747,23 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
       resolution::FormalActualMap fa(fn, ci);
       auto badPass = fa.byFormalIdx(candidate.formalIdx());
       auto formalDecl = badPass.formal();
-      const uast::AstNode* actualExpr = getActual(candidate.actualIdx());
-      bool badSplitInit = ci.actual(candidate.actualIdx()).expectSplitInit();
+      const uast::AstNode* actualExpr = nullptr;
+      bool badSplitInit = false;
+
+      // Can be -1 if the candidate is a method which we tried because
+      // of a freestanding call 'foo()' in a method context.
+      if (candidate.actualIdx() != -1) {
+        actualExpr = getActual(candidate.actualIdx());
+
+        // at this time, 'getActual' may not be total. In particular, it might
+        // return nullptr for the call receiver, since it's relatively
+        // hard to retrieve from the call expression. Only try to report
+        // a split init error if we have an actual expression to point to,
+        // since right now the error message heavily relies on pointing to the actual.
+        if (actualExpr) {
+          badSplitInit = ci.actual(candidate.actualIdx()).expectSplitInit();
+        }
+      }
 
       // formalDecl can be null if the function is in an 'extern' block, in which
       // case there is no Chapel AST corresponding to the formal.
@@ -807,7 +822,7 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
         // and say something nicer.
         wr.message("The instantiated type of ", expectedThing, " ", formalName,
                    " does not allow ", passedThing, "s of type '", badPass.actualType().type(), "'.");
-      } else if (ci.actual(candidate.actualIdx()).expectSplitInit()) {
+      } else if (badSplitInit) {
         auto formalKind = badPass.formalType().kind();
         auto actualName = "'" + actualExpr->toIdentifier()->name().str() + "'";
 
@@ -1651,7 +1666,11 @@ void ErrorNoMatchingCandidates::write(ErrorWriterBase& wr) const {
   wr.heading(kind_, type_, node, "unable to resolve call to '", ci.name(), "': no matching candidates.");
   wr.code(node);
 
-  printRejectedCandidates(wr, node->id(), ci, rejected, "an", "actual", "a", "formal", [call](int idx) -> const uast::AstNode* {
+  printRejectedCandidates(wr, node->id(), ci, rejected, "an", "actual", "a", "formal", [call, &ci](int idx) -> const uast::AstNode* {
+    // in x.foo(a, b, c), the CI actuals are [x, a, b, c] but the call expression
+    // only has the actuals [a, b, c]. Adjust the index to account for this.
+    if (ci.isMethodCall()) idx -= 1;
+
     if (call && 0 <= idx && idx < call->numActuals()) {
       return call->actual(idx);
     }

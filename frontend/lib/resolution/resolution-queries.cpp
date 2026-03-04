@@ -2937,7 +2937,7 @@ instantiateSignatureImpl(ResolutionContext* rc,
       auto got = canPassFn(context, actualType, formalType);
       if (!got.passes()) {
         // Including past type information made this instantiation fail.
-        return ApplicabilityResult::failure(sig, got.reason(), entry.formalIdx(), entry.actualIdx());
+        return ApplicabilityResult::failure(sig, got.reason(), entry.formalIdx(), call.originalActualIdx(entry.actualIdx()));
       }
 
       // If promotion was involved, figure out the scalar type. We want to
@@ -2998,7 +2998,7 @@ instantiateSignatureImpl(ResolutionContext* rc,
 
           auto got = canPassFn(context, scalarType, useTypeConcrete);
           if (!got.passes()) {
-            return ApplicabilityResult::failure(sig, got.reason(), entry.formalIdx(), entry.actualIdx());
+            return ApplicabilityResult::failure(sig, got.reason(), entry.formalIdx(), call.originalActualIdx(entry.actualIdx()));
           }
         }
       }
@@ -3119,12 +3119,12 @@ instantiateSignatureImpl(ResolutionContext* rc,
       // means the call is ill-formed.
       if (qFormalType.isUnknownKindOrType()) {
         if (entry.hasActual()) {
-          return ApplicabilityResult::failure(sig, FAIL_CANNOT_INSTANTIATE, entry.formalIdx(), entry.actualIdx());
+          return ApplicabilityResult::failure(sig, FAIL_CANNOT_INSTANTIATE, entry.formalIdx(), call.originalActualIdx(entry.actualIdx()));
         } else {
           // Something else has gone wrong. Use this failure kind to avoid
           // situations down the line where someone wants to know which
           // actual the failure corresponds to.
-          return ApplicabilityResult::failure(sig, FAIL_UNKNOWN_FORMAL_TYPE, entry.formalIdx(), entry.actualIdx());
+          return ApplicabilityResult::failure(sig, FAIL_UNKNOWN_FORMAL_TYPE, entry.formalIdx(), call.originalActualIdx(entry.actualIdx()));
         }
       }
 
@@ -3133,7 +3133,7 @@ instantiateSignatureImpl(ResolutionContext* rc,
       auto passResult = canPassFn(context, checkType, qFormalType);
       if (!passResult.passes()) {
         // Type query constraints were not satisfied
-        return ApplicabilityResult::failure(sig, passResult.reason(), entry.formalIdx(), entry.actualIdx());
+        return ApplicabilityResult::failure(sig, passResult.reason(), entry.formalIdx(), call.originalActualIdx(entry.actualIdx()));
       }
 
       // be strict about instantiation type to ensure type query values
@@ -3145,7 +3145,7 @@ instantiateSignatureImpl(ResolutionContext* rc,
         CHPL_ASSERT(vfml != nullptr);
         if (vfml->typeExpression() &&
             !parsing::typeQueriesInExpression(context, vfml->typeExpression()).empty()) {
-          return ApplicabilityResult::failure(sig, FAIL_VARARG_TQ_MISMATCH, entry.formalIdx(), entry.actualIdx());
+          return ApplicabilityResult::failure(sig, FAIL_VARARG_TQ_MISMATCH, entry.formalIdx(), call.originalActualIdx(entry.actualIdx()));
         }
       }
 
@@ -4135,7 +4135,7 @@ isInitialTypedSignatureApplicable(Context* context,
     // it has an UnknownType*, or we could short-circuit that, knowing
     // that an unknown actual won't get accepted.
     if (!actualType.type()) {
-      return ApplicabilityResult::failure(tfs, FAIL_UNKNOWN_ACTUAL_TYPE, entry.formalIdx(), entry.actualIdx());
+      return ApplicabilityResult::failure(tfs, FAIL_UNKNOWN_ACTUAL_TYPE, entry.formalIdx(), ci.originalActualIdx(entry.actualIdx()));
     }
 
     const auto& formalType = tfs->formalType(entry.formalIdx());
@@ -4159,7 +4159,7 @@ isInitialTypedSignatureApplicable(Context* context,
       // information that makes the formal concrete. Allow this for now.
     } else {
       CHPL_ASSERT(!got.passes());
-      return ApplicabilityResult::failure(tfs, got.reason(), entry.formalIdx(), entry.actualIdx());
+      return ApplicabilityResult::failure(tfs, got.reason(), entry.formalIdx(), ci.originalActualIdx(entry.actualIdx()));
     }
   }
 
@@ -7063,7 +7063,7 @@ resolveCallInMethod(ResolutionContext* rc,
 
   CallResolutionResult asMethod;
   if (shouldAttemptImplicitReceiver(ci, implicitReceiver)) {
-    auto methodCi = CallInfo::createWithReceiver(ci, implicitReceiver);
+    auto methodCi = CallInfo::createWithReceiver(ci, implicitReceiver, /* rename */ UniqueString(), /* isImplicitMethodCall */ true);
     bool skipForwarding = asFunction.mostSpecific().foundCandidates();
     asMethod = resolveCall(rc, call, methodCi, inScopes, rejected, skipForwarding);
   }
@@ -7111,7 +7111,7 @@ resolveGeneratedCallInMethod(ResolutionContext* rc,
   // construct a method call and use that instead. If that resolves,
   // it takes precedence over functions.
   if (shouldAttemptImplicitReceiver(ci, implicitReceiver)) {
-    auto methodCi = CallInfo::createWithReceiver(ci, implicitReceiver);
+    auto methodCi = CallInfo::createWithReceiver(ci, implicitReceiver, /* rename */ UniqueString(), /* isImplicitMethodCall */ true);
     auto ret = resolveGeneratedCall(rc, astContext, methodCi, inScopes);
     if (ret.mostSpecific().foundCandidates()) {
       return ret;
@@ -8205,7 +8205,7 @@ const Decl* findFieldByName(Context* context,
         break;
       }
     } else if (auto named = decl->toMultiDecl()) {
-      for (auto md : named->children()) {
+      for (auto md : named->decls()) {
         auto nmd = md->toNamedDecl();
         if (nmd->name() == name) {
           ret = nmd;
