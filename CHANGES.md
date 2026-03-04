@@ -127,7 +127,7 @@ Platform-Specific Documentation Improvements
 Technical Note Improvements
 ---------------------------
 * updated the 'Forwarding Method Calls' tech note to mention its instability
-* fixed several typos in the 'Compiler Driver Mode' tech note  
+* fixed several typos in the 'Compiler Driver Mode' tech note
 
 Example Codes
 -------------
@@ -231,9 +231,9 @@ Developer-oriented changes: Compiler improvements / changes
 
 Developer-oriented changes: Dyno Compiler improvements / changes
 ----------------------------------------------------------------
-* added support for implicitly initializing fields within initializers
-* fixed a bug when invoking a parenless method on a class
 * made numerous improvements to the Dyno resolver for types and calls:
+  - added support for implicitly initializing fields within initializers
+  - fixed a bug when invoking a parenless method on a class
   - fixed compiler-generated enum-to-order conversion for enums named `e`
   - fixed bug in which setting type aliases could result in a differing type
   - implemented calls to `RootObject.init` via `super.init`
