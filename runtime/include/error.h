@@ -45,7 +45,7 @@ void chpl_error_explicit(const char *message, int32_t lineno,
                          const char *filename);
 void chpl_internal_error(const char* message);
 void chpl_internal_error_v(const char *restrict format, ...)
-       __attribute__((format(printf, 1, 2)));
+       __attribute__ ((format (printf, 1, 2)));
 #else
 // Filename is now an int32_t index into a table that we are not going to have
 // while the runtime is in unit test mode, just print out the message instead
@@ -76,10 +76,7 @@ void chpl_internal_error_v(const char *restrict format, ...)
     exit(1);                                                                   \
   } while (0)
 
-static inline
-void chpl_internal_error_v(const char *restrict, ...)
-    __attribute__((format(printf, 1, 2)));
-
+__attribute__ ((format (printf, 1, 2)))
 static inline
 void chpl_internal_error_v(const char *restrict format, ...) {
   fflush(stdout);
@@ -94,13 +91,13 @@ void chpl_internal_error_v(const char *restrict format, ...) {
 }
 
 static inline
-void chpl_internal_error(const char*message) {
+void chpl_internal_error(const char* message) {
   chpl_internal_error_v("%s", message);
 }
 #endif
 
 void chpl_msg(int verbose_level, const char* fmt, ...)
-  __attribute__((format(printf, 2, 3)));
+  __attribute__ ((format (printf, 2, 3)));
 
 #ifndef LAUNCHER
 void chpl_error_init(void);
