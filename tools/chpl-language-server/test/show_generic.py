@@ -69,6 +69,7 @@ async def test_lenses_show(client: LanguageClient):
 EXPECTED_INLAY = tuple[Position, str, typing.Optional[InlayHintKind]]
 EXPECTED_INLAYS = typing.Sequence[EXPECTED_INLAY]
 
+
 async def click_lenses_and_check_inlays(
     client: LanguageClient,
     file: str,
@@ -110,6 +111,7 @@ async def click_lenses_and_check_inlays(
                 await check_inlay_hints(
                     client, doc, rng((0, 0), endpos(file)), inlays
                 )
+
 
 @pytest.mark.asyncio
 async def test_lenses_switch(client: LanguageClient):
@@ -191,7 +193,11 @@ async def test_lenses_default_rect(client: LanguageClient):
         (pos((1, 12)), "param value is 1", None),
         (pos((1, 12)), ": int(64)", None),
         (pos((2, 14)), ": int(64)", None),
-        (pos((3, 17)), "param value is \"[domain(1,int(64),one)] int(64)\"", None),
+        (
+            pos((3, 17)),
+            'param value is "[domain(1,int(64),one)] int(64)"',
+            None,
+        ),
         (pos((3, 17)), ": string", None),
     ]
     all_inlays = [
@@ -228,7 +234,11 @@ async def test_lenses_default_rect_rank1(client: LanguageClient):
         (pos((1, 12)), "param value is 1", None),
         (pos((1, 12)), ": int(64)", None),
         (pos((2, 14)), ": int(64)", None),
-        (pos((3, 17)), "param value is \"[domain(1,int(64),one)] int(64)\"", None),
+        (
+            pos((3, 17)),
+            'param value is "[domain(1,int(64),one)] int(64)"',
+            None,
+        ),
         (pos((3, 17)), ": string", None),
     ]
     all_inlays = [
@@ -265,7 +275,11 @@ async def test_lenses_default_rect_rank2(client: LanguageClient):
         (pos((1, 12)), "param value is 2", None),
         (pos((1, 12)), ": int(64)", None),
         (pos((2, 14)), ": int(64)", None),
-        (pos((3, 17)), "param value is \"[domain(2,int(64),one)] int(64)\"", None),
+        (
+            pos((3, 17)),
+            'param value is "[domain(2,int(64),one)] int(64)"',
+            None,
+        ),
         (pos((3, 17)), ": string", None),
     ]
     all_inlays = [
@@ -303,7 +317,11 @@ async def test_lenses_default_rect_where_1(client: LanguageClient):
         (pos((1, 12)), "param value is 1", None),
         (pos((1, 12)), ": int(64)", None),
         (pos((2, 14)), ": int(64)", None),
-        (pos((3, 17)), "param value is \"[domain(1,int(64),one)] int(64)\"", None),
+        (
+            pos((3, 17)),
+            'param value is "[domain(1,int(64),one)] int(64)"',
+            None,
+        ),
         (pos((3, 17)), ": string", None),
     ]
     all_inlays = [
@@ -336,7 +354,5 @@ async def test_lenses_default_rect_where_2(client: LanguageClient):
             """
 
     async with source_file(client, file) as doc:
-        actual_lenses = await check_generic_code_lenses(
-            client, doc, []
-        )
+        actual_lenses = await check_generic_code_lenses(client, doc, [])
         assert len(actual_lenses.keys()) == 0
