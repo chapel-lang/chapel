@@ -130,12 +130,12 @@ a file path and returns a list of Chapel AST nodes that represent this file.
 At compile-time, ``chapel-py`` generates several class hierarchies of Python
 objects, each corresponding to a class hierarchy in the Chapel frontend library.
 The hierarchies, listed by their base class, are as follows:
-:py:class:`chapel.AstNode`, :py:class:`chapel.ChapelType`, :py:class:`chapel.Param`,
-:py:class:`chapel.Error`. For each hierarchy, a number of classes are generated
+``chapel.AstNode``, ``chapel.ChapelType``, ``chapel.Param``,
+``chapel.Error``. For each hierarchy, a number of classes are generated
 that extend from the base class, or from other classes in the hierarchy.
 
-Using the :py:class:`Context <chapel.Context>` object and relying on classes
-from the :py:class:`AstNode <chapel.AstNode>` hierarchy, one might write:
+Using the ``Context`` object and relying on classes from the ``AstNode``
+hierarchy, one might write:
 
 .. code-block:: python
 
@@ -201,19 +201,15 @@ IDs of AST nodes, AST nodes themselves, and more. The compiler considers each
 distinct type of error message a class of its own. This makes it possible to
 inspect the error data in a type-safe manner.
 
-For convenience, the base :py:class:`Error <chapel.Error>` class exposes a
+For convenience, the base ``Error`` class exposes a
 variety of methods that do not require knowledge of the specific error type.
-This includes
-:py:meth:`location <chapel.Error.location>`,
-:py:meth:`message <chapel.Error.message>`, and
-:py:meth:`notes <chapel.Error.notes>`. Together, these can be
+This includes ``location``, ``message``, and ``notes``. Together, these can be
 used to match the output of the compiler when printing an error message.
 
 Further customization can be achieved by leaning on the class hierarchy of
 error messages. For instance, consider the case of the error
-:py:class:`MismatchedInitializerResult <chapel.MismatchedInitializerResult>`.
-The error is emitted when a type's initializer changes its type. An example of
-a program that triggers this issue is:
+``MismatchedInitializerResult``. The error is emitted when a type's initializer
+changes its type. An example of a program that triggers this issue is:
 
 .. code-block:: chapel
 
@@ -229,8 +225,7 @@ a program that triggers this issue is:
 
 Above, ``R(int).init=`` is invoked, but the resulting type of ``this``
 is ``R((int, int))``. This is disallowed by Chapel semantics, and the error
-is reported. By using the ``Context`` object's
-:py:meth:`track_errors <chapel.Context.track_errors>` method,
+is reported. By using the ``Context`` object's ``track_errors`` method,
 we detect this error and inspect its details.
 
 .. code-block:: python
