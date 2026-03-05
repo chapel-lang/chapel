@@ -1,28 +1,6 @@
 Release Changes List
 ====================
 
-TODO:
-* '(http:' -> '(see http:'
-* sort items within categories
-* check placement of items into categories
-* check for ' vs `
-o fulfill TODOs
-* check man page or util/chpl-completion.bash for new compiler flags
-* check test/release/examples
-* check for docs/2.4/ links
-* remove `.../index.html` in favor of `.../`
-* check forced linebreaks
-* check initial '*'
-* check for initial 'A-Z'
-* check for 'see:'
-* check for changes put too far down in file
-* add highlights
-* mason -> Mason when used as noun
-* spellcheck
-* check ordering of categories relative to one another
-* remove empty sections
-* check links
-
 version 2.8
 ===========
 
@@ -117,7 +95,6 @@ Package Manager / Mason Improvements
 * added new `chapel-py` methods for manipulating `Location` objects  
   (see https://chapel-lang.org/docs/2.8/tools/chapel-py/chapel-py.html#chapel.Location)
 * exposed the compiler front-end's error message hierarchy to `chapel-py`  
-  (see TODO)
 
 Compiler Flags
 --------------
