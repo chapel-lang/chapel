@@ -134,8 +134,8 @@ The hierarchies, listed by their base class, are as follows:
 :py:class:`chapel.Error`. For each hierarchy, a number of classes are generated
 that extend from the base class, or from other classes in the hierarchy.
 
-Using the ``Context`` object and relying on classes from the ``AstNode``
-hierarchy, one might write:
+Using the :py:class:`Context <chapel.Context>` object and relying on classes
+from the :py:class:`AstNode <chapel.AstNode>` hierarchy, one might write:
 
 .. code-block:: python
 
@@ -257,13 +257,13 @@ we detect this error and inspect its details.
    print("Ended as: ", end_type)
    print("Number of mismatched fields: ", len(mismatched_fields))
 
-Above, we use the ``info`` method (declared inddividually for each error class)
+Above, we use the ``info`` method (declared individually for each error class)
 to retrieve the details captured by the error object. These details are mapped
 to existing ``chapel-py`` types when possible. The Python script above, when
 used with the Chapel program that demonstrates the error, will print
 the following:
 
-.. code-block::
+.. code-block:: text
 
    Started as:  R(int(64))
    Ended as:  R((int(64), int(64)))
