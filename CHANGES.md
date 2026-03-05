@@ -18,8 +18,8 @@ o fulfill TODOs
 * add highlights
 * mason -> Mason when used as noun
 * spellcheck
-o check ordering of categories relative to one another
-o remove empty sections
+* check ordering of categories relative to one another
+* remove empty sections
 o check links
 
 version 2.8
@@ -39,9 +39,6 @@ Highlights (see the sections that follow for details)
 * documentation improvements, particularly for EX troubleshooting and tools
 * many other improvements in terms of features, bug fixes, error messages
 
-Updates to Chapel Prerequisites
--------------------------------
-
 Configuration / Build Changes
 -----------------------------
 * updated the `util/chplenv/` configuration scripts to support RISC-V CPUs
@@ -51,26 +48,11 @@ Updates to Chapel's Release Formats
 * added an aarch64 RPM for HPE Cray EX systems, built using SLES 15
 * changed the default for Linuxbrew to build without `libunwind`
 
-Syntactic / Naming Changes
---------------------------
-
 New Language Features
 ---------------------
 * return type inference now computes parent classes in the 'preview' edition  
   (see note in https://chapel-lang.org/docs/2.8/language/spec/procedures.html#implicit-return-types  
    and https://chapel-lang.org/docs/2.8/technotes/editions.html#changes-in-the-preview-edition)
-
-Language Feature Improvements
------------------------------
-
-Semantic Changes / Changes to the Language Definition
------------------------------------------------------
-
-Namespace Changes
------------------
-
-New Standard Library Features
------------------------------
 
 Changes / Feature Improvements in Standard Libraries
 ----------------------------------------------------
@@ -82,18 +64,6 @@ New Package Module Features
   (see https://chapel-lang.org/docs/2.8/modules/packages/TOML/TomlParser.html#TomlParser.Toml.get)
 * added an `assertClose()` procedure to the `UnitTest` module  
   (see https://chapel-lang.org/docs/2.8/modules/packages/UnitTest.html#UnitTest.Test.assertClose)
-
-Changes / Feature Improvements in Package Modules
--------------------------------------------------
-  
-New Standard Layout and Distribution Features
----------------------------------------------
-
-Name Changes for Standard Layouts and Distributions
----------------------------------------------------
-
-Name Changes in Libraries
--------------------------
 
 Debugging Improvements
 ----------------------
@@ -148,12 +118,6 @@ Package Manager / Mason Improvements
 * exposed the compiler front-end's error message hierarchy to `chapel-py`  
   (see TODO)
 
-Syntax Highlighters
--------------------
-
-Other Tool Improvements
------------------------
-
 Compiler Flags
 --------------
 * added a new `--sanitize-exe` flag as an alternative to `CHPL_SANITIZE_EXE`  
@@ -173,18 +137,6 @@ Performance Optimizations / Improvements
 * improved loop-invariant code motion for `const` arrays, aiding vectorization
 * improved the implementation of (de)serializers, which can reduce I/O overhead
 
-Improvements to Compile Times
------------------------------
-
-Generated Code Improvements
----------------------------
-
-Memory Improvements
--------------------
-
-GPU Computing
--------------
-
 Portability / Platform-specific Improvements
 --------------------------------------------
 * fixed an HPE Cray EX RPM install failure on RHEL due to CPU detection
@@ -196,9 +148,6 @@ Portability / Build Improvements for GPUs
 * added support for ROCm 6.3 and initial support for ROCm 7
 * relaxed ROCm 6 restrictions for building with LLVM 21
 
-Generated Executable Flags
---------------------------
-
 Launchers
 ---------
 * added a new `--system-launcher-flags` flag to pass arbitrary flags to Slurm  
@@ -209,12 +158,6 @@ Error Messages / Semantic Checks
 --------------------------------
 * improved the error when attempting to assign from a `string` to an `int`
 * added more bounds-checking to prevent potential undefined behavior
-
-Error Messages / Semantic Checks for Libraries
-----------------------------------------------
-
-Error Messages for Build Issues
--------------------------------
 
 Documentation Improvements
 --------------------------
@@ -249,9 +192,6 @@ Documentation Improvements for Tools
 * expanded the documentation for the `chapel-py` API  
   (see https://chapel-lang.org/docs/2.8/tools/chapel-py/chapel-py.html#module-chapel)
 
-Documentation Improvements to the 'man' Pages
----------------------------------------------
-
 Platform-Specific Documentation Improvements
 --------------------------------------------
 * added a new documentation page for using Chapel on RISC-V architectures  
@@ -265,12 +205,6 @@ Technical Note Improvements
 ---------------------------
 * updated the 'Forwarding Method Calls' tech note to note its instability
 * updated the 'Domain Map Standard Interface' tech note w.r.t. current practice
-
-Example Codes
--------------
-
-Runtime Library Improvements
-----------------------------
 
 Third-Party Software Changes
 ----------------------------
@@ -324,9 +258,6 @@ Bug Fixes for Libraries
 * fixed the TOML module's handling of strings with quotes and escaped chars
 * fixed the TOML module's handling of raw strings
 * fixed the TOML module's JSON printer
-
-Bug Fixes for GPU Computing
----------------------------
 
 Bug Fixes for Mason
 -------------------
@@ -387,17 +318,11 @@ Developer-oriented changes: Documentation
 * extended the sanitizer docs to cover undefined-behavior sanitizers  
   (see https://chapel-lang.org/docs/2.8/usingchapel/debugging/sanitizers.html#other-sanitizers)
 
-Developer-oriented changes: Syntactic / Naming Changes
-------------------------------------------------------
-
 Developer-oriented changes: Module changes
 ------------------------------------------
 * added an assignment operator for procedure pointer types
 * updated the `IO` module to use `toByte()` instead of hexadecimal values
 * removed the no-longer-used `_abspath` function from the `IO` module
-
-Developer-oriented changes: Performance improvements
-----------------------------------------------------
 
 Developer-oriented changes: Makefile / Build-time changes
 ---------------------------------------------------------
@@ -428,15 +353,6 @@ Developer-oriented changes: Dyno Compiler improvements / changes
   - fixed a bug in which POI scopes were missed while resolving functions
   - implemented deprecation warnings for implicitly reading from `sync` vars
 
-Developer-oriented changes: GPU support
----------------------------------------
-
-Developer-oriented changes: Runtime improvements
-------------------------------------------------
-
-Developer-oriented changes: Platform-specific bug fixes
--------------------------------------------------------
-
 Developer-oriented changes: Testing System
 ------------------------------------------
 * added a `--keep-executable` flag to `start_test` to preserve binaries
@@ -451,9 +367,6 @@ Developer-oriented changes: Tool Improvements
 * added more logging for unknown Mason errors
 * added `str`/`repr` methods for `TypedSignature` in `chapel-py`
 * removed unused Dyno contexts when a file is closed in CLS/chplcheck
-
-Developer-oriented changes: Utilities
--------------------------------------
 
 
 version 2.7
