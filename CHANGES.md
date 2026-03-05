@@ -95,6 +95,7 @@ Package Manager / Mason Improvements
 * added new `chapel-py` methods for manipulating `Location` objects  
   (see https://chapel-lang.org/docs/2.8/tools/chapel-py/chapel-py.html#chapel.Location)
 * exposed the compiler front-end's error message hierarchy to `chapel-py`  
+  (see https://chapel-lang.org/docs/2.8/tools/chapel-py/chapel-py.html#details-on-the-error-hierarchy)
 
 Compiler Flags
 --------------
