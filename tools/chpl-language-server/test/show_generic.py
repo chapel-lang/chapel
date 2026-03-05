@@ -200,3 +200,143 @@ async def test_lenses_default_rect(client: LanguageClient):
     ]
 
     await click_lenses_and_check_inlays(client, file, expected_lens, all_inlays)
+
+
+@pytest.mark.asyncio
+async def test_lenses_default_rect_rank1(client: LanguageClient):
+    """
+    Test that we can show default-rectangular substitutions for functions
+    that are only generic because of their array formals.
+
+    Here, the array has a specific rank, but it matches our default
+    substitution, so the tests match.
+    """
+
+    file = """
+            proc foo(arr: [1..10] int) {
+              param rank = arr.rank;
+              type eltType = arr.eltType;
+              param arrayType = arr.type : string;
+            }
+            // Note: no calls; auto-instantiated.
+            """
+
+    expected_lens = (pos((0, 5)), 2)
+
+    generic_inlays = []
+    default_inlays = [
+        (pos((1, 12)), "param value is 1", None),
+        (pos((1, 12)), ": int(64)", None),
+        (pos((2, 14)), ": int(64)", None),
+        (pos((3, 17)), "param value is \"[domain(1,int(64),one)] int(64)\"", None),
+        (pos((3, 17)), ": string", None),
+    ]
+    all_inlays = [
+        generic_inlays,
+        default_inlays,
+    ]
+
+    await click_lenses_and_check_inlays(client, file, expected_lens, all_inlays)
+
+
+@pytest.mark.asyncio
+async def test_lenses_default_rect_rank2(client: LanguageClient):
+    """
+    Test that we can show default-rectangular substitutions for functions
+    that are only generic because of their array formals.
+
+    Here, the array has a non-default rank, so we should show an instantiation
+    with a two-dimensional array.
+    """
+
+    file = """
+            proc foo(arr: [1..10, 1..10] int) {
+              param rank = arr.rank;
+              type eltType = arr.eltType;
+              param arrayType = arr.type : string;
+            }
+            // Note: no calls; auto-instantiated.
+            """
+
+    expected_lens = (pos((0, 5)), 2)
+
+    generic_inlays = []
+    default_inlays = [
+        (pos((1, 12)), "param value is 2", None),
+        (pos((1, 12)), ": int(64)", None),
+        (pos((2, 14)), ": int(64)", None),
+        (pos((3, 17)), "param value is \"[domain(2,int(64),one)] int(64)\"", None),
+        (pos((3, 17)), ": string", None),
+    ]
+    all_inlays = [
+        generic_inlays,
+        default_inlays,
+    ]
+
+    await click_lenses_and_check_inlays(client, file, expected_lens, all_inlays)
+
+
+@pytest.mark.asyncio
+async def test_lenses_default_rect_where_1(client: LanguageClient):
+    """
+    Test that we can show default-rectangular substitutions for functions
+    that are only generic because of their array formals.
+
+    Here, the procedure has a 'where' clause that constrains the array
+    to be a specific rank. The rank matches, so we should be able to show
+    the default substitution still.
+    """
+
+    file = """
+            proc foo(arr: [] int) where arr.rank == 1 {
+              param rank = arr.rank;
+              type eltType = arr.eltType;
+              param arrayType = arr.type : string;
+            }
+            // Note: no calls; auto-instantiated.
+            """
+
+    expected_lens = (pos((0, 5)), 2)
+
+    generic_inlays = []
+    default_inlays = [
+        (pos((1, 12)), "param value is 1", None),
+        (pos((1, 12)), ": int(64)", None),
+        (pos((2, 14)), ": int(64)", None),
+        (pos((3, 17)), "param value is \"[domain(1,int(64),one)] int(64)\"", None),
+        (pos((3, 17)), ": string", None),
+    ]
+    all_inlays = [
+        generic_inlays,
+        default_inlays,
+    ]
+
+    await click_lenses_and_check_inlays(client, file, expected_lens, all_inlays)
+
+
+@pytest.mark.asyncio
+async def test_lenses_default_rect_where_2(client: LanguageClient):
+    """
+    Test that we can show default-rectangular substitutions for functions
+    that are only generic because of their array formals.
+
+    Here, the procedure has a 'where' clause that constrains the array
+    to be a specific rank. The rank doesn't matches, and we're not smart
+    enough to parse the 'where' clause to figure out to try something
+    else. We should end with no lenses.
+    """
+
+    file = """
+            proc foo(arr: [] int) where arr.rank == 2 {
+              param rank = arr.rank;
+              type eltType = arr.eltType;
+              param arrayType = arr.type : string;
+            }
+            // Note: no calls; auto-instantiated.
+            """
+
+    async with source_file(client, file) as doc:
+        actual_lenses = await check_generic_code_lenses(
+            client, doc, []
+        )
+        assert len(actual_lenses.keys()) == 0
