@@ -10,6 +10,7 @@ o fulfill TODOs
 * check man page or util/chpl-completion.bash for new compiler flags
 * check test/release/examples
 * check for docs/2.4/ links
+* remove `.../index.html` in favor of `.../`
 * check forced linebreaks
 * check initial '*'
 * check for initial 'A-Z'
@@ -20,7 +21,7 @@ o fulfill TODOs
 * spellcheck
 * check ordering of categories relative to one another
 * remove empty sections
-o check links
+* check links
 
 version 2.8
 ===========
@@ -183,7 +184,7 @@ Documentation Improvements for Libraries
 Documentation Improvements for Tools
 ------------------------------------
 * expanded the tools docs landing page to describe the available tools  
-  (see https://chapel-lang.org/docs/2.8/tools/index.html)
+  (see https://chapel-lang.org/docs/2.8/tools/)
 * moved the debugging documentation for `chpl-parallel-dbg` to its own page  
   (see https://chapel-lang.org/docs/2.8/tools/chpl-parallel-dbg/chpl-parallel-dbg.html)
 * added new documentation for writing CI tests for Mason  
