@@ -166,3 +166,37 @@ async def test_lenses_switch(client: LanguageClient):
     ]
 
     await click_lenses_and_check_inlays(client, file, expected_lens, all_inlays)
+
+
+@pytest.mark.asyncio
+async def test_lenses_default_rect(client: LanguageClient):
+    """
+    Test that we can show default-rectangular substitutions for functions
+    that are only generic because of their array formals.
+    """
+
+    file = """
+            proc foo(arr: [] int) {
+              param rank = arr.rank;
+              type eltType = arr.eltType;
+              param arrayType = arr.type : string;
+            }
+            // Note: no calls; auto-instantiated.
+            """
+
+    expected_lens = (pos((0, 5)), 2)
+
+    generic_inlays = []
+    default_inlays = [
+        (pos((1, 12)), "param value is 1", None),
+        (pos((1, 12)), ": int(64)", None),
+        (pos((2, 14)), ": int(64)", None),
+        (pos((3, 17)), "param value is \"[domain(1,int(64),one)] int(64)\"", None),
+        (pos((3, 17)), ": string", None),
+    ]
+    all_inlays = [
+        generic_inlays,
+        default_inlays,
+    ]
+
+    await click_lenses_and_check_inlays(client, file, expected_lens, all_inlays)
