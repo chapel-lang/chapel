@@ -95,24 +95,6 @@ Name Changes for Standard Layouts and Distributions
 Name Changes in Libraries
 -------------------------
 
-Deprecated / Unstable / Removed Language Features
--------------------------------------------------
-* removed an exception for re-assigning `const` fields via methods in `init()`
-* removed deprecated support for casting arrays to strings
-* removed deprecated support for `lambda` expressions
-* removed deprecated support for omitting `new` in `dmapped` expressions
-
-Deprecated / Unstable / Removed Library Features
-------------------------------------------------
-* removed the deprecated `parSafe` list access from `List`
-* removed the deprecated parenless `first`/`last` methods from `List`
-* removed the deprecated `dmap` type
-* removed distributions that had previously been deprecated due to renaming  
-  (e.g., removed `Block`, `Cyclic`, `Private`, `Replicated`, `Stencil`)
-* removed the previously deprecated `LayoutCS` module
-* removed the deprecated `BlockDist.disableAliasedBulkTransfer` `config const`
-* removed the deprecated `Toml.=` assignments
-
 Debugging Improvements
 ----------------------
 * added LLDB pretty printers for `list`, `set`, `map`, and distributed arrays
@@ -294,6 +276,24 @@ Third-Party Software Changes
 ----------------------------
 * updated the bundled version of hwloc to 2.12.2
 * updated the bundled version of Qthreads to 1.23
+
+Deprecated / Unstable / Removed Language Features
+-------------------------------------------------
+* removed an exception for re-assigning `const` fields via methods in `init()`
+* removed deprecated support for casting arrays to strings
+* removed deprecated support for `lambda` expressions
+* removed deprecated support for omitting `new` in `dmapped` expressions
+
+Deprecated / Unstable / Removed Library Features
+------------------------------------------------
+* removed the deprecated `parSafe` list access from `List`
+* removed the deprecated parenless `first`/`last` methods from `List`
+* removed the deprecated `dmap` type
+* removed distributions that had previously been deprecated due to renaming  
+  (e.g., removed `Block`, `Cyclic`, `Private`, `Replicated`, `Stencil`)
+* removed the previously deprecated `LayoutCS` module
+* removed the deprecated `BlockDist.disableAliasedBulkTransfer` `config const`
+* removed the deprecated `Toml.=` assignments
 
 Bug Fixes
 ---------
