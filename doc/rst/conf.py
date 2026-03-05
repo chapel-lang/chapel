@@ -109,10 +109,20 @@ def process_signature(
 ):
     if what == "method":
         _, class_name, method_name = name.rsplit(".", 2)
-        res = chapel_pyi.get(class_name, method_name)
+        res = chapel_pyi.get_method(class_name, method_name)
         if res:
             signature, return_annotation = res
+    elif what == "class":
+        _, class_name = name.rsplit(".", 1)
+        res = chapel_pyi.get_class(class_name)
+        if res:
+            signature = res
     return signature, return_annotation
+
+
+# # autodoc-process-bases
+def process_bases(app, name, obj, options, bases):
+    pass
 
 
 # Setup CSS files
@@ -121,6 +131,7 @@ def setup(app):
 
     if include_chapel_py_docs:
         app.connect("autodoc-process-signature", process_signature)
+        app.connect("autodoc-process-bases", process_bases)
 
 
 # The suffix of source filenames.
