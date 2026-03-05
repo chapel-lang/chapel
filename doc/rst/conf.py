@@ -19,26 +19,29 @@ import pathlib
 import sphinx.environment
 import sphinx.util.logging
 
-on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
+on_rtd = os.environ.get("READTHEDOCS", None) == "True"
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-sys.path.insert(0, os.path.abspath('../'))
-sys.path.insert(0, os.path.abspath('./'))
+sys.path.insert(0, os.path.abspath("../"))
+sys.path.insert(0, os.path.abspath("./"))
 
 # to prevent failures if chapel-py is not built/installed, check if its installed
 # if installed, add the path and generate the rst file
 # if not installed, just create the file so that the build doesn't fail
 old_sys_path = sys.path.copy()
-sys.path.insert(0, os.path.abspath('../../util/chplenv'))
+sys.path.insert(0, os.path.abspath("../../util/chplenv"))
 import chpl_home_utils
+
 chapel_py_dir = chpl_home_utils.get_chpldeps(chapel_py=True)
 del chpl_home_utils
 sys.path = old_sys_path
 
 include_chapel_py_docs = False
-chapel_py_api_template = os.path.abspath("./tools/chapel-py/chapel-py-api-template.rst")
+chapel_py_api_template = os.path.abspath(
+    "./tools/chapel-py/chapel-py-api-template.rst"
+)
 chapel_py_api_rst = os.path.abspath("./tools/chapel-py/chapel-py-api.rst")
 if os.path.exists(chapel_py_dir):
     sys.path.insert(0, chapel_py_dir)
@@ -57,20 +60,20 @@ else:
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
-needs_sphinx = '1.3'
+needs_sphinx = "1.3"
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.autodoc',
-    'sphinx.ext.todo',
-    'sphinxcontrib.jquery',
-    'sphinxcontrib.chapeldomain',
-    'sphinx.ext.mathjax',
-    'util.disguise',
-    'breathe',
-    'search_index_entries',
+    "sphinx.ext.autodoc",
+    "sphinx.ext.todo",
+    "sphinxcontrib.jquery",
+    "sphinxcontrib.chapeldomain",
+    "sphinx.ext.mathjax",
+    "util.disguise",
+    "breathe",
+    "search_index_entries",
 ]
 
 breathe_default_project = "dyno"
@@ -78,9 +81,9 @@ breathe_default_project = "dyno"
 # it tries to link to the source code which we're not setup for
 breathe_show_include = False
 
-nitpick_ignore_regex = [('cpp:identifier', r'llvm(:.*)?')]
+nitpick_ignore_regex = [("cpp:identifier", r"llvm(:.*)?")]
 nitpick_ignore = []
-for line in open('../util/nitpick_ignore'):
+for line in open("../util/nitpick_ignore"):
     if line.strip() == "" or line.startswith("#"):
         continue
     dtype, target = line.split(None, 1)
@@ -88,39 +91,46 @@ for line in open('../util/nitpick_ignore'):
     nitpick_ignore.append((dtype, target))
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['meta/templates']
+templates_path = ["meta/templates"]
 
 
 # sphinx can't handle extension modules and pyi, so we have to do it ourselves
 # https://github.com/sphinx-doc/sphinx/issues/7630
 # load in the pyi file
 from process_pyi import PyiSignatures
+
 if include_chapel_py_docs:
-    chapel_pyi = PyiSignatures(chapel_py_dir + '/chapel/core.pyi')
+    chapel_pyi = PyiSignatures(chapel_py_dir + "/chapel/core.pyi")
+
+
 # autodoc-process-signature
-def process_signature(app, what, name, obj, options, signature, return_annotation):
-    if what == 'method':
-        _, class_name, method_name = name.rsplit('.', 2)
+def process_signature(
+    app, what, name, obj, options, signature, return_annotation
+):
+    if what == "method":
+        _, class_name, method_name = name.rsplit(".", 2)
         res = chapel_pyi.get(class_name, method_name)
         if res:
             signature, return_annotation = res
     return signature, return_annotation
 
+
 # Setup CSS files
 def setup(app):
-    app.add_css_file('style.css')
+    app.add_css_file("style.css")
 
     if include_chapel_py_docs:
-        app.connect('autodoc-process-signature', process_signature)
+        app.connect("autodoc-process-signature", process_signature)
+
 
 # The suffix of source filenames.
-source_suffix = {'.rst' : 'restructuredtext'}
+source_suffix = {".rst": "restructuredtext"}
 
 # The encoding of source files.
 # source_encoding = 'utf-8-sig'
 
 # The master toctree document.
-master_doc = 'index'
+master_doc = "index"
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -132,20 +142,22 @@ master_doc = 'index'
 # 'version' adds a redundant version number onto the top of the sidebar
 # automatically (rtd-theme). We also don't use |version| anywhere in rst
 
-chplversion = '2.8'
-shortversion = chplversion.replace('-', '&#8209') # prevent line-break at hyphen, if any
-html_context = {"chplversion":chplversion}
+chplversion = "2.8"
+shortversion = chplversion.replace(
+    "-", "&#8209"
+)  # prevent line-break at hyphen, if any
+html_context = {"chplversion": chplversion}
 
 # The full version, including alpha/beta/rc tags.
-release = '2.8.0 (pre-release)'
+release = "2.8.0"
 
 # General information about the project.
-project = u'Chapel Documentation'
+project = "Chapel Documentation"
 
-author_text = os.environ.get('CHPLDOC_AUTHOR', '')
+author_text = os.environ.get("CHPLDOC_AUTHOR", "")
 
 copyright_year = 2026
-copyright = u'{0}, {1}'.format(copyright_year, author_text)
+copyright = "{0}, {1}".format(copyright_year, author_text)
 
 
 # The language for content autogenerated by Sphinx. Refer to documentation
@@ -160,38 +172,37 @@ copyright = u'{0}, {1}'.format(copyright_year, author_text)
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = ['Makefile',
-                    'Makefile.sphinx',
-                    'developer/chips',
-                    'developer/implementation',
-                    'util',
-                    'meta',
-                    'usingchapel/editors',
-
-                    # These don't need to be processed separately
-                    # since they are included in the spec with .. include::
-                    'builtins/Atomics.rst',
-                    'builtins/Bytes.rst',
-                    'builtins/ChapelArray.rst',
-                    'builtins/ChapelDomain.rst',
-                    'builtins/ChapelLocale.rst',
-                    'builtins/ChapelRange.rst',
-                    'builtins/ChapelSyncvar.rst',
-                    'builtins/ChapelTuple.rst',
-                    'builtins/OwnedObject.rst',
-                    'builtins/SharedObject.rst',
-                    'builtins/String.rst',
-                    'modules/standard/AutoMath.rst',
-                    'modules/standard/AutoGpu.rst',
-                    'modules/standard/ChapelIO.rst',
-                    'modules/standard/ChapelSysCTypes.rst',
-                    'usingchapel/prereqs-commands.rst',
-
-                    # exclude the chapel-py files
-                    'tools/chapel-py/chapel-py-api-template.rst',
-                    'tools/chapel-py/chapel-py-api.rst',
-                    'tools/chplcheck/generated/rules.rst',
-                   ]
+exclude_patterns = [
+    "Makefile",
+    "Makefile.sphinx",
+    "developer/chips",
+    "developer/implementation",
+    "util",
+    "meta",
+    "usingchapel/editors",
+    # These don't need to be processed separately
+    # since they are included in the spec with .. include::
+    "builtins/Atomics.rst",
+    "builtins/Bytes.rst",
+    "builtins/ChapelArray.rst",
+    "builtins/ChapelDomain.rst",
+    "builtins/ChapelLocale.rst",
+    "builtins/ChapelRange.rst",
+    "builtins/ChapelSyncvar.rst",
+    "builtins/ChapelTuple.rst",
+    "builtins/OwnedObject.rst",
+    "builtins/SharedObject.rst",
+    "builtins/String.rst",
+    "modules/standard/AutoMath.rst",
+    "modules/standard/AutoGpu.rst",
+    "modules/standard/ChapelIO.rst",
+    "modules/standard/ChapelSysCTypes.rst",
+    "usingchapel/prereqs-commands.rst",
+    # exclude the chapel-py files
+    "tools/chapel-py/chapel-py-api-template.rst",
+    "tools/chapel-py/chapel-py-api.rst",
+    "tools/chplcheck/generated/rules.rst",
+]
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.
@@ -224,12 +235,12 @@ exclude_patterns = ['Makefile',
 # a list of builtin themes.
 if not on_rtd:
     import sphinx_rtd_theme
-    html_theme = 'sphinx_rtd_theme'
+
+    html_theme = "sphinx_rtd_theme"
 
     html_theme_options = {
-        'sticky_navigation': True,
+        "sticky_navigation": True,
     }
-
 
 
 # Theme options are theme-specific and customize the look and feel of a theme
@@ -243,7 +254,7 @@ if not on_rtd:
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
 # We set this because the default title is repetitive
-html_title = 'Chapel Documentation {0}'.format(chplversion)
+html_title = "Chapel Documentation {0}".format(chplversion)
 
 # A shorter title for the navigation bar.  Default is the same as html_title.
 # html_short_title = None
@@ -255,12 +266,12 @@ html_title = 'Chapel Documentation {0}'.format(chplversion)
 # The name of an image file (within the static path) to use as favicon of the
 # docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
 # pixels large.
-html_favicon = 'meta/static/favicon.ico'
+html_favicon = "meta/static/favicon.ico"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['meta/static']
+html_static_path = ["meta/static"]
 
 # Add any extra paths that contain custom files (such as robots.txt or
 # .htaccess) here, relative to this directory. These files are copied
@@ -305,28 +316,25 @@ html_show_sphinx = False
 # html_file_suffix = None
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'chapel'
+htmlhelp_basename = "chapel"
 
 
 # -- Options for LaTeX output ---------------------------------------------
 
 latex_elements = {
-# The paper size ('letterpaper' or 'a4paper').
-#'papersize': 'letterpaper',
-
-# The font size ('10pt', '11pt' or '12pt').
-#'pointsize': '10pt',
-
-# Additional stuff for the LaTeX preamble.
-#'preamble': '',
+    # The paper size ('letterpaper' or 'a4paper').
+    #'papersize': 'letterpaper',
+    # The font size ('10pt', '11pt' or '12pt').
+    #'pointsize': '10pt',
+    # Additional stuff for the LaTeX preamble.
+    #'preamble': '',
 }
 
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-  ('index', 'chapel.tex', u'Chapel Documentation',
-   author_text, 'manual'),
+    ("index", "chapel.tex", "Chapel Documentation", author_text, "manual"),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -354,10 +362,7 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [
-    ('index', 'chapel', u'Chapel Documentation',
-     [author_text], 1)
-]
+man_pages = [("index", "chapel", "Chapel Documentation", [author_text], 1)]
 
 # If true, show URL addresses after external links.
 # man_show_urls = False
@@ -369,10 +374,15 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'chapel', u'Chapel Documentation',
-   author_text, 'chapel',
-   'Chapel is an emerging programming language designed for productive parallel computing at scale.',
-   'Miscellaneous'),
+    (
+        "index",
+        "chapel",
+        "Chapel Documentation",
+        author_text,
+        "chapel",
+        "Chapel is an emerging programming language designed for productive parallel computing at scale.",
+        "Miscellaneous",
+    ),
 ]
 
 # Documents to append as an appendix to all manuals.
@@ -394,18 +404,20 @@ from pygments.lexer import RegexLexer
 from pygments import token
 from sphinx.highlighting import lexers
 
+
 class TrivialLexer(RegexLexer):
-    name = 'trivial'
+    name = "trivial"
 
     tokens = {
-        'root': [
-            (r'.*\n', token.Text)
-            #(r'MyKeyword', token.Keyword),
-            #(r'[a-zA-Z]', token.Name),
-            #(r'\s', token.Text)
+        "root": [
+            (r".*\n", token.Text)
+            # (r'MyKeyword', token.Keyword),
+            # (r'[a-zA-Z]', token.Name),
+            # (r'\s', token.Text)
         ]
     }
 
-lexers['syntax'] = TrivialLexer(startinline=True)
-lexers['syntaxdonotcollect'] = TrivialLexer(startinline=True)
-lexers['printoutput'] = TrivialLexer(startinline=True)
+
+lexers["syntax"] = TrivialLexer(startinline=True)
+lexers["syntaxdonotcollect"] = TrivialLexer(startinline=True)
+lexers["printoutput"] = TrivialLexer(startinline=True)

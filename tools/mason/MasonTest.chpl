@@ -107,25 +107,23 @@ proc masonTest(args: [] string) throws {
   if otherArgs.hasValue() {
     var flagInArgs = false;
     for arg in otherArgs.values() {
-      try! {
-        // try to get option values meant for compilation
-        if flagInArgs && !arg.startsWith('-') {
-          compopts.pushBack(arg);
-          flagInArgs=false;
-        } else if isFile(arg) && arg.endsWith(".chpl") {
-          // assume this is an individual test file
+      // try to get option values meant for compilation
+      if flagInArgs && !arg.startsWith('-') {
+        compopts.pushBack(arg);
+        flagInArgs=false;
+      } else if isFile(arg) && arg.endsWith(".chpl") {
+        // assume this is an individual test file
 
-          files.pushBack(arg);
-        } else if isDir(arg) {
-          // assume this is a test directory
-          dirs.pushBack(arg);
-        } else if arg.startsWith('-') {
-          // assume a flag for compiler
-          compopts.pushBack(arg);
-          flagInArgs=true;
-        } else {
-          searchSubStrings.pushBack(arg);
-        }
+        files.pushBack(arg);
+      } else if isDir(arg) {
+        // assume this is a test directory
+        dirs.pushBack(arg);
+      } else if arg.startsWith('-') {
+        // assume a flag for compiler
+        compopts.pushBack(arg);
+        flagInArgs=true;
+      } else {
+        searchSubStrings.pushBack(arg);
       }
     }
   }
@@ -228,6 +226,8 @@ private proc runTests(show: bool, run: bool, parallel: bool, filter: string,
 
     // Get project source code and dependencies
     const (sourceList, gitList) = genSourceList(lockFile);
+    const depPath = Path.joinPath(MASON_HOME, 'src');
+    const gitDepPath = Path.joinPath(MASON_HOME, 'git');
 
     getSrcCode(sourceList, skipUpdate, show);
     getGitCode(gitList, show);
@@ -246,6 +246,53 @@ private proc runTests(show: bool, run: bool, parallel: bool, filter: string,
     for flag in MasonPrereqs.chplFlags() {
       log.debugf("+compflag %s\n", flag);
       compopts.pushBack(flag);
+    }
+
+    log.debugf("Base compopts: %?\n", compopts);
+
+    // can't use _ since it will leak
+    // see https://github.com/chapel-lang/chapel/issues/25926
+    @chplcheck.ignore("UnusedLoopIndex")
+    for (_x, name, version) in srcSource.iterList(sourceList) {
+      const nameVer = "%s-%s".format(name, version);
+      // version of -1 specifies a git dep
+      if version != "-1" {
+        const depDir = Path.joinPath(depPath, nameVer);
+        const depSrc = Path.replaceExt(Path.joinPath(depDir, "src", name),
+                                       "chpl");
+
+        log.debugf("Adding source dependency %s's flags\n", name);
+        compopts.pushBack(depSrc);
+
+        for flag in MasonPrereqs.chplFlags(depDir) {
+          log.debugf("+compflag %s\n", flag);
+          compopts.pushBack(flag);
+        }
+      }
+    }
+
+    // can't use _ since it will leak
+    // see https://github.com/chapel-lang/chapel/issues/25926
+    @chplcheck.ignore("UnusedLoopIndex")
+    for (_x, name, branch, _y) in gitSource.iterList(gitList) {
+      const gitDepSrc = Path.joinPath(gitDepPath, name + "-" + branch,
+                                      'src', name + ".chpl");
+      compopts.pushBack(gitDepSrc);
+    }
+
+    // get system deps
+    if const pkgDeps = lockFile.get['system'] {
+      for (_, depInfo) in zip(pkgDeps.A.keys(), pkgDeps.A.values()) {
+        for (k,v) in allFields(depInfo!) {
+          var val = v!;
+          select k {
+            when "libs" do compopts.pushBack(parseCompilerOptions(val));
+            when "include" do
+              if val.s != "" then compopts.pushBack("-I" + val.s);
+            otherwise continue;
+          }
+        }
+      }
     }
 
     if isDir(joinPath(projectHome, "target/test/")) {
@@ -479,12 +526,14 @@ proc getRuntimeComm() throws {
     if comm != "none" {
       comm = setComm;
     } else {
-      if setComm == "none" then comm = setComm;
+      if setComm == "none" then
+        comm = setComm;
       else {
-        writeln("Trying to execute in a multiLocale environment when ",
-        "communication mechanism is `none`.");
-        writeln("Try changing the communication mechanism");
-        exit(2);
+        throw new MasonError(
+          "Trying to execute in a multiLocale environment when " +
+          "communication mechanism is `none`.\n"+
+          "Try changing the communication mechanism"
+        );
       }
     }
   }

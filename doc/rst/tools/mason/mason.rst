@@ -124,6 +124,7 @@ that make using mason worthwhile.
    guide/buildinglargerpackages
    guide/runtimearguments
    guide/testing
+   guide/ci
    guide/examples
    guide/documentation
    guide/chapeldependencies

@@ -17,27 +17,19 @@
  * limitations under the License.
  */
 
-#include "core-types-gen.h"
-#include "resolution.h"
-#include "chpl/uast/all-uast.h"
-#include "python-types.h"
-#include "chpl/framework/query-impl.h"
-#include "chpl/framework/ErrorWriter.h"
-#include "chpl/parsing/parsing-queries.h"
-#include "chpl/resolution/resolution-queries.h"
-#include "chpl/resolution/scope-queries.h"
-#include "chpl/util/version-info.h"
-#include "python-type-helper.h"
+#include "core-types-gen-help.h"
 
-using namespace chpl;
-using namespace uast;
+/* In this file are generated struct definitions for each AST node using
+   the X-Macros pattern. Each 'include' of a header file, such
+   as generated-types-list.h, is used to generate a bunch of similar code for many
+   classes.
 
-/* In this file are generated method and struct definitions for each AST node using
-   the X-Macros pattern. Each 'include' of a header file, either uast-classes-list.h
-   or method-tables.h, is used to generate a bunch of similar code for many
-   classes. */
+   The C++ implemenations for the methods are generated in individual
+   files corresponding to the method table, to reduce the memory usage
+   while compiling. E.g., uast-methods.h has a corresponding uast-methods.cpp.
+*/
 
-/* First, generate a Node_init for each type of node in the Dyno AST,
+/* First, generate a Node_init for each type of class we generate from Dyno,
    implemented in the DEFINE_INIT_FOR macro.
 
    We particularly want this to make sure we call the AstNode constructor,
@@ -51,74 +43,6 @@ using namespace uast;
 /* Use the X-macros pattern to invoke DEFINE_INIT_FOR for each AST node type. */
 #define GENERATED_TYPE(ROOT, ROOT_TYPE, NAME, TYPE, TAG, FLAGS) DEFINE_INIT_FOR(NAME, TAG)
 #include "generated-types-list.h"
-
-static const char* blockStyleToString(BlockStyle blockStyle) {
-  switch (blockStyle) {
-    case BlockStyle::EXPLICIT: return "explicit";
-    case BlockStyle::IMPLICIT: return "implicit";
-    case BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK: return "unnecessary";
-    default: return "";
-  }
-}
-
-static const char* opKindToString(Range::OpKind kind) {
-  switch (kind) {
-    case Range::DEFAULT: return "..";
-    case Range::OPEN_HIGH: return "..<";
-    default: return "";
-  }
-}
-
-static std::optional<chpl::Location> getValidLocation(const chpl::Location& loc) {
-  /*isEmpty doesn't work since that only relies upon path, which is set*/
-  if (loc.line() != -1) {
-    return loc;
-  }
-  return std::nullopt;
-}
-
-template <typename T> struct InvokeHelper {};
-
-template <typename Ret, typename... Args>
-struct InvokeHelper<Ret(Args...)> {
-  template <typename F>
-  static PyObject* invoke(ContextObject* contextObject, F&& fn) {
-    auto result = fn();
-    return PythonFnHelper<Ret(Args...)>::ReturnTypeInfo::wrap(contextObject, std::move(result));
-  }
-};
-
-template <typename... Args>
-struct InvokeHelper<void(Args...)> {
-  template <typename F>
-  static PyObject* invoke(ContextObject* contextObject, F&& fn) {
-    fn();
-    chpl_PY_RETURN_NONE;
-  }
-};
-
-/* The METHOD macro is overridden here to actually create a Python-compatible
-   function to insert into the method table. Each such function retrieves
-   a node's context object, calls the method body, and wraps the result
-   in a Python-compatible type.
- */
-#define METHOD(NODE, NAME, DOCSTR, TYPEFN, BODY)\
-  PyObject* NODE##Object_##NAME(PyObject *self, PyObject *argsTup) {\
-    auto* node = ((NODE##Object*) self)->unwrap(); \
-    if (!node) return nullptr; \
-    auto contextObject = ((NODE##Object*) self)->context(); \
-    auto context = &contextObject->value_; \
-    auto args = PythonFnHelper<TYPEFN>::unwrapArgs(contextObject, argsTup); \
-    return InvokeHelper<TYPEFN>::invoke(contextObject, \
-      [&node, context, contextObject, &args]() -> PythonFnHelper<TYPEFN>::ReturnType { \
-        (void) context, contextObject; \
-        BODY; \
-      }); \
-  }
-
-/* Call METHOD on each method in the method-tables.h header to generate
-   the Node_method(...) functions. */
-#include "method-tables.h"
 
 /* Helper macro to set up actual iterators. Needs to be a macro because nodes
    that have actuals don't all share a parent class (Attribute vs FnCall, e.g.).
@@ -149,11 +73,13 @@ struct InvokeHelper<void(Args...)> {
 ACTUAL_ITERATOR(Attribute);
 ACTUAL_ITERATOR(FnCall);
 
-/* Having generated the method calls and the method tables, we can now
-   generate the Python type objects for each AST node. The DEFINE_PY_TYPE_FOR
-   macro defines what a type object for an AST node (abstract or not) should
-   look like. */
-
+/* Having generated the initializers and iterators, we can now
+   generate the Python type objects for each generated type . The DEFINE_PY_TYPE_FOR
+   macro declares the PyTypeObject*. Later, we dynamically
+   construct the object in INITIALIZE_PY_TYPE_FOR and set this
+   variable with what a type object for a Dyno class (abstract or not) should
+   look like. Doing so dynamically makes it possible to use Python's stable
+   ABI, and not link against a particular version. */
 #define DEFINE_PY_TYPE_FOR(NAME) PyTypeObject* NAME##Type = NULL;
 
 /* Now, invoke DEFINE_PY_TYPE_FOR for each AST node to get our type objects. */

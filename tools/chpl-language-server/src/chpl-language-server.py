@@ -423,14 +423,22 @@ class ChapelLanguageServer(LanguageServer):
         if not self.param_inlays:
             return []
 
-        _, _, param = qt
+        _, ty, param = qt
         if not param:
             return []
+
+        val = str(param)
+        val = val.replace("\n", "\\n").replace("\t", "\\t").replace("\r", "\\r")
+        if isinstance(ty, chapel.CompositeType):
+            if ty_decl := ty.decl():
+                assert isinstance(ty_decl, chapel.NamedDecl)
+                if ty_decl.name() == "_bytes":
+                    val = "b" + val
 
         return [
             InlayHint(
                 position=decl.rng.end,
-                label="param value is " + str(param),
+                label="param value is " + val,
                 padding_left=True,
             )
         ]

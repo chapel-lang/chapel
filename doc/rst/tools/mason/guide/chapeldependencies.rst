@@ -1,5 +1,3 @@
-:title: Mason Guide: *Chapel Dependencies*
-
 Using Chapel Dependencies
 =========================
 

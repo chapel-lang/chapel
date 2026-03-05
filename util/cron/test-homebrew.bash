@@ -64,8 +64,8 @@ log_info "Chapel formula to be tested:"
 cat chapel.rb
 
 # Test if homebrew install using the chapel formula works.
-HOMEBREW_NO_AUTOREMOVE=1 brew upgrade --force
-HOMEBREW_NO_AUTOREMOVE=1 brew uninstall --force chapel
+HOMEBREW_NO_INSTALL_CLEANUP=1 HOMEBREW_NO_AUTOREMOVE=1 brew upgrade --force --overwrite
+HOMEBREW_NO_INSTALL_CLEANUP=1 HOMEBREW_NO_AUTOREMOVE=1 brew uninstall --force chapel
 
 # Remove the cached chapel tar file before running brew install --build-from-source chapel.rb
 rm -f $HOME/Library/Caches/Homebrew/downloads/*--chapel-${short_version}.tar.gz
@@ -75,8 +75,9 @@ cp ./chapel.rb $(brew --repository homebrew/core)/Formula/c/chapel.rb
 # install chapel
 # per the docs, HOMEBREW_NO_INSTALL_FROM_API must be set
 # https://docs.brew.sh/FAQ#can-i-edit-formulae-myself
-HOMEBREW_NO_INSTALL_FROM_API=1 brew install -v --build-from-source chapel \
-  | awk 'tolower($0)~/failed steps? ignored/{r=1} 1; END{exit(r)}'
+HOMEBREW_NO_INSTALL_CLEANUP=1 HOMEBREW_NO_AUTOREMOVE=1 HOMEBREW_NO_INSTALL_FROM_API=1 \
+  brew install -v --build-from-source --overwrite chapel \
+    | awk 'tolower($0)~/failed steps? ignored/{r=1} 1; END{exit(r)}'
 chpl --version
 
 # Run pidigits and see if it works

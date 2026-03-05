@@ -522,9 +522,24 @@ struct CopyElisionState {
 typedef std::map<VarSymbol*, CopyElisionState> VarToCopyElisionState;
 typedef std::set<Symbol*> VariablesSet;
 
-static bool doFindCopyElisionPoints(Expr* start,
-                                    VarToCopyElisionState& map,
-                                    VariablesSet& eligible);
+struct ReturnInfo {
+  /* Did the code being processed by copy elision return unconditionally?
+     If so, any code after it is probably dead. */
+  bool returnedUnconditionally;
+  /* IF returned unconditionally, did we elide all eligible copies?
+     Normally, this is sound, since now that we've returned, the elided-from
+     variables are dead. However, in some cases (try-catch), we might
+     recover from the return, and the variables won't be dead, so we don't
+     elide them. */
+  bool elidedCopies;
+
+  ReturnInfo(bool returned, bool elided) : returnedUnconditionally(returned), elidedCopies(elided) {}
+  ReturnInfo(bool convert) : returnedUnconditionally(convert), elidedCopies(convert) {}
+};
+
+static ReturnInfo doFindCopyElisionPoints(Expr* start,
+                                          VarToCopyElisionState& map,
+                                          VariablesSet& eligible);
 
 // If call is a copy initialization call (e.g. chpl__autoCopy)
 // return the lhs and rhs variables representing the copy.
@@ -760,10 +775,13 @@ static void promoteLocalVars(VarToCopyElisionState& parentMap,
   }
 }
 
-// returns true if there was an unconditional return
-static bool doFindCopyElisionPoints(Expr* start,
-                                    VarToCopyElisionState& map,
-                                    VariablesSet& eligible) {
+// returns whether there was an unconditional return, as well as if
+// copies were elided (sometimes, unconditional return does not mean copy
+// elision, e.g. if we throw but can recover).
+
+static ReturnInfo doFindCopyElisionPoints(Expr* start,
+                                          VarToCopyElisionState& map,
+                                          VariablesSet& eligible) {
 
   if (start == NULL)
     return false;
@@ -842,18 +860,24 @@ static bool doFindCopyElisionPoints(Expr* start,
 
       bool regularReturn = false;
       bool errorReturn = false;
+      bool cannotRecover = false; // if throwing, can someone catch?
+                                  // If so, it's not safe to elide copies,
+                                  // since original variables may be needed
+                                  // after 'catch'.
       if (gt != NULL) {
         regularReturn = gt->gotoTag == GOTO_RETURN;
         errorReturn = gt->gotoTag == GOTO_ERROR_HANDLING_RETURN ||
                       gt->gotoTag == GOTO_ERROR_HANDLING;
+        cannotRecover = gt->gotoTag == GOTO_ERROR_HANDLING_RETURN;
       } else if (call != NULL) {
         regularReturn = call->isPrimitive(PRIM_RETURN);
         errorReturn = call->isPrimitive(PRIM_THROW);
       }
 
       if (regularReturn || errorReturn) {
-        doElideCopies(map);
-        return true; // don't look at dead code after this.
+        bool elide = !errorReturn || cannotRecover;
+        if (elide) doElideCopies(map);
+        return { true, elide };
       }
 
     // { ... }  (nested block)
@@ -869,9 +893,9 @@ static bool doFindCopyElisionPoints(Expr* start,
       } else {
         // non-loop block
         Expr* start = block->body.first();
-        bool returned = doFindCopyElisionPoints(start, map, eligible);
-        if (returned)
-          return true; // stop traversing if it returned
+        auto returned = doFindCopyElisionPoints(start, map, eligible);
+        if (returned.returnedUnconditionally)
+          return returned; // stop traversing if it returned
       }
 
       // If we had a reason to, we could remove variables going
@@ -922,8 +946,8 @@ static bool doFindCopyElisionPoints(Expr* start,
       VariablesSet ifEligible = eligible;
       VariablesSet elseEligible = eligible;
 
-      bool ifRet = false;
-      bool elseRet = false;
+      ReturnInfo ifRet = false;
+      ReturnInfo elseRet = false;
 
       ifRet = doFindCopyElisionPoints(ifStart, ifMap, ifEligible);
 
@@ -932,15 +956,16 @@ static bool doFindCopyElisionPoints(Expr* start,
       }
 
       // If both blocks return, then they have already been copy elided.
-      if (ifRet && elseRet) {
+      if (ifRet.elidedCopies && elseRet.elidedCopies) {
         return true;
 
-      // Neither if nor else block returns. Promote elision points from
+      // Neither if nor else block unconditionally elided copies.
+      // Promote elision points from
       // each block into the parent copy elision map. If a variable is
       // declared in a higher scope and is not copied in both blocks, then
       // we cannot promote it. The elision points for local variables from
       // each block can be promoted freely.
-      } else if (!ifRet && !elseRet) {
+      } else if (!ifRet.elidedCopies && !elseRet.elidedCopies) {
 
         // First, promote local variables from each block.
         promoteLocalVars(map, ifMap, eligible, ifEligible);
@@ -985,18 +1010,22 @@ static bool doFindCopyElisionPoints(Expr* start,
           }
         }
 
-      // One block hasn't returned. Figure out which one it is, and promote
+      // One block hasn't unconditionally elided copies.
+      // Figure out which one it is, and promote
       // all its elision points into the parent map.
       } else {
         VarToCopyElisionState::iterator it, end;
-        it = ifRet ? elseMap.begin() : ifMap.begin();
-        end = ifRet ? elseMap.end() : ifMap.end();
+        it = ifRet.elidedCopies ? elseMap.begin() : ifMap.begin();
+        end = ifRet.elidedCopies ? elseMap.end() : ifMap.end();
         for (; it != end; ++it) {
           VarSymbol* var = it->first;
           CopyElisionState& state = it->second;
           if (state.lastIsCopy)
             map[var] = state;
         }
+      }
+      if (ifRet.returnedUnconditionally && elseRet.returnedUnconditionally) {
+        return ReturnInfo { true, ifRet.elidedCopies && elseRet.elidedCopies };
       }
     } else if (isFunctionOrTypeDeclaration(cur)) {
       // OK: mentions like `proc f() { ... x ... }` don't count

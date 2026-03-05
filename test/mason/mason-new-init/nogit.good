@@ -1,0 +1,10 @@
+++ which mason
++ MASON=$CHPL_HOME/bin/$CHPL_HOST_BIN_SUBDIR/mason
++ rm -rf testingPkg
++ mkdir testingPkg
++ cd testingPkg
++ PATH=
++ $CHPL_HOME/bin/$CHPL_HOST_BIN_SUBDIR/mason init
+Command failed: 'git init -q $CHPL_HOME/test/mason/mason-new-init/testingPkg'
++ echo 'expected failure for empty PATH'
+expected failure for empty PATH

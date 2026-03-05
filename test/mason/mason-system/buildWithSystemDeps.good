@@ -1,0 +1,48 @@
++++ dirname $CHPL_HOME/test/mason/mason-system/buildWithSystemDeps.masontest
+++ cd $CHPL_HOME/test/mason/mason-system
+++ pwd
++ CWD=$CHPL_HOME/test/mason/mason-system
++ REG=$CHPL_HOME/test/mason/mason-system/local-reg
++ mason publish --create-registry $CHPL_HOME/test/mason/mason-system/local-reg
+Initialized local registry at $CHPL_HOME/test/mason/mason-system/local-reg
+Add this registry to MASON_REGISTRY environment variable to include it in search path:
+   export MASON_REGISTRY="mason-registry|https://github.com/chapel-lang/mason-registry,local-reg|$CHPL_HOME/test/mason/mason-system/local-reg"
++ export 'MASON_REGISTRY=my-local-registry|$CHPL_HOME/test/mason/mason-system/local-reg'
++ MASON_REGISTRY='my-local-registry|$CHPL_HOME/test/mason/mason-system/local-reg'
++ cd myDep
++ git init -b main
+Initialized empty Git repository in $CHPL_HOME/test/mason/mason-system/myDep/.git/
++ git add .
++ git commit -m 'initial commit'
++ mason publish $CHPL_HOME/test/mason/mason-system/local-reg
+Successfully published package to $CHPL_HOME/test/mason/mason-system/local-reg
++ cd ..
++ cd myMasonPackage
++ mason build
+Updating my-local-registry
+Downloading dependency: myDep-0.1.0
+Compiling [debug] target: myMasonPackage
+Build Successful
+
++ mason run
+Hello from myMasonPackage!
+Testing myDep:
+myDep returned: 3.14 and 17
+MyChapelFlag is set to: 2
++ mason build --example example.chpl
+Updating my-local-registry
+compiled example.chpl successfully
++ mason run --example example.chpl
+Updating my-local-registry
+Hello from example.chpl!
+Testing myMasonPackage:
+myMasonPackage returned: 2
+Testing myDep:
+myDep returned: 3.14 and 17
++ mason test
+Updating my-local-registry
+
+----------------------------------------------------------------------
+Ran 2 tests in n seconds
+
+OK (passed = 2 )

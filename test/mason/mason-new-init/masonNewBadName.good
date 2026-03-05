@@ -1,0 +1,95 @@
++ mason new
+project name Required value missing
+Creates a new Mason project in a new directory with the given project name.
+
+Usage:
+    mason new [options] <project name>
+
+Options:
+    -h, --help                   Display this message
+        --show                   Increase verbosity
+        --no-vcs                 Do not initialize a git repository
+        --app                    Create a Mason "application"
+        --lib                    Create a Mason "library"
+        --light                  Create a Mason "lightweight" project
+        --name <legalName>       Specify package name different from directory
+                                 name
++ true
++ mason new 0bad
+Bad package name '0bad' - only Chapel identifiers are legal package names.
+Please use mason new 0bad --name <LegalName>
++ true
++ mason new 'bad$stuff' --light
+Bad package name 'bad$stuff' - only Chapel identifiers are legal package names.
+Please use mason new bad$stuff --name <LegalName>
++ true
++ mason new bad-name --lib
+Bad package name 'bad-name' - only Chapel identifiers are legal package names.
+Please use mason new bad-name --name <LegalName>
++ true
++ mason new bad.name
+Bad package name 'bad.name' - only Chapel identifiers are legal package names.
+Please use mason new bad.name --name <LegalName>
++ true
++ rm -rf testingPkg
++ mkdir testingPkg
++ mason new testingPkg
+A directory named 'testingPkg' already exists
++ true
++ rm -rf testingPkg
++ mkdir 0bad
++ cd 0bad
++ mason init
+Bad package name '0bad' - only Chapel identifiers are legal package names.
+Please use mason init 0bad --name <LegalName>
++ true
++ cd ..
++ rm -rf 0bad
++ mkdir bad-name
++ cd bad-name
++ mason init --light
+Bad package name 'bad-name' - only Chapel identifiers are legal package names.
+Please use mason init bad-name --name <LegalName>
++ true
++ cd ..
++ rm -rf bad-name
++ mkdir bad.name
++ cd bad.name
++ mason init
+Bad package name 'bad.name' - only Chapel identifiers are legal package names.
+Please use mason init bad.name --name <LegalName>
++ true
++ cd ..
++ rm -rf bad.name
++ mason new 0bad --name good
+Created new application project: good
++ cd 0bad
++ cat Mason.toml
++ sed /chplVersion/d
+[brick]
+name="good"
+version="0.1.0"
+license="None"
+type="application"
+
+[dependencies]
+
++ cd ..
++ rm -rf 0bad
++ mkdir bad-name
++ cd bad-name
++ mason init --name good
+Created new application project: good
+Tip: To convert existing code to a mason project, move the driver application to the `src/good.chpl` file. For adding other source code, using submodules is the recommended approach to avoid namespace collisions.
++ cat Mason.toml
++ sed /chplVersion/d
+[brick]
+name="good"
+version="0.1.0"
+license="None"
+type="application"
+
+[dependencies]
+
++ cd ..
++ rm -rf bad-name

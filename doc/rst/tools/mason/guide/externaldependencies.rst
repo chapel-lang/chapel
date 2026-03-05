@@ -1,5 +1,3 @@
-:title: Mason Guide: *External Dependencies*
-
 .. _mason-external-dependencies:
 
 Using Non-Chapel Dependencies

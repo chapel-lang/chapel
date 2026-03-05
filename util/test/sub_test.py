@@ -406,6 +406,8 @@ def KillProc(p, timeout):
 
 # clean up after the test has been built
 def cleanup(execname, test_ran_and_more_compopts=False):
+    if os.getenv("CHPL_TEST_KEEP_EXECUTABLE"):
+        return
     try:
         if execname is not None:
             if os.path.isfile(execname):

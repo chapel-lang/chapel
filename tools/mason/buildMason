@@ -37,7 +37,9 @@ PRE_COMPOPTS="--launcher=none"
 POST_COMPOPTS="--checks"
 if [ "$DEBUG" == "1" ]; then
   # TODO add --debug-safe-optimizations-only once https://github.com/chapel-lang/chapel/issues/28165 is resolved
-  COMPOPTS="$COMPOPTS -g --no-devel"
+  # for now, use a limited subset of what --debug-safe-optimizations-only
+  # would do
+  COMPOPTS="$COMPOPTS -g --no-devel --no-inline --no-copy-propagation"
 else
   # avoid specialization to prevent micro-architectural optimizations that
   # could break mason in cross platform scenarios

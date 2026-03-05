@@ -70,13 +70,23 @@ proc modifyToml(add: bool, spec: string, external: bool, system: bool,
 
   // Adding a dependency
   if add {
-    if spec.find("@") == -1 {
-      throw new MasonError("Dependency formatted incorrectly.\n"+
-                           "Format: package@version");
+    // dependencies must be formatted as "package@version". System dependencies
+    // can use wildcards for any version, so are excepted
+    var dependency, version: string;
+    if !system {
+      if spec.find("@") == -1 {
+        throw new MasonError("Dependency formatted incorrectly.\n"+
+                            "Format: package@version");
+      }
+      (dependency, _, version) = spec.partition('@');
+    } else {
+      if spec.find('@') != -1 {
+        (dependency, _, version) = spec.partition('@');
+      } else {
+        dependency = spec;
+        version = "*";
+      }
     }
-    const split = spec.split('@');
-    const dependency = split[0];
-    const version = split[1];
 
     // Name and version checks are only valid for mason packages
     if !external && !system {
@@ -84,11 +94,11 @@ proc modifyToml(add: bool, spec: string, external: bool, system: bool,
       checkVersion(version);
     }
 
-    if system && add {
+    if system {
       writeln("Adding system dependency", dependency,
               "version", version, sep=" ");
       newToml = masonSystemAdd(toml, dependency, version);
-    } else if external && add {
+    } else if external {
       writeln("Adding external dependency with spec", spec, sep=" ");
       newToml = masonExternalAdd(toml, dependency, spec);
     } else {
@@ -139,8 +149,8 @@ private proc masonAdd(toml: shared Toml,
                       toAdd: string, version: string) throws {
   if toml.pathExists("dependencies") {
     if toml.pathExists("dependencies." + toAdd) {
-      throw new MasonError("A dependency by that name already " +
-                           "exists in Mason.toml");
+      throw new MasonError("A dependency by the name '" + toAdd +
+                           "' already exists in Mason.toml");
     } else {
       toml["dependencies"]!.set(toAdd, version);
     }
@@ -159,7 +169,7 @@ private proc masonRemove(toml: shared Toml, toRm: string) throws {
   if const old = toml.get("dependencies." + toRm) {
     toml["dependencies"]!.A.remove(toRm);
   } else {
-    throw new MasonError("No dependency exists by that name");
+    throw new MasonError("No dependency exists by the name '" + toRm + "'");
   }
   return toml;
 }
@@ -170,8 +180,8 @@ private proc masonSystemAdd(toml: shared Toml,
 
   if toml.pathExists("system") {
     if toml.pathExists("system." + toAdd) {
-      throw new MasonError("A dependency by that name already " +
-                           "exists in Mason.toml");
+      throw new MasonError("A dependency by the name '" + toAdd +
+                           "' already exists in Mason.toml");
     } else {
       toml["system"]!.set(toAdd, version);
     }
@@ -186,15 +196,12 @@ private proc masonSystemAdd(toml: shared Toml,
 
 /* Remove a system dependency from Mason.toml */
 private proc masonSystemRemove(toml: shared Toml, toRm: string) throws {
-  if toml.pathExists("system") {
-    if toml.pathExists("system." + toRm) {
-      var old = toml["system"]![toRm]!;
-      toml["system"]!.A.remove(toRm);
-    } else {
-      throw new MasonError("No system dependency exists by " + toRm);
-    }
+  if toml.pathExists("system." + toRm) {
+    var old = toml["system"]![toRm]!;
+    toml["system"]!.A.remove(toRm);
   } else {
-    throw new MasonError("No system dependency exists by " + toRm);
+    throw new MasonError("No system dependency exists by the name '" +
+                          toRm + "'");
   }
   return toml;
 }
@@ -204,8 +211,8 @@ private proc masonExternalAdd(toml: shared Toml,
                               toAdd: string, spec: string) throws {
   if toml.pathExists("external") {
     if toml.pathExists("external." + toAdd) {
-      throw new MasonError("An external dependency by that name " +
-                           "already exists in Mason.toml");
+      throw new MasonError("An external dependency by the name '" + toAdd +
+                           "' already exists in Mason.toml");
     } else {
       toml["external"]!.set(toAdd, spec);
     }
@@ -220,15 +227,12 @@ private proc masonExternalAdd(toml: shared Toml,
 
 /* Remove an external dependency from Mason.toml */
 private proc masonExternalRemove(toml: shared Toml, toRm: string) throws {
-  if toml.pathExists("external") {
-    if toml.pathExists("external." + toRm) {
-      var old = toml["external"]![toRm]!;
-      toml["external"]!.A.remove(toRm);
-    } else {
-      throw new owned MasonError("No external dependency exists by that name");
-    }
+  if toml.pathExists("external." + toRm) {
+    var old = toml["external"]![toRm]!;
+    toml["external"]!.A.remove(toRm);
   } else {
-    throw new owned MasonError("No external dependency exists by that name");
+    throw new MasonError("No external dependency exists by the name '" +
+                          toRm + "'");
   }
   return toml;
 }

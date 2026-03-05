@@ -28,42 +28,50 @@ use Path;
 use Regex;
 
 /* Entry point for mason system commands */
-proc masonSystem(args: [] string) {
+proc masonSystem(args: [] string): int throws {
 
   var parser = new argumentParser(helpHandler=new MasonSystemHelpHandler());
 
-  var pcCmd = parser.addSubCommand("pc");
-  var searchCmd = parser.addSubCommand("search");
+  var subCommands = new map(string, shared Argument);
+  for c in ("pc", "search") {
+    subCommands.add(c, parser.addSubCommand(c));
+  }
 
   parser.parseArgs(args);
 
-  try! {
-    if pcCmd.hasValue() {
-      pkgConfigExists();
-      var pcArgs = pcCmd.values();
-      printPkgPc(pcArgs);
-    } else if searchCmd.hasValue() {
-      pkgConfigExists();
-      var searchArgs = searchCmd.values();
-      pkgSearch(searchArgs);
-    } else { // no valid sub-command given
-      masonSystemHelp();
-      exit(0);
+  var usedCmd: string;
+  var cmdList: list(string);
+  for cmd in subCommands.keys() {
+    if subCommands[cmd].hasValue() {
+      usedCmd = cmd;
+      cmdList = new list(subCommands[cmd].values());
+      break;
     }
-  } catch e: MasonError { // likely pkg-config wasn't found on system
-    stderr.writeln(e.message());
-    exit(1);
   }
+  select usedCmd {
+    when "pc" {
+      if !pkgConfigExists() then
+        throw new MasonError("pkg-config is not installed");
+      printPkgPc(cmdList.toArray());
+    }
+    when "search" {
+      if !pkgConfigExists() then
+        throw new MasonError("pkg-config is not installed");
+      pkgSearch(cmdList.toArray());
+    }
+    otherwise {
+      writeln("No subcommand provided");
+      masonSystemHelp();
+      return 1;
+    }
+  }
+  return 0;
 }
 
 
-/* Checks to see that pkg-config is installed */
-proc pkgConfigExists() throws {
+proc pkgConfigExists() {
   var status = runWithStatus("pkg-config --version", true);
-  if status != 0 {
-    throw new owned MasonError("pkg-config is not installed");
-  }
-  return true;
+  return status == 0;
 }
 
 /* Searches available system packages */
@@ -72,129 +80,97 @@ proc pkgSearch(args) throws {
   var parser =
     new argumentParser(helpHandler=new MasonSystemSearchHelpHandler());
 
-  var quietFlag = parser.addFlag(name="no-show-desc", defaultValue=false);
-  var descFlag = parser.addFlag(name="desc", defaultValue=false);
+  var nameOnlyFlag = parser.addFlag(name="no-show-desc", defaultValue=false);
+  var searchDescFlag = parser.addFlag(name="desc", defaultValue=false);
   var pkgNameArg = parser.addArgument(name="package", numArgs=0..1);
 
   parser.parseArgs(args);
 
-  var desc = descFlag.valueAsBool();
-  var quiet = quietFlag.valueAsBool();
-  var pkgName = "";
+  var searchDesc = searchDescFlag.valueAsBool();
+  var nameOnly = nameOnlyFlag.valueAsBool();
+  var pkgName = if pkgNameArg.hasValue() then pkgNameArg.value() else "";
 
-  if pkgNameArg.hasValue() {
-    pkgName = pkgNameArg.value();
-  } else {
-    listAllPkgs();
-    exit(0);
-  }
-
-  const pattern = new regex(pkgName, ignoreCase=true);
   const command = "pkg-config --list-all";
-  const cmd = command.split();
-  var sub = spawn(cmd, stdout=pipeStyle.pipe);
-  sub.wait();
+  var lines = runCommand(["pkg-config", "--list-all"],
+                         quiet=true,
+                         retType=list(string));
 
-  // TODO: Test if this ever worked
-  for line in sub.stdout.lines() {
-    const toSearch = line.partition(" ");
-    if desc {
-      if pattern.search(line) {
-        if quiet {
-          writeln(toSearch[1]);
-        } else write(line);
-      }
-    } else {
-      if pattern.search(toSearch[1]) {
-        if quiet {
-          writeln(toSearch[1]);
-        } else write(line);
+  if pkgName == "" {
+    // just print the output. If nameOnly, print just the names
+    for line in lines {
+      if nameOnly {
+        const parts = line.partition(" ");
+        writeln(parts[0]);
+      } else writeln(line);
+    }
+  } else {
+    // search each line for the pattern
+    // search the whole line if requested, otherwise just the package name
+    // print just the name if requested, otherwise print the whole line
+    const pattern = new regex(pkgName, ignoreCase=true);
+    for line in lines {
+      const parts = line.partition(" ");
+      var searchStr: string;
+      if searchDesc then
+        searchStr = line;
+      else
+        searchStr = parts[0];
+      if pattern.search(searchStr) {
+        if nameOnly {
+          writeln(parts[0]);
+        } else writeln(line);
       }
     }
   }
 }
-
-
-/* Lists all packages available on user system */
-proc listAllPkgs() {
-  const command = "pkg-config --list-all";
-  const status = runCommand(command);
-}
-
 
 /* Prints a pc for user debugging */
-proc printPkgPc(args) throws {
+proc printPkgPc(args: [] string) throws {
   var parser = new argumentParser(helpHandler=new MasonSystemPcHelpHandler());
 
-  var pkgNameArg = parser.addArgument(name="package", numArgs=0..1);
-
+  var pkgNameArg = parser.addArgument(name="package");
   parser.parseArgs(args);
 
-  if !pkgNameArg.hasValue() {
-    masonSystemPcHelp();
-    exit(1);
-  }
-  try! {
-    const pkgName = pkgNameArg.value();
-    if pkgExists(pkgName) {
-      //
-      // Add a these call, since `string.join` has an iterator overload but
-      // not one for list.
-      //
-      var pcDir = "".join(
-        getPkgVariable(pkgName, "--variable=pcfiledir").these()
-      ).strip();
-      var pcFile = joinPath(pcDir, pkgName + ".pc");
-      var pc = openReader(pcFile, locking=false);
-      writeln("\n------- " + pkgName + ".pc -------\n");
-      for line in pc.lines() {
-        write(line);
-      }
-      writeln("\n-------------------\n");
-    } else {
-      throw new MasonError("Mason could not find " +
-                           pkgName + " on your system");
+  const pkgName = pkgNameArg.value();
+  if pkgExists(pkgName) {
+    //
+    // Add a these call, since `string.join` has an iterator overload but
+    // not one for list.
+    //
+    var pcDir = getPkgVariable(pkgName, "--variable=pcfiledir");
+    var pcFile = joinPath(pcDir, pkgName + ".pc");
+    if !isFile(pcFile) {
+      throw new MasonError("Package exists but no .pc file found at '" +
+                           pcFile + "'");
     }
-  } catch e: FileNotFoundError {
-    stderr.writeln("Package exists but Mason could not find it's .pc file");
-    exit(1);
-  } catch e: MasonError {
-    stderr.writeln(e.message());
-    exit(1);
+    var pc = openReader(pcFile, locking=false);
+    writeln("\n------- " + pkgName + ".pc -------\n");
+    for line in pc.lines() {
+      write(line);
+    }
+    writeln("\n-------------------\n");
+  } else {
+    throw new MasonError("Mason could not find " +
+                          pkgName + " on your system");
   }
 }
-
 
 /* Gets a single variable from pkg-config
    given package name and variable */
 proc getPkgVariable(pkgName: string, option: string) {
-
-  var command = " ".join("pkg-config", pkgName, option);
-
-  var lines: list(string);
-  var cmd = command.split();
-  var sub = spawn(cmd, stdout=pipeStyle.pipe);
-  sub.wait();
-
-  var line:string;
-  for line in sub.stdout.lines() {
-    if line.size > 1 then
-      lines.pushBack(line);
-  }
-
-  return lines;
+  var lines = runCommand(["pkg-config", pkgName, option],
+                          quiet=true,
+                          retType=list(string));
+  var ret: string;
+  for l in lines do if l != "" then ret += l + "\n";
+  return ret.strip();
  }
 
 /* Queries pkg-config for package existence */
 proc pkgExists(pkgName: string) : bool {
-
-  const debug = " --print-errors";
   var command = "pkg-config " + pkgName + " --exists";
   const status = runWithStatus(command);
-  if status != 0 {
-    return false;
-  }
-  return true;
+  return status == 0;
 }
 
 /* Retrieves build information for MasonUpdate */
@@ -204,49 +180,40 @@ proc getPkgInfo(pkgName: string, version: string) throws {
   var pkgToml: [pkgDom] shared Toml?;
   var pkgInfo = new shared Toml(pkgToml);
 
-  if pkgExists(pkgName) {
-    // Pass "these" to join instead of converting the list to an array.
-    const pcVersion = "".join(
-      getPkgVariable(pkgName, "--modversion").these()
-    ).strip();
-    const libs = "".join(getPkgVariable(pkgName, "--libs").these()).strip();
-    const includePath = "".join(
-      getPkgVariable(pkgName, "--variable=includedir").these()
-    ).strip();
-
-    pkgInfo.set("name", pkgName);
-    pkgInfo.set("version", pcVersion);
-    pkgInfo.set("libs", libs);
-    pkgInfo.set("include", includePath);
-
-    if pcVersion != version && version != "*" {
-      throw new MasonError("Unable to locate " + pkgName +
-                           ": " +version + "\n Found " + pcVersion);
-    }
-  } else {
+  if !pkgExists(pkgName) {
     throw new MasonError("No pkg-config package by the name of: " + pkgName);
+  }
+  const pcVersion = getPkgVariable(pkgName, "--modversion");
+  const libs = getPkgVariable(pkgName, "--libs");
+  const includePath = getPkgVariable(pkgName, "--variable=includedir");
+
+  pkgInfo.set("name", pkgName);
+  pkgInfo.set("version", pcVersion);
+  pkgInfo.set("libs", libs);
+  pkgInfo.set("include", includePath);
+
+  if pcVersion != version && version != "*" {
+    throw new MasonError("Unable to locate " + pkgName +
+                          ": " +version + "\n Found " + pcVersion);
   }
   return pkgInfo;
 }
 
 /* Given a toml of external dependencies returns
    the dependencies in a toml */
-proc getPCDeps(exDeps: Toml) {
+proc getPCDeps(exDeps: Toml) throws {
+
+  if !pkgConfigExists() {
+    throw new MasonError("pkg-config is not installed");
+  }
 
   var exDom: domain(string, parSafe=false);
   var exDepTree: [exDom] shared Toml?;
 
   for (name, vers) in zip(exDeps.A.keys(), exDeps.A.values()) {
-    try! {
-      if pkgConfigExists() {
-        const pkgInfo = getPkgInfo(name, vers!.s);
-        exDom += name;
-        exDepTree[name] = pkgInfo;
-      }
-    } catch e: MasonError {
-      stderr.writeln(e.message());
-      exit(1);
-    }
+    const pkgInfo = getPkgInfo(name, vers!.s);
+    exDom += name;
+    exDepTree[name] = pkgInfo;
   }
   return exDepTree;
 }

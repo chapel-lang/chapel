@@ -60,7 +60,7 @@ def error_to_location_and_info(
     type_ = error.type()
     new_message = None
     if isinstance(error, chapel.NoMatchingCandidates):
-        (call, call_info, app_results, _) = error.info()
+        call, call_info, app_results, _ = error.info()
 
         # Check if all candidates were rejected due to a particular candidate.
         # In that case, highlight the specific candidate as the location of the error.
@@ -76,10 +76,11 @@ def error_to_location_and_info(
         for app_result in app_results:
             idx = app_result.actual_idx()
 
-            # 'this' formals are inserted into the call info but aren't in the
-            # call's actual list, so the reported indices are one higher than
-            # we should use to index into the call's actuals.
-            if app_result.candidate_is_method():
+            # If this is an explicit method call, 'this' formals are inserted
+            # into the call info but aren't in the call's actual list, so the
+            # reported indices are one higher than we should use to index into
+            # the call's actuals.
+            if call_info.is_method_call():
                 idx -= 1
 
             if app_result.candidate_failure_reason() != "FAIL_CANNOT_PASS":
@@ -99,23 +100,23 @@ def error_to_location_and_info(
                 error.kind().capitalize(), type_
             )
     elif isinstance(error, chapel.AsWithUseExcept):
-        (_, as_) = error.info()
+        _, as_ = error.info()
         if as_ is not None:
             location = as_.location()
     elif isinstance(error, chapel.TertiaryUseImportUnstable):
-        (_, node, _, _, _) = error.info()
+        _, node, _, _, _ = error.info()
         if node is not None:
             location = node.location()
     elif isinstance(error, chapel.TupleExpansionNamedArgs):
-        (tup, _) = error.info()
+        tup, _ = error.info()
         if tup is not None:
             location = tup.location()
     elif isinstance(error, chapel.TupleExpansionNonTuple):
-        (_, tup, _) = error.info()
+        _, tup, _ = error.info()
         if tup is not None:
             location = tup.location()
     elif isinstance(error, chapel.MultipleQuestionArgs):
-        (_, arg1, arg2) = error.info()
+        _, arg1, arg2 = error.info()
         assert arg1 is not None and arg2 is not None
 
         # TODO: it would be nice to use additional related info to highlight
@@ -145,7 +146,7 @@ def error_to_diagnostic(error) -> Diagnostic:
     else:
         message = "{}: {}".format(error.kind().capitalize(), error.message())
 
-    (location, new_message) = error_to_location_and_info(error)
+    location, new_message = error_to_location_and_info(error)
     related_info = None
     if new_message is not None:
         message = new_message

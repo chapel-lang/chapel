@@ -1,0 +1,30 @@
+#!/bin/bash
+
+TESTNAME=$1
+OUTFILE=$2
+
+# Only process the first two lines, which report leak stats.
+cat $OUTFILE | head -n 2 > $OUTFILE.tmphead
+cat $OUTFILE | tail -n +3 > $OUTFILE.tmptail
+
+# If the number is preceded by a '+', remove it.
+cat $OUTFILE.tmphead | sed 's/+[0-9]\{1,\}//g' > $OUTFILE.scratch
+mv $OUTFILE.scratch $OUTFILE.tmphead
+
+# Remove trailing whitespace as a result of above.
+cat $OUTFILE.tmphead | sed -e 's/[[:space:]]*$//g' > $OUTFILE.scratch
+mv $OUTFILE.scratch $OUTFILE.tmphead
+
+# Next, replace all but the first digit of every number with 'x'. Using
+# 'perl' here saved me a crazy headache trying to do this with 'sed'.
+# TODO: If the variance in leaks is such that the first digit changes, then
+#       just replace the whole line with 'x' (also easier to write...).
+cat $OUTFILE.tmphead | perl -pe 's/([0-9])([0-9]+)/$1 . "x" x length($2)/ge' > $OUTFILE.scratch
+mv $OUTFILE.scratch $OUTFILE.tmphead
+
+# Stitch the files back together.
+cat $OUTFILE.tmptail >> $OUTFILE.tmphead
+mv $OUTFILE.tmphead $OUTFILE
+
+# Make sure all the temp files that were used are cleaned up.
+rm -f $OUTFILE.tmphead $OUTFILE.tmptail $OUTFILE.scratch

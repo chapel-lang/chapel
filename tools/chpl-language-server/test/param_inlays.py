@@ -45,7 +45,7 @@ async def test_param_inlays_prim(client: LanguageClient):
     Ensure that param inlays are shown.
     """
 
-    file = """
+    file = '''
             param a = 10;
             param b = (a + 10) * 20;
             param c = sqrt(((a + 10) * 20): real):int;
@@ -60,7 +60,12 @@ async def test_param_inlays_prim(client: LanguageClient):
 
             param g = false;
             param h = true;
-           """
+
+            param i = "hello\\nworld";
+            param j = b"Lots of weird bytes in here \\t\\n\\r";
+            param k = """this is a long
+            long string""";
+           '''
 
     inlays = [
         (pos((0, 7)), "10"),
@@ -71,6 +76,9 @@ async def test_param_inlays_prim(client: LanguageClient):
         (pos((10, 7)), '"hello"'),
         (pos((12, 7)), "false"),
         (pos((13, 7)), "true"),
+        (pos((15, 7)), '"hello\\nworld"'),
+        (pos((16, 7)), 'b"Lots of weird bytes in here \\t\\n\\r"'),
+        (pos((17, 7)), '"this is a long\\nlong string"'),
     ]
 
     async with source_file(client, file) as doc:

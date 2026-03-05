@@ -39,7 +39,12 @@ proc masonRun(args: [] string) throws {
   var buildFlag = parser.addFlag(name="build", defaultValue=false);
 
   // not actually flags for Run, but rather for build
-  var forceFlag = parser.addFlag(name="force", defaultValue=false);
+  // TODO: I'm failure certain _present being true when defaultValue is set
+  // is a bug in ArgumentParser, but changing that may have wider impacts
+  // for now, use not default so _present is meaningful
+  // for the purposes of this function, the value of forceFlag isn't used
+  // anyways
+  var forceFlag = parser.addFlag(name="force" /*defaultValue=false*/);
   var updateFlag = parser.addFlag(name="update", flagInversion=true);
 
   var exampleOpts = parser.addOption(name="example",
@@ -54,26 +59,35 @@ proc masonRun(args: [] string) throws {
     throw new MasonError(
       "Only mason applications can be run, but this is a Mason " + projectType);
 
+  // don't specify build flags unless we are actually building
+  if !buildFlag.valueAsBool() {
+    if forceFlag._present then
+      throw new MasonError("The --force flag is only valid " +
+                           "when used with --build");
+    if updateFlag._present then
+      throw new MasonError("The --[no]-update flag is only valid " +
+                           "when used with --build");
+  }
+
   var show = showFlag.valueAsBool();
   var release = releaseFlag.valueAsBool();
   var execopts = new list(passArgs.values());
 
 
-  if exampleOpts._present && !exampleOpts.hasValue()
-    && args.size == 2 {
+  if exampleOpts._present &&
+    (!exampleOpts.hasValue() || exampleOpts.value().startsWith("-")) {
     // when mason run --example called
     printAvailableExamples();
-    exit(0);
   } else if exampleOpts._present || buildFlag.valueAsBool() {
     // --example with value or build flag
     masonBuildRun(args);
-    exit(0);
+  } else {
+    runProjectBinary(show, release, execopts, nLocales=1);
   }
-  runProjectBinary(show, release, execopts);
 }
 
 proc runProjectBinary(show: bool, release: bool,
-                      execopts: list(string)) throws {
+                      execopts: list(string), nLocales: int) throws {
 
   const cwd = here.cwd();
   const projectHome = getProjectHome(cwd);
@@ -86,36 +100,32 @@ proc runProjectBinary(show: bool, release: bool,
     var execs = ' '.join(execopts.these());
 
     // decide which binary(release or debug) to run
-    var command: string;
-    if release {
-      if isDir(joinPath(projectHome, 'target/release')) {
-        command = joinPath(projectHome, "target/release", project);
-      }
-    } else {
-      command = joinPath(projectHome, "target/debug", project);
-    }
+    var command: list(string);
+    const subdir = if release then "release" else "debug";
+    const executable: string = joinPath(projectHome, "target", subdir, project);
+    command.pushBack(executable);
+    command.pushBack("-nl" + nLocales:string);
+    command.pushBack(execopts);
+
 
     var built = false;
-    if isFile(command) then built = true;
+    if isFile(executable) then built = true;
 
-    // add execopts
-    command += " " + execs;
-
-    if show {
-      if release then writeln("Executing [release] target: " + command);
-      else writeln("Executing [debug] target: " + command);
-    }
+    if show then
+      writef("Executing [%s] target: %s\n",
+            if release then "release" else "debug",
+            " ".join(command.these()));
 
     // Build if not built, throwing error if Mason.toml doesnt exist
     if isFile(joinPath(projectHome, "Mason.lock")) && built {
-      const output = runCommand(command);
-      write(output);
+      // TODO: do we need to expose the error code in some way?
+      const runResult = runWithStatus(command.toArray());
     } else if isFile(joinPath(projectHome, "Mason.toml")) {
       const msg = "Mason could not find your Mason.lock.\n";
       const help = "To build and run your project use: mason run --build";
-      throw new owned MasonError(msg + help);
+      throw new MasonError(msg + help);
     } else {
-      throw new owned MasonError("Mason could not find your Mason.toml file");
+      throw new MasonError("Mason could not find your Mason.toml file");
     }
 
     // Close memory
@@ -126,6 +136,9 @@ proc runProjectBinary(show: bool, release: bool,
 }
 
 
+// FIXME: this function reparses args to then pass calls to `masonBuild`. Why!?
+// We should just restructure `masonBuild` so that it can be callable directly
+// since we already parsed the args
 /* Builds program before running. */
 private proc masonBuildRun(args: [] string) throws {
 
@@ -154,13 +167,8 @@ private proc masonBuildRun(args: [] string) throws {
   var buildExample = buildFlag.valueAsBool();
   var skipUpdate = MASON_OFFLINE;
   var execopts: list(string);
-  var exampleProgram='';
 
   if exampleOpts._present then example = true;
-
-  if passArgs.hasValue() && example {
-    throw new owned MasonError("Examples do not support `--` syntax");
-  }
 
   if updateFlag.hasValue() {
     if updateFlag.valueAsBool() then skipUpdate = false;
@@ -168,14 +176,12 @@ private proc masonBuildRun(args: [] string) throws {
   }
 
   if example {
-    // add expected arguments for masonExample
-    execopts.insert(0,["example", "--example"]);
-    for val in exampleOpts.values() do execopts.pushBack(val);
-    if !buildExample then execopts.pushBack("--no-build");
-    if release then execopts.pushBack("--release");
-    if force then execopts.pushBack("--force");
-    if show then execopts.pushBack("--show");
-    masonExample(execopts.toArray());
+    var examples = new list(exampleOpts.values());
+    var extraExecopts = new list(passArgs.values());
+    runExamples(show=show, run=true, build=buildExample, release=release,
+                skipUpdate=skipUpdate, force=force,
+                examplesRequested=examples,
+                extraExecopts=extraExecopts, nLocales=1);
   } else {
     var buildArgs: list(string);
     buildArgs.pushBack("build");
@@ -186,6 +192,6 @@ private proc masonBuildRun(args: [] string) throws {
     if show then buildArgs.pushBack("--show");
     masonBuild(buildArgs.toArray());
     for val in passArgs.values() do execopts.pushBack(val);
-    runProjectBinary(show, release, execopts);
+    runProjectBinary(show, release, execopts, nLocales=1);
   }
 }

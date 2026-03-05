@@ -7,7 +7,7 @@ from utils import memoize, error, check_valid_var
 
 @memoize
 def get():
-    locale_model_val = overrides.get('CHPL_LOCALE_MODEL', 'flat')
+    locale_model_val = overrides.get("CHPL_LOCALE_MODEL", "flat")
     check_valid_var("CHPL_LOCALE_MODEL", locale_model_val, ["flat", "gpu"])
     return locale_model_val
 
@@ -17,5 +17,5 @@ def _main():
     sys.stdout.write("{0}\n".format(locale_model_val))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     _main()

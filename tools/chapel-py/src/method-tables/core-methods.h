@@ -97,7 +97,7 @@ CLASS_BEGIN(Location)
 
          return Location(left->path(), std::max(left->start(), right.start()), left->end());
   )
-  METHOD(Location, adjust_start, "Get a new Location with the same end as this Location but with the start adjusted by the given line and column offsets",
+  METHOD(Location, modify_start, "Get a new Location with the same end as this Location but with the start adjusted by the given line and column offsets",
          chpl::Location(LineColumnPair),
          auto start = std::get<0>(args);
          auto newStart = std::make_tuple(node->firstLine() + std::get<0>(start),

@@ -757,6 +757,9 @@ def set_up_environment():
     if args.comp_only:
         os.environ["CHPL_COMPONLY"] = "true"
 
+    if args.keep_executable:
+        os.environ["CHPL_TEST_KEEP_EXECUTABLE"] = "true"
+
     # stdin redirection
     if args.no_stdin_redirect or args.stdin_redirect:
         os.environ["CHPL_NO_STDIN_REDIRECT"] = "true"
@@ -1403,6 +1406,8 @@ def parser_setup():
     # only compile
     parser.add_argument("-comp-only", "--comp-only", action="store_true",
             dest="comp_only", help="only compile the tests, don't run")
+    # keep executables
+    parser.add_argument("-keep-executable", "--keep-executable", "--keep", action="store_true", dest="keep_executable", help="don't clean the generated executable after running")
     # num locales
     parser.add_argument("-numlocales", "--numlocales", action="store",
             dest="num_locales", default="0",

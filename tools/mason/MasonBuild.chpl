@@ -35,6 +35,7 @@ use Subprocess;
 use TOML;
 
 import Path;
+import FileSystem;
 import MasonPrereqs;
 
 private var log = new logger("mason build");
@@ -54,10 +55,6 @@ proc masonBuild(args: [] string) throws {
   parser.parseArgs(args);
   log.debugln("Arguments parsed");
 
-  if passArgs.hasValue() && exampleOpts._present {
-    throw new owned MasonError("Examples do not support `--` syntax");
-  }
-
   const projectType = getProjectType();
   if projectType == "light" then
     throw new MasonError("Mason light projects do not " +
@@ -69,11 +66,8 @@ proc masonBuild(args: [] string) throws {
   var release = releaseFlag.valueAsBool();
   var force = forceFlag.valueAsBool();
   var compopts: list(string);
-  var example = false;
+  var example = exampleOpts._present; // --example provided w/wo a value
   var skipUpdate = MASON_OFFLINE;
-
-  // when --example provided with or without a value
-  if exampleOpts._present then example = true;
 
   if updateFlag.hasValue() {
     if updateFlag.valueAsBool() then skipUpdate = false;
@@ -84,17 +78,12 @@ proc masonBuild(args: [] string) throws {
 
   log.debugf("Is example? %s\n", example);
   if example {
-    // compopts become example names. Build never runs examples
-    for val in exampleOpts.values() do compopts.pushBack(val);
-    compopts.pushBack("--no-run");
-    if skipUpdate then compopts.pushBack('--no-update');
-                  else compopts.pushBack('--update');
-    if show then compopts.pushBack("--show");
-    if release then compopts.pushBack("--release");
-    if force then compopts.pushBack("--force");
-    // add expected arguments for masonExample
-    compopts.insert(0,["example", "--example"]);
-    masonExample(compopts.toArray());
+    var examples = new list(exampleOpts.values());
+    var extraCompopts = new list(passArgs.values());
+    runExamples(show=show, run=false, build=true, release=release,
+                skipUpdate=skipUpdate, force=force,
+                examplesRequested=examples,
+                extraCompopts=extraCompopts, nLocales=1);
   } else {
     if passArgs.hasValue() {
       for val in passArgs.values() do compopts.pushBack(val);
@@ -169,9 +158,11 @@ proc buildProgram(release: bool, show: bool, force: bool, skipUpdate: bool,
     var compopts = cmdLineCompopts;
     compopts.pushBack(getTomlCompopts(lockFile));
     // Compile Program
-    if compileSrc(lockFile, binLoc, release, compopts, projectHome) {
+    if compileSrc(lockFile, binLoc, release, compopts,
+                  projectHome, sourceList, gitList) {
       writeln("Build Successful\n");
     } else {
+      invalidateFingerprint(projectName, fingerprintDir);
       throw new MasonError("Build Failed");
     }
   } else {
@@ -186,9 +177,10 @@ proc buildProgram(release: bool, show: bool, force: bool, skipUpdate: bool,
    contained */
 proc compileSrc(lockFile: borrowed Toml, binLoc: string,
                 release: bool, compopts: list(string),
-                projectHome: string) : bool throws {
+                projectHome: string,
+                sourceList: list(srcSource),
+                gitList: list(gitSource)) : bool throws {
 
-  const (sourceList, gitList) = genSourceList(lockFile);
   const depPath = Path.joinPath(MASON_HOME, 'src');
   const gitDepPath = Path.joinPath(MASON_HOME, 'git');
   const project = lockFile["root.name"]!.s;
@@ -206,7 +198,8 @@ proc compileSrc(lockFile: borrowed Toml, binLoc: string,
     var cmd: list(string);
     cmd.pushBack("chpl");
     cmd.pushBack(pathToProj);
-    cmd.pushBack("-o " + moveTo);
+    cmd.pushBack("-o");
+    cmd.pushBack(moveTo);
 
     cmd.pushBack(compopts);
 
@@ -257,8 +250,8 @@ proc compileSrc(lockFile: borrowed Toml, binLoc: string,
             if release then "release" else "debug", project);
 
     // compile Program with deps
-    const command = " ".join(cmd.these());
-    log.debugln("Compilation command: " + command);
+    const command = cmd.toArray();
+    log.debugln("Compilation command: " + " ".join(command));
     var compilation = runWithStatus(command);
     if compilation != 0 {
       return false;
@@ -335,7 +328,7 @@ proc getSrcCode(sourceList: list(srcSource), skipUpdate, show) throws {
 
       // add prerequisites
       for prereq in MasonPrereqs.prereqs(destination) {
-        MasonPrereqs.install(prereq);
+        MasonPrereqs.install(destination, prereq);
       }
     }
   }
@@ -383,6 +376,33 @@ proc getTomlCompopts(lock: borrowed Toml): list(string) throws {
     }
   }
 
+  // get the dependencies, if they exist
+  for (name, package) in zip(lock.A.keys(), lock.A.values()) {
+    log.debugln("name: "+name);
+    if package!.tag != fieldtag.fieldToml then continue;
+    if name == "root" || name == "system" || name == "external" then continue;
+    if const depFlags = package!.get["compopts"] {
+      try {
+        compopts.pushBack(parseCompilerOptions(depFlags));
+      } catch {
+        throw new MasonError("unable to parse compopts for dependency " + name);
+      }
+    }
+    if const system = package!.get["system"] {
+        for (_, depInfo) in zip(system.A.keys(), system.A.values()) {
+          for (k,v) in allFields(depInfo!) {
+            var val = v!;
+            select k {
+              when "libs" do compopts.pushBack(parseCompilerOptions(val));
+              when "include" do
+                if val.s != "" then compopts.pushBack("-I" + val.s);
+              otherwise continue;
+            }
+          }
+        }
+      }
+  }
+
   if const exDeps = lock.get['external'] {
     for (_, depInfo) in zip(exDeps.A.keys(), exDeps.A.values()) {
       for (k,v) in allFields(depInfo!) {
@@ -397,10 +417,15 @@ proc getTomlCompopts(lock: borrowed Toml): list(string) throws {
     }
   }
   if const pkgDeps = lock.get['system'] {
-    for (_, dep) in zip(pkgDeps.A.keys(), pkgDeps.A.values()) {
-      var depInfo = dep!;
-      compopts.pushBack(depInfo["libs"]!.s);
-      compopts.pushBack("-I" + depInfo["include"]!.s);
+    for (_, depInfo) in zip(pkgDeps.A.keys(), pkgDeps.A.values()) {
+      for (k,v) in allFields(depInfo!) {
+        var val = v!;
+        select k {
+          when "libs" do compopts.pushBack(parseCompilerOptions(val));
+          when "include" do if val.s != "" then compopts.pushBack("-I" + val.s);
+          otherwise continue;
+        }
+      }
     }
   }
   return compopts;
@@ -495,5 +520,14 @@ proc checkFingerprint(projectName:string,
       log.debugln("Fingerprints match, no rebuild required");
       return true;
     }
+  }
+}
+
+proc invalidateFingerprint(projectName:string, fingerprintDir: string) {
+  const fingerprintFile = joinPath(fingerprintDir,
+                                   "%s-%s".format(projectName, "fingerprint"));
+  log.debugf("Invalidating fingerprint '%s'\n", fingerprintFile);
+  if isFile(fingerprintFile) {
+    FileSystem.remove(fingerprintFile);
   }
 }

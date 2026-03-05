@@ -1,0 +1,43 @@
+
+CWD=$(cd $(dirname $0) ; pwd)
+REG="$CWD/local-reg"
+
+cd myDep
+
+# make a local repo so the dep can be published
+git init -b main
+git add .
+git commit -m "initial commit"
+
+# create the local registry
+mason publish --create-registry $REG
+
+# try and create it again, should error
+mason publish --create-registry $REG || echo "error as expected: $?"
+
+# publish to the local registry
+mason publish $REG
+
+# publish again, should error since the version already exists
+mason publish $REG || echo "error as expected: $?"
+
+export MASON_REGISTRY="my-local-registry|$REG"
+
+# mason search should now find the package in the local registry
+mason search
+
+# make sure myPackage can use the local registry to find myDep
+cd ../myPackage
+mason build
+mason run
+mason test
+mason run --example Ex.chpl --build
+
+# create a new package and add the dependency to it
+cd ..
+mason new myNewPackage
+cd myNewPackage
+mason add myDep@0.1.0
+# replace the body of the package with a simple main that prints the strings from myDep
+echo 'module myNewPackage { import myDep; proc main() { writeln("got strings: ", myDep.getStrings()); } }' > src/myNewPackage.chpl
+mason run --build

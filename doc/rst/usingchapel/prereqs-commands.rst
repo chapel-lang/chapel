@@ -7,7 +7,7 @@
       sudo dnf install llvm-devel clang clang-devel
 
 
-  * Alpine 3.20, 3.21, 3.22::
+  * Alpine 3.20, 3.21, 3.22, 3.23::
 
       sudo apk add gcc g++ m4 perl python3 python3-dev bash make gawk git cmake libunwind-dev coreutils
       sudo apk add llvm-dev clang-dev clang-static llvm-static
@@ -45,25 +45,16 @@
       sudo pacman -Syu
       sudo pacman -S base-devel
       sudo pacman -S cmake git python libunwind
-      sudo pacman -S llvm20 clang20
+      sudo pacman -S llvm clang
 
 
-  * CentOS Stream 10::
+  * CentOS Stream 9, 10::
 
       sudo dnf upgrade
       sudo dnf install epel-release
       sudo dnf install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake libunwind-devel
       sudo dnf install which diffutils
       sudo dnf install llvm-devel clang clang-devel
-
-
-  * CentOS Stream 9::
-
-      sudo dnf upgrade
-      sudo dnf install epel-release
-      sudo dnf install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake libunwind-devel
-      sudo dnf install which diffutils
-      sudo dnf install llvm15-devel clang15 clang15-devel
 
 
   * Debian 11 "Bullseye"::
@@ -80,20 +71,12 @@
       sudo apt-get install llvm-dev llvm clang libclang-dev libclang-cpp-dev libedit-dev
 
 
-  * Fedora 42::
+  * Fedora 42, 43::
 
       sudo dnf upgrade
       sudo dnf install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake libunwind-devel
       sudo dnf install which diffutils
       sudo dnf install llvm-devel clang clang-devel
-
-
-  * Fedora 43::
-
-      sudo dnf upgrade
-      sudo dnf install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake libunwind-devel
-      sudo dnf install which diffutils
-      sudo dnf install llvm20-devel clang20 clang20-devel
 
 
   * FreeBSD 13.5, 14.3::
@@ -118,7 +101,7 @@
       sudo dnf install llvm-devel clang clang-devel
 
 
-  * Ubuntu 22.04 "Jammy Jellyfish", 24.04 "Noble Numbat", 25.04 "Plucky Puffin", 25.10 "Questing Quokka"::
+  * Ubuntu 22.04 "Jammy Jellyfish", 24.04 "Noble Numbat", 25.10 "Questing Quokka"::
 
       sudo apt-get update
       sudo apt-get install gcc g++ m4 perl python3 python3-dev bash make mawk git pkg-config cmake libunwind-dev

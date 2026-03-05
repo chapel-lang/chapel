@@ -46,13 +46,15 @@ CatchStmt* CatchStmt::build(BlockStmt* body) {
   return new CatchStmt(NULL, NULL, body);
 }
 
-CatchStmt::CatchStmt(const char* name, Expr* type, BlockStmt* body, bool createdErr)
+CatchStmt::CatchStmt(const char* name, Expr* type, BlockStmt* body, bool createdErr,
+                     CatchallState wasCatchall)
   : Stmt(E_CatchStmt) {
 
   _name = name ? astr(name) : NULL;
   _type = type;
   _body = body;
   _createdErr = createdErr;
+  _wasCatchall = wasCatchall;
 
   gCatchStmts.add(this);
 }
@@ -68,7 +70,7 @@ BlockStmt* CatchStmt::body() const {
   return _body;
 }
 
-BlockStmt* CatchStmt::bodyWithoutTest() const {
+BlockStmt* CatchStmt::bodyWithoutTest() {
   if (this->isCatchall()) {
     // if this is a catch-all, there is no test, so just return the body
     return body();
@@ -101,22 +103,32 @@ BlockStmt* CatchStmt::bodyWithoutTest() const {
   }
 }
 
-bool CatchStmt::isCatchall() const {
+bool CatchStmt::computeIsCatchall() {
+  auto markCatchall = [this](bool isCatchall) {
+    this->_wasCatchall = isCatchall ? CatchallState::CATCHALL : CatchallState::NOT_CATCHALL;
+    return isCatchall;
+  };
+
   if (_name == NULL)
-    return true;
+    return markCatchall(true);
 
   if (_type == NULL)
-    return true;
+    return markCatchall(true);
 
   if (SymExpr* typeSe = toSymExpr(type()))
     if (canonicalClassType(typeSe->symbol()->type) == dtError)
-      return true;
+      return markCatchall(true);
 
   if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(type()))
     if (urse->unresolved == dtError->symbol->name)
-      return true;
+      return markCatchall(true);
 
-  return false;
+  return markCatchall(false);
+}
+
+bool CatchStmt::isCatchall() {
+  if (_wasCatchall == CatchallState::NOT_YET_COMPUTED) return computeIsCatchall();
+  return _wasCatchall == CatchallState::CATCHALL;
 }
 
 void CatchStmt::accept(AstVisitor* visitor) {
@@ -129,7 +141,7 @@ void CatchStmt::accept(AstVisitor* visitor) {
 }
 
 CatchStmt* CatchStmt::copyInner(SymbolMap* map) {
-  return new CatchStmt(_name, COPY_INT(_type), COPY_INT(_body), _createdErr);
+  return new CatchStmt(_name, COPY_INT(_type), COPY_INT(_body), _createdErr, _wasCatchall);
 }
 
 void CatchStmt::replaceChild(Expr* old_ast, Expr* new_ast) {

@@ -1,4 +1,4 @@
-use TOML;
+use TOML, IO;
 
 config const f: string;
 
@@ -7,6 +7,5 @@ proc main() {
   var tomlData = parseToml(tomlChannel);
   writeln(tomlData);
 
-  delete tomlData;
   tomlChannel.close();
 }

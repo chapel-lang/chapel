@@ -1,0 +1,20 @@
+
+[brick]
+chplVersion = "2.8.0"
+license = "None"
+name = "myMasonPackage"
+type = "application"
+version = "0.1.0"
+
+tests = ["Test.chpl"]
+
+[examples]
+examples = "example.chpl"
+
+[dependencies]
+myDep = "0.1.0"
+
+[system]
+myOtherPackage = "1"
+
+

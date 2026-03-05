@@ -1,0 +1,2 @@
+mason clean
+mason run --example

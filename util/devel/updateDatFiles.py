@@ -11,8 +11,9 @@ import time
 # "move_key", "rename_key", and "remove_data"
 #
 # Some example usage is in "test" function below and for info on updating
-# nightly .dat files is in chapel-docs/bestPractices/updatingDatFiles.rst 
+# nightly .dat files is in chapel-docs/bestPractices/updatingDatFiles.rst
 #
+
 
 def main():
     files = sys.argv[1:]
@@ -22,6 +23,7 @@ def main():
             # replace `pass` with whatever .dat file manipulation you need
             pass
 
+
 # parse string as float if it's parse-able, returning 0.0 if it's not
 def maybe_float(val):
     try:
@@ -29,17 +31,18 @@ def maybe_float(val):
     except ValueError:
         return 0.0
 
+
 # DatFile is an object to help manipulate (insert, remove, move, rename) keys
 # and/or data from .dat files
 class DatFile:
-    def __init__ (self, dat_file):
+    def __init__(self, dat_file):
         self.dat_file = dat_file
         self.data = None
 
     # open the file and read in the data stripping empty lines
     def __enter__(self):
-        with open(self.dat_file, 'r') as f:
-            self.data = list(csv.reader(f, delimiter='\t'))
+        with open(self.dat_file, "r") as f:
+            self.data = list(csv.reader(f, delimiter="\t"))
             self.data = [x for x in self.data if x != []]
             # TODO check for malformed .dat files, possibly with
             # computePerfStats:verify_data_file()
@@ -47,8 +50,8 @@ class DatFile:
 
     # write the data back out to the .dat file
     def __exit__(self, exception_type, exception_val, trace):
-        with open(self.dat_file, 'w') as f:
-            writer = csv.writer(f, delimiter='\t', lineterminator="\n")
+        with open(self.dat_file, "w") as f:
+            writer = csv.writer(f, delimiter="\t", lineterminator="\n")
             for row in self.data:
                 writer.writerow(row)
 
@@ -56,8 +59,8 @@ class DatFile:
     # which starts with "# Date"
     def _is_comment_line(self, line):
         first_col = line[0].strip()
-        if first_col.startswith('#'):
-            if not first_col.startswith('# Date'):
+        if first_col.startswith("#"):
+            if not first_col.startswith("# Date"):
                 return True
 
         return False
@@ -81,8 +84,10 @@ class DatFile:
         if key_name in known_keys:
             return known_keys.index(key_name)
         else:
-           raise ValueError('Key "{0}" not found for: {1}. Known keys are: '
-                            '{2}'.format(key_name, self.dat_file, known_keys))
+            raise ValueError(
+                'Key "{0}" not found for: {1}. Known keys are: '
+                "{2}".format(key_name, self.dat_file, known_keys)
+            )
 
     # rename a key (by name) with a new name
     def rename_key(self, old_name, new_name):
@@ -95,7 +100,7 @@ class DatFile:
         old_data = []
         for row in self.data:
             if self._is_comment_line(row):
-                old_data.append('')
+                old_data.append("")
             else:
                 old_data.append(row.pop(col))
         return old_data
@@ -110,7 +115,7 @@ class DatFile:
         key_data.insert(0, key_name)
         for row, data in zip(self.data, key_data):
             if not self._is_comment_line(row):
-                row.insert(after_key_col+1, data)
+                row.insert(after_key_col + 1, data)
 
     # move a key (by name) after another key (also by name)
     def move_key(self, key_name, after_key):
@@ -124,7 +129,7 @@ class DatFile:
         # helper to convert a date to a stuct_time. optionally allows comments
         # to be returned
         def convert_date(date, comments=False):
-            dat_date_format = '%m/%d/%y'
+            dat_date_format = "%m/%d/%y"
             date = date.strip()
             if comments and date.startswith("#"):
                 return date
@@ -135,12 +140,17 @@ class DatFile:
         dat_times = [convert_date(d, comments=True) for d in self._get_dates()]
 
         if start_time > end_time:
-            raise ValueError('start_date: "{0}" is later than end_date: '
-                             '"{1}"'.format(start_date, end_date))
+            raise ValueError(
+                'start_date: "{0}" is later than end_date: '
+                '"{1}"'.format(start_date, end_date)
+            )
 
         start_index = end_index = None
         for index, dat_time in enumerate(dat_times):
-            if isinstance(dat_time, time.struct_time) and dat_time >= start_time:
+            if (
+                isinstance(dat_time, time.struct_time)
+                and dat_time >= start_time
+            ):
                 start_index = index
                 break
 
@@ -150,17 +160,19 @@ class DatFile:
                 break
 
         if start_index == None or end_index == None:
-            print('No data to remove in range {0} - {1} for .dat file '
-                  '"{2}"'.format(start_date, end_date, self.dat_file))
+            print(
+                "No data to remove in range {0} - {1} for .dat file "
+                '"{2}"'.format(start_date, end_date, self.dat_file)
+            )
             return
 
-        for i in reversed(range(start_index, end_index+1)):
+        for i in reversed(range(start_index, end_index + 1)):
             # `i+1` as _get_dates() doesn't include '#Date', but self.data does
-            self.data.pop(i+1)
+            self.data.pop(i + 1)
 
     # replace values that are over some threshold (default 1 day in seconds)
     # with the values from the previous day
-    def replace_values_over_threshold(self, threshold=(24*60*60)):
+    def replace_values_over_threshold(self, threshold=(24 * 60 * 60)):
         num_rows = len(self.data)
         num_cols = len(self.data[0])
 
@@ -169,7 +181,7 @@ class DatFile:
         last_non_comment_row = 1
         for r in range(2, num_rows):
             if len(self.data[r]) != num_cols:
-                continue # skip comment lines
+                continue  # skip comment lines
             for c in range(1, num_cols):
                 if maybe_float(self.data[r][c]) > threshold:
                     self.data[r][c] = self.data[last_non_comment_row][c]
@@ -182,21 +194,25 @@ class DatFile:
         first_key_col = self._get_col_num(first_key)
         last_key_col = self._get_col_num(last_key)
         if first_key_col >= last_key_col:
-            raise ValueError('Key "{0}" comes before "{1}". Known keys are: '
-                            '{2}'.format(last_key, first_key, keys))
+            raise ValueError(
+                'Key "{0}" comes before "{1}". Known keys are: '
+                "{2}".format(last_key, first_key, keys)
+            )
 
         running_total = self.remove_key(last_key)[1:]
         for col in reversed(range(first_key_col, last_key_col)):
             cur_key_vals = self.remove_key(keys[col])[1:]
             for r in range(len(running_total)):
-                running_total_r = maybe_float(running_total[r]) + maybe_float(cur_key_vals[r])
+                running_total_r = maybe_float(running_total[r]) + maybe_float(
+                    cur_key_vals[r]
+                )
                 running_total[r] = str(running_total_r)
 
         for r in range(len(running_total)):
             running_total_r = maybe_float(running_total[r])
             running_total[r] = str(round(running_total_r, precision))
 
-        self.insert_key(new_key, keys[col-1], running_total)
+        self.insert_key(new_key, keys[col - 1], running_total)
 
 
 # This exist just to test this from our testing system
@@ -232,5 +248,5 @@ def test(f):
         dat_file.merge_keys("scopeResolve", "normalize", "newNormalize")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

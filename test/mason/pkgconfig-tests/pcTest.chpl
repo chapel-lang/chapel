@@ -22,7 +22,7 @@ proc test(goodLock: string, tf: string) {
     w.close();
   }
 
-  var configs = updateLock(true, tf=tf, lf=temp.path);
+  var configs = try! updateLock(true, tf=tf, lf=temp.path);
   var lock = open(temp.path, ioMode.r);
   var lockFile = parseToml(lock);
   writeln(lockFile);

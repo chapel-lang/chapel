@@ -1,5 +1,3 @@
-:title: Users Guide: **on**-clauses
-
 .. default-domain:: chpl
 
 **on**-clauses: controlling locality/affinity

@@ -24,6 +24,7 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "expr.h"
+#include "fcf-support.h"
 #include "iterator.h"
 
 #include "global-ast-vecs.h"
@@ -366,7 +367,8 @@ ClassTypeDecoratorEnum classTypeDecorator(Type* t) {
       t->symbol->hasFlag(FLAG_DATA_CLASS) ||
       t == dtStringC ||
       t == dtCFnPtr ||
-      t == dtCVoidPtr) {
+      t == dtCVoidPtr ||
+      (isFunctionType(t) && fcfs::usePointerImplementation())) {
     return ClassTypeDecorator::UNMANAGED_NILABLE;
   }
 

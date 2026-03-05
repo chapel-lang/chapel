@@ -29,6 +29,7 @@
 #include "arrayViewElision.h"
 #include "astutil.h"
 #include "build.h"
+#include "CatchStmt.h"
 #include "DecoratedClassType.h"
 #include "driver.h"
 #include "errorHandling.h"
@@ -2838,6 +2839,13 @@ static Expr* getCallTempInsertPoint(Expr* expr) {
         if (def->sym == sym)
           return def;
     }
+  }
+  if (auto ctch = toCatchStmt(stmt)) {
+    // Catch statements are not expected to have anything other than
+    // catch statements as siblings, so we can put the call temp before
+    // parent try.
+    if (isTryStmt(ctch->parentExpr))
+      stmt = ctch->parentExpr;
   }
   return stmt;
 }

@@ -149,7 +149,7 @@ def parse_attribute(
     some way.
     """
 
-    (name, formals) = attribute
+    name, formals = attribute
 
     if attr.name() != name:
         return None
@@ -157,7 +157,7 @@ def parse_attribute(
     parse_result = {}
 
     def save_kw(actual_tuple):
-        (name, value) = actual_tuple
+        name, value = actual_tuple
         if name not in formals:
             raise Exception("Invalid named argument for attribute!")
         elif name in parse_result:
@@ -279,7 +279,7 @@ def match_pattern(ast, pattern):
         if isinstance(pat, str):
             return check_var(ast, pat, variables)
         elif isinstance(pat, tuple):
-            (pat_name, node_type) = pat
+            pat_name, node_type = pat
 
             if not isinstance(ast, node_type):
                 return False

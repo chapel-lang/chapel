@@ -9,4 +9,4 @@ source $UTIL_CRON_DIR/common-localnode-paratest.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="quickstart"
 
-$UTIL_CRON_DIR/nightly -cron -chpl-language-server $(get_nightly_paratest_args)
+$UTIL_CRON_DIR/nightly -cron -chpl-language-server $(get_nightly_paratest_args 8)

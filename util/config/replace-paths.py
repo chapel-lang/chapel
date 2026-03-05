@@ -11,67 +11,66 @@ For example, since $CHPL_HOME/lib will be installed to CHPL_RUNTIME_LIB,
 we replace references to that absolute path with $CHPL_RUNTIME_LIB.
 """
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
-  parser = optparse.OptionParser(usage='usage: %prog [--fixpath key path]')
-  parser.add_option('--fixpath', nargs=2, dest='fixpath', action='append')
-  
-  (options, args) = parser.parse_args()
+    parser = optparse.OptionParser(usage="usage: %prog [--fixpath key path]")
+    parser.add_option("--fixpath", nargs=2, dest="fixpath", action="append")
 
-  if options.fixpath:
+    options, args = parser.parse_args()
 
-    tofix=[]
-    for kv in options.fixpath:
+    if options.fixpath:
 
-      key = kv[0]
-      val = kv[1]
+        tofix = []
+        for kv in options.fixpath:
 
-      val = os.path.realpath(val)
-      tofix.append([key, val])
+            key = kv[0]
+            val = kv[1]
 
-    #for kv in tofix:
-    #  key = kv[0]
-    #  val = kv[1]
-    #  sys.stdout.write("will replace {0} with {1}\n".format(val,key))
+            val = os.path.realpath(val)
+            tofix.append([key, val])
 
-    for line in sys.stdin.readlines():
+        # for kv in tofix:
+        #  key = kv[0]
+        #  val = kv[1]
+        #  sys.stdout.write("will replace {0} with {1}\n".format(val,key))
 
-      # Find things that look like absolute paths
-      # Note that this needs to handle e.g. -I/some/directory
-      # (and not think it's a relative path starting with I)
+        for line in sys.stdin.readlines():
 
-      pattern = r'/[^ ]+'
+            # Find things that look like absolute paths
+            # Note that this needs to handle e.g. -I/some/directory
+            # (and not think it's a relative path starting with I)
 
-      fixed = line
+            pattern = r"/[^ ]+"
 
-      for m in re.findall(pattern, line):
+            fixed = line
 
-        origpath = m
-        path = os.path.realpath(origpath)
+            for m in re.findall(pattern, line):
 
-        if os.path.isfile(path):
-          # Leave out the filename, since we're only trying to replace
-          # directories. This prevents clang++ from being replaced
-          # with e.g. clang-6.0 when clang++ is a symbolic link.
-          origpath = os.path.dirname(origpath)
-          path = os.path.dirname(path)
+                origpath = m
+                path = os.path.realpath(origpath)
 
-        #sys.stdout.write("maybe found path {0} \n".format(path))
+                if os.path.isfile(path):
+                    # Leave out the filename, since we're only trying to replace
+                    # directories. This prevents clang++ from being replaced
+                    # with e.g. clang-6.0 when clang++ is a symbolic link.
+                    origpath = os.path.dirname(origpath)
+                    path = os.path.dirname(path)
 
-        for kv in tofix:
+                # sys.stdout.write("maybe found path {0} \n".format(path))
 
-          key = kv[0]
-          val = kv[1]
+                for kv in tofix:
 
-          #sys.stdout.write("does it start with {0}\n".format(val))
-          if path.startswith(val):
-            rel = os.path.relpath(path, val)
-            #sys.stdout.write("rel path to {0} is {1}\n".format(key, rel))
-            fixed = fixed.replace(origpath, key + "/" + rel)
-            break
+                    key = kv[0]
+                    val = kv[1]
 
-          #sys.stdout.write("replacing {0} {1}\n".format(val,key))
-          #sys.stdout.write(fixed)
+                    # sys.stdout.write("does it start with {0}\n".format(val))
+                    if path.startswith(val):
+                        rel = os.path.relpath(path, val)
+                        # sys.stdout.write("rel path to {0} is {1}\n".format(key, rel))
+                        fixed = fixed.replace(origpath, key + "/" + rel)
+                        break
 
-      sys.stdout.write(fixed)
+                    # sys.stdout.write("replacing {0} {1}\n".format(val,key))
+                    # sys.stdout.write(fixed)
 
+            sys.stdout.write(fixed)

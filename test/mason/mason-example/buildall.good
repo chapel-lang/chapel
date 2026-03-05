@@ -1,0 +1,31 @@
++ mason clean
++ mason build --example
+Updating registry
+compiled depExample.chpl successfully
+compiled example.chpl successfully
+compiled nomodule.chpl successfully
+compiled examplesubdir/subdirExample.chpl successfully
+compiled withOpts.chpl successfully
+compiled badExit.chpl successfully
++ mason run --example depExample.chpl
+Updating registry
+Example with dependency Passed!
++ mason run --example example.chpl
+Updating registry
+Example Passed!
++ mason run --example nomodule.chpl
+Updating registry
+Example with dependency outside module Passed!
++ mason run --example examplesubdir/subdirExample.chpl
+Updating registry
+Example within subdirectory Passed!
+'Passed from subdir!'
++ mason run --example withOpts.chpl
+Updating registry
+Passed!
+2
+I have spaces!
++ CHPL_RT_UNWIND=0
++ mason run --example badExit.chpl
+Updating registry
+$CHPL_HOME/test/mason/mason-example/sampleModule/example/badExit.chpl:1: error: halt reached - Yay bugs

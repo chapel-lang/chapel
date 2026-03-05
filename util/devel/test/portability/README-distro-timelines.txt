@@ -1,6 +1,6 @@
 x means reached end of life
 - means end of life soon
-  (last updated: 2025-12-01)
+  (last updated: 2026-02-24)
 
 Alma Linux -- see https://wiki.almalinux.org/release-notes/
            -- Version 9 will have active support until 31 May 2027, and security support until 31 May 2032.
@@ -20,6 +20,7 @@ x 3.19  EOL 2025-11-01
   3.20  EOL 2026-04-01
   3.21  EOL 2026-11-01
   3.22  EOL 2027-05-01
+  3.23  EOL 2027-11-01
 
 Amazon Linux
        -- see https://docs.aws.amazon.com/linux/al2022/ug/release-cadence.html
@@ -163,6 +164,7 @@ x 18.04 "Bionic Beaver"     LTS until Jun 2023, EOL Apr 2028
 x 20.04 "Focal Fossa"       LTS until Apr 2025, EOL Apr 2030
   22.04 "Jammy Jellyfish"   LTS until Jun 2027, EOL Apr 2032
   24.04 "Noble Numbat"      LTS until Jun 2029, EOL Apr 2036
+  26.04 "Resolute Raccoon"  Upcoming release in April 2026
 
 non-LTS:
 x 14.10 "Utopic Unicorn"    EOL July 2015
@@ -181,5 +183,5 @@ x 22.10 "Kinetic Kudu"      EOL July 2023
 x 23.04 "Lunar Lobster"     EOL Jan 2024
 x 23.10 "Mantic Minotaur"   EOL Jul 2024
 x 24.10 "Oracular Oriole"   EOL Jul 2025
-  25.04 "Plucky Puffin"     EOL Jan 2026
+x 25.04 "Plucky Puffin"     EOL Jan 2026
   25.10 "Questing Quokka"   EOL Jul 2026

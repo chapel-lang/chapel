@@ -1,0 +1,20 @@
+[brick]
+name="prereq2"
+version="0.1.0"
+chplVersion="2.7.0"
+license="None"
+type="library"
+compopts=["-smyParam=2"]
+
+tests = [
+  "Test.chpl",
+]
+
+[examples]
+examples = [ "Ex1.chpl", "Ex2.chpl" ]
+
+[examples.Ex2]
+compopts = ["-smyParam=3"]
+
+[dependencies]
+

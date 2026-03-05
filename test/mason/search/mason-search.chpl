@@ -16,7 +16,7 @@ proc main() {
 
   if debug {
     MasonLogger.logs = MasonLogger.logLevel.debug;
-    MasonLogger.setNoColor(true);
+    MasonLogger.setUseColorOutput(false);
   }
 
   try! {

@@ -52,7 +52,10 @@ public:
   static CatchStmt* build(const char* name, BlockStmt* body);
   static CatchStmt* build(BlockStmt* body);
 
-   CatchStmt(const char* name, Expr* type, BlockStmt* body, bool createdErr = false);
+  enum CatchallState { NOT_CATCHALL = 0, CATCHALL = 1, NOT_YET_COMPUTED = 2};
+
+   CatchStmt(const char* name, Expr* type, BlockStmt* body, bool createdErr = false,
+             CatchallState wasCatchall = CatchallState::NOT_YET_COMPUTED);
   ~CatchStmt() override = default;
 
   const char* name() const;
@@ -64,9 +67,10 @@ public:
   // the test without that conditional
 
   BlockStmt*  body() const;
-  BlockStmt*  bodyWithoutTest() const;
+  BlockStmt*  bodyWithoutTest();
 
-  bool        isCatchall() const;
+  bool        computeIsCatchall();
+  bool        isCatchall();
 
   void                accept(AstVisitor* visitor) override;
   void                replaceChild(Expr* old_ast, Expr* new_ast) override;
@@ -85,6 +89,8 @@ public:
   Expr*       _type;
   BlockStmt*  _body;
   bool  _createdErr;
+
+  CatchallState _wasCatchall;
 
 private:
   CatchStmt();

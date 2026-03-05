@@ -10,7 +10,12 @@ config const toml = "";
 
 proc main() {
 
-  updateLock(true, tf=toml);
+  try {
+    updateLock(true, tf=toml);
+  } catch e {
+    writeln(e.message());
+    exit(0);
+  }
 
   if exists("Mason.lock") {
     writeln("----- lock file -----");

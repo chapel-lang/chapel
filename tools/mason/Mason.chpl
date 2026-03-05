@@ -104,10 +104,10 @@ module Mason {
     // TODO: Can printVersion take an exit code?
     if versionFlag.valueAsBool() {
       printVersion();
-      exit(0);
+      return 0;
     }
 
-    MasonLogger.setNoColor(noColorFlag.valueAsBool());
+    MasonLogger.setUseColorOutput(!noColorFlag.valueAsBool());
 
     var usedCmd:string;
     var cmdList:list(string);
@@ -137,19 +137,20 @@ module Mason {
         when "rm" do masonModify(cmdArgs);
         when "run" do masonRun(cmdArgs);
         when "search" do retCode = masonSearch(cmdArgs);
-        when "system" do masonSystem(cmdArgs);
+        when "system" do retCode = masonSystem(cmdArgs);
         when "test" do masonTest(cmdArgs);
         when "update" do masonUpdate(cmdArgs);
         when "modules" do masonModules(cmdArgs);
         when "version" do printVersion();
         otherwise {
-          throw new MasonError("No such subcommand '%s'\ntry mason --help"
-                               .format(usedCmd));
+          writeln("No subcommand provided");
+          masonHelp();
+          retCode = 1;
         }
       }
     } catch ex: MasonError {
       stderr.writeln(ex.message());
-      exit(1);
+      retCode = 1;
     }
     return retCode;
   }

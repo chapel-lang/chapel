@@ -893,9 +893,9 @@ extern record iostyleInternal { // aka qio_style_t
   var max_width_bytes:uint(32) = max(uint(32));
 
   /* What character do we start strings with, when appropriate? Default is ``"``. */
-  var string_start:style_char_t = 0x22; // "
+  var string_start:style_char_t = '"'.toByte();
   /* What character do we end strings with, when appropriate? Default is ``"``. */
-  var string_end:style_char_t = 0x22; // "
+  var string_end:style_char_t = '"'.toByte();
 
   /* How should we format strings when performing text I/O?
      See :type:`iostringstyleInternal` for more information
@@ -903,8 +903,8 @@ extern record iostyleInternal { // aka qio_style_t
    */
   var string_format:uint(8) = iostringformatInternal.word:uint(8);
 
-  /* What character do we start bytes with, when appropriate? Default is ``"``. */
-  var bytes_prefix:style_char_t = 0x62; // b
+  /* What character do we start bytes with, when appropriate? Default is ``"b``. */
+  var bytes_prefix:style_char_t = "b".toByte();
 
   // numeric scanning/printing choices
   /* When reading or writing a numeric value in a text mode fileReader or
@@ -915,26 +915,26 @@ extern record iostyleInternal { // aka qio_style_t
   /* When reading or writing a numeric value in a text mode fileReader or
      fileWriter, how is the integer portion separated from the fractional
      portion? Default is ``.``. */
-  var point_char:style_char_t = 0x2e; // .
+  var point_char:style_char_t = ".".toByte();
   /* When reading or writing a numeric value in a text mode fileReader or
      fileWriter, how is the exponent written? Default is ``e``. */
-  var exponent_char:style_char_t = 0x65; // e
+  var exponent_char:style_char_t = "e".toByte();
   /* When reading or writing a numeric value in a text mode fileReader or
      fileWriter, when base is > 10, how is the exponent written? Default is
      ``p``. */
-  var other_exponent_char:style_char_t = 0x70; // p
+  var other_exponent_char:style_char_t = "p".toByte();
   /* What character denotes a positive number? Default is ``+``. */
-  var positive_char:style_char_t = 0x2b; // +;
+  var positive_char:style_char_t = "+".toByte();
   /* What character denotes a negative number? Default is ``-``. */
-  var negative_char:style_char_t = 0x2d; // -;
+  var negative_char:style_char_t = "-".toByte();
   /* What character follows an the imaginary number? Default is ``i``. */
-  var i_char:style_char_t = 0x69; // i
+  var i_char:style_char_t = "i".toByte();
   /* When writing in a base other than 10, should the prefix be used
      (e.g. hexadecimal numbers are prefixed with 0x)? */
   var prefix_base:uint(8) = 1;
   // numeric printing choices
   /* When padding with spaces, which pad character to use? Default is ' '. */
-  var pad_char:style_char_t = 0x20; // ' '
+  var pad_char:style_char_t = " ".toByte();
   /* When printing a positive numeric value, should the ``+`` be shown? */
   var showplus:uint(8) = 0;
   /* When printing a numeric value in hexadecimal, should it be
@@ -5815,7 +5815,7 @@ private proc _write_text_internal(_channel_internal:qio_channel_ptr_t, x:?t):err
     return qio_channel_print_float(false, _channel_internal, x, numBytes(t));
   } else if isImagType(t) {
     return qio_channel_print_imag(false, _channel_internal, x, numBytes(t));
-  } else if isComplexType(t)  {
+  } else if isComplexType(t) {
     // handle complex types
     return chpl_print_complex(_channel_internal, x);
   } else if t == string {
@@ -6783,7 +6783,7 @@ iter fileReader._lines_serial(
   // Update iostyleInternal
   var newline_style: iostyleInternal = this._styleInternal();
 
-  param newlineChar = 0x0A; // '\n'
+  param newlineChar = '\n'.toByte();
 
   newline_style.string_format = QIO_STRING_FORMAT_TOEND;
   newline_style.string_end = newlineChar;
@@ -7072,7 +7072,7 @@ proc fileReader.readLine(ref a: [] ?t, maxSize=a.size,
   on this._home {
     try this.lock(); defer { this.unlock(); }
     this.mark();
-    param newLineChar = 0x0A;
+    param newLineChar = '\n'.toByte();
     var got: int;
     var i = a.domain.lowBound;
     const maxIdx = a.domain.lowBound + maxSize - 1;
@@ -7224,7 +7224,7 @@ proc fileReader.readLine(ref s: string,
 
   on this._home {
     try this.lock(); defer { this.unlock(); }
-    param newLineChar = 0x0A; // ascii newline.
+    param newLineChar = '\n'.toByte();
     var maxCodepoints = if maxSize < 0 then max(int) else maxSize;
     var nCodepoints: int = 0; // num codepoints, including newline
     var chr : int(32);
@@ -7313,7 +7313,7 @@ proc fileReader.readLine(ref b: bytes,
 
   on this._home {
     try this.lock(); defer { this.unlock(); }
-    param newLineChar = 0x0A; // ascii newline.
+    param newLineChar = '\n'.toByte();
     var maxBytes = if maxSize < 0 then max(int) else maxSize;
     var nBytes: int = 0;
     // use the fileReader's buffering to compute how many bytes we are reading

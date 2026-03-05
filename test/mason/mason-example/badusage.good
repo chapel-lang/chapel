@@ -1,0 +1,26 @@
++ mason clean
++ mason run --example example.chpl
+Example has not been compiled: example.chpl
+Try running: mason build --example example.chpl
+         or: mason run --example example.chpl --build
+Updating registry
++ echo 'exited with 1'
+exited with 1
++ mason run --example example.chpl --force
+The --force flag is only valid when used with --build
++ echo 'exited with 1'
+exited with 1
++ mason run --example example.chpl --no-update
+The --[no]-update flag is only valid when used with --build
++ echo 'exited with 1'
+exited with 1
++ mason build --example Unknown
+Mason could not find example: Unknown
+Updating registry
++ echo 'exited with 1'
+exited with 1
++ mason run --example Unknown
+Mason could not find example: Unknown
+Updating registry
++ echo 'exited with 1'
+exited with 1

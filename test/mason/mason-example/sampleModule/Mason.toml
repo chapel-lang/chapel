@@ -1,0 +1,19 @@
+
+[brick]
+name = "sampleModule"
+version = "0.1.0"
+chplVersion = "1.17.0"
+type = "library"
+
+[dependencies]
+_MasonTest1 = "0.2.0"
+
+[examples]
+examples = ["depExample.chpl", "example.chpl", "nomodule.chpl", "examplesubdir/subdirExample.chpl", "withOpts.chpl", "badExit.chpl"]
+
+[examples.withOpts]
+compopts = ["-sexParam1=2", "-sexParam2='I have spaces!'"]
+execopts = "--exConfig=Passed!"
+
+[examples.subdirExample]
+execopts = ["--exConfig='Passed from subdir!'"]

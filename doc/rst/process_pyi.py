@@ -1,19 +1,19 @@
-
 import ast
 import re
 from typing import Dict, Tuple, Optional
+
 
 class PyiSignatures:
 
     def __init__(self, filename: str):
         self.filename = filename
-        self.regex = re.compile(r'def\s+([^ ]+)(\(.*\))(?:\s*->\s*(.+?))?:')
+        self.regex = re.compile(r"def\s+([^ ]+)(\(.*\))(?:\s*->\s*(.+?))?:")
         # (classname, methodname) -> (args, return)
         self.types: Dict[Tuple[str, str], Tuple[str, str]] = dict()
         self._process()
 
     def _process(self):
-        with open(self.filename, 'r') as f:
+        with open(self.filename, "r") as f:
             tree = ast.parse(f.read())
 
         for cls in ast.walk(tree):
@@ -29,7 +29,6 @@ class PyiSignatures:
                             args = m.group(2)
                             ret = m.group(3)
                             self.types[(classname, methodname)] = (args, ret)
-
 
     def get(self, classname: str, methodname: str) -> Optional[Tuple[str, str]]:
         return self.types.get((classname, methodname))

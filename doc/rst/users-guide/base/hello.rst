@@ -1,5 +1,3 @@
-:title: Users Guide: Hello world
-
 Hello world: simple console output
 ==================================
 

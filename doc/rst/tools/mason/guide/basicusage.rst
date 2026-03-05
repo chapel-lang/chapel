@@ -1,33 +1,19 @@
-:title: Mason Guide: *Basic Usage*
-
 Basic Usage
-===========
+-----------
 
 Starting a New Package
 ~~~~~~~~~~~~~~~~~~~~~~
 
-To initialize a new mason package, run ``mason new``. The same can also be done using ``mason init`` as follows:
+To initialize a new mason package, run ``mason new MyPackage``. This creates a
+directory and sets it up to have the structure of a mason package called
+MyPackage. Particularly, it creates a `Mason.toml` file and the `src` folder
+with the package main module. This creates a git repository by default, unless
+``--no-vcs`` is used.
 
-  .. code-block:: sh
+Mason packages can also be initialized using ``mason init``. For example, for
+an existing directory named MyPackage:
 
-    mkdir newPackage
-    cd newPackage
-    mason init
-
-This sets up a folder to have the structure of a mason package. Particularly, it creates a `Mason.toml` file and the `src` folder with the package main module.
-
-A more advanced user may use the ``mason new [ options ] <project name>`` command, for example::
-
-    mason new MyPackage
-
-This creates a git repository by default, unless ``--no-vcs`` is included.
-
-Mason packages can also be initialized using the ``mason init [options] [directory path]``.
-
-
-For example, for an existing directory named MyPackage,
-
-  .. code-block:: sh
+  .. code-block:: bash
 
     mason init MyPackage
 
@@ -36,16 +22,20 @@ For example, for an existing directory named MyPackage,
     cd MyPackage
     mason init
 
+Package Layout
+~~~~~~~~~~~~~~
 
-The package will have the following hierarchy::
+Freshly created packages will have the following hierarchy:
 
-  MyPackage/
-   │
-   ├── Mason.toml
-   ├── example/
-   ├── src/
-   │   └── MyPackage.chpl
-   └── test/
+.. code-block:: text
+
+    MyPackage/
+     │
+     ├── Mason.toml
+     ├── example/
+     ├── src/
+     │   └── MyPackage.chpl
+     └── test/
 
 
 The first file listed is the ``Mason.toml``. This is the manifest file
@@ -57,15 +47,19 @@ As you might expect, the ``test/`` folder and the ``example/`` folder hold
 tests and examples for your package, respectively. We will get to the
 additional functionality that comes with these folders later.
 
-Mason enforces that the main file be named after the package to enforce namespacing.
-``MyPackage.chpl`` will be the first file listed in ``src/``.
+Mason enforces that the main file be named after the package to enforce
+namespacing. ``MyPackage.chpl`` will be the first file listed in ``src/``.
 
-You can create a package in a directory that differs from the mason
-package name with the `mason {new,init} --name` flag.
-This may be useful when creating a package in a directory that
-is an illegal Mason package name, such as names with dashes. For example,
+Package Naming
+~~~~~~~~~~~~~~
 
-  .. code-block:: sh
+Mason packages by default have the same name as the directory in which they are
+created. This name must be a legal Chapel identifier. However, you can have the
+Mason package name differ from the directory name by creating the package with
+the ``--name`` flag. This may be useful when creating a package in a directory
+that is an illegal Mason package name, such as names with dashes. For example,
+
+  .. code-block:: bash
 
     mason new illegal-module-name --name LegalModuleName
 

@@ -966,6 +966,10 @@ bool isExternType(Type* t) {
   if (t->isWideRef())
     return false;
 
+  if (isFunctionType(t) && fcfs::usePointerImplementation()) {
+    return false;
+  }
+
   ClassTypeDecoratorEnum d = ClassTypeDecorator::UNMANAGED_NONNIL;
   // unmanaged or borrowed classes are OK
   if (isClassLikeOrManaged(t) || isClassLikeOrPtr(t))

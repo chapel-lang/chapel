@@ -29,7 +29,9 @@ use MasonUpdate;
 use MasonUtils;
 use Path;
 use Subprocess;
+import MasonLogger;
 
+private var log = new MasonLogger.logger("mason new");
 
 /*
   Creates a new library project at a given directory
@@ -49,7 +51,7 @@ proc masonNew(args: [] string) throws {
   var appFlag = parser.addFlag(name="app", defaultValue=false);
   var libFlag = parser.addFlag(name="lib", defaultValue=false);
   var lightFlag = parser.addFlag(name="light", defaultValue=false);
-  var dirArg = parser.addArgument(name="directory", numArgs=0..1);
+  var dirArg = parser.addArgument(name="project name", numArgs=1);
 
   parser.parseArgs(args);
 
@@ -85,32 +87,18 @@ proc masonNew(args: [] string) throws {
   else if isLightweight then
     packageType = "light";
 
-  if !isLightweight && validatePackageName(dirName=packageName) {
-    if isDir(dirName) {
-      throw new MasonError("A directory named '" +
-                            dirName + "' already exists");
-    }
+  const badPkgErr = validatePackageName(dirName=packageName, cmdName="new");
+  if badPkgErr != "" then
+    throw new MasonError(badPkgErr);
+
+  if isDir(dirName) {
+    throw new MasonError("A directory named '" +
+                          dirName + "' already exists");
   }
   initProject(dirName, packageName, vcs, show, version, chplVersion,
-              license, packageType);
+              license, packageType, true);
 }
 
-/* Exit terminal when CTRL + D is pressed */
-proc exitOnEOF(parameter) {
-  if parameter == '' {
-    writeln();
-    exit(1);
-  }
-}
-
-/* Previews the Mason.toml file that is going to be created */
-proc previewMasonFile(packageName, version, chapelVersion, license) {
-  // TODO: update hardcode
-  const baseToml = getBaseTomlString(packageName, version, chapelVersion,
-                                     license, "application");
-  writeln();
-  writeln(baseToml);
-}
 
 // TODO: this function is completely unused - remove or use it?
 /* Perform validation checks on Chapel Version */
@@ -127,17 +115,20 @@ proc validateChplVersion(chapelVersion) throws {
     return true;
 }
 
-/* Checks for illegal package names */
-proc validatePackageName(dirName) throws {
+/*
+  Checks for illegal package names
+
+  returns an error message, or an empty string if no error
+*/
+proc validatePackageName(dirName, cmdName): string {
   if dirName == '' {
-    throw new MasonError("No package name specified");
+    return "No package name specified";
   } else if !isIdentifier(dirName) {
-    throw new MasonError(
-      "Bad package name '" + dirName +
-      "' - only Chapel identifiers are legal package names.\n" +
-      "Please use mason new %s --name <LegalName>".format(dirName));
+    return "Bad package name '" + dirName +
+           "' - only Chapel identifiers are legal package names.\n" +
+           "Please use mason %s %s --name <LegalName>".format(cmdName, dirName);
   } else {
-    return true;
+    return "";
   }
 }
 
@@ -154,11 +145,17 @@ proc addGitIgnore(dirName: string) {
   target/
   Mason.lock
   doc/
-  """.dedent().strip() + "\n";
-  var gitIgnore = open(joinPath(dirName, ".gitignore"), ioMode.cw);
-  var GIwriter = gitIgnore.writer(locking=false);
-  GIwriter.write(toIgnore);
-  GIwriter.close();
+  """.dedent().strip();
+
+  const file = joinPath(dirName, ".gitignore");
+  if isFile(file) {
+    log.warnln(".gitignore already exists, " +
+               "skipping creation of .gitignore file");
+    return;
+  }
+
+  var writer = openWriter(file);
+  writer.writeln(toIgnore);
 }
 
 proc getBaseTomlString(packageName: string, version: string,

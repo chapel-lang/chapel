@@ -640,6 +640,15 @@ all:
       config: 16-node-apollo-hdr
   01/06/26:
     - Add undefined behavior guardrails to strings, IO, and hashing (#28227)
+  02/17/26:
+    - text: Added new LICM optimizations for arrays passed by const (#28091)
+      config: chapcs, 16-node-apollo-hdr, 16-node-hpe-cray-ex, 1-node-a100, 1-node-mi250x
+  12/21/25:
+    - text: System hardware/software change
+      config: chapcs
+  02/23/26:
+    - text: System hardware/software change
+      config: 1-node-a100, 1-node-mi250x
 
 # End all
 
@@ -1042,6 +1051,8 @@ fastaredux:
     - Propagate user thrown errors out of IO routines (#14739)
   01/06/21:
     - Remove lots of inlines in IO.chpl for non-trivial procedures (#16887)
+  01/12/26:
+    - Simplify sharing of serializers in fileReader/Writer (#28275)
 
 fft:
   05/15/19:
@@ -2042,6 +2053,8 @@ revcomp: &revcomp-base
     - Remove check on 'log' input with --no-checks (#26368)
   01/08/26:
     - Fix 'toArray()' for standard collections of non-default initializable records (#28259)
+  01/13/26:
+    - (no-local) Make serializer/deserializer fields non-nilable (#28280)
 
 revcomp-submitted:
   06/07/22:
@@ -2442,6 +2455,10 @@ compilerAndTestingStats: &compiler-perf-base
     - System software change
   11/19/25:
     - Fixed regression due to isDefAndOrUse change (#28082)
+  01/09/26:
+    - Fix uniquifyName failure when compiling with debug flag (#28258)
+  01/13/26:
+    - Revert uniquifyName bug fix (#28297)
 
 allTotalTime:
   <<: *compiler-perf-base
@@ -2680,6 +2697,13 @@ arkouda: &arkouda-base
     - Resolves Issue 4810, cumSum and cumProd performance (Bears-R-Us/arkouda#4819)
   12/01/25:
     - Fix CSV Parsing of Quoted Fields, Escaped Quotes, Embedded Delimiters, and Multi-Line Records (Bears-R-Us/arkouda#5080)
+  01/13/26:
+    - text: Possible regression in array transfer performance due to bigint perf tweaks (?) (Bears-R-Us/arkouda#5151)
+      config: chapcs
+  02/10/26:
+    - Add runtime warning on divide-by-zero (Bears-R-Us/arkouda#5315)
+  02/19/26:
+    - Fix performance regressions from divide-by-zero check (Bears-R-Us/arkouda#5416)
 
 arkouda-string:
   <<: *arkouda-base

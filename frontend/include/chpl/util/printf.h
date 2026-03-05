@@ -34,8 +34,8 @@
 
 namespace chpl {
 
-std::string vprintToString(const char* format, ...);
-std::string vprintToString(const char* format, va_list vl);
+std::string vprintToString(const char* format, ...) DYNO_ATTR_PRINTF_FORMAT(1, 2);
+std::string vprintToString(const char* format, va_list vl) DYNO_ATTR_PRINTF_FORMAT(1, 0);
 
 } // end namespace chpl
 

@@ -3163,7 +3163,7 @@ void runClang(const char* just_parse_filename) {
   // tell clang to use CUDA/AMD support
   if (isFullGpuCodegen()) {
     // Need to pass this flag so atomics header will compile
-    clangOtherArgs.push_back("--std=c++14");
+    clangOtherArgs.push_back("--std=c++17");
 
     // Need to select CUDA/AMD mode in embedded clang to
     // activate the GPU target

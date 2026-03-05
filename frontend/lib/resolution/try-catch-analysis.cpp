@@ -418,16 +418,21 @@ namespace resolution {
                                                     const AstNode* node) {
     // pragmas on modules override the default error checking mode.
     auto moduleId = parsing::idToModule(context, node->id());
-    auto ag = parsing::idToAttributeGroup(context, moduleId);
-    if (!ag) {
-      // fall through to figuring out the mode from the module kind
-    } else if (ag->hasPragma(pragmatags::PRAGMA_ERROR_MODE_FATAL)) {
-      return ErrorCheckingMode::FATAL;
-    } else if (ag->hasPragma(pragmatags::PRAGMA_ERROR_MODE_STRICT)) {
-      return ErrorCheckingMode::STRICT;
-    } else if (ag->hasPragma(pragmatags::PRAGMA_ERROR_MODE_RELAXED)) {
-      return ErrorCheckingMode::RELAXED;
+    while (!moduleId.isEmpty()) {
+      auto ag = parsing::idToAttributeGroup(context, moduleId);
+      if (!ag) {
+        // no attibute group on this module; is there a parent module?
+      } else if (ag->hasPragma(pragmatags::PRAGMA_ERROR_MODE_FATAL)) {
+        return ErrorCheckingMode::FATAL;
+      } else if (ag->hasPragma(pragmatags::PRAGMA_ERROR_MODE_STRICT)) {
+        return ErrorCheckingMode::STRICT;
+      } else if (ag->hasPragma(pragmatags::PRAGMA_ERROR_MODE_RELAXED)) {
+        return ErrorCheckingMode::RELAXED;
+      }
+
+      moduleId = parsing::idToParentModule(context, moduleId);
     }
+    // fall through to figuring out the mode from the module kind
 
     auto mode = ErrorCheckingMode::UNKNOWN;
     auto moduleKind = parsing::idToModuleKind(context, node->id());

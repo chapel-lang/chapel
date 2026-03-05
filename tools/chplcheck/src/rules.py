@@ -519,7 +519,7 @@ def rules(driver: LintDriver):
                     len("try") if not node.is_try_bang() else len("try!")
                 )
                 # adjust the location to be just the keyword
-                try_loc = try_loc - try_loc.adjust_start((0, len_of_keyword))
+                try_loc = try_loc - try_loc.modify_start((0, len_of_keyword))
                 res = check_for_unattached(
                     context, body, try_loc, curly_loc, AdvancedRuleResult
                 )
@@ -541,7 +541,7 @@ def rules(driver: LintDriver):
                     catch_loc = node.location()
                     len_of_keyword = len("catch")
                     # adjust the location to be just the keyword
-                    before_loc = catch_loc - catch_loc.adjust_start(
+                    before_loc = catch_loc - catch_loc.modify_start(
                         (0, len_of_keyword)
                     )
                 if before_loc is None:
@@ -1094,6 +1094,21 @@ def rules(driver: LintDriver):
             if isinstance(parent, FunctionSignature):
                 continue
 
+            # skip the writer/serializer formals for serialize and
+            # the reader/deserializer formals for deserialize since a valid
+            # serialize/deserialize may not reference them
+            if isinstance(parent, Function):
+                if parent.name() == "serialize" and formal.name() in (
+                    "writer",
+                    "serializer",
+                ):
+                    continue
+                if parent.name() == "deserialize" and formal.name() in (
+                    "reader",
+                    "deserializer",
+                ):
+                    continue
+
             formals[formal.unique_id()] = formal
 
         for use, _ in chapel.each_matching(root, Identifier):
@@ -1131,6 +1146,11 @@ def rules(driver: LintDriver):
                     or intent.init_expression() is not None
                 ):
                     continue
+            if intent.name() == "this":
+                # skip 'this' task intents, they may be used implicitly
+                # TODO: in the future, the resolver may be able to check if
+                # 'this' is actually used implicitly and we can remove this exception
+                continue
             intents[intent.unique_id()] = intent
 
         for use, _ in chapel.each_matching(root, Identifier):
@@ -1350,6 +1370,8 @@ def rules(driver: LintDriver):
         def find_anchor(node: Optional[AstNode]) -> Optional[AstNode]:
             # only loops and NamedDecls can be anchors for indentation
             anchor = node if isinstance(node, (Loop, NamedDecl)) else None
+            if isinstance(node, Module) and node.kind() == "implicit":
+                anchor = None
             return anchor
 
         # If root is something else (e.g., function call), do not

@@ -622,7 +622,8 @@ CallInfo CallInfo::create(Context* context,
 
 CallInfo CallInfo::createWithReceiver(const CallInfo& ci,
                                       QualifiedType receiverType,
-                                      UniqueString rename) {
+                                      UniqueString rename,
+                                      bool isImplicitMethodCall) {
   std::vector<CallInfoActual> newActuals;
   newActuals.push_back(CallInfoActual(receiverType, USTR("this")));
 
@@ -638,6 +639,7 @@ CallInfo CallInfo::createWithReceiver(const CallInfo& ci,
   auto name = rename.isEmpty() ? ci.name_ : rename;
   return CallInfo(name, QualifiedType(),
                   /* isMethodCall */ true,
+                  isImplicitMethodCall,
                   ci.hasQuestionArg_,
                   ci.isParenless_,
                   std::move(newActuals));
