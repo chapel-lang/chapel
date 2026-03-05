@@ -283,7 +283,7 @@ Bug Fixes for Build Issues
 
 Bug Fixes for the Runtime
 -------------------------
-* fixed an incorrect printf format attribute in the runtime
+* fixed an incorrect `printf()` format attribute in the runtime
 
 Developer-oriented changes: Process
 -----------------------------------
