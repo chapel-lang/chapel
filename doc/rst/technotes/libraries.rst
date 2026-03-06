@@ -694,12 +694,20 @@ definitions of these functions.
 Using Your Library in Multilocale Settings
 ==========================================
 
+.. note::
+
+  In order to compile a multi-locale library as described in the following
+  sections, you must throw the flag ``--client-server-library``. The default
+  behavior of ``--library`` for multi-locale Chapel configurations has
+  been changed to produce a more conventional dynamic library.
+
 Prerequisites
 -------------
 
-Chapel also supports ``--library`` when ``CHPL_COMM != none``.  We intend to
-support other settings in the future, see :ref:`Other Settings` in the
-:ref:`Multilocale Caveats` section for more information.
+Chapel also supports ``--library --client-server-library`` when
+``CHPL_COMM != none``.  We intend to support other settings in the future,
+see :ref:`Other Settings` in the :ref:`Multilocale Caveats` section for
+more information.
 
 To compile a multilocale library, `ZeroMQ <https://zeromq.org/>`_ must be
 installed.
@@ -843,11 +851,12 @@ the environment variable :ref:`chpl-rt-masterip`.
 Debugging Issues with Multilocale Libraries
 -------------------------------------------
 
-The ``chpl`` compiler provides a developer flag, ``--library-ml-debug``, which
-can be used to generate communication and underlying library implementation
-debugging output.  It is useful for tracking down connection issues between the
-generated executable and the generated library and unlikely to be helpful when
-tracking down issues with an exported function's body.
+The ``chpl`` compiler provides a developer flag,
+``--client-server-library-debug``, which can be used to generate communication
+and underlying library implementation debugging output.  It is useful for
+tracking down connection issues between the generated executable and the
+generated library and unlikely to be helpful when tracking down issues with
+an exported function's body.
 
 Caveats
 =======
@@ -910,12 +919,18 @@ supported for these types.  We may be able to support all intents in the future.
 Multilocale Caveats
 -------------------
 
+.. note::
+
+  The following sections describe caveats about multi-locale libraries
+  compiled with the ``--client-server-library`` flag.
+
 .. _Other Settings:
 
 Other Settings
 ~~~~~~~~~~~~~~
 
-The following settings are not yet supported for ``--library`` compilation:
+The following settings are not yet supported for ``--client-server-library``
+compilation:
 
 - ``--no-local``
 - ``CHPL_COMM = none`` when ``CHPL_LAUNCHER != none``
