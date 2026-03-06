@@ -1018,6 +1018,26 @@ class FileInfo:
 
             self._search_instantiations(fn, via=sig)
 
+        for node, _ in chapel.each_matching(
+            root, chapel.Function, iterator=chapel.preorder
+        ):
+            # Some functions (e.g., 'main') are never called, and written
+            # with array formals. This makes them generic. But we can turn
+            # the array formals into concrete default-rectangular formals,
+            # and thus maybe get a concrete instantiation to show.
+            assert isinstance(node, chapel.Function)
+            sig = node.initial_signature()
+            if sig:
+                sig = sig.rectangularize()
+            if sig:
+                insts = self.instantiations[node.unique_id()]
+                already_visited = sig in insts
+                if not already_visited:
+                    insts[sig] = []
+
+                if sig.is_instantiation() and not already_visited:
+                    self._search_instantiations(node, via=sig)
+
     def _invalidate_inst_segments(
         self,
     ):
