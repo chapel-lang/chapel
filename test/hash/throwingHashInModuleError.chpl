@@ -2,7 +2,7 @@ module throwingHashInModule { // module decl essential to exhibit the problem
   record myRec: hashable {
     var x: int;
 
-    proc hash(salt = 0): uint throws {
+    proc hash(salt = 0): uint {
       // This is not meant to be a good hash function, just to test throwing
       if salt == 0 then throw new IllegalArgumentError("salt too obvious!");
       else return x*salt;

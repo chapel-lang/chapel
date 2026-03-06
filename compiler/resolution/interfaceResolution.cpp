@@ -1329,9 +1329,34 @@ static FnSymbol* finalizeHolder(ImplementsStmt* istm, FnSymbol*   reqFn,
     wrapper->body->insertAtTail(stmt->remove());
   }
 
+  if (target->throwsError()) {
+    wrapper->throwsErrorInit();
+  }
+
   wrapper->retType = target->retType;
   wrapper->retTag = target->retTag;
   if (wrapper->retTag == RET_PARAM) wrapper->retTag = RET_VALUE;
+
+  // copy the this formal intent
+  wrapper->thisTag = target->thisTag;
+  ArgSymbol* wrapperThis = nullptr;
+  ArgSymbol* targetThis = nullptr;
+  for (int i = 1; i <= wrapper->numFormals(); i++) {
+    if (wrapper->getFormal(i)->hasFlag(FLAG_ARG_THIS)) {
+      wrapperThis = wrapper->getFormal(i);
+      break;
+    }
+  }
+  for (int i = 1; i <= target->numFormals(); i++) {
+    if (target->getFormal(i)->hasFlag(FLAG_ARG_THIS)) {
+      targetThis = target->getFormal(i);
+      break;
+    }
+  }
+  if (wrapperThis != nullptr && targetThis != nullptr) {
+    wrapperThis->originalIntent = targetThis->originalIntent;
+    wrapperThis->intent = targetThis->intent;
+  }
 
   if (target->retType == dtVoid) {
     wrapper->insertAtTail("'return'(%S)", gVoid);

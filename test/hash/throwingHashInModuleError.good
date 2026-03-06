@@ -1,0 +1,2 @@
+throwingHashInModuleError.chpl:5: In method 'hash':
+throwingHashInModuleError.chpl:7: error: cannot throw in a non-throwing function
