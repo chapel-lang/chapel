@@ -696,18 +696,17 @@ Using Your Library in Multilocale Settings
 
 .. note::
 
-  In order to compile a multi-locale library as described in the following
-  sections, you must throw the flag ``--client-server-library``. The default
-  behavior of ``--library`` for multi-locale Chapel configurations has
-  been changed to produce a more conventional dynamic library.
+  In order to compile a multilocale library as described in the following
+  sections, you must specify the flag ``--client-server-library``. The default
+  behavior of ``--library`` for multilocale Chapel configurations has
+  been changed in release 2.8 to produce a more conventional dynamic library.
 
 Prerequisites
 -------------
 
-Chapel also supports ``--library --client-server-library`` when
-``CHPL_COMM != none``.  We intend to support other settings in the future,
-see :ref:`Other Settings` in the :ref:`Multilocale Caveats` section for
-more information.
+Chapel also supports ``--client-server-library`` when ``CHPL_COMM != none``.
+We intend to support other settings in the future, see :ref:`Other Settings`
+in the :ref:`Multilocale Caveats` section for more information.
 
 To compile a multilocale library, `ZeroMQ <https://zeromq.org/>`_ must be
 installed.
@@ -921,7 +920,7 @@ Multilocale Caveats
 
 .. note::
 
-  The following sections describe caveats about multi-locale libraries
+  The following sections describe caveats about multilocale libraries
   compiled with the ``--client-server-library`` flag.
 
 .. _Other Settings:
@@ -929,8 +928,8 @@ Multilocale Caveats
 Other Settings
 ~~~~~~~~~~~~~~
 
-The following settings are not yet supported for ``--client-server-library``
-compilation:
+The ``--client-server-library`` flag does not currently support the
+following settings:
 
 - ``--no-local``
 - ``CHPL_COMM = none`` when ``CHPL_LAUNCHER != none``
