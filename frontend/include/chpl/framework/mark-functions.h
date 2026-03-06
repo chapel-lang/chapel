@@ -52,7 +52,7 @@ template<typename T> struct mark<T*> {
 };
 
 template<typename T> struct mark<owned<T>> {
-  void operator()(Context* context, owned<T>& keep) const {
+  void operator()(Context* context, const owned<T>& keep) const {
     context->markOwnedPointer(keep.get());
   }
 };
@@ -90,8 +90,8 @@ template<typename T> struct mark<std::vector<T>> {
   }
 };
 
-template<typename T, size_t i> struct mark<llvm::SmallVector<T, i>> {
-  void operator()(Context* context, const llvm::SmallVector<T, i>& keep) const {
+template<typename T> struct mark<llvm::SmallVector<T>> {
+  void operator()(Context* context, const llvm::SmallVector<T>& keep) const {
     for (auto const &elt : keep) {
       chpl::mark<T> marker;
       marker(context, elt);

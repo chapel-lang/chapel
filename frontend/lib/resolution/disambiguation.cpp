@@ -1820,7 +1820,7 @@ static bool isFormalPartiallyGeneric(const DisambiguationCandidate& candidate,
   if (faTypeExpr->isTuple()) {
     return true;
   } else if (auto op = faTypeExpr->toOpCall()) {
-    if (op->numActuals() == 2 && op->op() == USTR("*")) return true;
+    if (op->isBinaryOp() && op->op() == USTR("*")) return true;
   } else if (auto fnCall = faTypeExpr->toFnCall()) {
     if (parsing::isCallToClassManager(fnCall) &&
         fnCall->numActuals() >= 1) return true;

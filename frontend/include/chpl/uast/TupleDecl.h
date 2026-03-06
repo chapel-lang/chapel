@@ -187,7 +187,7 @@ class TupleDecl final : public Decl {
   const Decl* decl(int i) const {
     CHPL_ASSERT(i >= 0 && i < numDecls());
     const AstNode* ast = this->child(i);
-    CHPL_ASSERT(ast->isVariable() || ast->isTupleDecl());
+    CHPL_ASSERT(ast->isVariable() || ast->isFormal() || ast->isTupleDecl());
     CHPL_ASSERT(ast->isDecl());
     return (const Decl*)ast;
   }

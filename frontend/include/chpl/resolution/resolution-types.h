@@ -2620,26 +2620,85 @@ class AssociatedAction {
     TUPLE_CAST,
   };
 
+  using ActionsList = llvm::SmallVector<std::unique_ptr<AssociatedAction>>;
+
  private:
   Action action_;
   const TypedFnSignature* fn_;
   ID id_;
   types::QualifiedType type_;
 
+  // An index associated with some tuple per-element actions, where it is
+  // necessary to keep track of which tuple element the action applies to.
+  chpl::optional<int> tupleEltIdx_;
+
+  // A list of actions contained within this one.
+  // Currently only used for tuple call-init-deinit, where each element may
+  // have a sub-action.
+  // Sub-actions are owned by the parent, and will be destroyed with it.
+  ActionsList subActions_;
+
+  void copySubActions(const ActionsList& other) {
+    for (const auto& subAction : other) {
+      subActions_.push_back(std::make_unique<AssociatedAction>(*subAction));
+    }
+  }
+
  public:
   AssociatedAction(Action action, const TypedFnSignature* fn, ID id,
-                   types::QualifiedType type)
-    : action_(action), fn_(fn), id_(id), type_(type) {
+                   types::QualifiedType type,
+                   chpl::optional<int> tupleEltIdx = {},
+                   const ActionsList& subActions = {})
+      : action_(action),
+        fn_(fn),
+        id_(id),
+        type_(type),
+        tupleEltIdx_(tupleEltIdx) {
+    copySubActions(subActions);
   }
+  AssociatedAction(Action action, const TypedFnSignature* fn, ID id,
+                   types::QualifiedType type,
+                   chpl::optional<int> tupleEltIdx,
+                   ActionsList&& subActions)
+      : AssociatedAction(action, fn, id, type, tupleEltIdx) {
+    subActions_ = std::move(subActions);
+    subActions.clear();
+  }
+  AssociatedAction(const AssociatedAction& other) {
+    action_ = other.action_;
+    fn_ = other.fn_;
+    id_ = other.id_;
+    type_ = other.type_;
+    tupleEltIdx_ = other.tupleEltIdx_;
+    copySubActions(other.subActions_);
+  }
+  AssociatedAction& operator=(const AssociatedAction& other) {
+    if (this != &other) {
+      action_ = other.action_;
+      fn_ = other.fn_;
+      id_ = other.id_;
+      type_ = other.type_;
+      tupleEltIdx_ = other.tupleEltIdx_;
+      subActions_.clear();
+      copySubActions(other.subActions_);
+    }
+    return *this;
+  }
+  AssociatedAction(AssociatedAction&&) = default;
+  AssociatedAction& operator=(AssociatedAction&&) = default;
+
   bool operator==(const AssociatedAction& other) const {
     return action_ == other.action_ &&
            fn_ == other.fn_ &&
            id_ == other.id_ &&
-           type_ == other.type_;
+           type_ == other.type_ &&
+           tupleEltIdx_ == other.tupleEltIdx_ &&
+           subActions_ == other.subActions_;
   }
   bool operator!=(const AssociatedAction& other) const {
     return !(*this == other);
   }
+
   /** Returns which action this represents */
   Action action() const { return action_; }
 
@@ -2651,15 +2710,33 @@ class AssociatedAction {
 
   const types::QualifiedType type() const { return type_; }
 
+  const chpl::optional<int> tupleEltIdx() const {
+    return tupleEltIdx_;
+  }
+
+  const ActionsList& subActions() const {
+    return subActions_;
+  }
+
+  size_t hash() const {
+    return chpl::hash(action_, fn_, id_, type_, tupleEltIdx_, subActions_);
+  }
+
   void mark(Context* context) const {
     if (fn_ != nullptr) fn_->mark(context);
     id_.mark(context);
     type_.mark(context);
+    chpl::mark<decltype(tupleEltIdx_)>{}(context, tupleEltIdx_);
+    chpl::mark<decltype(subActions_)>{}(context, subActions_);
   }
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
   static const char* kindToString(Action a);
+
+  /// \cond DO_NOT_DOCUMENT
+  DECLARE_DUMP;
+  /// \endcond DO_NOT_DOCUMENT
 };
 
 class ResolvedParamLoop;
@@ -2737,14 +2814,14 @@ class ResolvedExpression {
 
   // TODO: Expected to be a placeholder as we look towards updating the
   // representation of associated actions.
-  std::optional<AssociatedAction> getAction(AssociatedAction::Action action) const {
+  const AssociatedAction* getAction(AssociatedAction::Action action) const {
     // TODO: what if there are multiple instances of the same action?
     auto it = std::find_if(associatedActions_.begin(), associatedActions_.end(),
-                [&](const AssociatedAction a) { return a.action() == action; });
+                [&](const AssociatedAction& a) { return a.action() == action; });
     if (it != associatedActions_.end()) {
-      return *it;
+      return &*it;
     } else {
-      return {};
+      return nullptr;
     }
   }
 
@@ -2780,12 +2857,18 @@ class ResolvedExpression {
   /** set the point-of-instantiation scope */
   void setPoiScope(const PoiScope* poiScope) { poiScope_ = poiScope; }
 
-  /** add an associated function */
-  void addAssociatedAction(AssociatedAction::Action action,
-                           const TypedFnSignature* fn,
-                           ID id,
-                           types::QualifiedType type) {
-    associatedActions_.push_back(AssociatedAction(action, fn, id, type));
+  /** remove all associated actions */
+  void clearAssociatedActions() {
+    associatedActions_.clear();
+  }
+
+  /** add an associated action */
+  template <typename ...Params>
+  void addAssociatedAction(Params&&... params) {
+    associatedActions_.emplace_back(std::forward<Params>(params)...);
+  }
+  void addAssociatedAction(AssociatedAction&& action) {
+    associatedActions_.push_back(std::move(action));
   }
 
   void setParamLoop(const ResolvedParamLoop* paramLoop) { paramLoop_ = paramLoop; }
@@ -3821,6 +3904,7 @@ CHPL_DEFINE_STD_HASH_(MostSpecificCandidate, (key.hash()));
 CHPL_DEFINE_STD_HASH_(MostSpecificCandidates, (key.hash()));
 CHPL_DEFINE_STD_HASH_(CallResolutionResult, (key.hash()));
 CHPL_DEFINE_STD_HASH_(TheseResolutionResult, (key.hash()));
+CHPL_DEFINE_STD_HASH_(AssociatedAction, (key.hash()));
 CHPL_DEFINE_STD_HASH_(ResolvedFieldResults, (key.hash()));
 CHPL_DEFINE_STD_HASH_(ResolvedFields, (key.hash()));
 CHPL_DEFINE_STD_HASH_(FieldDetail, (key.hash()));

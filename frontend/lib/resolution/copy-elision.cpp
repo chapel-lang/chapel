@@ -19,12 +19,14 @@
 
 #include "chpl/resolution/copy-elision.h"
 
+#include "chpl/resolution/can-pass.h"
 #include "chpl/resolution/ResolvedVisitor.h"
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/resolution-types.h"
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/types/Type.h"
 #include "chpl/types/ClassType.h"
+#include "chpl/types/TupleType.h"
 #include "chpl/uast/all-uast.h"
 
 #include "VarScopeVisitor.h"
@@ -46,7 +48,7 @@ struct FindElidedCopies : VarScopeVisitor {
   std::set<ID> outOrInoutFormals;
 
   // result of the process
-  std::set<ID> allElidedCopyFromIds;
+  ElidedCopyInfo allElidedCopyFromIds;
 
   // methods
   FindElidedCopies(Context* context,
@@ -70,8 +72,10 @@ struct FindElidedCopies : VarScopeVisitor {
                                   RV& rv);
   static bool lastMentionIsCopy(VarFrame* frame, ID varId);
   static void gatherLastMentionIsCopyVars(VarFrame* frame, std::set<ID>& vars);
-  static void addDeclaration(VarFrame* frame, const VarLikeDecl* ast);
-  static void addCopyInit(VarFrame* frame, ID fromVarId, ID point);
+  static void addDeclaration(VarFrame* frame,
+                             Qualifier intentOrKind,
+                             const NamedDecl* ast);
+  void addCopyInit(VarFrame* frame, ID fromVarId, ID point);
   static void addMention(VarFrame* frame, ID varId);
 
   // save the copy-elided variables in frame to allElidedCopyFromIds
@@ -86,9 +90,19 @@ struct FindElidedCopies : VarScopeVisitor {
   void propagateChildToParent(VarFrame* frame, VarFrame* parent, const AstNode* ast);
 
   // overrides
-  void handleDeclaration(const VarLikeDecl* ast, RV& rv) override;
+  void handleDeclaration(const VarLikeDecl* ast,
+                         const AstNode* parent,
+                         const AstNode* initExpr,
+                         const QualifiedType& initType,
+                         Qualifier intentOrKind,
+                         bool isFormal,
+                         RV& rv) override;
   void handleMention(const Identifier* ast, ID varId, RV& rv) override;
-  void handleAssign(const OpCall* ast, RV& rv) override;
+  void handleAssign(const AstNode* lhsAst,
+                    const AstNode* rhsAst,
+                    const types::QualifiedType& rhsType,
+                    const OpCall* opAst,
+                    RV& rv) override;
   void handleOutFormal(const Call* ast, const AstNode* actual,
                        const QualifiedType& formalType,
                        RV& rv) override;
@@ -201,11 +215,11 @@ void FindElidedCopies::gatherLastMentionIsCopyVars(VarFrame* frame,
   }
 }
 
-void FindElidedCopies::addDeclaration(VarFrame* frame, const VarLikeDecl* ast) {
+void FindElidedCopies::addDeclaration(VarFrame* frame, Qualifier intentOrKind,
+                                      const NamedDecl* ast) {
   bool inserted = frame->addToDeclaredVars(ast->id());
   if (inserted) {
-    auto kind = ast->storageKind();
-    if (kindAllowsCopyElision(kind)) {
+    if (kindAllowsCopyElision(intentOrKind)) {
       frame->eligibleVars.insert(ast->id());
     }
   }
@@ -217,7 +231,11 @@ void FindElidedCopies::addCopyInit(VarFrame* frame, ID fromVarId, ID point) {
   // get the map entry, default-initializing it if there was none
   CopyElisionState& state = frame->copyElisionState[fromVarId];
   state.lastIsCopy = true;
-  state.points.clear();
+  // Only clear previous points when not within a tuple, since they can cause
+  // multiple copy inits from the same variable.
+  if (!outermostContainingTuple()) {
+    state.points.clear();
+  }
   state.points.insert(point);
 }
 void FindElidedCopies::addMention(VarFrame* frame, ID varId) {
@@ -230,7 +248,9 @@ void FindElidedCopies::saveElidedCopies(VarFrame* frame) {
   for (const auto& pair : frame->copyElisionState) {
     const CopyElisionState& state = pair.second;
     if (state.lastIsCopy) {
-      allElidedCopyFromIds.insert(state.points.begin(), state.points.end());
+      for (const auto& point : state.points) {
+        allElidedCopyFromIds.emplace(point, pair.first);
+      }
     }
   }
 }
@@ -240,7 +260,9 @@ void FindElidedCopies::saveLocalVarElidedCopies(VarFrame* frame) {
     CHPL_ASSERT(frame->declaredVars.count(id) > 0);
     if (lastMentionIsCopy(frame, id)) {
       const CopyElisionState& state = frame->copyElisionState[id];
-      allElidedCopyFromIds.insert(state.points.begin(), state.points.end());
+      for (const auto& point : state.points) {
+        allElidedCopyFromIds.emplace(point, id);
+      }
     }
   }
 }
@@ -266,55 +288,131 @@ void FindElidedCopies::noteMentionsForOutFormals(VarFrame* frame) {
   }
 }
 
-void FindElidedCopies::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
-  addDeclaration(currentFrame(), ast);
-  processDeclarationInit(ast, rv);
+void FindElidedCopies::handleDeclaration(const VarLikeDecl* ast,
+                                         const AstNode* parent,
+                                         const AstNode* initExpr,
+                                         const QualifiedType& initType,
+                                         Qualifier intentOrKind,
+                                         bool isFormal,
+                                         RV& rv) {
+  addDeclaration(currentFrame(), intentOrKind, ast);
+  processDeclarationInit(ast, initExpr, rv);
 
-  if (auto initExpr = ast->initExpression()) {
+  if (initExpr) {
     VarFrame* frame = currentFrame();
     ID lhsVarId = ast->id();
-    ID rhsVarId = refersToId(initExpr, rv);
-    if (!rhsVarId.isEmpty() && isEligibleVarInAnyFrame(rhsVarId)) {
-      // check that the types are the same
-      if (rv.hasId(lhsVarId) && rv.hasId(rhsVarId)) {
-        QualifiedType lhsType = rv.byId(lhsVarId).type();
-        QualifiedType rhsType = rv.byId(rhsVarId).type();
-        if (copyElisionAllowedForTypes(lhsType, rhsType, ast, rv)) {
-          addCopyInit(frame, rhsVarId, ast->id());
+    if (auto tupleExprInit = initExpr->toTuple()) {
+      // TODO/HACK: Special handling for tuple var LHS = tuple expr RHS case,
+      // explicitly processing each RHS element.
+      // This will be obviated by just invoking `_tuple.init=` once we can
+      // properly handle VarScopeVisitor analyses over the param for loop it
+      // contains.
+      QualifiedType lhsTupleType = initType;
+      CHPL_ASSERT(lhsTupleType.type() &&
+                  lhsTupleType.type()->isTupleType());
+      for (int i = 0; i < tupleExprInit->numActuals(); i++) {
+        auto eltExpr = tupleExprInit->actual(i);
+        QualifiedType eltLhsType =
+            lhsTupleType.type()->toTupleType()->elementType(i);
+        // Remove ref-ness from lhs tuple elt since we are using it as a var,
+        // unless the whole tuple itself is ref
+        if (!lhsTupleType.isRef()) {
+          eltLhsType =
+              QualifiedType(KindProperties::removeRef(lhsTupleType.kind()),
+                            eltLhsType.type(), eltLhsType.param());
+        }
+        if (eltExpr->isTuple()) {
+          handleDeclaration(ast, parent, eltExpr, /* initType */ eltLhsType,
+                            intentOrKind, isFormal, rv);
+        } else {
+          ID rhsVarId = refersToId(eltExpr, rv);
+          QualifiedType rhsType = rv.byId(rhsVarId).type();
+          if (!rhsVarId.isEmpty() && isEligibleVarInAnyFrame(rhsVarId)) {
+            if (copyElisionAllowedForTypes(eltLhsType, rhsType, ast, rv)) {
+              addCopyInit(frame, rhsVarId, eltExpr->id());
+            }
+          }
+        }
+      }
+    } else {
+      QualifiedType lhsType = rv.byId(lhsVarId).type();
+      ID rhsVarId = refersToId(initExpr, rv);
+      if (!rhsVarId.isEmpty() && isEligibleVarInAnyFrame(rhsVarId)) {
+        // check that the types are the same
+        if (rv.hasId(lhsVarId) && rv.hasId(rhsVarId)) {
+          QualifiedType rhsType = initType;
+          if (copyElisionAllowedForTypes(lhsType, rhsType, ast, rv)) {
+            addCopyInit(frame, rhsVarId, ast->id());
+          }
         }
       }
     }
   }
 
-  if (ast->isFormal() || ast->isVarArgFormal()) {
-    if (ast->storageKind() == Qualifier::OUT ||
-        ast->storageKind() == Qualifier::INOUT) {
+  if (isFormal) {
+    if (intentOrKind == Qualifier::OUT ||
+        intentOrKind == Qualifier::INOUT) {
       outOrInoutFormals.insert(ast->id());
     }
   }
 }
+
 void FindElidedCopies::handleMention(const Identifier* ast, ID varId, RV& rv) {
   VarFrame* frame = currentFrame();
   addMention(frame, varId);
 }
-void FindElidedCopies::handleAssign(const OpCall* ast, RV& rv) {
-  auto lhsAst = ast->actual(0);
-  auto rhsAst = ast->actual(1);
-  bool splitInit = processSplitInitAssign(ast, allSplitInitedVars, rv);
+
+void FindElidedCopies::handleAssign(const AstNode* lhsAst,
+                                    const AstNode* rhsAst,
+                                    const types::QualifiedType& rhsType,
+                                    const OpCall* opAst,
+                                    RV& rv) {
+  bool splitInit = processSplitInitAssign(lhsAst, allSplitInitedVars, rv);
   if (splitInit) {
     VarFrame* frame = currentFrame();
 
     // if it was inserted in the current frame, it was a split init,
     // so the RHS here could be a copy & might be elided
+
     ID lhsVarId = refersToId(lhsAst, rv);
-    ID rhsVarId = refersToId(rhsAst, rv);
-    if (!rhsVarId.isEmpty() && isEligibleVarInAnyFrame(rhsVarId)) {
-      // check that the types are the same
-      if (rv.hasId(lhsVarId) && rv.hasId(rhsVarId)) {
-        QualifiedType lhsType = rv.byId(lhsVarId).type();
-        QualifiedType rhsType = rv.byId(rhsVarId).type();
-        if (copyElisionAllowedForTypes(lhsType, rhsType, ast, rv)) {
-          addCopyInit(frame, rhsVarId, ast->id());
+    QualifiedType lhsType = rv.byId(lhsVarId).type();
+    auto tupleExprInit = rhsAst->toTuple();
+    if (lhsType.type() && lhsType.type()->isTupleType() &&
+        tupleExprInit) {
+      // handle assign with tuple expression RHS
+      for (int i = 0; i < tupleExprInit->numActuals(); i++) {
+        auto actual = tupleExprInit->actual(i);
+        if (actual->isTuple()) {
+          handleAssign(lhsAst, actual, QualifiedType(), opAst, rv);
+        } else {
+          ID rhsVarId = refersToId(actual, rv);
+          if (!rhsVarId.isEmpty() && isEligibleVarInAnyFrame(rhsVarId)) {
+            // check that the types are the same
+            if (rv.hasId(lhsVarId) && rv.hasId(rhsVarId)) {
+              if (lhsType.type() && lhsType.type()->isTupleType()) {
+                const TupleType* ttype = lhsType.type()->toTupleType();
+                CHPL_ASSERT(ttype->numElements() == tupleExprInit->numActuals());
+                QualifiedType lhsEltType = ttype->elementType(i);
+
+                QualifiedType rhsType = rv.byId(rhsVarId).type();
+                if (copyElisionAllowedForTypes(lhsEltType, rhsType, opAst, rv)) {
+                  addCopyInit(frame, rhsVarId, actual->id());
+                }
+              }
+            }
+          }
+        }
+      }
+    } else {
+      ID lhsVarId = refersToId(lhsAst, rv);
+      ID rhsVarId = refersToId(rhsAst, rv);
+      if (!rhsVarId.isEmpty() && isEligibleVarInAnyFrame(rhsVarId)) {
+        // check that the types are the same
+        if (rv.hasId(lhsVarId) && rv.hasId(rhsVarId)) {
+          QualifiedType lhsType = rv.byId(lhsVarId).type();
+          if (copyElisionAllowedForTypes(lhsType, rhsType, opAst, rv)) {
+            addCopyInit(frame, rhsVarId, lhsAst->id());
+          }
         }
       }
     }
@@ -322,6 +420,7 @@ void FindElidedCopies::handleAssign(const OpCall* ast, RV& rv) {
     processMentions(lhsAst, rv);
   }
 }
+
 void FindElidedCopies::handleOutFormal(const Call* ast,
                                        const AstNode* actual,
                                        const QualifiedType& formalType,
@@ -639,14 +738,14 @@ void FindElidedCopies::handleScope(const AstNode* ast, RV& rv) {
   propagateChildToParent(frame, parent, ast);
 }
 
-std::set<ID>
+ElidedCopyInfo
 computeElidedCopies(Context* context,
                     const uast::AstNode* symbol,
                     const ResolutionResultByPostorderID& byPostorder,
                     const PoiScope* poiScope,
                     const std::set<ID>& allSplitInitedVars,
                     QualifiedType fnYieldedType) {
-  std::set<ID> elidedCopyFromIds;
+  ElidedCopyInfo elidedCopyFromIds;
 
   auto fn = symbol->toFunction();
 

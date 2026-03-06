@@ -62,9 +62,19 @@ struct FindSplitInits : VarScopeVisitor {
   void propagateChildToParent(VarFrame* frame, VarFrame* parent, const AstNode* ast);
 
   // overrides
-  void handleDeclaration(const VarLikeDecl* ast, RV& rv) override;
+  void handleDeclaration(const VarLikeDecl* ast,
+                         const AstNode* parent,
+                         const AstNode* initExpr,
+                         const QualifiedType& initType,
+                         Qualifier intentOrKind,
+                         bool isFormal,
+                         RV& rv) override;
   void handleMention(const Identifier* ast, ID varId, RV& rv) override;
-  void handleAssign(const OpCall* ast, RV& rv) override;
+  void handleAssign(const AstNode* lhsAst,
+                    const AstNode* rhsAst,
+                    const types::QualifiedType& rhsType,
+                    const OpCall* opAst,
+                    RV& rv) override;
   void handleOutFormal(const Call* ast, const AstNode* actual,
                        const QualifiedType& formalType,
                        RV& rv) override;
@@ -184,17 +194,23 @@ void FindSplitInits::handleInitOrAssign(ID varId,
   }
 }
 
-void FindSplitInits::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
+void FindSplitInits::handleDeclaration(const VarLikeDecl* ast,
+                                       const AstNode* parent,
+                                       const AstNode* initExpr,
+                                       const QualifiedType& initType,
+                                       Qualifier intentOrKind,
+                                       bool isFormal,
+                                       RV& rv) {
   VarFrame* frame = currentFrame();
   bool inserted = frame->addToDeclaredVars(ast->id());
   if (inserted) {
-    if (ast->initExpression() == nullptr) {
+    if (!initExpr) {
       frame->eligibleVars.insert(ast->id());
     }
-    if (ast->isFormal() || ast->isVarArgFormal()) {
-      if (ast->storageKind() == Qualifier::OUT) {
-        outFormals.insert(ast->id());
-      }
+  }
+  if (isFormal) {
+    if (intentOrKind == Qualifier::OUT) {
+      outFormals.insert(ast->id());
     }
   }
 }
@@ -212,14 +228,13 @@ void FindSplitInits::handleMention(const Identifier* ast, ID varId, RV& rv) {
   }
 }
 
-void FindSplitInits::handleAssign(const OpCall* ast, RV& rv) {
-  auto lhsAst = ast->actual(0);
-  auto rhsAst = ast->actual(1);
-
+void FindSplitInits::handleAssign(const AstNode* lhsAst,
+                                  const AstNode* rhsAst,
+                                  const types::QualifiedType& rhsType,
+                                  const OpCall* opAst,
+                                  RV& rv) {
   ID lhsVarId = refersToId(lhsAst, rv);
   if (!lhsVarId.isEmpty()) {
-    // get the type for the rhs
-    QualifiedType rhsType = rv.byAst(rhsAst).type();
     handleInitOrAssign(lhsVarId, rhsType, rv);
   } else {
     // visit the LHS to check for mentions

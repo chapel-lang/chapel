@@ -24,12 +24,14 @@
 #include "chpl/resolution/resolution-types.h"
 
 #include <set>
+#include <unordered_map>
 
 namespace chpl {
 namespace resolution {
 
+using ElidedCopyInfo = std::unordered_map<ID, ID>;
 
-/* Computes the set of IDs of initialization points
+/* Computes the IDs of initialization points
    that can be 'move's rather than '=' or 'copy-init'.
      * If the elided initialization point is a variable initialization expr,
        the ID of the initialized variable is stored in the set.
@@ -40,6 +42,9 @@ namespace resolution {
      * If the elided initialization point is a 'yield' statement, the
        ID of the 'yield' is stored in the set.
 
+   The value corresponding to the ID key is the ID of the init part being moved
+   from.
+
    Does not consider copy elision that only work with temporary
    variables (e.g. acceptsWithIn(returnsByValue())).
 
@@ -47,7 +52,7 @@ namespace resolution {
 
    allSplitInitedVars can be computed by computeSplitInits.
  */
-std::set<ID>
+ElidedCopyInfo
 computeElidedCopies(Context* context,
                     const uast::AstNode* symbol,
                     const ResolutionResultByPostorderID& byPostorder,

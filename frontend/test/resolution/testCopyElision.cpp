@@ -29,6 +29,7 @@
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
 #include "chpl/uast/Variable.h"
+#include <unordered_map>
 
 // resolves the last function, or module if testModule=true
 // checks that the copy elision points match the string IDs provided
@@ -67,7 +68,7 @@ static void testCopyElision(const char* test,
   }
 
   std::set<ID> splitIds;
-  std::set<ID> elisionPoints;
+  ElidedCopyInfo elisionPoints;
 
   if (testModule == false) {
     assert(func);
@@ -98,7 +99,8 @@ static void testCopyElision(const char* test,
   }
 
   std::set<std::string> pointNames;
-  for (auto id : elisionPoints) {
+  for (auto point : elisionPoints) {
+    auto id = point.first;
     pointNames.insert(id.str());
   }
 
@@ -272,7 +274,7 @@ static void test6() {
           }
         }
     )"""",
-    {"M.test@8", "M.test@12"});
+    {"M.test@6", "M.test@10"});
 
   testCopyElision("test6b",
     R""""(
@@ -349,7 +351,7 @@ static void test11() {
           y = x;
         }
     )"""",
-    {"M.test@5"});
+    {"M.test@3"});
 }
 
 static void test12() {
@@ -408,7 +410,7 @@ static void test14() {
           }
         }
     )"""",
-    {"M.test@10"});
+    {"M.test@8"});
 }
 
 static void test15() {
@@ -424,7 +426,7 @@ static void test15() {
           }
         }
     )"""",
-    {"M.test@8"});
+    {"M.test@6"});
 }
 
 static void test16() {
@@ -486,7 +488,7 @@ static void test19() {
           }
         }
     )"""",
-    {"M.test@5"});
+    {"M.test@3"});
 }
 
 static void test20() {
@@ -586,7 +588,7 @@ static void test26() {
           z = y;
         }
     )"""",
-    {"M.test@7"});
+    {"M.test@5"});
 }
 // including with an inner block
 static void test27() {
@@ -603,7 +605,7 @@ static void test27() {
           z = y;
         }
     )"""",
-    {"M.test@7"});
+    {"M.test@5"});
 }
 // including with a conditional
 static void test28() {
@@ -624,7 +626,7 @@ static void test28() {
           z = c;
         }
     )"""",
-    {"M.test@8", "M.test@12"});
+    {"M.test@6", "M.test@10"});
 }
 // including with a try/catch
 static void test29() {
@@ -645,7 +647,7 @@ static void test29() {
           z = b;
         }
     )"""",
-    {"M.test@7"});
+    {"M.test@5"});
 }
 
 // out variable can't be copy elided from b/c it is mentioned by return
@@ -706,7 +708,7 @@ static void test34() {
           z = c;
         }
     )"""",
-    {"M.test@8"});
+    {"M.test@6"});
 }
 
 static void test35() {
@@ -1186,7 +1188,7 @@ static void test42() {
           }
         }
     )"""",
-    {"M.test@12","M.test@18"});
+    {"M.test@10","M.test@16"});
 }
 
 static void test43() {
@@ -1365,7 +1367,7 @@ static void test47() {
 }
 
 static void test48() {
-  testCopyElision("test5a",
+  testCopyElision("test48",
     R""""(
         record R { proc foo(){} }
         proc test(cond: bool) {
@@ -1390,6 +1392,150 @@ static void test49() {
         }
     )"""",
     {}); // x is mentioned in a non-eligible block, so no elision
+}
+
+// Copy elision for destructuring of tuple var
+static void test50() {
+  // Init
+  testCopyElision("test50a",
+    R""""(
+      record R { }
+      proc test() {
+        var r = new R();
+        var s = new R();
+
+        var tup = ((1,), r, ((s, "hi"), 2, 3.14));
+
+        var ((a,), b, ((c, d), _, e)) = tup;
+      }
+    )"""",
+    {
+      "M.test@10",
+      "M.test@11",
+      "M.test@19",
+      "M.test@21",
+      "M.test@22",
+      "M.test@23",
+      "M.test@26",
+    });
+
+  // Assign
+  testCopyElision("test50b",
+    R""""(
+      record R { }
+      proc test() {
+        var r = new R();
+
+        var tup = (1, r, "hi");
+
+        var a: int;
+        var b: R;
+        (a, b, _) = tup;
+      }
+    )"""",
+    {"M.test@5", "M.test@13", "M.test@14"});
+}
+
+// Like test50, but no elision as the variable is mentioned later
+static void test51() {
+  // Init
+  testCopyElision("test51a",
+    R""""(
+      record R { }
+      proc test() {
+        var r = new R();
+        var s = new R();
+
+        var tup = ((1,), r, ((s, "hi"), 2, 3.14));
+
+        var ((a,), b, ((c, d), _, e)) = tup;
+        tup;
+      }
+    )"""",
+    {
+      "M.test@10",
+      "M.test@11",
+    });
+
+  // Assign
+  testCopyElision("test51b",
+    R""""(
+      record R { }
+      proc test() {
+        var r = new R();
+
+        var tup = (1, r, "hi");
+
+        var a: int;
+        var b: R;
+        (a, b, _) = tup;
+        tup;
+      }
+    )"""",
+    {"M.test@5"});
+}
+
+// Copy elision for assigning tuple expr into tuple var
+static void test52() {
+  // Init
+  testCopyElision("test52a",
+    R""""(
+      record R { }
+      proc test() {
+        var r = new R();
+        var s = new R();
+
+        var tup = (1, r, s);
+        s;
+      }
+    )"""",
+    {"M.test@9"});
+
+  // Init with no copy elision
+  testCopyElision("test52b",
+    R""""(
+      record R { }
+      proc test() {
+        var r = new R();
+        var s = new R();
+
+        var tup = (1, r, s);
+        r;
+        s;
+      }
+    )"""",
+    {});
+
+  // Assign
+  testCopyElision("test52c",
+    R""""(
+      record R { }
+      proc test() {
+        var r = new R();
+        var s = new R();
+
+        var tup: (int, R, R);
+        tup = (1, r, s);
+        s;
+      }
+    )"""",
+    {"M.test@15"});
+
+  // Assign with no copy elision
+  testCopyElision("test52d",
+    R""""(
+      record R { }
+      proc test() {
+        var r = new R();
+        var s = new R();
+
+        var tup: (int, R, R);
+        tup = (1, r, s);
+        r;
+        s;
+      }
+    )"""",
+    {});
 }
 
 int main() {
@@ -1442,5 +1588,9 @@ int main() {
   test47();
   test48();
   test49();
+  test50();
+  test51();
+  test52();
+
   return 0;
 }
