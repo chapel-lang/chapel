@@ -95,9 +95,9 @@ module Mason {
                                     opts=["-V","--version"],
                                     defaultValue=false);
 
-    var noColorFlag = parser.addFlag(name="noColorFlag",
-                                    opts=["--no-color"],
-                                    defaultValue=false);
+    var colorFlag = parser.addOption(name="color",
+                                    opts=["--color"],
+                                    defaultValue="auto");
 
     parser.parseArgs(args);
 
@@ -107,7 +107,15 @@ module Mason {
       return 0;
     }
 
-    MasonLogger.setUseColorOutput(!noColorFlag.valueAsBool());
+    try {
+      MasonLogger.setColorMode(
+        MasonLogger.colorModeFromString(colorFlag.value()));
+    } catch {
+      writeln("Unknown color mode: '", colorFlag.value(), "'. ",
+              "Valid options are 'auto', 'always', and 'never'.");
+      masonHelp();
+      return 1;
+    }
 
     var usedCmd:string;
     var cmdList:list(string);
