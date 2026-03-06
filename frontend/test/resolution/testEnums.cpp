@@ -824,7 +824,7 @@ static void test20() {
 
   std::ostringstream oss;
   vars.at("r").type()->stringify(oss, StringifyKind::CHPL_SYNTAX);
-  assert(oss.str() == "R(green)");
+  assert(oss.str() == "R(colors.green)");
 }
 
 // Non-param cast to string
@@ -1102,7 +1102,7 @@ static void test30() {
 
   std::ostringstream oss;
   vars.at("r").type()->stringify(oss, StringifyKind::CHPL_SYNTAX);
-  assert(oss.str() == "R(green)");
+  assert(oss.str() == "R(colors.green)");
 }
 
 // Param cast bytes to enum

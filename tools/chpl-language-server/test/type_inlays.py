@@ -84,7 +84,6 @@ async def test_type_inlays_prim(client: LanguageClient):
 
 
 @pytest.mark.asyncio
-@pytest.mark.xfail
 async def test_type_inlays_user_defined_types(client: LanguageClient):
     """
     Ensure that type inlays are shown properly for user-defined types.
@@ -98,6 +97,7 @@ async def test_type_inlays_user_defined_types(client: LanguageClient):
               var x: t;
               proc init(type t) {{
                 this.t = t;
+                this.x = if t != int(64) then new t() else 0;
               }}
             }}
             var a = new Concrete();
@@ -106,28 +106,28 @@ async def test_type_inlays_user_defined_types(client: LanguageClient):
             var c = new Generic(int);
             var d = c;
 
-            var e = new Generic(Concrete);
+            var e = new Generic({m}Concrete);
             var f = e;
 
-            var g = new Generic(Generic(string));
+            var g = new Generic({m}Generic(string));
             var h = g;
            """
 
     inlay_pos = [
-        (pos((10, 5)), "{m}Concrete"),
         (pos((11, 5)), "{m}Concrete"),
-        (pos((13, 5)), "{m}Generic(int)"),
-        (pos((14, 5)), "{m}Generic(int)"),
-        (pos((16, 5)), "{m}Generic({m}Concrete)"),
+        (pos((12, 5)), "{m}Concrete"),
+        (pos((14, 5)), "{m}Generic(int(64))"),
+        (pos((15, 5)), "{m}Generic(int(64))"),
         (pos((17, 5)), "{m}Generic({m}Concrete)"),
-        (pos((19, 5)), "{m}Generic({m}Generic(string))"),
+        (pos((18, 5)), "{m}Generic({m}Concrete)"),
         (pos((20, 5)), "{m}Generic({m}Generic(string))"),
+        (pos((21, 5)), "{m}Generic({m}Generic(string))"),
     ]
 
     variants = [("record", ""), ("class", "owned ")]
 
     for at, management in variants:
-        async with source_file(client, file.format(at=at)) as doc:
+        async with source_file(client, file.format(at=at, m=management)) as doc:
             inlays = [
                 (pos, typename.format(m=management))
                 for pos, typename in inlay_pos
@@ -172,7 +172,6 @@ async def test_type_inlays_tuple(client: LanguageClient):
 
 
 @pytest.mark.asyncio
-@pytest.mark.xfail
 async def test_type_inlays_range(client: LanguageClient):
     """
     Ensure that type inlays are shown for ranges
@@ -203,7 +202,7 @@ async def test_type_inlays_range(client: LanguageClient):
         (pos((7, 6)), "range(int(64), boundKind.both, strideKind.negative)"),
         (pos((8, 6)), "range(int(64), boundKind.both, strideKind.negOne)"),
         (pos((9, 6)), "range(int(64), boundKind.both, strideKind.one)"),
-        (pos((10, 7)), "range(int(32), boundKind.both, strideKind.one)"),
+        (pos((11, 7)), "range(int(32), boundKind.both, strideKind.one)"),
     ]
 
     async with source_file(client, file) as doc:
@@ -237,7 +236,6 @@ async def test_type_inlays_arrays(client: LanguageClient):
 
 
 @pytest.mark.asyncio
-@pytest.mark.xfail
 async def test_type_inlays_domains(client: LanguageClient):
     """
     Ensure that type inlays are shown for domains
@@ -315,7 +313,6 @@ async def test_type_inlays_return(client: LanguageClient):
 
 
 @pytest.mark.asyncio
-@pytest.mark.xfail
 async def test_type_inlays_yield(client: LanguageClient):
     """
     Ensure that type inlays are inferred from yield types on simple functions.
@@ -427,7 +424,6 @@ async def test_type_implicit_this(client: LanguageClient):
 
 
 @pytest.mark.asyncio
-@pytest.mark.xfail
 async def test_split_init_type_inlays(client: LanguageClient):
     """
     Ensure that type inlays are shown properly for split init on generics
@@ -447,7 +443,7 @@ async def test_split_init_type_inlays(client: LanguageClient):
             var y = x; // should be Generic(int)
            """
 
-    y_inlay = (pos((10, 5)), "Generic(int)")
+    y_inlay = (pos((10, 5)), "Generic(int(64))")
     async with source_file(client, file) as doc:
         await check_type_inlay_hints(
             client, doc, rng((0, 0), endpos(file)), [y_inlay]
