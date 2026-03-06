@@ -9,7 +9,7 @@
 // halt unexpectedly.
 //
 
-use ChapelDynamicLoading;
+use DynamicLibraryWrapper;
 use CTypes;
 use Reflection;
 
@@ -41,74 +41,6 @@ extern record foobar {
   var h: c_double;
   var x: baz;
   var padding: c_array(c_int, FOOBAR_PADDING);
-}
-
-/** Define a "user facing" wrapper around the internal dynamic library. */
-record dynamicLibrary {
-  var _bin: unmanaged chpl_BinaryInfo?;
-  var _err: owned DynLoadError?;
-
-  proc init(path: string) {
-    init this;
-    this._bin = chpl_BinaryInfo.create(path, this._err);
-    if _bin then _bin!.bumpRefCount();
-  }
-
-  proc deinit() {
-    if _bin then _bin!.dropRefCount();
-  }
-
-  proc err() do return _err.borrow();
-
-  inline proc _assertRetrievedProcedureProperties(p1: ?t1) {
-    use Types;
-
-    compilerAssert(isProcedureValue(p1));
-    compilerAssert(isProcedureType(t1));
-    compilerAssert(isProcedure(p1));
-    compilerAssert(isProcedure(t1));
-
-    compilerAssert(!chpl_isLocalProc(p1));
-    compilerAssert(!chpl_isLocalProc(t1));
-    compilerAssert(!chpl_isLocalProcType(t1));
-
-    compilerAssert(chpl_isWideProc(p1));
-    compilerAssert(chpl_isWideProc(t1));
-    compilerAssert(chpl_isWideProcType(t1));
-
-    compilerAssert(chpl_isExternProc(p1));
-    compilerAssert(chpl_isExternProc(t1));
-    compilerAssert(chpl_isExternProcType(t1));
-
-    const p2 = chpl_toLocalProc(p1);
-    type t2 = p2.type;
-
-    compilerAssert(isProcedureValue(p2));
-    compilerAssert(isProcedureType(t2));
-    compilerAssert(isProcedure(p2));
-    compilerAssert(isProcedure(t2));
-
-    compilerAssert(chpl_isLocalProc(p2));
-    compilerAssert(chpl_isLocalProc(t2));
-    compilerAssert(chpl_isLocalProcType(t2));
-
-    compilerAssert(!chpl_isWideProc(p2));
-    compilerAssert(!chpl_isWideProc(t2));
-    compilerAssert(!chpl_isWideProcType(t2));
-
-    compilerAssert(chpl_isExternProc(p2));
-    compilerAssert(chpl_isExternProc(t2));
-    compilerAssert(chpl_isExternProcType(t2));
-  }
-
-  proc ref load(sym: string, type T) throws {
-    if _err != nil then throw _err;
-    var err;
-    var ret = _bin!.loadSymbol(sym, T, err);
-    if err != nil then throw err;
-    _assertRetrievedProcedureProperties(ret);
-    return ret;
-  }
 }
 
 proc test0() {
@@ -232,10 +164,41 @@ proc test4() {
   }
 }
 
+// This test demonstrates that a library will persist on the locale that
+// it is originally loaded, even if other locales attempt to load it after.
+proc test5() {
+  writeln(getRoutineName());
+
+  // First create the library on LOCALE-0. This is where it will live.
+  var bin0 = new dynamicLibrary("./TestCLibraryToLoad.so");
+  type P1 = proc(_: int, _: int): int;
+  const wideProc0 = try! bin0.load("addTwoReturn", P1);
+  assert(wideProc0 != nil);
+
+  // TODO: Need a way to force evict libraries before execution ends.
+  assert(bin0._bin!.locale == here);
+
+  coforall loc in Locales do on loc {
+    var binHere = new dynamicLibrary("./TestCLibraryToLoad.so");
+
+    // The locales should match.
+    assert(binHere._bin!.locale == bin0._bin!.locale);
+
+    // And loading should work without incident.
+    type P1 = proc(_: int, _: int): int;
+    const wideProcHere = try! binHere.load("addTwoReturn", P1);
+    assert(wideProcHere != nil);
+
+    // And should have the same wide index.
+    assert(wideProcHere == wideProc0);
+  }
+}
+
 proc main() {
   test0();
   test1();
   test2();
   test3();
   test4();
+  test5();
 }
