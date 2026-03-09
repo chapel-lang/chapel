@@ -228,6 +228,7 @@ def main():
 
     with cd(archive_dir):
         set_make_threads()
+        log(f"Will invoke 'make' with {make_threads} threads")
 
         log("Creating the spec tests...")
         make("spectests")
