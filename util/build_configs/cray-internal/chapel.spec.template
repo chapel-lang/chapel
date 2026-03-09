@@ -28,6 +28,8 @@ Requires:   make
 Requires:   perl
 Requires:   python
 
+%define __brp_mangle_shebangs %{nil}
+
 %if %{!?buildroot:1}%{?buildroot:0}
 %{error: Missing required command line parameter --buildroot RPM_BUILD_ROOT}
 %{error: Make sure you also have --define "_topdir TOPDIR" (where RPM_BUILD_ROOT is a subdir)}
