@@ -444,7 +444,6 @@ module String {
     buf = buf + offset;
     import OS.POSIX.memcpy;
     memcpy(buf:c_ptr(void), x:c_ptr(void), length.safeCast(c_size_t));
-    memcpy(buf:c_ptr(void), x:c_ptr(void), length.safeCast(c_size_t));
     // add null byte
     buf[length] = 0;
 
