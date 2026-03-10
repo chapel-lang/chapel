@@ -147,6 +147,7 @@ chapelKeywords = set(
         "index",
         "inline",
         "inout",
+        "init",
         "iter",
         "label",
         "lambda",
@@ -160,6 +161,7 @@ chapelKeywords = set(
         "only",
         "otherwise",
         "out",
+        "owned",
         "param",
         "private",
         "proc",
@@ -172,12 +174,14 @@ chapelKeywords = set(
         "scan",
         "select",
         "serial",
+        "shared",
         "sparse",
         "subdomain",
         "sync",
         "then",
         "type",
         "union",
+        "unmanaged",
         "use",
         "var",
         "when",
@@ -544,7 +548,7 @@ def genStructOrUnion(structOrUnion, name="", isAnon=False):
             members = ""
             warnKeyword = True
             break
-        else:
+        elif fieldName is not None:
             chapelType = toChapelType(decl.type)
             if chapelType is None:
                 warnSkippingAnonymousType = True
@@ -643,6 +647,9 @@ class ChapelVisitor(c_ast.NodeVisitor):
                 or type(c) in (c_ast.ArrayDecl, ext_c_parser.ArrayDeclExt)
             ):
                 genVar(node)
+            elif type(c) == c_ast.Constant:
+                # we don't care about constants
+                pass
             else:
                 node.show()
                 raise Exception("Unhandled declaration")
@@ -704,7 +711,7 @@ def genTypedefs(defs):
                     structOrUnion = "union" if isUnion else "struct"
                     genComment("Opaque " + structOrUnion + "?")
                     gen = "extern union " if isUnion else "extern record "
-                    gen += name + " {};\n"
+                    gen += name + " {}\n"
                     print(gen)
                 else:
                     genTypeAlias(node)
