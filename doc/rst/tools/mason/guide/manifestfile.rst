@@ -53,10 +53,10 @@ Mason understands specific fields in the TOML file, which are described below.
    * ``chplVersion``: Indicates Chapel releases compatible with this
      package. There are a number of accepted formats:
 
-        .. code-block:: text
+        .. code-block:: toml
 
-           "2.1.0"         # 2.1.0 or later
-           "2.1"           # 2.1.0 or later
+           "2.1.0"        # 2.1.0 or later
+           "2.1"          # 2.1.0 or later
            "2.1.0..2.4.0" # 2.1 through 2.4, inclusive
 
      By default, ``chplVersion`` is set to represent the current Chapel release or
