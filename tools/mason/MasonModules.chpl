@@ -28,6 +28,7 @@ use MasonHelp;
 use MasonEnv;
 use MasonBuild;
 use Subprocess;
+use MasonUpdate;
 use TOML;
 import Path.joinPath;
 
