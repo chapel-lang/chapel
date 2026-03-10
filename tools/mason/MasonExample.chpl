@@ -42,7 +42,8 @@ proc runExamples(show: bool, run: bool, build: bool, release: bool,
                  extraCompopts = new list(string),
                  extraExecopts = new list(string),
                  nLocales: int) throws {
-  updateLock(skipUpdate);
+  if build then
+    updateLock(skipUpdate);
 
   const cwd = here.cwd();
   const projectHome = getProjectHome(cwd);
