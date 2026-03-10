@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+
+
+MASON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+DEPS_FILE="$MASON_DIR/third-party/masonDeps.txt"
+
+# if masonDeps does not exist, skip
+if [ ! -f "$DEPS_FILE" ]; then
+  echo "No masonDeps.txt found, skipping dependency download"
+  exit 0
+fi
+
+while IFS= read -r line; do
+  # skip empty lines and comments
+  [[ -z "$line" || "$line" == \#* ]] && continue
+
+  filename="${line%%@*}"
+  url="${line#*@}"
+
+  curl -sSfL "$url" -o "$MASON_DIR/third-party/$filename"
+  echo "Downloaded $filename"
+done < "$DEPS_FILE"
+
+

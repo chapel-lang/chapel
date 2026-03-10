@@ -13,13 +13,19 @@ fi
 
 export CHPL_COMM=none
 export CHPL_RE2=bundled
+export CHPL_LOCALE_MODEL=flat
 
-if ! $CHPL_MAKE_HOME/util/printchplenv --diagnose-lib=runtime >/dev/null 2>/dev/null; then
+echo "Using CHPL_COMPILER: ${CHPL_COMPILER}"
+MASON_CHPL_HOME=$($CHPL_COMPILER --print-chpl-home)
+echo "Using CHPL_HOME: ${MASON_CHPL_HOME}"
+
+if ! $MASON_CHPL_HOME/util/printchplenv --diagnose-lib=runtime >/dev/null 2>/dev/null; then
   cat<<EOF
   Cannot build mason with this configuration.
   Check that you have built a Chapel configuration that supports:
   CHPL_COMM=none
   CHPL_RE2=bundled
+  CHPL_LOCALE_MODEL=flat
 EOF
   exit 1
 fi
@@ -32,7 +38,7 @@ if command -v module > /dev/null 2>&1 ; then
   fi
 fi
 
-COMPOPTS=""
+COMPOPTS="-M third-party"
 PRE_COMPOPTS="--launcher=none"
 POST_COMPOPTS="--checks"
 if [ "$DEBUG" == "1" ]; then
@@ -48,7 +54,7 @@ else
 fi
 ALL_COMPOPTS="$PRE_COMPOPTS $COMPOPTS $POST_COMPOPTS"
 
-COMMAND="$chplBinDir/chpl $ALL_COMPOPTS Mason.chpl -o $chplBinDir/mason"
+COMMAND="$CHPL_COMPILER $ALL_COMPOPTS Mason.chpl -o $outputFile"
 echo "Building Mason: $COMMAND"
 
 if ! $COMMAND; then

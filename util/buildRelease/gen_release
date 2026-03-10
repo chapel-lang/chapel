@@ -244,6 +244,10 @@ def main():
         os.environ["CHPL_LLVM"] = "none"
         log(f"CHPL_HOME is set to: {os.environ['CHPL_HOME']}")
 
+        log("Getting the mason dependencies...")
+        with cd("tools/mason"):
+            make("tarball-prep")
+
         if "CHPL_GEN_RELEASE_SKIP_DOCS" not in os.environ:
             log("Building the html docs...")
             make("chapel-py-venv")
