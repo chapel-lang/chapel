@@ -28,7 +28,11 @@ EXITSTATUS=0
 if [ $EXITSTATUS -eq 0 ]
 then
   # First, check installation to bin lib etc
-  ./configure --prefix="$myprefix" && make -j$num_procs && make -j$num_procs mason && make -j$num_procs chpldoc && make -j$num_procs install
+  ./configure --prefix="$myprefix" \
+    && make -j$num_procs \
+    && make -j$num_procs mason \
+    && make -j$num_procs chpldoc \
+    && make -j$num_procs install
 
   # Remove bin and lib to eliminate possible confusion
   rm -Rf bin lib
@@ -88,7 +92,11 @@ fi
 if [ $EXITSTATUS -eq 0 ]
 then
   # Next, check installation to a chpl-home
-  ./configure --chpl-home="$myhome" && make -j$num_procs && make -j$num_procs mason && make -j$num_procs chpldoc && make -j$num_procs install
+  ./configure --chpl-home="$myhome" \
+    && make -j$num_procs \
+    && make -j$num_procs mason \
+    && make -j$num_procs chpldoc \
+    && make -j$num_procs install
   binsubdir=`./util/chplenv/chpl_bin_subdir.py`
 
   # Remove bin and lib to eliminate possible confusion
