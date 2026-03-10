@@ -127,6 +127,7 @@ update_all_images() {
 }
 # END FUNCTIONS
 
+RELEASE_VERSION="${RELEASE_VERSION:-}"
 
 if [ -n "$RELEASE_VERSION" ]
 then
