@@ -21,6 +21,9 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="docker"
 set -exuo pipefail
 
 
+# Use this many `make` threads in parallel within the Docker image build.
+export DOCKER_BUILD_MAKE_THREADS=4
+
 # BEGIN FUNCTIONS
 
 # Patch the Dockerfile to build FROM the nightly image instead of latest.
@@ -66,7 +69,7 @@ update_image() {
   # image before erroring out; it's important that release pushes come after
   # all nightly pushes so we can't push a broken release image.
   # Anna, 2024-10-07
-  docker_build_cmd="docker buildx build --platform=linux/amd64,linux/arm64 --push . -t $imageName"
+  docker_build_cmd="docker buildx build --build-arg MAKE_THREADS=$DOCKER_BUILD_MAKE_THREADS --platform=linux/amd64,linux/arm64 --push . -t $imageName"
   if [ -n "$release_tag" ]
   then
     # Also push as 'latest' tag if this is a release build.
