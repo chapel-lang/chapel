@@ -18,6 +18,9 @@ export CHPL_HOME=$(cd $UTIL_CRON_DIR/../.. ; pwd)
 log_info "Setting CHPL_HOME to: ${CHPL_HOME}"
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="docker"
 
+set -exuo pipefail
+
+
 # BEGIN FUNCTIONS
 
 # Patch the Dockerfile to build FROM the nightly image instead of latest.
