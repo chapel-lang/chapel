@@ -150,7 +150,7 @@ else
 fi
 
 # Build and push nightly images
-update_all_images
+update_all_images ""
 
 # Build and push release-tagged images, if RELEASE_VERSION was specified.
 # Runs after all nightly images, to abort if any fail.
