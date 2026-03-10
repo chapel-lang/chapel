@@ -544,6 +544,7 @@ if ($python2 == 0) {
 
 
 if ($build == 1) {
+  print "Using $num_procs processes for make\n";
   print "Making $make_vars_opt compiler\n";
   $makestat = mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt compiler", "making chapel compiler", $exitOnError);
 
