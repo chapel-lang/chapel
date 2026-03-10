@@ -258,9 +258,9 @@ proc publishPackage(username: string,
                                                         username,
                                                         masonRegRemoteName,
                                                         name);
-      writeln('Successfully published package to ' + registryPath);
-      writef("Go to '%s' to open a Pull Request to the mason-registry\n", url);
-    } else {
+    writeln('Successfully published package to ' + registryPath);
+    writef("Go to '%s' to open a Pull Request to the mason-registry\n", url);
+  } else {
     gitC(safeDir, 'git add Bricks/' + name);
     gitC(safeDir, commitCmd);
     writeln('Successfully published package to ' + registryPath);
