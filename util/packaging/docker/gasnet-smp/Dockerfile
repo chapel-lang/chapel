@@ -11,7 +11,7 @@ ENV CHPL_RT_OVERSUBSCRIBED=yes
 # is far too small for us, so use the SystemV implementation instead.
 ENV CHPL_GASNET_MORE_CFG_OPTIONS="--disable-pshm-posix --enable-pshm-sysv"
 
-RUN CHPL_TARGET_COMPILER=llvm make -j$MAKE_THREADS -C $CHPL_HOME \
-    && CHPL_TARGET_COMPILER=gnu make -j$MAKE_THREADS -C $CHPL_HOME \
-    && make -j$MAKE_THREADS -C $CHPL_HOME chpldoc test-venv mason \
-    && make -j$MAKE_THREADS -C $CHPL_HOME cleanall
+RUN CHPL_TARGET_COMPILER=llvm make -j$MAKE_THREADS -C $CHPL_HOME
+RUN CHPL_TARGET_COMPILER=gnu make -j$MAKE_THREADS -C $CHPL_HOME
+RUN make -j$MAKE_THREADS -C $CHPL_HOME chpldoc test-venv mason
+RUN make -j$MAKE_THREADS -C $CHPL_HOME cleanall

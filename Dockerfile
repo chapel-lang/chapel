@@ -65,8 +65,8 @@ ARG MAKE_THREADS=1
 COPY . .
 
 # build Chapel for both C and LLVM backends
-RUN CHPL_TARGET_COMPILER=llvm make -j$MAKE_THREADS \
-    && CHPL_TARGET_COMPILER=gnu make -j$MAKE_THREADS
+RUN CHPL_TARGET_COMPILER=llvm make -j$MAKE_THREADS
+RUN CHPL_TARGET_COMPILER=gnu make -j$MAKE_THREADS
 RUN make -j$MAKE_THREADS chpldoc test-venv mason
 RUN make -j$MAKE_THREADS chapel-py-venv chplcheck chpl-language-server
 RUN make -j$MAKE_THREADS cleanall
