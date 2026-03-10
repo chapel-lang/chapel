@@ -296,6 +296,9 @@ namespace detail {
 
 using namespace chpl;
 
+template <typename Tuple>
+auto getDummyfied(const Tuple& tup);
+
 template <typename T>
 struct CanConvert {
   // For unsupported types, just return an empty tuple.
@@ -324,6 +327,23 @@ template <> struct CanConvert<chpl::resolution::ApplicabilityResult> {
 template <> struct CanConvert<chpl::resolution::CallInfo> {
   static auto transform(const chpl::resolution::CallInfo& ar) { return ar; }
 };
+template <> struct CanConvert<chpl::types::QualifiedType> {
+  static auto transform(const chpl::types::QualifiedType& qt) {
+    return std::make_tuple(intentToString(qt.kind()), Nilable(qt.type()), Nilable(qt.param()));
+  }
+};
+template <> struct CanConvert<chpl::ID> {
+  static auto transform(const chpl::ID& id) { return id.str(); }
+};
+template <> struct CanConvert<const char*> {
+  static auto transform(const char* str) { return str; }
+};
+template <> struct CanConvert<std::string> {
+  static auto transform(const std::string& str) { return str; }
+};
+template <> struct CanConvert<UniqueString> {
+  static auto transform(const UniqueString& str) { return str; }
+};
 template <typename T> struct CanConvert<std::vector<T>> : CanConvert<T> {
   static auto transform(const std::vector<T>& vec) {
     std::vector<decltype(CanConvert<T>::transform(std::declval<T>()))> toReturn;
@@ -331,6 +351,11 @@ template <typename T> struct CanConvert<std::vector<T>> : CanConvert<T> {
       toReturn.push_back(CanConvert<T>::transform(elem));
     }
     return toReturn;
+  }
+};
+template <typename ...Ts> struct CanConvert<std::tuple<Ts...>> {
+  static auto transform(const std::tuple<Ts...>& tup) {
+    return getDummyfied(tup);
   }
 };
 #define GENERATED_TYPE(ROOT, ROOT_TYPE, NAME, TYPE, TAG, FLAGS) \
