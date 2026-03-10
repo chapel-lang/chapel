@@ -154,6 +154,10 @@ class CompositeType : public Type {
  public:
   virtual ~CompositeType() = 0; // this is an abstract base class
 
+  /* special logic for CHPL_SYNTAX display of param substitutions. */
+  static void stringifyParamSubstitution(std::ostream& ss,
+                                         const QualifiedType& qt);
+
   /* print the substitutions map like it would be printed for a composite type. */
   static void stringifySubstitutions(std::ostream& ss,
                                      chpl::StringifyKind stringKind,

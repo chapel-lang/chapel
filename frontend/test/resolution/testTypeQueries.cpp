@@ -916,20 +916,20 @@ static void test27() {
    )""";
 
   std::pair<const char*, const char*> cases[] = {
-    {"f(A)", "one-dim real (domain(1,int(64),one))"},
-    {"f(B)", "two-dim real (domain(1,int(64),negOne), domain(1,int(64),positive))"},
-    {"f(C)", "one-dim owned (domain(1,int(64),one)) with elt type owned MyClass"},
-    {"f((A, C))", "pair of real, owned (domain(1,int(64),one), domain(1,int(64),one))"},
-    {"sameElts(A, A)", "sameElts with elt type real(64) (domain(1,int(64),one), domain(1,int(64),one))"},
-    {"sameElts(C, C)", "sameElts with elt type owned MyClass (domain(1,int(64),one), domain(1,int(64),one))"},
-    {"foo(D)", "wrapper with elt type int(64) (domain(1,int(64),one))"},
-    {"foo(E)", "wrapper with elt type real(64) (domain(1,int(64),one))"},
-    {"foo(D)", "wrapper with elt type int(64) (domain(1,int(64),one))"},
-    {"foo(D, D)", "2 wrappers with elt type int(64) (domain(1,int(64),one))"},
-    {"foo(D, D, D)", "3 wrappers with elt type int(64) (domain(1,int(64),one))"},
-    {"f(F64)", "two-dim int with width 64 (domain(1,int(64),one), domain(1,int(64),one))"},
-    {"f(F32)", "two-dim int with width 32 (domain(1,int(64),one), domain(1,int(64),one))"},
-    {"f(F16)", "two-dim int with width 16 (domain(1,int(64),one), domain(1,int(64),one))"},
+    {"f(A)", "one-dim real (domain(1, int(64), strideKind.one))"},
+    {"f(B)", "two-dim real (domain(1, int(64), strideKind.negOne), domain(1, int(64), strideKind.positive))"},
+    {"f(C)", "one-dim owned (domain(1, int(64), strideKind.one)) with elt type owned MyClass"},
+    {"f((A, C))", "pair of real, owned (domain(1, int(64), strideKind.one), domain(1, int(64), strideKind.one))"},
+    {"sameElts(A, A)", "sameElts with elt type real(64) (domain(1, int(64), strideKind.one), domain(1, int(64), strideKind.one))"},
+    {"sameElts(C, C)", "sameElts with elt type owned MyClass (domain(1, int(64), strideKind.one), domain(1, int(64), strideKind.one))"},
+    {"foo(D)", "wrapper with elt type int(64) (domain(1, int(64), strideKind.one))"},
+    {"foo(E)", "wrapper with elt type real(64) (domain(1, int(64), strideKind.one))"},
+    {"foo(D)", "wrapper with elt type int(64) (domain(1, int(64), strideKind.one))"},
+    {"foo(D, D)", "2 wrappers with elt type int(64) (domain(1, int(64), strideKind.one))"},
+    {"foo(D, D, D)", "3 wrappers with elt type int(64) (domain(1, int(64), strideKind.one))"},
+    {"f(F64)", "two-dim int with width 64 (domain(1, int(64), strideKind.one), domain(1, int(64), strideKind.one))"},
+    {"f(F32)", "two-dim int with width 32 (domain(1, int(64), strideKind.one), domain(1, int(64), strideKind.one))"},
+    {"f(F16)", "two-dim int with width 16 (domain(1, int(64), strideKind.one), domain(1, int(64), strideKind.one))"},
     {"sameElts(A, C)", nullptr}, // should error
     {"sameElts(C, A)", nullptr}, // should error
     {"foo(D, E)", nullptr}, // should error

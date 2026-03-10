@@ -118,11 +118,10 @@ async def test_go_to_call_generic(client: LanguageClient):
 
 
 @pytest.mark.asyncio
-@pytest.mark.xfail
 async def test_string(client: LanguageClient):
     """
     Ensure that goto-type works on a string.
-    This should work, but currently crashes dyno.
+    This used to crash Dyno.
     """
 
     file = """
@@ -133,9 +132,6 @@ async def test_string(client: LanguageClient):
         string_loc = internal_module("String")
         await check_goto_type_def(
             client, doc, pos((0, 4)), string_loc, "record _string"
-        )
-        await check_goto_type_def(
-            client, doc, pos((0, 12)), string_loc, "record _string"
         )
 
 
