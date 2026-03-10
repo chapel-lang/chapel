@@ -51,17 +51,17 @@ function that Chapel calls. The key source files in this scenario are:
 * hello.h
 
 .. code-block:: c
- 
+
    void hello(void);
 
 * hello.c
 
 .. code-block:: c
- 
+
    #include <stdio.h>
 
    #include "hello.h"
-  
+
    void hello(void) {
      printf("Hello world!\n");
    }

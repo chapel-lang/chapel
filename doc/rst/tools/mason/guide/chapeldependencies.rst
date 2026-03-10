@@ -21,8 +21,8 @@ file of the package as follows:
    [dependencies]
    MatrixMarket = 0.1.0
 
-To add a Chapel dependency without editing the ``Mason.toml`` manually, use the ``mason add``
-command as follows::
+To add a Chapel dependency without editing the ``Mason.toml`` manually, use the
+``mason add`` command as follows::
 
   mason add MatrixMarket@0.1.0
 

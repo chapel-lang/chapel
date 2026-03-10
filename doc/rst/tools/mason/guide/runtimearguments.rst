@@ -1,7 +1,7 @@
 Runtime/Compilation Arguments
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Runtime and compilation options can be passed to a mason-built Chapel program
+Runtime and compilation options can be passed to a Mason-built Chapel program
 or the Chapel compiler via ``mason run`` and ``mason build``, respectively.
 Note that any options not intended for ``mason`` itself must be separated from
 the ``mason`` command by a ``--``. This indicates to ``mason`` that the
@@ -9,7 +9,7 @@ following arguments should be forwarded to the Chapel program or Chapel
 compiler.
 
 For an example of forwarding arguments in a call to ``mason run``, a Chapel
-program built in mason might have a ``config const number`` that corresponds to
+program built in Mason might have a ``config const number`` that corresponds to
 a value used in ``MyPackage.chpl``. To try out different values at runtime,
 pass the values for ``number`` to ``mason run`` as follows:
 

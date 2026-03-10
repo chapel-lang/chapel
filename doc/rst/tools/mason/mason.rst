@@ -8,7 +8,7 @@ Overview
 --------
 
 This guide on Mason Packages contains everything that you need to
-know to hit the ground developing in Chapel using mason, whether
+know to hit the ground developing in Chapel using ``mason``, whether
 that be to create a library to contribute to the community, use an
 existing package, or just to help with the process of building your
 Chapel programs.
@@ -49,10 +49,11 @@ more control.
 Quick Start Instructions
 ------------------------
 
-To install mason, run ``make mason`` from your Chapel home directory.
+Most installs of Chapel through a package manager include Mason. To build Mason
+from source, run ``make mason`` from your Chapel source directory.
 
-To create a new mason application run: ``mason new <MyAppName>``. This will
-create a mason project in a new directory `MyAppName` with the following
+To create a new Mason application run: ``mason new <MyAppName>``. This will
+create a Mason project in a new directory `MyAppName` with the following
 structure:
 
 .. code-block:: none
@@ -65,7 +66,7 @@ structure:
 The app can be run by calling ``mason build`` followed by ``mason run`` from
 within `MyAppName`.
 
-Or, to create a mason package that can be used as a dependency in other mason
+Or, to create a Mason package that can be used as a dependency in other Mason
 projects, run: ``mason new <MyPackageName> --lib``. This will create a similar
 file structure; however, the primary source file, `MyPackageName.chpl`, won't
 have a `main` routine because the library is not intended to be run as a
@@ -78,22 +79,22 @@ standalone program:
    │   └── MyPackageName.chpl
    └── Mason.toml
 
-For either type of mason project, add new dependencies with ``mason add
+For either type of Mason project, add new dependencies with ``mason add
 <package name>``. This will add the new dependency to the list in the `toml`
-file. When the project is built, mason will download source files for all
+file. When the project is built, Mason will download source files for all
 Chapel dependencies using the `Mason-Registry
 <https://github.com/chapel-lang/mason-registry>`_, allowing them to be used
 in the application or library.
 
-Note that mason also supports numerous other features such as unit testing,
+Note that Mason also supports numerous other features such as unit testing,
 examples, and documentation. See the sections below for more information.
 
 
 Getting Started with Mason
 --------------------------
 
-In this section, you will find more detailed information about installing mason
-and a basic HelloWorld example to get you started using mason packages in your
+In this section, you will find more detailed information about installing Mason
+and a basic HelloWorld example to get you started using Mason packages in your
 own code.
 
 .. toctree::
@@ -110,10 +111,10 @@ own code.
 Mason Guide
 -----------
 
-This section aims to explain why a user would want to use mason,
-point out what types of users would benefit from using mason, outline
-some typical use-cases of mason, and introduce some of the features
-that make using mason worthwhile.
+This section aims to explain why a user would want to use Mason,
+point out what types of users would benefit from using Mason, outline
+some typical use-cases of Mason, and introduce some of the features
+that make using Mason worthwhile.
 
 .. toctree::
    :maxdepth: 1
