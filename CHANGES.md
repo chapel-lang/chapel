@@ -295,7 +295,7 @@ Developer-oriented changes: Documentation
 * improved the recommended approach for fixing commits without DCO  
   (see https://chapel-lang.org/docs/2.8/developer/bestPractices/DCO.html#troubleshooting-dcos)
 * extended the sanitizer docs to cover undefined-behavior sanitizers  
-  (see https://chapel-lang.org/docs/2.8/usingchapel/debugging/sanitizers.html#other-sanitizers)
+  (see https://chapel-lang.org/docs/2.8/developer/bestPractices/Sanitizers.html#ubsan)
 
 Developer-oriented changes: Module changes
 ------------------------------------------
