@@ -16,9 +16,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- * Author: Sam Partee
- * Github: @Spartee
  */
 
 
@@ -62,9 +59,7 @@ module Mason {
   use MasonEnv;
   use MasonExternal;
   use MasonHelp;
-  use MasonInit;
   use MasonModify;
-  use MasonNew;
   use MasonPublish;
   use MasonRun;
   use MasonSearch;
@@ -73,6 +68,7 @@ module Mason {
   use MasonUpdate;
   use MasonUtils;
   use MasonModules;
+  import MasonNewInit;
 
   import MasonLogger;
   use List;
@@ -139,8 +135,10 @@ module Mason {
         when "env" do masonEnv(cmdArgs);
         when "external" do masonExternal(cmdArgs);
         when "help" do masonHelp();
-        when "init" do masonInit(cmdArgs);
-        when "new" do masonNew(cmdArgs);
+        when "init" do MasonNewInit.masonInit(cmdArgs);
+        when "new" do MasonNewInit.masonNew(cmdArgs);
+        // when "init" do masonInit(cmdArgs);
+        // when "new" do masonNew(cmdArgs);
         when "publish" do masonPublish(cmdArgs);
         when "rm" do masonModify(cmdArgs);
         when "run" do masonRun(cmdArgs);

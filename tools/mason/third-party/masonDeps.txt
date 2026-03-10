@@ -1,0 +1,2 @@
+TemplateString.chpl@https://raw.githubusercontent.com/jabraham17/TemplateString/refs/tags/v0.1.0/src/TemplateString.chpl
+Pathlib.chpl@https://raw.githubusercontent.com/jabraham17/Pathlib/refs/tags/v0.1.0/src/Pathlib.chpl
