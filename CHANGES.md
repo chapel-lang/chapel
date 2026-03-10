@@ -9,7 +9,7 @@ released March 12, 2026
 Highlights (see the sections that follow for details)
 -----------------------------------------------------
 * significant capability improvements when debugging Chapel programs
-* many improvements to the CLS, `chplcheck`, `chpldoc`, `chapel-py` tools
+* many improvements to `CLS`, `chplcheck`, `chpldoc`, `chapel-py` tools
 * significant robustness and feature improvements to Mason
 * improved loop-invariant code motion optimizations in support of vectorization
 * support for using LLVM 21 as the compiler's back-end
