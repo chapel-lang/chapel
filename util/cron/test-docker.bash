@@ -22,7 +22,9 @@ set -exuo pipefail
 
 
 # Use this many `make` threads in parallel within the Docker image build.
-export DOCKER_BUILD_MAKE_THREADS=4
+# Note that for multi-arch builds, the build for each arch occurs
+# simultaneously, and each build will use this many threads.
+export DOCKER_BUILD_MAKE_THREADS=2
 
 # BEGIN FUNCTIONS
 
