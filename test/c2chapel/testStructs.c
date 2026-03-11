@@ -27,3 +27,16 @@ void printForwardDeclStruct1(const forwardDeclStruct1* s) {
 void printForwardDeclStruct2(const struct forwardDeclStruct2* s) {
   printf("%d\n", s->x);
 }
+
+void nestedStruct_init(nestedStruct* n, int x, int y, int z) {
+  n->x = x;
+  n->y = y;
+  n->z = z;
+}
+
+void nestedStruct_print(nestedStruct n) {
+  printf("nestedStruct contents:\n");
+  printf("x = %d\n", n.x);
+  printf("y = %d\n", n.y);
+  printf("z = %d\n", n.z);
+}
