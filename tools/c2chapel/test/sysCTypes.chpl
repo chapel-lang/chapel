@@ -37,35 +37,35 @@ extern proc unsignedWidths(a : uint(8), b : uint(16), c : uint(32), d : uint(64)
 extern type FILE = c_int;
 
 // Opaque struct?
-extern record MirBlob {};
+extern record MirBlob {}
 
 // Opaque struct?
-extern record MirBufferStream {};
+extern record MirBufferStream {}
 
 // Opaque struct?
-extern record MirConnection {};
+extern record MirConnection {}
 
 // Opaque struct?
-extern record MirDisplayConfig {};
+extern record MirDisplayConfig {}
 
 extern type MirEGLNativeDisplayType = c_ptr(void);
 
 extern type MirEGLNativeWindowType = c_ptr(void);
 
 // Opaque struct?
-extern record MirPersistentId {};
+extern record MirPersistentId {}
 
 // Opaque struct?
-extern record MirPromptSession {};
+extern record MirPromptSession {}
 
 // Opaque struct?
-extern record MirScreencast {};
+extern record MirScreencast {}
 
 // Opaque struct?
-extern record MirSurface {};
+extern record MirSurface {}
 
 // Opaque struct?
-extern record MirSurfaceSpec {};
+extern record MirSurfaceSpec {}
 
 extern type _LOCK_RECURSIVE_T = c_int;
 
@@ -338,7 +338,7 @@ extern type wchar_t = c_int;
 extern type wint_t = c_int;
 
 // Opaque struct?
-extern record xcb_connection_t {};
+extern record xcb_connection_t {}
 
 extern type xcb_visualid_t = uint(32);
 
