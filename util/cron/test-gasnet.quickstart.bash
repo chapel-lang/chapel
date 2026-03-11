@@ -7,6 +7,7 @@ source $UTIL_CRON_DIR/common.bash
 source $UTIL_CRON_DIR/common-quickstart.bash
 source $UTIL_CRON_DIR/common-gasnet.bash # must come after quickstart source
 source $UTIL_CRON_DIR/common-localnode-paratest.bash
+unset CHPL_LAUNCHER
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="gasnet.quickstart"
 
