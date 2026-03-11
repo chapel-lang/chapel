@@ -28,10 +28,17 @@ Requires:   make
 Requires:   perl
 Requires:   python
 
+# Workarounds
+
 # Disable shebang mangling, due to errors encountered with shebangs in included
 # third-party code.
 # Anna, 2026-03-10
 %define __brp_mangle_shebangs %{nil}
+
+# Avoid generating debug info, for which we get symlinks that are broken outside
+# the build container.
+# Anna, 2026-03-11
+%debug_package %{nil}
 
 %if %{!?buildroot:1}%{?buildroot:0}
 %{error: Missing required command line parameter --buildroot RPM_BUILD_ROOT}
