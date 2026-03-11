@@ -1,0 +1,23 @@
++ rm -rf dummy
++ mason new dummy
+Created new application project: dummy
++ cd dummy
++ export MASON_LOG_LEVEL=info
++ MASON_LOG_LEVEL=info
++ mason --color=always build
+[1mmason prereqs :[0m Prerequisites have been installed
+[1mmason update  :[0m Skipping registry update since no dependency found in manifest file
+[1mmason update  :[0m Will do external update
+[1mmason update  :[0m Installing prerequisites
+[1mmason prereqs :[0m Prerequisites have been installed
+[1mmason build   :[0m Generating source list
+Compiling [debug] target: dummy
+Build Successful
+
++ mason --color=never build
+mason prereqs : Prerequisites have been installed
+mason update  : Skipping registry update since no dependency found in manifest file
+mason update  : Will do external update
+mason update  : Installing prerequisites
+mason prereqs : Prerequisites have been installed
+Skipping Build... No changes to project
