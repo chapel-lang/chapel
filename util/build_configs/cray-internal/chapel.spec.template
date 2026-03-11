@@ -39,6 +39,7 @@ Requires:   python
 # the build container.
 # Anna, 2026-03-11
 %debug_package %{nil}
+%define _build_id_links none
 
 %if %{!?buildroot:1}%{?buildroot:0}
 %{error: Missing required command line parameter --buildroot RPM_BUILD_ROOT}
