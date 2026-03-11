@@ -548,7 +548,11 @@ def genStructOrUnion(structOrUnion, name="", isAnon=False):
             members = ""
             warnKeyword = True
             break
-        elif fieldName is not None:
+        else:
+            if fieldName is None:
+                members = ""
+                warnSkippingAnonymousType = True
+                break
             chapelType = toChapelType(decl.type)
             if chapelType is None:
                 warnSkippingAnonymousType = True
