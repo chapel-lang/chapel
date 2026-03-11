@@ -81,7 +81,9 @@ update_image() {
     # a different SHA.
     docker_build_cmd="$docker_build_cmd -t $baseImageName"
   fi
-  BUILD_RESULT=$($docker_build_cmd)
+  $docker_build_cmd
+
+  BUILD_RESULT=$?
   if [ $BUILD_RESULT -ne 0 ]
   then
         echo "docker build failed for $imageName image"
