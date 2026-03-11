@@ -33,7 +33,6 @@ MyChapelFlag is set to: 2
 Updating my-local-registry
 compiled example.chpl successfully
 + mason run --example example.chpl
-Updating my-local-registry
 Hello from example.chpl!
 Testing myMasonPackage:
 myMasonPackage returned: 2
