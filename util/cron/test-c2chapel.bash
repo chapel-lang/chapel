@@ -20,4 +20,4 @@ export PATH="$CHPL_HOME/bin/$CHPL_BIN_SUBDIR:$PATH"
 
 export CHPL_LAUNCHER=none
 
-$UTIL_CRON_DIR/nightly -cron
+$UTIL_CRON_DIR/nightly -cron -c2chapel

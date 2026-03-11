@@ -73,6 +73,7 @@ $pythonDep = 0;
 $testblog = 0;
 $blogonly = 0;
 $blogdir = "";
+$c2chapel = 0;
 $chplcheck = 0;
 $chplcheckonly = 0;
 $chplLanguageServer = 0;
@@ -178,6 +179,8 @@ while (@ARGV) {
         $testblog = 1;
     } elsif ($flag eq "-blogdir") {
         $blogdir = shift @ARGV;
+    } elsif ($flag eq "-c2chapel") {
+        $c2chapel = 1;
     } elsif ($flag eq "-chplcheck") {
         $chplcheck = 1;
     } elsif ($flag eq "-chplcheckonly") {
@@ -232,6 +235,7 @@ if ($printusage == 1) {
     print "\t-blog                          : test the chapel blog with nightly tests. <blogdir> could be specified with CHPL_NIGHTLY_BLOGDIR or by passing -blogdir\n";
     print "\t-blogonly <blogdir>            : only run the chapel blog tests. <blogdir> could be specified with CHPL_NIGHTLY_BLOGDIR or by passing -blogdir\n";
     print "\t-blogdir <blogdir>             : specify the root of the chapel-blog repo to use with -blog or -blogonly";
+    print "\t-c2chapel                      : run the c2chapel tests\n";
     print "\t-chplcheck                     : run the chplcheck tests\n";
     print "\t-chplcheckonly                 : only run the chplcheck tests\n";
     print "\t-chpl-language-server          : run the Chapel Language Server tests\n";
@@ -570,6 +574,11 @@ if ($build == 1) {
   if ($buildruntime == 0) {
       print "Built compiler but not runtime, and did not run tests\n";
       exit 0;
+  }
+
+  if ($c2chapel == 1) {
+      print "Making c2chapel\n";
+      mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt c2chapel", "make c2chapel", $emailOnError);
   }
 
   if ($chplcheck == 1) {
