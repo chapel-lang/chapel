@@ -9,5 +9,6 @@ proc main() {
 
   writeln("Testing myDep:");
   const (num1, num2) = myDep.get();
-  writeln("myDep returned: ", num1, " and ", num2);
+  const num3 = myDep.get2();
+  writeln("myDep returned: ", num1, ", ", num2, ", and ", num3);
 }

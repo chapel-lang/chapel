@@ -27,7 +27,7 @@ Build Successful
 + mason run
 Hello from myMasonPackage!
 Testing myDep:
-myDep returned: 3.14 and 17
+myDep returned: 3.14, 17, and 1742
 MyChapelFlag is set to: 2
 + mason build --example example.chpl
 Updating my-local-registry
@@ -37,7 +37,7 @@ Hello from example.chpl!
 Testing myMasonPackage:
 myMasonPackage returned: 2
 Testing myDep:
-myDep returned: 3.14 and 17
+myDep returned: 3.14, 17, and 1742
 + mason test
 Updating my-local-registry
 
