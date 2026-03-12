@@ -9,8 +9,5 @@ source $UTIL_CRON_DIR/common.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="make-install-check"
 
-# Limit build jobs to avoid OOM, as this does a build of bundled LLVM.
-export CHPL_MAKE_MAX_CPU_COUNT=2
-
 source $CHPL_HOME/util/setchplenv.sh
 $UTIL_CRON_DIR/../buildRelease/test_install.bash
