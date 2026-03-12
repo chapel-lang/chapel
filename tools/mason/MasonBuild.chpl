@@ -394,8 +394,7 @@ proc getTomlCompopts(lock: borrowed Toml): list(string) throws {
             var val = v!;
             select k {
               when "libs" do compopts.pushBack(parseCompilerOptions(val));
-              when "include" do
-                if val.s != "" then compopts.pushBack("-I" + val.s);
+              when "includes" do compopts.pushBack(parseCompilerOptions(val));
               otherwise continue;
             }
           }
@@ -422,7 +421,7 @@ proc getTomlCompopts(lock: borrowed Toml): list(string) throws {
         var val = v!;
         select k {
           when "libs" do compopts.pushBack(parseCompilerOptions(val));
-          when "include" do if val.s != "" then compopts.pushBack("-I" + val.s);
+          when "includes" do compopts.pushBack(parseCompilerOptions(val));
           otherwise continue;
         }
       }
