@@ -2413,13 +2413,13 @@ int main(int argc, char** argv) {
   }
 
   // Make the intermediate dir and output dir.
-  if (auto err = makeDir(docsSphinxDir)) {
+  if (auto err = makeDir(docsSphinxDir, true)) {
     std::cerr << "error: Failed to create directory: "
               << docsSphinxDir << " due to: "
               << err.message() << std::endl;
     return 1;
   }
-  if (auto err = makeDir(docsOutputDir)) {
+  if (auto err = makeDir(docsOutputDir, true)) {
     std::cerr << "error: Failed to create directory: "
               << docsOutputDir << " due to: "
               << err.message() << std::endl;
