@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+set -exo pipefail
+
+cd prereq3
+
+MASON_LOG_LEVEL=info mason build
