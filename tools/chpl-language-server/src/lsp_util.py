@@ -730,6 +730,32 @@ class ContextContainer:
                 fi.rebuild_index()
         return errors
 
+    def call_contexts(
+        self, sig: chapel.TypedSignature
+    ) -> Iterable[CallInTypeContext]:
+        for ctxs in self.global_inst_contexts[sig]:
+            yield from ctxs
+
+    def instantiations(self, fnid: str):
+        for insts in self.global_instantiations[fnid]:
+            for inst in insts:
+                if inst not in self.global_inst_contexts:
+                    continue
+
+                # as long as there is one calling context, yield inst.
+                found_instance = False
+                for ctx in self.call_contexts(inst):
+                    found_instance = True
+                    break
+
+                if found_instance:
+                    yield (inst, insts.in_file)
+
+    def has_instantiation(self, fnid: str):
+        for _ in self.instantiations(fnid):
+            return True
+        return False
+
 
 # We should show these variables in autocompletion even though they are 'nodoc'.
 _ALLOWED_NODOC_DECLS = ["boundKind", "here", "strideKind"]

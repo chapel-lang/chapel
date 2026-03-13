@@ -1210,11 +1210,11 @@ def run_lsp():
         for decl in decls:
             if (
                 isinstance(decl.node, chapel.Function)
-                and decl.node.unique_id() in fi.instantiations
+                and fi.context.has_instantiation(decl.node.unique_id())
             ):
-                insts = fi.instantiations[decl.node.unique_id()]
+                insts = fi.context.instantiations(decl.node.unique_id())
                 actions_per_decl = []
-                for i, inst in enumerate(insts):
+                for inst, from_file in insts:
                     # Skip over "concrete" instantiations. They're in
                     # the list to track calls to concrete functions,
                     # but they don't have any type substitutions, so there's
@@ -1222,8 +1222,10 @@ def run_lsp():
                     if not inst.is_instantiation():
                         continue
 
+                    i = from_file.index_of_instantiation(decl.node, inst)
+                    assert i > -1
                     label = "Show Instantiation"
-                    if not insts[inst]:
+                    if not fi.context.call_contexts(inst):
                         label += " (Default-Rectangular)"
 
                     action = CodeLens(
@@ -1235,6 +1237,7 @@ def run_lsp():
                                 params.text_document.uri,
                                 decl.node.unique_id(),
                                 i,
+                                from_file.uri,
                             ],
                         ),
                         range=decl.rng,
@@ -1261,11 +1264,12 @@ def run_lsp():
 
     @server.command("chpl-language-server/showInstantiation")
     async def show_instantiation(
-        ls: ChapelLanguageServer, data: Tuple[str, str, int]
+        ls: ChapelLanguageServer, data: Tuple[str, str, int, str]
     ):
-        uri, unique_id, i = data
+        uri, unique_id, i, source_uri = data
 
         fi, _ = ls.get_file_info(uri)
+        source_fi, _ = ls.get_file_info(source_uri)
         decl = fi.find_decl_by_unique_id(unique_id)
 
         if decl is None:
@@ -1275,7 +1279,7 @@ def run_lsp():
         if not isinstance(node, chapel.Function):
             return
 
-        inst = fi.instantiation_at_index(node, i)
+        inst = source_fi.instantiation_at_index(node, i)
         node_and_range = NodeAndRange.for_entire_node(decl.node)
         fi.instantiation_segments.overwrite((node_and_range, inst))
         fi.update_call_segments_from_instantiations(node_and_range.rng)
@@ -1359,8 +1363,8 @@ def run_lsp():
             instantiation = fi.get_inst_segment_at_position(params.position)
             if instantiation and instantiation.ast() == node:
                 sigs.append(instantiation)
-            elif uid in fi.instantiations:
-                sigs.extend(fi.instantiations[uid].keys())
+            elif fi.context.has_instantiation(uid):
+                sigs.extend(fi.context.instantiations(uid))
 
         # Oddly, returning multiple here makes for no child nodes in the VSCode
         # UI. Just take one signature for now.
@@ -1391,7 +1395,8 @@ def run_lsp():
         # Here too, because there's no chapel-py way to convert an ID back
         # to a node, note the node whose ID we use in a dictionary (hack_id_to_node)
         # to look up later.
-        calls = fi.instantiations[fn.unique_id()][instantiation]
+        assert instantiation in fi.context.global_inst_contexts
+        calls = fi.context.call_contexts(instantiation)
         hack_id_to_node: Dict[str, chapel.NamedDecl] = {}
         incoming_calls: Dict[
             Union[chapel.TypedSignature, str], List[chapel.FnCall]
