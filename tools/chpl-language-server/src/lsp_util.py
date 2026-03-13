@@ -556,6 +556,39 @@ class References:
 
 
 @dataclass
+class Instantiations:
+    in_file: "FileInfo"
+    instantiations: List[chapel.TypedSignature]
+
+    def append(self, x: chapel.TypedSignature):
+        self.instantiations.append(x)
+
+    def clear(self):
+        self.instantiations.clear()
+
+    def __iter__(self):
+        return iter(self.instantiations)
+
+
+CallInTypeContext = Tuple[chapel.FnCall, Optional[chapel.TypedSignature]]
+
+
+@dataclass
+class CallsInTypeContext:
+    in_file: "FileInfo"
+    call_contexts: List[CallInTypeContext]
+
+    def append(self, x: CallInTypeContext):
+        self.call_contexts.append(x)
+
+    def clear(self):
+        self.call_contexts.clear()
+
+    def __iter__(self):
+        return iter(self.call_contexts)
+
+
+@dataclass
 class EndMarkerPattern:
     pattern: Union[Type, Set[Type]]
     header_location: Callable[[chapel.AstNode], Optional[chapel.Location]]
@@ -619,6 +652,12 @@ class ContextContainer:
         self.context: chapel.Context = chapel.Context()
         self.file_infos: List["FileInfo"] = []
         self.global_uses: Dict[chapel.AstNode, List[References]] = defaultdict(
+            list
+        )
+        self.global_instantiations: Dict[str, List[Instantiations]] = defaultdict(
+            list
+        )
+        self.global_inst_contexts: Dict[chapel.TypedSignature, List[CallsInTypeContext]] = defaultdict(
             list
         )
         self.instantiation_ids: Dict[chapel.TypedSignature, str] = {}
@@ -692,10 +731,6 @@ class ContextContainer:
         return errors
 
 
-CallInTypeContext = Tuple[chapel.FnCall, Optional[chapel.TypedSignature]]
-CallsInTypeContext = List[CallInTypeContext]
-
-
 # We should show these variables in autocompletion even though they are 'nodoc'.
 _ALLOWED_NODOC_DECLS = ["boundKind", "here", "strideKind"]
 
@@ -714,10 +749,8 @@ class FileInfo:
         Tuple[NodeAndRange, chapel.TypedSignature]
     ] = field(init=False)
     uses_here: Dict[chapel.AstNode, References] = field(init=False)
-    instantiations: Dict[
-        str,
-        Dict[chapel.TypedSignature, CallsInTypeContext],
-    ] = field(init=False)
+    instantations_here: Dict[str, Instantiations] = field(init=False)
+    inst_contexts_here: Dict[chapel.TypedSignature, CallsInTypeContext] = field(init=False)
     siblings: chapel.SiblingMap = field(init=False)
     earliest_changed_pos: Optional[Position] = None
 
@@ -728,6 +761,8 @@ class FileInfo:
         self.call_segments = PositionList(lambda x: x.ident.rng)
         self.instantiation_segments = PositionList(lambda x: x[0].rng)
         self.uses_here = {}
+        self.instantations_here = {}
+        self.inst_contexts_here = {}
         self.rebuild_index()
 
     def parse_file(self) -> List[chapel.AstNode]:
@@ -756,6 +791,26 @@ class FileInfo:
         self.context.global_uses[node].append(refs)
         return refs
 
+    def _get_inst_container(self, fnid: str) -> Instantiations:
+        if fnid in self.instantations_here:
+            return self.instantations_here[fnid]
+
+        insts = Instantiations(self, [])
+        self.instantations_here[fnid] = insts
+        self.context.global_instantiations[fnid].append(insts)
+        return insts
+
+    def _get_call_context_container(
+        self, sig: chapel.TypedSignature
+    ) -> CallsInTypeContext:
+        if sig in self.inst_contexts_here:
+            return self.inst_contexts_here[sig]
+
+        ctxs = CallsInTypeContext(self, [])
+        self.inst_contexts_here[sig] = ctxs
+        self.context.global_inst_contexts[sig].append(ctxs)
+        return ctxs
+
     def _note_reference(
         self, node: Union[chapel.Dot, chapel.Identifier, chapel.Include]
     ):
@@ -771,6 +826,21 @@ class FileInfo:
         self.use_segments.append(
             ResolvedPair(NodeAndRange(node), NodeAndRange(to))
         )
+
+    def _note_inst(
+        self,
+        fnid: str,
+        sig: chapel.TypedSignature,
+        call: chapel.FnCall,
+        via: Optional[chapel.TypedSignature]
+    ) -> bool:
+        insts = self._get_inst_container(fnid)
+        already_visited = sig in insts
+        if not already_visited:
+            insts.append(sig)
+        contexts = self._get_call_context_container(sig)
+        contexts.append((call, via))
+        return already_visited
 
     def _note_scope(self, node: chapel.AstNode):
         if not node.creates_scope():
@@ -1006,14 +1076,8 @@ class FileInfo:
                     )
                 )
 
-            # Even if we don't descend into it (and even if it's not an
-            # instantiation), track the call that invoked this function.
-            # This will help with call hierarchy.
-            insts = self.instantiations[fn.unique_id()]
-            already_visited = sig in insts
-            insts[sig].append((node, via))
-
-            if not sig.is_instantiation() or already_visited:
+            visit = self._note_inst(fn.unique_id(), sig, node, via)
+            if not sig.is_instantiation() or not visit:
                 continue
 
             self._search_instantiations(fn, via=sig)
@@ -1046,7 +1110,7 @@ class FileInfo:
         segments that were built with instantiations we no longer have.
         """
         for decl, inst in self.instantiation_segments.elts:
-            available_insts = self.instantiations.get(decl.node.unique_id())
+            available_insts = self.instantations_here.get(decl.node.unique_id())
             if not available_insts or inst not in available_insts:
                 self.instantiation_segments.clear_range(decl.rng)
 
@@ -1145,9 +1209,12 @@ class FileInfo:
 
         # Use this class as an AST visitor to rebuild the use and definition segment
         # table, as well as the list of references.
-        self.instantiations = defaultdict(lambda: defaultdict(list))
         for _, refs in self.uses_here.items():
             refs.clear()
+        for _, insts in self.instantations_here.items():
+            insts.clear()
+        for _, ctxs in self.inst_contexts_here.items():
+            ctxs.clear()
         self.use_segments.clear()
         self.def_segments.clear()
         self.scope_segments.clear()
@@ -1277,7 +1344,7 @@ class FileInfo:
         instantiations collected while rebuilding the index.
         """
         return next(
-            itertools.islice(self.instantiations[fn.unique_id()], idx, None)
+            itertools.islice(self.instantations_here[fn.unique_id()], idx, None)
         )
 
     def index_of_instantiation(
@@ -1290,7 +1357,7 @@ class FileInfo:
         return next(
             (
                 i
-                for i, s in enumerate(self.instantiations[fn.unique_id()])
+                for i, s in enumerate(self.instantations_here[fn.unique_id()])
                 if s == sig
             ),
             -1,
@@ -1306,8 +1373,8 @@ class FileInfo:
         that signature, if it exists for the given function.
         """
         uid = fn.unique_id()
-        if uid in self.instantiations:
-            for sig in self.instantiations[uid]:
+        if uid in self.instantations_here:
+            for sig in self.instantations_here[uid]:
                 if not sig.is_instantiation():
                     return sig
         return None
