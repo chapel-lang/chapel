@@ -3,7 +3,6 @@
 Example has not been compiled: example.chpl
 Try running: mason build --example example.chpl
          or: mason run --example example.chpl --build
-Updating registry
 + echo 'exited with 1'
 exited with 1
 + mason run --example example.chpl --force
@@ -21,6 +20,5 @@ Updating registry
 exited with 1
 + mason run --example Unknown
 Mason could not find example: Unknown
-Updating registry
 + echo 'exited with 1'
 exited with 1
