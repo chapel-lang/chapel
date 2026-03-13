@@ -673,8 +673,8 @@ class ChapelLanguageServer(LanguageServer):
             item.data is None
             or not isinstance(item.data, list)
             or not isinstance(item.data[0], str)
-            or not isinstance(item.data[1], (str, None))
-            or not isinstance(item.data[2], (str, None))
+            or not (item.data[1] is None or isinstance(item.data[1], str))
+            or not (item.data[2] is None or isinstance(item.data[2], str))
         ):
             self.show_message(
                 "Call hierarchy item contains missing or invalid additional data",
