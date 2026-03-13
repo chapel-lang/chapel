@@ -61,14 +61,19 @@ ifeq ($(COMP_GEN_FLOAT_OPT), 1)
   MAKE_COMP_GEN_CFLAGS += $(FAST_FLOAT_GEN_CFLAGS)
 endif
 
-COMP_GEN_CFLAGS = $(MAKE_COMP_GEN_CFLAGS) $(COMP_GEN_USER_CFLAGS)
-
 # Note the related GEN_CFLAGS and GEN_LFLAGS.
 # These are also used when compiling the generated code, but
-# unlike the above, they come from the Makefiles here
+# unlike the below, they come from the Makefiles here
 # rather than anything in the chpl invocation.
+COMP_GEN_CFLAGS = $(MAKE_COMP_GEN_CFLAGS) $(COMP_GEN_USER_CFLAGS)
 
+# Select link arguments based on the requested link style. If we are linking
+# against a dynamic/shared library then a lot of link arguments can be left
+# out because they are not needed.
+#
+# In general the argument order is 'runtime > program && bundled > system'.
 ifeq ($(RUNTIME_LINK_STYLE),static)
+  # The runtime to link against, e.g., the static runtime.
   SELECTED_TARGET_USE_RUNTIME_LINK_ARGS = \
     $(CHPL_MAKE_TARGET_USE_STATIC_RUNTIME_LINK_ARGS)
   SELECTED_TARGET_BUNDLED_RUNTIME_LINK_ARGS = \
@@ -76,6 +81,7 @@ ifeq ($(RUNTIME_LINK_STYLE),static)
   SELECTED_TARGET_SYSTEM_RUNTIME_LINK_ARGS = \
     $(CHPL_MAKE_TARGET_SYSTEM_RUNTIME_LINK_ARGS)
 else ifeq ($(RUNTIME_LINK_STYLE),shared)
+  # Just link against the shared runtime. It should contain all its deps.
   SELECTED_TARGET_USE_RUNTIME_LINK_ARGS = \
     $(CHPL_MAKE_TARGET_USE_SHARED_RUNTIME_LINK_ARGS)
 endif

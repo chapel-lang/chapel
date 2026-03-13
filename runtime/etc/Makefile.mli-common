@@ -87,6 +87,9 @@ endif
 #
 # Compile and link the Chapel runtime and the ZMQ library together into a
 # multi-locale executable. This will be the multi-locale library server.
+# The $(SELECTED...) arguments are computed in 'Makefile.include' based off
+# of the '$(RUNTIME_LINK_STYLE)' that is injected by the compiler.
+#
 $(TMPSERVERNAME): $(CHPL_CL_OBJS)
 ifneq ($(SKIP_COMPILE_LINK),skip)
 # Compile the server bundle.
@@ -99,11 +102,11 @@ ifneq ($(SKIP_COMPILE_LINK),skip)
 	$(LD) $(GEN_LFLAGS) $(GEN_DYNAMIC_FLAG) \
 		-o $(TMPSERVERNAME) $(TMPSERVERNAME).o $(CHPLUSEROBJ) \
 		$(CHPL_RT_LIB_DIR)/main.o $(CHPL_CL_OBJS) \
-	        $(CHPL_SELECTED_TARGET_USE_RUNTIME_LINK_ARGS) \
-	        $(CHPL_SELECTED_TARGET_BUNDLED_RUNTIME_LINK_ARGS) \
+	        $(SELECTED_TARGET_USE_RUNTIME_LINK_ARGS) \
+	        $(SELECTED_TARGET_BUNDLED_RUNTIME_LINK_ARGS) \
 	        $(CHPL_MAKE_TARGET_BUNDLED_PROGRAM_LINK_ARGS) \
 	        $(COMP_GEN_USER_LDFLAGS) $(COMP_GEN_LFLAGS) $(LIBS) \
-	        $(CHPL_SELECTED_TARGET_SYSTEM_RUNTIME_LINK_ARGS) \
+	        $(SELECTED_TARGET_SYSTEM_RUNTIME_LINK_ARGS) \
 	        $(CHPL_MAKE_TARGET_SYSTEM_PROGRAM_LINK_ARGS) \
 		$(CHPL_MLI_LIB_DIRS) \
 		-lzmq
