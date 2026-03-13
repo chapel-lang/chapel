@@ -90,24 +90,24 @@ def get_runtime_link_args(runtime_subdir):
 
 
 def path_to_runtime_libs(runtime_subdir):
-  lib = chpl_home_utils.get_chpl_runtime_lib()
-  ret = os.path.join(lib, runtime_subdir)
-  return ret
+    lib = chpl_home_utils.get_chpl_runtime_lib()
+    ret = os.path.join(lib, runtime_subdir)
+    return ret
 
 
 def static_runtime_lib_name():
-  return "libchpl.a"
+    return "libchpl.a"
 
 
 def shared_runtime_lib_ext():
-  platform = chpl_platform.get("target")
-  if platform == "darwin":
-    return "dylib"
-  return "so"
+    platform = chpl_platform.get("target")
+    if platform == "darwin":
+        return "dylib"
+    return "so"
 
 
 def shared_runtime_lib_name():
-  return "libchpl." + shared_runtime_lib_ext()
+    return "libchpl." + shared_runtime_lib_ext()
 
 
 def compute_static_runtime_lib_path(runtime_subdir):
@@ -187,7 +187,7 @@ def compute_internal_compile_link_args(runtime_subdir):
     # For the program, add visibility into runtime lib folder for linker.
     # We do NOT link directly against '-lchpl', but we do let the linker
     # see into the folder so that users can link '-lchplmalloc'.
-    tgt_program_link[0].append('-L' + path_to_runtime_libs(runtime_subdir))
+    tgt_program_link[0].append("-L" + path_to_runtime_libs(runtime_subdir))
 
     # add args from chpl_llvm
     if not skip_host:
