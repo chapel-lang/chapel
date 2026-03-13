@@ -165,7 +165,9 @@ RUNTIME_OVERRIDE_LD = $(RUNTIME_DIR)/override-ld
 ifeq ($(CHPL_MAKE_PLATFORM),darwin)
   # NOTE: Comment out / remove when direct references to program symbols in
   # the runtime have all been removed. By default, the OSX linker will emit
-  # an error if any symbol does not have a definition at link time.
+  # an error if any symbol does not have a definition at link time. While we
+  # are developing, we want lazy resolution like on linux. When we are done,
+  # we want strict mode to catch issues at compile-time.
   RUNTIME_SHARED_LIB_CXX_LINK_FLAGS=-Wl,-undefined,dynamic_lookup
 else
   # NOTE: Uncomment when direct references to program symbols in the runtime
