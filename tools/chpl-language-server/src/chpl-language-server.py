@@ -1202,6 +1202,9 @@ def run_lsp():
         if not ls.show_instantiations:
             return actions
 
+        # Collect instantiations from other files
+        ls.eagerly_process_all_files(fi.context)
+
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
 
         fi, _ = ls.get_file_info(text_doc.uri)
