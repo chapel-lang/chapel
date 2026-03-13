@@ -778,10 +778,7 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
   fprintf(makefile.fptr, "CHPL_MAKE_THIRD_PARTY = %s\n\n", CHPL_THIRD_PARTY.c_str());
   fprintf(makefile.fptr, "TMPDIRNAME = %s\n\n", tmpDirName);
 
-  const char* runtimeLinkStyle = "static";
-  if (!fBuiltinRuntime) {
-    runtimeLinkStyle = "shared";
-  }
+  const char* runtimeLinkStyle = fBuiltinRuntime ? "static" : "shared";
 
   fprintf(makefile.fptr, "RUNTIME_LINK_STYLE = %s\n\n", runtimeLinkStyle);
 
