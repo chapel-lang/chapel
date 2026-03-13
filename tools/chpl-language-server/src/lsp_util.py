@@ -744,7 +744,7 @@ class ContextContainer:
 
                 # as long as there is one calling context, yield inst.
                 found_instance = False
-                for ctx in self.call_contexts(inst):
+                for _ in self.call_contexts(inst):
                     found_instance = True
                     break
 
@@ -1137,7 +1137,15 @@ class FileInfo:
         """
         for decl, inst in self.instantiation_segments.elts:
             found_inst = False
-            for (ainst, _) in self.context.instantiations(decl.node.unique_id()):
+            for (ainst, in_file) in self.context.instantiations(decl.node.unique_id()):
+                # Conservatively, don't consider external instantiations
+                # safe to keep, because the other file might not yet have
+                # had its index rebuilt. To do this properly, we'd need
+                # a topological ordering of files ordered by instantiation
+                # dependencies.
+                if in_file is not self:
+                    continue
+
                 if ainst == inst:
                     found_inst = True
                     break
