@@ -728,6 +728,18 @@ class ContextContainer:
         with self.context.track_errors() as errors:
             for fi in self.file_infos:
                 fi.rebuild_index()
+
+            # Invoke _invalidate_insts a second time, so that
+            # if instantiations disappeared from a file after a different
+            # file was processed, we still remove them from the code lens
+            # list.
+            #
+            # To do this without this redundant work, we'd need
+            # a topological ordering of files ordered by instantiation
+            # dependencies. It doesn't seem worth it, though.
+            for fi in self.file_infos:
+                fi._invalidate_inst_segments()
+
         return errors
 
     def call_contexts(
@@ -1138,14 +1150,6 @@ class FileInfo:
         for decl, inst in self.instantiation_segments.elts:
             found_inst = False
             for (ainst, in_file) in self.context.instantiations(decl.node.unique_id()):
-                # Conservatively, don't consider external instantiations
-                # safe to keep, because the other file might not yet have
-                # had its index rebuilt. To do this properly, we'd need
-                # a topological ordering of files ordered by instantiation
-                # dependencies.
-                if in_file is not self:
-                    continue
-
                 if ainst == inst:
                     found_inst = True
                     break
