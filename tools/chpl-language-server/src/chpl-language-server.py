@@ -1367,7 +1367,7 @@ def run_lsp():
             if instantiation and instantiation.ast() == node:
                 sigs.append(instantiation)
             elif fi.context.has_instantiation(uid):
-                sigs.extend(fi.context.instantiations(uid))
+                sigs.extend(sig for sig, _ in fi.context.instantiations(uid))
 
         # Oddly, returning multiple here makes for no child nodes in the VSCode
         # UI. Just take one signature for now.
