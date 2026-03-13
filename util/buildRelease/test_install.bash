@@ -12,10 +12,6 @@ wd=`pwd`
 
 num_procs=${$($CHPL_HOME/util/buildRelease/chpl-make-cpu_count):-1}
 echo "Using $num_procs threads for parallel make"
-# Impose a (probably more restrictive) limit on threads used for building
-# bundled LLVM, as it requires a lot of memory.
-bundled_llvm_num_procs=1
-echo "Limiting to $bundled_llvm_num_procs threads for building bundled LLVM"
 
 export CHPL_LLVM=bundled
 
@@ -33,7 +29,6 @@ if [ $EXITSTATUS -eq 0 ]
 then
   # First, check installation to bin lib etc
   ./configure --prefix="$myprefix" \
-    && make -C third-party/llvm -j$bundled_llvm_num_procs \
     && make -j$num_procs \
     && make -j$num_procs mason \
     && make -j$num_procs chpldoc \
@@ -98,7 +93,6 @@ if [ $EXITSTATUS -eq 0 ]
 then
   # Next, check installation to a chpl-home
   ./configure --chpl-home="$myhome" \
-    && make -C third-party/llvm -j$bundled_llvm_num_procs \
     && make -j$num_procs \
     && make -j$num_procs mason \
     && make -j$num_procs chpldoc \
