@@ -775,7 +775,7 @@ class FileInfo:
         Tuple[NodeAndRange, chapel.TypedSignature]
     ] = field(init=False)
     uses_here: Dict[chapel.AstNode, References] = field(init=False)
-    instantations_here: Dict[str, Instantiations] = field(init=False)
+    instantiations_here: Dict[str, Instantiations] = field(init=False)
     inst_contexts_here: Dict[chapel.TypedSignature, CallsInTypeContext] = field(init=False)
     siblings: chapel.SiblingMap = field(init=False)
     earliest_changed_pos: Optional[Position] = None
@@ -787,7 +787,7 @@ class FileInfo:
         self.call_segments = PositionList(lambda x: x.ident.rng)
         self.instantiation_segments = PositionList(lambda x: x[0].rng)
         self.uses_here = {}
-        self.instantations_here = {}
+        self.instantiations_here = {}
         self.inst_contexts_here = {}
         self.rebuild_index()
 
@@ -818,11 +818,11 @@ class FileInfo:
         return refs
 
     def _get_inst_container(self, fnid: str) -> Instantiations:
-        if fnid in self.instantations_here:
-            return self.instantations_here[fnid]
+        if fnid in self.instantiations_here:
+            return self.instantiations_here[fnid]
 
         insts = Instantiations(self, [])
-        self.instantations_here[fnid] = insts
+        self.instantiations_here[fnid] = insts
         self.context.global_instantiations[fnid].append(insts)
         return insts
 
@@ -1136,8 +1136,13 @@ class FileInfo:
         segments that were built with instantiations we no longer have.
         """
         for decl, inst in self.instantiation_segments.elts:
-            available_insts = self.instantations_here.get(decl.node.unique_id())
-            if not available_insts or inst not in available_insts:
+            found_inst = False
+            for (ainst, _) in self.context.instantiations(decl.node.unique_id()):
+                if ainst == inst:
+                    found_inst = True
+                    break
+
+            if not found_inst:
                 self.instantiation_segments.clear_range(decl.rng)
 
     def find_decl_by_unique_id(self, unique_id: str) -> Optional[NodeAndRange]:
@@ -1237,7 +1242,7 @@ class FileInfo:
         # table, as well as the list of references.
         for _, refs in self.uses_here.items():
             refs.clear()
-        for _, insts in self.instantations_here.items():
+        for _, insts in self.instantiations_here.items():
             insts.clear()
         for _, ctxs in self.inst_contexts_here.items():
             ctxs.clear()
@@ -1370,7 +1375,7 @@ class FileInfo:
         instantiations collected while rebuilding the index.
         """
         return next(
-            itertools.islice(self.instantations_here[fn.unique_id()], idx, None)
+            itertools.islice(self.instantiations_here[fn.unique_id()], idx, None)
         )
 
     def index_of_instantiation(
@@ -1383,7 +1388,7 @@ class FileInfo:
         return next(
             (
                 i
-                for i, s in enumerate(self.instantations_here[fn.unique_id()])
+                for i, s in enumerate(self.instantiations_here[fn.unique_id()])
                 if s == sig
             ),
             -1,
@@ -1399,8 +1404,8 @@ class FileInfo:
         that signature, if it exists for the given function.
         """
         uid = fn.unique_id()
-        if uid in self.instantations_here:
-            for sig in self.instantations_here[uid]:
+        if uid in self.instantiations_here:
+            for sig in self.instantiations_here[uid]:
                 if not sig.is_instantiation():
                     return sig
         return None
