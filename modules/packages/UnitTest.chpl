@@ -659,6 +659,111 @@ module UnitTest {
       }
     }
 
+    /*
+      Assert that a given procedure throws the specified error (or a subclass
+      of that error).
+
+      :arg func: user-specified procedure
+
+      :arg errorType: error type, the same as or inheriting from the
+                      error thrown
+
+      :arg args: tuple of arguments passed directly to ``func``
+
+      :arg match: string for the error message to match, defaults to the empty
+                  string. If not empty and the expected error was thrown,
+                  ``match`` must be found within the error message. Regex
+                  characters are not supported at this time
+
+      :throws AssertionError: No error was thrown by ``func``
+
+      :throws AssertionError: An unexpected error was thrown by ``func``
+
+      :throws AssertionError: If ``match`` is not empty: the expected error was
+                              thrown by ``func``, but the error message did not
+                              include the contents of ``match``
+    */
+    proc assertThrows(func, type errorType, const args,
+                      const match:string=""): void throws
+                      where isSubtype(errorType, Error) && isTuple(args) {
+      const funcName = func:string;
+      try {
+        func((...args));
+        throw new owned AssertionError(_absentErrorMsg(funcName));
+      } catch e: errorType {
+        if match == "" then return;
+        var idx = e.message().find(match);
+        if idx == -1 {
+          throw new owned AssertionError(_goodErrWrongMsg(funcName, e));
+        }
+      } catch e: AssertionError { // absent error thrown in try
+        throw e;
+      } catch e {
+        throw new owned AssertionError(
+          _unexpectedErrMsg(funcName, e)
+        );
+      }
+    }
+    /*
+      Assert that a given procedure throws the specified error (or a subclass
+      of that error).
+
+      :arg func: user-specified procedure
+
+      :arg errorType: error type, the same as or inheriting from the
+                      error thrown
+
+      :arg match: string for the error message to match, defaults to the empty
+                  string. If not empty and the expected error was thrown,
+                  ``match`` must be found within the error message. Regex
+                  characters are not supported at this time
+
+      :throws AssertionError: No error was thrown by ``func``
+
+      :throws AssertionError: An unexpected error was thrown by ``func``
+
+      :throws AssertionError: If ``match`` is not empty: the expected error was
+                              thrown by ``func``, but the error message did not
+                              include the contents of ``match``
+    */
+    proc assertThrows(func, type errorType,
+                      const match:string=""): void throws
+                      where isSubtype(errorType, Error) {
+      const funcName = func:string;
+      try {
+        func();
+        throw new owned AssertionError(_absentErrorMsg(funcName));
+      } catch e: errorType {
+        if match == "" then return;
+        var idx = e.message().find(match);
+        if idx == -1 {
+          throw new owned AssertionError(_goodErrWrongMsg(funcName, e));
+        }
+      } catch e: AssertionError { // absent error thrown in try
+        throw e;
+      } catch e {
+        throw new owned AssertionError(
+          _unexpectedErrMsg(funcName, e)
+        );
+      }
+    }
+    @chpldoc.nodoc
+    proc _absentErrorMsg(const funcName:string): string {
+      return try! "assert failed - %s did not throw any error".format(funcName);
+    }
+    @chpldoc.nodoc
+    proc _goodErrWrongMsg(const funcName:string,
+                          const error: owned Error(?)): string {
+      return try! "assert failed - %s threw %s with an unexpected message: %s"
+                  .format(funcName, error.type:string, error.message());
+    }
+    @chpldoc.nodoc
+    proc _unexpectedErrMsg(const funcName:string,
+                           const error: owned Error(?)): string {
+      return try! "assert failed - %s threw an unexpected error: %?"
+                  .format(funcName, error);
+    }
+
 
     /*
       Assert that x matches the regular expression pattern.

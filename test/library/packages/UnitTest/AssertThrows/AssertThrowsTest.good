@@ -1,0 +1,12 @@
+Error Caught in badNoError
+AssertionError: in AssertThrowsTest.chpl:10 - assert failed - proc noThrow(): int { ... } did not throw any error
+================================================================================
+Error Caught in badNoErrorWithArgs
+AssertionError: in AssertThrowsTest.chpl:22 - assert failed - proc noThrowWithArgs(in a: real, in b: int): real { ... } did not throw any error
+================================================================================
+Error Caught in expectedBadMsg
+AssertionError: in AssertThrowsTest.chpl:10 - assert failed - proc throwCustom() throws { ... } threw owned CustomError with an unexpected message: Threw a custom error
+================================================================================
+Error Caught in badUnexpected
+AssertionError: in AssertThrowsTest.chpl:10 - assert failed - proc throwCustom() throws { ... } threw an unexpected error: CustomError: Threw a custom error
+================================================================================
