@@ -2620,7 +2620,7 @@ class AssociatedAction {
     TUPLE_CAST,
   };
 
-  using ActionsList = llvm::SmallVector<std::unique_ptr<AssociatedAction>>;
+  using ActionsList = llvm::SmallVector<const AssociatedAction*>;
 
  private:
   Action action_;
@@ -2638,54 +2638,39 @@ class AssociatedAction {
   // Sub-actions are owned by the parent, and will be destroyed with it.
   ActionsList subActions_;
 
-  void copySubActions(const ActionsList& other) {
-    for (const auto& subAction : other) {
-      subActions_.push_back(std::make_unique<AssociatedAction>(*subAction));
-    }
-  }
-
  public:
   AssociatedAction(Action action, const TypedFnSignature* fn, ID id,
                    types::QualifiedType type,
                    chpl::optional<int> tupleEltIdx = {},
-                   const ActionsList& subActions = {})
+                   ActionsList subActions = {})
       : action_(action),
         fn_(fn),
         id_(id),
         type_(type),
-        tupleEltIdx_(tupleEltIdx) {
-    copySubActions(subActions);
-  }
-  AssociatedAction(Action action, const TypedFnSignature* fn, ID id,
-                   types::QualifiedType type,
-                   chpl::optional<int> tupleEltIdx,
-                   ActionsList&& subActions)
-      : AssociatedAction(action, fn, id, type, tupleEltIdx) {
-    subActions_ = std::move(subActions);
-    subActions.clear();
-  }
-  AssociatedAction(const AssociatedAction& other) {
-    action_ = other.action_;
-    fn_ = other.fn_;
-    id_ = other.id_;
-    type_ = other.type_;
-    tupleEltIdx_ = other.tupleEltIdx_;
-    copySubActions(other.subActions_);
-  }
-  AssociatedAction& operator=(const AssociatedAction& other) {
-    if (this != &other) {
-      action_ = other.action_;
-      fn_ = other.fn_;
-      id_ = other.id_;
-      type_ = other.type_;
-      tupleEltIdx_ = other.tupleEltIdx_;
-      subActions_.clear();
-      copySubActions(other.subActions_);
+        tupleEltIdx_(tupleEltIdx),
+        subActions_() {
+    for (const AssociatedAction* subAction : subActions) {
+      subActions_.push_back(new AssociatedAction(*subAction));
     }
-    return *this;
   }
-  AssociatedAction(AssociatedAction&&) = default;
-  AssociatedAction& operator=(AssociatedAction&&) = default;
+
+  AssociatedAction(const AssociatedAction& other)
+      : action_(other.action_),
+        fn_(other.fn_),
+        id_(other.id_),
+        type_(other.type_),
+        tupleEltIdx_(other.tupleEltIdx_),
+        subActions_() {
+    for (const AssociatedAction* subAction : other.subActions_) {
+      subActions_.push_back(new AssociatedAction(*subAction));
+    }
+  }
+
+  ~AssociatedAction() {
+    for (const AssociatedAction* subAction : subActions_) {
+      delete subAction;
+    }
+  }
 
   bool operator==(const AssociatedAction& other) const {
     return action_ == other.action_ &&
@@ -2814,14 +2799,14 @@ class ResolvedExpression {
 
   // TODO: Expected to be a placeholder as we look towards updating the
   // representation of associated actions.
-  const AssociatedAction* getAction(AssociatedAction::Action action) const {
+  std::optional<AssociatedAction> getAction(AssociatedAction::Action action) const {
     // TODO: what if there are multiple instances of the same action?
     auto it = std::find_if(associatedActions_.begin(), associatedActions_.end(),
-                [&](const AssociatedAction& a) { return a.action() == action; });
+                [&](const AssociatedAction a) { return a.action() == action; });
     if (it != associatedActions_.end()) {
-      return &*it;
+      return *it;
     } else {
-      return nullptr;
+      return {};
     }
   }
 

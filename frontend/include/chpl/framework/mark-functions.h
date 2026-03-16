@@ -52,7 +52,7 @@ template<typename T> struct mark<T*> {
 };
 
 template<typename T> struct mark<owned<T>> {
-  void operator()(Context* context, const owned<T>& keep) const {
+  void operator()(Context* context, owned<T>& keep) const {
     context->markOwnedPointer(keep.get());
   }
 };

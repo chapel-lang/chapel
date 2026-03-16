@@ -435,16 +435,16 @@ void VarScopeVisitor::exit(const TupleDecl* ast, RV& rv) {
     auto decl = ast->decl(i);
     auto& re = rv.byPostorder().byAst(decl);
     llvm::SmallVector<AssociatedAction> subActions;
-    for (auto& action : re.associatedActions()) {
+    for (auto action : re.associatedActions()) {
       auto useId = action.id();
       auto useTupleEltIdx = i;
       subActions.emplace_back(action.action(), action.fn(), useId,
                               action.type(), useTupleEltIdx,
-                              std::move(action.subActions()));
+                              action.subActions());
     }
 
     re.clearAssociatedActions();
-    for (auto& action : subActions) {
+    for (auto action : subActions) {
       re.addAssociatedAction(std::move(action));
     }
   }

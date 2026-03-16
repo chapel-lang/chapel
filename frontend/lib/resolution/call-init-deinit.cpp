@@ -796,21 +796,25 @@ void CallInitDeinit::processTupleRhsHelper(VarFrame* frame,
     auto rhsEltType = rv.byPostorder().byAst(actual).type();
     processInit(frame, ast, lhsEltType,
                 rhsEltType, rv, actual);
-    for (const auto& action : re.associatedActions()) {
-      subActions.push_back(std::make_unique<AssociatedAction>(
+    for (auto action : re.associatedActions()) {
+      auto actionWithIdx = new AssociatedAction(
           action.action(),
           action.fn(),
           /* id */ actual->id(),
           action.type(),
           /* tupleEltIdx */ i,
-          action.subActions()));
+          action.subActions());
+      subActions.push_back(actionWithIdx);
     }
     re.clearAssociatedActions();
   }
   // Re-add the top-level action with the sub-actions.
   re.addAssociatedAction(topLevelAction.action(), topLevelAction.fn(),
                             topLevelAction.id(), topLevelAction.type(),
-                            chpl::optional<int>{}, std::move(subActions));
+                            chpl::optional<int>{}, subActions);
+  for (auto subAction : subActions) {
+    delete subAction;
+  }
 }
 
 bool CallInitDeinit::initIsCopyElidedFrom(const AstNode* lhsAst,
