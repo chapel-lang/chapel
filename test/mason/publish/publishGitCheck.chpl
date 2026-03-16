@@ -1,5 +1,5 @@
 use FileSystem;
-use MasonNew;
+use MasonNewInit;
 use MasonPublish;
 
 proc main(){
