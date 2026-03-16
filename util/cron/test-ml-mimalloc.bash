@@ -14,4 +14,4 @@ export CHPL_TARGET_MEM=mimalloc
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="ml-mimalloc"
 
-$UTIL_CRON_DIR/nightly -cron -multilocale ${nightly_args} $(get_nightly_paratest_args 2)
+$UTIL_CRON_DIR/nightly -cron -multilocale ${nightly_args} $(get_nightly_paratest_args 4)

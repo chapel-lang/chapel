@@ -1151,7 +1151,7 @@ handleRejectedCandidates(Resolver::CallResultWrapper& result,
       // this formal and place it in `actualDecls`, but it will be a decent
       // amount of work and lead to few error message benefits. - Daniel F.
     } else {
-      CHPL_ASSERT(0 <= actualIdx && actualIdx < actualAsts.size());
+      CHPL_ASSERT(0 <= actualIdx && (size_t) actualIdx < actualAsts.size());
       actualExpr = actualAsts[actualIdx];
     }
 

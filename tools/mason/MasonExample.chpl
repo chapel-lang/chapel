@@ -42,14 +42,16 @@ proc runExamples(show: bool, run: bool, build: bool, release: bool,
                  extraCompopts = new list(string),
                  extraExecopts = new list(string),
                  nLocales: int) throws {
-  updateLock(skipUpdate);
+
+  if build then
+    updateLock(skipUpdate);
 
   const cwd = here.cwd();
   const projectHome = getProjectHome(cwd);
 
   // Get buildInfo: dependencies, path to src code, compopts,
   // names of examples, example compopts
-  var buildInfo = getBuildInfo(projectHome, skipUpdate);
+  var buildInfo = getBuildInfo(projectHome, skipUpdate, build);
   const projectName = basename(stripExt(buildInfo.projectPath, ".chpl"));
   //TODO: This build info is weird and only used here, we should
   //      move away from this
@@ -140,90 +142,100 @@ record examplesBuildInfo {
   var perExampleOptions: map(string, chplOptions);
 }
 
+/*
+  computes most of the information required to build and run examples
+
+  if build is false, it only computes the example names and the path to the
+  project source code. the rest of the information is left blank
+*/
 private proc getBuildInfo(projectHome: string,
-                          skipUpdate: bool): examplesBuildInfo throws {
+                          skipUpdate: bool,
+                          build: bool): examplesBuildInfo throws {
 
-  // parse lock and toml(examples dont make it to lock file)
-  const lock = open(projectHome + "/Mason.lock", ioMode.r);
-  const toml = open(projectHome + "/Mason.toml", ioMode.r);
-  const lockFile = parseToml(lock);
+  const toml = open(Path.joinPath(projectHome, "Mason.toml"), ioMode.r);
+  defer toml.close();
   const tomlFile = parseToml(toml);
-
-  // Get project source code and dependencies
-  const (sourceList, gitList) = genSourceList(lockFile);
-  const depPath = Path.joinPath(MASON_HOME, 'src');
-  const gitDepPath = Path.joinPath(MASON_HOME, 'git');
-
-
-  getSrcCode(sourceList, skipUpdate, false);
-  getGitCode(gitList, false);
-  const project = lockFile["root.name"]!.s;
-  const projectPath = "".join(projectHome, "/src/", project, ".chpl");
-
 
   // get the example names from lockfile or from example directory
   const exampleNames = getExamples(tomlFile.borrow(), projectHome);
 
-  var compopts = getTomlCompopts(lockFile.borrow());
-  log.debugln("Adding prerequisite flags");
-  // add prerequisite compopts
-  for flag in MasonPrereqs.chplFlags() {
-    log.debugf("+compflag %s\n", flag);
-    compopts.pushBack(flag);
-  }
+  var sourceList: list(srcSource);
+  var gitList: list(gitSource);
+  var compopts: list(string);
+  var perExampleOptions = getExampleOptions(tomlFile.borrow(), exampleNames);
 
-  log.debugf("Base compopts: %?\n", compopts);
+  const project = tomlFile["brick.name"]!.s;
+  const projectPath = Path.joinPath(projectHome, "src", project + ".chpl");
 
-  // can't use _ since it will leak
-  // see https://github.com/chapel-lang/chapel/issues/25926
-  @chplcheck.ignore("UnusedLoopIndex")
-  for (_x, name, version) in srcSource.iterList(sourceList) {
-    const nameVer = "%s-%s".format(name, version);
-    // version of -1 specifies a git dep
-    if version != "-1" {
-      const depDir = Path.joinPath(depPath, nameVer);
-      const depSrc = Path.replaceExt(Path.joinPath(depDir, "src", name),
-                                      "chpl");
+  if build {
+    const lock = open(Path.joinPath(projectHome, "Mason.lock"), ioMode.r);
+    defer lock.close();
+    const lockFile = parseToml(lock);
+    // Get project source code and dependencies
+    (sourceList, gitList) = genSourceList(lockFile);
+    const depPath = Path.joinPath(MASON_HOME, 'src');
+    const gitDepPath = Path.joinPath(MASON_HOME, 'git');
 
-      log.debugf("Adding source dependency %s's flags\n", name);
-      compopts.pushBack(depSrc);
 
-      for flag in MasonPrereqs.chplFlags(depDir) {
-        log.debugf("+compflag %s\n", flag);
-        compopts.pushBack(flag);
+    getSrcCode(sourceList, skipUpdate, false);
+    getGitCode(gitList, false);
+
+
+    compopts = getTomlCompopts(lockFile.borrow());
+    log.debugln("Adding prerequisite flags");
+    // add prerequisite compopts
+    for flag in MasonPrereqs.chplFlags() {
+      log.debugf("+compflag %s\n", flag);
+      compopts.pushBack(flag);
+    }
+
+    log.debugf("Base compopts: %?\n", compopts);
+
+    // can't use _ since it will leak
+    // see https://github.com/chapel-lang/chapel/issues/25926
+    @chplcheck.ignore("UnusedLoopIndex")
+    for (_x, name, version) in srcSource.iterList(sourceList) {
+      const nameVer = "%s-%s".format(name, version);
+      // version of -1 specifies a git dep
+      if version != "-1" {
+        const depDir = Path.joinPath(depPath, nameVer);
+        const depSrc = Path.replaceExt(Path.joinPath(depDir, "src", name),
+                                        "chpl");
+
+        log.debugf("Adding source dependency %s's flags\n", name);
+        compopts.pushBack(depSrc);
+
+        for flag in MasonPrereqs.chplFlags(depDir) {
+          log.debugf("+compflag %s\n", flag);
+          compopts.pushBack(flag);
+        }
       }
     }
-  }
 
-  // can't use _ since it will leak
-  // see https://github.com/chapel-lang/chapel/issues/25926
-  @chplcheck.ignore("UnusedLoopIndex")
-  for (_x, name, branch, _y) in gitSource.iterList(gitList) {
-    const gitDepSrc = Path.joinPath(gitDepPath, name + "-" + branch,
-                                    'src', name + ".chpl");
-    compopts.pushBack(gitDepSrc);
-  }
+    // can't use _ since it will leak
+    // see https://github.com/chapel-lang/chapel/issues/25926
+    @chplcheck.ignore("UnusedLoopIndex")
+    for (_x, name, branch, _y) in gitSource.iterList(gitList) {
+      const gitDepSrc = Path.joinPath(gitDepPath, name + "-" + branch,
+                                      'src', name + ".chpl");
+      compopts.pushBack(gitDepSrc);
+    }
 
-  // get system deps
-  if const pkgDeps = lockFile.get['system'] {
-    for (_, depInfo) in zip(pkgDeps.A.keys(), pkgDeps.A.values()) {
-      for (k,v) in allFields(depInfo!) {
-        var val = v!;
-        select k {
-          when "libs" do compopts.pushBack(parseCompilerOptions(val));
-          when "include" do if val.s != "" then compopts.pushBack("-I" + val.s);
-          otherwise continue;
+    // get system deps
+    if const pkgDeps = lockFile.get['system'] {
+      for (_, depInfo) in zip(pkgDeps.A.keys(), pkgDeps.A.values()) {
+        for (k,v) in allFields(depInfo!) {
+          var val = v!;
+          select k {
+            when "libs" do compopts.pushBack(parseCompilerOptions(val));
+            when "include" do
+              if val.s != "" then compopts.pushBack("-I" + val.s);
+            otherwise continue;
+          }
         }
       }
     }
   }
-
-  var perExampleOptions = getExampleOptions(tomlFile.borrow(), exampleNames);
-
-  // Close lock and toml
-  lock.close();
-  toml.close();
-
 
   return new examplesBuildInfo(sourceList, gitList, projectPath,
                                compopts, exampleNames, perExampleOptions);

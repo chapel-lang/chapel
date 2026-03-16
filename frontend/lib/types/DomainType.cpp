@@ -56,16 +56,16 @@ void DomainType::stringify(std::ostream& ss,
     ss << ")";
   } else if (kind_ == Kind::Rectangular) {
     ss << "domain(";
-    rank().param()->stringify(ss, stringKind);
-    ss << ",";
+    CompositeType::stringifyParamSubstitution(ss, rank());
+    ss << ", ";
     idxType().type()->stringify(ss, stringKind);
-    ss << ",";
-    strides().param()->stringify(ss, stringKind);
+    ss << ", ";
+    CompositeType::stringifyParamSubstitution(ss, strides());
     ss << ")";
   } else if (kind_ == Kind::Associative) {
     ss << "domain(";
     idxType().type()->stringify(ss, stringKind);
-    ss << ",";
+    ss << ", ";
     parSafe().param()->stringify(ss, stringKind);
     ss << ")";
   } else if (kind_ == Kind::Unknown) {

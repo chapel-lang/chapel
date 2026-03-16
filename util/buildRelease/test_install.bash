@@ -10,6 +10,9 @@ unset CHPL_HOME
 export CHPL_CHECK_HOME=`pwd`
 wd=`pwd`
 
+num_procs=${$($CHPL_HOME/util/buildRelease/chpl-make-cpu_count):-1}
+echo "Using $num_procs threads for parallel make"
+
 export CHPL_LLVM=bundled
 
 mytmpdir=`mktemp -d 2>/dev/null || mktemp -d -t 'mytmpdir'`
@@ -25,7 +28,11 @@ EXITSTATUS=0
 if [ $EXITSTATUS -eq 0 ]
 then
   # First, check installation to bin lib etc
-  ./configure --prefix="$myprefix" && make && make mason && make chpldoc && make install
+  ./configure --prefix="$myprefix" \
+    && make -j$num_procs \
+    && make -j$num_procs mason \
+    && make -j$num_procs chpldoc \
+    && make -j$num_procs install
 
   # Remove bin and lib to eliminate possible confusion
   rm -Rf bin lib
@@ -85,7 +92,11 @@ fi
 if [ $EXITSTATUS -eq 0 ]
 then
   # Next, check installation to a chpl-home
-  ./configure --chpl-home="$myhome" && make && make mason && make chpldoc && make install
+  ./configure --chpl-home="$myhome" \
+    && make -j$num_procs \
+    && make -j$num_procs mason \
+    && make -j$num_procs chpldoc \
+    && make -j$num_procs install
   binsubdir=`./util/chplenv/chpl_bin_subdir.py`
 
   # Remove bin and lib to eliminate possible confusion

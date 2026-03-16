@@ -6,9 +6,11 @@ UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $UTIL_CRON_DIR/common.bash
 source $UTIL_CRON_DIR/common-quickstart.bash
 source $UTIL_CRON_DIR/common-gasnet.bash # must come after quickstart source
+source $UTIL_CRON_DIR/common-localnode-paratest.bash
+unset CHPL_LAUNCHER
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="gasnet.quickstart"
 
 export GASNET_QUIET=Y
 
-$UTIL_CRON_DIR/nightly -cron -multilocale
+$UTIL_CRON_DIR/nightly -cron -multilocale $(get_nightly_paratest_args 4)

@@ -11,11 +11,11 @@ series systems.
 .. contents::
 
 
---------------------------------------------------------
-Getting Started with Chapel on HPE Cray EX or XC Systems
---------------------------------------------------------
+--------------------------------------------------
+Getting Started with Chapel on HPE Cray EX Systems
+--------------------------------------------------
 
-Chapel is available as a module for HPE Cray EX and XC systems.  When
+Chapel is available as a module for HPE Cray EX systems.  When
 it is installed on your system, you do not need to build Chapel from
 the source release (though you can).  Using the module systems on such
 platforms, you can use Chapel with the default settings and confirm it
@@ -45,7 +45,7 @@ is correctly installed, as follows:
      ./hello6-taskpar-dist -nl 4
 
 
-This should be all that is necessary to use Chapel on an HPE Cray EX or XC
+This should be all that is necessary to use Chapel on an HPE Cray EX
 system.  If the installation setup by your system administrator
 deviates from the default settings, or you are interested in other
 configuration options, see `Using Chapel on an HPE Cray System`_ below.  If
@@ -60,11 +60,11 @@ For information on obtaining and installing the Chapel module please
 contact your system administrator.
 
 
--------------------------------------------------------------
-Getting Started with Chapel on HPE Apollo and Cray CS Systems
--------------------------------------------------------------
+-------------------------------------------------------------------
+Getting Started with Chapel on HPE Apollo and Cray CS or XC Systems
+-------------------------------------------------------------------
 
-On HPE Apollo and Cray CS systems, Chapel is not currently available
+On HPE Apollo and Cray CS or XC systems, Chapel is not currently available
 as a module due to the wide diversity of configurations that these
 systems support.  For this reason, Chapel must be built from source on
 these systems using the `Building Chapel for an HPE Cray System from
@@ -85,7 +85,7 @@ Building Chapel for an HPE Cray System from Source
       export CHPL_HOST_PLATFORM=hpe-cray-ex
 
    The following table lists the supported systems and strings.  Note
-   that on HPE Cray EX and XC systems, these values should typically
+   that on HPE Cray EX systems, these values should typically
    be inferred automatically and not need to be set manually.  That said,
    there is also no downside to setting them manually.  As with most
    `CHPL_*` environment variables, the current set and inferred values
@@ -151,7 +151,7 @@ Building Chapel for an HPE Cray System from Source
 3) Select the target compiler that Chapel should use when compiling
    code for the compute node:
 
-   On an HPE Apollo or Cray CS series system, set the
+   On an HPE Apollo or Cray CS or XC series system, set the
    ``CHPL_TARGET_COMPILER`` environment variable to indicate which
    compiler to use (and make sure that the compiler is in your path).
 
@@ -164,7 +164,7 @@ Building Chapel for an HPE Cray System from Source
       ...the Intel compiler (icc)  intel
       ===========================  ==============================
 
-   On an HPE Cray EX or Cray XC system, when using the C back-end,
+   On an HPE Cray EX system, when using the C back-end,
    ensure that you have one of the following Programming Environment
    modules loaded to specify your target compiler::
 

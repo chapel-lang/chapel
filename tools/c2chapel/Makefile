@@ -35,6 +35,11 @@ link=$(bdir)/c2chapel
 
 # Note, this version is used only for the fake headers,
 # but it should probably match third-party/chpl-venv/c2chapel-requirements.txt
+# TODO: this should be 2.23 to match the requirements, but that actually breaks
+# the fake headers (which have new fake headers for dirent, socket, and
+# stdatomic.h)
+# leave this as 2.20 for now until we can update c2chapel to handle the new
+# fake headers
 VERSION=2.20
 TAR=release_v$(VERSION).tar.gz
 

@@ -13,7 +13,6 @@ I have spaces!
 Updating registry
 compiled withOpts.chpl successfully
 + mason run --example withOpts.chpl -- '--exConfig=set on cli'
-Updating registry
 set on cli
 2
 set on cli
