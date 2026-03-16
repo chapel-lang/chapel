@@ -40,7 +40,7 @@ Requires:   python
 # Anna, 2026-03-11
 %debug_package %{nil}
 %define _build_id_links none
-%undefine _missing_build_ids_terminate_build
+%global _missing_build_ids_terminate_build 0
 
 %if %{!?buildroot:1}%{?buildroot:0}
 %{error: Missing required command line parameter --buildroot RPM_BUILD_ROOT}
