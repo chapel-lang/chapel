@@ -183,7 +183,6 @@ $(RUNTIME_SHARED_LIB): $(RUNTIME_OBJS) $(RUNTIME_DIR_TIMESTAMP) \
 ifneq ($(CHPL_MAKE_LIB_PIC),pic)
 	@echo "note: Skipping creation of '$(RUNTIME_SHARED_LIB_NAME)' because 'CHPL_LIB_PIC' != 'pic'"
 else
-	@rm -f $@
 	$(CHPL_MAKE_TARGET_CXX) -shared -o $@ $(RUNTIME_OBJS) $(LIBS) \
 		$(RUNTIME_SHARED_LIB_CXX_LINK_FLAGS) \
 		$(CHPL_MAKE_TARGET_BUNDLED_RUNTIME_LINK_ARGS) \
