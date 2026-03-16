@@ -28,6 +28,16 @@ Requires:   make
 Requires:   perl
 Requires:   python
 
+%if %{!?buildroot:1}%{?buildroot:0}
+%{error: Missing required command line parameter --buildroot RPM_BUILD_ROOT}
+%{error: Make sure you also have --define "_topdir TOPDIR" (where RPM_BUILD_ROOT is a subdir)}
+%{error: Highly recommended: --define "_tmppath TMPDIR" (where TMPDIR is a subdir of TOPDIR)}
+%quit
+%endif
+
+%description
+Chapel language compiler and libraries
+
 # Workarounds
 
 # Disable shebang mangling, due to errors encountered with shebangs in included
@@ -41,16 +51,6 @@ Requires:   python
 %debug_package %{nil}
 %define _build_id_links none
 %global _missing_build_ids_terminate_build 0
-
-%if %{!?buildroot:1}%{?buildroot:0}
-%{error: Missing required command line parameter --buildroot RPM_BUILD_ROOT}
-%{error: Make sure you also have --define "_topdir TOPDIR" (where RPM_BUILD_ROOT is a subdir)}
-%{error: Highly recommended: --define "_tmppath TMPDIR" (where TMPDIR is a subdir of TOPDIR)}
-%quit
-%endif
-
-%description
-Chapel language compiler and libraries
 
 %prep
 
