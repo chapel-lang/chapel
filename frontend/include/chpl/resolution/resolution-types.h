@@ -2635,7 +2635,6 @@ class AssociatedAction {
   // A list of actions contained within this one.
   // Currently only used for tuple call-init-deinit, where each element may
   // have a sub-action.
-  // Sub-actions are owned by the parent, and will be destroyed with it.
   ActionsList subActions_;
 
  public:
@@ -2648,30 +2647,7 @@ class AssociatedAction {
         id_(id),
         type_(type),
         tupleEltIdx_(tupleEltIdx),
-        subActions_() {
-    for (const AssociatedAction* subAction : subActions) {
-      subActions_.push_back(new AssociatedAction(*subAction));
-    }
-  }
-
-  AssociatedAction(const AssociatedAction& other)
-      : action_(other.action_),
-        fn_(other.fn_),
-        id_(other.id_),
-        type_(other.type_),
-        tupleEltIdx_(other.tupleEltIdx_),
-        subActions_() {
-    for (const AssociatedAction* subAction : other.subActions_) {
-      subActions_.push_back(new AssociatedAction(*subAction));
-    }
-  }
-
-  ~AssociatedAction() {
-    for (const AssociatedAction* subAction : subActions_) {
-      delete subAction;
-    }
-  }
-
+        subActions_(std::move(subActions)) {}
   bool operator==(const AssociatedAction& other) const {
     return action_ == other.action_ &&
            fn_ == other.fn_ &&
@@ -2683,7 +2659,6 @@ class AssociatedAction {
   bool operator!=(const AssociatedAction& other) const {
     return !(*this == other);
   }
-
   /** Returns which action this represents */
   Action action() const { return action_; }
 
