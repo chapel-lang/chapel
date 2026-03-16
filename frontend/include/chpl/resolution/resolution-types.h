@@ -2620,7 +2620,7 @@ class AssociatedAction {
     TUPLE_CAST,
   };
 
-  using ActionsList = llvm::SmallVector<const AssociatedAction*>;
+  using ActionsList = std::vector<AssociatedAction>;
 
  private:
   Action action_;

@@ -797,14 +797,12 @@ void CallInitDeinit::processTupleRhsHelper(VarFrame* frame,
     processInit(frame, ast, lhsEltType,
                 rhsEltType, rv, actual);
     for (auto action : re.associatedActions()) {
-      auto actionWithIdx = new AssociatedAction(
-          action.action(),
-          action.fn(),
-          /* id */ actual->id(),
-          action.type(),
-          /* tupleEltIdx */ i,
-          action.subActions());
-      subActions.push_back(actionWithIdx);
+      subActions.emplace_back(action.action(),
+                              action.fn(),
+                              /* id */ actual->id(),
+                              action.type(),
+                              /* tupleEltIdx */ i,
+                              action.subActions());
     }
     re.clearAssociatedActions();
   }
