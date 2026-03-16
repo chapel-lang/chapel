@@ -2071,12 +2071,10 @@ static void test27b() {
       {AssociatedAction::MOVE_INIT,  "r",           ""},
       {AssociatedAction::INIT_OTHER, "tup",         "", {}, {
         {AssociatedAction::ASSIGN,     "tup",   "M.test@4", 0},
-        {AssociatedAction::MOVE_INIT,  "tup",   "M.test@5", 1},
+        {AssociatedAction::COPY_INIT,  "tup",   "M.test@5", 1},
       }},
-      {AssociatedAction::COPY_INIT, "x",            "", {}, {
-        {AssociatedAction::ASSIGN,    "x",   "x", 0},
-        {AssociatedAction::COPY_INIT, "x",   "x", 1},
-      }},
+      {AssociatedAction::COPY_INIT,  "x",           ""},
+      {AssociatedAction::DEINIT,     "M.test@11",   "r"},
     });
 }
 
@@ -2099,9 +2097,10 @@ static void test27c() {
       {AssociatedAction::MOVE_INIT,  "r",           ""},
       {AssociatedAction::INIT_OTHER, "x",           "", {}, {
         {AssociatedAction::ASSIGN,     "x",   "M.test@4", 0},
-        {AssociatedAction::MOVE_INIT,  "x",   "M.test@5", 1},
+        {AssociatedAction::COPY_INIT,  "x",   "M.test@5", 1},
       }},
       {AssociatedAction::MOVE_INIT,  "y",           ""},
+      {AssociatedAction::DEINIT,     "M.test@10",   "r"},
     });
 }
 
@@ -2125,12 +2124,10 @@ static void test28() {
       {AssociatedAction::MOVE_INIT,  "r",           ""},
       {AssociatedAction::INIT_OTHER, "x",           "", {}, {
         {AssociatedAction::ASSIGN,     "x",   "M.test@4", 0},
-        {AssociatedAction::MOVE_INIT,  "x",   "M.test@5", 1},
+        {AssociatedAction::COPY_INIT,  "x",   "M.test@5", 1},
       }},
-      {AssociatedAction::COPY_INIT,  "y",           "", {}, {
-        {AssociatedAction::ASSIGN,     "y",   "y", 0},
-        {AssociatedAction::COPY_INIT,  "y",   "y", 1},
-      }},
+      {AssociatedAction::COPY_INIT,  "y",           ""},
+      {AssociatedAction::DEINIT,     "M.test@11",   "r"},
     });
 }
 
@@ -2202,7 +2199,7 @@ static void test31() {
       {AssociatedAction::MOVE_INIT,  "r",           ""},
       {AssociatedAction::INIT_OTHER, "tup",         "", {}, {
         {AssociatedAction::ASSIGN,     "tup",   "M.test@4", 0},
-        {AssociatedAction::MOVE_INIT,  "tup",   "M.test@5", 1},
+        {AssociatedAction::COPY_INIT,  "tup",   "M.test@5", 1},
       }},
       {AssociatedAction::MOVE_INIT,  "a",           ""},
       {AssociatedAction::NEW_INIT,   "M.test@12",   ""},
@@ -2210,44 +2207,12 @@ static void test31() {
       {AssociatedAction::ASSIGN,     "M.test@18",  "M.test@18", 0},
       {AssociatedAction::ASSIGN,     "M.test@18",  "M.test@18", 1},
       {AssociatedAction::DEINIT,     "M.test@20",   "b"},
-    });
-}
-
-// Assignment with tuple destructuring, moving out of tuple
-static void test32() {
-  testActions(__FUNCTION__,
-    R""""(
-      module M {
-        record R { }
-        proc test() {
-          var r = new R();
-
-          var tup = (1, r);
-
-          var a = 1;
-          var b = new R();
-          (a, b) = tup;
-        }
-      }
-    )"""",
-    {
-      {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
-      {AssociatedAction::MOVE_INIT,  "r",           ""},
-      {AssociatedAction::INIT_OTHER, "tup",         "", {}, {
-        {AssociatedAction::ASSIGN,     "tup",   "M.test@4", 0},
-        {AssociatedAction::MOVE_INIT,  "tup",   "M.test@5", 1},
-      }},
-      {AssociatedAction::MOVE_INIT,  "a",           ""},
-      {AssociatedAction::NEW_INIT,   "M.test@12",   ""},
-      {AssociatedAction::MOVE_INIT,  "b",           ""},
-      {AssociatedAction::ASSIGN,     "M.test@18",  "M.test@18", 0},
-      {AssociatedAction::ASSIGN,     "M.test@18",  "M.test@18", 1},
-      {AssociatedAction::DEINIT,     "M.test@19",   "b"},
+      {AssociatedAction::DEINIT,     "M.test@20",   "r"},
     });
 }
 
 // Init with tuple destructuring, copying out of tuple
-static void test33() {
+static void test32() {
   testActions(__FUNCTION__,
     R""""(
       module M {
@@ -2267,44 +2232,17 @@ static void test33() {
       {AssociatedAction::MOVE_INIT,  "r",           ""},
       {AssociatedAction::INIT_OTHER, "tup",         "", {}, {
         {AssociatedAction::ASSIGN,     "tup",   "M.test@4", 0},
-        {AssociatedAction::MOVE_INIT,  "tup",   "M.test@5", 1},
+        {AssociatedAction::COPY_INIT,  "tup",   "M.test@5", 1},
       }},
       {AssociatedAction::ASSIGN,    "a",   "a", 0},
       {AssociatedAction::COPY_INIT, "b",   "b", 1},
       {AssociatedAction::DEINIT,     "M.test@13",   "b"},
-    });
-}
-
-// Init with tuple destructuring, moving out of tuple
-static void test34() {
-  testActions(__FUNCTION__,
-    R""""(
-      module M {
-        record R { }
-        proc test() {
-          var r = new R();
-
-          var tup = (1, r);
-
-          var (a, b) = tup;
-        }
-      }
-    )"""",
-    {
-      {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
-      {AssociatedAction::MOVE_INIT,  "r",           ""},
-      {AssociatedAction::INIT_OTHER, "tup",         "", {}, {
-        {AssociatedAction::ASSIGN,     "tup",   "M.test@4", 0},
-        {AssociatedAction::MOVE_INIT,  "tup",   "M.test@5", 1},
-      }},
-      {AssociatedAction::MOVE_INIT, "a",   "a", 0},
-      {AssociatedAction::MOVE_INIT, "b",   "b", 1},
-      {AssociatedAction::DEINIT,    "M.test@12",   "b"},
+      {AssociatedAction::DEINIT,     "M.test@13",   "r"},
     });
 }
 
 // Tuple expr containing tuple variables, inner tuples of same type
-static void test35a() {
+static void test33a() {
   testActions(__FUNCTION__,
     R""""(
       module M {
@@ -2317,14 +2255,14 @@ static void test35a() {
     )"""",
     {
       {AssociatedAction::INIT_OTHER, "x",         "", {}, {
-        {AssociatedAction::MOVE_INIT,  "x",   "M.test@6", 0},
-        {AssociatedAction::MOVE_INIT,  "x",   "M.test@7", 1},
+        {AssociatedAction::COPY_INIT,  "x",   "M.test@6", 0},
+        {AssociatedAction::COPY_INIT,  "x",   "M.test@7", 1},
       }},
     });
 }
 
 // Like previous, but with inner tuples of different type
-static void test35b() {
+static void test33b() {
   testActions(__FUNCTION__,
     R""""(
       module M {
@@ -2338,8 +2276,8 @@ static void test35b() {
     )"""",
     {
       {AssociatedAction::INIT_OTHER, "x",         "", {}, {
-        {AssociatedAction::MOVE_INIT,  "x",   "M.test@8", 0},
-        {AssociatedAction::MOVE_INIT,  "x",   "M.test@9", 1},
+        {AssociatedAction::COPY_INIT,  "x",   "M.test@8", 0},
+        {AssociatedAction::COPY_INIT,  "x",   "M.test@9", 1},
       }},
     });
 }
@@ -2454,10 +2392,8 @@ int main() {
   test30();
   test31();
   test32();
-  test33();
-  test34();
-  test35a();
-  test35b();
+  test33a();
+  test33b();
 
   return 0;
 }

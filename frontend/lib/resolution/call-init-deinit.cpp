@@ -112,9 +112,6 @@ struct CallInitDeinit : VarScopeVisitor {
                              const TupleType* lhsTupleType,
                              const TupleType* rhsTupleType,
                              RV& rv);
-  bool initIsCopyElidedFrom(const AstNode* lhsAst,
-                            const AstNode* rhsAst,
-                            const ID& rhsDeclId);
   void processInit(VarFrame* frame,
                    const AstNode* ast,
                    const QualifiedType& lhsType,
@@ -812,23 +809,6 @@ void CallInitDeinit::processTupleRhsHelper(VarFrame* frame,
                             chpl::optional<int>{}, subActions);
 }
 
-bool CallInitDeinit::initIsCopyElidedFrom(const AstNode* lhsAst,
-                                          const AstNode* rhsAst,
-                                          const ID& rhsDeclId) {
-  for (const ID& id : {lhsAst->id(), rhsAst->id()}) {
-    auto it = elidedCopyFromIds.find(id);
-    if (it != elidedCopyFromIds.end()) {
-      const ID& fromId = it->second;
-      if (fromId == rhsDeclId) {
-        // copy elision with '=' should only apply to myVar = myOtherVar
-        CHPL_ASSERT(!rhsDeclId.isEmpty());
-        return true;
-      }
-    }
-  }
-  return false;
-}
-
 void CallInitDeinit::processInit(VarFrame* frame,
                                  const AstNode* ast,
                                  const QualifiedType& lhsType,
@@ -879,19 +859,20 @@ void CallInitDeinit::processInit(VarFrame* frame,
       return;
     }
 
-    ID rhsDeclId = refersToId(rhsAst, rv);
     if (isRef(lhsType.kind())) {
       // e.g. ref x = localVariable;
       //  or  ref y = returnAValue();
       if (isCallProducingValue(rhsAst, rhsType, rv)) {
         resolveDeinit(ast, rhsAst->id(), rhsType, rv);
       }
-    } else if (initIsCopyElidedFrom(lhsAst, rhsAst, rhsDeclId)) {
+    } else if (elidedCopyFromIds.count(ast->id()) > 0) {
       // it is move initialization
       resolveMoveInit(ast, rhsAst, lhsType, rhsType, rv);
 
       // The RHS must represent a variable that is now dead,
       // so note that in deinitedVars.
+      ID rhsDeclId = refersToId(rhsAst, rv);
+      // copy elision with '=' should only apply to myVar = myOtherVar
       frame->deinitedVars.emplace(rhsDeclId, currentStatement()->id());
     } else if (isCallProducingValue(rhsAst, rhsType, rv) && !lhsIsTuple) {
       // e.g. var x; x = callReturningValue();
