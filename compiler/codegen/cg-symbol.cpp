@@ -3291,7 +3291,7 @@ GenRet FnSymbol::codegenAsCallBaseExpr() {
       llvm::Type* Types[] = {ty.type};
 
 #if LLVM_VERSION_MAJOR < 21
-      // TargetIntrinsics where removed in LLVM 21
+      // TargetIntrinsics were removed in LLVM 21
       // we just access them like normal intrinsics
       const llvm::TargetIntrinsicInfo *TII = info->targetMachine->getIntrinsicInfo();
 #endif
