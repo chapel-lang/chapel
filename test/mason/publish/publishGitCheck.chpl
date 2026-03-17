@@ -6,7 +6,7 @@ proc main(){
   masonNew(['new', 'publishCheck']);
   var pwd = here.cwd();
   here.chdir(pwd + '/publishCheck');
-  if doesGitOriginExist() == false {
+  if !doesGitOriginExist() {
     here.chdir(pwd);
     rmTree('publishCheck');
     writeln("Passed! Should return empty string as no repo was initialized");
