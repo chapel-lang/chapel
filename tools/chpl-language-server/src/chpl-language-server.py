@@ -305,12 +305,21 @@ class ChapelLanguageServer(LanguageServer):
                 context = self.get_context(uri)
 
             file_info, errors = context.new_file_info(uri, self.use_resolver)
-            self.file_infos[fi_key] = file_info
 
-            # Also make this the "default" context for this file in case we
-            # open it.
-            if (uri, None) not in self.file_infos:
-                self.file_infos[(uri, None)] = file_info
+            # Store the file info into our cache. There are two reasons
+            # that we might want to retrieve the FI from the cache:
+            # * We just opened the file in the editor (the key should have
+            #   context ID 'None')
+            # * A call hierarchy expansion requested it (the key should have
+            #   previous file's context ID)
+            # We want to store the file info with both keys so that both
+            # of these methods don't accidentally miss the cache and create
+            # a duplicate FileInfo.
+
+            ctx_id = self.context_ids[context]
+            for key in ((uri, ctx_id), (uri, None)):
+                if key not in self.file_infos:
+                    self.file_infos[key] = file_info
 
         # filter out errors that are not related to the file
         cur_path = uri[len("file://") :]
