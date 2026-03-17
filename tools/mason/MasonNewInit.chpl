@@ -244,7 +244,7 @@ module MasonNewInit {
     if isNew && name == "" then
       throw new MasonError("A package name must be specified");
     if !isNew && name == "" {
-      name = basename(here.cwd());
+      name = (new path(here.cwd())).name;
       directory = ".":path;
     } else {
       directory = name:path;
