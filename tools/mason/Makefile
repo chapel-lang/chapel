@@ -51,7 +51,7 @@ deps:
 
 tarball-prep: deps
 	@echo "Preparing Mason for tarball..."
-	@rm third-party/masonDeps.txt
+	@rm ThirdParty/masonDeps.txt
 
 clean: FORCE
 	@echo "Removing Mason..."

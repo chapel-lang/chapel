@@ -38,7 +38,7 @@ if command -v module > /dev/null 2>&1 ; then
   fi
 fi
 
-COMPOPTS="-M third-party"
+COMPOPTS=""
 PRE_COMPOPTS="--launcher=none"
 POST_COMPOPTS="--checks"
 if [ "$DEBUG" == "1" ]; then

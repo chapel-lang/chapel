@@ -32,8 +32,8 @@ module MasonNewInit {
   import MasonHelp.{MasonNewHelpHandler, MasonInitHelpHandler};
   import Manifest.{manifestFile, packageType};
 
-  import TemplateString.templateString;
-  import Pathlib.path;
+  import ThirdParty.TemplateString.templateString;
+  import ThirdParty.Pathlib.path;
 
   private var log = new MasonLogger.logger("mason new/init");
 

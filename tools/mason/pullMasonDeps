@@ -2,7 +2,7 @@
 
 
 MASON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
-DEPS_FILE="$MASON_DIR/third-party/masonDeps.txt"
+DEPS_FILE="$MASON_DIR/ThirdParty/masonDeps.txt"
 
 # if masonDeps does not exist, skip
 if [ ! -f "$DEPS_FILE" ]; then
@@ -17,7 +17,7 @@ while IFS= read -r line; do
   filename="${line%%@*}"
   url="${line#*@}"
 
-  curl -sSfL "$url" -o "$MASON_DIR/third-party/$filename"
+  curl -sSfL "$url" -o "$MASON_DIR/ThirdParty/$filename"
   echo "Downloaded $filename"
 done < "$DEPS_FILE"
 

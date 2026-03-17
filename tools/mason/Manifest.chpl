@@ -28,7 +28,7 @@ module Manifest {
 
   import MasonUtils;
 
-  import TemplateString.templateString;
+  import ThirdParty.TemplateString.templateString;
 
   record manifestFile {
     // required
