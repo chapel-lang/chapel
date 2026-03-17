@@ -91,6 +91,7 @@ module MasonNewInit {
     proc makeProject() throws {
       makeBasicToml();
       makeSourceFiles();
+      writeln("Created new ", manifest.pkgType, " project: ", manifest.name);
     }
     /*
       Create a git repo and related files (ie gitignore)
