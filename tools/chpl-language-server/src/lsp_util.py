@@ -570,7 +570,10 @@ class Instantiations:
         return iter(self.instantiations)
 
 
-CallInTypeContext = Tuple[chapel.FnCall, Optional[chapel.TypedSignature]]
+CallInTypeContext = Union[
+    Tuple[chapel.FnCall, Optional[chapel.TypedSignature]],
+    Tuple[()]
+]
 
 
 @dataclass
@@ -869,7 +872,7 @@ class FileInfo:
         self,
         fnid: str,
         sig: chapel.TypedSignature,
-        call: chapel.FnCall,
+        call: Optional[chapel.FnCall],
         via: Optional[chapel.TypedSignature]
     ) -> bool:
         insts = self._get_inst_container(fnid)
@@ -877,7 +880,11 @@ class FileInfo:
         if not already_visited:
             insts.append(sig)
         contexts = self._get_call_context_container(sig)
-        contexts.append((call, via))
+        if call:
+            contexts.append((call, via))
+        else:
+            contexts.append(())
+
         return already_visited
 
     def _note_scope(self, node: chapel.AstNode):
@@ -1114,7 +1121,7 @@ class FileInfo:
                     )
                 )
 
-            visit = self._note_inst(fn.unique_id(), sig, node, via)
+            visit = not self._note_inst(fn.unique_id(), sig, node, via)
             if not sig.is_instantiation() or not visit:
                 continue
 
@@ -1132,13 +1139,11 @@ class FileInfo:
             if sig:
                 sig = sig.rectangularize()
             if sig:
-                insts = self.instantiations[node.unique_id()]
-                already_visited = sig in insts
-                if not already_visited:
-                    insts[sig] = []
+                visit = not self._note_inst(node.unique_id(), sig, None, via)
+                if not sig.is_instantiation() or not visit:
+                    continue
 
-                if sig.is_instantiation() and not already_visited:
-                    self._search_instantiations(node, via=sig)
+                self._search_instantiations(node, via=sig)
 
     def _invalidate_inst_segments(
         self,

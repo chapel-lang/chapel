@@ -1237,7 +1237,7 @@ def run_lsp():
                     i = from_file.index_of_instantiation(decl.node, inst)
                     assert i > -1
                     label = "Show Instantiation"
-                    if not fi.context.call_contexts(inst):
+                    if all(x == () for x in fi.context.call_contexts(inst)):
                         label += " (Default-Rectangular)"
 
                     action = CodeLens(
@@ -1413,7 +1413,10 @@ def run_lsp():
         incoming_calls: Dict[
             Union[chapel.TypedSignature, str], List[chapel.FnCall]
         ] = defaultdict(list)
-        for call, via in calls:
+        for call_context in calls:
+            if len(call_context) == 0:
+                continue
+            call, via = call_context
             # If the call is from an instantiation, use the instantiation
             # as the hierarchy item anchor.
             if via is not None:
