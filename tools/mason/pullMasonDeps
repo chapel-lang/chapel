@@ -17,7 +17,18 @@ while IFS= read -r line; do
   filename="${line%%@*}"
   url="${line#*@}"
 
-  curl -sSfL "$url" -o "$MASON_DIR/ThirdParty/$filename"
+  rm -f $MASON_DIR/ThirdParty/$filename
+  if command -v curl > /dev/null; then
+    # use curl if available
+    curl -sSfL "$url" -o "$MASON_DIR/ThirdParty/$filename"
+  else
+    # fall back to python
+    python3 -c "import urllib.request; urllib.request.urlretrieve('$url', '$MASON_DIR/ThirdParty/$filename')"
+  fi
+  if [ ! -f "$MASON_DIR/ThirdParty/$filename" ]; then
+    echo "Failed to download $filename from $url"
+    exit 1
+  fi
   echo "Downloaded $filename"
 done < "$DEPS_FILE"
 
