@@ -12,9 +12,6 @@ cd /home/linuxbrew
 export HOMEBREW_NO_INSTALL_FROM_API=1
 # Might not be needed, but also doesn't hurt and matches homebrew CI
 export HOMEBREW_NO_AUTO_UPDATE=1
-# might not need, but also doesn't hurt and matches homebrew mac testing
-export HOMEBREW_NO_AUTOREMOVE=1
-export HOMEBREW_NO_INSTALL_CLEANUP=1
 
 #Script used in docker exec command to test homebrew formula
 # brew test-bot --only-tap-syntax
