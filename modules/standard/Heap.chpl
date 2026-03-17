@@ -99,7 +99,7 @@ module Heap {
       Comparator record that defines how the
       data is compared. The greatest element will be on the top.
     */
-    var comparator: record;
+    var comparator: defaultComparator = new defaultComparator();
 
     @chpldoc.nodoc
     var _lock = if parSafe then new _LockWrapper() else none;
