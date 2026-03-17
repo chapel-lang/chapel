@@ -92,6 +92,12 @@ module MasonNewInit {
       makeBasicToml();
       makeSourceFiles();
       writeln("Created new ", manifest.pkgType, " project: ", manifest.name);
+      if manifest.pkgType != packageType.light {
+        writeln("Tip: To convert existing code to a mason project, " +
+        "move the driver application to the `src/" + manifest.name + ".chpl`" +
+        " file. For adding other source code, using submodules is the " +
+        "recommended approach to avoid namespace collisions.");
+      }
     }
     /*
       Create a git repo and related files (ie gitignore)
@@ -268,6 +274,7 @@ module MasonNewInit {
     var libFlag = parser.addFlag(name="lib", defaultValue=false);
     var lightFlag = parser.addFlag(name="light", defaultValue=false);
 
+    // TODO
     // var exampleFlag = parser.addFlag(name="example",
     //                                   opts=["--no-examples"],
     //                                   defaultValue=true);
