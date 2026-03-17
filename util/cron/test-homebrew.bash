@@ -79,7 +79,7 @@ until brew update; do
   RETRIES=$((RETRIES - 1))
   sleep 5
 done
-# Error: File exists
+
 # uninstall the old chapel so we can do a clean install
 HOMEBREW_NO_AUTO_UPDATE=1 brew uninstall --force chapel
 
