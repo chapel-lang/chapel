@@ -2807,8 +2807,11 @@ static void codegenGpuGlobals() {
 struct ChapelRemarkSerializer : public llvm::remarks::RemarkSerializer {
   ChapelRemarkSerializer(llvm::raw_ostream& OS)
       : llvm::remarks::RemarkSerializer(
-            llvm::remarks::Format::Unknown, OS,
-            llvm::remarks::SerializerMode::Standalone) {}
+            llvm::remarks::Format::Unknown, OS
+#if LLVM_VERSION_MAJOR < 22
+            , llvm::remarks::SerializerMode::Standalone
+#endif
+          ) {}
 
   void emit(const llvm::remarks::Remark& Remark) override {
 
@@ -2856,6 +2859,15 @@ struct ChapelRemarkSerializer : public llvm::remarks::RemarkSerializer {
     OS << " for '" << Remark.PassName << "'";
     OS << " - " << Remark.getArgsAsMsg() << "\n";
   }
+#if LLVM_VERSION_MAJOR >= 22
+  // just use the YAML (default) meta serializer, which gets encoded in the asm
+  std::unique_ptr<llvm::remarks::MetaSerializer> metaSerializer(
+      llvm::raw_ostream& OS,
+      llvm::StringRef ExternalFilename) override {
+    return std::make_unique<llvm::remarks::YAMLMetaSerializer>(
+        OS, ExternalFilename);
+  }
+#else
   // just use the YAML (default) meta serializer, which gets encoded in the asm
   std::unique_ptr<llvm::remarks::MetaSerializer> metaSerializer(
       llvm::raw_ostream& OS,
@@ -2863,6 +2875,7 @@ struct ChapelRemarkSerializer : public llvm::remarks::RemarkSerializer {
     return std::make_unique<llvm::remarks::YAMLMetaSerializer>(
         OS, ExternalFilename);
   }
+#endif
   private:
   std::string typeToString(llvm::remarks::Type t) {
     switch (t) {

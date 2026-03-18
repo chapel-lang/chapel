@@ -26,16 +26,10 @@ def llvm_versions():
     # Which major release - only need one number for that with current
     # llvm (since LLVM 4.0).
     # These will be tried in order.
-    return (
-        "21",
-        "20",
-        "19",
-        "18",
-        "17",
-        "16",
-        "15",
-        "14",
-    )
+    min_version = 14
+    max_version = 22
+    versions = tuple(str(i) for i in range(max_version, min_version - 1, -1))
+    return versions
 
 
 @memoize
@@ -1551,6 +1545,12 @@ def compute_host_link_settings():
             # clangAPINotes must go immediately after clangSema
             idx = clang_static_libs.index("-lclangSema") + 1
             clang_static_libs.insert(idx, "-lclangAPINotes")
+        # Starting with clang 22, clang needs additional libraries
+        if llvm_version not in ("14", "15", "16", "17", "18", "19", "20", "21"):
+            idx = clang_static_libs.index("-lclangDriver") + 1
+            clang_static_libs.insert(idx, "-lclangOptions")
+            idx = clang_static_libs.index("-lclangSema") + 1
+            clang_static_libs.insert(idx, "-lclangAnalysisLifetimeSafety")
 
     # quit early if the llvm value is unset
     if llvm_val == "unset":

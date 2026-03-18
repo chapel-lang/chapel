@@ -3104,8 +3104,13 @@ static GenRet codegenCallExprInner(GenRet function,
           }
 
           case clang::CodeGen::ABIArgInfo::Kind::Expand:
-            INT_FATAL("not implemented");
+            INT_FATAL("Expand ABI argument not implemented");
             break;
+#if LLVM_VERSION_MAJOR >= 22
+            case clang::CodeGen::ABIArgInfo::Kind::TargetSpecific:
+              INT_FATAL("TargetSpecific ABI argument not implemented");
+              break;
+#endif
         }
       } else {
 
@@ -4744,9 +4749,13 @@ DEFINE_PRIM(RETURN) {
         }
 
         case clang::CodeGen::ABIArgInfo::Kind::Expand:
-          INT_FATAL("not implemented yet");
+          INT_FATAL("Expand ABI return not implemented yet");
           break;
-
+#if LLVM_VERSION_MAJOR >= 22
+        case clang::CodeGen::ABIArgInfo::Kind::TargetSpecific:
+          INT_FATAL("TargetSpecific ABI argument not implemented");
+          break;
+#endif
         // No default -> compiler warning if more added
       }
 
