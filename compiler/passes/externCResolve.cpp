@@ -35,6 +35,7 @@
 
 #ifdef HAVE_LLVM
 // clang headers
+#include "clang/AST/ASTContext.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/Type.h"
 #include "llvm/ADT/SmallSet.h"
@@ -486,7 +487,12 @@ void convertDeclToChpl(ModuleSymbol* module,
   //struct
   if (clang::RecordDecl *rd =
       llvm::dyn_cast_or_null<clang::RecordDecl>(cType)) {
+#if LLVM_VERSION_MAJOR >= 22
+    auto& ctx = rd->getASTContext();
+    convertToChplType(module, ctx.getCanonicalTagType(rd)->getTypePtr());
+#else
     convertToChplType(module, rd->getTypeForDecl());
+#endif
   }
 
   //enum constant
