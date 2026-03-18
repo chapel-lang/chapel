@@ -21,11 +21,9 @@ from utils import (
 from collections import defaultdict
 
 
-# returns a tuple of supported major LLVM versions as strings
+# Get a tuple of supported major LLVM versions as strings.
+# These will be tried in order.
 def llvm_versions():
-    # Which major release - only need one number for that with current
-    # llvm (since LLVM 4.0).
-    # These will be tried in order.
     return (
         "21",
         "20",
