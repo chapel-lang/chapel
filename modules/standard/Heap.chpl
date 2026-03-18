@@ -96,10 +96,17 @@ module Heap {
     param parSafe = false;
 
     /*
+      The type of the comparator used by this heap.
+      Defaults to :record:`Sort.defaultComparator`.
+      This type field enables default initialization of heaps,
+    */
+    type comparatorType = defaultComparator;
+
+    /*
       Comparator record that defines how the
       data is compared. The greatest element will be on the top.
     */
-    var comparator: record;
+    var comparator: comparatorType;
 
     @chpldoc.nodoc
     var _lock = if parSafe then new _LockWrapper() else none;
@@ -136,11 +143,34 @@ module Heap {
       :arg comparator: The comparator to use
     */
     proc init(type eltType, param parSafe = false,
-              comparator: record = new defaultComparator()) {
+              comparator: record) {
       _checkType(eltType);
       this.eltType = eltType;
       this.parSafe = parSafe;
+      this.comparatorType = comparator.type;
       this.comparator = comparator;
+      this._data = new list(eltType);
+    }
+
+      /*
+      Initializes an empty heap using default initialization.
+      This enables type-based declarations without requiring `new`.
+
+      :arg eltType: The type of the elements
+
+      :arg parSafe: If `true`, this heap will use parallel safe operations.
+      :type parSafe: `param bool`
+
+      :arg comparatorType: The type of the comparator to use.
+        Defaults to :record:`~Sort.defaultComparator`.
+    */
+    proc init(type eltType, param parSafe = false,
+              type comparatorType = defaultComparator) {
+      _checkType(eltType);
+      this.eltType = eltType;
+      this.parSafe = parSafe;
+      this.comparatorType = comparatorType;
+      this.comparator = new comparatorType();
       this._data = new list(eltType);
     }
 
@@ -157,6 +187,7 @@ module Heap {
 
       this.eltType = this.type.eltType;
       this.parSafe = this.type.parSafe;
+      this.comparatorType = other.comparator.type;
       this.comparator = other.comparator;
       init this;
       _commonInitFromIterable(other._data);
