@@ -70,7 +70,7 @@ cat chapel.rb
 # "Error: File exists", this happens somewhat frequently and just
 # rerunning the command seems to fix it.
 RETRIES=3
-until brew update; do
+until brew upgrade --force --overwrite; do
   if [ $RETRIES -le 0 ]; then
     log_error "Failed to update Homebrew after multiple attempts."
     exit 1
