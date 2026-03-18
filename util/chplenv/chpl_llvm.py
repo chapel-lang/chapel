@@ -1545,6 +1545,12 @@ def compute_host_link_settings():
             # clangAPINotes must go immediately after clangSema
             idx = clang_static_libs.index("-lclangSema") + 1
             clang_static_libs.insert(idx, "-lclangAPINotes")
+        # Starting with clang 22, clang needs additional libraries
+        if llvm_version not in ("14", "15", "16", "17", "18", "19", "20", "21"):
+            idx = clang_static_libs.index("-lclangDriver") + 1
+            clang_static_libs.insert(idx, "-lclangOptions")
+            idx = clang_static_libs.index("-lclangSema") + 1
+            clang_static_libs.insert(idx, "-lclangAnalysisLifetimeSafety")
 
     # quit early if the llvm value is unset
     if llvm_val == "unset":
