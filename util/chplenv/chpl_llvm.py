@@ -26,16 +26,10 @@ def llvm_versions():
     # Which major release - only need one number for that with current
     # llvm (since LLVM 4.0).
     # These will be tried in order.
-    return (
-        "21",
-        "20",
-        "19",
-        "18",
-        "17",
-        "16",
-        "15",
-        "14",
-    )
+    min_version = 14
+    max_version = 22
+    versions = tuple(str(i) for i in range(max_version, min_version - 1, -1))
+    return versions
 
 
 @memoize
