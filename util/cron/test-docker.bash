@@ -44,6 +44,12 @@ dockerfile_nightly_patch() {
   patch $patch_args ./Dockerfile << EOF
 $nightlypatch
 EOF
+
+  if [ $? -ne 0 ]
+  then
+        echo "Dockerfile patch for building off nightly failed"
+        exit 1
+  fi
 }
 
 # Build, test, and push a Docker image.
