@@ -35,7 +35,9 @@
 #include "clang/Driver/Compilation.h"
 #include "clang/Driver/Driver.h"
 #include "clang/Driver/Job.h"
+#if LLVM_VERSION_MAJOR <= 21
 #include "clang/Driver/Options.h"
+#endif
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/CompilerInvocation.h"
 #include "clang/Frontend/FrontendActions.h"
@@ -530,7 +532,11 @@ static owned<clang::CompilerInstance> getCompilerInstanceForReadingPch(
     )
   );
   Clang->createFileManager();
+#if LLVM_VERSION_MAJOR >= 22
+  Clang->createSourceManager();
+#else
   Clang->createSourceManager(Clang->getFileManager());
+#endif
   Clang->createPreprocessor(clang::TU_Complete);
 
   return toOwned(Clang);

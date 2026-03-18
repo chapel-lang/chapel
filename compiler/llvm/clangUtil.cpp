@@ -1320,6 +1320,23 @@ void readMacrosClang(void) {
   }
 };
 
+
+template <typename Ty,
+          std::enable_if_t<std::is_pointer_v<Ty> &&
+                           std::is_base_of_v<clang::TypeDecl, std::remove_pointer_t<Ty>>, bool> = true>
+const clang::Type* getClangASTType(ASTContext& ctx, Ty decl) {
+#if LLVM_VERSION_MAJOR >= 22
+  if constexpr (std::is_same_v<Ty, clang::TagDecl*>) {
+    return ctx.getCanonicalTagType(decl)->getTypePtr();
+  } else {
+    return ctx.getCanonicalTypeDeclType(decl)->getTypePtr();
+  }
+#else
+  std::ignore ctx;
+  return decl->getTypeForDecl();
+#endif
+}
+
 // This ASTConsumer helps us to:
 // 1: parse code only in certain configurations
 // 2: Convert C code to LLVM IR in others
@@ -1330,7 +1347,11 @@ class CCodeGenConsumer final : public ASTConsumer {
   private:
     GenInfo* info;
     clang::DiagnosticsEngine* Diags;
+#if LLVM_VERSION_MAJOR >= 22
+    std::unique_ptr<clang::CodeGenerator> Builder;
+#else
     clang::CodeGenerator* Builder;
+#endif
     bool parseOnly;
     ASTContext* savedCtx;
 
@@ -1355,9 +1376,9 @@ class CCodeGenConsumer final : public ASTConsumer {
       : ASTConsumer(),
         info(gGenInfo),
         Diags(&info->clangInfo->Clang->getDiagnostics()),
-        Builder(NULL),
+        Builder(nullptr),
         parseOnly(info->clangInfo->parseOnly),
-        savedCtx(NULL)
+        savedCtx(nullptr)
     {
 
       if (!parseOnly) {
@@ -1375,7 +1396,11 @@ class CCodeGenConsumer final : public ASTConsumer {
         INT_ASSERT(Builder);
         INT_ASSERT(!info->module);
         info->module = Builder->GetModule();
+#if LLVM_VERSION_MAJOR >= 22
+        info->clangInfo->cCodeGen = Builder.get();
+#else
         info->clangInfo->cCodeGen = Builder;
+#endif
 
         // compute target triple, data layout
         setupModule();
@@ -1486,7 +1511,7 @@ class CCodeGenConsumer final : public ASTConsumer {
            info->lvt->addGlobalCDecl(*e); // & goes away with newer clang
          }
       } else if(RecordDecl *rd = dyn_cast<RecordDecl>(D)) {
-         const clang::Type *ctype = rd->getTypeForDecl();
+         const clang::Type *ctype = getClangASTType(rd->getASTContext(), rd);
 
          if(ctype != NULL && rd->getDefinition() != NULL) {
            info->lvt->addGlobalCDecl(rd);
@@ -1632,11 +1657,23 @@ static void initializeLlvmTargets() {
 
 // Get a string corresponding to the LLVM target triple
 // for the current configuration
+// TODO: use a different triple when cross compiling
+// TODO: look at CHPL_TARGET_ARCH
+#if LLVM_VERSION_MAJOR >= 22
+static llvm::Triple getConfiguredTargetTriple() {
+  return llvm::Triple(llvm::sys::getDefaultTargetTriple());
+}
+static std::string getConfiguredTargetTripleString() {
+  return getConfiguredTargetTriple().str();
+}
+#else
 static std::string getConfiguredTargetTriple() {
-  // TODO: use a different triple when cross compiling
-  // TODO: look at CHPL_TARGET_ARCH
   return llvm::sys::getDefaultTargetTriple();
 }
+static std:string getConfiguredTargetTripleString() {
+  return getConfiguredTargetTriple();
+}
+#endif
 
 
 void setupClang(GenInfo* info, std::string mainFile)
@@ -1675,7 +1712,7 @@ void setupClang(GenInfo* info, std::string mainFile)
   // target CPU supports vectorization, avx, etc, etc
   // Also important for generating assembly from this program.
   initializeLlvmTargets();
-  std::string triple = getConfiguredTargetTriple();
+  std::string triple = getConfiguredTargetTripleString();
 
   for (auto & arg : clangInfo->driverArgs) {
     clangInfo->driverArgsCStrings.push_back(arg.c_str());
@@ -1817,7 +1854,12 @@ void setupClang(GenInfo* info, std::string mainFile)
 
   // Create the compilers actual diagnostics engine.
 #if LLVM_VERSION_MAJOR >= 20
+#if LLVM_VERSION_MAJOR >= 22
+  clangInfo->Clang->createDiagnostics(*llvm::vfs::getRealFileSystem(),
+                                     clangInfo->Clang->getDiagnosticOpts());
+#else
   clangInfo->Clang->createDiagnostics(*llvm::vfs::getRealFileSystem());
+#endif
 #else
   clangInfo->Clang->createDiagnostics();
 #endif
@@ -1949,12 +1991,19 @@ static llvm::TargetOptions getTargetOptions(
   if (ffloatOpt == 1) {
     // --no-ieee-float
     // Allow unsafe fast floating point optimization
+#if LLVM_VERSION_MAJOR < 22
+    // NOTE (Jade 3-18-26): its not clear why LLVM removed "UnsafeFPMath", and
+    // what the proper replacement is, if any.
+    // They may have removed it due to it being redudant and so
+    // everything may just work fine
     Options.UnsafeFPMath = 1; // e.g. FSIN instruction
+#endif
     Options.NoInfsFPMath = 1;
     Options.NoNaNsFPMath = 1;
     Options.NoTrappingFPMath = 1;
     Options.NoSignedZerosFPMath = 1;
     Options.AllowFPOpFusion = llvm::FPOpFusion::Fast;
+
   } else if (ffloatOpt == 0) {
     // Target default floating point optimization
     Options.AllowFPOpFusion = llvm::FPOpFusion::Standard;
@@ -2127,7 +2176,11 @@ static void setupModule()
 
   // Set the TargetMachine
   std::string Err;
+#if LLVM_VERSION_MAJOR >= 22
+  const llvm::Target* Target = TargetRegistry::lookupTarget(Triple, Err);
+#else
   const llvm::Target* Target = TargetRegistry::lookupTarget(Triple.str(), Err);
+#endif
   if (!Target)
     USR_FATAL("Could not find LLVM target for %s: %s",
               Triple.str().c_str(), Err.c_str());
@@ -2852,7 +2905,7 @@ static bool isTargetCpuValid(const char* targetCpu) {
     return true;
   } else {
     initializeLlvmTargets();
-    std::string triple = getConfiguredTargetTriple();
+    auto triple = getConfiguredTargetTriple();
     std::string err;
     const llvm::Target* tgt = llvm::TargetRegistry::lookupTarget(triple, err);
     if (tgt == nullptr || !err.empty()) {
@@ -3067,7 +3120,7 @@ static void helpComputeClangArgs(std::string& clangCC,
     if (!targetCpuValid) {
       USR_WARN("Unknown target CPU %s -- not specializing",
                CHPL_LLVM_TARGET_CPU);
-      std::string triple = getConfiguredTargetTriple();
+      std::string triple = getConfiguredTargetTripleString();
       USR_PRINT("To see available CPU types, run "
                 "%s --target=%s --print-supported-cpus",
                 clangCC.c_str(), triple.c_str());
@@ -3503,9 +3556,13 @@ llvm::Type* codegenCType(const TypeDecl* td)
     RecordDecl *def = rd->getDefinition();
     if (def == nullptr) {
       // it's an opaque type - definition of fields not available
-      qType=rd->getCanonicalDecl()->getTypeForDecl()->getCanonicalTypeInternal();
+      qType
+        = getClangASTType(rd->getASTContext(),
+                          rd->getCanonicalDecl())->getCanonicalTypeInternal();
     } else {
-      qType=def->getCanonicalDecl()->getTypeForDecl()->getCanonicalTypeInternal();
+      qType
+        = getClangASTType(def->getASTContext(),
+                          def->getCanonicalDecl())->getCanonicalTypeInternal();
     }
   } else {
     INT_FATAL("Unknown clang type declaration");
@@ -3803,7 +3860,9 @@ llvm::Type *LayeredValueTable::getType(StringRef name, bool *isUnsigned) {
 
       // Convert it to an LLVM type.
       store->u.type = codegenCType(store->u.cTypeDecl);
-      const clang::Type *type = store->u.cTypeDecl->getTypeForDecl();
+      const clang::Type *type =
+        getClangASTType(store->u.cTypeDecl->getASTContext(),
+                        store->u.cTypeDecl);
       if (type != NULL) {
         store->isUnsigned = type->isUnsignedIntegerOrEnumerationType();
       }
@@ -4294,7 +4353,9 @@ int getCTypeAlignment(::Type* type) {
     if (def == nullptr)
       // ex. opaque pointer in test/extern/records/OpaqueStructNoField.chpl
       return ALIGNMENT_DEFER;
-    qType=def->getCanonicalDecl()->getTypeForDecl()->getCanonicalTypeInternal();
+    qType =
+      getClangASTType(def->getASTContext(),
+                      def->getCanonicalDecl())->getCanonicalTypeInternal();
   } else {
     INT_FATAL("Unknown clang type declaration");
   }
