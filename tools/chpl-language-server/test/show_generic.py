@@ -72,11 +72,18 @@ EXPECTED_INLAYS = typing.Sequence[EXPECTED_INLAY]
 
 async def click_lenses_and_check_inlays(
     client: LanguageClient,
-    file: str,
     expected_lens: tuple[Position, int],
     all_inlays: typing.Sequence[EXPECTED_INLAYS],
+    expected_lens_file = None,
+    **files: str,
 ):
-    async with source_file(client, file) as doc:
+    if expected_lens_file is None:
+        assert len(files) == 1
+        expected_lens_file = next(iter(files.keys()))
+
+    async with source_files(client, **files) as docs:
+        doc = docs(expected_lens_file)
+        file = files[expected_lens_file]
         actual_lenses = await check_generic_code_lenses(
             client, doc, [expected_lens]
         )
@@ -167,7 +174,7 @@ async def test_lenses_switch(client: LanguageClient):
         int_inlays,
     ]
 
-    await click_lenses_and_check_inlays(client, file, expected_lens, all_inlays)
+    await click_lenses_and_check_inlays(client, expected_lens, all_inlays, A=file)
 
 
 @pytest.mark.asyncio
@@ -205,7 +212,7 @@ async def test_lenses_default_rect(client: LanguageClient):
         default_inlays,
     ]
 
-    await click_lenses_and_check_inlays(client, file, expected_lens, all_inlays)
+    await click_lenses_and_check_inlays(client, expected_lens, all_inlays, A=file)
 
 
 @pytest.mark.asyncio
@@ -246,7 +253,7 @@ async def test_lenses_default_rect_rank1(client: LanguageClient):
         default_inlays,
     ]
 
-    await click_lenses_and_check_inlays(client, file, expected_lens, all_inlays)
+    await click_lenses_and_check_inlays(client, expected_lens, all_inlays, A=file)
 
 
 @pytest.mark.asyncio
@@ -287,7 +294,7 @@ async def test_lenses_default_rect_rank2(client: LanguageClient):
         default_inlays,
     ]
 
-    await click_lenses_and_check_inlays(client, file, expected_lens, all_inlays)
+    await click_lenses_and_check_inlays(client, expected_lens, all_inlays, A=file)
 
 
 @pytest.mark.asyncio
@@ -329,7 +336,7 @@ async def test_lenses_default_rect_where_1(client: LanguageClient):
         default_inlays,
     ]
 
-    await click_lenses_and_check_inlays(client, file, expected_lens, all_inlays)
+    await click_lenses_and_check_inlays(client, expected_lens, all_inlays, A=file)
 
 
 @pytest.mark.asyncio
@@ -481,3 +488,63 @@ async def test_lenses_default_rect_with_calls(client: LanguageClient):
     ]
 
     await click_lenses_and_check_inlays(client, file, expected_lens, all_inlays)
+
+
+@pytest.mark.asyncio
+async def test_lenses_switch_crossfile(client: LanguageClient):
+    """
+    Test that using the code lens for generics switches the type, and that show
+    generic code lens show up properly and work.
+    """
+
+    file1 = """
+            module A {
+              record R { type t = int; }
+
+              proc foo(type t, param p = 1) param do
+                return t == int && p == 2;
+            }
+            """
+    file2 = """
+            module B {
+              use A;
+
+              foo(R(real), false);
+              foo(R);
+              foo(R(?));
+              foo(int, p=3);
+            }
+            """
+
+    expected_lens = (pos((3, 7)), 5)
+
+    generic_inlays = []
+    R_real_inlays = [
+        (pos((3, 17)), ": R(real(64))", None),
+        (pos((3, 26)), "param value is false", None),
+        (pos((3, 26)), ": bool", None),
+    ]
+    R_inlays = [
+        (pos((3, 17)), ": R(int(64))", None),
+        (pos((3, 26)), "param value is 1", None),
+        (pos((3, 26)), ": int(64)", None),
+    ]
+    R_generic_inlays = [
+        (pos((3, 17)), ": R", None),
+        (pos((3, 26)), "param value is 1", None),
+        (pos((3, 26)), ": int(64)", None),
+    ]
+    int_inlays = [
+        (pos((3, 17)), ": int(64)", None),
+        (pos((3, 26)), "param value is 3", None),
+        (pos((3, 26)), ": int(64)", None),
+    ]
+    all_inlays = [
+        generic_inlays,
+        R_real_inlays,
+        R_inlays,
+        R_generic_inlays,
+        int_inlays,
+    ]
+
+    await click_lenses_and_check_inlays(client, expected_lens, all_inlays, expected_lens_file="A", A=file1, B=file2)
