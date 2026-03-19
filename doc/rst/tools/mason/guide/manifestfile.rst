@@ -9,7 +9,7 @@ directory of the package.
 
 For example, ``Mason.toml``:
 
-.. code-block:: text
+.. code-block:: toml
 
     [brick]
     authors = ["Sam Partee <Sam@Partee.com>"]
@@ -53,10 +53,10 @@ Mason understands specific fields in the TOML file, which are described below.
    * ``chplVersion``: Indicates Chapel releases compatible with this
      package. There are a number of accepted formats:
 
-        .. code-block:: text
+        .. code-block:: toml
 
-           "2.1.0"         # 2.1.0 or later
-           "2.1"           # 2.1.0 or later
+           "2.1.0"        # 2.1.0 or later
+           "2.1"          # 2.1.0 or later
            "2.1.0..2.4.0" # 2.1 through 2.4, inclusive
 
      By default, ``chplVersion`` is set to represent the current Chapel release or
@@ -103,7 +103,7 @@ Mason understands specific fields in the TOML file, which are described below.
    * Git dependencies are specified as an inline subtable with the name of
      the dependency, for example:
 
-        .. code-block:: text
+        .. code-block:: toml
 
            myDep = { git = "https://github.com/username/myDep" }
 
@@ -112,7 +112,7 @@ Mason understands specific fields in the TOML file, which are described below.
      specific revision of the git repository by adding `branch` or `rev` keys,
      respectively. For example:
 
-        .. code-block:: text
+        .. code-block:: toml
 
            myDep = { git = "https://github.com/username/myDep", branch = "main" }
            myDep = { git = "https://github.com/username/myDep", rev = "43d462682851dd2fed6edf123e8fb699db124183" }
@@ -120,7 +120,7 @@ Mason understands specific fields in the TOML file, which are described below.
      Instead of using the inline subtable syntax, you can also use the subtable
      syntax to specify git dependencies:
 
-        .. code-block:: text
+        .. code-block:: toml
 
            [dependencies.myDep]
            git = "https://github.com/username/myDep"
@@ -133,7 +133,7 @@ Mason understands specific fields in the TOML file, which are described below.
   pairs, where the key is the name of the system dependency and the value is
   the version or other relevant information. For example:
 
-    .. code-block:: text
+    .. code-block:: toml
 
        [system]
        cmake = "3.18"
@@ -182,7 +182,7 @@ change, removing ``Mason.lock`` from your ``.gitignore`` could be a good idea. A
 a lock file is written below as if generated from the earlier example of a ``Mason.toml``:
 
 
-.. code-block:: text
+.. code-block:: toml
 
      [root]
      authors = ["Sam Partee <Sam@Partee.com>"]

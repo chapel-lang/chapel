@@ -7,7 +7,7 @@ Package modules are libraries that currently live outside of the
 Chapel Standard Library, either because they are not considered to be
 fundamental enough or because they are not yet mature enough for
 inclusion there.  Over time, we expect many of these to become
-``mason`` packages.
+Mason packages.
 
 .. warning::
 

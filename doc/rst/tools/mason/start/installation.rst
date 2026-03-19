@@ -2,7 +2,7 @@ Installation Instructions
 =========================
 
 If you have installed Chapel from a package manager or binary distribution,
-mason may already be included. You can check by running ``mason --version`` in
+Mason may already be included. You can check by running ``mason --version`` in
 your terminal.
 
 Building and Installing Mason From Source
@@ -11,7 +11,7 @@ Building and Installing Mason From Source
 Prerequisites
 ~~~~~~~~~~~~~
 
-To build mason from source, ensure you have a working Chapel build from source
+To build Mason from source, ensure you have a working Chapel build from source
 and that your environment is set up correctly, as described in
 :ref:`readme-chplenv`.
 
@@ -34,10 +34,10 @@ In ``$CHPL_HOME`` run the following:
 
    make mason
 
-It builds the mason binary as ``$CHPL_HOME/bin/$CHPL_HOST_PLATFORM-$CHPL_HOST_ARCH/mason`` so that the command line interface can be used.
-If the binary is already in your path (see :ref:`using-chapel-in-other-sessions`),  mason can be used anywhere in the user’s file system.
+It builds the Mason binary as ``$CHPL_HOME/bin/$CHPL_HOST_PLATFORM-$CHPL_HOST_ARCH/mason`` so that the command line interface can be used.
+If the binary is already in your path (see :ref:`using-chapel-in-other-sessions`),  Mason can be used anywhere in the user's file system.
 
-To remove mason, change directory to ``$CHPL_HOME/tools/mason`` and run:
+To remove Mason, change directory to ``$CHPL_HOME/tools/mason`` and run:
 
 .. code-block:: sh
 
@@ -47,7 +47,8 @@ To remove mason, change directory to ``$CHPL_HOME/tools/mason`` and run:
 Installing Mason
 ~~~~~~~~~~~~~~~~
 
-Similarly to ``chpl``, mason can be built and installed into a specific directory (e.g ``/usr/local/bin``) as follows
+Similarly to ``chpl``, Mason can be built and installed into a specific
+directory (e.g ``/usr/local/bin``) as follows
 
 .. code-block:: sh
 

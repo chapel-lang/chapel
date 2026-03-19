@@ -4,8 +4,8 @@ Basic Usage
 Starting a New Package
 ~~~~~~~~~~~~~~~~~~~~~~
 
-To initialize a new mason package, run ``mason new MyPackage``. This creates a
-directory and sets it up to have the structure of a mason package called
+To initialize a new Mason package, run ``mason new MyPackage``. This creates a
+directory and sets it up to have the structure of a Mason package called
 MyPackage. Particularly, it creates a `Mason.toml` file and the `src` folder
 with the package main module. This creates a git repository by default, unless
 ``--no-vcs`` is used.
