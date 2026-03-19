@@ -1142,6 +1142,7 @@ private extern proc qio_file_get_plugin(f:qio_file_ptr_t):c_ptr(void);
 private extern proc qio_channel_get_plugin(ch:qio_channel_ptr_t):c_ptr(void);
 private extern proc qio_file_length(f:qio_file_ptr_t, ref len:int(64)):errorCode;
 private extern proc qio_file_length_guess(f:qio_file_ptr_t):int(64);
+private extern proc qio_isatty(f:qio_file_ptr_t):bool;
 
 private extern proc qio_channel_create(ref ch:qio_channel_ptr_t, file:qio_file_ptr_t, hints:c_int, readable:c_int, writeable:c_int, start:int(64), end:int(64), const ref style:iostyleInternal, bufIoMax:int(64)):errorCode;
 
@@ -5704,6 +5705,15 @@ proc file.writerHelper(param locking=false,
   }
   if err then try ioerror(err, "in file.writer", this._tryGetPath());
 
+  return ret;
+}
+
+@chpldoc.nodoc
+proc file.isAtty(): bool {
+  var ret: bool;
+  on this._home {
+    ret = qio_isatty(this._file_internal);
+  }
   return ret;
 }
 

@@ -69,7 +69,7 @@ expected failure for existing mason package
 + rm -rf .git
 + echo foo
 + MASON_LOG_LEVEL=warn
-+ mason --no-color init
++ mason init
 + grep '.gitignore already exists'
 mason new     : .gitignore already exists, skipping creation of .gitignore file
 + cat .gitignore

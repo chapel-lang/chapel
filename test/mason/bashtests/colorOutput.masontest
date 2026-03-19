@@ -1,0 +1,15 @@
+
+rm -rf dummy
+mason new dummy
+cd dummy
+
+# enable the log so we can test the color
+export MASON_LOG_LEVEL=info
+
+mason --color=always build
+mason --color=never build
+
+# there are no tests of the auto color output, since to do that we
+# would need to mock a tty, which is more work than it's worth for this test
+
+

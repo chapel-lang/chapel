@@ -33,6 +33,6 @@ git init -b main
 mason init || echo "expected failure for existing mason package"
 rm -rf .git
 echo "foo" > .gitignore
-MASON_LOG_LEVEL=warn mason --no-color init | grep ".gitignore already exists"
+MASON_LOG_LEVEL=warn mason init | grep ".gitignore already exists"
 cat .gitignore
 cat Mason.toml | sed '/chplVersion/d'
