@@ -1220,10 +1220,9 @@ def run_lsp():
 
         decls = fi.def_segments.elts
         for decl in decls:
-            if (
-                isinstance(decl.node, chapel.Function)
-                and fi.context.has_instantiation(decl.node.unique_id())
-            ):
+            if isinstance(
+                decl.node, chapel.Function
+            ) and fi.context.has_instantiation(decl.node.unique_id()):
                 insts = fi.context.instantiations(decl.node.unique_id())
                 actions_per_decl = []
                 for inst, from_file in insts:

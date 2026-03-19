@@ -571,8 +571,7 @@ class Instantiations:
 
 
 CallInTypeContext = Union[
-    Tuple[chapel.FnCall, Optional[chapel.TypedSignature]],
-    Tuple[()]
+    Tuple[chapel.FnCall, Optional[chapel.TypedSignature]], Tuple[()]
 ]
 
 
@@ -657,12 +656,12 @@ class ContextContainer:
         self.global_uses: Dict[chapel.AstNode, List[References]] = defaultdict(
             list
         )
-        self.global_instantiations: Dict[str, List[Instantiations]] = defaultdict(
-            list
+        self.global_instantiations: Dict[str, List[Instantiations]] = (
+            defaultdict(list)
         )
-        self.global_inst_contexts: Dict[chapel.TypedSignature, List[CallsInTypeContext]] = defaultdict(
-            list
-        )
+        self.global_inst_contexts: Dict[
+            chapel.TypedSignature, List[CallsInTypeContext]
+        ] = defaultdict(list)
         self.instantiation_ids: Dict[chapel.TypedSignature, str] = {}
         self.instantiation_id_counter = 0
 
@@ -791,7 +790,9 @@ class FileInfo:
     ] = field(init=False)
     uses_here: Dict[chapel.AstNode, References] = field(init=False)
     instantiations_here: Dict[str, Instantiations] = field(init=False)
-    inst_contexts_here: Dict[chapel.TypedSignature, CallsInTypeContext] = field(init=False)
+    inst_contexts_here: Dict[chapel.TypedSignature, CallsInTypeContext] = field(
+        init=False
+    )
     siblings: chapel.SiblingMap = field(init=False)
     earliest_changed_pos: Optional[Position] = None
 
@@ -873,7 +874,7 @@ class FileInfo:
         fnid: str,
         sig: chapel.TypedSignature,
         call: Optional[chapel.FnCall],
-        via: Optional[chapel.TypedSignature]
+        via: Optional[chapel.TypedSignature],
     ) -> bool:
         insts = self._get_inst_container(fnid)
         already_visited = sig in insts
@@ -1154,7 +1155,9 @@ class FileInfo:
         """
         for decl, inst in self.instantiation_segments.elts:
             found_inst = False
-            for (ainst, in_file) in self.context.instantiations(decl.node.unique_id()):
+            for ainst, in_file in self.context.instantiations(
+                decl.node.unique_id()
+            ):
                 if ainst == inst:
                     found_inst = True
                     break
@@ -1392,7 +1395,9 @@ class FileInfo:
         instantiations collected while rebuilding the index.
         """
         return next(
-            itertools.islice(self.instantiations_here[fn.unique_id()], idx, None)
+            itertools.islice(
+                self.instantiations_here[fn.unique_id()], idx, None
+            )
         )
 
     def index_of_instantiation(

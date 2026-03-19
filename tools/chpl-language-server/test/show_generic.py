@@ -74,7 +74,7 @@ async def click_lenses_and_check_inlays(
     client: LanguageClient,
     expected_lens: tuple[Position, int],
     all_inlays: typing.Sequence[EXPECTED_INLAYS],
-    expected_lens_file = None,
+    expected_lens_file=None,
     **files: str,
 ):
     if expected_lens_file is None:
@@ -174,7 +174,9 @@ async def test_lenses_switch(client: LanguageClient):
         int_inlays,
     ]
 
-    await click_lenses_and_check_inlays(client, expected_lens, all_inlays, A=file)
+    await click_lenses_and_check_inlays(
+        client, expected_lens, all_inlays, A=file
+    )
 
 
 @pytest.mark.asyncio
@@ -212,7 +214,9 @@ async def test_lenses_default_rect(client: LanguageClient):
         default_inlays,
     ]
 
-    await click_lenses_and_check_inlays(client, expected_lens, all_inlays, A=file)
+    await click_lenses_and_check_inlays(
+        client, expected_lens, all_inlays, A=file
+    )
 
 
 @pytest.mark.asyncio
@@ -253,7 +257,9 @@ async def test_lenses_default_rect_rank1(client: LanguageClient):
         default_inlays,
     ]
 
-    await click_lenses_and_check_inlays(client, expected_lens, all_inlays, A=file)
+    await click_lenses_and_check_inlays(
+        client, expected_lens, all_inlays, A=file
+    )
 
 
 @pytest.mark.asyncio
@@ -294,7 +300,9 @@ async def test_lenses_default_rect_rank2(client: LanguageClient):
         default_inlays,
     ]
 
-    await click_lenses_and_check_inlays(client, expected_lens, all_inlays, A=file)
+    await click_lenses_and_check_inlays(
+        client, expected_lens, all_inlays, A=file
+    )
 
 
 @pytest.mark.asyncio
@@ -336,7 +344,9 @@ async def test_lenses_default_rect_where_1(client: LanguageClient):
         default_inlays,
     ]
 
-    await click_lenses_and_check_inlays(client, expected_lens, all_inlays, A=file)
+    await click_lenses_and_check_inlays(
+        client, expected_lens, all_inlays, A=file
+    )
 
 
 @pytest.mark.asyncio
@@ -547,4 +557,11 @@ async def test_lenses_switch_crossfile(client: LanguageClient):
         int_inlays,
     ]
 
-    await click_lenses_and_check_inlays(client, expected_lens, all_inlays, expected_lens_file="A", A=file1, B=file2)
+    await click_lenses_and_check_inlays(
+        client,
+        expected_lens,
+        all_inlays,
+        expected_lens_file="A",
+        A=file1,
+        B=file2,
+    )
