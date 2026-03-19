@@ -98,7 +98,6 @@ module Heap {
     /*
       The type of the comparator used by this heap.
       Defaults to :record:`Sort.defaultComparator`.
-      This type field enables default initialization of heaps,
     */
     type comparatorType = defaultComparator;
 
@@ -154,7 +153,6 @@ module Heap {
 
       /*
       Initializes an empty heap using default initialization.
-      This enables type-based declarations without requiring `new`.
 
       :arg eltType: The type of the elements
 
