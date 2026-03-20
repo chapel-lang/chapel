@@ -17,19 +17,19 @@ Options:
 + true
 + mason new 0bad
 Bad package name '0bad' - only Chapel identifiers are legal package names.
-Please use mason new 0bad --name <LegalName>
+Use '--name <LegalName>' to specify a legal package name.
 + true
 + mason new 'bad$stuff' --light
 Bad package name 'bad$stuff' - only Chapel identifiers are legal package names.
-Please use mason new bad$stuff --name <LegalName>
+Use '--name <LegalName>' to specify a legal package name.
 + true
 + mason new bad-name --lib
 Bad package name 'bad-name' - only Chapel identifiers are legal package names.
-Please use mason new bad-name --name <LegalName>
+Use '--name <LegalName>' to specify a legal package name.
 + true
 + mason new bad.name
 Bad package name 'bad.name' - only Chapel identifiers are legal package names.
-Please use mason new bad.name --name <LegalName>
+Use '--name <LegalName>' to specify a legal package name.
 + true
 + rm -rf testingPkg
 + mkdir testingPkg
@@ -41,7 +41,7 @@ A directory named 'testingPkg' already exists
 + cd 0bad
 + mason init
 Bad package name '0bad' - only Chapel identifiers are legal package names.
-Please use mason init 0bad --name <LegalName>
+Use '--name <LegalName>' to specify a legal package name.
 + true
 + cd ..
 + rm -rf 0bad
@@ -49,7 +49,7 @@ Please use mason init 0bad --name <LegalName>
 + cd bad-name
 + mason init --light
 Bad package name 'bad-name' - only Chapel identifiers are legal package names.
-Please use mason init bad-name --name <LegalName>
+Use '--name <LegalName>' to specify a legal package name.
 + true
 + cd ..
 + rm -rf bad-name
@@ -57,12 +57,13 @@ Please use mason init bad-name --name <LegalName>
 + cd bad.name
 + mason init
 Bad package name 'bad.name' - only Chapel identifiers are legal package names.
-Please use mason init bad.name --name <LegalName>
+Use '--name <LegalName>' to specify a legal package name.
 + true
 + cd ..
 + rm -rf bad.name
 + mason new 0bad --name good
 Created new application project: good
+Tip: To convert existing code to a mason project, move the driver application to the `src/good.chpl` file. For adding other source code, using submodules is the recommended approach to avoid namespace collisions.
 + cd 0bad
 + cat Mason.toml
 + sed /chplVersion/d
@@ -73,7 +74,6 @@ license="None"
 type="application"
 
 [dependencies]
-
 + cd ..
 + rm -rf 0bad
 + mkdir bad-name
@@ -90,6 +90,5 @@ license="None"
 type="application"
 
 [dependencies]
-
 + cd ..
 + rm -rf bad-name
