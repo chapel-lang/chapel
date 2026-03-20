@@ -107,9 +107,9 @@ module Manifest {
     }
 
     if dependencies.isEmpty() {
-      s += "\n\n[dependencies]\n";
+      s += "\n[dependencies]\n";
     } else {
-      s += "\n\n[dependencies]\n" +
+      s += "\n[dependencies]\n" +
         "\n".join(for dep in dependencies do dep!.toToml());
     }
 
