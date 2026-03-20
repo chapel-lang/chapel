@@ -18,18 +18,18 @@ proc testAssert(func, type errorType, const args:?=none, const match:string="",
 }
 
 proc main() {
-  expectedCustom();
-  expectedCustomAnonymous();
-  expectedCustomClassMethod();
-  expectedParent();
-  expectedCustomWithArgs();
-  expectedRecordFunctor();
-  expectedClassFunctor();
+  expectedCustomError();
+  expectedCustomErrorAnonymous();
+  expectedErrorWrappedMethod();
+  expectedSuperError();
+  expectedCustomErrorWithArgs();
+  expectedErrorRecordFunctor();
+  expectedErrorClassFunctor();
 
-  badNoError();
-  badNoErrorWithArgs();
-  expectedBadMsg();
-  badUnexpected();
+  errorNeverThrown();
+  errorNeverThrownWithArgs();
+  expectedErrorBadMsg();
+  unexpectedError();
   unexpectedUnmanagedClassFunctorError();
   unexpectedSharedClassFunctorError();
 }
@@ -72,20 +72,20 @@ class MyClassThrower {
  * Test functions
 */
 
-proc expectedCustom() {
+proc expectedCustomError() {
   var test = new Test();
   try! test.assertThrows(throwCustom, CustomError);
   try! test.assertThrows(throwCustom, CustomError,
                          match="Threw a custom error");
 }
-proc expectedCustomAnonymous() {
+proc expectedCustomErrorAnonymous() {
   // ensure method works for anonymous procedures
   var test = new Test();
   const foo = proc(): void throws { throw new owned CustomError(); };
   try! test.assertThrows(foo, CustomError);
 }
 
-proc expectedCustomClassMethod() {
+proc expectedErrorWrappedMethod() {
   // ensure method works for throwing class method, but they must be wrapped
   var test = new Test();
   class CustomClass {
@@ -100,18 +100,19 @@ proc expectedCustomClassMethod() {
   try! test.assertThrows(bar, CustomError);
 }
 
-proc expectedRecordFunctor() {
+proc expectedErrorRecordFunctor() {
   var test = new Test();
   var thrower = new myRecordThrower(5);
   try! test.assertThrows(thrower, CustomError, (4,));
 }
-proc expectedClassFunctor() {
+
+proc expectedErrorClassFunctor() {
   var test = new Test();
   var thrower = new owned MyClassThrower(5);
   try! test.assertThrows(thrower, CustomError, (4,));
 }
 
-proc expectedCustomWithArgs() {
+proc expectedCustomErrorWithArgs() {
   var test = new Test();
   try! test.assertThrows(throwCustomWithArgs, CustomError,
                          ("user-spec error msg",));
@@ -119,29 +120,30 @@ proc expectedCustomWithArgs() {
                          ("user-spec error msg",), match="user-spec error msg");
 }
 
-proc expectedParent() {
+proc expectedSuperError() {
   // because Error is the super-class of CustomError, this is acceptable
   var test = new Test();
   try! test.assertThrows(throwCustom, Error);
   try! test.assertThrows(throwCustom, Error, match="Threw a custom error");
 }
 
-proc badNoError() throws {
+proc errorNeverThrown() throws {
   param thisProcName = getRoutineName();
   testAssert(noThrow, CustomError, reason=thisProcName);
 }
-proc badNoErrorWithArgs() throws {
+
+proc errorNeverThrownWithArgs() throws {
   param thisProcName = getRoutineName();
   testAssert(noThrowWithArgs, CustomError, (5.1, 6), reason=thisProcName);
 }
 
-proc expectedBadMsg() throws {
+proc expectedErrorBadMsg() throws {
   param thisProcName = getRoutineName();
   testAssert(throwCustom, CustomError, match="incorrect message",
              reason=thisProcName);
 }
 
-proc badUnexpected() throws {
+proc unexpectedError() throws {
   param thisProcName = getRoutineName();
   testAssert(throwCustom, NilThrownError, reason=thisProcName);
 }

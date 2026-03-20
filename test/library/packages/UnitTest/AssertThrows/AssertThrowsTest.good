@@ -1,13 +1,13 @@
-Error Caught in badNoError
+Error Caught in errorNeverThrown
 AssertionError: in AssertThrowsTest.chpl:12 - assert failed - proc noThrow(): int { ... } did not throw any error
 ================================================================================
-Error Caught in badNoErrorWithArgs
+Error Caught in errorNeverThrownWithArgs
 AssertionError: in AssertThrowsTest.chpl:12 - assert failed - proc noThrowWithArgs(in a: real, in b: int): real { ... } did not throw any error
 ================================================================================
-Error Caught in expectedBadMsg
+Error Caught in expectedErrorBadMsg
 AssertionError: in AssertThrowsTest.chpl:12 - assert failed - proc throwCustom() throws { ... } threw owned CustomError with an unexpected message: Threw a custom error
 ================================================================================
-Error Caught in badUnexpected
+Error Caught in unexpectedError
 AssertionError: in AssertThrowsTest.chpl:12 - assert failed - proc throwCustom() throws { ... } threw an unexpected error: CustomError: Threw a custom error
 ================================================================================
 Error Caught in unexpectedUnmanagedClassFunctorError
