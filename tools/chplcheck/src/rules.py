@@ -1005,11 +1005,12 @@ def rules(driver: LintDriver):
                 continue
             yield from MisleadingIndentation(context, child)
 
-            if prev and any(
-                p.location().start()[1] == child.location().start()[1]
-                for p in prev
-            ):
-                yield AdvancedRuleResult(child, fix)
+            if prev:
+                for p in prev:
+                    if p.location().start()[1] != child.location().start()[1]:
+                        continue
+
+                    yield AdvancedRuleResult(child, fix, data=p)
 
             prev = []
             fix = append_nested_single_stmt(child, prev)
@@ -1062,12 +1063,18 @@ def rules(driver: LintDriver):
         Change the 'do' keyword to an explicit curly-brace block.
         """
         assert isinstance(result.anchor, AstNode)
-        if not isinstance(result.anchor, IndexableLoop):
+        assert isinstance(result.data, AstNode)
+        implicit_block = result.data.parent()
+        assert implicit_block is not None
+        parent_blocklike = implicit_block.parent()
+        assert parent_blocklike is not None
+
+        if not isinstance(parent_blocklike, IndexableLoop):
             return []
 
         # the 'do' is the last two characters of the header.
-        loop_loc = result.anchor.location()
-        body_loc = result.anchor.body().location()
+        loop_loc = parent_blocklike.location()
+        body_loc = implicit_block.location()
         last_loc = result.node.location()
 
         # Strange shape, let's not try to fix it.
@@ -1091,8 +1098,9 @@ def rules(driver: LintDriver):
 
         parent_indent = max(loop_loc.start()[1] - 1, 0)
 
-        next_line = (last_loc.end()[0] + 1, 0)
-        edit_close = Edit(path, next_line, next_line, parent_indent * " " + '}\n')
+        lines = chapel.get_file_lines(context, result.node)
+        end_of_last = (last_loc.end()[0], len(lines[last_loc.end()[0] - 1]) + 1)
+        edit_close = Edit(path, end_of_last, end_of_last, "\n" + parent_indent * " " + '}')
 
         do_begin_col = body_loc.start()[1]
         do_end_col = do_begin_col + 2
