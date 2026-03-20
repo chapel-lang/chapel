@@ -594,11 +594,12 @@ module Bytes {
 
     :returns: whether the `Bytes.bytes` contains the pattern.
   */
-  @unstable
+  @unstable("'.contains' on 'bytes' is unstable and may change in future.")
   inline proc bytes.contains(pattern: bytes,
                               indices: range(?) = this.indices): bool {
-                                return this.find(pattern, indices) != -1;
+    return this.find(pattern, indices) != -1;
   }
+  
   /*
     Counts the number of occurrences of the argument in the :type:`bytes`
 

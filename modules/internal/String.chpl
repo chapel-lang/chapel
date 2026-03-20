@@ -1536,10 +1536,10 @@ module String {
 
     :returns: whether the substring is present in the string.
    */
-  @unstable
+  @unstable("'.contains' on 'String' is unstable and may change in future.")
   inline proc string.contains(pattern: string,
                               indices: range(?) = this.byteIndices:range(byteIndex)) : bool {
-                                return this.find(pattern, indices) != -1;
+    return this.find(pattern, indices) != -1;
   }
 
   /*
