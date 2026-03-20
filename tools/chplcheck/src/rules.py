@@ -1058,7 +1058,9 @@ def rules(driver: LintDriver):
         return [fixit] if fixit else []
 
     @driver.fixit(MisleadingIndentation)
-    def FixMisleadingIndentationCurly(context: Context, result: AdvancedRuleResult):
+    def FixMisleadingIndentationCurly(
+        context: Context, result: AdvancedRuleResult
+    ):
         """
         Change the 'do' keyword to an explicit curly-brace block.
         """
@@ -1100,13 +1102,15 @@ def rules(driver: LintDriver):
 
         lines = chapel.get_file_lines(context, result.node)
         end_of_last = (last_loc.end()[0], len(lines[last_loc.end()[0] - 1]) + 1)
-        edit_close = Edit(path, end_of_last, end_of_last, "\n" + parent_indent * " " + '}')
+        edit_close = Edit(
+            path, end_of_last, end_of_last, "\n" + parent_indent * " " + "}"
+        )
 
         do_begin_col = body_loc.start()[1]
         do_end_col = do_begin_col + 2
         do_start = (body_loc.start()[0], do_begin_col)
         do_end = (body_loc.start()[0], do_end_col)
-        edit_open = Edit(path, do_start, do_end, '{')
+        edit_open = Edit(path, do_start, do_end, "{")
 
         fixit = Fixit.build(edit_close, edit_open)
         return [fixit]
