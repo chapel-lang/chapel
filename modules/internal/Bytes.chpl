@@ -599,7 +599,7 @@ module Bytes {
                               indices: range(?) = this.indices): bool {
     return this.find(pattern, indices) != -1;
   }
-  
+
   /*
     Counts the number of occurrences of the argument in the :type:`bytes`
 
