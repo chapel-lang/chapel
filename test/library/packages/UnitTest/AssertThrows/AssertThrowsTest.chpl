@@ -23,11 +23,14 @@ proc main() {
   expectedCustomClassMethod();
   expectedParent();
   expectedCustomWithArgs();
+  expectedRecordFunctor();
+  expectedClassFunctor();
 
   badNoError();
   badNoErrorWithArgs();
   expectedBadMsg();
   badUnexpected();
+  unexpectedClassFunctorError();
 }
 
 /*
@@ -82,6 +85,29 @@ proc expectedCustomClassMethod() {
   try! test.assertThrows(bar, CustomError);
 }
 
+proc expectedRecordFunctor() {
+  record myRecordThrower {
+    var state: int;
+    proc this(in val:int) throws {
+      if state != val then throw new owned CustomError();
+    }
+  }
+  var test = new Test();
+  var thrower = new myRecordThrower(5);
+  try! test.assertThrows(thrower, CustomError, (4,));
+}
+proc expectedClassFunctor() {
+  class MyClassThrower {
+    var state: int;
+    proc this(in val:int) throws {
+      if state != val then throw new owned CustomError();
+    }
+  }
+  var test = new Test();
+  var thrower = new owned MyClassThrower(5);
+  try! test.assertThrows(thrower, CustomError, (4,));
+}
+
 proc expectedCustomWithArgs() {
   var test = new Test();
   try! test.assertThrows(throwCustomWithArgs, CustomError,
@@ -115,4 +141,18 @@ proc expectedBadMsg() throws {
 proc badUnexpected() throws {
   param thisProcName = getRoutineName();
   testAssert(throwCustom, NilThrownError, reason=thisProcName);
+}
+
+proc unexpectedClassFunctorError() {
+  param thisProcName = getRoutineName();
+  class MyClassThrower {
+    var state: int;
+    proc this(in val:int) throws {
+      if state != val then throw new owned CustomError("watch out");
+    }
+  }
+  var test = new Test();
+  var thrower = new unmanaged MyClassThrower(5);
+  testAssert(thrower, NilThrownError, (4,), reason=thisProcName);
+  delete thrower;
 }

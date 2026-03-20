@@ -10,3 +10,6 @@ AssertionError: in AssertThrowsTest.chpl:12 - assert failed - proc throwCustom()
 Error Caught in badUnexpected
 AssertionError: in AssertThrowsTest.chpl:12 - assert failed - proc throwCustom() throws { ... } threw an unexpected error: CustomError: Threw a custom error
 ================================================================================
+Error Caught in unexpectedClassFunctorError
+AssertionError: in AssertThrowsTest.chpl:12 - assert failed - unmanaged MyClassThrower threw an unexpected error: CustomError: watch out
+================================================================================

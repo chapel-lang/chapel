@@ -688,7 +688,19 @@ module UnitTest {
                       const match:string=""): void throws
                       where isSubtype(errorType, Error) &&
                       (isNothing(args) || isTuple(args)) {
-      const funcName = func:string;
+      var funcName:string;
+
+      // getting hairy here bc isClassValue returns true if ``func`` is a
+      // procedure - isSharedClassValue has the same problem
+      if isRecordValue(func) ||
+         isOwnedClassValue(func) ||
+         isUnmanagedClassValue(func) ||
+         isBorrowedClassValue(func) {
+        funcName = func.type:string;
+      } else {
+        funcName = func:string;
+      }
+
       try {
         if isNothing(args) then func(); else func((...args));
         throw new owned AssertionError(
