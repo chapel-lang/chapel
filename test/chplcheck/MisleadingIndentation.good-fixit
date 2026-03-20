@@ -81,4 +81,15 @@ writeln(i);
         writeln("Hello, world!");
   writeln("Hello, world!");
 
+  for 1..10 do
+    for 1..10 do
+      for 1..10 {
+        writeln("Hello, world!");
+        writeln(
+            "Hello, world!"
+        );
+        writeln(
+            "Hello, world!"
+        );
+      }
 }
