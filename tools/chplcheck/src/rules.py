@@ -1056,6 +1056,45 @@ def rules(driver: LintDriver):
             fixit = Fixit.build(Edit(loc.path(), line_start, loc.end(), text))
         return [fixit] if fixit else []
 
+    @driver.fixit(MisleadingIndentation)
+    def FixMisleadingIndentationCurly(context: Context, result: AdvancedRuleResult):
+        """
+        Change the 'do' keyword to an explicit curly-brace block.
+        """
+        assert isinstance(result.anchor, AstNode)
+        if not isinstance(result.anchor, IndexableLoop):
+            return []
+
+        # the 'do' is the last two characters of the header.
+        body_loc = result.anchor.body().location()
+        do_begin_col = body_loc.start()[1]
+        do_end_col = do_begin_col + 2
+
+        last_loc = result.node.location()
+        path = last_loc.path()
+        at_node = False
+        parent = result.node.parent()
+        assert parent
+        for sibling in parent:
+            if not at_node:
+                if sibling == result.node:
+                    at_node = True
+                continue
+
+            if sibling.location().start()[1] != last_loc.start()[1]:
+                break
+
+            last_loc = sibling.location()
+
+        next_line = (last_loc.end()[0] + 1, 0)
+        edit_close = Edit(path, next_line, next_line, '}\n')
+        do_start = (body_loc.start()[0], do_begin_col)
+        do_end = (body_loc.start()[0], do_end_col)
+        edit_open = Edit(path, do_start, do_end, '{')
+
+        fixit = Fixit.build(edit_close, edit_open)
+        return [fixit]
+
     @driver.advanced_rule
     def UnusedFormal(context: Context, root: AstNode):
         """
