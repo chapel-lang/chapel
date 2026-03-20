@@ -3,20 +3,10 @@ use UnitTest;
 
 const sep = "=="*40;
 
-proc testAssert(func, type errorType, const match:string="",
-                const reason:string=""):void where isSubtype(errorType, Error) {
-  var test = new Test();
-  try {
-    test.assertThrows(func=func, errorType=errorType, match=match);
-  } catch e {
-    writeln("Error Caught in " + reason);
-    writeln(e);
-    writeln(sep);
-  }
-}
-proc testAssert(func, type errorType, const args, const match:string="",
+proc testAssert(func, type errorType, const args:?=none, const match:string="",
                 const reason:string=""): void
-                where isSubtype(errorType, Error) && isTuple(args) {
+                where isSubtype(errorType, Error) &&
+                (isNothing(args) || isTuple(args)) {
   var test = new Test();
   try {
     test.assertThrows(func=func, errorType=errorType, args=args, match=match);
