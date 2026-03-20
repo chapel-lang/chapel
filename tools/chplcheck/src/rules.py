@@ -1066,11 +1066,14 @@ def rules(driver: LintDriver):
             return []
 
         # the 'do' is the last two characters of the header.
+        loop_loc = result.anchor.location()
         body_loc = result.anchor.body().location()
-        do_begin_col = body_loc.start()[1]
-        do_end_col = do_begin_col + 2
-
         last_loc = result.node.location()
+
+        # Strange shape, let's not try to fix it.
+        if loop_loc.start()[1] >= last_loc.start()[1]:
+            return []
+
         path = last_loc.path()
         at_node = False
         parent = result.node.parent()
@@ -1086,8 +1089,13 @@ def rules(driver: LintDriver):
 
             last_loc = sibling.location()
 
+        parent_indent = max(loop_loc.start()[1] - 1, 0)
+
         next_line = (last_loc.end()[0] + 1, 0)
-        edit_close = Edit(path, next_line, next_line, '}\n')
+        edit_close = Edit(path, next_line, next_line, parent_indent * " " + '}\n')
+
+        do_begin_col = body_loc.start()[1]
+        do_end_col = do_begin_col + 2
         do_start = (body_loc.start()[0], do_begin_col)
         do_end = (body_loc.start()[0], do_end_col)
         edit_open = Edit(path, do_start, do_end, '{')
