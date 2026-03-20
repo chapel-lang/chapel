@@ -154,7 +154,7 @@ Options:
 + true
 + mason new --application
 Bad package name '--application' - only Chapel identifiers are legal package names.
-Please use mason new --application --name <LegalName>
+Use '--name <LegalName>' to specify a legal package name.
 + true
 + mason new foo --application
 Found some unrecognizable arguments: --application

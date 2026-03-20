@@ -1,6 +1,7 @@
 + rm -rf tempMasonLib
 + mason new tempMasonLib --lib --no-vcs
 Created new library project: tempMasonLib
+Tip: To convert existing code to a mason project, move the driver application to the `src/tempMasonLib.chpl` file. For adding other source code, using submodules is the recommended approach to avoid namespace collisions.
 + cd tempMasonLib
 + mason add dummy@10.9.8 --system
 Adding system dependency dummy version 10.9.8

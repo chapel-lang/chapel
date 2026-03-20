@@ -49,6 +49,7 @@ got magic: 17
 + cd ..
 + mason new myNewPackage
 Created new application project: myNewPackage
+Tip: To convert existing code to a mason project, move the driver application to the `src/myNewPackage.chpl` file. For adding other source code, using submodules is the recommended approach to avoid namespace collisions.
 + cd myNewPackage
 + mason add myDep@0.1.0
 Adding Mason dependency myDep version 0.1.0
