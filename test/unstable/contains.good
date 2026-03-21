@@ -1,4 +1,4 @@
-contains.chpl:3: warning: '.contains' on 'String' is unstable and may change in future.
+contains.chpl:3: warning: '.contains' on 'string' is unstable and may change in future.
 contains.chpl:4: warning: '.contains' on 'bytes' is unstable and may change in future.
 true
 true

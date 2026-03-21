@@ -592,7 +592,7 @@ module Bytes {
                  default is the whole. Halts if the range is not
                  within ``this.indices``
 
-    :returns: whether the `Bytes.bytes` contains the pattern.
+    :returns: whether the :type:`bytes` contains the pattern.
   */
   @unstable("'.contains' on 'bytes' is unstable and may change in future.")
   inline proc bytes.contains(pattern: bytes,
