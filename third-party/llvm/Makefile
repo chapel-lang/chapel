@@ -20,6 +20,14 @@ else
   CHPL_LLVM_TARGETS_TO_BUILD := "$(CHPL_LLVM_TARGETS_TO_BUILD)"
 endif
 
+# select the cmake generator to use for the LLVM build
+# this can be set to "Unix Makefiles" or "Ninja" (or others supported by cmake)
+ifndef CHPL_LLVM_CMAKE_GENERATOR
+	CHPL_LLVM_CMAKE_GENERATOR := -G "Unix Makefiles"
+else
+	CHPL_LLVM_CMAKE_GENERATOR := -G "$(CHPL_LLVM_CMAKE_GENERATOR)"
+endif
+
 # activate LLVM asserts if it's from `make ASSERTS=1`
 # or if CHPL_LLVM_DEVELOPER is set
 CHPL_LLVM_ASSERTS := 0
@@ -121,6 +129,7 @@ llvm-config: FORCE
 	    $(CHPL_LLVM_DYNAMIC_OPTS) \
 	    $(CHPL_RV_CMAKE) \
 	    -Wno-dev \
+			$(CHPL_LLVM_CMAKE_GENERATOR) \
 	    $(LLVM_SRC_DIR) ; \
 
 llvm-config-support-only: FORCE
@@ -151,12 +160,13 @@ llvm-config-support-only: FORCE
 	    -DLLVM_INSTALL_UTILS=OFF \
 	    $(CHPL_LLVM_NO_EXTRAS) \
 	    -Wno-dev \
+			$(CHPL_LLVM_CMAKE_GENERATOR) \
 	    $(LLVM_SRC_DIR) ; \
 
 
 
 # note: the conditional below allows parallel make to continue
-# if cmake us also using Make.
+# if cmake is also using Make.
 llvm-build: FORCE
 	if [ -f $(LLVM_BUILD_DIR)/Makefile ]; then \
 	  cd $(LLVM_BUILD_DIR) && \
