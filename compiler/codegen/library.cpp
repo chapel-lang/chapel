@@ -109,8 +109,11 @@ void codegen_library_header(std::vector<FnSymbol*> functions) {
 }
 
 // Helper function to avoid unnecessary repetition when getting information
-// from compileline
-static std::string getCompilelineOption(std::string option) {
+// from compileline. If 'escapePathsForMake' is true then paths unique to
+// this particular target configuration will be escaped using '--fixpath'
+// and substituted with the appropriate Makefile variables.
+static std::string
+getCompilelineOption(std::string option, bool escapePathsForMake=true) {
   std::string fullCommand = "";
   for (std::map<std::string, const char*>::iterator env=envMap.begin();
        env!=envMap.end(); ++env) {
@@ -118,23 +121,30 @@ static std::string getCompilelineOption(std::string option) {
       "\" ";
   }
   fullCommand += "$CHPL_HOME/util/config/compileline --" + option;
-  fullCommand += "> cmd.out.tmp";
+
+  if (escapePathsForMake) {
+    fullCommand += "> cmd.out.tmp";
+  }
 
   std::string description = "Get compileline option " + option;
-  runCommand(fullCommand, description);
+  std::string ret = runCommand(fullCommand, description);
 
-  std::string replace = "$CHPL_HOME/util/config/replace-paths.py ";
+  if (escapePathsForMake) {
+    std::string replace = "$CHPL_HOME/util/config/replace-paths.py ";
 
-  replace += "--fixpath '$(CHPL_RUNTIME_LIB)' $CHPL_RUNTIME_LIB ";
-  replace += "--fixpath '$(CHPL_RUNTIME_INCL)' $CHPL_RUNTIME_INCL ";
-  replace += "--fixpath '$(CHPL_THIRD_PARTY)' $CHPL_THIRD_PARTY ";
-  replace += "--fixpath '$(CHPL_HOME)' $CHPL_HOME < cmd.out.tmp";
+    replace += "--fixpath '$(CHPL_RUNTIME_LIB)' $CHPL_RUNTIME_LIB ";
+    replace += "--fixpath '$(CHPL_RUNTIME_INCL)' $CHPL_RUNTIME_INCL ";
+    replace += "--fixpath '$(CHPL_THIRD_PARTY)' $CHPL_THIRD_PARTY ";
+    replace += "--fixpath '$(CHPL_HOME)' $CHPL_HOME < cmd.out.tmp";
 
-  std::string replaceDesc = "Replace paths in compileline option " + option;
-  std::string res = runCommand(replace, replaceDesc);
-  std::string cleanup = "rm cmd.out.tmp";
-  runCommand(cleanup, "Cleanup output file");
-  return res;
+    std::string replaceDesc = "Replace paths in compileline option " + option;
+    ret = runCommand(replace, replaceDesc);
+
+    std::string cleanup = "rm cmd.out.tmp";
+    runCommand(cleanup, "Cleanup output file");
+  }
+
+  return ret;
 }
 
 // Save the value of the environment variable "var" into the makefile, so it
@@ -831,19 +841,16 @@ static void makePYFile() {
     fprintf(py.fptr, "from Cython.Build import cythonize\n");
     fprintf(py.fptr, "import numpy\n\n");
 
-    // Get the static Chapel runtime and third-party libraries
-    fprintf(py.fptr, "chpl_libraries=[");
-    bool first = true;
+    std::vector<std::string> librariesImplicitPaths;  // '-lfoo'
+    std::vector<std::string> librariesExplicitPaths;  // 'path/to/libfoo.a'
+
     // Get the libraries listed in require statements
     for_vector(const char, libName, libFiles) {
-      if (first) {
-        first = false;
-      } else {
-        fprintf(py.fptr, ", ");
-      }
-      fprintf(py.fptr, "\"%s\"", libName);
+      librariesImplicitPaths.push_back(libName);
     }
-    std::string libraries = getCompilelineOption("libraries");
+
+    bool escapePaths = false;
+    std::string libraries = getCompilelineOption("libraries", escapePaths);
 
     // Erase trailing newline and append multilocale-only dependencies.
     if (fClientServerLibrary) {
@@ -852,26 +859,47 @@ static void makePYFile() {
       libraries += getCompilelineOption("multilocale-lib-deps");
     }
 
-    auto copyOfLib = std::make_unique<char[]>(libraries.length() + 1);
-    libraries.copy(copyOfLib.get(), libraries.length(), 0);
-    copyOfLib[libraries.length()] = '\0';
-    int prefixLen = strlen("-l");
-    char* curSection = strtok(copyOfLib.get(), " \n");
-    // Get the libraries from compileline --libraries, taking the `name`
-    // portion from all `-lname` parts of that command's output
-    while (curSection != NULL) {
-      if (strncmp(curSection, "-l", prefixLen) == 0) {
-        if (first) {
-          first = false;
-        } else {
-          fprintf(py.fptr, ", ");
-        }
-        fprintf(py.fptr, "\"%s\"", &curSection[prefixLen]);
+    std::vector<std::string> libraryLines;
+    splitStringWhitespace(libraries, libraryLines);
+
+    // Sort the output of '--libraries', organizing by '-lfoo' vs 'libfoo.a'.
+    for (auto& line : libraryLines) {
+      expandInstallationPaths(line);
+
+      if (line.find("-l") == 0) {
+        auto got = line.substr(2, line.size());
+        librariesImplicitPaths.push_back(std::move(got));
+
+      } else if (line.find(".a") == (line.size() - 2) ||
+                 line.find(".so") == (line.size() - 2)) {
+        librariesExplicitPaths.push_back(line);
       }
-      curSection = strtok(NULL, " \n");
     }
 
-    // Fetch addition
+    bool first = false;
+
+    // Print out a Python list for the implicit libraries.
+    fprintf(py.fptr, "chpl_libraries=[");
+    first = true;
+
+    for (auto& line : librariesImplicitPaths) {
+      fprintf(py.fptr, first ? "" : ", ");
+      first = false;
+      fprintf(py.fptr, "\"%s\"", line.c_str());
+    }
+
+    fprintf(py.fptr, "]\n");
+
+    // Print out a Python list for the explicit libraries.
+    fprintf(py.fptr, "chpl_extra_objects=[");
+    first = true;
+
+    for (auto& line : librariesExplicitPaths) {
+      fprintf(py.fptr, first ? "" : ", ");
+      first = false;
+      fprintf(py.fptr, "\"%s\"", line.c_str());
+    }
+
     fprintf(py.fptr, "]\n");
 
     // Cythonize me, Captain!
@@ -880,9 +908,10 @@ static void makePYFile() {
     fprintf(py.fptr, "\t\tExtension(\"%s\",\n", pythonModulename.c_str());
     fprintf(py.fptr, "\t\t\tinclude_dirs=[numpy.get_include()],\n");
     fprintf(py.fptr, "\t\t\tsources=[\"%s.pyx\"],\n", pythonModulename.c_str());
-    fprintf(py.fptr, "\t\t\tlibraries=[\"%s\"] + chpl_libraries + "
-                     "[\"%s\"])))\n",
-                     libname.c_str(), libname.c_str());
+    fprintf(py.fptr, "\t\t\tlibraries=[\"%s\"] + chpl_libraries + [\"%s\"],",
+                     libname.c_str(),
+                     libname.c_str());
+    fprintf(py.fptr, "\t\t\textra_objects=chpl_extra_objects)))\n");
 
     gGenInfo->cfile = save_cfile;
   }

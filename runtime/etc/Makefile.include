@@ -147,16 +147,6 @@ printlibraries:
 printlinker:
 	@echo $(LD)
 
-printlinkline:
-	@echo $(LD) $(CHPL_MAKE_BASE_LFLAGS) \
-              $(COMP_GEN_USER_LDFLAGS) $(COMP_GEN_LFLAGS) \
-	      $(CHPL_MAKE_TARGET_SYSTEM_COMPILE_ARGS) \
-	      $(CHPL_MAKE_TARGET_USE_STATIC_RUNTIME_LINK_ARGS) \
-	      $(CHPL_MAKE_TARGET_BUNDLED_RUNTIME_LINK_ARGS) \
-	      $(CHPL_MAKE_TARGET_BUNDLED_PROGRAM_LINK_ARGS) \
-	      $(CHPL_MAKE_TARGET_SYSTEM_RUNTIME_LINK_ARGS) \
-	      $(CHPL_MAKE_TARGET_SYSTEM_PROGRAM_LINK_ARGS)
-
 printoverrideld:
 	@echo $(LD)
 

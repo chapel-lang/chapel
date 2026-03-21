@@ -127,6 +127,7 @@ def compute_shared_runtime_lib_path(runtime_subdir):
 # Returns a list of strings representing linker arguments.
 def compute_use_static_runtime_link_args(runtime_subdir):
     ret = []
+    ret.append("-L" + path_to_runtime_libs(runtime_subdir))
     # Direct link against the static archive.
     ret.append(compute_static_runtime_lib_path(runtime_subdir))
     return ret
@@ -134,7 +135,7 @@ def compute_use_static_runtime_link_args(runtime_subdir):
 
 def compute_use_shared_runtime_link_args(runtime_subdir):
     ret = []
-    # Set the '-rpath' just in case.
+    # Set the '-rpath' just in case. On OSX this does not seem to be used.
     ret.append("-Wl,-rpath," + path_to_runtime_libs(runtime_subdir))
     # Direct link against the shared library.
     ret.append(compute_shared_runtime_lib_path(runtime_subdir))
