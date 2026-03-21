@@ -18,6 +18,7 @@ proc testAssert(func, type errorType, const args:?=none, const match:string="",
 }
 
 proc main() {
+  // tests which should not throw
   expectedCustomError();
   expectedAssertionError();
   expectedCustomErrorAnonymous();
@@ -26,7 +27,9 @@ proc main() {
   expectedCustomErrorWithArgs();
   expectedErrorRecordFunctor();
   expectedErrorClassFunctor();
+  expectedHeterogeneousTupleError();
 
+  // throwing tests
   errorNeverThrown();
   errorNeverThrownWithArgs();
   expectedErrorBadMsg();
@@ -132,12 +135,23 @@ proc expectedCustomErrorWithArgs() {
                          ("user-spec error msg",), match="user-spec error msg");
 }
 
+proc expectedHeterogeneousTupleError() {
+  // sanity-check multiple arguments of different type work
+  var test = new Test();
+  const foo = proc(in x:int, in y:string): void throws {
+    if x != 5 && y != "" then throw new owned CustomError();
+  };
+  param myInt = 6;
+  try! test.assertThrows(foo, CustomError, (myInt, "hey"));
+}
+
 proc expectedSuperError() {
   // because Error is the super-class of CustomError, this is acceptable
   var test = new Test();
   try! test.assertThrows(throwCustom, Error);
   try! test.assertThrows(throwCustom, Error, match="Threw a custom error");
 }
+
 
 proc errorNeverThrown() throws {
   param thisProcName = getRoutineName();
