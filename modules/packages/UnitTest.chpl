@@ -49,7 +49,9 @@ Here are the assert functions available in the UnitTest module:
 - :proc:`~Test.assertNotEqual`
 - :proc:`~Test.assertGreaterThan`
 - :proc:`~Test.assertLessThan`
+- :proc:`~Test.assertClose`
 - :proc:`~Test.assertRegexMatch`
+- :proc:`~Test.assertThrows`
 
 Test Metadata Functions
 -----------------------
