@@ -1615,24 +1615,24 @@ CCodeGenAction::CreateASTConsumer(CompilerInstance &CI, StringRef InFile) {
 };
 
 static void finishClang(ClangInfo* clangInfo){
-  if( clangInfo->cCodeGen ) {
+  if (clangInfo->cCodeGen) {
     // This should call Builder->Release()
     clangInfo->cCodeGen->HandleTranslationUnit(*clangInfo->Ctx);
   }
 }
 
 static void deleteClang(ClangInfo* clangInfo){
-  if( clangInfo->cCodeGen ) {
+  if (clangInfo->cCodeGen) {
     delete clangInfo->cCodeGen;
-    clangInfo->cCodeGen = NULL;
+    clangInfo->cCodeGen = nullptr;
   }
-  if ( clangInfo->Clang ) {
+  if (clangInfo->Clang) {
     delete clangInfo->Clang;
-    clangInfo->Clang = NULL;
+    clangInfo->Clang = nullptr;
   }
-  if ( clangInfo->cCodeGenAction ) {
+  if (clangInfo->cCodeGenAction) {
     delete clangInfo->cCodeGenAction;
-    clangInfo->cCodeGenAction = NULL;
+    clangInfo->cCodeGenAction = nullptr;
   }
 }
 
@@ -1645,7 +1645,7 @@ static void cleanupClang(ClangInfo* clangInfo)
 // Initialize LLVM targets if needed
 static void initializeLlvmTargets() {
   static bool targetsInited = false;
-  if (targetsInited == false) {
+  if (!targetsInited) {
     llvm::InitializeAllTargets();
     llvm::InitializeAllTargetMCs();
     llvm::InitializeAllAsmPrinters();
