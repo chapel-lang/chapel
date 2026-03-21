@@ -706,7 +706,10 @@ module UnitTest {
             .format(funcName, e.type:string, e.message())
           );
         }
-      } catch e: AssertionError { // absent error thrown in try
+      } catch e: AssertionError {
+        // func did not throw, catch AssertionError thrown in try
+        // placed after `catch e: errorType` in case AssertionError is the
+        // expected error
         throw e;
       } catch e {
         throw new owned AssertionError(

@@ -1,5 +1,5 @@
-use Reflection;
-use UnitTest;
+import Reflection.getRoutineName;
+import UnitTest.{Test, TestError};
 
 const sep = "=="*40;
 
@@ -19,6 +19,7 @@ proc testAssert(func, type errorType, const args:?=none, const match:string="",
 
 proc main() {
   expectedCustomError();
+  expectedAssertionError();
   expectedCustomErrorAnonymous();
   expectedErrorWrappedMethod();
   expectedSuperError();
@@ -78,6 +79,17 @@ proc expectedCustomError() {
   try! test.assertThrows(throwCustom, CustomError,
                          match="Threw a custom error");
 }
+
+proc expectedAssertionError() {
+  // edge-case: this should be caught and returned safely, not rethrown
+  // by the catch e: AssertionError line (in case those get rearranged someday)
+  var test = new Test();
+  const baz = proc(): void throws {
+    throw new owned TestError.AssertionError("special edge-case");
+  };
+  try! test.assertThrows(baz, TestError.AssertionError, match="edge-case");
+}
+
 proc expectedCustomErrorAnonymous() {
   // ensure method works for anonymous procedures
   var test = new Test();
