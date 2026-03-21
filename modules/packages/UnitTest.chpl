@@ -663,15 +663,18 @@ module UnitTest {
       Assert that a given procedure throws the specified error (or a subclass
       of that error).
 
-      :arg func: user-specified procedure or functor. Generic functors not
-                 currently supported
+      :arg func: user-specified procedure (including anonymous procedures) or
+                 functor. Generic procedures and functors are not currently
+                 supported (formal arguments cannot include ``type``
+                 or ``param``)
 
       :arg errorType: error type, the same as or inheriting from the actual
                       error thrown
 
-      :arg args: tuple of arguments passed directly to ``func``. The default
-                 value implies no arguments are passed (i.e., ``func()``).
-                 Type arguments not currently supported
+      :arg args: tuple of actual arguments passed directly to ``func``. The
+                 default value implies no arguments are passed
+                 (i.e., ``func()``). Arguments of ``type`` intent are
+                 not currently supported
 
       :arg match: string for the error message to match, defaults to the empty
                   string. If not empty and the expected error was thrown,
