@@ -61,6 +61,25 @@ index e4cb1a35962..0a19b263ec0 100644
    # this line is needed as a cleanup to ensure that any CMakeCaches with the old
 ```
 
+* The llvm-src/cmake/modules/CrossCompile.cmake file was edited to
+include https://github.com/llvm/llvm-project/pull/187824:
+```
+diff --git a/third-party/llvm/llvm-src/cmake/modules/CrossCompile.cmake b/third-party/llvm/llvm-src/cmake/modules/CrossCompile.cmake
+index 6075e6abdde..1b29c0a1689 100644
+--- a/third-party/llvm/llvm-src/cmake/modules/CrossCompile.cmake
++++ b/third-party/llvm/llvm-src/cmake/modules/CrossCompile.cmake
+@@ -102,6 +102,8 @@ function(llvm_create_cross_target project_name target_name toolchain buildtype)
+         -DLLVM_TEMPORARILY_ALLOW_OLD_TOOLCHAIN="${LLVM_TEMPORARILY_ALLOW_OLD_TOOLCHAIN}"
+         -DLLVM_INCLUDE_BENCHMARKS=OFF
+         -DLLVM_INCLUDE_TESTS=OFF
++        -DLLVM_INCLUDE_DOCS=OFF
++        -DLLVM_INCLUDE_EXAMPLES=OFF
+         -DLLVM_TABLEGEN_FLAGS="${llvm_tablegen_flags}"
+         -DPYTHON_EXECUTABLE="${PYTHON_EXECUTABLE}"
+         ${build_type_flags} ${linker_flag} ${external_clang_dir} ${libc_flags}
+
+```
+
 Upgrading LLVM versions
 =======================
 
