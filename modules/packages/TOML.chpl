@@ -20,8 +20,8 @@
 
 /* Support for parsing and writing TOML files.
 
-Chapel's Library for `Tom's Obvious, Minimal Language (TOML)
-<https://github.com/toml-lang/toml>`_.
+Chapel's Library for
+`Tom's Obvious, Minimal Language (TOML) <https://github.com/toml-lang/toml>`_.
 
   .. note::
 
@@ -50,8 +50,8 @@ module TOML {
   :start-after: START_EXAMPLE
   :end-before: STOP_EXAMPLE
 
-  To read tables of a TOML file, use the same syntax as accessing associative arrays. For example,
-  to access to the following TOML file's project name,
+  To read tables of a TOML file, use the same syntax as accessing associative
+  arrays. For example, to access to the following TOML file's project name,
 
   .. code-block:: yaml
 
