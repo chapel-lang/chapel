@@ -250,13 +250,18 @@ module MasonNewInit {
     if isNew && name == "" then
       throw new MasonError("A package name must be specified");
     if !isNew && name == "" {
-      name = (new path(here.cwd())).name;
-      directory = ".":path;
+      directory = (".":path).resolve();
     } else {
       directory = name:path;
     }
     if legalNameOpt.hasValue() {
       name = legalNameOpt.value().strip();
+    } else {
+      // reset the name to the basename of the directory
+      const tmp = if !directory.isAbsolute()
+        then (here.cwd() / directory)
+        else directory;
+      name = tmp.name;
     }
 
     return (name, directory);
@@ -313,7 +318,7 @@ module MasonNewInit {
     var template = getTemplate(newPkgManifest, directory);
 
     template.checks(isNew=true);
-    directory.mkdir();
+    directory.mkdir(parents=true);
     if !noVcs then
       template.makeVCS(show);
     template.makeProject();
