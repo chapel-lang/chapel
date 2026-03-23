@@ -209,7 +209,11 @@ struct ClangInfo {
   // Once we get to code generation....
   clang::ASTContext *Ctx;
 
+#if LLVM_VERSION_MAJOR >= 22
+  std::unique_ptr<clang::CodeGenerator> cCodeGen;
+#else
   clang::CodeGenerator *cCodeGen;
+#endif
   CCodeGenAction *cCodeGenAction;
 
   // We stash the layout that Clang would like to use here.
@@ -1347,11 +1351,7 @@ class CCodeGenConsumer final : public ASTConsumer {
   private:
     GenInfo* info;
     clang::DiagnosticsEngine* Diags;
-#if LLVM_VERSION_MAJOR >= 22
-    std::unique_ptr<clang::CodeGenerator> Builder;
-#else
     clang::CodeGenerator* Builder;
-#endif
     bool parseOnly;
     ASTContext* savedCtx;
 
@@ -1382,7 +1382,7 @@ class CCodeGenConsumer final : public ASTConsumer {
     {
 
       if (!parseOnly) {
-        Builder = CreateLLVMCodeGen(
+        info->clangInfo->cCodeGen = CreateLLVMCodeGen(
           *Diags,
           LLVM_MODULE_NAME,
 #if HAVE_LLVM_VER >= 150
@@ -1393,13 +1393,17 @@ class CCodeGenConsumer final : public ASTConsumer {
           info->clangInfo->codegenOptions,
           gContext->llvmContext());
 
-        INT_ASSERT(Builder);
-        INT_ASSERT(!info->module);
-        info->module = Builder->GetModule();
 #if LLVM_VERSION_MAJOR >= 22
-        info->clangInfo->cCodeGen = Builder.get();
+        INT_ASSERT(info->clangInfo->cCodeGen.get());
 #else
-        info->clangInfo->cCodeGen = Builder;
+        INT_ASSERT(info->clangInfo->cCodeGen);
+#endif
+        INT_ASSERT(!info->module);
+        info->module = info->clangInfo->cCodeGen->GetModule();
+#if LLVM_VERSION_MAJOR >= 22
+        Builder = info->clangInfo->cCodeGen.get();
+#else
+        Builder = info->clangInfo->cCodeGen;
 #endif
 
         // compute target triple, data layout
@@ -1623,8 +1627,13 @@ static void finishClang(ClangInfo* clangInfo){
 
 static void deleteClang(ClangInfo* clangInfo){
   if (clangInfo->cCodeGen) {
+#if LLVM_VERSION_MAJOR >= 22
+    delete clangInfo->cCodeGen.release();
+     clangInfo->cCodeGen = nullptr;
+#else
     delete clangInfo->cCodeGen;
     clangInfo->cCodeGen = nullptr;
+#endif
   }
   if (clangInfo->Clang) {
     delete clangInfo->Clang;
@@ -1855,8 +1864,7 @@ void setupClang(GenInfo* info, std::string mainFile)
   // Create the compilers actual diagnostics engine.
 #if LLVM_VERSION_MAJOR >= 20
 #if LLVM_VERSION_MAJOR >= 22
-  clangInfo->Clang->createDiagnostics(*llvm::vfs::getRealFileSystem(),
-                                     clangInfo->Clang->getDiagnosticOpts());
+  clangInfo->Clang->createDiagnostics();
 #else
   clangInfo->Clang->createDiagnostics(*llvm::vfs::getRealFileSystem());
 #endif
@@ -3536,13 +3544,16 @@ llvm::Type* getTypeLLVM(const char* name)
   return NULL;
 }
 // should support TypedefDecl,EnumDecl,RecordDecl
-llvm::Type* codegenCType(const TypeDecl* td)
-{
+llvm::Type* codegenCType(const TypeDecl* td) {
   GenInfo* info = gGenInfo;
   INT_ASSERT(info);
   ClangInfo* clangInfo = info->clangInfo;
   INT_ASSERT(clangInfo);
+#if LLVM_VERSION_MAJOR >= 22
+  clang::CodeGenerator* cCodeGen = clangInfo->cCodeGen.get();
+#else
   clang::CodeGenerator* cCodeGen = clangInfo->cCodeGen;
+#endif
   INT_ASSERT(cCodeGen);
 
   QualType qType;
@@ -3570,26 +3581,32 @@ llvm::Type* codegenCType(const TypeDecl* td)
   return clang::CodeGen::convertTypeForMemory(cCodeGen->CGM(), qType);
 }
 
-llvm::Type* codegenCType(const clang::QualType& qType)
-{
+llvm::Type* codegenCType(const clang::QualType& qType) {
   GenInfo* info = gGenInfo;
   INT_ASSERT(info);
   ClangInfo* clangInfo = info->clangInfo;
   INT_ASSERT(clangInfo);
+#if LLVM_VERSION_MAJOR >= 22
+  clang::CodeGenerator* cCodeGen = clangInfo->cCodeGen.get();
+#else
   clang::CodeGenerator* cCodeGen = clangInfo->cCodeGen;
+#endif
   INT_ASSERT(cCodeGen);
 
   return clang::CodeGen::convertTypeForMemory(cCodeGen->CGM(), qType);
 }
 
 // should support FunctionDecl,VarDecl,EnumConstantDecl
-GenRet codegenCValue(const ValueDecl *vd)
-{
+GenRet codegenCValue(const ValueDecl *vd) {
   GenInfo* info = gGenInfo;
   INT_ASSERT(info);
   ClangInfo* clangInfo = info->clangInfo;
   INT_ASSERT(clangInfo);
+#if LLVM_VERSION_MAJOR >= 22
+  clang::CodeGenerator* cCodeGen = clangInfo->cCodeGen.get();
+#else
   clang::CodeGenerator* cCodeGen = clangInfo->cCodeGen;
+#endif
   INT_ASSERT(cCodeGen);
 
   GenRet ret;
@@ -3982,13 +3999,16 @@ void LayeredValueTable::swap(LayeredValueTable* other)
 }
 
 int getCRecordMemberGEP(const char* typeName, const char* fieldName,
-                        bool& isCArrayField)
-{
+                        bool& isCArrayField) {
   GenInfo* info = gGenInfo;
   INT_ASSERT(info);
   ClangInfo* clangInfo = info->clangInfo;
   INT_ASSERT(clangInfo);
+#if LLVM_VERSION_MAJOR >= 22
+  clang::CodeGenerator* cCodeGen = clangInfo->cCodeGen.get();
+#else
   clang::CodeGenerator* cCodeGen = clangInfo->cCodeGen;
+#endif
   INT_ASSERT(cCodeGen);
 
   TypeDecl* d = NULL;
@@ -4115,13 +4135,16 @@ static clang::CanQualType getClangFormalType(ArgSymbol* formal) {
   return getClangFormalType(formal->intent, formal->type, isReceiver);
 }
 
-const clang::CodeGen::CGFunctionInfo& getClangABIInfoFD(clang::FunctionDecl* FD)
-{
+const clang::CodeGen::CGFunctionInfo& getClangABIInfoFD(clang::FunctionDecl* FD) {
   GenInfo* info = gGenInfo;
   INT_ASSERT(info);
   ClangInfo* clangInfo = info->clangInfo;
   INT_ASSERT(clangInfo);
+#if LLVM_VERSION_MAJOR >= 22
+  clang::CodeGenerator* cCodeGen = clangInfo->cCodeGen.get();
+#else
   clang::CodeGenerator* cCodeGen = clangInfo->cCodeGen;
+#endif
   INT_ASSERT(cCodeGen);
   clang::CodeGen::CodeGenModule& CGM = cCodeGen->CGM();
 
@@ -4141,7 +4164,11 @@ const clang::CodeGen::CGFunctionInfo& getClangABIInfoFD(clang::FunctionDecl* FD)
 const clang::CodeGen::CGFunctionInfo& getClangABIInfo(::FunctionType* ft) {
   auto info = gGenInfo;
   auto clangInfo = info->clangInfo;
-  auto cCodeGen = clangInfo->cCodeGen;
+#if LLVM_VERSION_MAJOR >= 22
+  clang::CodeGenerator* cCodeGen = clangInfo->cCodeGen.get();
+#else
+  clang::CodeGenerator* cCodeGen = clangInfo->cCodeGen;
+#endif
   INT_ASSERT(info && clangInfo && cCodeGen);
   auto& CGM = cCodeGen->CGM();
 
@@ -4183,7 +4210,11 @@ const clang::CodeGen::CGFunctionInfo& getClangABIInfo(FnSymbol* fn) {
   INT_ASSERT(info);
   ClangInfo* clangInfo = info->clangInfo;
   INT_ASSERT(clangInfo);
+#if LLVM_VERSION_MAJOR >= 22
+  clang::CodeGenerator* cCodeGen = clangInfo->cCodeGen.get();
+#else
   clang::CodeGenerator* cCodeGen = clangInfo->cCodeGen;
+#endif
   INT_ASSERT(cCodeGen);
   clang::CodeGen::CodeGenModule& CGM = cCodeGen->CGM();
 
@@ -4298,13 +4329,16 @@ bool useDarwinArmFix(::Type* type) {
 // TODO: Update `getClangABIInfo` to handle formal types and return types that
 // are not extern types.
 //
-const clang::CodeGen::ABIArgInfo*
-getSingleCGArgInfo(::Type* type) {
+const clang::CodeGen::ABIArgInfo* getSingleCGArgInfo(::Type* type) {
   GenInfo* info = gGenInfo;
   INT_ASSERT(info);
   ClangInfo* clangInfo = info->clangInfo;
   INT_ASSERT(clangInfo);
+#if LLVM_VERSION_MAJOR >= 22
+  clang::CodeGenerator* cCodeGen = clangInfo->cCodeGen.get();
+#else
   clang::CodeGenerator* cCodeGen = clangInfo->cCodeGen;
+#endif
   INT_ASSERT(cCodeGen);
   clang::CodeGen::CodeGenModule& CGM = cCodeGen->CGM();
 
