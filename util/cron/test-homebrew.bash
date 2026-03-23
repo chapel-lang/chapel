@@ -69,7 +69,7 @@ cat chapel.rb
 # we retry to install in case of either network issues or the error
 # "Error: File exists", this happens somewhat frequently and just
 # rerunning the command seems to fix it.
-RETRIES=3
+RETRIES=10
 until brew upgrade --force --overwrite; do
   if [ $RETRIES -le 0 ]; then
     log_error "Failed to update Homebrew after multiple attempts."
