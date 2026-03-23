@@ -48,12 +48,12 @@ expected failure for existing mason package
 + mkdir -p testing-pkg/foo-bar
 + mason init testing-pkg/foo-bar
 Bad package name 'foo-bar' - only Chapel identifiers are legal package names.
-Please use mason init foo-bar --name <LegalName>
+Use '--name <LegalName>' to specify a legal package name.
 + echo 'expected failure for invalid package name'
 expected failure for invalid package name
 + mason init testing-pkg/foo-bar --name foo-bar
 Bad package name 'foo-bar' - only Chapel identifiers are legal package names.
-Please use mason init foo-bar --name <LegalName>
+Use '--name <LegalName>' to specify a legal package name.
 + echo 'expected failure for invalid package name'
 expected failure for invalid package name
 + rm -rf testing-pkg
@@ -71,7 +71,7 @@ expected failure for existing mason package
 + MASON_LOG_LEVEL=warn
 + mason init
 + grep '.gitignore already exists'
-mason new     : .gitignore already exists, skipping creation of .gitignore file
+mason new/init: .gitignore already exists, skipping creation of .gitignore file
 + cat .gitignore
 foo
 + cat Mason.toml
@@ -83,4 +83,3 @@ license="None"
 type="application"
 
 [dependencies]
-

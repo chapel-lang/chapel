@@ -133,7 +133,7 @@ rm -rf testingPkg
 mason new testingPkg/subdir
 checktoml "testingPkg/subdir" "subdir" "application"
 checkappsrc testingPkg/subdir subdir
-checknogitfiles testingPkg/subdir
+checkgitfiles testingPkg/subdir
 runindir testingPkg/subdir mason run --build
 rm -rf testingPkg
 
@@ -141,7 +141,7 @@ rm -rf testingPkg && mkdir testingPkg
 mason new testingPkg/subdir
 checktoml "testingPkg/subdir" "subdir" "application"
 checkappsrc testingPkg/subdir subdir
-checknogitfiles testingPkg/subdir
+checkgitfiles testingPkg/subdir
 runindir testingPkg/subdir mason run --build
 rm -rf testingPkg
 
