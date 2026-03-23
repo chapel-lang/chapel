@@ -46,9 +46,9 @@ module TOML {
 
 
   .. literalinclude:: ../../../../test/library/packages/TOML/doc-examples/example_parseToml.chpl
-  :language: chapel
-  :start-after: START_EXAMPLE
-  :end-before: STOP_EXAMPLE
+    :language: chapel
+    :start-after: START_EXAMPLE
+    :end-before: STOP_EXAMPLE
 
   To read tables of a TOML file, use the same syntax as accessing associative
   arrays. For example, to access to the following TOML file's project name,
@@ -63,9 +63,9 @@ module TOML {
   Use the following code in Chapel.
 
   .. literalinclude:: ../../../../test/library/packages/TOML/doc-examples/example_access_Toml_attribut.chpl
-  :language: chapel
-  :start-after: START_EXAMPLE
-  :end-before: STOP_EXAMPLE
+    :language: chapel
+    :start-after: START_EXAMPLE
+    :end-before: STOP_EXAMPLE
 
   .. note::
 
