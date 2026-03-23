@@ -218,7 +218,7 @@ def generate_run_command_default_config(osname, include_tools=True) -> str:
         config[key] = value
     build_cmd = "nice make all -j$PARALLEL"
     if include_tools:
-        build_cmd = "nice make all chpldoc mason chplcheck chpl-language-server -j$PARALLEL"
+        build_cmd = "nice make all chpldoc mason chplcheck chpl-language-server c2chapel -j$PARALLEL"
     return generate_run_command(config, osname, build_cmd=build_cmd)
 
 

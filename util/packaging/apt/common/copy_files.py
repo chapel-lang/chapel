@@ -16,6 +16,7 @@ if not is_minimal:
             "/usr/bin/mason",
             "/usr/bin/chplcheck",
             "/usr/bin/chpl-language-server",
+            "/usr/bin/c2chapel",
             "/usr/bin/chpl-shim",
         ]
     )

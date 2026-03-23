@@ -36,6 +36,7 @@ cp %{_prefix}/bin/chpldoc %{buildroot}/%{_prefix}/bin/chpldoc
 cp %{_prefix}/bin/mason %{buildroot}/%{_prefix}/bin/mason
 cp %{_prefix}/bin/chplcheck %{buildroot}/%{_prefix}/bin/chplcheck
 cp %{_prefix}/bin/chpl-language-server %{buildroot}/%{_prefix}/bin/chpl-language-server
+cp %{_prefix}/bin/c2chapel %{buildroot}/%{_prefix}/bin/c2chapel
 cp %{_prefix}/bin/chpl-shim %{buildroot}/%{_prefix}/bin/chpl-shim
 # Libraries
 cp -r %{_prefix}/lib/chapel %{buildroot}/%{_prefix}/lib/chapel
@@ -49,10 +50,10 @@ cp -r %{_prefix}/share/chapel %{buildroot}/%{_prefix}/share/chapel
 %{_prefix}/bin/mason
 %{_prefix}/bin/chplcheck
 %{_prefix}/bin/chpl-language-server
+%{_prefix}/bin/c2chapel
 %{_prefix}/bin/chpl-shim
 %{_prefix}/lib/chapel/*
 %{_prefix}/share/chapel/*
 %{_prefix}/lib/cmake/chpl/*
-
 
 %changelog
