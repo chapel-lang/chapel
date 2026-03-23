@@ -57,5 +57,18 @@ proc iterKeysEmpty(test: borrowed Test) throws {
   test.assertTrue(keys.size == 0);
 }
 
+proc notAtTable(test: borrowed Test) throws {
+  var toml = parseToml(tomlFile);
+  try {
+    var keys = toml["mytable.key"]!.keys();
+    test.assertTrue(false); // should not reach here
+  } catch e: TomlError {
+    test.assertTrue(true); // expected exception
+    test.assertEqual(e.message(), "Only tables have keys");
+  } catch {
+    test.assertTrue(false); // should not reach here
+  }
+}
+
 
 UnitTest.main();
