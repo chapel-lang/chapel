@@ -461,7 +461,7 @@ if (exists($ENV{'CHPL_NIGHTLY_TEST_CONFIG_NAME'})) {
 # Include username in the tmp file's name, so we don't get conflicting files
 # between different users running this script.
 $username = $ENV{LOGNAME} || $ENV{USER} || getpwuid($<);
-$mysystemlog = "$basetmpdir/$username-mysystemerrs-$config_name.txt";
+$mysystemlog = "$basetmpdir/mysystemerrs-$username-$config_name.txt";
 $emailOnError = $mysystemlog;
 unlink($mysystemlog); # the file gets appended to, so clear it first.
 unlink("$mysystemlog.clean"); # the file gets appended to, so clear it first.
