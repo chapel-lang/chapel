@@ -18,6 +18,14 @@ export CHPL_HOME=$(cd $UTIL_CRON_DIR/../.. ; pwd)
 log_info "Setting CHPL_HOME to: ${CHPL_HOME}"
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="docker"
 
+set -exuo pipefail
+
+
+# Use this many `make` threads in parallel within the Docker image build.
+# Note that for multi-arch builds, the build for each arch occurs
+# simultaneously, and each build will use this many threads.
+export DOCKER_BUILD_MAKE_THREADS=1
+
 # BEGIN FUNCTIONS
 
 # Patch the Dockerfile to build FROM the nightly image instead of latest.
@@ -36,6 +44,12 @@ dockerfile_nightly_patch() {
   patch $patch_args ./Dockerfile << EOF
 $nightlypatch
 EOF
+
+  if [ $? -ne 0 ]
+  then
+        echo "Dockerfile patch for building off nightly failed"
+        exit 1
+  fi
 }
 
 # Build, test, and push a Docker image.
@@ -63,17 +77,17 @@ update_image() {
   # image before erroring out; it's important that release pushes come after
   # all nightly pushes so we can't push a broken release image.
   # Anna, 2024-10-07
-  if [ -z "$release_tag" ]
+  docker_build_cmd="docker buildx build --build-arg MAKE_THREADS=$DOCKER_BUILD_MAKE_THREADS --platform=linux/amd64,linux/arm64 --push . -t $imageName"
+  if [ -n "$release_tag" ]
   then
-    docker buildx build --platform=linux/amd64,linux/arm64 --push . -t "$imageName"
-  else
     # Also push as 'latest' tag if this is a release build.
     # Use base image name (without tag) to use Docker's default tag 'latest'.
     # This has to be done in a single invocation of 'build' to ensure we don't
     # rebuild the image for the 'latest' tag, which would result in it having
     # a different SHA.
-    docker buildx build --platform=linux/amd64,linux/arm64 --push . -t "$imageName" -t "$baseImageName"
+    docker_build_cmd="$docker_build_cmd -t $baseImageName"
   fi
+  $docker_build_cmd
 
   BUILD_RESULT=$?
   if [ $BUILD_RESULT -ne 0 ]
@@ -123,6 +137,7 @@ update_all_images() {
 }
 # END FUNCTIONS
 
+RELEASE_VERSION="${RELEASE_VERSION:-}"
 
 if [ -n "$RELEASE_VERSION" ]
 then
@@ -145,7 +160,7 @@ else
 fi
 
 # Build and push nightly images
-update_all_images
+update_all_images ""
 
 # Build and push release-tagged images, if RELEASE_VERSION was specified.
 # Runs after all nightly images, to abort if any fail.

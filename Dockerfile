@@ -59,15 +59,17 @@ WORKDIR $CHPL_HOME
 
 FROM chapel-base AS chapel-build
 
+ARG MAKE_THREADS=1
+
 # acquire sources
 COPY . .
 
 # build Chapel for both C and LLVM backends
-RUN CHPL_TARGET_COMPILER=llvm make \
-    && CHPL_TARGET_COMPILER=gnu make
-RUN make chpldoc test-venv mason
-RUN make chapel-py-venv chplcheck chpl-language-server
-RUN make cleanall
+RUN CHPL_TARGET_COMPILER=llvm make -j$MAKE_THREADS
+RUN CHPL_TARGET_COMPILER=gnu make -j$MAKE_THREADS
+RUN make -j$MAKE_THREADS chpldoc test-venv mason
+RUN make -j$MAKE_THREADS chapel-py-venv chplcheck chpl-language-server
+RUN make -j$MAKE_THREADS cleanall
 
 # Hack to get access to Chapel binaries
 RUN cd $CHPL_HOME/bin && ln -s */* .
