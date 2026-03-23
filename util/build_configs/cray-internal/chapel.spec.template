@@ -47,10 +47,8 @@ Chapel language compiler and libraries
 
 # Avoid generating debug info, for which we get symlinks that are broken outside
 # the build container.
-# Anna, 2026-03-11
+# Anna, 2026-03-23
 %global debug_package %{nil}
-%define _build_id_links none
-%global _missing_build_ids_terminate_build 0
 
 %prep
 
