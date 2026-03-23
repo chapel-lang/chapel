@@ -458,7 +458,10 @@ if (exists($ENV{'CHPL_NIGHTLY_TEST_CONFIG_NAME'})) {
 # to a file. The $exitOnError variable tells it to exit immediately, while
 # $ignoreErrors tells it to continue without doing anything. $emailOnError,
 # which is the path of the error file, tells it to write the errors to a file.
-$mysystemlog = "$basetmpdir/mysystemerrs-$config_name.txt";
+# Include username in the tmp file's name, so we don't get conflicting files
+# between different users running this script.
+$username = $ENV{LOGNAME} || $ENV{USER} || getpwuid($<);
+$mysystemlog = "$basetmpdir/mysystemerrs-$username-$config_name.txt";
 $emailOnError = $mysystemlog;
 unlink($mysystemlog); # the file gets appended to, so clear it first.
 unlink("$mysystemlog.clean"); # the file gets appended to, so clear it first.
