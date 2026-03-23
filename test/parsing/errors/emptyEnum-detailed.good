@@ -1,0 +1,9 @@
+─── syntax in emptyEnum.chpl:1 [EmptyEnum] ───
+  Enums cannot be empty.
+  Empty enum here:
+      |
+    1 | enum foo {
+    2 | 
+    3 | }
+      |
+

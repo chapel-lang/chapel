@@ -2249,35 +2249,46 @@ class_level_stmt_ls:
 // TODO: Move to builder methods, allow empty enums?
 enum_decl_stmt:
   enum_header TLCBR enum_ls TRCBR
-    {
-      TypeDeclParts parts = $1;
-      ParserExprList* list = $3;
-      // get any comments after the last element but before the closing brace
-      context->appendList(list, context->gatherComments(@4));
+  {
+    TypeDeclParts parts = $1;
+    ParserExprList* list = $3;
+    // get any comments after the last element but before the closing brace
+    context->appendList(list, context->gatherComments(@4));
 
-      auto decl = Enum::build(BUILDER, LOC(@$), toOwned(parts.attributeGroup),
-                              parts.visibility,
-                              parts.name,
-                              context->consumeList(list));
-      BUILDER->noteDeclNameLocation(decl.get(), LOC(parts.locName));
-      BUILDER->noteDeclHeaderLocation(decl.get(), LOC(@1));
-      BUILDER->noteCurlyBracesLocation(decl.get(), LOC2(@2, @4));
-      CommentsAndStmt cs = makeCommentsAndStmt(parts.comments, decl.release());
-      $$ = cs;
-      context->exitScope(asttags::Enum, parts.name);
-      context->resetDeclState();
-      context->clearComments();
-    }
+    auto decl = Enum::build(BUILDER, LOC(@$), toOwned(parts.attributeGroup),
+                            parts.visibility,
+                            parts.name,
+                            context->consumeList(list));
+    BUILDER->noteDeclNameLocation(decl.get(), LOC(parts.locName));
+    BUILDER->noteDeclHeaderLocation(decl.get(), LOC(@1));
+    BUILDER->noteCurlyBracesLocation(decl.get(), LOC2(@2, @4));
+    CommentsAndStmt cs = makeCommentsAndStmt(parts.comments, decl.release());
+    $$ = cs;
+    context->exitScope(asttags::Enum, parts.name);
+    context->resetDeclState();
+    context->clearComments();
+  }
 | enum_header TLCBR error TRCBR
-    {
-      TypeDeclParts parts = $1;
-      auto err = ErroneousExpression::build(BUILDER, LOC(@3));
-      CommentsAndStmt cs = makeCommentsAndStmt(parts.comments, err.release());
-      $$ = cs;
-      context->exitScope(asttags::Enum, parts.name);
-      context->resetDeclState();
-      context->clearComments();
-    }
+  {
+    TypeDeclParts parts = $1;
+    auto err = ErroneousExpression::build(BUILDER, LOC(@3));
+    CommentsAndStmt cs = makeCommentsAndStmt(parts.comments, err.release());
+    $$ = cs;
+    context->exitScope(asttags::Enum, parts.name);
+    context->resetDeclState();
+    context->clearComments();
+  }
+| enum_header TLCBR TRCBR
+  {
+    CHPL_PARSER_REPORT(context, EmptyEnum, @$);
+    TypeDeclParts parts = $1;
+    auto err = ErroneousExpression::build(BUILDER, LOC(@$));
+    CommentsAndStmt cs = makeCommentsAndStmt(parts.comments, err.release());
+    $$ = cs;
+    context->exitScope(asttags::Enum, parts.name);
+    context->resetDeclState();
+    context->clearComments();
+  }
 ;
 
 enum_header:
