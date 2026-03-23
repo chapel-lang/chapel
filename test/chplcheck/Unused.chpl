@@ -54,4 +54,14 @@ module Unused {
   }
 
   var myFCP: proc(x: int): int;
+
+  record myRec: serializable {
+    type T;
+    proc ref deserialize(reader, ref deserializer) throws {
+    }
+    proc ref deserialize(reader, ref deserializer) throws {
+    }
+    proc init(type T, reader, ref deserializer) throws {
+    }
+  }
 }
