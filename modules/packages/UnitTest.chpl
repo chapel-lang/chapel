@@ -49,7 +49,9 @@ Here are the assert functions available in the UnitTest module:
 - :proc:`~Test.assertNotEqual`
 - :proc:`~Test.assertGreaterThan`
 - :proc:`~Test.assertLessThan`
+- :proc:`~Test.assertClose`
 - :proc:`~Test.assertRegexMatch`
+- :proc:`~Test.assertThrows`
 
 Test Metadata Functions
 -----------------------
@@ -655,6 +657,68 @@ module UnitTest {
           "assert failed for actual=%n, expected=%n\n".format(actual, expected)
           + "Rel. Error: %r %%\n".format(relErr*100.0)
           + "Abs. Error: %r".format(absErr)
+        );
+      }
+    }
+
+    /*
+      Assert that a given procedure throws the specified error (or a subclass
+      of that error).
+
+      :arg func: user-specified procedure (including anonymous procedures) or
+                 functor. Generic procedures and functors are not currently
+                 supported (formal arguments cannot include ``type``
+                 or ``param``)
+
+      :arg errorType: error type, the same as or inheriting from the actual
+                      error thrown
+
+      :arg args: tuple of actual arguments passed directly to ``func``. The
+                 default value implies no arguments are passed
+                 (i.e., ``func()``). Arguments of ``type`` intent are
+                 not currently supported
+
+      :arg match: string for the error message to match, defaults to the empty
+                  string. If not empty and the expected error was thrown,
+                  ``match`` must be found within the error message. Regex
+                  characters are not supported at this time
+
+      :throws AssertionError: No error was thrown by ``func``
+
+      :throws AssertionError: An unexpected error was thrown by ``func``
+
+      :throws AssertionError: If ``match`` is specified: the expected error was
+                              thrown by ``func``, but the error message did not
+                              include the contents of ``match``
+    */
+    proc assertThrows(func, type errorType, const args:?=none,
+                      const match:string=""): void throws
+                      where isSubtype(errorType, Error) &&
+                      (isNothing(args) || isTuple(args)) {
+      const funcName = if isProcedureValue(func) then func:string
+                       else func.type:string;
+      try {
+        if isNothing(args) then func(); else func((...args));
+        throw new owned AssertionError(
+          "assert failed - %s did not throw any error".format(funcName)
+        );
+      } catch e: errorType {
+        if match == "" then return;
+        var idx = e.message().find(match);
+        if idx == -1 {
+          throw new owned AssertionError(
+            "assert failed - %s threw %s with an unexpected message: %s"
+            .format(funcName, e.type:string, e.message())
+          );
+        }
+      } catch e: AssertionError {
+        // func did not throw, catch AssertionError thrown in try
+        // placed after `catch e: errorType` in case AssertionError is the
+        // expected error
+        throw e;
+      } catch e {
+        throw new owned AssertionError(
+          "assert failed - %s threw an unexpected error: %?".format(funcName, e)
         );
       }
     }
