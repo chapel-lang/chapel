@@ -65,7 +65,7 @@ $(FAKES):
 	mkdir -p $(FAKES)
 	cd $(INSTALL) && \
 	echo "Fetching pycparser release $(VERSION) tarball for fake headers..." && \
-	wget $(RELEASE) -O $(TAR) && \
+	$(CHPL_MAKE_PYTHON) -c "import urllib.request; urllib.request.urlretrieve('$(RELEASE)', '$(TAR)')" && \
 	tar xzf $(TAR) -C $(FAKES) --strip 3 pycparser-release_v$(VERSION)/utils/fake_libc_include
 
 	./utils/fixFakes.sh $(FAKES) $(PWD)/utils/custom.h
