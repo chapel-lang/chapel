@@ -1,0 +1,2 @@
+warning: The path 'nonexistentdir' does not exist and will excluded from the module search path
+AddNonDirToModulePath.chpl:1: error: cannot find module named 'UsefulModule'
