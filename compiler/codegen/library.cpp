@@ -909,7 +909,6 @@ static void makePYFile() {
 
     // Sort the output of '--libraries' and collect the '-lfoo' arguments.
     for (auto& line : libraryLines) {
-      int64_t sharedLibExtStartOffset = line.size() - sharedLibraryExt.size();
 
       // Some paths may be symbolic, so expand them to real paths.
       expandInstallationPaths(line);
