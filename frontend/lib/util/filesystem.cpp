@@ -166,10 +166,12 @@ std::error_code writeFile(const char* path, const std::string& data) {
 }
 
 
-bool fileExists(const char* path) {
-  struct stat s;
-  int err = stat(path, &s);
-  return err == 0;
+bool pathExists(std::string_view path){
+  return llvm::sys::fs::exists(path);
+}
+
+bool directoryExists(std::string_view path) {
+  return llvm::sys::fs::is_directory(path);
 }
 
 std::error_code deleteDir(const llvm::Twine& dirname) {

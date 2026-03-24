@@ -4841,7 +4841,7 @@ static std::string findSiblingClangToolPath(std::string_view toolName) {
     if (!parent.empty()) {
       SmallString<128> path;
       sys::path::append(path, parent, toolName);
-      if (pathExists(path.str())) {
+      if (chpl::pathExists(path.str())) {
         return std::string(path);
       }
     }

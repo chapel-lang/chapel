@@ -259,7 +259,7 @@ std::string Context::tmpDirAnchorFile() {
 }
 
 void Context::cleanupTmpDirIfNeeded() {
-  if (!tmpDir_.empty() && fileExists(tmpDir_.c_str()) && !config_.keepTmpDir) {
+  if (!tmpDir_.empty() && pathExists(tmpDir_.c_str()) && !config_.keepTmpDir) {
     // delete the tmp dir
     deleteDir(tmpDir_);
   }
