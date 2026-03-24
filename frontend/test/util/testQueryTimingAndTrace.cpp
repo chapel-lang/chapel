@@ -41,7 +41,7 @@ int main(int argc, char** argv) {
   commandPath += getenv("CHPL_HOME");
   commandPath += "/";
   commandPath += relativeCommandPath;
-  if (!fileExists(commandPath.c_str())) {
+  if (!pathExists(commandPath.c_str())) {
     printf("Could not find analyze query trace command at path %s\n",
            commandPath.c_str());
     return 1;
