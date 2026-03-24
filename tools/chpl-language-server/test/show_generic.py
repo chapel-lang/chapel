@@ -364,8 +364,7 @@ async def test_lenses_default_rect_twoargs(client: LanguageClient):
     Test that we can show default-rectangular substitutions for functions
     that are only generic because of their array formals.
 
-    Here, the array has a specific rank, but it matches our default
-    substitution, so the tests match.
+    Here, there are two formals; they should both be instantiated.
     """
 
     file = """
@@ -404,6 +403,10 @@ async def test_lenses_default_rect_other_args(client: LanguageClient):
     """
     Test that we can show default-rectangular substitutions for functions
     that are only generic because of their array formals.
+
+    Here, there are additional concrete formals; they should not interfere
+    with the instantiation of the array formal, and we should still show
+    inlays the function.
     """
 
     file = """
