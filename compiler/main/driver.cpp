@@ -1053,35 +1053,16 @@ static void setDriverDebugPhase(const ArgumentDescription* desc,
   }
 }
 
-static bool checkModulePath(const char* path) {
-  if (!pathExists(path)) {
-    if (!driverInSubInvocation)
-      USR_WARN("The path '%s' does not exist and will excluded from the module search path", path);
-    return false;
-  } else if (!isDirectory(path)) {
-    USR_FATAL("The path '%s' is not a directory and cannot be added to the module search path", path);
-    return false;
-  } else {
-    return true;
-  }
-}
-
 static void addModulePath(const ArgumentDescription* desc, const char* newpath) {
-  if (checkModulePath(newpath)) {
-    cmdLineModPaths.push_back(std::string(newpath));
-  }
+  cmdLineModPaths.push_back(std::string(newpath));
 }
 
 static void addInternalModulePath(const ArgumentDescription* desc, const char* newpath) {
-  if (checkModulePath(newpath)) {
-    gDynoPrependInternalModulePaths.push_back(newpath);
-  }
+  gDynoPrependInternalModulePaths.push_back(newpath);
 }
 
 static void addStandardModulePath(const ArgumentDescription* desc, const char* newpath) {
-  if (checkModulePath(newpath)) {
-    gDynoPrependStandardModulePaths.push_back(newpath);
-  }
+  gDynoPrependStandardModulePaths.push_back(newpath);
 }
 
 static void noteCppLinesSet(const ArgumentDescription* desc, const char* unused) {
@@ -2447,7 +2428,7 @@ static void checkRuntimeBuilt(void) {
   runtime_dir += "/";
   runtime_dir += CHPL_RUNTIME_SUBDIR;
 
-  if (!isDirectory(runtime_dir.c_str())) {
+  if (!chpl::directoryExists(runtime_dir.c_str())) {
     const char* module_home = getenv("CHPL_MODULE_HOME");
     if (module_home) {
       USR_FATAL("The requested configuration is not included in the module. "
@@ -2474,7 +2455,7 @@ static void checkRuntimeBuilt(void) {
   launcher_dir += CHPL_LAUNCHER_SUBDIR;
 
   if (strcmp(CHPL_LAUNCHER, "none") != 0 &&
-      !isDirectory(launcher_dir.c_str())) {
+      !chpl::directoryExists(launcher_dir.c_str())) {
     USR_FATAL_CONT("There is no CHPL_LAUNCHER=%s for the current configuration.",
                    CHPL_LAUNCHER);
     if (developer) {
@@ -2781,12 +2762,6 @@ int main(int argc, char* argv[]) {
     std::string chpl_module_path;
     if (const char* envvarpath  = getenv("CHPL_MODULE_PATH")) {
       chpl_module_path = envvarpath;
-      if (!pathExists(chpl_module_path.c_str())) {
-        USR_FATAL("CHPL_MODULE_PATH environment variable set to '%s' but that path does not exist", chpl_module_path.c_str());
-      }
-      if (!isDirectory(chpl_module_path.c_str())) {
-        USR_FATAL("CHPL_MODULE_PATH environment variable set to '%s' but that path is not a directory", chpl_module_path.c_str());
-      }
     }
 
     bootstrapTmpDir();
