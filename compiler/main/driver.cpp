@@ -1053,8 +1053,35 @@ static void setDriverDebugPhase(const ArgumentDescription* desc,
   }
 }
 
+static bool checkModulePath(const char* path) {
+  if (!pathExists(path)) {
+    if (!driverInSubInvocation)
+      USR_WARN("The path '%s' does not exist and will excluded from the module search path", path);
+    return false;
+  } else if (!isDirectory(path)) {
+    USR_FATAL("The path '%s' is not a directory and cannot be added to the module search path", path);
+    return false;
+  } else {
+    return true;
+  }
+}
+
 static void addModulePath(const ArgumentDescription* desc, const char* newpath) {
-  cmdLineModPaths.push_back(std::string(newpath));
+  if (checkModulePath(newpath)) {
+    cmdLineModPaths.push_back(std::string(newpath));
+  }
+}
+
+static void addInternalModulePath(const ArgumentDescription* desc, const char* newpath) {
+  if (checkModulePath(newpath)) {
+    gDynoPrependInternalModulePaths.push_back(newpath);
+  }
+}
+
+static void addStandardModulePath(const ArgumentDescription* desc, const char* newpath) {
+  if (checkModulePath(newpath)) {
+    gDynoPrependStandardModulePaths.push_back(newpath);
+  }
 }
 
 static void noteCppLinesSet(const ArgumentDescription* desc, const char* unused) {
@@ -1302,7 +1329,7 @@ static void driverSetDevelSettings(const ArgumentDescription* desc, const char* 
   }
 }
 
-void addDynoGenLib(const ArgumentDescription* desc, const char* newpath) {
+static void addDynoGenLib(const ArgumentDescription* desc, const char* newpath) {
   if (fDynoGenLib) {
     USR_FATAL("cannot have multiple --dyno-gen-lib / --dyno-gen-std flags");
   }
@@ -2754,6 +2781,12 @@ int main(int argc, char* argv[]) {
     std::string chpl_module_path;
     if (const char* envvarpath  = getenv("CHPL_MODULE_PATH")) {
       chpl_module_path = envvarpath;
+      if (!pathExists(chpl_module_path.c_str())) {
+        USR_FATAL("CHPL_MODULE_PATH environment variable set to '%s' but that path does not exist", chpl_module_path.c_str());
+      }
+      if (!isDirectory(chpl_module_path.c_str())) {
+        USR_FATAL("CHPL_MODULE_PATH environment variable set to '%s' but that path is not a directory", chpl_module_path.c_str());
+      }
     }
 
     bootstrapTmpDir();

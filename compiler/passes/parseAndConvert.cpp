@@ -157,16 +157,6 @@ static ModuleSymbol* dynoConvertFile(UastConverter& c,
                                      ModTag      modTag,
                                      bool        namedOnCommandLine);
 
-void addInternalModulePath(const ArgumentDescription* desc, const char* newpath)
-{
-  gDynoPrependInternalModulePaths.push_back(newpath);
-}
-
-void addStandardModulePath(const ArgumentDescription* desc, const char* newpath)
-{
-  gDynoPrependStandardModulePaths.push_back(newpath);
-}
-
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
