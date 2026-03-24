@@ -594,7 +594,23 @@ module Bytes {
 
     :returns: whether the :type:`bytes` contains the pattern.
   */
+  @edition(last="2.0")
   @unstable("'.contains' on 'bytes' is unstable and may change in future.")
+  inline proc bytes.contains(pattern: bytes,
+                              indices: range(?) = this.indices): bool {
+    return this.find(pattern, indices) != -1;
+  }
+
+  /*
+    :arg pattern: The :type:`bytes` to search for
+
+    :arg indices: an optional range defining the indices to search within,
+                 default is the whole. Halts if the range is not
+                 within ``this.indices``
+
+    :returns: whether the :type:`bytes` contains the pattern.
+  */
+  @edition(first="preview")
   inline proc bytes.contains(pattern: bytes,
                               indices: range(?) = this.indices): bool {
     return this.find(pattern, indices) != -1;
