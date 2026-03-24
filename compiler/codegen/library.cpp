@@ -821,7 +821,36 @@ static void makeOpaqueArrayClass() {
   fprintf(outfile, "\t\tself.cleanup()\n\n");
 }
 
-// create the Python file which will be used to compile the .pyx, .pxd, library,
+static void printPythonList(FILE* fp, const char* listName,
+                            const std::vector<std::string>& v,
+                            bool format=false) {
+  fprintf(fp, "%s=[", listName);
+
+  if (v.size() > 0) {
+    if (format) fprintf(fp, "\n");
+
+    size_t i = 0;
+    for (auto& line : v) {
+      bool last   = i == (v.size() - 1);
+
+      if (format) fprintf(fp, "\t");
+      fprintf(fp, "\"%s\"", line.c_str());
+      if (!last) fprintf(fp, ",");
+
+      if (format) {
+        fprintf(fp, "\n");
+      } else if (!last) {
+        fprintf(fp, " ");
+      }
+
+      i++;
+    }
+  }
+
+  fprintf(fp, "]\n");
+}
+
+// Create the Python file which will be used to compile the .pyx, .pxd, library,
 // and header files into a Python module.
 static void makePYFile() {
   fileinfo py = { NULL, NULL, NULL };
@@ -843,13 +872,38 @@ static void makePYFile() {
 
     std::vector<std::string> librariesImplicitPaths;  // '-lfoo'
     std::vector<std::string> librariesExplicitPaths;  // 'path/to/libfoo.a'
+    std::vector<std::string> librariesSearchPaths;    // '-Lpath/to/thing'
+
+    // The path to the selected runtime, then all implicit paths again.
+    //
+    // The runtime is specified via an absolute path, which means that it
+    // cannot be passed as part of the "libraries" argument of the
+    // "setuputils.Extension" constructor (it actually sanitizes that too).
+    //
+    // However, we seemingly can pass it as part of "extra_link_args", but
+    // this means that e.g., 'libchpl.a' appears at the _end_ of the linker
+    // invocation. This is a huge problem, because the static archive has
+    // dependencies of its own that must be resolved, e.g., from "-lhwloc".
+    //
+    // A cheeky/hacky solution to this issue is to just once again append
+    // all of the listed "-l<lib>" flags at the end in the extra link args.
+    //
+    // TODO: Another potential solution is to create an unambiguous symlink
+    //       to the runtime we need e.g., make "libchpl-static.a" in the
+    //       build directory, and use that with "-l".
+    std::vector<std::string> librariesExtraLinkArgs;
 
     // Get the libraries listed in require statements
     for_vector(const char, libName, libFiles) {
       librariesImplicitPaths.push_back(libName);
     }
 
-    bool escapePaths = false;
+    // Used to control precise placement when linking against the Chapel RT.
+    std::string rtPath = fBuiltinRuntime
+          ? CHPL_TARGET_STATIC_RUNTIME_LIB_PATH
+          : CHPL_TARGET_SHARED_RUNTIME_LIB_PATH;
+
+    const bool escapePaths = false;
     std::string libraries = getCompilelineOption("libraries", escapePaths);
 
     // Erase trailing newline and append multilocale-only dependencies.
@@ -859,48 +913,58 @@ static void makePYFile() {
       libraries += getCompilelineOption("multilocale-lib-deps");
     }
 
+    // Split the output up into strings, one per line.
     std::vector<std::string> libraryLines;
     splitStringWhitespace(libraries, libraryLines);
 
+    // E.g., '.so', '.dylib'.
+    auto sharedLibraryExt = sharedLibraryExtensionByPlatform();
+
+    // Mark the start of the '-l' flags needed by the runtime.
+    const size_t rtLibrariesImplicitStartIdx = librariesImplicitPaths.size();
+
     // Sort the output of '--libraries', organizing by '-lfoo' vs 'libfoo.a'.
     for (auto& line : libraryLines) {
+      int64_t sharedLibExtStartOffset = line.size() - sharedLibraryExt.size();
+
+      // Some paths may be symbolic, so expand them to real paths.
       expandInstallationPaths(line);
 
       if (line.find("-l") == 0) {
         auto got = line.substr(2, line.size());
         librariesImplicitPaths.push_back(std::move(got));
 
-      } else if (line.find(".a") == (line.size() - 2) ||
-                 line.find(".so") == (line.size() - 2)) {
+      } else if (line.find("-L") == 0) {
+        auto got = line.substr(2, line.size());
+        librariesSearchPaths.push_back(std::move(got));
+
+      } else if (line.find(sharedLibraryExt) == sharedLibExtStartOffset ||
+                 line.find(".a") == (line.size() - 2)) {
+        // Omit the runtime library. TODO: More accurate path comparison.
+        if (line == rtPath) continue;
+
         librariesExplicitPaths.push_back(line);
       }
     }
 
-    bool first = false;
-
-    // Print out a Python list for the implicit libraries.
-    fprintf(py.fptr, "chpl_libraries=[");
-    first = true;
-
-    for (auto& line : librariesImplicitPaths) {
-      fprintf(py.fptr, first ? "" : ", ");
-      first = false;
-      fprintf(py.fptr, "\"%s\"", line.c_str());
+    if (librariesExplicitPaths.size() != 0) {
+      INT_FATAL("Unexpected external path specified");
     }
 
-    fprintf(py.fptr, "]\n");
+    // Now assemble the extra link args as described in the comment above.
+    librariesExtraLinkArgs.push_back(rtPath);
 
-    // Print out a Python list for the explicit libraries.
-    fprintf(py.fptr, "chpl_extra_objects=[");
-    first = true;
-
-    for (auto& line : librariesExplicitPaths) {
-      fprintf(py.fptr, first ? "" : ", ");
-      first = false;
-      fprintf(py.fptr, "\"%s\"", line.c_str());
+    for (size_t i = rtLibrariesImplicitStartIdx;
+                i < librariesImplicitPaths.size(); i++) {
+      // E.g., '-lhwloc'...
+      std::string arg = "-l" + librariesImplicitPaths[i];
+      librariesExtraLinkArgs.push_back(std::move(arg));
     }
 
-    fprintf(py.fptr, "]\n");
+    printPythonList(py.fptr, "chpl_library_dirs", librariesSearchPaths, true);
+    printPythonList(py.fptr, "chpl_libraries", librariesImplicitPaths);
+    printPythonList(py.fptr, "chpl_extra_objects", librariesExplicitPaths);
+    printPythonList(py.fptr, "chpl_extra_link_args", librariesExtraLinkArgs);
 
     // Cythonize me, Captain!
     fprintf(py.fptr, "setup(name = '%s library',\n", pythonModulename.c_str());
@@ -908,10 +972,12 @@ static void makePYFile() {
     fprintf(py.fptr, "\t\tExtension(\"%s\",\n", pythonModulename.c_str());
     fprintf(py.fptr, "\t\t\tinclude_dirs=[numpy.get_include()],\n");
     fprintf(py.fptr, "\t\t\tsources=[\"%s.pyx\"],\n", pythonModulename.c_str());
-    fprintf(py.fptr, "\t\t\tlibraries=[\"%s\"] + chpl_libraries + [\"%s\"],",
+    fprintf(py.fptr, "\t\t\tlibrary_dirs=chpl_library_dirs,\n");
+    fprintf(py.fptr, "\t\t\tlibraries=[\"%s\"] + chpl_libraries + [\"%s\"],\n",
                      libname.c_str(),
                      libname.c_str());
-    fprintf(py.fptr, "\t\t\textra_objects=chpl_extra_objects)))\n");
+    fprintf(py.fptr, "\t\t\textra_objects=chpl_extra_objects,\n");
+    fprintf(py.fptr, "\t\t\textra_link_args=chpl_extra_link_args)))\n");
 
     gGenInfo->cfile = save_cfile;
   }
@@ -1071,4 +1137,9 @@ bool isMultiLocaleLibrary() {
 
 bool isClientServerLibrary() {
   return fClientServerLibrary || fClientServerLibraryDebug;
+}
+
+std::string sharedLibraryExtensionByPlatform() {
+  if (!strcmp(CHPL_TARGET_PLATFORM, "darwin")) return ".dylib";
+  return ".so";
 }

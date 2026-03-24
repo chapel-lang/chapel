@@ -70,6 +70,7 @@ const char* getLibraryExtension();
 bool isMultiLocaleLibrary();
 bool isClientServerLibrary();
 bool isUserRoutine(FnSymbol* fn);
+std::string sharedLibraryExtensionByPlatform();
 
 std::string getPythonTypeName(Type* type, PythonFileType pxd);
 
