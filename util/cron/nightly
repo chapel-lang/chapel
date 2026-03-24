@@ -438,6 +438,7 @@ if (exists($ENV{'CHPL_NIGHTLY_MAKE'})) {
     $make = `$utildir/chplenv/chpl_make.py`;
     chomp($make);
 }
+$make = "time $make";
 print "Using make: $make\n";
 
 
