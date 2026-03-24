@@ -1,2 +1,3 @@
 Created new application project: publishCheck
+Tip: To convert existing code to a mason project, move the driver application to the `src/publishCheck.chpl` file. For adding other source code, using submodules is the recommended approach to avoid namespace collisions.
 Unable to publish your package to the registry, make sure your package is a git repository.

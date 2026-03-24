@@ -25,7 +25,6 @@ use List;
 use MasonBuild;
 use MasonEnv;
 use MasonModify;
-use MasonNew;
 use MasonUpdate;
 use MasonUtils;
 use Random;

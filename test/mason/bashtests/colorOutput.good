@@ -1,6 +1,7 @@
 + rm -rf dummy
 + mason new dummy
 Created new application project: dummy
+Tip: To convert existing code to a mason project, move the driver application to the `src/dummy.chpl` file. For adding other source code, using submodules is the recommended approach to avoid namespace collisions.
 + cd dummy
 + export MASON_LOG_LEVEL=info
 + MASON_LOG_LEVEL=info

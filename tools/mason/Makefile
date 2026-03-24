@@ -31,25 +31,31 @@ endif
 
 unexport CHPL_MAKE_CHPLENV_CACHE
 
-bdir=$(CHPL_BIN_DIR)
-link=../../tools/mason/mason
-linkFile=$(bdir)/mason
+override CHPL_COMPILER ?= $(CHPL_BIN_DIR)/chpl
+outputFile=$(CHPL_BIN_DIR)/mason
 
 MASON_SOURCES=*.chpl
 
-all: $(bdir)/mason FORCE
+all: $(outputFile) FORCE
 
-mason: $(bdir)/mason FORCE
+mason: $(outputFile) FORCE
 
-install: $(bdir)/mason FORCE
+install: $(outputFile) FORCE
 
-$(bdir)/mason: $(MASON_SOURCES) buildMason
+$(outputFile): $(MASON_SOURCES) buildMason deps
 	@echo "Building Mason..."
-	@chplBinDir=$(bdir) DEBUG=$(DEBUG) ./buildMason
+	@CHPL_COMPILER=$(CHPL_COMPILER) outputFile=$(outputFile) DEBUG=$(DEBUG) ./buildMason
+
+deps:
+	./pullMasonDeps
+
+tarball-prep: deps
+	@echo "Preparing Mason for tarball..."
+	@rm ThirdParty/masonDeps.txt
 
 clean: FORCE
 	@echo "Removing Mason..."
-	rm -f $(bdir)/mason
+	rm -f $(outputFile)
 
 clobber: clean FORCE
 

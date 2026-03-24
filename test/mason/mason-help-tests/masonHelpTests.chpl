@@ -4,6 +4,7 @@ use Subprocess;
 // Test the output of all mason [cmd] -h
 
 proc main() {
+  checkOutput('mason -h');
   checkOutput('mason new -h');
   checkOutput('mason init -h');
   checkOutput('mason add -h');

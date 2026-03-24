@@ -1,7 +1,7 @@
 use MasonModify;
 use MasonExternal;
 use MasonBuild;
-use MasonInit;
+use MasonNewInit;
 
 proc main() {
   // Sets up Spack

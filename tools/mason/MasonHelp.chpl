@@ -194,7 +194,7 @@ proc masonHelp() {
       search      Search the registry for packages
       env         Print environment variables recognized by mason
       clean       Remove the target directory
-      doc         Build this project\'s documentation
+      doc         Build this project's documentation
       system      Integrate with system packages found via pkg-config
       test        Compile and run tests found in /test
       external    Integrate external dependencies into mason packages

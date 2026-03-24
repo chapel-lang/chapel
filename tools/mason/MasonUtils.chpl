@@ -444,20 +444,13 @@ proc getChapelVersionStr() throws {
 }
 
 proc gitC(newDir, command, quiet=false) throws {
-  var ret : string;
   const oldDir = here.cwd();
   here.chdir(newDir);
   defer here.chdir(oldDir);
-  ret = runCommand(command, quiet);
+  var ret = runCommand(command, quiet=quiet);
 
   return ret;
 }
-
-proc developerMode: bool {
-  const env = getEnv("CHPL_DEVELOPER");
-  return env != "";
-}
-
 
 proc getProjectHome(cwd: string, tomlName="Mason.toml") : string throws {
   const (dirname, basename) = splitPath(cwd);
@@ -868,68 +861,6 @@ proc showToml(tomlFile : string) {
   const toml = parseToml(openFile);
   writeln(toml);
   openFile.close();
-}
-
-/*
-  Takes projectName, vcs (version control), show as inputs and
-  initializes a library project at a directory of given projectName
-  A library project consists of .gitignore file, Mason.toml file, and
-  directories such as .git, src, example, test
-*/
-proc initProject(dirName, packageName, vcs, show,
-                 version: string, chplVersion: string, license: string,
-                 packageType: string, isNew: bool) throws {
-  if packageType == "light" {
-    const path = if dirName == "" then here.cwd() else dirName;
-    const lightName = if packageName == ""
-                        then basename(here.cwd())
-                        else packageName;
-
-    if isNew {
-      mkdir(dirName);
-    } else {
-      // only create the directory if it doesn't exist,
-      if !exists(dirName) then
-        mkdir(dirName);
-    }
-    makeBasicToml(dirName=lightName, path=path, version, chplVersion,
-                  license, packageType);
-  } else {
-    if vcs {
-      if !isNew {
-        if isDir(joinPath(dirName, ".git")) {
-          throw new MasonError("'" + dirName +
-                               "' is already a git repository. " +
-                               "Use `--no-vcs` to create a project " +
-                               "without initializing a git repository.");
-        }
-      }
-
-      gitInit(dirName, show);
-      addGitIgnore(dirName);
-    } else {
-      if isNew {
-        mkdir(dirName);
-      } else {
-        // only create the directory if it doesn't exist,
-        if !exists(dirName) then
-          mkdir(dirName);
-      }
-    }
-    // Confirm git init before creating files
-    if isDir(dirName) {
-      makeBasicToml(dirName=packageName, path=dirName, version, chplVersion,
-                    license, packageType);
-      makeSrcDir(dirName);
-      makeModule(dirName, fileName=packageName, packageType);
-    } else {
-      throw new MasonError("Failed to create project");
-    }
-  }
-  if packageName != "" then
-    writeln("Created new " + packageType + " project: " + packageName);
-  else
-    writeln("Created new " + packageType + " project: " + basename(here.cwd()));
 }
 
 /* Iterator to collect fields from a toml
