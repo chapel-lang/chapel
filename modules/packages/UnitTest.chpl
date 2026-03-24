@@ -1362,10 +1362,15 @@ module UnitTest {
 
   private proc testNameFromProcedure(f): string {
     var line = f: string;
-    assert(line.startsWith("proc") || line.startsWith("wide proc"));
+
+    var start : byteIndex;
+    if line.startsWith("proc") then start = 5;
+    else if (line.startsWith("wide proc")) then start = 10;
+    else assert(false, "Unexpected function format: " + line);
+
     var parenIndex = line.find("(");
     assert(parenIndex > -1);
-    var name = try! line[(5 : byteIndex)..<parenIndex];
+    var name = try! line[start..<parenIndex];
 
     // Adding parentheses to the end makes it easier to detect in stdout.
     return name + "()";
