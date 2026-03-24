@@ -1,4 +1,6 @@
 --test=Basic # masonTestRunner.Basic.good
 --test=Fail # masonTestRunner.Fail.good
 --test=Filter1 # masonTestRunner.Filter1.good
---test=FilterAll # masonTestRunner.Basic.good
+--test=Filter2 # masonTestRunner.Filter2.good
+--test=FilterDepends1 # masonTestRunner.FilterDepends1.good
+--test=FilterDepends2 # masonTestRunner.FilterDepends2.good

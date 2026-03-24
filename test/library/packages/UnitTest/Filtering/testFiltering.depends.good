@@ -1,9 +1,9 @@
-
+iHaveDependents()
+iAmADependency()
+Flavour: OK
 ======================================================================
-FAIL masonTestRunner-MyTest.chpl: test2()
 ----------------------------------------------------------------------
-AssertionError: in masonTestRunner-MyTest.chpl:11 - assertTrue failed. Given expression is False
-
+iHaveDependents()
+Flavour: OK
+======================================================================
 ----------------------------------------------------------------------
-
-FAILED (passed = 3 failures = 1 )

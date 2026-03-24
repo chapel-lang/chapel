@@ -5,3 +5,5 @@
 --filter='testA|testB' # testFiltering.AB.good
 --filter='test[A|B]' # testFiltering.AB.good
 --filter='testA|failing' # testFiltering.AFailing.good
+--filter='iHaveDependents' # testFiltering.depends.good
+--filter='iHaveDependents|iAmADependency' # testFiltering.explicitDepends.good
