@@ -822,27 +822,16 @@ static void makeOpaqueArrayClass() {
 }
 
 static void printPythonList(FILE* fp, const char* listName,
-                            const std::vector<std::string>& v,
-                            bool format=false) {
+                            const std::vector<std::string>& v) {
   fprintf(fp, "%s=[", listName);
 
   if (v.size() > 0) {
-    if (format) fprintf(fp, "\n");
-
     size_t i = 0;
+
     for (auto& line : v) {
-      bool last   = i == (v.size() - 1);
-
-      if (format) fprintf(fp, "\t");
+      bool last = i == (v.size() - 1);
       fprintf(fp, "\"%s\"", line.c_str());
-      if (!last) fprintf(fp, ",");
-
-      if (format) {
-        fprintf(fp, "\n");
-      } else if (!last) {
-        fprintf(fp, " ");
-      }
-
+      if (!last) fprintf(fp, ", ");
       i++;
     }
   }
@@ -870,9 +859,7 @@ static void makePYFile() {
     fprintf(py.fptr, "from Cython.Build import cythonize\n");
     fprintf(py.fptr, "import numpy\n\n");
 
-    std::vector<std::string> librariesImplicitPaths;  // '-lfoo'
-    std::vector<std::string> librariesExplicitPaths;  // 'path/to/libfoo.a'
-    std::vector<std::string> librariesSearchPaths;    // '-Lpath/to/thing'
+    std::vector<std::string> librariesImplicitPaths;
 
     // The path to the selected runtime, then all implicit paths again.
     //
@@ -898,7 +885,7 @@ static void makePYFile() {
       librariesImplicitPaths.push_back(libName);
     }
 
-    // Used to control precise placement when linking against the Chapel RT.
+    // Link against the required runtime variant using an absolute path.
     std::string rtPath = fBuiltinRuntime
           ? CHPL_TARGET_STATIC_RUNTIME_LIB_PATH
           : CHPL_TARGET_SHARED_RUNTIME_LIB_PATH;
@@ -917,13 +904,10 @@ static void makePYFile() {
     std::vector<std::string> libraryLines;
     splitStringWhitespace(libraries, libraryLines);
 
-    // E.g., '.so', '.dylib'.
-    auto sharedLibraryExt = sharedLibraryExtensionByPlatform();
-
     // Mark the start of the '-l' flags needed by the runtime.
     const size_t rtLibrariesImplicitStartIdx = librariesImplicitPaths.size();
 
-    // Sort the output of '--libraries', organizing by '-lfoo' vs 'libfoo.a'.
+    // Sort the output of '--libraries' and collect the '-lfoo' arguments.
     for (auto& line : libraryLines) {
       int64_t sharedLibExtStartOffset = line.size() - sharedLibraryExt.size();
 
@@ -935,20 +919,17 @@ static void makePYFile() {
         librariesImplicitPaths.push_back(std::move(got));
 
       } else if (line.find("-L") == 0) {
-        auto got = line.substr(2, line.size());
-        librariesSearchPaths.push_back(std::move(got));
+        // OK, it's a library search path. Ignore it.
+        continue;
 
-      } else if (line.find(sharedLibraryExt) == sharedLibExtStartOffset ||
-                 line.find(".a") == (line.size() - 2)) {
+      } else if (line == rtPath) {
         // Omit the runtime library. TODO: More accurate path comparison.
-        if (line == rtPath) continue;
+        continue;
 
-        librariesExplicitPaths.push_back(line);
+      } else {
+        // Otherwise, it shouldn't be in the output of this command...
+        INT_FATAL("Unexpected linker flag");
       }
-    }
-
-    if (librariesExplicitPaths.size() != 0) {
-      INT_FATAL("Unexpected external path specified");
     }
 
     // Now assemble the extra link args as described in the comment above.
@@ -961,9 +942,7 @@ static void makePYFile() {
       librariesExtraLinkArgs.push_back(std::move(arg));
     }
 
-    printPythonList(py.fptr, "chpl_library_dirs", librariesSearchPaths, true);
     printPythonList(py.fptr, "chpl_libraries", librariesImplicitPaths);
-    printPythonList(py.fptr, "chpl_extra_objects", librariesExplicitPaths);
     printPythonList(py.fptr, "chpl_extra_link_args", librariesExtraLinkArgs);
 
     // Cythonize me, Captain!
@@ -972,11 +951,9 @@ static void makePYFile() {
     fprintf(py.fptr, "\t\tExtension(\"%s\",\n", pythonModulename.c_str());
     fprintf(py.fptr, "\t\t\tinclude_dirs=[numpy.get_include()],\n");
     fprintf(py.fptr, "\t\t\tsources=[\"%s.pyx\"],\n", pythonModulename.c_str());
-    fprintf(py.fptr, "\t\t\tlibrary_dirs=chpl_library_dirs,\n");
     fprintf(py.fptr, "\t\t\tlibraries=[\"%s\"] + chpl_libraries + [\"%s\"],\n",
                      libname.c_str(),
                      libname.c_str());
-    fprintf(py.fptr, "\t\t\textra_objects=chpl_extra_objects,\n");
     fprintf(py.fptr, "\t\t\textra_link_args=chpl_extra_link_args)))\n");
 
     gGenInfo->cfile = save_cfile;
