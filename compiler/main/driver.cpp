@@ -2653,6 +2653,8 @@ static void dynoConfigureContext(std::string chpl_module_path) {
   gContext = new chpl::Context(*oldContext, std::move(config));
   delete oldContext;
 
+  gDynoErrorHandler = dynoPrepareAndInstallErrorHandler();
+
   // set up the clang arguments
 #ifdef HAVE_LLVM
   {
@@ -2799,6 +2801,15 @@ int main(int argc, char* argv[]) {
   if (!driverInSubInvocation) {
     printStuff(argv[0]);
     validateSettings();
+  }
+
+  if (!driverInSubInvocation) {
+    // only realize errors in the main driver, to avoid duplicates
+    if (dynoRealizeErrors()) USR_STOP();
+  } else {
+    // even if we have errors to show, just clear them. they should have already
+    // been reported in the driver
+    dynoClearErrors();
   }
 
   if (fDynoTimingPath[0] != '\0' &&
