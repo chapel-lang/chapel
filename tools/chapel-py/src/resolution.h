@@ -45,3 +45,5 @@ findTestFunctionsForModule(chpl::Context* context, const chpl::uast::Module* mod
 const chpl::uast::FnCall* const&
 findUnitTestMainForModule(chpl::Context* context, const chpl::uast::Module* mod);
 
+std::pair<const chpl::resolution::TypedFnSignature*, const chpl::resolution::PoiScope*> const&
+makeDefaultRectangular(chpl::Context* context, const chpl::resolution::TypedFnSignature* sig, const chpl::resolution::PoiScope* poiScope);

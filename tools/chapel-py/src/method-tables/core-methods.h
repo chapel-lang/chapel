@@ -217,6 +217,16 @@ CLASS_BEGIN(TypedSignature)
                bool, return node->signature->instantiatedFrom() != nullptr)
   PLAIN_GETTER(TypedSignature, ast, "Get the AST from which this function signature is computed",
                Nilable<const chpl::uast::AstNode*>, return chpl::parsing::idToAst(context, node->signature->id()))
+  PLAIN_GETTER(TypedSignature, rectangularize, "Replace all generic array formals in this signature with default-rectangular arrays, if possible",
+               std::optional<TypedSignatureObject*>,
+
+               auto sig = node->signature;
+               auto poi = node->poiScope;
+               auto result = makeDefaultRectangular(context, sig, poi);
+               if (result.first) {
+                  return TypedSignatureObject::create(contextObject, {result.first, result.second});
+               }
+               return {})
 CLASS_END(TypedSignature)
 
 CLASS_BEGIN(ApplicabilityResult)

@@ -7261,21 +7261,9 @@ static bool handleArrayTypeExpr(Resolver& rv,
     // Propagate error from domain or element type
     arrayType =
         QualifiedType(QualifiedType::TYPE, ErroneousType::get(rv.context));
-  } else if (domainType.type() == genericDomainType.type()) {
-    // Preserve eltType info, if we have it.
-    if (!eltType.isUnknown() && !eltType.isTypeQuery()) {
-      auto domainTypeAsType =
-          QualifiedType(QualifiedType::TYPE, domainType.type());
-      arrayType = QualifiedType(
-          QualifiedType::TYPE,
-          ArrayType::getArrayType(
-              rv.context,
-              /* instance */
-              QualifiedType(QualifiedType::VAR, getAnyType(rv, loop->id())),
-              /* domainType */ domainTypeAsType,
-              /* eltType */ eltType));
-    }
   } else if (ignoreInstanceInArrayOrDomain(rv, loop)) {
+    computeUninstanced = true;
+  } else if (domainType.type() == genericDomainType.type()) {
     computeUninstanced = true;
   } else {
     // We have an instantiated domain, so get array type via call to its
