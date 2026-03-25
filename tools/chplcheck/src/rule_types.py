@@ -37,6 +37,7 @@ def _build_ignore_fixit(
     text = f'@chplcheck.ignore("{rule_name}")\n' + indent + text
     ignore = Fixit.build(Edit.build(loc, text))
     ignore.description = "Ignore this warning"
+    ignore.default_ignore = True
     return ignore
 
 

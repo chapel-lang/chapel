@@ -74,6 +74,7 @@ class Edit:
 class Fixit:
     edits: typing.List[Edit]
     description: typing.Optional[str] = None
+    default_ignore: bool = False
 
     @classmethod
     def build(cls, *edits: Edit) -> "Fixit":
@@ -84,6 +85,7 @@ class Fixit:
         return {
             "edits": [Edit.to_dict(e) for e in fixit.edits],
             "description": fixit.description if fixit.description else "",
+            "default_ignore": fixit.default_ignore,
         }
 
     @classmethod
@@ -97,5 +99,6 @@ class Fixit:
             if e is not None:
                 edits.append(e)
         desc = data.get("description", None)
+        default_ignore = data.get("default_ignore", False)
 
-        return Fixit(edits, desc)
+        return Fixit(edits, desc, default_ignore)
