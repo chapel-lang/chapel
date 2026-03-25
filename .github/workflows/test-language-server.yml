@@ -1,7 +1,11 @@
-name: Test Chapel Language Server
+name: Test chpl-language-server
 
 on:
   workflow_dispatch:
+  pull_request:
+    paths:
+      - 'tools/chapel-py/**'
+      - 'tools/chpl-language-server/**'
 
 jobs:
   test_chpl_language_server:
