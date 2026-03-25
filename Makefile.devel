@@ -114,6 +114,9 @@ MASON_MODULES_TO_LINT = $(shell find $(CHPL_MAKE_HOME)/tools/mason -name '*.chpl
 lint-mason: chplcheck FORCE
 	tools/chplcheck/chplcheck $(MASON_MODULES_TO_LINT)
 
+mason-deps: FORCE
+	cd tools/mason && $(MAKE) deps
+
 run-frontend-linters: FORCE
 	@cd compiler && $(MAKE) run-frontend-linters
 
