@@ -67,3 +67,5 @@ myDep = { git = "$myDepPath", rev = "$REV" }
 EOF
 runChecks
 echo "================="
+
+(cd myDep && rm -rf .git)
