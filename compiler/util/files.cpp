@@ -1113,14 +1113,6 @@ void expandInstallationPaths(std::vector<std::string>& args) {
   }
 }
 
-bool isDirectory(std::string_view path) {
-  return llvm::sys::fs::is_directory(path);
-}
-
-bool pathExists(std::string_view path) {
-  return llvm::sys::fs::exists(path);
-}
-
 // would just use realpath, but it is not supported on all platforms.
 char* chplRealPath(const char* path)
 {

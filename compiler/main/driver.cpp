@@ -1057,6 +1057,14 @@ static void addModulePath(const ArgumentDescription* desc, const char* newpath) 
   cmdLineModPaths.push_back(std::string(newpath));
 }
 
+static void addInternalModulePath(const ArgumentDescription* desc, const char* newpath) {
+  gDynoPrependInternalModulePaths.push_back(newpath);
+}
+
+static void addStandardModulePath(const ArgumentDescription* desc, const char* newpath) {
+  gDynoPrependStandardModulePaths.push_back(newpath);
+}
+
 static void noteCppLinesSet(const ArgumentDescription* desc, const char* unused) {
   userSetCppLineno = true;
 }
@@ -1302,7 +1310,7 @@ static void driverSetDevelSettings(const ArgumentDescription* desc, const char* 
   }
 }
 
-void addDynoGenLib(const ArgumentDescription* desc, const char* newpath) {
+static void addDynoGenLib(const ArgumentDescription* desc, const char* newpath) {
   if (fDynoGenLib) {
     USR_FATAL("cannot have multiple --dyno-gen-lib / --dyno-gen-std flags");
   }
@@ -2420,7 +2428,7 @@ static void checkRuntimeBuilt(void) {
   runtime_dir += "/";
   runtime_dir += CHPL_RUNTIME_SUBDIR;
 
-  if (!isDirectory(runtime_dir.c_str())) {
+  if (!chpl::directoryExists(runtime_dir.c_str())) {
     const char* module_home = getenv("CHPL_MODULE_HOME");
     if (module_home) {
       USR_FATAL("The requested configuration is not included in the module. "
@@ -2447,7 +2455,7 @@ static void checkRuntimeBuilt(void) {
   launcher_dir += CHPL_LAUNCHER_SUBDIR;
 
   if (strcmp(CHPL_LAUNCHER, "none") != 0 &&
-      !isDirectory(launcher_dir.c_str())) {
+      !chpl::directoryExists(launcher_dir.c_str())) {
     USR_FATAL_CONT("There is no CHPL_LAUNCHER=%s for the current configuration.",
                    CHPL_LAUNCHER);
     if (developer) {
@@ -2645,6 +2653,8 @@ static void dynoConfigureContext(std::string chpl_module_path) {
   gContext = new chpl::Context(*oldContext, std::move(config));
   delete oldContext;
 
+  gDynoErrorHandler = dynoPrepareAndInstallErrorHandler();
+
   // set up the clang arguments
 #ifdef HAVE_LLVM
   {
@@ -2791,6 +2801,15 @@ int main(int argc, char* argv[]) {
   if (!driverInSubInvocation) {
     printStuff(argv[0]);
     validateSettings();
+  }
+
+  if (!driverInSubInvocation) {
+    // only realize errors in the main driver, to avoid duplicates
+    if (dynoRealizeErrors()) USR_STOP();
+  } else {
+    // even if we have errors to show, just clear them. they should have already
+    // been reported in the driver
+    dynoClearErrors();
   }
 
   if (fDynoTimingPath[0] != '\0' &&

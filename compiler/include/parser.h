@@ -49,13 +49,6 @@ extern chpl::ID dynoIdForLastContainingDecl;
 
 void               parseAndConvertUast();
 
-void addInternalModulePath(const ArgumentDescription* desc,
-                           const char* newpath);
-void addStandardModulePath(const ArgumentDescription* desc,
-                           const char* newpath);
-void addDynoGenLib(const ArgumentDescription* desc,
-                   const char* newpath);
-
 void noteParsedIncludedModule(ModuleSymbol* mod, const char* path);
 
 #endif

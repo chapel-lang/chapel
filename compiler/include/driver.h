@@ -367,8 +367,10 @@ extern bool fNoIODeserializeReadThis;
 namespace chpl {
   class Context;
 }
+class DynoErrorHandler;
 
 extern chpl::Context* gContext;
+extern DynoErrorHandler* gDynoErrorHandler;
 
 extern std::vector<std::pair<std::string, std::string>> gDynoParams;
 
@@ -382,5 +384,12 @@ extern std::unordered_set<const char*> gDynoGenLibModuleNameAstrs;
 extern std::string gMainModuleName;
 
 extern bool fForeachIntents;
+
+// Call to insert an instance of the error handler above into the context.
+DynoErrorHandler* dynoPrepareAndInstallErrorHandler(void);
+
+void dynoClearErrors(void);
+bool dynoRealizeErrors(void);
+bool dynoRealizeDeferredErrors(void);
 
 #endif
