@@ -120,7 +120,9 @@ chapel-py-venv: FORCE $(CHPL_VENV_VIRTUALENV_DIR_OK)
 	export VIRTUAL_ENV=$(CHPL_VENV_VIRTUALENV_DIR) && \
 	CC=$(shell which $(CHPL_MAKE_HOST_CC)) \
 	CXX=$(shell which $(CHPL_MAKE_HOST_CXX)) \
-	CHPL_HOME=$(CHPL_MAKE_HOME) $(PIP) install --upgrade \
+	CMAKE_GENERATOR="Unix Makefiles" \
+	CHPL_HOME=$(CHPL_MAKE_HOME) \
+	  $(PIP) install --upgrade \
 	  $(CHAPEL_PY_VENV_EXTRA_FLAGS) \
 	  $(CHPL_PIP_INSTALL_PARAMS) $(LOCAL_PIP_FLAGS) \
 	  --target $(CHPL_VENV_CHPL_FRONTEND_PY_DEPS) \
