@@ -1,1 +1,1 @@
-error: The path 'AddNonDir-symlink-file' is not a directory and cannot be added to the module search path
+<command line>: error: path provided by -M/--module-dir is not a directory: AddNonDir-symlink-file

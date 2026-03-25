@@ -1,10 +1,10 @@
--M nonexistentdir           # AddNonDirToModulePath.1.good
--M AddNonDir-dir            # AddNonDirToModulePath.2.good
--M AddNonDir-file.txt       # AddNonDirToModulePath.3.good
--M AddNonDir-symlink-dir    # AddNonDirToModulePath.4.good
--M AddNonDir-symlink-file   # AddNonDirToModulePath.5.good
+-M nonexistentdir -M AddNonDir-dir # AddNonDirToModulePath.1.good
+-M AddNonDir-dir                   # AddNonDirToModulePath.2.good
+-M AddNonDir-file.txt              # AddNonDirToModulePath.3.good
+-M AddNonDir-symlink-dir           # AddNonDirToModulePath.4.good
+-M AddNonDir-symlink-file          # AddNonDirToModulePath.5.good
 
---prepend-internal-module-dir nonexistentdir     # AddNonDirToModulePath.1.good
---prepend-internal-module-dir AddNonDir-file.txt # AddNonDirToModulePath.3.good
---prepend-standard-module-dir nonexistentdir     # AddNonDirToModulePath.1.good
---prepend-standard-module-dir AddNonDir-file.txt # AddNonDirToModulePath.3.good
+-M AddNonDir-dir --prepend-internal-module-dir nonexistentdir     # AddNonDirToModulePath.6.good
+-M AddNonDir-dir --prepend-internal-module-dir AddNonDir-file.txt # AddNonDirToModulePath.7.good
+-M AddNonDir-dir --prepend-standard-module-dir nonexistentdir     # AddNonDirToModulePath.8.good
+-M AddNonDir-dir --prepend-standard-module-dir AddNonDir-file.txt # AddNonDirToModulePath.9.good
