@@ -183,7 +183,7 @@ proc masonTest(args: [] string) throws {
     }
 
     updateLock(skipUpdate);
-    compopts.pushBack("".join("--comm=",comm));
+    compopts.pushBack("--comm="+comm);
     runTests(show, run, parallel, filter, skipUpdate, compopts);
   } catch e: MasonError {
     try! {
@@ -352,6 +352,10 @@ private proc runTests(show: bool, run: bool, parallel: bool, filter: string,
         }
         const outputLoc =
           joinPath(projectHome, "target", "test", stripExt(testTemp, ".chpl"));
+        const outputDir = Path.dirname(outputLoc);
+        if !exists(outputDir) {
+          mkdir(outputDir, parents=true);
+        }
         var compCommand = new list(string);
         compCommand.pushBack(["chpl", testPath, projectPath, "-o", outputLoc]);
         compCommand.pushBack(compopts);
