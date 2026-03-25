@@ -556,7 +556,7 @@ def _validate_rocm_llvm_version_impl(gpu: gpu_type):
                 and int(chpl_llvm.get_llvm_version()) < 21
             ):
                 error(
-                    "Cannot target AMD GPUs with ROCm 6.3 without CHPL_LLVM=bundled or LLVM 21+"
+                    "Cannot target AMD GPUs with ROCm 6.3+ without CHPL_LLVM=bundled or LLVM 21+"
                 )
     elif major_version == "7":
         # requires LLVM 21+
