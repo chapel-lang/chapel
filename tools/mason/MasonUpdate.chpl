@@ -584,7 +584,8 @@ private proc pullGitDeps(gitDeps, show=false) {
         if show then pullDependency = "git fetch --all";
         gitC(destination, pullDependency);
 
-        // make sure to reset to the remote branch to get the latest revision if revision is not specified
+        // make sure to reset to the remote branch to get the latest revision
+        // if revision is not specified
         var remoteBranch = "origin/" + branch;
         var reset = "git reset -q --hard " + remoteBranch;
         if show {
