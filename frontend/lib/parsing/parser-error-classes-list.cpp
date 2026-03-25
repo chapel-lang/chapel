@@ -289,6 +289,14 @@ void ErrorUseImportNeedsModule::write(ErrorWriterBase& wr) const {
   wr.codeForLocation(loc);
 }
 
+void ErrorEmptyEnum::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info_);
+  wr.heading(kind_, type_, loc,
+             "enums cannot be empty.");
+  wr.message("Empty enum here:");
+  wr.code(loc);
+}
+
 // catch-alls for simple parsing errors
 
 void ErrorParseErr::write(ErrorWriterBase& wr) const {
