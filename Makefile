@@ -137,7 +137,7 @@ third-party-chapel-py-venv: FORCE
 
 test-venv: third-party-test-venv
 
-chapel-py-venv: frontend-shared
+chapel-py-venv: frontend-shared modules
 	$(MAKE) third-party-chapel-py-venv
 
 chpldoc: third-party-chpldoc-venv
@@ -189,13 +189,13 @@ c2chapel: third-party-c2chapel-venv FORCE
 	cd tools/c2chapel && $(MAKE)
 	cd tools/c2chapel && $(MAKE) install
 
-chplcheck: frontend-shared FORCE
+chplcheck: frontend-shared modules FORCE
 	@# chplcheck's build files take care of ensuring the virtual env is built.
 	@# Best not to depend on chapel-py-venv here, because at the time of
 	@# writing this target is always FORCEd (so we'd end up building it twice).
 	cd tools/chplcheck && $(MAKE) all install
 
-chpl-language-server: frontend-shared FORCE
+chpl-language-server: frontend-shared modules FORCE
 	@# chpl-language-server's build files take care of ensuring the virtual
 	@# env is built. Best not to depend on chapel-py-venv here, because at
 	@# the time of writing this target is always FORCEd (so we'd end up
