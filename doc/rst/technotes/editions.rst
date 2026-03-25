@@ -153,3 +153,6 @@ remain in the preview until they are deemed sufficiently complete.
   will be inferred as their parent class ``Parent`` instead of producing
   an error. See the note in the :ref:`Implicit_Return_Types` section for
   more details.
+
+- The ``string.contains()`` and ``bytes.contains()`` methods return whether
+  a given pattern is found within the receiver string or bytes value.

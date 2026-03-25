@@ -7,114 +7,137 @@ x.___("Hello")
 count: 1
 find: 0
 rfind: 0
+contains: true
 
 x.___("Hello", 1..)
 count: 0
 find: -1
 rfind: -1
+contains: false
 
 x.___("hello")
 count: 2
 find: 7
 rfind: 14
+contains: true
 
 x.___("hello", 13..)
 count: 1
 find: 14
 rfind: 14
+contains: true
 
 y.___("Allô")
 count: 1
 find: 0
 rfind: 0
+contains: true
 
 y.___("Allô", 1..)
 count: 0
 find: -1
 rfind: -1
+contains: false
 
 y.___("allô")
 count: 2
 find: 7
 rfind: 14
+contains: true
 
 y.___("allô", 11..)
 count: 1
 find: 14
 rfind: 14
+contains: true
 
 c.___("c")
 count: 28
 find: 0
 rfind: 27
+contains: true
 
 c.___("c", ..8)
 count: 9
 find: 0
 rfind: 8
+contains: true
 
 c.___("C")
 count: 0
 find: -1
 rfind: -1
+contains: false
 
 c.___("C", 4..8)
 count: 0
 find: -1
 rfind: -1
+contains: false
 
 d.___("ç")
 count: 28
 find: 0
 rfind: 54
+contains: true
 
 d.___("ç", ..17)
 count: 18
 find: 0
 rfind: 34
+contains: true
 
 d.___("Ç")
 count: 0
 find: -1
 rfind: -1
+contains: false
 
 d.___("Ç", 8..17)
 count: 0
 find: -1
 rfind: -1
+contains: false
 
 x.___("")
 count: 20
 find: -1
 rfind: 19
+contains: false
 
 x.___("", 8..14)
 count: 8
 find: -1
 rfind: 7
+contains: false
 
 "".___(x)
 count: 0
 find: -1
 rfind: -1
+contains: false
 
 y.___("")
 count: 17
 find: -1
 rfind: 19
+contains: false
 
 y.___("", 8..14)
 count: 8
 find: -1
 rfind: 8
+contains: false
 
 "".___(y)
 count: 0
 find: -1
 rfind: -1
+contains: false
 
 "".___("")
 count: 1
 find: -1
 rfind: -1
+contains: false
 
