@@ -412,7 +412,7 @@ async def test_lenses_default_rect_twoargs(client: LanguageClient):
         default_inlays,
     ]
 
-    await click_lenses_and_check_inlays(client, file, expected_lens, all_inlays)
+    await click_lenses_and_check_inlays(client, expected_lens, all_inlays, A=file)
 
 
 @pytest.mark.asyncio
@@ -454,7 +454,7 @@ async def test_lenses_default_rect_other_args(client: LanguageClient):
         default_inlays,
     ]
 
-    await click_lenses_and_check_inlays(client, file, expected_lens, all_inlays)
+    await click_lenses_and_check_inlays(client, expected_lens, all_inlays, A=file)
 
 
 @pytest.mark.asyncio
@@ -497,7 +497,7 @@ async def test_lenses_default_rect_with_calls(client: LanguageClient):
         default_inlays,
     ]
 
-    await click_lenses_and_check_inlays(client, file, expected_lens, all_inlays)
+    await click_lenses_and_check_inlays(client, expected_lens, all_inlays, A=file)
 
 
 @pytest.mark.asyncio
