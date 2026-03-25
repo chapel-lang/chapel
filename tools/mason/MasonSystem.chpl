@@ -188,7 +188,7 @@ proc getPkgInfo(pkgName: string, version: string) throws {
 
   const pcVersion = getPkgVariable(pkgName, "--modversion");
   const libs = getPkgVariable(pkgName, "--libs");
-  const includePath = getPkgVariable(pkgName, "--variable=includedir");
+  const includes = getPkgVariable(pkgName, "--cflags-only-I");
 
   if pcVersion == "" && !pkgExists(pkgName) {
     throw new MasonError("No pkg-config package by the name of: " + pkgName);
@@ -197,7 +197,7 @@ proc getPkgInfo(pkgName: string, version: string) throws {
   pkgInfo.set("name", pkgName);
   pkgInfo.set("version", pcVersion);
   pkgInfo.set("libs", libs);
-  pkgInfo.set("include", includePath);
+  pkgInfo.set("includes", includes);
 
   if pcVersion != version && version != "*" {
     throw new MasonError("Unable to locate " + pkgName +

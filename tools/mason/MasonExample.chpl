@@ -228,8 +228,7 @@ private proc getBuildInfo(projectHome: string,
           var val = v!;
           select k {
             when "libs" do compopts.pushBack(parseCompilerOptions(val));
-            when "include" do
-              if val.s != "" then compopts.pushBack("-I" + val.s);
+            when "includes" do compopts.pushBack(parseCompilerOptions(val));
             otherwise continue;
           }
         }

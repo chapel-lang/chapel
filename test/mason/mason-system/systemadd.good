@@ -63,19 +63,19 @@ version = "0.1.0"
 [system]
 
 [system.dummy]
-include = "/my/usr/include"
+includes = "-I/my/usr/include"
 libs = "-L/my/usr/lib -ldummy"
 name = "dummy"
 version = "10.9.8"
 
 [system.forGoodMeasure]
-include = "/my/usr/include"
+includes = "-I/my/usr/include"
 libs = "-L/my/usr/lib -Wl,-rpath,/my/usr/lib -lforGoodMeasure"
 name = "forGoodMeasure"
 version = "4.2"
 
 [system.myOtherPackage]
-include = ""
+includes = ""
 libs = "-sMyOtherChapelReal=3.14 -sMyOtherChapelInt=17"
 name = "myOtherPackage"
 version = "1"
@@ -113,19 +113,19 @@ version = "0.1.0"
 [system]
 
 [system.dummy]
-include = "/my/usr/include"
+includes = "-I/my/usr/include"
 libs = "-L/my/usr/lib -ldummy"
 name = "dummy"
 version = "10.9.8"
 
 [system.forGoodMeasure]
-include = "/my/usr/include"
+includes = "-I/my/usr/include"
 libs = "-L/my/usr/lib -Wl,-rpath,/my/usr/lib -lforGoodMeasure"
 name = "forGoodMeasure"
 version = "4.2"
 
 [system.myOtherPackage]
-include = ""
+includes = ""
 libs = "-sMyOtherChapelReal=3.14 -sMyOtherChapelInt=17"
 name = "myOtherPackage"
 version = "1"
