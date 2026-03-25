@@ -202,6 +202,13 @@ workflow beyond the basics. For example, you could:
 
 * Build and publish documentation for your package using GitHub Pages
 
+  .. note::
+
+     This example assumes you have configured your GitHub repository to publish
+     from a GitHub Action. You can do this by going to your repository's
+     settings, navigating to the "Pages" section, and selecting "GitHub Actions"
+     as the source for your Pages deployment.
+
   .. code-block:: yaml
 
       name: doc
