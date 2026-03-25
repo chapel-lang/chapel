@@ -1,0 +1,165 @@
++++ dirname $CHPL_HOME/test/mason/git-deps/gitDeps.masontest
+++ cd $CHPL_HOME/test/mason/git-deps
+++ pwd
++ CWD=$CHPL_HOME/test/mason/git-deps
++ myDepPath=$CHPL_HOME/test/mason/git-deps/myDep
++ echo 'TESTING: basic git dependency'
+TESTING: basic git dependency
++ cd myDep
++ rm -rf .git
++ git init
+Initialized empty Git repository in $CHPL_HOME/test/mason/git-deps/myDep/.git/
++ git add .
++ git commit -m 'initial commit'
++ cat
++ runChecks
++ cd myApp
++ mason clean
++ mason build
+Updating registry
+Downloading dependency: myDep-HEAD
+Checking out specified revision for myDep-HEAD...
+Compiling [debug] target: myApp
+Build Successful
+
++ mason run
+New mason package: myApp
+myAppConfig: 123
+myDep.getAll(): (42, 456)
++ mason build -- -smyDepConfig=17
+Updating registry
+Fetching latest changes for: myDep-HEAD...
+Checking out specified revision for myDep-HEAD...
+Checking out specified revision for myDep-HEAD...
+Compiling [debug] target: myApp
+Build Successful
+
++ mason run
+New mason package: myApp
+myAppConfig: 123
+myDep.getAll(): (42, 17)
++ mason test
+Updating registry
+Fetching latest changes for: myDep-HEAD...
+Checking out specified revision for myDep-HEAD...
+Checking out specified revision for myDep-HEAD...
+
+----------------------------------------------------------------------
+Ran 1 test in n seconds
+
+OK (passed = 1 )
++ mason build --example example.chpl
+Updating registry
+Fetching latest changes for: myDep-HEAD...
+Checking out specified revision for myDep-HEAD...
+Checking out specified revision for myDep-HEAD...
+compiled example.chpl successfully
++ mason run --example example.chpl
+myApp example
+myAppConfig: 123
+myDep.getAll(): (42, 456)
++ cd ..
++ echo =================
+=================
++ echo 'TESTING: git dependency with branch specified'
+TESTING: git dependency with branch specified
++ cd myDep
++ git checkout -b myBranch
+Switched to a new branch 'myBranch'
++ cat
++ runChecks
++ cd myApp
++ mason clean
++ mason build
+Updating registry
+Downloading dependency: myDep-myBranch
+Checking out specified revision for myDep-myBranch...
+Compiling [debug] target: myApp
+Build Successful
+
++ mason run
+New mason package: myApp
+myAppConfig: 123
+myDep.getAll(): (42, 456)
++ mason build -- -smyDepConfig=17
+Updating registry
+Fetching latest changes for: myDep-myBranch...
+Checking out specified revision for myDep-myBranch...
+Checking out specified revision for myDep-myBranch...
+Compiling [debug] target: myApp
+Build Successful
+
++ mason run
+New mason package: myApp
+myAppConfig: 123
+myDep.getAll(): (42, 17)
++ mason test
+Updating registry
+Fetching latest changes for: myDep-myBranch...
+Checking out specified revision for myDep-myBranch...
+Checking out specified revision for myDep-myBranch...
+
+----------------------------------------------------------------------
+Ran 1 test in n seconds
+
+OK (passed = 1 )
++ mason build --example example.chpl
+Updating registry
+Fetching latest changes for: myDep-myBranch...
+Checking out specified revision for myDep-myBranch...
+Checking out specified revision for myDep-myBranch...
+compiled example.chpl successfully
++ mason run --example example.chpl
+myApp example
+myAppConfig: 123
+myDep.getAll(): (42, 456)
++ cd ..
++ echo =================
+=================
++ echo 'TESTING: git dependency with revision specified'
+TESTING: git dependency with revision specified
+++ cd myDep
+++ git rev-parse HEAD
++ cat
++ runChecks
++ cd myApp
++ mason clean
++ mason build
+Updating registry
+Checking out specified revision for myDep-HEAD...
+Compiling [debug] target: myApp
+Build Successful
+
++ mason run
+New mason package: myApp
+myAppConfig: 123
+myDep.getAll(): (42, 456)
++ mason build -- -smyDepConfig=17
+Updating registry
+Checking out specified revision for myDep-HEAD...
+Compiling [debug] target: myApp
+Build Successful
+
++ mason run
+New mason package: myApp
+myAppConfig: 123
+myDep.getAll(): (42, 17)
++ mason test
+Updating registry
+Checking out specified revision for myDep-HEAD...
+
+----------------------------------------------------------------------
+Ran 1 test in n seconds
+
+OK (passed = 1 )
++ mason build --example example.chpl
+Updating registry
+Checking out specified revision for myDep-HEAD...
+compiled example.chpl successfully
++ mason run --example example.chpl
+myApp example
+myAppConfig: 123
+myDep.getAll(): (42, 456)
++ cd ..
++ echo =================
+=================
