@@ -92,6 +92,11 @@ def apply_fixits(
     not_applied = []
     edits_to_apply = []
     for loc, node, rule, fixits in violations:
+        if not interactive:
+            # Do not apply fixits that change semantics automatically.
+            # Too easy to accidentally break a program without a user knowing.
+            fixits = [f for f in fixits if not f.changes_semantics]
+
         if fixits is None or len(fixits) == 0:
             # no fixits to apply, skip
             not_applied.append((loc, node, rule, []))

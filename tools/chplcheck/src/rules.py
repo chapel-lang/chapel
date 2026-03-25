@@ -1113,6 +1113,7 @@ def rules(driver: LintDriver):
         edit_open = Edit(path, do_start, do_end, "{")
 
         fixit = Fixit.build(edit_close, edit_open)
+        fixit.changes_semantics = True
         return [fixit]
 
     @driver.advanced_rule
