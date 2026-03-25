@@ -316,9 +316,14 @@ private proc createDepTrees(depTree: Toml,
     var package     = brick["name"]!.s;
     var version     = brick["version"]!.s;
     var chplVersion = brick["chplVersion"]!.s;
-    var source      = brick["source"]!.s;
+    var source      = if brick.pathExists("source")
+                        then brick["source"]!.s else "";
     var compopts    = brick.get["compopts"];
     var system      = dep.get["system"];
+
+    if source == "" {
+      log.warnf("No source specified for package '%s'\n", package);
+    }
 
     if depTree.pathExists(package) {
       var verToUse = IVRS(brick, depTree[package]!);
@@ -572,28 +577,26 @@ private proc pullGitDeps(gitDeps, show=false) {
       }
       gitDepsWithRevision.pushBack((val, srcURL, branch, revision));
     } else {
-      if revision != "" {
+      var shouldUpdate = revision == "";
+      if shouldUpdate {
         writeln("Fetching latest changes for: " + nameVers + "...");
         var pullDependency = "git fetch -q --all";
         if show then pullDependency = "git fetch --all";
         gitC(destination, pullDependency);
+
+        // make sure to reset to the remote branch to get the latest revision if revision is not specified
+        var remoteBranch = "origin/" + branch;
+        var reset = "git reset -q --hard " + remoteBranch;
+        if show {
+          reset = "git reset --hard " + remoteBranch;
+        }
+        gitC(destination, reset);
 
         writeln("Checking out specified revision for " + nameVers + "...");
         // Use the revision to checkout, if specified
-        var checkout = "git checkout -q " + revision;
-        if show then checkout = "git checkout " + revision;
-
-        gitC(destination, checkout);
-      } else if branch != "HEAD" {
-        writeln("Fetching latest changes for: " + nameVers + "...");
-        var pullDependency = "git fetch -q --all";
-        if show then pullDependency = "git fetch --all";
-        gitC(destination, pullDependency);
-
-        writeln("Checking out specified revision for " + nameVers + "...");
-
-        var checkout = "git checkout -q " + branch;
-        if show then checkout = "git checkout " + branch;
+        var toCheckout = if revision != "" then revision else branch;
+        var checkout = "git checkout -q " + toCheckout;
+        if show then checkout = "git checkout " + toCheckout;
 
         gitC(destination, checkout);
       }

@@ -70,7 +70,7 @@ proc masonModules(args: [] string) throws {
   // generate list of dependencies and get src code
   var (sourceList, gitList) = genSourceList(lockFile);
   getSrcCode(sourceList, skipUpdate, false);
-  getGitCode(gitList, false);
+  getGitCode(gitList, skipUpdate, false);
 
   const depPath = joinPath(MASON_HOME, 'src');
   const gitDepPath = joinPath(MASON_HOME, 'git');
