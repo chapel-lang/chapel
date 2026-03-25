@@ -739,7 +739,7 @@ static void test18internal() {
   assert(vars.at("j").type());
   assert(vars.at("j").type()->isEnumType());
 
-  assert(guard.realizeErrors() == 1);
+  assert(guard.realizeErrors(/*countWarnings*/false) == 1);
 }
 
 // regression test: we used to generate `e : e` formals, which was not valid.

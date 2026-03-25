@@ -714,11 +714,13 @@ void setupModuleSearchPaths(
 
   // add the internal module paths
   for (auto& path : prependInternalModulePaths) {
-    if (checkModulePath(context, path, "--prepend-internal-module-dir")) {
-      searchPath.push_back(path);
-      UniqueString uPath = UniqueString::get(context, path);
-      uPrependedInternalModulePaths.push_back(uPath);
-    }
+    // check the path, but don't skip adding it to the path. This supports
+    // testing with fake filesystems where the paths may not actually exist.
+    // this is a developer only flag anyways, so no big deal
+    std::ignore = checkModulePath(context, path, "--prepend-internal-module-dir");
+    searchPath.push_back(path);
+    UniqueString uPath = UniqueString::get(context, path);
+    uPrependedInternalModulePaths.push_back(uPath);
   }
 
   setPrependedInternalModulePath(context, uPrependedInternalModulePaths);
@@ -736,11 +738,13 @@ void setupModuleSearchPaths(
 
   // move on to standard modules
   for (auto& path : prependStandardModulePaths) {
-    if (checkModulePath(context, path, "--prepend-standard-module-dir")) {
-      searchPath.push_back(path);
-      UniqueString uPath = UniqueString::get(context, path);
-      uPrependedStandardModulePaths.push_back(uPath);
-    }
+    // check the path, but don't skip adding it to the path. This supports
+    // testing with fake filesystems where the paths may not actually exist.
+    // this is a developer only flag anyways, so no big deal
+    std::ignore = checkModulePath(context, path, "--prepend-standard-module-dir");
+    searchPath.push_back(path);
+    UniqueString uPath = UniqueString::get(context, path);
+    uPrependedStandardModulePaths.push_back(uPath);
   }
 
   setPrependedStandardModulePath(context, uPrependedStandardModulePaths);
