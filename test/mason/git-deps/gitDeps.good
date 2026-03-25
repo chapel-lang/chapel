@@ -7,7 +7,7 @@
 TESTING: basic git dependency
 + cd myDep
 + rm -rf .git
-+ git init
++ git init -b main
 Initialized empty Git repository in $CHPL_HOME/test/mason/git-deps/myDep/.git/
 + git add .
 + git commit -m 'initial commit'
