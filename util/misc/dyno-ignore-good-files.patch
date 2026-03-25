@@ -1676,19 +1676,19 @@ index 5114b18582c..bc61a3ed040 100644
 +partialTypeFormal.chpl:19: error: unable to resolve call to 'foo': no matching candidates
 +partialTypeFormal.chpl:9: note: the following candidate didn't match because an actual couldn't be passed to a formal
 diff --git a/test/types/range/bradc/promoteRange.good b/test/types/range/bradc/promoteRange.good
-index 8fd05775f9f..3588826ecb6 100644
+index 8fd05775f9f..2ebcc28875e 100644
 --- a/test/types/range/bradc/promoteRange.good
 +++ b/test/types/range/bradc/promoteRange.good
 @@ -1 +1 @@
 -promoteRange.chpl:1: error: Ranges defined using bounds of type 'int(64)..range(int(64),both,one)' are not currently supported
-+promoteRange.chpl:1: error: Ranges defined using bounds of type 'int(64)..range(int(64), both, one)' are not currently supported
++promoteRange.chpl:1: error: Ranges defined using bounds of type 'int(64)..range(int(64), boundKind.both, strideKind.one)' are not currently supported
 diff --git a/test/types/range/bradc/promoteRange2.good b/test/types/range/bradc/promoteRange2.good
-index 1ac497ddfc4..24015e2643e 100644
+index 1ac497ddfc4..3b83e5953e6 100644
 --- a/test/types/range/bradc/promoteRange2.good
 +++ b/test/types/range/bradc/promoteRange2.good
 @@ -1 +1 @@
 -promoteRange2.chpl:1: error: Ranges defined using bounds of type 'range(int(64),both,one)..int(64)' are not currently supported
-+promoteRange2.chpl:1: error: Ranges defined using bounds of type 'range(int(64), both, one)..int(64)' are not currently supported
++promoteRange2.chpl:1: error: Ranges defined using bounds of type 'range(int(64), boundKind.both, strideKind.one)..int(64)' are not currently supported
 diff --git a/test/types/range/cast-assign-init/casts-4.good b/test/types/range/cast-assign-init/casts-4.good
 index 3199c922469..178c1d52b4a 100644
 --- a/test/types/range/cast-assign-init/casts-4.good
@@ -1869,12 +1869,12 @@ index 00000000000..50247f550ee
 +../../../../util/test/prediff-obscure-module-linenos
 \ No newline at end of file
 diff --git a/test/types/range/diten/badRange.good b/test/types/range/diten/badRange.good
-index e9e8fff5529..5673cfca5b9 100644
+index e9e8fff5529..30479bb8de7 100644
 --- a/test/types/range/diten/badRange.good
 +++ b/test/types/range/diten/badRange.good
 @@ -1 +1 @@
 -badRange.chpl:1: error: Ranges defined using bounds of type 'range(int(64),neither,one)' are not currently supported
-+badRange.chpl:1: error: Ranges defined using bounds of type 'range(int(64), neither, one)' are not currently supported
++badRange.chpl:1: error: Ranges defined using bounds of type 'range(int(64), boundKind.neither, strideKind.one)' are not currently supported
 diff --git a/test/types/range/diten/rangecastbounds.bounded.good b/test/types/range/diten/rangecastbounds.bounded.good
 index 7cf95ac0130..10e61332dcd 100644
 --- a/test/types/range/diten/rangecastbounds.bounded.good
@@ -1908,12 +1908,12 @@ index 0e3cdafc66f..eb0c4dd49ca 100644
 +$CHPL_HOME/modules/internal/ChapelRange.chpl:1666: In function ':':
 +$CHPL_HOME/modules/internal/ChapelRange.chpl:1668: error: cannot cast range from boundKind.both to boundKind.neither
 diff --git a/test/types/range/elliot/badRangeLiterals/badCountedLowBoundedRange.good b/test/types/range/elliot/badRangeLiterals/badCountedLowBoundedRange.good
-index efa1a94fdd1..6ea7dfe6dc4 100644
+index efa1a94fdd1..e1ac1c558c5 100644
 --- a/test/types/range/elliot/badRangeLiterals/badCountedLowBoundedRange.good
 +++ b/test/types/range/elliot/badRangeLiterals/badCountedLowBoundedRange.good
 @@ -1 +1 @@
 -badCountedLowBoundedRange.chpl:3: error: can't apply '#' to a range with idxType int(64) using a count of type real(64)
-+badCountedLowBoundedRange.chpl:3: error: cannot apply '#' to 'range(int(64), low, one)'
++badCountedLowBoundedRange.chpl:3: error: cannot apply '#' to 'range(int(64), boundKind.low, strideKind.one)'
 diff --git a/test/types/range/enum/castEnumRange2.good b/test/types/range/enum/castEnumRange2.good
 index 2b96d691ebb..e5fc6b3763b 100644
 --- a/test/types/range/enum/castEnumRange2.good
@@ -4247,26 +4247,26 @@ index f08ef8e5adb..92f7d6e78ea 100644
 +tuple-blank-to-ref.chpl:15: error: unable to resolve call to 'byref': no matching candidates
 +tuple-blank-to-ref.chpl:5: note: the following candidate didn't match because an actual couldn't be passed to a formal
 diff --git a/test/types/tuple/ferguson/tuple-from-array-error.good b/test/types/tuple/ferguson/tuple-from-array-error.good
-index 66a7d159a73..7fe9d34115a 100644
+index 66a7d159a73..1e6dc676953 100644
 --- a/test/types/tuple/ferguson/tuple-from-array-error.good
 +++ b/test/types/tuple/ferguson/tuple-from-array-error.good
 @@ -1 +1 @@
 -tuple-from-array-error.chpl:2: error: illegal tuple variable declaration with non-tuple initializer
-+tuple-from-array-error.chpl:2: error: value of non-tuple type '[domain(1,int(64),one)] int(64)' cannot be split using a tuple declaration
++tuple-from-array-error.chpl:2: error: value of non-tuple type '[domain(1, int(64), strideKind.one)] int(64)' cannot be split using a tuple declaration
 diff --git a/test/types/tuple/ferguson/tuple-from-array-for-error.good b/test/types/tuple/ferguson/tuple-from-array-for-error.good
-index 520d264565d..119e88be343 100644
+index 520d264565d..8cb0dc05806 100644
 --- a/test/types/tuple/ferguson/tuple-from-array-for-error.good
 +++ b/test/types/tuple/ferguson/tuple-from-array-for-error.good
 @@ -1 +1 @@
 -tuple-from-array-for-error.chpl:10: error: illegal tuple variable declaration with non-tuple initializer
-+tuple-from-array-for-error.chpl:10: error: value of non-tuple type '[domain(1,int(64),one)] int(64)' cannot be split using a tuple declaration
++tuple-from-array-for-error.chpl:10: error: value of non-tuple type '[domain(1, int(64), strideKind.one)] int(64)' cannot be split using a tuple declaration
 diff --git a/test/types/tuple/ferguson/tuple-from-array-forall-error.good b/test/types/tuple/ferguson/tuple-from-array-forall-error.good
-index d0f2221e02d..6cdae41bfcc 100644
+index d0f2221e02d..c1c95f06d7c 100644
 --- a/test/types/tuple/ferguson/tuple-from-array-forall-error.good
 +++ b/test/types/tuple/ferguson/tuple-from-array-forall-error.good
 @@ -1 +1 @@
 -tuple-from-array-forall-error.chpl:10: error: illegal tuple variable declaration with non-tuple initializer
-+tuple-from-array-forall-error.chpl:10: error: value of non-tuple type '[domain(1,int(64),one)] int(64)' cannot be split using a tuple declaration
++tuple-from-array-forall-error.chpl:10: error: value of non-tuple type '[domain(1, int(64), strideKind.one)] int(64)' cannot be split using a tuple declaration
 diff --git a/test/types/tuple/ferguson/tuple-size-mismatch-for.good b/test/types/tuple/ferguson/tuple-size-mismatch-for.good
 index 55921aca3d5..1291e1ee788 100644
 --- a/test/types/tuple/ferguson/tuple-size-mismatch-for.good
