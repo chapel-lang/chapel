@@ -222,8 +222,9 @@ CLASS_BEGIN(TypedSignature)
 
                auto sig = node->signature;
                auto poi = node->poiScope;
-               if (auto newSig = makeDefaultRectangular(context, sig, poi)) {
-                  return TypedSignatureObject::create(contextObject, {newSig, poi});
+               auto result = makeDefaultRectangular(context, sig, poi);
+               if (result.first) {
+                  return TypedSignatureObject::create(contextObject, {result.first, result.second});
                }
                return {})
 CLASS_END(TypedSignature)

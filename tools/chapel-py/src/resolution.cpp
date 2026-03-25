@@ -576,10 +576,11 @@ static QualifiedType const& computeDefaultRectangularArray(chpl::Context* contex
   return QUERY_END(result);
 }
 
-const chpl::resolution::TypedFnSignature* const&
+std::pair<const chpl::resolution::TypedFnSignature*, const chpl::resolution::PoiScope*> const&
 makeDefaultRectangular(chpl::Context* context, const chpl::resolution::TypedFnSignature* sig, const chpl::resolution::PoiScope* poiScope) {
   QUERY_BEGIN(makeDefaultRectangular, context, sig, poiScope);
   const resolution::TypedFnSignature* result = nullptr;
+  const resolution::PoiScope* poiScopeForResult = nullptr;
 
   bool attemptRectangularization = true;
   bool foundArrays = false;
@@ -590,7 +591,7 @@ makeDefaultRectangular(chpl::Context* context, const chpl::resolution::TypedFnSi
       !sig->untyped()->isTypeConstructor()) {
 
     auto rc = createDummyRC(context);
-    auto scope = scopeForId(context, sig->id());
+    auto scope = scopeForId(context, sig->id())->parentScope();
     auto fnAst = parsing::idToAst(context, sig->id());
 
     for (int i = 0; i < sig->numFormals(); i++) {
@@ -689,9 +690,10 @@ makeDefaultRectangular(chpl::Context* context, const chpl::resolution::TypedFnSi
         auto c = resolveGeneratedCall(&rc, /* astForScopeOrErr */ fnAst, ci, CallScopeInfo::forNormalCall(scope, poiScope));
         if (!c.mostSpecific().isEmpty() && !c.exprType().isUnknownOrErroneous()) {
           result = c.mostSpecific().only().fn();
+          poiScopeForResult = c.poiInfo().poiScope();
         }
     }
   }
 
-  return QUERY_END(result);
+  return QUERY_END(std::make_pair(result, poiScopeForResult));
 }
