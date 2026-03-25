@@ -13,11 +13,11 @@ writeln(i);
   writeln("second thing");
 
   // for multiline statements, best we can do is add curly braces.
-  for i in 1..10 {
+  @chplcheck.ignore("MisleadingIndentation")
+  for i in 1..10 do
     writeln(i);
     writeln
     ("second thing");
-  }
 
   // the only fixit here is ignore, don't know the indentation level
   @chplcheck.ignore("IncorrectIndentation")
@@ -81,9 +81,10 @@ writeln(i);
         writeln("Hello, world!");
   writeln("Hello, world!");
 
+  @chplcheck.ignore("MisleadingIndentation")
   for 1..10 do
     for 1..10 do
-      for 1..10 {
+      for 1..10 do
         writeln("Hello, world!");
         writeln(
             "Hello, world!"
@@ -91,5 +92,4 @@ writeln(i);
         writeln(
             "Hello, world!"
         );
-      }
 }
