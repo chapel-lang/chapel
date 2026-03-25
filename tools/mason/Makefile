@@ -36,21 +36,23 @@ outputFile=$(CHPL_BIN_DIR)/mason
 
 MASON_SOURCES=*.chpl
 
+.PHONY: all mason install deps tarball-prep clean clobber FORCE
 all: $(outputFile) FORCE
-
-mason: $(outputFile) FORCE
 
 install: $(outputFile) FORCE
 
-$(outputFile): $(MASON_SOURCES) buildMason deps
+$(outputFile): $(MASON_SOURCES) buildMason
+	@$(MAKE) deps
 	@echo "Building Mason..."
 	@CHPL_COMPILER=$(CHPL_COMPILER) outputFile=$(outputFile) DEBUG=$(DEBUG) ./buildMason
 
-deps:
-	./pullMasonDeps
+deps: pullMasonDeps ThirdParty/masonDeps.txt
+	@echo "Pulling Mason dependencies..."
+	@./pullMasonDeps
 
-tarball-prep: deps
+tarball-prep: FORCE
 	@echo "Preparing Mason for tarball..."
+	@$(MAKE) deps
 	@rm ThirdParty/masonDeps.txt
 
 clean: FORCE
@@ -58,5 +60,7 @@ clean: FORCE
 	rm -f $(outputFile)
 
 clobber: clean FORCE
+	@echo "Removing Mason dependencies..."
+	@find ThirdParty -type f -not -path '*/.gitignore' -not -path '*/masonDeps.txt' -exec rm {} +
 
 FORCE:
