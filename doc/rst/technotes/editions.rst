@@ -154,6 +154,5 @@ remain in the preview until they are deemed sufficiently complete.
   an error. See the note in the :ref:`Implicit_Return_Types` section for
   more details.
 
-- The ``string.contains()`` and ``bytes.contains()`` methods have been
-  stabilized, removing the unstable warning when compiling with
-  ``--edition=preview``.
+- The ``string.contains()`` and ``bytes.contains()`` methods return whether
+  a given pattern is found within the receiver string or bytes value.
