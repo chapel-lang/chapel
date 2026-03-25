@@ -64,14 +64,17 @@ proc install() {
 iter chplFlags(const baseDir = here.cwd()) {
   var flags: list(string);
 
-  const cmd = ["make", "MASON_PACKAGE_HOME=" + baseDir,
-                "--quiet", makeTargetChplFlags];
+  const cmd = ["make",
+               "CHPL_HOME=" + MasonUtils.CHPL_HOME,
+               "MASON_PACKAGE_HOME=" + baseDir,
+               "--quiet", makeTargetChplFlags];
   for prereq in prereqs(baseDir) {
     var makeOutput: string;
     manage pushd(prereq) do makeOutput = MasonUtils.runCommand(cmd).strip();
 
     for pFlag in makeOutput.split(" ") {
-      yield pFlag;
+      if pFlag.strip() != "" then
+        yield pFlag.strip();
     }
   }
 }
