@@ -969,31 +969,7 @@ class UserMapAssocArr: AbsBaseArr(?) {
     }
   }
 
-
-  //
-  // how to print out the whole array, sequentially
-  //
-  proc dsiSerialWrite(f) {
-    use IO;
-
-    var binary = f._binary();
-    var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
-    var isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
-    var ischpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !binary;
-
-    var printBraces = (isjson || ischpl);
-
-    if printBraces then f.writeLiteral("[");
-
-    var first = true;
-    for locArr in locArrs {
-      locArr!.myElems._value.dsiSerialReadWrite(f, printBraces=false, first);
-    }
-    if printBraces then f.writeLiteral("]");
-
-  }
-
-  proc dsiSerialWrite(f) throws where f.serializerType != nothing {
+  proc dsiSerialWrite(f) throws {
     use IO;
     if isDefaultSerializerType(f.serializerType) {
       var ser = f.serializer.startArray(f, dom.dsiNumIndices:int);

@@ -40,12 +40,9 @@ typedef uint8_t style_char_t;
 
 #define QIO_STYLE_ELEMENT_STRING 1
 #define QIO_STYLE_ELEMENT_COMPLEX 2
-#define QIO_STYLE_ELEMENT_ARRAY 3
 #define QIO_STYLE_ELEMENT_AGGREGATE 4
-#define QIO_STYLE_ELEMENT_TUPLE 5
 #define QIO_STYLE_ELEMENT_BYTE_ORDER 6
 #define QIO_STYLE_ELEMENT_IS_NATIVE_BYTE_ORDER 7
-#define QIO_STYLE_ELEMENT_SKIP_UNKNOWN_FIELDS 8
 
 
 // If these values change, also change iostringformat in IO.chpl
@@ -62,18 +59,6 @@ typedef uint8_t style_char_t;
 #define QIO_COMPLEX_FORMAT_ABI 0x0
 #define QIO_COMPLEX_FORMAT_PARENS 0x1
 #define QIO_COMPLEX_FORMAT_PART 0xf
-
-#define QIO_ARRAY_FORMAT_SPACE 0
-#define QIO_ARRAY_FORMAT_CHPL 1
-#define QIO_ARRAY_FORMAT_JSON 2
-
-#define QIO_AGGREGATE_FORMAT_BRACES 0
-#define QIO_AGGREGATE_FORMAT_CHPL 1
-#define QIO_AGGREGATE_FORMAT_JSON 2
-
-#define QIO_TUPLE_FORMAT_CHPL 0
-#define QIO_TUPLE_FORMAT_SPACE 1
-#define QIO_TUPLE_FORMAT_JSON 2
 
 
 #define QIO_STRSTYLE_VLEN (-10)
@@ -200,30 +185,6 @@ typedef struct qio_style_s {
   // QIO_COMPLEX_FORMAT_READ_STRICT -- do not accept the other format when reading
   uint8_t complex_style;
 
-  // arrays (not directly supported by QIO but used in Chapel)
-  // QIO_ARRAY_FORMAT_SPACE space in 1st dimensions, \n in later dims
-  // QIO_ARRAY_FORMAT_CHPL make it look like an anonymous array [1,3,4]
-  // QIO_ARRAY_FORMAT_JSON make it look like a JSON array [1,2]
-  uint8_t array_style;
-
-  // aggregates (not directly supported by QIO but used in Chapel)
-  // (includes records, classes, unions)
-  // QIO_AGGREGATE_FORMAT_BRACES record/union:(a=1) class:{a=1}
-  // QIO_AGGREGATE_FORMAT_CHPL call chpl constructor: new Something(a=1)
-  // QIO_AGGREGATE_FORMAT_JSON show JSON object: {a:1, b:2}
-  uint8_t aggregate_style;
-
-  // tuples (not directly supported by QIO but used in Chapel)
-  // QIO_TUPLE_FORMAT_SPACE space separates all values
-  // QIO_TUPLE_FORMAT_CHPL make it look like (a,b,c)
-  // QIO_TUPLE_FORMAT_JSON make it look like a JSON array [1,2]
-  uint8_t tuple_style;
-
-  // If this is set, skip any unknown record/class fields
-  // when reading (ie the data to read might have more fields
-  // than a record, and the additional fields will be ignored).
-  uint8_t skip_unknown_fields;
-
 } qio_style_t;
 
 typedef qio_style_t _qio_style_ptr_t;
@@ -279,10 +240,6 @@ void qio_style_init_default(qio_style_t* s)
   s->realfmt = 0;
 
   s->complex_style = 0;
-
-  s->array_style = 0;
-  s->aggregate_style = 0;
-  s->tuple_style = 0;
 }
 
 static inline

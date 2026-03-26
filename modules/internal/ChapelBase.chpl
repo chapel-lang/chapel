@@ -3241,24 +3241,9 @@ module ChapelBase {
   // and in e.g. implementations of those in Tuple.
   extern const QIO_STYLE_ELEMENT_STRING:int;
   extern const QIO_STYLE_ELEMENT_COMPLEX:int;
-  extern const QIO_STYLE_ELEMENT_ARRAY:int;
   extern const QIO_STYLE_ELEMENT_AGGREGATE:int;
-  extern const QIO_STYLE_ELEMENT_TUPLE:int;
   extern const QIO_STYLE_ELEMENT_BYTE_ORDER:int;
   extern const QIO_STYLE_ELEMENT_IS_NATIVE_BYTE_ORDER:int;
-  extern const QIO_STYLE_ELEMENT_SKIP_UNKNOWN_FIELDS:int;
-
-  extern const QIO_ARRAY_FORMAT_SPACE:int;
-  extern const QIO_ARRAY_FORMAT_CHPL:int;
-  extern const QIO_ARRAY_FORMAT_JSON:int;
-
-  extern const QIO_AGGREGATE_FORMAT_BRACES:int;
-  extern const QIO_AGGREGATE_FORMAT_CHPL:int;
-  extern const QIO_AGGREGATE_FORMAT_JSON:int;
-
-  extern const QIO_TUPLE_FORMAT_CHPL:int;
-  extern const QIO_TUPLE_FORMAT_SPACE:int;
-  extern const QIO_TUPLE_FORMAT_JSON:int;
 
   // Support for module deinit functions.
   class chpl_ModuleDeinit : writeSerializable {

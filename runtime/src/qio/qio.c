@@ -4611,9 +4611,6 @@ int64_t qio_channel_style_element(qio_channel_t* ch, int64_t element)
 {
   if( element == QIO_STYLE_ELEMENT_STRING ) return ch->style.str_style;
   if( element == QIO_STYLE_ELEMENT_COMPLEX ) return ch->style.complex_style;
-  if( element == QIO_STYLE_ELEMENT_ARRAY ) return ch->style.array_style;
-  if( element == QIO_STYLE_ELEMENT_AGGREGATE ) return ch->style.aggregate_style;
-  if( element == QIO_STYLE_ELEMENT_TUPLE ) return ch->style.tuple_style;
   if( element == QIO_STYLE_ELEMENT_BYTE_ORDER ) return ch->style.byteorder;
 # if __BYTE_ORDER == __LITTLE_ENDIAN
   if( element == QIO_STYLE_ELEMENT_IS_NATIVE_BYTE_ORDER ) {
@@ -4626,8 +4623,6 @@ int64_t qio_channel_style_element(qio_channel_t* ch, int64_t element)
             ch->style.byteorder == QIO_NATIVE) ? 1 : 0;
   }
 #endif // __BYTE_ORDER
-  if( element == QIO_STYLE_ELEMENT_SKIP_UNKNOWN_FIELDS )
-    return ch->style.skip_unknown_fields;
   return 0;
 }
 

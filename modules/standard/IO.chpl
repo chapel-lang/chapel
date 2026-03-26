@@ -974,9 +974,6 @@ extern record iostyleInternal { // aka qio_style_t
   var realfmt:uint(8) = 0;
 
   var complex_style:uint(8) = 0;
-  var array_style:uint(8) = 0;
-  var aggregate_style:uint(8) = 0;
-  var tuple_style:uint(8) = 0;
 }
 
 // This class helps in implementing runtime calls.
@@ -5778,11 +5775,9 @@ private proc _read_text_internal(_channel_internal:qio_channel_ptr_t,
     return ret;
   } else if isEnumType(t) {
     var err:errorCode = 0;
-    var st = qio_channel_style_element(_channel_internal, QIO_STYLE_ELEMENT_AGGREGATE);
     for i in t {
       { // try to read e.g. red for colorenum.red
         var str = i:string;
-        if st == QIO_AGGREGATE_FORMAT_JSON then str = '"'+str+'"';
         var slen:c_ssize_t = str.numBytes.safeCast(c_ssize_t);
         err = qio_channel_scan_literal(false, _channel_internal, str.c_str(), slen, 1);
         if !err {
@@ -5793,7 +5788,6 @@ private proc _read_text_internal(_channel_internal:qio_channel_ptr_t,
 
       { // try to read e.g. colorenum.red for colorenum.red
         var str = t:string + "." + i:string;
-        if st == QIO_AGGREGATE_FORMAT_JSON then str = '"'+str+'"';
         var slen:c_ssize_t = str.numBytes.safeCast(c_ssize_t);
         err = qio_channel_scan_literal(false, _channel_internal, str.c_str(), slen, 1);
         if !err {
@@ -5841,9 +5835,7 @@ private proc _write_text_internal(_channel_internal:qio_channel_ptr_t, x:?t):err
     const local_x = x.localize();
     return qio_channel_print_bytes(false, _channel_internal, local_x.c_str(), local_x.numBytes:c_ssize_t);
   } else if isEnumType(t) {
-    var st = qio_channel_style_element(_channel_internal, QIO_STYLE_ELEMENT_AGGREGATE);
     var s = x:string;
-    if st == QIO_AGGREGATE_FORMAT_JSON then s = '"'+s+'"';
     return qio_channel_print_literal(false, _channel_internal, s.c_str(), s.numBytes:c_ssize_t);
   } else {
     compilerError("Unknown primitive type in _write_text_internal ", t:string);
@@ -6250,107 +6242,6 @@ private proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
   return e;
 }
 
-pragma 'fn exempt instantiation limit'
-private proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
-                                       param kind:_iokind,
-                                       ref x:?t,
-                                       loc:locale): errorCode throws {
-  // Create a new fileReader that borrows the pointer in the
-  // existing fileReader so we can avoid locking (because we
-  // already have the lock)
-  var temp : shared _serializeWrapper(nothing);
-  var reader = new fileReader(locking=false,
-                              _deserializer=temp,
-                              home=here,
-                              _channel_internal=_channel_internal,
-                              _readWriteThisFromLocale=loc);
-
-  // Set the fileReader pointer to NULL to make the
-  // destruction of the local reader record safe
-  // (it shouldn't release anything since it's a local copy).
-  defer { reader._channel_internal = QIO_CHANNEL_PTR_NULL; }
-
-  if isNilableClassType(t) {
-    // future - write class IDs, have serialization format, handle binary
-    var st = reader.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
-    var iolit:chpl_ioLiteral;
-    if st == QIO_AGGREGATE_FORMAT_JSON {
-      iolit = new chpl_ioLiteral("null");
-    } else {
-      iolit = new chpl_ioLiteral("nil");
-    }
-    var e:errorCode = 0;
-    e = try _read_one_internal(_channel_internal, _iokind.dynamic, iolit, loc);
-    if !e {
-      x = nil;
-      return 0;
-    }
-  }
-
-  if isClassType(t) {
-    if x == nil then
-      throw new IllegalArgumentError("cannot read into a nil class");
-
-    var tmp = x!;
-    try tmp.readThis(reader);
-    // the read cannot change the class pointer
-    if tmp != x! then halt ("internal error - class pointer changed");
-  } else {
-    try x.readThis(reader);
-  }
-
-  return 0;
-}
-
-pragma "suppress lvalue error"
-pragma 'fn exempt instantiation limit'
-private proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
-                                        param kind:_iokind,
-                                        const x:?t,
-                                        loc:locale): errorCode throws {
-  // Create a new fileWriter that borrows the pointer in the
-  // existing fileWriter so we can avoid locking (because we
-  // already have the lock)
-  var temp : shared _serializeWrapper(nothing);
-  var writer = new fileWriter(locking=false,
-                              _serializer=temp,
-                              home=here,
-                              _channel_internal=_channel_internal,
-                              _readWriteThisFromLocale=loc);
-
-  // Set the fileWriter pointer to NULL to make the
-  // destruction of the local writer record safe
-  // (it shouldn't release anything since it's a local copy).
-  defer { writer._channel_internal = QIO_CHANNEL_PTR_NULL; }
-
-  var err: errorCode = 0;
-
-  if isClassType(t) || chpl_isDdata(t) || isAnyCPtr(t) {
-    if x == nil {
-      // future - write class IDs, have serialization format, handle binary
-      var st = writer.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
-      var iolit:chpl_ioLiteral;
-      if st == QIO_AGGREGATE_FORMAT_JSON {
-        iolit = new chpl_ioLiteral("null");
-      } else {
-        iolit = new chpl_ioLiteral("nil");
-      }
-      err = try _write_one_internal(_channel_internal, _iokind.dynamic,
-                                    iolit, loc);
-    } else if isClassType(t) {
-      var notNilX = x!;
-      try notNilX.writeThis(writer);
-    } else {
-      // ddata / cptr
-      try x.writeThis(writer);
-    }
-  } else {
-    try x.writeThis(writer);
-  }
-
-  return err;
-}
-
 private proc literalErrorHelper(x: ?t, action: string,
                                 isLiteral: bool): string {
   // Error message construction is handled here so that messages are
@@ -6646,24 +6537,6 @@ proc fileWriter.writeNewline() : void throws {
     const err = qio_channel_write_newline(false, _channel_internal);
     try _checkLiteralError("", err, "writing", isLiteral=false);
   }
-}
-
-@chpldoc.nodoc
-proc fileReader._binary():bool {
-  var ret:uint(8);
-  on this._home {
-    ret = qio_channel_binary(_channel_internal);
-  }
-  return ret != 0;
-}
-
-@chpldoc.nodoc
-proc fileWriter._binary():bool {
-  var ret:uint(8);
-  on this._home {
-    ret = qio_channel_binary(_channel_internal);
-  }
-  return ret != 0;
 }
 
 /* return other style elements. */
