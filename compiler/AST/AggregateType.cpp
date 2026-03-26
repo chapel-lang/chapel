@@ -2262,7 +2262,7 @@ void AggregateType::buildDefaultInitializer() {
     fn->insertFormalAtTail(_mt);
     fn->insertFormalAtTail(_this);
 
-    if (this->isUnion() == false) {
+    if (!this->isUnion()) {
       std::set<const char*> names;
       SymbolMap fieldArgMap;
 
@@ -2306,7 +2306,7 @@ void AggregateType::buildDefaultInitializer() {
 
       fn->insertAtTail(new CallExpr(PRIM_SET_UNION_ID,
                                     fn->_this,
-                                    new_IntSymbol(0)));
+                                    new_IntSymbol(-1)));
 
       normalize(fn);
 
@@ -2395,7 +2395,7 @@ void AggregateType::buildReaderInitializer() {
     fn->insertFormalAtTail(reader);
     fn->insertFormalAtTail(deser);
 
-    if (this->isUnion() == false) {
+    if (!this->isUnion()) {
       std::set<const char*> names;
       SymbolMap fieldArgMap;
 
@@ -2595,7 +2595,7 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
 
           if (typeExpr != nullptr) {
             CallExpr* desField = new CallExpr("readField", gMethodToken, desHelper,
-                                               new CallExpr(PRIM_FIELD_NUM_TO_NAME, fn->_this, new_IntSymbol(fieldNum)),
+                                               new CallExpr(PRIM_FIELD_NUM_TO_NAME, fn->_this, new_IntSymbol(fieldNum)), // TODO FIXME
                                                typeExpr);
             fn->insertAtTail(new CallExpr("=",
                                           new CallExpr(".",
@@ -2791,11 +2791,11 @@ void AggregateType::buildCopyInitializer() {
       fn->insertAtHead(new CallExpr(PRIM_ASSIGN, fn->_this, other));
 
     } else if (aggregateTag == AGGREGATE_UNION) {
-      // set field ID to 0 and then rely on field accessor
+      // set field ID to -1 and then rely on field accessor
       // call below to set it to the right value (and default init)
       fn->insertAtTail(new CallExpr(PRIM_SET_UNION_ID,
                                     fn->_this,
-                                    new_IntSymbol(0)));
+                                    new_IntSymbol(-1)));
 
       for_fields(fieldDefExpr, this) {
         if (VarSymbol* field = toVarSymbol(fieldDefExpr)) {
@@ -3106,18 +3106,18 @@ void AggregateType::discoverParentAndCheck(Expr* storesName,
     USR_FATAL(storesName, "Illegal super class %s", ts->name);
   }
 
-  if (isUnion() == true && pt->isUnion() == true) {
+  if (isUnion() && pt->isUnion()) {
     USR_FATAL(storesName, "Illegal inheritance involving union type");
   }
 
-  if (isRecord() == true && pt->isClass() == true) {
+  if (isRecord() && pt->isClass()) {
     USR_FATAL(storesName,
               "Record %s inherits from class %s",
               symbol->name,
               pt->symbol->name);
   }
 
-  if (isClass() == true && pt->isRecord() == true) {
+  if (isClass() && pt->isRecord()) {
     USR_FATAL(storesName,
               "Class %s inherits from record %s",
               symbol->name,

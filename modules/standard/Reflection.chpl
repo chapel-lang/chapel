@@ -57,12 +57,6 @@ pragma "suppress generic actual warning"
 proc getNumFields(type t) param : int do
   return __primitive("num fields", checkQueryT(t));
 
-/* Return the number of fields in a class or record as a param.
-   The count of fields includes types and param fields.
- */
-@deprecated(notes="'numFields' is deprecated - please use 'getNumFields' instead")
-proc numFields(type t) param : int do return getNumFields(t);
-
 /* Get the name of the field at `idx` in a class or record.
    Causes a compilation error if `idx` is not in 0..<getNumFields(t).
 
@@ -72,7 +66,7 @@ proc numFields(type t) param : int do return getNumFields(t);
  */
 pragma "suppress generic actual warning"
 proc getFieldName(type t, param idx:int) param : string do
-  return __primitive("field num to name", checkQueryT(t), idx+1);
+  return __primitive("field num to name", checkQueryT(t), idx);
 
 // Note, since this version has a where clause, it is preferred
 // over the const ref one.
@@ -86,9 +80,9 @@ proc getFieldName(type t, param idx:int) param : string do
 */
 proc getField(const ref obj:?t, param idx: int) param
   where idx >= 0 && idx < getNumFields(t) &&
-        isParam(__primitive("field by num", obj, idx+1)) {
+        isParam(__primitive("field by num", obj, idx)) {
 
-  return __primitive("field by num", obj, idx+1);
+  return __primitive("field by num", obj, idx);
 }
 
 // Note, since this version has a where clause, it is preferred
@@ -103,8 +97,8 @@ proc getField(const ref obj:?t, param idx: int) param
 */
 proc getField(const ref obj:?t, param idx: int) type
   where idx >= 0 && idx < getNumFields(t) &&
-        isType(__primitive("field by num", obj, idx+1)) {
-  return __primitive("field by num", obj, idx+1);
+        isType(__primitive("field by num", obj, idx)) {
+  return __primitive("field by num", obj, idx);
 }
 
 /* Get the field at `idx` in a class or record.
@@ -116,7 +110,7 @@ proc getField(const ref obj:?t, param idx: int) type
  */
 pragma "unsafe"
 inline proc getField(const ref obj:?t, param idx:int) const ref do
-  return __primitive("field by num", obj, idx+1);
+  return __primitive("field by num", obj, idx);
 
 /* Get a field in a class or record by name. When the named
    field is a `param`, this overload will be chosen to return a
@@ -216,13 +210,13 @@ pragma "unsafe"
 @unstable(reason="'getFieldRef' is unstable")
 inline proc getFieldRef(ref x:?t, param i:int) ref {
   checkValidQueryT(t);
-  if isType(__primitive("field by num", x, i+1)) then
+  if isType(__primitive("field by num", x, i)) then
     compilerError("cannot return a reference to 'type' field '",
                   getFieldName(t, i), "'");
-  if isParam(__primitive("field by num", x, i+1)) then
+  if isParam(__primitive("field by num", x, i)) then
     compilerError("cannot return a reference to 'param' field '",
                   getFieldName(t, i), "'");
-  return __primitive("field by num", x, i+1);
+  return __primitive("field by num", x, i);
 }
 
 pragma "unsafe"
@@ -230,13 +224,13 @@ pragma "unsafe"
 @unstable(reason="'getFieldRef' is unstable")
 inline proc getFieldRef(x: borrowed, param i:int) ref {
   checkValidQueryT(x.type);
-  if isType(__primitive("field by num", x, i+1)) then
+  if isType(__primitive("field by num", x, i)) then
     compilerError("cannot return a reference to 'type' field '",
                   getFieldName(x.type, i), "'");
-  if isParam(__primitive("field by num", x, i+1)) then
+  if isParam(__primitive("field by num", x, i)) then
     compilerError("cannot return a reference to 'param' field '",
                   getFieldName(x.type, i), "'");
-  return __primitive("field by num", x, i+1);
+  return __primitive("field by num", x, i);
 }
 
 /* Get a mutable ref to a field in a class or record by name.
@@ -271,7 +265,7 @@ proc getFieldRef(ref x:?t, param s:string) ref {
  */
 pragma "suppress generic actual warning"
 proc getFieldIndex(type t, param name:string) param : int do
-  return __primitive("field name to num", checkQueryT(t), name)-1;
+  return __primitive("field name to num", checkQueryT(t), name);
 
 /* Returns ``true`` if a class or record has a field named `name`,
    or ``false`` otherwise.

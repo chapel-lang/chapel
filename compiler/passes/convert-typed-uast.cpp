@@ -4156,7 +4156,7 @@ Expr* TConverter::convertPrimCallOrNull(const Call* node, RV& rv) {
     auto re = rv.byAst(primCall->actual(1));
     int64_t idx = re.type().param()->toIntParam()->value();
     types::QualifiedType qtField;
-    ret = codegenGetField(primCall->actual(0), idx-1, rv, &qtField);
+    ret = codegenGetField(primCall->actual(0), idx, rv, &qtField);
     ret = storeInTempIfNeeded(ret, qtField);
   } else {
     ret = new CallExpr(primCall->prim());
