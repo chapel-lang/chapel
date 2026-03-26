@@ -1751,33 +1751,33 @@ ID idToContainingMultiDeclId(Context* context, ID id) {
   return idToContainingMultiDeclIdQuery(context, id);
 }
 
-static bool helpFieldNameCheck(const AstNode* ast,
-                               UniqueString fieldName) {
+static const VarLikeDecl* helpFieldNameCheck(const AstNode* ast,
+                                             UniqueString fieldName) {
   if (auto var = ast->toVarLikeDecl()) {
-    return var->name() == fieldName;
+    if (var->name() == fieldName) {
+      return var;
+    }
   } else if (auto mult = ast->toMultiDecl()) {
     for (auto decl : mult->decls()) {
-      bool found = helpFieldNameCheck(decl, fieldName);
-      if (found) {
-        return true;
+      if (auto found = helpFieldNameCheck(decl, fieldName)) {
+        return found;
       }
     }
   } else if (auto tup = ast->toTupleDecl()) {
     for (auto decl : tup->decls()) {
-      bool found = helpFieldNameCheck(decl, fieldName);
-      if (found) {
-        return true;
+      if (auto found = helpFieldNameCheck(decl, fieldName)) {
+        return found;
       }
     }
   }
-  return false;
+  return nullptr;
 }
 
-static const bool&
-idContainsFieldWithNameQuery(Context* context, ID typeDeclId, UniqueString fieldName) {
-  QUERY_BEGIN(idContainsFieldWithNameQuery, context, typeDeclId, fieldName);
+static const VarLikeDecl* const&
+idToFieldWithNameQuery(Context* context, ID typeDeclId, UniqueString fieldName) {
+  QUERY_BEGIN(idToFieldWithNameQuery, context, typeDeclId, fieldName);
 
-  bool result = false;
+  const VarLikeDecl* result = nullptr;
   auto ast = parsing::idToAst(context, typeDeclId);
   if (ast && ast->isAggregateDecl()) {
     auto ad = ast->toAggregateDecl();
@@ -1787,9 +1787,8 @@ idContainsFieldWithNameQuery(Context* context, ID typeDeclId, UniqueString field
       if (child->isVarLikeDecl() ||
           child->isMultiDecl() ||
           child->isTupleDecl()) {
-        bool found = helpFieldNameCheck(child, fieldName);
-        if (found) {
-          result = true;
+        if (auto found = helpFieldNameCheck(child, fieldName)) {
+          result = found;
           break;
         }
       }
@@ -1799,8 +1798,8 @@ idContainsFieldWithNameQuery(Context* context, ID typeDeclId, UniqueString field
   return QUERY_END(result);
 }
 
-bool idContainsFieldWithName(Context* context, ID typeDeclId, UniqueString fieldName) {
-  return idContainsFieldWithNameQuery(context, typeDeclId, fieldName);
+const VarLikeDecl* idToFieldWithName(Context* context, ID typeDeclId, UniqueString fieldName) {
+  return idToFieldWithNameQuery(context, typeDeclId, fieldName);
 }
 
 bool findFieldIdInDeclaration(const AstNode* ast,
