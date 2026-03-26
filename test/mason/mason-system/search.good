@@ -8,7 +8,7 @@ myWeirdPackage                 myWeirdPackage - My weird package which abuses pk
 === mason system search package ===
 anotherPackage                 anotherPackage - Another simple package with no real information
 myOtherPackage                 myOtherPackage - My weird package which abuses pkg-config to pass Chapel flags
-myWeirdPackage                 myWeirdPackage - My weird package which abuses xpkg-config to pass Chapel flags
+myWeirdPackage                 myWeirdPackage - My weird package which abuses pkg-config to pass Chapel flags
 === mason system search myWeirdPackage ===
 myWeirdPackage                 myWeirdPackage - My weird package which abuses pkg-config to pass Chapel flags
 === mason system search simple ===
