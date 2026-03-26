@@ -15,6 +15,7 @@ Initialized empty Git repository in $CHPL_HOME/test/mason/mason-system/myDep/.gi
 + git add .
 + git commit -m 'initial commit'
 + mason publish $CHPL_HOME/test/mason/mason-system/local-reg
+Created git tag: v0.1.0. Make sure to push this tag to your remote when you publish to the registry with 'git push origin --tags'
 Successfully published package to $CHPL_HOME/test/mason/mason-system/local-reg
 + cd ..
 + cd myMasonPackage

@@ -32,6 +32,10 @@ use Subprocess;
 use TOML;
 import Path;
 
+import MasonLogger;
+
+private var log = new MasonLogger.logger("mason publish");
+
 /*
   Top Level procedure that gets called from mason.chpl that takes in arguments
   from command line. If --dry-run is passed then it checks to see if the package
@@ -48,6 +52,7 @@ proc masonPublish(args: [] string) throws {
                                 defaultValue=false);
   var checkArg = parser.addFlag(name="check", defaultValue=false);
   var ciFlag = parser.addFlag(name="ci-check", defaultValue=false);
+  var usernameFlag = parser.addFlag(name="username", opts=["--username"]);
   var updateFlag = parser.addFlag(name="update", flagInversion=true);
   var registryArg = parser.addArgument(name="registry", numArgs=0..1);
   var refreshLicenseFlag = parser.addFlag(name="refresh-licenses",
@@ -58,7 +63,11 @@ proc masonPublish(args: [] string) throws {
   var refreshLicenses = refreshLicenseFlag.valueAsBool();
   var registryPath = "";
   if registryArg.hasValue() then registryPath = registryArg.value();
-  var username = getUsername();
+  var username = if usernameFlag.hasValue() then
+                    usernameFlag.value()
+                  else
+                    getUsername(here.cwd());
+  log.debugln("Username for registry fork: %s".format(username));
   var isLocal = false;
   var ci = ciFlag.valueAsBool();
   var update = false;
@@ -71,15 +80,11 @@ proc masonPublish(args: [] string) throws {
   }
   var createReg = createFlag.valueAsBool();
 
-  const badSyntaxMessage =
-      'Arguments do not follow "mason publish [options] <registry>" syntax';
-
-
   if refreshLicenses {
     writeln("Force updating list of valid license names from SPDX repo...");
     refreshLicenseList(true);
     writeln("Done updating license list");
-    exit(0);
+    return;
   }
 
   if createReg {
@@ -145,9 +150,8 @@ proc masonPublish(args: [] string) throws {
       publishPackage(username, registryPath, isLocal);
     }
   } else {
-    writeln(badSyntaxMessage);
-    writeln('See "mason publish -h" for more details');
-    exit(0);
+    throw new MasonError(
+      'Arguments do not follow "mason publish [options] <registry>" syntax');
   }
 
 }
@@ -209,52 +213,56 @@ proc checkRegistryPath(registryPath : string, trueIfLocal : bool) throws {
 proc publishPackage(username: string,
                     registryPath: string,
                     isLocal: bool) throws {
-  try! {
-    const packageLocation = absPath(here.cwd());
-    var stream = new randomStream(int, false);
-    var uniqueDir = stream.next(): string;
-    const name = getPackageName();
-    var safeDir = '';
+  const packageLocation = absPath(here.cwd());
+  var stream = new randomStream(int, false);
+  var uniqueDir = stream.next(): string;
+  const name = getPackageName();
+  var safeDir = '';
 
-    if isLocal then safeDir = registryPath;
-    else {
-      safeDir = MASON_HOME + '/tmp/' + name + '-' + uniqueDir;
-    }
+  if isLocal then safeDir = registryPath;
+  else {
+    safeDir = MASON_HOME + '/tmp/' + name + '-' + uniqueDir;
+  }
 
-    if !isLocal {
-      if !exists(MASON_HOME + '/tmp') then mkdir(MASON_HOME + '/tmp');
-      mkdir(safeDir);
-    }
-
-    if !isLocal {
-      cloneMasonReg(username, safeDir, registryPath);
-      branchMasonReg(name, safeDir);
-    }
-
-    const version = addPackageToBricks(packageLocation, safeDir, name, isLocal);
-    const message =
-      ' "Adding %s package to registry via mason publish"'.format(version);
-    var command = ['git', 'commit', '-q', '-m', message];
-
-
-    if !isLocal {
-      gitC(safeDir + "/mason-registry", "git add .");
-      gitC(safeDir + '/mason-registry', command);
-      gitC(safeDir + "/mason-registry",
-           'git push --set-upstream origin ' + name, true);
+  if !isLocal {
+    if !exists(MASON_HOME + '/tmp') then mkdir(MASON_HOME + '/tmp');
+    if exists(safeDir) {
+      // a previous publish failed, clobber the dir
       rmTree(safeDir + '/');
-      writeln('----------------------------------' +
-              '----------------------------------');
-      writeln('Go to the above link to open up a ' +
-              'Pull Request to the mason-registry');
-     } else {
-      gitC(safeDir, 'git add Bricks/' + name);
-      gitC(safeDir, command);
-      writeln('Successfully published package to ' + registryPath);
     }
+    mkdir(safeDir);
+  }
+  defer {
+    // make sure we always cleanup
+    if !isLocal && exists(safeDir) then rmTree(safeDir + '/');
+  }
 
-  } catch e {
-    writeln(e.message());
+  if !isLocal {
+    cloneMasonReg(username, safeDir, registryPath);
+    branchMasonReg(name, safeDir);
+  }
+
+  const version = addPackageToBricks(packageLocation, safeDir, name, isLocal);
+  const message =
+    'Adding %s package to registry via mason publish'.format(version);
+  var commitCmd = ['git', 'commit', '-q', '-m', message];
+
+  if !isLocal {
+    gitC(safeDir + "/mason-registry", "git add .");
+    gitC(safeDir + '/mason-registry', commitCmd);
+    gitC(safeDir + "/mason-registry",
+          'git push -q --set-upstream origin ' + name);
+    const masonRegRemoteName = getRemoteName(safeDir + '/mason-registry');
+    const url = "https://github.com/%s/%s/pull/new/%s".format(
+                                                        username,
+                                                        masonRegRemoteName,
+                                                        name);
+    writeln('Successfully published package to ' + registryPath);
+    writef("Go to '%s' to open a Pull Request to the mason-registry\n", url);
+  } else {
+    gitC(safeDir, 'git add Bricks/' + name);
+    gitC(safeDir, commitCmd);
+    writeln('Successfully published package to ' + registryPath);
   }
 }
 
@@ -363,20 +371,37 @@ private proc checkIfForkExists(username: string) {
 
 /* Gets the GitHub username of the user, by parsing from the remote origin url.
  */
-private proc getUsername() {
-  var usernameUrl = gitUrl();
-  var tail = usernameUrl.find("/")-1: int;
-  var head = usernameUrl.find(":")+1: int;
-  var username = usernameUrl(head..tail);
+private proc getUsername(dir: string) {
+  var usernameUrl = gitUrl(dir);
+  var username: string;
+  if usernameUrl.startsWith("http") {
+    var tail = usernameUrl.rfind("/")-1;
+    var head = usernameUrl.rfind("/", indices=0:byteIndex..<tail)+1;
+    username = usernameUrl(head..tail);
+  } else {
+    var tail = usernameUrl.find("/")-1;
+    var head = usernameUrl.find(":")+1;
+    username = usernameUrl(head..tail);
+  }
   return username;
 }
 
+
+private proc getRemoteName(dir: string) {
+  var url = gitUrl(dir).strip();
+  var head = url.rfind("/") + 1;
+  var remoteName = url(head..);
+  if remoteName.endsWith(".git") then
+    remoteName = remoteName(0..<remoteName.size-(".git".size));
+
+  return remoteName;
+}
 /*
   Procedure that returns the url of the git remote origin
 */
-private proc gitUrl() {
+private proc gitUrl(dir: string) {
   try {
-    var url = runCommand("git config --get remote.origin.url", true);
+    var url = gitC(dir, "git config --get remote.origin.url", true);
     return url;
   } catch {
     return "";
@@ -447,23 +472,39 @@ private proc addPackageToBricks(projectLocal: string, safeDir: string,
                          'already exists in the Bricks.');
   }
 
+  // check the tag, if it already exists, throw an error
+  var tagExists = false;
+  var tagName = 'v' + versionNum;
+  var result = gitC(projectLocal, ['git', 'tag', '--list', tagName]).strip();
+  tagExists = result == tagName;
+
+  if tagExists {
+    throw new MasonError(
+      "A git tag for version " + versionNum + " of your package " +
+      "already exists. Please update the version number in " +
+      "your Mason.toml to publish.");
+  }
   if !isLocal {
     const baseToml = tomlFile;
-    const url = gitUrl();
+    const url = gitUrl(here.cwd());
     baseToml["brick"]!.set("source", url[0..<url.size-1]);
     var tomlWriter = openWriter(versionToml);
     tomlWriter.write(baseToml);
     tomlWriter.close();
-    return name + '@' + versionNum;
   } else {
     const baseToml = tomlFile;
     baseToml["brick"]!.set("source", projectLocal);
     var tomlWriter = openWriter(versionToml);
     tomlWriter.write(baseToml);
     tomlWriter.close();
-    gitC(projectLocal, ['git', 'tag', '-a', 'v' + versionNum, '-m', name]);
-    return name + '@' + versionNum;
   }
+  // create the tag
+  gitC(projectLocal, ['git', 'tag', '-a', tagName, '-m', name]);
+  writeln("Created git tag: ", tagName,
+          ". Make sure to push this tag to your remote when you ",
+          "publish to the registry with 'git push origin --tags'");
+
+  return name + '@' + versionNum;
 }
 
 /*

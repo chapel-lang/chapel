@@ -6,17 +6,16 @@ use MasonUtils;
 
 const dir = here.cwd();
 
-proc main() throws {
-  try! {
-    masonNew(['new' , 'publishCheck']);
-    here.chdir(dir + '/publishCheck');
-    publishPackage('dummy','dir', true);
+proc main() {
+  try! masonNew(['new' , 'publishCheck']);
+  defer {
     here.chdir(dir);
     rmTree('publishCheck');
   }
-  catch {
-    here.chdir(dir);
-    rmTree('publishCheck/');
-    exit(1);
+  here.chdir(dir + '/publishCheck');
+  try {
+    publishPackage('dummy','dir', true);
+  } catch e {
+    writeln(e.message());
   }
 }

@@ -17,9 +17,12 @@ Registry already exists at $CHPL_HOME/test/mason/publish/use-local-registry/loca
 + echo 'error as expected: 1'
 error as expected: 1
 + mason publish $CHPL_HOME/test/mason/publish/use-local-registry/local-reg
+Created git tag: v0.1.0. Make sure to push this tag to your remote when you publish to the registry with 'git push origin --tags'
 Successfully published package to $CHPL_HOME/test/mason/publish/use-local-registry/local-reg
 + mason publish $CHPL_HOME/test/mason/publish/use-local-registry/local-reg
 A package with that name and version number already exists in the Bricks.
++ echo 'error as expected: 1'
+error as expected: 1
 + export 'MASON_REGISTRY=my-local-registry|$CHPL_HOME/test/mason/publish/use-local-registry/local-reg'
 + MASON_REGISTRY='my-local-registry|$CHPL_HOME/test/mason/publish/use-local-registry/local-reg'
 + mason search
