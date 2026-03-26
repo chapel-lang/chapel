@@ -291,10 +291,22 @@ record LinkedList : serializable {
   }
 
   proc serialize(writer, ref serializer) throws {
-    var ser = serializer.startList(writer, size);
-    for e in this do
-      ser.writeElement(e);
-    ser.endList();
+    if writer.serializerType == IO.defaultSerializer {
+      var first = true;
+      for e in this {
+        if first then first = false;
+        else {
+          writer.writeLiteral(" ");
+        }
+
+        writer.write(e);
+      }
+    } else {
+      var ser = serializer.startList(writer, size);
+      for e in this do
+        ser.writeElement(e);
+      ser.endList();
+    }
   }
 
   proc ref deserialize(reader: fileReader, ref deserializer) throws
