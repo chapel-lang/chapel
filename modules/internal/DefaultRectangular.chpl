@@ -1854,8 +1854,7 @@ module DefaultRectangular {
     helper.endDim();
   }
 
-  proc chpl_serialReadWriteRectangularHelper(f, arr, dom) throws
-  where _supportsSerializers(f) {
+  proc chpl_serialReadWriteRectangularHelper(f, arr, dom) throws {
     param rank = arr.rank;
     type idxType = arr.idxType;
     type idxSignedType = chpl__signedType(chpl__idxTypeToIntIdxType(idxType));
