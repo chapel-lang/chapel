@@ -763,6 +763,10 @@ def rules(driver: LintDriver):
 
         parent = node.parent()
         while parent is not None:
+            if isinstance(parent, On):
+                # if at any point there is an on-statement, we are fine since
+                # the second coforall will be on another node
+                return True
             if isinstance(parent, Coforall):
                 return False
             parent = parent.parent()
