@@ -257,6 +257,11 @@ typedef enum {
   FIND_NOT_REF
 } functionExistsKind;
 
+typedef enum {
+  FIND_REC_EITHER = 0, /* no receiver or any receiver intent */
+  FIND_REC_NONTYPE /* receiver with non-type intent. */
+} functionExistsRecKind;
+
 // functionExists returns true iff
 //  function's name matches name
 //  function's number of formals matches numFormals
@@ -267,7 +272,8 @@ template<bool useCache, typename V, size_t numFormals>
 static FnSymbol* functionExists(const char *nameAstr,
                                 const V &fns,
                                 std::array<Type*, numFormals> formalTypes,
-                                functionExistsKind kind) {
+                                functionExistsKind kind,
+                                functionExistsRecKind recKind) {
   for (FnSymbol *fn : fns) {
     if (!useCache) {
       if (fn->name != nameAstr)
@@ -275,6 +281,10 @@ static FnSymbol* functionExists(const char *nameAstr,
     }
 
     if (numFormals != fn->numFormals())
+      continue;
+
+    if (recKind == FIND_REC_NONTYPE &&
+        (!fn->_this || fn->_this->hasFlag(FLAG_TYPE_VARIABLE)))
       continue;
 
     if (kind == FIND_REF && fn->retTag != RET_REF)
@@ -304,39 +314,43 @@ static FnSymbol* functionExists(const char *nameAstr,
 template<size_t numFormals>
 static FnSymbol* functionExists(const char* name,
                                 std::array<Type*, numFormals> formalTypes,
-                                functionExistsKind kind) {
+                                functionExistsKind kind,
+                                functionExistsRecKind recKind) {
   const char *nameAstr = astr(name);
   if (sFnSymbolIndex) {
     sFnSymbolIndex->update();
     return functionExists<true>(
-        name, sFnSymbolIndex->get(nameAstr), formalTypes, kind);
+        name, sFnSymbolIndex->get(nameAstr), formalTypes, kind, recKind);
   } else {
-    return functionExists<false>(nameAstr, gFnSymbols, formalTypes, kind);
+    return functionExists<false>(nameAstr, gFnSymbols, formalTypes, kind, recKind);
   }
 }
 
 static FnSymbol* functionExists(const char* name,
                                  Type* formalType1,
-                                 functionExistsKind kind=FIND_EITHER)
+                                 functionExistsKind kind=FIND_EITHER,
+                                 functionExistsRecKind recKind=FIND_REC_EITHER)
 {
-  return functionExists<1>(name, {{formalType1}}, kind);
+  return functionExists<1>(name, {{formalType1}}, kind, recKind);
 }
 
 static FnSymbol* functionExists(const char* name,
                                  Type* formalType1,
                                  Type* formalType2,
-                                 functionExistsKind kind=FIND_EITHER)
+                                 functionExistsKind kind=FIND_EITHER,
+                                 functionExistsRecKind recKind=FIND_REC_EITHER)
 {
-  return functionExists<2>(name, {{formalType1, formalType2}}, kind);
+  return functionExists<2>(name, {{formalType1, formalType2}}, kind, recKind);
 }
 
 static FnSymbol* functionExists(const char* name,
                                  Type* formalType1,
                                  Type* formalType2,
                                  Type* formalType3,
-                                 functionExistsKind kind=FIND_EITHER)
+                                 functionExistsKind kind=FIND_EITHER,
+                                 functionExistsRecKind recKind=FIND_REC_EITHER)
 {
-  return functionExists<3>(name, {{formalType1, formalType2, formalType3}}, kind);
+  return functionExists<3>(name, {{formalType1, formalType2, formalType3}}, kind, recKind);
 }
 
 static FnSymbol* functionExists(const char* name,
@@ -344,8 +358,9 @@ static FnSymbol* functionExists(const char* name,
                                 Type* formalType2,
                                 Type* formalType3,
                                 Type* formalType4,
-                                functionExistsKind kind=FIND_EITHER) {
-  return functionExists<4>(name, {{formalType1, formalType2, formalType3, formalType4}}, kind);
+                                functionExistsKind kind=FIND_EITHER,
+                                functionExistsRecKind recKind=FIND_REC_EITHER) {
+  return functionExists<4>(name, {{formalType1, formalType2, formalType3, formalType4}}, kind, recKind);
 }
 
 static FnSymbol* operatorExists(const char* name,
@@ -645,9 +660,10 @@ static void buildAccessors(AggregateType* ct, Symbol *field) {
                                 field->hasFlag(FLAG_TYPE_VARIABLE);
 
   FnSymbol *setter = functionExists(field->name,
-                                     dtMethodToken, ct, FIND_REF);
+                                     dtMethodToken, ct, FIND_REF, FIND_REC_NONTYPE);
   FnSymbol *getter = functionExists(field->name,
-                                     dtMethodToken, ct, FIND_NOT_REF);
+                                     dtMethodToken, ct, FIND_NOT_REF, FIND_REC_NONTYPE);
+
   if (setter)
     fixupAccessor(ct, field, fieldIsConst, recordLike, setter);
   if (getter)

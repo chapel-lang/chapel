@@ -1,0 +1,1 @@
+type-method-instance-method-field.chpl:8: error: parenless proc redeclares the field 'x'
