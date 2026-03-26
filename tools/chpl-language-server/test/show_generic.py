@@ -195,7 +195,7 @@ async def test_lenses_default_rect(client: LanguageClient):
         (pos((2, 14)), ": int(64)", None),
         (
             pos((3, 17)),
-            'param value is "[domain(1,int(64),one)] int(64)"',
+            'param value is "[domain(1, int(64), strideKind.one)] int(64)"',
             None,
         ),
         (pos((3, 17)), ": string", None),
@@ -236,7 +236,7 @@ async def test_lenses_default_rect_rank1(client: LanguageClient):
         (pos((2, 14)), ": int(64)", None),
         (
             pos((3, 17)),
-            'param value is "[domain(1,int(64),one)] int(64)"',
+            'param value is "[domain(1, int(64), strideKind.one)] int(64)"',
             None,
         ),
         (pos((3, 17)), ": string", None),
@@ -277,7 +277,7 @@ async def test_lenses_default_rect_rank2(client: LanguageClient):
         (pos((2, 14)), ": int(64)", None),
         (
             pos((3, 17)),
-            'param value is "[domain(2,int(64),one)] int(64)"',
+            'param value is "[domain(2, int(64), strideKind.one)] int(64)"',
             None,
         ),
         (pos((3, 17)), ": string", None),
@@ -319,7 +319,7 @@ async def test_lenses_default_rect_where_1(client: LanguageClient):
         (pos((2, 14)), ": int(64)", None),
         (
             pos((3, 17)),
-            'param value is "[domain(1,int(64),one)] int(64)"',
+            'param value is "[domain(1, int(64), strideKind.one)] int(64)"',
             None,
         ),
         (pos((3, 17)), ": string", None),
@@ -385,7 +385,7 @@ async def test_lenses_default_rect_twoargs(client: LanguageClient):
         (pos((2, 14)), ": (int(64), int(64))", None),
         (
             pos((3, 17)),
-            'param value is "[domain(1,int(64),one)] int(64)"',
+            'param value is "[domain(1, int(64), strideKind.one)] int(64)"',
             None,
         ),
         (pos((3, 17)), ": string", None),
@@ -427,7 +427,7 @@ async def test_lenses_default_rect_other_args(client: LanguageClient):
         (pos((2, 14)), ": int(64)", None),
         (
             pos((3, 17)),
-            'param value is "[domain(1,int(64),one)] int(64)"',
+            'param value is "[domain(1, int(64), strideKind.one)] int(64)"',
             None,
         ),
         (pos((3, 17)), ": string", None),
@@ -470,7 +470,7 @@ async def test_lenses_default_rect_with_calls(client: LanguageClient):
         (pos((2, 14)), ": int(64)", None),
         (
             pos((3, 17)),
-            'param value is "[domain(1,int(64),one)] int(64)"',
+            'param value is "[domain(1, int(64), strideKind.one)] int(64)"',
             None,
         ),
         (pos((3, 17)), ": string", None),
