@@ -575,16 +575,14 @@ FnSymbol* build_accessor(AggregateType* ct, Symbol* field,
       fn->insertAtTail(new CondStmt(idDiffers, resetBlock));
 
     } else {
-      // Check the union ID in the getter.
-      CallExpr* idDiffers = new CallExpr("!=",
-                              new CallExpr(PRIM_GET_UNION_ID, _this),
-                              new CallExpr(PRIM_FIELD_NAME_TO_NUM,
-                                           ct->symbol,
-                                           fieldNameSym));
-      CallExpr* halt = new CallExpr("halt",
-                                    new_StringSymbol("illegal union access"));
-
-      fn->insertAtTail(new CondStmt(idDiffers, halt));
+      if (!fNoUnionChecks) {
+        CallExpr* check = new CallExpr("_checkUnionAccess",
+                                       _this,
+                                       new CallExpr(PRIM_FIELD_NAME_TO_NUM,
+                                                    ct->symbol,
+                                                    fieldNameSym));
+        fn->insertAtTail(check);
+      }
     }
   }
 

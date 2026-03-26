@@ -147,6 +147,13 @@ module HaltWrappers {
     halt(s);
   }
 
+  /* Halt wrapper for --union-checks */
+  pragma "function terminates program"
+  pragma "always propagate line file info"
+  proc invalidUnionAccessHalt(s:string) {
+    halt(s);
+  }
+
   /* Halt wrapper for unimplemented features */
   pragma "function terminates program"
   pragma "always propagate line file info"

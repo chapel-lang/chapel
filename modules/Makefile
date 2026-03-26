@@ -194,7 +194,7 @@ DISTS_TO_DOCUMENT = \
 # live in a path named 'modules/internal/' so that they don't get
 # indexed like the user-facing modules.
 #
-INTERNAL_MODULES_TO_DOCUMENT =                        \
+INTERNAL_MODULES_TO_DOCUMENT =                          \
 	$(CHPL_MAKE_HOME)/modules/internal/Atomics.chpl       \
 	$(CHPL_MAKE_HOME)/modules/internal/Bytes.chpl         \
 	$(CHPL_MAKE_HOME)/modules/internal/ChapelArray.chpl   \
@@ -203,9 +203,10 @@ INTERNAL_MODULES_TO_DOCUMENT =                        \
 	$(CHPL_MAKE_HOME)/modules/internal/ChapelRange.chpl   \
 	$(CHPL_MAKE_HOME)/modules/internal/ChapelSyncvar.chpl \
 	$(CHPL_MAKE_HOME)/modules/internal/ChapelTuple.chpl   \
+	$(CHPL_MAKE_HOME)/modules/internal/ChapelUnion.chpl   \
 	$(CHPL_MAKE_HOME)/modules/internal/OwnedObject.chpl   \
 	$(CHPL_MAKE_HOME)/modules/internal/SharedObject.chpl  \
-	$(CHPL_MAKE_HOME)/modules/internal/String.chpl        \
+	$(CHPL_MAKE_HOME)/modules/internal/String.chpl
 
 
 documentation: $(SYS_CTYPES_MODULE_DOC)

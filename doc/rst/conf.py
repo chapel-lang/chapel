@@ -201,6 +201,7 @@ exclude_patterns = [
     "builtins/ChapelRange.rst",
     "builtins/ChapelSyncvar.rst",
     "builtins/ChapelTuple.rst",
+    "builtins/ChapelUnion.rst",
     "builtins/OwnedObject.rst",
     "builtins/SharedObject.rst",
     "builtins/String.rst",
