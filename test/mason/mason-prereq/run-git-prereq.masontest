@@ -1,12 +1,9 @@
 #!/usr/bin/env bash
 
 # Test that mason builds prereqs for git dependencies.
-# Currently, mason only builds prereqs (and collects printchplflags)
-# for the root project and registry/source dependencies, but NOT for
-# git dependencies. This test demonstrates the bug.
-#
-# When the bug is fixed, mason build should succeed and the app should
-# print "Hello from C prereq!" — update the .good file accordingly.
+# This verifies that mason correctly builds prereqs (and collects
+# printchplflags) for git dependencies, not just the root project
+# and registry/source dependencies.
 
 set -eo pipefail
 

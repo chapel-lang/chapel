@@ -13,10 +13,12 @@ with open(tmp_file, 'w') as tf:
           continue
         if line.startswith("Checking out specified revision"):
           continue
-        # Skip "Build Failed" from mason stderr
+        # Skip "Build Failed"/"Build Successful" from mason stderr
         # (position is non-deterministic due to merging of stdout and stderr)
-        # Our script already prints "mason build failed" to indicate failure
-        if line.strip() == "Build Failed":
+        if line.strip() in ("Build Failed", "Build Successful"):
+          continue
+        # Skip platform-specific linker warnings
+        if line.strip().startswith("ld: warning:"):
           continue
         tf.write(line)
 
