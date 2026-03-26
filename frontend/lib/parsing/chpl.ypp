@@ -1446,6 +1446,7 @@ internal_type_ident_def:
 scalar_type:
   TBOOL    { $$ = context->buildIdent(@$, $1); }
 | TENUM    { $$ = context->buildIdent(@$, $1); }
+| TUNION   { $$ = context->buildIdent(@$, $1); }
 | TINT     { $$ = context->buildIdent(@$, $1); }
 | TUINT    { $$ = context->buildIdent(@$, $1); }
 | TREAL    { $$ = context->buildIdent(@$, $1); }

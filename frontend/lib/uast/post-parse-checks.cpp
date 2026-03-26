@@ -1444,7 +1444,10 @@ static bool isNameReservedType(UniqueString name) {
       name == USTR("locale")    ||
       name == USTR("range")     ||
       name == USTR("nothing")   ||
-      name == USTR("void"))
+      name == USTR("void")      ||
+      name == USTR("enum")      ||
+      name == USTR("record")    ||
+      name == USTR("union"))
     return true;
   return false;
 }

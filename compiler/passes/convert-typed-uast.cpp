@@ -2578,7 +2578,7 @@ struct ConvertTypeHelper {
   Type* visit(const types::AnyClassType* t) { return dtAnyManagementNonNilable; }
   Type* visit(const types::AnyUintType t) { return dtIntegral; } // a lie
   Type* visit(const types::AnyUninstantiatedType* t) { return dtUninstantiated; }
-  Type* visit(const types::AnyUnionType* t) { return dtUnknown; } // a lie
+  Type* visit(const types::AnyUnionType* t) { return dtAnyUnion; }
 
   Type* visit(const types::ExternType* t) {
     // Taken from the builder function 'convertTypesToExtern'...

@@ -237,6 +237,7 @@ void ResolveScope::addBuiltIns() {
   extend(dtAny->symbol);
   extend(dtAnyComplex->symbol);
   extend(dtAnyEnumerated->symbol);
+  extend(dtAnyUnion->symbol);
   extend(dtAnyImag->symbol);
   extend(dtAnyReal->symbol);
   extend(dtAnyPOD->symbol);
