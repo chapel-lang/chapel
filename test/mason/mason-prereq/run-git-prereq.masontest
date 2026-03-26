@@ -47,4 +47,4 @@ fi
 
 # --- Clean up ---
 rm -rf "$LIB_REPO"
-rm -rf target Mason.lock
+rm -rf target Mason.lock Mason.toml

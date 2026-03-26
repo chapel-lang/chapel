@@ -20,6 +20,9 @@ with open(tmp_file, 'w') as tf:
         # Skip platform-specific linker warnings
         if line.strip().startswith("ld: warning:"):
           continue
+        # Skip blank lines (can result from filtering above)
+        if line.strip() == "":
+          continue
         tf.write(line)
 
 shutil.move(tmp_file, out_file)
