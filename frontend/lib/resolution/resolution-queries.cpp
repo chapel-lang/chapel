@@ -770,7 +770,8 @@ static void
 checkForParenlessMethodFieldRedefinition(Resolver& rv, const Function* fn) {
   Context* context = rv.context;
 
-  if (fn->isMethod() && fn->isParenless()) {
+  if (fn->isMethod() && fn->isParenless() &&
+      fn->thisFormal()->intent() != Formal::Intent::TYPE) {
     bool allowNonLocal = false;
     if (auto receiverInfo = rv.closestMethodReceiverInfo(allowNonLocal)) {
       auto compositeId = std::get<0>(*receiverInfo);
