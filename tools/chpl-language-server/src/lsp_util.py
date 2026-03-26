@@ -747,14 +747,20 @@ class ContextContainer:
     def call_contexts(
         self, sig: chapel.TypedSignature
     ) -> Iterable[CallInTypeContext]:
-        for ctxs in self.global_inst_contexts[sig]:
-            yield from ctxs
+        all_contexts = {
+            ctx for ctxs in self.global_inst_contexts[sig] for ctx in ctxs
+        }
+        return all_contexts
 
     def instantiations(self, fnid: str):
+        seen_insts = set()
         for insts in self.global_instantiations[fnid]:
             for inst in insts:
                 if inst not in self.global_inst_contexts:
                     continue
+                if inst in seen_insts:
+                    continue
+                seen_insts.add(inst)
 
                 # as long as there is one calling context, yield inst.
                 found_instance = False
