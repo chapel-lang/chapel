@@ -9,3 +9,4 @@ Unused.chpl:49: node violates rule UnusedFormal
 Unused.chpl:52: node violates rule UnusedFormal
 Unused.chpl:52: node violates rule UnusedFormal
 Unused.chpl:64: node violates rule UnusedFormal
+Unused.chpl:79: node violates rule UnusedFormal
