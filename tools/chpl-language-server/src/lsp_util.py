@@ -1128,6 +1128,7 @@ class FileInfo:
 
             self._search_instantiations(fn, via=sig)
 
+    def _search_rectangular_instantiations(self, root):
         for node, _ in chapel.each_matching(
             root, chapel.Function, iterator=chapel.preorder
         ):
@@ -1140,7 +1141,9 @@ class FileInfo:
             if sig:
                 sig = sig.rectangularize()
             if sig:
-                visit = not self._note_inst(node.unique_id(), sig, None, via)
+                visit = not self._note_inst(
+                    node.unique_id(), sig, None, via=None
+                )
                 if not sig.is_instantiation() or not visit:
                     continue
 
@@ -1281,6 +1284,7 @@ class FileInfo:
         if self.use_resolver:
             for ast in asts:
                 self._search_instantiations(ast)
+                self._search_rectangular_instantiations(ast)
                 self._invalidate_inst_segments()
             self.call_segments.sort()
 
