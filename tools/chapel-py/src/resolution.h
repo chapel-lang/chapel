@@ -20,6 +20,7 @@
 #include "chpl/uast/AstNode.h"
 #include "chpl/types/Type.h"
 #include "chpl/resolution/resolution-types.h"
+#include "core-types.h"
 
 const chpl::resolution::ResolvedExpression*
 scopeResolveResultsForNode(chpl::Context* context, const chpl::uast::AstNode* node);
@@ -47,3 +48,6 @@ findUnitTestMainForModule(chpl::Context* context, const chpl::uast::Module* mod)
 
 std::pair<const chpl::resolution::TypedFnSignature*, const chpl::resolution::PoiScope*> const&
 makeDefaultRectangular(chpl::Context* context, const chpl::resolution::TypedFnSignature* sig, const chpl::resolution::PoiScope* poiScope);
+
+TypedSignatureObject*
+createCanonicalTypedSignatureObject(ContextObject* context, const chpl::resolution::TypedFnSignature* sig, const chpl::resolution::PoiScope* poiScope);
