@@ -230,13 +230,13 @@ private proc runTests(show: bool, run: bool, parallel: bool, filter: string,
     const gitDepPath = Path.joinPath(MASON_HOME, 'git');
 
     getSrcCode(sourceList, skipUpdate, show);
-    getGitCode(gitList, show);
+    getGitCode(gitList, skipUpdate, show);
 
     const project = lockFile["root.name"]!.s;
     const projectPath = "".join(projectHome, "/src/", project, ".chpl");
 
     // Get system, and external compopts
-    var compopts = cmdLineCompopts;
+    var compopts = new list(string);
     compopts.pushBack(getTomlCompopts(lockFile));
     log.debugf("compopts from Mason.toml: %?\n", compopts);
 
@@ -275,9 +275,13 @@ private proc runTests(show: bool, run: bool, parallel: bool, filter: string,
     // see https://github.com/chapel-lang/chapel/issues/25926
     @chplcheck.ignore("UnusedLoopIndex")
     for (_x, name, branch, _y) in gitSource.iterList(gitList) {
-      const gitDepSrc = Path.joinPath(gitDepPath, name + "-" + branch,
-                                      'src', name + ".chpl");
+      const depDir = Path.joinPath(gitDepPath, name + "-" + branch);
+      const gitDepSrc = Path.joinPath(depDir, "src", name + ".chpl");
       compopts.pushBack(gitDepSrc);
+      for flag in MasonPrereqs.chplFlags(depDir) {
+        log.debugf("+compflag %s\n", flag);
+        compopts.pushBack(flag);
+      }
     }
 
     // get system deps
@@ -359,6 +363,7 @@ private proc runTests(show: bool, run: bool, parallel: bool, filter: string,
         compCommand.pushBack(["chpl", testPath, projectPath, "-o", outputLoc]);
         compCommand.pushBack(compopts);
         compCommand.pushBack(masonCompopts);
+        compCommand.pushBack(cmdLineCompopts);
         log.debugf("\t%?\n", compCommand);
         const compilation = runWithStatus(compCommand.toArray(), !show);
         const success = compilation == 0;
