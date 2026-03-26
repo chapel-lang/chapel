@@ -14,8 +14,10 @@ while IFS= read -r line; do
   # skip empty lines and comments
   [[ -z "$line" || "$line" == \#* ]] && continue
 
-  filename="${line%%@*}"
-  url="${line#*@}"
+  # FORMAT: FILENAME@URL@SHA
+  filename=$(echo "$line" | cut -d '@' -f 1)
+  url=$(echo "$line" | cut -d '@' -f 2)
+  sha=$(echo "$line" | cut -d '@' -f 3)
 
   rm -f $MASON_DIR/ThirdParty/$filename
   if command -v curl > /dev/null; then
@@ -29,6 +31,14 @@ while IFS= read -r line; do
     echo "Failed to download $filename from $url"
     exit 1
   fi
+
+  # verify the sha256
+  (cd $MASON_DIR/ThirdParty/ && echo "$sha  $filename" | shasum -a 256 -c -)
+  if [ $? -ne 0 ]; then
+    echo "SHA256 verification failed for $filename"
+    exit 1
+  fi
+
   echo "Downloaded $filename"
 done < "$DEPS_FILE"
 
