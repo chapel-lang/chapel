@@ -202,6 +202,7 @@ bool fNoDivZeroChecks = false;
 bool fNoFormalDomainChecks = false;
 bool fNoLocalChecks = false;
 bool fNoNilChecks = false;
+bool fNoUnionChecks = false;
 bool fIgnoreNilabilityErrors = false;
 bool fOverloadSetsChecks = true;
 bool fNoStackChecks = false;
@@ -1114,6 +1115,7 @@ static void setChecks(const ArgumentDescription* desc, const char* unused) {
   fNoStackChecks  = fNoChecks;
   fNoCastChecks = fNoChecks;
   fNoDivZeroChecks = fNoChecks;
+  fNoUnionChecks = fNoChecks;
 }
 
 static void setFastFlag(const ArgumentDescription* desc, const char* unused) {
@@ -1475,6 +1477,7 @@ static ArgumentDescription arg_desc[] = {
  {"local-checks", ' ', NULL, "Enable [disable] local block checking", "n", &fNoLocalChecks, NULL, NULL},
  {"nil-checks", ' ', NULL, "Enable [disable] runtime nil checking", "n", &fNoNilChecks, "CHPL_NIL_CHECKS", NULL},
  {"stack-checks", ' ', NULL, "Enable [disable] stack overflow checking", "n", &fNoStackChecks, "CHPL_STACK_CHECKS", setStackChecks},
+ {"union-checks", ' ', NULL, "Enable [disable] union field checking", "n", &fNoUnionChecks, NULL, NULL},
 
  {"", ' ', NULL, "Code Generation Options", NULL, NULL, NULL, NULL},
  {"codegen", ' ', NULL, "[Don't] Do code generation", "n", &no_codegen, "CHPL_CODEGEN", NULL},
@@ -2173,6 +2176,7 @@ static void setGPUFlags() {
       fNoStackChecks  = true;
       fNoCastChecks = true;
       fNoDivZeroChecks = true;
+      fNoUnionChecks = true;
     }
     //
     // set up gpuArch
@@ -2573,6 +2577,7 @@ static chpl::CompilerGlobals dynoBuildCompilerGlobals() {
     .nilDerefChecking = !fNoNilChecks,
     .overloadSetsChecking = fOverloadSetsChecks,
     .divByZeroChecking = !fNoDivZeroChecks,
+    .unionAccessChecking = !fNoUnionChecks,
     .cacheRemote = fCacheRemote,
     // We need privatization if we are doing a non-local compilation, or using
     // GPUs
