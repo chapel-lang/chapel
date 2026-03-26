@@ -1097,6 +1097,9 @@ def rules(driver: LintDriver):
                     at_node = True
                 continue
 
+            if isinstance(sibling, Comment):
+                continue
+
             if sibling.location().start()[1] != last_loc.start()[1]:
                 break
 
