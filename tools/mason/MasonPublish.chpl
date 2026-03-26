@@ -481,9 +481,9 @@ private proc addPackageToBricks(projectLocal: string, safeDir: string,
 
   if tagExists {
     throw new MasonError(
-      'A git tag with the version number of your package ' +
-      'already exists. Please update the version number in ' +
-      'your Mason.toml to publish.');
+      "A git tag for version " + versionNum + " of your package " +
+      "already exists. Please update the version number in " +
+      "your Mason.toml to publish.");
   }
   if !isLocal {
     const baseToml = tomlFile;
