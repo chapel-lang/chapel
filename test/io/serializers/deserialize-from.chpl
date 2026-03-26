@@ -21,7 +21,8 @@ record G : writeSerializable {
   }
 
   proc type deserializeFrom(reader: fileReader(?), ref deserializer) {
-    type fieldType = __primitive("field by num", this, 1);
+    use Reflection;
+    type fieldType = getField(this, 1);
     return new G(reader.read(fieldType));
   }
 }
