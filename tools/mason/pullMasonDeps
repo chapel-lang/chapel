@@ -42,4 +42,4 @@ while IFS= read -r line; do
   echo "Downloaded $filename"
 done < "$DEPS_FILE"
 
-
+echo "this file indicates a successful run">$MASON_DIR/ThirdParty/downloaded.txt
