@@ -68,6 +68,8 @@ Outline
      - `Tracking Current Failure Mode`_
      - `Resolving a Future`_
 
+   - `A Test That Has Memory Leaks`_
+
  * `Invoking start_test`_
 
    - `Correctness Testing`_
@@ -841,8 +843,8 @@ There are three situations under which a future will get resolved.
    - The developer may then either remove the supporting files for futures, or
      remove the test entirely.
 
-A Test That Has Leaks
----------------------
+A Test That Has Memory Leaks
+----------------------------
 
 Normally, if a test leaks memory, that will be caught by the testing system as
 an error, which will also be tagged as a leak for triaging the issue easily.
