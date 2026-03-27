@@ -433,10 +433,13 @@ is equivalent to
 
 for an arbitrary expression ``e``.
 
-As an exception, iterator expressions (such as calls to an ``iter`` procedure),
-promoted function calls (see :ref:`Promotion`), and loop expressions (e.g.,
-:ref:`For_Expressions`), are converted into arrays. For iterators in
-particular, see also :ref:`Iterators_as_Arrays`.
+A prominent exception to this behavior occurs when a variable's initialization
+expression involves iteration — for example, a call to an iterator,
+a promoted procedure call (see :ref:`Promotion`), or a loop expression (e.g.,
+:ref:`For_Expressions`). In such cases, the variable will be inferred to have
+an array type, and its elements will be initialized to store the results of the
+iteration. For more information about the iterator case, see also
+:ref:`Iterators_as_Arrays`.
 
    *Example (iter-promo-loop-as-arrays.chpl)*.
 
