@@ -4481,18 +4481,6 @@ inline operator :(x: chpl_ioNewline, type t:string) {
   return "\n";
 }
 
-@chpldoc.nodoc
-record _internalIoBits {
-  /* The bottom ``numBits`` of x will be read or written */
-  var x:uint(64);
-  /* How many of the low-order bits of ``x`` should we read or write? */
-  var numBits:int(8);
-
-  // keep the old names for compatibility with old ioBits
-  proc v: x.type {return x;}
-  proc nbits:numBits.type {return numBits;}
-}
-
 /*
  EEOF, ESHORT, and EFORMAT are internal, Chapel-specific IO error codes.
  */
@@ -5703,7 +5691,7 @@ proc _isIoPrimitiveType(type t) param do return
 
 @chpldoc.nodoc
  proc _isIoPrimitiveTypeOrNewline(type t) param do return
-  _isIoPrimitiveType(t) || t == chpl_ioNewline || t == _internalIoChar || t == _internalIoBits;
+  _isIoPrimitiveType(t) || t == chpl_ioNewline || t == _internalIoChar;
 
 // Read routines for all primitive types.
 private proc _read_text_internal(_channel_internal:qio_channel_ptr_t,
@@ -6062,7 +6050,7 @@ proc fileReader._deserializeOne(ref x:?t, loc:locale) throws {
   reader._home = _home;
   reader._readWriteThisFromLocale = loc;
 
-  if t == chpl_ioNewline || t == _internalIoBits || t == _internalIoChar {
+  if t == chpl_ioNewline || t == _internalIoChar {
     reader._readOne(_iokind.dynamic, x, reader.getLocaleOfIoRequest());
     return;
   }
@@ -6106,12 +6094,23 @@ proc fileWriter._serializeOne(const x:?t, loc:locale) throws {
   writer._home = _home;
   writer._readWriteThisFromLocale = loc;
 
-  if t == chpl_ioNewline || t == _internalIoBits || t == _internalIoChar {
+  if t == chpl_ioNewline || t == _internalIoChar {
     writer._writeOne(_iokind.dynamic, x, writer.getLocaleOfIoRequest());
     return;
   }
 
   try writer.serializer.serializeValue(writer, x);
+}
+
+private proc _checkIoError(rw, err: errorCode) throws {
+  if err != 0 {
+    var msg = rw._constructIoErrorMsg(err);
+    if err == EILSEQ {
+      // TODO: Is this error tested?
+      msg = escapedNonUTF8ErrorMessage() + msg;
+    }
+    try rw._ch_ioerror(err, msg);
+  }
 }
 
 //
@@ -6140,8 +6139,6 @@ private proc _read_io_type_internal(_channel_internal:qio_channel_ptr_t,
     return qio_channel_skip_past_newline(false, _channel_internal, x.skipWhitespaceOnly);
   } else if t == _internalIoChar {
     return qio_channel_read_char(false, _channel_internal, x.ch);
-  } else if t == _internalIoBits {
-    return qio_channel_read_bits(false, _channel_internal, x.x, x.numBits);
   } else if kind == _iokind.dynamic {
     var binary:uint(8) = qio_channel_binary(_channel_internal);
     var byteorder:uint(8) = qio_channel_byteorder(_channel_internal);
@@ -6192,8 +6189,6 @@ private proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
     return qio_channel_write_newline(false, _channel_internal);
   } else if t == _internalIoChar {
     return qio_channel_write_char(false, _channel_internal, x.ch);
-  } else if t == _internalIoBits {
-    return qio_channel_write_bits(false, _channel_internal, x.x, x.numBits);
   } else if kind == _iokind.dynamic {
     var binary:uint(8) = qio_channel_binary(_channel_internal);
     var byteorder:uint(8) = qio_channel_byteorder(_channel_internal);
@@ -8229,11 +8224,18 @@ proc fileReader.readBits(ref x:integral, numBits:int):bool throws {
       throw new owned IllegalArgumentError("readBits numBits=" + numBits:string + " < 0");
   }
 
-  var tmp:_internalIoBits;
-  tmp.numBits = numBits:int(8);
-  var ret = try this.read(tmp);
-  x = tmp.x:x.type;
-  return ret;
+  var tmp : uint(64);
+  const err = qio_channel_read_bits(false, _channel_internal, tmp, numBits:int(8));
+
+  try {
+    try _checkIoError(this, err);
+  } catch err: EofError {
+    return false;
+  }
+
+  x = tmp:x.type;
+
+  return true;
 }
 
 /*
@@ -8282,7 +8284,8 @@ proc fileWriter.writeBits(x: integral, numBits: int) : void throws {
         numBits:string + " < 0");
   }
 
-  try this.write(new _internalIoBits(x:uint(64), numBits:int(8)));
+  var err = qio_channel_write_bits(false, _channel_internal, x:uint(64), numBits:int(8));
+  try _checkIoError(this, err);
 }
 
 /*
