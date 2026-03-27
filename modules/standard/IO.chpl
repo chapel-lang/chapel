@@ -6673,8 +6673,19 @@ iter fileReader._lines_serial(
   this._set_styleInternal(newline_style);
 
   // Iterate over lines
-  var itemReader = new itemReaderInternal(t, locking, deserializerType, this);
-  for line in itemReader {
+  iter helper() {
+    while true {
+      var x : t;
+      var got : bool;
+      try! {
+        got = this.read(x);
+      }
+      if !got then break;
+      yield x;
+    }
+  }
+
+  for line in helper() {
     if !stripNewline then yield line;
     else {
       var lastCharIdx = line.size-1;
@@ -9477,36 +9488,6 @@ proc fileWriter.isClosed() : bool {
     ret = qio_channel_isclosed(locking, _channel_internal);
   }
   return ret;
-}
-
-@chpldoc.nodoc
-record itemReaderInternal {
-  /* What type do we read and yield? */
-  type ItemType;
-  /* the locking field for our fileReader */
-  param locking:bool;
-  /* the deserializer for this fileReader */
-  type deserializerType;
-  /* our fileReader */
-  var ch:fileReader(locking,deserializerType);
-
-  /* read a single item, throwing on error */
-  proc read(out arg:ItemType):bool throws {
-    return ch.read(arg);
-  }
-
-  /* iterate through all items of that type read from the fileReader */
-  iter these() { // TODO: this should throw
-    while true {
-      var x:ItemType;
-      var gotany:bool;
-      try! { // TODO this should by a 'try' (once #7134 is fixed)
-        gotany = ch.read(x);
-      }
-      if ! gotany then break;
-      yield x;
-    }
-  }
 }
 
 // And now, the toplevel items.
