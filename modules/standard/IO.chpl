@@ -4415,29 +4415,6 @@ proc fileWriter.withSerializer(in serializer: ?st) : fileWriter(this.locking, st
   return ret;
 }
 
-// represents a Unicode codepoint
-// used to pass codepoints to read and write to avoid duplicating code
-@chpldoc.nodoc
-record _internalIoChar : writeSerializable {
-  /* The codepoint value */
-  var ch:int(32);
-  @chpldoc.nodoc
-  proc serialize(writer, ref serializer) throws {
-    // ioChar.writeThis should not be called;
-    // I/O routines should handle ioChar directly
-    assert(false);
-  }
-}
-
-@chpldoc.nodoc
-inline operator :(x: _internalIoChar, type t:string) {
-  var csc: c_ptrConst(c_char) =  qio_encode_to_string(x.ch);
-  // The caller has responsibility for freeing the returned string.
-  try! {
-    return string.createAdoptingBuffer(csc);
-  }
-}
-
 @chpldoc.nodoc
 proc fileReader._getFp(): (bool, c_ptr(c_FILE)) {
   extern proc fdopen(fd: int(32), mode: c_ptrConst(c_char)): c_ptr(c_FILE);
@@ -5691,7 +5668,7 @@ proc _isIoPrimitiveType(type t) param do return
 
 @chpldoc.nodoc
  proc _isIoPrimitiveTypeOrNewline(type t) param do return
-  _isIoPrimitiveType(t) || t == chpl_ioNewline || t == _internalIoChar;
+  _isIoPrimitiveType(t) || t == chpl_ioNewline;
 
 // Read routines for all primitive types.
 private proc _read_text_internal(_channel_internal:qio_channel_ptr_t,
@@ -6050,7 +6027,7 @@ proc fileReader._deserializeOne(ref x:?t, loc:locale) throws {
   reader._home = _home;
   reader._readWriteThisFromLocale = loc;
 
-  if t == chpl_ioNewline || t == _internalIoChar {
+  if t == chpl_ioNewline {
     reader._readOne(_iokind.dynamic, x, reader.getLocaleOfIoRequest());
     return;
   }
@@ -6094,7 +6071,7 @@ proc fileWriter._serializeOne(const x:?t, loc:locale) throws {
   writer._home = _home;
   writer._readWriteThisFromLocale = loc;
 
-  if t == chpl_ioNewline || t == _internalIoChar {
+  if t == chpl_ioNewline {
     writer._writeOne(_iokind.dynamic, x, writer.getLocaleOfIoRequest());
     return;
   }
@@ -6137,8 +6114,6 @@ private proc _read_io_type_internal(_channel_internal:qio_channel_ptr_t,
   var e:errorCode = 0;
   if t == chpl_ioNewline {
     return qio_channel_skip_past_newline(false, _channel_internal, x.skipWhitespaceOnly);
-  } else if t == _internalIoChar {
-    return qio_channel_read_char(false, _channel_internal, x.ch);
   } else if kind == _iokind.dynamic {
     var binary:uint(8) = qio_channel_binary(_channel_internal);
     var byteorder:uint(8) = qio_channel_byteorder(_channel_internal);
@@ -6187,8 +6162,6 @@ private proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
   var e:errorCode = 0;
   if t == chpl_ioNewline {
     return qio_channel_write_newline(false, _channel_internal);
-  } else if t == _internalIoChar {
-    return qio_channel_write_char(false, _channel_internal, x.ch);
   } else if kind == _iokind.dynamic {
     var binary:uint(8) = qio_channel_binary(_channel_internal);
     var byteorder:uint(8) = qio_channel_byteorder(_channel_internal);
@@ -8228,7 +8201,7 @@ proc fileReader.readBits(ref x:integral, numBits:int):bool throws {
   const err = qio_channel_read_bits(false, _channel_internal, tmp, numBits:int(8));
 
   try {
-    try _checkIoError(this, err);
+    _checkIoError(this, err);
   } catch err: EofError {
     return false;
   }
@@ -8300,7 +8273,8 @@ proc fileWriter.writeBits(x: integral, numBits: int) : void throws {
                        due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileWriter.writeCodepoint(codepoint: int) throws {
-  try this.write(new _internalIoChar(codepoint.safeCast(int(32))));
+  const err = qio_channel_write_char(false, _channel_internal, codepoint.safeCast(int(32)));
+  try _checkIoError(this, err);
 }
 
 /*
@@ -8334,10 +8308,18 @@ proc fileReader.readCodepoint(): int throws {
                        due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileReader.readCodepoint(ref codepoint: int):bool throws {
-  var tmp:_internalIoChar;
-  var ret = try this.read(tmp);
-  codepoint = tmp.ch.safeCast(codepoint.type);
-  return ret;
+  var tmp : int(32);
+  const err = qio_channel_read_char(false, _channel_internal, tmp);
+
+  try {
+    _checkIoError(this, err);
+  } catch err: EofError {
+    return false;
+  }
+
+  codepoint = tmp.safeCast(codepoint.type);
+
+  return true;
 }
 
 /*
@@ -10439,24 +10421,6 @@ proc _setIfPrimitive(ref lhs:?t, rhs, argi:int):errorCode where !_isIoPrimitiveT
 }
 
 private inline
-proc _setIfChar(ref lhs:?t, rhs:int(32)) where t == string
-{
-  lhs = new _internalIoChar(rhs):string;
-}
-private inline
-proc _setIfChar(ref lhs:?t, rhs:int(32)) where isIntegralType(t)
-{
-  lhs = rhs:t;
-}
-private inline
-proc _setIfChar(ref lhs:?t, rhs:int(32)) where !(t==string||isIntegralType(t))
-{
-  // do nothing
-}
-
-
-
-private inline
 proc _toRegex(x:?t) where isSubtype(t, regex(?))
 {
   return (x, true);
@@ -11134,7 +11098,9 @@ proc fileWriter._writefOne(fmtStr, const ref arg, i: int,
         var (t,ok) = _toChar(arg);
         if ! ok {
           err = qio_format_error_arg_mismatch(i);
-        } else try _writeOne(_iokind.dynamic, new _internalIoChar(t), origLocale);
+        } else {
+          writeCodepoint(t);
+        }
       } when QIO_CONV_ARG_TYPE_BINARY_STRING {
         var (t,ok) = _toBytes(arg);
         if ! ok {
@@ -11439,11 +11405,23 @@ proc fileReader.readf(fmtStr:?t, ref args ...?k): bool throws
               }
             } when QIO_CONV_ARG_TYPE_CHAR {
               var (t,ok) = _toChar(args(i));
-              var chr = new _internalIoChar(t);
+              var chr : int(32);
               if ! ok {
                 err = qio_format_error_arg_mismatch(i);
-              } else try _readOne(_iokind.dynamic, chr, origLocale);
-              if ! err then _setIfChar(args(i),chr.ch);
+              } else try readCodepoint(chr);
+
+              if ! err {
+                ref arg = args(i);
+                if isIntegralType(arg.type) {
+                  arg = chr:arg.type;
+                } else if arg.type == string {
+                  var csc: c_ptrConst(c_char) = qio_encode_to_string(chr);
+                  // The caller has responsibility for freeing the returned string.
+                  try! {
+                    arg = string.createAdoptingBuffer(csc);
+                  }
+                }
+              }
             } when QIO_CONV_ARG_TYPE_BINARY_STRING {
               var (t,ok) = _toBytes(args(i));
               if ! ok {
