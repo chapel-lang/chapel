@@ -418,8 +418,8 @@ Local Type Inference
 --------------------
 
 If the type is omitted from a variable declaration, the type of the
-variable is defined to be the type of the initialization expression.
-
+variable is usually defined to be the type of the initialization expression.
+In other words,
 
 .. code-block:: chapel
 
@@ -431,9 +431,10 @@ is equivalent to
 
    var v: e.type = e;
 
-for an arbitrary expression ``e``, with two exceptions. First,
-iterator expressions (such as calls to an ``iter`` procedure), promoted
-function calls (see :ref:`Promotion`), and loop expressions (e.g.,
+for an arbitrary expression ``e``.
+
+As an exception, iterator expressions (such as calls to an ``iter`` procedure),
+promoted function calls (see :ref:`Promotion`), and loop expressions (e.g.,
 :ref:`For_Expressions`), are converted into arrays. For iterators in
 particular, see also :ref:`Iterators_as_Arrays`.
 
