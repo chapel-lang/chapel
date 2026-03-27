@@ -562,6 +562,16 @@ class ChapelLanguageServer(LanguageServer):
 
         decl_qts = []
         for i, _ in insts:
+            # If any one of the instantiations is purely provided by
+            # CLS, don't show common inlays. (e.g., what if we ONLY
+            # have synthetic instantiations? what if only the synthetic
+            # instantiation differs?).
+            from_real_call = any(
+              ctx != () for ctx in fi.context.call_contexts(i)
+            )
+            if not from_real_call:
+                return inlays
+
             rr = decl.node.resolve_via(i)
             if rr is None:
                 break
