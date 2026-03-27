@@ -148,6 +148,7 @@ class ChapelLanguageServer(LanguageServer):
         self.param_inlays: bool = config.get("param_inlays")
         self.enum_inlays: bool = config.get("enum_inlays")
         self.default_rect_arrays: bool = config.get("default_rect_arrays")
+        self.common_inlays: bool = config.get("common_inlays")
         self.dead_code: bool = config.get("dead_code")
         self.eval_expressions: bool = config.get("eval_expressions")
         self.show_instantiations: bool = config.get("show_instantiations")
@@ -539,6 +540,8 @@ class ChapelLanguageServer(LanguageServer):
     ) -> List[InlayHint]:
 
         inlays = []
+        if not self.common_inlays or not self.use_resolver:
+            return inlays
 
         node = decl.node
         if isinstance(node, chapel.Function):

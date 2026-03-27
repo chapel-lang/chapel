@@ -1539,6 +1539,9 @@ class CLSConfig:
             self.parser, "default-rect-arrays", "default_rect_arrays", True
         )
         chplcheck().config.add_bool_flag(
+            self.parser, "common-inlays", "common_inlays", True
+        )
+        chplcheck().config.add_bool_flag(
             self.parser, "literal-arg-inlays", "literal_arg_inlays", True
         )
         chplcheck().config.add_bool_flag(
