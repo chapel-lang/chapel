@@ -532,6 +532,58 @@ class ChapelLanguageServer(LanguageServer):
         inlays.extend(self._get_type_inlays(decl, qt))
         return inlays
 
+    def get_common_decl_inlays(
+        self,
+        decl: NodeAndRange,
+        fi: FileInfo,
+    ) -> List[InlayHint]:
+
+        inlays = []
+
+        node = decl.node
+        if isinstance(node, chapel.Function):
+            return inlays
+
+        parent = node.parent_symbol()
+        if not isinstance(parent, chapel.Function):
+            return inlays
+        parent_fn = parent
+
+        # Validate that the structure we're resolving is roughly what we'd expect
+        parent = parent.parent_symbol()
+        while parent:
+            if not isinstance(parent, (chapel.Module, chapel.CompositeType)):
+                return inlays
+            parent = parent.parent_symbol()
+
+        insts = list(fi.context.instantiations(parent_fn.unique_id()))
+        if len(insts) == 0:
+            return inlays
+
+        decl_qts = []
+        for i, _ in insts:
+            rr = decl.node.resolve_via(i)
+            if rr is None:
+                break
+
+            qt = rr.type()
+            if qt is None:
+                break
+
+            decl_qts.append(qt)
+
+        if len(decl_qts) != len(insts):
+            return inlays
+
+        unique_qts = set(decl_qts)
+        if len(unique_qts) != 1:
+            return inlays
+
+        qt = unique_qts.pop()
+        inlays.extend(self._get_param_inlays(decl, qt))
+        inlays.extend(self._get_type_inlays(decl, qt))
+        return inlays
+
     def get_call_inlays(
         self, call: chapel.FnCall, via: Optional[chapel.TypedSignature] = None
     ) -> List[InlayHint]:
@@ -1118,6 +1170,12 @@ def run_lsp():
         for decl in decls:
             instantiation = fi.get_inst_segment_at_position(decl.rng.start)
             inlays.extend(ls.get_decl_inlays(decl, instantiation))
+
+            if instantiation is not None:
+                continue
+
+            # Get inalys gathered if all instantiations show the same hint.
+            inlays.extend(ls.get_common_decl_inlays(decl, fi))
 
         for call in calls:
             call_range = location_to_range(call.location())
