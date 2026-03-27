@@ -559,8 +559,11 @@ class ChapelLanguageServer(LanguageServer):
                 return inlays
             parent = parent.parent_symbol()
 
+        # * If there are no instantiations, nothing to show.
+        # * If there's only one, we can't distinguish "common" from
+        #   "just in this one", so don't show anything.
         insts = list(fi.context.instantiations(parent_fn.unique_id()))
-        if len(insts) == 0:
+        if len(insts) < 2:
             return inlays
 
         decl_qts = []
