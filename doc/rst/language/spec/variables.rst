@@ -448,7 +448,7 @@ particular, see also :ref:`Iterators_as_Arrays`.
 
       var x = foo();
       var y = foo() + 1;
-      var z = for i in 2..10 do i;
+      var z = [i in 2..10] i;
       writeln(x.type : string);
       writeln(y.type : string);
       writeln(z.type : string);
