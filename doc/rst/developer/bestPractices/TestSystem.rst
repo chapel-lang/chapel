@@ -866,8 +866,9 @@ Changes in leaks (either positively or negatively) will be reported as a testing
 error tat needs to be acted upon either by updating the ``good`` file or fixing
 the leak.
 
-Note that leaky tests are captured by the [performance
-plots](https://chapel-lang.org/perf/chapcs/?graphs=memoryleaksforalltests,numberoftestswithleaks)
+.. _`memory leak plots`: https://chapel-lang.org/perf/chapcs/?graphs=memoryleaksforalltests,numberoftestswithleaks
+
+Note that leaky tests are captured by the `memory leak plots`_
 here. It is a good practice to keep the triager when a new leaky test is merged
 so that the changes in those plots can be annotated promptly.
 
