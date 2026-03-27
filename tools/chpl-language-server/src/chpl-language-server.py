@@ -147,6 +147,7 @@ class ChapelLanguageServer(LanguageServer):
         self.literal_arg_inlays: bool = config.get("literal_arg_inlays")
         self.param_inlays: bool = config.get("param_inlays")
         self.enum_inlays: bool = config.get("enum_inlays")
+        self.default_rect_arrays: bool = config.get("default_rect_arrays")
         self.dead_code: bool = config.get("dead_code")
         self.eval_expressions: bool = config.get("eval_expressions")
         self.show_instantiations: bool = config.get("show_instantiations")

@@ -1135,6 +1135,9 @@ class FileInfo:
             self._search_instantiations(fn, via=sig)
 
     def _search_rectangular_instantiations(self, root):
+        if not self.context.cls_config.get("default_rect_arrays"):
+            return
+
         for node, _ in chapel.each_matching(
             root, chapel.Function, iterator=chapel.preorder
         ):
@@ -1531,6 +1534,9 @@ class CLSConfig:
         )
         chplcheck().config.add_bool_flag(
             self.parser, "enum-inlays", "enum_inlays", True
+        )
+        chplcheck().config.add_bool_flag(
+            self.parser, "default-rect-arrays", "default_rect_arrays", True
         )
         chplcheck().config.add_bool_flag(
             self.parser, "literal-arg-inlays", "literal_arg_inlays", True
