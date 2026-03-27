@@ -573,7 +573,7 @@ class ChapelLanguageServer(LanguageServer):
             # have synthetic instantiations? what if only the synthetic
             # instantiation differs?).
             from_real_call = any(
-              ctx != () for ctx in fi.context.call_contexts(i)
+                ctx != () for ctx in fi.context.call_contexts(i)
             )
             if not from_real_call:
                 return inlays
