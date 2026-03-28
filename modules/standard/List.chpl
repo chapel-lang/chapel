@@ -982,6 +982,36 @@ module List {
     }
 
     /*
+      Returns `true` if this list contains an element satisfying the given
+      predicate, and `false` otherwise.
+
+      :arg predicate: A callable that takes an element and returns `true`
+        if it matches.
+
+      :return: `true` if an element satisfying `predicate` is found.
+      :rtype: `bool`
+      */
+    proc const contains(predicate): bool
+        where !isCoercible(predicate.type, eltType)
+    {
+      var result = false;
+
+      on this {
+        _enter();
+
+        for item in this do
+          if predicate(item) {
+            result = true;
+            break;
+          }
+
+        _leave();
+      }
+
+      return result;
+    }
+
+    /*
       Returns a reference to the first item in this list.
 
       .. warning::
@@ -1501,6 +1531,70 @@ module List {
 
         for i in start..stop do
           if x == _getRef(i) {
+            result = i;
+            break;
+          }
+
+        _leave();
+      }
+
+      return result;
+    }
+
+    /*
+      Return a zero-based index into this list of the first item satisfying
+      the given predicate. If no such element can be found or if the list
+      is empty, this method returns the value `-1`.
+
+      .. warning::
+
+        Calling this method with values of `start` or `end` that are out of
+        bounds will cause the currently running program to halt. If the
+        ``--fast`` flag is used, no safety checks will be performed.
+
+      :arg predicate: A callable that takes an element and returns `true`
+                      if it matches.
+
+      :arg start: The start index to start searching from.
+      :type start: `int`
+
+      :arg end: The end index to stop searching at. A value less than
+                `0` will search the entire list.
+      :type end: `int`
+
+      :return: The index of the first matching element, or `-1`` if not found.
+      :rtype: `int`
+    */
+    proc const find(predicate, start: int=0, end: int=-1): int
+        where !isCoercible(predicate.type, eltType)
+    {
+      param error = -1;
+
+      if _size == 0 then
+        return error;
+
+      if boundsChecking {
+        const msg = " index for \"list.find\" out of bounds: ";
+
+        if end >= 0 && !_withinBounds(end) then
+          boundsCheckHalt("End" + msg + end:string);
+
+        if !_withinBounds(start) then
+          boundsCheckHalt("Start" + msg + start:string);
+      }
+
+      if end >= 0 && end < start then
+        return error;
+
+      var result = error;
+
+      on this {
+        _enter();
+
+        const stop = if end < 0 then _size-1 else end;
+
+        for i in start..stop do
+          if predicate(_getRef(i)) {
             result = i;
             break;
           }
