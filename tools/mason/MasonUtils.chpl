@@ -32,6 +32,7 @@ public use Path;
 public use TOML;
 use Regex;
 import MasonLogger;
+import ThirdParty.Pathlib.path;
 
 private var log = new MasonLogger.logger("mason utils");
 
@@ -453,16 +454,18 @@ proc gitC(newDir, command, quiet=false) throws {
 }
 
 proc getProjectHome(cwd: string, tomlName="Mason.toml") : string throws {
-  const (dirname, basename) = splitPath(cwd);
-  if dirname == '/' {
-    throw new MasonError("Mason could not find your " +
-                         "configuration file (Mason.toml)");
+  var dir = cwd:path;
+  while true {
+    if (dir/tomlName).exists() then
+      return dir:string;
+    if dir:string == "/" then
+      throw new MasonError("Mason could not find your " +
+                           "configuration file (Mason.toml)");
+    dir = dir.parent;
   }
-  const tomlFile = joinPath(cwd, tomlName);
-  if exists(tomlFile) {
-    return cwd;
-  }
-  return getProjectHome(dirname, tomlName);
+  throw new MasonError("Mason could not find your " +
+                       "configuration file (Mason.toml)");
+  return ""; // should never reach here
 }
 
 proc getLastModified(filename: string) : int {
