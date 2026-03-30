@@ -646,7 +646,7 @@ FnSymbol* build_accessor(AggregateType* ct, Symbol* field,
   return fn;
 }
 
-FnSymbol* build_union_field_index_accessor(AggregateType* at, Symbol* field) {
+static void build_union_field_index_accessor(AggregateType* at, Symbol* field) {
   SET_LINENO(field);
   // add a parenless proc for the field name that returns the field index
   FnSymbol*  fn = new FnSymbol(field->name);
@@ -676,8 +676,6 @@ FnSymbol* build_union_field_index_accessor(AggregateType* at, Symbol* field) {
   at->methods.add(fn);
 
   fn->cname = astr("chpl_get_", at->symbol->cname, "_index_", fn->cname);
-
-  return fn;
 }
 
 // Getter and setter functions are provided by the compiler if not supplied by
