@@ -191,7 +191,7 @@ class Test:
 
     def test(self):
         start_time = time.time()
-        sub_test_util.printTestName(self.source_file)
+        sub_test_util.printTestName(self._nice_output_name())
         retcode, executable_output = self._execute()
         if executable_output is not None:
 
@@ -217,7 +217,7 @@ class Test:
                         )
                     )
         elapsed = time.time() - start_time
-        sub_test_util.printEndOfTestMsg(self.source_file, elapsed)
+        sub_test_util.printEndOfTestMsg(self._nice_output_name(), elapsed)
 
 
 def dirSkipIf(d: Path):

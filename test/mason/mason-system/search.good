@@ -1,116 +1,80 @@
-+ export PKG_CONFIG_LIBDIR=
-+ PKG_CONFIG_LIBDIR=
-+ export PKG_CONFIG_PATH=$CHPL_HOME/test/mason/mason-system/myPackages
-+ PKG_CONFIG_PATH=$CHPL_HOME/test/mason/mason-system/myPackages
-+ test
-+ echo 'Testing '
 Testing 
-+ mason system search
-+ sort
+=== mason system search ===
 anotherPackage                 anotherPackage - Another simple package with no real information
 dummy                          dummy - A dummy package to support testing mason
 forGoodMeasure                 forGoodMeasure - One more package that helps test mason
 myOtherPackage                 myOtherPackage - My weird package which abuses pkg-config to pass Chapel flags
 myWeirdPackage                 myWeirdPackage - My weird package which abuses pkg-config to pass Chapel flags
-+ mason system search package
-+ sort
+=== mason system search package ===
 anotherPackage                 anotherPackage - Another simple package with no real information
 myOtherPackage                 myOtherPackage - My weird package which abuses pkg-config to pass Chapel flags
 myWeirdPackage                 myWeirdPackage - My weird package which abuses pkg-config to pass Chapel flags
-+ mason system search myWeirdPackage
-+ sort
+=== mason system search myWeirdPackage ===
 myWeirdPackage                 myWeirdPackage - My weird package which abuses pkg-config to pass Chapel flags
-+ mason system search simple
-+ sort
-+ mason system search 'another|weird'
-+ sort
+=== mason system search simple ===
+=== mason system search 'another|weird' ===
 anotherPackage                 anotherPackage - Another simple package with no real information
 myWeirdPackage                 myWeirdPackage - My weird package which abuses pkg-config to pass Chapel flags
-+ echo ===============
 ===============
-+ test --no-show-desc
-+ echo 'Testing --no-show-desc'
 Testing --no-show-desc
-+ mason system search --no-show-desc
-+ sort
+=== mason system search ===
 anotherPackage
 dummy
 forGoodMeasure
 myOtherPackage
 myWeirdPackage
-+ mason system search package --no-show-desc
-+ sort
+=== mason system search package ===
 anotherPackage
 myOtherPackage
 myWeirdPackage
-+ mason system search myWeirdPackage --no-show-desc
-+ sort
+=== mason system search myWeirdPackage ===
 myWeirdPackage
-+ mason system search simple --no-show-desc
-+ sort
-+ mason system search 'another|weird' --no-show-desc
-+ sort
+=== mason system search simple ===
+=== mason system search 'another|weird' ===
 anotherPackage
 myWeirdPackage
-+ echo ===============
 ===============
-+ test --desc
-+ echo 'Testing --desc'
 Testing --desc
-+ mason system search --desc
-+ sort
+=== mason system search ===
 anotherPackage                 anotherPackage - Another simple package with no real information
 dummy                          dummy - A dummy package to support testing mason
 forGoodMeasure                 forGoodMeasure - One more package that helps test mason
 myOtherPackage                 myOtherPackage - My weird package which abuses pkg-config to pass Chapel flags
 myWeirdPackage                 myWeirdPackage - My weird package which abuses pkg-config to pass Chapel flags
-+ mason system search package --desc
-+ sort
+=== mason system search package ===
 anotherPackage                 anotherPackage - Another simple package with no real information
 dummy                          dummy - A dummy package to support testing mason
 forGoodMeasure                 forGoodMeasure - One more package that helps test mason
 myOtherPackage                 myOtherPackage - My weird package which abuses pkg-config to pass Chapel flags
 myWeirdPackage                 myWeirdPackage - My weird package which abuses pkg-config to pass Chapel flags
-+ mason system search myWeirdPackage --desc
-+ sort
+=== mason system search myWeirdPackage ===
 myWeirdPackage                 myWeirdPackage - My weird package which abuses pkg-config to pass Chapel flags
-+ mason system search simple --desc
-+ sort
+=== mason system search simple ===
 anotherPackage                 anotherPackage - Another simple package with no real information
-+ mason system search 'another|weird' --desc
-+ sort
+=== mason system search 'another|weird' ===
 anotherPackage                 anotherPackage - Another simple package with no real information
 myOtherPackage                 myOtherPackage - My weird package which abuses pkg-config to pass Chapel flags
 myWeirdPackage                 myWeirdPackage - My weird package which abuses pkg-config to pass Chapel flags
-+ echo ===============
 ===============
-+ test --no-show-desc --desc
-+ echo 'Testing --no-show-desc' --desc
 Testing --no-show-desc --desc
-+ mason system search --no-show-desc --desc
-+ sort
+=== mason system search ===
 anotherPackage
 dummy
 forGoodMeasure
 myOtherPackage
 myWeirdPackage
-+ mason system search package --no-show-desc --desc
-+ sort
+=== mason system search package ===
 anotherPackage
 dummy
 forGoodMeasure
 myOtherPackage
 myWeirdPackage
-+ mason system search myWeirdPackage --no-show-desc --desc
-+ sort
+=== mason system search myWeirdPackage ===
 myWeirdPackage
-+ mason system search simple --no-show-desc --desc
-+ sort
+=== mason system search simple ===
 anotherPackage
-+ mason system search 'another|weird' --no-show-desc --desc
-+ sort
+=== mason system search 'another|weird' ===
 anotherPackage
 myOtherPackage
 myWeirdPackage
-+ echo ===============
 ===============

@@ -604,11 +604,6 @@ if ($build == 1) {
   if ($mason_build == 1) {
     print "Making mason\n";
     mysystem("cd $chplhomedir && $make -j$num_procs mason", "making mason", $exitOnError);
-  } else {
-    # if we aren't building mason, make sure the mason deps are available.
-    # some tests build mason as part of the test but don't pull the deps
-    print "Getting mason dependencies\n";
-    mysystem("cd $chplhomedir && $make -j$num_procs mason-deps", "making mason dependencies", $exitOnError);
   }
 
   # Build the protobuf Chapel plugin
