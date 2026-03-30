@@ -1,13 +1,2 @@
-+ cd prereq3
-+ MASON_LOG_LEVEL=info
-+ mason build
-Command failed: 'make MASON_PACKAGE_HOME=$CHPL_HOME/test/mason/mason-prereq/prereq3'
-mmason prereqs : Prerequisites directory exists ($CHPL_HOME/test/mason/mason-prereq/prereq3/prereqs)
-mmason prereqs : Installing prerequisite $CHPL_HOME/test/mason/mason-prereq/prereq3/prereqs/some-c-lib
-mmason utils   : gcc -c -fPIE hello.c
-mmason utils   : hello.c:6:27: error: expected ';' after expression
-mmason utils   :     6 |   printf("Hello world!\n")
-mmason utils   :       |                           ^
-mmason utils   :       |                           ;
-mmason utils   : 1 error generated.
-mmason utils   : make: *** [all] Error 1
+Command failed: 'make MASON_PACKAGE_HOME=/chapel/home/abrahaja/chapel/test/mason/mason-prereq/prereq3'
+mason utils   : hello.c:6:27: error: expected ';' before '}' token
