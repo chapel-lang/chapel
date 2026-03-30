@@ -96,7 +96,7 @@ def path_to_runtime_libs(runtime_subdir):
 
 
 def static_runtime_lib_base_name():
-  return "chpl-static"
+    return "chpl-static"
 
 
 def static_runtime_lib_name():
@@ -111,7 +111,7 @@ def shared_runtime_lib_ext():
 
 
 def shared_runtime_lib_base_name():
-  return "chpl"
+    return "chpl"
 
 
 def shared_runtime_lib_name():
