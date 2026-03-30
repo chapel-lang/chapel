@@ -77,12 +77,12 @@ module ChapelIO {
       // print out just the set field for a union.
       writer.writeLiteral("(");
       param num_fields = getNumFields(t);
-      var id = __primitive("get_union_id", x);
+      var id = x.getActiveIndex();
       for param i in 0..<num_fields {
         if isIoField(x, i) && i == id {
           const eq = getFieldName(t, i) + " = ";
           writer.writeLiteral(eq);
-          writer.write(getField(x, i));
+          writer.write(x(i));
         }
       }
       writer.writeLiteral(")");
@@ -113,9 +113,9 @@ module ChapelIO {
       }
 
       param num_fields = getNumFields(t);
-      for param i in 1..num_fields {
+      for param i in 0..<num_fields {
         if isIoField(x, i) {
-          param name : string = getFieldName(x, i);
+          param name : string = getFieldName(t, i);
           ser.writeField(name, getField(x, i));
         }
       }
@@ -142,9 +142,9 @@ module ChapelIO {
       }
 
       param num_fields = getNumFields(t);
-      for param i in 1..num_fields {
+      for param i in 0..<num_fields {
         if isIoField(x, i) {
-          param name : string = getFieldName(x, i);
+          param name : string = getFieldName(t, i);
           ref field = getFieldRef(x, i);
           des.readField(name, field);
         }
