@@ -115,9 +115,8 @@ def shared_runtime_lib_base_name():
 
 
 def shared_runtime_lib_name():
-    ret = ""
-    ret += "lib" + shared_runtime_lib_base_name()
-    ret += "." + shared_runtime_lib_ext()
+    ret = "lib" + shared_runtime_lib_base_name() + "."
+    ret += shared_runtime_lib_ext()
     return ret
 
 
