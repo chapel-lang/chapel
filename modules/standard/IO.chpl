@@ -11408,7 +11408,11 @@ proc fileReader.readf(fmtStr:?t, ref args ...?k): bool throws
               var chr : int(32);
               if ! ok {
                 err = qio_format_error_arg_mismatch(i);
-              } else try readCodepoint(chr);
+              } else {
+                var tmp : int;
+                try readCodepoint(tmp);
+                chr = tmp.safeCast(int(32));
+              }
 
               if ! err {
                 ref arg = args(i);
