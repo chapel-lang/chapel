@@ -38,6 +38,18 @@ Requires:   python
 %description
 Chapel language compiler and libraries
 
+# Workarounds
+
+# Disable shebang mangling, due to errors encountered with shebangs in included
+# third-party code.
+# Anna, 2026-03-10
+%define __brp_mangle_shebangs %{nil}
+
+# Avoid generating build-id links, for which we get symlinks that are broken
+# outside the build container.
+# Anna, 2026-03-25
+%define _build_id_links none
+
 %prep
 
 cd $RPM_BUILD_DIR/%{chpl_home_basename}
