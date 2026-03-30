@@ -46,7 +46,7 @@ $(outputFile): $(MASON_SOURCES) buildMason
 	@echo "Building Mason..."
 	@CHPL_COMPILER=$(CHPL_COMPILER) outputFile=$(outputFile) DEBUG=$(DEBUG) ./buildMason
 
-deps: pullMasonDeps ThirdParty/masonDeps.txt
+deps: pullMasonDeps
 	@echo "Pulling Mason dependencies..."
 	@./pullMasonDeps
 
