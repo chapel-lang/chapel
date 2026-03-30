@@ -12,4 +12,12 @@ proc test2(test: borrowed Test) throws {
   }
 }
 
+proc iAmADependency(test: borrowed Test) throws {
+  test.assertTrue(true);
+}
+proc iHaveDependents(test: borrowed Test) throws {
+  test.dependsOn(iAmADependency);
+  test.assertTrue(true);
+}
+
 UnitTest.main();

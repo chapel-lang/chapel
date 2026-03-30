@@ -38,6 +38,8 @@ A program containing tests must execute the ``UnitTest``
 :proc:`~UnitTest.main()` function to run the tests.
 
 
+.. _assert-functions:
+
 Assert Functions
 ----------------
 
@@ -1493,7 +1495,6 @@ module UnitTest {
         testsFailed: map(string, bool),
         testsErrored: map(string, bool),
         testsLocalFails: map(string, bool),
-        testsPassed: map(string, bool),
         testsSkipped: map(string, bool);
     // Assuming 1 global test suite for now
     // Per-module or per-class is possible too
@@ -1518,7 +1519,6 @@ module UnitTest {
       testsFailed.addOrReplace(testName, false);
       testsErrored.addOrReplace(testName, false);
       testsLocalFails.addOrReplace(testName, false);
-      testsPassed.addOrReplace(testName, false);
       testsSkipped.addOrReplace(testName, false);
     }
     if testNames != "None" {
@@ -1528,25 +1528,28 @@ module UnitTest {
     }
     if failedTestNames != "None" {
       for test in failedTestNames.split(" ") {
-        testsFailed.replace(test.strip(), true); // these tests failed or skipped
+        // these tests failed or skipped
+        testsFailed.replace(test.strip(), true);
         testStatus.replace(test.strip(), true);
       }
     }
     if errorTestNames != "None" {
       for test in errorTestNames.split(" ") {
-        testsErrored.replace(test.strip(), true); // these tests failed or skipped
+        // these tests failed or skipped
+        testsErrored.replace(test.strip(), true);
         testStatus.replace(test.strip(), true);
       }
     }
     if skippedTestNames != "None" {
       for test in skippedTestNames.split(" ") {
-        testsSkipped.replace(test.strip(), true); // these tests failed or skipped
+        // these tests failed or skipped
+        testsSkipped.replace(test.strip(), true);
         testStatus.replace(test.strip(), true);
       }
     }
     if ranTests != "None" {
       for test in ranTests.split(" ") {
-        testsPassed.replace(test.strip(), true); // these tests failed or skipped
+        // these tests failed or skipped
         testStatus.replace(test.strip(), true);
       }
     }
@@ -1558,16 +1561,17 @@ module UnitTest {
         var checkCircle: list(string);
         var circleFound = false;
         var testObject = new Test();
-        runTestMethod(testStatus, testObject, testsFailed, testsErrored, testsSkipped,
-                      testsLocalFails, test, checkCircle, circleFound);
+        runTestMethod(testStatus, testObject, testsFailed, testsErrored,
+                      testsSkipped, testsLocalFails, test,
+                      checkCircle, circleFound);
       }
     }
   }
 
   private
-  proc runTestMethod(ref testStatus, ref testObject, ref testsFailed, ref testsErrored,
-                      ref testsSkipped, ref testsLocalFails, test, ref checkCircle,
-                      ref circleFound) throws {
+  proc runTestMethod(ref testStatus, ref testObject, ref testsFailed,
+                     ref testsErrored, ref testsSkipped, ref testsLocalFails,
+                     test, ref checkCircle, ref circleFound) throws {
     var testResult = new TextTestResult();
     var testName = testNameFromProcedure(test); //test is a FCF:
     checkCircle.pushBack(testName);
@@ -1576,23 +1580,33 @@ module UnitTest {
       test(testObject);
       testResult.addSuccess(testName);
       testsLocalFails.replace(testName, false);
-    }
-    // A variety of catch statements will handle errors thrown
-    catch e: AssertionError {
+    } catch e: AssertionError {
+      // A variety of catch statements will handle errors thrown
       testResult.addFailure(testName, try! "%?".format(e));
       testsFailed.replace(testName, true);
       // print info of the assertion error
-    }
-    catch e: DependencyFound {
+    } catch e: DependencyFound {
       var allTestsRan = true;
       for superTest in testObject.testDependsOn {
         var superTestName = testNameFromProcedure(superTest);
+
+        // if the dependency is not yet listed (i.e. we skipped it because
+        // of a filter), add it to the list with default values.
+        if !testStatus.contains(superTestName) {
+          testStatus.addOrReplace(superTestName, false);
+          testsFailed.addOrReplace(superTestName, false);
+          testsErrored.addOrReplace(superTestName, false);
+          testsLocalFails.addOrReplace(superTestName, false);
+          testsSkipped.addOrReplace(superTestName, false);
+        }
+
         var checkCircleCount = checkCircle.count(superTestName);
         // cycle is checked
         if checkCircleCount > 0 {
           testsSkipped.replace(testName, true);
           circleFound = true;
-          var failReason = testName + " skipped because circular dependency found";
+          var failReason =
+            testName + " skipped because circular dependency found";
           testResult.addSkip(testName, failReason);
           testStatus.replace(testName, true);
           return;
@@ -1606,9 +1620,9 @@ module UnitTest {
             // Create a test object per test
             var superTestObject = new Test();
             // running the super test
-            runTestMethod(testStatus, superTestObject, testsFailed, testsErrored,
-                          testsSkipped, testsLocalFails, superTest, checkCircle,
-                          circleFound);
+            runTestMethod(testStatus, superTestObject, testsFailed,
+                          testsErrored, testsSkipped, testsLocalFails,
+                          superTest, checkCircle, circleFound);
             var removeSuperTestCount = checkCircle.count(superTestName);
             if removeSuperTestCount > 0 {
               checkCircle.remove(superTestName);
@@ -1616,14 +1630,16 @@ module UnitTest {
             // if super test failed
             if testsFailed[superTestName] {
               testsSkipped.replace(testName, true);
-              var skipReason = testName + " skipped because " + superTestName +" failed";
+              var skipReason =
+                testName + " skipped because " + superTestName +" failed";
               testResult.addSkip(testName, skipReason);
               break;
             }
             // if super test failed
             if testsSkipped[superTestName] {
               testsSkipped.replace(testName, true);
-              var skipReason = testName + " skipped because " + superTestName +" skipped";
+              var skipReason =
+                testName + " skipped because " + superTestName +" skipped";
               testResult.addSkip(testName, skipReason);
               break;
             }
@@ -1638,66 +1654,64 @@ module UnitTest {
             // if superTest error then
             if testsErrored[superTestName] {
               testsSkipped.replace(testName, true);
-              var skipReason = testName + " skipped because " + superTestName +" gave an Error";
+              var skipReason =
+                testName + " skipped because " +
+                superTestName +" gave an Error";
               testResult.addSkip(testName, skipReason);
               break;
             }
           }
-        }
-        // super test Errored
-        else if testsErrored[superTestName] {
+        } else if testsErrored[superTestName] { // super test Errored
           testsSkipped.replace(testName, true);
-          var skipReason = testName + " skipped because " + superTestName +" gave an Error";
+          var skipReason =
+            testName + " skipped because " + superTestName +" gave an Error";
           testResult.addSkip(testName, skipReason);
           break;
-        }
-        // super test Skipped
-        else if testsSkipped[superTestName] {
+        } else if testsSkipped[superTestName] { // super test Skipped
           testsSkipped.replace(testName, true);
-          var skipReason = testName + " skipped because " + superTestName +" Skipped";
+          var skipReason =
+            testName + " skipped because " + superTestName +" Skipped";
           testResult.addSkip(testName, skipReason);
           break;
-        }
-        //super test failed
-        else {
+        } else {  // super test failed
           testsSkipped.replace(testName, true);
-          var skipReason = testName + " skipped because " + superTestName +" failed";
+          var skipReason =
+            testName + " skipped because " + superTestName +" failed";
           testResult.addSkip(testName, skipReason);
         }
       }
       if circleFound {
         testsSkipped.replace(testName, true);
-        var skipReason = testName + " skipped because circular dependency found";
+        var skipReason =
+          testName + " skipped because circular dependency found";
         testResult.addSkip(testName, skipReason);
-      }
-      // Test is not having error or failures or dependency or skipped
-      else if !testsErrored[testName] && allTestsRan &&
+      } else if !testsErrored[testName] && allTestsRan &&
               !testsFailed[testName] &&
               !testsSkipped[testName] {
-        testObject.dictDomain.clear(); // clearing so that we don't get Locales already added
-        runTestMethod(testStatus, testObject, testsFailed, testsErrored, testsSkipped,
-                      testsLocalFails, test, checkCircle, circleFound);
-      }
-      else if !testsErrored[testName] && !allTestsRan &&
+        // Test does not have error or failures or dependency or skipped
+
+        // clearing so that we don't get Locales already added
+        testObject.dictDomain.clear();
+        runTestMethod(testStatus, testObject, testsFailed, testsErrored,
+                      testsSkipped, testsLocalFails, test,
+                      checkCircle, circleFound);
+      } else if !testsErrored[testName] && !allTestsRan &&
               !testsFailed[testName] &&
               !testsSkipped[testName] {
         testResult.dependencyNotMet(testName);
       }
-    }
-    catch e: TestSkipped {
+    } catch e: TestSkipped {
       testResult.addSkip(testName, "TestSkipped: " + e.message());
       testsSkipped.replace(testName, true);
       // Print info on test skipped
-    }
-    catch e: TestIncorrectNumLocales {
-      testResult.addIncorrectNumLocales(testName, "TestIncorrectNumLocales: " + e.message());
+    } catch e: TestIncorrectNumLocales {
+      testResult.addIncorrectNumLocales(testName,
+        "TestIncorrectNumLocales: " + e.message());
       testsLocalFails.replace(testName, true);
-    }
-    catch e: UnexpectedLocales {
+    } catch e: UnexpectedLocales {
       testResult.addFailure(testName, "UnexpectedLocales: " + e.message());
       testsFailed.replace(testName, true);
-    }
-    catch e {
+    } catch e {
       testResult.addError(testName, e.message());
       testsErrored.replace(testName, true);
     }
@@ -1724,14 +1738,19 @@ module UnitTest {
         const thrownFileC = __primitive("chpl_lookupFilename",
                                              this.thrownFileId);
         var thrownFileS: string;
-        try! thrownFileS = string.createCopyingBuffer(thrownFileC:c_ptrConst(c_char));
+        try! thrownFileS =
+          string.createCopyingBuffer(thrownFileC:c_ptrConst(c_char));
 
-        var msg = try! "in %?:%i - %?".format(thrownFileS, this.thrownLine, this.details);
+        var msg = try! "in %?:%i - %?".format(
+          thrownFileS, this.thrownLine, this.details);
         return msg;
       }
     }
 
-    /*Assertion Error class. Raised when assert Function Failed*/
+    /*
+      Assertion Error class. Raised when an
+      :ref:`assert function <assert-functions>` failed
+    */
     class AssertionError: TestError {
       proc init(details: string = "") {
         super.init(details);
@@ -1745,7 +1764,7 @@ module UnitTest {
       }
     }
 
-    /* DependencyFound Error Class. Raised when a all dependency
+    /* DependencyFound Error Class. Raised when all dependencies
       of a test are not met.
     */
     class DependencyFound: TestError {
