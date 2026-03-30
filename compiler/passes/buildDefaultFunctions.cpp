@@ -646,6 +646,40 @@ FnSymbol* build_accessor(AggregateType* ct, Symbol* field,
   return fn;
 }
 
+FnSymbol* build_union_field_index_accessor(AggregateType* at, Symbol* field) {
+  SET_LINENO(field);
+  // add a parenless proc for the field name that returns the field index
+  FnSymbol*  fn = new FnSymbol(field->name);
+  fn->addFlag(FLAG_NO_IMPLICIT_COPY);
+  fn->addFlag(FLAG_INLINE);
+  fn->addFlag(FLAG_METHOD_PRIMARY);
+  fn->addFlag(FLAG_NO_PARENS);
+
+  fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
+  fn->setMethod(true);
+
+  ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", at);
+  _this->addFlag(FLAG_TYPE_VARIABLE);
+  _this->addFlag(FLAG_ARG_THIS);
+  fn->insertFormalAtTail(_this);
+  fn->_this = _this;
+
+  fn->retTag = RET_PARAM;
+  auto toReturn = new CallExpr(PRIM_FIELD_NAME_TO_NUM,
+                          at->symbol,
+                          new_CStringSymbol(field->name));
+  fn->insertAtTail(new CallExpr(PRIM_RETURN, toReturn));
+
+  DefExpr* def = new DefExpr(fn);
+  at->symbol->defPoint->insertBefore(def);
+  reset_ast_loc(fn, field);
+  at->methods.add(fn);
+
+  fn->cname = astr("chpl_get_", at->symbol->cname, "_index_", fn->cname);
+
+  return fn;
+}
+
 // Getter and setter functions are provided by the compiler if not supplied by
 // the user.
 // These functions have the same binding strength as if they were user-defined.
@@ -675,6 +709,9 @@ static void buildAccessors(AggregateType* ct, Symbol *field) {
     // Unions need a special getter and setter.
     build_accessor(ct, field, /* setter? */ false, /* type method? */ false);
     build_accessor(ct, field, /* setter? */ true,  /* type method? */ false);
+    // add a parenless proc for the field name that returns the field index
+    build_union_field_index_accessor(ct, field);
+
   } else {
     // Otherwise, only build one version for records and classes.
     // This is normally the 'ref' version.
@@ -684,7 +721,7 @@ static void buildAccessors(AggregateType* ct, Symbol *field) {
 
   // If the field is type/param, add a type-method accessor.
   if (fieldTypeOrParam) {
-    build_accessor(ct, field, /* getter? */ false, /* type method? */ true);
+    build_accessor(ct, field, /* setter? */ false, /* type method? */ true);
   }
 }
 
