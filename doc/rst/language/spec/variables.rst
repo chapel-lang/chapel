@@ -418,8 +418,8 @@ Local Type Inference
 --------------------
 
 If the type is omitted from a variable declaration, the type of the
-variable is defined to be the type of the initialization expression.
-
+variable is usually defined to be the type of the initialization expression.
+In other words,
 
 .. code-block:: chapel
 
@@ -432,6 +432,37 @@ is equivalent to
    var v: e.type = e;
 
 for an arbitrary expression ``e``.
+
+A prominent exception to this behavior occurs when a variable's initialization
+expression involves iteration — for example, a call to an iterator,
+a promoted procedure call (see :ref:`Promotion`), or a loop expression (e.g.,
+:ref:`For_Expressions`). In such cases, the variable will be inferred to have
+an array type, and its elements will be initialized to store the results of the
+iteration. For more information about the iterator case, see also
+:ref:`Iterators_as_Arrays`.
+
+   *Example (iter-promo-loop-as-arrays.chpl)*.
+
+   For example, the following code:
+
+   .. code-block:: chapel
+
+      iter foo() { for i in 2..10 do yield i; }
+
+      var x = foo();
+      var y = foo() + 1;
+      var z = [i in 2..10] i;
+      writeln(x.type : string);
+      writeln(y.type : string);
+      writeln(z.type : string);
+
+   prints three array types:
+
+   .. code-block:: printoutput
+
+      [domain(1,int(64),one)] int(64)
+      [domain(1,int(64),one)] int(64)
+      [domain(1,int(64),one)] int(64)
 
 .. index::
    single: declarations; multiple variables
