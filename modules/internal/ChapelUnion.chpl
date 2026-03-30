@@ -20,7 +20,7 @@
 
 
 module ChapelUnion {
-  proc union.getActiveIndex() {
+  proc (union).getActiveIndex() {
     return __primitive("get_union_id", this);
   }
   @chpldoc.nodoc
@@ -44,14 +44,14 @@ module ChapelUnion {
       invalidUnionAccessHalt("illegal union access");
     }
   }
-  proc ref union.this(param idx: int) ref {
+  proc ref (union).this(param idx: int) ref {
     import Reflection;
     if chpl_unionAccessChecking {
       _checkUnionAccess(this, idx);
     }
     return Reflection.getFieldRef(this, idx);
   }
-  proc const union.this(param idx: int) const {
+  proc const (union).this(param idx: int) const {
     import Reflection;
     if chpl_unionAccessChecking {
       _checkUnionAccess(this, idx);
@@ -62,7 +62,7 @@ module ChapelUnion {
   /*
     Get
   */
-  proc type union.getFieldIndex(param name: string) param {
+  proc type (union).getFieldIndex(param name: string) param {
     import Reflection;
     param idx = Reflection.getFieldIndex(this, name);
     if idx < 0 || idx >= Reflection.getNumFields(this) then
@@ -70,7 +70,7 @@ module ChapelUnion {
     return idx;
   }
 
-  proc union.visit(funcs...) {
+  proc (union).visit(funcs...) {
     import Reflection;
     if funcs.size != Reflection.getNumFields(this.type) then
       compilerError("wrong number of functions passed to visit");
