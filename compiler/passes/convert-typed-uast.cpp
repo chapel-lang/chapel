@@ -6460,7 +6460,8 @@ bool TConverter::enter(const Select* node, RV& rv) {
 
   types::QualifiedType selectQT;
   auto selectExpr = convertExpr(node->expr(), rv, &selectQT);
-  auto selectSym = storeInTempIfNeeded(selectExpr, selectQT);
+  auto selectTest = new CallExpr("_select_test", selectExpr);
+  auto selectSym = storeInTempIfNeeded(selectTest, selectQT);
 
   auto traverse = [this,&rv](const When* when) {
     enterScope(when, rv);

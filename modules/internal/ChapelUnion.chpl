@@ -87,4 +87,6 @@ module ChapelUnion {
       if i == idx then
         funcs[i](Reflection.getField(this, i));
   }
+
+  proc _select_test(x: union) do return x.getActiveIndex();
 }
