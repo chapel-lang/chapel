@@ -80,4 +80,10 @@ module Unused {
       this.t = t;
     }
   }
+
+  proc varargs(args...) { }
+  proc varargs2(args...) {
+    for arg in args do
+      writeln(arg);
+  }
 }

@@ -1134,7 +1134,7 @@ def rules(driver: LintDriver):
         formals = dict()
         uses = set()
 
-        for formal, _ in chapel.each_matching(root, Formal):
+        for formal, _ in chapel.each_matching(root, set([Formal, VarArgFormal])):
             # For now, it's harder to tell if we're ignoring 'this' formals
             # (what about method calls with implicit receiver?). So skip
             # 'this' formals.
