@@ -1175,6 +1175,28 @@ def rules(driver: LintDriver):
                     "deserializer",
                 ):
                     continue
+                if parent.name() == "init" and formal.name() in (
+                    "reader",
+                    "deserializer",
+                ):
+                    # all of the formals should be type intent, followed
+                    # by reader and deserializer
+                    parentFormals = [
+                        (f.name(), f.intent())
+                        for f in parent.formals()
+                        if isinstance(f, Formal) and not f.is_this()
+                    ]
+                    hasDeserializer = parentFormals[-1] == (
+                        "deserializer",
+                        "ref",
+                    )
+                    hasReader = parentFormals[-2][0] == "reader"
+                    allTypes = all(
+                        intent in ("type", "param")
+                        for _, intent in parentFormals[:-2]
+                    )
+                    if hasDeserializer and hasReader and allTypes:
+                        continue
 
             formals[formal.unique_id()] = formal
 
