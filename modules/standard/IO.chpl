@@ -11409,9 +11409,11 @@ proc fileReader.readf(fmtStr:?t, ref args ...?k): bool throws
               if ! ok {
                 err = qio_format_error_arg_mismatch(i);
               } else {
-                var tmp : int;
-                try readCodepoint(tmp);
-                chr = tmp.safeCast(int(32));
+                const err = qio_channel_read_char(false, _channel_internal, chr);
+                if err != 0 {
+                  const msg = _constructIoErrorMsg(chr);
+                  try _ch_ioerror(err, msg);
+                }
               }
 
               if ! err {
