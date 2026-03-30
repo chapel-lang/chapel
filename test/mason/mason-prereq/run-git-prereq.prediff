@@ -1,0 +1,28 @@
+#!/usr/bin/env python3
+import sys, re, shutil
+
+test_name = sys.argv[1]
+out_file  = sys.argv[2]
+tmp_file  = out_file + ".prediff.tmp"
+with open(tmp_file, 'w') as tf:
+  with open(out_file) as outf:
+      for line in outf:
+        # Skip registry update and download messages
+        # (since these vary by mason cache state)
+        if line.startswith("Updating ") or line.startswith("Downloading dependency"):
+          continue
+        if line.startswith("Checking out specified revision"):
+          continue
+        # Skip "Build Failed"/"Build Successful" from mason stderr
+        # (position is non-deterministic due to merging of stdout and stderr)
+        if line.strip() in ("Build Failed", "Build Successful"):
+          continue
+        # Skip platform-specific linker warnings
+        if line.strip().startswith("ld: warning:"):
+          continue
+        # Skip blank lines (can result from filtering above)
+        if line.strip() == "":
+          continue
+        tf.write(line)
+
+shutil.move(tmp_file, out_file)
