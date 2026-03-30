@@ -45,7 +45,7 @@ private inline proc pushd(path: string) {
   return new pushdMgr(path);
 }
 
-proc install(baseDir: string, path: string) {
+proc install(baseDir: string, path: string) throws {
   log.infof("Installing prerequisite %s\n", path);
   manage pushd(path) {
     // TODO check for errors
@@ -53,7 +53,7 @@ proc install(baseDir: string, path: string) {
   }
 }
 
-proc install() {
+proc install() throws {
   const baseDir = here.cwd();
   for prereq in prereqs(baseDir=baseDir) {
     install(baseDir, prereq);
@@ -61,7 +61,7 @@ proc install() {
   log.infoln("Prerequisites have been installed");
 }
 
-iter chplFlags(const baseDir = here.cwd()) {
+iter chplFlags(const baseDir = here.cwd()) throws {
   var flags: list(string);
 
   const cmd = ["make",
