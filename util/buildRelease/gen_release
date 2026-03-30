@@ -234,10 +234,6 @@ def make_tarball(chplhome, basetmpdir, tmpdir, reldir):
         os.environ["CHPL_LLVM"] = "none"
         log(f"CHPL_HOME is set to: {os.environ['CHPL_HOME']}")
 
-        log("Getting the mason dependencies...")
-        with cd("tools/mason"):
-            make("tarball-prep")
-
         if "CHPL_GEN_RELEASE_SKIP_DOCS" not in os.environ:
             log("Building the html docs...")
             make("chapel-py-venv")
@@ -270,6 +266,11 @@ def make_tarball(chplhome, basetmpdir, tmpdir, reldir):
         shutil.copytree("test/release/examples", "examples", copy_function=shutil.copy2)
         with cd("util"):
             shutil.copy2("start_test", "../examples/start_test")
+
+        # THIS MUST BE DONE AFTER THE CLOBBER
+        log("Getting the mason dependencies...")
+        with cd("tools/mason"):
+            make("tarball-prep")
 
         # print "[gen_release] Removing Makefiles that are not intended for release...\n";
 
