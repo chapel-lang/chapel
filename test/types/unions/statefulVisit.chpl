@@ -28,6 +28,12 @@ for i in 1..10 {
 }
 writeln("Number of int fields in union array: ", c.count);
 
+c = new counter();
+for i in 1..10 {
+  arr[i].visitOne(c);
+}
+writeln("Number of int fields in union array (using visitOne): ", c.count);
+
 class Counter {
   var count: int = 0;
   proc this(field) {
@@ -41,3 +47,9 @@ for i in 1..10 {
   arr[i].visit(c2, c2);
 }
 writeln("Number of int fields in union array (using class): ", c2.count);
+
+c2 = new Counter();
+for i in 1..10 {
+  arr[i].visitOne(c2);
+}
+writeln("Number of int fields in union array (using visitOne with class): ", c2.count);

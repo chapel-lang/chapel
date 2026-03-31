@@ -50,8 +50,8 @@ module ChapelUnion {
     }
   }
   /*
-    Accesses the union field at the given index. The index must be a compile-time
-    integer corresponding to a valid field in the union.
+    Accesses the union field at the given index. The index must be a
+    compile-time integer corresponding to a valid field in the union.
 
     If checks are enabled,
     this compile-time index will be checked against the active field index of
@@ -70,11 +70,10 @@ module ChapelUnion {
   }
   @chpldoc.nodoc
   proc const (union).this(param idx: int) const {
-    import Reflection;
     if chpl_unionAccessChecking {
       _checkUnionAccess(this, idx);
     }
-    return Reflection.getField(this, idx);
+    return thisInternal(idx);
   }
   @chpldoc.nodoc
   proc (union).this(idx) {
@@ -83,6 +82,11 @@ module ChapelUnion {
     } else {
       compilerError("union access by non-integer index is not supported");
     }
+  }
+  @chpldoc.nodoc
+  proc const (union).thisInternal(param idx: int) const {
+    import Reflection;
+    return Reflection.getField(this, idx);
   }
 
   /*
@@ -122,12 +126,39 @@ module ChapelUnion {
 
     for param i in 0..<funcs.size do
       if i == idx {
-        if !__primitive("resolves", funcs[i](Reflection.getField(this, i))) {
+        if !__primitive("resolves", funcs[i](this.thisInternal(i))) {
           compilerError(funcs[i].type:string + " at index " + i:string +
                         " cannot be called with an argument of type " +
-                        Reflection.getField(this, i).type:string);
+                       this.thisInternal(i).type:string);
         }
-        funcs[i](Reflection.getField(this, i));
+        funcs[i](this.thisInternal(i));
+      }
+  }
+
+  /*
+    A version of :proc:`~ChapelUnion.union.visit` that takes a single function
+    and calls it with the active field in the union.
+
+    The function should be generic and work with any of the field types in the
+    union, or the code will not compile.
+  */
+  proc (union).visitOne(ref func) {
+    import Reflection;
+    const idx = this.getActiveIndex();
+    if chpl_unionAccessChecking {
+      import HaltWrappers.invalidUnionAccessHalt;
+      if idx < 0 then
+        invalidUnionAccessHalt("illegal union access: no field is active");
+    }
+
+    for param i in 0..<Reflection.getNumFields(this.type) do
+      if i == idx {
+        if !__primitive("resolves", func(this.thisInternal(i))) {
+          compilerError(func.type:string +
+                        " cannot be called with an argument of type " +
+                        this.thisInternal(i).type:string);
+        }
+        func(this.thisInternal(i));
       }
   }
 

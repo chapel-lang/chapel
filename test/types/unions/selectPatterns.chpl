@@ -13,6 +13,11 @@ proc doVisit() do
     proc(z: string) { writeln("z: ", z); },
     proc(w: int) { writeln("w: ", w); }
   );
+proc doVisitOne() {
+  record F {}
+  proc F.this(x) do writeln("visited: ", x);
+  u.visitOne(new F());
+}
 
 proc doBasicSelect() throws do
   select u.getActiveIndex() {
@@ -79,6 +84,16 @@ u.z = "hello";
 doVisit();
 u.w = 20;
 doVisit();
+
+writeln("test visitOne");
+u.x = 10;
+doVisitOne();
+u.y = 3.14;
+doVisitOne();
+u.z = "hello";
+doVisitOne();
+u.w = 20;
+doVisitOne();
 
 writeln("test select");
 u.x = 10;
