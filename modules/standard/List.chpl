@@ -985,6 +985,16 @@ module List {
       return this.find(predicate) != -1;
     }
 
+    /*
+      Returns `true` if this list contains an element satisfying the given
+      predicate, and `false` otherwise.
+
+      :arg predicate: A callable that takes an element and returns `true`
+        if it matches.
+
+      :return: `true` if an element satisfying `predicate` is found.
+      :rtype: `bool`
+      */
     @edition(first="preview")
     proc const contains(predicate): bool
         where !isCoercible(predicate.type, eltType)
@@ -1559,6 +1569,30 @@ module List {
       return _findHelper(start, end, predicate, true);
     }
 
+    /*
+      Return a zero-based index into this list of the first item satisfying
+      the given predicate. If no such element can be found or if the list
+      is empty, this method returns the value `-1`.
+
+      .. warning::
+
+        Calling this method with values of `start` or `end` that are out of
+        bounds will cause the currently running program to halt. If the
+        ``--fast`` flag is used, no safety checks will be performed.
+
+      :arg predicate: A callable that takes an element and returns `true`
+                      if it matches.
+
+      :arg start: The start index to start searching from.
+      :type start: `int`
+
+      :arg end: The end index to stop searching at. A value less than
+                `0` will search the entire list.
+      :type end: `int`
+
+      :return: The index of the first matching element, or `-1`` if not found.
+      :rtype: `int`
+    */
     @edition(first="preview")
     proc const find(predicate, start: int=0, end: int=-1): int
         where !isCoercible(predicate.type, eltType)
