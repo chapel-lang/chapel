@@ -12,6 +12,11 @@ x: 10
 y: 3.14
 z: hello
 w: 20
+test visitOne
+visited: 10
+visited: 3.14
+visited: hello
+visited: 20
 test select
 x: 10
 y: 3.14

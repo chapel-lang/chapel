@@ -1,3 +1,5 @@
 Union array:(y = 1.0) (x = 2) (y = 3.0) (x = 4) (y = 5.0) (x = 6) (y = 7.0) (x = 8) (y = 9.0) (x = 10)
 Number of int fields in union array: 5
+Number of int fields in union array (using visitOne): 5
 Number of int fields in union array (using class): 5
+Number of int fields in union array (using visitOne with class): 5
