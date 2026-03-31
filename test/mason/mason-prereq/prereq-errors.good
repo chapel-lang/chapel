@@ -1,2 +1,2 @@
-Command failed: 'make MASON_PACKAGE_HOME=/chapel/home/abrahaja/chapel/test/mason/mason-prereq/prereq3'
-mason utils   : hello.c:6:27: error: expected ';' before '}' token
+Command failed: 'make MASON_PACKAGE_HOME=/Users/jade/Development/chapel-lang/chapel/test/mason/mason-prereq/prereq3'
+mason utils   : hello.c:6:27: error: expected
