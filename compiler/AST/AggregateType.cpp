@@ -2464,11 +2464,9 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
                                SymbolMap&             fieldArgMap,
                                Symbol*                desHelper) {
   bool isReaderInit = (desHelper != nullptr);
-  int fieldNum = isClass() ? -1 : 0;
+  int fieldNum = isClass() ? 0 : 1;
   for_fields(fieldDefExpr, this) {
     SET_LINENO(fieldDefExpr);
-    fieldNum += 1;
-
     if (VarSymbol* field = toVarSymbol(fieldDefExpr)) {
       if (field->hasFlag(FLAG_SUPER_CLASS) == false) {
 
@@ -2519,7 +2517,7 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
         //
         // A generic field.  Could be type/param/variable
         //
-        if        (defPoint->exprType == NULL && defPoint->init == NULL) {
+        if (defPoint->exprType == NULL && defPoint->init == NULL) {
           arg->type = dtAny;
 
 
@@ -2606,6 +2604,7 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
         }
       }
     }
+    fieldNum += 1;
   }
 }
 
