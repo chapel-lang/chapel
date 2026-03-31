@@ -95,8 +95,12 @@ def path_to_runtime_libs(runtime_subdir):
     return ret
 
 
+def static_runtime_lib_base_name():
+    return "chpl-static"
+
+
 def static_runtime_lib_name():
-    return "libchpl.a"
+    return "lib" + static_runtime_lib_base_name() + ".a"
 
 
 def shared_runtime_lib_ext():
@@ -106,8 +110,14 @@ def shared_runtime_lib_ext():
     return "so"
 
 
+def shared_runtime_lib_base_name():
+    return "chpl"
+
+
 def shared_runtime_lib_name():
-    return "libchpl." + shared_runtime_lib_ext()
+    ret = "lib" + shared_runtime_lib_base_name() + "."
+    ret += shared_runtime_lib_ext()
+    return ret
 
 
 def compute_static_runtime_lib_path(runtime_subdir):
@@ -127,17 +137,16 @@ def compute_shared_runtime_lib_path(runtime_subdir):
 # Returns a list of strings representing linker arguments.
 def compute_use_static_runtime_link_args(runtime_subdir):
     ret = []
-    # Direct link against the static archive.
-    ret.append(compute_static_runtime_lib_path(runtime_subdir))
+    ret.append("-L" + path_to_runtime_libs(runtime_subdir))
+    ret.append("-l" + static_runtime_lib_base_name())
     return ret
 
 
 def compute_use_shared_runtime_link_args(runtime_subdir):
     ret = []
-    # Set the '-rpath' just in case.
     ret.append("-Wl,-rpath," + path_to_runtime_libs(runtime_subdir))
-    # Direct link against the shared library.
-    ret.append(compute_shared_runtime_lib_path(runtime_subdir))
+    ret.append("-L" + path_to_runtime_libs(runtime_subdir))
+    ret.append("-l" + shared_runtime_lib_base_name())
     return ret
 
 
