@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-
+/**/
 module ChapelUnion {
   /*
     Returns the index of the active field in the union. This is the field that
