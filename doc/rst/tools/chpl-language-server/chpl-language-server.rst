@@ -125,6 +125,12 @@ The following features are extra visual aids:
 | Generic        | ``CLS`` can show the various               | ``--show-instantiations`` (default),  |
 | Instantiations | instantiations of a generic function.      | ``--no-show-instantiations``          |
 +----------------+--------------------------------------------+---------------------------------------+
+| Default        | Procedures accepting array formals are     | ``--default-rect-arrays`` (default),  |
+| Instantiations | usually generic over the array's dimension | ``--no-default-rect-arrays``          |
+| For Arrays     | and distribution. ``CLS`` can automatically|                                       |
+|                | create concrete instantiations with        |                                       |
+|                | "regular" (default-rectangular) arrays.    |                                       |
++----------------+--------------------------------------------+---------------------------------------+
 
 Using ``chplcheck`` from ``CLS``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

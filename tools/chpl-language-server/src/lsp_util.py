@@ -556,6 +556,41 @@ class References:
 
 
 @dataclass
+class Instantiations:
+    in_file: "FileInfo"
+    instantiations: List[chapel.TypedSignature]
+
+    def append(self, x: chapel.TypedSignature):
+        self.instantiations.append(x)
+
+    def clear(self):
+        self.instantiations.clear()
+
+    def __iter__(self):
+        return iter(self.instantiations)
+
+
+CallInTypeContext = Union[
+    Tuple[chapel.FnCall, Optional[chapel.TypedSignature]], Tuple[()]
+]
+
+
+@dataclass
+class CallsInTypeContext:
+    in_file: "FileInfo"
+    call_contexts: List[CallInTypeContext]
+
+    def append(self, x: CallInTypeContext):
+        self.call_contexts.append(x)
+
+    def clear(self):
+        self.call_contexts.clear()
+
+    def __iter__(self):
+        return iter(self.call_contexts)
+
+
+@dataclass
 class EndMarkerPattern:
     pattern: Union[Type, Set[Type]]
     header_location: Callable[[chapel.AstNode], Optional[chapel.Location]]
@@ -621,6 +656,12 @@ class ContextContainer:
         self.global_uses: Dict[chapel.AstNode, List[References]] = defaultdict(
             list
         )
+        self.global_instantiations: Dict[str, List[Instantiations]] = (
+            defaultdict(list)
+        )
+        self.global_inst_contexts: Dict[
+            chapel.TypedSignature, List[CallsInTypeContext]
+        ] = defaultdict(list)
         self.instantiation_ids: Dict[chapel.TypedSignature, str] = {}
         self.instantiation_id_counter = 0
 
@@ -689,11 +730,51 @@ class ContextContainer:
         with self.context.track_errors() as errors:
             for fi in self.file_infos:
                 fi.rebuild_index()
+
+            # Invoke _invalidate_insts a second time, so that
+            # if instantiations disappeared from a file after a different
+            # file was processed, we still remove them from the code lens
+            # list.
+            #
+            # To do this without this redundant work, we'd need
+            # a topological ordering of files ordered by instantiation
+            # dependencies. It doesn't seem worth it, though.
+            for fi in self.file_infos:
+                fi._invalidate_inst_segments()
+
         return errors
 
+    def call_contexts(
+        self, sig: chapel.TypedSignature
+    ) -> Iterable[CallInTypeContext]:
+        all_contexts = {
+            ctx for ctxs in self.global_inst_contexts[sig] for ctx in ctxs
+        }
+        return all_contexts
 
-CallInTypeContext = Tuple[chapel.FnCall, Optional[chapel.TypedSignature]]
-CallsInTypeContext = List[CallInTypeContext]
+    def instantiations(self, fnid: str):
+        seen_insts = set()
+        for insts in self.global_instantiations[fnid]:
+            for inst in insts:
+                if inst not in self.global_inst_contexts:
+                    continue
+                if inst in seen_insts:
+                    continue
+                seen_insts.add(inst)
+
+                # as long as there is one calling context, yield inst.
+                found_instance = False
+                for _ in self.call_contexts(inst):
+                    found_instance = True
+                    break
+
+                if found_instance:
+                    yield (inst, insts.in_file)
+
+    def has_instantiation(self, fnid: str):
+        for _ in self.instantiations(fnid):
+            return True
+        return False
 
 
 # We should show these variables in autocompletion even though they are 'nodoc'.
@@ -714,10 +795,10 @@ class FileInfo:
         Tuple[NodeAndRange, chapel.TypedSignature]
     ] = field(init=False)
     uses_here: Dict[chapel.AstNode, References] = field(init=False)
-    instantiations: Dict[
-        str,
-        Dict[chapel.TypedSignature, CallsInTypeContext],
-    ] = field(init=False)
+    instantiations_here: Dict[str, Instantiations] = field(init=False)
+    inst_contexts_here: Dict[chapel.TypedSignature, CallsInTypeContext] = field(
+        init=False
+    )
     siblings: chapel.SiblingMap = field(init=False)
     earliest_changed_pos: Optional[Position] = None
 
@@ -728,6 +809,8 @@ class FileInfo:
         self.call_segments = PositionList(lambda x: x.ident.rng)
         self.instantiation_segments = PositionList(lambda x: x[0].rng)
         self.uses_here = {}
+        self.instantiations_here = {}
+        self.inst_contexts_here = {}
         self.rebuild_index()
 
     def parse_file(self) -> List[chapel.AstNode]:
@@ -756,6 +839,26 @@ class FileInfo:
         self.context.global_uses[node].append(refs)
         return refs
 
+    def _get_inst_container(self, fnid: str) -> Instantiations:
+        if fnid in self.instantiations_here:
+            return self.instantiations_here[fnid]
+
+        insts = Instantiations(self, [])
+        self.instantiations_here[fnid] = insts
+        self.context.global_instantiations[fnid].append(insts)
+        return insts
+
+    def _get_call_context_container(
+        self, sig: chapel.TypedSignature
+    ) -> CallsInTypeContext:
+        if sig in self.inst_contexts_here:
+            return self.inst_contexts_here[sig]
+
+        ctxs = CallsInTypeContext(self, [])
+        self.inst_contexts_here[sig] = ctxs
+        self.context.global_inst_contexts[sig].append(ctxs)
+        return ctxs
+
     def _note_reference(
         self, node: Union[chapel.Dot, chapel.Identifier, chapel.Include]
     ):
@@ -771,6 +874,25 @@ class FileInfo:
         self.use_segments.append(
             ResolvedPair(NodeAndRange(node), NodeAndRange(to))
         )
+
+    def _note_inst(
+        self,
+        fnid: str,
+        sig: chapel.TypedSignature,
+        call: Optional[chapel.FnCall],
+        via: Optional[chapel.TypedSignature],
+    ) -> bool:
+        insts = self._get_inst_container(fnid)
+        already_visited = sig in insts
+        if not already_visited:
+            insts.append(sig)
+        contexts = self._get_call_context_container(sig)
+        if call:
+            contexts.append((call, via))
+        else:
+            contexts.append(())
+
+        return already_visited
 
     def _note_scope(self, node: chapel.AstNode):
         if not node.creates_scope():
@@ -1006,17 +1128,15 @@ class FileInfo:
                     )
                 )
 
-            # Even if we don't descend into it (and even if it's not an
-            # instantiation), track the call that invoked this function.
-            # This will help with call hierarchy.
-            insts = self.instantiations[fn.unique_id()]
-            already_visited = sig in insts
-            insts[sig].append((node, via))
-
-            if not sig.is_instantiation() or already_visited:
+            visit = not self._note_inst(fn.unique_id(), sig, node, via)
+            if not sig.is_instantiation() or not visit:
                 continue
 
             self._search_instantiations(fn, via=sig)
+
+    def _search_rectangular_instantiations(self, root):
+        if not self.context.cls_config.get("default_rect_arrays"):
+            return
 
         for node, _ in chapel.each_matching(
             root, chapel.Function, iterator=chapel.preorder
@@ -1030,13 +1150,13 @@ class FileInfo:
             if sig:
                 sig = sig.rectangularize()
             if sig:
-                insts = self.instantiations[node.unique_id()]
-                already_visited = sig in insts
-                if not already_visited:
-                    insts[sig] = []
+                visit = not self._note_inst(
+                    node.unique_id(), sig, None, via=None
+                )
+                if not sig.is_instantiation() or not visit:
+                    continue
 
-                if sig.is_instantiation() and not already_visited:
-                    self._search_instantiations(node, via=sig)
+                self._search_instantiations(node, via=sig)
 
     def _invalidate_inst_segments(
         self,
@@ -1046,8 +1166,15 @@ class FileInfo:
         segments that were built with instantiations we no longer have.
         """
         for decl, inst in self.instantiation_segments.elts:
-            available_insts = self.instantiations.get(decl.node.unique_id())
-            if not available_insts or inst not in available_insts:
+            found_inst = False
+            for ainst, in_file in self.context.instantiations(
+                decl.node.unique_id()
+            ):
+                if ainst == inst:
+                    found_inst = True
+                    break
+
+            if not found_inst:
                 self.instantiation_segments.clear_range(decl.rng)
 
     def find_decl_by_unique_id(self, unique_id: str) -> Optional[NodeAndRange]:
@@ -1145,9 +1272,12 @@ class FileInfo:
 
         # Use this class as an AST visitor to rebuild the use and definition segment
         # table, as well as the list of references.
-        self.instantiations = defaultdict(lambda: defaultdict(list))
         for _, refs in self.uses_here.items():
             refs.clear()
+        for _, insts in self.instantiations_here.items():
+            insts.clear()
+        for _, ctxs in self.inst_contexts_here.items():
+            ctxs.clear()
         self.use_segments.clear()
         self.def_segments.clear()
         self.scope_segments.clear()
@@ -1163,6 +1293,7 @@ class FileInfo:
         if self.use_resolver:
             for ast in asts:
                 self._search_instantiations(ast)
+                self._search_rectangular_instantiations(ast)
                 self._invalidate_inst_segments()
             self.call_segments.sort()
 
@@ -1277,7 +1408,9 @@ class FileInfo:
         instantiations collected while rebuilding the index.
         """
         return next(
-            itertools.islice(self.instantiations[fn.unique_id()], idx, None)
+            itertools.islice(
+                self.instantiations_here[fn.unique_id()], idx, None
+            )
         )
 
     def index_of_instantiation(
@@ -1290,7 +1423,7 @@ class FileInfo:
         return next(
             (
                 i
-                for i, s in enumerate(self.instantiations[fn.unique_id()])
+                for i, s in enumerate(self.instantiations_here[fn.unique_id()])
                 if s == sig
             ),
             -1,
@@ -1306,8 +1439,8 @@ class FileInfo:
         that signature, if it exists for the given function.
         """
         uid = fn.unique_id()
-        if uid in self.instantiations:
-            for sig in self.instantiations[uid]:
+        if uid in self.instantiations_here:
+            for sig in self.instantiations_here[uid]:
                 if not sig.is_instantiation():
                     return sig
         return None
@@ -1401,6 +1534,9 @@ class CLSConfig:
         )
         chplcheck().config.add_bool_flag(
             self.parser, "enum-inlays", "enum_inlays", True
+        )
+        chplcheck().config.add_bool_flag(
+            self.parser, "default-rect-arrays", "default_rect_arrays", True
         )
         chplcheck().config.add_bool_flag(
             self.parser, "literal-arg-inlays", "literal_arg_inlays", True

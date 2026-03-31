@@ -697,3 +697,21 @@ makeDefaultRectangular(chpl::Context* context, const chpl::resolution::TypedFnSi
 
   return QUERY_END(std::make_pair(result, poiScopeForResult));
 }
+
+TypedSignatureObject*
+createCanonicalTypedSignatureObject(ContextObject* contextObject, const chpl::resolution::TypedFnSignature* sig, const chpl::resolution::PoiScope* poiScope) {
+  auto tmp = contextObject->value_.runAndDetectErrors([=](Context* context) {
+      auto rc = createDummyRC(context);
+      if (auto resolvedFn = resolveFunctionIfPossible(&rc, sig, poiScope)) {
+        // If the POI info is compatible with a function with no POI scope,
+        // use the no-scope function as the canonical version of this signature,
+        // making it more reusable.
+        if (resolvedFn->poiInfo().canReuse(PoiInfo(nullptr))) {
+          return (const PoiScope*) nullptr;
+        }
+      }
+      return poiScope;
+  });
+
+  return TypedSignatureObject::create(contextObject, {sig, tmp.result()});
+}

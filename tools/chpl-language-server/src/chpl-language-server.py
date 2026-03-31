@@ -147,6 +147,7 @@ class ChapelLanguageServer(LanguageServer):
         self.literal_arg_inlays: bool = config.get("literal_arg_inlays")
         self.param_inlays: bool = config.get("param_inlays")
         self.enum_inlays: bool = config.get("enum_inlays")
+        self.default_rect_arrays: bool = config.get("default_rect_arrays")
         self.dead_code: bool = config.get("dead_code")
         self.eval_expressions: bool = config.get("eval_expressions")
         self.show_instantiations: bool = config.get("show_instantiations")
@@ -305,12 +306,21 @@ class ChapelLanguageServer(LanguageServer):
                 context = self.get_context(uri)
 
             file_info, errors = context.new_file_info(uri, self.use_resolver)
-            self.file_infos[fi_key] = file_info
 
-            # Also make this the "default" context for this file in case we
-            # open it.
-            if (uri, None) not in self.file_infos:
-                self.file_infos[(uri, None)] = file_info
+            # Store the file info into our cache. There are two reasons
+            # that we might want to retrieve the FI from the cache:
+            # * We just opened the file in the editor (the key should have
+            #   context ID 'None')
+            # * A call hierarchy expansion requested it (the key should have
+            #   previous file's context ID)
+            # We want to store the file info with both keys so that both
+            # of these methods don't accidentally miss the cache and create
+            # a duplicate FileInfo.
+
+            ctx_id = self.context_ids[context]
+            for key in ((uri, ctx_id), (uri, None)):
+                if key not in self.file_infos:
+                    self.file_infos[key] = file_info
 
         # filter out errors that are not related to the file
         cur_path = uri[len("file://") :]
@@ -673,8 +683,8 @@ class ChapelLanguageServer(LanguageServer):
             item.data is None
             or not isinstance(item.data, list)
             or not isinstance(item.data[0], str)
-            or not isinstance(item.data[1], (str, None))
-            or not isinstance(item.data[2], (str, None))
+            or not (item.data[1] is None or isinstance(item.data[1], str))
+            or not (item.data[2] is None or isinstance(item.data[2], str))
         ):
             self.show_message(
                 "Call hierarchy item contains missing or invalid additional data",
@@ -1202,19 +1212,21 @@ def run_lsp():
         if not ls.show_instantiations:
             return actions
 
+        # Collect instantiations from other files
+        ls.eagerly_process_all_files(fi.context)
+
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
 
         fi, _ = ls.get_file_info(text_doc.uri)
 
         decls = fi.def_segments.elts
         for decl in decls:
-            if (
-                isinstance(decl.node, chapel.Function)
-                and decl.node.unique_id() in fi.instantiations
-            ):
-                insts = fi.instantiations[decl.node.unique_id()]
+            if isinstance(
+                decl.node, chapel.Function
+            ) and fi.context.has_instantiation(decl.node.unique_id()):
+                insts = fi.context.instantiations(decl.node.unique_id())
                 actions_per_decl = []
-                for i, inst in enumerate(insts):
+                for inst, from_file in insts:
                     # Skip over "concrete" instantiations. They're in
                     # the list to track calls to concrete functions,
                     # but they don't have any type substitutions, so there's
@@ -1222,8 +1234,10 @@ def run_lsp():
                     if not inst.is_instantiation():
                         continue
 
+                    i = from_file.index_of_instantiation(decl.node, inst)
+                    assert i > -1
                     label = "Show Instantiation"
-                    if not insts[inst]:
+                    if all(x == () for x in fi.context.call_contexts(inst)):
                         label += " (Default-Rectangular)"
 
                     action = CodeLens(
@@ -1235,6 +1249,7 @@ def run_lsp():
                                 params.text_document.uri,
                                 decl.node.unique_id(),
                                 i,
+                                from_file.uri,
                             ],
                         ),
                         range=decl.rng,
@@ -1261,11 +1276,12 @@ def run_lsp():
 
     @server.command("chpl-language-server/showInstantiation")
     async def show_instantiation(
-        ls: ChapelLanguageServer, data: Tuple[str, str, int]
+        ls: ChapelLanguageServer, data: Tuple[str, str, int, str]
     ):
-        uri, unique_id, i = data
+        uri, unique_id, i, source_uri = data
 
         fi, _ = ls.get_file_info(uri)
+        source_fi, _ = ls.get_file_info(source_uri)
         decl = fi.find_decl_by_unique_id(unique_id)
 
         if decl is None:
@@ -1275,7 +1291,7 @@ def run_lsp():
         if not isinstance(node, chapel.Function):
             return
 
-        inst = fi.instantiation_at_index(node, i)
+        inst = source_fi.instantiation_at_index(node, i)
         node_and_range = NodeAndRange.for_entire_node(decl.node)
         fi.instantiation_segments.overwrite((node_and_range, inst))
         fi.update_call_segments_from_instantiations(node_and_range.rng)
@@ -1359,8 +1375,8 @@ def run_lsp():
             instantiation = fi.get_inst_segment_at_position(params.position)
             if instantiation and instantiation.ast() == node:
                 sigs.append(instantiation)
-            elif uid in fi.instantiations:
-                sigs.extend(fi.instantiations[uid].keys())
+            elif fi.context.has_instantiation(uid):
+                sigs.extend(sig for sig, _ in fi.context.instantiations(uid))
 
         # Oddly, returning multiple here makes for no child nodes in the VSCode
         # UI. Just take one signature for now.
@@ -1391,12 +1407,16 @@ def run_lsp():
         # Here too, because there's no chapel-py way to convert an ID back
         # to a node, note the node whose ID we use in a dictionary (hack_id_to_node)
         # to look up later.
-        calls = fi.instantiations[fn.unique_id()][instantiation]
+        assert instantiation in fi.context.global_inst_contexts
+        calls = fi.context.call_contexts(instantiation)
         hack_id_to_node: Dict[str, chapel.NamedDecl] = {}
         incoming_calls: Dict[
             Union[chapel.TypedSignature, str], List[chapel.FnCall]
         ] = defaultdict(list)
-        for call, via in calls:
+        for call_context in calls:
+            if len(call_context) == 0:
+                continue
+            call, via = call_context
             # If the call is from an instantiation, use the instantiation
             # as the hierarchy item anchor.
             if via is not None:
