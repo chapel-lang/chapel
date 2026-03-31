@@ -2359,9 +2359,13 @@ bool isCPtrConstChar(Type* t) {
 }
 
 bool isCVoidPtr(Type* t) {
-  return (t->symbol->hasFlag(FLAG_C_PTR_CLASS) &&
-          getDataClassType(t->symbol)->typeInfo() == dtVoid) ||
-         t == dtCVoidPtr;
+  if (t == dtCVoidPtr) return true;
+  if (t->symbol->hasFlag(FLAG_C_PTR_CLASS)) {
+    if (auto dct = getDataClassType(t->symbol)) {
+      return dct->typeInfo() == dtVoid;
+    }
+  }
+  return false;
 }
 
 bool isClassLikeOrNil(Type* t) {
