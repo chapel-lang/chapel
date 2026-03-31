@@ -1,10 +1,10 @@
 use Reflection;
 record R {
-  /* 1 */ param param_value = 1;
-  /* 2 */ type type_value = int;
-  /* 3 */ var x: int;
-  /* 4 */ var y: string;
-  /* 5 */ var z: real;
+  /* 0 */ param param_value = 1;
+  /* 1 */ type type_value = int;
+  /* 2 */ var x: int;
+  /* 3 */ var y: string;
+  /* 4 */ var z: real;
   proc something() {
     return z;
   }
@@ -15,9 +15,9 @@ const epsilon = 1e-8; // for comparing reals.
 
 assert(getNumFields(R) == 5);
 
-assert(getFieldName(R, 3) == "x");
-assert(getFieldName(R, 4) == "y");
-assert(getFieldName(R, 5) == "z");
+assert(getFieldName(R, 2) == "x");
+assert(getFieldName(R, 3) == "y");
+assert(getFieldName(R, 4) == "z");
 
 assert(isParam(getField(m, 0)));
 assert(isType(getField(m, 1)));
