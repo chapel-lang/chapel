@@ -964,21 +964,7 @@ module List {
       :rtype: `bool`
     */
     proc const contains(x: eltType): bool {
-      var result = false;
-
-      on this {
-        _enter();
-
-        for item in this do
-          if item == x {
-            result = true;
-            break;
-          }
-
-        _leave();
-      }
-
-      return result;
+      return this.find(x) != -1;
     }
 
     /*
@@ -991,24 +977,19 @@ module List {
       :return: `true` if an element satisfying `predicate` is found.
       :rtype: `bool`
       */
+    @edition(last="2.0")
+    @unstable("predicate-based 'list.contains' is unstable and may change in future.")
     proc const contains(predicate): bool
         where !isCoercible(predicate.type, eltType)
     {
-      var result = false;
+      return this.find(predicate) != -1;
+    }
 
-      on this {
-        _enter();
-
-        for item in this do
-          if predicate(item) {
-            result = true;
-            break;
-          }
-
-        _leave();
-      }
-
-      return result;
+    @edition(first="preview")
+    proc const contains(predicate): bool
+        where !isCoercible(predicate.type, eltType)
+    {
+      return this.find(predicate) != -1;
     }
 
     /*
@@ -1479,31 +1460,8 @@ module List {
       }
     }
 
-    /*
-      Return a zero-based index into this list of the first item whose value
-      is equal to `x`. If no such element can be found or if the list is empty,
-      this method returns the value `-1`.
-
-      .. warning::
-
-        Calling this method with values of `start` or `end` that are out of bounds
-        will cause the currently running program to halt. If the `--fast` flag is
-        used, no safety checks will be performed.
-
-      :arg x: An element to search for.
-      :type x: `eltType`
-
-      :arg start: The start index to start searching from.
-      :type start: `int`
-
-      :arg end: The end index to stop searching at. A value less than
-                `0` will search the entire list.
-      :type end: `int`
-
-      :return: The index of the element to search for, or `-1` on error.
-      :rtype: `int`
-    */
-    proc const find(x: eltType, start: int=0, end: int=-1): int {
+    @chpldoc.nodoc
+    proc const _findHelper(start: int, end: int, x, param usePredicate: bool): int {
       param error = -1;
 
       if _size == 0 then
@@ -1530,7 +1488,7 @@ module List {
         const stop = if end < 0 then _size-1 else end;
 
         for i in start..stop do
-          if x == _getRef(i) {
+          if (if usePredicate then x(_getRef(i)) else x == _getRef(i)) {
             result = i;
             break;
           }
@@ -1539,6 +1497,34 @@ module List {
       }
 
       return result;
+    }
+
+    /*
+      Return a zero-based index into this list of the first item whose value
+      is equal to `x`. If no such element can be found or if the list is empty,
+      this method returns the value `-1`.
+
+      .. warning::
+
+        Calling this method with values of `start` or `end` that are out of bounds
+        will cause the currently running program to halt. If the `--fast` flag is
+        used, no safety checks will be performed.
+
+      :arg x: An element to search for.
+      :type x: `eltType`
+
+      :arg start: The start index to start searching from.
+      :type start: `int`
+
+      :arg end: The end index to stop searching at. A value less than
+                `0` will search the entire list.
+      :type end: `int`
+
+      :return: The index of the element to search for, or `-1` on error.
+      :rtype: `int`
+    */
+    proc const find(x: eltType, start: int=0, end: int=-1): int {
+      return _findHelper(start, end, x, false);
     }
 
     /*
@@ -1565,44 +1551,19 @@ module List {
       :return: The index of the first matching element, or `-1`` if not found.
       :rtype: `int`
     */
+    @edition(last="2.0")
+    @unstable("predicate-based 'list.find' is unstable and may change in future.")
     proc const find(predicate, start: int=0, end: int=-1): int
         where !isCoercible(predicate.type, eltType)
     {
-      param error = -1;
+      return _findHelper(start, end, predicate, true);
+    }
 
-      if _size == 0 then
-        return error;
-
-      if boundsChecking {
-        const msg = " index for \"list.find\" out of bounds: ";
-
-        if end >= 0 && !_withinBounds(end) then
-          boundsCheckHalt("End" + msg + end:string);
-
-        if !_withinBounds(start) then
-          boundsCheckHalt("Start" + msg + start:string);
-      }
-
-      if end >= 0 && end < start then
-        return error;
-
-      var result = error;
-
-      on this {
-        _enter();
-
-        const stop = if end < 0 then _size-1 else end;
-
-        for i in start..stop do
-          if predicate(_getRef(i)) {
-            result = i;
-            break;
-          }
-
-        _leave();
-      }
-
-      return result;
+    @edition(first="preview")
+    proc const find(predicate, start: int=0, end: int=-1): int
+        where !isCoercible(predicate.type, eltType)
+    {
+      return _findHelper(start, end, predicate, true);
     }
 
     /*

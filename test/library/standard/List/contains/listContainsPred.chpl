@@ -21,3 +21,23 @@ assert(!lst.contains(proc(x: R): bool { return x.value > 10; }));
 // Empty list
 var empty = new list(R);
 assert(!empty.contains(proc(x: R): bool { return true; }));
+
+// Functor record with proc this
+record NameMatcher {
+  var target: string;
+  proc this(x: R): bool {
+    return x.name == target;
+  }
+}
+
+record ValueGreaterThan {
+  var threshold: int;
+  proc this(x: R): bool {
+    return x.value > threshold;
+  }
+}
+
+assert(lst.contains(new NameMatcher("Bob")));
+assert(!lst.contains(new NameMatcher("Zara")));
+assert(lst.contains(new ValueGreaterThan(2)));
+assert(!lst.contains(new ValueGreaterThan(10)));
