@@ -1216,7 +1216,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     const char*    fieldName  = imm->v_string.c_str();
     int            fieldCount = 0;
-    int            num        = 0;
+    int            num        = -1;
 
     for_fields(field, classType) {
       if (isNormalField(field) == true) {
