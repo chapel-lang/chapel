@@ -1,0 +1,3 @@
+1
+hello
+accessByIndex.chpl:13: error: halt reached - illegal union access: attempted to access field 'x' but 'y' is currently active

@@ -1,0 +1,1 @@
+accessByIndex-bad4.chpl:8: error: union access by non-compile-time index is not supported
