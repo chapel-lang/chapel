@@ -153,7 +153,7 @@ proc getField(const ref obj:?t, param name: string) type
 pragma "unsafe"
 inline proc getField(const ref obj:?t, param name:string) const ref {
   param i = __primitive("field name to num", t, name);
-  if i == 0 then
+  if i == -1 then
     compilerError("field ", name, " not found in ", t:string);
   return __primitive("field by num", obj, i);
 }
@@ -246,7 +246,7 @@ pragma "unsafe"
 proc getFieldRef(ref x:?t, param s:string) ref {
   checkValidQueryT(t);
   param i = __primitive("field name to num", t, s);
-  if i == 0 then
+  if i == -1 then
     compilerError("field ", s, " not found in ", t:string);
   if isType(__primitive("field by num", x, i)) then
     compilerError("cannot return a reference to 'type' field '", s, "'");
