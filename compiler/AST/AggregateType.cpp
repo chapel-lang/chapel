@@ -2593,7 +2593,7 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
 
           if (typeExpr != nullptr) {
             CallExpr* desField = new CallExpr("readField", gMethodToken, desHelper,
-                                               new CallExpr(PRIM_FIELD_NUM_TO_NAME, fn->_this, new_IntSymbol(fieldNum)), // TODO FIXME
+                                               new CallExpr(PRIM_FIELD_NUM_TO_NAME, fn->_this, new_IntSymbol(fieldNum)),
                                                typeExpr);
             fn->insertAtTail(new CallExpr("=",
                                           new CallExpr(".",
