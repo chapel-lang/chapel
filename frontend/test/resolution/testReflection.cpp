@@ -92,13 +92,13 @@ static void test3() {
          var c: string;
       }
       var r: R;
-      var r1 = __primitive("field by num", r, 1);
-      var r2 = __primitive("field by num", r, 2);
-      var r3 = __primitive("field by num", r, 3);
+      var r1 = __primitive("field by num", r, 0);
+      var r2 = __primitive("field by num", r, 1);
+      var r3 = __primitive("field by num", r, 2);
       var r4 = __primitive("field by num", r, "hi");
       var r5 = __primitive("field by num", r);
-      var r6 = __primitive("field by num", r, 1, 2);
-      var r7 = __primitive("field by num", R, 1);
+      var r6 = __primitive("field by num", r, 0, 1);
+      var r7 = __primitive("field by num", R, 0);
       )""", { "r1", "r2", "r3", "r4", "r5", "r6", "r7" });
   assert(variables.at("r1").type()->isIntType());
   assert(variables.at("r2").type()->isIntType());
