@@ -2464,7 +2464,7 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
                                SymbolMap&             fieldArgMap,
                                Symbol*                desHelper) {
   bool isReaderInit = (desHelper != nullptr);
-  int fieldNum = isClass() ? 0 : 1;
+  int fieldNum = isClass() ? -1 : 0;
   for_fields(fieldDefExpr, this) {
     SET_LINENO(fieldDefExpr);
     if (VarSymbol* field = toVarSymbol(fieldDefExpr)) {
