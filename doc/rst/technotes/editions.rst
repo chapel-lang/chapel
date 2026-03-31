@@ -157,6 +157,6 @@ remain in the preview until they are deemed sufficiently complete.
 - The ``string.contains()`` and ``bytes.contains()`` methods return whether
   a given pattern is found within the receiver string or bytes value.
 
-- The ``list.find()`` and ``list.contains()`` methods now accept a predicate
-  callable, allowing users to search for elements matching a custom condition
-  rather than only equality comparison.
+- The ``list.find()`` and ``list.contains()`` methods can optionally accept a 
+  predicate callable, allowing users to search for elements matching a custom 
+  condition rather than only equality comparison.

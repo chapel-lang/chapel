@@ -1497,11 +1497,14 @@ module List {
 
         const stop = if end < 0 then _size-1 else end;
 
-        for i in start..stop do
-          if (if usePredicate then x(_getRef(i)) else x == _getRef(i)) {
+        for i in start..stop {
+          const matches = if usePredicate then x(_getRef(i))
+                                          else x == _getRef(i);
+          if matches {
             result = i;
             break;
           }
+        }
 
         _leave();
       }

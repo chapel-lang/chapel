@@ -1,0 +1,5 @@
+$CHPL_HOME/modules/standard/List.chpl:nnnn: In method '_findHelper':
+$CHPL_HOME/modules/standard/List.chpl:nnnn: error: unresolved access of 'NotAFunctor' by '(int(64))'
+  $CHPL_HOME/modules/standard/List.chpl:nnnn: called as (list(int(64),false))._findHelper(start: int(64), end: int(64), x: NotAFunctor, param usePredicate = true) from method 'find'
+  $CHPL_HOME/modules/standard/List.chpl:nnnn: called as (list(int(64),false)).find(predicate: NotAFunctor, start: int(64), end: int(64)) from method 'contains'
+  listContainsInvalidFunctor.chpl:10: called as (list(int(64),false)).contains(predicate: NotAFunctor)

@@ -27,3 +27,15 @@ assert(lst.find(proc(x: R): bool { return x.value >= 3; }) == 2);
 // Empty list
 var empty = new list(R);
 assert(empty.find(proc(x: R): bool { return true; }) == -1);
+
+// Functor record with proc this
+record NameMatcher {
+  var target: string;
+  proc this(x: R): bool {
+    return x.name == target;
+  }
+}
+
+assert(lst.find(new NameMatcher("Bob")) == 1);
+assert(lst.find(new NameMatcher("Zara")) == -1);
+assert(lst.find(new NameMatcher("Bob"), start=2) == 3);
