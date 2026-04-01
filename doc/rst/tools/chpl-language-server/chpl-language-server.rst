@@ -131,6 +131,13 @@ The following features are extra visual aids:
 |                | create concrete instantiations with        |                                       |
 |                | "regular" (default-rectangular) arrays.    |                                       |
 +----------------+--------------------------------------------+---------------------------------------+
+| Common         | When generic functions are instantiated    | ``--common-inlays`` (default),        |
+| Instantiation  | with multiple different types, ``CLS`` can | ``--no-common-inlays``                |
+| Inlays         | show type inlays even for the generic      |                                       |
+|                | version of the function, by finding the    |                                       |
+|                | set of inlays shared between all           |                                       |
+|                | instantiations of the function.            |                                       |
++----------------+--------------------------------------------+---------------------------------------+
 
 Using ``chplcheck`` from ``CLS``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
