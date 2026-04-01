@@ -21,8 +21,9 @@ record G : writeSerializable {
   }
 
   proc type deserializeFrom(reader: fileReader(?), ref deserializer) {
-    use Reflection;
-    type fieldType = getField(this, 1);
+    // can we just use the reflection module?
+    // https://github.com/chapel-lang/chapel/issues/28629
+    type fieldType = __primitive("field by num", this, 0);
     return new G(reader.read(fieldType));
   }
 }
