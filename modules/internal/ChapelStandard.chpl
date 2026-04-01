@@ -86,5 +86,8 @@ module ChapelStandard {
   public use AutoGpu as AutoGpu;
 
   use stopInitCommDiags;      // Internal, but uses standard/CommDiagnostics
-  use ChapelDynamicLoading;   // Internal, but the compiler uses this
+
+  // These need to be compiled but do not need to be in the global namespace.
+  use ChapelDynamicLoading;
+  use ChapelProgramEntrypoints;
 }
