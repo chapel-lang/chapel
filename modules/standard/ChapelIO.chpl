@@ -44,10 +44,9 @@ module ChapelIO {
 
     private
     proc isIoField(x, param i) param {
-      use Reflection;
-      if isType(getField(x, i)) ||
-         isParam(getField(x, i)) ||
-         getField(x, i).type == nothing {
+      if isType(__primitive("field by num", x, i)) ||
+         isParam(__primitive("field by num", x, i)) ||
+         __primitive("field by num", x, i).type == nothing {
         // I/O should ignore type or param fields
         return false;
       } else {
@@ -56,8 +55,7 @@ module ChapelIO {
     }
 
     private proc __numIOFields(type t) : int {
-      use Reflection;
-      param n = getNumFields(t);
+      param n = __primitive("num fields", t);
       var ret = 0;
       pragma "no init"
       var dummy: t;
@@ -72,15 +70,14 @@ module ChapelIO {
     @chpldoc.nodoc
     proc serializeDefaultImpl(writer:fileWriter, ref serializer,
                               const x:?t) throws where isUnionType(t) {
-      use Reflection;
       // Handle unions.
       // print out just the set field for a union.
       writer.writeLiteral("(");
-      param num_fields = getNumFields(t);
+      param num_fields = __primitive("num fields", t);
       var id = x.getActiveIndex();
       for param i in 0..<num_fields {
         if isIoField(x, i) && i == id {
-          const eq = getFieldName(t, i) + " = ";
+          const eq = __primitive("field num to name", t, i) + " = ";
           writer.writeLiteral(eq);
           writer.write(x(i));
         }
@@ -99,7 +96,6 @@ module ChapelIO {
     @chpldoc.nodoc
     proc serializeDefaultImpl(writer:fileWriter, ref serializer,
                               const x:?t) throws {
-      use Reflection;
       const name = __primitive("simple type name", x);
       const numIO = __numIOFields(t);
       var ser = if isClassType(t) then
@@ -112,11 +108,11 @@ module ChapelIO {
           x.super.serialize(writer, ser);
       }
 
-      param num_fields = getNumFields(t);
+      param num_fields = __primitive("num fields", t);
       for param i in 0..<num_fields {
         if isIoField(x, i) {
-          param name : string = getFieldName(t, i);
-          ser.writeField(name, getField(x, i));
+          param name : string = __primitive("field num to name", t, i);
+          ser.writeField(name, __primitive("field by num", x, i));
         }
       }
 
@@ -129,7 +125,6 @@ module ChapelIO {
     @chpldoc.nodoc
     proc deserializeDefaultImpl(reader: fileReader, ref deserializer,
                                 ref x:?t) throws {
-      use Reflection;
       const name = __primitive("simple type name", x):string;
       var des = if isClassType(t) then
         deserializer.startClass(reader, name)
@@ -141,11 +136,11 @@ module ChapelIO {
           x.super.deserialize(reader, des);
       }
 
-      param num_fields = getNumFields(t);
+      param num_fields = __primitive("num fields", t);
       for param i in 0..<num_fields {
         if isIoField(x, i) {
-          param name : string = getFieldName(t, i);
-          ref field = getFieldRef(x, i);
+          param name : string = __primitive("field num to name", t, i);
+          ref field = __primitive("field by num", x, i);
           des.readField(name, field);
         }
       }
