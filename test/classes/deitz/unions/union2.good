@@ -1,2 +1,2 @@
 x: (-1)
-union2.chpl:14: error: halt reached - illegal union access
+union2.chpl:14: error: halt reached - illegal union access: attempted to access field 'i' but 'f' is currently active
