@@ -78,6 +78,7 @@ proc getFieldName(type t, param idx:int) param : string do
    :arg idx: which field to get
    :returns: the `param` that field represents
 */
+pragma "suppress generic actual warning"
 proc getField(const ref obj:?t, param idx: int) param
   where idx >= 0 && idx < getNumFields(t) &&
         isParam(__primitive("field by num", obj, idx)) {
@@ -95,6 +96,7 @@ proc getField(const ref obj:?t, param idx: int) param
    :arg idx: which field to get
    :returns: the type that field represents
 */
+pragma "suppress generic actual warning"
 proc getField(const ref obj:?t, param idx: int) type
   where idx >= 0 && idx < getNumFields(t) &&
         isType(__primitive("field by num", obj, idx)) {
@@ -109,6 +111,7 @@ proc getField(const ref obj:?t, param idx: int) type
    :returns: a const reference to that field.
  */
 pragma "unsafe"
+pragma "suppress generic actual warning"
 inline proc getField(const ref obj:?t, param idx:int) const ref do
   return __primitive("field by num", obj, idx);
 
@@ -121,6 +124,7 @@ inline proc getField(const ref obj:?t, param idx:int) const ref do
    :arg name: the name of a field
    :returns: the `param` that field represents
  */
+pragma "suppress generic actual warning"
 proc getField(const ref obj:?t, param name: string) param
 where getFieldIndex(t, name) != -1 &&
       isParam(getField(obj, getFieldIndex(t, name))) {
@@ -136,6 +140,7 @@ where getFieldIndex(t, name) != -1 &&
    :arg name: the name of a field
    :returns: the type that field represents
  */
+pragma "suppress generic actual warning"
 proc getField(const ref obj:?t, param name: string) type
   where getFieldIndex(t, name) != -1 && isType(getField(obj, getFieldIndex(t, name))) {
 
@@ -151,6 +156,7 @@ proc getField(const ref obj:?t, param name: string) type
    :returns: a const reference to that field.
  */
 pragma "unsafe"
+pragma "suppress generic actual warning"
 inline proc getField(const ref obj:?t, param name:string) const ref {
   param i = __primitive("field name to num", t, name);
   if i == -1 then
