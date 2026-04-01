@@ -148,6 +148,7 @@ class ChapelLanguageServer(LanguageServer):
         self.param_inlays: bool = config.get("param_inlays")
         self.enum_inlays: bool = config.get("enum_inlays")
         self.default_rect_arrays: bool = config.get("default_rect_arrays")
+        self.common_inlays: bool = config.get("common_inlays")
         self.dead_code: bool = config.get("dead_code")
         self.eval_expressions: bool = config.get("eval_expressions")
         self.show_instantiations: bool = config.get("show_instantiations")
@@ -528,6 +529,73 @@ class ChapelLanguageServer(LanguageServer):
         if qt is None:
             return inlays
 
+        inlays.extend(self._get_param_inlays(decl, qt))
+        inlays.extend(self._get_type_inlays(decl, qt))
+        return inlays
+
+    def get_common_decl_inlays(
+        self,
+        decl: NodeAndRange,
+        fi: FileInfo,
+    ) -> List[InlayHint]:
+
+        inlays = []
+        if not self.common_inlays or not self.use_resolver:
+            return inlays
+
+        node = decl.node
+        if isinstance(node, chapel.Function):
+            return inlays
+
+        parent = node.parent_symbol()
+        if not isinstance(parent, chapel.Function):
+            return inlays
+        parent_fn = parent
+
+        # Validate that the structure we're resolving is roughly what we'd expect
+        parent = parent.parent_symbol()
+        while parent:
+            if not isinstance(parent, (chapel.Module, chapel.CompositeType)):
+                return inlays
+            parent = parent.parent_symbol()
+
+        # * If there are no instantiations, nothing to show.
+        # * If there's only one, we can't distinguish "common" from
+        #   "just in this one", so don't show anything.
+        insts = list(fi.context.instantiations(parent_fn.unique_id()))
+        if len(insts) < 2:
+            return inlays
+
+        decl_qts = []
+        for i, _ in insts:
+            # If any one of the instantiations is purely provided by
+            # CLS, don't show common inlays. (e.g., what if we ONLY
+            # have synthetic instantiations? what if only the synthetic
+            # instantiation differs?).
+            from_real_call = any(
+                ctx != () for ctx in fi.context.call_contexts(i)
+            )
+            if not from_real_call:
+                return inlays
+
+            rr = decl.node.resolve_via(i)
+            if rr is None:
+                break
+
+            qt = rr.type()
+            if qt is None:
+                break
+
+            decl_qts.append(qt)
+
+        if len(decl_qts) != len(insts):
+            return inlays
+
+        unique_qts = set(decl_qts)
+        if len(unique_qts) != 1:
+            return inlays
+
+        qt = unique_qts.pop()
         inlays.extend(self._get_param_inlays(decl, qt))
         inlays.extend(self._get_type_inlays(decl, qt))
         return inlays
@@ -1118,6 +1186,12 @@ def run_lsp():
         for decl in decls:
             instantiation = fi.get_inst_segment_at_position(decl.rng.start)
             inlays.extend(ls.get_decl_inlays(decl, instantiation))
+
+            if instantiation is not None:
+                continue
+
+            # Get inalys gathered if all instantiations show the same hint.
+            inlays.extend(ls.get_common_decl_inlays(decl, fi))
 
         for call in calls:
             call_range = location_to_range(call.location())
