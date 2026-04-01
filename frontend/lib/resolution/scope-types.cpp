@@ -278,14 +278,10 @@ void MatchingIdsWithName::removeDuplicateIds(std::vector<ResultVisibilityTrace>*
   }
 
   if (cur != end) {
-#if LLVM_VERSION_MAJOR >= 14
-    idvs_.truncate(cur);
+    truncate((int) cur);
     if (traces) {
       traces->resize(cur);
     }
-#else
-    idvs_.resize(cur);
-#endif
   }
 }
 
