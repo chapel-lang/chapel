@@ -232,6 +232,8 @@ ChapelStaticVars
   from print-module-resolution.ChapelStandard.ChapelStaticVars
 ChapelRemoteVars
   from print-module-resolution.ChapelStandard.ChapelRemoteVars
+ChapelUnion
+  from print-module-resolution.ChapelStandard.ChapelUnion
 AutoGpu
   from print-module-resolution.ChapelStandard.AutoGpu
 stopInitCommDiags
