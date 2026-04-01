@@ -466,3 +466,67 @@ async def test_type_inlay_type_variable(client: LanguageClient):
         await check_type_inlay_hints(
             client, doc, rng((0, 0), endpos(file)), [y_inlay]
         )
+
+
+@pytest.mark.asyncio
+async def test_common_inlays(client: LanguageClient):
+    """
+    Ensure that type inlays are shown properly for type variables
+    """
+
+    file = """
+            proc foo(x) {
+              var y = x;
+              var z = (x, x);
+              var xStr = x : string;
+              var zStr = z : (string, string);
+            }
+            foo(42);
+            foo(42.0);
+           """
+
+    inlays = [
+        (pos((3, 10)), "string"),
+        (pos((4, 10)), "(string, string)"),
+    ]
+    async with source_file(client, file) as doc:
+        await check_type_inlay_hints(
+            client, doc, rng((0, 0), endpos(file)), inlays
+        )
+
+
+@pytest.mark.asyncio
+async def test_common_inlays_crossfile(client: LanguageClient):
+    """
+    Ensure that type inlays are shown properly for type variables
+    """
+
+    modA = """
+            module A {
+              proc foo(x) {
+                var y = x;
+                var z = (x, x);
+                var xStr = x : string;
+                var zStr = z : (string, string);
+              }
+            }
+           """
+    modB = """
+            module B {
+              use A;
+              foo(42);
+              foo(42.0);
+            }
+           """
+
+    inlays = [
+        (pos((4, 12)), "string"),
+        (pos((5, 12)), "(string, string)"),
+    ]
+    async with source_files(client, A=modA, B=modB) as docs:
+        await check_type_inlay_hints(
+            client, docs("B"), rng((0, 0), endpos(modB)), []
+        )
+        await check_type_inlay_hints(
+            client, docs("A"), rng((0, 0), endpos(modA)), inlays
+        )
