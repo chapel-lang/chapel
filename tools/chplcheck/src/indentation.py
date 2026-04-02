@@ -20,6 +20,7 @@ from chapel import (
     Union,
 )
 from typing import Optional, List, Tuple
+from functools import cache
 
 
 class IndentationCollector:
@@ -260,3 +261,10 @@ class IndentationCollector:
 
         for p, anchor, group in prev_single_stmts:
             self._note_misleading_group(p, anchor, group)
+
+
+@cache
+def build_and_run_indentation_collector(root: AstNode) -> IndentationCollector:
+    collector = IndentationCollector()
+    collector.collect(root)
+    return collector

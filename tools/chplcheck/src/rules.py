@@ -25,7 +25,7 @@ import chapel
 from chapel import *
 from driver import LintDriver
 from fixits import Fixit, Edit
-from indentation import IndentationCollector
+from indentation import build_and_run_indentation_collector
 from rule_types import (
     BasicRuleResult,
     AdvancedRuleResult,
@@ -1003,8 +1003,7 @@ def rules(driver: LintDriver):
         """
         Warn for single-statement blocks that look like they might be multi-statement blocks.
         """
-        collector = IndentationCollector()
-        collector.collect(root)
+        collector = build_and_run_indentation_collector(root)
 
         no_incorrect_indentation = (
             "IncorrectIndentation" in ChplcheckSilencedRules
@@ -1401,8 +1400,7 @@ def rules(driver: LintDriver):
         """
         Warn for inconsistent or missing indentation
         """
-        collector = IndentationCollector()
-        collector.collect(root)
+        collector = build_and_run_indentation_collector(root)
 
         no_misleading_indentation = (
             "MisleadingIndentation" in ChplcheckSilencedRules
