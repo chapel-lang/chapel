@@ -997,15 +997,21 @@ def rules(driver: LintDriver):
         yield from recurse(root)
 
     @driver.advanced_rule
-    def MisleadingIndentation(context: Context, root: AstNode):
+    def MisleadingIndentation(context: Context, root: AstNode, ChplcheckSilencedRules: List[str]):
         """
         Warn for single-statement blocks that look like they might be multi-statement blocks.
         """
         collector = IndentationCollector()
         collector.collect(root)
 
+        no_incorrect_indentation = "IncorrectIndentation" in ChplcheckSilencedRules
+
         for (node, (child, anchor, group)) in collector.misleadingly_indented_groups.items():
-            yield AdvancedRuleResult(node, anchor, data=(child, group))
+            # If the thing we look like we're bundled under is itself
+            # incorrectly indented, that's the root cause, let that report
+            # take precedence.
+            if no_incorrect_indentation or child not in collector.incorrectly_indented_nodes:
+                yield AdvancedRuleResult(node, anchor, data=(child, group))
 
     def append_nested_single_stmt(node, prev: List[tuple[AstNode, List[AstNode]]]):
         if isinstance(node, Loop) and node.block_style() == "implicit":

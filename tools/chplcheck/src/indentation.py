@@ -45,6 +45,7 @@ class IndentationCollector:
                 continue
             prev.append((stmt, anchor, []))
             self._append_nested_single_stmt(stmt, prev, anchor)
+            break
 
     def _contains_statements(self, node: AstNode) -> bool:
         """
