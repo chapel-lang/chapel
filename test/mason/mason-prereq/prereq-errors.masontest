@@ -5,4 +5,4 @@ set -eo pipefail
 cd prereq3
 
 
-MASON_LOG_LEVEL=info mason build | grep 'error:' | sed -E 's/^(.*expected).*$/\1/'
+MASON_LOG_LEVEL=info mason build || true
