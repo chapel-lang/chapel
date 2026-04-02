@@ -1003,7 +1003,7 @@ def rules(driver: LintDriver):
         if isinstance(root, Comment):
             return
         prev = []
-        fix = None
+        anchor = None
         for child in root:
             if isinstance(child, Comment):
                 continue
@@ -1014,10 +1014,10 @@ def rules(driver: LintDriver):
                     if p.location().start()[1] != child.location().start()[1]:
                         continue
 
-                    yield AdvancedRuleResult(child, fix, data=p)
+                    yield AdvancedRuleResult(child, anchor, data=p)
 
             prev = []
-            fix = append_nested_single_stmt(child, prev)
+            anchor = append_nested_single_stmt(child, prev)
 
     def append_nested_single_stmt(node, prev: List[AstNode]):
         if isinstance(node, Loop) and node.block_style() == "implicit":
