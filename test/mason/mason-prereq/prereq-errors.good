@@ -1,2 +1,12 @@
-Command failed: 'make MASON_PACKAGE_HOME=/Users/jade/Development/chapel-lang/chapel/test/mason/mason-prereq/prereq3'
-mason utils   : hello.c:6:27: error: expected
+Command failed: 'make MASON_PACKAGE_HOME=$CHPL_HOME/test/mason/mason-prereq/prereq3'
+mason prereqs : Prerequisites directory exists ($CHPL_HOME/test/mason/mason-prereq/prereq3/prereqs)
+mason prereqs : Installing prerequisite $CHPL_HOME/test/mason/mason-prereq/prereq3/prereqs/some-c-lib
+mason utils   : #include <stdio.h>
+mason utils   : 
+mason utils   : #include "hello.h"
+mason utils   : 
+mason utils   : void hello(void) {
+mason utils   :   printf("Hello world!\n")
+mason utils   : }
+mason utils   : error: missing ';'
+mason utils   : make: *** [all] Error 1
