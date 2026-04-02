@@ -26,6 +26,15 @@ from fixits import Fixit, Edit
 from config import RuleSetting
 
 
+BUILTIN_AUTO_ARGS = {"ChplcheckSilencedRules"}
+
+
+def _builtin_auto_args_in_fn(check_func: typing.Callable) -> typing.Set[str]:
+    import inspect
+    argspec = inspect.getfullargspec(check_func)
+    return set(argspec.args) & BUILTIN_AUTO_ARGS
+
+
 def _build_ignore_fixit(
     anchor: chapel.AstNode, lines: typing.List[str], rule_name: str
 ) -> Fixit:
@@ -264,6 +273,13 @@ class Rule(typing.Generic[VarResultType], metaclass=ABCMeta):
         if fixit_func.__doc__ is not None:
             fixit.description = fixit_func.__doc__.strip()
 
+    def _uses_internal_auto_args(self) -> typing.Set[str]:
+        """
+        Which of the arguments that can be auto-supplied by chplcheck
+        does this rule use?
+        """
+        return set()
+
     def run_fixit_hooks(
         self, context: chapel.Context, result: VarResultType
     ) -> typing.List[Fixit]:
@@ -295,6 +311,14 @@ class Rule(typing.Generic[VarResultType], metaclass=ABCMeta):
             driver_setting = self.driver.config.rule_settings.get(setting)
             setting_kwargs[setting.setting_name] = driver_setting
 
+        auto_args = self._uses_internal_auto_args()
+
+        silenced_rules_key = "ChplcheckSilencedRules"
+        assert silenced_rules_key in BUILTIN_AUTO_ARGS
+        if silenced_rules_key in auto_args:
+            silenced_rules = list(self.driver.SilencedRules)
+            setting_kwargs[silenced_rules_key] = silenced_rules
+
         return setting_kwargs
 
     @abstractmethod
@@ -320,6 +344,9 @@ class BasicRule(Rule[BasicRuleResult]):
         super().__init__(driver, name, settings)
         self.pattern = pattern
         self.check_func = check_func
+
+    def _uses_internal_auto_args(self) -> typing.Set[str]:
+        return _builtin_auto_args_in_fn(self.check_func)
 
     def _check_single(
         self, context: chapel.Context, node: chapel.AstNode
@@ -374,6 +401,9 @@ class AdvancedRule(Rule[AdvancedRuleResult]):
         super().__init__(driver, name, settings)
         self.check_func = check_func
 
+    def _uses_internal_auto_args(self) -> typing.Set[str]:
+        return _builtin_auto_args_in_fn(self.check_func)
+
     def check(
         self, context: chapel.Context, root: chapel.AstNode
     ) -> typing.Iterable[CheckResult]:
@@ -422,6 +452,9 @@ class LocationRule(Rule[LocationRuleResult]):
     ) -> None:
         super().__init__(driver, name, settings)
         self.check_func = check_func
+
+    def _uses_internal_auto_args(self) -> typing.Set[str]:
+        return _builtin_auto_args_in_fn(self.check_func)
 
     def check(
         self, context: chapel.Context, root: chapel.AstNode
