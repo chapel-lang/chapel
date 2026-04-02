@@ -105,7 +105,6 @@ class IndentationCollector:
     def _note_misleading_group(self, misleading_child: AstNode, anchor: Optional[AstNode], group: List[AstNode]):
         for member in group:
             self.misleadingly_indented_groups[member] = (misleading_child, anchor, group)
-            break
 
     def _note_incorrectly_indented(self, child: AstNode, anchor: Optional[AstNode]):
         self.incorrectly_indented_nodes[child] = anchor

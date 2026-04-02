@@ -1376,15 +1376,17 @@ def rules(driver: LintDriver):
             yield AdvancedRuleResult(iterand, anchor=loop, fixits=[fixit])
 
     @driver.advanced_rule
-    def IncorrectIndentation(context: Context, root: AstNode):
+    def IncorrectIndentation(context: Context, root: AstNode, ChplcheckSilencedRules: List[str]):
         """
         Warn for inconsistent or missing indentation
         """
         collector = IndentationCollector()
         collector.collect(root)
 
+        no_misleading_indentation = "MisleadingIndentation" in ChplcheckSilencedRules
+
         for (node, anchor) in collector.incorrectly_indented_nodes.items():
-            if node not in collector.misleadingly_indented_groups:
+            if no_misleading_indentation or node not in collector.misleadingly_indented_groups:
                 yield AdvancedRuleResult(node, anchor)
 
     @driver.advanced_rule
