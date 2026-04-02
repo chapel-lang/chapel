@@ -24,10 +24,17 @@ from typing import Optional, List, Tuple
 
 class IndentationCollector:
     def __init__(self):
-        self.misleadingly_indented_groups: dict[AstNode, Tuple[AstNode, Optional[AstNode], List[AstNode]]] = {}
+        self.misleadingly_indented_groups: dict[
+            AstNode, Tuple[AstNode, Optional[AstNode], List[AstNode]]
+        ] = {}
         self.incorrectly_indented_nodes: dict[AstNode, Optional[AstNode]] = {}
 
-    def _append_nested_single_stmt(self, node: AstNode, prev: List[Tuple[AstNode, AstNode, List[AstNode]]], anchor: Optional[AstNode] = None) -> Optional[AstNode]:
+    def _append_nested_single_stmt(
+        self,
+        node: AstNode,
+        prev: List[Tuple[AstNode, AstNode, List[AstNode]]],
+        anchor: Optional[AstNode] = None,
+    ) -> Optional[AstNode]:
         if not anchor:
             anchor = node
 
@@ -103,11 +110,22 @@ class IndentationCollector:
             anchor = None
         return anchor
 
-    def _note_misleading_group(self, misleading_child: AstNode, anchor: Optional[AstNode], group: List[AstNode]):
+    def _note_misleading_group(
+        self,
+        misleading_child: AstNode,
+        anchor: Optional[AstNode],
+        group: List[AstNode],
+    ):
         for member in group:
-            self.misleadingly_indented_groups[member] = (misleading_child, anchor, group)
+            self.misleadingly_indented_groups[member] = (
+                misleading_child,
+                anchor,
+                group,
+            )
 
-    def _note_incorrectly_indented(self, child: AstNode, anchor: Optional[AstNode]):
+    def _note_incorrectly_indented(
+        self, child: AstNode, anchor: Optional[AstNode]
+    ):
         self.incorrectly_indented_nodes[child] = anchor
 
     def collect(self, root: AstNode):
@@ -196,15 +214,21 @@ class IndentationCollector:
             if line == prev_line:
                 # Exception for enums, which are allowed to be on the same line.
                 #   enum color { red, green, blue }
-                if is_eligible_parent_for_indentation and not isinstance(child, EnumElement):
-                    self._note_incorrectly_indented(child, self._find_anchor(parent_for_indentation))
+                if is_eligible_parent_for_indentation and not isinstance(
+                    child, EnumElement
+                ):
+                    self._note_incorrectly_indented(
+                        child, self._find_anchor(parent_for_indentation)
+                    )
 
             # Warn for misaligned siblings:
             #   var x: int;
             #     var y: int;
             elif prev_depth and depth != prev_depth:
                 if is_eligible_parent_for_indentation:
-                    self._note_incorrectly_indented(child, self._find_anchor(parent_for_indentation))
+                    self._note_incorrectly_indented(
+                        child, self._find_anchor(parent_for_indentation)
+                    )
 
                 # Do not update 'prev_depth'; use original prev_depth as
                 # reference for next sibling.
@@ -216,15 +240,23 @@ class IndentationCollector:
             #   record r {
             #   var x: int;
             #   }
-            elif is_eligible_parent_for_indentation and parent_depth and depth == parent_depth:
-                if self._is_block_in_else_if_chain(child, parent_for_indentation):
+            elif (
+                is_eligible_parent_for_indentation
+                and parent_depth
+                and depth == parent_depth
+            ):
+                if self._is_block_in_else_if_chain(
+                    child, parent_for_indentation
+                ):
                     # don't warn if the child is the only statement in an else implicit block
                     prev_line = line
                     continue
-                self._note_incorrectly_indented(child, self._find_anchor(parent_for_indentation))
+                self._note_incorrectly_indented(
+                    child, self._find_anchor(parent_for_indentation)
+                )
 
             prev_depth = depth
             prev_line = line
 
-        for (p, anchor, group) in prev_single_stmts:
+        for p, anchor, group in prev_single_stmts:
             self._note_misleading_group(p, anchor, group)

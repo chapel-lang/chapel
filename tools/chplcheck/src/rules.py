@@ -997,23 +997,36 @@ def rules(driver: LintDriver):
         yield from recurse(root)
 
     @driver.advanced_rule
-    def MisleadingIndentation(context: Context, root: AstNode, ChplcheckSilencedRules: List[str]):
+    def MisleadingIndentation(
+        context: Context, root: AstNode, ChplcheckSilencedRules: List[str]
+    ):
         """
         Warn for single-statement blocks that look like they might be multi-statement blocks.
         """
         collector = IndentationCollector()
         collector.collect(root)
 
-        no_incorrect_indentation = "IncorrectIndentation" in ChplcheckSilencedRules
+        no_incorrect_indentation = (
+            "IncorrectIndentation" in ChplcheckSilencedRules
+        )
 
-        for (node, (child, anchor, group)) in collector.misleadingly_indented_groups.items():
+        for node, (
+            child,
+            anchor,
+            group,
+        ) in collector.misleadingly_indented_groups.items():
             # If the thing we look like we're bundled under is itself
             # incorrectly indented, that's the root cause, let that report
             # take precedence.
-            if no_incorrect_indentation or child not in collector.incorrectly_indented_nodes:
+            if (
+                no_incorrect_indentation
+                or child not in collector.incorrectly_indented_nodes
+            ):
                 yield AdvancedRuleResult(node, anchor, data=(child, group))
 
-    def append_nested_single_stmt(node, prev: List[tuple[AstNode, List[AstNode]]]):
+    def append_nested_single_stmt(
+        node, prev: List[tuple[AstNode, List[AstNode]]]
+    ):
         if isinstance(node, Loop) and node.block_style() == "implicit":
             children = list(node)
             # safe to access [-1], loops must have at least 1 child
@@ -1382,17 +1395,24 @@ def rules(driver: LintDriver):
             yield AdvancedRuleResult(iterand, anchor=loop, fixits=[fixit])
 
     @driver.advanced_rule
-    def IncorrectIndentation(context: Context, root: AstNode, ChplcheckSilencedRules: List[str]):
+    def IncorrectIndentation(
+        context: Context, root: AstNode, ChplcheckSilencedRules: List[str]
+    ):
         """
         Warn for inconsistent or missing indentation
         """
         collector = IndentationCollector()
         collector.collect(root)
 
-        no_misleading_indentation = "MisleadingIndentation" in ChplcheckSilencedRules
+        no_misleading_indentation = (
+            "MisleadingIndentation" in ChplcheckSilencedRules
+        )
 
-        for (node, anchor) in collector.incorrectly_indented_nodes.items():
-            if no_misleading_indentation or node not in collector.misleadingly_indented_groups:
+        for node, anchor in collector.incorrectly_indented_nodes.items():
+            if (
+                no_misleading_indentation
+                or node not in collector.misleadingly_indented_groups
+            ):
                 yield AdvancedRuleResult(node, anchor)
 
     @driver.advanced_rule

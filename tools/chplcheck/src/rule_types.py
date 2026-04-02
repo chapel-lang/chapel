@@ -31,6 +31,7 @@ BUILTIN_AUTO_ARGS = {"ChplcheckSilencedRules"}
 
 def _builtin_auto_args_in_fn(check_func: typing.Callable) -> typing.Set[str]:
     import inspect
+
     argspec = inspect.getfullargspec(check_func)
     return set(argspec.args) & BUILTIN_AUTO_ARGS
 
