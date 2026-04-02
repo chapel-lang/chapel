@@ -25,7 +25,6 @@ from dataclasses import dataclass
 from fixits import Fixit, Edit
 from config import RuleSetting
 
-
 BUILTIN_AUTO_ARGS = {"ChplcheckSilencedRules"}
 
 
