@@ -305,6 +305,7 @@ _chpl ()
 --no-stack-checks \
 --no-task-tracking \
 --no-tuple-copy-opt \
+--no-union-checks \
 --no-use-color-terminal \
 --no-vectorize \
 --no-verify \
@@ -414,6 +415,7 @@ _chpl ()
 --timers \
 --tuple-copy-limit \
 --tuple-copy-opt \
+--union-checks \
 --use-color-terminal \
 --using-attribute-toolname \
 --vector-library \
@@ -580,6 +582,7 @@ _chpl ()
 --no-stack-checks \
 --no-task-tracking \
 --no-tuple-copy-opt \
+--no-union-checks \
 --no-vectorize \
 --no-warn-float-to-float \
 --no-warn-implicit-numeric-conversions \
@@ -636,6 +639,7 @@ _chpl ()
 --timers \
 --tuple-copy-limit \
 --tuple-copy-opt \
+--union-checks \
 --using-attribute-toolname \
 --vector-library \
 --vectorize \
