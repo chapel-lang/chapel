@@ -13,4 +13,6 @@ MisleadingIndentation.chpl:74: node violates rule MisleadingIndentation
 MisleadingIndentation.chpl:80: node violates rule MisleadingIndentation
 MisleadingIndentation.chpl:86: node violates rule MisleadingIndentation
 MisleadingIndentation.chpl:89: node violates rule MisleadingIndentation
+MisleadingIndentation.chpl:99: node violates rule MisleadingIndentation
+MisleadingIndentation.chpl:100: node violates rule MisleadingIndentation
 [Success matching fixit for MisleadingIndentation]
