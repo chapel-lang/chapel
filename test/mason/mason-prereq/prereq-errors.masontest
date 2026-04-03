@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 
-set -eo pipefail
-
 cd prereq3
-
-
-MASON_LOG_LEVEL=info mason build || true
+MASON_LOG_LEVEL=info mason build
+if [ $? -ne 0 ]; then
+  echo "Mason build failed and correctly return a non-zero exit code"
+else
+  echo "Mason build succeeded but should have failed"
+  exit 1
+fi
