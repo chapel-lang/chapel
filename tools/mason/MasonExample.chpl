@@ -336,7 +336,7 @@ private proc runExampleBinary(projectHome: string, exampleName: string,
   }
 
   // TODO: do we need to expose the error code in some way?
-  const exampleResult = runWithStatus(command.toArray());
+  const exampleResult = runWithStatus(command.toArray(), capture=false);
 }
 
 private proc getExamples(toml: Toml, projectHome: string) {

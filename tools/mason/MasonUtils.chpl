@@ -156,17 +156,20 @@ proc runCommand(cmd: string, quiet=false) : string throws {
 
 /* Same as runCommand but for situations where an
    exit status is needed */
-proc runWithStatus(command: string, quiet=false): int {
+proc runWithStatus(command: string, quiet=false, capture=true): int {
   var cmd = command.split();
-  return runWithStatus(cmd, quiet=quiet);
+  return runWithStatus(cmd, quiet=quiet, capture=capture);
 }
-proc runWithStatus(command: [] string, quiet=false): int {
+proc runWithStatus(command: [] string, quiet=false, capture=true): int {
   try {
     log.debugf("runWithStatus: %?\n", command);
-    var sub = spawn(command, stdout=pipeStyle.pipe, stderr=pipeStyle.pipe);
+    var sub =
+      if capture
+        then spawn(command, stdout=pipeStyle.pipe, stderr=pipeStyle.pipe)
+        else spawn(command);
 
     var line:string;
-    if !quiet {
+    if !quiet && capture {
       while sub.stdout.readLine(line) do write(line);
       while sub.stderr.readLine(line) do write(line);
     }
