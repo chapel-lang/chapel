@@ -249,6 +249,60 @@ Creating links to other symbols
 See the `Hyperlinks`_ section for details on creating links, also
 known as cross-references, in the documentation to other symbols.
 
+Customizing the generated documentation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+By default, all documented Chapel modules are included automatically in the
+generated documentation (e.g., they will show up in the index). To suppress this
+behavior, preface the module symbol with the attribute ``@chpldoc.noAutoInclude``. ``chpldoc`` will still generate documentation for the module, but it will not automatically included. It will need to be included manually. This can provide more
+control over the organization of the documentation. For example:
+
+.. code-block:: chapel
+
+   @chpldoc.noAutoInclude
+   module MyModule { ... }
+
+   /*
+     This is the primary module in the codebase, all other docs get included
+     here
+
+     .. include:: /modules/MyModule.rst
+   */
+   module MyPrimaryModule {
+     use MyModule;
+     ...
+   }
+
+.. warning::
+
+   Care should be taken when inserting multiple modules into the same document
+   as ``chpldoc`` cannot create links for nested modules. It is only recommended
+   to do this if you use ``include`` with ``start-after`` to exclude the module declaration.
+
+By default, all documented Chapel modules get generated usage information.
+To suppress this behavior, preface the module
+symbol with the attribute ``@chpldoc.noUsage``.
+
+..
+
+   These are internal, but documented here for future use
+
+   By default, chpldoc will show the where clause for a function or method. This
+   may not always be desirable. To suppress the where clause, use the ``@chpldoc.noWhereClause`` attribute on the function or method. For example:
+
+   .. code-block:: chapel
+
+      @chpldoc.noWhereClause
+      proc foo() where isSomeType(T) { ... }
+
+   Some Chapel types are implemented using records, but we want to document them
+   as just a type. To do this, use the ``@chpldoc.hideImplType`` attribute on the record. For example:
+
+   .. code-block:: chapel
+
+      @chpldoc.hideImplType
+      record MyType { ... }
+
 
 .. _reStructuredText primer:
 
