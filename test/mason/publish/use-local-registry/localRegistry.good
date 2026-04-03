@@ -49,6 +49,10 @@ OK (passed = 2 )
 Updating my-local-registry
 got strings: (set, set)
 got magic: 17
++ mason doc
++ cat doc/_sources/modules/src/myPackage.rst.txt
++ grep '.. module::'
+.. module:: myPackage
 + cd ..
 + mason new myNewPackage
 Created new application project: myNewPackage
@@ -63,3 +67,7 @@ Compiling [debug] target: myNewPackage
 Build Successful
 
 got strings: (set, set)
++ mason doc
++ cat doc/_sources/modules/src/myNewPackage.rst.txt
++ grep '.. module::'
+.. module:: myNewPackage
