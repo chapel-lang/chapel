@@ -18,6 +18,7 @@ import shutil
 import pathlib
 import sphinx.environment
 import sphinx.util.logging
+from pathlib import Path
 
 on_rtd = os.environ.get("READTHEDOCS", None) == "True"
 
@@ -215,6 +216,14 @@ exclude_patterns = [
     "tools/chapel-py/chapel-py-api.rst",
     "tools/chplcheck/generated/rules.rst",
 ]
+
+chpldoc_exclude_patterns = []
+if paths := os.environ.get("CHPLDOC_EXCLUDE_PATHS", None):
+    for path in paths.split(","):
+        chpldoc_exclude_patterns.append(
+            str("modules" / Path(path).with_suffix(".rst"))
+        )
+exclude_patterns.extend(chpldoc_exclude_patterns)
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.

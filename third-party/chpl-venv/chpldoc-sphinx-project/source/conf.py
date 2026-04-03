@@ -93,6 +93,14 @@ if project_description:
 # directories to ignore when looking for source files.
 exclude_patterns = []
 
+chpldoc_exclude_patterns = []
+if paths := os.environ.get("CHPLDOC_EXCLUDE_PATHS", None):
+    for path in paths.split(","):
+        chpldoc_exclude_patterns.append(
+            str("modules" / Path(path).with_suffix(".rst"))
+        )
+exclude_patterns.extend(chpldoc_exclude_patterns)
+
 # The reST default role (used for this markup: `text`) to use for all
 # documents.
 #default_role = None
