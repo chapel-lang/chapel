@@ -69,7 +69,7 @@ module ChapelUnion {
     return Reflection.getFieldRef(this, idx);
   }
   @chpldoc.nodoc
-  proc const (union).this(param idx: int) const {
+  proc const ref (union).this(param idx: int) const ref {
     if chpl_unionAccessChecking {
       _checkUnionAccess(this, idx);
     }
@@ -84,7 +84,7 @@ module ChapelUnion {
     }
   }
   @chpldoc.nodoc
-  proc const (union).thisInternal(param idx: int) const {
+  proc const ref (union).thisInternal(param idx: int) const ref {
     import Reflection;
     return Reflection.getField(this, idx);
   }
@@ -127,7 +127,9 @@ module ChapelUnion {
     for param i in 0..<funcs.size do
       if i == idx {
         if !__primitive("resolves", funcs[i](this.thisInternal(i))) {
+          param attemptedField = Reflection.getFieldName(this.type, i);
           compilerError(funcs[i].type:string + " at index " + i:string +
+                        " (corresponding to field \""+ attemptedField + "\") " +
                         " cannot be called with an argument of type " +
                        this.thisInternal(i).type:string);
         }

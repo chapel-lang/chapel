@@ -1,1 +1,1 @@
-badVisit1.chpl:8: error: proc(x: int) at index 1 cannot be called with an argument of type real(64)
+badVisit1.chpl:8: error: proc(x: int) at index 1 (corresponding to field "y")  cannot be called with an argument of type real(64)
