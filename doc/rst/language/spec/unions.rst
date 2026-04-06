@@ -154,6 +154,8 @@ Union Pattern Matching
 
 There are two primary ways to perform pattern matching on unions: using a
 ``select`` statement or using the :proc:`~ChapelUnion.union.visit` method.
+Pattern matching allows users to decompose a union based on the currently
+active field.
 
    *Example (patternMatchSelect.chpl)*.
 
