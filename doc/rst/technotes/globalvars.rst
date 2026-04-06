@@ -44,7 +44,7 @@ Variables
 
     This variable can be used to check if ``--union-checks`` is enabled. When
     this variable is set to *true*, the runtime will check for attempts to
-    access a union field incorrectly
+    access a union field incorrectly.
 
 **chpl_warnUnstable**
 

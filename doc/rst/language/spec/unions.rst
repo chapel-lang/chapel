@@ -152,13 +152,13 @@ Union fields should not be specified with initialization expressions.
 Union Pattern Matching
 ----------------------
 
-There are two primary ways to perform pattern matching on unions: using a select
-statement or using the :proc:`~ChapelUnion.union.visit` method.
+There are two primary ways to perform pattern matching on unions: using a
+``select`` statement or using the :proc:`~ChapelUnion.union.visit` method.
 
    *Example (patternMatchSelect.chpl)*.
 
-   Unions can use a select statement to perform pattern matching on the active
-   field of the union.
+   Unions can use a ``select`` statement to perform pattern matching on the
+   active field of the union.
 
    .. BLOCK-test-chapelpre
 
