@@ -21,8 +21,20 @@
 module ChapelProgramEntrypoints {
   use ChapelBase, CTypes;
 
+  // This is an opaque alias for "char" used to make sure the compiler will
+  // generate the proper type instead of e.g., "int(8)" as is usually done
+  // for "c_char". Once inside a function passed this type, you can use a
+  // helper to cast back to "c_char".
+  extern "char" type chpl_opaqueChar;
+
   // Alias for 'char**' to be used as the type of 'argv'.
-  type c_argArray = c_ptr(c_ptr(c_char));
+  type chpl_opaqueArgArray = c_ptr(c_ptr(chpl_opaqueChar));
+
+  private inline proc toChplCharArray(x: chpl_opaqueArgArray) {
+    type t = c_ptr(c_ptr(c_char));
+    const ret = __primitive("cast", t, x);
+    return ret;
+  }
 
   pragma "locale private"
   var chpl_isLibInitialized = false;
@@ -58,8 +70,8 @@ module ChapelProgramEntrypoints {
   // TODO (dlongnecke): This function needs to be documented as one that also
   //                    initializes the runtime, or we need to make sure that
   //                    runtime initialization is split out from library init.
-  export proc chpl_library_init(argc: c_int, argv: c_argArray) {
-    extern proc chpl_rt_init(argc: c_int, argv: c_argArray): void;
+  export proc chpl_library_init(argc: c_int, argv: chpl_opaqueArgArray) {
+    extern proc chpl_rt_init(argc: c_int, argv: chpl_opaqueArgArray): void;
     // TODO: A lie, 'chpl_main' is actually a local function pointer.
     extern proc chpl_task_callMain(chpl_main: c_ptr(void)): void;
     extern proc chpl_std_module_init(): void;
@@ -68,7 +80,6 @@ module ChapelProgramEntrypoints {
     if chpl_isLibInitialized {
       // Ok to emit message as runtime is already set up.
       rtError("Can't call chpl_library_init() twice");
-
     }
 
     if numLocales > 1 then {
