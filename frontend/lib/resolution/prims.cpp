@@ -157,12 +157,11 @@ static QualifiedType primFieldNumToName(ResolutionContext* rc, const CallInfo& c
   auto firstActual = ci.actual(0).type();
   auto secondActual = ci.actual(1).type();
   if (auto fields = toCompositeTypeActualFields(rc, firstActual, TypeReq::EITHER)) {
-    int64_t fieldNum = 0;
+    int64_t fieldNum = -1;
     if (!toParamIntActual(secondActual, fieldNum)) return type;
-    // Fields in these primitives are 1-indexed.
-    if (fieldNum > fields->numFields() || fieldNum < 1) return type;
+    if (fieldNum >= fields->numFields() || fieldNum < 0) return type;
 
-    auto fieldName = fields->fieldName(fieldNum - 1);
+    auto fieldName = fields->fieldName(fieldNum);
     type = QualifiedType::makeParamString(rc->context(), fieldName);
   }
   return type;
@@ -174,8 +173,7 @@ static QualifiedType primFieldNameToNum(ResolutionContext* rc, const CallInfo& c
 
   auto firstActual = ci.actual(0).type();
   auto secondActual = ci.actual(1).type();
-  bool foundField = false;
-  int field = 0;
+  int field = -1;
   if (auto fields = toCompositeTypeActualFields(rc, firstActual)) {
     UniqueString fieldName;
     if (!toParamStringActual(secondActual, fieldName)) return type;
@@ -183,9 +181,7 @@ static QualifiedType primFieldNameToNum(ResolutionContext* rc, const CallInfo& c
     // TODO move this into a method on fields?
     for (int i = 0; i < fields->numFields(); i++) {
       if (fields->fieldName(i) == fieldName) {
-        foundField = true;
-        // Fields in these primitives are 1-indexed.
-        field = i + 1;
+        field = i;
         break;
       }
     }
@@ -197,13 +193,10 @@ static QualifiedType primFieldNameToNum(ResolutionContext* rc, const CallInfo& c
 
     if (fieldName == "_shape_" &&
         shapeForIterator(rc->context(), firstActual.type()->toIteratorType())) {
-      foundField = true;
-      // Fields in these primitives are 1-indexed.
-      field = 1;
+      field = 0;
     }
   }
 
-  if (!foundField) field = -1;
   return QualifiedType::makeParamInt(rc->context(), field);
 }
 
@@ -219,9 +212,8 @@ static QualifiedType primFieldByNum(ResolutionContext* rc, const CallInfo& ci) {
   int64_t fieldNum = 0;
   if (!toParamIntActual(secondActual, fieldNum)) return QualifiedType();
 
-  // Fields in these primitives are 1-indexed.
-  if (fieldNum > fields->numFields() || fieldNum < 1) return QualifiedType();
-  return fields->fieldType(fieldNum - 1);;
+  if (fieldNum >= fields->numFields() || fieldNum < 0) return QualifiedType();
+  return fields->fieldType(fieldNum);
 }
 
 static QualifiedType primCallResolves(ResolutionContext* rc,

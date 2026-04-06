@@ -575,16 +575,14 @@ FnSymbol* build_accessor(AggregateType* ct, Symbol* field,
       fn->insertAtTail(new CondStmt(idDiffers, resetBlock));
 
     } else {
-      // Check the union ID in the getter.
-      CallExpr* idDiffers = new CallExpr("!=",
-                              new CallExpr(PRIM_GET_UNION_ID, _this),
-                              new CallExpr(PRIM_FIELD_NAME_TO_NUM,
-                                           ct->symbol,
-                                           fieldNameSym));
-      CallExpr* halt = new CallExpr("halt",
-                                    new_StringSymbol("illegal union access"));
-
-      fn->insertAtTail(new CondStmt(idDiffers, halt));
+      if (!fNoUnionChecks) {
+        CallExpr* check = new CallExpr("_checkUnionAccess",
+                                       _this,
+                                       new CallExpr(PRIM_FIELD_NAME_TO_NUM,
+                                                    ct->symbol,
+                                                    fieldNameSym));
+        fn->insertAtTail(check);
+      }
     }
   }
 
@@ -648,6 +646,38 @@ FnSymbol* build_accessor(AggregateType* ct, Symbol* field,
   return fn;
 }
 
+static void build_union_field_index_accessor(AggregateType* at, Symbol* field) {
+  SET_LINENO(field);
+  // add a parenless proc for the field name that returns the field index
+  FnSymbol*  fn = new FnSymbol(field->name);
+  fn->addFlag(FLAG_NO_IMPLICIT_COPY);
+  fn->addFlag(FLAG_INLINE);
+  fn->addFlag(FLAG_METHOD_PRIMARY);
+  fn->addFlag(FLAG_NO_PARENS);
+
+  fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
+  fn->setMethod(true);
+
+  ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", at);
+  _this->addFlag(FLAG_TYPE_VARIABLE);
+  _this->addFlag(FLAG_ARG_THIS);
+  fn->insertFormalAtTail(_this);
+  fn->_this = _this;
+
+  fn->retTag = RET_PARAM;
+  auto toReturn = new CallExpr(PRIM_FIELD_NAME_TO_NUM,
+                          at->symbol,
+                          new_CStringSymbol(field->name));
+  fn->insertAtTail(new CallExpr(PRIM_RETURN, toReturn));
+
+  DefExpr* def = new DefExpr(fn);
+  at->symbol->defPoint->insertBefore(def);
+  reset_ast_loc(fn, field);
+  at->methods.add(fn);
+
+  fn->cname = astr("chpl_get_", at->symbol->cname, "_index_", fn->cname);
+}
+
 // Getter and setter functions are provided by the compiler if not supplied by
 // the user.
 // These functions have the same binding strength as if they were user-defined.
@@ -677,6 +707,9 @@ static void buildAccessors(AggregateType* ct, Symbol *field) {
     // Unions need a special getter and setter.
     build_accessor(ct, field, /* setter? */ false, /* type method? */ false);
     build_accessor(ct, field, /* setter? */ true,  /* type method? */ false);
+    // add a parenless proc for the field name that returns the field index
+    build_union_field_index_accessor(ct, field);
+
   } else {
     // Otherwise, only build one version for records and classes.
     // This is normally the 'ref' version.
@@ -686,7 +719,7 @@ static void buildAccessors(AggregateType* ct, Symbol *field) {
 
   // If the field is type/param, add a type-method accessor.
   if (fieldTypeOrParam) {
-    build_accessor(ct, field, /* getter? */ false, /* type method? */ true);
+    build_accessor(ct, field, /* setter? */ false, /* type method? */ true);
   }
 }
 
@@ -1576,7 +1609,7 @@ static void buildUnionAssignmentFunction(AggregateType* ct) {
   fn->insertFormalAtTail(arg1);
   fn->insertFormalAtTail(arg2);
   fn->retType = dtUnknown;
-  fn->insertAtTail(new CallExpr(PRIM_SET_UNION_ID, arg1, new_IntSymbol(0)));
+  fn->insertAtTail(new CallExpr(PRIM_SET_UNION_ID, arg1, new_IntSymbol(-1)));
   for_fields(tmp, ct) {
     if (!tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD)) {
       if (!tmp->hasFlag(FLAG_TYPE_VARIABLE)) {

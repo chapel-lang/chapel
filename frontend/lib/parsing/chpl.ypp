@@ -3168,7 +3168,6 @@ sub_type_level_expr:
   { $$ = context->buildTypeConstructor(@$, $1, $2); }
 | TSYNC expr
   { $$ = context->buildTypeConstructor(@$, $1, $2); }
-
 | TOWNED
   { $$ = Identifier::build(BUILDER, LOC(@1), $1).release(); }
 | TOWNED expr
@@ -3188,6 +3187,8 @@ sub_type_level_expr:
 | TCLASS
   { $$ = Identifier::build(BUILDER, LOC(@1), $1).release(); }
 | TRECORD
+  { $$ = Identifier::build(BUILDER, LOC(@1), $1).release(); }
+| TUNION
   { $$ = Identifier::build(BUILDER, LOC(@1), $1).release(); }
 ;
 

@@ -682,6 +682,14 @@ OPTIONS
 
     Enable [disable] run-time checking for stack overflow.
 
+.. _man-union-checks:
+.. index:: --union-checks, --no-union-checks
+
+**\--[no-]union-checks**
+
+    Enable [disable] run-time checking for accessing uninitialized fields of
+    unions.
+
 *Code Generation Options*
 
 .. _man-codegen:

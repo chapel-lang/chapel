@@ -1393,6 +1393,10 @@ module ChapelBase {
   pragma "last resort"
   proc _cond_invalid(x) param do return true;
 
+  inline proc _select_test(param x) param do return x;
+  inline proc _select_test(type x) type do return x;
+  inline proc _select_test(x) do return x;
+
   //
   // isNonnegative(i) == (i>=0), but is a param value if i is unsigned.
   //

@@ -2578,7 +2578,7 @@ struct ConvertTypeHelper {
   Type* visit(const types::AnyClassType* t) { return dtAnyManagementNonNilable; }
   Type* visit(const types::AnyUintType t) { return dtIntegral; } // a lie
   Type* visit(const types::AnyUninstantiatedType* t) { return dtUninstantiated; }
-  Type* visit(const types::AnyUnionType* t) { return dtUnknown; } // a lie
+  Type* visit(const types::AnyUnionType* t) { return dtAnyUnion; }
 
   Type* visit(const types::ExternType* t) {
     // Taken from the builder function 'convertTypesToExtern'...
@@ -4156,7 +4156,7 @@ Expr* TConverter::convertPrimCallOrNull(const Call* node, RV& rv) {
     auto re = rv.byAst(primCall->actual(1));
     int64_t idx = re.type().param()->toIntParam()->value();
     types::QualifiedType qtField;
-    ret = codegenGetField(primCall->actual(0), idx-1, rv, &qtField);
+    ret = codegenGetField(primCall->actual(0), idx, rv, &qtField);
     ret = storeInTempIfNeeded(ret, qtField);
   } else {
     ret = new CallExpr(primCall->prim());
@@ -6460,7 +6460,8 @@ bool TConverter::enter(const Select* node, RV& rv) {
 
   types::QualifiedType selectQT;
   auto selectExpr = convertExpr(node->expr(), rv, &selectQT);
-  auto selectSym = storeInTempIfNeeded(selectExpr, selectQT);
+  auto selectTest = new CallExpr("_select_test", selectExpr);
+  auto selectSym = storeInTempIfNeeded(selectTest, selectQT);
 
   auto traverse = [this,&rv](const When* when) {
     enterScope(when, rv);

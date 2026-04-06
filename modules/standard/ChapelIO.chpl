@@ -58,8 +58,8 @@ module ChapelIO {
       param n = __primitive("num fields", t);
       var ret = 0;
       pragma "no init"
-      var dummy : t;
-      for param i in 1..n {
+      var dummy: t;
+      for param i in 0..<n {
         if isIoField(dummy, i) then
           ret += 1;
       }
@@ -74,12 +74,12 @@ module ChapelIO {
       // print out just the set field for a union.
       writer.writeLiteral("(");
       param num_fields = __primitive("num fields", t);
-      var id = __primitive("get_union_id", x);
-      for param i in 1..num_fields {
+      var id = x.getActiveIndex();
+      for param i in 0..<num_fields {
         if isIoField(x, i) && i == id {
           const eq = __primitive("field num to name", t, i) + " = ";
           writer.writeLiteral(eq);
-          writer.write(__primitive("field by num", x, i));
+          writer.write(x(i));
         }
       }
       writer.writeLiteral(")");
@@ -109,11 +109,10 @@ module ChapelIO {
       }
 
       param num_fields = __primitive("num fields", t);
-      for param i in 1..num_fields {
+      for param i in 0..<num_fields {
         if isIoField(x, i) {
-          param name : string = __primitive("field num to name", x, i);
-          ser.writeField(name,
-                         __primitive("field by num", x, i));
+          param name : string = __primitive("field num to name", t, i);
+          ser.writeField(name, __primitive("field by num", x, i));
         }
       }
 
@@ -138,9 +137,9 @@ module ChapelIO {
       }
 
       param num_fields = __primitive("num fields", t);
-      for param i in 1..num_fields {
+      for param i in 0..<num_fields {
         if isIoField(x, i) {
-          param name : string = __primitive("field num to name", x, i);
+          param name : string = __primitive("field num to name", t, i);
           ref field = __primitive("field by num", x, i);
           des.readField(name, field);
         }

@@ -1,0 +1,1 @@
+bad-union-init-expr.chpl:3: error: union fields cannot have initializers

@@ -288,7 +288,11 @@ static std::string genAggregateAttributesTest(asttags::AstTag aggKind,
 
     ret += "var v";
     ret += std::to_string(i);
-    ret += " = 0;\n";
+    if (aggKind == asttags::Union) {
+      ret += ": int;\n";
+    } else {
+      ret += " = 0;\n";
+    }
   }
 
   ret += "}\n";

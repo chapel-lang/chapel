@@ -1166,18 +1166,17 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     for_fields(field, classType) {
       if (isNormalField(field) == true) {
-        fieldCount++;
-
         if (fieldCount == fieldNum) {
           name = field->name;
         }
+        fieldCount++;
       }
     }
 
     if (name == NULL) {
       USR_FATAL(call,
                 "'%d' is not a valid field number for %s",
-                fieldNum-1,
+                fieldNum,
                 toString(classType));
     }
 
@@ -1217,15 +1216,14 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     const char*    fieldName  = imm->v_string.c_str();
     int            fieldCount = 0;
-    int            num        = 0;
+    int            num        = -1;
 
     for_fields(field, classType) {
       if (isNormalField(field) == true) {
-        fieldCount++;
-
         if (strcmp(field->name, fieldName) == 0) {
           num = fieldCount;
         }
+        fieldCount++;
       }
     }
 
@@ -1252,11 +1250,10 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     for_fields(field, classType) {
       if (isNormalField(field) == true) {
-        fieldCount++;
-
         if (fieldCount == fieldNum) {
           name = field->name;
         }
+        fieldCount++;
       }
     }
 
@@ -1265,7 +1262,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
       // specified.  This is the user's error.
       USR_FATAL(call,
                 "'%d' is not a valid field number for %s",
-                fieldNum-1,
+                fieldNum,
                 toString(classType));
     }
 
