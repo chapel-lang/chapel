@@ -2379,8 +2379,10 @@ BlockStmt* convertTypesToExtern(BlockStmt* blk, const char* cname) {
 
         TypeSymbol* ts = new TypeSymbol(vs->name, pt);
         if (VarSymbol* theVs = toVarSymbol(vs)) {
+          // Preserve old qualifier - for some reason 'copyFlags' copies it?
+          auto oldQual = ts->qual;
           ts->copyFlags(theVs);
-          ts->qual = QUAL_UNKNOWN;
+          ts->qual = oldQual;
 
           ts->deprecationMsg = theVs->deprecationMsg;
           ts->unstableMsg = theVs->unstableMsg;

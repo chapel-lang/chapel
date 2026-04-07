@@ -4038,7 +4038,7 @@ static clang::CanQualType getClangType(::Type* t, bool makeRef) {
     std::string aliasName = cname;
 
     if (aliasName == "char") {
-      return getClangType(dt_c_char, makeRef);
+      ret = getClangType(dt_c_char, makeRef);
 
     } else {
       INT_FATAL(t->symbol, "Unhandled type alias when fetching Clang type");

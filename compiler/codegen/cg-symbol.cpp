@@ -1512,7 +1512,7 @@ static void handleOpaqueCTypeAlias(TypeSymbol* ts) {
     equivalentChapelType = dt_c_char;
 
   } else {
-    INT_FATAL(ts, "Unsupported opaque type alias name %s\n",ts->cname);
+    INT_FATAL(ts, "Unsupported opaque type alias name %s\n", ts->cname);
   }
 
   INT_ASSERT(equivalentChapelType);
