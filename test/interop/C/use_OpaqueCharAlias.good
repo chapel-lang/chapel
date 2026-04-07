@@ -1,0 +1,6 @@
+c_ptr(c_ptr(opaqueChar))
+c_ptr(c_ptr(int(8)))
+int(64)
+void signature0(char x);
+void signature1(char * x);
+void signature2(char * * x);

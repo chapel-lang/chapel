@@ -1,0 +1,3 @@
+#!/bin/bash
+
+grep signature lib/OpaqueCharAlias.h >> $2

@@ -1493,6 +1493,51 @@ void TypeSymbol::codegenPrototype() {
   }
 }
 
+#ifndef HAVE_LLVM
+static void handleOpaqueCTypeAlias(TypeSymbol* ts) {}
+#else
+static void handleOpaqueCTypeAlias(TypeSymbol* ts) {
+  // Nothing to do.
+  if (gGenInfo->cfile) return;
+
+  std::string aliasName = ts->cname;
+  Type* equivalentChapelType = nullptr;
+  auto info = gGenInfo;
+
+  // TODO: Automate this mapping, for instance, all the 'c_...' C types
+  //       could automatically have e.g., 'c_opaque_c_char' generated
+  //       for them. Then we have a reliable way to generate 'char' and
+  //       not 'int(8)'.
+  if (aliasName == "char") {
+    equivalentChapelType = dt_c_char;
+
+  } else {
+    INT_FATAL(ts, "Unsupported opaque type alias name %s\n", ts->cname);
+  }
+
+  INT_ASSERT(equivalentChapelType);
+
+  if (nullptr == info->lvt->getType(aliasName)) {
+    if (auto eqts = equivalentChapelType->symbol) {
+      // Make sure the equivalent type is generated first.
+      if (!eqts->hasLLVMType()) eqts->codegenDef();
+    }
+
+    auto llvmImplType = equivalentChapelType->symbol->llvmImplType;
+    auto llvmAlignment = equivalentChapelType->symbol->llvmAlignment;
+    bool isUnsigned = !isSignedType(equivalentChapelType);
+
+    info->lvt->addGlobalType(aliasName, llvmImplType, isUnsigned);
+
+    INT_ASSERT(ts->llvmImplType == nullptr);
+    INT_ASSERT(ts->llvmAlignment == ALIGNMENT_UNINIT);
+    ts->llvmImplType = llvmImplType;
+    ts->llvmAlignment = llvmAlignment;
+
+    ts->addFlag(FLAG_CODEGENNED);
+  }
+}
+#endif
 
 void TypeSymbol::codegenDef() {
   GenInfo *info = gGenInfo;
@@ -1501,6 +1546,14 @@ void TypeSymbol::codegenDef() {
       (breakOnCodegenCname[0] &&
        0 == strcmp(cname, breakOnCodegenCname)) ) {
     debuggerBreakHere();
+  }
+
+  if (hasFlag(FLAG_OPAQUE_C_TYPE_ALIAS)) {
+    handleOpaqueCTypeAlias(this);
+
+    // Should hold for subsequent code to take the right path.
+    INT_ASSERT(hasFlag(FLAG_EXTERN));
+    INT_ASSERT(hasFlag(FLAG_CODEGENNED));
   }
 
   if (!hasFlag(FLAG_EXTERN)) {
