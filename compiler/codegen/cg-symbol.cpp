@@ -1493,7 +1493,13 @@ void TypeSymbol::codegenPrototype() {
   }
 }
 
+#ifndef HAVE_LLVM
+static void handleOpaqueCTypeAlias(TypeSymbol* ts) {}
+#else
 static void handleOpaqueCTypeAlias(TypeSymbol* ts) {
+  // Nothing to do.
+  if (gGenInfo->cfile) return;
+
   std::string aliasName = ts->cname;
   Type* equivalentChapelType = nullptr;
   auto info = gGenInfo;
@@ -1531,6 +1537,7 @@ static void handleOpaqueCTypeAlias(TypeSymbol* ts) {
     ts->addFlag(FLAG_CODEGENNED);
   }
 }
+#endif
 
 void TypeSymbol::codegenDef() {
   GenInfo *info = gGenInfo;
@@ -1546,7 +1553,7 @@ void TypeSymbol::codegenDef() {
 
     // Should hold for subsequent code to take the right path.
     INT_ASSERT(hasFlag(FLAG_EXTERN));
-    INT_ASSERT(this->hasLLVMType());
+    INT_ASSERT(hasFlag(FLAG_CODEGENNED));
   }
 
   if (!hasFlag(FLAG_EXTERN)) {
