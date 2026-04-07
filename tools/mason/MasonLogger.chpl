@@ -88,6 +88,10 @@ module MasonLogger {
       pad = max(pad, prefix.size);
     }
 
+    proc flush() {
+      Safe.flush(logWriter);
+    }
+
     // TODO make all variadic
     proc info(s: string) {
       if doInfo then Safe.writef(logWriter, addPrefix("%s"), s);
@@ -161,6 +165,14 @@ module MasonLogger {
       } catch e {
         try! stderr.writeln("Error formatting string\n", e);
         return "Unable to format";
+      }
+    }
+
+    proc flush(writer) {
+      try {
+        writer.flush();
+      } catch e {
+        try! stderr.writeln("Error flushing debug output\n", e);
       }
     }
 

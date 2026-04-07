@@ -163,6 +163,7 @@ proc runWithStatus(command: string, quiet=false, capture=true): int {
 proc runWithStatus(command: [] string, quiet=false, capture=true): int {
   try {
     log.debugf("runWithStatus: %?\n", command);
+    if !capture then log.flush();
     var sub =
       if capture
         then spawn(command, stdout=pipeStyle.pipe, stderr=pipeStyle.pipe)
