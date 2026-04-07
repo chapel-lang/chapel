@@ -21,6 +21,7 @@
 #ifndef _WELL_KNOWN_H_
 #define _WELL_KNOWN_H_
 
+#include <string>
 #include <vector>
 
 class AggregateType;
@@ -93,6 +94,8 @@ extern Type* dt_c_ptrdiff;
 extern Type* dt_ssize_t;
 extern Type* dt_size_t;
 extern Type* dt_wchar;
+
+Type* chapelTypeForPrimitiveCTypeName(const std::string& name);
 
 // The well-known functions
 extern FnSymbol *gChplHereAlloc;

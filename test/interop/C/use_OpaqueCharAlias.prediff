@@ -1,3 +1,4 @@
 #!/bin/bash
 
-grep signature lib/OpaqueCharAlias.h >> $2
+# Use PCRE grep to match newlines. Look for "signature" and then ")".
+grep -Pzo '(?s)signature.*?\)' lib/OpaqueCharAlias.h | tr '\000' '\n' >> $2

@@ -1501,21 +1501,17 @@ static void handleOpaqueCTypeAlias(TypeSymbol* ts) {
   if (gGenInfo->cfile) return;
 
   std::string aliasName = ts->cname;
-  Type* equivalentChapelType = nullptr;
+  auto equivalentChapelType = chapelTypeForPrimitiveCTypeName(aliasName);
   auto info = gGenInfo;
 
-  // TODO: Automate this mapping, for instance, all the 'c_...' C types
-  //       could automatically have e.g., 'c_opaque_c_char' generated
-  //       for them. Then we have a reliable way to generate 'char' and
-  //       not 'int(8)'.
-  if (aliasName == "char") {
-    equivalentChapelType = dt_c_char;
-
-  } else {
-    INT_FATAL(ts, "Unsupported opaque type alias name %s\n", ts->cname);
+  if (!equivalentChapelType) {
+    INT_FATAL(ts, "Unsupported opaque type alias name %s\n",
+                  aliasName.c_str());
   }
 
-  INT_ASSERT(equivalentChapelType);
+  auto llvmImplType = equivalentChapelType->symbol->llvmImplType;
+  auto llvmAlignment = equivalentChapelType->symbol->llvmAlignment;
+  bool isUnsigned = !isSignedType(equivalentChapelType);
 
   if (nullptr == info->lvt->getType(aliasName)) {
     if (auto eqts = equivalentChapelType->symbol) {
@@ -1523,19 +1519,18 @@ static void handleOpaqueCTypeAlias(TypeSymbol* ts) {
       if (!eqts->hasLLVMType()) eqts->codegenDef();
     }
 
-    auto llvmImplType = equivalentChapelType->symbol->llvmImplType;
-    auto llvmAlignment = equivalentChapelType->symbol->llvmAlignment;
-    bool isUnsigned = !isSignedType(equivalentChapelType);
-
+    // Emplace the primitive C type if we need to. This only happens once,
+    // but the use of the pragma triggers the mapping for a given C type.
     info->lvt->addGlobalType(aliasName, llvmImplType, isUnsigned);
-
-    INT_ASSERT(ts->llvmImplType == nullptr);
-    INT_ASSERT(ts->llvmAlignment == ALIGNMENT_UNINIT);
-    ts->llvmImplType = llvmImplType;
-    ts->llvmAlignment = llvmAlignment;
-
-    ts->addFlag(FLAG_CODEGENNED);
   }
+
+  // Now set our type's LLVM info to match the 'c_...' type.
+  INT_ASSERT(ts->llvmImplType == nullptr);
+  INT_ASSERT(ts->llvmAlignment == ALIGNMENT_UNINIT);
+  ts->llvmImplType = llvmImplType;
+  ts->llvmAlignment = llvmAlignment;
+
+  ts->addFlag(FLAG_CODEGENNED);
 }
 #endif
 
