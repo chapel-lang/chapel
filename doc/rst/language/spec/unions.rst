@@ -98,6 +98,9 @@ set.
       3
       fieldAccess.chpl:8: error: halt reached - illegal union access: attempted to access field 'y' but 'x' is currently active
 
+   .. BLOCK-test-chapelcompopts
+
+      --checks
 
 The currently active field of a union can be queried at runtime with the
 :proc:`~ChapelUnion.union.getActiveIndex` method. If the union is not yet
