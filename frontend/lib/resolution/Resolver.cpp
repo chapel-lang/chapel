@@ -3920,6 +3920,11 @@ void Resolver::exit(const uast::Conditional* cond) {
 }
 
 bool Resolver::enter(const uast::Select* sel) {
+  // TODO: to match production, we need to specialize the select based on
+  // the type of the Select expression. For a union, a call to getActiveIndex
+  // needs to be inserted (all other cases are left untouched).
+  // Production handles this with _select_test, but we should handle this more
+  // directly with a generated call to getActiveIndex
   sel->expr()->traverse(*this);
   enterScope(sel);
   if (!scopeResolveOnly) return branchSensitivelyTraverse(sel, {});
