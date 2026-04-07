@@ -12,10 +12,10 @@ export proc signature2(x: argArray) {}
 export proc foo(x1: argArray) {
   const x2 = __primitive("cast", c_ptr(c_ptr(c_char)), x1);
   // In the body, can use 'foo' with 'x2'...
-  // writeln(x1.type:string);
-  // writeln(x2.type:string);
+  writeln(x1.type:string);
+  writeln(x2.type:string);
   var x3: int;
-  writeln(x3.type : string);
+  writeln(x3.type:string);
 }
 
 var g1: opaqueChar;
