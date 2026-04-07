@@ -485,6 +485,8 @@ PRAGMA(OBJECT_CLASS, ypr, "object class", ncm)
 PRAGMA(ON, npr, "on", ncm)
 PRAGMA(ON_BLOCK, npr, "on block", ncm)
 
+PRAGMA(OPAQUE_C_TYPE_ALIAS, ypr, "opaque c type alias", ncm)
+
 PRAGMA(OPERATOR, npr, "operator", ncm)
 
 PRAGMA(OVERRIDE, npr, "method overrides", ncm)
