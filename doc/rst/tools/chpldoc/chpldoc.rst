@@ -284,7 +284,6 @@ To suppress this behavior, preface the module
 symbol with the attribute ``@chpldoc.noUsage``.
 
 ..
-
    These are internal, but documented here for future use
 
    By default, chpldoc will show the where clause for a function or method. This
