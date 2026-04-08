@@ -4299,10 +4299,8 @@ int getCTypeAlignment(::Type* type) {
   if (td) {
     if (const TypedefNameDecl* tnd = dyn_cast<TypedefNameDecl>(td)) {
       qType = tnd->getCanonicalDecl()->getUnderlyingType();
-
     } else if (const EnumDecl* ed = dyn_cast<EnumDecl>(td)) {
       qType = ed->getCanonicalDecl()->getIntegerType();
-
     } else if (const RecordDecl* rd = dyn_cast<RecordDecl>(td)) {
       RecordDecl *def = rd->getDefinition();
       if (def == nullptr)
@@ -4313,12 +4311,10 @@ int getCTypeAlignment(::Type* type) {
     } else {
       INT_FATAL(type, "Unhandled Clang type declaration");
     }
-
   } else if (type->symbol->hasFlag(FLAG_OPAQUE_C_TYPE_ALIAS)) {
-    if (auto eqt = chapelTypeForPrimitiveCTypeName(type->symbol->cname)) {
-      return getCTypeAlignment(eqt);
-    }
-
+    auto eqt = chapelTypeForPrimitiveCTypeName(type->symbol->cname);
+    INT_ASSERT(eqt);
+    return getCTypeAlignment(eqt);
   } else {
     INT_FATAL(type, "Chapel type does not have a corresponding Clang type");
   }
