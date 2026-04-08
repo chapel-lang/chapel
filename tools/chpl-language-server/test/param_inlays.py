@@ -78,7 +78,7 @@ async def test_param_inlays_prim(client: LanguageClient):
         (pos((7, 7)), "1"),
         (pos((8, 7)), "10"),
         (pos((10, 7)), '"hello"'),
-        (pos((14, 8)), 'false'),
+        (pos((14, 8)), "false"),
         (pos((16, 7)), '"hello\\nworld"'),
         (pos((17, 7)), 'b"Lots of weird bytes in here \\t\\n\\r"'),
         (pos((18, 7)), '"this is a long\\nlong string"'),

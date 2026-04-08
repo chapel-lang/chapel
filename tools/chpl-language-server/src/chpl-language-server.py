@@ -472,11 +472,17 @@ class ChapelLanguageServer(LanguageServer):
                 and node_init.text() == val
             ):
                 return []
-            elif isinstance(node_init, (chapel.StringLiteral, chapel.BytesLiteral)):
+            elif isinstance(
+                node_init, (chapel.StringLiteral, chapel.BytesLiteral)
+            ):
                 # Apply the same escaping rules to the literal value to see
                 # if it matches what we'd show.
                 lit_val = node_init.value()
-                lit_val = val.replace("\n", "\\n").replace("\t", "\\t").replace("\r", "\\r")
+                lit_val = (
+                    val.replace("\n", "\\n")
+                    .replace("\t", "\\t")
+                    .replace("\r", "\\r")
+                )
                 if lit_val == val:
                     return []
             elif isinstance(node_init, chapel.BoolLiteral):
