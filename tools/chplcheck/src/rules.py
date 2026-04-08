@@ -136,6 +136,46 @@ def extract_only_bool(
     return check_for_bool.value()
 
 
+def find_docstring_ranges(
+    lines: typing.List[str],
+) -> typing.List[typing.Tuple[typing.Tuple[int, int], typing.Tuple[int, int]]]:
+    docstring_ranges = []
+    for row, line in enumerate(lines, start=1):
+        idx = 0
+        len_line = len(line)
+        while idx < len_line:
+            if line[idx] == "/" and idx + 1 < len_line and line[idx + 1] == "*":
+                docstring_ranges.append(((row, idx), (-1, -1)))
+                idx += 2
+            elif (
+                line[idx] == "*" and idx + 1 < len_line and line[idx + 1] == "/"
+            ):
+                # find the most recent docstring range that doesn't have an end yet and set its end
+                for i in range(len(docstring_ranges) - 1, -1, -1):
+                    if docstring_ranges[i][1] == (-1, -1):
+                        docstring_ranges[i] = (
+                            docstring_ranges[i][0],
+                            (row, idx + 2),
+                        )
+                        break
+                idx += 2
+            else:
+                idx += 1
+    return docstring_ranges
+
+
+def is_in_docstring(
+    loc: typing.Tuple[int, int],
+    docstring_ranges: typing.List[
+        typing.Tuple[typing.Tuple[int, int], typing.Tuple[int, int]]
+    ],
+) -> bool:
+    for start, end in docstring_ranges:
+        if start <= loc and loc <= end:
+            return True
+    return False
+
+
 def rules(driver: LintDriver):
     @driver.basic_rule(VarLikeDecl, default=False)
     def CamelOrPascalCaseVariables(context: Context, node: VarLikeDecl):
@@ -1637,12 +1677,20 @@ def rules(driver: LintDriver):
         )
         return [fixit]
 
-    @driver.location_rule(settings=[".Max"])
-    def LineLength(_: chapel.Context, path: str, lines: List[str], Max=None):
+    @driver.location_rule(settings=[".Max", ".IgnoreDocStrings"])
+    def LineLength(
+        _: chapel.Context,
+        path: str,
+        lines: List[str],
+        Max=None,
+        IgnoreDocStrings=None,
+    ):
         """
         Warn for lines that exceed a maximum length.
         By default, the maximum line length is 80 characters. This can be
-        configured with `--setting LineLength.Max=<number>`.
+        configured with ``--setting LineLength.Max=<number>``.
+        By default, docstrings are included in this check, but they can be
+        ignored with ``--setting LineLength.IgnoreDocStrings=true``.
         """
 
         Max = Max or "80"  # default to 80 characters
@@ -1650,7 +1698,23 @@ def rules(driver: LintDriver):
             max_line_length = int(Max)
         except ValueError:
             raise ValueError("Invalid value for Max: '{}'".format(Max))
+        if IgnoreDocStrings not in (None, "true", "false"):
+            raise ValueError(
+                "Invalid value for IgnoreDocStrings: '{}'".format(
+                    IgnoreDocStrings
+                )
+            )
+        IgnoreDocStrings = IgnoreDocStrings == "true"  # default to False
 
-        for i, line in enumerate(lines, start=1):
-            if len(line) > max_line_length:
-                yield RuleLocation(path, (i, 1), (i, len(line) + 1))
+        docstring_ranges = []
+        if IgnoreDocStrings:
+            docstring_ranges = find_docstring_ranges(lines)
+
+        for row, line in enumerate(lines, start=1):
+            nowhitespace = line.rstrip()
+            if IgnoreDocStrings and is_in_docstring(
+                (row, len(nowhitespace)), docstring_ranges
+            ):
+                continue
+            if len(nowhitespace) > max_line_length:
+                yield RuleLocation(path, (row, 1), (row, len(nowhitespace) + 1))
