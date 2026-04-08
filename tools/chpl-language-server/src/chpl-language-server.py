@@ -459,11 +459,18 @@ class ChapelLanguageServer(LanguageServer):
         # already obvious from the source (e.g. `param x = 1`, `param b = true`).
         if isinstance(decl.node, chapel.Variable):
             node_init = decl.node.init_expression()
-            if isinstance(
-                node_init,
-                (chapel.IntLiteral, chapel.UintLiteral,
-                 chapel.RealLiteral, chapel.ImagLiteral),
-            ) and node_init.text() == val:
+            if (
+                isinstance(
+                    node_init,
+                    (
+                        chapel.IntLiteral,
+                        chapel.UintLiteral,
+                        chapel.RealLiteral,
+                        chapel.ImagLiteral,
+                    ),
+                )
+                and node_init.text() == val
+            ):
                 return []
             if isinstance(node_init, chapel.BoolLiteral):
                 bool_str = "true" if node_init.value() else "false"

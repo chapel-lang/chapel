@@ -85,9 +85,7 @@ async def test_param_inlays_prim(client: LanguageClient):
 
         # check that specifying a range works — param a = 10 is suppressed so
         # no inlays on line 0
-        await check_param_inlay_hints(
-            client, doc, rng((0, 0), (1, 0)), []
-        )
+        await check_param_inlay_hints(client, doc, rng((0, 0), (1, 0)), [])
 
 
 @pytest.mark.asyncio
