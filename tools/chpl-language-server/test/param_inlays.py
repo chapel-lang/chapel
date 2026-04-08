@@ -68,14 +68,11 @@ async def test_param_inlays_prim(client: LanguageClient):
            '''
 
     inlays = [
-        (pos((0, 7)), "10"),
         (pos((1, 7)), "400"),
         (pos((2, 7)), "20"),
         (pos((7, 7)), "1"),
         (pos((8, 7)), "10"),
         (pos((10, 7)), '"hello"'),
-        (pos((12, 7)), "false"),
-        (pos((13, 7)), "true"),
         (pos((15, 7)), '"hello\\nworld"'),
         (pos((16, 7)), 'b"Lots of weird bytes in here \\t\\n\\r"'),
         (pos((17, 7)), '"this is a long\\nlong string"'),
@@ -86,9 +83,10 @@ async def test_param_inlays_prim(client: LanguageClient):
             client, doc, rng((0, 0), endpos(file)), inlays
         )
 
-        # check that specifying a range works
+        # check that specifying a range works — param a = 10 is suppressed so
+        # no inlays on line 0
         await check_param_inlay_hints(
-            client, doc, rng((0, 0), (1, 0)), [inlays[0]]
+            client, doc, rng((0, 0), (1, 0)), []
         )
 
 
@@ -107,6 +105,30 @@ async def test_param_inlays_split_init(client: LanguageClient):
            """
 
     inlays = [(pos((0, 7)), "20")]
+    async with source_file(client, file) as doc:
+        await check_param_inlay_hints(
+            client, doc, rng((0, 0), endpos(file)), inlays
+        )
+
+
+@pytest.mark.asyncio
+async def test_param_inlays_obvious(client: LanguageClient):
+    """
+    Ensure that param inlays are suppressed when the value is a literal
+    already visible in source, but still shown for non-literal inits.
+    """
+
+    file = """
+            proc getValue() param do return 42;
+            param x = 1;
+            param y = getValue();
+           """
+
+    # x = 1: literal init matching the param value — should be suppressed
+    # y = getValue(): function call — inlay should still be shown
+    inlays = [
+        (pos((2, 7)), "42"),
+    ]
     async with source_file(client, file) as doc:
         await check_param_inlay_hints(
             client, doc, rng((0, 0), endpos(file)), inlays

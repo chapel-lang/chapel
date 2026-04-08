@@ -530,3 +530,27 @@ async def test_common_inlays_crossfile(client: LanguageClient):
         await check_type_inlay_hints(
             client, docs("A"), rng((0, 0), endpos(modA)), inlays
         )
+
+
+@pytest.mark.asyncio
+async def test_type_inlays_obvious(client: LanguageClient):
+    """
+    Ensure that type inlays are suppressed when the type is obvious from
+    the init expression (plain identifier), but still shown for function calls.
+    """
+
+    file = """
+            proc getType() type do return int;
+            type t1 = int;
+            type t2 = getType();
+           """
+
+    # t1 = int: identifier init — should be suppressed (obvious)
+    # t2 = getType(): function call — inlay should still be shown
+    inlays = [
+        (pos((2, 7)), "int(64)"),
+    ]
+    async with source_file(client, file) as doc:
+        await check_type_inlay_hints(
+            client, doc, rng((0, 0), endpos(file)), inlays
+        )

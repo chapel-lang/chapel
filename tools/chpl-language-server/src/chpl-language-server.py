@@ -455,6 +455,21 @@ class ChapelLanguageServer(LanguageServer):
                 if ty_decl.name() == "_bytes":
                     val = "b" + val
 
+        # Suppress inlay if the init expression is a literal whose value is
+        # already obvious from the source (e.g. `param x = 1`, `param b = true`).
+        if isinstance(decl.node, chapel.Variable):
+            node_init = decl.node.init_expression()
+            if isinstance(
+                node_init,
+                (chapel.IntLiteral, chapel.UintLiteral,
+                 chapel.RealLiteral, chapel.ImagLiteral),
+            ) and node_init.text() == val:
+                return []
+            if isinstance(node_init, chapel.BoolLiteral):
+                bool_str = "true" if node_init.value() else "false"
+                if bool_str == val:
+                    return []
+
         return [
             InlayHint(
                 position=decl.rng.end,
@@ -480,6 +495,15 @@ class ChapelLanguageServer(LanguageServer):
             return []
         # skip implicit this formals
         if isinstance(decl.node, chapel.Formal) and decl.node.is_this():
+            return []
+
+        # Suppress inlay for `type t = SomeName` where the init is a plain
+        # identifier — the type is already obvious from the source.
+        if (
+            isinstance(decl.node, chapel.Variable)
+            and decl.node.kind() == "type"
+            and isinstance(decl.node.init_expression(), chapel.Identifier)
+        ):
             return []
 
         name_rng = location_to_range(decl.node.name_location())
