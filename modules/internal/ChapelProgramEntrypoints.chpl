@@ -25,16 +25,14 @@ module ChapelProgramEntrypoints {
   // generate the proper type instead of e.g., "int(8)" as is usually done
   // for "c_char". Once inside a function passed this type, you can use a
   // helper to cast back to "c_char".
-  extern "char" type chpl_opaqueChar;
+  pragma "opaque c type alias"
+  extern "char" type chpl_opaque_c_char;
+
+  pragma "opaque c type alias"
+  extern "int" type chpl_opaque_c_int;
 
   // Alias for 'char**' to be used as the type of 'argv'.
-  type chpl_opaqueArgArray = c_ptr(c_ptr(chpl_opaqueChar));
-
-  private inline proc toChplCharArray(x: chpl_opaqueArgArray) {
-    type t = c_ptr(c_ptr(c_char));
-    const ret = __primitive("cast", t, x);
-    return ret;
-  }
+  type chpl_opaque_argv_array = c_ptr(c_ptr(chpl_opaque_c_char));
 
   pragma "locale private"
   var chpl_isLibInitialized = false;
@@ -70,8 +68,10 @@ module ChapelProgramEntrypoints {
   // TODO (dlongnecke): This function needs to be documented as one that also
   //                    initializes the runtime, or we need to make sure that
   //                    runtime initialization is split out from library init.
-  export proc chpl_library_init(argc: c_int, argv: chpl_opaqueArgArray) {
-    extern proc chpl_rt_init(argc: c_int, argv: chpl_opaqueArgArray): void;
+  export proc chpl_library_init(argc: chpl_opaque_c_int,
+                                argv: chpl_opaque_argv_array) {
+    extern proc chpl_rt_init(argc: chpl_opaque_c_int,
+                             argv: chpl_opaque_argv_array): void;
     // TODO: A lie, 'chpl_main' is actually a local function pointer.
     extern proc chpl_task_callMain(chpl_main: c_ptr(void)): void;
     extern proc chpl_std_module_init(): void;
