@@ -19,6 +19,7 @@
 
 from typing import (
     Any,
+    DefaultDict,
     Dict,
     List,
     Optional,
@@ -155,14 +156,13 @@ def _use_import_named_modules(
     """
     For a Use or Import AST node, return a list of (Module, range) pairs
     where each module is one named in a visibility clause and range is the
-    location of the use/import statement itself.
+    location of that individual visibility clause.
     """
-    stmt_range = location_to_range(use_or_import.location())
     results: List[Tuple[chapel.Module, Range]] = []
     for vc in use_or_import.visibility_clauses():
         mod = _get_module_for_use_import_symbol(vc.symbol())
         if mod is not None:
-            results.append((mod, stmt_range))
+            results.append((mod, location_to_range(vc.location())))
     return results
 
 
@@ -758,7 +758,7 @@ class ChapelLanguageServer(LanguageServer):
             uri=loc.uri,
             range=loc.range,
             selection_range=location_to_range(sym.name_location()),
-            data=[sym.unique_id(), inst_id, context_id],
+            data=["fn", sym.unique_id(), inst_id, context_id],
         )
 
     def fn_to_call_hierarchy_item(
@@ -772,8 +772,8 @@ class ChapelLanguageServer(LanguageServer):
         """
         fn: chapel.Function = sig.ast()
         item = self.sym_to_call_hierarchy_item(fn)
-        item.data[1] = caller_context.register_signature(sig)
-        item.data[2] = self.context_ids[caller_context]
+        item.data[2] = caller_context.register_signature(sig)
+        item.data[3] = self.context_ids[caller_context]
 
         return item
 
@@ -794,7 +794,7 @@ class ChapelLanguageServer(LanguageServer):
             uri=loc.uri,
             range=loc.range,
             selection_range=location_to_range(mod.name_location()),
-            data=[mod.unique_id(), None, None, "module"],
+            data=["module", mod.unique_id(), None, None],
         )
 
     def unpack_module_call_hierarchy_item(
@@ -809,11 +809,11 @@ class ChapelLanguageServer(LanguageServer):
             item.data is None
             or not isinstance(item.data, list)
             or len(item.data) != 4
-            or item.data[3] != "module"
-            or not isinstance(item.data[0], str)
+            or item.data[0] != "module"
+            or not isinstance(item.data[1], str)
         ):
             return None
-        uid = item.data[0]
+        uid = item.data[1]
         fi, _ = self.get_file_info(item.uri)
         for node, _ in chapel.each_matching(fi.get_asts(), chapel.Module):
             if node.unique_id() == uid:
@@ -825,24 +825,24 @@ class ChapelLanguageServer(LanguageServer):
     ) -> Optional[
         Tuple[FileInfo, chapel.Function, Optional[chapel.TypedSignature]]
     ]:
-        # Module items have 4 elements; let unpack_module_call_hierarchy_item
-        # handle those.
-        if isinstance(item.data, list) and len(item.data) == 4:
+        # Module items have tag "module" at data[0]; skip them here.
+        if isinstance(item.data, list) and item.data and item.data[0] == "module":
             return None
         if (
             item.data is None
             or not isinstance(item.data, list)
-            or len(item.data) != 3
-            or not isinstance(item.data[0], str)
-            or not (item.data[1] is None or isinstance(item.data[1], str))
+            or len(item.data) != 4
+            or item.data[0] != "fn"
+            or not isinstance(item.data[1], str)
             or not (item.data[2] is None or isinstance(item.data[2], str))
+            or not (item.data[3] is None or isinstance(item.data[3], str))
         ):
             self.show_message(
                 "Call hierarchy item contains missing or invalid additional data",
                 MessageType.Error,
             )
             return None
-        uid, inst_id, ctx = item.data
+        _, uid, inst_id, ctx = item.data
 
         fi, _ = self.get_file_info(item.uri, context_id=ctx)
 
@@ -850,7 +850,7 @@ class ChapelLanguageServer(LanguageServer):
         # Once the Python bindings supports it, we can use the
         # "ID to AST" function from parsing to do this without iterating.
         for node, _ in chapel.each_matching(fi.get_asts(), chapel.Function):
-            if node.unique_id() == item.data[0]:
+            if node.unique_id() == uid:
                 fn = node
                 break
         else:
@@ -1559,6 +1559,160 @@ def run_lsp():
 
         return []
 
+    def _module_hierarchy_incoming(
+        ls: ChapelLanguageServer,
+        fi: FileInfo,
+        mod: chapel.Module,
+    ) -> List[CallHierarchyIncomingCall]:
+        """Return modules that import the given module."""
+        target_uid = mod.unique_id()
+
+        # Unlike function call hierarchy, which relies on the resolver's built-in
+        # cross-file call graph, module incoming requires a manual AST scan.
+        # Ensure all files in the compilation context are loaded first so that
+        # importers in other files are visible.
+        ls.eagerly_process_all_files(fi.context)
+
+        # Collect all importing modules across all open file infos.
+        incoming_modules: Dict[str, chapel.Module] = {}
+        incoming_ranges: DefaultDict[str, List[Range]] = defaultdict(list)
+        seen_fi_ids: set = set()
+        for _, other_fi in ls.file_infos.items():
+            fi_id = id(other_fi)
+            if fi_id in seen_fi_ids:
+                continue
+            seen_fi_ids.add(fi_id)
+
+            for use_or_import, _ in chapel.each_matching(
+                other_fi.get_asts(), {chapel.Use, chapel.Import}
+            ):
+                for named_mod, vc_range in _use_import_named_modules(
+                    use_or_import
+                ):
+                    if named_mod.unique_id() != target_uid:
+                        continue
+                    parent = use_or_import.parent_symbol()
+                    if not isinstance(parent, chapel.Module):
+                        continue
+                    pid = parent.unique_id()
+                    incoming_modules[pid] = parent
+                    incoming_ranges[pid].append(vc_range)
+
+        return [
+            CallHierarchyIncomingCall(
+                ls.module_to_call_hierarchy_item(importer),
+                from_ranges=incoming_ranges[pid],
+            )
+            for pid, importer in incoming_modules.items()
+        ]
+
+    def _module_hierarchy_outgoing(
+        ls: ChapelLanguageServer,
+        mod: chapel.Module,
+    ) -> List[CallHierarchyOutgoingCall]:
+        """Return modules that the given module imports."""
+        scope = mod.scope()
+        if scope is None:
+            return []
+        imported_modules = scope.modules_named_in_use_or_import()
+
+        from_ranges_map: DefaultDict[str, List[Range]] = defaultdict(list)
+        for use_or_import, _ in chapel.each_matching(
+            mod, {chapel.Use, chapel.Import}
+        ):
+            for named_mod, vc_range in _use_import_named_modules(use_or_import):
+                from_ranges_map[named_mod.unique_id()].append(vc_range)
+
+        return [
+            CallHierarchyOutgoingCall(
+                ls.module_to_call_hierarchy_item(imported),
+                from_ranges=from_ranges_map.get(
+                    imported.unique_id(),
+                    [location_to_range(mod.location())],
+                ),
+            )
+            for imported in imported_modules
+        ]
+
+    def _fn_hierarchy_incoming(
+        ls: ChapelLanguageServer,
+        fi: FileInfo,
+        fn: chapel.Function,
+        instantiation: Optional[chapel.TypedSignature],
+    ) -> List[CallHierarchyIncomingCall]:
+        """Return callers of the given function instantiation."""
+        if instantiation is None:
+            return []
+
+        assert instantiation in fi.context.global_inst_contexts
+        calls = fi.context.call_contexts(instantiation)
+
+        # Because there's no chapel-py way to convert an ID back to a node,
+        # record nodes whose IDs we use so we can look them up later.
+        hack_id_to_node: Dict[str, chapel.NamedDecl] = {}
+        incoming_calls: DefaultDict[
+            Union[chapel.TypedSignature, str], List[chapel.FnCall]
+        ] = defaultdict(list)
+        for call_context in calls:
+            if len(call_context) == 0:
+                continue
+            call, via = call_context
+            if via is not None:
+                incoming_calls[via].append(call)
+            else:
+                parent_sym: chapel.NamedDecl = call.parent_symbol()
+                hack_id_to_node[parent_sym.unique_id()] = parent_sym
+                incoming_calls[parent_sym.unique_id()].append(call)
+
+        to_return = []
+        for called_fn, fn_calls in incoming_calls.items():
+            if isinstance(called_fn, str):
+                item = ls.sym_to_call_hierarchy_item(hack_id_to_node[called_fn])
+            else:
+                item = ls.fn_to_call_hierarchy_item(called_fn, fi.context)
+            to_return.append(
+                CallHierarchyIncomingCall(
+                    item,
+                    from_ranges=[
+                        location_to_range(call.location()) for call in fn_calls
+                    ],
+                )
+            )
+        return to_return
+
+    def _fn_hierarchy_outgoing(
+        ls: ChapelLanguageServer,
+        fi: FileInfo,
+        fn: chapel.Function,
+        instantiation: Optional[chapel.TypedSignature],
+    ) -> List[CallHierarchyOutgoingCall]:
+        """Return functions called by the given function instantiation."""
+        outgoing_calls: DefaultDict[
+            chapel.TypedSignature, List[chapel.FnCall]
+        ] = defaultdict(list)
+        for call, _ in chapel.each_matching(fn, chapel.FnCall):
+            rr = (
+                call.resolve_via(instantiation)
+                if instantiation
+                else call.resolve()
+            )
+            if rr is None:
+                continue
+            msc = rr.most_specific_candidate()
+            if msc is None:
+                continue
+            outgoing_calls[msc.function()].append(call)
+
+        return [
+            CallHierarchyOutgoingCall(
+                ls.fn_to_call_hierarchy_item(called_fn, fi.context),
+                from_ranges=[
+                    location_to_range(call.location()) for call in fn_calls
+                ],
+            )
+            for called_fn, fn_calls in outgoing_calls.items()
+        ]
+
     @server.feature(CALL_HIERARCHY_INCOMING_CALLS)
     async def call_hierarchy_incoming(
         ls: ChapelLanguageServer, params: CallHierarchyIncomingCallsParams
@@ -1566,106 +1720,16 @@ def run_lsp():
         if not ls.use_resolver:
             return None
 
-        # Handle module import hierarchy: find modules that import this module.
         mod_unpacked = ls.unpack_module_call_hierarchy_item(params.item)
         if mod_unpacked is not None:
             fi, mod = mod_unpacked
-            target_uid = mod.unique_id()
-
-            # Ensure all files in the same compilation context are loaded so
-            # that we can find use/import references across the project.
-            ls.eagerly_process_all_files(fi.context)
-
-            # Collect all importing modules across all open file infos.
-            # incoming_map: importer_uid → (importer Module, [from_ranges])
-            incoming_map: Dict[str, Tuple[chapel.Module, List[Range]]] = {}
-            seen_fi_ids = set()
-            for fi_key, other_fi in ls.file_infos.items():
-                # Avoid processing the same FileInfo twice (it may be stored
-                # under multiple keys).
-                fi_id = id(other_fi)
-                if fi_id in seen_fi_ids:
-                    continue
-                seen_fi_ids.add(fi_id)
-
-                for use_or_import, _ in chapel.each_matching(
-                    other_fi.get_asts(), {chapel.Use, chapel.Import}
-                ):
-                    for named_mod, stmt_range in _use_import_named_modules(
-                        use_or_import
-                    ):
-                        if named_mod.unique_id() != target_uid:
-                            continue
-                        # Find the module that contains this use/import.
-                        parent = use_or_import.parent_symbol()
-                        if not isinstance(parent, chapel.Module):
-                            continue
-                        pid = parent.unique_id()
-                        if pid not in incoming_map:
-                            incoming_map[pid] = (parent, [])
-                        incoming_map[pid][1].append(stmt_range)
-
-            return [
-                CallHierarchyIncomingCall(
-                    ls.module_to_call_hierarchy_item(importer),
-                    from_ranges=ranges,
-                )
-                for importer, ranges in incoming_map.values()
-            ]
+            return _module_hierarchy_incoming(ls, fi, mod)
 
         unpacked = ls.unpack_call_hierarchy_item(params.item)
         if unpacked is None:
             return None
-
         fi, fn, instantiation = unpacked
-
-        # If there are no signatures that we found, there are no calls that
-        # we are aware of.
-        if instantiation is None:
-            return []
-
-        # TODO:
-        # Here too, because there's no chapel-py way to convert an ID back
-        # to a node, note the node whose ID we use in a dictionary (hack_id_to_node)
-        # to look up later.
-        assert instantiation in fi.context.global_inst_contexts
-        calls = fi.context.call_contexts(instantiation)
-        hack_id_to_node: Dict[str, chapel.NamedDecl] = {}
-        incoming_calls: Dict[
-            Union[chapel.TypedSignature, str], List[chapel.FnCall]
-        ] = defaultdict(list)
-        for call_context in calls:
-            if len(call_context) == 0:
-                continue
-            call, via = call_context
-            # If the call is from an instantiation, use the instantiation
-            # as the hierarchy item anchor.
-            if via is not None:
-                incoming_calls[via].append(call)
-            # Otherwise, the call is from a concrete function or something else,
-            # like a module. Use the parent symbol's location as anchor.
-            else:
-                parent_sym: chapel.NamedDecl = call.parent_symbol()
-                hack_id_to_node[parent_sym.unique_id()] = parent_sym
-                incoming_calls[parent_sym.unique_id()].append(call)
-
-        to_return = []
-        for called_fn, calls in incoming_calls.items():
-            if isinstance(called_fn, str):
-                item = ls.sym_to_call_hierarchy_item(hack_id_to_node[called_fn])
-            else:
-                item = ls.fn_to_call_hierarchy_item(called_fn, fi.context)
-
-            to_return.append(
-                CallHierarchyIncomingCall(
-                    item,
-                    from_ranges=[
-                        location_to_range(call.location()) for call in calls
-                    ],
-                )
-            )
-
-        return to_return
+        return _fn_hierarchy_incoming(ls, fi, fn, instantiation)
 
     @server.feature(CALL_HIERARCHY_OUTGOING_CALLS)
     async def call_hierarchy_outgoing(
@@ -1674,81 +1738,16 @@ def run_lsp():
         if not ls.use_resolver:
             return None
 
-        # Handle module import hierarchy: show what modules this module imports.
         mod_unpacked = ls.unpack_module_call_hierarchy_item(params.item)
         if mod_unpacked is not None:
             _, mod = mod_unpacked
-
-            # Collect imported modules via the module's scope.
-            scope = mod.scope()
-            if scope is None:
-                return []
-            imported_modules = scope.modules_named_in_use_or_import()
-
-            # Build a map from imported module uid → [from_range] using the
-            # Use/Import nodes within the module.
-            from_ranges_map: Dict[str, List[Range]] = {
-                m.unique_id(): [] for m in imported_modules
-            }
-            for use_or_import, _ in chapel.each_matching(
-                mod, {chapel.Use, chapel.Import}
-            ):
-                for named_mod, stmt_range in _use_import_named_modules(
-                    use_or_import
-                ):
-                    uid = named_mod.unique_id()
-                    if uid in from_ranges_map:
-                        from_ranges_map[uid].append(stmt_range)
-
-            return [
-                CallHierarchyOutgoingCall(
-                    ls.module_to_call_hierarchy_item(imported),
-                    from_ranges=from_ranges_map.get(
-                        imported.unique_id(),
-                        [location_to_range(mod.location())],
-                    ),
-                )
-                for imported in imported_modules
-            ]
+            return _module_hierarchy_outgoing(ls, mod)
 
         unpacked = ls.unpack_call_hierarchy_item(params.item)
         if unpacked is None:
             return None
-
         fi, fn, instantiation = unpacked
-
-        outgoing_calls: Dict[chapel.TypedSignature, List[chapel.FnCall]] = (
-            defaultdict(list)
-        )
-        for call, _ in chapel.each_matching(fn, chapel.FnCall):
-            rr = (
-                call.resolve_via(instantiation)
-                if instantiation
-                else call.resolve()
-            )
-
-            if rr is None:
-                continue
-
-            msc = rr.most_specific_candidate()
-            if msc is None:
-                continue
-
-            outgoing_calls[msc.function()].append(call)
-
-        to_return = []
-        for called_fn, calls in outgoing_calls.items():
-            item = ls.fn_to_call_hierarchy_item(called_fn, fi.context)
-            to_return.append(
-                CallHierarchyOutgoingCall(
-                    item,
-                    from_ranges=[
-                        location_to_range(call.location()) for call in calls
-                    ],
-                )
-            )
-
-        return to_return
+        return _fn_hierarchy_outgoing(ls, fi, fn, instantiation)
 
     server.start_io()
 

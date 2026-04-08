@@ -54,7 +54,7 @@ async def prepare_module_hierarchy(
 ) -> typing.Optional[CallHierarchyItem]:
     """
     Ask for the call hierarchy item at the given position.  Returns the item
-    only when it represents a module (data[3] == "module").
+    only when it represents a module (data[0] == "module").
     """
     items = await client.text_document_prepare_call_hierarchy_async(
         CallHierarchyPrepareParams(text_document=doc, position=position)
@@ -63,7 +63,7 @@ async def prepare_module_hierarchy(
         return None
     item = items[0]
     assert isinstance(item.data, list) and len(item.data) == 4
-    assert item.data[3] == "module"
+    assert item.data[0] == "module"
     assert item.kind == SymbolKind.Module
     return item
 
