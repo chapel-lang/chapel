@@ -1,4 +1,1 @@
-$CHPL_HOME/modules/standard/Reflection.chpl:nnnn: In function 'getField':
-$CHPL_HOME/modules/standard/Reflection.chpl:nnnn: error: '-1' is not a valid field number for U
-  $CHPL_HOME/modules/internal/ChapelUnion.chpl:nnnn: called as getField(obj: U, param idx = -1)
-  within internal functions (use --print-callstack-on-error to see)
+accessByIndex-bad1.chpl:7: error: invalid index passed to union field access

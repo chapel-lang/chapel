@@ -63,6 +63,8 @@ module ChapelUnion {
   @chpldoc.nodoc
   proc ref (union).this(param idx: int) ref {
     import Reflection;
+    if idx < 0 || idx >= Reflection.getNumFields(this.type) then
+      compilerError("invalid index passed to union field access");
     if chpl_unionAccessChecking {
       _checkUnionAccess(this, idx);
     }
@@ -70,6 +72,9 @@ module ChapelUnion {
   }
   @chpldoc.nodoc
   proc const ref (union).this(param idx: int) const ref {
+    import Reflection;
+    if idx < 0 || idx >= Reflection.getNumFields(this.type) then
+      compilerError("invalid index passed to union field access");
     if chpl_unionAccessChecking {
       _checkUnionAccess(this, idx);
     }
