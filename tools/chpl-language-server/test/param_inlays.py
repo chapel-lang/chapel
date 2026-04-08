@@ -56,15 +56,19 @@ async def test_param_inlays_prim(client: LanguageClient):
             param d = if foo(int) then 1 else 10;
             param e = if foo(string) then 1 else 10;
 
-            param f = "hello";
+            param f = "hello" + "";
 
             param g = false;
             param h = true;
             param gh = g && h;
 
-            param i = "hello\\nworld";
-            param j = b"Lots of weird bytes in here \\t\\n\\r";
+            param i = "hello\\nworld" + "";
+            param j = b"Lots of weird bytes in here \\t\\n\\r" + b"";
             param k = """this is a long
+            long string""" + "";
+            param l = "hello\\nworld";
+            param m = b"Lots of weird bytes in here \\t\\n\\r";
+            param n = """this is a long
             long string""";
            '''
 
