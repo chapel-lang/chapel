@@ -89,8 +89,6 @@ async def test_param_inlays_prim(client: LanguageClient):
             client, doc, rng((0, 0), endpos(file)), inlays
         )
 
-        # check that specifying a range works — param a = 10 is suppressed so
-        # no inlays on line 0
         await check_param_inlay_hints(client, doc, rng((0, 0), (1, 0)), [])
 
 
@@ -128,8 +126,6 @@ async def test_param_inlays_obvious(client: LanguageClient):
             param y = getValue();
            """
 
-    # x = 1: literal init matching the param value — should be suppressed
-    # y = getValue(): function call — inlay should still be shown
     inlays = [
         (pos((2, 7)), "42"),
     ]

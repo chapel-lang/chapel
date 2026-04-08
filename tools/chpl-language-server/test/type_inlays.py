@@ -545,8 +545,6 @@ async def test_type_inlays_obvious(client: LanguageClient):
             type t2 = getType();
            """
 
-    # t1 = int: identifier init — should be suppressed (obvious)
-    # t2 = getType(): function call — inlay should still be shown
     inlays = [
         (pos((2, 7)), "int(64)"),
     ]
