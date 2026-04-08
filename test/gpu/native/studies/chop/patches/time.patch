@@ -1,30 +1,30 @@
-diff --git a/modules/queens_aux.chpl b/modules/queens_aux.chpl
-index 55d2e57..a30e77e 100644
 --- a/modules/queens_aux.chpl
 +++ b/modules/queens_aux.chpl
-@@ -105,6 +105,7 @@ module queens_aux{
+@@ -105,7 +105,7 @@ module queens_aux{
  
      }//initial information
  
-+    config const printElapsedTime = false;
- 
+-
++  config const printElapsedTime = false;
  
  	proc queens_mlocale_print_metrics(size: uint(16), ref metrics: (uint(64),uint(64)),
-@@ -135,11 +136,13 @@ module queens_aux{
-             writef("\n\tNumber of solutions found: %u", metrics[0]);
-         }
+         ref initial: stopwatch, ref distribution: stopwatch, ref final: stopwatch, initial_tree_size: uint(64),
+@@ -129,12 +129,13 @@ module queens_aux{
+         writef("\n\tPercentage of the maximum number: %.3dr (%%)\n",
+             (initial_num_prefixes:real/maximum_num_prefixes:real)*100);
  
--        writef("\n\tElapsed Initial Search: %.3dr", initial.elapsed());
--        writef("\n\tElapsed PGAS Data Distribution: %.3dr", distribution.elapsed());
--        writef("\n\tElapsed Final Search: %.3dr",     final.elapsed());
--        writef("\n\tElapsed TOTAL: %.3dr\n",  final.elapsed()+initial.elapsed()+distribution.elapsed());
--        writef("\n\tPGAS proportion: %.3dr\n", (distribution.elapsed())/(total_time)*100);
+-
+-        writef("\n\tElapsed (s) Initial Search: %.3dr", initial.elapsed());
+-        writef("\n\tElapsed (s) PGAS Data Distribution: %.3dr", distribution.elapsed());
+-        writef("\n\tElapsed (s) Final Search: %.3dr",     final.elapsed());
+-        writef("\n\tElapsed (s) TOTAL: %.3dr\n",  final.elapsed()+initial.elapsed()+distribution.elapsed());
+-        writef("\n\tPGAS proportion: %.3dr (%%)\n", (distribution.elapsed())/(total_time)*100);
 +        if printElapsedTime {
-+          writef("\n\tElapsed Initial Search: %.3dr", initial.elapsed());
-+          writef("\n\tElapsed PGAS Data Distribution: %.3dr", distribution.elapsed());
-+          writef("\n\tElapsed Final Search: %.3dr",     final.elapsed());
-+          writef("\n\tElapsed time: %.3dr\n",  final.elapsed()+initial.elapsed()+distribution.elapsed());
-+          writef("\n\tPGAS proportion: %.3dr\n", (distribution.elapsed())/(total_time)*100);
++          writef("\n\tElapsed (s) Initial Search: %.3dr", initial.elapsed());
++          writef("\n\tElapsed (s) PGAS Data Distribution: %.3dr", distribution.elapsed());
++          writef("\n\tElapsed (s) Final Search: %.3dr",     final.elapsed());
++          writef("\n\tElapsed (s) TOTAL: %.3dr\n",  final.elapsed()+initial.elapsed()+distribution.elapsed());
++          writef("\n\tPGAS proportion: %.3dr (%%)\n", (distribution.elapsed())/(total_time)*100);
 +        }
  
  
