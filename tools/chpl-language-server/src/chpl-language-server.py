@@ -131,6 +131,41 @@ from lsprotocol.types import (
 from lsp_util import *
 
 
+def _get_module_for_use_import_symbol(
+    sym: chapel.AstNode,
+) -> Optional[chapel.Module]:
+    """
+    Given the symbol expression from a VisibilityClause (the AST node
+    representing what is being used/imported), resolve it to the Module
+    declaration it names, if any.  Handles both Identifier and Dot cases.
+    """
+    target = None
+    if isinstance(sym, chapel.Identifier):
+        target = sym.to_node()
+    elif isinstance(sym, chapel.Dot):
+        target = sym.to_node()
+    if isinstance(target, chapel.Module):
+        return target
+    return None
+
+
+def _use_import_named_modules(
+    use_or_import: chapel.AstNode,
+) -> List[Tuple[chapel.Module, Range]]:
+    """
+    For a Use or Import AST node, return a list of (Module, range) pairs
+    where each module is one named in a visibility clause and range is the
+    location of the use/import statement itself.
+    """
+    stmt_range = location_to_range(use_or_import.location())
+    results: List[Tuple[chapel.Module, Range]] = []
+    for vc in use_or_import.visibility_clauses():
+        mod = _get_module_for_use_import_symbol(vc.symbol())
+        if mod is not None:
+            results.append((mod, stmt_range))
+    return results
+
+
 class ChapelLanguageServer(LanguageServer):
     def __init__(self, config: CLSConfig):
         super().__init__("chpl-language-server", "v0.1")
@@ -742,14 +777,62 @@ class ChapelLanguageServer(LanguageServer):
 
         return item
 
+    def module_to_call_hierarchy_item(
+        self, mod: chapel.Module
+    ) -> CallHierarchyItem:
+        """
+        Given a Chapel Module declaration, return the corresponding call
+        hierarchy item.  The data list has four elements (the last being the
+        string "module") so that module items can be distinguished from
+        function items.
+        """
+        loc = location_to_location(mod.location())
+        return CallHierarchyItem(
+            name=mod.name(),
+            detail=str(SymbolSignature(mod)),
+            kind=SymbolKind.Module,
+            uri=loc.uri,
+            range=loc.range,
+            selection_range=location_to_range(mod.name_location()),
+            data=[mod.unique_id(), None, None, "module"],
+        )
+
+    def unpack_module_call_hierarchy_item(
+        self, item: CallHierarchyItem
+    ) -> Optional[Tuple[FileInfo, chapel.Module]]:
+        """
+        Unpack a module call hierarchy item (created by
+        module_to_call_hierarchy_item) into a (FileInfo, Module) pair.
+        Returns None if the item does not represent a module.
+        """
+        if (
+            item.data is None
+            or not isinstance(item.data, list)
+            or len(item.data) != 4
+            or item.data[3] != "module"
+            or not isinstance(item.data[0], str)
+        ):
+            return None
+        uid = item.data[0]
+        fi, _ = self.get_file_info(item.uri)
+        for node, _ in chapel.each_matching(fi.get_asts(), chapel.Module):
+            if node.unique_id() == uid:
+                return (fi, node)
+        return None
+
     def unpack_call_hierarchy_item(
         self, item: CallHierarchyItem
     ) -> Optional[
         Tuple[FileInfo, chapel.Function, Optional[chapel.TypedSignature]]
     ]:
+        # Module items have 4 elements; let unpack_module_call_hierarchy_item
+        # handle those.
+        if isinstance(item.data, list) and len(item.data) == 4:
+            return None
         if (
             item.data is None
             or not isinstance(item.data, list)
+            or len(item.data) != 3
             or not isinstance(item.data[0], str)
             or not (item.data[1] is None or isinstance(item.data[1], str))
             or not (item.data[2] is None or isinstance(item.data[2], str))
@@ -1454,10 +1537,27 @@ def run_lsp():
 
         # Oddly, returning multiple here makes for no child nodes in the VSCode
         # UI. Just take one signature for now.
-        return next(
+        fn_result = next(
             ([ls.fn_to_call_hierarchy_item(sig, fi.context)] for sig in sigs),
-            [],
+            None,
         )
+        if fn_result is not None:
+            return fn_result
+
+        # Handle the case where the cursor is on a module declaration.
+        if isinstance(node, chapel.Module):
+            return [ls.module_to_call_hierarchy_item(node)]
+
+        # Handle the case where the cursor is on a module name in a use/import.
+        use_seg = fi.get_use_segment_at_position(params.position)
+        if use_seg is not None and isinstance(
+            use_seg.resolved_to.node, chapel.Module
+        ):
+            return [
+                ls.module_to_call_hierarchy_item(use_seg.resolved_to.node)
+            ]
+
+        return []
 
     @server.feature(CALL_HIERARCHY_INCOMING_CALLS)
     async def call_hierarchy_incoming(
@@ -1465,6 +1565,53 @@ def run_lsp():
     ):
         if not ls.use_resolver:
             return None
+
+        # Handle module import hierarchy: find modules that import this module.
+        mod_unpacked = ls.unpack_module_call_hierarchy_item(params.item)
+        if mod_unpacked is not None:
+            fi, mod = mod_unpacked
+            target_uid = mod.unique_id()
+
+            # Ensure all files in the same compilation context are loaded so
+            # that we can find use/import references across the project.
+            ls.eagerly_process_all_files(fi.context)
+
+            # Collect all importing modules across all open file infos.
+            # incoming_map: importer_uid → (importer Module, [from_ranges])
+            incoming_map: Dict[str, Tuple[chapel.Module, List[Range]]] = {}
+            seen_fi_ids = set()
+            for fi_key, other_fi in ls.file_infos.items():
+                # Avoid processing the same FileInfo twice (it may be stored
+                # under multiple keys).
+                fi_id = id(other_fi)
+                if fi_id in seen_fi_ids:
+                    continue
+                seen_fi_ids.add(fi_id)
+
+                for use_or_import, _ in chapel.each_matching(
+                    other_fi.get_asts(), {chapel.Use, chapel.Import}
+                ):
+                    for named_mod, stmt_range in _use_import_named_modules(
+                        use_or_import
+                    ):
+                        if named_mod.unique_id() != target_uid:
+                            continue
+                        # Find the module that contains this use/import.
+                        parent = use_or_import.parent_symbol()
+                        if not isinstance(parent, chapel.Module):
+                            continue
+                        pid = parent.unique_id()
+                        if pid not in incoming_map:
+                            incoming_map[pid] = (parent, [])
+                        incoming_map[pid][1].append(stmt_range)
+
+            return [
+                CallHierarchyIncomingCall(
+                    ls.module_to_call_hierarchy_item(importer),
+                    from_ranges=ranges,
+                )
+                for importer, ranges in incoming_map.values()
+            ]
 
         unpacked = ls.unpack_call_hierarchy_item(params.item)
         if unpacked is None:
@@ -1526,6 +1673,43 @@ def run_lsp():
     ):
         if not ls.use_resolver:
             return None
+
+        # Handle module import hierarchy: show what modules this module imports.
+        mod_unpacked = ls.unpack_module_call_hierarchy_item(params.item)
+        if mod_unpacked is not None:
+            _, mod = mod_unpacked
+
+            # Collect imported modules via the module's scope.
+            scope = mod.scope()
+            if scope is None:
+                return []
+            imported_modules = scope.modules_named_in_use_or_import()
+
+            # Build a map from imported module uid → [from_range] using the
+            # Use/Import nodes within the module.
+            from_ranges_map: Dict[str, List[Range]] = {
+                m.unique_id(): [] for m in imported_modules
+            }
+            for use_or_import, _ in chapel.each_matching(
+                mod, {chapel.Use, chapel.Import}
+            ):
+                for named_mod, stmt_range in _use_import_named_modules(
+                    use_or_import
+                ):
+                    uid = named_mod.unique_id()
+                    if uid in from_ranges_map:
+                        from_ranges_map[uid].append(stmt_range)
+
+            return [
+                CallHierarchyOutgoingCall(
+                    ls.module_to_call_hierarchy_item(imported),
+                    from_ranges=from_ranges_map.get(
+                        imported.unique_id(),
+                        [location_to_range(mod.location())],
+                    ),
+                )
+                for imported in imported_modules
+            ]
 
         unpacked = ls.unpack_call_hierarchy_item(params.item)
         if unpacked is None:
