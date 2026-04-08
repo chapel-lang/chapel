@@ -21,6 +21,7 @@ from typing import (
     Any,
     DefaultDict,
     Dict,
+    Set,
     List,
     Optional,
     Tuple,
@@ -782,9 +783,7 @@ class ChapelLanguageServer(LanguageServer):
     ) -> CallHierarchyItem:
         """
         Given a Chapel Module declaration, return the corresponding call
-        hierarchy item.  The data list has four elements (the last being the
-        string "module") so that module items can be distinguished from
-        function items.
+        hierarchy item.
         """
         loc = location_to_location(mod.location())
         return CallHierarchyItem(
@@ -825,9 +824,6 @@ class ChapelLanguageServer(LanguageServer):
     ) -> Optional[
         Tuple[FileInfo, chapel.Function, Optional[chapel.TypedSignature]]
     ]:
-        # Module items have tag "module" at data[0]; skip them here.
-        if isinstance(item.data, list) and item.data and item.data[0] == "module":
-            return None
         if (
             item.data is None
             or not isinstance(item.data, list)
@@ -1553,6 +1549,17 @@ def run_lsp():
         if use_seg is not None and isinstance(
             use_seg.resolved_to.node, chapel.Module
         ):
+            # check that the use-seg is part of a VisibilityClause:
+            # qualified calls oughtn't trigger import hierarchy,
+            # since they aren't imports.
+            parent = use_seg.ident.node.parent()
+            while parent:
+                if isinstance(parent, chapel.VisibilityClause):
+                    break
+                parent = parent.parent()
+            else:
+                return []
+
             return [
                 ls.module_to_call_hierarchy_item(use_seg.resolved_to.node)
             ]
@@ -1565,7 +1572,6 @@ def run_lsp():
         mod: chapel.Module,
     ) -> List[CallHierarchyIncomingCall]:
         """Return modules that import the given module."""
-        target_uid = mod.unique_id()
 
         # Unlike function call hierarchy, which relies on the resolver's built-in
         # cross-file call graph, module incoming requires a manual AST scan.
@@ -1574,14 +1580,8 @@ def run_lsp():
         ls.eagerly_process_all_files(fi.context)
 
         # Collect all importing modules across all open file infos.
-        incoming_modules: Dict[str, chapel.Module] = {}
-        incoming_ranges: DefaultDict[str, List[Range]] = defaultdict(list)
-        seen_fi_ids: set = set()
-        for _, other_fi in ls.file_infos.items():
-            fi_id = id(other_fi)
-            if fi_id in seen_fi_ids:
-                continue
-            seen_fi_ids.add(fi_id)
+        incoming_ranges: DefaultDict[chapel.Module, List[Range]] = defaultdict(list)
+        for other_fi in fi.context.file_infos:
 
             for use_or_import, _ in chapel.each_matching(
                 other_fi.get_asts(), {chapel.Use, chapel.Import}
@@ -1589,21 +1589,21 @@ def run_lsp():
                 for named_mod, vc_range in _use_import_named_modules(
                     use_or_import
                 ):
-                    if named_mod.unique_id() != target_uid:
+                    if named_mod != mod:
                         continue
-                    parent = use_or_import.parent_symbol()
-                    if not isinstance(parent, chapel.Module):
-                        continue
-                    pid = parent.unique_id()
-                    incoming_modules[pid] = parent
-                    incoming_ranges[pid].append(vc_range)
+
+                    # Treat uses and imports, even inside functions and
+                    # smaller scopes, as belonging to the module containing them.
+                    parent = use_or_import.parent_module()
+                    assert parent is not None
+                    incoming_ranges[parent].append(vc_range)
 
         return [
             CallHierarchyIncomingCall(
                 ls.module_to_call_hierarchy_item(importer),
-                from_ranges=incoming_ranges[pid],
+                from_ranges=ranges,
             )
-            for pid, importer in incoming_modules.items()
+            for importer, ranges in incoming_ranges.items()
         ]
 
     def _module_hierarchy_outgoing(
@@ -1616,18 +1616,22 @@ def run_lsp():
             return []
         imported_modules = scope.modules_named_in_use_or_import()
 
-        from_ranges_map: DefaultDict[str, List[Range]] = defaultdict(list)
+        from_ranges_map: DefaultDict[chapel.Module, List[Range]] = defaultdict(list)
         for use_or_import, _ in chapel.each_matching(
             mod, {chapel.Use, chapel.Import}
         ):
+            # Don't treat parent modules as importing their children's
+            # imports.
+            if use_or_import.parent_module() != mod:
+                continue
             for named_mod, vc_range in _use_import_named_modules(use_or_import):
-                from_ranges_map[named_mod.unique_id()].append(vc_range)
+                from_ranges_map[named_mod].append(vc_range)
 
         return [
             CallHierarchyOutgoingCall(
                 ls.module_to_call_hierarchy_item(imported),
                 from_ranges=from_ranges_map.get(
-                    imported.unique_id(),
+                    imported,
                     [location_to_range(mod.location())],
                 ),
             )
@@ -1647,6 +1651,7 @@ def run_lsp():
         assert instantiation in fi.context.global_inst_contexts
         calls = fi.context.call_contexts(instantiation)
 
+        # TODO:
         # Because there's no chapel-py way to convert an ID back to a node,
         # record nodes whose IDs we use so we can look them up later.
         hack_id_to_node: Dict[str, chapel.NamedDecl] = {}
@@ -1657,8 +1662,12 @@ def run_lsp():
             if len(call_context) == 0:
                 continue
             call, via = call_context
+            # If the call is from an instantiation, use the instantiation
+            # as the hierarchy item anchor.
             if via is not None:
                 incoming_calls[via].append(call)
+            # Otherwise, the call is from a concrete function or something else,
+            # like a module. Use the parent symbol's location as anchor.
             else:
                 parent_sym: chapel.NamedDecl = call.parent_symbol()
                 hack_id_to_node[parent_sym.unique_id()] = parent_sym
