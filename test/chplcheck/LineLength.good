@@ -1,4 +1,47 @@
+=== chplcheckopts 1 ===
 LineLength.chpl:3: node violates rule LineLength
 LineLength.chpl:5: node violates rule UnattachedCurly
 LineLength.chpl:6: node violates rule LineLength
 LineLength.chpl:7: node violates rule LineLength
+LineLength.chpl:16: node violates rule LineLength
+LineLength.chpl:19: node violates rule IncorrectIndentation
+LineLength.chpl:19: node violates rule LineLength
+LineLength.chpl:21: node violates rule LineLength
+=== chplcheckopts 2 ===
+LineLength.chpl:2: node violates rule LineLength
+LineLength.chpl:3: node violates rule LineLength
+LineLength.chpl:5: node violates rule UnattachedCurly
+LineLength.chpl:5: node violates rule LineLength
+LineLength.chpl:6: node violates rule LineLength
+LineLength.chpl:7: node violates rule LineLength
+LineLength.chpl:11: node violates rule LineLength
+LineLength.chpl:12: node violates rule LineLength
+LineLength.chpl:13: node violates rule LineLength
+LineLength.chpl:16: node violates rule LineLength
+LineLength.chpl:18: node violates rule LineLength
+LineLength.chpl:19: node violates rule IncorrectIndentation
+LineLength.chpl:19: node violates rule LineLength
+LineLength.chpl:20: node violates rule LineLength
+LineLength.chpl:21: node violates rule LineLength
+LineLength.chpl:22: node violates rule LineLength
+LineLength.chpl:23: node violates rule LineLength
+=== chplcheckopts 3 ===
+LineLength.chpl:3: node violates rule LineLength
+LineLength.chpl:5: node violates rule UnattachedCurly
+LineLength.chpl:6: node violates rule LineLength
+LineLength.chpl:7: node violates rule LineLength
+LineLength.chpl:19: node violates rule IncorrectIndentation
+LineLength.chpl:19: node violates rule LineLength
+=== chplcheckopts 4 ===
+LineLength.chpl:2: node violates rule LineLength
+LineLength.chpl:3: node violates rule LineLength
+LineLength.chpl:5: node violates rule UnattachedCurly
+LineLength.chpl:5: node violates rule LineLength
+LineLength.chpl:6: node violates rule LineLength
+LineLength.chpl:7: node violates rule LineLength
+LineLength.chpl:11: node violates rule LineLength
+LineLength.chpl:12: node violates rule LineLength
+LineLength.chpl:19: node violates rule IncorrectIndentation
+LineLength.chpl:19: node violates rule LineLength
+LineLength.chpl:22: node violates rule LineLength
+LineLength.chpl:23: node violates rule LineLength
