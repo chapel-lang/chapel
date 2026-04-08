@@ -1577,6 +1577,11 @@ def run_lsp():
         # cross-file call graph, module incoming requires a manual AST scan.
         # Ensure all files in the compilation context are loaded first so that
         # importers in other files are visible.
+        #
+        # Note: we _could_ adjust the FileInfo + Context to track this for us,
+        # but since it would only be used for call hierarchy, it seems
+        # reasonable to gate this here. This is different from the function
+        # call graph, which we used for other things (inlays, go-to-def, etc.)
         ls.eagerly_process_all_files(fi.context)
 
         # Collect all importing modules across all open file infos.

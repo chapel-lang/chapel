@@ -76,7 +76,6 @@ async def test_import_hierarchy_prepare_on_module_decl(client: LanguageClient):
            }
            """
     async with source_file(client, file) as doc:
-        # Line 0: 'module Foo {', 'F' is at column 7
         item = await prepare_module_hierarchy(client, doc, pos((0, 7)))
         assert item is not None
         assert item.name == "Foo"
@@ -95,8 +94,6 @@ async def test_import_hierarchy_prepare_on_use_stmt(client: LanguageClient):
             }
             """
     async with source_files(client, A=fileA, B=fileB) as docs:
-        # fileB stripped: line 0='module B {', line 1='  use A;', line 2='}'
-        # 'A' in 'use A;' is at column 6 on line 1
         item = await prepare_module_hierarchy(client, docs("B"), pos((1, 6)))
         assert item is not None
         assert item.name == "A"
@@ -115,18 +112,17 @@ async def test_import_hierarchy_outgoing(client: LanguageClient):
             }
             """
     async with source_files(client, A=fileA, B=fileB) as docs:
-        # Get hierarchy item for module B — 'B' is at (0, 7)
         item = await prepare_module_hierarchy(client, docs("B"), pos((0, 7)))
         assert item is not None
         assert item.name == "B"
 
-        # Check outgoing — should contain A
         outgoing = await client.call_hierarchy_outgoing_calls_async(
             CallHierarchyOutgoingCallsParams(item)
         )
         assert outgoing is not None
+        assert len(outgoing) == 1
         names = {call.to.name for call in outgoing}
-        assert "A" in names
+        assert names == {"A"}
 
 
 @pytest.mark.asyncio
@@ -142,18 +138,17 @@ async def test_import_hierarchy_incoming(client: LanguageClient):
             }
             """
     async with source_files(client, A=fileA, B=fileB) as docs:
-        # Get hierarchy item for module A — 'A' is at (0, 7)
         item = await prepare_module_hierarchy(client, docs("A"), pos((0, 7)))
         assert item is not None
         assert item.name == "A"
 
-        # Check incoming — B imports A, so B should appear
         incoming = await client.call_hierarchy_incoming_calls_async(
             CallHierarchyIncomingCallsParams(item)
         )
         assert incoming is not None
+        assert len(incoming) == 1
         names = {call.from_.name for call in incoming}
-        assert "B" in names
+        assert names == {"B"}
 
 
 @pytest.mark.asyncio
@@ -175,24 +170,24 @@ async def test_import_hierarchy_chain(client: LanguageClient):
             """
 
     async with source_files(client, A=fileA, B=fileB, C=fileC) as docs:
-        # Outgoing from A should include B — 'A' is at (0, 7)
         item_a = await prepare_module_hierarchy(client, docs("A"), pos((0, 7)))
         assert item_a is not None
         outgoing_a = await client.call_hierarchy_outgoing_calls_async(
             CallHierarchyOutgoingCallsParams(item_a)
         )
         assert outgoing_a is not None
+        assert len(outgoing_a) == 1
         b_items = [c for c in outgoing_a if c.to.name == "B"]
         assert len(b_items) == 1
 
-        # Outgoing from B should include C
         item_b = b_items[0].to
         outgoing_b = await client.call_hierarchy_outgoing_calls_async(
             CallHierarchyOutgoingCallsParams(item_b)
         )
         assert outgoing_b is not None
+        assert len(outgoing_b) == 1
         names_b = {c.to.name for c in outgoing_b}
-        assert "C" in names_b
+        assert names_b == {"C"}
 
 
 @pytest.mark.asyncio
@@ -213,7 +208,6 @@ async def test_import_hierarchy_multiple_imports(client: LanguageClient):
             }
             """
     async with source_files(client, A=fileA, B=fileB, C=fileC) as docs:
-        # 'C' is at (0, 7)
         item = await prepare_module_hierarchy(client, docs("C"), pos((0, 7)))
         assert item is not None
 
@@ -221,9 +215,9 @@ async def test_import_hierarchy_multiple_imports(client: LanguageClient):
             CallHierarchyOutgoingCallsParams(item)
         )
         assert outgoing is not None
+        assert len(outgoing) == 2
         names = {c.to.name for c in outgoing}
-        assert "A" in names
-        assert "B" in names
+        assert names == {"A", "B"}
 
 
 @pytest.mark.asyncio
@@ -252,6 +246,6 @@ async def test_import_hierarchy_multiple_importers(client: LanguageClient):
             CallHierarchyIncomingCallsParams(item)
         )
         assert incoming is not None
+        assert len(incoming) == 2
         names = {c.from_.name for c in incoming}
-        assert "B" in names
-        assert "C" in names
+        assert names == {"B", "C"}
