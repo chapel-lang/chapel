@@ -540,15 +540,17 @@ async def test_type_inlays_obvious(client: LanguageClient):
     """
 
     file = """
+            use List;
             proc getType() type do return int;
             type t1 = int(64);
             type t2 = int;
             type t3 = getType();
+            type t4 = list(bool, false);
            """
 
     inlays = [
-        (pos((2, 7)), "int(64)"),
         (pos((3, 7)), "int(64)"),
+        (pos((4, 7)), "int(64)"),
     ]
     async with source_file(client, file) as doc:
         await check_type_inlay_hints(
