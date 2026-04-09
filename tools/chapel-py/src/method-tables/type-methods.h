@@ -41,4 +41,19 @@ CLASS_BEGIN(CompositeType)
                if (id.isEmpty()) return nullptr;
 
                return parsing::idToAst(context, id))
+  PLAIN_GETTER(CompositeType, name, "Get name of this CompositeType",
+               chpl::UniqueString,
+               return node->name())
 CLASS_END(CompositeType)
+
+CLASS_BEGIN(EnumType)
+  PLAIN_GETTER(EnumType, name, "Get name of this EnumType",
+               chpl::UniqueString,
+               return node->name())
+CLASS_END(EnumType)
+
+CLASS_BEGIN(ClassType)
+  PLAIN_GETTER(ClassType, manageable_type, "Get the type managed by this ClassType",
+               Nilable<const chpl::types::ManageableType*>,
+               return node->manageableType())
+CLASS_END(ClassType)

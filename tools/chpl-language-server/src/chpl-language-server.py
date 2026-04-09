@@ -538,6 +538,30 @@ class ChapelLanguageServer(LanguageServer):
             if init_str == type_str:
                 return []
 
+        if self.hide_more_redundant_type_inlays and might_be_redundant:
+            init_expr = decl.node.init_expression()
+            assert init_expr is not None # ensured via might_be_redundant
+            if (
+                isinstance(init_expr, chapel.Identifier)
+            ):
+                # Don't show type aliases for any reference to an internal type
+                if init_expr.refers_to_builtin():
+                    return []
+
+                named_type = None
+                if isinstance(type_, (chapel.CompositeType, chapel.EnumType)):
+                    named_type = type_
+                elif isinstance(type_, chapel.ClassType):
+                    # Get the 'C' from 'owned C?', for example
+                    named_type = type_.manageable_type()
+
+                # Also, if this is something like type T = myRecord,
+                # ignore it, even if myRecord becomes instantiated.
+                to_node = init_expr.to_node()
+                if named_type and isinstance(to_node, chapel.TypeDecl):
+                    if named_type.name() == to_node.name():
+                        return []
+
         name_rng = location_to_range(decl.node.name_location())
         edit_text = ": " + type_str
         text_edits = [TextEdit(Range(name_rng.end, name_rng.end), edit_text)]
