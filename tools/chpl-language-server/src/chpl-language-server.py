@@ -1498,16 +1498,13 @@ def run_lsp():
         tokens.sort(key=lambda x: (x[0], x[1]))
         return SemanticTokens(data=encode_deltas(tokens, 0, 0))
 
-    @server.feature(TEXT_DOCUMENT_PREPARE_CALL_HIERARCHY)
-    async def prepare_call_hierarchy(
-        ls: ChapelLanguageServer, params: CallHierarchyPrepareParams
+    def _prepare_call_hierarchy_fn(
+        ls: ChapelLanguageServer,
+        params: CallHierarchyPrepareParams,
+        fi: FileInfo,
     ):
         if not ls.use_resolver:
             return None
-
-        text_doc = ls.workspace.get_text_document(params.text_document.uri)
-
-        fi, _ = ls.get_file_info(text_doc.uri)
 
         # Get function from a particular call under the cursor.
         sigs: List[chapel.TypedSignature] = []
@@ -1533,12 +1530,18 @@ def run_lsp():
 
         # Oddly, returning multiple here makes for no child nodes in the VSCode
         # UI. Just take one signature for now.
-        fn_result = next(
+        return next(
             ([ls.fn_to_call_hierarchy_item(sig, fi.context)] for sig in sigs),
             None,
         )
-        if fn_result is not None:
-            return fn_result
+
+    def _prepare_call_hierarchy_module(
+        ls: ChapelLanguageServer,
+        params: CallHierarchyPrepareParams,
+        fi: FileInfo,
+    ):
+        decl = fi.get_def_segment_at_position(params.position)
+        node = decl.node if decl else None
 
         # Handle the case where the cursor is on a module declaration.
         if isinstance(node, chapel.Module):
@@ -1565,6 +1568,20 @@ def run_lsp():
             ]
 
         return []
+
+    @server.feature(TEXT_DOCUMENT_PREPARE_CALL_HIERARCHY)
+    async def prepare_call_hierarchy(
+        ls: ChapelLanguageServer, params: CallHierarchyPrepareParams
+    ):
+        text_doc = ls.workspace.get_text_document(params.text_document.uri)
+
+        fi, _ = ls.get_file_info(text_doc.uri)
+
+        hierarchy_items_fn = _prepare_call_hierarchy_fn(ls, params, fi)
+        if hierarchy_items_fn is not None:
+            return hierarchy_items_fn
+
+        return _prepare_call_hierarchy_module(ls, params, fi)
 
     def _module_hierarchy_incoming(
         ls: ChapelLanguageServer,
@@ -1731,13 +1748,13 @@ def run_lsp():
     async def call_hierarchy_incoming(
         ls: ChapelLanguageServer, params: CallHierarchyIncomingCallsParams
     ):
-        if not ls.use_resolver:
-            return None
-
         mod_unpacked = ls.unpack_module_call_hierarchy_item(params.item)
         if mod_unpacked is not None:
             fi, mod = mod_unpacked
             return _module_hierarchy_incoming(ls, fi, mod)
+
+        if not ls.use_resolver:
+            return None
 
         unpacked = ls.unpack_call_hierarchy_item(params.item)
         if unpacked is None:
@@ -1749,13 +1766,13 @@ def run_lsp():
     async def call_hierarchy_outgoing(
         ls: ChapelLanguageServer, params: CallHierarchyOutgoingCallsParams
     ):
-        if not ls.use_resolver:
-            return None
-
         mod_unpacked = ls.unpack_module_call_hierarchy_item(params.item)
         if mod_unpacked is not None:
             _, mod = mod_unpacked
             return _module_hierarchy_outgoing(ls, mod)
+
+        if not ls.use_resolver:
+            return None
 
         unpacked = ls.unpack_call_hierarchy_item(params.item)
         if unpacked is None:
