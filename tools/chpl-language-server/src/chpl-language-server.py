@@ -365,6 +365,10 @@ class ChapelLanguageServer(LanguageServer):
 
         # get lint diagnostics if applicable
         if self.lint_driver and chplcheck():
+            # chplcheck caches some rule work between runs. Clear this cache.
+            cache = chplcheck().indentation.build_and_run_indentation_collector
+            cache.cache_clear()
+
             lint_diagnostics = chplcheck().lsp.get_lint_diagnostics(
                 fi.context.context, self.lint_driver, fi.get_asts()
             )
