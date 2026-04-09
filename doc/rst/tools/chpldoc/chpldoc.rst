@@ -484,7 +484,7 @@ a matching identifier is found:
 ``:mod:``
 
     Reference a module; a dotted name may be used. See
-    :ref:`Inline markup <inline-markup-1>` for details on dotted and non-dotted
+    :ref:`Inline markup <inline-markup-2>` for details on dotted and non-dotted
     names.
 
 ``:proc:``
