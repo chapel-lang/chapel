@@ -168,7 +168,6 @@ class IndentationCollector:
             iterable = list(root)[1:]
         return iterable
 
-
     def collect(self, root: AstNode):
         if isinstance(root, Comment):
             return
