@@ -80,11 +80,12 @@ proc masonDoc(args: [] string) throws {
     if copyrightYear != "" {
       command.pushBack("--project-copyright-year=" + copyrightYear);
     }
+    const srcFiles =
+      [f in listDir("src/")] if f.endsWith(".chpl") then "src/" + f;
+    command.pushBack(srcFiles);
     command.pushBack([
-      joinPath("src", projectFile),
       "-o",
       "doc/",
-      "--process-used-modules"
     ]);
     command.pushBack(getTomlDocopts(tomlFile));
     command.pushBack(passArgs.values());

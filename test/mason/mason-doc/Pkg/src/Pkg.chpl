@@ -10,5 +10,7 @@ The project description is |project_description|
 module Pkg {
   use SubPkg;
   use FileSystem;
+  include module Included;
+  import Included;
   writeln("New library: Pkg");
 }
