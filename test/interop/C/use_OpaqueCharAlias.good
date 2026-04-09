@@ -1,6 +1,3 @@
-c_ptr(c_ptr(opaqueChar))
-c_ptr(c_ptr(int(8)))
-int(64)
 signature0(char x)
 signature1(char * x)
 signature2(char * * x)
