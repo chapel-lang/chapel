@@ -254,7 +254,10 @@ Customizing the generated documentation
 
 By default, all documented Chapel modules are included automatically in the
 generated documentation (e.g., they will show up in the index). To suppress this
-behavior, preface the module symbol with the attribute ``@chpldoc.noAutoInclude``. ``chpldoc`` will still generate documentation for the module, but it will not automatically included. It will need to be included manually. This can provide more
+behavior, preface the module symbol with the attribute
+``@chpldoc.noAutoInclude``. ``chpldoc`` will still generate documentation for
+the module, but it will not automatically included. It will need to be
+included manually. This can provide more
 control over the organization of the documentation. For example:
 
 .. code-block:: chapel
