@@ -95,7 +95,7 @@ if project_description:
 exclude_patterns = []
 
 chpldoc_exclude_patterns = []
-if paths := os.environ.get("CHPLDOC_EXCLUDE_PATHS", None):
+if paths := os.environ.get("CHPLDOC_EXCLUDE_PATTERNS", None):
     for path in paths.split(","):
         chpldoc_exclude_patterns.append(
             str("modules" / Path(path).with_suffix(".rst"))

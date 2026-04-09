@@ -2293,7 +2293,7 @@ void generateSphinxOutput(std::string sphinxDir, std::string outputDir,
     "export CHPLDOC_PROJECT_DESCRIPTION='" + projectDescription +"' && " +
     "export CHPLDOC_PROJECT_VERSION='" + projectVersion + "' && " +
     "export CHPLDOC_PROJECT_COPYRIGHT='" + projectCopyright + "' && " +
-    "export CHPLDOC_EXCLUDE_PATHS='" + excludePaths + "'";
+    "export CHPLDOC_EXCLUDE_PATTERNS='" + excludePaths + "'";
 
 
   // Run:
