@@ -148,13 +148,13 @@ Additionally, some of the above features can be tweaked.
 | hide obvious   | inlay exactly matches the right-hand side  | (default),                               |
 | inlays         | of the declaration.                        | ``--no-hide-redundant-type-inlays``      |
 |                |                                            |                                          |
-|                | Example: ``type myType = int(64);```       |                                          |
+|                | Example: ``type myType = int(64);``        |                                          |
 +----------------+--------------------------------------------+------------------------------------------+
 | Type Inlays:   | Hides potentially obvious inlays even if   | ``--hide-more-redundant-type-inlays``,   |
 | hide more      | the right-hand side of the type alias does | ``--no-hide-more-redundant-type-inlays`` |
 | inlays         | not exactly match the computed type.       | (default)                                |
 |                |                                            |                                          |
-|                | Example: ``type myType = range;```         |                                          |
+|                | Example: ``type myType = range;``          |                                          |
 +----------------+--------------------------------------------+------------------------------------------+
 
 Using ``chplcheck`` from ``CLS``
