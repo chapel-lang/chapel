@@ -31,7 +31,6 @@ from util.config import CLS_PATH
         server_command=[
             sys.executable,
             CLS_PATH(),
-            "--resolver",
         ],
         client_factory=get_base_client,
     )
