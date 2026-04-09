@@ -41,6 +41,32 @@ async def client(lsp_client: LanguageClient):
     await lsp_client.shutdown_session()
 
 
+@pytest_lsp.fixture(
+    config=ClientServerConfig(
+        server_command=[
+            sys.executable,
+            CLS_PATH(),
+            "--resolver",
+            "--type-inlays",
+            "--no-literal-arg-inlays",
+            "--no-param-inlays",
+            "--end-markers=none",
+            "--hide-more-redundant-type-inlays",
+        ],
+        client_factory=get_base_client,
+    )
+)
+async def client_hide_more(lsp_client: LanguageClient):
+    # Setup
+    params = InitializeParams(capabilities=ClientCapabilities())
+    await lsp_client.initialize_session(params)
+
+    yield
+
+    # Teardown
+    await lsp_client.shutdown_session()
+
+
 @pytest.mark.asyncio
 async def test_type_inlays_prim(client: LanguageClient):
     """
@@ -544,15 +570,46 @@ async def test_type_inlays_obvious(client: LanguageClient):
             proc getType() type do return int;
             type t1 = int(64);
             type t2 = int;
-            type t3 = getType();
-            type t4 = list(bool, false);
+            type t3 = bool;
+            type t4 = getType();
+            type t5 = list(bool, /* parSafe = */ false);
+            type t6 = range;
            """
 
     inlays = [
         (pos((3, 7)), "int(64)"),
-        (pos((4, 7)), "int(64)"),
+        (pos((5, 7)), "int(64)"),
+        (pos((7, 7)), "range(int(64), boundKind.both, strideKind.one)"),
     ]
     async with source_file(client, file) as doc:
         await check_type_inlay_hints(
             client, doc, rng((0, 0), endpos(file)), inlays
+        )
+
+
+@pytest.mark.asyncio
+async def test_type_inlays_obvious_more(client_hide_more: LanguageClient):
+    """
+    Ensure that type inlays are suppressed when the type is obvious from
+    the init expression (plain identifier), but still shown for function calls.
+    """
+
+    file = """
+            use List;
+            proc getType() type do return int;
+            type t1 = int(64);
+            type t2 = int;
+            type t3 = bool;
+            type t4 = getType();
+            type t5 = list(bool, /* parSafe = */ false);
+            type t6 = range;
+            type t7 = real;
+           """
+
+    inlays = [
+        (pos((5, 7)), "int(64)"),
+    ]
+    async with source_file(client_hide_more, file) as doc:
+        await check_type_inlay_hints(
+            client_hide_more, doc, rng((0, 0), endpos(file)), inlays
         )
