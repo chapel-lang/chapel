@@ -164,19 +164,28 @@ static const ID scopeResolveViaInclude(Context* context,
   return ID();
 }
 
+static const ResolvedExpression*
+scopeResolvedExpressionForNodeVia(Context* context, const AstNode* search,
+                                  const AstNode* node) {
+  if (auto rr = scopeResolveViaFunction(context, search, node)) {
+    return rr;
+  } else if (auto rr = scopeResolveViaAggregate(context, search, node)) {
+    return rr;
+  } else if (auto rr = scopeResolveViaEnum(context, search, node)) {
+    return rr;
+  } else if (auto rr = scopeResolveViaModule(context, search, node)) {
+    return rr;
+  }
+  return nullptr;
+}
+
 // For scope resolution, we handle AST nodes that don't necessarily get
 // their own ResolvedExpression (specifically, uses/imports), so return an ID
 // instead of a ResolvedExpression.
 static const ID scopeResolveToIdForNode(Context* context, const AstNode* node) {
   const AstNode* search = node;
   while (search) {
-    if (auto rr = scopeResolveViaFunction(context, search, node)) {
-      return rr->toId();
-    } else if (auto rr = scopeResolveViaAggregate(context, search, node)) {
-      return rr->toId();
-    } else if (auto rr = scopeResolveViaEnum(context, search, node)) {
-      return rr->toId();
-    } else if (auto rr = scopeResolveViaModule(context, search, node)) {
+    if (auto rr = scopeResolvedExpressionForNodeVia(context, search, node)) {
       return rr->toId();
     } else if(auto id = scopeResolveViaVisibilityStmt(context, search, node)) {
       return id;
@@ -186,6 +195,17 @@ static const ID scopeResolveToIdForNode(Context* context, const AstNode* node) {
     search = parsing::parentAst(context, search);
   }
   return ID();
+}
+
+static bool nodeRefersToBuiltinImpl(Context* context, const AstNode* node) {
+  const AstNode* search = node;
+  while (search) {
+    if (auto rr = scopeResolvedExpressionForNodeVia(context, search, node)) {
+      return rr->isBuiltin();
+    }
+    search = parsing::parentAst(context, search);
+  }
+  return false;
 }
 
 const resolution::ResolvedExpression* scopeResolveResultsForNode(Context* context, const AstNode* node) {
@@ -212,6 +232,12 @@ const AstNode* const& nodeOrNullFromToId(Context* context, const AstNode* node) 
   auto id = scopeResolveToIdForNode(context, node);
   auto nodeOrNull = idOrEmptyToAstNodeOrNull(context, id);
   return QUERY_END(nodeOrNull);
+}
+
+bool const& nodeRefersToBuiltin(Context* context, const AstNode* node) {
+  QUERY_BEGIN(nodeRefersToBuiltin, context, node);
+  auto result = nodeRefersToBuiltinImpl(context, node);
+  return QUERY_END(result);
 }
 
 static const resolution::ResolvedExpression* resolveViaFunction(Context* context, const AstNode* fnNode, const AstNode* node) {
