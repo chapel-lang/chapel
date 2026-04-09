@@ -119,7 +119,12 @@ class ChplcheckProxy:
             return module
 
         to_load = [
-            "chplcheck", "config", "lsp", "driver", "rules", "indentation"
+            "chplcheck",
+            "config",
+            "lsp",
+            "driver",
+            "rules",
+            "indentation",
         ]
         mods = []
         for mod in to_load:
