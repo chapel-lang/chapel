@@ -1557,13 +1557,13 @@ class CLSConfig:
             self.parser,
             "hide-redundant-type-inlays",
             "hide_redundant_type_inlays",
-            True
+            True,
         )
         chplcheck().config.add_bool_flag(
             self.parser,
             "hide-more-redundant-type-inlays",
             "hide_more_redundant_type_inlays",
-            False
+            False,
         )
         self.parser.add_argument("--end-markers", default="none")
         self.parser.add_argument("--end-marker-threshold", type=int, default=10)

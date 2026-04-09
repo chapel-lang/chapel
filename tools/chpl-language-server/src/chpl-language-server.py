@@ -152,11 +152,11 @@ class ChapelLanguageServer(LanguageServer):
         self.dead_code: bool = config.get("dead_code")
         self.eval_expressions: bool = config.get("eval_expressions")
         self.show_instantiations: bool = config.get("show_instantiations")
-        self.hide_redundant_type_inlays: bool = (
-            config.get("hide_redundant_type_inlays")
+        self.hide_redundant_type_inlays: bool = config.get(
+            "hide_redundant_type_inlays"
         )
-        self.hide_more_redundant_type_inlays: bool = (
-            config.get("hide_more_redundant_type_inlays")
+        self.hide_more_redundant_type_inlays: bool = config.get(
+            "hide_more_redundant_type_inlays"
         )
         self.end_markers: List[str] = config.get("end_markers")
         self.end_marker_threshold: int = config.get("end_marker_threshold")
@@ -540,10 +540,8 @@ class ChapelLanguageServer(LanguageServer):
 
         if self.hide_more_redundant_type_inlays and might_be_redundant:
             init_expr = decl.node.init_expression()
-            assert init_expr is not None # ensured via might_be_redundant
-            if (
-                isinstance(init_expr, chapel.Identifier)
-            ):
+            assert init_expr is not None  # ensured via might_be_redundant
+            if isinstance(init_expr, chapel.Identifier):
                 # Don't show type aliases for any reference to an internal type
                 if init_expr.refers_to_builtin():
                     return []
