@@ -406,7 +406,7 @@ Internal links
 ++++++++++++++
 
 Internal linking is done via a special reST role, see the section on specific
-:ref:`Inline markup <inline-markup-1>`.
+:ref:`Inline markup <inline-markup-2>`.
 
 
 Sections
