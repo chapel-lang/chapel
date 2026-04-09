@@ -484,9 +484,11 @@ class ChapelLanguageServer(LanguageServer):
                 node_init, (chapel.StringLiteral, chapel.BytesLiteral)
             ):
                 # Apply the same escaping rules to the literal value to see
-                # if it matches what we'd show. The string already
-                # contains the 'b' for the bytes literal, so don't add it here.
-                lit_val = self._escape_string(node_init.value())
+                # if it matches what we'd show.
+                lit_val = '"' + self._escape_string(node_init.value()) + '"'
+                if isinstance(node_init, chapel.BytesLiteral):
+                    lit_val = "b" + lit_val
+
                 if lit_val == val:
                     return []
             elif isinstance(node_init, chapel.BoolLiteral):
