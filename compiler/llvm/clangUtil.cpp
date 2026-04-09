@@ -4294,20 +4294,29 @@ int getCTypeAlignment(::Type* type) {
   gGenInfo->lvt->getCDecl(type->symbol->cname, &cType, &cVal);
   const clang::TypeDecl* td = cType;
 
-  // find the QualType
   QualType qType;
-  if (const TypedefNameDecl* tnd = dyn_cast<TypedefNameDecl>(td)) {
-    qType = tnd->getCanonicalDecl()->getUnderlyingType();
-  } else if (const EnumDecl* ed = dyn_cast<EnumDecl>(td)) {
-    qType = ed->getCanonicalDecl()->getIntegerType();
-  } else if (const RecordDecl* rd = dyn_cast<RecordDecl>(td)) {
-    RecordDecl *def = rd->getDefinition();
-    if (def == nullptr)
-      // ex. opaque pointer in test/extern/records/OpaqueStructNoField.chpl
-      return ALIGNMENT_DEFER;
-    qType=def->getCanonicalDecl()->getTypeForDecl()->getCanonicalTypeInternal();
+
+  if (td) {
+    if (const TypedefNameDecl* tnd = dyn_cast<TypedefNameDecl>(td)) {
+      qType = tnd->getCanonicalDecl()->getUnderlyingType();
+    } else if (const EnumDecl* ed = dyn_cast<EnumDecl>(td)) {
+      qType = ed->getCanonicalDecl()->getIntegerType();
+    } else if (const RecordDecl* rd = dyn_cast<RecordDecl>(td)) {
+      RecordDecl *def = rd->getDefinition();
+      if (def == nullptr)
+        // ex. opaque pointer in test/extern/records/OpaqueStructNoField.chpl
+        return ALIGNMENT_DEFER;
+      qType=def->getCanonicalDecl()->getTypeForDecl()
+               ->getCanonicalTypeInternal();
+    } else {
+      INT_FATAL(type, "Unhandled Clang type declaration");
+    }
+  } else if (type->symbol->hasFlag(FLAG_OPAQUE_C_TYPE_ALIAS)) {
+    auto eqt = chapelTypeForPrimitiveCTypeName(type->symbol->cname);
+    INT_ASSERT(eqt);
+    return getCTypeAlignment(eqt);
   } else {
-    INT_FATAL("Unknown clang type declaration");
+    INT_FATAL(type, "Chapel type does not have a corresponding Clang type");
   }
 
   return getCTypeAlignment(qType);
