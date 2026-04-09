@@ -1563,9 +1563,7 @@ def run_lsp():
             else:
                 return []
 
-            return [
-                ls.module_to_call_hierarchy_item(use_seg.resolved_to.node)
-            ]
+            return [ls.module_to_call_hierarchy_item(use_seg.resolved_to.node)]
 
         return []
 
@@ -1602,7 +1600,9 @@ def run_lsp():
         ls.eagerly_process_all_files(fi.context)
 
         # Collect all importing modules across all open file infos.
-        incoming_ranges: DefaultDict[chapel.Module, List[Range]] = defaultdict(list)
+        incoming_ranges: DefaultDict[chapel.Module, List[Range]] = defaultdict(
+            list
+        )
         for other_fi in fi.context.file_infos:
 
             for use_or_import, _ in chapel.each_matching(
@@ -1638,7 +1638,9 @@ def run_lsp():
             return []
         imported_modules = scope.modules_named_in_use_or_import()
 
-        from_ranges_map: DefaultDict[chapel.Module, List[Range]] = defaultdict(list)
+        from_ranges_map: DefaultDict[chapel.Module, List[Range]] = defaultdict(
+            list
+        )
         for use_or_import, _ in chapel.each_matching(
             mod, {chapel.Use, chapel.Import}
         ):
