@@ -273,7 +273,7 @@ class Rule(typing.Generic[VarResultType], metaclass=ABCMeta):
         if fixit_func.__doc__ is not None:
             fixit.description = fixit_func.__doc__.strip()
 
-    def _uses_internal_auto_args(self) -> typing.Set[str]:
+    def _get_internal_auto_args(self) -> typing.Set[str]:
         """
         Which of the arguments that can be auto-supplied by chplcheck
         does this rule use?
@@ -311,7 +311,7 @@ class Rule(typing.Generic[VarResultType], metaclass=ABCMeta):
             driver_setting = self.driver.config.rule_settings.get(setting)
             setting_kwargs[setting.setting_name] = driver_setting
 
-        auto_args = self._uses_internal_auto_args()
+        auto_args = self._get_internal_auto_args()
 
         silenced_rules_key = "ChplcheckSilencedRules"
         assert silenced_rules_key in BUILTIN_AUTO_ARGS
@@ -345,7 +345,7 @@ class BasicRule(Rule[BasicRuleResult]):
         self.pattern = pattern
         self.check_func = check_func
 
-    def _uses_internal_auto_args(self) -> typing.Set[str]:
+    def _get_internal_auto_args(self) -> typing.Set[str]:
         return _builtin_auto_args_in_fn(self.check_func)
 
     def _check_single(
@@ -401,7 +401,7 @@ class AdvancedRule(Rule[AdvancedRuleResult]):
         super().__init__(driver, name, settings)
         self.check_func = check_func
 
-    def _uses_internal_auto_args(self) -> typing.Set[str]:
+    def _get_internal_auto_args(self) -> typing.Set[str]:
         return _builtin_auto_args_in_fn(self.check_func)
 
     def check(
@@ -453,7 +453,7 @@ class LocationRule(Rule[LocationRuleResult]):
         super().__init__(driver, name, settings)
         self.check_func = check_func
 
-    def _uses_internal_auto_args(self) -> typing.Set[str]:
+    def _get_internal_auto_args(self) -> typing.Set[str]:
         return _builtin_auto_args_in_fn(self.check_func)
 
     def check(

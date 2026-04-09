@@ -38,7 +38,7 @@ from chapel import (
     SimpleBlockLike,
     Union,
 )
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple, Iterable
 from functools import cache
 
 
@@ -148,6 +148,27 @@ class IndentationCollector:
     ):
         self.incorrectly_indented_nodes[child] = anchor
 
+    def _get_iterable_for_node(self, root: AstNode) -> Iterable[AstNode]:
+        # We only care about misaligned statements, so we don't want to do stuff
+        # like warn for inherit-exprs or pragmas on a record.
+        iterable = root
+        if isinstance(root, AggregateDecl):
+            iterable = root.decls_or_comments()
+        elif isinstance(root, SimpleBlockLike):
+            iterable = root.stmts()
+        elif isinstance(root, Interface):
+            iterable = root.stmts()
+        elif isinstance(root, Cobegin):
+            iterable = root.task_bodies()
+        elif (
+            isinstance(root, (Module, Enum))
+            and root.attribute_group() is not None
+        ):
+            # attribute group is the first child, skip it
+            iterable = list(root)[1:]
+        return iterable
+
+
     def collect(self, root: AstNode):
         if isinstance(root, Comment):
             return
@@ -180,24 +201,7 @@ class IndentationCollector:
         prev_single_stmts: List[Tuple[AstNode, AstNode, List[AstNode]]] = []
         misleading_indent_child = None
 
-        # We only care about misaligned statements, so we don't want to do stuff
-        # like warn for inherit-exprs or pragmas on a record.
-        iterable = root
-        if isinstance(root, AggregateDecl):
-            iterable = root.decls_or_comments()
-        elif isinstance(root, SimpleBlockLike):
-            iterable = root.stmts()
-        elif isinstance(root, Interface):
-            iterable = root.stmts()
-        elif isinstance(root, Cobegin):
-            iterable = root.task_bodies()
-        elif (
-            isinstance(root, (Module, Enum))
-            and root.attribute_group() is not None
-        ):
-            # attribute group is the first child, skip it
-            iterable = list(root)[1:]
-
+        iterable = self._get_iterable_for_node(root)
         for child in iterable:
             if isinstance(child, Comment):
                 continue
