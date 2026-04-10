@@ -1743,7 +1743,9 @@ bool doCanDispatch(Type*     actualType,
                    FnSymbol* fn,
                    bool*     promotes,
                    bool*     paramNarrows,
-                   bool      paramCoerce) {
+                   bool      paramCoerce,
+                   FunctionType* fnType) {
+  if (fn) INT_ASSERT(fnType);
 
   if (actualType == formalType)
     return true;
@@ -1798,18 +1800,25 @@ bool doCanDispatch(Type*     actualType,
     return true;
 
   // check if promotion is possible
-  if (fn                              != NULL        &&
-      fn->name                        != astrSassign &&
-      strcmp(fn->name, "these")       != 0           &&
-      fn->retTag                      != RET_TYPE    &&
-      fn->retTag                      != RET_PARAM   &&
-      actualType->scalarPromotionType != NULL        &&
-      doCanDispatch(actualType->scalarPromotionType, NULL,
+  // Note: Assumes that if `fn` is null and we have a `fnType`, that we're
+  // dealing with a proc ptr. In this case, `=` and `these` cannot be captured
+  // and so do not need to be accounted for.
+  bool badName = fn && (fn->name == astrSassign || strcmp(fn->name, "these") == 0);
+  auto scalar = actualType->isRef() ?
+                  actualType->getValType()->scalarPromotionType :
+                  actualType->scalarPromotionType;
+  if (fnType &&
+      !badName &&
+      fnType->returnIntent()          != RET_TYPE    &&
+      fnType->returnIntent()          != RET_PARAM   &&
+      scalar != NULL        &&
+      doCanDispatch(scalar, NULL,
                     formalType, formalSym,
                     fn,
                     promotes,
                     paramNarrows,
-                    false)) {
+                    false,
+                    fnType)) {
     *promotes = true;
     return true;
   }
@@ -1826,7 +1835,11 @@ bool canDispatch(Type*     actualType,
                  FnSymbol* fn,
                  bool*     promotes,
                  bool*     paramNarrows,
-                 bool      paramCoerce) {
+                 bool      paramCoerce,
+                 FunctionType* fnType) {
+  if (fn && fnType == nullptr) {
+    fnType = FunctionType::get(fn);
+  }
   bool tmpPromotes     = false;
   bool tmpParamNarrows = false;
   bool retval          = doCanDispatch(actualType, actualSym,
@@ -1834,7 +1847,8 @@ bool canDispatch(Type*     actualType,
                                        fn,
                                        &tmpPromotes,
                                        &tmpParamNarrows,
-                                       paramCoerce);
+                                       paramCoerce,
+                                       fnType);
 
   if (promotes     != NULL) {
     *promotes = tmpPromotes;
