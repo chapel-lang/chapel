@@ -44,15 +44,15 @@ std::map<TypeSymbol*, std::string> fortranKindNames;
 std::map<TypeSymbol*, std::string> fortranTypeNames;
 
 static bool shouldGeneratePrototype(FnSymbol* fn) {
-  if (fn->hasFlag(FLAG_EXPORT) && isUserRoutine(fn)) return true;
+  if (fn->hasFlag(FLAG_EXPORT)) {
+    if (isUserRoutine(fn)) return true;
 
-  if (!strcmp(fn->name, "chpl_library_init") ||
-      !strcmp(fn->name, "chpl_library_finalize")) {
-    // These functions must be exposed. TODO: There may be a situation where
-    // these are declared 'extern' for some reason, in which case this assert
-    // will fire. Figure out something then (e.g., just skip those?).
-    INT_ASSERT(fn->hasFlag(FLAG_EXPORT));
-    return true;
+    if (fn->name == astr("chpl_library_init") ||
+        fn->name == astr("chpl_library_finalize")) {
+      if (auto mod = fn->getModule()) {
+        if (mod->modTag == MOD_INTERNAL) return true;
+      }
+    }
   }
 
   return false;

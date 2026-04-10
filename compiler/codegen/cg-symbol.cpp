@@ -1509,16 +1509,16 @@ static void handleOpaqueCTypeAlias(TypeSymbol* ts) {
                   aliasName.c_str());
   }
 
+  if (auto eqts = equivalentChapelType->symbol) {
+    // Make sure the equivalent type is generated first.
+    if (!eqts->hasLLVMType()) eqts->codegenDef();
+  }
+
   auto llvmImplType = equivalentChapelType->symbol->llvmImplType;
   auto llvmAlignment = equivalentChapelType->symbol->llvmAlignment;
   bool isUnsigned = !isSignedType(equivalentChapelType);
 
   if (nullptr == info->lvt->getType(aliasName)) {
-    if (auto eqts = equivalentChapelType->symbol) {
-      // Make sure the equivalent type is generated first.
-      if (!eqts->hasLLVMType()) eqts->codegenDef();
-    }
-
     // Emplace the primitive C type if we need to. This only happens once,
     // but the use of the pragma triggers the mapping for a given C type.
     info->lvt->addGlobalType(aliasName, llvmImplType, isUnsigned);
