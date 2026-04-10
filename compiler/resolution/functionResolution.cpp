@@ -1745,7 +1745,6 @@ bool doCanDispatch(Type*     actualType,
                    bool*     paramNarrows,
                    bool      paramCoerce,
                    FunctionType* fnType) {
-  if (fn) INT_ASSERT(fnType);
 
   if (actualType == formalType)
     return true;
@@ -1807,10 +1806,16 @@ bool doCanDispatch(Type*     actualType,
   auto scalar = actualType->isRef() ?
                   actualType->getValType()->scalarPromotionType :
                   actualType->scalarPromotionType;
-  if (fnType &&
-      !badName &&
-      fnType->returnIntent()          != RET_TYPE    &&
-      fnType->returnIntent()          != RET_PARAM   &&
+  bool okReturnIntent = false;
+  if (fn) {
+    okReturnIntent = fn->retTag != RET_TYPE &&
+                     fn->retTag != RET_PARAM;
+  } else if (fnType) {
+    okReturnIntent = fnType->returnIntent() != RET_TYPE &&
+                     fnType->returnIntent() != RET_PARAM;
+  }
+  if (!badName &&
+      okReturnIntent &&
       scalar != NULL        &&
       doCanDispatch(scalar, NULL,
                     formalType, formalSym,
@@ -1837,9 +1842,6 @@ bool canDispatch(Type*     actualType,
                  bool*     paramNarrows,
                  bool      paramCoerce,
                  FunctionType* fnType) {
-  if (fn && fnType == nullptr) {
-    fnType = FunctionType::get(fn);
-  }
   bool tmpPromotes     = false;
   bool tmpParamNarrows = false;
   bool retval          = doCanDispatch(actualType, actualSym,
