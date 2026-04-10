@@ -23,8 +23,7 @@ COMMON_LAUNCHER_SRCS = \
 	chpl-string-support.c \
 	chplcast.c \
 	config.c \
-	chpl-error.c \
-	chpl-unwind.c
+	chpl-error.c
 
 ONLY_LAUNCHER_SRCS = \
 	chpl-launcher-common.c
@@ -58,6 +57,7 @@ COMMON_NOGEN_SRCS = \
 	chpl-tasks.c \
 	chpl-tasks-callbacks.c \
 	chpl-timers.c \
+	chpl-unwind.c \
 	chpl-visual-debug.c \
 	debugger.c \
 

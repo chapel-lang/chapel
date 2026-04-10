@@ -25,8 +25,15 @@
 extern "C" {
 #endif
 
-char* chpl_stack_unwind_to_string(char sep);
-void chpl_stack_unwind(FILE* out, char sep);
+#ifdef LAUNCHER
+  // These symbols do nothing in launcher code, so define stubs here.
+  static inline char* chpl_stack_unwind_to_string(char sep) { return NULL; }
+  static inline void chpl_stack_unwind(FILE* out, char sep) {}
+#else
+  // Otherwise, call out to implementations in 'chpl-unwind.c'...
+  char* chpl_stack_unwind_to_string(char sep);
+  void chpl_stack_unwind(FILE* out, char sep);
+#endif
 
 #ifdef __cplusplus
 }

@@ -39,10 +39,8 @@
 #include <stdlib.h>
 #include <inttypes.h>
 
-#ifndef LAUNCHER
-#ifdef CHPL_DO_UNWIND
-#define CHPL_UNWIND_NOT_LAUNCHER
-#endif
+#ifdef LAUNCHER
+#error "Should not be possible!"
 #endif
 
 // #define DEBUG
@@ -53,7 +51,8 @@
 #define DEBUG_PRINT(x) do {} while (0)
 #endif
 
-#ifdef CHPL_UNWIND_NOT_LAUNCHER
+#ifdef CHPL_DO_UNWIND
+
 // Necessary for instruct libunwind to use only the local unwind
 #define UNW_LOCAL_ONLY
 #include <libunwind.h>
@@ -391,14 +390,4 @@ char* chpl_stack_unwind_to_string(char sep) {
   chpl_stack_unwind_helper(CHPL_STACK_UNWIND_MODE_STRING, sep, (void*)&str);
   return str;
 }
-
-#else
-
-void chpl_stack_unwind(FILE* out, char sep) {
-}
-
-char* chpl_stack_unwind_to_string(char sep) {
-  return NULL;
-}
-
 #endif
