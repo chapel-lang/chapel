@@ -44,6 +44,7 @@ import importlib.util
 import copy
 import configargparse
 import functools
+from pathlib import Path
 
 import chapel
 from chapel.lsp import location_to_range
@@ -62,6 +63,8 @@ from lsprotocol.types import (
     SymbolInformation,
     SymbolKind,
 )
+
+from mason import MasonProject
 
 
 def log(*args, **kwargs):
@@ -666,14 +669,16 @@ class ContextContainer:
         self.instantiation_id_counter = 0
 
         if config:
-            file_config = config.for_file(file)
-            if file_config:
-                self.module_paths = file_config["module_dirs"]
-                self.file_paths = file_config["files"]
+            module_dirs, files = config.for_file(file)
+            self.module_paths.extend(module_dirs)
+            self.file_paths.extend(files)
 
         self.std_module_root = self.cls_config.get("std_module_root")
         self.module_paths.extend(self.cls_config.get("module_dir"))
 
+        log("Setting module paths with std module root '{}', module paths '{}', and file paths '{}'".format(
+            self.std_module_root, self.module_paths, self.file_paths
+        ))
         self.context._set_module_paths(
             self.std_module_root, self.module_paths, self.file_paths
         )
@@ -1448,7 +1453,7 @@ class FileInfo:
 
 class WorkspaceConfig:
     def __init__(self, ls: "ChapelLanguageServer", json: Dict[str, Any]):
-        self.files: Dict[str, Dict[str, Any]] = {}
+        self._files: Dict[str, Dict[str, Any]] = {}
 
         for key in json:
             compile_commands = json[key]
@@ -1470,23 +1475,39 @@ class WorkspaceConfig:
                 )
                 continue
 
-            self.files[key] = compile_commands[0]
+            self._files[key] = compile_commands[0]
 
-    def file_paths(self) -> Iterable[str]:
-        return self.files.keys()
+        self.mason: Optional[MasonProject] = None
 
-    def for_file(self, path: str) -> Optional[Dict[str, Any]]:
-        if path in self.files:
-            return self.files[path]
-        return None
+    def for_file(self, path: str) -> Tuple[List[str], List[str]]:
+        file_cfg = self._files.get(path, {"module_dirs": [], "files": []})
+        module_dirs = file_cfg.get("module_dirs", [])
+        files = file_cfg.get("files", [])
+        if self.mason:
+            module_dirs += self.mason.get_module_dirs()
+            files += self.mason.get_files()
+        return module_dirs, files
+
+    def files(self) -> List[str]:
+        files = set()
+        for file_cfg in self._files.values():
+            files.update(file_cfg.get("files", []))
+        if self.mason:
+            files.update(self.mason.get_files())
+        return list(files)
 
     @staticmethod
-    def from_file(ls: "ChapelLanguageServer", path: str):
-        if os.path.exists(path):
+    def from_file(ls: "ChapelLanguageServer", workspace_root_uri: str) -> "WorkspaceConfig":
+        workspace_root = Path(workspace_root_uri[len("file://") :])
+        path = workspace_root / ".cls-commands.json"
+        if path.exists():
             with open(path) as f:
                 commands = json.load(f)
-                return WorkspaceConfig(ls, commands)
-        return None
+                ws_cfg = WorkspaceConfig(ls, commands)
+        else:
+            ws_cfg = WorkspaceConfig(ls, {})
+        ws_cfg.mason = MasonProject.from_ws(ls.config.get("mason_path"), workspace_root_uri)
+        return ws_cfg
 
 
 class CLSConfig:
@@ -1556,6 +1577,8 @@ class CLSConfig:
         self.parser.add_argument("--end-markers", default="none")
         self.parser.add_argument("--end-marker-threshold", type=int, default=10)
 
+        self.parser.add_argument("--mason-path", default="mason", help=configargparse.SUPPRESS)
+
         chplcheck().config.add_bool_flag(
             self.parser, "chplcheck", "do_linting", False
         )
@@ -1588,16 +1611,10 @@ class CLSConfig:
                 None, "Cannot specify 'all' with other end marker choices"
             )
 
-    def _mason_setup(self):
-        # if this is a mason project, add 'src' as a module-dir
-        if os.path.exists(os.path.join(os.getcwd(), "Mason.toml")):
-            self.args["module_dir"] = self.args["module_dir"] + ["src"]
-
     def parse_args(self):
         self.args = copy.deepcopy(vars(self.parser.parse_args()))
         self._parse_end_markers()
         self._validate_end_markers()
-        self._mason_setup()
 
     def get(self, key: str):
         return self.args[key]

@@ -129,6 +129,7 @@ from lsprotocol.types import (
 )
 
 from lsp_util import *
+from mason import MasonProject
 
 
 class ChapelLanguageServer(LanguageServer):
@@ -258,7 +259,8 @@ class ChapelLanguageServer(LanguageServer):
     def eagerly_process_all_files(self, context: ContextContainer):
         cfg = context.config
         if cfg:
-            for file in cfg.files:
+            for file in cfg.files():
+                log("eagerly processing file", file)
                 # Invocation records the compiler call, and is not really
                 # a file.
                 #
@@ -390,10 +392,7 @@ class ChapelLanguageServer(LanguageServer):
             return "\n".join(lines)
 
     def register_workspace(self, uri: str):
-        path = os.path.join(uri[len("file://") :], ".cls-commands.json")
-        config = WorkspaceConfig.from_file(self, path)
-        if config:
-            self.configurations[uri] = config
+        self.configurations[uri] = WorkspaceConfig.from_file(self, uri)
 
     def unregister_workspace(self, uri: str):
         if uri in self.configurations:

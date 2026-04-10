@@ -85,20 +85,21 @@ class SourceFilesContext:
         commands = {}
         allfiles = []
         for name, contents in files.items():
-            # make the directory structure, last component is the name
-            dir_path = self.tempdir.name
-            components = os.path.normpath(name).split(os.sep)
-            name = components[-1]
-            for component in components[:-1]:
-                dir_path = os.path.join(dir_path, component)
-                os.makedirs(dir_path, exist_ok=True)
-
-            filepath = os.path.join(dir_path, name + ".chpl")
+            p = os.path.normpath(name)
+            if not os.path.isabs(p):
+                if "." in name:
+                    filepath = os.path.join(self.tempdir.name, name)
+                else:
+                    filepath = os.path.join(self.tempdir.name, name + ".chpl")
+            else:
+                filepath = p
+            os.makedirs(os.path.dirname(filepath), exist_ok=True)
             with open(filepath, "w") as f:
                 f.write(strip_leading_whitespace(contents))
 
-            allfiles.append(filepath)
-            commands[filepath] = [{"module_dirs": [], "files": allfiles}]
+            if filepath.endswith(".chpl"):
+                allfiles.append(filepath)
+                commands[filepath] = [{"module_dirs": [], "files": allfiles}]
 
         commandspath = os.path.join(self.tempdir.name, ".cls-commands.json")
         if build_cls_commands:
@@ -106,8 +107,12 @@ class SourceFilesContext:
                 json.dump(commands, f)
 
     def _get_doc(self, name: str) -> TextDocumentIdentifier:
+        if os.path.isabs(name):
+            filepath = name
+        else:
+            filepath = os.path.join(self.tempdir.name, name + '.chpl')
         return TextDocumentIdentifier(
-            uri=f"file://{os.path.join(self.tempdir.name, name + '.chpl')}"
+            uri=f"file://{filepath}"
         )
 
     async def __aenter__(self):
@@ -166,6 +171,14 @@ def source_files(client: LanguageClient, **files: str):
 
 
 def unrelated_source_files(client: LanguageClient, **files: str):
+    """
+    Same as 'source_files', but doesn't create a .cls-commands.json file that
+    would cause the files to be treated as "connected" and resolved together.
+    """
+    return SourceFilesContext(client, files, build_cls_commands=False)
+
+
+def unrelated_source_files_dict(client: LanguageClient, files: typing.Dict[str, str]):
     """
     Same as 'source_files', but doesn't create a .cls-commands.json file that
     would cause the files to be treated as "connected" and resolved together.
