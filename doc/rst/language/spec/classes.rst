@@ -2103,28 +2103,68 @@ be deleted. It is possible to transfer the ownership to another
 :type:`~OwnedObject.owned` variable before that happens.
 
 Copy initializing from ``myOwnedObject`` or assigning it to another
-:type:`~OwnedObject.owned` will leave ``myOwnedObject`` storing a nil value
-and transfer the owned class instance to the other value.
+:type:`~OwnedObject.owned` will leave ``myOwnedObject`` dead
+and transfer the ``owned`` class instance to the other value.
 
-.. code-block:: chapel
+   *Example (transferOwnership.chpl)*.
 
-   var otherOwnedObject = myOwnedObject;
-   // now myOwnedObject stores nil
-   // the value it stored earlier has moved to otherOwnedObject
+   .. BLOCK-test-chapelpre
 
-   myOwnedObject = otherOwnedObject;
-   // this assignment moves the value from the right-hand-side
-   // to the left-hand-side, leaving the right-hand-side empty.
-   // after the assignment, otherOwnedObject stores nil
-   // and myOwnedObject stores a value that will be deleted
-   // when myOwnedObject goes out of scope.
+      class MyClass { }
+      proc main() {
+      var myOwnedObject = new MyClass();
 
+   .. code-block:: chapel
+
+      var otherOwnedObject = myOwnedObject;
+      // now myOwnedObject is dead and no longer stores a value
+      // the value it stored earlier has moved to otherOwnedObject
+      // when otherOwnedObject goes out of scope, the instance will be deleted
+
+   .. BLOCK-test-chapelpost
+
+      writeln(otherOwnedObject);
+      }
+
+   .. BLOCK-test-chapeloutput
+
+      {}
+
+Copy initializing from a nilable :type:`~OwnedObject.owned` object or assigning
+to another :type:`~OwnedObject.owned` will leave the first object storing
+``nil`` and transfer the ``owned`` class instance to the second object.
+
+   *Example (transferOwnershipNilable.chpl)*.
+
+   .. BLOCK-test-chapelpre
+
+      class MyClass { }
+
+   .. code-block:: chapel
+
+      var myNilableOwnedObject = new MyClass?();
+      var otherOwnedObject: owned MyClass?;
+
+      otherOwnedObject = myNilableOwnedObject;
+      // this assignment moves the value from the right-hand-side
+      // to the left-hand-side, leaving the right-hand-side empty.
+      // after the assignment, nilableOwnedObject stores nil
+      // and otherOwnedObject stores a value that will be deleted
+      // when otherOwnedObject goes out of scope.
+
+   .. BLOCK-test-chapelpost
+
+      writeln((otherOwnedObject, myNilableOwnedObject));
+
+   .. BLOCK-test-chapeloutput
+
+      ({}, nil)
 
 :type:`~OwnedObject.owned` forms part of a type and can be used in type expressions:
 
 .. code-block:: chapel
 
- var emptyOwnedObject: owned MyClass;
+   var ownedObject: owned MyClass;
 
 .. index::
    single: owned classes; borrowing
@@ -2161,7 +2201,7 @@ that could be deleted before the `borrow`. For example:
    .. BLOCK-test-chapelpost
 
       var res = test();
-  
+
    .. BLOCK-test-chapeloutput
 
       lifetimeCheckOnBorrow.chpl:2: In function 'test':
