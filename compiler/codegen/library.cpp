@@ -48,7 +48,9 @@ static bool shouldGeneratePrototype(FnSymbol* fn) {
 
   if (!strcmp(fn->name, "chpl_library_init") ||
       !strcmp(fn->name, "chpl_library_finalize")) {
-    // These functions must be exposed.
+    // These functions must be exposed. TODO: There may be a situation where
+    // these are declared 'extern' for some reason, in which case this assert
+    // will fire. Figure out something then (e.g., just skip those?).
     INT_ASSERT(fn->hasFlag(FLAG_EXPORT));
     return true;
   }
