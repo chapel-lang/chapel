@@ -21,6 +21,8 @@
 #ifndef CHPL_RT_UNWIND_H
 #define CHPL_RT_UNWIND_H
 
+#include <stdio.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
