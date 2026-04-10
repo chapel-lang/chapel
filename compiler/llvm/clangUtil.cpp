@@ -4036,7 +4036,7 @@ static clang::CanQualType getClangType(::Type* t, bool makeRef) {
 
   } else if (t->symbol->hasFlag(FLAG_OPAQUE_C_TYPE_ALIAS)) {
     if (::Type* t = chapelTypeForPrimitiveCTypeName(cname)) {
-      ret = getClangType(dt_c_char, makeRef);
+      ret = getClangType(t, makeRef);
     } else {
       INT_FATAL(t->symbol, "Unhandled type alias when fetching Clang type");
     }

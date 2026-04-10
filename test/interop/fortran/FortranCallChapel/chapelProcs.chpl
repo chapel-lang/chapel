@@ -2,14 +2,13 @@ var chplInt: int;
 var chplReal: real;
 
 export proc chpl_library_init_ftn() {
-  use ChapelProgramEntrypoints;
   use CTypes;
 
-  var filenamePtr1 = "fake" : c_ptr(c_char);
-  var filenamePtr2 = c_ptrTo(filenamePtr1);
+  extern proc chpl_library_init(argc: c_int, argv: c_ptr(c_ptr(c_char)));
 
-  const argc = __primitive("cast", chpl_opaque_c_int, (1 : c_int));
-  const argv = __primitive("cast", chpl_opaque_argv_array, filenamePtr2);
+  var filenamePtr1 = "fake" : c_ptr(c_char);
+  const argc: c_int = 1;
+  const argv: c_ptr(c_ptr(c_char)) = c_ptrTo(filenamePtr1);
 
   chpl_library_init(argc, argv);
   chpl__init_chapelProcs();
