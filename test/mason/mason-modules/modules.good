@@ -1,0 +1,46 @@
+Initialized local registry at $CWD/local-reg
+Add this registry to MASON_REGISTRY environment variable to include it in search path:
+   export MASON_REGISTRY="mason-registry|https://github.com/chapel-lang/mason-registry,local-reg|$CWD/local-reg"
+Created new library project: myNewGitDep
+Tip: To convert existing code to a mason project, move the driver application to the `src/myNewGitDep.chpl` file. For adding other source code, using submodules is the recommended approach to avoid namespace collisions.
+Created new library project: myNewDep
+Tip: To convert existing code to a mason project, move the driver application to the `src/myNewDep.chpl` file. For adding other source code, using submodules is the recommended approach to avoid namespace collisions.
+Created git tag: v0.1.0. Make sure to push this tag to your remote when you publish to the registry with 'git push origin --tags'
+Successfully published package to $CWD/local-reg
+Created new application project: myPackage
+Tip: To convert existing code to a mason project, move the driver application to the `src/myPackage.chpl` file. For adding other source code, using submodules is the recommended approach to avoid namespace collisions.
+Updating my-local-registry
+Downloading dependency: myNewGitDep-HEAD
+Downloading dependency: myNewDep-0.1.0
+Checking out specified revision for myNewGitDep-HEAD...
+Compiling [debug] target: myPackage
+Build Successful
+
+New mason package: myPackage
+mason modules
+Fetching latest changes for: myNewGitDep-HEAD...
+Checking out specified revision for myNewGitDep-HEAD...
+Checking out specified revision for myNewGitDep-HEAD...
+$CWD/mason_home/src/myNewDep-0.1.0/src/myNewDep.chpl $CWD/mason_home/git/myNewGitDep-HEAD/src/myNewGitDep.chpl
+mason modules --no-update
+Checking out specified revision for myNewGitDep-HEAD...
+$CWD/mason_home/src/myNewDep-0.1.0/src/myNewDep.chpl $CWD/mason_home/git/myNewGitDep-HEAD/src/myNewGitDep.chpl
+mason modules --update
+Fetching latest changes for: myNewGitDep-HEAD...
+Checking out specified revision for myNewGitDep-HEAD...
+Checking out specified revision for myNewGitDep-HEAD...
+$CWD/mason_home/src/myNewDep-0.1.0/src/myNewDep.chpl $CWD/mason_home/git/myNewGitDep-HEAD/src/myNewGitDep.chpl
+mason modules --no-update --format=text
+Checking out specified revision for myNewGitDep-HEAD...
+$CWD/mason_home/src/myNewDep-0.1.0/src/myNewDep.chpl $CWD/mason_home/git/myNewGitDep-HEAD/src/myNewGitDep.chpl
+mason modules --no-update --format=json
+Checking out specified revision for myNewGitDep-HEAD...
+{"modules":["$CWD/mason_home/src/myNewDep-0.1.0/src/myNewDep.chpl","$CWD/mason_home/git/myNewGitDep-HEAD/src/myNewGitDep.chpl"]}
+mason modules --no-update with no lock file, should error
+Cannot skip update without an existing lock file.
+error as expected: 1
+mason modules without --no-update should recreate it
+Fetching latest changes for: myNewGitDep-HEAD...
+Checking out specified revision for myNewGitDep-HEAD...
+Checking out specified revision for myNewGitDep-HEAD...
+{"modules":["$CWD/mason_home/src/myNewDep-0.1.0/src/myNewDep.chpl","$CWD/mason_home/git/myNewGitDep-HEAD/src/myNewGitDep.chpl"]}
