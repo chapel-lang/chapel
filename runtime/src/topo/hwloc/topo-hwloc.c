@@ -31,7 +31,7 @@
 #include "chpl-topo.h"
 #include "chpl-comm.h"
 #include "chpltypes.h"
-#include "error.h"
+#include "chpl-error.h"
 #include "chpl-mem-sys.h"
 #include "chplexit.h"
 

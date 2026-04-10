@@ -27,7 +27,7 @@
 #include "chpl-env.h"
 #include "chpl-tasks.h"
 #include "chpl-topo.h"
-#include "error.h"
+#include "chpl-error.h"
 
 #include <inttypes.h>
 #include <stdint.h>

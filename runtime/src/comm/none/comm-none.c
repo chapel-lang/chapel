@@ -25,7 +25,7 @@
 #include "chpl-comm-strd-xfer.h"
 #include "chpl-exec.h"
 #include "chplexit.h"
-#include "error.h"
+#include "chpl-error.h"
 #include "chpl-mem.h"
 #include "chpl-tasks.h"
 

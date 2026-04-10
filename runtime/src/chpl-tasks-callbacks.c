@@ -24,7 +24,7 @@
 #include "chplrt.h"
 
 #include "chpl-comm.h"
-#include "error.h"
+#include "chpl-error.h"
 #include "chpl-tasks-callbacks.h"
 #include "chpl-tasks-callbacks-internal.h"
 

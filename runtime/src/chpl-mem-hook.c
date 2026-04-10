@@ -26,7 +26,7 @@
 #include "chpl-mem.h"
 #include "chpl-mem-hook.h"
 #include "chpltypes.h"
-#include "error.h"
+#include "chpl-error.h"
 
 #include <stdio.h>
 #include <stdint.h>

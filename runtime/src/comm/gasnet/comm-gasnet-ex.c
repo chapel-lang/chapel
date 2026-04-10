@@ -40,7 +40,7 @@
 #include "chpl-gen-includes.h"
 #include "chpl-atomics.h"
 #include "chpl-linefile-support.h"
-#include "error.h"
+#include "chpl-error.h"
 #include "chpl-mem-desc.h"
 #include "chpl-mem-sys.h" // mem layer not initialized in init, need sys alloc
 

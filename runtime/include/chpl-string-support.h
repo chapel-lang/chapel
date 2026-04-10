@@ -32,7 +32,7 @@
  */
 
 #include "chpltypes.h"
-#include "error.h"
+#include "chpl-error.h"
 #include <string.h>
 
 #ifdef __cplusplus

@@ -31,7 +31,7 @@
 #include "chpllaunch.h"
 #include "chpl-mem.h"
 #include "chpltypes.h"
-#include "error.h"
+#include "chpl-error.h"
 //
 // We need to specify the path to aprun-utils.c since this file is
 // also compiled in the pbs-aprun directory

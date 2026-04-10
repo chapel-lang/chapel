@@ -26,7 +26,7 @@
 #include <errno.h>
 #include "chpllaunch.h"
 #include "chpl-mem.h"
-#include "error.h"
+#include "chpl-error.h"
 #include "aprun-utils.h"
 
 #define CHPL_CC_ARG "-cc"

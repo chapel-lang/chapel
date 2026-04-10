@@ -30,7 +30,7 @@
 #include <stdio.h>
 
 #include "chplrt.h"
-#include "error.h"
+#include "chpl-error.h"
 
 #ifdef __cplusplus
 extern "C" {

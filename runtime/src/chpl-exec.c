@@ -22,7 +22,7 @@
 
 #include "chpl-exec.h"
 #include "chpl-linefile-support.h"
-#include "error.h"
+#include "chpl-error.h"
 
 #include <sys/wait.h>
 

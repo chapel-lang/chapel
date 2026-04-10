@@ -22,7 +22,7 @@
 #include <string.h>
 #include "chpllaunch.h"
 #include "chpl-mem.h"
-#include "error.h"
+#include "chpl-error.h"
 
 
 static char* chpl_launch_create_command(int argc, char* argv[],

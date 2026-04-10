@@ -31,7 +31,7 @@
 #include "chplcgfns.h"
 #include "chpl-linefile-support.h"
 #include "config.h"
-#include "error.h"
+#include "chpl-error.h"
 
 #include "chpl-comm-compiler-macros.h"
 

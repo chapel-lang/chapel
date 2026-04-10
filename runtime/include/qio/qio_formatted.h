@@ -25,7 +25,7 @@
 #include "qio.h"
 
 #include "bswap.h"
-#include "error.h"
+#include "chpl-error.h"
 
 // true 1 false 0   __bool_true_false_are_defined
 #include <stdbool.h>

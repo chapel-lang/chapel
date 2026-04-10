@@ -31,7 +31,7 @@
 #include "chpl-mem-desc.h"
 #include "chpl-mem-hook.h"
 #include "chpltypes.h"
-#include "error.h"
+#include "chpl-error.h"
 
 #ifdef __cplusplus
 extern "C" {

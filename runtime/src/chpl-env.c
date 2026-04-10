@@ -22,7 +22,7 @@
 
 #include "chpl-env.h"
 #include "chpltypes.h"
-#include "error.h"
+#include "chpl-error.h"
 
 #ifdef LAUNCHER
 #include "chpllaunch.h"

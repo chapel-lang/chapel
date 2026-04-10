@@ -25,7 +25,7 @@
 
 #include "chpl-mem.h"
 #include "chpltypes.h"
-#include "error.h"
+#include "chpl-error.h"
 
 // This file always declares this function at least.
 void chpl_mem_replace_malloc_if_needed(void);

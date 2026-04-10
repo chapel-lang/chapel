@@ -22,7 +22,7 @@
 #include <string.h>
 #include "chpllaunch.h"
 #include "chpl-mem.h"
-#include "error.h"
+#include "chpl-error.h"
 
 // To get CHPL_THIRD_PARTY from chpl invocation
 #include "chplcgfns.h"

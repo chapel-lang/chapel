@@ -41,6 +41,6 @@
 #include "chpl-tasks.h"
 #include "chpltimers.h"
 #include "chpltypes.h"
-#include "error.h"
+#include "chpl-error.h"
 
 #endif

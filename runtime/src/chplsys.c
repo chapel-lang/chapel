@@ -36,7 +36,7 @@
 #include "chpl-mem.h"
 #include "chpl-tasks.h"
 #include "chpltypes.h"
-#include "error.h"
+#include "chpl-error.h"
 
 // System headers
 

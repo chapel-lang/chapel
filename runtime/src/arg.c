@@ -31,7 +31,7 @@
 #include "chpl-tasks.h"
 #include "chpl-linefile-support.h"
 #include "config.h"
-#include "error.h"
+#include "chpl-error.h"
 #include "chpl-comm-locales.h"
 
 #include <assert.h>

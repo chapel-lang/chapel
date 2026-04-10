@@ -33,7 +33,7 @@
 #include "chpllaunch.h"
 #include "chpl-mem.h"
 #include "chpltypes.h"
-#include "error.h"
+#include "chpl-error.h"
 #include "../aprun/aprun-utils.h"
 
 #define baseExpectFilename ".chpl-expect-"

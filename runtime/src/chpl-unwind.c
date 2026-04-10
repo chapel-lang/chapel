@@ -27,7 +27,7 @@
 #include "chpl-linefile-support.h"
 #include "chplcgfns.h"
 
-#include "error.h"
+#include "chpl-error.h"
 #include "chplexit.h"
 #include "chpl-mem.h"
 #include "chpl-env.h"
