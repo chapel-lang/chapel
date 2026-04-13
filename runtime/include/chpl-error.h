@@ -26,9 +26,6 @@
 #include <stdarg.h>
 #include <stdint.h>
 
-// Not ideal, but required so these symbols are visible within this header.
-#include "chpl-unwind.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif

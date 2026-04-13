@@ -26,6 +26,7 @@
 #include "chpl-comm.h"
 #include "chpl-mem.h"
 #include "chpl-error.h"
+#include "chpl-unwind.h"
 
 #ifdef __cplusplus
 extern "C" {

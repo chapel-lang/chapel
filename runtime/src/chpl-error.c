@@ -27,6 +27,7 @@
 #include "chpl-mem.h"
 #include "chpl-env.h"
 #include "chpl-exec.h"
+#include "chpl-unwind.h"
 
 #include <inttypes.h>
 #include <stdarg.h>

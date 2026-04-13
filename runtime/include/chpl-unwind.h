@@ -27,8 +27,8 @@
 extern "C" {
 #endif
 
-#ifdef LAUNCHER
-  // These symbols do nothing in launcher code, so define stubs here.
+#if defined(LAUNCHER) || !defined(CHPL_DO_UNWIND)
+  // Symbols do nothing for the launcher or without unwind, so define stubs.
   static inline char* chpl_stack_unwind_to_string(char sep) { return NULL; }
   static inline void chpl_stack_unwind(FILE* out, char sep) {}
 #else
