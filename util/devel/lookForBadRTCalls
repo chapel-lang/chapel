@@ -53,7 +53,7 @@ def main():
     ret = ret or look_for_calls.check_for_calls(atomic_funcs, runtime_dir, atomic_exclude_paths)
 
     # Check runtime for exit calls
-    exit_exclude_paths = ['error.h', 'chplexit.c', 'chplexit.h',
+    exit_exclude_paths = ['chpl-error.h', 'chplexit.c', 'chplexit.h',
                           'etc/src/mli/chpl-mli-libc-wrappers.h']
     exit_funcs = look_for_calls.get_exit_funcs()
     ret = ret or look_for_calls.check_for_calls(exit_funcs, runtime_dir, exit_exclude_paths)
