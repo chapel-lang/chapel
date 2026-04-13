@@ -38,7 +38,7 @@
 #include "chpl-linefile-support.h"
 #include "chplsys.h"
 #include "config.h"
-#include "error.h"
+#include "chpl-error.h"
 
 #include <stdint.h>
 #include <string.h>

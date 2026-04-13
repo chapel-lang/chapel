@@ -18,29 +18,27 @@
  * limitations under the License.
  */
 
-#ifndef _stdchplrt_H_
-#define _stdchplrt_H_
+#ifndef CHPL_RT_UNWIND_H
+#define CHPL_RT_UNWIND_H
 
-/* This is similar to stdchpl.h, but pared down for the runtime
-   Chapel code -- in particular, things like chplcgfns.h are not
-   needed for the generated runtime code, and cause problems. */
-
-#include "chplrt.h"
-
-#include <errno.h>
-#include <stdint.h>
 #include <stdio.h>
-#include <string.h>
 
-#include "chpl-bitops.h"
-#include "chplcast.h"
-#include "chplio.h"
-#include "chpl-mem.h"
-#include "chpl-prefetch.h"
-#include "chpl-string.h"
-#include "chpl-tasks.h"
-#include "chpltimers.h"
-#include "chpltypes.h"
-#include "chpl-error.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#if defined(LAUNCHER) || !defined(CHPL_DO_UNWIND)
+  // Symbols do nothing for the launcher or without unwind, so define stubs.
+  static inline char* chpl_stack_unwind_to_string(char sep) { return NULL; }
+  static inline void chpl_stack_unwind(FILE* out, char sep) {}
+#else
+  // Otherwise, call out to implementations in 'chpl-unwind.c'...
+  char* chpl_stack_unwind_to_string(char sep);
+  void chpl_stack_unwind(FILE* out, char sep);
+#endif
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

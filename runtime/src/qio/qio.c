@@ -40,7 +40,7 @@
 #include "qbuffer.h"
 #include "qio_plugin_api.h"
 
-#include "error.h"
+#include "chpl-error.h"
 
 #include <stdio.h>
 #include <stdarg.h>

@@ -24,7 +24,7 @@
 #include "stdchplrt.h"
 #include "qio_regex.h"
 #include "qbuffer.h" // qio_strdup, refcount functions, VOID_PTR_DIFF
-#include "error.h"
+#include "chpl-error.h"
 
 void qio_regex_init_default_options(qio_regex_options_t* opt)
 {

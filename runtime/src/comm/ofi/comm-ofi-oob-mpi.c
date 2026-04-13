@@ -30,7 +30,7 @@
 #include "chpl-mem-sys.h"
 #include "chpl-gen-includes.h"
 #include "chplsys.h"
-#include "error.h"
+#include "chpl-error.h"
 
 #include <assert.h>
 #include <mpi.h>

@@ -80,7 +80,7 @@
 #include "comm-ugni-heap-pages.h"
 #include "comm-ugni-mem.h"
 #include "config.h"
-#include "error.h"
+#include "chpl-error.h"
 
 // Don't get warning macros for chpl_comm_get etc
 #include "chpl-comm-no-warning-macros.h"

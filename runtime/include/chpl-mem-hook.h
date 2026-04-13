@@ -28,7 +28,7 @@
 #include <string.h>
 #include "arg.h"
 #include "chpltypes.h"
-#include "error.h"
+#include "chpl-error.h"
 
 // Need memory tracking prototypes for inlined memory routines
 #include "chplmemtrack.h"

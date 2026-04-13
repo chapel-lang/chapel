@@ -35,7 +35,7 @@
 #include "chplcgfns.h"
 #include "chplmemtrack.h"
 #include "chpltypes.h"
-#include "error.h"
+#include "chpl-error.h"
 
 static chpl_bool interleave_mem = false;
 static chpl_bool merge_split_chunks = false;

@@ -35,7 +35,7 @@
 #include "chpllaunch.h"
 #include "chpl-mem.h"
 #include "chpltypes.h"
-#include "error.h"
+#include "chpl-error.h"
 #include "whereami.c"
 
 // used in get_enviro_keys

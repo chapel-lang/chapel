@@ -36,7 +36,7 @@
 #include "qbuffer.h" // qio_strdup, refcount functions, qio_ptr_diff, etc
 #include "qio.h" // for channel operations
 #include "chpltypes.h" // must be before "error.h" to prevent include errors
-#include "error.h"
+#include "chpl-error.h"
 #include "encoding/encoding-support.h"
 #undef printf
 

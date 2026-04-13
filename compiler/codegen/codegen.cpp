@@ -2215,7 +2215,7 @@ codegen_config() {
     FILE* outfile = configFile.fptr;
     info->cfile = outfile;
 
-    fprintf(outfile, "#include \"error.h\"\n\n");
+    fprintf(outfile, "#include \"chpl-error.h\"\n\n");
 
     genGlobalInt("mainHasArgs", mainHasArgs, false);
     genGlobalInt("mainPreserveDelimiter", mainPreserveDelimiter, false);

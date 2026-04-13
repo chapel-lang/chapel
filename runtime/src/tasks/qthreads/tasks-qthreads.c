@@ -34,7 +34,7 @@
 #include "chplrt.h"
 
 #include "arg.h"
-#include "error.h"
+#include "chpl-error.h"
 #include "chplcgfns.h"
 #include "chpl-arg-bundle.h"
 #include "chpl-comm.h"

@@ -26,7 +26,7 @@
 
 #include "qbuffer.h"
 
-#include "error.h"
+#include "chpl-error.h"
 
 #include "sys.h"
 

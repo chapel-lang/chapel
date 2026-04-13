@@ -29,7 +29,7 @@
 #ifdef CHPL_MLI_IS_SERVER
   #include "chplexit.h"
   #include "chpl-mem.h"
-  #include "error.h"
+  #include "chpl-error.h"
 #endif
 
 // Include a file with libc wrappers for the client. This file is

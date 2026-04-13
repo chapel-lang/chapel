@@ -26,7 +26,7 @@
 #include "chpl-env.h"
 #include "chpllaunch.h"
 #include "chpl-mem.h"
-#include "error.h"
+#include "chpl-error.h"
 
 #define WRAP_TO_STR(x) TO_STR(x)
 #define TO_STR(x) #x

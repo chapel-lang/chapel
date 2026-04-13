@@ -29,7 +29,7 @@
 #include "chpl-mem.h"
 #include "chplmemtrack.h"
 #include "chpltypes.h"
-#include "error.h"
+#include "chpl-error.h"
 
 void chpl_mem_layerInit(void) {
   void* start;

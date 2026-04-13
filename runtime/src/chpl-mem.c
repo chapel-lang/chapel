@@ -25,7 +25,7 @@
 
 #include "chpl-mem.h"
 #include "chpltypes.h"
-#include "error.h"
+#include "chpl-error.h"
 #include "chplsys.h"
 
 static int heapInitialized = 0;

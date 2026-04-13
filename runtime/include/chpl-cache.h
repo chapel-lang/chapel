@@ -26,7 +26,7 @@
 #include "chpl-comm-task-decls.h"
 #include "chpl-env.h"
 #include "chpl-tasks.h"
-#include "error.h"
+#include "chpl-error.h"
 
 #ifdef HAS_CHPL_CACHE_FNS
 // This is a cache for remote data.

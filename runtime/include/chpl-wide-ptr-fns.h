@@ -24,7 +24,7 @@
 #include "chpltypes.h"
 
 // chpl_error needed for some of the packed wide pointer error cases.
-#include "error.h"
+#include "chpl-error.h"
 
 #ifdef __cplusplus
 extern "C" {

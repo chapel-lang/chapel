@@ -29,7 +29,7 @@
 #include "chpl-env.h"
 #include "chpl-mem.h"
 #include "chpltypes.h"
-#include "error.h"
+#include "chpl-error.h"
 
 #define baseSBATCHFilename ".chpl-slurm-sbatch-"
 

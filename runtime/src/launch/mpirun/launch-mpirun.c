@@ -23,7 +23,7 @@
 #include "chpllaunch.h"
 #include "chpl-mem.h"
 #include "chplcgfns.h"
-#include "error.h"
+#include "chpl-error.h"
 
 #define CHPL_SPMD "--spmd"
 
