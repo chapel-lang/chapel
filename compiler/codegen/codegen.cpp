@@ -2221,6 +2221,7 @@ codegen_config() {
     genGlobalInt("mainPreserveDelimiter", mainPreserveDelimiter, false);
     genGlobalInt("warnUnstable", fWarnUnstable, false);
 
+    fprintf(outfile, "void CreateConfigVarTable(void);\n");
     fprintf(outfile, "void CreateConfigVarTable(void) {\n");
     fprintf(outfile, "initConfigVarTable();\n");
 
