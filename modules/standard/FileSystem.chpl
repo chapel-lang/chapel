@@ -1026,7 +1026,6 @@ iter listDirHelper(path: string, hidden: bool, dirs: bool,
         if filename != "." && filename != ".." {
           const fullpath = path + "/" + filename;
 
-          // TODO: revisit error handling for this method
           try {
             if listlinks || !isSymlink(fullpath) {
               if dirs && isDir(fullpath) then
