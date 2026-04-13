@@ -142,10 +142,14 @@ int chpl_gpu_diags_is_enabled(void) {
   } while(0)
 
 #define chpl_gpu_diags_verbose_launch( \
-  ln, fn, device_id, blk_dim_x, blk_dim_y, blk_dim_z) \
+  ln, fn, device_id, \
+    grd_dim_x, grd_dim_y, grd_dim_z, \
+    blk_dim_x, blk_dim_y, blk_dim_z) \
     chpl_gpu_diags_verbose_printf(false, device_id,   \
-    "%s:%d: kernel launch (block size: %dx%dx%d)",    \
-    chpl_lookupFilename(fn), ln, blk_dim_x, blk_dim_y, blk_dim_z)
+    "%s:%d: kernel launch (grid size: %dx%dx%d, block size: %dx%dx%d)",    \
+    chpl_lookupFilename(fn), ln, \
+    grd_dim_x, grd_dim_y, grd_dim_z, \
+    blk_dim_x, blk_dim_y, blk_dim_z)
 
 #define chpl_gpu_diags_verbose_device_to_host_copy( \
   ln, fn, src_device_id, size, commid) \
