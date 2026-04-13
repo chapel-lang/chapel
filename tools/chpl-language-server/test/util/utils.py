@@ -110,10 +110,8 @@ class SourceFilesContext:
         if os.path.isabs(name):
             filepath = name
         else:
-            filepath = os.path.join(self.tempdir.name, name + '.chpl')
-        return TextDocumentIdentifier(
-            uri=f"file://{filepath}"
-        )
+            filepath = os.path.join(self.tempdir.name, name + ".chpl")
+        return TextDocumentIdentifier(uri=f"file://{filepath}")
 
     async def __aenter__(self):
         self.tempdir.__enter__()
@@ -178,7 +176,9 @@ def unrelated_source_files(client: LanguageClient, **files: str):
     return SourceFilesContext(client, files, build_cls_commands=False)
 
 
-def unrelated_source_files_dict(client: LanguageClient, files: typing.Dict[str, str]):
+def unrelated_source_files_dict(
+    client: LanguageClient, files: typing.Dict[str, str]
+):
     """
     Same as 'source_files', but doesn't create a .cls-commands.json file that
     would cause the files to be treated as "connected" and resolved together.

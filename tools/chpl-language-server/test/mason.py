@@ -62,6 +62,7 @@ _fake_mason_dir, _fake_mason_env, fake_mason_dep = make_fake_mason_env(
     "in/a/weird/far/away/place/MyDep.chpl"
 )
 
+
 def teardown_module():
     _fake_mason_dir.cleanup()
 
@@ -188,8 +189,9 @@ async def test_mason(client: LanguageClient):
         ]
         for def_loc, use_locs in to_check:
             for use_loc in use_locs:
-                await check_goto_decl_def(client, use_loc[0], use_loc[1], def_loc)
-
+                await check_goto_decl_def(
+                    client, use_loc[0], use_loc[1], def_loc
+                )
 
         await save_file(
             client,

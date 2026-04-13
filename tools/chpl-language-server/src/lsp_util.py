@@ -676,9 +676,11 @@ class ContextContainer:
         self.std_module_root = self.cls_config.get("std_module_root")
         self.module_paths.extend(self.cls_config.get("module_dir"))
 
-        log("Setting module paths with std module root '{}', module paths '{}', and file paths '{}'".format(
-            self.std_module_root, self.module_paths, self.file_paths
-        ))
+        log(
+            "Setting module paths with std module root '{}', module paths '{}', and file paths '{}'".format(
+                self.std_module_root, self.module_paths, self.file_paths
+            )
+        )
         self.context._set_module_paths(
             self.std_module_root, self.module_paths, self.file_paths
         )
@@ -1497,7 +1499,9 @@ class WorkspaceConfig:
         return list(files)
 
     @staticmethod
-    def from_file(ls: "ChapelLanguageServer", workspace_root_uri: str) -> "WorkspaceConfig":
+    def from_file(
+        ls: "ChapelLanguageServer", workspace_root_uri: str
+    ) -> "WorkspaceConfig":
         workspace_root = Path(workspace_root_uri[len("file://") :])
         path = workspace_root / ".cls-commands.json"
         if path.exists():
@@ -1506,7 +1510,9 @@ class WorkspaceConfig:
                 ws_cfg = WorkspaceConfig(ls, commands)
         else:
             ws_cfg = WorkspaceConfig(ls, {})
-        ws_cfg.mason = MasonProject.from_ws(ls.config.get("mason_path"), workspace_root_uri)
+        ws_cfg.mason = MasonProject.from_ws(
+            ls.config.get("mason_path"), workspace_root_uri
+        )
         return ws_cfg
 
 
@@ -1577,7 +1583,9 @@ class CLSConfig:
         self.parser.add_argument("--end-markers", default="none")
         self.parser.add_argument("--end-marker-threshold", type=int, default=10)
 
-        self.parser.add_argument("--mason-path", default="mason", help=configargparse.SUPPRESS)
+        self.parser.add_argument(
+            "--mason-path", default="mason", help=configargparse.SUPPRESS
+        )
 
         chplcheck().config.add_bool_flag(
             self.parser, "chplcheck", "do_linting", False

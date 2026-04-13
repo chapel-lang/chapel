@@ -23,6 +23,7 @@ import subprocess
 import os
 import json
 
+
 class MasonProject:
 
     def __init__(self, mason: str, mason_file: Path):
@@ -32,7 +33,13 @@ class MasonProject:
         self._files = self._get_mason_modules()
 
     def _get_mason_modules(self) -> List[Path]:
-        result = run_mason_cmd(self._mason_file.parent, self._mason, "modules", "--format=json", "--no-update")
+        result = run_mason_cmd(
+            self._mason_file.parent,
+            self._mason,
+            "modules",
+            "--format=json",
+            "--no-update",
+        )
         if result is None:
             return []
         try:
@@ -41,7 +48,10 @@ class MasonProject:
             return [Path(m) for m in modules]
         except json.JSONDecodeError as e:
             from lsp_util import log
-            log(f"Error parsing mason modules output as JSON: {result}, error: {e}")
+
+            log(
+                f"Error parsing mason modules output as JSON: {result}, error: {e}"
+            )
             return []
 
     def get_module_dirs(self) -> List[str]:
@@ -51,9 +61,12 @@ class MasonProject:
         return [str(f) for f in self._files]
 
     @classmethod
-    def from_ws(cls, mason: str, workspace_root_uri: str) -> Optional["MasonProject"]:
+    def from_ws(
+        cls, mason: str, workspace_root_uri: str
+    ) -> Optional["MasonProject"]:
         workspace_root = Path(workspace_root_uri[len("file://") :])
         from lsp_util import log
+
         log(f"looking for Mason.toml in workspace root {workspace_root}")
         mason_file = workspace_root / "Mason.toml"
         if mason_file.is_file():
@@ -61,8 +74,9 @@ class MasonProject:
         return None
 
 
-
-def run_mason_cmd(project_home: Path, mason: str, cmd: str, *args) -> Optional[str]:
+def run_mason_cmd(
+    project_home: Path, mason: str, cmd: str, *args
+) -> Optional[str]:
     env = os.environ.copy()
     env["MASON_LOG_LEVEL"] = "error"
     result = subprocess.run(
@@ -75,6 +89,7 @@ def run_mason_cmd(project_home: Path, mason: str, cmd: str, *args) -> Optional[s
     )
     if result.returncode != 0:
         from lsp_util import log
+
         log(f"Error running mason command: {result.stderr}")
         return None
     return result.stdout
