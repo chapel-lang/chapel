@@ -636,6 +636,11 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
       if( hasFlag(FLAG_CONST) && hasFlag(FLAG_EXTERN) ) {
         ret.isLVPtr = GEN_VAL;
         ret.c = cname;
+      } else if (ret.chplType == dtNil) {
+        // nil is not an immediate, but we should treat it like when for C
+        // codegen
+        ret.isLVPtr = GEN_VAL;
+        ret.c = cname;
       } else {
         QualifiedType qt = qualType();
         if (lhsInSetReference) {
