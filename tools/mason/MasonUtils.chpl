@@ -108,7 +108,7 @@ proc runCommand(cmd: [] string, quiet=false,
   }
   var ret: retType;
   try {
-    log.debugf("runCommand: %?\n", cmd);
+    log.debugf("runCommand (quiet=%?): '%?'\n", quiet, cmd);
     var process = spawn(cmd, stdout=pipeStyle.pipe, stderr=pipeStyle.pipe);
 
     log.debugln("stdout:");
@@ -134,17 +134,17 @@ proc runCommand(cmd: [] string, quiet=false,
     log.debugf("exitCode: %i\n", process.exitCode);
     if process.exitCode != 0 {
       var cmdStr = " ".join(cmd);
-      throw new owned MasonError("Command failed: '" + cmdStr + "'");
+      throw new MasonError("Command failed: '" + cmdStr + "'");
     }
   } catch e: FileNotFoundError {
     log.debugf("Caught FileNotFoundError for command: %?\n", cmd);
     var cmdStr = " ".join(cmd);
-    throw new owned MasonError("Command not found: '" + cmdStr + "'");
+    throw new MasonError("Command not found: '" + cmdStr + "'");
   } catch e: MasonError {
     throw e;
   } catch e {
     log.debugf("Caught unknown error ('%?') for command: %?\n", e, cmd);
-    throw new owned MasonError("Internal mason error");
+    throw new MasonError("Internal mason error");
   }
   return ret;
 }
@@ -162,7 +162,8 @@ proc runWithStatus(command: string, quiet=false, capture=true): int {
 }
 proc runWithStatus(command: [] string, quiet=false, capture=true): int {
   try {
-    log.debugf("runWithStatus: %?\n", command);
+    log.debugf("runWithStatus (quiet=%?, capture=%?): %?\n",
+               quiet, capture, command);
     if !capture then log.flush();
     var sub =
       if capture
@@ -448,10 +449,16 @@ proc getChapelVersionStr() throws {
   return chplVersion;
 }
 
-proc gitC(newDir, command, quiet=false) throws {
-  const oldDir = here.cwd();
-  here.chdir(newDir);
-  defer here.chdir(oldDir);
+// TODO: only exists because I don't want to rewrite everything to use path, yet
+proc gitC(newDir:string, command, quiet=false) throws {
+  return gitC(newDir:path, command, quiet);
+}
+proc gitC(newDir:path, command, quiet=false) throws {
+  const oldDir = path.cwd();
+  newDir.chdir();
+  defer oldDir.chdir();
+  // TODO: I would love to use newDir.pushChdir(), but I don't trust
+  // error handling + context managers enough
   var ret = runCommand(command, quiet=quiet);
 
   return ret;
@@ -610,13 +617,80 @@ proc getMasonDependencies(sourceList: list(srcSource),
 proc depExists(dependency: string, repo='/src/') {
   var repos = MASON_HOME + repo;
   var exists = false;
-  for dir in listDir(repos) {
-    if dir == dependency then
-      exists = true;
+  if !isDir(repos) then
+    return false;
+  try {
+    for dir in listDir(repos) {
+      if dir == dependency then
+        exists = true;
+    }
+  } catch e {
+    log.debugf("Caught error ('%?') when checking for dependency in %s\n",
+               e, repos);
+    exists = false;
   }
   return exists;
 }
 
+
+private const dummyExtraArgs: [1..0] string;
+proc cloneSource(url: string, dest: path,
+                 quiet=true, checkout=true, branch="", depth=-1,
+                 extra=dummyExtraArgs) throws {
+  log.debugf("Cloning from %s to %?\n", url, dest);
+  var baseCmd = new list(["git", "clone"]);
+  if quiet then
+    baseCmd.pushBack("--quiet");
+  if !checkout then
+    baseCmd.pushBack("--no-checkout");
+  if branch != "" then
+    baseCmd.pushBack("--branch=" + branch);
+  if depth > 0 then
+    baseCmd.pushBack("--depth=" + depth:string);
+  if extra.size > 0 then
+    baseCmd.pushBack(extra);
+
+  var cmd: [0..#(baseCmd.size + 2)] string;
+  cmd[0..#baseCmd.size] = baseCmd.toArray();
+  cmd[baseCmd.size] = url;
+  cmd[baseCmd.size + 1] = dest:string;
+
+  var cloneSucceeded = false;
+  if runWithStatus(cmd, quiet=quiet) == 0 {
+    cloneSucceeded = true;
+  } else {
+    log.debugf("Failed to clone from %s to %?\n", url, dest);
+    // there was an error, if the url starts with git@, try with https
+    if url.startsWith("git@") {
+      var httpsUrl = url
+        .replace(":", "/", count=1)
+        .replace("git@", "https://", count=1);
+      log.debugf("Retrying with https url: %s\n", httpsUrl);
+      // rewrite the command with the new url
+      cmd[baseCmd.size] = httpsUrl;
+      if runWithStatus(cmd, quiet=quiet) == 0 {
+        cloneSucceeded = true;
+      } else {
+        log.debugf("Failed to clone from %s to %?\n", httpsUrl, dest);
+      }
+    }
+  }
+  if !cloneSucceeded then
+    throw new MasonError("Failed to clone from " + url);
+}
+
+proc checkoutSource(repo: path, target: string, quiet=true,
+                     createBranch=false) throws {
+  var cmd: list(string);
+  cmd.pushBack("git");
+  cmd.pushBack("checkout");
+  if quiet then
+    cmd.pushBack("--quiet");
+  if createBranch then
+    cmd.pushBack("-b");
+  cmd.pushBack(target);
+  gitC(repo:string, cmd.toArray());
+}
 
 proc getProjectType(): string throws {
   const cwd = here.cwd();

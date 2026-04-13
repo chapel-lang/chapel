@@ -34,6 +34,8 @@ use TestResult;
 use Time;
 use TOML;
 
+import ThirdParty.Pathlib.path;
+
 import MasonLogger;
 import MasonPrereqs;
 
@@ -264,7 +266,7 @@ private proc runTests(show: bool, run: bool, parallel: bool, filter: string,
         log.debugf("Adding source dependency %s's flags\n", name);
         compopts.pushBack(depSrc);
 
-        for flag in MasonPrereqs.chplFlags(depDir) {
+        for flag in MasonPrereqs.chplFlags(depDir:path) {
           log.debugf("+compflag %s\n", flag);
           compopts.pushBack(flag);
         }
@@ -278,7 +280,7 @@ private proc runTests(show: bool, run: bool, parallel: bool, filter: string,
       const depDir = Path.joinPath(gitDepPath, name + "-" + branch);
       const gitDepSrc = Path.joinPath(depDir, "src", name + ".chpl");
       compopts.pushBack(gitDepSrc);
-      for flag in MasonPrereqs.chplFlags(depDir) {
+      for flag in MasonPrereqs.chplFlags(depDir:path) {
         log.debugf("+compflag %s\n", flag);
         compopts.pushBack(flag);
       }
