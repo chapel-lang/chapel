@@ -953,8 +953,54 @@ proc isMount(name: string): bool throws {
 
    :yield: The names of the specified directory's contents, as strings
 */
+@edition(last="2.0")
 iter listDir(path: string = ".", hidden: bool = false, dirs: bool = true,
               files: bool = true, listlinks: bool = true): string {
+  try {
+    for l in listDirHelper(path=path, hidden=hidden,
+                          dirs=dirs, files=files, listlinks=listlinks) do
+      yield l;
+  } catch e {
+    writeln(e.message());
+  }
+}
+/* Lists the contents of a directory.  May be invoked in serial
+   contexts only.
+
+   :arg path: The directory whose contents should be listed
+              (defaults to ``"."``)
+   :type path: `string`
+
+   :arg hidden: Indicates whether hidden files/directory should be listed
+                (defaults to `false`)
+   :type hidden: `bool`
+
+   :arg dirs: Indicates whether directories should be listed
+              (defaults to `true`)
+   :type dirs: `bool`
+
+   :arg files: Indicates whether files should be listed (defaults to `true`)
+   :type files: `bool`
+
+   :arg listlinks: Indicates whether symbolic links should be listed
+                   (defaults to `true`)
+   :type listlinks: `bool`
+
+   :yield: The names of the specified directory's contents, as strings
+
+   :throws SystemError: Thrown to describe a system error
+   :throws Errror: Thrown to describe an unknown error
+*/
+@edition(first="preview")
+iter listDir(path: string = ".", hidden: bool = false, dirs: bool = true,
+              files: bool = true, listlinks: bool = true): string throws {
+  for l in listDirHelper(path=path, hidden=hidden,
+                         dirs=dirs, files=files, listlinks=listlinks) do
+    yield l;
+}
+@chpldoc.nodoc
+iter listDirHelper(path: string, hidden: bool, dirs: bool,
+                   files: bool, listlinks: bool): string throws {
   extern record DIR {}
   extern type DIRptr = c_ptr(DIR);
   extern "struct dirent" record chpl_dirent {}
@@ -970,32 +1016,28 @@ iter listDir(path: string = ".", hidden: bool = false, dirs: bool = true,
   }
 
   var dir: DIRptr = opendir(unescape(path).c_str());
-  if (dir != nil) {
+  if dir != nil {
     var ent: direntptr = readdir(dir);
-    while (ent != nil) {
+    while ent != nil {
       var filename: string;
-      try! {
-        filename = string.createCopyingBuffer(ent.d_name(),
-                                             policy=decodePolicy.escape);
-      }
-      if (hidden || filename[0] != '.') {
-        if (filename != "." && filename != "..") {
+      filename = string.createCopyingBuffer(ent.d_name(),
+                                            policy=decodePolicy.escape);
+      if hidden || filename[0] != '.' {
+        if filename != "." && filename != ".." {
           const fullpath = path + "/" + filename;
 
           // TODO: revisit error handling for this method
           try {
-            if (listlinks || !isSymlink(fullpath)) {
-              if (dirs && isDir(fullpath)) then
+            if listlinks || !isSymlink(fullpath) {
+              if dirs && isDir(fullpath) then
                 yield filename;
-              else if (files && isFile(fullpath)) then
+              else if files && isFile(fullpath) then
                 yield filename;
             }
           } catch e: SystemError {
-            writeln("error in listDir(): ", errorToString(e.err));
-            break;
+            throw e;
           } catch {
-            writeln("unknown error in listDir()");
-            break;
+            throw new Error("unknown error in listDir()");
           }
         }
       }
@@ -1003,8 +1045,7 @@ iter listDir(path: string = ".", hidden: bool = false, dirs: bool = true,
     }
     closedir(dir);
   } else {
-    extern proc perror(s: c_ptrConst(c_char));
-    perror(("error in listDir(): " + path).c_str());
+    throw new SystemError(errno:errorCode, "error in listDir(): " + path);
   }
 }
 
