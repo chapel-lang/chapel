@@ -1563,6 +1563,18 @@ class CLSConfig:
         chplcheck().config.add_bool_flag(
             self.parser, "show-instantiations", "show_instantiations", True
         )
+        chplcheck().config.add_bool_flag(
+            self.parser,
+            "hide-redundant-type-inlays",
+            "hide_redundant_type_inlays",
+            True,
+        )
+        chplcheck().config.add_bool_flag(
+            self.parser,
+            "hide-more-redundant-type-inlays",
+            "hide_more_redundant_type_inlays",
+            False,
+        )
         self.parser.add_argument("--end-markers", default="none")
         self.parser.add_argument("--end-marker-threshold", type=int, default=10)
 

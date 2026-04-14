@@ -152,6 +152,12 @@ class ChapelLanguageServer(LanguageServer):
         self.dead_code: bool = config.get("dead_code")
         self.eval_expressions: bool = config.get("eval_expressions")
         self.show_instantiations: bool = config.get("show_instantiations")
+        self.hide_redundant_type_inlays: bool = config.get(
+            "hide_redundant_type_inlays"
+        )
+        self.hide_more_redundant_type_inlays: bool = config.get(
+            "hide_more_redundant_type_inlays"
+        )
         self.end_markers: List[str] = config.get("end_markers")
         self.end_marker_threshold: int = config.get("end_marker_threshold")
         self.end_marker_patterns = self._get_end_marker_patterns()
@@ -441,6 +447,9 @@ class ChapelLanguageServer(LanguageServer):
             )
         ]
 
+    def _escape_string(self, s: str) -> str:
+        return s.replace("\n", "\\n").replace("\t", "\\t").replace("\r", "\\r")
+
     def _get_param_inlays(
         self, decl: NodeAndRange, qt: chapel.QualifiedType
     ) -> List[InlayHint]:
@@ -451,13 +460,45 @@ class ChapelLanguageServer(LanguageServer):
         if not param:
             return []
 
-        val = str(param)
-        val = val.replace("\n", "\\n").replace("\t", "\\t").replace("\r", "\\r")
+        val = self._escape_string(str(param))
         if isinstance(ty, chapel.CompositeType):
             if ty_decl := ty.decl():
                 assert isinstance(ty_decl, chapel.NamedDecl)
                 if ty_decl.name() == "_bytes":
                     val = "b" + val
+
+        # Suppress inlay if the init expression is a literal whose value is
+        # already obvious from the source (e.g. `param x = 1`, `param b = true`).
+        if isinstance(decl.node, chapel.Variable):
+            node_init = decl.node.init_expression()
+            if (
+                isinstance(
+                    node_init,
+                    (
+                        chapel.IntLiteral,
+                        chapel.UintLiteral,
+                        chapel.RealLiteral,
+                        chapel.ImagLiteral,
+                    ),
+                )
+                and node_init.text() == val
+            ):
+                return []
+            elif isinstance(
+                node_init, (chapel.StringLiteral, chapel.BytesLiteral)
+            ):
+                # Apply the same escaping rules to the literal value to see
+                # if it matches what we'd show.
+                lit_val = '"' + self._escape_string(node_init.value()) + '"'
+                if isinstance(node_init, chapel.BytesLiteral):
+                    lit_val = "b" + lit_val
+
+                if lit_val == val:
+                    return []
+            elif isinstance(node_init, chapel.BoolLiteral):
+                bool_str = "true" if node_init.value() else "false"
+                if bool_str == val:
+                    return []
 
         return [
             InlayHint(
@@ -486,11 +527,50 @@ class ChapelLanguageServer(LanguageServer):
         if isinstance(decl.node, chapel.Formal) and decl.node.is_this():
             return []
 
+        type_str = str(type_)
+
+        # If enabled, suppress inlay for `type t = SomeInit` where the init
+        # is a trivial expression (reference to an identifier that matches the
+        # type, for example).
+        might_be_redundant = (
+            isinstance(decl.node, chapel.Variable)
+            and decl.node.kind() == "type"
+            and decl.node.init_expression()
+        )
+        if self.hide_redundant_type_inlays and might_be_redundant:
+            # Stringify using Chapel's pretty-printer. This way, identifiers,
+            # call expressions, and other common patterns are handled.
+            init_str = str(decl.node.init_expression())
+            if init_str == type_str:
+                return []
+
+        if self.hide_more_redundant_type_inlays and might_be_redundant:
+            init_expr = decl.node.init_expression()
+            assert init_expr is not None  # ensured via might_be_redundant
+            if isinstance(init_expr, chapel.Identifier):
+                # Don't show type aliases for any reference to an internal type
+                if init_expr.refers_to_builtin():
+                    return []
+
+                named_type = None
+                if isinstance(type_, (chapel.CompositeType, chapel.EnumType)):
+                    named_type = type_
+                elif isinstance(type_, chapel.ClassType):
+                    # Get the 'C' from 'owned C?', for example
+                    named_type = type_.manageable_type()
+
+                # Also, if this is something like type T = myRecord,
+                # ignore it, even if myRecord becomes instantiated.
+                to_node = init_expr.to_node()
+                if named_type and isinstance(to_node, chapel.TypeDecl):
+                    if named_type.name() == to_node.name():
+                        return []
+
         name_rng = location_to_range(decl.node.name_location())
-        type_str = ": " + str(type_)
-        text_edits = [TextEdit(Range(name_rng.end, name_rng.end), type_str)]
+        edit_text = ": " + type_str
+        text_edits = [TextEdit(Range(name_rng.end, name_rng.end), edit_text)]
         colon_label = InlayHintLabelPart(": ")
-        label = InlayHintLabelPart(str(type_))
+        label = InlayHintLabelPart(type_str)
         if isinstance(type_, chapel.CompositeType):
             typedecl = type_.decl()
             if typedecl and isinstance(typedecl, chapel.NamedDecl):

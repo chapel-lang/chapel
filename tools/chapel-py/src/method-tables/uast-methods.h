@@ -283,6 +283,8 @@ CLASS_BEGIN(Identifier)
                chpl::UniqueString, return node->name())
   PLAIN_GETTER(Identifier, to_node, "Get the AST node that this Identifier node refers to",
                Nilable<const chpl::uast::AstNode*>, return nodeOrNullFromToId(context, node))
+  PLAIN_GETTER(Identifier, refers_to_builtin, "Check if this Identifier refers to a builtin",
+               bool, return nodeRefersToBuiltin(context, node))
 CLASS_END(Identifier)
 
 CLASS_BEGIN(Import)
