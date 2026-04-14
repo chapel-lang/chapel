@@ -140,27 +140,31 @@ def find_docstring_ranges(
     lines: typing.List[str],
 ) -> typing.List[typing.Tuple[typing.Tuple[int, int], typing.Tuple[int, int]]]:
     docstring_ranges = []
+    docstring_stack = []
     for row, line in enumerate(lines, start=1):
         idx = 0
         len_line = len(line)
         while idx < len_line:
-            if line[idx] == "/" and idx + 1 < len_line and line[idx + 1] == "*":
-                docstring_ranges.append(((row, idx), (-1, -1)))
+            cur = (line[idx], line[idx + 1] if idx + 1 < len_line else None)
+            if cur == ("/", "*"):
+                docstring_stack.append((row, idx))
                 idx += 2
-            elif (
-                line[idx] == "*" and idx + 1 < len_line and line[idx + 1] == "/"
-            ):
-                # find the most recent docstring range that doesn't have an end yet and set its end
-                for i in range(len(docstring_ranges) - 1, -1, -1):
-                    if docstring_ranges[i][1] == (-1, -1):
-                        docstring_ranges[i] = (
-                            docstring_ranges[i][0],
-                            (row, idx + 2),
-                        )
-                        break
+            elif cur == ("*", "/"):
+                # pop stack and add a docstring range from the popped location
+                # to here
+                if docstring_stack:
+                    start = docstring_stack.pop()
+                    docstring_ranges.append((start, (row, idx + 2)))
+                else:
+                    # mismatched comment end, ignore it. should have been caught
+                    # by the chapel parser anyways
+                    pass
                 idx += 2
             else:
                 idx += 1
+    # if docstring_stack is not empty here, we have mismatched comment starts,
+    # but we'll ignore those too since they should have been caught by the
+    # chapel parser
     return docstring_ranges
 
 
