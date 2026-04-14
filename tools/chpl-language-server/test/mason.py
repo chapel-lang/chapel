@@ -137,12 +137,12 @@ async def test_mason(client: LanguageClient):
             MyDep = "0.1.0"
             """
 
-    async with unrelated_source_files_dict(
+    async with with_file_structure(
         client,
         {
-            "src/Package": filePackage,
-            "test/Test": fileTest,
-            "example/Example": fileExample,
+            "src/Package.chpl": filePackage,
+            "test/Test.chpl": fileTest,
+            "example/Example.chpl": fileExample,
             "Mason.toml": toml,
             fake_mason_dep: fileMyDep,
         },
@@ -194,12 +194,12 @@ async def test_mason(client: LanguageClient):
             docs("src/Package"),
             docs("test/Test"),
             docs("example/Example"),
-            docs("in/a/weird/far/away/place/MyDep"),
+            docs(fake_mason_dep),
         )
         assert len(client.diagnostics[docs("src/Package").uri]) == 0
         assert len(client.diagnostics[docs("test/Test").uri]) == 0
         assert len(client.diagnostics[docs("example/Example").uri]) == 0
         assert (
-            len(client.diagnostics[docs("in/a/weird/far/away/place/MyDep").uri])
+            len(client.diagnostics[docs(fake_mason_dep).uri])
             == 0
         )
