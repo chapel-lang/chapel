@@ -267,7 +267,6 @@ if [ ${CHPL_TEST_ARKOUDA_STOP_AFTER_BUILD} = "false" ]; then
       log_error "running benchmarks_v2"
     fi
 
-    git apply $CWD/reformat-log-patch
     log "Processing arkouda benchmarks_v2 data in dat-dir: $PERF_SUB_DIR"
     if python3 benchmark_v2/generate_field_lookup_map.py --dat-dir $PERF_SUB_DIR ; then
       log_success "benchmark_v2 field lookup map generation"
