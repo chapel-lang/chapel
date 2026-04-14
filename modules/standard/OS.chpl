@@ -1276,11 +1276,9 @@ module OS {
     */
     override proc message() {
       var strerror_err: c_int = 0;
-      var errstr              = sys_strerror_syserr_str(err, strerror_err);
+      var errstr = sys_strerror_syserr_str(err, strerror_err);
       var err_msg: string;
-      try! {
-        err_msg = string.createAdoptingBuffer(errstr);
-      }
+      err_msg = try! string.createAdoptingBuffer(errstr);
 
       if !details.isEmpty() then
         err_msg += " (" + details + ")";
@@ -1302,9 +1300,7 @@ module OS {
     var strerror_err: c_int = 0;
     var errstr = sys_strerror_syserr_str(err, strerror_err);
     var err_msg: string;
-    try! {
-      err_msg = string.createAdoptingBuffer(errstr);
-    }
+    err_msg = try! string.createAdoptingBuffer(errstr);
 
     // return appropriate error
     select err {
@@ -1752,8 +1748,7 @@ module OS {
   pragma "insert line file info"
   pragma "always propagate line file info"
   @chpldoc.nodoc
-  proc ioerror(error:errorCode, msg:string, path:string, offset:int(64)) throws
-  {
+  proc ioerror(error:errorCode, msg:string, path:string, offset:int(64)) throws {
     if error {
       const quotedpath = quote_string(path, path.numBytes:c_ssize_t);
       var   details    = msg + " with path " + quotedpath +
@@ -1765,8 +1760,7 @@ module OS {
   pragma "insert line file info"
   pragma "always propagate line file info"
   @chpldoc.nodoc // documented in the offset version
-  proc ioerror(error:errorCode, msg:string, path:string) throws
-  {
+  proc ioerror(error:errorCode, msg:string, path:string) throws {
     if error {
       const quotedpath = quote_string(path, path.numBytes:c_ssize_t);
       var   details    = msg + " with path " + quotedpath;
@@ -1777,8 +1771,7 @@ module OS {
   pragma "insert line file info"
   pragma "always propagate line file info"
   @chpldoc.nodoc // documented in the offset version
-  proc ioerror(error:errorCode, msg:string) throws
-  {
+  proc ioerror(error:errorCode, msg:string) throws {
     if error then throw createSystemOrChplError(error, msg);
   }
 
@@ -1795,8 +1788,7 @@ module OS {
   pragma "insert line file info"
   pragma "always propagate line file info"
   @chpldoc.nodoc
-  proc ioerror(errstr:string, msg:string, path:string, offset:int(64)) throws
-  {
+  proc ioerror(errstr:string, msg:string, path:string, offset:int(64)) throws {
     const quotedpath = quote_string(path, path.numBytes:c_ssize_t);
     const details    = errstr + " " + msg + " with path " + quotedpath +
                        " offset " + offset:string;
@@ -1808,13 +1800,10 @@ module OS {
      :arg error: the error code
      :returns: a string describing the error
    */
-  proc errorToString(error:errorCode):string
-  {
+  proc errorToString(error:errorCode): string {
     var strerror_err:c_int = 0;
     const errstr = sys_strerror_syserr_str(error, strerror_err);
-    try! {
-      return string.createAdoptingBuffer(errstr);
-    }
+    return try! string.createAdoptingBuffer(errstr);
   }
 
 }
