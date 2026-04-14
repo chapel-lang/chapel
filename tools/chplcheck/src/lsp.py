@@ -42,6 +42,7 @@ from lsprotocol.types import (
 )
 from fixits import Fixit, Edit
 from driver import LintDriver
+from indentation import build_and_run_indentation_collector
 
 
 def log(*args, **kwargs):
@@ -156,6 +157,7 @@ def run_lsp(driver: LintDriver):
             context = contexts[uri]
             context.advance_to_next_revision(False)
             context.set_module_paths([], [])
+            build_and_run_indentation_collector.cache_clear()
         else:
             context = chapel.core.Context()
             context.set_module_paths([], [])

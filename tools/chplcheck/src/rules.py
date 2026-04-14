@@ -25,6 +25,7 @@ import chapel
 from chapel import *
 from driver import LintDriver
 from fixits import Fixit, Edit
+from indentation import build_and_run_indentation_collector
 from rule_types import (
     BasicRuleResult,
     AdvancedRuleResult,
@@ -996,30 +997,35 @@ def rules(driver: LintDriver):
         yield from recurse(root)
 
     @driver.advanced_rule
-    def MisleadingIndentation(context: Context, root: AstNode):
+    def MisleadingIndentation(
+        context: Context, root: AstNode, ChplcheckSilencedRules: List[str]
+    ):
         """
         Warn for single-statement blocks that look like they might be multi-statement blocks.
         """
-        if isinstance(root, Comment):
-            return
-        prev = []
-        fix = None
-        for child in root:
-            if isinstance(child, Comment):
-                continue
-            yield from MisleadingIndentation(context, child)
+        collector = build_and_run_indentation_collector(root)
 
-            if prev:
-                for p in prev:
-                    if p.location().start()[1] != child.location().start()[1]:
-                        continue
+        no_incorrect_indentation = (
+            "IncorrectIndentation" in ChplcheckSilencedRules
+        )
 
-                    yield AdvancedRuleResult(child, fix, data=p)
+        for node, (
+            child,
+            anchor,
+            group,
+        ) in collector.misleadingly_indented_groups.items():
+            # If the thing we look like we're bundled under is itself
+            # incorrectly indented, that's the root cause, let that report
+            # take precedence.
+            if (
+                no_incorrect_indentation
+                or child not in collector.incorrectly_indented_nodes
+            ):
+                yield AdvancedRuleResult(node, anchor, data=(child, group))
 
-            prev = []
-            fix = append_nested_single_stmt(child, prev)
-
-    def append_nested_single_stmt(node, prev: List[AstNode]):
+    def append_nested_single_stmt(
+        node, prev: List[tuple[AstNode, List[AstNode]]]
+    ):
         if isinstance(node, Loop) and node.block_style() == "implicit":
             children = list(node)
             # safe to access [-1], loops must have at least 1 child
@@ -1032,7 +1038,7 @@ def rules(driver: LintDriver):
         for stmt in inblock:
             if isinstance(stmt, Comment):
                 continue
-            prev.append(stmt)
+            prev.append((stmt, []))
             append_nested_single_stmt(stmt, prev)
             return node  # Return the outermost on to use an anchor
 
@@ -1069,8 +1075,12 @@ def rules(driver: LintDriver):
         Change the 'do' keyword to an explicit curly-brace block.
         """
         assert isinstance(result.anchor, AstNode)
-        assert isinstance(result.data, AstNode)
-        implicit_block = result.data.parent()
+        assert isinstance(result.data, tuple) and len(result.data) == 2
+        assert isinstance(result.data[0], AstNode)
+        assert isinstance(result.data[1], list)
+
+        misleading_child, group = result.data
+        implicit_block = misleading_child.parent()
         assert implicit_block is not None
         parent_blocklike = implicit_block.parent()
         assert parent_blocklike is not None
@@ -1081,29 +1091,13 @@ def rules(driver: LintDriver):
         # the 'do' is the last two characters of the header.
         loop_loc = parent_blocklike.location()
         body_loc = implicit_block.location()
-        last_loc = result.node.location()
+        last_loc = group[-1].location()
 
         # Strange shape, let's not try to fix it.
         if loop_loc.start()[1] >= last_loc.start()[1]:
             return []
 
         path = last_loc.path()
-        at_node = False
-        parent = result.node.parent()
-        assert parent
-        for sibling in parent:
-            if not at_node:
-                if sibling == result.node:
-                    at_node = True
-                continue
-
-            if isinstance(sibling, Comment):
-                continue
-
-            if sibling.location().start()[1] != last_loc.start()[1]:
-                break
-
-            last_loc = sibling.location()
 
         parent_indent = max(loop_loc.start()[1] - 1, 0)
 
@@ -1400,171 +1394,24 @@ def rules(driver: LintDriver):
             yield AdvancedRuleResult(iterand, anchor=loop, fixits=[fixit])
 
     @driver.advanced_rule
-    def IncorrectIndentation(context: Context, root: AstNode):
+    def IncorrectIndentation(
+        context: Context, root: AstNode, ChplcheckSilencedRules: List[str]
+    ):
         """
         Warn for inconsistent or missing indentation
         """
+        collector = build_and_run_indentation_collector(root)
 
-        # First, recurse and find warnings in children.
-        for child in root:
-            yield from IncorrectIndentation(context, child)
+        no_misleading_indentation = (
+            "MisleadingIndentation" in ChplcheckSilencedRules
+        )
 
-        def contains_statements(node: AstNode) -> bool:
-            """
-            Returns true for allow-listed AST nodes that contain
-            just a list of statements.
-            """
-            classes = (
-                Record,
-                Class,
-                Module,
-                SimpleBlockLike,
-                Interface,
-                Union,
-                Enum,
-                Cobegin,
-            )
-            return isinstance(node, classes)
-
-        def unwrap_intermediate_block(node: AstNode) -> Optional[AstNode]:
-            """
-            Given a node, find the reference indentation that its children
-            should be compared against.
-
-            This method also rules out certain nodes that should
-            not be used for parent-child indentation comparison.
-            """
-            if not isinstance(node, Block):
-                return node
-
-            parent = node.parent()
-            if not parent:
-                return node
-
-            if isinstance(parent, (Function, Loop)):
-                return parent
-            elif isinstance(parent, Conditional):
-                return None if parent.is_expression_level() else parent
-            return node
-
-        def is_block_in_else_if_chain(
-            block: AstNode, parent: Optional[AstNode]
-        ) -> bool:
-            return (
-                isinstance(parent, Conditional)
-                and parent.has_else_block()
-                and parent.num_else_stmts() == 1
-                and parent.else_stmt(0).unique_id() == block.unique_id()
-                and parent.else_block_style() == "implicit"
-            )
-
-        def find_anchor(node: Optional[AstNode]) -> Optional[AstNode]:
-            # only loops and NamedDecls can be anchors for indentation
-            anchor = node if isinstance(node, (Loop, NamedDecl)) else None
-            if isinstance(node, Module) and node.kind() == "implicit":
-                anchor = None
-            return anchor
-
-        # If root is something else (e.g., function call), do not
-        # apply indentation rules; only apply them to things that contain
-        # a list of statements.
-        is_eligible_parent_for_indentation = contains_statements(root)
-        if not is_eligible_parent_for_indentation:
-            return
-
-        parent_for_indentation = unwrap_intermediate_block(root)
-        parent_depth = None
-        if parent_for_indentation is None:
-            # don't compare against any parent depth.
-            pass
-        # For implicit modules, proper code will technically be on the same
-        # line as the module's body. But we don't want to warn about that,
-        # since we don't want to ask all code to be indented one level deeper.
-        elif not (
-            isinstance(parent_for_indentation, Module)
-            and parent_for_indentation.kind() == "implicit"
-        ):
-            parent_depth = parent_for_indentation.location().start()[1]
-
-        prev = None
-        prev_depth = None
-        prev_line = None
-
-        # We only care about misaligned statements, so we don't want to do stuff
-        # like warn for inherit-exprs or pragmas on a record.
-        iterable = root
-        if isinstance(root, AggregateDecl):
-            iterable = root.decls_or_comments()
-        elif isinstance(root, SimpleBlockLike):
-            iterable = root.stmts()
-        elif isinstance(root, Interface):
-            iterable = root.stmts()
-        elif isinstance(root, Cobegin):
-            iterable = root.task_bodies()
-        elif (
-            isinstance(root, (Module, Enum))
-            and root.attribute_group() is not None
-        ):
-            # attribute group is the first child, skip it
-            iterable = list(root)[1:]
-
-        for child in iterable:
-            if isinstance(child, Comment):
-                continue
-
-            # Empty statements get their own warnings, no need to warn here.
-            if isinstance(child, EmptyStmt):
-                continue
-
-            line, depth = child.location().start()
-
-            # Warn for two statements on one line:
-            #   var x: int; var y: int;
-            if line == prev_line:
-                # Exception for enums, which are allowed to be on the same line.
-                #   enum color { red, green, blue }
-                if not isinstance(child, EnumElement):
-                    yield AdvancedRuleResult(
-                        child, anchor=find_anchor(parent_for_indentation)
-                    )
-            # Warn for misaligned siblings:
-            #   var x: int;
-            #     var y: int;
-            elif prev_depth and depth != prev_depth:
-                # Special case, slightly coarse: avoid double-warning with
-                # MisleadingIndentation
-                if not (
-                    prev
-                    and (isinstance(prev, Loop) or isinstance(prev, On))
-                    and prev.block_style() == "implicit"
-                ):
-                    yield AdvancedRuleResult(
-                        child, anchor=find_anchor(parent_for_indentation)
-                    )
-
-                # Do not update 'prev_depth'; use original prev_depth as
-                # reference for next sibling.
-                prev_line = line
-                prev = child
-                continue
-            # Warn for children that are not indented relative to parent
-            #
-            #   record r {
-            #   var x: int;
-            #   }
-            elif parent_depth and depth == parent_depth:
-                if is_block_in_else_if_chain(child, parent_for_indentation):
-                    # don't warn if the child is the only statement in an else implicit block
-                    prev_line = line
-                    prev = child
-                    continue
-                yield AdvancedRuleResult(
-                    child, anchor=find_anchor(parent_for_indentation)
-                )
-
-            prev_depth = depth
-            prev = child
-            prev_line = line
+        for node, anchor in collector.incorrectly_indented_nodes.items():
+            if (
+                no_misleading_indentation
+                or node not in collector.misleadingly_indented_groups
+            ):
+                yield AdvancedRuleResult(node, anchor)
 
     @driver.advanced_rule
     def MissingInIntent(_, root: chapel.AstNode):

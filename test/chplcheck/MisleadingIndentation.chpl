@@ -89,4 +89,25 @@ writeln("second thing");
         writeln(
             "Hello, world!"
         );
+
+  @chplcheck.ignore("MisleadingIndentation")
+  for i in 1..10 do
+    writeln(i);
+    writeln("second thing");
+    for j in 1..10 do
+        writeln(j);
+        writeln("third thing");
+        writeln("fourth thing");
+    writeln("fifth thing");
+
+  @chplcheck.ignore("MisleadingIndentation")
+  for i in 1..10 do
+    writeln(i);
+    writeln("second thing");
+    @chplcheck.ignore("MisleadingIndentation")
+    for j in 1..10 do
+        writeln(j);
+        writeln("third thing");
+        writeln("fourth thing");
+    writeln("fifth thing");
 }
