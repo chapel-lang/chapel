@@ -11,7 +11,7 @@ config const toml = "";
 proc main() {
 
   try {
-    updateLock(true, tf=toml);
+    updateLock(false, tf=toml);
   } catch e {
     writeln(e.message());
     exit(0);

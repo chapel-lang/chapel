@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+
+set -e
+
+CWD=$(cd $(dirname $0) ; pwd)
+REG="$CWD/local-reg"
+
+# create two deps, one will be included by source and the other by
+# registry
+
+
+mason publish --create-registry $REG
+export MASON_REGISTRY="my-local-registry|$REG"
+
+mason new myNewGitDep --lib
+cd myNewGitDep
+git add .
+git commit -m "initial commit"
+cd ..
+mason new myNewDep --lib
+cd myNewDep
+git add .
+git commit -m "initial commit"
+mason publish $REG
+cd ..
+
+mason new myPackage --no-vcs --app
+cd myPackage
+cat > Mason.toml <<EOF
+[brick]
+name="myPackage"
+version="0.1.0"
+chplVersion="2.9.0"
+license="None"
+type="application"
+
+[dependencies]
+myNewGitDep = { git = "$CWD/myNewGitDep" }
+myNewDep = '0.1.0'
+EOF
+
+mason build
+mason run
+
+echo "mason modules"
+mason modules
+echo "mason modules --no-update"
+mason modules --no-update
+echo "mason modules --update"
+mason modules --update
+echo "mason modules --no-update --format=text"
+mason modules --no-update --format=text
+echo "mason modules --no-update --format=json"
+mason modules --no-update --format=json
+
+# delete the lock file, --no-update should not work anymore
+rm -rf Mason.lock
+echo "mason modules --no-update with no lock file, should error"
+mason modules --no-update || echo "error as expected: $?"
+echo "mason modules without --no-update should recreate it"
+mason modules --format json
+
+cd ..
+rm -rf myNewGitDep myNewDep myPackage
+

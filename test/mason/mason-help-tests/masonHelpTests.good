@@ -11,22 +11,22 @@ Options:
         --no-color      Do not format text printed on console
 
 Mason commands:
-    new         Create a new mason project
-    init        Initialize a mason project inside an existing directory
+    new         Create a new Mason project
+    init        Initialize a Mason project inside an existing directory
     add         Add a dependency to Mason.toml
     rm          Remove a dependency from Mason.toml
     update      Update/Generate Mason.lock
     build       Compile the current project
     run         Build and execute src/<project name>.chpl
     search      Search the registry for packages
-    env         Print environment variables recognized by mason
+    env         Print environment variables recognized by Mason
     clean       Remove the target directory
     doc         Build this project's documentation
     system      Integrate with system packages found via pkg-config
     test        Compile and run tests found in /test
-    external    Integrate external dependencies into mason packages
+    external    Integrate external dependencies into Mason packages
     publish     Publish package to mason-registry
-    modules     Print flags for including mason dependencies from TOML file
+    modules     Print the dependencies of a Mason project
 ********************************************************************************
 $ mason new -h
 Creates a new Mason project in a new directory with the given project name.
@@ -314,7 +314,25 @@ Options:
 Please see Mason documentation for more instructions on using external
 packages
 ********************************************************************************
+$ mason modules -h
+Print the dependencies of a Mason project
+
+Usage:
+    mason modules
+
+Options:
+    -h, --help                  Display this message
+    --[no-]update               [Do not] update the mason registry before
+                                printing the modules
+    --format {text,json}        Adjust the output format. The default is
+                                'text', which is prints the modules in a
+                                simple space-separated list.
+                                'json' prints the modules in a JSON format,
+                                which is easier to parse if the output is
+                                being used programmatically.
+********************************************************************************
 Installing Spack backend ...
+Spack update or installation failed. Expected v1.0.0, got v1.0.0
 $ mason external search -h
 Search for external packages
 
