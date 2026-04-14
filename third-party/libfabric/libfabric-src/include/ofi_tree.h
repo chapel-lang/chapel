@@ -80,6 +80,10 @@ ofi_rbmap_create(int (*compare)(struct ofi_rbmap *map, void *key, void *data));
 void ofi_rbmap_destroy(struct ofi_rbmap *map);
 void ofi_rbmap_init(struct ofi_rbmap *map,
 		int (*compare)(struct ofi_rbmap *map, void *key, void *data));
+typedef int (*ofi_rbmap_node_func_t)(struct ofi_rbmap *map,
+				      struct ofi_rbnode *node, void *context);
+int ofi_rbmap_foreach(struct ofi_rbmap *map, struct ofi_rbnode *root,
+		      ofi_rbmap_node_func_t func, void *context);
 void ofi_rbmap_cleanup(struct ofi_rbmap *map);
 
 struct ofi_rbnode *ofi_rbmap_get_root(struct ofi_rbmap *map);

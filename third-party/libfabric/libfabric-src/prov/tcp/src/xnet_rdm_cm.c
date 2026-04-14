@@ -30,14 +30,13 @@
  * SOFTWARE.
  */
 
+#include <poll.h>
 #include <stdlib.h>
 #include <string.h>
-#include <poll.h>
 
+#include "xnet.h"
 #include <ofi.h>
 #include <ofi_util.h>
-#include "xnet.h"
-
 
 /* Include cm_msg with connect() data.  If the connection is accepted,
  * return the version.  The returned version must be <= the requested
@@ -46,10 +45,19 @@
  */
 struct xnet_rdm_cm {
 	uint8_t version;
-	uint8_t resv;
+	uint8_t features;
 	uint16_t port;
 	uint32_t pid;
 };
+
+/*
+ * RDM feature flag xnet_rdm_cm::features, bit wised.
+ */
+enum {
+	XNET_RDM_FIREWALL_ADDR = 1 << 0,
+	XNET_RDM_RESERVED = 1 << 7,
+};
+#define XNET_RDM_FEATURES (XNET_RDM_FIREWALL_ADDR)
 
 static int xnet_match_event(struct slist_entry *item, const void *arg)
 {
@@ -108,40 +116,44 @@ static int xnet_bind_conn(struct xnet_rdm *rdm, struct xnet_ep *ep)
 	if (ret)
 		return ret;
 
-	ret = fi_ep_bind(&ep->util_ep.ep_fid,
-			 &rdm->util_ep.rx_cq->cq_fid.fid, FI_RECV);
+	ret = fi_ep_bind(&ep->util_ep.ep_fid, &rdm->util_ep.rx_cq->cq_fid.fid,
+			 FI_RECV);
 	if (ret)
 		return ret;
 
-	ret = fi_ep_bind(&ep->util_ep.ep_fid,
-			 &rdm->util_ep.tx_cq->cq_fid.fid, FI_SEND);
+	ret = fi_ep_bind(&ep->util_ep.ep_fid, &rdm->util_ep.tx_cq->cq_fid.fid,
+			 FI_SEND);
 	if (ret)
 		return ret;
 
 	if (rdm->util_ep.cntrs[CNTR_RX]) {
 		ret = fi_ep_bind(&ep->util_ep.ep_fid,
-				 &rdm->util_ep.cntrs[CNTR_RX]->cntr_fid.fid, FI_RECV);
+				 &rdm->util_ep.cntrs[CNTR_RX]->cntr_fid.fid,
+				 FI_RECV);
 		if (ret)
 			return ret;
 	}
 
 	if (rdm->util_ep.cntrs[CNTR_TX]) {
 		ret = fi_ep_bind(&ep->util_ep.ep_fid,
-				 &rdm->util_ep.cntrs[CNTR_TX]->cntr_fid.fid, FI_SEND);
+				 &rdm->util_ep.cntrs[CNTR_TX]->cntr_fid.fid,
+				 FI_SEND);
 		if (ret)
 			return ret;
 	}
 
 	if (rdm->util_ep.cntrs[CNTR_RD]) {
 		ret = fi_ep_bind(&ep->util_ep.ep_fid,
-				 &rdm->util_ep.cntrs[CNTR_RD]->cntr_fid.fid, FI_READ);
+				 &rdm->util_ep.cntrs[CNTR_RD]->cntr_fid.fid,
+				 FI_READ);
 		if (ret)
 			return ret;
 	}
 
 	if (rdm->util_ep.cntrs[CNTR_WR]) {
 		ret = fi_ep_bind(&ep->util_ep.ep_fid,
-				 &rdm->util_ep.cntrs[CNTR_WR]->cntr_fid.fid, FI_WRITE);
+				 &rdm->util_ep.cntrs[CNTR_WR]->cntr_fid.fid,
+				 FI_WRITE);
 		if (ret)
 			return ret;
 	}
@@ -165,7 +177,6 @@ static int xnet_bind_conn(struct xnet_rdm *rdm, struct xnet_ep *ep)
 	ep->util_ep.rx_msg_flags = rdm->util_ep.rx_msg_flags;
 	ep->util_ep.tx_op_flags = rdm->util_ep.tx_op_flags;
 	ep->util_ep.rx_op_flags = rdm->util_ep.rx_op_flags;
-
 
 	return 0;
 }
@@ -227,14 +238,15 @@ static int xnet_rdm_connect(struct xnet_conn *conn)
 
 	msg.version = XNET_RDM_VERSION;
 	msg.pid = htonl((uint32_t) getpid());
-	msg.resv = 0;
+	msg.features = xnet_firewall_addr ? XNET_RDM_FIREWALL_ADDR : 0;
 	msg.port = htons(ofi_addr_get_port(&conn->rdm->addr.sa));
 
-	ofi_straddr_dbg(&xnet_prov, FI_LOG_EP_CTRL, "rdm addr", &conn->rdm->addr);
+	ofi_straddr_dbg(&xnet_prov, FI_LOG_EP_CTRL, "rdm addr",
+			&conn->rdm->addr);
 	ofi_straddr_dbg(&xnet_prov, FI_LOG_EP_CTRL, "src addr", info->src_addr);
 
-	ret = fi_connect(&conn->ep->util_ep.ep_fid, info->dest_addr,
-			 &msg, sizeof msg);
+	ret = fi_connect(&conn->ep->util_ep.ep_fid, info->dest_addr, &msg,
+			 sizeof msg);
 	if (ret) {
 		XNET_WARN_ERR(FI_LOG_EP_CTRL, "fi_connect", ret);
 		goto err;
@@ -294,8 +306,8 @@ void xnet_freeall_conns(struct xnet_rdm *rdm)
 	}
 }
 
-static struct xnet_conn *
-xnet_alloc_conn(struct xnet_rdm *rdm, struct util_peer_addr *peer)
+static struct xnet_conn *xnet_alloc_conn(struct xnet_rdm *rdm,
+					 struct util_peer_addr *peer)
 {
 	struct xnet_conn *conn;
 	struct rxm_av *av;
@@ -317,8 +329,8 @@ xnet_alloc_conn(struct xnet_rdm *rdm, struct util_peer_addr *peer)
 	return conn;
 }
 
-static struct xnet_conn *
-xnet_add_conn(struct xnet_rdm *rdm, struct util_peer_addr *peer)
+static struct xnet_conn *xnet_add_conn(struct xnet_rdm *rdm,
+				       struct util_peer_addr *peer)
 {
 	struct xnet_conn *conn;
 
@@ -358,6 +370,14 @@ ssize_t xnet_get_conn(struct xnet_rdm *rdm, fi_addr_t addr,
 		return -FI_ENOMEM;
 
 	if (!(*conn)->ep) {
+		if ((*peer)->firewall_addr) {
+			FI_WARN(&xnet_prov, FI_LOG_EP_CTRL,
+				"warn: peer %s is behind firewall\n",
+				(*peer)->str_addr);
+
+			return -FI_EFIREWALLADDR;
+		}
+
 		ret = xnet_rdm_connect(*conn);
 		if (ret)
 			return ret;
@@ -426,6 +446,7 @@ static void xnet_process_connreq(struct fi_eq_cm_entry *cm_entry)
 	struct util_peer_addr *peer;
 	struct xnet_conn *conn;
 	struct rxm_av *av;
+	uint64_t flags;
 	int ret, cmp;
 
 	assert(cm_entry->fid->fclass == FI_CLASS_PEP);
@@ -437,8 +458,9 @@ static void xnet_process_connreq(struct fi_eq_cm_entry *cm_entry)
 	       cm_entry->info->dest_addrlen);
 	ofi_addr_set_port(&peer_addr.sa, ntohs(msg->port));
 
+	flags = (msg->features & XNET_RDM_FIREWALL_ADDR) ? FI_FIREWALL_ADDR : 0;
 	av = container_of(rdm->util_ep.av, struct rxm_av, util_av);
-	peer = util_get_peer(av, &peer_addr);
+	peer = util_get_peer(av, &peer_addr, flags);
 	if (!peer) {
 		XNET_WARN_ERR(FI_LOG_EP_CTRL, "util_get_peer", -FI_ENOMEM);
 		goto reject;
@@ -487,7 +509,8 @@ static void xnet_process_connreq(struct fi_eq_cm_entry *cm_entry)
 		 * CONNREQ event.  The peer has already accepted the current
 		 * connection.
 		 */
-		if (!conn->remote_pid || (conn->remote_pid == ntohl(msg->pid))) {
+		if (!conn->remote_pid ||
+		    (conn->remote_pid == ntohl(msg->pid))) {
 			FI_INFO(&xnet_prov, FI_LOG_EP_CTRL,
 				"simultaneous, reject peer\n");
 			goto put;
@@ -512,6 +535,13 @@ accept:
 	if (ret)
 		goto free;
 
+	if ((msg->features & ~XNET_RDM_FEATURES) != 0) {
+		FI_WARN(&xnet_prov, FI_LOG_EP_CTRL,
+			"peer: %s requested unsupported features: %x\n",
+			peer->str_addr, msg->features & ~XNET_RDM_FEATURES);
+	}
+	msg->features &= XNET_RDM_FEATURES;
+
 	msg->pid = htonl((uint32_t) getpid());
 	xnet_set_rdm_version(msg);
 	xnet_set_protocol(conn->ep, msg);
@@ -535,11 +565,24 @@ reject:
 	fi_freeinfo(cm_entry->info);
 }
 
+static void xnet_process_connected(struct fi_eq_cm_entry *cm_entry)
+{
+	struct xnet_conn *conn;
+	struct xnet_rdm_cm *msg;
+
+	conn = cm_entry->fid->context;
+	msg = (struct xnet_rdm_cm *) cm_entry->data;
+	conn->remote_pid = ntohl(msg->pid);
+	xnet_set_protocol(conn->ep, msg);
+
+	FI_INFO(&xnet_prov, FI_LOG_EP_CTRL, "peer %s feature supported: %x\n",
+		conn->peer->str_addr, msg->features);
+}
+
 void xnet_handle_event_list(struct xnet_progress *progress)
 {
 	struct xnet_event *event;
 	struct slist_entry *item;
-	struct xnet_rdm_cm *msg;
 	struct xnet_conn *conn;
 
 	assert(ofi_genlock_held(&progress->rdm_lock));
@@ -555,10 +598,7 @@ void xnet_handle_event_list(struct xnet_progress *progress)
 			xnet_process_connreq(&event->cm_entry);
 			break;
 		case FI_CONNECTED:
-			conn = event->cm_entry.fid->context;
-			msg = (struct xnet_rdm_cm *) event->cm_entry.data;
-			conn->remote_pid = ntohl(msg->pid);
-			xnet_set_protocol(conn->ep, msg);
+			xnet_process_connected(&event->cm_entry);
 			break;
 		case FI_SHUTDOWN:
 			conn = event->cm_entry.fid->context;

@@ -173,6 +173,7 @@ ssize_t ofi_readv_socket(SOCKET fd, const struct iovec *iovec, size_t iov_cnt);
 ssize_t ofi_sendmsg_tcp(SOCKET fd, const struct msghdr *msg, int flags);
 ssize_t ofi_recvmsg_tcp(SOCKET fd, struct msghdr *msg, int flags);
 
+#define OFI_KEEPALIVE	TCP_KEEPALIVE
 /*
  * pthread_spinlock is not available on Mac OS X, the following code
  * used os_unfair_lock to implement pthread_spinlock.

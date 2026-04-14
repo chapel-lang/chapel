@@ -182,19 +182,21 @@ ssize_t vrb_post_send(struct vrb_ep *ep, struct ibv_send_wr *wr, uint64_t flags)
 		goto unlock;
 	}
 
-	if (!ep->sq_credits || !ep->peer_rq_credits) {
-		cq = container_of(ep->util_ep.rx_cq, struct vrb_cq, util_cq);
+	if (!ep->sq_credits) {
+		cq = container_of(ep->util_ep.tx_cq, struct vrb_cq, util_cq);
 		vrb_flush_cq(cq);
 
-		if (!ep->sq_credits || !ep->peer_rq_credits)
+		if (!ep->sq_credits)
 			goto freectx;
 	}
 
-	if (vrb_wr_consumes_recv(wr) && !--ep->peer_rq_credits &&
-	    !(flags & OFI_PRIORITY)) {
+	if (vrb_wr_consumes_recv(wr)) {
+		if  (!ep->peer_rq_credits ||
+		     (ep->peer_rq_credits == 1 && !(flags & OFI_PRIORITY)))
 		/* Last credit is reserved for credit update */
-		ep->peer_rq_credits++;
-		goto freectx;
+			goto freectx;
+
+		ep->peer_rq_credits--;
 	}
 
 	ep->sq_credits--;
@@ -618,6 +620,10 @@ static int vrb_ep_close(fid_t fid)
 	struct vrb_ep *ep =
 		container_of(fid, struct vrb_ep, util_ep.ep_fid.fid);
 
+	if (ep->profile)
+		vrb_prof_set_st_time(ep->profile, (ofi_gettime_ns()),
+				VRB_DISCONNECTED);
+
 	switch (ep->util_ep.type) {
 	case FI_EP_MSG:
 		if (ep->eq) {
@@ -704,6 +710,8 @@ static int vrb_ep_bind(struct fid *fid, struct fid *bfid, uint64_t flags)
 	struct vrb_dgram_av *av;
 	int ret;
 
+	vrb_prof_func_start(__func__);
+
 	ep = container_of(fid, struct vrb_ep, util_ep.ep_fid.fid);
 	ret = ofi_ep_bind_valid(&vrb_prov, bfid, flags);
 	if (ret)
@@ -749,6 +757,7 @@ static int vrb_ep_bind(struct fid *fid, struct fid *bfid, uint64_t flags)
 		ret = -FI_EINVAL;
 		break;
 	}
+	vrb_prof_func_start(__func__);
 
 	return ret;
 }
@@ -770,11 +779,13 @@ static int vrb_create_dgram_ep(struct vrb_domain *domain, struct vrb_ep *ep,
 
 	init_attr->qp_type = IBV_QPT_UD;
 
+	vrb_prof_func_start("ibv_create_qp");
 	ep->ibv_qp = ibv_create_qp(domain->pd, init_attr);
 	if (!ep->ibv_qp) {
 		VRB_WARN_ERRNO(FI_LOG_EP_CTRL, "ibv_create_qp");
 		return -errno;
 	}
+	vrb_prof_func_end("ibv_create_qp");
 
 	ret = ibv_modify_qp(ep->ibv_qp, &attr,
 			    IBV_QP_STATE |
@@ -987,6 +998,8 @@ static int vrb_ep_enable(struct fid_ep *ep_fid)
 	struct vrb_domain *domain = vrb_ep2_domain(ep);
 	int ret;
 
+	vrb_prof_func_start(__func__);
+
 	if (!ep->eq && (ep->util_ep.type == FI_EP_MSG)) {
 		VRB_WARN(FI_LOG_EP_CTRL,
 			 "Endpoint is not bound to an event queue\n");
@@ -1036,11 +1049,16 @@ static int vrb_ep_enable(struct fid_ep *ep_fid)
 		/* Server-side QP creation, after RDMA_CM_EVENT_CONNECT_REQUEST
 		 * is recevied */
 		if (ep->id->verbs && ep->ibv_qp == NULL) {
+			vrb_prof_func_start("rdma_create_qp");
 			ret = rdma_create_qp(ep->id, domain->pd, &attr);
 			if (ret) {
 				VRB_WARN_ERRNO(FI_LOG_EP_CTRL, "rdma_create_qp");
 				return -errno;
 			}
+			vrb_prof_func_end("rdma_create_qp");
+			if (ep->profile)
+				vrb_prof_cntr_inc(ep->profile,
+						 FI_VAR_MSG_QUEUE_CNT);
 
 			/* Allow shared XRC INI QP not controlled by RDMA CM
 			 * to share same post functions as RC QP. */
@@ -1061,6 +1079,7 @@ static int vrb_ep_enable(struct fid_ep *ep_fid)
 		assert(0);
 		return -FI_EINVAL;
 	}
+	vrb_prof_func_end(__func__);
 	return 0;
 }
 
@@ -1142,7 +1161,7 @@ static struct fi_ops vrb_ep_ops = {
 	.close = vrb_ep_close,
 	.bind = vrb_ep_bind,
 	.control = vrb_ep_control,
-	.ops_open = fi_no_ops_open,
+	.ops_open = vrb_ep_ops_open,
 };
 
 static struct fi_ops_cm vrb_dgram_cm_ops = {
@@ -1200,6 +1219,8 @@ int vrb_open_ep(struct fid_domain *domain, struct fi_info *info,
 	struct fi_info *fi;
 	int ret;
 
+	vrb_prof_func_start("vrb_open_ep");
+
 	if (!info->ep_attr || !info->rx_attr || !info->tx_attr)
 		return -FI_EINVAL;
 
@@ -1250,6 +1271,22 @@ int vrb_open_ep(struct fid_domain *domain, struct fi_info *info,
 	ret = vrb_ep_save_info_attr(ep, info);
 	if (ret)
 		goto close_ep;
+
+	// initiate profile
+	if ((info->ep_attr->type == FI_EP_MSG) ||
+	    (info->ep_attr->type == FI_EP_DGRAM)) {
+		ret = vrb_prof_create(&ep->profile);
+		if (!ret) {
+			if (info->handle &&
+			    (info->handle->fclass == FI_CLASS_CONNREQ)) {
+				vrb_prof_init_state(ep->profile,
+					ofi_gettime_ns(), VRB_PASSIVE_CONN);
+			} else {
+				vrb_prof_init_state(ep->profile,
+					ofi_gettime_ns(), VRB_ACTIVE_CONN);
+			}
+		}
+	}
 
 	switch (info->ep_attr->type) {
 	case FI_EP_MSG:
@@ -1313,7 +1350,7 @@ int vrb_open_ep(struct fid_domain *domain, struct fi_info *info,
 			ep->id = pep->id;
 			ep->ibv_qp = ep->id->qp;
 			pep->id = NULL;
-
+			vrb_prof_func_start("rdma_resolve_addr");
 			if (rdma_resolve_addr(ep->id, info->src_addr, info->dest_addr,
 					      VERBS_RESOLVE_TIMEOUT)) {
 				ret = -errno;
@@ -1323,6 +1360,7 @@ int vrb_open_ep(struct fid_domain *domain, struct fi_info *info,
 				rdma_destroy_ep(ep->id);
 				goto close_ep;
 			}
+			vrb_prof_func_end("rdma_resolve_addr");
 			ep->id->context = &ep->util_ep.ep_fid.fid;
 		} else {
 			ret = -FI_ENOSYS;
@@ -1356,6 +1394,8 @@ int vrb_open_ep(struct fid_domain *domain, struct fi_info *info,
 	*ep_fid = &ep->util_ep.ep_fid;
 	ep->util_ep.ep_fid.fid.ops = &vrb_ep_ops;
 	ep->util_ep.ep_fid.ops = &vrb_ep_base_ops;
+
+	vrb_prof_func_end("vrb_open_ep");
 
 	return FI_SUCCESS;
 
@@ -1530,6 +1570,9 @@ int vrb_passive_ep(struct fid_fabric *fabric, struct fi_info *info,
 	_pep->src_addrlen = info->src_addrlen;
 
 	*pep = &_pep->pep_fid;
+
+	vrb_prof_create(&_pep->profile);
+
 	return 0;
 
 err4:
@@ -1955,13 +1998,13 @@ check_datatype:
 	switch (datatype) {
 	case FI_INT64:
 	case FI_UINT64:
-#if __BITS_PER_LONG == 64
+#if LONG_WIDTH == 64
 	case FI_DOUBLE:
 	case FI_FLOAT:
 #endif
 		break;
 	default:
-		return -FI_EINVAL;
+		return -FI_ENOSYS;
 	}
 
 	attr->size = ofi_datatype_size(datatype);
@@ -2093,7 +2136,7 @@ vrb_msg_ep_atomic_readwrite(struct fid_ep *ep_fid, const void *buf, size_t count
 	case FI_SUM:
 		wr.opcode = IBV_WR_ATOMIC_FETCH_AND_ADD;
 		wr.wr.atomic.remote_addr = addr;
-		wr.wr.atomic.compare_add = (uintptr_t)buf;
+		wr.wr.atomic.compare_add = *(uint64_t *)buf;
 		wr.wr.atomic.swap = 0;
 		wr.wr.atomic.rkey = (uint32_t)(uintptr_t)key;
 		break;
@@ -2154,7 +2197,7 @@ vrb_msg_ep_atomic_readwritemsg(struct fid_ep *ep_fid,
 	case FI_SUM:
 		wr.opcode = IBV_WR_ATOMIC_FETCH_AND_ADD;
 		wr.wr.atomic.remote_addr = msg->rma_iov->addr;
-		wr.wr.atomic.compare_add = (uintptr_t) msg->addr;
+		wr.wr.atomic.compare_add = *(uint64_t *)msg->msg_iov->addr;
 		wr.wr.atomic.swap = 0;
 		wr.wr.atomic.rkey = (uint32_t) (uintptr_t) msg->rma_iov->key;
 		break;
@@ -2184,8 +2227,8 @@ vrb_msg_ep_atomic_compwrite(struct fid_ep *ep_fid, const void *buf, size_t count
 		.wr_id = VERBS_COMP(ep, (uintptr_t)context),
 		.opcode = IBV_WR_ATOMIC_CMP_AND_SWP,
 		.wr.atomic.remote_addr = addr,
-		.wr.atomic.compare_add = (uintptr_t)compare,
-		.wr.atomic.swap = (uintptr_t)buf,
+		.wr.atomic.compare_add = *(uint64_t *)compare,
+		.wr.atomic.swap = *(uint64_t *)buf,
 		.wr.atomic.rkey = (uint32_t)(uintptr_t)key,
 		.send_flags = IBV_SEND_FENCE,
 	};
@@ -2239,8 +2282,8 @@ vrb_msg_ep_atomic_compwritemsg(struct fid_ep *ep_fid,
 		.wr_id = VERBS_COMP_FLAGS(ep, flags, (uintptr_t)msg->context),
 		.opcode = IBV_WR_ATOMIC_CMP_AND_SWP,
 		.wr.atomic.remote_addr = msg->rma_iov->addr,
-		.wr.atomic.compare_add = (uintptr_t)comparev->addr,
-		.wr.atomic.swap = (uintptr_t)msg->addr,
+		.wr.atomic.compare_add = *(uint64_t *)comparev->addr,
+		.wr.atomic.swap = *(uint64_t *)msg->msg_iov->addr,
 		.wr.atomic.rkey = (uint32_t)(uintptr_t)msg->rma_iov->key,
 		.send_flags = IBV_SEND_FENCE,
 	};
@@ -2394,7 +2437,7 @@ vrb_msg_xrc_ep_atomic_readwrite(struct fid_ep *ep_fid, const void *buf,
 	case FI_SUM:
 		wr.opcode = IBV_WR_ATOMIC_FETCH_AND_ADD;
 		wr.wr.atomic.remote_addr = addr;
-		wr.wr.atomic.compare_add = (uintptr_t)buf;
+		wr.wr.atomic.compare_add = *(uint64_t *)buf;
 		wr.wr.atomic.swap = 0;
 		wr.wr.atomic.rkey = (uint32_t)(uintptr_t)key;
 		break;
@@ -2442,7 +2485,7 @@ vrb_msg_xrc_ep_atomic_readwritemsg(struct fid_ep *ep_fid,
 	case FI_SUM:
 		wr.opcode = IBV_WR_ATOMIC_FETCH_AND_ADD;
 		wr.wr.atomic.remote_addr = msg->rma_iov->addr;
-		wr.wr.atomic.compare_add = (uintptr_t) msg->addr;
+		wr.wr.atomic.compare_add = *(uint64_t *)msg->msg_iov->addr;
 		wr.wr.atomic.swap = 0;
 		wr.wr.atomic.rkey = (uint32_t) (uintptr_t) msg->rma_iov->key;
 		break;
@@ -2472,8 +2515,8 @@ vrb_msg_xrc_ep_atomic_compwrite(struct fid_ep *ep_fid, const void *buf, size_t c
 		.wr_id = VERBS_COMP(&ep->base_ep, (uintptr_t)context),
 		.opcode = IBV_WR_ATOMIC_CMP_AND_SWP,
 		.wr.atomic.remote_addr = addr,
-		.wr.atomic.compare_add = (uintptr_t)compare,
-		.wr.atomic.swap = (uintptr_t)buf,
+		.wr.atomic.compare_add = *(uint64_t *)compare,
+		.wr.atomic.swap = *(uint64_t *)buf,
 		.wr.atomic.rkey = (uint32_t)(uintptr_t)key,
 		.send_flags = IBV_SEND_FENCE,
 	};
@@ -2510,8 +2553,8 @@ vrb_msg_xrc_ep_atomic_compwritemsg(struct fid_ep *ep_fid,
 					  (uintptr_t)msg->context),
 		.opcode = IBV_WR_ATOMIC_CMP_AND_SWP,
 		.wr.atomic.remote_addr = msg->rma_iov->addr,
-		.wr.atomic.compare_add = (uintptr_t)comparev->addr,
-		.wr.atomic.swap = (uintptr_t)msg->addr,
+		.wr.atomic.compare_add = *(uint64_t *)comparev->addr,
+		.wr.atomic.swap = *(uint64_t *)msg->msg_iov->addr,
 		.wr.atomic.rkey = (uint32_t)(uintptr_t)msg->rma_iov->key,
 		.send_flags = IBV_SEND_FENCE,
 	};

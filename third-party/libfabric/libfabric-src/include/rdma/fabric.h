@@ -65,7 +65,6 @@
 
 #if defined(_WIN32)
 #include <BaseTsd.h>
-#include <windows.h>
 typedef SSIZE_T ssize_t;
 #endif
 
@@ -73,24 +72,21 @@ typedef SSIZE_T ssize_t;
 extern "C" {
 #endif
 
-#ifndef container_of
-#define container_of(ptr, type, field) \
-	((type *) ((char *)ptr - offsetof(type, field)))
-#endif
+#define FI_MAJOR_VERSION 2
+#define FI_MINOR_VERSION 3
+#define FI_REVISION_VERSION 1
 
-#ifndef count_of
-#define count_of(x) 	\
-	((sizeof(x)/sizeof(0[x])) / ((size_t)(!(sizeof(x) % sizeof(0[x])))))
-#endif
-
-#define FI_MAJOR_VERSION 1
-#define FI_MINOR_VERSION 21
-#define FI_REVISION_VERSION 0
-
+/* Removing these breaks the build for some apps.
+ * The use of FI_NAME_MAX is undefined.
+ * FI_ATOMIC_OP_LAST and FI_DATATYPE_LAST values cannot change
+ * (such as inserting new enum values that they are intended to be the
+ * last of) without breaking apps that recompile.  So, they are hard-coded
+ * here.
+ */
 enum {
-	FI_PATH_MAX		= 256,
-	FI_NAME_MAX		= 64,
-	FI_VERSION_MAX		= 64
+	FI_NAME_MAX = 64,
+	FI_ATOMIC_OP_LAST = 19,
+	FI_DATATYPE_LAST = 14, /* not actual last datatype */
 };
 
 #define FI_VERSION(major, minor) (((major) << 16) | (minor))
@@ -160,15 +156,18 @@ typedef struct fid *fid_t;
 #define FI_COMMIT_COMPLETE	(1ULL << 30)
 #define FI_MATCH_COMPLETE	(1ULL << 31)
 
+#define FI_RESCAN		(1ULL << 35)
 #define FI_PEER_TRANSFER	(1ULL << 36)
-#define FI_MR_DMABUF		(1ULL << 40)
+/* #define FI_MR_DMABUF		(1ULL << 40) */
 #define FI_AV_USER_ID		(1ULL << 41)
+#define FI_FIREWALL_ADDR	(1ULL << 42)
 #define FI_PEER			(1ULL << 43)
 /* #define FI_XPU_TRIGGER		(1ULL << 44) */
-#define FI_HMEM_HOST_ALLOC	(1ULL << 45)
-#define FI_HMEM_DEVICE_ONLY	(1ULL << 46)
+
+#define FI_TAGGED_DIRECTED_RECV	(1ULL << 45)
+#define FI_TAGGED_MULTI_RECV	(1ULL << 46)
 #define FI_HMEM			(1ULL << 47)
-/* #define FI_VARIABLE_MSG		(1ULL << 48) */
+#define FI_EXACT_DIRECTED_RECV	(1ULL << 48)
 #define FI_RMA_PMEM		(1ULL << 49)
 #define FI_SOURCE_ERR		(1ULL << 50)
 #define FI_LOCAL_COMM		(1ULL << 51)
@@ -216,6 +215,8 @@ enum {
 	FI_ADDR_OPX,
 	FI_ADDR_CXI,
 	FI_ADDR_UCX,
+
+	FI_SOCKADDR_IP,		/* FI_SOCKADDR_IN and FI_SOCKADDR_IN6 */
 };
 
 #define FI_ADDR_UNSPEC		((uint64_t) -1)
@@ -231,12 +232,10 @@ enum fi_av_type {
 	FI_AV_TABLE
 };
 
-/* Named enum for backwards compatibility */
-enum fi_mr_mode {
-	FI_MR_UNSPEC,
-	FI_MR_BASIC,	     /* (1 << 0) */
-	FI_MR_SCALABLE,	     /* (1 << 1) */
-};
+#define FI_MR_UNSPEC		_Pragma("GCC warning \"'FI_MR_UNSPEC' is deprecated\"")		(0)
+#define FI_MR_BASIC		_Pragma("GCC warning \"'FI_MR_BASIC' is deprecated\"")		(1 << 0)
+#define FI_MR_SCALABLE		_Pragma("GCC warning \"'FI_MR_SCALABLE' is deprecated\"")	(1 << 1)
+
 #define FI_MR_LOCAL		(1 << 2)
 #define FI_MR_RAW		(1 << 3)
 #define FI_MR_VIRT_ADDR		(1 << 4)
@@ -270,7 +269,7 @@ enum fi_resource_mgmt {
 	FI_RM_ENABLED
 };
 
-#define FI_ORDER_NONE		0ULL
+#define FI_ORDER_NONE		_Pragma("GCC warning \"'FI_ORDER_NONE' is deprecated\"")	0ULL
 #define FI_ORDER_RAR		(1ULL << 0)
 #define FI_ORDER_RAW		(1ULL << 1)
 #define FI_ORDER_RAS		(1ULL << 2)
@@ -280,7 +279,7 @@ enum fi_resource_mgmt {
 #define FI_ORDER_SAR		(1ULL << 6)
 #define FI_ORDER_SAW		(1ULL << 7)
 #define FI_ORDER_SAS		(1ULL << 8)
-#define FI_ORDER_STRICT		0x1FF
+#define FI_ORDER_STRICT		_Pragma("GCC warning \"'FI_ORDER_STRICT' is deprecated\"")	0x1FF
 
 #define FI_ORDER_RMA_RAR	(1ULL << 32)
 #define FI_ORDER_RMA_RAW	(1ULL << 33)
@@ -291,7 +290,7 @@ enum fi_resource_mgmt {
 #define FI_ORDER_ATOMIC_WAR	(1ULL << 38)
 #define FI_ORDER_ATOMIC_WAW	(1ULL << 39)
 
-#define FI_ORDER_DATA		(1ULL << 16)
+#define FI_ORDER_DATA		_Pragma("GCC warning \"'FI_ORDER_DATA' is deprecated\"")	(1ULL << 16)
 
 enum fi_ep_type {
 	FI_EP_UNSPEC,
@@ -343,6 +342,15 @@ enum {
 	FI_PROTO_UCX,
 	FI_PROTO_SM2,
 	FI_PROTO_CXI_RNR,
+	FI_PROTO_LPP,
+	FI_PROTO_LNX,
+};
+
+enum {
+	FI_TAG_BITS,
+	FI_TAG_MPI,
+	FI_TAG_CCL,
+	FI_TAG_MAX_FORMAT = (1ULL << 16),
 };
 
 enum {
@@ -372,11 +380,11 @@ static inline uint8_t fi_tc_dscp_get(uint32_t tclass)
 #define FI_MSG_PREFIX		(1ULL << 58)
 #define FI_ASYNC_IOV		(1ULL << 57)
 #define FI_RX_CQ_DATA		(1ULL << 56)
-#define FI_LOCAL_MR		(1ULL << 55)
+#define FI_LOCAL_MR		_Pragma("GCC warning \"'FI_LOCAL_MR' is deprecated\"")	(1ULL << 55)
 /* #define FI_NOTIFY_FLAGS_ONLY	(1ULL << 54) */
 /* #define FI_RESTRICTED_COMP	(1ULL << 53) */
 #define FI_CONTEXT2		(1ULL << 52)
-#define FI_BUFFERED_RECV	(1ULL << 51)
+/* #define FI_BUFFERED_RECV	(1ULL << 51) */
 /* #define FI_PEER_TRANSFER	(1ULL << 36) */
 
 struct fi_tx_attr {
@@ -424,7 +432,10 @@ struct fi_domain_attr {
 	char			*name;
 	enum fi_threading	threading;
 	enum fi_progress	control_progress;
-	enum fi_progress	data_progress;
+	union {
+		enum fi_progress data_progress;
+		enum fi_progress progress;
+	};
 	enum fi_resource_mgmt	resource_mgmt;
 	enum fi_av_type		av_type;
 	int			mr_mode;
@@ -448,6 +459,7 @@ struct fi_domain_attr {
 	size_t			mr_cnt;
 	uint32_t		tclass;
 	size_t			max_ep_auth_key;
+	uint32_t		max_group_id;
 };
 
 struct fi_fabric_attr {
@@ -611,6 +623,8 @@ struct fid_fabric {
 	uint32_t		api_version;
 };
 
+int fi_fabric2(struct fi_info *info, struct fid_fabric **fabric,
+	       uint64_t flags, void *context);
 int fi_fabric(struct fi_fabric_attr *attr, struct fid_fabric **fabric,
 	      void *context);
 int fi_open(uint32_t version, const char *name, void *attr, size_t attr_len,
@@ -679,6 +693,7 @@ enum {
 	FI_GET_VAL,		/* struct fi_fid_var */
 	FI_SET_VAL,		/* struct fi_fid_var */
 	FI_EXPORT_FID,		/* struct fi_fid_export */
+	FI_GET_FD, 		/* int */
 };
 
 static inline int fi_control(struct fid *fid, int command, void *arg)

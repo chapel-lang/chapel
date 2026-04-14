@@ -78,9 +78,9 @@ ofi_shm_p2p_no_copy(struct iovec *local, unsigned long local_cnt,
 static struct ofi_shm_p2p_ops p2p_ops[] = {
 	[FI_SHM_P2P_XPMEM] = {
 		.initialized = false,
-		.init = xpmem_init,
-		.cleanup = xpmem_cleanup,
-		.copy = xpmem_copy,
+		.init = ofi_xpmem_init,
+		.cleanup = ofi_xpmem_cleanup,
+		.copy = ofi_xpmem_copy,
 	},
 	[FI_SHM_P2P_CMA] = {
 		.initialized = false,

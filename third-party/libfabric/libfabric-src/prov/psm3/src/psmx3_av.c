@@ -234,11 +234,11 @@ void psmx3_epid_to_epaddr(struct psmx3_trx_ctxt *trx_ctxt,
 		psmx3_log(&psmx3_prov, FI_LOG_WARN, FI_LOG_AV, __func__, __LINE__,
 			"psm3_ep_connect returned error %s, remote epid=%s."
 			"Try setting FI_PSM3_CONN_TIMEOUT "
-			"to a larger value (current: %d seconds).\n",
+			"to a larger value (current: %d seconds). Aborting\n",
 			psm3_error_get_string(err), psm3_epid_fmt(epid, 0), psmx3_env.conn_timeout);
 	else
 		psmx3_log(&psmx3_prov, FI_LOG_WARN, FI_LOG_AV, __func__, __LINE__,
-			"psm3_ep_connect returned error %s, remote epid=%s.\n",
+			"psm3_ep_connect returned error %s, remote epid=%s. Aborting\n",
 			psm3_error_get_string(err), psm3_epid_fmt(epid, 0));
 
 	abort();
@@ -946,7 +946,7 @@ static struct fi_ops psmx3_fi_ops = {
 static struct fi_ops_av psmx3_av_ops = {
 	.size = sizeof(struct fi_ops_av),
 	.insert = psmx3_av_insert,
-	.insertsvc = fi_no_av_insertsvc,
+	.insertsvc = psmx3_av_insertsvc,
 	.insertsym = fi_no_av_insertsym,
 	.remove = psmx3_av_remove,
 	.lookup = psmx3_av_lookup,
@@ -956,7 +956,7 @@ static struct fi_ops_av psmx3_av_ops = {
 static struct fi_ops_av psmx3_av_map_ops = {
 	.size = sizeof(struct fi_ops_av),
 	.insert = psmx3_av_map_insert,
-	.insertsvc = fi_no_av_insertsvc,
+	.insertsvc = psmx3_av_insertsvc,
 	.insertsym = fi_no_av_insertsym,
 	.remove = psmx3_av_map_remove,
 	.lookup = psmx3_av_map_lookup,
@@ -1116,3 +1116,63 @@ errout_free:
 	return err;
 }
 
+struct psmx3_ep_name *psmx3_lookup(const char *node, const char *service)
+{
+	psm2_uuid_t uuid;
+	struct psmx3_ep_name *dest_addr = NULL;
+	int svc0, svc = PSMX3_ANY_SERVICE;
+
+	psmx3_get_uuid(uuid);
+	struct util_ns ns = {
+		.port = psmx3_uuid_to_port(uuid),
+		.name_len = sizeof(*dest_addr),
+		.service_len = sizeof(svc),
+		.service_cmp = psmx3_ns_service_cmp,
+		.is_service_wildcard = psmx3_ns_is_service_wildcard,
+	};
+	ofi_ns_init(&ns);
+
+	if (service)
+		svc = atoi(service);
+	svc0 = svc;
+	dest_addr = (struct psmx3_ep_name *)
+		ofi_ns_resolve_name(&ns, node, &svc);
+	if (dest_addr) {
+		PSMX3_INFO(&psmx3_prov, FI_LOG_CORE,
+			"'%s:%u' resolved to <epid=%s>:%d\n",
+			node, svc0, psm3_epid_fmt(dest_addr->epid, 0), svc);
+	} else {
+		PSMX3_INFO(&psmx3_prov, FI_LOG_CORE,
+			"failed to resolve '%s:%u'.\n", node, svc);
+	}
+	return dest_addr;
+}
+
+int psmx3_av_insertsvc(struct fid_av *av, const char *node, const char *service,
+				       fi_addr_t *fi_addr, uint64_t flags,	void *context)
+{
+	size_t addr_size = 0;
+	void *addr_formatted;
+	char *addr_str = NULL;
+	int rc;
+	struct psmx3_fid_av *psmx3_av = (struct psmx3_fid_av *)av;
+	struct psmx3_ep_name * dest_addr = psmx3_lookup(node, service);
+
+	if (!dest_addr)
+		return -FI_EINVAL;
+	if (psmx3_av->addr_format == FI_ADDR_STR) {
+		addr_str = psmx3_ep_name_to_string(dest_addr, &addr_size);
+		addr_formatted = &addr_str;
+	}
+	else {
+		addr_formatted = dest_addr;
+	}
+
+	if (psmx3_av->type == FI_AV_MAP)
+		rc = psmx3_av_map_insert(av, addr_formatted, 1, fi_addr, flags, context);
+	else
+		rc = psmx3_av_insert(av, addr_formatted, 1, fi_addr, flags, context);
+	if (addr_str)
+		free(addr_str);
+	return rc;
+}

@@ -42,11 +42,6 @@ static inline int vrb_dgram_av_is_addr_valid(struct vrb_dgram_av *av,
 static inline int
 vrb_dgram_verify_av_flags(struct util_av *av, uint64_t flags)
 {
-	if ((av->flags & FI_EVENT) && !av->eq) {
-		VRB_WARN(FI_LOG_AV, "No EQ bound to AV\n");
-		return -FI_ENOEQ;
-	}
-
 	if (flags & ~(FI_MORE)) {
 		VRB_WARN(FI_LOG_AV, "Unsupported flags\n");
 		return -FI_ENOEQ;
@@ -213,7 +208,7 @@ static int vrb_dgram_av_close(struct fid *av_fid)
 static struct fi_ops vrb_dgram_fi_ops = {
 	.size		= sizeof(vrb_dgram_fi_ops),
 	.close		= vrb_dgram_av_close,
-	.bind		= ofi_av_bind,
+	.bind		= fi_no_bind,
 	.control	= fi_no_control,
 	.ops_open	= fi_no_ops_open,
 };

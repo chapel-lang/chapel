@@ -94,7 +94,7 @@ static int ucx_ep_getopt(fid_t fid, int level, int optname, void *optval,
 		*optlen = sizeof(size_t);
 		return FI_SUCCESS;
 	}
-	return -FI_EINVAL;
+	return -FI_ENOPROTOOPT;
 }
 
 static int ucx_ep_setopt(fid_t fid, int level, int optname,
@@ -102,14 +102,30 @@ static int ucx_ep_setopt(fid_t fid, int level, int optname,
 {
 	struct ucx_ep *ep;
 
-	if (level == FI_OPT_ENDPOINT &&
-	    optname == FI_OPT_MIN_MULTI_RECV &&
-	    optlen >= sizeof(size_t)) {
+	if (level != FI_OPT_ENDPOINT)
+		return -FI_ENOPROTOOPT;
+
+	if (optname == FI_OPT_MIN_MULTI_RECV && optlen >= sizeof(size_t)) {
 		ep = container_of(fid, struct ucx_ep, ep.ep_fid.fid);
 		ep->ep_opts.mrecv_min_size = *(size_t*)optval;
 		return FI_SUCCESS;
 	}
-	return -FI_EINVAL;
+
+	if (optname == FI_OPT_CUDA_API_PERMITTED) {
+		if (!hmem_ops[FI_HMEM_CUDA].initialized) {
+			FI_WARN(&ucx_prov, FI_LOG_EP_CTRL,
+				"Cannot set CUDA API permitted when"
+				"CUDA library or CUDA device is not available\n");
+			return -FI_EINVAL;
+		}
+
+		/* our HMEM support does not make calls to CUDA API,
+		 * therefore we can accept any option for FI_OPT_CUDA_API_PERMITTED.
+		 */
+		return FI_SUCCESS;
+	}
+
+	return -FI_ENOPROTOOPT;
 }
 
 static int ucx_ep_close(fid_t fid)

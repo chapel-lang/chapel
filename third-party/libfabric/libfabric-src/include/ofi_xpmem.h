@@ -47,13 +47,13 @@ typedef int64_t xpmem_apid_t;
 typedef int64_t xpmem_segid_t;
 #endif /* HAVE_XPMEM */
 
-struct xpmem_client {
+struct ofi_xpmem_client {
 	uint8_t cap;
 	xpmem_apid_t apid;
 	uintptr_t addr_max;
 };
 
-struct xpmem_pinfo {
+struct ofi_xpmem_pinfo {
 	/* XPMEM segment id for this process */
 	xpmem_segid_t seg_id;
 	/* maximum attachment address for this process. attempts to attach
@@ -61,31 +61,30 @@ struct xpmem_pinfo {
 	uintptr_t address_max;
 };
 
-struct xpmem {
-	struct xpmem_pinfo pinfo;
+struct ofi_xpmem {
+	struct ofi_xpmem_pinfo pinfo;
 	/* maximum size that will be used with a single memcpy call.
 	 * On some systems we see better peformance if we chunk the
 	 * copy into multiple memcpy calls. */
 	uint64_t memcpy_chunk_size;
 };
 
-extern struct xpmem *xpmem;
+extern struct ofi_xpmem *xpmem;
 
 int ofi_xpmem_cache_search(struct ofi_mr_cache *cache,
 			   struct iovec *iov, uint64_t peer_id,
 			   struct ofi_mr_entry **mr_entry,
-			   struct xpmem_client *xpmem);
+			   struct ofi_xpmem_client *xpmem);
 
 int ofi_xpmem_cache_open(struct ofi_mr_cache **cache);
 void ofi_xpmem_cache_destroy(struct ofi_mr_cache *cache);
 
-int xpmem_init(void);
-int xpmem_cleanup(void);
-int xpmem_copy(struct iovec *local, unsigned long local_cnt,
-	       struct iovec *remote, unsigned long remote_cnt,
-	       size_t total, pid_t pid, bool write, void *user_data);
-int ofi_xpmem_enable(struct xpmem_pinfo *peer,
-		     struct xpmem_client *xpmem);
-void ofi_xpmem_release(struct xpmem_client *xpmem);
+int ofi_xpmem_init(void);
+int ofi_xpmem_cleanup(void);
+int ofi_xpmem_copy(struct iovec *local, unsigned long local_cnt,
+		   struct iovec *remote, unsigned long remote_cnt, size_t total,
+		   pid_t pid, bool write, void *user_data);
+int ofi_xpmem_enable(struct ofi_xpmem_pinfo *peer, struct ofi_xpmem_client *xpmem);
+void ofi_xpmem_release(struct ofi_xpmem_client *xpmem);
 
 #endif /* OFI_XPMEM_H */

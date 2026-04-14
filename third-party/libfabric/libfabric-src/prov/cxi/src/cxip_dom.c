@@ -395,7 +395,7 @@ int cxip_domain_prov_mr_id_alloc(struct cxip_domain *dom,
 	 */
 	key.events = mr->count_events || mr->rma_events || mr->cntr;
 
-	key.opt = cxip_env.optimized_mrs &&
+	key.opt = dom->optimized_mrs &&
 			key.id < CXIP_PTL_IDX_PROV_MR_OPT_CNT;
 	mr->key = key.raw;
 	ofi_spin_unlock(&dom->ctrl_id_lock);
@@ -1556,12 +1556,99 @@ static int cxip_query_atomic(struct fid_domain *domain,
 	return FI_SUCCESS;
 }
 
+struct fi_ops_srx_peer cxip_srx_peer_ops = {
+	.size = sizeof(struct fi_ops_srx_peer),
+	.start_msg = cxip_unexp_start,
+	.start_tag = cxip_unexp_start,
+	.discard_msg = cxip_no_discard,
+	.discard_tag = cxip_no_discard,
+};
+
+static int cxip_srx_close(struct fid *fid)
+{
+	struct cxip_domain *dom;
+
+	dom = container_of(fid, struct cxip_domain, rx_ep.fid);
+
+	ofi_atomic_dec32(&dom->util_domain.ref);
+
+	return FI_SUCCESS;
+}
+
+static struct fi_ops cxip_srx_fi_ops = {
+	.size = sizeof(struct fi_ops),
+	.close = cxip_srx_close,
+	.bind = fi_no_bind,
+	.control = fi_no_control,
+	.ops_open = fi_no_ops_open,
+};
+
+static struct fi_ops_msg cxip_srx_msg_ops = {
+	.size = sizeof(struct fi_ops_msg),
+	.recv = fi_no_msg_recv,
+	.recvv = fi_no_msg_recvv,
+	.recvmsg = fi_no_msg_recvmsg,
+	.send = fi_no_msg_send,
+	.sendv = fi_no_msg_sendv,
+	.sendmsg = fi_no_msg_sendmsg,
+	.inject = fi_no_msg_inject,
+	.senddata = fi_no_msg_senddata,
+	.injectdata = fi_no_msg_injectdata,
+};
+
+static struct fi_ops_tagged cxip_srx_tagged_ops = {
+	.size = sizeof(struct fi_ops_msg),
+	.recv = fi_no_tagged_recv,
+	.recvv = fi_no_tagged_recvv,
+	.recvmsg = fi_no_tagged_recvmsg,
+	.send = fi_no_tagged_send,
+	.sendv = fi_no_tagged_sendv,
+	.sendmsg = fi_no_tagged_sendmsg,
+	.inject = fi_no_tagged_inject,
+	.senddata = fi_no_tagged_senddata,
+	.injectdata = fi_no_tagged_injectdata,
+};
+
+static int cxip_srx_context(struct fid_domain *fid, struct fi_rx_attr *attr,
+		struct fid_ep **rx_ep, void *context)
+{
+	struct cxip_domain *dom;
+
+	if (!context || ! attr || !fid)
+		return -FI_EINVAL;
+
+	dom = container_of(fid, struct cxip_domain,
+			   util_domain.domain_fid.fid);
+
+	if (attr->op_flags & FI_PEER) {
+		dom->owner_srx = ((struct fi_peer_srx_context *) context)->srx;
+		dom->owner_srx->peer_ops = &cxip_srx_peer_ops;
+		dom->rx_ep.msg = &cxip_srx_msg_ops;
+		dom->rx_ep.tagged = &cxip_srx_tagged_ops;
+		dom->rx_ep.fid.ops = &cxip_srx_fi_ops;
+		dom->rx_ep.fid.fclass = FI_CLASS_SRX_CTX;
+		*rx_ep = &dom->rx_ep;
+		ofi_atomic_inc32(&dom->util_domain.ref);
+		return FI_SUCCESS;
+	}
+
+	return -FI_ENOSYS;
+}
+
 static int cxip_query_collective(struct fid_domain *domain,
 				 enum fi_collective_op coll,
 			         struct fi_collective_attr *attr,
 				 uint64_t flags)
 {
 	int ext_op;
+	
+	if(cxip_collectives_supported) {
+		CXIP_WARN("%s: CXI Collectives are supported\n", __func__);
+	}
+	else {
+		CXIP_WARN("%s: CXI Collectives are not supported\n", __func__);
+		return -FI_EOPNOTSUPP;
+	}
 
 	/* BARRIER does not require attr */
 	if (coll == FI_BARRIER && !attr)
@@ -1625,6 +1712,11 @@ static int cxip_query_collective(struct fid_domain *domain,
 		case FI_BOR:
 		case FI_BAND:
 		case FI_BXOR:
+#if 0 /* keep for future use */		
+		case FI_LOR:
+		case FI_LAND:
+		case FI_LXOR:
+#endif		
 			switch (attr->datatype) {
 			case FI_INT8:
 			case FI_UINT8:
@@ -1695,7 +1787,7 @@ static struct fi_ops_domain cxip_dom_ops = {
 	.cntr_open = cxip_cntr_open,
 	.poll_open = fi_no_poll_open,
 	.stx_ctx = fi_no_stx_context,
-	.srx_ctx = fi_no_srx_context,
+	.srx_ctx = cxip_srx_context,
 	.query_atomic = cxip_query_atomic,
 	.query_collective = cxip_query_collective
 };

@@ -968,12 +968,12 @@ psm3_mq_irecv_inner(psm2_mq_t mq, psm2_mq_req_t req, void *buf, uint32_t len)
 		if (req->req_data.buf != NULL) {	/* 0-byte messages don't alloc a sysbuf */
 			msglen = mq_set_msglen(req, len, req->req_data.send_msglen);
 			psm3_mq_recv_copy(mq, req,
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 					req->is_buf_gpu_mem,
 #endif
 					buf, len, msglen);
 			psm3_mq_sysbuf_free(mq, req->req_data.buf);
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 		} else {
 			mq->stats.rx_sysbuf_cpu_num++;
 #endif
@@ -990,7 +990,7 @@ psm3_mq_irecv_inner(psm2_mq_t mq, psm2_mq_req_t req, void *buf, uint32_t len)
 		 */
 		req->recv_msgoff = min(req->recv_msgoff, msglen);
 		psm3_mq_recv_copy(mq, req,
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 				req->is_buf_gpu_mem,
 #endif
 				buf, len, req->recv_msgoff);
@@ -1009,7 +1009,7 @@ psm3_mq_irecv_inner(psm2_mq_t mq, psm2_mq_req_t req, void *buf, uint32_t len)
 		req->recv_msgoff = min(req->recv_msgoff, msglen);
 		if (req->send_msgoff) {	// only have sysbuf if RTS w/payload
 			psm3_mq_recv_copy(mq, req,
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 					req->is_buf_gpu_mem,
 #endif
 					buf, len, req->recv_msgoff);
@@ -1061,12 +1061,12 @@ psm3_mq_fp_msg(psm2_ep_t ep, psm2_mq_t mq, psm2_epaddr_t addr, psm2_mq_tag_t *ta
 		psm2_mq_req_t recv_req;
 		int table;
 
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 		int gpu_mem = 0;
 		void *gpu_user_buffer = NULL;
 
-		if (len && PSMI_IS_GPU_ENABLED && PSMI_IS_GPU_MEM(buf)) {
-			PSM3_MARK_BUF_SYNCHRONOUS(buf);
+		if (len && PSM3_IS_GPU_MEM(buf)) {
+			PSM3_GPU_MARK_BUF_SYNCHRONOUS(buf);
 
 			gpu_mem = 1;
 			gpu_user_buffer = buf;
@@ -1094,7 +1094,7 @@ psm3_mq_fp_msg(psm2_ep_t ep, psm2_mq_t mq, psm2_epaddr_t addr, psm2_mq_tag_t *ta
 			recv_req->recv_msgoff = 0;
 			recv_req->req_data.context = context;
 
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 			recv_req->is_buf_gpu_mem = gpu_mem;
 			recv_req->user_gpu_buffer = gpu_user_buffer;
 #endif
@@ -1110,7 +1110,7 @@ psm3_mq_fp_msg(psm2_ep_t ep, psm2_mq_t mq, psm2_epaddr_t addr, psm2_mq_tag_t *ta
 				  tag->tag[0], tag->tag[1], tag->tag[2],
 				  tagsel->tag[0], tagsel->tag[1], tagsel->tag[2], recv_req);
 
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 			recv_req->is_buf_gpu_mem = gpu_mem;
 			recv_req->user_gpu_buffer = gpu_user_buffer;
 #endif
@@ -1141,11 +1141,11 @@ psm3_mq_irecv2(psm2_mq_t mq, psm2_epaddr_t src,
 	psm2_mq_req_t req;
 	int table;
 
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI) 
+#ifdef PSM_HAVE_GPU
 	int gpu_mem = 0;
 
-	if (len && PSMI_IS_GPU_ENABLED && PSMI_IS_GPU_MEM(buf)) {
-		PSM3_MARK_BUF_SYNCHRONOUS(buf);
+	if (len && PSM3_IS_GPU_MEM(buf)) {
+		PSM3_GPU_MARK_BUF_SYNCHRONOUS(buf);
 
 		gpu_mem = 1;
 	}
@@ -1177,7 +1177,7 @@ psm3_mq_irecv2(psm2_mq_t mq, psm2_epaddr_t src,
 		req->recv_msgoff = 0;
 		req->req_data.context = context;
 
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 		req->is_buf_gpu_mem = gpu_mem;
 		if (gpu_mem)
 			req->user_gpu_buffer = buf;
@@ -1195,7 +1195,7 @@ psm3_mq_irecv2(psm2_mq_t mq, psm2_epaddr_t src,
 			  " tagsel=%08x.%08x.%08x req=%p\n", buf, len,
 			  tag->tag[0], tag->tag[1], tag->tag[2],
 			  tagsel->tag[0], tagsel->tag[1], tagsel->tag[2], req);
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 		req->is_buf_gpu_mem = gpu_mem;
 		if (gpu_mem)
 			req->user_gpu_buffer = buf;
@@ -1262,9 +1262,9 @@ psm3_mq_imrecv(psm2_mq_t mq, uint32_t flags, void *buf, uint32_t len,
 		   user's buffer. */
 		req->req_data.context = context;
 
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
-		if (len && PSMI_IS_GPU_ENABLED && PSMI_IS_GPU_MEM(buf)) {
-			PSM3_MARK_BUF_SYNCHRONOUS(buf);
+#ifdef PSM_HAVE_GPU
+		if (len && PSM3_IS_GPU_MEM(buf)) {
+			PSM3_GPU_MARK_BUF_SYNCHRONOUS(buf);
 			req->is_buf_gpu_mem = 1;
 			req->user_gpu_buffer = buf;
 		} else {
@@ -1426,13 +1426,13 @@ psm2_error_t psm3_mqopt_ctl(psm2_mq_t mq, uint32_t key, void *value, int get)
 	switch (key) {
 	case PSM2_MQ_RNDV_HFI_SZ:
 		if (get)
-			*((uint32_t *) value) = mq->hfi_thresh_rv;
+			*((uint32_t *) value) = mq->rndv_nic_thresh;
 		else {
 			val32 = *((uint32_t *) value);
-			mq->hfi_thresh_rv = val32;
+			mq->rndv_nic_thresh = val32;
 		}
 		_HFI_VDBG("RNDV_HFI_SZ = %d (%s)\n",
-			  mq->hfi_thresh_rv, get ? "GET" : "SET");
+			  mq->rndv_nic_thresh, get ? "GET" : "SET");
 		break;
 
 	case PSM2_MQ_RNDV_SHM_SZ:
@@ -1445,7 +1445,7 @@ psm2_error_t psm3_mqopt_ctl(psm2_mq_t mq, uint32_t key, void *value, int get)
 		_HFI_VDBG("RNDV_SHM_SZ = %d (%s)\n",
 			  mq->shm_thresh_rv, get ? "GET" : "SET");
 		break;
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 	case PSM2_MQ_GPU_RNDV_SHM_SZ:
 		if (get)
 			*((uint32_t *) value) = mq->shm_gpu_thresh_rv;
@@ -1655,7 +1655,7 @@ static int psm3_mq_parse_window_rv(const char *str,
 		if (delim)
 			*delim = '\0';
 		// parse window
-		if (psm3_parse_str_uint(s, &win, 1, PSM_MQ_NIC_MAX_RNDV_WINDOW)) {
+		if (psm3_parse_str_uint(s, &win, 1, PSM3_MQ_RNDV_NIC_WINDOW_MAX)) {
 			if (errstr_size)
 				snprintf(errstr, errstr_size, " Invalid window_rv: %s", s);
 			goto fail;
@@ -1735,7 +1735,7 @@ uint32_t psm3_mq_max_window_rv(psm2_mq_t mq, int gpu)
 	// must do search since window_rv may not be increasing (but usually is)
 	uint32_t ret = 0;
 	struct psm3_mq_window_rv_entry *e;
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 	if (gpu)
 		e = mq->ips_gpu_window_rv;
 	else
@@ -1750,16 +1750,16 @@ uint32_t psm3_mq_max_window_rv(psm2_mq_t mq, int gpu)
 uint32_t psm3_mq_get_window_rv(psm2_mq_req_t req)
 {
 	if (! req->window_rv) {
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 		if (req->is_buf_gpu_mem) {
 			req->window_rv = search_window(
 						req->mq->ips_gpu_window_rv,
 						req->req_data.send_msglen);
 		} else
-#endif	/* PSM_CUDA || PSM_ONEAPI */
+#endif	/* PSM_HAVE_GPU */
 		req->window_rv = search_window(req->mq->ips_cpu_window_rv,
 						req->req_data.send_msglen);
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 		_HFI_VDBG("Selected Window of %u for %u byte %s msg\n",
 			req->window_rv,
 			req->req_data.send_msglen,
@@ -2053,7 +2053,7 @@ static uint64_t shm_dsa_avg_copy_size_recv(void *context)
 }
 #endif /* PSM_DSA */
 
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 static uint64_t gpu_ipc_hit_rate(void *context)
 {
 	psm2_mq_t mq = (psm2_mq_t)context;
@@ -2071,7 +2071,7 @@ static uint64_t gpu_ipc_miss_rate(void *context)
 	else
 		return 0;
 }
-#endif /* defined(PSM_CUDA) || defined(PSM_ONEAPI) */
+#endif /* PSM_HAVE_GPU */
 
 
 static uint64_t self_avg_msg_size_sent(void *context)
@@ -2083,7 +2083,7 @@ static uint64_t self_avg_msg_size_sent(void *context)
 		return 0;
 }
 
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 static uint64_t eager_cpu_avg_msg_size_sent(void *context)
 {
 	psm2_mq_t mq = (psm2_mq_t)context;
@@ -2133,7 +2133,7 @@ static uint64_t sysbuf_cuCopy_avg_size_recv(void *context)
 	else
 		return 0;
 }
-#endif /* defined(PSM_CUDA) || defined(PSM_ONEAPI) */
+#endif /* PSM_HAVE_GPU */
 
 psm2_error_t psm3_mq_initstats(psm2_mq_t mq, psm2_epid_t epid)
 {
@@ -2393,7 +2393,7 @@ psm2_error_t psm3_mq_initstats(psm2_mq_t mq, psm2_epid_t epid)
 				"Total DSA receive copiess which failured for non-page fault error",
 				&mq->stats.dsa_stats[1].dsa_error),
 #endif /* PSM_DSA */
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 		// ------------------------------------------------------------
 		PSMI_STATS_DECL_HELP("Intra-node GPU messages may use GPU IPC Handles "
 			"to perform GPU to GPU rendezvous messages directly to and from "
@@ -2438,7 +2438,7 @@ psm2_error_t psm3_mq_initstats(psm2_mq_t mq, psm2_epid_t epid)
 		PSMI_STATS_DECLU64("gpu_ipc_clear",
 				"Number of times entire cache was cleared and reset due to error",
 				&mq->stats.gpu_ipc_cache_clear),
-#endif /* defined(PSM_CUDA) || defined(PSM_ONEAPI) */
+#endif /* PSM_HAVE_GPU */
 
 		// ------------------------------------------------------------
 		PSMI_STATS_DECL_HELP("The PSM3 self protocol is used in the "
@@ -2454,7 +2454,7 @@ psm2_error_t psm3_mq_initstats(psm2_mq_t mq, psm2_epid_t epid)
 				"Average message size sent using PSM3 self protocol",
 				self_avg_msg_size_sent),
 
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 		// ------------------------------------------------------------
 		PSMI_STATS_DECL_HELP("Eager messages may be sent from GPU or "
 			"CPU application buffers.\n"
@@ -2514,7 +2514,7 @@ psm2_error_t psm3_mq_initstats(psm2_mq_t mq, psm2_epid_t epid)
 		PSMI_STATS_DECL_FUNC("sysbuf_cuCopy_avg_size_recv",
 				"Average gpuCopy size from a receive bounce buffer to a GPU buffer",
 				sysbuf_cuCopy_avg_size_recv),
-#endif /* PSM_CUDA || PSM_ONEAPI */
+#endif /* PSM_HAVE_GPU */
 	};
 
 	return psm3_stats_register_type("MPI_Statistics_Summary",
@@ -2576,9 +2576,9 @@ psm2_error_t psm3_mq_malloc(psm2_mq_t *mqo)
 
 	// shm_thresh_rv is N/A to NIC and HAL, so we set this here and let
 	// HAL set the rest of the defaults
-	mq->shm_thresh_rv = MQ_SHM_THRESH_RNDV;
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
-	mq->shm_gpu_thresh_rv = MQ_SHM_GPU_THRESH_RNDV;
+	mq->shm_thresh_rv = PSM3_MQ_RNDV_SHM_THRESH;
+#ifdef PSM_HAVE_GPU
+	mq->shm_gpu_thresh_rv = psm3_gpu_mq_rndv_shm_gpu_thresh_default;
 #endif
 
 	psmi_hal_mq_init_defaults(mq);
@@ -2604,7 +2604,7 @@ psm2_error_t psm3_mq_initialize_params(psm2_mq_t mq)
 {
 	union psmi_envvar_val env_hfitiny, env_rvwin, env_hfirv,
 		env_shmrv, env_hash, env_stats;
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 	union psmi_envvar_val env_shmgpurv;
 #endif
 
@@ -2618,8 +2618,8 @@ psm2_error_t psm3_mq_initialize_params(psm2_mq_t mq)
 	psm3_getenv("PSM3_MQ_RNDV_NIC_THRESH",
 		    "NIC eager-to-rendezvous switchover",
 		    PSMI_ENVVAR_LEVEL_USER, PSMI_ENVVAR_TYPE_UINT,
-		    (union psmi_envvar_val)mq->hfi_thresh_rv, &env_hfirv);
-	mq->hfi_thresh_rv = env_hfirv.e_uint;
+		    (union psmi_envvar_val)mq->rndv_nic_thresh, &env_hfirv);
+	mq->rndv_nic_thresh = env_hfirv.e_uint;
 
 #define WINDOW_SYNTAX "Specified as window_size:limit,window_size:limit, ...\nwhere limit is the largest message size the window_size is applicable to.\nThe last window_size in the list will be used for all remaining message\nsizes (eg. its limit is optional and ignored).\nwindow_size must be <= 4194304 and the limit in each entry must be larger\nthan the prior entry."
 
@@ -2651,8 +2651,8 @@ psm2_error_t psm3_mq_initialize_params(psm2_mq_t mq)
 			// already checked, shouldn't get parse errors nor empty strings
 			psmi_assert(0);
 		}
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
-		if (PSMI_IS_GPU_ENABLED && mq->ips_gpu_window_rv_str) {
+#ifdef PSM_HAVE_GPU
+		if (mq->ips_gpu_window_rv_str) {
 			union psmi_envvar_val env_gpurvwin;
 			char *env;
 
@@ -2679,21 +2679,17 @@ psm2_error_t psm3_mq_initialize_params(psm2_mq_t mq)
 		}
 #else
 		(void)got_depwin;	// keep compiler happy
-#endif /* PSM_CUDA || PSM_ONEAPI */
+#endif /* PSM_HAVE_GPU */
 	}
 
-	/* Re-evaluate this since it may have changed after initializing the shm
-	 * device */
-	mq->shm_thresh_rv = psm3_shm_mq_rv_thresh;
 	psm3_getenv("PSM3_MQ_RNDV_SHM_THRESH",
 		    "shm eager-to-rendezvous switchover",
 		    PSMI_ENVVAR_LEVEL_USER, PSMI_ENVVAR_TYPE_UINT,
 		    (union psmi_envvar_val)mq->shm_thresh_rv, &env_shmrv);
 	mq->shm_thresh_rv = env_shmrv.e_uint;
 
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
-	if (PSMI_IS_GPU_ENABLED) {
-		mq->shm_gpu_thresh_rv = psm3_shm_mq_gpu_rv_thresh;
+#ifdef PSM_HAVE_GPU
+	if (PSM3_GPU_IS_ENABLED) {
 		psm3_getenv("PSM3_MQ_RNDV_SHM_GPU_THRESH",
 			"shm eager-to-rendezvous switchover for GPU send",
 			PSMI_ENVVAR_LEVEL_USER, PSMI_ENVVAR_TYPE_UINT,
@@ -2733,7 +2729,7 @@ psm2_error_t MOCKABLE(psm3_mq_free)(psm2_mq_t mq)
 	psm3_mq_req_fini(mq);
 	psm3_mq_sysbuf_fini(mq);
 	psm3_stats_deregister_type(PSMI_STATSTYPE_MQ, mq);
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 	psmi_free(mq->ips_gpu_window_rv);
 #endif
 	psmi_free(mq->ips_cpu_window_rv);

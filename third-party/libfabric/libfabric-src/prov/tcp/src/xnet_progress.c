@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2017-2022 Intel Corporation, Inc.  All rights reserved.
  * Copyright (c) 2022 DataDirect Networks, Inc. All rights reserved.
+ * Copyright (c) 2025 VDURA, Inc. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -1493,25 +1494,25 @@ xnet_handle_events(struct xnet_progress *progress,
 
 	assert(ofi_genlock_held(progress->active_lock));
 	for (i = 0; i < nfds; i++) {
-		fid = events[i].data.ptr;
+		fid = OFI_EPOLL_EVT_DATA(events[i]);
 		assert(fid);
 
-		pin = events[i].events & POLLIN;
-		pout = events[i].events & POLLOUT;
-		perr = events[i].events & POLLERR;
+		pin = OFI_EPOLL_EVT_HAS_INPUT(events[i]);
+		pout = OFI_EPOLL_EVT_HAS_OUTPUT(events[i]);
+		perr = OFI_EPOLL_EVT_HAS_ERR(events[i]);
 
 		switch (fid->fclass) {
 		case FI_CLASS_EP:
-			xnet_run_ep(events[i].data.ptr, pin, pout, perr);
+			xnet_run_ep(OFI_EPOLL_EVT_DATA(events[i]), pin, pout, perr);
 			break;
 		case FI_CLASS_PEP:
-			xnet_accept_sock(events[i].data.ptr);
+			xnet_accept_sock(OFI_EPOLL_EVT_DATA(events[i]));
 			break;
 		case FI_CLASS_CONNREQ:
-			xnet_run_conn(events[i].data.ptr, pin, pout, perr);
+			xnet_run_conn(OFI_EPOLL_EVT_DATA(events[i]), pin, pout, perr);
 			break;
 		case XNET_CLASS_URING:
-			xnet_progress_uring(progress, events[i].data.ptr);
+			xnet_progress_uring(progress, OFI_EPOLL_EVT_DATA(events[i]));
 			break;
 		default:
 			assert(fid->fclass == XNET_CLASS_PROGRESS);

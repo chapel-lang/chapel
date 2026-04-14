@@ -175,7 +175,7 @@ int ofi_cntr_wait(struct fid_cntr *cntr_fid, uint64_t threshold, int timeout)
 		timeout_quantum = (timeout < 0 ? OFI_TIMEOUT_QUANTUM_MS :
 				   MIN(OFI_TIMEOUT_QUANTUM_MS, timeout));
 
-		ret = fi_wait(&cntr->wait->wait_fid, timeout_quantum);
+		ret = ofi_wait(&cntr->wait->wait_fid, timeout_quantum);
 	} while (!ret || (ret == -FI_ETIMEDOUT &&
 			  (timeout < 0 || timeout_quantum < timeout)));
 
@@ -254,8 +254,8 @@ int ofi_cntr_cleanup(struct util_cntr *cntr)
 		fi_close(&cntr->peer_cntr->fid);
 
 	if (cntr->wait) {
-		fi_poll_del(&cntr->wait->pollset->poll_fid,
-			    &cntr->cntr_fid.fid, 0);
+		ofi_poll_del(&cntr->wait->pollset->poll_fid,
+			     &cntr->cntr_fid.fid, 0);
 		if (cntr->internal_wait)
 			fi_close(&cntr->wait->wait_fid.fid);
 	}
@@ -369,8 +369,8 @@ int ofi_cntr_init(const struct fi_provider *prov, struct fid_domain *domain,
 		memset(&wait_attr, 0, sizeof wait_attr);
 		wait_attr.wait_obj = attr->wait_obj;
 		cntr->internal_wait = 1;
-		ret = fi_wait_open(&cntr->domain->fabric->fabric_fid,
-				   &wait_attr, &wait);
+		ret = ofi_wait_open(&cntr->domain->fabric->fabric_fid,
+				    &wait_attr, &wait);
 		if (ret)
 			return ret;
 		break;
@@ -402,8 +402,8 @@ int ofi_cntr_init(const struct fi_provider *prov, struct fid_domain *domain,
 	/* CNTR must be fully operational before adding to wait set */
 	if (wait) {
 		cntr->wait = container_of(wait, struct util_wait, wait_fid);
-		ret = fi_poll_add(&cntr->wait->pollset->poll_fid,
-				  &cntr->cntr_fid.fid, 0);
+		ret = ofi_poll_add(&cntr->wait->pollset->poll_fid,
+				   &cntr->cntr_fid.fid, 0);
 		if (ret) {
 			ofi_cntr_cleanup(cntr);
 			goto errout_close_wait;

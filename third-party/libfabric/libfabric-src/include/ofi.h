@@ -65,6 +65,56 @@
 extern "C" {
 #endif
 
+/*
+ * Internal version of deprecated APIs.
+ * These are used internally to avoid compiler warnings.
+ */
+
+#define OFI_MR_UNSPEC		0
+#define OFI_MR_BASIC		(1 << 0)
+#define OFI_MR_SCALABLE		(1 << 1)
+
+#define OFI_LOCAL_MR 		(1ULL << 55)
+#define OFI_REG_MR 		(1ULL << 59)
+
+static inline int
+ofi_wait_open(struct fid_fabric *fabric, struct fi_wait_attr *attr,
+	      struct fid_wait **waitset)
+{
+	return fabric->ops->wait_open(fabric, attr, waitset);
+}
+
+static inline int
+ofi_poll_open(struct fid_domain *domain, struct fi_poll_attr *attr,
+	      struct fid_poll **pollset)
+{
+	return domain->ops->poll_open(domain, attr, pollset);
+}
+
+static inline int
+ofi_wait(struct fid_wait *waitset, int timeout)
+{
+	 return waitset->ops->wait(waitset, timeout);
+}
+
+static inline int
+ofi_poll(struct fid_poll *pollset, void **context, int count)
+{
+	return pollset->ops->poll(pollset, context, count);
+}
+
+static inline int
+ofi_poll_add(struct fid_poll *pollset, struct fid *event_fid, uint64_t flags)
+{
+	return pollset->ops->poll_add(pollset, event_fid, flags);
+}
+
+static inline int
+ofi_poll_del(struct fid_poll *pollset, struct fid *event_fid, uint64_t flags)
+{
+	return pollset->ops->poll_del(pollset, event_fid, flags);
+}
+
 /* For in-tree providers */
 #define OFI_VERSION_LATEST	FI_VERSION(FI_MAJOR_VERSION, FI_MINOR_VERSION)
 /* The lower minor digit is reserved for custom libfabric builds */
@@ -72,10 +122,18 @@ extern "C" {
 	FI_VERSION(FI_MAJOR_VERSION * 100 + FI_MINOR_VERSION, \
 		   FI_REVISION_VERSION * 10)
 
+#define OFI_NAME_MAX		64
+#define OFI_ATOMIC_OP_LAST	(FI_MSWAP + 1) /* last pt 2 pt atomic */
+#define OFI_DATATYPE_LAST	(FI_LONG_DOUBLE_COMPLEX + 1) /* compatibility */
+
 #define OFI_GETINFO_INTERNAL	(1ULL << 58)
 #define OFI_CORE_PROV_ONLY	(1ULL << 59)
 #define OFI_GETINFO_HIDDEN	(1ULL << 60)
 #define OFI_OFFLOAD_PROV_ONLY	(1ULL << 61)
+
+/* internal mode bit carried over from v1 */
+#define OFI_BUFFERED_RECV	(1ULL << 51)
+
 
 #define OFI_ORDER_RAR_SET	(FI_ORDER_RAR | FI_ORDER_RMA_RAR | \
 				 FI_ORDER_ATOMIC_RAR)
@@ -103,7 +161,7 @@ extern "C" {
 	(FI_MULTI_RECV | FI_TRIGGER | FI_RMA_PMEM | FI_SOURCE | \
 	 FI_RMA_EVENT | FI_SOURCE_ERR)
 
-#define OFI_DOMAIN_PRIMARY_CAPS FI_AV_USER_ID
+#define OFI_DOMAIN_PRIMARY_CAPS (FI_AV_USER_ID | FI_PEER)
 #define OFI_DOMAIN_SECONDARY_CAPS \
 	(FI_SHARED_AV | FI_REMOTE_COMM | FI_LOCAL_COMM)
 
@@ -133,6 +191,15 @@ extern "C" {
 #define OFI_RX_OP_FLAGS \
 	(FI_COMPLETION | FI_MULTI_RECV)
 
+#ifndef container_of
+#define container_of(ptr, type, field) \
+	((type *) ((char *)ptr - offsetof(type, field)))
+#endif
+
+#ifndef count_of
+#define count_of(x) 	\
+	((sizeof(x)/sizeof(0[x])) / ((size_t)(!(sizeof(x) % sizeof(0[x])))))
+#endif
 
 #define sizeof_field(type, field) sizeof(((type *)0)->field)
 
@@ -204,6 +271,8 @@ static inline int ofi_val32_ge(uint32_t x, uint32_t y) {
 	case SYM: { ofi_strncatf(buf, N, #SYM); break; }
 #define IFFLAGSTRN(flags, SYM, N) \
 	do { if (flags & SYM) ofi_strncatf(buf, N, #SYM ", "); } while(0)
+#define IFFLAGSTRN2(flags, SYMVAL, SYMNAME, N) \
+	do { if (flags & SYMVAL) ofi_strncatf(buf, N, #SYMNAME ", "); } while(0)
 
 
 /*
@@ -228,6 +297,7 @@ enum ofi_prov_type {
 	OFI_PROV_UTIL,
 	OFI_PROV_HOOK,
 	OFI_PROV_OFFLOAD,
+	OFI_PROV_LNX,
 };
 
 /* Restrict to size of struct fi_provider::context (struct fi_context) */
@@ -250,7 +320,7 @@ struct ofi_filter {
 
 extern struct ofi_filter prov_log_filter;
 extern struct fi_provider core_prov;
-extern const char *log_prefix;
+extern OFI_THREAD_LOCAL const char *log_prefix;
 
 void ofi_create_filter(struct ofi_filter *filter, const char *env_name);
 void ofi_free_filter(struct ofi_filter *filter);
@@ -266,6 +336,7 @@ void fi_param_fini(void);
 void fi_param_undefine(const struct fi_provider *provider);
 void ofi_remove_comma(char *buffer);
 void ofi_dump_sysconfig(void);
+void ofi_params_init(void);
 
 const char *ofi_hex_str(const uint8_t *data, size_t len);
 
@@ -291,9 +362,13 @@ struct ipc_info {
 
 static inline uint64_t roundup_power_of_two(uint64_t n)
 {
+#if defined(__GNUC__)
+	if (n < 2)
+		return n;
+	return 2ULL << (63 - __builtin_clzll(n - 1));
+#else
 	if (!n || !(n & (n - 1)))
 		return n;
-	n--;
 	n |= n >> 1;
 	n |= n >> 2;
 	n |= n >> 4;
@@ -302,6 +377,7 @@ static inline uint64_t roundup_power_of_two(uint64_t n)
 	n |= n >> 32;
 	n++;
 	return n;
+#endif
 }
 
 static inline uint64_t rounddown_power_of_two(uint64_t n)
@@ -357,6 +433,7 @@ uint64_t ofi_tag_format(uint64_t max_tag);
 uint8_t ofi_msb(uint64_t num);
 uint8_t ofi_lsb(uint64_t num);
 
+extern int ofi_fork_unsafe;
 extern size_t ofi_universe_size;
 extern int ofi_av_remove_cleanup;
 extern char *ofi_offload_coll_prov_name;
@@ -376,6 +453,10 @@ int ofi_check_rx_mode(const struct fi_info *info, uint64_t flags);
 uint64_t ofi_gettime_ns(void);
 uint64_t ofi_gettime_us(void);
 uint64_t ofi_gettime_ms(void);
+
+uint64_t ofi_get_realtime_ns(void);
+uint64_t ofi_get_realtime_ms(void);
+uint64_t ofi_get_realtime_us(void);
 
 static inline uint64_t ofi_timeout_time(int timeout)
 {

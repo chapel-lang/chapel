@@ -4,7 +4,7 @@
  * Copyright (c) 2014 Intel Corporation, Inc. All rights reserved.
  * Copyright (c) 2016 Cisco Systems, Inc. All rights reserved.
  * Copyright (c) 2017 DataDirect Networks, Inc. All rights reserved.
- * Copyright (c) 2018-2023 Hewlett Packard Enterprise Development LP
+ * Copyright (c) 2018-2024 Hewlett Packard Enterprise Development LP
  */
 
 #ifndef _CXIP_PROV_H_
@@ -66,6 +66,11 @@
 
 #define CXIP_REQ_CLEANUP_TO		3000
 
+/* PATH_MAX is generally 4K, when not required and variables
+ * are stack based use CXIP_PATH_MAX
+ */
+#define CXIP_PATH_MAX			256
+
 #define CXIP_BUFFER_ID_MAX		(1 << 16)
 
 /* Scalable EP not supported */
@@ -104,19 +109,23 @@
 
 #define CXIP_AMO_MAX_IOV		1
 #define CXIP_EQ_DEF_SZ			(1 << 8)
-#define CXIP_CQ_DEF_SZ			1024U
+#define CXIP_CQ_DEF_SZ			131072U
 #define CXIP_REMOTE_CQ_DATA_SZ		8
 
 #define CXIP_PTE_IGNORE_DROPS		((1 << 24) - 1)
-#define CXIP_RDZV_THRESHOLD		2048
-#define CXIP_OFLOW_BUF_SIZE		(2*1024*1024)
+#define CXIP_RDZV_THRESHOLD		16384
+#define CXIP_OFLOW_BUF_SIZE		(12*1024*1024)
 #define CXIP_OFLOW_BUF_MIN_POSTED	3
 #define CXIP_OFLOW_BUF_MAX_CACHED	(CXIP_OFLOW_BUF_MIN_POSTED * 3)
-#define CXIP_REQ_BUF_SIZE		(2*1024*1024)
-#define CXIP_REQ_BUF_MIN_POSTED		4
+#define CXIP_REQ_BUF_SIZE		(12*1024*1024)
+#define CXIP_REQ_BUF_MIN_POSTED		6
 #define CXIP_REQ_BUF_MAX_CACHED		0
-#define CXIP_UX_BUFFER_SIZE		(CXIP_OFLOW_BUF_MIN_POSTED * \
-					 CXIP_OFLOW_BUF_SIZE)
+
+#define CXIP_DEFAULT_MR_CACHE_MAX_CNT	4096
+#define CXIP_DEFAULT_MR_CACHE_MAX_SIZE	-1
+
+#define CXIP_MR_CACHE_EVENTS_DISABLE_POLL_NSECS 100000U
+#define CXIP_MR_CACHE_EVENTS_DISABLE_LE_POLL_NSECS 1000000000U
 
 /* When device memory is safe to access via load/store then the
  * CPU will be used to move data below this threshold.
@@ -126,25 +135,25 @@
 #define CXIP_EP_PRI_CAPS \
 	(FI_RMA | FI_ATOMICS | FI_TAGGED | FI_RECV | FI_SEND | \
 	 FI_READ | FI_WRITE | FI_REMOTE_READ | FI_REMOTE_WRITE | \
-	 FI_DIRECTED_RECV | FI_MSG | FI_NAMED_RX_CTX | \
-	 FI_COLLECTIVE | FI_HMEM)
+	 FI_DIRECTED_RECV | FI_MSG | FI_NAMED_RX_CTX | FI_HMEM | \
+	 FI_COLLECTIVE)
 #define CXIP_EP_SEC_CAPS \
 	(FI_SOURCE | FI_SOURCE_ERR | FI_LOCAL_COMM | \
 	 FI_REMOTE_COMM | FI_RMA_EVENT | FI_MULTI_RECV | FI_FENCE | FI_TRIGGER)
 #define CXIP_EP_CAPS (CXIP_EP_PRI_CAPS | CXIP_EP_SEC_CAPS)
-#define CXIP_DOM_CAPS (FI_LOCAL_COMM | FI_REMOTE_COMM | FI_AV_USER_ID)
+#define CXIP_DOM_CAPS (FI_LOCAL_COMM | FI_REMOTE_COMM | FI_AV_USER_ID | FI_PEER)
 #define CXIP_CAPS (CXIP_DOM_CAPS | CXIP_EP_CAPS)
 #define CXIP_MSG_ORDER			(FI_ORDER_SAS | \
 					 FI_ORDER_WAW | \
 					 FI_ORDER_RMA_WAW | \
+					 FI_ORDER_RMA_RAR | \
 					 FI_ORDER_ATOMIC_WAW | \
 					 FI_ORDER_ATOMIC_WAR | \
 					 FI_ORDER_ATOMIC_RAW | \
 					 FI_ORDER_ATOMIC_RAR)
 
 #define CXIP_EP_CQ_FLAGS \
-	(FI_SEND | FI_TRANSMIT | FI_RECV | FI_SELECTIVE_COMPLETION | \
-	 FI_COLLECTIVE)
+	(FI_SEND | FI_TRANSMIT | FI_RECV | FI_SELECTIVE_COMPLETION)
 #define CXIP_EP_CNTR_FLAGS \
 	(FI_SEND | FI_RECV | FI_READ | FI_WRITE | FI_REMOTE_READ | \
 	 FI_REMOTE_WRITE)
@@ -153,7 +162,7 @@
 
 /* Max TX size of 16,384 translate to a 4MiB command queue buffer. */
 #define CXIP_MAX_TX_SIZE		16384U
-#define CXIP_DEFAULT_TX_SIZE		512U
+#define CXIP_DEFAULT_TX_SIZE		1024U
 
 /* Some LEs need to be used for internally by CXI provider. The user facing
  * RX size should be updated to reflect this.
@@ -166,33 +175,49 @@
 #define LES_PER_EP_MAX			16384U
 
 #define CXIP_MAX_RX_SIZE		(LES_PER_EP_MAX - CXI_PROV_LE_PER_EP)
-#define CXIP_DEFAULT_RX_SIZE		512U
+#define CXIP_DEFAULT_RX_SIZE		1024U
 
 #define CXIP_MAJOR_VERSION		0
 #define CXIP_MINOR_VERSION		1
 #define CXIP_PROV_VERSION		FI_VERSION(CXIP_MAJOR_VERSION, \
 						   CXIP_MINOR_VERSION)
-#define CXIP_FI_VERSION			FI_VERSION(1, 21)
+#define CXIP_FI_VERSION			FI_VERSION(2, 2)
 #define CXIP_WIRE_PROTO_VERSION		1
 
 #define	CXIP_COLL_MAX_CONCUR		8
 #define	CXIP_COLL_MIN_RX_BUFS		8
-#define	CXIP_COLL_MIN_RX_SIZE		4096
+#define	CXIP_COLL_MIN_RX_SIZE		131072
 #define	CXIP_COLL_MIN_MULTI_RECV	64
 #define	CXIP_COLL_MAX_DATA_SIZE		32
-#define	CXIP_COLL_MAX_SEQNO		(1 << 10)
+#define	CXIP_COLL_MAX_SEQNO		((1 << 10) - 1)
+#define	CXIP_COLL_MOD_SEQNO		(CXIP_COLL_MAX_SEQNO - 1)
+
 // TODO adjust based on performance testing
-#define	CXIP_COLL_MIN_RETRY_USEC	1
-#define	CXIP_COLL_MAX_RETRY_USEC	32000
-#define	CXIP_COLL_MIN_TIMEOUT_USEC	1
-#define	CXIP_COLL_MAX_TIMEOUT_USEC	32000
+#define CXIP_COLL_MIN_RETRY_USEC	1
+#define CXIP_COLL_MAX_RETRY_USEC	32000
+/* multiplier used to calc leaf rdma get trigger
+ * this allows the trigger to scale with
+ * CXIP_COLL_MAX_RETRY_USEC
+ */
+#define CXIP_COLL_MAX_LEAF_TIMEOUT_MULT	50
+#define CXIP_COLL_MIN_TIMEOUT_USEC	1
+#define CXIP_COLL_MAX_TIMEOUT_USEC	20000000
 
 #define CXIP_REQ_BUF_HEADER_MAX_SIZE (sizeof(struct c_port_fab_hdr) + \
 	sizeof(struct c_port_unrestricted_hdr))
 #define CXIP_REQ_BUF_HEADER_MIN_SIZE (sizeof(struct c_port_fab_hdr) + \
 	sizeof(struct c_port_small_msg_hdr))
 
-extern int s_page_size;
+// Hints for spinloops
+#if defined(__aarch64__)
+#define CXIP_PAUSE() __asm__ __volatile__ ("YIELD" ::: "memory")
+#elif defined(__x86_64__)
+#define CXIP_PAUSE() __asm__ __volatile__ ("pause" ::: "memory")
+#else
+#define CXIP_PAUSE()
+#endif
+
+extern int sc_page_size;
 extern char cxip_prov_name[];
 extern struct fi_provider cxip_prov;
 extern struct util_prov cxip_util_prov;
@@ -235,6 +260,19 @@ enum cxip_rdzv_proto {
 
 const char *cxip_rdzv_proto_to_str(enum cxip_rdzv_proto proto);
 
+enum cxip_mr_target_ordering {
+	/* Sets MR target ordering based on message and target RMA ordering
+	 * options.
+	 */
+	MR_ORDER_DEFAULT,
+
+	/* Force ordering to always be strict. */
+	MR_ORDER_STRICT,
+
+	/* Force ordering to always be relaxed. */
+	MR_ORDER_RELAXED,
+};
+
 struct cxip_environment {
 	/* Translation */
 	int odp;
@@ -258,6 +296,8 @@ struct cxip_environment {
 	int rdzv_aligned_sw_rget;
 	int rnr_max_timeout_us;
 	int disable_non_inject_msg_idc;
+	int disable_non_inject_rma_idc;
+	int disable_non_inject_amo_idc;
 	int disable_host_register;
 	size_t oflow_buf_size;
 	size_t oflow_buf_min_posted;
@@ -285,10 +325,10 @@ struct cxip_environment {
 
 	size_t eq_ack_batch_size;
 	int fc_retry_usec_delay;
+	int cntr_spin_before_yield;
 	size_t ctrl_rx_eq_max_size;
 	char *device_name;
 	size_t cq_fill_percent;
-	int enable_unrestricted_end_ro;
 	int rget_tc;
 	int cacheline_size;
 
@@ -308,9 +348,16 @@ struct cxip_environment {
 	int disable_hmem_dev_register;
 	int ze_hmem_supported;
 	enum cxip_rdzv_proto  rdzv_proto;
+	int disable_alt_read_cmdq;
+	int cntr_trig_cmdq;
 	int enable_trig_op_limit;
 	int hybrid_posted_recv_preemptive;
 	int hybrid_unexpected_msg_preemptive;
+	size_t mr_cache_events_disable_poll_nsecs;
+	size_t mr_cache_events_disable_le_poll_nsecs;
+	int force_dev_reg_copy;
+	enum cxip_mr_target_ordering mr_target_ordering;
+	int disable_cuda_sync_memops;
 };
 
 extern struct cxip_environment cxip_env;
@@ -336,6 +383,7 @@ static inline bool cxip_software_pte_allowed(void)
 struct cxip_addr {
 	uint32_t pid		: C_DFA_PID_BITS_MAX;
 	uint32_t nic		: C_DFA_NIC_BITS;
+	uint32_t pad		: 3;
 	uint16_t vni;
 };
 
@@ -568,6 +616,7 @@ enum cxip_ctrl_msg_type {
 	CXIP_CTRL_MSG_FC_NOTIFY = 0,
 	CXIP_CTRL_MSG_FC_RESUME,
 	CXIP_CTRL_MSG_ZB_DATA,
+	CXIP_CTRL_MSG_ZB_DATA_RDMA_LAC,
 };
 
 union cxip_match_bits {
@@ -590,7 +639,8 @@ union cxip_match_bits {
 	};
 	/* Split TX ID for rendezvous operations. */
 	struct {
-		uint64_t pad2       : CXIP_TAG_WIDTH; /* User tag value */
+		uint64_t pad2       : (CXIP_TAG_WIDTH - 1); /* User tag value */
+		uint64_t coll_get   : 1; /* leaf rdma get */
 		uint64_t rdzv_id_hi : CXIP_RDZV_ID_HIGH_WIDTH;
 		uint64_t rdzv_lac   : 4;  /* Rendezvous Get LAC */
 	};
@@ -708,7 +758,7 @@ struct cxip_lni {
 	/* Software remapped communication profiles. */
 	struct dlist_entry remap_cps;
 
-	ofi_spin_t lock;
+	pthread_rwlock_t cp_lock;
 };
 
 /* A portals table define a network endpoint address. The endpoint address is
@@ -757,6 +807,7 @@ struct cxip_cmdq {
 	enum cxip_llring_mode llring_mode;
 
 	struct cxi_cp *cur_cp;
+	struct cxi_cp *prev_cp;
 	struct cxip_lni *lni;
 };
 
@@ -794,9 +845,12 @@ struct cxip_md {
 	struct cxip_domain *dom;
 	struct cxi_md *md;
 	struct ofi_mr_info info;
+	uint64_t map_flags;
 	uint64_t handle;
+	int dmabuf_fd;
 	bool handle_valid;
 	bool cached;
+	bool dmabuf_fd_valid;
 };
 
 #define CXIP_MR_DOMAIN_HT_BUCKETS 16
@@ -847,6 +901,9 @@ struct cxip_domain {
 	struct cxip_fabric *fab;
 	ofi_spin_t lock;
 	ofi_atomic32_t ref;
+
+	struct fid_ep rx_ep;
+	struct fid_peer_srx *owner_srx;
 
 	uint32_t tclass;
 
@@ -1046,8 +1103,11 @@ struct cxip_eq {
 	ofi_mutex_t list_lock;
 };
 
-#define CXIP_EQ_MAP_FLAGS \
-	(CXI_MAP_WRITE | CXI_MAP_PIN | CXI_MAP_IOVA_ALLOC)
+#ifdef CXI_MAP_IOVA_ALLOC
+#define CXIP_EQ_MAP_FLAGS (CXI_MAP_WRITE | CXI_MAP_PIN | CXI_MAP_IOVA_ALLOC)
+#else
+#define CXIP_EQ_MAP_FLAGS (CXI_MAP_WRITE | CXI_MAP_PIN)
+#endif
 
 /*
  * RMA request
@@ -1058,6 +1118,9 @@ struct cxip_req_rma {
 	struct cxip_txc *txc;
 	struct cxip_md *local_md;	// RMA target buffer
 	void *ibuf;
+	struct cxip_cntr *cntr;
+	/* collectives leaf_rdma_get_callback context data */
+	struct cxip_coll_reduction *reduction;
 };
 
 struct cxip_req_amo {
@@ -1072,7 +1135,7 @@ struct cxip_req_amo {
 	bool fetching_amo_flush;
 	uint8_t fetching_amo_flush_event_count;
 	unsigned int fetching_amo_flush_event_rc;
-	struct cxip_cntr *fetching_amo_flush_cntr;
+	struct cxip_cntr *cntr;
 };
 
 /* Used with receive request to maintain state associated
@@ -1139,7 +1202,7 @@ struct cxip_req_recv {
 	uint32_t rdzv_initiator;	// Rendezvous initiator used for mrecvs
 	uint32_t rget_nic;
 	uint32_t rget_pid;
-	bool software_list;		// Appended to HW or SW
+	int multirecv_inflight;		// SW EP Multi-receives in progress
 	bool canceled;			// Request canceled?
 	bool unlinked;
 	bool multi_recv;
@@ -1258,6 +1321,8 @@ struct cxip_req {
 	uint64_t trig_thresh;
 	struct cxip_cntr *trig_cntr;
 
+	struct fi_peer_rx_entry *rx_entry;
+
 	/* CQ event fields, set according to fi_cq.3
 	 *   - set by provider
 	 *   - returned to user in completion event
@@ -1366,6 +1431,9 @@ struct cxip_evtq {
 	unsigned int ack_batch_size;
 	struct c_eq_status prev_eq_status;
 	bool eq_saturated;
+	/* Reference to wait_obj allocated outside scope of event queue */
+	struct cxil_wait_obj *event_wait_obj;
+	struct cxil_wait_obj *status_wait_obj;
 
 	/* Point back to CQ */
 	struct cxip_cq *cq;
@@ -1389,8 +1457,8 @@ struct cxip_cq {
 	 */
 	struct ofi_genlock ep_list_lock;
 
-	/* Internal CXI wait object allocated only if required. */
-	struct cxil_wait_obj *priv_wait;
+	/* CXI CQ wait object EPs are maintained in epoll FD */
+	int ep_fd;
 
 	/* CXI specific fields. */
 	struct cxip_domain *domain;
@@ -1415,7 +1483,10 @@ struct cxip_cntr {
 	/* Contexts to which counter is bound */
 	struct dlist_entry ctx_list;
 
-	ofi_mutex_t lock;
+        /* Triggered cmdq for bound counters */
+	struct cxip_cmdq *trig_cmdq;
+
+	struct ofi_genlock lock;
 
 	struct cxi_ct *ct;
 	struct c_ct_writeback *wb;
@@ -1426,11 +1497,46 @@ struct cxip_cntr {
 	struct c_ct_writeback lwb;
 
 	struct dlist_entry dom_entry;
+
+	/* Counter for number of operations which need progress. A separate lock
+	 * is needed since these functions may be called without counter lock held.
+	 */
+	struct ofi_genlock progress_count_lock;
+	int progress_count;
 };
+
+static inline void cxip_cntr_progress_inc(struct cxip_cntr *cntr)
+{
+	ofi_genlock_lock(&cntr->progress_count_lock);
+	assert(cntr->progress_count >= 0);
+	cntr->progress_count++;
+	ofi_genlock_unlock(&cntr->progress_count_lock);
+}
+
+static inline void cxip_cntr_progress_dec(struct cxip_cntr *cntr)
+{
+	ofi_genlock_lock(&cntr->progress_count_lock);
+	cntr->progress_count--;
+	assert(cntr->progress_count >= 0);
+	ofi_genlock_unlock(&cntr->progress_count_lock);
+}
+
+static inline unsigned int cxip_cntr_progress_get(struct cxip_cntr *cntr)
+{
+	unsigned int count;
+
+	ofi_genlock_lock(&cntr->progress_count_lock);
+	count = cntr->progress_count;
+	ofi_genlock_unlock(&cntr->progress_count_lock);
+
+	return count;
+}
 
 struct cxip_ux_send {
 	struct dlist_entry rxc_entry;
 	struct cxip_req *req;
+	struct cxip_rxc *rxc;
+	struct fi_peer_rx_entry *rx_entry;
 	union c_event put_ev;
 	bool claimed;			/* Reserved with FI_PEEK | FI_CLAIM */
 };
@@ -1540,6 +1646,7 @@ struct cxip_ep_zbcoll_obj {
  */
 struct cxip_ep_coll_obj {
 	struct index_map mcast_map;	// mc address -> object
+	struct dlist_entry root_retry_list;
 	struct dlist_entry mc_list;	// list of mcast addresses
 	struct cxip_coll_pte *coll_pte;	// PTE extensions
 	struct dlist_ts sched_list;	// scheduled actions
@@ -1558,6 +1665,10 @@ struct cxip_ep_coll_obj {
 	bool join_busy;			// serialize joins on a node
 	bool is_hwroot;			// set if ep is hw_root
 	bool enabled;			// enabled
+	/* needed for progress after leaf sends its contribution */
+	struct dlist_entry leaf_rdma_get_list;
+	/* used to change ctrl_msg_type to CXIP_CTRL_MSG_ZB_DATA_RDMA_LAC */
+	bool leaf_save_root_lac;
 };
 
 /* Receive context state machine.
@@ -1798,7 +1909,7 @@ struct cxip_rxc_ops {
 			       void *desc, fi_addr_t src_add, uint64_t tag,
 			       uint64_t ignore, void *context, uint64_t flags,
 			       bool tagged, struct cxip_cntr *comp_cntr);
-	void (*progress)(struct cxip_rxc *rxc);
+	void (*progress)(struct cxip_rxc *rxc, bool internal);
 	void (*recv_req_tgt_event)(struct cxip_req *req,
 				   const union c_event *event);
 	int (*cancel_msg_recv)(struct cxip_req *req);
@@ -1845,7 +1956,7 @@ struct cxip_rxc {
 	struct cxip_evtq rx_evtq;
 	struct cxip_pte *rx_pte;
 	struct cxip_cmdq *rx_cmdq;
-	ofi_atomic32_t orx_reqs;
+	int orx_reqs;
 
 	/* If FI_MULTI_RECV is supported, minimum receive size required
 	 * for buffers posted.
@@ -1880,9 +1991,13 @@ struct cxip_rxc_hpc {
 	/* Number of unexpected list entries in HW. */
 	ofi_atomic32_t orx_hw_ule_cnt;
 
-	/* RX context transmit queue, required for rendezvous
-	 * gets.
+	/* RX context transmit queue is separated into two logical
+	 * queues, one used for rendezvous get initiation and one
+	 * used for notifications. Depending on the messaging protocols
+	 * and traffic classes in use, the two logical queues could
+	 * point to the same hardware queue or be distinct.
 	 */
+	struct cxip_cmdq *tx_rget_cmdq;
 	struct cxip_cmdq *tx_cmdq;
 	ofi_atomic32_t orx_tx_reqs;
 
@@ -1943,13 +2058,16 @@ struct cxip_rxc_rnr {
 };
 
 static inline void cxip_copy_to_md(struct cxip_md *md, void *dest,
-				   const void *src, size_t size)
+				   const void *src, size_t size,
+				   bool require_dev_reg_copy)
 {
 	ssize_t ret __attribute__((unused));
 	struct iovec iov;
+	bool dev_reg_copy = require_dev_reg_copy ||
+		(md->handle_valid && size <= cxip_env.safe_devmem_copy_threshold);
 
-	/* Favor CPU store access instead of relying on HMEM copy functions. */
-	if (md->handle_valid && size <= cxip_env.safe_devmem_copy_threshold) {
+	/* Favor dev reg access instead of relying on HMEM copy functions. */
+	if (dev_reg_copy) {
 		ret = ofi_hmem_dev_reg_copy_to_hmem(md->info.iface, md->handle,
 						    dest, src, size);
 		assert(ret == FI_SUCCESS);
@@ -1965,13 +2083,16 @@ static inline void cxip_copy_to_md(struct cxip_md *md, void *dest,
 }
 
 static inline void cxip_copy_from_md(struct cxip_md *md, void *dest,
-				     const void *src, size_t size)
+				     const void *src, size_t size,
+				     bool require_dev_reg_copy)
 {
 	ssize_t ret __attribute__((unused));
 	struct iovec iov;
+	bool dev_reg_copy = require_dev_reg_copy ||
+		(md->handle_valid && size <= cxip_env.safe_devmem_copy_threshold);
 
-	/* Favor CPU store access instead of relying on HMEM copy functions. */
-	if (md->handle_valid && size <= cxip_env.safe_devmem_copy_threshold) {
+	/* Favor dev reg access instead of relying on HMEM copy functions. */
+	if (dev_reg_copy) {
 		ret = ofi_hmem_dev_reg_copy_from_hmem(md->info.iface,
 						      md->handle,
 						      dest, src, size);
@@ -2163,7 +2284,7 @@ struct cxip_txc_ops {
 			       bool triggered, uint64_t trig_thresh,
 			       struct cxip_cntr *trig_cntr,
 			       struct cxip_cntr *comp_cntr);
-	void (*progress)(struct cxip_txc *txc);
+	void (*progress)(struct cxip_txc *txc, bool internal);
 	int (*cancel_msg_send)(struct cxip_req *req);
 	void (*init_struct)(struct cxip_txc *txc, struct cxip_ep_obj *ep_obj);
 	void (*fini_struct)(struct cxip_txc *txc);
@@ -2207,7 +2328,7 @@ struct cxip_txc {
 	struct ofi_bufpool *ibuf_pool;
 
 	struct cxip_cmdq *tx_cmdq;	// added during cxip_txc_enable()
-	ofi_atomic32_t otx_reqs;	// outstanding transmit requests
+	int otx_reqs;	// outstanding transmit requests
 
 	/* Queue of TX messages in flight for the context */
 	struct dlist_entry msg_queue;
@@ -2365,6 +2486,8 @@ struct cxip_ep_obj {
 	struct cxip_domain *domain;
 	struct cxip_av *av;
 
+	struct fid_peer_srx *owner_srx;
+
 	/* Domain has been configured with FI_AV_AUTH_KEY. */
 	bool av_auth_key;
 
@@ -2386,6 +2509,10 @@ struct cxip_ep_obj {
 	uint32_t protocol;
 	struct cxip_txc *txc;
 	struct cxip_rxc *rxc;
+
+	/* Internal support for CQ wait object */
+	struct cxil_wait_obj *priv_wait;
+	int wait_fd;
 
 	/* ASIC version associated with EP/Domain */
 	enum cassini_version asic_ver;
@@ -2416,6 +2543,9 @@ struct cxip_ep_obj {
 	struct fi_tx_attr tx_attr;
 	struct fi_rx_attr rx_attr;
 
+	/* Require memcpy's via the dev reg APIs. */
+	bool require_dev_reg_copy[OFI_HMEM_MAX];
+
 	/* Collectives support */
 	struct cxip_ep_coll_obj coll;
 	struct cxip_ep_zbcoll_obj zbcoll;
@@ -2425,6 +2555,92 @@ struct cxip_ep_obj {
 	ofi_atomic32_t ref;
 	struct cxip_portals_table *ptable;
 };
+
+int cxip_ep_obj_map(struct cxip_ep_obj *ep, const void *buf, unsigned long len,
+		    uint64_t access, uint64_t flags, struct cxip_md **md);
+
+static inline void
+cxip_ep_obj_copy_to_md(struct cxip_ep_obj *ep, struct cxip_md *md, void *dest,
+		       const void *src, size_t size)
+{
+	cxip_copy_to_md(md, dest, src, size,
+			ep->require_dev_reg_copy[md->info.iface]);
+}
+
+static inline void
+cxip_ep_obj_copy_from_md(struct cxip_ep_obj *ep, struct cxip_md *md, void *dest,
+			 const void *src, size_t size)
+{
+	cxip_copy_from_md(md, dest, src, size,
+			  ep->require_dev_reg_copy[md->info.iface]);
+}
+
+static inline bool cxip_ep_obj_mr_relaxed_order(struct cxip_ep_obj *ep)
+{
+	if (cxip_env.mr_target_ordering ==  MR_ORDER_STRICT)
+		return false;
+
+	if (cxip_env.mr_target_ordering ==  MR_ORDER_RELAXED)
+		return true;
+
+	if ((ep->rx_attr.msg_order & FI_ORDER_RMA_WAW) &&
+	     ep->ep_attr.max_order_waw_size != 0)
+		return false;
+
+	if ((ep->rx_attr.msg_order & FI_ORDER_WAW) &&
+	    ep->ep_attr.max_order_waw_size != 0)
+		return false;
+
+	return true;
+}
+
+static inline void cxip_txc_otx_reqs_inc(struct cxip_txc *txc)
+{
+	assert(ofi_genlock_held(&txc->ep_obj->lock) == 1);
+	txc->otx_reqs++;
+}
+
+static inline void cxip_txc_otx_reqs_dec(struct cxip_txc *txc)
+{
+	assert(ofi_genlock_held(&txc->ep_obj->lock) == 1);
+	txc->otx_reqs--;
+	assert(txc->otx_reqs >= 0);
+}
+
+static inline int cxip_txc_otx_reqs_get(struct cxip_txc *txc)
+{
+	assert(ofi_genlock_held(&txc->ep_obj->lock) == 1);
+	return txc->otx_reqs;
+}
+
+static inline void cxip_txc_otx_reqs_init(struct cxip_txc *txc)
+{
+	txc->otx_reqs = 0;
+}
+
+static inline void cxip_rxc_orx_reqs_inc(struct cxip_rxc *rxc)
+{
+	assert(ofi_genlock_held(&rxc->ep_obj->lock) == 1);
+	rxc->orx_reqs++;
+}
+
+static inline void cxip_rxc_orx_reqs_dec(struct cxip_rxc *rxc)
+{
+	assert(ofi_genlock_held(&rxc->ep_obj->lock) == 1);
+	rxc->orx_reqs--;
+	assert(rxc->orx_reqs >= 0);
+}
+
+static inline int cxip_rxc_orx_reqs_get(struct cxip_rxc *rxc)
+{
+	assert(ofi_genlock_held(&rxc->ep_obj->lock) == 1);
+	return rxc->orx_reqs;
+}
+
+static inline void cxip_rxc_orx_reqs_init(struct cxip_rxc *rxc)
+{
+	rxc->orx_reqs = 0;
+}
 
 /*
  * CXI endpoint implementations to support FI_CLASS_EP.
@@ -2706,32 +2922,23 @@ enum cxip_coll_state {
 	CXIP_COLL_STATE_FAULT,
 };
 
-/* Similar to C_RC_* provider errors, but pure libfabric */
-/* These should be in priority order, from lowest to highest */
-enum cxip_coll_prov_errno {
-	CXIP_PROV_ERRNO_OK = -1,		// good
-	CXIP_PROV_ERRNO_PTE = -2,		// PTE setup failure
-	CXIP_PROV_ERRNO_MCAST_INUSE = -3,	// multicast in-use
-	CXIP_PROV_ERRNO_HWROOT_INUSE = -4,	// hwroot in-use
-	CXIP_PROV_ERRNO_MCAST_INVALID = -5,	// multicast invalid
-	CXIP_PROV_ERRNO_HWROOT_INVALID = -6,	// hwroot invalid
-	CXIP_PROV_ERRNO_CURL = -7,		// CURL failure
-	CXIP_PROV_ERRNO_LAST = -8,		// last error code (unused)
-};
+const char *cxip_strerror(int prov_errno);
 
 /* Rosetta reduction engine error codes */
 typedef enum cxip_coll_rc {
 	CXIP_COLL_RC_SUCCESS = 0,		// good
 	CXIP_COLL_RC_FLT_INEXACT = 1,		// result was rounded
 	CXIP_COLL_RC_FLT_OVERFLOW = 3,		// result too large to represent
-	CXIP_COLL_RC_FLT_INVALID = 4,           // operand was signalling NaN,
-						//   or infinities subtracted
+	CXIP_COLL_RC_FLT_INVALID = 4,		// op was signalling NaN, or
+						// infinities subtracted
 	CXIP_COLL_RC_REP_INEXACT = 5,		// reproducible sum was rounded
 	CXIP_COLL_RC_INT_OVERFLOW = 6,		// reproducible sum overflow
 	CXIP_COLL_RC_CONTR_OVERFLOW = 7,	// too many contributions seen
 	CXIP_COLL_RC_OP_MISMATCH = 8,		// conflicting opcodes
 	CXIP_COLL_RC_TX_FAILURE = 9,		// internal send error
-	CXIP_COLL_RC_MAX = 10
+	CXIP_COLL_RC_RDMA_FAILURE = 10,		// leaf rdma read error
+	CXIP_COLL_RC_RDMA_DATA_FAILURE = 11,	// leaf rdma read data misc
+	CXIP_COLL_RC_MAX = 12
 } cxip_coll_rc_t;
 
 struct cxip_coll_buf {
@@ -2773,6 +2980,33 @@ struct cxip_coll_data {
 	bool initialized;
 };
 
+struct coll_counters {
+	int32_t coll_recv_cnt;
+	int32_t send_cnt;
+	int32_t recv_cnt;
+	int32_t pkt_cnt;
+	int32_t seq_err_cnt;
+	int32_t tmout_cnt;
+};
+
+struct cxip_coll_metrics_ep {
+	int myrank;
+	bool isroot;
+};
+struct cxip_coll_metrics {
+	long red_count_bad;
+	long red_count_full;
+	long red_count_partial;
+	long red_count_unreduced;
+	struct cxip_coll_metrics_ep ep_data;
+};
+
+void cxip_coll_reset_mc_ctrs(struct fid_mc *mc);
+void cxip_coll_get_mc_ctrs(struct fid_mc *mc, struct coll_counters *counters);
+
+void cxip_coll_init_metrics(void);
+void cxip_coll_get_metrics(struct cxip_coll_metrics *metrics);
+
 struct cxip_coll_reduction {
 	struct cxip_coll_mc *mc_obj;		// parent mc_obj
 	uint32_t red_id;			// reduction id
@@ -2781,16 +3015,23 @@ struct cxip_coll_reduction {
 	struct cxip_req *op_inject_req;		// active operation request
 	enum cxip_coll_state coll_state;	// reduction state on node
 	struct cxip_coll_data accum;		// reduction accumulator
+	struct cxip_coll_data backup;		// copy of above
 	void *op_rslt_data;			// user recv buffer (or NULL)
 	int op_data_bytcnt;			// bytes in send/recv buffers
 	void *op_context;			// caller's context
 	bool in_use;				// reduction is in-use
 	bool pktsent;				// reduction packet sent
 	bool completed;				// reduction is completed
+	bool rdma_get_sent;			// rdma get from leaf to root
+	bool rdma_get_completed;		// rdma get completed
+	int rdma_get_cb_rc;			// rdma get status
+	uint64_t leaf_contrib_start_us;		// leaf ts after contrib send
 	bool drop_send;				// drop the next send operation
 	bool drop_recv;				// drop the next recv operation
 	enum cxip_coll_rc red_rc;		// set by first error
-	struct timespec tv_expires;		// reduction expiration time
+	struct timespec tv_expires;		// need to retry?
+	struct timespec arm_expires;		// RE expiration time for this red_id
+	struct dlist_entry tmout_link;		// link to timeout list
 	uint8_t tx_msg[64];			// static packet memory
 };
 
@@ -2801,7 +3042,9 @@ struct cxip_coll_mc {
 	struct cxip_av_set *av_set_obj;		// associated AV set
 	struct cxip_zbcoll_obj *zb;		// zb object for zbcol
 	struct cxip_coll_pte *coll_pte;		// collective PTE
-	struct timespec timeout;		// state machine timeout
+	struct timespec rootexpires;		// root wait expiration timeout
+	struct timespec leafexpires;		// leaf wait expiration timeout
+	struct timespec curlexpires;		// CURL delete expiration timeout
 	fi_addr_t mynode_fiaddr;		// fi_addr of this node
 	int mynode_idx;				// av_set index of this node
 	uint32_t hwroot_idx;			// av_set index of hwroot node
@@ -2810,6 +3053,9 @@ struct cxip_coll_mc {
 	int next_red_id;			// next available red_id
 	int max_red_id;				// limit total concurrency
 	int seqno;				// rolling seqno for packets
+	int close_state;			// the state of the close operation
+	bool has_closed;			// true after a mc close call
+	bool has_error;				// true if any error
 	bool is_multicast;			// true if multicast address
 	bool arm_disable;			// arm-disable for testing
 	bool retry_disable;			// retry-disable for testing
@@ -2826,6 +3072,18 @@ struct cxip_coll_mc {
 
 	struct cxi_md *reduction_md;		// memory descriptor for DMA
 	struct cxip_coll_reduction reduction[CXIP_COLL_MAX_CONCUR];
+	/* Logical address context for leaf rdma get */
+	uint64_t rdma_get_lac_va_tx;
+	/* Logical address context recieved by the leaf */
+	uint64_t rdma_get_lac_va_rx;
+	/* pointer to the source buffer base used in the RDMA */
+	uint8_t *root_rdma_get_data_p;
+	/* pointer to the dest buffer base used in the RDMA */
+	uint8_t *leaf_rdma_get_data_p;
+	/* root rdma get memory descriptor, for entire root src buffer */
+	struct cxip_md *root_rdma_get_md;
+	/* leaf rdma get memory descriptor, for entire leaf dest buffer */
+	struct cxip_md *leaf_rdma_get_md;
 };
 
 struct cxip_curl_handle;
@@ -2852,6 +3110,7 @@ enum curl_ops {
 	CURL_DELETE,
 	CURL_MAX
 };
+extern bool cxip_collectives_supported;
 int cxip_curl_init(void);
 void cxip_curl_fini(void);
 const char *cxip_curl_opname(enum curl_ops op);
@@ -2874,6 +3133,8 @@ int cxip_json_int64(const char *desc, struct json_object *jobj, int64_t *val);
 int cxip_json_double(const char *desc, struct json_object *jobj, double *val);
 int cxip_json_string(const char *desc, struct json_object *jobj,
 		     const char **val);
+struct json_object *cxip_json_tokener_parse(const char *str);
+int cxip_json_object_put(struct json_object *obj);
 
 /* Perform zero-buffer collectives */
 void cxip_tree_rowcol(int radix, int nodeidx, int *row, int *col, int *siz);
@@ -2881,7 +3142,7 @@ void cxip_tree_nodeidx(int radix, int row, int col, int *nodeidx);
 int cxip_tree_relatives(int radix, int nodeidx, int maxnodes, int *rels);
 
 int cxip_zbcoll_recv_cb(struct cxip_ep_obj *ep_obj, uint32_t init_nic,
-			uint32_t init_pid, uint64_t mbv);
+			uint32_t init_pid, uint64_t mbv, uint64_t data);
 void cxip_zbcoll_send(struct cxip_zbcoll_obj *zb, int srcidx, int dstidx,
 		      uint64_t payload);
 void cxip_zbcoll_free(struct cxip_zbcoll_obj *zb);
@@ -2997,8 +3258,18 @@ static inline bool cxip_cmdq_match(struct cxip_cmdq *cmdq, uint16_t vni,
 		(cmdq->cur_cp->tc_type == tc_type);
 }
 
+static inline bool cxip_cmdq_prev_match(struct cxip_cmdq *cmdq, uint16_t vni,
+					enum cxi_traffic_class tc,
+					enum cxi_traffic_class_type tc_type)
+{
+	return (cmdq->prev_cp->vni == vni) && (cmdq->prev_cp->tc == tc) &&
+		(cmdq->prev_cp->tc_type == tc_type);
+}
+
+
 int cxip_evtq_init(struct cxip_evtq *evtq, struct cxip_cq *cq,
-		   size_t num_events, size_t num_fc_events);
+		   size_t num_events, size_t num_fc_events,
+		   struct cxil_wait_obj *priv_wait);
 void cxip_evtq_fini(struct cxip_evtq *eq);
 
 int cxip_domain(struct fid_fabric *fabric, struct fi_info *info,
@@ -3049,12 +3320,12 @@ void cxip_rxc_struct_init(struct cxip_rxc *rxc, const struct fi_rx_attr *attr,
 			  void *context);
 void cxip_rxc_recv_req_cleanup(struct cxip_rxc *rxc);
 
-int cxip_rxc_emit_dma(struct cxip_rxc_hpc *rxc, uint16_t vni,
-		      enum cxi_traffic_class tc,
+int cxip_rxc_emit_dma(struct cxip_rxc_hpc *rxc, struct cxip_cmdq *cmdq,
+		      uint16_t vni, enum cxi_traffic_class tc,
 		      enum cxi_traffic_class_type tc_type,
 		      struct c_full_dma_cmd *dma, uint64_t flags);
-int cxip_rxc_emit_idc_msg(struct cxip_rxc_hpc *rxc, uint16_t vni,
-			  enum cxi_traffic_class tc,
+int cxip_rxc_emit_idc_msg(struct cxip_rxc_hpc *rxc, struct cxip_cmdq *cmdq,
+			  uint16_t vni, enum cxi_traffic_class tc,
 			  enum cxi_traffic_class_type tc_type,
 			  const struct c_cstate_cmd *c_state,
 			  const struct c_idc_msg_hdr *msg, const void *buf,
@@ -3078,16 +3349,19 @@ int cxip_cq_req_complete_addr(struct cxip_req *req, fi_addr_t src);
 int cxip_cq_req_error(struct cxip_req *req, size_t olen,
 		      int err, int prov_errno, void *err_data,
 		      size_t err_data_size, fi_addr_t src_addr);
+int cxip_cq_add_wait_fd(struct cxip_cq *cq, int wait_fd, int events);
+void cxip_cq_del_wait_fd(struct cxip_cq *cq, int wait_fd);
+
 int proverr2errno(int err);
 struct cxip_req *cxip_evtq_req_alloc(struct cxip_evtq *evtq,
 				     int remap, void *req_ctx);
 void cxip_evtq_req_free(struct cxip_req *req);
-void cxip_evtq_progress(struct cxip_evtq *evtq);
+void cxip_evtq_progress(struct cxip_evtq *evtq, bool internal);
 
 void cxip_ep_progress(struct fid *fid);
-int cxip_ep_peek(struct fid *fid);
 void cxip_ep_flush_trig_reqs(struct cxip_ep_obj *ep_obj);
 
+int cxip_cq_trywait(struct cxip_cq *cq);
 void cxip_cq_progress(struct cxip_cq *cq);
 void cxip_util_cq_progress(struct util_cq *util_cq);
 int cxip_cq_open(struct fid_domain *domain, struct fi_cq_attr *attr,
@@ -3104,20 +3378,20 @@ int cxip_cntr_open(struct fid_domain *domain, struct fi_cntr_attr *attr,
 int cxip_iomm_init(struct cxip_domain *dom);
 void cxip_iomm_fini(struct cxip_domain *dom);
 int cxip_map(struct cxip_domain *dom, const void *buf, unsigned long len,
-	     uint64_t flags, struct cxip_md **md);
+	     uint64_t access, uint64_t flags, struct cxip_md **md);
 void cxip_unmap(struct cxip_md *md);
 
-int cxip_ctrl_msg_send(struct cxip_ctrl_req *req);
-void cxip_ep_ctrl_progress(struct cxip_ep_obj *ep_obj);
-void cxip_ep_ctrl_progress_locked(struct cxip_ep_obj *ep_obj);
-void cxip_ep_tx_ctrl_progress(struct cxip_ep_obj *ep_obj);
-void cxip_ep_tx_ctrl_progress_locked(struct cxip_ep_obj *ep_obj);
-void cxip_ep_tgt_ctrl_progress(struct cxip_ep_obj *ep_obj);
-void cxip_ep_tgt_ctrl_progress_locked(struct cxip_ep_obj *ep_obj);
+int cxip_ctrl_msg_send(struct cxip_ctrl_req *req, uint64_t data);
+void cxip_ep_ctrl_progress(struct cxip_ep_obj *ep_obj, bool internal);
+void cxip_ep_ctrl_progress_locked(struct cxip_ep_obj *ep_obj, bool internal);
+void cxip_ep_tx_ctrl_progress(struct cxip_ep_obj *ep_obj, bool internal);
+void cxip_ep_tx_ctrl_progress_locked(struct cxip_ep_obj *ep_obj, bool internal);
+void cxip_ep_tgt_ctrl_progress(struct cxip_ep_obj *ep_obj, bool internal);
+void cxip_ep_tgt_ctrl_progress_locked(struct cxip_ep_obj *ep_obj,
+				      bool internal);
 int cxip_ep_ctrl_init(struct cxip_ep_obj *ep_obj);
 void cxip_ep_ctrl_fini(struct cxip_ep_obj *ep_obj);
-void cxip_ep_ctrl_del_wait(struct cxip_ep_obj *ep_obj);
-int cxip_ep_ctrl_trywait(void *arg);
+int cxip_ep_trywait(struct cxip_ep_obj *ep_obj, struct cxip_cq *cq);
 
 int cxip_av_set(struct fid_av *av, struct fi_av_set_attr *attr,
 	        struct fid_av_set **av_set_fid, void * context);
@@ -3133,7 +3407,7 @@ int cxip_coll_send(struct cxip_coll_reduction *reduction,
 		   struct cxi_md *md);
 int cxip_coll_send_red_pkt(struct cxip_coll_reduction *reduction,
 			   const struct cxip_coll_data *coll_data,
-			   bool arm, bool retry);
+			   bool arm, bool retry, bool root_result_pkt);
 
 void cxip_capture_red_id(int *red_id_buf);
 ssize_t cxip_barrier(struct fid_ep *ep, fi_addr_t coll_addr, void *context);
@@ -3154,13 +3428,12 @@ int cxip_join_collective(struct fid_ep *ep, fi_addr_t coll_addr,
 			 const struct fid_av_set *coll_av_set,
 			 uint64_t flags, struct fid_mc **mc, void *context);
 void cxip_coll_progress_join(struct cxip_ep_obj *ep_obj);
+void cxip_coll_progress_cq_poll(struct cxip_ep_obj *ep_obj);
 
 int cxip_coll_arm_disable(struct fid_mc *mc, bool disable);
 void cxip_coll_limit_red_id(struct fid_mc *mc, int max_red_id);
 void cxip_coll_drop_send(struct cxip_coll_reduction *reduction);
 void cxip_coll_drop_recv(struct cxip_coll_reduction *reduction);
-
-void cxip_coll_reset_mc_ctrs(struct fid_mc *mc);
 
 void cxip_dbl_to_rep(struct cxip_repsum *x, double d);
 void cxip_rep_to_dbl(double *d, const struct cxip_repsum *x);
@@ -3170,6 +3443,11 @@ double cxip_rep_sum(size_t count, double *values);
 
 int cxip_check_auth_key_info(struct fi_info *info);
 int cxip_gen_auth_key(struct fi_info *info, struct cxi_auth_key *key);
+
+static inline struct fid_peer_srx *cxip_get_owner_srx(struct cxip_rxc *rxc)
+{
+	return rxc->ep_obj->owner_srx;
+}
 
 #define CXIP_FC_SOFTWARE_INITIATED -1
 
@@ -3214,6 +3492,13 @@ ssize_t cxip_rma_common(enum fi_op_type op, struct cxip_txc *txc,
 			bool triggered, uint64_t trig_thresh,
 			struct cxip_cntr *trig_cntr,
 			struct cxip_cntr *comp_cntr);
+
+static inline int cxip_no_discard(struct fi_peer_rx_entry *rx_entry)
+{
+	return -FI_ENOSYS;
+}
+
+int cxip_unexp_start(struct fi_peer_rx_entry *entry);
 
 /*
  * Request variants:
@@ -3544,17 +3829,19 @@ cxip_txc_copy_from_hmem(struct cxip_txc *txc, struct cxip_md *hmem_md,
 	 */
 	if (!cxip_env.fork_safe_requested) {
 		if (!hmem_md) {
-			ret = cxip_map(domain, hmem_src, size, 0, &hmem_md);
+			ret = cxip_ep_obj_map(txc->ep_obj, hmem_src, size,
+					      CXI_MAP_READ, 0, &hmem_md);
 			if (ret) {
-				TXC_WARN(txc, "cxip_map failed: %d:%s\n", ret,
-					 fi_strerror(-ret));
+				TXC_WARN(txc, "cxip_ep_obj_map failed: %d:%s\n",
+					 ret, fi_strerror(-ret));
 				return ret;
 			}
 
 			unmap_hmem_md = true;
 		}
 
-		cxip_copy_from_md(hmem_md, dest, hmem_src, size);
+		cxip_ep_obj_copy_from_md(txc->ep_obj, hmem_md, dest, hmem_src,
+					 size);
 		if (unmap_hmem_md)
 			cxip_unmap(hmem_md);
 
@@ -3626,7 +3913,9 @@ int cxip_set_recv_match_id(struct cxip_rxc *rxc, fi_addr_t src_addr,
 	return FI_SUCCESS;
 }
 
-fi_addr_t cxip_recv_req_src_addr(struct cxip_req *req);
+fi_addr_t cxip_recv_req_src_addr(struct cxip_rxc *rxc,
+				 uint32_t init, uint16_t vni,
+				 bool force);
 int cxip_recv_req_alloc(struct cxip_rxc *rxc, void *buf, size_t len,
 			struct cxip_md *md, struct cxip_req **cxip_req,
 			int (*recv_cb)(struct cxip_req *req,
@@ -3677,5 +3966,75 @@ int cxip_domain_dwq_emit_amo(struct cxip_domain *dom, uint16_t vni,
 			     struct cxip_cntr *trig_cntr, size_t trig_thresh,
 			     struct c_dma_amo_cmd *amo, uint64_t flags,
 			     bool fetching, bool flush);
+
+static inline void cxip_set_env_rx_match_mode(void)
+{
+	char *param_str = NULL;
+
+	fi_param_get_str(&cxip_prov, "rx_match_mode", &param_str);
+	/* Parameters to tailor hybrid hardware to software transitions
+	 * that are initiated by software.
+	 */
+	fi_param_define(&cxip_prov, "hybrid_preemptive", FI_PARAM_BOOL,
+			"Enable/Disable low LE preemptive UX transitions.");
+	fi_param_get_bool(&cxip_prov, "hybrid_preemptive",
+			  &cxip_env.hybrid_preemptive);
+	fi_param_define(&cxip_prov, "hybrid_recv_preemptive", FI_PARAM_BOOL,
+			"Enable/Disable low LE preemptive recv transitions.");
+	fi_param_get_bool(&cxip_prov, "hybrid_recv_preemptive",
+			  &cxip_env.hybrid_recv_preemptive);
+	fi_param_define(&cxip_prov, "hybrid_unexpected_msg_preemptive",
+			FI_PARAM_BOOL,
+			"Enable preemptive transition to software endpoint when number of hardware unexpected messages exceeds RX attribute size");
+	fi_param_get_bool(&cxip_prov, "hybrid_unexpected_msg_preemptive",
+			  &cxip_env.hybrid_unexpected_msg_preemptive);
+	fi_param_define(&cxip_prov, "hybrid_posted_recv_preemptive",
+			FI_PARAM_BOOL,
+			"Enable preemptive transition to software endpoint when number of posted receives exceeds RX attribute size");
+	fi_param_get_bool(&cxip_prov, "hybrid_posted_recv_preemptive",
+			  &cxip_env.hybrid_posted_recv_preemptive);
+
+	if (param_str) {
+		if (!strcasecmp(param_str, "hardware")) {
+			cxip_env.rx_match_mode = CXIP_PTLTE_HARDWARE_MODE;
+			cxip_env.msg_offload = true;
+		} else if (!strcmp(param_str, "software")) {
+			cxip_env.rx_match_mode = CXIP_PTLTE_SOFTWARE_MODE;
+			cxip_env.msg_offload = false;
+		} else if (!strcmp(param_str, "hybrid")) {
+			cxip_env.rx_match_mode = CXIP_PTLTE_HYBRID_MODE;
+			cxip_env.msg_offload = true;
+		} else {
+			_CXIP_WARN(FI_LOG_FABRIC, "Unrecognized rx_match_mode: %s\n",
+				  param_str);
+			cxip_env.rx_match_mode = CXIP_PTLTE_HARDWARE_MODE;
+			cxip_env.msg_offload = true;
+		}
+	}
+
+	if (cxip_env.rx_match_mode != CXIP_PTLTE_HYBRID_MODE &&
+	    cxip_env.hybrid_preemptive) {
+		cxip_env.hybrid_preemptive = false;
+		_CXIP_WARN(FI_LOG_FABRIC, "Not in hybrid mode, ignoring preemptive\n");
+	}
+
+	if (cxip_env.rx_match_mode != CXIP_PTLTE_HYBRID_MODE &&
+	    cxip_env.hybrid_recv_preemptive) {
+		_CXIP_WARN(FI_LOG_FABRIC, "Not in hybrid mode, ignore LE  recv preemptive\n");
+		cxip_env.hybrid_recv_preemptive = 0;
+	}
+
+	if (cxip_env.rx_match_mode != CXIP_PTLTE_HYBRID_MODE &&
+	    cxip_env.hybrid_posted_recv_preemptive) {
+		_CXIP_WARN(FI_LOG_FABRIC, "Not in hybrid mode, ignore hybrid_posted_recv_preemptive\n");
+		cxip_env.hybrid_posted_recv_preemptive = 0;
+	}
+
+	if (cxip_env.rx_match_mode != CXIP_PTLTE_HYBRID_MODE &&
+	    cxip_env.hybrid_unexpected_msg_preemptive) {
+		_CXIP_WARN(FI_LOG_FABRIC, "Not in hybrid mode, ignore hybrid_unexpected_msg_preemptive\n");
+		cxip_env.hybrid_unexpected_msg_preemptive = 0;
+	}
+}
 
 #endif

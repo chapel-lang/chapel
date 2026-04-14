@@ -77,8 +77,6 @@ static int sock_dom_bind(struct fid *fid, struct fid *bfid, uint64_t flags)
 		return -FI_EINVAL;
 
 	dom->eq = eq;
-	if (flags & FI_REG_MR)
-		dom->mr_eq = eq;
 
 	return 0;
 }

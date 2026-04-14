@@ -60,8 +60,6 @@ static ze_context_handle_t context;
 static ze_device_handle_t *devices = NULL;
 static struct ofi_ze_dev_info *dev_info = NULL;
 static int num_devices = 0;
-static int num_pci_devices = 0;
-static int *dev_fds = NULL;
 static bool p2p_enabled = false;
 static bool host_reg_enabled = true;
 ofi_spin_t cl_lock;
@@ -382,132 +380,12 @@ ze_result_t ofi_zexDriverReleaseImportedPointer(ze_driver_handle_t hDriver,
 #include <sys/ioctl.h>
 #include <stdio.h>
 
-static int ze_hmem_init_fds(void)
-{
-	const char *dev_dir = "/dev/dri/by-path/";
-	const char *suffix = "-render";
-	DIR *dir;
-	struct dirent *ent = NULL;
-	char dev_name[NAME_MAX];
-	int ret, i;
-	char *str;
-	uint16_t domain_id;
-	uint8_t pci_id;
-	char *saveptr;
-
-	dir = opendir(dev_dir);
-	if (dir == NULL)
-		return -FI_EIO;
-
-	while ((ent = readdir(dir)) != NULL) {
-		if (ent->d_name[0] == '.' ||
-		    strstr(ent->d_name, suffix) == NULL)
-			continue;
-
-		memset(dev_name, 0, sizeof(dev_name));
-		ret = snprintf(dev_name, NAME_MAX, "%s%s", dev_dir, ent->d_name);
-		if (ret < 0 || ret >= NAME_MAX)
-			goto err;
-
-		dev_fds[num_pci_devices] = open(dev_name, O_RDWR);
-		if (dev_fds[num_pci_devices] == -1)
-			goto err;
-		str = strtok_r(ent->d_name, "-", &saveptr);
-		str = strtok_r(NULL, ":", &saveptr);
-		domain_id = (uint16_t) strtol(str, NULL, 16);
-		str = strtok_r(NULL, ":", &saveptr);
-		pci_id = (uint8_t) strtol(str, NULL, 16);
-		for (i = 0; i < num_devices; i++) {
-			if (dev_info[i].uuid.id[8] == pci_id &&
-			    (uint16_t) dev_info[i].uuid.id[6] == domain_id)
-				dev_info[i].pci_device = num_pci_devices;
-		}
-		num_pci_devices++;
-	}
-
-	(void) closedir(dir);
-	return FI_SUCCESS;
-
-err:
-	(void) closedir(dir);
-	FI_WARN(&core_prov, FI_LOG_CORE,
-		"Failed open device %d\n", num_pci_devices);
-	return -FI_EIO;
-}
-
-int ze_hmem_get_shared_handle(uint64_t device, void *dev_buf, int *ze_fd,
-			      void **handle)
-{
-	struct drm_prime_handle open_fd = {0, 0, 0};
-	ze_ipc_mem_handle_t ze_handle;
-	int dev_fd = dev_fds[dev_info[device].pci_device];
-	int ret;
-
-	assert(dev_fd != -1);
-	ret = ze_hmem_get_handle(dev_buf, 0, (void **) &ze_handle);
-	if (ret)
-		return ret;
-
-	memcpy(ze_fd, &ze_handle, sizeof(*ze_fd));
-	memcpy(&open_fd.fd, &ze_handle, sizeof(open_fd.fd));
-	ret = ioctl(dev_fd, DRM_IOCTL_PRIME_FD_TO_HANDLE, &open_fd);
-	if (ret) {
-		FI_WARN(&core_prov, FI_LOG_CORE,
-			"ioctl call failed on get, err %d\n", errno);
-		return -FI_EINVAL;
-	}
-
-	*(int *) handle = open_fd.handle;
-	return FI_SUCCESS;
-}
-
-int ze_hmem_open_shared_handle(uint64_t device, int *peer_fds, void **handle,
-			       int *ze_fd, void **ipc_ptr)
-{
-	struct drm_prime_handle open_fd = {0, 0, 0};
-	ze_ipc_mem_handle_t ze_handle;
-	int dev_fd = peer_fds[dev_info[device].pci_device];
-	int ret;
-
-	open_fd.flags = DRM_CLOEXEC | DRM_RDWR;
-	open_fd.handle = *(int *) handle;
-
-	ret = ioctl(dev_fd, DRM_IOCTL_PRIME_HANDLE_TO_FD, &open_fd);
-	if (ret) {
-		FI_WARN(&core_prov, FI_LOG_CORE,
-			"ioctl call failed on open, err %d\n", errno);
-		return -FI_EINVAL;
-	}
-
-	*ze_fd = open_fd.fd;
-	memset(&ze_handle, 0, sizeof(ze_handle));
-	memcpy(&ze_handle, &open_fd.fd, sizeof(open_fd.fd));
-	return ze_hmem_open_handle((void **) &ze_handle, 0, device, ipc_ptr);
-}
-
 bool ze_hmem_p2p_enabled(void)
 {
 	return !ofi_hmem_p2p_disabled() && p2p_enabled;
 }
 
 #else
-
-static int ze_hmem_init_fds(void)
-{
-	return FI_SUCCESS;
-}
-
-int ze_hmem_get_shared_handle(uint64_t device, void *dev_buf, int *ze_fd,
-			      void **handle)
-{
-	return -FI_ENOSYS;
-}
-
-int ze_hmem_open_shared_handle(uint64_t device, int *peer_fds, void **handle,
-			       int *ze_fd, void **ipc_ptr)
-{
-	return -FI_ENOSYS;
-}
 
 bool ze_hmem_p2p_enabled(void)
 {
@@ -522,7 +400,7 @@ static int ze_hmem_dl_init(void)
 	libze_handle = dlopen("libze_loader.so.1", RTLD_NOW);
 	if (!libze_handle) {
 		FI_WARN(&core_prov, FI_LOG_CORE,
-			"Failed to dlopen libze_loader.so\n");
+			"Failed to dlopen libze_loader.so.1\n");
 		goto err_out;
 	}
 
@@ -760,15 +638,10 @@ static int ze_hmem_cleanup_internal(int fini_workaround)
 		}
 		if (dev_info[i].cl_pool)
 			ofi_bufpool_destroy(dev_info[i].cl_pool);
-		if (dev_fds[i] != -1) {
-			close(dev_fds[i]);
-			dev_fds[i] = -1;
-		}
 	}
 
 	free(devices);
 	free(dev_info);
-	free(dev_fds);
 
 	if (!fini_workaround) {
 		if (ofi_zeContextDestroy(context))
@@ -848,16 +721,13 @@ int ze_hmem_init(void)
 
 	devices = calloc(count, sizeof(*devices));
 	dev_info = calloc(count, sizeof(*dev_info));
-	dev_fds = calloc(count, sizeof(*dev_fds));
-	if (!devices || !dev_info || !dev_fds)
+	if (!devices || !dev_info)
 		goto err;
 
 	ze_ret = ofi_zeDeviceGet(driver, &count, devices);
 	if (ze_ret)
 		goto err;
 
-	for (i = 0; i < count; dev_fds[i++] = -1)
-		;
 
 	for (num_devices = 0; num_devices < count; num_devices++) {
 		dev_info[num_devices].cl_pool = NULL;
@@ -882,10 +752,6 @@ int ze_hmem_init(void)
 				p2p = false;
 		}
 	}
-
-	ret = ze_hmem_init_fds();
-	if (ret)
-		goto err;
 
 	p2p_enabled = p2p;
 	return FI_SUCCESS;
@@ -1049,42 +915,67 @@ bool ze_hmem_is_addr_valid(const void *addr, uint64_t *device, uint64_t *flags)
 int ze_hmem_get_handle(void *dev_buf, size_t size, void **handle)
 {
 	ze_result_t ze_ret;
+	struct ze_pid_handle *pid_handle = (struct ze_pid_handle *) handle;
+	ze_ipc_mem_handle_t temp_handle;
 
-	ze_ret = ofi_zeMemGetIpcHandle(context, dev_buf,
-				       (ze_ipc_mem_handle_t *) handle);
+	ze_ret = ofi_zeMemGetIpcHandle(context, dev_buf, &temp_handle);
 	if (ze_ret) {
 		FI_WARN(&core_prov, FI_LOG_CORE, "Unable to get handle\n");
 		return -FI_EINVAL;
 	}
+	memcpy(&pid_handle->get_fd, &temp_handle,
+		sizeof(pid_handle->get_fd));
 
 	return FI_SUCCESS;
+}
+
+void ze_set_pid_fd(void **handle, int pid_fd)
+{
+	((struct ze_pid_handle *) handle)->pid_fd = pid_fd;
 }
 
 int ze_hmem_open_handle(void **handle, size_t size, uint64_t device,
 			void **ipc_ptr)
 {
 	ze_result_t ze_ret;
+	struct ze_pid_handle *pid_handle = (struct ze_pid_handle *) handle;
+	ze_ipc_mem_handle_t temp_handle = {0};
+	int fd;
 	int dev_id = ze_get_device_idx(device);
+	void *buf;
 
 	/* only device memory is supported */
 	assert(!ze_get_driver_idx(device) && dev_id >= 0);
 
-	ze_ret = ofi_zeMemOpenIpcHandle(context, devices[dev_id],
-					*((ze_ipc_mem_handle_t *) handle),
-					0, ipc_ptr);
-	if (ze_ret) {
+	fd = ofi_pidfd_getfd(pid_handle->pid_fd, pid_handle->get_fd, 0);
+	if (fd < 0) {
 		FI_WARN(&core_prov, FI_LOG_CORE,
-			"Unable to open memory handle\n");
+			"Unable find fd from peer pid\n");
 		return -FI_EINVAL;
 	}
 
+	pid_handle->open_fd = fd;
+	memcpy(&temp_handle, &pid_handle->open_fd, sizeof(pid_handle->open_fd));
+	ze_ret = ofi_zeMemOpenIpcHandle(context, devices[dev_id], temp_handle,
+					0, &buf);
+	if (ze_ret) {
+		FI_WARN(&core_prov, FI_LOG_CORE,
+			"Unable to open memory handle\n");
+		pid_handle->open_fd = -1;
+		close(fd);
+		return -FI_EINVAL;
+	}
+
+	*ipc_ptr = buf;
 	return FI_SUCCESS;
 }
 
-int ze_hmem_close_handle(void *ipc_ptr)
+int ze_hmem_close_handle(void *ipc_ptr, void **handle)
 {
 	ze_result_t ze_ret;
+	struct ze_pid_handle *pid_handle = (struct ze_pid_handle *) handle;
 
+	close(pid_handle->open_fd);
 	ze_ret = ofi_zeMemCloseIpcHandle(context, ipc_ptr);
 	if (ze_ret) {
 		FI_WARN(&core_prov, FI_LOG_CORE,
@@ -1097,7 +988,7 @@ int ze_hmem_close_handle(void *ipc_ptr)
 
 int ze_hmem_get_ipc_handle_size(size_t *size)
 {
-	*size = sizeof(ze_ipc_mem_handle_t);
+	*size = sizeof(struct ze_pid_handle);
 	return FI_SUCCESS;
 }
 
@@ -1132,12 +1023,6 @@ int ze_hmem_get_id(const void *ptr, uint64_t *id)
 
 	*id = mem_props.id;
 	return FI_SUCCESS;
-}
-
-int *ze_hmem_get_dev_fds(int *nfds)
-{
-	*nfds = num_pci_devices;
-	return dev_fds;
 }
 
 int ze_hmem_host_register(void *ptr, size_t size)
@@ -1389,25 +1274,18 @@ int ze_hmem_get_handle(void *dev_buf, size_t size, void **handle)
 	return -FI_ENOSYS;
 }
 
+void ze_set_pid_fd(void **handle, int pid_fd)
+{
+	/* no-op */
+}
+
 int ze_hmem_open_handle(void **handle, size_t size, uint64_t device,
 			void **ipc_ptr)
 {
 	return -FI_ENOSYS;
 }
 
-int ze_hmem_get_shared_handle(uint64_t device, void *dev_buf, int *ze_fd,
-			      void **handle)
-{
-	return -FI_ENOSYS;
-}
-
-int ze_hmem_open_shared_handle(uint64_t device, int *peer_fds, void **handle,
-			       int *ze_fd, void **ipc_ptr)
-{
-	return -FI_ENOSYS;
-}
-
-int ze_hmem_close_handle(void *ipc_ptr)
+int ze_hmem_close_handle(void *ipc_ptr, void **handle)
 {
 	return -FI_ENOSYS;
 }
@@ -1431,12 +1309,6 @@ int ze_hmem_get_base_addr(const void *ptr, size_t len, void **base,
 int ze_hmem_get_id(const void *ptr, uint64_t *id)
 {
 	return -FI_ENOSYS;
-}
-
-int *ze_hmem_get_dev_fds(int *nfds)
-{
-	*nfds = 0;
-	return NULL;
 }
 
 int ze_hmem_host_register(void *ptr, size_t size)

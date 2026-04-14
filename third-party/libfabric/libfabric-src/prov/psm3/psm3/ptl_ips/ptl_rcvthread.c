@@ -97,14 +97,6 @@ struct ptl_rcvthread {
 pthread_t psm3_rcv_threadid;
 #endif
 
-#ifdef PSM_CUDA
-/* This is a global cuda context (extern declaration in psm_user.h)
- * stored to provide hints during a cuda failure
- * due to a null cuda context.
- */
-CUcontext cu_ctxt;
-#endif
-
 // for psm3_wait and psm3_wake
 static pthread_mutex_t     wait_mutex;
 static pthread_cond_t      wait_condvar;
@@ -144,15 +136,16 @@ psm2_error_t psm3_ips_ptl_rcvthread_init(ptl_t *ptl_gen, struct ips_recvhdrq *re
 	rcvc->ptl = ptl_gen;
 	rcvc->t_start_cyc = get_cycles();
 
-#ifdef PSM_CUDA
-	if (PSMI_IS_GPU_ENABLED)
-		PSMI_CUDA_CALL(cuCtxGetCurrent, &cu_ctxt);
-#endif
+	PSM3_GPU_FETCH_CTXT();
 
 	if (psmi_hal_has_sw_status(PSM_HAL_PSMI_RUNTIME_RTS_RX_THREAD) &&
 	    (!psmi_hal_has_sw_status(PSM_HAL_PSMI_RUNTIME_RX_THREAD_STARTED))){
 
-		pthread_cond_init(&wait_condvar, NULL);
+		pthread_condattr_t attr;
+		pthread_condattr_init(&attr);
+		pthread_condattr_setclock(&attr, CLOCK_MONOTONIC);
+		pthread_cond_init(&wait_condvar, &attr);
+
 		pthread_mutex_init(&wait_mutex, NULL);
 		wait_signalled = 0;
 
@@ -375,12 +368,12 @@ psm2_error_t rcvthread_initsched(struct ptl_rcvthread *rcvc)
 // means migrating to a singleton model and properly fixing/removing the
 // transfer_ownership of rcvc when EPs are destroyed so can ensure
 // poll_type properly maintained on all affected EPs.
-psm2_error_t psm3_wait(int timeout)
+psm2_error_t psm3_wait(int timeout_ms)
 {
 	psm2_ep_t ep;
 	psm2_error_t ret = PSM2_OK;
 
-	_HFI_VDBG("Wait for event. timeout=%d\n", timeout);
+	_HFI_VDBG("Wait for event. timeout=%d ms\n", timeout_ms);
 	// TBD - while psm3_wait is active, we would like a quick poll() timeout
 	// because it is our only checking for PSM protocol timeouts.  However
 	// poll() has probably already started, so too late to change it now.
@@ -460,20 +453,20 @@ psm2_error_t psm3_wait(int timeout)
 		wait_signalled = 0;
 		wait_nosleep_signalled_count++;
 		_HFI_VDBG("found already signaled, no sleep\n");
-	} else if (timeout < 0) {	// infinite timeout
+	} else if (timeout_ms < 0) {	// infinite timeout
 		// Wait for condition variable to be signaled or broadcast.
 		pthread_cond_wait(&wait_condvar, &wait_mutex);
 		wait_signalled = 0;
 		wait_sleep_til_signal_count++;
 		_HFI_VDBG("slept, infinite timeout\n");
 	} else {
-		struct timespec wait_time;
+		struct timespec wait_time; // absolute timestamp
 		clock_gettime(CLOCK_MONOTONIC, &wait_time);	// current time
-		wait_time.tv_sec += timeout / 1000;
-		wait_time.tv_nsec += (timeout % 1000) * 1000;
-		if (wait_time.tv_nsec > 1000000000) { // handle carry from nsec to sec
-			wait_time.tv_sec++; 
-			wait_time.tv_nsec -= 1000000000;
+		wait_time.tv_sec  +=  timeout_ms / MSEC_PER_SEC;
+		wait_time.tv_nsec += (timeout_ms % MSEC_PER_SEC) * NSEC_PER_MSEC;
+		if (wait_time.tv_nsec >= NSEC_PER_SEC) { // handle carry from nsec to sec
+			wait_time.tv_sec++;
+			wait_time.tv_nsec -= NSEC_PER_SEC;
 		}
 		if (0 > pthread_cond_timedwait(&wait_condvar, &wait_mutex, &wait_time)) {
 			_HFI_VDBG("slept, timeout\n");
@@ -486,7 +479,7 @@ psm2_error_t psm3_wait(int timeout)
 			wait_sleep_signal_count++;
 		}
 	}
-	pthread_mutex_unlock( &wait_mutex );
+	pthread_mutex_unlock(&wait_mutex);
 	// TBD if ret == PSM2_OK we could use ipeek to see if any real progress
 	// was made and loop back to start to wait again if not.  For now we
 	// leave that to our caller
@@ -564,10 +557,7 @@ void *ips_ptl_pollintr(void *rcvthreadc)
 	int next_timeout = rcvc->last_timeout;
 	psm2_error_t err;
 
-#ifdef PSM_CUDA
-	if (PSMI_IS_GPU_ENABLED && cu_ctxt != NULL)
-		PSMI_CUDA_CALL(cuCtxSetCurrent, cu_ctxt);
-#endif
+	PSM3_GPU_REFRESH_CTXT();
 
 	PSM2_LOG_MSG("entering");
 	/* No reason to have many of these, keep this as a backup in case the

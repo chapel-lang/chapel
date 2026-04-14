@@ -72,6 +72,22 @@
 #endif
 #endif
 
+// PSM3_NIC_SELECTION_ALG choices.
+// ALG_NUMA is the default. This option spreads the NIC selection within the
+// local CPU socket's NICs (NUMA).
+// If it is preferred to spread job over over entire set of NICs within the
+// system, use ALG_ANY.
+// For systems with PCIe switches for GPU Direct, GPU_CENTRIC is typically best.
+// For GPU systems w/o switches, CPU_CENTRIC may be best.
+#define PSMI_NIC_SEL_ALG_NUMA        0 /* Round Robin within NUMA */
+#define PSMI_NIC_SEL_ALG_FIRST       1 /* First Active NIC */
+#define PSMI_NIC_SEL_ALG_ANY         2 /* Round Robin All */
+#define PSMI_NIC_SEL_ALG_CPU_CENTRIC 3 /* Round Robin, prefer CPU distance */
+#ifdef PSM_HAVE_GPU_CENTRIC_AFFINITY
+#define PSMI_NIC_SEL_ALG_GPU_CENTRIC 4 /* Round Robin, prefer GPU distance */
+#endif
+
+
 // subnuma is risky right now, so disable and explore in future
 //#ifdef PSM_USE_HWLOC
 //#define PSM3_HAVE_CPU_SUBNUMA
@@ -152,7 +168,7 @@ psm3_get_uuid_hash(psm2_uuid_t const uuid)
 
 int psm3_get_current_proc_location()
 {
-        int core_id, node_id;
+	int core_id, node_id;
 
 	core_id = sched_getcpu();
 	if (core_id < 0)
@@ -248,68 +264,6 @@ int psm3_get_max_cpu_numa()
 	numa_free_cpumask(empty_cpumask);
 	psmi_assert_always(max_cpu_numa >= 0);
 	return max_cpu_numa;
-}
-
-/* search the list of all units for those which are active
- * and optionally match the given NUMA node_id (when node_id >= 0)
- * returns the number of active units found.
- * Note get_unit_active tests for active ports, valid addresses and
- * performs filtering as done in get_port_subnets
- */
-static int
-hfi_find_active_hfis(int nunits, int node_id, int *saved_hfis)
-{
-	int found = 0, unit_id;
-
-	for (unit_id = 0; unit_id < nunits; unit_id++) {
-		int node_id_i;
-
-		if (psmi_hal_get_unit_active(unit_id) <= 0)
-			continue;
-
-		if (node_id < 0) {
-			saved_hfis[found++] = unit_id;
-			_HFI_DBG("RoundRobinAll Found NIC unit= %d, local rank=%d.\n",
-				unit_id, psm3_get_mylocalrank());
-		} else if (!psmi_hal_get_node_id(unit_id, &node_id_i)
-				&& node_id_i == node_id) {
-			saved_hfis[found++] = unit_id;
-			_HFI_DBG("RoundRobin Found NIC unit= %d, node = %d, local rank=%d.\n",
-				unit_id, node_id, psm3_get_mylocalrank());
-		}
-	}
-	return found;
-}
-
-// select NIC across all NICs, use a hash of job_id and local rank to
-// distribute local ranks across NICs and to attempt to distribute
-// jobs across NICs.
-// TBD - if know never have >1 job per node, could ignore job_id, perhaps
-// have an env to exclude job_id from hash so NIC selection is deterministic
-static void
-psmi_spread_nic_selection(psm2_uuid_t const job_key, long *unit_start,
-			     long *unit_end, int nunits)
-{
-	{
-		int found, saved_hfis[nunits];
-
-		/* else, we are going to look at:
-		   (a hash of the job key plus the local rank id) mod nunits. */
-		found = hfi_find_active_hfis(nunits, -1, saved_hfis);
-		if (found)
-			*unit_start = saved_hfis[((psm3_get_mylocalrank()+1) +
-				psm3_get_uuid_hash(job_key)) % found];
-		else
-			// none found, caller will fail, start is a don't care
-			*unit_start = 0;
-		/* just in case, caller will check all other units, with wrap */
-		if (*unit_start > 0)
-			*unit_end = *unit_start - 1;
-		else
-			*unit_end = nunits-1;
-	}
-	_HFI_DBG("RoundRobinAll Will select 1st viable NIC unit= %ld to %ld.\n",
-		*unit_start, *unit_end);
 }
 
 static int
@@ -411,57 +365,6 @@ free_name:
 	psmi_free(psm3_affinity_shm_name);
 	psm3_affinity_shm_name = NULL;
 	return -1;
-}
-
-/*
- * Spread HFI selection between units if we find more than one within a socket.
- */
-static void
-psmi_spread_hfi_within_socket(long *unit_start, long *unit_end, int node_id,
-			      int *saved_hfis, int found, psm2_uuid_t const job_key)
-{
-	int ret, shm_location;
-
-	/*
-	 * Take affinity lock and open shared memory region to be able to
-	 * accurately determine which HFI to pick for this process. If any
-	 * issues, bail by picking first known HFI.
-	 */
-	if (!psm3_affinity_semaphore_open)
-		goto spread_hfi_fallback;
-
-	ret = psm3_create_and_open_affinity_shm(job_key);
-	if (ret < 0)
-		goto spread_hfi_fallback;
-
-	// one shm entry per CPU NUMA domain
-	// The entry contains the next round robin NIC to use
-	// in the form of a index into saved_hfis
-	// saved_hfis has a list of all the NUMA local active NICs
-	shm_location = AFFINITY_SHM_HFI_INDEX_LOCATION + node_id;
-	if (shm_location > PSMI_PAGESIZE)
-		goto spread_hfi_fallback;
-
-	/* Start critical section to read/write shm object */
-	if (psmi_sem_timedwait(psm3_sem_affinity_shm_rw, psm3_sem_affinity_shm_rw_name)) {
-		_HFI_VDBG("Could not enter critical section to update NIC index\n");
-		goto spread_hfi_fallback;
-	}
-
-	*unit_start = *unit_end = saved_hfis[psm3_shared_affinity_ptr[shm_location]];
-	psm3_shared_affinity_ptr[shm_location] =
-		(psm3_shared_affinity_ptr[shm_location] + 1) % found;
-	_HFI_DBG("RoundRobin Selected NIC unit= %ld, Next NIC=%ld, node = %d, local rank=%d, found=%d.\n",
-		  *unit_start, psm3_shared_affinity_ptr[shm_location], node_id,
-		  psm3_get_mylocalrank(), found);
-
-	/* End Critical Section */
-	psmi_sem_post(psm3_sem_affinity_shm_rw, psm3_sem_affinity_shm_rw_name);
-
-	return;
-
-spread_hfi_fallback:
-	*unit_start = *unit_end = saved_hfis[0];
 }
 
 static void
@@ -732,9 +635,9 @@ void nic_info_filter_gpu_distance(struct nic_info *nic_info, unsigned ninfo)
 	unsigned i;
 	int min_distance = INT_MAX;	// smallest distance found
 	unsigned found = 0;
-	struct pci_addr gpu_pci_addr;
+	struct pci_addr gpu_pci_addr = { 0 };
 
-	if (! PSMI_IS_GPU_ENABLED)
+	if (! PSM3_GPU_IS_ENABLED)
 		return;
 
 	psm3_deferred_hwloc_topology_init();
@@ -742,66 +645,9 @@ void nic_info_filter_gpu_distance(struct nic_info *nic_info, unsigned ninfo)
 		return;	// hwloc incorrect version
 	psmi_assert(psm3_hwloc_topology_initialized);
 
-	// Get current GPU PCIe address to gpu_pci_addr;
-#ifdef PSM_CUDA
-	{
-		int domain, bus, dev;
-		int num_devices;
-		CUdevice device;
-
-		PSMI_CUDA_CALL(cuDeviceGetCount, &num_devices);
-		_HFI_DBG("%d Cuda GPUs found\n", num_devices);
-		if (! num_devices)
-			return;
-
-		if (num_devices == 1) {
-			PSMI_CUDA_CALL(cuDeviceGet, &device, 0);
-		} else {
-			// all GPUs will be visible to process, see if app chose one first
-			CUcontext ctxt = {0};
-			if (! psmi_cuCtxGetCurrent || psmi_cuCtxGetCurrent(&ctxt) || ! ctxt) {
-				_HFI_DBG("Unable to get Cuda ctxt\n");
-				//PSMI_CUDA_CALL(cuDeviceGet, &device, 0);
-				return;
-			} else {
-				PSMI_CUDA_CALL(cuCtxGetDevice, &device);
-			}
-		}
-		_HFI_DBG("Using Cuda GPU %d\n", device);
-		PSMI_CUDA_CALL(cuDeviceGetAttribute,
-								&domain,
-								CU_DEVICE_ATTRIBUTE_PCI_DOMAIN_ID,
-								device);
-		PSMI_CUDA_CALL(cuDeviceGetAttribute,
-								&bus,
-								CU_DEVICE_ATTRIBUTE_PCI_BUS_ID,
-								device);
-		PSMI_CUDA_CALL(cuDeviceGetAttribute,
-								&dev,
-								CU_DEVICE_ATTRIBUTE_PCI_DEVICE_ID,
-								device);
-		gpu_pci_addr.domain = domain;
-		gpu_pci_addr.bus = bus;
-		gpu_pci_addr.dev = dev;
-		gpu_pci_addr.func = 0;
-	}
-#elif defined(PSM_ONEAPI)
-	{
-		ze_pci_ext_properties_t PciProperties;
-
-		_HFI_DBG("%d Level Zero GPUs found\n", num_ze_devices);
-		if (! num_ze_devices)
-			return;
-
-		// caling middleware will have limited GPUs visible to process
-		PSMI_ONEAPI_ZE_CALL(zeDevicePciGetPropertiesExt,
-							ze_devices[0].dev, &PciProperties);
-		gpu_pci_addr.domain = PciProperties.address.domain;
-		gpu_pci_addr.bus = PciProperties.address.bus;
-		gpu_pci_addr.dev = PciProperties.address.device;
-		gpu_pci_addr.func = PciProperties.address.function;
-	}
-#endif
+	// Get current GPU's PCIe address to gpu_pci_addr;
+	PSM3_GPU_GET_PCI_ADDR( &gpu_pci_addr.domain, &gpu_pci_addr.bus,
+		&gpu_pci_addr.dev, &gpu_pci_addr.func);
 	_HFI_DBG("GPU PCIe address is %04x:%02x:%02x.%x\n",
 				gpu_pci_addr.domain, gpu_pci_addr.bus,
 				gpu_pci_addr.dev, gpu_pci_addr.func);
@@ -848,6 +694,14 @@ void nic_info_filter_gpu_distance(struct nic_info *nic_info, unsigned ninfo)
 					found, min_distance);
 }
 #endif /* PSM_HAVE_GPU_CENTRIC_AFFINITY */
+
+// filter down the list of NICs solely based on CPU NUMA locality
+static void nic_info_filter_cpu_numa(struct nic_info *nic_info,
+										unsigned ninfo)
+{
+	_HFI_DBG("Filtering NICs with CPU NUMA Strategy\n");
+	nic_info_filter_numa(nic_info, ninfo);
+}
 
 // filter down the list of NICs with a CPU locality focus as priority
 // if present, the GPU is considered last.  If the GPU is NUMA local
@@ -1010,7 +864,7 @@ psm3_open_shm_scoreboard_and_select_nic(
 		goto fallback;
 	}
 
-	// balance among procceses within current node
+	// balance among processes within current node
 	nic_info_filter_refcount(nic_info, ninfo,
 					psm3_shared_affinity_nic_refcount_ptr,
 					nunits, "local node");
@@ -1059,198 +913,58 @@ void psm3_dec_nic_refcount(int unit_id)
 	}
 }
 
-psm2_error_t
-psm3_compute_start_and_end_unit_cpu_centric(
-				psm2_uuid_t const job_key,
-				long *unit_start,long *unit_end, int nunits)
+static int parse_selection_alg(const char *str)
 {
-	unsigned index;
-	unsigned ninfo;
-	struct nic_info nic_info[PSMI_MAX_RAILS];
-
-	// caller will enumerate addr_index, just just get all active ports
-	ninfo = nic_info_init(nic_info, nunits, 0);
-	if (! ninfo) {
-		// should not happen, caller already confirmed there is >1 active unit
-		// mimic what caller of psm3_compute_start_and_end_unit would do
-		return psm3_handle_error(NULL, PSM2_EP_DEVICE_FAILURE,
-                    "PSM3 no nic units are active");
-	}
-
-	nic_info_filter_cpu_centric(nic_info, ninfo);
-
-	index = psm3_open_shm_scoreboard_and_select_nic(nic_info, ninfo,
-								job_key, nunits);
-	psmi_assert(index >= 0 && index < ninfo);
-
-	// caller will select 1st active port and an addr_index within unit
-	*unit_start = *unit_end = nic_info[index].unit;
-	return PSM2_OK;
-}
-
+	if (!strcasecmp(str, "Round Robin")
+		|| !strcasecmp(str, "RoundRobin")
+		|| !strcasecmp(str, "rr"))
+		return PSMI_NIC_SEL_ALG_NUMA;
+	else if (!strcasecmp(str, "Packed")
+			 || !strcasecmp(str, "p"))
+		return PSMI_NIC_SEL_ALG_FIRST;
+	else if (!strcasecmp(str, "Round Robin All")
+			 || !strcasecmp(str, "RoundRobinAll")
+			 || !strcasecmp(str, "rra"))
+		return PSMI_NIC_SEL_ALG_ANY;
+	else if (!strcasecmp(str, "CPU Centric Round Robin")
+			 || !strcasecmp(str, "CpuRoundRobin")
+			 || !strcasecmp(str, "crr"))
+		return PSMI_NIC_SEL_ALG_CPU_CENTRIC;
 #ifdef PSM_HAVE_GPU_CENTRIC_AFFINITY
-psm2_error_t
-psm3_compute_start_and_end_unit_gpu_centric(
-				psm2_uuid_t const job_key,
-				long *unit_start,long *unit_end, int nunits)
-{
-	unsigned index;
-	unsigned ninfo;
-	struct nic_info nic_info[PSMI_MAX_RAILS];
-
-	// caller will enumerate addr_index, just just get all active ports
-	ninfo = nic_info_init(nic_info, nunits, 0);
-	if (! ninfo) {
-		// should not happen, caller already confirmed there is >1 active unit
-		// mimic what caller of psm3_compute_start_and_end_unit would do
-		return psm3_handle_error(NULL, PSM2_EP_DEVICE_FAILURE,
-                    "PSM3 no nic units are active");
-	}
-
-	nic_info_filter_gpu_centric(nic_info, ninfo);
-
-	index = psm3_open_shm_scoreboard_and_select_nic(nic_info, ninfo,
-								job_key, nunits);
-	psmi_assert(index >= 0 && index < ninfo);
-
-	// caller will select 1st active port and an addr_index within unit
-	*unit_start = *unit_end = nic_info[index].unit;
-	return PSM2_OK;
-}
-#endif /* PSM_HAVE_GPU_CENTRIC_AFFINITY */
-
-// return set of units to consider and which to start at.
-// caller will use 1st active unit which can be opened.
-// caller will wrap around so it's valid for start >= end
-// Note: When using multiple rails per PSM process, higher level code will
-// walk through desired units and unit_param will specify a specific unit
-// if unit_param is PSM3_NIC_ANY, this will pick starting point for nic search
-psm2_error_t
-psm3_compute_start_and_end_unit(long unit_param, long addr_index,
-				int nunitsactive, int nunits,
-				psm2_uuid_t const job_key,
-				long *unit_start, long *unit_end)
-{
-	unsigned short nic_sel_alg = PSMI_UNIT_SEL_ALG_ACROSS;
-	int node_id, found = 0;
-	int saved_hfis[nunits];
-
-	/* if the user did not set PSM3_NIC then ... */
-	if (unit_param == PSM3_NIC_ANY)
-	{
-		if (nunitsactive > 1) {
-			// if NICs are on different planes (non-routed subnets)
-			// we need to have all ranks default to the same plane
-			// so force 1st active NIC in that case
-			int have_subnet = 0, unit_id;
-			psmi_subnet128_t got_subnet = { };
-			for (unit_id = 0; unit_id < nunits; unit_id++) {
-				psmi_subnet128_t subnet;
-				if (psmi_hal_get_unit_active(unit_id) <= 0)
-					continue;
-				if (0 != psmi_hal_get_port_subnet(unit_id, 1 /* VERBS_PORT*/,
-								addr_index>0?addr_index:0,
-								&subnet, NULL, NULL, NULL))
-					continue; // can't access NIC
-				if (! have_subnet) {
-					have_subnet = 1;
-					got_subnet = subnet;
-				} else if (! psm3_subnets_match(got_subnet,
-								subnet)) {
-					// active units have different tech
-					// (IB/OPA vs Eth) or different subnets
-					// caller will pick 1st active unit
-					*unit_start = 0;
-					*unit_end = nunits - 1;
-					_HFI_DBG("Multi-Plane config: Will select 1st viable NIC unit= %ld to %ld.\n",
-						*unit_start, *unit_end);
-					return PSM2_OK;
-				}
-			}
-		}
-
-		/* Get the actual selection algorithm from the environment: */
-		nic_sel_alg = psmi_parse_nic_selection_algorithm();
-		/* If round-robin is selection algorithm and ... */
-		if ((nic_sel_alg == PSMI_UNIT_SEL_ALG_ACROSS) &&
-		    /* there are more than 1 active units then ... */
-		    (nunitsactive > 1))
-		{
-			/*
-			 * Pick an HFI on same root complex as current task.
-			 * linux IPC ensures balanced NIC usage within job.
-			 * If none found, fall back to
-			 * RoundRobinAll load-balancing algorithm.
-			 */
-			node_id = psm3_get_current_proc_location();
-			if (node_id >= 0) {
-				found = hfi_find_active_hfis(nunits, node_id,
-								saved_hfis);
-				if (found > 1) {
-					psm3_create_affinity_semaphores(job_key);
-					psmi_spread_hfi_within_socket(unit_start, unit_end,
-								      node_id, saved_hfis,
-								      found, job_key);
-				} else if (found == 1) {
-					*unit_start = *unit_end = saved_hfis[0];
-					_HFI_DBG("RoundRobin Selected NIC unit= %ld, node = %d, local rank=%d, found=%d.\n",
-						*unit_start, node_id,
-						psm3_get_mylocalrank(), found);
-				}
-			}
-
-			if (node_id < 0 || !found) {
-				_HFI_DBG("RoundRobin No local NIC found, using RoundRobinAll, node = %d, local rank=%d, found=%d.\n",
-						node_id,
-						psm3_get_mylocalrank(), found);
-				psmi_spread_nic_selection(job_key, unit_start,
-							  unit_end, nunits);
-			}
-		} else if ((nic_sel_alg == PSMI_UNIT_SEL_ALG_ACROSS_ALL) &&
-			 (nunitsactive > 1)) {
-				psmi_spread_nic_selection(job_key, unit_start,
-							  unit_end, nunits);
-		} else if ((nic_sel_alg == PSMI_UNIT_SEL_ALG_CPU_CENTRIC) &&
-			 (nunitsactive > 1)) {
-				return psm3_compute_start_and_end_unit_cpu_centric(job_key,
-							unit_start, unit_end, nunits);
-#ifdef PSM_HAVE_GPU_CENTRIC_AFFINITY
-		} else if ((nic_sel_alg == PSMI_UNIT_SEL_ALG_GPU_CENTRIC) &&
-			 (nunitsactive > 1)) {
-				return psm3_compute_start_and_end_unit_gpu_centric(job_key,
-							unit_start, unit_end, nunits);
+	else if (!strcasecmp(str, "GPU Centric Round Robin")
+			 || !strcasecmp(str, "GpuRoundRobin")
+			 || !strcasecmp(str, "grr"))
+		return PSMI_NIC_SEL_ALG_GPU_CENTRIC;
 #endif
-		} else { // PSMI_UNIT_SEL_ALG_WITHIN or only 1 active unit
-			// caller will pick 1st active unit
-			*unit_start = 0;
-			*unit_end = nunits - 1;
-			_HFI_DBG("%s: Will select 1st viable NIC unit= %ld to %ld.\n",
-				(nic_sel_alg == PSMI_UNIT_SEL_ALG_WITHIN)
-					?"Packed":"Only 1 viable NIC",
-				*unit_start, *unit_end);
-		}
-	} else if (unit_param >= 0) {
-		/* the user specified PSM3_NIC, we use it. */
-		*unit_start = *unit_end = unit_param;
-		_HFI_DBG("Caller selected NIC %ld.\n", *unit_start);
-	} else {
-		psm3_handle_error(NULL, PSM2_EP_DEVICE_FAILURE,
-				 "PSM3 can't open unit: %ld for reading and writing",
-				 unit_param);
-		return PSM2_EP_DEVICE_FAILURE;
-	}
+	else
+		return -1;
+}
 
-	return PSM2_OK;
+/* check for valid PSM3_SELECTION_ALG
+ * returns:
+ * 0 - valid
+ * -1 - empty string
+ * -2 - invalid syntax
+ */
+static int parse_check_selection_alg(int type, const union psmi_envvar_val val,
+						void *ptr, size_t errstr_size, char errstr[])
+{
+		psmi_assert(type == PSMI_ENVVAR_TYPE_STR);
+		if (! val.e_str || ! *val.e_str)
+			return -1;
+		if (parse_selection_alg(val.e_str) < 0)
+			return -2;
+		return 0;
 }
 
 static
 int psmi_parse_nic_selection_algorithm(void)
 {
 	union psmi_envvar_val env_nic_alg;
-	int nic_alg = PSMI_UNIT_SEL_ALG_ACROSS;
+	int nic_alg;
 
 	const char* PSM3_NIC_SELECTION_ALG_HELP =
-		    "NIC Device Selection Algorithm to use. Round Robin[RoundRobin or rr] (Default) "
+		    "Round Robin[RoundRobin or rr] (Default)"
 		    ", Packed[p], Round Robin All[RoundRobinAll or rra],"
 #ifdef PSM_HAVE_GPU_CENTRIC_AFFINITY
 			" CPU Centric Round Robin [CpuRoundRobin or crr]"
@@ -1259,42 +973,105 @@ int psmi_parse_nic_selection_algorithm(void)
 			" or CPU Centric Round Robin [CpuRoundRobin or crr]";
 #endif
 
+	psm3_getenv_range("PSM3_NIC_SELECTION_ALG",
+			"NIC Device Selection Algorithm",
+			PSM3_NIC_SELECTION_ALG_HELP,
+			PSMI_ENVVAR_LEVEL_USER, PSMI_ENVVAR_TYPE_STR,
+			(union psmi_envvar_val)"rr",
+			(union psmi_envvar_val)NULL, (union psmi_envvar_val)NULL,
+			parse_check_selection_alg, NULL, &env_nic_alg);
 
-	/* If a specific unit is set in the environment, use that one. */
-	psm3_getenv("PSM3_NIC_SELECTION_ALG", PSM3_NIC_SELECTION_ALG_HELP,
-		    PSMI_ENVVAR_LEVEL_USER, PSMI_ENVVAR_TYPE_STR,
-		    (union psmi_envvar_val)"rr", &env_nic_alg);
-
-	if (!strcasecmp(env_nic_alg.e_str, "Round Robin")
-		|| !strcasecmp(env_nic_alg.e_str, "RoundRobin")
-		|| !strcasecmp(env_nic_alg.e_str, "rr"))
-		nic_alg = PSMI_UNIT_SEL_ALG_ACROSS;
-	else if (!strcasecmp(env_nic_alg.e_str, "Packed")
-			 || !strcasecmp(env_nic_alg.e_str, "p"))
-		nic_alg = PSMI_UNIT_SEL_ALG_WITHIN;
-	else if (!strcasecmp(env_nic_alg.e_str, "Round Robin All")
-			 || !strcasecmp(env_nic_alg.e_str, "RoundRobinAll")
-			 || !strcasecmp(env_nic_alg.e_str, "rra"))
-		nic_alg = PSMI_UNIT_SEL_ALG_ACROSS_ALL;
-	else if (!strcasecmp(env_nic_alg.e_str, "CPU Centric Round Robin")
-			 || !strcasecmp(env_nic_alg.e_str, "CpuRoundRobin")
-			 || !strcasecmp(env_nic_alg.e_str, "crr"))
-		nic_alg = PSMI_UNIT_SEL_ALG_CPU_CENTRIC;
-#ifdef PSM_HAVE_GPU_CENTRIC_AFFINITY
-	else if (!strcasecmp(env_nic_alg.e_str, "GPU Centric Round Robin")
-			 || !strcasecmp(env_nic_alg.e_str, "GpuRoundRobin")
-			 || !strcasecmp(env_nic_alg.e_str, "grr"))
-		nic_alg = PSMI_UNIT_SEL_ALG_GPU_CENTRIC;
-#endif
-	else {
-		_HFI_INFO(
-		    "Invalid value for PSM3_NIC_SELECTION_ALG ('%s') %-40s Using: %s\n",
-			env_nic_alg.e_str, PSM3_NIC_SELECTION_ALG_HELP, "RoundRobin");
-		nic_alg = PSMI_UNIT_SEL_ALG_ACROSS;
-	}
-
+	nic_alg = parse_selection_alg(env_nic_alg.e_str);
+	psmi_assert(nic_alg >= 0);
 	return nic_alg;
 }
+
+// Autoselect one unit for non-multirail operation.
+// caller will select 1st active port and an addr_index within unit
+// returns the unit number or -1 if unable to find an active unit
+int
+psm3_autoselect_one(long addr_index, int nunits, psm2_uuid_t const job_key)
+{
+	unsigned short nic_sel_alg;
+	unsigned first_active = nunits;	// invalid value. for error check
+	int have_subnet = 0, unit_id;
+	psmi_subnet128_t got_subnet = { };
+	unsigned ninfo;
+	struct nic_info nic_info[PSMI_MAX_RAILS];
+	unsigned index;
+	int nunitsactive = 0;
+
+	// find first_active, also if NICs are on different planes
+	// (non-routed subnets) we need to have all ranks default to the
+	// same plane so force 1st active NIC in that case
+	for (unit_id = 0; unit_id < nunits; unit_id++) {
+		psmi_subnet128_t subnet;
+		if (psmi_hal_get_unit_active(unit_id) <= 0)
+			continue;
+		if (0 != psmi_hal_get_port_subnet(unit_id, 1 /* VERBS_PORT*/,
+						addr_index>0?addr_index:0,
+						&subnet, NULL, NULL, NULL))
+			continue; // can't access NIC
+		// found an active viable NIC
+		nunitsactive++;
+		if (! have_subnet) {
+			have_subnet = 1;
+			got_subnet = subnet;
+			first_active = unit_id;
+		} else if (! psm3_subnets_match(got_subnet, subnet)) {
+			// Active units have different tech (IB/OPA vs Eth)
+			// or different subnets.
+			// Use 1st active unit so all ranks in job can communicate
+			_HFI_DBG("Multi-Plane config: Using 1st viable NIC unit= %u.\n",
+					first_active);
+			return first_active;
+		}
+	}
+	if (nunitsactive == 0)
+		return -1;
+
+	nic_sel_alg = psmi_parse_nic_selection_algorithm();
+
+	if (nunitsactive <= 1 || nic_sel_alg == PSMI_NIC_SEL_ALG_FIRST) {
+		// pick 1st active unit
+		_HFI_DBG("%s: Selected 1st viable NIC unit= %u.\n",
+			(nic_sel_alg == PSMI_NIC_SEL_ALG_FIRST)
+				?"Packed":"Only 1 viable NIC",
+			first_active);
+		return first_active;
+	}
+
+	ninfo = nic_info_init(nic_info, nunits, 0);
+	if (! ninfo) {
+		// should not happen, already confirmed there is >1 active unit
+		return -1;
+	}
+	switch (nic_sel_alg) {
+	default:
+	case PSMI_NIC_SEL_ALG_NUMA: /* round-robin is selection algorithm */
+		nic_info_filter_cpu_numa(nic_info, ninfo);
+		break;
+	case PSMI_NIC_SEL_ALG_ANY:
+		// we will use any active unit
+		_HFI_DBG("No further NIC filtering\n");
+		break;
+	case PSMI_NIC_SEL_ALG_CPU_CENTRIC:
+		nic_info_filter_cpu_centric(nic_info, ninfo);
+		break;
+#ifdef PSM_HAVE_GPU_CENTRIC_AFFINITY
+	case PSMI_NIC_SEL_ALG_GPU_CENTRIC:
+		nic_info_filter_gpu_centric(nic_info, ninfo);
+		break;
+#endif
+	}
+
+	index = psm3_open_shm_scoreboard_and_select_nic(nic_info, ninfo,
+									job_key, nunits);
+	psmi_assert(index >= 0 && index < ninfo);
+
+	return nic_info[index].unit;
+}
+
 
 /* parse a list of NIC rails for PSM3_MULTIRAIL_MAP
  * map is in format: unit:port-addr_index,unit:port-addr_index,...;unit....
@@ -1592,109 +1369,95 @@ psm3_copy_nic_info_to_multitrail_config(
 	}
 }
 
-// select a list of NICs to use, optimizing for CPU locality first
+// Multirail enabled, see if PSM3_MULTIRAIL_MAP is selecting NICs
+// for PSM3_MULTIRAIL=1 or 2, PSM3_MULTIRAIL_MAP can explicitly select NICs.
+// returns:
+//   PSM2_OK - PSM3_MULTIRAIL_MAP specified and valid, multirail_config updated
+//   PSM2_EP_NO_DEVICE - PSM3_MULTIRAIL_MAP not specified or invalid
 static psm2_error_t
-psm3_ep_multirail_autoselect_cpu_centric(uint32_t nunits,
+psm3_ep_multirail_map(int multirail_mode,
 							struct multirail_config *multirail_config)
 {
-	unsigned ninfo;
-	struct nic_info nic_info[PSMI_MAX_RAILS];
-
-	// enumerate addr_index too
-	ninfo = nic_info_init(nic_info, nunits, 1);
-	if (! ninfo) {
-		// caller will try single NIC selection next
-		multirail_config->num_rails = 0;
-		return PSM2_OK;
-	}
-
-	nic_info_filter_cpu_centric(nic_info, ninfo);
-
-	// we will use all unfiltered units
-
-	// ensure psm3_context_set_affinity doesn't unnecessarily narrow CPU
-	// selection, it will be called per rail and if rails are in
-	// different CPU NUMA could have an undesired impact
-	setenv("PSM3_NO_AFFINITY", "1", 1);
-
-	psm3_copy_nic_info_to_multitrail_config(nic_info, ninfo, multirail_config);
-	return PSM2_OK;
-}
-
-#ifdef PSM_HAVE_GPU_CENTRIC_AFFINITY
-// select a list of NICs to use, optimizing for GPU locality first
-static psm2_error_t
-psm3_ep_multirail_autoselect_gpu_centric(uint32_t nunits,
-							struct multirail_config *multirail_config)
-{
-	unsigned ninfo;
-	struct nic_info nic_info[PSMI_MAX_RAILS];
-
-	// enumerate addr_index too
-	ninfo = nic_info_init(nic_info, nunits, 1);
-	if (! ninfo) {
-		// caller will try single NIC selection next
-		multirail_config->num_rails = 0;
-		return PSM2_OK;
-	}
-
-	nic_info_filter_gpu_centric(nic_info, ninfo);
-
-	// we will use all unfiltered units
-
-	// ensure psm3_context_set_affinity doesn't unnecessarily narrow CPU
-	// selection, it will be called per rail and if rails are in
-	// different CPU NUMA could have an undesired impact
-	setenv("PSM3_NO_AFFINITY", "1", 1);
-
-	psm3_copy_nic_info_to_multitrail_config(nic_info, ninfo, multirail_config);
-	return PSM2_OK;
-}
-#endif /* PSM_HAVE_GPU_CENTRIC_AFFINITY */
-
-// for use in psm3_ep_multirail_autoselect so can sort rails
-// by subnet and addr_index
-struct rail_info {
-	psmi_subnet128_t subnet;
-	unsigned unit;
-	unsigned port;
-	unsigned addr_index;
-};
-
-static int cmpfunc(const void *p1, const void *p2)
-{
-	struct rail_info *a = ((struct rail_info *) p1);
-	struct rail_info *b = ((struct rail_info *) p2);
 	int ret;
+	union psmi_envvar_val env_multirail_map;
+	int map_index;
 
-	ret = psmi_subnet128_cmp(a->subnet, b->subnet);
-	if (ret == 0) {
-		if (a->addr_index < b->addr_index)
-			return -1;
-		else if (a->addr_index > b->addr_index)
-			return 1;
+	// PSM3_MUTLIRAIL_MAP only allowed for PSM3_MULTIRAIL=1 or 2
+	// We treat invalid input, such as bad syntax or selection of an unusable
+	// port (down/missing/etc), as a fatal error instead of attempting to run
+	// on the default PSM3_MULTIRAIL_MAP config.  This helps avoid
+	// inconsistent NIC selections, especially for down ports, which may
+	// cause confusing behaviors or errors.
+	// If PSM3_MULTIRAIL_MAP contains multiple lists of NICs, then
+	// if PSM3_MULTIRAIL=1 - use local rank index (0, ...) to select
+	// if PSM3_MULTIRAIL=2 - use process NUMA (0, ...) to select
+	if (multirail_mode == 1) {
+		map_index = psm3_get_mylocalrank();
+	} else if (multirail_mode == 2) {
+		map_index = psm3_get_current_proc_location();
+		if (map_index < 0) {
+			return psm3_handle_error(PSMI_EP_NORETURN,
+				PSM2_EP_DEVICE_FAILURE,
+				"Unable to get NUMA location of current process\n");
+		}
+	} else {
+		return PSM2_EP_NO_DEVICE;	// caller will ignore MULTIRAIL_MAP
 	}
-	return ret;
+	ret = psm3_getenv_range("PSM3_MULTIRAIL_MAP",
+		"Explicit NIC selections for each rail",
+		"Specified as:\n"
+		"     rail,rail,...;rail,rail,...\n"
+#if 0
+		"Where rail can be: unit:port-addr_index or unit\n"
+#else
+		"Where rail can be: unit-addr_index or unit\n"
+#endif
+		"unit can be device name or unit number\n"
+#if 0
+		"where :port is optional (default of 1)\n"
+#endif
+		"addr_index can be 0 to PSM3_ADDR_PER_NIC-1, or 'any' or 'all'\n"
+		"When addr_index is omitted, it defaults to 'all'\n"
+		"When more than 1 set of rails is present (each set is separated by ;),\n"
+		"the set to use for a given process is selected based on PSM3_MULTIRAIL.\n"
+		"    1 - use local rank number to select\n"
+		"    2 - use local CPU NUMA to select\n"
+		"When empty, PSM3 will autoselect NICs as controlled by PSM3_MULTIRAIL.",
+			PSMI_ENVVAR_LEVEL_USER|PSMI_ENVVAR_FLAG_FATAL, PSMI_ENVVAR_TYPE_STR,
+			(union psmi_envvar_val)"",
+			(union psmi_envvar_val)NULL, (union psmi_envvar_val)NULL,
+			psm3_parse_check_multirail_map, &map_index, &env_multirail_map);
+	if (ret < 0) {	// syntax error in input, ret error instead of using default
+		psmi_assert(0); // should not get here since specified FLAG_FATAL
+		multirail_config->num_rails = 0;
+		return psm3_handle_error(PSMI_EP_NORETURN,
+				PSM2_EP_DEVICE_FAILURE,
+				"Invalid value for PSM3_MULTIRAIL_MAP: '%s', can't proceed\n",
+				env_multirail_map.e_str);
+	}
+	if (! ret) {
+		// valid input
+		if (psm3_parse_multirail_map(env_multirail_map.e_str, map_index, 0, NULL,
+			multirail_config) < 0) {
+			// already checked, shouldn't get parse errors nor empty strings
+			psmi_assert(0);
+		}
+		return PSM2_OK;
+	}
+	return PSM2_EP_NO_DEVICE;
 }
 
 // Multirail enabled, autoselect one or more NICs for this process
-// multirail_mode is PSM3_MULTIRAIL selection (1=all NICs, 2=NUMA local NICs)
+// multirail_mode is PSM3_MULTIRAIL selection
+// (1=all NICs, 2=NUMA local NICs, 3=cpu centric, 4=gpu centric)
 static psm2_error_t
 psm3_ep_multirail_autoselect(int multirail_mode,
 							struct multirail_config *multirail_config)
 {
 	uint32_t num_units = 0;
-	psmi_subnet128_t subnet;
-	unsigned i, j, k, count = 0;
-	int ret;
 	psm2_error_t err = PSM2_OK;
-	struct rail_info rail_info[PSMI_MAX_RAILS];
-	int multirail_within_socket_used = 0;
-	int node_id = -1, found = 0;
-
-	if (multirail_mode == 2)
-		multirail_within_socket_used = 1;
-
+	unsigned ninfo;
+	struct nic_info nic_info[PSMI_MAX_RAILS];
 
 	if ((err = psm3_ep_num_devunits(&num_units))) {
 		return err;
@@ -1707,87 +1470,41 @@ psm3_ep_multirail_autoselect(int multirail_mode,
 		num_units = PSMI_MAX_RAILS;
 	}
 
-	if (multirail_mode == 3)
-		return psm3_ep_multirail_autoselect_cpu_centric(num_units, multirail_config);
+	// enumerate addr_index too
+	ninfo = nic_info_init(nic_info, num_units, 1);
+	if (! ninfo) {
+		// caller will try single NIC selection next
+		multirail_config->num_rails = 0;
+		return PSM2_OK;
+	}
+
+	switch (multirail_mode) {
+	default:
+	case 1:
+		// we will use all active units
+		_HFI_DBG("No further NIC filtering\n");
+		break;
+	case 2:
+		nic_info_filter_cpu_numa(nic_info, ninfo);
+		break;
+	case 3:
+		nic_info_filter_cpu_centric(nic_info, ninfo);
+		break;
 #ifdef PSM_HAVE_GPU_CENTRIC_AFFINITY
-	if (multirail_mode == 4)
-		return psm3_ep_multirail_autoselect_gpu_centric(num_units, multirail_config);
-#endif
-
-	/*
-	 * PSM3_MULTIRAIL=2 functionality-
-	 *   - Try to find at least find one NIC in the same root
-	 *     complex. If none found, continue to run and
-	 *     use remaining NIC in the system.
-	 *   - If we do find at least one NIC in same root complex, we
-	 *     go ahead and add to list.
-	 */
-	if (multirail_within_socket_used) {
-		node_id = psm3_get_current_proc_location();
-		for (i = 0; i < num_units; i++) {
-			if (psmi_hal_get_unit_active(i) <= 0)
-				continue;
-			int node_id_i;
-
-			if (!psmi_hal_get_node_id(i, &node_id_i)) {
-				if (node_id_i == node_id) {
-					found = 1;
-					break;
-				}
-			}
-		}
-	}
-/*
- * Get all the ports and addr_index with a valid lid and gid, one port per unit.
- * but up to PSM3_ADDR_PER_NIC addresses.  If we are using the NUMA selection
- * algorithm and found at list 1 NUMA local NIC above, limit the list to NUMA
- * local NICs, otherwise list all NICs
- */
-	for (i = 0; i < num_units; i++) {
-		int node_id_i;
-
-		if (!psmi_hal_get_node_id(i, &node_id_i))
-		{
-			if (multirail_within_socket_used &&
-			    found && (node_id_i != node_id))
-				continue;
-		}
-
-		for (j = PSM3_NIC_MIN_PORT; j <= PSM3_NIC_MAX_PORT; j++) {
-			int got_port = 0;
-			for (k = 0; k < psm3_addr_per_nic; k++) {
-				ret = psmi_hal_get_port_lid(i, j, k);
-				if (ret <= 0)
-					continue;
-				ret = psmi_hal_get_port_subnet(i, j, k, &subnet, NULL, NULL, NULL);
-				if (ret == -1)
-					continue;
-
-				rail_info[count].subnet = subnet;
-				rail_info[count].unit = i;
-				rail_info[count].port = j;
-				rail_info[count].addr_index = k;
-				got_port = 1;
-				count++;
-			}
-			if (got_port)	// one port per unit
-				break;
-		}
+	case 4:
+		nic_info_filter_gpu_centric(nic_info, ninfo);
+		break;
+#endif /* PSM_HAVE_GPU_CENTRIC_AFFINITY */
 	}
 
-/*
- * Sort all the ports within rail_info from small to big.
- * This is for multiple fabrics, and we use fabric with the
- * smallest subnet to make the master connection.
- */
-	qsort(rail_info, count, sizeof(rail_info[0]), cmpfunc);
+	// we will use all unfiltered units
 
-	for (i = 0; i < count; i++) {
-		multirail_config->units[i] = rail_info[i].unit;
-		multirail_config->ports[i] = rail_info[i].port;
-		multirail_config->addr_indexes[i] = rail_info[i].addr_index;
-	}
-	multirail_config->num_rails = count;
+	// ensure psm3_context_set_affinity doesn't unnecessarily narrow CPU
+	// selection, it will be called per rail and if rails are in
+	// different CPU NUMA could have an undesired impact
+	setenv("PSM3_NO_AFFINITY", "1", 1);
+
+	psm3_copy_nic_info_to_multitrail_config(nic_info, ninfo, multirail_config);
 	return PSM2_OK;
 }
 
@@ -1795,7 +1512,8 @@ psm3_ep_multirail_autoselect(int multirail_mode,
 // list of unit/port/addr_index in multirail_config.
 // When multirail_config->num_rails is returned as 0, multirail is not enabled
 // and other mechanisms (PSM3_NIC, PSM3_NIC_SELECTION_ALG) must be
-// used by the caller to select a single NIC for the process.
+// used by the caller to select a single NIC for the process
+// via psm3_autoselect_one().
 // This can return num_rails==1 if exactly 1 NIC is to be used by this process
 // or num_rails>1 if this process is to stripe data across multiple NICs
 // in which case the 1st NIC in multirail_config should be used as the
@@ -1803,10 +1521,7 @@ psm3_ep_multirail_autoselect(int multirail_mode,
 psm2_error_t
 psm3_ep_multirail(struct multirail_config *multirail_config)
 {
-	int ret;
 	union psmi_envvar_val env_multirail;
-	union psmi_envvar_val env_multirail_map;
-	int map_index;
 
 	psm3_getenv_range("PSM3_MULTIRAIL",
 			"Control use of multiple NICs",
@@ -1865,71 +1580,9 @@ psm3_ep_multirail(struct multirail_config *multirail_config)
 		return PSM2_OK;
 	}
 
-	if (env_multirail.e_int == 1 || env_multirail.e_int == 2) {
-		// TBD - move this code to a separate function
-		// for PSM3_MULTIRAIL=1 or 2, PSM3_MULTIRAIL_MAP can explicitly select NICs.
-		// We treat invalid input, such as bad syntax or selection of an unusable
-		// port (down/missing/etc), as a fatal error instead of attempting to run
-		// on the default PSM3_MULTIRAIL_MAP config.  This helps avoid
-		// inconsistent NIC selections, especially for down ports, which may
-		// cause confusing behaviors or errors.
-		// If PSM3_MULTIRAIL_MAP contains multiple lists of NICs, then
-		// if PSM3_MULTIRAIL=1 - use local rank index (0, ...) to select
-		// if PSM3_MULTIRAIL=2 - use process NUMA (0, ...) to select
-		if (env_multirail.e_int == 1) {
-			map_index = psm3_get_mylocalrank();
-		} else if (env_multirail.e_int == 2) {
-			map_index = psm3_get_current_proc_location();
-			if (map_index < 0) {
-				return psm3_handle_error(PSMI_EP_NORETURN,
-					PSM2_EP_DEVICE_FAILURE,
-					"Unable to get NUMA location of current process\n");
-			}
-		} else {
-			psmi_assert(0);
-		}
-		ret = psm3_getenv_range("PSM3_MULTIRAIL_MAP",
-			"Explicit NIC selections for each rail",
-			"Specified as:\n"
-			"     rail,rail,...;rail,rail,...\n"
-#if	 0
-			"Where rail can be: unit:port-addr_index or unit\n"
-#else
-			"Where rail can be: unit-addr_index or unit\n"
-#endif
-			"unit can be device name or unit number\n"
-#if 0
-			"where :port is optional (default of 1)\n"
-#endif
-			"addr_index can be 0 to PSM3_ADDR_PER_NIC-1, or 'any' or 'all'\n"
-			"When addr_index is omitted, it defaults to 'all'\n"
-			"When more than 1 set of rails is present (each set is separated by ;),\n"
-			"the set to use for a given process is selected based on PSM3_MULTIRAIL.\n"
-			"    1 - use local rank number to select\n"
-			"    2 - use local CPU NUMA to select\n"
-			"When empty, PSM3 will autoselect NICs as controlled by PSM3_MULTIRAIL.",
-				PSMI_ENVVAR_LEVEL_USER|PSMI_ENVVAR_FLAG_FATAL, PSMI_ENVVAR_TYPE_STR,
-				(union psmi_envvar_val)"",
-				(union psmi_envvar_val)NULL, (union psmi_envvar_val)NULL,
-				psm3_parse_check_multirail_map, &map_index, &env_multirail_map);
-		if (ret < 0) {	// syntax error in input, ret error instead of using default
-			psmi_assert(0); // should not get here since specified FLAG_FATAL
-			multirail_config->num_rails = 0;
-			return psm3_handle_error(PSMI_EP_NORETURN,
-					PSM2_EP_DEVICE_FAILURE,
-					"Invalid value for PSM3_MULTIRAIL_MAP: '%s', can't proceed\n",
-					env_multirail_map.e_str);
-		}
-		if (! ret) {
-			// valid input
-			if (psm3_parse_multirail_map(env_multirail_map.e_str, map_index, 0, NULL,
-				multirail_config) < 0) {
-				// already checked, shouldn't get parse errors nor empty strings
-				psmi_assert(0);
-			}
-			return PSM2_OK;
-		}
-	}
+	// see if PSM3_MULTIRAIL_MAP is manually selecting NICs
+	if (psm3_ep_multirail_map(env_multirail.e_int, multirail_config) == PSM2_OK)
+		return PSM2_OK;
 
 	// multirail enabled, automatically select 1 or more NICs
 	return psm3_ep_multirail_autoselect(env_multirail.e_int, multirail_config);

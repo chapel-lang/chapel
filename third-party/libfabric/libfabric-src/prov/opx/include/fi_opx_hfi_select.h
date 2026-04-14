@@ -32,22 +32,22 @@
 #ifndef _FI_OPX_HFI_SELECT_H_
 #define _FI_OPX_HFI_SELECT_H_
 
-enum hfi_selector_type { HFI_SELECTOR_FIXED = 1, HFI_SELECTOR_MAPBY, HFI_SELECTOR_DEFAULT};
-enum hfi_selector_mapby_type { HFI_SELECTOR_MAPBY_NUMA = 1, HFI_SELECTOR_MAPBY_CORE};
+enum hfi_selector_type { HFI_SELECTOR_FIXED = 1, HFI_SELECTOR_MAPBY, HFI_SELECTOR_DEFAULT };
+enum hfi_selector_mapby_type { HFI_SELECTOR_MAPBY_NUMA = 1, HFI_SELECTOR_MAPBY_CORE };
 
 #define HFI_SELECTOR_SUBSTRING_MAX 4096
-#define HFI_SELECTOR_UNIT_MAX INT_MAX
-#define HFI_SELECTOR_NUMA_MAX INT_MAX
-#define HFI_SELECTOR_CORE_MAX INT_MAX
+#define HFI_SELECTOR_UNIT_MAX	   INT_MAX
+#define HFI_SELECTOR_NUMA_MAX	   INT_MAX
+#define HFI_SELECTOR_CORE_MAX	   INT_MAX
 
 struct hfi_selector {
 	enum hfi_selector_type type;
-	int unit;
+	int		       unit;
 	union {
 		struct {
 			enum hfi_selector_mapby_type type;
-			int rangeS;
-			int rangeE;
+			int			     rangeS;
+			int			     rangeE;
 		} mapby;
 	};
 };
@@ -63,7 +63,8 @@ struct hfi_selector {
  * 		<mapby-resource-type> : 'numa'
  * 		<selector-data> : ???
  *
- * @return On success, @c char* to first character of next element or @c char* to '\0' in @c start if @c '\0' was encountered. @c NULL on error.
+ * @return On success, @c char* to first character of next element or @c char* to '\0' in @c start if @c '\0' was
+ * encountered. @c NULL on error.
  */
 const char *hfi_selector_next(const char *start, struct hfi_selector *selector);
 

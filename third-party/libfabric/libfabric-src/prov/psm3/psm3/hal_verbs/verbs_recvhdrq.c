@@ -99,7 +99,7 @@ psm3_ips_proto_mq_handle_eager,		/* OPCODE_EAGER */
 psm3_ips_proto_mq_handle_rts,		/* OPCODE_LONG_RTS */
 psm3_ips_proto_mq_handle_cts,		/* OPCODE_LONG_CTS */
 psm3_ips_proto_mq_handle_data,		/* OPCODE_LONG_DATA */
-#ifdef RNDV_MOD
+#ifdef PSM_HAVE_RDMA_ERR_CHK
 ips_protoexp_process_err_chk_rdma,	/* OPCODE_ERR_CHK_RDMA */
 ips_protoexp_process_err_chk_rdma_resp,	/* OPCODE_ERR_CHK_RDMA_RESP */
 #else
@@ -154,7 +154,7 @@ psm2_error_t psm3_verbs_check_rv_completion(psm2_ep_t ep, struct ips_proto *prot
 				break;
 			case RV_WC_RECV_RDMA_WITH_IMM:
 				if_pf (ev.wc.status) {
-					if (ep->verbs_ep.rv_reconnect_timeout)
+					if (ep->reconnect_timeout)
 						break;	/* let sender handle errors */
 					psm3_handle_error(PSMI_EP_NORETURN, PSM2_INTERNAL_ERR,
 							"failed rv recv RDMA '%s' (%d) on %s port %u epid %s\n",
@@ -178,6 +178,131 @@ psm2_error_t psm3_verbs_check_rv_completion(psm2_ep_t ep, struct ips_proto *prot
 	return ret;;
 }
 #endif // RNDV_MOD
+
+// process a WC with an error completion which was returned by ibv_pollcq
+// returns:
+//	PSM2_OK - WC has been processed and polling can continue
+//	other - this is an unrecoverable for the QP
+// When user RC QP reconnection is allowed, failures can be recovered
+// from by replacing the RC QP and re-establishing the RC connection.
+// When not allowed or for errors on UD QPs, the error is unrecoverable.
+// If using SRQ, shouldn't get recv error CQEs upon QP error
+// so treat as unrecoverable too
+static psm2_error_t psm3_verbs_recv_wc_error(psm2_ep_t ep, struct ibv_wc *wc)
+{
+#ifdef USE_RC
+	rbuf_t buf = (rbuf_t)wc->wr_id;
+#endif
+#ifdef PSM_RC_RECONNECT
+	struct psm3_verbs_rc_qp *rc_qp;
+	ips_epaddr_t *ipsaddr;
+#endif
+
+	// this funciton only called for WCs with error
+	psmi_assert(wc->status);
+
+	// only the following fields in wc are valid:
+	//	wr_id, status, vendor_err, qp_num 
+
+#ifdef USE_RC
+	psmi_assert(buf);
+#endif
+
+	// errors on SRQ, on UD QPs or when reconnect not allowed are
+	// unrecoverable
+#ifdef USE_RC
+	if (! ep->allow_reconnect || buf->pool->for_srq
+		|| psm3_verbs_is_ud_qp_num(ep, wc->qp_num)) {
+#else
+	{
+#endif
+		// only report the 1st error (non-flush), it will
+		// be followed by a burst of FLUSH_ERR for other queued WQEs
+		if (wc->status != IBV_WC_WR_FLUSH_ERR)
+			_HFI_ERROR("failed recv '%s' (%d) on %s port %u epid %s QP %u\n",
+				ibv_wc_status_str(wc->status),
+				(int)(wc->status), ep->dev_name, ep->portnum,
+				psm3_epid_fmt_internal(ep->epid, 0),
+				wc->qp_num);
+		// QP is now in QPS_ERR and can't send/recv packets
+#ifdef PSM_RC_RECONNECT
+		// no need to worry about decrementing rc_qp->recv_pool.posted
+		// (via buf->pool->posted--)
+#endif
+		// upcoming async event will cause fatal error
+		return PSM2_INTERNAL_ERR;
+	}
+#if defined(USE_RC) && ! defined(PSM_RC_RECONNECT)
+	psmi_assert(0);	// should not get here, allow_reconnect always false
+	return PSM2_INTERNAL_ERR;
+#endif
+#ifdef PSM_RC_RECONNECT
+	// For user space RC QP, the QP is now in QPS_ERR and we
+	// need to replace and reconnect it.
+	psmi_assert(! psm3_verbs_is_ud_qp_num(ep, wc->qp_num));
+	rc_qp = psm3_verbs_rc_qp_from_recv_pool(buf->pool);
+	psmi_assert(rc_qp);
+	psmi_assert(rc_qp->qp->qp_num == wc->qp_num);
+
+	psmi_assert(rc_qp->recv_pool.posted > 0);
+	rc_qp->recv_pool.posted--;
+	ipsaddr = rc_qp->ipsaddr;
+	psmi_assert(ipsaddr == (ips_epaddr_t *)rbuf_qp_context(ep, buf));
+
+	// treat a FLUSH or other error similar (except for logging)
+	// Depending on order of polling, may detect the QP issue via an
+	// RQ FLUSH CQE prior to detecting the SQ error CQE, in which case
+	// we want to still start the reconnection protocol ASAP (via
+	// psm3_ips_proto_connection_error)
+
+	// log 1st observed issue on QP and all non-flush error CQEs.
+	// We skip logging of other flush CQEs since there can be many.
+	if ((_HFI_CONNDBG_ON || _HFI_DBG_ON)
+	    && (wc->status != IBV_WC_WR_FLUSH_ERR || ! rc_qp->draining)) {
+		_HFI_DBG_ALWAYS("[ipsaddr %p] failed recv buf %p on %s port %u epid %s QP %u posted %u + %u status: '%s' (%d)\n",
+			ipsaddr, buf, ep->dev_name, ep->portnum,
+			psm3_epid_fmt_internal(ep->epid, 0), wc->qp_num,
+			rc_qp->send_posted, rc_qp->recv_pool.posted,
+			ibv_wc_status_str(wc->status), (int)wc->status);
+	}
+	if (wc->status != IBV_WC_WR_FLUSH_ERR)
+		ipsaddr->epaddr.proto->epaddr_stats.recv_wc_error++;
+
+	// only call connect_error for 1st error on QP, if already
+	// draining due to a separate send error, recv error or
+	// reconnect packet don't call connection_error again.
+	// psm3_ips_proto_connection_error tests ipsaddr->allow_reconnect
+	// and reports fatal error if reconnect not allowed
+	if (! ipsaddr->allow_reconnect || ! rc_qp->draining) {
+		// for return != no progress, rc_qp may have been freed
+		// fatal error in connection_error prior to other error returns
+		if (PSM2_OK_NO_PROGRESS == psm3_ips_proto_connection_error(
+				ipsaddr, "recv",
+				ibv_wc_status_str(wc->status), wc->status, 0))
+			psm3_verbs_free_rc_qp_if_empty("RQ WC Err",rc_qp);
+	} else
+		psm3_verbs_free_rc_qp_if_empty("RQ WC Err",rc_qp);
+	return PSM2_OK;
+#endif /* PSM_RC_RECONNECT */
+}
+
+#ifdef PSM_RC_RECONNECT_SRQ
+// since the CQ has been emptied, we know any RQ WQEs and CQEs related to
+// the given draining RC QP have now been fully processed and we can
+// mark its receive side as fully drained.
+static void recv_cq_empty(psm2_ep_t ep)
+{
+	struct psm3_verbs_rc_qp *rc_qp;
+
+	while (NULL != (rc_qp = SLIST_FIRST(&ep->verbs_ep.qps_draining))) {
+		psmi_assert(rc_qp->draining);
+		SLIST_REMOVE_HEAD(&ep->verbs_ep.qps_draining, drain_next);
+		psmi_assert(rc_qp->recv_pool.posted == 1);
+		rc_qp->recv_pool.posted--;
+		psm3_verbs_free_rc_qp_if_empty("RQ CQ Empty", rc_qp);
+	}
+}
+#endif
 
 psm2_error_t psm3_verbs_recvhdrq_progress(struct ips_recvhdrq *recvq)
 {
@@ -213,21 +338,27 @@ psm2_error_t psm3_verbs_recvhdrq_progress(struct ips_recvhdrq *recvq)
 	int done = 0;
 	do {
 		struct ibv_wc *wc;
-// a little atypical, but allows ifdef to be smaller scope
-#undef WC
-#define WC(field) ((wc)->field)
 		if (! ep->verbs_ep.recv_wc_count) {
 			// TBD - negative error return is possible but unlikely
-			if (0 == (err = ibv_poll_cq(ep->verbs_ep.recv_cq, VERBS_RECV_CQE_BATCH, ep->verbs_ep.recv_wc_list)))
+			err = ibv_poll_cq(ep->verbs_ep.recv_cq, VERBS_RECV_CQE_BATCH, ep->verbs_ep.recv_wc_list);
+			if (err == 0) {
+#ifdef PSM_RC_RECONNECT_SRQ
+				// the CQE has been drained
+				if (SLIST_FIRST(&ep->verbs_ep.qps_draining))
+					recv_cq_empty(ep);
+#endif
 				break;
-			else if_pf (err < 0) {
-				if (errno == EAGAIN || errno == EWOULDBLOCK
-				    || errno == EBUSY || errno = EINTR)
+			} else if_pf(err < 0) {
+				// ibv returns negative errno in the specific case of poll_cq
+				err = -err;
+				if (err == EAGAIN || err == EWOULDBLOCK || err == EBUSY || err == EINTR)
 					break;
 				_HFI_ERROR("failed ibv_poll_cq '%s' (%d) on %s port %u epid %s\n",
-					strerror(errno), errno, ep->dev_name, ep->portnum, psm3_epid_fmt_internal(ep->epid, 0));
+					strerror(err), err, ep->dev_name, ep->portnum,
+					psm3_epid_fmt_internal(ep->epid, 0));
 				goto fail;
 			}
+			// else positive value indicates number of completions returned
 			ep->verbs_ep.recv_wc_count = err;
 			ep->verbs_ep.recv_wc_next = 0;
 			// once drained break out of loop w/o polling CQ again
@@ -242,55 +373,70 @@ psm2_error_t psm3_verbs_recvhdrq_progress(struct ips_recvhdrq *recvq)
 		{
 #else	// VERBS_RECV_CQE_BATCH > 1
 	while (1) {
-		struct ibv_wc wc;
-// a little atypical, but allows ifdef to be smaller scope
-#undef WC
-#define WC(field) ((wc).field)
+		struct ibv_wc wc[1];
 		// TBD really only need to check this on 1st loop
 		if_pf (ep->verbs_ep.revisit_buf) {
 			buf = ep->verbs_ep.revisit_buf;
 			ep->verbs_ep.revisit_buf = NULL;
 			rcv_ev.payload_size = ep->verbs_ep.revisit_payload_size;
-		} else if (0 == (err = ibv_poll_cq(ep->verbs_ep.recv_cq, 1, &wc))) {
+		} else if (0 == (err = ibv_poll_cq(ep->verbs_ep.recv_cq, 1, wc))) {
+#ifdef PSM_RC_RECONNECT_SRQ
+			// the CQE has been drained
+			if (SLIST_FIRST(&ep->verbs_ep.qps_draining))
+				recv_cq_empty(ep);
+#endif
 			break;
 		} else if_pf (err < 0) {
-			if (errno == EAGAIN || errno == EWOULDBLOCK
-			    || errno == EBUSY || errno == EINTR)
+			// ibv returns negative errno in the specific case of poll_cq
+			err = -err;
+			if (err == EAGAIN || err == EWOULDBLOCK || err == EBUSY || err == EINTR)
 				break;
 			_HFI_ERROR("failed ibv_poll_cq '%s' (%d) on %s port %u epid %s\n",
-				strerror(errno), errno, ep->dev_name, ep->portnum, psm3_epid_fmt_internal(ep->epid, 0));
+				strerror(err), err, ep->dev_name, ep->portnum,
+				psm3_epid_fmt_internal(ep->epid, 0));
 			goto fail;
 		} else {
 #endif	// VERBS_RECV_CQE_BATCH > 1
-			psmi_assert_always(WC(wr_id));
-			buf = (rbuf_t)WC(wr_id);
-			if_pf (WC(status)) {
-				if (WC(status) != IBV_WC_WR_FLUSH_ERR)
-					_HFI_ERROR("failed recv '%s' (%d) on %s port %u epid %s QP %u\n",
-						ibv_wc_status_str(WC(status)), (int)WC(status), ep->dev_name, ep->portnum, psm3_epid_fmt_internal(ep->epid, 0), WC(qp_num));
-				goto fail;
+			_HFI_VDBG("poll_cq recv WC: QP %u wr_id: %p status: '%s' (%d)\n",
+				wc->qp_num, (void*)wc->wr_id,
+				ibv_wc_status_str(wc->status), wc->status);
+#ifdef PSM_DEBUG
+			if (! wc->wr_id)
+				_HFI_ERROR("poll_cq recv WC: QP %u wr_id: %p status: '%s' (%d)\n",
+					wc->qp_num, (void*)wc->wr_id,
+					ibv_wc_status_str(wc->status), wc->status);
+#endif
+			psmi_assert_always(wc->wr_id);
+			if_pf (wc->status) {
+				if (PSM2_OK != psm3_verbs_recv_wc_error(ep, wc))
+					goto fail;	// unrecoverable
+				// recoverable, don't repost, QP has issue
+				num_done++;
+				continue;
 			}
-			switch (WC(opcode)) {
+			buf = (rbuf_t)wc->wr_id;
+			switch (wc->opcode) {
 #ifdef USE_RC
 			case IBV_WC_RECV_RDMA_WITH_IMM:
 				_HFI_MMDBG("got RDMA Write Immediate RQ CQE %u bytes\n",
-							WC(byte_len));
-				// wc.byte_len is len of inbound rdma write not including immed
-				// wc.qp_num - local QP
+					wc->byte_len);
+				// wc->byte_len is len of inbound rdma write not including immed
+				// wc->qp_num - local QP
 				ips_protoexp_handle_immed_data(rcv_ev.proto,
 						(uint64_t)(rbuf_qp_context(ep, buf)),
-						RDMA_IMMED_USER_RC, WC(imm_data), WC(byte_len));
+						RDMA_IMMED_USER_RC, wc->imm_data, wc->byte_len);
 				goto repost;
 				break;
 #endif
 			default:
 				_HFI_ERROR("unexpected recv opcode %d on %s port %u epid %s QP %u\n",
-					WC(opcode), ep->dev_name, ep->portnum, psm3_epid_fmt_internal(ep->epid, 0), WC(qp_num));
+					wc->opcode, ep->dev_name, ep->portnum,
+					psm3_epid_fmt_internal(ep->epid, 0), wc->qp_num);
 				goto repost;
 				break;
 			case IBV_WC_RECV:
-				_HFI_VDBG("got CQE %u bytes\n", WC(byte_len));
-				// wc.byte_len is length of data including rbuf_addition
+				_HFI_VDBG("got CQE %u bytes\n", wc->byte_len);
+				// wc->byte_len is length of data including rbuf_addition
 				// actual data starts after rbuf_addition in posted recv buffer
 				// if we need it wc has:
 				//		qp_num - local QP
@@ -298,12 +444,13 @@ psm2_error_t psm3_verbs_recvhdrq_progress(struct ips_recvhdrq *recvq)
 				// 		slid - remote SLID
 				// 		probably have GRH at start of buffer with remote GID
 				if_pf (_HFI_PDBG_ON)
-					_HFI_PDBG_DUMP_ALWAYS(rbuf_to_buffer(buf), WC(byte_len));
-				if_pf (WC(byte_len) < rbuf_addition(buf)+sizeof(struct ips_message_header)) {
-					_HFI_ERROR( "unexpected small recv: %u on %s port %u\n", WC(byte_len), ep->dev_name, ep->portnum);
+					_HFI_PDBG_DUMP_ALWAYS(rbuf_to_buffer(buf), wc->byte_len);
+				if_pf (wc->byte_len < rbuf_addition(buf)+sizeof(struct ips_message_header)) {
+					_HFI_ERROR( "unexpected small recv: %u on %s port %u\n",
+						wc->byte_len, ep->dev_name, ep->portnum);
 					goto repost;
 				}
-				rcv_ev.payload_size = WC(byte_len) - rbuf_addition(buf) - sizeof(struct ips_message_header);
+				rcv_ev.payload_size = wc->byte_len - rbuf_addition(buf) - sizeof(struct ips_message_header);
 				break;
 			}
 			// fall through to process recv pkt in buf of rcv_ev.payload_size
@@ -344,6 +491,9 @@ psm2_error_t psm3_verbs_recvhdrq_progress(struct ips_recvhdrq *recvq)
 		}
 repost:
 		num_done++;
+#ifdef PSM_RC_RECONNECT
+		buf->pool->posted--; // consumed WQE and done with buffer
+#endif
 		// buffer processing is done, we can requeue it on QP
 		if_pf (PSM2_OK != psm3_ep_verbs_post_recv(
 #ifndef USE_RC
@@ -360,7 +510,7 @@ repost:
 			break;
 		}
 #if VERBS_RECV_CQE_BATCH > 1
-	} while(! done);
+	} while(ep->verbs_ep.recv_wc_count || !done);
 #else
 	}
 #endif

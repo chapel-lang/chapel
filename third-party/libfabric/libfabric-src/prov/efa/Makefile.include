@@ -47,15 +47,15 @@ _efa_files = \
 	prov/efa/src/efa_prov.c	\
 	prov/efa/src/efa_env.c	\
 	prov/efa/src/efa_cntr.c	\
-	prov/efa/src/dgram/efa_dgram_ep.c \
-	prov/efa/src/dgram/efa_dgram_cq.c \
-	prov/efa/src/dgram/efa_dgram_msg.c \
-	prov/efa/src/dgram/efa_dgram_rma.c \
+	prov/efa/src/efa_msg.c \
+	prov/efa/src/efa_rma.c \
+	prov/efa/src/efa_cq.c \
+	prov/efa/src/efa_ep.c \
+	prov/efa/src/efa_data_path_direct.c \
 	prov/efa/src/rdm/efa_rdm_peer.c	\
 	prov/efa/src/rdm/efa_rdm_cq.c \
 	prov/efa/src/rdm/efa_rdm_ep_utils.c \
 	prov/efa/src/rdm/efa_rdm_ep_fiops.c \
-	prov/efa/src/rdm/efa_rdm_ep_progress.c \
 	prov/efa/src/rdm/efa_rdm_rma.c	\
 	prov/efa/src/rdm/efa_rdm_msg.c	\
 	prov/efa/src/rdm/efa_rdm_pke.c \
@@ -67,6 +67,7 @@ _efa_files = \
 	prov/efa/src/rdm/efa_rdm_pke_req.c \
 	prov/efa/src/rdm/efa_rdm_pke_nonreq.c \
 	prov/efa/src/rdm/efa_rdm_pke_cmd.c \
+	prov/efa/src/rdm/efa_rdm_pke_print.c \
 	prov/efa/src/rdm/efa_rdm_pkt_type.c \
 	prov/efa/src/rdm/efa_rdm_ope.c \
 	prov/efa/src/rdm/efa_rdm_rxe_map.c \
@@ -74,6 +75,10 @@ _efa_files = \
 	prov/efa/src/rdm/efa_rdm_tracepoint_def.c \
 	prov/efa/src/rdm/efa_rdm_srx.c \
 	prov/efa/src/rdm/efa_rdm_util.c
+
+if ENABLE_EFA_UNIT_TEST
+_efa_files += prov/efa/test/efa_unit_test_data_path_ops.c
+endif ENABLE_EFA_UNIT_TEST
 
 _efa_headers = \
 	prov/efa/src/efa.h \
@@ -95,8 +100,14 @@ _efa_headers = \
 	prov/efa/src/efa_prov.h \
 	prov/efa/src/efa_env.h \
 	prov/efa/src/fi_ext_efa.h \
-	prov/efa/src/dgram/efa_dgram_ep.h \
-	prov/efa/src/dgram/efa_dgram_cq.h \
+	prov/efa/src/efa_data_path_ops.h \
+	prov/efa/src/efa_io_defs.h \
+	prov/efa/src/efa_io_regs_defs.h \
+	prov/efa/src/efa_data_path_direct_structs.h \
+	prov/efa/src/efa_data_path_direct_entry.h \
+	prov/efa/src/efa_data_path_direct.h \
+	prov/efa/src/efa_data_path_direct_internal.h \
+	prov/efa/src/efa_mmio.h \
 	prov/efa/src/rdm/efa_rdm_peer.h	\
 	prov/efa/src/rdm/efa_rdm_cq.h \
 	prov/efa/src/rdm/efa_rdm_ep.h \
@@ -111,6 +122,7 @@ _efa_headers = \
 	prov/efa/src/rdm/efa_rdm_pke_rta.h \
 	prov/efa/src/rdm/efa_rdm_pke_nonreq.h \
 	prov/efa/src/rdm/efa_rdm_pke_cmd.h \
+	prov/efa/src/rdm/efa_rdm_pke_print.h \
 	prov/efa/src/rdm/efa_rdm_pkt_type.h \
 	prov/efa/src/rdm/efa_rdm_atomic.h \
 	prov/efa/src/rdm/efa_rdm_ope.h \
@@ -146,7 +158,13 @@ nodist_prov_efa_test_efa_unit_test_SOURCES = \
 	prov/efa/test/efa_unit_test_ope.c \
 	prov/efa/test/efa_unit_test_send.c \
 	prov/efa/test/efa_unit_test_fork_support.c \
-	prov/efa/test/efa_unit_test_runt.c
+	prov/efa/test/efa_unit_test_runt.c \
+	prov/efa/test/efa_unit_test_mr.c \
+	prov/efa/test/efa_unit_test_rdm_peer.c \
+	prov/efa/test/efa_unit_test_pke.c \
+	prov/efa/test/efa_unit_test_msg.c \
+	prov/efa/test/efa_unit_test_rma.c \
+	prov/efa/test/efa_unit_test_data_path_direct.c
 
 
 efa_CPPFLAGS += -I$(top_srcdir)/include -I$(top_srcdir)/prov/efa/test $(cmocka_CPPFLAGS)
@@ -157,7 +175,38 @@ prov_efa_test_efa_unit_test_LDFLAGS = $(cmocka_rpath) $(efa_LDFLAGS) $(cmocka_LD
 					-Wl,--wrap=ibv_create_ah \
 					-Wl,--wrap=ibv_is_fork_initialized \
 					-Wl,--wrap=efadv_query_device \
-					-Wl,--wrap=ofi_copy_from_hmem_iov
+					-Wl,--wrap=ofi_cudaMalloc \
+					-Wl,--wrap=ofi_copy_from_hmem_iov \
+					-Wl,--wrap=efa_rdm_pke_read \
+					-Wl,--wrap=efa_rdm_pke_proc_matched_rtm \
+					-Wl,--wrap=efa_rdm_ope_post_send \
+					-Wl,--wrap=efa_device_support_unsolicited_write_recv \
+					-Wl,--wrap=efa_qp_post_recv \
+					-Wl,--wrap=efa_qp_wr_complete \
+					-Wl,--wrap=efa_qp_wr_send \
+					-Wl,--wrap=efa_qp_wr_start \
+					-Wl,--wrap=efa_qp_wr_rdma_read \
+					-Wl,--wrap=efa_qp_wr_rdma_write \
+					-Wl,--wrap=efa_qp_wr_rdma_write_imm \
+					-Wl,--wrap=efa_qp_wr_send_imm \
+					-Wl,--wrap=efa_qp_wr_set_inline_data_list \
+					-Wl,--wrap=efa_qp_wr_set_sge_list \
+					-Wl,--wrap=efa_qp_wr_set_ud_addr \
+					-Wl,--wrap=efa_ibv_cq_start_poll \
+					-Wl,--wrap=efa_ibv_cq_next_poll \
+					-Wl,--wrap=efa_ibv_cq_end_poll \
+					-Wl,--wrap=efa_ibv_cq_wc_read_opcode \
+					-Wl,--wrap=efa_ibv_cq_wc_read_qp_num \
+					-Wl,--wrap=efa_ibv_cq_wc_read_vendor_err \
+					-Wl,--wrap=efa_ibv_cq_wc_read_src_qp \
+					-Wl,--wrap=efa_ibv_cq_wc_read_slid \
+					-Wl,--wrap=efa_ibv_cq_wc_read_byte_len \
+					-Wl,--wrap=efa_ibv_cq_wc_read_wc_flags \
+					-Wl,--wrap=efa_ibv_cq_wc_read_imm_data \
+					-Wl,--wrap=efa_ibv_cq_wc_is_unsolicited \
+					-Wl,--wrap=efa_ibv_cq_wc_read_sgid \
+					-Wl,--wrap=efa_ibv_get_cq_event \
+					-Wl,--wrap=efa_ibv_req_notify_cq
 
 if HAVE_EFADV_CQ_EX
 prov_efa_test_efa_unit_test_LDFLAGS += -Wl,--wrap=efadv_create_cq
@@ -175,13 +224,20 @@ if HAVE_EFA_DATA_IN_ORDER_ALIGNED_128_BYTES
 prov_efa_test_efa_unit_test_LDFLAGS += -Wl,--wrap=ibv_query_qp_data_in_order
 endif
 
+if HAVE_EFADV_QUERY_QP_WQS
+prov_efa_test_efa_unit_test_LDFLAGS += -Wl,--wrap=efadv_query_qp_wqs
+endif HAVE_EFADV_QUERY_QP_WQS
+
+if HAVE_EFADV_QUERY_CQ
+prov_efa_test_efa_unit_test_LDFLAGS += -Wl,--wrap=efadv_query_cq
+endif HAVE_EFADV_QUERY_CQ
+
 prov_efa_test_efa_unit_test_LIBS = $(efa_LIBS) $(linkback)
 
 endif ENABLE_EFA_UNIT_TEST
 
 efa_CPPFLAGS += \
 	-I$(top_srcdir)/prov/efa/src/ \
-	-I$(top_srcdir)/prov/efa/src/dgram/ \
 	-I$(top_srcdir)/prov/efa/src/rdm/
 
 rdmainclude_HEADERS += \

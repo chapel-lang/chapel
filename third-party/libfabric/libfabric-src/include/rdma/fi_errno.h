@@ -114,7 +114,7 @@ extern "C" {
 //#define	FI_EADV			EADV		/* Advertise error */
 //#define	FI_ESRMNT		ESRMNT		/* Srmount error */
 //#define	FI_ECOMM		ECOMM		/* Communication error on send */
-//#define	FI_EPROTO		EPROTO		/* Protocol error */
+#define	FI_EPROTO		EPROTO			/* Protocol error */
 //#define	FI_EMULTIHOP		EMULTIHOP	/* Multihop attempted */
 //#define	FI_EDOTDOT		EDOTDOT		/* RFS specific error */
 //#define	FI_EBADMSG		EBADMSG		/* Not a data message */
@@ -195,6 +195,7 @@ enum {
 	FI_EOVERRUN	 = 268, /* Queue has been overrun */
 	FI_ENORX	 = 269, /* Receiver not ready, no receive buffers available */
 	FI_ENOMR	 = 270, /* No more memory registrations available */
+	FI_EFIREWALLADDR = 271, /* Host unreachable because it is behind firewall */
 	FI_ERRNO_MAX
 };
 

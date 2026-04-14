@@ -105,9 +105,6 @@ struct sock_rx_entry *sock_rx_new_buffered_entry(struct sock_rx_ctx *rx_ctx,
 {
 	struct sock_rx_entry *rx_entry;
 
-	if (rx_ctx->buffered_len + len >= rx_ctx->attr.total_buffered_recv)
-		SOCK_LOG_ERROR("Exceeded buffered recv limit\n");
-
 	rx_entry = calloc(1, sizeof(*rx_entry) + len);
 	if (!rx_entry)
 		return NULL;

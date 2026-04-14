@@ -5,6 +5,7 @@
  * Copyright (c) 2015 Los Alamos Nat. Security, LLC. All rights reserved.
  * Copyright (c) 2020 Amazon.com, Inc. or its affiliates.
  * Copyright (c) 2022 DataDirect Networks, Inc. All rights reserved.
+ * Copyright (c) 2025 VDURA, Inc. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -84,10 +85,20 @@ struct ofi_common_locks common_locks = {
 	.util_fabric_lock = PTHREAD_MUTEX_INITIALIZER,
 };
 
+int ofi_fork_unsafe;
 size_t ofi_universe_size = 1024;
 int ofi_av_remove_cleanup;
 char *ofi_offload_coll_prov_name = NULL;
 
+
+void ofi_params_init(void)
+{
+	fi_param_get_bool(NULL, "fork_unsafe", &ofi_fork_unsafe);
+	fi_param_get_size_t(NULL, "universe_size", &ofi_universe_size);
+	fi_param_get_bool(NULL, "av_remove_cleanup", &ofi_av_remove_cleanup);
+	fi_param_get_str(NULL, "offload_coll_provider",
+			 &ofi_offload_coll_prov_name);
+}
 
 int ofi_genlock_init(struct ofi_genlock *lock,
 		     enum ofi_lock_type lock_type)
@@ -304,6 +315,24 @@ uint32_t ofi_generate_seed(void)
 	return rand_seed;
 }
 
+uint64_t ofi_get_realtime_ns(void)
+{
+	struct timespec now;
+
+	clock_gettime(CLOCK_REALTIME, &now);
+	return now.tv_sec * 1000000000 + now.tv_nsec;
+}
+
+uint64_t ofi_get_realtime_us(void)
+{
+	return ofi_get_realtime_ns() / 1000;
+}
+
+uint64_t ofi_get_realtime_ms(void)
+{
+	return ofi_get_realtime_ns() / 1000000;
+}
+
 uint64_t ofi_gettime_ns(void)
 {
 	struct timespec now;
@@ -335,6 +364,7 @@ uint16_t ofi_get_sa_family(const struct fi_info *info)
 	case FI_SOCKADDR_IB:
 		return AF_IB;
 	case FI_SOCKADDR:
+	case FI_SOCKADDR_IP:
 	case FI_FORMAT_UNSPEC:
 		if (info->src_addr)
 			return ((struct sockaddr *) info->src_addr)->sa_family;
@@ -362,6 +392,19 @@ const char *ofi_straddr(char *buf, size_t *len,
 
 	switch (addr_format) {
 	case FI_SOCKADDR:
+		sock_addr = addr;
+		switch (sock_addr->sa_family) {
+		case AF_INET:
+			goto sa_sin;
+		case AF_INET6:
+			goto sa_sin6;
+		case AF_IB:
+			goto sa_ib;
+		default:
+			return NULL;
+		}
+		break;
+	case FI_SOCKADDR_IP:
 		sock_addr = addr;
 		switch (sock_addr->sa_family) {
 		case AF_INET:
@@ -400,6 +443,7 @@ sa_sin6:
 				str, *((uint16_t *)addr + 8), *((uint32_t *)addr + 5));
 		break;
 	case FI_SOCKADDR_IB:
+sa_ib:
 		sib = addr;
 		memset(str, 0, sizeof(str));
 		if (!inet_ntop(AF_INET6, sib->sib_addr, str, INET6_ADDRSTRLEN))
@@ -829,8 +873,9 @@ static int ofi_ifname_toaddr(const char *name, uint32_t *addr_format,
 		return ret;
 
 	for (ifa = ifaddrs; ifa; ifa = ifa->ifa_next) {
-		if (ifa->ifa_addr->sa_family != AF_INET &&
-		    ifa->ifa_addr->sa_family != AF_INET6)
+		if (ifa->ifa_addr == NULL ||
+		    (ifa->ifa_addr->sa_family != AF_INET &&
+		     ifa->ifa_addr->sa_family != AF_INET6))
 			continue;
 		if (!strcmp(name, ifa->ifa_name))
 			break;
@@ -970,6 +1015,7 @@ bool ofi_is_wildcard_listen_addr(const char *node, const char *service,
 
 	if (hints && hints->addr_format != FI_FORMAT_UNSPEC &&
 	    hints->addr_format != FI_SOCKADDR &&
+	    hints->addr_format != FI_SOCKADDR_IP &&
 	    hints->addr_format != FI_SOCKADDR_IN &&
 	    hints->addr_format != FI_SOCKADDR_IN6)
 		return false;
@@ -1035,19 +1081,19 @@ size_t ofi_mask_addr(struct sockaddr *maskaddr, const struct sockaddr *srcaddr,
 	return len;
 }
 
-void ofi_straddr_log_internal(const char *func, int line,
+void ofi_straddr_log_internal(const char *func, int line, uint32_t addr_format,
 			      const struct fi_provider *prov,
 			      enum fi_log_level level,
 			      enum fi_log_subsys subsys, char *log_str,
 			      const void *addr)
 {
 	char buf[OFI_ADDRSTRLEN];
-	uint32_t addr_format;
 	size_t len = sizeof(buf);
 
 	if (fi_log_enabled(prov, level, subsys)) {
 		if (addr) {
-			addr_format = ofi_translate_addr_format(ofi_sa_family(addr));
+			if (addr_format == FI_FORMAT_UNSPEC)
+				addr_format = ofi_translate_addr_format(ofi_sa_family(addr));
 			fi_log(prov, level, subsys, func, line, "%s: %s\n", log_str,
 			       ofi_straddr(buf, &len, addr_format, addr));
 		} else {
@@ -1399,10 +1445,27 @@ int ofi_bsock_async_done(const struct fi_provider *prov,
 	uint8_t ctrl[CMSG_SPACE(sizeof(*serr) * 2)];
 	int ret;
 
+	int val = 0;
+	socklen_t len = sizeof(val);
+	ret = getsockopt(bsock->sock, SOL_SOCKET, SO_ERROR, &val, &len);
+	if (ret < 0) {
+		FI_WARN(prov, FI_LOG_EP_DATA,
+			"Error reading socket error (%s)\n", strerror(errno));
+		return -errno;
+	}
+	if (val != 0) {
+		FI_WARN(prov, FI_LOG_EP_DATA,
+			"Socket error (%s)\n", strerror(val));
+		return -val;
+	}
+
 	msg.msg_control = &ctrl;
 	msg.msg_controllen = sizeof(ctrl);
 	ret = recvmsg(bsock->sock, &msg, MSG_ERRQUEUE);
 	if (ret < 0) {
+		if (OFI_SOCK_TRY_SND_RCV_AGAIN(errno))
+			return 0;
+
 		FI_WARN(prov, FI_LOG_EP_DATA,
 			"Error reading MSG_ERRQUEUE (%s)\n", strerror(errno));
 		return -errno;
@@ -1706,8 +1769,8 @@ int ofi_pollfds_wait(struct ofi_pollfds *pfds,
 			if (pfds->fds[i].revents) {
 				ctx = ofi_pollfds_get_ctx(pfds, pfds->fds[i].fd);
 				if (ctx) {
-					events[ret].events = pfds->fds[i].revents;
-					events[ret++].data.ptr = ctx->context;
+					OFI_EPOLL_EVT_EVENTS(events[ret]) = pfds->fds[i].revents;
+					OFI_EPOLL_EVT_DATA(events[ret++]) = ctx->context;
 				}
 				cnt--;
 			}
@@ -2367,13 +2430,19 @@ size_t ofi_vrb_speed(uint8_t speed, uint8_t width)
 		break;
 	case 4:
 	case 8:
-		speed_val = 8 * gbit_2_bit_coef;
+		speed_val = 10 * gbit_2_bit_coef;
 		break;
 	case 16:
 		speed_val = 14 * gbit_2_bit_coef;
 		break;
 	case 32:
 		speed_val = 25 * gbit_2_bit_coef;
+		break;
+	case 64:
+		speed_val = 50 * gbit_2_bit_coef;
+		break;
+	case 128:
+		speed_val = 100 * gbit_2_bit_coef;
 		break;
 	default:
 		speed_val = 0;
@@ -2393,6 +2462,9 @@ size_t ofi_vrb_speed(uint8_t speed, uint8_t width)
 	case 8:
 		width_val = 12;
 		break;
+	case 16:
+		width_val = 2;
+		break;
 	default:
 		width_val = 0;
 		break;
@@ -2402,4 +2474,4 @@ size_t ofi_vrb_speed(uint8_t speed, uint8_t width)
 }
 
 /* log_prefix is used by fi_log and by prov/util */
-const char *log_prefix = "";
+OFI_THREAD_LOCAL const char *log_prefix = "";

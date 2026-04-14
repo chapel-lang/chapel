@@ -54,7 +54,7 @@
 extern "C" {
 #endif
 
-#define SMR_VERSION	7
+#define SMR_VERSION	8
 
 #define SMR_FLAG_ATOMIC	(1 << 0)
 #define SMR_FLAG_DEBUG	(1 << 1)
@@ -169,6 +169,9 @@ struct smr_cmd {
 #define SMR_PATH_MAX	(SMR_NAME_MAX + sizeof(SMR_DIR))
 #define SMR_SOCK_NAME_MAX sizeof(((struct sockaddr_un *)0)->sun_path)
 
+/* On next version update remove this struct to make id a bool in the smr_peer
+ * remove name from smr_peer_data because it is unused.
+ */
 struct smr_addr {
 	char		name[SMR_NAME_MAX];
 	int64_t		id;
@@ -177,8 +180,9 @@ struct smr_addr {
 struct smr_peer_data {
 	struct smr_addr		addr;
 	uint32_t		sar_status;
-	uint32_t		name_sent;
-	struct xpmem_client 	xpmem;
+	uint16_t		name_sent;
+	uint16_t		ipc_valid;
+	struct ofi_xpmem_client xpmem;
 };
 
 extern struct dlist_entry ep_name_list;
@@ -205,6 +209,7 @@ struct smr_peer {
 	struct smr_addr		peer;
 	fi_addr_t		fiaddr;
 	struct smr_region	*region;
+	int			pid_fd;
 };
 
 #define SMR_MAX_PEERS	256
@@ -223,14 +228,16 @@ struct smr_region {
 	uint8_t		resv;
 	uint16_t	flags;
 	int		pid;
+	/* Do not touch above fields. It might break backwards compatibility */
+
 	uint8_t		cma_cap_peer;
 	uint8_t		cma_cap_self;
 	uint8_t		xpmem_cap_self;
 	uint8_t		resv2;
 
 	uint32_t	max_sar_buf_per_peer;
-	struct xpmem_pinfo xpmem_self;
-	struct xpmem_pinfo xpmem_peer;
+	struct ofi_xpmem_pinfo	xpmem_self;
+	struct ofi_xpmem_pinfo	xpmem_peer;
 	void		*base_addr;
 	pthread_spinlock_t	lock; /* lock for shm access
 				 if both ep->tx_lock and this lock need to
@@ -348,17 +355,16 @@ size_t smr_calculate_size_offsets(size_t tx_count, size_t rx_count,
 				  size_t *sock_offset);
 void	smr_cma_check(struct smr_region *region, struct smr_region *peer_region);
 void	smr_cleanup(void);
-int	smr_map_create(const struct fi_provider *prov, int peer_count,
-		       uint16_t caps, struct smr_map **map);
 int	smr_map_to_region(const struct fi_provider *prov, struct smr_map *map,
 			  int64_t id);
 void	smr_map_to_endpoint(struct smr_region *region, int64_t id);
+void	smr_unmap_region(const struct fi_provider *prov, struct smr_map *map,
+			  int64_t id, bool found);
 void	smr_unmap_from_endpoint(struct smr_region *region, int64_t id);
 void	smr_exchange_all_peers(struct smr_region *region);
-int	smr_map_add(const struct fi_provider *prov,
-		    struct smr_map *map, const char *name, int64_t *id);
+int	smr_map_add(const struct fi_provider *prov, struct smr_map *map,
+		    const char *name, int64_t *id);
 void	smr_map_del(struct smr_map *map, int64_t id);
-void	smr_map_free(struct smr_map *map);
 
 struct smr_region *smr_map_get(struct smr_map *map, int64_t id);
 

@@ -59,11 +59,22 @@
 #include "psm_am_internal.h"
 #include "cmarw.h"
 
-#ifdef PSM_CUDA
-#include "am_cuda_memhandle_cache.h"
-#endif
-#ifdef PSM_ONEAPI
-#include "am_oneapi_memhandle_cache.h"
+#ifdef PSM_FI
+/*
+ * fault injection for psm3_cma_get() and psm3_cma_put().
+ * since the reaction to cma faults is for the given endpoint to stop
+ * using CMA, this should be set to be quite rare and only 1 fault per
+ * endpoint can occur, then the endpoint stops using CMA altogether
+ */
+PSMI_ALWAYS_INLINE(int cma_do_fault(psm2_ep_t ep))
+{
+	if_pf(PSM3_FAULTINJ_ENABLED()) {
+		PSM3_FAULTINJ_STATIC_DECL(fi, "cma_err", "CMA failure",
+					 0, SHM_FAULTINJ_CMA_ERR);
+		return PSM3_FAULTINJ_IS_FAULT(fi, ep, "");
+	} else
+		return 0;
+}
 #endif
 
 /* not reported yet, so just track in a global so can pass a pointer to
@@ -92,71 +103,18 @@ ptl_handle_rtsmatch_request(psm2_mq_req_t req, int was_posted,
 
 	_HFI_VDBG("[shm][rndv][recv] req=%p dest=%p len=%d tok=%p\n",
 		  req, req->req_data.buf, req->req_data.recv_msglen, tok);
-#ifdef PSM_CUDA
-	if (req->cuda_ipc_handle_attached) {
-
-		CUdeviceptr cuda_ipc_dev_ptr = am_cuda_memhandle_acquire(
-								 ptl->memhandle_cache,
-								 req->rts_sbuf - req->cuda_ipc_offset,
-								 (CUipcMemHandle*)&req->cuda_ipc_handle,
-								 req->rts_peer->epid);
-		cuda_ipc_dev_ptr = cuda_ipc_dev_ptr + req->cuda_ipc_offset;
-		/* cuMemcpy into the receive side buffer
-		 * based on its location */
-		if (req->is_buf_gpu_mem) {
-			PSM3_GPU_MEMCPY_DTOD(req->req_data.buf, cuda_ipc_dev_ptr,
-				       req->req_data.recv_msglen);
-			PSM3_GPU_SYNCHRONIZE_MEMCPY();
-		} else {
-			PSM3_GPU_MEMCPY_DTOH(req->req_data.buf, cuda_ipc_dev_ptr,
-				req->req_data.recv_msglen);
-		}
+#ifdef PSM_HAVE_GPU
+	if (PSM3_GPU_SHM_RTSMATCH(ptl, req)) {
 		gpu_ipc_send_completion = 1;
-		am_cuda_memhandle_release(ptl->memhandle_cache,
-					cuda_ipc_dev_ptr - req->cuda_ipc_offset);
-		req->cuda_ipc_handle_attached = 0;
-		goto send_cts;
-	}
-#endif
-#ifdef PSM_ONEAPI
-	if (req->ze_handle_attached) {
-		void *buf_ptr = am_ze_memhandle_acquire(
-						  ptl->memhandle_cache,
-						  req->rts_sbuf - req->ze_ipc_offset, req->ze_handle,
-						  req->rts_peer,
-#ifndef PSM_HAVE_PIDFD
-						  req->ze_device_index, req->ze_alloc_id,
-#else
-						  0, req->ze_alloc_id,
-#endif
-						  req->ze_alloc_type);
-		psmi_assert_always(buf_ptr != NULL);
-		buf_ptr = (uint8_t *)buf_ptr + req->ze_ipc_offset;
-		/* zeMemcpy into the receive side buffer
-		 * based on its location */
-		_HFI_VDBG("Copying src %p (offset 0x%x) dst %p msg_len %u\n",
-			  buf_ptr, req->ze_ipc_offset,
-			  req->req_data.buf, req->req_data.recv_msglen);
-		if (req->is_buf_gpu_mem) {
-			PSM3_GPU_MEMCPY_DTOD(req->req_data.buf, buf_ptr,
-				       req->req_data.recv_msglen);
-			PSM3_GPU_SYNCHRONIZE_MEMCPY();
-		} else {
-			PSM3_GPU_MEMCPY_DTOH(req->req_data.buf, buf_ptr,
-				req->req_data.recv_msglen);
-		}
-		gpu_ipc_send_completion = 1;
-		am_ze_memhandle_release(ptl->memhandle_cache,
-					(uint8_t *)buf_ptr - req->ze_ipc_offset);
-		req->ze_handle_attached = 0;
 		goto send_cts;
 	}
 #endif
 
-	if ((ptl->psmi_kassist_mode & PSMI_KASSIST_GET)
+	// since we will do the cma_get, can decide based on local config of ptl
+	if ((ptl->kassist_mode & PSM3_KASSIST_GET)
 	    && req->req_data.recv_msglen > 0
 	    && (pid = psm3_epaddr_pid(epaddr))) {
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 		/* If the buffer on the send side is on the host,
 		 * we alloc a bounce buffer, use kassist and then
 		 * do a cuMemcpy if the buffer on the recv side
@@ -167,10 +125,18 @@ ptl_handle_rtsmatch_request(psm2_mq_req_t req, int was_posted,
 			if (!ptl->gpu_bounce_buf)
 				PSM3_GPU_HOST_ALLOC(&ptl->gpu_bounce_buf, AMSH_GPU_BOUNCE_BUF_SZ);
 			while (cnt < req->req_data.recv_msglen) {
+				size_t res;
 				size_t nbytes = min(req->req_data.recv_msglen-cnt,
 									AMSH_GPU_BOUNCE_BUF_SZ);
-				size_t res = psm3_cma_get(pid, (void *)(req->rts_sbuf+cnt),
+#ifdef PSM_FI
+				if_pf(cma_do_fault(ptl->ep))
+					res = -1;
+				else
+#endif
+				res = psm3_cma_get(pid, (void *)(req->rts_sbuf+cnt),
 										ptl->gpu_bounce_buf, nbytes);
+				if (res == -1)
+					goto fail_cma;
 				void *buf;
 				psmi_assert_always(nbytes == res);
 				if (PSMI_USE_GDR_COPY_RECV(nbytes)
@@ -186,40 +152,47 @@ ptl_handle_rtsmatch_request(psm2_mq_req_t req, int was_posted,
 			/* Cuda library has recent optimizations where they do
 			 * not guarantee synchronus nature for Host to Device
 			 * copies for msg sizes less than 64k. The event record
-			 * and synchronize calls are to guarentee completion.
+			 * and synchronize calls are to guarantee completion.
 			 */
 			PSM3_GPU_SYNCHRONIZE_MEMCPY();
 		} else {
 			/* cma can be done in handler context or not. */
-			size_t nbytes = psm3_cma_get(pid, (void *)req->rts_sbuf,
-						req->req_data.buf, req->req_data.recv_msglen);
-			psmi_assert_always(nbytes == req->req_data.recv_msglen);
-		}
-#else
-		/* cma can be done in handler context or not. */
-		size_t nbytes = psm3_cma_get(pid, (void *)req->rts_sbuf,
-					req->req_data.buf, req->req_data.recv_msglen);
-		if (nbytes == -1) {
-			ptl->psmi_kassist_mode = PSMI_KASSIST_OFF;
-			_HFI_ERROR("Reading from remote process' memory failed. Disabling CMA support\n");
-		}
-		else {
-			psmi_assert_always(nbytes == req->req_data.recv_msglen);
-			cma_succeed = 1;
-		}
-		psmi_assert_always(nbytes == req->req_data.recv_msglen);
+			size_t nbytes;
+#ifdef PSM_FI
+			if_pf(cma_do_fault(ptl->ep))
+				nbytes = -1;
+			else
 #endif
+			nbytes = psm3_cma_get(pid, (void *)req->rts_sbuf,
+						req->req_data.buf, req->req_data.recv_msglen);
+			if (nbytes == -1)
+				goto fail_cma;
+			psmi_assert_always(nbytes == req->req_data.recv_msglen);
+		}
+#else /* PSM_HAVE_GPU */
+		/* cma can be done in handler context or not. */
+		size_t nbytes;
+#ifdef PSM_FI
+		if_pf(cma_do_fault(ptl->ep))
+			nbytes = -1;
+		else
+#endif
+		nbytes = psm3_cma_get(pid, (void *)req->rts_sbuf,
+					req->req_data.buf, req->req_data.recv_msglen);
+		if (nbytes == -1)
+			goto fail_cma;
+		psmi_assert_always(nbytes == req->req_data.recv_msglen);
+#endif /* PSM_HAVE_GPU */
+		cma_succeed = 1;
 	}
 
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
 send_cts:
-#endif
 	args[0].u64w0 = (uint64_t) (uintptr_t) req->ptl_req_ptr;
 	args[1].u64w0 = (uint64_t) (uintptr_t) req;
 	args[2].u64w0 = (uint64_t) (uintptr_t) req->req_data.buf;
 	args[3].u32w0 = req->req_data.recv_msglen;
 	args[3].u32w1 = tok != NULL ? 1 : 0;
-	args[4].u32w0 = ptl->psmi_kassist_mode;		// pass current kassist mode to the peer process
+	args[4].u32w0 = ptl->kassist_mode;		// pass current kassist mode to the peer process
 
 	if (tok != NULL) {
 		psm3_am_reqq_add(AMREQUEST_SHORT, tok->ptl,
@@ -235,12 +208,18 @@ send_cts:
 	req->mq->stats.rx_shm_bytes += req->req_data.recv_msglen;
 
 	/* 0-byte completion or we used kassist */
-	if (pid || cma_succeed ||
+	if (cma_succeed ||
 		req->req_data.recv_msglen == 0 || gpu_ipc_send_completion == 1) {
 		psm3_mq_handle_rts_complete(req);
 	}
 	PSM2_LOG_MSG("leaving.");
 	return PSM2_OK;
+
+fail_cma:
+	ptl->kassist_mode = PSM3_KASSIST_OFF;
+	ptl->self_nodeinfo->amsh_features &= ~AMSH_HAVE_CMA;
+	_HFI_ERROR("Reading from remote process' memory failed. Disabling CMA support\n");
+	goto send_cts;
 }
 
 static
@@ -290,7 +269,7 @@ psm3_am_mq_handler(void *toki, psm2_amarg_t *args, int narg, void *buf,
 	default:{
 			void *sreq = (void *)(uintptr_t) args[3].u64w0;
 			uintptr_t sbuf = (uintptr_t) args[4].u64w0;
-#ifdef PSM_ONEAPI
+#ifdef PSM_HAVE_GPU
 			psmi_assert(narg == 5 || narg == 6);
 #else
 			psmi_assert(narg == 5);
@@ -303,38 +282,13 @@ psm3_am_mq_handler(void *toki, psm2_amarg_t *args, int narg, void *buf,
 			req->rts_peer = tok->tok.epaddr_incoming;
 			req->ptl_req_ptr = sreq;
 			req->rts_sbuf = sbuf;
-#ifdef PSM_CUDA
-			/* Payload in RTS would mean an IPC handle has been
+#ifdef PSM_HAVE_GPU
+			/* Payload in RTS would mean a GPU IPC handle has been
 			 * sent. This would also mean the sender has to
 			 * send from a GPU buffer
 			 */
-			if (buf && len > 0) {
-				req->cuda_ipc_handle = *((CUipcMemHandle*)buf);
-				req->cuda_ipc_handle_attached = 1;
-				req->cuda_ipc_offset = args[2].u32w0;
-			}
-#endif
-#ifdef PSM_ONEAPI
-			/* Payload in RTS would mean an IPC handle has been
-			 * sent. This would also mean the sender has to
-			 * send from a GPU buffer
-			 */
-			if (buf && len > 0) {
-				am_oneapi_ze_ipc_info_t info;
-
-				psmi_assert(narg == 6);
-				info = (am_oneapi_ze_ipc_info_t)buf;
-				req->ze_handle = info->handle;
-				req->ze_alloc_type = info->alloc_type;
-				req->ze_handle_attached = 1;
-				req->ze_ipc_offset = args[2].u32w0;
-#ifndef PSM_HAVE_PIDFD
-				req->ze_device_index = args[5].u32w0;
-				req->ze_alloc_id = args[5].u32w1;
-#else
-				req->ze_alloc_id = args[5].u64w0;
-#endif
-			}
+			if (buf && len > 0)
+				PSM3_GPU_SHM_PROCESS_RTS(req, buf, len, narg, args);
 #endif
 
 			if (rc == MQ_RET_MATCH_OK)	/* we are in handler context, issue a reply */
@@ -357,7 +311,7 @@ psm3_am_mq_handler_data(void *toki, psm2_amarg_t *args, int narg, void *buf,
 	psm2_epaddr_t epaddr = (psm2_epaddr_t) tok->tok.epaddr_incoming;
 	psm2_mq_req_t req = mq_eager_match(tok->mq, epaddr, 0);	/* using seqnum 0 */
 	psmi_assert_always(req != NULL);
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 	psm3_mq_handle_data(tok->mq, req, args[2].u32w0, buf, len, 0, NULL);
 #else
 	psm3_mq_handle_data(tok->mq, req, args[2].u32w0, buf, len);
@@ -379,34 +333,19 @@ psm3_am_mq_handler_rtsmatch(void *toki, psm2_amarg_t *args, int narg, void *buf,
 
 	ptl_t *ptl = tok->ptl;
 	psm2_mq_req_t sreq = (psm2_mq_req_t) (uintptr_t) args[0].u64w0;
-#ifdef PSM_CUDA
-	/* If send side req has a cuda ipc handle attached then as soon as we
+#ifdef PSM_HAVE_GPU
+	/* If send side req has a GPU IPC  handle attached then as soon as we
 	 * get a CTS, we can assume the data has been copied and receiver now
 	 * has a reference for the ipc handle for any receiver handle caching
 	 */
-	if (sreq->cuda_ipc_handle_attached) {
-		sreq->cuda_ipc_handle_attached = 0;
+	if (PSM3_GPU_SHM_PROCESS_CTS(sreq)) {
 		sreq->mq->stats.tx_shm_bytes += sreq->req_data.send_msglen;
 		sreq->mq->stats.tx_rndv_bytes += sreq->req_data.send_msglen;
 		psm3_mq_handle_rts_complete(sreq);
 		return;
 	}
 #endif
-#ifdef PSM_ONEAPI
-	/* If send side req has an ipc handle attached then as soon as we
-	 * get a CTS, we can assume the data has been copied and receiver now
-	 * has a reference for the ipc handle for any receiver handle caching
-	 */
-	if (sreq->ze_handle_attached) {
-		psm3_put_ipc_handle(sreq->req_data.buf - sreq->ze_ipc_offset,
-							sreq->ipc_handle);
-		sreq->ze_handle_attached = 0;
-		sreq->mq->stats.tx_shm_bytes += sreq->req_data.send_msglen;
-		sreq->mq->stats.tx_rndv_bytes += sreq->req_data.send_msglen;
-		psm3_mq_handle_rts_complete(sreq);
-		return;
-	}
-#endif
+
 	void *dest = (void *)(uintptr_t) args[2].u64w0;
 	uint32_t msglen = args[3].u32w0;
 	psm2_amarg_t rarg[1];
@@ -417,22 +356,25 @@ psm3_am_mq_handler_rtsmatch(void *toki, psm2_amarg_t *args, int narg, void *buf,
 
 	if (msglen > 0) {
 		rarg[0].u64w0 = args[1].u64w0;	/* rreq */
-		int kassist_mode = ((struct ptl_am *)ptl)->psmi_kassist_mode;
+		int kassist_mode = ((struct ptl_am *)ptl)->kassist_mode;
 		int kassist_mode_peer = args[4].u32w0;
-		// In general, peer process(es) shall have the same kassist mode set,
-		// but due to dynamic CMA failure detection, we must align local and remote state,
-		// and make protocol to adopt to that potential change.
-		if (kassist_mode_peer == PSMI_KASSIST_OFF && (kassist_mode & PSMI_KASSIST_MASK)) {
-			((struct ptl_am *)ptl)->psmi_kassist_mode = PSMI_KASSIST_OFF;
-			goto no_kassist;
-		}
 
-		if (kassist_mode & PSMI_KASSIST_PUT) {
+		if (kassist_mode_peer & PSM3_KASSIST_GET) {
+			// peer did cma_get(), nothing for us to do
+		} else if (kassist_mode & PSM3_KASSIST_PUT) {
+			// we can do cma_put()
 			int pid = psm3_epaddr_pid(tok->tok.epaddr_incoming);
-			size_t nbytes = psm3_cma_put(sreq->req_data.buf, pid, dest, msglen);
+			size_t nbytes;
+#ifdef PSM_FI
+			if_pf(cma_do_fault(((struct ptl_am *)ptl)->ep))
+				nbytes = -1;
+			else
+#endif
+			nbytes = psm3_cma_put(sreq->req_data.buf, pid, dest, msglen);
 			if (nbytes == -1) {
 				_HFI_ERROR("Writing to remote process' memory failed. Disabling CMA support\n");
-				((struct ptl_am *)ptl)->psmi_kassist_mode = PSMI_KASSIST_OFF;
+				((struct ptl_am *)ptl)->kassist_mode = PSM3_KASSIST_OFF;
+				((struct ptl_am *)ptl)->self_nodeinfo->amsh_features &= ~AMSH_HAVE_CMA;
 				goto no_kassist;
 			}
 
@@ -441,8 +383,8 @@ psm3_am_mq_handler_rtsmatch(void *toki, psm2_amarg_t *args, int narg, void *buf,
 			/* Send response that PUT is complete */
 			psm3_amsh_short_reply(tok, mq_handler_rtsdone_hidx,
 					      rarg, 1, NULL, 0, 0);
-		} else if (!(kassist_mode & PSMI_KASSIST_MASK)) {
-			/* Only transfer if kassist is off, i.e. neither GET nor PUT. */
+		} else {
+			/* Only transfer if peer didn't do GET and we didn't do PUT */
 no_kassist:
 			psm3_amsh_long_reply(tok, mq_handler_rtsdone_hidx, rarg,
 					     1, sreq->req_data.buf, msglen, dest, 0);

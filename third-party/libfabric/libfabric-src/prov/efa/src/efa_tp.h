@@ -25,22 +25,40 @@
 /* tracelog() is similar to tracef(), but with a log level param */
 #define efa_tracelog	lttng_ust_tracelog
 
-static inline void efa_tracepoint_wr_id_post_send(const void *wr_id)
+static inline void efa_rdm_tracepoint_wr_id_post_send(const void *wr_id)
 {
 	struct efa_rdm_pke *pkt_entry = (struct efa_rdm_pke *) wr_id;
 	struct efa_rdm_ope *ope = pkt_entry->ope;
 	if (!ope)
 		return;
-	efa_tracepoint(post_send, (size_t) wr_id, (size_t) ope, (size_t) ope->cq_entry.op_context);
+	efa_tracepoint(post_send, (size_t) wr_id, (size_t) ope->cq_entry.op_context);
 }
 
-static inline void efa_tracepoint_wr_id_post_recv(const void *wr_id)
+static inline void efa_rdm_tracepoint_wr_id_post_recv(const void *wr_id)
 {
 	struct efa_rdm_pke *pkt_entry = (struct efa_rdm_pke *) wr_id;
 	struct efa_rdm_ope *ope = pkt_entry->ope;
 	if (!ope)
 		return;
-	efa_tracepoint(post_recv, (size_t) wr_id, (size_t) ope, (size_t) ope->cq_entry.op_context);
+	efa_tracepoint(post_recv, (size_t) wr_id, (size_t) ope->cq_entry.op_context);
+}
+
+static inline void efa_rdm_tracepoint_wr_id_post_read(const void *wr_id)
+{
+	struct efa_rdm_pke *pkt_entry = (struct efa_rdm_pke *) wr_id;
+	struct efa_rdm_ope *ope = pkt_entry->ope;
+	if (!ope)
+		return;
+	efa_tracepoint(post_read, (size_t) wr_id, (size_t) ope->cq_entry.op_context);
+}
+
+static inline void efa_rdm_tracepoint_wr_id_post_write(const void *wr_id)
+{
+	struct efa_rdm_pke *pkt_entry = (struct efa_rdm_pke *) wr_id;
+	struct efa_rdm_ope *ope = pkt_entry->ope;
+	if (!ope)
+		return;
+	efa_tracepoint(post_write, (size_t) wr_id, (size_t) ope->cq_entry.op_context);
 }
 
 #else

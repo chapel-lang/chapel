@@ -202,13 +202,15 @@ void xnet_report_error(struct xnet_xfer_entry *xfer_entry, int err)
 
 	err_entry.flags = xfer_entry->cq_flags & ~FI_COMPLETION;
 	if (err_entry.flags & FI_RECV) {
-		if (xfer_entry->ctrl_flags & XNET_MULTI_RECV &&
-		    xfer_entry->mrecv) {
-			xfer_entry->mrecv->ref_cnt--;
-			if (!xfer_entry->mrecv->ref_cnt) {
+		if (xfer_entry->ctrl_flags & XNET_MULTI_RECV) {
+			if (xfer_entry->mrecv) {
+				xfer_entry->mrecv->ref_cnt--;
+				if (!xfer_entry->mrecv->ref_cnt) {
+					err_entry.flags |= FI_MULTI_RECV;
+					free(xfer_entry->mrecv);
+				}
+			} else
 				err_entry.flags |= FI_MULTI_RECV;
-				free(xfer_entry->mrecv);
-			}
 		}
 		xnet_get_cq_info(xfer_entry, &err_entry.flags, &err_entry.data,
 				 &err_entry.tag);

@@ -64,31 +64,33 @@ static inline void psmx3_iov_copy(struct iovec *iov, size_t count,
 /* RMA protocol:
  *
  * Write REQ:
- *	args[0].u32w0	cmd, flag
- *	args[0].u32w1	len
- *	args[1].u64	req
- *	args[2].u64	addr
- *	args[3].u64	key
- *	args[4].u64	data (optional)
+ *	args[0].u32w0 : cmd, flag
+ *	args[0].u32w1 : req len
+ *	args[1].u64   : req
+ *	args[2].u64   : target base address
+ *	args[3].u64   : target mr key
+ *	args[4].u64   : cq data (optional)
+ *	args[5].u32w0 : target base offset (optional; unused for long protocol)
+ *	args[5].u32w1 : reserved
  *
  * Write REP:
- *	args[0].u32w0	cmd, flag
- *	args[0].u32w1	error
- *	args[1].u64	req
+ *	args[0].u32w0 : cmd, flag
+ *	args[0].u32w1 : error
+ *	args[1].u64   : req
  *
  * Read REQ:
- *	args[0].u32w0	cmd, flag
- *	args[0].u32w1	len
- *	args[1].u64	req
- *	args[2].u64	addr
- *	args[3].u64	key
- *	args[4].u64	offset / unused for long protocol
+ *	args[0].u32w0 : cmd, flag
+ *	args[0].u32w1 : len
+ *	args[1].u64   : req
+ *	args[2].u64   : addr
+ *	args[3].u64   : key
+ *	args[4].u64   : offset / unused for long protocol
  *
  * Read REP:
- *	args[0].u32w0	cmd, flag
- *	args[0].u32w1	error
- *	args[1].u64	req
- *	args[2].u64	offset
+ *	args[0].u32w0 : cmd, flag
+ *	args[0].u32w1 : error
+ *	args[1].u64   : req
+ *	args[2].u64   : offset
  */
 
 int psmx3_am_rma_handler(psm2_am_token_t token, psm2_amarg_t *args,
@@ -98,6 +100,8 @@ int psmx3_am_rma_handler(psm2_am_token_t token, psm2_amarg_t *args,
 	psm2_amarg_t rep_args[8];
 	uint8_t *rma_addr;
 	ssize_t rma_len;
+	size_t rma_offset;
+	uint32_t cq_data;
 	uint64_t key;
 	int err = 0;
 	int op_error = 0;
@@ -123,23 +127,23 @@ int psmx3_am_rma_handler(psm2_am_token_t token, psm2_amarg_t *args,
 		rma_len = args[0].u32w1;
 		rma_addr = (uint8_t *)(uintptr_t)args[2].u64;
 		key = args[3].u64;
+		cq_data = args[4].u64;
+		rma_offset = args[5].u32w0;
 		mr = psmx3_mr_get(rx->domain, key);
 		op_error = mr ?
-			psmx3_mr_validate(mr, (uint64_t)rma_addr, len, FI_REMOTE_WRITE) :
+			psmx3_mr_validate(mr, (uint64_t)rma_addr + rma_offset, len, FI_REMOTE_WRITE) :
 			-FI_EINVAL;
 		if (!op_error) {
-			rma_addr += mr->offset;
-			psm3_memcpy(rma_addr, src, len);
+			psm3_memcpy(rma_addr + mr->offset + rma_offset, src, len);
 			if (eom) {
 				if (rx->ep->recv_cq && has_data) {
-					/* TODO: report the addr/len of the whole write */
 					event = psmx3_cq_create_event(
 							rx->ep->recv_cq,
 							0, /* context */
 							rma_addr,
 							FI_REMOTE_WRITE | FI_RMA | FI_REMOTE_CQ_DATA,
-							rma_len,
-							args[4].u64,
+							rma_offset + rma_len,
+							cq_data,
 							0, /* tag */
 							0, /* olen */
 							0);
@@ -409,6 +413,7 @@ static ssize_t psmx3_rma_self(int am_cmd,
 	struct psmx3_fid_cntr *cntr = NULL;
 	struct psmx3_fid_cntr *mr_cntr = NULL;
 	struct psmx3_fid_cq *cq = NULL;
+	psm2_ep_t psm_ep = ep->tx ? ep->tx->psm2_ep : ep->rx->psm2_ep;
 	int no_event;
 	int err = 0;
 	int op_error = 0;
@@ -458,7 +463,7 @@ static ssize_t psmx3_rma_self(int am_cmd,
 				cq = ep->recv_cq;
 			if (mr->cntr != cntr)
 				mr_cntr = mr->cntr;
-			psm3_memcpy((void *)addr, buf, len);
+			psm3_ep_memcpy(psm_ep, (void *)addr, buf, len);
 			break;
 
 		case PSMX3_AM_REQ_WRITEV:
@@ -470,14 +475,14 @@ static ssize_t psmx3_rma_self(int am_cmd,
 			dst = (void *)addr;
 			for (i=0; i<iov_count; i++)
 				if (iov[i].iov_len) {
-					psm3_memcpy(dst, iov[i].iov_base, iov[i].iov_len);
+					psm3_ep_memcpy(psm_ep, dst, iov[i].iov_base, iov[i].iov_len);
 					dst += iov[i].iov_len;
 				}
 			break;
 
 		case PSMX3_AM_REQ_READ:
 			cntr = ep->remote_read_cntr;
-			psm3_memcpy(buf, (void *)addr, len);
+			psm3_ep_memcpy(psm_ep, buf, (void *)addr, len);
 			break;
 
 		case PSMX3_AM_REQ_READV:
@@ -485,7 +490,7 @@ static ssize_t psmx3_rma_self(int am_cmd,
 			src = (void *)addr;
 			for (i=0; i<iov_count; i++)
 				if (iov[i].iov_len) {
-					psm3_memcpy(iov[i].iov_base, src, iov[i].iov_len);
+					psm3_ep_memcpy(psm_ep, iov[i].iov_base, src, iov[i].iov_len);
 					src += iov[i].iov_len;
 				}
 			break;
@@ -944,6 +949,7 @@ ssize_t psmx3_write_generic(struct fid_ep *ep, const void *buf, size_t len,
 	void *psm2_context;
 	int no_event;
 	size_t req_refcnt = 0;
+	size_t offset = 0;
 	int err;
 
 	ep_priv = container_of(ep, struct psmx3_fid_ep, ep);
@@ -1050,12 +1056,14 @@ ssize_t psmx3_write_generic(struct fid_ep *ep, const void *buf, size_t len,
 	}
 
 	PSMX3_AM_SET_OP(args[0].u32w0, PSMX3_AM_REQ_WRITE);
-	nargs = 4;
+	nargs = 6;
+	args[4].u64 = 0; /* cq_data always zero when !EOM */
 	while (len > chunk_size) {
 		args[0].u32w1 = chunk_size;
 		args[1].u64 = (uint64_t)(uintptr_t)req;
 		args[2].u64 = addr;
 		args[3].u64 = key;
+		args[5].u32w0 = offset;
 		err = psm3_am_request_short(psm2_epaddr, PSMX3_AM_RMA_HANDLER,
 					    args, nargs, (void *)buf,
 					    chunk_size, am_flags, NULL, NULL);
@@ -1068,8 +1076,8 @@ ssize_t psmx3_write_generic(struct fid_ep *ep, const void *buf, size_t len,
 		}
 		psmx3_am_poll(ep_priv->tx);
 		buf = (const uint8_t *)buf + chunk_size;
-		addr += chunk_size;
 		len -= chunk_size;
+		offset += chunk_size;
 		req_refcnt++;
 	}
 
@@ -1077,10 +1085,10 @@ ssize_t psmx3_write_generic(struct fid_ep *ep, const void *buf, size_t len,
 	args[1].u64 = (uint64_t)(uintptr_t)req;
 	args[2].u64 = addr;
 	args[3].u64 = key;
+	args[5].u32w0 = offset;
 	if (flags & FI_REMOTE_CQ_DATA) {
 		PSMX3_AM_SET_FLAG(args[0].u32w0, PSMX3_AM_DATA | PSMX3_AM_EOM);
 		args[4].u64 = data;
-		nargs++;
 	} else {
 		PSMX3_AM_SET_FLAG(args[0].u32w0, PSMX3_AM_EOM);
 	}
@@ -1184,19 +1192,20 @@ ssize_t psmx3_writev_generic(struct fid_ep *ep, const struct iovec *iov,
 		PSMX3_CTXT_USER(&req->fi_context) = context;
 		PSMX3_CTXT_EP(&req->fi_context) = ep_priv;
 
+		nargs = 6;
 		args[0].u32w0 = 0;
 		PSMX3_AM_SET_OP(args[0].u32w0, PSMX3_AM_REQ_WRITE);
 		args[0].u32w1 = len;
 		args[1].u64 = (uint64_t)(uintptr_t)req;
 		args[2].u64 = addr;
 		args[3].u64 = key;
-		nargs = 4;
+		args[5].u32w0 = 0;
 		if (flags & FI_REMOTE_CQ_DATA) {
 			PSMX3_AM_SET_FLAG(args[0].u32w0, PSMX3_AM_DATA | PSMX3_AM_EOM);
 			args[4].u64 = data;
-			nargs++;
 		} else {
 			PSMX3_AM_SET_FLAG(args[0].u32w0, PSMX3_AM_EOM);
+			args[4].u64 = 0;
 		}
 		err = psm3_am_request_short(psm2_epaddr, PSMX3_AM_RMA_HANDLER,
 					    args, nargs, (void *)buf, len,
@@ -1285,7 +1294,8 @@ ssize_t psmx3_writev_generic(struct fid_ep *ep, const struct iovec *iov,
 
 		/* Case 2.2: use short protocol all other segments */
 		PSMX3_AM_SET_OP(args[0].u32w0, PSMX3_AM_REQ_WRITE);
-		nargs = 4;
+		nargs = 6;
+		args[4].u64 = 0; /* cq_data always zero when !EOM */
 		buf = iov[i].iov_base;
 		len = iov[i].iov_len;
 		while (len > chunk_size) {
@@ -1293,6 +1303,7 @@ ssize_t psmx3_writev_generic(struct fid_ep *ep, const struct iovec *iov,
 			args[1].u64 = (uint64_t)(uintptr_t)req;
 			args[2].u64 = addr;
 			args[3].u64 = key;
+			args[5].u32w0 = len_sent;
 			err = psm3_am_request_short(psm2_epaddr, PSMX3_AM_RMA_HANDLER,
 						    args, nargs, (void *)buf,
 						    chunk_size, am_flags,
@@ -1304,7 +1315,6 @@ ssize_t psmx3_writev_generic(struct fid_ep *ep, const struct iovec *iov,
 			}
 			psmx3_am_poll(ep_priv->tx);
 			buf += chunk_size;
-			addr += chunk_size;
 			len -= chunk_size;
 			len_sent += chunk_size;
 			req_refcnt++;
@@ -1314,11 +1324,11 @@ ssize_t psmx3_writev_generic(struct fid_ep *ep, const struct iovec *iov,
 		args[1].u64 = (uint64_t)(uintptr_t)req;
 		args[2].u64 = addr;
 		args[3].u64 = key;
+		args[5].u32w0 = len_sent;
 		if (len_sent + len == total_len) {
 			if (flags & FI_REMOTE_CQ_DATA) {
 				PSMX3_AM_SET_FLAG(args[0].u32w0, PSMX3_AM_DATA | PSMX3_AM_EOM);
 				args[4].u64 = data;
-				nargs++;
 			} else {
 				PSMX3_AM_SET_FLAG(args[0].u32w0, PSMX3_AM_EOM);
 			}

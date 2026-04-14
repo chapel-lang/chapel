@@ -666,7 +666,7 @@ int mrail_cq_open(struct fid_domain *domain, struct fi_cq_attr *attr,
 		}
 	}
 
-	// TODO add regular process comp when FI_BUFFERED_RECV not set
+	// TODO add regular process comp when OFI_BUFFERED_RECV not set
 	mrail_cq->process_comp = mrail_handle_recv_completion;
 
 	*cq_fid = &mrail_cq->util_cq.cq_fid;

@@ -280,6 +280,7 @@ int ucx_cntr_open(struct fid_domain *domain, struct fi_cntr_attr *attr,
 ssize_t ucx_mrecv_repost(struct ucx_ep *ep,
 			 struct ucx_mrecv_ctx *mctx);
 
+void ucx_callback_noop( void *request, ucs_status_t status);
 void ucx_send_callback_no_compl(void *request, ucs_status_t status);
 void ucx_send_callback(void *request, ucs_status_t status);
 void ucx_recv_callback_no_compl(void *request, ucs_status_t status,

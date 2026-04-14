@@ -98,7 +98,7 @@ void psm3_mq_handle_rts_complete(psm2_mq_req_t req)
 	return;
 }
 
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 /*
  * Copy a packet from host buffer to a gpu buffer.
  *
@@ -170,12 +170,12 @@ psm3_mq_req_gpu_copy(uint64_t gpu_buf_start, uint32_t gpu_buf_len,
 		pkt_len = len;
 	}
 }
-#endif /* PSM_CUDA || PSM_ONEAPI  */
+#endif /* PSM_HAVE_GPU */
 
 static void
 psm3_mq_req_copy(psm2_mq_req_t req,
 		 uint32_t offset, const void *buf, uint32_t nbytes
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 		, int use_gdrcopy, psm2_ep_t ep
 #endif
 		)
@@ -198,7 +198,7 @@ psm3_mq_req_copy(psm2_mq_req_t req,
 		msglen_this = nbytes;
 	}
 	if (msgptr != buf) {
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 		// for loopback HAL, invalid to call psm3_mq_get_window_rv()
 		// however, for loopback HAL, gdr copy is disabled
 		if (use_gdrcopy)
@@ -227,7 +227,7 @@ psm3_mq_req_copy(psm2_mq_req_t req,
 int
 psm3_mq_handle_data(psm2_mq_t mq, psm2_mq_req_t req,
 		    uint32_t offset, const void *buf, uint32_t nbytes
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 		    , int use_gdrcopy, psm2_ep_t ep
 #endif
 		)
@@ -245,7 +245,7 @@ psm3_mq_handle_data(psm2_mq_t mq, psm2_mq_req_t req,
 		rc = MQ_RET_UNEXP_OK;
 	}
 
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 	psm3_mq_req_copy(req, offset, buf, nbytes, use_gdrcopy, ep);
 #else
 	psm3_mq_req_copy(req, offset, buf, nbytes);
@@ -416,7 +416,7 @@ psm3_mq_handle_rts(psm2_mq_t mq, psm2_epaddr_t src, uint32_t *_tag,
 		if (paylen) {
 			// payload of RTS can contain a single packet synchronous MPI msg
 			psm3_mq_mtucpy(req->req_data.buf, payload, paylen);
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 			if (req->is_buf_gpu_mem) {
 				stats->rndv_rts_cuCopy_recv++;
 				stats->rndv_rts_cuCopy_recv_bytes += paylen;
@@ -463,7 +463,7 @@ psm3_mq_handle_rts(psm2_mq_t mq, psm2_epaddr_t src, uint32_t *_tag,
 		/* We don't know recv_msglen yet but we set it here for
 		 * mq_iprobe */
 		req->req_data.send_msglen = req->req_data.recv_msglen = send_msglen;
-		PSM2_LOG_EPM_COND(req->req_data.send_msglen > mq->hfi_thresh_rv,
+		PSM2_LOG_EPM_COND(req->req_data.send_msglen > mq->rndv_nic_thresh,
 				 OPCODE_LONG_RTS,PSM2_LOG_RX,src->epid,mq->ep->epid,
 				    "req->rts_reqidx_peer: %d",req->rts_reqidx_peer);
 		req->state = MQ_STATE_UNEXP_RV;
@@ -474,7 +474,7 @@ psm3_mq_handle_rts(psm2_mq_t mq, psm2_epaddr_t src, uint32_t *_tag,
 		if (paylen) {
 			req->req_data.buf = psm3_mq_sysbuf_alloc(mq, paylen);
 			psmi_assert(paylen == 0 || req->req_data.buf != NULL);
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 			psm3_mq_mtucpy_host_mem(req->req_data.buf, payload, paylen);
 #else
 			psm3_mq_mtucpy(req->req_data.buf, payload, paylen);
@@ -521,9 +521,9 @@ psm3_mq_handle_envelope(psm2_mq_t mq, psm2_epaddr_t src, uint32_t *_tag,
 	psm2_mq_req_t req;
 	uint32_t msglen;
 	psmi_mtucpy_fn_t psmi_mtucpy_fn;
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 	int use_gdrcopy = 0;
-#endif /*  PSM_CUDA || PSM_ONEAPI */
+#endif /* PSM_HAVE_GPU */
 	psm2_mq_tag_t *tag = (psm2_mq_tag_t *)_tag;
 
 	if (msgorder && (req = psm3_mq_req_match(mq, src, tag, 1))) {
@@ -543,7 +543,7 @@ psm3_mq_handle_envelope(psm2_mq_t mq, psm2_epaddr_t src, uint32_t *_tag,
 		switch (opcode) {
 		case MQ_MSG_TINY:
 			/* mq_copy_tiny() can handle zero byte */
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 			if (!req->is_buf_gpu_mem) {
 				mq_copy_tiny_host_mem((uint32_t *) user_buffer, (uint32_t *) payload, msglen);
 				stats->tiny_cpu_recv++;
@@ -561,7 +561,7 @@ psm3_mq_handle_envelope(psm2_mq_t mq, psm2_epaddr_t src, uint32_t *_tag,
 				user_buffer = req->req_data.buf;
 #endif
 				mq_copy_tiny((uint32_t *) user_buffer, (uint32_t *) payload, msglen);
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 				stats->tiny_cuCopy_recv++;
 				stats->tiny_cuCopy_recv_bytes += msglen;
 			}
@@ -577,7 +577,7 @@ psm3_mq_handle_envelope(psm2_mq_t mq, psm2_epaddr_t src, uint32_t *_tag,
 
 		case MQ_MSG_SHORT:	/* message fits in 1 payload */
 			psmi_mtucpy_fn = psm3_mq_mtucpy;
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 			if (!req->is_buf_gpu_mem) {
 				psmi_mtucpy_fn = psm3_mq_mtucpy_host_mem;
 				stats->short_cpu_recv++;
@@ -589,15 +589,10 @@ psm3_mq_handle_envelope(psm2_mq_t mq, psm2_epaddr_t src, uint32_t *_tag,
 							(unsigned long)req->req_data.buf,
 							msglen, 1, mq->ep))) {
 				psmi_mtucpy_fn = psm3_mq_mtucpy_host_mem;
-#ifdef PSM_ONEAPI
-				use_gdrcopy = 1;
-#endif
 				stats->short_gdrcopy_recv++;
 				stats->short_gdrcopy_recv_bytes += msglen;
 			} else {
 				user_buffer = req->req_data.buf;
-#endif
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
 				stats->short_cuCopy_recv++;
 				stats->short_cuCopy_recv_bytes += msglen;
 			}
@@ -635,7 +630,7 @@ psm3_mq_handle_envelope(psm2_mq_t mq, psm2_epaddr_t src, uint32_t *_tag,
 			_HFI_VDBG("exp MSG_EAGER of length %d bytes pay=%d\n",
 				  msglen, paylen);
 			// !offset -> only count recv msgs on 1st pkt in msg
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 			if (!req->is_buf_gpu_mem) {
 				if (!offset) stats->eager_cpu_recv++;
 				stats->eager_cpu_recv_bytes += paylen;
@@ -655,7 +650,7 @@ psm3_mq_handle_envelope(psm2_mq_t mq, psm2_epaddr_t src, uint32_t *_tag,
 #endif
 			if (paylen > 0)
 				psm3_mq_handle_data(mq, req, offset, payload,
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 						    paylen, use_gdrcopy, mq->ep);
 #else
 						    paylen);
@@ -721,7 +716,7 @@ psm3_mq_handle_envelope(psm2_mq_t mq, psm2_epaddr_t src, uint32_t *_tag,
 		if (msglen > 0) {
 			req->req_data.buf = psm3_mq_sysbuf_alloc(mq, msglen);
 			psmi_assert(msglen == 0 || req->req_data.buf != NULL);
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 			mq_copy_tiny_host_mem((uint32_t *) req->req_data.buf,
 				     (uint32_t *) payload, msglen);
 #else
@@ -741,14 +736,14 @@ psm3_mq_handle_envelope(psm2_mq_t mq, psm2_epaddr_t src, uint32_t *_tag,
 		req->req_data.buf = psm3_mq_sysbuf_alloc(mq, msglen);
 		psmi_assert(msglen == 0 || req->req_data.buf != NULL);
 		if (msglen <= paylen) {
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 			psm3_mq_mtucpy_host_mem(req->req_data.buf, payload, msglen);
 #else
 			psm3_mq_mtucpy(req->req_data.buf, payload, msglen);
 #endif
 		} else {
 			psmi_assert((msglen & ~0x3) == paylen);
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 			psm3_mq_mtucpy_host_mem(req->req_data.buf, payload, paylen);
 #else
 			psm3_mq_mtucpy(req->req_data.buf, payload, paylen);
@@ -758,7 +753,7 @@ psm3_mq_handle_envelope(psm2_mq_t mq, psm2_epaddr_t src, uint32_t *_tag,
 			 * copy after the DW payload.
 			 */
 			uint32_t off[] = { offset };
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 			mq_copy_tiny_host_mem((uint32_t *)(req->req_data.buf+paylen),
 				(uint32_t *)off, msglen & 0x3);
 #else
@@ -781,7 +776,7 @@ psm3_mq_handle_envelope(psm2_mq_t mq, psm2_epaddr_t src, uint32_t *_tag,
 		_HFI_VDBG("unexp MSG_EAGER of length %d bytes pay=%d\n",
 			  msglen, paylen);
 		if (paylen > 0)
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 			psm3_mq_handle_data(mq, req, offset, payload, paylen, 0, NULL);
 #else
 			psm3_mq_handle_data(mq, req, offset, payload, paylen);
@@ -807,7 +802,7 @@ psm3_mq_handle_envelope(psm2_mq_t mq, psm2_epaddr_t src, uint32_t *_tag,
 	return MQ_RET_UNEXP_OK;
 }
 
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI) // declared inline in psm_mq_internal.h for non-CUDA
+#ifdef PSM_HAVE_GPU // declared inline in psm_mq_internal.h for non-GPU
 // perform the actual copy for an psmi_mq_irecv_inner.  We copy from a sysbuf
 // (req->req_data.buf) to the actual user buffer (buf) and keep statistics.
 // is_buf_gpu_mem indicates if buf is a gpu buffer
@@ -826,22 +821,22 @@ void psm3_mq_recv_copy(psm2_mq_t mq, psm2_mq_req_t req, uint8_t is_buf_gpu_mem,
 		return;
 	}
 	if (!is_buf_gpu_mem) {
-		psmi_assert(! PSMI_IS_GPU_ENABLED || !PSMI_IS_GPU_MEM(buf));
+		psmi_assert(!PSM3_IS_GPU_MEM(buf));
 		mq->stats.rx_sysbuf_cpu_num++;
 		mq->stats.rx_sysbuf_cpu_bytes += copysz;
 		psmi_mtucpy_fn = psm3_mq_mtucpy_host_mem;
-	// len could be huge, so limit ourselves to gdr_copy_limit_recv
-	// Note to get here copysz <= gdr_copy_limit_recv
+	// len could be huge, so limit ourselves to psm3_gpu_gdr_copy_limit_recv
+	// Note to get here copysz <= psm3_gpu_gdr_copy_limit_recv
 	} else if (PSMI_USE_GDR_COPY_RECV(copysz) &&
 		NULL != (ubuf = psmi_hal_gdr_convert_gpu_to_host_addr((unsigned long)buf,
-						    min(gdr_copy_limit_recv, len), 1,
+						    min(psm3_gpu_gdr_copy_limit_recv, len), 1,
 						    mq->ep))) {
-		psmi_assert(! PSMI_IS_GPU_ENABLED || PSMI_IS_GPU_MEM(buf));
+		psmi_assert(! PSM3_GPU_IS_ENABLED || PSM3_IS_GPU_MEM(buf));
 		psmi_mtucpy_fn = psm3_mq_mtucpy_host_mem;
 		mq->stats.rx_sysbuf_gdrcopy_num++;
 		mq->stats.rx_sysbuf_gdrcopy_bytes += copysz;
 	} else {
-		psmi_assert(! PSMI_IS_GPU_ENABLED || PSMI_IS_GPU_MEM(buf));
+		psmi_assert(! PSM3_GPU_IS_ENABLED || PSM3_IS_GPU_MEM(buf));
 		ubuf = buf;
 		mq->stats.rx_sysbuf_cuCopy_num++;
 		mq->stats.rx_sysbuf_cuCopy_bytes += copysz;
@@ -849,7 +844,7 @@ void psm3_mq_recv_copy(psm2_mq_t mq, psm2_mq_req_t req, uint8_t is_buf_gpu_mem,
 	if (copysz)
 		psmi_mtucpy_fn(ubuf, (const void *)req->req_data.buf, copysz);
 }
-#endif // defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#endif // PSM_HAVE_GPU
 
 // we landed an out of order message in a sysbuf and can now process it
 // ureq is where we landed it.  If found, ereq is the user posted receive.
@@ -873,13 +868,13 @@ int psm3_mq_handle_outoforder(psm2_mq_t mq, psm2_mq_req_t ureq)
 	case MQ_STATE_COMPLETE:
 		if (ureq->req_data.buf != NULL) {	/* 0-byte don't alloc a sysreq_data.buf */
 			psm3_mq_recv_copy(mq, ureq,
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 					ereq->is_buf_gpu_mem,
 #endif
 					ereq->req_data.buf,
 					ereq->req_data.buf_len, msglen);
 			psm3_mq_sysbuf_free(mq, ureq->req_data.buf);
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 		} else {
 			mq->stats.rx_sysbuf_cpu_num++; // zero length
 #endif
@@ -895,7 +890,7 @@ int psm3_mq_handle_outoforder(psm2_mq_t mq, psm2_mq_req_t ureq)
 		ereq->send_msgoff = ureq->send_msgoff;
 		ereq->recv_msgoff = min(ureq->recv_msgoff, msglen);
 		psm3_mq_recv_copy(mq, ureq,
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 				ereq->is_buf_gpu_mem,
 #endif
 				ereq->req_data.buf,
@@ -913,7 +908,7 @@ int psm3_mq_handle_outoforder(psm2_mq_t mq, psm2_mq_req_t ureq)
 		ereq->recv_msgoff = min(ureq->recv_msgoff, msglen);
 		if (ereq->send_msgoff) { // only have sysbuf if RTS w/payload
 			psm3_mq_recv_copy(mq, ureq,
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 					ereq->is_buf_gpu_mem,
 #endif
 					ereq->req_data.buf,

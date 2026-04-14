@@ -172,7 +172,7 @@ extern char psm3_mylabel[];
 void psm3_set_mylabel(char *);
 extern FILE *psm3_dbgout;
 extern void psm3_dump_buf(uint8_t *buf, uint32_t len);
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 extern void psm3_dump_gpu_buf(uint8_t *buf, uint32_t len);
 #endif
 
@@ -268,7 +268,7 @@ extern void psm3_dump_gpu_buf(uint8_t *buf, uint32_t len);
 #define _HFI_PDBG_ON unlikely(psm3_dbgmask & __HFI_PKTDBG)
 #define _HFI_PDBG_ALWAYS(fmt, ...) _HFI_DBG_ALWAYS(fmt, ##__VA_ARGS__)
 #define _HFI_PDBG_DUMP_ALWAYS(buf, len) psm3_dump_buf(buf, len)
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 #define _HFI_PDBG_DUMP_GPU_ALWAYS(buf, len) psm3_dump_gpu_buf(buf, len)
 #endif
 
@@ -321,7 +321,7 @@ extern void psm3_dump_gpu_buf(uint8_t *buf, uint32_t len);
 #define _HFI_MMDBG_ON 0
 #define _HFI_MMDBG_ALWAYS(fmt, ...)
 #define _HFI_PDBG_DUMP_ALWAYS(buf, len)
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 #define _HFI_PDBG_DUMP_GPU_ALWAYS(buf, len)
 #endif
 #define _HFI_INFO_ON 0

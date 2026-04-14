@@ -92,7 +92,9 @@ void efa_rdm_pke_rtm_update_rxe(struct efa_rdm_pke *pkt_entry,
 
 ssize_t efa_rdm_pke_proc_matched_rtm(struct efa_rdm_pke *pkt_entry);
 
-ssize_t efa_rdm_pke_proc_rtm_rta(struct efa_rdm_pke *pkt_entry);
+ssize_t efa_rdm_pke_proc_msgrtm(struct efa_rdm_pke *pkt_entry);
+
+ssize_t efa_rdm_pke_proc_rtm_rta(struct efa_rdm_pke *pkt_entry, struct efa_rdm_peer *peer);
 
 void efa_rdm_pke_handle_rtm_rta_recv(struct efa_rdm_pke *pkt_entry);
 
@@ -234,7 +236,7 @@ ssize_t efa_rdm_pke_init_runtread_tagrtm(struct efa_rdm_pke *pkt_entry,
 					 size_t data_offset,
 					 int data_size);
 
-void efa_rdm_pke_handle_runtread_rtm_sent(struct efa_rdm_pke *pkt_entry);
+void efa_rdm_pke_handle_runtread_rtm_sent(struct efa_rdm_pke *pkt_entry, struct efa_rdm_peer *peer);
 
 void efa_rdm_pke_handle_runtread_rtm_send_completion(struct efa_rdm_pke *pkt_entry);
 

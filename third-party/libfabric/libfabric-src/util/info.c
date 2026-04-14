@@ -161,7 +161,6 @@ static int str2mode(char *inputstr, uint64_t *value)
 	ORCASE(FI_MSG_PREFIX);
 	ORCASE(FI_ASYNC_IOV);
 	ORCASE(FI_RX_CQ_DATA);
-	ORCASE(FI_LOCAL_MR);
 	ORCASE(FI_CONTEXT2);
 
 	fprintf(stderr, "error: Unrecognized mode: %s\n", inputstr);
@@ -346,7 +345,7 @@ int main(int argc, char **argv)
 
 	hints->mode = ~0;
 	hints->domain_attr->mode = ~0;
-	hints->domain_attr->mr_mode = ~(FI_MR_BASIC | FI_MR_SCALABLE);
+	hints->domain_attr->mr_mode = ~3; /* deprecated: (FI_MR_BASIC | FI_MR_SCALABLE) */
 
 	while ((op = getopt_long(argc, argv, "s:n:P:c:m:t:a:p:d:f:eg:i:lhv", longopts,
 				 &option_index)) != -1) {

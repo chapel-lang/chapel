@@ -17,10 +17,6 @@
 #define PSMX3_GIT_CHECKSUM	"@PSM3_GIT_HASH@"
 #endif
 
-#ifndef PSM3_MARCH
-#define PSM3_MARCH	"@PSM3_MARCH@"
-#endif
-
 char psm3_IEFS_version[] = PSMX3_IEFS_VERSION;
 char psm3_build_timestamp[] = PSMX3_BUILD_TIMESTAMP;
 char psm3_sources_checksum[] = PSMX3_SRC_CHECKSUM;

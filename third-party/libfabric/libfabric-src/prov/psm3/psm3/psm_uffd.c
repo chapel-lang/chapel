@@ -410,7 +410,7 @@ static unsigned long reg_tracker_get_rightmost(const struct psm3_uffd_region *re
 // then provides all the rbtree manipulation functions.
 
 // we don't need RBTREE_CMP nor the ips_cl_qmap_searchv
-//#define RBTREE_CMP(a,b) reg_tracker_key_cmp((a), (b))
+//#define RBTREE_CMP(a, b, c) reg_tracker_key_cmp((a), (b))
 #define RBTREE_ASSERT                     psmi_assert
 #define RBTREE_MAP_COUNT(PAYLOAD_PTR)     ((PAYLOAD_PTR)->nelems)
 // this is used to enable ips_cl_qmap_search() in psm3_rbtree.c

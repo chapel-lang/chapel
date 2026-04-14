@@ -22,4 +22,6 @@ int efa_prov_info_compare_domain_name(const struct fi_info *hints,
 int efa_prov_info_compare_pci_bus_id(const struct fi_info *hints,
                                      const struct fi_info *info);
 
+void efa_prov_info_direct_set_hmem_flags(struct fi_info *prov_info);
+
 #endif

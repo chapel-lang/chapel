@@ -931,8 +931,10 @@ int coll_join_collective(struct fid_ep *ep, const void *addr,
 	av_set = container_of(set, struct util_av_set, av_set_fid);
 
 	if (coll_addr == FI_ADDR_NOTAVAIL) {
+		ofi_genlock_lock(&av_set->av->lock);
 		assert(av_set->av->av_set);
 		coll_mc = &av_set->av->av_set->coll_mc;
+		ofi_genlock_unlock(&av_set->av->lock);
 	} else {
 		coll_mc = (struct util_coll_mc*) ((uintptr_t) coll_addr);
 	}

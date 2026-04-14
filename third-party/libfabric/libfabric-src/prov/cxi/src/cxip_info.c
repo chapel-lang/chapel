@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause OR GPL-2.0-only
  *
- * Copyright (c) 2019,2022 Hewlett Packard Enterprise Development LP
+ * Copyright (c) 2019,2022-2024 Hewlett Packard Enterprise Development LP
  */
 
 /* CXI fabric discovery implementation. */
@@ -12,6 +12,7 @@
 #define CXIP_DBG(...) _CXIP_DBG(FI_LOG_FABRIC, __VA_ARGS__)
 #define CXIP_WARN(...) _CXIP_WARN(FI_LOG_FABRIC, __VA_ARGS__)
 #define CXIP_INFO(...) _CXIP_INFO(FI_LOG_FABRIC, __VA_ARGS__)
+bool cxip_collectives_supported = true;
 
 char cxip_prov_name[] = "cxi";
 
@@ -249,8 +250,8 @@ struct fi_ep_attr cxip_ep_attr = {
 	.protocol = FI_PROTO_CXI,
 	.protocol_version = CXIP_WIRE_PROTO_VERSION,
 	.max_msg_size = CXIP_EP_MAX_MSG_SZ,
-	.max_order_raw_size = -1,
-	.max_order_war_size = -1,
+	.max_order_raw_size = 0,
+	.max_order_war_size = 0,
 	.max_order_waw_size = -1,
 	.mem_tag_format = FI_TAG_GENERIC >> (64 - CXIP_TAG_WIDTH),
 	.auth_key_size = sizeof(struct cxi_auth_key),
@@ -270,8 +271,6 @@ struct fi_rx_attr cxip_rx_attr = {
 	.caps = CXIP_EP_CAPS & ~OFI_IGNORED_RX_CAPS,
 	.op_flags = CXIP_RX_OP_FLAGS,
 	.msg_order = CXIP_MSG_ORDER,
-	.comp_order = FI_ORDER_NONE,
-	.total_buffered_recv = CXIP_UX_BUFFER_SIZE,
 	.size = CXIP_MAX_RX_SIZE,
 	.iov_limit = 1,
 };
@@ -290,8 +289,6 @@ struct fi_rx_attr cxip_multi_auth_key_rx_attr = {
 	.caps = CXIP_EP_CAPS & ~OFI_IGNORED_RX_CAPS & ~FI_DIRECTED_RECV,
 	.op_flags = CXIP_RX_OP_FLAGS,
 	.msg_order = CXIP_MSG_ORDER,
-	.comp_order = FI_ORDER_NONE,
-	.total_buffered_recv = CXIP_UX_BUFFER_SIZE,
 	.size = CXIP_MAX_RX_SIZE,
 	.iov_limit = 1,
 };
@@ -390,13 +387,13 @@ struct util_prov cxip_util_prov = {
 	.flags = 0,
 };
 
-int s_page_size;
+int sc_page_size;
 
 /* Get _SC_PAGESIZE */
 static void set_system_page_size(void)
 {
-	if (!s_page_size)
-		s_page_size = sysconf(_SC_PAGESIZE);
+	if (!sc_page_size)
+		sc_page_size = sysconf(_SC_PAGESIZE);
 }
 
 /*
@@ -612,8 +609,6 @@ struct cxip_environment cxip_env = {
 	.force_odp = false,
 	.ats = false,
 	.iotlb = true,
-	.disable_dmabuf_cuda = false,
-	.disable_dmabuf_rocr = false,
 	.ats_mlock_mode = CXIP_ATS_MLOCK_ALL,
 	.fork_safe_requested = false,
 	.rx_match_mode = CXIP_PTLTE_DEFAULT_MODE,
@@ -623,6 +618,8 @@ struct cxip_environment cxip_env = {
 	.rdzv_aligned_sw_rget = 1,
 	.rnr_max_timeout_us = CXIP_RNR_TIMEOUT_US,
 	.disable_non_inject_msg_idc = 0,
+	.disable_non_inject_rma_idc = 0,
+	.disable_non_inject_amo_idc = 0,
 	.disable_host_register = 0,
 	.oflow_buf_size = CXIP_OFLOW_BUF_SIZE,
 	.oflow_buf_min_posted = CXIP_OFLOW_BUF_MIN_POSTED,
@@ -647,6 +644,7 @@ struct cxip_environment cxip_env = {
 	.hybrid_posted_recv_preemptive = 0,
 	.hybrid_unexpected_msg_preemptive = 0,
 	.fc_retry_usec_delay = 1000,
+	.cntr_spin_before_yield = 1000,
 	.ctrl_rx_eq_max_size = 67108864,
 	.default_cq_size = CXIP_CQ_DEF_SZ,
 	.default_tx_size = CXIP_DEFAULT_TX_SIZE,
@@ -654,7 +652,6 @@ struct cxip_environment cxip_env = {
 	.disable_eq_hugetlb = false,
 	.zbcoll_radix = 2,
 	.cq_fill_percent = 50,
-	.enable_unrestricted_end_ro = true,
 	.rget_tc = FI_TC_UNSPEC,
 	.cacheline_size = CXIP_DEFAULT_CACHE_LINE_SIZE,
 	.coll_job_id = NULL,
@@ -670,7 +667,16 @@ struct cxip_environment cxip_env = {
 	.disable_hmem_dev_register = 0,
 	.ze_hmem_supported = 0,
 	.rdzv_proto = CXIP_RDZV_PROTO_DEFAULT,
+	.disable_alt_read_cmdq = false,
+	.cntr_trig_cmdq = false,
 	.enable_trig_op_limit = false,
+	.mr_cache_events_disable_poll_nsecs =
+		CXIP_MR_CACHE_EVENTS_DISABLE_POLL_NSECS,
+	.mr_cache_events_disable_le_poll_nsecs =
+		CXIP_MR_CACHE_EVENTS_DISABLE_LE_POLL_NSECS,
+	.force_dev_reg_copy = false,
+	.mr_target_ordering = MR_ORDER_DEFAULT,
+	.disable_cuda_sync_memops = false,
 };
 
 static void cxip_env_init(void)
@@ -737,16 +743,23 @@ static void cxip_env_init(void)
 	fi_param_get_bool(&cxip_prov, "disable_non_inject_msg_idc",
 			  &cxip_env.disable_non_inject_msg_idc);
 
+	fi_param_define(&cxip_prov, "disable_non_inject_rma_idc", FI_PARAM_BOOL,
+			"Disables IDC for non-inject RMA (default: %d).",
+			cxip_env.disable_non_inject_rma_idc);
+	fi_param_get_bool(&cxip_prov, "disable_non_inject_rma_idc",
+			  &cxip_env.disable_non_inject_rma_idc);
+
+	fi_param_define(&cxip_prov, "disable_non_inject_amo_idc", FI_PARAM_BOOL,
+			"Disables IDC for non-inject atomics (default: %d).",
+			cxip_env.disable_non_inject_amo_idc);
+	fi_param_get_bool(&cxip_prov, "disable_non_inject_amo_idc",
+			  &cxip_env.disable_non_inject_amo_idc);
+
 	fi_param_define(&cxip_prov, "disable_host_register", FI_PARAM_BOOL,
 			"Disables host buffer GPU registration (default: %d).",
 			cxip_env.disable_host_register);
 	fi_param_get_bool(&cxip_prov, "disable_host_register",
 			  &cxip_env.disable_host_register);
-
-	fi_param_define(&cxip_prov, "enable_unrestricted_end_ro", FI_PARAM_BOOL,
-			"Default: %d", cxip_env.enable_unrestricted_end_ro);
-	fi_param_get_bool(&cxip_prov, "enable_unrestricted_end_ro",
-			  &cxip_env.enable_unrestricted_end_ro);
 
 	fi_param_define(&cxip_prov, "odp", FI_PARAM_BOOL,
 			"Enables on-demand paging (default %d).", cxip_env.odp);
@@ -769,17 +782,17 @@ static void cxip_env_init(void)
 			"Enables the NIC IOTLB (default %d).", cxip_env.iotlb);
 	fi_param_get_bool(&cxip_prov, "iotlb", &cxip_env.iotlb);
 
-	fi_param_define(&cxip_prov, "disable_dmabuf_cuda", FI_PARAM_BOOL,
-			"Disables the DMABUF interface for CUDA (default %d).",
-			cxip_env.disable_dmabuf_cuda);
-	fi_param_get_bool(&cxip_prov, "disable_dmabuf_cuda",
-			  &cxip_env.disable_dmabuf_cuda);
+	/* Use ROCR DMABUF by default - honors the env if already set */
+	ret = setenv("FI_HMEM_ROCR_USE_DMABUF", "1", 0);
+	if (ret)
+		CXIP_INFO("Could not enable FI_HMEM_ROCR_USE_DMABUF ret:%d %s\n",
+			  ret, fi_strerror(errno));
 
-	fi_param_define(&cxip_prov, "disable_dmabuf_rocr", FI_PARAM_BOOL,
-			"Disables the DMABUF interface for ROCR (default %d).",
-			cxip_env.disable_dmabuf_rocr);
-	fi_param_get_bool(&cxip_prov, "disable_dmabuf_rocr",
-			  &cxip_env.disable_dmabuf_rocr);
+	/* Disable cuda DMABUF by default - honors the env if already set */
+	ret = setenv("FI_HMEM_CUDA_USE_DMABUF", "0", 0);
+	if (ret)
+		CXIP_INFO("Could not disable FI_HMEM_CUDA_USE_DMABUF ret:%d %s\n",
+			  ret, fi_strerror(errno));
 
 	fi_param_define(&cxip_prov, "ats_mlock_mode", FI_PARAM_STRING,
 			"Sets ATS mlock mode (off | all).");
@@ -833,30 +846,12 @@ static void cxip_env_init(void)
 
 	fi_param_define(&cxip_prov, "rx_match_mode", FI_PARAM_STRING,
 			"Sets RX message match mode (hardware | software | hybrid).");
-	fi_param_get_str(&cxip_prov, "rx_match_mode", &param_str);
 
-	if (param_str) {
-		if (!strcasecmp(param_str, "hardware")) {
-			cxip_env.rx_match_mode = CXIP_PTLTE_HARDWARE_MODE;
-			cxip_env.msg_offload = true;
-		} else if (!strcmp(param_str, "software")) {
-			cxip_env.rx_match_mode = CXIP_PTLTE_SOFTWARE_MODE;
-			cxip_env.msg_offload = false;
-		} else if (!strcmp(param_str, "hybrid")) {
-			cxip_env.rx_match_mode = CXIP_PTLTE_HYBRID_MODE;
-			cxip_env.msg_offload = true;
-		} else {
-			CXIP_WARN("Unrecognized rx_match_mode: %s\n",
-				  param_str);
-			cxip_env.rx_match_mode = CXIP_PTLTE_HARDWARE_MODE;
-			cxip_env.msg_offload = true;
-		}
-
-		param_str = NULL;
-	}
+	cxip_set_env_rx_match_mode();
 
 	fi_param_define(&cxip_prov, "rdzv_threshold", FI_PARAM_SIZE_T,
-			"Message size threshold for rendezvous protocol.");
+			"Message size threshold for rendezvous protocol (default %lu).",
+			cxip_env.rdzv_threshold);
 	fi_param_get_size_t(&cxip_prov, "rdzv_threshold",
 			    &cxip_env.rdzv_threshold);
 
@@ -896,7 +891,8 @@ static void cxip_env_init(void)
 	}
 
 	fi_param_define(&cxip_prov, "oflow_buf_size", FI_PARAM_SIZE_T,
-			"Overflow buffer size.");
+			"Overflow buffer size (default %lu).",
+			cxip_env.oflow_buf_size);
 	fi_param_get_size_t(&cxip_prov, "oflow_buf_size",
 			    &cxip_env.oflow_buf_size);
 
@@ -915,11 +911,13 @@ static void cxip_env_init(void)
 
 	/* Allow either FI_CXI_OFLOW_BUF_COUNT or FI_CXI_FLOW_BUF_MIN_POSTED */
 	fi_param_define(&cxip_prov, "oflow_buf_count", FI_PARAM_SIZE_T,
-			"Overflow buffer count/min posted.");
+			"Overflow buffer count/min posted (default %lu).",
+			cxip_env.oflow_buf_min_posted);
 	fi_param_get_size_t(&cxip_prov, "oflow_buf_count",
 			    &cxip_env.oflow_buf_min_posted);
 	fi_param_define(&cxip_prov, "oflow_buf_min_posted", FI_PARAM_SIZE_T,
-			"Overflow buffer count/min posted.");
+			"Overflow buffer count/min posted (default %lu).",
+			cxip_env.oflow_buf_min_posted);
 	fi_param_get_size_t(&cxip_prov, "oflow_buf_min_posted",
 			    &cxip_env.oflow_buf_min_posted);
 	cxip_env.oflow_buf_max_cached = cxip_env.oflow_buf_min_posted * 3;
@@ -1023,11 +1021,13 @@ static void cxip_env_init(void)
 	fi_param_get_bool(&cxip_prov, "msg_lossless", &cxip_env.msg_lossless);
 
 	fi_param_define(&cxip_prov, "req_buf_size", FI_PARAM_SIZE_T,
-			"Size of request buffer.");
+			"Size of request buffer (default %lu).",
+			cxip_env.req_buf_size);
 	fi_param_get_size_t(&cxip_prov, "req_buf_size", &cxip_env.req_buf_size);
 
 	fi_param_define(&cxip_prov, "req_buf_min_posted", FI_PARAM_SIZE_T,
-			"Minimum number of request buffer posted.");
+			"Minimum number of request buffer posted (default %lu).",
+			cxip_env.req_buf_min_posted);
 	fi_param_get_size_t(&cxip_prov, "req_buf_min_posted",
 			    &cxip_env.req_buf_min_posted);
 
@@ -1040,54 +1040,6 @@ static void cxip_env_init(void)
 			"Maximum number of request buffer cached.");
 	fi_param_get_size_t(&cxip_prov, "req_buf_max_cached",
 			    &cxip_env.req_buf_max_cached);
-
-	/* Parameters to tailor hybrid hardware to software transitions
-	 * that are initiated by software.
-	 */
-	fi_param_define(&cxip_prov, "hybrid_preemptive", FI_PARAM_BOOL,
-			"Enable/Disable low LE preemptive UX transitions.");
-	fi_param_get_bool(&cxip_prov, "hybrid_preemptive",
-			  &cxip_env.hybrid_preemptive);
-	if (cxip_env.rx_match_mode != CXIP_PTLTE_HYBRID_MODE &&
-	    cxip_env.hybrid_preemptive) {
-		cxip_env.hybrid_preemptive = false;
-		CXIP_WARN("Not in hybrid mode, ignoring preemptive\n");
-	}
-
-	fi_param_define(&cxip_prov, "hybrid_recv_preemptive", FI_PARAM_BOOL,
-			"Enable/Disable low LE preemptive recv transitions.");
-	fi_param_get_bool(&cxip_prov, "hybrid_recv_preemptive",
-			  &cxip_env.hybrid_recv_preemptive);
-
-	if (cxip_env.rx_match_mode != CXIP_PTLTE_HYBRID_MODE &&
-	    cxip_env.hybrid_recv_preemptive) {
-		CXIP_WARN("Not in hybrid mode, ignore LE  recv preemptive\n");
-		cxip_env.hybrid_recv_preemptive = 0;
-	}
-
-	fi_param_define(&cxip_prov, "hybrid_posted_recv_preemptive",
-			FI_PARAM_BOOL,
-			"Enable preemptive transition to software endpoint when number of posted receives exceeds RX attribute size");
-	fi_param_get_bool(&cxip_prov, "hybrid_posted_recv_preemptive",
-			  &cxip_env.hybrid_posted_recv_preemptive);
-
-	if (cxip_env.rx_match_mode != CXIP_PTLTE_HYBRID_MODE &&
-	    cxip_env.hybrid_posted_recv_preemptive) {
-		CXIP_WARN("Not in hybrid mode, ignore hybrid_posted_recv_preemptive\n");
-		cxip_env.hybrid_posted_recv_preemptive = 0;
-	}
-
-	fi_param_define(&cxip_prov, "hybrid_unexpected_msg_preemptive",
-			FI_PARAM_BOOL,
-			"Enable preemptive transition to software endpoint when number of hardware unexpected messages exceeds RX attribute size");
-	fi_param_get_bool(&cxip_prov, "hybrid_unexpected_msg_preemptive",
-			  &cxip_env.hybrid_unexpected_msg_preemptive);
-
-	if (cxip_env.rx_match_mode != CXIP_PTLTE_HYBRID_MODE &&
-	    cxip_env.hybrid_unexpected_msg_preemptive) {
-		CXIP_WARN("Not in hybrid mode, ignore hybrid_unexpected_msg_preemptive\n");
-		cxip_env.hybrid_unexpected_msg_preemptive = 0;
-	}
 
 	if (cxip_software_pte_allowed()) {
 		min_free = CXIP_REQ_BUF_HEADER_MAX_SIZE +
@@ -1125,6 +1077,12 @@ static void cxip_env_init(void)
 		CXIP_WARN("FC retry delay invalid. Setting to %d usecs\n",
 			  cxip_env.fc_retry_usec_delay);
 	}
+
+	fi_param_define(&cxip_prov, "cntr_spin_before_yield", FI_PARAM_INT,
+			"Number of times to spin in counter operations before yielding. Default: %d",
+			cxip_env.cntr_spin_before_yield);
+	fi_param_get_int(&cxip_prov, "cntr_spin_before_yield",
+			 &cxip_env.cntr_spin_before_yield);
 
 	fi_param_define(&cxip_prov, "sw_rx_tx_init_max", FI_PARAM_INT,
 			"Max TX S/W RX processing will initiate. Default: %d",
@@ -1333,6 +1291,60 @@ static void cxip_env_init(void)
 		param_str = NULL;
 	}
 
+	fi_param_define(&cxip_prov, "disable_alt_read_cmdq", FI_PARAM_BOOL,
+			"Disables use of alt_read dedicated cmdq (%d).",
+			cxip_env.disable_alt_read_cmdq);
+	fi_param_get_bool(&cxip_prov, "disable_alt_read_cmdq",
+			  &cxip_env.disable_alt_read_cmdq);
+
+	fi_param_define(&cxip_prov, "cntr_trig_cmdq", FI_PARAM_BOOL,
+			"Enables dedicated cmdq for counters (default %d).",
+			cxip_env.cntr_trig_cmdq);
+	fi_param_get_bool(&cxip_prov, "cntr_trig_cmdq",
+			  &cxip_env.cntr_trig_cmdq);
+
+	fi_param_define(&cxip_prov, "mr_cache_events_disable_poll_nsecs", FI_PARAM_SIZE_T,
+			"Max amount of time to poll when disabling an MR configured with MR match events (default: %lu).",
+			cxip_env.mr_cache_events_disable_poll_nsecs);
+	fi_param_get_size_t(&cxip_prov, "mr_cache_events_disable_poll_nsecs",
+			    &cxip_env.mr_cache_events_disable_poll_nsecs);
+
+	fi_param_define(&cxip_prov, "mr_cache_events_disable_le_poll_nsecs", FI_PARAM_SIZE_T,
+			"Max amount of time to poll when LE invalidate disabling an MR configured with MR match events (default: %lu).",
+			cxip_env.mr_cache_events_disable_le_poll_nsecs);
+	fi_param_get_size_t(&cxip_prov, "mr_cache_events_disable_le_poll_nsecs",
+			    &cxip_env.mr_cache_events_disable_le_poll_nsecs);
+
+	fi_param_define(&cxip_prov, "force_dev_reg_copy", FI_PARAM_BOOL,
+			"Force device register copy operations. Default: %d",
+			cxip_env.force_dev_reg_copy);
+	fi_param_get_bool(&cxip_prov, "force_dev_reg_copy",
+			  &cxip_env.force_dev_reg_copy);
+
+	fi_param_define(&cxip_prov, "mr_target_ordering", FI_PARAM_STRING,
+			"MR target ordering (i.e. PCI ordering). Options: default, strict, or relaxed. Recommendation is to leave at default behavior.");
+	fi_param_get_str(&cxip_prov, "mr_target_ordering", &param_str);
+
+	if (param_str) {
+		if (!strcmp(param_str, "default"))
+			cxip_env.mr_target_ordering = MR_ORDER_DEFAULT;
+		else if (!strcmp(param_str, "strict"))
+			cxip_env.mr_target_ordering = MR_ORDER_STRICT;
+		else if (!strcmp(param_str, "relaxed"))
+			cxip_env.mr_target_ordering = MR_ORDER_RELAXED;
+		else
+			CXIP_WARN("Unrecognized mr_target_ordering: %s\n",
+				  param_str);
+
+		param_str = NULL;
+	}
+
+	fi_param_define(&cxip_prov, "disable_cuda_sync_memops", FI_PARAM_BOOL,
+			"Disable CUDA sync of memory operations. Default: %d",
+			cxip_env.disable_cuda_sync_memops);
+	fi_param_get_bool(&cxip_prov, "disable_cuda_sync_memops",
+			  &cxip_env.disable_cuda_sync_memops);
+
 	set_system_page_size();
 }
 
@@ -1341,9 +1353,18 @@ static void cxip_env_init(void)
  */
 CXI_INI
 {
+	int ret = 0;
 	cxip_env_init();
-
-	cxip_curl_init();
+	/* 
+	 * Check to see if we had any issues when binding the curl symbols or during multi init
+	 * If we failed, then collective support will be removed from the CXI provider fi_info
+	 */
+	ret = cxip_curl_init();
+	if(ret != FI_SUCCESS) {
+		CXIP_WARN("cxip_curl_init() failed!\n");
+		CXIP_WARN("removing collective support from CXI prov fi_getinfo()\n");
+		cxip_collectives_supported = false;
+	}
 
 	cxip_if_init();
 
@@ -1374,12 +1395,17 @@ static void cxip_alter_caps(struct fi_info *info, const struct fi_info *hints)
 	 * FI_MSG for send and receive if not already enabled.
 	 */
 	if (hints && hints->caps && (hints->caps & FI_COLLECTIVE)) {
-		if (!(info->caps & (FI_MSG | FI_TAGGED))) {
+		if(!cxip_collectives_supported) {
+			CXIP_WARN("Collectives are not supported - %s\n", __func__);
+			info->caps &= ~FI_COLLECTIVE;
+		} else if (!(info->caps & (FI_MSG | FI_TAGGED))) {
 			info->caps |= FI_MSG | FI_SEND | FI_RECV;
 			info->tx_attr->caps |= FI_MSG | FI_SEND;
 			info->rx_attr->caps |= FI_MSG | FI_RECV;
 		}
+
 	}
+	
 }
 
 static void cxip_alter_tx_attr(struct fi_tx_attr *attr,

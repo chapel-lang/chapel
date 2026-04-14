@@ -2,7 +2,7 @@
  * Copyright (c) 2017-2019 Intel Corporation, Inc. All rights reserved.
  * Copyright (c) 2019-2021 Amazon.com, Inc. or its affiliates.
  *                         All rights reserved.
- * (C) Copyright 2020 Hewlett Packard Enterprise Development LP
+ * (C) Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -40,6 +40,8 @@
 #  include <config.h>
 #endif /* HAVE_CONFIG_H */
 
+struct ofi_mr;
+
 #include <inttypes.h>
 #include <stdbool.h>
 
@@ -48,6 +50,15 @@
 #include <ofi_lock.h>
 #include <ofi_list.h>
 #include <ofi_tree.h>
+#include <ofi_hmem.h>
+
+#if HAVE_KDREG2_MONITOR
+#if HAVE_KDREG2_INCLUDE_PATH
+#include "kdreg2.h"
+#else
+#include <linux/kdreg2.h>
+#endif
+#endif
 
 int ofi_open_mr_cache(uint32_t version, void *attr, size_t attr_len,
 		      uint64_t flags, struct fid **fid, void *context);
@@ -79,11 +90,11 @@ static inline int ofi_mr_local(const struct fi_info *info)
 	if (info->domain_attr->mr_mode & FI_MR_LOCAL)
 		return 1;
 
-	if (info->domain_attr->mr_mode & ~(FI_MR_BASIC | FI_MR_SCALABLE))
+	if (info->domain_attr->mr_mode & ~(OFI_MR_BASIC | OFI_MR_SCALABLE))
 		return 0;
 
 check_local_mr:
-	return (info->mode & FI_LOCAL_MR) ? 1 : 0;
+	return (info->mode & OFI_LOCAL_MR) ? 1 : 0;
 }
 
 #define OFI_MR_MODE_RMA_TARGET (FI_MR_RAW | FI_MR_VIRT_ADDR |			\
@@ -101,15 +112,18 @@ static inline uint64_t ofi_mr_get_prov_mode(uint32_t version,
 	    (user_info->domain_attr &&
 	     !(user_info->domain_attr->mr_mode & FI_MR_LOCAL))) {
 		return (prov_info->domain_attr->mr_mode & FI_MR_LOCAL) ?
-			prov_info->mode | FI_LOCAL_MR : prov_info->mode;
+			prov_info->mode | OFI_LOCAL_MR : prov_info->mode;
 	} else {
 		return prov_info->mode;
 	}
 }
 
-
 /* Single lock used by all memory monitors and MR caches. */
 extern pthread_mutex_t mm_lock;
+
+/* Lock used to coordinate monitor states. */
+extern pthread_mutex_t mm_state_lock;
+
 /* The read-write lock is an additional lock used to protect the dlist_entry
  * list of ofi_mem_monitor. Due to the necessity of releasing the mm_lock
  * while walking the dlist in ofi_monitor_notify, we need a separate lock to
@@ -128,6 +142,12 @@ struct ofi_mr_cache;
 union ofi_mr_hmem_info {
 	uint64_t cuda_id;
 	uint64_t ze_id;
+#if HAVE_KDREG2_MONITOR
+	struct {
+		kdreg2_cookie_t cookie;
+		struct kdreg2_monitoring_params monitoring_params;
+	} kdreg2;
+#endif
 };
 
 struct ofi_mr_entry {
@@ -214,6 +234,7 @@ struct ofi_uffd {
 	struct ofi_mem_monitor		monitor;
 	pthread_t			thread;
 	int				fd;
+	int                             exit_pipe[2];
 };
 
 extern struct ofi_mem_monitor *uffd_monitor;
@@ -228,11 +249,29 @@ struct ofi_memhooks {
 
 extern struct ofi_mem_monitor *memhooks_monitor;
 
+/*
+ * Kdreg2 monitor
+ */
+
+struct kdreg2_status_data;
+
+struct ofi_kdreg2 {
+	struct ofi_mem_monitor          monitor;
+	pthread_t                       thread;
+	int                             fd;
+	int                             exit_pipe[2];
+	const struct kdreg2_status_data *status_data;
+	ofi_atomic64_t                  next_cookie;
+};
+
+extern struct ofi_mem_monitor *kdreg2_monitor;
+
 extern struct ofi_mem_monitor *cuda_monitor;
 extern struct ofi_mem_monitor *cuda_ipc_monitor;
 extern struct ofi_mem_monitor *rocr_monitor;
 extern struct ofi_mem_monitor *rocr_ipc_monitor;
 extern struct ofi_mem_monitor *ze_monitor;
+extern struct ofi_mem_monitor *ze_ipc_monitor;
 extern struct ofi_mem_monitor *import_monitor;
 extern struct ofi_mem_monitor *xpmem_monitor;
 
@@ -367,7 +406,7 @@ struct ofi_mr_cache {
 	struct ofi_rbmap		tree;
 	struct dlist_entry		lru_list;
 	struct dlist_entry		dead_region_list;
-	pthread_mutex_t 		lock;
+	pthread_mutex_t			lock;
 
 	size_t				cached_cnt;
 	size_t				cached_size;
@@ -416,14 +455,15 @@ bool ofi_mr_cache_flush(struct ofi_mr_cache *cache, bool flush_lru);
  * a new ofi_mr_entry and assign it to entry.
  *
  * @param[in] cache     The cache the entry belongs to
- * @param[in] info      Information about the mr entry to search
+ * @param[in out] info  Information about the mr entry to search. Info IOV may
+ *			be updated by providers to reflect region registered by
+ *			the provider.
  * @param[out] entry    The registered entry corresponding to the
  *			region described in info.
  * @returns On success, returns 0. On failure, returns a negative error code.
  */
-int ofi_mr_cache_search(struct ofi_mr_cache *cache,
-			 const struct ofi_mr_info *info,
-			 struct ofi_mr_entry **entry);
+int ofi_mr_cache_search(struct ofi_mr_cache *cache, struct ofi_mr_info *info,
+			struct ofi_mr_entry **entry);
 
 /**
  * Given an attr (with an iov range), if the iov range is already registered,

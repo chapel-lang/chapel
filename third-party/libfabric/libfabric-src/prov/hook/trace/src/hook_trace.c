@@ -262,6 +262,8 @@ static void hook_trace_prof_init(void *context)
 		    fi_tostr_r(buf,len, info->tx_attr, FI_TYPE_TX_ATTR));   \
 		FI_TRACE(dom->fabric->hprov, FI_LOG_DOMAIN, "\n%s",  \
 		    fi_tostr_r(buf,len, info->rx_attr, FI_TYPE_RX_ATTR));  \
+		FI_TRACE(dom->fabric->hprov, FI_LOG_DOMAIN, "\n%s",  \
+		    fi_tostr_r(buf,len, info->domain_attr, FI_TYPE_DOMAIN_ATTR));  \
 	} while (0);
 
 typedef void (*trace_cq_entry_fn)(const struct fi_provider *prov,

@@ -1,6 +1,7 @@
 /*
- * Copyright (c) 2021-2024 Hewlett Packard Enterprise Development LP
  * SPDX-License-Identifier: BSD-2-Clause OR GPL-2.0-only
+ *
+ * Copyright (c) 2021-2024 Hewlett Packard Enterprise Development LP
  */
 
 /**
@@ -106,7 +107,9 @@ char *cxip_coll_trace_pathname;
 FILE *cxip_coll_trace_fid;
 uint64_t cxip_coll_trace_mask;
 
-/* Get environment variable as string representation of int */
+/* Get environment variable as string representation of int
+ * Return -1 if undefined, or not-a-number.
+ */
 static int getenv_int(const char *name)
 {
 	char *env;
@@ -117,6 +120,21 @@ static int getenv_int(const char *name)
 	if (env)
 		sscanf(env, "%d", &value);
 	return value;
+}
+
+/* Get environment variable
+ * Return 0 if undefined, or defined as zero.
+ */
+static int getenv_is_set(const char *name)
+{
+	char *env;
+
+	env = getenv(name);
+	if (!env)
+		return 0;
+	if (strcmp(env, "0") == 0)
+		return 0;
+	return 1;
 }
 
 void cxip_coll_trace_init(void)
@@ -139,19 +157,19 @@ void cxip_coll_trace_init(void)
 	fpath = getenv("CXIP_TRC_PATHNAME");
 
 	/* set bits in cxip_coll_trace_mask */
-	if (getenv("CXIP_TRC_CTRL"))
+	if (getenv_is_set("CXIP_TRC_CTRL"))
 		cxip_coll_trace_set(CXIP_TRC_CTRL);
-	if (getenv("CXIP_TRC_ZBCOLL"))
+	if (getenv_is_set("CXIP_TRC_ZBCOLL"))
 		cxip_coll_trace_set(CXIP_TRC_ZBCOLL);
-	if (getenv("CXIP_TRC_COLL_CURL"))
+	if (getenv_is_set("CXIP_TRC_COLL_CURL"))
 		cxip_coll_trace_set(CXIP_TRC_COLL_CURL);
-	if (getenv("CXIP_TRC_COLL_PKT"))
+	if (getenv_is_set("CXIP_TRC_COLL_PKT"))
 		cxip_coll_trace_set(CXIP_TRC_COLL_PKT);
-	if (getenv("CXIP_TRC_COLL_JOIN"))
+	if (getenv_is_set("CXIP_TRC_COLL_JOIN"))
 		cxip_coll_trace_set(CXIP_TRC_COLL_JOIN);
-	if (getenv("CXIP_TRC_COLL_DEBUG"))
+	if (getenv_is_set("CXIP_TRC_COLL_DEBUG"))
 		cxip_coll_trace_set(CXIP_TRC_COLL_DEBUG);
-	if (getenv("CXIP_TRC_TEST_CODE"))
+	if (getenv_is_set("CXIP_TRC_TEST_CODE"))
 		cxip_coll_trace_set(CXIP_TRC_TEST_CODE);
 
 	/* if no trace masks set, do nothing */
@@ -212,7 +230,8 @@ int cxip_coll_trace_attr cxip_coll_trace(const char *fmt, ...)
 	len = vasprintf(&str, fmt, args);
 	va_end(args);
 	if (len >= 0) {
-		len = fprintf(cxip_coll_trace_fid, "[%2d|%2d] %s", cxip_coll_trace_rank,
+		len = fprintf(cxip_coll_trace_fid, "[%lu][%2d|%2d] %s",
+			      ofi_gettime_ns(), cxip_coll_trace_rank,
 			      cxip_coll_trace_numranks, str);
 		free(str);
 	}

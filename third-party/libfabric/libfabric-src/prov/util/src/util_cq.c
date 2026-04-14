@@ -373,7 +373,7 @@ ssize_t ofi_cq_sreadfrom(struct fid_cq *cq_fid, void *buf, size_t count,
 			return -FI_EAGAIN;
 		}
 
-		ret = fi_wait(&cq->wait->wait_fid, timeout);
+		ret = ofi_wait(&cq->wait->wait_fid, timeout);
 	} while (!ret);
 
 	return ret == -FI_ETIMEDOUT ? -FI_EAGAIN : ret;
@@ -437,8 +437,8 @@ int ofi_cq_cleanup(struct util_cq *cq)
 		util_peer_cq_cleanup(cq);
 
 	if (cq->wait) {
-		fi_poll_del(&cq->wait->pollset->poll_fid,
-			    &cq->cq_fid.fid, 0);
+		ofi_poll_del(&cq->wait->pollset->poll_fid,
+			     &cq->cq_fid.fid, 0);
 		if (cq->internal_wait)
 			fi_close(&cq->wait->wait_fid.fid);
 	}
@@ -768,8 +768,8 @@ int ofi_cq_init(const struct fi_provider *prov, struct fid_domain *domain,
 		memset(&wait_attr, 0, sizeof wait_attr);
 		wait_attr.wait_obj = attr->wait_obj;
 		cq->internal_wait = 1;
-		ret = fi_wait_open(&cq->domain->fabric->fabric_fid,
-				   &wait_attr, &wait);
+		ret = ofi_wait_open(&cq->domain->fabric->fabric_fid,
+				    &wait_attr, &wait);
 		if (ret)
 			goto cleanup;
 		break;
@@ -784,8 +784,8 @@ int ofi_cq_init(const struct fi_provider *prov, struct fid_domain *domain,
 	/* CQ must be fully operational before adding to wait set */
 	if (wait) {
 		cq->wait = container_of(wait, struct util_wait, wait_fid);
-		ret = fi_poll_add(&cq->wait->pollset->poll_fid,
-				  &cq->cq_fid.fid, 0);
+		ret = ofi_poll_add(&cq->wait->pollset->poll_fid,
+				   &cq->cq_fid.fid, 0);
 		if (ret) {
 			if (cq->internal_wait) {
 				fi_close(&cq->wait->wait_fid.fid);

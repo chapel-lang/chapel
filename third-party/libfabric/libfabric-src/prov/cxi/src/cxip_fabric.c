@@ -24,13 +24,41 @@ int cxip_eq_def_sz = CXIP_EQ_DEF_SZ;
 
 static int read_default_params;
 
+static int cxip_trywait(struct fid_fabric *fabric, struct fid **fids,
+			int count)
+{
+	struct cxip_cq *cq;
+	int ret;
+	int i;
+
+	for (i = 0; i < count; i++) {
+		switch (fids[i]->fclass) {
+		case FI_CLASS_CQ:
+			cq = container_of(fids[i], struct cxip_cq,
+					  util_cq.cq_fid.fid);
+			ret = cxip_cq_trywait(cq);
+			if (ret)
+				return ret;
+			break;
+		case FI_CLASS_EQ:
+		case FI_CLASS_CNTR:
+		case FI_CLASS_WAIT:
+			return -FI_ENOSYS;
+		default:
+			return -FI_EINVAL;
+		}
+	}
+
+	return FI_SUCCESS;
+}
+
 static struct fi_ops_fabric cxip_fab_ops = {
 	.size = sizeof(struct fi_ops_fabric),
 	.domain = cxip_domain,
 	.passive_ep = fi_no_passive_ep,
 	.eq_open = cxip_eq_open,
-	.wait_open = ofi_wait_fd_open,
-	.trywait = ofi_trywait,
+	.wait_open = fi_no_wait_open,
+	.trywait = cxip_trywait,
 };
 
 static int cxip_fabric_close(fid_t fid)

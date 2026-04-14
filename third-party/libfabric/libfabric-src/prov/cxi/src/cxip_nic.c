@@ -235,6 +235,7 @@ static int cxip_nic_get_best_rgroup_vni(struct cxip_if *nic_if,
 	CXIP_INFO("Found (%u:%u) for %s\n", *rgroup, *vni,
 		  nic_if->info->device_name);
 
+	cxil_free_svc_list(svc_list);
 	return FI_SUCCESS;
 }
 

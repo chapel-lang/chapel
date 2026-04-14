@@ -115,6 +115,9 @@ size_t ofi_get_mem_size(void)
 	if (page_cnt <= 0 || page_size <= 0)
 		return 0;
 
+	if (page_cnt > SIZE_MAX / page_size)
+		return 0;
+
 	mem_size = (size_t) page_cnt * (size_t) page_size;
 	if (mem_size < page_cnt || mem_size < page_size)
 		return 0;

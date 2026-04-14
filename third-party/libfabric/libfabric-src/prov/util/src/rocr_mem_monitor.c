@@ -44,6 +44,7 @@
 struct rocr_mm_entry {
 	struct iovec iov;
 	struct ofi_rbnode *node;
+	struct dlist_entry entry;
 };
 
 struct rocr_mm {
@@ -57,11 +58,17 @@ static int rocr_mm_subscribe(struct ofi_mem_monitor *monitor, const void *addr,
 			     size_t len, union ofi_mr_hmem_info *hmem_info);
 static void rocr_mm_unsubscribe(struct ofi_mem_monitor *monitor,
 				const void *addr, size_t len,
-				union ofi_mr_hmem_info *hmem_info);
+				union ofi_mr_hmem_info *hmem_info,
+				struct dlist_entry *free_list);
 static bool rocr_mm_valid(struct ofi_mem_monitor *monitor,
 			   const struct ofi_mr_info *info,
 			   struct ofi_mr_entry *entry);
 
+/* Since ROCR may have many MR cache entries for the same VA range and
+ * ofi_monitor_unsubscribe() is called for every MR cache entry being freed,
+ * ROCR unsubscribe needs to be a noop. Else, MR cache entries may no longer
+ * be monitored.
+ */
 static struct rocr_mm rocr_mm = {
 	.mm = {
 		.iface = FI_HMEM_ROCR,
@@ -70,8 +77,9 @@ static struct rocr_mm rocr_mm = {
 		.start = rocr_mm_start,
 		.stop = rocr_mm_stop,
 		.subscribe = rocr_mm_subscribe,
-		.unsubscribe = rocr_mm_unsubscribe,
+		.unsubscribe = ofi_monitor_unsubscribe_no_op,
 		.valid = rocr_mm_valid,
+		.name = "rocr",
 	},
 };
 
@@ -132,15 +140,22 @@ static struct rocr_mm_entry *rocr_mm_entry_find(const void *addr)
 static void rocr_mm_dealloc_cb(void *addr, void *user_data)
 {
 	size_t len = (size_t) user_data;
+	DEFINE_LIST(free_list);
+	struct rocr_mm_entry *entry;
 
 	pthread_rwlock_rdlock(&mm_list_rwlock);
 	pthread_mutex_lock(&mm_lock);
-	ofi_monitor_unsubscribe(rocr_monitor, addr, len, NULL);
+	rocr_mm_unsubscribe(rocr_monitor, addr, len, NULL, &free_list);
 	pthread_mutex_unlock(&mm_lock);
 	pthread_rwlock_unlock(&mm_list_rwlock);
+
+	while (!dlist_empty(&free_list)) {
+		dlist_pop_front(&free_list, struct rocr_mm_entry, entry, entry);
+		free(entry);
+	}
 }
 
-static void rocr_mm_entry_free(struct rocr_mm_entry *entry)
+static void rocr_mm_entry_delete(struct rocr_mm_entry *entry)
 {
 	hsa_status_t hsa_ret __attribute__((unused));
 
@@ -160,6 +175,11 @@ static void rocr_mm_entry_free(struct rocr_mm_entry *entry)
 	       hsa_ret == HSA_STATUS_ERROR_INVALID_ARGUMENT);
 
 	ofi_rbmap_delete(rocr_mm.dev_region_tree, entry->node);
+}
+
+static void rocr_mm_entry_free(struct rocr_mm_entry *entry)
+{
+	rocr_mm_entry_delete(entry);
 	free(entry);
 }
 
@@ -261,7 +281,8 @@ static void rocr_mm_stop(struct ofi_mem_monitor *monitor)
 
 static void rocr_mm_unsubscribe(struct ofi_mem_monitor *monitor,
 				const void *addr, size_t len,
-				union ofi_mr_hmem_info *hmem_info)
+				union ofi_mr_hmem_info *hmem_info,
+				struct dlist_entry *free_list)
 {
 	struct rocr_mm_entry *entry;
 	size_t cur_len = len;
@@ -285,7 +306,14 @@ static void rocr_mm_unsubscribe(struct ofi_mem_monitor *monitor,
 
 		next_addr = (void *) ((uintptr_t) ofi_iov_end(&entry->iov) + 1);
 
-		rocr_mm_entry_free(entry);
+		/* Since unsubscribed is called with mm_lock held, calling free
+		 * may result in deadlocks if memhooks is used. To prevent this,
+		 * entries are placed on a list to be freed later.
+		 *
+		 * Entry still needs to be deleted.
+		 */
+		rocr_mm_entry_delete(entry);
+		dlist_insert_tail(&entry->entry, free_list);
 
 		cur_len -= MIN((uintptr_t) next_addr - (uintptr_t) cur_addr,
 			       cur_len);
@@ -380,12 +408,6 @@ static int rocr_mm_subscribe(struct ofi_mem_monitor *monitor, const void *addr,
 	return -FI_ENOSYS;
 }
 
-static void rocr_mm_unsubscribe(struct ofi_mem_monitor *monitor,
-				const void *addr, size_t len,
-				union ofi_mr_hmem_info *hmem_info)
-{
-}
-
 static bool rocr_mm_valid(struct ofi_mem_monitor *monitor,
 			  const struct ofi_mr_info *info,
 			  struct ofi_mr_entry *entry)
@@ -400,7 +422,7 @@ static struct ofi_mem_monitor rocr_mm = {
 	.start = rocr_mm_start,
 	.stop = rocr_mm_stop,
 	.subscribe = rocr_mm_subscribe,
-	.unsubscribe = rocr_mm_unsubscribe,
+	.unsubscribe = ofi_monitor_unsubscribe_no_op,
 	.valid = rocr_mm_valid,
 	.name = "rocr",
 };

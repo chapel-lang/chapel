@@ -430,7 +430,7 @@ static int sm2_alloc_xfer_entry_ctx(struct sm2_ep *ep,
 	memcpy(&xfer_ctx->xfer_entry, xfer_entry, sizeof(*xfer_entry));
 	xfer_ctx->ep = ep;
 
-	rx_entry->size = xfer_entry->hdr.size;
+	rx_entry->msg_size = xfer_entry->hdr.size;
 	rx_entry->flags |= xfer_entry->hdr.op_flags & FI_REMOTE_CQ_DATA;
 	rx_entry->cq_data = xfer_entry->hdr.cq_data;
 
@@ -519,9 +519,9 @@ static int sm2_progress_recv_msg(struct sm2_ep *ep,
 				 struct sm2_xfer_entry *xfer_entry)
 {
 	struct fid_peer_srx *peer_srx = sm2_get_peer_srx(ep);
+	struct fi_peer_match_attr attr;
 	struct fi_peer_rx_entry *rx_entry;
 	struct sm2_av *sm2_av;
-	fi_addr_t addr;
 	int ret = 0;
 
 	/* TODO - Switch on protocol before switching on op to avoid messy
@@ -538,11 +538,12 @@ static int sm2_progress_recv_msg(struct sm2_ep *ep,
 	}
 
 	sm2_av = container_of(ep->util_ep.av, struct sm2_av, util_av);
-	addr = sm2_av->reverse_lookup[xfer_entry->hdr.sender_gid];
+	attr.addr = sm2_av->reverse_lookup[xfer_entry->hdr.sender_gid];
+	attr.msg_size = xfer_entry->hdr.size;
+	attr.tag = xfer_entry->hdr.tag;
 
 	if (xfer_entry->hdr.op == ofi_op_tagged) {
-		ret = peer_srx->owner_ops->get_tag(
-			peer_srx, addr, xfer_entry->hdr.tag, &rx_entry);
+		ret = peer_srx->owner_ops->get_tag(peer_srx, &attr, &rx_entry);
 		if (ret == -FI_ENOENT) {
 			xfer_entry->hdr.proto_flags |= SM2_UNEXP;
 			ret = sm2_alloc_xfer_entry_ctx(ep, rx_entry,
@@ -557,8 +558,7 @@ static int sm2_progress_recv_msg(struct sm2_ep *ep,
 			goto out;
 		}
 	} else {
-		ret = peer_srx->owner_ops->get_msg(
-			peer_srx, addr, xfer_entry->hdr.size, &rx_entry);
+		ret = peer_srx->owner_ops->get_msg(peer_srx, &attr, &rx_entry);
 		if (ret == -FI_ENOENT) {
 			xfer_entry->hdr.proto_flags |= SM2_UNEXP;
 			ret = sm2_alloc_xfer_entry_ctx(ep, rx_entry,

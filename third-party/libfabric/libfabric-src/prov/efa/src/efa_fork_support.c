@@ -70,14 +70,13 @@ void efa_fork_support_request_initialize()
  *
  * This relies on internal behavior in rdma-core and is a temporary workaround.
  *
- * @param domain_fid domain fid so we can register memory
  * @return 1 if fork support is enabled
  *         0 if not enabled
  *         -FI_EINVAL/-FI_NOMEM on errors.
  */
-static int efa_fork_support_is_enabled(struct fid_domain *domain_fid)
+static int efa_fork_support_is_enabled()
 {
-	/* If ibv_is_fork_initialized is availble, check if the function
+	/* If ibv_is_fork_initialized is available, check if the function
 	 * can exit early.
 	 */
 #if HAVE_IBV_IS_FORK_INITIALIZED == 1
@@ -86,17 +85,15 @@ static int efa_fork_support_is_enabled(struct fid_domain *domain_fid)
 	/* If fork support is ENABLED or UNNEEDED, return 1. */
 	return fork_status != IBV_FORK_DISABLED;
 #else
-	struct efa_domain *efa_domain;
 	struct ibv_mr *mr = NULL;
+	struct ibv_pd *ibv_pd;
 	char *buf = NULL;
 	int ret=0, ret_init=0;
 	long page_size;
 
-	efa_domain = container_of(domain_fid, struct efa_domain, util_domain.domain_fid);
-
 	page_size = ofi_get_page_size();
 	if (page_size <= 0) {
-		EFA_WARN(FI_LOG_DOMAIN, "Unable to determine page size %ld\n",
+		EFA_WARN(FI_LOG_CORE, "Unable to determine page size %ld\n",
 			 page_size);
 		return -FI_EINVAL;
 	}
@@ -105,8 +102,14 @@ static int efa_fork_support_is_enabled(struct fid_domain *domain_fid)
 	if (!buf)
 		return -FI_ENOMEM;
 
+	ibv_pd = ibv_alloc_pd(g_efa_selected_device_list[0].ibv_ctx);
+	if (!ibv_pd) {
+		EFA_WARN(FI_LOG_CORE, "Failed to allocate ibv pd: %d\n", errno);
+		free(buf);
+		return -FI_ENOMEM;
+	}
 
-	mr = ibv_reg_mr(efa_domain->ibv_pd, buf, page_size, 0);
+	mr = ibv_reg_mr(ibv_pd, buf, page_size, 0);
 	if (mr == NULL) {
 		ret = errno;
 		goto out;
@@ -124,15 +127,16 @@ static int efa_fork_support_is_enabled(struct fid_domain *domain_fid)
 out:
 	if(buf) free(buf);
 	if(mr) ibv_dereg_mr(mr);
+	if(ibv_pd) ibv_dealloc_pd(ibv_pd);
 	if (ret) {
-		EFA_WARN(FI_LOG_DOMAIN,
+		EFA_WARN(FI_LOG_CORE,
 			"Unexpected error during ibv_reg_mr in "
 			"efa_fork_support_is_enabled(): %s\n",strerror(ret));
 		return -FI_EINVAL;
 	}
-	if (ret_init == 0) return 0;
-	if (ret_init == EINVAL) return 1;
-	EFA_WARN(FI_LOG_DOMAIN,
+	if (ret_init == 0) return 1;
+	if (ret_init == EINVAL) return 0;
+	EFA_WARN(FI_LOG_CORE,
 		"Unexpected error during ibv_fork_init in "
 		"efa_fork_support_is_enabled(): %s\n",strerror(ret_init));
 	return -FI_EINVAL;
@@ -201,6 +205,7 @@ void efa_atfork_callback_flush_mr_cache()
 	struct efa_domain *efa_domain;
 	bool flush_lru = true;
 
+	ofi_mutex_lock(&g_efa_domain_list_lock);
 	dlist_foreach_container_safe(&g_efa_domain_list,
 				     struct efa_domain,
 				     efa_domain, list_entry, tmp) {
@@ -208,6 +213,7 @@ void efa_atfork_callback_flush_mr_cache()
 			while(ofi_mr_cache_flush(efa_domain->cache, flush_lru));
 		}
 	}
+	ofi_mutex_unlock(&g_efa_domain_list_lock);
 }
 
 #ifndef _WIN32
@@ -221,12 +227,10 @@ void efa_atfork_callback_flush_mr_cache()
  * library or process initiates a fork and we determined from previous logic
  * that we cannot support that.
  *
- * @param domain_fid domain fid so we can check register memory during initialization.
  * @return error number if we failed to initialize, 0 otherwise
  */
-int efa_fork_support_enable_if_requested(struct fid_domain* domain_fid)
+int efa_fork_support_enable_if_requested()
 {
-	static int fork_handler_installed = 0;
 	int ret;
 	int is_enabled;
 
@@ -236,7 +240,7 @@ int efa_fork_support_enable_if_requested(struct fid_domain* domain_fid)
 	if (g_efa_fork_status == EFA_FORK_SUPPORT_ON) {
 		ret = -ibv_fork_init();
 		if (ret) {
-			EFA_WARN(FI_LOG_DOMAIN,
+			EFA_WARN(FI_LOG_CORE,
 				 "Fork support requested but ibv_fork_init failed: %s\n",
 				 strerror(-ret));
 			return ret;
@@ -249,7 +253,7 @@ int efa_fork_support_enable_if_requested(struct fid_domain* domain_fid)
 	 * this variable was set to ON during provider init.  Huge pages for
 	 * bounce buffers will not be used if fork support is on.
 	 */
-	ret = efa_fork_support_is_enabled(domain_fid);
+	ret = efa_fork_support_is_enabled();
 	if (ret < 0) return ret;
 	is_enabled = ret;
 
@@ -257,34 +261,10 @@ int efa_fork_support_enable_if_requested(struct fid_domain* domain_fid)
 		g_efa_fork_status = EFA_FORK_SUPPORT_ON;
 
 	if (g_efa_fork_status == EFA_FORK_SUPPORT_ON && getenv("RDMAV_HUGEPAGES_SAFE")) {
-			EFA_WARN(FI_LOG_DOMAIN,
+			EFA_WARN(FI_LOG_CORE,
 				 "Using libibverbs fork support and huge pages is not"
 				 " supported by the EFA provider.\n");
 		return -FI_EINVAL;
-	}
-
-	/*
-	 * It'd be better to install this during provider init (since that's
-	 * only invoked once) but we need to do a memory registration for the
-	 * fork check above. This can move to the provider init once that check
-	 * is gone.
-	 */
-	if (!fork_handler_installed && g_efa_fork_status != EFA_FORK_SUPPORT_UNNEEDED) {
-		if (g_efa_fork_status == EFA_FORK_SUPPORT_OFF) {
-			ret = pthread_atfork(efa_atfork_callback_warn_and_abort, NULL, NULL);
-		} else {
-			assert(g_efa_fork_status == EFA_FORK_SUPPORT_ON);
-			ret = pthread_atfork(efa_atfork_callback_flush_mr_cache, NULL, NULL);
-		}
-
-		if (ret) {
-			EFA_WARN(FI_LOG_DOMAIN,
-				 "Unable to register atfork callback: %s\n",
-				 strerror(-ret));
-			return ret;
-		}
-
-		fork_handler_installed = 1;
 	}
 
 	return 0;
@@ -296,13 +276,12 @@ int efa_fork_support_enable_if_requested(struct fid_domain* domain_fid)
  *
  * We check if fork is requested and return failure as fork is not supported on Windows
  *
- * @param domain_fid domain unused
  * @return error number if fork is requested, 0 otherwise
  */
-int efa_fork_support_enable_if_requested(struct domain_fid* domain_fid)
+int efa_fork_support_enable_if_requested()
 {
 	if (g_efa_fork_status == EFA_FORK_SUPPORT_ON) {
-		EFA_WARN(FI_LOG_DOMAIN,
+		EFA_WARN(FI_LOG_CORE,
 			 "Using fork support is not supported by the EFA provider on Windows\n");
 		return -FI_EINVAL;
 	}
@@ -311,3 +290,36 @@ int efa_fork_support_enable_if_requested(struct domain_fid* domain_fid)
 
 #endif
 
+/* @brief
+ *
+ * install a fork handler to ensure that we abort if another
+ * library or process initiates a fork and we determined from previous logic
+ * that we cannot support that.
+ *
+ * @return error number if we failed to install, 0 otherwise
+ */
+int efa_fork_support_install_fork_handler()
+{
+	static int fork_handler_installed = 0;
+	int ret;
+
+	if (!fork_handler_installed && g_efa_fork_status != EFA_FORK_SUPPORT_UNNEEDED) {
+		if (g_efa_fork_status == EFA_FORK_SUPPORT_OFF) {
+			ret = pthread_atfork(efa_atfork_callback_warn_and_abort, NULL, NULL);
+		} else {
+			assert(g_efa_fork_status == EFA_FORK_SUPPORT_ON);
+			ret = pthread_atfork(efa_atfork_callback_flush_mr_cache, NULL, NULL);
+		}
+
+		if (ret) {
+			EFA_WARN(FI_LOG_CORE,
+				 "Unable to register atfork callback: %s\n",
+				 strerror(-ret));
+			return ret;
+		}
+
+		fork_handler_installed = 1;
+	}
+
+	return 0;
+}

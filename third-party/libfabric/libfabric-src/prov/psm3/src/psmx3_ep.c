@@ -147,6 +147,46 @@ STATIC ssize_t psmx3_ep_cancel(fid_t fid, void *context)
 	return psmx3_errno(err);
 }
 
+STATIC int psmx3_ep_getopt_cuda_api_permitted(
+	struct psmx3_fid_ep *ep, bool *value)
+{
+	// invariant: if both rx and tx are set, then they are expected to be
+	// the same internal PSM endpoint
+	assert(!ep->tx || !ep->rx || ep->tx->psm2_ep == ep->rx->psm2_ep);
+
+	uint64_t size = (uint64_t)sizeof(*value);
+
+	psm2_error_t err = psm3_getopt(
+		PSM2_COMPONENT_CORE,
+		ep->tx ? ep->tx->psm2_ep : ep->rx->psm2_ep,
+		PSM2_CORE_OPT_EP_CUDA_PERMITTED,
+		value,
+		&size);
+	if (err)
+		return -FI_EINVAL;
+
+	return 0;
+}
+
+STATIC int psmx3_ep_setopt_cuda_api_permitted(
+	struct psmx3_fid_ep *ep, const bool *value)
+{
+	// invariant: if both rx and tx are set, then they are expected to be
+	// the same internal PSM endpoint
+	assert(!ep->tx || !ep->rx || ep->tx->psm2_ep == ep->rx->psm2_ep);
+
+	psm2_error_t err = psm3_setopt(
+		PSM2_COMPONENT_CORE,
+		ep->tx ? ep->tx->psm2_ep : ep->rx->psm2_ep,
+		PSM2_CORE_OPT_EP_CUDA_PERMITTED,
+		value,
+		sizeof(*value));
+	if (err)
+		return -FI_EINVAL;
+
+	return 0;
+}
+
 DIRECT_FN
 STATIC int psmx3_ep_getopt(fid_t fid, int level, int optname,
 			   void *optval, size_t *optlen)
@@ -163,6 +203,11 @@ STATIC int psmx3_ep_getopt(fid_t fid, int level, int optname,
 		*(size_t *)optval = ep->min_multi_recv;
 		*optlen = sizeof(size_t);
 		break;
+
+	case FI_OPT_CUDA_API_PERMITTED:
+		if (!optlen || *optlen != sizeof(bool))
+			return -FI_EINVAL;
+		return psmx3_ep_getopt_cuda_api_permitted(ep, (bool *)optval);
 
 	default:
 		return -FI_ENOPROTOOPT;
@@ -186,6 +231,11 @@ STATIC int psmx3_ep_setopt(fid_t fid, int level, int optname,
 	case FI_OPT_MIN_MULTI_RECV:
 		ep->min_multi_recv = *(size_t *)optval;
 		break;
+
+	case FI_OPT_CUDA_API_PERMITTED:
+		if (optlen != sizeof(bool))
+			return -FI_EINVAL;
+		return psmx3_ep_setopt_cuda_api_permitted(ep, (const bool *)optval);
 
 	default:
 		return -FI_ENOPROTOOPT;

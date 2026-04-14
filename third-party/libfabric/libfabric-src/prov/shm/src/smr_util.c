@@ -61,12 +61,6 @@ void smr_cleanup(void)
 	pthread_mutex_unlock(&ep_list_lock);
 }
 
-static void smr_peer_addr_init(struct smr_addr *peer)
-{
-	memset(peer->name, 0, SMR_NAME_MAX);
-	peer->id = -1;
-}
-
 void smr_cma_check(struct smr_region *smr, struct smr_region *peer_smr)
 {
 	struct iovec local_iov, remote_iov;
@@ -312,7 +306,7 @@ int smr_create(const struct fi_provider *prov, struct smr_map *map,
 	smr_freestack_init(smr_sar_pool(*smr), SMR_MAX_PEERS,
 			sizeof(struct smr_sar_buf));
 	for (i = 0; i < SMR_MAX_PEERS; i++) {
-		smr_peer_addr_init(&smr_peer_data(*smr)[i].addr);
+		smr_peer_data(*smr)[i].addr.id = -1;
 		smr_peer_data(*smr)[i].sar_status = 0;
 		smr_peer_data(*smr)[i].name_sent = 0;
 		smr_peer_data(*smr)[i].xpmem.cap = SMR_VMA_CAP_OFF;
@@ -342,39 +336,6 @@ void smr_free(struct smr_region *smr)
 	munmap(smr, smr->total_size);
 }
 
-static int smr_name_compare(struct ofi_rbmap *map, void *key, void *data)
-{
-	struct smr_map *smr_map;
-
-	smr_map = container_of(map, struct smr_map, rbmap);
-
-	return strncmp(smr_map->peers[(uintptr_t) data].peer.name,
-		       (char *) key, SMR_NAME_MAX);
-}
-
-int smr_map_create(const struct fi_provider *prov, int peer_count,
-		   uint16_t flags, struct smr_map **map)
-{
-	int i;
-
-	(*map) = calloc(1, sizeof(struct smr_map));
-	if (!*map) {
-		FI_WARN(prov, FI_LOG_DOMAIN, "failed to create SHM region group\n");
-		return -FI_ENOMEM;
-	}
-
-	for (i = 0; i < peer_count; i++) {
-		smr_peer_addr_init(&(*map)->peers[i].peer);
-		(*map)->peers[i].fiaddr = FI_ADDR_NOTAVAIL;
-	}
-	(*map)->flags = flags;
-
-	ofi_rbmap_init(&(*map)->rbmap, smr_name_compare);
-	ofi_spin_init(&(*map)->lock);
-
-	return 0;
-}
-
 static int smr_match_name(struct dlist_entry *item, const void *args)
 {
 	return !strcmp(container_of(item, struct smr_ep_name, entry)->name,
@@ -386,6 +347,9 @@ int smr_map_to_region(const struct fi_provider *prov, struct smr_map *map,
 {
 	struct smr_peer *peer_buf = &map->peers[id];
 	struct smr_region *peer;
+	struct util_ep *util_ep;
+	struct smr_ep *smr_ep;
+	struct smr_av *av;
 	size_t size;
 	int fd, ret = 0;
 	struct stat sts;
@@ -403,16 +367,15 @@ int smr_map_to_region(const struct fi_provider *prov, struct smr_map *map,
 	}
 	pthread_mutex_unlock(&ep_list_lock);
 
-	ofi_spin_lock(&map->lock);
 	if (peer_buf->region)
-		goto unlock;
+		return FI_SUCCESS;
 
+	assert(ofi_spin_held(&map->lock));
 	fd = shm_open(name, O_RDWR, S_IRUSR | S_IWUSR);
 	if (fd < 0) {
-		ret = -errno;
 		FI_WARN_ONCE(prov, FI_LOG_AV,
 			     "shm_open error: name %s errno %d\n", name, errno);
-		goto unlock;
+		return -errno;
 	}
 
 	memset(tmp, 0, sizeof(tmp));
@@ -453,12 +416,26 @@ int smr_map_to_region(const struct fi_provider *prov, struct smr_map *map,
 		if (ret)
 			FI_WARN(prov, FI_LOG_EP_CTRL,
 				"unable to register shm with iface\n");
+		if (ofi_hmem_is_initialized(FI_HMEM_ZE)) {
+			peer_buf->pid_fd = ofi_pidfd_open(peer->pid, 0);
+			if (peer_buf->pid_fd < 0) {
+				FI_WARN(prov, FI_LOG_EP_CTRL,
+					"unable to open pidfd\n");
+			}
+		} else {
+			peer_buf->pid_fd = -1;
+		}
+	}
+
+	av = container_of(map, struct smr_av, smr_map);
+	dlist_foreach_container(&av->util_av.ep_list, struct util_ep, util_ep,
+				av_entry) {
+		smr_ep = container_of(util_ep, struct smr_ep, util_ep);
+		smr_map_to_endpoint(smr_ep->region, id);
 	}
 
 out:
 	close(fd);
-unlock:
-	ofi_spin_unlock(&map->lock);
 	return ret;
 }
 
@@ -468,16 +445,12 @@ void smr_map_to_endpoint(struct smr_region *region, int64_t id)
 	struct smr_region *peer_smr;
 	struct smr_peer_data *local_peers;
 
-	if (region->map->peers[id].peer.id < 0)
-		return;
+	assert(ofi_spin_held(&region->map->lock));
+	peer_smr = smr_peer_region(region, id);
+	if (region->map->peers[id].peer.id < 0 || !peer_smr)
+	    return;
 
 	local_peers = smr_peer_data(region);
-
-	strncpy(local_peers[id].addr.name,
-		region->map->peers[id].peer.name, SMR_NAME_MAX - 1);
-	local_peers[id].addr.name[SMR_NAME_MAX - 1] = '\0';
-
-	peer_smr = smr_peer_region(region, id);
 
 	if ((region != peer_smr && region->cma_cap_peer == SMR_VMA_CAP_NA) ||
 	    (region == peer_smr && region->cma_cap_self == SMR_VMA_CAP_NA))
@@ -499,7 +472,54 @@ void smr_map_to_endpoint(struct smr_region *region, int64_t id)
 		local_peers[id].xpmem.cap = SMR_VMA_CAP_OFF;
 	}
 
+	smr_set_ipc_valid(region, id);
+
 	return;
+}
+
+void smr_unmap_region(const struct fi_provider *prov, struct smr_map *map,
+		     int64_t peer_id, bool local)
+{
+	struct smr_region *peer_region;
+	struct smr_peer *peer;
+	struct util_ep *util_ep;
+	struct smr_ep *smr_ep;
+	struct smr_av *av;
+	int ret = 0;
+
+	assert(ofi_spin_held(&map->lock));
+	peer_region = map->peers[peer_id].region;
+	if (!peer_region)
+		return;
+
+	peer = &map->peers[peer_id];
+	av = container_of(map, struct smr_av, smr_map);
+	dlist_foreach_container(&av->util_av.ep_list, struct util_ep, util_ep,
+				av_entry) {
+		smr_ep = container_of(util_ep, struct smr_ep, util_ep);
+		smr_unmap_from_endpoint(smr_ep->region, peer_id);
+	}
+
+	/* Don't unmap memory owned by this pid because the endpoint it belongs
+	 * to might still be active.
+	 */
+	if (local)
+		return;
+
+	if (map->flags & SMR_FLAG_HMEM_ENABLED) {
+		ret = ofi_hmem_host_unregister(peer_region);
+		if (ret)
+			FI_WARN(prov, FI_LOG_EP_CTRL,
+				"unable to unregister shm with iface\n");
+
+		if (peer->pid_fd != -1) {
+			close(peer->pid_fd);
+			peer->pid_fd = -1;
+		}
+	}
+
+	munmap(peer_region, peer_region->total_size);
+	peer->region = NULL;
 }
 
 void smr_unmap_from_endpoint(struct smr_region *region, int64_t id)
@@ -508,47 +528,49 @@ void smr_unmap_from_endpoint(struct smr_region *region, int64_t id)
 	struct smr_peer_data *local_peers, *peer_peers;
 	int64_t peer_id;
 
-	local_peers = smr_peer_data(region);
-
-	memset(local_peers[id].addr.name, 0, SMR_NAME_MAX);
-	peer_id = region->map->peers[id].peer.id;
-	if (peer_id < 0)
+	if (region->map->peers[id].peer.id < 0)
 		return;
 
 	peer_smr = smr_peer_region(region, id);
+	assert(peer_smr);
 	peer_peers = smr_peer_data(peer_smr);
+	peer_id = smr_peer_data(region)[id].addr.id;
 
 	peer_peers[peer_id].addr.id = -1;
 	peer_peers[peer_id].name_sent = 0;
 
+	local_peers = smr_peer_data(region);
 	ofi_xpmem_release(&local_peers[peer_id].xpmem);
 }
 
 void smr_exchange_all_peers(struct smr_region *region)
 {
 	int64_t i;
+
+	ofi_spin_lock(&region->map->lock);
 	for (i = 0; i < SMR_MAX_PEERS; i++)
 		smr_map_to_endpoint(region, i);
+
+	ofi_spin_unlock(&region->map->lock);
 }
 
 int smr_map_add(const struct fi_provider *prov, struct smr_map *map,
 		const char *name, int64_t *id)
 {
 	struct ofi_rbnode *node;
+	const char *shm_name = smr_no_prefix(name);
 	int tries = 0, ret = 0;
 
 	ofi_spin_lock(&map->lock);
-	ret = ofi_rbmap_insert(&map->rbmap, (void *) name,
+	ret = ofi_rbmap_insert(&map->rbmap, (void *) shm_name,
 			       (void *) (intptr_t) *id, &node);
 	if (ret) {
 		assert(ret == -FI_EALREADY);
 		*id = (intptr_t) node->data;
-		ofi_spin_unlock(&map->lock);
-		return 0;
+		goto out;
 	}
 
-	while (map->peers[map->cur_id].peer.id != -1 &&
-	       tries < SMR_MAX_PEERS) {
+	while (map->peers[map->cur_id].peer.id != -1 && tries < SMR_MAX_PEERS) {
 		if (++map->cur_id == SMR_MAX_PEERS)
 			map->cur_id = 0;
 		tries++;
@@ -556,60 +578,41 @@ int smr_map_add(const struct fi_provider *prov, struct smr_map *map,
 
 	assert(map->cur_id < SMR_MAX_PEERS && tries < SMR_MAX_PEERS);
 	*id = map->cur_id;
+	if (++map->cur_id == SMR_MAX_PEERS)
+		map->cur_id = 0;
 	node->data = (void *) (intptr_t) *id;
-	strncpy(map->peers[*id].peer.name, name, SMR_NAME_MAX);
+	strncpy(map->peers[*id].peer.name, shm_name, SMR_NAME_MAX);
 	map->peers[*id].peer.name[SMR_NAME_MAX - 1] = '\0';
 	map->peers[*id].region = NULL;
 	map->num_peers++;
-	ofi_spin_unlock(&map->lock);
+	map->peers[*id].peer.id = *id;
 
-	ret = smr_map_to_region(prov, map, *id);
-	if (!ret)
-		map->peers[*id].peer.id = *id;
-	return ret == -ENOENT ? 0 : ret;
+out:
+	ofi_spin_unlock(&map->lock);
+	return FI_SUCCESS;
 }
 
 void smr_map_del(struct smr_map *map, int64_t id)
 {
-	struct dlist_entry *entry;
+	struct smr_ep_name *name;
+	bool local = false;
 
 	assert(id >= 0 && id < SMR_MAX_PEERS);
-
 	pthread_mutex_lock(&ep_list_lock);
-	entry = dlist_find_first_match(&ep_name_list, smr_match_name,
-				       smr_no_prefix(map->peers[id].peer.name));
-	pthread_mutex_unlock(&ep_list_lock);
-
-	ofi_spin_lock(&map->lock);
-	if (map->peers[id].peer.id < 0)
-		goto unlock;
-
-	if (!entry) {
-		if (map->flags & SMR_FLAG_HMEM_ENABLED)
-			(void) ofi_hmem_host_unregister(map->peers[id].region);
-		munmap(map->peers[id].region, map->peers[id].region->total_size);
+	dlist_foreach_container(&ep_name_list, struct smr_ep_name, name, entry) {
+		if (!strcmp(name->name, map->peers[id].peer.name)) {
+			local = true;
+			break;
+		}
 	}
-
-	(void) ofi_rbmap_find_delete(&map->rbmap,
-				     (void *) map->peers[id].peer.name);
-
+	pthread_mutex_unlock(&ep_list_lock);
+	ofi_spin_lock(&map->lock);
+	smr_unmap_region(&smr_prov, map, id, local);
 	map->peers[id].fiaddr = FI_ADDR_NOTAVAIL;
 	map->peers[id].peer.id = -1;
 	map->num_peers--;
-
-unlock:
+	ofi_rbmap_find_delete(&map->rbmap, map->peers[id].peer.name);
 	ofi_spin_unlock(&map->lock);
-}
-
-void smr_map_free(struct smr_map *map)
-{
-	int64_t i;
-
-	for (i = 0; i < SMR_MAX_PEERS; i++)
-		smr_map_del(map, i);
-
-	ofi_rbmap_cleanup(&map->rbmap);
-	free(map);
 }
 
 struct smr_region *smr_map_get(struct smr_map *map, int64_t id)

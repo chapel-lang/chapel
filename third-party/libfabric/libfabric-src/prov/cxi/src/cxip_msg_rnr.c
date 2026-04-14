@@ -229,9 +229,9 @@ static int cxip_rnr_recv_cb(struct cxip_req *req, const union c_event *event)
 	}
 }
 
-static void cxip_rxc_rnr_progress(struct cxip_rxc *rxc)
+static void cxip_rxc_rnr_progress(struct cxip_rxc *rxc, bool internal)
 {
-	cxip_evtq_progress(&rxc->rx_evtq);
+	cxip_evtq_progress(&rxc->rx_evtq, internal);
 }
 
 static void cxip_rxc_rnr_recv_req_tgt_event(struct cxip_req *req,
@@ -339,7 +339,7 @@ static int cxip_rxc_rnr_msg_init(struct cxip_rxc *rxc_base)
 		dlist_init(&req->recv.rxc_entry);
 
 		/* Selective does not count toward outstanding RX operations */
-		ofi_atomic_dec32(&rxc->base.orx_reqs);
+		cxip_rxc_orx_reqs_dec(&rxc->base);
 
 		ret = cxip_recv_req_alloc(&rxc->base, NULL, 0, NULL, &req,
 					  cxip_rnr_recv_selective_comp_cb);
@@ -359,7 +359,7 @@ static int cxip_rxc_rnr_msg_init(struct cxip_rxc *rxc_base)
 		dlist_init(&req->recv.rxc_entry);
 
 		/* Selective does not count toward outstanding RX operations */
-		ofi_atomic_dec32(&rxc->base.orx_reqs);
+		cxip_rxc_orx_reqs_dec(&rxc->base);
 		rxc->hybrid_mr_desc = true;
 	}
 
@@ -382,7 +382,7 @@ static int cxip_rxc_rnr_msg_init(struct cxip_rxc *rxc_base)
 
 	/* Start accepting Puts. */
 	ret = cxip_pte_set_state(rxc->base.rx_pte, rxc->base.rx_cmdq,
-				 C_PTLTE_ENABLED, 0);
+				 C_PTLTE_ENABLED, CXIP_PTE_IGNORE_DROPS);
 	if (ret != FI_SUCCESS) {
 		CXIP_WARN("cxip_pte_set_state returned: %d\n", ret);
 		goto free_pte;
@@ -391,7 +391,7 @@ static int cxip_rxc_rnr_msg_init(struct cxip_rxc *rxc_base)
 	/* Wait for PTE state change */
 	do {
 		sched_yield();
-		cxip_evtq_progress(&rxc->base.rx_evtq);
+		cxip_evtq_progress(&rxc->base.rx_evtq, true);
 	} while (rxc->base.rx_pte->state != C_PTLTE_ENABLED);
 
 	return FI_SUCCESS;
@@ -400,12 +400,12 @@ free_pte:
 	cxip_pte_free(rxc->base.rx_pte);
 free_req_tag:
 	if (rxc->req_selective_comp_tag) {
-		ofi_atomic_inc32(&rxc->base.orx_reqs);
+		cxip_rxc_orx_reqs_inc(&rxc->base);
 		cxip_recv_req_free(rxc->req_selective_comp_tag);
 	}
 free_req_msg:
 	if (rxc->req_selective_comp_msg) {
-		ofi_atomic_inc32(&rxc->base.orx_reqs);
+		cxip_rxc_orx_reqs_inc(&rxc->base);
 		cxip_recv_req_free(rxc->req_selective_comp_msg);
 	}
 
@@ -423,11 +423,11 @@ static int cxip_rxc_rnr_msg_fini(struct cxip_rxc *rxc_base)
 	 * back before freeing.
 	 */
 	if (rxc->req_selective_comp_msg) {
-		ofi_atomic_inc32(&rxc->base.orx_reqs);
+		cxip_rxc_orx_reqs_inc(&rxc->base);
 		cxip_recv_req_free(rxc->req_selective_comp_msg);
 	}
 	if (rxc->req_selective_comp_tag) {
-		ofi_atomic_inc32(&rxc->base.orx_reqs);
+		cxip_rxc_orx_reqs_inc(&rxc->base);
 		cxip_recv_req_free(rxc->req_selective_comp_tag);
 	}
 
@@ -491,6 +491,8 @@ cxip_recv_common(struct cxip_rxc *rxc, void *buf, size_t len, void *desc,
 		return ret;
 	}
 
+	cntr = comp_cntr ? comp_cntr : rxc->recv_cntr;
+
 	ofi_genlock_lock(&rxc->ep_obj->lock);
 
 	if (mr && !(flags & (FI_COMPLETION | FI_MULTI_RECV |
@@ -517,17 +519,22 @@ cxip_recv_common(struct cxip_rxc *rxc, void *buf, size_t len, void *desc,
 
 		/* Can still disable success events if multi-recv and
 		 * completions are not requested since final mandatory unlink
-		 * will cleanup resources. However, if buffer will be auto-
-		 * unlinked take internal completions to handle the
-		 * accounting to ensure all data has landed.
+		 * will cleanup resources. If the buffer is mutli-recv auto
+		 * unlink or completion events are requested we will still
+		 * generate success events.
 		 */
 		if (flags & FI_MULTI_RECV && !(flags & FI_COMPLETION) &&
-		    !rxc->min_multi_recv)
+		    !rxc->min_multi_recv) {
 			recv_req->recv.success_disable = true;
-		else
+		} else {
 			recv_req->recv.success_disable = false;
+			if (cntr) {
+				req->recv.cntr = cntr;
+				cxip_cntr_progress_inc(req->recv.cntr);
+			}
+		}
 	}
-	cntr = comp_cntr ? comp_cntr : rxc->recv_cntr;
+
 	recv_req->recv.match_id = match_id;
 	recv_req->recv.vni = vni;
 	recv_req->recv.tag = tag;
@@ -827,7 +834,7 @@ static int cxip_process_rnr_time_wait(struct cxip_txc_rnr *txc)
 					ofi_atomic_dec32(&txc->time_wait_reqs);
 					cxip_send_buf_fini(req);
 					cxip_report_send_completion(req, true);
-					ofi_atomic_dec32(&txc->base.otx_reqs);
+					cxip_txc_otx_reqs_dec(&txc->base);
 					cxip_evtq_req_free(req);
 
 					continue;
@@ -836,10 +843,10 @@ static int cxip_process_rnr_time_wait(struct cxip_txc_rnr *txc)
 				/* Must TX return credit, will take it back if
 				 * we could not send.
 				 */
-				ofi_atomic_dec32(&txc->base.otx_reqs);
+				cxip_txc_otx_reqs_dec(&txc->base);
 				ret = cxip_rnr_msg_send(req);
 				if (ret != FI_SUCCESS) {
-					ofi_atomic_inc32(&txc->base.otx_reqs);
+					cxip_txc_otx_reqs_inc(&txc->base);
 					goto reset_min_time_wait;
 				}
 
@@ -870,14 +877,14 @@ reset_min_time_wait:
 	return ret;
 }
 
-static void cxip_txc_rnr_progress(struct cxip_txc *txc_base)
+static void cxip_txc_rnr_progress(struct cxip_txc *txc_base, bool internal)
 {
 	struct cxip_txc_rnr *txc = container_of(txc_base, struct cxip_txc_rnr,
 						base);
 
 	assert(txc->base.protocol == FI_PROTO_CXI_RNR);
 
-	cxip_evtq_progress(&txc->base.tx_evtq);
+	cxip_evtq_progress(&txc->base.tx_evtq, internal);
 	cxip_process_rnr_time_wait(txc);
 }
 
@@ -1031,7 +1038,7 @@ static int cxip_rnr_send_cb(struct cxip_req *req, const union c_event *event)
 			 req->send.caddr.nic, req->send.caddr.pid,
 			 req->send.tagged ? '*' : '-',
 			 req->send.tag, req->send.retries,
-			 ofi_atomic_get32(&txc->base.otx_reqs));
+			 cxip_txc_otx_reqs_get(&txc->base));
 	}
 
 	cxip_rnr_send_req_dequeue(req);
@@ -1054,7 +1061,7 @@ static int cxip_rnr_send_cb(struct cxip_req *req, const union c_event *event)
 
 	cxip_report_send_completion(req, req->send.canceled);
 
-	ofi_atomic_dec32(&txc->base.otx_reqs);
+	cxip_txc_otx_reqs_dec(&txc->base);
 	cxip_evtq_req_free(req);
 
 	return FI_SUCCESS;
@@ -1109,12 +1116,12 @@ cxip_send_common(struct cxip_txc *txc, uint32_t tclass, const void *buf,
 	ofi_genlock_lock(&txc->ep_obj->lock);
 	/* If RNR list is not empty, check if the first retry entry time
 	 * wait has expired, and if so force progress to initiate any
-	 * read retry/retries.
+	 * read retry/retries but do not disable interrupts.
 	 */
 	if (txc_rnr->next_retry_wait_us != UINT64_MAX &&
 	    ofi_atomic_get32(&txc_rnr->time_wait_reqs)) {
 		if (ofi_gettime_us() >= txc_rnr->next_retry_wait_us)
-			cxip_txc_rnr_progress(txc);
+			cxip_txc_rnr_progress(txc, true);
 	}
 
 	idc = cxip_rnr_req_uses_idc(txc_rnr, len, triggered);
@@ -1128,6 +1135,7 @@ cxip_send_common(struct cxip_txc *txc, uint32_t tclass, const void *buf,
 				    txc_rnr->req_selective_comp_msg;
 		send_req->send.send_md = NULL;
 		send_req->send.hybrid_md = false;
+		send_req->send.cntr = triggered ? comp_cntr : txc->send_cntr;
 	} else {
 		req = cxip_evtq_req_alloc(&txc->tx_evtq, false, txc);
 		if (!req) {
@@ -1144,10 +1152,14 @@ cxip_send_common(struct cxip_txc *txc, uint32_t tclass, const void *buf,
 		send_req->flags = FI_SEND |
 				  (flags & (FI_COMPLETION | FI_MATCH_COMPLETE));
 		send_req->send.success_disable = false;
+
+		send_req->send.cntr = triggered ? comp_cntr : txc->send_cntr;
+		if (send_req->send.cntr)
+			cxip_cntr_progress_inc(send_req->send.cntr);
 	}
 
 	/* Restrict outstanding success event requests to queue size */
-	if (ofi_atomic_get32(&txc->otx_reqs) > txc->attr.size) {
+	if (cxip_txc_otx_reqs_get(txc) > txc->attr.size) {
 		ret = -FI_EAGAIN;
 		goto free_req;
 	}
@@ -1158,7 +1170,6 @@ cxip_send_common(struct cxip_txc *txc, uint32_t tclass, const void *buf,
 
 	/* Save Send parameters to replay */
 	send_req->send.tclass = tclass;
-	send_req->send.cntr = triggered ? comp_cntr : txc->send_cntr;
 	send_req->send.buf = buf;
 	send_req->send.len = len;
 	send_req->send.data = data;
@@ -1174,9 +1185,10 @@ cxip_send_common(struct cxip_txc *txc, uint32_t tclass, const void *buf,
 
 	if (send_req->send.len && !idc) {
 		if (!mr) {
-			ret = cxip_map(txc->domain, send_req->send.buf,
-				       send_req->send.len, 0,
-				       &send_req->send.send_md);
+			ret = cxip_ep_obj_map(txc->ep_obj, send_req->send.buf,
+					      send_req->send.len, 0,
+					      CXI_MAP_READ,
+					      &send_req->send.send_md);
 			if (ret) {
 				TXC_WARN(txc,
 					 "Local buffer map failed: %d %s\n",
@@ -1233,8 +1245,12 @@ free_map:
 	if (send_req->send.send_md && !send_req->send.hybrid_md)
 		cxip_unmap(send_req->send.send_md);
 free_req:
-	if (req)
+	if (req) {
+		if (req->send.cntr)
+			cxip_cntr_progress_dec(req->send.cntr);
+
 		cxip_evtq_req_free(req);
+	}
 unlock:
 	ofi_genlock_unlock(&txc->ep_obj->lock);
 

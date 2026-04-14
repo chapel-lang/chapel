@@ -368,7 +368,7 @@ int ucx_domain_open(struct fid_fabric *fabric, struct fi_info *info,
 		return -ENOMEM;
 
 	ofi_status = fi_param_get_size_t(NULL, "universe_size", &univ_size);
-	if (ofi_status) {
+	if (ofi_status == FI_SUCCESS) {
 		params.estimated_num_eps = univ_size;
 		params.field_mask |= UCP_PARAM_FIELD_ESTIMATED_NUM_EPS;
 	}

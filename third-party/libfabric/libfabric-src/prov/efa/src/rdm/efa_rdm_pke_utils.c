@@ -4,7 +4,6 @@
 #include <rdma/fi_rma.h>
 #include "ofi_iov.h"
 #include "efa.h"
-#include "efa_mr.h"
 #include "efa_hmem.h"
 #include "efa_device.h"
 #include "efa_rdm_ep.h"
@@ -16,13 +15,14 @@
 #include "efa_rdm_pkt_type.h"
 #include "efa_rdm_protocol.h"
 #include "efa_rdm_pke_req.h"
+#include "efa_rdm_tracepoint.h"
 
 /**
  * @brief initialize the payload, payload_size, payload_mr and pkt_size of an outgoing packet
  *
  * This function may or may not copy data from user's buffer to the packet's.
  * If copy, "payload" will be pointing to a location inside packet entry's wiredata.
- * Otherwise, "payload" will be pointing to a location insder user's buffer.
+ * Otherwise, "payload" will be pointing to a location inside user's buffer.
  *
  * @param[in,out]	pkt_entry	packet entry. Header must have been set when the function is called
  * @param[in]		ope		operation entry that has user buffer information.
@@ -41,13 +41,12 @@ ssize_t efa_rdm_pke_init_payload_from_ope(struct efa_rdm_pke *pke,
 					  size_t data_size)
 {
 	int tx_iov_index, ret;
-	bool p2p_available;
+	bool mr_p2p_available;
 	size_t tx_iov_offset, copied;
 	struct efa_mr *iov_mr;
 
-	assert(payload_offset > 0);
-
 	pke->ope = ope;
+	pke->peer = ope->peer;
 	if (data_size == 0) {
 		pke->pkt_size = payload_offset;
 		return 0;
@@ -63,27 +62,28 @@ ssize_t efa_rdm_pke_init_payload_from_ope(struct efa_rdm_pke *pke,
 	assert(tx_iov_index < ope->iov_count);
 	assert(tx_iov_offset < ope->iov[tx_iov_index].iov_len);
 	iov_mr = ope->desc[tx_iov_index];
+	mr_p2p_available = false;
 
-	/* When using EFA device, EFA device can access memory that
-	 * that has been registered, and p2p is allowed to be used.
-	 */
 	if (iov_mr) {
 		ret = efa_rdm_ep_use_p2p(pke->ep, iov_mr);
 		if (ret < 0)
 			return ret;
-		p2p_available = ret;
-	} else {
-		p2p_available = false;
+		mr_p2p_available = ret;
 	}
 
 	/*
 	 * Copy can be avoid if the following 2 conditions are true:
-	 * 1. EFA can directly access the memory
-	 * 2. data to be send is in 1 iov, because device only support 2 iov, and we use
-	 *    1st iov for header.
+	 * 1. data to be send is in 1 iov, because device only support 2 iov,
+	 * and we use 1st iov for header.
+	 * 2. p2p is available.
+	 * Note that FI_INJECT requires outbound buffer to be reusable
+	 * immediately after function returns, so a copy from the user buffer 
+	 * to the internal bounce buffer is needed.
 	 */
-	if (p2p_available &&
-	    (tx_iov_offset + data_size <= ope->iov[tx_iov_index].iov_len)) {
+	/* TODO: Disable copies when total packet size with payload is smaller
+	 * than device inline size */
+	if (tx_iov_offset + data_size <= ope->iov[tx_iov_index].iov_len &&
+	    mr_p2p_available && !(ope->fi_flags & FI_INJECT)) {
 		pke->payload = (char *)ope->iov[tx_iov_index].iov_base + tx_iov_offset;
 		pke->payload_size = data_size;
 		pke->payload_mr = ope->desc[tx_iov_index];
@@ -91,20 +91,8 @@ ssize_t efa_rdm_pke_init_payload_from_ope(struct efa_rdm_pke *pke,
 		return 0;
 	}
 
-	if (iov_mr && (iov_mr->peer.flags & OFI_HMEM_DATA_DEV_REG_HANDLE)) {
-		assert(iov_mr->peer.hmem_data);
-		copied = ofi_dev_reg_copy_from_hmem_iov(pke->wiredata + payload_offset,
-							data_size, iov_mr->peer.iface,
-							(uint64_t)iov_mr->peer.hmem_data,
-							ope->iov, ope->iov_count,
-							segment_offset);
-	} else {
-		copied = ofi_copy_from_hmem_iov(pke->wiredata + payload_offset,
-						data_size,
-		                                iov_mr ? iov_mr->peer.iface : FI_HMEM_SYSTEM,
-		                                iov_mr ? iov_mr->peer.device.reserved : 0,
-		                                ope->iov, ope->iov_count, segment_offset);
-	}
+	copied = efa_rdm_pke_copy_from_hmem_iov(
+		iov_mr, pke, ope, payload_offset, segment_offset, data_size);
 
 	assert(copied == data_size);
 	pke->payload = pke->wiredata + payload_offset;
@@ -150,6 +138,7 @@ int efa_rdm_ep_flush_queued_blocking_copy_to_hmem(struct efa_rdm_ep *ep)
 		desc = rxe->desc[0];
 		assert(desc && desc->peer.iface != FI_HMEM_SYSTEM);
 
+		efa_rdm_tracepoint(rx_pke_blocking_copy_payload_begin, (size_t) pkt_entry, pkt_entry->payload_size, rxe->msg_id, (size_t) rxe->cq_entry.op_context, rxe->total_len);
 		if (desc->peer.flags & OFI_HMEM_DATA_DEV_REG_HANDLE) {
 			assert(desc->peer.hmem_data);
 			bytes_copied[i] = ofi_dev_reg_copy_to_hmem_iov(
@@ -165,6 +154,7 @@ int efa_rdm_ep_flush_queued_blocking_copy_to_hmem(struct efa_rdm_ep *ep)
 			                                       segment_offset + ep->msg_prefix_size,
 			                                       data, pkt_entry->payload_size);
 		}
+		efa_rdm_tracepoint(rx_pke_blocking_copy_payload_end, (size_t) pkt_entry, pkt_entry->payload_size, rxe->msg_id, (size_t) rxe->cq_entry.op_context, rxe->total_len);
 	}
 
 	for (i = 0; i < ep->queued_copy_num; ++i) {
@@ -231,23 +221,63 @@ int efa_rdm_pke_queued_copy_payload_to_hmem(struct efa_rdm_pke *pke,
 	return efa_rdm_ep_flush_queued_blocking_copy_to_hmem(ep);
 }
 
-/* @brief copy data in pkt_entry to CUDA memory
+/*
+ * @brief check which copy methods are available
  *
  * There are 3 ways to copy data to CUDA memory. None of them is guaranteed to
  * be available:
  *
- * gdrcopy, which is avaibale only when cuda_is_gdrcopy_enabled() is true
+ * localread copy, which is available only when p2p is supported by device, and
+ * device support read.
  *
- * cudaMemcpy, which is available only when endpoint is permitted to call CUDA api
+ * cudaMemcpy, which is available only when endpoint is permitted to call CUDA
+ * api.
  *
- * localread copy, which is available only when p2p is supported by device, and device support read.
+ * gdrcopy, which is available only when cuda_is_gdrcopy_enabled() is true.
+ * 
+ * @param[in]			ep, efa_mr
+ * @param[in,out]		local_read_available, cuda_memcpy_available,
+ * gdrcopy_available
+ * @return		On success, return 0
+ * 				On failure, return libfabric error code
+ */
+int efa_rdm_pke_get_available_copy_methods(struct efa_rdm_ep *ep,
+					   struct efa_mr *efa_mr,
+					   bool *restrict local_read_available,
+					   bool *restrict cuda_memcpy_available,
+					   bool *restrict gdrcopy_available)
+{
+	int ret;
+	bool mr_p2p_available;
+
+	assert(efa_mr);
+	ret = efa_rdm_ep_use_p2p(ep, efa_mr);
+	if (ret < 0) {
+		return ret;
+	}
+
+	mr_p2p_available = ret;
+	*local_read_available = mr_p2p_available && efa_rdm_ep_support_rdma_read(ep);
+	*cuda_memcpy_available = ep->cuda_api_permitted;
+	*gdrcopy_available = efa_mr->peer.flags & OFI_HMEM_DATA_DEV_REG_HANDLE;
+
+	/* For in-order aligned send/recv, only allow local read to be used to copy data */
+	if (ep->sendrecv_in_order_aligned_128_bytes) {
+		*cuda_memcpy_available = false;
+		*gdrcopy_available = false;
+	}
+
+	return 0;
+}
+
+/* @brief copy data in pkt_entry to CUDA memory using gdrcopy, cudaMemcpy, or localread copy
  *
  * gdrcopy and cudaMemcpy is mutally exclusive, when they are both available, cudaMemcpy is used.
  * so we consider them as blocking copy.
  *
  * When neither blocking copy and localread copy is available, this function return error.
  *
- * When only one method is available, the availble one will be used.
+ * When only one method is available, the available one will be used.
  *
  * When both methods are available, we used a mixed approach, e.g.
  *
@@ -268,7 +298,7 @@ int efa_rdm_pke_copy_payload_to_cuda(struct efa_rdm_pke *pke,
 	struct efa_mr *desc;
 	struct efa_rdm_ep *ep;
 	size_t segment_offset;
-	bool p2p_available, local_read_available, gdrcopy_available, cuda_memcpy_available;
+	bool local_read_available, gdrcopy_available, cuda_memcpy_available;
 	int ret, err;
 
 	desc = rxe->desc[0];
@@ -277,21 +307,13 @@ int efa_rdm_pke_copy_payload_to_cuda(struct efa_rdm_pke *pke,
 	ep = pke->ep;
 	assert(ep);
 
-	ret = efa_rdm_ep_use_p2p(ep, desc);
-	if (ret < 0)
+	segment_offset = efa_rdm_pke_get_segment_offset(pke);
+
+	ret = efa_rdm_pke_get_available_copy_methods(
+		ep, desc, &local_read_available, &cuda_memcpy_available, &gdrcopy_available);
+	if (ret < 0) {
+		EFA_WARN(FI_LOG_EP_DATA, "Failed to get available copy methods, ret = %d\n", ret);
 		return ret;
-
-	segment_offset = efa_rdm_pke_get_segment_offset(pke),
-
-	p2p_available = ret;
-	local_read_available = p2p_available && efa_rdm_ep_support_rdma_read(ep);
-	cuda_memcpy_available = ep->cuda_api_permitted;
-	gdrcopy_available = desc->peer.flags & OFI_HMEM_DATA_DEV_REG_HANDLE;
-
-	/* For in-order aligned send/recv, only allow local read to be used to copy data */
-	if (ep->sendrecv_in_order_aligned_128_bytes) {
-		cuda_memcpy_available = false;
-		gdrcopy_available = false;
 	}
 
 	if (!local_read_available && !gdrcopy_available && !cuda_memcpy_available) {
@@ -332,10 +354,12 @@ int efa_rdm_pke_copy_payload_to_cuda(struct efa_rdm_pke *pke,
 		 */
 		if (rxe->bytes_copied + pke->payload_size == rxe->total_len) {
 			assert(desc->peer.hmem_data);
+			efa_rdm_tracepoint(rx_pke_blocking_copy_payload_begin, (size_t) pke, pke->payload_size, rxe->msg_id, (size_t) rxe->cq_entry.op_context, rxe->total_len);
 			ofi_dev_reg_copy_to_hmem_iov(FI_HMEM_CUDA, (uint64_t)desc->peer.hmem_data,
 			                             rxe->iov, rxe->iov_count,
 			                             segment_offset + ep->msg_prefix_size,
 			                             pke->payload, pke->payload_size);
+			efa_rdm_tracepoint(rx_pke_blocking_copy_payload_end, (size_t) pke, pke->payload_size, rxe->msg_id, (size_t) rxe->cq_entry.op_context, rxe->total_len);
 			efa_rdm_pke_handle_data_copied(pke);
 			return 0;
 		}
@@ -403,7 +427,7 @@ ssize_t efa_rdm_pke_copy_payload_to_ope(struct efa_rdm_pke *pke,
 	struct efa_mr *desc;
 	struct efa_rdm_ep *ep;
 	size_t segment_offset;
-	ssize_t bytes_copied;
+	size_t bytes_copied;
 
 	ep = pke->ep;
 	assert(ep);
@@ -443,9 +467,11 @@ ssize_t efa_rdm_pke_copy_payload_to_ope(struct efa_rdm_pke *pke,
 		return efa_rdm_pke_queued_copy_payload_to_hmem(pke, ope);
 
 	assert( !desc || desc->peer.iface == FI_HMEM_SYSTEM);
+	efa_rdm_tracepoint(rx_pke_blocking_copy_payload_begin, (size_t) pke, pke->payload_size, ope->msg_id, (size_t) ope->cq_entry.op_context, ope->total_len);
 	bytes_copied = ofi_copy_to_iov(ope->iov, ope->iov_count,
 				       segment_offset + ep->msg_prefix_size,
 				       pke->payload, pke->payload_size);
+	efa_rdm_tracepoint(rx_pke_blocking_copy_payload_end, (size_t) pke, pke->payload_size, ope->msg_id, (size_t) ope->cq_entry.op_context, ope->total_len);
 
 	if (bytes_copied != MIN(pke->payload_size, ope->cq_entry.len - segment_offset)) {
 		EFA_WARN(FI_LOG_CQ, "wrong size! bytes_copied: %ld\n",

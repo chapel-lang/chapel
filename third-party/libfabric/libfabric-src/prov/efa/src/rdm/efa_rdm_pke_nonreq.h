@@ -91,8 +91,32 @@ uint32_t efa_rdm_pke_get_handshake_opt_device_version(struct efa_rdm_pke *pke)
 	return device_version_hdr->device_version;
 }
 
+static inline
+struct efa_rdm_handshake_opt_user_recv_qp_hdr *efa_rdm_pke_get_handshake_opt_user_recv_qp_ptr(struct efa_rdm_pke *pke)
+{
+	struct efa_rdm_handshake_hdr *handshake_hdr;
+	size_t offset;
+
+	handshake_hdr = efa_rdm_pke_get_handshake_hdr(pke);
+	assert(handshake_hdr->type == EFA_RDM_HANDSHAKE_PKT);
+	assert(handshake_hdr->flags & EFA_RDM_HANDSHAKE_USER_RECV_QP_HDR);
+
+	offset = sizeof (struct efa_rdm_handshake_hdr)
+		+ ((handshake_hdr->nextra_p3 - 3) * sizeof handshake_hdr->extra_info[0]);
+
+	if (handshake_hdr->flags & EFA_RDM_PKT_CONNID_HDR)
+		offset += sizeof (struct efa_rdm_handshake_opt_connid_hdr);
+	if (handshake_hdr->flags & EFA_RDM_HANDSHAKE_HOST_ID_HDR)
+		offset += sizeof (struct efa_rdm_handshake_opt_host_id_hdr);
+	if (handshake_hdr->flags & EFA_RDM_HANDSHAKE_DEVICE_VERSION_HDR)
+		offset += sizeof (struct efa_rdm_handshake_opt_device_version_hdr);
+
+	return (struct efa_rdm_handshake_opt_user_recv_qp_hdr *) (pke->wiredata + offset);
+}
+
+
 ssize_t efa_rdm_pke_init_handshake(struct efa_rdm_pke *pkt_entry,
-				   fi_addr_t addr);
+				   struct efa_rdm_peer *peer);
 
 void efa_rdm_pke_handle_handshake_recv(struct efa_rdm_pke *pkt_entry);
 
@@ -182,7 +206,6 @@ void efa_rdm_pke_init_write_context(struct efa_rdm_pke *pkt_entry,
 
 void efa_rdm_pke_init_read_context(struct efa_rdm_pke *pkt_entry,
 				   struct efa_rdm_ope *ope,
-				   fi_addr_t addr,
 				   int read_id,
 				   size_t seg_size);
 

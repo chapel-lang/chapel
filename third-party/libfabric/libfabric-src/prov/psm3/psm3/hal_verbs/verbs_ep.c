@@ -139,10 +139,10 @@ psm3_ep_open_verbs(psm2_ep_t ep, int unit, int port, int addr_index, psm2_uuid_t
 	// 		eg. ibv_create_comp_channel
 
 	// TBD - should we simply use ep->pd and remove verbs_ep.pd field
+	errno = 0;
 	ep->verbs_ep.pd = ibv_alloc_pd(ep->verbs_ep.context);
 	if (! ep->verbs_ep.pd) {
-		_HFI_ERROR( "Unable to alloc PD on %s: %s\n",
-						ep->dev_name, strerror(errno));
+		_HFI_ERROR("Unable to alloc PD on %s: %s\n", ep->dev_name, strerror(errno));
 		goto fail;
 	}
 	// for use by MR cache
@@ -159,18 +159,19 @@ psm3_ep_open_verbs(psm2_ep_t ep, int unit, int port, int addr_index, psm2_uuid_t
 	// poll
 	// we will never have more than hfi_num_send_wqes +  hfi_num_send_rdma
 	// so CQ only needs a little headroom to be safe (1000)
+	errno = 0;
 	ep->verbs_ep.send_cq = ibv_create_cq(ep->verbs_ep.context, ep->verbs_ep.hfi_num_send_wqes+ep->hfi_num_send_rdma + 1000, (void*)ep, NULL, 0);
 	if (! ep->verbs_ep.send_cq) {
-		_HFI_ERROR( "Unable to create send CQ of size %u on %s: %s\n",
-						ep->verbs_ep.hfi_num_send_wqes+1000, ep->dev_name,
-						strerror(errno));
+		_HFI_ERROR("Unable to create send CQ of size %u on %s: %s\n",
+			ep->verbs_ep.hfi_num_send_wqes + 1000, ep->dev_name, strerror(errno));
 		goto fail;
 	}
 
+	errno = 0;
 	ep->verbs_ep.recv_comp_channel = ibv_create_comp_channel(ep->verbs_ep.context);
 	if (! ep->verbs_ep.recv_comp_channel) {
-		_HFI_ERROR( "Unable to create recv CQ completion channel on %s: %s\n",
-						ep->dev_name, strerror(errno));
+		_HFI_ERROR("Unable to create recv CQ completion channel on %s: %s\n",
+			ep->dev_name, strerror(errno));
 		goto fail;
 	}
 	// change completion channel to non-blocking
@@ -186,33 +187,45 @@ psm3_ep_open_verbs(psm2_ep_t ep, int unit, int port, int addr_index, psm2_uuid_t
 		// SRQ improves scalability
 		struct ibv_device_attr dev_attr;
 		union psmi_envvar_val envvar_val;
+		int err;
 
 		// get RDMA capabilities of device
-		if (ibv_query_device(ep->verbs_ep.context, &dev_attr)) {
-			_HFI_ERROR("Unable to query device %s: %s\n", ep->dev_name,
-						strerror(errno));
+		err = ibv_query_device(ep->verbs_ep.context, &dev_attr);
+		if (err) {
+			_HFI_ERROR("Unable to query device %s: %s\n", ep->dev_name, strerror(err));
 			goto fail;
 		}
 		_HFI_DBG("max_srq=%d\n", dev_attr.max_srq);
+#ifdef PSM_RC_RECONNECT_SRQ
 		if (dev_attr.max_srq) {
+#else
+		if (dev_attr.max_srq && ! ep->allow_reconnect) {
+#endif
+			// SRQ will introduce some overhead and increase latency for small fabrics
+			// only try SRQ on fabric with more than one node and fabric size > 4
+			unsigned int default_enable =
+				psm3_get_myrank_count() == -1 || psm3_get_mylocalrank_count() == -1 // no rank info
+				|| (psm3_get_myrank_count() > psm3_get_mylocalrank_count() // has more than one node
+					&& psm3_get_myrank_count() >= RC_SRQ_MIN_RANK_CNT); // and fabric size >= RC_SRQ_MIN_RANK_CNT (5)
 			psm3_getenv("PSM3_USE_SRQ",
-				"If device supports SRQ, use it [1=yes, 0=no) [1]",
+				"If device supports SRQ, use it [1=yes, 0=no). Default is 1 if\n"
+				"fabric has more than one node and fabric size >= " STRINGIFY(RC_SRQ_MIN_RANK_CNT),
 				PSMI_ENVVAR_LEVEL_HIDDEN, PSMI_ENVVAR_TYPE_UINT,
-				(union psmi_envvar_val)1, &envvar_val);
+				(union psmi_envvar_val)default_enable, &envvar_val);
 			if (envvar_val.e_uint) {
 				struct ibv_srq_init_attr attr = { 0 };
 				attr.srq_context = ep;	// our own pointer
 				attr.attr.max_wr = ep->verbs_ep.hfi_num_recv_wqes;
 				attr.attr.max_sge = 1;
 
+				errno = 0;
 				ep->verbs_ep.srq = ibv_create_srq(ep->verbs_ep.pd, &attr);
 				if (ep->verbs_ep.srq == NULL) {
-					_HFI_ERROR( "Unable to create SRQ on %s: %s\n",
+					_HFI_ERROR("Unable to create SRQ on %s: %s\n",
 						ep->dev_name, strerror(errno));
 					if (errno == ENOMEM) {
-						_HFI_ERROR( "Requested SRQ size might be too big. Try reducing TX depth and/or inline size.\n");
-						_HFI_ERROR( "Requested RX depth was %u .\n",
-								ep->verbs_ep.hfi_num_recv_wqes);
+						_HFI_ERROR("Requested SRQ size might be too big. Try reducing TX depth and/or inline size.\n");
+						_HFI_ERROR("Requested RX depth was %u.\n", ep->verbs_ep.hfi_num_recv_wqes);
 					}
 					goto fail;
 				}
@@ -231,35 +244,49 @@ psm3_ep_open_verbs(psm2_ep_t ep, int unit, int port, int addr_index, psm2_uuid_t
 	// HFI_TF_NFLOWS (32) limits receiver side concurrent tidflows (aka inbound
 	// RDMA w/immed).
 	// For USER RC Eager without SRQ we can have num_recv_wqes/FRACTION per
-	// QP in which case theoretical need could be huge.  We add 4000 as a
-	// swag to cover most cases and user can always tune higher as needed
+	// QP, and we calculate the total size based on the total QPs required.
+	// The CQ size for the UD QP is covered by hfi_num_recv_wqes.
 	// For USER RC Eager with SRQ worse case is num_recv_wqes so we
 	// add that to allow up to num_recv_wqes on UD QP and SRQ each and keep
 	// the HFI_TF_NFLOWS+1000 as headroom.
 	if (! ep->verbs_ep.hfi_num_recv_cqes) {
 		ep->verbs_ep.hfi_num_recv_cqes = ep->verbs_ep.hfi_num_recv_wqes+HFI_TF_NFLOWS+1000;
+#ifdef USE_RC
 		if ((ep->rdmamode&IPS_PROTOEXP_FLAG_RDMA_MASK) == IPS_PROTOEXP_FLAG_RDMA_USER_RC) {
-			if (ep->verbs_ep.srq)
+			if (ep->verbs_ep.srq) {
 				ep->verbs_ep.hfi_num_recv_cqes += ep->verbs_ep.hfi_num_recv_wqes;
-			else
-				ep->verbs_ep.hfi_num_recv_cqes += 4000;
+			} else {
+				int tot_cnt = psm3_get_myrank_count();
+				int loc_cnt = psm3_get_mylocalrank_count();
+				uint32_t rem_cnt;
+				uint32_t cqes_per_qp;
+
+				/*
+				 * Check to see if MPI is used. If yes, we will calculate the total
+				 * number of RC QPs. Otherwise, we use a arbitrary large number to
+				 * accommodate up to 128 remote connections
+				 */
+				if (tot_cnt > 0 && loc_cnt > 0)
+					rem_cnt = (uint32_t)(tot_cnt - loc_cnt);
+				else
+					rem_cnt = 128;
+
+				cqes_per_qp = ep->verbs_ep.hfi_num_recv_wqes / VERBS_RECV_QP_FRACTION;
+				ep->verbs_ep.hfi_num_recv_cqes += rem_cnt * cqes_per_qp;
+			}
 		}
+#endif
 	}
+
+	errno = 0;
 	ep->verbs_ep.recv_cq = ibv_create_cq(ep->verbs_ep.context,
 						 ep->verbs_ep.hfi_num_recv_cqes,
 						 (void*)ep,  ep->verbs_ep.recv_comp_channel, 0);
 	if (! ep->verbs_ep.recv_cq) {
-		_HFI_ERROR( "Unable to create recv CQ of size %u on %s: %s\n",
-					ep->verbs_ep.hfi_num_recv_cqes, ep->dev_name,
-					strerror(errno));
+		_HFI_ERROR("Unable to create recv CQ of size %u on %s: %s\n",
+			ep->verbs_ep.hfi_num_recv_cqes, ep->dev_name, strerror(errno));
 		goto fail;
 	}
-	// this gets done by psm3_verbs_poll_type
-	//if (ibv_req_notify_cq(ep->verbs_ep.recv_cq, 0)) {
-	//	_HFI_ERROR("Can't request RQ events from %s: %s\n",
-	//					ep->dev_name, strerror(errno));
-	//	goto fail;
-	//}
 
 	ep->verbs_ep.qp = ud_qp_create(ep);
 	if (! ep->verbs_ep.qp)
@@ -272,7 +299,7 @@ psm3_ep_open_verbs(psm2_ep_t ep, int unit, int port, int addr_index, psm2_uuid_t
 		ep->epid = psm3_epid_pack_ipv4(ep->addr,
 						PSMI_ETH_PROTO_ROCE,
 						ep->verbs_ep.qp->qp_num, 0);
-		_HFI_VDBG("construct epid ipv4: %s: ip %s qp %d mtu %d\n",
+		_HFI_VDBG("construct epid ipv4: %s: ip %s QP %u mtu %u\n",
 						psm3_epid_fmt_internal(ep->epid, 0),
 						psm3_naddr128_fmt(ep->addr, 1),
 						ep->verbs_ep.qp->qp_num, ep->mtu);
@@ -280,7 +307,7 @@ psm3_ep_open_verbs(psm2_ep_t ep, int unit, int port, int addr_index, psm2_uuid_t
 		ep->epid = psm3_epid_pack_ipv6(ep->addr,
 						PSMI_ETH_PROTO_ROCE,
 						ep->verbs_ep.qp->qp_num, 0);
-		_HFI_VDBG("construct epid ipv6: %s: ip %s qp %d mtu %d\n",
+		_HFI_VDBG("construct epid ipv6: %s: ip %s QP %u mtu %u\n",
 						psm3_epid_fmt_internal(ep->epid, 0),
 						psm3_naddr128_fmt(ep->addr, 1),
 						ep->verbs_ep.qp->qp_num, ep->mtu);
@@ -289,7 +316,7 @@ psm3_ep_open_verbs(psm2_ep_t ep, int unit, int port, int addr_index, psm2_uuid_t
 		ep->epid = psm3_epid_pack_ib(ep->verbs_ep.port_attr.lid,
 							ep->verbs_ep.qp->qp_num,
 							ep->addr);
-		_HFI_VDBG("construct epid ib: %s: lid %d qp %d addr %s mtu %d\n",
+		_HFI_VDBG("construct epid ib: %s: lid 0x%x QP %u addr %s mtu %u\n",
 						psm3_epid_fmt_internal(ep->epid, 0), ep->verbs_ep.port_attr.lid,
 						ep->verbs_ep.qp->qp_num,
 						psm3_naddr128_fmt(ep->addr, 1),
@@ -354,7 +381,7 @@ psm3_verbs_parse_params(psm2_ep_t ep)
 			"Number of recv CQEs to allocate\n"
 			"(0 will calculate as PSM3_NUM_RECV_WQES+1032 for PSM3_RDMA=0-2\n"
 			"for PSM3_RDMA=3 with SRQ, allow an additional PSM3_NUM_RECV_WQES\n"
-			"for PSM3_RDMA=3 without SRQ, allow an additional 4000) [0]",
+			"for PSM3_RDMA=3 without SRQ, calculate based on total QPs) [0]",
 			PSMI_ENVVAR_LEVEL_USER,
 			PSMI_ENVVAR_TYPE_UINT,
 			(union psmi_envvar_val)0, &envvar_val);
@@ -397,8 +424,6 @@ psm3_verbs_parse_params(psm2_ep_t ep)
 	// min size is (HFI_TF_NFLOWS + ep->hfi_num_send_rdma) *
 	// chunk size (psm3_mq_max_window_rv(mq, 0) after
 	// psm3_mq_initialize_params)
-	// for OPA native, actual window_rv may be smaller, but for UD it
-	// is not reduced
 	psm3_getenv("PSM3_RV_MR_CACHE_SIZE",
 			"kernel space MR cache size"
 			" (MBs, 0 lets rv module decide) [0]",
@@ -410,7 +435,7 @@ psm3_verbs_parse_params(psm2_ep_t ep)
 	// 		(HFI_TF_NFLOWS + ep->hfi_num_send_rdma)
 	//		* psm3_mq_max_window_rv(mq, 0)
 	// and automatically increase with warning if not?
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 	ep->rv_gpu_cache_size = psmi_parse_gpudirect_rv_gpu_cache_size(0);
 	// TBD - we could check gpu_cache_size >= minimum based on:
 	// 		(HFI_TF_NFLOWS + ep->hfi_num_send_rdma)
@@ -432,20 +457,65 @@ psm3_verbs_parse_params(psm2_ep_t ep)
 			(union psmi_envvar_val)0, &envvar_val);
 	ep->verbs_ep.rv_q_depth = envvar_val.e_uint;
 
-	psm3_getenv("PSM3_RV_RECONNECT_TIMEOUT",
-			"RV End-point minimum re-connection timeout in seconds. 0 for no connection recovery [30]",
-			PSMI_ENVVAR_LEVEL_USER,
-			PSMI_ENVVAR_TYPE_UINT,
-			(union psmi_envvar_val)30, &envvar_val);
-	ep->verbs_ep.rv_reconnect_timeout = envvar_val.e_uint;
-
 	psm3_getenv("PSM3_RV_HEARTBEAT_INTERVAL",
 			"RV End-point heartbeat interval in milliseconds. 0 for no heartbeat [1000]",
 			PSMI_ENVVAR_LEVEL_USER,
 			PSMI_ENVVAR_TYPE_UINT,
 			(union psmi_envvar_val)1000, &envvar_val);
 	ep->verbs_ep.rv_hb_interval = envvar_val.e_uint;
+
+	psm3_getenv_range("PSM3_RV_FR_PAGE_LIST_LEN",
+			  "RV Fast-registration page list length (0 lets rv module decide) [1024]", NULL,
+			  PSMI_ENVVAR_LEVEL_USER, PSMI_ENVVAR_TYPE_UINT,
+			  (union psmi_envvar_val)RV_FR_PAGE_LIST_LEN_DEFAULT,
+			  (union psmi_envvar_val)RV_FR_PAGE_LIST_LEN_MIN,
+			  (union psmi_envvar_val)UINT32_MAX,
+			  NULL, NULL, &envvar_val);
+	ep->verbs_ep.rv_fr_page_list_len = envvar_val.e_uint;
+
 #endif // RNDV_MOD
+
+#if defined(RNDV_MOD) || defined(USE_RC)
+#ifdef PSM_RC_RECONNECT
+	if (IPS_PROTOEXP_FLAG_KERNEL_QP(ep->rdmamode)
+		|| IPS_PROTOEXP_FLAG_USER_RC_QP(ep->rdmamode)) {
+			// depricated parameter
+#else
+	if (IPS_PROTOEXP_FLAG_KERNEL_QP(ep->rdmamode)) {
+#endif
+#ifdef PSM_RC_RECONNECT
+		// RC QP recovery is tech preview, default to 0 (off) for now
+		// only parse PSM3_RV_RECONNECT_TIMEOUT when using KERNEL_QP (RV)
+		if (IPS_PROTOEXP_FLAG_USER_RC_QP(ep->rdmamode)) {
+			envvar_val.e_uint = 0;
+		} else
+#endif
+		{
+			psm3_getenv("PSM3_RV_RECONNECT_TIMEOUT",
+#ifdef PSM_RC_RECONNECT
+				"RV and RC End-point minimum re-connection timeout in seconds. Deprecated. 0 for no connection recovery [30]",
+				PSMI_ENVVAR_LEVEL_HIDDEN,
+#else
+				"RV and RC End-point minimum re-connection timeout in seconds. 0 for no connection recovery [30]",
+				PSMI_ENVVAR_LEVEL_USER,
+#endif
+				PSMI_ENVVAR_TYPE_UINT,
+				(union psmi_envvar_val)30, &envvar_val);
+		}
+		ep->reconnect_timeout = envvar_val.e_uint;
+#ifdef PSM_RC_RECONNECT
+		psm3_getenv("PSM3_RECONNECT_TIMEOUT",
+			"RV and RC End-point minimum re-connection timeout in seconds. 0 for no connection recovery (default of 30 for RV, 0 for user RC QPs)",
+			PSMI_ENVVAR_LEVEL_USER,
+			PSMI_ENVVAR_TYPE_UINT,
+			(union psmi_envvar_val)ep->reconnect_timeout,
+			&envvar_val);
+		ep->reconnect_timeout = envvar_val.e_uint;
+		ep->allow_reconnect = (IPS_PROTOEXP_FLAG_USER_RC_QP(ep->rdmamode)
+			&& ep->reconnect_timeout);
+#endif
+	}
+#endif /* RNDV_MOD || USE_RC */
 }
 
 // complete initialization which requires ips_proto.
@@ -460,7 +530,7 @@ psm3_verbs_ips_proto_init(struct ips_proto *proto, uint32_t cksum_sz)
 	// PSM3_* env for SDMA are parsed later in psm3_ips_proto_init.
 	proto->iovec_thresh_eager = 8192;
 	proto->iovec_thresh_eager_blocking = 8192;
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 	proto->iovec_gpu_thresh_eager = 128;
 	proto->iovec_gpu_thresh_eager_blocking = 128;
 #endif
@@ -471,37 +541,67 @@ psm3_verbs_ips_proto_init(struct ips_proto *proto, uint32_t cksum_sz)
 	// at this point ep->mtu is our HW capability found during open
 	// and adjusted to allow for PSM headers so ep->mtu reflects maximum
 	// PSM payload (not yet adjusted for optional cksum_sz)
-	/* See if user specifies a lower MTU to use */
-	if (!psm3_getenv("PSM3_MTU",
-		"Upper bound on packet MTU (<=0 uses port MTU): 1-5,256,512,1024,2048,4096]",
-	     PSMI_ENVVAR_LEVEL_USER, PSMI_ENVVAR_TYPE_INT,
-	     (union psmi_envvar_val)-1, &env_mtu)) {
+	char help[128];
+
+	if ((ep->rdmamode & IPS_PROTOEXP_FLAG_RDMA_MASK) == IPS_PROTOEXP_FLAG_RDMA_USER_RC) {
+		snprintf(help, sizeof(help), "Upper bound on PSM3 payload (<=0 uses port MTU): 1-7, 1024-PSM3_MQ_RNDV_NIC_THRESH(%u)", ep->mq->rndv_nic_thresh);
+	} else {
+		snprintf(help, sizeof(help), "Upper bound on packet MTU (<=0 uses port MTU): 1-5,256,512,1024,2048,4096,8192");
+	}
+	/* See if user specifies a MTU to use */
+	if (!psm3_getenv("PSM3_MTU", help,
+		PSMI_ENVVAR_LEVEL_USER, PSMI_ENVVAR_TYPE_INT,
+		(union psmi_envvar_val)-1, &env_mtu)) {
+		uint32_t mtu; // in bytes
 		// use OPA_MTU_MAX so we don't round down to min MTU when
 		// OPA enum values mistakenly used here.
-		if (env_mtu.e_int >= IBTA_MTU_MIN && env_mtu.e_int <= OPA_MTU_MAX) //enum
-			env_mtu.e_int = opa_mtu_enum_to_int((enum opa_mtu)env_mtu.e_int);
-		else if (env_mtu.e_int < IBTA_MTU_MIN) // pick default
-			env_mtu.e_int = 8192; // default high, will use wire MTU
-		else // wash through enum to force round up to next valid MTU
-			env_mtu.e_int = opa_mtu_enum_to_int(opa_mtu_int_to_enum(env_mtu.e_int));
+		if (env_mtu.e_int >= IBTA_MTU_MIN && env_mtu.e_int <= OPA_MTU_MAX) { //enum
+			mtu = opa_mtu_enum_to_int((enum opa_mtu)env_mtu.e_int);
+		} else if (env_mtu.e_int < IBTA_MTU_MIN) { // pick default
+			mtu = ep->mtu + MAX_PSM_HEADER; // use wire MTU
+		} else if ((ep->rdmamode & IPS_PROTOEXP_FLAG_RDMA_MASK) == IPS_PROTOEXP_FLAG_RDMA_USER_RC
+			   && ! ep->allow_reconnect) { // use as local PSM3 MTU
+			// Under RDMA3 mode without reconnect, UD is only used
+			// for ctr msg only that shall be smaller than
+			// wire MTU. It's safe to increase PSM3 MTU beyond wire
+			// MTU because RC will be used, and the NIC driver will
+			// segment a msg into multiple packets to ensure 
+			// each pkt size is within wire MTU. 
+
+			mtu = env_mtu.e_int;
+			// only apply PSM3_MTU on eager messages
+			if (env_mtu.e_int > ep->mq->rndv_nic_thresh)
+				mtu = ep->mq->rndv_nic_thresh;
+			if (env_mtu.e_int < opa_mtu_enum_to_int(IBTA_MTU_MIN))
+				mtu = opa_mtu_enum_to_int(IBTA_MTU_MIN);
+			// round down to nearest multiple of 64
+			mtu = ROUNDDOWNP2(mtu, 64);
+			proto->epinfo.ep_mtu = mtu - MAX_PSM_HEADER;
+		} else { // wash through enum to force round up to next valid MTU
+			mtu = opa_mtu_enum_to_int(opa_mtu_int_to_enum(env_mtu.e_int));
+		}
+
 		// only allow MTU decrease
 		// PSM3_MTU specified ends up being used as max verbs payload
 		// so decrease by PSM HEADER size (and cksum below)
-		if (ep->mtu > env_mtu.e_int - MAX_PSM_HEADER)
-			ep->mtu = env_mtu.e_int - MAX_PSM_HEADER;
+		if (ep->mtu > mtu - MAX_PSM_HEADER)
+			ep->mtu = mtu - MAX_PSM_HEADER;
 	}
+
 	/* allow space for optional software managed checksum (for debug) */
 	ep->mtu -= cksum_sz;
-	// ep->mtu is our final choice of local PSM payload we can support
-	proto->epinfo.ep_mtu = ep->mtu;
+	// if proto->epinfo.ep_mtu is not set, use ep->mtu as our final choice 
+	// of local PSM payload we can support
+	if (!proto->epinfo.ep_mtu)
+		proto->epinfo.ep_mtu = ep->mtu;
 
 	if (PSM2_OK != psm_verbs_alloc_send_pool(ep, ep->verbs_ep.pd, &ep->verbs_ep.send_pool, 
 				// save 1 send WQE just to be paranoid (should be unnecessary)
 				min(ep->verbs_ep.hfi_num_send_wqes, ep->verbs_ep.qp_cap.max_send_wr-1),
 				// want to end up with multiple of cache line (64)
-				// ep->mtu+MAX_PSM_HEADERS will be power of 2 verbs MTU
+				// proto->epinfo.ep_mtu+MAX_PSM_HEADERS will be power of 2 verbs MTU
 				// be conservative (+BUFFER_HEADROOM)
-				ep->mtu + MAX_PSM_HEADER + BUFFER_HEADROOM
+				proto->epinfo.ep_mtu + MAX_PSM_HEADER + BUFFER_HEADROOM
 		)) {
 		_HFI_ERROR( "Unable to allocate UD send buffer pool\n");
 		goto fail;
@@ -518,9 +618,9 @@ psm3_verbs_ips_proto_init(struct ips_proto *proto, uint32_t cksum_sz)
 	if (PSM2_OK != psm_verbs_alloc_recv_pool(ep, 0, ep->verbs_ep.qp, &ep->verbs_ep.recv_pool,
 				min(ep->verbs_ep.hfi_num_recv_wqes, ep->verbs_ep.qp_cap.max_recv_wr),
 				// want to end up with multiple of cache line (64)
-				// ep->mtu+MAX_PSM_HEADERS will be power of 2 verbs MTU
+				// proto->epinfo.ep_mtu+MAX_PSM_HEADERS will be power of 2 verbs MTU
 				// be conservative (+BUFFER_HEADROOM)
-				ep->mtu + MAX_PSM_HEADER + BUFFER_HEADROOM
+				proto->epinfo.ep_mtu + MAX_PSM_HEADER + BUFFER_HEADROOM
 		)) {
 		_HFI_ERROR( "Unable to allocate UD recv buffer pool\n");
 		goto fail;
@@ -531,9 +631,9 @@ psm3_verbs_ips_proto_init(struct ips_proto *proto, uint32_t cksum_sz)
 					ep->verbs_ep.hfi_num_recv_wqes,
 					 (proto->ep->rdmamode == IPS_PROTOEXP_FLAG_RDMA_USER)? 0
 					// want to end up with multiple of cache line (64)
-					// ep->mtu+MAX_PSM_HEADERS will be power of 2 verbs MTU
+					// proto->epinfo.ep_mtu+MAX_PSM_HEADERS will be power of 2 verbs MTU
 					// be conservative (+BUFFER_HEADROOM)
-					: (ep->mtu + MAX_PSM_HEADER + BUFFER_HEADROOM)
+					: (proto->epinfo.ep_mtu + MAX_PSM_HEADER + BUFFER_HEADROOM)
 			)) {
 			_HFI_ERROR( "Unable to allocate SRQ recv buffer pool\n");
 			goto fail;
@@ -547,10 +647,10 @@ psm3_verbs_ips_proto_init(struct ips_proto *proto, uint32_t cksum_sz)
 
 	// no send segmentation, max_segs will constrain
 	ep->chunk_max_segs = 1;
-	ep->chunk_max_size = ep->mtu;
+	ep->chunk_max_size = proto->epinfo.ep_mtu;
 #ifdef PSM_BYTE_FLOW_CREDITS
 	// let flow_credits be the control
-	proto->flow_credit_bytes = ep->mtu * proto->flow_credits;
+	proto->flow_credit_bytes = proto->epinfo.ep_mtu * proto->max_credits;
 	_HFI_DBG("initial flow_credits %d bytes %d\n",
 				proto->flow_credits, proto->flow_credit_bytes);
 #else
@@ -573,7 +673,7 @@ psm3_verbs_ips_proto_init(struct ips_proto *proto, uint32_t cksum_sz)
 	if(PSM2_OK != modify_ud_qp_to_rts(ep, ep->verbs_ep.qp)) {
 		goto fail;
 	}
-	_HFI_PRDBG("created QP %p (%u)\n", ep->verbs_ep.qp, ep->verbs_ep.qp->qp_num);
+	_HFI_PRDBG("created UD QP %p (%u)\n", ep->verbs_ep.qp, ep->verbs_ep.qp->qp_num);
 
 	/*
 	 * Pre-calculate the PSN mask to support 31 bit PSN.
@@ -594,7 +694,7 @@ fail:
 }
 
 // Fetch current link state to update linkinfo fields in ips_proto:
-// 	ep_base_lid, ep_lmc, ep_link_rate, QoS tables, CCA tables
+// 	ep_base_lid, ep_lmc, ep_link_rate
 // These are all fields which can change during a link bounce.
 // Note "active" state is not adjusted as on link down PSM will wait for
 // the link to become usable again so it's always a viable/active device
@@ -671,11 +771,11 @@ psm2_error_t psm3_verbs_ips_make_ah(psm2_ep_t ep, ips_path_rec_t *path_rec)
 		_HFI_ERROR( "Unable to convert path_rec to AH for %s port %u\n", ep->dev_name, ep->portnum);
 		return PSM2_INTERNAL_ERR;
 	}
+	errno = 0;
 	path_rec->verbs.pr_ah = ibv_create_ah(ep->verbs_ep.pd, &ah_attr);
 	if (! path_rec->verbs.pr_ah) {
-		int save_errno = errno;
-		_HFI_ERROR( "Unable to create AH for %s: %s (%d)\n", ep->dev_name, strerror(save_errno), save_errno);
-		if (save_errno == ETIMEDOUT)
+		_HFI_ERROR("Unable to create AH for %s: %s\n", ep->dev_name, strerror(errno));
+		if (errno == ETIMEDOUT)
 			return PSM2_EPID_PATH_RESOLUTION;
 		else
 			return PSM2_INTERNAL_ERR;
@@ -763,6 +863,8 @@ psm2_error_t psm3_verbs_ips_path_rec_init(struct ips_proto *proto,
 
 int psm3_verbs_poll_type(int poll_type, psm2_ep_t ep)
 {
+	int err;
+
 	switch (poll_type) {
 	case PSMI_HAL_POLL_TYPE_NONE:
 		// no events for solicted and unsolictited recv
@@ -775,17 +877,19 @@ int psm3_verbs_poll_type(int poll_type, psm2_ep_t ep)
 	case PSMI_HAL_POLL_TYPE_URGENT:
 		// set for event on solicted recv (urgent PSM protocol pkts)
 		_HFI_PRDBG("enable solicited event\n");
-		if (0 != ibv_req_notify_cq(ep->verbs_ep.recv_cq, 1)) {
+		err = ibv_req_notify_cq(ep->verbs_ep.recv_cq, 1);
+		if (err) {
 			_HFI_ERROR("Can't request solicitied RQ events on %s: %s\n",
-							ep->dev_name, strerror(errno));
+				ep->dev_name, strerror(err));
 			return -1;
 		}
 		break;
 	case PSMI_HAL_POLL_TYPE_ANYRCV:
 		_HFI_VDBG("enable all events\n");
-		if (0 != ibv_req_notify_cq(ep->verbs_ep.recv_cq, 0)) {
+		err = ibv_req_notify_cq(ep->verbs_ep.recv_cq, 0);
+		if (err) {
 			_HFI_ERROR("Can't request all RQ events on %s: %s\n",
-							ep->dev_name, strerror(errno));
+				ep->dev_name, strerror(err));
 			return -1;
 		}
 		break;
@@ -876,25 +980,9 @@ psm2_error_t psm_verbs_alloc_send_pool(psm2_ep_t ep, struct ibv_pd *pd,
 			_HFI_ERROR( "can't alloc send buffers");
 			goto fail;
 		}
-#if defined(PSM_CUDA) && !defined(PSM3_NO_CUDA_REGISTER)
-		// By registering memory with Cuda, we make
-		// cuMemcpy run faster for copies from
-		// GPU to the send buffer.
-		if (PSMI_IS_GPU_ENABLED && check_have_cuda_ctxt())
-			PSMI_CUDA_CALL(cuMemHostRegister,
-				pool->send_buffers,
-				pool->send_total*pool->send_buffer_size,
-				CU_MEMHOSTALLOC_PORTABLE);
-#endif
-#if defined(PSM_ONEAPI) && !defined(PSM3_NO_ONEAPI_IMPORT)
-		// By registering memory with Level Zero, we make
-		// zeCommandListAppendMemoryCopy run faster for copies from
-		// GPU to the send buffer.
-		if (PSMI_IS_GPU_ENABLED)
-			PSMI_ONEAPI_ZE_CALL(zexDriverImportExternalPointer,
-				ze_driver, pool->send_buffers,
+		// This can allows faster copies from GPU to the send buffer
+		PSM3_GPU_REGISTER_HOSTMEM( pool->send_buffers,
 				pool->send_total*pool->send_buffer_size);
-#endif
 
 		_HFI_PRDBG("send pool: buffers: %p size %u\n",  pool->send_buffers, pool->send_buffer_size);
 		pool->send_bufs = (struct verbs_sbuf *)psmi_calloc(ep, NETWORK_BUFFERS,
@@ -907,6 +995,11 @@ psm2_error_t psm_verbs_alloc_send_pool(psm2_ep_t ep, struct ibv_pd *pd,
 		for (i=pool->send_total-1; i >= 0; i--) {
 			pool->send_bufs[i].buffer = &(pool->send_buffers[send_buffer_start(pool, i)]);
 			pool->send_bufs[i].next = pool->send_free;
+#ifdef PSM_DEBUG
+			// help detect and debug double free
+			pool->send_bufs[i].allocator = NULL;
+			pool->send_bufs[i].freed_by = "init";
+#endif
 			pool->send_free = &(pool->send_bufs[i]);
 		}
 		_HFI_PRDBG("%u Send Buffers of %u bytes each allocated at %p.\n", pool->send_total, pool->send_buffer_size,
@@ -915,13 +1008,14 @@ psm2_error_t psm_verbs_alloc_send_pool(psm2_ep_t ep, struct ibv_pd *pd,
 		// UD doesn't support RDMA, so we just need local NIC to be able to
 		// access our buffers with kernel bypass (IBV_ACCESS_LOCAL_WRITE)
 		// technically we probably don't need LOCAL_WRITE for send buffers
+		errno = 0;
 		pool->send_buffer_mr = ibv_reg_mr(
 						pd, pool->send_buffers,
 						pool->send_total*pool->send_buffer_size,
 						IBV_ACCESS_LOCAL_WRITE);
 		if (! pool->send_buffer_mr) {
-			_HFI_ERROR( "Unable to alloc send buffer MR on %s: %s\n",
-							ep->dev_name, strerror(errno));
+			_HFI_ERROR("Unable to alloc send buffer MR on %s: %s\n",
+				ep->dev_name, strerror(errno));
 			goto fail;
 		}
 	}
@@ -995,25 +1089,9 @@ psm2_error_t psm_verbs_alloc_recv_pool(psm2_ep_t ep, uint32_t for_srq,
 				_HFI_ERROR( "can't alloc recv buffers");
 				goto fail;
 			}
-#if defined(PSM_CUDA) && !defined(PSM3_NO_CUDA_REGISTER)
-			// By registering memory with Cuda, we make
-			// cuMemcpy run faster for copies from
-			// recv buffer to GPU
-			if (PSMI_IS_GPU_ENABLED && check_have_cuda_ctxt())
-				PSMI_CUDA_CALL(cuMemHostRegister,
-					pool->recv_buffers,
-					pool->recv_total*pool->recv_buffer_size,
-					CU_MEMHOSTALLOC_PORTABLE);
-#endif
-#if defined(PSM_ONEAPI) && !defined(PSM3_NO_ONEAPI_IMPORT)
-			// By registering memory with Level Zero, we make
-			// zeCommandListAppendMemoryCopy run faster for copies from
-			// recv buffer to GPU
-			if (PSMI_IS_GPU_ENABLED)
-				PSMI_ONEAPI_ZE_CALL(zexDriverImportExternalPointer,
-					ze_driver, pool->recv_buffers,
-					pool->recv_total*pool->recv_buffer_size);
-#endif
+			// This can allow faster copies from recv buffer to GPU
+			PSM3_GPU_REGISTER_HOSTMEM(pool->recv_buffers,
+				pool->recv_total*pool->recv_buffer_size);
 			//printf("recv pool: buffers: %p size %u\n",  pool->recv_buffers, pool->recv_buffer_size);
 #ifdef USE_RC
 			pool->recv_bufs = (struct verbs_rbuf *)psmi_calloc(ep, NETWORK_BUFFERS,
@@ -1033,6 +1111,7 @@ psm2_error_t psm_verbs_alloc_recv_pool(psm2_ep_t ep, uint32_t for_srq,
 
 			// UD doesn't support RDMA, so we just need local NIC to be able to
 			// access our buffers with kernel bypass (IBV_ACCESS_LOCAL_WRITE)
+			errno = 0;
 			pool->recv_buffer_mr = ibv_reg_mr(
 #ifdef USE_RC
 							for_srq?pool->srq->pd:
@@ -1042,8 +1121,8 @@ psm2_error_t psm_verbs_alloc_recv_pool(psm2_ep_t ep, uint32_t for_srq,
 							pool->recv_total*pool->recv_buffer_size,
 							IBV_ACCESS_LOCAL_WRITE);
 			if (! pool->recv_buffer_mr) {
-				_HFI_ERROR( "Unable to alloc recv buffer MR on %s: %s\n",
-								ep->dev_name, strerror(errno));
+				_HFI_ERROR("Unable to alloc recv buffer MR on %s: %s\n",
+					ep->dev_name, strerror(errno));
 				goto fail;
 			}
 		} else {
@@ -1106,38 +1185,7 @@ void psm_verbs_free_send_pool(psm3_verbs_send_pool_t pool)
 		pool->send_bufs = NULL;
 	}
 	if (pool->send_buffers) {
-#if defined(PSM_CUDA) && !defined(PSM3_NO_CUDA_REGISTER)
-		if (PSMI_IS_GPU_ENABLED && cu_ctxt) {
-			/* ignore NOT_REGISTERED in case cuda initialized late */
-			/* ignore other errors as context could be destroyed before this */
-			CUresult cudaerr;
-			//PSMI_CUDA_CALL_EXCEPT(CUDA_ERROR_HOST_MEMORY_NOT_REGISTERED,
-			//		cuMemHostUnregister, pool->send_buffers);
-			psmi_count_cuMemHostUnregister++;
-			cudaerr = psmi_cuMemHostUnregister(pool->send_buffers);
-			if (cudaerr) {
-				const char *pStr = NULL;
-				psmi_count_cuGetErrorString++;
-				psmi_cuGetErrorString(cudaerr, &pStr);
-				_HFI_DBG("CUDA failure: cuMemHostUnregister returned %d: %s\n",
-						cudaerr, pStr?pStr:"Unknown");
-			}
-
-		}
-#endif
-#if defined(PSM_ONEAPI) && !defined(PSM3_NO_ONEAPI_IMPORT)
-		if (PSMI_IS_GPU_ENABLED) {
-			ze_result_t result;
-			//PSMI_ONEAPI_ZE_CALL(zexDriverReleaseImportedPointer,
-			//		 ze_driver, pool->send_buffers);
-			psmi_count_zexDriverReleaseImportedPointer++;
-			result = psmi_zexDriverReleaseImportedPointer(ze_driver,
-					pool->send_buffers);
-			if (result != ZE_RESULT_SUCCESS) {
-				_HFI_DBG("OneAPI Level Zero failure: zexDriverReleaseImportedPointer returned %d: %s\n", result, psmi_oneapi_ze_result_to_string(result));
-			}
-		}
-#endif
+		PSM3_GPU_UNREGISTER_HOSTMEM(pool->send_buffers);
 		psmi_free(pool->send_buffers);
 		pool->send_buffers = NULL;
 	}
@@ -1158,37 +1206,7 @@ void psm_verbs_free_recv_pool(psm3_verbs_recv_pool_t pool)
 	}
 #endif
 	if (pool->recv_buffers) {
-#if defined(PSM_CUDA) && !defined(PSM3_NO_CUDA_REGISTER)
-		if (PSMI_IS_GPU_ENABLED && cu_ctxt) {
-			/* ignore NOT_REGISTERED in case cuda initialized late */
-			/* ignore other errors as context could be destroyed before this */
-			CUresult cudaerr;
-			//PSMI_CUDA_CALL_EXCEPT(CUDA_ERROR_HOST_MEMORY_NOT_REGISTERED,
-			//		cuMemHostUnregister, pool->recv_buffers);
-			psmi_count_cuMemHostUnregister++;
-			cudaerr = psmi_cuMemHostUnregister(pool->recv_buffers);
-			if (cudaerr) {
-				const char *pStr = NULL;
-				psmi_count_cuGetErrorString++;
-				psmi_cuGetErrorString(cudaerr, &pStr);
-				_HFI_DBG("CUDA failure: cuMemHostUnregister returned %d: %s\n",
-						cudaerr, pStr?pStr:"Unknown");
-			}
-		}
-#endif
-#if defined(PSM_ONEAPI) && !defined(PSM3_NO_ONEAPI_IMPORT)
-		if (PSMI_IS_GPU_ENABLED) {
-			ze_result_t result;
-			//PSMI_ONEAPI_ZE_CALL(zexDriverReleaseImportedPointer,
-			//		 ze_driver, pool->recv_buffers);
-			psmi_count_zexDriverReleaseImportedPointer++;
-			result = psmi_zexDriverReleaseImportedPointer(ze_driver,
-					pool->recv_buffers);
-			if (result != ZE_RESULT_SUCCESS) {
-				_HFI_DBG("OneAPI Level Zero failure: zexDriverReleaseImportedPointer returned %d: %s\n", result, psmi_oneapi_ze_result_to_string(result));
-			}
-		}
-#endif
+		PSM3_GPU_UNREGISTER_HOSTMEM(pool->recv_buffers);
 		psmi_free(pool->recv_buffers);
 		pool->recv_buffers = NULL;
 	}
@@ -1199,11 +1217,21 @@ void psm_verbs_free_recv_pool(psm3_verbs_recv_pool_t pool)
 // so we can tend to allocate a small set of buffers
 // to improve CPU, MMU and NIC MMU hit rates
 sbuf_t psm3_ep_verbs_alloc_sbuf(psm3_verbs_send_allocator_t allocator,
+#ifdef PSM_RC_RECONNECT
+				struct psm3_verbs_rc_qp *rc_qp,
+#endif
 				sbuf_t *prev_sbuf)
 {
 	psm3_verbs_send_pool_t pool = allocator->pool;
 	sbuf_t sbuf = pool->send_free;
+#ifdef PSM_RC_RECONNECT
+	psmi_assert(! rc_qp || ! rc_qp->draining);
+#endif
 	if_pt (sbuf) {
+#ifdef PSM_DEBUG
+		// helps detect double free or double alloc
+		psmi_assert(! sbuf->allocator);
+#endif
 		// take off head of free list
 		pool->send_free = sbuf->next;
 		pool->send_num_free--;
@@ -1220,7 +1248,18 @@ sbuf_t psm3_ep_verbs_alloc_sbuf(psm3_verbs_send_allocator_t allocator,
 		allocator->send_alloc_end = sbuf;
 #ifdef USE_RC
 		sbuf->allocator = allocator;
+#ifdef PSM_DEBUG
+		// help debug double free
+		sbuf->freed_by = "allocated";
 #endif
+#ifdef PSM_RC_RECONNECT
+		if (rc_qp) {
+			psmi_assert(allocator == &rc_qp->send_allocator);
+			sbuf->rc_qp = rc_qp;
+			rc_qp->send_posted++;
+		}
+#endif /* PSM_RC_RECONNECT */
+#endif /* USE_RC */
 	}
 	return sbuf;
 }
@@ -1235,6 +1274,17 @@ void psm3_ep_verbs_unalloc_sbuf(psm3_verbs_send_allocator_t allocator,
 	psmi_assert(sbuf->allocator == allocator);
 #endif
 	_HFI_VDBG("unalloc sbuf %p prev %p sbuf->scb %p\n", sbuf, prev_sbuf, sbuf->scb);
+#ifdef USE_RC
+#ifdef PSM_RC_RECONNECT
+	if (sbuf->rc_qp) {
+		psmi_assert(allocator == &sbuf->rc_qp->send_allocator);
+		psm3_verbs_dec_posted(sbuf->rc_qp);
+		// caller allocated an sbuf, then unalloced, can't be draining
+		psmi_assert(!sbuf->rc_qp->draining);
+		sbuf->rc_qp = NULL;
+	}
+#endif
+#endif
 	if (sbuf->scb) {
 		psmi_assert(sbuf->scb->sdma_outstanding);
 		sbuf->scb->sdma_outstanding--;
@@ -1261,28 +1311,87 @@ void psm3_ep_verbs_unalloc_sbuf(psm3_verbs_send_allocator_t allocator,
 	sbuf->next = pool->send_free;
 	pool->send_free = sbuf;
 	pool->send_num_free++;
+#ifdef PSM_DEBUG
+	// help detect and debug double free
+	sbuf->allocator = NULL;
+	sbuf->freed_by = "unalloc";
+#endif
 }
 
 // buffers must be freed in order, the fact the SQ reports completions in
 // same order as send WQEs ensures this
-// this will free count buffers with buf being the last freed
+// this will free up to count buffers with buf being the last freed
 void psm3_ep_verbs_free_sbuf(
 #ifndef USE_RC
 			psm3_verbs_send_allocator_t allocator,
 #endif
-			sbuf_t buf, uint32_t count)
+			sbuf_t buf, uint32_t count
+#ifdef PSM_RC_RECONNECT
+			, int can_free_rc_qp
+#endif
+#ifdef PSM_DEBUG
+			// to help debug double free
+			, const char *caller
+			, const char *caller_mid
+#endif
+			)
 {
 #ifdef USE_RC
 	psm3_verbs_send_allocator_t allocator = buf->allocator;
 #endif
+#ifdef PSM_DEBUG
+	if (! allocator) {
+		_HFI_ERROR("double sbuf free.  caller=%s buf=%p allocator=%p count %u freed_by %s\n",
+			caller, buf, allocator, count, buf->freed_by);
+#ifdef PSM_RC_RECONNECT
+		if (buf->rc_qp)
+			_HFI_ERROR("details ipsaddr %p QP %u draining %u posted %u + %u drain outstanding %u \n",
+				buf->rc_qp->ipsaddr, buf->rc_qp->qp->qp_num,
+				buf->rc_qp->draining, buf->rc_qp->send_posted,
+				buf->rc_qp->recv_pool.posted,
+				buf->rc_qp->ipsaddr->epaddr.proto->ep->verbs_ep.send_drain_outstanding);
+		psmi_assert(allocator);
+#endif /* PSM_RC_RECONNECT */
+	}
+#ifdef PSM_RC_RECONNECT
+	if (buf->rc_qp)
+		psmi_assert(allocator == &buf->rc_qp->send_allocator);
+#endif /* PSM_RC_RECONNECT */
+#endif /* PSM_DEBUG */
 	psm3_verbs_send_pool_t pool = allocator->pool;
 	sbuf_t b;
 	do {
 		// take 1st off allocated list
 		b = allocator->send_alloc_head;
+#ifdef PSM_DEBUG
+		if (! b) {
+			_HFI_ERROR("no buffers on sbuf alloc list.  caller=%s buf=%p allocator=%p count %u\n",
+				caller, buf, allocator, count);
+#ifdef PSM_RC_RECONNECT
+			if (buf->rc_qp)
+				_HFI_ERROR("details ipsaddr %p QP %u draining %u posted %u + %u drain outstanding %u \n",
+					 buf->rc_qp->ipsaddr,
+					 buf->rc_qp->qp->qp_num,
+					 buf->rc_qp->draining,
+					 buf->rc_qp->send_posted,
+					 buf->rc_qp->recv_pool.posted,
+					 buf->rc_qp->ipsaddr->epaddr.proto->ep->verbs_ep.send_drain_outstanding);
+#endif /* PSM_RC_RECONNECT */
+		}
+#endif /* PSM_DEBUG */
+		psmi_assert(b);
 		allocator->send_alloc_head = b->next;
 		if_pf (allocator->send_alloc_end == b)	// unlikely last outstanding
 			allocator->send_alloc_end = NULL;
+#ifdef PSM_RC_RECONNECT
+		if (b->rc_qp) {
+			psmi_assert(allocator == &b->rc_qp->send_allocator);
+			psm3_verbs_dec_posted(b->rc_qp);
+			if (can_free_rc_qp)
+				psm3_verbs_free_rc_qp_if_drained("SQ WC", b->rc_qp);
+			b->rc_qp = NULL;
+		}
+#endif
 		if (b->scb) {
 			psmi_assert(b->scb->sdma_outstanding);
 			b->scb->sdma_outstanding--;
@@ -1294,6 +1403,14 @@ void psm3_ep_verbs_free_sbuf(
 		b->next =  pool->send_free;
 		pool->send_free = b;
 		pool->send_num_free++;
+#ifdef PSM_DEBUG
+		// helps to detect and debug double free
+		b->allocator = NULL;
+		if (b != buf)
+			b->freed_by = caller_mid;
+		else
+			b->freed_by = caller;
+#endif /* PSM_DEBUG */
 #ifdef UD_DEBUG
 		printf("freed: %u num free: %u\n", 
 			(uint32_t)send_buffer_index(pool, b->buffer),
@@ -1304,8 +1421,40 @@ void psm3_ep_verbs_free_sbuf(
 	// however when send error CQEs occur (such as flush) we may find less
 	// than count inflight ahead of buf
 	//psmi_assert_always(b == buf && count == 0);
+#ifdef PSM_DEBUG
+	if (b != buf) {
+		_HFI_ERROR("free loop ended without finding buf, caller=%s buf %p b %p allocator=%p next %p\n",
+			caller, buf, b, allocator, allocator->send_alloc_head);
+#ifdef PSM_RC_RECONNECT
+		if (buf->rc_qp)
+			_HFI_ERROR("details for buf ipsaddr %p QP %u draining %u posted %u + %u drain outstanding %u\n",
+				buf->rc_qp->ipsaddr, buf->rc_qp->qp->qp_num,
+				buf->rc_qp->draining, buf->rc_qp->send_posted,
+				buf->rc_qp->recv_pool.posted,
+				buf->rc_qp->ipsaddr->epaddr.proto->ep->verbs_ep.send_drain_outstanding);
+#endif /* PSM_RC_RECONNECT */
+	}
+#endif /* PSM_DEBUG */
 	psmi_assert_always(b == buf);
 }
+
+#ifdef PSM_RC_RECONNECT
+// all the sends on the given allocator are now done, free their sbufs
+// will not free rc_qp, even if QP now empty
+void psm3_ep_verbs_send_drained(psm3_verbs_send_allocator_t allocator)
+{
+	sbuf_t b;
+	// we could just free_sbuf(allocator->send_alloc_end, pool->send_total);
+	// but this is more obvious and we don't care about minor perf differences
+	// in recovery paths
+	while (NULL != (b = allocator->send_alloc_head)) 
+		psm3_ep_verbs_free_sbuf(b, 1, 0
+#ifdef PSM_DEBUG
+				, "send_drained", "send drained"
+#endif
+				);
+}
+#endif
 
 psm2_error_t psm3_ep_verbs_post_recv(
 #ifndef USE_RC
@@ -1323,8 +1472,18 @@ psm2_error_t psm3_ep_verbs_post_recv(
 	struct ibv_sge list;
 #endif
 	struct ibv_recv_wr *bad_wr;
+	int err;
 
 #ifdef USE_RC
+#ifdef PSM_RC_RECONNECT
+	if (pool->draining) {
+		psmi_assert(pool->qp != pool->ep->verbs_ep.qp);// not UD QP pool
+		psmi_assert(! pool->for_srq);
+		psm3_verbs_free_rc_qp_if_empty("RQ WC",
+				psm3_verbs_rc_qp_from_recv_pool(pool));
+		return PSM2_OK;
+	}
+#endif
 	// only RC QPs doing just RDMA Write can have a zero buffer size
 	if (pool->recv_buffer_size) {
 #else
@@ -1355,33 +1514,54 @@ psm2_error_t psm3_ep_verbs_post_recv(
 #endif
 					"RQ WQE with bad lkey",
 					0, IPS_FAULTINJ_RQ_LKEY);
+#ifdef PSM_RC_RECONNECT
+			PSM3_FAULTINJ_STATIC_DECL(fi_rc_rq_lkey, "rc_rq_lkey",
+					"post RC RQ WQE with bad lkey",
+					pool->ep->allow_reconnect?1:0,
+					IPS_FAULTINJ_RC_RQ_LKEY);
+#endif
 			// SRQ has no number but need consistency in fmt and number of args
 			if_pf(PSM3_FAULTINJ_IS_FAULT(fi_rq_lkey, pool->ep,
 #ifdef USE_RC
-				 "%s %u", pool->for_srq?"SRQ":"QP", pool->for_srq?0:pool->qp->qp_num))
+				 "%s %u buf %p", pool->for_srq?"SRQ":"QP",
+				 pool->for_srq?0:pool->qp->qp_num, buf))
 #else
-				 " QP %u", pool->qp->qp_num))
+				 " QP %u buf %p", pool->qp->qp_num, buf))
 #endif
-				wr->sg_list->lkey = 55;
-		} else
-			wr->sg_list->lkey = pool->recv_buffer_mr->lkey;
+				wr->sg_list->lkey = IPS_BAD_LKEY;
+#ifdef PSM_RC_RECONNECT
+			else if_pf(! pool->for_srq && pool->ep->verbs_ep.qp != pool->qp
+				&& PSM3_FAULTINJ_IS_FAULT(fi_rc_rq_lkey, pool->ep,
+				 " RC QP %u buf %p", pool->qp->qp_num, buf))
+				wr->sg_list->lkey = IPS_BAD_LKEY;
+#endif
+			else
+				wr->sg_list->lkey = pool->recv_buffer_mr->lkey;
+		}
 #endif // PSM_FI
 		if_pf (++pool->next_recv_wqe >= VERBS_RECV_QP_COALLESCE) {
 			// we have a batch ready to post
 #ifdef USE_RC
 			if (pool->for_srq) {
-				if_pf (ibv_post_srq_recv(pool->srq, pool->recv_wr_list, &bad_wr)) {
-					_HFI_ERROR("failed to post SRQ on %s port %u: %s", pool->ep->dev_name, pool->ep->portnum, strerror(errno));
+				err = ibv_post_srq_recv(pool->srq, pool->recv_wr_list, &bad_wr);
+				if_pf (err) {
+					_HFI_ERROR("failed to post SRQ on %s port %u: %s",
+						pool->ep->dev_name, pool->ep->portnum, strerror(err));
 					return PSM2_INTERNAL_ERR;
 				}
 				//_HFI_VDBG("posted SRQ, including buffer %u\n", index);
 			} else
 #endif
 			{
-				if_pf (ibv_post_recv(pool->qp, pool->recv_wr_list, &bad_wr)) {
-					_HFI_ERROR("failed to post RQ on %s port %u: %s", pool->ep->dev_name, pool->ep->portnum, strerror(errno));
+				err = ibv_post_recv(pool->qp, pool->recv_wr_list, &bad_wr);
+				if_pf (err) {
+					_HFI_ERROR("failed to post RQ on %s port %u: %s",
+						pool->ep->dev_name, pool->ep->portnum, strerror(err));
 					return PSM2_INTERNAL_ERR;
 				}
+#ifdef PSM_RC_RECONNECT
+				pool->posted += pool->next_recv_wqe;
+#endif
 				//_HFI_VDBG("posted RQ, including buffer %u\n", index);
 			}
 			pool->next_recv_wqe = 0;
@@ -1401,14 +1581,27 @@ psm2_error_t psm3_ep_verbs_post_recv(
 #endif
 					"RQ WQE with bad lkey",
 					0, IPS_FAULTINJ_RQ_LKEY);
+#ifdef PSM_RC_RECONNECT
+			PSM3_FAULTINJ_STATIC_DECL(fi_rc_rq_lkey, "rc_rq_lkey",
+					"post RC RQ WQE with bad lkey",
+					pool->ep->allow_reconnect?1:0,
+					IPS_FAULTINJ_RC_RQ_LKEY);
+#endif
 			// SRQ has no number but need consistency in fmt and number of args
 			if_pf(PSM3_FAULTINJ_IS_FAULT(fi_rq_lkey, pool->ep,
 #ifdef USE_RC
-				 "%s %u", pool->for_srq?"SRQ":"QP", pool->for_srq?0:pool->qp->qp_num))
+				 "%s %u buf %p", pool->for_srq?"SRQ":"QP",
+				 pool->for_srq?0:pool->qp->qp_num, buf))
 #else
-				 " QP %u", pool->qp->qp_num))
+				 " QP %u buf %p", pool->qp->qp_num, buf))
 #endif
-				list.lkey = 55;
+				list.lkey = IPS_BAD_LKEY;
+#ifdef PSM_RC_RECONNECT
+			else if_pf(! pool->for_srq && pool->ep->verbs_ep.qp != pool->qp
+				&& PSM3_FAULTINJ_IS_FAULT(fi_rc_rq_lkey, pool->ep,
+				 " RC QP %u buf %p", pool->qp->qp_num, buf))
+				list.lkey = IPS_BAD_LKEY;
+#endif
 		}
 #endif // PSM_FI
 		wr.next = NULL;	// just post 1
@@ -1418,18 +1611,25 @@ psm2_error_t psm3_ep_verbs_post_recv(
 
 #ifdef USE_RC
 		if (pool->for_srq) {
-			if_pf (ibv_post_srq_recv(pool->srq, &wr, &bad_wr)) {
-				_HFI_ERROR("failed to post SRQ on %s port %u: %s", pool->ep->dev_name, pool->ep->portnum, strerror(errno));
+			err = ibv_post_srq_recv(pool->srq, &wr, &bad_wr);
+			if_pf (err) {
+				_HFI_ERROR("failed to post SRQ on %s port %u: %s",
+					pool->ep->dev_name, pool->ep->portnum, strerror(err));
 				return PSM2_INTERNAL_ERR;
 			}
 			//_HFI_VDBG("posted SRQ, buffer %u\n", index);
 		} else
 #endif
 		{
-			if_pf (ibv_post_recv(pool->qp, &wr, &bad_wr)) {
-				_HFI_ERROR("failed to post RQ on %s port %u: %s", pool->ep->dev_name, pool->ep->portnum, strerror(errno));
+			err = ibv_post_recv(pool->qp, &wr, &bad_wr);
+			if_pf (err) {
+				_HFI_ERROR("failed to post RQ on %s port %u: %s",
+					pool->ep->dev_name, pool->ep->portnum, strerror(err));
 				return PSM2_INTERNAL_ERR;
 			}
+#ifdef PSM_RC_RECONNECT
+			pool->posted++;
+#endif
 			//_HFI_VDBG("posted RQ, buffer %u\n", index);
 		}
 #endif /* VERBS_RECV_QP_COALLESCE > 1 */
@@ -1443,16 +1643,23 @@ psm2_error_t psm3_ep_verbs_post_recv(
 		if_pf (++pool->next_recv_wqe >= VERBS_RECV_QP_COALLESCE) {
 			// we have a batch ready to post
 			if (pool->for_srq) {
-				if_pf (ibv_post_srq_recv(pool->srq, pool->recv_wr_list, &bad_wr)) {
-					_HFI_ERROR("failed to post SRQ on %s port %u: %s", pool->ep->dev_name, pool->ep->portnum, strerror(errno));
+				err = ibv_post_srq_recv(pool->srq, pool->recv_wr_list, &bad_wr);
+				if_pf (err) {
+					_HFI_ERROR("failed to post SRQ on %s port %u: %s",
+						pool->ep->dev_name, pool->ep->portnum, strerror(err));
 					return PSM2_INTERNAL_ERR;
 				}
 				//_HFI_VDBG("posted SRQ\n");
 			} else {
-				if_pf (ibv_post_recv(pool->qp, pool->recv_wr_list, &bad_wr)) {
-					_HFI_ERROR("failed to post RQ on %s on port %u: %s", pool->ep->dev_name, pool->ep->portnum, strerror(errno));
+				err = ibv_post_recv(pool->qp, pool->recv_wr_list, &bad_wr);
+				if_pf (err) {
+					_HFI_ERROR("failed to post RQ on %s on port %u: %s",
+						pool->ep->dev_name, pool->ep->portnum, strerror(err));
 					return PSM2_INTERNAL_ERR;
 				}
+#ifdef PSM_RC_RECONNECT
+				pool->posted += pool->next_recv_wqe;
+#endif
 				//_HFI_VDBG("posted RQ\n");
 			}
 			pool->next_recv_wqe = 0;
@@ -1466,16 +1673,23 @@ psm2_error_t psm3_ep_verbs_post_recv(
 		wr.num_sge = 0;	// size of sg_list
 
 		if (pool->for_srq) {
-			if_pf (ibv_post_srq_recv(pool->srq, &wr, &bad_wr)) {
-				_HFI_ERROR("failed to post SRQ on %s port %u: %s", pool->ep->dev_name, pool->ep->portnum, strerror(errno));
+			err = ibv_post_srq_recv(pool->srq, &wr, &bad_wr);
+			if_pf (err) {
+				_HFI_ERROR("failed to post SRQ on %s port %u: %s",
+					pool->ep->dev_name, pool->ep->portnum, strerror(err));
 				return PSM2_INTERNAL_ERR;
 			}
 			//_HFI_VDBG("posted SRQ\n");
 		} else {
-			if_pf (ibv_post_recv(pool->qp, &wr, &bad_wr)) {
-				_HFI_ERROR("failed to post RQ on %s on port %u: %s", pool->ep->dev_name, pool->ep->portnum, strerror(errno));
+			err = ibv_post_recv(pool->qp, &wr, &bad_wr);
+			if_pf (err) {
+				_HFI_ERROR("failed to post RQ on %s on port %u: %s",
+					pool->ep->dev_name, pool->ep->portnum, strerror(err));
 				return PSM2_INTERNAL_ERR;
 			}
+#ifdef PSM_RC_RECONNECT
+			pool->posted++;
+#endif
 			//_HFI_VDBG("posted RQ\n");
 		}
 #endif /* VERBS_RECV_QP_COALLESCE > 1 */
@@ -1491,6 +1705,9 @@ psm2_error_t psm3_ep_verbs_prepost_recv(
 
 	if (! pool->recv_total)
 		return PSM2_INTERNAL_ERR;
+#ifdef PSM_RC_RECONNECT
+	psmi_assert(! pool->draining);
+#endif
 	// prepare RQ
 	for (i=0; i< pool->recv_total; i++) {
 #ifdef USE_RC
@@ -1515,7 +1732,12 @@ psm2_error_t psm3_ep_verbs_prepost_recv(
 }
 
 // only used when PSM3_RDMA enabled
-psm2_error_t psm3_verbs_post_rdma_write_immed(psm2_ep_t ep, struct ibv_qp *qp,
+psm2_error_t psm3_verbs_post_rdma_write_immed(psm2_ep_t ep,
+#ifdef PSM_RC_RECONNECT
+				struct psm3_verbs_rc_qp *rc_qp,
+#else
+				struct ibv_qp *qp,
+#endif
 				void *loc_buf, struct psm3_verbs_mr *loc_mr,
 				uint64_t rem_buf, uint32_t rkey,
 				size_t len, uint32_t immed, uint64_t wr_id)
@@ -1524,6 +1746,10 @@ psm2_error_t psm3_verbs_post_rdma_write_immed(psm2_ep_t ep, struct ibv_qp *qp,
 	struct ibv_send_wr *bad_wr;
 	struct ibv_sge list;
 	psm2_error_t ret = PSM2_OK;
+#ifdef PSM_RC_RECONNECT
+	struct ibv_qp *qp = rc_qp->qp;
+#endif
+	int err;
 
 	//printf("XXXX %s 0x%p %ld 0x%x\n", __FUNCTION__, loc_buf, len, loc_mr->lkey);
 	psmi_assert(IPS_PROTOEXP_FLAG_USER_RC_QP(ep->rdmamode));
@@ -1532,18 +1758,21 @@ psm2_error_t psm3_verbs_post_rdma_write_immed(psm2_ep_t ep, struct ibv_qp *qp,
 		   ((uintptr_t)loc_buf - (uintptr_t)loc_mr->addr);
 	list.length = len;
 	list.lkey = loc_mr->lkey;
+	wr.next = NULL; // just post 1
+	psmi_assert(! VERBS_SQ_WR_OP(wr_id));
+	wr.wr_id = wr_id | VERBS_SQ_WR_ID_RDMA_WRITE;
 #ifdef PSM_FI
 	if_pf(PSM3_FAULTINJ_ENABLED_EP(ep)) {
 		PSM3_FAULTINJ_STATIC_DECL(fi_rc_rdma_lkey, "rc_rdma_lkey",
 				"post RC RDMA Write WQE with bad lkey",
-				0, IPS_FAULTINJ_RC_RDMA_LKEY);
-		if_pf(PSM3_FAULTINJ_IS_FAULT(fi_rc_rdma_lkey, ep, " QP %u", qp->qp_num))
-			list.lkey = 55;
+				ep->allow_reconnect?1:0,
+				IPS_FAULTINJ_RC_RDMA_LKEY);
+		if_pf(PSM3_FAULTINJ_IS_FAULT(fi_rc_rdma_lkey, ep,
+				" RC QP %u wr_id %p len %u", qp->qp_num,
+				(void*)wr.wr_id, list.length))
+			list.lkey = IPS_BAD_LKEY;
 	}
 #endif // PSM_FI
-	wr.next = NULL; // just post 1
-	psmi_assert(! (wr_id & VERBS_SQ_WR_ID_MASK));
-	wr.wr_id = wr_id | VERBS_SQ_WR_ID_RDMA_WRITE;
 	wr.sg_list = &list;
 	wr.num_sge = 1; // size of sg_list
 	wr.opcode = IBV_WR_RDMA_WRITE_WITH_IMM;
@@ -1554,9 +1783,14 @@ psm2_error_t psm3_verbs_post_rdma_write_immed(psm2_ep_t ep, struct ibv_qp *qp,
 	if_pf(PSM3_FAULTINJ_ENABLED_EP(ep)) {
 		PSM3_FAULTINJ_STATIC_DECL(fi_rc_rdma_rkey, "rc_rdma_rkey",
 				"post RC RDMA Write WQE with bad rkey",
-				0, IPS_FAULTINJ_RC_RDMA_RKEY);
-		if_pf(PSM3_FAULTINJ_IS_FAULT(fi_rc_rdma_rkey, ep, " QP %u", qp->qp_num))
-			wr.wr.rdma.rkey = 55;
+				ep->allow_reconnect?1:0,
+				IPS_FAULTINJ_RC_RDMA_RKEY);
+		// no use injecting rkey faults if already injected bad lkey
+		if_pf(list.lkey != IPS_BAD_LKEY
+		    && PSM3_FAULTINJ_IS_FAULT(fi_rc_rdma_rkey, ep,
+			" RC QP %u wr_id %p len %u", qp->qp_num,
+			(void*)wr.wr_id, list.length))
+			wr.wr.rdma.rkey = IPS_BAD_RKEY;
 	}
 #endif // PSM_FI
 	// RDMA Writes will tend to be larger and we want the completion
@@ -1565,16 +1799,20 @@ psm2_error_t psm3_verbs_post_rdma_write_immed(psm2_ep_t ep, struct ibv_qp *qp,
 	// no need for wr.send_flags |= IBV_SEND_SOLICITED
 	// these will be bigger sends, no need for inline
 	ep->verbs_ep.send_rdma_outstanding++;
-	if_pf (ibv_post_send(qp, &wr, &bad_wr)) {
-		if (errno != EBUSY && errno != EAGAIN && errno != ENOMEM)
+	err = ibv_post_send(qp, &wr, &bad_wr);
+	if_pf (err) {
+		if (err != EBUSY && err != EAGAIN && err != ENOMEM)
 			_HFI_ERROR("failed to post RC SQ on %s port %u: %s",
-					ep->dev_name, ep->portnum, strerror(errno));
+				ep->dev_name, ep->portnum, strerror(err));
 		// caller will try again later when next send buffer freed
 		// or timer expires
 		ret = PSM2_TIMEOUT;
 		ep->verbs_ep.send_rdma_outstanding--;
 		goto done;
 	}
+#ifdef PSM_RC_RECONNECT
+	rc_qp->send_posted++;
+#endif
 	_HFI_VDBG("posted RDMA Write: from 0x%"PRIx64" to 0x%"PRIx64" len %u rkey 0x%x\n",
 		list.addr,  wr.wr.rdma.remote_addr, list.length,  wr.wr.rdma.rkey /* TBD rem QPN */ );
 #if 0
@@ -1617,7 +1855,7 @@ psm2_error_t psm3_verbs_post_rv_rdma_write_immed(psm2_ep_t ep,
 				"post RV RDMA Write with bad rkey",
 				1, IPS_FAULTINJ_RV_RDMA_RKEY);
 		if_pf(PSM3_FAULTINJ_IS_FAULT(fi_rv_rdma_rkey, ep, ""))
-			rkey = 55;
+			rkey = IPS_BAD_RKEY;
 	}
 #endif // PSM_FI
 	if (psm3_rv_post_rdma_write_immed(ep->rv, conn,
@@ -1627,7 +1865,7 @@ psm2_error_t psm3_verbs_post_rv_rdma_write_immed(psm2_ep_t ep,
 		switch (errno) {
 		case EIO:
 			// lost or failed connection
-			ret = PSM2_EPID_RV_CONNECT_ERROR;
+			ret = PSM2_EPID_RC_CONNECT_ERROR;
 			break;
 		case EAGAIN:
 			// lost connection and are recoverying it
@@ -1659,7 +1897,178 @@ done:
 }
 #endif // RNDV_MOD
 
+#ifdef USE_RC
 extern int ips_protoexp_rdma_write_completion( uint64_t wr_id);
+#ifdef PSM_RC_RECONNECT
+struct psm3_verbs_rc_qp *ips_protoexp_rdma_write_completion_rc_qp(psm2_ep_t ep,
+						uint64_t wr_id);
+int ips_protoexp_rdma_write_completion_error(psm2_ep_t ep, uint64_t wr_id,
+						enum ibv_wc_status wc_status);
+#endif /* PSM_RC_RECONNECT */
+#endif /* USE_RC */
+
+// process a send WC with an error completion which was returned by ibv_pollcq
+// When user RC QP reconnection is allowed, failures can be recovered
+// from by replacing the RC QP and reestablishing the RC connection.
+// When not allowed or for errors on UD QPs, the error is unrecoverable.
+// For RDMA write completions, the wr_id is tidsendc and tidsendc tracks the
+// rc_qp.  This assumes a given tidsendc has exactly 1 RDMA Write posted.
+static void psm3_verbs_send_wc_error(psm2_ep_t ep, struct ibv_wc *wc)
+{
+#ifdef PSM_RC_RECONNECT
+	struct psm3_verbs_rc_qp *rc_qp;
+	ips_epaddr_t *ipsaddr;
+#endif
+	// this function only called for WCs with error
+	psmi_assert(wc->status);
+
+	// only the following fields in wc are valid:
+	//	wr_id, status, vendor_err, qp_num
+
+	// on UD QPs or when reconnect not allowed WC errors are unrecoverable
+#ifdef USE_RC
+	if (! ep->allow_reconnect || psm3_verbs_is_ud_qp_num(ep, wc->qp_num)) {
+#else
+	{
+#endif
+		// only report the 1st error (non-flush), it will
+		// be followed by a burst of FLUSH_ERR for other queued WQEs
+		if (wc->status != IBV_WC_WR_FLUSH_ERR)
+			_HFI_ERROR("failed %s on %s port %u epid %s status: '%s' (%d) QP %u\n",
+				VERBS_SQ_WR_OP_STR(wc->wr_id),
+				ep->dev_name, ep->portnum,
+				psm3_epid_fmt_internal(ep->epid, 0),
+				ibv_wc_status_str(wc->status),
+				(int)wc->status, wc->qp_num);
+		// QP is now in QPS_ERR and can't send/recv packets
+		// Upcoming async event will cause fatal error
+#ifdef PSM_RC_RECONNECT
+		psmi_assert(VERBS_SQ_WR_OP(wc->wr_id) != VERBS_SQ_WR_ID_DRAIN_MARKER);
+#endif
+		if (VERBS_SQ_WR_OP(wc->wr_id) == VERBS_SQ_WR_ID_SEND) {
+			psm3_ep_verbs_free_sbuf(
+#ifndef USE_RC
+				&ep->verbs_ep.send_allocator,
+#endif
+				(sbuf_t)VERBS_SQ_WR_PTR(wc->wr_id),
+				VERBS_SEND_CQ_COALLESCE
+#ifdef PSM_RC_RECONNECT
+				, 0
+#endif
+#ifdef PSM_DEBUG
+				, "UD WC err", "UD WC err mid"
+#endif
+				);
+		} else {
+#ifdef USE_RC
+			psmi_assert(VERBS_SQ_WR_OP(wc->wr_id) == VERBS_SQ_WR_ID_RDMA_WRITE);
+			// no need to dec rdma counts and call
+			// ips_protoexp_rdma_write_completion_error since
+			// async event will cause fatal error
+			// Note: we could also have some successful sbuf sends
+			// which didn't ask for a completion.
+			psmi_assert(! psm3_verbs_is_ud_qp_num(ep, wc->qp_num));
+#else
+			psmi_assert(0);	// should not happen
+#endif
+		}
+		return;
+	}
+#if defined(USE_RC) && ! defined(PSM_RC_RECONNECT)
+	psmi_assert(0); // should not get here, allow_reconnect always false
+	return;
+#endif
+#ifdef PSM_RC_RECONNECT
+	// For user space RC QP, the QP is now in QPS_ERR and we
+	// need to replace and reconnect it.
+	// we will ultimately get an ack timeout for affected packets & retry
+	psmi_assert(! psm3_verbs_is_ud_qp_num(ep, wc->qp_num));
+	if (VERBS_SQ_WR_OP(wc->wr_id) == VERBS_SQ_WR_ID_SEND) {
+		sbuf_t sbuf = (sbuf_t)VERBS_SQ_WR_PTR(wc->wr_id);
+		rc_qp = sbuf->rc_qp;
+		psm3_ep_verbs_free_sbuf(sbuf, VERBS_SEND_CQ_COALLESCE, 0
+#ifdef PSM_DEBUG
+			, "RC WC Err", "RC WC Err mid"
+#endif
+			);
+	} else if (VERBS_SQ_WR_OP(wc->wr_id) == VERBS_SQ_WR_ID_RDMA_WRITE) {
+		ep->verbs_ep.send_rdma_outstanding--;
+		rc_qp = ips_protoexp_rdma_write_completion_rc_qp(ep, 
+				VERBS_SQ_WR_PTR(wc->wr_id));
+		if (ips_protoexp_rdma_write_completion_error(ep,
+				VERBS_SQ_WR_PTR(wc->wr_id), wc->status))
+			goto rdma_fatal;
+	} else {
+		psmi_assert(VERBS_SQ_WR_OP(wc->wr_id) == VERBS_SQ_WR_ID_DRAIN_MARKER);
+		rc_qp = (struct psm3_verbs_rc_qp *)VERBS_SQ_WR_PTR(wc->wr_id);
+		psmi_assert(rc_qp->draining);
+		psmi_assert(rc_qp->send_posted);
+		psm3_ep_verbs_send_drained(&rc_qp->send_allocator);
+		psm3_verbs_dec_posted(rc_qp);	// for marker itself
+		psmi_assert(! rc_qp->send_posted);	// SQ now empty
+	}
+	psmi_assert(rc_qp);
+	psmi_assert(rc_qp->qp->qp_num == wc->qp_num);
+	ipsaddr = rc_qp->ipsaddr;
+	psmi_assert(ipsaddr);
+	psmi_assert(ipsaddr == (ips_epaddr_t *)rc_qp->qp->qp_context);
+
+	// treat a FLUSH or other error similar (except for logging)
+	// Depending on order of polling, may detect the QP issue via an
+	// SQ FLUSH CQE prior to detecting the RQ error CQE, in which case
+	// we want to still start the reconnection protocol ASAP (via
+	// psm3_ips_proto_connection_error)
+
+	// log 1st observed issue on QP and all non-flush error CQEs.
+	// We skip logging of other flush CQEs since there can be many.
+	if ((_HFI_CONNDBG_ON || _HFI_DBG_ON)
+	    && (wc->status != IBV_WC_WR_FLUSH_ERR || ! rc_qp->draining)) {
+		_HFI_DBG_ALWAYS("[ipsaddr %p] failed %s wr_id %p on %s port %u epid %s RC QP %u rcnt %u posted %u + %u status: '%s' (%d)\n",
+			ipsaddr, VERBS_SQ_WR_OP_STR(wc->wr_id),
+			(void *)(wc->wr_id),
+			ep->dev_name, ep->portnum,
+			psm3_epid_fmt_internal(ep->epid, 0), wc->qp_num,
+			rc_qp->reconnect_count,
+			rc_qp->send_posted, rc_qp->recv_pool.posted,
+			ibv_wc_status_str(wc->status), (int)wc->status);
+	}
+	if (wc->status != IBV_WC_WR_FLUSH_ERR) {
+		if (VERBS_SQ_WR_OP(wc->wr_id) == VERBS_SQ_WR_ID_SEND)
+			ipsaddr->epaddr.proto->epaddr_stats.send_wc_error++;
+		else if (VERBS_SQ_WR_OP(wc->wr_id) == VERBS_SQ_WR_ID_RDMA_WRITE)
+			ipsaddr->epaddr.proto->epaddr_stats.rdma_wc_error++;
+		else
+			ipsaddr->epaddr.proto->epaddr_stats.drain_wc_error++;
+	}
+
+	// only call connect_error for 1st error on QP, if already
+	// draining due to a separate send error, recv error or
+	// reconnect packet don't call connection_error again.
+	// psm3_ips_proto_connection_error tests ipsaddr->allow_reconnect
+	// and reports fatal error if reconnect not allowed
+	if (! ipsaddr->allow_reconnect || ! rc_qp->draining) {
+		// for return != no progress, rc_qp may have been freed
+		// fatal error in connection_error prior to other error returns
+		if (PSM2_OK_NO_PROGRESS == psm3_ips_proto_connection_error(
+				ipsaddr, VERBS_SQ_WR_OP_STR(wc->wr_id),
+				ibv_wc_status_str(wc->status), wc->status, 0))
+			psm3_verbs_free_rc_qp_if_empty("SQ WC Err", rc_qp);
+	} else
+		psm3_verbs_free_rc_qp_if_empty("SQ WC Err", rc_qp);
+	return;
+
+rdma_fatal:
+	// RDMA WC unrecoverable
+	// we either have a bug which yielded a NULL wr_id
+	// or we are not enabling reconnection and RDMA retry
+	psm3_handle_error(PSMI_EP_NORETURN, PSM2_INTERNAL_ERR,
+		"failed RDMA Write '%s' (%d) on %s port %u epid %s\n",
+		ibv_wc_status_str(wc->status), (int)wc->status,
+		ep->dev_name, ep->portnum,
+		psm3_epid_fmt_internal(ep->epid, 0));
+	return;
+#endif /* PSM_RC_RECONNECT */
+}
 
 // we structure this similar to psm3_gen1_dma_completion_update
 // this is non-blocking.  We reap what's available and then return
@@ -1669,7 +2078,7 @@ extern int ips_protoexp_rdma_write_completion( uint64_t wr_id);
 psm2_error_t
 psm3_verbs_completion_update(psm2_ep_t ep, int drain)
 {
-	#define CQE_BATCH 10	// reap a few at a time, hopefully faster this way
+	#define CQE_BATCH 32	// reap a few at a time, hopefully faster this way
 	//#define CQE_BATCH 8 or 18	// reap a few at a time, hopefully faster this way
 							// 18*COALLESE > default reap threshold so we
 							// should get away with one poll_q
@@ -1691,58 +2100,80 @@ psm3_verbs_completion_update(psm2_ep_t ep, int drain)
 	// hit the coalsce threshold.
 	if_pt (!drain && (! ep->verbs_ep.send_rdma_outstanding
 				 || IPS_PROTOEXP_FLAG_KERNEL_QP(ep->rdmamode))
-		   && ep->verbs_ep.send_pool.send_num_free > ep->verbs_ep.send_pool.send_total - ep->verbs_ep.send_reap_thresh  )
+		   && ep->verbs_ep.send_pool.send_num_free > ep->verbs_ep.send_pool.send_total - ep->verbs_ep.send_reap_thresh
+#ifdef PSM_RC_RECONNECT
+		   && ! ep->verbs_ep.send_drain_outstanding
+#endif
+		   )
 		return PSM2_OK;	// not ready to reap, return quickly
+#ifdef PSM_DEBUG
+	// detect recursive calls to completion_update()
+	psmi_assert(! ep->verbs_ep.in_completion_update);
+	ep->verbs_ep.in_completion_update = 1;
+#endif
 
 	//if ( 0 != (ne = ibv_poll_cq(ep->verbs_ep.send_cq, CQE_BATCH, wc)))
 	while ( 0 != (ne = ibv_poll_cq(ep->verbs_ep.send_cq, CQE_BATCH, wc)))
 	{
 		unsigned i;
 		for (i=0; i<ne; i++) {
+			_HFI_VDBG("poll_cq send WC: QP %u wr_id: %p (%s) status: '%s' (%d)\n",
+				wc[i].qp_num, (void*)wc[i].wr_id,
+				VERBS_SQ_WR_OP_STR(wc[i].wr_id),
+				ibv_wc_status_str(wc[i].status), wc[i].status);
 			psmi_assert_always(wc[i].wr_id);
 			if_pf (wc[i].status) {
-				if (wc[i].status != IBV_WC_WR_FLUSH_ERR)
-					_HFI_ERROR("failed %s on %s port %u status: '%s' (%d) QP %u\n",
-						VERBS_SQ_WR_OP_STR(wc[i].wr_id),
-						ep->dev_name, ep->portnum,
-						ibv_wc_status_str(wc[i].status), (int)wc[i].status,
-						wc[i].qp_num);
-				// For user space RC QP, the QP is now in QPS_ERROR and we
-				// need to reset (or replace) and reconnect it.
-				// Upcoming async event will cause us to stop.
-				// User's wanting reliability for RDMA should use RV.
-				if (VERBS_SQ_WR_OP(wc[i].wr_id) == VERBS_SQ_WR_ID_SEND)
-					psm3_ep_verbs_free_sbuf(
-#ifndef USE_RC
-								&ep->verbs_ep.send_allocator,
-#endif
-								(sbuf_t)(wc[i].wr_id & ~VERBS_SQ_WR_ID_MASK),
-								VERBS_SEND_CQ_COALLESCE);
+				psm3_verbs_send_wc_error(ep, &wc[i]);
 				continue;
 			}
+#ifdef PSM_RC_RECONNECT
+			psmi_assert(VERBS_SQ_WR_OP(wc[i].wr_id) != VERBS_SQ_WR_ID_DRAIN_MARKER);
+#endif
 			switch (wc[i].opcode) {
 			case IBV_WC_SEND:
 				// UD sends just mean it got onto the wire and can reuse our buf
 				// no guarantees it made it to the remote side
 				// buffer address is in wc.wr_id
+				psmi_assert(VERBS_SQ_WR_OP(wc[i].wr_id) == VERBS_SQ_WR_ID_SEND);
 				_HFI_VDBG("send done (%u bytes) sbuf index %lu\n", wc[i].byte_len,
-					send_buffer_index(&ep->verbs_ep.send_pool, sbuf_to_buffer((sbuf_t)(wc[i].wr_id))));
+					send_buffer_index(&ep->verbs_ep.send_pool, sbuf_to_buffer((sbuf_t)VERBS_SQ_WR_PTR(wc[i].wr_id))));
 				psm3_ep_verbs_free_sbuf(
 #ifndef USE_RC
 							&ep->verbs_ep.send_allocator,
 #endif
-							(sbuf_t)(wc[i].wr_id & ~VERBS_SQ_WR_ID_MASK),
-							VERBS_SEND_CQ_COALLESCE);
+							(sbuf_t)VERBS_SQ_WR_PTR(wc[i].wr_id),
+							VERBS_SEND_CQ_COALLESCE
+#ifdef PSM_RC_RECONNECT
+							, 1
+#endif
+#ifdef PSM_DEBUG
+							, psm3_verbs_is_ud_qp_num(ep, wc->qp_num)?
+								"UD WC":"RC WC"
+							, psm3_verbs_is_ud_qp_num(ep, wc->qp_num)?
+								"UD WC mid":"RC WC mid"
+#endif
+							);
 				break;
 #ifdef USE_RC
 			case IBV_WC_RDMA_WRITE:
+				psmi_assert(VERBS_SQ_WR_OP(wc[i].wr_id) == VERBS_SQ_WR_ID_RDMA_WRITE);
 				ep->verbs_ep.send_rdma_outstanding--;
 				ips_protoexp_rdma_write_completion(
-							 wc[i].wr_id & ~VERBS_SQ_WR_ID_MASK);
+						 VERBS_SQ_WR_PTR(wc[i].wr_id));
 				break;
-#endif
+#ifdef USE_RDMA_READ
+			case IBV_WC_RDMA_READ:
+			{
+				struct ips_epaddr *ipsaddr = (struct ips_epaddr *)wc[i].wr_id;
+
+				ipsaddr->verbs.remote_seq_outstanding = 0;
+				_HFI_VDBG("Got remote_recv_psn=%d\n", ipsaddr->verbs.remote_recv_psn);
+				break;
+			}
+#endif // USE_RDMA_READ
+#endif // USE_RC
 			default:
-				_HFI_ERROR("unexpected send completion on %s port %u opcode %d QP %u\n",
+				_HFI_ERROR("unexpected send completion on %s port %u opcode %u QP %u\n",
 							ep->dev_name, ep->portnum,
 							wc[i].opcode, wc[i].qp_num);
 				break;
@@ -1756,17 +2187,23 @@ psm3_verbs_completion_update(psm2_ep_t ep, int drain)
 					// next pass reap any that appear while we were processing
 #endif
 	}
+#ifdef PSM_DEBUG
+	// detect recursive calls to completion_update()
+	ep->verbs_ep.in_completion_update = 0;
+#endif
 	return PSM2_OK;
 }
 
 int verbs_get_port_index2pkey(psm2_ep_t ep, int index)
 {
 	__be16 pkey;
+	int err;
 
 	psmi_assert_always(ep->verbs_ep.context);
-	if (0 != ibv_query_pkey(ep->verbs_ep.context, ep->portnum, index, &pkey)) {
-		_HFI_ERROR( "Can't query pkey index %d on %s port %u: %s\n", index,
-				ep->dev_name, ep->portnum, strerror(errno));
+	err = ibv_query_pkey(ep->verbs_ep.context, ep->portnum, index, &pkey);
+	if (err) {
+		_HFI_ERROR("Can't query pkey index %d on %s port %u: %s\n",
+			index, ep->dev_name, ep->portnum, strerror(err));
 		return -1;
 	}
 	_HFI_PRDBG("got pkey 0x%x on %s port %u\n", __be16_to_cpu(pkey), ep->dev_name, ep->portnum);
@@ -1783,7 +2220,7 @@ int verbs_get_port_index2pkey(psm2_ep_t ep, int index)
 	}
 
 EP_STAT_FUNC(rv_q_depth, verbs_ep.rv_q_depth)
-EP_STAT_FUNC(rv_reconnect_timeout, verbs_ep.rv_reconnect_timeout)
+EP_STAT_FUNC(rv_reconnect_timeout, reconnect_timeout)
 EP_STAT_FUNC(rv_hb_interval, verbs_ep.rv_hb_interval)
 #undef EP_STAT_FUNC
 
@@ -2199,15 +2636,15 @@ static psm2_error_t open_rv(psm2_ep_t ep, psm2_uuid_t const job_key)
 	// we always fill in everything we might need in loc_info
 	// in some modes, some of the fields are not used by RV
 	loc_info.mr_cache_size = ep->rv_mr_cache_size;
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 	/* gpu_cache_size ignored unless RV_RDMA_MODE_GPU */
 	loc_info.gpu_cache_size = ep->rv_gpu_cache_size;
 #endif
 	loc_info.rdma_mode = IPS_PROTOEXP_FLAG_KERNEL_QP(ep->rdmamode)?
 					RV_RDMA_MODE_KERNEL: RV_RDMA_MODE_USER;
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
-	if (PSMI_IS_GPU_ENABLED) {
-		// when Cuda is enabled we will have larger window_sz and
+#ifdef PSM_HAVE_GPU
+	if (PSM3_GPU_IS_ENABLED) {
+		// when GPU is enabled we will have larger window_sz and
 		// need to upsize the caches we will use for priority MRs
 		if (ep->rdmamode & IPS_PROTOEXP_FLAG_ENABLED) {
 			// priority window_sz reg_mr for CPU
@@ -2216,9 +2653,9 @@ static psm2_error_t open_rv(psm2_ep_t ep, psm2_uuid_t const job_key)
  		if (psmi_parse_gpudirect()) {
 			// When GPU Direct is enabled we need a GPU Cache
 			loc_info.rdma_mode |= RV_RDMA_MODE_GPU;
-#ifdef PSM_ONEAPI
-			psm3_oneapi_ze_can_use_zemem();
-#endif
+
+			PSM3_GPU_USING_RV_FOR_MRS();
+
 			if ((ep->rdmamode & IPS_PROTOEXP_FLAG_ENABLED)
 				&& (psmi_parse_gpudirect_rdma_send_limit(1)
 				|| psmi_parse_gpudirect_rdma_recv_limit(1))) {
@@ -2260,8 +2697,9 @@ static psm2_error_t open_rv(psm2_ep_t ep, psm2_uuid_t const job_key)
 		loc_info.cq_entries = ep->hfi_num_send_rdma + HFI_TF_NFLOWS + 32;
 	}
 	loc_info.q_depth = ep->verbs_ep.rv_q_depth;
-	loc_info.reconnect_timeout = ep->verbs_ep.rv_reconnect_timeout;
+	loc_info.reconnect_timeout = ep->reconnect_timeout;
 	loc_info.hb_interval = ep->verbs_ep.rv_hb_interval;
+	loc_info.fr_page_list_len = ep->verbs_ep.rv_fr_page_list_len;
 
 	ep->rv =psm3_rv_open(ep->dev_name, &loc_info);
 	if (! ep->rv) {
@@ -2269,7 +2707,7 @@ static psm2_error_t open_rv(psm2_ep_t ep, psm2_uuid_t const job_key)
 	}
 	// parallel hal_gen1/gen1_hal_inline_i.h handling HFI1_CAP_GPUDIRECT_OT
 #ifndef RV_CAP_GPU_DIRECT
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 #error "Inconsistent build.  RV_CAP_GPU_DIRECT must be defined for GPU builds. Must use GPU enabled rv headers"
 #else
 // lifted from rv_user_ioctls.h
@@ -2283,19 +2721,17 @@ static psm2_error_t open_rv(psm2_ep_t ep, psm2_uuid_t const job_key)
 		psmi_hal_add_cap(PSM_HAL_CAP_GPUDIRECT_SDMA);
 		psmi_hal_add_cap(PSM_HAL_CAP_GPUDIRECT_RDMA);
 	}
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
-	if (loc_info.capability & RV_CAP_NVIDIA_GPU)
-		psmi_hal_add_cap(PSM_HAL_CAP_NVIDIA_GPU);
-	if (loc_info.capability & RV_CAP_INTEL_GPU)
-		psmi_hal_add_cap(PSM_HAL_CAP_INTEL_GPU);
+#ifdef PSM_HAVE_GPU
+	PSM3_GPU_RV_SET_HAL_CAP(loc_info.capability);
 #endif
 	ep->verbs_ep.rv_index = loc_info.rv_index;
 	ep->rv_mr_cache_size = loc_info.mr_cache_size;
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 	ep->rv_gpu_cache_size = loc_info.gpu_cache_size;
 #endif
 	ep->verbs_ep.rv_q_depth = loc_info.q_depth;
-	ep->verbs_ep.rv_reconnect_timeout = loc_info.reconnect_timeout;
+	if (IPS_PROTOEXP_FLAG_KERNEL_QP(ep->rdmamode))
+		ep->reconnect_timeout = loc_info.reconnect_timeout;
 	/* Default for mlx5: 256 MB */
 #define MAX_FMR_SIZE_DEFAULT (64 * 1024 * 4096)
 	ep->verbs_ep.max_fmr_size = loc_info.max_fmr_size;
@@ -2330,6 +2766,7 @@ static psm2_error_t verbs_open_dev(psm2_ep_t ep, int unit, int port, int addr_in
 	int err = PSM2_OK;
 	const char *unitpath = psm3_sysfs_unit_path(unit);
 	int flags;
+	int ret;
 
 	// callers tend not to set port, 0 means any
 	if (PSM3_NIC_PORT_ANY == port)
@@ -2380,10 +2817,10 @@ static psm2_error_t verbs_open_dev(psm2_ep_t ep, int unit, int port, int addr_in
 	_HFI_PRDBG("Using unit_id[%d] %s.\n", ep->unit_id, ep->dev_name);
 
 	ib_dev = dev_list[i];	// device list order may differ from unit order
+	errno = 0;
 	ep->verbs_ep.context = ibv_open_device(ib_dev);
 	if (! ep->verbs_ep.context) {
-		_HFI_ERROR( "Unable to open %s: %s\n", ep->dev_name,
-						strerror(errno));
+		_HFI_ERROR( "Unable to open %s: %s\n", ep->dev_name, strerror(errno));
 		err = PSM2_INTERNAL_ERR;
 		goto fail;
 	} else {
@@ -2398,9 +2835,10 @@ static psm2_error_t verbs_open_dev(psm2_ep_t ep, int unit, int port, int addr_in
 		goto fail;
 	}
 
-	if (ibv_query_port(ep->verbs_ep.context, ep->portnum, &ep->verbs_ep.port_attr)) {
-		_HFI_ERROR( "Unable to query port %u of %s: %s\n", ep->portnum,
-						ep->dev_name, strerror(errno));
+	ret = ibv_query_port(ep->verbs_ep.context, ep->portnum, &ep->verbs_ep.port_attr);
+	if (ret) {
+		_HFI_ERROR("Unable to query port %u of %s: %s\n",
+			ep->portnum, ep->dev_name, strerror(ret));
 		err = PSM2_INTERNAL_ERR;
 		goto fail;
 	} else {
@@ -2444,6 +2882,39 @@ static psm2_error_t verbs_open_dev(psm2_ep_t ep, int unit, int port, int addr_in
 				psm3_gid128_fmt(ep->gid, 2));
 	}
 
+#if defined(USE_RDMA_READ)
+#if defined(USE_RC)
+	{
+		union psmi_envvar_val envvar_val;
+		struct ibv_device_attr dev_attr;
+		// get RDMA capabilities of device
+		ret = ibv_query_device(ep->verbs_ep.context, &dev_attr);
+		if (ret) {
+			_HFI_ERROR("Unable to query device %s: %s\n",
+				ep->dev_name, strerror(ret));
+			err = PSM2_INTERNAL_ERR;
+			goto fail;
+		}
+		ep->verbs_ep.max_qp_rd_atom = dev_attr.max_qp_rd_atom;
+		ep->verbs_ep.max_qp_init_rd_atom = dev_attr.max_qp_init_rd_atom;
+		_HFI_PRDBG("got device attr: rd_atom %u init_rd_atom %u\n",
+						dev_attr.max_qp_rd_atom, dev_attr.max_qp_init_rd_atom);
+		// TBD could have an env variable to reduce requested values
+
+		if (ep->verbs_ep.max_qp_rd_atom && ep->verbs_ep.max_qp_init_rd_atom &&
+			IPS_PROTOEXP_FLAG_USER_RC_QP(ep->rdmamode)) {
+			psm3_getenv("PSM3_USE_RDMA_READ",
+				"Allow PSM3 to use RDMA_READ if available (used by flow control) [1=yes, 0=no]",
+				PSMI_ENVVAR_LEVEL_HIDDEN, PSMI_ENVVAR_TYPE_UINT,
+				(union psmi_envvar_val)1, &envvar_val);
+			if (envvar_val.e_uint == 0) {
+				ep->verbs_ep.max_qp_rd_atom = 0;
+				ep->verbs_ep.max_qp_init_rd_atom = 0;
+			}
+		}
+	}
+#endif // USE_RC
+#endif // USE_RDMA_READ
 #ifdef RNDV_MOD
 	if (IPS_PROTOEXP_FLAG_KERNEL_QP(ep->rdmamode)
 		|| ep->mr_cache_mode == MR_CACHE_MODE_KERNEL ) {
@@ -2552,14 +3023,14 @@ static struct ibv_qp* ud_qp_create(psm2_ep_t ep)
 
 	attr.qp_type = IBV_QPT_UD;
 
+	errno = 0;
 	qp = ibv_create_qp(ep->verbs_ep.pd, &attr);
 	if (qp == NULL) {
-		_HFI_ERROR( "Unable to create UD QP on %s: %s\n",
-					ep->dev_name, strerror(errno));
+		_HFI_ERROR("Unable to create UD QP on %s: %s\n", ep->dev_name, strerror(errno));
 		if (errno == ENOMEM) {
-			_HFI_ERROR( "Requested QP size might be too big. Try reducing TX depth and/or inline size.\n");
-			_HFI_ERROR( "Requested TX depth was %u and RX depth was %u .\n",
-					ep->verbs_ep.hfi_num_send_wqes+1, ep->verbs_ep.hfi_num_recv_wqes);
+			_HFI_ERROR("Requested QP size might be too big. Try reducing TX depth and/or inline size.\n");
+			_HFI_ERROR("Requested TX depth was %u and RX depth was %u.\n",
+				ep->verbs_ep.hfi_num_send_wqes+1, ep->verbs_ep.hfi_num_recv_wqes);
 		}
 		return NULL;
 	}
@@ -2602,6 +3073,7 @@ static psm2_error_t modify_ud_qp_to_init(psm2_ep_t ep, struct ibv_qp *qp)
 {
 	struct ibv_qp_attr attr = { 0 };
 	int flags = IBV_QP_STATE | IBV_QP_PKEY_INDEX | IBV_QP_PORT | IBV_QP_QKEY;
+	int err;
 
 	attr.qp_state = IBV_QPS_INIT;
 	attr.pkey_index = ep->network_pkey_index;
@@ -2610,9 +3082,10 @@ static psm2_error_t modify_ud_qp_to_init(psm2_ep_t ep, struct ibv_qp *qp)
 	//attr.qp_access_flags N/A for UD
 	//flags |= IBV_QP_ACCESS_FLAGS;
 
-	if (ibv_modify_qp(qp, &attr,flags)) {
-		_HFI_ERROR( "Failed to modify UD QP to INIT on %s: %s\n",
-					ep->dev_name, strerror(errno));
+	err = ibv_modify_qp(qp, &attr,flags);
+	if (err) {
+		_HFI_ERROR("Failed to modify UD QP to INIT on %s: %s\n",
+			ep->dev_name, strerror(err));
 		return PSM2_INTERNAL_ERR;
 	}
 	return PSM2_OK;
@@ -2622,12 +3095,14 @@ static psm2_error_t modify_ud_qp_to_rtr(psm2_ep_t ep,struct ibv_qp *qp)
 {
 	struct ibv_qp_attr attr = { 0 };
 	int flags = IBV_QP_STATE;
+	int err;
 
 	attr.qp_state = IBV_QPS_RTR;
 
-	if (ibv_modify_qp(qp, &attr, flags)) {
-		_HFI_ERROR( "Failed to modify UD QP to RTR on %s: %s\n",
-					ep->dev_name, strerror(errno));
+	err = ibv_modify_qp(qp, &attr, flags);
+	if (err) {
+		_HFI_ERROR("Failed to modify UD QP to RTR on %s: %s\n",
+			ep->dev_name, strerror(err));
 		return PSM2_INTERNAL_ERR;
 	}
 	return PSM2_OK;
@@ -2637,13 +3112,15 @@ static psm2_error_t modify_ud_qp_to_rts(psm2_ep_t ep, struct ibv_qp *qp)
 {
 	struct ibv_qp_attr attr = { 0 };
 	int flags = IBV_QP_STATE | IBV_QP_SQ_PSN;
+	int err;
 
 	attr.qp_state = IBV_QPS_RTS;
 	attr.sq_psn = 0x1234;	// doesn't really matter for UD
 
-	if (ibv_modify_qp(qp, &attr, flags)) {
-		_HFI_ERROR( "Failed to modify UD QP to RTS on %s: %s\n",
-					ep->dev_name, strerror(errno));
+	err = ibv_modify_qp(qp, &attr, flags);
+	if (err) {
+		_HFI_ERROR("Failed to modify UD QP to RTS on %s: %s\n",
+			ep->dev_name, strerror(err));
 		return PSM2_INTERNAL_ERR;
 	}
 	return PSM2_OK;
@@ -2665,7 +3142,13 @@ struct ibv_qp* rc_qp_create(psm2_ep_t ep, void *context, struct ibv_qp_cap *cap)
 	if ((ep->rdmamode&IPS_PROTOEXP_FLAG_RDMA_MASK) == IPS_PROTOEXP_FLAG_RDMA_USER_RC) {
 		// need to be prepared in case all sends posted to same RC QP, so
 		// match the number of send buffers we plan to allocate
+		// +1 in case verbs needs an extra WQE to detect QP full
+#ifdef PSM_RC_RECONNECT
+		// +1 so have a WQE for drain MARKER
+		attr.cap.max_send_wr  = ep->verbs_ep.hfi_num_send_wqes+ep->hfi_num_send_rdma+2;
+#else
 		attr.cap.max_send_wr  = ep->verbs_ep.hfi_num_send_wqes+ep->hfi_num_send_rdma+1;
+#endif
 		attr.cap.max_send_sge = 2;
 		// inline data helps latency and message rate for small sends
 		attr.cap.max_inline_data = ep->hfi_imm_size;
@@ -2686,23 +3169,26 @@ struct ibv_qp* rc_qp_create(psm2_ep_t ep, void *context, struct ibv_qp_cap *cap)
 
 	qp = ibv_create_qp(ep->verbs_ep.pd, &attr);
 	if (qp == NULL) {
-		_HFI_ERROR( "Unable to create RC QP on %s: %s\n",
-					ep->dev_name, strerror(errno));
-		_HFI_ERROR( "Requested QP size might be too big. Try reducing TX depth and/or inline size.\n");
-		if ((ep->rdmamode&IPS_PROTOEXP_FLAG_RDMA_MASK) == IPS_PROTOEXP_FLAG_RDMA_USER_RC) {
-			_HFI_ERROR( "Requested TX depth was %u and RX depth was %u .\n",
-				ep->verbs_ep.hfi_num_send_wqes+ep->hfi_num_send_rdma+1,
-				ep->verbs_ep.srq?0
-					:(ep->verbs_ep.hfi_num_recv_wqes/VERBS_RECV_QP_FRACTION));
+		_HFI_ERROR("Unable to create RC QP on %s\n", ep->dev_name);
+		_HFI_ERROR("Requested QP size might be too big. Try reducing TX depth and/or inline size.\n");
+		if ((ep->rdmamode & IPS_PROTOEXP_FLAG_RDMA_MASK) == IPS_PROTOEXP_FLAG_RDMA_USER_RC) {
+			_HFI_ERROR("Requested TX depth was %u and RX depth was %u.\n",
+#ifdef PSM_RC_RECONNECT
+				ep->verbs_ep.hfi_num_send_wqes + ep->hfi_num_send_rdma + 2,
+#else
+				ep->verbs_ep.hfi_num_send_wqes + ep->hfi_num_send_rdma + 1,
+#endif
+				ep->verbs_ep.srq
+					? 0 : ep->verbs_ep.hfi_num_recv_wqes / VERBS_RECV_QP_FRACTION);
 		} else {
-			_HFI_ERROR( "Requested TX depth was %u and RX depth was %u .\n",
-				ep->hfi_num_send_rdma+1,
-				ep->verbs_ep.srq?0:(HFI_TF_NFLOWS+1));
+			_HFI_ERROR("Requested TX depth was %u and RX depth was %u\n",
+				ep->hfi_num_send_rdma + 1,
+				ep->verbs_ep.srq ? 0 : HFI_TF_NFLOWS + 1);
 		}
 		return NULL;
 	}
 
-// TBD - getting too small resources should be fatal or adjust limits to be smaller
+// TBD - getting too small resources should be fatal or adjust limits to be smaller - such as num_sge
 	if ((ep->rdmamode&IPS_PROTOEXP_FLAG_RDMA_MASK) == IPS_PROTOEXP_FLAG_RDMA_USER_RC) {
 		// QP adjusted values due to HW limits
 		if (ep->hfi_imm_size > attr.cap.max_inline_data) {
@@ -2711,9 +3197,17 @@ struct ibv_qp* rc_qp_create(psm2_ep_t ep, void *context, struct ibv_qp_cap *cap)
 		} else {
 			_HFI_PRDBG("Inline Size: %u\n", attr.cap.max_inline_data);
 		}
+#ifdef PSM_RC_RECONNECT
+		if (ep->verbs_ep.hfi_num_send_wqes+ep->hfi_num_send_rdma+2 > attr.cap.max_send_wr) {
+#else
 		if (ep->verbs_ep.hfi_num_send_wqes+ep->hfi_num_send_rdma+1 > attr.cap.max_send_wr) {
+#endif
 			_HFI_PRDBG( "Limited to %d SQ WQEs, requested %u\n",
+#ifdef PSM_RC_RECONNECT
+				attr.cap.max_send_wr, ep->verbs_ep.hfi_num_send_wqes+ep->hfi_num_send_rdma+2);
+#else
 				attr.cap.max_send_wr, ep->verbs_ep.hfi_num_send_wqes+ep->hfi_num_send_rdma+1);
+#endif
 		} else {
 			_HFI_PRDBG("SQ WQEs: %u\n", attr.cap.max_send_wr);
 		}
@@ -2731,6 +3225,24 @@ struct ibv_qp* rc_qp_create(psm2_ep_t ep, void *context, struct ibv_qp_cap *cap)
 		if (1 > attr.cap.max_recv_sge) {
 			_HFI_PRDBG( "Limited to %d RQ SGEs\n",
 				attr.cap.max_recv_sge);
+		}
+
+		// we need to make sure we can't overflow send Q
+#ifdef PSM_RC_RECONNECT
+		// -1 to hold back 1 WQE for use as drain MARKER
+		if (attr.cap.max_send_wr-1 < ep->verbs_ep.send_pool.send_total) {
+#else
+		if (attr.cap.max_send_wr < ep->verbs_ep.send_pool.send_total) {
+#endif
+			_HFI_ERROR("RC QP Send Q too small: Limited to %d SQ WQEs, requested %u, min %u\n",
+				attr.cap.max_send_wr,
+#ifdef PSM_RC_RECONNECT
+				ep->verbs_ep.hfi_num_send_wqes+ep->hfi_num_send_rdma+2,
+#else
+				ep->verbs_ep.hfi_num_send_wqes+ep->hfi_num_send_rdma+1,
+#endif
+				ep->verbs_ep.send_pool.send_total);
+			goto fail;
 		}
 	} else {
 		// QP adjusted values due to HW limits
@@ -2755,12 +3267,17 @@ struct ibv_qp* rc_qp_create(psm2_ep_t ep, void *context, struct ibv_qp_cap *cap)
 
 	if (cap)
 		*cap = attr.cap;
-	_HFI_PRDBG("created RC QP %d\n", qp->qp_num);
+	_HFI_PRDBG("created RC QP %u\n", qp->qp_num);
 	return qp;
+
+fail:
+	ibv_destroy_qp(qp);
+	return NULL;
 }
 
 void rc_qp_destroy(struct ibv_qp* qp)
 {
+	_HFI_PRDBG("destroying RC QP %u\n", qp->qp_num);
 	ibv_destroy_qp(qp);
 }
 
@@ -2768,6 +3285,7 @@ psm2_error_t modify_rc_qp_to_init(psm2_ep_t ep, struct ibv_qp *qp)
 {
 	struct ibv_qp_attr attr = { 0 };
 	int flags = IBV_QP_STATE | IBV_QP_PKEY_INDEX | IBV_QP_PORT;
+	int err;
 
 	attr.qp_state        = IBV_QPS_INIT;
 	attr.pkey_index = ep->network_pkey_index;
@@ -2776,16 +3294,20 @@ psm2_error_t modify_rc_qp_to_init(psm2_ep_t ep, struct ibv_qp *qp)
 	//attr.qkey = ep->verbs_ep.qkey;
 	//flags |= IBV_QP_QKEY;	// only allowed for UD
 	attr.qp_access_flags = 0;
+#ifdef USE_RDMA_READ
+	attr.qp_access_flags |= IBV_ACCESS_REMOTE_READ;
+#endif
 	attr.qp_access_flags |= IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE;
 	//attr.qp_access_flags |= IBV_ACCESS_REMOTE_ATOMIC;
 	flags |= IBV_QP_ACCESS_FLAGS;
 
-	if (ibv_modify_qp(qp, &attr, flags)) {
-		_HFI_ERROR( "Failed to modify RC QP to INIT on %s: %s\n",
-					ep->dev_name, strerror(errno));
+	err = ibv_modify_qp(qp, &attr, flags);
+	if (err) {
+		_HFI_ERROR("Failed to modify RC QP to INIT on %s: %s\n",
+			ep->dev_name, strerror(err));
 		return PSM2_INTERNAL_ERR;
 	}
-	_HFI_PRDBG("moved %d to INIT\n", qp->qp_num);
+	_HFI_PRDBG("moved RC QP %u to INIT\n", qp->qp_num);
 	return PSM2_OK;
 }
 
@@ -2797,6 +3319,7 @@ psm2_error_t modify_rc_qp_to_rtr(psm2_ep_t ep, struct ibv_qp *qp,
 {
 	int flags = IBV_QP_STATE;
 	struct ibv_qp_attr attr = { 0 };
+	int err;
 
 	attr.qp_state = IBV_QPS_RTR;
 
@@ -2806,38 +3329,53 @@ psm2_error_t modify_rc_qp_to_rtr(psm2_ep_t ep, struct ibv_qp *qp,
 	// TBD - we already factored in req vs pr to update pr no need
 	// for modify_cq_qp_to_rtr to repeat it
 	// pr_mtu is max PSM payload in bytes and req_attr_mtu is IB enum
-	attr.path_mtu = MIN(ibv_mtu_int_to_enum(path_rec->pr_mtu), req_attr->mtu);
+	attr.path_mtu = MIN(ibv_mtu_int_to_enum(ep->mtu), req_attr->mtu);
 	attr.dest_qp_num = req_attr->qpn;
 	attr.rq_psn = initpsn;
 	flags |= (IBV_QP_PATH_MTU | IBV_QP_DEST_QPN | IBV_QP_RQ_PSN);
 
+#ifdef USE_RDMA_READ
+	ep->verbs_ep.max_qp_rd_atom =
+		min(ep->verbs_ep.max_qp_rd_atom, req_attr->initiator_depth);
+	attr.max_dest_rd_atomic = ep->verbs_ep.max_qp_rd_atom;
+#endif
 	_HFI_PRDBG("set max_dest_rd_atomic to %u\n", attr.max_dest_rd_atomic);
 	attr.min_rnr_timer = 12;	// TBD well known
 	flags |= (IBV_QP_MIN_RNR_TIMER | IBV_QP_MAX_DEST_RD_ATOMIC);
 
-	if (ibv_modify_qp(qp, &attr, flags)) {
-		_HFI_ERROR( "Failed to modify RC QP to RTR on %s: %s\n",
-					ep->dev_name, strerror(errno));
+	err = ibv_modify_qp(qp, &attr, flags);
+	if (err) {
+		_HFI_ERROR("Failed to modify RC QP to RTR on %s: %s\n",
+			ep->dev_name, strerror(err));
 		return PSM2_INTERNAL_ERR;
 	}
-	_HFI_PRDBG("moved %d to RTR\n", qp->qp_num);
+	_HFI_PRDBG("moved RC QP %u to RTR with MTU=%d\n", qp->qp_num, attr.path_mtu);
 
 	return PSM2_OK;
 }
 
 // initpsn is value we sent in our req and rep
 // req_attr is from REP we received from other side
+// if returns PSM2_EPID_RC_CONNECT_ERROR then RC QP already got an error in RTR
+// and is in ERR, so can't move to RTS
 psm2_error_t modify_rc_qp_to_rts(psm2_ep_t ep, struct ibv_qp *qp,
 				const struct psm_rc_qp_attr *req_attr, uint32_t initpsn)
 {
 	int flags = IBV_QP_STATE;
 	struct ibv_qp_attr attr = { 0 };
+	struct ibv_qp_init_attr init_attr;
+	int rc;
 
 	attr.qp_state = IBV_QPS_RTS;
 
 	attr.sq_psn = initpsn;	// value we told other side
 	flags |= IBV_QP_SQ_PSN;
 
+#ifdef USE_RDMA_READ
+	ep->verbs_ep.max_qp_init_rd_atom =
+		min(ep->verbs_ep.max_qp_init_rd_atom, req_attr->responder_resources);
+	attr.max_rd_atomic = ep->verbs_ep.max_qp_init_rd_atom;
+#endif
 	_HFI_PRDBG("set max_rd_atomic to %u\n", attr.max_rd_atomic);
 	flags |=  IBV_QP_MAX_QP_RD_ATOMIC;
 
@@ -2846,15 +3384,258 @@ psm2_error_t modify_rc_qp_to_rts(psm2_ep_t ep, struct ibv_qp *qp,
 	attr.timeout = ep->verbs_ep.hfi_qp_timeout;
 	flags |= IBV_QP_RETRY_CNT | IBV_QP_RNR_RETRY | IBV_QP_TIMEOUT;
 
-	_HFI_PRDBG("moving %d to RTS\n", qp->qp_num);
-	if (ibv_modify_qp(qp, &attr, flags)) {
-		_HFI_ERROR( "Failed to modify RC QP to RTS on %s: %s\n",
-						ep->dev_name, strerror(errno));
+	_HFI_PRDBG("moving RC QP %u to RTS\n", qp->qp_num);
+	rc = ibv_modify_qp(qp, &attr, flags);
+	if (rc) {
+		int query_rc;
+
+		// could already be in ERR (possibly due to race with async event)
+		attr.qp_state = IBV_QPS_UNKNOWN;
+		query_rc = ibv_query_qp(qp, &attr, IBV_QP_STATE, &init_attr);
+		if (!query_rc && attr.qp_state == IBV_QPS_ERR) {
+			_HFI_VDBG("Failed to modify RC QP %u to RTS, QP in ERR on %s: %s\n",
+				qp->qp_num, ep->dev_name, strerror(query_rc));
+			return PSM2_EPID_RC_CONNECT_ERROR;
+		}
+		_HFI_ERROR("Failed to modify RC QP %u to RTS on %s: %s\n",
+			qp->qp_num, ep->dev_name, strerror(rc));
 		return PSM2_INTERNAL_ERR;
 	}
 	//psm3_dump_verbs_qp(qp);
 	return PSM2_OK;
 }
+#ifdef PSM_RC_RECONNECT
+static psm2_error_t modify_rc_qp_to_err(psm2_ep_t ep, struct ibv_qp *qp)
+{
+	struct ibv_qp_attr attr = { 0 };
+	struct ibv_qp_init_attr init_attr;
+	int err;
+	int save_err;
+
+	attr.qp_state = IBV_QPS_ERR;
+
+	err = ibv_modify_qp(qp, &attr, IBV_QP_STATE);
+	if (!err) {
+		_HFI_VDBG("moved RC QP %u to ERR\n", qp->qp_num);
+		return PSM2_OK;
+	}
+	save_err = err;
+	// some drivers can fail the ERR->ERR transition, check if
+	// already in ERR (possibly due to race with async event)
+	attr.qp_state = IBV_QPS_UNKNOWN;
+	err = ibv_query_qp(qp, &attr, IBV_QP_STATE, &init_attr);
+	if (!err && attr.qp_state == IBV_QPS_ERR) {
+		_HFI_VDBG("RC QP %u already in ERR\n", qp->qp_num);
+		return PSM2_OK;
+	}
+	_HFI_ERROR("Failed to modify RC QP %u to ERR on %s: state %u: %s\n",
+		qp->qp_num, ep->dev_name, attr.qp_state, strerror(save_err));
+	return PSM2_INTERNAL_ERR;
+}
+
+psm2_error_t psm3_verbs_post_send_drain(psm2_ep_t ep, struct psm3_verbs_rc_qp *rc_qp)
+{
+	// post special WQE on SQ
+	struct ibv_send_wr wr;
+	struct ibv_send_wr *bad_wr;
+	struct ibv_sge list;
+	int err;
+
+	_HFI_CONNDBG("posting send drain QP %u\n", rc_qp->qp->qp_num);
+	psmi_assert(! rc_qp->draining);
+	wr.next = NULL; // just post 1
+	psmi_assert(! VERBS_SQ_WR_OP((uintptr_t)rc_qp));
+	wr.wr_id = (uintptr_t)rc_qp | VERBS_SQ_WR_ID_DRAIN_MARKER;
+	// races inside the NIC have been observed where a QP is in ERR, but the
+	// drain WQE is still successfully processed and generates a packet on wire
+	// to avoid that we post an invalid sg_list and lkey
+	// using invalid lkey and a vaddr not registered with NIC
+	list.addr = (uintptr_t)rc_qp;	// valid vaddr in heap
+	list.length = 1;
+	list.lkey = VERBS_SQ_DRAIN_BAD_LKEY;
+	wr.sg_list = &list;
+	wr.num_sge = 1;
+	wr.opcode = IBV_WR_SEND;
+	//wr.sg_list = NULL;
+	//wr.num_sge = 0;
+	//wr.opcode = IBV_WR_RDMA_WRITE;
+	wr.send_flags = IBV_SEND_SIGNALED; // get a completion
+
+	// EINTR should be transient (call interrupted by event)
+	// any other issue is not retried
+	while (1) {
+		rc_qp->send_posted++;
+		err = ibv_post_send(rc_qp->qp, &wr, &bad_wr);
+		if_pf (err) {
+			rc_qp->send_posted--;
+			if (err != EINTR) {
+				_HFI_ERROR("failed to post RC SQ drain on ipsaddr %p %s port %u: %s (%d)",
+					rc_qp->ipsaddr, ep->dev_name, ep->portnum,
+					strerror(errno), err);
+				return PSM2_INTERNAL_ERR;
+			}
+		} else {
+			break;	// success
+		}
+	}
+	_HFI_CONNDBG("[ipsaddr %p] RC QP %u rcnt %u posted RC SQ drain WQE\n",
+		rc_qp->ipsaddr, rc_qp->qp->qp_num, rc_qp->reconnect_count);
+	return PSM2_OK;
+}
+
+// even if fail to move QP to IBV_QPS_ERR, we must still set draining flag
+// and attempt to free QP, otherwise, we may end up invalidly calling
+// psm3_ips_proto_connection_error a second time for the same rc_qp if we
+// see a bad CQE for the QP.
+// when this returns error, caller will fatal error, otherwise we will never
+// finish draining the QP
+psm2_error_t psm3_verbs_drain_rc_qp(psm2_ep_t ep, struct psm3_verbs_rc_qp *rc_qp,
+		int move_to_err)
+{
+	psm2_error_t err = PSM2_OK;
+
+	psmi_assert(IPS_PROTOEXP_FLAG_USER_RC_QP(ep->rdmamode));
+	if (! rc_qp->draining) {
+		// if never got to Init, can't have anything posted
+		psmi_assert(rc_qp->initialized
+			|| rc_qp->send_posted + rc_qp->recv_pool.posted == 0);
+		// if never got to Init, invalid to move to ERR
+		if (move_to_err && rc_qp->initialized) {
+			err = modify_rc_qp_to_err(ep, rc_qp->qp);
+			if (! err)
+				_HFI_CONNDBG("[ipsaddr %p] RC QP %u to ERR\n",
+					rc_qp->ipsaddr, rc_qp->qp->qp_num);
+		}
+		if (! err && rc_qp->send_allocator.send_alloc_head) {
+			psmi_assert(rc_qp->send_posted);
+			psmi_assert(rc_qp->initialized);
+			// must issue a send with completion to force flush of
+			// prior sbufs which may have successfully completed
+			// already but did not request a completion
+			err = psm3_verbs_post_send_drain(ep, rc_qp);
+		}
+		// send_drain_outstanding will force poll_cq until we free the
+		// rc_qp.  Not worth optimizing to limit to QPs which have
+		// outstanding sends since the QP will be freed soon enough.
+		ep->verbs_ep.send_drain_outstanding++;
+		rc_qp->draining = 1;
+		rc_qp->recv_pool.draining = 1;
+		_HFI_CONNDBG("[ipsaddr %p] RC QP %u rcnt %u to draining posted %u + %u\n",
+			rc_qp->ipsaddr, rc_qp->qp->qp_num, rc_qp->reconnect_count,
+			rc_qp->send_posted, rc_qp->recv_pool.posted);
+	}
+	psm3_verbs_free_rc_qp_if_empty("start drain", rc_qp);
+	return err;
+}
+
+// free the rc_qp and corresponding recv_pool
+// in rare cases of errors draining QP (such as unable to move to IBV_QPS_ERR,
+// the QP might not yet be drained and ! rc_qp->draining
+void psm3_verbs_free_rc_qp(const char *why, struct psm3_verbs_rc_qp *rc_qp)
+{
+	_HFI_CONNDBG("[ipsaddr %p] free RC QP %u rcnt %u posted %u + %u: %s\n", rc_qp->ipsaddr,
+			rc_qp->qp?rc_qp->qp->qp_num:0, rc_qp->reconnect_count,
+			rc_qp->send_posted, rc_qp->recv_pool.posted, why);
+	if (rc_qp->draining)
+		rc_qp->ipsaddr->epaddr.proto->ep->verbs_ep.send_drain_outstanding--;
+	if (rc_qp->ipsaddr) {
+		ips_epaddr_t *ipsaddr = rc_qp->ipsaddr;
+		// SLIST_REMOVE will walk list, but list is short
+		SLIST_REMOVE(&ipsaddr->verbs.rc_qps, rc_qp, psm3_verbs_rc_qp, next);
+	}
+	// ep is one of 1st things set in alloc_recv_pool so use it to
+	// decide if appropriate to call free_recv_pool.
+	if (rc_qp->recv_pool.ep)
+		psm_verbs_free_recv_pool(&rc_qp->recv_pool);
+	if (rc_qp->qp)
+		rc_qp_destroy(rc_qp->qp);
+	psmi_free(rc_qp);
+}
+
+void psm3_verbs_free_rc_qp_if_empty(const char *why, struct psm3_verbs_rc_qp *rc_qp)
+{
+	if (rc_qp->send_posted + rc_qp->recv_pool.posted == 0)
+		psm3_verbs_free_rc_qp(why, rc_qp);
+}
+
+psm2_error_t psm3_verbs_create_rc_qp(psm2_ep_t ep, ips_epaddr_t *ipsaddr)
+{
+	struct psm3_verbs_rc_qp *rc_qp;
+	struct ibv_qp_cap qp_cap;
+	psm2_error_t err = PSM2_OK;
+
+	rc_qp = (struct psm3_verbs_rc_qp *)psmi_calloc(ep, PER_PEER_ENDPOINT,
+					sizeof(struct psm3_verbs_rc_qp), 1);
+	if (! rc_qp) {
+		_HFI_ERROR("unable to allocate RC QP info: No Memory\n");
+		return PSM2_NO_MEMORY;
+	}
+
+	rc_qp->qp = rc_qp_create(ep, ipsaddr, &qp_cap);
+	if (! rc_qp->qp) {
+		// _HFI_ERROR already output
+		err = PSM2_INTERNAL_ERR;
+		goto fail;
+	}
+
+	// these should be the same as prior QP, but to be safe
+	// update them.  max_recv_wr controls sizing of recv_pool which
+	// will be allocated for this new rc_qp and max_inline_data
+	// controls future send WQEs placed on this new rc_qp
+	ipsaddr->verbs.rc_qp_max_recv_wr = qp_cap.max_recv_wr;
+	ipsaddr->verbs.rc_qp_max_inline_data = qp_cap.max_inline_data;
+
+	rc_qp->ipsaddr = ipsaddr;
+	rc_qp->reconnect_count = ipsaddr->reconnect_count;
+	SLIST_INSERT_HEAD(&ipsaddr->verbs.rc_qps, rc_qp, next);
+	return PSM2_OK;
+
+fail:
+	psm3_verbs_free_rc_qp("failed RC QP create", rc_qp);
+	return err;
+}
+
+struct psm3_verbs_rc_qp *psm3_verbs_active_rc_qp(ips_epaddr_t *ipsaddr)
+{
+	struct psm3_verbs_rc_qp *rc_qp =
+		SLIST_FIRST(&ipsaddr->verbs.rc_qps);
+	psmi_assert(rc_qp);
+	psmi_assert(! rc_qp->draining);
+	return rc_qp;
+}
+
+psm2_error_t psm3_verbs_have_rc_qp(ips_epaddr_t *ipsaddr, uint8_t reconnect_count)
+{
+	struct psm3_verbs_rc_qp *rc_qp;
+	SLIST_FOREACH(rc_qp, &ipsaddr->verbs.rc_qps, next) {
+		if (rc_qp->reconnect_count == reconnect_count) {
+			_HFI_CONNDBG("[ipsaddr %p] have RC QP %u draining = %u posted %u + %u\n",
+				ipsaddr, rc_qp->qp->qp_num, rc_qp->draining,
+				rc_qp->send_posted, rc_qp->recv_pool.posted);
+			return 1;
+		}
+	}
+	return 0;
+}
+
+#ifdef PSM_RC_RECONNECT_SRQ
+struct psm3_verbs_rc_qp *psm3_verbs_lookup_rc_qp(ips_epaddr_t *ipsaddr,
+			uint32_t qp_num)
+{
+	struct psm3_verbs_rc_qp *rc_qp;
+	SLIST_FOREACH(rc_qp, &ipsaddr->verbs.rc_qps, next) {
+		if (rc_qp->qp->qp_num == qp_num) {
+			_HFI_CONNDBG("[ipsaddr %p] have RC QP %u draining = %u posted %u + %u\n",
+				ipsaddr, rc_qp->qp->qp_num, rc_qp->draining,
+				rc_qp->send_posted, rc_qp->recv_pool.posted);
+			return rc_qp;
+		}
+	}
+	_HFI_CONNDBG("[ipsaddr %p] don't have RC QP %u\n", ipsaddr, qp_num);
+	return NULL;
+}
+#endif // PSM_RC_RECONNECT_SRQ
+#endif // PSM_RC_RECONNECT
 #endif // USE_RC
 
 /* RDMA mode */
@@ -2884,10 +3665,13 @@ unsigned psm3_verbs_parse_rdmamode(int reload)
 	// IPS_PROTOEXP_FLAGS_INTERLEAVE are N/A when RDMA not enabled
 
 	default_value = 0;
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
 #ifdef RNDV_MOD
+	if (psm3_rv_available()) {
+		default_value = IPS_PROTOEXP_FLAG_RDMA_KERNEL;
+	}
+#ifdef PSM_HAVE_GPU
 	// GPUDIRECT causes default_value of RDMA=1
-	if (PSMI_IS_GPU_ENABLED && psmi_parse_gpudirect())
+	if (PSM3_GPU_IS_ENABLED && psmi_parse_gpudirect())
 		default_value = IPS_PROTOEXP_FLAG_RDMA_KERNEL;
 #endif
 #endif
@@ -2949,8 +3733,8 @@ unsigned psm3_verbs_parse_mr_cache_mode(unsigned rdmamode, int reload)
 	// PSM_HAL_CAP_GPUDIRECT_* flags not known until after HAL device open,
 	// so we test SDMA and RDMA here as prereqs for GPUDIRECT_SDMA and RDMA.
 	if (! (rdmamode & IPS_PROTOEXP_FLAG_ENABLED)
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
-		&& (PSMI_IS_GPU_DISABLED || ! psmi_parse_gpudirect()
+#ifdef PSM_HAVE_GPU
+		&& (! PSM3_GPU_IS_ENABLED || ! psmi_parse_gpudirect()
 			//verbs always has these HAL capabilities set
 			//|| (!psmi_hal_has_cap(PSM_HAL_CAP_SDMA)
 			//	&& !psmi_hal_has_cap(PSM_HAL_CAP_RDMA)))
@@ -2961,9 +3745,9 @@ unsigned psm3_verbs_parse_mr_cache_mode(unsigned rdmamode, int reload)
 	} else if (IPS_PROTOEXP_FLAG_KERNEL_QP(rdmamode)) {
 		// RDMA enabled in kernel mode.  Must use rv MR cache
 		envval.e_uint = MR_CACHE_MODE_RV;
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 #ifdef PSM_HAVE_RNDV_MOD
-	} else if (PSMI_IS_GPU_ENABLED && psmi_parse_gpudirect()) {
+	} else if (PSM3_GPU_IS_ENABLED && psmi_parse_gpudirect()) {
 		// GPU Direct (RDMA, send DMA and/or gdrcopy) must
 		// use kernel MR cache in RV
 		envval.e_uint = MR_CACHE_MODE_KERNEL;
@@ -3040,14 +3824,19 @@ psm3_dump_verbs_ep(psm2_ep_t ep, unsigned igid)
 {
 	struct psm3_verbs_ep *vep = &(ep->verbs_ep);
 	union ibv_gid gid;
+	int err;
 
 	printf("ib_devname = %s\n", ep->dev_name);
 	printf("qp_num     = %u\n", vep->qp->qp_num);
 	printf("GID        = ");
-	if (0 == ibv_query_gid(vep->context, ep->portnum, igid, &gid))
-		printf("%s\n", psm3_ibv_gid_fmt(gid, 0));
-	else
-		printf("unavailable.\n");
+
+	err = ibv_query_gid(vep->context, ep->portnum, igid, &gid);
+	if_pf (err) {
+		printf("unable to query GID: %s\n", strerror(err));
+		return;
+	}
+
+	printf("%s\n", psm3_ibv_gid_fmt(gid, 0));
 }
 
 void
@@ -3057,6 +3846,8 @@ psm3_dump_verbs_qp(struct ibv_qp *qp)
 	struct ibv_qp_init_attr init_attr;
 	int mask = IBV_QP_STATE | IBV_QP_PKEY_INDEX | IBV_QP_PORT | IBV_QP_CAP
 			/*| IBV_QP_RATE_LIMIT*/ ;
+	int err;
+
 	if (qp->qp_type == IBV_QPT_RC) {
 		mask |= IBV_QP_ACCESS_FLAGS | IBV_QP_AV | IBV_QP_PATH_MTU
 				| IBV_QP_TIMEOUT | IBV_QP_RETRY_CNT | IBV_QP_RNR_RETRY
@@ -3068,10 +3859,13 @@ psm3_dump_verbs_qp(struct ibv_qp *qp)
 	} else {
 		mask |= IBV_QP_QKEY;
 	}
-	if (ibv_query_qp(qp, &attr, mask, &init_attr)) {
-			printf("unable to query QP\n");
-			return;
+
+	err = ibv_query_qp(qp, &attr, mask, &init_attr);
+	if (err) {
+		printf("unable to query QP: %s\n", strerror(err));
+		return;
 	}
+
 	// rate_limit field not available in some versions of verbs.h
 	//printf("QP %p (%u), type %u state %u PkeyIndx %u Port %u rate %u draining %u\n",
 	//		qp, qp->qp_num, qp->qp_type, attr.qp_state, attr.pkey_index,

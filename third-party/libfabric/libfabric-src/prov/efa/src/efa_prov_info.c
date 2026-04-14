@@ -9,24 +9,21 @@
 #include "rdm/efa_rdm_pkt_type.h"
 
 #define EFA_FABRIC_PREFIX "EFA-"
-#define EFA_FABRIC_NAME "efa"
 #define EFA_DOMAIN_CAPS (FI_LOCAL_COMM | FI_REMOTE_COMM)
 
 #define EFA_RDM_TX_CAPS (OFI_TX_MSG_CAPS)
 #define EFA_RDM_RX_CAPS (OFI_RX_MSG_CAPS | FI_SOURCE)
+#define EFA_RDM_CAPS (EFA_RDM_TX_CAPS | EFA_RDM_RX_CAPS | EFA_DOMAIN_CAPS)
+
 #define EFA_DGRM_TX_CAPS (OFI_TX_MSG_CAPS)
 #define EFA_DGRM_RX_CAPS (OFI_RX_MSG_CAPS | FI_SOURCE)
-#define EFA_RDM_CAPS (EFA_RDM_TX_CAPS | EFA_RDM_RX_CAPS | EFA_DOMAIN_CAPS)
 #define EFA_DGRM_CAPS (EFA_DGRM_TX_CAPS | EFA_DGRM_RX_CAPS | EFA_DOMAIN_CAPS)
 
 #define EFA_TX_OP_FLAGS (FI_TRANSMIT_COMPLETE)
+#define EFA_RDM_TX_OP_FLAGS (FI_INJECT | FI_COMPLETION | FI_TRANSMIT_COMPLETE | \
+							FI_DELIVERY_COMPLETE)
 
-#define EFA_RX_MODE (0)
-
-#define EFA_RX_RDM_OP_FLAGS (0)
-#define EFA_RX_DGRM_OP_FLAGS (0)
-
-#define EFA_MSG_ORDER (FI_ORDER_NONE)
+#define EFA_MSG_ORDER (0)
 
 #define EFA_NO_DEFAULT -1
 
@@ -41,41 +38,17 @@ const struct fi_fabric_attr efa_fabric_attr = {
 };
 
 /**
- * @brief set the fabric_attr field of a prov_info
- *
- * @param 	prov_info[out]		prov_info object
- * @param	device[in]		pointer to an efa_device struct, which contains device attributes
- * @return	0 on sucessess
- * 		-FI_ENOMEM if memory allocation failed
- */
-static
-int efa_prov_info_set_fabric_attr(struct fi_info *prov_info, struct efa_device *device)
-{
-	size_t name_len = strlen(EFA_FABRIC_NAME);
-
-	*prov_info->fabric_attr	= efa_fabric_attr;
-
-	name_len = strlen(EFA_FABRIC_NAME);
-	prov_info->fabric_attr->name = calloc(1, name_len + 1);
-	if (!prov_info->fabric_attr->name)
-		return -FI_ENOMEM;
-
-	strcpy(prov_info->fabric_attr->name, EFA_FABRIC_NAME);
-	return 0;
-}
-
-/**
  * @brief default domain_attr for prov_info
  */
 const struct fi_domain_attr efa_domain_attr = {
 	.caps			= EFA_DOMAIN_CAPS,
 	.threading		= FI_THREAD_DOMAIN,
 	.control_progress	= FI_PROGRESS_AUTO,
-	.data_progress		= FI_PROGRESS_AUTO,
+	.progress		= FI_PROGRESS_AUTO,
 	.resource_mgmt		= FI_RM_DISABLED,
-	.mr_mode		= OFI_MR_BASIC_MAP | FI_MR_LOCAL | FI_MR_BASIC,
+	.mr_mode		= OFI_MR_BASIC_MAP | FI_MR_LOCAL | OFI_MR_BASIC | FI_MR_ALLOCATED,
 	.mr_key_size		= sizeof_field(struct ibv_sge, lkey),
-	.cq_data_size		= 0,
+	.cq_data_size		= EFA_CQ_DATA_SIZE,
 	.tx_ctx_cnt		= 1024,
 	.rx_ctx_cnt		= 1024,
 	.max_ep_tx_ctx		= 1,
@@ -122,6 +95,15 @@ int efa_prov_info_set_domain_attr(struct fi_info *prov_info,
 	prov_info->domain_attr->max_ep_rx_ctx	= 1;
 	prov_info->domain_attr->resource_mgmt	= FI_RM_DISABLED;
 	prov_info->domain_attr->mr_cnt		= device->ibv_attr.max_mr;
+
+	if (ep_type == FI_EP_RDM) {
+		/* EFA direct path is thread safe */
+		prov_info->domain_attr->threading = FI_THREAD_SAFE;
+
+		/* EFA direct path retries indefinitely when Receiver Not Ready (RNR) */
+		prov_info->domain_attr->resource_mgmt = FI_RM_ENABLED;
+	}
+
 	EFA_DBG(FI_LOG_DOMAIN, "Domain attribute :\n"
 				"\t prov_info->domain_attr->cq_cnt		= %zu\n"
 				"\t prov_info->domain_attr->ep_cnt		= %zu\n"
@@ -145,7 +127,9 @@ const struct fi_ep_attr efa_ep_attr = {
 	.protocol		= FI_PROTO_EFA,
 	.protocol_version	= 1,
 	.msg_prefix_size	= 0,
+	.max_order_raw_size	= 0,
 	.max_order_war_size	= 0,
+	.max_order_waw_size	= 0,
 	.mem_tag_format		= 0,
 	.tx_ctx_cnt		= 1,
 	.rx_ctx_cnt		= 1,
@@ -165,30 +149,18 @@ void efa_prov_info_set_ep_attr(struct fi_info *prov_info,
 {
 
 	*prov_info->ep_attr = efa_ep_attr;
-	if (ep_type == FI_EP_DGRAM) {
-		prov_info->mode |= FI_MSG_PREFIX;
+	prov_info->ep_attr->protocol	= FI_PROTO_EFA;
+	prov_info->ep_attr->max_msg_size = device->ibv_port_attr.max_msg_sz;
+	prov_info->ep_attr->type = ep_type;
+
+	if (ep_type == FI_EP_RDM) {
+		/* ep_attr->max_msg_size is the maximum of both MSG and RMA operations */
+		if (prov_info->caps & FI_RMA)
+			prov_info->ep_attr->max_msg_size = MAX(device->ibv_port_attr.max_msg_sz, device->max_rdma_size);
+	} else {
+		assert(ep_type == FI_EP_DGRAM);
 		prov_info->ep_attr->msg_prefix_size = 40;
 	}
-
-	prov_info->ep_attr->protocol	= FI_PROTO_EFA;
-	prov_info->ep_attr->type	= ep_type;
-
-	if (prov_info->ep_attr->type == FI_EP_RDM) {
-		prov_info->tx_attr->inject_size = device->efa_attr.inline_buf_size;
-	} else {
-		assert(prov_info->ep_attr->type == FI_EP_DGRAM);
-                /*
-		 * Currently, there is no mechanism for device to discard
-		 * a completion, therefore there is no way for dgram endpoint
-		 * to implement FI_INJECT. Because FI_INJECT is not an optional
-		 * feature, we had to set inject_size to 0.
-                 */
-		prov_info->tx_attr->inject_size = 0;
-	}
-
-	prov_info->ep_attr->max_msg_size		= device->ibv_port_attr.max_msg_sz;
-	prov_info->ep_attr->max_order_raw_size	= device->ibv_port_attr.max_msg_sz;
-	prov_info->ep_attr->max_order_waw_size	= device->ibv_port_attr.max_msg_sz;
 }
 
 /**
@@ -199,7 +171,6 @@ const struct fi_tx_attr efa_dgrm_tx_attr = {
 	.mode			= FI_MSG_PREFIX,
 	.op_flags		= EFA_TX_OP_FLAGS,
 	.msg_order		= EFA_MSG_ORDER,
-	.comp_order		= FI_ORDER_NONE,
 	.inject_size		= 0,
 	.rma_iov_limit		= 0,
 };
@@ -209,11 +180,8 @@ const struct fi_tx_attr efa_dgrm_tx_attr = {
  */
 const struct fi_rx_attr efa_dgrm_rx_attr = {
 	.caps			= EFA_DGRM_RX_CAPS,
-	.mode			= FI_MSG_PREFIX | EFA_RX_MODE,
-	.op_flags		= EFA_RX_DGRM_OP_FLAGS,
+	.mode			= FI_MSG_PREFIX,
 	.msg_order		= EFA_MSG_ORDER,
-	.comp_order		= FI_ORDER_NONE,
-	.total_buffered_recv	= 0,
 	.iov_limit		= 1
 };
 
@@ -225,7 +193,6 @@ const struct fi_tx_attr efa_rdm_tx_attr = {
 	.mode			= 0,
 	.op_flags		= EFA_TX_OP_FLAGS,
 	.msg_order		= EFA_MSG_ORDER,
-	.comp_order		= FI_ORDER_NONE,
 	.inject_size		= 0,
 	.rma_iov_limit		= 1,
 };
@@ -235,11 +202,7 @@ const struct fi_tx_attr efa_rdm_tx_attr = {
  */
 const struct fi_rx_attr efa_rdm_rx_attr = {
 	.caps			= EFA_RDM_RX_CAPS,
-	.mode			= EFA_RX_MODE,
-	.op_flags		= EFA_RX_RDM_OP_FLAGS,
 	.msg_order		= EFA_MSG_ORDER,
-	.comp_order		= FI_ORDER_NONE,
-	.total_buffered_recv	= 0,
 	.iov_limit		= 1
 };
 
@@ -257,12 +220,26 @@ void efa_prov_info_set_tx_rx_attr(struct fi_info *prov_info,
 	if (ep_type == FI_EP_RDM) {
 		*prov_info->tx_attr	= efa_rdm_tx_attr;
 		*prov_info->rx_attr	= efa_rdm_rx_attr;
+
+		prov_info->tx_attr->op_flags |= EFA_RDM_TX_OP_FLAGS;
+		prov_info->rx_attr->op_flags |= FI_COMPLETION;
+
+		/* If the device supports FI_RMA, also set tx_attr and rx_attr */
+		if (prov_info->caps & FI_RMA) {
+			prov_info->tx_attr->caps |= OFI_TX_RMA_CAPS;
+			prov_info->rx_attr->caps |= OFI_RX_RMA_CAPS;
+		}
 	} else {
 		assert(ep_type == FI_EP_DGRAM);
 		*prov_info->tx_attr	= efa_dgrm_tx_attr;
 		*prov_info->rx_attr	= efa_dgrm_rx_attr;
 	}
 
+	/* efa-direct and DGRAM paths require FI_CONTEXT2 */
+	prov_info->tx_attr->mode |= FI_CONTEXT2;
+	prov_info->rx_attr->mode |= FI_CONTEXT2;
+
+	prov_info->tx_attr->inject_size = device->efa_attr.inline_buf_size;
 	prov_info->tx_attr->iov_limit = device->efa_attr.max_sq_sge;
 	prov_info->tx_attr->size = rounddown_power_of_two(device->efa_attr.max_sq_wr);
 	prov_info->rx_attr->iov_limit = device->efa_attr.max_rq_sge;
@@ -378,7 +355,7 @@ static int efa_prov_info_set_nic_attr(struct fi_info *prov_info, struct efa_devi
 		goto err_free;
 	}
 
-	link_attr->mtu = device->ibv_port_attr.max_msg_sz - efa_rdm_pkt_type_get_max_hdr_size();
+	link_attr->mtu = device->ibv_port_attr.max_msg_sz;
 	link_attr->speed = ofi_vrb_speed(device->ibv_port_attr.active_speed,
 	                                 device->ibv_port_attr.active_width);
 
@@ -412,20 +389,51 @@ err_free:
 }
 
 #if HAVE_CUDA || HAVE_NEURON || HAVE_SYNAPSEAI
-void efa_prov_info_set_hmem_flags(struct fi_info *prov_info)
+void efa_prov_info_direct_set_hmem_flags(struct fi_info *prov_info)
 {
-	if (prov_info->ep_attr->type == FI_EP_RDM &&
-	    (ofi_hmem_is_initialized(FI_HMEM_CUDA) ||
-	     ofi_hmem_is_initialized(FI_HMEM_NEURON) ||
-	     ofi_hmem_is_initialized(FI_HMEM_SYNAPSEAI))) {
-		prov_info->caps			|= FI_HMEM;
-		prov_info->tx_attr->caps		|= FI_HMEM;
-		prov_info->rx_attr->caps		|= FI_HMEM;
-		prov_info->domain_attr->mr_mode	|= FI_MR_HMEM;
+	int i;
+	enum fi_hmem_iface iface;
+	struct efa_hmem_info *hmem_info;
+
+	assert(prov_info->ep_attr->type == FI_EP_RDM);
+
+	/* Check if FI_HMEM_P2P_DISABLED is set */
+	if (ofi_hmem_p2p_disabled()) {
+		EFA_WARN(FI_LOG_CORE,
+			"FI_HMEM capability requires peer to peer "
+			"support, which is disabled because "
+			"FI_HMEM_P2P_DISABLED was set to 1/on/true.\n");
+		return;
 	}
+
+	/* Check if HMEM libraries are available at runtime */
+	if (!ofi_hmem_is_initialized(FI_HMEM_CUDA) &&
+	    !ofi_hmem_is_initialized(FI_HMEM_NEURON) &&
+	    !ofi_hmem_is_initialized(FI_HMEM_SYNAPSEAI)) {
+			return;
+	}
+
+	/* EFA direct only supports HMEM when p2p support is available */
+	EFA_HMEM_IFACE_FOREACH_NON_SYSTEM(i) {
+		iface = efa_hmem_ifaces[i];
+		hmem_info = &g_efa_hmem_info[iface];
+		if (hmem_info->initialized && !hmem_info->p2p_supported_by_device) {
+			EFA_INFO(FI_LOG_CORE,
+				"EFA direct provider was compiled with support for %s HMEM interface "
+				"but the interface does not support p2p transfers. "
+				"EFA direct provider does not support HMEM transfers without p2p support. "
+				"HMEM support will be disabled.\n", fi_tostr(&iface, FI_TYPE_HMEM_IFACE));
+				return;
+		}
+	}
+
+	prov_info->caps			|= FI_HMEM;
+	prov_info->tx_attr->caps	|= FI_HMEM;
+	prov_info->rx_attr->caps	|= FI_HMEM;
+	prov_info->domain_attr->mr_mode	|= FI_MR_HMEM;
 }
 #else
-void efa_prov_info_set_hmem_flags(struct fi_info *prov_info)
+void efa_prov_info_direct_set_hmem_flags(struct fi_info *prov_info, enum fi_ep_type ep_type)
 {
 }
 #endif
@@ -458,13 +466,35 @@ int efa_prov_info_alloc(struct fi_info **prov_info_ptr,
 	if (!prov_info)
 		return -FI_ENOMEM;
 
-	if (ep_type != FI_EP_RDM && ep_type != FI_EP_DGRAM) {
-		EFA_WARN(FI_LOG_DOMAIN, "Unsupported endpoint type: %d\n",
-			 ep_type);
-		return -FI_ENODATA;
+	prov_info->mode |= FI_CONTEXT2; 	/* EFA direct path requires FI_CONTEXT2 mode */
+
+	if (ep_type == FI_EP_RDM) {
+		prov_info->caps	= EFA_RDM_CAPS;
+
+		/* Claim RMA support in the efa-direct path only if read, write
+		 * and unsolicited write are all available
+		 * Older versions of rdma-core do not contain the symbol
+		 * EFADV_DEVICE_ATTR_CAPS_UNSOLICITED_WRITE_RECV, so we only
+		 * check for the unsolicited write recv cap only when the
+		 * rdma-core is new enough
+		 */
+#if HAVE_CAPS_UNSOLICITED_WRITE_RECV
+		if (device->device_caps & EFADV_DEVICE_ATTR_CAPS_RDMA_READ &&
+		    device->device_caps & EFADV_DEVICE_ATTR_CAPS_RDMA_WRITE &&
+		    device->device_caps &
+			    EFADV_DEVICE_ATTR_CAPS_UNSOLICITED_WRITE_RECV)
+			prov_info->caps |= (OFI_TX_RMA_CAPS | OFI_RX_RMA_CAPS);
+#endif
+
+	} else {
+		if (ep_type != FI_EP_DGRAM) {
+			EFA_WARN(FI_LOG_DOMAIN, "Unsupported EFA info type: %d\n", ep_type);
+			return -FI_ENODATA;
+		}
+		prov_info->caps	= EFA_DGRM_CAPS;
+		prov_info->mode |= FI_MSG_PREFIX;
 	}
 
-	prov_info->caps	= (ep_type == FI_EP_RDM) ? EFA_RDM_CAPS : EFA_DGRM_CAPS;
 	prov_info->handle = NULL;
 	prov_info->addr_format = FI_ADDR_EFA;
 	prov_info->src_addr = calloc(1, EFA_EP_ADDR_LEN);
@@ -475,10 +505,8 @@ int efa_prov_info_alloc(struct fi_info **prov_info_ptr,
 	prov_info->src_addrlen = EFA_EP_ADDR_LEN;
 	memcpy(prov_info->src_addr, &device->ibv_gid, sizeof(device->ibv_gid));
 
-	err = efa_prov_info_set_fabric_attr(prov_info, device);
-	if (err) {
-		goto err_free;
-	}
+	/* fabric_attr->name is set in efa_util_prov_initialize */
+	*prov_info->fabric_attr	= efa_fabric_attr;
 
 	err = efa_prov_info_set_domain_attr(prov_info, device, ep_type);
 	if (err) {
@@ -493,8 +521,6 @@ int efa_prov_info_alloc(struct fi_info **prov_info_ptr,
 	if (err) {
 		goto err_free;
 	}
-
-	efa_prov_info_set_hmem_flags(prov_info);
 
 	*prov_info_ptr = prov_info;
 	return 0;
@@ -545,6 +571,11 @@ int efa_prov_info_alloc_for_rdm(struct fi_info **prov_info_rdm_ptr,
 
 	prov_info_rdm->caps |= efa_rdm_added_tx_caps | efa_rdm_added_rx_caps | efa_domain_caps;
 
+	/* efa-direct requires FI_CONTEXT2 but RDM doesn't. So unset FI_CONTEXT2 */
+	prov_info_rdm->mode &= ~FI_CONTEXT2;
+	prov_info_rdm->tx_attr->mode &= ~FI_CONTEXT2;
+	prov_info_rdm->rx_attr->mode &= ~FI_CONTEXT2;
+
 	/* update domain_attr */
 	{
 		/* EFA RDM endpoint ensure thread safety by pthread lock */
@@ -559,10 +590,12 @@ int efa_prov_info_alloc_for_rdm(struct fi_info **prov_info_rdm_ptr,
 		 * buffer. EFA RDM endpoint does not have this requirement, hence unset the flag
 		 */
 		prov_info_rdm->domain_attr->mr_mode &= ~FI_MR_LOCAL;
-
-		/* EFA RDM endpoint support writing CQ data by put it in packet header
+		/*
+		 * EFA RDM path requires manual progress for connection management
+		 * and data transfers
 		 */
-		prov_info_rdm->domain_attr->cq_data_size = EFA_RDM_CQ_DATA_SIZE;
+		prov_info_rdm->domain_attr->control_progress = FI_PROGRESS_MANUAL;
+		prov_info_rdm->domain_attr->progress = FI_PROGRESS_MANUAL;
 	}
 
 	/* update ep_attr */
@@ -580,11 +613,13 @@ int efa_prov_info_alloc_for_rdm(struct fi_info **prov_info_rdm_ptr,
 		/*
 		 * EFA RDM endpoint implemented emulated atomic, hence set atomic size
 		 */
-		max_atomic_size = device->rdm_info->ep_attr->max_msg_size
+		max_atomic_size = device->ibv_port_attr.max_msg_sz
 					- sizeof(struct efa_rdm_rta_hdr)
 					- device->rdm_info->src_addrlen
 					- EFA_RDM_IOV_LIMIT * sizeof(struct fi_rma_iov);
 		prov_info_rdm->ep_attr->max_order_raw_size = max_atomic_size;
+		prov_info_rdm->ep_attr->max_order_war_size = max_atomic_size;
+		prov_info_rdm->ep_attr->max_order_waw_size = max_atomic_size;
 	}
 
 	/* update tx_attr */
@@ -603,8 +638,7 @@ int efa_prov_info_alloc_for_rdm(struct fi_info **prov_info_rdm_ptr,
 		 * EFA RDM endpoint supports delivery complete by using DC capable protocols.
 		 * Therefore changing the default op_flags
 		 */
-		prov_info_rdm->tx_attr->op_flags = FI_INJECT | FI_COMPLETION | FI_TRANSMIT_COMPLETE |
-						   FI_DELIVERY_COMPLETE;
+		prov_info_rdm->tx_attr->op_flags |= EFA_RDM_TX_OP_FLAGS;
 
 		/* Here we calculate the max msg size for emulated injection of EFA RDM endpoint.
 		 * The requirement for inject is: upon return, the user buffer can be reused immediately.
@@ -614,10 +648,10 @@ int efa_prov_info_alloc_for_rdm(struct fi_info **prov_info_rdm_ptr,
 		 *    pkt_entry_size - maximum_header_size.
 		 */
 		if (efa_env.enable_shm_transfer)
-			min_pkt_size = MIN(device->rdm_info->ep_attr->max_msg_size - efa_rdm_pkt_type_get_max_hdr_size(),
+			min_pkt_size = MIN(device->ibv_port_attr.max_msg_sz - efa_rdm_pkt_type_get_max_hdr_size(),
 					   SHM_MAX_INJECT_SIZE);
 		else
-			min_pkt_size = device->rdm_info->ep_attr->max_msg_size - efa_rdm_pkt_type_get_max_hdr_size();
+			min_pkt_size = device->ibv_port_attr.max_msg_sz - efa_rdm_pkt_type_get_max_hdr_size();
 
 		if (min_pkt_size < efa_rdm_pkt_type_get_max_hdr_size()) {
 			prov_info_rdm->tx_attr->inject_size = 0;
@@ -644,6 +678,16 @@ int efa_prov_info_alloc_for_rdm(struct fi_info **prov_info_rdm_ptr,
 
 		if (efa_env.rx_size > 0)
 			prov_info_rdm->rx_attr->size = efa_env.rx_size;
+	}
+
+	/* EFA RDM can support HMEM even if p2p support is not available */
+	if ((ofi_hmem_is_initialized(FI_HMEM_CUDA) ||
+	     ofi_hmem_is_initialized(FI_HMEM_NEURON) ||
+	     ofi_hmem_is_initialized(FI_HMEM_SYNAPSEAI))) {
+		prov_info_rdm->caps |= FI_HMEM;
+		prov_info_rdm->tx_attr->caps |= FI_HMEM;
+		prov_info_rdm->rx_attr->caps |= FI_HMEM;
+		prov_info_rdm->domain_attr->mr_mode |= FI_MR_HMEM;
 	}
 
 	*prov_info_rdm_ptr = prov_info_rdm;

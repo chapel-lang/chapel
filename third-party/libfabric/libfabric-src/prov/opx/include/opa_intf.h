@@ -54,6 +54,7 @@
 */
 
 /* Copyright (c) 2003-2014 Intel Corporation. All rights reserved. */
+/* Copyright (C) 2021-2024 by Cornelis Networks.                   */
 
 #ifndef OPA_INTF_H
 #define OPA_INTF_H
@@ -74,9 +75,9 @@
 /* these aren't implemented for user mode, which is OK until we multi-thread */
 typedef struct _atomic {
 	uint32_t counter;
-} atomic_t;			/* no atomic_t type in user-land */
-#define atomic_set(a, v) ((a)->counter = (v))
-#define atomic_inc_return(a)  (++(a)->counter)
+} atomic_t; /* no atomic_t type in user-land */
+#define atomic_set(a, v)     ((a)->counter = (v))
+#define atomic_inc_return(a) (++(a)->counter)
 
 #if defined(__GNUC__)
 #ifndef if_pt

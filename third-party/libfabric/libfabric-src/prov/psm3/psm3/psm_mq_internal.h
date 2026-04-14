@@ -178,14 +178,14 @@ struct psm2_mq {
 	STAILQ_HEAD(, psm2_mq_req) eager_q; /**> eager request queue */
 
 	uint32_t hfi_thresh_tiny;
-	uint32_t hfi_thresh_rv;
+	uint32_t rndv_nic_thresh;
 	uint32_t shm_thresh_rv;
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 	uint32_t shm_gpu_thresh_rv;
 #endif
 	const char *ips_cpu_window_rv_str;	// default input to parser
 	struct psm3_mq_window_rv_entry *ips_cpu_window_rv;
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 	const char *ips_gpu_window_rv_str;	// default input to parser
 	struct psm3_mq_window_rv_entry *ips_gpu_window_rv;
 #endif
@@ -330,31 +330,10 @@ struct psm2_mq_req {
 	psm3_verbs_mr_t	mr;	// local registered memory for app buffer
 #endif
 
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 	uint8_t* user_gpu_buffer;	/* for recv */
 	STAILQ_HEAD(sendreq_spec_, ips_gpu_hostbuf) sendreq_prefetch;
 	uint32_t prefetch_send_msgoff;
-#endif
-#ifdef PSM_CUDA
-	CUipcMemHandle cuda_ipc_handle;
-	uint8_t cuda_ipc_handle_attached;
-	uint32_t cuda_ipc_offset;
-#endif
-#ifdef PSM_ONEAPI
-	union {
-		ze_ipc_mem_handle_t ipc_handle; // for sender req
-		uint32_t ze_handle;		// receiver req pidfd or gem_handle
-	};
-	uint8_t ze_handle_attached;
-	uint8_t ze_alloc_type;
-	uint32_t ze_ipc_offset;
-#ifndef PSM_HAVE_PIDFD
-	uint32_t ze_device_index;
-#endif
-	uint64_t ze_alloc_id;
-#endif
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
-	int gpu_hostbuf_used;
 	/*
 	 * is_sendbuf_gpu_mem - Used to always select TID path on the receiver
 	 * when send is on a device buffer
@@ -365,6 +344,10 @@ struct psm2_mq_req {
 	 * on a device/host buffer.
 	 */
 	uint8_t is_buf_gpu_mem;
+	uint16_t pad;	// ensure fields below are 64 bit aligned
+	// GPU specific fields for use in PSM3 shm GPU IPC
+	union psm2_mq_req_gpu_specific gpu_specific;
+	int gpu_hostbuf_used;
 #endif
 
 	/* PTLs get to store their own per-request data.  MQ manages the allocation
@@ -547,8 +530,8 @@ PSMI_ALWAYS_INLINE(
 void
 mq_copy_tiny(uint32_t *dest, uint32_t *src, uint8_t len))
 {
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
-	if (len && PSMI_IS_GPU_ENABLED && (PSMI_IS_GPU_MEM(dest) || PSMI_IS_GPU_MEM(src))) {
+#ifdef PSM_HAVE_GPU
+	if (len && (PSM3_IS_GPU_MEM(dest) || PSM3_IS_GPU_MEM(src))) {
 		PSM3_GPU_MEMCPY(dest, src, len);
 		return;
 	}
@@ -587,7 +570,7 @@ mq_copy_tiny(uint32_t *dest, uint32_t *src, uint8_t len))
 
 typedef void (*psmi_mtucpy_fn_t)(void *dest, const void *src, uint32_t len);
 typedef void (*psmi_copy_tiny_fn_t)(uint32_t *dest, uint32_t *src, uint8_t len);
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 
 PSMI_ALWAYS_INLINE(
 void
@@ -781,7 +764,7 @@ MOCK_DCL_EPILOGUE(psm3_mq_free);
 void psm3_mq_handle_rts_complete(psm2_mq_req_t req);
 int psm3_mq_handle_data(psm2_mq_t mq, psm2_mq_req_t req,
 			uint32_t offset, const void *payload, uint32_t paylen
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 			, int use_gdrcopy, psm2_ep_t ep
 #endif
 			);
@@ -804,7 +787,7 @@ int psm3_mq_handle_outoforder(psm2_mq_t mq, psm2_mq_req_t req);
 // 	can get future cache hits on other size messages in same buffer
 // not needed - msglen - negotiated total message size
 // copysz - actual amount to copy (<= msglen)
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 void psm3_mq_recv_copy(psm2_mq_t mq, psm2_mq_req_t req, uint8_t is_buf_gpu_mem,
                                 void *buf, uint32_t len, uint32_t copysz);
 #else

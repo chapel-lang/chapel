@@ -903,14 +903,14 @@ uint32_t ofi_addr_format(const char *str);
 int ofi_str_toaddr(const char *str, uint32_t *addr_format,
 		   void **addr, size_t *len);
 
-void ofi_straddr_log_internal(const char *func, int line,
+void ofi_straddr_log_internal(const char *func, int line, uint32_t addr_format,
 			      const struct fi_provider *prov,
 			      enum fi_log_level level,
 			      enum fi_log_subsys subsys, char *log_str,
 			      const void *addr);
 
 #define ofi_straddr_log(...) \
-	ofi_straddr_log_internal(__func__, __LINE__, __VA_ARGS__)
+	ofi_straddr_log_internal(__func__, __LINE__, FI_FORMAT_UNSPEC, __VA_ARGS__)
 
 #if ENABLE_DEBUG
 #define ofi_straddr_dbg(prov, subsystem, ...) \

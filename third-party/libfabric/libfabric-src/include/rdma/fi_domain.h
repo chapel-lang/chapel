@@ -122,6 +122,12 @@ struct fid_av {
  * Tracks registered memory regions, primarily for remote access,
  * but also for local access until we can remove that need.
  */
+
+#define FI_MR_DMABUF		(1ULL << 40)
+#define FI_MR_SINGLE_USE	(1ULL << 41)
+#define FI_HMEM_HOST_ALLOC	(1ULL << 45)
+#define FI_HMEM_DEVICE_ONLY	(1ULL << 46)
+
 struct fid_mr {
 	struct fid		fid;
 	void			*mem_desc;
@@ -175,6 +181,9 @@ struct fi_mr_attr {
 		int		synapseai;
 	} device;
 	void			*hmem_data;
+	size_t			page_size;
+	const struct fid_mr	*base_mr;
+	size_t			sub_mr_cnt;
 };
 
 struct fi_mr_modify {
@@ -223,14 +232,12 @@ enum fi_datatype {
 	FI_DOUBLE_COMPLEX,
 	FI_LONG_DOUBLE,
 	FI_LONG_DOUBLE_COMPLEX,
-	/* End of point to point atomic datatypes */
-	FI_DATATYPE_LAST,
-	/*
-	 * enums for 128-bit integer atomics, existing ordering and
-	 * FI_DATATYPE_LAST preserved for compatabilty.
-	 */
-	FI_INT128 = FI_DATATYPE_LAST,
+	FI_INT128,
 	FI_UINT128,
+	FI_FLOAT16,
+	FI_BFLOAT16,
+	FI_FLOAT8_E4M3,
+	FI_FLOAT8_E5M2,
 
 	/* Collective datatypes */
 	FI_VOID = FI_COLLECTIVE_OFFSET,
@@ -256,8 +263,7 @@ enum fi_op {
 	FI_CSWAP_GE,
 	FI_CSWAP_GT,
 	FI_MSWAP,
-	/* End of point to point atomic ops */
-	FI_ATOMIC_OP_LAST,
+	FI_DIFF,
 
 	/* Collective datatypes */
 	FI_NOOP = FI_COLLECTIVE_OFFSET,
@@ -334,7 +340,7 @@ struct fi_ops_mr {
 };
 
 /* Domain bind flags */
-#define FI_REG_MR		(1ULL << 59)
+#define FI_REG_MR	_Pragma("GCC warning \"'FI_REG_MR' is deprecated\"")	(1ULL << 59)
 
 struct fid_domain {
 	struct fid		fid;
@@ -388,14 +394,14 @@ fi_cntr_open(struct fid_domain *domain, struct fi_cntr_attr *attr,
 	return domain->ops->cntr_open(domain, attr, cntr, context);
 }
 
-static inline int
+static inline FI_DEPRECATED_FUNC int
 fi_wait_open(struct fid_fabric *fabric, struct fi_wait_attr *attr,
 	     struct fid_wait **waitset)
 {
 	return fabric->ops->wait_open(fabric, attr, waitset);
 }
 
-static inline int
+static inline FI_DEPRECATED_FUNC int
 fi_poll_open(struct fid_domain *domain, struct fi_poll_attr *attr,
 	     struct fid_poll **pollset)
 {
@@ -498,7 +504,7 @@ fi_av_open(struct fid_domain *domain, struct fi_av_attr *attr,
 	return domain->ops->av_open(domain, attr, av, context);
 }
 
-static inline int
+static inline FI_DEPRECATED_FUNC int
 fi_av_bind(struct fid_av *av, struct fid *fid, uint64_t flags)
 {
 	return av->fid.ops->bind(&av->fid, fid, flags);
@@ -575,6 +581,12 @@ static inline fi_addr_t
 fi_rx_addr(fi_addr_t fi_addr, int rx_index, int rx_ctx_bits)
 {
 	return (fi_addr_t) (((uint64_t) rx_index << (64 - rx_ctx_bits)) | fi_addr);
+}
+
+static inline fi_addr_t
+fi_group_addr(fi_addr_t fi_addr, uint32_t group_id)
+{
+	return (fi_addr_t) (((uint64_t) group_id << 32) | fi_addr);
 }
 
 #endif

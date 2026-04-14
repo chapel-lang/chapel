@@ -18,7 +18,7 @@
 #include "ofi_prov.h"
 #include <ofi_util.h>
 
-#include "efa.h"
+#include "efa_cq.h"
 #include "efa_prov_info.h"
 #ifdef EFA_PERF_ENABLED
 const char *efa_perf_counters_str[] = {
@@ -60,6 +60,43 @@ static int efa_fabric_close(fid_t fid)
 	return 0;
 }
 
+static int efa_trywait(struct fid_fabric *fabric, struct fid **fids, int count)
+{
+	struct efa_cq *efa_cq;
+	struct util_wait *wait;
+	int ret, i;
+
+	for (i = 0; i < count; i++) {
+		if (fids[i]->fclass == FI_CLASS_CQ) {
+			/* Use EFA-specific CQ trywait */
+			efa_cq = container_of(fids[i], struct efa_cq, util_cq.cq_fid.fid);
+			ret = efa_cq_trywait(efa_cq);
+			if (ret)
+				return ret;
+		} else {
+			/* Use generic util trywait logic for non-CQ types */
+			switch (fids[i]->fclass) {
+			case FI_CLASS_EQ:
+				wait = container_of(fids[i], struct util_eq, eq_fid.fid)->wait;
+				break;
+			case FI_CLASS_CNTR:
+				wait = container_of(fids[i], struct util_cntr, cntr_fid.fid)->wait;
+				break;
+			case FI_CLASS_WAIT:
+				wait = container_of(fids[i], struct util_wait, wait_fid.fid);
+				break;
+			default:
+				return -FI_EINVAL;
+			}
+
+			ret = wait->wait_try(wait);
+			if (ret)
+				return ret;
+		}
+	}
+	return FI_SUCCESS;
+}
+
 static struct fi_ops efa_fi_ops = {
 	.size = sizeof(struct fi_ops),
 	.close = efa_fabric_close,
@@ -74,7 +111,7 @@ static struct fi_ops_fabric efa_ops_fabric = {
 	.passive_ep = fi_no_passive_ep,
 	.eq_open = ofi_eq_create,
 	.wait_open = ofi_wait_fd_open,
-	.trywait = ofi_trywait
+	.trywait = efa_trywait
 };
 
 int efa_fabric(struct fi_fabric_attr *attr, struct fid_fabric **fabric_fid,

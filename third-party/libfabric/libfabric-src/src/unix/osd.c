@@ -116,7 +116,7 @@ int ofi_wait_cond(pthread_cond_t *cond, pthread_mutex_t *mut, int timeout_ms)
 	if (timeout_ms < 0)
 		return pthread_cond_wait(cond, mut);
 
-	t = ofi_gettime_ms() + timeout_ms;
+	t = ofi_get_realtime_ms() + timeout_ms;
 	ts.tv_sec = t / 1000;
 	ts.tv_nsec = (t % 1000) * 1000000;
 	return pthread_cond_timedwait(cond, mut, &ts);

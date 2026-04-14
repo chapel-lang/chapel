@@ -60,7 +60,7 @@
 #include "ips_proto_internal.h"
 
 psm2_error_t
-psm3_ips_scbctrl_init(psm2_ep_t ep,
+psm3_ips_scbctrl_init(const struct ips_proto *proto,
 		 uint32_t numscb, uint32_t numbufs,
 		 uint32_t imm_size, uint32_t bufsize,
 		 ips_scbctrl_avail_callback_fn_t scb_avail_callback,
@@ -72,6 +72,7 @@ psm3_ips_scbctrl_init(psm2_ep_t ep,
 	size_t alloc_sz;
 	uintptr_t base, imm_base;
 	psm2_error_t err = PSM2_OK;
+	psm2_ep_t ep = proto->ep;
 
 	psmi_assert_always(numscb > 0);
 	scbc->sbuf_num = scbc->sbuf_num_cur = numbufs;
@@ -80,6 +81,7 @@ psm3_ips_scbctrl_init(psm2_ep_t ep,
 	scbc->sbuf_buf_base = NULL;
 	scbc->sbuf_buf_alloc = NULL;
 	scbc->sbuf_buf_last = NULL;
+	scbc->proto = (struct ips_proto *)proto;
 
 	/* send buffers are not mandatory but when allocating them, make sure they
 	 * are on a page boundary */
@@ -144,17 +146,6 @@ psm3_ips_scbctrl_init(psm2_ep_t ep,
 	memset(scbc->scb_base, 0, alloc_sz);
 	base = (uintptr_t) scbc->scb_base;
 
-	/*
-	 * Allocate ack/send timer for each scb object.
-	 */
-	scbc->timers = (struct psmi_timer *)
-		psmi_calloc(ep, UNDEFINED, 2*numscb,
-		sizeof(struct psmi_timer));
-	if (scbc->timers == NULL) {
-		err = PSM2_NO_MEMORY;
-		goto fail;
-	}
-
 	for (i = 0; i < numscb; i++) {
 		scb = (struct ips_scb *)(base + i * scb_size);
 
@@ -166,22 +157,6 @@ psm3_ips_scbctrl_init(psm2_ep_t ep,
 			scb->imm_payload = NULL;
 
 		SLIST_INSERT_HEAD(&scbc->scb_free, scb, next);
-
-		/*
-		 * Initialize timers.
-		 * Associate the timers to each scb, the association is
-		 * not fixed because later PSM may exchange the timers
-		 * between scb, the reason for exchanging is that the
-		 * timer is currently using by flow, but the scb is to
-		 * be freed. see ack/nak processing in file ips_prot_recv.c
-		 */
-		scb->timer_ack = &scbc->timers[2*i];
-		psmi_timer_entry_init(scb->timer_ack,
-				psm3_ips_proto_timer_ack_callback, scb);
-
-		scb->timer_send = &scbc->timers[2*i+1];
-		psmi_timer_entry_init(scb->timer_send,
-				psm3_ips_proto_timer_send_callback, scb);
 	}
 	scbc->scb_avail_callback = scb_avail_callback;
 	scbc->scb_avail_context = scb_avail_context;
@@ -198,9 +173,6 @@ psm2_error_t psm3_ips_scbctrl_fini(struct ips_scbctrl *scbc)
 	}
 	if (scbc->sbuf_buf_alloc) {
 		psmi_free(scbc->sbuf_buf_alloc);
-	}
-	if (scbc->timers != NULL) {
-		psmi_free(scbc->timers);
 	}
 	if (scbc->scb_imm_buf) {
 		psmi_free(scbc->scb_imm_buf);
@@ -241,22 +213,89 @@ int psm3_ips_scbctrl_bufalloc(ips_scb_t *scb)
 	}
 }
 
-int psm3_ips_scbctrl_avail(struct ips_scbctrl *scbc)
+static ips_scb_t *
+psm3_ips_scbctrl_alloc_dynamic(struct ips_scbctrl *scbc, int len,
+			       uint32_t flags)
 {
-	return (!SLIST_EMPTY(&scbc->scb_free) && scbc->sbuf_num_cur > 0);
+	struct ips_scb *scb;
+	size_t scb_size;
+	size_t alloc_sz;
+	struct ips_scb_stats *stats = &scbc->proto->scb_stats;
+
+	scb_size = PSMI_ALIGNUP(sizeof(*scb), 64);
+	scb = psmi_memalign(PSMI_EP_NONE, NETWORK_BUFFERS, 64, scb_size);
+	if (!scb)
+		goto fail_exit;
+
+	/* Zero out all fields */
+	memset(scb, 0, scb_size);
+
+	scb->scbc = scbc;
+
+	/* Allocate the buffer if requested */
+	if (flags & IPS_SCB_FLAG_ADD_BUFFER) {
+		scb->payload_size = len;
+
+		alloc_sz = PSMI_ALIGNUP(len, 64);
+		scb->dyn_buf = psmi_calloc(PSMI_EP_NONE, NETWORK_BUFFERS,
+					   1, alloc_sz);
+		if (scb->dyn_buf == NULL)
+			goto fail_scb;
+		ips_scb_buffer(scb) = scb->dyn_buf;
+	}
+
+	scb->nfrag = 1;
+	scb->is_dynamic = true;
+
+	/* We are under memory pressure */
+	scb->scb_flags |= IPS_SEND_FLAG_ACKREQ;
+
+	/* Update the stats */
+	stats->dyn_alloc++;
+	stats->max_dyn_inuse = max(stats->max_dyn_inuse,
+				   stats->dyn_alloc - stats->dyn_free);
+
+	return scb;
+fail_scb:
+	psmi_free(scb);
+fail_exit:
+
+	return NULL;
+}
+
+static void psm3_ips_scbctrl_free_dynamic(ips_scb_t *scb)
+{
+	/* Update stats */
+	scb->scbc->proto->scb_stats.dyn_free++;
+
+	if (scb->dyn_buf)
+		psmi_free(scb->dyn_buf);
+	psmi_free(scb);
 }
 
 ips_scb_t *MOCKABLE(psm3_ips_scbctrl_alloc)(struct ips_scbctrl *scbc, int scbnum, int len,
 				uint32_t flags)
 {
 	ips_scb_t *scb, *scb_head = NULL;
+	struct ips_scb_stats *stats = &scbc->proto->scb_stats;
 
 	psmi_assert(flags & IPS_SCB_FLAG_ADD_BUFFER ? (scbc->sbuf_num > 0) : 1);
 	psmi_assert(scbc->sbuf_buf_size >= len);
 
 	while (scbnum--) {
-		if (SLIST_EMPTY(&scbc->scb_free))
+		if (SLIST_EMPTY(&scbc->scb_free)) {
+			/*
+			 * If we are out of scb and we can't fail, allocate all
+			 * the resources dynamically.
+			 */
+			if (flags & IPS_SCB_FLAG_PRIORITY) {
+				scb = psm3_ips_scbctrl_alloc_dynamic(scbc, len,
+					flags);
+				if (scb)
+					goto scb_link;
+			}
 			break;
+		}
 		scb = SLIST_FIRST(&scbc->scb_free);
 		/* Need to set this here as bufalloc may request
 		 * an ACK under memory pressure
@@ -276,7 +315,7 @@ ips_scb_t *MOCKABLE(psm3_ips_scbctrl_alloc)(struct ips_scbctrl *scbc, int scbnum
 		scb->nfrag = 1;
 		scb->frag_size = 0;
 		scb->chunk_size = 0;
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 		scb->mq_req = NULL;
 #endif
 #ifdef PSM_HAVE_REG_MR
@@ -291,8 +330,14 @@ ips_scb_t *MOCKABLE(psm3_ips_scbctrl_alloc)(struct ips_scbctrl *scbc, int scbnum
 			scb->scb_flags |= IPS_SEND_FLAG_ACKREQ;
 
 		SLIST_REMOVE_HEAD(&scbc->scb_free, next);
+scb_link:
 		SLIST_NEXT(scb, next) = scb_head;
 		scb_head = scb;
+
+		/* Update stats */
+		stats->alloc++;
+		stats->max_inuse = max(stats->max_inuse,
+				stats->alloc - stats->free);
 	}
 	return scb_head;
 }
@@ -301,6 +346,15 @@ MOCK_DEF_EPILOGUE(psm3_ips_scbctrl_alloc);
 void psm3_ips_scbctrl_free(ips_scb_t *scb)
 {
 	struct ips_scbctrl *scbc = scb->scbc;
+
+	/* Update stats */
+	scbc->proto->scb_stats.free++;
+
+	/* If it is allocated dynamically, simply free the resources */
+	if (scb->is_dynamic) {
+		psm3_ips_scbctrl_free_dynamic(scb);
+		return;
+	}
 	if (scbc->sbuf_num && (ips_scb_buffer(scb) >= scbc->sbuf_buf_base) &&
 	    (ips_scb_buffer(scb) <= scbc->sbuf_buf_last)) {
 		scbc->sbuf_num_cur++;
@@ -328,11 +382,19 @@ void psm3_ips_scbctrl_free(ips_scb_t *scb)
 	return;
 }
 
-ips_scb_t *MOCKABLE(psm3_ips_scbctrl_alloc_tiny)(struct ips_scbctrl *scbc)
+ips_scb_t *MOCKABLE(psm3_ips_scbctrl_alloc_tiny)(struct ips_scbctrl *scbc,
+						 uint32_t flags)
 {
 	ips_scb_t *scb;
-	if (SLIST_EMPTY(&scbc->scb_free))
+	struct ips_scb_stats *stats = &scbc->proto->scb_stats;
+
+	if (SLIST_EMPTY(&scbc->scb_free)) {
+		if (flags & IPS_SCB_FLAG_PRIORITY) {
+			scb = psm3_ips_scbctrl_alloc_dynamic(scbc, 0, 0);
+			goto update_stats;
+		}
 		return NULL;
+	}
 	scb = SLIST_FIRST(&scbc->scb_free);
 
 	SLIST_REMOVE_HEAD(&scbc->scb_free, next);
@@ -346,7 +408,7 @@ ips_scb_t *MOCKABLE(psm3_ips_scbctrl_alloc_tiny)(struct ips_scbctrl *scbc)
 	scb->nfrag = 1;
 	scb->frag_size = 0;
 	scb->chunk_size = 0;
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 	scb->mq_req = NULL;
 #endif
 #ifdef PSM_HAVE_REG_MR
@@ -359,6 +421,11 @@ ips_scb_t *MOCKABLE(psm3_ips_scbctrl_alloc_tiny)(struct ips_scbctrl *scbc)
 	scbc->scb_num_cur--;
 	if (scbc->scb_num_cur < (scbc->scb_num >> 1))
 		scb->scb_flags |= IPS_SEND_FLAG_ACKREQ;
+update_stats:
+	stats->alloc++;
+	stats->max_inuse = max(stats->max_inuse,
+			       stats->alloc - stats->free);
+
 	return scb;
 }
 MOCK_DEF_EPILOGUE(psm3_ips_scbctrl_alloc_tiny);

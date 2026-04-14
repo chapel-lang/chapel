@@ -368,7 +368,7 @@ int cuda_gdrcopy_dev_unregister(uint64_t handle)
 	err = global_gdrcopy_ops.gdr_unpin_buffer(global_gdr, gdrcopy->mh);
 	if (err) {
 		FI_WARN(&core_prov, FI_LOG_MR,
-			"gdr_unmap failed! error: %s\n",
+			"gdr_unpin_buffer failed! error: %s\n",
 			strerror(err));
 		goto exit;
 	}

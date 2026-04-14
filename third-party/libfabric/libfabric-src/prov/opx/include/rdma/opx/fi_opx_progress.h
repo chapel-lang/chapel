@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Cornelis Networks.
+ * Copyright (C) 2022-2025 Cornelis Networks.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -34,29 +34,20 @@
 #define _FI_PROV_OPX_PROGRESS_H_
 
 #include <pthread.h>
-#include <stdbool.h>
-#include <stdint.h>
-#include "rdma/opx/fi_opx_compiler.h"
+#include "rdma/opx/fi_opx_eq.h"
 
-struct fi_opx_progress_track {
-	pthread_t				*progress_thread;
-	bool					keep_running;
-	void					*returned_value;
+#define OPX_PROGRESS_CQ_WAIT_USEC (200)
+
+static const uint64_t OPX_PROGRESS_EVENT_TERMINATE = 0xD1Eul;
+
+struct opx_progress_thread {
+	struct fi_opx_cq *cq;
+	pthread_t	  p_thread;
+	int		  event_fd;
 };
 
-struct progress_func_args {
-        struct fid_cq *cq;
-        char* prog_affinity;
-	struct fi_opx_progress_track *progress_track;
-	int progress_interval;
-};
+void *opx_progress_init(struct fi_opx_cq *cq, char *affinity);
 
-// init progress_track
-__OPX_FORCE_INLINE__
-void fi_opx_progress_init (struct fi_opx_progress_track *progress) {
-	progress->progress_thread = NULL;
-	progress->returned_value = NULL;
-}
-void fi_opx_start_progress (struct fi_opx_progress_track *progress_track, struct fid_cq *cq, char* prog_affinity, int progress_interval);
-void fi_opx_stop_progress (struct fi_opx_progress_track *progress_track);
+void opx_progress_stop(void *progress_thread_ptr);
+
 #endif

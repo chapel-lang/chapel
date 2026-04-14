@@ -40,7 +40,8 @@
 		     OFI_RX_RMA_CAPS | FI_ATOMICS | FI_DIRECTED_RECV | \
 		     FI_MULTI_RECV)
 
-#define RXM_DOMAIN_CAPS (FI_LOCAL_COMM | FI_REMOTE_COMM)
+#define RXM_DOMAIN_CAPS (FI_LOCAL_COMM | FI_REMOTE_COMM | FI_AV_USER_ID | \
+			 FI_PEER)
 
 
 /* Since we are a layering provider, the attributes for which we rely on the
@@ -52,7 +53,6 @@ struct fi_tx_attr rxm_tx_attr = {
 	.caps = RXM_TX_CAPS | FI_HMEM,
 	.op_flags = RXM_PASSTHRU_TX_OP_FLAGS | RXM_TX_OP_FLAGS,
 	.msg_order = ~0x0ULL,
-	.comp_order = FI_ORDER_NONE,
 	.size = RXM_TX_SIZE,
 	.iov_limit = RXM_IOV_LIMIT,
 	.rma_iov_limit = RXM_IOV_LIMIT,
@@ -62,7 +62,6 @@ struct fi_rx_attr rxm_rx_attr = {
 	.caps = RXM_RX_CAPS | FI_HMEM,
 	.op_flags = RXM_PASSTHRU_RX_OP_FLAGS | RXM_RX_OP_FLAGS,
 	.msg_order = ~0x0ULL,
-	.comp_order = FI_ORDER_NONE,
 	.size = RXM_RX_SIZE,
 	.iov_limit= RXM_IOV_LIMIT,
 };
@@ -71,7 +70,6 @@ static struct fi_tx_attr rxm_tx_attr_coll = {
 	.caps = RXM_TX_CAPS | FI_COLLECTIVE,
 	.op_flags = RXM_PASSTHRU_TX_OP_FLAGS | RXM_TX_OP_FLAGS,
 	.msg_order = ~0x0ULL,
-	.comp_order = FI_ORDER_NONE,
 	.size = RXM_TX_SIZE,
 	.iov_limit = RXM_IOV_LIMIT,
 	.rma_iov_limit = RXM_IOV_LIMIT,
@@ -81,7 +79,6 @@ static struct fi_rx_attr rxm_rx_attr_coll = {
 	.caps = RXM_RX_CAPS | FI_COLLECTIVE,
 	.op_flags = RXM_PASSTHRU_RX_OP_FLAGS | RXM_RX_OP_FLAGS,
 	.msg_order = ~0x0ULL,
-	.comp_order = FI_ORDER_NONE,
 	.size = RXM_RX_SIZE,
 	.iov_limit= RXM_IOV_LIMIT,
 };
@@ -123,7 +120,7 @@ static struct fi_domain_attr rxm_domain_attr = {
 	 * doesn't fail at RxM level. If an app requires FI_MR_BASIC, it
 	 * would be passed down to core provider.
 	 */
-	.mr_mode = FI_MR_BASIC | FI_MR_SCALABLE,
+	.mr_mode = OFI_MR_BASIC | OFI_MR_SCALABLE,
 	.cq_data_size = sizeof_field(struct ofi_op_hdr, data),
 	.cq_cnt = (1 << 16),
 	.ep_cnt = (1 << 15),
@@ -155,7 +152,6 @@ static struct fi_tx_attr rxm_tx_thru_attr = {
 	.caps = OFI_PRIMARY_TX_CAPS | OFI_SECONDARY_TX_CAPS,
 	.op_flags = OFI_TX_OP_FLAGS,
 	.msg_order = ~0x0ULL,
-	.comp_order = FI_ORDER_NONE,
 	.inject_size = SIZE_MAX,
 	.size = RXM_TX_SIZE,
 	.iov_limit = SIZE_MAX,
@@ -166,7 +162,6 @@ static struct fi_rx_attr rxm_rx_thru_attr = {
 	.caps = OFI_PRIMARY_RX_CAPS | OFI_SECONDARY_RX_CAPS,
 	.op_flags = OFI_RX_OP_FLAGS,
 	.msg_order = ~0x0ULL,
-	.comp_order = FI_ORDER_NONE,
 	.size = SIZE_MAX,
 	.iov_limit= SIZE_MAX,
 };
@@ -195,7 +190,7 @@ static struct fi_domain_attr rxm_domain_thru_attr = {
 	 * doesn't fail at RxM level. If an app requires FI_MR_BASIC, it
 	 * would be passed down to core provider.
 	 */
-	.mr_mode = FI_MR_BASIC | FI_MR_SCALABLE,
+	.mr_mode = OFI_MR_BASIC | OFI_MR_SCALABLE,
 	.cq_data_size = sizeof(uint64_t),
 	.cq_cnt = (1 << 16),
 	.ep_cnt = (1 << 15),
@@ -229,7 +224,7 @@ static struct fi_info rxm_base_info = {
 
 static struct fi_info rxm_tcp_info = {
 	.caps = RXM_TX_CAPS | RXM_RX_CAPS | RXM_DOMAIN_CAPS,
-	.addr_format = FI_SOCKADDR,
+	.addr_format = FI_SOCKADDR_IP,
 	.tx_attr = &rxm_tx_attr,
 	.rx_attr = &rxm_rx_attr,
 	.ep_attr = &rxm_ep_attr,

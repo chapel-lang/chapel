@@ -42,13 +42,13 @@
 #include <stdio.h>
 
 #define XPMEM_DEFAULT_MEMCPY_CHUNK_SIZE 262144
-struct xpmem *xpmem = NULL;
+struct ofi_xpmem *xpmem = NULL;
 
 #if HAVE_XPMEM
 /* global cache for use with xpmem */
 static struct ofi_mr_cache *xpmem_cache;
 
-int xpmem_init(void)
+int ofi_xpmem_init(void)
 {
 	/* Any attachment that goes past the Linux TASK_SIZE will always
 	 * fail. To prevent this we need to determine the value of
@@ -65,7 +65,7 @@ int xpmem_init(void)
 	char buffer[1024];
 	uintptr_t address_max = 0;
 	FILE *fh;
-	uintptr_t low, high;
+	uintptr_t high;
 	char *tmp;
 
 	fi_param_define(&core_prov, "xpmem_memcpy_chunksize", FI_PARAM_SIZE_T,
@@ -87,7 +87,7 @@ int xpmem_init(void)
 	while (fgets(buffer, sizeof(buffer), fh)) {
 		/* each line of /proc/self/maps starts with low-high in
 		 * hexidecimal (without a 0x) */
-		low = strtoul(buffer, &tmp, 16);
+		(void) strtoul(buffer, &tmp, 16);
 		high = strtoul(tmp + 1, NULL, 16);
 		if (address_max < high)
 			address_max = high;
@@ -108,7 +108,7 @@ int xpmem_init(void)
 	xpmem->pinfo.seg_id = xpmem_make(0, XPMEM_MAXADDR_SIZE, XPMEM_PERMIT_MODE,
 					 (void *) 0666);
 	if (xpmem->pinfo.seg_id == -1) {
-		FI_WARN(&core_prov, FI_LOG_CORE,
+		FI_INFO(&core_prov, FI_LOG_CORE,
 			"Failed to export process virtual address space for use with xpmem\n");
 		ret = -FI_ENODATA;
 		goto fail;
@@ -132,7 +132,7 @@ fail:
 	return ret;
 }
 
-int xpmem_cleanup(void)
+int ofi_xpmem_cleanup(void)
 {
 	int ret = 0;
 
@@ -158,9 +158,9 @@ static inline void xpmem_memcpy(void *dst, void *src, size_t size)
 	}
 }
 
-int xpmem_copy(struct iovec *local, unsigned long local_cnt,
-	       struct iovec *remote, unsigned long remote_cnt,
-	       size_t total, pid_t pid, bool write, void *user_data)
+int ofi_xpmem_copy(struct iovec *local, unsigned long local_cnt,
+                   struct iovec *remote, unsigned long remote_cnt,
+                   size_t total, pid_t pid, bool write, void *user_data)
 {
 	int ret, i;
 	struct iovec iov;
@@ -175,12 +175,13 @@ int xpmem_copy(struct iovec *local, unsigned long local_cnt,
 		iov.iov_base = (void *) ofi_get_page_start(remote[i].iov_base,
 							   page_size);
 		iov.iov_len =
-			(uintptr_t) ofi_get_page_end(remote[i].iov_base +
-					remote[i].iov_len, page_size) -
+			(uintptr_t) ofi_get_page_end(
+					(void*)((uintptr_t)remote[i].iov_base +
+					remote[i].iov_len), page_size) -
 					(uintptr_t)iov.iov_base;
 
 		ret = ofi_xpmem_cache_search(xpmem_cache, &iov, pid, &mr_entry,
-					     (struct xpmem_client *)user_data);
+					     (struct ofi_xpmem_client *)user_data);
 		if (ret)
 			return ret;
 
@@ -208,8 +209,8 @@ int xpmem_copy(struct iovec *local, unsigned long local_cnt,
 	return 0;
 }
 
-int ofi_xpmem_enable(struct xpmem_pinfo *peer,
-		     struct xpmem_client *xpmem)
+int ofi_xpmem_enable(struct ofi_xpmem_pinfo *peer,
+		     struct ofi_xpmem_client *xpmem)
 {
 	xpmem->apid = xpmem_get(peer->seg_id,
 				XPMEM_RDWR, XPMEM_PERMIT_MODE, (void *) 0666);
@@ -219,37 +220,37 @@ int ofi_xpmem_enable(struct xpmem_pinfo *peer,
 	return FI_SUCCESS;
 }
 
-void ofi_xpmem_release(struct xpmem_client *xpmem)
+void ofi_xpmem_release(struct ofi_xpmem_client *xpmem)
 {
 	xpmem_release(xpmem->apid);
 }
 
 #else
 
-int xpmem_init(void)
+int ofi_xpmem_init(void)
 {
 	return -FI_ENOSYS;
 }
 
-int xpmem_cleanup(void)
+int ofi_xpmem_cleanup(void)
 {
 	return -FI_ENOSYS;
 }
 
-int xpmem_copy(struct iovec *local, unsigned long local_cnt,
-	       struct iovec *remote, unsigned long remote_cnt,
-	       size_t total, pid_t pid, bool write, void *user_data)
+int ofi_xpmem_copy(struct iovec *local, unsigned long local_cnt,
+                   struct iovec *remote, unsigned long remote_cnt,
+                   size_t total, pid_t pid, bool write, void *user_data)
 {
 	return -FI_ENOSYS;
 }
 
-int ofi_xpmem_enable(struct xpmem_pinfo *peer,
-		     struct xpmem_client *xpmem)
+int ofi_xpmem_enable(struct ofi_xpmem_pinfo *peer,
+		     struct ofi_xpmem_client *xpmem)
 {
 	return -FI_ENOSYS;
 }
 
-void ofi_xpmem_release(struct xpmem_client *xpmem)
+void ofi_xpmem_release(struct ofi_xpmem_client *xpmem)
 {
 }
 

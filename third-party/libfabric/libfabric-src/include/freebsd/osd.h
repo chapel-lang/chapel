@@ -49,6 +49,7 @@
 #define HOST_NAME_MAX  128
 #define SOL_TCP IPPROTO_TCP
 
+#define OFI_KEEPALIVE TCP_KEEPIDLE
 typedef cpuset_t cpu_set_t;
 
 static inline int ofi_shm_remap(struct util_shm *shm, size_t newsize, void **mapped)

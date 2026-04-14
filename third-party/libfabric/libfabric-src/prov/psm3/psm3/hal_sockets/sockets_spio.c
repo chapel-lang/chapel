@@ -71,7 +71,7 @@
 /*---------------------------------------------------------------------------*/
 /* TCP specific code */
 
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 // set iov for remaining GPU payload data. It copies device memory to sockets_ep.sbuf
 // in word boundary and then set iov to use the sockets_ep.sbuf with proper offset.
 #define PAYLOAD_IOV(iov, payload, payload_len, remaining, buf, is_gpu_payload)                      \
@@ -101,7 +101,7 @@
 #endif
 
 // prepare msghdr for a message
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 #define MSG_IOV(msg, header, payload, payload_len, remaining, buf, is_gpu_payload)                  \
 	if (likely(remaining > payload_len)) {                                                       \
 		msg.msg_iov[msg.msg_iovlen].iov_len = remaining - payload_len;                       \
@@ -323,7 +323,7 @@ psm3_sockets_tcp_sendpacing(struct ips_proto *proto, struct ips_flow *flow)
 static __inline__ psm2_error_t
 psm3_sockets_tcp_aux_send(psm2_ep_t ep, struct ips_flow *flow,
 	struct ips_message_header *header, uint32_t *payload, uint32_t payload_len
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 	, uint32_t is_gpu_payload
 #endif
 	)
@@ -344,7 +344,7 @@ psm3_sockets_tcp_aux_send(psm2_ep_t ep, struct ips_flow *flow,
 	msg.msg_iov[0].iov_len = sizeof(*header);
 	if (payload_len) {
 		PAYLOAD_IOV(msg.msg_iov[1], payload, payload_len, payload_len
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 			, ep->sockets_ep.sbuf, is_gpu_payload
 #endif
 			);
@@ -383,7 +383,7 @@ psm3_sockets_tcp_spio_transfer_frame(struct ips_proto *proto, struct ips_flow *f
 			struct ips_scb *scb, uint32_t *payload,
 			uint32_t length, uint32_t isCtrlMsg,
 			uint32_t cksum_valid, uint32_t cksum
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 			, uint32_t is_gpu_payload
 #endif
 			)
@@ -477,7 +477,7 @@ psm3_sockets_tcp_spio_transfer_frame(struct ips_proto *proto, struct ips_flow *f
 			_HFI_VDBG("Send DISCONN msg opcode=%x via aux_socket\n", opcode);
 			flow->send_remaining = 0;
 			return psm3_sockets_tcp_aux_send(ep, flow, ips_lrh, payload, length
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 				, is_gpu_payload
 #endif
 			);
@@ -490,7 +490,7 @@ psm3_sockets_tcp_spio_transfer_frame(struct ips_proto *proto, struct ips_flow *f
 		len = flow->send_remaining ? flow->send_remaining : sizeof(*ips_lrh) + length;
 		msg.msg_iovlen = 0;
 		MSG_IOV(msg, ips_lrh, payload, length, len
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 			, ep->sockets_ep.sbuf, is_gpu_payload
 #endif
 			);
@@ -552,7 +552,7 @@ psm3_sockets_tcp_spio_transfer_frame(struct ips_proto *proto, struct ips_flow *f
 				psm3_sockaddr_fmt((struct sockaddr *)&flow->ipsaddr->sockets.remote_pri_addr, 0),
 				length);
 			_HFI_PDBG_DUMP_ALWAYS((uint8_t*)ips_lrh, sizeof(*ips_lrh));
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 			if (is_gpu_payload) {
 				PSM3_GPU_MEMCPY_DTOH(ep->sockets_ep.sbuf,
 					payload, length);
@@ -566,7 +566,7 @@ psm3_sockets_tcp_spio_transfer_frame(struct ips_proto *proto, struct ips_flow *f
 		}
 		if_pf (opcode == OPCODE_DISCONNECT_REPLY) {
 			return psm3_sockets_tcp_aux_send(ep, flow, ips_lrh, payload, length
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 				, is_gpu_payload
 #endif
 			);
@@ -707,7 +707,7 @@ psm3_sockets_tcp_spio_transfer_frame(struct ips_proto *proto, struct ips_flow *f
 				//    (UDP), it will fill receiver buffer from beginning
 				flow->send_remaining = 0;
 				ret = psm3_sockets_tcp_aux_send(ep, flow, ips_lrh, payload, length
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 					, is_gpu_payload
 #endif
 				);
@@ -739,7 +739,7 @@ psm3_sockets_tcp_spio_transfer_frame(struct ips_proto *proto, struct ips_flow *f
 			_HFI_VDBG("Invalid tcp_fd on %s! Try to use aux socket.\n", ep->dev_name);
 			flow->send_remaining = 0;
 			ret = psm3_sockets_tcp_aux_send(ep, flow, ips_lrh, payload, length
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 				, is_gpu_payload
 #endif
 			);
@@ -751,9 +751,9 @@ psm3_sockets_tcp_spio_transfer_frame(struct ips_proto *proto, struct ips_flow *f
 	}
 
 #ifndef PSM_TCP_ACK
-	// return PSM2_OK for ctrl msg and PSM2_TCP_DATA_SENT for data msg
+	// return PSM2_OK for ctrl msg and PSM2_RELIABLE_DATA_SENT for data msg
 	if (ret == PSM2_OK && !isCtrlMsg) {
-		return PSM2_TCP_DATA_SENT;
+		return PSM2_RELIABLE_DATA_SENT;
 	}
 #endif
 	return ret;
@@ -774,7 +774,7 @@ psm3_sockets_tcp_spio_transfer_frames(struct ips_proto *proto, struct ips_flow *
 
 	struct msghdr msg = ep->sockets_ep.snd_msg;
 	msg.msg_iovlen = 0;
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 	// this is used for GPU support. It maintains the position in sbuf
 	// to which we copy data from device
 	uint8_t *buf = ep->sockets_ep.sbuf;
@@ -796,7 +796,7 @@ psm3_sockets_tcp_spio_transfer_frames(struct ips_proto *proto, struct ips_flow *
 		ret = psm3_sockets_tcp_spio_transfer_frame(proto, flow, scb, ips_scb_buffer(scb),
 			scb->payload_size, PSMI_TRUE, scb->ips_lrh.flags & IPS_SEND_FLAG_PKTCKSUM,
 			scb->cksum[0]
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 			, IS_TRANSFER_BUF_GPU_MEM(scb)
 #endif
 		);
@@ -839,7 +839,7 @@ psm3_sockets_tcp_spio_transfer_frames(struct ips_proto *proto, struct ips_flow *
 		len = sizeof(*ips_lrh) + scb->payload_size;
 	}
 	MSG_IOV(msg, ips_lrh, ips_scb_buffer(scb), scb->payload_size, len
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 			, buf, IS_TRANSFER_BUF_GPU_MEM(scb)
 #endif
 		);
@@ -864,7 +864,7 @@ psm3_sockets_tcp_spio_transfer_frames(struct ips_proto *proto, struct ips_flow *
 		if (likely(scb->payload_size > 0)) {
 			PAYLOAD_IOV(iovs[msg.msg_iovlen], ips_scb_buffer(scb),
 				scb->payload_size, scb->payload_size
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 				, buf, IS_TRANSFER_BUF_GPU_MEM(scb)
 #endif
 				);
@@ -983,7 +983,7 @@ psm3_sockets_udp_gso_send(int fd, struct ips_proto *proto,
 		psm3_sockaddr_in_t *addr,
 		struct ips_scb *scb, uint8_t *payload, uint32_t length,
 		uint32_t frag_size
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 		, uint32_t is_gpu_payload
 #endif
 		)
@@ -1027,7 +1027,7 @@ psm3_sockets_udp_gso_send(int fd, struct ips_proto *proto,
                                 len + sizeof(*ips_lrh) + HFI_CRC_SIZE_IN_BYTES);
 
 		_HFI_VDBG("copy payload %p %u\n", payload, len);
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 		if (is_gpu_payload) {
 			PSM3_GPU_MEMCPY_DTOH(sbuf_gso + sizeof(*ips_lrh),
 					payload, len);
@@ -1099,7 +1099,7 @@ psm3_sockets_udp_spio_transfer_frame(struct ips_proto *proto, struct ips_flow *f
 			struct ips_scb *scb, uint32_t *payload,
 			uint32_t length, uint32_t isCtrlMsg,
 			uint32_t cksum_valid, uint32_t cksum
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 			, uint32_t is_gpu_payload
 #endif
 			)
@@ -1143,7 +1143,7 @@ psm3_sockets_udp_spio_transfer_frame(struct ips_proto *proto, struct ips_flow *f
 					&flow->ipsaddr->sockets.remote_pri_addr,
 					scb, (uint8_t*)payload, scb->chunk_size_remaining,
 					scb->frag_size
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 					,is_gpu_payload
 #endif
 					)) {
@@ -1159,7 +1159,7 @@ psm3_sockets_udp_spio_transfer_frame(struct ips_proto *proto, struct ips_flow *f
 	memcpy(sbuf, ips_lrh, sizeof(*ips_lrh));
 	// copy payload to send buffer, length could be zero, be safe
 	_HFI_VDBG("copy payload %p %u\n",  payload, length);
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 	if (is_gpu_payload) {
 		PSM3_GPU_MEMCPY_DTOH(sbuf + sizeof(*ips_lrh),
 			payload, length);

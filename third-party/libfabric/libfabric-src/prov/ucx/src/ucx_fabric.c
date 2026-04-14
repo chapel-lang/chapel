@@ -87,7 +87,7 @@ static char* ucx_local_host_resolve()
 	char *result = NULL;
 
 	status = fi_param_get(&ucx_prov, "ns_iface", &iface);
-	if (!status)
+	if (status != FI_SUCCESS)
 		iface = NULL;
 
 	if (getifaddrs(&ifaddr) == -1) {

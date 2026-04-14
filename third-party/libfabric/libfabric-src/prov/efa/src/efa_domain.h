@@ -10,10 +10,16 @@
 #include "efa_env.h"
 #include "ofi_hmem.h"
 #include "ofi_util.h"
+#include "ofi_lock.h"
+
+enum efa_domain_info_type {
+	EFA_INFO_RDM,
+	EFA_INFO_DIRECT,
+	EFA_INFO_DGRAM,
+};
 
 struct efa_domain {
 	struct util_domain	util_domain;
-	struct fi_info		*shm_info;
 	struct fid_domain	*shm_domain;
 	struct efa_device	*device;
 	struct ibv_pd		*ibv_pd;
@@ -22,17 +28,42 @@ struct efa_domain {
 	struct ofi_mr_cache	*cache;
 	struct efa_qp		**qp_table;
 	size_t			qp_table_sz_m1;
-	struct efa_hmem_info	hmem_info[OFI_HMEM_MAX];
 	size_t			mtu_size;
 	size_t			addrlen;
 	bool 			mr_local;
-	uint64_t		rdm_mode;
-	size_t			rdm_cq_size;
 	struct dlist_entry	list_entry; /* linked to g_efa_domain_list */
 	struct ofi_genlock	srx_lock; /* shared among peer providers */
+	struct efa_ah		*ah_map;
+	/* Total count of ibv memory registrations */
+	size_t ibv_mr_reg_ct;
+	/* Total size of memory registrations (in bytes) */
+	size_t ibv_mr_reg_sz;
+	/* info_type is used to distinguish between the rdm, dgram and
+	 * efa-direct paths */
+	enum efa_domain_info_type info_type;
+
+	size_t			rdm_cq_size;
+	/* number of rdma-read messages in flight */
+	uint64_t		num_read_msg_in_flight;
+	/* queued op entries */
+	struct dlist_entry ope_queued_list;
+	/* tx/rx_entries used by long CTS msg/write/read protocol
+         * which have data to be sent */
+	struct dlist_entry ope_longcts_send_list;
+	/* list of #efa_rdm_peer that are in backoff due to RNR */
+	struct dlist_entry peer_backoff_list;
+	/* list of #efa_rdm_peer that will retry posting handshake pkt */
+	struct dlist_entry handshake_queued_peer_list;
+	/* Function pointer for internal buffer memory registration */
+	int (*internal_buf_mr_regv)(struct fid_domain *domain_fid,
+				    const struct iovec *iov, size_t count,
+				    uint64_t access, uint64_t offset,
+				    uint64_t requested_key, uint64_t flags,
+				    struct fid_mr **mr_fid, void *context);
 };
 
 extern struct dlist_entry g_efa_domain_list;
+extern ofi_mutex_t g_efa_domain_list_lock;
 
 /*
  * efa_is_cache_available() is a check to see whether a memory registration
@@ -86,5 +117,7 @@ bool efa_domain_support_rnr_retry_modify(struct efa_domain *domain)
 
 int efa_domain_open(struct fid_fabric *fabric_fid, struct fi_info *info,
 		    struct fid_domain **domain_fid, void *context);
+
+void efa_domain_progress_rdm_peers_and_queues(struct efa_domain *domain);
 
 #endif

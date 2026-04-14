@@ -51,14 +51,14 @@
   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 */
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
 #include "psm_user.h"
+
+#ifdef PSM_HAVE_GPU
 #include "psm2_hal.h"
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <sys/types.h>
 #include "ips_proto.h"
-#include "ptl_ips/ips_tid.h"
 #include "ptl_ips/ips_expected_proto.h"
 
 // flags=0 for send, 1 for recv
@@ -67,10 +67,11 @@ psm3_verbs_gdr_convert_gpu_to_host_addr(unsigned long buf,
 							 size_t size, int flags,
 							 psm2_ep_t ep)
 {
+#ifdef RNDV_MOD
 	void *host_addr_buf;
 	uintptr_t pageaddr;
 	uint64_t pagelen;
-#ifdef RNDV_MOD
+
 	// when PSM3_MR_ACCESS is enabled, we use the same access flags for
 	// gdrcopy as we use for user space GPU MRs.  This can improve MR cache
 	// hit rate.  Note the actual mmap is always for CPU read/write access.
@@ -80,19 +81,10 @@ psm3_verbs_gdr_convert_gpu_to_host_addr(unsigned long buf,
 	// both tend to be smaller buffers, this may provide a better hit rate.
 	int access = IBV_ACCESS_IS_GPU_ADDR
 			|(ep->mr_access?IBV_ACCESS_LOCAL_WRITE|IBV_ACCESS_REMOTE_WRITE:0);
-#endif
 
-#ifdef PSM_ONEAPI
-	PSMI_ONEAPI_ZE_CALL(zeMemGetAddressRange, ze_context,
-			    (const void *)buf, (void **)&pageaddr, &pagelen);
-#else
-	pageaddr = buf & GPU_PAGE_MASK;
-	pagelen = (uint64_t) (PSMI_GPU_PAGESIZE +
-			      ((buf + size - 1) & GPU_PAGE_MASK) - pageaddr);
-#endif
+	PSM3_GPU_ROUNDUP_GDRCOPY(buf, size, &pageaddr, &pagelen);
 	_HFI_VDBG("buf=%p size=%zu pageaddr=%p pagelen=%"PRIu64" flags=0x%x ep=%p\n",
 		(void *)buf, size, (void *)pageaddr, pagelen, flags, ep);
-#ifdef RNDV_MOD
 	ep = ep->mctxt_master;
 	host_addr_buf = psm3_rv_pin_and_mmap(ep->rv, pageaddr, pagelen, access);
 	if_pf (! host_addr_buf) {
@@ -105,16 +97,12 @@ psm3_verbs_gdr_convert_gpu_to_host_addr(unsigned long buf,
 			return NULL;
 	}
 //_HFI_ERROR("pinned buf=%p size=%zu pageaddr=%p pagelen=%u access=0x%x flags=0x%x ep=%p, @ %p\n", (void *)buf, size, (void *)pageaddr, pagelen, access, flags, ep, host_addr_buf);
-#else
-	psmi_assert_always(0);	// unimplemented, should not get here
-	host_addr_buf = NULL;
-#endif /* RNDV_MOD */
-#ifdef PSM_ONEAPI
 	return (void *)((uintptr_t)host_addr_buf + (buf - pageaddr));
 #else
-	return (void *)((uintptr_t)host_addr_buf + (buf & GPU_PAGE_OFFSET_MASK));
-#endif
+	psmi_assert_always(0);	// unimplemented, should not get here
+	return NULL;
+#endif /* RNDV_MOD */
 }
 
-#endif /* PSM_CUDA || PSM_ONEAPI  */
+#endif /* PSM_HAVE_GPU */
 #endif /* PSM_VERBS */

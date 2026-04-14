@@ -65,6 +65,13 @@
 #define DF_OPP_LIBRARY "libopasadb.so.1.0.0"
 #define DATA_VFABRIC_OFFSET 8
 
+#define IPS_PROTO_FLOW_CREDITS_MIN_DEFAULT 32
+#define IPS_PROTO_FLOW_CREDITS_MAX_DEFAULT 128
+#define IPS_PROTO_FLOW_CREDITS_STEP_DEFAULT 16
+
+#define IPS_PROTO_FLOW_CREDITS_RC_MIN_DEFAULT 768
+#define IPS_PROTO_FLOW_CREDITS_RC_MAX_DEFAULT 960
+
 /* Send retransmission */
 #define IPS_PROTO_SPIO_RETRY_US_DEFAULT	2	/* in uS */
 
@@ -97,13 +104,22 @@
 #define IPS_FAULTINJ_SENDPART	10	/* 1 every X pkts partial send */
 #define IPS_FAULTINJ_RECVPART	10	/* 1 every X pkts partial recv */
 #define IPS_FAULTINJ_CONNUNKN	500000	/* 1 every X pkts send with unknown connection */
+#define IPS_FAULTINJ_CONNRECVLOST 10	/* 1 every X conn pkts drop at recv */
+#define IPS_FAULTINJ_SLOWCONN   10      /* 1 every X conn pkt rcv are slowed */
+#define IPS_SLOWCONN_DELAY      10      /* ms to delay per pkt for SLOWCONN */
 #ifdef PSM_HAVE_REG_MR
 #define IPS_FAULTINJ_RQ_LKEY	5000	/* 0 every X RQ WQE bad lkey */
 #define IPS_FAULTINJ_SQ_LKEY	5000	/* 0 every X SQ WQE bad lkey */
+#ifdef PSM_RC_RECONNECT
+#define IPS_FAULTINJ_RC_RQ_LKEY	5000	/* 0 every X RC RQ WQE bad lkey */
+#define IPS_FAULTINJ_RC_SQ_LKEY	5000	/* 0 every X RC SQ WQE bad lkey */
+#endif
 #define IPS_FAULTINJ_RC_RDMA_LKEY 5000	/* 0 every X RC SQ RDMA bad lkey */
+#define IPS_BAD_LKEY 55	// for RQ, SQ, RC_RQ, RC_SQ, and RC_RDMA fault injectors
 #define IPS_FAULTINJ_RC_RDMA_RKEY 5000	/* 0 every X RC SQ RDMA bad rkey */
 #define IPS_FAULTINJ_RV_RDMA_LEN 5000	/* 0 every X RV SQ RDMA bad len */
 #define IPS_FAULTINJ_RV_RDMA_RKEY 5000	/* 1 every X RV SQ RDMA bad rkey */
+#define IPS_BAD_RKEY 55	// for RC_RDMA and RV_RDMA fault injectors
 #define IPS_FAULTINJ_REG_MR	100	/* 1 every X reg_mr ENOMEM */
 #define IPS_FAULTINJ_NONPRI_REG_MR 50	/* 1 every X non-pri reg_mr ENOMEM */
 #define IPS_FAULTINJ_PRI_REG_MR	1000	/* 1 every X pri reg_mr ENOMEM */
@@ -112,7 +128,7 @@
 #define IPS_FAULTINJ_UFFD_REGISTER 1000	/* 1 every X uffd REGISTER ENOMEM */
 #endif
 #endif /* PSM_HAVE_REG_MR */
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 #define IPS_FAULTINJ_GDRMMAP	100	/* 1 every X GPU pin and mmap ENOMEM */
 #define IPS_FAULTINJ_GPU_REG_MR	100	/* 1 every X GPU reg_mr */
 #endif

@@ -197,7 +197,7 @@ struct sm2_cma_data {
 };
 
 struct sm2_ep_name {
-	char name[FI_NAME_MAX];
+	char name[OFI_NAME_MAX];
 	struct sm2_region *region;
 	struct dlist_entry entry;
 };

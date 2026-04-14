@@ -6,7 +6,7 @@
   GPL LICENSE SUMMARY
 
   Copyright(c) 2015 Intel Corporation.
-  Copyright(c) 2021 Cornelis Networks.
+  Copyright(c) 2021,2023-2025 Cornelis Networks.
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of version 2 of the GNU General Public License as
@@ -23,7 +23,7 @@
   BSD LICENSE
 
   Copyright(c) 2015 Intel Corporation.
-  Copyright(c) 2021 Cornelis Networks.
+  Copyright(c) 2021,2023-2025 Cornelis Networks.
 
   Redistribution and use in source and binary forms, with or without
   modification, are permitted provided that the following conditions
@@ -84,53 +84,51 @@
 #include "opa_udebug.h"
 #include "opa_service.h"
 
-#define HFI_TF_NFLOWS                       32
+#define HFI_TF_NFLOWS 32
 
 /* IB - LRH header consts */
-#define HFI_LRH_BTH 0x0002	/* 1. word of IB LRH - next header: BTH */
-#define HFI_LRH_SC_SHIFT 12
-#define HFI_LRH_SC_MASK 0xf
-#define HFI_LRH_SL_SHIFT 4
-#define HFI_LRH_SL_MASK 0xf
+#define HFI_LRH_BTH	    0x0002 /* 1. word of IB LRH - next header: BTH */
+#define HFI_LRH_SC_SHIFT    12
+#define HFI_LRH_SC_MASK	    0xf
+#define HFI_LRH_SL_SHIFT    4
+#define HFI_LRH_SL_MASK	    0xf
 #define HFI_LRH_PKTLEN_MASK 0xfff
 
 /* IB - BTH header consts */
-#define HFI_BTH_OPCODE_SHIFT 24
-#define HFI_BTH_OPCODE_MASK 0xff
-#define HFI_BTH_BECN_SHIFT 30
-#define HFI_BTH_FECN_SHIFT 31
-#define HFI_BTH_QP_SHIFT 16
-#define HFI_BTH_QP_MASK 0xff
-#define HFI_BTH_FLOWID_SHIFT 11
-#define HFI_BTH_FLOWID_MASK 0x1f
+#define HFI_BTH_OPCODE_SHIFT  24
+#define HFI_BTH_OPCODE_MASK   0xff
+#define HFI_BTH_BECN_SHIFT    30
+#define HFI_BTH_FECN_SHIFT    31
+#define HFI_BTH_QP_SHIFT      16
+#define HFI_BTH_QP_MASK	      0xff
+#define HFI_BTH_FLOWID_SHIFT  11
+#define HFI_BTH_FLOWID_MASK   0x1f
 #define HFI_BTH_SUBCTXT_SHIFT 8
-#define HFI_BTH_SUBCTXT_MASK 0x7
+#define HFI_BTH_SUBCTXT_MASK  0x7
 
 #define HFI_BTH_SEQ_SHIFT 0
-#define HFI_BTH_SEQ_MASK 0x7ff
+#define HFI_BTH_SEQ_MASK  0x7ff
 #define HFI_BTH_GEN_SHIFT 11
-#define HFI_BTH_GEN_MASK 0xfffff
+#define HFI_BTH_GEN_MASK  0xfffff
 #define HFI_BTH_ACK_SHIFT 31
 
 /* KDETH header consts */
-#define HFI_KHDR_OFFSET_MASK 0x7fff
-#define HFI_KHDR_OM_SHIFT 15
-#define HFI_KHDR_TID_SHIFT 16
-#define HFI_KHDR_TID_MASK 0x3ff
+#define HFI_KHDR_OFFSET_MASK   0x7fff
+#define HFI_KHDR_OM_SHIFT      15
+#define HFI_KHDR_TID_SHIFT     16
+#define HFI_KHDR_TID_MASK      0x3ff
 #define HFI_KHDR_TIDCTRL_SHIFT 26
-#define HFI_KHDR_TIDCTRL_MASK 0x3
-#define HFI_KHDR_INTR_SHIFT 28
-#define HFI_KHDR_SH_SHIFT 29
-#define HFI_KHDR_KVER_SHIFT 30
-#define HFI_KHDR_KVER_MASK 0x3
+#define HFI_KHDR_TIDCTRL_MASK  0x3
+#define HFI_KHDR_INTR_SHIFT    28
+#define HFI_KHDR_SH_SHIFT      29
+#define HFI_KHDR_KVER_SHIFT    30
+#define HFI_KHDR_KVER_MASK     0x3
 
-#define HFI_KHDR_MSGSEQ_MASK 0xffff
-#define HFI_KHDR_TINYLEN_MASK 0xf
+#define HFI_KHDR_MSGSEQ_MASK   0xffff
+#define HFI_KHDR_TINYLEN_MASK  0xf
 #define HFI_KHDR_TINYLEN_SHIFT 16
 
-#define GET_HFI_KHDR_TIDCTRL(val) \
-	(((val) >> HFI_KHDR_TIDCTRL_SHIFT) & \
-	HFI_KHDR_TIDCTRL_MASK)
+#define GET_HFI_KHDR_TIDCTRL(val) (((val) >> HFI_KHDR_TIDCTRL_SHIFT) & HFI_KHDR_TIDCTRL_MASK)
 
 #ifdef PSM_CUDA
 extern int is_driver_gpudirect_enabled;
@@ -156,39 +154,36 @@ struct opx_hfi_kdeth {
 #define HFI_CRC_SIZE_IN_BYTES 4
 
 #define HFI_DEFAULT_SERVICE_ID 0x1000117500000000ULL
-#define HFI_DEFAULT_P_KEY 0x8001 /* fabric default pkey for app traffic */
 
 /* Receive Header Queue: receive type (from hfi) */
-#define RCVHQ_RCV_TYPE_EXPECTED  0
-#define RCVHQ_RCV_TYPE_EAGER     1
-#define RCVHQ_RCV_TYPE_NON_KD    2
-#define RCVHQ_RCV_TYPE_ERROR     3
+#define RCVHQ_RCV_TYPE_EXPECTED 0
+#define RCVHQ_RCV_TYPE_EAGER	1
+#define RCVHQ_RCV_TYPE_NON_KD	2
+#define RCVHQ_RCV_TYPE_ERROR	3
 
 /* OPA PSM assumes that the message header is always 56 bytes. */
-#define HFI_MESSAGE_HDR_SIZE	56
+#define HFI_MESSAGE_HDR_SIZE 56
 
 /* interval timing routines */
 /* Convert a count of cycles to elapsed nanoseconds */
 /* this is only accurate for reasonably large numbers of cycles (at least tens)
-*/
-static __inline__ uint64_t cycles_to_nanosecs(uint64_t)
-					  __attribute__ ((always_inline));
+ */
+static __inline__ uint64_t cycles_to_nanosecs(uint64_t) __attribute__((always_inline));
 /* convert elapsed nanoseconds to elapsed cycles */
 /* this is only accurate for reasonably large numbers of nsecs (at least tens)
-*/
-static __inline__ uint64_t nanosecs_to_cycles(uint64_t)
-					  __attribute__ ((always_inline));
+ */
+static __inline__ uint64_t nanosecs_to_cycles(uint64_t) __attribute__((always_inline));
 
 /* Statistics maintained by the driver */
 const char *opx_hfi_get_next_name(char **names);
-int opx_hfi_get_stats_names_count(void);
+int	    opx_hfi_get_stats_names_count(void);
 /* Counters maintained in the chip, globally, and per-prot */
 int opx_hfi_get_ctrs_unit_names_count(int unitno);
 int opx_hfi_get_ctrs_port_names_count(int unitno);
 
 uint64_t opx_hfi_get_single_unitctr(int unit, const char *attr, uint64_t *s);
-int opx_hfi_get_single_portctr(int unit, int port, const char *attr, uint64_t *c);
-void opx_hfi_release_names(char *namep);
+int	 opx_hfi_get_single_portctr(int unit, int port, const char *attr, uint64_t *c);
+void	 opx_hfi_release_names(char *namep);
 
 /* Syslog wrapper
 
@@ -198,19 +193,17 @@ void opx_hfi_release_names(char *namep);
    prefix should be a short string to describe which part of the software stack
    is using syslog, i.e. "PSM", "mpi", "mpirun".
 */
-void opx_hfi_syslog(const char *prefix, int to_console, int level,
-		const char *format, ...)
-		__attribute__((format(printf, 4, 5)));
+void opx_hfi_syslog(const char *prefix, int to_console, int level, const char *format, ...)
+	__attribute__((format(printf, 4, 5)));
 
 /*
  * Copy routine that may copy a byte multiple times but optimized for througput
  * This is not safe to use for PIO routines where we want a guarantee that a
  * byte is only copied/moved across the bus once.
  */
-void opx_hfi_dwordcpy(volatile uint32_t *dest, const uint32_t *src,
-		  uint32_t ndwords);
+void opx_hfi_dwordcpy(volatile uint32_t *dest, const uint32_t *src, uint32_t ndwords);
 
-extern uint32_t __opx_pico_per_cycle;	/* only for use in these functions */
+extern uint32_t __opx_pico_per_cycle; /* only for use in these functions */
 
 /* this is only accurate for reasonably large numbers of cycles (at least tens) */
 static __inline__ uint64_t cycles_to_nanosecs(uint64_t cycs)
@@ -225,4 +218,77 @@ static __inline__ uint64_t nanosecs_to_cycles(uint64_t ns)
 }
 
 #include "opa_user_gen1.h"
+
+// Register CceRevision from the hardware spec defines ChipRevMajor as 15:8 (LE)
+#define OPX_HFI1_CCE_CSR_CHIP_MINOR_MASK  (0x000000FF)
+#define OPX_HFI1_CCE_CSR_CHIP_MINOR_SHIFT (0)
+#define OPX_HFI1_CCE_CSR_CHIP_MAJOR_MASK  (0x0000FF00)
+#define OPX_HFI1_CCE_CSR_CHIP_MAJOR_SHIFT (8)
+#define OPX_HFI1_CCE_CSR_CHIP_MAJOR_WFR	  (0x7)
+#define OPX_HFI1_CCE_CSR_CHIP_MAJOR_JKR	  (0x8)
+#define OPX_HFI1_CCE_CSR_CHIP_MAJOR_CYR	  (0x9)
+#define OPX_HFI1_CCE_CSR_ARCH_MASK	  (0x00FF0000)
+#define OPX_HFI1_CCE_CSR_ARCH_SHIFT	  (16)
+#define OPX_HFI1_CCE_CSR_ARCH_WFR	  (0x2)
+#define OPX_HFI1_CCE_CSR_ARCH_JKR	  (0x3)
+/* The CYR architecture revision is incremented by 1 compared to WFR,
+ * same as JKR */
+#define OPX_HFI1_CCE_CSR_ARCH_CYR	    (0x3)
+#define OPX_HFI1_CCE_CSR_SW_INTERFACE_MASK  (0xFF000000)
+#define OPX_HFI1_CCE_CSR_SW_INTERFACE_SHIFT (24)
+#define OPX_HFI1_CCE_CSR_SW_INTERFACE_WFR   (0x3)
+#define OPX_HFI1_CCE_CSR_SW_INTERFACE_JKR   (0x4)
+#define OPX_HFI1_CCE_CSR_SW_INTERFACE_CYR   (0x5)
+
+static __inline__ enum opx_hfi1_type opx_hfi1_check_hwversion(const uint32_t hw_version)
+{
+	assert(hw_version);
+	/* WFR example value: 3020710
+	** JKR example value: ???????
+	** WFR should be chip_major 7, JKR should be 8
+	*/
+	const uint32_t hw_chip_major =
+		(hw_version & OPX_HFI1_CCE_CSR_CHIP_MAJOR_MASK) >> OPX_HFI1_CCE_CSR_CHIP_MAJOR_SHIFT;
+
+	// Check if hfi1 chip is WFR
+	if (hw_chip_major == OPX_HFI1_CCE_CSR_CHIP_MAJOR_WFR) {
+		// Assert arch and software revisions are supported (WFR versions)
+		// Arch should be 2
+		assert((hw_version & OPX_HFI1_CCE_CSR_ARCH_MASK) ==
+		       (OPX_HFI1_CCE_CSR_ARCH_WFR << OPX_HFI1_CCE_CSR_ARCH_SHIFT));
+		// Software Interface should be 3
+		assert((hw_version & OPX_HFI1_CCE_CSR_SW_INTERFACE_MASK) ==
+		       (OPX_HFI1_CCE_CSR_SW_INTERFACE_WFR << OPX_HFI1_CCE_CSR_SW_INTERFACE_SHIFT));
+
+		return OPX_HFI1_WFR;
+	}
+	// Check if hfi1 chip is JKR
+	if (hw_chip_major == OPX_HFI1_CCE_CSR_CHIP_MAJOR_JKR) {
+		// Assert arch and software revisions are supported (WFR versions)
+		// Arch should be 2
+		assert((hw_version & OPX_HFI1_CCE_CSR_ARCH_MASK) ==
+		       (OPX_HFI1_CCE_CSR_ARCH_JKR << OPX_HFI1_CCE_CSR_ARCH_SHIFT));
+		// Software Interface should be 3
+		assert((hw_version & OPX_HFI1_CCE_CSR_SW_INTERFACE_MASK) ==
+		       (OPX_HFI1_CCE_CSR_SW_INTERFACE_JKR << OPX_HFI1_CCE_CSR_SW_INTERFACE_SHIFT));
+
+		return OPX_HFI1_JKR;
+	}
+	if (hw_chip_major != OPX_HFI1_CCE_CSR_CHIP_MAJOR_CYR) {
+		fprintf(stderr,
+			"opx_hfi1_check_hwversion(): hw_version is %x, chip_major is not OPA100, CN5000, or CN6000\n",
+			hw_version);
+		fprintf(stderr, "opx_hfi1_check_hwversion(): Aborting due to unsupported hfi1 hardware\n");
+		abort();
+	}
+
+	// Assert arch and software revisions are supported (CYR versions)
+	assert((hw_version & OPX_HFI1_CCE_CSR_ARCH_MASK) == (OPX_HFI1_CCE_CSR_ARCH_CYR << OPX_HFI1_CCE_CSR_ARCH_SHIFT));
+	// Software Interface should be 4
+	assert((hw_version & OPX_HFI1_CCE_CSR_SW_INTERFACE_MASK) ==
+	       (OPX_HFI1_CCE_CSR_SW_INTERFACE_CYR << OPX_HFI1_CCE_CSR_SW_INTERFACE_SHIFT));
+
+	return OPX_HFI1_CYR;
+}
+
 #endif /* OPA_USER_H */

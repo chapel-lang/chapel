@@ -3,7 +3,7 @@
  * Copyright (c) 2017-2021 Intel Inc. All rights reserved.
  * Copyright (c) 2019-2021 Amazon.com, Inc. or its affiliates.
  *                         All rights reserved.
- * (C) Copyright 2020 Hewlett Packard Enterprise Development LP
+ * (C) Copyright 2020,2024 Hewlett Packard Enterprise Development LP
  * Copyright (C) 2024 Cornelis Networks. All rights reserved.
  *
  * This software is available to you under a choice of one of two
@@ -39,27 +39,10 @@
 
 #include <ofi_mr.h>
 #include <ofi_mem.h>
-#include <ofi_hmem.h>
-#include <ofi_enosys.h>
-#include <rdma/fi_ext.h>
-
 
 pthread_mutex_t mm_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mm_state_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_rwlock_t mm_list_rwlock = PTHREAD_RWLOCK_INITIALIZER;
-
-static int ofi_uffd_start(struct ofi_mem_monitor *monitor);
-static void ofi_uffd_stop(struct ofi_mem_monitor *monitor);
-
-static struct ofi_uffd uffd = {
-	.monitor.iface = FI_HMEM_SYSTEM,
-	.monitor.init = ofi_monitor_init,
-	.monitor.cleanup = ofi_monitor_cleanup,
-	.monitor.start = ofi_uffd_start,
-	.monitor.stop = ofi_uffd_stop,
-	.monitor.name = "uffd",
-};
-struct ofi_mem_monitor *uffd_monitor = &uffd.monitor;
 
 struct ofi_mem_monitor *default_monitor;
 struct ofi_mem_monitor *default_cuda_monitor;
@@ -189,7 +172,9 @@ static void initialize_monitor_list()
 		rocr_ipc_monitor,
 		xpmem_monitor,
 		ze_monitor,
+		ze_ipc_monitor,
 		import_monitor,
+		kdreg2_monitor,
 	};
 
 	monitor_list_size = ARRAY_SIZE(monitors);
@@ -205,6 +190,37 @@ static void cleanup_monitor_list() {
 	free(monitor_list);
 	monitor_list = NULL;
 	monitor_list_size = 0;
+}
+
+static void set_default_monitor(const char *monitor)
+{
+	if (!monitor)
+		return;
+
+	if (!strcmp(monitor, "userfaultfd") || !strcmp(monitor, "uffd")) {
+#if HAVE_UFFD_MONITOR
+		default_monitor = uffd_monitor;
+#else
+		FI_WARN(&core_prov, FI_LOG_MR, "userfaultfd monitor not available\n");
+		default_monitor = NULL;
+#endif
+	} else if (!strcmp(monitor, "memhooks")) {
+#if HAVE_MEMHOOKS_MONITOR
+		default_monitor = memhooks_monitor;
+#else
+		FI_WARN(&core_prov, FI_LOG_MR, "memhooks monitor not available\n");
+		default_monitor = NULL;
+#endif
+	} else if (!strcmp(monitor, "kdreg2")) {
+#if HAVE_KDREG2_MONITOR
+		default_monitor = kdreg2_monitor;
+#else
+		FI_WARN(&core_prov, FI_LOG_MR, "kdreg2 monitor not available\n");
+		default_monitor = NULL;
+#endif
+	} else if (!strcmp(monitor, "disabled")) {
+		default_monitor = NULL;
+	}
 }
 
 /*
@@ -241,11 +257,17 @@ void ofi_monitors_init(void)
 			"Define a default memory registration monitor."
 			" The monitor checks for virtual to physical memory"
 			" address changes.  Options are: userfaultfd, memhooks"
-			" and disabled.  Userfaultfd is a Linux kernel feature."
-			" Memhooks operates by intercepting memory allocation"
-			" and free calls.  Userfaultfd is the default if"
-			" available on the system. 'disabled' option disables"
-			" memory caching.");
+			" kdreg2, and disabled.  Userfaultfd is a Linux kernel"
+			" feature. Memhooks operates by intercepting memory"
+			" allocation and free calls. kdreg2 is a supplied as a"
+			" loadable Linux kernel module."
+#if defined(HAVE_MR_CACHE_MONITOR_DEFAULT)
+			" " HAVE_MR_CACHE_MONITOR_DEFAULT
+#else
+			" Userfaultfd"
+#endif
+			" is the default if available on the system. 'disabled'"
+			" option disables memory caching.");
 	fi_param_define(NULL, "mr_cuda_cache_monitor_enabled", FI_PARAM_BOOL,
 			"Enable or disable the CUDA cache memory monitor."
 			"Enabled by default.");
@@ -274,34 +296,21 @@ void ofi_monitors_init(void)
 	 * do not override
 	 */
 	if (!default_monitor) {
-#if HAVE_MEMHOOKS_MONITOR
+#if defined(HAVE_MR_CACHE_MONITOR_DEFAULT)
+		set_default_monitor(HAVE_MR_CACHE_MONITOR_DEFAULT);
+#elif HAVE_MEMHOOKS_MONITOR
 		default_monitor = memhooks_monitor;
 #elif HAVE_UFFD_MONITOR
 		default_monitor = uffd_monitor;
+#elif HAVE_KDREG2_MONITOR
+		default_monitor = kdreg2_monitor;
 #else
 		default_monitor = NULL;
 #endif
 	}
 
-	if (cache_params.monitor != NULL) {
-		if (!strcmp(cache_params.monitor, "userfaultfd")) {
-#if HAVE_UFFD_MONITOR
-			default_monitor = uffd_monitor;
-#else
-			FI_WARN(&core_prov, FI_LOG_MR, "userfaultfd monitor not available\n");
-			default_monitor = NULL;
-#endif
-		} else if (!strcmp(cache_params.monitor, "memhooks")) {
-#if HAVE_MEMHOOKS_MONITOR
-			default_monitor = memhooks_monitor;
-#else
-			FI_WARN(&core_prov, FI_LOG_MR, "memhooks monitor not available\n");
-			default_monitor = NULL;
-#endif
-		} else if (!strcmp(cache_params.monitor, "disabled")) {
-			default_monitor = NULL;
-		}
-	}
+	if (cache_params.monitor != NULL)
+		set_default_monitor(cache_params.monitor);
 
 	FI_INFO(&core_prov, FI_LOG_MR,
 		"Default memory monitor is: %s\n",
@@ -495,6 +504,7 @@ void ofi_monitor_flush(struct ofi_mem_monitor *monitor)
 	}
 }
 
+/* For each new cached MR cache entry, subscribed is called. */
 int ofi_monitor_subscribe(struct ofi_mem_monitor *monitor,
 			  const void *addr, size_t len,
 			  union ofi_mr_hmem_info *hmem_info)
@@ -513,6 +523,13 @@ int ofi_monitor_subscribe(struct ofi_mem_monitor *monitor,
 	return ret;
 }
 
+/* For each cached MR entry freed, unsubscribe is called.
+
+ * If a memory monitor does not have a context per subscribe (e.g., a single
+ * monitored region servering multiple MRs), the memory monitor must implement
+ * unsubscribe as a noop. This may result in extra notification events, but is
+ * harmless to correct operation.
+ */
 void ofi_monitor_unsubscribe(struct ofi_mem_monitor *monitor,
 			     const void *addr, size_t len,
 			     union ofi_mr_hmem_info *hmem_info)
@@ -542,372 +559,4 @@ void ofi_monitor_unsubscribe_no_op(struct ofi_mem_monitor *notifier,
 			    const void *addr, size_t len,
 			    union ofi_mr_hmem_info *hmem_info)
 {
-}
-
-#if HAVE_UFFD_MONITOR
-
-#include <poll.h>
-#include <sys/syscall.h>
-#include <sys/ioctl.h>
-#include <linux/userfaultfd.h>
-
-/* The userfault fd monitor requires for events that could
- * trigger it to be handled outside of the monitor functions
- * itself. When a fault occurs on a monitored region, the
- * faulting thread is put to sleep until the event is read
- * via the userfault file descriptor. If this fault occurs
- * within the userfault handling thread, no threads will
- * read this event and our threads cannot progress, resulting
- * in a hang.
- */
-static void *ofi_uffd_handler(void *arg)
-{
-	struct uffd_msg msg;
-	struct pollfd fds;
-	int ret;
-
-	fds.fd = uffd.fd;
-	fds.events = POLLIN;
-	for (;;) {
-		ret = poll(&fds, 1, -1);
-		if (ret != 1)
-			break;
-
-		pthread_rwlock_rdlock(&mm_list_rwlock);
-		pthread_mutex_lock(&mm_lock);
-		ret = read(uffd.fd, &msg, sizeof(msg));
-		if (ret != sizeof(msg)) {
-			pthread_mutex_unlock(&mm_lock);
-			pthread_rwlock_unlock(&mm_list_rwlock);
-			if (errno != EAGAIN)
-				break;
-			continue;
-		}
-
-		switch (msg.event) {
-		case UFFD_EVENT_REMOVE:
-			ofi_monitor_unsubscribe(&uffd.monitor,
-				(void *) (uintptr_t) msg.arg.remove.start,
-				(size_t) (msg.arg.remove.end -
-					  msg.arg.remove.start), NULL);
-			/* fall through */
-		case UFFD_EVENT_UNMAP:
-			ofi_monitor_notify(&uffd.monitor,
-				(void *) (uintptr_t) msg.arg.remove.start,
-				(size_t) (msg.arg.remove.end -
-					  msg.arg.remove.start));
-			break;
-		case UFFD_EVENT_REMAP:
-			ofi_monitor_notify(&uffd.monitor,
-				(void *) (uintptr_t) msg.arg.remap.from,
-				(size_t) msg.arg.remap.len);
-			break;
-		default:
-			FI_WARN(&core_prov, FI_LOG_MR,
-				"Unhandled uffd event %d\n", msg.event);
-			break;
-		}
-		pthread_mutex_unlock(&mm_lock);
-		pthread_rwlock_unlock(&mm_list_rwlock);
-	}
-	return NULL;
-}
-
-static int ofi_uffd_register(const void *addr, size_t len, size_t page_size)
-{
-	struct uffdio_register reg;
-	int ret;
-
-	reg.range.start = (uint64_t) (uintptr_t)
-			  ofi_get_page_start(addr, page_size);
-	reg.range.len = ofi_get_page_bytes(addr, len, page_size);
-	reg.mode = UFFDIO_REGISTER_MODE_MISSING;
-	ret = ioctl(uffd.fd, UFFDIO_REGISTER, &reg);
-	if (ret < 0) {
-		if (errno != EINVAL) {
-			FI_WARN(&core_prov, FI_LOG_MR,
-				"ioctl/uffd_reg: %s\n", strerror(errno));
-		}
-		return -errno;
-	}
-	return 0;
-}
-
-static int ofi_uffd_subscribe(struct ofi_mem_monitor *monitor,
-			      const void *addr, size_t len,
-			      union ofi_mr_hmem_info *hmem_info)
-{
-	int i;
-
-	assert(monitor == &uffd.monitor);
-	for (i = 0; i < num_page_sizes; i++) {
-		if (!ofi_uffd_register(addr, len, page_sizes[i]))
-			return 0;
-	}
-	return -FI_EFAULT;
-}
-
-static int ofi_uffd_unregister(const void *addr, size_t len, size_t page_size)
-{
-	struct uffdio_range range;
-	int ret;
-
-	range.start = (uint64_t) (uintptr_t)
-		      ofi_get_page_start(addr, page_size);
-	range.len = ofi_get_page_bytes(addr, len, page_size);
-	ret = ioctl(uffd.fd, UFFDIO_UNREGISTER, &range);
-	if (ret < 0) {
-		if (errno != EINVAL) {
-			FI_WARN(&core_prov, FI_LOG_MR,
-				"ioctl/uffd_unreg: %s\n", strerror(errno));
-		}
-		return -errno;
-	}
-	return 0;
-}
-
-/* May be called from mr cache notifier callback */
-static void ofi_uffd_unsubscribe(struct ofi_mem_monitor *monitor,
-				 const void *addr, size_t len,
-				 union ofi_mr_hmem_info *hmem_info)
-{
-	int i;
-
-	assert(monitor == &uffd.monitor);
-	for (i = 0; i < num_page_sizes; i++) {
-		if (!ofi_uffd_unregister(addr, len, page_sizes[i]))
-			break;
-	}
-}
-
-static bool ofi_uffd_valid(struct ofi_mem_monitor *monitor,
-			   const struct ofi_mr_info *info,
-			   struct ofi_mr_entry *entry)
-{
-	/* no-op */
-	return true;
-}
-
-static int ofi_uffd_start(struct ofi_mem_monitor *monitor)
-{
-	struct uffdio_api api;
-	int ret;
-
-	uffd.monitor.subscribe = ofi_uffd_subscribe;
-	uffd.monitor.unsubscribe = ofi_uffd_unsubscribe;
-	uffd.monitor.valid = ofi_uffd_valid;
-
-	if (!num_page_sizes)
-		return -FI_ENODATA;
-
-	uffd.fd = syscall(__NR_userfaultfd, O_CLOEXEC | O_NONBLOCK);
-	if (uffd.fd < 0) {
-		FI_WARN(&core_prov, FI_LOG_MR,
-			"syscall/userfaultfd %s\n", strerror(errno));
-		return -errno;
-	}
-
-	api.api = UFFD_API;
-	api.features = UFFD_FEATURE_EVENT_UNMAP | UFFD_FEATURE_EVENT_REMOVE |
-		       UFFD_FEATURE_EVENT_REMAP;
-	ret = ioctl(uffd.fd, UFFDIO_API, &api);
-	if (ret < 0) {
-		FI_WARN(&core_prov, FI_LOG_MR,
-			"ioctl/uffdio: %s\n", strerror(errno));
-		ret = -errno;
-		goto closefd;
-	}
-
-	if (api.api != UFFD_API) {
-		FI_WARN(&core_prov, FI_LOG_MR, "uffd features not supported\n");
-		ret = -FI_ENOSYS;
-		goto closefd;
-	}
-
-	ret = pthread_create(&uffd.thread, NULL, ofi_uffd_handler, &uffd);
-	if (ret) {
-		FI_WARN(&core_prov, FI_LOG_MR,
-			"failed to create handler thread %s\n", strerror(ret));
-		ret = -ret;
-		goto closefd;
-	}
-	return 0;
-
-closefd:
-	close(uffd.fd);
-	return ret;
-}
-
-static void ofi_uffd_stop(struct ofi_mem_monitor *monitor)
-{
-	pthread_cancel(uffd.thread);
-	pthread_join(uffd.thread, NULL);
-	close(uffd.fd);
-}
-
-#else /* HAVE_UFFD_MONITOR */
-
-static int ofi_uffd_start(struct ofi_mem_monitor *monitor)
-{
-	return -FI_ENOSYS;
-}
-
-static void ofi_uffd_stop(struct ofi_mem_monitor *monitor)
-{
-}
-
-#endif /* HAVE_UFFD_MONITOR */
-
-
-static void ofi_import_monitor_init(struct ofi_mem_monitor *monitor);
-static void ofi_import_monitor_cleanup(struct ofi_mem_monitor *monitor);
-static int ofi_import_monitor_start(struct ofi_mem_monitor *monitor);
-static void ofi_import_monitor_stop(struct ofi_mem_monitor *monitor);
-static int ofi_import_monitor_subscribe(struct ofi_mem_monitor *notifier,
-					const void *addr, size_t len,
-					union ofi_mr_hmem_info *hmem_info);
-static void ofi_import_monitor_unsubscribe(struct ofi_mem_monitor *notifier,
-					   const void *addr, size_t len,
-					   union ofi_mr_hmem_info *hmem_info);
-static bool ofi_import_monitor_valid(struct ofi_mem_monitor *notifier,
-				     const struct ofi_mr_info *info,
-				     struct ofi_mr_entry *entry);
-
-struct ofi_import_monitor {
-	struct ofi_mem_monitor monitor;
-	struct fid_mem_monitor *impfid;
-};
-
-static struct ofi_import_monitor impmon = {
-	.monitor.iface = FI_HMEM_SYSTEM,
-	.monitor.init = ofi_import_monitor_init,
-	.monitor.cleanup = ofi_import_monitor_cleanup,
-	.monitor.start = ofi_import_monitor_start,
-	.monitor.stop = ofi_import_monitor_stop,
-	.monitor.subscribe = ofi_import_monitor_subscribe,
-	.monitor.unsubscribe = ofi_import_monitor_unsubscribe,
-	.monitor.valid = ofi_import_monitor_valid,
-	.monitor.name = "import",
-};
-
-struct ofi_mem_monitor *import_monitor = &impmon.monitor;
-
-static void ofi_import_monitor_init(struct ofi_mem_monitor *monitor)
-{
-	ofi_monitor_init(monitor);
-}
-
-static void ofi_import_monitor_cleanup(struct ofi_mem_monitor *monitor)
-{
-	assert(!impmon.impfid);
-	ofi_monitor_cleanup(monitor);
-}
-
-static int ofi_import_monitor_start(struct ofi_mem_monitor *monitor)
-{
-	if (!impmon.impfid)
-		return -FI_ENOSYS;
-
-	return impmon.impfid->export_ops->start(impmon.impfid);
-}
-
-static void ofi_import_monitor_stop(struct ofi_mem_monitor *monitor)
-{
-	assert(impmon.impfid);
-	impmon.impfid->export_ops->stop(impmon.impfid);
-}
-
-static int ofi_import_monitor_subscribe(struct ofi_mem_monitor *notifier,
-					const void *addr, size_t len,
-					union ofi_mr_hmem_info *hmem_info)
-{
-	assert(impmon.impfid);
-	return impmon.impfid->export_ops->subscribe(impmon.impfid, addr, len);
-}
-
-static void ofi_import_monitor_unsubscribe(struct ofi_mem_monitor *notifier,
-					   const void *addr, size_t len,
-					   union ofi_mr_hmem_info *hmem_info)
-{
-	assert(impmon.impfid);
-	impmon.impfid->export_ops->unsubscribe(impmon.impfid, addr, len);
-}
-
-static bool ofi_import_monitor_valid(struct ofi_mem_monitor *notifier,
-				     const struct ofi_mr_info *info,
-				     struct ofi_mr_entry *entry)
-{
-	assert(impmon.impfid);
-	return impmon.impfid->export_ops->valid(impmon.impfid,
-						entry->info.iov.iov_base,
-						entry->info.iov.iov_len);
-}
-
-static void ofi_import_monitor_notify(struct fid_mem_monitor *monitor,
-				      const void *addr, size_t len)
-{
-	assert(monitor->fid.context == &impmon);
-	pthread_rwlock_rdlock(&mm_list_rwlock);
-	pthread_mutex_lock(&mm_lock);
-	ofi_monitor_notify(&impmon.monitor, addr, len);
-	pthread_mutex_unlock(&mm_lock);
-	pthread_rwlock_unlock(&mm_list_rwlock);
-}
-
-static int ofi_close_import(struct fid *fid)
-{
-	pthread_mutex_lock(&mm_state_lock);
-	impmon.monitor.state = FI_MM_STATE_IDLE;
-	pthread_mutex_unlock(&mm_state_lock);
-	impmon.impfid = NULL;
-	return 0;
-}
-
-static struct fi_ops_mem_notify import_ops = {
-	.size = sizeof(struct fi_ops_mem_notify),
-	.notify = ofi_import_monitor_notify,
-};
-
-static struct fi_ops impfid_ops = {
-	.size = sizeof(struct fi_ops),
-	.close = ofi_close_import,
-	.bind = fi_no_bind,
-	.control = fi_no_control,
-	.ops_open = fi_no_ops_open,
-	.tostr = fi_no_tostr,
-	.ops_set = fi_no_ops_set,
-};
-
-int ofi_monitor_import(struct fid *fid)
-{
-	struct fid_mem_monitor *impfid;
-
-	if (fid->fclass != FI_CLASS_MEM_MONITOR)
-		return -FI_ENOSYS;
-
-	if (impmon.impfid) {
-		FI_WARN(&core_prov, FI_LOG_MR,
-			"imported monitor already exists\n");
-		return -FI_EBUSY;
-	}
-
-	if (default_monitor && !dlist_empty(&default_monitor->list)) {
-		FI_WARN(&core_prov, FI_LOG_MR,
-			"cannot replace active monitor\n");
-		return -FI_EBUSY;
-	}
-
-	impfid = container_of(fid, struct fid_mem_monitor, fid);
-	if (impfid->export_ops->size < sizeof(struct fi_ops_mem_monitor))
-		return -FI_EINVAL;
-
-	impmon.impfid = impfid;
-	impfid->fid.context = &impmon;
-	impfid->fid.ops = &impfid_ops;
-	impfid->import_ops = &import_ops;
-
-	FI_INFO(&core_prov, FI_LOG_MR,
-		"setting imported memory monitor as default\n");
-	default_monitor = &impmon.monitor;
-	return 0;
 }

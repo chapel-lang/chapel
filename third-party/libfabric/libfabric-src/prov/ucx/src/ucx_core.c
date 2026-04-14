@@ -43,6 +43,7 @@ ssize_t ucx_do_sendmsg(struct fid_ep *ep, const struct fi_msg_tagged *msg,
 	struct util_cq *cq;
 	ucs_status_t cstatus = UCS_OK;
 	int no_completion;
+	int using_inject = 0;
 
 	u_ep = container_of(ep, struct ucx_ep, ep.ep_fid);
 	dst_ep = UCX_GET_UCP_EP(u_ep, msg->addr);
@@ -50,8 +51,11 @@ ssize_t ucx_do_sendmsg(struct fid_ep *ep, const struct fi_msg_tagged *msg,
 
 	no_completion = (u_ep->ep.tx_op_flags & FI_SELECTIVE_COMPLETION) &&
 			!(flags & FI_COMPLETION);
+	using_inject = (flags & FI_INJECT);
 
-	cbf = no_completion ? ucx_send_callback_no_compl : ucx_send_callback;
+	cbf = no_completion ?
+			(using_inject ? ucx_callback_noop : ucx_send_callback_no_compl) :
+			ucx_send_callback;
 
 	if (OFI_UNLIKELY(flags & FI_MATCH_COMPLETE)) {
 		if (msg->iov_count < 2) {
@@ -94,25 +98,38 @@ ssize_t ucx_do_sendmsg(struct fid_ep *ep, const struct fi_msg_tagged *msg,
 		return ucx_translate_errcode(*(ucs_status_t*)status);
 	}
 
-	if (flags & FI_INJECT) {
+	if (UCS_PTR_STATUS(status) != UCS_OK) {
+		struct ucx_request *req = (struct ucx_request *)status;
+
+		/*
+		 * Set up the req fields before the callback function is called
+		 * (in ucp_worker_progress or ucp_worker_flush).
+		 */
+		req->ep = u_ep;
+		if (!no_completion) {
+			req->completion.op_context = msg->context;
+			req->completion.flags = FI_SEND |
+						(mode == UCX_MSG ? FI_MSG : FI_TAGGED);
+			req->completion.len = msg->msg_iov[0].iov_len;
+			req->completion.buf = msg->msg_iov[0].iov_base;
+			req->completion.tag = msg->tag;
+			req->cq = cq;
+		}
+	}
+
+	if (using_inject) {
 		if(UCS_PTR_STATUS(status) != UCS_OK) {
 			while ((cstatus = ucp_request_check_status(status))
 					== UCS_INPROGRESS)
 				ucp_worker_progress(u_ep->worker);
 
+			ucx_req_release(status);
 			/*
 			 * The callback function should have already taken
 			 * care of cntr and cq update.
 			 */
 			goto fence;
 		}
-
-		goto done;
-	}
-
-	if (no_completion) {
-		if (UCS_PTR_STATUS(status) != UCS_OK)
-			goto fence;
 
 		goto done;
 	}
@@ -129,16 +146,6 @@ ssize_t ucx_do_sendmsg(struct fid_ep *ep, const struct fi_msg_tagged *msg,
 		 * Not done yet. completion will be handled by the callback
 		 * function.
 		 */
-		struct ucx_request *req = (struct ucx_request *)status;
-
-		req->completion.op_context = msg->context;
-		req->completion.flags = FI_SEND |
-					(mode == UCX_MSG ? FI_MSG : FI_TAGGED);
-		req->completion.len = msg->msg_iov[0].iov_len;
-		req->completion.buf = msg->msg_iov[0].iov_base;
-		req->completion.tag = msg->tag;
-		req->ep = u_ep;
-		req->cq = cq;
 		goto fence;
 	}
 

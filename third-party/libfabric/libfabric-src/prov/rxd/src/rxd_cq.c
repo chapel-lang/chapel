@@ -1269,8 +1269,8 @@ ssize_t rxd_cq_sreadfrom(struct fid_cq *cq_fid, void *buf, size_t count,
 		}
 		ofi_genlock_unlock(&cq->ep_list_lock);
 
-		ret = fi_wait(&cq->wait->wait_fid, ep_retry == -1 ?
-			      timeout : rxd_get_timeout(ep_retry));
+		ret = ofi_wait(&cq->wait->wait_fid, ep_retry == -1 ?
+			       timeout : rxd_get_timeout(ep_retry));
 
 		if (ep_retry != -1 && ret == -FI_ETIMEDOUT)
 			ret = 0;

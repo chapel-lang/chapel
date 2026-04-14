@@ -6,7 +6,7 @@
   GPL LICENSE SUMMARY
 
   Copyright(c) 2015 Intel Corporation.
-  Copyright(c) 2021 Cornelis Networks.
+  Copyright(c) 2021-2024 Cornelis Networks.
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of version 2 of the GNU General Public License as
@@ -23,7 +23,7 @@
   BSD LICENSE
 
   Copyright(c) 2015 Intel Corporation.
-  Copyright(c) 2021 Cornelis Networks.
+  Copyright(c) 2021-2024 Cornelis Networks.
 
   Redistribution and use in source and binary forms, with or without
   modification, are permitted provided that the following conditions
@@ -77,18 +77,18 @@
 /* touch the pages, with a 32 bit read */
 void opx_hfi_touch_mmap(void *m, size_t bytes)
 {
-	volatile uint32_t *b = (volatile uint32_t *)m, c;
-	size_t i;		/* m is always page aligned, so pgcnt exact */
-	int __hfi_pg_sz;
+	volatile uint32_t *b = (volatile uint32_t *) m, c;
+	size_t		   i; /* m is always page aligned, so pgcnt exact */
+	int		   __hfi_pg_sz;
 
 	/* First get the page size */
 	__hfi_pg_sz = sysconf(_SC_PAGESIZE);
 
-	_HFI_VDBG("Touch %lu mmap'ed pages starting at %p\n",
-		  (unsigned long)bytes / __hfi_pg_sz, m);
+	_HFI_VDBG("Touch %lu mmap'ed pages starting at %p\n", (unsigned long) bytes / __hfi_pg_sz, m);
 	bytes /= sizeof(c);
-	for (i = 0; i < bytes; i += __hfi_pg_sz / sizeof(c))
+	for (i = 0; i < bytes; i += __hfi_pg_sz / sizeof(c)) {
 		c = b[i];
+	}
 }
 
 /* set the send context pkey to check BTH pkey in each packet.
@@ -96,24 +96,23 @@ void opx_hfi_touch_mmap(void *m, size_t bytes)
    this pkey, if not, driver should return error. */
 int opx_hfi_set_pkey(struct _hfi_ctrl *ctrl, uint16_t pkey)
 {
-	struct hfi1_cmd cmd;
+	struct hfi1_cmd	      cmd;
 	struct hfi1_base_info tbinfo;
 
 	cmd.type = OPX_HFI_CMD_SET_PKEY;
-	cmd.len = 0;
+	cmd.len	 = 0;
 	cmd.addr = (uint64_t) pkey;
 
-	_HFI_VDBG("Setting context pkey to 0x%04x.\n", pkey);
+	_HFI_VDBG("Setting context pkey to 0x%04x on fd %d.\n", pkey, ctrl->fd);
 	if (opx_hfi_cmd_write(ctrl->fd, &cmd, sizeof(cmd)) == -1) {
-		_HFI_INFO("Setting context pkey to 0x%04x failed: %s\n",
-			  pkey, strerror(errno));
+		_HFI_INFO("Setting context pkey to 0x%04x failed: %s\n", pkey, strerror(errno));
 		return -1;
 	} else {
 		_HFI_VDBG("Successfully set context pkey to 0x%04x.\n", pkey);
 	}
 
 	int selinux = 0;
-	fi_param_get_bool(fi_opx_global.prov,"selinux",&selinux);
+	fi_param_get_bool(fi_opx_global.prov, "selinux", &selinux);
 	if (selinux) {
 		/*
 		 * If SELinux is in use the kernel may have changed our JKey based on
@@ -122,12 +121,11 @@ int opx_hfi_set_pkey(struct _hfi_ctrl *ctrl, uint16_t pkey)
 		 * IOCTL to get the JKey only. For now, this temporary workaround works.
 		 */
 		cmd.type = OPX_HFI_CMD_USER_INFO;
-		cmd.len = sizeof(tbinfo);
+		cmd.len	 = sizeof(tbinfo);
 		cmd.addr = (uint64_t) &tbinfo;
 
 		if (opx_hfi_cmd_write(ctrl->fd, &cmd, sizeof(cmd)) == -1) {
-			_HFI_VDBG("BASE_INFO command failed in setpkey: %s\n",
-				  strerror(errno));
+			_HFI_VDBG("BASE_INFO command failed in setpkey: %s\n", strerror(errno));
 			return -1;
 		}
 		_HFI_VDBG("FI_OPX_SELINUX is set, updating jkey to 0x%04x\n", tbinfo.jkey);
@@ -145,8 +143,9 @@ static int opx_hfi_count_names(const char *namep)
 {
 	int n = 0;
 	while (*namep != '\0') {
-		if (*namep == '\n')
+		if (*namep == '\n') {
 			n++;
+		}
 		namep++;
 	}
 	return n;
@@ -154,35 +153,36 @@ static int opx_hfi_count_names(const char *namep)
 
 const char *opx_hfi_get_next_name(char **names)
 {
-char *p, *start;
+	char *p, *start;
 
 	p = start = *names;
 	while (*p != '\0' && *p != '\n') {
 		p++;
-	}   
+	}
 	if (*p == '\n') {
 		*p = '\0';
 		p++;
 		*names = p;
 		return start;
-	} else
+	} else {
 		return NULL;
+	}
 }
 
-int opx_hfi_lookup_stat(const char *attr, char *namep, uint64_t *stats,
-		    uint64_t *s)
+int opx_hfi_lookup_stat(const char *attr, char *namep, uint64_t *stats, uint64_t *s)
 {
 	const char *p;
-	int i, ret = -1, len = strlen(attr);
-	int nelem = opx_hfi_count_names(namep);
+	int	    i, ret = -1, len = strlen(attr);
+	int	    nelem = opx_hfi_count_names(namep);
 
 	for (i = 0; i < nelem; i++) {
 		p = opx_hfi_get_next_name(&namep);
-		if (p == NULL)
+		if (p == NULL) {
 			break;
+		}
 		if (strncasecmp(p, attr, len + 1) == 0) {
 			ret = i;
-			*s = stats[i];
+			*s  = stats[i];
 		}
 	}
 	return ret;

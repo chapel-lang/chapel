@@ -222,7 +222,7 @@ int neuron_get_dmabuf_fd(const void *addr, uint64_t size, int *fd,
 
 	/* nrt_get_dmabuf_fd symbol doesn't exist in Neuron Runtime */
 	if (!neuron_ops.nrt_get_dmabuf_fd) {
-		return -FI_ENOPROTOOPT;
+		return -FI_EOPNOTSUPP;
 	}
 
 	ret = neuron_ops.nrt_get_dmabuf_fd((uintptr_t)addr, size, fd);
@@ -245,8 +245,14 @@ int neuron_get_dmabuf_fd(const void *addr, uint64_t size, int *fd,
 		/* fallback to mem registration using ibv_reg_mr */
 		FI_INFO(&core_prov, FI_LOG_CORE,
 			"Failed to retrieve dmabuf_fd: %d\n", ret);
-		return -FI_ENOPROTOOPT;
+		return -FI_EOPNOTSUPP;
 	}
+}
+
+int neuron_put_dmabuf_fd(int fd)
+{
+	close(fd);
+	return FI_SUCCESS;
 }
 
 #else
@@ -293,6 +299,11 @@ void neuron_free(void **handle)
 
 int neuron_get_dmabuf_fd(const void *addr, uint64_t size, int *fd,
 			 uint64_t *offset)
+{
+	return -FI_ENOSYS;
+}
+
+int neuron_put_dmabuf_fd(int fd)
 {
 	return -FI_ENOSYS;
 }

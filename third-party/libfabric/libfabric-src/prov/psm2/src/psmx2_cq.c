@@ -1693,7 +1693,7 @@ STATIC ssize_t psmx2_cq_readerr(struct fid_cq *cq, struct fi_cq_err_entry *buf,
 				  buf, &cq_priv->pending_error->cqe.err);
 		free(cq_priv->pending_error);
 		cq_priv->pending_error = NULL;
-		psmx2_unlock(&cq_priv->lock, 2);
+		cq_priv->domain->cq_unlock_fn(&cq_priv->lock, 2);
 		return 1;
 	}
 	cq_priv->domain->cq_unlock_fn(&cq_priv->lock, 2);
@@ -1728,7 +1728,7 @@ STATIC ssize_t psmx2_cq_sreadfrom(struct fid_cq *cq, void *buf, size_t count,
 				ofi_atomic_set32(&cq_priv->signaled, 0);
 				return -FI_ECANCELED;
 			}
-			fi_wait((struct fid_wait *)cq_priv->wait, timeout);
+			ofi_wait((struct fid_wait *)cq_priv->wait, timeout);
 		} else {
 			clock_gettime(CLOCK_REALTIME, &ts0);
 			while (!sth_happened) {
@@ -1834,7 +1834,7 @@ static int psmx2_cq_close(fid_t fid)
 	ofi_spin_destroy(&cq->lock);
 
 	if (cq->wait) {
-		fi_poll_del(&cq->wait->pollset->poll_fid, &cq->cq.fid, 0);
+		ofi_poll_del(&cq->wait->pollset->poll_fid, &cq->cq.fid, 0);
 		if (cq->wait_is_local)
 			fi_close(&cq->wait->wait_fid.fid);
 	}
@@ -1949,8 +1949,8 @@ int psmx2_cq_open(struct fid_domain *domain, struct fi_cq_attr *attr,
 	case FI_WAIT_MUTEX_COND:
 		wait_attr.wait_obj = attr->wait_obj;
 		wait_attr.flags = 0;
-		err = fi_wait_open(&domain_priv->fabric->util_fabric.fabric_fid,
-				   &wait_attr, (struct fid_wait **)&wait);
+		err = ofi_wait_open(&domain_priv->fabric->util_fabric.fabric_fid,
+				    &wait_attr, (struct fid_wait **)&wait);
 		if (err)
 			return err;
 		wait_is_local = 1;
@@ -2017,7 +2017,7 @@ int psmx2_cq_open(struct fid_domain *domain, struct fi_cq_attr *attr,
 	}
 
 	if (wait)
-		fi_poll_add(&cq_priv->wait->pollset->poll_fid, &cq_priv->cq.fid, 0);
+		ofi_poll_add(&cq_priv->wait->pollset->poll_fid, &cq_priv->cq.fid, 0);
 
 	*cq = &cq_priv->cq;
 	return 0;

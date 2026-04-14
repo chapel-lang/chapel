@@ -52,11 +52,6 @@ static int mrail_av_close(struct fid *fid)
 	return retv;
 }
 
-static int mrail_av_bind(struct fid *fid, struct fid *bfid, uint64_t flags)
-{
-	return ofi_av_bind(fid, bfid, flags);
-}
-
 static const char *mrail_av_straddr(struct fid_av *av, const void *addr,
 				  char *buf, size_t *len)
 {
@@ -167,7 +162,7 @@ static struct fi_ops_av mrail_av_ops = {
 static struct fi_ops mrail_av_fi_ops = {
 	.size = sizeof(struct fi_ops),
 	.close = mrail_av_close,
-	.bind = mrail_av_bind,
+	.bind = fi_no_bind,
 	.control = fi_no_control,
 	.ops_open = fi_no_ops_open,
 };

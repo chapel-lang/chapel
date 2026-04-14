@@ -40,6 +40,11 @@
 static DEFINE_LIST(fabric_list);
 extern struct ofi_common_locks common_locks;
 
+struct util_domain_match_arg {
+	const struct fi_info *info;
+	const struct fi_info *hints;
+};
+
 void ofi_fabric_insert(struct util_fabric *fabric)
 {
 	pthread_mutex_lock(&common_locks.util_fabric_lock);
@@ -154,15 +159,62 @@ void fid_list_remove2(struct dlist_entry *fid_list, struct ofi_genlock *lock,
 static int util_find_domain(struct dlist_entry *item, const void *arg)
 {
 	const struct util_domain *domain;
-	const struct fi_info *info = arg;
+	const struct util_domain_match_arg *match_arg = arg;
+	const struct fi_info *info = match_arg->info;
+	const struct fi_info *hints = match_arg->hints;
+	const char *domain_name;
 
 	domain = container_of(item, struct util_domain, list_entry);
+	domain_name =
+		(hints && hints->domain_attr && hints->domain_attr->name) ?
+			hints->domain_attr->name : info->domain_attr->name;
 
-	return !strcmp(domain->name, info->domain_attr->name) &&
+	return !strcmp(domain->name, domain_name) &&
 		!((info->caps | info->domain_attr->caps) & ~domain->info_domain_caps) &&
 		 (((info->mode | info->domain_attr->mode) &
 		   domain->info_domain_mode) == domain->info_domain_mode) &&
 		 ((info->domain_attr->mr_mode & domain->mr_mode) == domain->mr_mode);
+}
+
+void util_lookup_existing_fabric_domain(const struct util_prov *util_prov,
+					const struct fi_info *hints,
+					struct fi_info **info)
+{
+	struct util_fabric *fabric;
+	struct util_domain *domain;
+	struct dlist_entry *item;
+	struct util_fabric_info fabric_info;
+
+	fabric_info.name =
+		(hints && hints->fabric_attr && hints->fabric_attr->name) ?
+			hints->fabric_attr->name :
+			(*info)->fabric_attr->name;
+	fabric_info.prov = util_prov->prov;
+
+	pthread_mutex_lock(&common_locks.util_fabric_lock);
+	item = dlist_find_first_match(&fabric_list, util_match_fabric,
+				      &fabric_info);
+	if (item) {
+		fabric = container_of(item, struct util_fabric, list_entry);
+		FI_DBG(util_prov->prov, FI_LOG_CORE, "Found opened fabric\n");
+		(*info)->fabric_attr->fabric = &fabric->fabric_fid;
+
+		struct util_domain_match_arg match_arg = { *info, hints };
+		ofi_mutex_lock(&fabric->lock);
+		item = dlist_find_first_match(&fabric->domain_list,
+					      util_find_domain, &match_arg);
+		if (item) {
+			FI_DBG(util_prov->prov, FI_LOG_CORE,
+			       "Found open domain\n");
+			domain = container_of(item, struct util_domain,
+					      list_entry);
+			(*info)->domain_attr->domain =
+					&domain->domain_fid;
+		}
+		ofi_mutex_unlock(&fabric->lock);
+
+	}
+	pthread_mutex_unlock(&common_locks.util_fabric_lock);
 }
 
 static int ofi_dup_auth_keys(const struct fi_info *hints, struct fi_info *info)
@@ -204,11 +256,7 @@ int util_getinfo(const struct util_prov *util_prov, uint32_t version,
 		 const char *node, const char *service, uint64_t flags,
 		 const struct fi_info *hints, struct fi_info **info)
 {
-	struct util_fabric *fabric;
-	struct util_domain *domain;
-	struct dlist_entry *item;
 	const struct fi_provider *prov = util_prov->prov;
-	struct util_fabric_info fabric_info;
 	struct fi_info *saved_info;
 	int ret, copy_dest;
 
@@ -229,33 +277,7 @@ int util_getinfo(const struct util_prov *util_prov, uint32_t version,
 	saved_info = *info;
 
 	for (; *info; *info = (*info)->next) {
-
-		fabric_info.name = (*info)->fabric_attr->name;
-		fabric_info.prov = util_prov->prov;
-
-		pthread_mutex_lock(&common_locks.util_fabric_lock);
-		item = dlist_find_first_match(&fabric_list, util_match_fabric,
-					      &fabric_info);
-		if (item) {
-			fabric = container_of(item, struct util_fabric, list_entry);
-			FI_DBG(prov, FI_LOG_CORE, "Found opened fabric\n");
-			(*info)->fabric_attr->fabric = &fabric->fabric_fid;
-
-			ofi_mutex_lock(&fabric->lock);
-			item = dlist_find_first_match(&fabric->domain_list,
-						      util_find_domain, *info);
-			if (item) {
-				FI_DBG(prov, FI_LOG_CORE,
-				       "Found open domain\n");
-				domain = container_of(item, struct util_domain,
-						      list_entry);
-				(*info)->domain_attr->domain =
-						&domain->domain_fid;
-			}
-			ofi_mutex_unlock(&fabric->lock);
-
-		}
-		pthread_mutex_unlock(&common_locks.util_fabric_lock);
+		util_lookup_existing_fabric_domain(util_prov, hints, info);
 
 		if (flags & FI_SOURCE) {
 			ret = ofi_get_addr(&(*info)->addr_format, flags,
@@ -391,7 +413,7 @@ static void util_getinfo_ifs(const struct util_prov *prov,
 
 		if (hints && ((hints->caps & addr_entry->comm_caps) !=
 		    (hints->caps & (FI_LOCAL_COMM | FI_REMOTE_COMM)) ||
-		     !ofi_valid_addr_format(addr_format, hints->addr_format)))
+		     !ofi_match_addr_format(addr_format, hints->addr_format)))
 			continue;
 
 		cur = fi_dupinfo(src_info);

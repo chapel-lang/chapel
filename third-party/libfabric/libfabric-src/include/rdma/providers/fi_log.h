@@ -53,7 +53,6 @@ enum fi_log_subsys {
 	FI_LOG_EQ,
 	FI_LOG_MR,
 	FI_LOG_CNTR,
-	FI_LOG_SUBSYS_MAX
 };
 
 enum fi_log_level {
@@ -61,7 +60,6 @@ enum fi_log_level {
 	FI_LOG_TRACE,
 	FI_LOG_INFO,
 	FI_LOG_DEBUG,
-	FI_LOG_MAX
 };
 
 int fi_log_enabled(const struct fi_provider *prov, enum fi_log_level level,

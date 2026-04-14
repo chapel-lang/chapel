@@ -39,6 +39,20 @@
 #include <ofi.h>
 #include <ofi_osd.h>
 
+#ifdef HAVE_FABRIC_PROFILE
+#include <ofi_profile.h>
+static inline void
+ofi_bufpool_track_mem(size_t size)
+{
+	ofi_prof_inc_sys_var(FI_VAR_OFI_MEM, (int64_t)size);
+};
+#else
+static inline void
+ofi_bufpool_track_mem(size_t size)
+{
+	OFI_UNUSED(size);
+};
+#endif
 
 enum {
 	OFI_BUFPOOL_REGION_CHUNK_CNT = 16
@@ -125,6 +139,14 @@ int ofi_bufpool_grow(struct ofi_bufpool *pool)
 	int ret;
 	size_t i;
 
+	size_t mem_allocated = 0;
+
+	FI_DBG(&core_prov, FI_LOG_CORE, "%s pool %p  size %ld region_size %zu "
+	       "entry_cnt %d chunk_cnt %d\n",
+		__func__, pool, pool->alloc_size, pool->region_size,
+		(int)(pool->entry_cnt+pool->attr.chunk_cnt),
+		(int)pool->attr.chunk_cnt);
+
 	if (pool->attr.max_cnt && pool->entry_cnt >= pool->attr.max_cnt)
 		return -FI_ENOMEM;
 
@@ -143,7 +165,10 @@ int ofi_bufpool_grow(struct ofi_bufpool *pool)
 		goto err1;
 	}
 
-	memset(buf_region->alloc_region, 0, pool->alloc_size);
+	mem_allocated += buf_region->pool->alloc_size;
+
+	if (!(pool->attr.flags & OFI_BUFPOOL_NO_ZERO))
+		memset(buf_region->alloc_region, 0, pool->alloc_size);
 	buf_region->mem_region = buf_region->alloc_region + pool->entry_size;
 	if (pool->attr.alloc_fn) {
 		ret = pool->attr.alloc_fn(buf_region);
@@ -162,6 +187,8 @@ int ofi_bufpool_grow(struct ofi_bufpool *pool)
 			goto err3;
 		}
 		pool->region_table = new_table;
+		mem_allocated += OFI_BUFPOOL_REGION_CHUNK_CNT *
+				 sizeof(*pool->region_table);
 	}
 	pool->region_table[pool->region_cnt] = buf_region;
 	buf_region->index = pool->region_cnt++;
@@ -171,7 +198,6 @@ int ofi_bufpool_grow(struct ofi_bufpool *pool)
 		buf_hdr = ofi_buf_hdr(buf);
 		buf_hdr->region = buf_region;
 		buf_hdr->index = pool->entry_cnt + i;
-		OFI_DBG_SET(buf_hdr->allocated, false);
 		OFI_DBG_SET(buf_hdr->magic, OFI_MAGIC_SIZE_T);
 		OFI_DBG_SET(buf_hdr->ftr,
 			    (struct ofi_bufpool_ftr *) ((char *) buf +
@@ -198,6 +224,8 @@ int ofi_bufpool_grow(struct ofi_bufpool *pool)
 		dlist_insert_tail(&buf_region->entry, &pool->free_list.regions);
 
 	pool->entry_cnt += pool->attr.chunk_cnt;
+
+	ofi_bufpool_track_mem(mem_allocated);
 	return 0;
 
 err3:
@@ -240,6 +268,12 @@ int ofi_bufpool_create_attr(struct ofi_bufpool_attr *attr,
 
 	pool->alloc_size = (pool->attr.chunk_cnt + 1) * pool->entry_size;
 	pool->region_size = pool->alloc_size - pool->entry_size;
+
+	FI_DBG(&core_prov, FI_LOG_CORE,
+		"%s alloc_size %zu region_size %zu align_entry %zu "
+		"entry_size %zu chunk_cnt %ld pool %p  (%p)\n",
+		__func__, pool->alloc_size, pool->region_size, pool->entry_size,
+		attr->size, pool->attr.chunk_cnt, pool, buf_pool);
 
 	*buf_pool = pool;
 	return FI_SUCCESS;

@@ -80,8 +80,19 @@ int psm3_opened_endpoint_count = 0;
 // for OPA/IB this is the LID
 // for IPv4 this is the full 32 bit IPv4 address
 // for IPv6 this is the full 128 bit IPv6 address
+static psmi_lock_t nids_lock;
 static psm2_nid_t *hfi_nids;
 static uint32_t nnids;	// number of populated entries in hfi_nids array
+
+void psm3_ep_init(void)
+{
+	psmi_init_lock(&nids_lock);
+}
+
+void psm3_ep_fini(void)
+{
+	psmi_destroy_lock(&nids_lock);
+}
 
 static psm2_error_t psm3_ep_open_device(const psm2_ep_t ep,
 				       const struct psm3_ep_open_opts *opts,
@@ -253,26 +264,13 @@ psm2_error_t psm3_epaddr_to_epid(psm2_epaddr_t epaddr, psm2_epid_t *epid)
 	return err;
 }
 
-// this is used to find devices with the same address as another process,
-// implying intra-node comms.
-// we poplate hfi_nids and nnids with the set of network ids (NID) for
-// all the local NICs.
-// The caller will see if any of these NIDs match the NID of the remote process.
-// Note that NIDs are globally unique and include both subnet and NIC address
-// information, so we can compare them regardless of their subnet.
-// NIDs which are not on the same subnet will not match.
-// NIDs on the same subnet only match if they are the same NIC.
-// Two local NICs with the same subnet and same address is an unexpected
-// invalid config, and will silently match the two NICs.
-#define MAX_GID_IDX 31
-static psm2_error_t
-psm3_ep_devnids(psm2_nid_t **nids, uint32_t *num_nids_o)
+static psm2_error_t devnids_init(void)
 {
 	uint32_t num_units = 0;
 	int i;
 	psm2_error_t err = PSM2_OK;
 
-	PSMI_ERR_UNLESS_INITIALIZED(NULL);
+	PSMI_LOCK(nids_lock);
 
 	if (hfi_nids == NULL) {
 		if ((err = psm3_ep_num_devunits(&num_units)))
@@ -320,11 +318,50 @@ psm3_ep_devnids(psm2_nid_t **nids, uint32_t *num_nids_o)
 			goto fail;
 		}
 	}
+
+fail:
+	PSMI_UNLOCK(nids_lock);
+	return err;
+}
+
+static void devnids_destroy(void)
+{
+	PSMI_LOCK(nids_lock);
+
+	if (hfi_nids) {
+		psmi_free(hfi_nids);
+		hfi_nids = NULL;
+		nnids = 0;
+	}
+
+	PSMI_UNLOCK(nids_lock);
+}
+
+// This is used to find devices with the same address as another process,
+// implying intra-node comms.
+// We populate hfi_nids and nnids with the set of network ids (NID) for
+// all the local NICs.
+// The caller will see if any of these NIDs match the NID of the remote process.
+// Note that NIDs are globally unique and include both subnet and NIC address
+// information, so we can compare them regardless of their subnet.
+// NIDs which are not on the same subnet will not match.
+// NIDs on the same subnet only match if they are the same NIC.
+// Two local NICs with the same subnet and same address is an unexpected
+// invalid config, and will silently match the two NICs.
+//
+static psm2_error_t
+psm3_ep_devnids(psm2_nid_t **nids, uint32_t *num_nids_o)
+{
+	PSMI_ERR_UNLESS_INITIALIZED(NULL);
+
+	psm2_error_t err = devnids_init();
+	if (err != PSM2_OK)
+		return err;
+
 	*nids = hfi_nids;
 	*num_nids_o = nnids;
 
-fail:
-	return err;
+	return PSM2_OK;
 }
 
 // Indicate if the given epid is a local process.
@@ -455,6 +492,10 @@ psm3_ep_open_internal(psm2_uuid_t const unique_job_key, int *devid_enabled,
 		opts.outsl = opts_i->outsl;
 	if (opts_i->service_id)
 		opts.service_id = (uint64_t) opts_i->service_id;
+#ifdef PSM3_PATH_REC_QUERY
+	if (opts_i->path_res_type != PSM2_PATH_RES_NONE)
+		opts.path_res_type = opts_i->path_res_type;
+#endif
 	if (opts_i->senddesc_num)
 		opts.senddesc_num = opts_i->senddesc_num;
 	if (opts_i->imm_size)
@@ -470,7 +511,33 @@ psm3_ep_open_internal(psm2_uuid_t const unique_job_key, int *devid_enabled,
 		opts.service_id = (uint64_t) envvar_val.e_ulonglong;
 	}
 
+#ifdef PSM3_PATH_REC_QUERY
+	const char *PSM3_PATH_REC_HELP =
+			 "Mechanism to query NIC path record [opp, umad or none] (default is none)";
+	/* Get Path resolution type from environment Possible choices are:
+	 *
+	 * NONE : Default same as previous instances. Utilizes static data.
+	 * OPP  : Use OFED Plus Plus library to do path record queries.
+	 * UMAD : Use raw libibumad interface to form and process path records.
+	 */
+	if (!psm3_getenv("PSM3_PATH_REC", PSM3_PATH_REC_HELP,
+			 PSMI_ENVVAR_LEVEL_USER, PSMI_ENVVAR_TYPE_STR,
+			 (union psmi_envvar_val)"none", &envvar_val)) {
+		if (!strcasecmp(envvar_val.e_str, "none"))
+			opts.path_res_type = PSM2_PATH_RES_NONE;
+		else if (!strcasecmp(envvar_val.e_str, "opp"))
+			opts.path_res_type = PSM2_PATH_RES_OPP;
+		else if (!strcasecmp(envvar_val.e_str, "umad"))
+			opts.path_res_type = PSM2_PATH_RES_UMAD;
+		else {
+			_HFI_INFO("Invalid value for PSM3_PATH_REC ('%s') %-40s Using: none\n",
+				envvar_val.e_str, PSM3_PATH_REC_HELP);
+			opts.path_res_type = PSM2_PATH_RES_NONE;
+		}
+	}
+#else
 	opts.path_res_type = PSM2_PATH_RES_NONE;
+#endif
 
 	/* Get user specified port number to use. */
 	if (!psm3_getenv("PSM3_NIC_PORT", "NIC Port number (0 autodetects)",
@@ -648,9 +715,9 @@ psm3_ep_open_internal(psm2_uuid_t const unique_job_key, int *devid_enabled,
 	ep->hfi_num_send_rdma = 0;
 #endif
 #ifdef PSM_HAVE_RNDV_MOD
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 	ep->rv_gpu_cache_size = 0;
-#endif /* PSM_CUDA || PSM_ONEAPI */
+#endif /* PSM_HAVE_GPU */
 #endif /* PSM_HAVE_RNDV_MOD */
 
 	/* See how many iterations we want to spin before yielding */
@@ -717,10 +784,7 @@ psm3_ep_open_internal(psm2_uuid_t const unique_job_key, int *devid_enabled,
 	if (! mq->ep)	// only call on 1st EP within MQ
 		psm3_mq_initstats(mq, ep->epid);
 
-#ifdef PSM_CUDA
-	if (PSMI_IS_GPU_ENABLED)
-		verify_device_support_unified_addr();
-#endif
+	PSM3_GPU_VERIFY_CAPABILITIES();
 
 	_HFI_VDBG("start ptl device init...\n");
 	if (psm3_ep_device_is_enabled(ep, PTL_DEVID_SELF)) {
@@ -797,15 +861,7 @@ psm3_ep_open(psm2_uuid_t const unique_job_key,
 		return PSM2_TOO_MANY_ENDPOINTS;
 	}
 
-#if defined(PSM_ONEAPI)
-	/* Make sure ze_context and command queue/list are available.
-	 * They could be destroyed when there is no more endpoints.
-	 * If another endpoint is created after that, the code here can
-	 * recreate the context, command queue and list.
-	 */
-	if (PSMI_IS_GPU_ENABLED && !cur_ze_dev)
-		psmi_oneapi_cmd_create_all();
-#endif //PSM_ONEAPI
+	PSM3_GPU_EP_OPEN();
 
 	/* Matched Queue initialization.  We do this early because we have to
 	 * make sure ep->mq exists and is valid before calling ips_do_work.
@@ -839,11 +895,12 @@ psm3_ep_open(psm2_uuid_t const unique_job_key,
 			opts.addr_index = multirail_config.addr_indexes[0];
 		}
 	}
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 	// if HAL doesn't support GDR Copy, it may disable Gdr Copy
-	// by zeroing is_gdr_copy_enabled, gdr_copy_limit_send, and
-	// gdr_copy_limit_recv during gdr_open
-	if (PSMI_IS_GDR_COPY_ENABLED)
+	// by zeroing psm3_gpu_is_gdr_copy_enabled,
+	// psm3_gpu_gdr_copy_limit_send, and
+	// psm3_gpu_gdr_copy_limit_recv during gdr_open
+	if (PSM3_GPU_IS_GDR_COPY_ENABLED)
 		psmi_hal_gdr_open();
 #endif
 
@@ -952,12 +1009,8 @@ psm3_ep_open(psm2_uuid_t const unique_job_key,
 fail:
 	fflush(stdout);
 	PSMI_UNLOCK(psm3_creation_lock);
-#if defined(PSM_ONEAPI)
-	if (PSMI_IS_GPU_ENABLED && psm3_opened_endpoint_count == 0) {
-		psmi_oneapi_putqueue_free();
-		psmi_oneapi_cmd_destroy_all();
-	}
-#endif //PSM_ONEAPI
+	if (psm3_opened_endpoint_count == 0)
+		PSM3_GPU_EP_CLOSE();
 	PSM2_LOG_MSG("leaving");
 	return err;
 }
@@ -975,14 +1028,14 @@ psm2_error_t psm3_ep_close(psm2_ep_t ep, int mode, int64_t timeout_in)
 	}
 #endif
 
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 	/*
 	 * The close on the gdr fd needs to be called before the
 	 * close on the hfi fd as the the gdr device will hold
 	 * reference count on the hfi device which will make the close
 	 * on the hfi fd return without actually closing the fd.
 	 */
-	if (PSMI_IS_GDR_COPY_ENABLED)
+	if (PSM3_GPU_IS_GDR_COPY_ENABLED)
 		psmi_hal_gdr_close();
 #endif
 	union psmi_envvar_val timeout_intval;
@@ -1021,12 +1074,12 @@ psm2_error_t psm3_ep_close(psm2_ep_t ep, int mode, int64_t timeout_in)
 		    "End-point close timeout over-ride.",
 		    PSMI_ENVVAR_LEVEL_HIDDEN, PSMI_ENVVAR_TYPE_UINT,
 		    (union psmi_envvar_val)0, &timeout_intval)) {
-		timeout_in = timeout_intval.e_uint * SEC_ULL;
+		timeout_in = timeout_intval.e_uint * NSEC_PER_SEC;
 	} else if (timeout_in > 0) {
 		/* The timeout parameter provides the minimum timeout. A heuristic
 		 * is used to scale up the timeout linearly with the number of
 		 * endpoints, and we allow one second per 100 endpoints. */
-		timeout_in = max(timeout_in, (ep->connections * SEC_ULL) / 100);
+		timeout_in = max(timeout_in, (ep->connections * NSEC_PER_SEC) / 100);
 	}
 
 	if (timeout_in > 0 && timeout_in < PSMI_MIN_EP_CLOSE_TIMEOUT)
@@ -1158,31 +1211,19 @@ psm2_error_t psm3_ep_close(psm2_ep_t ep, int mode, int64_t timeout_in)
 		err = psm3_mq_free(mmq);
 	}
 
-	if (hfi_nids)
-	{
-		psmi_free(hfi_nids);
-		hfi_nids = NULL;
-		nnids = 0;
-	}
-
 	PSMI_UNLOCK(psm3_creation_lock);
 
 	if (_HFI_PRDBG_ON) {
 		_HFI_PRDBG_ALWAYS("Closed endpoint in %.3f secs\n",
 				 (double)cycles_to_nanosecs(get_cycles() -
-				 t_start) / SEC_ULL);
+				 t_start) / NSEC_PER_SEC);
 	}
-#if defined(PSM_ONEAPI)
-	/*
-	 * It would be ideal to destroy the global command list, queue, and
-	 * context in psm3_finalize(). Unfortunately, it will cause segfaults
-	 * in Level-zero library.
-	 */
-	if (PSMI_IS_GPU_ENABLED && psm3_opened_endpoint_count == 0) {
-		psmi_oneapi_putqueue_free();
-		psmi_oneapi_cmd_destroy_all();
+
+	if (psm3_opened_endpoint_count == 0) {
+		PSM3_GPU_EP_CLOSE();
+		devnids_destroy();
 	}
-#endif //PSM_ONEAPI
+
 	PSM2_LOG_MSG("leaving");
 	return err;
 }
@@ -1346,7 +1387,7 @@ int psm3_ep_device_is_enabled(const psm2_ep_t ep, int devid)
 }
 
 #ifdef PSM_HAVE_RNDV_MOD
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 // used for GdrCopy
 
 // given an ep this returns the "next one".
@@ -1487,5 +1528,5 @@ done:
 	}
 	return evicted;
 }
-#endif /* PSM_CUDA || PSM_ONEAPI */
+#endif /* PSM_HAVE_GPU */
 #endif /* PSM_HAVE_RNDV_MOD */

@@ -35,6 +35,78 @@
 
 #include "smr.h"
 
+extern struct fi_ops_srx_peer smr_srx_peer_ops;
+
+static int smr_srx_close(struct fid *fid)
+{
+	struct smr_domain *domain = container_of(fid, struct smr_domain,
+						 rx_ep.fid);
+
+	ofi_atomic_dec32(&domain->util_domain.ref);
+
+	return FI_SUCCESS;
+}
+
+static struct fi_ops smr_srx_fi_ops = {
+	.size = sizeof(struct fi_ops),
+	.close = smr_srx_close,
+	.bind = fi_no_bind,
+	.control = fi_no_control,
+	.ops_open = fi_no_ops_open,
+};
+
+static struct fi_ops_msg smr_srx_msg_ops = {
+	.size = sizeof(struct fi_ops_msg),
+	.recv = fi_no_msg_recv,
+	.recvv = fi_no_msg_recvv,
+	.recvmsg = fi_no_msg_recvmsg,
+	.send = fi_no_msg_send,
+	.sendv = fi_no_msg_sendv,
+	.sendmsg = fi_no_msg_sendmsg,
+	.inject = fi_no_msg_inject,
+	.senddata = fi_no_msg_senddata,
+	.injectdata = fi_no_msg_injectdata,
+};
+
+static struct fi_ops_tagged smr_srx_tagged_ops = {
+	.size = sizeof(struct fi_ops_msg),
+	.recv = fi_no_tagged_recv,
+	.recvv = fi_no_tagged_recvv,
+	.recvmsg = fi_no_tagged_recvmsg,
+	.send = fi_no_tagged_send,
+	.sendv = fi_no_tagged_sendv,
+	.sendmsg = fi_no_tagged_sendmsg,
+	.inject = fi_no_tagged_inject,
+	.senddata = fi_no_tagged_senddata,
+	.injectdata = fi_no_tagged_injectdata,
+};
+
+static int smr_srx_context(struct fid_domain *domain, struct fi_rx_attr *attr,
+			   struct fid_ep **rx_ep, void *context)
+{
+	struct smr_domain *smr_domain;
+
+	smr_domain = container_of(domain, struct smr_domain,
+				  util_domain.domain_fid);
+
+	if (attr->op_flags & FI_PEER) {
+		smr_domain->srx = ((struct fi_peer_srx_context *)
+					(context))->srx;
+		smr_domain->srx->peer_ops = &smr_srx_peer_ops;
+		smr_domain->rx_ep.msg = &smr_srx_msg_ops;
+		smr_domain->rx_ep.tagged = &smr_srx_tagged_ops;
+		smr_domain->rx_ep.fid.ops = &smr_srx_fi_ops;
+		smr_domain->rx_ep.fid.fclass = FI_CLASS_SRX_CTX;
+		*rx_ep = &smr_domain->rx_ep;
+		ofi_atomic_inc32(&smr_domain->util_domain.ref);
+		return FI_SUCCESS;
+	}
+	FI_WARN(&smr_prov, FI_LOG_EP_CTRL,
+		"shared srx only supported with FI_PEER flag\n");
+	return -FI_EINVAL;
+}
+
+
 static struct fi_ops_domain smr_domain_ops = {
 	.size = sizeof(struct fi_ops_domain),
 	.av_open = smr_av_open,

@@ -34,8 +34,8 @@
 
 #include "config.h"
 #include <ofi_util.h>
-struct opx_tid_domain;
-
+#include "rdma/opx/fi_opx_tid_domain.h"
+#include "fi_opx_tid.h"
 
 /* @brief Setup the MR cache.
  *
@@ -45,36 +45,44 @@ struct opx_tid_domain;
  * @param domain	The EFA domain where cache will be used.
  * @return 0 on success, fi_errno on failure.
  */
-int opx_tid_cache_setup(struct ofi_mr_cache **cache,
-			struct opx_tid_domain *domain);
+int opx_tid_cache_setup(struct ofi_mr_cache **cache, struct opx_tid_domain *domain);
 
-int opx_tid_cache_add_abort();
-void opx_tid_cache_delete_abort();
+int  opx_tid_cache_add_abort(struct ofi_mr_cache *cache, struct ofi_mr_entry *entry);
+void opx_tid_cache_delete_abort(struct ofi_mr_cache *cache, struct ofi_mr_entry *entry);
 
-#define OPX_ENTRY_FOUND 0
-#define OPX_ENTRY_OVERLAP 1
-#define OPX_ENTRY_NOT_FOUND 2
-#define OPX_ENTRY_IN_USE 3
+enum opx_tid_cache_entry_status {
+	OPX_TID_CACHE_ENTRY_NOT_FOUND = 0,
+	OPX_TID_CACHE_ENTRY_FOUND,
+	OPX_TID_CACHE_ENTRY_OVERLAP_LEFT,
+	OPX_TID_CACHE_ENTRY_OVERLAP_RIGHT,
+	OPX_TID_CACHE_ENTRY_IN_USE,
+	OPX_TID_CACHE_ENTRY_LAST
+};
+
+struct opx_tid_cache_chain {
+	uint32_t	     entry_count;
+	struct iovec	     range;
+	struct ofi_mr_entry *entries[OPX_MAX_TID_COUNT];
+};
 
 /* Flush cache entries */
-void opx_tid_cache_flush_all(struct ofi_mr_cache *cache,const bool flush_lru,const bool flush_all);
+int opx_tid_cache_flush_all(struct ofi_mr_cache *cache, const bool flush_lru, const bool flush_all);
 
 __OPX_FORCE_INLINE__
-void opx_tid_cache_flush(struct ofi_mr_cache *cache, const bool flush_lru)
+int opx_tid_cache_flush(struct ofi_mr_cache *cache, const bool flush_lru)
 {
 	/* Nothing to do, early exit */
-	if (dlist_empty(&cache->dead_region_list) &&
-	    (!flush_lru ||
-	     dlist_empty(&cache->lru_list))) return;
+	if (dlist_empty(&cache->dead_region_list) && (!flush_lru || dlist_empty(&cache->lru_list))) {
+		return 0;
+	}
 
 	pthread_mutex_unlock(&mm_lock);
 
-	/* Flush dead list or lru (one-time) */
-	opx_tid_cache_flush_all(cache, flush_lru, false);/* one time */
+	/* Flush dead list and possibly one lru entry */
+	int freed_entries = opx_tid_cache_flush_all(cache, flush_lru, false);
 
 	pthread_mutex_lock(&mm_lock);
-	return;
-
+	return freed_entries;
 }
 
 /* Purge all entries for the specified endpoint */
@@ -84,20 +92,12 @@ void opx_tid_cache_purge_ep(struct ofi_mr_cache *cache, struct fi_opx_ep *opx_ep
 void opx_tid_cache_cleanup(struct ofi_mr_cache *cache);
 
 /* De-register (lazy, unless force is true) a memory region on TID rendezvous completion */
-void opx_deregister_for_rzv(struct fi_opx_ep *opx_ep, const uint64_t tid_vaddr,
-			    const int64_t tid_length,
-			    bool invalidate);
-
-/* forward declaration of parameter structure */
-struct fi_opx_hfi1_rx_rzv_rts_params;
+void opx_deregister_for_rzv(struct fi_opx_ep *opx_ep, const uint64_t tid_vaddr, const int64_t tid_length);
 
 /* Register a memory region for TID rendezvous,
  * return 0 on success
- * returns non-zero on failure (fallback to Eager rendezvous)
+ * returns non-zero on failure
  */
-int opx_register_for_rzv(struct fi_opx_hfi1_rx_rzv_rts_params *params,
-			 const uint64_t tid_vaddr, const uint64_t tid_length,
-			 const enum fi_hmem_iface tid_iface,
-			 const uint64_t tid_device);
-
+int opx_register_for_rzv(struct fi_opx_ep *opx_ep, struct fi_opx_hmem_iov *cur_addr_range,
+			 struct opx_tid_addr_block *tid_addr_block);
 #endif /* _FI_PROV_OPX_TID_CACHE_H_ */

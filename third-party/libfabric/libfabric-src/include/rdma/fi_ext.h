@@ -76,6 +76,7 @@ enum {
 	FI_OPT_EFA_USE_DEVICE_RDMA,	/* bool */
 	FI_OPT_EFA_SENDRECV_IN_ORDER_ALIGNED_128_BYTES, /* bool */
 	FI_OPT_EFA_WRITE_IN_ORDER_ALIGNED_128_BYTES, /* bool */
+	FI_OPT_EFA_HOMOGENEOUS_PEERS,   /* bool */
 };
 
 struct fi_fid_export {

@@ -129,7 +129,8 @@ nodist_prov_cxi_test_cxitest_SOURCES = \
 	prov/cxi/test/auth_key.c \
 	prov/cxi/test/fork.c \
 	prov/cxi/test/mem_reg.c \
-	prov/cxi/test/nic.c
+	prov/cxi/test/nic.c \
+	prov/cxi/test/mr_cache.c
 
 prov_cxi_test_cxitest_CPPFLAGS = $(AM_CPPFLAGS) $(cxi_CPPFLAGS) \
 	$(cxitest_CPPFLAGS) $(PTHREAD_CFLAGS)
@@ -206,8 +207,8 @@ src_libfabric_la_LIBADD += $(cxi_LIBS)
 src_libfabric_la_LDFLAGS += $(cxi_LDFLAGS)
 endif !HAVE_CXI_DL
 
-prov_install_man_pages += man/man7/fi_cxi.7
+prov_install_man_pages += man/man7/fi_cxi.7 man/man7/cxi_collectives.7
 
 endif HAVE_CXI
 
-prov_dist_man_pages += man/man7/fi_cxi.7
+prov_dist_man_pages += man/man7/fi_cxi.7 man/man7/cxi_collectives.7

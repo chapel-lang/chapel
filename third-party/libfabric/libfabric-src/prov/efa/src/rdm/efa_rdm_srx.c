@@ -62,6 +62,12 @@ static int efa_rdm_srx_start(struct fi_peer_rx_entry *peer_rxe)
 
 	rxe->state = EFA_RDM_RXE_MATCHED;
 
+	/**
+	 * Since the rxe is now matched, we need to clean the unexp_pkt
+	 * as the pkts are now processed.
+	 */
+	rxe->unexp_pkt = NULL;
+
 	ret = efa_rdm_pke_proc_matched_rtm(pkt_entry);
 	if (OFI_UNLIKELY(ret)) {
 		/* If we run out of memory registrations, we fall back to
@@ -101,7 +107,8 @@ static int efa_rdm_srx_discard(struct fi_peer_rx_entry *peer_rxe)
 	EFA_WARN(FI_LOG_EP_CTRL,
 		"Discarding unmatched unexpected rxe: %p pkt_entry %p\n",
 		rxe, rxe->unexp_pkt);
-	efa_rdm_pke_release_rx(rxe->unexp_pkt);
+	efa_rdm_pke_release_rx_list(rxe->unexp_pkt);
+	rxe->unexp_pkt = NULL;
 	efa_rdm_rxe_release_internal(rxe);
 	return FI_SUCCESS;
 }
@@ -151,7 +158,7 @@ int efa_rdm_peer_srx_construct(struct efa_rdm_ep *ep)
 {
 	int ret;
 	ret = util_ep_srx_context(&efa_rdm_ep_domain(ep)->util_domain,
-				ep->rx_size, EFA_RDM_IOV_LIMIT,
+				ep->base_ep.info->rx_attr->size, EFA_RDM_IOV_LIMIT,
 				ep->min_multi_recv_size,
 				&efa_rdm_srx_update_mr,
 				&efa_rdm_ep_domain(ep)->srx_lock,

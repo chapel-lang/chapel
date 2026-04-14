@@ -50,6 +50,7 @@
 #include <accel-config/libaccel_config.h>
 #include <linux/idxd.h>
 #include <numa.h>
+#include <immintrin.h> // _mm_pause
 #include "smr_util.h"
 #include "smr_dsa.h"
 
@@ -79,6 +80,13 @@ struct dsa_cmd_context {
 	void *entry_ptr;
 };
 
+struct wq_handle {
+	union {
+		void *mmapped;
+		int fd;
+	};
+};
+
 struct smr_dsa_context {
 	struct dsa_hw_desc dsa_work_desc[MAX_CMD_BATCH_SIZE *
 					 CMD_CONTEXT_COUNT];
@@ -89,10 +97,11 @@ struct smr_dsa_context {
 	struct dsa_cmd_context dsa_cmd_context[CMD_CONTEXT_COUNT];
 
 	struct dsa_bitmap dsa_bitmap;
-	void *wq_portal[MAX_WQS_PER_EP];
+	struct wq_handle wq_handle[MAX_WQS_PER_EP];
 	int wq_count;
 	int next_wq;
-	int enable_dsa_page_touch;
+	int (*submit_cmd)(struct wq_handle *wq_handle, struct dsa_hw_desc *desc);
+	void (*close_wq)(struct wq_handle *wq_handle);
 
 	unsigned long copy_type_stats[2];
 	unsigned long page_fault_stats[2];
@@ -133,32 +142,41 @@ struct dsa_ops {
 static void *libdsa_handle = NULL;
 static struct dsa_ops dsa_ops;
 
-static inline unsigned char dsa_enqcmd(struct dsa_hw_desc *desc,
-				       volatile void *reg)
+static int dsa_enq_cmd(struct wq_handle *wq_handle, struct dsa_hw_desc *desc)
 {
+	volatile void *reg = (void *) wq_handle->mmapped;
 	unsigned char retry;
 
 	asm volatile(".byte 0xf2, 0x0f, 0x38, 0xf8, 0x02\t\n"
 		     "setz %0\t\n"
 		     : "=r"(retry)
 		     : "a"(reg), "d"(desc));
-	return retry;
+	return (int) retry;
+}
+
+static int dsa_write_cmd(struct wq_handle *wq_handle, struct dsa_hw_desc *desc)
+{
+	int ret;
+	int wq_fd = wq_handle->fd;
+
+	ret = write(wq_fd, desc, sizeof(*desc));
+	return ret != sizeof(*desc) ? 1 : 0;
 }
 
 static __always_inline void dsa_desc_submit(struct smr_dsa_context *dsa_context,
 					    struct dsa_hw_desc *hw)
 {
-	int enq_status;
+	int status;
 
 	// make sure writes (e.g., comp.status = 0) are ordered wrt to enqcmd
 	{ asm volatile("sfence":::"memory"); }
 
 	do {
-		enq_status = dsa_enqcmd(hw,
-				dsa_context->wq_portal[dsa_context->next_wq]);
-		dsa_context->next_wq = (dsa_context->next_wq + 1) %
-			(dsa_context->wq_count);
-	} while (enq_status);
+		status = dsa_context->submit_cmd(
+			&dsa_context->wq_handle[dsa_context->next_wq], hw);
+		dsa_context->next_wq =
+			(dsa_context->next_wq + 1) % (dsa_context->wq_count);
+	} while (status);
 }
 
 static int dsa_open_wq(struct accfg_wq *wq)
@@ -185,6 +203,33 @@ static int dsa_open_wq(struct accfg_wq *wq)
 	return fd;
 }
 
+static bool dsa_write_is_supported(int fd)
+{
+	int ret;
+	int max_comp_checks = 65536;
+	struct dsa_hw_desc desc __attribute__((aligned(64))) = {0};
+	struct dsa_completion_record comp __attribute__((aligned(32))) = {0};
+
+	desc.opcode = DSA_OPCODE_NOOP;
+	desc.flags = IDXD_OP_FLAG_CRAV | IDXD_OP_FLAG_RCR;
+	desc.completion_addr = (unsigned long) &comp;
+
+	// make sure writes (e.g., comp.status = 0) are ordered wrt to write()
+	{ asm volatile("sfence":::"memory"); }
+
+	ret = write(fd, &desc, sizeof(desc));
+
+	if (ret != sizeof(desc))
+		return false;
+
+	while (comp.status == DSA_COMP_NONE && max_comp_checks > 0) {
+		max_comp_checks--;
+		_mm_pause();
+	}
+
+	return comp.status == DSA_COMP_SUCCESS;
+}
+
 static void *dsa_idxd_wq_mmap(struct accfg_wq *wq)
 {
 	int fd;
@@ -196,31 +241,55 @@ static void *dsa_idxd_wq_mmap(struct accfg_wq *wq)
 		      MAP_SHARED | MAP_POPULATE, fd, 0);
 	close(fd);
 
-	if (wq_reg == MAP_FAILED) {
-		FI_WARN(&smr_prov, FI_LOG_EP_CTRL, "d_idxd_wq_mmap error\n");
+	if (wq_reg == MAP_FAILED)
 		return NULL;
-	}
 
 	return wq_reg;
 }
 
-static void dsa_idxd_wq_unmap(void *wq)
+static int dsa_idxd_wq_fd(struct accfg_wq *wq, bool check_write_support)
 {
-	munmap(wq, LIMITED_MSIX_PORTAL_OFFSET);
+	int fd;
+
+	fd = dsa_open_wq(wq);
+
+	if (fd < 0)
+		return fd;
+
+	if (check_write_support) {
+		if (!dsa_write_is_supported(fd)) {
+			close(fd);
+			return -1;
+		}
+	}
+	return fd;
+}
+
+static void dsa_idxd_wq_unmap(struct wq_handle *wq_handle)
+{
+	munmap(wq_handle->mmapped, LIMITED_MSIX_PORTAL_OFFSET);
+}
+
+static void dsa_idxd_wq_close(struct wq_handle *wq_handle)
+{
+	close(wq_handle->fd);
 }
 
 static int dsa_idxd_init_wq_array(int shared, int numa_node,
-				  void **wq_array)
+				  struct smr_dsa_context *dsa_context)
 {
 	static struct accfg_ctx *ctx;
 	struct accfg_wq *wq;
 	void *wq_reg;
+	int fd;
 	enum accfg_device_state dstate;
 	enum accfg_wq_state wstate;
 	enum accfg_wq_type type;
 	int mode;
 	int wq_count = 0;
 	struct accfg_device *device;
+	bool wq_mmap_support = true;
+	bool wq_write_support = false;
 
 	if ((*dsa_ops.accfg_new)(&ctx) < 0)
 		return 0;
@@ -267,17 +336,48 @@ static int dsa_idxd_init_wq_array(int shared, int numa_node,
 					"DSA WQ: %s\n",
 					(*dsa_ops.accfg_wq_get_devname)(wq));
 
-			wq_reg = dsa_idxd_wq_mmap(wq);
-			if (wq_reg == NULL)
-				continue;
-			wq_array[wq_count] = wq_reg;
-			wq_count++;
-			break;
+			fd = -1;
+			wq_reg = NULL;
+
+			if (wq_mmap_support) {
+				wq_reg = dsa_idxd_wq_mmap(wq);
+				if (!wq_reg && wq_count == 0) {
+					wq_mmap_support = false;
+					wq_write_support = true;
+				} else if (wq_reg != NULL) {
+					dsa_context->wq_handle[wq_count].mmapped = wq_reg;
+				}
+			}
+
+			if (wq_write_support) {
+				fd = dsa_idxd_wq_fd(wq, wq_count == 0);
+				if (fd < 0 && wq_count == 0)
+					wq_write_support = false;
+				else if (fd >= 0)
+					dsa_context->wq_handle[wq_count].fd = fd;
+			}
+
+			if (wq_reg || fd >= 0 ) {
+				wq_count++;
+				break;
+			}
+
 		}
 
 		if (wq_count >= MAX_WQS_PER_EP)
 			break;
 	}
+
+	if (wq_mmap_support) {
+		dsa_context->submit_cmd = dsa_enq_cmd;
+		dsa_context->close_wq = dsa_idxd_wq_unmap;
+	} else if (wq_write_support) {
+		dsa_context->submit_cmd = dsa_write_cmd;
+		dsa_context->close_wq = dsa_idxd_wq_close;
+	} else {
+		assert(wq_count == 0);
+	}
+
 
 	(*dsa_ops.accfg_unref)(ctx);
 	return wq_count;
@@ -514,22 +614,6 @@ static void smr_dsa_copy_sar(struct smr_freestack *sar_pool,
 	dsa_cmd_context->op = cmd->msg.hdr.op;
 }
 
-static void dsa_handle_page_fault(struct dsa_completion_record *comp)
-{
-	volatile char *fault_addr;
-
-	if (comp->status & DSA_COMP_PAGE_FAULT_NOBOF) {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-value"
-		fault_addr = (char *)comp->fault_addr;
-
-		if (comp->status & DSA_COMP_STATUS_WRITE)
-			*fault_addr = *fault_addr;
-		else
-			*fault_addr;
-#pragma GCC diagnostic pop
-	}
-}
 
 static void
 dsa_process_partially_completed_desc(struct smr_dsa_context *dsa_context,
@@ -541,8 +625,6 @@ dsa_process_partially_completed_desc(struct smr_dsa_context *dsa_context,
 	uint32_t bytes_completed;
 	struct dsa_completion_record *comp =
 	    (struct dsa_completion_record *)dsa_descriptor->completion_addr;
-
-	dsa_handle_page_fault(comp);
 
 	bytes_completed = comp->bytes_completed;
 
@@ -562,8 +644,7 @@ dsa_process_partially_completed_desc(struct smr_dsa_context *dsa_context,
 	dsa_prepare_copy_desc(dsa_descriptor, new_xfer_size,
 			       new_src_addr, new_dst_addr);
 
-	if (dsa_context->enable_dsa_page_touch)
-		dsa_touch_buffer_pages(dsa_descriptor);
+	dsa_touch_buffer_pages(dsa_descriptor);
 
 	dsa_desc_submit(dsa_context, dsa_descriptor);
 }
@@ -834,7 +915,6 @@ void smr_dsa_context_init(struct smr_ep *ep)
 	int wq_count;
 	struct smr_dsa_context *dsa_context;
 	unsigned int numa_node;
-	int enable_dsa_page_touch = 0;
 
 	cpu = sched_getcpu();
 	numa_node = numa_node_of_cpu(cpu);
@@ -851,15 +931,11 @@ void smr_dsa_context_init(struct smr_ep *ep)
 	dsa_context = ep->dsa_context;
 	memset(dsa_context, 0, sizeof(*dsa_context));
 
-	fi_param_get_bool(&smr_prov, "enable_dsa_page_touch",
-			  &enable_dsa_page_touch);
-
-	wq_count = dsa_idxd_init_wq_array(1, numa_node,
-				      dsa_context->wq_portal);
+	wq_count = dsa_idxd_init_wq_array(1, numa_node, dsa_context);
 
 	if (wq_count == 0) {
 		FI_WARN(&smr_prov, FI_LOG_EP_CTRL,
-			 "error calling dsa_idxd_init_wq_array()\n");
+			 "error: wq mmap and wq write not supported\n");
 		goto wq_get_error;
 	}
 
@@ -870,7 +946,6 @@ void smr_dsa_context_init(struct smr_ep *ep)
 
 	dsa_context->next_wq = 0;
 	dsa_context->wq_count = wq_count;
-	dsa_context->enable_dsa_page_touch = enable_dsa_page_touch;
 
 	FI_DBG(&smr_prov, FI_LOG_EP_CTRL, "Numa node of endpoint CPU: %d\n",
 			numa_node);
@@ -904,7 +979,7 @@ void smr_dsa_context_cleanup(struct smr_ep *ep)
 			"doing cleanup\n");
 
 	for (i = 0; i < dsa_context->wq_count; i++)
-		dsa_idxd_wq_unmap(dsa_context->wq_portal[i]);
+		dsa_context->close_wq(&dsa_context->wq_handle[i]);
 
 	free(ep->dsa_context);
 }

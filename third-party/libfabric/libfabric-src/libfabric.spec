@@ -11,7 +11,7 @@
 %{!?modulefile_path: %define modulefile_path /usr/share/Modules/modulefiles}
 
 Name: libfabric
-Version: 1.21.0
+Version: 2.3.1
 Release: 1%{?dist}
 Summary: User-space RDMA Fabric Interfaces
 
@@ -97,6 +97,7 @@ rm -rf %{buildroot}
 %{_bindir}/fi_info
 %{_bindir}/fi_strerror
 %{_bindir}/fi_pingpong
+%{_bindir}/fi_mon_sampler
 %if 0%{?_version_symbolic_link:1}
 %{_version_symbolic_link}
 %endif

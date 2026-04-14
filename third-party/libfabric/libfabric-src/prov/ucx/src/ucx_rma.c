@@ -339,7 +339,7 @@ ssize_t ucx_inject_write(struct fid_ep *ep, const void *buf, size_t len,
 		return -FI_EINVAL;
 
 	status = ucp_put_nb(dst_ep, buf, len, addr, rkey->rkey,
-			    ucx_send_callback_no_compl);
+			    ucx_callback_noop);
 
 	if (status != UCS_OK) {
 		if (UCS_PTR_IS_ERR(status))
@@ -348,6 +348,8 @@ ssize_t ucx_inject_write(struct fid_ep *ep, const void *buf, size_t len,
 		while ((ret = ucp_request_check_status(status)) ==
 		       UCS_INPROGRESS)
 			ucp_worker_progress(u_ep->worker);
+
+		ucx_req_release(status);
 	}
 
 	ofi_ep_cntr_inc(&(u_ep->ep), CNTR_WR);

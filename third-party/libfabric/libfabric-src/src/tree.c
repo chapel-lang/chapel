@@ -93,21 +93,34 @@ ofi_rbmap_create(int (*compare)(struct ofi_rbmap *map, void *key, void *data))
 	return map;
 }
 
-static void ofi_delete_tree(struct ofi_rbmap *map, struct ofi_rbnode *node)
+static int ofi_free_node(struct ofi_rbmap *map, struct ofi_rbnode *node,
+			  void *context)
 {
-	if (node == &map->sentinel)
-		return;
-
-	ofi_delete_tree(map, node->left);
-	ofi_delete_tree(map, node->right);
 	free(node);
+	return FI_SUCCESS;
+}
+
+int ofi_rbmap_foreach(struct ofi_rbmap *map, struct ofi_rbnode *root,
+		      ofi_rbmap_node_func_t func, void *context)
+{
+	int ret;
+	if (root == &map->sentinel)
+		return FI_SUCCESS;
+
+	ret = ofi_rbmap_foreach(map, root->left, func, context);
+	if (ret)
+		return ret;
+	ret = ofi_rbmap_foreach(map, root->right, func, context);
+	if (ret)
+		return ret;
+	return func(map, root, context);
 }
 
 void ofi_rbmap_cleanup(struct ofi_rbmap *map)
 {
 	struct ofi_rbnode *node;
 
-	ofi_delete_tree(map, map->root);
+	(void) ofi_rbmap_foreach(map, map->root, ofi_free_node, NULL);
 	while (map->free_list) {
 		node = map->free_list;
 		map->free_list = node->right;

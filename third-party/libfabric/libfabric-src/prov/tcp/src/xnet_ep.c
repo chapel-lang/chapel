@@ -156,6 +156,75 @@ static void xnet_set_no_port(SOCKET sock)
 #define xnet_set_no_port(sock)
 #endif
 
+void
+xnet_disable_keepalive(struct xnet_ep *ep)
+{
+	int optval = 0;
+	int ret;
+
+	ret = setsockopt(ep->bsock.sock, SOL_SOCKET, SO_KEEPALIVE, (char *)&optval,
+			 sizeof(optval));
+	if (ret) {
+		FI_WARN(&xnet_prov, FI_LOG_EP_CTRL, "set SO_KEEPALIVE failed %d", ret);
+		return;
+	}
+
+	FI_INFO(&xnet_prov, FI_LOG_EP_CTRL, "ep %p KEEPALIVE is disabled.\n", ep);
+}
+
+static int
+xnet_enable_keepalive(struct xnet_ep *ep)
+{
+	int optval = 1;
+	int idle_time = 5;
+	int keep_intvl = 2;
+	int keep_cnt = 2;
+	int ret;
+
+	ret = setsockopt(ep->bsock.sock, SOL_SOCKET, SO_KEEPALIVE, (const void *)&optval,
+			 sizeof(optval));
+	if (ret) {
+		FI_WARN(&xnet_prov, FI_LOG_EP_CTRL, "set SO_KEEPALIVE failed %d", ret);
+		return -ofi_sockerr();
+	}
+
+	ret = setsockopt(ep->bsock.sock, IPPROTO_TCP, OFI_KEEPALIVE, (const void *)&idle_time,
+			 sizeof(idle_time));
+	if (ret) {
+		ret = -ofi_sockerr();
+		FI_WARN(&xnet_prov, FI_LOG_EP_CTRL, "set TCP_KEEPIDLE failed %d", ret);
+		goto out;
+	}
+
+	ret = setsockopt(ep->bsock.sock, IPPROTO_TCP, TCP_KEEPINTVL, (const void *)&keep_intvl,
+			 sizeof(keep_intvl));
+	if (ret) {
+		ret = -ofi_sockerr();
+		FI_WARN(&xnet_prov, FI_LOG_EP_CTRL, "set TCP_KEEPINTVL failed %d", ret);
+		goto out;
+	}
+
+	ret = setsockopt(ep->bsock.sock, IPPROTO_TCP, TCP_KEEPCNT, (const void *)&keep_cnt,
+			 sizeof(keep_cnt));
+	if (ret) {
+		ret = -ofi_sockerr();
+		FI_WARN(&xnet_prov, FI_LOG_EP_CTRL, "set SO_KEEPALIVE failed %d", ret);
+		goto out;
+	}
+
+	FI_INFO(&xnet_prov, FI_LOG_EP_CTRL, "%p KEEPALIVE idle %d intvl %d cnt %d\n",
+		ep, idle_time, keep_intvl, keep_cnt);
+
+out:
+	if (ret) {
+		FI_WARN(&xnet_prov, FI_LOG_EP_CTRL, "%p KEEPALIVE set keepalive failed %d\n",
+			ep, ret);
+		xnet_disable_keepalive(ep);
+	}
+
+	return ret;
+}
+
 int xnet_setup_socket(SOCKET sock, struct fi_info *info)
 {
 	int ret, optval = 1;
@@ -272,7 +341,7 @@ xnet_ep_accept(struct fid_ep *ep_fid, const void *param, size_t paramlen)
 	struct xnet_progress *progress;
 	struct xnet_ep *ep;
 	struct xnet_conn_handle *conn;
-	struct fi_eq_cm_entry cm_entry;
+	struct xnet_cm_entry cm_entry;
 	int ret;
 
 	FI_DBG(&xnet_prov, FI_LOG_EP_CTRL, "accepting endpoint connection\n");
@@ -294,6 +363,16 @@ xnet_ep_accept(struct fid_ep *ep_fid, const void *param, size_t paramlen)
 		ep->cm_msg->hdr.seg_size = htons((uint16_t) paramlen);
 	}
 
+	/* Enable keepalive to make sure the socket status can be reset in time
+	 * if the remote peer is restarted after it gets connreq but not replies.
+	 */
+	ret = xnet_enable_keepalive(ep);
+	if (ret) {
+		FI_WARN(&xnet_prov, FI_LOG_EP_CTRL, "%p set tcp keepalive failure:%d\n",
+			ep, ret);
+		return ret;
+	}
+
 	ret = xnet_send_cm_msg(ep);
 	if (ret)
 		return ret;
@@ -313,6 +392,8 @@ xnet_ep_accept(struct fid_ep *ep_fid, const void *param, size_t paramlen)
 
 	cm_entry.fid = &ep->util_ep.ep_fid.fid;
 	cm_entry.info = NULL;
+	if (paramlen)
+		memcpy(cm_entry.data, param, paramlen);
 	ret = xnet_eq_write(ep->util_ep.eq, FI_CONNECTED, &cm_entry,
 			    sizeof(cm_entry), 0);
 	if (ret < 0) {
@@ -618,6 +699,9 @@ static int xnet_ep_ctrl(struct fid *fid, int command, void *arg)
 
 	ep = container_of(fid, struct xnet_ep, util_ep.ep_fid.fid);
 	switch (command) {
+	case FI_GET_FD:
+		*((int *)arg) = ep->bsock.sock;
+		break;
 	case FI_ENABLE:
 		if ((ofi_needs_rx(ep->util_ep.caps) && !ep->util_ep.rx_cq) ||
 		    (ofi_needs_tx(ep->util_ep.caps) && !ep->util_ep.tx_cq)) {
@@ -677,7 +761,7 @@ static struct fi_ops xnet_ep_fi_ops = {
 	.close = xnet_ep_close,
 	.bind = xnet_ep_bind,
 	.control = xnet_ep_ctrl,
-	.ops_open = fi_no_ops_open,
+	.ops_open = xnet_ep_ops_open,
 };
 
 static int xnet_ep_getopt(fid_t fid, int level, int optname,
@@ -828,7 +912,6 @@ int xnet_endpoint(struct fid_domain *domain, struct fi_info *info,
 	(*ep_fid)->msg = &xnet_msg_ops;
 	(*ep_fid)->rma = &xnet_rma_ops;
 	(*ep_fid)->tagged = &xnet_tagged_ops;
-	(*ep_fid)->fid.ops->ops_open = xnet_ep_ops_open;
 	return 0;
 
 err3:

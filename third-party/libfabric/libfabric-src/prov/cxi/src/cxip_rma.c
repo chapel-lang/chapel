@@ -127,6 +127,9 @@ static int cxip_rma_cb(struct cxip_req *req, const union c_event *event)
 
 	req->flags &= (FI_RMA | FI_READ | FI_WRITE);
 
+	if (req->rma.cntr)
+		cxip_cntr_progress_dec(req->rma.cntr);
+
 	if (req->rma.local_md)
 		cxip_unmap(req->rma.local_md);
 
@@ -150,10 +153,44 @@ static int cxip_rma_cb(struct cxip_req *req, const union c_event *event)
 			TXC_WARN(txc, "Failed to report error: %d\n", ret);
 	}
 
-	ofi_atomic_dec32(&req->rma.txc->otx_reqs);
+	cxip_txc_otx_reqs_dec(req->rma.txc);
 	cxip_evtq_req_free(req);
 
 	return FI_SUCCESS;
+}
+
+static bool cxip_rma_emit_dma_need_req(size_t len, uint64_t flags,
+				       struct cxip_mr *mr)
+{
+	/* DMA commands with FI_INJECT always require a request structure to
+	 * track the bounce buffer.
+	 */
+	if (len && (flags & FI_INJECT))
+		return true;
+
+	/* If user request FI_COMPLETION, need request structure to return
+	 * user context back.
+	 *
+	 * TODO: This can be optimized for zero byte operations. Specifically,
+	 * The user context can be associated with the DMA command. But, this
+	 * requires reworking on event queue processing to support.
+	 */
+	if (flags & FI_COMPLETION)
+		return true;
+
+	/* If the user has provider their own MR, internal memory registration
+	 * is not needed. Thus, no request structure is needed.
+	 */
+	if (mr)
+		return false;
+
+	/* In the initiator buffer length is zero, no memory registration is
+	 * needed. Thus, no request structure is needed.
+	 */
+	if (!len)
+		return false;
+
+	return true;
 }
 
 static int cxip_rma_emit_dma(struct cxip_txc *txc, const void *buf, size_t len,
@@ -169,23 +206,19 @@ static int cxip_rma_emit_dma(struct cxip_txc *txc, const void *buf, size_t len,
 {
 	struct cxip_req *req = NULL;
 	struct cxip_md *dma_md = NULL;
-	void *dma_buf;
+	void *dma_buf = NULL;
 	struct c_full_dma_cmd dma_cmd = {};
 	int ret;
 	struct cxip_domain *dom = txc->domain;
 	struct cxip_cntr *cntr;
 	void *inject_req;
+	uint64_t access = write ? CXI_MAP_READ : CXI_MAP_WRITE;
 
 	/* MR desc cannot be value unless hybrid MR desc is enabled. */
 	if (!dom->hybrid_mr_desc)
 		mr = NULL;
 
-	/* DMA commands always require a request structure regardless if
-	 * FI_COMPLETION is set. This is due to the provider doing internally
-	 * memory registration and having to clean up the registration on DMA
-	 * operation completion.
-	 */
-	if ((len && (flags & FI_INJECT)) || (flags & FI_COMPLETION) || !mr) {
+	if (cxip_rma_emit_dma_need_req(len, flags, mr)) {
 		req = cxip_evtq_req_alloc(&txc->tx_evtq, 0, txc);
 		if (!req) {
 			ret = -FI_EAGAIN;
@@ -240,7 +273,8 @@ static int cxip_rma_emit_dma(struct cxip_txc *txc, const void *buf, size_t len,
 		} else {
 			assert(req != NULL);
 
-			ret = cxip_map(dom, buf, len, 0, &req->rma.local_md);
+			ret = cxip_ep_obj_map(txc->ep_obj, buf, len, access, 0,
+					      &req->rma.local_md);
 			if (ret) {
 				TXC_WARN(txc, "Failed to map buffer: %d:%s\n",
 					ret, fi_strerror(-ret));
@@ -298,6 +332,11 @@ static int cxip_rma_emit_dma(struct cxip_txc *txc, const void *buf, size_t len,
 		if (cntr) {
 			dma_cmd.event_ct_ack = 1;
 			dma_cmd.ct = cntr->ct->ctn;
+
+			if (req) {
+				req->rma.cntr = cntr;
+				cxip_cntr_progress_inc(cntr);
+			}
 		}
 
 		if (flags & (FI_DELIVERY_COMPLETE | FI_MATCH_COMPLETE))
@@ -312,6 +351,11 @@ static int cxip_rma_emit_dma(struct cxip_txc *txc, const void *buf, size_t len,
 		if (cntr) {
 			dma_cmd.event_ct_reply = 1;
 			dma_cmd.ct = cntr->ct->ctn;
+
+			if (req) {
+				req->rma.cntr = cntr;
+				cxip_cntr_progress_inc(cntr);
+			}
 		}
 	}
 
@@ -415,6 +459,11 @@ static int cxip_rma_emit_idc(struct cxip_txc *txc, const void *buf, size_t len,
 	if (txc->write_cntr) {
 		cstate_cmd.event_ct_ack = 1;
 		cstate_cmd.ct = txc->write_cntr->ct->ctn;
+
+		if (req) {
+			req->rma.cntr = txc->write_cntr;
+			cxip_cntr_progress_inc(txc->write_cntr);
+		}
 	}
 
 	/* If the user has not request a completion, success events will be
@@ -499,14 +548,10 @@ static bool cxip_rma_is_unrestricted(struct cxip_txc *txc, uint64_t key,
 }
 
 static bool cxip_rma_is_idc(struct cxip_txc *txc, uint64_t key, size_t len,
-			    bool write, bool triggered, bool unr)
+			    bool write, bool triggered, bool unr, uint64_t flags)
 {
 	size_t max_idc_size = unr ? CXIP_INJECT_SIZE : C_MAX_IDC_PAYLOAD_RES;
 
-	/* DISABLE_NON_INJECT_MSG_IDC disables the IDC
-	 */
-	if (cxip_env.disable_non_inject_msg_idc)
-		return false;
 	/* IDC commands are not supported for unoptimized MR since the IDC
 	 * small message format does not support remote offset which is needed
 	 * for RMA commands.
@@ -525,6 +570,10 @@ static bool cxip_rma_is_idc(struct cxip_txc *txc, uint64_t key, size_t len,
 	/* Triggered operations never can be issued with an IDC. */
 	if (triggered)
 		return false;
+
+	/* Don't issue non-inject operation as IDC if disabled by env */
+	if (!(flags & FI_INJECT) && cxip_env.disable_non_inject_rma_idc)
+	       return false;
 
 	return true;
 }
@@ -586,7 +635,7 @@ ssize_t cxip_rma_common(enum fi_op_type op, struct cxip_txc *txc,
 	}
 
 	unr = cxip_rma_is_unrestricted(txc, key, msg_order, write);
-	idc = cxip_rma_is_idc(txc, key, len, write, triggered, unr);
+	idc = cxip_rma_is_idc(txc, key, len, write, triggered, unr, flags);
 
 	/* Build target network address. */
 	ret = cxip_av_lookup_addr(txc->ep_obj->av, tgt_addr, &caddr);
@@ -608,7 +657,7 @@ ssize_t cxip_rma_common(enum fi_op_type op, struct cxip_txc *txc,
 	/* Select the correct traffic class type within a traffic class. */
 	if (!unr && (flags & FI_CXI_HRP))
 		tc_type = CXI_TC_TYPE_HRP;
-	else if (!unr)
+	else if (!unr && !triggered)
 		tc_type = CXI_TC_TYPE_RESTRICTED;
 	else
 		tc_type = CXI_TC_TYPE_DEFAULT;
@@ -633,12 +682,14 @@ ssize_t cxip_rma_common(enum fi_op_type op, struct cxip_txc *txc,
 
 	if (ret)
 		TXC_WARN(txc,
-			 "%s RMA %s failed: buf=%p len=%lu rkey=%#lx roffset=%#lx nic=%#x pid=%u pid_idx=%u\n",
+			 "%s %s RMA %s failed: buf=%p len=%lu rkey=%#lx roffset=%#lx nic=%#x pid=%u pid_idx=%u\n",
+			 unr ? "Ordered" : "Un-ordered",
 			 idc ? "IDC" : "DMA", write ? "write" : "read",
 			 buf, len, key, addr, caddr.nic, caddr.pid, pid_idx);
 	else
 		TXC_DBG(txc,
-			"%s RMA %s emitted: buf=%p len=%lu rkey=%#lx roffset=%#lx nic=%#x pid=%u pid_idx=%u\n",
+			"%s %s RMA %s emitted: buf=%p len=%lu rkey=%#lx roffset=%#lx nic=%#x pid=%u pid_idx=%u\n",
+			unr ? "Ordered" : "Un-ordered",
 			idc ? "IDC" : "DMA", write ? "write" : "read",
 			buf, len, key, addr, caddr.nic, caddr.pid, pid_idx);
 

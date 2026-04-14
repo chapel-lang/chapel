@@ -54,9 +54,9 @@ int sm2_setname(fid_t fid, void *addr, size_t addrlen)
 	struct sm2_ep *ep;
 	char *name;
 
-	if (addrlen > FI_NAME_MAX) {
+	if (addrlen > OFI_NAME_MAX) {
 		FI_WARN(&sm2_prov, FI_LOG_EP_CTRL,
-			"Addrlen exceeds max addrlen (%d)\n", FI_NAME_MAX);
+			"Addrlen exceeds max addrlen (%d)\n", OFI_NAME_MAX);
 		return -FI_EINVAL;
 	}
 
@@ -587,8 +587,8 @@ static struct fi_ops sm2_ep_fi_ops = {
 static int sm2_endpoint_name(struct sm2_ep *ep, char *name, char *addr,
 			     size_t addrlen)
 {
-	memset(name, 0, FI_NAME_MAX);
-	if (!addr || addrlen > FI_NAME_MAX)
+	memset(name, 0, OFI_NAME_MAX);
+	if (!addr || addrlen > OFI_NAME_MAX)
 		return -FI_EINVAL;
 
 	pthread_mutex_lock(&sm2_ep_list_lock);
@@ -596,11 +596,11 @@ static int sm2_endpoint_name(struct sm2_ep *ep, char *name, char *addr,
 	pthread_mutex_unlock(&sm2_ep_list_lock);
 
 	if (strstr(addr, SM2_PREFIX)) {
-		snprintf(name, FI_NAME_MAX - 1, "%s:%d:%d", addr, getuid(),
+		snprintf(name, OFI_NAME_MAX - 1, "%s:%d:%d", addr, getuid(),
 			 ep->ep_idx);
 	} else {
 		/* this is an fi_ns:// address.*/
-		snprintf(name, FI_NAME_MAX - 1, "%s", addr);
+		snprintf(name, OFI_NAME_MAX - 1, "%s", addr);
 	}
 
 	return 0;
@@ -611,7 +611,7 @@ int sm2_endpoint(struct fid_domain *domain, struct fi_info *info,
 {
 	struct sm2_ep *ep;
 	int ret;
-	char name[FI_NAME_MAX];
+	char name[OFI_NAME_MAX];
 
 	ep = calloc(1, sizeof(*ep));
 	if (!ep)
@@ -621,7 +621,7 @@ int sm2_endpoint(struct fid_domain *domain, struct fi_info *info,
 
 	if (ret)
 		goto ep;
-	ret = sm2_setname(&ep->util_ep.ep_fid.fid, name, FI_NAME_MAX);
+	ret = sm2_setname(&ep->util_ep.ep_fid.fid, name, OFI_NAME_MAX);
 	if (ret)
 		goto ep;
 
@@ -641,7 +641,8 @@ int sm2_endpoint(struct fid_domain *domain, struct fi_info *info,
 	if (ret || ofi_bufpool_grow(ep->xfer_ctx_pool)) {
 		FI_WARN(&sm2_prov, FI_LOG_EP_CTRL,
 			"Unable to create xfer_entry ctx pool\n");
-		return -FI_ENOMEM;
+		ret = -FI_ENOMEM;
+		goto close;
 	}
 
 	ep->util_ep.ep_fid.fid.ops = &sm2_ep_fi_ops;
@@ -653,6 +654,8 @@ int sm2_endpoint(struct fid_domain *domain, struct fi_info *info,
 	*ep_fid = &ep->util_ep.ep_fid;
 	return 0;
 
+close:
+	(void) ofi_endpoint_close(&ep->util_ep);
 name:
 	free((void *) ep->name);
 ep:

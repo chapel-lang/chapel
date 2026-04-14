@@ -130,7 +130,7 @@ static int cxip_mr_wait_append(struct cxip_ep_obj *ep_obj,
 	/* Wait for PTE LE append status update */
 	do {
 		sched_yield();
-		cxip_ep_tgt_ctrl_progress_locked(ep_obj);
+		cxip_ep_tgt_ctrl_progress_locked(ep_obj, true);
 	} while (mr->mr_state != CXIP_MR_LINKED &&
 		 mr->mr_state != CXIP_MR_LINK_ERR);
 
@@ -198,6 +198,29 @@ static int cxip_mr_enable_std(struct cxip_mr *mr)
 	return FI_SUCCESS;
 }
 
+/* If MR event counts are recorded then we can check event counts to determine
+ * if invalidate can be skipped.
+ */
+static bool cxip_mr_disable_check_count_events(struct cxip_mr *mr,
+					       uint64_t timeout)
+{
+	struct cxip_ep_obj *ep_obj = mr->ep->ep_obj;
+	uint64_t end = ofi_gettime_ns() + timeout;
+
+	while (true) {
+
+		if (ofi_atomic_get32(&mr->match_events) ==
+		    ofi_atomic_get32(&mr->access_events))
+			return true;
+
+		if (ofi_gettime_ns() >= end)
+			return false;
+
+		sched_yield();
+		cxip_ep_tgt_ctrl_progress_locked(ep_obj, true);
+	}
+}
+
 /*
  * cxip_mr_disable_std() - Free HW resources from the standard MR.
  *
@@ -207,35 +230,45 @@ static int cxip_mr_disable_std(struct cxip_mr *mr)
 {
 	int ret;
 	struct cxip_ep_obj *ep_obj = mr->ep->ep_obj;
+	bool count_events_disabled;
 
 	/* TODO: Handle -FI_EAGAIN. */
 	ret = cxip_pte_unlink(ep_obj->ctrl.pte, C_PTL_LIST_PRIORITY,
 			      mr->req.req_id, ep_obj->ctrl.tgq);
-	assert(ret == FI_SUCCESS);
+	if (ret != FI_SUCCESS)
+		CXIP_FATAL("Unable to queue unlink command: %d\n", ret);
 
 	do {
 		sched_yield();
-		cxip_ep_tgt_ctrl_progress_locked(ep_obj);
+		cxip_ep_tgt_ctrl_progress_locked(ep_obj, true);
 	} while (mr->mr_state != CXIP_MR_UNLINKED);
 
-	/* If MR event counts are recorded then we can check event counts
-	 * to determine if invalidate can be skipped.
-	 */
-	if (!mr->count_events || ofi_atomic_get32(&mr->match_events) !=
-	    ofi_atomic_get32(&mr->access_events)) {
-		/* TODO: Temporary debug helper for DAOS to track if
-		 * Match events detect a need to flush.
-		 */
-		if (mr->count_events)
-			CXIP_WARN("Match events required pte LE invalidate\n");
+	if (mr->count_events) {
+		count_events_disabled = cxip_mr_disable_check_count_events(mr, cxip_env.mr_cache_events_disable_poll_nsecs);
+		if (count_events_disabled)
+			goto disabled_success;
 
-		ret = cxil_invalidate_pte_le(ep_obj->ctrl.pte->pte, mr->key,
-					     C_PTL_LIST_PRIORITY);
-		if (ret)
-			CXIP_WARN("MR %p key 0x%016lX invalidate failed %d\n",
-				  mr, mr->key, ret);
+		CXIP_WARN("Match events required pte LE invalidate: match_events=%u access_events=%u\n",
+			  ofi_atomic_get32(&mr->match_events),
+			  ofi_atomic_get32(&mr->access_events));
 	}
 
+	ret = cxil_invalidate_pte_le(ep_obj->ctrl.pte->pte, mr->key,
+				     C_PTL_LIST_PRIORITY);
+	if (ret)
+		CXIP_FATAL("MR %p key 0x%016lX invalidate failed %d\n", mr,
+			   mr->key, ret);
+
+	/* For LE invalidate and MR events, need to flush event queues until
+	 * access equals match.
+	 */
+	if (mr->count_events) {
+		count_events_disabled = cxip_mr_disable_check_count_events(mr, cxip_env.mr_cache_events_disable_le_poll_nsecs);
+		if (!count_events_disabled)
+			CXIP_FATAL("Failed LE MR invalidation\n");
+	}
+
+disabled_success:
 	mr->enabled = false;
 
 	CXIP_DBG("Standard MR disabled: %p (key: 0x%016lX)\n", mr, mr->key);
@@ -281,7 +314,9 @@ static int cxip_mr_enable_opt(struct cxip_mr *mr)
 	uint32_t le_flags;
 	uint64_t ib = 0;
 	int pid_idx;
+	bool target_relaxed_order;
 
+	target_relaxed_order = cxip_ep_obj_mr_relaxed_order(ep_obj);
 	mr->req.cb = cxip_mr_cb;
 
 	ret = cxip_pte_alloc_nomap(ep_obj->ptable, ep_obj->ctrl.tgt_evtq,
@@ -307,15 +342,15 @@ static int cxip_mr_enable_opt(struct cxip_mr *mr)
 		goto err_pte_free;
 	}
 
-	ret = cxip_pte_set_state(mr->pte, ep_obj->ctrl.tgq, C_PTLTE_ENABLED, 0);
+	ret = cxip_pte_set_state(mr->pte, ep_obj->ctrl.tgq, C_PTLTE_ENABLED,
+				 CXIP_PTE_IGNORE_DROPS);
 	if (ret != FI_SUCCESS) {
 		/* This is a bug, we have exclusive access to this CMDQ. */
 		CXIP_WARN("Failed to enqueue command: %d\n", ret);
 		goto err_pte_free;
 	}
 
-	le_flags = C_LE_EVENT_COMM_DISABLE | C_LE_EVENT_SUCCESS_DISABLE |
-		   C_LE_UNRESTRICTED_BODY_RO;
+	le_flags = C_LE_EVENT_COMM_DISABLE | C_LE_EVENT_SUCCESS_DISABLE;
 	if (mr->attr.access & FI_REMOTE_WRITE)
 		le_flags |= C_LE_OP_PUT;
 	if (mr->attr.access & FI_REMOTE_READ)
@@ -323,15 +358,10 @@ static int cxip_mr_enable_opt(struct cxip_mr *mr)
 	if (mr->cntr)
 		le_flags |= C_LE_EVENT_CT_COMM;
 
-	/* When FI_FENCE is not requested, restricted operations can used PCIe
-	 * relaxed ordering. Unrestricted operations PCIe relaxed ordering is
-	 * controlled by an env for now.
-	 */
-	if (!(ep_obj->caps & FI_FENCE)) {
+	if (target_relaxed_order) {
 		ib = 1;
-
-		if (cxip_env.enable_unrestricted_end_ro)
-			le_flags |= C_LE_UNRESTRICTED_END_RO;
+		le_flags |= C_LE_UNRESTRICTED_END_RO |
+			C_LE_UNRESTRICTED_BODY_RO;
 	}
 
 	ret = cxip_pte_append(mr->pte,
@@ -381,7 +411,7 @@ static int cxip_mr_disable_opt(struct cxip_mr *mr)
 
 	do {
 		sched_yield();
-		cxip_ep_tgt_ctrl_progress_locked(ep_obj);
+		cxip_ep_tgt_ctrl_progress_locked(ep_obj, true);
 	} while (mr->mr_state != CXIP_MR_UNLINKED);
 
 cleanup:
@@ -442,7 +472,9 @@ static int cxip_mr_prov_cache_enable_opt(struct cxip_mr *mr)
 	struct cxip_mr *_mr;
 	uint32_t le_flags;
 	uint64_t ib = 0;
+	bool target_relaxed_order;
 
+	target_relaxed_order = cxip_ep_obj_mr_relaxed_order(ep_obj);
 	mr_cache = &ep_obj->ctrl.opt_mr_cache[lac];
 	ofi_atomic_inc32(&mr_cache->ref);
 
@@ -501,7 +533,7 @@ static int cxip_mr_prov_cache_enable_opt(struct cxip_mr *mr)
 	}
 
 	ret = cxip_pte_set_state(_mr->pte, ep_obj->ctrl.tgq,
-				 C_PTLTE_ENABLED, 0);
+				 C_PTLTE_ENABLED, CXIP_PTE_IGNORE_DROPS);
 	if (ret != FI_SUCCESS) {
 		/* This is a bug, we have exclusive access to this CMDQ. */
 		CXIP_WARN("Failed to enqueue command: %d\n", ret);
@@ -509,17 +541,12 @@ static int cxip_mr_prov_cache_enable_opt(struct cxip_mr *mr)
 	}
 
 	le_flags = C_LE_EVENT_COMM_DISABLE | C_LE_EVENT_SUCCESS_DISABLE |
-		   C_LE_UNRESTRICTED_BODY_RO | C_LE_OP_PUT | C_LE_OP_GET;
+		C_LE_OP_PUT | C_LE_OP_GET;
 
-	/* When FI_FENCE is not requested, restricted operations can used PCIe
-	 * relaxed ordering. Unrestricted operations PCIe relaxed ordering is
-	 * controlled by an env for now.
-	 */
-	if (!(ep_obj->caps & FI_FENCE)) {
+	if (target_relaxed_order) {
 		ib = 1;
-
-		if (cxip_env.enable_unrestricted_end_ro)
-			le_flags |= C_LE_UNRESTRICTED_END_RO;
+		le_flags |= C_LE_UNRESTRICTED_END_RO |
+			C_LE_UNRESTRICTED_BODY_RO;
 	}
 
 	ret = cxip_pte_append(_mr->pte, 0, -1ULL, lac,
@@ -601,6 +628,9 @@ static int cxip_mr_prov_cache_enable_std(struct cxip_mr *mr)
 	union cxip_match_bits mb;
 	union cxip_match_bits ib;
 	uint32_t le_flags;
+	bool target_relaxed_order;
+
+	target_relaxed_order = cxip_ep_obj_mr_relaxed_order(ep_obj);
 
 	/* TODO: Handle enabling for each bound endpoint */
 	mr_cache = &ep_obj->ctrl.std_mr_cache[lac];
@@ -643,8 +673,10 @@ static int cxip_mr_prov_cache_enable_std(struct cxip_mr *mr)
 	ib.mr_lac = 0;
 	ib.mr_cached = 0;
 
-	le_flags = C_LE_EVENT_SUCCESS_DISABLE | C_LE_UNRESTRICTED_BODY_RO |
-		   C_LE_OP_PUT | C_LE_OP_GET;
+	le_flags = C_LE_EVENT_SUCCESS_DISABLE | C_LE_OP_PUT | C_LE_OP_GET;
+	if (target_relaxed_order)
+		le_flags |= C_LE_UNRESTRICTED_END_RO |
+			C_LE_UNRESTRICTED_BODY_RO;
 
 	ret = cxip_pte_append(ep_obj->ctrl.pte, 0, -1ULL,
 			      mb.mr_lac, C_PTL_LIST_PRIORITY,
@@ -725,6 +757,14 @@ static void cxip_mr_domain_remove(struct cxip_mr *mr)
 	ofi_spin_unlock(&mr->domain->mr_domain.lock);
 }
 
+static bool cxip_is_valid_mr_key(uint64_t key)
+{
+	if (key & ~CXIP_MR_KEY_MASK)
+		return false;
+
+	return true;
+}
+
 /*
  * cxip_mr_domain_insert() - Validate uniqueness and insert
  * client key in the domain hash table.
@@ -744,7 +784,7 @@ static int cxip_mr_domain_insert(struct cxip_mr *mr)
 
 	mr->key = mr->attr.requested_key;
 
-	if (!cxip_generic_is_valid_mr_key(mr->key))
+	if (!cxip_is_valid_mr_key(mr->key))
 		return -FI_EKEYREJECTED;
 
 	bucket = fasthash64(&mr->key, sizeof(mr->key), 0) %
@@ -816,14 +856,6 @@ static int cxip_prov_cache_init_mr_key(struct cxip_mr *mr,
 		 key.raw, key.lac, (uint64_t)key.lac_off);
 
 	return FI_SUCCESS;
-}
-
-static bool cxip_is_valid_mr_key(uint64_t key)
-{
-	if (key & ~CXIP_MR_KEY_MASK)
-		return false;
-
-	return true;
 }
 
 static bool cxip_is_valid_prov_mr_key(uint64_t key)
@@ -1007,7 +1039,7 @@ void cxip_ctrl_mr_cache_flush(struct cxip_ep_obj *ep_obj)
 
 		do {
 			sched_yield();
-			cxip_ep_tgt_ctrl_progress_locked(ep_obj);
+			cxip_ep_tgt_ctrl_progress_locked(ep_obj, true);
 		} while (mr_cache->ctrl_req->mr.mr->mr_state !=
 			 CXIP_MR_UNLINKED);
 
@@ -1043,7 +1075,7 @@ void cxip_ctrl_mr_cache_flush(struct cxip_ep_obj *ep_obj)
 
 		do {
 			sched_yield();
-			cxip_ep_tgt_ctrl_progress_locked(ep_obj);
+			cxip_ep_tgt_ctrl_progress_locked(ep_obj, true);
 		} while (mr_cache->ctrl_req->mr.mr->mr_state !=
 			 CXIP_MR_UNLINKED);
 
@@ -1250,6 +1282,15 @@ static int cxip_mr_bind(struct fid *fid, struct fid *bfid, uint64_t flags)
 			break;
 		}
 
+		/* Zero length MRs do not have MD. */
+		if (mr->md &&
+		    ep->ep_obj->require_dev_reg_copy[mr->md->info.iface] &&
+		    !mr->md->handle_valid) {
+			CXIP_WARN("Cannot bind to endpoint without required dev reg support\n");
+			ret = -FI_EOPNOTSUPP;
+			break;
+		}
+
 		mr->ep = ep;
 		ofi_atomic_inc32(&ep->ep_obj->ref);
 		break;
@@ -1362,6 +1403,18 @@ static int cxip_mr_init(struct cxip_mr *mr, struct cxip_domain *dom,
 	return FI_SUCCESS;
 }
 
+static uint64_t ofi_access_to_cxi_access(uint64_t access)
+{
+	uint64_t cxi_access = 0;
+
+	if (access & (FI_WRITE | FI_SEND | FI_REMOTE_READ))
+		cxi_access |= CXI_MAP_READ;
+	if (access & (FI_RECV | FI_READ | FI_REMOTE_WRITE))
+		cxi_access |= CXI_MAP_WRITE;
+
+	return cxi_access;
+}
+
 /*
  * Libfabric MR creation APIs
  */
@@ -1372,6 +1425,7 @@ static int cxip_regattr(struct fid *fid, const struct fi_mr_attr *attr,
 	struct cxip_domain *dom;
 	struct cxip_mr *_mr;
 	int ret;
+	uint64_t access;
 
 	if (fid->fclass != FI_CLASS_DOMAIN || !attr || attr->iov_count <= 0)
 		return -FI_EINVAL;
@@ -1406,8 +1460,14 @@ static int cxip_regattr(struct fid *fid, const struct fi_mr_attr *attr,
 		_mr->mr_fid.key = _mr->key;
 
 	if (_mr->len) {
-		ret = cxip_map(_mr->domain, (void *)_mr->buf, _mr->len, 0,
-			       &_mr->md);
+		access = ofi_access_to_cxi_access(attr->access);
+
+		/* Do not check whether cuda_api_permitted is set at this point,
+		 * because the mr is not bound to an endpoint.  Check instead in
+		 * cxip_mr_bind().
+		 */
+		ret = cxip_map(_mr->domain, (void *)_mr->buf, _mr->len,
+			       access, 0, &_mr->md);
 		if (ret) {
 			CXIP_WARN("Failed to map MR buffer: %d\n", ret);
 			goto err_remove_mr;

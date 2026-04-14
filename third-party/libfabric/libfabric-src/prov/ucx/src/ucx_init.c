@@ -93,7 +93,7 @@ static struct fi_domain_attr ucx_domain_attrs = {
 	.data_progress = FI_PROGRESS_MANUAL,
 	.resource_mgmt = FI_RM_ENABLED,
 	.av_type = FI_AV_UNSPEC,
-	.mr_mode = OFI_MR_BASIC_MAP | FI_MR_BASIC | FI_MR_RAW,
+	.mr_mode = OFI_MR_BASIC_MAP | OFI_MR_BASIC | FI_MR_RAW,
 	.mr_key_size = FI_UCX_MAX_KEY_SIZE,
 	.tx_ctx_cnt = 1,
 	.rx_ctx_cnt = 1,
@@ -109,8 +109,6 @@ static struct fi_rx_attr ucx_rx_attrs = {
 	.mode = FI_UCX_MODE,
 	.op_flags = FI_UCX_RX_FLAGS,
 	.msg_order = FI_ORDER_SAS,
-	.comp_order = FI_ORDER_NONE,
-	.total_buffered_recv = ~(0ULL),
 	.size = 384,
 	.iov_limit = 4,
 };
@@ -120,7 +118,6 @@ static struct fi_tx_attr ucx_tx_attrs = {
 	.mode = FI_UCX_MODE,
 	.op_flags = FI_UCX_TX_FLAGS,
 	.msg_order = FI_ORDER_SAS,
-	.comp_order = FI_ORDER_NONE,
 	.inject_size = FI_UCX_DEFAULT_INJECT_SIZE, /* Should be setup after init */
 	.size = 384,
 	.iov_limit = 1,
@@ -335,7 +332,8 @@ static int ucx_getinfo(uint32_t version, const char *node,
 		    hints->addr_format == FI_ADDR_UCX ||
 		    hints->addr_format == FI_FORMAT_UNSPEC) {
 			ucx_info.addr_format = FI_ADDR_UCX;
-		} else if (hints->addr_format <= FI_SOCKADDR_IN) {
+		} else if (hints->addr_format <= FI_SOCKADDR_IN ||
+			   hints->addr_format == FI_SOCKADDR_IP) {
 			ucx_descriptor.use_ns = 1;
 			ucx_info.addr_format = FI_SOCKADDR_IN;
 		} else {
@@ -401,7 +399,8 @@ struct fi_provider ucx_prov = {
 UCX_INI
 {
 #if HAVE_UCX_DL
-        ofi_hmem_init();
+	ofi_hmem_init();
+	ofi_params_init();
 #endif
 
 	ucx_init_errcodes();

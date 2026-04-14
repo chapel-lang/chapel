@@ -505,7 +505,7 @@ usd_create_wq_pio(
     /* packet buffer */
     wq->pio_v_pkt_buf = (void *)ivaddr;
     wq->pio_p_pkt_buf = pio_paddr + ivaddr - (uint64_t)pio_vaddr;
-    ivaddr += wq->uwq_num_entries * 256;
+    ivaddr += ((uint64_t) wq->uwq_num_entries) * 256;
 
     used_size = ivaddr - (uintptr_t)pio_vaddr;
     if (used_size > pio_memsize) {

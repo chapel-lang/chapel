@@ -59,9 +59,8 @@
 #include "ips_expected_proto.h"
 #include "ips_tidflow.h"
 
-// TBD - this is only needed for OPA or UD w/RNDV
-// can reduce to just counting allocations on UD and
-// not build for UDP.
+// TBD - this is only needed for UD w/RNDV
+// could omit from build for UDP.
 // Once that is done, could #ifdef PSMI_STATSTYPE_RDMA declaration
 //
 // TBD - move this into HAL and have init, fini, alloc, dealloc
@@ -104,47 +103,40 @@ psm2_error_t psm3_ips_tf_init(struct ips_protoexp *protoexp,
 		tfc->tidrecvc[tf_idx].rdescid._desc_genc = tf_idx;
 	}
 
-	{
-		tfc->tf_ctrl = (struct ips_tf_ctrl *)
-		    psmi_calloc(ep, UNDEFINED, 1,
-				sizeof(struct ips_tf_ctrl));
-		if (tfc->tf_ctrl == NULL) {
-			return PSM2_NO_MEMORY;
-		}
-	}
+	tfc->tf_ctrl = (struct ips_tf_ctrl *)psmi_calloc(ep, UNDEFINED, 1,
+			sizeof(struct ips_tf_ctrl));
+	if (tfc->tf_ctrl == NULL)
+		return PSM2_NO_MEMORY;
 
 	/*
 	 * Only the master process can initialize.
 	 */
-	{
-		tfc->tf_ctrl->tf_num_max = HFI_TF_NFLOWS;
-		tfc->tf_ctrl->tf_num_avail = HFI_TF_NFLOWS;
+	tfc->tf_ctrl->tf_num_max = HFI_TF_NFLOWS;
+	tfc->tf_ctrl->tf_num_avail = HFI_TF_NFLOWS;
 
-		for (tf_idx = 0; tf_idx < HFI_TF_NFLOWS; tf_idx++) {
-// USE_RC TBD this is bizzare.  For native mode it works fine
-// for UD/UDP mode it crashes at next_free assignment below on some systems
+	for (tf_idx = 0; tf_idx < HFI_TF_NFLOWS; tf_idx++) {
+// USE_RC TBD this is bizzare.
+// For UD/UDP mode it crashes at next_free assignment below on some systems
 // but adding this print or moving next_free assignment to separate
 // loop works fine.  Really odd if this is a compiler issue, but
 // I don't see any other reason.  We should be single threaded here
 // enabling the empty call to tidflow_reset doesn't help
-// stubbing tidflow_reset on native works fine, can't explain crash
-// nor workaround
-			/* Update flow state */
-			tfc->tf_ctrl->tf[tf_idx].state = TF_STATE_DEALLOCATED;
-			tfc->tf_ctrl->tf[tf_idx].tf_idx = tf_idx;
-			tfc->tf_ctrl->tf[tf_idx].next_gen = 0;
+// Can't explain crash nor workaround
+		/* Update flow state */
+		tfc->tf_ctrl->tf[tf_idx].state = TF_STATE_DEALLOCATED;
+		tfc->tf_ctrl->tf[tf_idx].tf_idx = tf_idx;
+		tfc->tf_ctrl->tf[tf_idx].next_gen = 0;
 #if 0
-			tfc->tf_ctrl->tf[tf_idx].next_free = tf_idx + 1;
+		tfc->tf_ctrl->tf[tf_idx].next_free = tf_idx + 1;
 #endif
 
-		}
-#if 1
-		for (tf_idx = 0; tf_idx < HFI_TF_NFLOWS; tf_idx++) {
-			tfc->tf_ctrl->tf[tf_idx].next_free = tf_idx + 1;
-		}
-#endif
-		tfc->tf_ctrl->tf_head = 0;
 	}
+#if 1
+	for (tf_idx = 0; tf_idx < HFI_TF_NFLOWS; tf_idx++) {
+		tfc->tf_ctrl->tf[tf_idx].next_free = tf_idx + 1;
+	}
+#endif
+	tfc->tf_ctrl->tf_head = 0;
 
 #if TF_ADD
 	/* TF_ADD: Add a new stats type for tid flows in psm_stats.h */
@@ -179,19 +171,15 @@ psm2_error_t psm3_ips_tf_allocate(struct ips_tf *tfc,
 	struct ips_tf_ctrl *ctrl = tfc->tf_ctrl;
 	struct ips_tf_entry *entry;
 
-
 	if (!ctrl->tf_num_avail) {
 		psmi_assert(ctrl->tf_head == HFI_TF_NFLOWS);
 		*tidrecvc = NULL;
-
-
 		return PSM2_EP_NO_RESOURCES;
 	}
 
 	entry = &ctrl->tf[ctrl->tf_head];
 	ctrl->tf_head = entry->next_free;
 	ctrl->tf_num_avail--;
-
 
 	tfc->tf_num_total++;
 	tfc->tf_num_inuse++;
@@ -205,7 +193,6 @@ psm2_error_t psm3_ips_tf_allocate(struct ips_tf *tfc,
 
 	psmi_assert((*tidrecvc)->rdescid._desc_idx == entry->tf_idx);
 	psmi_assert_always(entry->next_gen < tfc->tf_gen_mask);
-
 
 	return PSM2_OK;
 }
@@ -233,11 +220,9 @@ psm2_error_t psm3_ips_tf_deallocate(struct ips_tf *tfc, uint32_t tf_idx, int use
 		tfc->tidrecvc[tf_idx].rdescid.u32w1++;
 	}
 
-
 	entry->next_free = ctrl->tf_head;
 	ctrl->tf_head = tf_idx;
 	ctrl->tf_num_avail++;
-
 
 	tfc->tf_num_inuse--;
 	/* If an available callback is registered invoke it */
@@ -246,4 +231,3 @@ psm2_error_t psm3_ips_tf_deallocate(struct ips_tf *tfc, uint32_t tf_idx, int use
 
 	return PSM2_OK;
 }
-
