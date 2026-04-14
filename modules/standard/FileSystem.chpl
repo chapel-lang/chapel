@@ -989,7 +989,7 @@ iter listDir(path: string = ".", hidden: bool = false, dirs: bool = true,
    :yield: The names of the specified directory's contents, as strings
 
    :throws SystemError: Thrown to describe a system error
-   :throws Errror: Thrown to describe an unknown error
+   :throws Error: Thrown to describe an unknown error
 */
 @edition(first="preview")
 iter listDir(path: string = ".", hidden: bool = false, dirs: bool = true,
