@@ -501,9 +501,7 @@ async def test_lenses_default_rect_with_calls(client: LanguageClient):
         default_inlays,
     ]
 
-    await click_lenses_and_check_inlays(
-        client, expected_lens, all_inlays, A=file
-    )
+    await click_lenses_and_check_inlays(client, expected_lens, all_inlays, A=file)
 
 
 @pytest.mark.asyncio
