@@ -9,7 +9,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: psf/black@stable
         with:
-          options: "--check --verbose --line-length 80 --extend-exclude '^/(third-party|test|util/test|util/devel/test)/'"
+          options: "--check --verbose --line-length 80 --extend-exclude '^/(third-party|test)/'"
           src: "."
       - uses: psf/black@stable
         with:
