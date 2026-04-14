@@ -77,19 +77,25 @@ class MasonProject:
 def run_mason_cmd(
     project_home: Path, mason: str, cmd: str, *args
 ) -> Optional[str]:
+    from lsp_util import log
+
+    log(
+        f"Running mason command: '{mason} {cmd} {' '.join(args)}' in {project_home}"
+    )
     env = os.environ.copy()
     env["MASON_LOG_LEVEL"] = "error"
+
     result = subprocess.run(
         [mason, cmd] + list(args),
         cwd=project_home,
+        stdin=subprocess.DEVNULL,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
         env=env,
+        check=False,
     )
     if result.returncode != 0:
-        from lsp_util import log
-
         log(f"Error running mason command: {result.stderr}")
         return None
     return result.stdout
