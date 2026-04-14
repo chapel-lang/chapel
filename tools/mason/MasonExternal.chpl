@@ -25,13 +25,13 @@ use Map;
 use MasonEnv;
 use MasonHelp;
 use MasonUtils;
-use MasonLogger;
+import MasonLogger;
 use Path;
 use SpecParser;
 use TOML;
 import ThirdParty.Pathlib.path;
 
-var log = new logger("mason external");
+private var log = MasonLogger.getLogger("mason external");
 
 // We could consider bumping this version up as needed.
 const minSpackVersion = new versionInfo('1.0.0');
@@ -95,14 +95,14 @@ proc masonExternal(args: [] string) {
       // Engin: Why do we clone spack itself while creating our own registry?
       // If spack registry is not installed then install it
       if !isDir(spackRegistryDefaultPath) {
-        log.infoln("Installing Spack Registry ...");
+        log.info("Installing Spack Registry ...");
         const dest:path = spackRegistryDefaultPath;
         const branch = "releases/latest";
         const status = cloneSpackRepository(branch, dest);
         if status != 0 then
           throw new owned MasonError("Spack registry installation failed.");
       } else {
-        log.infof("Using existing Spack Registry at %s\n",
+        log.info("Using existing Spack Registry at ",
                   spackRegistryDefaultPath);
       }
 
@@ -466,11 +466,11 @@ proc getExternalPackages(exDeps: Toml) {
               fullSpec = "@".join(name, spec.s);
             }
 
-            log.debugf("Dep %s: fullSpec: %s\n", name, fullSpec);
+            log.debugf("Dep %s: fullSpec: %s", name, fullSpec);
 
             const resolvedSpec = resolveSpec(fullSpec);
 
-            log.debugf("Dep %s: resolvedSpec: %s\n", name, resolvedSpec);
+            log.debugf("Dep %s: resolvedSpec: %s", name, resolvedSpec);
 
             var dependencies = getSpkgDependencies(resolvedSpec);
             const pkgInfo = getSpkgInfo(resolvedSpec, dependencies);
@@ -567,14 +567,14 @@ proc getSpkgDependencies(spec: string): list(string) throws {
   var found = false;
   var dependencies: list(string);
   for item in pkgInfo.split() {
-    log.debugf("Spack dependency %s\n", item);
+    log.debug("Spack dependency ", item);
 
     if item.rfind(name) != -1 {
       found = true;
-      log.debugln("Found");
+      log.debug("Found");
     } else if found {
       const dep = item.strip("^");
-      log.debugf("Had found already, adding %s\n", dep);
+      log.debug("Had found already, adding ", dep);
       dependencies.pushBack(dep);
     }
   }

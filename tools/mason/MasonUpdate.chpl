@@ -27,7 +27,7 @@ use MasonExternal;
 use MasonHelp;
 use MasonSystem;
 use MasonUtils;
-use MasonLogger;
+import MasonLogger;
 use TOML;
 import Path;
 import ThirdParty.Pathlib.path;
@@ -50,7 +50,7 @@ The current resolution strategy for Mason 0.1.0 is the IVRS as described below:
 */
 
 private var failedChapelVersion: list(string);
-private var log = new logger("mason update");
+private var log = MasonLogger.getLogger("mason update");
 
 proc masonUpdate(args: [] string) throws {
   var tf = "Mason.toml";
@@ -83,13 +83,13 @@ proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock",
   const openFile = openReader(tomlPath:string, locking=false);
   const TomlFile = parseToml(openFile);
   openFile.close();
-  log.debugf("Parsed %s\n", tomlPath:string);
+  log.debugf("Parsed ", tomlPath:string);
 
   var updated = false;
   if tomlPath.isFile() {
     if TomlFile.pathExists('dependencies') {
       if force || TomlFile['dependencies']!.A.size > 0 {
-        log.infoln("Updating registry");
+        log.info("Updating registry");
         updateRegistry(skipUpdate, show);
         updated = true;
       }
@@ -99,24 +99,24 @@ proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock",
         if skipUpdate
           then ""
           else " since no dependency found in manifest file";
-      log.infoln("Skipping registry update" + reason);
+      log.info("Skipping registry update" + reason);
     }
   }
 
   if !skipUpdate {
-    log.infoln("Will do external update");
+    log.info("Will do external update");
     if isDir(SPACK_ROOT) && TomlFile.pathExists('external') {
       if getSpackVersion() < minSpackVersion then
         throw new MasonError("Mason has been updated. " +
                               "To install Spack, run: mason external --setup.");
     }
   } else {
-    log.debugln("Skipping external update");
+    log.debug("Skipping external update");
   }
 
 
   if !skipUpdate {
-    log.debugln("Will do createDepTree");
+    log.debug("Will do createDepTree");
     const lockFile = createDepTree(TomlFile);
     if failedChapelVersion.size > 0 {
       const prefix = if failedChapelVersion.size == 1
@@ -129,23 +129,23 @@ proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock",
       throw new MasonError(err.strip());
     }
     // Generate Lock File
-    log.debugln("Generating lock file");
+    log.debug("Generating lock file");
     genLock(lockFile, lockPath:string);
   } else {
-    log.debugln("Skipping lock file generation");
+    log.debug("Skipping lock file generation");
     if !lockPath.exists() {
       throw new MasonError("Cannot skip update without an existing lock file.");
     }
   }
 
   if !skipUpdate {
-    log.infoln("Installing prerequisites");
+    log.info("Installing prerequisites");
     MasonPrereqs.install();
   } else {
-    log.debugln("Skipping prerequisites installation");
+    log.debug("Skipping prerequisites installation");
   }
 
-  log.debugln("updateLock returning");
+  log.debug("updateLock returning");
   return (tf, lf);
 }
 
@@ -196,7 +196,7 @@ proc updateRegistry(skipUpdate: bool, show=true) throws {
   for ((name, registry), registryHome) in
       zip(MASON_REGISTRY, MASON_CACHED_REGISTRY) {
 
-    log.debugf("Updating registry %s (%s) at %s\n",
+    log.debugf("Updating registry %s (%s) at %s",
                 name, registry, registryHome);
 
     if isDir(registryHome) {
@@ -258,7 +258,7 @@ private proc createDepTree(root: Toml) throws {
     throw new MasonError("Could not find brick; Mason cannot update");
   }
 
-  log.debugln("Setting depTree for Chapel dependencies");
+  log.debug("Setting depTree for Chapel dependencies");
   if root.pathExists("dependencies") {
     var deps = getDependencies(root);
 
@@ -305,14 +305,14 @@ private proc createDepTree(root: Toml) throws {
   }
 
   // Check for pkg-config dependencies
-  log.debugln("Setting depTree for system dependencies");
+  log.debug("Setting depTree for system dependencies");
   if root.pathExists("system") {
     const exDeps = getPCDeps(root["system"]!);
     depTree.set("system", exDeps);
   }
 
   // Check for non-Chapel dependencies
-  log.debugln("Setting depTree for external dependencies");
+  log.debug("Setting depTree for external dependencies");
   if root.pathExists("external") {
     const externals = getExternalPackages(root["external"]!);
     depTree.set("external", externals);
@@ -336,7 +336,7 @@ private proc createDepTrees(depTree: Toml,
     var system      = dep.get["system"];
 
     if source == "" {
-      log.warnf("No source specified for package '%s'\n", package);
+      log.warnf("No source specified for package '%s'", package);
     }
 
     if depTree.pathExists(package) {
@@ -560,7 +560,7 @@ private proc pullGitDeps(gitDeps, show=false) {
   const baseDir = MASON_HOME:path / "git";
   for val in gitDepMap.keys() {
     var (srcURL, origBranch, revision) = gitDepMap[val];
-    log.debugf("Processing dependency %s: url: '%s', branch: '%s', rev='%s'\n",
+    log.debugf("Processing dependency %s: url: '%s', branch: '%s', rev='%s'",
                 val, srcURL, origBranch, revision);
 
     // Default to head if branch isn't specified

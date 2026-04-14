@@ -35,7 +35,7 @@ import MasonLogger;
 import MasonPrereqs;
 import ThirdParty.Pathlib.path;
 
-private var log = new MasonLogger.logger("mason example");
+private var log = MasonLogger.getLogger("mason example");
 
 proc runExamples(show: bool, run: bool, build: bool, release: bool,
                  skipUpdate: bool, force: bool,
@@ -183,14 +183,14 @@ private proc getBuildInfo(projectHome: string,
 
 
     compopts = getTomlCompopts(lockFile.borrow());
-    log.debugln("Adding prerequisite flags");
+    log.debug("Adding prerequisite flags");
     // add prerequisite compopts
     for flag in MasonPrereqs.chplFlags() {
-      log.debugf("+compflag %s\n", flag);
+      log.debug("+compflag ", flag);
       compopts.pushBack(flag);
     }
 
-    log.debugf("Base compopts: %?\n", compopts);
+    log.debug("Base compopts: ", compopts);
 
     // can't use _ since it will leak
     // see https://github.com/chapel-lang/chapel/issues/25926
@@ -203,11 +203,11 @@ private proc getBuildInfo(projectHome: string,
         const depSrc = Path.replaceExt(Path.joinPath(depDir, "src", name),
                                         "chpl");
 
-        log.debugf("Adding source dependency %s's flags\n", name);
+        log.debugf("Adding source dependency %s's flags", name);
         compopts.pushBack(depSrc);
 
         for flag in MasonPrereqs.chplFlags(depDir:path) {
-          log.debugf("+compflag %s\n", flag);
+          log.debug("+compflag ", flag);
           compopts.pushBack(flag);
         }
       }
@@ -222,7 +222,7 @@ private proc getBuildInfo(projectHome: string,
       compopts.pushBack(gitDepSrc);
 
       for flag in MasonPrereqs.chplFlags(depDir:path) {
-        log.debugf("+compflag %s\n", flag);
+        log.debug("+compflag ", flag);
         compopts.pushBack(flag);
       }
     }

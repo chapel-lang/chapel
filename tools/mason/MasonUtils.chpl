@@ -34,7 +34,7 @@ use Regex;
 import MasonLogger;
 import ThirdParty.Pathlib.path;
 
-private var log = new MasonLogger.logger("mason utils");
+private var log = MasonLogger.getLogger("mason utils");
 
 
 /* Gets environment variables for spawn commands */
@@ -108,10 +108,10 @@ proc runCommand(cmd: [] string, quiet=false,
   }
   var ret: retType;
   try {
-    log.debugf("runCommand (quiet=%?): '%?'\n", quiet, cmd);
+    log.debugf("runCommand (quiet=%?): '%?'", quiet, cmd);
     var process = spawn(cmd, stdout=pipeStyle.pipe, stderr=pipeStyle.pipe);
 
-    log.debugln("stdout:");
+    log.debug("stdout:");
     // use .lines() to avoid https://github.com/chapel-lang/chapel/issues/28211
     for line in process.stdout.lines(stripNewline=true) {
       if retType == string then
@@ -119,31 +119,31 @@ proc runCommand(cmd: [] string, quiet=false,
       else
         ret.pushBack(line);
 
-      if quiet then log.debugln(line); else log.infoln(line);
+      if quiet then log.debug(line); else log.info(line);
     }
-    log.debugln("end stdout");
+    log.debug("end stdout");
 
-    log.debugln("stderr:");
+    log.debug("stderr:");
     for line in process.stderr.lines() {
       log.warn(line);
     }
-    log.debugln("end stderr.");
+    log.debug("end stderr.");
 
     process.wait();
 
-    log.debugf("exitCode: %i\n", process.exitCode);
+    log.debug("exitCode: ", process.exitCode);
     if process.exitCode != 0 {
       var cmdStr = " ".join(cmd);
       throw new MasonError("Command failed: '" + cmdStr + "'");
     }
   } catch e: FileNotFoundError {
-    log.debugf("Caught FileNotFoundError for command: %?\n", cmd);
+    log.debug("Caught FileNotFoundError for command: ", cmd);
     var cmdStr = " ".join(cmd);
     throw new MasonError("Command not found: '" + cmdStr + "'");
   } catch e: MasonError {
     throw e;
   } catch e {
-    log.debugf("Caught unknown error ('%?') for command: %?\n", e, cmd);
+    log.debugf("Caught unknown error ('%?') for command: %?", e, cmd);
     throw new MasonError("Internal mason error");
   }
   return ret;
@@ -162,7 +162,7 @@ proc runWithStatus(command: string, quiet=false, capture=true): int {
 }
 proc runWithStatus(command: [] string, quiet=false, capture=true): int {
   try {
-    log.debugf("runWithStatus (quiet=%?, capture=%?): %?\n",
+    log.debugf("runWithStatus (quiet=%?, capture=%?): %?",
                quiet, capture, command);
     if !capture then log.flush();
     var sub =
@@ -178,7 +178,7 @@ proc runWithStatus(command: [] string, quiet=false, capture=true): int {
     sub.wait();
     return sub.exitCode;
   } catch e {
-    log.debugf("Caught unknown error ('%?') for command: %?\n", e, command);
+    log.debugf("Caught unknown error ('%?') for command: %?", e, command);
     return -1;
   }
 }
@@ -249,7 +249,7 @@ proc getSpackResult(cmd, quiet=false) : string throws {
                " && . $SPACK_ROOT/share/spack/setup-env.sh && ";
   var splitCmd = prefix + cmd;
   try {
-    log.debugf("running spack command %s\n", splitCmd);
+    log.debug("running spack command ", splitCmd);
     var process = spawnshell(splitCmd,
                              stdout=pipeStyle.pipe, executable="bash");
 
@@ -261,7 +261,7 @@ proc getSpackResult(cmd, quiet=false) : string throws {
     }
     process.wait();
   } catch e {
-    log.debugf("Caught unknown error ('%?') for command: %?\n", e, splitCmd);
+    log.debugf("Caught unknown error ('%?') for command: %?", e, splitCmd);
     throw new owned MasonError("Internal mason error");
   }
   return ret;
@@ -766,7 +766,7 @@ proc searchDependencies(pattern: regex(string)): list(package) throws {
       const name = dir.replace("/", "");
       if pattern.search(name) {
         if isHidden(name) {
-          log.debugln("found hidden package: " + name);
+          log.debug("found hidden package: " + name);
         } else {
           const ver = findLatest(joinPath(searchDir, dir));
           if ver != versionInfo.zero() {
@@ -819,7 +819,7 @@ proc findLatest(packageDir: string): versionInfo {
   for manifest in listDir(packageDir, files=true, dirs=false) {
     // Check that it is a valid TOML file
     if !manifest.endsWith(suffix) {
-      log.warnf("File without '.toml' extension encountered - skipping %s %s\n",
+      log.warnf("File without '.toml' extension encountered - skipping %s %s",
                 packageName, manifest);
       continue;
     }
