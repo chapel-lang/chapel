@@ -1,9 +1,5 @@
 """
 Tests for mason project support in the language server.
-
-Two kinds of tests:
-  1. Integration tests that require the mason executable (skipped if unavailable).
-  2. Unit tests that use a fake mason script so the real mason is not needed.
 """
 
 import os
