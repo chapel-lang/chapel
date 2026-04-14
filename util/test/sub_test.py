@@ -1563,14 +1563,14 @@ def main():
         else:
             executebin = execute
 
-        testfuturesfile=False
-        testskipiffile=False
-        noexecfile=False
-        execoptsfile=False
-        precomp=None
-        prediff=None
-        preexec=None
-        postexec=None
+        testfuturesfile = False
+        testskipiffile = False
+        noexecfile = False
+        execoptsfile = False
+        precomp = None
+        prediff = None
+        preexec = None
+        postexec = None
 
         if os.getenv("CHPL_NO_STDIN_REDIRECT") == None:
             redirectin = "/dev/null"
@@ -1768,10 +1768,10 @@ def main():
             elif suffix == ".preexec" and os.access(f, os.R_OK | os.X_OK):
                 preexec = f
 
-            elif (suffix=='.postexec' and os.access(f, os.R_OK|os.X_OK)):
-                postexec=f
+            elif suffix == ".postexec" and os.access(f, os.R_OK | os.X_OK):
+                postexec = f
 
-            elif (suffix=='.stdin' and os.access(f, os.R_OK)):
+            elif suffix == ".stdin" and os.access(f, os.R_OK):
                 if redirectin == None:
                     sys.stdout.write(
                         "[Skipping test with .stdin input since -nostdinredirect is given: %s/%s]\n"
@@ -2982,11 +2982,17 @@ def main():
                         execlogfile.write(output_to_write)
 
                     if postexec:
-                        sys.stdout.write('[Executing postexec %s.postexec]\n'%(test_filename))
+                        sys.stdout.write(
+                            "[Executing postexec %s.postexec]\n"
+                            % (test_filename)
+                        )
                         sys.stdout.flush()
-                        test_postexec = './{0}.postexec'.format(test_filename)
-                        stdout = run_process([test_postexec, execname, execlog, compiler],
-                                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT)[1]
+                        test_postexec = "./{0}.postexec".format(test_filename)
+                        stdout = run_process(
+                            [test_postexec, execname, execlog, compiler],
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.STDOUT,
+                        )[1]
                         sys.stdout.write(stdout)
                         sys.stdout.flush()
 
