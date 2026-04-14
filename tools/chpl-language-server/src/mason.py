@@ -29,10 +29,10 @@ class MasonProject:
     def __init__(self, mason: str, mason_file: Path):
         self._mason = mason
         self._mason_file = mason_file
-        self._module_dirs = [mason_file.parent / "src"]
+        self._module_dirs = [str(mason_file.parent / "src")]
         self._files = self._get_mason_modules()
 
-    def _get_mason_modules(self) -> List[Path]:
+    def _get_mason_modules(self) -> List[str]:
         result = run_mason_cmd(
             self._mason_file.parent,
             self._mason,
@@ -44,8 +44,11 @@ class MasonProject:
             return []
         try:
             output = json.loads(result)
-            modules = output.get("modules", [])
-            return [Path(m) for m in modules]
+            modules = []
+            for module in output.get("modules", []):
+                if Path(module).is_file():
+                    modules.append(module)
+            return modules
         except json.JSONDecodeError as e:
             from lsp_util import log
 
@@ -55,10 +58,10 @@ class MasonProject:
             return []
 
     def get_module_dirs(self) -> List[str]:
-        return [str(d) for d in self._module_dirs]
+        return self._module_dirs
 
     def get_files(self) -> List[str]:
-        return [str(f) for f in self._files]
+        return self._files
 
     @classmethod
     def from_ws(
