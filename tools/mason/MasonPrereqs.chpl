@@ -80,7 +80,8 @@ iter prereqs(const baseDir = path.cwd()): path {
   const prereqsDir = "prereqs";
   const prereqsPath = baseDir / prereqsDir;
 
-  log.debugf("Looking for the prerequisites directory %s\n", prereqsPath:string);
+  log.debugf("Looking for the prerequisites directory %s\n",
+             prereqsPath:string);
   if prereqsPath.exists() {
     if prereqsPath.isDir() {
       log.infof("Prerequisites directory exists (%s)\n", prereqsPath:string);
