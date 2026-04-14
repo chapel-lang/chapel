@@ -1,10 +1,10 @@
 use CTypes;
 
-
 extern {
   #include "chpltypes.h"
   #include <stdio.h>
 
+  // Test to see what happens when we load or store into a struct.
   typedef struct holder {
     void** global_serialize_table;
     void** globals_registry;
