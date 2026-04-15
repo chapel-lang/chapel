@@ -681,11 +681,12 @@ static struct _hfi_ctrl *opx_hfi_userinit_internal(int fd, bool skip_affinity,
 
 	internal->context.hfi1_type = opx_hfi1_check_hwversion(binfo->hw_version);
 	assert(internal->context.hfi1_type &
-	       (OPX_HFI1_CYR | OPX_HFI1_JKR | OPX_HFI1_WFR)); /* OPX_HFI1_JKR_9B is determined later */
+	       (OPX_HFI1_CYR | OPX_HFI1_JKR | OPX_HFI1_WFR)); /* OPX_HFI1_MIXED_9B is determined later */
 
 	/* Need the global set early, may be changed later on mixed networks */
-	if (OPX_HFI1_TYPE == OPX_HFI1_UNDEF) {
-		OPX_HFI1_TYPE = internal->context.hfi1_type;
+	if (OPX_SW_HFI1_TYPE == OPX_HFI1_UNDEF) {
+		OPX_SW_HFI1_TYPE = internal->context.hfi1_type;
+		OPX_HW_HFI1_TYPE = internal->context.hfi1_type;
 	}
 
 #ifndef OPX_JKR_SUPPORT
@@ -697,7 +698,7 @@ static struct _hfi_ctrl *opx_hfi_userinit_internal(int fd, bool skip_affinity,
 #endif
 
 	FI_DBG_TRACE(fi_opx_global.prov, FI_LOG_EP_DATA,
-		     "global type %d, opx_hfi1_check_hwversion base_info->hw_version %#X, %s\n", OPX_HFI1_TYPE,
+		     "global type %d, opx_hfi1_check_hwversion base_info->hw_version %#X, %s\n", OPX_SW_HFI1_TYPE,
 		     binfo->hw_version, OPX_HFI1_TYPE_STRING(internal->context.hfi1_type));
 
 	/* Rheq is only on JKR rdma-core, we have to set the token manually */

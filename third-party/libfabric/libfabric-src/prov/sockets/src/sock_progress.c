@@ -136,7 +136,7 @@ static inline void sock_pe_discard_field(struct sock_pe_entry *pe_entry)
 
 	SOCK_LOG_DBG("Remaining for %p: %" PRId64 "\n", pe_entry, pe_entry->rem);
 	ret = sock_comm_discard(pe_entry, pe_entry->rem);
-	SOCK_LOG_DBG("Discarded %ld\n", ret);
+	SOCK_LOG_DBG("Discarded %zu\n", ret);
 
 	pe_entry->rem -= ret;
 	if (pe_entry->rem == 0)
@@ -225,7 +225,7 @@ static struct sock_pe_entry *sock_pe_acquire_entry(struct sock_pe *pe)
 		assert(ofi_rbempty(&pe_entry->comm_buf));
 		dlist_remove(&pe_entry->entry);
 		dlist_insert_tail(&pe_entry->entry, &pe->busy_list);
-		SOCK_LOG_DBG("progress entry %p acquired : %lu\n", pe_entry,
+		SOCK_LOG_DBG("progress entry %p acquired : %zd\n", pe_entry,
 			     PE_INDEX(pe, pe_entry));
 	}
 	return pe_entry;
@@ -2108,7 +2108,7 @@ static void sock_pe_new_rx_entry(struct sock_pe *pe, struct sock_rx_ctx *rx_ctx,
 	else
 		pe_entry->comp = &rx_ctx->comp;
 
-	SOCK_LOG_DBG("New RX on PE entry %p (%ld)\n",
+	SOCK_LOG_DBG("New RX on PE entry %p (%zd)\n",
 		      pe_entry, PE_INDEX(pe, pe_entry));
 
 	SOCK_LOG_DBG("Inserting rx_entry to PE entry %p, conn: %p\n",

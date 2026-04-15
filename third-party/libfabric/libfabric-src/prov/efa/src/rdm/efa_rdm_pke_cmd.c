@@ -453,15 +453,8 @@ void efa_rdm_pke_handle_tx_error(struct efa_rdm_pke *pkt_entry, int prov_errno)
 					break;
 				default:
 				{
-					char ep_addr_str[OFI_ADDRSTRLEN], peer_addr_str[OFI_ADDRSTRLEN];
-					size_t buflen=0;
-
-					memset(&ep_addr_str, 0, sizeof(ep_addr_str));
-					memset(&peer_addr_str, 0, sizeof(peer_addr_str));
-					buflen = sizeof(ep_addr_str);
-					efa_base_ep_raw_addr_str(&ep->base_ep, ep_addr_str, &buflen);
-					buflen = sizeof(peer_addr_str);
-					efa_base_ep_get_peer_raw_addr_str(&ep->base_ep, pkt_entry->peer->conn->fi_addr, peer_addr_str, &buflen);
+					EFA_RDM_GET_EP_ADDR_STR(ep, ep_addr_str);
+					EFA_RDM_GET_PEER_ADDR_STR(ep, pkt_entry->peer, peer_addr_str);
 					EFA_WARN(FI_LOG_CQ,
 						"While sending a handshake packet, an error occurred."
 						"  Our address: %s, peer address: %s\n",
@@ -546,6 +539,8 @@ void efa_rdm_pke_handle_send_completion(struct efa_rdm_pke *pkt_entry)
 	struct efa_rdm_ep *ep;
 
 	ep = pkt_entry->ep;
+
+	efa_rdm_ep_record_tx_op_completed(ep, pkt_entry);
 	/*
 	 * For a send completion, pkt_entry->peer can be NULL in 3 situations:
 	 * 1. the pkt_entry is used for a local read operation
@@ -556,7 +551,6 @@ void efa_rdm_pke_handle_send_completion(struct efa_rdm_pke *pkt_entry)
 	if (!pkt_entry->peer &&
 	    !(pkt_entry->flags & EFA_RDM_PKE_LOCAL_READ)) {
 		EFA_WARN(FI_LOG_CQ, "ignoring send completion of a packet to a removed peer.\n");
-		efa_rdm_ep_record_tx_op_completed(ep, pkt_entry);
 		efa_rdm_pke_release_tx(pkt_entry);
 		return;
 	}
@@ -564,7 +558,6 @@ void efa_rdm_pke_handle_send_completion(struct efa_rdm_pke *pkt_entry)
 	/* These pkts are eager pkts withour hdrs */
 	if (pkt_entry->flags & EFA_RDM_PKE_SEND_TO_USER_RECV_QP) {
 		efa_rdm_pke_handle_eager_rtm_send_completion(pkt_entry);
-		efa_rdm_ep_record_tx_op_completed(ep, pkt_entry);
 		efa_rdm_pke_release_tx(pkt_entry);
 		return;
 	}
@@ -572,6 +565,11 @@ void efa_rdm_pke_handle_send_completion(struct efa_rdm_pke *pkt_entry)
 	/* Start handling pkts with hdrs */
 	switch (efa_rdm_pkt_type_of(pkt_entry)) {
 	case EFA_RDM_HANDSHAKE_PKT:
+		efa_rdm_tracepoint(handshake_send_completion,
+				   (size_t) pkt_entry, pkt_entry->pkt_size,
+				   pkt_entry->ope->msg_id,
+				   (size_t) pkt_entry->ope->cq_entry.op_context,
+				   pkt_entry->ope->total_len);
 		efa_rdm_txe_release(pkt_entry->ope);
 		break;
 	case EFA_RDM_CTS_PKT:
@@ -648,16 +646,16 @@ void efa_rdm_pke_handle_send_completion(struct efa_rdm_pke *pkt_entry)
 	case EFA_RDM_DC_LONGCTS_MSGRTM_PKT:
 	case EFA_RDM_DC_LONGCTS_TAGRTM_PKT:
 	case EFA_RDM_DC_LONGCTS_RTW_PKT:
-		/* no action to be taken here
-		 * For non-dc version of these packet types,
-		 * this is the place to increase bytes_acked or
-		 * write tx completion.
-		 * For dc, tx completion will always be
-		 * written upon receving the receipt packet
-		 * Moreoever, because receipt can arrive
-		 * before send completion, we cannot take
-		 * any action on txe here.
+		/* For DC packets, use efa_outstanding_tx_ops to track TX completions
+		 * instead of bytes_acked to avoid issues with unset payload_size.
+		 * Note: efa_rdm_ep_record_tx_op_completed() above decrements efa_outstanding_tx_ops,
+		 * so this check must come after that call.
+		 * Only release TXE when both TX ops complete and receipt is received.
 		 */
+		assert(pkt_entry->ope);
+		if (efa_rdm_txe_dc_ready_for_release(pkt_entry->ope))
+			efa_rdm_txe_release(pkt_entry->ope);
+		break;
 	case EFA_RDM_READ_NACK_PKT:
 		/* no action needed for NACK packet */
 		break;
@@ -669,8 +667,6 @@ void efa_rdm_pke_handle_send_completion(struct efa_rdm_pke *pkt_entry)
 		efa_base_ep_write_eq_error(&ep->base_ep, FI_EIO, FI_EFA_ERR_INVALID_PKT_TYPE);
 		return;
 	}
-
-	efa_rdm_ep_record_tx_op_completed(ep, pkt_entry);
 	efa_rdm_pke_release_tx(pkt_entry);
 }
 

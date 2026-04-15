@@ -158,8 +158,8 @@ static inline void xpmem_memcpy(void *dst, void *src, size_t size)
 	}
 }
 
-int ofi_xpmem_copy(struct iovec *local, unsigned long local_cnt,
-                   struct iovec *remote, unsigned long remote_cnt,
+int ofi_xpmem_copy(struct iovec *local, size_t local_cnt,
+                   struct iovec *remote, size_t remote_cnt,
                    size_t total, pid_t pid, bool write, void *user_data)
 {
 	int ret, i;
@@ -237,8 +237,8 @@ int ofi_xpmem_cleanup(void)
 	return -FI_ENOSYS;
 }
 
-int ofi_xpmem_copy(struct iovec *local, unsigned long local_cnt,
-                   struct iovec *remote, unsigned long remote_cnt,
+int ofi_xpmem_copy(struct iovec *local, size_t local_cnt,
+                   struct iovec *remote, size_t remote_cnt,
                    size_t total, pid_t pid, bool write, void *user_data)
 {
 	return -FI_ENOSYS;

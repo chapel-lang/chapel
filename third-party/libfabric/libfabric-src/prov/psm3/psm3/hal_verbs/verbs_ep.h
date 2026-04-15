@@ -520,7 +520,7 @@ extern int psm3_verbs_poll_type(int poll_type, psm2_ep_t ep);
 extern psm2_error_t psm_verbs_alloc_send_pool(psm2_ep_t ep, struct ibv_pd *pd,
             psm3_verbs_send_pool_t pool,
             uint32_t send_total, uint32_t send_buffer_size);
-extern psm2_error_t psm_verbs_init_send_allocator(
+extern void psm_verbs_init_send_allocator(
             psm3_verbs_send_allocator_t allocator,
             psm3_verbs_send_pool_t pool);
 extern psm2_error_t psm_verbs_alloc_recv_pool(psm2_ep_t ep, uint32_t for_srq,

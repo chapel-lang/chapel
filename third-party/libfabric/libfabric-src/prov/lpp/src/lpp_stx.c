@@ -195,7 +195,7 @@ struct lpp_stx *lpp_stx_alloc(struct lpp_domain *lpp_domainp, struct fi_tx_attr 
 
 	if (lpp_max_eager_size > lpp_tx_max_eager(&lpp_domainp->devinfo)) {
 		FI_WARN(&lpp_prov, FI_LOG_DOMAIN,
-		    "requested max eager size %ld exceeds max possible %ld\n",
+		    "requested max eager size %zu exceeds max possible %zu\n",
 		    lpp_max_eager_size, lpp_tx_max_eager(&lpp_domainp->devinfo));
 		lpp_max_eager_size = lpp_tx_max_eager(&lpp_domainp->devinfo);
 	}
@@ -393,7 +393,7 @@ static struct lpp_tx_entry *lpp_token_to_tx_entry(struct lpp_stx *lpp_stxp,
 
 	if (idx > lpp_stxp->attr.size) {
 		FI_WARN(&lpp_prov, FI_LOG_EP_DATA,
-		    "Out of bounds idx: %u (max %ld)\n",
+		    "Out of bounds idx: %u (max %zu)\n",
 		    idx, lpp_stxp->attr.size);
 		return NULL;
 	}
@@ -480,8 +480,8 @@ ssize_t lpp_tx_verify_flags(struct lpp_stx *lpp_stxp, uint64_t flags)
 	if ((lpp_stxp->attr.caps & flags & LPP_CAPS_OPS) !=
 	    (flags & LPP_CAPS_OPS)) {
 		FI_WARN(&lpp_prov, FI_LOG_EP_DATA,
-			"TX attr caps (%lx) incorrect for requested op (%lx)\n",
-			lpp_stxp->attr.caps, flags);
+			"TX attr caps (0x%" PRIx64 ") incorrect for requested op (0x%" PRIx64 ")\n",
+			(uint64_t)lpp_stxp->attr.caps, (uint64_t)flags);
 		return -FI_EINVAL;
 	}
 	return 0;
@@ -491,7 +491,7 @@ ssize_t lpp_tx_verify_rma_iov_count(struct lpp_stx *lpp_stxp, size_t iov_count)
 {
 	if (iov_count > lpp_stxp->attr.rma_iov_limit) {
 		FI_WARN(&lpp_prov, FI_LOG_EP_DATA,
-			"iov_count out of range (%ld/%ld)\n", iov_count,
+			"iov_count out of range (%zu/%zu)\n", iov_count,
 			lpp_stxp->attr.rma_iov_limit);
 		return -FI_EINVAL;
 	}
@@ -502,7 +502,7 @@ ssize_t lpp_tx_verify_iov_count(struct lpp_stx *lpp_stxp, size_t iov_count)
 {
 	if (iov_count > lpp_stxp->attr.iov_limit) {
 		FI_WARN(&lpp_prov, FI_LOG_EP_DATA,
-			"iov_count out of range (%ld/%ld)\n", iov_count,
+			"iov_count out of range (%zu/%zu)\n", iov_count,
 			lpp_stxp->attr.iov_limit);
 		return -FI_EINVAL;
 	}
@@ -772,7 +772,7 @@ ssize_t lpp_send_common(struct lpp_ep *lpp_epp, struct lpp_tx_entry *tx_entry)
 	if (tx_entry->flags & FI_INJECT) {
 		if (tx_entry->msg_hdr.data_length > lpp_stxp->attr.inject_size) {
 			FI_WARN(&lpp_prov, FI_LOG_EP_DATA,
-				"length %u exceeds max inject size %ld\n",
+				"length %u exceeds max inject size %zu\n",
 				tx_entry->msg_hdr.data_length,
 				lpp_stxp->attr.inject_size);
 			ret = -FI_EINVAL;
@@ -845,8 +845,8 @@ ssize_t lpp_send_common(struct lpp_ep *lpp_epp, struct lpp_tx_entry *tx_entry)
 		tx_entry->msg_hdr.type = KLPP_MSG_RDZV_SEND;
 		tx_entry->msg_hdr.flags |= KLPP_MSG_DATA_RDZV;
 
-		FI_DBG(&lpp_prov, FI_LOG_EP_DATA, "len: %d, flags: 0x%lx "
-				"lpp_flags: 0x%lx token: 0x%llx\n",
+		FI_DBG(&lpp_prov, FI_LOG_EP_DATA, "len: %d, flags: 0x%" PRIx64 " "
+				"lpp_flags: 0x%" PRIx64 " token: 0x%llx\n",
 			tx_entry->msg_hdr.data_length, tx_entry->flags,
 			tx_entry->lpp_flags, u2k.rdzv_send.token);
 		// Attempt to flush unsent, as ordering requires them to go out first.
@@ -1020,7 +1020,7 @@ ssize_t lpp_atomic_common(struct lpp_ep *lpp_epp, struct lpp_tx_entry *tx_entry)
 	if (tx_entry->flags & FI_INJECT) {
 		if (tx_entry->msg_hdr.data_length > lpp_stxp->attr.inject_size) {
 			FI_WARN(&lpp_prov, FI_LOG_EP_DATA,
-				"length %u exceeds max inject size %ld\n",
+				"length %u exceeds max inject size %zu\n",
 				tx_entry->msg_hdr.data_length, lpp_stxp->attr.inject_size);
 			ret = -FI_EINVAL;
 			goto err_no_spool;

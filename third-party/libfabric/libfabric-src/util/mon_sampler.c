@@ -146,7 +146,7 @@ static int ms_write_csv(struct monitor_data data[mon_api_size], struct file_entr
 
 	for(int i = 0; i < mon_api_size; i++) {
 		for (int j = 0; j < MON_SIZE_MAX; j++) {
-			fprintf(file->output, "%lu,%lu",
+			fprintf(file->output, "%" PRIu64 ",%" PRIu64,
 				data[i].count[j],
 				data[i].sum[j]);
 			if (!(i+1 == mon_api_size && j+1 == MON_SIZE_MAX))

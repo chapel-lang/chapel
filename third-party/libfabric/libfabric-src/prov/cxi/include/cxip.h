@@ -178,10 +178,10 @@
 #define CXIP_DEFAULT_RX_SIZE		1024U
 
 #define CXIP_MAJOR_VERSION		0
-#define CXIP_MINOR_VERSION		1
+#define CXIP_MINOR_VERSION		2
 #define CXIP_PROV_VERSION		FI_VERSION(CXIP_MAJOR_VERSION, \
 						   CXIP_MINOR_VERSION)
-#define CXIP_FI_VERSION			FI_VERSION(2, 2)
+#define CXIP_FI_VERSION			FI_VERSION(2, 5)
 #define CXIP_WIRE_PROTO_VERSION		1
 
 #define	CXIP_COLL_MAX_CONCUR		8
@@ -358,13 +358,14 @@ struct cxip_environment {
 	int force_dev_reg_copy;
 	enum cxip_mr_target_ordering mr_target_ordering;
 	int disable_cuda_sync_memops;
+	int enable_writedata;
 };
 
 extern struct cxip_environment cxip_env;
 
-static inline bool cxip_software_pte_allowed(void)
+static inline bool cxip_software_pte_allowed(enum cxip_ep_ptle_mode rx_match_mode)
 {
-	return cxip_env.rx_match_mode != CXIP_PTLTE_HARDWARE_MODE;
+	return rx_match_mode != CXIP_PTLTE_HARDWARE_MODE;
 }
 
 /*
@@ -521,7 +522,8 @@ struct cxip_mr_key {
 			 * it repeated.
 			 */
 			uint64_t id     : 16;  /* Unique - 64K MR */
-			uint64_t seqnum : 44;  /* Sequence with random seed */
+			uint64_t seqnum : 43;  /* Sequence with random seed */
+			uint64_t sol_event : 1;  /* For FI_WRITEDATA dual entry */
 			uint64_t events : 1;   /* Requires event generation */
 			uint64_t unused3: 2;
 			uint64_t is_prov: 1;
@@ -699,7 +701,24 @@ union cxip_match_bits {
 	uint64_t raw;
 };
 #define CXIP_IS_PROV_MR_KEY_BIT (1ULL << 63)
-#define CXIP_KEY_MATCH_BITS(key) ((key) & ~CXIP_IS_PROV_MR_KEY_BIT)
+#define CXIP_SOL_NUM_MR_KEY_BIT (1ULL << 59)
+#define CXIP_EVENTS_MR_KEY_BIT  (1ULL << 60) /* 'events' field - request comm event generation */
+#define CXIP_KEY_MATCH_BITS(key) ((key) & ~(CXIP_IS_PROV_MR_KEY_BIT | CXIP_SOL_NUM_MR_KEY_BIT))
+
+static inline uint64_t cxip_key_set_writedata(uint64_t key)
+{
+	struct cxip_mr_key cxip_key = { .raw = key };
+
+	/* Provider keys only: non-cached provider keys support writedata.
+	 * Set sol_event (bit 59) for writedata LE match and events (bit 60)
+	 * for target comm event generation.
+	 */
+	if (cxip_key.is_prov && !cxip_key.cached) {
+		/* is_prov bit (63) masked out, preserving 60:59. */
+		return key | CXIP_SOL_NUM_MR_KEY_BIT | CXIP_EVENTS_MR_KEY_BIT;
+	}
+	return key;
+}
 
 /* libcxi Wrapper Structures */
 
@@ -708,6 +727,7 @@ union cxip_match_bits {
 #define CXI_PLATFORM_Z1 2
 #define CXI_PLATFORM_FPGA 3
 
+#define MAX_HW_CPS 16
 /*
  * CXI Device wrapper
  *
@@ -752,7 +772,7 @@ struct cxip_lni {
 	struct cxil_lni *lni;
 
 	/* Hardware communication profiles */
-	struct cxi_cp *hw_cps[16];
+	struct cxi_cp *hw_cps[MAX_HW_CPS];
 	int n_cps;
 
 	/* Software remapped communication profiles. */
@@ -907,6 +927,20 @@ struct cxip_domain {
 
 	uint32_t tclass;
 
+	/* CQ data sizes for remote CQ data support:
+	 * - msg_cq_data_size: for messaging operations (FI_REMOTE_CQ_DATA in msg ops)
+	 * - rma_cq_data_size: for RMA writedata operations (fi_writedata/fi_inject_writedata)
+	 * These are set separately to allow messaging to use remote CQ data without
+	 * forcing RMA to enable writedata support.
+	 */
+	size_t msg_cq_data_size;
+	size_t rma_cq_data_size;
+
+	/* Legacy cq_data_size field - now derived from msg_cq_data_size and rma_cq_data_size.
+	 * Set to non-zero if either messaging or RMA supports remote CQ data.
+	 */
+	size_t cq_data_size;
+
 	struct cxip_eq *eq; //unused
 	struct cxip_eq *mr_eq; //unused
 
@@ -1013,6 +1047,12 @@ struct cxip_domain {
 	unsigned int cmdq_cnt;
 	struct ofi_genlock cmdq_lock;
 	size_t tx_size;
+
+	/* domain level match mode override */
+	enum cxip_ep_ptle_mode rx_match_mode;
+	bool msg_offload;
+	size_t req_buf_size;
+
 };
 
 int cxip_domain_emit_idc_put(struct cxip_domain *dom, uint16_t vni,
@@ -1049,7 +1089,8 @@ static inline bool cxip_domain_mr_cache_iface_enabled(struct cxip_domain *dom,
 	return cxip_domain_mr_cache_enabled(dom) && dom->iomm.monitors[iface];
 }
 
-int cxip_domain_valid_vni(struct cxip_domain *dom, unsigned int vni);
+int cxip_domain_valid_vni(struct cxip_domain *dom, struct cxi_auth_key *key);
+
 
 /* This structure implies knowledge about the breakdown of the NIC address,
  * which is taken from the AMA, that the provider does not know in a flexible
@@ -1669,6 +1710,12 @@ struct cxip_ep_coll_obj {
 	struct dlist_entry leaf_rdma_get_list;
 	/* used to change ctrl_msg_type to CXIP_CTRL_MSG_ZB_DATA_RDMA_LAC */
 	bool leaf_save_root_lac;
+	/* Logical address context for leaf rdma get */
+	uint64_t rdma_get_lac_va_tx;
+	/* pointer to the source buffer base used in the RDMA */
+	uint8_t *root_rdma_get_data_p;
+	/* root rdma get memory descriptor, for entire root src buffer */
+	struct cxip_md *root_rdma_get_md;
 };
 
 /* Receive context state machine.
@@ -2684,9 +2731,10 @@ struct cxip_mr {
 	struct fi_mr_attr attr;		// attributes
 	struct cxip_cntr *cntr;		// if bound to cntr
 
-	/* Indicates if FI_RMA_EVENT was specified at creation and
-	 * will be used to enable fi_writedata() and fi_inject_writedata()
-	 * support for this MR (TODO).
+	/* Indicates if FI_RMA_EVENT was specified at creation.
+	 * This enables remote counter events for this MR.
+	 * Note: fi_writedata() support is controlled by domain->rma_cq_data_size,
+	 * not by FI_RMA_EVENT or this flag.
 	 */
 	bool rma_events;
 
@@ -2706,9 +2754,12 @@ struct cxip_mr {
 	struct cxip_mr_util_ops *mr_util;
 	bool enabled;
 	struct cxip_pte *pte;
+	struct cxip_pte *writedata_pte;	// Second PTE for FI_WRITEDATA dual entry
 	enum cxip_mr_state mr_state;
+	enum cxip_mr_state writedata_mr_state; // State for writedata PTE
 	int64_t mr_id;			// Non-cached provider key uniqueness
 	struct cxip_ctrl_req req;
+	struct cxip_ctrl_req writedata_req; // Control req for writedata PTE
 	bool optimized;
 
 	void *buf;			// memory buffer VA
@@ -3204,6 +3255,8 @@ enum cxi_traffic_class cxip_ofi_to_cxi_tc(uint32_t ofi_tclass);
 int cxip_cmdq_cp_set(struct cxip_cmdq *cmdq, uint16_t vni,
 		     enum cxi_traffic_class tc,
 		     enum cxi_traffic_class_type tc_type);
+int cxip_cmdq_cp_modify(struct cxip_cmdq *cmdq, uint16_t vni,
+			enum cxi_traffic_class tc);
 void cxip_if_init(void);
 void cxip_if_fini(void);
 
@@ -3635,11 +3688,19 @@ extern bool cxip_coll_trace_linebuf;		// set line buffering for trace
 extern int cxip_coll_trace_rank;		// tracing rank
 extern int cxip_coll_trace_numranks;		// tracing number of ranks
 extern FILE *cxip_coll_trace_fid;		// trace output file descriptor
+extern bool cxip_coll_prod_trace_initialized;	// turn on tracing in non-debug
+						// build
+extern char **cxip_coll_prod_trace_buffer;	// production trace buffer
+extern int cxip_coll_prod_trace_current;	// current index in trace buffer
+extern int cxip_coll_prod_trace_max_idx;	// max lines in trace buffer
+extern int cxip_coll_prod_trace_ln_max;		// max trace line length
 
 int cxip_coll_trace_attr cxip_coll_trace(const char *fmt, ...);
+int cxip_coll_trace_attr cxip_coll_prod_trace(const char *fmt, ...);
 void cxip_coll_trace_flush(void);
 void cxip_coll_trace_close(void);
-void cxip_coll_trace_init(void);
+void cxip_coll_trace_init(struct cxip_ep_obj *ep_obj);
+void cxip_coll_print_prod_trace(void);
 
 /* debugging TRACE filtering control */
 enum cxip_coll_trace_module {
@@ -3669,12 +3730,19 @@ static inline bool cxip_coll_trace_true(int mod)
 	return (!cxip_coll_trace_muted) && (cxip_coll_trace_mask & (1L << mod));
 }
 
+static inline bool cxip_coll_prod_trace_true(void)
+{
+	return cxip_coll_prod_trace_initialized;
+}
+
 #if ENABLE_DEBUG
 #define CXIP_COLL_TRACE(mod, fmt, ...) \
 	do {if (cxip_coll_trace_true(mod)) \
 	    cxip_coll_trace(fmt, ##__VA_ARGS__);} while (0)
 #else
-#define	CXIP_COLL_TRACE(mod, fmt, ...) do {} while (0)
+#define	CXIP_COLL_TRACE(mod, fmt, ...) \
+	do {if (cxip_coll_prod_trace_true()) \
+	    cxip_coll_prod_trace(fmt, ##__VA_ARGS__); } while (0)
 #endif
 
 /* fabric logging implementation functions */

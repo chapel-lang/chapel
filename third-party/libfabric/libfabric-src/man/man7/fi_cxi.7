@@ -15,7 +15,7 @@
 . ftr VB CB
 . ftr VBI CBI
 .\}
-.TH "fi_cxi" "7" "2025\-08\-26" "Libfabric Programmer\[cq]s Manual" "Libfabric v2.3.1"
+.TH "fi_cxi" "7" "2026\-02\-10" "Libfabric Programmer\[cq]s Manual" "Libfabric v2.5.1"
 .hy
 .SH NAME
 .PP
@@ -530,12 +530,11 @@ See the Fork section for more information.
 The CXI provider supports DMABUF for device memory registration.
 DMABUF is supported in ROCm 5.6+ and Cuda 11.7+ with nvidia open source
 driver 525+.
-Both \f[I]FI_HMEM_ROCR_USE_DMABUF\f[R] and \f[I]FI_HMEM_CUDA_USE_DMABUF
-are disabled by default in libfabric core but the CXI provider enables
-\f[R]FI_HMEM_ROCR_USE_DMABUF* by default if not specifically set.
-There may be situations with CUDA that may double the BAR consumption.
-Until this is fixed in the CUDA stack, CUDA DMABUF will be disabled by
-default.
+Both \f[I]FI_HMEM_ROCR_USE_DMABUF\f[R] and
+\f[I]FI_HMEM_CUDA_USE_DMABUF\f[R] are disabled by default in libfabric
+core but the CXI provider enables both \f[I]FI_HMEM_ROCR_USE_DMABUF\f[R]
+and \f[I]FI_HMEM_CUDA_USE_DMABUF\f[R] by default if not specifically
+set.
 .SS Translation Cache
 .PP
 Mapping a buffer for use by the NIC is an expensive operation.
@@ -1216,8 +1215,8 @@ Minimum rendezvous Get payload size.
 A Send with length less than or equal to \f[I]FI_CXI_RDZV_THRESHOLD\f[R]
 plus \f[I]FI_CXI_RDZV_GET_MIN\f[R] will be performed using the eager
 protocol.
-Larger Sends will be performed using the rendezvous protocol with
-\f[I]FI_CXI_RDZV_THRESHOLD\f[R] bytes of payload sent eagerly and the
+Larger sends will be performed using the rendezvous protocol with
+\f[I]FI_CXI_EAGER_SIZE\f[R] bytes of payload sent eagerly and the
 remainder of the payload read from the source using a Get.
 \f[I]FI_CXI_RDZV_THRESHOLD\f[R] plus \f[I]FI_CXI_RDZV_GET_MIN\f[R] must
 be less than or equal to \f[I]FI_CXI_OFLOW_BUF_SIZE\f[R].
@@ -1582,6 +1581,32 @@ Enable enforcement of triggered operation limit.
 Doing this can prevent fi_control(FI_QUEUE_WORK) deadlocking at the cost
 of performance.
 .TP
+\f[I]FI_CXI_ENABLE_WRITEDATA\f[R]
+Controls provider support for the fi_writedata() and
+fi_inject_writedata() RMA operations.
+When enabled and the domain attribute cq_data_size is non-zero, the CXI
+provider implements handling to generate solicited RMA completions that
+include immediate data; completions will include FI_REMOTE_CQ_DATA and
+will report source information when FI_SOURCE is enabled (FI_SOURCE_ERR
+behavior is followed on resolution failures).
+.RS
+.PP
+Note that the CXI_RX_CQ_DATA capability is not required and writedata
+RMA operations do not consume posted receive buffers on the target.
+The feature is gated by domain/endpoint capabilities (for example, a
+non-zero domain_attr->cq_data_size in the libfabric API) and endpoint
+support.
+Internally, the combination of domain and endpoint cq_data_size sets
+rma_cq_data_size.
+Only provider MR keys are supported.
+.PP
+This option is disabled by default; enable it only when applications
+require immediate-data delivery on RMA completions or for controlled
+testing and debugging.
+Application support for FI_MR_PROV_KEY mr_mode is required to use this
+feature.
+.RE
+.TP
 \f[I]FI_CXI_MR_CACHE_EVENTS_DISABLE_POLL_NSECS\f[R]
 Max amount of time to poll when disabling an MR configured with MR match
 events.
@@ -1664,6 +1689,40 @@ do not require events.
 The command will fail with -FI_EINVAL if FI_MR_PROV_KEY MR mode is not
 in use.
 It can only be changed prior to any MR being created.
+.PP
+Command \f[I]FI_OPT_CXI_GET_RX_MATCH_MODE_OVERRIDE\f[R] where the
+argument is a pointer to a char buffer.
+The buffer must be large enough to hold one of the mode values
+\[lq]hardware\[rq], \[lq]software\[rq], or \[lq]hybrid\[rq] that are
+returned.
+The command will fail with -FI_EINVAL for a NULL buffer or unknown mode
+value.
+.PP
+Command \f[I]FI_OPT_CXI_SET_RX_MATCH_MODE_OVERRIDE\f[R] where the
+argument is a pointer to a char buffer that is initialized to one of
+these mode values \[lq]hardware\[rq], \[lq]software\[rq], or
+\[lq]hybrid\[rq].
+This call overrides the default match mode setting at the domain level.
+By default the domain match mode is determined by the environment
+setting of FI_CXI_RX_MATCH_MODE.
+This option should be set prior to the creation of any endpoint for the
+domain.
+The command will fail with -FI_EINVAL for a NULL buffer or unknown mode
+value.
+.PP
+Command \f[I]FI_OPT_CXI_GET_REQ_BUF_SIZE_OVERRIDE\f[R] where the
+argument is a pointer to size_t unsigned long.
+It will return the current domain level req_buf_size setting.
+.PP
+Command \f[I]FI_OPT_CXI_SET_REQ_BUF_SIZE_OVERRIDE\f[R] where the
+argument is a pointer to size_t unsigned long.
+This call overrides the default req_buf_size setting at the domain
+level.
+By default the domain req_buf_size is determined by the environment
+setting of FI_CXI_REQ_BUF_SIZE.
+This option should be set prior to the creation of any endpoint for the
+domain.
+The command will fail with -FI_EINVAL for an illegal value of 0.
 .SS CXI Domain Extensions
 .PP
 CXI domain extensions have been named \f[I]FI_CXI_DOM_OPS_6\f[R].

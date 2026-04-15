@@ -61,8 +61,8 @@ static inline size_t opx_debug_slist_len(struct slist_entry *head)
 static inline uint8_t opx_debug_get_replay_bth_opcode(struct fi_opx_reliability_tx_replay *replay,
 						      enum opx_hfi1_type		   hfi1_type)
 {
-	return (hfi1_type & (OPX_HFI1_JKR_9B | OPX_HFI1_WFR)) ? replay->scb.scb_9B.hdr.bth.opcode :
-								replay->scb.scb_16B.hdr.bth.opcode;
+	return (hfi1_type & (OPX_HFI1_MIXED_9B | OPX_HFI1_WFR)) ? replay->scb.scb_9B.hdr.bth.opcode :
+								  replay->scb.scb_16B.hdr.bth.opcode;
 }
 
 static inline uint32_t opx_debug_get_replay_psn(struct fi_opx_reliability_tx_replay *replay,
@@ -71,12 +71,12 @@ static inline uint32_t opx_debug_get_replay_psn(struct fi_opx_reliability_tx_rep
 	uint8_t opcode = opx_debug_get_replay_bth_opcode(replay, hfi1_type);
 
 	if (opcode == 0xC2) {
-		return (hfi1_type & (OPX_HFI1_JKR_9B | OPX_HFI1_WFR)) ?
+		return (hfi1_type & (OPX_HFI1_MIXED_9B | OPX_HFI1_WFR)) ?
 			       ((uint32_t) ntohl(replay->scb.scb_9B.hdr.bth.psn)) & 0x00FFFFFF :
 			       ((uint32_t) ntohl(replay->scb.scb_16B.hdr.bth.psn)) & 0x00FFFFFF;
 	} else {
-		return (hfi1_type & (OPX_HFI1_JKR_9B | OPX_HFI1_WFR)) ? replay->scb.scb_9B.hdr.bth.psn & 0x00FFFFFF :
-									replay->scb.scb_16B.hdr.bth.psn & 0x00FFFFFF;
+		return (hfi1_type & (OPX_HFI1_MIXED_9B | OPX_HFI1_WFR)) ? replay->scb.scb_9B.hdr.bth.psn & 0x00FFFFFF :
+									  replay->scb.scb_16B.hdr.bth.psn & 0x00FFFFFF;
 	}
 }
 
@@ -164,13 +164,13 @@ static void opx_debug_dump_tx_flow(struct fi_opx_ep *opx_ep, pid_t my_pid, FILE 
 
 			struct fi_opx_reliability_tx_replay *replay =
 				(struct fi_opx_reliability_tx_replay *) node_type->val;
-			int32_t psn	  = opx_debug_get_replay_psn(replay, OPX_HFI1_TYPE);
+			int32_t psn	  = opx_debug_get_replay_psn(replay, OPX_SW_HFI1_TYPE);
 			int32_t first_psn = psn;
 
 			struct fi_opx_reliability_tx_replay *first_replay = NULL;
 			while (replay != first_replay) {
 				++replay_count;
-				psn	 = opx_debug_get_replay_psn(replay, OPX_HFI1_TYPE);
+				psn	 = opx_debug_get_replay_psn(replay, OPX_SW_HFI1_TYPE);
 				last_psn = psn;
 
 				if (!first_replay) {
@@ -271,6 +271,10 @@ static void opx_debug_dump_endpoint(struct fi_opx_ep *opx_ep)
 	fprintf(output, "(%d) work_pending[TID_SETUP].head           : %p (%lu)\n", my_pid,
 		opx_ep->tx->work_pending[OPX_WORK_TYPE_TID_SETUP].head,
 		opx_debug_slist_len(opx_ep->tx->work_pending[OPX_WORK_TYPE_TID_SETUP].head));
+
+	fprintf(output, "(%d) work_pending[HFISVC].head              : %p (%lu)\n", my_pid,
+		opx_ep->tx->work_pending[OPX_WORK_TYPE_HFISVC].head,
+		opx_debug_slist_len(opx_ep->tx->work_pending[OPX_WORK_TYPE_HFISVC].head));
 
 	fprintf(output, "(%d) sdma_request_queue.list.head           : %p (%lu)\n", my_pid,
 		opx_ep->tx->sdma_request_queue.list.head,

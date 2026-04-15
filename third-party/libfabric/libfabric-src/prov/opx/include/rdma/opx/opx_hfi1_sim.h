@@ -229,7 +229,7 @@ void opx_open_sim_bar(unsigned unit, unsigned short int rcontext, unsigned short
 		volatile uint64_t *__pio_sop;                                                                   \
 		const short int	   per_bar_context = context & 0xFF;                                            \
 		do {                                                                                            \
-			if (OPX_HFI1_TYPE & OPX_HFI1_WFR) {                                                     \
+			if (OPX_SW_HFI1_TYPE & OPX_HFI1_WFR) {                                                  \
 				__pio_sop = (uint64_t *) (OPX_TXE_PIO_SEND + (context * (64 * 1024L)) +         \
 							  (16 * 1024 * 1024L));                                 \
 			} else {                                                                                \
@@ -245,7 +245,7 @@ void opx_open_sim_bar(unsigned unit, unsigned short int rcontext, unsigned short
 		volatile uint64_t *__pio;                                                                   \
 		const short int	   per_bar_context = context & 0xFF;                                        \
 		do {                                                                                        \
-			if (OPX_HFI1_TYPE & OPX_HFI1_WFR) {                                                 \
+			if (OPX_SW_HFI1_TYPE & OPX_HFI1_WFR) {                                              \
 				__pio = (uint64_t *) (OPX_TXE_PIO_SEND + (context * (64 * 1024L)));         \
 			} else {                                                                            \
 				__pio = (uint64_t *) (OPX_TXE_PIO_SEND + (per_bar_context * (64 * 1024L))); \
@@ -259,7 +259,7 @@ void opx_open_sim_bar(unsigned unit, unsigned short int rcontext, unsigned short
 		volatile uint64_t *__uregs;                                                             \
 		const short int	   per_bar_context = context & 0xFF;                                    \
 		do {                                                                                    \
-			if (OPX_HFI1_TYPE & OPX_HFI1_WFR) {                                             \
+			if (OPX_SW_HFI1_TYPE & OPX_HFI1_WFR) {                                          \
 				__uregs = (uint64_t *) (OPX_WFR_RXE_PER_CONTEXT_OFFSET +                \
 							((context) * OPX_WFR_RXE_UCTX_STRIDE));         \
 			} else {                                                                        \

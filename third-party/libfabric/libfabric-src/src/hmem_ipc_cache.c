@@ -65,7 +65,7 @@ static int ipc_cache_add_region(struct ofi_mr_cache *cache, struct ofi_mr_entry 
 	}
 	if (ret) {
 		FI_WARN(&core_prov, FI_LOG_CORE,
-			"Failed to open hmem handle, addr: %p, len: %lu\n",
+			"Failed to open hmem handle, addr: %p, len: %zu\n",
 			entry->info.iov.iov_base, entry->info.iov.iov_len);
 	}
 	return ret;

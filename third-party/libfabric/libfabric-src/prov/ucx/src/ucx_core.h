@@ -113,6 +113,8 @@ static inline ssize_t ucx_do_inject(struct fid_ep *ep, const void *buf,
 
 	u_ep = container_of(ep, struct ucx_ep, ep.ep_fid);
 	dst_ep = UCX_GET_UCP_EP(u_ep, dest_addr);
+	if (!dst_ep)
+		return -FI_EINVAL;
 
 	status = ucp_tag_send_nb(dst_ep, buf, len,
 				 ucp_dt_make_contig(1),

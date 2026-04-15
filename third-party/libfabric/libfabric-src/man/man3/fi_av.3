@@ -14,7 +14,7 @@
 . ftr VB CB
 . ftr VBI CBI
 .\}
-.TH "fi_av" "3" "2025\-04\-09" "Libfabric Programmer\[cq]s Manual" "Libfabric v2.3.1"
+.TH "fi_av" "3" "2025\-12\-19" "Libfabric Programmer\[cq]s Manual" "Libfabric v2.5.1"
 .hy
 .SH NAME
 .PP
@@ -551,6 +551,9 @@ The corresponding fi_addr_t values are invalidated and may not be used
 in data transfer calls.
 The behavior of operations in progress that reference the removed
 addresses is undefined.
+Requesting removal of a fi_addr that is unset or outside of the
+provider\[cq]s address vector bounds will result in -FI_EINVAL being
+returned.
 .PP
 Note that removing an address may not disable receiving data from the
 peer endpoint.
@@ -574,6 +577,9 @@ fi_addr_t.
 This call returns the address stored in the address vector that
 corresponds to the given fi_addr.
 The returned address is the same format as those stored by the AV.
+Requesting lookup of a fi_addr that is unset or is outside of the
+provider\[cq]s address vector bounds will result in -FI_EINVAL being
+returned.
 On input, the addrlen parameter should indicate the size of the addr
 buffer.
 If the actual address is larger than what can fit into the buffer, it

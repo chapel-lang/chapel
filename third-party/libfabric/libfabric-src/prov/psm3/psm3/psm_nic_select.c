@@ -1067,7 +1067,7 @@ psm3_autoselect_one(long addr_index, int nunits, psm2_uuid_t const job_key)
 
 	index = psm3_open_shm_scoreboard_and_select_nic(nic_info, ninfo,
 									job_key, nunits);
-	psmi_assert(index >= 0 && index < ninfo);
+	psmi_assert(index < ninfo);
 
 	return nic_info[index].unit;
 }

@@ -37,7 +37,8 @@
 #include <stdint.h>
 
 union fi_opx_hfi1_deferred_work;
-int opx_ipc_send_cts(union fi_opx_hfi1_deferred_work *work);
+int opx_ipc_send_cts_9B(union fi_opx_hfi1_deferred_work *work);
+int opx_ipc_send_cts_16B(union fi_opx_hfi1_deferred_work *work);
 
 #endif
 #endif

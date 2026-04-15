@@ -34,6 +34,16 @@ int cxip_ctrl_msg_cb(struct cxip_ctrl_req *req, const union c_event *event)
 	int ret, mcast_id;
 	struct cxip_coll_mc *mc_obj;
 
+	/*
+	 * If an access was cancelled during an LE invalidate operaiton for
+	 * a standard MR, then it is possible a C_RC_MST_CANCELLED status
+	 * could be returned for PtlTE condifugred with an EQ.
+	 */
+	if (cxi_event_rc(event) == C_RC_MST_CANCELLED) {
+		CXIP_WARN("C_RC_MST_CANCELLED received, ignoring\n");
+		return FI_SUCCESS;
+	}
+
 	/* Check to see if event processing is implemented or overridden
 	 * int the protocol. A return of -FI_ENOSYS indicated the event
 	 * was not consumed.

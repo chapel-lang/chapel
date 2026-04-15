@@ -481,7 +481,7 @@ usdf_am_insert_sync(struct fid_av *fav, const void *addr, size_t count,
 			u_dest->ds_dest.ds_udp.u_hdr.uh_ip.frag_off |=
 				htons(IP_DF);
 			dest->ds_dest = *u_dest;
-			fi_addr[i] = (fi_addr_t)dest;
+			fi_addr[i] = (fi_addr_t)(uintptr_t)dest;
 			LIST_INSERT_HEAD(&av->av_addresses, dest,
 					 ds_addresses_entry);
 			++ret_count;

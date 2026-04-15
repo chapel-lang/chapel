@@ -235,7 +235,7 @@ src_libfabric_la_LIBADD =
 src_libfabric_la_DEPENDENCIES = libfabric.map
 
 if !EMBEDDED
-src_libfabric_la_LDFLAGS += -version-info 30:1:29
+src_libfabric_la_LDFLAGS += -version-info 32:1:31
 endif
 src_libfabric_la_LDFLAGS += -export-dynamic \
 			   $(libfabric_version_script)

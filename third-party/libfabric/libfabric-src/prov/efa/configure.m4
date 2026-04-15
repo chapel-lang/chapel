@@ -188,13 +188,13 @@ AC_DEFUN([FI_EFA_CONFIGURE],[
 			[have_efadv_sl=1],
 			[have_efadv_sl=0],
 			[[#include <infiniband/efadv.h>]])
-		
+
 		have_efadv_query_qp_wqs=1
 		AC_CHECK_DECL([efadv_query_qp_wqs],
 			[],
 			[have_efadv_query_qp_wqs=0],
 			[[#include <infiniband/efadv.h>]])
-	
+
 		have_efadv_query_cq=1
 		AC_CHECK_DECL([efadv_query_cq],
 			[],
@@ -281,6 +281,13 @@ AC_DEFUN([FI_EFA_CONFIGURE],[
 	efa_CPPFLAGS="$efa_ibverbs_CPPFLAGS $efadv_CPPFLAGS"
 	efa_LDFLAGS="$efa_ibverbs_LDFLAGS $efadv_LDFLAGS"
 	efa_LIBS="$efa_ibverbs_LIBS $efadv_LIBS"
+
+	dnl Add RPATH for custom efa_LIBDIR if specified
+	AS_IF([test x"$efa_LIBDIR" != x""],
+	[
+		AC_MSG_NOTICE([Adding RUNPATH for EFA libraries: $efa_LIBDIR])
+		efa_LDFLAGS+=" -L$efa_LIBDIR -Wl,--enable-new-dtags,-rpath,$efa_LIBDIR"
+	])
 	cmocka_rpath=""
 	AC_ARG_ENABLE([efa-unit-test],
 		[

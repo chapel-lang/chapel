@@ -3513,12 +3513,12 @@ static bool psm3_oneapi_ze_is_memcpy_permitted(struct psm2_ep *ep)
 struct psm3_gpu_hal psm3_oneapi_ze_hal = {
 	.type = "oneapi-ze",
 #ifdef PSM_HAVE_RNDV_MOD
-#if defined(RV_GPU_ABI_VER_MINOR_0) && defined(RV_GPU_ABI_VER_MAJOR_1) && defined(RV_GPU_ABI_VER_MINOR_1)
+#if RV_GPU_ABI_VERSION_CURRENT > RV_GPU_ABI_VERSION(1, 1)
 		// RV GPU API <= 1.0 does not have track GPU alloc_id
 		// RV GPU API <= 1.1 requires munmap_unpin
 		// so if RV GPU API <= 1.1, do not allow GPUDirect
-	.rv_major_rev_fail = RV_GPU_ABI_VER_MAJOR_1,
-	.rv_minor_rev_fail = RV_GPU_ABI_VER_MINOR_1,
+	.rv_major_rev_fail = 1,
+	.rv_minor_rev_fail = 1,
 #else
 	/* not defined if compile against older RV header */
 #error "Intel GPU Support requires version 1.1 or newer rv_user_ioctls.h header"

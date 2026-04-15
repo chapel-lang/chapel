@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2016 by Argonne National Laboratory.
- * Copyright (C) 2021 Cornelis Networks.
+ * Copyright (C) 2021-2022,2024-2025 Cornelis Networks.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -41,9 +41,10 @@
 #define L2_CACHE_LINE_SIZE (64)
 
 #ifdef NDEBUG // No Debug, Optimizing
-#define __OPX_INLINE__	     static inline
-#define __OPX_FORCE_INLINE__ static inline __attribute__((always_inline))
-#define __OPX_FLATTEN__	     static __attribute__((flatten))
+#define __OPX_INLINE__	       static inline
+#define __OPX_FORCE_INLINE__   static inline __attribute__((always_inline))
+#define __OPX_FLATTEN__	       static __attribute__((flatten))
+#define __OPX_FORCE_NOINLINE__ static __attribute__((noinline, cold))
 
 /* https://github.com/ofiwg/libfabric/issues/7916
  * It's bad to use always-inline and flatten compiler attributes
@@ -51,9 +52,10 @@
  */
 // #define __OPX_FORCE_INLINE_AND_FLATTEN__ static inline __attribute__ ((always_inline, flatten))
 #else // NDEBUG
-#define __OPX_INLINE__	     static inline
-#define __OPX_FORCE_INLINE__ static inline
-#define __OPX_FLATTEN__	     static
+#define __OPX_INLINE__	       static inline
+#define __OPX_FORCE_INLINE__   static inline
+#define __OPX_FLATTEN__	       static
+#define __OPX_FORCE_NOINLINE__ static
 // #define __OPX_FORCE_INLINE_AND_FLATTEN__ static inline
 #endif // NDEBUG
 

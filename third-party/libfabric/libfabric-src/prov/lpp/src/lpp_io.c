@@ -31,6 +31,7 @@
  */
 
 #include <stdatomic.h>
+#include <inttypes.h>
 
 #include "lpp.h"
 
@@ -94,8 +95,8 @@ static int lpp_try_pio(struct lpp_domain *lpp_domainp, struct lpp_ep *lpp_epp,
 
 	if (dst_addr < rmr_meta->legal_remote_start_uaddr) {
 		FI_WARN(&lpp_prov, FI_LOG_EP_DATA,
-			"PIO start out of bounds %lx %lx\n", dst_addr,
-			rmr_meta->legal_remote_start_uaddr);
+			"PIO start out of bounds %" PRIx64 " %" PRIx64 "\n", (uint64_t)dst_addr,
+			(uint64_t)rmr_meta->legal_remote_start_uaddr);
 		return -1;
 	}
 
@@ -104,13 +105,13 @@ static int lpp_try_pio(struct lpp_domain *lpp_domainp, struct lpp_ep *lpp_epp,
 
 	if (rmr_meta->legal_length < legal_offset + write_length) {
 		FI_WARN(&lpp_prov, FI_LOG_EP_DATA,
-			"PIO write out of range (region len: %ld offset: %ld len:%ld\n",
+			"PIO write out of range (region len: %" PRIu64 " offset: %" PRIu64 " len:%zu\n",
 			rmr_meta->legal_length, legal_offset, write_length);
 		return -1;
 	}
 
 	baseaddr = (rmr_meta->region == KLPP_RMR_RW) ? lpp_domainp->rmr_rw : lpp_domainp->rmr_ro;
-	rmr_buf = (void *)((uintptr_t)baseaddr + rmr_meta->offset + offset_in_region);
+	rmr_buf = (void *)((uintptr_t)baseaddr + (uintptr_t)rmr_meta->offset + (uintptr_t)offset_in_region);
 
 	if (flags & FI_WRITE) {
 		memcpy(rmr_buf, src_buf, write_length);
@@ -143,10 +144,10 @@ ssize_t lpp_rma_common(struct fid_ep *ep, const struct iovec *local_iovp,
 
 	if (remote_iov_count == 1) {
 		FI_DBG(&lpp_prov, FI_LOG_MR,
-		       "RMA op on remote key: 0x%lx, flags: 0x%lx, ctx: %p\n",
+		       "RMA op on remote key: 0x%" PRIx64 ", flags: 0x%" PRIx64 ", ctx: %p\n",
 			remote_iovp->key, flags, context);
 	} else {
-		FI_DBG(&lpp_prov, FI_LOG_MR, "RMA op iov_count: %ld\n",
+		FI_DBG(&lpp_prov, FI_LOG_MR, "RMA op iov_count: %zu\n",
 		       remote_iov_count);
 	}
 
@@ -171,26 +172,26 @@ ssize_t lpp_rma_common(struct fid_ep *ep, const struct iovec *local_iovp,
 	}
 
 	if ((lpp_stxp->attr.caps & flags & LPP_CAPS_OPS) != (flags & LPP_CAPS_OPS)) {
-		FI_WARN(&lpp_prov, FI_LOG_EP_DATA, "TX attr caps (%lx) incorrect for requested op (%lx)\n",
-			lpp_stxp->attr.caps, flags);
+		FI_WARN(&lpp_prov, FI_LOG_EP_DATA, "TX attr caps (0%" PRIx64 ") incorrect for requested op (%" PRIx64 ")\n",
+			(uint64_t)lpp_stxp->attr.caps, (uint64_t)flags);
 		return -FI_EINVAL;
 	}
 
 	// Make sure that we won't overrun our IOVs in the descriptors.
 	if (local_iov_count > lpp_stxp->attr.rma_iov_limit) {
-		FI_WARN(&lpp_prov, FI_LOG_EP_DATA, "local iov count out of range, (%lu/%lu)\n",
+		FI_WARN(&lpp_prov, FI_LOG_EP_DATA, "local iov count out of range, (%zu/%zu)\n",
 		    local_iov_count, lpp_stxp->attr.rma_iov_limit);
 		return -FI_EINVAL;
 	}
 	if (remote_iov_count > lpp_stxp->attr.rma_iov_limit) {
-		FI_WARN(&lpp_prov, FI_LOG_EP_DATA, "remote iov count out of range, (%lu/%lu)\n",
+		FI_WARN(&lpp_prov, FI_LOG_EP_DATA, "remote iov count out of range, (%zu/%zu)\n",
 		    remote_iov_count, lpp_stxp->attr.rma_iov_limit);
 		return -FI_EINVAL;
 	}
 
 	// Make sure that the inject data isn't too big.
 	if (((flags & FI_INJECT) != 0) && (local_iovp->iov_len > lpp_stxp->attr.inject_size)) {
-		FI_WARN(&lpp_prov, FI_LOG_EP_DATA, "inject size %ld exceeds maximum %ld\n",
+		FI_WARN(&lpp_prov, FI_LOG_EP_DATA, "inject size %zu exceeds maximum %zu\n",
 		    local_iovp->iov_len, lpp_stxp->attr.inject_size);
 		return -FI_EINVAL;
 	}
@@ -218,11 +219,11 @@ ssize_t lpp_rma_common(struct fid_ep *ep, const struct iovec *local_iovp,
 	}
 
 	if (local_iov_count > lpp_stxp->attr.rma_iov_limit) {
-		FI_WARN(&lpp_prov, FI_LOG_EP_DATA, "local iov_count %ld exceeds max %ld\n",
+		FI_WARN(&lpp_prov, FI_LOG_EP_DATA, "local iov_count %zu exceeds max %zu\n",
 		    local_iov_count, lpp_stxp->attr.rma_iov_limit);
 	}
 	if (remote_iov_count > lpp_stxp->attr.rma_iov_limit) {
-		FI_WARN(&lpp_prov, FI_LOG_EP_DATA, "remote iov_count %ld exceeds max %ld\n",
+		FI_WARN(&lpp_prov, FI_LOG_EP_DATA, "remote iov_count %zu exceeds max %zu\n",
 		    remote_iov_count, lpp_stxp->attr.rma_iov_limit);
 	}
 

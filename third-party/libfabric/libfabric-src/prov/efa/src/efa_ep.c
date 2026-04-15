@@ -171,6 +171,17 @@ static int efa_ep_setopt(fid_t fid, int level, int optname, const void *optval, 
 	/* no op as efa direct ep will not handshake with peers */
 	case FI_OPT_EFA_HOMOGENEOUS_PEERS:
 		break;
+	case FI_OPT_EFA_USE_UNSOLICITED_WRITE_RECV:
+		if (optlen != sizeof(bool))
+			return -FI_EINVAL;
+		if (!(ep->info->mode & FI_RX_CQ_DATA) && !*(bool *)optval) {
+			EFA_WARN(FI_LOG_EP_CTRL,
+				 "FI_RX_CQ_DATA is required when unsolicited "
+				 "write recv is disabled.\n");
+			return -FI_EOPNOTSUPP;
+		}
+		ep->use_unsolicited_write_recv = *(bool *)optval;
+		break;
 	default:
 		EFA_INFO(FI_LOG_EP_CTRL, "Unknown / unsupported endpoint option\n");
 		return -FI_ENOPROTOOPT;
@@ -207,7 +218,8 @@ static int efa_ep_close(fid_t fid)
 	if (ret) {
 		EFA_WARN(FI_LOG_EP_CTRL, "Unable to close base endpoint\n");
 	}
-
+	if (efa_env.track_mr)
+		efa_direct_ope_pool_destroy(ep);
 	free(ep);
 
 	return 0;
@@ -332,8 +344,13 @@ static int efa_ep_enable(struct fid_ep *ep_fid)
 		return err;
 
 	err = efa_base_ep_insert_cntr_ibv_cq_poll_list(ep);
-	if (err)
+	if (err) {
 		efa_base_ep_destruct_qp(ep);
+		return err;
+	}
+
+	if (efa_env.track_mr)
+		err = efa_direct_ope_pool_create(ep);
 
 	return err;
 }

@@ -420,6 +420,8 @@ static void util_peer_cq_cleanup(struct util_cq *cq)
 	while (!slist_empty(&cq->aux_queue)) {
 		entry = slist_remove_head(&cq->aux_queue);
 		err = container_of(entry, struct util_cq_aux_entry, list_entry);
+		if (err->comp.err_data_size)
+			free(err->comp.err_data);
 		free(err);
 	}
 

@@ -75,6 +75,69 @@ enum efa_rdm_pke_alloc_type {
  * is not registered (when it is unexpected or out-of-order). A new packet entry will be cloned
  * using endpoint's read_copy_pkt_pool, whose memory was registered.
  */
+
+#if ENABLE_DEBUG
+/**
+ * @brief Debug info for tracking packet lifecycle events
+ *
+ * Used to diagnose "Packet already processed" errors by recording
+ * packet lifecycle events in a circular buffer.
+ *
+ * Size: 8 bytes per entry (naturally aligned)
+ * 48 entries provide sufficient history for diagnosis while keeping
+ * the debug buffer at a reasonable size (392 bytes total).
+ */
+#define EFA_RDM_PKE_DEBUG_INFO_SIZE 48
+
+/* Event type definitions (4 bits, 9 types) */
+#define EFA_RDM_PKE_DEBUG_EVENT_SEND_POST       0  /**< Send packet posted */
+#define EFA_RDM_PKE_DEBUG_EVENT_SEND_COMPLETION 1  /**< Send packet completed */
+#define EFA_RDM_PKE_DEBUG_EVENT_RECV_POST       2  /**< Receive buffer posted */
+#define EFA_RDM_PKE_DEBUG_EVENT_RECV_COMPLETION 3  /**< Receive completed */
+#define EFA_RDM_PKE_DEBUG_EVENT_READ_POST       4  /**< RDMA read posted */
+#define EFA_RDM_PKE_DEBUG_EVENT_READ_COMPLETION 5  /**< RDMA read completed */
+#define EFA_RDM_PKE_DEBUG_EVENT_WRITE_POST      6  /**< RDMA write posted */
+#define EFA_RDM_PKE_DEBUG_EVENT_WRITE_COMPLETION 7 /**< RDMA write completed */
+#define EFA_RDM_PKE_DEBUG_EVENT_RECV_RDMA_WITH_IMM 8 /**< Recv RDMA with immediate */
+#define EFA_RDM_PKE_DEBUG_EVENT_TYPE_COUNT      9  /**< Number of event types */
+
+struct efa_rdm_pke_debug_info {
+	uint32_t qkey;        /**< Queue key */
+	uint16_t qpn_gen;     /**< Bits [15:6]=qpn (10 bits), [5:0]=gen (6 bits) */
+	uint8_t counter;      /**< Incremental counter */
+	uint8_t event;        /**< Event type (9 types: 0-8) */
+};
+
+/* Compile-time size check */
+_Static_assert(sizeof(struct efa_rdm_pke_debug_info) == 8, "debug_info must be 8 bytes");
+
+/**
+ * @brief Debug info buffer - includes counter and circular buffer
+ */
+struct efa_rdm_pke_debug_info_buffer {
+	uint8_t counter;      /**< Global counter (0-255) */
+	uint8_t padding[7];   /**< Padding for alignment */
+	struct efa_rdm_pke_debug_info entries[EFA_RDM_PKE_DEBUG_INFO_SIZE]; /**< Circular buffer */
+};
+
+/* Bit field layout constants for qpn_gen field */
+#define EFA_RDM_PKE_DEBUG_GEN_BITS 6
+#define EFA_RDM_PKE_DEBUG_QPN_BITS 10
+#define EFA_RDM_PKE_DEBUG_QPN_SHIFT EFA_RDM_PKE_DEBUG_GEN_BITS
+#define EFA_RDM_PKE_DEBUG_GEN_MASK ((1 << EFA_RDM_PKE_DEBUG_GEN_BITS) - 1)
+#define EFA_RDM_PKE_DEBUG_QPN_MASK ((1 << EFA_RDM_PKE_DEBUG_QPN_BITS) - 1)
+
+/* Accessor macros for bit-packed qpn_gen field */
+#define EFA_RDM_PKE_DEBUG_INFO_GET_QPN(info)       (((info)->qpn_gen >> EFA_RDM_PKE_DEBUG_QPN_SHIFT) & EFA_RDM_PKE_DEBUG_QPN_MASK)
+#define EFA_RDM_PKE_DEBUG_INFO_GET_GEN(info)       ((info)->qpn_gen & EFA_RDM_PKE_DEBUG_GEN_MASK)
+#define EFA_RDM_PKE_DEBUG_INFO_GET_EVENT(info)     ((info)->event)
+
+#define EFA_RDM_PKE_DEBUG_INFO_SET_QPN_GEN(info, _qpn, _gen) \
+	do { \
+		(info)->qpn_gen = (((_qpn) & EFA_RDM_PKE_DEBUG_QPN_MASK) << EFA_RDM_PKE_DEBUG_QPN_SHIFT) | ((_gen) & EFA_RDM_PKE_DEBUG_GEN_MASK); \
+	} while(0)
+#endif
+
 struct efa_rdm_pke {
 	/**
 	 * entry to the linked list of outstanding/queued packet entries
@@ -180,6 +243,13 @@ struct efa_rdm_pke {
 	 */
 	size_t payload_size;
 
+	/**@brief Generation counter. It is incremented every time the packet is posted to rdma-core */
+	uint8_t gen;
+
+#if ENABLE_DEBUG
+	struct efa_rdm_pke_debug_info_buffer *debug_info; /**< Pointer to debug info buffer */
+#endif
+
 	/** @brief buffer that contains data that is going over wire
 	 *
 	 * @details
@@ -202,6 +272,10 @@ struct efa_rdm_pke {
 
 #if defined(static_assert)
 static_assert(sizeof (struct efa_rdm_pke) % EFA_RDM_PKE_ALIGNMENT == 0, "efa_rdm_pke alignment check");
+#if !ENABLE_DEBUG
+/* In optimized builds, packet entry structure is designed to fit into two x86 cache lines */
+static_assert(sizeof (struct efa_rdm_pke) == EFA_RDM_PKE_ALIGNMENT, "efa_rdm_pke size check");
+#endif
 #endif
 
 struct efa_rdm_ep;
@@ -223,6 +297,30 @@ void efa_rdm_pke_release_rx(struct efa_rdm_pke *pkt_entry);
 void efa_rdm_pke_release_rx_list(struct efa_rdm_pke *pkt_entry);
 
 void efa_rdm_pke_release(struct efa_rdm_pke *pkt_entry);
+
+#if ENABLE_DEBUG
+/**
+ * @brief Record debug info event in packet entry (inline for performance)
+ */
+static inline void efa_rdm_pke_record_debug_info(struct efa_rdm_pke *pkt_entry,
+                                                   uint16_t qpn, uint32_t qkey,
+                                                   uint8_t gen, uint8_t event_type)
+{
+	if (!pkt_entry->debug_info)
+		return;
+
+	uint8_t idx = pkt_entry->debug_info->counter % EFA_RDM_PKE_DEBUG_INFO_SIZE;
+	struct efa_rdm_pke_debug_info *info = &pkt_entry->debug_info->entries[idx];
+
+	info->qkey = qkey;
+	EFA_RDM_PKE_DEBUG_INFO_SET_QPN_GEN(info, qpn, gen);
+	info->counter = pkt_entry->debug_info->counter;
+	info->event = event_type;
+	pkt_entry->debug_info->counter++;
+}
+
+void efa_rdm_pke_print_debug_info(struct efa_rdm_pke *pkt_entry);
+#endif
 
 void efa_rdm_pke_append(struct efa_rdm_pke *dst,
 			struct efa_rdm_pke *src);

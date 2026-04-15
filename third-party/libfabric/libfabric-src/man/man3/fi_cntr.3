@@ -14,7 +14,7 @@
 . ftr VB CB
 . ftr VBI CBI
 .\}
-.TH "fi_cntr" "3" "2024\-12\-10" "Libfabric Programmer\[cq]s Manual" "Libfabric v2.3.1"
+.TH "fi_cntr" "3" "2026\-04\-03" "Libfabric Programmer\[cq]s Manual" "Libfabric v2.5.1"
 .hy
 .SH NAME
 .PP
@@ -251,10 +251,37 @@ See fi_eq.3 for addition details using control with FI_GETWAIT.
 .SS fi_cntr_read
 .PP
 The fi_cntr_read call returns the current value of the counter.
+.PP
+Applications must manage counter values that approach the limit defined
+by the domain attribute \f[V]max_cntr_value\f[R].
+This value, which defaults to UINT64_MAX but may be lower due to
+provider limitations, defines the maximum value returned by
+fi_cntr_read().
+.PP
+When a counter reaches its maximum value and additional operations
+complete, the counter behavior will be undefined.
+Applications that need to track the total number of operations beyond
+the provider\[cq]s counter limits are responsible for detecting and
+handling this condition by resetting counters with \f[V]fi_cntr_set\f[R]
+before they reach the maximum, or it could result in incorrect values.
 .SS fi_cntr_readerr
 .PP
 The read error call returns the number of operations that completed in
 error and were unable to update the counter.
+.PP
+Applications must manage error counter values that approach the limit
+defined by the domain attribute \f[V]max_err_cntr_value\f[R].
+This value, which defaults to UINT64_MAX but may be lower due to
+provider limitations, defines the maximum value returned by
+fi_cntr_readerr().
+.PP
+When an error counter reaches its maximum value and additional error
+operations complete, the counter behavior will be undefined.
+Applications that need to track the total number of error operations
+beyond the provider\[cq]s counter limits are responsible for detecting
+and handling this condition by resetting the error counters with
+\f[V]fi_cntr_seterr\f[R] before they reach the maximum, or it could
+result in incorrect values.
 .SS fi_cntr_add
 .PP
 This adds the user-specified value to the counter.

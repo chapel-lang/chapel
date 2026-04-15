@@ -51,8 +51,7 @@ struct efa_rdm_atomic_ex {
 	struct iovec comp_iov[EFA_RDM_IOV_LIMIT];
 	int comp_iov_count;
 	void *result_desc[EFA_RDM_IOV_LIMIT];
-	/* compare_desc does not require persistence b/c it is only used to send the RTA */
-	void **compare_desc;
+	void *compare_desc[EFA_RDM_IOV_LIMIT];
 };
 
 /**
@@ -104,7 +103,7 @@ struct efa_rdm_ope {
 	 * This flag is different from #cq_entry.flags, which is
 	 * applied to CQ entry's returned to user.
 	 */
-	uint16_t internal_flags;
+	uint32_t internal_flags;
 
 	size_t iov_count;
 	struct iovec iov[EFA_RDM_IOV_LIMIT];
@@ -121,6 +120,9 @@ struct efa_rdm_ope {
 
 	/* ep_entry is linked to tx/rxe_list in efa_rdm_ep */
 	struct dlist_entry ep_entry;
+
+	/* ack_list_entry is linked to ope_posted_ack_list in efa_rdm_ep */
+	struct dlist_entry ack_list_entry;
 
 	/* queued_entry is linked with ope_queued_list in efa_domain */
 	struct dlist_entry queued_entry;
@@ -279,12 +281,17 @@ void efa_rdm_rxe_release_internal(struct efa_rdm_ope *rxe);
  * @brief flag to indicate that the ope was created
  * for internal operations, so it should not generate
  * any cq entry or err entry.
- * NOTICE: the ope->internal_flags is uint16_t, so
- * to introduce more bits for internal flags, the
- * internal_flags needs to be changed to uint32_t
- * or larger.
  */
 #define EFA_RDM_OPE_INTERNAL			BIT_ULL(15)
+
+/**
+ * @brief flag to indicate that a DC txe has received its receipt packet
+ *
+ * This flag is used to track when a delivery complete operation has
+ * received acknowledgment from the receiver, preventing premature
+ * completion before all TX operations finish.
+ */
+#define EFA_RDM_TXE_RECEIPT_RECEIVED		BIT_ULL(16)
 
 #define EFA_RDM_OPE_QUEUED_FLAGS (EFA_RDM_OPE_QUEUED_RNR | EFA_RDM_OPE_QUEUED_CTRL | EFA_RDM_OPE_QUEUED_READ | EFA_RDM_OPE_QUEUED_BEFORE_HANDSHAKE)
 
@@ -308,6 +315,27 @@ void efa_rdm_rxe_report_completion(struct efa_rdm_ope *rxe);
 void efa_rdm_ope_handle_recv_completed(struct efa_rdm_ope *ope);
 
 void efa_rdm_ope_handle_send_completed(struct efa_rdm_ope *ope);
+
+/**
+ * @brief Check if a delivery complete (DC) TXE is ready for release
+ *
+ * @details
+ * For DC packets, this function prevents use-after-free race conditions by
+ * ensuring the TXE is only released when both conditions are met:
+ * 1. All TX operations have completed (efa_outstanding_tx_ops == 0)
+ * 2. Receipt packet has been received (EFA_RDM_TXE_RECEIPT_RECEIVED flag set)
+ *
+ * This dual-condition check ensures proper synchronization between send
+ * completions and receipt acknowledgments in the delivery complete protocol.
+ *
+ * @param[in] txe TX operation entry to check
+ * @return true if TXE is ready for release, false otherwise
+ */
+static inline bool efa_rdm_txe_dc_ready_for_release(struct efa_rdm_ope *txe)
+{
+	return (txe->efa_outstanding_tx_ops == 0) &&
+	       (txe->internal_flags & EFA_RDM_TXE_RECEIPT_RECEIVED);
+}
 
 int efa_rdm_ope_prepare_to_post_read(struct efa_rdm_ope *ope);
 
@@ -340,6 +368,6 @@ ssize_t efa_rdm_ope_repost_ope_queued_before_handshake(struct efa_rdm_ope *ope);
 
 ssize_t efa_rdm_txe_prepare_local_read_pkt_entry(struct efa_rdm_ope *txe);
 
-int efa_rdm_ope_process_queued_ope(struct efa_rdm_ope *ope, uint16_t flag);
+int efa_rdm_ope_process_queued_ope(struct efa_rdm_ope *ope, uint32_t flag);
 
 #endif

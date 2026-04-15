@@ -959,7 +959,7 @@ monitor_shm_init(struct monitor_context *mon_ctx)
 	}
 
 
-	if (snprintf(mon_ctx->shm_name, PATH_MAX, "%s/%u_%u_%lu_%lu_%s",
+	if (snprintf(mon_ctx->shm_name, PATH_MAX, "%s/%u_%u_%" PRIu64 "_%lu_%s",
 		     outpath, getppid(), getpid(), monitor_get_id(),job_id,
 		     hprov->name) < 0) {
 		FI_WARN(hprov, FI_LOG_CORE, "Failed so format shm name!\n");
@@ -1151,12 +1151,13 @@ static int monitor_env_init(void)
 			"Number of API calls before synchronisation files are checked for data request. (default: %d)",
 			mon_env.tick_max);
 
-	fi_param_get_int(prov, "tick_max", &signed_tick_max);
-	if (signed_tick_max < 0) {
-		FI_WARN(prov, FI_LOG_CORE, "Tick is negative!\n");
-		return -EOVERFLOW;
+	if (fi_param_get_int(prov, "tick_max", &signed_tick_max) == FI_SUCCESS) {
+		if (signed_tick_max < 0) {
+			FI_WARN(prov, FI_LOG_CORE, "Tick is negative!\n");
+			return -EOVERFLOW;
+		}
+		mon_env.tick_max = (unsigned int)signed_tick_max;
 	}
-	mon_env.tick_max = (unsigned int)signed_tick_max;
 
 	fi_param_define(prov, "file_mode", FI_PARAM_INT,
 			"POSIX mode/permission for synchronisation files. (default: %04o)",

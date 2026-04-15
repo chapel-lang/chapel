@@ -336,6 +336,16 @@ void xnet_connect_done(struct xnet_ep *ep)
 		goto disable;
 	}
 
+	/* Enable keepalive to make sure the socket status can be reset in time
+	 * if the remote peer is restarted after it gets connreq but not replies.
+	 */
+	ret = xnet_enable_keepalive(ep);
+	if (ret) {
+		FI_WARN(&xnet_prov, FI_LOG_EP_CTRL, "%p set tcp keepalive failure:%d\n",
+			ep, ret);
+		goto disable;
+	}
+
 	ret = xnet_send_cm_msg(ep);
 	if (ret)
 		goto disable;

@@ -90,10 +90,13 @@
 #include "config.h"
 
 #include <fcntl.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+
+#include <ofi_lock.h>
 
 #include "cxip.h"
 
@@ -101,11 +104,26 @@ bool cxip_coll_trace_initialized;
 bool cxip_coll_trace_muted;
 bool cxip_coll_trace_append;
 bool cxip_coll_trace_linebuf;
+bool cxip_coll_prod_trace_initialized;
+int cxip_coll_prod_trace_current;
+int cxip_coll_prod_trace_max_idx;
+int cxip_coll_prod_trace_ln_max;
+char **cxip_coll_prod_trace_buffer;
 int cxip_coll_trace_rank;
 int cxip_coll_trace_numranks;
 char *cxip_coll_trace_pathname;
 FILE *cxip_coll_trace_fid;
 uint64_t cxip_coll_trace_mask;
+
+static struct ofi_genlock *ep_lock;
+
+#define CXIP_DBG(...) _CXIP_DBG(FI_LOG_EP_CTRL, __VA_ARGS__)
+#define CXIP_INFO(...) _CXIP_INFO(FI_LOG_EP_CTRL, __VA_ARGS__)
+#define CXIP_WARN(...) _CXIP_WARN(FI_LOG_EP_CTRL, __VA_ARGS__)
+
+/* modular increment/decrement */
+#define INCMOD(val, mod) ((val) = ((val)+1)%(mod))
+#define DECMOD(val, mod) ((val) = ((val)+(mod)-1)%(mod))
 
 /* Get environment variable as string representation of int
  * Return -1 if undefined, or not-a-number.
@@ -137,7 +155,69 @@ static int getenv_is_set(const char *name)
 	return 1;
 }
 
-void cxip_coll_trace_init(void)
+static void cxip_coll_prod_trace_free(void)
+{
+	int i;
+
+	if (!cxip_coll_prod_trace_initialized)
+		return;
+
+	for (i = 0; i < cxip_coll_prod_trace_max_idx; i++)
+		free(cxip_coll_prod_trace_buffer[i]);
+
+	free(cxip_coll_prod_trace_buffer);
+}
+
+static void cxip_coll_prod_trace_alloc(void)
+{
+	int i;
+	int j;
+	char fail_msg[] = "Failed to allocate memory for debug trace buffers";
+
+	cxip_coll_prod_trace_buffer =
+		calloc(cxip_coll_prod_trace_max_idx, sizeof(char *));
+
+	if (cxip_coll_prod_trace_buffer == NULL) {
+		CXIP_WARN("%s\n", fail_msg);
+		cxip_coll_prod_trace_initialized = false;
+		return;
+	}
+
+	for (i = 0; i < cxip_coll_prod_trace_max_idx; i++) {
+		cxip_coll_prod_trace_buffer[i] =
+			calloc(cxip_coll_prod_trace_ln_max, sizeof(char));
+		if (cxip_coll_prod_trace_buffer[i] == NULL) {
+			CXIP_WARN("%s\n", fail_msg);
+			for (j = 0; j < i; j++)
+				free(cxip_coll_prod_trace_buffer[j]);
+			free(cxip_coll_prod_trace_buffer);
+			cxip_coll_prod_trace_initialized = false;
+			return;
+		}
+	}
+}
+
+static void cxip_coll_handle_signal(int signum)
+{
+	cxip_coll_print_prod_trace();
+}
+
+static void cxip_coll_install_sig_handler(void)
+{
+	struct sigaction sa;
+
+	if (!cxip_coll_prod_trace_initialized)
+		return;
+
+	sa.sa_handler = cxip_coll_handle_signal;
+	sigemptyset(&sa.sa_mask);
+	sa.sa_flags = 0;
+
+	if (sigaction(SIGUSR1, &sa, NULL) != 0)
+		cxip_coll_prod_trace_initialized = false;
+}
+
+void cxip_coll_trace_init(struct cxip_ep_obj *ep_obj)
 {
 	const char *fpath;
 	int ret;
@@ -171,25 +251,53 @@ void cxip_coll_trace_init(void)
 		cxip_coll_trace_set(CXIP_TRC_COLL_DEBUG);
 	if (getenv_is_set("CXIP_TRC_TEST_CODE"))
 		cxip_coll_trace_set(CXIP_TRC_TEST_CODE);
+	if (getenv_is_set("CXIP_COLL_PROD_TRACE")) {
+		cxip_coll_prod_trace_initialized = true;
 
-	/* if no trace masks set, do nothing */
-	if (!cxip_coll_trace_mask)
+		ep_lock = &ep_obj->lock;
+
+		cxip_coll_prod_trace_max_idx =
+			getenv_int("CXIP_COLL_PROD_TRACE_NUM_LINES");
+		if (cxip_coll_prod_trace_max_idx < 0)
+			cxip_coll_prod_trace_max_idx = 10000;
+
+		cxip_coll_prod_trace_ln_max =
+			getenv_int("CXIP_COLL_PROD_TRACE_LINE_LEN");
+		if (cxip_coll_prod_trace_ln_max < 0)
+			cxip_coll_prod_trace_ln_max = 130;
+
+		cxip_coll_install_sig_handler();
+		cxip_coll_prod_trace_alloc();
+	}
+
+	/* if no trace masks set, and prod tracing wasn't requested,
+	 * do nothing
+	 */
+	if (!cxip_coll_trace_mask && !cxip_coll_prod_trace_initialized)
 		return;
 
 	if (!fpath || !*fpath)
 		fpath = "trace";
-	ret = asprintf(&cxip_coll_trace_pathname, "%s%d", fpath, cxip_coll_trace_rank);
+	ret = asprintf(&cxip_coll_trace_pathname, "%s%d", fpath,
+		       cxip_coll_trace_rank);
 	if (ret <= 0) {
-		fprintf(stderr, "asprintf() failed = %s\n", strerror(ret));
+		fprintf(stderr, "asprintf() failed = %s\n",
+			strerror(ret));
+		cxip_coll_prod_trace_free();
+		cxip_coll_prod_trace_initialized = false;
 		return;
 	}
 	cxip_coll_trace_fid =
-		fopen(cxip_coll_trace_pathname, cxip_coll_trace_append ? "a" : "w");
+		fopen(cxip_coll_trace_pathname,
+		      cxip_coll_trace_append ? "a" : "w");
 	if (!cxip_coll_trace_fid) {
-		fprintf(stderr, "open('%s') failed: %s\n", cxip_coll_trace_pathname,
+		fprintf(stderr, "open('%s') failed: %s\n",
+			cxip_coll_trace_pathname,
 			strerror(errno));
 		free(cxip_coll_trace_pathname);
 		cxip_coll_trace_pathname = NULL;
+		cxip_coll_prod_trace_free();
+		cxip_coll_prod_trace_initialized = false;
 		return;
 	}
 	if (cxip_coll_trace_linebuf && cxip_coll_trace_fid)
@@ -217,7 +325,67 @@ void cxip_coll_trace_close(void)
 			cxip_coll_trace_pathname = NULL;
 		}
 	}
+
+	cxip_coll_prod_trace_free();
 	cxip_coll_trace_initialized = false;
+	cxip_coll_prod_trace_initialized = false;
+}
+
+void cxip_coll_print_prod_trace(void)
+{
+	int current;
+	int i;
+	int idx;
+
+	if (!cxip_coll_prod_trace_initialized)
+		return;
+
+	current = cxip_coll_prod_trace_current;
+
+	write(fileno(cxip_coll_trace_fid), "---- start ----\n",
+	      strlen("---- start ----\n"));
+
+	for (i = 0; i < cxip_coll_prod_trace_max_idx; i++) {
+		idx = (current + i) % cxip_coll_prod_trace_max_idx;
+		if (cxip_coll_prod_trace_buffer[idx])
+			/* write() is safe in signal handlers */
+			write(fileno(cxip_coll_trace_fid),
+			      cxip_coll_prod_trace_buffer[idx],
+			      strlen(cxip_coll_prod_trace_buffer[idx]));
+	}
+
+	write(fileno(cxip_coll_trace_fid), "---- end ----\n",
+	      strlen("---- end ----\n"));
+
+	cxip_coll_trace_flush();
+}
+
+int cxip_coll_trace_attr cxip_coll_prod_trace(const char *fmt, ...)
+{
+	va_list args;
+	char *str;
+	int len;
+	int current;
+
+	ofi_genlock_lock(ep_lock);
+
+	current = cxip_coll_prod_trace_current;
+
+	va_start(args, fmt);
+	len = vasprintf(&str, fmt, args);
+	va_end(args);
+	if (len >= 0) {
+		len = snprintf(cxip_coll_prod_trace_buffer[current],
+			       cxip_coll_prod_trace_ln_max,
+			       "[%lu][%2d|%2d] %s",
+			       ofi_gettime_ns(), cxip_coll_trace_rank,
+			       cxip_coll_trace_numranks, str);
+		free(str);
+		INCMOD(cxip_coll_prod_trace_current,
+		       cxip_coll_prod_trace_max_idx);
+	}
+	ofi_genlock_unlock(ep_lock);
+	return len;
 }
 
 int cxip_coll_trace_attr cxip_coll_trace(const char *fmt, ...)

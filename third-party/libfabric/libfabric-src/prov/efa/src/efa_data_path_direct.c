@@ -160,10 +160,10 @@ void efa_data_path_direct_qp_finalize(struct efa_qp *efa_qp)
  * @note This function requires that the underlying IBV completion queue
  *       has been successfully created before being called
  */
-int efa_data_path_direct_cq_initialize(struct efa_cq *efa_cq)
+int efa_data_path_direct_cq_initialize(struct efa_ibv_cq *ibv_cq)
 {
 	struct efadv_cq_attr attr = {0};  /* Hardware CQ attributes */
-	struct efa_data_path_direct_cq *data_path_direct = &efa_cq->ibv_cq.data_path_direct;
+	struct efa_data_path_direct_cq *data_path_direct = &ibv_cq->data_path_direct;
 	int ret;
 
 	/* Initialize the direct completion queue structure */
@@ -183,14 +183,14 @@ int efa_data_path_direct_cq_initialize(struct efa_cq *efa_cq)
 	}
 
 	/* Query hardware completion queue attributes from rdma-core */
-	ret = efadv_query_cq(ibv_cq_ex_to_cq(efa_cq->ibv_cq.ibv_cq_ex), &attr,
+	ret = efadv_query_cq(ibv_cq_ex_to_cq(ibv_cq->ibv_cq_ex), &attr,
 		     sizeof(attr));
 	if (ret != FI_SUCCESS) {
 		return ret;
 	}
 
 	/* Mark direct CQ operations as enabled */
-	efa_cq->ibv_cq.data_path_direct_enabled = true;
+	ibv_cq->data_path_direct_enabled = true;
 
 	/* Configure completion queue with hardware attributes */
 	data_path_direct->buffer = attr.buffer;           /* Hardware CQ buffer */

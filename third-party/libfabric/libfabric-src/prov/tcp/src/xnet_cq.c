@@ -129,6 +129,7 @@ void xnet_report_success(struct xnet_xfer_entry *xfer_entry)
 	struct util_cq *cq;
 	uint64_t flags, data, tag;
 	size_t len;
+	int ret;
 
 	if (xfer_entry->ctrl_flags & (XNET_INTERNAL_XFER | XNET_SAVED_XFER))
 		return;
@@ -172,14 +173,18 @@ void xnet_report_success(struct xnet_xfer_entry *xfer_entry)
 	}
 
 	if (cq->src) {
-		ofi_cq_write_src(cq, xfer_entry->context, flags, len,
-				 xfer_entry->user_buf, data, tag,
-				 xfer_entry->src_addr);
+		ret = ofi_cq_write_src(cq, xfer_entry->context, flags, len,
+				       xfer_entry->user_buf, data, tag,
+				       xfer_entry->src_addr);
 	} else {
-		ofi_cq_write(cq, xfer_entry->context, flags, len,
-			     xfer_entry->user_buf, data, tag);
+		ret = ofi_cq_write(cq, xfer_entry->context, flags, len,
+				   xfer_entry->user_buf, data, tag);
 	}
-	if (cq->wait)
+
+	if (ret) 
+		FI_WARN(&xnet_prov, FI_LOG_CQ, "cq write failed (%s)\n",
+			fi_strerror(ret));
+	else if (cq->wait)
 		cq->wait->signal(cq->wait);
 }
 

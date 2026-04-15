@@ -49,6 +49,7 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/time.h>
+#include <inttypes.h>
 
 #include "ofi.h"
 #include "ofi_osd.h"
@@ -166,7 +167,7 @@ int ofi_shm_map(struct util_shm *shm, const char *name, size_t size,
 	}
 
 	FI_DBG(&core_prov, FI_LOG_CORE,
-		"Creating shm segment :%s (size: %lu)\n", fname, size);
+		"Creating shm segment :%s (size: %zu)\n", fname, size);
 
 	shm->shared_fd = shm_open(fname, flags, S_IRUSR | S_IWUSR);
 	if (shm->shared_fd < 0) {

@@ -408,12 +408,11 @@ static inline ssize_t opx_shm_tx_close(struct opx_shm_tx *tx, const uint32_t seg
 static inline ssize_t opx_shm_tx_fini(struct opx_shm_tx *tx)
 {
 	RbtIterator	     itr;
-	uint32_t	     segment_index;
 	struct opx_shm_info *shm_info;
 
 	itr = rbtBegin(tx->shm_info_rbtree);
 	while (itr) {
-		rbtKeyValue(tx->shm_info_rbtree, itr, (void **) &segment_index, (void **) &shm_info);
+		shm_info = *(rbtValuePtr(tx->shm_info_rbtree, itr));
 		if (shm_info->connection.segment_ptr != NULL) {
 			munmap(shm_info->connection.segment_ptr, shm_info->connection.segment_size);
 		}

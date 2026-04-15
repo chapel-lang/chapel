@@ -469,11 +469,8 @@ static PSMI_HAL_INLINE psm2_error_t psm3_hfp_verbs_ips_ipsaddr_start_reconnect(
 		return err;	// caller will fatal error
 	}
 	rc_qp = SLIST_FIRST(&ipsaddr->verbs.rc_qps);
-	if (PSM2_OK != psm_verbs_init_send_allocator(&rc_qp->send_allocator,
-						&proto->ep->verbs_ep.send_pool)) {
-		_HFI_ERROR("can't init RC QP send allocator\n");
-		return PSM2_INTERNAL_ERR;	// caller will fatal error
-	}
+	psm_verbs_init_send_allocator(&rc_qp->send_allocator,
+				      &proto->ep->verbs_ep.send_pool);
 
 	_HFI_CONNDBG("[ipsaddr %p] replacement RC QP %u rcnt %u\n", ipsaddr,
 				rc_qp->qp->qp_num, rc_qp->reconnect_count);
@@ -696,12 +693,8 @@ static PSMI_HAL_INLINE psm2_error_t psm3_hfp_verbs_ips_ipsaddr_init_connections(
 			goto fail;
 		}
 		rc_qp = SLIST_FIRST(&ipsaddr->verbs.rc_qps);
-		if (PSM2_OK != psm_verbs_init_send_allocator(&rc_qp->send_allocator,
-							&proto->ep->verbs_ep.send_pool)) {
-			_HFI_ERROR("can't init RC QP send allocator\n");
-			err = PSM2_INTERNAL_ERR;
-			goto fail;
-		}
+		psm_verbs_init_send_allocator(&rc_qp->send_allocator,
+					      &proto->ep->verbs_ep.send_pool);
 #else
 		struct ibv_qp_cap qp_cap;
 		ipsaddr->verbs.rc_qp = rc_qp_create(proto->ep, ipsaddr, &qp_cap);
@@ -713,12 +706,8 @@ static PSMI_HAL_INLINE psm2_error_t psm3_hfp_verbs_ips_ipsaddr_init_connections(
 		}
 		ipsaddr->verbs.rc_qp_max_recv_wr = qp_cap.max_recv_wr;
 		ipsaddr->verbs.rc_qp_max_inline_data = qp_cap.max_inline_data;
-		if (PSM2_OK != psm_verbs_init_send_allocator(&ipsaddr->verbs.send_allocator,
-							&proto->ep->verbs_ep.send_pool)) {
-			_HFI_ERROR("can't init RC QP send allocator\n");
-			err = PSM2_INTERNAL_ERR;
-			goto fail;
-		}
+		psm_verbs_init_send_allocator(&ipsaddr->verbs.send_allocator,
+					      &proto->ep->verbs_ep.send_pool);
 #endif
 		_HFI_CONNDBG("[ipsaddr %p] RC QP %u\n",
 #ifdef PSM_RC_RECONNECT

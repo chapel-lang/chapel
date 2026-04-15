@@ -388,12 +388,12 @@ err_free:
 	return ret;
 }
 
-#if HAVE_CUDA || HAVE_NEURON || HAVE_SYNAPSEAI
+#if EFA_HAVE_NON_SYSTEM_HMEM
 void efa_prov_info_direct_set_hmem_flags(struct fi_info *prov_info)
 {
-	int i;
 	enum fi_hmem_iface iface;
 	struct efa_hmem_info *hmem_info;
+	bool any_hmem_initialized = false;
 
 	assert(prov_info->ep_attr->type == FI_EP_RDM);
 
@@ -407,15 +407,18 @@ void efa_prov_info_direct_set_hmem_flags(struct fi_info *prov_info)
 	}
 
 	/* Check if HMEM libraries are available at runtime */
-	if (!ofi_hmem_is_initialized(FI_HMEM_CUDA) &&
-	    !ofi_hmem_is_initialized(FI_HMEM_NEURON) &&
-	    !ofi_hmem_is_initialized(FI_HMEM_SYNAPSEAI)) {
-			return;
+	EFA_HMEM_IFACE_FOREACH_NON_SYSTEM(iface) {
+		if (ofi_hmem_is_initialized(iface)) {
+			any_hmem_initialized = true;
+			break;
+		}
 	}
 
+	if (!any_hmem_initialized)
+		return;
+
 	/* EFA direct only supports HMEM when p2p support is available */
-	EFA_HMEM_IFACE_FOREACH_NON_SYSTEM(i) {
-		iface = efa_hmem_ifaces[i];
+	EFA_HMEM_IFACE_FOREACH_NON_SYSTEM(iface) {
 		hmem_info = &g_efa_hmem_info[iface];
 		if (hmem_info->initialized && !hmem_info->p2p_supported_by_device) {
 			EFA_INFO(FI_LOG_CORE,
@@ -433,7 +436,7 @@ void efa_prov_info_direct_set_hmem_flags(struct fi_info *prov_info)
 	prov_info->domain_attr->mr_mode	|= FI_MR_HMEM;
 }
 #else
-void efa_prov_info_direct_set_hmem_flags(struct fi_info *prov_info, enum fi_ep_type ep_type)
+void efa_prov_info_direct_set_hmem_flags(struct fi_info *prov_info)
 {
 }
 #endif
@@ -472,20 +475,17 @@ int efa_prov_info_alloc(struct fi_info **prov_info_ptr,
 		prov_info->caps	= EFA_RDM_CAPS;
 
 		/* Claim RMA support in the efa-direct path only if read, write
-		 * and unsolicited write are all available
+		 * are all available.
 		 * Older versions of rdma-core do not contain the symbol
-		 * EFADV_DEVICE_ATTR_CAPS_UNSOLICITED_WRITE_RECV, so we only
-		 * check for the unsolicited write recv cap only when the
+		 * EFADV_DEVICE_ATTR_CAPS_RDMA_WRITE, so we only
+		 * check for the rdma write cap when the
 		 * rdma-core is new enough
 		 */
-#if HAVE_CAPS_UNSOLICITED_WRITE_RECV
+#if HAVE_CAPS_RDMA_WRITE
 		if (device->device_caps & EFADV_DEVICE_ATTR_CAPS_RDMA_READ &&
-		    device->device_caps & EFADV_DEVICE_ATTR_CAPS_RDMA_WRITE &&
-		    device->device_caps &
-			    EFADV_DEVICE_ATTR_CAPS_UNSOLICITED_WRITE_RECV)
+		    device->device_caps & EFADV_DEVICE_ATTR_CAPS_RDMA_WRITE)
 			prov_info->caps |= (OFI_TX_RMA_CAPS | OFI_RX_RMA_CAPS);
 #endif
-
 	} else {
 		if (ep_type != FI_EP_DGRAM) {
 			EFA_WARN(FI_LOG_DOMAIN, "Unsupported EFA info type: %d\n", ep_type);
@@ -534,11 +534,11 @@ err_free:
 /**
  * @brief allocate an prov_info object that matches the functionality of EFA RDM endpoint
  *
- * EFA RDM endpoint implemented mulitple additional functionalities over rdma-core
+ * EFA RDM endpoint implemented multiple additional functionalities over rdma-core
  * SRD QP. The added functionalities
  * include:
  *
- * tag matching, orderred send/receive, message segmentation,
+ * tag matching, ordered send/receive, message segmentation,
  * emulated RMA/atomic emulation, multi recv.
  *
  * This function allocates a prov_info object the matches EFA RDM endpoint's functionality.
@@ -562,6 +562,8 @@ int efa_prov_info_alloc_for_rdm(struct fi_info **prov_info_rdm_ptr,
 	uint64_t efa_domain_caps = FI_LOCAL_COMM | FI_REMOTE_COMM;
 
 	struct fi_info *prov_info_rdm;
+	enum fi_hmem_iface iface;
+	bool any_hmem_initialized = false;
 
 	assert(device->rdm_info);
 
@@ -680,10 +682,14 @@ int efa_prov_info_alloc_for_rdm(struct fi_info **prov_info_rdm_ptr,
 			prov_info_rdm->rx_attr->size = efa_env.rx_size;
 	}
 
+	EFA_HMEM_IFACE_FOREACH_NON_SYSTEM(iface) {
+		if (ofi_hmem_is_initialized(iface)) {
+			any_hmem_initialized = true;
+			break;
+		}
+	}
 	/* EFA RDM can support HMEM even if p2p support is not available */
-	if ((ofi_hmem_is_initialized(FI_HMEM_CUDA) ||
-	     ofi_hmem_is_initialized(FI_HMEM_NEURON) ||
-	     ofi_hmem_is_initialized(FI_HMEM_SYNAPSEAI))) {
+	if (any_hmem_initialized) {
 		prov_info_rdm->caps |= FI_HMEM;
 		prov_info_rdm->tx_attr->caps |= FI_HMEM;
 		prov_info_rdm->rx_attr->caps |= FI_HMEM;
@@ -762,6 +768,25 @@ int efa_prov_info_compare_pci_bus_id(const struct fi_info *hints,
 	if (hints && hints->nic && hints->nic->bus_attr && hints->nic->bus_attr->bus_type == FI_BUS_PCI) {
 		return (hints->nic->bus_attr->attr.pci.bus_id == info->nic->bus_attr->attr.pci.bus_id) ? 0 : 1;
 	}
+
+	return 0;
+}
+
+/*
+ * @brief Compare the fabric name specified via hints and match it with the
+ *		  fabric name in prov_info
+ *
+ * @param      info[in]        info object
+ * @param      hints[in]       hints from user's call to fi_getinfo()
+ *
+ * return      1 - If the names are different
+ *             0 - No difference, names match.
+ */
+int efa_prov_info_compare_fabric_name(const struct fi_info *hints,
+				      const struct fi_info *info)
+{
+	if (hints && hints->fabric_attr && hints->fabric_attr->name)
+		return strcmp(info->fabric_attr->name, hints->fabric_attr->name);
 
 	return 0;
 }

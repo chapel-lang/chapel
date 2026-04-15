@@ -66,7 +66,7 @@ void ofi_mem_init(void)
 	hpsize = ofi_get_hugepage_size();
 	if (hpsize > 0) {
 		n = scandir("/sys/kernel/mm/hugepages", &pglist, NULL, NULL);
-		max_cnt = (n < 0) ? 2 : n + 1;
+		max_cnt = (n <= 0) ? 2 : (size_t)n + 1;
 	} else {
 		max_cnt = 1;
 		n = 0;

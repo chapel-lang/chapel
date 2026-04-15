@@ -755,6 +755,9 @@ efa_rdm_msg_alloc_rxe_for_msgrtm(struct efa_rdm_ep *ep,
 	struct efa_rdm_ope *rxe;
 	int ret;
 	int pkt_type;
+#if HAVE_LTTNG
+	struct efa_rdm_pke *orig_pke_ptr;
+#endif
 
 	peer_srx = util_get_peer_srx(ep->peer_srx_ep);
 
@@ -770,9 +773,16 @@ efa_rdm_msg_alloc_rxe_for_msgrtm(struct efa_rdm_ep *ep,
 			efa_base_ep_write_eq_error(&ep->base_ep, FI_ENOBUFS, FI_EFA_ERR_RXE_POOL_EXHAUSTED);
 			return NULL;
 		}
-		efa_rdm_tracepoint(msg_match_expected_nontagged, rxe->msg_id,
-			    (size_t) rxe->cq_entry.op_context, rxe->total_len);
+		efa_rdm_tracepoint(
+			msg_match_expected_nontagged, (uint64_t) *pkt_entry_ptr,
+			(*pkt_entry_ptr)->pkt_size, rxe->msg_id,
+			(size_t) rxe->cq_entry.op_context, rxe->total_len);
 	} else if (ret == -FI_ENOENT) { /* No matched rxe is found */
+
+#if HAVE_LTTNG
+		orig_pke_ptr = *pkt_entry_ptr;
+#endif
+
 		/*
 		 * efa_rdm_msg_alloc_unexp_rxe_for_rtm() might release pkt_entry,
 		 * thus we have to use pkt_entry_ptr here
@@ -785,8 +795,14 @@ efa_rdm_msg_alloc_rxe_for_msgrtm(struct efa_rdm_ep *ep,
 		(*pkt_entry_ptr)->ope = rxe;
 		peer_rxe->peer_context = (*pkt_entry_ptr);
 		rxe->peer_rxe = peer_rxe;
-		efa_rdm_tracepoint(msg_recv_unexpected_nontagged, rxe->msg_id,
-			    (size_t) rxe->cq_entry.op_context, rxe->total_len);
+
+#if HAVE_LTTNG
+		efa_rdm_tracepoint(msg_recv_unexpected_nontagged, (uint64_t) orig_pke_ptr,
+				   (*pkt_entry_ptr)->pkt_size, rxe->msg_id,
+				   (size_t) rxe->cq_entry.op_context,
+				   rxe->total_len, rxe->tag, rxe->peer->conn->fi_addr);
+#endif
+
 	} else { /* Unexpected errors */
 		EFA_WARN(FI_LOG_EP_CTRL,
 			"get_msg failed, error: %d\n",
@@ -827,6 +843,9 @@ efa_rdm_msg_alloc_rxe_for_tagrtm(struct efa_rdm_ep *ep,
 	struct efa_rdm_ope *rxe;
 	int ret;
 	int pkt_type;
+#if HAVE_LTTNG
+	struct efa_rdm_pke *orig_pke_ptr;
+#endif
 
 	peer = (*pkt_entry_ptr)->peer;
 
@@ -843,9 +862,15 @@ efa_rdm_msg_alloc_rxe_for_tagrtm(struct efa_rdm_ep *ep,
 			efa_base_ep_write_eq_error(&ep->base_ep, FI_ENOBUFS, FI_EFA_ERR_RXE_POOL_EXHAUSTED);
 			return NULL;
 		}
-		efa_rdm_tracepoint(msg_match_expected_tagged, rxe->msg_id,
-			    (size_t) rxe->cq_entry.op_context, rxe->total_len);
+		efa_rdm_tracepoint(
+			msg_match_expected_tagged, (uint64_t) *pkt_entry_ptr,
+			(*pkt_entry_ptr)->pkt_size, rxe->msg_id,
+			(size_t) rxe->cq_entry.op_context, rxe->total_len);
 	} else if (ret == -FI_ENOENT) { /* No matched rxe is found */
+
+#if HAVE_LTTNG
+		orig_pke_ptr = *pkt_entry_ptr;
+#endif
 		/*
 		 * efa_rdm_msg_alloc_unexp_rxe_for_rtm() might release pkt_entry,
 		 * thus we have to use pkt_entry_ptr here
@@ -865,9 +890,14 @@ efa_rdm_msg_alloc_rxe_for_tagrtm(struct efa_rdm_ep *ep,
 
 		peer_rxe->peer_context = *pkt_entry_ptr;
 		rxe->peer_rxe = peer_rxe;
-		efa_rdm_tracepoint(msg_recv_unexpected_tagged, rxe->msg_id,
-			    (size_t) rxe->cq_entry.op_context, rxe->total_len,
-			    rxe->tag, rxe->peer->conn->fi_addr);
+
+#if HAVE_LTTNG
+		efa_rdm_tracepoint(msg_recv_unexpected_tagged, (uint64_t) orig_pke_ptr,
+				   (*pkt_entry_ptr)->pkt_size, rxe->msg_id,
+				   (size_t) rxe->cq_entry.op_context,
+				   rxe->total_len, rxe->tag, rxe->peer->conn->fi_addr);
+#endif
+
 	} else { /* Unexpected errors */
 		EFA_WARN(FI_LOG_EP_CTRL,
 			"get_tag failed, error: %d\n",
@@ -974,8 +1004,7 @@ ssize_t efa_rdm_msg_recv(struct fid_ep *ep_fid, void *buf, size_t len,
 	iov.iov_len = len;
 
 	efa_rdm_msg_construct(&msg, &iov, &desc, 1, src_addr, context, 0);
-	return efa_rdm_msg_generic_recv(ep, &msg, 0, 0, ofi_op_msg,
-					efa_rdm_rx_flags(ep) | ep->base_ep.util_ep.rx_msg_flags);
+	return efa_rdm_msg_generic_recv(ep, &msg, 0, 0, ofi_op_msg, efa_rdm_rx_flags(ep));
 }
 
 static
@@ -989,8 +1018,7 @@ ssize_t efa_rdm_msg_recvv(struct fid_ep *ep_fid, const struct iovec *iov,
 	ep = container_of(ep_fid, struct efa_rdm_ep, base_ep.util_ep.ep_fid.fid);
 
 	efa_rdm_msg_construct(&msg, iov, desc, count, src_addr, context, 0);
-	return efa_rdm_msg_generic_recv(ep, &msg, 0, 0, ofi_op_msg,
-					efa_rdm_rx_flags(ep) | ep->base_ep.util_ep.rx_msg_flags);
+	return efa_rdm_msg_generic_recv(ep, &msg, 0, 0, ofi_op_msg, efa_rdm_rx_flags(ep));
 }
 
 /**

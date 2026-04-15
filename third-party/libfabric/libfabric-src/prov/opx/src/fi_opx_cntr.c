@@ -80,13 +80,15 @@ static uint64_t fi_opx_cntr_read(struct fid_cntr *cntr)
 			for (i = 0; i < count; ++i) {
 				fi_opx_lock(&opx_cntr->progress.ep[i]->lock);
 				fi_opx_ep_rx_poll(&opx_cntr->progress.ep[i]->ep_fid, 0, OPX_RELIABILITY,
-						  FI_OPX_HDRQ_MASK_RUNTIME, OPX_HFI1_TYPE, OPX_IS_CTX_SHARING_ENABLED);
+						  FI_OPX_HDRQ_MASK_RUNTIME, OPX_SW_HFI1_TYPE,
+						  OPX_IS_CTX_SHARING_ENABLED);
 				fi_opx_unlock(&opx_cntr->progress.ep[i]->lock);
 			}
 		} else {
 			for (i = 0; i < count; ++i) {
 				fi_opx_ep_rx_poll(&opx_cntr->progress.ep[i]->ep_fid, 0, OPX_RELIABILITY,
-						  FI_OPX_HDRQ_MASK_RUNTIME, OPX_HFI1_TYPE, OPX_IS_CTX_SHARING_ENABLED);
+						  FI_OPX_HDRQ_MASK_RUNTIME, OPX_SW_HFI1_TYPE,
+						  OPX_IS_CTX_SHARING_ENABLED);
 			}
 		}
 	}
@@ -147,14 +149,14 @@ static int fi_opx_cntr_wait(struct fid_cntr *cntr, uint64_t threshold, int timeo
 				for (i = 0; i < count; ++i) {
 					fi_opx_lock(&opx_cntr->progress.ep[i]->lock);
 					fi_opx_ep_rx_poll(&opx_cntr->progress.ep[i]->ep_fid, 0, OPX_RELIABILITY,
-							  FI_OPX_HDRQ_MASK_RUNTIME, OPX_HFI1_TYPE,
+							  FI_OPX_HDRQ_MASK_RUNTIME, OPX_SW_HFI1_TYPE,
 							  OPX_IS_CTX_SHARING_ENABLED);
 					fi_opx_unlock(&opx_cntr->progress.ep[i]->lock);
 				}
 			} else {
 				for (i = 0; i < count; ++i) {
 					fi_opx_ep_rx_poll(&opx_cntr->progress.ep[i]->ep_fid, 0, OPX_RELIABILITY,
-							  FI_OPX_HDRQ_MASK_RUNTIME, OPX_HFI1_TYPE,
+							  FI_OPX_HDRQ_MASK_RUNTIME, OPX_SW_HFI1_TYPE,
 							  OPX_IS_CTX_SHARING_ENABLED);
 				}
 			}

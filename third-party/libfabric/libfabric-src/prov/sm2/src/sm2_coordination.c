@@ -563,8 +563,8 @@ static void *sm2_mmap_shrink_to_size(struct sm2_mmap *map, size_t shrink_size)
 		if (map->base == MAP_FAILED) {
 			FI_WARN(&sm2_prov, FI_LOG_AV,
 				"Failed to remap when decreasing the map size. "
-				"st.st_size=%ld shrink_size=%ld\n",
-				st.st_size, shrink_size);
+				"st.st_size=%jd shrink_size=%zu\n",
+				(intmax_t) st.st_size, shrink_size);
 			map->base = NULL;
 		}
 		map->size = shrink_size;

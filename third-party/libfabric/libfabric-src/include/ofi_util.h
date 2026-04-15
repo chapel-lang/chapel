@@ -1006,7 +1006,7 @@ fi_addr_t ofi_ip_av_get_fi_addr(struct util_av *av, const void *addr);
 int ofi_get_addr(uint32_t *addr_format, uint64_t flags,
 		 const char *node, const char *service,
 		 void **addr, size_t *addrlen);
-int ofi_get_src_addr(uint32_t addr_format,
+int ofi_get_src_addr(uint32_t *addr_format,
 		     const void *dest_addr, size_t dest_addrlen,
 		     void **src_addr, size_t *src_addrlen);
 void ofi_getnodename(uint16_t sa_family, char *buf, int buflen);

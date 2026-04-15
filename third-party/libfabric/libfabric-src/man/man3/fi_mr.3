@@ -14,7 +14,7 @@
 . ftr VB CB
 . ftr VBI CBI
 .\}
-.TH "fi_mr" "3" "2025\-06\-20" "Libfabric Programmer\[cq]s Manual" "Libfabric v2.3.1"
+.TH "fi_mr" "3" "2025\-12\-05" "Libfabric Programmer\[cq]s Manual" "Libfabric v2.5.1"
 .hy
 .SH NAME
 .PP
@@ -666,6 +666,7 @@ struct fi_mr_attr {
         int            ze
         int            neuron;
         int            synapseai;
+        int            rocr;
     } device;
     void               *hmem_data;
     size_t             page_size;
@@ -881,6 +882,9 @@ For FI_HMEM_NEURON, the device identifier for AWS Trainium devices.
 .TP
 \f[I]synapseai\f[R]
 For FI_HMEM_SYNAPSEAI, the device identifier for Habana Gaudi hardware.
+.TP
+\f[I]rocr\f[R]
+For FI_HMEM_ROCR, the device index for an AMD GPU.
 .SS hmem_data
 .PP
 The hmem_data field is reserved for future use and must be null.

@@ -318,6 +318,10 @@ int cxip_iomm_init(struct cxip_domain *dom)
 	enum fi_hmem_iface iface;
 	int ret;
 	bool scalable;
+	char *def_oride = NULL;
+	char *def_name = NULL;
+	enum fi_mm_state def_state;
+	bool bdef_state = false;
 
 	/* Check if ATS is supported */
 	if (cxip_env.ats && cxip_ats_check(dom))
@@ -369,7 +373,28 @@ int cxip_iomm_init(struct cxip_domain *dom)
 					&dom->iomm);
 		if (ret) {
 			CXIP_INFO("MR cache init failed: %s. MR caching disabled.\n",
-				  fi_strerror(-ret));
+				fi_strerror(-ret));
+			/* check for user override of default monitor
+			 * for system mem
+			 */
+			if(default_monitor) {
+				def_oride = getenv("FI_MR_CACHE_MONITOR");
+				def_state = default_monitor->state;
+				def_name = default_monitor->name;
+				bdef_state = def_state != FI_MM_STATE_RUNNING;
+				if(def_oride && bdef_state) {
+					CXIP_INFO("default monitor start failed\n");
+					CXIP_INFO("monitor state %d\n",
+						def_state);
+					CXIP_INFO("monitor name %s\n",
+						def_name);
+					CXIP_INFO("FI_MR_CACHE_MONITOR = %s\n",
+						def_oride);
+					CXIP_INFO("reset it to a different\n");
+					CXIP_INFO("valid monitor option\n");
+					return ret;
+				}
+			}
 		} else {
 			CXIP_INFO("MR cache using max_size %ld and max_cnt %ld\n",
 				  cache_params.max_size,cache_params.max_cnt);
@@ -424,7 +449,7 @@ static int cxip_map_cache(struct cxip_domain *dom, struct ofi_mr_info *info,
 		    !cxip_env.disable_cuda_sync_memops) {
 			ret = cuda_set_sync_memops((void *) info->iov.iov_base);
 			if (ret)
-				CXIP_WARN("CUDA sysnc_memops %p returned %d\n",
+				CXIP_WARN("CUDA sync_memops %p returned %d\n",
 					  (void *) info->iov.iov_base, ret);
 		}
 		return FI_SUCCESS;
@@ -496,7 +521,7 @@ static int cxip_map_nocache(struct cxip_domain *dom, struct fi_mr_attr *attr,
 	    !cxip_env.disable_cuda_sync_memops) {
 		ret = cuda_set_sync_memops((void *) uncached_md->md->va);
 		if (ret)
-			CXIP_WARN("CUDA sysnc_memops %p returned %d\n",
+			CXIP_WARN("CUDA sync_memops %p returned %d\n",
 				  (void *) uncached_md->md->va, ret);
 	}
 

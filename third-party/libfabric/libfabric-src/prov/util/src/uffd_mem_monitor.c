@@ -108,6 +108,9 @@ static void *ofi_uffd_handler(void *arg)
 
 	for (;;) {
 		ret = poll(fds, 2, -1);
+		if (ret < 0 && errno == EINTR)
+			continue;
+
 		if (ret < 0 || fds[1].revents)
 			break;
 
@@ -117,7 +120,7 @@ static void *ofi_uffd_handler(void *arg)
 		if (ret != sizeof(msg)) {
 			pthread_mutex_unlock(&mm_lock);
 			pthread_rwlock_unlock(&mm_list_rwlock);
-			if (errno != EAGAIN)
+			if (errno != EAGAIN && errno != EINTR)
 				break;
 			continue;
 		}
@@ -178,12 +181,12 @@ static void ofi_uffd_pagefault_handler(struct uffd_msg *msg)
 	if (flags != UFFD_PAGEFAULT_FLAG_WRITE) {
 #if HAVE_UFFD_THREAD_ID
 		FI_WARN(&core_prov, FI_LOG_MR,
-			"UFFD pagefault with unrecognized flags: %lu, address %p, thread %u\n",
-			flags, address, ptid);
+			"UFFD pagefault with unrecognized flags: %" PRIu64 ", address %p, thread %u\n",
+			(uint64_t)flags, address, ptid);
 #else
 		FI_WARN(&core_prov, FI_LOG_MR,
-			"UFFD pagefault with unrecognized flags: %lu, address %p\n",
-			flags, address);
+			"UFFD pagefault with unrecognized flags: %" PRIu64 ", address %p\n",
+			(uint64_t)flags, address);
 #endif
 		/* The faulting thread is halted at this point. In
 		 * theory we could wake it up with UFFDIO_WAKE. In

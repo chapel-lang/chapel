@@ -51,6 +51,8 @@ static struct fi_ops ucx_fabric_fi_ops = {
 	.bind = fi_no_bind,
 	.control = fi_no_control,
 	.ops_open = fi_no_ops_open,
+	.tostr = fi_no_tostr,
+	.ops_set = fi_no_ops_set,
 };
 
 static struct fi_ops_fabric ucx_fabric_ops = {

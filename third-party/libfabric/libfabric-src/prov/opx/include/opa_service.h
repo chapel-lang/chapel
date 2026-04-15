@@ -205,7 +205,7 @@ int opx_hfi_context_open_ex(int unit, int port, uint64_t open_timeout, unsigned 
 
 uint32_t opx_hfi_check_non_dw_mul_sdma(void);
 
-void opx_hfi_context_close(int fd);
+void opx_hfi_context_close(int fd_cdev, int fd_verbs);
 
 /* opx_hfi_get_user_major_version() returns the major version of the driver
    that should be used for this session of psm. Valid only after

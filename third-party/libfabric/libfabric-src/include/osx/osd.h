@@ -104,6 +104,21 @@ static inline int ofi_hugepage_enabled(void)
 	return 0;
 }
 
+static inline int ofi_open(const char* path, int flags, ...)
+{
+	va_list arg;
+	mode_t mode = 0;
+
+	// open takes a variadic argument 'mode_t mode', but not a va_list
+	// extract mode if required, as indicated by flag O_CREAT
+	if ((flags & O_CREAT) != 0) {
+		va_start(arg, flags);
+		mode = (mode_t)va_arg(arg, int);
+		va_end(arg);
+	}
+	return open(path, flags, mode);
+}
+
 static inline ssize_t ofi_process_vm_readv(pid_t pid,
 			const struct iovec *local_iov,
 			unsigned long liovcnt,

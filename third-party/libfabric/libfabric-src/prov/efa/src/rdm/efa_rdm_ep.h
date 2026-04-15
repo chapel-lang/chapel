@@ -34,18 +34,14 @@ struct efa_rdm_ep_queued_copy {
  */
 #define EFA_RDM_MAX_QUEUED_OPE_BEFORE_HANDSHAKE (16)
 
-/** @brief max number of concurrent send reuqests allowed by EFA device
- *
- * The value was from EFA device's attribute (device->efa_attr.max_sq_wr)
- */
-#define EFA_RDM_EP_MAX_WR_PER_IBV_POST_SEND (4096)
-#define EFA_RDM_EP_MAX_WR_PER_IBV_POST_RECV (8192)
-
 #define EFA_RDM_EP_MIN_PEER_POOL_SIZE (1024)
-#define EFA_RDM_EP_MIN_PEER_REORDER_BUFFER_POOL_SIZE (16)
 
 struct efa_rdm_ep {
 	struct efa_base_ep base_ep;
+
+	/* self_ah necessary for local reads when application does not insert
+	 * its own address into the AV */
+	struct efa_ah *self_ah;
 
 	/**
 	 * Default to 0
@@ -118,19 +114,18 @@ struct efa_rdm_ep {
 	/* list of pre-posted recv buffers */
 	struct dlist_entry rx_posted_buf_list;
 
-	/* Hashmap between fi_addr and efa_rdm_peer structs */
-	struct efa_rdm_ep_peer_map_entry *fi_addr_to_peer_map;
-
-	/* Hashmap between implicit peer id and efa_rdm_peer structs */
-	struct efa_rdm_ep_peer_map_entry *fi_addr_to_peer_map_implicit;
-
 	/* bufpool to hold the fi_addr->peer hashmap entries */
 	struct ofi_bufpool *peer_map_entry_pool;
+
+	/**< List of peers associated with this endpoint */
+	struct dlist_entry ep_peer_list;
 
 	/* buffer pool for peer reorder circular buffer */
 	struct ofi_bufpool *peer_robuf_pool;
 
 #if ENABLE_DEBUG
+	/* buffer pool for packet debug info */
+	struct ofi_bufpool *pke_debug_info_pool;
 	/* tx/rx_entries waiting to receive data in
          * long CTS msg/read/write protocols */
 	struct dlist_entry ope_recv_list;
@@ -197,11 +192,17 @@ struct efa_rdm_ep {
 	bool sendrecv_in_order_aligned_128_bytes; /**< whether to support in order send/recv of each aligned 128 bytes memory region */
 	bool write_in_order_aligned_128_bytes; /**< whether to support in order write of each aligned 128 bytes memory region */
 	struct efa_rdm_pke **pke_vec;
+	/* Work arrays for efa_rdm_ope_post_send to avoid stack allocation */
+	struct efa_rdm_pke **send_pkt_entry_vec;
+	int *send_pkt_entry_size_vec;
 	struct dlist_entry entry;
 	/* the count of opes queued before handshake is made with their peers */
 	size_t ope_queued_before_handshake_cnt;
 	bool homogeneous_peers; /* peers always support the same capabilities in extra_info as this ep */
 	struct fi_info *shm_info;	/* fi_info used to create shm_ep */
+
+	/* track operations with posted packets to ack a remote */
+	struct dlist_entry ope_posted_ack_list;
 };
 
 int efa_rdm_ep_flush_queued_blocking_copy_to_hmem(struct efa_rdm_ep *ep);
@@ -212,6 +213,8 @@ int efa_rdm_ep_flush_queued_blocking_copy_to_hmem(struct efa_rdm_ep *ep);
 struct efa_ep_addr *efa_rdm_ep_raw_addr(struct efa_rdm_ep *ep);
 
 struct efa_rdm_peer *efa_rdm_ep_get_peer(struct efa_rdm_ep *ep, fi_addr_t addr);
+
+struct efa_rdm_peer *efa_rdm_ep_get_peer_explicit(struct efa_rdm_ep *ep, fi_addr_t addr);
 
 int32_t efa_rdm_ep_get_peer_ahn(struct efa_rdm_ep *ep, fi_addr_t addr);
 struct efa_rdm_peer *efa_rdm_ep_get_peer_implicit(struct efa_rdm_ep *ep, fi_addr_t addr);
@@ -230,22 +233,10 @@ void efa_rdm_ep_record_tx_op_submitted(struct efa_rdm_ep *ep, struct efa_rdm_pke
 
 void efa_rdm_ep_record_tx_op_completed(struct efa_rdm_ep *ep, struct efa_rdm_pke *pkt_entry);
 
-static inline size_t efa_rdm_ep_get_rx_pool_size(struct efa_rdm_ep *ep)
-{
-	return MIN(ep->efa_max_outstanding_rx_ops, ep->base_ep.info->rx_attr->size);
-}
-
-static inline size_t efa_rdm_ep_get_tx_pool_size(struct efa_rdm_ep *ep)
-{
-	return MIN(ep->efa_max_outstanding_tx_ops, ep->base_ep.info->tx_attr->size);
-}
-
 static inline int efa_rdm_ep_need_sas(struct efa_rdm_ep *ep)
 {
 	return ((ep->base_ep.info->tx_attr->msg_order & FI_ORDER_SAS) || (ep->base_ep.info->rx_attr->msg_order & FI_ORDER_SAS));
 }
-
-
 
 /* Initialization functions */
 int efa_rdm_ep_open(struct fid_domain *domain, struct fi_info *info,
@@ -272,27 +263,6 @@ struct efa_domain *efa_rdm_ep_domain(struct efa_rdm_ep *ep)
 void efa_rdm_ep_post_internal_rx_pkts(struct efa_rdm_ep *ep);
 
 int efa_rdm_ep_bulk_post_internal_rx_pkts(struct efa_rdm_ep *ep);
-
-/**
- * @brief return whether this endpoint should write error cq entry for RNR.
- *
- * For an endpoint to write RNR completion, two conditions must be met:
- *
- * First, the end point must be able to receive RNR completion from rdma-core,
- * which means rnr_etry must be less then EFA_RNR_INFINITE_RETRY.
- *
- * Second, the app need to request this feature when opening endpoint
- * (by setting info->domain_attr->resource_mgmt to FI_RM_DISABLED).
- * The setting was saved as efa_rdm_ep->handle_resource_management.
- *
- * @param[in]	ep	endpoint
- */
-static inline
-bool efa_rdm_ep_should_write_rnr_completion(struct efa_rdm_ep *ep)
-{
-	return (ep->base_ep.rnr_retry < EFA_RNR_INFINITE_RETRY) &&
-		(ep->handle_resource_management == FI_RM_DISABLED);
-}
 
 /*
  * @brief: check whether we should use p2p for this transaction
@@ -556,27 +526,15 @@ bool efa_rdm_ep_support_unsolicited_write_recv(struct efa_rdm_ep *ep)
 	return ep->extra_info[0] & EFA_RDM_EXTRA_FEATURE_UNSOLICITED_WRITE_RECV;
 }
 
-struct efa_rdm_ep_peer_map_entry {
-	fi_addr_t addr;
-	struct efa_rdm_peer peer;
-	UT_hash_handle hndl;
-};
-
-int
-efa_rdm_ep_peer_map_insert(struct efa_rdm_ep_peer_map_entry **peer_map,
-			   fi_addr_t addr,
-			   struct efa_rdm_ep_peer_map_entry *map_entry);
-struct efa_rdm_peer *
-efa_rdm_ep_peer_map_lookup(struct efa_rdm_ep_peer_map_entry **peer_map,
-			   fi_addr_t addr);
-void efa_rdm_ep_peer_map_remove(struct efa_rdm_ep_peer_map_entry **peer_map,
-				fi_addr_t addr);
-
-void efa_rdm_ep_peer_map_implicit_to_explicit(struct efa_rdm_ep *ep,
-					      struct efa_rdm_peer *peer,
-					      fi_addr_t implicit_fi_addr,
-					      fi_addr_t explicit_fi_addr);
-
 bool efa_rdm_ep_has_unfinished_send(struct efa_rdm_ep *efa_rdm_ep);
+
+int efa_rdm_ep_close_shm_resources(struct efa_rdm_ep *efa_rdm_ep);
+
+void efa_rdm_ep_wait_send(struct efa_rdm_ep *efa_rdm_ep);
+
+/* Macro for getting local endpoint address string */
+#define EFA_RDM_GET_EP_ADDR_STR(ep, ep_addr_str) \
+	char ep_addr_str[OFI_ADDRSTRLEN] = {0}; \
+	efa_base_ep_raw_addr_str(&ep->base_ep, ep_addr_str, &(size_t){sizeof ep_addr_str});
 
 #endif

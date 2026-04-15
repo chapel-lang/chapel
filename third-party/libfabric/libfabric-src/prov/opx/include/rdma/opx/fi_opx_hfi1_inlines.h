@@ -46,7 +46,7 @@ size_t opx_hfi1_dput_write_header_and_payload_put(struct fi_opx_ep *opx_ep, unio
 						  const uint64_t sbuf_handle, uintptr_t *rbuf,
 						  const enum opx_hfi1_type hfi1_type, const uint32_t opcode)
 {
-	if (hfi1_type & (OPX_HFI1_WFR | OPX_HFI1_JKR_9B)) {
+	if (hfi1_type & (OPX_HFI1_WFR | OPX_HFI1_MIXED_9B)) {
 		hdr->qw_9B[4] = opx_ep->rx->tx.dput_9B.hdr.qw_9B[4] | (opcode << 4) | (dt64 << 16) | (op64 << 24) |
 				(payload_bytes << 48);
 		hdr->qw_9B[5] = key_or_rma_req;
@@ -96,7 +96,7 @@ size_t opx_hfi1_dput_write_header_and_payload_atomic_fetch(
 	const enum fi_hmem_iface sbuf_iface, const uint64_t sbuf_device, uintptr_t *rbuf,
 	const enum opx_hfi1_type hfi1_type)
 {
-	if (hfi1_type & (OPX_HFI1_WFR | OPX_HFI1_JKR_9B)) {
+	if (hfi1_type & (OPX_HFI1_WFR | OPX_HFI1_MIXED_9B)) {
 		hdr->qw_9B[4] = opx_ep->rx->tx.dput_9B.hdr.qw_9B[4] | (FI_OPX_HFI_DPUT_OPCODE_ATOMIC_FETCH << 4) |
 				(dt64 << 16) | (op64 << 24) | (payload_bytes << 48);
 		hdr->qw_9B[5] = key;
@@ -168,7 +168,7 @@ size_t opx_hfi1_dput_write_header_and_payload_atomic_compare_fetch(
 	const enum fi_hmem_iface cbuf_iface, const uint64_t cbuf_device, uintptr_t *rbuf,
 	const enum opx_hfi1_type hfi1_type)
 {
-	if (hfi1_type & (OPX_HFI1_WFR | OPX_HFI1_JKR_9B)) {
+	if (hfi1_type & (OPX_HFI1_WFR | OPX_HFI1_MIXED_9B)) {
 		hdr->qw_9B[4] = opx_ep->rx->tx.dput_9B.hdr.qw_9B[4] |
 				(FI_OPX_HFI_DPUT_OPCODE_ATOMIC_COMPARE_FETCH << 4) | (dt64 << 16) | (op64 << 24) |
 				(payload_bytes << 48);
@@ -222,7 +222,7 @@ size_t opx_hfi1_dput_write_header_and_payload_get(struct fi_opx_ep *opx_ep, unio
 						  const uint64_t sbuf_handle, uintptr_t *rbuf,
 						  const enum opx_hfi1_type hfi1_type)
 {
-	if (hfi1_type & (OPX_HFI1_WFR | OPX_HFI1_JKR_9B)) {
+	if (hfi1_type & (OPX_HFI1_WFR | OPX_HFI1_MIXED_9B)) {
 		hdr->qw_9B[4] = opx_ep->rx->tx.dput_9B.hdr.qw_9B[4] | (FI_OPX_HFI_DPUT_OPCODE_GET << 4) | (dt64 << 16) |
 				(payload_bytes << 48);
 		hdr->qw_9B[5] = rma_request_vaddr;
@@ -264,7 +264,7 @@ size_t opx_hfi1_dput_write_header_and_payload_rzv(struct fi_opx_ep *opx_ep, unio
 						  const uint64_t sbuf_device, const uint64_t sbuf_handle,
 						  uintptr_t *rbuf, enum opx_hfi1_type hfi1_type)
 {
-	if (hfi1_type & (OPX_HFI1_WFR | OPX_HFI1_JKR_9B)) {
+	if (hfi1_type & (OPX_HFI1_WFR | OPX_HFI1_MIXED_9B)) {
 		hdr->qw_9B[4] = opx_ep->rx->tx.rzv_dput_9B.hdr.qw_9B[4] | (opcode << 4) | (payload_bytes << 48);
 		hdr->qw_9B[5] = target_byte_counter_vaddr;
 		hdr->qw_9B[6] = fi_opx_dput_rbuf_out(*rbuf);
@@ -303,7 +303,7 @@ size_t opx_hfi1_dput_write_packet(struct fi_opx_ep *opx_ep, union opx_hfi1_packe
 {
 	uint64_t psn = (uint64_t) htonl((uint32_t) psn_orig);
 
-	if (hfi1_type & (OPX_HFI1_WFR | OPX_HFI1_JKR_9B)) {
+	if (hfi1_type & (OPX_HFI1_WFR | OPX_HFI1_MIXED_9B)) {
 		union opx_hfi1_packet_hdr *model_hdr;
 		if ((opcode == FI_OPX_HFI_DPUT_OPCODE_RZV) || (opcode == FI_OPX_HFI_DPUT_OPCODE_RZV_TID) ||
 		    (opcode == FI_OPX_HFI_DPUT_OPCODE_RZV_NONCONTIG)) {

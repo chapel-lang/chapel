@@ -402,13 +402,6 @@ struct cxip_rxc *cxip_rxc_calloc(struct cxip_ep_obj *ep_obj, void *context)
 {
 	struct cxip_rxc *rxc = NULL;
 
-	/* 
-	 * It's possible the owner provider decides to turn off
-	 * hardware offload in cxi. If that happens we need to update the
-	 * rx_match_mode.
-	 */
-	cxip_set_env_rx_match_mode();
-
 	switch (ep_obj->protocol) {
 	case FI_PROTO_CXI:
 		rxc = calloc(1, sizeof(struct cxip_rxc_hpc));
@@ -438,15 +431,15 @@ struct cxip_rxc *cxip_rxc_calloc(struct cxip_ep_obj *ep_obj, void *context)
 	rxc->domain = ep_obj->domain;
 	rxc->min_multi_recv = CXIP_EP_MIN_MULTI_RECV;
 	rxc->state = RXC_DISABLED;
-	rxc->msg_offload = cxip_env.msg_offload;
+	rxc->msg_offload = ep_obj->domain->msg_offload;
 	rxc->max_tx = cxip_env.sw_rx_tx_init_max;
 	rxc->attr = ep_obj->rx_attr;
 	rxc->hmem = !!(rxc->attr.caps & FI_HMEM);
 	rxc->pid_bits = ep_obj->domain->iface->dev->info.pid_bits;
 	cxip_rxc_orx_reqs_init(rxc);
-
-	rxc->sw_ep_only = cxip_env.rx_match_mode ==
+	rxc->sw_ep_only = ep_obj->domain->rx_match_mode ==
 					CXIP_PTLTE_SOFTWARE_MODE;
+
 	cxip_msg_counters_init(&rxc->cntrs);
 
 	/* Derived initialization/overrides */

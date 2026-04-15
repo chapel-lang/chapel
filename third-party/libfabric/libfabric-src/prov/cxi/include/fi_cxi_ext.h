@@ -57,6 +57,11 @@ enum {
 	FI_OPT_CXI_SET_PROV_KEY_CACHE,			/* bool */
 	FI_OPT_CXI_GET_PROV_KEY_CACHE,			/* bool */
 	FI_OPT_CXI_SET_RNR_MAX_RETRY_TIME,		/* uint64_t */
+	FI_OPT_CXI_SET_RX_MATCH_MODE_OVERRIDE,		/* char string */
+	FI_OPT_CXI_GET_RX_MATCH_MODE_OVERRIDE,		/* char string */
+	FI_OPT_CXI_SET_REQ_BUF_SIZE_OVERRIDE,		/* size_t */
+	FI_OPT_CXI_GET_REQ_BUF_SIZE_OVERRIDE,		/* size_t */
+
 };
 
 /*

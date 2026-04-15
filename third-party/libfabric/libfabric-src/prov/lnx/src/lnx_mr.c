@@ -142,7 +142,7 @@ int lnx_mr_regattr(struct fid *fid, const struct fi_mr_attr *attr,
 	mr->mr_fid.fid.ops = &lnx_mr_fi_ops;
 	mr->mr_fid.mem_desc = lm;
 	mr->domain = &domain->ld_domain;
-	mr->flags = flags | FI_HMEM_DEVICE_ONLY;
+	mr->flags = flags;
 
 	*mr_fid = &mr->mr_fid;
 	ofi_atomic_inc32(&domain->ld_domain.ref);

@@ -346,7 +346,7 @@ void ofi_mr_get_iov_from_dmabuf(struct iovec *iov,
 
 	for (i = 0; i < count; i++) {
 		iov[i].iov_base = (void *) (
-			(uintptr_t) dmabuf[i].base_addr + dmabuf[i].offset);
+			(char *) dmabuf[i].base_addr + dmabuf[i].offset);
 		iov[i].iov_len = dmabuf[i].len;
 	}
 }

@@ -3,8 +3,23 @@
 /* adds build_id to version if it was defined */
 #undef BUILD_ID
 
+/* Whether libcxi.h has cxil_alloc_trig_cp() support */
+#undef CXI_HAVE_ALLOC_TRIG_CP
+
+/* Whether libcxi.h has cxil_modify_cp() support */
+#undef CXI_HAVE_MODIFY_CP
+
+/* Whether libcxi.h has cxil_svc_get_netns() support */
+#undef CXI_HAVE_SVC_GET_NETNS
+
+/* Whether libcxi.h has cxil_svc_get_vni_range() support */
+#undef CXI_HAVE_SVC_GET_VNI_RANGE
+
 /* EFA unit testing */
 #undef EFA_UNIT_TEST
+
+/* defined to 1 if AddressSanitizer is enabled */
+#undef ENABLE_ASAN
 
 /* dlopen CUDA libraries */
 #undef ENABLE_CUDA_DLOPEN
@@ -25,11 +40,20 @@
 /* dlopen gdrcopy libraries */
 #undef ENABLE_GDRCOPY_DLOPEN
 
+/* defined to 1 if LeakSanitizer is enabled */
+#undef ENABLE_LSAN
+
 /* Define to 1 to enable memhooks memory monitor */
 #undef ENABLE_MEMHOOKS_MONITOR
 
 /* dlopen ROCR libraries */
 #undef ENABLE_ROCR_DLOPEN
+
+/* defined to 1 if ThreadSanitizer is enabled */
+#undef ENABLE_TSAN
+
+/* defined to 1 if UndefinedBehavior Sanitizer is enabled */
+#undef ENABLE_UBSAN
 
 /* Define to 1 to enable uffd memory monitor */
 #undef ENABLE_UFFD_MONITOR
@@ -216,6 +240,12 @@
 /* Define to 1 if you have the <habanalabs/synapse_api.h> header file. */
 #undef HAVE_HABANALABS_SYNAPSE_API_H
 
+/* hfi1 direct verbs enabled */
+#undef HAVE_HFI1_DIRECT_VERBS
+
+/* hfisvc support availability */
+#undef HAVE_HFISVC
+
 /* hook_debug provider is built */
 #undef HAVE_HOOK_DEBUG
 
@@ -248,6 +278,9 @@
 
 /* Define to 1 if you have the <infiniband/hfi1dv.h> header file. */
 #undef HAVE_INFINIBAND_HFI1DV_H
+
+/* Define to 1 if you have the <infiniband/hfisvc_client.h> header file. */
+#undef HAVE_INFINIBAND_HFISVC_CLIENT_H
 
 /* Define to 1 if you have the <infiniband/verbs.h> header file. */
 #undef HAVE_INFINIBAND_VERBS_H
@@ -578,9 +611,6 @@
 /* fabric direct address vector */
 #undef OPX_AV
 
-/* hfi1 direct verbs enabled */
-#undef OPX_HFI1_DIRECT_VERBS
-
 /* fabric direct memory region */
 #undef OPX_MR
 
@@ -654,7 +684,7 @@
 #undef typeof
 
 
-#if defined(__linux__) && (defined(__x86_64__) || defined(__amd64__) || defined(__aarch64__) || (defined(__riscv) && __riscv_xlen == 64)) && ENABLE_MEMHOOKS_MONITOR
+#if defined(__linux__) && (defined(__x86_64__) || defined(__amd64__) || defined(__aarch64__) || (defined(__riscv) && __riscv_xlen == 64)) && ENABLE_MEMHOOKS_MONITOR && !defined(ENABLE_ASAN)
 #define HAVE_MEMHOOKS_MONITOR 1
 #else
 #define HAVE_MEMHOOKS_MONITOR 0

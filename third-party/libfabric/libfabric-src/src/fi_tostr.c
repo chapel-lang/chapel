@@ -483,7 +483,7 @@ ofi_tostr_domain_attr(char *buf, size_t len, const struct fi_domain_attr *attr,
 
 	ofi_strncatf(buf, len, "%sfi_domain_attr:\n", prefix);
 
-	ofi_strncatf(buf, len, "%s%sdomain: 0x%x\n", prefix, TAB, attr->domain);
+	ofi_strncatf(buf, len, "%s%sdomain: %p\n", prefix, TAB, (void *)attr->domain);
 
 	ofi_strncatf(buf, len, "%s%sname: %s\n", prefix, TAB, attr->name);
 	ofi_strncatf(buf, len, "%s%sthreading: ", prefix, TAB);
@@ -541,6 +541,14 @@ ofi_tostr_domain_attr(char *buf, size_t len, const struct fi_domain_attr *attr,
 		     attr->max_err_data);
 	ofi_strncatf(buf, len, "%s%smr_cnt: %zu\n", prefix, TAB, attr->mr_cnt);
 	ofi_strncatf(buf, len, "%s%stclass: 0x%x\n", prefix, TAB, attr->tclass);
+	ofi_strncatf(buf, len, "%s%smax_ep_auth_key: %zu\n", prefix, TAB,
+		     attr->max_ep_auth_key);
+	ofi_strncatf(buf, len, "%s%smax_group_id: %u\n", prefix, TAB,
+		     attr->max_group_id);
+	ofi_strncatf(buf, len, "%s%smax_cntr_value: %lu\n", prefix, TAB,
+		     attr->max_cntr_value);
+	ofi_strncatf(buf, len, "%s%smax_err_cntr_value: %lu\n", prefix, TAB,
+		     attr->max_err_cntr_value);
 }
 
 static void
@@ -1038,6 +1046,12 @@ char *DEFAULT_SYMVER_PRE(fi_tostr_r)(char *buf, size_t len,
 		break;
 	case FI_TYPE_CQ_ERR_ENTRY:
 		ofi_tostr_cq_err_entry(buf, len, data);
+		break;
+	case FI_TYPE_CQ_WAIT_COND:
+		ofi_tostr_cq_wait_cond(buf, len, *enumval);
+		break;
+	case FI_TYPE_WAIT_OBJ:
+		ofi_tostr_wait_obj(buf, len, *enumval);
 		break;
 	default:
 		ofi_strncatf(buf, len, "Unknown type");

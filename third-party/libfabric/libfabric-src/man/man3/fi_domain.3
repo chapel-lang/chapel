@@ -15,7 +15,7 @@
 . ftr VB CB
 . ftr VBI CBI
 .\}
-.TH "fi_domain" "3" "2025\-03\-06" "Libfabric Programmer\[cq]s Manual" "Libfabric v2.3.1"
+.TH "fi_domain" "3" "2026\-02\-11" "Libfabric Programmer\[cq]s Manual" "Libfabric v2.5.1"
 .hy
 .SH NAME
 .PP
@@ -228,6 +228,8 @@ struct fi_domain_attr {
     uint32_t              tclass;
     size_t                max_ep_auth_key;
     uint32_t              max_group_id;
+    uint64_t              max_cntr_value;
+    uint64_t              max_err_cntr_value;
 };
 \f[R]
 .fi
@@ -1029,6 +1031,43 @@ Providers that cannot meet the requested max_group_id will fail
 fi_getinfo().
 On output, providers may return a value higher than that requested by
 the application.
+.SS Maximum Counter Value (max_cntr_value)
+.PP
+The maximum value returned by fi_cntr_read.
+While counters use uint64_t, the full range may not be supported due to
+hardware limitations.
+This field allows providers to advertise their specific limits.
+The default value is UINT64_MAX, which indicates the full counter range.
+A value of 0 means the provider does not set the limit and should be
+treated the same as the default value.
+.PP
+Applications may provide a non-zero max_cntr_value as input to
+fi_getinfo to request a minimum supported counter range.
+If the provider cannot satisfy the requested range, it should return
+-FI_ENODATA.
+The provider may return a value larger than the one requested.
+.PP
+Applications must manage counter values that approach this limit.
+See \f[V]fi_cntr\f[R](3) for details on counter limit handling
+responsibilities.
+.SS Maximum Error Counter Value (max_err_cntr_value)
+.PP
+The maximum value returned by fi_cntr_readerr.
+Similar to max_cntr_value, this addresses provider-specific limitations
+for error counter ranges.
+The default value is UINT64_MAX, which indicates the full counter range.
+A value of 0 means the provider does not set the limit and should be
+treated the same as the default value.
+.PP
+Applications may provide a non-zero max_err_cntr_value as input to
+fi_getinfo to request a minimum supported error counter range.
+If the provider cannot satisfy the requested range, it should return
+-FI_ENODATA.
+The provider may return a value larger than the one requested.
+.PP
+Applications must manage error counter values that approach this limit.
+See \f[V]fi_cntr\f[R](3) for details on counter limit handling
+responsibilities.
 .SH RETURN VALUE
 .PP
 Returns 0 on success.
@@ -1054,5 +1093,6 @@ resources appropriately for the installed provider(s).
 .PP
 \f[V]fi_getinfo\f[R](3), \f[V]fi_endpoint\f[R](3), \f[V]fi_av\f[R](3),
 \f[V]fi_eq\f[R](3), \f[V]fi_mr\f[R](3) \f[V]fi_peer\f[R](3)
+\f[V]fi_cntr\f[R](3)
 .SH AUTHORS
 OpenFabrics.

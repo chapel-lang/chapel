@@ -125,11 +125,11 @@ typedef uint32_t opx_lid_t; /* only 3 bytes of lid is used */
 
 /* hfi1 type for bit logic */
 enum opx_hfi1_type {
-	OPX_HFI1_UNDEF	= 0, // undefined
-	OPX_HFI1_JKR_9B = 1, // CN5000+ built for mixed network. Internal use
-	OPX_HFI1_WFR	= 2, // Omni-path (all generations)
-	OPX_HFI1_JKR	= 4, // CN5000 (initial generation)
-	OPX_HFI1_CYR	= 8  // CN6000 (initial generation)
+	OPX_HFI1_UNDEF	  = 0, // undefined
+	OPX_HFI1_MIXED_9B = 1, // CN5000+ built for mixed network. Internal use
+	OPX_HFI1_WFR	  = 2, // Omni-path (all generations)
+	OPX_HFI1_JKR	  = 4, // CN5000 (initial generation)
+	OPX_HFI1_CYR	  = 8  // CN6000 (initial generation)
 };
 /* Post WFR 16B support - CN5000, CN6000 - unless they need to be differentiated */
 #define OPX_HFI1_CNX000 (OPX_HFI1_JKR | OPX_HFI1_CYR)
@@ -163,7 +163,7 @@ static const char *const OPX_HFI1_PACKET_STR[] = {
 
 #define OPX_NO_16B_SUPPORT(_hfi1_type)                                                                             \
 	do {                                                                                                       \
-		if (!(_hfi1_type & (OPX_HFI1_WFR | OPX_HFI1_JKR_9B))) {                                            \
+		if (!(_hfi1_type & (OPX_HFI1_WFR | OPX_HFI1_MIXED_9B))) {                                          \
 			fprintf(stderr, "%s NO 16B SUPPORT for %s\n", __func__, OPX_HFI1_TYPE_STRING(_hfi1_type)); \
 			if (getenv("OPX_16B_ABORT"))                                                               \
 				abort();                                                                           \
@@ -183,7 +183,7 @@ struct opx_hfi_local_entry {
 struct opx_hfi_local_info {
 	/* == CACHE LINE 0 == */
 	uint32_t	   local_lids_size;
-	enum opx_hfi1_type type;
+	enum opx_hfi1_type sw_type;	 // SW defined hfi1 type, including "mixed networks"
 	int		   sim_sctxt_fd; // simulator send context BAR resource fd
 	int		   sim_rctxt_fd; // simulator recv context BAR resource fd
 	uint64_t	   pbc_lid;
@@ -194,7 +194,9 @@ struct opx_hfi_local_info {
 	bool		   multi_lid; // job has multiple lids
 	int32_t		   min_rctxt;
 	int32_t		   max_rctxt;
-	uint64_t	   unused_qws[3];
+	enum opx_hfi1_type hw_type; // HW hfi1 type before "mixed_network" changes
+	uint32_t	   unused_dws[1];
+	uint64_t	   unused_qws[2];
 
 	/* == CACHE LINE 1 == */
 	opx_lid_t local_lid_ids[OPX_MAX_HFIS];
@@ -219,9 +221,21 @@ OPX_COMPILE_TIME_ASSERT(sizeof(struct opx_hfi_local_info) == (FI_OPX_CACHE_LINE_
 #undef OPX_SIM_ENABLED
 #endif
 
-#define OPX_HFI1_TYPE fi_opx_global.hfi_local_info.type
+// HFI1 type from SW/logical point of view
+#define OPX_SW_HFI1_TYPE fi_opx_global.hfi_local_info.sw_type
+
+// HFI1 HW type independent of SW
+#define OPX_HW_HFI1_TYPE fi_opx_global.hfi_local_info.hw_type
 
 #define OPX_IS_CTX_SHARING_ENABLED fi_opx_global.ctx_sharing_enabled
+
+// This is constant for all (macro magic) _hfi1_type except OPX_HFI1_MIXED_9B which additionally checks a variable
+// OPX_HW_HFI1_TYPE
+#define OPX_IS_EXTENDED_RX(_hfi1_type) \
+	((_hfi1_type & OPX_HFI1_CYR) || ((_hfi1_type & OPX_HFI1_MIXED_9B) && (OPX_HW_HFI1_TYPE & OPX_HFI1_CYR)))
+
+// Alternative - this only checks the variable OPX_HW_HFI1_TYPE
+// define OPX_IS_EXTENDED_RX(_ignored) (OPX_HW_HFI1_TYPE & OPX_HFI1_CYR)
 
 struct fi_opx_global_data {
 	/* == CACHE LINE 0 == */

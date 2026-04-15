@@ -101,19 +101,6 @@ static int efa_domain_init_device_and_pd(struct efa_domain *efa_domain,
 	return 0;
 }
 
-static int efa_domain_init_qp_table(struct efa_domain *efa_domain)
-{
-	size_t qp_table_size;
-
-	qp_table_size = roundup_power_of_two(efa_domain->device->ibv_attr.max_qp);
-	efa_domain->qp_table_sz_m1 = qp_table_size - 1;
-	efa_domain->qp_table = calloc(qp_table_size, sizeof(*efa_domain->qp_table));
-	if (!efa_domain->qp_table)
-		return -FI_ENOMEM;
-
-	return 0;
-}
-
 static int efa_domain_init_rdm(struct efa_domain *efa_domain, struct fi_info *info)
 {
 	struct fi_info *shm_info = NULL;
@@ -181,6 +168,15 @@ int efa_domain_open(struct fid_fabric *fabric_fid, struct fi_info *info,
 	if (!efa_domain)
 		return -FI_ENOMEM;
 
+	/* This list_entry is not the head of the list. But we initialize it
+	 * anyway to prevent a segfault in efa_domain_close.
+	 *
+	 * efa_domain_close always removes this dlist_entry. If the domain is
+	 * successfully opened, then this entry is added to g_efa_domain_list
+	 * and is successfully removed in efa_domain_close. But if the domain
+	 * open fails and we reach efa_domain_close in the error path, then not
+	 * initializing this list_entry will cause a segfault efa_domain_close.
+	 */
 	dlist_init(&efa_domain->list_entry);
 	efa_domain->fabric = container_of(fabric_fid, struct efa_fabric,
 					  util_fabric.fabric_fid);
@@ -192,8 +188,8 @@ int efa_domain_open(struct fid_fabric *fabric_fid, struct fi_info *info,
 		goto err_free;
 	}
 
-	efa_domain->ibv_mr_reg_ct = 0;
-	efa_domain->ibv_mr_reg_sz = 0;
+	ofi_atomic_initialize64(&efa_domain->ibv_mr_reg_ct, 0);
+	ofi_atomic_initialize64(&efa_domain->ibv_mr_reg_sz, 0);
 
 	efa_domain->ah_map = NULL;
 
@@ -245,13 +241,6 @@ int efa_domain_open(struct fid_fabric *fabric_fid, struct fi_info *info,
 
 	*domain_fid = &efa_domain->util_domain.domain_fid;
 
-	err = efa_domain_init_qp_table(efa_domain);
-	if (err) {
-		ret = err;
-		EFA_WARN(FI_LOG_DOMAIN, "Failed to init qp table. err: %d\n", ret);
-		goto err_free;
-	}
-
 	/*
 	 * Open the MR cache if application did not set FI_MR_LOCAL
 	 * and the cache is enabled
@@ -267,7 +256,7 @@ int efa_domain_open(struct fid_fabric *fabric_fid, struct fi_info *info,
 		}
 		efa_domain->internal_buf_mr_regv = efa_mr_cache_regv;
 	} else {
-		efa_domain->internal_buf_mr_regv = fi_mr_regv;
+		efa_domain->internal_buf_mr_regv = efa_mr_internal_regv;
 	}
 	efa_domain->util_domain.domain_fid.mr = &efa_domain_mr_ops;
 
@@ -279,6 +268,10 @@ int efa_domain_open(struct fid_fabric *fabric_fid, struct fi_info *info,
 		assert(EFA_INFO_TYPE_IS_DGRAM(info));
 		efa_domain->info_type = EFA_INFO_DGRAM;
 	}
+
+	dlist_init(&efa_domain->ah_lru_list);
+	if (efa_env.track_mr)
+		dlist_init(&efa_domain->base_ep_list);
 
 	efa_domain->util_domain.domain_fid.fid.ops = &efa_ops_domain_fid;
 	if (efa_domain->info_type == EFA_INFO_RDM) {
@@ -293,6 +286,32 @@ int efa_domain_open(struct fid_fabric *fabric_fid, struct fi_info *info,
 	} else {
 		assert(efa_domain->info_type == EFA_INFO_DIRECT || efa_domain->info_type == EFA_INFO_DGRAM);
 		efa_domain->util_domain.domain_fid.ops = &efa_domain_ops;
+
+		/* Allocate and register bounce buffer for 0-byte rma operations (efa-direct only) */
+		if (efa_domain->info_type == EFA_INFO_DIRECT && info->caps & FI_RMA) {
+			struct iovec iov;
+			struct fid_mr *mr_fid;
+			uint64_t mr_flags = FI_READ | FI_WRITE;
+
+			err = ofi_memalign(&efa_domain->zero_byte_bounce_buf, ofi_get_page_size(), ofi_get_page_size());
+			if (err) {
+				EFA_WARN(FI_LOG_DOMAIN, "Failed to allocate zero-byte bounce buffer\n");
+				err = -FI_ENOMEM;
+				goto err_free;
+			}
+
+			iov.iov_base = efa_domain->zero_byte_bounce_buf;
+			iov.iov_len = ofi_get_page_size();
+			err = efa_mr_internal_regv(&efa_domain->util_domain.domain_fid,
+						   &iov, 1, mr_flags, 0, 0, 0, &mr_fid, NULL);
+			if (err) {
+				EFA_WARN(FI_LOG_DOMAIN, "Failed to register zero-byte bounce buffer: %d\n", err);
+				free(efa_domain->zero_byte_bounce_buf);
+				efa_domain->zero_byte_bounce_buf = NULL;
+				goto err_free;
+			}
+			efa_domain->zero_byte_bounce_buf_mr = container_of(mr_fid, struct efa_mr, mr_fid);
+		}
 	}
 
 #ifndef _WIN32
@@ -316,8 +335,8 @@ err_free:
 
 	err = efa_domain_close(&efa_domain->util_domain.domain_fid.fid);
 	if (err) {
-		EFA_WARN(FI_LOG_DOMAIN, "When handling error (%d), domain resource was being released."
-			 "During the release process, an addtional error (%d) was encoutered\n",
+		EFA_WARN(FI_LOG_DOMAIN, "When handling error (%d), domain resource was being released. "
+			 "During the release process, an additional error (%d) was encountered\n",
 			 -ret, -err);
 	}
 
@@ -359,6 +378,18 @@ static int efa_domain_close(fid_t fid)
 	}
 	ofi_genlock_unlock(&efa_domain->util_domain.lock);
 
+	if (efa_domain->zero_byte_bounce_buf_mr) {
+		ret = fi_close(&efa_domain->zero_byte_bounce_buf_mr->mr_fid.fid);
+		if (ret)
+			EFA_WARN(FI_LOG_DOMAIN, "Failed to close zero-byte bounce buffer MR: %d\n", ret);
+		efa_domain->zero_byte_bounce_buf_mr = NULL;
+	}
+
+	if (efa_domain->zero_byte_bounce_buf) {
+		free(efa_domain->zero_byte_bounce_buf);
+		efa_domain->zero_byte_bounce_buf = NULL;
+	}
+
 	if (efa_domain->ibv_pd) {
 		ret = ibv_dealloc_pd(efa_domain->ibv_pd);
 		if (ret)
@@ -380,7 +411,6 @@ static int efa_domain_close(fid_t fid)
 		fi_freeinfo(efa_domain->info);
 
 	ofi_genlock_destroy(&efa_domain->srx_lock);
-	free(efa_domain->qp_table);
 	free(efa_domain);
 	return 0;
 }

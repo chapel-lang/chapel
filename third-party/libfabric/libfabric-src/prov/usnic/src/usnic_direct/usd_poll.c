@@ -71,7 +71,7 @@ find_rx_lengths(
     } while (type == RQ_ENET_TYPE_NOT_SOP);
 
     *posted_len_o = rcvbuf_len;
-    *len_in_pkt_o = ntohs(((struct usd_udp_hdr *)bus_addr)->uh_ip.tot_len) +
+    *len_in_pkt_o = ntohs(((struct usd_udp_hdr *)(uintptr_t)bus_addr)->uh_ip.tot_len) +
                           sizeof(struct ether_header);
 }
 

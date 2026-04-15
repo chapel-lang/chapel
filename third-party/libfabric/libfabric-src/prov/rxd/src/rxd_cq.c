@@ -292,7 +292,9 @@ void rxd_progress_tx_list(struct rxd_ep *ep, struct rxd_peer *peer)
 				break;
 		}
 
-		if (tx_entry->bytes_done == tx_entry->cq_entry.len) {
+		if (tx_entry->bytes_done == tx_entry->cq_entry.len &&
+		    tx_entry->op != RXD_ATOMIC_FETCH &&
+		    tx_entry->op != RXD_ATOMIC_COMPARE) {
 			if (ofi_before(tx_entry->start_seq + (tx_entry->num_segs - 1),
 			    head_seq)) {
 				if (tx_entry->op == RXD_DATA_READ) {
@@ -432,7 +434,7 @@ static void rxd_handle_rts(struct rxd_ep *ep, struct rxd_pkt_entry *pkt_entry)
 	node = ofi_rbmap_find(&rxd_av->rbmap, pkt->source);
 
 	if (node) {
-		rxd_addr = (fi_addr_t) node->data;
+		rxd_addr = (fi_addr_t)(uintptr_t) node->data;
 	} else {
 		ret = rxd_av_insert_dg_addr(rxd_av, (void *) pkt->source,
 					    &rxd_addr, 0, NULL);
@@ -539,12 +541,15 @@ static struct rxd_x_entry *rxd_match_rx(struct rxd_ep *ep,
 
 		dup_entry->start_seq = base->seq_no;
 		dlist_init(&dup_entry->entry);
-		return dup_entry;
+		rx_entry = dup_entry;
+		goto init;
 	}
 
 out:
 	dlist_remove(&rx_entry->entry);
+init:
 	rx_entry->cq_entry.len = MIN(rx_entry->cq_entry.len, total_size);
+	dlist_insert_tail(&rx_entry->entry, &(rxd_peer(ep, base->peer)->rx_list));
 	return rx_entry;
 }
 
@@ -558,7 +563,7 @@ static int rxd_verify_iov(struct rxd_ep *ep, struct ofi_rma_iov *rma,
 		ret = ofi_mr_verify(&util_domain->mr_map, rma[i].len,
 			(uintptr_t *)(&rma[i].addr), rma[i].key,
 			ofi_rx_mr_reg_flags(type, 0));
-		iov[i].iov_base = (void *) rma[i].addr;
+		iov[i].iov_base = (void *)(uintptr_t) rma[i].addr;
 		iov[i].iov_len = rma[i].len;
 		if (ret) {
 			FI_WARN(&rxd_prov, FI_LOG_EP_CTRL, "could not verify MR\n");
@@ -629,6 +634,7 @@ static struct rxd_x_entry *rxd_rma_rx_entry_init(struct rxd_ep *ep,
 
 	rx_entry->start_seq = base_hdr->seq_no;
 
+	dlist_insert_tail(&rx_entry->entry, &(rxd_peer(ep, base_hdr->peer)->rx_list));
 	return rx_entry;
 }
 
@@ -883,8 +889,6 @@ void rxd_progress_op(struct rxd_ep *ep, struct rxd_x_entry *rx_entry,
 	rx_entry->num_segs = sar_hdr->num_segs;
 	rx_entry->next_seg_no++;
 	rx_entry->start_seq = base_hdr->seq_no;
-
-	dlist_insert_tail(&rx_entry->entry, &(rxd_peer(ep, base_hdr->peer)->rx_list));
 }
 
 static struct rxd_x_entry *rxd_get_data_x_entry(struct rxd_ep *ep,

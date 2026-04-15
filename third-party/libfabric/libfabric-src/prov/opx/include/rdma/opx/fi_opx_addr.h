@@ -43,10 +43,10 @@
  * WFR and JKR: bits 10:8 is subctxt and 7:0 is rx id
  * CYR: bits 10:9 is subctxt and 8:0 is rx id */
 #define OPX_HFI1_SUBCTXT(_subctxt_rx, _hfi1_type) \
-	((_hfi1_type == OPX_HFI1_CYR) ? (0x600 & __be16_to_cpu(_subctxt_rx)) : (0x700 & __be16_to_cpu(_subctxt_rx)))
+	(OPX_IS_EXTENDED_RX(_hfi1_type) ? (0x600 & __be16_to_cpu(_subctxt_rx)) : (0x700 & __be16_to_cpu(_subctxt_rx)))
 
 #define OPX_HFI1_RX(_subctxt_rx, _hfi1_type) \
-	((_hfi1_type == OPX_HFI1_CYR) ? (0x1ff & __be16_to_cpu(_subctxt_rx)) : (0xff & __be16_to_cpu(_subctxt_rx)))
+	(OPX_IS_EXTENDED_RX(_hfi1_type) ? (0x1ff & __be16_to_cpu(_subctxt_rx)) : (0xff & __be16_to_cpu(_subctxt_rx)))
 
 union fi_opx_addr {
 	fi_addr_t fi;

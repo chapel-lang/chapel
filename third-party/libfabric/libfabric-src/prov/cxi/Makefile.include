@@ -130,7 +130,8 @@ nodist_prov_cxi_test_cxitest_SOURCES = \
 	prov/cxi/test/fork.c \
 	prov/cxi/test/mem_reg.c \
 	prov/cxi/test/nic.c \
-	prov/cxi/test/mr_cache.c
+	prov/cxi/test/mr_cache.c \
+	prov/cxi/test/writedata.c
 
 prov_cxi_test_cxitest_CPPFLAGS = $(AM_CPPFLAGS) $(cxi_CPPFLAGS) \
 	$(cxitest_CPPFLAGS) $(PTHREAD_CFLAGS)

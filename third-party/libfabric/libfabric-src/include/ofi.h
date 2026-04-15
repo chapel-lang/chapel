@@ -217,6 +217,8 @@ ofi_poll_del(struct fid_poll *pollset, struct fid *event_fid, uint64_t flags)
 		_a > _b ? _a : _b; })
 #endif
 
+#define MIN3(a, b, c) MIN(MIN(a, b), c)
+
 #define ofi_div_ceil(a, b) ((a + b - 1) / b)
 
 static inline int ofi_val64_gt(uint64_t x, uint64_t y) {

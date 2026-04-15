@@ -42,6 +42,7 @@ struct ucx_global_descriptor ucx_descriptor = {
 	.localhost = NULL,
 	.ep_flush = 1,
 	.check_req_leak = 0,
+	.single_thread = 0,
 };
 
 /*
@@ -294,6 +295,10 @@ static int ucx_getinfo(uint32_t version, const char *node,
 	if (status != FI_SUCCESS)
 		ucx_descriptor.check_req_leak = 0;
 
+	status = fi_param_get(&ucx_prov, "single_thread", &ucx_descriptor.single_thread);
+	if (status != FI_SUCCESS)
+		ucx_descriptor.single_thread = 0;
+
 	status = ucp_config_read(NULL, configfile_name, &ucx_descriptor.config);
 	if (status != UCS_OK)
 		FI_WARN(&ucx_prov, FI_LOG_CORE,
@@ -363,9 +368,11 @@ static int ucx_getinfo(uint32_t version, const char *node,
 			(*info)->nic->link_attr->speed =
 				(size_t) speed_gbps * 1000 * 1000 * 1000;
 
-		if (hints && hints->domain_attr &&
-		    (hints->domain_attr->mr_mode & FI_MR_HMEM))
-			(*info)->domain_attr->mr_mode |= FI_MR_HMEM;
+		if (hints && hints->domain_attr) {
+			if (hints->domain_attr->mr_mode & FI_MR_HMEM)
+				(*info)->domain_attr->mr_mode |= FI_MR_HMEM;
+			(*info)->domain_attr->threading = hints->domain_attr->threading;
+		}
 	}
 
 	/* make sure the memery hooks are installed for memory type cache */
@@ -448,6 +455,10 @@ UCX_INI
 	fi_param_define(&ucx_prov,
 			"check_req_leak", FI_PARAM_BOOL,
 			"Check request leak (Default: false)");
+
+	fi_param_define(&ucx_prov,
+			"single_thread", FI_PARAM_BOOL,
+			"Only use single thread (Default: false)");
 
 	return &ucx_prov;
 }

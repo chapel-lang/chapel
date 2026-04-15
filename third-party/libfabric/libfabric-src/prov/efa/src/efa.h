@@ -37,6 +37,7 @@
 #include "ofi_file.h"
 
 #include "efa_base_ep.h"
+#include "efa_direct_ope.h"
 #include "efa_mr.h"
 #include "efa_env.h"
 #include "efa_shm.h"
@@ -111,6 +112,11 @@
  * Set alignment to x86 cache line size.
  */
 #define EFA_RDM_BUFPOOL_ALIGNMENT	(64)
+
+/*
+ * Define bitmask to compare packet generation
+ */
+#define EFA_RDM_PACKET_GEN_MASK (EFA_RDM_BUFPOOL_ALIGNMENT - 1)
 
 
 struct efa_fabric {

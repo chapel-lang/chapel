@@ -91,6 +91,15 @@ struct hsa_ops {
 	hsa_status_t (*hsa_shut_down)(void);
 	hsa_status_t (*hsa_status_string)(hsa_status_t status,
 					  const char **status_string);
+	hsa_status_t (*hsa_memory_allocate)(hsa_region_t region, size_t size,
+					void **ptr);
+	hsa_status_t (*hsa_memory_free)(void *ptr);
+	hsa_status_t (*hsa_agent_iterate_regions)(hsa_agent_t agent,
+					hsa_status_t (*callback)(hsa_region_t, void *),
+					void *data);
+	hsa_status_t (*hsa_region_get_info)(hsa_region_t region,
+					hsa_region_info_t attribute,
+					void *value);
 	hsa_status_t (*hsa_amd_dereg_dealloc_cb)(void *ptr,
 						 hsa_amd_deallocation_callback_t cb);
 	hsa_status_t (*hsa_amd_reg_dealloc_cb)(void *ptr,
@@ -156,6 +165,11 @@ static struct hsa_ops hsa_ops = {
 	.hsa_init = hsa_init,
 	.hsa_shut_down = hsa_shut_down,
 	.hsa_status_string = hsa_status_string,
+	/* memory allocation */
+	.hsa_memory_allocate = hsa_memory_allocate,
+	.hsa_memory_free = hsa_memory_free,
+	.hsa_agent_iterate_regions = hsa_agent_iterate_regions,
+	.hsa_region_get_info = hsa_region_get_info,
 	/* used for memory monitoring */
 	.hsa_amd_dereg_dealloc_cb =
 		hsa_amd_deregister_deallocation_callback,
@@ -253,6 +267,98 @@ hsa_status_t ofi_hsa_amd_memory_lock(void *host_ptr, size_t size,
 hsa_status_t ofi_hsa_amd_memory_unlock(void *host_ptr)
 {
 	return hsa_ops.hsa_amd_memory_unlock(host_ptr);
+}
+
+hsa_status_t ofi_hsa_memory_allocate(hsa_region_t region, size_t size, void **ptr)
+{
+	return hsa_ops.hsa_memory_allocate(region, size, ptr);
+}
+
+hsa_status_t ofi_hsa_memory_free(void *ptr)
+{
+	return hsa_ops.hsa_memory_free(ptr);
+}
+
+hsa_status_t ofi_hsa_agent_iterate_regions(hsa_agent_t agent,
+		hsa_status_t (*callback)(hsa_region_t, void *),
+		void *data)
+{
+	return hsa_ops.hsa_agent_iterate_regions(agent, callback, data);
+}
+
+hsa_status_t ofi_hsa_region_get_info(hsa_region_t region,
+		hsa_region_info_t attribute, void *value)
+{
+	return hsa_ops.hsa_region_get_info(region, attribute, value);
+}
+
+static hsa_status_t find_gpu_memory_region(hsa_region_t region, void *data)
+{
+	hsa_region_segment_t segment;
+	hsa_region_global_flag_t flags;
+	hsa_status_t hsa_ret;
+	hsa_region_t *gpu_region = (hsa_region_t *) data;
+
+	hsa_ret = ofi_hsa_region_get_info(region, HSA_REGION_INFO_SEGMENT, &segment);
+	if (hsa_ret != HSA_STATUS_SUCCESS || segment != HSA_REGION_SEGMENT_GLOBAL)
+		return hsa_ret;
+
+	hsa_ret = ofi_hsa_region_get_info(region, HSA_REGION_INFO_GLOBAL_FLAGS, &flags);
+	if (hsa_ret != HSA_STATUS_SUCCESS)
+		return hsa_ret;
+
+	if (flags & HSA_REGION_GLOBAL_FLAG_COARSE_GRAINED) {
+		*gpu_region = region;
+		return HSA_STATUS_INFO_BREAK;
+	}
+
+	return hsa_ret;
+}
+
+void *rocr_alloc(size_t size)
+{
+	hsa_region_t gpu_region = {0};
+	hsa_status_t hsa_ret;
+	void *ptr;
+
+	if (rocr_agents.num_gpu == 0)
+		return NULL;
+
+	hsa_ret = ofi_hsa_agent_iterate_regions(rocr_agents.gpu_agents[0],
+						find_gpu_memory_region, &gpu_region);
+	if (hsa_ret != HSA_STATUS_SUCCESS && hsa_ret != HSA_STATUS_INFO_BREAK) {
+		FI_WARN(&core_prov, FI_LOG_CORE,
+			"Failed to find GPU memory region: %s\n",
+			ofi_hsa_status_to_string(hsa_ret));
+		return NULL;
+	}
+
+	if (gpu_region.handle == 0) {
+		FI_WARN(&core_prov, FI_LOG_CORE, "No suitable GPU memory region found\n");
+		return NULL;
+	}
+
+	hsa_ret = ofi_hsa_memory_allocate(gpu_region, size, &ptr);
+	if (hsa_ret != HSA_STATUS_SUCCESS) {
+		FI_WARN(&core_prov, FI_LOG_CORE,
+			"Failed to allocate GPU memory: %s\n",
+			ofi_hsa_status_to_string(hsa_ret));
+		return NULL;
+	}
+
+	return ptr;
+}
+
+void rocr_free(void *ptr)
+{
+	hsa_status_t hsa_ret;
+
+	hsa_ret = ofi_hsa_memory_free(ptr);
+	if (hsa_ret != HSA_STATUS_SUCCESS) {
+		FI_WARN(&core_prov, FI_LOG_CORE,
+			"Failed to free GPU memory: %s\n",
+			ofi_hsa_status_to_string(hsa_ret));
+	}
 }
 
 hsa_status_t ofi_hsa_memory_copy(void *dst, const void *src, size_t size)
@@ -882,6 +988,34 @@ static int rocr_hmem_dl_init(void)
 		goto err;
 	}
 
+	hsa_ops.hsa_memory_allocate = dlsym(hsa_handle, "hsa_memory_allocate");
+	if (!hsa_ops.hsa_memory_allocate) {
+		FI_WARN(&core_prov, FI_LOG_CORE,
+			"Failed to find hsa_memory_allocate\n");
+		goto err;
+	}
+
+	hsa_ops.hsa_memory_free = dlsym(hsa_handle, "hsa_memory_free");
+	if (!hsa_ops.hsa_memory_free) {
+		FI_WARN(&core_prov, FI_LOG_CORE,
+			"Failed to find hsa_memory_free\n");
+		goto err;
+	}
+
+	hsa_ops.hsa_agent_iterate_regions = dlsym(hsa_handle, "hsa_agent_iterate_regions");
+	if (!hsa_ops.hsa_agent_iterate_regions) {
+		FI_WARN(&core_prov, FI_LOG_CORE,
+			"Failed to find hsa_agent_iterate_regions\n");
+		goto err;
+	}
+
+	hsa_ops.hsa_region_get_info = dlsym(hsa_handle, "hsa_region_get_info");
+	if (!hsa_ops.hsa_region_get_info) {
+		FI_WARN(&core_prov, FI_LOG_CORE,
+			"Failed to find hsa_region_get_info\n");
+		goto err;
+	}
+
 #if HAVE_HSA_AMD_PORTABLE_EXPORT_DMABUF
 	hsa_ops.hsa_amd_portable_export_dmabuf = dlsym(hsa_handle, "hsa_amd_portable_export_dmabuf");
 	if (!hsa_ops.hsa_amd_portable_export_dmabuf) {
@@ -947,8 +1081,8 @@ int rocr_hmem_init(void)
 		"Threshold for switching to hsa memcpy for device-to-host"
 		"  copies. (Default 16384");
 
-	fi_param_define(NULL, "hmem_rocr_use_dmabuf", FI_PARAM_INT,
-			"Use dma-buf for sharing buffer with hardware. (default:0)");
+	fi_param_define(NULL, "hmem_rocr_use_dmabuf", FI_PARAM_BOOL,
+			"Use dma-buf for sharing buffer with hardware. (default: true)");
 
 	ret = rocr_hmem_dl_init();
 	if (ret != FI_SUCCESS)
@@ -1123,14 +1257,20 @@ int rocr_dev_reg_copy_from_hmem(uint64_t handle, void *dest, const void *src,
 	return FI_SUCCESS;
 }
 
+bool rocr_is_dmabuf_requested(void)
+{
+	int use_dmabuf = 1;
+
+	fi_param_get_int(NULL, "hmem_rocr_use_dmabuf", &use_dmabuf);
+	return use_dmabuf;
+}
+
 static bool rocr_is_dmabuf_supported(void)
 {
 	hsa_status_t hsa_ret;
-	int use_dmabuf = 0;
 	bool dmabuf_support = false, dmabuf_kernel = false;
 
-	fi_param_get_int(NULL, "hmem_rocr_use_dmabuf", &use_dmabuf);
-	if (!use_dmabuf)
+	if (!rocr_is_dmabuf_requested())
 		goto out;
 
 	/* HSA_AMD_SYSTEM_INFO_DMABUF_SUPPORTED = 0x204, we use the number
@@ -1365,6 +1505,21 @@ int rocr_hmem_get_dmabuf_fd(const void *addr, uint64_t size, int *dmabuf_fd,
 int rocr_hmem_put_dmabuf_fd(int fd)
 {
 	return -FI_ENOSYS;
+}
+
+void *rocr_alloc(size_t size)
+{
+	return NULL;
+}
+
+void rocr_free(void *ptr)
+{
+	return;
+}
+
+bool rocr_is_dmabuf_requested(void)
+{
+	return false;
 }
 
 #endif /* HAVE_ROCR */

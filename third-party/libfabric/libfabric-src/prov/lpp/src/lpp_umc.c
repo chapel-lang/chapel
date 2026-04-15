@@ -201,7 +201,7 @@ static void lpp_umc_free_srq_spool(struct lpp_ep *lpp_epp)
 
 	for (ioc = spool->head; ioc != NULL; ioc = spool->head) {
 		smsg = container_of(ioc, struct lpp_spooled_msg_srq, ioc);
-		spool->head = (struct klpp_ioc_kmc_send *)ioc->next_ptr;
+		spool->head = (struct klpp_ioc_kmc_send *)(uintptr_t)ioc->next_ptr;
 		if (smsg->callback != NULL)
 			smsg->callback(lpp_epp, smsg + 1, -FI_ESHUTDOWN);
 
@@ -470,7 +470,7 @@ static void lpp_cmpl_srq_add(struct lpp_ep *lpp_epp, struct klpp_ioc_kmc_send *i
 		spool->head = ioc;
 		spool->tail = ioc;
 	} else {
-		spool->tail->next_ptr = (__u64)ioc;
+		spool->tail->next_ptr = (__u64)(uintptr_t)ioc;
 		spool->tail = ioc;
 	}
 	spool->size++;
@@ -508,7 +508,7 @@ static void lpp_cmpl_srq_flush(struct lpp_ep *lpp_epp)
 					"failed to srq send completion %lld\n",
 					ioc->errval);
 			}
-			spool->head = (struct klpp_ioc_kmc_send *)ioc->next_ptr;
+			spool->head = (struct klpp_ioc_kmc_send *)(uintptr_t)ioc->next_ptr;
 			if (spool->head == NULL)
 				spool->tail = NULL;
 
@@ -625,7 +625,7 @@ int lpp_umc_tx_cmpl(struct lpp_ep *lpp_epp, struct lpp_fi_addr addr,
 		ioc = &smsg->ioc;
 		ioc->dst_addr = addr;
 		ioc->kmc_flags = lpp_disable_dqp ? KLPPIOCF_KMC_NODQP : 0;
-		ioc->iov_ptr = (__u64)&smsg->iov;
+		ioc->iov_ptr = (__u64)(uintptr_t)&smsg->iov;
 		ioc->iov_cnt = iov_count;
 		hdr->src_ep = lpp_epp->addr;
 		ioc->msg_hdr = *hdr;
@@ -1026,7 +1026,7 @@ static void lpp_umc_check_keep_alive(struct lpp_ep *lpp_epp)
 			     lpp_keep_alive_msec)) {
 			if (rumc->keep_alive_cnt >= lpp_keep_alive_retries) {
 				FI_INFO(&lpp_prov, FI_LOG_EP_CTRL,
-					"%u:%u path down; failed to reply to %ld keep alives\n",
+					"%u:%u path down; failed to reply to %zu keep alives\n",
 					rumc->node_id, rumc->umc_id,
 					lpp_keep_alive_retries);
 				lpp_stx_path_down(lpp_epp, rumc->node_id,

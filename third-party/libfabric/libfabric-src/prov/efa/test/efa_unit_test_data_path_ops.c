@@ -21,46 +21,29 @@ int efa_qp_post_recv(struct efa_qp *qp, struct ibv_recv_wr *wr, struct ibv_recv_
 	return 0;
 }
 
-int efa_qp_wr_complete(struct efa_qp *efaqp)
+int efa_qp_post_send(struct efa_qp *qp, const struct ibv_sge *sge_list,
+		     const struct ibv_data_buf *inline_data_list, size_t iov_count,
+		     bool use_inline, uintptr_t wr_id, uint64_t data, uint64_t flags,
+		     struct efa_ah *ah, uint32_t qpn, uint32_t qkey)
 {
 	return 0;
 }
 
-void efa_qp_wr_rdma_read(struct efa_qp *efaqp, uint32_t rkey, uint64_t remote_addr)
+int efa_qp_post_read(struct efa_qp *qp, const struct ibv_sge *sge_list, size_t sge_count,
+		     uint32_t remote_key, uint64_t remote_addr, uintptr_t wr_id,
+		     uint64_t flags, struct efa_ah *ah, uint32_t qpn, uint32_t qkey)
 {
+	return 0;
 }
 
-void efa_qp_wr_rdma_write(struct efa_qp *efaqp, uint32_t rkey, uint64_t remote_addr)
+int efa_qp_post_write(struct efa_qp *qp, const struct ibv_sge *sge_list, size_t sge_count,
+		      uint32_t remote_key, uint64_t remote_addr, uintptr_t wr_id,
+		      uint64_t data, uint64_t flags, struct efa_ah *ah, uint32_t qpn, uint32_t qkey)
 {
+	return 0;
 }
 
-void efa_qp_wr_rdma_write_imm(struct efa_qp *efaqp, uint32_t rkey, uint64_t remote_addr, __be32 imm_data)
-{
-}
 
-void efa_qp_wr_send(struct efa_qp *efaqp)
-{
-}
-
-void efa_qp_wr_send_imm(struct efa_qp *efaqp, __be32 imm_data)
-{
-}
-
-void efa_qp_wr_set_inline_data_list(struct efa_qp *efaqp, size_t num_buf, const struct ibv_data_buf *buf_list)
-{
-}
-
-void efa_qp_wr_set_sge_list(struct efa_qp *efaqp, size_t num_sge, const struct ibv_sge *sg_list)
-{
-}
-
-void efa_qp_wr_set_ud_addr(struct efa_qp *efaqp, struct efa_ah *ah, uint32_t remote_qpn, uint32_t remote_qkey)
-{
-}
-
-void efa_qp_wr_start(struct efa_qp *efaqp)
-{
-}
 
 /* CQ wrapper functions - unit test stubs */
 int efa_ibv_cq_start_poll(struct efa_ibv_cq *ibv_cq, struct ibv_poll_cq_attr *attr)

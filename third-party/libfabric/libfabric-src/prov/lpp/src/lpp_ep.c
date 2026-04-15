@@ -176,14 +176,14 @@ int lpp_verify_ep_attrs(const struct klppioc_lf *klpp_devinfo, struct fi_ep_attr
 	}
 
 	if ((ep_attrs->rx_ctx_cnt != 0) && (ep_attrs->rx_ctx_cnt != 1)) {
-		FI_INFO(&lpp_prov, FI_LOG_EP_CTRL, "invalid rx_ctx_cnt: %lu\n",
+		FI_INFO(&lpp_prov, FI_LOG_EP_CTRL, "invalid rx_ctx_cnt: %zu\n",
 				ep_attrs->tx_ctx_cnt);
 		return -FI_EINVAL;
 	}
 
 	if ((ep_attrs->tx_ctx_cnt != 0) && (ep_attrs->tx_ctx_cnt != 1) &&
 	    (ep_attrs->tx_ctx_cnt != FI_SHARED_CONTEXT)) {
-		FI_INFO(&lpp_prov, FI_LOG_EP_CTRL, "invalid tx_ctx_cnt: %lu\n",
+		FI_INFO(&lpp_prov, FI_LOG_EP_CTRL, "invalid tx_ctx_cnt: %zu\n",
 				ep_attrs->tx_ctx_cnt);
 		return -FI_EINVAL;
 	}
@@ -635,7 +635,7 @@ int lpp_fi_ep_bind(struct fid *fid, struct fid *bfid, uint64_t flags)
 		status = lpp_ep_bind_stx(fid, bfid, flags);
 		break;
 	default:
-		FI_WARN(&lpp_prov, FI_LOG_EP_CTRL, "invalid bind class %ld\n",
+		FI_WARN(&lpp_prov, FI_LOG_EP_CTRL, "invalid bind class %zu\n",
 			bfid->fclass);
 		status = -FI_EINVAL;
 		break;

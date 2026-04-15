@@ -223,10 +223,10 @@ psm3_rv_t psm3_rv_open(const char *devname, struct local_info *loc_info)
 	rv->ioctl_gpu_pin_mmap = RV_IOCTL_GPU_PIN_MMAP;
 	if ((loc_info->rdma_mode & RV_RDMA_MODE_GPU)
 		|| (loc_info->rdma_mode & RV_RDMA_MODE_MASK) == RV_RDMA_MODE_GPU_ONLY) {
-#ifdef RV_GPU_ABI_VER_MINOR_0	/* not defined if compile against older RV header */
+#if RV_GPU_ABI_VERSION_CURRENT > RV_GPU_ABI_VERSION(1, 0)
 		// RV GPU API <= 1.0 is ok, ioctl different but arg subset
-		if (loc_info->gpu_major_rev <= RV_GPU_ABI_VER_MAJOR_1
-			&& loc_info->gpu_minor_rev <= RV_GPU_ABI_VER_MINOR_0)
+		if (RV_GPU_ABI_VERSION(loc_info->gpu_major_rev, loc_info->gpu_minor_rev) <=
+		    RV_GPU_ABI_VERSION(1, 0))
 			rv->ioctl_gpu_pin_mmap = RV_IOCTL_GPU_PIN_MMAP_R0;
 #endif
 		if (!(qparams.capability & RV_CAP_GPU_DIRECT)) {
@@ -248,9 +248,9 @@ psm3_rv_t psm3_rv_open(const char *devname, struct local_info *loc_info)
 			if ((loc_info->rdma_mode & RV_RDMA_MODE_MASK) == RV_RDMA_MODE_GPU_ONLY)
 				goto fail_sockets;
 		}
-		if ((PSM3_GPU_RV_MAJOR_REV_FAIL && PSM3_GPU_RV_MINOR_REV_FAIL)
-			&& loc_info->gpu_major_rev <= PSM3_GPU_RV_MAJOR_REV_FAIL
-			&& loc_info->gpu_minor_rev <= PSM3_GPU_RV_MINOR_REV_FAIL) {
+		if ((PSM3_GPU_RV_MAJOR_REV_FAIL && PSM3_GPU_RV_MINOR_REV_FAIL) &&
+		    RV_GPU_ABI_VERSION(loc_info->gpu_major_rev, loc_info->gpu_minor_rev) <=
+		    RV_GPU_ABI_VERSION(PSM3_GPU_RV_MAJOR_REV_FAIL, PSM3_GPU_RV_MINOR_REV_FAIL)) {
 			char buf2[100];
 			PSM3_GPU_RV_CAP_STRING(buf2, sizeof(buf2), loc_info->capability);
 			_HFI_INFO("WARNING: Mismatch: Unsupported RV %s revision (v%u.%u) ne > v%u.%u.\n",
@@ -275,24 +275,20 @@ psm3_rv_t psm3_rv_open(const char *devname, struct local_info *loc_info)
 		goto fail;
 	}
 	rv->ioctl_reg_mem = RV_IOCTL_REG_MEM;
-#ifdef RV_ABI_VER_MINOR_1	/* not defined if compile against older RV header */
+#if RV_ABI_VERSION_CURRENT > RV_ABI_VERSION(1, 1)
 	// RV API <= 1.1 is ok, ioctl different but arg subset
-	if (loc_info->major_rev <= RV_ABI_VER_MAJOR_1
-		&& loc_info->minor_rev <= RV_ABI_VER_MINOR_1)
+	if (RV_ABI_VERSION(loc_info->major_rev, loc_info->minor_rev) <= RV_ABI_VERSION(1, 1))
 		rv->ioctl_reg_mem = RV_IOCTL_REG_MEM_R1;
 #endif
-#ifdef RV_ABI_VER_MINOR_4	/* not defined if compile against older RV header */
+#if RV_ABI_VERSION_CURRENT > RV_ABI_VERSION(1, 4)
 	// RV API <= 1.4 is ok, ioctl different but arg subset
-	if (loc_info->major_rev <= RV_ABI_VER_MAJOR_1 &&
-	    loc_info->minor_rev <= RV_ABI_VER_MINOR_4)
+	if (RV_ABI_VERSION(loc_info->major_rev, loc_info->minor_rev) <= RV_ABI_VERSION(1, 4))
 		rv->ioctl_reg_mem = RV_IOCTL_REG_MEM_R4;
 #endif
 	rv->ioctl_attach = RV_IOCTL_ATTACH;
-#ifdef RV_ABI_VER_MINOR_5
+#if RV_ABI_VERSION_CURRENT > RV_ABI_VERSION(1, 5)
 	/* For older RV (ABI <= 1.5) */
-	if (loc_info->major_rev < RV_ABI_VER_MAJOR_1 ||
-	    (loc_info->major_rev == RV_ABI_VER_MAJOR_1 &&
-	     loc_info->minor_rev <= RV_ABI_VER_MINOR_5))
+	if (RV_ABI_VERSION(loc_info->major_rev, loc_info->minor_rev) <= RV_ABI_VERSION(1, 5))
 		rv->ioctl_attach = RV_IOCTL_ATTACH_R5;
 #endif
 
@@ -328,10 +324,8 @@ psm3_rv_t psm3_rv_open(const char *devname, struct local_info *loc_info)
 	aparams.in.q_depth = loc_info->q_depth;
 	aparams.in.reconnect_timeout = loc_info->reconnect_timeout;
 	aparams.in.hb_interval = loc_info->hb_interval;
-#ifdef RV_ABI_VER_MINOR_5
-	if (loc_info->major_rev > RV_ABI_VER_MAJOR_1 ||
-	    (loc_info->major_rev == RV_ABI_VER_MAJOR_1 &&
-	     loc_info->minor_rev > RV_ABI_VER_MINOR_5))
+#if RV_ABI_VERSION_CURRENT > RV_ABI_VERSION(1, 5)
+	if (RV_ABI_VERSION(loc_info->major_rev, loc_info->minor_rev) > RV_ABI_VERSION(1, 5))
 		aparams.in.fr_page_list_len = loc_info->fr_page_list_len;
 #endif
 
@@ -348,9 +342,9 @@ psm3_rv_t psm3_rv_open(const char *devname, struct local_info *loc_info)
 		loc_info->q_depth = aparams.out_gpu.q_depth;
 		loc_info->reconnect_timeout = aparams.out_gpu.reconnect_timeout;
 		loc_info->gpu_cache_size = aparams.out_gpu.gpu_cache_size;
-#ifdef RV_GPU_ABI_VER_MINOR_2
-		if (loc_info->gpu_major_rev >= RV_GPU_ABI_VER_MAJOR_1 &&
-		    loc_info->gpu_minor_rev > RV_GPU_ABI_VER_MINOR_2)
+#if RV_GPU_ABI_VERSION_CURRENT > RV_GPU_ABI_VERSION(1, 2)
+		if (RV_GPU_ABI_VERSION(loc_info->gpu_major_rev, loc_info->gpu_minor_rev) >
+		    RV_GPU_ABI_VERSION(1, 2))
 			loc_info->max_fmr_size = aparams.out_gpu.max_fmr_size;
 #endif
 	} else {
@@ -359,9 +353,9 @@ psm3_rv_t psm3_rv_open(const char *devname, struct local_info *loc_info)
 		loc_info->mr_cache_size = aparams.out.mr_cache_size;
 		loc_info->q_depth = aparams.out.q_depth;
 		loc_info->reconnect_timeout = aparams.out.reconnect_timeout;
-#ifdef RV_ABI_VER_MINOR_3
-		if (loc_info->major_rev >= RV_ABI_VER_MAJOR_1 &&
-		    loc_info->minor_rev > RV_ABI_VER_MINOR_3)
+#if RV_ABI_VERSION_CURRENT > RV_ABI_VERSION(1, 3)
+		if (RV_ABI_VERSION(loc_info->major_rev, loc_info->minor_rev) >
+		    RV_ABI_VERSION(1, 3))
 			loc_info->max_fmr_size = aparams.out.max_fmr_size;
 #endif
 #ifdef PSM_HAVE_GPU

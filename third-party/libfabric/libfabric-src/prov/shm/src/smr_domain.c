@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 Intel Corporation, Inc.  All rights reserved.
+ * Copyright (c) Intel Corporation, Inc.  All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -29,9 +29,6 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-
-#include <stdlib.h>
-#include <string.h>
 
 #include "smr.h"
 
@@ -106,7 +103,6 @@ static int smr_srx_context(struct fid_domain *domain, struct fi_rx_attr *attr,
 	return -FI_EINVAL;
 }
 
-
 static struct fi_ops_domain smr_domain_ops = {
 	.size = sizeof(struct fi_ops_domain),
 	.av_open = smr_av_open,
@@ -126,7 +122,8 @@ static int smr_domain_close(fid_t fid)
 	int ret;
 	struct smr_domain *domain;
 
-	domain = container_of(fid, struct smr_domain, util_domain.domain_fid.fid);
+	domain = container_of(fid, struct smr_domain,
+			      util_domain.domain_fid.fid);
 
 	if (domain->ipc_cache)
 		ofi_ipc_cache_destroy(domain->ipc_cache);
@@ -155,11 +152,10 @@ static struct fi_ops_mr smr_mr_ops = {
 };
 
 int smr_domain_open(struct fid_fabric *fabric, struct fi_info *info,
-		struct fid_domain **domain, void *context)
+		    struct fid_domain **domain, void *context)
 {
 	int ret;
 	struct smr_domain *smr_domain;
-	struct smr_fabric *smr_fabric;
 
 	ret = ofi_prov_check_info(&smr_util_prov, fabric->api_version, info);
 	if (ret)
@@ -176,13 +172,13 @@ int smr_domain_open(struct fid_fabric *fabric, struct fi_info *info,
 		return ret;
 	}
 
-	smr_fabric = container_of(fabric, struct smr_fabric, util_fabric.fabric_fid);
-	ofi_mutex_lock(&smr_fabric->util_fabric.lock);
+	ofi_mutex_lock(&smr_domain->util_domain.fabric->lock);
 	smr_domain->fast_rma = smr_fast_rma_enabled(info->domain_attr->mr_mode,
 						    info->tx_attr->msg_order);
-	ofi_mutex_unlock(&smr_fabric->util_fabric.lock);
+	ofi_mutex_unlock(&smr_domain->util_domain.fabric->lock);
 
-	ret = ofi_ipc_cache_open(&smr_domain->ipc_cache, &smr_domain->util_domain);
+	ret = ofi_ipc_cache_open(&smr_domain->ipc_cache,
+				 &smr_domain->util_domain);
 	if (ret) {
 		free(smr_domain);
 		return ret;

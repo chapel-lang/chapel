@@ -89,7 +89,7 @@ void lpp_completion_recv(struct lpp_ep *lpp_epp, uint64_t flags, uint64_t data,
 
 	if (status)
 		FI_WARN(&lpp_prov, FI_LOG_CQ,
-			"RECV error code: %d (buf: %p, len: %ld)\n", status, buf, len);
+			"RECV error code: %d (buf: %p, len: %zu)\n", status, buf, len);
 
 	if (status == 0 && olen != 0) {
 		status = EMSGSIZE;

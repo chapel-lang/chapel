@@ -14,7 +14,7 @@
 . ftr VB CB
 . ftr VBI CBI
 .\}
-.TH "fi_shm" "7" "2025\-05\-24" "Libfabric Programmer\[cq]s Manual" "Libfabric v2.3.1"
+.TH "fi_shm" "7" "2026\-02\-27" "Libfabric Programmer\[cq]s Manual" "Libfabric v2.5.1"
 .hy
 .SH NAME
 .PP
@@ -179,11 +179,6 @@ These values are reflected in the related fabric attribute structures.
 The \f[I]shm\f[R] provider checks for the following environment
 variables:
 .TP
-\f[I]FI_SHM_SAR_THRESHOLD\f[R]
-Maximum message size to use segmentation protocol before switching to
-mmap (only valid when CMA is not available).
-Default: SIZE_MAX (18446744073709551615)
-.TP
 \f[I]FI_SHM_TX_SIZE\f[R]
 Maximum number of outstanding tx operations.
 Default 1024
@@ -215,6 +210,15 @@ chunks.
 This environment variable is provided to fine tune performance on
 different systems.
 Default 262144
+.TP
+\f[I]FI_SHM_BUFFER_THRESHOLD\f[R]
+When to start requesting forced unexpected messaging buffering.
+When this threshold is reached, the sender will notify the receiver to
+force buffering of the entire message if it is unexpected.
+If the message is matched when received, it has no effect.
+Requesting unexpected message buffering allows shm to support unlimited
+unexpected messaging (memory permitting).
+Default: 1
 .SH SEE ALSO
 .PP
 \f[V]fabric\f[R](7), \f[V]fi_provider\f[R](7), \f[V]fi_getinfo\f[R](3)

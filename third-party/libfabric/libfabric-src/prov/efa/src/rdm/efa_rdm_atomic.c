@@ -58,7 +58,9 @@ efa_rdm_atomic_alloc_txe(struct efa_rdm_ep *efa_rdm_ep,
 		return NULL;
 	}
 
+	efa_domain_ope_list_lock(efa_rdm_ep_domain(efa_rdm_ep));
 	dlist_insert_tail(&txe->ep_entry, &efa_rdm_ep->txe_list);
+	efa_domain_ope_list_unlock(efa_rdm_ep_domain(efa_rdm_ep));
 
 	ofi_ioc_to_iov(msg_atomic->msg_iov, iov, msg_atomic->iov_count, datatype_size);
 	msg.addr = msg_atomic->addr;
@@ -436,7 +438,7 @@ efa_rdm_atomic_compwritemsg(struct fid_ep *ep,
 	struct efa_rdm_atomic_ex atomic_ex = {
 		.resp_iov_count = result_count,
 		.comp_iov_count = compare_count,
-		.compare_desc = compare_desc,
+		
 	};
 	size_t datatype_size;
 	int err;
@@ -481,6 +483,9 @@ efa_rdm_atomic_compwritemsg(struct fid_ep *ep,
 
 	ofi_ioc_to_iov(resultv, atomic_ex.resp_iov, result_count, datatype_size);
 	ofi_ioc_to_iov(comparev, atomic_ex.comp_iov, compare_count, datatype_size);
+	memset(atomic_ex.compare_desc, 0, sizeof(atomic_ex.compare_desc));
+	if (compare_desc)
+		memcpy(atomic_ex.compare_desc, compare_desc, sizeof(void*) * compare_count);
 	memcpy(atomic_ex.result_desc, result_desc, sizeof(void*) * result_count);
 
 	return efa_rdm_atomic_generic_efa(efa_rdm_ep, msg, peer, &atomic_ex, ofi_op_atomic_compare, flags);

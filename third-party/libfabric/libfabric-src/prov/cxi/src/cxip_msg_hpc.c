@@ -840,7 +840,7 @@ static int cxip_rxc_check_ule_hybrid_preempt(struct cxip_rxc_hpc *rxc)
 	int ret;
 	int count;
 
-	if (cxip_env.rx_match_mode == CXIP_PTLTE_HYBRID_MODE &&
+	if (rxc->base.domain->rx_match_mode == CXIP_PTLTE_HYBRID_MODE &&
 	    cxip_env.hybrid_unexpected_msg_preemptive == 1) {
 		count = ofi_atomic_get32(&rxc->orx_hw_ule_cnt);
 
@@ -1944,7 +1944,7 @@ static void cxip_post_ux_onload_sw(struct cxip_rxc_hpc *rxc)
 {
 	int ret;
 
-	assert(cxip_env.rx_match_mode == CXIP_PTLTE_HYBRID_MODE);
+	assert(rxc->base.domain->rx_match_mode == CXIP_PTLTE_HYBRID_MODE);
 	assert(rxc->prev_state == RXC_ENABLED);
 	assert(rxc->new_state == RXC_ENABLED_SOFTWARE);
 
@@ -2422,7 +2422,7 @@ void cxip_recv_pte_cb(struct cxip_pte *pte, const union c_event *event)
 			/* If running in hybrid mode, resume operation as a
 			 * software managed EP to reduce LE resource load.
 			 */
-			if (cxip_env.rx_match_mode == CXIP_PTLTE_HYBRID_MODE)
+			if (rxc->base.domain->rx_match_mode == CXIP_PTLTE_HYBRID_MODE)
 				rxc->new_state = RXC_ENABLED_SOFTWARE;
 
 			rxc->num_fc_append_fail++;
@@ -2463,7 +2463,7 @@ void cxip_recv_pte_cb(struct cxip_pte *pte, const union c_event *event)
 			 * Must replenish buffers, but does not require that
 			 * LE resources are recovered.
 			 */
-			RXC_WARN(rxc, FC_REQ_FULL_MSG, cxip_env.req_buf_size);
+			RXC_WARN(rxc, FC_REQ_FULL_MSG, rxc->base.domain->req_buf_size);
 			rxc->base.state = RXC_ONLOAD_FLOW_CONTROL_REENABLE;
 			rxc->num_fc_req_full++;
 			break;
@@ -2528,7 +2528,7 @@ void cxip_recv_pte_cb(struct cxip_pte *pte, const union c_event *event)
 			 * been disabled; it is safe to ignore this change.
 			 */
 			assert(rxc->base.state == RXC_DISABLED);
-			if (!cxip_env.msg_offload) {
+			if (!rxc->base.domain->msg_offload) {
 				RXC_WARN(rxc, "Software managed EP enabled\n");
 				rxc->base.state = RXC_ENABLED_SOFTWARE;
 			}
@@ -3956,7 +3956,7 @@ static int cxip_rxc_hpc_msg_init(struct cxip_rxc *rxc_base)
 	/* If starting in or able to transition to software managed
 	 * PtlTE, append request list entries first.
 	 */
-	if (cxip_software_pte_allowed()) {
+	if (cxip_software_pte_allowed(rxc->base.domain->rx_match_mode)) {
 		ret = cxip_req_bufpool_init(rxc);
 		if (ret != FI_SUCCESS)
 			goto free_slots;
@@ -3994,7 +3994,7 @@ free_oflow_buf:
 	if (rxc->base.msg_offload)
 		cxip_oflow_bufpool_fini(rxc);
 free_req_buf:
-	if (cxip_software_pte_allowed())
+	if (cxip_software_pte_allowed(rxc->base.domain->rx_match_mode))
 		cxip_req_bufpool_fini(rxc);
 free_slots:
 	cxip_evtq_adjust_reserved_fc_event_slots(&rxc->base.rx_evtq,
@@ -4101,9 +4101,9 @@ static void cxip_rxc_hpc_cleanup(struct cxip_rxc *rxc_base)
 			  rxc->num_sc_nic_hw2sw_unexp,
 			  rxc->num_sc_nic_hw2sw_append_fail);
 
-	if (cxip_software_pte_allowed())
+	if (cxip_software_pte_allowed(rxc->base.domain->rx_match_mode))
 		cxip_req_bufpool_fini(rxc);
-	if (cxip_env.msg_offload)
+	if (rxc->base.domain->msg_offload)
 		cxip_oflow_bufpool_fini(rxc);
 }
 
@@ -4116,7 +4116,7 @@ static int cxip_rxc_check_recv_count_hybrid_preempt(struct cxip_rxc *rxc)
 	if (rxc->protocol != FI_PROTO_CXI)
 		return FI_SUCCESS;
 
-	if (cxip_env.rx_match_mode == CXIP_PTLTE_HYBRID_MODE &&
+	if (rxc->domain->rx_match_mode == CXIP_PTLTE_HYBRID_MODE &&
 	    cxip_env.hybrid_posted_recv_preemptive == 1) {
 		count = cxip_rxc_orx_reqs_get(rxc);
 
@@ -4179,7 +4179,7 @@ ssize_t _cxip_recv_req(struct cxip_req *req, bool restart_seq)
 	 * still matching in hardware, and FI_CXI_HYBRID_RECV_PREEMPTIVE
 	 * explicitly set by the application.
 	 */
-	if (cxip_env.rx_match_mode != CXIP_PTLTE_HYBRID_MODE ||
+	if (rxc->domain->rx_match_mode != CXIP_PTLTE_HYBRID_MODE ||
 	    ++rxc->recv_appends & CXIP_HYBRID_RECV_CHECK_INTERVAL)
 		le_flags = C_LE_EVENT_LINK_DISABLE;
 

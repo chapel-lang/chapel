@@ -54,13 +54,13 @@ static int lpp_getinfo_match(const struct klppioc_lf *klpp_devinfo,
 		return 0;
 	// Compare the modes the application supports to those we require.
 	if ((hints->mode & LPP_MODE) != LPP_MODE) {
-		FI_INFO(&lpp_prov, FI_LOG_FABRIC, "hint mode %lx invalid for LPP mode %x\n", hints->mode, LPP_MODE);
+		FI_INFO(&lpp_prov, FI_LOG_FABRIC, "hint mode %" PRIx64 " invalid for LPP mode %x\n", (uint64_t)hints->mode, LPP_MODE);
 		return -FI_ENODATA;
 	}
 
 	// Compare the capabilities requested to those we can provide.
 	if ((hints->caps & LPP_CAPS) != hints->caps) {
-		FI_INFO(&lpp_prov, FI_LOG_FABRIC, "hint caps %lx invalid for LPP caps %llx\n", hints->caps, LPP_CAPS);
+		FI_INFO(&lpp_prov, FI_LOG_FABRIC, "hint caps %" PRIx64 " invalid for LPP caps %llx\n", (uint64_t)hints->caps, LPP_CAPS);
 		return -FI_ENODATA;
 	}
 
@@ -222,7 +222,7 @@ int lpp_fi_getinfo(uint32_t version, const char *node, const char *service,
 			continue;
 		}
 		if (klpp_getdevice(klpp_fd, &klpp_devinfo) < 0) {
-			FI_WARN(&lpp_prov, FI_LOG_FABRIC, "failed to query KLPP device %ld\n", i);
+			FI_WARN(&lpp_prov, FI_LOG_FABRIC, "failed to query KLPP device %zu\n", i);
 			continue;
 		}
 		close(klpp_fd);

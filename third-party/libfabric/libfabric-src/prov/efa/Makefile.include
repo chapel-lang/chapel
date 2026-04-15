@@ -35,6 +35,8 @@ _efa_files = \
 	prov/efa/src/efa_hmem.c \
 	prov/efa/src/efa_shm.c \
 	prov/efa/src/efa_av.c \
+	prov/efa/src/efa_ah.c \
+	prov/efa/src/efa_conn.c \
 	prov/efa/src/efa_domain.c \
 	prov/efa/src/efa_fabric.c \
 	prov/efa/src/efa_mr.c \
@@ -44,6 +46,7 @@ _efa_files = \
 	prov/efa/src/efa_fork_support.c \
 	prov/efa/src/efa_tp_def.c \
 	prov/efa/src/efa_base_ep.c \
+	prov/efa/src/efa_direct_ope.c \
 	prov/efa/src/efa_prov.c	\
 	prov/efa/src/efa_env.c	\
 	prov/efa/src/efa_cntr.c	\
@@ -83,6 +86,8 @@ endif ENABLE_EFA_UNIT_TEST
 _efa_headers = \
 	prov/efa/src/efa.h \
 	prov/efa/src/efa_av.h \
+	prov/efa/src/efa_ah.h \
+	prov/efa/src/efa_conn.h \
 	prov/efa/src/efa_mr.h \
 	prov/efa/src/efa_shm.h \
 	prov/efa/src/efa_hmem.h \
@@ -95,6 +100,7 @@ _efa_headers = \
 	prov/efa/src/efa_cq.h \
 	prov/efa/src/efa_cntr.h \
 	prov/efa/src/efa_base_ep.h \
+	prov/efa/src/efa_direct_ope.h \
 	prov/efa/src/efa_tp_def.h \
 	prov/efa/src/efa_tp.h \
 	prov/efa/src/efa_prov.h \
@@ -164,6 +170,7 @@ nodist_prov_efa_test_efa_unit_test_SOURCES = \
 	prov/efa/test/efa_unit_test_pke.c \
 	prov/efa/test/efa_unit_test_msg.c \
 	prov/efa/test/efa_unit_test_rma.c \
+	prov/efa/test/efa_unit_test_rdm_rma.c \
 	prov/efa/test/efa_unit_test_data_path_direct.c
 
 
@@ -173,25 +180,22 @@ prov_efa_test_efa_unit_test_CPPFLAGS = $(efa_CPPFLAGS)
 prov_efa_test_efa_unit_test_LDADD = $(cmocka_LIBS) $(linkback)
 prov_efa_test_efa_unit_test_LDFLAGS = $(cmocka_rpath) $(efa_LDFLAGS) $(cmocka_LDFLAGS) \
 					-Wl,--wrap=ibv_create_ah \
+					-Wl,--wrap=ibv_destroy_ah \
 					-Wl,--wrap=ibv_is_fork_initialized \
 					-Wl,--wrap=efadv_query_device \
+					-Wl,--wrap=efa_ah_alloc \
+					-Wl,--wrap=efa_ah_release \
 					-Wl,--wrap=ofi_cudaMalloc \
 					-Wl,--wrap=ofi_copy_from_hmem_iov \
+					-Wl,--wrap=efa_rdm_pke_copy_payload_to_ope \
 					-Wl,--wrap=efa_rdm_pke_read \
 					-Wl,--wrap=efa_rdm_pke_proc_matched_rtm \
 					-Wl,--wrap=efa_rdm_ope_post_send \
 					-Wl,--wrap=efa_device_support_unsolicited_write_recv \
 					-Wl,--wrap=efa_qp_post_recv \
-					-Wl,--wrap=efa_qp_wr_complete \
-					-Wl,--wrap=efa_qp_wr_send \
-					-Wl,--wrap=efa_qp_wr_start \
-					-Wl,--wrap=efa_qp_wr_rdma_read \
-					-Wl,--wrap=efa_qp_wr_rdma_write \
-					-Wl,--wrap=efa_qp_wr_rdma_write_imm \
-					-Wl,--wrap=efa_qp_wr_send_imm \
-					-Wl,--wrap=efa_qp_wr_set_inline_data_list \
-					-Wl,--wrap=efa_qp_wr_set_sge_list \
-					-Wl,--wrap=efa_qp_wr_set_ud_addr \
+					-Wl,--wrap=efa_qp_post_send \
+					-Wl,--wrap=efa_qp_post_read \
+					-Wl,--wrap=efa_qp_post_write \
 					-Wl,--wrap=efa_ibv_cq_start_poll \
 					-Wl,--wrap=efa_ibv_cq_next_poll \
 					-Wl,--wrap=efa_ibv_cq_end_poll \

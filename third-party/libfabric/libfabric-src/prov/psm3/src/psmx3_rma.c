@@ -101,7 +101,7 @@ int psmx3_am_rma_handler(psm2_am_token_t token, psm2_amarg_t *args,
 	uint8_t *rma_addr;
 	ssize_t rma_len;
 	size_t rma_offset;
-	uint32_t cq_data;
+	uint64_t cq_data;
 	uint64_t key;
 	int err = 0;
 	int op_error = 0;

@@ -337,16 +337,16 @@ int lpp_domain_verify_attrs(const struct klppioc_lf *klpp_devinfo,
 		return -FI_ENODATA;											\
 	}
 
-	CHECK_ATTR(mr_key_size, attr->mr_key_size, >, fi_domain_default_attrs.mr_key_size, "%ld");
-	CHECK_ATTR(cq_data_size, attr->cq_data_size, >, fi_domain_default_attrs.cq_data_size, "%ld");
-	CHECK_ATTR(cq_cnt, attr->cq_cnt, >, fi_domain_default_attrs.cq_cnt, "%ld");
-	CHECK_ATTR(ep_cnt, attr->ep_cnt, >, fi_domain_default_attrs.ep_cnt, "%ld");
-	CHECK_ATTR(max_ep_tx_ctx, attr->max_ep_tx_ctx, >, fi_domain_default_attrs.max_ep_tx_ctx, "%ld");
-	CHECK_ATTR(max_ep_rx_ctx, attr->max_ep_rx_ctx, >, fi_domain_default_attrs.max_ep_rx_ctx, "%ld");
-	CHECK_ATTR(cntr_cnt, attr->cntr_cnt, >, fi_domain_default_attrs.cntr_cnt, "%ld");
-	CHECK_ATTR(mr_iov_limit, attr->mr_iov_limit, >, fi_domain_default_attrs.mr_iov_limit, "%ld");
-	CHECK_ATTR(max_err_data, attr->max_err_data, >, fi_domain_default_attrs.max_err_data, "%ld");
-	CHECK_ATTR(mr_cnt, attr->mr_cnt, >, fi_domain_default_attrs.mr_cnt, "%ld");
+	CHECK_ATTR(mr_key_size, attr->mr_key_size, >, fi_domain_default_attrs.mr_key_size, "%zu");
+	CHECK_ATTR(cq_data_size, attr->cq_data_size, >, fi_domain_default_attrs.cq_data_size, "%zu");
+	CHECK_ATTR(cq_cnt, attr->cq_cnt, >, fi_domain_default_attrs.cq_cnt, "%zu");
+	CHECK_ATTR(ep_cnt, attr->ep_cnt, >, fi_domain_default_attrs.ep_cnt, "%zu");
+	CHECK_ATTR(max_ep_tx_ctx, attr->max_ep_tx_ctx, >, fi_domain_default_attrs.max_ep_tx_ctx, "%zu");
+	CHECK_ATTR(max_ep_rx_ctx, attr->max_ep_rx_ctx, >, fi_domain_default_attrs.max_ep_rx_ctx, "%zu");
+	CHECK_ATTR(cntr_cnt, attr->cntr_cnt, >, fi_domain_default_attrs.cntr_cnt, "%zu");
+	CHECK_ATTR(mr_iov_limit, attr->mr_iov_limit, >, fi_domain_default_attrs.mr_iov_limit, "%zu");
+	CHECK_ATTR(max_err_data, attr->max_err_data, >, fi_domain_default_attrs.max_err_data, "%zu");
+	CHECK_ATTR(mr_cnt, attr->mr_cnt, >, fi_domain_default_attrs.mr_cnt, "%zu");
 
 #undef CHECK_ATTR
 

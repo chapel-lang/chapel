@@ -19,6 +19,7 @@
 #include <ofi_util.h>
 
 #include "efa_cq.h"
+#include "efa_domain.h"
 #include "efa_prov_info.h"
 #ifdef EFA_PERF_ENABLED
 const char *efa_perf_counters_str[] = {
@@ -70,7 +71,13 @@ static int efa_trywait(struct fid_fabric *fabric, struct fid **fids, int count)
 		if (fids[i]->fclass == FI_CLASS_CQ) {
 			/* Use EFA-specific CQ trywait */
 			efa_cq = container_of(fids[i], struct efa_cq, util_cq.cq_fid.fid);
-			ret = efa_cq_trywait(efa_cq);
+			if (container_of(efa_cq->util_cq.domain, struct efa_domain, util_domain)->info_type == EFA_INFO_RDM) {
+				if (!efa_cq->util_cq.wait)
+					return -FI_EINVAL;
+				ret = efa_cq->util_cq.wait->wait_try(efa_cq->util_cq.wait);
+			} else {
+				ret = efa_cq_trywait(efa_cq);
+			}
 			if (ret)
 				return ret;
 		} else {

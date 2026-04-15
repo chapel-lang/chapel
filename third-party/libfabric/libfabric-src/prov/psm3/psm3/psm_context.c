@@ -139,6 +139,26 @@ psm3_context_open(const psm2_ep_t ep, long unit_param, long port, long addr_inde
 		psmi_assert(unit_param >= 0);	// caller checked valid
 	}
 
+	/* See if we want to activate support for receive thread */
+	psm3_getenv("PSM3_RCVTHREAD",
+		    "Enable receive thread (0 disables thread)",
+		    PSMI_ENVVAR_LEVEL_USER, PSMI_ENVVAR_TYPE_UINT_FLAGS,
+			// default to 0 for all but 1st rail
+		    (union psmi_envvar_val)(norcvthread++ ? 0 :
+					    PSMI_RCVTHREAD_FLAGS),
+		    &env_rcvthread);
+
+	/* If enabled, use the polling capability to implement a receive
+	 * interrupt thread that can handle urg packets */
+	if (env_rcvthread.e_uint) {
+		psmi_hal_add_sw_status(PSM_HAL_PSMI_RUNTIME_RTS_RX_THREAD);
+#ifdef PSMI_PLOCK_IS_NOLOCK
+		psm3_handle_error(PSMI_EP_NORETURN, PSM2_INTERNAL_ERR,
+				  "#define PSMI_PLOCK_IS_NOLOCK not functional yet "
+				  "with RCVTHREAD on");
+#endif
+	}
+
 	/* open this unit. */
 	if (psmi_hal_get_unit_active(unit_param) <= 0
 	    || psmi_hal_context_open(unit_param, port,
@@ -174,25 +194,6 @@ psm3_context_open(const psm2_ep_t ep, long unit_param, long port, long addr_inde
 			&ep->network_pkey, &ep->network_pkey_index)) != PSM2_OK)
 		goto close;
 
-	/* See if we want to activate support for receive thread */
-	psm3_getenv("PSM3_RCVTHREAD",
-		    "Enable Recv thread (0 disables thread)",
-		    PSMI_ENVVAR_LEVEL_USER, PSMI_ENVVAR_TYPE_UINT_FLAGS,
-			// default to 0 for all but 1st rail
-		    (union psmi_envvar_val)(norcvthread++ ? 0 :
-					    PSMI_RCVTHREAD_FLAGS),
-		    &env_rcvthread);
-
-	/* If enabled, use the polling capability to implement a receive
-	 * interrupt thread that can handle urg packets */
-	if (env_rcvthread.e_uint) {
-		psmi_hal_add_sw_status(PSM_HAL_PSMI_RUNTIME_RTS_RX_THREAD);
-#ifdef PSMI_PLOCK_IS_NOLOCK
-		psm3_handle_error(PSMI_EP_NORETURN, PSM2_INTERNAL_ERR,
-				  "#define PSMI_PLOCK_IS_NOLOCK not functional yet "
-				  "with RCVTHREAD on");
-#endif
-	}
 	_HFI_PRDBG("Opened unit %ld port %ld: EPID=%s %s\n", unit_param, port,
 		psm3_epid_fmt_internal(ep->epid, 0), psm3_epid_fmt_addr(ep->epid, 1));
 

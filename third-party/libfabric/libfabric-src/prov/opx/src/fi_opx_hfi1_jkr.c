@@ -48,7 +48,7 @@ void opx_jkr_rhe_debug(struct fi_opx_ep *opx_ep, volatile uint64_t *rhe_ptr, vol
 		fi_opx_global.prov, FI_LOG_EP_DATA,
 #endif
 		"ERROR %s RHF(%#16.16lX) RHE(%p)[%u]=%p RHE %#16.16lX is ERRORED %u, UseEgrBuf %u, EgrIndex %#X/%#X, EgrOffset %#X, %s%s%s %s %#16.16lX  %s%s%s%s%s%s%s%s%s%s%s \n",
-		OPX_HFI1_TYPE_STRING(OPX_HFI1_TYPE), rhf_rcvd, rhe_ptr, rhe_index, rhe, *rhe,
+		OPX_HFI1_TYPE_STRING(OPX_SW_HFI1_TYPE), rhf_rcvd, rhe_ptr, rhe_index, rhe, *rhe,
 		OPX_IS_ERRORED_RHF(rhf_rcvd, hfi1_type) != 0UL, OPX_RHF_IS_USE_EGR_BUF(rhf_rcvd, hfi1_type),
 		(uint32_t) OPX_RHF_EGR_INDEX(rhf_rcvd, hfi1_type), last_egrbfr_index,
 		(uint32_t) OPX_RHF_EGR_OFFSET(rhf_rcvd, hfi1_type),
@@ -171,7 +171,7 @@ void opx_print_9B_pbc(uint64_t pbc1, const enum opx_hfi1_type hfi1_type, const c
 {
 	/* WFR 9B is different */
 	FI_DBG_TRACE(fi_opx_global.prov, FI_LOG_EP_DATA, "%s %s %s\n", func, OPX_HFI1_TYPE_STRING(hfi1_type),
-		     OPX_HFI1_TYPE_STRING(OPX_HFI1_TYPE));
+		     OPX_HFI1_TYPE_STRING(OPX_SW_HFI1_TYPE));
 	if (hfi1_type & OPX_HFI1_WFR) {
 		return opx_wfr_print_9B_pbc(pbc1, func);
 	}

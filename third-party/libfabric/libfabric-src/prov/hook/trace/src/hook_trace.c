@@ -33,6 +33,7 @@
 #include "ofi_prov.h"
 #include "ofi_iov.h"
 #include <config.h>
+#include <inttypes.h>
 
 #include <rdma/fi_profile.h>
 struct hook_trace_ep {
@@ -205,7 +206,7 @@ static void hook_trace_prof_init(void *context)
 	if (!(ret)) { \
 		if ((flags)) \
 			FI_TRACE((fabric)->hprov, FI_LOG_EP_CTRL, \
-				 "ep/pep %p flags 0x%lx\n", \
+				 "ep/pep %p flags 0x%" PRIx64 "\n", \
 				 (void *)(ep), (uint64_t)(flags)); \
 		else \
 			FI_TRACE((fabric)->hprov, FI_LOG_EP_CTRL, \
@@ -221,35 +222,36 @@ static void hook_trace_prof_init(void *context)
 #define TRACE_EP_MSG(ret, ep, buf, len, addr, data, flags, context) \
 	if (!(ret)) { \
 		FI_TRACE((ep)->domain->fabric->hprov, FI_LOG_EP_DATA, \
-			"buf %p len %zu addr %zu data %lu " \
-			"flags 0x%zx ctx %p\n", \
-			buf, len, addr, (uint64_t)data, \
-			(uint64_t)flags, context); \
+			"buf %p len %zu addr %" PRIuPTR " data 0x%" PRIx64 " " \
+			"flags 0x%" PRIxPTR " ctx %p\n", \
+			(void *)(buf), (size_t)(len), (uintptr_t)(addr), (uint64_t)(data), \
+			(uintptr_t)flags, (void *)(context)); \
 	}
 
 #define TRACE_EP_RMA(ret, ep, buf, len, addr, raddr, data, flags, key, context) \
 	if (!(ret)) { \
 		FI_TRACE((ep)->domain->fabric->hprov, FI_LOG_EP_DATA, \
-			"buf %p len %zu addr %zu raddr %lu data %lu " \
-			"flags 0x%zx key 0x%zx ctx %p\n", \
-			buf, len, addr, (uint64_t)raddr, (uint64_t)data, \
-			(uint64_t)flags, (uint64_t)key, context); \
+			"buf %p len %zu addr %" PRIuPTR " raddr %" PRIu64 " data %" PRIu64 " " \
+			"flags 0x%" PRIxPTR " key 0x%" PRIxPTR " ctx %p\n", \
+			(void *)(buf), (size_t)(len), (uintptr_t)(addr), (uint64_t)(raddr),  \
+			(uint64_t)(data), (uintptr_t)(flags), (uintptr_t)(key), (void *)(context)); \
 	}
 
 #define TRACE_EP_TAGGED(ret, ep, buf, len, addr, data, flags, tag, ignore, context) \
 	if (!(ret)) { \
 		FI_TRACE((ep)->domain->fabric->hprov, FI_LOG_EP_DATA, \
-			"buf %p len %zu addr %zu data %lu " \
-			"flags 0x%zx tag 0x%lx ignore 0x%zx ctx %p\n", \
-			buf, len, addr, (uint64_t)data, (uint64_t)flags, \
-			(uint64_t)tag, (uint64_t)ignore, context); \
+			"buf %p len %zu addr %" PRIuPTR " data %" PRIu64 " " \
+			"flags 0x%" PRIxPTR " tag 0x%" PRIxPTR " ignore 0x%" PRIxPTR " ctx %p\n", \
+			(void *)(buf), (size_t)(len), (uintptr_t)(addr), (uint64_t)(data),  \
+			(uintptr_t)(flags), (uintptr_t)tag, (uintptr_t)ignore, (void *)(context)); \
 	}
 
 #define TRACE_MR_ATTR(ret, buf, size, dom, mr, len, flags, attr)    \
 	if (!(ret)) { \
-		FI_TRACE(dom->fabric->hprov, FI_LOG_DOMAIN, \
-		     "mr %p len %lu flags 0x%lx\n%s",  mr, (len), (flags), \
-		      fi_tostr_r(buf, size, (void *)attr, FI_TYPE_MR_ATTR)); \
+		FI_TRACE(dom->fabric->hprov, FI_LOG_DOMAIN,									\
+		     "mr %p len %zu flags 0x%" PRIx64 "\n%s",  (void *)(mr), (size_t)(len),	\
+		      (uint64_t)(flags), fi_tostr_r(buf, size, (void *)attr,				\
+				  FI_TYPE_MR_ATTR));												\
 	}
 
 #define TRACE_ENDPOINT(buf, len, dom, name, ep, context, info)  \
@@ -300,12 +302,12 @@ trace_cq_msg_entry(const struct fi_provider *prov, const char *func,
 	for (i = 0; i < count; i++) {
 		if (entry[i].flags & FI_RECV) {
 			fi_log(prov, FI_LOG_TRACE, FI_LOG_CQ, func, line,
-			       "ctx %p flags 0x%lx len %zu\n",
-			       entry[i].op_context, entry[i].flags,  entry[i].len);
+			       "ctx %p flags 0x%" PRIx64 " len %zu\n",
+			       entry[i].op_context, (uint64_t)entry[i].flags,  entry[i].len);
 		} else {
 			fi_log(prov, FI_LOG_TRACE, FI_LOG_CQ, func, line,
-			       "ctx %p flags 0x%lx\n",
-			       entry[i].op_context, entry[i].flags);
+			       "ctx %p flags 0x%" PRIx64 "\n",
+			       entry[i].op_context, (uint64_t)entry[i].flags);
 		}
 	}
 }
@@ -320,14 +322,14 @@ trace_cq_data_entry(const struct fi_provider *prov, const char *func,
 	for (i = 0; i < count; i++) {
 		if (entry[i].flags & FI_RECV) {
 			fi_log(prov, FI_LOG_TRACE, FI_LOG_CQ, func, line,
-			       "ctx %p flags 0x%lx len %zu buf %p, data %lu\n",
-			       entry[i].op_context, entry[i].flags,
+			       "ctx %p flags 0x%" PRIx64 " len %zu buf %p, data %" PRIu64 "\n",
+			       entry[i].op_context, (uint64_t)entry[i].flags,
 			       entry[i].len, entry[i].buf,
-			       (entry[i].flags & FI_REMOTE_CQ_DATA) ? entry[i].data : 0);
+			       (entry[i].flags & FI_REMOTE_CQ_DATA) ? (uint64_t)entry[i].data : 0);
 		} else {
 			fi_log(prov, FI_LOG_TRACE, FI_LOG_CQ, func, line,
-			       "ctx %p flags 0x%lx\n",
-			       entry[i].op_context, entry[i].flags);
+			       "ctx %p flags 0x%" PRIx64 "\n",
+			       entry[i].op_context, (uint64_t)entry[i].flags);
 		}
 	}
 }
@@ -342,15 +344,15 @@ trace_cq_tagged_entry(const struct fi_provider *prov, const char *func,
 	for (i = 0; i < count; i++) {
 		if (entry[i].flags & FI_RECV) {
 			fi_log(prov, FI_LOG_TRACE, FI_LOG_CQ, func, line,
-			       "ctx %p flags 0x%lx len %zu buf %p, data %lu tag 0x%lx\n",
-			       entry[i].op_context, entry[i].flags,
+			       "ctx %p flags 0x%" PRIx64 " len %zu buf %p, data %" PRIu64 " tag 0x%" PRIx64 "\n",
+			       entry[i].op_context, (uint64_t)entry[i].flags,
 			       entry[i].len, entry[i].buf,
-			       (entry[i].flags & FI_REMOTE_CQ_DATA) ? entry[i].data : 0,
-			       entry[i].tag);
+			       (uint64_t)(entry[i].flags & FI_REMOTE_CQ_DATA) ? entry[i].data : 0,
+			       (uint64_t)entry[i].tag);
 		} else {
 			fi_log(prov, FI_LOG_TRACE, FI_LOG_CQ, func, line,
-			       "ctx %p flags 0x%lx\n",
-			       entry[i].op_context, entry[i].flags);
+			       "ctx %p flags 0x%" PRIx64 "\n",
+			       entry[i].op_context, (uint64_t)entry[i].flags);
 		}
 	}
 }
@@ -387,16 +389,16 @@ trace_cq_err(struct hook_cq *cq, const char *func, int line,
 	if (entry->flags & FI_RECV) {
 		fi_log(cq->domain->fabric->hprov, FI_LOG_TRACE, FI_LOG_CQ,
 		       func, line,
-		       "ctx %p flags 0x%lx, len %zu buf %p data %lu tag 0x%lx "
+		       "ctx %p flags 0x%" PRIx64 ", len %zu buf %p data 0x%" PRIx64 " tag 0x%" PRIx64 " "
 		       "olen %zu err %d (%s) prov_errno %d (%s)\n",
-		       entry->op_context, entry->flags, entry->len, entry->buf,
-		       entry->data, entry->tag, entry->olen,  
+		       entry->op_context, (uint64_t)entry->flags, entry->len, entry->buf,
+		       (uint64_t)entry->data, (uint64_t)entry->tag, entry->olen,
 		       entry->err, fi_strerror(entry->err),
 		       entry->prov_errno, err_buf);
 	} else {
 		fi_log(cq->domain->fabric->hprov, FI_LOG_TRACE, FI_LOG_CQ,
 		       func, line,
-		       "ctx %p flags 0x%lx, data %lu tag 0x%lx "
+		       "ctx %p flags 0x%" PRIx64 ", data %" PRIu64 " tag 0x%" PRIx64 " "
 		       "olen %zu err %d (%s) prov_errno %d (%s)\n",
 		       entry->op_context, entry->flags,
 		       entry->data, entry->tag, entry->olen,

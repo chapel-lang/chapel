@@ -39,6 +39,9 @@
 #define LNX_MAX_PRIMARY_ID	((1ULL << 56) - 1)
 #define LNX_MAX_SUB_ID 		((1ULL << 8) - 1)
 
+#define LNX_PER_MSG_SELECTION_STR	"PER_MSG"
+#define LNX_PER_PEER_SELECTION_STR	"PER_PEER"
+
 #define lnx_ep_rx_flags(lnx_ep) ((lnx_ep)->le_ep.rx_op_flags)
 
 struct lnx_match_attr {
@@ -134,6 +137,11 @@ struct lnx_peer {
 	ofi_atomic32_t lp_ep_rr;
 	struct lnx_core_av **lp_avs;
 	struct lnx_peer_ep_map *lp_src_eps;
+	/* Both fields below are used to lock the peer to a specific local
+	 * endpoint and remote peer address
+	 */
+	fi_addr_t lp_locked_core_addr;
+	struct lnx_core_ep *lp_locked_cep;
 };
 
 struct lnx_av {
@@ -159,6 +167,12 @@ struct lnx_domain {
 	int ld_ep_idx;
 };
 
+enum lnx_multirail_selection {
+	LNX_MR_SELECTION_PER_MSG = 0,
+	LNX_MR_SELECTION_PER_PEER,
+	LNX_MR_SELECTION_MAX,
+};
+
 struct lnx_ep {
 	int le_idx;
 	struct util_ep le_ep;
@@ -169,6 +183,9 @@ struct lnx_ep {
 	size_t le_fclass;
 	struct lnx_peer_srq le_srq;
 	struct lnx_av *le_lav;
+	/* global round robin index */
+	ofi_atomic32_t le_rr;
+	enum lnx_multirail_selection le_mr;
 };
 
 struct lnx_cq {
@@ -289,13 +306,12 @@ lnx_get_core_addr(struct lnx_core_ep *cep, fi_addr_t addr)
 	return map_addr->map_addrs[idx];
 }
 
-/* TODO:
- * Make this function a callback. Intent is to be able to have different
- * ways to select the endpoints. This is useful to try different methods
- * of selecting the endpoint <-> peer addr pairing.
+/*
+ * Round robin over the end points and peer addresses per message
+ * This does not take into consideration send after send requirements.
  */
 static inline int
-lnx_select_send_endpoints(struct lnx_ep *lep, fi_addr_t lnx_addr,
+lnx_select_send_endpoints_msg(struct lnx_ep *lep, fi_addr_t lnx_addr,
 		struct lnx_core_ep **cep_out, fi_addr_t *core_addr)
 {
 	int idx, rr;
@@ -309,8 +325,7 @@ lnx_select_send_endpoints(struct lnx_ep *lep, fi_addr_t lnx_addr,
 		return -FI_ENOSYS;
 
 	/* round robin over the endpoints which can reach this peer */
-	rr = ofi_atomic_get32(&lp->lp_ep_rr);
-	ofi_atomic_inc32(&lp->lp_ep_rr);
+	rr = ofi_atomic_inc32(&lp->lp_ep_rr) - 1;
 	ep_map = &lp->lp_src_eps[lep->le_idx];
 	idx = rr % ep_map->pem_num_eps;
 	cep = ep_map->pem_eps[idx];
@@ -318,8 +333,7 @@ lnx_select_send_endpoints(struct lnx_ep *lep, fi_addr_t lnx_addr,
 	map_addr = ofi_bufpool_get_ibuf(cep->cep_cav->cav_map, lp->lp_addr);
 
 	/* round robin over available peer addresses */
-	rr = ofi_atomic_get32(&map_addr->map_rr);
-	ofi_atomic_inc32(&map_addr->map_rr);
+	rr = ofi_atomic_inc32(&map_addr->map_rr) - 1;
 	idx = rr % (map_addr->map_count);
 
 	*core_addr = map_addr->map_addrs[idx];
@@ -327,6 +341,96 @@ lnx_select_send_endpoints(struct lnx_ep *lep, fi_addr_t lnx_addr,
 	*cep_out = cep;
 
 	return FI_SUCCESS;
+}
+
+/*
+ * Round robin over the end points, assigning each peer a particular local
+ * endpoint and one of its core addresses to use. This ensures that the
+ * peer receives messages in the same order they are sent.
+ */
+static inline int
+lnx_select_send_endpoints_peer(struct lnx_ep *lep, fi_addr_t lnx_addr,
+		struct lnx_core_ep **cep_out, fi_addr_t *core_addr)
+{
+	bool found = false;
+	int idx, i;
+	uint32_t rr, seed;
+	struct lnx_peer *lp;
+	struct lnx_core_ep *cep;
+	struct lnx_peer_map *map_addr;
+	struct lnx_peer_ep_map *ep_map;
+
+	lp = lnx_av_lookup_addr(lep->le_lav, lnx_addr);
+	if (!lp)
+		return -FI_ENOSYS;
+
+	if (lp->lp_locked_cep) {
+		*core_addr = lp->lp_locked_core_addr;
+		*cep_out = lp->lp_locked_cep;
+		return FI_SUCCESS;
+	}
+
+	ep_map = &lp->lp_src_eps[lep->le_idx];
+
+	while (!found) {
+		rr = ofi_atomic_inc32(&lep->le_rr) - 1;
+		idx = rr % lep->le_domain->ld_num_doms;
+		cep = &lep->le_core_eps[idx];
+
+		for (i = 0; i < ep_map->pem_num_eps; i++) {
+			if (cep == ep_map->pem_eps[i]) {
+				found = true;
+				break;
+			}
+		}
+	}
+
+	map_addr = ofi_bufpool_get_ibuf(cep->cep_cav->cav_map, lp->lp_addr);
+
+	/* randomize the address selection from the list of reachable
+	 * peer addresses. This will allow different processes to send to
+	 * different peer addresses, instead of using the first address of
+	 * a peer. This is not round robin over the peer addresses, but
+	 * in the PER_PEER case, there is no effective way to enforce
+	 * round robin across independent peers. In this method it at
+	 * least allows spreading traffic across peer addresses. */
+	seed = (uint32_t)ofi_gettime_ns();
+	rr = ofi_xorshift_random(seed);
+	idx = rr % (map_addr->map_count);
+
+	*core_addr = lp->lp_locked_core_addr = map_addr->map_addrs[idx];
+	*cep_out = lp->lp_locked_cep = cep;
+
+	return FI_SUCCESS;
+}
+
+static inline void
+lnx_set_send_pair_noop(struct lnx_ep *lep, struct lnx_core_ep *cep, fi_addr_t addr)
+{
+}
+
+/* if you haven't sent to a particular peer before then lock the
+ * address you're going to send on. If this is the first message
+ * you receive from peer, then you want to respond on the same
+ * address and core endpoint that peer used. This will ensure
+ * symmetry.
+*/
+static inline void
+lnx_set_send_pair_peer(struct lnx_ep *lep, struct lnx_core_ep *cep, fi_addr_t addr)
+{
+	fi_addr_t core_addr, prim_addr;
+	struct lnx_peer *lp;
+
+	if (addr == FI_ADDR_UNSPEC)
+		return;
+
+	prim_addr = lnx_decode_primary_id(addr);
+	lp = lnx_av_lookup_addr(lep->le_lav, prim_addr);
+	if (!lp->lp_locked_cep) {
+		core_addr = lnx_get_core_addr(cep, addr);
+		lp->lp_locked_core_addr = core_addr;
+		lp->lp_locked_cep = cep;
+	}
 }
 
 #endif /* LNX_H */

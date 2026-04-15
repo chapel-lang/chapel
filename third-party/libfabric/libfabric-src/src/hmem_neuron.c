@@ -51,15 +51,63 @@ struct neuron_ops {
 	void (*nrt_tensor_free)(nrt_tensor_t **tensor);
 	void *(*nrt_tensor_get_va)(const nrt_tensor_t *tensor);
 	NRT_STATUS (*nrt_memcpy_to_device)(void *dest, const void *src, size_t size);
-	NRT_STATUS (*nrt_get_dmabuf_fd)(uint64_t va, uint64_t size, int* fd);
+	NRT_STATUS (*nrt_get_dmabuf_fd)(uint64_t va, uint64_t size, int* fd, uint64_t *offset);
 	NRT_STATUS (*nrt_get_total_nc_count)(uint32_t *nc_count);
 };
+
+struct neuron_ops_internal {
+	NRT_STATUS (*nrt_get_dmabuf_fd)(uint64_t va, uint64_t size, int* fd);
+	int op_version[NRT_NEURON_OP_NUMBER_MAX];
+} neuron_ops_internal;
 
 static void *neuron_handle;
 static struct neuron_ops neuron_ops;
 
+static NRT_STATUS nrt_get_dmabuf_fd_v1(uint64_t va, uint64_t size, int* fd, uint64_t *offset) {
+		/* 
+ 		 * The assumption is that nrt_get_dmabuf_fd() would fail for 
+ 		 * any addr that is not the starting address of the dma-buf 
+ 		 * object. Otherwise we need a low level op to get the base 
+ 		 * address of the dma-buf object. 
+ 		 */ 
+	*offset = 0;
+	return neuron_ops_internal.nrt_get_dmabuf_fd(va, size, fd);
+}
+
+int neuron_get_op_version(enum NEURON_OP op)
+{
+	if (op >= NRT_NEURON_OP_NUMBER_MAX)
+		return -FI_EINVAL;
+
+	return neuron_ops_internal.op_version[op];
+}
+
+static void setup_nrt_get_dmabuf_fd(void)
+{
+	neuron_ops.nrt_get_dmabuf_fd = dlsym(neuron_handle, "nrt_get_dmabuf_fd_v2");
+	if (neuron_ops.nrt_get_dmabuf_fd) {
+		neuron_ops_internal.op_version[NRT_GET_DMABUF_FD] = 2;
+		return;
+	}
+
+	FI_WARN(&core_prov, FI_LOG_CORE,
+		"Failed to find nrt_get_dmabuf_fd_v2, falling back to nrt_get_dmabuf_fd\n");
+
+	neuron_ops_internal.nrt_get_dmabuf_fd = dlsym(neuron_handle, "nrt_get_dmabuf_fd");
+	if (!neuron_ops_internal.nrt_get_dmabuf_fd) {
+		FI_WARN(&core_prov, FI_LOG_CORE,
+			"Failed to find nrt_get_dmabuf_fd, "
+			"dmabuf feature will not be used for Neuron devices\n");
+		return;
+	}
+	neuron_ops_internal.op_version[NRT_GET_DMABUF_FD] = 1;
+	neuron_ops.nrt_get_dmabuf_fd = &nrt_get_dmabuf_fd_v1;
+}
+
 static int neuron_dl_init(void)
 {
+	memset(&neuron_ops_internal, 0, sizeof(neuron_ops_internal));
+
 	neuron_handle = dlopen("libnrt.so.1", RTLD_NOW);
 	if (!neuron_handle) {
 		FI_INFO(&core_prov, FI_LOG_CORE,
@@ -72,37 +120,37 @@ static int neuron_dl_init(void)
 		FI_WARN(&core_prov, FI_LOG_CORE, "Failed to find nrt_tensor_allocate\n");
 		goto err;
 	}
+	neuron_ops_internal.op_version[NRT_TENSOR_ALLOCATE] = 1;
 
 	neuron_ops.nrt_tensor_free = dlsym(neuron_handle, "nrt_tensor_free");
 	if (!neuron_ops.nrt_tensor_free) {
 		FI_WARN(&core_prov, FI_LOG_CORE, "Failed to find nrt_tensor_free\n");
 		goto err;
 	}
+	neuron_ops_internal.op_version[NRT_TENSOR_FREE] = 1;
 
 	neuron_ops.nrt_tensor_get_va = dlsym(neuron_handle, "nrt_tensor_get_va");
 	if (!neuron_ops.nrt_tensor_get_va) {
 		FI_WARN(&core_prov, FI_LOG_CORE, "Failed to find nrt_tensor_get_va\n");
 		goto err;
 	}
+	neuron_ops_internal.op_version[NRT_TENSOR_GET_VA] = 1;
 
 	neuron_ops.nrt_memcpy_to_device = dlsym(neuron_handle, "nrt_memcpy_to_device");
 	if (!neuron_ops.nrt_memcpy_to_device) {
 		FI_WARN(&core_prov, FI_LOG_CORE, "Failed to find nrt_memcpy_to_device\n");
 		goto err;
 	}
+	neuron_ops_internal.op_version[NRT_MEMCPY_TO_DEVICE] = 1;
 
-	neuron_ops.nrt_get_dmabuf_fd = dlsym(neuron_handle, "nrt_get_dmabuf_fd");
-	if (!neuron_ops.nrt_get_dmabuf_fd) {
-		FI_INFO(&core_prov, FI_LOG_CORE,
-			"Failed to find nrt_get_dmabuf_fd, "
-			"dmabuf feature will not be used for Neuron devices\n");
-	}
+	setup_nrt_get_dmabuf_fd();
 
 	neuron_ops.nrt_get_total_nc_count = dlsym(neuron_handle, "nrt_get_total_nc_count");
 	if (!neuron_ops.nrt_get_total_nc_count) {
 		FI_WARN(&core_prov, FI_LOG_CORE, "Failed to find nrt_get_total_nc_count");
 		goto err;
 	}
+	neuron_ops_internal.op_version[NRT_GET_TOTAL_NC_COUNT] = 1;
 
 	return FI_SUCCESS;
 err:
@@ -151,6 +199,9 @@ int neuron_hmem_init(void)
 {
 	int ret;
 	uint32_t total_nc_count;
+
+	fi_param_define(NULL, "hmem_neuron_use_dmabuf", FI_PARAM_BOOL,
+			"Use DMABUF for Neuron device memory registration. (Default: true)");
 
 	ret = neuron_dl_init();
 	if (ret)
@@ -225,16 +276,9 @@ int neuron_get_dmabuf_fd(const void *addr, uint64_t size, int *fd,
 		return -FI_EOPNOTSUPP;
 	}
 
-	ret = neuron_ops.nrt_get_dmabuf_fd((uintptr_t)addr, size, fd);
+	ret = neuron_ops.nrt_get_dmabuf_fd((uintptr_t)addr, size, fd, offset);
 
 	if (ret == NRT_SUCCESS) {
-		/*
-		 * The assumption is that nrt_get_dmabuf_fd() would fail for
-		 * any addr that is not the starting address of the dma-buf
-		 * object. Otherwise we need a low level op to get the base
-		 * address of the dma-buf object.
-		 */
-		*offset = 0;
 		return FI_SUCCESS;
 	} else if (ret == NRT_RESOURCE) {
 		/* real error from Neuron */
@@ -253,6 +297,14 @@ int neuron_put_dmabuf_fd(int fd)
 {
 	close(fd);
 	return FI_SUCCESS;
+}
+
+bool neuron_is_dmabuf_requested(void)
+{
+	int use_dmabuf = 1;
+
+	fi_param_get_bool(NULL, "hmem_neuron_use_dmabuf", &use_dmabuf);
+	return use_dmabuf;
 }
 
 #else
@@ -306,6 +358,11 @@ int neuron_get_dmabuf_fd(const void *addr, uint64_t size, int *fd,
 int neuron_put_dmabuf_fd(int fd)
 {
 	return -FI_ENOSYS;
+}
+
+bool neuron_is_dmabuf_requested(void)
+{
+	return false;
 }
 
 #endif /* HAVE_NEURON */

@@ -40,6 +40,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <inttypes.h>
 
 #include "sock.h"
 #include "sock_util.h"
@@ -109,7 +110,7 @@ struct sock_rx_entry *sock_rx_new_buffered_entry(struct sock_rx_ctx *rx_ctx,
 	if (!rx_entry)
 		return NULL;
 
-	SOCK_LOG_DBG("New buffered entry:%p len: %lu, ctx: %p\n",
+	SOCK_LOG_DBG("New buffered entry:%p len: %zu, ctx: %p\n",
 		       rx_entry, len, rx_ctx);
 
 	rx_entry->is_busy = 1;

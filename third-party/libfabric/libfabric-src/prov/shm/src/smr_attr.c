@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2018 Intel Corporation. All rights reserved.
+ * Copyright (c) Intel Corporation. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -101,7 +101,7 @@ struct fi_domain_attr smr_domain_attr = {
 	.av_type = FI_AV_UNSPEC,
 	.mr_mode = OFI_MR_BASIC | OFI_MR_SCALABLE,
 	.mr_key_size = sizeof_field(struct fi_rma_iov, key),
-	.cq_data_size = sizeof_field(struct smr_msg_hdr, data),
+	.cq_data_size = sizeof_field(struct smr_cmd_hdr, cq_data),
 	.cq_cnt = (1 << 10),
 	.ep_cnt = SMR_MAX_PEERS,
 	.tx_ctx_cnt = (1 << 10),
@@ -121,7 +121,7 @@ struct fi_domain_attr smr_hmem_domain_attr = {
 	.av_type = FI_AV_UNSPEC,
 	.mr_mode = FI_MR_HMEM,
 	.mr_key_size = sizeof_field(struct fi_rma_iov, key),
-	.cq_data_size = sizeof_field(struct smr_msg_hdr, data),
+	.cq_data_size = sizeof_field(struct smr_cmd_hdr, cq_data),
 	.cq_cnt = (1 << 10),
 	.ep_cnt = SMR_MAX_PEERS,
 	.tx_ctx_cnt = (1 << 10),

@@ -52,6 +52,7 @@ static int sm2_cma_send_ipc_handle(struct sm2_ep *ep,
 	struct sm2_cma_data *cma_data =
 		((struct sm2_cma_data *) xfer_entry->user_data);
 	struct ipc_info *ipc_info;
+	size_t base_length;
 	void *device_ptr, *base;
 	int ret;
 
@@ -72,8 +73,7 @@ static int sm2_cma_send_ipc_handle(struct sm2_ep *ep,
 	ipc_info->device = mr[0]->device;
 
 	ret = ofi_hmem_get_base_addr(ipc_info->iface, device_ptr,
-				     xfer_entry->hdr.size, &base,
-				     &ipc_info->base_length);
+				     xfer_entry->hdr.size, &base, &base_length);
 	if (ret) {
 		FI_WARN(&sm2_prov, FI_LOG_EP_CTRL,
 			"Failed to get device memory base address. Error code: "
@@ -81,6 +81,8 @@ static int sm2_cma_send_ipc_handle(struct sm2_ep *ep,
 			ret);
 		return ret;
 	}
+
+	ipc_info->base_length = (uint64_t) base_length;
 
 	ret = ofi_hmem_get_handle(ipc_info->iface, base, ipc_info->base_length,
 				  (void **) &ipc_info->ipc_handle);
@@ -462,7 +464,7 @@ sm2_progress_cma_host_to_dev(struct sm2_ep *ep,
 		return;
 	}
 
-	ret = sm2_complete_tx(ep, (void *) xfer_entry->hdr.context,
+	ret = sm2_complete_tx(ep, (void *) (uintptr_t) xfer_entry->hdr.context,
 			      xfer_entry->hdr.op, xfer_entry->hdr.op_flags);
 
 	if (ret) {
@@ -673,7 +675,7 @@ static int sm2_progress_atomic(struct sm2_ep *ep,
 		if (ret)
 			break;
 
-		ioc[i].addr = (void *) ioc_ptr->addr;
+		ioc[i].addr = (void *) (uintptr_t) ioc_ptr->addr;
 		ioc[i].count = ioc_ptr->count;
 	}
 
@@ -741,9 +743,9 @@ static inline void sm2_progress_return(struct sm2_ep *ep,
 	}
 
 	if (xfer_entry->hdr.proto_flags & SM2_GENERATE_COMPLETION) {
-		ret = sm2_complete_tx(ep, (void *) xfer_entry->hdr.context,
-				      xfer_entry->hdr.op,
-				      xfer_entry->hdr.op_flags);
+		ret = sm2_complete_tx(
+			ep, (void *) (uintptr_t) xfer_entry->hdr.context,
+			xfer_entry->hdr.op, xfer_entry->hdr.op_flags);
 		if (ret)
 			FI_WARN(&sm2_prov, FI_LOG_EP_CTRL,
 				"Unable to process FI_DELIVERY_COMPLETE "

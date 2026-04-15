@@ -169,6 +169,9 @@ int rocr_dev_reg_copy_from_hmem(uint64_t handle, void *dest, const void *src,
 int rocr_hmem_get_dmabuf_fd(const void *addr, uint64_t size, int *dmabuf_fd,
 			    uint64_t *offset);
 int rocr_hmem_put_dmabuf_fd(int fd);
+void *rocr_alloc(size_t size);
+void rocr_free(void *ptr);
+bool rocr_is_dmabuf_requested(void);
 
 int cuda_copy_to_dev(uint64_t device, void *dev, const void *host, size_t size);
 int cuda_copy_from_dev(uint64_t device, void *host, const void *dev, size_t size);
@@ -193,6 +196,7 @@ bool cuda_is_ipc_enabled(void);
 int cuda_get_ipc_handle_size(size_t *size);
 bool cuda_is_gdrcopy_enabled(void);
 bool cuda_is_dmabuf_supported(void);
+bool cuda_is_dmabuf_requested(void);
 int cuda_get_dmabuf_fd(const void *addr, uint64_t size, int *fd,
 		       uint64_t *offset);
 int cuda_put_dmabuf_fd(int fd);
@@ -245,6 +249,20 @@ int ze_dev_reg_copy_from_hmem(uint64_t handle, void *dest, const void *src,
 			      size_t size);
 int ze_hmem_get_dmabuf_fd(const void *addr, uint64_t size, int *fd,
 			  uint64_t *offset);
+bool ze_is_dmabuf_requested(void);
+
+enum NEURON_OP {
+	NRT_TENSOR_ALLOCATE = 0,
+	NRT_TENSOR_FREE,
+	NRT_TENSOR_GET_VA,
+	NRT_TENSOR_READ,
+	NRT_TENSOR_WRITE,
+	NRT_MEMCPY_TO_DEVICE,
+	NRT_GET_DMABUF_FD,
+	NRT_GET_TOTAL_NC_COUNT,
+	NRT_INIT,
+	NRT_NEURON_OP_NUMBER_MAX
+};
 
 int neuron_copy_to_dev(uint64_t device, void *dev, const void *host, size_t size);
 int neuron_copy_from_dev(uint64_t device, void *host, const void *dev, size_t size);
@@ -257,6 +275,8 @@ void neuron_free(void **handle);
 int neuron_get_dmabuf_fd(const void *addr, uint64_t size, int *fd,
 			 uint64_t *offset);
 int neuron_put_dmabuf_fd(int fd);
+bool neuron_is_dmabuf_requested(void);
+int neuron_get_op_version(enum NEURON_OP op);
 
 int synapseai_init(void);
 int synapseai_cleanup(void);
@@ -270,6 +290,7 @@ bool synapseai_is_addr_valid(const void *addr, uint64_t *device,
                              uint64_t *flags);
 int synapseai_host_register(void *ptr, size_t size);
 int synapseai_host_unregister(void *ptr);
+bool synapseai_is_dmabuf_requested(void);
 
 static inline int ofi_memcpy(uint64_t device, void *dest, const void *src,
 			     size_t size)
@@ -430,6 +451,9 @@ ssize_t ofi_copy_from_mr_iov(void *dest, size_t size, struct ofi_mr **mr,
 ssize_t ofi_copy_to_mr_iov(struct ofi_mr **mr, const struct iovec *iov,
 			   size_t iov_count, uint64_t iov_offset,
 			   const void *src, size_t size);
+ssize_t ofi_copy_mr_iov(struct ofi_mr **mr, const struct iovec *iov,
+			size_t iov_count, size_t offset, void *buf,
+			size_t size, int dir);
 
 int ofi_hmem_get_handle(enum fi_hmem_iface iface, void *base_addr,
 			size_t size, void **handle);
@@ -460,5 +484,5 @@ int ofi_hmem_dev_reg_copy_from_hmem(enum fi_hmem_iface iface, uint64_t handle,
 int ofi_hmem_get_dmabuf_fd(enum fi_hmem_iface, const void *addr, uint64_t size,
 			   int *fd, uint64_t *offset);
 int ofi_hmem_put_dmabuf_fd(enum fi_hmem_iface iface, int fd);
-
+bool ofi_hmem_is_dmabuf_env_var_enabled(enum fi_hmem_iface iface);
 #endif /* _OFI_HMEM_H_ */

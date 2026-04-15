@@ -41,6 +41,7 @@ struct efa_env efa_env = {
 	.internal_rx_refill_threshold = 8,
 	.use_data_path_direct = true,
 	.implicit_av_size = 0,
+	.track_mr = 0,
 };
 
 /* @brief Read and store the FI_EFA_* environment variables.
@@ -140,6 +141,7 @@ void efa_env_param_get(void)
 		efa_env.huge_page_setting = use_huge_page ? EFA_ENV_HUGE_PAGE_ENABLED : EFA_ENV_HUGE_PAGE_DISABLED;
 	}
 	fi_param_get_bool(&efa_prov, "use_data_path_direct", &efa_env.use_data_path_direct);
+	fi_param_get_bool(&efa_prov, "track_mr", &efa_env.track_mr);
 
 	efa_fork_support_request_initialize();
 }
@@ -233,6 +235,11 @@ void efa_env_define()
 			"size. Setting this value to 0 will allow unbounded "
 			"growth of the implicit AV. (Default: 0)",
 			efa_env.implicit_av_size);
+	fi_param_define(&efa_prov, "track_mr", FI_PARAM_BOOL,
+			"Enable tracking of memory registrations to detect if "
+			"any outstanding operations still reference an MR when "
+			"it is closed. This is useful for debugging memory "
+			"registration issues. (Default: false)");
 }
 
 

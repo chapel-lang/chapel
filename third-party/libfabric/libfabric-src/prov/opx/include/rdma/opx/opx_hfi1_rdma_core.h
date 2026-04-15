@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Cornelis Networks.
+ * Copyright (C) 2024-2025 Cornelis Networks.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -51,8 +51,9 @@ struct _hfi_ctrl;
 struct hfi1_user_info_dep;
 
 /* Open a context with hfi1 direct or cdev */
-int opx_hfi1_wrapper_context_open(struct fi_opx_hfi1_context_internal *internal, int unit, int port,
-				  uint64_t open_timeout, unsigned int *user_version);
+int opx_hfi1_wrapper_context_open(const int unit, const int port, const uint64_t open_timeout,
+				  const enum opx_hfi1_type hfi1_type, void **ibv_context, unsigned int *user_version,
+				  int *fd_cdev, int *fd_verbs);
 
 /* Initialize the context with hfi1 direct or cdev */
 struct _hfi_ctrl *opx_hfi1_wrapper_userinit(int fd, struct fi_opx_hfi1_context_internal *internal, int unit, int port);
@@ -66,8 +67,11 @@ int opx_hfi1_wrapper_ack_events(struct fi_opx_hfi1_context *context, uint64_t ac
 /* Reset context (link bounce support) */
 int opx_hfi1_wrapper_reset_context(struct fi_opx_hfi1_context *context);
 
-/* Close the rdma-core lib/context */
+/* Close the rdma-core context */
 void opx_hfi1_rdma_context_close(void *ibv_context);
+
+/* Close the rdma-core lib */
+void opx_hfi1_rdma_lib_close();
 
 /* TID function pointers and wrapper */
 struct fi_opx_hfi1_context;
@@ -96,4 +100,44 @@ int32_t opx_hfi1_wrapper_update_tid(struct fi_opx_hfi1_context *context, uint64_
 		     vaddr, *length, tidlist, *tidcnt, flags);
 	return (*opx_fn_hfi1_update_tid)(context, vaddr, length, tidlist, tidcnt, flags);
 }
+
+#if HAVE_HFI1_DIRECT_VERBS
+#include <infiniband/hfi1dv.h>
+#include <infiniband/verbs.h>
+
+struct opx_rdma_ops_struct {
+	/* static flags */
+
+	bool hfi1_direct_verbs_enabled; /* run-time check based on dlopen() */
+	bool one_time_setup;		/* one time setup is done */
+
+	/* dlopen libraries */
+
+	void *libhfi1verbs;
+	void *libibverbs;
+
+	/* verbs.h */
+
+	struct ibv_device **(*fn_ibv_get_device_list)(int *num_devices);
+	const char *(*fn_ibv_get_device_name)(struct ibv_device *device);
+	struct ibv_context *(*fn_ibv_open_device)(struct ibv_device *device);
+	void (*fn_ibv_free_device_list)(struct ibv_device **list);
+	int (*fn_ibv_close_device)(struct ibv_context *);
+
+	/* hfi1dv.h */
+
+	int (*fn_hfi1_get_vers)(struct ibv_context *, struct hfi1_get_vers_rsp *);
+	int (*fn_hfi1_assign_ctxt)(struct ibv_context *, struct hfi1_assign_ctxt_cmd *);
+	int (*fn_hfi1_ctxt_info)(struct ibv_context *, struct hfi1_ctxt_info_rsp *);
+	int (*fn_hfi1_user_info)(struct ibv_context *, struct hfi1_user_info_rsp *);
+	int (*fn_hfi1_set_pkey)(struct ibv_context *, struct hfi1_set_pkey_cmd *);
+	int (*fn_hfi1_tid_update)(struct ibv_context *context, struct hfi1_tid_update_cmd *cmd,
+				  struct hfi1_tid_update_rsp *rsp);
+	int (*fn_hfi1_tid_free)(struct ibv_context *context, struct hfi1_tid_free_cmd *cmd,
+				struct hfi1_tid_free_rsp *rsp);
+	int (*fn_hfi1_ack_event)(struct ibv_context *context, struct hfi1_ack_event_cmd *cmd);
+	int (*fn_hfi1_ctxt_reset)(struct ibv_context *context);
+};
+#endif
+
 #endif /* _FI_PROV_OPX_HFI1_RDMA_CORE_H_ */

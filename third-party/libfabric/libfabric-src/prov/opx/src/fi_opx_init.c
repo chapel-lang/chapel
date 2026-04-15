@@ -487,31 +487,21 @@ err:
 	return -errno;
 }
 
-struct fi_opx_global_data fi_opx_global = {.hfi_local_info.local_lids_size = -1U,
-					   .hfi_local_info.type		   = OPX_HFI1_UNDEF,
-					   .hfi_local_info.sim_rctxt_fd	   = -1,
-					   .hfi_local_info.sim_sctxt_fd	   = -1,
-					   .hfi_local_info.lid		   = (opx_lid_t) 0,
-					   .hfi_local_info.hfi_unit	   = (uint8_t) -1U,
-					   .hfi_local_info.sriov	   = false,
-					   .hfi_local_info.multi_vm	   = false,
-					   .hfi_local_info.multi_lid	   = false,
-					   .hfi_local_info.min_rctxt	   = 0,
-					   .hfi_local_info.max_rctxt	   = INT_MAX,
-					   .pkt_size			   = OPX_HFI1_DEFAULT_PKT_SIZE,
-					   .opx_hfi1_type_strings	   = {[OPX_HFI1_UNDEF]	= "OPX_HFI1_UNDEF",
-									      [OPX_HFI1_JKR_9B] = "CN5000-mixed",
-									      [OPX_HFI1_WFR]	= "OPA100",
-									      [3]		= "ERROR",
-									      [OPX_HFI1_JKR]	= "CN5000",
-									      [5]		= "ERROR",
-									      [6]		= "ERROR",
-									      [7]		= "ERROR",
-									      [OPX_HFI1_CYR]	= "CN6000",
-									      [9]		= "ERROR",
-									      [10]		= "ERROR",
-									      [11]		= "ERROR",
-									      [OPX_HFI1_CNX000] = "CN5000|CN6000"}};
+/* Be careful not to initialze here AND in OPX_INI */
+struct fi_opx_global_data fi_opx_global = {.opx_hfi1_type_strings = {[OPX_HFI1_UNDEF]	 = "OPX_HFI1_UNDEF",
+								     [OPX_HFI1_MIXED_9B] = "CN5000|CN6000-OPA100-mixed",
+								     [OPX_HFI1_WFR]	 = "OPA100",
+								     [3]		 = "ERROR",
+								     [OPX_HFI1_JKR]	 = "CN5000",
+								     [5]		 = "ERROR",
+								     [6]		 = "ERROR",
+								     [7]		 = "ERROR",
+								     [OPX_HFI1_CYR]	 = "CN6000",
+								     [9]		 = "ERROR",
+								     [10]		 = "ERROR",
+								     [11]		 = "ERROR",
+								     [OPX_HFI1_CNX000]	 = "CN5000|CN6000"}};
+
 /* ROUTE CONTROL table for each packet type */
 int opx_route_control[OPX_HFI1_NUM_PACKET_TYPES];
 
@@ -825,6 +815,21 @@ OPX_INI
 
 	memset(&fi_opx_global.hfi_local_info, 0, sizeof(fi_opx_global.hfi_local_info));
 
+	fi_opx_global.hfi_local_info.local_lids_size = 0;
+	fi_opx_global.hfi_local_info.sw_type	     = OPX_HFI1_UNDEF;
+	fi_opx_global.hfi_local_info.hw_type	     = OPX_HFI1_UNDEF;
+	fi_opx_global.hfi_local_info.sim_rctxt_fd    = -1;
+	fi_opx_global.hfi_local_info.sim_sctxt_fd    = -1;
+	fi_opx_global.hfi_local_info.lid	     = (opx_lid_t) 0;
+	fi_opx_global.hfi_local_info.hfi_unit	     = (uint8_t) -1U;
+	fi_opx_global.hfi_local_info.sriov	     = false;
+	fi_opx_global.hfi_local_info.multi_vm	     = false;
+	fi_opx_global.hfi_local_info.multi_lid	     = false;
+	fi_opx_global.hfi_local_info.min_rctxt	     = 0;
+	fi_opx_global.hfi_local_info.max_rctxt	     = INT_MAX;
+
+	fi_opx_global.pkt_size = OPX_HFI1_DEFAULT_PKT_SIZE;
+
 	fi_opx_init = 1;
 
 	fi_param_define(
@@ -967,6 +972,10 @@ OPX_INI
 	fi_param_define(
 		&fi_opx_provider, "mmap_guard", FI_PARAM_BOOL,
 		"Enable guards around OPX/HFI mmaps. When enabled, this will cause a segfault when mmapped memory is illegally accessed through buffer overruns or underruns.  Default is false.");
+
+	fi_param_define(&fi_opx_provider, "hfisvc", FI_PARAM_BOOL,
+			"Indicates that HFI Service should be used for bulk transfers if available. Default is %s.",
+			OPX_HFISVC_ENABLED_DEFAULT ? "true" : "false");
 
 	/* Track TID and HMEM domains so caches can be cleared on exit */
 	dlist_init(&fi_opx_global.tid_domain_list);

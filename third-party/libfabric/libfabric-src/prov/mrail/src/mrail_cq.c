@@ -145,7 +145,7 @@ static int mrail_cq_process_rndv_req(struct fi_cq_tagged_entry *comp,
 	mrail_pkt = (struct mrail_pkt *)comp->buf;
 	rndv_hdr = (struct mrail_rndv_hdr *)&mrail_pkt[1];
 	rndv_req = (struct mrail_rndv_req *)&rndv_hdr[1];
-	recv->rndv.context = (void *)rndv_hdr->context;
+	recv->rndv.context = (void *)(uintptr_t)rndv_hdr->context;
 	recv->rndv.flags = comp->flags & FI_REMOTE_CQ_DATA;
 	recv->rndv.len = rndv_req->len;
 	recv->rndv.tag = mrail_pkt->hdr.tag;
@@ -204,7 +204,7 @@ static int mrail_cq_process_rndv_ack(struct fi_cq_tagged_entry *comp)
 
 	mrail_pkt = (struct mrail_pkt *)comp->buf;
 	rndv_hdr = (struct mrail_rndv_hdr *)&mrail_pkt[1];
-	tx_buf = (struct mrail_tx_buf *)rndv_hdr->context;
+	tx_buf = (struct mrail_tx_buf *)(uintptr_t)rndv_hdr->context;
 	ret = mrail_cq_write_send_comp(tx_buf->ep->util_ep.tx_cq, tx_buf);
 	if (ret)
 		retv = ret;

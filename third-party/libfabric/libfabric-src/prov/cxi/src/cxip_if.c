@@ -193,7 +193,6 @@ int cxip_if_valid_rgroup_vni(struct cxip_if *iface, unsigned int rgroup_id,
 			     unsigned int vni)
 {
 	struct cxi_svc_desc svc_desc;
-	bool vni_found = false;
 	int ret;
 	int i;
 
@@ -205,23 +204,31 @@ int cxip_if_valid_rgroup_vni(struct cxip_if *iface, unsigned int rgroup_id,
 		return -FI_EINVAL;
 	}
 
+	/* The restricted_vnis flag indicates that there are vnis in the
+	 * svc_desc.vnis[] array. If it is not set, then we may have a
+	 * range - vni_min to vni_max, inclusive.
+	 */
 	if (svc_desc.restricted_vnis) {
 		for (i = 0; i < svc_desc.num_vld_vnis; i++) {
-			if (vni == svc_desc.vnis[i]) {
-				vni_found = true;
-				break;
-			}
+			if (vni == svc_desc.vnis[i])
+				return FI_SUCCESS;
 		}
+	} else {
+#ifdef CXI_HAVE_SVC_GET_VNI_RANGE
+		uint16_t vni_min;
+		uint16_t vni_max;
 
-		if (!vni_found) {
-			CXIP_WARN("Invalid VNI %d for %s and svc_id %d\n",
-				  vni, iface->dev->info.device_name,
-				  rgroup_id);
-			return -FI_EINVAL;
-		}
+		ret = cxil_svc_get_vni_range(iface->dev, rgroup_id, &vni_min,
+					     &vni_max);
+		if (!ret && vni >= vni_min && vni <= vni_max)
+#endif /* CXI_HAVE_SVC_GET_VNI_RANGE */
+			return FI_SUCCESS;
 	}
 
-	return FI_SUCCESS;
+	CXIP_WARN("Invalid VNI %d for %s and svc_id %d\n", vni,
+		  iface->dev->info.device_name, rgroup_id);
+
+	return -FI_EINVAL;
 }
 
 /*

@@ -489,9 +489,9 @@ static void recv_rdzv(struct lpp_ep *lpp_epp, struct lpp_rx_entry *rx_entry,
 	}
 
 	u2k.type = KLPP_U2K_RDZV_RECV;
-	u2k.rdzv_recv.rx_op_ptr = (__u64)rx_op;
+	u2k.rdzv_recv.rx_op_ptr = (__u64)(uintptr_t)rx_op;
 	u2k.rdzv_recv.token = hdr->token;
-	u2k.rdzv_recv.base_uaddr = (__u64)rx_entry->msg_iov[0].iov_base;
+	u2k.rdzv_recv.base_uaddr = (__u64)(uintptr_t)rx_entry->msg_iov[0].iov_base;
 	u2k.rdzv_recv.base_length = rx_entry->msg_iov[0].iov_len;
 	u2k.rdzv_recv.offset = rx_op->offset;
 	u2k.rdzv_recv.length = rx_op->length;
@@ -543,7 +543,7 @@ ssize_t lpp_rx_verify_iov_count(struct lpp_rx *lpp_rxp, size_t iov_count)
 {
 	if (iov_count > lpp_rxp->attr.iov_limit) {
 		FI_WARN(&lpp_prov, FI_LOG_EP_DATA,
-		    "iov_count out of range (%ld/%ld)\n",
+		    "iov_count out of range (%zu/%zu)\n",
 		    iov_count, lpp_rxp->attr.iov_limit);
 		return -FI_EINVAL;
 	}
@@ -555,8 +555,8 @@ ssize_t lpp_rx_verify_flags(struct lpp_rx *lpp_rxp, uint64_t flags)
 	if ((lpp_rxp->attr.caps & flags & LPP_CAPS_OPS) !=
 	    (flags & LPP_CAPS_OPS)) {
 		FI_WARN(&lpp_prov, FI_LOG_EP_DATA,
-		    "RX attr caps (%lx) incorrect for requested op (%lx)\n",
-		    lpp_rxp->attr.caps, flags);
+		    "RX attr caps (0x%" PRIx64 ") incorrect for requested op (0x%" PRIx64 ")\n",
+		    (uint64_t)lpp_rxp->attr.caps, (uint64_t)flags);
 		return -FI_EINVAL;
 	}
 	return 0;
@@ -618,8 +618,8 @@ ssize_t lpp_rx_common(struct lpp_ep *lpp_epp, struct lpp_rx_entry *rx_entry)
 		}
 	}
 
-	FI_DBG(&lpp_prov, FI_LOG_EP_DATA, "len: %ld, flags: 0x%lx lpp_flags: 0x%lx\n",
-		rx_entry->total_length, rx_entry->flags, rx_entry->lpp_flags);
+	FI_DBG(&lpp_prov, FI_LOG_EP_DATA, "len: %zu, flags: 0x%" PRIx64 " lpp_flags: 0x%" PRIx64 "\n",
+		(size_t)rx_entry->total_length, (uint64_t)rx_entry->flags, (uint64_t)rx_entry->lpp_flags);
 
 	/* TODO: do we really need this check?
 	 * Check that the count of IOVs is in range. Zero length recvs are
@@ -769,7 +769,7 @@ void lpp_rx_rdzv_done(struct lpp_ep *lpp_epp, struct klpp_umc_k2u *k2u)
 	struct iovec *iov;
 	size_t offset;
 
-	rx_op = (struct lpp_rx_op*)k2u->rdzv_recv_done.rx_op_ptr;
+	rx_op = (struct lpp_rx_op*)(uintptr_t)k2u->rdzv_recv_done.rx_op_ptr;
 	rx_entry = rx_op->rx_entry;
 
 	/* TODO is this a redundant computation? Kernel needs to do something

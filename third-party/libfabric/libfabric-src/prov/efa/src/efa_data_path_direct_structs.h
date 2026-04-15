@@ -81,6 +81,15 @@ struct efa_data_path_direct_wq {
 	struct ofi_genlock *wqlock;   /**< Lock for thread-safe queue operations */
 	uint32_t *db;                 /**< Hardware doorbell register pointer */
 	uint32_t max_batch;           /**< max wqe cnt that can be posted in a batch */
+
+	/**
+	 * Generation-based stale completion detection.
+	 * gen_mask covers the upper bits of req_id above the wrid index.
+	 * shifted_gen is the current QP generation pre-shifted into position.
+	 * Both are uint16_t to match the hardware req_id field width.
+	 */
+	uint16_t gen_mask;
+	uint16_t shifted_gen;
 };
 
 /**
@@ -144,9 +153,6 @@ struct efa_data_path_direct_sq {
 	 * built, but doorbell is deferred for batching efficiency.
 	 */
 	uint32_t num_wqe_pending;
-
-	/** Current work queue entry being constructed */
-	struct efa_io_tx_wqe curr_tx_wqe;
 };
 
 /**
@@ -160,8 +166,7 @@ struct efa_data_path_direct_sq {
 struct efa_data_path_direct_qp {
 	struct efa_data_path_direct_sq sq;        /**< Send queue structure */
 	struct efa_data_path_direct_rq rq;        /**< Receive queue structure */
-	int wr_session_err;                       /**< Error state for current WR session */
-
+	uint16_t gen;                             /**< QP generation counter */
 };
 
 

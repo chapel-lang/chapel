@@ -6,6 +6,7 @@
 #include "cxip.h"
 #include "ofi.h"
 #include "ofi_str.h"
+#include <sys/stat.h>
 
 #define CXIP_DBG(...) _CXIP_DBG(FI_LOG_FABRIC, __VA_ARGS__)
 #define CXIP_WARN(...) _CXIP_WARN(FI_LOG_FABRIC, __VA_ARGS__)
@@ -142,6 +143,33 @@ static int cxip_nic_get_rgroup_vni_ss_env(struct cxip_if *nic_if,
 	return FI_SUCCESS;
 }
 
+/*
+ * @brief Retrieve the current process's Network Namespace ID, if available.
+ *
+ * @param netns  Updated with the detected network namespace ID.
+ *
+ * @return 0 on success (with *netns set accordingly), or -1 on failure
+ *         (e.g., no Network Namespace support or unable to determine it).
+ *         On failure, *netns is set to 0, which represents an invalid
+ *         inode/netns value.
+ */
+static int cxip_process_network_namespace(unsigned int *netns)
+{
+	struct stat st;
+
+	if (stat("/proc/self/ns/net", &st)) {
+		CXIP_WARN("failed to stat /proc/self/ns/net (no namespace support or none set?): %d:%s\n",
+			  errno, strerror(errno));
+		*netns = 0; /* invalid Namespace ID*/
+		return -1;
+	}
+
+	/* inode uniquely identifies the Network Namespace ID */
+	*netns = st.st_ino;
+
+	return 0;
+}
+
 static int cxip_nic_get_best_rgroup_vni(struct cxip_if *nic_if,
 					unsigned int *rgroup,
 					unsigned int *vni)
@@ -150,15 +178,20 @@ static int cxip_nic_get_best_rgroup_vni(struct cxip_if *nic_if,
 	struct cxil_svc_list *svc_list;
 	uid_t uid;
 	gid_t gid;
+	unsigned int cur_netns;
 	int i;
 	int j;
 	struct cxi_svc_desc *desc;
 	int found_uid;
 	int found_gid;
+	int found_netns;
 	int found_unrestricted;
 
 	uid = geteuid();
 	gid = getegid();
+	ret = cxip_process_network_namespace(&cur_netns);
+	if (ret)
+		CXIP_WARN("cxip_process_network_namespace failed, proceeding without network namespace support\n");
 
 	ret = cxil_get_svc_list(nic_if->dev, &svc_list);
 	if (ret) {
@@ -168,12 +201,13 @@ static int cxip_nic_get_best_rgroup_vni(struct cxip_if *nic_if,
 	}
 
 	/* Find the service indexes which can be used by this process. These are
-	 * services which are unrestricted, have a matching UID, or have a
-	 * matching GID. If there are multiple service IDs which could match
-	 * unrestricted, UID, and GID, only the first one found is selected.
+	 * services which have no membership restrictions, or have a matching UID,
+	 * GID or The Network Namespace ID(NETNS).If there are multiple service
+	 * IDs which match uid, gid, and netns, the priority is netns, uid and then gid.
 	 */
 	found_uid = -1;
 	found_gid = -1;
+	found_netns = -1;
 	found_unrestricted = -1;
 
 	for (i = svc_list->count - 1; i >= 0; i--) {
@@ -198,12 +232,25 @@ static int cxip_nic_get_best_rgroup_vni(struct cxip_if *nic_if,
 				 found_gid == -1)
 				found_gid = i;
 		}
+
+#ifdef CXI_HAVE_SVC_GET_NETNS
+		/* Check if service ID created with netns type and matching with current Network Namespace ID */
+		if (cur_netns && found_netns == -1) {
+			unsigned int netns;
+
+			if (!cxil_svc_get_netns(nic_if->dev, desc->svc_id, &netns) &&
+			    (netns == cur_netns))
+				found_netns = i;
+		}
+#endif /* CXI_HAVE_SVC_GET_NETNS */
 	}
 
-	/* Prioritized list for matching service ID. */
-	if (found_uid != -1)
+	/* The service ID matching with the netns is prioritized over service ID with uid or gid. */
+	if (found_netns != -1) {
+		i = found_netns;
+	} else if (found_uid != -1) {
 		i = found_uid;
-	else if (found_gid != -1) {
+	} else if (found_gid != -1) {
 		i = found_gid;
 	} else if (found_unrestricted != -1) {
 		i = found_unrestricted;
@@ -227,7 +274,17 @@ static int cxip_nic_get_best_rgroup_vni(struct cxip_if *nic_if,
 
 		*vni = (uint16_t)desc->vnis[0];
 	} else {
-		*vni = (uint16_t)cxip_env.default_vni;
+#ifdef CXI_HAVE_SVC_GET_VNI_RANGE
+		uint16_t vni_min;
+		uint16_t vni_max;
+
+		ret = cxil_svc_get_vni_range(nic_if->dev, desc->svc_id,
+					     &vni_min, &vni_max);
+		if (!ret)
+			*vni = vni_min;
+		else
+#endif /* CXI_HAVE_SVC_GET_VNI_RANGE */
+			*vni = (uint16_t)cxip_env.default_vni;
 	}
 
 	*rgroup = desc->svc_id;

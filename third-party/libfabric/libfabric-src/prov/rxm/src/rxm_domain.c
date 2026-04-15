@@ -225,6 +225,9 @@ static fi_addr_t rxm_get_addr(struct fi_peer_rx_entry *rx_entry)
 {
 	struct rxm_rx_buf *rx_buf = rx_entry->peer_context;
 
+	if (!rx_buf->conn)
+		return rx_entry->addr;
+
 	return rx_buf->conn->peer->fi_addr;
 }
 
@@ -473,7 +476,7 @@ static int rxm_mr_close(fid_t fid)
 
 	if (rxm_mr->hmem_handle) {
 		ofi_hmem_dev_unregister(rxm_mr->iface,
-					(uint64_t) rxm_mr->hmem_handle);
+					(uint64_t)(uintptr_t) rxm_mr->hmem_handle);
 	}
 
 	ret = fi_close(&rxm_mr->msg_mr->fid);

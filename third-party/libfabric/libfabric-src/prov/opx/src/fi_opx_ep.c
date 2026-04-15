@@ -42,6 +42,7 @@
 #include "rdma/opx/fi_opx_hfi1.h"
 #include "rdma/opx/fi_opx_hfi1_sdma.h"
 #include "rdma/opx/fi_opx_match.h"
+#include "rdma/opx/opx_hfisvc.h"
 #include "rdma/opx/opx_debug.h"
 
 #include <ofi_enosys.h>
@@ -105,9 +106,9 @@ void fi_opx_ep_tx_model_init(struct fi_opx_hfi1_context *hfi, struct fi_opx_hfi1
 	 */
 	/* Setup the 9B models whether or not they'll be used */
 	enum opx_hfi1_type __attribute__((unused)) hfi1_type =
-		(OPX_HFI1_TYPE & OPX_HFI1_WFR) ? OPX_HFI1_WFR : OPX_HFI1_JKR_9B;
+		(OPX_SW_HFI1_TYPE & OPX_HFI1_WFR) ? OPX_HFI1_WFR : OPX_HFI1_MIXED_9B;
 
-	uint16_t subctxt_rx = (hfi1_type & (OPX_HFI1_WFR | OPX_HFI1_JKR_9B)) ?
+	uint16_t subctxt_rx = (!(OPX_IS_EXTENDED_RX(hfi1_type))) ?
 				      __cpu_to_be16(hfi->subctxt << 8 | hfi->info.rxe.id) : /* WFR and CN5K */
 				      __cpu_to_be16(hfi->subctxt << 9 | hfi->info.rxe.id);  /* CN6K+ */
 
@@ -206,10 +207,11 @@ void fi_opx_ep_tx_model_init_16B(struct fi_opx_hfi1_context *hfi, struct fi_opx_
 	/*
 	 * fi_send*() model - eager
 	 */
-	/* Setup the 16B models whether or not they'll be used */
-	enum opx_hfi1_type hfi1_type = OPX_HFI1_JKR;
+	/* Setup the 16B models whether or not they'll be used, but
+	   CYR/JKR difference is important for subctxt_rx */
+	enum opx_hfi1_type hfi1_type = (OPX_HW_HFI1_TYPE & OPX_HFI1_CYR) ? OPX_HFI1_CYR : OPX_HFI1_JKR;
 
-	uint16_t subctxt_rx = (hfi1_type & OPX_HFI1_JKR) ?
+	uint16_t subctxt_rx = (!(OPX_IS_EXTENDED_RX(hfi1_type))) ?
 				      __cpu_to_be16(hfi->subctxt << 8 | hfi->info.rxe.id) : /* JKR */
 				      __cpu_to_be16(hfi->subctxt << 9 | hfi->info.rxe.id);  /* CN6K+ */
 
@@ -420,8 +422,8 @@ static int fi_opx_close_ep(fid_t fid)
 				fi_reliability_service_ping_remote(&opx_ep->ep_fid, service);
 				service->usec_next = fi_opx_timer_next_event_usec(timer, timestamp, service->usec_max);
 			}
-			fi_opx_ep_rx_poll(&opx_ep->ep_fid, 0, OPX_RELIABILITY, FI_OPX_HDRQ_MASK_RUNTIME, OPX_HFI1_TYPE,
-					  OPX_IS_CTX_SHARING_ENABLED);
+			fi_opx_ep_rx_poll(&opx_ep->ep_fid, 0, OPX_RELIABILITY, FI_OPX_HDRQ_MASK_RUNTIME,
+					  OPX_SW_HFI1_TYPE, OPX_IS_CTX_SHARING_ENABLED);
 			compare = fi_opx_timer_now(timestamp, timer);
 		}
 	}
@@ -448,6 +450,15 @@ static int fi_opx_close_ep(fid_t fid)
 	opx_tid_cache_purge_ep(opx_ep->tid_domain->tid_cache, opx_ep);
 
 	if (opx_ep->domain) {
+#if HAVE_HFISVC
+		if (opx_ep->domain->use_hfisvc) {
+			ret = fi_opx_ref_dec(&opx_ep->domain->hfisvc.ref_cnt, "hfisvc");
+			if (ret) {
+				errno = -ret;
+				goto err_unlock;
+			}
+		}
+#endif
 		ret = fi_opx_ref_dec(&opx_ep->domain->ref_cnt, "domain");
 		if (ret) {
 			errno = -ret;
@@ -471,6 +482,7 @@ static int fi_opx_close_ep(fid_t fid)
 			goto err_unlock;
 		}
 	}
+
 	if (opx_ep->rx && (opx_ep->rx->cq && (fid->fclass == FI_CLASS_EP || fid->fclass == FI_CLASS_RX_CTX))) {
 		opx_ep_free_match_queued_contexts(opx_ep);
 		ret = fi_opx_ref_dec(&opx_ep->rx->cq->ref_cnt, "completion queue");
@@ -638,8 +650,16 @@ static int fi_opx_close_ep(fid_t fid)
 			return ret; // Error
 		}
 		FI_DBG_TRACE(fi_opx_global.prov, FI_LOG_EP_DATA, "HFI context not in use\n");
-		/* Close HFI1 Direct Verbs lib/context */
+
+		/* Close HFI1 Direct Verbs context, but HFISVC shares ONE endpoint context
+		   with the domain.  Let the domain close it */
+#if HAVE_HFISVC
+		if (opx_ep->domain->hfisvc.ctx != opx_ep->hfi->ibv_context) {
+			opx_hfi1_rdma_context_close(opx_ep->hfi->ibv_context);
+		}
+#else
 		opx_hfi1_rdma_context_close(opx_ep->hfi->ibv_context);
+#endif
 
 		if (opx_ep->hfi->ref_cnt == 0) {
 			// free memory allocated for _hfi_ctrl struct in opx_hfi_userinit_internal function in
@@ -661,6 +681,21 @@ static int fi_opx_close_ep(fid_t fid)
 #endif
 		opx_ep->hmem_copy_buf = NULL;
 	}
+
+#if HAVE_HFISVC
+	if (opx_ep->use_hfisvc) {
+		ret = (*opx_ep->domain->hfisvc.completion_queue_close)(&opx_ep->hfisvc.internal_completion_queue);
+		if (ret) {
+			errno = -ret;
+			goto err_unlock;
+		}
+		ret = (*opx_ep->domain->hfisvc.command_queue_close)(&opx_ep->hfisvc.command_queue);
+		if (ret) {
+			errno = -ret;
+			goto err_unlock;
+		}
+	}
+#endif
 
 	opx_debug_ep_list_free(opx_ep);
 
@@ -819,11 +854,13 @@ static int fi_opx_ep_tx_init(struct fi_opx_ep *opx_ep, struct fi_opx_domain *opx
 	opx_ep->tx->pio_credits_addr  = hfi->info.pio.credits_addr;
 
 	/* initialize the models */
-	fi_opx_ep_tx_model_init(hfi, &opx_ep->tx->inject_9B, &opx_ep->tx->send_9B, &opx_ep->tx->send_mp_9B,
-				&opx_ep->tx->rzv_9B);
-
-	fi_opx_ep_tx_model_init_16B(hfi, &opx_ep->tx->inject_16B, &opx_ep->tx->send_16B, &opx_ep->tx->send_mp_16B,
-				    &opx_ep->tx->rzv_16B);
+	if (OPX_SW_HFI1_TYPE & (OPX_HFI1_WFR | OPX_HFI1_MIXED_9B)) {
+		fi_opx_ep_tx_model_init(hfi, &opx_ep->tx->inject_9B, &opx_ep->tx->send_9B, &opx_ep->tx->send_mp_9B,
+					&opx_ep->tx->rzv_9B);
+	} else {
+		fi_opx_ep_tx_model_init_16B(hfi, &opx_ep->tx->inject_16B, &opx_ep->tx->send_16B,
+					    &opx_ep->tx->send_mp_16B, &opx_ep->tx->rzv_16B);
+	}
 
 	// Retrieve the parameter for RZV min message length
 	int	l_rzv_min_payload_bytes;
@@ -906,8 +943,8 @@ static int fi_opx_ep_tx_init(struct fi_opx_ep *opx_ep, struct fi_opx_domain *opx
 		opx_ep->tx->mp_eager_min_payload_bytes = UINT16_MAX;
 		opx_ep->tx->mp_eager_chunk_size	       = UINT16_MAX;
 	} else {
-		uint16_t max_chunk_size =
-			(OPX_HFI1_TYPE & OPX_HFI1_WFR) ? OPX_MP_EGR_MAX_CHUNK_SIZE_WFR : OPX_MP_EGR_MAX_CHUNK_SIZE_CN5K;
+		uint16_t max_chunk_size = (OPX_SW_HFI1_TYPE & OPX_HFI1_WFR) ? OPX_MP_EGR_MAX_CHUNK_SIZE_WFR :
+									      OPX_MP_EGR_MAX_CHUNK_SIZE_CN5K;
 
 		opx_ep->tx->mp_eager_max_payload_bytes = l_rzv_min_payload_bytes - 1;
 		opx_ep->tx->mp_eager_min_payload_bytes = l_pio_flow_eager_tx_bytes + 1;
@@ -984,6 +1021,12 @@ static int fi_opx_ep_tx_init(struct fi_opx_ep *opx_ep, struct fi_opx_domain *opx
 		opx_ep->tx->sdma_min_payload_bytes = l_sdma_min_payload_bytes;
 		OPX_LOG_OBSERVABLE(FI_LOG_EP_DATA, "FI_OPX_SDMA_MIN_PAYLOAD_BYTES was specified.  Set to %d\n",
 				   opx_ep->tx->sdma_min_payload_bytes);
+	}
+
+	if (opx_ep->tx->sdma_min_payload_bytes < opx_ep->tx->rzv_min_payload_bytes) {
+		FI_WARN(fi_opx_global.prov, FI_LOG_EP_DATA,
+			"FI_OPX_SDMA_MIN_PAYLOAD_BYTES(%d) will only impact RMA and atomic operations until the FI_OPX_RZV_MIN_PAYLOAD_BYTES(%d) value is hit.\n",
+			opx_ep->tx->sdma_min_payload_bytes, opx_ep->tx->rzv_min_payload_bytes);
 	}
 
 	int l_sdma_max_writevs_per_cycle;
@@ -1130,8 +1173,8 @@ static inline bool opx_check_sriov(int unit, int port_index, int *min_rctxt, int
 
 	fd = fopen(filename, "r");
 	if (!fd) {
-		FI_WARN(fi_opx_global.prov, FI_LOG_EP_DATA, "no hw_resources(%s), unit %d, port %d\n", strerror(errno),
-			unit, port_index);
+		FI_TRACE(fi_opx_global.prov, FI_LOG_EP_DATA, "No hw_resources(%s), unit %d, port %d\n", strerror(errno),
+			 unit, port_index);
 		return false;
 	}
 	char port_rctxt[FI_OPX_MAX_STRLEN];
@@ -1145,6 +1188,7 @@ static inline bool opx_check_sriov(int unit, int port_index, int *min_rctxt, int
 		if (!strncmp(label, "numvfs", 6)) {
 			if (val1 > 0) {
 				is_sriov = true;
+				assert(!(OPX_SW_HFI1_TYPE & OPX_HFI1_WFR));
 			}
 			FI_INFO(fi_opx_global.prov, FI_LOG_EP_DATA, "sr-iov true: %s %d : unit %d, port %d\n", label,
 				val1, unit, port_index);
@@ -1203,7 +1247,7 @@ static int fi_opx_ep_rx_init(struct fi_opx_ep *opx_ep)
 	opx_ep->rx->egrq.last_egrbfr_index = 0;
 	opx_ep->rx->egrq.head_register	   = hfi1->info.rxe.egrq.head_register;
 
-	uint16_t subctxt_rx = (OPX_HFI1_TYPE & (OPX_HFI1_WFR | OPX_HFI1_JKR | OPX_HFI1_JKR_9B)) ?
+	uint16_t subctxt_rx = (!(OPX_IS_EXTENDED_RX(OPX_SW_HFI1_TYPE))) ?
 				      __cpu_to_be16(hfi1->subctxt << 8 | hfi1->info.rxe.id) :
 				      __cpu_to_be16(hfi1->subctxt << 9 | hfi1->info.rxe.id);
 
@@ -1226,8 +1270,8 @@ static int fi_opx_ep_rx_init(struct fi_opx_ep *opx_ep)
 	/* pbc_lid is only used for loopback and is OPX_PBC_WFR_UNUSED (0) for *any* lid
 	 * in the pbc/header processing, but for the loopback check we need it to be
 	 invalid (-1UL) lid for WFR and not match */
-	fi_opx_global.hfi_local_info.pbc_lid = (OPX_HFI1_TYPE == OPX_HFI1_WFR) ? -1UL : OPX_PBC_JKR_DLID(hfi1->lid);
-	/* Check if sr-iov(alpha) is enabled (or forced for unsupported testing)*/
+	fi_opx_global.hfi_local_info.pbc_lid = (OPX_SW_HFI1_TYPE & OPX_HFI1_WFR) ? -1UL : OPX_PBC_JKR_DLID(hfi1->lid);
+	/* Check if JKR/sr-iov(alpha) is enabled (or forced for unsupported testing)*/
 	fi_opx_global.hfi_local_info.min_rctxt = -1;
 	fi_opx_global.hfi_local_info.max_rctxt = -1;
 	fi_opx_global.hfi_local_info.sriov =
@@ -1260,7 +1304,7 @@ static int fi_opx_ep_rx_init(struct fi_opx_ep *opx_ep)
 			}
 
 			hwctxt_ctrl->hdrq_head	       = 0;
-			hwctxt_ctrl->rx_hdrq_rhf_seq   = OPX_RHF_SEQ_INIT_VAL(OPX_HFI1_TYPE);
+			hwctxt_ctrl->rx_hdrq_rhf_seq   = OPX_RHF_SEQ_INIT_VAL(OPX_SW_HFI1_TYPE);
 			hwctxt_ctrl->last_egrbfr_index = 0;
 			hwctxt_ctrl->hfi_frozen_count  = 0;
 
@@ -1296,7 +1340,7 @@ static int fi_opx_ep_rx_init(struct fi_opx_ep *opx_ep)
 				       "==========Subctxt %u configuring its own opx_subcontext_ureg[%u]=%p structure.\n",
 				       i, i, ureg_p);
 				memset(ureg_p, 0, sizeof(struct opx_subcontext_ureg));
-				ureg_p->hdrq_rhf_seq = OPX_RHF_SEQ_INIT_VAL(OPX_HFI1_TYPE);
+				ureg_p->hdrq_rhf_seq = OPX_RHF_SEQ_INIT_VAL(OPX_SW_HFI1_TYPE);
 				FI_DBG(fi_opx_global.prov, FI_LOG_EP_DATA,
 				       "opx_subcontext_ureg[%u]->hdrq_rhf_seq=%lx\n", i, ureg_p->hdrq_rhf_seq);
 				FI_DBG(fi_opx_global.prov, FI_LOG_EP_DATA,
@@ -1322,7 +1366,7 @@ static int fi_opx_ep_rx_init(struct fi_opx_ep *opx_ep)
 				opx_ep->rx->shd_ctx.head	      = 0;
 				opx_ep->rx->shd_ctx.rhf_base	      = rcvhdr_base + hfi1->info.rxe.hdrq.rhf_off;
 				opx_ep->rx->shd_ctx.eager_buf_base    = rcvegr_base;
-				opx_ep->rx->shd_ctx.rhf_seq	      = OPX_RHF_SEQ_INIT_VAL(OPX_HFI1_TYPE);
+				opx_ep->rx->shd_ctx.rhf_seq	      = OPX_RHF_SEQ_INIT_VAL(OPX_SW_HFI1_TYPE);
 				opx_ep->rx->shd_ctx.rhq_head_reg      = &ureg_p->uregbase[ur_rcvhdrhead * 8];
 				opx_ep->rx->shd_ctx.eager_head_reg    = &ureg_p->uregbase[ur_rcvegrindexhead * 8];
 
@@ -1376,12 +1420,13 @@ static int fi_opx_ep_rx_init(struct fi_opx_ep *opx_ep)
 	/*
 	 * initialize tx for acks, etc
 	 */
-	{ /* 9B */
+	if (OPX_SW_HFI1_TYPE & (OPX_HFI1_WFR | OPX_HFI1_MIXED_9B)) {
+		/* 9B */
 		/* rendezvous CTS packet model */
 
-		/* Setup the 9B models whether or not they'll be used */
+		/* Setup the 9B models */
 		enum opx_hfi1_type __attribute__((unused)) hfi1_type =
-			(OPX_HFI1_TYPE & OPX_HFI1_WFR) ? OPX_HFI1_WFR : OPX_HFI1_JKR_9B;
+			(OPX_SW_HFI1_TYPE & OPX_HFI1_WFR) ? OPX_HFI1_WFR : OPX_HFI1_MIXED_9B;
 
 		memset(&opx_ep->rx->tx.cts_9B, 0, sizeof(opx_ep->rx->tx.cts_9B));
 		/* PBC data */
@@ -1462,13 +1507,11 @@ static int fi_opx_ep_rx_init(struct fi_opx_ep *opx_ep)
 								    OPX_BTH_CSPEC(OPX_BTH_CSPEC_DEFAULT, hfi1_type));
 
 		OPX_DEBUG_PRINT_HDR((&(opx_ep->rx->tx.rzv_dput_9B.hdr)), hfi1_type);
-	}
-
-	{ /* 16B */
+	} else { /* 16B */
 		/* rendezvous CTS packet model for 16B*/
-		/* Setup the 16B models whether or not they'll be used */
+		/* Setup the 16B models */
 
-		uint64_t hfi1_type = OPX_HFI1_JKR; // OPX_HFI1_CYR ?
+		uint64_t hfi1_type = (OPX_HW_HFI1_TYPE & OPX_HFI1_CYR) ? OPX_HFI1_CYR : OPX_HFI1_JKR;
 
 		memset(&opx_ep->rx->tx.cts_16B, 0, sizeof(opx_ep->rx->tx.cts_16B));
 		/* PBC data */
@@ -1689,6 +1732,7 @@ static void fi_opx_apply_bind_flags(struct fi_opx_ep *opx_ep)
 		opx_ep->tx->cq_completed_ptr = &opx_ep->init_tx_cq->completed;
 		opx_ep->tx->cq_pending_ptr   = &opx_ep->init_tx_cq->pending;
 		opx_ep->tx->cq_err_ptr	     = &opx_ep->init_tx_cq->err;
+
 		/* See NOTE_SELECTIVE_COMPLETION for more information */
 		opx_ep->tx->cq_bind_flags = opx_ep->tx_cq_bflags;
 
@@ -1715,6 +1759,12 @@ static void fi_opx_apply_bind_flags(struct fi_opx_ep *opx_ep)
 			}
 		}
 	}
+
+#if HAVE_HFISVC
+	if (opx_ep->use_hfisvc) {
+		opx_ep->hfisvc.cq_completion_queue = &opx_ep->init_rx_cq->hfisvc.completion_queue;
+	}
+#endif
 
 	fi_opx_update_counter(opx_ep->init_read_cntr);
 	fi_opx_update_counter(opx_ep->init_write_cntr);
@@ -1786,29 +1836,29 @@ static int fi_opx_open_command_queues(struct fi_opx_ep *opx_ep)
 	FI_DBG_TRACE(fi_opx_global.prov, FI_LOG_FABRIC, "Global OPX packet size %u\n", OPX_HFI1_PKT_SIZE);
 
 	/* The global was set early (userinit), may be changed now on mixed networks */
-	if (!(OPX_HFI1_TYPE & (OPX_HFI1_WFR | OPX_HFI1_JKR_9B))) {
+	if (!(OPX_SW_HFI1_TYPE & (OPX_HFI1_WFR | OPX_HFI1_MIXED_9B))) {
 		int mixed_network;
 		if (fi_param_get_bool(fi_opx_global.prov, "mixed_network", &mixed_network) == FI_SUCCESS) {
 			if (mixed_network) {
-				OPX_HFI1_TYPE = OPX_HFI1_JKR_9B;
+				OPX_SW_HFI1_TYPE = OPX_HFI1_MIXED_9B;
 			}
 		} else { // default is mixed
-			OPX_HFI1_TYPE = OPX_HFI1_JKR_9B;
+			OPX_SW_HFI1_TYPE = OPX_HFI1_MIXED_9B;
 		}
 	}
-	opx_ep->hfi->hfi1_type = OPX_HFI1_TYPE;
+	opx_ep->hfi->hfi1_type = OPX_SW_HFI1_TYPE;
 	FI_WARN(fi_opx_global.prov, FI_LOG_FABRIC, "Mixed OPA100 network %s with local HFI type %s.\n",
-		(OPX_HFI1_TYPE > OPX_HFI1_WFR) ? "disabled" : "enabled", OPX_HFI1_TYPE_STRING(OPX_HFI1_TYPE));
+		(OPX_SW_HFI1_TYPE > OPX_HFI1_WFR) ? "disabled" : "enabled", OPX_HFI1_TYPE_STRING(OPX_SW_HFI1_TYPE));
 
 	FI_INFO(fi_opx_global.prov, FI_LOG_EP_DATA,
 		"Opened hfi %p, HFI type %s, unit %u, port %u, ref_cnt %#lX, rcv ctxt %u, send ctxt %u, subctxt %u, subctxt_cnt %u\n",
-		opx_ep->hfi, OPX_HFI1_TYPE_STRING(OPX_HFI1_TYPE), opx_ep->hfi->hfi_unit, opx_ep->hfi->hfi_port,
+		opx_ep->hfi, OPX_HFI1_TYPE_STRING(OPX_SW_HFI1_TYPE), opx_ep->hfi->hfi_unit, opx_ep->hfi->hfi_port,
 		opx_ep->hfi->ref_cnt, opx_ep->hfi->ctrl->ctxt_info.ctxt, opx_ep->hfi->ctrl->ctxt_info.send_ctxt,
 		opx_ep->hfi->ctrl->ctxt_info.subctxt, opx_ep->hfi->subctxt_cnt);
 
-	if (OPX_HFI1_TYPE & OPX_HFI1_JKR || OPX_HFI1_TYPE & OPX_HFI1_JKR_9B) {
+	if (OPX_SW_HFI1_TYPE & OPX_HFI1_JKR || OPX_SW_HFI1_TYPE & OPX_HFI1_MIXED_9B) {
 		OPX_LOG_OBSERVABLE(FI_LOG_EP_DATA, "*****HFI type is CN5000\n");
-	} else if (OPX_HFI1_TYPE & OPX_HFI1_CYR) {
+	} else if (OPX_SW_HFI1_TYPE & OPX_HFI1_CYR) {
 		OPX_LOG_OBSERVABLE(FI_LOG_EP_DATA, "*****HFI type is CN6000\n");
 	} else {
 		OPX_LOG_OBSERVABLE(FI_LOG_EP_DATA, "*****HFI type is OPA100\n");
@@ -2048,6 +2098,53 @@ static int fi_opx_open_command_queues(struct fi_opx_ep *opx_ep)
 		}
 	}
 
+#if HAVE_HFISVC
+	// Check this env. var even when HFI service isn't being used, since there may be places we
+	// use OPX_HFISVC_DEBUG_LOG that are not in an HFISVC-specific code path.
+	if (getenv("OPX_HFISVC_LOG_DISABLE")) {
+		opx_hfisvc_log_enabled = 0;
+	}
+	if (opx_ep->use_hfisvc) {
+		if (opx_domain->hfisvc.ctx == NULL) {
+			assert(opx_ep->hfi->ibv_context != NULL);
+			opx_domain->hfisvc.ctx = opx_ep->hfi->ibv_context;
+		}
+		int ret;
+		if ((ret = opx_domain_hfisvc_init(opx_domain)) != FI_SUCCESS) {
+			if (ret == -FI_ENODEV) {
+				FI_WARN(fi_opx_global.prov, FI_LOG_EP_DATA, "[HFISVC] disabled hfisvc\n");
+				opx_ep->use_hfisvc = false;
+				OPX_HFISVC_DEBUG_LOG("Disabling HFISVC on FI_ENODEV\n");
+				goto done;
+			} else {
+				abort();
+			}
+		}
+
+		OPX_HFISVC_DEBUG_LOG("Attempting to create new command queue...\n");
+		if ((*opx_domain->hfisvc.command_queue_open)(&opx_ep->hfisvc.command_queue, opx_domain->hfisvc.ctx)) {
+			abort();
+		}
+
+		OPX_HFISVC_DEBUG_LOG("Attempting to create new completion queue...\n");
+		if ((*opx_domain->hfisvc.completion_queue_open)(&opx_ep->hfisvc.internal_completion_queue,
+								opx_domain->hfisvc.ctx)) {
+			fprintf(stderr, "(%d) %s:%s():%d Failed creating TX completion queue!\n", getpid(), __FILE__,
+				__func__, __LINE__);
+			abort();
+		}
+
+		int rc = (*opx_domain->hfisvc.completion_queue_open)(&opx_ep->init_tx_cq->hfisvc.completion_queue,
+								     opx_domain->hfisvc.ctx);
+		if (rc) {
+			fprintf(stderr, "(%d) %s:%s():%d Failed creating CQ completion queue, rc=%d\n", getpid(),
+				__FILE__, __func__, __LINE__, rc);
+			abort();
+		}
+		opx_ep->init_tx_cq->use_hfisvc = 1;
+	}
+done:
+#endif
 	/* Unlock */
 	fi_opx_unlock(&opx_ep->lock);
 	if (rx_cq_lock_held) {
@@ -2548,6 +2645,28 @@ int opx_get_srcver_sys(char *srcver_sys)
 	return FI_SUCCESS;
 }
 
+#define OPX_HFISVC_USE_BULKSVC_PARM "/sys/module/hfi1/parameters/use_bulksvc"
+
+int opx_hfi_drv_bulksvc_enabled(void)
+{
+	FILE *parm_file = fopen(OPX_HFISVC_USE_BULKSVC_PARM, "r");
+
+	if (parm_file == NULL) {
+		FI_WARN(fi_opx_global.prov, FI_LOG_EP_DATA, "[HFISVC] no BULKSVC\n");
+		return 0;
+	}
+
+	int c = fgetc(parm_file);
+	fclose(parm_file);
+
+	if (c == EOF) {
+		FI_WARN(fi_opx_global.prov, FI_LOG_EP_DATA, "[HFISVC] no BULKSVC\n");
+		return 0;
+	}
+
+	return (c == 'Y') || (c == 'y') || (c == '1');
+}
+
 int opx_hfi_drv_version_check(char *min_version)
 {
 	char drv_ver[FI_OPX_VER_CHECK_BUF_LEN]	      = {0};
@@ -2819,6 +2938,43 @@ int fi_opx_endpoint_rx_tx(struct fid_domain *dom, struct fi_info *info, struct f
 		}
 	}
 #endif
+
+#if HAVE_HFISVC
+	int drv_bulksvc_enabled = opx_hfi_drv_bulksvc_enabled();
+	if ((!drv_bulksvc_enabled) && (getenv("_FI_OPX_FORCE_BULKSVC"))) {
+		drv_bulksvc_enabled = 1;
+		FI_WARN(fi_opx_global.prov, FI_LOG_EP_DATA, "[HFISVC] _FI_OPX_FORCE_BULKSVC\n");
+	}
+
+	int use_hfisvc;
+	if (fi_param_get_bool(fi_opx_global.prov, "hfisvc", &use_hfisvc) == FI_SUCCESS) {
+		if (use_hfisvc) {
+			if (!drv_bulksvc_enabled) {
+				FI_WARN(&fi_opx_provider, FI_LOG_FABRIC,
+					"FI_OPX_HFISVC is enabled, but the hfi1 driver module either does not support it or the use_bulksvc parameter is not enabled. Work with your system administrator to enable this performance feature, or re-run without enabling FI_OPX_HFISVC.\n");
+				errno = FI_EOPNOTSUPP;
+				goto err;
+			}
+			opx_ep->use_hfisvc = true;
+		} else {
+			opx_ep->use_hfisvc = false;
+		}
+	} else if (OPX_HFISVC_ENABLED_DEFAULT) {
+		if (!drv_bulksvc_enabled) {
+			FI_WARN(&fi_opx_provider, FI_LOG_FABRIC,
+				"The currently active hfi1 module does not have use_bulksvc turned on. OPX will run with degraded performance.\n");
+			opx_ep->use_hfisvc = false;
+		} else {
+			opx_ep->use_hfisvc = true;
+		}
+	} else {
+		opx_ep->use_hfisvc = false;
+	}
+#else
+	opx_ep->use_hfisvc = false;
+#endif
+	FI_WARN(fi_opx_global.prov, FI_LOG_EP_DATA, "[HFISVC] HFI Service is %s for bulk transfers.\n",
+		opx_ep->use_hfisvc ? "enabled" : "disabled");
 
 	*ep = &opx_ep->ep_fid;
 
@@ -3131,7 +3287,7 @@ void fi_opx_ep_rx_reliability_process_packet(struct fid_ep *ep, const union opx_
 	opx_lid_t slid;
 
 	/* Non-inlined functions should just use the runtime HFI1 type check, no optimizations */
-	if (OPX_HFI1_TYPE & (OPX_HFI1_WFR | OPX_HFI1_JKR_9B)) {
+	if (OPX_SW_HFI1_TYPE & (OPX_HFI1_WFR | OPX_HFI1_MIXED_9B)) {
 		lrh_pktlen_le = ntohs(hdr->lrh_9B.pktlen);
 		total_bytes   = (lrh_pktlen_le - 1) * 4; /* do not copy the trailing icrc */
 		payload_bytes = total_bytes - sizeof(struct fi_opx_hfi1_stl_packet_hdr_9B);
@@ -3146,11 +3302,11 @@ void fi_opx_ep_rx_reliability_process_packet(struct fid_ep *ep, const union opx_
 	if (OFI_LIKELY(opcode & FI_OPX_HFI_BTH_OPCODE_TAG_BIT)) {
 		fi_opx_ep_rx_process_header(ep, hdr, (const union fi_opx_hfi1_packet_payload *const) payload,
 					    payload_bytes, FI_TAGGED, opcode, OPX_SHM_FALSE, FI_OPX_LOCK_NOT_REQUIRED,
-					    OFI_RELIABILITY_KIND_ONLOAD, OPX_HFI1_TYPE, slid);
+					    OFI_RELIABILITY_KIND_ONLOAD, OPX_SW_HFI1_TYPE, slid);
 	} else {
 		fi_opx_ep_rx_process_header(ep, hdr, (const union fi_opx_hfi1_packet_payload *const) payload,
 					    payload_bytes, FI_MSG, opcode, OPX_SHM_FALSE, FI_OPX_LOCK_NOT_REQUIRED,
-					    OFI_RELIABILITY_KIND_ONLOAD, OPX_HFI1_TYPE, slid);
+					    OFI_RELIABILITY_KIND_ONLOAD, OPX_SW_HFI1_TYPE, slid);
 	}
 }
 
@@ -3346,9 +3502,12 @@ ssize_t fi_opx_ep_tx_connect(struct fi_opx_ep *opx_ep, size_t count, union fi_op
 				return rc;
 			}
 		}
-		if (!fi_opx_global.hfi_local_info.multi_lid) {
-			/* sr-iov Loopback to self (no SHM) if a single lid jobs, <n> VMs */
+		if (fi_opx_global.hfi_local_info.multi_vm) {
+			/* Multi-vm (self) jobs will need loopback to self so disable SHM */
 			opx_remove_self_lid(fi_opx_global.hfi_local_info.hfi_unit, fi_opx_global.hfi_local_info.lid);
+			/* assert JKR/sr-iov(alpha) can't mix loopback and other lids across vms */
+			assert(!(OPX_HW_HFI1_TYPE & OPX_HFI1_JKR) || !fi_opx_global.hfi_local_info.multi_lid);
+			assert(!(OPX_HW_HFI1_TYPE & OPX_HFI1_WFR)); /* not supported */
 		}
 		FI_INFO(fi_opx_global.prov, FI_LOG_AV, "multi-vm %u, multi-lid %u, SHM %u\n",
 			fi_opx_global.hfi_local_info.multi_vm, fi_opx_global.hfi_local_info.multi_lid,
@@ -3390,11 +3549,11 @@ ssize_t fi_opx_ep_tx_connect(struct fi_opx_ep *opx_ep, size_t count, union fi_op
 }
 
 FI_OPX_MSG_SPECIALIZED_FUNC(OPX_LOCK, OPX_AV, OPX_EP_CAPS, OPX_RELIABILITY, OPX_HFI1_WFR, OPX_CTX_SHARING_ON)
-FI_OPX_MSG_SPECIALIZED_FUNC(OPX_LOCK, OPX_AV, OPX_EP_CAPS, OPX_RELIABILITY, OPX_HFI1_JKR_9B, OPX_CTX_SHARING_ON)
+FI_OPX_MSG_SPECIALIZED_FUNC(OPX_LOCK, OPX_AV, OPX_EP_CAPS, OPX_RELIABILITY, OPX_HFI1_MIXED_9B, OPX_CTX_SHARING_ON)
 FI_OPX_MSG_SPECIALIZED_FUNC(OPX_LOCK, OPX_AV, OPX_EP_CAPS, OPX_RELIABILITY, OPX_HFI1_JKR, OPX_CTX_SHARING_ON)
 FI_OPX_MSG_SPECIALIZED_FUNC(OPX_LOCK, OPX_AV, OPX_EP_CAPS, OPX_RELIABILITY, OPX_HFI1_CYR, OPX_CTX_SHARING_ON)
 FI_OPX_MSG_SPECIALIZED_FUNC(OPX_LOCK, OPX_AV, OPX_EP_CAPS, OPX_RELIABILITY, OPX_HFI1_WFR, OPX_CTX_SHARING_OFF)
-FI_OPX_MSG_SPECIALIZED_FUNC(OPX_LOCK, OPX_AV, OPX_EP_CAPS, OPX_RELIABILITY, OPX_HFI1_JKR_9B, OPX_CTX_SHARING_OFF)
+FI_OPX_MSG_SPECIALIZED_FUNC(OPX_LOCK, OPX_AV, OPX_EP_CAPS, OPX_RELIABILITY, OPX_HFI1_MIXED_9B, OPX_CTX_SHARING_OFF)
 FI_OPX_MSG_SPECIALIZED_FUNC(OPX_LOCK, OPX_AV, OPX_EP_CAPS, OPX_RELIABILITY, OPX_HFI1_JKR, OPX_CTX_SHARING_OFF)
 FI_OPX_MSG_SPECIALIZED_FUNC(OPX_LOCK, OPX_AV, OPX_EP_CAPS, OPX_RELIABILITY, OPX_HFI1_CYR, OPX_CTX_SHARING_OFF)
 
@@ -3403,15 +3562,15 @@ ssize_t fi_opx_send_FABRIC_DIRECT(struct fid_ep *ep, const void *buf, size_t len
 {
 	/* Non-inlined functions should just use the runtime HFI1 type check, no optimizations */
 	if (OPX_IS_CTX_SHARING_ENABLED) {
-		if (OPX_HFI1_TYPE & OPX_HFI1_WFR) {
+		if (OPX_SW_HFI1_TYPE & OPX_HFI1_WFR) {
 			return FI_OPX_MSG_SPECIALIZED_FUNC_NAME(send, OPX_LOCK, OPX_AV, OPX_EP_CAPS, OPX_RELIABILITY,
 								OPX_HFI1_WFR, OPX_CTX_SHARING_ON)(ep, buf, len, desc,
 												  dest_addr, context);
-		} else if (OPX_HFI1_TYPE & OPX_HFI1_JKR_9B) {
+		} else if (OPX_SW_HFI1_TYPE & OPX_HFI1_MIXED_9B) {
 			return FI_OPX_MSG_SPECIALIZED_FUNC_NAME(send, OPX_LOCK, OPX_AV, OPX_EP_CAPS, OPX_RELIABILITY,
-								OPX_HFI1_JKR_9B, OPX_CTX_SHARING_ON)(
+								OPX_HFI1_MIXED_9B, OPX_CTX_SHARING_ON)(
 				ep, buf, len, desc, dest_addr, context);
-		} else if (OPX_HFI1_TYPE & OPX_HFI1_JKR) {
+		} else if (OPX_SW_HFI1_TYPE & OPX_HFI1_JKR) {
 			return FI_OPX_MSG_SPECIALIZED_FUNC_NAME(send, OPX_LOCK, OPX_AV, OPX_EP_CAPS, OPX_RELIABILITY,
 								OPX_HFI1_JKR, OPX_CTX_SHARING_ON)(ep, buf, len, desc,
 												  dest_addr, context);
@@ -3421,15 +3580,15 @@ ssize_t fi_opx_send_FABRIC_DIRECT(struct fid_ep *ep, const void *buf, size_t len
 												  dest_addr, context);
 		}
 	} else {
-		if (OPX_HFI1_TYPE & OPX_HFI1_WFR) {
+		if (OPX_SW_HFI1_TYPE & OPX_HFI1_WFR) {
 			return FI_OPX_MSG_SPECIALIZED_FUNC_NAME(send, OPX_LOCK, OPX_AV, OPX_EP_CAPS, OPX_RELIABILITY,
 								OPX_HFI1_WFR, OPX_CTX_SHARING_OFF)(ep, buf, len, desc,
 												   dest_addr, context);
-		} else if (OPX_HFI1_TYPE & OPX_HFI1_JKR_9B) {
+		} else if (OPX_SW_HFI1_TYPE & OPX_HFI1_MIXED_9B) {
 			return FI_OPX_MSG_SPECIALIZED_FUNC_NAME(send, OPX_LOCK, OPX_AV, OPX_EP_CAPS, OPX_RELIABILITY,
-								OPX_HFI1_JKR_9B, OPX_CTX_SHARING_OFF)(
+								OPX_HFI1_MIXED_9B, OPX_CTX_SHARING_OFF)(
 				ep, buf, len, desc, dest_addr, context);
-		} else if (OPX_HFI1_TYPE & OPX_HFI1_JKR) {
+		} else if (OPX_SW_HFI1_TYPE & OPX_HFI1_JKR) {
 			return FI_OPX_MSG_SPECIALIZED_FUNC_NAME(send, OPX_LOCK, OPX_AV, OPX_EP_CAPS, OPX_RELIABILITY,
 								OPX_HFI1_JKR, OPX_CTX_SHARING_OFF)(ep, buf, len, desc,
 												   dest_addr, context);
@@ -3447,15 +3606,15 @@ ssize_t fi_opx_recv_FABRIC_DIRECT(struct fid_ep *ep, void *buf, size_t len, void
 {
 	/* Non-inlined functions should just use the runtime HFI1 type check, no optimizations */
 	if (OPX_IS_CTX_SHARING_ENABLED) {
-		if (OPX_HFI1_TYPE & OPX_HFI1_WFR) {
+		if (OPX_SW_HFI1_TYPE & OPX_HFI1_WFR) {
 			return FI_OPX_MSG_SPECIALIZED_FUNC_NAME(recv, OPX_LOCK, OPX_AV, OPX_EP_CAPS, OPX_RELIABILITY,
 								OPX_HFI1_WFR, OPX_CTX_SHARING_ON)(ep, buf, len, desc,
 												  src_addr, context);
-		} else if (OPX_HFI1_TYPE & OPX_HFI1_JKR_9B) {
+		} else if (OPX_SW_HFI1_TYPE & OPX_HFI1_MIXED_9B) {
 			return FI_OPX_MSG_SPECIALIZED_FUNC_NAME(recv, OPX_LOCK, OPX_AV, OPX_EP_CAPS, OPX_RELIABILITY,
-								OPX_HFI1_JKR_9B, OPX_CTX_SHARING_ON)(ep, buf, len, desc,
-												     src_addr, context);
-		} else if (OPX_HFI1_TYPE & OPX_HFI1_JKR) {
+								OPX_HFI1_MIXED_9B, OPX_CTX_SHARING_ON)(
+				ep, buf, len, desc, src_addr, context);
+		} else if (OPX_SW_HFI1_TYPE & OPX_HFI1_JKR) {
 			return FI_OPX_MSG_SPECIALIZED_FUNC_NAME(recv, OPX_LOCK, OPX_AV, OPX_EP_CAPS, OPX_RELIABILITY,
 								OPX_HFI1_JKR, OPX_CTX_SHARING_ON)(ep, buf, len, desc,
 												  src_addr, context);
@@ -3465,15 +3624,15 @@ ssize_t fi_opx_recv_FABRIC_DIRECT(struct fid_ep *ep, void *buf, size_t len, void
 												  src_addr, context);
 		}
 	} else {
-		if (OPX_HFI1_TYPE & OPX_HFI1_WFR) {
+		if (OPX_SW_HFI1_TYPE & OPX_HFI1_WFR) {
 			return FI_OPX_MSG_SPECIALIZED_FUNC_NAME(recv, OPX_LOCK, OPX_AV, OPX_EP_CAPS, OPX_RELIABILITY,
 								OPX_HFI1_WFR, OPX_CTX_SHARING_OFF)(ep, buf, len, desc,
 												   src_addr, context);
-		} else if (OPX_HFI1_TYPE & OPX_HFI1_JKR_9B) {
+		} else if (OPX_SW_HFI1_TYPE & OPX_HFI1_MIXED_9B) {
 			return FI_OPX_MSG_SPECIALIZED_FUNC_NAME(recv, OPX_LOCK, OPX_AV, OPX_EP_CAPS, OPX_RELIABILITY,
-								OPX_HFI1_JKR_9B, OPX_CTX_SHARING_OFF)(
+								OPX_HFI1_MIXED_9B, OPX_CTX_SHARING_OFF)(
 				ep, buf, len, desc, src_addr, context);
-		} else if (OPX_HFI1_TYPE & OPX_HFI1_JKR) {
+		} else if (OPX_SW_HFI1_TYPE & OPX_HFI1_JKR) {
 			return FI_OPX_MSG_SPECIALIZED_FUNC_NAME(recv, OPX_LOCK, OPX_AV, OPX_EP_CAPS, OPX_RELIABILITY,
 								OPX_HFI1_JKR, OPX_CTX_SHARING_OFF)(ep, buf, len, desc,
 												   src_addr, context);
@@ -3490,15 +3649,15 @@ ssize_t fi_opx_inject_FABRIC_DIRECT(struct fid_ep *ep, const void *buf, size_t l
 {
 	/* Non-inlined functions should just use the runtime HFI1 type check, no optimizations */
 	if (OPX_IS_CTX_SHARING_ENABLED) {
-		if (OPX_HFI1_TYPE & OPX_HFI1_WFR) {
+		if (OPX_SW_HFI1_TYPE & OPX_HFI1_WFR) {
 			return FI_OPX_MSG_SPECIALIZED_FUNC_NAME(inject, OPX_LOCK, OPX_AV, OPX_EP_CAPS, OPX_RELIABILITY,
 								OPX_HFI1_WFR,
 								OPX_CTX_SHARING_ON)(ep, buf, len, dest_addr);
-		} else if (OPX_HFI1_TYPE & OPX_HFI1_JKR_9B) {
+		} else if (OPX_SW_HFI1_TYPE & OPX_HFI1_MIXED_9B) {
 			return FI_OPX_MSG_SPECIALIZED_FUNC_NAME(inject, OPX_LOCK, OPX_AV, OPX_EP_CAPS, OPX_RELIABILITY,
-								OPX_HFI1_JKR_9B,
+								OPX_HFI1_MIXED_9B,
 								OPX_CTX_SHARING_ON)(ep, buf, len, dest_addr);
-		} else if (OPX_HFI1_TYPE & OPX_HFI1_JKR) {
+		} else if (OPX_SW_HFI1_TYPE & OPX_HFI1_JKR) {
 			return FI_OPX_MSG_SPECIALIZED_FUNC_NAME(inject, OPX_LOCK, OPX_AV, OPX_EP_CAPS, OPX_RELIABILITY,
 								OPX_HFI1_JKR,
 								OPX_CTX_SHARING_ON)(ep, buf, len, dest_addr);
@@ -3508,15 +3667,15 @@ ssize_t fi_opx_inject_FABRIC_DIRECT(struct fid_ep *ep, const void *buf, size_t l
 								OPX_CTX_SHARING_ON)(ep, buf, len, dest_addr);
 		}
 	} else {
-		if (OPX_HFI1_TYPE & OPX_HFI1_WFR) {
+		if (OPX_SW_HFI1_TYPE & OPX_HFI1_WFR) {
 			return FI_OPX_MSG_SPECIALIZED_FUNC_NAME(inject, OPX_LOCK, OPX_AV, OPX_EP_CAPS, OPX_RELIABILITY,
 								OPX_HFI1_WFR,
 								OPX_CTX_SHARING_OFF)(ep, buf, len, dest_addr);
-		} else if (OPX_HFI1_TYPE & OPX_HFI1_JKR_9B) {
+		} else if (OPX_SW_HFI1_TYPE & OPX_HFI1_MIXED_9B) {
 			return FI_OPX_MSG_SPECIALIZED_FUNC_NAME(inject, OPX_LOCK, OPX_AV, OPX_EP_CAPS, OPX_RELIABILITY,
-								OPX_HFI1_JKR_9B,
+								OPX_HFI1_MIXED_9B,
 								OPX_CTX_SHARING_OFF)(ep, buf, len, dest_addr);
-		} else if (OPX_HFI1_TYPE & OPX_HFI1_JKR) {
+		} else if (OPX_SW_HFI1_TYPE & OPX_HFI1_JKR) {
 			return FI_OPX_MSG_SPECIALIZED_FUNC_NAME(inject, OPX_LOCK, OPX_AV, OPX_EP_CAPS, OPX_RELIABILITY,
 								OPX_HFI1_JKR,
 								OPX_CTX_SHARING_OFF)(ep, buf, len, dest_addr);
@@ -3533,13 +3692,13 @@ ssize_t fi_opx_recvmsg_FABRIC_DIRECT(struct fid_ep *ep, const struct fi_msg *msg
 {
 	/* Non-inlined functions should just use the runtime HFI1 type check, no optimizations */
 	if (OPX_IS_CTX_SHARING_ENABLED) {
-		if (OPX_HFI1_TYPE & OPX_HFI1_WFR) {
+		if (OPX_SW_HFI1_TYPE & OPX_HFI1_WFR) {
 			return FI_OPX_MSG_SPECIALIZED_FUNC_NAME(recvmsg, OPX_LOCK, OPX_AV, OPX_EP_CAPS, OPX_RELIABILITY,
 								OPX_HFI1_WFR, OPX_CTX_SHARING_ON)(ep, msg, flags);
-		} else if (OPX_HFI1_TYPE & OPX_HFI1_JKR_9B) {
+		} else if (OPX_SW_HFI1_TYPE & OPX_HFI1_MIXED_9B) {
 			return FI_OPX_MSG_SPECIALIZED_FUNC_NAME(recvmsg, OPX_LOCK, OPX_AV, OPX_EP_CAPS, OPX_RELIABILITY,
-								OPX_HFI1_JKR_9B, OPX_CTX_SHARING_ON)(ep, msg, flags);
-		} else if (OPX_HFI1_TYPE & OPX_HFI1_JKR) {
+								OPX_HFI1_MIXED_9B, OPX_CTX_SHARING_ON)(ep, msg, flags);
+		} else if (OPX_SW_HFI1_TYPE & OPX_HFI1_JKR) {
 			return FI_OPX_MSG_SPECIALIZED_FUNC_NAME(recvmsg, OPX_LOCK, OPX_AV, OPX_EP_CAPS, OPX_RELIABILITY,
 								OPX_HFI1_JKR, OPX_CTX_SHARING_ON)(ep, msg, flags);
 		} else {
@@ -3547,13 +3706,13 @@ ssize_t fi_opx_recvmsg_FABRIC_DIRECT(struct fid_ep *ep, const struct fi_msg *msg
 								OPX_HFI1_CYR, OPX_CTX_SHARING_ON)(ep, msg, flags);
 		}
 	} else {
-		if (OPX_HFI1_TYPE & OPX_HFI1_WFR) {
+		if (OPX_SW_HFI1_TYPE & OPX_HFI1_WFR) {
 			return FI_OPX_MSG_SPECIALIZED_FUNC_NAME(recvmsg, OPX_LOCK, OPX_AV, OPX_EP_CAPS, OPX_RELIABILITY,
 								OPX_HFI1_WFR, OPX_CTX_SHARING_OFF)(ep, msg, flags);
-		} else if (OPX_HFI1_TYPE & OPX_HFI1_JKR_9B) {
+		} else if (OPX_SW_HFI1_TYPE & OPX_HFI1_MIXED_9B) {
 			return FI_OPX_MSG_SPECIALIZED_FUNC_NAME(recvmsg, OPX_LOCK, OPX_AV, OPX_EP_CAPS, OPX_RELIABILITY,
-								OPX_HFI1_JKR_9B, OPX_CTX_SHARING_OFF)(ep, msg, flags);
-		} else if (OPX_HFI1_TYPE & OPX_HFI1_JKR) {
+								OPX_HFI1_MIXED_9B, OPX_CTX_SHARING_OFF)(ep, msg, flags);
+		} else if (OPX_SW_HFI1_TYPE & OPX_HFI1_JKR) {
 			return FI_OPX_MSG_SPECIALIZED_FUNC_NAME(recvmsg, OPX_LOCK, OPX_AV, OPX_EP_CAPS, OPX_RELIABILITY,
 								OPX_HFI1_JKR, OPX_CTX_SHARING_OFF)(ep, msg, flags);
 		} else {
@@ -3569,15 +3728,15 @@ ssize_t fi_opx_senddata_FABRIC_DIRECT(struct fid_ep *ep, const void *buf, size_t
 {
 	/* Non-inlined functions should just use the runtime HFI1 type check, no optimizations */
 	if (OPX_IS_CTX_SHARING_ENABLED) {
-		if (OPX_HFI1_TYPE & OPX_HFI1_WFR) {
+		if (OPX_SW_HFI1_TYPE & OPX_HFI1_WFR) {
 			return FI_OPX_MSG_SPECIALIZED_FUNC_NAME(senddata, OPX_LOCK, OPX_AV, OPX_EP_CAPS,
 								OPX_RELIABILITY, OPX_HFI1_WFR, OPX_CTX_SHARING_ON)(
 				ep, buf, len, desc, data, dest_addr, context);
-		} else if (OPX_HFI1_TYPE & OPX_HFI1_JKR_9B) {
+		} else if (OPX_SW_HFI1_TYPE & OPX_HFI1_MIXED_9B) {
 			return FI_OPX_MSG_SPECIALIZED_FUNC_NAME(senddata, OPX_LOCK, OPX_AV, OPX_EP_CAPS,
-								OPX_RELIABILITY, OPX_HFI1_JKR_9B, OPX_CTX_SHARING_ON)(
+								OPX_RELIABILITY, OPX_HFI1_MIXED_9B, OPX_CTX_SHARING_ON)(
 				ep, buf, len, desc, data, dest_addr, context);
-		} else if (OPX_HFI1_TYPE & OPX_HFI1_JKR) {
+		} else if (OPX_SW_HFI1_TYPE & OPX_HFI1_JKR) {
 			return FI_OPX_MSG_SPECIALIZED_FUNC_NAME(senddata, OPX_LOCK, OPX_AV, OPX_EP_CAPS,
 								OPX_RELIABILITY, OPX_HFI1_JKR, OPX_CTX_SHARING_ON)(
 				ep, buf, len, desc, data, dest_addr, context);
@@ -3587,15 +3746,15 @@ ssize_t fi_opx_senddata_FABRIC_DIRECT(struct fid_ep *ep, const void *buf, size_t
 				ep, buf, len, desc, data, dest_addr, context);
 		}
 	} else {
-		if (OPX_HFI1_TYPE & OPX_HFI1_WFR) {
+		if (OPX_SW_HFI1_TYPE & OPX_HFI1_WFR) {
 			return FI_OPX_MSG_SPECIALIZED_FUNC_NAME(senddata, OPX_LOCK, OPX_AV, OPX_EP_CAPS,
 								OPX_RELIABILITY, OPX_HFI1_WFR, OPX_CTX_SHARING_OFF)(
 				ep, buf, len, desc, data, dest_addr, context);
-		} else if (OPX_HFI1_TYPE & OPX_HFI1_JKR_9B) {
-			return FI_OPX_MSG_SPECIALIZED_FUNC_NAME(senddata, OPX_LOCK, OPX_AV, OPX_EP_CAPS,
-								OPX_RELIABILITY, OPX_HFI1_JKR_9B, OPX_CTX_SHARING_OFF)(
-				ep, buf, len, desc, data, dest_addr, context);
-		} else if (OPX_HFI1_TYPE & OPX_HFI1_JKR) {
+		} else if (OPX_SW_HFI1_TYPE & OPX_HFI1_MIXED_9B) {
+			return FI_OPX_MSG_SPECIALIZED_FUNC_NAME(
+				senddata, OPX_LOCK, OPX_AV, OPX_EP_CAPS, OPX_RELIABILITY, OPX_HFI1_MIXED_9B,
+				OPX_CTX_SHARING_OFF)(ep, buf, len, desc, data, dest_addr, context);
+		} else if (OPX_SW_HFI1_TYPE & OPX_HFI1_JKR) {
 			return FI_OPX_MSG_SPECIALIZED_FUNC_NAME(senddata, OPX_LOCK, OPX_AV, OPX_EP_CAPS,
 								OPX_RELIABILITY, OPX_HFI1_JKR, OPX_CTX_SHARING_OFF)(
 				ep, buf, len, desc, data, dest_addr, context);
@@ -3613,15 +3772,15 @@ ssize_t fi_opx_injectdata_FABRIC_DIRECT(struct fid_ep *ep, const void *buf, size
 {
 	/* Non-inlined functions should just use the runtime HFI1 type check, no optimizations */
 	if (OPX_IS_CTX_SHARING_ENABLED) {
-		if (OPX_HFI1_TYPE & OPX_HFI1_WFR) {
+		if (OPX_SW_HFI1_TYPE & OPX_HFI1_WFR) {
 			return FI_OPX_MSG_SPECIALIZED_FUNC_NAME(injectdata, OPX_LOCK, OPX_AV, OPX_EP_CAPS,
 								OPX_RELIABILITY, OPX_HFI1_WFR,
 								OPX_CTX_SHARING_ON)(ep, buf, len, data, dest_addr);
-		} else if (OPX_HFI1_TYPE & OPX_HFI1_JKR_9B) {
+		} else if (OPX_SW_HFI1_TYPE & OPX_HFI1_MIXED_9B) {
 			return FI_OPX_MSG_SPECIALIZED_FUNC_NAME(injectdata, OPX_LOCK, OPX_AV, OPX_EP_CAPS,
-								OPX_RELIABILITY, OPX_HFI1_JKR_9B,
+								OPX_RELIABILITY, OPX_HFI1_MIXED_9B,
 								OPX_CTX_SHARING_ON)(ep, buf, len, data, dest_addr);
-		} else if (OPX_HFI1_TYPE & OPX_HFI1_JKR) {
+		} else if (OPX_SW_HFI1_TYPE & OPX_HFI1_JKR) {
 			return FI_OPX_MSG_SPECIALIZED_FUNC_NAME(injectdata, OPX_LOCK, OPX_AV, OPX_EP_CAPS,
 								OPX_RELIABILITY, OPX_HFI1_JKR,
 								OPX_CTX_SHARING_ON)(ep, buf, len, data, dest_addr);
@@ -3631,15 +3790,15 @@ ssize_t fi_opx_injectdata_FABRIC_DIRECT(struct fid_ep *ep, const void *buf, size
 								OPX_CTX_SHARING_ON)(ep, buf, len, data, dest_addr);
 		}
 	} else {
-		if (OPX_HFI1_TYPE & OPX_HFI1_WFR) {
+		if (OPX_SW_HFI1_TYPE & OPX_HFI1_WFR) {
 			return FI_OPX_MSG_SPECIALIZED_FUNC_NAME(injectdata, OPX_LOCK, OPX_AV, OPX_EP_CAPS,
 								OPX_RELIABILITY, OPX_HFI1_WFR,
 								OPX_CTX_SHARING_OFF)(ep, buf, len, data, dest_addr);
-		} else if (OPX_HFI1_TYPE & OPX_HFI1_JKR_9B) {
+		} else if (OPX_SW_HFI1_TYPE & OPX_HFI1_MIXED_9B) {
 			return FI_OPX_MSG_SPECIALIZED_FUNC_NAME(injectdata, OPX_LOCK, OPX_AV, OPX_EP_CAPS,
-								OPX_RELIABILITY, OPX_HFI1_JKR_9B,
+								OPX_RELIABILITY, OPX_HFI1_MIXED_9B,
 								OPX_CTX_SHARING_OFF)(ep, buf, len, data, dest_addr);
-		} else if (OPX_HFI1_TYPE & OPX_HFI1_JKR) {
+		} else if (OPX_SW_HFI1_TYPE & OPX_HFI1_JKR) {
 			return FI_OPX_MSG_SPECIALIZED_FUNC_NAME(injectdata, OPX_LOCK, OPX_AV, OPX_EP_CAPS,
 								OPX_RELIABILITY, OPX_HFI1_JKR,
 								OPX_CTX_SHARING_OFF)(ep, buf, len, data, dest_addr);

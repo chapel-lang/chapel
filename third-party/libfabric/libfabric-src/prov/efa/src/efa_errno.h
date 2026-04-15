@@ -71,7 +71,8 @@
 	_(12,	REMOTE_ERROR_BAD_STATUS,	Unexpected status returned by responder)					\
 	_(13,	LOCAL_ERROR_UNRESP_REMOTE,	Unresponsive remote (was previously responsive))						\
 	_(14,	REMOTE_ERROR_UNKNOWN_PEER,	No valid address handle at remote side (required for RDMA operations))	\
-	_(15,	LOCAL_ERROR_UNREACH_REMOTE,	Unreachable remote (never received a response))
+	_(15,	LOCAL_ERROR_UNREACH_REMOTE,	Unreachable remote - never received a response)					\
+	_(18,	REMOTE_ERROR_FEATURE_MISMATCH,	Remote feature mismatch)							\
 
 /**
  * @brief EFA provider proprietary error codes
@@ -157,6 +158,7 @@ static inline int to_fi_errno(enum efa_errno err) {
 	case EFA_IO_COMP_STATUS_LOCAL_ERROR_INVALID_LKEY:
 	case EFA_IO_COMP_STATUS_LOCAL_ERROR_UNSUPPORTED_OP:
 	case EFA_IO_COMP_STATUS_REMOTE_ERROR_BAD_ADDRESS:
+	case EFA_IO_COMP_STATUS_REMOTE_ERROR_FEATURE_MISMATCH:
 		return FI_EINVAL;
 	case EFA_IO_COMP_STATUS_LOCAL_ERROR_UNREACH_REMOTE:
 		return FI_EHOSTUNREACH;

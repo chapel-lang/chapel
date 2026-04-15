@@ -268,9 +268,12 @@ int opx_hfi_context_open_ex(int unit, int port, uint64_t open_timeout, unsigned 
 	return fd;
 }
 
-void opx_hfi_context_close(int fd)
+void opx_hfi_context_close(int fd_cdev, int fd_verbs)
 {
-	(void) close(fd);
+	if (fd_verbs != -1) {
+		(void) close(fd_verbs);
+	}
+	(void) close(fd_cdev);
 }
 
 int opx_hfi_cmd_writev(int fd, const struct iovec *iov, int iovcnt)

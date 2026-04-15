@@ -172,7 +172,7 @@ int vrb_dgram_av_lookup(struct fid_av *av_fid, fi_addr_t fi_addr,
 
 	av_entry = vrb_dgram_av_lookup_av_entry(fi_addr);
 	if (!av_entry)
-		return -FI_ENOENT;
+		return -FI_EINVAL;
 
 	memcpy(addr, &av_entry->addr, MIN(*addrlen, sizeof(av_entry->addr)));
 	*addrlen = sizeof(av_entry->addr);

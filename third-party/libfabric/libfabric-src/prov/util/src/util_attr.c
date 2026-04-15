@@ -727,6 +727,23 @@ int ofi_check_domain_attr(const struct fi_provider *prov, uint32_t api_version,
 		return -FI_ENODATA;
 	}
 
+	if (FI_VERSION_GE(api_version, FI_VERSION(2, 5))) {
+		if (prov_attr->max_cntr_value &&
+		    user_attr->max_cntr_value > prov_attr->max_cntr_value) {
+			OFI_INFO_CHECK_SIZE(prov, prov_attr, user_attr,
+					    max_cntr_value);
+			return -FI_ENODATA;
+		}
+
+		if (prov_attr->max_err_cntr_value &&
+		    user_attr->max_err_cntr_value >
+			    prov_attr->max_err_cntr_value) {
+			OFI_INFO_CHECK_SIZE(prov, prov_attr, user_attr,
+					    max_err_cntr_value);
+			return -FI_ENODATA;
+		}
+	}
+
 	return 0;
 }
 
@@ -1259,6 +1276,12 @@ static void fi_alter_domain_attr(struct fi_domain_attr *attr,
 	}
 
 	attr->caps = ofi_get_caps(info_caps, hints ? hints->caps : 0, attr->caps);
+
+	if (attr->max_cntr_value == 0)
+		attr->max_cntr_value = UINT64_MAX;
+	if (attr->max_err_cntr_value == 0)
+		attr->max_err_cntr_value = UINT64_MAX;
+
 	if (!hints)
 		return;
 

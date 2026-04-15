@@ -191,7 +191,7 @@ extern int opx_route_control[OPX_HFI1_NUM_PACKET_TYPES];
 static inline int opx_route_control_value(const enum opx_hfi1_type hfi1_type, enum opx_hfi1_packet_type pkt_type,
 					  const char *func, const int line)
 {
-	assert(OPX_HFI1_TYPE != OPX_HFI1_UNDEF);
+	assert(OPX_SW_HFI1_TYPE != OPX_HFI1_UNDEF);
 	assert(pkt_type < OPX_HFI1_NUM_PACKET_TYPES);
 	FI_TRACE(fi_opx_global.prov, FI_LOG_EP_DATA, "[%s:%d] Return %s route control %d.\n", func, line,
 		 OPX_HFI1_PACKET_STR[pkt_type], opx_route_control[pkt_type]);
@@ -203,10 +203,10 @@ static inline int opx_route_control_value(const enum opx_hfi1_type hfi1_type, en
 
 static inline void opx_set_route_control_value(const bool disabled)
 {
-	assert(OPX_HFI1_TYPE != OPX_HFI1_UNDEF);
+	assert(OPX_SW_HFI1_TYPE != OPX_HFI1_UNDEF);
 
 	/* HFI specific default (except OPX_HFI1_RZV_CTRL which always defaults to OPX_RC_IN_ORDER_0) */
-	const int default_route_control = ((OPX_HFI1_TYPE & (OPX_HFI1_CNX000 | OPX_HFI1_JKR_9B)) ?
+	const int default_route_control = ((OPX_SW_HFI1_TYPE & (OPX_HFI1_CNX000 | OPX_HFI1_MIXED_9B)) ?
 						   OPX_CHECK_OUT_OF_ORDER(disabled, OPX_RC_OUT_OF_ORDER_0) :
 						   OPX_RC_IN_ORDER_0);
 	char	 *env_route_control;
@@ -251,7 +251,7 @@ static inline void opx_set_route_control_value(const bool disabled)
 		}
 		FI_TRACE(fi_opx_global.prov, FI_LOG_EP_DATA,
 			 "All packet types using %s default route control values.\n",
-			 OPX_HFI1_TYPE_STRING(OPX_HFI1_TYPE));
+			 OPX_HFI1_TYPE_STRING(OPX_SW_HFI1_TYPE));
 	}
 }
 /* The bit shifts here are for the half word indicating the ECN field */
@@ -402,9 +402,9 @@ __OPX_FORCE_INLINE__ int opx_jkr_16B_rhf_check_header(const uint64_t			     rhf_
 	}
 }
 
-#define OPX_JKR_RHF_CHECK_HEADER(_rhf_rcvd, _hdr, _hfi1_type)                                        \
-	((_hfi1_type & OPX_HFI1_JKR_9B) ? opx_jkr_9B_rhf_check_header(_rhf_rcvd, _hdr, _hfi1_type) : \
-					  opx_jkr_16B_rhf_check_header(_rhf_rcvd, _hdr, _hfi1_type))
+#define OPX_JKR_RHF_CHECK_HEADER(_rhf_rcvd, _hdr, _hfi1_type)                                          \
+	((_hfi1_type & OPX_HFI1_MIXED_9B) ? opx_jkr_9B_rhf_check_header(_rhf_rcvd, _hdr, _hfi1_type) : \
+					    opx_jkr_16B_rhf_check_header(_rhf_rcvd, _hdr, _hfi1_type))
 
 union opx_jkr_pbc {
 	uint64_t raw64b;

@@ -147,6 +147,22 @@ static struct fi_ops lnx_fabric_fi_ops = {
 	.ops_open = fi_no_ops_open,
 };
 
+static int lnx_wait_open(struct fid_fabric *fabric_fid,
+			 struct fi_wait_attr *attr,
+			 struct fid_wait **waitset)
+{
+	switch (attr->wait_obj) {
+	case FI_WAIT_UNSPEC:
+	case FI_WAIT_YIELD:
+		return ofi_wait_yield_open(fabric_fid, attr, waitset);
+	case FI_WAIT_FD:
+		return ofi_wait_fd_open(fabric_fid, attr, waitset);
+	default:
+		return -FI_ENOSYS;
+	}
+}
+
+
 static struct fi_ops_fabric lnx_fabric_ops = {
 	.size = sizeof(struct fi_ops_fabric),
 	.domain = lnx_domain_open,
@@ -155,7 +171,7 @@ static struct fi_ops_fabric lnx_fabric_ops = {
 	 * to how the CQ is supported.
 	 */
 	.eq_open = ofi_eq_create,
-	.wait_open = fi_no_wait_open,
+	.wait_open = lnx_wait_open,
 	.trywait = fi_no_trywait
 };
 
@@ -263,7 +279,10 @@ insert:
 	dlist_init(&e->entry);
 	e->fi = info;
 
-	dlist_insert_tail(&e->entry, head);
+	if(!strncmp(e->fi->fabric_attr->prov_name, "shm", 3))
+		dlist_insert_head(&e->entry, head);
+	else
+		dlist_insert_tail(&e->entry, head);
 
 	return 0;
 }
@@ -476,6 +495,7 @@ int lnx_getinfo_helper(uint32_t version, char *prov, char *domain,
 
 	lnx_hints->fabric_attr->prov_name = prov;
 	lnx_hints->domain_attr->name = domain;
+	lnx_hints->ep_attr->protocol = FI_PROTO_UNSPEC;
 
 	if (!strncmp(prov, "shm", 3)) {
 		shm = true;
@@ -743,6 +763,11 @@ LNX_INI
 {
 	struct ofi_bufpool_attr bp_attrs = {};
 	int ret;
+
+	fi_param_define(&lnx_prov, "multi_rail_selection", FI_PARAM_STRING,
+			"Specify which Multi-Rail endpoint selection "
+			"algorithm to use. One of: PER_MSG, PER_PEER. "
+			"Defaults to PER_PEER");
 
 	fi_param_define(&lnx_prov, "prov_links", FI_PARAM_STRING,
 			"Specify which providers LNX will link together. Format: "

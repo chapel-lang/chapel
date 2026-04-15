@@ -105,10 +105,12 @@ int efa_user_info_check_fabric_object(const struct fi_info *hints,
 	}
 
 	util_fabric = container_of(hints->fabric_attr->fabric, struct util_fabric, fabric_fid);
-	fabric_attr.name = (char *)util_fabric->name;
 	fabric_attr.prov_name = (char *)util_fabric->prov->name;
 	fabric_attr.prov_version = util_fabric->prov->version;
 	fabric_attr.api_version = hints->fabric_attr->fabric->api_version;
+
+	if (strcmp(util_fabric->name, prov_info->fabric_attr->name))
+		return -FI_EINVAL;
 
 	ret = ofi_check_fabric_attr(efa_util_prov.prov, 
 				    prov_info->fabric_attr, 
@@ -148,6 +150,9 @@ int efa_user_info_check_domain_object(const struct fi_info *hints,
 	util_domain = container_of(hints->domain_attr->domain, struct util_domain, domain_fid);
 	util_fabric = util_domain->fabric;
 
+	if (strcmp(util_fabric->name, dupinfo->fabric_attr->name))
+		return -FI_EINVAL;
+
 	if (strcmp(util_domain->name, dupinfo->domain_attr->name))
 		return -FI_EINVAL;
 
@@ -175,7 +180,7 @@ int efa_user_info_check_domain_object(const struct fi_info *hints,
 	return 0;
 }
 
-#if HAVE_CUDA || HAVE_NEURON || HAVE_SYNAPSEAI
+#if EFA_HAVE_NON_SYSTEM_HMEM
 /**
  * @brief determine if EFA provider should claim support of FI_HMEM in info
  * @param[in]	version		libfabric API version used by user
@@ -186,7 +191,7 @@ bool efa_user_info_should_support_hmem(int version)
 {
 	bool any_hmem, rdma_allowed;
 	char *extra_info = "";
-	int i;
+	enum fi_hmem_iface iface;
 
 	/* Note that the default behavior of EFA provider is different between
 	 * libfabric API version when CUDA is used as HMEM system.
@@ -220,12 +225,11 @@ bool efa_user_info_should_support_hmem(int version)
 	}
 
 	any_hmem = false;
-	EFA_HMEM_IFACE_FOREACH_NON_SYSTEM(i) {
-		enum fi_hmem_iface hmem_iface = efa_hmem_ifaces[i];
+	EFA_HMEM_IFACE_FOREACH_NON_SYSTEM(iface) {
 		/* Note that .initialized doesn't necessarily indicate there are
 		   hardware devices available, only that the libraries are
 		   available. */
-		if (hmem_ops[hmem_iface].initialized) {
+		if (hmem_ops[iface].initialized) {
 			any_hmem = true;
 		}
 	}
@@ -461,6 +465,44 @@ int efa_user_info_alter_direct(int version, struct fi_info *info, const struct f
 		info->domain_attr->mr_mode |= FI_MR_HMEM;
 	}
 
+	/**
+	 * When application requests FI_RX_CQ_DATA, efa-direct
+	 * will respect it, and will finally disable unsolicited
+	 * write recv during the QP creation.
+	 * 
+	 * For NULL hints, return FI_RMA and FI_RX_CQ_DATA as 
+	 * efa direct can support them.
+	 */
+	if (!hints || (hints && hints->mode & FI_RX_CQ_DATA)) {
+		info->mode |= FI_RX_CQ_DATA;
+		info->rx_attr->mode |= FI_RX_CQ_DATA;
+	}
+
+	/**
+	 * When unsolicited write recv is not supported,
+	 * For hints that request FI_RMA but not FI_RX_CQ_DATA, we don't return efa-direct.
+	 * For hints that doesn't request FI_RMA and FI_RX_CQ_DATA, we will clear FI_RMA.
+	 */
+	if (hints && !efa_device_support_unsolicited_write_recv() &&
+	    !(info->mode & FI_RX_CQ_DATA)) {
+		if (hints->caps & FI_RMA) {
+			/**
+			 * RDMA with immediate needs to consume a recv buffer
+			 * when unsolicited write recv is not supported. So
+			 * FI_RX_CQ_DATA is required when application requests
+			 * FI_RMA.
+			 */
+			EFA_INFO(FI_LOG_CORE,
+				 "FI_RX_CQ_DATA is required for FI_RMA when "
+				 "unsolicited write recv is not supported.\n");
+			return -FI_ENODATA;
+		}
+		/** Util doesn't clear FI_RMA when !hints->caps so we always
+		 * clear it when user doesn't request it */
+		info->caps &= ~(OFI_TX_RMA_CAPS | OFI_RX_RMA_CAPS);
+		info->tx_attr->caps &= ~OFI_TX_RMA_CAPS;
+		info->rx_attr->caps &= ~OFI_RX_RMA_CAPS;
+	}
 	/*
 	 * Handle user-provided hints and adapt the info object passed back up
 	 * based on EFA-specific constraints.
@@ -556,6 +598,10 @@ int efa_get_user_info(uint32_t version, const char *node,
 		if (ret)
 			continue;
 
+		ret = efa_prov_info_compare_fabric_name(hints, prov_info);
+		if (ret)
+			continue;
+
 		ret = efa_prov_info_compare_domain_name(hints, prov_info);
 		if (ret)
 			continue;
@@ -578,8 +624,10 @@ int efa_get_user_info(uint32_t version, const char *node,
 
 		if (EFA_INFO_TYPE_IS_RDM(prov_info)) {
 			ret = efa_user_info_alter_rdm(version, dupinfo, hints);
-			if (ret)
-				goto free_info;
+			if (ret) {
+				fi_freeinfo(dupinfo);
+				continue;
+			}
 
 			/* If application asked for FI_REMOTE_COMM but not FI_LOCAL_COMM, it
 			 * does not want to use shm. In this case, we honor the request by
@@ -592,8 +640,10 @@ int efa_get_user_info(uint32_t version, const char *node,
 
 		if (EFA_INFO_TYPE_IS_DIRECT(prov_info)) {
 			ret = efa_user_info_alter_direct(version, dupinfo, hints);
-			if (ret)
-				goto free_info;
+			if (ret) {
+				fi_freeinfo(dupinfo);
+				continue;
+			}
 		}
 
 		ofi_alter_info(dupinfo, hints, version);
@@ -601,12 +651,16 @@ int efa_get_user_info(uint32_t version, const char *node,
 		/* On input to fi_getinfo, a user may set this to an opened
 		 * fabric/domain instance to restrict output to the given fabric/domain. */
 		ret = efa_user_info_check_fabric_object(hints, dupinfo, prov_info);
-		if (ret)
+		if (ret) {
+			fi_freeinfo(dupinfo);
 			continue;
+		}
 
 		ret = efa_user_info_check_domain_object(hints, dupinfo);
-		if (ret)
+		if (ret) {
+			fi_freeinfo(dupinfo);
 			continue;
+		}
 
 		if (!dupinfo->fabric_attr->fabric && !dupinfo->domain_attr->domain)
 			util_lookup_existing_fabric_domain(&efa_util_prov, hints, &dupinfo);

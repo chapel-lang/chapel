@@ -30,16 +30,20 @@
 #include "cxip.h"
 
 #define CXIP_WARN(...) _CXIP_WARN(FI_LOG_EQ, __VA_ARGS__)
+#define CXIP_DBG(...) _CXIP_DBG(FI_LOG_EQ, __VA_ARGS__)
 
 static int cxip_eq_close(struct fid *fid)
 {
 	struct cxip_eq *cxi_eq;
+	int count;
 
 	cxi_eq = container_of(fid, struct cxip_eq, util_eq.eq_fid.fid);
-
+	count = ofi_atomic_get32(&cxi_eq->util_eq.ref);
 	/* May not close until all bound EPs closed */
-	if (ofi_atomic_get32(&cxi_eq->util_eq.ref))
+	if (count) {
+		CXIP_DBG("EQ refcount non-zero:%d returning FI_EBUSY\n", count);
 		return -FI_EBUSY;
+	}
 
 	ofi_mutex_destroy(&cxi_eq->list_lock);
 	ofi_eq_cleanup(&cxi_eq->util_eq.eq_fid.fid);

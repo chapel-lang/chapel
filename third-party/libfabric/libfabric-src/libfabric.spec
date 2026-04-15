@@ -11,7 +11,7 @@
 %{!?modulefile_path: %define modulefile_path /usr/share/Modules/modulefiles}
 
 Name: libfabric
-Version: 2.3.1
+Version: 2.5.1
 Release: 1%{?dist}
 Summary: User-space RDMA Fabric Interfaces
 

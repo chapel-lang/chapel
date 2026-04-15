@@ -1582,7 +1582,11 @@ void
 
 	fclose(perf_stats_fd);
 end:
-	pthread_exit(NULL);
+	pthread_mutex_lock(&mq->mq_perf_data.perf_print_mutex);
+	mq->mq_perf_data.perf_print_exited = 1;
+	pthread_cond_signal(&mq->mq_perf_data.perf_print_done);
+	pthread_mutex_unlock(&mq->mq_perf_data.perf_print_mutex);
+	return NULL;
 }
 
 static
@@ -1590,10 +1594,16 @@ void
 psm3_mq_print_stats_init(psm2_mq_t mq)
 {
 	mq->mq_perf_data.perf_print_stats = 1;
+	pthread_cond_init(&mq->mq_perf_data.perf_print_done, NULL);
+	pthread_mutex_init(&mq->mq_perf_data.perf_print_mutex, NULL);
+	mq->mq_perf_data.perf_print_exited = 0;
 	if (pthread_create(&(mq->mq_perf_data.perf_print_thread), NULL,
 				psm3_mq_print_stats_thread, (void*)mq))
 	{
 		mq->mq_perf_data.perf_print_stats = 0;
+		mq->mq_perf_data.perf_print_exited = 1;
+		pthread_cond_destroy(&mq->mq_perf_data.perf_print_done);
+		pthread_mutex_destroy(&mq->mq_perf_data.perf_print_mutex);
 		_HFI_ERROR("Failed to create logging thread\n");
 	}
 }
@@ -1604,8 +1614,22 @@ psm3_mq_print_stats_finalize(psm2_mq_t mq)
 {
 	if (mq->mq_perf_data.perf_print_stats)
 	{
+		struct timespec ts;
+
 		mq->mq_perf_data.perf_print_stats = 0;
-		pthread_join(mq->mq_perf_data.perf_print_thread, NULL);
+		clock_gettime(CLOCK_REALTIME, &ts);
+		// Max wait time: 2 * mq->print_stats;
+		ts.tv_sec += 2 * mq->print_stats;
+		// pthread_join() should not be used in dlclose path
+		pthread_mutex_lock(&mq->mq_perf_data.perf_print_mutex);
+		while (!mq->mq_perf_data.perf_print_exited) {
+			if (pthread_cond_timedwait(&mq->mq_perf_data.perf_print_done,
+						   &mq->mq_perf_data.perf_print_mutex, &ts))
+				break;
+		}
+		pthread_mutex_unlock(&mq->mq_perf_data.perf_print_mutex);
+		pthread_cond_destroy(&mq->mq_perf_data.perf_print_done);
+		pthread_mutex_destroy(&mq->mq_perf_data.perf_print_mutex);
 	}
 }
 

@@ -2,6 +2,9 @@
 /* SPDX-FileCopyrightText: Copyright Amazon.com, Inc. or its affiliates. All rights reserved. */
 
 #include <sys/time.h>
+#ifndef _WIN32
+#include <sys/random.h>
+#endif
 #include "efa.h"
 #include "efa_av.h"
 #include "efa_cq.h"
@@ -54,6 +57,41 @@ static inline void efa_base_ep_unlock_cq(struct efa_base_ep *base_ep)
 
 int efa_base_ep_destruct_qp(struct efa_base_ep *base_ep)
 {
+	/*
+	 * Two locks are required for QP table thread safety:
+	 * 1. Device lock: protects concurrent EP enable/close operations
+	 *    from multiple threads (QP numbers are allocated per device)
+	 * 2. CQ lock: protects race between CQ polling and QP creation/destruction
+	 *
+	 * Lock ordering: device lock -> CQ locks -> QP operations
+	 */
+	ofi_genlock_lock(&base_ep->domain->device->qp_table_lock);
+	efa_base_ep_lock_cq(base_ep);
+	efa_base_ep_destruct_qp_unsafe(base_ep);
+	efa_base_ep_unlock_cq(base_ep);
+	ofi_genlock_unlock(&base_ep->domain->device->qp_table_lock);
+	return 0;
+}
+
+/**
+ * @brief Invalidate stale cur_wq pointer on a CQ if it references the given QP
+ *
+ * When a QP is about to be destroyed, any CQ that has cur_wq pointing into
+ * that QP's work queue must be invalidated to prevent use-after-free during
+ * the subsequent CQ drain.
+ */
+static inline void efa_cq_invalidate_cur_wq(struct efa_cq *cq, struct efa_qp *qp)
+{
+#if HAVE_EFA_DATA_PATH_DIRECT
+	if (cq && cq->ibv_cq.data_path_direct_enabled &&
+	    cq->ibv_cq.data_path_direct.cur_wq &&
+	    cq->ibv_cq.data_path_direct.cur_qp == qp)
+		cq->ibv_cq.data_path_direct.cur_wq = NULL;
+#endif
+}
+
+int efa_base_ep_destruct_qp_unsafe(struct efa_base_ep *base_ep)
+{
 	struct efa_domain *domain;
 	struct efa_qp *qp = base_ep->qp;
 	struct efa_qp *user_recv_qp = base_ep->user_recv_qp;
@@ -61,31 +99,42 @@ int efa_base_ep_destruct_qp(struct efa_base_ep *base_ep)
 	struct efa_cq *tx_cq, *rx_cq;
 	int err;
 
-	/*
-	 * Acquire the lock to prevent race conditions when CQ polling accesses the qp_table
-	 * and the qp resource
-	 */
-	efa_base_ep_lock_cq(base_ep);
+	tx_cq = efa_base_ep_get_tx_cq(base_ep);
+	rx_cq = efa_base_ep_get_rx_cq(base_ep);
+
+	assert(!tx_cq || ofi_genlock_held(&tx_cq->util_cq.ep_list_lock));
+	assert(!rx_cq || ofi_genlock_held(&rx_cq->util_cq.ep_list_lock));
+	assert(ofi_genlock_held(&base_ep->domain->device->qp_table_lock));
+
 	if (qp) {
 		domain = qp->base_ep->domain;
 		qp_num = qp->qp_num;
+		efa_cq_invalidate_cur_wq(tx_cq, qp);
+		if (rx_cq != tx_cq)
+			efa_cq_invalidate_cur_wq(rx_cq, qp);
 		efa_qp_destruct(qp);
-		domain->qp_table[qp_num & domain->qp_table_sz_m1] = NULL;
+		domain->device->qp_table[qp_num & domain->device->qp_table_sz_m1] = NULL;
 		base_ep->qp = NULL;
 	}
 
 	if (user_recv_qp) {
 		domain = user_recv_qp->base_ep->domain;
 		qp_num = user_recv_qp->qp_num;
+		efa_cq_invalidate_cur_wq(tx_cq, user_recv_qp);
+		if (rx_cq != tx_cq)
+			efa_cq_invalidate_cur_wq(rx_cq, user_recv_qp);
 		efa_qp_destruct(user_recv_qp);
-		domain->qp_table[qp_num & domain->qp_table_sz_m1] = NULL;
+		domain->device->qp_table[qp_num & domain->device->qp_table_sz_m1] = NULL;
 		base_ep->user_recv_qp = NULL;
 	}
 
-	/* Flush the cq to poll out all stale cqes for the destroyed qp */
-	tx_cq = efa_base_ep_get_tx_cq(base_ep);
-	rx_cq = efa_base_ep_get_rx_cq(base_ep);
-
+	/* Drain the CQ after destroying the QP
+	 *
+	 * If 	(1) the CQ is not drained
+	 * 		(2) there are CQEs in the CQ that were
+	 * 			meant for the destroyed QP and
+	 * 		(3) a new QP is created with the same QPN,
+	 * the new CQEs will be considered valid CQEs for the new QP */
 	if (tx_cq) {
 		err = 0;
 		while (err != ENOENT) {
@@ -99,8 +148,6 @@ int efa_base_ep_destruct_qp(struct efa_base_ep *base_ep)
 			err = rx_cq->poll_ibv_cq(-1, &rx_cq->ibv_cq);
 		}
 	}
-
-	efa_base_ep_unlock_cq(base_ep);
 
 	return 0;
 }
@@ -121,42 +168,75 @@ int efa_base_ep_destruct(struct efa_base_ep *base_ep)
 {
 	int err;
 
+	if (efa_env.track_mr && base_ep->efa_qp_enabled) {
+		ofi_genlock_lock(&base_ep->domain->util_domain.lock);
+		dlist_remove(&base_ep->base_ep_entry);
+		ofi_genlock_unlock(&base_ep->domain->util_domain.lock);
+	}
+
 	/* We need to free the util_ep first to avoid race conditions
 	 * with other threads progressing the cq. */
 	efa_base_ep_close_util_ep(base_ep);
 
 	fi_freeinfo(base_ep->info);
 
-	if (base_ep->self_ah)
-		efa_ah_release(base_ep->domain, base_ep->self_ah);
-
 	err = efa_base_ep_destruct_qp(base_ep);
 
 	if (base_ep->efa_recv_wr_vec)
 		free(base_ep->efa_recv_wr_vec);
-	
+
 	if (base_ep->user_recv_wr_vec)
 		free(base_ep->user_recv_wr_vec);
 
 	return err;
 }
 
-static int efa_generate_rdm_connid(void)
+#ifdef _WIN32
+static int efa_read_random(struct efa_device *device, uint32_t *val)
 {
-	struct timeval tv;
-	uint32_t val;
-	int err;
-
-	err = gettimeofday(&tv, NULL);
-	if (err) {
-		EFA_WARN(FI_LOG_EP_CTRL, "Cannot gettimeofday, err=%d.\n", err);
+   return rand_s(val);
+}
+#else
+static int efa_read_random(struct efa_device *device, uint32_t *val)
+{
+	/*
+	 * GRND_INSECURE  is the best option
+	 * for non-blocking random number generation.
+	 * See:
+	 * https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=75551dbf112c992bc6c99a972990b3f272247e23
+	 * https://lwn.net/Articles/884875/
+	 *
+	 * However, GRND_INSECURE is only available on kernels 5.10+
+	 * So we first try getrandom with GRND_NONBLOCK and we read directly
+	 * from /dev/urandom if getrandom fails with EAGAIN or ENOSYS
+	 */
+	if (getrandom(val, sizeof(*val), GRND_NONBLOCK) == sizeof(*val))
 		return 0;
+
+	if (errno != EAGAIN && errno != ENOSYS)
+		return -FI_EIO;
+
+	assert(ofi_genlock_held(&device->qp_table_lock));
+
+	if (device->urandom_fd >= 0 &&
+	    read(device->urandom_fd, val, sizeof(*val)) == sizeof(*val))
+		return 0;
+
+	return -FI_EIO;
+}
+#endif
+
+static uint32_t efa_generate_rdm_connid(struct efa_device *device)
+{
+	uint32_t val;
+
+	if (efa_read_random(device, &val)) {
+		struct timeval tv;
+
+		EFA_WARN(FI_LOG_EP_CTRL, "Failed to generate random QKEY. Falling back to pid and timestamp.\n");
+		gettimeofday(&tv, NULL);
+		val = (uint32_t) ((tv.tv_sec << 16) | (getpid() & 0xffff));
 	}
-
-	/* tv_usec is in range [0,1,000,000), shift it by 12 to [0,4,096,000,000 */
-	val = (tv.tv_usec << 12) + tv.tv_sec;
-
-	val = ofi_xorshift_random(val);
 
 	/* 0x80000000 and up is privileged Q Key range. */
 	val &= 0x7fffffff;
@@ -279,6 +359,7 @@ int efa_qp_create(struct efa_qp **qp, struct ibv_qp_init_attr_ex *init_attr_ex,
 	(*qp)->ibv_qp_ex = ibv_qp_to_qp_ex((*qp)->ibv_qp);
 	/* Initialize it explicitly for safety */
 	(*qp)->data_path_direct_enabled = false;
+	(*qp)->base_ep = init_attr_ex->qp_context;
 	return FI_SUCCESS;
 }
 
@@ -335,17 +416,36 @@ static int efa_base_ep_create_qp(struct efa_base_ep *base_ep,
 {
 	int ret;
 	struct ibv_qp_init_attr_ex attr_ex = { 0 };
+	bool use_unsolicited_write_recv = true;
 
 	efa_base_ep_construct_ibv_qp_init_attr_ex(base_ep, &attr_ex, tx_cq->ibv_cq_ex, rx_cq->ibv_cq_ex);
 
 	assert(tx_cq->unsolicited_write_recv_enabled == rx_cq->unsolicited_write_recv_enabled);
 
+	if (EFA_INFO_TYPE_IS_DIRECT(base_ep->info)) {
+		/* If user intend to post rx buffer for cq data, we shouldn't
+		 * enable unsolicited write recv */
+		use_unsolicited_write_recv =
+			tx_cq->unsolicited_write_recv_enabled && !(base_ep->info->mode & FI_RX_CQ_DATA);
+	} else {
+		/* RDM full protocol doesn't support FI_RX_CQ_DATA.
+		 * Set FI_OPT_EFA_USE_UNSOLICITED_WRITE_RECV to false to disable unsolicited write recv. */
+		use_unsolicited_write_recv =
+			tx_cq->unsolicited_write_recv_enabled && base_ep->use_unsolicited_write_recv;
+	}
+	EFA_INFO(FI_LOG_EP_CTRL, "creating QP with unsolicited write recv status: %d\n", use_unsolicited_write_recv);
 	ret = efa_qp_create(&base_ep->qp, &attr_ex, base_ep->info->tx_attr->tclass,
-			    tx_cq->unsolicited_write_recv_enabled);
+			    use_unsolicited_write_recv);
 	if (ret)
 		return ret;
 
-	base_ep->qp->base_ep = base_ep;
+	if (create_user_recv_qp) {
+		ret = efa_qp_create(&base_ep->user_recv_qp, &attr_ex, base_ep->info->tx_attr->tclass, tx_cq->unsolicited_write_recv_enabled);
+		if (ret) {
+			efa_base_ep_destruct_qp_unsafe(base_ep);
+			return ret;
+		}
+	}
 
 #if HAVE_EFA_DATA_PATH_DIRECT
 	/* Only enable direct QP when direct CQ is enabled */
@@ -353,20 +453,19 @@ static int efa_base_ep_create_qp(struct efa_base_ep *base_ep,
 	if (tx_cq->data_path_direct_enabled) {
 		ret = efa_data_path_direct_qp_initialize(base_ep->qp);
 		if (ret) {
-			efa_base_ep_destruct_qp(base_ep);
+			efa_base_ep_destruct_qp_unsafe(base_ep);
 			return ret;
 		}
+		if (create_user_recv_qp) {
+			ret = efa_data_path_direct_qp_initialize(base_ep->user_recv_qp);
+			if (ret) {
+				efa_base_ep_destruct_qp_unsafe(base_ep);
+				return ret;
+			}
+		}
+
 	}
 #endif
-
-	if (create_user_recv_qp) {
-		ret = efa_qp_create(&base_ep->user_recv_qp, &attr_ex, base_ep->info->tx_attr->tclass, tx_cq->unsolicited_write_recv_enabled);
-		if (ret) {
-			efa_base_ep_destruct_qp(base_ep);
-			return ret;
-		}
-		base_ep->user_recv_qp->base_ep = base_ep;
-	}
 
 	return 0;
 }
@@ -376,39 +475,45 @@ int efa_base_ep_enable_qp(struct efa_base_ep *base_ep, struct efa_qp *qp)
 {
 	int err;
 
+	assert(!efa_base_ep_get_tx_cq(base_ep) || ofi_genlock_held(&efa_base_ep_get_tx_cq(base_ep)->util_cq.ep_list_lock));
+	assert(!efa_base_ep_get_rx_cq(base_ep) || ofi_genlock_held(&efa_base_ep_get_rx_cq(base_ep)->util_cq.ep_list_lock));
+
 	qp->qkey = (base_ep->util_ep.type == FI_EP_DGRAM) ?
 			   EFA_DGRAM_CONNID :
-			   efa_generate_rdm_connid();
+			   efa_generate_rdm_connid(base_ep->domain->device);
 	err = efa_base_ep_modify_qp_rst2rts(base_ep, qp);
 	if (err)
 		return err;
 
 	qp->qp_num = qp->ibv_qp->qp_num;
 
-	base_ep->domain->qp_table[qp->qp_num & base_ep->domain->qp_table_sz_m1] = qp;
-	
-	EFA_INFO(FI_LOG_EP_CTRL, "QP enabled! qp_n: %d qkey: %d\n", qp->qp_num, qp->qkey);
+#if HAVE_EFA_DATA_PATH_DIRECT
+	if (qp->data_path_direct_enabled) {
+		struct efa_data_path_direct_wq *sq_wq = &qp->data_path_direct_qp.sq.wq;
+		struct efa_data_path_direct_wq *rq_wq = &qp->data_path_direct_qp.rq.wq;
+
+		assert(ofi_genlock_held(&base_ep->domain->device->qp_table_lock));
+		qp->data_path_direct_qp.gen = ++base_ep->domain->device->qp_gen_table[qp->qp_num & base_ep->domain->device->qp_table_sz_m1];
+
+		sq_wq->gen_mask = ~sq_wq->desc_mask;
+		sq_wq->shifted_gen = qp->data_path_direct_qp.gen << __builtin_ctz(sq_wq->desc_mask + 1);
+		rq_wq->gen_mask = ~rq_wq->desc_mask;
+		rq_wq->shifted_gen = qp->data_path_direct_qp.gen << __builtin_ctz(rq_wq->desc_mask + 1);
+	}
+#endif
+
+	base_ep->domain->device->qp_table[qp->qp_num & base_ep->domain->device->qp_table_sz_m1] = qp;
+
+	EFA_INFO(FI_LOG_EP_CTRL, "QP enabled! qp_n: %d qkey: %d, domain_name: %s, efa_domain: %p\n", qp->qp_num, qp->qkey, base_ep->domain->util_domain.name, base_ep->domain);
 
 	return err;
-}
-
-/* efa_base_ep_create_self_ah() create an address handler for
- * an EP's own address. The address handler is used by
- * an EP to read from itself. It is used to
- * copy data from host memory to GPU memory.
- */
-static inline
-int efa_base_ep_create_self_ah(struct efa_base_ep *base_ep, struct ibv_pd *ibv_pd)
-{
-
-	base_ep->self_ah = efa_ah_alloc(base_ep->domain, base_ep->src_addr.raw);
-
-	return base_ep->self_ah ? 0 : -FI_EINVAL;
 }
 
 void efa_qp_destruct(struct efa_qp *qp)
 {
 	int err;
+
+	EFA_INFO(FI_LOG_EP_CTRL, "Destroying QP with qp_n: %d qkey: %d, domain_name: %s, efa_domain: %p\n", qp->qp_num, qp->qkey, qp->base_ep->domain->util_domain.name, qp->base_ep->domain);
 
 	err = -ibv_destroy_qp(qp->ibv_qp);
 	if (err)
@@ -426,7 +531,7 @@ int efa_base_ep_enable(struct efa_base_ep *base_ep)
 
 	err = efa_base_ep_enable_qp(base_ep, base_ep->qp);
 	if (err) {
-		efa_base_ep_destruct_qp(base_ep);
+		efa_base_ep_destruct_qp_unsafe(base_ep);
 		return err;
 	}
 
@@ -435,7 +540,7 @@ int efa_base_ep_enable(struct efa_base_ep *base_ep)
 	if (base_ep->user_recv_qp) {
 		err = efa_base_ep_enable_qp(base_ep, base_ep->user_recv_qp);
 		if (err) {
-			efa_base_ep_destruct_qp(base_ep);
+			efa_base_ep_destruct_qp_unsafe(base_ep);
 			return err;
 		}
 	}
@@ -445,11 +550,10 @@ int efa_base_ep_enable(struct efa_base_ep *base_ep)
 	base_ep->src_addr.pad = 0;
 	base_ep->src_addr.qkey = base_ep->qp->qkey;
 
-	err = efa_base_ep_create_self_ah(base_ep, base_ep->domain->ibv_pd);
-	if (err) {
-		EFA_WARN(FI_LOG_EP_CTRL,
-			 "Endpoint cannot create ah for its own address\n");
-		efa_base_ep_destruct_qp(base_ep);
+	if (efa_env.track_mr) {
+		ofi_genlock_lock(&base_ep->domain->util_domain.lock);
+		dlist_insert_tail(&base_ep->base_ep_entry, &base_ep->domain->base_ep_list);
+		ofi_genlock_unlock(&base_ep->domain->util_domain.lock);
 	}
 
 	return err;
@@ -463,15 +567,14 @@ int efa_base_ep_construct(struct efa_base_ep *base_ep,
 {
 	int err;
 
+	base_ep->domain = container_of(domain_fid, struct efa_domain, util_domain.domain_fid);
+
 	err = ofi_endpoint_init(domain_fid, &efa_util_prov, info, &base_ep->util_ep,
 				context, progress);
 	if (err)
 		return err;
 
 	base_ep->util_ep_initialized = true;
-
-	base_ep->domain = container_of(domain_fid, struct efa_domain, util_domain.domain_fid);
-
 	base_ep->info = fi_dupinfo(info);
 	if (!base_ep->info) {
 		EFA_WARN(FI_LOG_EP_CTRL, "fi_dupinfo() failed for base_ep->info!\n");
@@ -483,12 +586,12 @@ int efa_base_ep_construct(struct efa_base_ep *base_ep,
 	/* This is SRD qp's default behavior */
 	base_ep->rnr_retry = EFA_RNR_INFINITE_RETRY;
 
-	base_ep->efa_recv_wr_vec = calloc(sizeof(struct efa_recv_wr), EFA_RDM_EP_MAX_WR_PER_IBV_POST_RECV);
+	base_ep->efa_recv_wr_vec = calloc(sizeof(struct efa_recv_wr), efa_base_ep_get_rx_pool_size(base_ep));
 	if (!base_ep->efa_recv_wr_vec) {
 		EFA_WARN(FI_LOG_EP_CTRL, "cannot alloc memory for base_ep->efa_recv_wr_vec!\n");
 		return -FI_ENOMEM;
 	}
-	base_ep->user_recv_wr_vec = calloc(sizeof(struct efa_recv_wr), EFA_RDM_EP_MAX_WR_PER_IBV_POST_RECV);
+	base_ep->user_recv_wr_vec = calloc(sizeof(struct efa_recv_wr), efa_base_ep_get_rx_pool_size(base_ep));
 	if (!base_ep->user_recv_wr_vec) {
 		EFA_WARN(FI_LOG_EP_CTRL, "cannot alloc memory for base_ep->user_recv_wr_vec!\n");
 		return -FI_ENOMEM;
@@ -505,6 +608,7 @@ int efa_base_ep_construct(struct efa_base_ep *base_ep,
 	/* TODO: update inject_rma_size to inline size after firmware
 	 * supports inline rdma write */
 	base_ep->inject_rma_size = 0;
+	base_ep->use_unsolicited_write_recv = true;
 	return 0;
 }
 
@@ -840,7 +944,15 @@ int efa_base_ep_create_and_enable_qp(struct efa_base_ep *ep, bool create_user_re
 	scq = txcq ? txcq : rxcq;
 	rcq = rxcq ? rxcq : txcq;
 
-	/* Acquire the lock to prevent race conditions when CQ polling accesses the qp_table */
+	/*
+	 * Two locks are required for QP table thread safety:
+	 * 1. Device lock: protects concurrent EP enable/close operations
+	 *    from multiple threads (QP numbers are allocated per device)
+	 * 2. CQ lock: protects race between CQ polling and QP creation/destruction
+	 *
+	 * Lock ordering: device lock -> CQ locks -> QP operations
+	 */
+	ofi_genlock_lock(&ep->domain->device->qp_table_lock);
 	efa_base_ep_lock_cq(ep);
 	err = efa_base_ep_create_qp(ep, &scq->ibv_cq, &rcq->ibv_cq, create_user_recv_qp);
 	if (err)
@@ -850,6 +962,7 @@ int efa_base_ep_create_and_enable_qp(struct efa_base_ep *ep, bool create_user_re
 
 out:
 	efa_base_ep_unlock_cq(ep);
+	ofi_genlock_unlock(&ep->domain->device->qp_table_lock);
 	return err;
 }
 

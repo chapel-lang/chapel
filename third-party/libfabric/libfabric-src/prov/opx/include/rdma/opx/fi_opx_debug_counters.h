@@ -48,6 +48,7 @@
 #define OPX_DEBUG_COUNTERS_RECV
 #define OPX_DEBUG_COUNTERS_RHF
 #define OPX_DEBUG_COUNTERS_HMEM
+#define OPX_DEBUG_COUNTERS_HFISVC
 #endif
 
 #if !defined(OPX_DEBUG_COUNTERS_RELIABILITY_PING) && defined(OPX_DUMP_PINGS)
@@ -327,6 +328,50 @@ struct fi_opx_debug_counters {
 		uint64_t reg_for_rzv_get_initial;
 		uint64_t reg_for_rzv_get_remaining;
 	} expected_receive;
+
+	struct {
+		struct {
+			uint64_t attempt;
+			uint64_t success;
+			uint64_t completed;
+
+			uint64_t eagain_access_key;
+			uint64_t eagain_credits;
+			uint64_t eagain_psn;
+			uint64_t eagain_hfisvc;
+			uint64_t enomem_completion;
+			uint64_t enomem_context;
+
+			uint64_t reg_dma_buf;
+		} rzv_send_rts;
+
+		struct {
+			uint64_t rdma_read;
+			uint64_t truncation_rdma_read;
+			uint64_t deferred;
+			uint64_t eagain_hfisvc;
+			uint64_t completed;
+		} rzv_recv_rts;
+
+		struct {
+			uint64_t alloc;
+			uint64_t alloc_enospc;
+			uint64_t free;
+
+		} access_key;
+
+		struct {
+			uint64_t poll_many;
+			uint64_t reliability_timer_pop;
+			uint64_t deferred_work;
+		} doorbell_ring;
+
+		struct {
+			uint64_t success;
+			uint64_t error;
+		} internal_completion;
+
+	} hfisvc;
 
 	struct {
 		uint64_t replay_rts;
@@ -686,6 +731,35 @@ static inline void fi_opx_debug_counters_print(struct fi_opx_debug_counters *cou
 	FI_OPX_DEBUG_COUNTERS_PRINT_COUNTER(pid, hmem.tid_update);
 	FI_OPX_DEBUG_COUNTERS_PRINT_COUNTER(pid, hmem.tid_recv);
 #endif
+#ifdef OPX_DEBUG_COUNTERS_HFISVC
+	FI_OPX_DEBUG_COUNTERS_PRINT_COUNTER(pid, hfisvc.rzv_send_rts.attempt);
+	FI_OPX_DEBUG_COUNTERS_PRINT_COUNTER(pid, hfisvc.rzv_send_rts.success);
+	FI_OPX_DEBUG_COUNTERS_PRINT_COUNTER(pid, hfisvc.rzv_recv_rts.completed);
+	FI_OPX_DEBUG_COUNTERS_PRINT_COUNTER(pid, hfisvc.rzv_send_rts.eagain_access_key);
+	FI_OPX_DEBUG_COUNTERS_PRINT_COUNTER(pid, hfisvc.rzv_send_rts.eagain_credits);
+	FI_OPX_DEBUG_COUNTERS_PRINT_COUNTER(pid, hfisvc.rzv_send_rts.eagain_psn);
+	FI_OPX_DEBUG_COUNTERS_PRINT_COUNTER(pid, hfisvc.rzv_send_rts.eagain_hfisvc);
+	FI_OPX_DEBUG_COUNTERS_PRINT_COUNTER(pid, hfisvc.rzv_send_rts.enomem_completion);
+	FI_OPX_DEBUG_COUNTERS_PRINT_COUNTER(pid, hfisvc.rzv_send_rts.enomem_context);
+	FI_OPX_DEBUG_COUNTERS_PRINT_COUNTER(pid, hfisvc.rzv_send_rts.reg_dma_buf);
+
+	FI_OPX_DEBUG_COUNTERS_PRINT_COUNTER(pid, hfisvc.rzv_recv_rts.rdma_read);
+	FI_OPX_DEBUG_COUNTERS_PRINT_COUNTER(pid, hfisvc.rzv_recv_rts.truncation_rdma_read);
+	FI_OPX_DEBUG_COUNTERS_PRINT_COUNTER(pid, hfisvc.rzv_recv_rts.completed);
+	FI_OPX_DEBUG_COUNTERS_PRINT_COUNTER(pid, hfisvc.rzv_recv_rts.deferred);
+	FI_OPX_DEBUG_COUNTERS_PRINT_COUNTER(pid, hfisvc.rzv_recv_rts.eagain_hfisvc);
+
+	FI_OPX_DEBUG_COUNTERS_PRINT_COUNTER(pid, hfisvc.access_key.alloc);
+	FI_OPX_DEBUG_COUNTERS_PRINT_COUNTER(pid, hfisvc.access_key.alloc_enospc);
+	FI_OPX_DEBUG_COUNTERS_PRINT_COUNTER(pid, hfisvc.access_key.free);
+
+	FI_OPX_DEBUG_COUNTERS_PRINT_COUNTER(pid, hfisvc.doorbell_ring.poll_many);
+	FI_OPX_DEBUG_COUNTERS_PRINT_COUNTER(pid, hfisvc.doorbell_ring.reliability_timer_pop);
+	FI_OPX_DEBUG_COUNTERS_PRINT_COUNTER(pid, hfisvc.doorbell_ring.deferred_work);
+
+	FI_OPX_DEBUG_COUNTERS_PRINT_COUNTER(pid, hfisvc.internal_completion.success);
+	FI_OPX_DEBUG_COUNTERS_PRINT_COUNTER(pid, hfisvc.internal_completion.error);
+#endif
 }
 
 static struct fi_opx_debug_counters *opx_debug_sig_counters;
@@ -716,10 +790,11 @@ static inline void fi_opx_debug_counters_init(struct fi_opx_debug_counters *coun
 	signal(SIGUSR1, opx_debug_counters_handle_sig);
 }
 
-#if defined(OPX_DEBUG_COUNTERS_MP_EAGER) || defined(OPX_DEBUG_COUNTERS_RELIABILITY_PING) || \
-	defined(OPX_DEBUG_COUNTERS_RELIABILITY) || defined(OPX_DEBUG_COUNTERS_SDMA) ||      \
-	defined(OPX_DEBUG_COUNTERS_EXPECTED_RECEIVE) || defined(OPX_DEBUG_COUNTERS_RECV) || \
-	defined(OPX_DEBUG_COUNTERS_RHF) || defined(OPX_DEBUG_COUNTERS_HMEM) || defined(OPX_DEBUG_COUNTERS_MATCH)
+#if defined(OPX_DEBUG_COUNTERS_MP_EAGER) || defined(OPX_DEBUG_COUNTERS_RELIABILITY_PING) ||                         \
+	defined(OPX_DEBUG_COUNTERS_RELIABILITY) || defined(OPX_DEBUG_COUNTERS_SDMA) ||                              \
+	defined(OPX_DEBUG_COUNTERS_EXPECTED_RECEIVE) || defined(OPX_DEBUG_COUNTERS_RECV) ||                         \
+	defined(OPX_DEBUG_COUNTERS_RHF) || defined(OPX_DEBUG_COUNTERS_HMEM) || defined(OPX_DEBUG_COUNTERS_MATCH) || \
+	defined(OPX_DEBUG_COUNTERS_HFISVC)
 
 #define FI_OPX_DEBUG_COUNTERS_DECLARE_COUNTERS struct fi_opx_debug_counters debug_counters
 #define FI_OPX_DEBUG_COUNTERS_DECLARE_TMP(x)   uint64_t x = 0

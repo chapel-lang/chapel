@@ -67,7 +67,7 @@ static void xnet_subdomains_mr_close(struct xnet_domain *domain, uint64_t mr_key
 		ret = ofi_mr_map_remove(&subdomain->util_domain.mr_map, mr_key);
 		ofi_genlock_unlock(&subdomain->util_domain.lock);
 
-		if (!ret)
+		if (!ret || (mr_key == FI_KEY_NOTAVAIL))
 			ofi_atomic_dec32(&subdomain->util_domain.ref);
 	}
 }
@@ -196,7 +196,7 @@ xnet_mplex_mr_regattr(struct fid *fid, const struct fi_mr_attr *attr,
 		ret = xnet_mr_regattr(item->fid, attr, flags, &sub_mr_fid);
 		if (ret) {
 			FI_WARN(&xnet_prov, FI_LOG_MR,
-				"Failed to reg mr (%ld) from subdomain (%p)\n",
+				"Failed to reg mr (%" PRIu64 ") from subdomain (%p)\n",
 				mr->key, item->fid);
 
 			xnet_subdomains_mr_close(domain, mr->key);

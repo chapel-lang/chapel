@@ -21,6 +21,12 @@ struct fi_fabric_attr cxip_fabric_attr = {
 	.name = cxip_prov_name,
 };
 
+#ifdef CXI_HAVE_SVC_GET_VNI_RANGE
+#define MAX_VNIS (32768)
+#else
+#define MAX_VNIS (4)
+#endif
+
 /* No ODP, provider specified MR keys */
 struct fi_domain_attr cxip_prov_key_domain_attr = {
 	.name = NULL,
@@ -155,7 +161,7 @@ struct fi_domain_attr cxip_prov_key_multi_auth_key_domain_attr = {
 	.auth_key_size = sizeof(struct cxi_auth_key),
 
 	/* Set to the number of VNIs supported by a single CXI service. */
-	.max_ep_auth_key = 4,
+	.max_ep_auth_key = MAX_VNIS,
 };
 
 /* ODP, provider specified MR keys */
@@ -184,7 +190,7 @@ struct fi_domain_attr cxip_odp_prov_key_multi_auth_key_domain_attr = {
 	.auth_key_size = sizeof(struct cxi_auth_key),
 
 	/* Set to the number of VNIs supported by a single CXI service. */
-	.max_ep_auth_key = 4,
+	.max_ep_auth_key = MAX_VNIS,
 };
 
 /* No ODP, client specified MR keys */
@@ -213,7 +219,7 @@ struct fi_domain_attr cxip_client_key_multi_auth_key_domain_attr = {
 	.auth_key_size = sizeof(struct cxi_auth_key),
 
 	/* Set to the number of VNIs supported by a single CXI service. */
-	.max_ep_auth_key = 4,
+	.max_ep_auth_key = MAX_VNIS,
 };
 
 /* ODP, client specified MR keys */
@@ -242,7 +248,7 @@ struct fi_domain_attr cxip_odp_client_key_multi_auth_key_domain_attr = {
 	.auth_key_size = sizeof(struct cxi_auth_key),
 
 	/* Set to the number of VNIs supported by a single CXI service. */
-	.max_ep_auth_key = 4,
+	.max_ep_auth_key = MAX_VNIS,
 };
 
 struct fi_ep_attr cxip_ep_attr = {
@@ -614,7 +620,7 @@ struct cxip_environment cxip_env = {
 	.rx_match_mode = CXIP_PTLTE_DEFAULT_MODE,
 	.rdzv_threshold = CXIP_RDZV_THRESHOLD,
 	.rdzv_get_min = 2049, /* Avoid single packet Gets */
-	.rdzv_eager_size = CXIP_RDZV_THRESHOLD,
+	.rdzv_eager_size = 2048,
 	.rdzv_aligned_sw_rget = 1,
 	.rnr_max_timeout_us = CXIP_RNR_TIMEOUT_US,
 	.disable_non_inject_msg_idc = 0,
@@ -677,6 +683,7 @@ struct cxip_environment cxip_env = {
 	.force_dev_reg_copy = false,
 	.mr_target_ordering = MR_ORDER_DEFAULT,
 	.disable_cuda_sync_memops = false,
+	.enable_writedata = false,
 };
 
 static void cxip_env_init(void)
@@ -788,10 +795,10 @@ static void cxip_env_init(void)
 		CXIP_INFO("Could not enable FI_HMEM_ROCR_USE_DMABUF ret:%d %s\n",
 			  ret, fi_strerror(errno));
 
-	/* Disable cuda DMABUF by default - honors the env if already set */
-	ret = setenv("FI_HMEM_CUDA_USE_DMABUF", "0", 0);
+	/* Use cuda DMABUF by default - honors the env if already set */
+	ret = setenv("FI_HMEM_CUDA_USE_DMABUF", "1", 0);
 	if (ret)
-		CXIP_INFO("Could not disable FI_HMEM_CUDA_USE_DMABUF ret:%d %s\n",
+		CXIP_INFO("Could not enable FI_HMEM_CUDA_USE_DMABUF ret:%d %s\n",
 			  ret, fi_strerror(errno));
 
 	fi_param_define(&cxip_prov, "ats_mlock_mode", FI_PARAM_STRING,
@@ -951,6 +958,12 @@ static void cxip_env_init(void)
 	fi_param_get_bool(&cxip_prov, "mr_match_events",
 			  &cxip_env.mr_match_events);
 
+	fi_param_define(&cxip_prov, "enable_writedata", FI_PARAM_BOOL,
+			"Enable dual MR entries for FI_WRITEDATA support (default %d).",
+			cxip_env.enable_writedata);
+	fi_param_get_bool(&cxip_prov, "enable_writedata",
+			  &cxip_env.enable_writedata);
+
 	fi_param_define(&cxip_prov, "prov_key_cache", FI_PARAM_BOOL,
 			"Disable caching of FI_MR_PROV_KEY (default %lu).",
 			&cxip_env.prov_key_cache);
@@ -1041,7 +1054,7 @@ static void cxip_env_init(void)
 	fi_param_get_size_t(&cxip_prov, "req_buf_max_cached",
 			    &cxip_env.req_buf_max_cached);
 
-	if (cxip_software_pte_allowed()) {
+	if (cxip_software_pte_allowed(cxip_env.rx_match_mode)) {
 		min_free = CXIP_REQ_BUF_HEADER_MAX_SIZE +
 			cxip_env.rdzv_threshold + cxip_env.rdzv_get_min;
 

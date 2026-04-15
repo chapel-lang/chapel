@@ -34,6 +34,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <inttypes.h>
 #include <ofi_enosys.h>
 #include <ofi_mem.h>
 #include <ofi.h>
@@ -141,7 +142,7 @@ int ofi_bufpool_grow(struct ofi_bufpool *pool)
 
 	size_t mem_allocated = 0;
 
-	FI_DBG(&core_prov, FI_LOG_CORE, "%s pool %p  size %ld region_size %zu "
+	FI_DBG(&core_prov, FI_LOG_CORE, "%s pool %p  size %zu region_size %zu "
 	       "entry_cnt %d chunk_cnt %d\n",
 		__func__, pool, pool->alloc_size, pool->region_size,
 		(int)(pool->entry_cnt+pool->attr.chunk_cnt),
@@ -271,7 +272,7 @@ int ofi_bufpool_create_attr(struct ofi_bufpool_attr *attr,
 
 	FI_DBG(&core_prov, FI_LOG_CORE,
 		"%s alloc_size %zu region_size %zu align_entry %zu "
-		"entry_size %zu chunk_cnt %ld pool %p  (%p)\n",
+		"entry_size %zu chunk_cnt %zu pool %p  (%p)\n",
 		__func__, pool->alloc_size, pool->region_size, pool->entry_size,
 		attr->size, pool->attr.chunk_cnt, pool, buf_pool);
 

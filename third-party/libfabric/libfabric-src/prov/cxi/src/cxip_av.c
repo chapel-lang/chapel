@@ -503,9 +503,12 @@ static int cxip_av_close(struct fid *fid)
 {
 	struct cxip_av *av = container_of(fid, struct cxip_av, av_fid.fid);
 	struct cxip_domain *dom = av->domain;
+	int count = ofi_atomic_get32(&av->ref);
 
-	if (ofi_atomic_get32(&av->ref))
+	if (count) {
+		CXIP_DBG("AV refcount non-zero:%d returning FI_EBUSY\n", count);
 		return -FI_EBUSY;
+	}
 
 	HASH_CLEAR(hh, av->auth_key_entry_hash);
 	ofi_bufpool_destroy(av->auth_key_entry_pool);
@@ -557,7 +560,7 @@ static int cxip_av_insert_auth_key_validate_args(struct cxip_av *cxi_av,
 		return -FI_ENOSPC;
 	}
 
-	return cxip_domain_valid_vni(cxi_av->domain, key->vni);
+	return cxip_domain_valid_vni(cxi_av->domain, key);
 }
 
 static int cxip_av_insert_auth_key(struct fid_av *av, const void *auth_key,

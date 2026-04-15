@@ -54,13 +54,13 @@ int efa_data_path_direct_qp_initialize(struct efa_qp *efa_qp);
  * This includes mapping the hardware completion queue buffer and initializing
  * completion processing state.
  *
- * @param efa_cq Pointer to the EFA completion queue to initialize
+ * @param ibv_cq Pointer to the efa_ibv_cq to initialize
  * @return 0 on success, negative error code on failure
  *
  * @note This function is called during completion queue creation and requires
  *       that the underlying hardware completion queue has been successfully created
  */
-int efa_data_path_direct_cq_initialize(struct efa_cq *efa_cq);
+int efa_data_path_direct_cq_initialize(struct efa_ibv_cq *ibv_cq);
 
 /**
  * @brief Finalize and cleanup direct completion queue operations for a queue pair

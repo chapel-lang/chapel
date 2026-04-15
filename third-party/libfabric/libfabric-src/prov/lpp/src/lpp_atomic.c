@@ -31,6 +31,7 @@
  */
 
 #include <stdlib.h>
+#include <inttypes.h>
 
 #include "lpp.h"
 
@@ -181,17 +182,17 @@ void lpp_atomic_process_msg(struct lpp_ep *lpp_epp, struct klpp_msg_hdr *hdr)
 			       valid_flags);
 	if (ret != 0) {
 		FI_WARN(&lpp_prov, FI_LOG_EP_DATA,
-			"atomic datatype %u op %u flags %lx is invalid\n",
+			"atomic datatype %u op %u flags %" PRIx64 " is invalid\n",
 			atomic_hdr->datatype, atomic_hdr->op, valid_flags);
 		cmpl_hdr.status = -FI_EINVAL;
 		goto err_tx_cmpl;
 	}
 
-	lpp_mrp = lpp_mr_cache_find(lpp_epp->domain, (void *) atomic_hdr->addr,
+	lpp_mrp = lpp_mr_cache_find(lpp_epp->domain, (void *)(uintptr_t) atomic_hdr->addr,
 				    op_length, atomic_hdr->key);
 
 	if (lpp_mrp == NULL) {
-		FI_WARN(&lpp_prov, FI_LOG_EP_DATA, "no MR for key %lx\n",
+		FI_WARN(&lpp_prov, FI_LOG_EP_DATA, "no MR for key %" PRIx64 "\n",
 			atomic_hdr->key);
 		cmpl_hdr.status = -FI_ENOENT;
 		goto err_tx_cmpl;
@@ -199,19 +200,19 @@ void lpp_atomic_process_msg(struct lpp_ep *lpp_epp, struct klpp_msg_hdr *hdr)
 
 	if ((lpp_mrp->attr.access & want_access) != want_access) {
 		FI_WARN(&lpp_prov, FI_LOG_EP_DATA,
-			"invalid access for atomic write dest: have %lx, want %lx\n",
+			"invalid access for atomic write dest: have %" PRIx64 ", want %" PRIx64 "\n",
 			lpp_mrp->attr.access, want_access);
 		cmpl_hdr.status = -FI_EACCES;
 		goto err_tx_cmpl;
 	}
 
-	local_data = (void *)atomic_hdr->addr;
+	local_data = (void *)(uintptr_t)atomic_hdr->addr;
 	local_end = (char *)local_data + op_length;
 	if (local_data < lpp_mrp->attr.mr_iov[0].iov_base ||
 	    local_end > (void *)((char *)lpp_mrp->attr.mr_iov[0].iov_base +
 					lpp_mrp->attr.mr_iov[0].iov_len)) {
 		FI_WARN(&lpp_prov, FI_LOG_EP_DATA,
-			"local buffer with key %lx is out of range, have [%p,%p] want [%p,%p]\n",
+			"local buffer with key %" PRIx64 " is out of range, have [%p,%p] want [%p,%p]\n",
 			atomic_hdr->key, lpp_mrp->attr.mr_iov[0].iov_base,
 			(char *)lpp_mrp->attr.mr_iov[0].iov_base +
 				lpp_mrp->attr.mr_iov[0].iov_len,

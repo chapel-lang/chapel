@@ -329,7 +329,7 @@ int util_getinfo(const struct util_prov *util_prov, uint32_t version,
 		}
 
 		if ((*info)->dest_addr && !(*info)->src_addr) {
-			ret = ofi_get_src_addr((*info)->addr_format,
+			ret = ofi_get_src_addr(&(*info)->addr_format,
 					       (*info)->dest_addr,
 					       (*info)->dest_addrlen,
 					       &(*info)->src_addr,

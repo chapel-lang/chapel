@@ -14,7 +14,7 @@
 . ftr VB CB
 . ftr VBI CBI
 .\}
-.TH "fi_cq" "3" "2024\-12\-10" "Libfabric Programmer\[cq]s Manual" "Libfabric v2.3.1"
+.TH "fi_cq" "3" "2026\-02\-11" "Libfabric Programmer\[cq]s Manual" "Libfabric v2.5.1"
 .hy
 .SH NAME
 .PP
@@ -358,6 +358,11 @@ the CQ attributes.
 The fi_control arg parameter should be an address where a pointer to the
 returned wait object will be written.
 See fi_eq.3 for addition details using fi_control with FI_GETWAIT.
+.TP
+\f[I]FI_GETWAITOBJ (enum fi_wait_obj *)\f[R]
+This command retrieves the type of wait object associated with the CQ.
+The \f[V]fi_control\f[R] arg parameter should be an address where the
+wait object type will be written.
 .SS fi_cq_read
 .PP
 The fi_cq_read operation performs a non-blocking read of completion data
@@ -475,9 +480,9 @@ See field details below for more information on the use of err_data and
 err_data_size.
 .PP
 Note that error completions are generated for all operations, including
-those for which a completion was not requested (e.g.\ an endpoint is
-configured with FI_SELECTIVE_COMPLETION, but the request did not have
-the FI_COMPLETION flag set).
+those for which a completion was not requested (e.g.\ inject transfers
+or when an endpoint is configured with FI_SELECTIVE_COMPLETION, but the
+request did not have the FI_COMPLETION flag set).
 In such cases, providers will return as much information as made
 available by the underlying software and hardware about the failure,
 other fields will be set to NULL or 0.

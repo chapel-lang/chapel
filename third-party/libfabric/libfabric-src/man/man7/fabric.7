@@ -14,7 +14,7 @@
 . ftr VB CB
 . ftr VBI CBI
 .\}
-.TH "fabric" "7" "2024\-12\-10" "Libfabric Programmer\[cq]s Manual" "Libfabric v2.3.1"
+.TH "fabric" "7" "2026\-03\-13" "Libfabric Programmer\[cq]s Manual" "Libfabric v2.5.1"
 .hy
 .SH NAME
 .PP
@@ -195,8 +195,9 @@ Unlike other data transfer interfaces, atomic operations are aware of
 the data formatting at the target memory region.
 .SH LOGGING INTERFACE
 .PP
-Logging can be controlled using the FI_LOG_LEVEL, FI_LOG_PROV, and
-FI_LOG_SUBSYS environment variables.
+Logging can be controlled using the FI_LOG_LEVEL, FI_LOG_LOCATION,
+FI_LOG_LOCATION_MODE, FI_LOG_PROV, and FI_LOG_SUBSYS environment
+variables.
 .TP
 \f[I]FI_LOG_LEVEL\f[R]
 FI_LOG_LEVEL controls the amount of logging data that is output.
@@ -217,6 +218,24 @@ Info is high traffic and meant for detailed output.
 Debug is high traffic and is likely to impact application performance.
 Debug output is only available if the library has been compiled with
 debugging enabled.
+.TP
+\f[I]FI_LOG_LOCATION\f[R]
+FI_LOG_LOCATION controls the location of the log output.
+Possible options are \f[V]stdout\f[R], \f[V]stderr\f[R], as well as a
+path to a file or a directory.
+The default location is \f[V]stderr\f[R].
+If set to a file path, then the specified file will be created and used.
+The file pointed to by the setting must not exist prior to launching
+libfabric.
+If set to a directory path, then a new file \f[V]ofi_<pid>.log\f[R] in
+the specified directory will be used.
+Log files use the file mode specified via
+\f[I]FI_LOG_LOCATION_MODE\f[R].
+.TP
+\f[I]FI_LOG_LOCATION_MODE\f[R]
+FI_LOG_LOCATION_MODE controls the mode of the log file if
+\f[I]FI_LOG_LOCATION\f[R] is set to a file or directory.
+The default is \f[V]0600\f[R].
 .TP
 \f[I]FI_LOG_PROV\f[R]
 The FI_LOG_PROV environment variable enables or disables logging from
@@ -521,6 +540,13 @@ Added new fields to the following attributes:
 .TP
 \f[I]fi_domain_attr\f[R]
 Added max_group_id
+.SS ABI 1.9
+.PP
+ABI version starting with libfabric 2.5.
+Added new fields to the following attributes:
+.TP
+\f[I]fi_domain_attr\f[R]
+Added max_cntr_value, max_err_cntr_value
 .SH SEE ALSO
 .PP
 \f[V]fi_info\f[R](1), \f[V]fi_provider\f[R](7), \f[V]fi_getinfo\f[R](3),

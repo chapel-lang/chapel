@@ -179,6 +179,7 @@ struct fi_mr_attr {
 		int		ze;
 		int		neuron;
 		int		synapseai;
+		int		rocr;
 	} device;
 	void			*hmem_data;
 	size_t			page_size;

@@ -96,8 +96,8 @@ void xnet_hdr_trace(struct xnet_ep *ep, struct xnet_base_hdr *hdr)
 
 	dir = (hdr == &ep->cur_rx.hdr.base_hdr) ? "Rx" : "Tx";
 
-	FI_TRACE(&xnet_prov, FI_LOG_EP_DATA, "%s op:%s tag:0x%zx flags:0x%x "
-		 "op_data:0x%x hdr_size:%d data_size:%zu\n", dir,
+	FI_TRACE(&xnet_prov, FI_LOG_EP_DATA, "%s op:%s tag:0x%" PRIu64 " flags:0x%x "
+		 "op_data:0x%x hdr_size:%d data_size:%" PRIu64 "\n", dir,
 		 xnet_op_str(hdr->op), tag, hdr->flags, hdr->op_data,
 		 hdr->hdr_size, hdr->size - hdr->hdr_size);
 }
@@ -172,7 +172,7 @@ xnet_disable_keepalive(struct xnet_ep *ep)
 	FI_INFO(&xnet_prov, FI_LOG_EP_CTRL, "ep %p KEEPALIVE is disabled.\n", ep);
 }
 
-static int
+int
 xnet_enable_keepalive(struct xnet_ep *ep)
 {
 	int optval = 1;
@@ -361,16 +361,6 @@ xnet_ep_accept(struct fid_ep *ep_fid, const void *param, size_t paramlen)
 	if (paramlen) {
 		memcpy(ep->cm_msg->data, param, paramlen);
 		ep->cm_msg->hdr.seg_size = htons((uint16_t) paramlen);
-	}
-
-	/* Enable keepalive to make sure the socket status can be reset in time
-	 * if the remote peer is restarted after it gets connreq but not replies.
-	 */
-	ret = xnet_enable_keepalive(ep);
-	if (ret) {
-		FI_WARN(&xnet_prov, FI_LOG_EP_CTRL, "%p set tcp keepalive failure:%d\n",
-			ep, ret);
-		return ret;
 	}
 
 	ret = xnet_send_cm_msg(ep);

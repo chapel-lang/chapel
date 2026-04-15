@@ -81,75 +81,57 @@ static pthread_spinlock_t global_gdr_lock;
 static void *gdrapi_handle;
 static struct gdrcopy_ops global_gdrcopy_ops;
 
-static int cuda_gdrcopy_dl_hmem_init(void)
+static int cuda_gdrcopy_load_symbol(void **func_ptr, const char *symbol_name)
 {
-	gdrapi_handle = dlopen("libgdrapi.so", RTLD_NOW);
-	if (!gdrapi_handle) {
-		FI_INFO(&core_prov, FI_LOG_CORE,
-			"Failed to dlopen libgdrapi.so\n");
-		return -FI_ENOSYS;
+	dlerror();
+	*func_ptr = dlsym(gdrapi_handle, symbol_name);
+	if (!*func_ptr) {
+		FI_WARN(&core_prov, FI_LOG_CORE, "Failed to find %s: %s\n", symbol_name, dlerror());
+		return -FI_ENODATA;
 	}
-
-	global_gdrcopy_ops.gdr_open = dlsym(gdrapi_handle, "gdr_open");
-	if (!global_gdrcopy_ops.gdr_open) {
-		FI_WARN(&core_prov, FI_LOG_CORE, "Failed to find gdr_open\n");
-		goto err_dlclose_gdrapi;
-	}
-
-	global_gdrcopy_ops.gdr_close = dlsym(gdrapi_handle, "gdr_close");
-	if (!global_gdrcopy_ops.gdr_close) {
-		FI_WARN(&core_prov, FI_LOG_CORE, "Failed to find gdr_close\n");
-		goto err_dlclose_gdrapi;
-	}
-
-	global_gdrcopy_ops.gdr_pin_buffer = dlsym(gdrapi_handle, "gdr_pin_buffer");
-	if (!global_gdrcopy_ops.gdr_pin_buffer) {
-		FI_WARN(&core_prov, FI_LOG_CORE,
-			"Failed to find gdr_pin_buffer\n");
-		goto err_dlclose_gdrapi;
-	}
-
-	global_gdrcopy_ops.gdr_unpin_buffer = dlsym(gdrapi_handle, "gdr_unpin_buffer");
-	if (!global_gdrcopy_ops.gdr_unpin_buffer) {
-		FI_WARN(&core_prov, FI_LOG_CORE,
-			"Failed to find gdr_unpin_buffer\n");
-		goto err_dlclose_gdrapi;
-	}
-
-	global_gdrcopy_ops.gdr_map = dlsym(gdrapi_handle, "gdr_map");
-	if (!global_gdrcopy_ops.gdr_map) {
-		FI_WARN(&core_prov, FI_LOG_CORE,
-			"Failed to find gdr_map\n");
-		goto err_dlclose_gdrapi;
-	}
-
-	global_gdrcopy_ops.gdr_unmap = dlsym(gdrapi_handle, "gdr_unmap");
-	if (!global_gdrcopy_ops.gdr_unmap) {
-		FI_WARN(&core_prov, FI_LOG_CORE,
-			"Failed to find gdr_unmap\n");
-		goto err_dlclose_gdrapi;
-	}
-
-	global_gdrcopy_ops.gdr_copy_to_mapping = dlsym(gdrapi_handle, "gdr_copy_to_mapping");
-	if (!global_gdrcopy_ops.gdr_copy_to_mapping) {
-		FI_WARN(&core_prov, FI_LOG_CORE,
-			"Failed to find gdr_copy_to_mapping\n");
-		goto err_dlclose_gdrapi;
-	}
-
-	global_gdrcopy_ops.gdr_copy_from_mapping = dlsym(gdrapi_handle, "gdr_copy_from_mapping");
-	if (!global_gdrcopy_ops.gdr_copy_from_mapping) {
-		FI_WARN(&core_prov, FI_LOG_CORE,
-			"Failed to find gdr_copy_from_mapping\n");
-		goto err_dlclose_gdrapi;
-	}
-
 	return FI_SUCCESS;
+}
 
-err_dlclose_gdrapi:
-	memset(&global_gdrcopy_ops, 0, sizeof(global_gdrcopy_ops));
-	dlclose(gdrapi_handle);
-	return -FI_ENODATA;
+static int cuda_gdrcopy_dl_hmem_init(void)
+{	
+	const char *lib_paths[] = {
+		"libgdrapi.so", 
+		"libgdrapi.so.2",
+		NULL
+	};
+	Dl_info info;
+
+	for (int i = 0; lib_paths[i]; i++) {
+		FI_INFO(&core_prov, FI_LOG_CORE, "Trying to load: %s\n", lib_paths[i]);
+		void *handle = dlopen(lib_paths[i], RTLD_NOW);
+		if (!handle) continue;
+		
+		gdrapi_handle = handle;
+		
+		/* Try to load all symbols - if any fail, cleanup and try next library */
+		if (cuda_gdrcopy_load_symbol((void**)&global_gdrcopy_ops.gdr_open, "gdr_open") ||
+		    cuda_gdrcopy_load_symbol((void**)&global_gdrcopy_ops.gdr_close, "gdr_close") ||
+		    cuda_gdrcopy_load_symbol((void**)&global_gdrcopy_ops.gdr_pin_buffer, "gdr_pin_buffer") ||
+		    cuda_gdrcopy_load_symbol((void**)&global_gdrcopy_ops.gdr_unpin_buffer, "gdr_unpin_buffer") ||
+		    cuda_gdrcopy_load_symbol((void**)&global_gdrcopy_ops.gdr_map, "gdr_map") ||
+		    cuda_gdrcopy_load_symbol((void**)&global_gdrcopy_ops.gdr_unmap, "gdr_unmap") ||
+		    cuda_gdrcopy_load_symbol((void**)&global_gdrcopy_ops.gdr_copy_to_mapping, "gdr_copy_to_mapping") ||
+		    cuda_gdrcopy_load_symbol((void**)&global_gdrcopy_ops.gdr_copy_from_mapping, "gdr_copy_from_mapping")) {
+			memset(&global_gdrcopy_ops, 0, sizeof(global_gdrcopy_ops));
+			dlclose(handle);
+			gdrapi_handle = NULL;
+			continue;
+		}
+		
+		/* All symbols loaded successfully */
+		if (dladdr(global_gdrcopy_ops.gdr_open, &info)) {
+			FI_INFO(&core_prov, FI_LOG_CORE, "Loaded GDRCopy library: %s\n", info.dli_fname);
+		}
+		return FI_SUCCESS;
+	}
+	
+	FI_INFO(&core_prov, FI_LOG_CORE, "Failed to find usable libgdrapi.so\n");
+	return -FI_ENOSYS;
 }
 
 static int cuda_gdrcopy_dl_hmem_cleanup(void)

@@ -2835,7 +2835,7 @@ psm3_ips_proto_disconnect(struct ips_proto *proto, int force, int numep,
 					psmi_assert(ipsaddr->reconnecting);
 					psmi_assert(! ipsaddr->waiting_in_connect);
 					psmi_assert(ipsaddr->waiting_in_disconnect);
-					/* FALLSTHROUGH */
+					/* FALLTHROUGH */
 				case CSTATE_ESTABLISHED:
 					psmi_assert(ipsaddr->waiting_in_disconnect);
 					/* Still pending acks, hold off for now */

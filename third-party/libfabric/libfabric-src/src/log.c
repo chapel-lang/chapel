@@ -36,6 +36,10 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <limits.h>
+#include <sys/stat.h>
+#include <string.h>
+#include <errno.h>
 
 #include <rdma/fi_errno.h>
 #include <rdma/fi_ext.h>
@@ -88,6 +92,7 @@ enum {
 
 static int log_interval = 2000;
 uint64_t log_mask;
+static FILE *log_location;
 struct ofi_filter prov_log_filter;
 extern struct ofi_common_locks common_locks;
 
@@ -107,11 +112,64 @@ static int fi_convert_log_str(const char *value)
 	return 0;
 }
 
+static void fi_log_location_init(char* locationstr, mode_t mode)
+{
+	struct stat st = {0};
+	char path_buffer[PATH_MAX];
+	int len;
+	int fd;
+
+	if (strcmp(locationstr, "stderr") == 0 || *locationstr == '\0') {
+		log_location = stderr;
+		return;
+	}
+	if (strcmp(locationstr, "stdout") == 0) {
+		log_location = stdout;
+		return;
+	}
+
+	if (stat(locationstr, &st) == -1 && errno != ENOENT)
+		goto error_log_location;
+
+	if (st.st_mode & S_IFDIR) {
+		len = snprintf(path_buffer, PATH_MAX, "%s/ofi_%u.log",
+			locationstr, pid);
+		if (len < 0)
+			goto error_log_location;
+		if (len >= PATH_MAX) {
+			errno = ENAMETOOLONG;
+			goto error_log_location;
+		}
+	} else {
+		strncpy(path_buffer, locationstr, PATH_MAX-1);
+	}
+
+	// do not open (and potentially overwrite) existing files
+	fd = ofi_open(path_buffer, O_RDWR|O_CREAT|O_EXCL, mode);
+	if (fd == -1)
+		goto error_log_location;
+	log_location = ofi_fdopen(fd, "r+");
+	if (log_location == NULL) {
+		ofi_close(fd);
+		goto error_log_location;
+	}
+	return;
+
+error_log_location:
+	log_location = stderr;
+	FI_WARN(&core_prov, FI_LOG_CORE,
+		"Could not initialize log location at '%s': %s. "
+		"Will write log to stderr.\n",
+		locationstr, strerror(errno));
+}
+
 void fi_log_init(void)
 {
 	struct ofi_filter subsys_filter;
 	int level, i;
-	char *levelstr = NULL, *provstr = NULL, *subsysstr = NULL;
+	char *levelstr = NULL, *provstr = NULL, *subsysstr = NULL,
+		*locationstr = NULL;
+	int location_mode = 0600;
 
 	fi_param_define(NULL, "log_interval", FI_PARAM_INT,
 			"Delay in ms between rate limited log messages "
@@ -140,6 +198,19 @@ void fi_log_init(void)
 	}
 	ofi_free_filter(&subsys_filter);
 	pid = getpid();
+
+	fi_param_define(NULL, "log_location", FI_PARAM_STRING,
+			"Specify log output: stderr, stdout, filepath, or dirpath "
+			"(default: stderr)");
+	fi_param_define(NULL, "log_location_mode", FI_PARAM_INT,
+			"Specify file mode for log output (default: 0600)");
+	if (fi_param_get_int(NULL, "log_location_mode", &location_mode) != FI_SUCCESS)
+		location_mode = 0600;
+	if (fi_param_get_str(NULL, "log_location", &locationstr) == FI_SUCCESS
+		&& locationstr != NULL)
+		fi_log_location_init(locationstr, location_mode);
+	else
+		log_location = stderr;
 }
 
 static int ofi_log_enabled(const struct fi_provider *prov,
@@ -149,14 +220,14 @@ static int ofi_log_enabled(const struct fi_provider *prov,
 	int prov_filtered = (flags & FI_LOG_PROV_FILTERED);
 
 	return ((FI_LOG_TAG(prov_filtered, level, subsys) & log_mask) ==
-		FI_LOG_TAG(prov_filtered, level, subsys));
+		FI_LOG_TAG(prov_filtered, level, subsys)) && log_location != NULL;
 }
 
 static void ofi_log(const struct fi_provider *prov, enum fi_log_level level,
 		    enum fi_log_subsys subsys, const char *func, int line,
 		    const char *msg)
 {
-	fprintf(stderr, "%s:%d:%ld:%s:%s:%s:%s():%d<%s> %s",
+	fprintf(log_location, "%s:%d:%ld:%s:%s:%s:%s():%d<%s> %s",
 		PACKAGE, pid, (unsigned long) time(NULL), log_prefix,
 		prov->name, log_subsys[subsys], func, line,
 		log_levels[level], msg);
@@ -318,6 +389,21 @@ void ofi_tostr_log_subsys(char *buf, size_t len, enum fi_log_subsys subsys)
 void fi_log_fini(void)
 {
 	ofi_free_filter(&prov_log_filter);
+	if (log_location != NULL && log_location != stderr
+		&& log_location != stdout) {
+		if (fflush(log_location) != 0) {
+			log_location = stderr;
+			FI_WARN(&core_prov, FI_LOG_CORE,
+				"Failed to flush log file: %s\n",
+				strerror(errno));
+		}
+		if (fclose(log_location) != 0) {
+			log_location = stderr;
+			FI_WARN(&core_prov, FI_LOG_CORE,
+				"Failed to close log file: %s\n",
+				strerror(errno));
+		}
+	}
 }
 
 __attribute__((visibility ("default"),EXTERNALLY_VISIBLE))

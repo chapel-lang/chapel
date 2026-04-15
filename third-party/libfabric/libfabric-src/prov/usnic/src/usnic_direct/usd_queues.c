@@ -47,6 +47,7 @@
 #include <sys/mman.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <inttypes.h>
 
 #include <netinet/in.h>
 #include <infiniband/verbs.h>
@@ -119,8 +120,8 @@ usd_map_one_res(struct usd_device *dev, struct usd_vf *vf,
     iomap->vaddr = mmap64(NULL, iomap->len, PROT_READ + PROT_WRITE,
                         MAP_SHARED, dev->ud_ctx->ucx_ib_dev_fd, offset);
     if (iomap->vaddr == MAP_FAILED) {
-        usd_err("Failed to map res type %d, bus_addr 0x%lx, len 0x%lx\n",
-                barres->type, iomap->bus_addr, iomap->len);
+        usd_err("Failed to map res type %d, bus_addr 0x%" PRIx64 ", len 0x%" PRIx64 "\n",
+                barres->type, (uint64_t)iomap->bus_addr, (uint64_t)iomap->len);
         return -errno;
     }
     vnic_dev_upd_res_vaddr(vf->vf_vdev, iomap);
@@ -426,7 +427,7 @@ usd_create_wq_ud(
     if (ret != 0)
         return ret;
 
-    ret = usd_vnic_wq_init(wq, qp->uq_vf, (uint64_t)wq->uwq_desc_ring);
+    ret = usd_vnic_wq_init(wq, qp->uq_vf, (uint64_t)(uintptr_t)wq->uwq_desc_ring);
     if (ret != 0)
         goto out;
 
@@ -473,9 +474,9 @@ usd_create_wq_pio(
     pio_paddr = qp->uq_attrs.uqa_pio_paddr;
 
     /* 512-byte alignment must match */
-    if ((((uint64_t)pio_vaddr ^ pio_paddr) & 511) != 0) {
-        fprintf(stderr, "Alignment mismatch, %p vs 0x%lx, cannot do PIO\n",
-                pio_vaddr, pio_paddr);
+    if ((((uintptr_t)pio_vaddr ^ pio_paddr) & 511) != 0) {
+        fprintf(stderr, "Alignment mismatch, %p vs 0x%" PRIx64 ", cannot do PIO\n",
+                pio_vaddr, (uint64_t)pio_paddr);
         return -ENXIO;
     }
 
@@ -490,8 +491,8 @@ usd_create_wq_pio(
     wq = &qp->uq_wq;
     ring_size = wq->uwq_num_entries * sizeof(struct wq_enet_desc);
     ring_size += 64 - sizeof(struct wq_enet_desc);
-    wq->pio_v_wq_addr = (void *)ivaddr;
-    wq->pio_p_wq_addr = pio_paddr + ivaddr - (uint64_t)pio_vaddr;
+    wq->pio_v_wq_addr = (void *)(uintptr_t)ivaddr;
+    wq->pio_p_wq_addr = pio_paddr + ivaddr - (uint64_t)(uintptr_t)pio_vaddr;
     ivaddr += ring_size;
 
     /* round up to 64 bytes */
@@ -503,8 +504,8 @@ usd_create_wq_pio(
         return ret;
 
     /* packet buffer */
-    wq->pio_v_pkt_buf = (void *)ivaddr;
-    wq->pio_p_pkt_buf = pio_paddr + ivaddr - (uint64_t)pio_vaddr;
+    wq->pio_v_pkt_buf = (void *)(uintptr_t)ivaddr;
+    wq->pio_p_pkt_buf = pio_paddr + ivaddr - (uint64_t)(uintptr_t)pio_vaddr;
     ivaddr += ((uint64_t) wq->uwq_num_entries) * 256;
 
     used_size = ivaddr - (uintptr_t)pio_vaddr;
@@ -613,7 +614,7 @@ usd_create_rq(struct usd_qp_impl *qp)
     if (ret != 0)
         return ret;
 
-    ret = usd_vnic_rq_init(rq, qp->uq_vf, (uint64_t)rq->urq_desc_ring);
+    ret = usd_vnic_rq_init(rq, qp->uq_vf, (uint64_t)(uintptr_t)rq->urq_desc_ring);
     if (ret != 0)
         goto out;
 

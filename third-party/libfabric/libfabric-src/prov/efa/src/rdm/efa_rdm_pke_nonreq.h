@@ -245,8 +245,6 @@ static inline struct efa_rdm_atomrsp_hdr *efa_rdm_pke_get_atomrsp_hdr(struct efa
 
 int efa_rdm_pke_init_atomrsp(struct efa_rdm_pke *pkt_entry, struct efa_rdm_ope *rxe);
 
-void efa_rdm_pke_handle_atomrsp_sent(struct efa_rdm_pke *pkt_entry);
-
 void efa_rdm_pke_handle_atomrsp_send_completion(struct efa_rdm_pke *pkt_entry);
 
 void efa_rdm_pke_handle_atomrsp_recv(struct efa_rdm_pke *pkt_entry);
@@ -259,8 +257,6 @@ struct efa_rdm_receipt_hdr *efa_rdm_pke_get_receipt_hdr(struct efa_rdm_pke *pke)
 }
 
 int efa_rdm_pke_init_receipt(struct efa_rdm_pke *pkt_entry, struct efa_rdm_ope *rxe);
-
-void efa_rdm_pke_handle_receipt_sent(struct efa_rdm_pke *pkt_entry);
 
 void efa_rdm_pke_handle_receipt_send_completion(struct efa_rdm_pke *pkt_entry);
 

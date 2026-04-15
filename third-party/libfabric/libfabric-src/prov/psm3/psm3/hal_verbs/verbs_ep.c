@@ -197,7 +197,10 @@ psm3_ep_open_verbs(psm2_ep_t ep, int unit, int port, int addr_index, psm2_uuid_t
 		}
 		_HFI_DBG("max_srq=%d\n", dev_attr.max_srq);
 #ifdef PSM_RC_RECONNECT_SRQ
-		if (dev_attr.max_srq) {
+		// allow_reconnect with SRQ requires RCVTHREAD
+		if (dev_attr.max_srq &&
+		    (! ep->allow_reconnect ||
+		     psmi_hal_has_sw_status(PSM_HAL_PSMI_RUNTIME_RTS_RX_THREAD))) {
 #else
 		if (dev_attr.max_srq && ! ep->allow_reconnect) {
 #endif
@@ -606,11 +609,8 @@ psm3_verbs_ips_proto_init(struct ips_proto *proto, uint32_t cksum_sz)
 		_HFI_ERROR( "Unable to allocate UD send buffer pool\n");
 		goto fail;
 	}
-	if (PSM2_OK != psm_verbs_init_send_allocator(&ep->verbs_ep.send_allocator, 
-					&ep->verbs_ep.send_pool)) {
-		_HFI_ERROR( "Unable to init UD send buffer allocator\n");
-		goto fail;
-	}
+	psm_verbs_init_send_allocator(&ep->verbs_ep.send_allocator,
+				      &ep->verbs_ep.send_pool);
 
 	ep->verbs_ep.send_reap_thresh = min(ep->verbs_ep.hfi_send_reap_thresh, ep->verbs_ep.send_pool.send_total/2);
 	_HFI_PRDBG("reaping when %u posted.\n", ep->verbs_ep.send_reap_thresh);
@@ -1026,7 +1026,7 @@ fail:
 	return PSM2_INTERNAL_ERR;
 }
 
-extern psm2_error_t psm_verbs_init_send_allocator(
+void psm_verbs_init_send_allocator(
 			psm3_verbs_send_allocator_t allocator,
 			psm3_verbs_send_pool_t pool)
 {
@@ -1034,7 +1034,6 @@ extern psm2_error_t psm_verbs_init_send_allocator(
 	memset(allocator,0,sizeof(*allocator));
 	allocator->pool = pool;
 	allocator->send_num_til_coallesce = VERBS_SEND_CQ_COALLESCE;
-	return PSM2_OK;
 }
 
 
@@ -3052,8 +3051,9 @@ static struct ibv_qp* ud_qp_create(psm2_ep_t ep)
 		_HFI_PRDBG("SQ WQEs: %u\n", attr.cap.max_send_wr);
 	}
 	if (2 > attr.cap.max_send_sge) {
-		_HFI_PRDBG( "Limited to %d SQ SGEs\n",
-			attr.cap.max_send_sge);
+		_HFI_ERROR("Insufficient Send SGEs on %s: requested 2, got %u\n",
+			ep->dev_name, attr.cap.max_send_sge);
+		goto fail;
 	}
 	if (ep->verbs_ep.hfi_num_recv_wqes > attr.cap.max_recv_wr) {
 		_HFI_PRDBG( "Limited to %d RQ WQEs, requested %u\n",
@@ -3062,11 +3062,15 @@ static struct ibv_qp* ud_qp_create(psm2_ep_t ep)
 		_HFI_PRDBG("RQ WQEs: %u\n", attr.cap.max_recv_wr);
 	}
 	if (1 > attr.cap.max_recv_sge) {
-		_HFI_PRDBG( "Limited to %d RQ SGEs\n",
-			attr.cap.max_recv_sge);
+		_HFI_ERROR("Insufficient Recv SGEs on %s: requested 1, got %u\n",
+			ep->dev_name, attr.cap.max_recv_sge);
+		goto fail;
 	}
 
 	return qp;
+fail:
+	ibv_destroy_qp(qp);
+	return NULL;
 }
 
 static psm2_error_t modify_ud_qp_to_init(psm2_ep_t ep, struct ibv_qp *qp)
@@ -3188,7 +3192,7 @@ struct ibv_qp* rc_qp_create(psm2_ep_t ep, void *context, struct ibv_qp_cap *cap)
 		return NULL;
 	}
 
-// TBD - getting too small resources should be fatal or adjust limits to be smaller - such as num_sge
+	// TBD - getting too small resources should be fatal or adjust limits to be smaller
 	if ((ep->rdmamode&IPS_PROTOEXP_FLAG_RDMA_MASK) == IPS_PROTOEXP_FLAG_RDMA_USER_RC) {
 		// QP adjusted values due to HW limits
 		if (ep->hfi_imm_size > attr.cap.max_inline_data) {
@@ -3212,8 +3216,9 @@ struct ibv_qp* rc_qp_create(psm2_ep_t ep, void *context, struct ibv_qp_cap *cap)
 			_HFI_PRDBG("SQ WQEs: %u\n", attr.cap.max_send_wr);
 		}
 		if (2 > attr.cap.max_send_sge) {
-			_HFI_PRDBG( "Limited to %d SQ SGEs\n",
-				attr.cap.max_send_sge);
+			_HFI_ERROR("Insufficient Send SGEs on %s: requested 2, got %u\n",
+				ep->dev_name, attr.cap.max_send_sge);
+			goto fail;
 		}
 		if (! ep->verbs_ep.srq
 		    && ep->verbs_ep.hfi_num_recv_wqes/VERBS_RECV_QP_FRACTION > attr.cap.max_recv_wr) {
@@ -3223,8 +3228,9 @@ struct ibv_qp* rc_qp_create(psm2_ep_t ep, void *context, struct ibv_qp_cap *cap)
 			_HFI_PRDBG("RQ WQEs: %u\n", attr.cap.max_recv_wr);
 		}
 		if (1 > attr.cap.max_recv_sge) {
-			_HFI_PRDBG( "Limited to %d RQ SGEs\n",
-				attr.cap.max_recv_sge);
+			_HFI_ERROR("Insufficient Recv SGEs on %s: requested 1, got %u\n",
+				ep->dev_name, attr.cap.max_recv_sge);
+			goto fail;
 		}
 
 		// we need to make sure we can't overflow send Q
@@ -3253,8 +3259,9 @@ struct ibv_qp* rc_qp_create(psm2_ep_t ep, void *context, struct ibv_qp_cap *cap)
 			_HFI_PRDBG("SQ WQEs: %u\n", attr.cap.max_send_wr);
 		}
 		if (1 > attr.cap.max_send_sge) {
-			_HFI_PRDBG( "Limited to %d SQ SGEs\n",
-				attr.cap.max_send_sge);
+			_HFI_ERROR("Insufficient Send SGEs on %s: requested 1, got %u\n",
+				ep->dev_name, attr.cap.max_send_sge);
+			goto fail;
 		}
 		if (! ep->verbs_ep.srq
 		    && HFI_TF_NFLOWS+1 > attr.cap.max_recv_wr) {
@@ -3536,10 +3543,10 @@ void psm3_verbs_free_rc_qp(const char *why, struct psm3_verbs_rc_qp *rc_qp)
 	_HFI_CONNDBG("[ipsaddr %p] free RC QP %u rcnt %u posted %u + %u: %s\n", rc_qp->ipsaddr,
 			rc_qp->qp?rc_qp->qp->qp_num:0, rc_qp->reconnect_count,
 			rc_qp->send_posted, rc_qp->recv_pool.posted, why);
-	if (rc_qp->draining)
-		rc_qp->ipsaddr->epaddr.proto->ep->verbs_ep.send_drain_outstanding--;
 	if (rc_qp->ipsaddr) {
 		ips_epaddr_t *ipsaddr = rc_qp->ipsaddr;
+		if (rc_qp->draining)
+			ipsaddr->epaddr.proto->ep->verbs_ep.send_drain_outstanding--;
 		// SLIST_REMOVE will walk list, but list is short
 		SLIST_REMOVE(&ipsaddr->verbs.rc_qps, rc_qp, psm3_verbs_rc_qp, next);
 	}

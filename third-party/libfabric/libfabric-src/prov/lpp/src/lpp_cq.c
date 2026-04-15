@@ -30,6 +30,8 @@
  * SOFTWARE.
  */
 
+#include <inttypes.h>
+
 #include "lpp.h"
 
 static const struct fi_ops lpp_fi_cq_ops = {
@@ -66,7 +68,7 @@ static int lpp_cq_verify_attr(struct fi_cq_attr *attr)
 
 #define CHECK_ATTR(actual, op, desired)													\
 	if (actual op desired) {													\
-		FI_INFO(&lpp_prov, FI_LOG_CQ, #actual " (%ld) " #op " " #desired " (%ld)\n", (uint64_t)actual, (uint64_t)desired);	\
+		FI_INFO(&lpp_prov, FI_LOG_CQ, #actual " (%" PRIuPTR ") " #op " " #desired " (%" PRIuPTR ")\n", (uintptr_t)actual, (uintptr_t)desired);	\
 		return -FI_EINVAL;													\
 	}
 
@@ -336,12 +338,12 @@ void lpp_cq_enqueue_entry(struct lpp_cq *lpp_cqp, struct klpp_cq_tagged_entry *e
 {
 	if (lpp_cqp->header->overrun) {
 		FI_WARN(&lpp_prov, FI_LOG_CQ,
-			"CQ in overrun state, dropping completion (flags %lx)\n",
-			entry->generic.flags);
+			"CQ in overrun state, dropping completion (flags %" PRIx64 ")\n",
+			(uint64_t)entry->generic.flags);
 	} else if (klpp_ringbuf_enqueue_cq(lpp_cqp->cq, lpp_cqp->num_entries, entry) != 0) {
 		FI_WARN(&lpp_prov, FI_LOG_CQ,
-			"Unable to enqueue CQ entry, setting overrun (flags %lx)\n",
-			entry->generic.flags);
+			"Unable to enqueue CQ entry, setting overrun (flags %" PRIx64 ")\n",
+			(uint64_t)entry->generic.flags);
 		lpp_cqp->header->overrun = 1;
 	}
 }

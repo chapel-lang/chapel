@@ -309,15 +309,20 @@ static int sock_av_lookup(struct fid_av *av, fi_addr_t fi_addr, void *addr,
 	ofi_mutex_lock(&_av->table_lock);
 	if (index >= _av->table_hdr->size || index < 0) {
 		SOCK_LOG_ERROR("requested address not inserted\n");
-		ofi_mutex_unlock(&_av->table_lock);
-		return -EINVAL;
+		goto inval;
 	}
 
 	av_addr = &_av->table[index];
+	if (!av_addr->valid)
+		goto inval;
+
 	memcpy(addr, &av_addr->addr, MIN(*addrlen, (size_t)_av->addrlen));
 	ofi_mutex_unlock(&_av->table_lock);
 	*addrlen = _av->addrlen;
 	return 0;
+inval:
+	ofi_mutex_unlock(&_av->table_lock);
+	return -FI_EINVAL;
 }
 
 static int _sock_av_insertsvc(struct fid_av *av, const char *node,
@@ -430,6 +435,8 @@ static int sock_av_remove(struct fid_av *av, fi_addr_t *fi_addr, size_t count,
 	struct sock_ep *sock_ep;
 	struct sock_conn *conn;
 	uint16_t idx;
+	int64_t index;
+	int ret = FI_SUCCESS;
 
 	_av = container_of(av, struct sock_av, av_fid);
 	ofi_mutex_lock(&_av->list_lock);
@@ -440,7 +447,11 @@ static int sock_av_remove(struct fid_av *av, fi_addr_t *fi_addr, size_t count,
 		for (i = 0; i < count; i++) {
 			idx = (uint16_t)(fi_addr[i] & sock_ep->attr->av->mask);
 			conn = ofi_idm_lookup(&sock_ep->attr->av_idm, idx);
-			if (conn && conn != SOCK_CM_CONN_IN_PROGRESS) {
+			if (!conn) {
+				ret = -FI_EINVAL;
+				continue;
+			}
+			if (conn != SOCK_CM_CONN_IN_PROGRESS) {
 				/* A peer may be using the connection, so leave
 				 * it operational, just dissociate it from AV.
 				 */
@@ -455,12 +466,20 @@ static int sock_av_remove(struct fid_av *av, fi_addr_t *fi_addr, size_t count,
 
 	ofi_mutex_lock(&_av->table_lock);
 	for (i = 0; i < count; i++) {
+		index = fi_addr[i] & _av->mask;
+		if (index >= _av->table_hdr->size || index < 0) {
+			ret = -FI_EINVAL;
+			continue;
+		}
 		av_addr = &_av->table[fi_addr[i]];
-		av_addr->valid = 0;
+		if (av_addr->valid)
+			av_addr->valid = 0;
+		else
+			ret = -FI_EINVAL;
 	}
 	ofi_mutex_unlock(&_av->table_lock);
 
-	return 0;
+	return ret;
 }
 
 static const char *sock_av_straddr(struct fid_av *av, const void *addr,

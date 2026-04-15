@@ -71,7 +71,9 @@ static inline void lnx_dump_core_ep_stats(struct lnx_core_ep *cep)
 
 	tstats = &cep->cep_t_stats;
 
-	FI_TRACE(&lnx_prov, FI_LOG_DOMAIN, "%s,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld\n",
+	FI_TRACE(&lnx_prov, FI_LOG_DOMAIN, "%s,%" PRIu64 ",%" PRIu64
+			",%" PRIu64 ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 ",%"
+			PRIu64 ",%" PRIu64 "\n",
 		 cep->cep_domain->cd_info->domain_attr->name,
 		 tstats->st_num_tsend, tstats->st_num_tsendv,
 		 tstats->st_num_tsendmsg, tstats->st_num_tsenddata,
@@ -92,11 +94,11 @@ lnx_dump_srx_queue_stats(struct lnx_ep *lep)
 	}
 
 	FI_TRACE(&lnx_prov, FI_LOG_DOMAIN,
-		 "RECVQ,-,-,-,-,-,-,-,-,%lu,%lu\n",
+		 "RECVQ,-,-,-,-,-,-,-,-,%" PRIu64 ",%" PRIu64 "\n",
 		 lep->le_srq.lps_trecv.lqp_recvq.lq_max,
 		 lep->le_srq.lps_trecv.lqp_recvq.lq_rolling_avg);
 	FI_TRACE(&lnx_prov, FI_LOG_DOMAIN,
-		 "UNEXQ,-,-,-,-,-,-,-,-,%lu,%lu\n",
+		 "UNEXQ,-,-,-,-,-,-,-,-,%" PRIu64 ",%" PRIu64 "\n",
 		 lep->le_srq.lps_trecv.lqp_unexq.lq_max,
 		 lep->le_srq.lps_trecv.lqp_unexq.lq_rolling_avg);
 }
@@ -640,10 +642,40 @@ int lnx_endpoint(struct fid_domain *domain, struct fi_info *info,
 {
 	int rc;
 	struct lnx_ep *my_ep;
+	char *mr_selection;
+	enum lnx_multirail_selection mr;
 
+	rc = fi_param_get_str(&lnx_prov, "multi_rail_selection",
+			      &mr_selection);
+	if (rc == -FI_ENOENT || rc == -FI_ENODATA) {
+		/* if the user makes no selection, pick the safest method
+		 * which ensures send after send is satisfied
+		 */
+		mr = LNX_MR_SELECTION_PER_PEER;
+		goto create_ep;
+	} else if (rc) {
+		return rc;
+	}
+
+	if (strncasecmp(LNX_PER_MSG_SELECTION_STR, mr_selection,
+		    strlen(mr_selection)) == 0) {
+		mr = LNX_MR_SELECTION_PER_MSG;
+	} else if (strncasecmp(LNX_PER_PEER_SELECTION_STR, mr_selection,
+			 strlen(mr_selection)) == 0) {
+		mr = LNX_MR_SELECTION_PER_PEER;
+	} else {
+		FI_WARN(&lnx_prov, FI_LOG_CORE,
+			"Unknown multi-rail selection policy: %s\n", mr_selection);
+		return FI_EINVAL;
+	}
+
+create_ep:
 	rc = lnx_alloc_endpoint(domain, info, &my_ep, context, FI_CLASS_EP);
 	if (rc)
 		return rc;
+
+	my_ep->le_mr = mr;
+	ofi_atomic_initialize32(&my_ep->le_rr, 0);
 
 	*ep = &my_ep->le_ep.ep_fid;
 

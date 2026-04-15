@@ -681,6 +681,9 @@ int ze_hmem_init(void)
 	if (enginestr)
 		sscanf(enginestr, "%d.%d", &ordinal, &index);
 
+	fi_param_define(NULL, "hmem_ze_use_dmabuf", FI_PARAM_BOOL,
+			"Use DMABUF for ZE device memory registration. (Default: true)");
+
 	ret = ze_hmem_dl_init();
 	if (ret)
 		return ret;
@@ -1088,6 +1091,14 @@ int ze_hmem_get_dmabuf_fd(const void *addr, uint64_t size, int *fd,
 	return 0;
 }
 
+bool ze_is_dmabuf_requested(void)
+{
+	int use_dmabuf = 1;
+
+	fi_param_get_int(NULL, "hmem_ze_use_dmabuf", &use_dmabuf);
+	return use_dmabuf;
+}
+
 struct ze_dev_reg_handle {
 	void *base_dev;
 	void *base_host;
@@ -1347,6 +1358,11 @@ int ze_hmem_get_dmabuf_fd(const void *addr, uint64_t size, int *fd,
 			  uint64_t *offset)
 {
 	return -FI_ENOSYS;
+}
+
+bool ze_is_dmabuf_requested(void)
+{
+	return false;
 }
 
 #endif /* HAVE_ZE */

@@ -48,7 +48,7 @@ typedef int64_t xpmem_segid_t;
 #endif /* HAVE_XPMEM */
 
 struct ofi_xpmem_client {
-	uint8_t cap;
+	bool avail;
 	xpmem_apid_t apid;
 	uintptr_t addr_max;
 };
@@ -81,8 +81,8 @@ void ofi_xpmem_cache_destroy(struct ofi_mr_cache *cache);
 
 int ofi_xpmem_init(void);
 int ofi_xpmem_cleanup(void);
-int ofi_xpmem_copy(struct iovec *local, unsigned long local_cnt,
-		   struct iovec *remote, unsigned long remote_cnt, size_t total,
+int ofi_xpmem_copy(struct iovec *local, size_t local_cnt,
+		   struct iovec *remote, size_t remote_cnt, size_t total,
 		   pid_t pid, bool write, void *user_data);
 int ofi_xpmem_enable(struct ofi_xpmem_pinfo *peer, struct ofi_xpmem_client *xpmem);
 void ofi_xpmem_release(struct ofi_xpmem_client *xpmem);

@@ -659,7 +659,7 @@ static inline ssize_t cxip_rnr_send_dma(struct cxip_req *req,
 		cmd.request_len = req->send.len;
 	}
 
-	if (req->send.cntr) {
+	if (req->send.cntr && req->send.success_disable) {
 		if (req->send.cntr->attr.events == FI_CXI_CNTR_EVENTS_BYTES)
 			cmd.event_ct_bytes = 1;
 
@@ -691,7 +691,7 @@ static inline ssize_t cxip_rnr_send_idc(struct cxip_req *req,
 	cstate_cmd.initiator = cxip_msg_match_id(txc);
 	cstate_cmd.event_success_disable = req->send.success_disable;
 
-	if (req->send.cntr) {
+	if (req->send.cntr && req->send.success_disable) {
 		if (req->send.cntr->attr.events == FI_CXI_CNTR_EVENTS_BYTES)
 			cstate_cmd.event_ct_bytes = 1;
 
@@ -834,21 +834,14 @@ static int cxip_process_rnr_time_wait(struct cxip_txc_rnr *txc)
 					ofi_atomic_dec32(&txc->time_wait_reqs);
 					cxip_send_buf_fini(req);
 					cxip_report_send_completion(req, true);
-					cxip_txc_otx_reqs_dec(&txc->base);
 					cxip_evtq_req_free(req);
 
 					continue;
 				}
 
-				/* Must TX return credit, will take it back if
-				 * we could not send.
-				 */
-				cxip_txc_otx_reqs_dec(&txc->base);
 				ret = cxip_rnr_msg_send(req);
-				if (ret != FI_SUCCESS) {
-					cxip_txc_otx_reqs_inc(&txc->base);
+				if (ret != FI_SUCCESS)
 					goto reset_min_time_wait;
-				}
 
 				txc->total_retries++;
 				dlist_remove_init(&req->send.rnr_entry);
@@ -1028,8 +1021,11 @@ static int cxip_rnr_send_cb(struct cxip_req *req, const union c_event *event)
 		txc->total_rnr_nacks++;
 		ret  = cxip_rnr_queue_retry(txc, req);
 
-		if (ret == FI_SUCCESS)
+		if (ret == FI_SUCCESS) {
+			/* Release TX credit while pending retry */
+			cxip_txc_otx_reqs_dec(&txc->base);
 			return ret;
+		}
 
 		TXC_WARN(&txc->base, "req %p RNR max timeout buf: %p len: %lu, "
 			 "dest_addr: 0x%lX nic: %#x pid: %d tag(%c) 0x%lx "
@@ -1045,8 +1041,9 @@ static int cxip_rnr_send_cb(struct cxip_req *req, const union c_event *event)
 	cxip_send_buf_fini(req);
 
 	/* If status is good, then the request completed before it could
-	 * be canceled. If canceled, indicate software update of the
-	 * error count is required.
+	 * be canceled. Reflect data length actually sent (for byte counting)
+	 * and include a truncation indicator if requested. If canceled, the
+	 * error count will be incremented.
 	 */
 	if (rc == C_RC_OK) {
 		req->send.canceled = false;
@@ -1054,12 +1051,13 @@ static int cxip_rnr_send_cb(struct cxip_req *req, const union c_event *event)
 		/* Report truncation if requested */
 		if (txc->base.trunc_ok) {
 			req->data_len = event->init_short.mlength;
+
 			if (req->send.len > req->data_len)
 				req->flags |= FI_CXI_TRUNC;
 		}
 	}
 
-	cxip_report_send_completion(req, req->send.canceled);
+	cxip_report_send_completion(req, !req->send.success_disable);
 
 	cxip_txc_otx_reqs_dec(&txc->base);
 	cxip_evtq_req_free(req);

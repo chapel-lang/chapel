@@ -28,18 +28,22 @@ enum cxi_traffic_class cxip_ofi_to_cxi_tc(uint32_t ofi_tclass)
 static int cxip_cp_find(struct cxip_lni *lni, uint16_t vni,
 		       enum cxi_traffic_class tc,
 		       enum cxi_traffic_class_type tc_type,
-		       struct cxi_cp **cp)
+		       struct cxi_cp **cp, bool trig_cp)
 {
 	struct cxip_remap_cp *sw_cp;
 
 	dlist_foreach_container(&lni->remap_cps, struct cxip_remap_cp, sw_cp,
 				remap_entry) {
-		if (sw_cp->remap_cp.vni == vni && sw_cp->remap_cp.tc == tc &&
-		    sw_cp->remap_cp.tc_type == tc_type) {
-			CXIP_DBG("Reusing SW CP: %u VNI: %u TC: %s TYPE: %s\n",
+		/* LCID 0 is reserved for triggered CQ/cntr use. */
+		if (sw_cp->remap_cp.vni == vni &&
+		    sw_cp->remap_cp.tc == tc &&
+		    sw_cp->remap_cp.tc_type == tc_type &&
+		    (!trig_cp ? sw_cp->remap_cp.lcid : !sw_cp->remap_cp.lcid)) {
+			CXIP_INFO("Reusing SW lcid:%u VNI:%u TC:%s TYPE:%s trig_cp:%d\n",
 				 sw_cp->remap_cp.lcid, sw_cp->remap_cp.vni,
 				 cxi_tc_to_str(sw_cp->remap_cp.tc),
-				 cxi_tc_type_to_str(sw_cp->remap_cp.tc_type));
+				 cxi_tc_type_to_str(sw_cp->remap_cp.tc_type),
+				 trig_cp);
 			*cp = &sw_cp->remap_cp;
 			return FI_SUCCESS;
 		}
@@ -51,7 +55,7 @@ static int cxip_cp_find(struct cxip_lni *lni, uint16_t vni,
 static int cxip_cp_get(struct cxip_lni *lni, uint16_t vni,
 		       enum cxi_traffic_class tc,
 		       enum cxi_traffic_class_type tc_type,
-		       struct cxi_cp **cp)
+		       struct cxi_cp **cp, bool trig_cp)
 {
 	int ret;
 	int i;
@@ -60,7 +64,7 @@ static int cxip_cp_get(struct cxip_lni *lni, uint16_t vni,
 
 	/* Always prefer SW remapped CPs over allocating HW CP. */
 	pthread_rwlock_rdlock(&lni->cp_lock);
-	ret = cxip_cp_find(lni, vni, tc, tc_type, cp);
+	ret = cxip_cp_find(lni, vni, tc, tc_type, cp, trig_cp);
 	pthread_rwlock_unlock(&lni->cp_lock);
 
 	if (ret == FI_SUCCESS)
@@ -70,10 +74,16 @@ static int cxip_cp_get(struct cxip_lni *lni, uint16_t vni,
 	 * been added in threaded env.
 	 */
 	pthread_rwlock_wrlock(&lni->cp_lock);
-	ret = cxip_cp_find(lni, vni, tc, tc_type, cp);
+	ret = cxip_cp_find(lni, vni, tc, tc_type, cp, trig_cp);
 
 	if (ret == FI_SUCCESS)
 		goto success_unlock;
+
+	if (lni->n_cps >= MAX_HW_CPS) {
+		CXIP_WARN("No room to allocate CP for VNI:%u\n", vni);
+		ret = -FI_ENOSPC;
+		goto err_unlock;
+	}
 
 	/* Allocate a new SW remapped CP entry and attempt to allocate the
 	 * user requested HW CP.
@@ -84,8 +94,14 @@ static int cxip_cp_get(struct cxip_lni *lni, uint16_t vni,
 		goto err_unlock;
 	}
 
+#if CXI_HAVE_ALLOC_TRIG_CP
+	ret = cxil_alloc_trig_cp(lni->lni, vni, tc, tc_type,
+				 trig_cp ? TRIG_LCID : NON_TRIG_LCID,
+				 &lni->hw_cps[lni->n_cps]);
+#else
 	ret = cxil_alloc_cp(lni->lni, vni, tc, tc_type,
 			    &lni->hw_cps[lni->n_cps]);
+#endif
 	if (ret) {
 		/* Attempt to fall back to remap traffic class with the same
 		 * traffic class type and allocate HW CP if necessary.
@@ -109,8 +125,14 @@ static int cxip_cp_get(struct cxip_lni *lni, uint16_t vni,
 		}
 
 		/* Attempt to allocated a remapped HW CP. */
+#if CXI_HAVE_ALLOC_TRIG_CP
+		ret = cxil_alloc_trig_cp(lni->lni, vni, remap_tc, tc_type,
+					 trig_cp ? TRIG_LCID : NON_TRIG_LCID,
+					 &lni->hw_cps[lni->n_cps]);
+#else
 		ret = cxil_alloc_cp(lni->lni, vni, remap_tc, tc_type,
 				    &lni->hw_cps[lni->n_cps]);
+#endif
 		if (ret) {
 			CXIP_WARN("Failed to allocate CP, ret: %d VNI: %u TC: %s TYPE: %s\n",
 				  ret, vni, cxi_tc_to_str(remap_tc),
@@ -119,6 +141,10 @@ static int cxip_cp_get(struct cxip_lni *lni, uint16_t vni,
 			goto err_free_sw_cp;
 		}
 	}
+
+	if (trig_cp && lni->hw_cps[lni->n_cps]->lcid)
+		CXIP_WARN("Triggered CQ requires CP with LCID=0, LCID is %d",
+			  lni->hw_cps[lni->n_cps]->lcid);
 
 	CXIP_DBG("Allocated CP: %u VNI: %u TC: %s TYPE: %s\n",
 		 lni->hw_cps[lni->n_cps]->lcid, vni,
@@ -161,13 +187,13 @@ int cxip_cmdq_cp_set(struct cxip_cmdq *cmdq, uint16_t vni,
 
 	if (cxip_cmdq_prev_match(cmdq, vni, tc, tc_type)) {
 		cp = cmdq->prev_cp;
-        } else {
-		ret = cxip_cp_get(cmdq->lni, vni, tc, tc_type, &cp);
+	} else {
+		ret = cxip_cp_get(cmdq->lni, vni, tc, tc_type, &cp, false);
 		if (ret != FI_SUCCESS) {
 			CXIP_DBG("Failed to get CP: %d\n", ret);
 			return -FI_EOTHER;
 		}
-        }
+	}
 
 	ret = cxi_cq_emit_cq_lcid(cmdq->dev_cmdq, cp->lcid);
 	if (ret) {
@@ -187,8 +213,57 @@ int cxip_cmdq_cp_set(struct cxip_cmdq *cmdq, uint16_t vni,
 	return ret;
 }
 
+int cxip_cmdq_cp_modify(struct cxip_cmdq *cmdq, uint16_t vni,
+			enum cxi_traffic_class tc)
+{
+	int ret;
+#if defined(CXI_HAVE_MODIFY_CP)
+	int i;
+	struct cxi_cp *hw_cp = NULL;
+	struct cxip_lni *lni = cmdq->lni;
+
+	pthread_rwlock_wrlock(&lni->cp_lock);
+
+	/* find the hw CP that matches the sw CP */
+	for (i = 0; i < lni->n_cps; i++) {
+		if (lni->hw_cps[i]->vni == cmdq->cur_cp->vni_pcp  &&
+		    lni->hw_cps[i]->tc == cmdq->cur_cp->tc &&
+		    lni->hw_cps[i]->tc_type == cmdq->cur_cp->tc_type &&
+		    lni->hw_cps[i]->lcid == cmdq->cur_cp->lcid) {
+			hw_cp = lni->hw_cps[i];
+			break;
+		}
+	}
+
+	if (hw_cp) {
+		ret = cxil_modify_cp(cmdq->lni->lni, hw_cp, vni);
+		if (!ret) {
+			hw_cp->vni_pcp = vni;
+			cmdq->cur_cp->vni_pcp = vni;
+			pthread_rwlock_unlock(&lni->cp_lock);
+
+			return FI_SUCCESS;
+		}
+
+		CXIP_WARN("cxil_modify_cp failed:%d\n", ret);
+	}
+
+	pthread_rwlock_unlock(&lni->cp_lock);
+
+	return -FI_ENOENT;
+#endif /* CXI_HAVE_MODIFY_CP */
+
+	ret = cxip_cmdq_cp_set(cmdq, vni, tc, CXI_TC_TYPE_DEFAULT);
+	if (ret)
+		CXIP_WARN("Failed to change communication profile: %d\n", ret);
+
+	return ret;
+}
+
 /*
  * cxip_cmdq_alloc() - Allocate a command queue.
+ *
+ * For a triggered CQ, the lcid must be 0.
  */
 int cxip_cmdq_alloc(struct cxip_lni *lni, struct cxi_eq *evtq,
 		    struct cxi_cq_alloc_opts *cq_opts, uint16_t vni,
@@ -208,10 +283,11 @@ int cxip_cmdq_alloc(struct cxip_lni *lni, struct cxi_eq *evtq,
 	}
 
 	if (cq_opts->flags & CXI_CQ_IS_TX) {
-		ret = cxip_cp_get(lni, vni, tc, tc_type, &cp);
+		ret = cxip_cp_get(lni, vni, tc, tc_type, &cp,
+				  !!(cq_opts->flags & CXI_CQ_TX_WITH_TRIG_CMDS));
 		if (ret != FI_SUCCESS) {
 			CXIP_WARN("Failed to allocate CP: %d\n", ret);
-			return ret;
+			goto free_cmdq;
 		}
 		cq_opts->lcid = cp->lcid;
 

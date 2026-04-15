@@ -150,7 +150,7 @@ efa_rdm_pke_copy_from_hmem_iov(struct efa_mr *iov_mr, struct efa_rdm_pke *pke,
 		copied = ofi_copy_from_hmem_iov(pke->wiredata + payload_offset,
 		                                data_size,
 		                                iov_mr ? iov_mr->peer.iface : FI_HMEM_SYSTEM,
-		                                iov_mr ? iov_mr->peer.device.reserved : 0,
+		                                iov_mr ? iov_mr->peer.device : 0,
 		                                ope->iov, ope->iov_count, segment_offset);
 	}
 
@@ -247,5 +247,7 @@ int efa_rdm_pke_get_available_copy_methods(struct efa_rdm_ep *ep,
 					   bool *restrict local_read_available,
 					   bool *restrict cuda_memcpy_available,
 					   bool *restrict gdrcopy_available);
+
+struct efa_rdm_pke *efa_rdm_pke_get_ooo_pke(struct efa_rdm_pke *pkt_entry);
 
 #endif

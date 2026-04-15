@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Intel Corporation. All rights reserved
+ * Copyright (c) Intel Corporation. All rights reserved
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -30,32 +30,18 @@
  * SOFTWARE.
  */
 
-#ifndef _DSA_SHM_H_
-#define _DSA_SHM_H_
+#ifndef _SMR_DSA_H_
+#define _SMR_DSA_H_
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#if HAVE_CONFIG_H
-#  include <config.h>
-#endif /* HAVE_CONFIG_H */
-
-#include <stddef.h>
-#include <stdint.h>
 #include "smr.h"
 
-/* SMR FUNCTIONS FOR DSA SUPPORT */
 void smr_dsa_init(void);
 void smr_dsa_cleanup(void);
-size_t smr_dsa_copy_to_sar(struct smr_ep *ep, struct smr_freestack *sar_pool,
-		struct smr_resp *resp, struct smr_cmd *cmd,
-		const struct iovec *iov, size_t count, size_t *bytes_done,
-		void *entry_ptr);
-size_t smr_dsa_copy_from_sar(struct smr_ep *ep, struct smr_freestack *sar_pool,
-		struct smr_resp *resp, struct smr_cmd *cmd,
-		const struct iovec *iov, size_t count, size_t *bytes_done,
-		void *entry_ptr);
+ssize_t smr_dsa_copy_sar(struct smr_ep *ep, struct smr_pend_entry *pend);
 void smr_dsa_context_init(struct smr_ep *ep);
 void smr_dsa_context_cleanup(struct smr_ep *ep);
 void smr_dsa_progress(struct smr_ep *ep);
@@ -63,4 +49,4 @@ void smr_dsa_progress(struct smr_ep *ep);
 #ifdef __cplusplus
 }
 #endif
-#endif /* _DSA_SHM_H_ */
+#endif /* _SMR_DSA_H_ */

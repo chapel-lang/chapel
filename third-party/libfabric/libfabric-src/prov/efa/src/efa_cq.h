@@ -179,132 +179,15 @@ static inline int efa_cq_open_ibv_cq_with_ibv_create_cq_ex(
 	return 0;
 }
 
-/**
- * @brief Create ibv_cq_ex by calling efadv_create_cq or ibv_create_cq_ex
- *
- * @param[in] attr Completion queue attributes
- * @param[in] ibv_ctx Pointer to ibv_context
- * @param[in,out] ibv_cq Pointer to efa_ibv_cq to be initialized
- * @param[in] efa_cq_init_attr Pointer to fi_efa_cq_init_attr containing attributes for efadv_create_cq
- * @return Return 0 on success, error code otherwise
- */
-#if HAVE_EFADV_CQ_EX
-static inline
 int efa_cq_open_ibv_cq(struct fi_cq_attr *attr,
 			struct ibv_context *ibv_ctx,
 			struct efa_ibv_cq *ibv_cq,
-			struct fi_efa_cq_init_attr *efa_cq_init_attr)
-{
-	int ret;
-
-	ibv_cq->channel = NULL;
-	if (attr->wait_obj != FI_WAIT_NONE) {
-		ret = efa_cq_create_comp_channel(ibv_cq, ibv_ctx);
-		if (ret)
-			return ret;
-	}
-
-	struct ibv_cq_init_attr_ex init_attr_ex = {
-		.cqe = attr->size ? attr->size : EFA_DEF_CQ_SIZE,
-		.cq_context = NULL,
-		.channel = ibv_cq->channel,
-		.comp_vector = 0,
-		/* EFA requires these values for wc_flags and comp_mask.
-		 * See `efa_create_cq_ex` in rdma-core.
-		 */
-		.wc_flags = IBV_WC_STANDARD_FLAGS,
-		.comp_mask = 0,
-	};
-
-	struct efadv_cq_init_attr efadv_cq_init_attr = {
-		.comp_mask = 0,
-		.wc_flags = EFADV_WC_EX_WITH_SGID,
-	};
-
-	ibv_cq->unsolicited_write_recv_enabled = false;
-#if HAVE_CAPS_UNSOLICITED_WRITE_RECV
-	if (efa_use_unsolicited_write_recv())
-		efadv_cq_init_attr.wc_flags |= EFADV_WC_EX_WITH_IS_UNSOLICITED;
-#endif
-
-#if HAVE_CAPS_CQ_WITH_EXT_MEM_DMABUF
-	if (efa_cq_init_attr->flags & FI_EFA_CQ_INIT_FLAGS_EXT_MEM_DMABUF) {
-		efadv_cq_init_attr.flags = EFADV_CQ_INIT_FLAGS_EXT_MEM_DMABUF;
-		efadv_cq_init_attr.ext_mem_dmabuf.buffer = efa_cq_init_attr->ext_mem_dmabuf.buffer;
-		efadv_cq_init_attr.ext_mem_dmabuf.length = efa_cq_init_attr->ext_mem_dmabuf.length;
-		efadv_cq_init_attr.ext_mem_dmabuf.offset = efa_cq_init_attr->ext_mem_dmabuf.offset;
-		efadv_cq_init_attr.ext_mem_dmabuf.fd = efa_cq_init_attr->ext_mem_dmabuf.fd;
-	}
-#endif
-
-	ibv_cq->data_path_direct_enabled = false;
-	ibv_cq->ibv_cq_ex = efadv_create_cq(ibv_ctx, &init_attr_ex,
-				     &efadv_cq_init_attr,
-				     sizeof(efadv_cq_init_attr));
-
-	if (!ibv_cq->ibv_cq_ex) {
-#if HAVE_CAPS_CQ_WITH_EXT_MEM_DMABUF
-		if (efa_cq_init_attr->flags & FI_EFA_CQ_INIT_FLAGS_EXT_MEM_DMABUF) {
-			EFA_WARN(FI_LOG_CQ,
-				 "efadv_create_cq failed on external memory. "
-				 "errno: %s\n", strerror(errno));
-			return (errno == EOPNOTSUPP) ? -FI_EOPNOTSUPP : -FI_EINVAL;
-		}
-#endif
-		/* This could be due to old EFA kernel module versions */
-		/* Fallback to ibv_create_cq_ex */
-		return efa_cq_open_ibv_cq_with_ibv_create_cq_ex(
-			&init_attr_ex, ibv_ctx, &ibv_cq->ibv_cq_ex, &ibv_cq->ibv_cq_ex_type);
-	}
-
-#if HAVE_CAPS_UNSOLICITED_WRITE_RECV
-	if (efadv_cq_init_attr.wc_flags & EFADV_WC_EX_WITH_IS_UNSOLICITED)
-		ibv_cq->unsolicited_write_recv_enabled = true;
-#endif
-
-	ibv_cq->ibv_cq_ex_type = EFADV_CQ;
-	return 0;
-}
-#else
-static inline
-int efa_cq_open_ibv_cq(struct fi_cq_attr *attr,
-			struct ibv_context *ibv_ctx,
-			struct efa_ibv_cq *ibv_cq,
-			struct fi_efa_cq_init_attr *efa_cq_init_attr)
-{
-	int ret;
-
-	ibv_cq->channel = NULL;
-	if (attr->wait_obj != FI_WAIT_NONE) {
-		ret = efa_cq_create_comp_channel(ibv_cq, ibv_ctx);
-		if (ret)
-			return ret;
-	}
-
-	struct ibv_cq_init_attr_ex init_attr_ex = {
-		.cqe = attr->size ? attr->size : EFA_DEF_CQ_SIZE,
-		.cq_context = NULL,
-		.channel = ibv_cq->channel,
-		.comp_vector = 0,
-		/* EFA requires these values for wc_flags and comp_mask.
-		 * See `efa_create_cq_ex` in rdma-core.
-		 */
-		.wc_flags = IBV_WC_STANDARD_FLAGS,
-		.comp_mask = 0,
-	};
-
-	ibv_cq->data_path_direct_enabled = false;
-	ibv_cq->unsolicited_write_recv_enabled = false;
-	return efa_cq_open_ibv_cq_with_ibv_create_cq_ex(
-		&init_attr_ex, ibv_ctx, &ibv_cq->ibv_cq_ex, &ibv_cq->ibv_cq_ex_type);
-}
-#endif
+			struct fi_efa_cq_init_attr *efa_cq_init_attr);
 
 int efa_cq_open(struct fid_domain *domain_fid, struct fi_cq_attr *attr,
 		struct fid_cq **cq_fid, void *context);
 
 void efa_cq_progress(struct util_cq *cq);
-
 int efa_cq_close(fid_t fid);
 
 const char *efa_cq_strerror(struct fid_cq *cq_fid, int prov_errno,
@@ -374,5 +257,9 @@ int efa_cq_trywait(struct efa_cq *cq);
 int efa_cq_signal(struct fid_cq *cq_fid);
 int efa_poll_events(struct efa_cq *cq, int timeout);
 int efa_cq_control(struct fid *cq, int command, void *arg);
+int efa_cq_signal_init(struct efa_cq *cq);
+void efa_cq_signal_fini(struct efa_cq *cq);
+void efa_cq_ack_events(struct efa_cq *cq);
+int efa_cq_destroy_comp_channel(struct efa_cq *cq);
 
 #endif /* end of _EFA_CQ_H*/

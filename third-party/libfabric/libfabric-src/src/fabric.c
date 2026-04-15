@@ -1079,7 +1079,7 @@ void DEFAULT_SYMVER_PRE(fi_freeinfo)(struct fi_info *info)
 		free(info);
 	}
 }
-DEFAULT_SYMVER(fi_freeinfo_, fi_freeinfo, FABRIC_1.8);
+DEFAULT_SYMVER(fi_freeinfo_, fi_freeinfo, FABRIC_1.9);
 
 static bool
 ofi_info_match_prov(struct fi_info *info, struct ofi_info_match *match)
@@ -1419,7 +1419,7 @@ int DEFAULT_SYMVER_PRE(fi_getinfo)(uint32_t version, const char *node,
 
 	return *info ? 0 : -FI_ENODATA;
 }
-DEFAULT_SYMVER(fi_getinfo_, fi_getinfo, FABRIC_1.8);
+DEFAULT_SYMVER(fi_getinfo_, fi_getinfo, FABRIC_1.9);
 
 struct fi_info *ofi_allocinfo_internal(void)
 {
@@ -1550,7 +1550,7 @@ fail:
 	fi_freeinfo(dup);
 	return NULL;
 }
-DEFAULT_SYMVER(fi_dupinfo_, fi_dupinfo, FABRIC_1.8);
+DEFAULT_SYMVER(fi_dupinfo_, fi_dupinfo, FABRIC_1.9);
 
 __attribute__((visibility ("default"),EXTERNALLY_VISIBLE))
 int DEFAULT_SYMVER_PRE(fi_fabric)(struct fi_fabric_attr *attr,

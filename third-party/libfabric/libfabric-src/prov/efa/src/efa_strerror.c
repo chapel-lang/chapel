@@ -94,8 +94,12 @@ void efa_show_help(enum efa_errno err) {
 		"Please consider matching the local and remote libfabric versions, or turning off "
 		"the zero-copy recv feature by setting FI_EFA_USE_ZCPY_RX=0 in the environment";
 		break;
+	case EFA_IO_COMP_STATUS_REMOTE_ERROR_FEATURE_MISMATCH:
+		help = "This error is detected remotely. "
+		"The peer doesn't support or didn't enable a locally requested feature.";
+		break;
 	default:
 		return;
 	}
-	EFA_WARN(FI_LOG_CQ, "%s\n", help);
+	EFA_INFO(FI_LOG_CQ, "%s\n", help);
 }

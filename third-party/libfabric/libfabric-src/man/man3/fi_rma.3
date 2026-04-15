@@ -14,7 +14,7 @@
 . ftr VB CB
 . ftr VBI CBI
 .\}
-.TH "fi_rma" "3" "2024\-12\-10" "Libfabric Programmer\[cq]s Manual" "Libfabric v2.3.1"
+.TH "fi_rma" "3" "2026\-02\-27" "Libfabric Programmer\[cq]s Manual" "Libfabric v2.5.1"
 .hy
 .SH NAME
 .PP
@@ -70,7 +70,8 @@ Fabric endpoint on which to initiate read or write operation.
 .TP
 \f[I]buf\f[R]
 Local data buffer to read into (read target) or write from (write
-source)
+source).
+For 0-byte operations, buf may be ignored.
 .TP
 \f[I]len\f[R]
 Length of data to read or write, specified in bytes.
@@ -78,9 +79,11 @@ Valid transfers are from 0 bytes up to the endpoint\[cq]s max_msg_size.
 .TP
 \f[I]iov\f[R]
 Vectored data buffer.
+For 0-byte operations, iov may be ignored.
 .TP
 \f[I]count\f[R]
 Count of vectored data entries.
+For 0-byte operations, count may be 0.
 .TP
 \f[I]addr\f[R]
 Address of remote memory to access.
@@ -92,7 +95,9 @@ FI_MR_SCALABLE.
 Protection key associated with the remote memory.
 .TP
 \f[I]desc\f[R]
-Descriptor associated with the local data buffer See \f[V]fi_mr\f[R](3).
+Descriptor associated with the local data buffer.
+For 0-byte operations, desc may be ignored even for FI_MR_LOCAL.
+See \f[V]fi_mr\f[R](3).
 .TP
 \f[I]data\f[R]
 Remote CQ data to transfer with the operation.
@@ -185,6 +190,9 @@ struct fi_rma_iov {
 };
 \f[R]
 .fi
+.PP
+For 0-byte operations, msg_iov, desc (including FI_MR_LOCAL), and
+iov_count may be ignored.
 .SS fi_inject_write
 .PP
 The write inject call is an optimized version of fi_write.

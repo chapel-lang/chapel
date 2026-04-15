@@ -43,6 +43,7 @@
 #include <net/if.h>
 #include <ofi_util.h>
 #include <ofi_iov.h>
+#include <inttypes.h>
 
 
 static int (*xnet_start_op[xnet_op_max])(struct xnet_ep *ep);
@@ -116,7 +117,7 @@ xnet_get_save_rx(struct xnet_ep *ep, uint64_t tag)
 	assert(ep->cur_rx.hdr_done == ep->cur_rx.hdr_len &&
 	       !ep->cur_rx.claim_ctx);
 
-	FI_DBG(&xnet_prov, FI_LOG_EP_DATA, "Saving msg tag 0x%zx src %zu\n",
+	FI_DBG(&xnet_prov, FI_LOG_EP_DATA, "Saving msg tag 0x%" PRIx64 " src %" PRIu64 "\n",
 	       tag, ep->peer->fi_addr);
 	rx_entry = xnet_alloc_xfer(xnet_srx2_progress(ep->srx));
 	if (!rx_entry)
@@ -255,7 +256,7 @@ void xnet_complete_saved(struct xnet_xfer_entry *saved_entry, void *msg_data)
 
 	msg_len = xnet_msg_len(&saved_entry->hdr);
 	FI_DBG(&xnet_prov, FI_LOG_EP_DATA, "Completing saved msg "
-	       "tag 0x%zx src %zu size %zu\n", saved_entry->tag,
+	       "tag 0x%" PRIx64 " src %" PRIx64 " size %zu\n", saved_entry->tag,
 	       saved_entry->src_addr, msg_len);
 
 	if (msg_len) {
@@ -288,7 +289,7 @@ void xnet_recv_saved(struct xnet_rdm *rdm, struct xnet_xfer_entry *saved_entry,
 	progress = xnet_rdm2_progress(rdm);
 	assert(xnet_progress_locked(progress));
 	FI_DBG(&xnet_prov, FI_LOG_EP_DATA, "recv matched saved msg "
-	       "tag 0x%zx src %zu\n", saved_entry->tag, saved_entry->src_addr);
+	       "tag 0x%" PRIx64 " src %" PRIx64 "\n", saved_entry->tag, saved_entry->src_addr);
 
 	if (saved_entry->ctrl_flags & XNET_FREE_BUF) {
 		buf2free = saved_entry->user_buf;
@@ -950,7 +951,7 @@ static int xnet_handle_write(struct xnet_ep *ep)
 		return -FI_ENOMEM;
 
 	if (ep->cur_rx.hdr.base_hdr.flags & XNET_REMOTE_CQ_DATA) {
-		rx_entry->cq_flags = (FI_COMPLETION | FI_REMOTE_WRITE |
+		rx_entry->cq_flags = (FI_COMPLETION | FI_RMA | FI_REMOTE_WRITE |
 				      FI_REMOTE_CQ_DATA);
 		rma_iov = (struct ofi_rma_iov *) ((uint8_t *) &rx_entry->hdr +
 			   sizeof(rx_entry->hdr.cq_data_hdr));
@@ -1331,7 +1332,7 @@ static void xnet_progress_cqe(struct xnet_progress *progress,
 	struct xnet_pep *pep;
 
 	assert(xnet_io_uring);
-	sockctx = (struct ofi_sockctx *) cqe->user_data;
+	sockctx = (struct ofi_sockctx *)(uintptr_t) cqe->user_data;
 	assert(sockctx);
 	assert(sockctx->uring_sqe_inuse);
 	if (!(cqe ->flags & IORING_CQE_F_MORE))

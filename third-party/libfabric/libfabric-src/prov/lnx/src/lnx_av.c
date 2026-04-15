@@ -75,7 +75,7 @@ lnx_av_lookup_addr(struct lnx_av *av, fi_addr_t addr)
 
 	if (!lp)
 		FI_WARN(&lnx_prov, FI_LOG_CORE,
-			"Invalid fi_addr %#lx\n", addr);
+			"Invalid fi_addr %#" PRIx64 "\n", addr);
 
 	return lp;
 }
@@ -423,6 +423,7 @@ skip:
 						&lp->lp_addr, 1, 0);
 			return rc;
 		}
+
 		la = (struct lnx_address *) lea;
 	}
 

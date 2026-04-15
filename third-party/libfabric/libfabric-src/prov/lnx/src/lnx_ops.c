@@ -38,6 +38,7 @@
 #include <string.h>
 #include <dirent.h>
 #include <ctype.h>
+#include <inttypes.h>
 
 #include <rdma/fi_errno.h>
 #include "ofi_util.h"
@@ -50,6 +51,21 @@
 #include "rdma/fi_ext.h"
 #include "ofi_iov.h"
 #include "lnx.h"
+
+static int (*lnx_select_send_endpoints[LNX_MR_SELECTION_MAX])
+	(struct lnx_ep *lep, fi_addr_t lnx_addr,
+	 struct lnx_core_ep **cep_out, fi_addr_t *core_addr) =
+{
+	[LNX_MR_SELECTION_PER_MSG] = lnx_select_send_endpoints_msg,
+	[LNX_MR_SELECTION_PER_PEER] = lnx_select_send_endpoints_peer,
+};
+
+static void (*lnx_set_send_pair[LNX_MR_SELECTION_MAX])
+	(struct lnx_ep *lep, struct lnx_core_ep *cep, fi_addr_t addr) =
+{
+	[LNX_MR_SELECTION_PER_MSG] = lnx_set_send_pair_noop,
+	[LNX_MR_SELECTION_PER_PEER] = lnx_set_send_pair_peer,
+};
 
 int lnx_get_msg(struct fid_peer_srx *srx, struct fi_peer_match_attr *match,
 		struct fi_peer_rx_entry **entry)
@@ -188,7 +204,7 @@ int lnx_queue_tag(struct fi_peer_rx_entry *entry)
 
 	rx_entry = container_of(entry, struct lnx_rx_entry, rx_entry);
 	FI_DBG(&lnx_prov, FI_LOG_CORE,
-		"addr = %lx tag = %lx ignore = 0 found\n",
+		"addr = %" PRIx64 " tag = %" PRIx64 " ignore = 0 found\n",
 		entry->addr, entry->tag);
 
 	lnx_insert_rx_entry(&lnx_srq->lps_trecv.lqp_unexq, rx_entry);
@@ -219,14 +235,14 @@ int lnx_get_tag(struct fid_peer_srx *srx, struct fi_peer_match_attr *match,
 					  &match_attr);
 	if (rx_entry) {
 		FI_DBG(&lnx_prov, FI_LOG_CORE,
-		       "addr = %lx tag = %lx ignore = 0 found\n",
+		       "addr = %" PRIx64 " tag = %" PRIx64 " ignore = 0 found\n",
 		       match_attr.lm_addr, tag);
 
 		goto assign;
 	}
 
 	FI_DBG(&lnx_prov, FI_LOG_CORE,
-	       "addr = %lx tag = %lx ignore = 0 not found\n",
+	       "addr = %" PRIx64 " tag = %" PRIx64 " ignore = 0 not found\n",
 	       match_attr.lm_addr, tag);
 
 	rx_entry = get_rx_entry(lep, NULL, NULL, 0, addr, tag, 0, NULL,
@@ -246,6 +262,8 @@ int lnx_get_tag(struct fid_peer_srx *srx, struct fi_peer_match_attr *match,
 	goto finalize;
 
 assign:
+	lnx_set_send_pair[lep->le_mr](lep, cep, addr);
+
 	cep->cep_t_stats.st_num_posted_recvs++;
 
 	rx_entry->rx_entry.addr = lnx_get_core_addr(cep, addr);
@@ -283,6 +301,7 @@ lnx_discard(struct lnx_ep *lep, struct lnx_rx_entry *rx_entry, void *context)
 			  rx_entry->rx_entry.cq_data,
 			  rx_entry->rx_entry.tag);
 
+	dlist_remove(&rx_entry->entry);
 	lnx_free_entry(&rx_entry->rx_entry);
 
 	return rc;
@@ -300,7 +319,7 @@ lnx_peek(struct lnx_ep *lep, struct lnx_match_attr *match_attr, void *context,
 					match_attr);
 	if (!rx_entry) {
 		FI_DBG(&lnx_prov, FI_LOG_CORE,
-			"PEEK addr=%lx tag=%lx ignore=%lx\n",
+			"PEEK addr=%" PRIx64 " tag=%" PRIx64 " ignore=%" PRIx64 "\n",
 			match_attr->lm_addr, match_attr->lm_tag,
 			match_attr->lm_ignore);
 		return ofi_cq_write_error_peek(lep->le_ep.rx_cq,
@@ -314,12 +333,17 @@ lnx_peek(struct lnx_ep *lep, struct lnx_match_attr *match_attr, void *context,
 			  rx_entry->rx_entry.tag);
 
 	if (flags & FI_DISCARD) {
+		rc = rx_entry->rx_cep->cep_srx.peer_ops->discard_tag(
+							&rx_entry->rx_entry);
+		dlist_remove(&rx_entry->entry);
 		lnx_free_entry(&rx_entry->rx_entry);
 		goto out;
 	}
 
-	if (flags & FI_CLAIM)
+	if (flags & FI_CLAIM) {
+		dlist_remove(&rx_entry->entry);
 		((struct fi_context *)context)->internal[0] = rx_entry;
+	}
 
 out:
 	return rc;
@@ -377,7 +401,7 @@ static int lnx_process_recv(struct lnx_ep *lep, const struct iovec *iov, void *d
 						&match_attr);
 		if (!rx_entry) {
 			FI_DBG(&lnx_prov, FI_LOG_CORE,
-			"addr=%lx tag=%lx ignore=%lx buf=%p len=%lx not found\n",
+			"addr=%" PRIx64 " tag=%" PRIx64 " ignore=%" PRIx64 " buf=%p len=%zu not found\n",
 			addr, tag, ignore, iov->iov_base, iov->iov_len);
 
 			goto nomatch;
@@ -385,7 +409,7 @@ static int lnx_process_recv(struct lnx_ep *lep, const struct iovec *iov, void *d
 	}
 
 	FI_DBG(&lnx_prov, FI_LOG_CORE,
-	       "addr=%lx tag=%lx ignore=%lx buf=%p len=%lx found\n",
+	       "addr=%" PRIx64 " tag=%" PRIx64 " ignore=%" PRIx64 " buf=%p len=%zu found\n",
 	       addr, tag, ignore, iov->iov_base, iov->iov_len);
 
 	/* match is found in the unexpected queue. call into the core
@@ -406,6 +430,8 @@ static int lnx_process_recv(struct lnx_ep *lep, const struct iovec *iov, void *d
 			return rc;
 	}
 
+	lnx_set_send_pair[lep->le_mr](lep, cep, match_attr.lm_addr);
+
 	if (tagged)
 		rc = cep->cep_srx.peer_ops->start_tag(&rx_entry->rx_entry);
 	else
@@ -416,7 +442,7 @@ static int lnx_process_recv(struct lnx_ep *lep, const struct iovec *iov, void *d
 		 * rx_entry. So keep it on the queue
 		 */
 		FI_DBG(&lnx_prov, FI_LOG_CORE,
-		       "addr = %lx tag = %lx ignore = %lx start_tag() in progress\n",
+		       "addr = %" PRIx64 " tag = %" PRIx64 " ignore = %" PRIx64 " start_tag() in progress\n",
 		       addr, tag, ignore);
 
 		goto insert_recvq;
@@ -425,7 +451,7 @@ static int lnx_process_recv(struct lnx_ep *lep, const struct iovec *iov, void *d
 	}
 
 	FI_DBG(&lnx_prov, FI_LOG_CORE,
-	       "addr = %lx tag = %lx ignore = %lx start_tag() success\n",
+	       "addr = %" PRIx64 " tag = %" PRIx64 " ignore = %" PRIx64 " start_tag() success\n",
 	       addr, tag, ignore);
 
 	return 0;
@@ -527,12 +553,12 @@ ssize_t lnx_tsend(struct fid_ep *ep, const void *buf, size_t len, void *desc,
 	if (!lep)
 		return -FI_ENOSYS;
 
-	rc = lnx_select_send_endpoints(lep, dest_addr, &cep, &core_addr);
+	rc = lnx_select_send_endpoints[lep->le_mr](lep, dest_addr, &cep, &core_addr);
 	if (rc)
 		return rc;
 
 	FI_DBG(&lnx_prov, FI_LOG_CORE,
-	       "sending to %lx tag %lx buf %p len %ld\n",
+	       "sending to %" PRIx64 " tag %" PRIx64 " buf %p len %zu\n",
 	       core_addr, tag, buf, len);
 
 	if (desc) {
@@ -558,19 +584,16 @@ ssize_t lnx_tsendv(struct fid_ep *ep, const struct iovec *iov, void **desc,
 	struct lnx_core_ep *cep;
 	fi_addr_t core_addr;
 
-	if (count > 1)
-		return -FI_EINVAL;
-
 	lep = container_of(ep, struct lnx_ep, le_ep.ep_fid.fid);
 	if (!lep)
 		return -FI_ENOSYS;
 
-	rc = lnx_select_send_endpoints(lep, dest_addr, &cep, &core_addr);
+	rc = lnx_select_send_endpoints[lep->le_mr](lep, dest_addr, &cep, &core_addr);
 	if (rc)
 		return rc;
 
 	FI_DBG(&lnx_prov, FI_LOG_CORE,
-	       "sending to %lx tag %lx buf %p len %ld\n",
+	       "sending to %" PRIx64 " tag %" PRIx64 " buf %p len %zu\n",
 	       core_addr, tag, iov->iov_base, iov->iov_len);
 
 	if (desc && *desc) {
@@ -597,21 +620,18 @@ ssize_t lnx_tsendmsg(struct fid_ep *ep, const struct fi_msg_tagged *msg,
 	struct lnx_core_ep *cep;
 	struct fi_msg_tagged core_msg;
 
-	if (msg->iov_count > 1)
-		return -FI_EINVAL;
-
 	memcpy(&core_msg, msg, sizeof(*msg));
 
 	lep = container_of(ep, struct lnx_ep, le_ep.ep_fid.fid);
 	if (!lep)
 		return -FI_ENOSYS;
 
-	rc = lnx_select_send_endpoints(lep, core_msg.addr, &cep, &core_msg.addr);
+	rc = lnx_select_send_endpoints[lep->le_mr](lep, core_msg.addr, &cep, &core_msg.addr);
 	if (rc)
 		return rc;
 
 	FI_DBG(&lnx_prov, FI_LOG_CORE,
-	       "sending to %lx tag %lx\n",
+	       "sending to %" PRIx64 " tag %" PRIx64 "\n",
 	       core_msg.addr, core_msg.tag);
 
 	if (core_msg.desc && *core_msg.desc) {
@@ -641,12 +661,12 @@ ssize_t lnx_tinject(struct fid_ep *ep, const void *buf, size_t len,
 	if (!lep)
 		return -FI_ENOSYS;
 
-	rc = lnx_select_send_endpoints(lep, dest_addr, &cep, &core_addr);
+	rc = lnx_select_send_endpoints[lep->le_mr](lep, dest_addr, &cep, &core_addr);
 	if (rc)
 		return rc;
 
 	FI_DBG(&lnx_prov, FI_LOG_CORE,
-	       "sending to %lx tag %lx buf %p len %ld\n",
+	       "sending to %" PRIx64 " tag %" PRIx64 " buf %p len %zu\n",
 	       core_addr, tag, buf, len);
 
 	rc = fi_tinject(cep->cep_ep, buf, len, core_addr, tag);
@@ -670,12 +690,12 @@ ssize_t lnx_tsenddata(struct fid_ep *ep, const void *buf, size_t len, void *desc
 	if (!lep)
 		return -FI_ENOSYS;
 
-	rc = lnx_select_send_endpoints(lep, dest_addr, &cep, &core_addr);
+	rc = lnx_select_send_endpoints[lep->le_mr](lep, dest_addr, &cep, &core_addr);
 	if (rc)
 		return rc;
 
 	FI_DBG(&lnx_prov, FI_LOG_CORE,
-	       "sending to %lx tag %lx buf %p len %ld\n",
+	       "sending to %" PRIx64 " tag %" PRIx64 " buf %p len %zu\n",
 	       core_addr, tag, buf, len);
 
 	if (desc) {
@@ -705,12 +725,12 @@ ssize_t lnx_tinjectdata(struct fid_ep *ep, const void *buf, size_t len,
 	if (!lep)
 		return -FI_ENOSYS;
 
-	rc = lnx_select_send_endpoints(lep, dest_addr, &cep, &core_addr);
+	rc = lnx_select_send_endpoints[lep->le_mr](lep, dest_addr, &cep, &core_addr);
 	if (rc)
 		return rc;
 
 	FI_DBG(&lnx_prov, FI_LOG_CORE,
-	       "sending to %lx tag %lx buf %p len %ld\n",
+	       "sending to %" PRIx64 " tag %" PRIx64 " buf %p len %zu\n",
 	       core_addr, tag, buf, len);
 
 	rc = fi_tinjectdata(cep->cep_ep, buf, len, data, core_addr, tag);

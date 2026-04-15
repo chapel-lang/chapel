@@ -5,14 +5,13 @@
 #define EFA_AV_H
 
 #include <infiniband/verbs.h>
-#include "ofi_util.h"
 #include "rdm/efa_rdm_protocol.h"
 #include "rdm/efa_rdm_peer.h"
+#include "efa_ah.h"
+#include "efa_conn.h"
 
 #define EFA_MIN_AV_SIZE (16384)
 #define EFA_SHM_MAX_AV_COUNT       (256)
-
-#define EFA_GID_LEN	16
 
 struct efa_ep_addr {
 	uint8_t			raw[EFA_GID_LEN];
@@ -28,23 +27,6 @@ struct efa_ep_addr_hashable {
 };
 
 #define EFA_EP_ADDR_LEN sizeof(struct efa_ep_addr)
-
-struct efa_ah {
-	uint8_t		gid[EFA_GID_LEN]; /* efa device GID */
-	struct ibv_ah	*ibv_ah; /* created by ibv_create_ah() using GID */
-	uint16_t	ahn; /* adress handle number */
-	int		refcnt; /* reference counter. Multiple efa_conn can share an efa_ah */
-	UT_hash_handle	hh; /* hash map handle, link all efa_ah with efa_ep->ah_map */
-};
-
-struct efa_conn {
-	struct efa_ah *ah;
-	struct efa_ep_addr *ep_addr;
-	fi_addr_t		implicit_fi_addr;
-	fi_addr_t		fi_addr;
-	fi_addr_t		shm_fi_addr;
-	struct dlist_entry	implicit_av_lru_entry;
-};
 
 /* util_av implementation requires the first element of efa_av_entry to be
  * ep_addr */
@@ -128,11 +110,11 @@ int efa_av_reverse_av_add(struct efa_av *av,
 			  struct efa_prv_reverse_av **prv_reverse_av,
 			  struct efa_conn *conn);
 
-struct efa_ah *efa_ah_alloc(struct efa_domain *domain, const uint8_t *gid);
+void efa_av_reverse_av_remove(struct efa_cur_reverse_av **cur_reverse_av,
+				    struct efa_prv_reverse_av **prv_reverse_av,
+				    struct efa_conn *conn);
 
-void efa_ah_release(struct efa_domain *domain, struct efa_ah *ah);
-
-void efa_av_implicit_av_lru_move(struct efa_av *av,
+void efa_av_implicit_av_lru_conn_move(struct efa_av *av,
 					struct efa_conn *conn);
 
 #endif

@@ -47,6 +47,9 @@ ssize_t ucx_do_sendmsg(struct fid_ep *ep, const struct fi_msg_tagged *msg,
 
 	u_ep = container_of(ep, struct ucx_ep, ep.ep_fid);
 	dst_ep = UCX_GET_UCP_EP(u_ep, msg->addr);
+	if (!dst_ep)
+		return -FI_EINVAL;
+
 	cq = u_ep->ep.tx_cq;
 
 	no_completion = (u_ep->ep.tx_op_flags & FI_SELECTIVE_COMPLETION) &&

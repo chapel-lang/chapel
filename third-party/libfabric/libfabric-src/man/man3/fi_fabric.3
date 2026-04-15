@@ -14,7 +14,7 @@
 . ftr VB CB
 . ftr VBI CBI
 .\}
-.TH "fi_fabric" "3" "2024\-12\-10" "Libfabric Programmer\[cq]s Manual" "Libfabric v2.3.1"
+.TH "fi_fabric" "3" "2025\-12\-26" "Libfabric Programmer\[cq]s Manual" "Libfabric v2.5.1"
 .hy
 .SH NAME
 .PP
@@ -106,8 +106,8 @@ struct fi_info, including all substructures and fields
 \f[I]FI_TYPE_EP_TYPE\f[R]
 struct fi_info::type field
 .TP
-\f[I]FI_TYPE_EP_CAP\f[R]
-struct fi_info::ep_cap field
+\f[I]FI_TYPE_CAPS\f[R]
+struct fi_info::caps field
 .TP
 \f[I]FI_TYPE_OP_FLAGS\f[R]
 struct fi_info::op_flags field, or general uint64_t flags
@@ -186,6 +186,30 @@ enum fi_log_level
 .TP
 \f[I]FI_TYPE_LOG_SUBSYS\f[R]
 enum fi_log_subsys
+.TP
+\f[I]FI_TYPE_AV_ATTR\f[R]
+struct fi_av_attr
+.TP
+\f[I]FI_TYPE_CQ_ATTR\f[R]
+struct fi_cq_attr
+.TP
+\f[I]FI_TYPE_MR_ATTR\f[R]
+struct fi_mr_attr
+.TP
+\f[I]FI_TYPE_CNTR_ATTR\f[R]
+struct fi_cntr_attr
+.TP
+\f[I]FI_TYPE_COLLECTIVE_OP\f[R]
+enum fi_collective_op
+.TP
+\f[I]FI_TYPE_CQ_ERR_ENTRY\f[R]
+struct fi_cq_err_entry
+.TP
+\f[I]FI_TYPE_WAIT_OBJ\f[R]
+enum fi_wait_obj
+.TP
+\f[I]FI_TYPE_CQ_WAIT_COND\f[R]
+enum fi_cq_wait_cond
 .PP
 fi_tostr() will return a pointer to an internal libfabric buffer that
 should not be modified, and will be overwritten the next time fi_tostr()

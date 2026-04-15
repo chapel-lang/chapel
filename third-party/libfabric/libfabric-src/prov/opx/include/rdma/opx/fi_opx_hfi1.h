@@ -283,7 +283,7 @@ static inline void fi_opx_store_scb_qw(volatile uint64_t dest[8], const uint64_t
 	volatile uint64_t * const scb =
 		FI_OPX_HFI1_PIO_SCB_HEAD(opx_ep->tx->pio_scb_sop_first, pio_state);
 
-	if ((hfi1_type & (OPX_HFI1_WFR | OPX_HFI1_JKR_9B))) {
+	if ((hfi1_type & (OPX_HFI1_WFR | OPX_HFI1_MIXED_9B))) {
 		OPX_HFI1_BAR_STORE(&scb[0], (model_9B.qw0 | OPX_PBC_CR(0x1, hfi1_type) |
 OPX_PBC_LRH_DLID_TO_PBC_DLID(lrh_dlid, hfi1_type))); OPX_HFI1_BAR_STORE(&scb[1], (model_9B.hdr.qw_9B[0] | lrh_dlid));
 		OPX_HFI1_BAR_STORE(&scb[2], (model_9B.hdr.qw_9B[1] | bth_rx));
@@ -560,14 +560,15 @@ struct fi_opx_hfi1_context {
 
 	} info;
 
-	int		   fd;
+	int		   fd_cdev;
+	int		   fd_verbs;
 	opx_lid_t	   lid;
-	struct _hfi_ctrl  *ctrl;
 	enum opx_hfi1_type hfi1_type;
+	struct _hfi_ctrl  *ctrl;
 	uint32_t	   hfi_unit;
 	uint32_t	   hfi_port;
 	uint16_t	   subctxt_cnt;
-	uint16_t	   unused;
+	uint16_t	   unused[3];
 
 	uint64_t gid_hi;
 	uint64_t gid_lo;
@@ -872,7 +873,8 @@ void opx_print_context(struct fi_opx_hfi1_context *context)
 	/*	Not printing                                Context info.rxe.uregbase                   */
 	FI_DBG(fi_opx_global.prov, FI_LOG_EP_DATA, "Context info.rxe.id                   %#X\n", context->info.rxe.id);
 
-	FI_DBG(fi_opx_global.prov, FI_LOG_EP_DATA, "Context fd                            %#X \n", context->fd);
+	FI_DBG(fi_opx_global.prov, FI_LOG_EP_DATA, "Context fd_cdev                       %#X \n", context->fd_cdev);
+	FI_DBG(fi_opx_global.prov, FI_LOG_EP_DATA, "Context fd_verbs                      %#X \n", context->fd_verbs);
 	FI_DBG(fi_opx_global.prov, FI_LOG_EP_DATA, "Context lid                           %#X \n", context->lid);
 	FI_DBG(fi_opx_global.prov, FI_LOG_EP_DATA, "Context ctrl                          %p  \n", context->ctrl);
 	FI_DBG(fi_opx_global.prov, FI_LOG_EP_DATA, "Context hfi1_type                     %#X \n", context->hfi1_type);

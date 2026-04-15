@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2016 by Argonne National Laboratory.
- * Copyright (C) 2021-2024 Cornelis Networks.
+ * Copyright (C) 2021-2025 Cornelis Networks.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -90,7 +90,7 @@ void fi_opx_set_info(struct fi_info *fi, enum fi_progress progress)
 		.max_ep_tx_ctx	= 160,
 		.max_ep_rx_ctx	= 160,
 		.max_ep_stx_ctx = 0,
-		.max_ep_srx_ctx = SIZE_MAX,
+		.max_ep_srx_ctx = 0,
 		.cntr_cnt	= 0,
 		.mr_iov_limit	= 1,
 		.caps		= FI_LOCAL_COMM | FI_REMOTE_COMM, /* TODO: FI_SHARED_AV */

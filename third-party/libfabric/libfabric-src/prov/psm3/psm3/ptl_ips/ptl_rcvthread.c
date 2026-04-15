@@ -112,6 +112,11 @@ static uint64_t wait_sleep_timeout_count;
 static uint64_t wait_sleep_signal_count;
 static uint64_t wakeup_count;
 
+// The mutex is used to guard rcv_thread_done and rcv_thread_exited for
+// synchronizing with rcv_thread exit.
+static pthread_mutex_t rcv_thread_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t rcv_thread_done  = PTHREAD_COND_INITIALIZER;
+static int rcv_thread_exited;
 
 /*
  * The receive thread knows about the ptl interface, so it can muck with it
@@ -161,10 +166,14 @@ psm2_error_t psm3_ips_ptl_rcvthread_init(ptl_t *ptl_gen, struct ips_recvhdrq *re
 		}
 
 		psmi_hal_add_sw_status(PSM_HAL_PSMI_RUNTIME_RX_THREAD_STARTED);
+		rcv_thread_exited = 0;
 		if (pthread_create(&rcvc->hdrq_threadid, NULL,
 				   ips_ptl_pollintr, ptl->rcvthread)) {
 			close(rcvc->pipefd[0]);
 			close(rcvc->pipefd[1]);
+			rcv_thread_exited = 1;
+			pthread_cond_destroy(&rcv_thread_done);
+			pthread_mutex_destroy(&rcv_thread_mutex);
 			err = psm3_handle_error(ptl->ep, PSM2_EP_DEVICE_FAILURE,
 						"Cannot start receive thread: %s\n",
 						strerror(errno));
@@ -197,6 +206,8 @@ psm2_error_t psm3_ips_ptl_rcvthread_fini(ptl_t *ptl_gen)
 
 	psm3_stats_deregister_type(PSMI_STATSTYPE_RCVTHREAD, rcvc);
 	if (rcvc->hdrq_threadid && psmi_hal_has_sw_status(PSM_HAL_PSMI_RUNTIME_RX_THREAD_STARTED)) {
+		struct timespec ts;
+
 		t_now = get_cycles();
 
 		/* Disable interrupts then kill the receive thread */
@@ -216,7 +227,16 @@ psm2_error_t psm3_ips_ptl_rcvthread_fini(ptl_t *ptl_gen)
 			_HFI_VDBG
 			    ("unable to close pipe to receive thread cleanly\n");
 		}
-		pthread_join(rcvc->hdrq_threadid, NULL);
+		clock_gettime(CLOCK_REALTIME, &ts);
+		// Max time: 2 seconds
+		ts.tv_sec += 2;
+		// pthread_join() should not be used in dlclose path
+		pthread_mutex_lock(&rcv_thread_mutex);
+		while (!rcv_thread_exited) {
+			if (pthread_cond_timedwait(&rcv_thread_done, &rcv_thread_mutex, &ts))
+				break;
+		}
+		pthread_mutex_unlock(&rcv_thread_mutex);
 		psmi_hal_sub_sw_status(PSM_HAL_PSMI_RUNTIME_RX_THREAD_STARTED);
 		rcvc->hdrq_threadid = 0;
 		_HFI_PRDBG("rcvthread poll success %lld/%lld times, "
@@ -226,6 +246,8 @@ psm2_error_t psm3_ips_ptl_rcvthread_fini(ptl_t *ptl_gen)
 
 		pthread_cond_destroy(&wait_condvar);
 		pthread_mutex_destroy(&wait_mutex);
+		pthread_cond_destroy(&rcv_thread_done);
+		pthread_mutex_destroy(&rcv_thread_mutex);
 		wait_signalled = 0;
 	}
 
@@ -598,6 +620,10 @@ void *ips_ptl_pollintr(void *rcvthreadc)
 	}
 
 	PSM2_LOG_MSG("leaving");
+	pthread_mutex_lock(&rcv_thread_mutex);
+	rcv_thread_exited = 1;
+	pthread_cond_signal(&rcv_thread_done);
+	pthread_mutex_unlock(&rcv_thread_mutex);
 	return NULL;
 }
 

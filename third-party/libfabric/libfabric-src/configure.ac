@@ -10,7 +10,7 @@ dnl
 dnl Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.60])
-AC_INIT([libfabric], [2.3.1], [ofiwg@lists.openfabrics.org])
+AC_INIT([libfabric], [2.5.1], [ofiwg@lists.openfabrics.org])
 AC_CONFIG_SRCDIR([src/fabric.c])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_MACRO_DIR(config)
@@ -175,7 +175,20 @@ AC_DEFUN([FI_ARG_ENABLE_SANITIZER],[
                       [],
                       [enable_$1=no])
         AS_IF([test x"$enable_$1" != x"no"],
-              [CFLAGS="-fsanitize=$2 $CFLAGS"])
+              [save_CFLAGS="$CFLAGS"
+               save_LDFLAGS="$LDFLAGS"
+               CFLAGS="-fsanitize=$2 $CFLAGS"
+               LDFLAGS="-fsanitize=$2 $LDFLAGS"
+               AC_MSG_CHECKING([for $3Sanitizer support])
+               AC_LINK_IFELSE([AC_LANG_PROGRAM([[]], [[return 0;]])],
+                              [AC_MSG_RESULT([yes])
+                               AC_DEFINE([ENABLE_]m4_toupper([$1]), [1],
+                                         [defined to 1 if $3Sanitizer is enabled])],
+                              [AC_MSG_RESULT([no])
+                               CFLAGS="$save_CFLAGS"
+                               LDFLAGS="$save_LDFLAGS"
+                               AC_MSG_ERROR([$3Sanitizer requested but compiler/linker support not found.])])
+              ])
 ])
 
 m4_map([FI_ARG_ENABLE_SANITIZER],[
@@ -979,7 +992,7 @@ AC_ARG_WITH([default-monitor],
 	[])
 
 AH_BOTTOM([
-#if defined(__linux__) && (defined(__x86_64__) || defined(__amd64__) || defined(__aarch64__) || (defined(__riscv) && __riscv_xlen == 64)) && ENABLE_MEMHOOKS_MONITOR
+#if defined(__linux__) && (defined(__x86_64__) || defined(__amd64__) || defined(__aarch64__) || (defined(__riscv) && __riscv_xlen == 64)) && ENABLE_MEMHOOKS_MONITOR && !defined(ENABLE_ASAN)
 #define HAVE_MEMHOOKS_MONITOR 1
 #else
 #define HAVE_MEMHOOKS_MONITOR 0

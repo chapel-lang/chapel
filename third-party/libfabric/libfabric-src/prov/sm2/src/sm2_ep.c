@@ -253,6 +253,7 @@ static ssize_t sm2_format_ipc(struct sm2_xfer_entry *xfer_entry, void *ptr,
 {
 	void *base;
 	ssize_t ret;
+	size_t base_length;
 	struct ipc_info *ipc_info = (struct ipc_info *) xfer_entry->user_data;
 
 	xfer_entry->hdr.proto = sm2_proto_ipc;
@@ -261,9 +262,11 @@ static ssize_t sm2_format_ipc(struct sm2_xfer_entry *xfer_entry, void *ptr,
 	ipc_info->device = device;
 
 	ret = ofi_hmem_get_base_addr(ipc_info->iface, ptr, len, &base,
-				     &ipc_info->base_length);
+				     &base_length);
 	if (ret)
 		return ret;
+
+	ipc_info->base_length = (uint64_t) base_length;
 
 	ret = ofi_hmem_get_handle(ipc_info->iface, base, ipc_info->base_length,
 				  (void **) &ipc_info->ipc_handle);

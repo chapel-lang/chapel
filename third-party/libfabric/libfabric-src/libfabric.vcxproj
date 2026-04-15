@@ -872,6 +872,8 @@
   <ItemGroup Condition="'$(Configuration)|$(Platform)'=='Debug-Efa-v142|x64' OR '$(Configuration)|$(Platform)'=='Release-Efa-v142|x64'">
     <ClCompile Include="prov\efa\src\windows\efawin.c" />
     <ClCompile Include="prov\efa\src\efa_av.c" />
+    <ClCompile Include="prov\efa\src\efa_ah.c" />
+    <ClCompile Include="prov\efa\src\efa_conn.c" />
     <ClCompile Include="prov\efa\src\efa_hmem.c" />
     <ClCompile Include="prov\efa\src\efa_device.c" />
     <ClCompile Include="prov\efa\src\efa_domain.c" />
@@ -890,6 +892,7 @@
     <ClCompile Include="prov\efa\src\efa_rma.c" />
     <ClCompile Include="prov\efa\src\efa_cq.c" />
     <ClCompile Include="prov\efa\src\efa_ep.c" />
+    <ClCompile Include="prov\efa\src\efa_direct_ope.c" />
     <ClCompile Include="prov\efa\src\rdm\efa_rdm_ope.c" />
     <ClCompile Include="prov\efa\src\rdm\efa_rdm_rxe_map.c" />
     <ClCompile Include="prov\efa\src\rdm\efa_rdm_atomic.c" />
@@ -1012,6 +1015,8 @@
     <ClInclude Include="prov\efa\src\windows\infiniband\verbs_defs.h" />
     <ClInclude Include="prov\efa\src\efa.h" />
     <ClInclude Include="prov\efa\src\efa_av.h" />
+    <ClInclude Include="prov\efa\src\efa_ah.h" />
+    <ClInclude Include="prov\efa\src\efa_conn.h" />
     <ClInclude Include="prov\efa\src\efa_base_ep.h" />
     <ClInclude Include="prov\efa\src\efa_cntr.h" />
     <ClInclude Include="prov\efa\src\rdm\efa_rdm_ep.h" />
@@ -1020,6 +1025,7 @@
     <ClInclude Include="prov\efa\src\rdm\efa_rdm_atomic.h" />
     <ClInclude Include="prov\efa\src\rdm\efa_rdm_msg.h" />
     <ClInclude Include="prov\efa\src\rdm\efa_rdm_pke.h" />
+    <ClInclude Include="prov\efa\src\rdm\efa_rdm_peer.h" />
     <ClInclude Include="prov\efa\src\rdm\efa_rdm_pkt_type.h" />
     <ClInclude Include="prov\efa\src\rdm\rxr_pkt_type_req.h" />
     <ClInclude Include="prov\efa\src\rdm\efa_rdm_rma.h" />

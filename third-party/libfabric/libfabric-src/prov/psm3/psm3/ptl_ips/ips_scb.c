@@ -90,7 +90,7 @@ psm3_ips_scbctrl_init(const struct ips_proto *proto,
 
 		bufsize = PSMI_ALIGNUP(bufsize, 64);
 
-		alloc_sz = numbufs * bufsize + PSMI_PAGESIZE;
+		alloc_sz = (size_t)numbufs * (size_t)bufsize + PSMI_PAGESIZE;
 		scbc->sbuf_buf_alloc =
 		    psmi_calloc(ep, NETWORK_BUFFERS, 1, alloc_sz);
 		if (scbc->sbuf_buf_alloc == NULL) {

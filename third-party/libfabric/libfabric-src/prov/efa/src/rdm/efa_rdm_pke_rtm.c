@@ -479,6 +479,15 @@ void efa_rdm_pke_handle_rtm_rta_recv(struct efa_rdm_pke *pkt_entry)
 				"Invalid msg_id: %" PRIu32
 				" robuf->exp_msg_id: %" PRIu32 "\n",
 			       msg_id, peer->robuf.exp_msg_id);
+
+#if ENABLE_DEBUG
+			/* Print debug info on reorder error */
+			EFA_WARN(FI_LOG_EP_CTRL,
+			         "  pkt_entry=%p gen=%u\n"
+			         "  Debug info history:\n",
+			         pkt_entry, pkt_entry->gen);
+			efa_rdm_pke_print_debug_info(pkt_entry);
+#endif
 			efa_base_ep_write_eq_error(&ep->base_ep, ret, FI_EFA_ERR_PKT_ALREADY_PROCESSED);
 			efa_rdm_pke_release_rx(pkt_entry);
 			return;
@@ -507,11 +516,12 @@ void efa_rdm_pke_handle_rtm_rta_recv(struct efa_rdm_pke *pkt_entry)
 
 	/*
 	 * efa_rdm_pke_proc_rtm_rta() will write error cq entry if needed,
-	 * thus we do not write error cq entry
+	 * thus we do not write error cq entry.
+	 *
+	 * Even if we hit an error processing the packets contents, we still
+	 * need to slide the recv window so we can continue to do work.
 	 */
-	ret = efa_rdm_pke_proc_rtm_rta(pkt_entry, peer);
-	if (OFI_UNLIKELY(ret))
-		return;
+	(void) efa_rdm_pke_proc_rtm_rta(pkt_entry, peer);
 
 	if (slide_recvwin) {
 		ofi_recvwin_slide((&peer->robuf));
@@ -672,10 +682,10 @@ ssize_t efa_rdm_pke_proc_matched_eager_rtm(struct efa_rdm_pke *pkt_entry)
 	/*
 	 * On success, efa_rdm_pke_copy_data_to_ope will write rx completion,
 	 * release pkt_entry and rxe
+	 * 
+	 * On error, pkt_entry and rxe are released by caller.
 	 */
 	err = efa_rdm_pke_copy_payload_to_ope(pkt_entry, rxe);
-	if (err)
-		efa_rdm_pke_release_rx(pkt_entry);
 
 	return err;
 }
@@ -925,7 +935,13 @@ ssize_t efa_rdm_pke_proc_matched_mulreq_rtm(struct efa_rdm_pke *pkt_entry)
 
 		err = efa_rdm_pke_copy_payload_to_ope(cur, rxe);
 		if (err) {
-			efa_rdm_pke_release_rx(cur);
+			/* On error,
+			 * If this is the first packet (cur == pkt_entry), caller will release it
+			 * If this is NOT the first packet, we release it here
+			 */
+			if (cur != pkt_entry) {
+				efa_rdm_pke_release_rx(cur);
+			}
 			ret = err;
 		}
 
@@ -1206,8 +1222,9 @@ ssize_t efa_rdm_pke_proc_matched_longread_rtm(struct efa_rdm_pke *pkt_entry)
 		    (size_t) rxe->cq_entry.op_context, rxe->total_len);
 
 	err = efa_rdm_pke_post_remote_read_or_nack(ep, pkt_entry, rxe);
-
-	efa_rdm_pke_release_rx(pkt_entry);
+	if (OFI_LIKELY(!err)) {
+		efa_rdm_pke_release_rx(pkt_entry);
+	}
 	return err;
 }
 

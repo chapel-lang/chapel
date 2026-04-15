@@ -19,6 +19,7 @@
 
 #include "cxip.h"
 
+#define CXIP_DBG(...) _CXIP_DBG(FI_LOG_FABRIC, __VA_ARGS__)
 int cxip_cq_def_sz = CXIP_CQ_DEF_SZ;
 int cxip_eq_def_sz = CXIP_EQ_DEF_SZ;
 
@@ -64,10 +65,14 @@ static struct fi_ops_fabric cxip_fab_ops = {
 static int cxip_fabric_close(fid_t fid)
 {
 	struct cxip_fabric *fab;
+	int count;
 
 	fab = container_of(fid, struct cxip_fabric, util_fabric.fabric_fid);
-	if (ofi_atomic_get32(&fab->ref))
+	count = ofi_atomic_get32(&fab->ref);
+	if (count) {
+		CXIP_DBG("FABRIC refcount non-zero:%d returning FI_EBUSY\n", count);
 		return -FI_EBUSY;
+	}
 
 	ofi_fabric_close(&fab->util_fabric);
 	free(fab);

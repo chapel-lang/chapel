@@ -791,4 +791,5 @@ int xnet_rdm_ops_open(struct fid *fid, const char *name,
 		fi_strerror((int) -(err)), (int) err)
 
 void xnet_disable_keepalive(struct xnet_ep *ep);
+int xnet_enable_keepalive(struct xnet_ep *ep);
 #endif //_XNET_H_

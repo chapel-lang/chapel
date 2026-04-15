@@ -258,9 +258,12 @@ static int cxip_cq_close(struct fid *fid)
 {
 	struct cxip_cq *cq = container_of(fid, struct cxip_cq,
 					  util_cq.cq_fid.fid);
+	int count = ofi_atomic_get32(&cq->util_cq.ref);
 
-	if (ofi_atomic_get32(&cq->util_cq.ref))
+	if (count) {
+		CXIP_DBG("CQ refcount non-zero:%d returning FI_EBUSY\n", count);
 		return -FI_EBUSY;
+	}
 
 	if (cq->ep_fd >= 0)
 		close(cq->ep_fd);

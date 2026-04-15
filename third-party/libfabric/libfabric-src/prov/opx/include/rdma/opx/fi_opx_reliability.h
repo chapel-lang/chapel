@@ -327,11 +327,11 @@ struct fi_opx_reliability_tx_replay {
 	uint8_t data[];
 } __attribute__((__aligned__(64)));
 
-#define OPX_REPLAY_HDR(_replay) OPX_REPLAY_HDR_TYPE(_replay, OPX_HFI1_TYPE)
+#define OPX_REPLAY_HDR(_replay) OPX_REPLAY_HDR_TYPE(_replay, OPX_SW_HFI1_TYPE)
 
-#define OPX_REPLAY_HDR_TYPE(_replay, _hfi1_type)                                            \
-	((_hfi1_type & (OPX_HFI1_WFR | OPX_HFI1_JKR_9B)) ? (&((_replay)->scb.scb_9B.hdr)) : \
-							   (&((_replay)->scb.scb_16B.hdr)))
+#define OPX_REPLAY_HDR_TYPE(_replay, _hfi1_type)                                              \
+	((_hfi1_type & (OPX_HFI1_WFR | OPX_HFI1_MIXED_9B)) ? (&((_replay)->scb.scb_9B.hdr)) : \
+							     (&((_replay)->scb.scb_16B.hdr)))
 
 OPX_COMPILE_TIME_ASSERT(offsetof(struct fi_opx_reliability_tx_replay, sdma_we) == FI_OPX_CACHE_LINE_SIZE,
 			"Reliability Replay sdma_we should start on first cacheline!");
@@ -682,7 +682,7 @@ size_t fi_opx_reliability_replay_get_payload_size(struct fi_opx_reliability_tx_r
 
 	/* reported in LRH as the number of 4-byte words in the packet; header + payload + icrc */
 	/* Inlined but called from non-inlined functions with no const hfi1 type, so just use the runtime check */
-	if (OPX_HFI1_TYPE & (OPX_HFI1_WFR | OPX_HFI1_JKR_9B)) {
+	if (OPX_SW_HFI1_TYPE & (OPX_HFI1_WFR | OPX_HFI1_MIXED_9B)) {
 		const uint16_t lrh_pktlen_le = ntohs(replay->scb.scb_9B.hdr.lrh_9B.pktlen);
 		const size_t   total_bytes   = (lrh_pktlen_le - 1) * 4; /* do not copy the trailing icrc */
 		return (total_bytes - sizeof(struct fi_opx_hfi1_stl_packet_hdr_9B));
@@ -975,6 +975,20 @@ int32_t fi_opx_reliability_tx_next_psn(struct fid_ep *ep, struct fi_opx_reliabil
 
 	return psn;
 }
+
+/**
+ * @brief Return an unused PSN.
+ *
+ * If a PSN was allocated, but then we were unable to proceed with using it,
+ * return it so that we don't end up with a gap in PSNs.
+ */
+__OPX_FORCE_INLINE__
+void fi_opx_reliability_tx_return_psn(union fi_opx_reliability_tx_psn *psn_ptr, uint32_t return_psn)
+{
+	assert(((psn_ptr->psn.psn - 1) & MAX_PSN) == return_psn);
+	psn_ptr->psn.psn = (psn_ptr->psn.psn - 1) & MAX_PSN;
+}
+
 __OPX_FORCE_INLINE__
 struct fi_opx_reliability_tx_replay *
 fi_opx_reliability_service_replay_allocate(struct fi_opx_reliability_service *service, const bool use_iov)
@@ -1088,7 +1102,7 @@ void fi_opx_reliability_service_replay_register_with_update(struct fi_opx_reliab
 	opx_lid_t hdr_dlid;
 	uint16_t  hdr_dst_subctxt_rx;
 
-	if (hfi1_type & (OPX_HFI1_WFR | OPX_HFI1_JKR_9B)) {
+	if (hfi1_type & (OPX_HFI1_WFR | OPX_HFI1_MIXED_9B)) {
 		lrh_pktlen_le	   = ntohs(replay->scb.scb_9B.hdr.lrh_9B.pktlen);
 		total_bytes	   = (lrh_pktlen_le - 1) * 4; /* do not copy the trailing icrc */
 		hdr_dlid	   = (opx_lid_t) __be16_to_cpu24((__be16) replay->scb.scb_9B.hdr.lrh_9B.dlid);

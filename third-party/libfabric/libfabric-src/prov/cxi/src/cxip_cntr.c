@@ -751,12 +751,14 @@ static int cxip_cntr_enable(struct cxip_cntr *cxi_cntr)
 static int cxip_cntr_close(struct fid *fid)
 {
 	struct cxip_cntr *cntr;
-	int ret;
+	int ret, count;
 
 	cntr = container_of(fid, struct cxip_cntr, cntr_fid.fid);
-	if (ofi_atomic_get32(&cntr->ref))
+	count = ofi_atomic_get32(&cntr->ref);
+	if (count) {
+		CXIP_DBG("CNTR refcount non-zero:%d returning FI_EBUSY\n", count);
 		return -FI_EBUSY;
-
+	}
 	assert(dlist_empty(&cntr->ctx_list));
 	assert(cntr->progress_count == 0);
 

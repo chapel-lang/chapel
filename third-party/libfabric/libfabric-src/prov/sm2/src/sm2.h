@@ -242,7 +242,7 @@ static inline void sm2_generic_format(struct sm2_xfer_entry *xfer_entry,
 	xfer_entry->hdr.tag = tag;
 	xfer_entry->hdr.sender_gid = self_gid;
 	xfer_entry->hdr.cq_data = cq_data;
-	xfer_entry->hdr.context = (uint64_t) context;
+	xfer_entry->hdr.context = (uint64_t) (uintptr_t) context;
 }
 
 struct sm2_xfer_ctx {

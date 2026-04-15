@@ -19,19 +19,25 @@
 
 #define CXIP_DBG(...) _CXIP_DBG(FI_LOG_EP_CTRL, __VA_ARGS__)
 #define CXIP_WARN(...) _CXIP_WARN(FI_LOG_EP_CTRL, __VA_ARGS__)
+#define CXIP_INFO(...) _CXIP_INFO(FI_LOG_EP_CTRL, __VA_ARGS__)
 
 extern struct fi_ops_rma cxip_ep_rma_ops;
 extern struct fi_ops_rma cxip_ep_rma_no_ops;
+extern struct fi_ops_rma cxip_ep_rma_writedata_ops;
 
 extern struct fi_ops_msg cxip_ep_msg_ops;
 extern struct fi_ops_msg cxip_ep_msg_no_ops;
 extern struct fi_ops_msg cxip_ep_msg_no_tx_ops;
 extern struct fi_ops_msg cxip_ep_msg_no_rx_ops;
+extern struct fi_ops_msg cxip_ep_msg_ops_no_writedata;
+extern struct fi_ops_msg cxip_ep_msg_no_rx_ops_no_writedata;
 
 extern struct fi_ops_tagged cxip_ep_tagged_ops;
 extern struct fi_ops_tagged cxip_ep_tagged_no_ops;
 extern struct fi_ops_tagged cxip_ep_tagged_no_tx_ops;
 extern struct fi_ops_tagged cxip_ep_tagged_no_rx_ops;
+extern struct fi_ops_tagged cxip_ep_tagged_ops_no_writedata;
+extern struct fi_ops_tagged cxip_ep_tagged_no_rx_ops_no_writedata;
 
 extern struct fi_ops_atomic cxip_ep_atomic_ops;
 extern struct fi_ops_atomic cxip_ep_atomic_no_ops;
@@ -717,29 +723,62 @@ static int cxip_ep_enable(struct fid_ep *fid_ep)
 
 	/* Enable only appropriate API functions based on primary/secondary
 	 * capabilities. Send/Receive requires FI_MSG or FI_TAGGED.
+	 *
+	 * For FI_TAGGED operations, check if writedata is supported.
+	 * If tx_attr.caps includes FI_TAGGED and domain->msg_cq_data_size is non-zero,
+	 * use ops table with fi_tagged_senddata/fi_tagged_injectdata implementations.
+	 * Otherwise, use ops table with fi_no_tagged_senddata/fi_no_tagged_injectdata.
 	 */
 	if (ofi_send_allowed(ep->tx_attr.caps & ~FI_MSG) &&
-	    ofi_recv_allowed(ep->rx_attr.caps & ~FI_MSG))
-		ep->ep.tagged = &cxip_ep_tagged_ops;
-	else if (ofi_send_allowed(ep->tx_attr.caps & ~FI_MSG))
-		ep->ep.tagged = &cxip_ep_tagged_no_rx_ops;
-	else if (ofi_recv_allowed(ep->rx_attr.caps & ~FI_MSG))
+	    ofi_recv_allowed(ep->rx_attr.caps & ~FI_MSG)) {
+		if ((ep->tx_attr.caps & FI_TAGGED) && ep_obj->domain->msg_cq_data_size)
+			ep->ep.tagged = &cxip_ep_tagged_ops;
+		else
+			ep->ep.tagged = &cxip_ep_tagged_ops_no_writedata;
+	} else if (ofi_send_allowed(ep->tx_attr.caps & ~FI_MSG)) {
+		if ((ep->tx_attr.caps & FI_TAGGED) && ep_obj->domain->msg_cq_data_size)
+			ep->ep.tagged = &cxip_ep_tagged_no_rx_ops;
+		else
+			ep->ep.tagged = &cxip_ep_tagged_no_rx_ops_no_writedata;
+	} else if (ofi_recv_allowed(ep->rx_attr.caps & ~FI_MSG)) {
 		ep->ep.tagged = &cxip_ep_tagged_no_tx_ops;
+	}
 
+	/* For FI_MSG operations, check if writedata is supported.
+	 * If tx_attr.caps includes FI_MSG and domain->msg_cq_data_size is non-zero,
+	 * use ops table with fi_senddata/fi_injectdata implementations.
+	 * Otherwise, use ops table with fi_no_msg_senddata/fi_no_msg_injectdata.
+	 */
 	if (ofi_send_allowed(ep->tx_attr.caps & ~FI_TAGGED) &&
-	    ofi_recv_allowed(ep->rx_attr.caps & ~FI_TAGGED))
-		ep->ep.msg = &cxip_ep_msg_ops;
-	else if (ofi_send_allowed(ep->tx_attr.caps & ~FI_TAGGED))
-		ep->ep.msg = &cxip_ep_msg_no_rx_ops;
-	else if (ofi_recv_allowed(ep->rx_attr.caps & ~FI_TAGGED))
+	    ofi_recv_allowed(ep->rx_attr.caps & ~FI_TAGGED)) {
+		if ((ep->tx_attr.caps & FI_MSG) && ep_obj->domain->msg_cq_data_size)
+			ep->ep.msg = &cxip_ep_msg_ops;
+		else
+			ep->ep.msg = &cxip_ep_msg_ops_no_writedata;
+	} else if (ofi_send_allowed(ep->tx_attr.caps & ~FI_TAGGED)) {
+		if ((ep->tx_attr.caps & FI_MSG) && ep_obj->domain->msg_cq_data_size)
+			ep->ep.msg = &cxip_ep_msg_no_rx_ops;
+		else
+			ep->ep.msg = &cxip_ep_msg_no_rx_ops_no_writedata;
+	} else if (ofi_recv_allowed(ep->rx_attr.caps & ~FI_TAGGED)) {
 		ep->ep.msg = &cxip_ep_msg_no_tx_ops;
+	}
 
 	/* Initiate requires FI_RMA or FI_ATOMIC */
 	if (ofi_rma_initiate_allowed(ep->tx_attr.caps & ~FI_RMA))
 		ep->ep.atomic = &cxip_ep_atomic_ops;
 
-	if (ofi_rma_initiate_allowed(ep->tx_attr.caps & ~FI_ATOMIC))
-		ep->ep.rma = &cxip_ep_rma_ops;
+	if (ofi_rma_initiate_allowed(ep->tx_attr.caps & ~FI_ATOMIC)) {
+		/* Select RMA ops variant. Enable writedata/injectdata only if:
+		 *  - FI_RMA is present in tx_attr.caps
+		 *  - domain has non-zero rma_cq_data_size (remote CQ data supported)
+		 */
+		if ((ep->tx_attr.caps & FI_RMA) && ep_obj->domain->rma_cq_data_size) {
+			ep->ep.rma = &cxip_ep_rma_writedata_ops;
+		} else {
+			ep->ep.rma = &cxip_ep_rma_ops;
+		}
+	}
 
 	ep_obj->enabled = true;
 	ofi_genlock_unlock(&ep_obj->lock);
@@ -800,7 +839,7 @@ int cxip_free_endpoint(struct cxip_ep *ep)
 	 */
 	count = ofi_atomic_get32(&ep_obj->ref);
 	if (count) {
-		CXIP_WARN("EP refcount non-zero: %d\n", count);
+		CXIP_WARN("EP refcount non-zero:%d\n", count);
 		return -FI_EBUSY;
 	}
 
@@ -1608,3 +1647,4 @@ int cxip_endpoint(struct fid_domain *domain, struct fi_info *info,
 
 	return FI_SUCCESS;
 }
+

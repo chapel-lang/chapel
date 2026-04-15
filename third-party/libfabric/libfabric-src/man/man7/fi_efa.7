@@ -14,7 +14,7 @@
 . ftr VB CB
 . ftr VBI CBI
 .\}
-.TH "fi_efa" "7" "2025\-08\-29" "Libfabric Programmer\[cq]s Manual" "Libfabric v2.3.1"
+.TH "fi_efa" "7" "2026\-03\-19" "Libfabric Programmer\[cq]s Manual" "Libfabric v2.5.1"
 .hy
 .SH NAME
 .PP
@@ -92,7 +92,12 @@ The provider supports \f[I]FI_CQ_FORMAT_CONTEXT\f[R],
 \f[I]FI_CQ_FORMAT_MSG\f[R], and \f[I]FI_CQ_FORMAT_DATA\f[R].
 \f[I]FI_CQ_FORMAT_TAGGED\f[R] is supported on the \f[V]efa\f[R] fabric
 of RDM endpoint.
-Wait objects are not currently supported.
+.PP
+The \f[V]efa\f[R] and \f[V]efa-direct\f[R] fabrics for RDM endpoints
+support \f[I]FI_WAIT_UNSPEC\f[R] and \f[I]FI_WAIT_FD\f[R] wait objects
+for blocking CQ operations (\f[I]fi_cq_sread\f[R]).
+.PP
+DGRAM endpoints do not support wait objects.
 .TP
 \f[I]Modes\f[R]
 The provider requires the use of \f[I]FI_MSG_PREFIX\f[R] when running
@@ -127,9 +132,17 @@ Both RDM and DGRAM endpoints supports \f[I]FI_THREAD_SAFE\f[R].
 .SH LIMITATIONS
 .SS Completion events
 .IP \[bu] 2
-Synchronous CQ read is not supported.
+DGRAM endpoints do not support synchronous CQ reads
+(\f[I]fi_cq_sread\f[R]) or wait objects.
 .IP \[bu] 2
-Wait objects are not currently supported.
+\f[I]FI_WAIT_FD\f[R] is not supported for RDM endpoints with SHM
+transfers enabled.
+Valid wait objects are \f[I]FI_WAIT_NONE\f[R] or
+\f[I]FI_WAIT_UNSPEC\f[R].
+Blocking read via \f[I]fi_cq_sread()\f[R] is supported and will wait on
+SHM completions.
+When SHM transfers are disabled, \f[I]FI_WAIT_FD\f[R] wait objects are
+supported.
 .SS RMA operations
 .IP \[bu] 2
 Completion events for RMA targets (\f[I]FI_RMA_EVENT\f[R]) is not
@@ -230,6 +243,15 @@ When set to true, the target side of a RMA operation must insert the
 initiator side\[cq]s address into AV before the RMA operation is kicked
 off, due to a current device limitation.
 The default value is false.
+.TP
+\f[I]FI_OPT_EFA_USE_UNSOLICITED_WRITE_RECV - bool\f[R]
+This option only applies to the fi_setopt() call.
+It is used to disable unsolicited write recv for this endpoint, which
+can reduce the likelihood of CQ overflow.
+The default value is true.
+For efa-direct, FI_RX_CQ_DATA is required when
+FI_OPT_EFA_USE_UNSOLICITED_WRITE_RECV is false, or it will return
+-FI_EOPNOTSUPP for the call to fi_setopt().
 .SH PROVIDER SPECIFIC DOMAIN OPS
 .PP
 The efa provider exports extensions for operations that are not provided
@@ -664,6 +686,14 @@ Use the direct data path implementation that bypasses rdma-core on data
 path, including the CQ polling and TX/RX submissions, when it\[cq]s
 available.
 Setting this variable as 0 will disable this feature (Default: true).
+.TP
+\f[I]FI_EFA_TRACK_MR\f[R]
+Enable tracking of memory registrations to detect if any outstanding
+operations still reference an MR when it is closed.
+When enabled, the provider will print a warning message if an MR is
+closed while TX or RX operations still reference it.
+This is useful for debugging memory registration issues.
+(Default: false).
 .SH SEE ALSO
 .PP
 \f[V]fabric\f[R](7), \f[V]fi_provider\f[R](7), \f[V]fi_getinfo\f[R](3)

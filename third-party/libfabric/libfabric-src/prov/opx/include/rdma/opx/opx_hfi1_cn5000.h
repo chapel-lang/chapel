@@ -47,7 +47,7 @@ __OPX_FORCE_INLINE__
 int opx_select_port_index(int unit)
 {
 	FI_DBG_TRACE(fi_opx_global.prov, FI_LOG_EP_DATA, "[HFI1-DIRECT] %s, unit %d\n",
-		     OPX_HFI1_TYPE_STRING(OPX_HFI1_TYPE), unit);
+		     OPX_HFI1_TYPE_STRING(OPX_SW_HFI1_TYPE), unit);
 
 	/* The environment variable is the user-visible "port" number (PSM2
 	 * legacy), but the HFI1 wants a port index.
@@ -75,8 +75,9 @@ int opx_select_port_index(int unit)
 		/* check if port is usable and swap if it's down,
 		   assuming here that at least one port is working */
 		if (opx_hfi_get_port_lid(unit, port) <= 0) {
-			FI_WARN(&fi_opx_provider, FI_LOG_FABRIC, "[HFI1-DIRECT] port index %d failed, use %d, pid %d\n",
-				port_index, port_index ? 0 : 1, getpid());
+			FI_TRACE(&fi_opx_provider, FI_LOG_FABRIC,
+				 "[HFI1-DIRECT] port index %d failed, use %d, pid %d\n", port_index, port_index ? 0 : 1,
+				 getpid());
 			port_index = port_index ? 0 : 1;
 			port	   = port_index + 1;
 		}
@@ -125,17 +126,17 @@ __off64_t opx_hfi_mmap_rheq_token(const struct hfi1_ctxt_info *ctxt_info)
 {
 	__off64_t token = OPX_HFI1_MMAP_TOKEN(OPX_RCV_RHEQ, ctxt_info->ctxt, ctxt_info->subctxt, 0);
 	FI_DBG_TRACE(fi_opx_global.prov, FI_LOG_EP_DATA, "[HFI1-DIRECT] %s ctxt %u, subctxt %u token %#lX\n",
-		     OPX_HFI1_TYPE_STRING(OPX_HFI1_TYPE), ctxt_info->ctxt, ctxt_info->subctxt, token);
+		     OPX_HFI1_TYPE_STRING(OPX_SW_HFI1_TYPE), ctxt_info->ctxt, ctxt_info->subctxt, token);
 	return token;
 }
 
 __OPX_FORCE_INLINE__
 void opx_sw_trigger(void)
 {
-	FI_DBG_TRACE(fi_opx_global.prov, FI_LOG_EP_DATA, "[HFI1-DIRECT] %s\n", OPX_HFI1_TYPE_STRING(OPX_HFI1_TYPE));
+	FI_DBG_TRACE(fi_opx_global.prov, FI_LOG_EP_DATA, "[HFI1-DIRECT] %s\n", OPX_HFI1_TYPE_STRING(OPX_SW_HFI1_TYPE));
 
 #ifdef OPX_TRIGGER
-	if (OPX_HFI1_TYPE & OPX_HFI1_WFR) {
+	if (OPX_SW_HFI1_TYPE & OPX_HFI1_WFR) {
 		return; /* not supported */
 	}
 	const char    *resource0path		= "/sys/class/infiniband/hfi1_0/device/resource0";

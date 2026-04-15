@@ -83,6 +83,11 @@ struct psm2_mq_perf_data
 {
 	pthread_t perf_print_thread;
 	int perf_print_stats;
+	// The mutex is used to guard perf_print_done and perf_print_exited
+	// for synchronizing with perf_print_thread exit only.
+	pthread_mutex_t perf_print_mutex;
+	pthread_cond_t perf_print_done;
+	int perf_print_exited;
 };
 
 struct psm3_mq_window_rv_entry {

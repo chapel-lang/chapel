@@ -52,8 +52,8 @@ struct ofi_shm_p2p_ops {
 	bool initialized;
 	int (*init)(void);
 	int (*cleanup)(void);
-	int (*copy)(struct iovec *local, unsigned long local_cnt,
-		    struct iovec *remote, unsigned long remote_cnt,
+	int (*copy)(struct iovec *local, size_t local_cnt,
+		    struct iovec *remote, size_t remote_cnt,
 		    size_t total, pid_t pid, bool write, void *user_data);
 };
 
@@ -68,8 +68,8 @@ static inline int ofi_shm_p2p_no_cleanup(void)
 }
 
 static inline int
-ofi_shm_p2p_no_copy(struct iovec *local, unsigned long local_cnt,
-		    struct iovec *remote, unsigned long remote_cnt,
+ofi_shm_p2p_no_copy(struct iovec *local, size_t local_cnt,
+		    struct iovec *remote, size_t remote_cnt,
 		    size_t total, pid_t pid, bool write, void *user_data)
 {
 	return -FI_ENOSYS;

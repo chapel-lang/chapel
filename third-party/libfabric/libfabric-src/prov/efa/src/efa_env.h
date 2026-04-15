@@ -75,6 +75,11 @@ struct efa_env {
 	 * Value of 0 means there is no limit on the size.
 	 */
 	size_t implicit_av_size;
+	/**
+	 * Enable tracking of memory registrations to detect if any outstanding
+	 * operations still reference an MR when it is closed.
+	 */
+	int track_mr;
 };
 
 extern struct efa_env efa_env;

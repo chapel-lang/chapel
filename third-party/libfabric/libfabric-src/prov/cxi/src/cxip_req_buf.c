@@ -315,7 +315,7 @@ int cxip_req_bufpool_init(struct cxip_rxc_hpc *rxc)
 	struct cxip_ptelist_bufpool_attr attr = {
 		.list_type = C_PTL_LIST_REQUEST,
 		.ptelist_cb = cxip_req_buf_cb,
-		.buf_size = cxip_env.req_buf_size,
+		.buf_size = rxc->base.domain->req_buf_size,
 		.min_space_avail = CXIP_REQ_BUF_HEADER_MAX_SIZE +
 				   rxc->max_eager_size,
 		.min_posted = cxip_env.req_buf_min_posted,

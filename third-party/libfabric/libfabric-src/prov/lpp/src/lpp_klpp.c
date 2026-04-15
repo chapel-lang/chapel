@@ -280,7 +280,7 @@ int klpp_ep_enable(struct lpp_ep *lpp_epp)
 	klppioc.cntr_remote_read_id	= PTR_TO_ID(lpp_epp->cntr_remote_read);
 	klppioc.cntr_remote_write_id	= PTR_TO_ID(lpp_epp->cntr_remote_write);
 
-	klppioc.io_stat_uaddr = (uint64_t)lpp_epp->io_stat;
+	klppioc.io_stat_uaddr = (uint64_t)(uintptr_t)lpp_epp->io_stat;
 
 	status = KLPP_IOCTL(lpp_epp->domain->fd, KLPPIOC_EP_ENABLE, &klppioc);
 
@@ -357,12 +357,12 @@ int klpp_readwrite(struct lpp_ep *lpp_epp, fi_addr_t addr, uint64_t length,
 
 	ioc_readwrite.ep_id = lpp_epp->id;
 	ioc_readwrite.fi_addr = addrstor.fi_addr;
-	ioc_readwrite.local_uaddr = (uint64_t)local_uaddr;
+	ioc_readwrite.local_uaddr = (uint64_t)(uintptr_t)local_uaddr;
 	ioc_readwrite.remote_uaddr = remote_uaddr;
 	ioc_readwrite.remote_key = remote_key;
 	ioc_readwrite.length = length;
 	ioc_readwrite.flags = flags;
-	ioc_readwrite.context = (uint64_t)context;
+	ioc_readwrite.context = (uint64_t)(uintptr_t)context;
 
 	return KLPP_IOCTL(lpp_epp->domain->fd, KLPPIOC_READWRITE, &ioc_readwrite);
 }
@@ -375,10 +375,10 @@ int klpp_umc_acquire(struct lpp_domain *lpp_domain, klpp_id_t *umc_id,
 	struct klpp_ioc_umc ioc;
 	int ret;
 
-	ioc.rx_base_uaddr = (uint64_t)rx_base;
-	ioc.tx_base_uaddr = (uint64_t)tx_base;
-	ioc.k2u_base_uaddr = (uint64_t)k2u_base;
-	ioc.u2k_base_uaddr = (uint64_t)u2k_base;
+	ioc.rx_base_uaddr = (uint64_t)(uintptr_t)rx_base;
+	ioc.tx_base_uaddr = (uint64_t)(uintptr_t)tx_base;
+	ioc.k2u_base_uaddr = (uint64_t)(uintptr_t)k2u_base;
+	ioc.u2k_base_uaddr = (uint64_t)(uintptr_t)u2k_base;
 	ioc.ep_addr = ep_addr;
 	ioc.port = *port;
 
@@ -412,7 +412,7 @@ int klpp_kmc_send_one(struct lpp_ep *lpp_epp, struct lpp_fi_addr dst_addr,
 
 	ioc.dst_addr = dst_addr;
 	ioc.msg_hdr = *hdr;
-	ioc.iov_ptr = (__u64)iov;
+	ioc.iov_ptr = (__u64)(uintptr_t)iov;
 	ioc.iov_cnt = (__u64)iov_count;
 	ioc.kmc_flags = lpp_disable_dqp ? KLPPIOCF_KMC_NODQP : 0;
 	ioc.next_ptr = 0;

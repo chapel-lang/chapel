@@ -30,6 +30,7 @@
  * SOFTWARE.
  */
 
+#include <inttypes.h>
 #include "coll.h"
 #include "ofi_coll.h"
 
@@ -94,8 +95,8 @@ static void coll_log_work(struct util_coll_operation *coll_op)
 						 struct util_coll_xfer_item,
 						 hdr);
 			FI_DBG(coll_op->mc->av_set->av->prov, FI_LOG_CQ,
-			       "\t%ld: { %p [%s] SEND TO: 0x%02x FROM: 0x%02lx "
-			       "cnt: %d typesize: %ld tag: 0x%02lx }\n",
+			       "\t%zu: { %p [%s] SEND TO: 0x%02x FROM: 0x%02" PRIx64 " "
+			       "cnt: %d typesize: %zu tag: 0x%02" PRIx64 " }\n",
 			       count, cur_item,
 			       log_util_coll_state[cur_item->state],
 			       xfer_item->remote_rank, coll_op->mc->local_rank,
@@ -109,38 +110,38 @@ static void coll_log_work(struct util_coll_operation *coll_op)
 						 struct util_coll_xfer_item,
 						 hdr);
 			FI_DBG(coll_op->mc->av_set->av->prov, FI_LOG_CQ,
-			       "\t%ld: { %p [%s] RECV FROM: 0x%02x TO: 0x%02lx "
-			       "cnt: %d typesize: %ld tag: 0x%02lx }\n",
+			       "\t%zu: { %p [%s] RECV FROM: 0x%02" PRIx64 " TO: 0x%02" PRIx64 " "
+			       "cnt: %zu typesize: %zu tag: 0x%02" PRIx64 " }\n",
 			       count, cur_item,
 			       log_util_coll_state[cur_item->state],
-			       xfer_item->remote_rank, coll_op->mc->local_rank,
-			       xfer_item->count,
+			       (uint64_t)xfer_item->remote_rank, (uint64_t)coll_op->mc->local_rank,
+			       (size_t)xfer_item->count,
 			       ofi_datatype_size(xfer_item->datatype),
-			       xfer_item->tag);
+			       (uint64_t)xfer_item->tag);
 			break;
 
 		case UTIL_COLL_REDUCE:
 			FI_DBG(coll_op->mc->av_set->av->prov, FI_LOG_CQ,
-			       "\t%ld: { %p [%s] REDUCTION }\n",
+			       "\t%zu: { %p [%s] REDUCTION }\n",
 			       count, cur_item,
 			       log_util_coll_state[cur_item->state]);
 			break;
 
 		case UTIL_COLL_COPY:
 			FI_DBG(coll_op->mc->av_set->av->prov, FI_LOG_CQ,
-			       "\t%ld: { %p [%s] COPY }\n", count, cur_item,
+			       "\t%zu: { %p [%s] COPY }\n", count, cur_item,
 			       log_util_coll_state[cur_item->state]);
 			break;
 
 		case UTIL_COLL_COMP:
 			FI_DBG(coll_op->mc->av_set->av->prov, FI_LOG_CQ,
-			       "\t%ld: { %p [%s] COMPLETION }\n", count, cur_item,
+			       "\t%zu: { %p [%s] COMPLETION }\n", count, cur_item,
 			       log_util_coll_state[cur_item->state]);
 			break;
 
 		default:
 			FI_DBG(coll_op->mc->av_set->av->prov, FI_LOG_CQ,
-			       "\t%ld: { %p [%s] UNKNOWN }\n", count, cur_item,
+			       "\t%zu: { %p [%s] UNKNOWN }\n", count, cur_item,
 			       log_util_coll_state[cur_item->state]);
 			break;
 		}
@@ -615,7 +616,7 @@ static int coll_do_scatter(struct util_coll_operation *coll_op,
 				remote_rank -= numranks;
 
 			FI_DBG(coll_op->mc->av_set->av->prov, FI_LOG_CQ,
-			       "MASK: 0x%0lx CUR_CNT: %ld SENDING: %ld TO: %ld\n",
+			       "MASK: 0x%0" PRIx64 " CUR_CNT: %zu SENDING: %zu TO: %" PRId64 "\n",
 			       mask, cur_cnt, send_cnt, remote_rank);
 
 			assert(send_cnt > 0);
@@ -793,7 +794,7 @@ static ssize_t coll_process_xfer_item(struct util_coll_xfer_item *item)
 		ret = fi_tsendmsg(ep->peer_ep, &msg, FI_PEER_TRANSFER);
 		if (!ret)
 			FI_DBG(coll_op->mc->av_set->av->prov, FI_LOG_CQ,
-			       "%p SEND [0x%02lx] -> [0x%02x] cnt: %d sz: %ld\n",
+			       "%p SEND [0x%02" PRIx64 "] -> [0x%02x] cnt: %d sz: %zu\n",
 			       item, coll_op->mc->local_rank, item->remote_rank,
 			       item->count,
 			       item->count * ofi_datatype_size(item->datatype));
@@ -802,7 +803,7 @@ static ssize_t coll_process_xfer_item(struct util_coll_xfer_item *item)
 		ret = fi_trecvmsg(ep->peer_ep, &msg, FI_PEER_TRANSFER);
 		if (!ret)
 			FI_DBG(coll_op->mc->av_set->av->prov, FI_LOG_CQ,
-			       "%p RECV [0x%02lx] <- [0x%02x] cnt: %d sz: %ld\n",
+			       "%p RECV [0x%02" PRIx64 "] <- [0x%02x] cnt: %d sz: %zu\n",
 			       item, coll_op->mc->local_rank, item->remote_rank,
 			       item->count,
 			       item->count * ofi_datatype_size(item->datatype));
@@ -1227,11 +1228,11 @@ ssize_t coll_peer_xfer_complete(struct fid_ep *ep,
 
 	coll_op = xfer_item->hdr.coll_op;
 	FI_DBG(coll_op->mc->av_set->av->prov, FI_LOG_CQ,
-	       "\tXfer complete: { %p %s Remote: 0x%02x Local: "
-	       "0x%02lx cnt: %d typesize: %ld }\n", xfer_item,
+	       "\tXfer complete: { %p %s Remote: 0x%02" PRIx64 " Local: "
+	       "0x%02" PRIx64 " cnt: %zu typesize: %zu }\n", xfer_item,
 	       xfer_item->hdr.type == UTIL_COLL_SEND ? "SEND" : "RECV",
-	       xfer_item->remote_rank, coll_op->mc->local_rank,
-	       xfer_item->count, ofi_datatype_size(xfer_item->datatype));
+	       (uint64_t)xfer_item->remote_rank, (uint64_t)coll_op->mc->local_rank,
+	       (size_t)xfer_item->count, ofi_datatype_size(xfer_item->datatype));
 
 	util_ep = container_of(coll_op->ep, struct util_ep, ep_fid);
 	coll_progress_work(util_ep, coll_op);
@@ -1252,11 +1253,11 @@ ssize_t coll_peer_xfer_error(struct fid_ep *ep, struct fi_cq_err_entry *cqerr)
 	(void) coll_op;
 
 	FI_DBG(coll_op->mc->av_set->av->prov, FI_LOG_CQ,
-	       "\tXfer error: { %p %s Remote: 0x%02x Local: "
-	       "0x%02lx cnt: %d typesize: %ld }\n", xfer_item,
+	       "\tXfer error: { %p %s Remote: 0x%02" PRIx64 " Local: "
+	       "0x%02" PRIx64 " cnt: %zu typesize: %zu }\n", xfer_item,
 	       xfer_item->hdr.type == UTIL_COLL_SEND ? "SEND" : "RECV",
-	       xfer_item->remote_rank, coll_op->mc->local_rank,
-	       xfer_item->count, ofi_datatype_size(xfer_item->datatype));
+	       (uint64_t)xfer_item->remote_rank, (uint64_t)coll_op->mc->local_rank,
+	       (size_t)xfer_item->count, ofi_datatype_size(xfer_item->datatype));
 
 	/* TODO: finish the work with error */
 
