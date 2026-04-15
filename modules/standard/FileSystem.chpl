@@ -486,8 +486,9 @@ private proc copyTreeHelper(src: string, dest: string, copySymbolically: bool=fa
     }
   }
 
-
-  for filename in listDir(path=src, dirs=false, files=true, listlinks=true) {
+  var lsDirErr: owned Error? = nil;
+  for filename in listDirHelper(path=src, dirs=false, files=true,
+                                listlinks=true, hidden=true, err=lsDirErr) {
     // Take care of files in src
     var fileDestName = dest + "/" + filename;
     var fileSrcName = src + "/" + filename;
@@ -501,8 +502,10 @@ private proc copyTreeHelper(src: string, dest: string, copySymbolically: bool=fa
       try copy(fileSrcName, fileDestName, metadata=metadata);
     }
   }
+  if lsDirErr != nil then throw (lsDirErr:owned class);
 
-  for dirname in listDir(path=src, dirs=true, files=false, listlinks=true) {
+  for dirname in listDirHelper(path=src, dirs=true, files=false,
+                               listlinks=true, hidden=true, err=lsDirErr) {
     var dirDestName = dest+"/"+dirname;
     var dirSrcName = src+"/"+dirname;
     if (try isSymlink(dirSrcName) && copySymbolically) {
@@ -515,6 +518,7 @@ private proc copyTreeHelper(src: string, dest: string, copySymbolically: bool=fa
       try copyTreeHelper(dirSrcName, dirDestName, copySymbolically);
     }
   }
+  if lsDirErr != nil then throw (lsDirErr:owned class);
 }
 
 /* Obtains and returns the current working directory for this locale.
