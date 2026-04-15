@@ -33,13 +33,16 @@ if [[ "$SKIP_ML_PLAYGROUND" == "1" ]]; then
   exit
 fi
 
-# Test what happens to performance if we disable the
-# --interprocedural-alias-analysis pass by default
+# Test what happens to performance if all references to compiler-generated
+# symbols in the Chapel runtime are replaced with indirect references to
+# the same data that are accessed via struct field reads.
+#
+# E.g., 'CHPL_COMM' is replaced with 'program->data.CHPL_COMM'.
 
-GITHUB_USER=bradcray
-GITHUB_BRANCH=no-noAliasSets2
-SHORT_NAME=noAliasAnalysis
-START_DATE=2/19/26
+GITHUB_USER=dlongnecke-cray
+GITHUB_BRANCH=dynamic-loading-runtime-explore
+SHORT_NAME=runtimeIndirectlyReferencesProgramData
+START_DATE=4/14/26
 
 set -e
 checkout_branch $GITHUB_USER $GITHUB_BRANCH
