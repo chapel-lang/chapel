@@ -333,9 +333,10 @@ proc getSrcCode(sourceList: list(srcSource),
             checkoutSource(destination, "v" + version, quiet=!show);
           } catch e: MasonError {
             errors.pushBack(e.message());
-          } catch {
+          } catch e {
             errors.pushBack("An unknown error occurred while " +
-                            "installing dependency " + nameVers);
+                            "installing dependency " + nameVers +
+                            ": " + e.message());
           }
         } else {
           errors.pushBack("Dependency " + nameVers +
@@ -349,9 +350,10 @@ proc getSrcCode(sourceList: list(srcSource),
           MasonPrereqs.install(destination, prereq);
         } catch e: MasonError {
           errors.pushBack(e.message());
-        } catch {
+        } catch e {
           errors.pushBack("An unknown error occurred while " +
-                          "installing prerequisites for " + nameVers);
+                          "installing prerequisites for " + nameVers +
+                          ": " + e.message());
         }
       }
     }
@@ -382,9 +384,10 @@ proc getGitCode(gitList: list(gitSource),
           checkoutSource(destination, revision, quiet=!show);
         } catch e: MasonError {
           errors.pushBack(e.message());
-        } catch {
+        } catch e {
           errors.pushBack("An unknown error occurred while " +
-                          "installing dependency " + nameVers);
+                          "installing dependency " + nameVers +
+                          ": " + e.message());
         }
       } else {
         errors.pushBack("Dependency " + nameVers +
@@ -396,9 +399,10 @@ proc getGitCode(gitList: list(gitSource),
         checkoutSource(destination, revision, quiet=!show);
       } catch e: MasonError {
         errors.pushBack(e.message());
-      } catch {
+      } catch e {
         errors.pushBack("An unknown error occurred while " +
-                        "checking out dependency " + nameVers);
+                        "checking out dependency " + nameVers +
+                        ": " + e.message());
       }
     }
 
@@ -408,9 +412,10 @@ proc getGitCode(gitList: list(gitSource),
         MasonPrereqs.install(destination, prereq);
       } catch e: MasonError {
         errors.pushBack(e.message());
-      } catch {
+      } catch e {
         errors.pushBack("An unknown error occurred while " +
-                        "installing prerequisites for " + nameVers);
+                        "installing prerequisites for " + nameVers +
+                        ": " + e.message());
       }
     }
   }
