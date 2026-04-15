@@ -1348,9 +1348,7 @@ static void pairIteratorInLoopExpression(
 }
 
 static void testForLoopExpression() {
-
   printf("%s\n", __FUNCTION__);
-
   auto iters =
     R""""(
     iter i1() { yield 0.0; }
@@ -1364,6 +1362,7 @@ static void testForLoopExpression() {
 }
 
 static void testForallLoopExpressionStandalone() {
+  printf("%s\n", __FUNCTION__);
   auto iters =
     R""""(
     iter i1() { yield 0.0; }
@@ -1375,6 +1374,7 @@ static void testForallLoopExpressionStandalone() {
 }
 
 static void testForallLoopExpressionLeaderFollower() {
+  printf("%s\n", __FUNCTION__);
   // Note: compred to the previous test, no standalone iterator is available
   auto iters =
     R""""(
@@ -1388,6 +1388,7 @@ static void testForallLoopExpressionLeaderFollower() {
 }
 
 static void testBracketLoopExpressionStandalone() {
+  printf("%s\n", __FUNCTION__);
   auto iters =
     R""""(
     iter i1(param tag: iterKind) where tag == iterKind.standalone { yield 0.0; }
@@ -1398,6 +1399,7 @@ static void testBracketLoopExpressionStandalone() {
 }
 
 static void testBracketLoopExpressionStandaloneZipperedSingleton() {
+  printf("%s\n", __FUNCTION__);
   auto iters =
     R""""(
     iter i1(param tag: iterKind) where tag == iterKind.standalone { yield 0.0; }
@@ -1408,6 +1410,7 @@ static void testBracketLoopExpressionStandaloneZipperedSingleton() {
 }
 
 static void testBracketLoopExpressionStandaloneZippered() {
+  printf("%s\n", __FUNCTION__);
   auto iters =
     R""""(
     iter i1(param tag: iterKind) where tag == iterKind.standalone { yield 0.0; }
@@ -1419,6 +1422,7 @@ static void testBracketLoopExpressionStandaloneZippered() {
 }
 
 static void testBracketLoopExpressionZippered() {
+  printf("%s\n", __FUNCTION__);
   auto iters =
     R""""(
     iter i1(param tag: iterKind) where tag == iterKind.standalone { yield 0.0; }
@@ -1434,6 +1438,7 @@ static void testBracketLoopExpressionZippered() {
 }
 
 static void testBracketLoopExpressionLeaderFollower() {
+  printf("%s\n", __FUNCTION__);
   // Note: compred to the previous test, no standalone iterator is available
   auto iters =
     R""""(
@@ -1448,6 +1453,7 @@ static void testBracketLoopExpressionLeaderFollower() {
 }
 
 static void testBracketLoopExpressionSerial() {
+  printf("%s\n", __FUNCTION__);
   // Note: compred to the previous test, no standalone iterator is available
   auto iters =
     R""""(
@@ -1460,6 +1466,7 @@ static void testBracketLoopExpressionSerial() {
 }
 
 static void testForLoopExpressionInForall() {
+  printf("%s\n", __FUNCTION__);
   auto iters =
     R""""(
     iter i1() { yield 0.0; }
@@ -1476,6 +1483,7 @@ static void testForLoopExpressionInForall() {
 }
 
 static void testForLoopExpressionInBracketLoop() {
+  printf("%s\n", __FUNCTION__);
   auto iters =
     R""""(
     iter i1() { yield 0.0; }
@@ -1495,6 +1503,7 @@ static void testForLoopExpressionInBracketLoop() {
 // on context, the loop yield type is still the one from the parallel loop.
 // This probably won't compile if we were to add type compatibility checks.
 static void testForallExpressionInForLoop() {
+  printf("%s\n", __FUNCTION__);
   auto iters =
     R""""(
     iter i1() { yield 0.0; }
@@ -1509,6 +1518,7 @@ static void testForallExpressionInForLoop() {
 }
 
 static void testBracketLoopSerialFallback() {
+  printf("%s\n", __FUNCTION__);
   // Test that a bracket loop expression falls back to the serial iterator
   // if a leader is present, but one of the followers is not.
   auto iters =
@@ -1533,6 +1543,7 @@ static void testBracketLoopSerialFallback() {
 }
 
 static void testUnpackingFromIterator() {
+  printf("%s\n", __FUNCTION__);
   auto context = buildStdContext();
   ErrorGuard guard(context);
   auto prog =
@@ -1551,6 +1562,7 @@ static void testUnpackingFromIterator() {
 }
 
 static void testBasicUnpacking() {
+  printf("%s\n", __FUNCTION__);
   auto context = buildStdContext();
   ErrorGuard guard(context);
   auto prog =
@@ -1571,6 +1583,7 @@ static void testBasicUnpacking() {
 }
 
 static void testBasicUnpackingFailure() {
+  printf("%s\n", __FUNCTION__);
   auto context = buildStdContext();
   ErrorGuard guard(context);
   auto prog =
@@ -1591,6 +1604,7 @@ static void testBasicUnpackingFailure() {
 }
 
 static void testForallUnpacking() {
+  printf("%s\n", __FUNCTION__);
   auto context = buildStdContext();
   ErrorGuard guard(context);
   auto prog =
@@ -1614,6 +1628,7 @@ static void testForallUnpacking() {
 }
 
 static void testLoopExprZipUnpacking() {
+  printf("%s\n", __FUNCTION__);
   auto context = buildStdContext();
   ErrorGuard guard(context);
   auto prog =
@@ -1639,6 +1654,7 @@ static void testLoopExprZipUnpacking() {
 }
 
 static void testLoopExprZipUnpackingTooFewInner() {
+  printf("%s\n", __FUNCTION__);
   auto context = buildStdContext();
   ErrorGuard guard(context);
   auto prog =
@@ -1657,6 +1673,7 @@ static void testLoopExprZipUnpackingTooFewInner() {
 }
 
 static void testLoopExprZipUnpackingTooManyInner() {
+  printf("%s\n", __FUNCTION__);
   auto context = buildStdContext();
   ErrorGuard guard(context);
   auto prog =
@@ -1675,6 +1692,7 @@ static void testLoopExprZipUnpackingTooManyInner() {
 }
 
 static void testLoopExprZipUnpackingTooFewOuter() {
+  printf("%s\n", __FUNCTION__);
   auto context = buildStdContext();
   ErrorGuard guard(context);
   auto prog =
@@ -1694,6 +1712,7 @@ static void testLoopExprZipUnpackingTooFewOuter() {
 }
 
 static void testLoopExprZipUnpackingTooManyOuter() {
+  printf("%s\n", __FUNCTION__);
   auto context = buildStdContext();
   ErrorGuard guard(context);
   auto prog =
@@ -1712,6 +1731,7 @@ static void testLoopExprZipUnpackingTooManyOuter() {
 }
 
 static void testSingletonZip(){
+  printf("%s\n", __FUNCTION__);
   // In production, a single-iterator zip does not create a tuple.
   // Make sure we do the same.
   auto context = buildStdContext();
@@ -1732,6 +1752,7 @@ static void testSingletonZip(){
 }
 
 static void testBracketLoopExpressionStandaloneUnpackedZipperedSingleton() {
+  printf("%s\n", __FUNCTION__);
   auto iters =
     R""""(
     iter i1(param tag: iterKind) where tag == iterKind.standalone { yield 0.0; }
@@ -1742,6 +1763,7 @@ static void testBracketLoopExpressionStandaloneUnpackedZipperedSingleton() {
 }
 
 static void testBracketLoopExpressionUnpackedZippered() {
+  printf("%s\n", __FUNCTION__);
   auto iters =
     R""""(
     iter i1(param tag: iterKind) where tag == iterKind.leader { yield (0,0); }
@@ -1756,9 +1778,7 @@ static void testBracketLoopExpressionUnpackedZippered() {
 }
 
 static void testForLoopExpressionTypeMethod() {
-
   printf("%s\n", __FUNCTION__);
-
   auto iters =
     R""""(
     class C {
@@ -1774,6 +1794,7 @@ static void testForLoopExpressionTypeMethod() {
 }
 
 static void testForallLoopExpressionStandaloneTypeMethod() {
+  printf("%s\n", __FUNCTION__);
   auto iters =
     R""""(
     class C {
@@ -1787,6 +1808,7 @@ static void testForallLoopExpressionStandaloneTypeMethod() {
 }
 
 static void testForallLoopExpressionLeaderFollowerTypeMethod() {
+  printf("%s\n", __FUNCTION__);
   // Note: compred to the previous test, no standalone iterator is available
   auto iters =
     R""""(
