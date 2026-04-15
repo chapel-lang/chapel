@@ -1,0 +1,7 @@
+mason utils: Cloning from git@github.com:unknown/repo.git to (pathStr = dummy)
+mason utils: runWithStatus (quiet=true, capture=true): git clone --quiet git@github.com:unknown/repo.git dummy
+mason utils: Failed to clone from git@github.com:unknown/repo.git to (pathStr = dummy)
+mason utils: Retrying with https url: https://github.com/unknown/repo.git
+mason utils: runWithStatus (quiet=true, capture=true): git clone --quiet https://github.com/unknown/repo.git dummy
+mason utils: Failed to clone from https://github.com/unknown/repo.git to (pathStr = dummy)
+Failed to clone from git@github.com:unknown/repo.git

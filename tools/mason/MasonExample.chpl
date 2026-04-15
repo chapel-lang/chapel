@@ -33,6 +33,7 @@ use Subprocess;
 use TOML;
 import MasonLogger;
 import MasonPrereqs;
+import ThirdParty.Pathlib.path;
 
 private var log = new MasonLogger.logger("mason example");
 
@@ -205,7 +206,7 @@ private proc getBuildInfo(projectHome: string,
         log.debugf("Adding source dependency %s's flags\n", name);
         compopts.pushBack(depSrc);
 
-        for flag in MasonPrereqs.chplFlags(depDir) {
+        for flag in MasonPrereqs.chplFlags(depDir:path) {
           log.debugf("+compflag %s\n", flag);
           compopts.pushBack(flag);
         }
@@ -220,7 +221,7 @@ private proc getBuildInfo(projectHome: string,
       const gitDepSrc = Path.joinPath(depDir, "src", name + ".chpl");
       compopts.pushBack(gitDepSrc);
 
-      for flag in MasonPrereqs.chplFlags(depDir) {
+      for flag in MasonPrereqs.chplFlags(depDir:path) {
         log.debugf("+compflag %s\n", flag);
         compopts.pushBack(flag);
       }

@@ -34,6 +34,8 @@ use MasonLogger;
 use Subprocess;
 use TOML;
 
+import ThirdParty.Pathlib.path;
+
 import Path;
 import FileSystem;
 import MasonPrereqs;
@@ -230,7 +232,7 @@ proc compileSrc(lockFile: borrowed Toml, binLoc: string,
         log.debugf("Adding source dependency %s's flags\n", name);
         cmd.pushBack(depSrc);
 
-        for flag in MasonPrereqs.chplFlags(depDir) {
+        for flag in MasonPrereqs.chplFlags(depDir:path) {
           log.debugf("+compflag %s\n", flag);
           cmd.pushBack(flag);
         }
@@ -245,7 +247,7 @@ proc compileSrc(lockFile: borrowed Toml, binLoc: string,
       const gitDepSrc = Path.joinPath(depDir, "src", name + ".chpl");
       cmd.pushBack(gitDepSrc);
 
-      for flag in MasonPrereqs.chplFlags(depDir) {
+      for flag in MasonPrereqs.chplFlags(depDir:path) {
         log.debugf("+compflag %s\n", flag);
         cmd.pushBack(flag);
       }
@@ -313,70 +315,115 @@ proc genSourceList(lockFile: borrowed Toml) {
    the src code dependency pool */
 proc getSrcCode(sourceList: list(srcSource),
                 skipUpdate: bool, show: bool) throws {
-  var baseDir = MASON_HOME +'/src/';
-  forall (srcURL, name, version) in srcSource.iterList(sourceList) {
+  var baseDir = MASON_HOME:path / "src";
+  if !baseDir.isDir() then baseDir.mkdir(parents=true);
+
+  var errors = new list(string, true);
+  forall (srcURL, name, version) in srcSource.iterList(sourceList)
+  with (ref errors) {
     // version of -1 specifies a git dep
     if version != "-1" {
       const nameVers = name + "-" + version;
-      const destination = baseDir + nameVers;
+      const destination = baseDir / nameVers;
       if !depExists(nameVers) {
-        if skipUpdate then
-          throw new MasonError(
-            "Dependency cannot be installed in offline mode");
-        writeln("Downloading dependency: " + nameVers);
-        var getDependency = "git clone -qn "+ srcURL + ' ' + destination +'/';
-        var checkout = "git checkout -q v" + version;
-        if show {
-          getDependency = "git clone -n " + srcURL + ' ' + destination + '/';
-          checkout = "git checkout v" + version;
+        if !skipUpdate {
+          writeln("Downloading dependency: " + nameVers);
+          try {
+            cloneSource(srcURL, destination, quiet=!show, checkout=false);
+            checkoutSource(destination, "v" + version, quiet=!show);
+          } catch e: MasonError {
+            errors.pushBack(e.message());
+          } catch e {
+            errors.pushBack("An unknown error occurred while " +
+                            "installing dependency " + nameVers +
+                            ": " + e.message());
+          }
+        } else {
+          errors.pushBack("Dependency " + nameVers +
+                          " cannot be installed in offline mode");
         }
-        runCommand(getDependency);
-        gitC(destination, checkout);
       }
 
       // add prerequisites
       for prereq in MasonPrereqs.prereqs(destination) {
-        MasonPrereqs.install(destination, prereq);
+        try {
+          MasonPrereqs.install(destination, prereq);
+        } catch e: MasonError {
+          errors.pushBack(e.message());
+        } catch e {
+          errors.pushBack("An unknown error occurred while " +
+                          "installing prerequisites for " + nameVers +
+                          ": " + e.message());
+        }
       }
     }
+  }
+  if errors.size > 0 {
+    var errorMsg = "The following errors were encountered while " +
+                   "installing source dependencies:";
+    for err in errors do errorMsg += "\n- " + err;
+    throw new MasonError(errorMsg);
   }
 }
 
 proc getGitCode(gitList: list(gitSource),
                 skipUpdate: bool, show: bool) throws {
-  if !isDir(MASON_HOME + '/git/') {
-    mkdir(MASON_HOME + '/git/', parents=true);
-  }
-  var baseDir = MASON_HOME +'/git/';
-  forall (srcURL, name, branch, revision) in gitSource.iterList(gitList) {
+  const baseDir = MASON_HOME:path / "git";
+  if !baseDir.isDir() then baseDir.mkdir(parents=true);
+
+  var errors = new list(string, true);
+  forall (srcURL, name, branch, revision) in gitSource.iterList(gitList)
+  with (ref errors) {
     const nameVers = name + "-" + branch;
-    const destination = baseDir + nameVers;
+    const destination = baseDir / nameVers;
     if !depExists(nameVers, '/git/') {
-      if skipUpdate then
-        throw new MasonError("Dependency cannot be installed in offline mode");
-      writeln("Downloading dependency: " + nameVers);
-      var getDependency = "git clone -qn "+ srcURL + ' ' + destination +'/';
-      var checkout = "git checkout -q " + revision;
-      if show {
-        getDependency = "git clone -n " + srcURL + ' ' + destination + '/';
-        checkout = "git checkout " + revision;
+      if !skipUpdate {
+        writeln("Downloading dependency: " + nameVers);
+        try {
+          cloneSource(srcURL, destination, quiet=!show, checkout=false);
+          checkoutSource(destination, revision, quiet=!show);
+        } catch e: MasonError {
+          errors.pushBack(e.message());
+        } catch e {
+          errors.pushBack("An unknown error occurred while " +
+                          "installing dependency " + nameVers +
+                          ": " + e.message());
+        }
+      } else {
+        errors.pushBack("Dependency " + nameVers +
+                        " cannot be installed in offline mode");
       }
-      runCommand(getDependency);
-      gitC(destination, checkout);
     } else {
       writeln("Checking out specified revision for " + nameVers + "...");
-
-      var checkoutBranch = "git checkout -q " + revision;
-      if show {
-        checkoutBranch = "git checkout " + revision;
+      try {
+        checkoutSource(destination, revision, quiet=!show);
+      } catch e: MasonError {
+        errors.pushBack(e.message());
+      } catch e {
+        errors.pushBack("An unknown error occurred while " +
+                        "checking out dependency " + nameVers +
+                        ": " + e.message());
       }
-      gitC(destination, checkoutBranch);
     }
 
     // add prerequisites
     for prereq in MasonPrereqs.prereqs(destination) {
-      MasonPrereqs.install(destination, prereq);
+      try {
+        MasonPrereqs.install(destination, prereq);
+      } catch e: MasonError {
+        errors.pushBack(e.message());
+      } catch e {
+        errors.pushBack("An unknown error occurred while " +
+                        "installing prerequisites for " + nameVers +
+                        ": " + e.message());
+      }
     }
+  }
+  if errors.size > 0 {
+    var errorMsg = "The following errors were encountered while " +
+                   "installing git dependencies:";
+    for err in errors do errorMsg += "\n- " + err;
+    throw new MasonError(errorMsg);
   }
 }
 

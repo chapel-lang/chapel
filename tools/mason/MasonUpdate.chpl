@@ -205,12 +205,11 @@ proc updateRegistry(skipUpdate: bool, show=true) throws {
       gitC(registryHome, pullRegistry);
     } else {
       // Registry has moved or does not exist
-      mkdir(MASON_HOME + '/src', parents=true);
-      const localRegistry = registryHome;
-      mkdir(localRegistry, parents=true);
-      const cloneRegistry = 'git clone -q ' + registry + ' .';
+      (MASON_HOME:path / "src").mkdir(parents=true);
+      const localRegistry:path = registryHome;
+      localRegistry.mkdir(parents=true);
       if show then writeln("Updating ", name);
-      gitC(localRegistry, cloneRegistry);
+      cloneSource(registry, localRegistry, quiet=true);
     }
   }
 }
@@ -558,7 +557,7 @@ private proc pullGitDeps(gitDeps, show=false) {
 
   // Pull git repositories so that we can have access to the
   // current revision and TOML file to get dependencies
-  var baseDir = MASON_HOME +'/git/';
+  const baseDir = MASON_HOME:path / "git";
   for val in gitDepMap.keys() {
     var (srcURL, origBranch, revision) = gitDepMap[val];
     log.debugf("Processing dependency %s: url: '%s', branch: '%s', rev='%s'\n",
@@ -567,27 +566,20 @@ private proc pullGitDeps(gitDeps, show=false) {
     // Default to head if branch isn't specified
     var branch = if origBranch == "" then "HEAD" else origBranch;
     const nameVers = val + "-" + branch;
-    const destination = baseDir + nameVers;
+    const destination = baseDir / nameVers;
     if !depExists(nameVers, '/git/') {
       writef("Downloading dependency: %s\n", nameVers);
-      var getDependency = "git clone -q "+ srcURL + ' ' + destination +'/';
-      runCommand(getDependency);
+      cloneSource(srcURL, destination, quiet=true);
 
       if (branch != "HEAD") || (revision != "") {
         // Use the revision to checkout, if specified
-        var toCheckout = if revision != "" then revision else branch;
-        var checkout = "git checkout -q " + toCheckout;
-        if show {
-          getDependency = "git clone " + srcURL + ' ' + destination + '/';
-          checkout = "git checkout " + toCheckout;
-        }
-
-        gitC(destination, checkout);
+        const toCheckout = if revision != "" then revision else branch;
+        checkoutSource(destination, toCheckout, quiet=!show);
       }
 
       // get the revision to store in lock if not specified
       if revision == "" {
-        var revParse = "git rev-parse HEAD";
+        const revParse = "git rev-parse HEAD";
         revision = gitC(destination, revParse, true).strip();
       }
       gitDepsWithRevision.pushBack((val, srcURL, branch, revision));
@@ -610,11 +602,8 @@ private proc pullGitDeps(gitDeps, show=false) {
 
         writeln("Checking out specified revision for " + nameVers + "...");
         // Use the revision to checkout, if specified
-        var toCheckout = if revision != "" then revision else branch;
-        var checkout = "git checkout -q " + toCheckout;
-        if show then checkout = "git checkout " + toCheckout;
-
-        gitC(destination, checkout);
+        const toCheckout = if revision != "" then revision else branch;
+        checkoutSource(destination, toCheckout, quiet=!show);
       }
 
       // get the revision to store in lock if not specified

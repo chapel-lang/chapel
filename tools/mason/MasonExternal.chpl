@@ -29,6 +29,7 @@ use MasonLogger;
 use Path;
 use SpecParser;
 use TOML;
+import ThirdParty.Pathlib.path;
 
 var log = new logger("mason external");
 
@@ -95,8 +96,8 @@ proc masonExternal(args: [] string) {
       // If spack registry is not installed then install it
       if !isDir(spackRegistryDefaultPath) {
         log.infoln("Installing Spack Registry ...");
-        const dest = spackRegistryDefaultPath;
-        const branch = ' --branch releases/latest ';
+        const dest:path = spackRegistryDefaultPath;
+        const branch = "releases/latest";
         const status = cloneSpackRepository(branch, dest);
         if status != 0 then
           throw new owned MasonError("Spack registry installation failed.");
@@ -123,8 +124,7 @@ proc masonExternal(args: [] string) {
       // mason dependency if a package has a spack-based dependency.
       if !isDir(SPACK_ROOT) {
         writeln("Installing Spack backend ... ");
-        const spackLatestBranch = ' --branch ' + spackBranch + ' ';
-        const status = cloneSpackRepository(spackLatestBranch, SPACK_ROOT);
+        const status = cloneSpackRepository(spackBranch, SPACK_ROOT:path);
         if isDir(spackRegistryDefaultPath) then generateYAML();
         if status != 0 then
           throw new owned MasonError("Spack installation failed.");
@@ -202,12 +202,12 @@ proc spackInstalled() throws {
 /* Spack installed to MASON_HOME/spack */
 proc setupSpack() throws {
   writeln("Installing Spack backend ...");
-  const destCLI = MASON_HOME + "/spack/";
-  const spackLatestBranch = ' --branch v' + minSpackVersion.str() + ' ';
-  const destPackages = MASON_HOME + "/spack-registry";
-  const spackMasterBranch = ' --branch releases/latest ';
+  const destCLI = MASON_HOME:path / "spack";
+  const spackLatestBranch = "v" + minSpackVersion.str();
+  const destPackages = MASON_HOME: path / "spack-registry";
+  const spackMasterBranch = "releases/latest";
   const statusCLI = cloneSpackRepository(spackLatestBranch, destCLI);
-  const statusPackages = cloneSpackRepository(spackMasterBranch, destPackages);
+  const statusPackages = cloneSpackRepository("releases/latest", destPackages);
   generateYAML();
   if statusCLI != 0 && statusPackages != 0 {
     throw new owned MasonError("Spack installation failed");
@@ -215,23 +215,25 @@ proc setupSpack() throws {
 }
 
 /* Clones the Spack repository */
-proc cloneSpackRepository(branch : string, dest: string) {
-  const repo = "https://github.com/spack/spack ";
-  const depth = '--depth 1 ';
-  const command = 'git clone -q -c advice.detachedHead=false ' +
-                  branch + depth + repo + dest;
-  const statusPackages = runWithStatus(command);
-  if statusPackages != 0 then return -1;
-  else return 0;
+proc cloneSpackRepository(branch: string, dest: path): int {
+  const repo = "https://github.com/spack/spack";
+  const extra = ["-c", "advice.detachedHead=false"];
+  try {
+    cloneSource(repo, dest, branch=branch, depth=1, extra=extra);
+  } catch {
+    return -1;
+  }
+  return 0;
 }
 
 /* git checkout command run at SPACK_ROOT */
 proc gitCheckOutSpack(tag: string) {
-  const checkOutCommand = 'git ' + '-C ' + SPACK_ROOT +
-                      ' checkout -q ' + tag;
-  const status = runWithStatus(checkOutCommand);
-  if status != 0 then return -1;
-  else return 0;
+  try {
+    checkoutSource(SPACK_ROOT:path, tag);
+  } catch {
+    return -1;
+  }
+  return 0;
 }
 
 /* git fetch command run at SPACK_ROOT */

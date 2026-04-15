@@ -19,9 +19,8 @@
  */
 
 import FileSystem as FS;
-use FileSystem only cwd,chdir; // these are tertiary methods on locale
-import Path;
 import List.list;
+import ThirdParty.Pathlib.path;
 
 import MasonLogger;
 import MasonUtils;
@@ -30,47 +29,41 @@ private config param makeTargetChplFlags = "printchplflags";
 
 private var log = new MasonLogger.logger("mason prereqs");
 
-record pushdMgr: contextManager {
-  var path: string;
-  var initDir = here.cwd();
 
-  proc ref enterContext() do here.chdir(path);
-  proc ref exitContext(in err: owned Error?) throws {
-    if err then throw err;
-    here.chdir(initDir);
-  }
-}
-
-private inline proc pushd(path: string) {
-  return new pushdMgr(path);
-}
-
-proc install(baseDir: string, path: string) throws {
-  log.infof("Installing prerequisite %s\n", path);
-  manage pushd(path) {
-    // TODO check for errors
-    MasonUtils.runCommand(["make", "MASON_PACKAGE_HOME=" + baseDir]);
-  }
+proc install(baseDir: path, p: path) throws {
+  log.infof("Installing prerequisite %s\n", p:string);
+  const oldDir = path.cwd();
+  p.chdir();
+  defer oldDir.chdir();
+  // TODO: I would love to use p.pushChdir(), but I don't trust
+  // error handling + context managers enough
+  // TODO check for errors
+  MasonUtils.runCommand(["make", "MASON_PACKAGE_HOME=" + baseDir:string]);
 }
 
 proc install() throws {
-  const baseDir = here.cwd();
+  const baseDir = path.cwd();
   for prereq in prereqs(baseDir=baseDir) {
     install(baseDir, prereq);
   }
   log.infoln("Prerequisites have been installed");
 }
 
-iter chplFlags(const baseDir = here.cwd()) throws {
+iter chplFlags(const baseDir = path.cwd()) throws {
   var flags: list(string);
 
   const cmd = ["make",
                "CHPL_HOME=" + MasonUtils.CHPL_HOME,
-               "MASON_PACKAGE_HOME=" + baseDir,
+               "MASON_PACKAGE_HOME=" + baseDir:string,
                "--quiet", makeTargetChplFlags];
   for prereq in prereqs(baseDir) {
     var makeOutput: string;
-    manage pushd(prereq) do makeOutput = MasonUtils.runCommand(cmd).strip();
+    const oldDir = path.cwd();
+    prereq.chdir();
+    defer oldDir.chdir();
+    // TODO: I would love to use prereq.pushChdir(), but I don't trust
+    // error handling + context managers enough
+    makeOutput = MasonUtils.runCommand(cmd).strip();
 
     for pFlag in makeOutput.split(" ") {
       if pFlag.strip() != "" then
@@ -79,37 +72,39 @@ iter chplFlags(const baseDir = here.cwd()) throws {
   }
 }
 
-proc dirHasMakefile(dir: string) {
-  const checkPath = Path.joinPath(dir, "Makefile");
-  return FS.isFile(checkPath);
+proc dirHasMakefile(dir: path) {
+  return (dir / "Makefile").isFile();
 }
 
-iter prereqs(const baseDir = here.cwd()) {
+iter prereqs(const baseDir = path.cwd()): path {
   const prereqsDir = "prereqs";
-  const prereqsPath = Path.joinPath(baseDir, prereqsDir);
+  const prereqsPath = baseDir / prereqsDir;
 
-  log.debugf("Looking for the prerequisites directory %s\n", prereqsPath);
-  if FS.exists(prereqsPath) {
-    if FS.isDir(prereqsPath) {
-      log.infof("Prerequisites directory exists (%s)\n", prereqsPath);
+  log.debugf("Looking for the prerequisites directory %s\n",
+             prereqsPath:string);
+  if prereqsPath.exists() {
+    if prereqsPath.isDir() {
+      log.infof("Prerequisites directory exists (%s)\n", prereqsPath:string);
 
       // You shouldn't need an array here, but there seems to be a compiler bug
       // See https://github.com/chapel-lang/chapel/issues/27855
-      const dirs = FS.walkDirs(prereqsPath, depth=1);
+      const dirs = FS.walkDirs(prereqsPath:string, depth=1);
 
       for dir in dirs[1..] {
-        if dirHasMakefile(dir) {
-          yield dir;
+        const dirP = dir:path;
+        if dirHasMakefile(dirP) {
+          yield dirP;
         } else {
           log.warnf("%s is in prereqs directory. But doesn't have a Makefile." +
-                    " Ignoring.\n", dir);
+                    " Ignoring.\n", dirP:string);
         }
       }
     } else {
       log.infof("%s is supposed to be directory with prerequisites " +
-                "but it looks to be a file. It will be ignored.\n", prereqsDir);
+                "but it looks to be a file. It will be ignored.\n",
+                prereqsDir:string);
     }
   } else {
-    log.debugf("%s don't exist.\n", prereqsDir);
+    log.debugf("%s don't exist.\n", prereqsDir:string);
   }
 }
