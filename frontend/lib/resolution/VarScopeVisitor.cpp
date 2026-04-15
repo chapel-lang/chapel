@@ -492,38 +492,46 @@ void VarScopeVisitor::exit(const NamedDecl* ast, RV& rv) {
       Qualifier intentOrKind;
       bool isFormal;
 
+      bool skipHandling = false;
       auto maybeOuterTuple = outermostContainingTuple();
-      if (vld->name() == USTR("_") && maybeOuterTuple) {
-        // Skip _ ident in tuple
-      } else if (const TupleDecl* outerTuple =
-              (maybeOuterTuple ? maybeOuterTuple->toTupleDecl() : nullptr)) {
-        parent = parsing::parentAst(context, outerTuple);
-        initExpr = outerTuple->initExpression();
-        auto parentInitExpr = nestedTupleInfoStack.back().second;
-        if (parentInitExpr) {
-          initExpr = parentInitExpr->actual(indexWithinContainingTuple(ast));
-        }
-        auto parentInitType = nestedTupleInfoStack.back().first;
-        if (!parentInitType.isUnknown()) {
-          auto parentInitTupleType = parentInitType.type()->toTupleType();
-          CHPL_ASSERT(parentInitTupleType);
-          initType =
-              parentInitTupleType->elementType(indexWithinContainingTuple(ast));
-        }
-        intentOrKind = (Qualifier)outerTuple->intentOrKind();
-        isFormal = outerTuple->isFormal() || outerTuple->isVarArgFormal() || outerTuple->isTupleDeclFormal();
 
-        handleDeclaration(vld, parent, initExpr, initType, intentOrKind, isFormal,
-                        rv);
-      } else {
+      if (!maybeOuterTuple) {
         parent = parsing::parentAst(context, vld);
         initExpr = vld->initExpression();
         initType = initExpr ? rv.byAst(initExpr).type() : QualifiedType();
         intentOrKind = vld->storageKind();
         isFormal = vld->isFormal() || vld->isVarArgFormal();
+      } else {
+        auto outerTupleDecl = maybeOuterTuple->toTupleDecl();
+        CHPL_ASSERT(outerTupleDecl);
 
-        handleDeclaration(vld, parent, initExpr, initType, intentOrKind, isFormal,
-                        rv);
+        if (vld->name() == USTR("_")) {
+          // Skip _ ident in tuple
+          skipHandling = true;
+        } else {
+          parent = parsing::parentAst(context, outerTupleDecl);
+          initExpr = outerTupleDecl->initExpression();
+          auto parentInitExpr = nestedTupleInfoStack.back().second;
+          if (parentInitExpr) {
+            initExpr = parentInitExpr->actual(indexWithinContainingTuple(ast));
+          }
+          auto parentInitType = nestedTupleInfoStack.back().first;
+          if (!parentInitType.isUnknown()) {
+            auto parentInitTupleType = parentInitType.type()->toTupleType();
+            CHPL_ASSERT(parentInitTupleType);
+            initType = parentInitTupleType->elementType(
+                indexWithinContainingTuple(ast));
+          }
+          intentOrKind = (Qualifier)outerTupleDecl->intentOrKind();
+          isFormal = outerTupleDecl->isFormal() ||
+                     outerTupleDecl->isVarArgFormal() ||
+                     outerTupleDecl->isTupleDeclFormal();
+        }
+      }
+
+      if (!skipHandling) {
+        handleDeclaration(vld, parent, initExpr, initType, intentOrKind,
+                          isFormal, rv);
       }
     }
   }
