@@ -23,7 +23,7 @@ proc main(){
   defer rmTree("srcTest");
 
   try {
-    gitC("srcTest", "git ini");
+    gitC("srcTest", "git ini", quiet=true);
   } catch e {
     writeln(e); // should get an unknown git error
   }
@@ -31,7 +31,7 @@ proc main(){
   try {
     removePath();
     defer restorePath();
-    gitC("srcTest", "git init");
+    gitC("srcTest", "git init", quiet=true);
   } catch e {
     writeln(e); // should get a missing git error
   }
@@ -44,22 +44,22 @@ proc main(){
     new gitSource("this-url-will-not-exist-either", "dummy2", "HEAD", "123456")]);
 
   try {
-    getSrcCode(srcList, skipUpdate=false, show=true);
+    getSrcCode(srcList, skipUpdate=false, show=false);
   } catch e {
     writeln(e); // should get errors
   }
   try {
-    getSrcCode(srcList, skipUpdate=true, show=true);
+    getSrcCode(srcList, skipUpdate=true, show=false);
   } catch e {
     writeln(e); // should get errors
   }
   try {
-    getGitCode(gitList, skipUpdate=false, show=true);
+    getGitCode(gitList, skipUpdate=false, show=false);
   } catch e {
     writeln(e); // should get errors
   }
   try {
-    getGitCode(gitList, skipUpdate=true, show=true);
+    getGitCode(gitList, skipUpdate=true, show=false);
   } catch e {
     writeln(e); // should get errors
   }
