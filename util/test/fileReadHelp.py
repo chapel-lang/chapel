@@ -3,28 +3,30 @@
 # Utility routines to help with reading files
 #
 def IsCommentOrBlank(line):
-    l=line.strip()
-    if l == '':
+    l = line.strip()
+    if l == "":
         return True
-    if l[0] == '#':
+    if l[0] == "#":
         return True
     return False
+
 
 # Ignore blank lines and commented line
 # Strip trailing white space and new line
 def ReadNextNonCommentLine(f):
     l = f.readline()
-    if l == '':
+    if l == "":
         return None
     while IsCommentOrBlank(l):
         l = f.readline()
-        if l == '':
+        if l == "":
             return None
     return l.rstrip()
 
+
 def ReadFileWithComments(filename):
     try:
-        f= open(filename, 'r')
+        f = open(filename, "r")
     except IOError:
         return None
 
