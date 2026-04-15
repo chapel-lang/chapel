@@ -17,21 +17,24 @@ directories = ["current", "../vagrant/current"]
 
 
 def gather_provision_script_cmds(path):
-    cmds = [ ]
+    cmds = []
     with open(path) as file:
         for line in file:
             line = line.strip()
             if line.startswith("#!"):
-                pass # ignore shebang line
-            elif (line.startswith("alias unsudo") or
-                  line.startswith("alias hide") or
-                  line.startswith("hide") or
-                  line.endswith("#hide") or
-                  line.endswith("# hide")):
-                pass # ignore these hidden details
+                pass  # ignore shebang line
+            elif (
+                line.startswith("alias unsudo")
+                or line.startswith("alias hide")
+                or line.startswith("hide")
+                or line.endswith("#hide")
+                or line.endswith("# hide")
+            ):
+                pass  # ignore these hidden details
             elif line:
                 cmds.append(line)
     return cmds
+
 
 def title(name):
     name = name.capitalize()
@@ -80,35 +83,36 @@ def title(name):
         name = '25.10 "Questing Quokka"'
     return name
 
+
 def fixname(subdir):
     name = os.path.basename(subdir)
     # remove -cloud-base from e.g. fedora-32-cloud-base
     if name.endswith("-cloud-base"):
-        name = name[:name.find("-cloud-base")]
+        name = name[: name.find("-cloud-base")]
     # remove -STABLE from e.g. freebsd-FreeBSD-12.2-STABLE
     if name.endswith("-STABLE"):
-        name = name[:name.find("-STABLE")]
+        name = name[: name.find("-STABLE")]
     # remove first freebsd in freebsd-FreeBSD-12.2-STABLE
     if name.startswith("freebsd-FreeBSD-"):
-        name = name[len("freebsd-"):]
+        name = name[len("freebsd-") :]
     if name.startswith("bento-freebsd-"):
-        name = name[len("bento-"):]
+        name = name[len("bento-") :]
     # remove 64 in ubuntu-impish64
     if name.endswith("64"):
-        name = name[:name.find("64")]
+        name = name[: name.find("64")]
     if name.endswith("homebrew"):
         name = "Homebrew"
 
     parts = name.split("-")
-    adj = [ ]
+    adj = []
     for part in parts:
         if part.endswith("linux"):
             # e.g. rockylinux -> Rocky Linux
-            tmp = part[:part.find("linux")]
+            tmp = part[: part.find("linux")]
             adj.append(title(tmp))
             adj.append("Linux")
-        elif re.search('\\d$', part):
-            sections = re.split('([0-9.]+)', part)
+        elif re.search("\\d$", part):
+            sections = re.split("([0-9.]+)", part)
             for s in sections:
                 s = s.strip()
                 if s:
@@ -118,8 +122,9 @@ def fixname(subdir):
 
     return " ".join(adj)
 
+
 def extract_sdef_commands(sdef):
-    cmds = [ ]
+    cmds = []
     with open(sdef) as file:
         inSectionToRead = False
         for line in file:
@@ -131,36 +136,42 @@ def extract_sdef_commands(sdef):
                 line = line.strip()
 
                 if line.startswith("DEBIAN_FRONTEND=noninteractive"):
-                    line = line.replace("DEBIAN_FRONTEND=noninteractive", "").strip()
+                    line = line.replace(
+                        "DEBIAN_FRONTEND=noninteractive", ""
+                    ).strip()
 
                 if line.startswith("/provision-scripts/"):
-                    spath = line[1:] # remove leading /
+                    spath = line[1:]  # remove leading /
                     subcmds = gather_provision_script_cmds(spath)
                     cmds.extend(subcmds)
                 elif line:
                     cmds.append(line)
     return cmds
 
+
 def extract_vfile_commands(vfile):
-    cmds = [ ]
+    cmds = []
     with open(vfile) as file:
         for line in file:
             line = line.strip()
-            if 'provision-scripts' in line:
+            if "provision-scripts" in line:
                 parts = line.split('"')
                 for part in parts:
-                    if 'provision-scripts' in part:
-                        spath = part[part.find('provision-scripts'):]
-                        if ('git-clone-chapel.sh' in spath or
-                            'gmake-chapel-quick.sh' in spath or
-                            'make-chapel-quick.sh' in spath or
-                            'freebsd-repo-fix.sh' in spath or
-                            'proxy-setup.sh' in spath):
-                            pass # skip these
+                    if "provision-scripts" in part:
+                        spath = part[part.find("provision-scripts") :]
+                        if (
+                            "git-clone-chapel.sh" in spath
+                            or "gmake-chapel-quick.sh" in spath
+                            or "make-chapel-quick.sh" in spath
+                            or "freebsd-repo-fix.sh" in spath
+                            or "proxy-setup.sh" in spath
+                        ):
+                            pass  # skip these
                         else:
                             subcmds = gather_provision_script_cmds(spath)
                             cmds.extend(subcmds)
     return cmds
+
 
 @contextmanager
 def cd(newdir):
@@ -171,32 +182,33 @@ def cd(newdir):
     finally:
         os.chdir(prevdir)
 
+
 def main():
     directories = ["current", "../vagrant/current"]
 
-    subdirs = [ ]
+    subdirs = []
     for d in directories:
         for subdir in os.listdir(d):
             subpath = os.path.join(d, subdir)
             if "nollvm" in subpath:
-                continue # skip these configurations
+                continue  # skip these configurations
             if "homebrew" in subpath:
-                continue # skip these configurations
-                        # (not sure how useful this is)
+                continue  # skip these configurations
+                # (not sure how useful this is)
             if "nix" in subpath:
-                continue # skip these configurations
-                        # (not sure how useful this is)
+                continue  # skip these configurations
+                # (not sure how useful this is)
             if "generic-x32-debian" in subpath:
-                continue # skip this one, redudant with other debian ones
+                continue  # skip this one, redudant with other debian ones
 
             subdirs.append(subpath)
 
     subdirs.sort(key=fixname)
 
-    tocmds = { }
+    tocmds = {}
 
     for subpath in subdirs:
-        cmds = [ ]
+        cmds = []
         if os.path.isdir(subpath):
             sdef = os.path.join(subpath, "image.def")
             vfile = os.path.join(subpath, "Vagrantfile")
@@ -207,13 +219,13 @@ def main():
             else:
                 print("NO CMDS FILE FOUND for", subpath)
 
-        result = [ ]
+        result = []
         for cmd in cmds:
             if cmd.startswith("#"):
-                pass # ignore comments
+                pass  # ignore comments
             else:
                 words = cmd.split()
-                adj = [ ]
+                adj = []
                 sudo = True
                 if words[0] == "sudo":
                     words.pop(0)
@@ -223,7 +235,11 @@ def main():
                 if words[-1] == "#unsudo":
                     sudo = False
                     words.pop(-1)
-                if len(words) >= 2 and words[-2] == "#" and words[-1] == "unsudo":
+                if (
+                    len(words) >= 2
+                    and words[-2] == "#"
+                    and words[-1] == "unsudo"
+                ):
                     sudo = False
                     words.pop(-1)
                     words.pop(-1)
@@ -231,7 +247,7 @@ def main():
                     sudo = False
                 for word in words:
                     if word == "-y" or word == "--yes" or word == "--noconfirm":
-                        pass # filter these out
+                        pass  # filter these out
                     elif word == "/home/vagrant/.bashrc":
                         adj.append("~/.bashrc")
                     else:
@@ -243,12 +259,12 @@ def main():
 
         tocmds[subpath] = result
 
-    tab = { }
+    tab = {}
 
     i = 0
     while i < len(subdirs):
         subpath = subdirs[i]
-        names = [ ]
+        names = []
 
         # find how many configs have the same commands
         cmds = tocmds[subpath]
@@ -258,7 +274,7 @@ def main():
 
         # summarize names string
         # remove words that occur repeatedly
-        shortnames = [ ]
+        shortnames = []
         firstwords = names[0].split()
         first = True
         for name in names:
@@ -273,8 +289,12 @@ def main():
                 mayskip = True
                 shortname = ""
                 while j < len(words):
-                    if mayskip and j < len(firstwords) and firstwords[j] == words[j]:
-                        pass # skip redundant word
+                    if (
+                        mayskip
+                        and j < len(firstwords)
+                        and firstwords[j] == words[j]
+                    ):
+                        pass  # skip redundant word
                     else:
                         mayskip = False
                         shortname += " " + words[j]
@@ -285,12 +305,13 @@ def main():
 
     # finally, output the table
     for names, cmds in sorted(tab.items(), key=lambda x: x[0]):
-        print("  * " + names + '::')
+        print("  * " + names + "::")
         print()
         for cmd in cmds:
             print("      " + cmd)
         print()
         print()
+
 
 if __name__ == "__main__":
     SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))

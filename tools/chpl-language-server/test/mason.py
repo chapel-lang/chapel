@@ -199,7 +199,4 @@ async def test_mason(client: LanguageClient):
         assert len(client.diagnostics[docs("src/Package").uri]) == 0
         assert len(client.diagnostics[docs("test/Test").uri]) == 0
         assert len(client.diagnostics[docs("example/Example").uri]) == 0
-        assert (
-            len(client.diagnostics[docs(fake_mason_dep).uri])
-            == 0
-        )
+        assert len(client.diagnostics[docs(fake_mason_dep).uri]) == 0

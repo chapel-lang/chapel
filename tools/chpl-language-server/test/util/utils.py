@@ -82,7 +82,12 @@ class SourceFilesContext:
         self.tempdir = tempdir
 
     @classmethod
-    def from_files(cls, client: LanguageClient, files: typing.Dict[str, str], build_cls_commands: bool = True):
+    def from_files(
+        cls,
+        client: LanguageClient,
+        files: typing.Dict[str, str],
+        build_cls_commands: bool = True,
+    ):
         tempdir = tempfile.TemporaryDirectory()
         instance = cls(client, tempdir)
         if build_cls_commands:
@@ -92,7 +97,9 @@ class SourceFilesContext:
         return instance
 
     @classmethod
-    def from_explicit_files(cls, client: LanguageClient, files: typing.Dict[str, str]):
+    def from_explicit_files(
+        cls, client: LanguageClient, files: typing.Dict[str, str]
+    ):
         tempdir = tempfile.TemporaryDirectory()
         instance = cls(client, tempdir)
         instance._add_explicit_files(files)
@@ -198,12 +205,12 @@ def unrelated_source_files(client: LanguageClient, **files: str):
     Same as 'source_files', but doesn't create a .cls-commands.json file that
     would cause the files to be treated as "connected" and resolved together.
     """
-    return SourceFilesContext.from_files(client, files, build_cls_commands=False)
+    return SourceFilesContext.from_files(
+        client, files, build_cls_commands=False
+    )
 
 
-def with_file_structure(
-    client: LanguageClient, files: typing.Dict[str, str]
-):
+def with_file_structure(client: LanguageClient, files: typing.Dict[str, str]):
     """
     Same as 'source_files', but requires an explicit file structure. relative
     paths will be treated as relative to the temporary directory, and absolute

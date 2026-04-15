@@ -956,13 +956,12 @@ proc isMount(name: string): bool throws {
 @edition(last="2.0")
 iter listDir(path: string = ".", hidden: bool = false, dirs: bool = true,
               files: bool = true, listlinks: bool = true): string {
-  try {
-    for l in listDirHelper(path=path, hidden=hidden,
-                          dirs=dirs, files=files, listlinks=listlinks) do
-      yield l;
-  } catch e {
-    writeln(e.message());
-  }
+  var err: owned Error? = nil;
+  for l in listDirHelper(path=path, hidden=hidden,
+                          dirs=dirs, files=files, listlinks=listlinks,
+                          err=err) do
+    yield l;
+  if err != nil then writeln(err!.message());
 }
 /* Lists the contents of a directory.  May be invoked in serial
    contexts only.
@@ -994,13 +993,17 @@ iter listDir(path: string = ".", hidden: bool = false, dirs: bool = true,
 @edition(first="preview")
 iter listDir(path: string = ".", hidden: bool = false, dirs: bool = true,
               files: bool = true, listlinks: bool = true): string throws {
+  var err: owned Error? = nil;
   for l in listDirHelper(path=path, hidden=hidden,
-                         dirs=dirs, files=files, listlinks=listlinks) do
+                         dirs=dirs, files=files, listlinks=listlinks,
+                         err=err) do
     yield l;
+  if err != nil then throw (err:owned class);
 }
 @chpldoc.nodoc
 iter listDirHelper(path: string, hidden: bool, dirs: bool,
-                   files: bool, listlinks: bool): string throws {
+                   files: bool, listlinks: bool,
+                   ref err: owned Error?): string {
   extern record DIR {}
   extern type DIRptr = c_ptr(DIR);
   extern "struct dirent" record chpl_dirent {}
@@ -1017,11 +1020,17 @@ iter listDirHelper(path: string, hidden: bool, dirs: bool,
 
   var dir: DIRptr = opendir(unescape(path).c_str());
   if dir != nil {
+    defer closedir(dir);
     var ent: direntptr = readdir(dir);
     while ent != nil {
       var filename: string;
-      filename = string.createCopyingBuffer(ent.d_name(),
-                                            policy=decodePolicy.escape);
+      try {
+        filename = string.createCopyingBuffer(ent.d_name(),
+                                              policy=decodePolicy.escape);
+      } catch e {
+        err = e;
+        return;
+      }
       if hidden || filename[0] != '.' {
         if filename != "." && filename != ".." {
           const fullpath = path + "/" + filename;
@@ -1034,17 +1043,19 @@ iter listDirHelper(path: string, hidden: bool, dirs: bool,
                 yield filename;
             }
           } catch e: SystemError {
-            throw e;
+            err = e;
+            return;
           } catch {
-            throw new Error("unknown error in listDir()");
+            err = new Error("unknown error in listDir()");
+            return;
           }
         }
       }
       ent = readdir(dir);
     }
-    closedir(dir);
   } else {
-    throw new SystemError(errno:errorCode, "error in listDir(): " + path);
+    err = new SystemError(errno:errorCode, "error in listDir(): " + path);
+    return;
   }
 }
 

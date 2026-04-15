@@ -16,7 +16,7 @@ import sys
 import os
 from pathlib import Path
 
-on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
+on_rtd = os.environ.get("READTHEDOCS", None) == "True"
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -26,50 +26,50 @@ on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
-needs_sphinx = '1.0'
+needs_sphinx = "1.0"
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.todo',
-    'sphinxcontrib.chapeldomain',
-    'sphinx.ext.mathjax',
+    "sphinx.ext.todo",
+    "sphinxcontrib.chapeldomain",
+    "sphinx.ext.mathjax",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+templates_path = ["_templates"]
 
 # The suffix of source filenames.
-source_suffix = {'.rst' : 'restructuredtext'}
+source_suffix = {".rst": "restructuredtext"}
 
 # The encoding of source files.
 # source_encoding = 'utf-8-sig'
 
 # The root toctree document.
-root_doc = 'index'
+root_doc = "index"
 
 # General information about the project.
-project = os.environ.get('CHPLDOC_PROJECT_NAME', 'PROJECT NAME')
-project_description = os.environ.get('CHPLDOC_PROJECT_DESCRIPTION', '')
+project = os.environ.get("CHPLDOC_PROJECT_NAME", "PROJECT NAME")
+project_description = os.environ.get("CHPLDOC_PROJECT_DESCRIPTION", "")
 
-copyright_text = os.environ.get('CHPLDOC_PROJECT_COPYRIGHT', '2015')
-author_text = os.environ.get('CHPLDOC_AUTHOR', None)
+copyright_text = os.environ.get("CHPLDOC_PROJECT_COPYRIGHT", "2015")
+author_text = os.environ.get("CHPLDOC_AUTHOR", None)
 
 if author_text:
-    copyright = u'{0}, {1}'.format(copyright_text, author_text)
+    copyright = "{0}, {1}".format(copyright_text, author_text)
 else:
-    copyright = u'{0}'.format(copyright_text)
+    copyright = "{0}".format(copyright_text)
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 #
 # The short X.Y version.
-version = os.environ.get('CHPLDOC_PROJECT_VERSION', '').split("-")[0]
+version = os.environ.get("CHPLDOC_PROJECT_VERSION", "").split("-")[0]
 # version = '0.0.1-alpha'
 # The full version, including alpha/beta/rc tags.
-release = os.environ.get('CHPLDOC_PROJECT_VERSION', '')
+release = os.environ.get("CHPLDOC_PROJECT_VERSION", "")
 
 
 rst_prolog = f"""
@@ -118,7 +118,7 @@ exclude_patterns.extend(chpldoc_exclude_patterns)
 # show_authors = False
 
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = 'sphinx'
+pygments_style = "sphinx"
 
 # A list of ignored prefixes for module index sorting.
 # modindex_common_prefix = []
@@ -133,10 +133,11 @@ pygments_style = 'sphinx'
 # a list of builtin themes.
 if not on_rtd:
     import sphinx_rtd_theme
-    html_theme = 'sphinx_rtd_theme'
+
+    html_theme = "sphinx_rtd_theme"
 
     html_theme_options = {
-        'sticky_navigation': True,
+        "sticky_navigation": True,
     }
 
 
@@ -167,7 +168,7 @@ if not on_rtd:
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+html_static_path = ["_static"]
 
 # Add any extra paths that contain custom files (such as robots.txt or
 # .htaccess) here, relative to this directory. These files are copied
@@ -216,28 +217,31 @@ html_static_path = ['_static']
 # html_file_suffix = None
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'chpldocdoc'
+htmlhelp_basename = "chpldocdoc"
 
 
 # -- Options for LaTeX output ---------------------------------------------
 
 latex_elements = {
-# The paper size ('letterpaper' or 'a4paper').
-#'papersize': 'letterpaper',
-
-# The font size ('10pt', '11pt' or '12pt').
-#'pointsize': '10pt',
-
-# Additional stuff for the LaTeX preamble.
-#'preamble': '',
+    # The paper size ('letterpaper' or 'a4paper').
+    #'papersize': 'letterpaper',
+    # The font size ('10pt', '11pt' or '12pt').
+    #'pointsize': '10pt',
+    # Additional stuff for the LaTeX preamble.
+    #'preamble': '',
 }
 
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-  ('index', f'{project}.tex', f'{project} Documentation',
-   author_text, 'manual'),
+    (
+        "index",
+        f"{project}.tex",
+        f"{project} Documentation",
+        author_text,
+        "manual",
+    ),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -265,10 +269,7 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [
-    ('index', project, f'{project} Documentation',
-     [author_text], 1)
-]
+man_pages = [("index", project, f"{project} Documentation", [author_text], 1)]
 
 # If true, show URL addresses after external links.
 # man_show_urls = False
@@ -280,8 +281,15 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', project, f'{project} Documentation',
-   author_text, project, project_description, 'Miscellaneous'),
+    (
+        "index",
+        project,
+        f"{project} Documentation",
+        author_text,
+        project,
+        project_description,
+        "Miscellaneous",
+    ),
 ]
 
 # Documents to append as an appendix to all manuals.
