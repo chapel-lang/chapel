@@ -371,12 +371,8 @@ bool VarScopeVisitor::enter(const TupleDecl* ast, RV& rv) {
 
   // Determine type part and init part for this decl, either directly for a
   // top-level decl, or from the parent tuple decl in the case of nesting.
-  QualifiedType initType;
-  if (auto typeExpr = ast->typeExpression()) {
-    initType = rv.byAst(typeExpr).type();
-  } else if (auto initExpr = ast->initExpression()) {
-    initType = rv.byAst(initExpr).type();
-  } else if (outermostContainingTuple()) {
+  QualifiedType initType = rv.byAst(ast).type();
+  if (initType.isUnknown() && outermostContainingTuple()) {
     CHPL_ASSERT(!nestedTupleInfoStack.empty());
     if (auto parentInitType = nestedTupleInfoStack.back().first.type()) {
       auto parentTupleType = parentInitType->toTupleType();
@@ -384,11 +380,7 @@ bool VarScopeVisitor::enter(const TupleDecl* ast, RV& rv) {
       initType = parentTupleType->elementType(indexWithinContainingTuple(ast));
     }
   }
-  if (!initType.isUnknown()) {
-    auto initTupleType = initType.type()->toTupleType();
-    CHPL_ASSERT(initTupleType);
-    CHPL_ASSERT(ast->numDecls() == initTupleType->numElements());
-  }
+
   const Tuple* initPart = nullptr;
   if (auto initExpr = ast->initExpression()) {
     initPart = initExpr->toTuple();
