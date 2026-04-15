@@ -68,7 +68,7 @@ index dc386e89673..88ad174d5e3 100644
     The call to printX() is not ambiguous because M2’s definition shadows
     that of M1. On the other hand, the call to printY() is ambiguous
 diff --git a/doc/rst/language/spec/variables.rst b/doc/rst/language/spec/variables.rst
-index 57b4b8d78b4..8da7750790b 100644
+index 36f5784aef2..97f4a0f47ef 100644
 --- a/doc/rst/language/spec/variables.rst
 +++ b/doc/rst/language/spec/variables.rst
 @@ -224,9 +224,14 @@ unconditionally return.
@@ -79,10 +79,10 @@ index 57b4b8d78b4..8da7750790b 100644
 -      no-split-init.chpl:2: note: cannot find initialization point to split-init this variable
 -      no-split-init.chpl:3: note: 'x' is used here before it is initialized
 +      no-split-init.chpl:3: error: unable to resolve call to 'writeln': no matching candidates
-+      $CHPL_HOME/modules/standard/ChapelIO.chpl:409: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++      $CHPL_HOME/modules/standard/ChapelIO.chpl:408: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
 +      no-split-init.chpl:2: note: The actual 'x' expects to be split-initialized because it is declared with a generic type and no initialization expression here
 +      no-split-init.chpl:3: note: The call to 'writeln' occurs before any valid initialization points
-+      $CHPL_HOME/modules/standard/ChapelIO.chpl:403: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++      $CHPL_HOME/modules/standard/ChapelIO.chpl:402: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
 +      no-split-init.chpl:3: note: omitting 1 more candidates that didn't match
 +      no-split-init.chpl:4: error: cannot pass const to non-const
 +
@@ -90,7 +90,7 @@ index 57b4b8d78b4..8da7750790b 100644
  
     *Example (split-cond-blocks-init.chpl)*
 diff --git a/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-const-err-1.good b/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-const-err-1.good
-index 353bc711b9b..8b73c9dc9a7 100644
+index 353bc711b9b..f50eef42c56 100644
 --- a/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-const-err-1.good
 +++ b/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-const-err-1.good
 @@ -1,4 +1,4 @@
@@ -99,11 +99,11 @@ index 353bc711b9b..8b73c9dc9a7 100644
 -dflt-ctor-generic-uninit-field-const-err-1.chpl:7: note: because call does not supply enough arguments
 -dflt-ctor-generic-uninit-field-const-err-1.chpl:4: note: it is missing a value for formal 'in c'
 +dflt-ctor-generic-uninit-field-const-err-1.chpl:7: error: unable to resolve call to 'init': no matching candidates
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:363: note: the following candidate didn't match
++$CHPL_HOME/modules/standard/ChapelIO.chpl:362: note: the following candidate didn't match
 +$CHPL_HOME/modules/internal/ChapelRange.chpl:280: note: the following candidate didn't match
 +dflt-ctor-generic-uninit-field-const-err-1.chpl:7: note: omitting 20 more candidates that didn't match
 diff --git a/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-param-err-1.good b/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-param-err-1.good
-index b006744280f..83610fec3b1 100644
+index b006744280f..0150ee9236e 100644
 --- a/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-param-err-1.good
 +++ b/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-param-err-1.good
 @@ -1,6 +1,4 @@
@@ -114,11 +114,11 @@ index b006744280f..83610fec3b1 100644
 -dflt-ctor-generic-uninit-field-param-err-1.chpl:7: note: other candidates are:
 -dflt-ctor-generic-uninit-field-param-err-1.chpl:3: note:   A.init(param p, reader, deserializer)
 +dflt-ctor-generic-uninit-field-param-err-1.chpl:7: error: unable to resolve call to 'init': no matching candidates
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:363: note: the following candidate didn't match
++$CHPL_HOME/modules/standard/ChapelIO.chpl:362: note: the following candidate didn't match
 +$CHPL_HOME/modules/internal/ChapelRange.chpl:280: note: the following candidate didn't match
 +dflt-ctor-generic-uninit-field-param-err-1.chpl:7: note: omitting 20 more candidates that didn't match
 diff --git a/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-type-err-1.good b/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-type-err-1.good
-index e771412e0ba..ec28ed79c80 100644
+index e771412e0ba..12891cd4238 100644
 --- a/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-type-err-1.good
 +++ b/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-type-err-1.good
 @@ -1,6 +1,4 @@
@@ -129,11 +129,11 @@ index e771412e0ba..ec28ed79c80 100644
 -dflt-ctor-generic-uninit-field-type-err-1.chpl:7: note: other candidates are:
 -dflt-ctor-generic-uninit-field-type-err-1.chpl:3: note:   A.init(type t, reader, deserializer)
 +dflt-ctor-generic-uninit-field-type-err-1.chpl:7: error: unable to resolve call to 'init': no matching candidates
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:363: note: the following candidate didn't match
++$CHPL_HOME/modules/standard/ChapelIO.chpl:362: note: the following candidate didn't match
 +$CHPL_HOME/modules/internal/ChapelRange.chpl:280: note: the following candidate didn't match
 +dflt-ctor-generic-uninit-field-type-err-1.chpl:7: note: omitting 20 more candidates that didn't match
 diff --git a/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-var-err-1.good b/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-var-err-1.good
-index 1e4db802fe4..66b5e8e2e20 100644
+index 1e4db802fe4..2f8d2559cf2 100644
 --- a/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-var-err-1.good
 +++ b/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-var-err-1.good
 @@ -1,4 +1,4 @@
@@ -142,7 +142,7 @@ index 1e4db802fe4..66b5e8e2e20 100644
 -dflt-ctor-generic-uninit-field-var-err-1.chpl:7: note: because call does not supply enough arguments
 -dflt-ctor-generic-uninit-field-var-err-1.chpl:4: note: it is missing a value for formal 'in v'
 +dflt-ctor-generic-uninit-field-var-err-1.chpl:7: error: unable to resolve call to 'init': no matching candidates
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:363: note: the following candidate didn't match
++$CHPL_HOME/modules/standard/ChapelIO.chpl:362: note: the following candidate didn't match
 +$CHPL_HOME/modules/internal/ChapelRange.chpl:280: note: the following candidate didn't match
 +dflt-ctor-generic-uninit-field-var-err-1.chpl:7: note: omitting 20 more candidates that didn't match
 diff --git a/test/classes/initializers/compilerGenerated/generics/issue-16508-default-ok.good b/test/classes/initializers/compilerGenerated/generics/issue-16508-default-ok.good
@@ -155,7 +155,7 @@ index e010eb041e0..a06343ef4fd 100644
 -issue-16508-default-ok.chpl:2: note: consider separately declaring a type field for it or using a 'new' call
 +issue-16508-default-ok.chpl:5: error: unable to resolve call to 'init': no matching candidates
 diff --git a/test/classes/initializers/compilerGenerated/generics/withParamTypeNoDefNoArgsInCall.good b/test/classes/initializers/compilerGenerated/generics/withParamTypeNoDefNoArgsInCall.good
-index c4be8f5b2ff..00723855840 100644
+index c4be8f5b2ff..9e59e334bac 100644
 --- a/test/classes/initializers/compilerGenerated/generics/withParamTypeNoDefNoArgsInCall.good
 +++ b/test/classes/initializers/compilerGenerated/generics/withParamTypeNoDefNoArgsInCall.good
 @@ -1,6 +1,4 @@
@@ -166,7 +166,7 @@ index c4be8f5b2ff..00723855840 100644
 -withParamTypeNoDefNoArgsInCall.chpl:5: note: other candidates are:
 -withParamTypeNoDefNoArgsInCall.chpl:1: note:   Foo.init(param p: bool, reader, deserializer)
 +withParamTypeNoDefNoArgsInCall.chpl:5: error: unable to resolve call to 'init': no matching candidates
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:363: note: the following candidate didn't match
++$CHPL_HOME/modules/standard/ChapelIO.chpl:362: note: the following candidate didn't match
 +$CHPL_HOME/modules/internal/ChapelRange.chpl:280: note: the following candidate didn't match
 +withParamTypeNoDefNoArgsInCall.chpl:5: note: omitting 20 more candidates that didn't match
 diff --git a/test/classes/initializers/compilerGenerated/inherits_initializer_bad.good b/test/classes/initializers/compilerGenerated/inherits_initializer_bad.good
@@ -184,7 +184,7 @@ index fe576424976..24d7cb22f0e 100644
 +inherits_initializer_bad.chpl:10: note: the following candidate didn't match because it expects 2 actuals, but none were provided
 +inherits_initializer_bad.chpl:16: note: omitting 22 more candidates that didn't match
 diff --git a/test/classes/initializers/compilerGenerated/outOfOrderFieldUse.good b/test/classes/initializers/compilerGenerated/outOfOrderFieldUse.good
-index 9a24ed9905b..64b45330b48 100644
+index 9a24ed9905b..30981de8e68 100644
 --- a/test/classes/initializers/compilerGenerated/outOfOrderFieldUse.good
 +++ b/test/classes/initializers/compilerGenerated/outOfOrderFieldUse.good
 @@ -1,2 +1,4 @@
@@ -192,7 +192,7 @@ index 9a24ed9905b..64b45330b48 100644
 -outOfOrderFieldUse.chpl:6: note: the variable 'y' is defined here
 +outOfOrderFieldUse.chpl:9: error: unable to resolve call to 'init': no matching candidates
 +outOfOrderFieldUse.chpl:4: note: the following candidate didn't match
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:363: note: the following candidate didn't match
++$CHPL_HOME/modules/standard/ChapelIO.chpl:362: note: the following candidate didn't match
 +outOfOrderFieldUse.chpl:9: note: omitting 21 more candidates that didn't match
 diff --git a/test/classes/initializers/compilerGenerated/parent_inherits_initializer_bad.good b/test/classes/initializers/compilerGenerated/parent_inherits_initializer_bad.good
 index e250981e770..ce1a696bbe8 100644
@@ -780,7 +780,7 @@ index 80104c2215f..48217bf39cf 100644
 -explicitAssignment.chpl:3: note: is passed to formal 'other: Foo(real(64))'
 +explicitAssignment.chpl:16: error: type mismatch between declared type of 'a' and initialization expression
 diff --git a/test/classes/initializers/records/generics/omittedGenerics2.good b/test/classes/initializers/records/generics/omittedGenerics2.good
-index 134894721d7..543bc3fc838 100644
+index 134894721d7..8ba69657c24 100644
 --- a/test/classes/initializers/records/generics/omittedGenerics2.good
 +++ b/test/classes/initializers/records/generics/omittedGenerics2.good
 @@ -1,2 +1,8 @@
@@ -788,10 +788,10 @@ index 134894721d7..543bc3fc838 100644
 -omittedGenerics2.chpl:10: error: can't omit initialization of field "a", no type or default value provided
 +omittedGenerics2.chpl:17: In function 'main':
 +omittedGenerics2.chpl:19: error: unable to resolve call to 'writeln': no matching candidates
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:409: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++$CHPL_HOME/modules/standard/ChapelIO.chpl:408: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
 +omittedGenerics2.chpl:18: note: The actual 'c' expects to be split-initialized because it is declared with a generic type and no initialization expression here
 +omittedGenerics2.chpl:19: note: The call to 'writeln' occurs before any valid initialization points
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:403: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++$CHPL_HOME/modules/standard/ChapelIO.chpl:402: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
 +omittedGenerics2.chpl:19: note: omitting 1 more candidates that didn't match
 +omittedGenerics2.chpl:18: error: cannot default initialize variable using generic or unknown type
 diff --git a/test/classes/initializers/records/where-clause4.good b/test/classes/initializers/records/where-clause4.good
@@ -871,23 +871,23 @@ index ed4f8cb5636..f14399f6816 100644
 -  param-compiler-error.chpl:6: called as foo(param arg = b"a")
 +param-compiler-error.chpl:3: error: type mismatch between declared type of 'x' and initialization expression
 diff --git a/test/types/bytes/param/param-errors1.good b/test/types/bytes/param/param-errors1.good
-index 75087738eb1..34fac2558f6 100644
+index 75087738eb1..2df25d74a86 100644
 --- a/test/types/bytes/param/param-errors1.good
 +++ b/test/types/bytes/param/param-errors1.good
 @@ -1 +1,4 @@
 -param-errors1.chpl:2: error: illegal cast from bytes to string
 +param-errors1.chpl:2: error: unable to resolve call to ':': no matching candidates
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:445: note: the following candidate didn't match because the 'where' clause evaluated to 'false'
++$CHPL_HOME/modules/standard/ChapelIO.chpl:444: note: the following candidate didn't match because the 'where' clause evaluated to 'false'
 +$CHPL_HOME/modules/internal/StringCasts.chpl:60: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +param-errors1.chpl:2: note: omitting 124 more candidates that didn't match
 diff --git a/test/types/bytes/param/param-errors2.good b/test/types/bytes/param/param-errors2.good
-index 874368da630..f8178ef83b1 100644
+index 874368da630..15e986285d9 100644
 --- a/test/types/bytes/param/param-errors2.good
 +++ b/test/types/bytes/param/param-errors2.good
 @@ -1 +1,4 @@
 -param-errors2.chpl:3: error: illegal cast from bytes to string
 +param-errors2.chpl:3: error: unable to resolve call to ':': no matching candidates
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:445: note: the following candidate didn't match because the 'where' clause evaluated to 'false'
++$CHPL_HOME/modules/standard/ChapelIO.chpl:444: note: the following candidate didn't match because the 'where' clause evaluated to 'false'
 +$CHPL_HOME/modules/internal/StringCasts.chpl:60: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +param-errors2.chpl:3: note: omitting 124 more candidates that didn't match
 diff --git a/test/types/bytes/param/param-errors3.good b/test/types/bytes/param/param-errors3.good
@@ -1494,7 +1494,7 @@ index 7df509600a2..099e1206b37 100644
 +int-coerce-var.chpl:12: error: unable to resolve call to 'acceptIntRef': no matching candidates
 +int-coerce-var.chpl:1: note: the following candidate didn't match because an actual couldn't be passed to a formal
 diff --git a/test/types/integral/integralvariable2.good b/test/types/integral/integralvariable2.good
-index 3bd7a3ad5c0..4bc5d7d0076 100644
+index 3bd7a3ad5c0..3bea85df3e5 100644
 --- a/test/types/integral/integralvariable2.good
 +++ b/test/types/integral/integralvariable2.good
 @@ -1,4 +1,7 @@
@@ -1503,10 +1503,10 @@ index 3bd7a3ad5c0..4bc5d7d0076 100644
 -integralvariable2.chpl:1: note: cannot find initialization point to split-init this variable
 -integralvariable2.chpl:2: note: 'r' is used here before it is initialized
 +integralvariable2.chpl:2: error: unable to resolve call to 'writeln': no matching candidates
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:409: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++$CHPL_HOME/modules/standard/ChapelIO.chpl:408: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
 +integralvariable2.chpl:1: note: The actual 'r' expects to be split-initialized because it is declared with a generic type and no initialization expression here
 +integralvariable2.chpl:2: note: The call to 'writeln' occurs before any valid initialization points
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:403: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++$CHPL_HOME/modules/standard/ChapelIO.chpl:402: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
 +integralvariable2.chpl:2: note: omitting 1 more candidates that didn't match
 +integralvariable2.chpl:1: error: cannot default initialize variable using generic or unknown type
 diff --git a/test/types/locale/bradc/changeLocaleID.good b/test/types/locale/bradc/changeLocaleID.good
@@ -1535,7 +1535,7 @@ index 5e8aee6ffa9..aecf08cddbb 100644
 -note: An additional error is hidden. Use --print-additional-errors to see it.
 +bad-managed-init.chpl:13: error: type mismatch between declared type of 's' and initialization expression
 diff --git a/test/types/partial/default-init-generic1.good b/test/types/partial/default-init-generic1.good
-index ce672e1bd09..5d74e1f7b7e 100644
+index ce672e1bd09..cd5b3c684d4 100644
 --- a/test/types/partial/default-init-generic1.good
 +++ b/test/types/partial/default-init-generic1.good
 @@ -1,7 +1,22 @@
@@ -1547,28 +1547,28 @@ index ce672e1bd09..5d74e1f7b7e 100644
 -default-init-generic1.chpl:22: note: cannot find initialization point to split-init this variable
 -default-init-generic1.chpl:23: note: 'D' is used here before it is initialized
 +default-init-generic1.chpl:23: error: unable to resolve call to 'writeln': no matching candidates
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:409: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++$CHPL_HOME/modules/standard/ChapelIO.chpl:408: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
 +default-init-generic1.chpl:22: note: The actual 'D' expects to be split-initialized because it is declared with a generic type and no initialization expression here
 +default-init-generic1.chpl:23: note: The call to 'writeln' occurs before any valid initialization points
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:403: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++$CHPL_HOME/modules/standard/ChapelIO.chpl:402: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
 +default-init-generic1.chpl:23: note: omitting 1 more candidates that didn't match
 +default-init-generic1.chpl:26: error: unable to resolve call to 'writeln': no matching candidates
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:409: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++$CHPL_HOME/modules/standard/ChapelIO.chpl:408: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
 +default-init-generic1.chpl:25: note: The actual 'A' expects to be split-initialized because it is declared with a generic type and no initialization expression here
 +default-init-generic1.chpl:26: note: The call to 'writeln' occurs before any valid initialization points
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:403: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++$CHPL_HOME/modules/standard/ChapelIO.chpl:402: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
 +default-init-generic1.chpl:26: note: omitting 1 more candidates that didn't match
 +default-init-generic1.chpl:29: error: unable to resolve call to 'writeln': no matching candidates
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:409: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++$CHPL_HOME/modules/standard/ChapelIO.chpl:408: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
 +default-init-generic1.chpl:28: note: The actual 'x' expects to be split-initialized because it is declared with a generic type and no initialization expression here
 +default-init-generic1.chpl:29: note: The call to 'writeln' occurs before any valid initialization points
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:403: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++$CHPL_HOME/modules/standard/ChapelIO.chpl:402: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
 +default-init-generic1.chpl:29: note: omitting 1 more candidates that didn't match
 +default-init-generic1.chpl:22: error: cannot default initialize variable using generic or unknown type
 +default-init-generic1.chpl:25: error: cannot default initialize variable using generic or unknown type
 +default-init-generic1.chpl:28: error: cannot default initialize variable using generic or unknown type
 diff --git a/test/types/partial/default-init-generic2.good b/test/types/partial/default-init-generic2.good
-index 8d265af15ad..100a3535924 100644
+index 8d265af15ad..a9b33112c6c 100644
 --- a/test/types/partial/default-init-generic2.good
 +++ b/test/types/partial/default-init-generic2.good
 @@ -1,5 +1,15 @@
@@ -1578,16 +1578,16 @@ index 8d265af15ad..100a3535924 100644
 -default-init-generic2.chpl:13: note: cannot find initialization point to split-init this variable
 -default-init-generic2.chpl:14: note: 'B' is used here before it is initialized
 +default-init-generic2.chpl:14: error: unable to resolve call to 'writeln': no matching candidates
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:409: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++$CHPL_HOME/modules/standard/ChapelIO.chpl:408: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
 +default-init-generic2.chpl:13: note: The actual 'B' expects to be split-initialized because it is declared with a generic type and no initialization expression here
 +default-init-generic2.chpl:14: note: The call to 'writeln' occurs before any valid initialization points
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:403: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++$CHPL_HOME/modules/standard/ChapelIO.chpl:402: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
 +default-init-generic2.chpl:14: note: omitting 1 more candidates that didn't match
 +default-init-generic2.chpl:17: error: unable to resolve call to 'writeln': no matching candidates
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:409: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++$CHPL_HOME/modules/standard/ChapelIO.chpl:408: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
 +default-init-generic2.chpl:16: note: The actual 'C' expects to be split-initialized because it is declared with a generic type and no initialization expression here
 +default-init-generic2.chpl:17: note: The call to 'writeln' occurs before any valid initialization points
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:403: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++$CHPL_HOME/modules/standard/ChapelIO.chpl:402: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
 +default-init-generic2.chpl:17: note: omitting 1 more candidates that didn't match
 +default-init-generic2.chpl:13: error: cannot default initialize variable using generic or unknown type
 +default-init-generic2.chpl:16: error: cannot default initialize variable using generic or unknown type
@@ -1676,19 +1676,19 @@ index 5114b18582c..bc61a3ed040 100644
 +partialTypeFormal.chpl:19: error: unable to resolve call to 'foo': no matching candidates
 +partialTypeFormal.chpl:9: note: the following candidate didn't match because an actual couldn't be passed to a formal
 diff --git a/test/types/range/bradc/promoteRange.good b/test/types/range/bradc/promoteRange.good
-index 8fd05775f9f..3588826ecb6 100644
+index 8fd05775f9f..2ebcc28875e 100644
 --- a/test/types/range/bradc/promoteRange.good
 +++ b/test/types/range/bradc/promoteRange.good
 @@ -1 +1 @@
 -promoteRange.chpl:1: error: Ranges defined using bounds of type 'int(64)..range(int(64),both,one)' are not currently supported
-+promoteRange.chpl:1: error: Ranges defined using bounds of type 'int(64)..range(int(64), both, one)' are not currently supported
++promoteRange.chpl:1: error: Ranges defined using bounds of type 'int(64)..range(int(64), boundKind.both, strideKind.one)' are not currently supported
 diff --git a/test/types/range/bradc/promoteRange2.good b/test/types/range/bradc/promoteRange2.good
-index 1ac497ddfc4..24015e2643e 100644
+index 1ac497ddfc4..3b83e5953e6 100644
 --- a/test/types/range/bradc/promoteRange2.good
 +++ b/test/types/range/bradc/promoteRange2.good
 @@ -1 +1 @@
 -promoteRange2.chpl:1: error: Ranges defined using bounds of type 'range(int(64),both,one)..int(64)' are not currently supported
-+promoteRange2.chpl:1: error: Ranges defined using bounds of type 'range(int(64), both, one)..int(64)' are not currently supported
++promoteRange2.chpl:1: error: Ranges defined using bounds of type 'range(int(64), boundKind.both, strideKind.one)..int(64)' are not currently supported
 diff --git a/test/types/range/cast-assign-init/casts-4.good b/test/types/range/cast-assign-init/casts-4.good
 index 3199c922469..178c1d52b4a 100644
 --- a/test/types/range/cast-assign-init/casts-4.good
@@ -1869,12 +1869,12 @@ index 00000000000..50247f550ee
 +../../../../util/test/prediff-obscure-module-linenos
 \ No newline at end of file
 diff --git a/test/types/range/diten/badRange.good b/test/types/range/diten/badRange.good
-index e9e8fff5529..5673cfca5b9 100644
+index e9e8fff5529..30479bb8de7 100644
 --- a/test/types/range/diten/badRange.good
 +++ b/test/types/range/diten/badRange.good
 @@ -1 +1 @@
 -badRange.chpl:1: error: Ranges defined using bounds of type 'range(int(64),neither,one)' are not currently supported
-+badRange.chpl:1: error: Ranges defined using bounds of type 'range(int(64), neither, one)' are not currently supported
++badRange.chpl:1: error: Ranges defined using bounds of type 'range(int(64), boundKind.neither, strideKind.one)' are not currently supported
 diff --git a/test/types/range/diten/rangecastbounds.bounded.good b/test/types/range/diten/rangecastbounds.bounded.good
 index 7cf95ac0130..10e61332dcd 100644
 --- a/test/types/range/diten/rangecastbounds.bounded.good
@@ -1908,12 +1908,12 @@ index 0e3cdafc66f..eb0c4dd49ca 100644
 +$CHPL_HOME/modules/internal/ChapelRange.chpl:1666: In function ':':
 +$CHPL_HOME/modules/internal/ChapelRange.chpl:1668: error: cannot cast range from boundKind.both to boundKind.neither
 diff --git a/test/types/range/elliot/badRangeLiterals/badCountedLowBoundedRange.good b/test/types/range/elliot/badRangeLiterals/badCountedLowBoundedRange.good
-index efa1a94fdd1..6ea7dfe6dc4 100644
+index efa1a94fdd1..e1ac1c558c5 100644
 --- a/test/types/range/elliot/badRangeLiterals/badCountedLowBoundedRange.good
 +++ b/test/types/range/elliot/badRangeLiterals/badCountedLowBoundedRange.good
 @@ -1 +1 @@
 -badCountedLowBoundedRange.chpl:3: error: can't apply '#' to a range with idxType int(64) using a count of type real(64)
-+badCountedLowBoundedRange.chpl:3: error: cannot apply '#' to 'range(int(64), low, one)'
++badCountedLowBoundedRange.chpl:3: error: cannot apply '#' to 'range(int(64), boundKind.low, strideKind.one)'
 diff --git a/test/types/range/enum/castEnumRange2.good b/test/types/range/enum/castEnumRange2.good
 index 2b96d691ebb..e5fc6b3763b 100644
 --- a/test/types/range/enum/castEnumRange2.good
@@ -2282,7 +2282,7 @@ index 9b2d9720d02..071dcfab346 100644
 +init-new-changes-type.chpl:20: error: final result of initialization does not match the initial type
 +init-new-changes-type.chpl:16: note: field 't' started with type 'int(64)', but had incompatible type 'real(64)' after initialization
 diff --git a/test/types/records/bad-change-type/init-uses-default.good b/test/types/records/bad-change-type/init-uses-default.good
-index 66d88624433..656035472dd 100644
+index 66d88624433..15fd961a966 100644
 --- a/test/types/records/bad-change-type/init-uses-default.good
 +++ b/test/types/records/bad-change-type/init-uses-default.good
 @@ -1,4 +1,7 @@
@@ -2291,10 +2291,10 @@ index 66d88624433..656035472dd 100644
 -init-uses-default.chpl:11: note: cannot find initialization point to split-init this variable
 -init-uses-default.chpl:12: note: 'xx' is used here before it is initialized
 +init-uses-default.chpl:12: error: unable to resolve call to 'writeln': no matching candidates
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:409: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++$CHPL_HOME/modules/standard/ChapelIO.chpl:408: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
 +init-uses-default.chpl:11: note: The actual 'xx' expects to be split-initialized because it is declared with a generic type and no initialization expression here
 +init-uses-default.chpl:12: note: The call to 'writeln' occurs before any valid initialization points
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:403: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++$CHPL_HOME/modules/standard/ChapelIO.chpl:402: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
 +init-uses-default.chpl:12: note: omitting 1 more candidates that didn't match
 +init-uses-default.chpl:11: error: cannot default initialize variable using generic or unknown type
 diff --git a/test/types/records/bad-change-type/range-init1.good b/test/types/records/bad-change-type/range-init1.good
@@ -2728,19 +2728,13 @@ index 068e44ac963..9a4c8bef03a 100644
 -inheritanceError.chpl:5: error: inheritance is not currently supported for records
 +inheritanceError.chpl:5: error: invalid parent class expression
 diff --git a/test/types/records/lydia/recordOffset-badField.good b/test/types/records/lydia/recordOffset-badField.good
-index c2791354310..45fce299fc7 100644
+index c2791354310..9d6ad14ca51 100644
 --- a/test/types/records/lydia/recordOffset-badField.good
 +++ b/test/types/records/lydia/recordOffset-badField.good
-@@ -1,3 +1,7 @@
-+$CHPL_HOME/modules/standard/Reflection.chpl:252: In function 'getFieldRef':
-+$CHPL_HOME/modules/standard/Reflection.chpl:257: error: bad call to primitive "field by num"
-+$CHPL_HOME/modules/standard/Reflection.chpl:259: error: bad call to primitive "field by num"
-+$CHPL_HOME/modules/standard/Reflection.chpl:261: error: bad call to primitive "field by num"
+@@ -1,3 +1,2 @@
  $CHPL_HOME/modules/standard/CTypes.chpl:xyz: In function 'c_offsetof':
--$CHPL_HOME/modules/standard/CTypes.chpl:xyz: error: field foo not found in Test
+ $CHPL_HOME/modules/standard/CTypes.chpl:xyz: error: field foo not found in Test
 -  recordOffset-badField.chpl:11: called as c_offsetof(type t = Test, param fieldname = "foo")
-+$CHPL_HOME/modules/standard/CTypes.chpl:xyz: error: cannot return a reference to 'type' field 'foo'
-+$CHPL_HOME/modules/standard/CTypes.chpl:xyz: error: cannot return a reference to 'param' field 'foo'
 diff --git a/test/types/records/noakes/complete-2.good b/test/types/records/noakes/complete-2.good
 index 1c2e17bcd0b..be0652ceb52 100644
 --- a/test/types/records/noakes/complete-2.good
@@ -2826,7 +2820,7 @@ index b0775c29d35..be3d4740181 100644
 -error-never-initialized-values-global4.chpl:3: note: consider adding a management decorator such as 'owned', 'shared', 'borrowed', or 'unmanaged'
 +error-never-initialized-values-global4.chpl:3: error: cannot default initialize variable using generic or unknown type
 diff --git a/test/types/records/split-init/error-never-initialized-values-mentioned1.good b/test/types/records/split-init/error-never-initialized-values-mentioned1.good
-index bfa8e6442f2..f24f0c03170 100644
+index bfa8e6442f2..73b69be174f 100644
 --- a/test/types/records/split-init/error-never-initialized-values-mentioned1.good
 +++ b/test/types/records/split-init/error-never-initialized-values-mentioned1.good
 @@ -1,4 +1,7 @@
@@ -2835,10 +2829,10 @@ index bfa8e6442f2..f24f0c03170 100644
 -error-never-initialized-values-mentioned1.chpl:5: note: cannot find initialization point to split-init this variable
 -error-never-initialized-values-mentioned1.chpl:7: note: 'a2' is used here before it is initialized
 +error-never-initialized-values-mentioned1.chpl:7: error: unable to resolve call to 'writeln': no matching candidates
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:409: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++$CHPL_HOME/modules/standard/ChapelIO.chpl:408: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
 +error-never-initialized-values-mentioned1.chpl:5: note: The actual 'a2' expects to be split-initialized because it is declared with a generic type and no initialization expression here
 +error-never-initialized-values-mentioned1.chpl:7: note: The call to 'writeln' occurs before any valid initialization points
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:403: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++$CHPL_HOME/modules/standard/ChapelIO.chpl:402: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
 +error-never-initialized-values-mentioned1.chpl:7: note: omitting 1 more candidates that didn't match
 diff --git a/test/types/records/split-init/error-never-initialized-values-mentioned2.good b/test/types/records/split-init/error-never-initialized-values-mentioned2.good
 index 6e31d880999..bf9905cbd68 100644
@@ -2852,7 +2846,7 @@ index 6e31d880999..bf9905cbd68 100644
 -note: Consider using the type borrowed C? instead
 +error-never-initialized-values-mentioned2.chpl:5: error: cannot default initialize variable using non-nilable class type
 diff --git a/test/types/records/split-init/error-never-initialized-values-mentioned3.good b/test/types/records/split-init/error-never-initialized-values-mentioned3.good
-index c9032597bca..8fb878f21c4 100644
+index c9032597bca..83720d115c9 100644
 --- a/test/types/records/split-init/error-never-initialized-values-mentioned3.good
 +++ b/test/types/records/split-init/error-never-initialized-values-mentioned3.good
 @@ -1,5 +1,8 @@
@@ -2862,14 +2856,14 @@ index c9032597bca..8fb878f21c4 100644
 -error-never-initialized-values-mentioned3.chpl:5: note: cannot find initialization point to split-init this variable
 -error-never-initialized-values-mentioned3.chpl:7: note: 'c2' is used here before it is initialized
 +error-never-initialized-values-mentioned3.chpl:7: error: unable to resolve call to 'writeln': no matching candidates
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:409: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++$CHPL_HOME/modules/standard/ChapelIO.chpl:408: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
 +error-never-initialized-values-mentioned3.chpl:5: note: The actual 'c2' expects to be split-initialized because it is declared with a generic type and no initialization expression here
 +error-never-initialized-values-mentioned3.chpl:7: note: The call to 'writeln' occurs before any valid initialization points
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:403: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++$CHPL_HOME/modules/standard/ChapelIO.chpl:402: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
 +error-never-initialized-values-mentioned3.chpl:7: note: omitting 1 more candidates that didn't match
 +error-never-initialized-values-mentioned3.chpl:5: error: cannot default initialize variable using non-nilable class type
 diff --git a/test/types/records/split-init/error-never-initialized-values-mentioned4.good b/test/types/records/split-init/error-never-initialized-values-mentioned4.good
-index fd160707c4e..9bac5805485 100644
+index fd160707c4e..717bb414e76 100644
 --- a/test/types/records/split-init/error-never-initialized-values-mentioned4.good
 +++ b/test/types/records/split-init/error-never-initialized-values-mentioned4.good
 @@ -1,5 +1,8 @@
@@ -2879,10 +2873,10 @@ index fd160707c4e..9bac5805485 100644
 -error-never-initialized-values-mentioned4.chpl:5: note: cannot find initialization point to split-init this variable
 -error-never-initialized-values-mentioned4.chpl:7: note: 'q2' is used here before it is initialized
 +error-never-initialized-values-mentioned4.chpl:7: error: unable to resolve call to 'writeln': no matching candidates
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:409: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++$CHPL_HOME/modules/standard/ChapelIO.chpl:408: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
 +error-never-initialized-values-mentioned4.chpl:5: note: The actual 'q2' expects to be split-initialized because it is declared with a generic type and no initialization expression here
 +error-never-initialized-values-mentioned4.chpl:7: note: The call to 'writeln' occurs before any valid initialization points
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:403: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++$CHPL_HOME/modules/standard/ChapelIO.chpl:402: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
 +error-never-initialized-values-mentioned4.chpl:7: note: omitting 1 more candidates that didn't match
 +error-never-initialized-values-mentioned4.chpl:5: error: cannot default initialize variable using non-nilable class type
 diff --git a/test/types/records/split-init/error-never-initialized-values-not-mentioned1.good b/test/types/records/split-init/error-never-initialized-values-not-mentioned1.good
@@ -3158,16 +3152,16 @@ index 65856d9b0d3..5d6d8c390d7 100644
 -externRecordInvalidNOT_EQUALS.chpl:5: error: unresolved call '!=(blah_t, 1)'
 +externRecordInvalidNOT_EQUALS.chpl:5: error: unable to resolve call to '!=': no matching candidates
 diff --git a/test/types/records/tupleFields/detupleFieldDecl.good b/test/types/records/tupleFields/detupleFieldDecl.good
-index f2b8c3613e5..836619f92f9 100644
+index f2b8c3613e5..3ba8650a780 100644
 --- a/test/types/records/tupleFields/detupleFieldDecl.good
 +++ b/test/types/records/tupleFields/detupleFieldDecl.good
 @@ -1 +1,8 @@
  detupleFieldDecl.chpl:10: error: de-tupling declarations are not currently supported as fields
 +detupleFieldDecl.chpl:17: error: unable to resolve call to 'writeln': no matching candidates
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:409: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++$CHPL_HOME/modules/standard/ChapelIO.chpl:408: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
 +detupleFieldDecl.chpl:16: note: The actual 'myR2' expects to be split-initialized because it is declared with a generic type and no initialization expression here
 +detupleFieldDecl.chpl:17: note: The call to 'writeln' occurs before any valid initialization points
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:403: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++$CHPL_HOME/modules/standard/ChapelIO.chpl:402: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
 +detupleFieldDecl.chpl:17: note: omitting 1 more candidates that didn't match
 +detupleFieldDecl.chpl:16: error: cannot default initialize variable using generic or unknown type
 diff --git a/test/types/records/typeArgs/argConstraints2.good b/test/types/records/typeArgs/argConstraints2.good
@@ -4247,26 +4241,26 @@ index f08ef8e5adb..92f7d6e78ea 100644
 +tuple-blank-to-ref.chpl:15: error: unable to resolve call to 'byref': no matching candidates
 +tuple-blank-to-ref.chpl:5: note: the following candidate didn't match because an actual couldn't be passed to a formal
 diff --git a/test/types/tuple/ferguson/tuple-from-array-error.good b/test/types/tuple/ferguson/tuple-from-array-error.good
-index 66a7d159a73..7fe9d34115a 100644
+index 66a7d159a73..1e6dc676953 100644
 --- a/test/types/tuple/ferguson/tuple-from-array-error.good
 +++ b/test/types/tuple/ferguson/tuple-from-array-error.good
 @@ -1 +1 @@
 -tuple-from-array-error.chpl:2: error: illegal tuple variable declaration with non-tuple initializer
-+tuple-from-array-error.chpl:2: error: value of non-tuple type '[domain(1,int(64),one)] int(64)' cannot be split using a tuple declaration
++tuple-from-array-error.chpl:2: error: value of non-tuple type '[domain(1, int(64), strideKind.one)] int(64)' cannot be split using a tuple declaration
 diff --git a/test/types/tuple/ferguson/tuple-from-array-for-error.good b/test/types/tuple/ferguson/tuple-from-array-for-error.good
-index 520d264565d..119e88be343 100644
+index 520d264565d..8cb0dc05806 100644
 --- a/test/types/tuple/ferguson/tuple-from-array-for-error.good
 +++ b/test/types/tuple/ferguson/tuple-from-array-for-error.good
 @@ -1 +1 @@
 -tuple-from-array-for-error.chpl:10: error: illegal tuple variable declaration with non-tuple initializer
-+tuple-from-array-for-error.chpl:10: error: value of non-tuple type '[domain(1,int(64),one)] int(64)' cannot be split using a tuple declaration
++tuple-from-array-for-error.chpl:10: error: value of non-tuple type '[domain(1, int(64), strideKind.one)] int(64)' cannot be split using a tuple declaration
 diff --git a/test/types/tuple/ferguson/tuple-from-array-forall-error.good b/test/types/tuple/ferguson/tuple-from-array-forall-error.good
-index d0f2221e02d..6cdae41bfcc 100644
+index d0f2221e02d..c1c95f06d7c 100644
 --- a/test/types/tuple/ferguson/tuple-from-array-forall-error.good
 +++ b/test/types/tuple/ferguson/tuple-from-array-forall-error.good
 @@ -1 +1 @@
 -tuple-from-array-forall-error.chpl:10: error: illegal tuple variable declaration with non-tuple initializer
-+tuple-from-array-forall-error.chpl:10: error: value of non-tuple type '[domain(1,int(64),one)] int(64)' cannot be split using a tuple declaration
++tuple-from-array-forall-error.chpl:10: error: value of non-tuple type '[domain(1, int(64), strideKind.one)] int(64)' cannot be split using a tuple declaration
 diff --git a/test/types/tuple/ferguson/tuple-size-mismatch-for.good b/test/types/tuple/ferguson/tuple-size-mismatch-for.good
 index 55921aca3d5..1291e1ee788 100644
 --- a/test/types/tuple/ferguson/tuple-size-mismatch-for.good
@@ -4486,15 +4480,15 @@ index 36ea9a89178..b711582e4fc 100644
 +illegalFieldQuery.chpl:8: note: call resolution was not completed because formal 1 of this candidate was ill-formed
 +illegalFieldQuery.chpl:13: note: omitting 1 more candidates that didn't match
 diff --git a/test/types/type_variables/bharshbarg/thisOnTypeVar.good b/test/types/type_variables/bharshbarg/thisOnTypeVar.good
-index 273bd12b43d..ca2b3bccbd9 100644
+index 273bd12b43d..a53f8733546 100644
 --- a/test/types/type_variables/bharshbarg/thisOnTypeVar.good
 +++ b/test/types/type_variables/bharshbarg/thisOnTypeVar.good
 @@ -1 +1,4 @@
 -thisOnTypeVar.chpl:3: error: illegal call of type
 +thisOnTypeVar.chpl:3: error: unable to resolve call to 'this': no matching candidates
 +$CHPL_HOME/modules/internal/ChapelBase.chpl:42: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/internal/ChapelRange.chpl:2432: note: the following candidate didn't match because it expects 1 actual, but none were provided
-+thisOnTypeVar.chpl:3: note: omitting 11 more candidates that didn't match
++$CHPL_HOME/modules/internal/ChapelUnion.chpl:79: note: the following candidate didn't match because it expects 1 actual, but none were provided
++thisOnTypeVar.chpl:3: note: omitting 14 more candidates that didn't match
 diff --git a/test/types/type_variables/deitz/functions/test_foo5-error.good b/test/types/type_variables/deitz/functions/test_foo5-error.good
 index ca5709a54b8..207dd5573c3 100644
 --- a/test/types/type_variables/deitz/functions/test_foo5-error.good
@@ -4561,7 +4555,7 @@ index 5b9443a4214..e75292a3092 100644
 +test_error1.chpl:14: error: unable to resolve call to 'foo': no matching candidates
 +test_error1.chpl:10: note: the following candidate didn't match because an actual couldn't be passed to a formal
 diff --git a/test/types/type_variables/deitz/part7/test_infer_class1.good b/test/types/type_variables/deitz/part7/test_infer_class1.good
-index e58ce80a69a..ab60b2d6e8e 100644
+index e58ce80a69a..a67bda7d1cc 100644
 --- a/test/types/type_variables/deitz/part7/test_infer_class1.good
 +++ b/test/types/type_variables/deitz/part7/test_infer_class1.good
 @@ -1,6 +1,4 @@
@@ -4572,11 +4566,11 @@ index e58ce80a69a..ab60b2d6e8e 100644
 -test_infer_class1.chpl:6: note: other candidates are:
 -test_infer_class1.chpl:1: note:   C.init(type t, reader, deserializer)
 +test_infer_class1.chpl:6: error: unable to resolve call to 'init': no matching candidates
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:363: note: the following candidate didn't match
++$CHPL_HOME/modules/standard/ChapelIO.chpl:362: note: the following candidate didn't match
 +$CHPL_HOME/modules/internal/ChapelRange.chpl:280: note: the following candidate didn't match
 +test_infer_class1.chpl:6: note: omitting 20 more candidates that didn't match
 diff --git a/test/types/type_variables/deitz/part7/test_infer_class2.good b/test/types/type_variables/deitz/part7/test_infer_class2.good
-index 2599a263216..73136aa2d8d 100644
+index 2599a263216..6e9f3d0876e 100644
 --- a/test/types/type_variables/deitz/part7/test_infer_class2.good
 +++ b/test/types/type_variables/deitz/part7/test_infer_class2.good
 @@ -1,6 +1,4 @@
@@ -4587,7 +4581,7 @@ index 2599a263216..73136aa2d8d 100644
 -test_infer_class2.chpl:6: note: other candidates are:
 -test_infer_class2.chpl:1: note:   C.init(type t, reader, deserializer)
 +test_infer_class2.chpl:6: error: unable to resolve call to 'init': no matching candidates
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:363: note: the following candidate didn't match
++$CHPL_HOME/modules/standard/ChapelIO.chpl:362: note: the following candidate didn't match
 +$CHPL_HOME/modules/internal/ChapelRange.chpl:280: note: the following candidate didn't match
 +test_infer_class2.chpl:6: note: omitting 20 more candidates that didn't match
 diff --git a/test/types/type_variables/deitz/test_query_expression_error.good b/test/types/type_variables/deitz/test_query_expression_error.good
@@ -4799,7 +4793,7 @@ index aa289f0aefb..247f9e1fa87 100644
 -loop-expr-ind.chpl:2: error: unimplemented feature: if you are attempting to use skyline arrays, they are not yet supported; if not, remove the index expression from this array type specification
 +loop-expr-ind.chpl:2: error: a type variable cannot be initialized with a regular value
 diff --git a/test/types/typedefs/bradc/redefineTypeNames.good b/test/types/typedefs/bradc/redefineTypeNames.good
-index 426c9bacc24..8aef9489d26 100644
+index 426c9bacc24..bfb53cbe4cf 100644
 --- a/test/types/typedefs/bradc/redefineTypeNames.good
 +++ b/test/types/typedefs/bradc/redefineTypeNames.good
 @@ -8,3 +8,25 @@ redefineTypeNames.chpl:8: error: attempt to redefine reserved type 'imag'
@@ -4807,24 +4801,24 @@ index 426c9bacc24..8aef9489d26 100644
  redefineTypeNames.chpl:20: error: attempt to redefine reserved type 'imag'
  redefineTypeNames.chpl:22: error: attempt to redefine reserved type 'complex'
 +redefineTypeNames.chpl:10: error: unable to resolve call to 'writeln': no matching candidates
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:409: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:403: note: the following candidate didn't match because an actual couldn't be passed to a formal
++$CHPL_HOME/modules/standard/ChapelIO.chpl:408: note: the following candidate didn't match because an actual couldn't be passed to a formal
++$CHPL_HOME/modules/standard/ChapelIO.chpl:402: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +redefineTypeNames.chpl:10: note: omitting 1 more candidates that didn't match
 +redefineTypeNames.chpl:11: error: unable to resolve call to 'writeln': no matching candidates
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:409: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:403: note: the following candidate didn't match because an actual couldn't be passed to a formal
++$CHPL_HOME/modules/standard/ChapelIO.chpl:408: note: the following candidate didn't match because an actual couldn't be passed to a formal
++$CHPL_HOME/modules/standard/ChapelIO.chpl:402: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +redefineTypeNames.chpl:11: note: omitting 1 more candidates that didn't match
 +redefineTypeNames.chpl:12: error: unable to resolve call to 'writeln': no matching candidates
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:409: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:403: note: the following candidate didn't match because an actual couldn't be passed to a formal
++$CHPL_HOME/modules/standard/ChapelIO.chpl:408: note: the following candidate didn't match because an actual couldn't be passed to a formal
++$CHPL_HOME/modules/standard/ChapelIO.chpl:402: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +redefineTypeNames.chpl:12: note: omitting 1 more candidates that didn't match
 +redefineTypeNames.chpl:13: error: unable to resolve call to 'writeln': no matching candidates
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:409: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:403: note: the following candidate didn't match because an actual couldn't be passed to a formal
++$CHPL_HOME/modules/standard/ChapelIO.chpl:408: note: the following candidate didn't match because an actual couldn't be passed to a formal
++$CHPL_HOME/modules/standard/ChapelIO.chpl:402: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +redefineTypeNames.chpl:13: note: omitting 1 more candidates that didn't match
 +redefineTypeNames.chpl:14: error: unable to resolve call to 'writeln': no matching candidates
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:409: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:403: note: the following candidate didn't match because an actual couldn't be passed to a formal
++$CHPL_HOME/modules/standard/ChapelIO.chpl:408: note: the following candidate didn't match because an actual couldn't be passed to a formal
++$CHPL_HOME/modules/standard/ChapelIO.chpl:402: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +redefineTypeNames.chpl:14: note: omitting 1 more candidates that didn't match
 +redefineTypeNames.chpl:24: error: type mismatch between declared type of 'a' and initialization expression
 +redefineTypeNames.chpl:28: error: type mismatch between declared type of 'e' and initialization expression

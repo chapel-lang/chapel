@@ -899,6 +899,10 @@ bool canInstantiate(Type* actualType, Type* formalType) {
     return true;
   }
 
+  if (formalType == dtAnyUnion && isUnion(actualType)) {
+    return true;
+  }
+
   if (formalType == dtNumeric &&
       (isIntType(actualType)  ||
        isUIntType(actualType) ||

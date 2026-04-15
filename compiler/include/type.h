@@ -627,6 +627,7 @@ TYPE_EXTERN Type*             dtAnyEnumerated;
 TYPE_EXTERN Type*             dtAnyImag;
 TYPE_EXTERN Type*             dtAnyReal;
 TYPE_EXTERN Type*             dtAnyPOD;
+TYPE_EXTERN Type*             dtAnyUnion;
 
 TYPE_EXTERN Type*             dtIteratorRecord;
 TYPE_EXTERN Type*             dtIteratorClass;

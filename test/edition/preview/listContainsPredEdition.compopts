@@ -1,0 +1,3 @@
+--warn-unstable # listContainsPredEdition.good
+--edition=preview # listContainsPredEdition.new.good
+--edition=preview --warn-unstable # listContainsPredEdition.preview-warn.good

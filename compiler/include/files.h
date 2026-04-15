@@ -28,6 +28,7 @@
 #include <vector>
 #include <functional>
 #include "vec.h"
+#include "chpl/util/filesystem.h"
 
 extern std::string executableFilename;
 extern std::string libmodeHeadername;
@@ -146,9 +147,6 @@ bool readArgsFromFile(std::string path, std::vector<std::string>& cmds,
                       bool errFatal=true);
 void expandInstallationPaths(std::string& arg);
 void expandInstallationPaths(std::vector<std::string>& args);
-
-bool isDirectory(std::string_view path);
-bool pathExists(std::string_view path);
 
 char*       chplRealPath(const char* path);
 char*       dirHasFile(const char* dir, const char* file);

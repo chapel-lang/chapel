@@ -114,10 +114,16 @@ MASON_MODULES_TO_LINT = $(shell find $(CHPL_MAKE_HOME)/tools/mason -name '*.chpl
 lint-mason: chplcheck FORCE
 	tools/chplcheck/chplcheck $(MASON_MODULES_TO_LINT)
 
+mason-deps: FORCE
+	cd tools/mason && $(MAKE) deps
+
 run-frontend-linters: FORCE
 	@cd compiler && $(MAKE) run-frontend-linters
 
 run-dyno-linters: run-frontend-linters FORCE
+
+chpl-completion: FORCE
+	CHPL_HOME=$(CHPL_MAKE_HOME) ./util/devel/gen-chpl-bash-completion > util/chpl-completion.bash
 
 SPECTEST_DIR = ./test/release/examples/spec
 spectests: FORCE

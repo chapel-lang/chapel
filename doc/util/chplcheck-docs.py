@@ -76,14 +76,21 @@ def find_rules(file: str):
             i
             for d in func.decorator_list
             for i in ast.walk(d)
-            if isinstance(i, ast.Attribute)
+            if isinstance(i, (ast.Attribute, ast.Call))
         ]
+
+        RULE_DECORATORS = ("basic_rule", "advanced_rule", "location_rule")
 
         # keep only the decorators that are rules
         decorators = [
             d
             for d in decorators
-            if d.attr in ["basic_rule", "advanced_rule", "location_rule"]
+            if (isinstance(d, ast.Attribute) and d.attr in RULE_DECORATORS)
+            or (
+                isinstance(d, ast.Call)
+                and isinstance(d.func, ast.Attribute)
+                and d.func.attr in RULE_DECORATORS
+            )
         ]
         # if there are no decorators, this is not a rule
         if not decorators:

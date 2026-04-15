@@ -119,7 +119,7 @@ proc runProjectBinary(show: bool, release: bool,
     // Build if not built, throwing error if Mason.toml doesnt exist
     if isFile(joinPath(projectHome, "Mason.lock")) && built {
       // TODO: do we need to expose the error code in some way?
-      const runResult = runWithStatus(command.toArray());
+      const runResult = runWithStatus(command.toArray(), capture=false);
     } else if isFile(joinPath(projectHome, "Mason.toml")) {
       const msg = "Mason could not find your Mason.lock.\n";
       const help = "To build and run your project use: mason run --build";

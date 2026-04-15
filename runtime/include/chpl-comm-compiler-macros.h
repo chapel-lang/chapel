@@ -25,7 +25,7 @@
 
 #include "chpl-comm.h"
 #include "chpl-mem.h"
-#include "error.h"
+#include "chpl-error.h"
 #include "chpl-wide-ptr-fns.h"
 
 #include "chpl-prefetch.h" // for chpl_prefetch

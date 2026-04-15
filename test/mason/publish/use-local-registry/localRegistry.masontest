@@ -33,6 +33,11 @@ mason run
 mason test
 mason run --example Ex.chpl --build
 
+# make sure mason doc works
+mason doc >/dev/null 2>/dev/null
+cat doc/_sources/modules/src/myPackage.rst.txt | grep '.. module::'
+
+
 # create a new package and add the dependency to it
 cd ..
 mason new myNewPackage
@@ -41,3 +46,7 @@ mason add myDep@0.1.0
 # replace the body of the package with a simple main that prints the strings from myDep
 echo 'module myNewPackage { import myDep; proc main() { writeln("got strings: ", myDep.getStrings()); } }' > src/myNewPackage.chpl
 mason run --build
+
+# make sure mason doc works
+mason doc >/dev/null 2>/dev/null
+cat doc/_sources/modules/src/myNewPackage.rst.txt | grep '.. module::'

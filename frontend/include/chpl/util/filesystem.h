@@ -49,8 +49,13 @@ std::error_code writeFile(const char* path, const std::string& data);
 
 /**
   Checks to see if a file exists at path. Returns 'true' if it does.
- */
-bool fileExists(const char* path);
+*/
+bool pathExists(std::string_view path);
+
+/**
+   Checks to see if a directory exists at path. Returns 'true' if it does.
+*/
+bool directoryExists(std::string_view path);
 
 /**
  * create the directory specified by argument dirname

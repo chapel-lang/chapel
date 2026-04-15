@@ -57,6 +57,7 @@ extern bool fNoStackChecks;
 extern bool fNoCastChecks;
 extern bool fNoConstArgChecks;
 extern bool fNoDivZeroChecks;
+extern bool fNoUnionChecks;
 extern bool fMungeUserIdents;
 extern bool fEnableTaskTracking;
 extern bool fEnableMemInterleaving;
@@ -155,7 +156,8 @@ extern const char* CHPL_TARGET_BUNDLED_RUNTIME_LINK_ARGS;
 extern const char* CHPL_TARGET_BUNDLED_PROGRAM_LINK_ARGS;
 extern const char* CHPL_TARGET_SYSTEM_RUNTIME_LINK_ARGS;
 extern const char* CHPL_TARGET_SYSTEM_PROGRAM_LINK_ARGS;
-extern const char* CHPL_TARGET_USE_RUNTIME_LINK_ARGS;
+extern const char* CHPL_TARGET_USE_STATIC_RUNTIME_LINK_ARGS;
+extern const char* CHPL_TARGET_USE_SHARED_RUNTIME_LINK_ARGS;
 
 extern const char* CHPL_CUDA_LIBDEVICE_PATH;
 extern const char* CHPL_ROCM_LLVM_PATH;
@@ -366,8 +368,10 @@ extern bool fNoIODeserializeReadThis;
 namespace chpl {
   class Context;
 }
+class DynoErrorHandler;
 
 extern chpl::Context* gContext;
+extern DynoErrorHandler* gDynoErrorHandler;
 
 extern std::vector<std::pair<std::string, std::string>> gDynoParams;
 
@@ -381,5 +385,12 @@ extern std::unordered_set<const char*> gDynoGenLibModuleNameAstrs;
 extern std::string gMainModuleName;
 
 extern bool fForeachIntents;
+
+// Call to insert an instance of the error handler above into the context.
+DynoErrorHandler* dynoPrepareAndInstallErrorHandler(void);
+
+void dynoClearErrors(void);
+bool dynoRealizeErrors(void);
+bool dynoRealizeDeferredErrors(void);
 
 #endif

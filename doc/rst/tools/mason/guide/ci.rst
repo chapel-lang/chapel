@@ -5,17 +5,17 @@ Setting up Automated Testing
 
 Mason packages can be easily integrated into automated testing pipelines, such
 as those used in continuous integration (CI) systems. For the most part, all
-that is needed is a working install of Chapel/mason, and then the standard
+that is needed is a working install of Chapel/Mason, and then the standard
 ``mason test`` command can be used to run the tests for a package.
 
-There are two recommended approaches for setting up CI testing of mason
+There are two recommended approaches for setting up CI testing of Mason
 packages:
 
-* Using the published Dockerhub images for Chapel, which come with mason
+* Using the published Dockerhub images for Chapel, which come with Mason
   pre-installed
-* Installing Chapel/mason in the CI environment through binary packages
+* Installing Chapel/Mason in the CI environment through binary packages
 
-These docs provide some examples of setting up the CI for a mason package using
+These docs provide some examples of setting up the CI for a Mason package using
 both of these approaches in GitHub Actions. However, the same principles can be
 applied to other CI systems as well.
 
@@ -23,7 +23,7 @@ Using Containers
 ~~~~~~~~~~~~~~~~
 
 Using the prebuild Chapel Dockerhub images is a very easy way to get started
-with CI testing of mason packages. A very simple CI workflow using the
+with CI testing of Mason packages. A very simple CI workflow using the
 Dockerhub images might look like the following:
 
 .. code-block:: yaml
@@ -47,7 +47,7 @@ Dockerhub images might look like the following:
           - name: Check the project builds
             run: |
               mason build
-          - name: Run mason tests
+          - name: Run Mason tests
             run: |
               mason test
           - name: Check that examples build
@@ -57,13 +57,13 @@ Dockerhub images might look like the following:
             run: |
               chplcheck src/**/*.chpl
 
-This should go in your mason package's repository under
+This should go in your Mason package's repository under
 ``.github/workflows/ci.yml``. This workflow will run on every pull request and
 push to main. It will try and build the project, run the tests, build the
 examples, and run chplcheck on all source files. If any of these steps fail,
 the CI will be marked as failed.
 
-This is the fastest way to get started with CI testing for mason packages,
+This is the fastest way to get started with CI testing for Mason packages,
 since it requires no setup beyond writing the workflow file.
 
 
@@ -74,9 +74,9 @@ While using containers is the easiest way to get started with CI testing, it
 does have some limitations. The biggest one is if you are already using a
 container for your CI for some other dependency and can't easily switch to
 using the Chapel Dockerhub images. You could build a custom container that
-includes both your dependencies and Chapel/mason, but that can be a lot of work
+includes both your dependencies and Chapel/Mason, but that can be a lot of work
 to set up and maintain. An alternative to using containers is to use the
-``setup-chpl`` GitHub Action to install Chapel and mason in your CI
+``setup-chpl`` GitHub Action to install Chapel and Mason in your CI
 environment.
 
 .. code-block:: yaml
@@ -95,14 +95,14 @@ environment.
         runs-on: ubuntu-latest
         steps:
           - uses: actions/checkout@v4
-          - name: Install Chapel and mason
+          - name: Install Chapel and Mason
             uses: jabraham17/setup-chpl@v1
             with:
               version: latest
           - name: Check the project builds
             run: |
               mason build
-          - name: Run mason tests
+          - name: Run Mason tests
             run: |
               mason test
           - name: Check that examples build
@@ -112,7 +112,7 @@ environment.
             run: |
               chplcheck src/**/*.chpl
 
-This should go in your mason package's repository under
+This should go in your Mason package's repository under
 ``.github/workflows/ci.yml``. This workflow will run on every pull request and
 push to main. It will try and build the project, run the tests, build the
 examples, and run chplcheck on all source files. If any of these steps fail,
@@ -131,7 +131,7 @@ For more options to configure the ``setup-chpl`` action, see the `setup-chpl doc
 More advanced CI setups
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-The above examples are very basic CI workflows that should work for most mason
+The above examples are very basic CI workflows that should work for most Mason
 packages. However, there are many ways to customize and enhance your CI
 workflow beyond the basics. For example, you could:
 
@@ -201,6 +201,13 @@ workflow beyond the basics. For example, you could:
             # ...
 
 * Build and publish documentation for your package using GitHub Pages
+
+  .. note::
+
+     This example assumes you have configured your GitHub repository to publish
+     from a GitHub Action. You can do this by going to your repository's
+     settings, navigating to the "Pages" section, and selecting "GitHub Actions"
+     as the source for your Pages deployment.
 
   .. code-block:: yaml
 

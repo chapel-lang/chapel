@@ -964,21 +964,42 @@ module List {
       :rtype: `bool`
     */
     proc const contains(x: eltType): bool {
-      var result = false;
+      return this.find(x) != -1;
+    }
 
-      on this {
-        _enter();
+    /*
+      Returns `true` if this list contains an element satisfying the given
+      predicate, and `false` otherwise.
 
-        for item in this do
-          if item == x {
-            result = true;
-            break;
-          }
+      :arg predicate: A callable that takes an element and returns `true`
+        if it matches.
 
-        _leave();
-      }
+      :return: `true` if an element satisfying `predicate` is found.
+      :rtype: `bool`
+      */
+    @edition(last="2.0")
+    @unstable("predicate-based 'list.contains' is unstable and may change in future.")
+    proc const contains(predicate): bool
+        where !isCoercible(predicate.type, eltType)
+    {
+      return this.find(predicate) != -1;
+    }
 
-      return result;
+    /*
+      Returns `true` if this list contains an element satisfying the given
+      predicate, and `false` otherwise.
+
+      :arg predicate: A callable that takes an element and returns `true`
+        if it matches.
+
+      :return: `true` if an element satisfying `predicate` is found.
+      :rtype: `bool`
+      */
+    @edition(first="preview")
+    proc const contains(predicate): bool
+        where !isCoercible(predicate.type, eltType)
+    {
+      return this.find(predicate) != -1;
     }
 
     /*
@@ -1449,31 +1470,8 @@ module List {
       }
     }
 
-    /*
-      Return a zero-based index into this list of the first item whose value
-      is equal to `x`. If no such element can be found or if the list is empty,
-      this method returns the value `-1`.
-
-      .. warning::
-
-        Calling this method with values of `start` or `end` that are out of bounds
-        will cause the currently running program to halt. If the `--fast` flag is
-        used, no safety checks will be performed.
-
-      :arg x: An element to search for.
-      :type x: `eltType`
-
-      :arg start: The start index to start searching from.
-      :type start: `int`
-
-      :arg end: The end index to stop searching at. A value less than
-                `0` will search the entire list.
-      :type end: `int`
-
-      :return: The index of the element to search for, or `-1` on error.
-      :rtype: `int`
-    */
-    proc const find(x: eltType, start: int=0, end: int=-1): int {
+    @chpldoc.nodoc
+    proc const _findHelper(start: int, end: int, x, param usePredicate: bool): int {
       param error = -1;
 
       if _size == 0 then
@@ -1499,16 +1497,110 @@ module List {
 
         const stop = if end < 0 then _size-1 else end;
 
-        for i in start..stop do
-          if x == _getRef(i) {
+        for i in start..stop {
+          const matches = if usePredicate then x(_getRef(i))
+                                          else x == _getRef(i);
+          if matches {
             result = i;
             break;
           }
+        }
 
         _leave();
       }
 
       return result;
+    }
+
+    /*
+      Return a zero-based index into this list of the first item whose value
+      is equal to `x`. If no such element can be found or if the list is empty,
+      this method returns the value `-1`.
+
+      .. warning::
+
+        Calling this method with values of `start` or `end` that are out of bounds
+        will cause the currently running program to halt. If the `--fast` flag is
+        used, no safety checks will be performed.
+
+      :arg x: An element to search for.
+      :type x: `eltType`
+
+      :arg start: The start index to start searching from.
+      :type start: `int`
+
+      :arg end: The end index to stop searching at. A value less than
+                `0` will search the entire list.
+      :type end: `int`
+
+      :return: The index of the element to search for, or `-1` on error.
+      :rtype: `int`
+    */
+    proc const find(x: eltType, start: int=0, end: int=-1): int {
+      return _findHelper(start, end, x, false);
+    }
+
+    /*
+      Return a zero-based index into this list of the first item satisfying
+      the given predicate. If no such element can be found or if the list
+      is empty, this method returns the value `-1`.
+
+      .. warning::
+
+        Calling this method with values of `start` or `end` that are out of
+        bounds will cause the currently running program to halt. If the
+        ``--fast`` flag is used, no safety checks will be performed.
+
+      :arg predicate: A callable that takes an element and returns `true`
+                      if it matches.
+
+      :arg start: The start index to start searching from.
+      :type start: `int`
+
+      :arg end: The end index to stop searching at. A value less than
+                `0` will search the entire list.
+      :type end: `int`
+
+      :return: The index of the first matching element, or `-1`` if not found.
+      :rtype: `int`
+    */
+    @edition(last="2.0")
+    @unstable("predicate-based 'list.find' is unstable and may change in future.")
+    proc const find(predicate, start: int=0, end: int=-1): int
+        where !isCoercible(predicate.type, eltType)
+    {
+      return _findHelper(start, end, predicate, true);
+    }
+
+    /*
+      Return a zero-based index into this list of the first item satisfying
+      the given predicate. If no such element can be found or if the list
+      is empty, this method returns the value `-1`.
+
+      .. warning::
+
+        Calling this method with values of `start` or `end` that are out of
+        bounds will cause the currently running program to halt. If the
+        ``--fast`` flag is used, no safety checks will be performed.
+
+      :arg predicate: A callable that takes an element and returns `true`
+                      if it matches.
+
+      :arg start: The start index to start searching from.
+      :type start: `int`
+
+      :arg end: The end index to stop searching at. A value less than
+                `0` will search the entire list.
+      :type end: `int`
+
+      :return: The index of the first matching element, or `-1`` if not found.
+      :rtype: `int`
+    */
+    @edition(first="preview")
+    proc const find(predicate, start: int=0, end: int=-1): int
+        where !isCoercible(predicate.type, eltType)
+    {
+      return _findHelper(start, end, predicate, true);
     }
 
     /*

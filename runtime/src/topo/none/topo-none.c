@@ -26,7 +26,7 @@
 #include "chplsys.h"
 #include "chpl-topo.h"
 #include "chpltypes.h"
-#include "error.h"
+#include "chpl-error.h"
 
 #include <stdint.h>
 

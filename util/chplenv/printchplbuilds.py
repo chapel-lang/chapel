@@ -15,6 +15,7 @@ import datetime
 from enum import Enum, unique
 from collections import defaultdict
 import chpl_home_utils
+from compile_link_args_utils import static_runtime_lib_name
 
 # Parsing the build directory path is implemented as a state machine. Some
 # of the components start with a prefix, some do not. The state machine
@@ -440,10 +441,11 @@ def main(argv):
         # gather the paths for all builds
         base = chpl_home_utils.get_chpl_runtime_lib()
 
-        # "targets" is a list of all paths that contain a "libchpl.a" file
+        # "targets" is a list of all paths that contain the runtime static lib
         targets = []
+        rt_static_lib = static_runtime_lib_name()
         for root, dirs, files in os.walk(base):
-            for target in filter(lambda x: x == "libchpl.a", files):
+            for target in filter(lambda x: x == rt_static_lib, files):
                 targets.append(os.path.join(root, target))
 
         if args.sort == Sort.OLDEST:

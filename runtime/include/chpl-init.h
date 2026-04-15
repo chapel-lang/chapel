@@ -39,13 +39,11 @@ void deallocate_string_literals_buf(void);
 void chpl_rt_init(int argc, char* argv[]);
 
 void chpl_executable_init(void);
-void chpl_execute_module_deinit(c_fn_ptr deinitFun);
-
-void chpl_library_init(int argc, char* argv[]);
-void chpl_library_finalize(void);
 
 void chpl_std_module_init(void);
-void chpl_std_module_finalize(void);
+
+// TODO: Just replace with procedure pointer call.
+void chpl_execute_module_deinit(c_fn_ptr deinitFun);
 
 #ifdef __cplusplus
 }

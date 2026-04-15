@@ -4028,15 +4028,26 @@ static clang::CanQualType getClangType(::Type* t, bool makeRef) {
   if (cCastedToType)
     USR_FATAL(t, "Cannot use macro with type cast in export function argument");
 
-  if (cTypeDecl == NULL)
+  clang::CanQualType ret;
+
+  if (cTypeDecl) {
+    auto cQualType = Ctx->getTypeDeclType(cTypeDecl);
+    ret = cQualType->getCanonicalTypeUnqualified();
+
+  } else if (t->symbol->hasFlag(FLAG_OPAQUE_C_TYPE_ALIAS)) {
+    if (::Type* t = chapelTypeForPrimitiveCTypeName(cname)) {
+      ret = getClangType(t, makeRef);
+    } else {
+      INT_FATAL(t->symbol, "Unhandled type alias when fetching Clang type");
+    }
+
+  } else {
     USR_FATAL(t, "Could not find C type %s - "
                   "extern/export functions should only use extern types",
                    cname);
+  }
 
-  clang::QualType cQualType = Ctx->getTypeDeclType(cTypeDecl);
-  clang::CanQualType cTy = cQualType->getCanonicalTypeUnqualified();
-
-  return cTy;
+  return ret;
 }
 
 static clang::CanQualType
@@ -4283,20 +4294,29 @@ int getCTypeAlignment(::Type* type) {
   gGenInfo->lvt->getCDecl(type->symbol->cname, &cType, &cVal);
   const clang::TypeDecl* td = cType;
 
-  // find the QualType
   QualType qType;
-  if (const TypedefNameDecl* tnd = dyn_cast<TypedefNameDecl>(td)) {
-    qType = tnd->getCanonicalDecl()->getUnderlyingType();
-  } else if (const EnumDecl* ed = dyn_cast<EnumDecl>(td)) {
-    qType = ed->getCanonicalDecl()->getIntegerType();
-  } else if (const RecordDecl* rd = dyn_cast<RecordDecl>(td)) {
-    RecordDecl *def = rd->getDefinition();
-    if (def == nullptr)
-      // ex. opaque pointer in test/extern/records/OpaqueStructNoField.chpl
-      return ALIGNMENT_DEFER;
-    qType=def->getCanonicalDecl()->getTypeForDecl()->getCanonicalTypeInternal();
+
+  if (td) {
+    if (const TypedefNameDecl* tnd = dyn_cast<TypedefNameDecl>(td)) {
+      qType = tnd->getCanonicalDecl()->getUnderlyingType();
+    } else if (const EnumDecl* ed = dyn_cast<EnumDecl>(td)) {
+      qType = ed->getCanonicalDecl()->getIntegerType();
+    } else if (const RecordDecl* rd = dyn_cast<RecordDecl>(td)) {
+      RecordDecl *def = rd->getDefinition();
+      if (def == nullptr)
+        // ex. opaque pointer in test/extern/records/OpaqueStructNoField.chpl
+        return ALIGNMENT_DEFER;
+      qType=def->getCanonicalDecl()->getTypeForDecl()
+               ->getCanonicalTypeInternal();
+    } else {
+      INT_FATAL(type, "Unhandled Clang type declaration");
+    }
+  } else if (type->symbol->hasFlag(FLAG_OPAQUE_C_TYPE_ALIAS)) {
+    auto eqt = chapelTypeForPrimitiveCTypeName(type->symbol->cname);
+    INT_ASSERT(eqt);
+    return getCTypeAlignment(eqt);
   } else {
-    INT_FATAL("Unknown clang type declaration");
+    INT_FATAL(type, "Chapel type does not have a corresponding Clang type");
   }
 
   return getCTypeAlignment(qType);
@@ -4841,7 +4861,7 @@ static std::string findSiblingClangToolPath(std::string_view toolName) {
     if (!parent.empty()) {
       SmallString<128> path;
       sys::path::append(path, parent, toolName);
-      if (pathExists(path.str())) {
+      if (chpl::pathExists(path.str())) {
         return std::string(path);
       }
     }
@@ -5168,8 +5188,21 @@ void makeBinaryLLVM(void) {
     //
 
     if (fBuiltinRuntime) {
-      splitStringWhitespace(CHPL_TARGET_USE_RUNTIME_LINK_ARGS,
+      // We are embedding a copy of the runtime, so link against 'libchpl.a'.
+      splitStringWhitespace(CHPL_TARGET_USE_STATIC_RUNTIME_LINK_ARGS,
                             clangLDArgs);
+    } else {
+      // Even without a builtin runtime, we still need to pass in the
+      // shared library containing the runtime so that the linker will
+      // not complain about undefined symbols. This can happen on OSX.
+      //
+      // Link against 'libchpl.so'/'libchpl.dylib':
+      splitStringWhitespace(CHPL_TARGET_USE_SHARED_RUNTIME_LINK_ARGS,
+                            clangLDArgs);
+    }
+
+    if (fBuiltinRuntime) {
+      // If embedding, we need to also link against runtime dependencies.
       splitStringWhitespace(CHPL_TARGET_BUNDLED_RUNTIME_LINK_ARGS,
                             clangLDArgs);
     }
@@ -5177,6 +5210,7 @@ void makeBinaryLLVM(void) {
     splitStringWhitespace(CHPL_TARGET_BUNDLED_PROGRAM_LINK_ARGS, clangLDArgs);
 
     if (fBuiltinRuntime) {
+      // If embedding, we need to also link against runtime dependencies.
       splitStringWhitespace(CHPL_TARGET_SYSTEM_RUNTIME_LINK_ARGS,
                             clangLDArgs);
     }

@@ -25,10 +25,15 @@
 #include "chpl/framework/query-impl.h"
 #include "chpl/types/ClassType.h"
 #include "chpl/uast/all-uast.h"
+#include "chpl/types/ArrayType.h"
+#include "chpl/types/all-types.h"
+#include "chpl/types/IntType.h"
+#include "chpl/types/BoolType.h"
 
 using namespace chpl;
 using namespace uast;
 using namespace types;
+using namespace resolution;
 
 static const ID scopeResolveViaVisibilityStmt(Context* context, const AstNode* visibilityStmt, const AstNode* node) {
   if (visibilityStmt->isUse() || visibilityStmt->isImport()) {
@@ -159,19 +164,28 @@ static const ID scopeResolveViaInclude(Context* context,
   return ID();
 }
 
+static const ResolvedExpression*
+scopeResolvedExpressionForNodeVia(Context* context, const AstNode* search,
+                                  const AstNode* node) {
+  if (auto rr = scopeResolveViaFunction(context, search, node)) {
+    return rr;
+  } else if (auto rr = scopeResolveViaAggregate(context, search, node)) {
+    return rr;
+  } else if (auto rr = scopeResolveViaEnum(context, search, node)) {
+    return rr;
+  } else if (auto rr = scopeResolveViaModule(context, search, node)) {
+    return rr;
+  }
+  return nullptr;
+}
+
 // For scope resolution, we handle AST nodes that don't necessarily get
 // their own ResolvedExpression (specifically, uses/imports), so return an ID
 // instead of a ResolvedExpression.
 static const ID scopeResolveToIdForNode(Context* context, const AstNode* node) {
   const AstNode* search = node;
   while (search) {
-    if (auto rr = scopeResolveViaFunction(context, search, node)) {
-      return rr->toId();
-    } else if (auto rr = scopeResolveViaAggregate(context, search, node)) {
-      return rr->toId();
-    } else if (auto rr = scopeResolveViaEnum(context, search, node)) {
-      return rr->toId();
-    } else if (auto rr = scopeResolveViaModule(context, search, node)) {
+    if (auto rr = scopeResolvedExpressionForNodeVia(context, search, node)) {
       return rr->toId();
     } else if(auto id = scopeResolveViaVisibilityStmt(context, search, node)) {
       return id;
@@ -181,6 +195,17 @@ static const ID scopeResolveToIdForNode(Context* context, const AstNode* node) {
     search = parsing::parentAst(context, search);
   }
   return ID();
+}
+
+static bool nodeRefersToBuiltinImpl(Context* context, const AstNode* node) {
+  const AstNode* search = node;
+  while (search) {
+    if (auto rr = scopeResolvedExpressionForNodeVia(context, search, node)) {
+      return rr->isBuiltin();
+    }
+    search = parsing::parentAst(context, search);
+  }
+  return false;
 }
 
 const resolution::ResolvedExpression* scopeResolveResultsForNode(Context* context, const AstNode* node) {
@@ -207,6 +232,12 @@ const AstNode* const& nodeOrNullFromToId(Context* context, const AstNode* node) 
   auto id = scopeResolveToIdForNode(context, node);
   auto nodeOrNull = idOrEmptyToAstNodeOrNull(context, id);
   return QUERY_END(nodeOrNull);
+}
+
+bool const& nodeRefersToBuiltin(Context* context, const AstNode* node) {
+  QUERY_BEGIN(nodeRefersToBuiltin, context, node);
+  auto result = nodeRefersToBuiltinImpl(context, node);
+  return QUERY_END(result);
 }
 
 static const resolution::ResolvedExpression* resolveViaFunction(Context* context, const AstNode* fnNode, const AstNode* node) {
@@ -411,4 +442,302 @@ findUnitTestMainForModule(Context* context, const Module* mod) {
     result = tfmf.callsMain;
   }
   return QUERY_END(result);
+}
+
+std::pair<const AstNode*, const Scope*> const& getScopeForDefaultResolution(Context* context) {
+  QUERY_BEGIN(getScopeForDefaultResolution, context);
+
+  std::pair<const AstNode*, const Scope*> result = {nullptr, nullptr};
+  if (auto moduleScope = resolution::scopeForAutoModule(context)) {
+    auto moduleId = moduleScope->id();
+    result = {parsing::idToAst(context, moduleId), moduleScope};
+  }
+
+
+  return QUERY_END(result);
+}
+
+static QualifiedType const& computeDefaultBoundedRange(chpl::Context* context) {
+  QUERY_BEGIN(computeDefaultBoundedRange, context);
+  QualifiedType result;
+
+  std::vector<CallInfoActual> rangeActuals;
+  rangeActuals.emplace_back(QualifiedType(QualifiedType::VAR, IntType::get(context, 64)));
+  rangeActuals.emplace_back(QualifiedType(QualifiedType::VAR, IntType::get(context, 64)));
+
+  auto ci = CallInfo(UniqueString::get(context, "chpl_build_bounded_range"),
+                     QualifiedType(),
+                     /* isMethodCall */ false,
+                     /* hasQuestionArg */ false,
+                     /* isParenless */ false,
+                     /* actuals */ std::move(rangeActuals));
+
+  auto& [ast, scope] = getScopeForDefaultResolution(context);
+  if (ast && scope) {
+    auto rc = createDummyRC(context);
+    auto c = resolveGeneratedCall(&rc, /* astForScopeOrErr */ ast, ci, CallScopeInfo::forNormalCall(scope, nullptr));
+
+    if (c.mostSpecific().isEmpty() || c.exprType().isUnknownOrErroneous()) {
+      /* do nothing */
+    } else {
+      result = c.exprType();
+    }
+  }
+
+  return QUERY_END(result);
+}
+
+static QualifiedType const& computeDefaultRectangularDomain(chpl::Context* context, int dimension = 1) {
+  QUERY_BEGIN(computeDefaultRectangularDomain, context, dimension);
+  QualifiedType result;
+
+  auto rangeType = computeDefaultBoundedRange(context);
+
+  if (!rangeType.isUnknown()) {
+    std::vector<CallInfoActual> domainActuals;
+    for (int i = 0; i < dimension; i++)
+      domainActuals.emplace_back(rangeType, UniqueString());
+    domainActuals.emplace_back(QualifiedType(QualifiedType::VAR, BoolType::get(context)), UniqueString());
+
+    auto ci = CallInfo(UniqueString::get(context, "chpl__buildDomainExpr"),
+                       QualifiedType(),
+                       /* isMethodCall */ false,
+                       /* hasQuestionArg */ false,
+                       /* isParenless */ false,
+                       /* actuals */ std::move(domainActuals));
+
+    auto& [ast, scope] = getScopeForDefaultResolution(context);
+    if (ast && scope){
+      auto rc = createDummyRC(context);
+      auto c = resolveGeneratedCall(&rc, /* astForScopeOrErr */ ast, ci, CallScopeInfo::forNormalCall(scope, nullptr));
+
+      if (c.mostSpecific().isEmpty() || c.exprType().isUnknownOrErroneous()) {
+        /* do nothing */
+      } else {
+        result = c.exprType();
+        CHPL_ASSERT(result.type()->isDomainType());
+      }
+    }
+  }
+
+  return QUERY_END(result);
+}
+
+static QualifiedType const& rebuildDomainInstance(chpl::Context* context, const DomainType* dom) {
+  QUERY_BEGIN(rebuildDomainInstance, context, dom);
+
+  QualifiedType result;
+
+  // Find the DefaultRectangular module.
+  auto mod = parsing::getToplevelModule(context, UniqueString::get(context, "DefaultRectangular"));
+  if (mod) {
+    auto rectDomainId = ID(UniqueString::getConcat(context, mod->id().symbolPath().c_str(), ".DefaultRectangularDom"));
+    auto rectDomainTy = resolution::initialTypeForTypeDecl(context, rectDomainId);
+    if (rectDomainTy) {
+      QualifiedType rectDomainQt(QualifiedType::TYPE, rectDomainTy);
+      std::vector<CallInfoActual> typeConstructorActuals;
+
+      // args are rank, index type and strides, all of which we can get from dom.
+      typeConstructorActuals.emplace_back(dom->rank(), UniqueString());
+      typeConstructorActuals.emplace_back(dom->idxType(), UniqueString());
+      typeConstructorActuals.emplace_back(dom->strides(), UniqueString());
+
+      auto ci = CallInfo(UniqueString::get(context, "DefaultRectangularDom"),
+                          rectDomainQt,
+                         /* isMethodCall */ false,
+                         /* hasQuestionArg */ false,
+                         /* isParenless */ false,
+                         /* actuals */ std::move(typeConstructorActuals));
+      auto& [ast, scope] = getScopeForDefaultResolution(context);
+      if (ast && scope) {
+        auto rc = createDummyRC(context);
+        auto c = resolveGeneratedCall(&rc, /* astForScopeOrErr */ ast, ci, CallScopeInfo::forNormalCall(scope, nullptr));
+        if (c.mostSpecific().isEmpty() || c.exprType().isUnknownOrErroneous()) {
+          /* do nothing */
+        } else {
+          if (auto instanceCt = c.exprType().type()->toClassType()) {
+            // Make it 'shared'
+            instanceCt = ClassType::get(context, instanceCt->manageableType(), AnySharedType::get(context), ClassTypeDecorator(ClassTypeDecorator::MANAGED_NONNIL));
+            auto instance = QualifiedType(QualifiedType::VAR, instanceCt);
+
+            auto finalDom = DomainType::getRectangularType(context, instance, dom->rank(), dom->idxType(), dom->strides());
+            result = QualifiedType(QualifiedType::TYPE, finalDom);
+          }
+        }
+      }
+    }
+  }
+
+  return QUERY_END(result);
+}
+
+static QualifiedType const& computeDefaultRectangularArray(chpl::Context* context, QualifiedType domainType, QualifiedType eltType) {
+  QUERY_BEGIN(computeDefaultRectangularArray, context, domainType, eltType);
+  QualifiedType result;
+
+  std::vector<CallInfoActual> arrayActuals;
+  domainType = QualifiedType(QualifiedType::VAR, domainType.type());
+  arrayActuals.emplace_back(domainType, UniqueString::get(context, "dom"));
+  arrayActuals.emplace_back(eltType, UniqueString::get(context, "eltType"));
+
+  auto ci = CallInfo(UniqueString::get(context, "chpl__buildArrayRuntimeType"),
+                     QualifiedType(),
+                     /* isMethodCall */ false,
+                     /* hasQuestionArg */ false,
+                     /* isParenless */ false,
+                     /* actuals */ std::move(arrayActuals));
+  auto& [ast, scope] = getScopeForDefaultResolution(context);
+  if (ast && scope) {
+    auto rc = createDummyRC(context);
+    auto c = resolveGeneratedCall(&rc, /* astForScopeOrErr */ ast, ci, CallScopeInfo::forNormalCall(scope, nullptr));
+
+    if (c.mostSpecific().isEmpty() || c.exprType().isUnknownOrErroneous()) {
+      /* do nothing */
+    } else {
+      result = c.exprType();
+      CHPL_ASSERT(result.type()->isArrayType());
+    }
+  }
+
+  return QUERY_END(result);
+}
+
+std::pair<const chpl::resolution::TypedFnSignature*, const chpl::resolution::PoiScope*> const&
+makeDefaultRectangular(chpl::Context* context, const chpl::resolution::TypedFnSignature* sig, const chpl::resolution::PoiScope* poiScope) {
+  QUERY_BEGIN(makeDefaultRectangular, context, sig, poiScope);
+  const resolution::TypedFnSignature* result = nullptr;
+  const resolution::PoiScope* poiScopeForResult = nullptr;
+
+  bool attemptRectangularization = true;
+  bool foundArrays = false;
+
+  std::vector<CallInfoActual> actuals;
+
+  if (sig->instantiationState() & TypedFnSignature::INST_GENERIC_OTHER &&
+      !sig->untyped()->isTypeConstructor()) {
+
+    auto rc = createDummyRC(context);
+    auto scope = scopeForId(context, sig->id())->parentScope();
+    auto fnAst = parsing::idToAst(context, sig->id());
+
+    for (int i = 0; i < sig->numFormals(); i++) {
+      auto& formalType = sig->formalType(i);
+
+      if (sig->untyped()->formalIsVarArgs(i)) {
+        attemptRectangularization = false;
+        break;
+      }
+
+      actuals.emplace_back(formalType, sig->formalName(i));
+
+
+      if (formalType.type() == nullptr ||
+          formalType.type()->isErroneousType()) {
+        attemptRectangularization = false;
+        break;
+      }
+      if (formalType.kind() == QualifiedType::OUT ||
+          formalType.kind() == QualifiedType::PARAM ||
+          formalType.kind() == QualifiedType::TYPE) {
+        continue;
+      }
+
+      auto isGeneric = getTypeGenericity(context, formalType.type()) == Type::GENERIC;
+      auto at = formalType.type()->toArrayType();
+      if (!at && isGeneric) {
+        attemptRectangularization = false;
+        break;
+      }
+
+      if (!isGeneric) continue;
+
+
+      // Generic array type. Is it because it's "uninstanced" (ie.,
+      // distribution-generic)? If so, we can try make it into a rectangular array.
+      if (!at->isUninstancedArray()) {
+        attemptRectangularization = false;
+        break;
+      }
+
+
+      // If the code is like `[] int`, we are using a fully generic domain.
+      // To "regularize" it, guess a one-dimensional rectangular domain.
+      auto dQt = at->domainType();
+      if (dQt.isUnknownOrErroneous() || dQt.type() == DomainType::getGenericDomainType(context)) {
+        dQt = computeDefaultRectangularDomain(context);
+      } else if (dQt.type()->isDomainType() &&
+                 dQt.type()->toDomainType()->kind() != DomainType::Kind::Rectangular) {
+        // Non-rectangular domain. We don't really know how to handle these yet.
+        attemptRectangularization = false;
+        break;
+      } else {
+        // Explicit user domain. Could be something like `[1..10] myArray`,
+        // or even `[D] myArray` even though we are thinking about making
+        // that be a concrete array formal, not a generic one. Leave dQt alone,
+        // except, if it's uninstanced itself, we need to re-instance it
+        // with a default-rectangular domain.
+
+        auto dt = dQt.type()->toDomainType();
+        if (dt && dt->isUninstanced(context)) {
+          dQt = rebuildDomainInstance(context, dt);
+        }
+      }
+
+      auto eltQt = at->eltType();
+      if (eltQt.isUnknownOrErroneous() ||
+          getTypeGenericity(context, eltQt) == Type::GENERIC) {
+        attemptRectangularization = false;
+        break;
+      }
+
+      // Create a default-rectangular array type based on the domain and element types we have.
+      auto& arrayType = computeDefaultRectangularArray(context, dQt, eltQt);
+      if (arrayType.isUnknown()) {
+        attemptRectangularization = false;
+        break;
+      }
+
+      // Ok, it worked. Replace the original generic array type with the new
+      // rectangular array type.
+      auto newFormalType = QualifiedType(formalType.kind(), arrayType.type());
+      actuals[i] = CallInfoActual(newFormalType, sig->formalName(i));
+      foundArrays = true;
+    }
+
+    if (attemptRectangularization && foundArrays) {
+        auto ci = CallInfo(
+            /* name */ sig->untyped()->name(),
+            /* calledType */ QualifiedType(),
+            /* isMethodCall */ sig->isMethod(),
+            /* hasQuestionArg */ false,
+            /* isParenless */ false,
+            actuals);
+
+        auto c = resolveGeneratedCall(&rc, /* astForScopeOrErr */ fnAst, ci, CallScopeInfo::forNormalCall(scope, poiScope));
+        if (!c.mostSpecific().isEmpty() && !c.exprType().isUnknownOrErroneous()) {
+          result = c.mostSpecific().only().fn();
+          poiScopeForResult = c.poiInfo().poiScope();
+        }
+    }
+  }
+
+  return QUERY_END(std::make_pair(result, poiScopeForResult));
+}
+
+TypedSignatureObject*
+createCanonicalTypedSignatureObject(ContextObject* contextObject, const chpl::resolution::TypedFnSignature* sig, const chpl::resolution::PoiScope* poiScope) {
+  auto tmp = contextObject->value_.runAndDetectErrors([=](Context* context) {
+      auto rc = createDummyRC(context);
+      if (auto resolvedFn = resolveFunctionIfPossible(&rc, sig, poiScope)) {
+        // If the POI info is compatible with a function with no POI scope,
+        // use the no-scope function as the canonical version of this signature,
+        // making it more reusable.
+        if (resolvedFn->poiInfo().canReuse(PoiInfo(nullptr))) {
+          return (const PoiScope*) nullptr;
+        }
+      }
+      return poiScope;
+  });
+
+  return TypedSignatureObject::create(contextObject, {sig, tmp.result()});
 }

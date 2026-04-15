@@ -127,7 +127,8 @@ const char* CHPL_TARGET_BUNDLED_RUNTIME_LINK_ARGS = NULL;
 const char* CHPL_TARGET_BUNDLED_PROGRAM_LINK_ARGS = NULL;
 const char* CHPL_TARGET_SYSTEM_RUNTIME_LINK_ARGS = NULL;
 const char* CHPL_TARGET_SYSTEM_PROGRAM_LINK_ARGS = NULL;
-const char* CHPL_TARGET_USE_RUNTIME_LINK_ARGS = NULL;
+const char* CHPL_TARGET_USE_STATIC_RUNTIME_LINK_ARGS = NULL;
+const char* CHPL_TARGET_USE_SHARED_RUNTIME_LINK_ARGS = NULL;
 
 const char* CHPL_CUDA_LIBDEVICE_PATH = NULL;
 const char* CHPL_ROCM_LLVM_PATH = NULL;
@@ -201,6 +202,7 @@ bool fNoDivZeroChecks = false;
 bool fNoFormalDomainChecks = false;
 bool fNoLocalChecks = false;
 bool fNoNilChecks = false;
+bool fNoUnionChecks = false;
 bool fIgnoreNilabilityErrors = false;
 bool fOverloadSetsChecks = true;
 bool fNoStackChecks = false;
@@ -1056,6 +1058,14 @@ static void addModulePath(const ArgumentDescription* desc, const char* newpath) 
   cmdLineModPaths.push_back(std::string(newpath));
 }
 
+static void addInternalModulePath(const ArgumentDescription* desc, const char* newpath) {
+  gDynoPrependInternalModulePaths.push_back(newpath);
+}
+
+static void addStandardModulePath(const ArgumentDescription* desc, const char* newpath) {
+  gDynoPrependStandardModulePaths.push_back(newpath);
+}
+
 static void noteCppLinesSet(const ArgumentDescription* desc, const char* unused) {
   userSetCppLineno = true;
 }
@@ -1105,6 +1115,7 @@ static void setChecks(const ArgumentDescription* desc, const char* unused) {
   fNoStackChecks  = fNoChecks;
   fNoCastChecks = fNoChecks;
   fNoDivZeroChecks = fNoChecks;
+  fNoUnionChecks = fNoChecks;
 }
 
 static void setFastFlag(const ArgumentDescription* desc, const char* unused) {
@@ -1301,7 +1312,7 @@ static void driverSetDevelSettings(const ArgumentDescription* desc, const char* 
   }
 }
 
-void addDynoGenLib(const ArgumentDescription* desc, const char* newpath) {
+static void addDynoGenLib(const ArgumentDescription* desc, const char* newpath) {
   if (fDynoGenLib) {
     USR_FATAL("cannot have multiple --dyno-gen-lib / --dyno-gen-std flags");
   }
@@ -1466,6 +1477,7 @@ static ArgumentDescription arg_desc[] = {
  {"local-checks", ' ', NULL, "Enable [disable] local block checking", "n", &fNoLocalChecks, NULL, NULL},
  {"nil-checks", ' ', NULL, "Enable [disable] runtime nil checking", "n", &fNoNilChecks, "CHPL_NIL_CHECKS", NULL},
  {"stack-checks", ' ', NULL, "Enable [disable] stack overflow checking", "n", &fNoStackChecks, "CHPL_STACK_CHECKS", setStackChecks},
+ {"union-checks", ' ', NULL, "Enable [disable] union field checking", "n", &fNoUnionChecks, NULL, NULL},
 
  {"", ' ', NULL, "Code Generation Options", NULL, NULL, NULL, NULL},
  {"codegen", ' ', NULL, "[Don't] Do code generation", "n", &no_codegen, "CHPL_CODEGEN", NULL},
@@ -1835,7 +1847,8 @@ bool useDefaultEnv(std::string key, bool isCrayPrgEnv) {
       key == "CHPL_HOST_SYSTEM_LINK_ARGS" ||
       key == "CHPL_TARGET_BUNDLED_COMPILE_ARGS" ||
       key == "CHPL_TARGET_SYSTEM_COMPILE_ARGS" ||
-      key == "CHPL_TARGET_USE_RUNTIME_LINK_ARGS" ||
+      key == "CHPL_TARGET_USE_STATIC_RUNTIME_LINK_ARGS" ||
+      key == "CHPL_TARGET_USE_SHARED_RUNTIME_LINK_ARGS" ||
       key == "CHPL_TARGET_BUNDLED_RUNTIME_LINK_ARGS" ||
       key == "CHPL_TARGET_BUNDLED_PROGRAM_LINK_ARGS" ||
       key == "CHPL_TARGET_SYSTEM_RUNTIME_LINK_ARGS" ||
@@ -1965,7 +1978,8 @@ static void setChapelEnvs() {
   CHPL_TARGET_BUNDLED_PROGRAM_LINK_ARGS = envMap["CHPL_TARGET_BUNDLED_PROGRAM_LINK_ARGS"];
   CHPL_TARGET_SYSTEM_RUNTIME_LINK_ARGS = envMap["CHPL_TARGET_SYSTEM_RUNTIME_LINK_ARGS"];
   CHPL_TARGET_SYSTEM_PROGRAM_LINK_ARGS = envMap["CHPL_TARGET_SYSTEM_PROGRAM_LINK_ARGS"];
-  CHPL_TARGET_USE_RUNTIME_LINK_ARGS = envMap["CHPL_TARGET_USE_RUNTIME_LINK_ARGS"];
+  CHPL_TARGET_USE_STATIC_RUNTIME_LINK_ARGS = envMap["CHPL_TARGET_USE_STATIC_RUNTIME_LINK_ARGS"];
+  CHPL_TARGET_USE_SHARED_RUNTIME_LINK_ARGS = envMap["CHPL_TARGET_USE_SHARED_RUNTIME_LINK_ARGS"];
 
   if (usingGpuLocaleModel()) {
     CHPL_CUDA_LIBDEVICE_PATH = envMap["CHPL_CUDA_LIBDEVICE_PATH"];
@@ -2162,6 +2176,7 @@ static void setGPUFlags() {
       fNoStackChecks  = true;
       fNoCastChecks = true;
       fNoDivZeroChecks = true;
+      fNoUnionChecks = true;
     }
     //
     // set up gpuArch
@@ -2417,7 +2432,7 @@ static void checkRuntimeBuilt(void) {
   runtime_dir += "/";
   runtime_dir += CHPL_RUNTIME_SUBDIR;
 
-  if (!isDirectory(runtime_dir.c_str())) {
+  if (!chpl::directoryExists(runtime_dir.c_str())) {
     const char* module_home = getenv("CHPL_MODULE_HOME");
     if (module_home) {
       USR_FATAL("The requested configuration is not included in the module. "
@@ -2444,7 +2459,7 @@ static void checkRuntimeBuilt(void) {
   launcher_dir += CHPL_LAUNCHER_SUBDIR;
 
   if (strcmp(CHPL_LAUNCHER, "none") != 0 &&
-      !isDirectory(launcher_dir.c_str())) {
+      !chpl::directoryExists(launcher_dir.c_str())) {
     USR_FATAL_CONT("There is no CHPL_LAUNCHER=%s for the current configuration.",
                    CHPL_LAUNCHER);
     if (developer) {
@@ -2562,6 +2577,7 @@ static chpl::CompilerGlobals dynoBuildCompilerGlobals() {
     .nilDerefChecking = !fNoNilChecks,
     .overloadSetsChecking = fOverloadSetsChecks,
     .divByZeroChecking = !fNoDivZeroChecks,
+    .unionAccessChecking = !fNoUnionChecks,
     .cacheRemote = fCacheRemote,
     // We need privatization if we are doing a non-local compilation, or using
     // GPUs
@@ -2641,6 +2657,8 @@ static void dynoConfigureContext(std::string chpl_module_path) {
   auto oldContext = gContext;
   gContext = new chpl::Context(*oldContext, std::move(config));
   delete oldContext;
+
+  gDynoErrorHandler = dynoPrepareAndInstallErrorHandler();
 
   // set up the clang arguments
 #ifdef HAVE_LLVM
@@ -2788,6 +2806,15 @@ int main(int argc, char* argv[]) {
   if (!driverInSubInvocation) {
     printStuff(argv[0]);
     validateSettings();
+  }
+
+  if (!driverInSubInvocation) {
+    // only realize errors in the main driver, to avoid duplicates
+    if (dynoRealizeErrors()) USR_STOP();
+  } else {
+    // even if we have errors to show, just clear them. they should have already
+    // been reported in the driver
+    dynoClearErrors();
   }
 
   if (fDynoTimingPath[0] != '\0' &&

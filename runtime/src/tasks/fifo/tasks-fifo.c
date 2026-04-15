@@ -36,7 +36,7 @@
 #include "chpl-topo.h"
 #include "chpltypes.h"
 #include "chpl-linefile-support.h"
-#include "error.h"
+#include "chpl-error.h"
 #include <stdio.h>
 #include <string.h>
 #include <signal.h>

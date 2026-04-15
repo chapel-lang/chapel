@@ -179,7 +179,7 @@ CLASS_END(ResolvedExpression)
 
 CLASS_BEGIN(MostSpecificCandidate)
   PLAIN_GETTER(MostSpecificCandidate, function, "Get the signature of the function called by this candidate.",
-               TypedSignatureObject*, return TypedSignatureObject::create(contextObject, {node->candidate->fn(), node->poiScope }))
+               TypedSignatureObject*, return createCanonicalTypedSignatureObject(contextObject, node->candidate->fn(), node->poiScope))
 
   // Note: calling node.resolve().formal_actual_mapping() -- thus using the
   // below method -- should be equivalent to calling node.formal_actual_mapping().
@@ -217,6 +217,16 @@ CLASS_BEGIN(TypedSignature)
                bool, return node->signature->instantiatedFrom() != nullptr)
   PLAIN_GETTER(TypedSignature, ast, "Get the AST from which this function signature is computed",
                Nilable<const chpl::uast::AstNode*>, return chpl::parsing::idToAst(context, node->signature->id()))
+  PLAIN_GETTER(TypedSignature, rectangularize, "Replace all generic array formals in this signature with default-rectangular arrays, if possible",
+               std::optional<TypedSignatureObject*>,
+
+               auto sig = node->signature;
+               auto poi = node->poiScope;
+               auto result = makeDefaultRectangular(context, sig, poi);
+               if (result.first) {
+                  return createCanonicalTypedSignatureObject(contextObject, result.first, result.second);
+               }
+               return {})
 CLASS_END(TypedSignature)
 
 CLASS_BEGIN(ApplicabilityResult)

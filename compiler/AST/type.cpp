@@ -1930,6 +1930,9 @@ void initPrimitiveTypes() {
   dtAnyEnumerated = createInternalType ("enum", "enum");
   dtAnyEnumerated->symbol->addFlag(FLAG_GENERIC);
 
+  dtAnyUnion = createInternalType ("union", "union");
+  dtAnyUnion->symbol->addFlag(FLAG_GENERIC);
+
   dtAnyImag = createInternalType("chpl_anyimag", "imag");
   dtAnyImag->symbol->addFlag(FLAG_GENERIC);
 
@@ -2319,6 +2322,7 @@ bool isBuiltinGenericType(Type* t) {
   return isBuiltinGenericClassType(t) ||
          t == dtAnyComplex || t == dtAnyImag || t == dtAnyReal ||
          t == dtAnyEnumerated ||
+         t == dtAnyUnion ||
          t == dtNumeric || t == dtIntegral ||
          t == dtIteratorRecord || t == dtIteratorClass ||
          t == dtThunkRecord ||
@@ -2359,9 +2363,13 @@ bool isCPtrConstChar(Type* t) {
 }
 
 bool isCVoidPtr(Type* t) {
-  return (t->symbol->hasFlag(FLAG_C_PTR_CLASS) &&
-          getDataClassType(t->symbol)->typeInfo() == dtVoid) ||
-         t == dtCVoidPtr;
+  if (t == dtCVoidPtr) return true;
+  if (t->symbol->hasFlag(FLAG_C_PTR_CLASS)) {
+    if (auto dct = getDataClassType(t->symbol)) {
+      return dct->typeInfo() == dtVoid;
+    }
+  }
+  return false;
 }
 
 bool isClassLikeOrNil(Type* t) {

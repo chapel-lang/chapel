@@ -38,13 +38,13 @@ static void test1() {
          var c: int;
       }
       param r1 = __primitive("num fields", R);
-      param r2 = __primitive("field num to name", R, 1);
-      param r3 = __primitive("field num to name", R, 2);
-      param r4 = __primitive("field num to name", R, 3);
-      param r5 = __primitive("field num to name", R, 4);
+      param r2 = __primitive("field num to name", R, 0);
+      param r3 = __primitive("field num to name", R, 1);
+      param r4 = __primitive("field num to name", R, 2);
+      param r5 = __primitive("field num to name", R, 3);
       param r6 = __primitive("field num to name", R, "hi");
       param r7 = __primitive("field num to name", R);
-      param r8 = __primitive("field num to name", R, 1, 1);
+      param r8 = __primitive("field num to name", R, 0, 0);
       )""", { "r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8" });
   ensureParamInt(variables.at("r1"), 3);
   ensureParamString(variables.at("r2"), "a");
@@ -73,9 +73,9 @@ static void test2() {
       param r6 = __primitive("field name to num", R);
       param r7 = __primitive("field name to num", R, "a", "b");
       )""", { "r1", "r2", "r3", "r4", "r5", "r6", "r7" });
-  ensureParamInt(variables.at("r1"), 1);
-  ensureParamInt(variables.at("r2"), 2);
-  ensureParamInt(variables.at("r3"), 3);
+  ensureParamInt(variables.at("r1"), 0);
+  ensureParamInt(variables.at("r2"), 1);
+  ensureParamInt(variables.at("r3"), 2);
   ensureParamInt(variables.at("r4"), -1);
   ensureErroneousType(variables.at("r5"));
   ensureErroneousType(variables.at("r6"));
@@ -92,13 +92,13 @@ static void test3() {
          var c: string;
       }
       var r: R;
-      var r1 = __primitive("field by num", r, 1);
-      var r2 = __primitive("field by num", r, 2);
-      var r3 = __primitive("field by num", r, 3);
+      var r1 = __primitive("field by num", r, 0);
+      var r2 = __primitive("field by num", r, 1);
+      var r3 = __primitive("field by num", r, 2);
       var r4 = __primitive("field by num", r, "hi");
       var r5 = __primitive("field by num", r);
-      var r6 = __primitive("field by num", r, 1, 2);
-      var r7 = __primitive("field by num", R, 1);
+      var r6 = __primitive("field by num", r, 0, 1);
+      var r7 = __primitive("field by num", R, 0);
       )""", { "r1", "r2", "r3", "r4", "r5", "r6", "r7" });
   assert(variables.at("r1").type()->isIntType());
   assert(variables.at("r2").type()->isIntType());

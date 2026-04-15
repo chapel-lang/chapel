@@ -43,6 +43,21 @@ std::map<TypeSymbol*, std::pair<std::string, std::string> > pythonNames;
 std::map<TypeSymbol*, std::string> fortranKindNames;
 std::map<TypeSymbol*, std::string> fortranTypeNames;
 
+static bool shouldGeneratePrototype(FnSymbol* fn) {
+  if (fn->hasFlag(FLAG_EXPORT)) {
+    if (isUserRoutine(fn)) return true;
+
+    if (fn->name == astr("chpl_library_init") ||
+        fn->name == astr("chpl_library_finalize")) {
+      if (auto mod = fn->getModule()) {
+        if (mod->modTag == MOD_INTERNAL) return true;
+      }
+    }
+  }
+
+  return false;
+}
+
 //
 // Generates a .h file to complement the library file created using --library
 // This .h file will contain necessary #includes, any explicitly exported
@@ -92,10 +107,7 @@ void codegen_library_header(std::vector<FnSymbol*> functions) {
       // Print out the module initialization function headers and the exported
       // functions
       for_vector(FnSymbol, fn, functions) {
-        if (fn->hasFlag(FLAG_EXPORT) &&
-            isUserRoutine(fn)) {
-          fn->codegenPrototype();
-        }
+        if (shouldGeneratePrototype(fn)) fn->codegenPrototype();
       }
 
       if (usingGpuLocaleModel()) {

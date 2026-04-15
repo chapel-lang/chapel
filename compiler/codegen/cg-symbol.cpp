@@ -636,6 +636,11 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
       if( hasFlag(FLAG_CONST) && hasFlag(FLAG_EXTERN) ) {
         ret.isLVPtr = GEN_VAL;
         ret.c = cname;
+      } else if (ret.chplType == dtNil) {
+        // nil is not an immediate, but we should treat it like when for C
+        // codegen
+        ret.isLVPtr = GEN_VAL;
+        ret.c = cname;
       } else {
         QualifiedType qt = qualType();
         if (lhsInSetReference) {
@@ -1112,21 +1117,38 @@ static Type* getFormalCodegenType(ArgSymbol* formal) {
 // return type of exported functions, or arguments of those functions.
 //
 // TODO: apply to _ddata as well?
-static std::string
-transformTypeForPointer(Type* type) {
+static std::string transformTypeForPointer(Type* type, bool makeConst=false) {
+  Type* underlying = nullptr;
+  bool isConst = false;
+  std::string ret;
+
   if (type->symbol->hasFlag(FLAG_REF)) {
-    Type* referenced = type->getValType();
-    return referenced->codegen().c + " *";
+    underlying = type->getValType();
 
   } else if (type->symbol->hasFlag(FLAG_C_PTR_CLASS)) {
-    Type* pointedTo = getDataClassType(type->symbol)->typeInfo();
-    bool isConst = type->symbol->hasFlag(FLAG_C_PTRCONST_CLASS);
-    std::string ret = isConst ? "const " : "";
-    ret += pointedTo->codegen().c + " *";
-    return ret;
+    underlying = getDataClassType(type->symbol)->typeInfo();
+    isConst = type->symbol->hasFlag(FLAG_C_PTRCONST_CLASS);
   }
-  std::string typeName = type->codegen().c;
-  return typeName;
+
+  // Consider output for 'a pointer to a const pointer to a const int(64)':
+  //
+  // const int64_t * const * ptr;
+  //
+  // It's a little bit goofy to build this type in C. We start by recursing
+  // to the left if need be. If the underlying is a pointer, we attach
+  // 'const' to the right of it. Otherwise, we attach 'const ' to the left
+  // of it. The outermost pointer can never be 'const'.
+  if (underlying != nullptr) {
+    ret += transformTypeForPointer(underlying, isConst);
+    ret += " *";
+    if (makeConst) ret += " const";
+
+  } else {
+    if (makeConst) ret += "const ";
+    ret += type->codegen().c;
+  }
+
+  return ret;
 }
 
 static GenRet codegenFormalType(Qualifier qual, Type* type) {
@@ -1476,6 +1498,46 @@ void TypeSymbol::codegenPrototype() {
   }
 }
 
+#ifndef HAVE_LLVM
+static void handleOpaqueCTypeAlias(TypeSymbol* ts) {}
+#else
+static void handleOpaqueCTypeAlias(TypeSymbol* ts) {
+  // Nothing to do.
+  if (gGenInfo->cfile) return;
+
+  std::string aliasName = ts->cname;
+  auto equivalentChapelType = chapelTypeForPrimitiveCTypeName(aliasName);
+  auto info = gGenInfo;
+
+  if (!equivalentChapelType) {
+    INT_FATAL(ts, "Unsupported opaque type alias name %s\n",
+                  aliasName.c_str());
+  }
+
+  if (auto eqts = equivalentChapelType->symbol) {
+    // Make sure the equivalent type is generated first.
+    if (!eqts->hasLLVMType()) eqts->codegenDef();
+  }
+
+  auto llvmImplType = equivalentChapelType->symbol->llvmImplType;
+  auto llvmAlignment = equivalentChapelType->symbol->llvmAlignment;
+  bool isUnsigned = !isSignedType(equivalentChapelType);
+
+  if (nullptr == info->lvt->getType(aliasName)) {
+    // Emplace the primitive C type if we need to. This only happens once,
+    // but the use of the pragma triggers the mapping for a given C type.
+    info->lvt->addGlobalType(aliasName, llvmImplType, isUnsigned);
+  }
+
+  // Now set our type's LLVM info to match the 'c_...' type.
+  INT_ASSERT(ts->llvmImplType == nullptr);
+  INT_ASSERT(ts->llvmAlignment == ALIGNMENT_UNINIT);
+  ts->llvmImplType = llvmImplType;
+  ts->llvmAlignment = llvmAlignment;
+
+  ts->addFlag(FLAG_CODEGENNED);
+}
+#endif
 
 void TypeSymbol::codegenDef() {
   GenInfo *info = gGenInfo;
@@ -1484,6 +1546,14 @@ void TypeSymbol::codegenDef() {
       (breakOnCodegenCname[0] &&
        0 == strcmp(cname, breakOnCodegenCname)) ) {
     debuggerBreakHere();
+  }
+
+  if (hasFlag(FLAG_OPAQUE_C_TYPE_ALIAS)) {
+    handleOpaqueCTypeAlias(this);
+
+    // Should hold for subsequent code to take the right path.
+    INT_ASSERT(hasFlag(FLAG_EXTERN));
+    INT_ASSERT(hasFlag(FLAG_CODEGENNED));
   }
 
   if (!hasFlag(FLAG_EXTERN)) {
@@ -3291,7 +3361,7 @@ GenRet FnSymbol::codegenAsCallBaseExpr() {
       llvm::Type* Types[] = {ty.type};
 
 #if LLVM_VERSION_MAJOR < 21
-      // TargetIntrinsics where removed in LLVM 21
+      // TargetIntrinsics were removed in LLVM 21
       // we just access them like normal intrinsics
       const llvm::TargetIntrinsicInfo *TII = info->targetMachine->getIntrinsicInfo();
 #endif

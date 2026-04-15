@@ -56,29 +56,32 @@ async def test_param_inlays_prim(client: LanguageClient):
             param d = if foo(int) then 1 else 10;
             param e = if foo(string) then 1 else 10;
 
-            param f = "hello";
+            param f = "hello" + "";
 
             param g = false;
             param h = true;
+            param gh = g && h;
 
-            param i = "hello\\nworld";
-            param j = b"Lots of weird bytes in here \\t\\n\\r";
+            param i = "hello\\nworld" + "";
+            param j = b"Lots of weird bytes in here \\t\\n\\r" + b"";
             param k = """this is a long
+            long string""" + "";
+            param l = "hello\\nworld";
+            param m = b"Lots of weird bytes in here \\t\\n\\r";
+            param n = """this is a long
             long string""";
            '''
 
     inlays = [
-        (pos((0, 7)), "10"),
         (pos((1, 7)), "400"),
         (pos((2, 7)), "20"),
         (pos((7, 7)), "1"),
         (pos((8, 7)), "10"),
         (pos((10, 7)), '"hello"'),
-        (pos((12, 7)), "false"),
-        (pos((13, 7)), "true"),
-        (pos((15, 7)), '"hello\\nworld"'),
-        (pos((16, 7)), 'b"Lots of weird bytes in here \\t\\n\\r"'),
-        (pos((17, 7)), '"this is a long\\nlong string"'),
+        (pos((14, 8)), "false"),
+        (pos((16, 7)), '"hello\\nworld"'),
+        (pos((17, 7)), 'b"Lots of weird bytes in here \\t\\n\\r"'),
+        (pos((18, 7)), '"this is a long\\nlong string"'),
     ]
 
     async with source_file(client, file) as doc:
@@ -86,10 +89,7 @@ async def test_param_inlays_prim(client: LanguageClient):
             client, doc, rng((0, 0), endpos(file)), inlays
         )
 
-        # check that specifying a range works
-        await check_param_inlay_hints(
-            client, doc, rng((0, 0), (1, 0)), [inlays[0]]
-        )
+        await check_param_inlay_hints(client, doc, rng((0, 0), (1, 0)), [])
 
 
 @pytest.mark.asyncio
@@ -107,6 +107,28 @@ async def test_param_inlays_split_init(client: LanguageClient):
            """
 
     inlays = [(pos((0, 7)), "20")]
+    async with source_file(client, file) as doc:
+        await check_param_inlay_hints(
+            client, doc, rng((0, 0), endpos(file)), inlays
+        )
+
+
+@pytest.mark.asyncio
+async def test_param_inlays_obvious(client: LanguageClient):
+    """
+    Ensure that param inlays are suppressed when the value is a literal
+    already visible in source, but still shown for non-literal inits.
+    """
+
+    file = """
+            proc getValue() param do return 42;
+            param x = 1;
+            param y = getValue();
+           """
+
+    inlays = [
+        (pos((2, 7)), "42"),
+    ]
     async with source_file(client, file) as doc:
         await check_param_inlay_hints(
             client, doc, rng((0, 0), endpos(file)), inlays

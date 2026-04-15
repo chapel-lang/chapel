@@ -538,6 +538,8 @@ static inline int64_t qio_file_length_guess(qio_file_t* f) {
   return f->initial_length;
 }
 
+bool qio_isatty(qio_file_t* f);
+
 /* CHANNELS ..... */
 
 /* A Read and Write Buffered channels support:

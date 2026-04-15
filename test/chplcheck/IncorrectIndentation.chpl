@@ -473,4 +473,10 @@ if 1 < 2 {
      var x = 1;
     var y = 2;
   }
+
+  @chpldoc.nodoc
+  enum foo {
+    bar,
+    baz
+  }
 }

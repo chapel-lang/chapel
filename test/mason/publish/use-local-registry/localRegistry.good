@@ -17,9 +17,12 @@ Registry already exists at $CHPL_HOME/test/mason/publish/use-local-registry/loca
 + echo 'error as expected: 1'
 error as expected: 1
 + mason publish $CHPL_HOME/test/mason/publish/use-local-registry/local-reg
+Created git tag: v0.1.0. Make sure to push this tag to your remote when you publish to the registry with 'git push origin --tags'
 Successfully published package to $CHPL_HOME/test/mason/publish/use-local-registry/local-reg
 + mason publish $CHPL_HOME/test/mason/publish/use-local-registry/local-reg
 A package with that name and version number already exists in the Bricks.
++ echo 'error as expected: 1'
+error as expected: 1
 + export 'MASON_REGISTRY=my-local-registry|$CHPL_HOME/test/mason/publish/use-local-registry/local-reg'
 + MASON_REGISTRY='my-local-registry|$CHPL_HOME/test/mason/publish/use-local-registry/local-reg'
 + mason search
@@ -46,9 +49,14 @@ OK (passed = 2 )
 Updating my-local-registry
 got strings: (set, set)
 got magic: 17
++ mason doc
++ cat doc/_sources/modules/src/myPackage.rst.txt
++ grep '.. module::'
+.. module:: myPackage
 + cd ..
 + mason new myNewPackage
 Created new application project: myNewPackage
+Tip: To convert existing code to a mason project, move the driver application to the `src/myNewPackage.chpl` file. For adding other source code, using submodules is the recommended approach to avoid namespace collisions.
 + cd myNewPackage
 + mason add myDep@0.1.0
 Adding Mason dependency myDep version 0.1.0
@@ -59,3 +67,7 @@ Compiling [debug] target: myNewPackage
 Build Successful
 
 got strings: (set, set)
++ mason doc
++ cat doc/_sources/modules/src/myNewPackage.rst.txt
++ grep '.. module::'
+.. module:: myNewPackage

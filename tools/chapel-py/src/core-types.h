@@ -175,10 +175,14 @@ struct ChapelTypeObject  : public PythonClassWithContext<ChapelTypeObject, const
   static constexpr const char* DocStr = "The base type of Chapel types";
 
   static PyObject* str(ChapelTypeObject* self);
+  static Py_hash_t hash(ChapelTypeObject* self);
+  static PyObject* richcompare(ChapelTypeObject* self, PyObject* other, int op);
 
   static PyTypeObject* configurePythonType() {
-    std::array<PyType_Slot, 1> extraSlots = {
+    std::array<PyType_Slot, 3> extraSlots = {
       PyType_Slot{Py_tp_str, (void*) ChapelTypeObject::str},
+      PyType_Slot{Py_tp_hash, (void*) ChapelTypeObject::hash},
+      PyType_Slot{Py_tp_richcompare, (void*) ChapelTypeObject::richcompare},
     };
     PyTypeObject* configuring = PythonClassWithContext<ChapelTypeObject, const chpl::types::Type*>::configurePythonType(Py_TPFLAGS_BASETYPE, extraSlots);
     return configuring;

@@ -657,6 +657,25 @@ addCommandLineFileDirectories(std::vector<std::string>& searchPath,
   }
 }
 
+static bool checkModulePath(Context* context,
+                            std::string_view path, std::string_view flagName) {
+  if (!pathExists(path)) {
+    context->warning(IdOrLocation::createForCommandLineLocation(context),
+                      "path provided by %.*s does not exist: %.*s",
+                      (int)flagName.size(), flagName.data(),
+                      (int)path.size(), path.data());
+    return false;
+  } else if (!directoryExists(path)) {
+    context->error(IdOrLocation::createForCommandLineLocation(context),
+                    "path provided by %.*s is not a directory: %.*s",
+                    (int)flagName.size(), flagName.data(),
+                    (int)path.size(), path.data());
+    return false;
+  } else {
+    return true;
+  }
+}
+
 void setupModuleSearchPaths(
                   Context* context,
                   const std::string& chplHome,
@@ -695,6 +714,10 @@ void setupModuleSearchPaths(
 
   // add the internal module paths
   for (auto& path : prependInternalModulePaths) {
+    // check the path, but don't skip adding it to the path. This supports
+    // testing with fake filesystems where the paths may not actually exist.
+    // this is a developer only flag anyways, so no big deal
+    std::ignore = checkModulePath(context, path, "--prepend-internal-module-dir");
     searchPath.push_back(path);
     UniqueString uPath = UniqueString::get(context, path);
     uPrependedInternalModulePaths.push_back(uPath);
@@ -715,6 +738,10 @@ void setupModuleSearchPaths(
 
   // move on to standard modules
   for (auto& path : prependStandardModulePaths) {
+    // check the path, but don't skip adding it to the path. This supports
+    // testing with fake filesystems where the paths may not actually exist.
+    // this is a developer only flag anyways, so no big deal
+    std::ignore = checkModulePath(context, path, "--prepend-standard-module-dir");
     searchPath.push_back(path);
     UniqueString uPath = UniqueString::get(context, path);
     uPrependedStandardModulePaths.push_back(uPath);
@@ -735,7 +762,9 @@ void setupModuleSearchPaths(
 
   // Add paths from -M flags on the command line
   for (const auto& p : cmdLinePaths) {
-    searchPath.push_back(p);
+    if (checkModulePath(context, p, "-M/--module-dir")) {
+      searchPath.push_back(p);
+    }
   }
 
   // Add paths from the CHPL_MODULE_PATH environment variable
@@ -745,7 +774,9 @@ void setupModuleSearchPaths(
     std::string path;
 
     while (std::getline(ss, path, ':')) {
-      searchPath.push_back(path);
+      if (checkModulePath(context, path, "CHPL_MODULE_PATH")) {
+        searchPath.push_back(path);
+      }
     }
   }
 
@@ -943,9 +974,9 @@ const std::set<std::string>& filesInDir(Context* context, std::string dirPath) {
   return filesInDirWithCleanedPath(context, std::move(dirPath));
 }
 
-static const bool& fileExistsQuery(Context* context, std::string path) {
-  QUERY_BEGIN_INPUT(fileExistsQuery, context, path);
-  bool result = fileExists(path.c_str());
+static const bool& pathExistsQuery(Context* context, std::string path) {
+  QUERY_BEGIN_INPUT(pathExistsQuery, context, path);
+  bool result = pathExists(path.c_str());
   return QUERY_END(result);
 }
 
@@ -973,7 +1004,7 @@ bool checkFileExists(Context* context,
     // is the requested file present?
     return files.count(filename) > 0;
   } else {
-    return fileExistsQuery(context, std::move(path));
+    return pathExistsQuery(context, std::move(path));
   }
 }
 
@@ -1227,7 +1258,7 @@ getIncludedSubmoduleQuery(Context* context, ID includeModuleId) {
     check += submoduleName.c_str();
     check += ".chpl";
 
-    if (hasFileText(context, check) || fileExistsQuery(context, check)) {
+    if (hasFileText(context, check) || pathExistsQuery(context, check)) {
       auto filePath = UniqueString::get(context, check);
       const BuilderResult& p = parseFileToBuilderResult(context, filePath,
                                                         parentSymbolPath);
@@ -1720,33 +1751,33 @@ ID idToContainingMultiDeclId(Context* context, ID id) {
   return idToContainingMultiDeclIdQuery(context, id);
 }
 
-static bool helpFieldNameCheck(const AstNode* ast,
-                               UniqueString fieldName) {
+static const VarLikeDecl* helpFieldNameCheck(const AstNode* ast,
+                                             UniqueString fieldName) {
   if (auto var = ast->toVarLikeDecl()) {
-    return var->name() == fieldName;
+    if (var->name() == fieldName) {
+      return var;
+    }
   } else if (auto mult = ast->toMultiDecl()) {
     for (auto decl : mult->decls()) {
-      bool found = helpFieldNameCheck(decl, fieldName);
-      if (found) {
-        return true;
+      if (auto found = helpFieldNameCheck(decl, fieldName)) {
+        return found;
       }
     }
   } else if (auto tup = ast->toTupleDecl()) {
     for (auto decl : tup->decls()) {
-      bool found = helpFieldNameCheck(decl, fieldName);
-      if (found) {
-        return true;
+      if (auto found = helpFieldNameCheck(decl, fieldName)) {
+        return found;
       }
     }
   }
-  return false;
+  return nullptr;
 }
 
-static const bool&
-idContainsFieldWithNameQuery(Context* context, ID typeDeclId, UniqueString fieldName) {
-  QUERY_BEGIN(idContainsFieldWithNameQuery, context, typeDeclId, fieldName);
+static const VarLikeDecl* const&
+idToFieldWithNameQuery(Context* context, ID typeDeclId, UniqueString fieldName) {
+  QUERY_BEGIN(idToFieldWithNameQuery, context, typeDeclId, fieldName);
 
-  bool result = false;
+  const VarLikeDecl* result = nullptr;
   auto ast = parsing::idToAst(context, typeDeclId);
   if (ast && ast->isAggregateDecl()) {
     auto ad = ast->toAggregateDecl();
@@ -1756,9 +1787,8 @@ idContainsFieldWithNameQuery(Context* context, ID typeDeclId, UniqueString field
       if (child->isVarLikeDecl() ||
           child->isMultiDecl() ||
           child->isTupleDecl()) {
-        bool found = helpFieldNameCheck(child, fieldName);
-        if (found) {
-          result = true;
+        if (auto found = helpFieldNameCheck(child, fieldName)) {
+          result = found;
           break;
         }
       }
@@ -1768,8 +1798,8 @@ idContainsFieldWithNameQuery(Context* context, ID typeDeclId, UniqueString field
   return QUERY_END(result);
 }
 
-bool idContainsFieldWithName(Context* context, ID typeDeclId, UniqueString fieldName) {
-  return idContainsFieldWithNameQuery(context, typeDeclId, fieldName);
+const VarLikeDecl* idToFieldWithName(Context* context, ID typeDeclId, UniqueString fieldName) {
+  return idToFieldWithNameQuery(context, typeDeclId, fieldName);
 }
 
 bool findFieldIdInDeclaration(const AstNode* ast,

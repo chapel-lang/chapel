@@ -626,14 +626,14 @@ module ChapelRange {
 
 
   /* Returns the range's stride. */
-  pragma "no where doc"
+  @chpldoc.noWhereClause
   inline proc range.stride where !hasParamStride() do return _stride;
 
   @chpldoc.nodoc proc range.stride param where hasParamStride() do
     return (if strides == strideKind.one then 1 else -1) : strType;
 
   /* Returns the range's alignment. */
-  pragma "no where doc"
+  @chpldoc.noWhereClause
   inline proc range.alignment where !hasParamAlignment() do
     return chpl_intToIdx(if hasParamAlignmentField() then 0 else _alignment);
 
@@ -642,7 +642,7 @@ module ChapelRange {
 
   /* Returns ``true`` if the range's alignment is unambiguous,
      ``false`` otherwise. */
-  pragma "no where doc"
+  @chpldoc.noWhereClause
   inline proc range.isAligned() where !hasParamAligned() do
     return _alignment != unalignedMark;
 
@@ -1082,7 +1082,7 @@ module ChapelRange {
   }
 
   // tells whether omitting the 'align' clause results in the same range
-  pragma "no where doc"
+  @chpldoc.noWhereClause
   proc range.chpl_isNaturallyAligned()
     where ! hasPosNegUnitStride() && bounds != boundKind.neither
   do if bounds == boundKind.both {
@@ -1614,7 +1614,7 @@ module ChapelRange {
    the original bounds and/or stride do not fit in the new idxType
    or when the original stride is not legal for the new `strides` parameter.
  */
-pragma "no where doc"
+@chpldoc.noWhereClause
 proc range.tryCast(type t: range(?)) where chpl_tryCastIsSafe(this, t) {
   const r = this;
   checkBounds(t, r);

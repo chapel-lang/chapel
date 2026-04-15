@@ -12,7 +12,7 @@ module Indentation {
 writeln(i);
 writeln("second thing");
 
-  // the only fixit is ignore, cant apply fixit to the multiline
+  // for multiline statements, best we can do is add curly braces.
   for i in 1..10 do
     writeln(i);
     writeln
@@ -79,4 +79,35 @@ writeln("second thing");
         writeln("Hello, world!");
         writeln("Hello, world!");
 
+  for 1..10 do
+    for 1..10 do
+      for 1..10 do
+        writeln("Hello, world!");
+        writeln(
+            "Hello, world!"
+        );
+        writeln(
+            "Hello, world!"
+        );
+
+  @chplcheck.ignore("MisleadingIndentation")
+  for i in 1..10 do
+    writeln(i);
+    writeln("second thing");
+    for j in 1..10 do
+        writeln(j);
+        writeln("third thing");
+        writeln("fourth thing");
+    writeln("fifth thing");
+
+  @chplcheck.ignore("MisleadingIndentation")
+  for i in 1..10 do
+    writeln(i);
+    writeln("second thing");
+    @chplcheck.ignore("MisleadingIndentation")
+    for j in 1..10 do
+        writeln(j);
+        writeln("third thing");
+        writeln("fourth thing");
+    writeln("fifth thing");
 }

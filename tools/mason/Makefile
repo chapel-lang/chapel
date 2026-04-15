@@ -31,26 +31,38 @@ endif
 
 unexport CHPL_MAKE_CHPLENV_CACHE
 
-bdir=$(CHPL_BIN_DIR)
-link=../../tools/mason/mason
-linkFile=$(bdir)/mason
+override CHPL_COMPILER ?= $(CHPL_BIN_DIR)/chpl
+outputFile=$(CHPL_BIN_DIR)/mason
 
 MASON_SOURCES=*.chpl
 
-all: $(bdir)/mason FORCE
+.PHONY: all mason install deps tarball-prep clean clean-deps clobber FORCE
+all: $(outputFile) FORCE
 
-mason: $(bdir)/mason FORCE
+install: $(outputFile) FORCE
 
-install: $(bdir)/mason FORCE
-
-$(bdir)/mason: $(MASON_SOURCES) buildMason
+$(outputFile): $(MASON_SOURCES) buildMason
+	@$(MAKE) deps
 	@echo "Building Mason..."
-	@chplBinDir=$(bdir) DEBUG=$(DEBUG) ./buildMason
+	@CHPL_COMPILER=$(CHPL_COMPILER) outputFile=$(outputFile) DEBUG=$(DEBUG) ./buildMason
+
+deps: pullMasonDeps
+	@echo "Pulling Mason dependencies..."
+	@./pullMasonDeps
+
+tarball-prep: FORCE
+	@echo "Preparing Mason for tarball..."
+	@$(MAKE) deps
+	@rm ThirdParty/masonDeps.txt ThirdParty/downloaded.txt
 
 clean: FORCE
 	@echo "Removing Mason..."
-	rm -f $(bdir)/mason
+	rm -f $(outputFile)
 
-clobber: clean FORCE
+clean-deps: FORCE
+	@echo "Removing Mason dependencies..."
+	@find ThirdParty -type f -not -path '*/.gitignore' -not -path '*/masonDeps.txt' -exec rm {} +
+
+clobber: clean clean-deps FORCE
 
 FORCE:

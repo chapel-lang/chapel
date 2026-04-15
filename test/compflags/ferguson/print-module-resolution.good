@@ -232,12 +232,16 @@ ChapelStaticVars
   from print-module-resolution.ChapelStandard.ChapelStaticVars
 ChapelRemoteVars
   from print-module-resolution.ChapelStandard.ChapelRemoteVars
+ChapelUnion
+  from print-module-resolution.ChapelStandard.ChapelUnion
 AutoGpu
   from print-module-resolution.ChapelStandard.AutoGpu
 stopInitCommDiags
   from print-module-resolution.ChapelStandard.stopInitCommDiags
 ChapelDynamicLoading
   from print-module-resolution.ChapelStandard.ChapelDynamicLoading
+ChapelProgramEntrypoints
+  from print-module-resolution.ChapelStandard.ChapelProgramEntrypoints
 ChapelStandard
   from print-module-resolution.ChapelStandard
 print-module-resolution

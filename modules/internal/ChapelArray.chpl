@@ -1527,23 +1527,11 @@ module ChapelArray {
     // method we would incur promotion when trying to print arrays.
     @chpldoc.nodoc
     proc serialize(writer, ref serializer) throws {
-      var arrayStyle = writer.styleElement(QIO_STYLE_ELEMENT_ARRAY);
-      var ischpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !writer._binary();
-      if rank > 1 && ischpl {
-        throw new owned IllegalArgumentError("Cannot perform Chapel write of multidimensional array.");
-      }
-
       _value.dsiSerialWrite(writer);
     }
 
     @chpldoc.nodoc
     proc ref deserialize(reader, ref deserializer) throws {
-      var arrayStyle = reader.styleElement(QIO_STYLE_ELEMENT_ARRAY);
-      var ischpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !reader._binary();
-      if rank > 1 && ischpl {
-        throw new owned IllegalArgumentError("Cannot perform Chapel read of multidimensional array.");
-      }
-
       _value.dsiSerialRead(reader);
     }
 

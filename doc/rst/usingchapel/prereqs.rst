@@ -62,7 +62,7 @@ In addition, several optional components have additional requirements:
 
   * ``m4`` is required for building the bundled GMP
 
-  * ``git`` is required for :ref:`readme-mason`, chapel's package manager
+  * ``git`` is required for :ref:`readme-mason`, Chapel's package manager
 
   * ``pkg-config`` is required for the ``mason system`` subcommands
 

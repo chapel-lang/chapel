@@ -25,6 +25,7 @@ import chapel
 from chapel import *
 from driver import LintDriver
 from fixits import Fixit, Edit
+from indentation import build_and_run_indentation_collector
 from rule_types import (
     BasicRuleResult,
     AdvancedRuleResult,
@@ -134,6 +135,50 @@ def extract_only_bool(
     if not isinstance(check_for_bool, BoolLiteral):
         return None
     return check_for_bool.value()
+
+
+def find_docstring_ranges(
+    lines: typing.List[str],
+) -> typing.List[typing.Tuple[typing.Tuple[int, int], typing.Tuple[int, int]]]:
+    docstring_ranges = []
+    docstring_stack = []
+    for row, line in enumerate(lines, start=1):
+        idx = 0
+        len_line = len(line)
+        while idx < len_line:
+            cur = (line[idx], line[idx + 1] if idx + 1 < len_line else None)
+            if cur == ("/", "*"):
+                docstring_stack.append((row, idx))
+                idx += 2
+            elif cur == ("*", "/"):
+                # pop stack and add a docstring range from the popped location
+                # to here
+                if docstring_stack:
+                    start = docstring_stack.pop()
+                    docstring_ranges.append((start, (row, idx + 2)))
+                else:
+                    # mismatched comment end, ignore it. should have been caught
+                    # by the chapel parser anyways
+                    pass
+                idx += 2
+            else:
+                idx += 1
+    # if docstring_stack is not empty here, we have mismatched comment starts,
+    # but we'll ignore those too since they should have been caught by the
+    # chapel parser
+    return docstring_ranges
+
+
+def is_in_docstring(
+    loc: typing.Tuple[int, int],
+    docstring_ranges: typing.List[
+        typing.Tuple[typing.Tuple[int, int], typing.Tuple[int, int]]
+    ],
+) -> bool:
+    for start, end in docstring_ranges:
+        if start <= loc and loc <= end:
+            return True
+    return False
 
 
 def rules(driver: LintDriver):
@@ -763,6 +808,10 @@ def rules(driver: LintDriver):
 
         parent = node.parent()
         while parent is not None:
+            if isinstance(parent, On):
+                # if at any point there is an on-statement, we are fine since
+                # the second coforall will be on another node
+                return True
             if isinstance(parent, Coforall):
                 return False
             parent = parent.parent()
@@ -992,29 +1041,35 @@ def rules(driver: LintDriver):
         yield from recurse(root)
 
     @driver.advanced_rule
-    def MisleadingIndentation(context: Context, root: AstNode):
+    def MisleadingIndentation(
+        context: Context, root: AstNode, ChplcheckSilencedRules: List[str]
+    ):
         """
         Warn for single-statement blocks that look like they might be multi-statement blocks.
         """
-        if isinstance(root, Comment):
-            return
-        prev = []
-        fix = None
-        for child in root:
-            if isinstance(child, Comment):
-                continue
-            yield from MisleadingIndentation(context, child)
+        collector = build_and_run_indentation_collector(root)
 
-            if prev and any(
-                p.location().start()[1] == child.location().start()[1]
-                for p in prev
+        no_incorrect_indentation = (
+            "IncorrectIndentation" in ChplcheckSilencedRules
+        )
+
+        for node, (
+            child,
+            anchor,
+            group,
+        ) in collector.misleadingly_indented_groups.items():
+            # If the thing we look like we're bundled under is itself
+            # incorrectly indented, that's the root cause, let that report
+            # take precedence.
+            if (
+                no_incorrect_indentation
+                or child not in collector.incorrectly_indented_nodes
             ):
-                yield AdvancedRuleResult(child, fix)
+                yield AdvancedRuleResult(node, anchor, data=(child, group))
 
-            prev = []
-            fix = append_nested_single_stmt(child, prev)
-
-    def append_nested_single_stmt(node, prev: List[AstNode]):
+    def append_nested_single_stmt(
+        node, prev: List[tuple[AstNode, List[AstNode]]]
+    ):
         if isinstance(node, Loop) and node.block_style() == "implicit":
             children = list(node)
             # safe to access [-1], loops must have at least 1 child
@@ -1027,7 +1082,7 @@ def rules(driver: LintDriver):
         for stmt in inblock:
             if isinstance(stmt, Comment):
                 continue
-            prev.append(stmt)
+            prev.append((stmt, []))
             append_nested_single_stmt(stmt, prev)
             return node  # Return the outermost on to use an anchor
 
@@ -1056,6 +1111,56 @@ def rules(driver: LintDriver):
             fixit = Fixit.build(Edit(loc.path(), line_start, loc.end(), text))
         return [fixit] if fixit else []
 
+    @driver.fixit(MisleadingIndentation)
+    def FixMisleadingIndentationCurly(
+        context: Context, result: AdvancedRuleResult
+    ):
+        """
+        Change the 'do' keyword to an explicit curly-brace block.
+        """
+        assert isinstance(result.anchor, AstNode)
+        assert isinstance(result.data, tuple) and len(result.data) == 2
+        assert isinstance(result.data[0], AstNode)
+        assert isinstance(result.data[1], list)
+
+        misleading_child, group = result.data
+        implicit_block = misleading_child.parent()
+        assert implicit_block is not None
+        parent_blocklike = implicit_block.parent()
+        assert parent_blocklike is not None
+
+        if not isinstance(parent_blocklike, IndexableLoop):
+            return []
+
+        # the 'do' is the last two characters of the header.
+        loop_loc = parent_blocklike.location()
+        body_loc = implicit_block.location()
+        last_loc = group[-1].location()
+
+        # Strange shape, let's not try to fix it.
+        if loop_loc.start()[1] >= last_loc.start()[1]:
+            return []
+
+        path = last_loc.path()
+
+        parent_indent = max(loop_loc.start()[1] - 1, 0)
+
+        lines = chapel.get_file_lines(context, result.node)
+        end_of_last = (last_loc.end()[0], len(lines[last_loc.end()[0] - 1]) + 1)
+        edit_close = Edit(
+            path, end_of_last, end_of_last, "\n" + parent_indent * " " + "}"
+        )
+
+        do_begin_col = body_loc.start()[1]
+        do_end_col = do_begin_col + 2
+        do_start = (body_loc.start()[0], do_begin_col)
+        do_end = (body_loc.start()[0], do_end_col)
+        edit_open = Edit(path, do_start, do_end, "{")
+
+        fixit = Fixit.build(edit_close, edit_open)
+        fixit.changes_semantics = True
+        return [fixit]
+
     @driver.advanced_rule
     def UnusedFormal(context: Context, root: AstNode):
         """
@@ -1067,7 +1172,9 @@ def rules(driver: LintDriver):
         formals = dict()
         uses = set()
 
-        for formal, _ in chapel.each_matching(root, Formal):
+        for formal, _ in chapel.each_matching(
+            root, set([Formal, VarArgFormal])
+        ):
             # For now, it's harder to tell if we're ignoring 'this' formals
             # (what about method calls with implicit receiver?). So skip
             # 'this' formals.
@@ -1108,6 +1215,28 @@ def rules(driver: LintDriver):
                     "deserializer",
                 ):
                     continue
+                if parent.name() == "init" and formal.name() in (
+                    "reader",
+                    "deserializer",
+                ):
+                    # all of the formals should be type intent, followed
+                    # by reader and deserializer
+                    parentFormals = [
+                        (f.name(), f.intent())
+                        for f in parent.formals()
+                        if isinstance(f, Formal) and not f.is_this()
+                    ]
+                    hasDeserializer = parentFormals[-1] == (
+                        "deserializer",
+                        "ref",
+                    )
+                    hasReader = parentFormals[-2][0] == "reader"
+                    allTypes = all(
+                        intent in ("type", "param")
+                        for _, intent in parentFormals[:-2]
+                    )
+                    if hasDeserializer and hasReader and allTypes:
+                        continue
 
             formals[formal.unique_id()] = formal
 
@@ -1309,168 +1438,24 @@ def rules(driver: LintDriver):
             yield AdvancedRuleResult(iterand, anchor=loop, fixits=[fixit])
 
     @driver.advanced_rule
-    def IncorrectIndentation(context: Context, root: AstNode):
+    def IncorrectIndentation(
+        context: Context, root: AstNode, ChplcheckSilencedRules: List[str]
+    ):
         """
         Warn for inconsistent or missing indentation
         """
+        collector = build_and_run_indentation_collector(root)
 
-        # First, recurse and find warnings in children.
-        for child in root:
-            yield from IncorrectIndentation(context, child)
+        no_misleading_indentation = (
+            "MisleadingIndentation" in ChplcheckSilencedRules
+        )
 
-        def contains_statements(node: AstNode) -> bool:
-            """
-            Returns true for allow-listed AST nodes that contain
-            just a list of statements.
-            """
-            classes = (
-                Record,
-                Class,
-                Module,
-                SimpleBlockLike,
-                Interface,
-                Union,
-                Enum,
-                Cobegin,
-            )
-            return isinstance(node, classes)
-
-        def unwrap_intermediate_block(node: AstNode) -> Optional[AstNode]:
-            """
-            Given a node, find the reference indentation that its children
-            should be compared against.
-
-            This method also rules out certain nodes that should
-            not be used for parent-child indentation comparison.
-            """
-            if not isinstance(node, Block):
-                return node
-
-            parent = node.parent()
-            if not parent:
-                return node
-
-            if isinstance(parent, (Function, Loop)):
-                return parent
-            elif isinstance(parent, Conditional):
-                return None if parent.is_expression_level() else parent
-            return node
-
-        def is_block_in_else_if_chain(
-            block: AstNode, parent: Optional[AstNode]
-        ) -> bool:
-            return (
-                isinstance(parent, Conditional)
-                and parent.has_else_block()
-                and parent.num_else_stmts() == 1
-                and parent.else_stmt(0).unique_id() == block.unique_id()
-                and parent.else_block_style() == "implicit"
-            )
-
-        def find_anchor(node: Optional[AstNode]) -> Optional[AstNode]:
-            # only loops and NamedDecls can be anchors for indentation
-            anchor = node if isinstance(node, (Loop, NamedDecl)) else None
-            if isinstance(node, Module) and node.kind() == "implicit":
-                anchor = None
-            return anchor
-
-        # If root is something else (e.g., function call), do not
-        # apply indentation rules; only apply them to things that contain
-        # a list of statements.
-        is_eligible_parent_for_indentation = contains_statements(root)
-        if not is_eligible_parent_for_indentation:
-            return
-
-        parent_for_indentation = unwrap_intermediate_block(root)
-        parent_depth = None
-        if parent_for_indentation is None:
-            # don't compare against any parent depth.
-            pass
-        # For implicit modules, proper code will technically be on the same
-        # line as the module's body. But we don't want to warn about that,
-        # since we don't want to ask all code to be indented one level deeper.
-        elif not (
-            isinstance(parent_for_indentation, Module)
-            and parent_for_indentation.kind() == "implicit"
-        ):
-            parent_depth = parent_for_indentation.location().start()[1]
-
-        prev = None
-        prev_depth = None
-        prev_line = None
-
-        # We only care about misaligned statements, so we don't want to do stuff
-        # like warn for inherit-exprs or pragmas on a record.
-        iterable = root
-        if isinstance(root, AggregateDecl):
-            iterable = root.decls_or_comments()
-        elif isinstance(root, SimpleBlockLike):
-            iterable = root.stmts()
-        elif isinstance(root, Interface):
-            iterable = root.stmts()
-        elif isinstance(root, Cobegin):
-            iterable = root.task_bodies()
-        elif isinstance(root, Module) and root.attribute_group() is not None:
-            # attribute group is the first child, skip it
-            iterable = list(root)[1:]
-
-        for child in iterable:
-            if isinstance(child, Comment):
-                continue
-
-            # Empty statements get their own warnings, no need to warn here.
-            if isinstance(child, EmptyStmt):
-                continue
-
-            line, depth = child.location().start()
-
-            # Warn for two statements on one line:
-            #   var x: int; var y: int;
-            if line == prev_line:
-                # Exception for enums, which are allowed to be on the same line.
-                #   enum color { red, green, blue }
-                if not isinstance(child, EnumElement):
-                    yield AdvancedRuleResult(
-                        child, anchor=find_anchor(parent_for_indentation)
-                    )
-            # Warn for misaligned siblings:
-            #   var x: int;
-            #     var y: int;
-            elif prev_depth and depth != prev_depth:
-                # Special case, slightly coarse: avoid double-warning with
-                # MisleadingIndentation
-                if not (
-                    prev
-                    and (isinstance(prev, Loop) or isinstance(prev, On))
-                    and prev.block_style() == "implicit"
-                ):
-                    yield AdvancedRuleResult(
-                        child, anchor=find_anchor(parent_for_indentation)
-                    )
-
-                # Do not update 'prev_depth'; use original prev_depth as
-                # reference for next sibling.
-                prev_line = line
-                prev = child
-                continue
-            # Warn for children that are not indented relative to parent
-            #
-            #   record r {
-            #   var x: int;
-            #   }
-            elif parent_depth and depth == parent_depth:
-                if is_block_in_else_if_chain(child, parent_for_indentation):
-                    # don't warn if the child is the only statement in an else implicit block
-                    prev_line = line
-                    prev = child
-                    continue
-                yield AdvancedRuleResult(
-                    child, anchor=find_anchor(parent_for_indentation)
-                )
-
-            prev_depth = depth
-            prev = child
-            prev_line = line
+        for node, anchor in collector.incorrectly_indented_nodes.items():
+            if (
+                no_misleading_indentation
+                or node not in collector.misleadingly_indented_groups
+            ):
+                yield AdvancedRuleResult(node, anchor)
 
     @driver.advanced_rule
     def MissingInIntent(_, root: chapel.AstNode):
@@ -1543,12 +1528,20 @@ def rules(driver: LintDriver):
         )
         return [fixit]
 
-    @driver.location_rule(settings=[".Max"])
-    def LineLength(_: chapel.Context, path: str, lines: List[str], Max=None):
+    @driver.location_rule(settings=[".Max", ".IgnoreDocStrings"])
+    def LineLength(
+        _: chapel.Context,
+        path: str,
+        lines: List[str],
+        Max=None,
+        IgnoreDocStrings=None,
+    ):
         """
         Warn for lines that exceed a maximum length.
         By default, the maximum line length is 80 characters. This can be
-        configured with `--setting LineLength.Max=<number>`.
+        configured with ``--setting LineLength.Max=<number>``.
+        By default, docstrings are included in this check, but they can be
+        ignored with ``--setting LineLength.IgnoreDocStrings=true``.
         """
 
         Max = Max or "80"  # default to 80 characters
@@ -1556,7 +1549,23 @@ def rules(driver: LintDriver):
             max_line_length = int(Max)
         except ValueError:
             raise ValueError("Invalid value for Max: '{}'".format(Max))
+        if IgnoreDocStrings not in (None, "true", "false"):
+            raise ValueError(
+                "Invalid value for IgnoreDocStrings: '{}'".format(
+                    IgnoreDocStrings
+                )
+            )
+        IgnoreDocStrings = IgnoreDocStrings == "true"  # default to False
 
-        for i, line in enumerate(lines, start=1):
-            if len(line) > max_line_length:
-                yield RuleLocation(path, (i, 1), (i, len(line) + 1))
+        docstring_ranges = []
+        if IgnoreDocStrings:
+            docstring_ranges = find_docstring_ranges(lines)
+
+        for row, line in enumerate(lines, start=1):
+            nowhitespace = line.rstrip()
+            if IgnoreDocStrings and is_in_docstring(
+                (row, len(nowhitespace)), docstring_ranges
+            ):
+                continue
+            if len(nowhitespace) > max_line_length:
+                yield RuleLocation(path, (row, 1), (row, len(nowhitespace) + 1))

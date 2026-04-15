@@ -92,12 +92,24 @@ def apply_fixits(
     not_applied = []
     edits_to_apply = []
     for loc, node, rule, fixits in violations:
+        non_ignores = len([f for f in fixits if not f.default_ignore])
+        if non_ignores > 1 and not interactive:
+            # multiple fixits and not interactive, skip to avoid applying the
+            # wrong one
+            continue
+
+        if not interactive:
+            # Do not apply fixits that change semantics automatically.
+            # Too easy to accidentally break a program without a user knowing.
+            fixits = [f for f in fixits if not f.changes_semantics]
+
         if fixits is None or len(fixits) == 0:
             # no fixits to apply, skip
             not_applied.append((loc, node, rule, []))
             continue
+
         if not interactive:
-            # apply the first fixit
+            # apply the first fixit (this could be the default ignore)
             edits_to_apply.extend(fixits[0].edits)
             continue
 

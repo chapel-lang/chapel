@@ -230,6 +230,27 @@ PyObject* ChapelTypeObject::str(ChapelTypeObject* self) {
   return Py_BuildValue("s", typeString.c_str());
 }
 
+Py_hash_t ChapelTypeObject::hash(ChapelTypeObject* self) {
+  if (!self->value_) {
+    raiseExceptionForIncorrectlyConstructedType("Type");
+    return 0;
+  }
+  return reinterpret_cast<Py_hash_t>(self->value_);
+}
+
+PyObject* ChapelTypeObject::richcompare(ChapelTypeObject* self, PyObject* other, int op) {
+  if (!self->value_) {
+    raiseExceptionForIncorrectlyConstructedType("Type");
+    return nullptr;
+  }
+
+  if (!PyObject_TypeCheck(other, ChapelTypeObject::PythonType)) {
+    Py_RETURN_NOTIMPLEMENTED;
+  }
+
+  Py_RETURN_RICHCOMPARE(self->value_, ((ChapelTypeObject*) other)->value_, op);
+}
+
 PyObject* ParamObject::str(ParamObject* self) {
   if (!self->value_) {
     raiseExceptionForIncorrectlyConstructedType("Param");

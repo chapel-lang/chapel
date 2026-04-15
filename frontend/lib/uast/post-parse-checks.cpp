@@ -166,6 +166,7 @@ struct Visitor {
   void checkFunctionReturnsYields(const Function* node);
   void checkForwardingInNonRecordOrClass(const ForwardingDecl* node);
   void checkMainFunctions(const Function* node);
+  void checkUnionElements(const Union* node);
 
   /*
   TODO
@@ -1796,6 +1797,7 @@ void Visitor::visit(const FunctionSignature* node) {
 }
 
 void Visitor::visit(const Union* node) {
+  checkUnionElements(node);
   warnUnstableUnions(node);
 }
 
@@ -2087,6 +2089,20 @@ void Visitor::checkMainFunctions(const Function* fn) {
     if (fn->returnIntent() == Function::PARAM ||
         fn->returnIntent() == Function::TYPE) {
       error(fn, "'proc main' cannot return a 'type' or 'param'");
+    }
+  }
+}
+
+void Visitor::checkUnionElements(const Union* node) {
+  for (auto decl : node->decls()) {
+    if (auto var = decl->toVariable()) {
+      if (var->kind() != Variable::VAR) {
+        error(var, "union fields must be 'var'");
+      } else if (!var->typeExpression()) {
+        error(var, "union fields must have an explicit type");
+      } else if (var->initExpression()) {
+        error(var, "union fields cannot have initializers");
+      }
     }
   }
 }

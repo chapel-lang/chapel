@@ -1,0 +1,11 @@
+mason prereqs : Prerequisites directory exists ($CHPL_HOME/test/mason/mason-prereq/prereq3/prereqs)
+mason prereqs : Installing prerequisite $CHPL_HOME/test/mason/mason-prereq/prereq3/prereqs/some-c-lib
+mason utils   : #include <stdio.h>
+mason utils   : 
+mason utils   : #include "hello.h"
+mason utils   : 
+mason utils   : void hello(void) {
+mason utils   :   printf("Hello world!\n")
+mason utils   : }
+mason utils   : error: missing ';'
+Mason build failed and correctly return a non-zero exit code

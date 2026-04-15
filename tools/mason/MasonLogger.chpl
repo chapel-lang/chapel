@@ -53,13 +53,31 @@ module MasonLogger {
   private proc doWarn do return logs>=logLevel.warn;
   private proc doError do return logs>=logLevel.error;
 
-  private var colorOutput = true;
-  proc setUseColorOutput(flag: bool) {
-    colorOutput = flag;
-  }
-
   private var logWriter = IO.stdout;
   private var pad = 0;
+  private var isAtty = logWriter.getFile().isAtty();
+
+  enum colorMode { auto, always, never }
+  proc type colorMode.default do return colorMode.auto;
+  proc colorModeFromString(s: string): colorMode throws {
+    const lower = s.toLower();
+    if lower == "true" || lower == "always" then
+      return colorMode.always;
+    else if lower == "false" || lower == "never" then
+      return colorMode.never;
+    else if lower == "auto" then
+      return colorMode.auto;
+    else
+      throw new Error("Invalid value: '"+ s +"'");
+  }
+  private var color = colorMode.default;
+  proc setColorMode(c: colorMode) {
+    color = c;
+  }
+  proc doColorOutput(): bool {
+    return color == colorMode.always ||
+            (color == colorMode.auto && isAtty);
+  }
 
   record logger {
     var prefix: string;
@@ -68,6 +86,10 @@ module MasonLogger {
       this.prefix = prefix;
 
       pad = max(pad, prefix.size);
+    }
+
+    proc flush() {
+      Safe.flush(logWriter);
     }
 
     // TODO make all variadic
@@ -121,7 +143,7 @@ module MasonLogger {
 
     proc addPrefix(f) {
       proc bold(s) {
-        if !colorOutput then return s;
+        if !doColorOutput() then return s;
 
         param start = "\x1b[1m";
         param reset = "\x1b[0m";
@@ -143,6 +165,14 @@ module MasonLogger {
       } catch e {
         try! stderr.writeln("Error formatting string\n", e);
         return "Unable to format";
+      }
+    }
+
+    proc flush(writer) {
+      try {
+        writer.flush();
+      } catch e {
+        try! stderr.writeln("Error flushing debug output\n", e);
       }
     }
 

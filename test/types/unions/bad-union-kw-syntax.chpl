@@ -1,0 +1,7 @@
+
+{
+  var union = t;
+}
+{
+  union;
+}

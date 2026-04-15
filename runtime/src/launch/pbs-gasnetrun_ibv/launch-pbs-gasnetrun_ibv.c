@@ -29,7 +29,7 @@
 #include "chpl-mem.h"
 #include "chpl-env.h"
 #include "chpltypes.h"
-#include "error.h"
+#include "chpl-error.h"
 
 #define LAUNCH_PATH_HELP WRAP_TO_STR(LAUNCH_PATH)
 #define WRAP_TO_STR(x) TO_STR(x)

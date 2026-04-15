@@ -26,7 +26,8 @@
 
 #include "chpl-atomics.h"
 #include "chpl-comm.h"
-#include "error.h"
+#include "chpl-error.h"
+#include "chpl-unwind.h"
 
 #ifdef __cplusplus
 extern "C" {

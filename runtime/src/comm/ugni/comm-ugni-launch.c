@@ -30,7 +30,7 @@
 #include "chpl-comm-launch.h"
 #include "chpl-env.h"
 #include "comm-ugni-heap-pages.h"
-#include "error.h"
+#include "chpl-error.h"
 
 
 //

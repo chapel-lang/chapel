@@ -369,6 +369,9 @@ static void checkKnownAttributes(const AttributeGroup* attrs) {
       UniqueString::get(gContext, "chpldoc.nodoc"),
       UniqueString::get(gContext, "chpldoc.attributeSignature"),
       UniqueString::get(gContext, "chpldoc.hideImplType"),
+      UniqueString::get(gContext, "chpldoc.noWhereClause"),
+      UniqueString::get(gContext, "chpldoc.noAutoInclude"),
+      UniqueString::get(gContext, "chpldoc.noUsage"),
   };
   for (auto attr : attrs->children()) {
     auto name = attr->toAttribute()->name();
@@ -450,11 +453,19 @@ static bool isNoDoc(const Decl* e) {
 }
 
 static bool isNoWhereDoc(const Function* f) {
-  return f->hasPragma(gContext, pragmatags::PRAGMA_NO_WHERE_DOC);
+  return f->hasAttribute(gContext, UniqueString::get(gContext, "chpldoc.noWhereClause"));
 }
 
 static bool isHideImplType(const Decl* e) {
   return e->hasAttribute(gContext, UniqueString::get(gContext, "chpldoc.hideImplType"));
+}
+
+static bool isNoAutoInclude(const Module* m) {
+  return m->hasAttribute(gContext, UniqueString::get(gContext, "chpldoc.noAutoInclude"));
+}
+
+static bool isNoUsage(const Module* m) {
+  return m->hasAttribute(gContext, UniqueString::get(gContext, "chpldoc.noUsage"));
 }
 
 static std::vector<std::string> splitLines(const std::string& s) {
@@ -485,9 +496,7 @@ static bool ends_with(llvm::StringRef a, llvm::StringRef b) {
 #endif
 }
 
-static std::string filenameFromModuleName(std::string name,
-                                          std::string docsWorkDir) {
-  // Borrowed from chpldoc
+static std::string filenameFromModuleName(std::string name) {
   std::string filename = name;
   size_t location = filename.rfind("/");
   if (location != std::string::npos) {
@@ -505,7 +514,6 @@ static std::string filenameFromModuleName(std::string name,
   } else {
     filename = "";
   }
-  filename = docsWorkDir + "/" + filename;
 
   return filename;
 }
@@ -513,7 +521,11 @@ static std::string filenameFromModuleName(std::string name,
 static bool hasSubmodule(const Module* mod) {
   for (const AstNode* child : mod->stmts()) {
     if (auto mod = child->toModule())
-      if (mod->visibility() != chpl::uast::Decl::PRIVATE && !isNoDoc(mod)) {
+      if (mod->visibility() != chpl::uast::Decl::PRIVATE &&
+          !isNoDoc(mod) && !isNoAutoInclude(mod)) {
+        // if isNoAutoInclude, then we won't include this module in the docs,
+        // but we should generated docs for it
+        // however, this function is only used for includes, not generation
         return true;
     }
   }
@@ -1692,7 +1704,10 @@ struct RstResultBuilder {
     for (auto stmt : m->stmts()) {
       if (auto inc = stmt->toInclude()) {
         auto incMod = getIncludedSubmodule(context_, inc->id());
-        if (!isNoDoc(incMod)) {
+        if (!isNoDoc(incMod) && !isNoAutoInclude(incMod)) {
+          // if isNoAutoInclude, then we won't include this module in the docs,
+          // but we should generated docs for it
+          // however, this boolean is only used for includes, not generation
           hasIncludes = true;
           break;
         }
@@ -1767,13 +1782,17 @@ struct RstResultBuilder {
         os_ << "An explicit ``use`` statement is not necessary.";
         os_ << std::endl;
       } else {
-        os_ << templateReplace(templateUsage, "MODULE", moduleName) << "\n";
+        if (!isNoUsage(m)) {
+          os_ << templateReplace(templateUsage, "MODULE", moduleName) << "\n";
+        }
       }
 
     } else {
-      os_ << m->name().c_str();
-      os_ << templateReplace(textOnlyTemplateUsage, "MODULE", moduleName) << "\n";
-      lastComment = previousComment(context_, m->id());
+      if (!isNoUsage(m)) {
+        os_ << m->name().c_str();
+        os_ << templateReplace(textOnlyTemplateUsage, "MODULE", moduleName) << "\n";
+        lastComment = previousComment(context_, m->id());
+      }
     }
 
     if (hasSubmodule(m) || hasIncludes) {
@@ -2257,16 +2276,24 @@ static
 void generateSphinxOutput(std::string sphinxDir, std::string outputDir,
                           std::string projectName, std::string projectDescription,
                           std::string projectVersion, std::string projectCopyright,
-                          std::string author,
+                          std::string author, const std::vector<std::string>& pathsToNotInclude,
                           bool printSystemCommands) {
   std::string sphinxBuild = "python3 " + getChplDepsApp() + " sphinx-build";
+
+  std::string excludePaths;
+  std::string sep;
+  for (const auto& path : pathsToNotInclude) {
+    excludePaths += sep + path;
+    sep = ",";
+  }
 
   std::string envVars =
     "export CHPLDOC_AUTHOR='" + author + "' && " +
     "export CHPLDOC_PROJECT_NAME='" + projectName + "' && " +
     "export CHPLDOC_PROJECT_DESCRIPTION='" + projectDescription +"' && " +
     "export CHPLDOC_PROJECT_VERSION='" + projectVersion + "' && " +
-    "export CHPLDOC_PROJECT_COPYRIGHT='" + projectCopyright + "'";
+    "export CHPLDOC_PROJECT_COPYRIGHT='" + projectCopyright + "' && " +
+    "export CHPLDOC_EXCLUDE_PATTERNS='" + excludePaths + "'";
 
 
   // Run:
@@ -2544,6 +2571,7 @@ int main(int argc, char** argv) {
   // exit if there were fatal errors in the processing done so far
   erroHandler->printAndExitIfError(gContext);
 
+  std::vector<std::string> pathsToNotInclude;
   for (auto id : gather.modules) {
     if (auto& r = rstDoc(gContext, id, 1)) {
         // given a module ID we can get the path to the file that we parsed
@@ -2562,11 +2590,23 @@ int main(int argc, char** argv) {
             }
           }
         }
-        std::string docsWorkingDir_ = filenameFromModuleName(filePath.c_str(), outputDir_);
-        std::string outdir = docsWorkingDir_;
+        auto outFileName = filenameFromModuleName(filePath.c_str());
+        std::string outdir = outputDir_ + "/" + outFileName;
         // TODO: This is an ugly hack to handle included module paths
         if (parentSymbol.isEmpty()) {
           outdir += "/" + parentPath;
+        }
+
+        if (!id.isEmpty()) {
+          const AstNode* node = idToAst(gContext, id);
+          if (auto m = node->toModule()) {
+            if (isNoAutoInclude(m)) {
+              if (outFileName.empty())
+                pathsToNotInclude.push_back(moduleName);
+              else
+                pathsToNotInclude.push_back(outFileName + "/" + moduleName);
+            }
+          }
         }
 
         // need to check for a parent module in the path and add it to the directory structure if it exists
@@ -2581,7 +2621,7 @@ int main(int argc, char** argv) {
     generateSphinxOutput(docsSphinxDir, docsOutputDir,
                          fDocsProjectName, fDocsProjectDescription,
                          fDocsProjectVersion, fDocsProjectCopyrightYear,
-                         fDocsAuthor,
+                         fDocsAuthor, pathsToNotInclude,
                          printSystemCommands);
   }
 

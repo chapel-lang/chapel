@@ -51,6 +51,7 @@ PARSER_SYNTAX_CLASS(NewWithoutArgs, const uast::AstNode*)
 PARSER_WARNING_CLASS(PreIncDecOp, bool)
 PARSER_SYNTAX_CLASS(StringLiteralEOF, char, int)
 PARSER_SYNTAX_CLASS(UseImportNeedsModule, bool)
+PARSER_SYNTAX_CLASS(EmptyEnum)
 
 // ParseErr and ParseSyntax are catch-alls for simple parsing errors that do not
 // have a specialized error class

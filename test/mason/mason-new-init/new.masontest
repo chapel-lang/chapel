@@ -128,3 +128,45 @@ checklight testingPkg myNewPkg
 checknogitfiles testingPkg
 rm -rf testingPkg
 
+
+rm -rf testingPkg
+mason new testingPkg/subdir
+checktoml "testingPkg/subdir" "subdir" "application"
+checkappsrc testingPkg/subdir subdir
+checkgitfiles testingPkg/subdir
+runindir testingPkg/subdir mason run --build
+rm -rf testingPkg
+
+rm -rf testingPkg && mkdir testingPkg
+mason new testingPkg/subdir
+checktoml "testingPkg/subdir" "subdir" "application"
+checkappsrc testingPkg/subdir subdir
+checkgitfiles testingPkg/subdir
+runindir testingPkg/subdir mason run --build
+rm -rf testingPkg
+
+
+rm -rf testing-Pkg
+mason new testing-Pkg/sub-dir --name mySubPkg --no-vcs
+checktoml "testing-Pkg/sub-dir" "mySubPkg" "application"
+checkappsrc "testing-Pkg/sub-dir" "mySubPkg"
+checknogitfiles testing-Pkg/sub-dir
+runindir testing-Pkg/sub-dir mason run --build
+rm -rf testing-Pkg
+
+
+rm -rf testing-Pkg
+mason new testing-Pkg/subdir --no-vcs --lib
+checktoml "testing-Pkg/subdir" "subdir" "library"
+checklibsrc "testing-Pkg/subdir" "subdir"
+checknogitfiles testing-Pkg/subdir
+runindir testing-Pkg/subdir mason build
+rm -rf testing-Pkg
+
+rm -rf testing-Pkg && mkdir testing-Pkg && cd testing-Pkg
+mason new ../testing-Pkg/subdir --no-vcs --lib
+checktoml "subdir" "subdir" "library"
+checklibsrc "subdir" "subdir"
+checknogitfiles subdir
+runindir subdir mason build
+cd .. && rm -rf testing-Pkg

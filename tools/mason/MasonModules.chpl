@@ -31,6 +31,12 @@ use Subprocess;
 use MasonUpdate;
 use TOML;
 import Path.joinPath;
+import ThirdParty.Pathlib.path;
+
+enum OutputFormat {
+  json,
+  text
+}
 
 // A call to `mason modules` will print to screen the flags that are
 // required to include the mason packages specified in the TOML file
@@ -45,15 +51,23 @@ proc masonModules(args: [] string) throws {
   var parser = new argumentParser(helpHandler=new MasonModulesHelpHandler());
 
   var updateFlag = parser.addFlag(name="update", flagInversion=true);
+  var formatFlag = parser.addOption(name="format", defaultValue="text");
 
   var passArgs = parser.addPassThrough();
 
   parser.parseArgs(args);
 
   var skipUpdate = MASON_OFFLINE;
-
   if updateFlag.hasValue() {
     skipUpdate = !updateFlag.valueAsBool();
+  }
+
+  var outputFormat: OutputFormat;
+  try {
+    outputFormat = formatFlag.value():OutputFormat;
+  } catch {
+    throw new MasonError("Invalid output format specified. " +
+                         "Valid options are 'json' and 'text'.");
   }
 
   if !isDir(MASON_HOME) {
@@ -63,24 +77,24 @@ proc masonModules(args: [] string) throws {
   const tomlName = configNames[0];
   const lockName = configNames[1];
 
-  const cwd = here.cwd();
-  const toParse = open(cwd + "/" + lockName, ioMode.r);
+  const cwd = here.cwd():path;
+  const toParse = open((cwd / lockName):string, ioMode.r);
   var lockFile = parseToml(toParse);
 
   // generate list of dependencies and get src code
   var (sourceList, gitList) = genSourceList(lockFile);
   getSrcCode(sourceList, skipUpdate, false);
-  getGitCode(gitList, false);
+  getGitCode(gitList, skipUpdate, false);
 
-  const depPath = joinPath(MASON_HOME, 'src');
-  const gitDepPath = joinPath(MASON_HOME, 'git');
-  var modules: string;
+  const depPath = MASON_HOME:path / 'src';
+  const gitDepPath = MASON_HOME:path / 'git';
+  var modules: list(path);
   // can't use _ since it will leak
   // see https://github.com/chapel-lang/chapel/issues/25926
   @chplcheck.ignore("UnusedLoopIndex")
   for (_x, name, version) in srcSource.iterList(sourceList) {
-    const depM = joinPath(depPath, name + "-" + version, 'src', name + ".chpl");
-    modules += ' ' + depM;
+    const depM = depPath / (name + "-" + version) / "src" / (name + ".chpl");
+    modules.pushBack(depM);
   }
 
   // can't use _ since it will leak
@@ -88,9 +102,33 @@ proc masonModules(args: [] string) throws {
   @chplcheck.ignore("UnusedLoopIndex")
   for (_x, name, branch, _y) in gitSource.iterList(gitList) {
     const gitDepSrc =
-      joinPath(gitDepPath, name + "-" + branch, 'src', name + ".chpl");
-    modules += ' ' + gitDepSrc;
+      gitDepPath / (name + "-" + branch) / "src" / (name + ".chpl");
+    modules.pushBack(gitDepSrc);
   }
 
-  writeln(modules);
+  select outputFormat {
+    when OutputFormat.text {
+      var sep = "";
+      for m in modules {
+        write(sep, m:string);
+        sep = " ";
+      }
+      writeln();
+    }
+    when OutputFormat.json {
+      var jsonModules = "{\"modules\":[";
+      var sep = "";
+      for m in modules {
+        jsonModules += sep + "\"" + m:string + "\"";
+        sep = ",";
+      }
+      jsonModules += "]}";
+      writeln(jsonModules);
+    }
+    otherwise {
+      // this should be impossible since we check the output format above
+      throw new MasonError("Invalid output format specified. " +
+                           "Valid options are 'json' and 'text'.");
+    }
+  }
 }

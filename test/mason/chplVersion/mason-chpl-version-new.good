@@ -1,4 +1,5 @@
 Created new application project: newTest
+Tip: To convert existing code to a mason project, move the driver application to the `src/newTest.chpl` file. For adding other source code, using submodules is the recommended approach to avoid namespace collisions.
 [brick]
 name="newTest"
 version="0.1.0"
@@ -7,4 +8,3 @@ license="None"
 type="application"
 
 [dependencies]
-

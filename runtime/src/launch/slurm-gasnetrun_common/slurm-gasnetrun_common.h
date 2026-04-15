@@ -30,7 +30,7 @@
 #include "chpl-env.h"
 #include "chpl-mem.h"
 #include "chpltypes.h"
-#include "error.h"
+#include "chpl-error.h"
 
 #ifndef GASNETRUN_LAUNCHER
 #error GASNETRUN_LAUNCHER must be defined

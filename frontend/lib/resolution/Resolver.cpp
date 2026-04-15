@@ -3931,6 +3931,11 @@ void Resolver::exit(const uast::Conditional* cond) {
 }
 
 bool Resolver::enter(const uast::Select* sel) {
+  // TODO: to match production, we need to specialize the select based on
+  // the type of the Select expression. For a union, a call to getActiveIndex
+  // needs to be inserted (all other cases are left untouched).
+  // Production handles this with _select_test, but we should handle this more
+  // directly with a generated call to getActiveIndex
   sel->expr()->traverse(*this);
   enterScope(sel);
   if (!scopeResolveOnly) return branchSensitivelyTraverse(sel, {});
@@ -7275,21 +7280,9 @@ static bool handleArrayTypeExpr(Resolver& rv,
     // Propagate error from domain or element type
     arrayType =
         QualifiedType(QualifiedType::TYPE, ErroneousType::get(rv.context));
-  } else if (domainType.type() == genericDomainType.type()) {
-    // Preserve eltType info, if we have it.
-    if (!eltType.isUnknown() && !eltType.isTypeQuery()) {
-      auto domainTypeAsType =
-          QualifiedType(QualifiedType::TYPE, domainType.type());
-      arrayType = QualifiedType(
-          QualifiedType::TYPE,
-          ArrayType::getArrayType(
-              rv.context,
-              /* instance */
-              QualifiedType(QualifiedType::VAR, getAnyType(rv, loop->id())),
-              /* domainType */ domainTypeAsType,
-              /* eltType */ eltType));
-    }
   } else if (ignoreInstanceInArrayOrDomain(rv, loop)) {
+    computeUninstanced = true;
+  } else if (domainType.type() == genericDomainType.type()) {
     computeUninstanced = true;
   } else {
     // We have an instantiated domain, so get array type via call to its

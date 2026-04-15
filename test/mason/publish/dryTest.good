@@ -1,2 +1,11 @@
 Created new application project: publishCheck
-Package does not gave a git origin
+Tip: To convert existing code to a mason project, move the driver application to the `src/publishCheck.chpl` file. For adding other source code, using submodules is the recommended approach to avoid namespace collisions.
+Checking Registry with $PWD/mason_home path.
+   You must have a fork of the mason-registry to publish a package (FAILED)
+------------------------------------------------------
+The current mason environment is:
+MASON_HOME: $PWD/mason_home *
+MASON_REGISTRY: registry|https://github.com/chapel-lang/mason-registry *
+MASON_OFFLINE: false *
+SPACK_ROOT: $PWD/mason_home/spack *
+Package can be published to local registry

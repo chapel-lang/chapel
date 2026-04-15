@@ -27,7 +27,11 @@
 #include "python-type-helper.h"
 
 template <typename ObjectType>
-struct PerTypeMethods;
+struct PerTypeMethods {
+  static constexpr PyMethodDef methods[] = {
+    {NULL, NULL, 0, NULL}  /* Sentinel */
+  };
+};
 
 struct ContextObject;
 

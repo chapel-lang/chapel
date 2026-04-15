@@ -1,0 +1,3 @@
+bad-union-field.chpl:2: error: union fields must be 'var'
+bad-union-field.chpl:3: error: union fields must be 'var'
+bad-union-field.chpl:5: error: union fields must be 'var'

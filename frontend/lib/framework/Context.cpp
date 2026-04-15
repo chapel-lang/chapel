@@ -259,7 +259,7 @@ std::string Context::tmpDirAnchorFile() {
 }
 
 void Context::cleanupTmpDirIfNeeded() {
-  if (!tmpDir_.empty() && fileExists(tmpDir_.c_str()) && !config_.keepTmpDir) {
+  if (!tmpDir_.empty() && pathExists(tmpDir_.c_str()) && !config_.keepTmpDir) {
     // delete the tmp dir
     deleteDir(tmpDir_);
   }
@@ -1023,6 +1023,10 @@ void Context::warning(Location loc, const char* fmt, ...) {
 
 void Context::warning(ID id, const char* fmt, ...) {
   CHPL_CONTEXT_LOG_ERROR_HELPER(this, ErrorBase::WARNING, id, fmt);
+}
+
+void Context::warning(const IdOrLocation& loc, const char* fmt, ...) {
+  CHPL_CONTEXT_LOG_ERROR_HELPER(this, ErrorBase::WARNING, loc, fmt);
 }
 
 void Context::warning(const uast::AstNode* ast, const char* fmt, ...) {

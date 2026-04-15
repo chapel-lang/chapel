@@ -51,17 +51,17 @@ function that Chapel calls. The key source files in this scenario are:
 * hello.h
 
 .. code-block:: c
- 
+
    void hello(void);
 
 * hello.c
 
 .. code-block:: c
- 
+
    #include <stdio.h>
 
    #include "hello.h"
-  
+
    void hello(void) {
      printf("Hello world!\n");
    }
@@ -127,6 +127,7 @@ Special Variables
 Mason will pass some information to the prereqs through environment variables.
 This allows the prereqs to be more flexible and dynamic. The following list of variables is available:
 
+* ``CHPL_HOME``: This is the normal CHPL_HOME variable.
 * ``MASON_PACKAGE_HOME``: The absolute path to the root of the package. In the
   example above, it will be the absolute path to the ``Hello`` directory.
 

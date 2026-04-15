@@ -33,7 +33,7 @@
 #include "chpl-mem-hook.h"
 #include "chpl-topo.h"
 #include "chpltypes.h"
-#include "error.h"
+#include "chpl-error.h"
 
 #ifdef __cplusplus
 extern "C" {

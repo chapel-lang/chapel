@@ -57,9 +57,6 @@ module JSON {
       var orig = st; defer { dc._set_styleInternal(orig); }
       st.realfmt = 2;
       st.string_format = iostringformatInternal.json:uint(8);
-      st.aggregate_style = QIO_AGGREGATE_FORMAT_JSON:uint(8);
-      st.array_style = QIO_ARRAY_FORMAT_JSON:uint(8);
-      st.tuple_style = QIO_TUPLE_FORMAT_JSON:uint(8);
       dc._set_styleInternal(st);
       dc._writeOne(_iokind.dynamic, val, here);
     }
@@ -97,11 +94,15 @@ module JSON {
       :arg val: The value to be serialized
     */
     proc ref serializeValue(writer: jsonWriter, const val:?t) throws {
-      if t == string  || isEnumType(t) || t == bytes {
+      if t == string || t == bytes {
         // for quotes around things
         _oldWrite(writer, val);
       } else if isNumericType(t) || isBoolType(t) {
         _oldWrite(writer, val);
+      } else if isEnumType(t) {
+        writer.writeLiteral('"');
+        writer.writeLiteral(val:string);
+        writer.writeLiteral('"');
       } else if isClassType(t) {
         if val == nil {
           writer.writeLiteral("null");
@@ -613,9 +614,6 @@ module JSON {
       st.realfmt = 2;
       st.bytes_prefix = 0;
       st.string_format = iostringformatInternal.json:uint(8);
-      st.aggregate_style = QIO_AGGREGATE_FORMAT_JSON:uint(8);
-      st.array_style = QIO_ARRAY_FORMAT_JSON:uint(8);
-      st.tuple_style = QIO_TUPLE_FORMAT_JSON:uint(8);
       dc._set_styleInternal(st);
       dc._readOne(_iokind.dynamic, val, here);
     }

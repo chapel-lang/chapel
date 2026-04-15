@@ -15,6 +15,7 @@ Initialized empty Git repository in $CHPL_HOME/test/mason/mason-system/myDep/.gi
 + git add .
 + git commit -m 'initial commit'
 + mason publish $CHPL_HOME/test/mason/mason-system/local-reg
+Created git tag: v0.1.0. Make sure to push this tag to your remote when you publish to the registry with 'git push origin --tags'
 Successfully published package to $CHPL_HOME/test/mason/mason-system/local-reg
 + cd ..
 + cd myMasonPackage
@@ -27,7 +28,7 @@ Build Successful
 + mason run
 Hello from myMasonPackage!
 Testing myDep:
-myDep returned: 3.14 and 17
+myDep returned: 3.14, 17, and 1742
 MyChapelFlag is set to: 2
 + mason build --example example.chpl
 Updating my-local-registry
@@ -37,7 +38,7 @@ Hello from example.chpl!
 Testing myMasonPackage:
 myMasonPackage returned: 2
 Testing myDep:
-myDep returned: 3.14 and 17
+myDep returned: 3.14, 17, and 1742
 + mason test
 Updating my-local-registry
 

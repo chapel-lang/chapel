@@ -771,6 +771,7 @@ checkForParenlessMethodFieldRedefinition(Resolver& rv, const Function* fn) {
   Context* context = rv.context;
 
   if (fn->isMethod() && fn->isParenless()) {
+    bool isTypeMethod = fn->thisFormal()->intent() == Formal::Intent::TYPE;
     bool allowNonLocal = false;
     if (auto receiverInfo = rv.closestMethodReceiverInfo(allowNonLocal)) {
       auto compositeId = std::get<0>(*receiverInfo);
@@ -789,10 +790,14 @@ checkForParenlessMethodFieldRedefinition(Resolver& rv, const Function* fn) {
       }
 
       if (compositeId) {
-        if (parsing::idContainsFieldWithName(context, compositeId,
-                                             fn->name())) {
-          context->error(fn, "parenless proc redeclares the field '%s'",
-                         fn->name().c_str());
+        if (auto field = parsing::idToFieldWithName(context, compositeId, fn->name())) {
+          auto fieldAlsoMakesTypeMethod =
+            field->storageKind() == Qualifier::TYPE ||
+            field->storageKind() == Qualifier::PARAM;
+          if (!isTypeMethod || fieldAlsoMakesTypeMethod) {
+            context->error(fn, "parenless proc redeclares the field '%s'",
+                           fn->name().c_str());
+          }
         }
       }
     }

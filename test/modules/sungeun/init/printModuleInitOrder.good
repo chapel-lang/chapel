@@ -64,6 +64,7 @@ Initializing Modules:
     ExportWrappers
     ChapelStaticVars
     ChapelDynamicLoading
+    ChapelProgramEntrypoints
     AlignedTSupport
    printModuleInitOrder
     moduleInitTest

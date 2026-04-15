@@ -136,6 +136,7 @@ Run-time Semantic Check Options:
       --[no-]local-checks             Enable [disable] local block checking
       --[no-]nil-checks               Enable [disable] runtime nil checking
       --[no-]stack-checks             Enable [disable] stack overflow checking
+      --[no-]union-checks             Enable [disable] union field checking
 
 Code Generation Options:
       --[no-]codegen                  [Don't] Do code generation

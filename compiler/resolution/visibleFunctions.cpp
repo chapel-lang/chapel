@@ -381,6 +381,21 @@ static void updateReexportEntry(VisibleFunctionBlock* vfb, const char* name,
     // We haven't checked before, so recurse, save, and include what we found
     reexportEntry.first = true;
     buildReexportVec(block, name, call, &reexportEntry.second);
+
+    // Remove functions from re-exports that are already directly defined
+    // in this module to avoid duplicates in circular public use scenarios.
+    if (Vec<FnSymbol*>* directFns = vfb->visibleFunctions.get(name)) {
+      std::vector<FnSymbol*>& reexportedFns = reexportEntry.second;
+      auto newEnd = std::remove_if(reexportedFns.begin(), reexportedFns.end(),
+        [directFns](FnSymbol* fn) {
+          // Remove if this function is in the directly defined functions
+          forv_Vec(FnSymbol, directFn, *directFns) {
+            if (fn == directFn) return true;
+          }
+          return false;
+        });
+      reexportedFns.erase(newEnd, reexportedFns.end());
+    }
   }
 }
 

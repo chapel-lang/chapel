@@ -30,6 +30,7 @@ use MasonUtils;
 use MasonLogger;
 use TOML;
 import Path;
+import ThirdParty.Pathlib.path;
 
 import MasonPrereqs;
 
@@ -76,15 +77,16 @@ proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock",
                                   show=true, force=false) throws {
 
   const cwd = here.cwd();
-  const projectHome = getProjectHome(cwd, tf);
-  const tomlPath = projectHome + "/" + Path.relPath(tf);
-  const lockPath = projectHome + "/" + Path.relPath(lf);
-  const openFile = openReader(tomlPath, locking=false);
+  const projectHome = getProjectHome(cwd, tf):path;
+  const tomlPath = projectHome / Path.relPath(tf);
+  const lockPath = projectHome / Path.relPath(lf);
+  const openFile = openReader(tomlPath:string, locking=false);
   const TomlFile = parseToml(openFile);
-  log.debugf("Parsed %s\n", tomlPath);
+  openFile.close();
+  log.debugf("Parsed %s\n", tomlPath:string);
 
   var updated = false;
-  if isFile(tomlPath) {
+  if tomlPath.isFile() {
     if TomlFile.pathExists('dependencies') {
       if force || TomlFile['dependencies']!.A.size > 0 {
         log.infoln("Updating registry");
@@ -101,34 +103,47 @@ proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock",
     }
   }
 
-  log.infoln("Will do external update");
-  if isDir(SPACK_ROOT) && TomlFile.pathExists('external') {
-    if getSpackVersion() < minSpackVersion then
-      throw new MasonError("Mason has been updated. " +
-                            "To install Spack, run: mason external --setup.");
+  if !skipUpdate {
+    log.infoln("Will do external update");
+    if isDir(SPACK_ROOT) && TomlFile.pathExists('external') {
+      if getSpackVersion() < minSpackVersion then
+        throw new MasonError("Mason has been updated. " +
+                              "To install Spack, run: mason external --setup.");
+    }
+  } else {
+    log.debugln("Skipping external update");
   }
 
 
-  log.debugln("Will do createDepTree");
-  const lockFile = createDepTree(TomlFile);
-  if failedChapelVersion.size > 0 {
-    const prefix = if failedChapelVersion.size == 1
-      then "The following package is"
-      else "The following packages are";
-    var err = "%s incompatible with your version of Chapel (%s):\n"
-                .format(prefix, getChapelVersionStr());
-    for msg in failedChapelVersion do
-      err += "  " + msg + "\n";
-    throw new MasonError(err.strip());
+  if !skipUpdate {
+    log.debugln("Will do createDepTree");
+    const lockFile = createDepTree(TomlFile);
+    if failedChapelVersion.size > 0 {
+      const prefix = if failedChapelVersion.size == 1
+        then "The following package is"
+        else "The following packages are";
+      var err = "%s incompatible with your version of Chapel (%s):\n"
+                  .format(prefix, getChapelVersionStr());
+      for msg in failedChapelVersion do
+        err += "  " + msg + "\n";
+      throw new MasonError(err.strip());
+    }
+    // Generate Lock File
+    log.debugln("Generating lock file");
+    genLock(lockFile, lockPath:string);
+  } else {
+    log.debugln("Skipping lock file generation");
+    if !lockPath.exists() {
+      throw new MasonError("Cannot skip update without an existing lock file.");
+    }
   }
-  // Generate Lock File
-  log.debugln("Generating lock file");
-  genLock(lockFile, lockPath);
 
-  log.infoln("Installing prerequisites");
-  MasonPrereqs.install();
-  // Close Memory
-  openFile.close();
+  if !skipUpdate {
+    log.infoln("Installing prerequisites");
+    MasonPrereqs.install();
+  } else {
+    log.debugln("Skipping prerequisites installation");
+  }
 
   log.debugln("updateLock returning");
   return (tf, lf);
@@ -316,9 +331,14 @@ private proc createDepTrees(depTree: Toml,
     var package     = brick["name"]!.s;
     var version     = brick["version"]!.s;
     var chplVersion = brick["chplVersion"]!.s;
-    var source      = brick["source"]!.s;
+    var source      = if brick.pathExists("source")
+                        then brick["source"]!.s else "";
     var compopts    = brick.get["compopts"];
     var system      = dep.get["system"];
+
+    if source == "" {
+      log.warnf("No source specified for package '%s'\n", package);
+    }
 
     if depTree.pathExists(package) {
       var verToUse = IVRS(brick, depTree[package]!);
@@ -572,28 +592,27 @@ private proc pullGitDeps(gitDeps, show=false) {
       }
       gitDepsWithRevision.pushBack((val, srcURL, branch, revision));
     } else {
-      if revision != "" {
+      var shouldUpdate = revision == "";
+      if shouldUpdate {
         writeln("Fetching latest changes for: " + nameVers + "...");
         var pullDependency = "git fetch -q --all";
         if show then pullDependency = "git fetch --all";
         gitC(destination, pullDependency);
+
+        // make sure to reset to the remote branch to get the latest revision
+        // if revision is not specified
+        var remoteBranch = "origin/" + branch;
+        var reset = "git reset -q --hard " + remoteBranch;
+        if show {
+          reset = "git reset --hard " + remoteBranch;
+        }
+        gitC(destination, reset);
 
         writeln("Checking out specified revision for " + nameVers + "...");
         // Use the revision to checkout, if specified
-        var checkout = "git checkout -q " + revision;
-        if show then checkout = "git checkout " + revision;
-
-        gitC(destination, checkout);
-      } else if branch != "HEAD" {
-        writeln("Fetching latest changes for: " + nameVers + "...");
-        var pullDependency = "git fetch -q --all";
-        if show then pullDependency = "git fetch --all";
-        gitC(destination, pullDependency);
-
-        writeln("Checking out specified revision for " + nameVers + "...");
-
-        var checkout = "git checkout -q " + branch;
-        if show then checkout = "git checkout " + branch;
+        var toCheckout = if revision != "" then revision else branch;
+        var checkout = "git checkout -q " + toCheckout;
+        if show then checkout = "git checkout " + toCheckout;
 
         gitC(destination, checkout);
       }

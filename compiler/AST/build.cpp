@@ -1208,7 +1208,7 @@ BlockStmt* buildSelectStmt(Expr* selectCond, BlockStmt* whenstmts) {
   tmp->addFlag(FLAG_EXPR_TEMP);
 
   block->insertAtTail(new DefExpr(tmp));
-  block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, selectCond));
+  block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr("_select_test", selectCond)));
 
   for_alist(stmt, whenstmts->body) {
     CondStmt* when = toCondStmt(stmt);
@@ -2379,14 +2379,15 @@ BlockStmt* convertTypesToExtern(BlockStmt* blk, const char* cname) {
 
         TypeSymbol* ts = new TypeSymbol(vs->name, pt);
         if (VarSymbol* theVs = toVarSymbol(vs)) {
-          // TODO: Loop/copy all flags here instead of two?
-          if (theVs->hasFlag(FLAG_PRIVATE)) ts->addFlag(FLAG_PRIVATE);
-          if (theVs->hasFlag(FLAG_C_MEMORY_ORDER_TYPE)) ts->addFlag(FLAG_C_MEMORY_ORDER_TYPE);
-          if (theVs->hasFlag(FLAG_DEPRECATED)) {
-            ts->addFlag(FLAG_DEPRECATED);
-            ts->deprecationMsg = theVs->deprecationMsg;
-          }
+          // Preserve old qualifier - for some reason 'copyFlags' copies it?
+          auto oldQual = ts->qual;
+          ts->copyFlags(theVs);
+          ts->qual = oldQual;
+
+          ts->deprecationMsg = theVs->deprecationMsg;
+          ts->unstableMsg = theVs->unstableMsg;
         }
+
         DefExpr* newde = new DefExpr(ts);
 
         de->replace(newde);

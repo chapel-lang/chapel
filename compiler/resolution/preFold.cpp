@@ -1166,18 +1166,17 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     for_fields(field, classType) {
       if (isNormalField(field) == true) {
-        fieldCount++;
-
         if (fieldCount == fieldNum) {
           name = field->name;
         }
+        fieldCount++;
       }
     }
 
     if (name == NULL) {
       USR_FATAL(call,
                 "'%d' is not a valid field number for %s",
-                fieldNum-1,
+                fieldNum,
                 toString(classType));
     }
 
@@ -1217,15 +1216,14 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     const char*    fieldName  = imm->v_string.c_str();
     int            fieldCount = 0;
-    int            num        = 0;
+    int            num        = -1;
 
     for_fields(field, classType) {
       if (isNormalField(field) == true) {
-        fieldCount++;
-
         if (strcmp(field->name, fieldName) == 0) {
           num = fieldCount;
         }
+        fieldCount++;
       }
     }
 
@@ -1252,11 +1250,10 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     for_fields(field, classType) {
       if (isNormalField(field) == true) {
-        fieldCount++;
-
         if (fieldCount == fieldNum) {
           name = field->name;
         }
+        fieldCount++;
       }
     }
 
@@ -1265,7 +1262,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
       // specified.  This is the user's error.
       USR_FATAL(call,
                 "'%d' is not a valid field number for %s",
-                fieldNum-1,
+                fieldNum,
                 toString(classType));
     }
 
@@ -1995,12 +1992,22 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
   case PRIM_TO_FOLLOWER: {
     FnSymbol* iterator     = getTheIteratorFn(call->get(1)->typeInfo());
+    ModuleSymbol* parentMod = toModuleSymbol(iterator->defPoint->parentSymbol);
     CallExpr* followerCall = NULL;
 
     if (FnSymbol* f2 = findForallexprFollower(iterator)) {
       followerCall = new CallExpr(f2);
     } else {
       followerCall = new CallExpr(iterator->name);
+
+      if (parentMod && !iterator->isMethod()) {
+        // The "to follower" call can be happening outside of the scope in which
+        // the original iterator is defined, so we may not be able to find the
+        // corresponding leader function in the current scope. To make sure it's
+        // found, explicitly add the module of the original iterator.
+        followerCall->insertAtTail(gModuleToken);
+        followerCall->insertAtTail(parentMod);
+      }
     }
 
     for_formals(formal, iterator) {
@@ -2038,7 +2045,16 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
   case PRIM_TO_LEADER: {
     FnSymbol* iterator   = getTheIteratorFn(call->get(1)->typeInfo());
+    ModuleSymbol* parentMod = toModuleSymbol(iterator->defPoint->parentSymbol);
     CallExpr* leaderCall = new CallExpr(iterator->name);
+    if (parentMod && !iterator->isMethod()) {
+      // The "to leader" call can be happening outside of the scope in which
+      // the original iterator is defined, so we may not be able to find the
+      // corresponding leader function in the current scope. To make sure it's
+      // found, explicitly add the module of the original iterator.
+      leaderCall->insertAtTail(gModuleToken);
+      leaderCall->insertAtTail(parentMod);
+    }
 
     for_formals(formal, iterator) {
       // Note: this can add a use formal outside of its function
@@ -2064,7 +2080,16 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
   case PRIM_TO_STANDALONE: {
     FnSymbol* iterator       = getTheIteratorFn(call->get(1)->typeInfo());
+    ModuleSymbol* parentMod = toModuleSymbol(iterator->defPoint->parentSymbol);
     CallExpr* standaloneCall = new CallExpr(iterator->name);
+    if (parentMod && !iterator->isMethod()) {
+      // The "to standalone" call can be happening outside of the scope in which
+      // the original iterator is defined, so we may not be able to find the
+      // corresponding leader function in the current scope. To make sure it's
+      // found, explicitly add the module of the original iterator.
+      standaloneCall->insertAtTail(gModuleToken);
+      standaloneCall->insertAtTail(parentMod);
+    }
 
     for_formals(formal, iterator) {
       // Note: this can add a use formal outside of its function

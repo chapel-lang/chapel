@@ -23,7 +23,7 @@
 #include "chplcast.h"
 #include "chpltypes.h"
 #include "chpl-mem.h"
-#include "error.h"
+#include "chpl-error.h"
 
 #include <ctype.h>
 #include <stdio.h>

@@ -283,6 +283,8 @@ CLASS_BEGIN(Identifier)
                chpl::UniqueString, return node->name())
   PLAIN_GETTER(Identifier, to_node, "Get the AST node that this Identifier node refers to",
                Nilable<const chpl::uast::AstNode*>, return nodeOrNullFromToId(context, node))
+  PLAIN_GETTER(Identifier, refers_to_builtin, "Check if this Identifier refers to a builtin",
+               bool, return nodeRefersToBuiltin(context, node))
 CLASS_END(Identifier)
 
 CLASS_BEGIN(Import)
@@ -651,6 +653,15 @@ CLASS_BEGIN(Function)
                bool, return node->throws())
   PLAIN_GETTER(Function, where_clause, "Get the where clause for this Function node",
                Nilable<const chpl::uast::AstNode*>, return node->whereClause())
+  PLAIN_GETTER(Function, initial_signature, "Compute the initial typed signature of this Function node",
+               std::optional<TypedSignatureObject*>,
+
+               auto rc = chpl::resolution::createDummyRC(context);
+               const chpl::resolution::PoiScope* poiScope = nullptr;
+               if (auto sig = chpl::resolution::typedSignatureInitialForId(&rc, node->id())) {
+                  return TypedSignatureObject::create(contextObject, {sig, poiScope});
+               }
+               return {})
 CLASS_END(Function)
 
 CLASS_BEGIN(Interface)

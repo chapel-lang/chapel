@@ -30,7 +30,7 @@
 #include "chpl-gpu-diags.h"
 #include "chpl-comm-diags.h"
 #include "chpl-mem-consistency.h"
-#include "error.h"
+#include "chpl-error.h"
 
 #include <stdint.h>
 #include <stdio.h>

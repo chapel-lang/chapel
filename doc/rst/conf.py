@@ -18,6 +18,7 @@ import shutil
 import pathlib
 import sphinx.environment
 import sphinx.util.logging
+from pathlib import Path
 
 on_rtd = os.environ.get("READTHEDOCS", None) == "True"
 
@@ -109,10 +110,20 @@ def process_signature(
 ):
     if what == "method":
         _, class_name, method_name = name.rsplit(".", 2)
-        res = chapel_pyi.get(class_name, method_name)
+        res = chapel_pyi.get_method(class_name, method_name)
         if res:
             signature, return_annotation = res
+    elif what == "class":
+        _, class_name = name.rsplit(".", 1)
+        res = chapel_pyi.get_class(class_name)
+        if res:
+            signature = res
     return signature, return_annotation
+
+
+# # autodoc-process-bases
+def process_bases(app, name, obj, options, bases):
+    pass
 
 
 # Setup CSS files
@@ -121,6 +132,7 @@ def setup(app):
 
     if include_chapel_py_docs:
         app.connect("autodoc-process-signature", process_signature)
+        app.connect("autodoc-process-bases", process_bases)
 
 
 # The suffix of source filenames.
@@ -190,6 +202,7 @@ exclude_patterns = [
     "builtins/ChapelRange.rst",
     "builtins/ChapelSyncvar.rst",
     "builtins/ChapelTuple.rst",
+    "builtins/ChapelUnion.rst",
     "builtins/OwnedObject.rst",
     "builtins/SharedObject.rst",
     "builtins/String.rst",
@@ -203,6 +216,14 @@ exclude_patterns = [
     "tools/chapel-py/chapel-py-api.rst",
     "tools/chplcheck/generated/rules.rst",
 ]
+
+chpldoc_exclude_patterns = []
+if paths := os.environ.get("CHPLDOC_EXCLUDE_PATTERNS", None):
+    for path in paths.split(","):
+        chpldoc_exclude_patterns.append(
+            str("modules" / Path(path).with_suffix(".rst"))
+        )
+exclude_patterns.extend(chpldoc_exclude_patterns)
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.

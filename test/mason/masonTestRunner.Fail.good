@@ -6,4 +6,4 @@ AssertionError: in masonTestRunner-MyTest.chpl:11 - assertTrue failed. Given exp
 
 ----------------------------------------------------------------------
 
-FAILED (passed = 1 failures = 1 )
+FAILED (passed = 3 failures = 1 )

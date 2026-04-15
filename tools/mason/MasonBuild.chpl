@@ -151,14 +151,12 @@ proc buildProgram(release: bool, show: bool, force: bool, skipUpdate: bool,
       spackInstalled();
     }
     getSrcCode(sourceList, skipUpdate, show);
-
-    getGitCode(gitList, show);
+    getGitCode(gitList, skipUpdate, show);
 
     // get compilation options including external dependencies
-    var compopts = cmdLineCompopts;
-    compopts.pushBack(getTomlCompopts(lockFile));
+    var compopts = getTomlCompopts(lockFile);
     // Compile Program
-    if compileSrc(lockFile, binLoc, release, compopts,
+    if compileSrc(lockFile, binLoc, release, cmdLineCompopts, compopts,
                   projectHome, sourceList, gitList) {
       writeln("Build Successful\n");
     } else {
@@ -176,7 +174,9 @@ proc buildProgram(release: bool, show: bool, force: bool, skipUpdate: bool,
    named after the project folder in which it is
    contained */
 proc compileSrc(lockFile: borrowed Toml, binLoc: string,
-                release: bool, compopts: list(string),
+                release: bool,
+                cmdLineCompopts: list(string),
+                compopts: list(string),
                 projectHome: string,
                 sourceList: list(srcSource),
                 gitList: list(gitSource)) : bool throws {
@@ -241,10 +241,17 @@ proc compileSrc(lockFile: borrowed Toml, binLoc: string,
     // see https://github.com/chapel-lang/chapel/issues/25926
     @chplcheck.ignore("UnusedLoopIndex")
     for (_x, name, branch, _y) in gitSource.iterList(gitList) {
-      const gitDepSrc = Path.joinPath(gitDepPath, name + "-" + branch,
-                                      'src', name + ".chpl");
+      const depDir = Path.joinPath(gitDepPath, name + "-" + branch);
+      const gitDepSrc = Path.joinPath(depDir, "src", name + ".chpl");
       cmd.pushBack(gitDepSrc);
+
+      for flag in MasonPrereqs.chplFlags(depDir) {
+        log.debugf("+compflag %s\n", flag);
+        cmd.pushBack(flag);
+      }
     }
+
+    cmd.pushBack(cmdLineCompopts);
 
     writef("Compiling [%s] target: %s\n",
             if release then "release" else "debug", project);
@@ -304,7 +311,8 @@ proc genSourceList(lockFile: borrowed Toml) {
 
 /* Clones the git repository of each dependency into
    the src code dependency pool */
-proc getSrcCode(sourceList: list(srcSource), skipUpdate, show) throws {
+proc getSrcCode(sourceList: list(srcSource),
+                skipUpdate: bool, show: bool) throws {
   var baseDir = MASON_HOME +'/src/';
   forall (srcURL, name, version) in srcSource.iterList(sourceList) {
     // version of -1 specifies a git dep
@@ -313,8 +321,8 @@ proc getSrcCode(sourceList: list(srcSource), skipUpdate, show) throws {
       const destination = baseDir + nameVers;
       if !depExists(nameVers) {
         if skipUpdate then
-          throw new MasonError("Dependency cannot be installed when " +
-                               "MASON_OFFLINE is set.");
+          throw new MasonError(
+            "Dependency cannot be installed in offline mode");
         writeln("Downloading dependency: " + nameVers);
         var getDependency = "git clone -qn "+ srcURL + ' ' + destination +'/';
         var checkout = "git checkout -q v" + version;
@@ -334,7 +342,8 @@ proc getSrcCode(sourceList: list(srcSource), skipUpdate, show) throws {
   }
 }
 
-proc getGitCode(gitList: list(gitSource), show) {
+proc getGitCode(gitList: list(gitSource),
+                skipUpdate: bool, show: bool) throws {
   if !isDir(MASON_HOME + '/git/') {
     mkdir(MASON_HOME + '/git/', parents=true);
   }
@@ -343,6 +352,8 @@ proc getGitCode(gitList: list(gitSource), show) {
     const nameVers = name + "-" + branch;
     const destination = baseDir + nameVers;
     if !depExists(nameVers, '/git/') {
+      if skipUpdate then
+        throw new MasonError("Dependency cannot be installed in offline mode");
       writeln("Downloading dependency: " + nameVers);
       var getDependency = "git clone -qn "+ srcURL + ' ' + destination +'/';
       var checkout = "git checkout -q " + revision;
@@ -360,6 +371,11 @@ proc getGitCode(gitList: list(gitSource), show) {
         checkoutBranch = "git checkout " + revision;
       }
       gitC(destination, checkoutBranch);
+    }
+
+    // add prerequisites
+    for prereq in MasonPrereqs.prereqs(destination) {
+      MasonPrereqs.install(destination, prereq);
     }
   }
 }
@@ -394,8 +410,7 @@ proc getTomlCompopts(lock: borrowed Toml): list(string) throws {
             var val = v!;
             select k {
               when "libs" do compopts.pushBack(parseCompilerOptions(val));
-              when "include" do
-                if val.s != "" then compopts.pushBack("-I" + val.s);
+              when "includes" do compopts.pushBack(parseCompilerOptions(val));
               otherwise continue;
             }
           }
@@ -422,7 +437,7 @@ proc getTomlCompopts(lock: borrowed Toml): list(string) throws {
         var val = v!;
         select k {
           when "libs" do compopts.pushBack(parseCompilerOptions(val));
-          when "include" do if val.s != "" then compopts.pushBack("-I" + val.s);
+          when "includes" do compopts.pushBack(parseCompilerOptions(val));
           otherwise continue;
         }
       }

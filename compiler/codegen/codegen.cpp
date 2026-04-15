@@ -1538,7 +1538,7 @@ static void genGlobalSerializeTable(GenInfo* info) {
         llvm::ConstantArray::get(
           global_serializeTableType, global_serializeTable));
     info->lvt->addGlobalValue("chpl_global_serialize_table",
-                              global_serializeTableGVar, GEN_PTR, true, dtCVoidPtr);
+                              global_serializeTableGVar, GEN_VAL, true, dtCVoidPtr);
 #endif
   }
 }
@@ -2085,7 +2085,7 @@ static void codegen_header(std::set<const char*> & cnames,
     chpl_globals_registryGVar->setInitializer(
         llvm::Constant::getNullValue(globValType));
     info->lvt->addGlobalValue("chpl_globals_registry",
-                              chpl_globals_registryGVar, GEN_PTR, true, /* chplType= */ nullptr);
+                              chpl_globals_registryGVar, GEN_VAL, true, /* chplType= */ nullptr);
 #endif
   }
   if( hdrfile ) {
@@ -2111,7 +2111,7 @@ static void codegen_header(std::set<const char*> & cnames,
     chpl_memDescsGVar->setInitializer(
         llvm::ConstantArray::get(memDescTableType, memDescTable));
     chpl_memDescsGVar->setConstant(true);
-    info->lvt->addGlobalValue("chpl_mem_descs", chpl_memDescsGVar, GEN_PTR, true, dtStringC);
+    info->lvt->addGlobalValue("chpl_mem_descs", chpl_memDescsGVar, GEN_VAL, true, dtStringC);
 #endif
   }
 
@@ -2161,7 +2161,7 @@ static void codegen_header(std::set<const char*> & cnames,
         llvm::ConstantArray::get(
           private_broadcastTableType, private_broadcastTable));
     info->lvt->addGlobalValue("chpl_private_broadcast_table",
-                              private_broadcastTableGVar, GEN_PTR, true, dtCVoidPtr);
+                              private_broadcastTableGVar, GEN_VAL, true, dtCVoidPtr);
     genGlobalInt("chpl_private_broadcast_table_len",
                  private_broadcastTable.size(), false);
 #endif
@@ -2215,12 +2215,13 @@ codegen_config() {
     FILE* outfile = configFile.fptr;
     info->cfile = outfile;
 
-    fprintf(outfile, "#include \"error.h\"\n\n");
+    fprintf(outfile, "#include \"chpl-error.h\"\n\n");
 
     genGlobalInt("mainHasArgs", mainHasArgs, false);
     genGlobalInt("mainPreserveDelimiter", mainPreserveDelimiter, false);
     genGlobalInt("warnUnstable", fWarnUnstable, false);
 
+    fprintf(outfile, "void CreateConfigVarTable(void);\n");
     fprintf(outfile, "void CreateConfigVarTable(void) {\n");
     fprintf(outfile, "initConfigVarTable();\n");
 

@@ -132,41 +132,47 @@ proc printPkgPc(args: [] string) throws {
   parser.parseArgs(args);
 
   const pkgName = pkgNameArg.value();
-  if pkgExists(pkgName) {
-    //
-    // Add a these call, since `string.join` has an iterator overload but
-    // not one for list.
-    //
-    var pcDir = getPkgVariable(pkgName, "--variable=pcfiledir");
-    var pcFile = joinPath(pcDir, pkgName + ".pc");
-    if !isFile(pcFile) {
+  const pcDir = getPkgVariable(pkgName, "--variable=pcfiledir");
+  const pcFile = joinPath(pcDir, pkgName + ".pc");
+  if !isFile(pcFile) {
+    if !pkgExists(pkgName) then
+      throw new MasonError("Mason could not find " +
+                            pkgName + " on your system");
+    else
       throw new MasonError("Package exists but no .pc file found at '" +
-                           pcFile + "'");
-    }
-    var pc = openReader(pcFile, locking=false);
-    writeln("\n------- " + pkgName + ".pc -------\n");
-    for line in pc.lines() {
-      write(line);
-    }
-    writeln("\n-------------------\n");
-  } else {
-    throw new MasonError("Mason could not find " +
-                          pkgName + " on your system");
+                          pcFile + "'");
   }
+  const pc = openReader(pcFile, locking=false);
+  writeln("\n------- " + pkgName + ".pc -------\n");
+  for line in pc.lines() {
+    write(line);
+  }
+  writeln("\n-------------------\n");
 }
 
 /* Gets a single variable from pkg-config
    given package name and variable */
 proc getPkgVariable(pkgName: string, option: string) {
-  var lines = runCommand(["pkg-config", pkgName, option],
-                          quiet=true,
-                          retType=list(string));
+  var lines: list(string);
+  try {
+    lines = runCommand(["pkg-config", pkgName, option],
+                            quiet=true,
+                            retType=list(string));
+  } catch {
+    ;
+  }
   var ret: string;
   for l in lines do if l != "" then ret += l + "\n";
   return ret.strip();
  }
 
-/* Queries pkg-config for package existence */
+/*
+  Queries pkg-config for package existence
+
+  This function is not perfect - it is possible for a package to exist but for
+  --exists to return false if the .pc file is malformed or is missing a
+  dependency. Use with caution.
+*/
 proc pkgExists(pkgName: string) : bool {
   var command = "pkg-config " + pkgName + " --exists";
   const status = runWithStatus(command);
@@ -180,17 +186,18 @@ proc getPkgInfo(pkgName: string, version: string) throws {
   var pkgToml: [pkgDom] shared Toml?;
   var pkgInfo = new shared Toml(pkgToml);
 
-  if !pkgExists(pkgName) {
-    throw new MasonError("No pkg-config package by the name of: " + pkgName);
-  }
   const pcVersion = getPkgVariable(pkgName, "--modversion");
   const libs = getPkgVariable(pkgName, "--libs");
-  const includePath = getPkgVariable(pkgName, "--variable=includedir");
+  const includes = getPkgVariable(pkgName, "--cflags-only-I");
+
+  if pcVersion == "" && !pkgExists(pkgName) {
+    throw new MasonError("No pkg-config package by the name of: " + pkgName);
+  }
 
   pkgInfo.set("name", pkgName);
   pkgInfo.set("version", pcVersion);
   pkgInfo.set("libs", libs);
-  pkgInfo.set("include", includePath);
+  pkgInfo.set("includes", includes);
 
   if pcVersion != version && version != "*" {
     throw new MasonError("Unable to locate " + pkgName +

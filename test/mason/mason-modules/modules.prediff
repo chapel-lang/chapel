@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+OUTFILE=$2
+
+sed -e '/initial commit$/d' -e '/insertions/d' -e '/create mode/d' $OUTFILE > $OUTFILE.tmp
+mv $OUTFILE.tmp $OUTFILE
+
+CWD=$(cd $(dirname $0) ; pwd)
+sed -e "s|$CWD|\$CWD|g" $OUTFILE > $OUTFILE.tmp
+mv $OUTFILE.tmp $OUTFILE
+
+sed -e "s|$CHPL_HOME|\$CHPL_HOME|g" $OUTFILE > $OUTFILE.tmp
+mv $OUTFILE.tmp $OUTFILE

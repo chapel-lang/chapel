@@ -70,7 +70,7 @@
 #include "chpl-topo.h"
 #include "chpltypes.h"
 #include "chpl-visual-debug.h"
-#include "error.h"
+#include "chpl-error.h"
 
 #include "chpl-comm-compiler-macros.h"
 #include "chpl-wide-ptr-fns.h"

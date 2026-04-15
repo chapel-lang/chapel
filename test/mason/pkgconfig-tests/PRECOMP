@@ -11,7 +11,7 @@ pkg=$testprefix
 pkgver=`pkg-config $pkg --modversion`
 pkglibs=`pkg-config $pkg --libs`
 pkglibs="$(echo -e "${pkglibs}" | sed -e 's/[[:space:]]*$//')"
-pkgincs=`pkg-config $pkg --variable=includedir`
+pkgincs=`pkg-config $pkg --cflags-only-I`
 pkgincs="$(echo -e "${pkgincs}" | sed -e 's/[[:space:]]*$//')"
 
 # output the expected output to goodfile
@@ -25,7 +25,7 @@ echo>>$good
 echo [system]>>$good
 echo>>$good
 echo [system.$pkg]>>$good
-echo include = \"$pkgincs\">>$good
+echo includes = \"$pkgincs\">>$good
 echo libs = \"$pkglibs\">>$good
 echo name = \"$pkg\">>$good
 echo version = \"$pkgver\">>$good

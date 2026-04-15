@@ -620,10 +620,10 @@ ID idToContainingMultiDeclId(Context* context, ID id);
 
 /**
   Given an ID for a Record/Union/Class Decl,
-  returns 'true' if the passed name is the name of a field contained in it.
+  returns the declaration with the given name, if any.
  */
-bool idContainsFieldWithName(Context* context, ID typeDeclId,
-                             UniqueString fieldName);
+const uast::VarLikeDecl* idToFieldWithName(Context* context, ID typeDeclId,
+                                           UniqueString fieldName);
 
 /**
   Given an AST node for a (multi-)declaration, find a Variable

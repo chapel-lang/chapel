@@ -28,7 +28,7 @@
 #include "chpl-mem.h"
 #include "chpl-linefile-support.h"
 #include "config.h"
-#include "error.h"
+#include "chpl-error.h"
 
 #include <stdio.h>
 #include <string.h>

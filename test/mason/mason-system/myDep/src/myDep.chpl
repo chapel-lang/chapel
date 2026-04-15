@@ -6,4 +6,10 @@ module myDep {
   proc get() {
     return (MyOtherChapelReal, MyOtherChapelInt);
   }
+
+  require "myHeader.h";
+  proc get2() {
+    extern proc getMyExternalInt(): int;
+    return getMyExternalInt();
+  }
 }

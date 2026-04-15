@@ -26,7 +26,7 @@
 #include "chpl-gpu.h"
 #include "chpl-gpu-impl.h"
 #include "chpl-tasks.h"
-#include "error.h"
+#include "chpl-error.h"
 #include "chplcgfns.h"
 #include "chpl-env-gen.h"
 #include "chpl-linefile-support.h"

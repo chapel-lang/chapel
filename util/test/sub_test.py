@@ -127,6 +127,8 @@
 # .precomp: Additional script to execute before compiling the test
 # .prediff: Additional script to execute before diff'ing output
 # .preexec: Additional script to execute before executing test program
+# .postexec: Aditional script to execute after executing test program,
+#    but before the prediff
 # .perfkeys: Existence indicates a performance test.  Contents specifies
 #    performance "keys"
 #
@@ -1373,6 +1375,7 @@ def main():
         precomp=None
         prediff=None
         preexec=None
+        postexec=None
 
         if os.getenv('CHPL_NO_STDIN_REDIRECT') == None:
             redirectin = '/dev/null'
@@ -1521,6 +1524,9 @@ def main():
 
             elif (suffix=='.preexec' and os.access(f, os.R_OK|os.X_OK)):
                 preexec=f
+
+            elif (suffix=='.postexec' and os.access(f, os.R_OK|os.X_OK)):
+                postexec=f
 
             elif (suffix=='.stdin' and os.access(f, os.R_OK)):
                 if redirectin == None:
@@ -2404,6 +2410,15 @@ def main():
                     with open(execlog, mode) as execlogfile:
                         execlogfile.write(pre_exec_to_write)
                         execlogfile.write(output_to_write)
+
+                    if postexec:
+                        sys.stdout.write('[Executing postexec %s.postexec]\n'%(test_filename))
+                        sys.stdout.flush()
+                        test_postexec = './{0}.postexec'.format(test_filename)
+                        stdout = run_process([test_postexec, execname, execlog, compiler],
+                                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT)[1]
+                        sys.stdout.write(stdout)
+                        sys.stdout.flush()
 
                     if not exectimeout and not launcher_error:
                         if systemPrediffs:

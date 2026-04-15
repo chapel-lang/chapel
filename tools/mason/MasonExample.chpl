@@ -178,7 +178,7 @@ private proc getBuildInfo(projectHome: string,
 
 
     getSrcCode(sourceList, skipUpdate, false);
-    getGitCode(gitList, false);
+    getGitCode(gitList, skipUpdate, false);
 
 
     compopts = getTomlCompopts(lockFile.borrow());
@@ -216,9 +216,14 @@ private proc getBuildInfo(projectHome: string,
     // see https://github.com/chapel-lang/chapel/issues/25926
     @chplcheck.ignore("UnusedLoopIndex")
     for (_x, name, branch, _y) in gitSource.iterList(gitList) {
-      const gitDepSrc = Path.joinPath(gitDepPath, name + "-" + branch,
-                                      'src', name + ".chpl");
+      const depDir = Path.joinPath(gitDepPath, name + "-" + branch);
+      const gitDepSrc = Path.joinPath(depDir, "src", name + ".chpl");
       compopts.pushBack(gitDepSrc);
+
+      for flag in MasonPrereqs.chplFlags(depDir) {
+        log.debugf("+compflag %s\n", flag);
+        compopts.pushBack(flag);
+      }
     }
 
     // get system deps
@@ -228,8 +233,7 @@ private proc getBuildInfo(projectHome: string,
           var val = v!;
           select k {
             when "libs" do compopts.pushBack(parseCompilerOptions(val));
-            when "include" do
-              if val.s != "" then compopts.pushBack("-I" + val.s);
+            when "includes" do compopts.pushBack(parseCompilerOptions(val));
             otherwise continue;
           }
         }
@@ -332,7 +336,7 @@ private proc runExampleBinary(projectHome: string, exampleName: string,
   }
 
   // TODO: do we need to expose the error code in some way?
-  const exampleResult = runWithStatus(command.toArray());
+  const exampleResult = runWithStatus(command.toArray(), capture=false);
 }
 
 private proc getExamples(toml: Toml, projectHome: string) {

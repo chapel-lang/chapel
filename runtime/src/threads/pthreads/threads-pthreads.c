@@ -29,7 +29,7 @@
 #include "chplcgfns.h"
 #include "chpl-tasks.h"
 #include "config.h"
-#include "error.h"
+#include "chpl-error.h"
 #include "chplsys.h"
 #include <assert.h>
 #include <errno.h>
