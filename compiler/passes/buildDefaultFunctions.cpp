@@ -802,7 +802,8 @@ static FnSymbol* buildInitProgramCommandLineModulesFn() {
   ret->cname = fnName;
   ret->addFlag(FLAG_COMPILER_GENERATED);
 
-  mainModule->block->insertAtTail(new DefExpr(ret));
+  // Insert into an internal module to restrict user visibility.
+  theProgram->block->insertAtTail(new DefExpr(ret));
 
   ret->insertAtTail(new CallExpr(mainModule->initFn));
 
