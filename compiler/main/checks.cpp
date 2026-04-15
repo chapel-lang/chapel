@@ -1024,8 +1024,8 @@ checkFormalActualBaseTypesMatch()
 
       for_formals_actuals(formal, actual, call)
       {
-        if (actual->typeInfo() == dtNil) {
-          if (formal->type == dtNil)
+        if (actual->typeInfo()->getValType() == dtNil) {
+          if (formal->type->getValType() == dtNil)
             // Exact match, so OK.
             continue;
 
@@ -1088,8 +1088,8 @@ checkFormalActualTypesMatch()
 
       for_formals_actuals(formal, actual, call)
       {
-        if (actual->typeInfo() == dtNil) {
-          if (formal->type == dtNil)
+        if (actual->typeInfo()->getValType() == dtNil) {
+          if (formal->type->getValType() == dtNil)
             // Exact match, so OK.
             continue;
 
