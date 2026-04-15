@@ -795,12 +795,6 @@ static FnSymbol* buildInitProgramCommandLineModulesFn() {
   auto mainModule = ModuleSymbol::mainModule();
   auto fnName = astr("chpl_initProgramCommandLineModules");
 
-  for_alist(e, mainModule->block->body) {
-    auto def = toDefExpr(e);
-    auto fn = def ? toFnSymbol(def->sym) : nullptr;
-    if (fn && fn->name == fnName) return fn;
-  }
-
   auto ret = new FnSymbol(fnName);
   ret->addFlag(FLAG_EXPORT);
   ret->addFlag(FLAG_LOCAL_ARGS);
