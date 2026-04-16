@@ -19,7 +19,9 @@
 
 from typing import (
     Any,
+    DefaultDict,
     Dict,
+    Set,
     List,
     Optional,
     Tuple,
@@ -130,6 +132,40 @@ from lsprotocol.types import (
 
 from lsp_util import *
 from mason import MasonProject
+
+
+def _get_module_for_use_import_symbol(
+    sym: chapel.AstNode,
+) -> Optional[chapel.Module]:
+    """
+    Given the symbol expression from a VisibilityClause (the AST node
+    representing what is being used/imported), resolve it to the Module
+    declaration it names, if any.  Handles both Identifier and Dot cases.
+    """
+    target = None
+    if isinstance(sym, chapel.Identifier):
+        target = sym.to_node()
+    elif isinstance(sym, chapel.Dot):
+        target = sym.to_node()
+    if isinstance(target, chapel.Module):
+        return target
+    return None
+
+
+def _use_import_named_modules(
+    use_or_import: chapel.AstNode,
+) -> List[Tuple[chapel.Module, Range]]:
+    """
+    For a Use or Import AST node, return a list of (Module, range) pairs
+    where each module is one named in a visibility clause and range is the
+    location of that individual visibility clause.
+    """
+    results: List[Tuple[chapel.Module, Range]] = []
+    for vc in use_or_import.visibility_clauses():
+        mod = _get_module_for_use_import_symbol(vc.symbol())
+        if mod is not None:
+            results.append((mod, location_to_range(vc.location())))
+    return results
 
 
 class ChapelLanguageServer(LanguageServer):
@@ -806,7 +842,7 @@ class ChapelLanguageServer(LanguageServer):
             uri=loc.uri,
             range=loc.range,
             selection_range=location_to_range(sym.name_location()),
-            data=[sym.unique_id(), inst_id, context_id],
+            data=["fn", sym.unique_id(), inst_id, context_id],
         )
 
     def fn_to_call_hierarchy_item(
@@ -820,10 +856,51 @@ class ChapelLanguageServer(LanguageServer):
         """
         fn: chapel.Function = sig.ast()
         item = self.sym_to_call_hierarchy_item(fn)
-        item.data[1] = caller_context.register_signature(sig)
-        item.data[2] = self.context_ids[caller_context]
+        item.data[2] = caller_context.register_signature(sig)
+        item.data[3] = self.context_ids[caller_context]
 
         return item
+
+    def module_to_call_hierarchy_item(
+        self, mod: chapel.Module
+    ) -> CallHierarchyItem:
+        """
+        Given a Chapel Module declaration, return the corresponding call
+        hierarchy item.
+        """
+        loc = location_to_location(mod.location())
+        return CallHierarchyItem(
+            name=mod.name(),
+            detail=str(SymbolSignature(mod)),
+            kind=SymbolKind.Module,
+            uri=loc.uri,
+            range=loc.range,
+            selection_range=location_to_range(mod.name_location()),
+            data=["module", mod.unique_id(), None, None],
+        )
+
+    def unpack_module_call_hierarchy_item(
+        self, item: CallHierarchyItem
+    ) -> Optional[Tuple[FileInfo, chapel.Module]]:
+        """
+        Unpack a module call hierarchy item (created by
+        module_to_call_hierarchy_item) into a (FileInfo, Module) pair.
+        Returns None if the item does not represent a module.
+        """
+        if (
+            item.data is None
+            or not isinstance(item.data, list)
+            or len(item.data) != 4
+            or item.data[0] != "module"
+            or not isinstance(item.data[1], str)
+        ):
+            return None
+        uid = item.data[1]
+        fi, _ = self.get_file_info(item.uri)
+        for node, _ in chapel.each_matching(fi.get_asts(), chapel.Module):
+            if node.unique_id() == uid:
+                return (fi, node)
+        return None
 
     def unpack_call_hierarchy_item(
         self, item: CallHierarchyItem
@@ -833,16 +910,18 @@ class ChapelLanguageServer(LanguageServer):
         if (
             item.data is None
             or not isinstance(item.data, list)
-            or not isinstance(item.data[0], str)
-            or not (item.data[1] is None or isinstance(item.data[1], str))
+            or len(item.data) != 4
+            or item.data[0] != "fn"
+            or not isinstance(item.data[1], str)
             or not (item.data[2] is None or isinstance(item.data[2], str))
+            or not (item.data[3] is None or isinstance(item.data[3], str))
         ):
             self.show_message(
                 "Call hierarchy item contains missing or invalid additional data",
                 MessageType.Error,
             )
             return None
-        uid, inst_id, ctx = item.data
+        _, uid, inst_id, ctx = item.data
 
         fi, _ = self.get_file_info(item.uri, context_id=ctx)
 
@@ -850,7 +929,7 @@ class ChapelLanguageServer(LanguageServer):
         # Once the Python bindings supports it, we can use the
         # "ID to AST" function from parsing to do this without iterating.
         for node, _ in chapel.each_matching(fi.get_asts(), chapel.Function):
-            if node.unique_id() == item.data[0]:
+            if node.unique_id() == uid:
                 fn = node
                 break
         else:
@@ -1506,16 +1585,13 @@ def run_lsp():
         tokens.sort(key=lambda x: (x[0], x[1]))
         return SemanticTokens(data=encode_deltas(tokens, 0, 0))
 
-    @server.feature(TEXT_DOCUMENT_PREPARE_CALL_HIERARCHY)
-    async def prepare_call_hierarchy(
-        ls: ChapelLanguageServer, params: CallHierarchyPrepareParams
+    def _prepare_call_hierarchy_fn(
+        ls: ChapelLanguageServer,
+        params: CallHierarchyPrepareParams,
+        fi: FileInfo,
     ):
         if not ls.use_resolver:
             return None
-
-        text_doc = ls.workspace.get_text_document(params.text_document.uri)
-
-        fi, _ = ls.get_file_info(text_doc.uri)
 
         # Get function from a particular call under the cursor.
         sigs: List[chapel.TypedSignature] = []
@@ -1543,35 +1619,154 @@ def run_lsp():
         # UI. Just take one signature for now.
         return next(
             ([ls.fn_to_call_hierarchy_item(sig, fi.context)] for sig in sigs),
-            [],
+            None,
         )
 
-    @server.feature(CALL_HIERARCHY_INCOMING_CALLS)
-    async def call_hierarchy_incoming(
-        ls: ChapelLanguageServer, params: CallHierarchyIncomingCallsParams
+    def _prepare_call_hierarchy_module(
+        ls: ChapelLanguageServer,
+        params: CallHierarchyPrepareParams,
+        fi: FileInfo,
     ):
-        if not ls.use_resolver:
-            return None
+        decl = fi.get_def_segment_at_position(params.position)
+        node = decl.node if decl else None
 
-        unpacked = ls.unpack_call_hierarchy_item(params.item)
-        if unpacked is None:
-            return None
+        # Handle the case where the cursor is on a module declaration.
+        if isinstance(node, chapel.Module):
+            return [ls.module_to_call_hierarchy_item(node)]
 
-        fi, fn, instantiation = unpacked
+        # Handle the case where the cursor is on a module name in a use/import.
+        use_seg = fi.get_use_segment_at_position(params.position)
+        if use_seg is not None and isinstance(
+            use_seg.resolved_to.node, chapel.Module
+        ):
+            # check that the use-seg is part of a VisibilityClause:
+            # qualified calls oughtn't trigger import hierarchy,
+            # since they aren't imports.
+            parent = use_seg.ident.node.parent()
+            while parent:
+                if isinstance(parent, chapel.VisibilityClause):
+                    break
+                parent = parent.parent()
+            else:
+                return []
 
-        # If there are no signatures that we found, there are no calls that
-        # we are aware of.
+            return [ls.module_to_call_hierarchy_item(use_seg.resolved_to.node)]
+
+        return []
+
+    @server.feature(TEXT_DOCUMENT_PREPARE_CALL_HIERARCHY)
+    async def prepare_call_hierarchy(
+        ls: ChapelLanguageServer, params: CallHierarchyPrepareParams
+    ):
+        text_doc = ls.workspace.get_text_document(params.text_document.uri)
+
+        fi, _ = ls.get_file_info(text_doc.uri)
+
+        hierarchy_items_fn = _prepare_call_hierarchy_fn(ls, params, fi)
+        if hierarchy_items_fn is not None:
+            return hierarchy_items_fn
+
+        return _prepare_call_hierarchy_module(ls, params, fi)
+
+    def _module_hierarchy_incoming(
+        ls: ChapelLanguageServer,
+        fi: FileInfo,
+        mod: chapel.Module,
+    ) -> List[CallHierarchyIncomingCall]:
+        """Return modules that import the given module."""
+
+        # Unlike function call hierarchy, which relies on the resolver's built-in
+        # cross-file call graph, module incoming requires a manual AST scan.
+        # Ensure all files in the compilation context are loaded first so that
+        # importers in other files are visible.
+        #
+        # Note: we _could_ adjust the FileInfo + Context to track this for us,
+        # but since it would only be used for call hierarchy, it seems
+        # reasonable to gate this here. This is different from the function
+        # call graph, which we used for other things (inlays, go-to-def, etc.)
+        ls.eagerly_process_all_files(fi.context)
+
+        # Collect all importing modules across all open file infos.
+        incoming_ranges: DefaultDict[chapel.Module, List[Range]] = defaultdict(
+            list
+        )
+        for other_fi in fi.context.file_infos:
+
+            for use_or_import, _ in chapel.each_matching(
+                other_fi.get_asts(), {chapel.Use, chapel.Import}
+            ):
+                for named_mod, vc_range in _use_import_named_modules(
+                    use_or_import
+                ):
+                    if named_mod != mod:
+                        continue
+
+                    # Treat uses and imports, even inside functions and
+                    # smaller scopes, as belonging to the module containing them.
+                    parent = use_or_import.parent_module()
+                    assert parent is not None
+                    incoming_ranges[parent].append(vc_range)
+
+        return [
+            CallHierarchyIncomingCall(
+                ls.module_to_call_hierarchy_item(importer),
+                from_ranges=ranges,
+            )
+            for importer, ranges in incoming_ranges.items()
+        ]
+
+    def _module_hierarchy_outgoing(
+        ls: ChapelLanguageServer,
+        mod: chapel.Module,
+    ) -> List[CallHierarchyOutgoingCall]:
+        """Return modules that the given module imports."""
+        scope = mod.scope()
+        if scope is None:
+            return []
+        imported_modules = scope.modules_named_in_use_or_import()
+
+        from_ranges_map: DefaultDict[chapel.Module, List[Range]] = defaultdict(
+            list
+        )
+        for use_or_import, _ in chapel.each_matching(
+            mod, {chapel.Use, chapel.Import}
+        ):
+            # Don't treat parent modules as importing their children's
+            # imports.
+            if use_or_import.parent_module() != mod:
+                continue
+            for named_mod, vc_range in _use_import_named_modules(use_or_import):
+                from_ranges_map[named_mod].append(vc_range)
+
+        return [
+            CallHierarchyOutgoingCall(
+                ls.module_to_call_hierarchy_item(imported),
+                from_ranges=from_ranges_map.get(
+                    imported,
+                    [location_to_range(mod.location())],
+                ),
+            )
+            for imported in imported_modules
+        ]
+
+    def _fn_hierarchy_incoming(
+        ls: ChapelLanguageServer,
+        fi: FileInfo,
+        fn: chapel.Function,
+        instantiation: Optional[chapel.TypedSignature],
+    ) -> List[CallHierarchyIncomingCall]:
+        """Return callers of the given function instantiation."""
         if instantiation is None:
             return []
 
-        # TODO:
-        # Here too, because there's no chapel-py way to convert an ID back
-        # to a node, note the node whose ID we use in a dictionary (hack_id_to_node)
-        # to look up later.
         assert instantiation in fi.context.global_inst_contexts
         calls = fi.context.call_contexts(instantiation)
+
+        # TODO:
+        # Because there's no chapel-py way to convert an ID back to a node,
+        # record nodes whose IDs we use so we can look them up later.
         hack_id_to_node: Dict[str, chapel.NamedDecl] = {}
-        incoming_calls: Dict[
+        incoming_calls: DefaultDict[
             Union[chapel.TypedSignature, str], List[chapel.FnCall]
         ] = defaultdict(list)
         for call_context in calls:
@@ -1590,68 +1785,89 @@ def run_lsp():
                 incoming_calls[parent_sym.unique_id()].append(call)
 
         to_return = []
-        for called_fn, calls in incoming_calls.items():
+        for called_fn, fn_calls in incoming_calls.items():
             if isinstance(called_fn, str):
                 item = ls.sym_to_call_hierarchy_item(hack_id_to_node[called_fn])
             else:
                 item = ls.fn_to_call_hierarchy_item(called_fn, fi.context)
-
             to_return.append(
                 CallHierarchyIncomingCall(
                     item,
                     from_ranges=[
-                        location_to_range(call.location()) for call in calls
+                        location_to_range(call.location()) for call in fn_calls
                     ],
                 )
             )
-
         return to_return
 
-    @server.feature(CALL_HIERARCHY_OUTGOING_CALLS)
-    async def call_hierarchy_outgoing(
-        ls: ChapelLanguageServer, params: CallHierarchyOutgoingCallsParams
-    ):
-        if not ls.use_resolver:
-            return None
-
-        unpacked = ls.unpack_call_hierarchy_item(params.item)
-        if unpacked is None:
-            return None
-
-        fi, fn, instantiation = unpacked
-
-        outgoing_calls: Dict[chapel.TypedSignature, List[chapel.FnCall]] = (
-            defaultdict(list)
-        )
+    def _fn_hierarchy_outgoing(
+        ls: ChapelLanguageServer,
+        fi: FileInfo,
+        fn: chapel.Function,
+        instantiation: Optional[chapel.TypedSignature],
+    ) -> List[CallHierarchyOutgoingCall]:
+        """Return functions called by the given function instantiation."""
+        outgoing_calls: DefaultDict[
+            chapel.TypedSignature, List[chapel.FnCall]
+        ] = defaultdict(list)
         for call, _ in chapel.each_matching(fn, chapel.FnCall):
             rr = (
                 call.resolve_via(instantiation)
                 if instantiation
                 else call.resolve()
             )
-
             if rr is None:
                 continue
-
             msc = rr.most_specific_candidate()
             if msc is None:
                 continue
-
             outgoing_calls[msc.function()].append(call)
 
-        to_return = []
-        for called_fn, calls in outgoing_calls.items():
-            item = ls.fn_to_call_hierarchy_item(called_fn, fi.context)
-            to_return.append(
-                CallHierarchyOutgoingCall(
-                    item,
-                    from_ranges=[
-                        location_to_range(call.location()) for call in calls
-                    ],
-                )
+        return [
+            CallHierarchyOutgoingCall(
+                ls.fn_to_call_hierarchy_item(called_fn, fi.context),
+                from_ranges=[
+                    location_to_range(call.location()) for call in fn_calls
+                ],
             )
+            for called_fn, fn_calls in outgoing_calls.items()
+        ]
 
-        return to_return
+    @server.feature(CALL_HIERARCHY_INCOMING_CALLS)
+    async def call_hierarchy_incoming(
+        ls: ChapelLanguageServer, params: CallHierarchyIncomingCallsParams
+    ):
+        mod_unpacked = ls.unpack_module_call_hierarchy_item(params.item)
+        if mod_unpacked is not None:
+            fi, mod = mod_unpacked
+            return _module_hierarchy_incoming(ls, fi, mod)
+
+        if not ls.use_resolver:
+            return None
+
+        unpacked = ls.unpack_call_hierarchy_item(params.item)
+        if unpacked is None:
+            return None
+        fi, fn, instantiation = unpacked
+        return _fn_hierarchy_incoming(ls, fi, fn, instantiation)
+
+    @server.feature(CALL_HIERARCHY_OUTGOING_CALLS)
+    async def call_hierarchy_outgoing(
+        ls: ChapelLanguageServer, params: CallHierarchyOutgoingCallsParams
+    ):
+        mod_unpacked = ls.unpack_module_call_hierarchy_item(params.item)
+        if mod_unpacked is not None:
+            _, mod = mod_unpacked
+            return _module_hierarchy_outgoing(ls, mod)
+
+        if not ls.use_resolver:
+            return None
+
+        unpacked = ls.unpack_call_hierarchy_item(params.item)
+        if unpacked is None:
+            return None
+        fi, fn, instantiation = unpacked
+        return _fn_hierarchy_outgoing(ls, fi, fn, instantiation)
 
     server.start_io()
 
