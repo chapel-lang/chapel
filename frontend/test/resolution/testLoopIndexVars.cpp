@@ -1668,7 +1668,7 @@ static void testLoopExprZipUnpackingTooFewInner() {
   auto types = resolveTypesOfVariables(context, prog, {"a", "c", "d"});
 
   assert(guard.numErrors() > 0);
-  assert(guard.error(0)->type() == ErrorType::TupleDeclMismatchedElems);
+  assert(guard.error(0)->type() == ErrorType::TupleDeclAssignMismatchedElems);
   assert(guard.realizeErrors());
 }
 
@@ -1687,7 +1687,7 @@ static void testLoopExprZipUnpackingTooManyInner() {
   auto types = resolveTypesOfVariables(context, prog, {"a", "b", "c", "d"});
 
   assert(guard.numErrors() > 0);
-  assert(guard.error(0)->type() == ErrorType::TupleDeclMismatchedElems);
+  assert(guard.error(0)->type() == ErrorType::TupleDeclAssignMismatchedElems);
   assert(guard.realizeErrors());
 }
 
@@ -1707,7 +1707,7 @@ static void testLoopExprZipUnpackingTooFewOuter() {
   auto types = resolveTypesOfVariables(context, prog, {"a", "b", "c", "d"});
 
   assert(guard.numErrors() > 0);
-  assert(guard.error(0)->type() == ErrorType::TupleDeclMismatchedElems);
+  assert(guard.error(0)->type() == ErrorType::TupleDeclAssignMismatchedElems);
   assert(guard.realizeErrors());
 }
 
@@ -1726,7 +1726,7 @@ static void testLoopExprZipUnpackingTooManyOuter() {
   auto types = resolveTypesOfVariables(context, prog, {"a", "b", "c", "d"});
 
   assert(guard.numErrors() > 0);
-  assert(guard.error(0)->type() == ErrorType::TupleDeclMismatchedElems);
+  assert(guard.error(0)->type() == ErrorType::TupleDeclAssignMismatchedElems);
   assert(guard.realizeErrors());
 }
 

@@ -1343,8 +1343,7 @@ static void test33() {
   resolveModule(context, mod->id());
 
   assert(guard.numErrors() == 1);
-  auto& err = guard.error(0);
-  assert(err->message() == "tuple size mismatch in split tuple assign");
+  assert(guard.error(0)->type() == ErrorType::TupleDeclAssignMismatchedElems);
   guard.realizeErrors();
 }
 

@@ -2689,7 +2689,7 @@ void Resolver::resolveTupleUnpackDecl(const TupleDecl* lhsTuple,
 
   // Then, check that they have the same size
   } else if (lhsTuple->numDecls() != rhsT->numElements()) {
-    RESOLVER_REPORT(*this, TupleDeclMismatchedElems, lhsTuple, rhsT);
+    RESOLVER_REPORT(*this, TupleDeclAssignMismatchedElems, lhsTuple, rhsT);
     return;
 
   // Else, it's a tuple of the same size, so use the RHS element types
@@ -3284,9 +3284,8 @@ bool Resolver::resolveSpecialOpCall(const Call* call) {
         auto rhsQt = byPostorder.byAst(op->rhs()).type();
         if (auto rhsTupleType = rhsQt.type()->toTupleType()) {
           if (lhsTuple->numActuals() != rhsTupleType->numElements()) {
-            context->error(call, "tuple size mismatch in split tuple assign");
-            byPostorder.byAst(call).setType(QualifiedType(
-                QualifiedType::UNKNOWN, ErroneousType::get(context)));
+            byPostorder.byAst(call).setType(RESOLVER_TYPE_ERROR(
+                *this, TupleDeclAssignMismatchedElems, op, rhsTupleType));
           }
         }
       }
