@@ -1527,7 +1527,11 @@ const char* FunctionType::toStringMangledForCodegen() const {
     auto f = this->formal(i);
     oss << qualifierMnemonicMangled(f->qual());
     oss << intentTagMnemonicMangled(f->intent());
-    oss << typeToStringMangled(f->type()) << "_";
+    if (f->isGeneric()) {
+      oss << "unknown";
+    } else {
+      oss << typeToStringMangled(f->type()) << "_";
+    }
     if (f->name()) oss << f->name();
     oss << "_";
   }

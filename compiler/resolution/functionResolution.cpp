@@ -1743,7 +1743,8 @@ bool doCanDispatch(Type*     actualType,
                    FnSymbol* fn,
                    bool*     promotes,
                    bool*     paramNarrows,
-                   bool      paramCoerce) {
+                   bool      paramCoerce,
+                   FunctionType* fnType) {
 
   if (actualType == formalType)
     return true;
@@ -1798,18 +1799,31 @@ bool doCanDispatch(Type*     actualType,
     return true;
 
   // check if promotion is possible
-  if (fn                              != NULL        &&
-      fn->name                        != astrSassign &&
-      strcmp(fn->name, "these")       != 0           &&
-      fn->retTag                      != RET_TYPE    &&
-      fn->retTag                      != RET_PARAM   &&
-      actualType->scalarPromotionType != NULL        &&
-      doCanDispatch(actualType->scalarPromotionType, NULL,
+  // Note: Assumes that if `fn` is null and we have a `fnType`, that we're
+  // dealing with a proc ptr. In this case, `=` and `these` cannot be captured
+  // and so do not need to be accounted for.
+  bool badName = fn && (fn->name == astrSassign || strcmp(fn->name, "these") == 0);
+  auto scalar = actualType->isRef() ?
+                  actualType->getValType()->scalarPromotionType :
+                  actualType->scalarPromotionType;
+  bool okReturnIntent = false;
+  if (fn) {
+    okReturnIntent = fn->retTag != RET_TYPE &&
+                     fn->retTag != RET_PARAM;
+  } else if (fnType) {
+    okReturnIntent = fnType->returnIntent() != RET_TYPE &&
+                     fnType->returnIntent() != RET_PARAM;
+  }
+  if (!badName &&
+      okReturnIntent &&
+      scalar != NULL        &&
+      doCanDispatch(scalar, NULL,
                     formalType, formalSym,
                     fn,
                     promotes,
                     paramNarrows,
-                    false)) {
+                    false,
+                    fnType)) {
     *promotes = true;
     return true;
   }
@@ -1826,7 +1840,8 @@ bool canDispatch(Type*     actualType,
                  FnSymbol* fn,
                  bool*     promotes,
                  bool*     paramNarrows,
-                 bool      paramCoerce) {
+                 bool      paramCoerce,
+                 FunctionType* fnType) {
   bool tmpPromotes     = false;
   bool tmpParamNarrows = false;
   bool retval          = doCanDispatch(actualType, actualSym,
@@ -1834,7 +1849,8 @@ bool canDispatch(Type*     actualType,
                                        fn,
                                        &tmpPromotes,
                                        &tmpParamNarrows,
-                                       paramCoerce);
+                                       paramCoerce,
+                                       fnType);
 
   if (promotes     != NULL) {
     *promotes = tmpPromotes;
@@ -3394,6 +3410,8 @@ static bool resolveFunctionPointerCall(CallExpr* call) {
 
   bool onceForErrorHeader = true;
 
+  bool anyPromotes = false;
+
   // TODO: Can we rework 'ResolutionCandidate' to operate in terms of
   // function types? That might enable us to use that machinery here.
   for (int i = 0; i < ft->numFormals(); i++) {
@@ -3412,7 +3430,9 @@ static bool resolveFunctionPointerCall(CallExpr* call) {
     bool ok = canDispatch(actualType, actualSym, formalType, formalSym, fn,
                           &promotes,
                           &paramNarrows,
-                          paramCoerce);
+                          paramCoerce,
+                          ft);
+    anyPromotes = anyPromotes || promotes;
     if (!ok) {
       if (onceForErrorHeader) {
         USR_FATAL_CONT(call, "failed to resolve call");
@@ -3424,6 +3444,37 @@ static bool resolveFunctionPointerCall(CallExpr* call) {
                              toString(actualType),
                              toString(formalType));
     }
+  }
+
+  // Instead of refactoring promotion wrapping machinery, create a wrapper for
+  // this particular call and resolve it normally.
+  if (anyPromotes) {
+    static int promoWrapperId = 0;
+    auto name = astr("chpl_fnptr_promo_wrapper_", std::to_string(promoWrapperId++).c_str());
+    FnSymbol* fn = new FnSymbol(name);
+    fn->addFlag(FLAG_COMPILER_GENERATED);
+    CallExpr* wrappedCall = new CallExpr(call->baseExpr->copy());
+    for (int i = 0; i < ft->numFormals(); i++) {
+      auto formal = ft->formal(i);
+      ArgSymbol* arg = new ArgSymbol(formal->intent(), formal->name(), formal->type());
+      fn->insertFormalAtTail(arg);
+      wrappedCall->insertAtTail(new SymExpr(arg));
+    }
+
+    fn->retType = ft->returnType();
+    if (ft->returnType() != dtVoid) {
+      VarSymbol* ret = newTemp("fnptr_promo_wrapper_ret", ft->returnType());
+      fn->body->insertAtTail(new DefExpr(ret));
+      fn->body->insertAtTail(new CallExpr(PRIM_MOVE, ret, wrappedCall));
+      fn->body->insertAtTail(new CallExpr(PRIM_RETURN, ret));
+    } else {
+      fn->body->insertAtTail(wrappedCall);
+    }
+
+    call->getStmtExpr()->insertBefore(new DefExpr(fn));
+
+    call->baseExpr->replace(new SymExpr(fn));
+    resolveNormalCall(call);
   }
 
   return true;

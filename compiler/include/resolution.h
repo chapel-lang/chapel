@@ -147,7 +147,8 @@ bool canDispatch(Type*     actualType,
                  FnSymbol* fn          = NULL,
                  bool*     promotes    = NULL,
                  bool*     paramNarrows= NULL,
-                 bool      paramCoerce = false);
+                 bool      paramCoerce = false,
+                 FunctionType* fnType = nullptr);
 
 
 void parseExplainFlag(char* flag, int* line, ModuleSymbol** module);
