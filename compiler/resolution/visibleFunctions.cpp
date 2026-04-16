@@ -240,6 +240,15 @@ static void buildVisibleFunctionMap() {
   for (int i = nVisibleFunctions; i < gFnSymbols.n; i++) {
     FnSymbol* fn = gFnSymbols.v[i];
     if (!fn->hasFlag(FLAG_INVISIBLE_FN) && fn->inTree() && !isArgSymbol(fn->defPoint->parentSymbol)) {
+      if (fn->hasFlag(FLAG_HAS_EDITION)) {
+        // Only allow functions with a specified edition if that edition
+        // matches
+        if (!isEditionApplicable(fn->getFirstEdition(),
+                                 fn->getLastEdition(),
+                                 fn)) {
+          continue;
+        }
+      }
       BlockStmt* block = NULL;
       if (fn->hasFlag(FLAG_AUTO_II) || fn->hasFlag(FLAG_THUNK_INVOKE)) {
         block = theProgram->block;
