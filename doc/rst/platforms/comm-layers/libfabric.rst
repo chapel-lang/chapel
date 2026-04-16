@@ -45,6 +45,16 @@ Building Chapel with the ofi Communication Layer
    environment variable is set to 'bundled' or the default search fails
    to find a libfabric on such systems, a warning will result.
 
+    If you are preparing a libfabric installation for a Slingshot target on a
+    different system (cross-compiling), make sure that libfabric was built with
+    ``cxi`` support. That generally requires the corresponding HPE CXI headers,
+    the ``libcxi`` development files, and the matching CXI driver headers used
+    by this build path. Public sources for these are available
+    from the `shs-cassini-headers <https://github.com/HewlettPackard/shs-cassini-headers>`_
+    , `shs-libcxi <https://github.com/HewlettPackard/shs-libcxi>`_,
+    and `shs-cxi-driver <https://github.com/HewlettPackard/shs-cxi-driver>`_
+    repositories.
+
 #. Select a launcher. On Cray XC and HPE Cray EX systems you can skip this step,
    because on those systems the automatically-selected ``aprun`` or
    ``srun`` launcher settings will work with the ofi communication
