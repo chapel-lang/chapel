@@ -1,0 +1,6 @@
+explicitName.chpl:13: In function 'test1':
+explicitName.chpl:15: warning: new
+explicitName.chpl:17: In function 'test2':
+explicitName.chpl:19: warning: new
+explicitName.chpl:21: In function 'test3':
+explicitName.chpl:23: warning: new
