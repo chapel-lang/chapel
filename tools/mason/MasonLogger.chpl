@@ -19,178 +19,59 @@
  */
 
 module MasonLogger {
-  import IO;
-  import this.SafeCalls as Safe;
+  use ThirdParty.Logging;
+  import ThirdParty.TerminalColors.{style, styledText, red, yellow, blue};
 
+  import Time.dateTime;
+  import IO.format;
 
-  // Note: we use >= to determine whether we should output something. So, if you
-  // change enum values, make sure to put things in order, where the lower
-  // values mean lower verbosity.
-  enum logLevel { no, error, warn, info, debug }
-
-  var logs = getDefaultLogs();
-
-  private proc getDefaultLogs() {
-    var ll = logLevel.info;
-
-    import OS, OS.POSIX;
-    // this is in lieu of proper mason log level control
-    // https://github.com/chapel-lang/chapel/issues/28163
-    const logLevelChar = OS.POSIX.getenv("MASON_LOG_LEVEL");
-    if logLevelChar != nil {
-      try {
-        const s = string.createCopyingBuffer(logLevelChar).toLower();
-        ll = if s == "none" then logLevel.no else s:logLevel;
-      } catch {
-        // do nothing
-      }
-    }
-    return ll;
-  }
-
-  private proc doDebug do return logs>=logLevel.debug;
-  private proc doInfo do return logs>=logLevel.info;
-  private proc doWarn do return logs>=logLevel.warn;
-  private proc doError do return logs>=logLevel.error;
-
-  private var logWriter = IO.stdout;
-  private var pad = 0;
-  private var isAtty = logWriter.getFile().isAtty();
-
-  enum colorMode { auto, always, never }
-  proc type colorMode.default do return colorMode.auto;
-  proc colorModeFromString(s: string): colorMode throws {
+  proc colorModeFromString(s: string): ColorMode throws {
     const lower = s.toLower();
     if lower == "true" || lower == "always" then
-      return colorMode.always;
+      return ColorMode.ALWAYS;
     else if lower == "false" || lower == "never" then
-      return colorMode.never;
+      return ColorMode.NEVER;
     else if lower == "auto" then
-      return colorMode.auto;
+      return ColorMode.AUTO;
     else
       throw new Error("Invalid value: '"+ s +"'");
   }
-  private var color = colorMode.default;
-  proc setColorMode(c: colorMode) {
-    color = c;
-  }
-  proc doColorOutput(): bool {
-    return color == colorMode.always ||
-            (color == colorMode.auto && isAtty);
-  }
+  private var color = ColorMode.AUTO;
+  proc setColorMode(c: ColorMode) do color = c;
 
-  record logger {
-    var prefix: string;
+  private var pad = 0;
 
-    proc init(prefix) {
-      this.prefix = prefix;
-
-      pad = max(pad, prefix.size);
+  class MasonLogFormat: LogFormat {
+    proc init(args...) {
+      super.init((...args));
     }
-
-    proc flush() {
-      Safe.flush(logWriter);
+    override proc format(
+      timestamp: dateTime, level: LogLevel,
+      moduleName: string, routineName: string, lineNumber: int,
+      loggerName: string, message: string): string {
+      const paddedName = try! ("%<"+pad:string+"s").format(loggerName);
+      return super.format(timestamp, level,
+                          moduleName, routineName, lineNumber,
+                          paddedName, message);
     }
-
-    // TODO make all variadic
-    proc info(s: string) {
-      if doInfo then Safe.writef(logWriter, addPrefix("%s"), s);
-    }
-
-    proc infoln(s: string) {
-      if doInfo then Safe.writeln(logWriter, addPrefix(s));
-    }
-
-    proc infof(f: string, args...) {
-      if doInfo then Safe.writef(logWriter, addPrefix(f), (...args));
-    }
-
-    proc warn(s: string) {
-      if doWarn then Safe.writef(logWriter, addPrefix("%s"), s);
-    }
-
-    proc warnln(s: string) {
-      if doWarn then Safe.writeln(logWriter, addPrefix(s));
-    }
-
-    proc warnf(f: string, args...) {
-      if doWarn then Safe.writef(logWriter, addPrefix(f), (...args));
-    }
-
-    proc debug(s: string) {
-      if doDebug then Safe.writef(logWriter, addPrefix("%s"), s);
-    }
-
-    proc debugln(s: string) {
-      if doDebug then Safe.writeln(logWriter, addPrefix(s));
-    }
-
-    proc debugf(f: string, args...) {
-      if doDebug then Safe.writef(logWriter, addPrefix(f), (...args));
-    }
-
-    proc error(s: string) {
-      if doError then Safe.writef(logWriter, addPrefix("%s"), s);
-    }
-
-    proc errorln(s: string) {
-      if doError then Safe.writeln(logWriter, addPrefix(s));
-    }
-
-    proc errorf(f: string, args...) {
-      if doError then Safe.writef(logWriter, addPrefix(f), (...args));
-    }
-
-    proc addPrefix(f) {
-      proc bold(s) {
-        if !doColorOutput() then return s;
-
-        param start = "\x1b[1m";
-        param reset = "\x1b[0m";
-
-        return start+s+reset;
-      }
-
-      const prefixFmt = bold(Safe.format("%%<%is:", pad));
-      return Safe.format(prefixFmt+" %s", this.prefix, f);
+    override proc styleForLogName(level: LogLevel): styledText {
+      var s = style().bold();
+      if level == LogLevel.ERROR then
+        s = s.fg(red());
+      else if level == LogLevel.WARNING then
+        s = s.fg(yellow());
+      else if level == LogLevel.DEBUG then
+        s = s.fg(blue());
+      return s;
     }
   }
 
-  module SafeCalls {
-    import IO.stderr;
-
-    proc format(fmt:string, args...) {
-      try {
-        return fmt.format((...args));
-      } catch e {
-        try! stderr.writeln("Error formatting string\n", e);
-        return "Unable to format";
-      }
-    }
-
-    proc flush(writer) {
-      try {
-        writer.flush();
-      } catch e {
-        try! stderr.writeln("Error flushing debug output\n", e);
-      }
-    }
-
-    proc writef(writer, fmt: string, args...) {
-      try {
-        writer.writef(fmt, (...args));
-      } catch e {
-        try! stderr.writeln("Error writing formatted debug output\n", e);
-      }
-    }
-
-    proc writeln(writer, s: string) {
-      try {
-        writer.writeln(s);
-      } catch e {
-        try! stderr.writeln("Error writing debug output\n", e);
-      }
-    }
+  proc getLogger(name: string): logger {
+    pad = max(pad, name.size);
+    return new logger(name,
+                      colorMode=color,
+                      logLevelEnvVar="MASON_LOG_LEVEL",
+                      format=new MasonLogFormat("%NAME%: %m%"));
   }
 }
 

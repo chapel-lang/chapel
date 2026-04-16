@@ -43,3 +43,15 @@ while IFS= read -r line; do
 done < "$DEPS_FILE"
 
 echo "this file indicates a successful run">$MASON_DIR/ThirdParty/downloaded.txt
+
+echo "Patching includes to be relative..."
+# because we have shoved these dependencies into a submodule, we need to fix the
+# includes to be relative.
+for dep in $(ls $MASON_DIR/ThirdParty/*.chpl); do
+  modName=$(basename $dep .chpl)
+  for other in $(ls $MASON_DIR/ThirdParty/*.chpl); do
+    if grep -q "import $modName" $other; then
+      sed "s/import $modName/import super.$modName/g" $other > $other.tmp && mv $other.tmp $other
+    fi
+  done
+done
