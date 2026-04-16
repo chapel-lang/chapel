@@ -1064,7 +1064,11 @@ def run_lsp():
 
         fi, _ = ls.get_file_info(text_doc.uri)
 
-        node_and_loc = fi.get_target_segment_at_position(params.position)
+        # Use the source expression (identifier under cursor) rather than the
+        # declaration it resolves to, because the expression's type is more
+        # sensitive to the current context (e.g., when instantiations are
+        # in play), and because it already has the type information.
+        node_and_loc = fi.get_source_segment_at_position(params.position)
         if not node_and_loc:
             return None
 
