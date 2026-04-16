@@ -4,3 +4,9 @@ explicitName.chpl:17: In function 'test2':
 explicitName.chpl:19: warning: new
 explicitName.chpl:21: In function 'test3':
 explicitName.chpl:23: warning: new
+explicitName.chpl:25: In function 'test4':
+explicitName.chpl:27: warning: new
+explicitName.chpl:29: In function 'test5':
+explicitName.chpl:31: warning: new
+explicitName.chpl:33: In function 'test6':
+explicitName.chpl:35: warning: new
