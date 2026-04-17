@@ -1,0 +1,3 @@
+bug: type constraint based on arg with generic formal type too loose
+
+#9310
