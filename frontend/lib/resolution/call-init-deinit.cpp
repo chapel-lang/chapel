@@ -211,18 +211,7 @@ bool CallInitDeinit::isCallProducingValue(const AstNode* rhsAst,
     return asTupleType == asTupleType->toValueTuple(context);
   }
 
-  bool isProbablyCall = rv.byAst(rhsAst).toId().isEmpty();
-
-  // If we're in a tuple expr, we won't have an id, so the above check may give
-  // a false positive.
-  auto parentId = parsing::idToParentId(context, rhsAst->id());
-  if (auto parentAst = parsing::idToAst(context, parentId)) {
-    if (parentAst->isTuple() || parentAst->isTupleDecl()) {
-      isProbablyCall = false;
-    }
-  }
-
-  return isProbablyCall && !isRef(rhsType.kind());
+  return rv.byAst(rhsAst).toId().isEmpty() && !isRef(rhsType.kind());
 }
 
 std::tuple<CallInfo, CallScopeInfo>
@@ -840,14 +829,18 @@ void CallInitDeinit::processInit(VarFrame* frame,
     }
   }
 
-  const AstNode* lhsAst = nullptr;
-  if (op && op->op() == USTR("=")) {
-    lhsAst = op->lhs();
+  // Force copying for tuple destructuring, or when the RHS is part of a
+  // tuple expression, matching production's behavior.
+  bool isTupleDestructure =
+      ast->isTupleDecl() ||
+      (op && op->op() == USTR("=") && op->lhs()->isTuple());
+  // TODO: better logic for detecting when RHS is in a tuple
+  bool rhsIsTupleElt = false;
+  auto parentId = parsing::idToParentId(context, rhsAst->id());
+  if (auto parentAst = parsing::idToAst(context, parentId)) {
+    rhsIsTupleElt = parentAst->isTuple();
   }
-  const bool lhsIsTuple = lhsAst && lhsAst->isTuple();
-  if (!lhsAst) {
-    lhsAst = ast;
-  }
+  bool forceTupleCopy = isTupleDestructure || rhsIsTupleElt;
 
   if (lhsType.isType() || lhsType.isParam()) {
     // these are basically 'move' initialization
@@ -874,7 +867,7 @@ void CallInitDeinit::processInit(VarFrame* frame,
       ID rhsDeclId = refersToId(rhsAst, rv);
       // copy elision with '=' should only apply to myVar = myOtherVar
       frame->deinitedVars.emplace(rhsDeclId, currentStatement()->id());
-    } else if (isCallProducingValue(rhsAst, rhsType, rv) && !lhsIsTuple) {
+    } else if (isCallProducingValue(rhsAst, rhsType, rv) && !forceTupleCopy) {
       // e.g. var x; x = callReturningValue();
       resolveMoveInit(ast, rhsAst, lhsType, rhsType, rv);
     } else {
