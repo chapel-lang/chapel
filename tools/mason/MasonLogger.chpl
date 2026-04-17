@@ -25,6 +25,11 @@ module MasonLogger {
   import Time.dateTime;
   import IO.format;
 
+  private var color = ColorMode.AUTO;
+  private var logStream = new shared LogStream();
+  private var logFormat = new shared MasonLogFormat("%NAME%: %m%");
+  private var pad = 0;
+
   proc colorModeFromString(s: string): ColorMode throws {
     const lower = s.toLower();
     if lower == "true" || lower == "always" then
@@ -36,10 +41,11 @@ module MasonLogger {
     else
       throw new Error("Invalid value: '"+ s +"'");
   }
-  private var color = ColorMode.AUTO;
-  proc setColorMode(c: ColorMode) do color = c;
 
-  private var pad = 0;
+  proc setColorMode(c: ColorMode) {
+    color = c;
+    logFormat.setUseColor(c, logStream);
+  }
 
   class MasonLogFormat: LogFormat {
     proc init(args...) {
@@ -71,7 +77,8 @@ module MasonLogger {
     return new logger(name,
                       colorMode=color,
                       logLevelEnvVar="MASON_LOG_LEVEL",
-                      format=new MasonLogFormat("%NAME%: %m%"));
+                      stream=logStream,
+                      format=logFormat);
   }
 }
 
