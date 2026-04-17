@@ -36,7 +36,7 @@ import ThirdParty.Pathlib.path;
 
 import MasonLogger;
 
-private var log = new MasonLogger.logger("mason publish");
+private var log = MasonLogger.getLogger("mason publish");
 
 /*
   Top Level procedure that gets called from mason.chpl that takes in arguments
@@ -69,7 +69,7 @@ proc masonPublish(args: [] string) throws {
                     usernameFlag.value()
                   else
                     getUsername(here.cwd());
-  log.debugln("Username for registry fork: %s".format(username));
+  log.debug("Username for registry fork: ", username);
   var isLocal = false;
   var ci = ciFlag.valueAsBool();
   var update = false;

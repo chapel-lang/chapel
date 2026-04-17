@@ -1,2 +1,4 @@
 TemplateString.chpl@https://raw.githubusercontent.com/jabraham17/TemplateString/refs/tags/v0.1.0/src/TemplateString.chpl@fd58c3e4a10fbc5921151ea03e343fc8bcee4e2822100562ce7145e3202f8197
 Pathlib.chpl@https://raw.githubusercontent.com/jabraham17/Pathlib/refs/tags/v0.2.0/src/Pathlib.chpl@b20eb4a4b9fb612763351cd834f1356c0aa70c188514fef1f8c88f0f004e5a7c
+Log.chpl@https://raw.githubusercontent.com/jabraham17/Log/refs/tags/v0.1.0/src/Log.chpl@be217a0b50ce926a9e4118bebe4d61798e259ccb3e02ca4b25ef6660e1dbb0d7
+TerminalColors.chpl@https://raw.githubusercontent.com/jabraham17/TerminalColors/refs/tags/v0.1.0/src/TerminalColors.chpl@93d8d103483382459452181ae72303ce3f7faaef39b351b949447f9fdb660631

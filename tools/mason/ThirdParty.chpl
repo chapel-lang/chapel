@@ -19,11 +19,13 @@
  */
 
 /*
-  All third-party dependecies are included here. This allows access of
+  All third-party dependencies are included here. This allows access of
   third-party deps as `import ThirdParty.DependencyName` or
   `use ThirdParty.DependencyName`.
 */
 module ThirdParty {
   include module Pathlib;
   include module TemplateString;
+  include module Log;
+  include module TerminalColors;
 }

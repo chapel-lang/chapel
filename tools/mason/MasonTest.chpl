@@ -47,7 +47,7 @@ var comm: string;
 var dirs: list(string);
 var files: list(string);
 
-private var log = new MasonLogger.logger("mason test");
+private var log = MasonLogger.getLogger("mason test");
 
 /* Runs the .chpl files found within the /tests directory of Mason packages
    or files which in the path provided.
@@ -84,7 +84,7 @@ proc masonTest(args: [] string) throws {
   if updateFlag.hasValue() {
     skipUpdate = !updateFlag.valueAsBool();
   }
-  if skipUpdate then log.debugln("Will skip updates");
+  if skipUpdate then log.debug("Will skip updates");
 
   if setCommOpt.hasValue() then setComm = setCommOpt.value();
 
@@ -240,17 +240,17 @@ private proc runTests(show: bool, run: bool, parallel: bool, filter: string,
     // Get system, and external compopts
     var compopts = new list(string);
     compopts.pushBack(getTomlCompopts(lockFile));
-    log.debugf("compopts from Mason.toml: %?\n", compopts);
+    log.debug("compopts from Mason.toml: ", compopts);
 
-    log.debugln("Adding prerequisite flags");
+    log.debug("Adding prerequisite flags");
 
     // add prerequisite compopts
     for flag in MasonPrereqs.chplFlags() {
-      log.debugf("+compflag %s\n", flag);
+      log.debug("+compflag ", flag);
       compopts.pushBack(flag);
     }
 
-    log.debugf("Base compopts: %?\n", compopts);
+    log.debug("Base compopts: ", compopts);
 
     // can't use _ since it will leak
     // see https://github.com/chapel-lang/chapel/issues/25926
@@ -263,11 +263,11 @@ private proc runTests(show: bool, run: bool, parallel: bool, filter: string,
         const depSrc = Path.replaceExt(Path.joinPath(depDir, "src", name),
                                        "chpl");
 
-        log.debugf("Adding source dependency %s's flags\n", name);
+        log.debugf("Adding source dependency %s's flags", name);
         compopts.pushBack(depSrc);
 
         for flag in MasonPrereqs.chplFlags(depDir:path) {
-          log.debugf("+compflag %s\n", flag);
+          log.debug("+compflag ", flag);
           compopts.pushBack(flag);
         }
       }
@@ -281,7 +281,7 @@ private proc runTests(show: bool, run: bool, parallel: bool, filter: string,
       const gitDepSrc = Path.joinPath(depDir, "src", name + ".chpl");
       compopts.pushBack(gitDepSrc);
       for flag in MasonPrereqs.chplFlags(depDir:path) {
-        log.debugf("+compflag %s\n", flag);
+        log.debug("+compflag ", flag);
         compopts.pushBack(flag);
       }
     }
@@ -344,7 +344,7 @@ private proc runTests(show: bool, run: bool, parallel: bool, filter: string,
           else
             testPath = "".join('test/', test);
         }
-        log.infof("Testing %s\n", testPath);
+        log.info("Testing ", testPath);
         const testName = basename(stripExt(test, ".chpl"));
 
         // get the string of dependencies for compilation
@@ -366,7 +366,7 @@ private proc runTests(show: bool, run: bool, parallel: bool, filter: string,
         compCommand.pushBack(compopts);
         compCommand.pushBack(masonCompopts);
         compCommand.pushBack(cmdLineCompopts);
-        log.debugf("\t%?\n", compCommand);
+        log.debugf("\t%?", compCommand);
         const compilation = runWithStatus(compCommand.toArray(), !show);
         const success = compilation == 0;
 

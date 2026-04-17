@@ -27,11 +27,11 @@ import MasonUtils;
 
 private config param makeTargetChplFlags = "printchplflags";
 
-private var log = new MasonLogger.logger("mason prereqs");
+private var log = MasonLogger.getLogger("mason prereqs");
 
 
 proc install(baseDir: path, p: path) throws {
-  log.infof("Installing prerequisite %s\n", p:string);
+  log.info("Installing prerequisite ", p:string);
   const oldDir = path.cwd();
   p.chdir();
   defer oldDir.chdir();
@@ -46,7 +46,7 @@ proc install() throws {
   for prereq in prereqs(baseDir=baseDir) {
     install(baseDir, prereq);
   }
-  log.infoln("Prerequisites have been installed");
+  log.info("Prerequisites have been installed");
 }
 
 iter chplFlags(const baseDir = path.cwd()) throws {
@@ -80,11 +80,10 @@ iter prereqs(const baseDir = path.cwd()): path {
   const prereqsDir = "prereqs";
   const prereqsPath = baseDir / prereqsDir;
 
-  log.debugf("Looking for the prerequisites directory %s\n",
-             prereqsPath:string);
+  log.debug("Looking for the prerequisites directory ", prereqsPath);
   if prereqsPath.exists() {
     if prereqsPath.isDir() {
-      log.infof("Prerequisites directory exists (%s)\n", prereqsPath:string);
+      log.infof("Prerequisites directory exists (%s)", prereqsPath:string);
 
       // You shouldn't need an array here, but there seems to be a compiler bug
       // See https://github.com/chapel-lang/chapel/issues/27855
@@ -96,15 +95,15 @@ iter prereqs(const baseDir = path.cwd()): path {
           yield dirP;
         } else {
           log.warnf("%s is in prereqs directory. But doesn't have a Makefile." +
-                    " Ignoring.\n", dirP:string);
+                    " Ignoring.", dir:string);
         }
       }
     } else {
       log.infof("%s is supposed to be directory with prerequisites " +
-                "but it looks to be a file. It will be ignored.\n",
+                "but it looks to be a file. It will be ignored.",
                 prereqsDir:string);
     }
   } else {
-    log.debugf("%s don't exist.\n", prereqsDir:string);
+    log.debugf("%s don't exist.", prereqsDir:string);
   }
 }

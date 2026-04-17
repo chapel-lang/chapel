@@ -28,7 +28,7 @@ use MasonUtils;
 import MasonLogger;
 use TOML;
 
-private var log = new MasonLogger.logger("mason run");
+private var log = MasonLogger.getLogger("mason run");
 
 proc masonRun(args: [] string) throws {
 

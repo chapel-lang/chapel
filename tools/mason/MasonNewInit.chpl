@@ -35,7 +35,7 @@ module MasonNewInit {
   import ThirdParty.TemplateString.templateString;
   import ThirdParty.Pathlib.path;
 
-  private var log = new MasonLogger.logger("mason new/init");
+  private var log = MasonLogger.getLogger("mason new/init");
 
   class MasonPackageTemplate {
     var manifest: manifestFile;
@@ -140,8 +140,8 @@ module MasonNewInit {
 
       const file = directory / ".gitignore";
       if file.isFile() {
-        log.warnln(".gitignore already exists, " +
-                  "skipping creation of .gitignore file");
+        log.warn(".gitignore already exists, " +
+                 "skipping creation of .gitignore file");
         return;
       }
 
@@ -204,7 +204,7 @@ module MasonNewInit {
     override proc makeVCS(show: bool) throws {
       // TODO: this warning doesn't seem very useful since the default is always
       // --vcs
-      // log.warnln("Lightweight projects don't create git repositories");
+      // log.warn("Lightweight projects don't create git repositories");
     }
   }
 
