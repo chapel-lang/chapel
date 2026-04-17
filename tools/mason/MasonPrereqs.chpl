@@ -31,7 +31,7 @@ private var log = MasonLogger.getLogger("mason prereqs");
 
 
 proc install(baseDir: path, p: path) throws {
-  log.infof("Installing prerequisite ", p:string);
+  log.info("Installing prerequisite ", p:string);
   const oldDir = path.cwd();
   p.chdir();
   defer oldDir.chdir();
