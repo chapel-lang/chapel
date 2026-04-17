@@ -2212,7 +2212,7 @@ static void test31() {
 }
 
 // Init with tuple destructuring, copying out of tuple
-static void test32() {
+static void test32a() {
   testActions(__FUNCTION__,
     R""""(
       module M {
@@ -2238,6 +2238,39 @@ static void test32() {
       {AssociatedAction::COPY_INIT, "b",   "b", 1},
       {AssociatedAction::DEINIT,     "M.test@13",   "b"},
       {AssociatedAction::DEINIT,     "M.test@13",   "r"},
+    });
+}
+
+// Init with nested tuple destructuring
+static void test32b() {
+  testActions(__FUNCTION__,
+    R""""(
+      module M {
+        record R { }
+        proc test() {
+          var r = new R();
+
+          var tup = (1, (r, 2));
+
+          var (a, b) = tup;
+          tup;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
+      {AssociatedAction::MOVE_INIT,  "r",           ""},
+      {AssociatedAction::INIT_OTHER, "tup",         "", {}, {
+        {AssociatedAction::ASSIGN,     "tup",   "M.test@4", 0},
+        {AssociatedAction::INIT_OTHER, "tup",   "M.test@7", 1, {
+          {AssociatedAction::COPY_INIT,  "tup",   "M.test@5", 0},
+          {AssociatedAction::ASSIGN,     "tup",   "M.test@6", 1},
+        }},
+      }},
+      {AssociatedAction::ASSIGN,    "a",   "a", 0},
+      {AssociatedAction::COPY_INIT, "b",   "b", 1},
+      // {AssociatedAction::DEINIT,     "M.test@15",   "b"},
+      {AssociatedAction::DEINIT,     "M.test@15",   "r"},
     });
 }
 
@@ -2391,7 +2424,8 @@ int main() {
   test29();
   test30();
   test31();
-  test32();
+  test32a();
+  test32b();
   test33a();
   test33b();
 
