@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -40,6 +40,15 @@ bool AstNode::hasPragma(Context* context, pragmatags::PragmaTag p) const {
   if (auto& id = this->id()) {
     if (auto ag = parsing::idToAttributeGroup(context, id)) {
       return ag->hasPragma(p);
+    }
+  }
+  return false;
+}
+
+bool AstNode::hasAttribute(Context* context, UniqueString attributeName) const {
+  if (auto& id = this->id()) {
+    if (auto ag = parsing::idToAttributeGroup(context, id)) {
+      return ag->hasAttribute(attributeName);
     }
   }
   return false;

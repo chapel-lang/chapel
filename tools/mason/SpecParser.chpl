@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -62,8 +62,7 @@ proc getSpecFields(spec: string) {
     }
     specFields = (specInfo[0], specInfo[1], compiler,
                   specInfo[3]);
-  }
-  catch e: MasonError {
+  } catch e: MasonError {
     stderr.writeln(e.message());
   }
   return specFields;
@@ -151,10 +150,10 @@ private proc parseSpec(ref tokenList: list(string)): 4*string throws {
         // Note: This is currently unused
         compilerVersion = compilerSplit[1];
       }
-    }
-    else {
+    } else {
       variants.pushBack(toke);
     }
   }
-  return (package, packageVersion, compiler, " ".join(variants.these()).strip());
+  return (package, packageVersion, compiler,
+          " ".join(variants.these()).strip());
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -34,17 +34,24 @@
 // Use a single context with revisions to get this test running faster.
 static Context* context;
 
-template <typename F>
-void testHeapBufferArg(const char* formalType, const char* actualType, F&& test) {
+static Context* advanceAndGetContext() {
   context->advanceToNextRevision(false);
   if (!context->chplHome().empty())
-    setupModuleSearchPaths(context, false, false, {}, {});
+    setupModuleSearchPaths(context,  false, {}, {});
+  return context;
+}
+
+template <typename F>
+void testHeapBufferArg(const char* formalType, const char* actualType, F&& test) {
+  auto context = advanceAndGetContext();
   ErrorGuard guard(context);
 
   std::stringstream ss;
 
+  ss << "operator =(ref lhs: int, const rhs: int) {}" << std::endl;
+  ss << "operator =(ref lhs: _ddata(?t), const rhs: _ddata(t)) {}" << std::endl;
   ss << "record rec { type someType; }" << std::endl;
-  ss << "proc f(x: " << formalType << ") {}" << std::endl;
+  ss << "proc f(x: " << formalType << ") { return 0; }" << std::endl;
   ss << "var arg: " << actualType << ";" << std::endl;
   ss << "var x = f(arg);" << std::endl;
 
@@ -56,14 +63,14 @@ void testHeapBufferArg(const char* formalType, const char* actualType, F&& test)
 
   assert(modules.size() == 1);
   auto mainMod = modules[0];
-  assert(mainMod->numStmts() == 4);
+  assert(mainMod->numStmts() == 6);
 
-  auto fChild = mainMod->child(1);
+  auto fChild = mainMod->child(3);
   assert(fChild->isFunction());
   auto fFn = fChild->toFunction();
   assert(fFn->name() == "f");
 
-  auto fCallVar = mainMod->child(3);
+  auto fCallVar = mainMod->child(5);
   assert(fCallVar->isVariable());
 
   auto& modResResult = resolveModule(context, mainMod->id());
@@ -151,13 +158,12 @@ static void test7() {
 }
 
 static void test8() {
-  context->advanceToNextRevision(false);
-  if (!context->chplHome().empty())
-    setupModuleSearchPaths(context, false, false, {}, {});
+  auto context = advanceAndGetContext();
   ErrorGuard guard(context);
 
   std::string program = R"""(
   module M{
+    operator =(ref lhs: int, const rhs: int) {}
     module X {
       proc foo() {
         var ret : _ddata(int);
@@ -180,9 +186,7 @@ static void test8() {
 }
 
 static void test9() {
-  context->advanceToNextRevision(false);
-  if (!context->chplHome().empty())
-    setupModuleSearchPaths(context, false, false, {}, {});
+  auto context = advanceAndGetContext();
   ErrorGuard guard(context);
 
   std::string program = R"""(
@@ -217,12 +221,11 @@ static void test11() {
   // being considered when 'nil' is passed (because later, y will be instantiated
   // and only a conversion from nil will be needed).
 
-  context->advanceToNextRevision(false);
-  if (!context->chplHome().empty())
-    setupModuleSearchPaths(context, false, false, {}, {});
+  auto context = advanceAndGetContext();
   ErrorGuard guard(context);
 
   std::string program = R"""(
+  operator =(ref lhs: _ddata(?t), const rhs: _ddata(t)) {}
   proc foo(x: _ddata(?t), y: _ddata(t)) do return y;
   var ptrInt: _ddata(int);
   var ptrReal: _ddata(real);
@@ -239,7 +242,7 @@ static void test11() {
   assert(guard.realizeErrors() == 0);
 }
 
-static void runAllTests() {
+static void runCommonTests() {
   test1();
   test2();
   test3();
@@ -249,22 +252,26 @@ static void runAllTests() {
   test7();
   test8();
   test9();
-  test10();
   test11();
+}
+
+static void runTestsThatRequireStdlib() {
+  test10();
 }
 
 int main() {
   // With stdlib
   {
     context = new Context(getConfigWithHome());
-    runAllTests();
+    runCommonTests();
+    runTestsThatRequireStdlib();
     delete context;
   }
 
   // Without stdlib
   {
     context = new Context();
-    runAllTests();
+    runCommonTests();
     delete context;
   }
 

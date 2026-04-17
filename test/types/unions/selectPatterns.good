@@ -1,0 +1,34 @@
+-1
+caught error: union is not currently active
+caught error: union is not currently active
+caught error: union is not currently active
+test getActiveIndex
+0
+1
+2
+3
+test visit
+x: 10
+y: 3.14
+z: hello
+w: 20
+test visitOne
+visited: 10
+visited: 3.14
+visited: hello
+visited: 20
+test select
+x: 10
+y: 3.14
+z: hello
+w: 20
+test fancy select
+x: 10
+y: 3.14
+z: hello
+w: 20
+test super fancy select
+x: 10
+y: 3.14
+z: hello
+w: 20

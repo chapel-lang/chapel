@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -121,6 +121,7 @@ QualifiedType::Kind resolveIntent(const QualifiedType& t,
     case QualifiedType::PARENLESS_FUNCTION:
     case QualifiedType::FUNCTION:
     case QualifiedType::MODULE:
+    case QualifiedType::LOOP:
     case QualifiedType::INIT_RECEIVER:
       // these don't really have an intent
       return QualifiedType::UNKNOWN;

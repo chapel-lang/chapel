@@ -1,5 +1,3 @@
-:title: Users Guide: Task Parallelism Overview
-
 Task Parallelism Overview
 =========================
 

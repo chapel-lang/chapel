@@ -64,9 +64,9 @@ void	markdone_shorthandler(gex_Token_t token);
 #define hidx_markdone_shorthandler    203
 
 gex_AM_Entry_t htable[] = { 
-	{ hidx_ping_shorthandler,     ping_shorthandler,     GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_SHORT, 0 },
-	{ hidx_pong_shorthandler,     pong_shorthandler,     GEX_FLAG_AM_REPLY|GEX_FLAG_AM_SHORT, 0 },
-	{ hidx_markdone_shorthandler, markdone_shorthandler, GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_SHORT, 0 },
+	{ hidx_ping_shorthandler,     (gex_AM_Fn_t)ping_shorthandler,     GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_SHORT, 0 },
+	{ hidx_pong_shorthandler,     (gex_AM_Fn_t)pong_shorthandler,     GEX_FLAG_AM_REPLY|GEX_FLAG_AM_SHORT, 0 },
+	{ hidx_markdone_shorthandler, (gex_AM_Fn_t)markdone_shorthandler, GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_SHORT, 0 },
 };
 #define HANDLER_TABLE_SIZE (sizeof(htable)/sizeof(gex_AM_Entry_t))
 

@@ -17,6 +17,6 @@ PYTHON_LDVERSION=$($chpl_python -c "import sysconfig; print(sysconfig.get_config
 DISABLE_WARNINGS=""
 # some older python's don't use `#ifndef` when they should
 # so we disable redefinition warnings for clean testing
-DISABLE_WARNINGS+="--ccflags -Wno-macro-redefined"
+DISABLE_WARNINGS="$DISABLE_WARNINGS --ccflags -Wno-macro-redefined"
 
 echo "--ccflags -isystem$PYTHON_INCLUDE_DIR -L$PYTHON_LIB_DIR --ldflags -Wl,-rpath,$PYTHON_LIB_DIR -lpython$PYTHON_LDVERSION $DISABLE_WARNINGS"

@@ -36,6 +36,10 @@ cpp:identifier Location
 cpp:identifier AstTag
 cpp:identifier uast::AstTag
 cpp:identifier AstList::const_iterator
+cpp:identifier AstListIt::value_type
+cpp:identifier AstListIt::difference_type
+cpp:identifier AstListIt::pointer
+cpp:identifier AstListIt::reference
 cpp:identifier size_t
 cpp:identifier detail
 cpp:identifier detail::PODUniqueString
@@ -63,6 +67,7 @@ cpp:identifier EnumParam
 cpp:identifier chpl::uast::PrimitiveTag
 cpp:identifier types::RealParam
 cpp:identifier types::IntParam
+cpp:identifier IntParam
 cpp:identifier types::UintParam
 # Breaks because of (e.g.): WhereClauseResult whereClauseResult = WHERE_TBD;
 # Doxygen can't handle a class/struct field initialized with an enum.
@@ -83,6 +88,7 @@ cpp:identifier LOOKUP_DECLS
 cpp:identifier LOOKUP_IMPORT_AND_USE
 cpp:identifier LOOKUP_PARENTS
 cpp:identifier LOOKUP_EXTERN_BLOCKS
+cpp:identifier chpl::empty
 
 
 # python types

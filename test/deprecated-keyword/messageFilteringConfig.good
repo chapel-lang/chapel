@@ -1,0 +1,21 @@
+warning: x001 is deprecated
+note: 'x001' was set via a compiler flag
+warning: I am deprecated
+note: 'x003' was set via a compiler flag
+warning: I am deprecated: spam
+note: 'x005' was set via a compiler flag
+messageFilteringConfig.chpl:n: warning: x000 is deprecated
+messageFilteringConfig.chpl:n: warning: x001 is deprecated
+messageFilteringConfig.chpl:n: warning: I am deprecated
+messageFilteringConfig.chpl:n: warning: I am deprecated
+messageFilteringConfig.chpl:n: warning: I am deprecated: spam
+messageFilteringConfig.chpl:n: warning: I am deprecated: spam
+0
+0
+0
+0
+0
+0
+<command-line arg>:1: warning: x000 is deprecated
+<command-line arg>:2: warning: I am deprecated
+<command-line arg>:3: warning: I am deprecated: spam

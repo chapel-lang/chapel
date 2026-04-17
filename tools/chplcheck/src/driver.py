@@ -1,5 +1,5 @@
 #
-# Copyright 2023-2025 Hewlett Packard Enterprise Development LP
+# Copyright 2023-2026 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -20,6 +20,7 @@
 import functools
 import itertools
 from typing import Any, Callable, Iterator, List, Optional, Tuple, Union
+import os, fnmatch, pathlib
 
 import chapel
 from fixits import Fixit
@@ -122,6 +123,32 @@ class LintDriver:
             node.name().startswith(p) for p in self.config.internal_prefixes
         )
 
+    def _should_skip_path(
+        self, context: chapel.Context, node: Union[chapel.AstNode, str]
+    ) -> bool:
+        """
+        Check if a node should be skipped based on its path.
+        """
+        path = node if isinstance(node, str) else node.location().path()
+        path = pathlib.Path(path).absolute()
+
+        if self.config.skip_bundled and context.is_bundled_path(str(path)):
+            return True
+        elif len(self.config.skip_files) > 0:
+            skip_files = [pathlib.Path(f) for f in self.config.skip_files]
+            for skip_pattern in skip_files:
+                abs_skip_pattern = skip_pattern.absolute()
+                return (
+                    (
+                        os.path.exists(skip_pattern)
+                        and os.path.samefile(skip_pattern, path)
+                    )
+                    or os.path.commonprefix([abs_skip_pattern, path])
+                    == str(abs_skip_pattern)
+                    or fnmatch.fnmatch(path, skip_pattern)
+                )
+        return False
+
     def _preorder_skip_unstable_modules(self, node):
         if not self.config.skip_unstable:
             yield from chapel.preorder(node)
@@ -171,7 +198,7 @@ class LintDriver:
         The name of the decorated function is used as the name of the rule.
         """
 
-        def decorator_basic_rule(func):
+        def decorator_basic_rule(func: rule_types.BasicRuleCheck):
             self.BasicRules.append(
                 rule_types.BasicRule(
                     driver=self,
@@ -202,7 +229,7 @@ class LintDriver:
         suggested to the user.
         """
 
-        def decorator_fixit(func):
+        def decorator_fixit(func: rule_types.FixitHook):
             found = False
             for rule in itertools.chain(
                 self.BasicRules, self.AdvancedRules, self.LocationRules
@@ -242,7 +269,7 @@ class LintDriver:
         The name of the decorated function is used as the name of the rule.
         """
 
-        def decorator_advanced_rule(func):
+        def decorator_advanced_rule(func: rule_types.AdvancedRuleCheck):
             self.AdvancedRules.append(
                 rule_types.AdvancedRule(
                     driver=self,
@@ -278,7 +305,7 @@ class LintDriver:
         The name of the decorated function is used as the name of the rule.
         """
 
-        def decorator_location_rule(func):
+        def decorator_location_rule(func: rule_types.LocationRuleCheck):
             self.LocationRules.append(
                 rule_types.LocationRule(
                     driver=self,
@@ -341,6 +368,10 @@ class LintDriver:
                         not self.config.check_internal_prefixes
                         and node
                         and self.has_internal_prefix(node)
+                    ) or (
+                        self._should_skip_path(
+                            context, node or toreport[0].path()
+                        )
                     ):
                         continue
 

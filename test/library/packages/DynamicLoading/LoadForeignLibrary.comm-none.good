@@ -1,0 +1,7 @@
+test1
+
+extern proc(_: int, _: int): int
+
+LOCALE0 got: 0
+---
+

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -127,6 +127,9 @@ bool ResolutionCandidate::isApplicableGeneric(CallInfo& info,
     return false;
 
   if (checkGenericFormals(info.call) == false)
+    return false;
+
+  if (checkGenericFormalsFromDefaults(info.call) == false)
     return false;
 
   // Compute the param/type substitutions for generic arguments.
@@ -516,17 +519,8 @@ void ResolutionCandidate::computeSubstitutionForDefaultExpr(ArgSymbol* formal,
       }
 
     } else if (formal->type->symbol->hasFlag(FLAG_GENERIC) == true) {
-      Type* defaultType = tail->typeInfo();
-
-      bool inOutCopy = inOrOutFormalNeedingCopyType(formal);
-      if (defaultType == dtTypeDefaultToken) {
-        substitutions.put(formal, dtTypeDefaultToken->symbol);
-
-      } else if (Type* type = getInstantiationType(defaultType, NULL,
-                                                   formal->type, NULL, ctx,
-                                                   true, false,
-                                                   inOutCopy)) {
-        substitutions.put(formal, type->symbol);
+      if (auto sub = getSubstitutionFromDefaultValue(formal, tail, ctx)) {
+        substitutions.put(formal, sub);
       }
     }
   }
@@ -1070,13 +1064,25 @@ bool ResolutionCandidate::checkGenericFormals(Expr* ctx) {
   return true;
 }
 
+bool ResolutionCandidate::checkGenericFormalsFromDefaults(Expr* ctx) {
+  for_formals(formal, fn) {
+    // See how the flag was added for a description of the error cases.
+    if (formal->hasFlag(FLAG_BAD_UNINSTANTIATED_FORMAL)) {
+      failingArgument = formal;
+      reason = RESOLUTION_CANDIDATE_UNRELATED_TYPE;
+      return false;
+    }
+  }
+  return true;
+}
+
 static bool isNumericType(Type* t) {
-  return is_bool_type(t) ||
-         is_int_type(t) ||
-         is_uint_type(t) ||
-         is_real_type(t) ||
-         is_imag_type(t) ||
-         is_complex_type(t);
+  return isBoolType(t) ||
+         isIntType(t) ||
+         isUIntType(t) ||
+         isRealType(t) ||
+         isImagType(t) ||
+         isComplexType(t);
 }
 
 static bool isClassLikeOrPtrOrManaged(Type* t) {
@@ -1102,12 +1108,12 @@ classifyTypeMismatch(Type* actualType, Symbol* formalSym) {
   if (formalSym->hasFlag(FLAG_ARG_THIS))
     return RESOLUTION_CANDIDATE_DIFFERENT_RECEIVER_TYPES;
 
-  if ((is_bool_type   (actualType) && is_bool_type   (formalType)) ||
-      (is_int_type    (actualType) && is_int_type    (formalType)) ||
-      (is_uint_type   (actualType) && is_uint_type   (formalType)) ||
-      (is_real_type   (actualType) && is_real_type   (formalType)) ||
-      (is_imag_type   (actualType) && is_imag_type   (formalType)) ||
-      (is_complex_type(actualType) && is_complex_type(formalType)))
+  if ((isBoolType   (actualType) && isBoolType   (formalType)) ||
+      (isIntType    (actualType) && isIntType    (formalType)) ||
+      (isUIntType   (actualType) && isUIntType   (formalType)) ||
+      (isRealType   (actualType) && isRealType   (formalType)) ||
+      (isImagType   (actualType) && isImagType   (formalType)) ||
+      (isComplexType(actualType) && isComplexType(formalType)))
     return RESOLUTION_CANDIDATE_TYPE_RELATED;
 
   if (isNumericType(actualType) && isNumericType(formalType))
@@ -1213,6 +1219,16 @@ void explainCandidateRejection(CallInfo& info, FnSymbol* fn) {
     case RESOLUTION_CANDIDATE_TYPE_SAME_CATEGORY:
     case RESOLUTION_CANDIDATE_UNRELATED_TYPE:
     case RESOLUTION_CANDIDATE_DIFFERENT_RECEIVER_TYPES:
+      if (c.failingArgument && c.failingArgument->hasFlag(FLAG_BAD_UNINSTANTIATED_FORMAL)) {
+        auto failingFormal = toArgSymbol(c.failingArgument);
+        USR_PRINT(failingFormal,
+                  "because the generic formal '%s' of type '%s' cannot be "
+                  "instantiated with default value of type '%s'",
+                  failingFormal->name, toString(failingFormal->type),
+                  toString(failingFormal->defaultExpr->body.tail->getValType()));
+        break;
+      }
+
       USR_PRINT(call, "because %s with type '%s'",
                     failingActualDesc,
                     toString(failingActual->getValType()));
@@ -1222,6 +1238,8 @@ void explainCandidateRejection(CallInfo& info, FnSymbol* fn) {
           isNonNilableClassType(failingFormal->getValType()))
         USR_PRINT(call, "try to apply the postfix ! operator to %s",
                   failingActualDesc);
+      maybeSuggestToByteCall(failingActual, failingActual->type,
+                             failingFormal->type, call);
       break;
     case RESOLUTION_CANDIDATE_WHERE_FAILED:
       USR_PRINT(fn, "because where clause evaluated to false");

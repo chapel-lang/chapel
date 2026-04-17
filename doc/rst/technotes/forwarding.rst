@@ -9,6 +9,11 @@ This feature allows a ``record`` or ``class`` to specify that certain
 method calls will be forwarded to a particular expression. The most
 typical use case is to forward methods to a particular field.
 
+.. warning::
+
+   Forwarding as described in this technical note is an unstable feature
+   and may change in future Chapel releases.
+
 Why Forwarding?
 ---------------
 

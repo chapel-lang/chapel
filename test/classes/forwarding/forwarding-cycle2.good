@@ -1,0 +1,7 @@
+forwarding-cycle2.chpl:26: In function 'main':
+forwarding-cycle2.chpl:28: error: forwarding cycle detected
+forwarding-cycle2.chpl:2: note: forwarding cycle includes type 'C'
+forwarding-cycle2.chpl:19: note: forwarding cycle includes type 'A'
+$CHPL_HOME/modules/internal/OwnedObject.chpl:40: note: forwarding cycle includes type 'owned B'
+forwarding-cycle2.chpl:12: note: forwarding cycle includes type 'B'
+$CHPL_HOME/modules/internal/OwnedObject.chpl:40: note: forwarding cycle includes type 'owned C'

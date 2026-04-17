@@ -26,7 +26,7 @@ int main(int argc, char** argv) {
 
   printf("%s", "popcount: ");
   start_time = chpl_now_timevalue();
-  for(uint64_t i=start; i<(uint32_t)start+NUM_ITER; i++) {
+  for(uint64_t i=start; i<(uint64_t)start+NUM_ITER; i++) {
     accumulator += chpl_bitops_popcount_64(i);
   }
   end_time = chpl_now_timevalue();
@@ -38,7 +38,7 @@ int main(int argc, char** argv) {
   accumulator = 0;
   printf("%s", "clz: ");
   start_time = chpl_now_timevalue();
-  for(uint64_t i=start; i<(uint32_t)start+NUM_ITER; i++) {
+  for(uint64_t i=start; i<(uint64_t)start+NUM_ITER; i++) {
     accumulator += chpl_bitops_clz_64(i);
   }
   end_time = chpl_now_timevalue();
@@ -50,7 +50,7 @@ int main(int argc, char** argv) {
   accumulator = 0;
   printf("%s", "ctz: ");
   start_time = chpl_now_timevalue();
-  for(uint64_t i=start; i<(uint32_t)start+NUM_ITER; i++) {
+  for(uint64_t i=start; i<(uint64_t)start+NUM_ITER; i++) {
     accumulator += chpl_bitops_ctz_64(i);
   }
   end_time = chpl_now_timevalue();

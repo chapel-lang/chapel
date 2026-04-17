@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -23,12 +23,6 @@
 #include "test-parsing.h"
 
 #include "chpl/resolution/resolution-types.h"
-
-#define ADVANCE_PRESERVING_STANDARD_MODULES_(ctx__) \
-  do { \
-    ctx__->advanceToNextRevision(false); \
-    setupModuleSearchPaths(ctx__, false, false, {}, {}); \
-  } while (0)
 
 // forward declare classes and namespaces
 namespace chpl {
@@ -66,8 +60,8 @@ void testCall(const char* testName,
               const char* callIdStr,
               const char* calledFnIdStr);
 
-const Variable* findVariable(const AstNode* ast, const char* name);
-const Variable* findVariable(const ModuleVec& vec, const char* name);
+const VarLikeDecl* findVariable(const AstNode* ast, const char* name);
+const VarLikeDecl* findVariable(const ModuleVec& vec, const char* name);
 
 std::unordered_map<std::string, QualifiedType>
 resolveTypesOfVariables(Context* context,
@@ -77,19 +71,27 @@ resolveTypesOfVariables(Context* context,
 std::unordered_map<std::string, QualifiedType>
 resolveTypesOfVariables(Context* context, std::string program, const std::vector<std::string>& variables);
 
+QualifiedType resolveTypeOfVariable(Context* context, std::string program,
+                                    const std::string& variable);
+
 std::unordered_map<std::string, QualifiedType>
 resolveTypesOfVariablesInit(Context* context, std::string program, const std::vector<std::string>& variables);
 
 void ensureParamInt(const QualifiedType& type, int64_t expectedValue);
 void ensureParamUint(const QualifiedType& type, uint64_t expectedValue);
 void ensureParamBool(const QualifiedType& type, bool expectedValue);
-void ensureParamString(const QualifiedType& type, const std::string& expectedValue);
+void ensureParamString(const QualifiedType& type, const std::string& expectedValue, bool isByteString = false);
 void ensureParamEnumStr(const QualifiedType& type, const std::string& expectedName);
+void ensureParamReal(const QualifiedType& type, double expectedValue);
 void ensureErroneousType(const QualifiedType& type);
 
 QualifiedType getTypeForFirstStmt(Context* context, const std::string& program);
 
 Context::Configuration getConfigWithHome();
+
+void ensureSubs(Context* context,
+              const CompositeType* ct,
+              const std::map<std::string, QualifiedType>& expected);
 
 /**
   Returns the ResolvedFunction called by a particular
@@ -108,13 +110,13 @@ QualifiedType findVarType(const Module* m,
 /**
   Test resolution of a domain literal.
  */
-void testDomainLiteral(Context* context, std::string domainLiteral,
+void testDomainLiteral(std::string domainLiteral,
                        DomainType::Kind domainKind);
 
-void testDomainIndex(Context* context, std::string domainType,
+void testDomainIndex(std::string domainType,
                      std::string expectedType);
 
-void testDomainBadPass(Context* context, std::string argType,
+void testDomainBadPass(std::string argType,
                        std::string actualType);
 
 /**
@@ -124,5 +126,7 @@ void testDomainBadPass(Context* context, std::string argType,
 void testArrayAssign(Context* context, const char* prelude, const char* typeExpr, const char* iterable, int expectedRank, const char* expectedStride, AssociatedAction::Action actionKind, const char* expectedCopyInitFn);
 void testArrayMaterialize(Context* context, const char* prelude, const char* iterable, int expectedRank, const char* expectedStride, const char* expectedCopyInitFn);
 void testArrayCoerce(Context* context, const char* prelude, const char* typeExpr, const char* iterable, int expectedRank, const char* expectedStride, const char* expectedCopyInitFn);
+
+std::string toString(QualifiedType type);
 
 #endif

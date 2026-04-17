@@ -1,0 +1,21 @@
+    1  test  6.34
+43.29 + 279.1i
+"test \"\" '' !"
+'test "" \'\' !'
+(test (\))
+|                                    test|
+|test                                    |
+|                  test                  |
+|                                    test|
+123456
+   'a'
+'a'...
+'a'
+''...
+got = true, s = a
+got = true, s = a
+got = true, s = a
+BadFormatError: bad format (in fileReader.readf(fmt:string, ...) with path "example_formatted_io.stdin" offset 7)
+got = true, s = a
+got = true, s = a
+BadFormatError: bad format: encountered non-whitespace (in fileReader.readf(fmt:string, ...) with path "example_formatted_io.stdin" offset 13)

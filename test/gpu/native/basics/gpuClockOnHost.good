@@ -1,0 +1,4 @@
+0
+0
+gpuClockOnHost.chpl:3: warning: gpuClock was called from the host, it will return 0.
+gpuClockOnHost.chpl:6: warning: gpuClock was called from the host, it will return 0.

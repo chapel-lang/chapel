@@ -16,6 +16,7 @@ Best Practices for Contributors
    DCO
    CompilerDebugging
    CompilerIRTricks
+   EditionsDev
    ErrorWarningMessaging
    RuntimeLibrary
    GeneratedCode
@@ -26,12 +27,14 @@ Best Practices for Contributors
    SpellChecking
    Valgrind
    Sanitizers
+   MemoryProfiling
    Deprecation
    Unstable
    NightlyTesting
    StandardModuleStyle
    TestAnnotationsLocally
    buildingdocs
+   PythonDeps
    Potpourri
 
 This directory contains rough notes intended to be helpful in pointing
@@ -96,6 +99,9 @@ developers.  A possible reading order is roughly as follows:
 :ref:`best-practices-unstable`:
   How to mark features as unstable
 
+:ref:`best-practices-editions`:
+  How to tie a particular change to a particular (set of) edition(s)
+
 :ref:`readme-nightlytesting`
   How to run nightly testing
 
@@ -107,6 +113,9 @@ developers.  A possible reading order is roughly as follows:
 
 :ref:`readme-buildingdocs`:
   Information about building and updating the Chapel documentation
+
+:ref:`readme-python-deps`:
+  Information about updating Python dependencies for various tools
 
 :ref:`best-practices-potpourri`:
   Notes not in any of the above categories.

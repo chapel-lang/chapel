@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -32,6 +32,7 @@ extern "C" {
 #include <cstring>
 #include <sstream>
 #include <string>
+#include <llvm/ADT/APSInt.h>
 
 #ifndef IFA_EXTERN
 #define IFA_EXTERN extern
@@ -151,6 +152,8 @@ class Immediate { public:
   int64_t  to_int( void)        const;
   uint64_t to_uint( void)       const;
   std::string to_string(void)   const;
+
+  llvm::APSInt aps_int(void)    const;
 
   Immediate& operator=(const Immediate&);
   Immediate& operator=(bool b) {
@@ -328,6 +331,18 @@ inline std::string Immediate::to_string(void) const {
   default: CHPL_ASSERT(false && "Unexpected type to convert to string"); break;
   } // Closes switch statement
   return ss.str();
+}
+
+inline llvm::APSInt Immediate::aps_int(void) const {
+  CHPL_ASSERT(const_kind == NUM_KIND_INT || const_kind == NUM_KIND_UINT);
+  uint64_t bitWidth = (num_index == INT_SIZE_8) ? 8 :
+                      (num_index == INT_SIZE_16) ? 16 :
+                      (num_index == INT_SIZE_32) ? 32 :
+                      (num_index == INT_SIZE_64) ? 64 : 0;
+  CHPL_ASSERT(bitWidth != 0);
+  auto isSigned = (const_kind == NUM_KIND_INT);
+  auto apint = llvm::APInt(bitWidth, to_uint(), isSigned);
+  return llvm::APSInt(apint, !isSigned);
 }
 
 class ImmHashFns { public:

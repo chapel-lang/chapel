@@ -1,0 +1,2 @@
+--edition=2.0 # floatcomplexexceptions.old.good
+--edition=preview # floatcomplexexceptions.good

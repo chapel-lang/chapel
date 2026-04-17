@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -62,6 +62,11 @@ QualifiedType QualifiedType::makeParamInt(Context* context, int64_t i) {
           IntParam::get(context, i)};
 }
 
+QualifiedType QualifiedType::makeParamUint(Context* context, uint64_t i) {
+  return {QualifiedType::PARAM, UintType::get(context, 0),
+          UintParam::get(context, i)};
+}
+
 QualifiedType QualifiedType::makeParamString(Context* context, UniqueString s) {
   return {QualifiedType::PARAM, RecordType::getStringType(context),
           StringParam::get(context, s)};
@@ -71,10 +76,19 @@ QualifiedType QualifiedType::makeParamString(Context* context, std::string s) {
   return makeParamString(context, UniqueString::get(context, s));
 }
 
+QualifiedType QualifiedType::makeParamBytes(Context* context, UniqueString s) {
+  return {QualifiedType::PARAM, RecordType::getBytesType(context),
+          StringParam::get(context, s)};
+}
+
+QualifiedType QualifiedType::makeParamBytes(Context* context, std::string s) {
+  return makeParamBytes(context, UniqueString::get(context, s));
+}
+
 bool QualifiedType::needsSplitInitTypeInfo(Context* context) const {
   return (isParam() && !hasParamPtr()) ||
     isUnknownKindOrType() ||
-    resolution::getTypeGenericity(context, type()) == Type::GENERIC;
+    resolution::getTypeGenericity(context, type()) != Type::CONCRETE;
 }
 
 QualifiedType QualifiedType::createParamBool(Context* context, bool x) {

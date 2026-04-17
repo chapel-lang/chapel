@@ -1,0 +1,8 @@
+CanAlwaysThrowWithinManage.chpl:13: In function 'codeThatContainsManage':
+CanAlwaysThrowWithinManage.chpl:14: warning: r is being used in a 'manage' statement via its 'enterContext' and 'exitContext' methods. However, r does not implement contextManager. In the future, this will result in an error.
+default-init (ptr = {x = 0})
+What happens if I throw?!
+deinit (ptr = {x = 0})
+uncaught Error: It halts at the 'manage'!
+  CanAlwaysThrowWithinManage.chpl:10: thrown here
+  CanAlwaysThrowWithinManage.chpl:14: uncaught here

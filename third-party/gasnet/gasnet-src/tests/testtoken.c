@@ -48,12 +48,12 @@ const int mycdata[6] = { 42, 511, 911, 0, -1, 777 };
 #define hidx_LRep  (GEX_AM_INDEX_BASE + 2*am_long   + 1)
 
 gex_AM_Entry_t htable[] = {
-  { hidx_SReq, SReq, GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_SHORT,  1, &mycdata[0], "Alpha" },
-  { hidx_SRep, SRep, GEX_FLAG_AM_REPLY  |GEX_FLAG_AM_SHORT,  0, &mycdata[1], "Bravo" },
-  { hidx_MReq, MReq, GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_MEDIUM, 1, &mycdata[2], "Charlie" },
-  { hidx_MRep, MRep, GEX_FLAG_AM_REPLY  |GEX_FLAG_AM_MEDIUM, 0, &mycdata[3], "Delta" },
-  { hidx_LReq, LReq, GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_LONG,   1, &mycdata[4], "Echo" },
-  { hidx_LRep, LRep, GEX_FLAG_AM_REPLY  |GEX_FLAG_AM_LONG,   0, &mycdata[5], "Foxtrot" }
+  { hidx_SReq, (gex_AM_Fn_t)SReq, GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_SHORT,  1, &mycdata[0], "Alpha" },
+  { hidx_SRep, (gex_AM_Fn_t)SRep, GEX_FLAG_AM_REPLY  |GEX_FLAG_AM_SHORT,  0, &mycdata[1], "Bravo" },
+  { hidx_MReq, (gex_AM_Fn_t)MReq, GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_MEDIUM, 1, &mycdata[2], "Charlie" },
+  { hidx_MRep, (gex_AM_Fn_t)MRep, GEX_FLAG_AM_REPLY  |GEX_FLAG_AM_MEDIUM, 0, &mycdata[3], "Delta" },
+  { hidx_LReq, (gex_AM_Fn_t)LReq, GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_LONG,   1, &mycdata[4], "Echo" },
+  { hidx_LRep, (gex_AM_Fn_t)LRep, GEX_FLAG_AM_REPLY  |GEX_FLAG_AM_LONG,   0, &mycdata[5], "Foxtrot" }
 };
 #define HANDLER_TABLE_SIZE (sizeof(htable)/sizeof(gex_AM_Entry_t))
 
@@ -121,32 +121,32 @@ static void common(gex_Token_t token, gex_Rank_t srcrank, int is_req, int catego
 }
 
 static void SReq(gex_Token_t token, gex_AM_Arg_t srcrank) {
-  common(token, srcrank, 1, am_short, &SReq);
+  common(token, srcrank, 1, am_short, (gex_AM_Fn_t)&SReq);
   gex_AM_ReplyShort0(token, hidx_SRep, 0);
 }
 
 static void SRep(gex_Token_t token) {
-  common(token, next_rank, 0, am_short, &SRep);
+  common(token, next_rank, 0, am_short, (gex_AM_Fn_t)&SRep);
   gasnett_atomic_increment(&reply_cnt, 0);
 }
 
 static void MReq(gex_Token_t token, void *buf, size_t nbytes, gex_AM_Arg_t srcrank) {
-  common(token, srcrank, 1, am_medium, &MReq);
+  common(token, srcrank, 1, am_medium, (gex_AM_Fn_t)&MReq);
   gex_AM_ReplyMedium0(token, hidx_MRep, NULL, 0, GEX_EVENT_NOW, 0);
 }
 
 static void MRep(gex_Token_t token, void *buf, size_t nbytes) {
-  common(token, next_rank, 0, am_medium, &MRep);
+  common(token, next_rank, 0, am_medium, (gex_AM_Fn_t)&MRep);
   gasnett_atomic_increment(&reply_cnt, 0);
 }
 
 static void LReq(gex_Token_t token, void *buf, size_t nbytes, gex_AM_Arg_t srcrank) {
-  common(token, srcrank, 1, am_long, &LReq);
+  common(token, srcrank, 1, am_long, (gex_AM_Fn_t)&LReq);
   gex_AM_ReplyLong0(token, hidx_LRep, NULL, 0, prev_base, GEX_EVENT_NOW, 0);
 }
 
 static void LRep(gex_Token_t token, void *buf, size_t nbytes) {
-  common(token, next_rank, 0, am_long, &LRep);
+  common(token, next_rank, 0, am_long, (gex_AM_Fn_t)&LRep);
   gasnett_atomic_increment(&reply_cnt, 0);
 }
 

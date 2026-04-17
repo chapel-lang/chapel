@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -147,7 +147,8 @@ bool canDispatch(Type*     actualType,
                  FnSymbol* fn          = NULL,
                  bool*     promotes    = NULL,
                  bool*     paramNarrows= NULL,
-                 bool      paramCoerce = false);
+                 bool      paramCoerce = false,
+                 FunctionType* fnType = nullptr);
 
 
 void parseExplainFlag(char* flag, int* line, ModuleSymbol** module);
@@ -257,7 +258,13 @@ void      resolveCallAndCallee(CallExpr* call, bool allowUnresolved = false);
 Type*     resolveDefaultGenericTypeSymExpr(SymExpr* se);
 Type*     resolveTypeAlias(SymExpr* se);
 
-FnSymbol* tryResolveCall(CallExpr* call, bool checkWithin=false);
+enum class PoiSearchMode {
+  NORMAL,
+  NON_POI_ONLY,
+  POI_ONLY,
+};
+
+FnSymbol* tryResolveCall(CallExpr* call, bool checkWithin=false, PoiSearchMode poiMode = PoiSearchMode::NORMAL);
 void      makeRefType(Type* type);
 
 // FnSymbol changes
@@ -440,6 +447,9 @@ static inline void sanityCheckDefinedConstArg(BaseAST *arg) {
   }
 }
 
+Symbol* getSubstitutionFromDefaultValue(ArgSymbol* formal,
+                                        Expr* defaultExpr,
+                                        Expr* ctx);
 
 // Return the array element type, or NULL if not an array
 Type* arrayElementType(Type* arrayType);

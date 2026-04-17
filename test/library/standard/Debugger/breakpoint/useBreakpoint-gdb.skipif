@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+if command -v gdb >/dev/null ; then
+  echo "False"
+else
+  echo "True"
+fi

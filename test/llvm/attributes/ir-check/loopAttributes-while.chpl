@@ -1,5 +1,5 @@
-proc loop_start() {}
-proc loop_end() {}
+proc loop_start() { return 1; }
+proc loop_end() { return 2; }
 
 proc loops() {
   // CHECK-LABEL: @loops

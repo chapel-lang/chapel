@@ -1,0 +1,92 @@
+Array(eltType=int(64),size=3,ndim=1)
+  format: q
+  itemsize: 8
+  shape: (3,)
+  strides: (8,)
+  ndim: 1
+  nbytes: 24
+  readonly: False
+  c_contiguous: True
+
+Array(eltType=uint(32),size=3,ndim=1)
+  format: L
+  itemsize: 4
+  shape: (3,)
+  strides: (4,)
+  ndim: 1
+  nbytes: 12
+  readonly: False
+  c_contiguous: True
+
+Array(eltType=uint(8),size=3,ndim=1)
+  format: B
+  itemsize: 1
+  shape: (3,)
+  strides: (1,)
+  ndim: 1
+  nbytes: 3
+  readonly: False
+  c_contiguous: True
+
+Array(eltType=bool,size=24,ndim=2)
+  format: ?
+  itemsize: 1
+  shape: (4, 6)
+  strides: (6, 1)
+  ndim: 2
+  nbytes: 24
+  readonly: False
+  c_contiguous: True
+
+Array(eltType=real(64),size=6,ndim=2)
+  format: d
+  itemsize: 8
+  shape: (2, 3)
+  strides: (24, 8)
+  ndim: 2
+  nbytes: 48
+  readonly: False
+  c_contiguous: True
+
+Array(eltType=real(32),size=12,ndim=3)
+  format: f
+  itemsize: 4
+  shape: (2, 2, 3)
+  strides: (24, 12, 4)
+  ndim: 3
+  nbytes: 48
+  readonly: False
+  c_contiguous: True
+
+Array(eltType=int(16),size=5280,ndim=4)
+  format: h
+  itemsize: 2
+  shape: (10, 11, 12, 4)
+  strides: (1056, 96, 8, 2)
+  ndim: 4
+  nbytes: 10560
+  readonly: False
+  c_contiguous: True
+
+Array(eltType=int(16),size=5280,ndim=4)
+  format: h
+  itemsize: 2
+  shape: (10, 11, 12, 4)
+  strides: (1056, 96, 8, 2)
+  ndim: 4
+  nbytes: 10560
+  readonly: False
+  c_contiguous: True
+
+Chapel Arr:
+1.0 2.0 3.0
+4.0 5.0 6.0
+
+7.0 8.0 9.0
+10.0 11.0 12.0
+
+13.0 14.0 15.0
+16.0 17.0 18.0
+tolist: [[[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], [[7.0, 8.0, 9.0], [10.0, 11.0, 12.0]], [[13.0, 14.0, 15.0], [16.0, 17.0, 18.0]]]
+Round tripped array:
+1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0 11.0 12.0 13.0 14.0 15.0 16.0 17.0 18.0

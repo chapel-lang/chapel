@@ -127,7 +127,7 @@ Iterators are invoked using regular call expressions:
 
 .. code-block:: syntax
 
-   iteratable-call-expression:
+   iterable-call-expression:
      call-expression
 
 All details of iterator calls, including argument passing, function
@@ -355,7 +355,7 @@ Parallel iterators are defined for standard constructs in Chapel such as
 ranges, domains, and arrays, thereby allowing these constructs to be
 used with forall-statements and -expressions.
 
-The left-most iteratable expression in a forall-statement or -expression
+The left-most iterable expression in a forall-statement or -expression
 determines the number of tasks, the iterations each task executes, and
 the locales on which these tasks execute. For ranges, default domains,
 and default arrays, these values can be controlled via configuration

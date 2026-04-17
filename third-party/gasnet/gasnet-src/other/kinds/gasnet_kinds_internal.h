@@ -81,6 +81,11 @@ struct gasneti_mk_impl_s {
   // Hook for gex_Segment_Destroy()
   // If NULL, the default is no class-specific destruction
   void (*mk_segment_destroy)(gasneti_Segment_t);
+
+  // Push and pop of a "context" if any
+  // If NULL, the default is no class-specific operation
+  int (*mk_segment_context_push)(gasneti_Segment_t);
+  int (*mk_segment_context_pop)(gasneti_Segment_t);
 };
 
 #endif

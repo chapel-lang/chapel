@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -80,7 +80,7 @@
 #include "comm-ugni-heap-pages.h"
 #include "comm-ugni-mem.h"
 #include "config.h"
-#include "error.h"
+#include "chpl-error.h"
 
 // Don't get warning macros for chpl_comm_get etc
 #include "chpl-comm-no-warning-macros.h"
@@ -1947,7 +1947,8 @@ void chpl_comm_post_mem_init(void)
 //
 int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status)
 {
-  return 0;
+  chpl_error("Running Chapel with CHPL_COMM=ugni and gdb is not yet supported", 0, 0);
+  return 1;
 }
 
 //
@@ -1955,7 +1956,8 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status)
 //
 int chpl_comm_run_in_lldb(int argc, char* argv[], int lldbArgnum, int* status)
 {
-  return 0;
+  chpl_error("Running Chapel with CHPL_COMM=ugni and lldb is not yet supported", 0, 0);
+  return 1;
 }
 
 void chpl_comm_impl_unordered_task_fence(void) {

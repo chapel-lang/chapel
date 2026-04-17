@@ -1,0 +1,5 @@
+#!/bin/sh
+
+sed -E 's/(_ir_chpl__loopexpr_iter)[[:digit:]]+/\1XY/' <$2 >$2.prediffed
+mv $2.prediffed $2
+

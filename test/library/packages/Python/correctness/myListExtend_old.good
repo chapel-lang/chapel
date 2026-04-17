@@ -1,0 +1,4 @@
+lst [1, 2, 'hi', False, 5]
+uncaught PythonException: PyList.extend() is not supported in Python n.n.n
+  myListExtend_old.chpl:21: thrown here
+  myListExtend_old.chpl:21: uncaught here

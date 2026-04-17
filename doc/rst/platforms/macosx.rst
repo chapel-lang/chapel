@@ -14,37 +14,37 @@ There are two main approaches for using Chapel on Mac OS X:
    system.  This is slightly more involved, but supports Chapel's full
    feature set.
 
+.. _macosx-homebrew:
+
 --------
 Homebrew
 --------
 
-A minimal installation of Chapel can be obtained through Homebrew_ with the
-following commands::
+Chapel can be installed through Homebrew_ with the following commands:
 
-    brew update
-    brew install chapel
+.. code-block:: bash
+
+   brew update
+   brew install chapel
 
 These commands install the latest release of Chapel.  When using a
-Homebrew installation of Chapel, the ``CHPL_HOME`` directory is here::
+Homebrew installation of Chapel, the ``CHPL_HOME`` directory can be found by
+running the following command:
 
-    `brew --cellar`/chapel/<chapel-version>/libexec/
+.. code-block:: bash
 
-Compile and run a test program::
+   chpl --print-chpl-home
 
-    chpl `brew --cellar`/chapel/<chapel-version>/libexec/examples/hello.chpl
-    ./hello
+Compile and run a test program:
+
+.. code-block:: bash
+
+   chpl `chpl --print-chpl-home`/examples/hello.chpl
+   ./hello
 
 If you're new to Chapel, refer to the `What's Next?
 <https://chapel-lang.org/docs/usingchapel/QUICKSTART.html#what-s-next>`_
 section of :ref:`chapelhome-quickstart` for next steps.
-
-.. note::
-
-   The Homebrew installation provides a minimal installation of Chapel
-   for users to explore and test the language.  Of the omitted
-   features, :ref:`multilocale <readme-multilocale>` support is most
-   notable.  Users interested in utilizing Chapel's complete set of
-   features should build Chapel from source (option 2 above).
 
 .. note::
 
@@ -54,6 +54,69 @@ section of :ref:`chapelhome-quickstart` for next steps.
 
     brew install chapel --HEAD
 
+Multi-locale Execution
+~~~~~~~~~~~~~~~~~~~~~~
+
+The Homebrew installation of Chapel supports 2 different ways of
+:ref:`running multi-locale programs <readme-multilocale>` on your
+shared memory machine:
+
+* Using the :ref:`GASNet SMP conduit <readme-gasnet-smp>` allows you to run
+  multi-locale programs by partitioning the machine's resources into multiple
+  locales.
+
+  Compile and run a test program:
+
+  .. code-block:: bash
+
+     chpl --comm=gasnet --comm-substrate=smp \\
+       `chpl --print-chpl-home`/examples/hello6-taskpar-dist.chpl
+     ./hello6-taskpar-dist -nl 4
+
+* Using the :ref:`GASNNet UDP conduit <readme-gasnet-emulating-multilocale>`
+  allows you to run multi-locale programs by oversubscribing the machine's
+  resources.
+
+  Compile and run a test program:
+
+  .. code-block:: bash
+
+     chpl --comm=gasnet --comm-substrate=udp \\
+       `chpl --print-chpl-home`/examples/hello6-taskpar-dist.chpl
+     chplrun-udp ./hello6-taskpar-dist -nl 4
+
+  .. note::
+
+     Note the usage of the ``chplrun-udp`` command to run the program. This is a
+     necessary to setup the environment for the UDP conduit to properly launch
+     the program locally through the network stack. You can also forgo the
+     ``chplrun-udp`` command and run the program directly, making sure to properly
+     setup the environment. This will also allow you to launch jobs on
+     multiple nodes across the network. See :ref:`using-udp` for details.
+
+For more information on the differences between these two modes,
+see :ref:`readme-udp-vs-smp`.
+
+GPU Execution
+~~~~~~~~~~~~~
+
+The Homebrew installation of Chapel comes with a mode for emulating GPU
+execution. This allows you to test Chapel programs designed for a GPU, but
+it does not provide actual GPU support. If you are interested in compiling
+Chapel code for NVIDIA or AMD GPUs, see the
+:ref:`GPU documentation <readme-gpu>`.
+
+Compile and run a test program:
+
+.. code-block:: bash
+
+   chpl --locale-mode=gpu --gpu=cpu `chpl --print-chpl-home`/examples/gpu/hello-gpu.chpl
+   ./hello-gpu
+
+.. warning::
+
+   Chapel does not yet support GPU commutation with Apple GPUs. The above code
+   will emulate GPU execution by treating the CPU as a GPU.
 
 .. _Homebrew: https://brew.sh/
 

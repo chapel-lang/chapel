@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+file=$2
+
+sed -E -e 's/(bad typecode).*/\1/' $file > $file.tmp
+mv $file.tmp $file

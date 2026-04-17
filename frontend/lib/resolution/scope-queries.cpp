@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -254,6 +254,18 @@ struct GatherDecls {
   }
   void exit(const MultiDecl* d) { }
 
+  bool enter(const ForwardingDecl* d) {
+    return true;
+  }
+  void exit(const ForwardingDecl* d) { }
+
+  bool enter(const Label* l) {
+    gather(declared, l->name(), l->loop(), Decl::DEFAULT_VISIBILITY, atFieldLevel);
+    return true;
+  }
+  void exit(const Label* l) { }
+
+
   // make note of use/import
   bool enter(const Use* d) {
     containsUseImport = true;
@@ -474,6 +486,11 @@ static void populateScopeWithBuiltins(Context* context, Scope* scope) {
   // TODO: maybe we can represent these as 'NilLiteral' and 'NoneLiteral' nodes?
   scope->addBuiltinVar(USTR("nil"));
   scope->addBuiltinVar(USTR("none"));
+  scope->addBuiltinVar(USTR("chpl_INFINITY"));
+  scope->addBuiltinVar(USTR("chpl_NAN"));
+
+  scope->addBuiltinFunction(USTR("chpl__orderToEnum"));
+  scope->addBuiltinFunction(USTR("chpl__enumToOrder"));
 
   populateScopeWithBuiltinKeywords(context, scope);
 }
@@ -1225,6 +1242,7 @@ LookupResult LookupHelper::doLookupInExternBlocks(const Scope* scope,
   const std::vector<ID>& exbIds = gatherExternBlocks(context, scope->id());
 
   bool found = false;
+  bool nonFunctions = false;
 
   // Consider each extern block in turn. Does it have a symbol with that name?
   for (const auto& exbId : exbIds) {
@@ -1233,19 +1251,22 @@ LookupResult LookupHelper::doLookupInExternBlocks(const Scope* scope,
       auto newId = ID::fabricateId(context, exbId, name,
                                    ID::ExternBlockElement);
 
-      // We assume it's not a parenful function or a type,
-      // but that might not be. However, it shouldn't matter for scope
-      // resolution. Adjust this code if it does.
+      bool isParenfulFunction =
+          externBlockContainsFunction(context, exbId, name);
+
+      // We assume it's not a type, but that might not be. However, it
+      // shouldn't matter for scope resolution. Adjust this code if it does.
       auto idv = IdAndFlags(std::move(newId),
                             /* isPublic */ true,
                             /* isMethodOrField */ false,
-                            /* isParenfulFunction */ false, // maybe a lie
+                            /* isParenfulFunction */ isParenfulFunction,
                             /* isMethod */ false,
                             /* isModule */ false,
                             /* isType */ false); // maybe a lie
 
       result.append(std::move(idv));
       found = true;
+      nonFunctions |= !isParenfulFunction;
 
       if (traceCurPath && traceResult) {
         ResultVisibilityTrace t;
@@ -1258,8 +1279,6 @@ LookupResult LookupHelper::doLookupInExternBlocks(const Scope* scope,
     }
   }
 
-  /* might be a lie, because we're lying about isParenfulFunction above */
-  bool nonFunctions = true;
   return LookupResult(found, nonFunctions);
 }
 
@@ -1289,12 +1308,14 @@ static const IdAndFlags* getReservedIdentifier(UniqueString name) {
     {USTR("complex"),   IdAndFlags::createForBuiltinType()},
     {USTR("domain"),    IdAndFlags::createForBuiltinType()},
     {USTR("int"),       IdAndFlags::createForBuiltinType()},
+    {USTR("integral"),  IdAndFlags::createForBuiltinType()},
     {USTR("locale"),    IdAndFlags::createForBuiltinType()},
     {USTR("nil"),       IdAndFlags::createForBuiltinVar()},
     {USTR("real"),      IdAndFlags::createForBuiltinType()},
     {USTR("sparse"),    IdAndFlags::createForBuiltinType()},
     {USTR("string"),    IdAndFlags::createForBuiltinType()},
     {USTR("subdomain"), IdAndFlags::createForBuiltinType()},
+    {USTR("range"),     IdAndFlags::createForBuiltinType()},
     {USTR("uint"),      IdAndFlags::createForBuiltinType()},
     {USTR("void"),      IdAndFlags::createForBuiltinType()},
   };
@@ -1828,7 +1849,7 @@ helpLookupInScope(Context* context,
   // TODO: check for "last resort" symbols here, as well
 
   // Deduplicate
-  result.removeDuplicateIds();
+  result.removeDuplicateIds(traceResult);
 
   return got;
 }
@@ -1860,7 +1881,8 @@ static LookupResult helpLookupInScopeWithShadowingWarning(
                                &shadowed,
                                /* traceShadowed */ nullptr);
 
-  if (shadowed.numIds() > 0) {
+  // don't issue shadowing warnings for generated code, we know what we are doing.
+  if (shadowed.numIds() > 0 && !idForWarnings.isFabricatedId()) {
     // once more, with feeling!
     // well, tracing, actually.
     shadowed.clear();
@@ -2189,11 +2211,11 @@ getSymbolsAvailableInScope(Context* context,
 }
 
 static
-bool doIsWholeScopeVisibleFromScope(Context* context,
-                                   const Scope* checkScope,
-                                   const Scope* fromScope,
-                                   ScopeSet& checked) {
-
+bool scopeExposesAllContents(Context* context,
+                             const Scope* checkScope,
+                             const Scope* fromScope,
+                             ScopeSet& checked,
+                             bool requirePublic) {
   auto pair = checked.insert(fromScope);
   if (pair.second == false) {
     // scope has already been visited by this function,
@@ -2201,31 +2223,28 @@ bool doIsWholeScopeVisibleFromScope(Context* context,
     return false;
   }
 
-  // go through parent scopes checking for a match
-  for (const Scope* cur = fromScope; cur != nullptr; cur = cur->parentScope()) {
-    if (checkScope == cur) {
-      return true;
-    }
+  if (!fromScope->containsUseImport()) return false;
 
-    if (cur->containsUseImport()) {
-      const ResolvedVisibilityScope* r = resolveVisibilityStmts(context, cur);
+  const ResolvedVisibilityScope* r = resolveVisibilityStmts(context, fromScope);
+  if (r == nullptr) return false;
 
-      if (r != nullptr) {
-        // check for scope containment
-        for (const VisibilitySymbols& is: r->visibilityClauses()) {
-          if (is.kind() == VisibilitySymbols::ALL_CONTENTS) {
-            // find it in the contents
-            const Scope* usedScope = is.scope();
-            // check it recursively
-            bool found = doIsWholeScopeVisibleFromScope(context,
-                                                        checkScope,
-                                                        usedScope,
-                                                        checked);
-            if (found) {
-              return true;
-            }
-          }
-        }
+  // check for scope containment
+  for (const VisibilitySymbols& is: r->visibilityClauses()) {
+    if ((!requirePublic || !is.isPrivate()) && is.kind() == VisibilitySymbols::ALL_CONTENTS) {
+      // find it in the contents
+      const Scope* usedScope = is.scope();
+      // if we just use'd it, yep, fromScope exposes all contents of checkScope
+      if (usedScope == checkScope) return true;
+      // check it recursively. At this point, require that the target modules
+      // make the contents public, since we're importing them, which only brings
+      // in public definitions.
+      bool found = scopeExposesAllContents(context,
+                                           checkScope,
+                                           usedScope,
+                                           checked,
+                                           /* requirePublic */ true);
+      if (found) {
+        return true;
       }
     }
   }
@@ -2233,16 +2252,76 @@ bool doIsWholeScopeVisibleFromScope(Context* context,
   return false;
 }
 
+// If I 'public use' this scope, do I get every single thing that's visible
+// inside it?
+//
+// Fully importable module:
+//   module M1 { var x: int; proc foo() {}; public use Reflection; }
+//
+// Not fully importable modules:
+//   module M2 { private proc foo() {} }
+//   module M3 { use IO; } // IO not re-exported.
+static bool const& isScopeFullyImportable(Context* context,
+                                          const Scope* scope) {
+  QUERY_BEGIN(isScopeFullyImportable, context, scope);
+  bool fullyImportable = true;
+  if (scope->containsRequire()) {
+    // conservative (`require` can produce only public definitions),
+    // but hopefully niche.
+    fullyImportable = false;
+  } else {
+    const ResolvedVisibilityScope* r = resolveVisibilityStmts(context, scope);
+    if (r != nullptr) {
+      for (const VisibilitySymbols& is: r->visibilityClauses()) {
+        if (is.isPrivate() || is.kind() != VisibilitySymbols::ALL_CONTENTS) {
+          // Conservative: one can 'public use X only x; public use X except x'
+          // which together bring in all of X, but this will reject that
+          // since neither is ALL_CONTENTS.
+          fullyImportable = false;
+          break;
+        }
+      }
+    }
+  }
+  return QUERY_END(fullyImportable);
+}
+
 bool isWholeScopeVisibleFromScope(Context* context,
                                   const Scope* checkScope,
                                   const Scope* fromScope) {
 
   ScopeSet checked;
+  checked.insert(fromScope);
 
-  return doIsWholeScopeVisibleFromScope(context,
-                                        checkScope,
-                                        fromScope,
-                                        checked);
+  // There are two ways one scope can be wholly visible from another:
+  //
+  // 1. The 'fromScope' is the same as or a child of the 'checkScope'.
+  // 2. 'fromScope' or one of its parent scopes 'use's 'checkScope',
+  //    bringing in all its contents. However, this is only valid if
+  //    'checkScope' is fully importable (i.e., a 'public use' would
+  //    bring in everything visible in it). Otherwise, we can't replace it
+  //    with different scope that 'public use's it since that would change what
+  //    is visible.
+
+  bool checkScopeFullyImportable = isScopeFullyImportable(context, checkScope);
+  for (const Scope* cur = fromScope; cur != nullptr; cur = cur->parentScope()) {
+    if (checkScope == cur) {
+      return true; // case (1)
+    }
+
+    // here, in the exact scope we're checking, we don't need the 'use' to
+    // be public. We're not checking if fromScope / cur is exposing the whole
+    // of checkScope, just that it can see all of it.
+    if (checkScopeFullyImportable &&
+        scopeExposesAllContents(context,
+                                checkScope,
+                                cur,
+                                checked,
+                                /* requirePublic */ false)) {
+      return true; // case (2)
+    }
+  }
+  return false;
 }
 
 static const bool& isNameBuiltinType(Context* context, UniqueString name) {
@@ -3224,11 +3303,25 @@ struct GatherMentionedModules {
   const Module* inMod = nullptr;
   std::set<const Scope*> scopes;
   std::set<ID> idSet;
-  std::vector<ID> idVec;
+  std::vector<ID>idVec;
+  std::vector<std::pair<const Scope*, const AstNode*>> scopeStack;
 
   GatherMentionedModules(Context* context, const Module* inMod)
     : context(context), inMod(inMod)
   { }
+
+  void enterScope(const AstNode* node);
+  void exitScope(const AstNode* node);
+
+  const Scope* currentScope() {
+    CHPL_ASSERT(!scopeStack.empty());
+    if (scopeStack.back().first == nullptr) {
+      scopeStack.back().first =
+        scopeForId(context, scopeStack.back().second->id());
+    }
+
+    return scopeStack.back().first;
+  }
 
   void gatherModuleId(const ID& id);
   const Scope* lookupAndGather(const Scope* scope, const AstNode* ast,
@@ -3259,16 +3352,35 @@ struct GatherMentionedModules {
 
   // do not delve into submodules
   bool enter(const Module* m) {
+    enterScope(m);
     return (m == inMod); // visit the requested module only
   }
-  void exit(const Module* m) { }
+  void exit(const Module* m) {
+    exitScope(m);
+  }
 
   // traverse through anything else
   bool enter(const AstNode* ast) {
+    enterScope(ast);
     return true;
   }
-  void exit(const AstNode* ast) { }
+  void exit(const AstNode* ast) {
+    exitScope(ast);
+  }
 };
+
+void GatherMentionedModules::enterScope(const AstNode* node) {
+  if (resolution::createsScope(node->tag())) {
+    scopeStack.emplace_back(nullptr, node);
+  }
+}
+
+void GatherMentionedModules::exitScope(const AstNode* node) {
+  if (resolution::createsScope(node->tag())) {
+    CHPL_ASSERT(!scopeStack.empty());
+    scopeStack.pop_back();
+  }
+}
 
 // save the module used/imported to idSet / idVec
 void GatherMentionedModules::gatherModuleId(const ID& id) {
@@ -3419,12 +3531,12 @@ void GatherMentionedModules::processDot(const Dot* d) {
   // TODO: ideally this would use the result of scope resolution.
   // It does not yet because running the scope resolver in all
   // these cases would currently lead to compilation slowdowns
-  const Scope* scope = scopeForId(context, d->id());
+  const Scope* scope = currentScope();
   gatherAndFindScope(scope, d);
 }
 
 void GatherMentionedModules::processUseImport(const AstNode* ast) {
-  const Scope* scope = scopeForId(context, ast->id());
+  const Scope* scope = currentScope();
   if (scope && scope->containsUseImport()) {
     auto p = scopes.insert(scope);
     if (p.second) {

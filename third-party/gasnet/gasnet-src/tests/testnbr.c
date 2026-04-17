@@ -197,7 +197,7 @@ void  ghostReqHandler(gex_Token_t token, void *buf, size_t nbytes,
 }
 
 gex_AM_Entry_t htable[] = {
-    { hidx_ghostReqHandler, ghostReqHandler, GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_LONG, 2, NULL, NULL }
+    { hidx_ghostReqHandler, (gex_AM_Fn_t)ghostReqHandler, GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_LONG, 2, NULL, NULL }
 };
 
 #define init_stat \

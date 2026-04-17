@@ -1,4 +1,4 @@
-.TH "hwlocality_bitmap" 3 "Version 2.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_bitmap" 3 "Version 2.12.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -279,11 +279,15 @@ And bitmap \fCbitmap1\fP and the negation of \fCbitmap2\fP and store the result 
 .SS "int hwloc_bitmap_asprintf (char ** strp, \fBhwloc_const_bitmap_t\fP bitmap)"
 
 .PP
-Stringify a bitmap into a newly allocated string\&. 
+Stringify a bitmap into a newly allocated string in the default hwloc format\&. \fBNote that if the bitmap is a CPU or nodeset, it contains physical indexes\&.\fP
+.PP
+Print the bits set inside a bitmap as a comma-separated list of hexadecimal 32-bit blocks\&. A bitmap containing bits 1, 33, 34, and all from 64 to 95 is printed as \fC'0xffffffff,0x00000006,0x00000002'\fP\&.
 .PP
 \fBReturns\fP
 .RS 4
-0 on success, -1 on error\&. 
+the number of characters that were written (not including the ending \fC\\0\fP)\&. 
+.PP
+-1 on error, for instance with \fCerrno\fP set to \fCENOMEM\fP on failure to allocate the output string\&. 
 .RE
 .PP
 
@@ -501,18 +505,24 @@ the last index unset in \fCbitmap\fP\&.
 .SS "int hwloc_bitmap_list_asprintf (char ** strp, \fBhwloc_const_bitmap_t\fP bitmap)"
 
 .PP
-Stringify a bitmap into a newly allocated list string\&. 
+Stringify a bitmap into a newly allocated list string\&. \fBNote that if the bitmap is a CPU or nodeset, it contains physical indexes\&.\fP
+.PP
+Lists are comma-separated indexes or ranges\&. Ranges are dash separated indexes\&. A bitmap containing bits 1, 33, 34, and all from 64 to 95 is printed as \fC'1,33-34,64-95'\fP\&. The last range may not have an ending index if the bitmap is infinitely set\&.
 .PP
 \fBReturns\fP
 .RS 4
-0 on success, -1 on error\&. 
+the number of characters that were written (not including the ending \fC\\0\fP)\&. 
+.PP
+-1 on error, for instance with \fCerrno\fP set to \fCENOMEM\fP on failure to allocate the output string\&. 
 .RE
 .PP
 
 .SS "int hwloc_bitmap_list_snprintf (char *restrict buf, size_t buflen, \fBhwloc_const_bitmap_t\fP bitmap)"
 
 .PP
-Stringify a bitmap in the list format\&. Lists are comma-separated indexes or ranges\&. Ranges are dash separated indexes\&. The last range may not have an ending indexes if the bitmap is infinitely set\&.
+Stringify a bitmap in the list format\&. \fBNote that if the bitmap is a CPU or nodeset, it contains physical indexes\&.\fP
+.PP
+Lists are comma-separated indexes or ranges\&. Ranges are dash separated indexes\&. A bitmap containing bits 1, 33, 34, and all from 64 to 95 is printed as \fC'1,33-34,64-95'\fP\&. The last range may not have an ending index if the bitmap is infinitely set\&.
 .PP
 Up to \fCbuflen\fP characters may be written in buffer \fCbuf\fP\&.
 .PP
@@ -520,14 +530,18 @@ If \fCbuflen\fP is 0, \fCbuf\fP may safely be \fCNULL\fP\&.
 .PP
 \fBReturns\fP
 .RS 4
-the number of characters that were actually written if not truncating, or that would have been written (not including the ending \\0)\&. 
+the number of characters that were actually written if not truncating, or that would have been written (not including the ending \fC\\0\fP)\&. 
+.PP
+-1 on error\&. 
 .RE
 .PP
 
 .SS "int hwloc_bitmap_list_sscanf (\fBhwloc_bitmap_t\fP bitmap, const char *restrict string)"
 
 .PP
-Parse a list string and stores it in bitmap \fCbitmap\fP\&. 
+Parse a list string and stores it in bitmap \fCbitmap\fP\&. \fBNote that if the bitmap is a CPU or nodeset, the input string must contain physical indexes\&.\fP
+.PP
+Lists are comma-separated indexes or ranges\&. Ranges are dash separated indexes\&. String \fC'1,33-34,64-95'\fP is parsed as a bitmap containing bits 1, 33, 34, and all from 64 to 95\&. The last range may not have an ending index if the bitmap is infinitely set\&.
 .PP
 \fBReturns\fP
 .RS 4
@@ -620,20 +634,28 @@ This function cannot be applied to an object set directly\&. It should be applie
 .SS "int hwloc_bitmap_snprintf (char *restrict buf, size_t buflen, \fBhwloc_const_bitmap_t\fP bitmap)"
 
 .PP
-Stringify a bitmap\&. Up to \fCbuflen\fP characters may be written in buffer \fCbuf\fP\&.
+Stringify a bitmap in the default hwloc format\&. \fBNote that if the bitmap is a CPU or nodeset, it contains physical indexes\&.\fP
+.PP
+Print the bits set inside a bitmap as a comma-separated list of hexadecimal 32-bit blocks\&. A bitmap containing bits 1, 33, 34, and all from 64 to 95 is printed as \fC'0xffffffff,0x00000006,0x00000002'\fP\&.
+.PP
+Up to \fCbuflen\fP characters may be written in buffer \fCbuf\fP\&.
 .PP
 If \fCbuflen\fP is 0, \fCbuf\fP may safely be \fCNULL\fP\&.
 .PP
 \fBReturns\fP
 .RS 4
-the number of characters that were actually written if not truncating, or that would have been written (not including the ending \\0)\&. 
+the number of characters that were actually written if not truncating, or that would have been written (not including the ending \fC\\0\fP)\&. 
+.PP
+-1 on error\&. 
 .RE
 .PP
 
 .SS "int hwloc_bitmap_sscanf (\fBhwloc_bitmap_t\fP bitmap, const char *restrict string)"
 
 .PP
-Parse a bitmap string and stores it in bitmap \fCbitmap\fP\&. 
+Parse a bitmap string as the default hwloc format and stores it in bitmap \fCbitmap\fP\&. \fBNote that if the bitmap is a CPU or nodeset, the input string must contain physical indexes\&.\fP
+.PP
+The input string should be a comma-separared list of hexadecimal 32-bit blocks\&. String \fC'0xffffffff,0x6,0x2'\fP is parsed as a bitmap containing all bits between 64 and 95, and bits 33, 34 and 1\&.
 .PP
 \fBReturns\fP
 .RS 4
@@ -644,18 +666,24 @@ Parse a bitmap string and stores it in bitmap \fCbitmap\fP\&.
 .SS "int hwloc_bitmap_taskset_asprintf (char ** strp, \fBhwloc_const_bitmap_t\fP bitmap)"
 
 .PP
-Stringify a bitmap into a newly allocated taskset-specific string\&. 
+Stringify a bitmap into a newly allocated taskset-specific string\&. \fBNote that if the bitmap is a CPU or nodeset, it contains physical indexes\&.\fP
+.PP
+The taskset program manipulates bitmap strings that contain a single (possible very long) hexadecimal number starting with 0x\&. A bitmap containing bits 1, 33, 34, and all from 64 to 95 is printed as \fC'0xffffffff0000000600000002'\fP\&.
 .PP
 \fBReturns\fP
 .RS 4
-0 on success, -1 on error\&. 
+the number of characters that were written (not including the ending \fC\\0\fP)\&. 
+.PP
+-1 on error, for instance with \fCerrno\fP set to \fCENOMEM\fP on failure to allocate the output string\&. 
 .RE
 .PP
 
 .SS "int hwloc_bitmap_taskset_snprintf (char *restrict buf, size_t buflen, \fBhwloc_const_bitmap_t\fP bitmap)"
 
 .PP
-Stringify a bitmap in the taskset-specific format\&. The taskset command manipulates bitmap strings that contain a single (possible very long) hexadecimal number starting with 0x\&.
+Stringify a bitmap in the taskset-specific format\&. \fBNote that if the bitmap is a CPU or nodeset, it contains physical indexes\&.\fP
+.PP
+The taskset program manipulates bitmap strings that contain a single (possible very long) hexadecimal number starting with 0x\&. A bitmap containing bits 1, 33, 34, and all from 64 to 95 is printed as \fC'0xffffffff0000000600000002'\fP\&.
 .PP
 Up to \fCbuflen\fP characters may be written in buffer \fCbuf\fP\&.
 .PP
@@ -663,14 +691,18 @@ If \fCbuflen\fP is 0, \fCbuf\fP may safely be \fCNULL\fP\&.
 .PP
 \fBReturns\fP
 .RS 4
-the number of characters that were actually written if not truncating, or that would have been written (not including the ending \\0)\&. 
+the number of characters that were actually written if not truncating, or that would have been written (not including the ending \fC\\0\fP)\&. 
+.PP
+-1 on error\&. 
 .RE
 .PP
 
 .SS "int hwloc_bitmap_taskset_sscanf (\fBhwloc_bitmap_t\fP bitmap, const char *restrict string)"
 
 .PP
-Parse a taskset-specific bitmap string and stores it in bitmap \fCbitmap\fP\&. 
+Parse a taskset-specific bitmap string and stores it in bitmap \fCbitmap\fP\&. \fBNote that if the bitmap is a CPU or nodeset, the input string must contain physical indexes\&.\fP
+.PP
+The taskset program manipulates bitmap strings that contain a single (possible very long) hexadecimal number starting with 0x\&. String \fC'0xffffffff0000000600000002'\fP is parsed as a bitmap containing all bits between 64 and 95, and bits 33, 34 and 1\&.
 .PP
 \fBReturns\fP
 .RS 4

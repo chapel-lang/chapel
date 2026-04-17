@@ -2,7 +2,7 @@
 GASNet for Chapel release
 =========================
 
-This copy of GASNet-2025.2.0-snapshot is being released with Chapel for
+This copy of GASNet-2025.8.0 is being released with Chapel for
 convenience and was obtained from
 
   https://gasnet.lbl.gov/
@@ -17,16 +17,17 @@ The directory $CHPL_HOME/third-party/gasnet/gasnet-src/ contains the
 un-tarballed GASNet package contents.  Version updates should be done as
 follows, assuming the CWD is $CHPL_HOME/third-party/gasnet/:
 
-1. un-tarball the new package version into the directory it specifies,
-   for example GASNet-2025.2.0-snapshot
-2. git rm -r gasnet-src
-3. mv GASNet-2025.2.0-snapshot gasnet-src
-4. git add --force gasnet-src
+1. Download the new package from https://bitbucket.org/berkeleylab/gasnet/downloads/GASNet-2025.8.0.tar.gz
+2. un-tarball the new package version into the directory it specifies,
+   for example GASNet-2025.8.0
+3. git rm -r gasnet-src
+4. mv GASNet-2025.8.0 gasnet-src
+5. git add --force gasnet-src
    ('--force' is needed so that the 'git add' ignores our .gitignore)
-5. commit
-6. update the new sources by re-applying any needed patches (see above)
+6. commit
+7. update the new sources by re-applying any needed patches (see above)
    and commit
-7. PR, merge, etc.
+8. PR, merge, etc.
 
 Chapel modifications to GASNet
 ==============================
@@ -35,3 +36,20 @@ The modifications that we have made to the GASNet source are as follows:
 
 * Add GASNET_NO_PSHM_WARNING flag to disable warning that occurs when
   co-locales are run without PSHM enabled.
+
+```
+--- a/gasnet-src/gasnet_internal.c
++++ b/gasnet-src/gasnet_internal.c
+@@ -2184,7 +2184,7 @@ extern void gasneti_nodemapParse(void) {
+     }
+   #endif
+   
+-#if GASNET_NDEBUG && !GASNET_PSHM && !GASNET_SEGMENT_EVERYTHING
++#if GASNET_NDEBUG && !GASNET_PSHM && !GASNET_SEGMENT_EVERYTHING && !GASNET_NO_PSHM_WARNING
+   if (!gasneti_mynode && (gasneti_nodes != gasneti_myhost.grp_count)) {
+     // at least one host holds more than one process
+     gasneti_console_message("WARNING",
+
+```
+
+* Cherry-picked 5da3b2f592 - ofi: fix EVERYTHING support, broken by PR#663

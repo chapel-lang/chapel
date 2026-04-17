@@ -1,0 +1,1 @@
+--set Partitioning.PARTITIONING_EXTRA_CHECKS=true --set PartitioningUtility.BULK_COPY_EXTRA_CHECKS=true

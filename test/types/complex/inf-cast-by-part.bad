@@ -1,0 +1,3 @@
+uncaught IllegalArgumentError: bad cast from string 'inf + infi' to complex(128)
+  inf-cast-by-part.chpl:1: thrown here
+  inf-cast-by-part.chpl:1: uncaught here

@@ -9,6 +9,9 @@ gen
 Mason.lock
 *.ntoks
 *.o
+*.so
+*.dylib
+*.a
 *.pyc
 *.tmp
 TAGS
@@ -19,6 +22,7 @@ tags
 .idea/
 cmake-build-*/
 .cache/
+*.dSYM
 
 # Top level ignores.
 /BUILD_VERSION

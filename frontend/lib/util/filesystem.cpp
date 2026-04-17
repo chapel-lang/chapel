@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -32,12 +32,7 @@
 #include "llvm/Support/Path.h"
 #include "llvm/Support/Process.h"
 
-// LLVM 13 introduced SHA256. Use that if it is available.
-#if LLVM_VERSION_MAJOR >= 13
 #include "llvm/Support/SHA256.h"
-#else
-#include "llvm/Support/SHA1.h"
-#endif
 
 #include <cerrno>
 
@@ -171,10 +166,12 @@ std::error_code writeFile(const char* path, const std::string& data) {
 }
 
 
-bool fileExists(const char* path) {
-  struct stat s;
-  int err = stat(path, &s);
-  return err == 0;
+bool pathExists(std::string_view path){
+  return llvm::sys::fs::exists(path);
+}
+
+bool directoryExists(std::string_view path) {
+  return llvm::sys::fs::is_directory(path);
 }
 
 std::error_code deleteDir(const llvm::Twine& dirname) {
@@ -254,24 +251,21 @@ std::string getExecutablePath(const char* argv0, void* MainExecAddr) {
   return getMainExecutable(argv0, MainExecAddr);
 }
 
-// TODO: remove the size once LLVM 11 is no longer supported
-using SmallVectorChar = llvm::SmallVector<char, 64>;
-
-static SmallVectorChar normalizePath(llvm::StringRef path) {
+static llvm::SmallVector<char> normalizePath(llvm::StringRef path) {
   // return an empty string instead of cwd for an empty input path
   if (path.empty())
-    return SmallVectorChar();
+    return llvm::SmallVector<char>();
 
   std::error_code err;
-  SmallVectorChar abspath(path.begin(), path.end());
+  llvm::SmallVector<char> abspath(path.begin(), path.end());
   err = llvm::sys::fs::make_absolute(abspath);
   if (err) {
     // ignore error making it absolute & just use path
-    abspath = SmallVectorChar(path.begin(), path.end());
+    abspath = llvm::SmallVector<char>(path.begin(), path.end());
   }
 
   // collapse .. etc (ignoring errors)
-  SmallVectorChar realpath;
+  llvm::SmallVector<char> realpath;
   err = llvm::sys::fs::real_path(abspath, realpath);
   if (err) {
     // ignore error making it real & try it a different way
@@ -314,7 +308,7 @@ deduplicateSamePaths(const std::vector<std::string>& paths)
 
   for (const auto& path : paths) {
     // normalize the path
-    SmallVectorChar norm = normalizePath(path);
+    auto norm = normalizePath(path);
     std::string normPath = std::string(norm.data(), norm.size());
 
     auto pair1 = pathsSet.insert(normPath);
@@ -359,8 +353,8 @@ static bool filePathInDirPath(const char* filePathPtr, size_t filePathLen,
     return false; // documented behavior; use "." for the current dir.
 
   // create SmallVectors for the relevant paths so we can use LLVM Path stuff
-  auto path = SmallVectorChar(filePathPtr, filePathPtr+filePathLen);
-  auto dirPath = SmallVectorChar(dirPathPtr, dirPathPtr+dirPathLen);
+  auto path = llvm::SmallVector<char>(filePathPtr, filePathPtr+filePathLen);
+  auto dirPath = llvm::SmallVector<char>(dirPathPtr, dirPathPtr+dirPathLen);
 
   // set 'path' to filePath without the filename (i.e. the directory)
   auto style = llvm::sys::path::Style::posix;
@@ -406,11 +400,7 @@ llvm::ErrorOr<HashFileResult> hashFile(const llvm::Twine& path) {
     return errorCodeFromCError(errno);
   }
 
-#if LLVM_VERSION_MAJOR >= 13
   llvm::SHA256 hasher;
-#else
-  llvm::SHA1 hasher;
-#endif
 
   uint8_t buf[256];
   while (true) {
@@ -444,11 +434,7 @@ llvm::ErrorOr<HashFileResult> hashFile(const llvm::Twine& path) {
 }
 
 HashFileResult hashString(llvm::StringRef data) {
-#if LLVM_VERSION_MAJOR >= 13
   llvm::SHA256 hasher;
-#else
-  llvm::SHA1 hasher;
-#endif
 
   hasher.update(data);
 
@@ -483,6 +469,36 @@ std::error_code copyModificationTime(const llvm::Twine& srcPath,
     llvm::sys::Process::SafelyCloseFileDescriptor(fd);
   }
   return err;
+}
+
+std::error_code moveFile(const llvm::Twine& srcPath,
+              const llvm::Twine& dstPath) {
+  auto err = llvm::sys::fs::rename(srcPath, dstPath);
+  if (err) {
+    // rename may have failed (especially across filesystems)
+    // fall back to copy (with permissions) and delete
+    err = llvm::sys::fs::copy_file(srcPath, dstPath);
+    if (err) {
+      return err;
+    }
+
+    // and then set permissions, like mv
+    auto maybePerms = llvm::sys::fs::getPermissions(srcPath);
+    if (maybePerms.getError()) {
+      return maybePerms.getError();
+    }
+    err = llvm::sys::fs::setPermissions(dstPath, *maybePerms);
+    if (err) {
+      return err;
+    }
+
+    // and then remove the file, so it's like mv
+    err = llvm::sys::fs::remove(srcPath);
+    if (err) {
+      return err;
+    }
+  }
+  return std::error_code();
 }
 
 

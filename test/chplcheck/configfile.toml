@@ -1,0 +1,2 @@
+[tool.chplcheck]
+disable-rule = ["UnusedLoopIndex", "PascalCaseModules"]

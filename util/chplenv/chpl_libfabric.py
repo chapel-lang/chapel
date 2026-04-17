@@ -8,23 +8,24 @@ import overrides, third_party_utils
 
 from utils import error, memoize, try_run_command, warning, check_valid_var
 
+
 @memoize
 def get():
     comm_val = chpl_comm.get()
-    if comm_val == 'ofi':
-        libfabric_val = overrides.get('CHPL_LIBFABRIC')
+    if comm_val == "ofi":
+        libfabric_val = overrides.get("CHPL_LIBFABRIC")
         if not libfabric_val:
-            if third_party_utils.pkgconfig_system_has_package('libfabric'):
-                libfabric_val = 'system'
+            if third_party_utils.pkgconfig_system_has_package("libfabric"):
+                libfabric_val = "system"
             else:
-                libfabric_val = 'bundled'
+                libfabric_val = "bundled"
 
-        check_valid_var('CHPL_LIBFABRIC', libfabric_val, ['bundled', 'system'])
-        if chpl_platform.is_hpe_cray('target') and libfabric_val != 'system':
-            warning('CHPL_LIBFABRIC!=system is discouraged on HPE Cray')
+        check_valid_var("CHPL_LIBFABRIC", libfabric_val, ["bundled", "system"])
+        if chpl_platform.is_hpe_cray("target") and libfabric_val != "system":
+            warning("CHPL_LIBFABRIC!=system is discouraged on HPE Cray")
 
     else:
-        libfabric_val = 'none'
+        libfabric_val = "none"
 
     return libfabric_val
 
@@ -32,34 +33,38 @@ def get():
 @memoize
 def get_uniq_cfg_path():
     base_uniq_cfg = third_party_utils.default_uniq_cfg_path()
-    if chpl_comm_debug.get() == 'debug':
-        base_uniq_cfg += '-debug'
+    if chpl_comm_debug.get() == "debug":
+        base_uniq_cfg += "-debug"
     oob = chpl_comm_ofi_oob.get()
-    return base_uniq_cfg + '/oob-' + oob
+    return base_uniq_cfg + "/oob-" + oob
+
 
 # returns 2-tuple of lists
 #  (compiler_bundled_args, compiler_system_args)
 @memoize
 def get_compile_args():
-    args = ([ ], [ ])
+    args = ([], [])
     libfabric_val = get()
-    if libfabric_val == 'bundled':
+    if libfabric_val == "bundled":
         ucp_val = get_uniq_cfg_path()
-        args = third_party_utils.get_bundled_compile_args('libfabric',
-                                                          ucp=ucp_val)
-    elif libfabric_val == 'system':
-        flags = [ ]
+        args = third_party_utils.get_bundled_compile_args(
+            "libfabric", ucp=ucp_val
+        )
+    elif libfabric_val == "system":
+        flags = []
 
         # Allow overriding pkg-config via LIBFABRIC_DIR, for platforms
         # without pkg-config.
-        libfab_dir_val = overrides.get('LIBFABRIC_DIR')
+        libfab_dir_val = overrides.get("LIBFABRIC_DIR")
         if libfab_dir_val:
-            args[1].append('-I' + libfab_dir_val + '/include')
+            args[1].append("-I" + libfab_dir_val + "/include")
         else:
             # Try using pkg-config to get the compile-time flags.
-            x = third_party_utils.pkgconfig_get_system_compile_args('libfabric')
+            x = third_party_utils.pkgconfig_get_system_compile_args("libfabric")
             if x == (None, None):
-                error("Could not find a system install of 'libfabric', try setting LIBFABRIC_DIR")
+                error(
+                    "Could not find a system install of 'libfabric', try setting LIBFABRIC_DIR"
+                )
             args = x
 
     return args
@@ -69,26 +74,35 @@ def get_compile_args():
 #  (linker_bundled_args, linker_system_args)
 @memoize
 def get_link_args():
-    args = ([ ], [ ])
+    args = ([], [])
     libfabric_val = get()
-    if libfabric_val == 'bundled':
+    if libfabric_val == "bundled":
         args = third_party_utils.pkgconfig_get_bundled_link_args(
-                                          'libfabric', ucp=get_uniq_cfg_path())
-    elif libfabric_val == 'system':
-        libs = [ ]
+            "libfabric", ucp=get_uniq_cfg_path()
+        )
+    elif libfabric_val == "system":
+        libs = []
         # Allow overriding pkg-config via LIBFABRIC_DIR, for platforms
         # without pkg-config.
-        libfab_dir_val = overrides.get('LIBFABRIC_DIR')
+        libfab_dir_val = overrides.get("LIBFABRIC_DIR")
         if libfab_dir_val:
-            libs.extend(['-L' + libfab_dir_val + '/lib',
-                         '-Wl,-rpath,' + libfab_dir_val + '/lib',
-                         '-lfabric'])
+            libs.extend(
+                [
+                    "-L" + libfab_dir_val + "/lib",
+                    "-Wl,-rpath," + libfab_dir_val + "/lib",
+                    "-lfabric",
+                ]
+            )
         else:
             # Try using pkg-config to get the libraries to link
             # libfabric with.
-            tup = third_party_utils.pkgconfig_get_system_link_args('libfabric')
+            tup = third_party_utils.pkgconfig_get_system_link_args(
+                "libfabric", False
+            )
             if tup == (None, None):
-                error("Could not find a system install of 'libfabric', try setting LIBFABRIC_DIR")
+                error(
+                    "Could not find a system install of 'libfabric', try setting LIBFABRIC_DIR"
+                )
             # put the two lists together (but expect tup[0] to be empty)
             pclibs = tup[0] + tup[1]
 
@@ -96,8 +110,8 @@ def get_link_args():
             # this was a workaround and is probably not needed anymore
             for pcl in pclibs:
                 libs.append(pcl)
-                if pcl.startswith('-L'):
-                    libs.append(pcl.replace('-L', '-Wl,-rpath,', 1))
+                if pcl.startswith("-L"):
+                    libs.append(pcl.replace("-L", "-Wl,-rpath,", 1))
 
         args[1].extend(libs)
 
@@ -105,9 +119,28 @@ def get_link_args():
 
 
 def _main():
-    libfabric_val = get()
-    sys.stdout.write("{0}\n".format(libfabric_val))
+    import optparse
+
+    parser = optparse.OptionParser(usage="usage: %prog [options]")
+    parser.add_option(
+        "--compile",
+        dest="which",
+        action="store_const",
+        const="compile",
+        default=None,
+    )
+    parser.add_option(
+        "--link", dest="which", action="store_const", const="link"
+    )
+    options, args = parser.parse_args()
+    if options.which == "compile":
+        val = get_compile_args()
+    elif options.which == "link":
+        val = get_link_args()
+    else:
+        val = get()
+    sys.stdout.write("{0}\n".format(val))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     _main()

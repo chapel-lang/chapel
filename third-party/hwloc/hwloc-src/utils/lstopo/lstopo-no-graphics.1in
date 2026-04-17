@@ -1,8 +1,9 @@
 .\" -*- nroff -*-
-.\" Copyright © 2009-2024 Inria.  All rights reserved.
+.\" Copyright © 2009-2025 Inria.  All rights reserved.
 .\" Copyright © 2009-2010 Université of Bordeaux
 .\" Copyright © 2009-2010 Cisco Systems, Inc.  All rights reserved.
 .\" Copyright © 2020 Hewlett Packard Enterprise.  All rights reserved.
+.\" Copyright © 2025 Université of Reims Champagne-Ardenne.  All rights reserved.
 .\" See COPYING in top-level directory.
 .TH LSTOPO "1" "%HWLOC_DATE%" "%PACKAGE_VERSION%" "%PACKAGE_NAME%"
 .SH NAME
@@ -234,12 +235,12 @@ Never factorize identical objects in the graphical output.
 If an object type is given, only factorizing of these objects is disabled.
 This only applies to normal CPU-side objects, it is independent from PCI collapsing.
 .TP
-\fB\-\-factorize\fR \fB\-\-factorize\fR=[<type>,]<N>[,<L>[,<F>]
+\fB\-\-factorize\fR \fB\-\-factorize\fR=[<type>,]<N>[,<F>[,<L>]]
 Factorize identical children in the graphical output (enabled by default).
 
 If <N> is specified (4 by default), factorizing only occurs when there are strictly
 more than N identical children.
-If <L> and <F> are specified, they set the numbers of first and last children to keep
+If <F> and <L> are specified, they set the numbers of first and last children to keep
 after factorizing.
 
 If an object type is given, only factorizing of these objects is configured.
@@ -751,12 +752,18 @@ sections may also be configured through \fB\-\-children\-order\fR.
 .\"    Colors Section
 .\" **************************
 .SH COLORS
-Individual CPUs and NUMA nodes are colored in the graphical output
-formats to indicate different characteristics:
+Boxes in the graphical output formats are colorized according to the
+hwloc object type, e.g. CPU packages are green or NUMA nodes are pink.
+This may be configured with \fB\-\-palette\fR, see also CUSTOM COLORS below.
+.
+On top of these default colors,
+individual CPUs and NUMA nodes may be colored
+to indicate different characteristics:
 .TP
 Green
 The topology is reported as seen by a specific process (see \fB\-\-pid\fR),
 and the given CPU or NUMA node is in this process CPU or Memory binding mask.
+This color may be changed with \fB\-\-binding\-color\fR.
 .TP
 White
 The CPU or NUMA node is in the allowed set (see below).
@@ -765,11 +772,12 @@ the object is also not in this process binding mask.
 .TP
 Red
 The CPU or NUMA node is not in the allowed set (see below).
+This color may be changed with \fB\-\-disallowed-color\fR.
 .
 .PP
 The "allowed set" is the set of CPUs or NUMA nodes to which the current process is
 allowed to bind.  The allowed set is usually either inherited from the
-parent process or set by administrative qpolicies on the system.  Linux
+parent process or set by administrative policies on the system.  Linux
 cpusets are one example of limiting the allowed set for a process and
 its children to be less than the full set of CPUs or NUMA nodes on the system.
 .PP

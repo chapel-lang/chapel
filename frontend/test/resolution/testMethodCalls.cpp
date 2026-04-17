@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -633,13 +633,15 @@ static void test13() {
     proc SecretlyGeneric type do return owned class;
     proc SecretlyNotGeneric type do return int;
 
-    var myR: r;
+    class C {}
+
+    var myR = new r(x=new C());
     var tmp = (myR.x, myR.y, myR.z);
     )""";
 
   auto vars = resolveTypesOfVariables(context, program, { "tmp" });
 
-  assert(guard.numErrors() == 2);
+  assert(guard.numErrors());
   for (auto& err : guard.errors()) {
     assert(err->type() == ErrorType::SyntacticGenericityMismatch);
   }
@@ -835,11 +837,8 @@ static void test17() {
 static void test18() {
   // test sync var method call isFull
   printf("test6\n");
-  auto config = getConfigWithHome();
-  Context ctx(config);
-  Context* context = &ctx;
+  Context* context = buildStdContext();
   ErrorGuard guard(context);
-  setupModuleSearchPaths(context, false, false, {}, {});
 
   std::string program = R"""(
       var x : sync int;
@@ -854,6 +853,145 @@ static void test18() {
   auto qt = results.byAst(init).type();
   assert(qt.type()->isBoolType());
   assert(guard.numErrors() == 0);
+}
+
+static void test19() {
+  // classes without management, with nested generic fields, or both,
+  // are considered generic and this should not "surprise" the
+  // syntactic genericity checker.
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program = R"""(
+    class ClearlyOwnershipGeneric {}
+    record wrapper { type wraps; }
+
+    record r {
+      var x: wrapper(wrapper(?));
+      var y: ClearlyOwnershipGeneric;
+      var z: wrapper(ClearlyOwnershipGeneric);
+    }
+
+    var myR = new r(new wrapper(wrapper(int)), new ClearlyOwnershipGeneric(), new wrapper(owned ClearlyOwnershipGeneric));
+    var tmp = (myR.x, myR.y, myR.z);
+    )""";
+
+  // should resolve without issue
+  std::ignore = resolveTypesOfVariables(context, program, { "tmp" });
+  assert(!guard.realizeErrors(/* countWarnings */ false));
+}
+
+// Test warnings for fields with generic memory management
+static void test20() {
+  printf("test20\n");
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program = R"""(
+    class MyClass { }
+
+    record A {
+      var myfield: MyClass?;
+    }
+
+    record B {
+      var myfield: MyClass?;
+    }
+
+    record C {
+      var myfield: MyClass;
+      proc init() {
+        this.myfield = new MyClass();
+      }
+    }
+
+    var aa = new A(new MyClass());
+    var bb: B(owned MyClass?) = new B(nil: owned MyClass?);
+    var cc = new C();
+    )""";
+
+  std::ignore = resolveTypesOfVariables(context, program, { "aa", "bb", "cc" });
+
+  // Should have 3 warnings for generic memory management
+  assert(guard.numErrors() == 3);
+  for (auto& err : guard.errors()) {
+    assert(err->type() == ErrorType::FieldWithGenericManagement);
+  }
+  guard.realizeErrors();
+}
+
+// Test that records with generic-with-defaults fields don't warn
+static void test21() {
+  printf("test21\n");
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program = R"""(
+    record GRD {
+      type t = int;
+    }
+
+    record J {
+      var myfield: GRD;
+    }
+
+    var x = new J(new GRD(int));
+    )""";
+
+  std::ignore = resolveTypeOfX(context, program);
+
+  // Should have no errors or warnings
+  assert(guard.numErrors() == 0);
+}
+
+// Test warnings for fields with generic types (no defaults)
+static void test22() {
+  printf("test22\n");
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program = R"""(
+    record GR {
+      type t;
+    }
+
+    record E {
+      var myfield: GR;
+    }
+
+    var x = new E(new GR(int));
+    )""";
+
+  std::ignore = resolveTypeOfX(context, program);
+
+  // Should have 1 warning about generic field not marked with '?'
+  assert(guard.numErrors() == 1);
+  auto& err = guard.errors()[0];
+  assert(err->type() == ErrorType::GenericFieldWithoutMark);
+  guard.realizeErrors();
+}
+
+// Test warnings for domain fields without '?'
+static void test23() {
+  printf("test23\n");
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program = R"""(
+    record K {
+      var myfield: domain;
+    }
+
+    var x = new K({1..10});
+    )""";
+
+  std::ignore = resolveTypeOfX(context, program);
+
+  // Should have 1 warning about generic domain field not marked with '?'
+  assert(guard.numErrors() == 1);
+  auto& err = guard.errors()[0];
+  assert(err->type() == ErrorType::GenericFieldWithoutMark);
+  guard.realizeErrors();
 }
 
 int main() {
@@ -875,6 +1013,11 @@ int main() {
   test16();
   test17();
   test18();
+  test19();
+  test20();
+  test21();
+  test22();
+  test23();
 
   return 0;
 }

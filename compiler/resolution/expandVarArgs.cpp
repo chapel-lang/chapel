@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -268,7 +268,14 @@ static int varArgsCount(ArgSymbol* formal, VarSymbol* nVar) {
     retval = nVar->immediate->int_value();
 
   } else {
-    INT_FATAL(formal, "unexpected non-VarSymbol");
+    // Generate user-facing error for non-integral vararg counts
+    if (isBoolType(nVar->type)) {
+      USR_FATAL(formal, "variadic arguments count must be a 'param' integer type, not bool");
+    } else if (!isIntType(nVar->type) || nVar->immediate == NULL) {
+      USR_FATAL(formal, "variadic arguments count must be a 'param' integer type");
+    } else {
+      INT_FATAL(formal, "unexpected non-VarSymbol");
+    }
   }
 
   return retval;
@@ -443,7 +450,7 @@ static void moveInitializeVarArgsTuple(FnSymbol* fn, ArgSymbol* formal,
 
   // Now we finish up by moving the formals into the tuple.
   for (size_t i = 0; i < formals.size(); i++) {
-    size_t fieldIdx = i + 2;
+    size_t fieldIdx = i + 1;
     CallExpr* to = new CallExpr(PRIM_FIELD_NUM_TO_NAME, var,
                                 new_IntSymbol(fieldIdx));
     Symbol* from = formals[i];

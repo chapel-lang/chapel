@@ -1,4 +1,4 @@
-# Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+# Copyright 2021-2026 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -46,11 +46,14 @@ comp_unit_test(testFieldAccess)
 comp_unit_test(testFindDecl)
 comp_unit_test(testForwarding)
 comp_unit_test(testFunctionCalls)
+comp_unit_test(testGeneratedMethods)
 comp_unit_test(testGenericDefaults)
 comp_unit_test(testGetSymbolsAvailableInScope)
 comp_unit_test(testHeapBuffer)
 comp_unit_test(testIf)
+comp_unit_test(testInitialSignatures)
 comp_unit_test(testInitSemantics)
+comp_unit_test(testIntegralReturnType)
 comp_unit_test(testInteractive)
 comp_unit_test(testInterfaces)
 comp_unit_test(testIterators)
@@ -90,6 +93,7 @@ comp_unit_test(testScopeTypes)
 comp_unit_test(testSplitInit)
 comp_unit_test(testSubtypePrimitives)
 comp_unit_test(testSuper)
+comp_unit_test(testSyncs)
 comp_unit_test(testTaskIntents)
 comp_unit_test(testTertiaryImport)
 comp_unit_test(testTestPrimitives)

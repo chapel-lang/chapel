@@ -36,10 +36,10 @@ void pong_medhandler(gex_Token_t token, void *buf, size_t nbytes) {
 }
 
 gex_AM_Entry_t htable[] = {
-  { hidx_ping_shorthandler, ping_shorthandler, GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_SHORT,  0 },
-  { hidx_ping_medhandler,   ping_medhandler,   GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_MEDIUM, 0 },
-  { hidx_pong_shorthandler, pong_shorthandler, GEX_FLAG_AM_REPLY  |GEX_FLAG_AM_SHORT,  0 },
-  { hidx_pong_medhandler,   pong_medhandler,   GEX_FLAG_AM_REPLY  |GEX_FLAG_AM_MEDIUM, 0 },
+  { hidx_ping_shorthandler, (gex_AM_Fn_t)ping_shorthandler, GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_SHORT,  0 },
+  { hidx_ping_medhandler,   (gex_AM_Fn_t)ping_medhandler,   GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_MEDIUM, 0 },
+  { hidx_pong_shorthandler, (gex_AM_Fn_t)pong_shorthandler, GEX_FLAG_AM_REPLY  |GEX_FLAG_AM_SHORT,  0 },
+  { hidx_pong_medhandler,   (gex_AM_Fn_t)pong_medhandler,   GEX_FLAG_AM_REPLY  |GEX_FLAG_AM_MEDIUM, 0 },
 };
 
 /* ------------------------------------------------------------------------------------ */

@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+# for this test, all we really care about is that it did not crash
+# try to match the actual output to something reasonable is really hard
+file=$2
+compopts=$5
+
+# find the last line in file with --
+lastline=$(grep '\--' $file | tail -n 1)
+
+# if devel is in the compopts, the last flag must be --print-chpl-loc
+if [[ $compopts == *--devel* ]]; then
+  if [[ $lastline != *--print-chpl-loc* ]]; then
+    echo "Expected --print-chpl-loc to be the last flag when --devel is used, last line is '$lastline'" >>$file
+    exit 0
+  fi
+else
+  # otherwise, the last flag must be --version
+  if [[ $lastline != *--version* ]]; then
+    echo "Expected --version to be the last flag, last line is '$lastline'" >>$file
+    exit 0
+  fi
+fi
+# overwrite the output on success
+echo "Success" >$file

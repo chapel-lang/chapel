@@ -27,17 +27,22 @@ export GASNET_PHYSMEM_MAX="0.90"
 # When the multi-local playground is not used, set `SKIP_ML_PLAYGROUND=1
 #
 
-SKIP_ML_PLAYGROUND=1
+SKIP_ML_PLAYGROUND=0
 if [[ "$SKIP_ML_PLAYGROUND" == "1" ]]; then
   log_info "Skipping testing of the multi-local playground"
   exit
 fi
 
-# Test performance with the latest qthreads release.
-GITHUB_USER=insertinterestingnamehere
-GITHUB_BRANCH=qthread
-SHORT_NAME=qthread122
-START_DATE=03/10/25
+# Test what happens to performance if all references to compiler-generated
+# symbols in the Chapel runtime are replaced with indirect references to
+# the same data that are accessed via struct field reads.
+#
+# E.g., 'CHPL_COMM' is replaced with 'program->data.CHPL_COMM'.
+
+GITHUB_USER=dlongnecke-cray
+GITHUB_BRANCH=dynamic-loading-runtime-explore
+SHORT_NAME=runtimeIndirectlyReferencesProgramData
+START_DATE=4/14/26
 
 set -e
 checkout_branch $GITHUB_USER $GITHUB_BRANCH
@@ -50,3 +55,4 @@ perf_args="${perf_args} -performance-configs gn-ibv-large:v,gn-ibv-fast:v,$SHORT
 perf_args="${perf_args} -numtrials 1 -startdate $START_DATE"
 
 $UTIL_CRON_DIR/nightly -cron ${perf_args} ${nightly_args}
+

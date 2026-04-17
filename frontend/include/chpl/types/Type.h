@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -49,6 +49,8 @@ namespace types {
 /// \endcond
 // Apply the above macros to type-classes-list.h
 #include "chpl/types/type-classes-list-adapter.h"
+
+class IntParam;
 
 class Type;
 using PlaceholderMap = std::unordered_map<ID, const Type*>;
@@ -211,6 +213,16 @@ class Type {
   // In contrast, isNumericType checks to see if the type is one of the
   // numeric types.
 
+  /** returns true if this represents the c_array type. If it does, sets
+      outEltType and outSize to the element type and size of the c_array. */
+  bool isCArrayType(Context* context, const Type*& outEltType, const IntParam*& outSize) const;
+
+  /** returns true if this represents the _owned builtin record */
+  bool isOwnedRecordType() const;
+
+  /** returns true if this represents the _shared builtin record */
+  bool isSharedRecordType() const;
+
   /** returns true if this represents the string type */
   bool isStringType() const;
 
@@ -219,6 +231,9 @@ class Type {
 
   /** returns true if this represents the locale type */
   bool isLocaleType() const;
+
+  /** returns true if this is the _syncvar record. */
+  bool isSyncType() const;
 
   /** returns true if it's string, bytes, or c_string type */
   bool isStringLikeType() const {
@@ -302,8 +317,8 @@ class Type {
       always considered to be POD, and no further evaluation takes
       place.
 
-      If 't' is the sync type, the single type, an atomic type, the
-      array type, or the domain type, then 't' is not POD.
+      If 't' is the sync type, an atomic type, the array type, or
+      the domain type, then 't' is not POD.
 
       If 't' is a class with 'owned' or 'shared' management, then 't'
       is not POD.

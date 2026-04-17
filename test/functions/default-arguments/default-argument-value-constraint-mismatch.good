@@ -1,0 +1,3 @@
+default-argument-value-constraint-mismatch.chpl:8: error: unresolved call 'test()'
+default-argument-value-constraint-mismatch.chpl:4: note: this candidate did not match: test(x: integral = 3.14)
+default-argument-value-constraint-mismatch.chpl:4: note: because the generic formal 'x' of type 'integral' cannot be instantiated with default value of type 'real(64)'

@@ -1,0 +1,5 @@
+Time elapsed (domain iteration):
+Time elapsed (domain iteration with temps):
+Time elapsed (domain iteration with c_ptr):
+Time elapsed (zippered iteration):
+Time elapsed (external c):

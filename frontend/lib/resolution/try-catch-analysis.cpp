@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -21,6 +21,7 @@
 
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/ResolvedVisitor.h"
+#include "chpl/resolution/BranchSensitiveVisitor.h"
 #include "chpl/resolution/resolution-types.h"
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/uast/all-uast.h"
@@ -41,6 +42,7 @@ enum class ErrorCheckingMode {
   UNKNOWN,
   FATAL,
   RELAXED,
+  STRICT,
 };
 
 struct TryCatchState {
@@ -49,7 +51,7 @@ struct TryCatchState {
   bool catchesAreExhaustive;
 };
 
-struct TryCatchAnalyzer {
+struct TryCatchAnalyzer : BranchSensitiveVisitor<DefaultFrame, ResolvedVisitor<TryCatchAnalyzer>&> {
   using RV = ResolvedVisitor<TryCatchAnalyzer>;
 
   // input
@@ -106,7 +108,7 @@ struct TryCatchAnalyzer {
       auto resType = getClassTypeForError(context, err, rv);
       auto qt = QualifiedType(QualifiedType::VAR, resType);
       auto passResult = canPass(context, r.type(), qt);
-      using CPR = CanPassResult::ConversionKind;
+      using CPR = CanPassResult;
       if (passResult.passes() && passResult.conversionKind() == CPR::NONE) {
         catchAll = true;
       }
@@ -150,6 +152,10 @@ struct TryCatchAnalyzer {
     tryStack.pop_back();
   }
 
+  const types::Param* determineWhenCaseValue(const uast::AstNode* ast, RV& rv) override;
+  const types::Param* determineIfValue(const uast::AstNode* ast, RV& rv) override;
+  void traverseNode(const uast::AstNode* ast, RV& rv) override;
+
   void process(const uast::AstNode* symbol,
                ResolutionResultByPostorderID& byPostorder);
 
@@ -176,12 +182,55 @@ struct TryCatchAnalyzer {
   bool enter(const Throw* ast, RV& rv);
   void exit(const Throw* ast, RV& rv);
 
+  bool enter(const Break* brk, RV& rv);
+  void exit(const Break* brk, RV& rv);
+
+  bool enter(const Continue* cont, RV& rv);
+  void exit(const Continue* cont, RV& rv);
+
+  bool enter(const Return* ret, RV& rv);
+  void exit(const Return* ret, RV& rv);
+
+  bool enter(const Conditional* cond, RV& rv);
+  void exit(const Conditional* cond, RV& rv);
+
+  bool enter(const Select* sel, RV& rv);
+  void exit(const Select* sel, RV& rv);
+
   bool enter(const AstNode* ast, RV& rv);
   void exit(const AstNode* ast, RV& rv);
 };
 
+} // end namespace resolution
+
+namespace uast {
+template <>
+struct AstVisitorPrecondition<resolution::TryCatchAnalyzer> {
+  static bool skipSubtree(const AstNode* node, resolution::TryCatchAnalyzer& rv) {
+    return rv.isDoneExecuting();
+  }
+};
+
+};
+
+namespace resolution {
+
+  const types::Param* TryCatchAnalyzer::determineWhenCaseValue(const uast::AstNode* ast, RV& rv) {
+    if (auto action = rv.byAst(ast).getAction(AssociatedAction::COMPARE)) {
+      return action->type().param();
+    } else {
+      return nullptr;
+    }
+  }
+  const types::Param* TryCatchAnalyzer::determineIfValue(const uast::AstNode* ast, RV& rv) {
+    return rv.byAst(ast).type().param();
+  }
+  void TryCatchAnalyzer::traverseNode(const uast::AstNode* ast, RV& rv) {
+    ast->traverse(rv);
+  }
 
   bool TryCatchAnalyzer::enter(const Try* ast, RV& rv) {
+    enterScope(ast, rv);
     enterTry(ast, rv);
     return true;
   }
@@ -191,6 +240,7 @@ struct TryCatchAnalyzer {
     // is it an exhaustive catch?
     bool exhaustive = tryStack.back().catchesAreExhaustive;
     exitTry();
+    exitScope(ast, rv);
     // check for a catchall, or this is a try! or the parent function throws
     if (tryStack.size() == 0 && !exhaustive && !this->canThrow()) {
       context->error(ast, "Try without a catchall in a non-throwing function");
@@ -224,6 +274,12 @@ struct TryCatchAnalyzer {
               context->error(ast, "call to throwing function from "
                                   "non-throwing function");
             }
+          } else if (mode == ErrorCheckingMode::STRICT && this->canThrow()) {
+            // In strict mode, even in throwing functions, all throwing calls must be directly marked
+            if (tryStack.size() == 0) {
+              context->error(ast, "call to throwing function '%s' must be marked with try or try! (strict mode)",
+                                  bestResFn->untyped()->name().c_str());
+            }
           } else if (tryStack.size() > 0) {
             // check if any of the enclosing try blocks have a catchall
             bool foundCatchAll = false;
@@ -241,6 +297,7 @@ struct TryCatchAnalyzer {
           }
         }
       }
+      if (r.causedFatalError()) markFatalError();
     }
     return true;
   }
@@ -272,20 +329,58 @@ struct TryCatchAnalyzer {
   bool TryCatchAnalyzer::enter(const Throw* ast, RV& rv) {
     // check that we are in a function that is marked as throwing or inside
     // a try
+    enterScope(ast, rv);
     bool canThrow = tryStack.size() > 0 || this->canThrow();
-    if (!canThrow) {
+    if (!canThrow && mode != ErrorCheckingMode::FATAL) {
       context->error(ast, "cannot throw in a non-throwing function");
     }
     return true;
   }
   void TryCatchAnalyzer::exit(const Throw* ast, RV& rv) {
+    exitScope(ast, rv);
   }
 
+  bool TryCatchAnalyzer::enter(const Break* brk, RV& rv) {
+    markBreak(rv.getBreakOrContinueTarget(brk));
+    return false;
+  }
+  void TryCatchAnalyzer::exit(const Break* brk, RV& rv) {}
+
+  bool TryCatchAnalyzer::enter(const Continue* cont, RV& rv) {
+    markContinue(rv.getBreakOrContinueTarget(cont));
+    return false;
+  }
+  void TryCatchAnalyzer::exit(const Continue* cont, RV& rv) {}
+
+  bool TryCatchAnalyzer::enter(const Return* ret, RV& rv) {
+    return true;
+  }
+  void TryCatchAnalyzer::exit(const Return* ret, RV& rv) {
+    markReturn();
+  }
+
+  bool TryCatchAnalyzer::enter(const Conditional* cond, RV& rv) {
+    enterScope(cond, rv);
+    return branchSensitivelyTraverse(cond, rv);
+  }
+  void TryCatchAnalyzer::exit(const Conditional* cond, RV& rv) {
+    exitScope(cond, rv);
+  }
+
+  bool TryCatchAnalyzer::enter(const Select* sel, RV& rv) {
+    enterScope(sel, rv);
+    return branchSensitivelyTraverse(sel, rv);
+  }
+  void TryCatchAnalyzer::exit(const Select* sel, RV& rv) {
+    exitScope(sel, rv);
+  }
 
   bool TryCatchAnalyzer::enter(const AstNode* ast, RV& rv) {
+    enterScope(ast, rv);
     return true;
   }
   void TryCatchAnalyzer::exit(const AstNode* ast, RV& rv) {
+    exitScope(ast, rv);
   }
 
   void TryCatchAnalyzer::process(const uast::AstNode* symbol,
@@ -321,6 +416,24 @@ struct TryCatchAnalyzer {
   // PERMIT_UNHANDLED_MODULE_ERRORS compiler flag to determine the handling mode
   static ErrorCheckingMode computeErrorCheckingMode(Context* context,
                                                     const AstNode* node) {
+    // pragmas on modules override the default error checking mode.
+    auto moduleId = parsing::idToModule(context, node->id());
+    while (!moduleId.isEmpty()) {
+      auto ag = parsing::idToAttributeGroup(context, moduleId);
+      if (!ag) {
+        // no attibute group on this module; is there a parent module?
+      } else if (ag->hasPragma(pragmatags::PRAGMA_ERROR_MODE_FATAL)) {
+        return ErrorCheckingMode::FATAL;
+      } else if (ag->hasPragma(pragmatags::PRAGMA_ERROR_MODE_STRICT)) {
+        return ErrorCheckingMode::STRICT;
+      } else if (ag->hasPragma(pragmatags::PRAGMA_ERROR_MODE_RELAXED)) {
+        return ErrorCheckingMode::RELAXED;
+      }
+
+      moduleId = parsing::idToParentModule(context, moduleId);
+    }
+    // fall through to figuring out the mode from the module kind
+
     auto mode = ErrorCheckingMode::UNKNOWN;
     auto moduleKind = parsing::idToModuleKind(context, node->id());
     if (moduleKind == Module::Kind::PROTOTYPE ||

@@ -1,0 +1,3 @@
+bug: nested class in generic procedure causes (de)serialization error
+
+#27994

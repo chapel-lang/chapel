@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -51,6 +51,7 @@ PARSER_SYNTAX_CLASS(NewWithoutArgs, const uast::AstNode*)
 PARSER_WARNING_CLASS(PreIncDecOp, bool)
 PARSER_SYNTAX_CLASS(StringLiteralEOF, char, int)
 PARSER_SYNTAX_CLASS(UseImportNeedsModule, bool)
+PARSER_SYNTAX_CLASS(EmptyEnum)
 
 // ParseErr and ParseSyntax are catch-alls for simple parsing errors that do not
 // have a specialized error class

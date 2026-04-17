@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -27,6 +27,9 @@ namespace chpl {
 class Context;
 
 #define ID_GEN_START -3
+
+/* find the last '.' but don't count \. returns -1 if none was found */
+ssize_t findLastDot(const char* path);
 
 /**
   This class represents an ID for an AST node.
@@ -141,6 +144,11 @@ class ID final {
     }
   }
 
+  bool isExternBlockElement() const {
+    return isFabricatedId() &&
+           (fabricatedIdKind() == FabricatedIdKind::ExternBlockElement);
+  }
+
   /**
     Create an ID that represents something that isn't directly contained
     in the source code but rather something created during compilation.
@@ -209,6 +217,12 @@ class ID final {
   UniqueString symbolName(Context* context) const;
 
   /**
+    Get the part after the '#' in this ID, which distinguishes IDs
+    with the same name.
+   */
+  UniqueString overloadPart(Context* context) const;
+
+  /**
     returns 'true' if the AST node with this ID contains the AST
     node with the other ID, including if they refer to the same AST node.
    */
@@ -231,6 +245,10 @@ class ID final {
   /** Given a symbol path, return the name of the innermost symbol */
   static UniqueString innermostSymbolName(Context* context,
                                           UniqueString symbolPath);
+
+  /** Given a symbol path, return the portion after the '#'. */
+  static UniqueString overloadPart(Context* context,
+                                   UniqueString symbolPath);
 
   /**
     Given a symbol path, expand it into a vector

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -55,7 +55,6 @@ static void checkIsIterator(); // Ensure each iterator is flagged so.
 static void check_afterInlineFunctions();
 static void checkResolveRemovedPrims(void); // Checks that certain primitives
                                             // are removed after resolution
-static void checkNoRecordDeletes();  // No 'delete' on records.
 static void checkTaskRemovedPrims(); // Checks that certain primitives are
                                      // removed after task functions are
                                      // created.
@@ -242,6 +241,23 @@ void check_cullOverReferences()
   // No ContextCallExprs should remain in the tree.
   for_alive_in_Vec(ContextCallExpr, cc, gContextCallExprs) {
     INT_FATAL("ContextCallExpr should no longer be in AST");
+  }
+
+  for_alive_in_Vec(ArgSymbol, arg, gArgSymbols) {
+    auto t = arg->type->getValType();
+
+    // TODO: Tuple formals are not having their intents properly resolved due
+    //       to how 'cullOverReferences' appears to work. It's unclear to me
+    //       if this is an easy fix. These exceptions mirror those made in
+    //       that pass.
+    bool skip = t->symbol->hasFlag(FLAG_TUPLE) ||
+                arg->getFunction()->hasFlag(FLAG_BUILD_TUPLE) ||
+                arg->getFunction()->hasFlag(FLAG_TUPLE_CAST_FN);
+
+    if (!skip) {
+      // Should have been decided by this pass.
+      INT_ASSERT(!(arg->intent & INTENT_FLAG_MAYBE_CONST));
+    }
   }
 
   checkForPromotionsThatMayRace();
@@ -458,6 +474,16 @@ void check_insertLineNumbers()
   check_afterCallDestructors();
   check_afterLowerIterators();
   check_afterInlineFunctions();
+
+  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
+    if (auto ft = toFunctionType(ts->type)) {
+      if (ft->numFormals() < 2 && !ft->hasForeignLinkage() &&
+          ts->isUsed()) {
+        INT_FATAL("Non-foreign procedure types without line/file formals "
+                  "should not be used after this point");
+      }
+    }
+  }
 }
 
 void check_denormalize() {
@@ -547,7 +573,6 @@ static void check_afterResolution()
   checkReturnTypesHaveRefTypes();
   if (fVerify)
   {
-    checkNoRecordDeletes();
     checkTaskRemovedPrims();
     checkResolveRemovedPrims();
 // Disabled for now because user warnings should not be logged multiple times:
@@ -557,6 +582,40 @@ static void check_afterResolution()
     checkAutoCopyMap();
     checkInitEqAssignCast();
   }
+
+  // Ensure functions 'used as values' are actually used that way.
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (!fn->isUsed() || !fn->inTree()) {
+      /*
+      // TODO: We might like to do this, but right now expressions like
+      //       'myAdd.type' are counted as a 'use as value', even though
+      //       when resolved they will not actually leave a 'SymExpr' in
+      //       the tree.
+      //
+      if (!fn->isUsed() && fn->inTree()) {
+        // If the function is not in the tree then we don't care at all (it
+        // will be pruned soon), but if it is 'inTree()' but not 'isUsed()',
+        // then it definitely shouldn't be marked as 'isUsedAsValue()'!.
+        INT_ASSERT(!fn->isUsedAsValue());
+      }
+      */
+
+      continue;
+    }
+
+    if (fn->isUsedAsValue()) {
+      bool atLeastOnce = false;
+
+      for_SymbolSymExprs(se, fn) {
+        if (!se->inTree()) continue;
+
+        atLeastOnce = isUseOfProcedureAsValue(se);
+        if (atLeastOnce) break;
+      }
+
+      INT_ASSERT(atLeastOnce);
+    }
+  }
 }
 
 static void check_afterResolveIntents()
@@ -564,7 +623,7 @@ static void check_afterResolveIntents()
   if (fVerify) {
     for_alive_in_Vec(DefExpr, def, gDefExprs) {
       Symbol* sym = def->sym;
-      // Only look at Var or Arg symbols
+      // look at Var or Arg symbols
       if (isLcnSymbol(sym)) {
         QualifiedType qual = sym->qualType();
         // MPF TODO: This should not be necessary
@@ -578,6 +637,47 @@ static void check_afterResolveIntents()
 
         if (qual.getQual() == QUAL_UNKNOWN) {
           INT_FATAL("Symbol should not have unknown qualifier: %s (%d)", sym->cname, sym->id);
+        }
+
+      } else if (sym->type && isFunctionType(sym->getValType())) {
+        auto ft = toFunctionType(sym->getValType());
+        auto parent = sym->defPoint->parentSymbol;
+        bool isSymbolToCheck = true;
+
+        if (isTypeSymbol(sym) && isFunctionType(sym->type)) {
+          // Don't check function types - they can persist in the tree.
+          isSymbolToCheck = false;
+
+        } else if (sym->hasEitherFlag(FLAG_REF, FLAG_WIDE_REF) &&
+                   isTypeSymbol(sym)) {
+          // Don't check ref types.
+          isSymbolToCheck = false;
+
+        } else if (parent->hasEitherFlag(FLAG_REF, FLAG_WIDE_REF) &&
+                   isVarSymbol(sym) &&
+                   isTypeSymbol(parent)) {
+          // Check types, but ignore the fields of 'ref'/'wide-ref' types.
+          isSymbolToCheck = false;
+        }
+
+        if (isSymbolToCheck) {
+          for (auto& formal : ft->formals()) {
+            INT_ASSERT(formal.intent() != INTENT_BLANK);
+            INT_ASSERT(formal.qual() != QUAL_UNKNOWN);
+          }
+        }
+
+      } else if (auto fn = toFnSymbol(sym)) {
+        if (auto ft1 = toFunctionType(fn->type)) {
+          auto ft2 = fn->computeAndSetType();
+          if (ft1 != ft2) {
+            INT_FATAL("The type computed for the current state of the "
+                      "function %s [%d] and its existing '->type' have "
+                      "diverged. Make sure that any pass that changes "
+                      "the signature of a function also recomputes its "
+                      "type and handles the consequences of doing so",
+                      fn->name, fn->id);
+          }
         }
       }
     }
@@ -599,10 +699,16 @@ static void check_afterLowerErrorHandling()
     // TODO: check no more CatchStmt
 
     // check no more PRIM_THROW
-    forv_Vec(CallExpr, call, gCallExprs)
-    {
-      if (call->isPrimitive(PRIM_THROW) && call->inTree())
+    forv_Vec(CallExpr, call, gCallExprs) {
+      if (call->isPrimitive(PRIM_THROW) && call->inTree()) {
         INT_FATAL(call, "PRIM_THROW should no longer exist");
+      }
+
+      auto ft = call->isIndirectCall() ? call->functionType() : nullptr;
+      if (ft && ft->throws()) {
+        INT_FATAL(call, "Indirect calls to throwing functions should not "
+                        "appear after this point!");
+      }
     }
   }
 }
@@ -695,16 +801,6 @@ checkResolveRemovedPrims(void) {
       }
     }
   }
-}
-
-static void checkNoRecordDeletes() {
-  // No need to do for_alive_in_Vec - there shouldn't be any, period.
-  // User errors are to be detected by chpl__delete() in the modules.
-  forv_Vec(CallExpr, call, gCallExprs)
-    if (FnSymbol* fn = call->resolvedFunction())
-      if(fn->hasFlag(FLAG_DESTRUCTOR))
-        if (!isClassLike(call->get(1)->typeInfo()->getValType()))
-          INT_FATAL(call, "delete not on a class");
 }
 
 static void
@@ -928,8 +1024,8 @@ checkFormalActualBaseTypesMatch()
 
       for_formals_actuals(formal, actual, call)
       {
-        if (actual->typeInfo() == dtNil) {
-          if (formal->type == dtNil)
+        if (actual->typeInfo()->getValType() == dtNil) {
+          if (formal->type->getValType() == dtNil)
             // Exact match, so OK.
             continue;
 
@@ -992,8 +1088,8 @@ checkFormalActualTypesMatch()
 
       for_formals_actuals(formal, actual, call)
       {
-        if (actual->typeInfo() == dtNil) {
-          if (formal->type == dtNil)
+        if (actual->typeInfo()->getValType() == dtNil) {
+          if (formal->type->getValType() == dtNil)
             // Exact match, so OK.
             continue;
 

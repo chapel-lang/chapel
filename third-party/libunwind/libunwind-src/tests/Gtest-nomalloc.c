@@ -37,10 +37,10 @@ int in_unwind;
 void *
 malloc(size_t s)
 {
-  static void * (*func)();
+  static void * (*func)(size_t);
 
   if(!func)
-    func = (void *(*)()) dlsym(RTLD_NEXT, "malloc");
+    func = (void *(*)(size_t)) dlsym(RTLD_NEXT, "malloc");
 
   if (in_unwind) {
     num_errors++;

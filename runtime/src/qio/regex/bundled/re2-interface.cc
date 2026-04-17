@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -36,7 +36,7 @@
 #include "qbuffer.h" // qio_strdup, refcount functions, qio_ptr_diff, etc
 #include "qio.h" // for channel operations
 #include "chpltypes.h" // must be before "error.h" to prevent include errors
-#include "error.h"
+#include "chpl-error.h"
 #include "encoding/encoding-support.h"
 #undef printf
 

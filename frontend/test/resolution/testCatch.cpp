@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -420,6 +420,111 @@ static void test12(Parser* parser) {
   assert(guard.realizeErrors() == 1);
 }
 
+// cannot throw in a non-throwing function, but can if it returns early!
+static void test12b(Parser* parser) {
+  auto ctx = buildStdContext();
+  auto path = UniqueString::get(ctx, "test12.chpl");
+
+  ErrorGuard guard(ctx);
+  std::string program = R""""(
+                        module M {
+                          proc test() {
+                            return true;
+                            throw new Error();
+                          }
+                        }
+              )"""";
+  setFileText(ctx, path, program);
+  const ModuleVec& vec = parseToplevel(ctx, path);
+  auto mod = vec[0]->toModule();
+  assert(mod);
+  auto func = mod->stmt(0)->toFunction();
+  assert(func);
+  auto resFunc = resolveConcreteFunction(ctx, func->id());
+  assert(resFunc);
+}
+
+
+// after compilerError, try-catch analysis should go and try access unresolved
+// AST.
+static void test12c(Parser* parser) {
+  auto ctx = buildStdContext();
+  auto path = UniqueString::get(ctx, "test12.chpl");
+
+  std::string program = R""""(
+                        module M {
+                          proc test() {
+                            compilerError("oopsie!");
+
+                            // this is a regression test; in the past,
+                            // trying to branch-sensitively traverse this
+                            // conditional (which wasn't resolved, since we
+                            // produced a compiler error) caused a hard crash
+                            // of the compiler.
+                            if true {
+                              throw new Error();
+                            } else {
+                              // or don't throw
+                            }
+                          }
+                        }
+              )"""";
+  setFileText(ctx, path, program);
+  const ModuleVec& vec = parseToplevel(ctx, path);
+  auto mod = vec[0]->toModule();
+  assert(mod);
+  auto func = mod->stmt(0)->toFunction();
+  assert(func);
+  auto resFunc = resolveConcreteFunction(ctx, func->id());
+  assert(resFunc);
+}
+
+// cannot throw in a non-throwing function... unless a pragma specifies fatal mode.
+static void test12d(Parser* parser) {
+  auto ctx = buildStdContext();
+  auto path = UniqueString::get(ctx, "test12.chpl");
+
+  ErrorGuard guard(ctx);
+  std::string program = R""""(
+                        pragma "error mode fatal"
+                        module M {
+                          proc test() {
+                            throw new Error();
+                          }
+                        }
+              )"""";
+  setFileText(ctx, path, program);
+  const ModuleVec& vec = parseToplevel(ctx, path);
+  auto mod = vec[0]->toModule();
+  assert(mod);
+  auto func = mod->stmt(0)->toFunction();
+  assert(func);
+  auto resFunc = resolveConcreteFunction(ctx, func->id());
+  assert(resFunc);
+}
+
+// cannot throw in a non-throwing context if the module is marked non-fatal.
+static void test12e(Parser* parser) {
+  auto ctx = buildStdContext();
+  auto path = UniqueString::get(ctx, "test12.chpl");
+
+  ErrorGuard guard(ctx);
+  std::string program = R""""(
+                        pragma "error mode relaxed"
+                        prototype module M {
+                          throw new Error();
+                        }
+              )"""";
+  setFileText(ctx, path, program);
+  const ModuleVec& vec = parseToplevel(ctx, path);
+  auto mod = vec[0]->toModule();
+  std::ignore = resolveModule(ctx, mod->id());
+
+  assert(guard.numErrors() == 1);
+  assert(guard.error(0)->message() == "cannot throw in a non-throwing function");
+  assert(guard.error(0)->kind() == ErrorBase::Kind::ERROR);
+  assert(guard.realizeErrors() == 1);
+}
 
 // "is in a try but not handled"
 static void test13(Parser* parser) {
@@ -842,6 +947,218 @@ static void test25() {
   assert(!guard.realizeErrors());
 }
 
+// strict mode: throwing call in throwing function without explicit try
+static void test26() {
+  auto ctx = buildStdContext();
+  auto path = UniqueString::get(ctx, "test26.chpl");
+
+  ErrorGuard guard(ctx);
+  std::string program = R""""(
+                        pragma "error mode strict"
+                        module M {
+                          proc canThrow() throws {
+                            throw new owned Error();
+                          }
+                          proc caller() throws {
+                            canThrow();
+                          }
+                        }
+              )"""";
+  setFileText(ctx, path, program);
+  const ModuleVec& vec = parseToplevel(ctx, path);
+  auto mod = vec[0]->toModule();
+  assert(mod);
+  auto func = mod->stmt(1)->toFunction();
+  assert(func);
+  auto resFunc = resolveConcreteFunction(ctx, func->id());
+  assert(resFunc);
+
+  assert(guard.numErrors() == 1);
+  assert(guard.error(0)->message() == "call to throwing function 'canThrow' must be marked with try or try! (strict mode)");
+  assert(guard.error(0)->kind() == ErrorBase::Kind::ERROR);
+  assert(guard.realizeErrors() == 1);
+}
+
+// strict mode: throwing call with explicit try in throwing function is OK
+static void test27() {
+  auto ctx = buildStdContext();
+  auto path = UniqueString::get(ctx, "test27.chpl");
+
+  ErrorGuard guard(ctx);
+  std::string program = R""""(
+                        pragma "error mode strict"
+                        module M {
+                          proc canThrow() throws {
+                            throw new owned Error();
+                          }
+                          proc caller() throws {
+                            try canThrow();
+                          }
+                        }
+              )"""";
+  setFileText(ctx, path, program);
+  const ModuleVec& vec = parseToplevel(ctx, path);
+  auto mod = vec[0]->toModule();
+  assert(mod);
+  auto func = mod->stmt(1)->toFunction();
+  assert(func);
+  auto resFunc = resolveConcreteFunction(ctx, func->id());
+  assert(resFunc);
+
+  assert(!guard.realizeErrors());
+}
+
+// strict mode: throwing call with try block in throwing function is OK
+static void test28() {
+  auto ctx = buildStdContext();
+  auto path = UniqueString::get(ctx, "test28.chpl");
+
+  ErrorGuard guard(ctx);
+  std::string program = R""""(
+                        pragma "error mode strict"
+                        module M {
+                          proc canThrow() throws {
+                            throw new owned Error();
+                          }
+                          proc caller() throws {
+                            try {
+                              canThrow();
+                            }
+                          }
+                        }
+              )"""";
+  setFileText(ctx, path, program);
+  const ModuleVec& vec = parseToplevel(ctx, path);
+  auto mod = vec[0]->toModule();
+  assert(mod);
+  auto func = mod->stmt(1)->toFunction();
+  assert(func);
+  auto resFunc = resolveConcreteFunction(ctx, func->id());
+  assert(resFunc);
+
+  assert(!guard.realizeErrors());
+}
+
+// strict mode: throwing call with try! in non-throwing function is OK
+static void test29() {
+  auto ctx = buildStdContext();
+  auto path = UniqueString::get(ctx, "test29.chpl");
+
+  ErrorGuard guard(ctx);
+  std::string program = R""""(
+                        pragma "error mode strict"
+                        module M {
+                          proc canThrow() throws {
+                            throw new owned Error();
+                          }
+                          proc caller() {
+                            try! canThrow();
+                          }
+                        }
+              )"""";
+  setFileText(ctx, path, program);
+  const ModuleVec& vec = parseToplevel(ctx, path);
+  auto mod = vec[0]->toModule();
+  assert(mod);
+  auto func = mod->stmt(1)->toFunction();
+  assert(func);
+  auto resFunc = resolveConcreteFunction(ctx, func->id());
+  assert(resFunc);
+
+  assert(!guard.realizeErrors());
+}
+
+// strict mode: throwing call with assignment try in throwing function is OK
+static void test30() {
+  auto ctx = buildStdContext();
+  auto path = UniqueString::get(ctx, "test30.chpl");
+
+  ErrorGuard guard(ctx);
+  std::string program = R""""(
+                        pragma "error mode strict"
+                        module M {
+                          proc canThrow(): int throws {
+                            throw new owned Error();
+                          }
+                          proc caller() throws {
+                            var x = try canThrow();
+                          }
+                        }
+              )"""";
+  setFileText(ctx, path, program);
+  const ModuleVec& vec = parseToplevel(ctx, path);
+  auto mod = vec[0]->toModule();
+  assert(mod);
+  auto func = mod->stmt(1)->toFunction();
+  assert(func);
+  auto resFunc = resolveConcreteFunction(ctx, func->id());
+  assert(resFunc);
+
+  assert(!guard.realizeErrors());
+}
+
+// strict mode: throwing call with catch in throwing function is OK
+static void test31() {
+  auto ctx = buildStdContext();
+  auto path = UniqueString::get(ctx, "test31.chpl");
+
+  ErrorGuard guard(ctx);
+  std::string program = R""""(
+                        pragma "error mode strict"
+                        module M {
+                          proc canThrow() throws {
+                            throw new owned Error();
+                          }
+                          proc caller() throws {
+                            try {
+                              canThrow();
+                            } catch {
+                            }
+                          }
+                        }
+              )"""";
+  setFileText(ctx, path, program);
+  const ModuleVec& vec = parseToplevel(ctx, path);
+  auto mod = vec[0]->toModule();
+  assert(mod);
+  auto func = mod->stmt(1)->toFunction();
+  assert(func);
+  auto resFunc = resolveConcreteFunction(ctx, func->id());
+  assert(resFunc);
+
+  assert(!guard.realizeErrors());
+}
+
+// strict mode: calls not at the top level of a try block are still considered marked
+static void test32() {
+  auto ctx = buildStdContext();
+  auto path = UniqueString::get(ctx, "test28.chpl");
+
+  ErrorGuard guard(ctx);
+  std::string program = R""""(
+                        pragma "error mode strict"
+                        module M {
+                          proc canThrow() throws {
+                            throw new owned Error();
+                          }
+                          proc caller() throws {
+                            try {
+                              { { { canThrow(); } } }
+                            }
+                          }
+                        }
+              )"""";
+  setFileText(ctx, path, program);
+  const ModuleVec& vec = parseToplevel(ctx, path);
+  auto mod = vec[0]->toModule();
+  assert(mod);
+  auto func = mod->stmt(1)->toFunction();
+  assert(func);
+  auto resFunc = resolveConcreteFunction(ctx, func->id());
+  assert(resFunc);
+
+  assert(!guard.realizeErrors());
+}
 
 // TODO: error handling in defer blocks must be complete
 
@@ -864,6 +1181,10 @@ int main() {
   test10(p);
   test11(p);
   test12(p);
+  test12b(p);
+  test12c(p);
+  test12d(p);
+  test12e(p);
   test13(p);
   test14(p);
   test15(p);
@@ -878,6 +1199,13 @@ int main() {
   test24(p);
 
   test25();
+  test26();
+  test27();
+  test28();
+  test29();
+  test30();
+  test31();
+  test32();
 
   return 0;
 }

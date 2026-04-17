@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2025-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -65,9 +65,8 @@ static void testOutOfOrder() {
   )""";
 
   resolveTypeOfXInit(context, program, /* requireType */ false);
-  assert(guard.numErrors() == 2);
+  assert(guard.numErrors() == 1);
   assert(guard.error(0)->type() == ErrorType::UseOfLaterVariable);
-  assert(guard.error(1)->type() == ErrorType::NoMatchingCandidates);
   guard.realizeErrors();
 }
 

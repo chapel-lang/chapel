@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -759,21 +759,17 @@ module Random {
 
     * Use the randomStream's parallel iteration methods:
 
-    .. code-block:: chapel
-
-      var A: [1..n] int;
-      var rs = new randomStream(int);
-
-      forall (r, a) in zip(rs.next(A.domain), A) do a = r;
+    .. literalinclude:: ../../../../test/library/standard/Random/doc-examples/RandomStreamExamples.chpl
+       :language: chapel
+       :start-after: START_EXAMPLE_0
+       :end-before: STOP_EXAMPLE_0
 
     * Create a random stream for each task using task-private variables:
 
-    .. code-block:: chapel
-
-      var A: [1..n] int;
-
-      forall a in A with (var rs = new randomStream(int)) do a = rs.next();
-
+    .. literalinclude:: ../../../../test/library/standard/Random/doc-examples/RandomStreamExamples.chpl
+       :language: chapel
+       :start-after: START_EXAMPLE_1
+       :end-before: STOP_EXAMPLE_1
 
     The ``randomStream`` provides several methods to generate random numbers or
     to manipulate arrays using random numbers:
@@ -1397,13 +1393,10 @@ module Random {
 
       For example, a rectangular array ``A`` could be filled with random values using:
 
-      .. code-block:: chapel
-
-        var rs = new randomStream(int),
-            A: [1..1000] int;
-
-        forall (a, r) in zip(A, rs.next(A.domain)) do
-          a = r;
+      .. literalinclude:: ../../../../test/library/standard/Random/doc-examples/RandomStreamNext.chpl
+         :language: chapel
+         :start-after: START_EXAMPLE_0
+         :end-before: STOP_EXAMPLE_0
 
       *Note that :proc:`randomStream.fill` also serves the same purpose.*
 
@@ -1702,7 +1695,7 @@ module Random {
 
   // Returns an unsigned integer x with 0 <= x <= bound
   // count is 1-based
-  private proc boundedrand64_1(ref states, seed:int(64), count:int(64),
+  private inline proc boundedrand64_1(ref states, seed:int(64), count:int(64),
                                 bound:uint):uint
   {
     if bound > max(uint(32)):uint {

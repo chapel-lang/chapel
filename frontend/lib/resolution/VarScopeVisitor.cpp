@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -19,7 +19,9 @@
 
 #include "VarScopeVisitor.h"
 
+#include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/ResolvedVisitor.h"
+#include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/resolution-types.h"
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/uast/all-uast.h"
@@ -85,7 +87,16 @@ VarScopeVisitor::process(const uast::AstNode* symbol,
 
     exitScope(mod, rv);
   } else {
+    const AstNode* parent = nullptr;
+    if (parsing::idIsField(context, symbol->id())) {
+      parent = parsing::idToAst(context, symbol->id().parentSymbolId(context));
+    }
+
+    if (parent) enterScope(parent, rv);
+
     symbol->traverse(rv);
+
+    if (parent) exitScope(parent, rv);
   }
 }
 
@@ -152,7 +163,7 @@ VarScopeVisitor::processSplitInitAssign(const OpCall* ast,
 }
 
 bool
-VarScopeVisitor::processSplitInitOut(const FnCall* ast,
+VarScopeVisitor::processSplitInitOut(const Call* ast,
                                      const AstNode* actual,
                                      const std::set<ID>& allSplitInitedVars,
                                      RV& rv) {
@@ -210,7 +221,10 @@ static const types::Param* determineParamValue(const ResolvedExpression& rr) {
 }
 
 const types::Param* VarScopeVisitor::determineWhenCaseValue(const uast::AstNode* ast, RV& extraData) {
-  return determineParamValue(extraData.byAst(ast));
+  if (auto action = extraData.byAst(ast).getAction(AssociatedAction::COMPARE)) {
+    return action->type().param();
+  }
+  return nullptr;
 }
 
 const types::Param* VarScopeVisitor::determineIfValue(const uast::AstNode* ast, RV& extraData) {
@@ -229,7 +243,15 @@ void VarScopeVisitor::handleConditional(const Conditional* cond, RV& rv) {
   std::vector<VarFrame*> frames;
   if (thenFrame) frames.push_back(thenFrame);
   if (elseFrame) frames.push_back(elseFrame);
-  handleDisjunction(cond, frame, frames, elseFrame != nullptr, rv);
+
+  bool alwaysTaken = false;
+  if (elseFrame) {
+    alwaysTaken = true;
+  } else if (thenFrame && thenFrame->knownPath) {
+    alwaysTaken = true;
+  }
+
+  handleDisjunction(cond, frame, frames, alwaysTaken, rv);
   handleScope(cond, rv);
 }
 
@@ -237,14 +259,14 @@ void VarScopeVisitor::handleSelect(const Select* sel, RV& rv) {
   auto frame = currentFrame();
 
   std::vector<VarFrame*> frames;
-  bool total = sel->hasOtherwise();
+  bool alwaysTaken = sel->hasOtherwise();
   for(int i = 0; i < sel->numWhenStmts(); i++) {
     auto whenFrame = currentWhenFrame(i);
     if (!whenFrame) continue;
     frames.push_back(whenFrame);
-    total |= whenFrame->paramTrueCond;
+    alwaysTaken |= whenFrame->paramTrueCond;
   }
-  handleDisjunction(sel, frame, frames, total, rv);
+  handleDisjunction(sel, frame, frames, alwaysTaken, rv);
   handleScope(sel, rv);
 }
 
@@ -330,111 +352,176 @@ bool VarScopeVisitor::enter(const OpCall* ast, RV& rv) {
     rhsAst->traverse(rv);
 
     handleAssign(ast, rv);
-  }
 
-  return false;
+    return false;
+  } else {
+    return resolvedCallHelper(ast, rv);
+  }
 }
 
 void VarScopeVisitor::exit(const OpCall* ast, RV& rv) {
   exitAst(ast);
 }
 
+bool VarScopeVisitor::resolvedCallHelper(const Call* callAst, RV& rv) {
+  auto rr = rv.byPostorder().byAstOrNull(callAst);
+  if (!rr) return false;
 
-bool VarScopeVisitor::enter(const FnCall* callAst, RV& rv) {
-  enterAst(callAst);
+  if (rr->causedFatalError()) {
+    markFatalError();
+    return false;
+  }
 
-  if (rv.hasAst(callAst)) {
-    // Does any return-intent-overload use 'in', 'out', or 'inout'?
-    // This filter is intended as an optimization.
-    const MostSpecificCandidates& candidates = rv.byAst(callAst).mostSpecific();
-    bool anyInOutInout = false;
-    bool isMethod = false;
-    for (const MostSpecificCandidate& candidate : candidates) {
-      if (candidate) {
-        auto fn = candidate.fn();
-        if (fn->untyped()->isMethod()) isMethod = true;
+  // Does any return-intent-overload use 'in', 'out', or 'inout'?
+  // This filter is intended as an optimization.
+  const MostSpecificCandidates& candidates = rr->mostSpecific();
+  bool anyInOutInout = false;
+  bool isMethod = false;
+  bool foundCandidate = false;
+  for (const MostSpecificCandidate& candidate : candidates) {
+    if (candidate) {
+      foundCandidate = true;
+      auto fn = candidate.fn();
+      if (fn->untyped()->isMethod()) isMethod = true;
 
-        int n = fn->numFormals();
-        for (int i = 0; i < n; i++) {
-          const QualifiedType& formalQt = fn->formalType(i);
-          auto kind = formalQt.kind();
-          if (kind == QualifiedType::OUT ||
-              kind == QualifiedType::IN || kind == QualifiedType::CONST_IN ||
-              kind == QualifiedType::INOUT) {
-            anyInOutInout = true;
-            break;
-          }
-        }
-        if (anyInOutInout) {
+      int n = fn->numFormals();
+      for (int i = 0; i < n; i++) {
+        const QualifiedType& formalQt = fn->formalType(i);
+        auto kind = formalQt.kind();
+        if (kind == QualifiedType::OUT ||
+            kind == QualifiedType::IN || kind == QualifiedType::CONST_IN ||
+            kind == QualifiedType::INOUT) {
+          anyInOutInout = true;
           break;
         }
       }
+      if (anyInOutInout) {
+        break;
+      }
+    }
+  }
+
+  if (!foundCandidate) {
+    // this indicates some special handling took place to resolve this call.
+    // We can handle special logic for such special handling here.
+
+    // detect elided unnecessary casts (where the lhs was cast to its own type)
+    // in this case we perform a copy of the original value.
+    //
+    // TODO: we could consider a more general way to signal how a particular
+    // call was resolved (like, "hey, this was resolved by a compiler-generated
+    // elided cast!") so that we don't have to pattern match. However, there
+    // aren't a lot of different casses like this, so for now I'm leaving
+    // the special case. - D.F.
+    if (auto op = callAst->toOpCall()) {
+      if (op->op() == USTR(":")) {
+        CHPL_ASSERT(op->numActuals() == 2);
+        auto lhs = op->actual(0);
+        auto lhsRr = rv.byPostorder().byAst(lhs);
+        if (!rr->type().isUnknownOrErroneous() &&
+            rr->type().type() == lhsRr.type().type()) {
+          handleInFormal(callAst, lhs, rr->type(), nullptr, rv);
+          return false;
+        }
+      }
+    }
+  }
+
+  if (!anyInOutInout) {
+    // visit the actuals (and receiver, if any) to gather mentions
+    if (auto fnCall = callAst->toFnCall()) {
+      fnCall->calledExpression()->traverse(rv);
+    }
+    for (auto actualAst : callAst->actuals()) {
+      actualAst->traverse(rv);
+    }
+  } else {
+    // Use FormalActualMap to figure out which variable ID
+    // is passed to a formal with out/in/inout intent.
+    // Issue an error if it does not match among return intent overloads.
+    //
+    // TODO: Should we store the resolved CallInfo so we don't need to build
+    // it back up here?
+    std::vector<const AstNode*> actualAsts;
+    auto ci = CallInfo::create(context, callAst, rv.byPostorder(),
+                               /* raiseErrors */ false,
+                               &actualAsts);
+
+    if (isMethod && ci.isMethodCall() == false) {
+      // Create a dummy 'this' actual
+      ci = ci.createWithReceiver(ci, QualifiedType());
+      actualAsts.insert(actualAsts.begin(), nullptr);
     }
 
-    if (!anyInOutInout) {
-      // visit the actuals to gather mentions
-      for (auto actualAst : callAst->actuals()) {
+
+    // compute a vector indicating which actuals are passed to
+    // an 'out' formal in all return intent overloads
+    const PromotionIteratorType* promoCtx = nullptr;
+    if (!rr->type().isUnknownOrErroneous()) {
+      promoCtx = rr->type().type()->toPromotionIteratorType();
+    }
+    std::vector<QualifiedType> actualFormalTypes;
+    std::vector<Qualifier> actualFormalIntents;
+    std::vector<bool> actualPromoted;
+    computeActualFormalIntents(context, candidates, ci, actualAsts,
+                               actualFormalIntents, actualFormalTypes,
+                               actualPromoted, promoCtx);
+
+    // for a given actual index, returns:
+    // * nullptr if no promotion ocurred
+    // * the scalar type of the given actual was used in promotion
+    // * the actual type itself if it was not
+    // This can be used to signal to handleInFormal() etc. to adjust
+    // their behavior for promotion, and to provide the additional information
+    // of the scalar type.
+    auto getScalarType = [&](int idx) {
+      auto& actualQt = ci.actual(idx).type();
+      return
+        promoCtx == nullptr ? nullptr :
+        actualPromoted[idx] ? &getPromotionType(context, actualQt) :
+        &actualQt;
+    };
+    int actualIdx = 0;
+    for (auto actual : ci.actuals()) {
+      (void) actual; // avoid compilation error about unused variable
+
+      const AstNode* actualAst = actualAsts[actualIdx];
+      Qualifier kind = actualFormalIntents[actualIdx];
+
+      // handle an actual that is passed to an 'out'/'in'/'inout' formal
+      if (actualAst == nullptr) {
+        CHPL_ASSERT(ci.isMethodCall() && actualIdx == 0);
+      } else if (kind == Qualifier::OUT) {
+        handleOutFormal(callAst, actualAst,
+                        actualFormalTypes[actualIdx], rv);
+      } else if ((kind == Qualifier::IN || kind == Qualifier::CONST_IN) &&
+                 !(ci.name() == "init" && actualIdx == 0)) {
+        // don't do this for the 'this' argument to 'init', because it
+        // is not getting copied.
+
+        handleInFormal(callAst, actualAst,
+                       actualFormalTypes[actualIdx], getScalarType(actualIdx), rv);
+      } else if (kind == Qualifier::INOUT) {
+        handleInoutFormal(callAst, actualAst,
+                          actualFormalTypes[actualIdx], getScalarType(actualIdx), rv);
+      } else {
+        // otherwise, visit the actuals to gather mentions
         actualAst->traverse(rv);
       }
-    } else {
-      // Use FormalActualMap to figure out which variable ID
-      // is passed to a formal with out/in/inout intent.
-      // Issue an error if it does not match among return intent overloads.
-      //
-      // TODO: Should we store the resolved CallInfo so we don't need to build
-      // it back up here?
-      std::vector<const AstNode*> actualAsts;
-      auto ci = CallInfo::create(context, callAst, rv.byPostorder(),
-                                 /* raiseErrors */ false,
-                                 &actualAsts);
 
-      if (isMethod && ci.isMethodCall() == false) {
-        // Create a dummy 'this' actual
-        ci = ci.createWithReceiver(ci, QualifiedType());
-        actualAsts.insert(actualAsts.begin(), nullptr);
-      }
-
-      // compute a vector indicating which actuals are passed to
-      // an 'out' formal in all return intent overloads
-      std::vector<QualifiedType> actualFormalTypes;
-      std::vector<Qualifier> actualFormalIntents;
-      computeActualFormalIntents(context, candidates, ci, actualAsts,
-                                 actualFormalIntents, actualFormalTypes);
-
-      int actualIdx = 0;
-      for (auto actual : ci.actuals()) {
-        (void) actual; // avoid compilation error about unused variable
-
-        const AstNode* actualAst = actualAsts[actualIdx];
-        Qualifier kind = actualFormalIntents[actualIdx];
-
-        // handle an actual that is passed to an 'out'/'in'/'inout' formal
-        if (actualAst == nullptr) {
-          CHPL_ASSERT(ci.isMethodCall() && actualIdx == 0);
-        } else if (kind == Qualifier::OUT) {
-          handleOutFormal(callAst, actualAst,
-                          actualFormalTypes[actualIdx], rv);
-        } else if ((kind == Qualifier::IN || kind == Qualifier::CONST_IN) &&
-                   !(ci.name() == "init" && actualIdx == 0)) {
-          // don't do this for the 'this' argument to 'init', because it
-          // is not getting copied.
-          handleInFormal(callAst, actualAst,
-                         actualFormalTypes[actualIdx], rv);
-        } else if (kind == Qualifier::INOUT) {
-          handleInoutFormal(callAst, actualAst,
-                            actualFormalTypes[actualIdx], rv);
-        } else {
-          // otherwise, visit the actuals to gather mentions
-          actualAst->traverse(rv);
-        }
-
-        actualIdx++;
-      }
+      actualIdx++;
     }
   }
 
   return false;
 }
+
+bool VarScopeVisitor::enter(const FnCall* callAst, RV& rv) {
+  enterAst(callAst);
+
+  return resolvedCallHelper(callAst, rv);
+}
+
 
 void VarScopeVisitor::exit(const FnCall* ast, RV& rv) {
   exitAst(ast);
@@ -447,7 +534,7 @@ bool VarScopeVisitor::enter(const Return* ast, RV& rv) {
 }
 void VarScopeVisitor::exit(const Return* ast, RV& rv) {
   if (!scopeStack.empty()) {
-    markReturnOrThrow();
+    markReturn();
     handleReturn(ast, rv);
   }
   exitAst(ast);
@@ -458,7 +545,7 @@ bool VarScopeVisitor::enter(const Break* ast, RV& rv) {
   return true;
 }
 void VarScopeVisitor::exit(const Break* ast, RV& rv) {
-  markBreak();
+  markBreak(rv.getBreakOrContinueTarget(ast));
   exitAst(ast);
 }
 
@@ -467,7 +554,7 @@ bool VarScopeVisitor::enter(const Continue* ast, RV& rv) {
   return true;
 }
 void VarScopeVisitor::exit(const Continue* ast, RV& rv) {
-  markContinue();
+  markContinue(rv.getBreakOrContinueTarget(ast));
   exitAst(ast);
 }
 
@@ -477,7 +564,7 @@ bool VarScopeVisitor::enter(const Throw* ast, RV& rv) {
 }
 void VarScopeVisitor::exit(const Throw* ast, RV& rv) {
   if (!scopeStack.empty()) {
-    markReturnOrThrow();
+    markThrow();
     handleThrow(ast, rv);
   }
   exitAst(ast);
@@ -567,13 +654,17 @@ computeActualFormalIntents(Context* context,
                            const CallInfo& ci,
                            const std::vector<const AstNode*>& actualAsts,
                            std::vector<Qualifier>& actualFormalIntents,
-                           std::vector<QualifiedType>& actualFormalTypes) {
+                           std::vector<QualifiedType>& actualFormalTypes,
+                           std::vector<bool>& actualPromoted,
+                           const types::PromotionIteratorType* promoCtx) {
 
   int nActuals = ci.numActuals();
   actualFormalIntents.clear();
   actualFormalIntents.resize(nActuals);
   actualFormalTypes.clear();
   actualFormalTypes.resize(nActuals);
+  actualPromoted.clear();
+  actualPromoted.resize(nActuals);
 
   int nFns = candidates.numBest();
   if (nFns == 0) {
@@ -581,14 +672,21 @@ computeActualFormalIntents(Context* context,
     return;
   }
 
+  int methodOpOffset = ci.isMethodCall() && ci.isOpCall() ? 1 : 0;
   bool firstCandidate = true;
   for (const MostSpecificCandidate& candidate : candidates) {
     if (candidate) {
       auto& formalActualMap = candidate.formalActualMap();
-      for (int actualIdx = 0; actualIdx < nActuals; actualIdx++) {
-        const FormalActual* fa = formalActualMap.byActualIdx(actualIdx);
+      for (int actualIdx = methodOpOffset; actualIdx < nActuals; actualIdx++) {
+        const FormalActual* fa = formalActualMap.byActualIdx(actualIdx-methodOpOffset);
         auto intent  = normalizeFormalIntent(fa->formalType().kind());
         QualifiedType& aft = actualFormalTypes[actualIdx];
+
+        // all actualPromoted are guaranteed to be the same IF all the
+        // formal types are guaranteed to be the same, which they are
+        // using the checks below.
+        actualPromoted[actualIdx] =
+          promoCtx && promoCtx->promotedFormals().count(fa->formalIdx()) > 0;
 
         if (firstCandidate) {
           actualFormalIntents[actualIdx] = intent;

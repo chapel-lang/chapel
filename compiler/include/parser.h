@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -48,13 +48,6 @@ extern bool printTokens;
 extern chpl::ID dynoIdForLastContainingDecl;
 
 void               parseAndConvertUast();
-
-void addInternalModulePath(const ArgumentDescription* desc,
-                           const char* newpath);
-void addStandardModulePath(const ArgumentDescription* desc,
-                           const char* newpath);
-void addDynoGenLib(const ArgumentDescription* desc,
-                   const char* newpath);
 
 void noteParsedIncludedModule(ModuleSymbol* mod, const char* path);
 

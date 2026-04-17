@@ -1,0 +1,4 @@
+forwarding.chpl:8: warning: forwarding is currently unstable and may change in ways that will break some of its current uses
+forwarding.chpl:18: warning: forwarding is currently unstable and may change in ways that will break some of its current uses
+impl doing thing
+impl doing thing

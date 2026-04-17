@@ -55,9 +55,9 @@ void rank_medlonghandler(gex_Token_t token, void *buf, size_t nbytes,
 
 // handler table
 gex_AM_Entry_t htable[] = {
-  { hidx_pong_shorthandler,   pong_shorthandler,   GEX_FLAG_AM_REPLY  |GEX_FLAG_AM_SHORT,   1 },
-  { hidx_rank_shorthandler,   rank_shorthandler,   GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_SHORT,   2 },
-  { hidx_rank_medlonghandler, rank_medlonghandler, GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_MEDLONG, 2 }
+  { hidx_pong_shorthandler,   (gex_AM_Fn_t)pong_shorthandler,   GEX_FLAG_AM_REPLY  |GEX_FLAG_AM_SHORT,   1 },
+  { hidx_rank_shorthandler,   (gex_AM_Fn_t)rank_shorthandler,   GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_SHORT,   2 },
+  { hidx_rank_medlonghandler, (gex_AM_Fn_t)rank_medlonghandler, GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_MEDLONG, 2 }
  };
 #define HANDLER_TABLE_SIZE (sizeof(htable)/sizeof(gex_AM_Entry_t))
 

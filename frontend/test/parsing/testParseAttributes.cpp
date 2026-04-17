@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -288,7 +288,11 @@ static std::string genAggregateAttributesTest(asttags::AstTag aggKind,
 
     ret += "var v";
     ret += std::to_string(i);
-    ret += " = 0;\n";
+    if (aggKind == asttags::Union) {
+      ret += ": int;\n";
+    } else {
+      ret += " = 0;\n";
+    }
   }
 
   ret += "}\n";

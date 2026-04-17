@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -129,7 +129,8 @@ static void test1(Parser* parser) {
    class C {
      /* this class does nothing */
      var x;
-     var (x, y) = tup;
+     /* not supported; see https://github.com/chapel-lang/chapel/issues/27983.
+        var (x, y) = tup; */
      proc Cproc(val: int) {
        if val > x then x = val;
      }

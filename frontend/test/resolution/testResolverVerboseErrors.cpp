@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -49,7 +49,7 @@ class Child : Parent {}
 
 proc f(ref x: owned Parent) {}
 
-var x: owned Child;
+var x = new Child();
 f(x);
 )""";
 
@@ -96,7 +96,6 @@ static const char* errorExpectedSubType = R"""(
     3 | f(int);
       |   ⎺⎺⎺
       |
-  Formals with kind 'type' expect the actual to be a subtype, but 'int(64)' is not a subtype of 'string'.
 )""";
 
 static const char* progIncompatibleMgr = R"""(
@@ -104,7 +103,7 @@ class C {}
 
 proc f(x: owned C) {}
 
-var x: shared C;
+var x = new shared C();
 f(x);
 )""";
 
@@ -277,6 +276,7 @@ record R {
 
 var r: R;
 r.x("hello");
+operator =(ref lhs: int, const rhs: int) {}
 )""";
 
 static const char* errorOther = R"""(
@@ -332,8 +332,104 @@ static const char* errorManyCandidates = R"""(
   Omitting 6 more candidates that didn't match.
 )""";
 
+static const char* progBreakNonLoop = R"""(
+label outer
+for i in 0..3 {
+  for j in 0..3 {
+   {
+     var outer = 42;
+     continue outer;
+   }
+  }
+}
+)""";
+
+static const char* errorBreakNonLoop = R"""(
+─── error in file.chpl:6 [InvalidContinueBreakTarget] ───
+  Invalid target for 'continue' statement.
+      |
+    6 |      continue outer;
+      |               ⎺⎺⎺⎺⎺
+      |
+  A 'continue' statement can only refer to a loop. This is done by using the loop's label.
+  However, the target is declared as a value of type 'int(64)' here:
+      |
+    5 |      var outer = 42;
+      |      ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      |
+)""";
+
+static const char* progLabelAsValue = R"""(
+proc foo(x) {}
+
+label outer
+for i in 0..3 {
+  for j in 0..3 {
+   foo(outer);
+  }
+}
+)""";
+
+static const char* errorLabelAsValue = R"""(
+─── error in file.chpl:6 [LoopLabelOutsideBreakOrContinue] ───
+  Invalid reference to loop label outside of a 'break' or 'continue' statement.
+  Loop labels can only be referenced in 'break' or 'continue' statements.
+  However, the expression here references a loop label in another context:
+      |
+    6 |    foo(outer);
+      |        ⎺⎺⎺⎺⎺
+      |
+  The expression in question refers to a labeled loop declared here:
+      |
+    4 | for i in 0..3 {
+      |
+)""";
+
+static const char* notSplitInit = R"""(
+  proc foo(x: int) {}
+  proc foo(x: real) {}
+  var x: numeric;
+  foo(x);
+)""";
+
+static const char* errorNotSplitInit = R"""(
+─── error in file.chpl:4 [NoMatchingCandidates] ───
+  Unable to resolve call to 'foo': no matching candidates.
+      |
+    4 |   foo(x);
+      |
+  
+  The following candidate didn't match because it does not initialize an actual which expects to be initialized:
+      |
+    2 |   proc foo(x: real) {}
+      |            ⎺⎺⎺⎺⎺⎺⎺
+      |
+  The actual 'x' expects to be split-initialized because it is declared with a generic type and no initialization expression here:
+      |
+    3 |   var x: numeric;
+      |   ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      |
+  The call to 'foo' occurs before any valid initialization points:
+      |
+    4 |   foo(x);
+      |       ⎺
+      |
+  The call to 'foo' cannot initialize 'x' because only 'out' formals can be used to split-initialize. However, 'x' is passed to formal 'x' which has intent 'const in'.
+  
+  The following candidate didn't match because it does not initialize an actual which expects to be initialized:
+      |
+    1 |   proc foo(x: int) {}
+      |            ⎺⎺⎺⎺⎺⎺
+      |
+      |
+    4 |   foo(x);
+      |       ⎺
+      |
+)""";
+
 static void testResolverError(const char* program, const char* error,
-                              bool standard = true) {
+                              bool standard = true,
+                              ErrorType expectedType = ErrorType::NoMatchingCandidates) {
   Context* context = nullptr;
   Context ctx;
   if (standard) {
@@ -352,16 +448,32 @@ static void testResolverError(const char* program, const char* error,
   auto mod = parseResult.singleModule();
   auto resolutionResult = resolveModule(context, mod->id());
 
-  assert(guard.numErrors() == 1);
-  assert(guard.error(0)->type() == ErrorType::NoMatchingCandidates);
+  assert(guard.numErrors() >= 1);
+  assert(guard.error(0)->type() == expectedType);
 
   std::ostringstream oss;
   ErrorWriter detailedWriter(context, oss, ErrorWriter::DETAILED, /* useColor */ false);
   guard.error(0)->write(detailedWriter);
 
+  auto got = oss.str();
   printf("Expected error:\n%s\n", error);
-  printf("Actual error:\n%s\n", oss.str().c_str());
-  assert(oss.str() == error);
+  printf("Actual error:\n%s\n", got.c_str());
+  auto minlen = std::min(strlen(error), got.size());
+  int line = 0;
+  int col = 0;
+  for (size_t i = 0; i < minlen; i++) {
+    if (error[i] != got[i]) {
+      printf("First difference at line %d column %d, (%c vs %c)\n",
+             line, col, error[i], got[i]);
+      break;
+    }
+    if (error[i] == '\n') {
+      line++;
+      col = 0;
+    }
+    col++;
+  }
+  assert(got == error);
 
   guard.clearErrors();
 }
@@ -379,6 +491,10 @@ int main() {
   // Avoid standard modules for now to prevent very long list of candidates
   testResolverError(progOther, errorOther, false);
   testResolverError(progManyCandidates, errorManyCandidates);
+
+  testResolverError(progBreakNonLoop, errorBreakNonLoop, true,  ErrorType::InvalidContinueBreakTarget);
+  testResolverError(progLabelAsValue, errorLabelAsValue, true, ErrorType::LoopLabelOutsideBreakOrContinue);
+  testResolverError(notSplitInit, errorNotSplitInit, true, ErrorType::NoMatchingCandidates);
 
   return 0;
 }

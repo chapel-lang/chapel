@@ -1,0 +1,3 @@
+lambda_capture_var.chpl:1: In function 'testme':
+lambda_capture_var.chpl:3: error: cannot capture proc because it refers to outer variables
+lambda_capture_var.chpl:3: note: such as 'i', here

@@ -8,4 +8,4 @@ source $UTIL_CRON_DIR/common-localnode-paratest.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="baseline"
 
-$UTIL_CRON_DIR/nightly -cron -baseline $(get_nightly_paratest_args)
+$UTIL_CRON_DIR/nightly -cron -baseline $(get_nightly_paratest_args 8)

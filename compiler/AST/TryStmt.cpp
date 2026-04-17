@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -75,6 +75,17 @@ bool TryStmt::tryBang() const {
 // sync block instead of explicit user code.
 bool TryStmt::isSyncTry() const {
   return _isSyncTry;
+}
+
+bool TryStmt::isForManageStmt() const {
+  if (auto block = _body) {
+    if (tryBang() && block->blockTag == BLOCK_NORMAL) {
+      if (auto def = toDefExpr(block->body.first())) {
+        if (def->sym->hasFlag(FLAG_MANAGER_HANDLE)) return true;
+      }
+    }
+  }
+  return false;
 }
 
 void TryStmt::accept(AstVisitor* visitor) {

@@ -7,7 +7,6 @@
 #ifndef _GASNET_EXTENDED_REFRATOMIC_H
 #define _GASNET_EXTENDED_REFRATOMIC_H
 
-#if ! GASNETE_BUILD_AMRATOMIC_STUBS // otherwise using a stub w/o AM handlers
 //
 // AM Handler Table entries
 //
@@ -26,6 +25,5 @@ MEDIUM_HANDLER_DECL(gasnete_amratomic_reph,1,2);
 #define GASNETE_AMRATOMIC_HANDLERS() \
     gasneti_handler_tableentry_with_bits(gasnete_amratomic_reqh,3,5,REQUEST,MEDIUM,0),   \
     gasneti_handler_tableentry_with_bits(gasnete_amratomic_reph,1,2,REPLY,MEDIUM,0),
-#endif // ! GASNETE_BUILD_AMRATOMIC_STUBS
 
 #endif

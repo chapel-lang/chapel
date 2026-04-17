@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -156,6 +156,212 @@ static void test7() {
          true /* foo comes from the extern block */);
 }
 
+static void test8() {
+  printf("%s\n", __FUNCTION__);
+  {
+    Context* context = buildStdContext();
+    ErrorGuard guard(context);
+    QualifiedType qt =
+      resolveTypeOfXInit(context,
+                         R""""(
+                          module M {
+                            extern { int i; }
+                            var x = i;
+                          }
+                         )"""", true);
+
+    assert(!qt.isUnknownOrErroneous());
+    assert(qt.type()->isIntType());
+
+    assert(!guard.realizeErrors());
+  }
+
+  // Empty extern block
+  {
+    Context* context = buildStdContext();
+    ErrorGuard guard(context);
+    QualifiedType qt =
+      resolveTypeOfXInit(context,
+                         R""""(
+                          module M {
+                            extern { }
+                            var x = 1;
+                          }
+                         )"""", true);
+
+    assert(!qt.isUnknownOrErroneous());
+
+    assert(!guard.realizeErrors());
+  }
+}
+
+static void test9() {
+  printf("%s\n", __FUNCTION__);
+  {
+    Context* context = buildStdContext();
+    ErrorGuard guard(context);
+    QualifiedType qt =
+      resolveTypeOfXInit(context,
+                         R""""(
+                          module M {
+                            module CDemo {
+                              extern {
+                                 static double square(double num) {
+                                    return 2;
+                                 }
+                              }
+                            }
+
+                            var x = CDemo.square(2.0);
+                          }
+                         )"""", true);
+
+    assert(!qt.isUnknownOrErroneous());
+    assert(qt.type()->isRealType());
+    assert(qt.type()->toRealType()->isDefaultWidth());
+
+    assert(!guard.realizeErrors());
+  }
+
+  // With forward declaration(s)
+  {
+    Context* context = buildStdContext();
+    ErrorGuard guard(context);
+    QualifiedType qt =
+      resolveTypeOfXInit(context,
+                         R""""(
+                          module M {
+                            module CDemo {
+                              extern {
+                                 static double square(double num);
+                                 static double square(double num);
+                                 static double square(double num) {
+                                    return 2;
+                                 }
+                              }
+                            }
+
+                            var x = CDemo.square(2.0);
+                          }
+                         )"""", true);
+
+    assert(!qt.isUnknownOrErroneous());
+    assert(qt.type()->isRealType());
+    assert(qt.type()->toRealType()->isDefaultWidth());
+
+    assert(!guard.realizeErrors());
+  }
+}
+
+static void test10() {
+  printf("%s\n", __FUNCTION__);
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+  QualifiedType qt =
+    resolveTypeOfXInit(context,
+                       R""""(
+                        module M {
+                          module CDemo {
+                            extern {
+                               int main(void) {
+                                  return 1;
+                               }
+                            }
+                          }
+
+                          var x = CDemo.main();
+                        }
+                       )"""", true);
+
+  assert(!qt.isUnknownOrErroneous());
+  assert(qt.type()->isIntType());
+  assert(!qt.type()->toIntType()->isDefaultWidth());
+
+  assert(!guard.realizeErrors());
+}
+
+static void test11() {
+  printf("%s\n", __FUNCTION__);
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+  QualifiedType qt =
+    resolveTypeOfXInit(context,
+                       R""""(
+                        module M {
+                          module CDemo {
+                            extern {
+                               void foo(void) {
+                                  return;
+                               }
+                            }
+                          }
+
+                          var x = CDemo.foo();
+                        }
+                       )"""", true);
+
+  assert(!qt.isUnknownOrErroneous());
+  assert(qt.type()->isVoidType());
+
+  assert(!guard.realizeErrors());
+}
+
+static void test12() {
+  printf("%s\n", __FUNCTION__);
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+  QualifiedType qt =
+    resolveTypeOfXInit(context,
+                       R""""(
+                        module M {
+                          use CTypes;
+                          extern {
+                            static int foo(const int* x) {
+                              return *x + 1;
+                            }
+                          }
+
+                          var y : c_int = 5;
+                          var yp : c_ptr(c_int) = c_ptrTo(y);
+                          var x = foo(yp);
+                        }
+                       )"""");
+
+  assert(qt.type()->isIntType());
+  assert(!guard.realizeErrors());
+}
+
+static void test13() {
+  printf("%s\n", __FUNCTION__);
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+  std::ignore =
+    resolveTypeOfXInit(context,
+                       R""""(
+                        module M {
+                          use CTypes;
+                          extern {
+                            static int bar(int* x) {
+                              return *x + 1;
+                            }
+                          }
+
+                          var y: c_int = 10;
+                          var yp: c_ptrConst(c_int) = c_ptrToConst(y);
+                          var x = bar(yp);
+                        }
+                       )"""", false);
+
+  assert(guard.numErrors() == 1);
+  assert(guard.errors().at(0)->type() == ErrorType::NoMatchingCandidates);
+  auto error = static_cast<ErrorNoMatchingCandidates*>(guard.errors().at(0).get());
+  auto& candidates = std::get<2>(error->info());
+  assert(candidates.size() == 1);
+  assert(candidates[0].reason() == resolution::FAIL_CANNOT_PASS);
+
+  guard.realizeErrors();
+}
+
 
 
 
@@ -167,6 +373,12 @@ int main() {
   test5();
   test6();
   test7();
+  test8();
+  test9();
+  test10();
+  test11();
+  test12();
+  test13();
 
   return 0;
 }

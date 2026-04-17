@@ -17,50 +17,61 @@ import re
 capture_space = re.compile(r"(\s*)\S.*")
 capture_chapter = re.compile(r"\s*.. _Chapter-([a-zA-Z0-9._-]+):\s*")
 capture_testname = re.compile(r"\s*[*]?Example\s+\(([a-zA-Z0-9._-]+)\).*")
-match_code = re.compile(r"\s*.. code-block:: chapel\s*|" +
-                        r"\s*.. BLOCK-test-chapelnoprint\s*|" +
-                        r"\s*.. BLOCK-test-chapelpost\s*|" +
-                        r"\s*.. BLOCK-test-chapelpre\s*")
+match_code = re.compile(
+    r"\s*.. code-block:: chapel\s*|"
+    + r"\s*.. BLOCK-test-chapelnoprint\s*|"
+    + r"\s*.. BLOCK-test-chapelpost\s*|"
+    + r"\s*.. BLOCK-test-chapelpre\s*"
+)
 match_outputname = re.compile(r"\s*.. BLOCK-test-chapeloutputname\s*")
-match_output = re.compile(r"\s*.. BLOCK-test-chapeloutput\s*|" +
-                          r"\s*.. .. code-block:: printoutput")
+match_output = re.compile(
+    r"\s*.. BLOCK-test-chapeloutput\s*|" + r"\s*.. .. code-block:: printoutput"
+)
 match_compopts = re.compile(r"\s*.. BLOCK-test-chapelcompopts\s*")
 match_execopts = re.compile(r"\s*.. BLOCK-test-chapelexecopts\s*")
 match_prediff = re.compile(r"\s*.. BLOCK-test-chapelprediff\s*")
 match_function = re.compile(r"\s*.. function::\s*")
 total_tests = 0
 
+
 def get_arguments():
     """
     Get arguments from command line
     """
     parser = argparse.ArgumentParser(
-        prog='extract-rst-tests',
-        usage='%(prog)s  file.chpl [options] ',
+        prog="extract-rst-tests",
+        usage="%(prog)s  file.chpl [options] ",
         description=__doc__,
-        formatter_class=argparse.RawDescriptionHelpFormatter)
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
 
-    parser.add_argument('rstfiles', nargs='+',
-                        help='gather tests from these RST files')
-    parser.add_argument('--output', default='test/release/examples/spec',
-                        help='destination directory of output')
-    parser.add_argument('--verbose', '-v', action='store_true', default=False,
-                        help='verbosity')
+    parser.add_argument(
+        "rstfiles", nargs="+", help="gather tests from these RST files"
+    )
+    parser.add_argument(
+        "--output",
+        default="test/release/examples/spec",
+        help="destination directory of output",
+    )
+    parser.add_argument(
+        "--verbose", "-v", action="store_true", default=False, help="verbosity"
+    )
     return parser.parse_args()
 
 
 def save_to(outdir, chapter, name, data, isexe=False):
     path = outdir + "/" + chapter + "/" + name
     if not os.path.exists(os.path.dirname(path)):
-        print('Adding ', os.path.dirname(path))
+        print("Adding ", os.path.dirname(path))
         os.makedirs(os.path.dirname(path))
 
-    #print('Writing to: ', path)
-    with open(path, 'w', encoding='utf-8') as handle:
+    # print('Writing to: ', path)
+    with open(path, "w", encoding="utf-8") as handle:
         handle.write(data)
 
     if isexe:
         os.chmod(path, stat.S_IRWXU | stat.S_IRGRP)
+
 
 def read_block(lines, start):
     indent = -1
@@ -75,7 +86,7 @@ def read_block(lines, start):
             match = re.match(capture_space, lines[j])
             if match:
                 cur = len(match.group(1))
-                #print("Line ", j+1, " has indent ", cur)
+                # print("Line ", j+1, " has indent ", cur)
                 if indent == -1:
                     first_nonempty = j
                     indent = cur
@@ -85,7 +96,7 @@ def read_block(lines, start):
                     break
         j += 1
 
-    #print("indent_text: ", indent_text)
+    # print("indent_text: ", indent_text)
 
     # read the block
     block = ""
@@ -102,23 +113,24 @@ def read_block(lines, start):
     block = block.rstrip("\n\r")
     block += "\n"
 
-    #print("read_block returning ", (start+1, end+1))
-    #print(block)
+    # print("read_block returning ", (start+1, end+1))
+    # print(block)
     return (end, block)
+
 
 def extract_tests(rstfile, outdir):
     print("Processing .rst file: ", rstfile)
 
-    lines = ( )
-    with open(rstfile, 'r', encoding='utf-8') as handle:
+    lines = ()
+    with open(rstfile, "r", encoding="utf-8") as handle:
         lines = handle.readlines()
 
     chapter = ""
     testname = ""
-    
+
     i = 0
     while i < len(lines):
-        #if i % 100 == 0:
+        # if i % 100 == 0:
         #    print("Processing line: ", i)
 
         line = lines[i]
@@ -146,11 +158,11 @@ def extract_tests(rstfile, outdir):
             compopts = ""
             prediff = ""
 
-            example_start = i-1
+            example_start = i - 1
             example_end = -1
-            (example_end, block) = read_block(lines, example_start)
-            
-            #print("Processing example: ", chapter + "/" + testname,
+            example_end, block = read_block(lines, example_start)
+
+            # print("Processing example: ", chapter + "/" + testname,
             #       (example_start+1, example_end+1))
 
             # Process the lines in the example
@@ -163,7 +175,7 @@ def extract_tests(rstfile, outdir):
                 #     *Example (enum.chpl)*.
                 if re.match(capture_testname, line):
                     # stop this loop if another example is encountered
-                    #print ("Breaking for Example match on line ", i)
+                    # print ("Breaking for Example match on line ", i)
                     i -= 1
                     break
 
@@ -171,14 +183,14 @@ def extract_tests(rstfile, outdir):
                 #     *.. function:: proc foo int
                 if re.match(match_function, line):
                     # stop this loop if a function block is encounterred
-                    #print ("Breaking for Example match on line ", i)
+                    # print ("Breaking for Example match on line ", i)
                     i -= 1
                     break
 
                 # Find lines like
                 #   .. BLOCK-test-chapeloutputname
                 elif re.match(match_outputname, line):
-                    (i, block) = read_block(lines, i)
+                    i, block = read_block(lines, i)
                     if block != "":
                         # First, save any old .good
                         if goodname == "":
@@ -188,36 +200,34 @@ def extract_tests(rstfile, outdir):
 
                         # Then, update the .good name
                         goodname = block.strip()
-                        #print ("Read output name", goodname)
- 
+                        # print ("Read output name", goodname)
 
                 # Find lines like
                 #   .. BLOCK-test-chapeloutput
                 #   .. code-block:: printoutput
                 elif re.match(match_output, line):
-                    (i, block) = read_block(lines, i)
+                    i, block = read_block(lines, i)
                     if block != "":
                         good += block
 
                 # Find lines like
                 #   .. BLOCK-test-chapelcompopts
                 elif re.match(match_compopts, line):
-                    (i, block) = read_block(lines, i)
+                    i, block = read_block(lines, i)
                     if block != "":
                         compopts += block
 
                 # Find lines like
                 #   .. BLOCK-test-chapelexecopts
                 elif re.match(match_execopts, line):
-                    (i, block) = read_block(lines, i)
+                    i, block = read_block(lines, i)
                     if block != "":
                         execopts += block
-
 
                 # Find lines like
                 #   .. BLOCK-test-chapelprediff
                 elif re.match(match_prediff, line):
-                    (i, block) = read_block(lines, i)
+                    i, block = read_block(lines, i)
                     if block != "":
                         prediff += block
 
@@ -227,14 +237,13 @@ def extract_tests(rstfile, outdir):
                 #   .. BLOCK-test-chapelpost
                 #   .. BLOCK-test-chapelpre
                 elif re.match(match_code, line):
-                    (i, block) = read_block(lines, i)
+                    i, block = read_block(lines, i)
                     # Filter out request for line numbers
                     if block.startswith(":linenos:"):
                         block = block.replace(":linenos:", "", 1)
 
                     chpl += block
-                    #print ("Adding to chpl ", block)
-
+                    # print ("Adding to chpl ", block)
 
             # Now save the data gathered
             if goodname == "":
@@ -249,8 +258,7 @@ def extract_tests(rstfile, outdir):
                 save_to(outdir, chapter, testname + ".compopts", compopts)
             if prediff != "":
                 isexe = prediff.startswith("#!")
-                save_to(outdir, chapter, testname + ".prediff", prediff,
-                        isexe)
+                save_to(outdir, chapter, testname + ".prediff", prediff, isexe)
 
             global total_tests
             total_tests += 1
@@ -260,25 +268,26 @@ def main(**kwargs):
     """Driver function"""
 
     # Parse keyword arguments
-    rstfiles = kwargs['rstfiles']
-    output = kwargs['output']
-    verbose = kwargs['verbose']
+    rstfiles = kwargs["rstfiles"]
+    output = kwargs["output"]
+    verbose = kwargs["verbose"]
 
     for rstfile in rstfiles:
         if os.path.isfile(rstfile):
             extract_tests(rstfile, output)
         elif os.path.isdir(rstfile):
-          for dirpath, dirnames, filenames in os.walk(rstfile):
-              for f in filenames:
-                  if f.endswith('.rst'):
-                      extract_tests(os.path.join(dirpath, f), output)
+            for dirpath, dirnames, filenames in os.walk(rstfile):
+                for f in filenames:
+                    if f.endswith(".rst"):
+                        extract_tests(os.path.join(dirpath, f), output)
         else:
             print("File not found ", rstfile)
 
     global total_tests
     print("DONE - created", total_tests, "tests")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     # Parse arguments and cast them into a dictionary
     arguments = vars(get_arguments())
     main(**arguments)

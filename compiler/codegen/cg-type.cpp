@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -28,6 +28,7 @@
 #include "codegen.h"
 #include "driver.h"
 #include "expr.h"
+#include "fcf-support.h"
 #include "files.h"
 #include "intlimits.h"
 #include "iterator.h"
@@ -92,55 +93,66 @@ void PrimitiveType::codegenDef() {
 void ConstrainedType::codegenDef() {
 }
 
-// TODO: See 'codegenFunctionTypeLLVM' for hints about what ABI stuff to
-// do when code generating extern/export stuff. It's a mess in there!
-void FunctionType::codegenDef() {
-  auto info = gGenInfo;
-  auto outfile = info->cfile;
-
-  if (outfile) {
-    INT_FATAL("The C backend is not supported yet!");
+static void codegenFunctionTypeWide(FunctionType* ft) {
+  // Use a 'int64' dynamic index. Do not bother generating a function type.
+  if (auto outfile = gGenInfo->cfile) {
+    fprintf(outfile, "typedef %s %s;\n\n",
+                     dtInt[INT_SIZE_64]->codegen().c.c_str(),
+                     ft->symbol->cname);
   } else {
-    #ifdef HAVE_LLVM
-    llvm::Type* returnTy = this->returnType()->symbol->getLLVMType();
-    std::vector<llvm::Type*> argTys;
-
-    for (int i = 0; i < numFormals(); i++) {
-      auto formal = this->formal(i);
-      llvm::Type* llvmTy = formal->type->symbol->getLLVMType();
-      INT_ASSERT(llvmTy);
-      argTys.push_back(llvmTy);
+  #ifdef HAVE_LLVM
+    auto t = llvm::Type::getInt64Ty(gContext->llvmContext());
+    if (!ft->symbol->hasLLVMType()) {
+      gGenInfo->lvt->addGlobalType(ft->symbol->cname, t, false);
+      ft->symbol->llvmImplType = t;
+      ft->symbol->llvmAlignment = ALIGNMENT_DEFER;
     }
+  #endif
+  }
+}
 
-    // Get the base type for the function. It is not a pointer.
-    const bool isVarArgs = false;
-    auto baseType = llvm::FunctionType::get(returnTy, argTys, isVarArgs);
-
-    // TODO: With the new 'opaque pointer' strategy that LLVM is adopting,
-    // it would be impossible to get the underlying type unless we carry
-    // it around or have access to the Chapel FunctionType in contexts
-    // where that information is important...
-    // But this complicates the generator, because the type of a static
-    // function (FnSymbol*) is a pointer to a function type, and the type
-    // of a Chapel function type is the underlying function type.
-    // For now, my workaround is just going to be to use a static map from
-    // the pointer type to the function type. That way the LLVM type for a
-    // Chapel FunctionType can still be a pointer, and everything lines up
-    // nicely in the generator.
-    bool ok = llvmMapUnderlyingFunctionType(this, baseType);
-    INT_ASSERT(ok);
+static void codegenFunctionTypeLocal(FunctionType* ft) {
+  // Declare local procs as 'void*' to handle circular dependencies.
+  if (auto outfile = gGenInfo->cfile) {
+    fprintf(outfile, "typedef %s %s;\n\n",
+                     dtCVoidPtr->codegen().c.c_str(),
+                     ft->symbol->cname);
+  } else {
+  #ifdef HAVE_LLVM
+    // Generate the underlying type. This is a function value type.
+    auto& info = localFunctionTypeCodegenInfo(ft);
+    auto baseType = info.llvmType;
 
     // The final type is a pointer to the underlying function type.
-    auto& layout = info->module->getDataLayout();
+    auto& layout = gGenInfo->module->getDataLayout();
     auto addrSpace = layout.getAllocaAddrSpace();
-    auto type = llvm::PointerType::get(baseType, addrSpace);
+    llvm::Type* t = getPointerType(baseType, addrSpace);
 
-    if (! this->symbol->hasLLVMType()) {
-      info->lvt->addGlobalType(this->symbol->cname, type, false);
-      this->symbol->llvmImplType = type;
-      this->symbol->llvmAlignment = ALIGNMENT_DEFER;
+    if (!ft->symbol->hasLLVMType()) {
+      gGenInfo->lvt->addGlobalType(ft->symbol->cname, t, false);
+      ft->symbol->llvmImplType = t;
+      ft->symbol->llvmAlignment = ALIGNMENT_DEFER;
     }
-    #endif
+  #endif
+  }
+}
+
+void FunctionType::codegenDef() {
+  // This must hold, otherwise we'd be using class instances instead...
+  INT_ASSERT(fcfs::usePointerImplementation());
+
+  #ifdef HAVE_LLVM
+  if (gGenInfo->cfile == nullptr) {
+    // A LLVM-only precondition to make sure we only evaluate once.
+    llvm::Type *type = gGenInfo->lvt->getType(symbol->cname);
+    if (type) return;
+  }
+  #endif
+
+  if (this->isWide()) {
+    codegenFunctionTypeWide(this);
+  } else {
+    codegenFunctionTypeLocal(this);
   }
 }
 
@@ -152,14 +164,12 @@ void EnumType::codegenDef() {
   if( outfile ) {
     fprintf(outfile, "typedef enum {");
     bool first = true;
-    for_enums(constant, this) {
+    for (auto [sym, var] : this->getConstantMap()) {
+      INT_ASSERT(var && var->immediate);
       if (!first) {
         fprintf(outfile, ", ");
       }
-      fprintf(outfile, "%s", constant->sym->codegen().c.c_str());
-      if (constant->init) {
-        fprintf(outfile, " = %s", constant->init->codegen().c.c_str());
-      }
+      fprintf(outfile, "%s = %s", sym->codegen().c.c_str(), var->codegen().c.c_str());
       first = false;
     }
     fprintf(outfile, "} ");
@@ -177,34 +187,14 @@ void EnumType::codegenDef() {
       PrimitiveType* ty = getIntegerType();
       type = ty->codegen().type;
 
-      info->lvt->addGlobalType(symbol->cname, type, !is_signed(ty));
+      info->lvt->addGlobalType(symbol->cname, type, !isSignedType(ty));
       symbol->llvmImplType = type;
       symbol->llvmAlignment = ALIGNMENT_DEFER;
 
-      // Convert enums to constants with the user-specified immediate,
-      // sized appropriately, when it exists.  When it doesn't, give
-      // it the semi-arbitrary 0-based ordinal value (similar to what
-      // the C back-end would do itself).  Note that once some enum
-      // has a non-NULL constant->init, all subsequent ones should as
-      // well.
-      int order = 0;
-      for_enums(constant, this) {
-        //llvm::Constant *initConstant;
-
-        VarSymbol* s;
-        if (constant->init) {
-          s = toVarSymbol(toSymExpr(constant->init)->symbol());
-        } else {
-          s = new_IntSymbol(order, INT_SIZE_64);
-        }
-        INT_ASSERT(s);
-        INT_ASSERT(s->immediate);
-
-        VarSymbol* sizedImmediate = resizeImmediate(s, ty);
-
-        info->lvt->addGlobalValue(constant->sym->cname,
-                                  sizedImmediate->codegen());
-        order++;
+      for (auto [sym, var] : this->getConstantMap()) {
+        INT_ASSERT(var && var->immediate);
+        VarSymbol* sizedImmediate = resizeImmediate(var, ty);
+        info->lvt->addGlobalValue(sym->cname, sizedImmediate->codegen());
       }
     }
 #endif
@@ -216,11 +206,12 @@ void EnumType::codegenDef() {
 
 static Type* baseForLLVMPointer(TypeSymbol* origBase) {
   Type* result = origBase->type;
-  if (result == dtVoid || result == dtNothing)
+  if (result == dtVoid || result == dtNothing) {
     // LLVM does not allow void*, see StructType::isValidElementType()
     // for typed pointers, use i8*
     // for untyped pointers, i8* is good enough. it does not matter the base type
     result = dtInt[INT_SIZE_8];
+  }
   return result;
 }
 
@@ -233,23 +224,23 @@ static Type* baseForLLVMPointer(TypeSymbol* origBase) {
 // and do not fill 'aligns'.
 static void buildStructFields(const llvm::DataLayout& DL,
                               AggregateType* ag, bool explicitPadding,
-                              std::map<std::string, int>& GEPMap,
-                              std::vector<llvm::Type*>& params,
-                              std::vector<unsigned>& aligns,
+                              llvm::SmallDenseMap<const char*, int>& GEPMap,
+                              llvm::SmallVector<llvm::Type*>& params,
+                              llvm::SmallVector<unsigned>& aligns,
                               uint64_t& structSize, int& structAlignment)
 {
   GenInfo* info = gGenInfo;
   int      paramID = 0;
   uint64_t currSize = 0;
   int      currAlignment = ALIGNMENT_DEFER;
-  INT_ASSERT(GEPMap.empty());  // we clear it if explicit padding is needed
+  INT_ASSERT(!explicitPadding || GEPMap.empty()); // we clear it if explicit padding is needed
   llvm::Type* padTy =
     explicitPadding ? llvm::Type::getInt8Ty(gContext->llvmContext()) : nullptr;
 
   // Performs updates when explicitPadding==false.
   // This avoids the need to compute fieldSize and fieldAlign.
   auto addFieldWhenNotEP = [&](const char* fieldName, llvm::Type* fieldType) {
-    GEPMap.insert(std::pair<std::string, int>(fieldName, paramID));
+    GEPMap.insert(std::make_pair(astr(fieldName), paramID));
     paramID++;
     params.push_back(fieldType);
   };
@@ -258,7 +249,7 @@ static void buildStructFields(const llvm::DataLayout& DL,
   // Assumes that padding has already been inserted as needed.
   auto addFieldWhenEP = [&](const char* fieldName, llvm::Type* fieldType,
                             uint64_t fieldSize, int fieldAlign) {
-    GEPMap.insert(std::pair<std::string, int>(fieldName, paramID));
+    GEPMap.insert(std::make_pair(astr(fieldName), paramID));
     paramID++;
     params.push_back(fieldType);
     aligns.push_back(fieldAlign);
@@ -306,9 +297,8 @@ static void buildStructFields(const llvm::DataLayout& DL,
         largestSize = fieldSize;
       }
 
-      GEPMap.insert(std::pair<std::string, int>(field->cname, paramID));
-      GEPMap.insert(std::pair<std::string, int>(
-            std::string("_u.") + field->cname, paramID));
+      GEPMap.insert(std::make_pair(field->cname, paramID));
+      GEPMap.insert(std::make_pair(astr("_u.", field->cname), paramID));
 
       // TODO account for field's alignment in case it is >8
     }
@@ -409,8 +399,8 @@ static void buildStructFields(const llvm::DataLayout& DL,
 // what we think vs. what LLVM thinks.
 static void checkStructFields(const llvm::DataLayout& DL,
                               AggregateType* ag, llvm::StructType* stype,
-                              std::vector<llvm::Type*>& params,
-                              std::vector<unsigned>& aligns,
+                              llvm::SmallVector<llvm::Type*>& params,
+                              llvm::SmallVector<unsigned>& aligns,
                               uint64_t structSize, int structAlignment)
 {
   // For the release we should hide these behind 'if (fVerify)'
@@ -505,7 +495,7 @@ void AggregateType::codegenDef() {
   llvm::Type *type = NULL;
   int structAlignment = ALIGNMENT_UNINIT;
 #endif
-  if (id == breakOnCodegenID) gdbShouldBreakHere();
+  if (id == breakOnCodegenID) debuggerBreakHere();
 
   if (symbol->hasFlag(FLAG_STAR_TUPLE)) {
     if( outfile ) {
@@ -551,7 +541,7 @@ void AggregateType::codegenDef() {
     } else {
 #ifdef HAVE_LLVM
       llvm::Type* llBaseType = baseForLLVMPointer(base)->getLLVMType();
-      type = llvm::PointerType::getUnqual(llBaseType);
+      type = getPointerType(llBaseType);
       structAlignment = ALIGNMENT_DEFER; // or pointer alignment
 #endif
     }
@@ -566,7 +556,7 @@ void AggregateType::codegenDef() {
     } else {
 #ifdef HAVE_LLVM
       llvm::Type* llBaseType = baseForLLVMPointer(base)->getLLVMType();
-      type = llvm::PointerType::getUnqual(llBaseType);
+      type = getPointerType(llBaseType);
       structAlignment = ALIGNMENT_DEFER; // or pointer alignment
 #endif
     }
@@ -616,8 +606,8 @@ void AggregateType::codegenDef() {
     } else {
 #ifdef HAVE_LLVM
       const llvm::DataLayout& DL = info->module->getDataLayout();
-      std::vector<llvm::Type*> params;
-      std::vector<unsigned> aligns; // only for assertions
+      llvm::SmallVector<llvm::Type*> params;
+      llvm::SmallVector<unsigned> aligns; // only for assertions
       uint64_t structSize = 0;
 
       // this updates params, aligns, structSize, structAlignment
@@ -637,18 +627,16 @@ void AggregateType::codegenDef() {
         llvm::Type *globalPtrTy = nullptr;
 
         if (isOpaquePointer(llBaseType)) {
-#if HAVE_LLVM_VER >= 140
           // No need to compute the element type for an opaque pointer
-          globalPtrTy = llvm::PointerType::get(gContext->llvmContext(),
+          globalPtrTy = getPointerType(gContext->llvmContext(),
                                                globalAddressSpace);
-#endif
         } else {
 #ifdef HAVE_LLVM_TYPED_POINTERS
           // Remove one level of indirection since the addr field
           // of a wide pointer is always a local address.
           llvm::Type* eltType = llBaseType->getPointerElementType();
           INT_ASSERT(eltType);
-          globalPtrTy = llvm::PointerType::get(eltType, globalAddressSpace);
+          globalPtrTy = getPointerType(eltType, globalAddressSpace);
 #endif
         }
 
@@ -701,7 +689,8 @@ void AggregateType::codegenDef() {
     } else {
       INT_ASSERT(this->symbol->llvmImplType == type);
     }
-    INT_ASSERT(this->symbol->llvmAlignment == ALIGNMENT_UNINIT);
+    INT_ASSERT(this->symbol->llvmAlignment == ALIGNMENT_UNINIT ||
+               this->symbol->llvmAlignment == ALIGNMENT_DEFER);
     INT_ASSERT(structAlignment != ALIGNMENT_UNINIT);
     this->symbol->llvmAlignment = llvmAlignmentOrDefer(structAlignment, type);
     // double-check, in case we missed this in buildStructFields
@@ -731,7 +720,7 @@ void AggregateType::codegenPrototype() {
       st = llvm::StructType::create(info->module->getContext(), struct_name);
       info->lvt->addGlobalType(struct_name, st, false);
 
-      llvm::PointerType* pt = llvm::PointerType::getUnqual(st);
+      auto pt = getPointerType(st);
       info->lvt->addGlobalType(symbol->cname, pt, false);
       symbol->llvmImplType = st;
 #endif
@@ -742,16 +731,15 @@ void AggregateType::codegenPrototype() {
 
 int AggregateType::getMemberGEP(const char *name, bool &isCArrayField) {
 #ifdef HAVE_LLVM
-  if( symbol->hasFlag(FLAG_EXTERN) ) {
+  if (symbol->hasFlag(FLAG_EXTERN)) {
     // We will cache the info in the local GEP map.
-    std::map<std::string, int>::const_iterator GEPIdx = GEPMap.find(name);
-    if(GEPIdx != GEPMap.end()) {
-      isCArrayField = isCArrayFieldMap[name];
-      return GEPIdx->second;
+    if (auto it = GEPMap.find(astr(name)); it != GEPMap.end()) {
+      isCArrayField = isCArrayFieldMap[astr(name)];
+      return it->second;
     }
     int ret = getCRecordMemberGEP(symbol->cname, name, isCArrayField);
-    GEPMap.insert(std::pair<std::string,int>(name, ret));
-    isCArrayFieldMap.insert(std::pair<std::string,int>(name, isCArrayField));
+    GEPMap.insert(std::make_pair(astr(name), ret));
+    isCArrayFieldMap.insert(std::make_pair(astr(name), isCArrayField));
     return ret;
   } else {
     Vec<Type*> next, current;
@@ -760,9 +748,8 @@ int AggregateType::getMemberGEP(const char *name, bool &isCArrayField) {
 
     while (current_p->n != 0) {
       forv_Vec(Type, t, *current_p) {
-        std::map<std::string,int>::const_iterator GEPIdx = t->GEPMap.find(name);
-        if(GEPIdx != t->GEPMap.end()) {
-          return GEPIdx->second;
+        if (auto it = t->GEPMap.find(astr(name)); it != t->GEPMap.end()) {
+          return it->second;
         }
 
         if (AggregateType* at = toAggregateType(t)) {

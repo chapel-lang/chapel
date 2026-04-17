@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -125,7 +125,7 @@ class Variable final : public VarLikeDecl {
  public:
   ~Variable() override = default;
 
-  static owned<Variable> build(Builder* builder, Location loc,
+  static owned<Variable> build(Builder* builder, Location loc, Location nameLoc,
                                owned<AttributeGroup> attributeGroup,
                                Decl::Visibility vis,
                                Decl::Linkage linkage,

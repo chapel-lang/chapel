@@ -86,7 +86,7 @@
 //
 // This is currently a version number for *this* document.
 #define GEX_SPEC_VERSION_MAJOR 0
-#define GEX_SPEC_VERSION_MINOR 18 // actually 18 plus minor clarifications, no API changes
+#define GEX_SPEC_VERSION_MINOR 19
 
 // Major and Minor versions of the GASNet-1 specification.
 //
@@ -183,7 +183,8 @@ extern void gasnet_QueryGexObjects(gex_Client_t      *client_p,
 // The following are conditionally permitted in handler context, the condition being the 
 // caller must be within an AMRequest handler and not holding a handler-safe lock:
 //
-// gasnet_AMReply*(), gex_AM_Reply*() gex_AM_{Prepare,Commit}Reply*(), gex_AM_SrcDesc*()
+// gasnet_AMReply*(), gex_AM_Reply*()
+// gex_AM_{Prepare,Commit,Cancel}Reply*(), gex_AM_SrcDesc*()
 //
 // The following are conditionally permitted in handler context, the condition
 // being that the 'flags' argument must include GEX_FLAG_IMMEDIATE:
@@ -1643,6 +1644,12 @@ typedef struct {
 // at a fixed index, or 0 for "don't care" (see gex_EP_RegisterHandlers() for
 // more information on this case).
 //
+// Because the gex_fnptr field is used to hold pointers to functions with many
+// possible signatures, C++ and C23 (or higher) require explicit casts to the
+// type gex_AM_Fn_t when populating this field.  Since a client author might
+// not control the default C language level of the compiler, casts in C clients
+// should be considered "best practice".
+//
 // The gex_nargs and gex_flags fields are used by the client to supply the implementation 
 // with assertions regarding the future invocations and behavior of each AM handler.
 // If a handler invocation (eg via an AM injection targeting a given handler) or
@@ -2153,28 +2160,28 @@ int gex_AM_ReplyShort[M](
 // also defer selecting the destination address.  These various parameters are
 // passed to the Commit function which performs the actual AM injection.
 //
-// It is important to note that in the interval between a Prepare and Commit,
-// the client is bound by the same restrictions as in an Active Message Reply
-// handler (ie all communication calls are prohibited).  Prepare/commit pairs
-// do not nest.  Additionally, the Prepare returns a thread-specific object
-// that must be consumed (exactly once) by a Commit in the same thread. Calls
-// to Prepare are permitted in the same places as the corresponding
-// fixed-payload AM injection call.
+// It is important to note that in the interval between a Prepare and successful
+// Commit (or Cancel) the client is bound by the same restrictions as in an
+// Active Message Reply handler (ie all communication calls are prohibited).
+// Prepare/commit pairs do not nest.  Additionally, the Prepare returns a
+// thread-specific object that must be consumed (exactly once) by a Cancel or
+// successful Commit in the same thread.  Calls to Prepare are permitted in the
+// same places as the corresponding fixed-payload AM injection call.
 //
 // Currently the semantics of the least_payload==0 case are unspecified.
 // We advise avoiding that case until a later release has resolved this.
 
 // Opaque type for AM Source Descriptor
 // Used in negotiated-payload AM calls:
-//   Produced by (returned from) gex_AM_Prepare*()
-//   Consumed by (passed to) gex_AM_Commit*()
+//   Produced by gex_AM_Prepare*()
+//   Consumed by gex_AM_Cancel*() or successful gex_AM_Commit*()
 typedef ... gex_AM_SrcDesc_t;
 
 // Predefined value of type gex_AM_SrcDesc_t
 // Guaranteed to be zero.
 // May be returned by gex_AM_Prepare*() when the GEX_FLAG_IMMEDIATE flag 
 // was passed, but required resources are not available.
-// Must not be passed to gex_AM_Commit*() calls or the
+// Must not be passed to gex_AM_Commit*() or gex_AM_Cancel*(), or the
 // gex_AM_SrcDesc*() queries.
 #define GEX_AM_SRCDESC_NO_OP ((gex_AM_SrcDesc_t)0)
 
@@ -2219,8 +2226,8 @@ size_t gex_AM_SrcDescSize(gex_AM_SrcDesc_t sd);
 // RETURNS: gex_AM_SrcDesc_t
 //   + An opaque scalar type (with accessors) described above
 //   + This is thread-specific value
-//   + This object is "consumed" by (cannot be used after) the
-//     Commit call
+//   + This object is "consumed" by (cannot be used after) a
+//     gex_AM_Cancel* or successful gex_AM_Commit* call.
 // ARGUMENTS:
 //  gex_TM_t tm, gex_Rank_t rank [REQUEST ONLY]
 //   + These arguments name the destination of an AMRequest
@@ -2258,10 +2265,10 @@ size_t gex_AM_SrcDescSize(gex_AM_SrcDesc_t sd);
 //   + If client_buf is NULL, this argument must also be NULL.
 //   + If client_buf is non-NULL, this argument operates in the same
 //     manner as the 'lc_opt' argument to the fixed-payload AM calls.
-//     Between Prepare and Commit, the contents of the gex_Event_t
-//     referenced by lc_opt, if any, is indeterminate.  Only after
-//     return from the Commit call may such a value be used by the
-//     caller.
+//     Between Prepare and a successful Commit, the contents of the
+//     gex_Event_t referenced by lc_opt, if any, is indeterminate.
+//     Only after return from a successful Commit call may such a
+//     value be used by the caller.
 //  gex_Flags_t flags
 //   + Bitwise OR of flags valid for the corresponding
 //     fixed-payload AM injection
@@ -2327,13 +2334,18 @@ extern gex_AM_SrcDesc_t gex_AM_PrepareReplyLong(
                 unsigned int   numargs);
 
 //
-// gex_AM_Commit calls
+// gex_AM_Commit family calls
 //
-// The `sd` argument to `gex_AM_Commit<XXX>[M]()` must be the return from a
-// call to the corresponding (i.e. same `<XXX>`) `gex_AM_Prepare<XXX>()`,
-// and with `[M]` (if any) matching the `numargs` passed to the Prepare.
+// This section applies to two groups of APIs described below:
+//  +  gex_AM_Commit<XXX>[M]()
+//  +  gex_AM_Commit<XXX>[M]_v2()
 //
-// NOTE: Prototypes in this section are "patterns"
+// The `sd` argument to either `gex_AM_Commit<XXX>[M]()` or
+// `gex_AM_Commit<XXX>[M]_v2()` must be the return from a call to the
+// corresponding (i.e. same `<XXX>`) `gex_AM_Prepare<XXX>()`, and with `[M]`
+// (if any) matching the `numargs` passed to the Prepare.
+//
+// NOTE: Prototypes in the following two sections are "patterns"
 //   These API instantiate the "[M]" at the end of each prototype with
 //   the integers 0 through gex_AM_MaxArgs(), inclusive.
 //   The '[,arg0, ... ,argM-1]' then represent the arguments
@@ -2342,7 +2354,6 @@ extern gex_AM_SrcDesc_t gex_AM_PrepareReplyLong(
 //   (added in C99 and C++11) the "[M]" may optionally be omitted entirely and
 //   is inferred based on the argument count.
 //
-// RETURNS: void
 // ARGUMENTS:
 //  gex_AM_SrcDesc sd
 //   + The value returned by the immediately preceding Prepare
@@ -2358,6 +2369,21 @@ extern gex_AM_SrcDesc_t gex_AM_PrepareReplyLong(
 //   + The destination address for transfer of Long payloads
 //   + If non-NULL dest_addr was passed to Prepare, this must
 //     be the same value
+//  gex_Flags_t commit_flags [V2 ONLY]
+//   + Bitwise OR of a subset of the flags valid for the corresponding
+//     fixed-payload AM injection, as described more fully in the
+//     gex_AM_Commit<XXX>[M]_v2 section, below.
+
+//
+// gex_AM_Commit<XXX>[M] calls
+//
+// RETURNS: void
+// ARGUMENTS:
+//  gex_AM_SrcDesc sd
+//  gex_AM_Index_t handler
+//  size_t nbytes
+//  void *dest_addr [LONG ONLY]
+//   + See "gex_AM_Commit family calls", above
 //
 extern void gex_AM_CommitRequestMedium[M](
                 gex_AM_SrcDesc_t sd,
@@ -2381,6 +2407,126 @@ extern void gex_AM_CommitReplyLong[M](
                 size_t           nbytes,
                 void             *dest_addr
                 [,arg0, ... ,argM-1]);
+
+//
+// gex_AM_Commit<XXX>[M]_v2 calls [EXPERIMENTAL]
+//
+// This corresponds to feature macro GASNET_SUPPORTS_AM_COMMIT_V2 == 20240906L
+//
+// These APIs are analogous to the gex_AM_Commit<XXX>[M]() APIs described above,
+// with the addition of a `commit_flags` argument and a return type of `int`
+// (instead of `void`).  Depending on the `commit_flags` bits set, there may
+// also be semantic differences, as described below.  However, when
+// `commit_flags == 0` the behavior is identical to the corresponding
+// gex_AM_Commit<XXX>[M]()
+//
+// RETURNS: int
+//   0 on success, non-zero under conditions described below
+// ARGUMENTS:
+//  gex_AM_SrcDesc sd
+//  gex_AM_Index_t handler
+//  size_t nbytes
+//  void *dest_addr [LONG ONLY]
+//   + See "gex_AM_Commit family calls", above
+//  gex_Flags_t commit_flags
+//   + Bitwise OR of a subset of the flags valid for the corresponding
+//     fixed-payload AM injection
+//   + GEX_FLAG_IMMEDIATE: a Commit*_v2 call may return non-zero if injection
+//     resources cannot be obtained without polling to progress the underlying
+//     network.  Use of this flag bit is entirely independent of its presence or
+//     absence from the `flags` passed to Prepare.  A client may validly pass
+//     this flag to one, both, or neither of the Prepare and Commit*_v2 calls.
+//   + Currently, no other GEX_FLAG_* values are supported.
+//     Passing flags not explicitly listed here as supported will result in
+//     undefined behavior.
+//
+// NOTE 1: Return value
+//
+//   A call is a "no op" IF AND ONLY IF the value GEX_FLAG_IMMEDIATE is included
+//   in the 'commit_flags' argument AND the conduit could determine that it
+//   would need to block temporarily to obtain the necessary resources.  This
+//   case is distinguished by a non-zero return.  In all other cases the return
+//   value is zero.
+//
+//   In the "no op" case no communication has been performed and the contents of
+//   the location named by the 'lc_opt' argument (if any) remains indeterminate;
+//   the `sd` remains unchanged and valid for use in subsequent calls to
+//   gex_AM_{SrcDesc,Commit,Cancel}*().
+//
+//   The "no op" case is not a "successful Commit".  Where this document refers
+//   to a "successful Commit" only the zero-return case is included.
+//
+// NOTE 2: Repeated calls to gex_AM_Commit*_v2()
+//
+//   As with any call which takes the `GEX_FLAG_IMMEDIATE` flag, a client should
+//   not assume that a sequence of repeated calls will eventually succeed.
+//
+extern int gex_AM_CommitRequestMedium[M]_v2(
+                gex_AM_SrcDesc_t sd,
+                gex_AM_Index_t   handler,
+                size_t           nbytes,
+                gex_Flags_t      commit_flags
+                [,arg0, ... ,argM-1]);
+extern int gex_AM_CommitReplyMedium[M]_v2(
+                gex_AM_SrcDesc_t sd,
+                gex_AM_Index_t   handler,
+                size_t           nbytes,
+                gex_Flags_t      commit_flags
+                [,arg0, ... ,argM-1]);
+extern int gex_AM_CommitRequestLong[M]_v2(
+                gex_AM_SrcDesc_t sd,
+                gex_AM_Index_t   handler,
+                size_t           nbytes,
+                void             *dest_addr,
+                gex_Flags_t      commit_flags
+                [,arg0, ... ,argM-1]);
+extern int gex_AM_CommitReplyLong[M]_v2(
+                gex_AM_SrcDesc_t sd,
+                gex_AM_Index_t   handler,
+                size_t           nbytes,
+                void             *dest_addr,
+                gex_Flags_t      commit_flags
+                [,arg0, ... ,argM-1]);
+
+//
+// gex_AM_Cancel calls [EXPERIMENTAL]
+//
+// This corresponds to feature macro GASNET_SUPPORTS_AM_CANCEL == 20240418L
+//
+// Cancel a gex_AM_SrcDesc_t without initiating communication
+//
+// The `sd` argument to `gex_AM_Cancel<XXX>()` must be the return from a call to
+// the corresponding (i.e. same `<XXX>`) `gex_AM_Prepare<XXX>()`.
+//
+// This call is valid only after a Prepare without a following successful
+// Commit (or Cancel), and enables the client to elect not to perform the
+// communication described by the Prepare.  This call "consumes" the 'sd',
+// meaning that after return it is no longer a valid argument to any GASNet
+// API call.
+//
+// Any resources allocated by the Prepare call are released.  In particular, if
+// the Prepare call allocated a buffer (client_buf == NULL), then any accesses
+// to that buffer by the client after a Cancel will yield undefined behavior.
+//
+// The contents of the location named by the 'lc_opt' argument (if any) to the
+// Prepare call was undefined since return from the Prepare call and remains so
+// upon return from this call.
+//
+// Currently, `flags` is reserved and must be zero.
+//
+// Returns 0 on success, non-zero on error
+extern int gex_AM_CancelRequestMedium(
+                gex_AM_SrcDesc_t     sd,
+                gex_Flags_t          flags);
+extern int gex_AM_CancelReplyMedium(
+                gex_AM_SrcDesc_t     sd,
+                gex_Flags_t          flags);
+extern int gex_AM_CancelRequestLong(
+                gex_AM_SrcDesc_t     sd,
+                gex_Flags_t          flags);
+extern int gex_AM_CancelReplyLong(
+                gex_AM_SrcDesc_t     sd,
+                gex_Flags_t          flags);
 
 
 //

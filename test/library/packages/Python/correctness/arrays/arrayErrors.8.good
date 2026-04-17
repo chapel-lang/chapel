@@ -1,0 +1,3 @@
+$CHPL_HOME/modules/packages/Python.chpl:nnnn: In iterator 'values':
+$CHPL_HOME/modules/packages/Python.chpl:nnnn: error: Element type must be specified at compile time
+  arrayErrors.chpl:137: called as (PyArray(nothing,-1)).values()

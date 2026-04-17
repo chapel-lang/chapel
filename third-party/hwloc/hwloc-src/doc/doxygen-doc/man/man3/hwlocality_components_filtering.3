@@ -1,4 +1,4 @@
-.TH "hwlocality_components_filtering" 3 "Version 2.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_components_filtering" 3 "Version 2.12.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -10,16 +10,16 @@ hwlocality_components_filtering \- Components and Plugins: Filtering objects
 
 .in +1c
 .ti -1c
-.RI "static int \fBhwloc_filter_check_pcidev_subtype_important\fP (unsigned classid)"
+.RI "int \fBhwloc_filter_check_pcidev_subtype_important\fP (unsigned classid)"
 .br
 .ti -1c
-.RI "static int \fBhwloc_filter_check_osdev_subtype_important\fP (\fBhwloc_obj_osdev_type_t\fP subtype)"
+.RI "int \fBhwloc_filter_check_osdev_subtype_important\fP (\fBhwloc_obj_osdev_type_t\fP subtype)"
 .br
 .ti -1c
-.RI "static int \fBhwloc_filter_check_keep_object_type\fP (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_type_t\fP type)"
+.RI "int \fBhwloc_filter_check_keep_object_type\fP (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_type_t\fP type)"
 .br
 .ti -1c
-.RI "static int \fBhwloc_filter_check_keep_object\fP (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_t\fP obj)"
+.RI "int \fBhwloc_filter_check_keep_object\fP (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_t\fP obj)"
 .br
 .in -1c
 .SH "Detailed Description"
@@ -34,7 +34,7 @@ These structures and functions may change when \fBHWLOC_COMPONENT_ABI\fP is modi
 
 .SH "Function Documentation"
 .PP 
-.SS "static int hwloc_filter_check_keep_object (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_t\fP obj)\fC [inline]\fP, \fC [static]\fP"
+.SS "int hwloc_filter_check_keep_object (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_t\fP obj)\fC [inline]\fP"
 
 .PP
 Check whether the given object should be filtered-out\&. 
@@ -45,7 +45,7 @@ Check whether the given object should be filtered-out\&.
 .RE
 .PP
 
-.SS "static int hwloc_filter_check_keep_object_type (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_type_t\fP type)\fC [inline]\fP, \fC [static]\fP"
+.SS "int hwloc_filter_check_keep_object_type (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_type_t\fP type)\fC [inline]\fP"
 
 .PP
 Check whether a non-I/O object type should be filtered-out\&. Cannot be used for I/O objects\&.
@@ -56,7 +56,7 @@ Check whether a non-I/O object type should be filtered-out\&. Cannot be used for
 .RE
 .PP
 
-.SS "static int hwloc_filter_check_osdev_subtype_important (\fBhwloc_obj_osdev_type_t\fP subtype)\fC [inline]\fP, \fC [static]\fP"
+.SS "int hwloc_filter_check_osdev_subtype_important (\fBhwloc_obj_osdev_type_t\fP subtype)\fC [inline]\fP"
 
 .PP
 Check whether the given OS device subtype is important\&. 
@@ -67,7 +67,7 @@ Check whether the given OS device subtype is important\&.
 .RE
 .PP
 
-.SS "static int hwloc_filter_check_pcidev_subtype_important (unsigned classid)\fC [inline]\fP, \fC [static]\fP"
+.SS "int hwloc_filter_check_pcidev_subtype_important (unsigned classid)\fC [inline]\fP"
 
 .PP
 Check whether the given PCI device classid is important\&. 

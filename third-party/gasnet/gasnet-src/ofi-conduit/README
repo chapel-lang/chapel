@@ -450,7 +450,7 @@ Recognized environment variables:
   See "topology-aware environment variable families" in GASNet's top-level
   README for a description of how 'GASNET_OFI_DEVICE_TYPE' can be used to
   establish process-specific values for 'GASNET_OFI_DEVICE'.
-  As a concrete example, on OLCF's Crusher there are four NICs -- one per NUMA
+  As a concrete example, on OLCF's Frontier there are four NICs -- one per NUMA
   Node.  Examining the corresponding Quick Start Guide one can construct the
   following settings to ensure processes bound to cores in a single NUMA Node
   will use the topologically nearest NIC:
@@ -460,7 +460,7 @@ Recognized environment variables:
       GASNET_OFI_DEVICE_2=cxi3
       GASNET_OFI_DEVICE_3=cxi0
   These specific recommendations are appropriate to the specific composition
-  of a node of OLCF's Crusher, and should not be considered as generic advice
+  of a node of OLCF's Frontier, and should not be considered as generic advice
   for use of all multi-NIC systems.
   Of course, even on the same system, your mileage may vary.
   By default 'GASNET_OFI_DEVICE_TYPE' is "Socket" and all other variables in

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -76,7 +76,10 @@ static void testPrimitive(std::string primitive, std::vector<std::tuple<const ch
     if (expectedValidities[i]) {
       assert(varTypes.at(variables[i]).isParamTrue());
     } else {
-      assert(varTypes.at(variables[i]).isErroneousType());
+      // if we are calling .type, we'll get 'unknown' instead of erroneous
+      bool callDotType = std::get<2>(args[i]);
+      assert(callDotType ? varTypes.at(variables[i]).isUnknown()
+                         : varTypes.at(variables[i]).isErroneousType());
     }
   }
 

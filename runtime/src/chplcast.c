@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -23,7 +23,7 @@
 #include "chplcast.h"
 #include "chpltypes.h"
 #include "chpl-mem.h"
-#include "error.h"
+#include "chpl-error.h"
 
 #include <ctype.h>
 #include <stdio.h>
@@ -188,7 +188,16 @@ _define_string_to_float_precise(real, 64, "%lf")
     if (scanningNCounts() && numitems == 3) {                           \
       numitems = 2;                                                     \
     }                                                                   \
-    if (numitems == 1) {                                                \
+    if (numitems == 0) {                                                \
+      if (0 == strcmp(str, "infi")) {                                   \
+        val = INFINITY;                                                 \
+        *invalid = 0;                                                   \
+        *invalidCh = '\0';                                              \
+      } else {                                                          \
+        *invalid = 1;                                                   \
+        *invalidCh = *str;                                              \
+      }                                                                 \
+    } else if (numitems == 1) {                                         \
       /* missing terminating i */                                       \
       *invalid = 2;                                                     \
       *invalidCh = i;                                                   \
@@ -292,7 +301,7 @@ _define_string_to_imag_precise(imag, 64, "%lf")
         *invalidCh = *str;                                              \
       }                                                                 \
     }                                                                   \
-    val = val_re + val_im*_Complex_I;                                   \
+    val = _chpl_complex##width(val_re, val_im);                         \
     return val;                                                         \
   }
 

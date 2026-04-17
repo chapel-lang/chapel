@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -391,10 +391,21 @@ module Map {
                       '`parSafe=true`', 2);
     }
 
+    @chpldoc.nodoc
+    proc ref this(k: keyType) ref
+      where isDefaultInitializable(valType) {
+      _warnForParSafeIndexing();
 
-    // TODO (Jade 11/6/23): This doc comment should go on the `this` overload
-    // without `where` that is marked `throws`. However, there is a current
-    // limitation in chpldoc with return intents and `throws` (#23776)
+      _enter(); defer _leave();
+
+      var (_, slot) = table.findAvailableSlot(k);
+      if !table.isSlotFull(slot) {
+        var val: valType;
+        table.fillSlot(slot, k, val);
+      }
+      return table.table[slot].val;
+    }
+
     /*
       If the key exists in the map, get a reference to the value mapped
       to the given key. If the key does not exist in the map, the value
@@ -414,21 +425,6 @@ module Map {
 
       :returns: Reference to the value mapped to the given key.
     */
-    proc ref this(k: keyType) ref
-      where isDefaultInitializable(valType) {
-      _warnForParSafeIndexing();
-
-      _enter(); defer _leave();
-
-      var (_, slot) = table.findAvailableSlot(k);
-      if !table.isSlotFull(slot) {
-        var val: valType;
-        table.fillSlot(slot, k, val);
-      }
-      return table.table[slot].val;
-    }
-
-    @chpldoc.nodoc
     proc ref this(k: keyType) ref throws {
       _warnForParSafeIndexing();
 
@@ -624,7 +620,7 @@ module Map {
       Reads the contents of this map from a ``fileReader``.
       The 'defaultDeserializer' format looks like:
 
-        .. code-block:: chapel
+        .. code-block:: text
 
            {k1: v1, k2: v2, .... , kn: vn}
 
@@ -652,7 +648,7 @@ module Map {
       Writes the contents of this map to a ``fileWriter``.
       The 'defaultSerializer' format looks like:
 
-        .. code-block:: chapel
+        .. code-block:: text
 
            {k1: v1, k2: v2, .... , kn: vn}
 
@@ -769,11 +765,8 @@ module Map {
       if !isCopyableType(keyType) || !isCopyableType(valType) then
         compilerError("toArray requires copyable key and value types");
 
-      var A: [0..#_size] (keyType, valType);
-
-      for (a, k, v) in zip(A, keys(), values()) {
-        a = (k, v);
-      }
+      var A: [0..#_size] (keyType, valType)
+          = for (k, v) in zip(keys(), values()) do (k, v);
 
       return A;
     }

@@ -72,7 +72,7 @@ proc main() {
   revcomp(nextSeqID, buf[seqStart..<end-1]);
 }
 
-proc revcomp(seqID, seq:[?D]) {
+proc revcomp(seqID, ref seq:[?D]) {
   param eol  = '\n'.toByte(),      // end-of-line, as an integer
         cmp = b"                                                             "
             + b"    TVGH  CD  M KN   YSAABW R       TVGH  CD  M KN   YSAABW R";

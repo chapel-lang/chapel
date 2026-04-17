@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Hardware Locality (hwloc): Object Sets (hwloc_cpuset_t and hwloc_nodeset_t)</title>
+<title>Hardware Locality (hwloc): Changing the Source of Topology Discovery</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -18,7 +18,7 @@
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Hardware Locality (hwloc)<span id="projectnumber">&#160;2.11.2</span>
+   <div id="projectname">Hardware Locality (hwloc)<span id="projectnumber">&#160;2.12.2</span>
    </div>
   </td>
  </tr>
@@ -40,92 +40,265 @@ $(function() {
 </div><!-- top -->
 <div class="header">
   <div class="summary">
-<a href="#typedef-members">Typedefs</a>  </div>
-  <div class="headertitle"><div class="title">Object Sets (hwloc_cpuset_t and hwloc_nodeset_t)</div></div>
+<a href="#enum-members">Enumerations</a> &#124;
+<a href="#func-members">Functions</a>  </div>
+  <div class="headertitle"><div class="title">Changing the Source of Topology Discovery</div></div>
 </div><!--header-->
 <div class="contents">
 <table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="typedef-members" name="typedef-members"></a>
-Typedefs</h2></td></tr>
-<tr class="memitem:ga4bbf39b68b6f568fb92739e7c0ea7801" id="r_ga4bbf39b68b6f568fb92739e7c0ea7801"><td class="memItemLeft" align="right" valign="top">typedef <a class="el" href="a00194.html#gaa3c2bf4c776d603dcebbb61b0c923d84">hwloc_bitmap_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00172.html#ga4bbf39b68b6f568fb92739e7c0ea7801">hwloc_cpuset_t</a></td></tr>
-<tr class="separator:ga4bbf39b68b6f568fb92739e7c0ea7801"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga1f784433e9b606261f62d1134f6a3b25" id="r_ga1f784433e9b606261f62d1134f6a3b25"><td class="memItemLeft" align="right" valign="top">typedef <a class="el" href="a00194.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00172.html#ga1f784433e9b606261f62d1134f6a3b25">hwloc_const_cpuset_t</a></td></tr>
-<tr class="separator:ga1f784433e9b606261f62d1134f6a3b25"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga37e35730fa7e775b5bb0afe893d6d508" id="r_ga37e35730fa7e775b5bb0afe893d6d508"><td class="memItemLeft" align="right" valign="top">typedef <a class="el" href="a00194.html#gaa3c2bf4c776d603dcebbb61b0c923d84">hwloc_bitmap_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00172.html#ga37e35730fa7e775b5bb0afe893d6d508">hwloc_nodeset_t</a></td></tr>
-<tr class="separator:ga37e35730fa7e775b5bb0afe893d6d508"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga2f5276235841ad66a79bedad16a5a10c" id="r_ga2f5276235841ad66a79bedad16a5a10c"><td class="memItemLeft" align="right" valign="top">typedef <a class="el" href="a00194.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00172.html#ga2f5276235841ad66a79bedad16a5a10c">hwloc_const_nodeset_t</a></td></tr>
-<tr class="separator:ga2f5276235841ad66a79bedad16a5a10c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="enum-members" name="enum-members"></a>
+Enumerations</h2></td></tr>
+<tr class="memitem:ga949f656c779208a36790feba24048b7e" id="r_ga949f656c779208a36790feba24048b7e"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00172.html#ga949f656c779208a36790feba24048b7e">hwloc_topology_components_flag_e</a> { <a class="el" href="a00172.html#gga949f656c779208a36790feba24048b7ea33eec25d29253a2aba21dd3c731b416e">HWLOC_TOPOLOGY_COMPONENTS_FLAG_BLACKLIST</a>
+ }</td></tr>
+<tr class="separator:ga949f656c779208a36790feba24048b7e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
+Functions</h2></td></tr>
+<tr class="memitem:ga341fc17b5867a4715570baab131f68cd" id="r_ga341fc17b5867a4715570baab131f68cd"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00172.html#ga341fc17b5867a4715570baab131f68cd">hwloc_topology_set_pid</a> (<a class="el" href="a00166.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> restrict topology, hwloc_pid_t pid)</td></tr>
+<tr class="separator:ga341fc17b5867a4715570baab131f68cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga4fab186bb6181a00bcf585825fddd38d" id="r_ga4fab186bb6181a00bcf585825fddd38d"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00172.html#ga4fab186bb6181a00bcf585825fddd38d">hwloc_topology_set_synthetic</a> (<a class="el" href="a00166.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> restrict topology, const char *restrict description)</td></tr>
+<tr class="separator:ga4fab186bb6181a00bcf585825fddd38d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga879439b7ee99407ee911b3ac64e9a25e" id="r_ga879439b7ee99407ee911b3ac64e9a25e"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00172.html#ga879439b7ee99407ee911b3ac64e9a25e">hwloc_topology_set_xml</a> (<a class="el" href="a00166.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> restrict topology, const char *restrict xmlpath)</td></tr>
+<tr class="separator:ga879439b7ee99407ee911b3ac64e9a25e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga2745616b65595e1c1e579ecc7e461fa8" id="r_ga2745616b65595e1c1e579ecc7e461fa8"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00172.html#ga2745616b65595e1c1e579ecc7e461fa8">hwloc_topology_set_xmlbuffer</a> (<a class="el" href="a00166.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> restrict topology, const char *restrict buffer, int size)</td></tr>
+<tr class="separator:ga2745616b65595e1c1e579ecc7e461fa8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga9ad41adf418cee1c0ee32ba9bd4a3d36" id="r_ga9ad41adf418cee1c0ee32ba9bd4a3d36"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00172.html#ga9ad41adf418cee1c0ee32ba9bd4a3d36">hwloc_topology_set_components</a> (<a class="el" href="a00166.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> restrict topology, unsigned long flags, const char *restrict name)</td></tr>
+<tr class="separator:ga9ad41adf418cee1c0ee32ba9bd4a3d36"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<p>Hwloc uses bitmaps to represent two distinct kinds of object sets: CPU sets (<a class="el" href="a00172.html#ga4bbf39b68b6f568fb92739e7c0ea7801" title="A CPU set is a bitmap whose bits are set according to CPU physical OS indexes.">hwloc_cpuset_t</a>) and NUMA node sets (<a class="el" href="a00172.html#ga37e35730fa7e775b5bb0afe893d6d508" title="A node set is a bitmap whose bits are set according to NUMA memory node physical OS indexes.">hwloc_nodeset_t</a>). These types are both typedefs to a common back end type (<a class="el" href="a00194.html#gaa3c2bf4c776d603dcebbb61b0c923d84" title="Set of bits represented as an opaque pointer to an internal bitmap.">hwloc_bitmap_t</a>), and therefore all the hwloc bitmap functions are applicable to both <a class="el" href="a00172.html#ga4bbf39b68b6f568fb92739e7c0ea7801" title="A CPU set is a bitmap whose bits are set according to CPU physical OS indexes.">hwloc_cpuset_t</a> and <a class="el" href="a00172.html#ga37e35730fa7e775b5bb0afe893d6d508" title="A node set is a bitmap whose bits are set according to NUMA memory node physical OS indexes.">hwloc_nodeset_t</a> (see <a class="el" href="a00194.html">The bitmap API</a>).</p>
-<p>The rationale for having two different types is that even though the actions one wants to perform on these types are the same (e.g., enable and disable individual items in the set/mask), they're used in very different contexts: one for specifying which processors to use and one for specifying which NUMA nodes to use. Hence, the name difference is really just to reflect the intent of where the type is used. </p>
-<h2 class="groupheader">Typedef Documentation</h2>
-<a id="ga1f784433e9b606261f62d1134f6a3b25" name="ga1f784433e9b606261f62d1134f6a3b25"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga1f784433e9b606261f62d1134f6a3b25">&#9670;&#160;</a></span>hwloc_const_cpuset_t</h2>
+<p>These functions must be called between <a class="el" href="a00166.html#ga03fd4a16d8b9ee1ffc32b25fd2f6bdfa" title="Allocate a topology context.">hwloc_topology_init()</a> and <a class="el" href="a00166.html#gabdf58d87ad77f6615fccdfe0535ff826" title="Build the actual topology.">hwloc_topology_load()</a>. Otherwise, they will return -1 with errno set to <code>EBUSY</code>.</p>
+<p>If none of the functions below is called, the default is to detect all the objects of the machine that the caller is allowed to access.</p>
+<p>This default behavior may also be modified through environment variables if the application did not modify it already. Setting HWLOC_XMLFILE in the environment enforces the discovery from a XML file as if <a class="el" href="a00172.html#ga879439b7ee99407ee911b3ac64e9a25e" title="Enable XML-file based topology.">hwloc_topology_set_xml()</a> had been called. Setting HWLOC_SYNTHETIC enforces a synthetic topology as if <a class="el" href="a00172.html#ga4fab186bb6181a00bcf585825fddd38d" title="Enable synthetic topology.">hwloc_topology_set_synthetic()</a> had been called.</p>
+<p>Finally, HWLOC_THISSYSTEM enforces the return value of <a class="el" href="a00173.html#ga68ffdcfd9175cdf40709801092f18017" title="Does the topology context come from this system?">hwloc_topology_is_thissystem()</a>. </p>
+<h2 class="groupheader">Enumeration Type Documentation</h2>
+<a id="ga949f656c779208a36790feba24048b7e" name="ga949f656c779208a36790feba24048b7e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga949f656c779208a36790feba24048b7e">&#9670;&#160;</a></span>hwloc_topology_components_flag_e</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef <a class="el" href="a00194.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a> <a class="el" href="a00172.html#ga1f784433e9b606261f62d1134f6a3b25">hwloc_const_cpuset_t</a></td>
+          <td class="memname">enum <a class="el" href="a00172.html#ga949f656c779208a36790feba24048b7e">hwloc_topology_components_flag_e</a></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p>A non-modifiable <a class="el" href="a00172.html#ga4bbf39b68b6f568fb92739e7c0ea7801" title="A CPU set is a bitmap whose bits are set according to CPU physical OS indexes.">hwloc_cpuset_t</a>. </p>
+<p>Flags to be passed to <a class="el" href="a00172.html#ga9ad41adf418cee1c0ee32ba9bd4a3d36" title="Prevent a discovery component from being used for a topology.">hwloc_topology_set_components()</a> </p>
+<table class="fieldtable">
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="gga949f656c779208a36790feba24048b7ea33eec25d29253a2aba21dd3c731b416e" name="gga949f656c779208a36790feba24048b7ea33eec25d29253a2aba21dd3c731b416e"></a>HWLOC_TOPOLOGY_COMPONENTS_FLAG_BLACKLIST&#160;</td><td class="fielddoc"><p>Blacklist the target component from being used. </p>
+</td></tr>
+</table>
 
 </div>
 </div>
-<a id="ga2f5276235841ad66a79bedad16a5a10c" name="ga2f5276235841ad66a79bedad16a5a10c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga2f5276235841ad66a79bedad16a5a10c">&#9670;&#160;</a></span>hwloc_const_nodeset_t</h2>
+<h2 class="groupheader">Function Documentation</h2>
+<a id="ga9ad41adf418cee1c0ee32ba9bd4a3d36" name="ga9ad41adf418cee1c0ee32ba9bd4a3d36"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga9ad41adf418cee1c0ee32ba9bd4a3d36">&#9670;&#160;</a></span>hwloc_topology_set_components()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef <a class="el" href="a00194.html#gae991a108af01d408be2776c5b2c467b2">hwloc_const_bitmap_t</a> <a class="el" href="a00172.html#ga2f5276235841ad66a79bedad16a5a10c">hwloc_const_nodeset_t</a></td>
+          <td class="memname">int hwloc_topology_set_components </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="a00166.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> restrict&#160;</td>
+          <td class="paramname"><em>topology</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned long&#160;</td>
+          <td class="paramname"><em>flags</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *restrict&#160;</td>
+          <td class="paramname"><em>name</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p>A non-modifiable <a class="el" href="a00172.html#ga37e35730fa7e775b5bb0afe893d6d508" title="A node set is a bitmap whose bits are set according to NUMA memory node physical OS indexes.">hwloc_nodeset_t</a>. </p>
+<p>Prevent a discovery component from being used for a topology. </p>
+<p><code>name</code> is the name of the discovery component that should not be used when loading topology <code>topology</code>. The name is a string such as "cuda".</p>
+<p>For components with multiple phases, it may also be suffixed with the name of a phase, for instance "linux:io".</p>
+<p><code>flags</code> should be <a class="el" href="a00172.html#gga949f656c779208a36790feba24048b7ea33eec25d29253a2aba21dd3c731b416e" title="Blacklist the target component from being used.">HWLOC_TOPOLOGY_COMPONENTS_FLAG_BLACKLIST</a>.</p>
+<p>This may be used to avoid expensive parts of the discovery process. For instance, CUDA-specific discovery may be expensive and unneeded while generic I/O discovery could still be useful.</p>
+<dl class="section return"><dt>Returns</dt><dd>0 on success. </dd>
+<dd>
+-1 on error, for instance if flags are invalid. </dd></dl>
 
 </div>
 </div>
-<a id="ga4bbf39b68b6f568fb92739e7c0ea7801" name="ga4bbf39b68b6f568fb92739e7c0ea7801"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga4bbf39b68b6f568fb92739e7c0ea7801">&#9670;&#160;</a></span>hwloc_cpuset_t</h2>
+<a id="ga341fc17b5867a4715570baab131f68cd" name="ga341fc17b5867a4715570baab131f68cd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga341fc17b5867a4715570baab131f68cd">&#9670;&#160;</a></span>hwloc_topology_set_pid()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef <a class="el" href="a00194.html#gaa3c2bf4c776d603dcebbb61b0c923d84">hwloc_bitmap_t</a> <a class="el" href="a00172.html#ga4bbf39b68b6f568fb92739e7c0ea7801">hwloc_cpuset_t</a></td>
+          <td class="memname">int hwloc_topology_set_pid </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="a00166.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> restrict&#160;</td>
+          <td class="paramname"><em>topology</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">hwloc_pid_t&#160;</td>
+          <td class="paramname"><em>pid</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p>A CPU set is a bitmap whose bits are set according to CPU physical OS indexes. </p>
-<p>It may be consulted and modified with the bitmap API as any <a class="el" href="a00194.html#gaa3c2bf4c776d603dcebbb61b0c923d84" title="Set of bits represented as an opaque pointer to an internal bitmap.">hwloc_bitmap_t</a> (see <a class="el" href="a00110_source.html">hwloc/bitmap.h</a>).</p>
-<p>Each bit may be converted into a PU object using <a class="el" href="a00189.html#ga751c238a4931db5cc0ca3181b7dd7479" title="Returns the object of type HWLOC_OBJ_PU with os_index.">hwloc_get_pu_obj_by_os_index()</a>. </p>
+<p>Change which process the topology is viewed from. </p>
+<p>On some systems, processes may have different views of the machine, for instance the set of allowed CPUs. By default, hwloc exposes the view from the current process. Calling <a class="el" href="a00172.html#ga341fc17b5867a4715570baab131f68cd" title="Change which process the topology is viewed from.">hwloc_topology_set_pid()</a> permits to make it expose the topology of the machine from the point of view of another process.</p>
+<dl class="section note"><dt>Note</dt><dd><code>hwloc_pid_t</code> is <code>pid_t</code> on Unix platforms, and <code>HANDLE</code> on native Windows platforms.</dd>
+<dd>
+-1 is returned and errno is set to <code>ENOSYS</code> on platforms that do not support this feature.</dd>
+<dd>
+The PID will not actually be used until <a class="el" href="a00166.html#gabdf58d87ad77f6615fccdfe0535ff826" title="Build the actual topology.">hwloc_topology_load()</a>. If the corresponding process exits in the meantime, hwloc will ignore the PID. If another process reuses the PID, the view of that process will be used.</dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>0 on success, -1 on error. </dd></dl>
 
 </div>
 </div>
-<a id="ga37e35730fa7e775b5bb0afe893d6d508" name="ga37e35730fa7e775b5bb0afe893d6d508"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga37e35730fa7e775b5bb0afe893d6d508">&#9670;&#160;</a></span>hwloc_nodeset_t</h2>
+<a id="ga4fab186bb6181a00bcf585825fddd38d" name="ga4fab186bb6181a00bcf585825fddd38d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga4fab186bb6181a00bcf585825fddd38d">&#9670;&#160;</a></span>hwloc_topology_set_synthetic()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef <a class="el" href="a00194.html#gaa3c2bf4c776d603dcebbb61b0c923d84">hwloc_bitmap_t</a> <a class="el" href="a00172.html#ga37e35730fa7e775b5bb0afe893d6d508">hwloc_nodeset_t</a></td>
+          <td class="memname">int hwloc_topology_set_synthetic </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="a00166.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> restrict&#160;</td>
+          <td class="paramname"><em>topology</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *restrict&#160;</td>
+          <td class="paramname"><em>description</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p>A node set is a bitmap whose bits are set according to NUMA memory node physical OS indexes. </p>
-<p>It may be consulted and modified with the bitmap API as any <a class="el" href="a00194.html#gaa3c2bf4c776d603dcebbb61b0c923d84" title="Set of bits represented as an opaque pointer to an internal bitmap.">hwloc_bitmap_t</a> (see <a class="el" href="a00110_source.html">hwloc/bitmap.h</a>). Each bit may be converted into a NUMA node object using <a class="el" href="a00189.html#gab89d9ed9edfaa3dd526fb6ee1a1618ea" title="Returns the object of type HWLOC_OBJ_NUMANODE with os_index.">hwloc_get_numanode_obj_by_os_index()</a>.</p>
-<p>When binding memory on a system without any NUMA node, the single main memory bank is considered as NUMA node #0.</p>
-<p>See also <a class="el" href="a00192.html">Converting between CPU sets and node sets</a>. </p>
+<p>Enable synthetic topology. </p>
+<p>Gather topology information from the given <code>description</code>, a space-separated string of &lt;type:number&gt; describing the object type and arity at each level. All types may be omitted (space-separated string of numbers) so that hwloc chooses all types according to usual topologies. See also the <a class="el" href="a00377.html">Synthetic topologies</a>.</p>
+<p>Setting the environment variable HWLOC_SYNTHETIC may also result in this behavior.</p>
+<p>If <code>description</code> was properly parsed and describes a valid topology configuration, this function returns 0. Otherwise -1 is returned and errno is set to <code>EINVAL</code>.</p>
+<p>Note that this function does not actually load topology information; it just tells hwloc where to load it from. You'll still need to invoke <a class="el" href="a00166.html#gabdf58d87ad77f6615fccdfe0535ff826" title="Build the actual topology.">hwloc_topology_load()</a> to actually load the topology information.</p>
+<dl class="section return"><dt>Returns</dt><dd>0 on success. </dd>
+<dd>
+-1 with errno set to <code>EINVAL</code> if the description was invalid.</dd></dl>
+<dl class="section note"><dt>Note</dt><dd>For convenience, this backend provides empty binding hooks which just return success.</dd>
+<dd>
+On success, the synthetic component replaces the previously enabled component (if any), but the topology is not actually modified until <a class="el" href="a00166.html#gabdf58d87ad77f6615fccdfe0535ff826" title="Build the actual topology.">hwloc_topology_load()</a>. </dd></dl>
+
+</div>
+</div>
+<a id="ga879439b7ee99407ee911b3ac64e9a25e" name="ga879439b7ee99407ee911b3ac64e9a25e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga879439b7ee99407ee911b3ac64e9a25e">&#9670;&#160;</a></span>hwloc_topology_set_xml()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int hwloc_topology_set_xml </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="a00166.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> restrict&#160;</td>
+          <td class="paramname"><em>topology</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *restrict&#160;</td>
+          <td class="paramname"><em>xmlpath</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Enable XML-file based topology. </p>
+<p>Gather topology information from the XML file given at <code>xmlpath</code>. Setting the environment variable HWLOC_XMLFILE may also result in this behavior. This file may have been generated earlier with <a class="el" href="a00186.html#ga333f79975b4eeb28a3d8fad3373583ce" title="Export the topology into an XML file.">hwloc_topology_export_xml()</a> in <a class="el" href="a00104_source.html">hwloc/export.h</a>, or lstopo file.xml.</p>
+<p>Note that this function does not actually load topology information; it just tells hwloc where to load it from. You'll still need to invoke <a class="el" href="a00166.html#gabdf58d87ad77f6615fccdfe0535ff826" title="Build the actual topology.">hwloc_topology_load()</a> to actually load the topology information.</p>
+<dl class="section return"><dt>Returns</dt><dd>0 on success. </dd>
+<dd>
+-1 with errno set to <code>EINVAL</code> on failure to read the XML file.</dd></dl>
+<dl class="section note"><dt>Note</dt><dd>See also <a class="el" href="a00186.html#ga5ac6917ea7289955fb1ffda4353af9b0" title="Set the application-specific callback for importing userdata.">hwloc_topology_set_userdata_import_callback()</a> for importing application-specific object userdata.</dd>
+<dd>
+For convenience, this backend provides empty binding hooks which just return success. To have hwloc still actually call OS-specific hooks, the <a class="el" href="a00173.html#ggada025d3ec20b4b420f8038d23d6e7bdea6ecb6abc6a0bb75e81564f8bca85783b" title="Assume that the selected backend provides the topology for the system on which we are running.">HWLOC_TOPOLOGY_FLAG_IS_THISSYSTEM</a> has to be set to assert that the loaded file is really the underlying system.</dd>
+<dd>
+On success, the XML component replaces the previously enabled component (if any), but the topology is not actually modified until <a class="el" href="a00166.html#gabdf58d87ad77f6615fccdfe0535ff826" title="Build the actual topology.">hwloc_topology_load()</a>.</dd>
+<dd>
+If an invalid XML input file is given, the error may be reported either here or later by <a class="el" href="a00166.html#gabdf58d87ad77f6615fccdfe0535ff826" title="Build the actual topology.">hwloc_topology_load()</a> depending on the XML library used by hwloc. </dd></dl>
+
+</div>
+</div>
+<a id="ga2745616b65595e1c1e579ecc7e461fa8" name="ga2745616b65595e1c1e579ecc7e461fa8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga2745616b65595e1c1e579ecc7e461fa8">&#9670;&#160;</a></span>hwloc_topology_set_xmlbuffer()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int hwloc_topology_set_xmlbuffer </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="a00166.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> restrict&#160;</td>
+          <td class="paramname"><em>topology</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *restrict&#160;</td>
+          <td class="paramname"><em>buffer</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>size</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Enable XML based topology using a memory buffer (instead of a file, as with <a class="el" href="a00172.html#ga879439b7ee99407ee911b3ac64e9a25e" title="Enable XML-file based topology.">hwloc_topology_set_xml()</a>). </p>
+<p>Gather topology information from the XML memory buffer given at <code>buffer</code> and of length <code>size</code> (including an ending <code>\0</code>). This buffer may have been filled earlier with <a class="el" href="a00186.html#gad33b7f7c11db10459505a3b1634fd3f1" title="Export the topology into a newly-allocated XML memory buffer.">hwloc_topology_export_xmlbuffer()</a> in <a class="el" href="a00104_source.html">hwloc/export.h</a>.</p>
+<p>Note that this function does not actually load topology information; it just tells hwloc where to load it from. You'll still need to invoke <a class="el" href="a00166.html#gabdf58d87ad77f6615fccdfe0535ff826" title="Build the actual topology.">hwloc_topology_load()</a> to actually load the topology information.</p>
+<dl class="section return"><dt>Returns</dt><dd>0 on success. </dd>
+<dd>
+-1 with errno set to <code>EINVAL</code> on failure to read the XML buffer.</dd></dl>
+<dl class="section note"><dt>Note</dt><dd>See also <a class="el" href="a00186.html#ga5ac6917ea7289955fb1ffda4353af9b0" title="Set the application-specific callback for importing userdata.">hwloc_topology_set_userdata_import_callback()</a> for importing application-specific object userdata.</dd>
+<dd>
+For convenience, this backend provides empty binding hooks which just return success. To have hwloc still actually call OS-specific hooks, the <a class="el" href="a00173.html#ggada025d3ec20b4b420f8038d23d6e7bdea6ecb6abc6a0bb75e81564f8bca85783b" title="Assume that the selected backend provides the topology for the system on which we are running.">HWLOC_TOPOLOGY_FLAG_IS_THISSYSTEM</a> has to be set to assert that the loaded file is really the underlying system.</dd>
+<dd>
+On success, the XML component replaces the previously enabled component (if any), but the topology is not actually modified until <a class="el" href="a00166.html#gabdf58d87ad77f6615fccdfe0535ff826" title="Build the actual topology.">hwloc_topology_load()</a>.</dd>
+<dd>
+If an invalid XML input file is given, the error may be reported either here or later by <a class="el" href="a00166.html#gabdf58d87ad77f6615fccdfe0535ff826" title="Build the actual topology.">hwloc_topology_load()</a> depending on the XML library used by hwloc. </dd></dl>
 
 </div>
 </div>

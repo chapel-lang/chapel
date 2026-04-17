@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -47,6 +47,7 @@ struct GatherStuff {
 // function indexes count functions from 1
 //   0 means nothing found
 //  -1 means ambiguous
+// checks last call in the module, to allow calls in argument types
 static void checkCalledIndex(Context* context,
                              std::string contents,
                              int expectOnlyIdx,
@@ -75,14 +76,15 @@ static void checkCalledIndex(Context* context,
   m->traverse(stuff);
 
   assert(stuff.fns.size() > 1); // > 1 needed for disambiguation
-  assert(stuff.fnCalls.size() == 1); // need just one to disambiguate
 
-  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
-  const ResolvedExpression& re = rr.byAst(stuff.fnCalls[0]);
+  // resolve the individual module statement, since the full module
+  // resolution performs return intent selection and discards unrelated candidates.
+  const ResolutionResultByPostorderID& rr = resolveModuleStmt(context, parsing::idToParentModuleStmt(context, stuff.fnCalls.back()->id()));
+  const ResolvedExpression& re = rr.byAst(stuff.fnCalls.back());
   const MostSpecificCandidates& s = re.mostSpecific();
 
   // disambiguation tests should either have a best candidate or be ambiguous.
-  assert (!s.isEmpty());
+  assert (!s.isEmpty() || s.isAmbiguous());
 
   int foundOnlyIdx = 0;
   int foundBestRef = 0;
@@ -372,6 +374,20 @@ static void test6() {
   assert(qt.type()->isStringType());
 }
 
+static void test7() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  checkCalledIndex(context,
+      R""""(
+        proc f(param arg: int(8)) { }   // 1
+        proc f(param arg: int(16)) { }  // 2
+        param x = 1;
+        f(x);
+      )"""",
+    1);
+}
+
 static void testDistance() {
   auto context = buildStdContext();
   ErrorGuard guard(context);
@@ -419,6 +435,148 @@ static void testDistance() {
   assert(x->isStringType());
 }
 
+// Test partial instantiation: single type field
+static void testPartialGeneric1() {
+  auto context = buildStdContext();
+
+  checkCalledIndex(context,
+      R""""(
+        record R {
+          type T;
+          param p : T;
+        }
+        proc f(x : R(int)) { }   // 1 - partially generic
+        proc f(x : R(?)) { }     // 2 - fully generic
+        var arg = new R(int, 100);
+        f(arg);
+      )"""",
+    1);
+}
+
+// Test partial instantiation: class with management
+static void testPartialGeneric2() {
+  auto context = buildStdContext();
+
+  // 'owned' makes both partially generic; this is ambiguous in prod.
+  checkCalledIndex(context,
+      R""""(
+        class C {
+          type T;
+          param n : int;
+        }
+        proc f(x : owned C(int)) { }
+        proc f(x : owned C(?)) { }
+        var arg = new owned C(int, 4);
+        f(arg);
+      )"""",
+    -1);
+
+  checkCalledIndex(context,
+      R""""(
+        class C {
+          type T;
+          param n : int;
+        }
+        proc f(x : owned C(?)) { }   // 1
+        proc f(x :       C(?)) { }   // 2
+        var arg = new owned C(string, 10);
+        f(arg);
+      )"""",
+    1);
+}
+
+// Test partial instantiation: param values constrain the type
+static void testPartialGeneric3() {
+  auto context = buildStdContext();
+
+  checkCalledIndex(context,
+      R""""(
+        class C {
+          type T;
+          param n : int;
+        }
+        proc f(x : C(n=4)) { }    // 1 - partially generic (param specified)
+        proc f(x : C(?)) { }      // 2 - fully generic
+        var arg = new owned C(string, 4);
+        f(arg);
+      )"""",
+    1);
+}
+
+// Test partial instantiation: tuple types constrain size
+static void testPartialGeneric4() {
+  auto context = buildStdContext();
+
+  checkCalledIndex(context,
+      R""""(
+        proc f(x : (int, ?)) { }   // 1 - partially generic (size constrained)
+        proc f(x : _tuple) { }     // 2 - fully generic
+        var arg = (1, 2);
+        f(arg);
+      )"""",
+    1);
+
+  checkCalledIndex(context,
+      R""""(
+        proc f(x : (?, ?)) { }   // 1 - partially generic (size constrained)
+        proc f(x : _tuple) { }   // 2 - fully generic
+        var arg = (1, 2);
+        f(arg);
+      )"""",
+    1);
+}
+
+// Test partial instantiation: array element types
+static void testPartialGeneric5() {
+  auto context = buildStdContext();
+
+  checkCalledIndex(context,
+      R""""(
+        proc f(x : [1..10] int) { }  // 1 - partially generic (element type specified)
+        proc f(x : [1..10] ?) { }    // 2 - fully generic
+        var arg : [1..10] int;
+        f(arg);
+      )"""",
+    1);
+}
+
+// Test multiple fields with different specificity
+static void testPartialGeneric6() {
+  auto context = buildStdContext();
+
+  checkCalledIndex(context,
+      R""""(
+        record R {
+          type T;
+          type U;
+        }
+        proc f(x : R(T=int, ?)) { }    // 1 - partially generic
+        proc f(x : R(?, U=int)) { }    // 2 - partially generic (different field)
+        proc f(x : R(?)) { }         // 3 - fully generic
+        var arg : R(int, int);
+        f(arg);
+      )"""",
+    -1); // ambiguous between 1 and 2
+}
+
+// regression test; vararg counts are not part of a formal's type and thus
+// don't make it partially generic. Thus, 'proc foo(x...1)` and `proc foo(x)`
+// should both be fully generic and ambiguous. Other constraitns (e.g. `where`
+// clauses) would then be used to disambiguate.
+//
+// See `Matrix(rows, cols, type eltType)` in `LinearAlgebra` for an example
+// of this in practice.
+static void testPartialGeneric7() {
+  auto context = buildStdContext();
+  checkCalledIndex(context,
+      R""""(
+        proc f(const args...?n, type eltType) { }  // 1 - fully generic
+        proc f(arg1, arg2, type eltType=real) where isIntegral(arg1) && isIntegral(arg2) { }  // 2 - fully generic
+        f(5, 10, int);
+      )"""",
+    2); // where clause makes 2 more specific
+}
+
 int main() {
 
   test1();
@@ -427,7 +585,15 @@ int main() {
   test4();
   test5();
   test6();
+  test7();
   testDistance();
+  testPartialGeneric1();
+  testPartialGeneric2();
+  testPartialGeneric3();
+  testPartialGeneric4();
+  testPartialGeneric5();
+  testPartialGeneric6();
+  testPartialGeneric7();
 
   return 0;
 }

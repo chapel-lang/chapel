@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+
+checkforfiles() {
+  local dir="doc/_sources/modules/src"
+  if [ ! -f "$dir/Pkg.rst.txt" ]; then
+    echo "Error: expected to find $dir/Pkg.rst.txt but it does not exist"
+    exit 1
+  fi
+  if [ ! -f "$dir/SubPkg.rst.txt" ]; then
+    echo "Error: expected to find $dir/SubPkg.rst.txt but it does not exist"
+    exit 1
+  fi
+  if [ ! -f "$dir/Pkg/Included.rst.txt" ]; then
+    echo "Error: expected to find $dir/Included.rst.txt but it does not exist"
+    exit 1
+  fi
+  if [ -f "$dir/FileSystem.rst.txt" ]; then
+    echo "Error: expected not to find $dir/FileSystem.rst.txt but it exists"
+    exit 1
+  fi
+}
+
+cd Pkg
+
+echo "Test basic doc"
+
+mason doc
+if [ $? -ne 0 ]; then
+  echo "Error: mason doc failed"
+  exit 1
+fi
+checkforfiles
+# check the index has the author
+if ! grep -q "2025, Caroline" doc/index.html; then
+  echo "Error: expected to find author and year in index.html"
+  exit 1
+fi
+rm -rf doc
+
+
+echo "Test doc with custom args"
+mason doc -- --author Billy
+if [ $? -ne 0 ]; then
+  echo "Error: mason doc with custom args failed"
+  exit 1
+fi
+checkforfiles
+if ! grep -q "2025, Billy" doc/index.html; then
+  echo "Error: expected to find custom author and year in index.html"
+  exit 1
+fi
+rm -rf doc

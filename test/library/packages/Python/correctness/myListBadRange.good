@@ -1,0 +1,2 @@
+myListBadRange.chpl:8: In function 'main':
+myListBadRange.chpl:16: error: cannot call `get()` on a Python list with a range with stride other than 1

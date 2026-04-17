@@ -92,18 +92,18 @@ Library Name
 
 The generated library name will be the same as the file being compiled, except
 it will start with ``lib`` if the name does not already, and it will be followed
-by a ``.so`` or ``.a`` suffix.  Thus, in the example above, the generated
-library will be named ``libfoo.so`` or ``libfoo.a``.
+by a ``.so``/``.dylib`` or ``.a`` suffix.  Thus, in the example above, the generated
+library will be named ``libfoo.so``/``libfoo.dylib`` or ``libfoo.a``.
 
 .. code-block:: bash
 
    # Builds library as lib/libfoo.a
    chpl --library --static foo.chpl
 
-   # Builds library as lib/libfoo.so
+   # Builds library as lib/libfoo.so (On MacOS, lib/libfoo.dylib)
    chpl --library --dynamic foo.chpl
 
-   # Builds library as lib/libfoo.so (note: file named libfoo.chpl)
+   # Builds library as lib/libfoo.so (On MacOS, lib/libfoo.dylib) (note: file named libfoo.chpl)
    chpl --library --dynamic libfoo.chpl
 
 The basename used (the ``foo`` portion) can be changed with the ``-o`` or
@@ -694,12 +694,19 @@ definitions of these functions.
 Using Your Library in Multilocale Settings
 ==========================================
 
+.. note::
+
+  In order to compile a multilocale library as described in the following
+  sections, you must specify the flag ``--client-server-library``. The default
+  behavior of ``--library`` for multilocale Chapel configurations has
+  been changed in release 2.8 to produce a more conventional dynamic library.
+
 Prerequisites
 -------------
 
-Chapel also supports ``--library`` when ``CHPL_COMM != none``.  We intend to
-support other settings in the future, see :ref:`Other Settings` in the
-:ref:`Multilocale Caveats` section for more information.
+Chapel also supports ``--client-server-library`` when ``CHPL_COMM != none``.
+We intend to support other settings in the future, see :ref:`Other Settings`
+in the :ref:`Multilocale Caveats` section for more information.
 
 To compile a multilocale library, `ZeroMQ <https://zeromq.org/>`_ must be
 installed.
@@ -843,11 +850,12 @@ the environment variable :ref:`chpl-rt-masterip`.
 Debugging Issues with Multilocale Libraries
 -------------------------------------------
 
-The ``chpl`` compiler provides a developer flag, ``--library-ml-debug``, which
-can be used to generate communication and underlying library implementation
-debugging output.  It is useful for tracking down connection issues between the
-generated executable and the generated library and unlikely to be helpful when
-tracking down issues with an exported function's body.
+The ``chpl`` compiler provides a developer flag,
+``--client-server-library-debug``, which can be used to generate communication
+and underlying library implementation debugging output.  It is useful for
+tracking down connection issues between the generated executable and the
+generated library and unlikely to be helpful when tracking down issues with
+an exported function's body.
 
 Caveats
 =======
@@ -910,12 +918,18 @@ supported for these types.  We may be able to support all intents in the future.
 Multilocale Caveats
 -------------------
 
+.. note::
+
+  The following sections describe caveats about multilocale libraries
+  compiled with the ``--client-server-library`` flag.
+
 .. _Other Settings:
 
 Other Settings
 ~~~~~~~~~~~~~~
 
-The following settings are not yet supported for ``--library`` compilation:
+The ``--client-server-library`` flag does not currently support the
+following settings:
 
 - ``--no-local``
 - ``CHPL_COMM = none`` when ``CHPL_LAUNCHER != none``

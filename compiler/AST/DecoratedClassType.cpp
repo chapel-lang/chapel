@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -24,6 +24,7 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "expr.h"
+#include "fcf-support.h"
 #include "iterator.h"
 
 #include "global-ast-vecs.h"
@@ -33,6 +34,10 @@ static const char* nameForUser(const char* className) {
     return className+1;
 
   return className;
+}
+
+const char* decoratorToString(ClassTypeDecoratorEnum d) {
+  return ClassTypeDecorator::decoratorToString(d);
 }
 
 const char* decoratedTypeAstr(ClassTypeDecoratorEnum d, const char* className) {
@@ -362,7 +367,8 @@ ClassTypeDecoratorEnum classTypeDecorator(Type* t) {
       t->symbol->hasFlag(FLAG_DATA_CLASS) ||
       t == dtStringC ||
       t == dtCFnPtr ||
-      t == dtCVoidPtr) {
+      t == dtCVoidPtr ||
+      (isFunctionType(t) && fcfs::usePointerImplementation())) {
     return ClassTypeDecorator::UNMANAGED_NILABLE;
   }
 
@@ -402,68 +408,9 @@ static Type* convertToCanonical(Type* a) {
   return canonicalDecoratedClassType(a);
 }
 
-
 static void convertClassTypes(void) {
-
-  forv_Vec(VarSymbol, var, gVarSymbols) {
-    Type* newT = convertToCanonical(var->type);
-    if (newT != var->type) var->type = newT;
-  }
-
-  forv_Vec(ArgSymbol, arg, gArgSymbols) {
-    Type* newT = convertToCanonical(arg->type);
-    if (newT != arg->type) arg->type = newT;
-  }
-
-  forv_Vec(ShadowVarSymbol, sv, gShadowVarSymbols) {
-    Type* newT = convertToCanonical(sv->type);
-    if (newT != sv->type) sv->type = newT;
-  }
-
-  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    Type* newT = convertToCanonical(ts->type);
-    if (newT != ts->type) {
-      TypeSymbol* newTS = newT->symbol;
-      for_SymbolSymExprs(se, ts) {
-        se->setSymbol(newTS);
-      }
-    }
-
-    size_t n = ts->type->substitutionsPostResolve.size();;
-    for (size_t i = 0; i < n; i++) {
-      NameAndSymbol& ns = ts->type->substitutionsPostResolve[i];
-      if (TypeSymbol* ets = toTypeSymbol(ns.value)) {
-        Type* newT = convertToCanonical(ets->type);
-        if (newT != ets->type) {
-          TypeSymbol* newTS = newT->symbol;
-          ns.value = newTS;
-        }
-      }
-    }
-  }
-
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    Type* newRetT = convertToCanonical(fn->retType);
-    if (newRetT != fn->retType) fn->retType = newRetT;
-
-    if (fn->iteratorInfo) {
-      Type* newYieldT = convertToCanonical(fn->iteratorInfo->yieldedType);
-      if (newYieldT != fn->iteratorInfo->yieldedType)
-        fn->iteratorInfo->yieldedType = newYieldT;
-    }
-
-    size_t n = fn->substitutionsPostResolve.size();
-    for (size_t i = 0; i < n; i++) {
-      NameAndSymbol& ns = fn->substitutionsPostResolve[i];
-      if (TypeSymbol* ets = toTypeSymbol(ns.value)) {
-        Type* newT = convertToCanonical(ets->type);
-        if (newT != ets->type) {
-          TypeSymbol* newTS = newT->symbol;
-          ns.value = newTS;
-        }
-      }
-    }
-  }
+  AdjustTypeFn adjustTypeFn = convertToCanonical;
+  adjustAllSymbolTypes(adjustTypeFn);
 }
 
 void convertClassTypesToCanonical() {
@@ -477,10 +424,17 @@ void convertClassTypesToCanonical() {
   // be removed from the tree. Using these would be an error.
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (isDecoratedClassType(ts->type)) {
-      if (ts->inTree())
+      if (ts->inTree()) {
+        INT_ASSERT(!ts->isUsed());
         ts->defPoint->remove();
-      if (ts->type->refType && ts->type->refType->symbol->inTree())
-        ts->type->refType->symbol->defPoint->remove();
+      }
+
+      if (auto refT = ts->type->refType) {
+        if (refT->symbol->inTree()) {
+          INT_ASSERT(!refT->symbol->isUsed());
+          refT->symbol->defPoint->remove();
+        }
+      }
     }
   }
 

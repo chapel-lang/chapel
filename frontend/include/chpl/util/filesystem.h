@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -49,8 +49,13 @@ std::error_code writeFile(const char* path, const std::string& data);
 
 /**
   Checks to see if a file exists at path. Returns 'true' if it does.
- */
-bool fileExists(const char* path);
+*/
+bool pathExists(std::string_view path);
+
+/**
+   Checks to see if a directory exists at path. Returns 'true' if it does.
+*/
+bool directoryExists(std::string_view path);
 
 /**
  * create the directory specified by argument dirname
@@ -153,15 +158,10 @@ bool filePathInDirPath(llvm::StringRef filePath, llvm::StringRef dirPath);
  */
 bool filePathInDirPath(UniqueString filePath, UniqueString dirPath);
 
-#if LLVM_VERSION_MAJOR >= 13
 /**
  Non-error result type for hashFile.
  */
 using HashFileResult = std::array<uint8_t, 32>;
-#else
-// LLVM 12 and older don't have SHA256, so use the SHA1 size.
-using HashFileResult = std::array<uint8_t, 20>;
-#endif
 
 /**
   Convert a HashFileResult to a string storing its hex value
@@ -187,6 +187,8 @@ HashFileResult hashString(llvm::StringRef data);
 std::error_code copyModificationTime(const llvm::Twine& srcPath,
                                      const llvm::Twine& dstPath);
 
+std::error_code moveFile(const llvm::Twine& srcPath,
+                         const llvm::Twine& dstPath);
 
 } // end namespace chpl
 

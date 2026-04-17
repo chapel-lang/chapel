@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2024-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -35,23 +35,31 @@ class PromotionIteratorType final : public IteratorType {
  private:
   /* The scalar (non-array) function that was invoked as part of the promotion. */
   const resolution::TypedFnSignature* scalarFn_;
+
+  /* The return type of the scalar function. Stored here because
+     the call site that produced this iterator type may affect it. */
+  const QualifiedType yieldType_;
+
   /*
      Mapping of promoted formals to their array (non-scalar) types, for the
      purposes of determining the parallel iteration strategy.
    */
-  const resolution::SubstitutionsMap promotedFormals_;
+  const resolution::PromotedFormalMap promotedFormals_;
 
   PromotionIteratorType(const resolution::PoiScope* poiScope,
                         const resolution::TypedFnSignature* scalarFn,
-                        resolution::SubstitutionsMap promotedFormals)
+                        QualifiedType yieldType,
+                        resolution::PromotedFormalMap promotedFormals)
     : IteratorType(typetags::PromotionIteratorType, poiScope),
       scalarFn_(scalarFn),
+      yieldType_(std::move(yieldType)),
       promotedFormals_(std::move(promotedFormals)) {}
 
   bool contentsMatchInner(const Type* other) const override {
     auto rhs = (PromotionIteratorType*) other;
     return iteratorTypeContentsMatchInner(rhs) &&
            this->scalarFn_ == rhs->scalarFn_ &&
+           this->yieldType_ == rhs->yieldType_ &&
            this->promotedFormals_ == rhs->promotedFormals_;
   }
 
@@ -61,17 +69,20 @@ class PromotionIteratorType final : public IteratorType {
   getPromotionIteratorType(Context* context,
                            const resolution::PoiScope* poiScope,
                            const resolution::TypedFnSignature* scalarFn,
-                           resolution::SubstitutionsMap promotedFormals);
+                           QualifiedType retType,
+                           resolution::PromotedFormalMap promotedFormals);
 
  public:
   static const PromotionIteratorType* get(Context* context,
                                           const resolution::PoiScope* poiScope,
                                           const resolution::TypedFnSignature* scalarFn,
-                                          resolution::SubstitutionsMap promotedFormals);
+                                          QualifiedType retType,
+                                          resolution::PromotedFormalMap promotedFormals);
 
   virtual const Type* substitute(Context* context,
                                  const PlaceholderMap& subs) const override {
     return get(context, poiScope_, scalarFn_->substitute(context, subs),
+               yieldType_.substitute(context, subs),
                resolution::substituteInMap(context, promotedFormals_, subs));
   }
 
@@ -79,7 +90,11 @@ class PromotionIteratorType final : public IteratorType {
     return scalarFn_;
   }
 
-  const resolution::SubstitutionsMap& promotedFormals() const {
+  const QualifiedType& yieldType() const {
+    return yieldType_;
+  }
+
+  const resolution::PromotedFormalMap& promotedFormals() const {
     return promotedFormals_;
   }
 };

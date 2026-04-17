@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -102,13 +102,12 @@ module SharedObject {
   }
 
 
-  // Ideally, this can be marked with nodoc and the doc put at the module level
-  //   since shared isn't really a 'record' or a 'type'
-  // But that prevents us from referencing a "top-level" shared reference
-  // If we one day support :noindexentry:, that could be applied at the module
-  //   level (instead of :noindex:)
-  // And then we could do :mod:`shared <SharedObject>`
-  // For now, `fixInternalDocs.sh` replaces `.. record:: shared` with `.. type:: shared`
+  // TODO: Ideally, this can be marked with nodoc and the doc put at the module
+  // level since shared isn't really a 'record' or a 'type'.  But that prevents
+  // us from referencing a "top-level" shared reference.  If we one day support
+  // :noindexentry:, that could be applied at the module level (instead of
+  // :noindex:).  And then we could do :mod:`shared <SharedObject>`.
+  // https://github.com/chapel-lang/chapel/issues/23071
   /*
     :type:`shared` manages the deletion of a class instance in a way
     that supports multiple owners of the class instance.
@@ -116,6 +115,7 @@ module SharedObject {
     This is currently implemented with task-safe reference counting.
   */
   pragma "managed pointer"
+  @chpldoc.hideImplType
   record _shared : writeSerializable, readDeserializable {
     type chpl_t;         // contained type (class type)
 
@@ -349,6 +349,7 @@ proc _shared.init=(pragma "nil from arg" in take: owned) {
     as an expiring value.
   */
   inline proc type _shared.adopt(pragma "nil from arg" in obj: owned) {
+    pragma "no user debug info"
     var ptr = owned.release(obj);
     return shared.adopt(ptr);
   }
@@ -527,6 +528,7 @@ proc _shared.init=(pragma "nil from arg" in take: owned) {
       throw new owned NilClassError();
     }
     // the following line can throw ClassCastError
+    pragma "no user debug info"
     var p = try x.chpl_p:_to_nonnil(_to_unmanaged(t.chpl_t));
 
     return new _shared(true, _to_borrowed(p.type), p, x.chpl_pn);
@@ -536,6 +538,7 @@ proc _shared.init=(pragma "nil from arg" in take: owned) {
     where isProperSubtype(t.chpl_t, x.chpl_t)
   {
     // the following line can throw ClassCastError
+    pragma "no user debug info"
     var p = try x.chpl_p:_to_nonnil(_to_unmanaged(t.chpl_t));
 
     return new _shared(true, _to_borrowed(p.type), p, x.chpl_pn);
@@ -548,6 +551,7 @@ proc _shared.init=(pragma "nil from arg" in take: owned) {
     where isProperSubtype(t.chpl_t, x.chpl_t)
   {
     // this cast returns nil if the dynamic type is not compatible
+    pragma "no user debug info"
     var p = x.chpl_p:_to_nilable(_to_unmanaged(t.chpl_t));
     return new _shared(true, _to_borrowed(p.type), p, x.chpl_pn);
   }
@@ -556,6 +560,7 @@ proc _shared.init=(pragma "nil from arg" in take: owned) {
     where isProperSubtype(t.chpl_t, x.chpl_t:class?)
   {
     // this cast returns nil if the dynamic type is not compatible
+    pragma "no user debug info"
     var p = x.chpl_p:_to_nilable(_to_unmanaged(t.chpl_t));
     return new _shared(true, _to_borrowed(p.type), p, x.chpl_pn);
   }
@@ -568,6 +573,7 @@ proc _shared.init=(pragma "nil from arg" in take: owned) {
     if isGenericType(t) then
       compilerError("illegal cast from nil to a generic shared type");
 
+    pragma "no user debug info"
     var tmp:t;
     return tmp;
   }

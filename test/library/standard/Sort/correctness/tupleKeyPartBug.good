@@ -1,0 +1,2 @@
+before sort A is: (2, 3) (6, 5) (1, 2) (2, 2)
+after sort A is:  (1, 2) (2, 2) (2, 3) (6, 5)

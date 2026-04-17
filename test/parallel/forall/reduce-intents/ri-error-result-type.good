@@ -1,0 +1,1 @@
+ri-error-result-type.chpl:7: error: cannot store reduction result of type int(64) into a variable of type bool

@@ -32,18 +32,10 @@ Example
 To use the ``noinit`` feature, declare an array and initialize it with
 the keyword ``noinit`` as this example shows:
 
-.. code-block:: chapel
-
-  config const n = 10;
-  var D = {1..n};
-  var A: [D] real = noinit;  // A's elements won't be initialized here
-
-  // Reading one of A's elements here is a memory error -
-  // it will read uninitialized memory.
-
-  // A's elements can be initialized using the assignment operator
-  forall a in A do
-    a = 0.0;
+.. literalinclude:: ../../../test/technotes/doc-examples/NoInitExamples.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE_0
+   :end-before: STOP_EXAMPLE_0
 
 Future Work
 -----------

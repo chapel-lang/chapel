@@ -37,7 +37,6 @@ zdrot : 4 PASSED, 0 FAILED
 srotg : 4 PASSED, 0 FAILED
 drotg : 4 PASSED, 0 FAILED
 crotg : 4 PASSED, 0 FAILED
-zrotg : 4 PASSED, 0 FAILED
 srotm : 4 PASSED, 0 FAILED
 drotm : 4 PASSED, 0 FAILED
 srotmg : 2 PASSED, 0 FAILED

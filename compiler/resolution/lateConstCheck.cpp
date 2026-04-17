@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -54,7 +54,7 @@ static const bool doPrintDebugInfo = false;
   do { \
     if (sym__->id == breakOnId1 || sym__->id == breakOnId2 || \
         sym__->id == breakOnId3) { \
-      gdbShouldBreakHere(); \
+      debuggerBreakHere(); \
     } \
   } while (0)
 

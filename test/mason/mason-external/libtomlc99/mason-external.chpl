@@ -25,7 +25,7 @@ proc main() {
 
   // build library that uses libtomlc99
   var buildArgs = ["build", "--force"];
-  masonBuild(buildArgs, checkProj=false);
+  masonBuild(buildArgs);
 
 }
 

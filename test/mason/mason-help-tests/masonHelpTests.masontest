@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+
+set -e
+
+checkOutput() {
+  echo "$ $@"
+  "$@"
+  printf '%.0s*' {1..80}; echo ""
+}
+
+checkOutput mason -h
+checkOutput mason new -h
+checkOutput mason init -h
+checkOutput mason add -h
+checkOutput mason rm -h
+checkOutput mason build -h
+checkOutput mason run -h
+checkOutput mason publish -h
+checkOutput mason search -h
+checkOutput mason env -h
+checkOutput mason clean -h
+checkOutput mason doc -h
+checkOutput mason system -h
+checkOutput mason system pc -h
+checkOutput mason system search -h
+checkOutput mason test -h
+checkOutput mason external -h
+checkOutput mason modules -h
+
+# following commands require spack
+mason external --setup || true
+checkOutput mason external search -h
+checkOutput mason external compiler -h
+checkOutput mason external install -h
+checkOutput mason external uninstall -h
+checkOutput mason external info -h

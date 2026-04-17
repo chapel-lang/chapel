@@ -1,0 +1,7 @@
+feature request: Permit superclass 'init's to 'throw' after their 'init this;'
+
+This test was designed to ensure that a throwing superclass 'init()'
+after 'init this;' would cause the superclass fields to be cleaned up,
+but not the subclass fields.  However, at present, we don't permit
+calls to 'super.init()' that throw.  I expect this would not be hard
+to enable, but that's work for another day.

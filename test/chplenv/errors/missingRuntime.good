@@ -1,0 +1,18 @@
+error: The runtime has not been built for this configuration.
+There is no runtime for 'CHPL_TASKS=fifo'
+Valid options: qthreads
+This variable is either set in the environment or via a command line argument, consider unsetting it.
+note: Run $CHPL_HOME/util/chplenv/printchplbuilds.py for more information on available runtimes.
+====
+error: The runtime has not been built for this configuration.
+There is no runtime for 'CHPL_TASKS=fifo'
+Valid options: qthreads
+This variable is either set in the environment or via a command line argument, consider unsetting it.
+note: Run $CHPL_HOME/util/chplenv/printchplbuilds.py for more information on available runtimes.
+====
+error: The runtime has not been built for this configuration.
+There is no runtime for 'CHPL_TASKS=fifo'
+Valid options: qthreads
+This variable is set in './chplconfig', consider removing it.
+note: Run $CHPL_HOME/util/chplenv/printchplbuilds.py for more information on available runtimes.
+====

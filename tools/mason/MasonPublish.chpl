@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -25,7 +25,6 @@ use List;
 use MasonBuild;
 use MasonEnv;
 use MasonModify;
-use MasonNew;
 use MasonUpdate;
 use MasonUtils;
 use Random;
@@ -33,281 +32,273 @@ use Subprocess;
 use TOML;
 import Path;
 
-/* Top Level procedure that gets called from mason.chpl that takes in arguments from command line.
-   If --dry-run is passed  then it checks to see if the package is able to be published.
-   Takes in the username of the package owner as an argument
- */
-proc masonPublish(args: [?d] string) {
-  var listArgs: list(string);
-    for x in args do listArgs.pushBack(x);
-    masonPublish(listArgs);
-}
+import ThirdParty.Pathlib.path;
 
-proc masonPublish(ref args: list(string)) throws {
+import MasonLogger;
+
+private var log = new MasonLogger.logger("mason publish");
+
+/*
+  Top Level procedure that gets called from mason.chpl that takes in arguments
+  from command line. If --dry-run is passed then it checks to see if the package
+  is able to be published. Takes in the username of the package owner as an
+  argument
+*/
+proc masonPublish(args: [] string) throws {
 
   var parser = new argumentParser(helpHandler=new MasonPublishHelpHandler());
 
-  var dryFlag = parser.addFlag(name="dry-run",
-                               defaultValue=false);
+  var dryFlag = parser.addFlag(name="dry-run", defaultValue=false);
   var createFlag = parser.addFlag(name="create-registry",
-                                  opts=["-c","--create-registry"],
-                                  defaultValue=false);
-
+                                opts=["-c", "--create-registry"],
+                                defaultValue=false);
   var checkArg = parser.addFlag(name="check", defaultValue=false);
   var ciFlag = parser.addFlag(name="ci-check", defaultValue=false);
+  var usernameFlag = parser.addFlag(name="username", opts=["--username"]);
   var updateFlag = parser.addFlag(name="update", flagInversion=true);
   var registryArg = parser.addArgument(name="registry", numArgs=0..1);
-
   var refreshLicenseFlag = parser.addFlag(name="refresh-licenses",
                                           defaultValue=false);
+  parser.parseArgs(args);
+  var dry = dryFlag.valueAsBool();
+  var checkFlag = checkArg.valueAsBool();
+  var refreshLicenses = refreshLicenseFlag.valueAsBool();
+  var registryPath = "";
+  if registryArg.hasValue() then registryPath = registryArg.value();
+  var username = if usernameFlag.hasValue() then
+                    usernameFlag.value()
+                  else
+                    getUsername(here.cwd());
+  log.debugln("Username for registry fork: %s".format(username));
+  var isLocal = false;
+  var ci = ciFlag.valueAsBool();
+  var update = false;
+  var noUpdate = false;
+  var skipUpdate = MASON_OFFLINE;
+  if updateFlag.hasValue() {
+    update = updateFlag.valueAsBool();
+    noUpdate = !update;
+    skipUpdate = !update;
+  }
+  var createReg = createFlag.valueAsBool();
 
-  parser.parseArgs(args.toArray());
+  if refreshLicenses {
+    writeln("Force updating list of valid license names from SPDX repo...");
+    refreshLicenseList(true);
+    writeln("Done updating license list");
+    return;
+  }
 
-  try! {
-    var dry = dryFlag.valueAsBool();
-    var checkFlag = checkArg.valueAsBool();
-    var refreshLicenses = refreshLicenseFlag.valueAsBool();
-    var registryPath = "";
-    if registryArg.hasValue() then registryPath = registryArg.value();
-    var username = getUsername();
-    var isLocal = false;
-    var ci = ciFlag.valueAsBool();
-    var update = false;
-    var noUpdate = false;
-    var skipUpdate = MASON_OFFLINE;
-    if updateFlag.hasValue() {
-      update = updateFlag.valueAsBool();
-      noUpdate = !update;
-      skipUpdate = !update;
+  if createReg {
+    const pathReg:path = registryPath;
+    if !pathReg.isDir() then
+      pathReg.mkdir();
+    else
+      throw new MasonError("Registry already exists at %s"
+                            .format(pathReg:string));
+    if !(pathReg / "Bricks").isDir() then
+      (pathReg / "Bricks").mkdir();
+    if !(pathReg / "README.md").isDir() then
+      (pathReg / "README.md").touch();
+    if !(pathReg / ".git").isDir() {
+      gitC(pathReg, ["git", "init", "-q"]);
+      gitC(pathReg, ["git", "add", "."]);
+      gitC(pathReg, ["git", "commit", "-q", "-m", "initialized registry"]);
     }
-    var createReg = createFlag.valueAsBool();
+    const absPathReg = pathReg.resolve();
+    writeln("Initialized local registry at %s".format(pathReg:string));
+    writeln("Add this registry to MASON_REGISTRY environment variable "
+        + "to include it in search path:");
 
-    const badSyntaxMessage = 'Arguments do not follow "mason publish [options] <registry>" syntax';
+    writeln("   export MASON_REGISTRY=\"%s|%s,%s|%s\""
+        .format("mason-registry",
+          regUrl,
+          basename(pathReg:string),
+          absPathReg:string));
 
-    if refreshLicenses {
-      writeln("Force updating list of valid license names from SPDX repo...");
-      refreshLicenseList(true);
-      writeln("Done updating license list");
-      exit(0);
-    }
+    return;
+  }
 
-    if createReg {
-      var pathReg = registryPath;
-      try! {
-        if !isDir(pathReg) then mkdir(pathReg);
-        else throw new owned MasonError("Registry already exists at %s".format(pathReg));
-        if !isDir(pathReg + '/Bricks') then mkdir(pathReg + '/Bricks');
-        if !isDir(pathReg + '/README.md') then touch(pathReg + '/README.md');
-        if !isDir(pathReg + '/.git') {
-          gitC(pathReg, 'git init -q');
-          gitC(pathReg, 'git add .');
-          commitSubProcess(pathReg, ['git','commit', '-q', '-m',' "initialized registry"']);
-        }
-        const absPathReg = Path.absPath(pathReg);
-        writeln("Initialized local registry at %s".format(pathReg));
-        writeln("Add this registry to MASON_REGISTRY environment variable to include it in search path:");
-        writeln('   export MASON_REGISTRY="%s|%s,%s|%s"'.format("mason-registry",regUrl, basename(pathReg), absPathReg));
-        exit(0);
-      }
-      catch e: MasonError {
-        writeln(e.message());
-        exit(1);
-      }
-    }
+  if registryPath.isEmpty() {
+    registryPath = MASON_HOME;
+  } else {
+    isLocal = isRegistryPathLocal(registryPath);
+  }
 
-    if registryPath.isEmpty() {
-      registryPath = MASON_HOME;
-    } else {
-      isLocal = isRegistryPathLocal(registryPath);
-    }
-
-    if checkFlag || ci {
-      if ci then check(username, registryPath, isLocal, ci);
-      else {
-        check(username, registryPath, isLocal, ci);
-      }
-    }
-
-    if ((MASON_OFFLINE  && !update) || noUpdate) && !falseIfRemotePath() {
-      if !isLocal {
-        throw new owned MasonError('You cannot publish to a remote repository when MASON_OFFLINE is set to true or "--no-update" is passed, override with --update');
-      }
-      else updateRegistry(skipUpdate);
-    }
-
-    if !isLocal && !doesGitOriginExist() && !dry {
-      throw new owned MasonError('Your package must have a git origin remote in order to publish to a remote registry.');
-    }
-
-    if checkRegistryPath(registryPath, isLocal) {
-      if dry {
-        dryRun(username, registryPath, true);
-      }
-      else {
-        publishPackage(username, registryPath, isLocal);
-      }
-    }
+  if checkFlag || ci {
+    if ci then check(registryPath, ci);
     else {
-      writeln(badSyntaxMessage);
-      writeln('See "mason publish -h" for more details');
-      exit(0);
+      check(registryPath, ci);
     }
   }
-  catch e : MasonError {
-    writeln(e.message());
-    exit(1);
+
+  if ((MASON_OFFLINE  && !update) || noUpdate) && !falseIfRemotePath() {
+    if !isLocal then
+      throw new MasonError('You cannot publish to a remote repository ' +
+                           'when MASON_OFFLINE is set to true or ' +
+                           '"--no-update" is passed, override with --update');
+    else
+      updateRegistry(skipUpdate);
   }
+
+  if !isLocal && !doesGitOriginExist() && !dry {
+    throw new MasonError('Your package must have a git origin remote ' +
+                         'in order to publish to a remote registry.');
+  }
+
+  if checkRegistryPath(registryPath, isLocal) {
+    if dry {
+      dryRun(username, registryPath, true);
+    } else {
+      publishPackage(username, registryPath, isLocal);
+    }
+  } else {
+    throw new MasonError(
+      'Arguments do not follow "mason publish [options] <registry>" syntax');
+  }
+
 }
 
 /* creates a file at a given path */
 proc touch(pathToFile: string) throws {
   const fileWriter = open(pathToFile, ioMode.cw).writer(locking=false);
-  const contents = "This registry was generated by mason publish --create-registry";
+  const contents =
+    "This registry was generated by mason publish --create-registry";
   fileWriter.write(contents);
   fileWriter.close();
 }
 
-/* Uses the existence of a colon to see if a passed registryPath is a local or remote registryPath
- */
+/*
+  Uses the existence of a colon to see if a passed registryPath is a
+  local or remote registryPath
+*/
 proc isRegistryPathLocal(registryPath : string) throws {
   return registryPath.find(":") == -1;
 }
 
-/* When passed a registryPath and whether or not that registryPath is a local or remote registryPath,
-   the function checks to make sure that it is a valid registryPath to a mason-registry
-   by checking the existence of the Bricks
+/*
+  When passed a registryPath and whether or not that registryPath is a local or
+  remote registryPath, the function checks to make sure that it is a valid
+  registryPath to a mason-registry by checking the existence of the Bricks
  */
 proc checkRegistryPath(registryPath : string, trueIfLocal : bool) throws {
   try! {
     if registryPath == MASON_HOME then return true;
     if !exists('.git') {
-      throw new owned MasonError(registryPath + ' is not a local git repository.');
+      throw new MasonError(registryPath + ' is not a local git repository.');
     }
     if trueIfLocal {
       if exists(registryPath) && exists(registryPath + "/Bricks/") {
         return true;
+      } else {
+        throw new MasonError(registryPath +
+                             " is not a valid path to a local mason-registry.");
       }
-      else {
-        throw new owned MasonError(registryPath + " is not a valid path to a local mason-registry.");
-        exit(0);
-      }
-    }
-    else {
+    } else {
       var command = ('git ls-remote ' + registryPath).split();
       var checkRemote = spawn(command, stdout=pipeStyle.pipe);
       checkRemote.wait();
       if checkRemote.exitCode == 0 then return true;
       else {
-        throw new owned MasonError(registryPath + " is not a valid remote path");
-        exit(0);
+        throw new MasonError(registryPath + " is not a valid remote path");
       }
     }
-  }
-  catch e {
+  } catch e {
     writeln(e.message());
     exit(0);
   }
 }
-/* Main Script that goes through the act of publishing the package to the mason registry.
-   Takes the package owners GitHub username as input will throw errors through command
-   line git commands if any of the git calls fails.
+/*
+  Main Script that goes through the act of publishing the package to the mason
+  registry. Takes the package owners GitHub username as input will throw errors
+  through command line git commands if any of the git calls fails.
  */
-proc publishPackage(username: string, registryPath : string, isLocal : bool) throws {
-  try! {
-    const packageLocation = absPath(here.cwd());
-    var stream = new randomStream(int, false);
-    var uniqueDir = stream.next(): string;
-    const name = getPackageName();
-    var safeDir = '';
+proc publishPackage(username: string,
+                    registryPath: string,
+                    isLocal: bool) throws {
+  const packageLocation = absPath(here.cwd());
+  var stream = new randomStream(int, false);
+  var uniqueDir = stream.next(): string;
+  const name = getPackageName();
+  var safeDir = '';
 
-    if isLocal then safeDir = registryPath;
-    else {
-      safeDir = MASON_HOME + '/tmp/' + name + '-' + uniqueDir;
-    }
+  if isLocal then safeDir = registryPath;
+  else {
+    safeDir = MASON_HOME + '/tmp/' + name + '-' + uniqueDir;
+  }
 
-    if !isLocal {
-      if !exists(MASON_HOME + '/tmp') then mkdir(MASON_HOME + '/tmp');
-      mkdir(safeDir);
-    }
-
-    if !isLocal {
-      cloneMasonReg(username, safeDir, registryPath);
-      branchMasonReg(username, name, safeDir, registryPath);
-    }
-
-    const version = addPackageToBricks(packageLocation, safeDir, name, registryPath, isLocal);
-    var  message = ' "Adding %s package to registry via mason publish"'.format(version);
-    var command = ['git', 'commit', '-q', '-m', message];
-
-
-    if !isLocal {
-      gitC(safeDir + "/mason-registry", "git add .");
-      commitSubProcess(safeDir + '/mason-registry', command);
-      gitC(safeDir + "/mason-registry", 'git push --set-upstream origin ' + name, true);
+  if !isLocal {
+    if !exists(MASON_HOME + '/tmp') then mkdir(MASON_HOME + '/tmp');
+    if exists(safeDir) {
+      // a previous publish failed, clobber the dir
       rmTree(safeDir + '/');
-      writeln('--------------------------------------------------------------------');
-      writeln('Go to the above link to open up a Pull Request to the mason-registry');
-     }
-    else {
-      gitC(safeDir, 'git add Bricks/' + name);
-      commitSubProcess(safeDir, command);
-      writeln('Successfully published package to ' + registryPath);
     }
-
+    mkdir(safeDir);
   }
-  catch e {
-    writeln(e.message());
+  defer {
+    // make sure we always cleanup
+    if !isLocal && exists(safeDir) then rmTree(safeDir + '/');
+  }
+
+  if !isLocal {
+    cloneMasonReg(username, safeDir, registryPath);
+    branchMasonReg(name, safeDir);
+  }
+
+  const version = addPackageToBricks(packageLocation, safeDir, name, isLocal);
+  const message =
+    'Adding %s package to registry via mason publish'.format(version);
+  var commitCmd = ['git', 'commit', '-q', '-m', message];
+
+  if !isLocal {
+    gitC(safeDir + "/mason-registry", "git add .");
+    gitC(safeDir + '/mason-registry', commitCmd);
+    gitC(safeDir + "/mason-registry",
+          'git push -q --set-upstream origin ' + name);
+    const masonRegRemoteName = getRemoteName(safeDir + '/mason-registry');
+    const url = "https://github.com/%s/%s/pull/new/%s".format(
+                                                        username,
+                                                        masonRegRemoteName,
+                                                        name);
+    writeln('Successfully published package to ' + registryPath);
+    writef("Go to '%s' to open a Pull Request to the mason-registry\n", url);
+  } else {
+    gitC(safeDir, 'git add Bricks/' + name);
+    gitC(safeDir, commitCmd);
+    writeln('Successfully published package to ' + registryPath);
   }
 }
 
-/* Subprocess function designed to pass a message to 'git commit' without get the string
- split by the MasonUtils runCommand()/
- */
-private proc commitSubProcess(dir: string, command: [] string) throws {
-  var spawnArgs = command;
-  const oldDir = here.cwd();
-  here.chdir(dir);
-  var commitSpawn = spawn(spawnArgs, stdout=pipeStyle.pipe, stderr=pipeStyle.pipe);
-  commitSpawn.wait();
-  here.chdir(oldDir);
-  return commitSpawn;
-}
-
-/* If --dry-run is passed then it takes the username and checks to see if the mason-registry is forked
- and the package has a git remote origin. If both exist then the package can be published.
+/*
+  If --dry-run is passed then it takes the username and checks to see if the
+  mason-registry is forked and the package has a git remote origin.
+  If both exist then the package can be published.
  */
 proc dryRun(username: string, registryPath : string, isLocal : bool) throws {
   if !isLocal {
-    var fork = true;
     var remoteCheck = checkIfForkExists(username: string);
-    if remoteCheck == 1 {
-      fork = false;
-    }
-    var git = false;
-    if doesGitOriginExist() {
-      git = true;
-    }
+    const fork = remoteCheck != 1;
+    const git = doesGitOriginExist();
     if git && fork {
-      writeln('Package can be published to the mason-registry');
-      writeln('Commands that will be run:');
-      writeln('> git clone git:github.com:[username]/mason-registry mason-registry');
-      writeln('> git checkout -b [package name]');
-      writeln('Package Name will be added to the Bricks in the mason-registry');
-      writeln('> git add .');
-      writeln('> git commit -m [package info]');
-      writeln('> git push --set-upstream origin [package name]');
+      const s = """
+      Package can be published to the mason-registry
+      Commands that will be run:
+      > git clone git@github.com:[username]/mason-registry mason-registry
+      > git checkout -b [package name]
+      Package Name will be added to the Bricks in the mason-registry
+      > git add .
+      > git commit -m [package info]
+      > git push --set-upstream origin [package name]
+      """.dedent().strip();
+      writeln(s);
       exit(0);
+    } else {
+      if !fork then
+        throw new MasonError('mason-registry is not forked on your GitHub');
+      else
+        throw new MasonError('Package does not gave a git origin');
     }
-    else {
-      if fork == false {
-        throw new owned MasonError('mason-registry is not forked on your GitHub');
-      }
-      else {
-        throw new owned MasonError('Package does not gave a git origin');
-      }
-    }
-  }
-  else {
+  } else {
     const spacer = '------------------------------------------------------';
     writeln('Checking Registry with ' + registryPath + ' path.');
     var registryTest = registryPathCheck(registryPath, username, false);
@@ -316,39 +307,36 @@ proc dryRun(username: string, registryPath : string, isLocal : bool) throws {
     returnMasonEnv();
     var reg = MASON_REGISTRY;
 
-    if reg.size == 1 {
-      if reg[0] == ('mason-registry', regUrl)
-        then writeln('   In order to use a local registry, ensure that MASON_REGISTRY points to the path.');
-    }
+    if reg.size == 1 && reg[0] == ('mason-registry', regUrl) then
+      writeln('   In order to use a local registry, ' +
+              'ensure that MASON_REGISTRY points to the path.');
 
     if checkRegistryPath(registryPath, isLocal) {
       writeln('Package can be published to local registry');
       exit(0);
-    }
-    else {
-      throw new owned MasonError(registryPath + ' is not a valid registryPath to a local registry.');
+    } else {
+      throw new MasonError(registryPath +
+                           ' is not a valid registryPath to a local registry.');
     }
   }
 }
 
 /* Clones the mason registry fork from the users repo. Takes username as input.
  */
-proc cloneMasonReg(username: string, safeDir : string, registryPath : string) throws {
+proc cloneMasonReg(username: string,
+                   safeDir: string,
+                   registryPath: string) throws {
   try! {
-    if registryPath == MASON_HOME {
-      const gitClone = 'git clone --quiet git@github.com:';
-      var ret = gitC(safeDir, gitClone  + username + "/mason-registry mason-registry", false);
-      return ret;
-    }
-    else {
-      const gitRegistryPath = 'git clone --quiet ';
-      var gitCall = gitC(safeDir, gitRegistryPath + registryPath + ' mason-registry', false);
-      return gitCall;
-    }
-  }
-  catch {
-    throw new owned MasonError('Error cloning the fork of mason-registry. Make sure you have forked the mason-registry on GitHub');
-    exit(1);
+    const url = if registryPath == MASON_HOME
+      then "https://github.com/%s/mason-registry".format(username)
+      else registryPath;
+    const dest = safeDir:path / "mason-registry";
+
+    cloneSource(url, dest, quiet=false);
+  } catch {
+    throw new MasonError(
+      'Error cloning the fork of mason-registry. ' +
+      'Make sure you have forked the mason-registry on GitHub');
   }
 }
 
@@ -367,52 +355,69 @@ proc doesGitOriginExist() {
 /* Opens Spawn call to get username for the mason registry fork
  */
 private proc usernameCheck(username: string) {
-  const gitRemote = 'git ls-remote https://github.com/';
-  var usernameCheck = runWithStatus(gitRemote + username + '/mason-registry', true);
+  const gitRemote = 'git ls-remote https://github.com/%s/mason-registry';
+  var usernameCheck = runWithStatus(gitRemote.format(username), true);
   return usernameCheck;
 }
 
 /* Runs Commands to see if Fork of mason-registry exists under the username
  */
 private proc checkIfForkExists(username: string) {
-  var getFork = ('git ls-remote https://github.com/' + username + '/mason-registry');
-  var p = runWithProcess(getFork, false);
-  return p.exitCode;
+  var getFork = 'git ls-remote https://github.com/%s/mason-registry';
+  var status = runWithStatus(getFork.format(username), false);
+  return status;
 }
 
 /* Gets the GitHub username of the user, by parsing from the remote origin url.
  */
-private proc getUsername() {
-  var usernameUrl = gitUrl();
-  var tail = usernameUrl.find("/")-1: int;
-  var head = usernameUrl.find(":")+1: int;
-  var username = usernameUrl(head..tail);
+private proc getUsername(dir: string) {
+  var usernameUrl = gitUrl(dir);
+  var username: string;
+  if usernameUrl.startsWith("http") {
+    var tail = usernameUrl.rfind("/")-1;
+    var head = usernameUrl.rfind("/", indices=0:byteIndex..<tail)+1;
+    username = usernameUrl(head..tail);
+  } else {
+    var tail = usernameUrl.find("/")-1;
+    var head = usernameUrl.find(":")+1;
+    username = usernameUrl(head..tail);
+  }
   return username;
 }
 
-/* Procedure that returns the url of the git remote origin
- */
-private proc gitUrl() {
+
+private proc getRemoteName(dir: string) {
+  var url = gitUrl(dir).strip();
+  var head = url.rfind("/") + 1;
+  var remoteName = url(head..);
+  if remoteName.endsWith(".git") then
+    remoteName = remoteName(0..<remoteName.size-(".git".size));
+
+  return remoteName;
+}
+/*
+  Procedure that returns the url of the git remote origin
+*/
+private proc gitUrl(dir: string) {
   try {
-    var url = runCommand("git config --get remote.origin.url", true);
+    var url = gitC(dir, "git config --get remote.origin.url", true);
     return url;
   } catch {
     return "";
   }
 }
 
-/* Takes the git username and creates a new branch of the mason registry users fork,
-  name or branch is taken from the Mason.toml of the mason package.
+/*
+  Takes the git username and creates a new branch of the mason registry users
+  fork, name or branch is taken from the Mason.toml of the mason package.
  */
-proc branchMasonReg(username: string, name: string, safeDir: string, registryPath : string) throws {
-  try! {
-    const branchCommand = "git checkout --quiet -b  "+ name: string;
-    var ret = gitC(safeDir + '/mason-registry', branchCommand, false);
-    return ret;
-  }
-  catch {
-    throw new owned MasonError('Error branching the registry, make sure you have a remote origin set up');
-    exit(1);
+proc branchMasonReg(name: string, safeDir: string) throws {
+  try {
+    const dir = safeDir:path / "mason-registry";
+    checkoutSource(dir, name, createBranch=true);
+  } catch {
+    throw new MasonError('Error branching the registry, make sure you have a ' +
+                         'remote origin set up');
   }
 }
 
@@ -422,80 +427,90 @@ proc getPackageName() throws {
   try! {
     const toParse = open("Mason.toml", ioMode.r);
     var tomlFile = (parseToml(toParse));
-    const name = tomlFile['brick']!['name']!.s;
+    const name = tomlFile['brick.name']!.s;
     return name;
-  }
-  catch {
-    throw new owned MasonError('Issue getting the name of your package, ensure your package is a mason project.');
-    exit(1);
-  }
-}
-
-/* Adds package to the Bricks of the mason-registry branch and then adds the version.toml
- with the source url of the package's GitHub repo.
- */
-private proc addPackageToBricks(projectLocal: string, safeDir: string, name : string,registryPath : string, isLocal : bool) throws {
-  try! {
-    const toParse = open(projectLocal+ "/Mason.toml", ioMode.r);
-    var tomlFile = (parseToml(toParse));
-    const versionNum = tomlFile!['brick']!['version']!.s;
-    if !isLocal {
-      if !exists(safeDir + '/mason-registry/Bricks/') {
-        throw new owned MasonError('Registry does not have the expected structure. Ensure your registry has a Bricks directory.');
-      }
-      if !exists(safeDir + "/mason-registry/Bricks/" + name) {
-        mkdir(safeDir + "/mason-registry/Bricks/" + name);
-      }
-      if !exists(safeDir + '/mason-registry/Bricks/' + name + "/" + versionNum + ".toml") {
-        const baseToml = tomlFile;
-        var newToml = open(safeDir + "/mason-registry/Bricks/" + name + "/" + versionNum + ".toml", ioMode.cw);
-        var tomlWriter = newToml.writer(locking=false);
-        const url = gitUrl();
-        baseToml["brick"]!.set("source", url[0..<url.size-1]);
-        tomlWriter.write(baseToml);
-        tomlWriter.close();
-        return name + '@' + versionNum;
-      }
-      else {
-        throw new owned MasonError('A package with that name and version number already exists in the Bricks.');
-        exit(1);
-      }
-    }
-    else {
-      if !exists(safeDir + '/.git') {
-        throw new owned MasonError('Unable to publish your package to the registry, make sure your package is a git repository.');
-        exit(1);
-      }
-      if !exists(safeDir + '/Bricks/' + name) {
-        mkdir(safeDir + "/Bricks/" + name);
-      }
-      if !exists(safeDir + "/Bricks/" + name + "/" + versionNum + ".toml") {
-        const baseToml = tomlFile;
-        var newToml = open(safeDir + "/Bricks/" + name + "/" + versionNum + ".toml", ioMode.cw);
-        var tomlWriter = newToml.writer(locking=false);
-        baseToml["brick"]!.set("source", projectLocal);
-        tomlWriter.write(baseToml);
-        tomlWriter.close();
-        const gitMessageString = ('git tag -a "v' + versionNum + '" -m "' + name + '"');
-        commitSubProcess(projectLocal, ['git','tag','-a',"v"+versionNum,'-m',name]);
-        return name + '@' + versionNum;
-      }
-      else {
-        throw new owned MasonError('A package with that name and version already exists in the Bricks.');
-        exit(1);
-      }
-    }
-  }
-  catch e {
-    writeln(e.message());
-    exit(1);
+  } catch {
+    throw new MasonError('Issue getting the name of your package, ' +
+                         'ensure your package is a mason project.');
   }
 }
 
-/* check is a function to run a quick list of checks of the package, the registry path, and other issues that may
-   prevent a package from being published to a registry.
+/*
+  Adds package to the Bricks of the mason-registry branch and then adds the
+  version.toml with the source url of the package's GitHub repo.
  */
-proc check(username : string, path : string, trueIfLocal : bool, ci : bool) throws {
+private proc addPackageToBricks(projectLocal: string, safeDir: string,
+                                name: string, isLocal: bool) throws {
+  if isLocal && !exists(joinPath(safeDir, '.git')) {
+    throw new MasonError(
+      'Unable to publish your package to the registry, ' +
+      'make sure your package is a git repository.');
+  }
+
+  const bricksDir = if !isLocal
+                      then joinPath(safeDir, 'mason-registry', 'Bricks')
+                      else joinPath(safeDir, 'Bricks');
+
+  if !isLocal && !exists(bricksDir) {
+    throw new MasonError('Registry does not have the expected structure. ' +
+                         'Ensure your registry has a Bricks directory.');
+  }
+
+  const projectBrickDir = joinPath(bricksDir, name);
+  const toParse = open(joinPath(projectLocal, "Mason.toml"), ioMode.r);
+  var tomlFile = (parseToml(toParse));
+  const versionNum = tomlFile!['brick.version']!.s;
+  const versionToml = joinPath(projectBrickDir, versionNum + ".toml");
+
+  if !exists(projectBrickDir) {
+    mkdir(projectBrickDir);
+  }
+  if exists(versionToml) {
+    throw new MasonError('A package with that name and version number ' +
+                         'already exists in the Bricks.');
+  }
+
+  // check the tag, if it already exists, throw an error
+  var tagExists = false;
+  var tagName = 'v' + versionNum;
+  var result = gitC(projectLocal, ['git', 'tag', '--list', tagName]).strip();
+  tagExists = result == tagName;
+
+  if tagExists {
+    throw new MasonError(
+      "A git tag for version " + versionNum + " of your package " +
+      "already exists. Please update the version number in " +
+      "your Mason.toml to publish.");
+  }
+  if !isLocal {
+    const baseToml = tomlFile;
+    const url = gitUrl(here.cwd());
+    baseToml["brick"]!.set("source", url[0..<url.size-1]);
+    var tomlWriter = openWriter(versionToml);
+    tomlWriter.write(baseToml);
+    tomlWriter.close();
+  } else {
+    const baseToml = tomlFile;
+    baseToml["brick"]!.set("source", projectLocal);
+    var tomlWriter = openWriter(versionToml);
+    tomlWriter.write(baseToml);
+    tomlWriter.close();
+  }
+  // create the tag
+  gitC(projectLocal, ['git', 'tag', '-a', tagName, '-m', name]);
+  writeln("Created git tag: ", tagName,
+          ". Make sure to push this tag to your remote when you ",
+          "publish to the registry with 'git push origin --tags'");
+
+  return name + '@' + versionNum;
+}
+
+/*
+  check is a function to run a quick list of checks of the package, the
+  registry path, and other issues that may prevent a package from being
+  published to a registry.
+ */
+proc check(p: string, ci: bool) throws {
   const spacer = '------------------------------------------------------';
   const package = (ensureMasonProject(here.cwd(), 'Mason.toml') == 'true');
   const projectCheckHome = here.cwd();
@@ -514,8 +529,7 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
     writeln('   Could not find your configuration file (Mason.toml) (FAILED)');
     writeln('   Ensure your project is a mason package');
     packageTest = false;
-    }
-  else {
+  } else {
     writeln('   Package is a Mason package and has a Mason.toml (PASSED)');
   }
   writeln(spacer);
@@ -523,10 +537,11 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
   if package {
     writeln('Main Module Check:');
     if moduleCheck(projectCheckHome) {
-      writeln('   Your package has one main module whose name matches the package name. (PASSED)');
-    }
-    else {
-      writeln('   Packages must have a single main module whose name matches the package name. (FAILED)');
+      writeln('   Your package has one main module whose name matches ' +
+              'the package name. (PASSED)');
+    } else {
+      writeln('   Packages must have a single main module whose name matches ' +
+              'the package name. (FAILED)');
       moduleTest = false;
     }
     writeln(spacer);
@@ -535,13 +550,21 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
   if package {
     writeln('Checking for fields in manifest file:');
     const manifestResults = masonTomlFileCheck(projectCheckHome);
-    if manifestResults[0] {
-      writeln('   All fields present in manifest file, can be published to a registry. (PASSED)');
-    } else {
+    if manifestResults.isValid() {
+      writeln('   All fields present in manifest file, can be published ' +
+              'to a registry. (PASSED)');
+    } else if manifestResults.missingFields.size > 0 {
       writeln('   Missing fields in manifest file (Mason.toml). (FAILED)');
       writeln('   The missing fields are as follows: ');
-      const missingFields = manifestResults[1];
-      for field in missingFields do writeln('   %s'.format(field));
+      for field in manifestResults.missingFields do
+        writeln('   %s'.format(field));
+      masonFieldsTest = false;
+    } else if manifestResults.mismatchedTypes.size > 0 {
+      writeln('   Mismatched field types in manifest file (Mason.toml). ',
+              '(FAILED)');
+      writeln('   The fields with mismatched types are as follows: ');
+      for field in manifestResults.mismatchedTypes do
+        writeln('   %s'.format(field));
       masonFieldsTest = false;
     }
     writeln(spacer);
@@ -550,7 +573,8 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
   if package {
     writeln('Checking for examples:');
     if exampleCheck(projectCheckHome) {
-      writeln('   Found examples in the package, can be published to a registry. (PASSED)');
+      writeln('   Found examples in the package, ',
+              'can be published to a registry. (PASSED)');
     } else {
       writeln('   No examples found in package. (WARNING)');
       exampleTest = false;
@@ -561,7 +585,8 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
   if package {
     writeln('Checking for tests:');
     if testCheck(projectCheckHome) {
-      writeln('   Found tests in the package, can be published to a registry. (PASSED)');
+      writeln('   Found tests in the package, can be published to a ' +
+              'registry. (PASSED)');
     } else {
       writeln('   No tests found in package. (FAILED)');
       testTest = false;
@@ -573,7 +598,8 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
     writeln('Checking git tag version formatting:');
     const tagResults = gitTagVersionCheck(projectCheckHome);
     if tagResults[0] {
-      writeln('   Valid git tag version formatting, can be published to a registry. (PASSED)');
+      writeln('   Valid git tag version formatting, can be published to a ' +
+              'registry. (PASSED)');
     } else {
       writeln('   Invalid git tag version formatting. (FAILED)');
       const listTags = tagResults[1];
@@ -592,8 +618,9 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
     if validLicenseCheck[0] {
       writeln('   Found valid license in manifest file. (PASSED)');
     } else {
-      writeln('   Invalid license name: "' + validLicenseCheck[1] + '". Please use a valid name from ' +
-          'SPDX license list. (FAILED)');
+      writeln('   Invalid license name: "' +
+              validLicenseCheck[1] + '". Please use a valid name from ' +
+              'SPDX license list. (FAILED)');
       licenseTest = false;
     }
     writeln(spacer);
@@ -602,11 +629,12 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
   if package && !ci {
     writeln('Git Remote Check:');
     if doesGitOriginExist() {
-      writeln('   Package has a git remote origin and can be published to a remote registry (PASSED)');
+      writeln('   Package has a git remote origin and can be published ' +
+              'to a remote registry (PASSED)');
       writeln('   Remote Origin: ' + getRemoteOrigin());
-    }
-    else {
-      writeln('   Package has no remote origin and cannot be publish to a registry with path:' + path + ' (FAILED)');
+    } else {
+      writeln('   Package has no remote origin and cannot be publish to a ' +
+              'registry with path:' + p + ' (FAILED)');
       remoteTest = false;
     }
     writeln(spacer);
@@ -614,13 +642,17 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
 
   writeln(spacer);
   if package && !ci {
-    writeln('Attempting to build package using following options:');
-    writeln('   show = false');
-    writeln('   release = false');
-    writeln('   force = true');
-    writeln('   opt = false');
-    writeln('   example = false');
-    writeln('If these are different than what is required to build your package you can disregard this check');
+    const s = """
+    Attempting to build package using following options:
+       show = false
+       release = false
+       force = true
+       opt = false
+       example = false
+    If these are different than what is required to build your package
+    you can disregard this check
+    """.dedent().strip();
+    writeln(s);
     attemptToBuild();
   }
   writeln(spacer);
@@ -632,19 +664,20 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
   writeln('RESULTS');
   writeln(spacer);
 
-  if packageTest && remoteTest && moduleTest && testTest
-    && licenseTest && gitTagTest && masonFieldsTest {
+  if packageTest && remoteTest && moduleTest && testTest &&
+    licenseTest && gitTagTest && masonFieldsTest {
     writeln('(PASSED) Your package is ready to publish');
-  }
-  else {
+  } else {
     if !packageTest {
-      writeln('(FAILED) Your package does not have to proper package structure');
+      writeln(
+        '(FAILED) Your package does not have to proper package structure');
     }
     if !moduleTest {
       writeln('(FAILED) Your package has more than one main module');
     }
     if !masonFieldsTest {
-      writeln('(FAILED) Your package has missing fields in manifest file (Mason.toml)');
+      writeln('(FAILED) Your package has missing fields in manifest file ' +
+              '(Mason.toml)');
     }
     if !licenseTest {
       writeln('(FAILED) Your package does not have valid license name.');
@@ -656,7 +689,8 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
       writeln('(FAILED) Your package does not have tests');
     }
     if !remoteTest {
-      writeln('(FAILED) Your package has no remote origin and cannot be published');
+      writeln('(FAILED) Your package has no remote origin and cannot be ' +
+              'published');
     }
     if !gitTagTest {
       writeln('(FAILED) Your package has invalid git tag version formatting');
@@ -666,13 +700,13 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
   writeln(spacer);
 
   if ci {
-    if package && moduleCheck(projectCheckHome) && testCheck(projectCheckHome)
-    && checkLicense(projectCheckHome)[0] && masonTomlFileCheck(projectCheckHome)[0]
-    && gitTagVersionCheck(projectCheckHome)[0] {
+    if package && moduleCheck(projectCheckHome) &&
+       testCheck(projectCheckHome) && checkLicense(projectCheckHome)[0] &&
+       masonTomlFileCheck(projectCheckHome).isValid() &&
+       gitTagVersionCheck(projectCheckHome)[0] {
       attemptToBuild();
       exit(0);
-    }
-    else {
+    } else {
       writeln('New package does not have the proper structure.');
       exit(1);
     }
@@ -686,28 +720,29 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
   copy of the repo.
 */
 proc refreshLicenseList(overwrite=false) throws {
-  const dest = MASON_HOME + '/spdx';
-  const branch = '--branch main ';
-  const depth = '--depth 1 ';
-  const url = 'https://github.com/spdx/license-list-data.git ';
-  const referIfAble = if MASON_LICENSE_CACHE_PATH != "" then
-    " --reference-if-able " + MASON_LICENSE_CACHE_PATH +
-      "/license-list-data.git" else "";
-  const command = 'git clone -q ' + branch + depth + url + dest + referIfAble;
-  if !isDir(dest) {
-    runCommand(command);
-  } else if overwrite {
-    rmTree(dest);
-    runCommand(command);
-  }
+  const dest = MASON_HOME:path / "spdx";
+  const url = "https://github.com/spdx/license-list-data.git";
+  const extraCloneArgs: list(string) = if MASON_LICENSE_CACHE_PATH != ""
+    then new list(["--reference-if-able",
+                   MASON_LICENSE_CACHE_PATH + "/license-list-data.git"])
+    else new list(string);
 
-  if !isDir(dest + "/text") {
-    throw new owned MasonError("Expected to find license list data at " + dest +
-                               "/text, but location does not exist. Try running\
-                               'mason publish --refresh-licenses' to update the\
-                               license list.");
+  if overwrite && dest.exists() then
+    dest.remove();
+  if !dest.isDir() then
+    cloneSource(url, dest, depth=1, branch="main",
+                quiet=true, extra=extraCloneArgs.toArray());
+
+  const licenseListPath = dest / "text";
+
+  if !licenseListPath.isDir() {
+    throw new MasonError("Expected to find license list data at " +
+                         licenseListPath:string +
+                         ", but location does not exist. Try running " +
+                         "'mason publish --refresh-licenses' to update the " +
+                         "license list.");
   }
-  const licenseList = listDir(dest + "/text");
+  const licenseList = listDir(licenseListPath:string);
   return licenseList;
 }
 
@@ -719,7 +754,7 @@ private proc checkLicense(projectHome: string) throws {
     const toParse = open(joinPath(projectHome, "Mason.toml"), ioMode.r);
     const tomlFile = (parseToml(toParse));
     if tomlFile.pathExists("brick.license") {
-      defaultLicense = tomlFile["brick"]!["license"]!.s;
+      defaultLicense = tomlFile["brick.license"]!.s;
     }
     // get the license list and validate license identifier
     const licenseList = refreshLicenseList();
@@ -742,62 +777,69 @@ private proc attemptToBuild() throws {
   sub.wait();
   if sub.exitCode == 1 {
     writeln('(FAILED) Please make sure your package builds');
-  }
-  else {
+  } else {
     writeln('(PASSED) Package builds successfully.');
   }
 }
 
-/* registryPathCheck accepts the path, username, and trueIfLocal in order to check whether the registry that someone
-   is trying to publish to is properly set up and has the correct structure.
+/*
+  registryPathCheck accepts the path, username, and trueIfLocal in order to
+  check whether the registry that someone is trying to publish to is properly
+  set up and has the correct structure.
  */
-private proc registryPathCheck(path : string, username : string, trueIfLocal : bool) throws {
-  if path == MASON_HOME {
+private proc registryPathCheck(p: string,
+                               username: string,
+                               trueIfLocal: bool) throws {
+  if p == MASON_HOME {
     var forkCheck = usernameCheck(username);
     if forkCheck == 0 {
-      writeln('   The mason-registry is forked under username: ' + username + ' (PASSED)');
+      writeln('   The mason-registry is forked under username: ' +
+              username + ' (PASSED)');
       return true;
-    }
-    else {
-      writeln('   You must have a fork of the mason-registry to publish a package (FAILED)');
+    } else {
+      writeln('   You must have a fork of the mason-registry to ' +
+              'publish a package (FAILED)');
       return false;
     }
-  }
-  else {
+  } else {
     if trueIfLocal {
-      const isLocalGit = exists(path + '/.git');
-      const hasBricks = exists(path + '/Bricks/');
+      const isLocalGit = exists(p + '/.git');
+      const hasBricks = exists(p + '/Bricks/');
       if !isLocalGit {
-        writeln('   Registry with path ' + path + ' is not a git repository. (FAILED)');
-        writeln("   Local registries must be git repositories in order to publish");
+        writeln('   Registry with path ' +
+                p + ' is not a git repository. (FAILED)');
+        writeln("   Local registries must be git repositories " +
+                "in order to publish");
         return false;
-      }
-      else if !hasBricks {
-        writeln('   The registry with path ' + path + ' does not have proper registry structure (FAILED)');
-        writeln("   A registry must have a /Bricks/ directory to be a valid registry");
+      } else if !hasBricks {
+        writeln('   The registry with path ' +
+                p + ' does not have proper registry structure (FAILED)');
+        writeln("   A registry must have a /Bricks/ " +
+                "directory to be a valid registry");
         return false;
-      }
-      else {
-        writeln('   The local registry with path ' + path + ' is a valid registry to be publish too (PASSED)');
+      } else {
+        writeln('   The local registry with path ' +
+                p + ' is a valid registry to be publish too (PASSED)');
         return true;
       }
-    }
-    else {
+    } else {
       return true;
     }
   }
 }
 
-/* Grabs the remote origin of the package
- */
+/* Grabs the remote origin of the package */
 private proc getRemoteOrigin() {
   const packageDir = here.cwd();
-  var gitRemoteOrigin = gitC(packageDir, 'git config --get remote.origin.url', true);
+  const gitRemoteOrigin =
+    gitC(packageDir, 'git config --get remote.origin.url', true);
   return gitRemoteOrigin;
 }
 
-/* Makes sure that the directory `mason publish --check is called in is a mason package
- */
+/*
+  Makes sure that the directory `mason publish --check`
+  is called in is a mason package
+*/
 private proc ensureMasonProject(cwd : string, tomlName="Mason.toml") : string {
   const (dirname, basename) = splitPath(cwd);
   if dirname == '/' {
@@ -810,7 +852,8 @@ private proc ensureMasonProject(cwd : string, tomlName="Mason.toml") : string {
   return ensureMasonProject(dirname, tomlName);
 }
 
-/*Checks to make sure the package has a main module
+/*
+  Checks to make sure the package has a main module
 
   The source file for the main module should have the same name as the package.
   For example, `foo.chpl` is a valid main module for the following package:
@@ -818,12 +861,12 @@ private proc ensureMasonProject(cwd : string, tomlName="Mason.toml") : string {
     foo/
       Mason.toml
       src/
-        foo.chpl  # module foo { include module bar; use bar; proc main() { ... } }
+        foo.chpl # module foo { include module bar; use bar; proc main() {...} }
         foo/
           bar.chpl
       ...
 
- */
+*/
 private proc moduleCheck(projectHome : string) throws {
   const files = listDir(projectHome + '/src', dirs=false),
         modules = for f in files do if f.endsWith('.chpl') then f;
@@ -847,8 +890,7 @@ proc testCheck(projectHome: string) {
     return tests.size > 0;
   } else return false;
 }
-/* Returns the mason env
- */
+/* Returns the mason env */
 private proc returnMasonEnv() {
   const fakeArgs = ['env'];
   masonEnv(fakeArgs);
@@ -870,7 +912,7 @@ proc gitTagVersionCheck(projectHome: string) throws {
   var allTags = tags.split("\n");
   const toParse = open(projectHome + "/Mason.toml", ioMode.r);
   const tomlFile = (parseToml(toParse));
-  var version = "v" + tomlFile["brick"]!["version"]!.s;
+  var version = "v" + tomlFile["brick.version"]!.s;
   for tag in allTags {
     if tag == version {
       return (true, allTags, version);
@@ -879,30 +921,56 @@ proc gitTagVersionCheck(projectHome: string) throws {
   return (false, allTags, version);
 }
 
-/* make sure directory created is same as that of package
-   name in manifest file */
+/*
+  make sure directory created is same as that of package
+  name in manifest file
+*/
 proc namespaceCollisionCheck(projectHome: string) throws {
   var directoryName = basename(projectHome);
   const toParse = open(projectHome + "/Mason.toml", ioMode.r);
   const tomlFile = (parseToml(toParse));
-  var packageName = tomlFile["brick"]!["name"]!.s;
-  if packageName == directoryName then return true;
-  else return false;
+  var packageName = tomlFile["brick.name"]!.s;
+  return packageName == directoryName;
 }
 
-/* Mason toml file formatting */
-proc masonTomlFileCheck(projectHome: string) {
-  const toParse = open(projectHome + "/Mason.toml", ioMode.r);
-  const tomlFile = (parseToml(toParse));
-  var missingFields : list(string);
-  var name, chplVersion, version, source, author, license = false;
-  if tomlFile.pathExists("brick.name") then name = true; else missingFields.pushBack('name');
-  if tomlFile.pathExists("brick.version") then version = true; else missingFields.pushBack('version');
-  if tomlFile.pathExists("brick.chplVersion") then chplVersion = true; else missingFields.pushBack('chplVersion');
-  if tomlFile.pathExists("brick.source") then source = true; else missingFields.pushBack('source');
-  if tomlFile.pathExists("brick.license") then license = true; else missingFields.pushBack('license');
-  if tomlFile.pathExists("brick.authors") then author = true; else missingFields.pushBack('authors');
-  if name && version && chplVersion && source
-    && author && license then return (true, missingFields);
-  else return (false, missingFields);
+record tomlCheckResult {
+  var missingFields: list(string);
+  var mismatchedTypes: list(string);
+  proc isValid(): bool {
+    return missingFields.size == 0 && mismatchedTypes.size == 0;
+  }
+}
+/*
+  Mason.toml file formatting. registry file must have the following fields:
+    name: string
+    version: string
+    chplVersion: string
+    source: string
+    authors: string or list(string)
+    license: string
+
+  Returns (isValid, missingFields, mismatchedTypes)
+*/
+proc masonTomlFileCheck(projectHome: string): tomlCheckResult {
+  const toParse = open(joinPath(projectHome, "Mason.toml"), ioMode.r);
+  const tomlFile = parseToml(toParse);
+  var missingFields: list(string);
+  var mismatchedTypes: list(string);
+
+  const requireStringFields = ("name", "version", "chplVersion",
+                               "source", "license");
+  const requireStringOrListFields = ("authors",);
+  for field in requireStringFields {
+    if !tomlFile.pathExists("brick." + field) then
+      missingFields.pushBack(field);
+    else if tomlFile["brick"]![field]!.tomlType != "string" then
+      mismatchedTypes.pushBack(field);
+  }
+  for field in requireStringOrListFields {
+    if !tomlFile.pathExists("brick." + field) then
+      missingFields.pushBack(field);
+    else if !isStringOrStringArray(tomlFile["brick"]![field]!) then
+      mismatchedTypes.pushBack(field);
+  }
+  return new tomlCheckResult(missingFields, mismatchedTypes);
 }

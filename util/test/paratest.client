@@ -13,6 +13,7 @@
 #  valgrind - run valgrind (0=no, 1=both compiler and executable, 2=executable only)
 #  memleaks    - check for memleaks (0=no, 1=yes)
 #  memleakslog - check for memleaks creating a log file (0=no, 1=yes)
+#  componly - pass '-comp-only' to start_test
 #  compopts - optional Chapel compiler options
 #  execopts - optional test execution options
 #
@@ -52,9 +53,9 @@ sub main {
     chomp $node;
     ($node) = split (/\./, $node);
 
-    if ($#ARGV < 7) {
+    if ($#ARGV < 8) {
         fatal("insufficient arguments: '@ARGV'\n" .
-	      "Usage:  paratest.client id chapeltestdir testdir chplenv futures-mode valgrind memleaks memleakslog [compopts [execopts]]");
+	      "Usage:  paratest.client id chapeltestdir testdir chplenv futures-mode valgrind memleaks memleakslog componly [compopts [execopts]]");
     }
 
     $id = $ARGV[0];
@@ -69,11 +70,11 @@ sub main {
     $valgrind = "-valgrindexe" if ($ARGV[5] == 2);
 
     print "$id $workingdir $testdir $futures_mode $valgrind" if $debug;
-    if ($#ARGV>=8) {
-        $compopts = "-compopts \"" . $ARGV[8] . "\"";
-    }
     if ($#ARGV>=9) {
-        $execopts = "-execopts \"" . $ARGV[9] . "\"";
+        $compopts = "-compopts \"" . $ARGV[9] . "\"";
+    }
+    if ($#ARGV>=10) {
+        $execopts = "-execopts \"" . $ARGV[10] . "\"";
     }
 
     $synchfile = "$synchdir/$node.$id";
@@ -106,7 +107,10 @@ sub main {
     $memleakslog = "";
     $memleakslog = "-memleakslog $logdir/tmp.$dirfname.$node.memleaks" if ($ARGV[7] == 1);
 
-    $testarg = "-compiler $compiler -logfile $logfile $futures_mode $valgrind $compopts $execopts $memleaks $memleakslog";
+    $componly = "";
+    $componly = "-comp-only" if ($ARGV[8] == 1);
+
+    $testarg = "-compiler $compiler -logfile $logfile $futures_mode $valgrind $compopts $execopts $memleaks $memleakslog $componly";
     $testarg = "$testarg $testdir -norecurse";
 
     # Set up the Chapel environment passed in by paratest.server

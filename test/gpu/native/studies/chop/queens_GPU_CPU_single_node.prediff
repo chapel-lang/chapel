@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+cp $2 $2.bak
+
+grep "^[[:space:]]*Tree size" $2 > $2.tmp
+grep "^[[:space:]]*Elapsed time" $2 >> $2.tmp
+
+mv $2.tmp $2

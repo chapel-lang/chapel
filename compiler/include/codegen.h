@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -21,8 +21,10 @@
 #ifndef CODEGEN_H
 #define CODEGEN_H
 
+#include "intents.h"
 #include "baseAST.h"
 #include "LayeredValueTable.h"
+#include "type.h"
 
 #include <list>
 #include <map>
@@ -213,6 +215,16 @@ void initializeGenInfo(void);
 void setupClang(GenInfo* info, std::string rtmain);
 #endif
 
+// These typedefs exist just to avoid needing ifdefs in fn prototypes
+#ifdef HAVE_LLVM
+#include "clang/CodeGen/CGFunctionInfo.h"
+typedef clang::FunctionDecl* ClangFunctionDeclPtr;
+typedef llvm::FunctionType* LlvmFunctionTypePtr;
+#else
+typedef void* ClangFunctionDeclPtr;
+typedef void* LlvmFunctionTypePtr;
+#endif
+
 bool isBuiltinExternCFunction(const char* cname);
 bool needsCodegenWrtGPU(FnSymbol* fn);
 
@@ -231,6 +243,23 @@ void flushStatements(void);
 GenRet codegenCallExpr(const char* fnName);
 GenRet codegenCallExpr(const char* fnName, GenRet a1);
 GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2);
+GenRet codegenCallExprWithArgs(const char* fnName,
+                               std::vector<GenRet> & args,
+                               FnSymbol* fnSym = nullptr,
+                               astlocT callLoc = astlocT::unknownLoc(),
+                               ClangFunctionDeclPtr FD = nullptr,
+                               bool defaultToValues = true);
+GenRet codegenGetLocaleID(void);
+GenRet codegenUseGlobal(const char* global);
+GenRet codegenProcedurePointerFetch(Expr* baseExpr);
+GenRet codegenValueMaybeDeref(Expr* baseExpr);
+void   codegenGlobalInt64(const char* cname, int64_t value, bool isHeader,
+                          bool isConstant=true);
+
+bool argRequiresCPtr(IntentTag intent, Type* t, bool isReceiver);
+bool argRequiresCPtr(ArgSymbol* formal);
+bool argRequiresCPtr(const FunctionType::Formal* formal);
+
 Type* getNamedTypeDuringCodegen(const char* name);
 void setupDefaultFilenames(void);
 void gatherTypesForCodegen(void);
@@ -241,5 +270,33 @@ void registerPrimitiveCodegens();
 void linkInDynoFiles();
 
 void closeCodegenFiles();
+
+struct FunctionTypeCodegenInfo {
+#ifdef HAVE_LLVM
+  // If we are generating LLVM, we need not only the type, but also a
+  // standard set of attributes that we generate for indirect calls.
+  // These attributes are responsible for setting things like the
+  // correct calling convention, so they can't be omitted.
+  llvm::FunctionType* llvmType = nullptr;
+  llvm::AttributeList llvmAttrs;
+#endif
+  // For C code, this will contain the string representing the local type
+  // of the function. For LLVM code, it will contain a 'llvm::Type*' set
+  // to the function type that was computed above. In both cases the Chapel
+  // type will be set to the corresponding local function type.
+  GenRet gen;
+};
+
+// This can be called to produce a backend-appropriate translation of the
+// 'local' function type for 'ft' that is suitable for use when issuing
+// an indirect call.
+//
+// The actual wideness of 'ft' is ignored, as backend procedure pointer
+// types are always local.
+//
+// This exists in addition to 'FunctionType::codegenDef()' because that
+// method produces an opaque type (an 'int64_t' for 'wide' and a 'void*'
+// for 'local') in order to simplify translation.
+const FunctionTypeCodegenInfo& localFunctionTypeCodegenInfo(FunctionType* ft1);
 
 #endif //CODEGEN_H

@@ -1,0 +1,10 @@
+pySet size 3
+chapel set size 3
+chapelSet contains a true
+chapelSet contains b true
+chapelSet contains c true
+checking Value version
+chapel set2 size 3
+chapelSet2 contains a true
+chapelSet2 contains b true
+chapelSet2 contains c true

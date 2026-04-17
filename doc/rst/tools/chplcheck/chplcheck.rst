@@ -148,6 +148,39 @@ as at least 1 rule opts in to using them. For example, custom rules could confor
 to the setting ``MyIgnoreList``, which could be set as
 ``--setting MyIgnoreList="foo,bar"``.
 
+Configuration Files
+-------------------
+
+``chplcheck`` can be configured without passing command line flags using a
+configuration file. This file can be specified using the ``--config`` (also
+``-c``) flag. The configuration file can either be a YAML file or a specific
+TOML file. For example, running ``chplcheck -c config.yaml`` will load the
+configuration from ``config.yaml``. Additionally, ``chplcheck`` will look for
+configuration files in the current directory named ``chplcheck.cfg`` or
+``.chplcheck.cfg`` (in that order).
+
+Most command line options can be specified in the configuration file. For
+example, the following YAML configuration file will explicitly enable the
+``UseExplicitModules`` rule and disable the ``UnusedLoopIndex`` and
+``UnusedFormal`` rules:
+
+.. code-block:: yaml
+
+   enable-rule: ["UseExplicitModules"]
+   disable-rule: ["UnusedLoopIndex", "UnusedFormal"]
+
+TOML configuration files can also be used, for example the following is the same configuration as above:
+
+.. code-block:: toml
+
+   [tool.chplcheck]
+   enable-rule = ["UseExplicitModules"]
+   disable-rule = ["UnusedLoopIndex", "UnusedFormal"]
+
+This configuration can also be added to a :ref:`Mason <readme-mason>`
+configuration file. ``chplcheck`` will automatically use a configuration file
+contained in a ``Mason.toml`` file in the current directory.
+
 Setting Up In Your Editor
 -------------------------
 
@@ -500,6 +533,80 @@ generate Sphinx documentation for the rule. This can be done by running the
 This will generate a ``rules.rst`` file in ``my/out/directory`` that contains
 the documentation for the rules in ``myrules.py``. Note that this script is
 currently only available in the Chapel source tree.
+
+Flags
+-----
+
+``chplcheck`` supports a number of command line flags to control its behavior.
+Any flag that starts with ``--`` can also be specified
+`in a configuration file <#configuration-files>`_.
+
++------------------------------+-----------------------------------------------+
+| Common Flags                 | Description                                   |
++------------------------------+-----------------------------------------------+
+| ``--config, -c FILE``        | Specify a config file to read from.           |
++------------------------------+-----------------------------------------------+
+| ``--enable-rule RULE_NAME``  | Enable a rule by name.                        |
++------------------------------+-----------------------------------------------+
+| ``--disable-rule RULE_NAME`` | Disable a rule by name.                       |
++------------------------------+-----------------------------------------------+
+| ``--add-rules FILE.py``      | Add custom rules from the specified file.     |
+|                              | This can be used multiple times to add        |
+|                              | multiple rule files.                          |
++------------------------------+-----------------------------------------------+
+| ``--setting NAME=VALUE``     | Set a rule-specific setting.                  |
+|                              | e.g., ``--setting LineLength.Max=100``.       |
++------------------------------+-----------------------------------------------+
+| ``--skip FILE``              | Skip linting the specified file.              |
+|                              | Can be used multiple times.                   |
++------------------------------+-----------------------------------------------+
+| ``--list-rules``             | List all available rules.                     |
++------------------------------+-----------------------------------------------+
+| ``--list-active-rules``      | List all currently enabled rules.             |
++------------------------------+-----------------------------------------------+
+| ``--lsp``                    | Run with the Language Server Protocol.        |
+|                              | This should only be used when integrating     |
+|                              | with an editor.                               |
++------------------------------+-----------------------------------------------+
+
++---------------------------+--------------------------------------------------+
+| Flags for Fixits          | Description                                      |
++---------------------------+--------------------------------------------------+
+| ``--fixit``               | Apply fixits to the file. By default, this is    |
+|                           | done in-place, overwriting the original file     |
+|                           | with the fixed version.                          |
++---------------------------+--------------------------------------------------+
+| ``--fixit-suffix SUFFIX`` | Apply fixits to a new file with the given suffix |
+|                           | appended to the original file name. For example, |
+|                           | ``--fixit-suffix .fixed`` would create a new     |
+|                           | file named ``myfile.chpl.fixed`` with the fixits |
+|                           | applied.                                         |
++---------------------------+--------------------------------------------------+
+| ``--interactive, -i``     | Start an interactive session where you can       |
+|                           | choose which fixits to apply.                    |
++---------------------------+--------------------------------------------------+
+
++---------------------------------+--------------------------------------------+
+| Other Flags                     | Description                                |
++---------------------------------+--------------------------------------------+
+| ``--skip-unstable``             | Skip linting code that is marked as        |
+|                                 | unstable (via ``@unstable``).              |
++---------------------------------+--------------------------------------------+
+| ``--[no]-skip-bundled-modules`` | [Don't] skip linting the bundled Chapel    |
+|                                 | modules. They are skipped by default.      |
++---------------------------------+--------------------------------------------+
+| ``--internal-prefix PREFIX``    | Consider ``PREFIX`` an internal prefix     |
+|                                 | when linting. Commonly used as             |
+|                                 | ``--internal-prefix chpl_`` when linting   |
+|                                 | the standard modules.                      |
++---------------------------------+--------------------------------------------+
+| ``--check-internal-prefix``     | Lint code that uses an internal prefix.    |
+|                                 | This is disabled by default.               |
++---------------------------------+--------------------------------------------+
+| ``--file FILE``                 | Add a file to check, can be used           |
+|                                 | multiple times. Files can also be listed   |
+|                                 | as positional arguments.                   |
++---------------------------------+--------------------------------------------+
 
 Current Rules
 -------------

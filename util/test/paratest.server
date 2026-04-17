@@ -52,6 +52,7 @@ $junit_xml = 0;
 $junit_xml_file = "";
 $junit_remove_prefix = "";
 $timing_file = "";
+$componly = 0;
 # Once a node has timed out, we don't send it any more work, so this timeout
 # should be set higher than the time needed to process the largest directory.
 # -1 means "never time out".
@@ -282,7 +283,7 @@ sub feed_nodes {
                       $execopts = "\\\"$execopts\\\"";
                   }
                   # If the command line gets too long, consider using xargs
-                  $rem_cmd = "$rem_exec_cmd $client_script $readyid $pwd $testdir $chplenv $futures_mode $valgrind $memleaksflag $memleakslog $compopts $execopts";
+                  $rem_cmd = "$rem_exec_cmd $client_script $readyid $pwd $testdir $chplenv $futures_mode $valgrind $memleaksflag $memleakslog $componly $compopts $execopts";
                   if ($verbose) {
                       systemd ($rem_cmd);
                   } else {
@@ -686,6 +687,8 @@ sub main {
                 print "missing -junit-remove-prefix arg\n";
                 exit (8);
             }
+        } elsif (/^-comp-only$/) {
+          $componly = 1;
         } elsif (/^-help$|^-h$/) {
             print_help;
             exit (9);

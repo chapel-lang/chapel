@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -53,6 +53,7 @@ class UastConverter {
   setFunctionsToConvertWithTypes(const chpl::resolution::CalledFnsSet& calledFns) = 0;
 
   virtual void setSymbolsToIgnore(std::unordered_set<chpl::ID> ignore) = 0;
+  virtual void eraseSymbolToIgnore(chpl::ID ignore) = 0;
 
   // Indicate which module is the main module
   virtual void setMainModule(chpl::ID mainModule) = 0;
@@ -70,6 +71,7 @@ class UastConverter {
 
   // convert AST, in an untyped manner
   virtual Expr* convertAST(const chpl::uast::AstNode* node) = 0;
+  virtual Expr* convertAST(const chpl::uast::AstNode* node, ModTag modTag) = 0;
 
   // apply fixups to fix SymExprs to refer to Symbols that
   // might have been created in a different order.
@@ -77,6 +79,9 @@ class UastConverter {
 
   // Generate main functions (for use with TConverter)
   virtual void createMainFunctions() = 0;
+
+  virtual void noteConvertedSym(const chpl::uast::AstNode* ast, Symbol* sym) = 0;
+  virtual void noteConvertedFn(const chpl::resolution::TypedFnSignature* sig, FnSymbol* fn) = 0;
 };
 
 chpl::owned<UastConverter> createUntypedConverter(chpl::Context* context);

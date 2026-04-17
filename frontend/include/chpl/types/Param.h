@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -184,6 +184,10 @@ class Param {
   bool completeMatch(const Param* other) const;
 
   static bool isParamOpFoldable(chpl::uast::PrimitiveTag op);
+
+  static bool castAllowed(Context* context,
+                          const QualifiedType& a,
+                          const QualifiedType& b);
 
   static QualifiedType fold(Context* context,
                             const chpl::uast::AstNode* astForErr,

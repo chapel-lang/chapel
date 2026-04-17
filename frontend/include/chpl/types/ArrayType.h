@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -73,7 +73,11 @@ class ArrayType final : public CompositeType {
                                        const QualifiedType& domainType,
                                        const QualifiedType& eltType);
 
-  const RuntimeType* getDomainRuntimeType() const;
+  /* construct an array type whose element type / domain type might be constrained,
+     but the array is still generic. */
+  static const ArrayType* getUninstancedArrayType(Context* context,
+                                                  const QualifiedType& domainType,
+                                                  const QualifiedType& eltType);
 
   const Type* substitute(Context* context,
                          const PlaceholderMap& subs) const override {
@@ -102,6 +106,14 @@ class ArrayType final : public CompositeType {
   }
 
   const RuntimeType* runtimeType(Context* context) const;
+
+  bool isAliasingArray(Context* context) const;
+
+  bool isUninstancedArray() const {
+    /* 0 subs = fully generic, 3 subs = _instance is present, 2 subs =
+       _instance is absent but domain and eltType are present */
+    return substitutions().size() == 2;
+  }
 
   ~ArrayType() = default;
 

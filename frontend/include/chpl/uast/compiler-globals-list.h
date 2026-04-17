@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -23,6 +23,7 @@ COMPILER_GLOBAL(bool, "chpl_constArgChecking", constArgChecking)
 COMPILER_GLOBAL(bool, "chpl_checkNilDereferences", nilDerefChecking)
 COMPILER_GLOBAL(bool, "chpl_overloadSetsChecks", overloadSetsChecking)
 COMPILER_GLOBAL(bool, "chpl_checkDivByZero", divByZeroChecking)
+COMPILER_GLOBAL(bool, "chpl_unionAccessChecking", unionAccessChecking)
 COMPILER_GLOBAL(bool, "CHPL_CACHE_REMOTE", cacheRemote)
 COMPILER_GLOBAL(bool, "_privatization", privatization)
 COMPILER_GLOBAL(bool, "_local", local)

@@ -43,7 +43,7 @@ fi
 # enable arrow/parquet support
 export ARKOUDA_SERVER_PARQUET_SUPPORT=true
 
-export CHPL_WHICH_RELEASE_FOR_ARKOUDA="2.4.0"
+export CHPL_WHICH_RELEASE_FOR_ARKOUDA="2.8.0"
 
 function partial_checkout_release() {
   currentSha=`git rev-parse HEAD`
@@ -52,6 +52,55 @@ function partial_checkout_release() {
   git checkout $currentSha -- $CHPL_HOME/util/cron/
   git checkout $currentSha -- $CHPL_HOME/util/test/
   git checkout $currentSha -- $CHPL_HOME/third-party/chpl-venv/test-requirements.txt
+}
+
+function release_dependencies() {
+  fallback_to_bundled_llvm=$1
+  # Note: Add more cases to the following 'if' whenever we need to test a
+  # release that does not support our latest available LLVM. Cases can be
+  # removed when we no longer care about testing against that release.
+  if [ "$CHPL_WHICH_RELEASE_FOR_ARKOUDA" = "2.4.0" ]; then
+    # use LLVM 19, latest supported by 2.4.0
+    if [ -f /hpcdc/project/chapel/setup_llvm.bash ] ; then
+      # Hack to avoid build issues with GMP. Spack installed GMP is pulled in as
+      # a dependency of GDB. Then for some reason, it's (undesirably) linked
+      # against by the bundled GMP's self-tests, causing them to fail due to
+      # version mismatch. Avoid this by unloading GDB and therefore GMP.
+      # Anna 2024-06-17
+      module unload gdb
+
+      source /hpcdc/project/chapel/setup_llvm.bash 19
+    else
+      echo "CHPL_WHICH_RELEASE_FOR_ARKOUDA is set to $CHPL_WHICH_RELEASE_FOR_ARKOUDA, but no setup_llvm.bash found."
+      if [ "$fallback_to_bundled_llvm" = "true" ]; then
+        echo "Falling back to a bundled LLVM."
+        export CHPL_LLVM=bundled
+        unset CHPL_LLVM_CONFIG
+      else
+        exit 1
+      fi
+    fi
+  elif [ "$CHPL_WHICH_RELEASE_FOR_ARKOUDA" = "2.5.0" ]; then
+    : # no extra setup needed yet
+  elif [ "$CHPL_WHICH_RELEASE_FOR_ARKOUDA" = "2.6.0" ]; then
+    : # no extra setup needed yet
+  elif [ "$CHPL_WHICH_RELEASE_FOR_ARKOUDA" = "2.7.0" ]; then
+    : # no extra setup needed yet
+  elif [ "$CHPL_WHICH_RELEASE_FOR_ARKOUDA" = "2.8.0" ]; then
+    : # no extra setup needed yet
+  else
+    echo "CHPL_WHICH_RELEASE_FOR_ARKOUDA is set to $CHPL_WHICH_RELEASE_FOR_ARKOUDA, but is not supported by this script."
+    exit 1
+  fi
+}
+
+function setup_release() {
+  if [ -n "$CHPL_WHICH_RELEASE_FOR_ARKOUDA" ]; then
+    release_dependencies $@
+  else
+    echo "CHPL_WHICH_RELEASE_FOR_ARKOUDA not set, cannot run Arkouda release test!"
+    exit 1
+  fi
 }
 
 # test against Chapel release (checking out current test/cron directories)
@@ -67,8 +116,8 @@ function test_nightly() {
 
 function sync_graphs() {
   if [[ -n $CHPL_TEST_PERF_SYNC_DIR_SUFFIX ]]; then
-    $CHPL_HOME/util/cron/syncPerfGraphs.py $CHPL_TEST_PERF_DIR/html/ arkouda/$CHPL_TEST_PERF_CONFIG_NAME/$CHPL_TEST_PERF_SYNC_DIR_SUFFIX
+    $CHPL_HOME/util/cron/syncPerfGraphs.py $CHPL_TEST_PERF_DIR/$CHPL_TEST_PERF_DESCRIPTION/html/ arkouda/$CHPL_TEST_PERF_CONFIG_NAME/$CHPL_TEST_PERF_SYNC_DIR_SUFFIX
   else
-    $CHPL_HOME/util/cron/syncPerfGraphs.py $CHPL_TEST_PERF_DIR/html/ arkouda/$CHPL_TEST_PERF_CONFIG_NAME
+    $CHPL_HOME/util/cron/syncPerfGraphs.py $CHPL_TEST_PERF_DIR/$CHPL_TEST_PERF_DESCRIPTION/html/ arkouda/$CHPL_TEST_PERF_CONFIG_NAME
   fi
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -68,12 +68,31 @@ static inline void chpl_Py_DECREF(PyObject* o) { Py_DECREF(o); }
 static inline void chpl_Py_CLEAR(PyObject** o) { Py_CLEAR(*o); }
 
 static inline int chpl_PyList_Check(PyObject* o) { return PyList_Check(o); }
+
+static inline void chpl_PyList_Clear(PyObject* o) {
+#if PY_VERSION_HEX >= 0x30d00f0 /* Python 3.13 */
+  PyList_Clear(o);
+#else
+  PyErr_SetString(PyErr_NewException("exceptions.Exception", NULL, NULL),
+                  "PyList.clear() is not supported in Python " PY_VERSION);
+#endif
+}
+
+static inline void chpl_PyList_Extend(PyObject* o, PyObject* iterable) {
+#if PY_VERSION_HEX >= 0x30d00f0 /* Python 3.13 */
+  PyList_Extend(o, iterable);
+#else
+  PyErr_SetString(PyErr_NewException("exceptions.Exception", NULL, NULL),
+                  "PyList.extend() is not supported in Python " PY_VERSION);
+#endif
+}
+
 static inline int chpl_PyGen_Check(PyObject* o) { return PyGen_Check(o); }
 
 static inline PyObject* chpl_Py_None(void) { return (PyObject*)Py_None; }
 static inline PyObject* chpl_Py_True(void) { return (PyObject*)Py_True; }
 static inline PyObject* chpl_Py_False(void) { return (PyObject*)Py_False; }
-
+static inline PyObject* chpl_Py_NotImplemented(void) { return (PyObject*)Py_NotImplemented; }
 
 static inline PyObject* chpl_Py_CompileString(const char* str,
                                               const char* filename, int start) {
@@ -101,5 +120,7 @@ static const int chpl_PyBUF_SIMPLE = PyBUF_SIMPLE;
 static const int chpl_PyBUF_WRITABLE = PyBUF_WRITABLE;
 static const int chpl_PyBUF_FORMAT = PyBUF_FORMAT;
 static const int chpl_PyBUF_ND = PyBUF_ND;
+static const int chpl_PyBUF_STRIDES = PyBUF_STRIDES;
+static const int chpl_PyBUF_C_CONTIGUOUS = PyBUF_C_CONTIGUOUS;
 
 #endif

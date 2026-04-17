@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -38,6 +38,8 @@ A program containing tests must execute the ``UnitTest``
 :proc:`~UnitTest.main()` function to run the tests.
 
 
+.. _assert-functions:
+
 Assert Functions
 ----------------
 
@@ -49,6 +51,9 @@ Here are the assert functions available in the UnitTest module:
 - :proc:`~Test.assertNotEqual`
 - :proc:`~Test.assertGreaterThan`
 - :proc:`~Test.assertLessThan`
+- :proc:`~Test.assertClose`
+- :proc:`~Test.assertRegexMatch`
+- :proc:`~Test.assertThrows`
 
 Test Metadata Functions
 -----------------------
@@ -66,42 +71,27 @@ UnitTest module also provides multiple methods for specifying test Metadata:
 Examples
 --------
 
+All examples are run using the `mason test` command, which acts as a test
+runner for the UnitTest module. See :ref:`testing-with-mason` for more info.
+
+.. note::
+
+   These examples can also be run standalone, but that output is not shown here.
+
 Basic Usage
 ^^^^^^^^^^^
 
 Here is a minimal example demonstrating how to use the UnitTest module:
 
-.. code-block:: chapel
-
-   use UnitTest;
-
-   proc celsius2fahrenheit(x) {
-     // we should be returning "(x: real * 9/5)+32"
-     return (x * 9/5)+32;
-   }
-
-   proc test_temperature(test: borrowed Test) throws {
-     // we were expecting 98.6 but since we missed typecasting
-     // the above function returned 98.
-     test.assertFalse(celsius2fahrenheit(37) == 98);
-   }
-
-   UnitTest.main();
+.. literalinclude:: ../../../../test/library/packages/UnitTest/doc-examples/BasicUsage.chpl
+    :language: chapel
+    :start-after: START_EXAMPLE
+    :end-before: STOP_EXAMPLE
 
 Output:
 
-.. code-block:: bash
-
-  ======================================================================
-  FAIL xyz.chpl: test_temperature()
-  ----------------------------------------------------------------------
-  AssertionError: assertFalse failed. Given expression is True
-
-  ----------------------------------------------------------------------
-  Run 1 test
-
-  FAILED failures = 1
-
+.. literalinclude:: ../../../../test/library/packages/UnitTest/doc-examples/BasicUsage.good
+    :language: bash
 
 Skipping Tests
 ^^^^^^^^^^^^^^^
@@ -109,142 +99,89 @@ Skipping Tests
 You can skip tests unconditionally with :proc:`~Test.skip` and
 conditionally with :proc:`~Test.skipIf`:
 
-.. code-block:: chapel
-
-   use UnitTest;
-
-   /* calculates factorial */
-   proc factorial(x: int): int {
-     return if x == 0 then 1 else x * factorial(x-1);
-   }
-
-   /*Conditional skip*/
-   proc test1(test: borrowed Test) throws {
-     test.skipIf(factorial(0) != 1,"Base condition is wrong in factorial");
-     test.assertTrue(factorial(5) == 120);
-   }
-
-   /*Unconditional skip*/
-   proc test2(test: borrowed Test) throws {
-     test.skip("Skipping the test directly");
-   }
-
-   UnitTest.main();
-
+.. literalinclude:: ../../../../test/library/packages/UnitTest/doc-examples/Skip.chpl
+    :language: chapel
+    :start-after: START_EXAMPLE
+    :end-before: STOP_EXAMPLE
 
 Output:
 
-.. code-block:: bash
-
-  ======================================================================
-  SKIPPED xyz.chpl: test2()
-  ----------------------------------------------------------------------
-  TestSkipped: Skipping the test directly
-
-  ----------------------------------------------------------------------
-  Run 1 test
-
-  OK skipped = 1
-
+.. literalinclude:: ../../../../test/library/packages/UnitTest/doc-examples/Skip.good
+    :language: bash
 
 Specifying locales
 ^^^^^^^^^^^^^^^^^^
 
-You can specify the num of locales of a test using these method.
+You can control the number of locales a test should use with these methods:
 
 :proc:`~Test.addNumLocales`
 :proc:`~Test.maxLocales`
 :proc:`~Test.minLocales`
 
-Here is an example demonstrating how to use the :proc:`~Test.addNumLocales`
+Here is an example demonstrating how to use :proc:`~Test.addNumLocales`
 
-.. code-block:: chapel
-
-  proc test_square(test: borrowed Test) throws {
-    test.addNumLocales(5);
-    var A: [Locales.domain] int;
-    coforall i in 0..numLocales-1 with (ref A) {
-      on Locales(i) {
-        A[i+1] = (i+1)*(i+1);
-      }
-    }
-    test.assertTrue(A[5]==25);
-  }
+.. literalinclude:: ../../../../test/library/packages/UnitTest/doc-examples/LocalesSquare.chpl
+    :language: chapel
+    :start-after: START_EXAMPLE
+    :end-before: STOP_EXAMPLE
 
 Output:
 
-.. code-block:: bash
+.. literalinclude:: ../../../../test/library/packages/UnitTest/doc-examples/LocalesSquare.good
+    :language: bash
 
-  ----------------------------------------------------------------------
-  Run 1 test
-
-  OK
 
 You can also specify multiple locales on which your code can run.
 
-.. code-block:: chapel
+.. literalinclude:: ../../../../test/library/packages/UnitTest/doc-examples/Locales.chpl
+    :language: chapel
+    :start-after: START_EXAMPLE_1
+    :end-before: STOP_EXAMPLE_1
 
-  proc test3(test: borrowed Test) throws {
-    test.addNumLocales(16,8);
-  }
-
-You can mention the range of locales using :proc:`~Test.maxLocales` and
+You can specify the range of locales using :proc:`~Test.maxLocales` and
 :proc:`~Test.minLocales`
 
-.. code-block:: chapel
-
-  proc test4(test: borrowed Test) throws {
-    test.maxLocales(4);
-    test.minLocales(2);
-  }
+.. literalinclude:: ../../../../test/library/packages/UnitTest/doc-examples/Locales.chpl
+    :language: chapel
+    :start-after: START_EXAMPLE_2
+    :end-before: STOP_EXAMPLE_2
 
 Specifying Dependencies
 ^^^^^^^^^^^^^^^^^^^^^^^
 
 You can specify the order in which tests should run using :proc:`~Test.dependsOn`:
 
-.. code-block:: chapel
-
-   use UnitTest;
-
-   var factorials: list(int);
-
-   // calculates factorial
-   proc factorial(x: int): int {
-     return if x == 0 then 1 else x * factorial(x-1);
-   }
-
-   proc testFillFact(test: borrowed Test) throws {
-     test.skipIf(factorial(0) != 1,"Base condition is wrong in factorial");
-     for i in 1..10 do
-       factorials.pushBack(factorial(i));
-   }
-
-   proc testSumFact(test: borrowed Test) throws {
-     test.dependsOn(testFillFact);
-     var s = 0;
-     for i in factorials.indices do
-       s += factorials[i];
-     test.assertGreaterThan(s,0);
-   }
-
-   UnitTest.main();
+.. literalinclude:: ../../../../test/library/packages/UnitTest/doc-examples/Dependencies.chpl
+    :language: chapel
+    :start-after: START_EXAMPLE
+    :end-before: STOP_EXAMPLE
 
 Output:
 
-.. code-block:: bash
+.. literalinclude:: ../../../../test/library/packages/UnitTest/doc-examples/Dependencies.good
+    :language: bash
 
-  ----------------------------------------------------------------------
-  Run 2 tests
 
-  OK
+Filtering Tests
+~~~~~~~~~~~~~~~
+
+When running tests, you can run a subset of the tests in a given file by using specifying a filter. This is done by specifying ``--filter`` followed by a regular expression matching the names of the tests to run.
+
+.. note::
+
+   If you are using a build of Chapel without regex support
+   (i.e. ``CHPL_RE2=none``), you can compile your test case with ``-snoRegex``
+   to disable regex support in the test runner. ``--filter`` will then
+   perform simple substring matching instead of regex matching.
 
 */
 module UnitTest {
   use Reflection;
+  use Regex;
   use TestError;
   use List, Map;
   private use IO, IO.FormattedIO;
+  private use Math;
 
   @chpldoc.nodoc
   config const testNames: string = "None";
@@ -256,6 +193,12 @@ module UnitTest {
   config const skippedTestNames: string = "None";
   @chpldoc.nodoc
   config const ranTests: string = "None";
+
+  @chpldoc.nodoc
+  config const filter: string = "";
+  @chpldoc.nodoc
+  config param noRegex: bool = false;
+
   // This is a dummy test to capture the function signature
   private
   proc testSignature(test: borrowed Test) throws { }
@@ -534,6 +477,299 @@ module UnitTest {
     pragma "always propagate line file info"
     proc assertEqual(first, second) throws {
       checkAssertEquality(first, second);
+    }
+
+    /*
+     Default relative tolerance for assertClose
+
+     :returns: 1.0e-5
+     */
+    proc defaultRelTol param : real do return 1e-5;
+
+    /*
+     Default absolute tolerance for assertClose
+
+     :returns: 0.0
+     */
+    proc defaultAbsTol param : real do return 0.0;
+
+    /*
+    Check if a scalar or array is within tolerance of the expected value.
+
+    :arg actual: actual value
+
+    :arg expected: expected value
+
+    :arg relTol: relative tolerance
+
+    :arg absTol: absolute tolerance
+
+    :arg equalNan: whether or not NaN should compare equal, defaults to true
+
+    :returns: True if within tolerance, else false
+    :rtype: bool or [] bool
+
+    :throws IllegalArgumentError: either tolerance is negative
+    */
+    pragma "insert line file info"
+    pragma "always propagate line file info"
+    @chpldoc.nodoc
+    proc withinTol(const actual: ?T, const expected: T,
+                   const in relTol: real=defaultRelTol,
+                   const in absTol: real=defaultAbsTol,
+                   const in equalNan: bool=true) throws {
+      if relTol < 0.0 || absTol < 0.0 {
+        throw new owned IllegalArgumentError(
+          "relTol and absTol must both be nonnegative.");
+      }
+
+      proc compareNanFalse(const actual_, const expected_) {
+        // Compare two values, returning false if at least one is NaN
+        return abs(actual_ - expected_) <= absTol + relTol * abs(expected_);
+      }
+
+      proc compareNanTrue(const actual_: real, const expected_: real): bool {
+        // Compare two values, returning true if both are NaN
+        return compareNanFalse(actual_, expected_) || (isNan(actual_) &&
+                                                       isNan(expected_));
+      }
+
+      proc compareComplex(const actual_: complex,
+                          const expected_: complex): bool {
+        // if real/imag part of either complex value is NaN, compare real
+        // and imaginary parts separately, such that, e.g., nan+0i == nan+0i
+        if isNan(actual_.re) || isNan(actual_.im)
+        || isNan(expected_.re) || isNan(expected_.im) {
+          return compareNanTrue(actual_.re, expected_.re)
+              && compareNanTrue(actual_.im, expected_.im);
+        }
+        // else compare complex numbers standard way, with absolute values
+        return compareNanFalse(actual_, expected_);
+      }
+
+      if equalNan {
+        if isComplexType(T) ||
+          (isArrayType(T) && isComplexType(actual.eltType)) {
+          return compareComplex(actual, expected);
+        }
+        if isImagType(T) || (isArrayType(T) && isImagType(actual.eltType)) {
+          // no imaginary NaN, must cast to real
+          return compareNanTrue(actual:real, expected:real);
+        }
+        return compareNanTrue(actual, expected);
+      }
+      return compareNanFalse(actual, expected);
+    }
+
+    /*
+      Assert that two arrays are, element-wise, approximately equal to within
+      the specified tolerances.
+
+      It asserts that actual <= absTol + relTol*expected for each element.
+
+      :arg actual: actual, user-computed value
+
+      :arg expected: expected or desired value
+
+      :arg relTol: relative tolerance
+
+      :arg absTol: absolute tolerance
+
+      :arg equalNan: whether or not NaN should compare equal, defaults to true
+
+      :throws IllegalArgumentError: If `actual` and `expected` are of different
+                                    shape.
+
+      :throws AssertionError: If `actual` is not approximately equal to
+                              `expected` within the specified tolerance.
+    */
+    pragma "insert line file info"
+    pragma "always propagate line file info"
+    proc assertClose(const actual: [] ?T, const expected: [] T,
+                     const in relTol: real=defaultRelTol,
+                     const in absTol: real=defaultAbsTol,
+                     const in equalNan: bool=true): void throws
+                     where (isNumericType(T) && !isIntegralType(T)) {
+      if actual.shape != expected.shape {
+        throw new owned IllegalArgumentError(
+          "Actual array shape " + actual.shape:string
+        + " does not match expected: " + expected.shape:string
+        );
+      }
+      var isWithinTol = withinTol(actual=actual, expected=expected,
+                                  relTol=relTol, absTol=absTol,
+                                  equalNan=equalNan);
+      const passes = && reduce isWithinTol;
+      if !passes {
+        const numFailed: int = isWithinTol.count(false);
+        const numTotal: int = isWithinTol.size;
+        const percFailed: real = 100.0 * numFailed / numTotal;
+
+        var maxAbsErr = min(real);
+        var maxRelErr = min(real);
+        forall (a, e) in zip(actual, expected) with (max reduce maxAbsErr,
+                                                     max reduce maxRelErr) {
+          const absErr = abs(a - e);
+          const relErr = absErr / abs(e);
+          maxAbsErr reduce= absErr;
+          maxRelErr reduce= relErr;
+        }
+        throw new owned AssertionError(
+          "assert failed for %i/%i elements (%r%%)\n".format(numFailed,
+            numTotal, percFailed)
+          + "Max Rel. Error: %r%%\n".format(maxRelErr*100.0)
+          + "Max Abs. Error: %r".format(maxAbsErr)
+        );
+      }
+    }
+
+    /*
+      Assert that two numeric types are approximately equal to within
+      the specified tolerances.
+
+      It asserts that actual <= absTol + relTol*expected.
+
+      :arg actual: actual, user-computed value
+
+      :arg expected: expected or desired value
+
+      :arg relTol: relative tolerance
+
+      :arg absTol: absolute tolerance
+
+      :arg equalNan: whether or not NaN should compare equal, defaults to true
+
+      :throws AssertionError: If `actual` is not approximately equal to
+                              `expected` within the specified tolerance.
+    */
+    pragma "insert line file info"
+    pragma "always propagate line file info"
+    proc assertClose(const in actual: ?T, const in expected: T,
+                     const in relTol: real=defaultRelTol,
+                     const in absTol: real=defaultAbsTol,
+                     const in equalNan: bool=true):void throws
+                     where (isNumericType(T) && !isIntegralType(T)) {
+      var isWithinTol = withinTol(actual=actual, expected=expected,
+                                  relTol=relTol, absTol=absTol,
+                                  equalNan=equalNan);
+      if !isWithinTol {
+        const absErr: real = abs(actual - expected);
+        const relErr = absErr / abs(expected);
+        throw new owned UnitTest.TestError.AssertionError(
+          "assert failed for actual=%n, expected=%n\n".format(actual, expected)
+          + "Rel. Error: %r %%\n".format(relErr*100.0)
+          + "Abs. Error: %r".format(absErr)
+        );
+      }
+    }
+
+    /*
+      Assert that a given procedure throws the specified error (or a subclass
+      of that error).
+
+      :arg func: user-specified procedure (including anonymous procedures) or
+                 functor. Generic procedures and functors are not currently
+                 supported (formal arguments cannot include ``type``
+                 or ``param``)
+
+      :arg errorType: error type, the same as or inheriting from the actual
+                      error thrown
+
+      :arg args: tuple of actual arguments passed directly to ``func``. The
+                 default value implies no arguments are passed
+                 (i.e., ``func()``). Arguments of ``type`` intent are
+                 not currently supported
+
+      :arg match: string for the error message to match, defaults to the empty
+                  string. If not empty and the expected error was thrown,
+                  ``match`` must be found within the error message. Regex
+                  characters are not supported at this time
+
+      :throws AssertionError: No error was thrown by ``func``
+
+      :throws AssertionError: An unexpected error was thrown by ``func``
+
+      :throws AssertionError: If ``match`` is specified: the expected error was
+                              thrown by ``func``, but the error message did not
+                              include the contents of ``match``
+    */
+    proc assertThrows(func, type errorType, const args:?=none,
+                      const match:string=""): void throws
+                      where isSubtype(errorType, Error) &&
+                      (isNothing(args) || isTuple(args)) {
+      const funcName = if isProcedureValue(func) then func:string
+                       else func.type:string;
+      try {
+        if isNothing(args) then func(); else func((...args));
+        throw new owned AssertionError(
+          "assert failed - %s did not throw any error".format(funcName)
+        );
+      } catch e: errorType {
+        if match == "" then return;
+        var idx = e.message().find(match);
+        if idx == -1 {
+          throw new owned AssertionError(
+            "assert failed - %s threw %s with an unexpected message: %s"
+            .format(funcName, e.type:string, e.message())
+          );
+        }
+      } catch e: AssertionError {
+        // func did not throw, catch AssertionError thrown in try
+        // placed after `catch e: errorType` in case AssertionError is the
+        // expected error
+        throw e;
+      } catch e {
+        throw new owned AssertionError(
+          "assert failed - %s threw an unexpected error: %?".format(funcName, e)
+        );
+      }
+    }
+
+
+    /*
+      Assert that x matches the regular expression pattern.
+
+      .. warning::
+
+        This method requires Chapel to be built with `CHPL_RE2=bundled`.
+
+      :arg x: The first string or bytes to match.
+      :arg pattern: The regular expression pattern.
+      :throws AssertionError: If x doesn't match the regex
+    */
+    pragma "insert line file info"
+    pragma "always propagate line file info"
+    proc assertRegexMatch(x: ?t, pattern: t) throws {
+      var re = new regex(pattern);
+      checkAssertRegexMatch(x, re);
+    }
+
+    /*
+      Assert that x matches the pre-compiled regular expression object.
+
+      .. warning::
+
+        This method requires Chapel to be built with `CHPL_RE2=bundled`.
+
+      :arg x: The first string or bytes to match.
+      :arg pattern: The pre-compiled regular expression object.
+      :throws AssertionError: If x doesn't match the regex
+    */
+    pragma "insert line file info"
+    pragma "always propagate line file info"
+    proc assertRegexMatch(x: ?t, re: regex(t)) throws {
+      checkAssertRegexMatch(x, re);
+    }
+
+    pragma "insert line file info"
+    pragma "always propagate line file info"
+    @chpldoc.nodoc
+    proc checkAssertRegexMatch(x: ?t, re: regex(t)) throws {
+      if !re.match(x) {
+        const errorMsg = "assert failed - '%?' doesn't match\
+                          the regular expression '%?'".format(x, re:t);
+        throw new owned AssertionError(errorMsg);
+      }
     }
 
     pragma "insert line file info"
@@ -1088,7 +1324,7 @@ module UnitTest {
         }
       }
       if !canRun {
-        const errorMsg = "Required Locales = {%?}".format(", ".join([i in this.dictDomain] i:string));
+        const errorMsg = "Required Locales = %?".format(", ".join([i in this.dictDomain] i:string));
         throw new owned TestIncorrectNumLocales(errorMsg);
       }
     }
@@ -1192,13 +1428,57 @@ module UnitTest {
 
   private proc testNameFromProcedure(f): string {
     var line = f: string;
-    assert(line.startsWith("proc"));
+
+    var start : byteIndex;
+    if line.startsWith("proc") then start = 5;
+    else if (line.startsWith("wide proc")) then start = 10;
+    else assert(false, "Unexpected function format: " + line);
+
     var parenIndex = line.find("(");
     assert(parenIndex > -1);
-    var name = try! line[(5 : byteIndex)..<parenIndex];
+    var name = try! line[start..<parenIndex];
 
     // Adding parentheses to the end makes it easier to detect in stdout.
     return name + "()";
+  }
+
+  @chpldoc.nodoc
+  record Filter {
+    type patType = if noRegex then string else regex(string);
+    const rawPattern: string;
+    const pattern: patType;
+
+    proc init(p: string) {
+      this.rawPattern = p;
+      this.pattern = p;
+    }
+    proc init(raw, p: regex(string)) {
+      this.rawPattern = raw;
+      this.pattern = p;
+    }
+    proc type create(p: string) throws {
+      if noRegex then
+        return new Filter(p);
+      else {
+        import ChplConfig;
+        if ChplConfig.CHPL_RE2 == "none" then
+          compilerError(
+            "Regular expressions are not supported in this Chapel build. " +
+            "Recompile with -snoRegex or build Chapel with CHPL_RE2=bundled.",
+            errorDepth=2
+          );
+        return new Filter(p, new regex(p));
+      }
+    }
+    proc matches(s: string): bool throws {
+      if rawPattern == "" then
+        return true;
+
+      if noRegex then
+        return s.find(this.pattern) != -1;
+      else
+        return this.pattern.search(s).matched;
+    }
   }
 
   /*Runs the tests
@@ -1215,7 +1495,6 @@ module UnitTest {
         testsFailed: map(string, bool),
         testsErrored: map(string, bool),
         testsLocalFails: map(string, bool),
-        testsPassed: map(string, bool),
         testsSkipped: map(string, bool);
     // Assuming 1 global test suite for now
     // Per-module or per-class is possible too
@@ -1225,9 +1504,11 @@ module UnitTest {
     // gather all the tests
     param n = __primitive("gather tests", testObjGather.borrow());
 
+    const F = Filter.create(filter);
+
     for param i in 1..n {
       var test_FCF = __primitive("get test by index",i);
-      if (test_FCF: string != tempFcf: string) {
+      if test_FCF: string != tempFcf: string && F.matches(test_FCF:string) {
         testSuite.addTest(test_FCF);
       }
     }
@@ -1238,7 +1519,6 @@ module UnitTest {
       testsFailed.addOrReplace(testName, false);
       testsErrored.addOrReplace(testName, false);
       testsLocalFails.addOrReplace(testName, false);
-      testsPassed.addOrReplace(testName, false);
       testsSkipped.addOrReplace(testName, false);
     }
     if testNames != "None" {
@@ -1248,25 +1528,28 @@ module UnitTest {
     }
     if failedTestNames != "None" {
       for test in failedTestNames.split(" ") {
-        testsFailed.replace(test.strip(), true); // these tests failed or skipped
+        // these tests failed or skipped
+        testsFailed.replace(test.strip(), true);
         testStatus.replace(test.strip(), true);
       }
     }
     if errorTestNames != "None" {
       for test in errorTestNames.split(" ") {
-        testsErrored.replace(test.strip(), true); // these tests failed or skipped
+        // these tests failed or skipped
+        testsErrored.replace(test.strip(), true);
         testStatus.replace(test.strip(), true);
       }
     }
     if skippedTestNames != "None" {
       for test in skippedTestNames.split(" ") {
-        testsSkipped.replace(test.strip(), true); // these tests failed or skipped
+        // these tests failed or skipped
+        testsSkipped.replace(test.strip(), true);
         testStatus.replace(test.strip(), true);
       }
     }
     if ranTests != "None" {
       for test in ranTests.split(" ") {
-        testsPassed.replace(test.strip(), true); // these tests failed or skipped
+        // these tests failed or skipped
         testStatus.replace(test.strip(), true);
       }
     }
@@ -1278,16 +1561,17 @@ module UnitTest {
         var checkCircle: list(string);
         var circleFound = false;
         var testObject = new Test();
-        runTestMethod(testStatus, testObject, testsFailed, testsErrored, testsSkipped,
-                      testsLocalFails, test, checkCircle, circleFound);
+        runTestMethod(testStatus, testObject, testsFailed, testsErrored,
+                      testsSkipped, testsLocalFails, test,
+                      checkCircle, circleFound);
       }
     }
   }
 
   private
-  proc runTestMethod(ref testStatus, ref testObject, ref testsFailed, ref testsErrored,
-                      ref testsSkipped, ref testsLocalFails, test, ref checkCircle,
-                      ref circleFound) throws {
+  proc runTestMethod(ref testStatus, ref testObject, ref testsFailed,
+                     ref testsErrored, ref testsSkipped, ref testsLocalFails,
+                     test, ref checkCircle, ref circleFound) throws {
     var testResult = new TextTestResult();
     var testName = testNameFromProcedure(test); //test is a FCF:
     checkCircle.pushBack(testName);
@@ -1296,23 +1580,33 @@ module UnitTest {
       test(testObject);
       testResult.addSuccess(testName);
       testsLocalFails.replace(testName, false);
-    }
-    // A variety of catch statements will handle errors thrown
-    catch e: AssertionError {
+    } catch e: AssertionError {
+      // A variety of catch statements will handle errors thrown
       testResult.addFailure(testName, try! "%?".format(e));
       testsFailed.replace(testName, true);
       // print info of the assertion error
-    }
-    catch e: DependencyFound {
+    } catch e: DependencyFound {
       var allTestsRan = true;
       for superTest in testObject.testDependsOn {
         var superTestName = testNameFromProcedure(superTest);
+
+        // if the dependency is not yet listed (i.e. we skipped it because
+        // of a filter), add it to the list with default values.
+        if !testStatus.contains(superTestName) {
+          testStatus.addOrReplace(superTestName, false);
+          testsFailed.addOrReplace(superTestName, false);
+          testsErrored.addOrReplace(superTestName, false);
+          testsLocalFails.addOrReplace(superTestName, false);
+          testsSkipped.addOrReplace(superTestName, false);
+        }
+
         var checkCircleCount = checkCircle.count(superTestName);
         // cycle is checked
         if checkCircleCount > 0 {
           testsSkipped.replace(testName, true);
           circleFound = true;
-          var failReason = testName + " skipped because circular dependency found";
+          var failReason =
+            testName + " skipped because circular dependency found";
           testResult.addSkip(testName, failReason);
           testStatus.replace(testName, true);
           return;
@@ -1326,9 +1620,9 @@ module UnitTest {
             // Create a test object per test
             var superTestObject = new Test();
             // running the super test
-            runTestMethod(testStatus, superTestObject, testsFailed, testsErrored,
-                          testsSkipped, testsLocalFails, superTest, checkCircle,
-                          circleFound);
+            runTestMethod(testStatus, superTestObject, testsFailed,
+                          testsErrored, testsSkipped, testsLocalFails,
+                          superTest, checkCircle, circleFound);
             var removeSuperTestCount = checkCircle.count(superTestName);
             if removeSuperTestCount > 0 {
               checkCircle.remove(superTestName);
@@ -1336,14 +1630,16 @@ module UnitTest {
             // if super test failed
             if testsFailed[superTestName] {
               testsSkipped.replace(testName, true);
-              var skipReason = testName + " skipped because " + superTestName +" failed";
+              var skipReason =
+                testName + " skipped because " + superTestName +" failed";
               testResult.addSkip(testName, skipReason);
               break;
             }
             // if super test failed
             if testsSkipped[superTestName] {
               testsSkipped.replace(testName, true);
-              var skipReason = testName + " skipped because " + superTestName +" skipped";
+              var skipReason =
+                testName + " skipped because " + superTestName +" skipped";
               testResult.addSkip(testName, skipReason);
               break;
             }
@@ -1358,66 +1654,64 @@ module UnitTest {
             // if superTest error then
             if testsErrored[superTestName] {
               testsSkipped.replace(testName, true);
-              var skipReason = testName + " skipped because " + superTestName +" gave an Error";
+              var skipReason =
+                testName + " skipped because " +
+                superTestName +" gave an Error";
               testResult.addSkip(testName, skipReason);
               break;
             }
           }
-        }
-        // super test Errored
-        else if testsErrored[superTestName] {
+        } else if testsErrored[superTestName] { // super test Errored
           testsSkipped.replace(testName, true);
-          var skipReason = testName + " skipped because " + superTestName +" gave an Error";
+          var skipReason =
+            testName + " skipped because " + superTestName +" gave an Error";
           testResult.addSkip(testName, skipReason);
           break;
-        }
-        // super test Skipped
-        else if testsSkipped[superTestName] {
+        } else if testsSkipped[superTestName] { // super test Skipped
           testsSkipped.replace(testName, true);
-          var skipReason = testName + " skipped because " + superTestName +" Skipped";
+          var skipReason =
+            testName + " skipped because " + superTestName +" Skipped";
           testResult.addSkip(testName, skipReason);
           break;
-        }
-        //super test failed
-        else {
+        } else {  // super test failed
           testsSkipped.replace(testName, true);
-          var skipReason = testName + " skipped because " + superTestName +" failed";
+          var skipReason =
+            testName + " skipped because " + superTestName +" failed";
           testResult.addSkip(testName, skipReason);
         }
       }
       if circleFound {
         testsSkipped.replace(testName, true);
-        var skipReason = testName + " skipped because circular dependency found";
+        var skipReason =
+          testName + " skipped because circular dependency found";
         testResult.addSkip(testName, skipReason);
-      }
-      // Test is not having error or failures or dependency or skipped
-      else if !testsErrored[testName] && allTestsRan &&
+      } else if !testsErrored[testName] && allTestsRan &&
               !testsFailed[testName] &&
               !testsSkipped[testName] {
-        testObject.dictDomain.clear(); // clearing so that we don't get Locales already added
-        runTestMethod(testStatus, testObject, testsFailed, testsErrored, testsSkipped,
-                      testsLocalFails, test, checkCircle, circleFound);
-      }
-      else if !testsErrored[testName] && !allTestsRan &&
+        // Test does not have error or failures or dependency or skipped
+
+        // clearing so that we don't get Locales already added
+        testObject.dictDomain.clear();
+        runTestMethod(testStatus, testObject, testsFailed, testsErrored,
+                      testsSkipped, testsLocalFails, test,
+                      checkCircle, circleFound);
+      } else if !testsErrored[testName] && !allTestsRan &&
               !testsFailed[testName] &&
               !testsSkipped[testName] {
         testResult.dependencyNotMet(testName);
       }
-    }
-    catch e: TestSkipped {
+    } catch e: TestSkipped {
       testResult.addSkip(testName, "TestSkipped: " + e.message());
       testsSkipped.replace(testName, true);
       // Print info on test skipped
-    }
-    catch e: TestIncorrectNumLocales {
-      testResult.addIncorrectNumLocales(testName, "TestIncorrectNumLocales: " + e.message());
+    } catch e: TestIncorrectNumLocales {
+      testResult.addIncorrectNumLocales(testName,
+        "TestIncorrectNumLocales: " + e.message());
       testsLocalFails.replace(testName, true);
-    }
-    catch e: UnexpectedLocales {
+    } catch e: UnexpectedLocales {
       testResult.addFailure(testName, "UnexpectedLocales: " + e.message());
       testsFailed.replace(testName, true);
-    }
-    catch e {
+    } catch e {
       testResult.addError(testName, e.message());
       testsErrored.replace(testName, true);
     }
@@ -1444,14 +1738,19 @@ module UnitTest {
         const thrownFileC = __primitive("chpl_lookupFilename",
                                              this.thrownFileId);
         var thrownFileS: string;
-        try! thrownFileS = string.createCopyingBuffer(thrownFileC:c_ptrConst(c_char));
+        try! thrownFileS =
+          string.createCopyingBuffer(thrownFileC:c_ptrConst(c_char));
 
-        var msg = try! "in %?:%i - %?".format(thrownFileS, this.thrownLine, this.details);
+        var msg = try! "in %?:%i - %?".format(
+          thrownFileS, this.thrownLine, this.details);
         return msg;
       }
     }
 
-    /*Assertion Error class. Raised when assert Function Failed*/
+    /*
+      Assertion Error class. Raised when an
+      :ref:`assert function <assert-functions>` failed
+    */
     class AssertionError: TestError {
       proc init(details: string = "") {
         super.init(details);
@@ -1465,7 +1764,7 @@ module UnitTest {
       }
     }
 
-    /* DependencyFound Error Class. Raised when a all dependency
+    /* DependencyFound Error Class. Raised when all dependencies
       of a test are not met.
     */
     class DependencyFound: TestError {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -29,6 +29,7 @@
 */
 module TestResult {
   private use List;
+  import ChapelLocks;
   class TestResult {
     type tupType = 2*string;
     var failures: list(tupType),
@@ -39,6 +40,11 @@ module TestResult {
     var shouldStop = false;
     var separator1 = "="* 70,
         separator2 = "-"* 70;
+
+    // the lock is only taken when modifying the result, as thats the only
+    // time we need to be thread-safe
+    var lock = new ChapelLocks.chpl_LocalSpinlock();
+
     // called when a test ran
     proc testRan() {
       this.testsRun += 1;
@@ -46,29 +52,37 @@ module TestResult {
 
     /*Called when an error has occurred.*/
     proc addError(testName: string, fileName: string, errMsg: string) {
-      this.testRan();
-      var fileAdd = fileName + ": " + testName;
-      this.errors.pushBack((fileAdd, errMsg));
+      manage lock {
+        this.testRan();
+        var fileAdd = fileName + ": " + testName;
+        this.errors.pushBack((fileAdd, errMsg));
+      }
     }
 
     /*called when error occured */
     proc addFailure(testName: string, fileName: string, errMsg: string) {
-      this.testRan();
-      var fileAdd = fileName + ": " + testName;
-      this.failures.pushBack((fileAdd, errMsg));
+      manage lock {
+        this.testRan();
+        var fileAdd = fileName + ": " + testName;
+        this.failures.pushBack((fileAdd, errMsg));
+      }
     }
 
     /*Called when a test has completed successfully*/
-    proc addSuccess(testName: string, fileName: string) {
-      this.testRan();
-      this.testsPassed += 1;
+    proc addSuccess() {
+      manage lock {
+        this.testRan();
+        this.testsPassed += 1;
+      }
     }
 
     /*Called when a test is skipped.*/
     proc addSkip(testName: string, fileName: string, errMsg: string) {
-      this.testRan();
-      var fileAdd = fileName + ": " + testName;
-      this.skipped.pushBack((fileAdd, errMsg));
+      manage lock {
+        this.testRan();
+        var fileAdd = fileName + ": " + testName;
+        this.skipped.pushBack((fileAdd, errMsg));
+      }
     }
 
     /*Tells whether or not this result was a success.*/
@@ -130,8 +144,7 @@ module TestResult {
             infos.pushBack("failures = " + failed: string);
           if errored then
             infos.pushBack("errors = " + errored: string);
-        }
-        else
+        } else
           write("OK");
         if skipped then
           infos.pushBack("skipped = " + skipped: string);
@@ -140,8 +153,7 @@ module TestResult {
           for info in infos do write(info, " ");
           writeln(")");
         }
-      }
-      else {
+      } else {
         writeln("No Tests Found");
       }
     }

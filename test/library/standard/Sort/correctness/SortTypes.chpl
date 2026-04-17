@@ -1,4 +1,4 @@
-config const size = 100000;
+config const size = 2**16;
 config const verbose = false;
 
 use Sort, Math;

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# if the docs build suceeded, replace the output to check with
+# if the docs build succeeded, replace the output to check with
 # the generated VERSION line, trimmed to remove leading spaces
 if [ -f docs/_static/documentation_options.js ]
 then

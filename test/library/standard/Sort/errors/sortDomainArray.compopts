@@ -2,9 +2,11 @@
 -sassoc3 -sassoc6 -srect4 -srect5 -srect6 # sortDomainArray.good
 
 # this case has warnings
--sassoc7 # sortDomainArray.assoc7.good
+-sassoc7 --edition=2.0 # sortDomainArray.assoc7.good
+# this case errors
+-sassoc7 --edition=preview # sortDomainArray.assoc7-removed.good
 # disable the warnings with a compiler flag
--sassoc7 -snoSortedWarnings # sortDomainArray.good
+-sassoc7 --edition=2.0 -snoSortedWarnings # sortDomainArray.good
 
 
 # the rest should be some form of compiler error

@@ -139,7 +139,6 @@ void ping_medhandler(gex_Token_t token, void *buf, size_t nbytes,
   int chunkidx = arg1 & ((1<<CHUNK_BITS)-1);
   validate_chunk("Medium Request (pre-reply)", buf, nbytes, iter, chunkidx);
   gex_AM_SrcDesc_t sd;
-  int imm = 0;
   gex_Flags_t flags = TEST_RAND_ONEIN(5) ? GEX_FLAG_IMMEDIATE : 0;
   size_t most_payload = TEST_RAND(nbytes, 2*nbytes);
   int injmode = INJMODE(iter); // [0..2]
@@ -148,7 +147,9 @@ void ping_medhandler(gex_Token_t token, void *buf, size_t nbytes,
   size_t least_payload = TEST_RAND(MIN(nbytes - nbytes/2, max_least_payload),
                                    MIN(most_payload, max_least_payload));
   size_t len = TEST_RAND(nbytes - nbytes/2, nbytes);
-retry:
+retry: ;
+  int imm = 0;
+  int imm_commit = 0;
   switch (injmode) { // [0..2]
     case INJ_FP: // Fixed-payload
       imm = gex_AM_ReplyMedium2(token, hidx_pong_medhandler, buf, len, GEX_EVENT_NOW, flags, iter, arg1);
@@ -163,8 +164,20 @@ retry:
       assert(gex_AM_SrcDescSize(sd) >= least_payload);
       assert(gex_AM_SrcDescSize(sd) <= most_payload);
       assert(gex_AM_SrcDescAddr(sd) == buf);
+      if (TEST_RAND_ONEIN(8)) {
+        GASNET_Safe( gex_AM_CancelReplyMedium(sd, 0) );
+        goto retry;
+      }
       len = MIN(len, gex_AM_SrcDescSize(sd));
-      gex_AM_CommitReplyMedium2(sd, hidx_pong_medhandler, len, iter, arg1);
+      if (TEST_RAND_ONEIN(4)) {
+        imm_commit = gex_AM_CommitReplyMedium2_v2(sd, hidx_pong_medhandler, len, GEX_FLAG_IMMEDIATE, iter, arg1);
+        if (imm_commit && TEST_RAND_ONEIN(2)) {
+          imm_commit = gex_AM_CommitReplyMedium2_v2(sd, hidx_pong_medhandler, len, 0, iter, arg1);
+          assert(! imm_commit);
+        }
+      } else {
+        gex_AM_CommitReplyMedium2(sd, hidx_pong_medhandler, len, iter, arg1);
+      }
       break;
 
     case INJ_NP_GB: // Negotiated-payload without client-provided buffer
@@ -173,14 +186,30 @@ retry:
       if (imm) break;
       assert(gex_AM_SrcDescSize(sd) >= least_payload);
       assert(gex_AM_SrcDescSize(sd) <= most_payload);
+      if (TEST_RAND_ONEIN(8)) {
+        GASNET_Safe( gex_AM_CancelReplyMedium(sd, 0) );
+        goto retry;
+      }
       len = MIN(len, gex_AM_SrcDescSize(sd));
       memcpy(gex_AM_SrcDescAddr(sd), buf, len);
-      gex_AM_CommitReplyMedium2(sd, hidx_pong_medhandler, len, iter, arg1);
+      if (TEST_RAND_ONEIN(4)) {
+        imm_commit = gex_AM_CommitReplyMedium2_v2(sd, hidx_pong_medhandler, len, GEX_FLAG_IMMEDIATE, iter, arg1);
+        if (imm_commit && TEST_RAND_ONEIN(2)) {
+          imm_commit = gex_AM_CommitReplyMedium2_v2(sd, hidx_pong_medhandler, len, 0, iter, arg1);
+          assert(! imm_commit);
+        }
+      } else {
+        gex_AM_CommitReplyMedium2(sd, hidx_pong_medhandler, len, iter, arg1);
+      }
       break;
   }
   if (imm) {
     assert(flags & GEX_FLAG_IMMEDIATE);
     flags &= ~GEX_FLAG_IMMEDIATE;
+    goto retry;
+  }
+  if (imm_commit) {
+    GASNET_Safe( gex_AM_CancelReplyMedium(sd, 0) );
     goto retry;
   }
   if ((injmode != INJ_NP_GB) && TEST_RAND_ONEIN(5)) {
@@ -207,7 +236,6 @@ void ping_longhandler(gex_Token_t token, void *buf, size_t nbytes,
   gex_AM_SrcDesc_t sd;
   uint8_t *srcbuf = INSEG(iter) ? buf : longreplysrc+chunkidx*curr_sz;
   uint8_t *dstbuf = peerrepseg+chunkidx*curr_sz;
-  int imm = 0;
   gex_Flags_t flags = TEST_RAND_ONEIN(5) ? GEX_FLAG_IMMEDIATE : 0;
   void * maybe_dest = TEST_RAND_ONEIN(2) ? dstbuf : NULL; // Passing dest_addr to Prepare is optional
   size_t most_payload = TEST_RAND(nbytes, 2*nbytes);
@@ -217,7 +245,9 @@ void ping_longhandler(gex_Token_t token, void *buf, size_t nbytes,
   size_t least_payload = TEST_RAND(MIN(nbytes, max_least_payload),
                                    MIN(most_payload, max_least_payload));
   size_t len = TEST_RAND(nbytes - nbytes/2, nbytes);
-retry:
+retry: ;
+  int imm = 0;
+  int imm_commit = 0;
   switch (injmode) { // [0..2]
     case INJ_FP: // Fixed-payload
       if (srcbuf != buf) memcpy(srcbuf, buf, len);
@@ -233,9 +263,21 @@ retry:
       assert(gex_AM_SrcDescSize(sd) >= least_payload);
       assert(gex_AM_SrcDescSize(sd) <= most_payload);
       assert(gex_AM_SrcDescAddr(sd) == srcbuf);
+      if (TEST_RAND_ONEIN(8)) {
+        GASNET_Safe( gex_AM_CancelReplyLong(sd, 0) );
+        goto retry;
+      }
       len = MIN(len, gex_AM_SrcDescSize(sd));
       if (srcbuf != buf) memcpy(srcbuf, buf, len); // according to INSEG - not due to Prepare
-      gex_AM_CommitReplyLong2(sd, hidx_pong_longhandler, len, dstbuf, iter, arg1);
+      if (TEST_RAND_ONEIN(4)) {
+        imm_commit = gex_AM_CommitReplyLong2_v2(sd, hidx_pong_longhandler, len, dstbuf, GEX_FLAG_IMMEDIATE, iter, arg1);
+        if (imm_commit && TEST_RAND_ONEIN(2)) {
+          imm_commit = gex_AM_CommitReplyLong2_v2(sd, hidx_pong_longhandler, len, dstbuf, 0, iter, arg1);
+          assert(! imm_commit);
+        }
+      } else {
+        gex_AM_CommitReplyLong2(sd, hidx_pong_longhandler, len, dstbuf, iter, arg1);
+      }
       break;
 
     case INJ_NP_GB: // Negotiated-payload without client-provided buffer
@@ -244,14 +286,30 @@ retry:
       if (imm) break;
       assert(gex_AM_SrcDescSize(sd) >= least_payload);
       assert(gex_AM_SrcDescSize(sd) <= most_payload);
+      if (TEST_RAND_ONEIN(8)) {
+        GASNET_Safe( gex_AM_CancelReplyLong(sd, 0) );
+        goto retry;
+      }
       len = MIN(len, gex_AM_SrcDescSize(sd));
       memcpy(gex_AM_SrcDescAddr(sd), buf, len);
-      gex_AM_CommitReplyLong2(sd, hidx_pong_longhandler, len, dstbuf, iter, arg1);
+      if (TEST_RAND_ONEIN(4)) {
+        imm_commit = gex_AM_CommitReplyLong2_v2(sd, hidx_pong_longhandler, len, dstbuf, GEX_FLAG_IMMEDIATE, iter, arg1);
+        if (imm_commit && TEST_RAND_ONEIN(2)) {
+          imm_commit = gex_AM_CommitReplyLong2_v2(sd, hidx_pong_longhandler, len, dstbuf, 0, iter, arg1);
+          assert(! imm_commit);
+        }
+      } else {
+        gex_AM_CommitReplyLong2(sd, hidx_pong_longhandler, len, dstbuf, iter, arg1);
+      }
       break;
   }
   if (imm) {
     assert(flags & GEX_FLAG_IMMEDIATE);
     flags &= ~GEX_FLAG_IMMEDIATE;
+    goto retry;
+  }
+  if (imm_commit) {
+    GASNET_Safe( gex_AM_CancelReplyLong(sd, 0) );
     goto retry;
   }
   if ((injmode != INJ_NP_GB) && !INSEG(iter) && TEST_RAND_ONEIN(5)) {
@@ -280,10 +338,10 @@ int amopt = 0;
 int main(int argc, char **argv) {
   int arg = 1, help = 0;
   gex_AM_Entry_t htable[] = {
-    { hidx_ping_medhandler,  ping_medhandler,  GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_MEDIUM, 2 },
-    { hidx_pong_medhandler,  pong_medhandler,  GEX_FLAG_AM_REPLY|GEX_FLAG_AM_MEDIUM, 2 },
-    { hidx_ping_longhandler, ping_longhandler, GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_LONG, 2 },
-    { hidx_pong_longhandler, pong_longhandler, GEX_FLAG_AM_REPLY|GEX_FLAG_AM_LONG, 2 },
+    { hidx_ping_medhandler,  (gex_AM_Fn_t)ping_medhandler,  GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_MEDIUM, 2 },
+    { hidx_pong_medhandler,  (gex_AM_Fn_t)pong_medhandler,  GEX_FLAG_AM_REPLY|GEX_FLAG_AM_MEDIUM, 2 },
+    { hidx_ping_longhandler, (gex_AM_Fn_t)ping_longhandler, GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_LONG, 2 },
+    { hidx_pong_longhandler, (gex_AM_Fn_t)pong_longhandler, GEX_FLAG_AM_REPLY|GEX_FLAG_AM_LONG, 2 },
   };
 
   /* call startup */
@@ -514,7 +572,6 @@ void *doit(void *id) {
             gex_AM_Arg_t arg1 = chunkidx | (sz_idx << CHUNK_BITS);
             gex_AM_SrcDesc_t sd;
             void *srcbuf = srcseg+chunkidx*sz;
-            int imm = 0;
             gex_Flags_t flags = TEST_RAND_ONEIN(5) ? GEX_FLAG_IMMEDIATE : 0;
             size_t most_payload = TEST_RAND(sz, 2*sz);
             int injmode = INJMODE(iter); // [0..2]
@@ -529,7 +586,9 @@ void *doit(void *id) {
               memcpy(tmpbuf, srcbuf, len);
               src = tmpbuf;
             }
-          retry_med:
+          retry_med: ;
+            int imm = 0;
+            int imm_commit = 0;
             switch (injmode) { // [0..2]
               case INJ_FP: // Fixed-payload
                 imm = gex_AM_RequestMedium2(myteam, peerproc, hidx_ping_medhandler, src,
@@ -551,9 +610,23 @@ void *doit(void *id) {
                 assert(gex_AM_SrcDescSize(sd) >= least_payload);
                 assert(gex_AM_SrcDescSize(sd) <= most_payload);
                 assert(gex_AM_SrcDescAddr(sd) == src);
+                if (TEST_RAND_ONEIN(8)) {
+                  GASNET_Safe( gex_AM_CancelRequestMedium(sd, 0) );
+                  goto retry_med;
+                }
                 len = MIN(len, gex_AM_SrcDescSize(sd));
-                gex_AM_CommitRequestMedium2(sd, hidx_ping_medhandler, len, iter, arg1);
-                if (lc_opt == GEX_EVENT_GROUP) {
+                if (TEST_RAND_ONEIN(4)) {
+                  imm_commit = gex_AM_CommitRequestMedium2_v2(sd, hidx_ping_medhandler, len, GEX_FLAG_IMMEDIATE, iter, arg1);
+                  if (imm_commit && TEST_RAND_ONEIN(2)) {
+                    imm_commit = gex_AM_CommitRequestMedium2_v2(sd, hidx_ping_medhandler, len, 0, iter, arg1);
+                    assert(! imm_commit);
+                  }
+                } else {
+                  gex_AM_CommitRequestMedium2(sd, hidx_ping_medhandler, len, iter, arg1);
+                }
+                if (imm_commit) {
+                  // nothing to wait for
+                } else if (lc_opt == GEX_EVENT_GROUP) {
                   gex_NBI_Wait(GEX_EC_AM,0);
                 } else if (lc_opt != GEX_EVENT_NOW) {
                   (void)gex_Event_QueryLeaf(lc, GEX_EC_LC); // should fail if not a root event
@@ -568,14 +641,30 @@ void *doit(void *id) {
                 if (imm) break;
                 assert(gex_AM_SrcDescSize(sd) >= least_payload);
                 assert(gex_AM_SrcDescSize(sd) <= most_payload);
+                if (TEST_RAND_ONEIN(8)) {
+                  GASNET_Safe( gex_AM_CancelRequestMedium(sd, 0) );
+                  goto retry_med;
+                }
                 len = MIN(len, gex_AM_SrcDescSize(sd));
                 memcpy(gex_AM_SrcDescAddr(sd), srcbuf, len);
-                gex_AM_CommitRequestMedium2(sd, hidx_ping_medhandler, len, iter, arg1);
+                if (TEST_RAND_ONEIN(4)) {
+                  imm_commit = gex_AM_CommitRequestMedium2_v2(sd, hidx_ping_medhandler, len, GEX_FLAG_IMMEDIATE, iter, arg1);
+                  if (imm_commit && TEST_RAND_ONEIN(2)) {
+                    imm_commit = gex_AM_CommitRequestMedium2_v2(sd, hidx_ping_medhandler, len, 0, iter, arg1);
+                    assert(! imm_commit);
+                  }
+                } else {
+                  gex_AM_CommitRequestMedium2(sd, hidx_ping_medhandler, len, iter, arg1);
+                }
                 break;
             }
             if (imm) {
               assert(flags & GEX_FLAG_IMMEDIATE);
               flags &= ~GEX_FLAG_IMMEDIATE;
+              goto retry_med;
+            }
+            if (imm_commit) {
+              GASNET_Safe( gex_AM_CancelRequestMedium(sd, 0) );
               goto retry_med;
             }
             if (src == tmpbuf) memset(tmpbuf, 0xa5, len); // overwrite source
@@ -592,7 +681,6 @@ void *doit(void *id) {
             gex_AM_SrcDesc_t sd;
             void *srcbuf = srcseg+chunkidx*sz;
             void *dstbuf = peerreqseg+chunkidx*sz;
-            int imm = 0;
             gex_Flags_t flags = TEST_RAND_ONEIN(5) ? GEX_FLAG_IMMEDIATE : 0;
             void * maybe_dest = TEST_RAND_ONEIN(2) ? dstbuf : NULL; // Passing dest_addr to Prepare is optional
             size_t most_payload = TEST_RAND(sz, 2*sz);
@@ -608,7 +696,9 @@ void *doit(void *id) {
               memcpy(tmpbuf, srcbuf, len);
               src = tmpbuf;
             }
-          retry_long:
+          retry_long: ;
+            int imm = 0;
+            int imm_commit = 0;
             switch (injmode) { // [0..2]
               case INJ_FP: // Fixed-payload
                 imm = gex_AM_RequestLong2(myteam, peerproc, hidx_ping_longhandler, src, len,
@@ -630,9 +720,23 @@ void *doit(void *id) {
                 assert(gex_AM_SrcDescSize(sd) >= least_payload);
                 assert(gex_AM_SrcDescSize(sd) <= most_payload);
                 assert(gex_AM_SrcDescAddr(sd) == src);
+                if (TEST_RAND_ONEIN(8)) {
+                  GASNET_Safe( gex_AM_CancelRequestLong(sd, 0) );
+                  goto retry_long;
+                }
                 len = MIN(len, gex_AM_SrcDescSize(sd));
-                gex_AM_CommitRequestLong2(sd, hidx_ping_longhandler, len, dstbuf, iter, arg1);
-                if (lc_opt == GEX_EVENT_GROUP) {
+                if (TEST_RAND_ONEIN(4)) {
+                  imm_commit = gex_AM_CommitRequestLong2_v2(sd, hidx_ping_longhandler, len, dstbuf, GEX_FLAG_IMMEDIATE, iter, arg1);
+                  if (imm_commit && TEST_RAND_ONEIN(2)) {
+                    imm_commit = gex_AM_CommitRequestLong2_v2(sd, hidx_ping_longhandler, len, dstbuf, 0, iter, arg1);
+                    assert(! imm_commit);
+                  }
+                } else {
+                  gex_AM_CommitRequestLong2(sd, hidx_ping_longhandler, len, dstbuf, iter, arg1);
+                }
+                if (imm_commit) {
+                  // nothing to wait for
+                } else if (lc_opt == GEX_EVENT_GROUP) {
                   gex_NBI_Wait(GEX_EC_AM,0);
                 } else if (lc_opt != GEX_EVENT_NOW) {
                   (void)gex_Event_QueryLeaf(lc, GEX_EC_LC); // should fail if not a root event
@@ -647,14 +751,30 @@ void *doit(void *id) {
                 if (imm) break;
                 assert(gex_AM_SrcDescSize(sd) >= least_payload);
                 assert(gex_AM_SrcDescSize(sd) <= most_payload);
+                if (TEST_RAND_ONEIN(8)) {
+                  GASNET_Safe( gex_AM_CancelRequestLong(sd, 0) );
+                  goto retry_long;
+                }
                 len = MIN(len, gex_AM_SrcDescSize(sd));
                 memcpy(gex_AM_SrcDescAddr(sd), srcbuf, len);
-                gex_AM_CommitRequestLong2(sd, hidx_ping_longhandler, len, dstbuf, iter, arg1);
+                if (TEST_RAND_ONEIN(4)) {
+                  imm_commit = gex_AM_CommitRequestLong2_v2(sd, hidx_ping_longhandler, len, dstbuf, GEX_FLAG_IMMEDIATE, iter, arg1);
+                  if (imm_commit && TEST_RAND_ONEIN(2)) {
+                    imm_commit = gex_AM_CommitRequestLong2_v2(sd, hidx_ping_longhandler, len, dstbuf, 0, iter, arg1);
+                    assert(! imm_commit);
+                  }
+                } else {
+                  gex_AM_CommitRequestLong2(sd, hidx_ping_longhandler, len, dstbuf, iter, arg1);
+                }
                 break;
             }
             if (imm) {
               assert(flags & GEX_FLAG_IMMEDIATE);
               flags &= ~GEX_FLAG_IMMEDIATE;
+              goto retry_long;
+            }
+            if (imm_commit) {
+              GASNET_Safe( gex_AM_CancelRequestLong(sd, 0) );
               goto retry_long;
             }
             if (src == tmpbuf) memset(tmpbuf, 0x5a, len); // overwrite source

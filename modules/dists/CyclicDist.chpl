@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -65,15 +65,6 @@ The ``cyclicDist`` distribution uses a round-robin partitioning to map
 d-dimensional indices to a d-dimensional array of locales, starting
 from a given index.
 
-.. Warning::
-
-  The ``cyclicDist`` distribution was, until recently, a class named
-  ``Cyclic``.  Today, ``Cyclic`` is still supported in a deprecated
-  form, yet is an alias to the ``cyclicDist`` record here.  In our
-  experience, most uses of ``Cyclic`` in distribution contexts should
-  continue to work, but updating to ``cyclicDist`` is requested going
-  forward due to the deprecation.
-
 More precisely, for a ``cyclicDist`` distribution with:
 
   =============  ====================================================
@@ -98,32 +89,14 @@ and declares an array ``A`` over that domain.
 The `forall` loop sets each array element
 to the ID of the locale to which it is mapped.
 
-  .. code-block:: chapel
-
-    use CyclicDist;
-
-    const Dist = new cyclicDist(startIdx=(1,1));
-    const D = Dist.createDomain({1..8, 1..8});
-    var A: [D] int;
-
-    forall a in A do
-      a = here.id;
-
-    writeln(A);
+.. literalinclude:: ../../../../test/distributions/doc-examples/CyclicDistExamples.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE
+   :end-before: STOP_EXAMPLE
 
 When run on 6 locales, the output is:
 
-  ::
-
-    0 1 0 1 0 1 0 1
-    2 3 2 3 2 3 2 3
-    4 5 4 5 4 5 4 5
-    0 1 0 1 0 1 0 1
-    2 3 2 3 2 3 2 3
-    4 5 4 5 4 5 4 5
-    0 1 0 1 0 1 0 1
-    2 3 2 3 2 3 2 3
-
+.. literalinclude:: ../../../../test/distributions/doc-examples/CyclicDistExamples.good
 
 **Data-Parallel Iteration**
 
@@ -360,9 +333,6 @@ operator =(ref a: cyclicDist(?), b: cyclicDist(?)) {
       _reprivatize(a._value);
   }
 }
-
-@deprecated("'Cyclic' is deprecated, please use 'cyclicDist' instead")
-type Cyclic = cyclicDist;
 
 @chpldoc.nodoc
 class CyclicImpl: BaseDist, writeSerializable {
@@ -1113,15 +1083,18 @@ proc CyclicArr.dsiAccess(i:rank*idxType) ref {
           locRAD.unlockRAD(rlocIdx);
         }
       }
-      pragma "no copy" pragma "no auto destroy" var myLocRAD = myLocArr.locRAD;
-      pragma "no copy" pragma "no auto destroy" var radata = _to_nonnil(myLocRAD).RAD;
+      pragma "no copy" pragma "no auto destroy"
+      var myLocRAD = myLocArr.locRAD;
+      pragma "no copy" pragma "no auto destroy"
+      var radata = _to_nonnil(myLocRAD).RAD;
       if radata(rlocIdx).data != nil {
         const startIdx = _to_nonnil(myLocArr.locCyclicRAD).startIdx;
         const dimLength = _to_nonnil(myLocArr.locCyclicRAD).targetLocDomDimLength;
         type strType = chpl__signedType(idxType);
         var str: rank*strType;
         for param i in 0..rank-1 {
-          pragma "no copy" pragma "no auto destroy" var whole = dom.whole;
+          pragma "no copy" pragma "no auto destroy"
+          var whole = dom.whole;
           str(i) = whole.dim(i).stride;
         }
         var dataIdx = radata(rlocIdx).getDataIndex(strides, str, i, startIdx, dimLength);
@@ -1485,6 +1458,7 @@ proc type cyclicDist.createDomain(dom: domain(?), targetLocales: [] locale = Loc
 }
 
 // create a domain over a Cyclic Distribution constructed from a series of ranges
+pragma "last resort"
 proc type cyclicDist.createDomain(rng: range(?)..., targetLocales: [] locale = Locales) {
   return createDomain({(...rng)}, targetLocales);
 }
@@ -1541,6 +1515,7 @@ proc type cyclicDist.createArray(
 
 // create an array over a Cyclic Distribution constructed from a series of ranges, default initialized
 pragma "no copy return"
+pragma "last resort"
 proc type cyclicDist.createArray(
   rng: range(?)...,
   type eltType,
@@ -1556,6 +1531,7 @@ proc type cyclicDist.createArray(rng: range(?)..., type eltType) {
 
 // create an array over a Cyclic Distribution constructed from a series of ranges, initialized with the given value or iterator
 pragma "no copy return"
+pragma "last resort"
 proc type cyclicDist.createArray(
   rng: range(?)...,
   type eltType,
@@ -1575,6 +1551,7 @@ proc type cyclicDist.createArray(rng: range(?)..., type eltType, initExpr: ?t)
 
 // create an array over a Cyclic Distribution constructed from a series of ranges, initialized from the given array
 pragma "no copy return"
+pragma "last resort"
 proc type cyclicDist.createArray(
   rng: range(?)...,
   type eltType,

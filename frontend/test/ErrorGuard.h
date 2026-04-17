@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -64,9 +64,13 @@ class ErrorGuard {
   }
 
  public:
+  void installSignalHandler();
+  void removeSignalHandler();
+
   ErrorGuard(chpl::Context* ctx) : ctx_(ctx) {
     auto handler = prepareAndStoreHandler();
     oldErrorHandler_ = ctx_->installErrorHandler(std::move(handler));
+    installSignalHandler();
   }
 
   inline chpl::Context* context() const { return ctx_; }
@@ -131,6 +135,7 @@ class ErrorGuard {
   /** The guard destructor will assert that no errors have occurred. */
   ~ErrorGuard() {
     assert(!this->realizeErrors());
+    removeSignalHandler();
     std::ignore = ctx_->installErrorHandler(std::move(oldErrorHandler_));
   }
 };

@@ -8,7 +8,27 @@ set(QTHREADS_DEFAULT_STACK_SIZE 32768 CACHE STRING "Default qthread stack size."
 set(QTHREADS_HASHMAP hashmap CACHE STRING "Which hashmap implementation to use. Valid values are \"hashmap\" and \"lf_hashmap\".")
 set(QTHREADS_DICT_TYPE shavit CACHE STRING "Which dictionary implementation to use. Valid values are \"shavit\", \"trie\", and \"simple\".")
 set(QTHREADS_TIMER_TYPE gettimeofday CACHE STRING "Which timer implementation to use. Valid values are \"clock_gettime\", \"mach\", \"gettimeofday\", and \"gethrtime\".")
-set(QTHREADS_CONTEXT_SWAP_IMPL fastcontext CACHE STRING "Which context swap implementation to use. Valid values are \"system\" and \"fastcontext\".")
+# Only default to the fastcontext implementation in cases where it's confirmed to work.
+# Note: apparently 32-bit x86 may show up as i386, i486, i586, or i686.
+# Little-endian powerpc variants are excluded here as they're known not to work
+# due to an unresolved bug in our fastcontext code.
+if ("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64" OR
+    "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "amd64" OR
+    "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "aarch64" OR
+    "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "arm64" OR
+    "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "arm" OR
+    "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "riscv64" OR
+    "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "i386" OR
+    "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "i486" OR
+    "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "i586" OR
+    "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "i686" OR
+    "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "ppc64" OR
+    "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "ppc")
+  set(QTHREADS_CONTEXT_SWAP_IMPL fastcontext CACHE STRING "Which context swap implementation to use. Valid values are \"system\" and \"fastcontext\".")
+else()
+  message(WARNING "No fast context swap available on this system, falling back to the system-provided one.")
+  set(QTHREADS_CONTEXT_SWAP_IMPL system CACHE STRING "Which context swap implementation to use. Valid values are \"system\" and \"fastcontext\".")
+endif()
 set(QTHREADS_HWLOC_GET_TOPOLOGY_FUNCTION "" CACHE STRING "function to get hwloc topology (otherwise uses hwloc_topology_init and hwloc_topology_load)")
 set(QTHREADS_GUARD_PAGES OFF CACHE BOOL "Whether or not to guard memory pages to help with debugging stack overflows. Default is OFF.")
 set(QTHREADS_CONDWAIT_QUEUE OFF CACHE BOOL "Use a waiting queue based on pthread condition variables instead of a spin-based queue for inter-thread communication. Default is OFF.")
@@ -35,6 +55,7 @@ set(QTHREADS_SOURCES
   alloc/${QTHREADS_ALLOC}.c
   affinity/common.c
   affinity/${QTHREADS_TOPOLOGY}.c
+  threadpool.c
   touch.c
   tls.c
   teams.c
@@ -75,8 +96,24 @@ endif()
 target_include_directories(qthread
   PRIVATE "../include"
 )
-set_target_properties(qthread PROPERTIES C_VISIBILITY_PRESET hidden)
+set_target_properties(
+  qthread
+  PROPERTIES C_VISIBILITY_PRESET hidden
+             VERSION ${PROJECT_VERSION}
+             SOVERSION ${PROJECT_VERSION_MAJOR})
+# Link pthreads.
 target_link_libraries(qthread PUBLIC Threads::Threads)
+
+# The c11 threading library has to be linked
+# via a separate library on BSD OSs.
+if ("${CMAKE_SYSTEM_NAME}" STREQUAL "FreeBSD" OR
+    "${CMAKE_SYSTEM_NAME}" STREQUAL "kFreeBSD" OR
+    "${CMAKE_SYSTEM_NAME}" STREQUAL "OpenBSD" OR
+    "${CMAKE_SYSTEM_NAME}" STREQUAL "NetBSD" OR
+    "${CMAKE_SYSTEM_NAME}" STREQUAL "DragonFly")
+  target_link_libraries(qthread PUBLIC "stdthreads")
+endif()
+
 if ("${QTHREADS_TOPOLOGY}" STREQUAL "hwloc" OR "${QTHREADS_TOPOLOGY}" STREQUAL "binders")
   find_package(hwloc REQUIRED)
   target_include_directories(qthread PRIVATE "${hwloc_INCLUDE_DIR}")
@@ -88,7 +125,7 @@ endif()
 target_include_directories(qthread
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
-    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/qthread>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 # TODO: move these into a configure header instead of piping them through the flags.
 target_compile_definitions(qthread
@@ -123,8 +160,21 @@ install(
     DESTINATION "${CMAKE_INSTALL_LIBDIR}"
     COMPONENT shlib
 )
+configure_package_config_file("${CMAKE_CURRENT_SOURCE_DIR}/../qthread-config.cmake.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/qthread-config.cmake"
+  INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/qthread")
+write_basic_package_version_file(
+  "${CMAKE_CURRENT_BINARY_DIR}/qthread-config-version.cmake"
+  VERSION 1.22
+  COMPATIBILITY SameMajorVersion)
 install(
-  DIRECTORY ${CMAKE_SOURCE_DIR}/include/qthread
+  FILES
+    "${CMAKE_CURRENT_BINARY_DIR}/qthread-config.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/qthread-config-version.cmake"
+  DESTINATION
+    "${CMAKE_INSTALL_LIBDIR}/cmake/qthread")
+install(
+  DIRECTORY "${CMAKE_SOURCE_DIR}/include/qthread"
   DESTINATION include
   PATTERN "top" EXCLUDE
 )

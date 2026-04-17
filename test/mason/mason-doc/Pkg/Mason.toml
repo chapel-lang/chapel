@@ -2,5 +2,8 @@
 name = "Pkg"
 version = "0.1.0"
 chplVersion = "1.20.0"
+authors=["Caroline"]
+copyrightYear="2025"
+docopts = ["--project-description", "'my docstring'"]
 
 [dependencies]

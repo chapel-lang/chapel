@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -25,6 +25,7 @@
 #include "chpl.h"
 #include "map.h"
 
+#include <array>
 #include <cstdio>
 #include <map>
 #include <set>
@@ -56,6 +57,7 @@ extern bool fNoStackChecks;
 extern bool fNoCastChecks;
 extern bool fNoConstArgChecks;
 extern bool fNoDivZeroChecks;
+extern bool fNoUnionChecks;
 extern bool fMungeUserIdents;
 extern bool fEnableTaskTracking;
 extern bool fEnableMemInterleaving;
@@ -82,6 +84,7 @@ extern bool fNoOptimizeRangeIteration;
 extern bool fNoOptimizeLoopIterators;
 extern bool fNoVectorize;
 extern bool fForceVectorize;
+extern std::string fVectorLib;
 extern bool fNoPrivatization;
 extern bool fNoOptimizeOnClauses;
 extern bool fNoRemoveEmptyRecords;
@@ -149,8 +152,12 @@ extern const char* CHPL_LLVM_CLANG_CXX;
 extern const char* CHPL_TARGET_BUNDLED_COMPILE_ARGS;
 extern const char* CHPL_TARGET_SYSTEM_COMPILE_ARGS;
 extern const char* CHPL_TARGET_LD;
-extern const char* CHPL_TARGET_BUNDLED_LINK_ARGS;
-extern const char* CHPL_TARGET_SYSTEM_LINK_ARGS;
+extern const char* CHPL_TARGET_BUNDLED_RUNTIME_LINK_ARGS;
+extern const char* CHPL_TARGET_BUNDLED_PROGRAM_LINK_ARGS;
+extern const char* CHPL_TARGET_SYSTEM_RUNTIME_LINK_ARGS;
+extern const char* CHPL_TARGET_SYSTEM_PROGRAM_LINK_ARGS;
+extern const char* CHPL_TARGET_USE_STATIC_RUNTIME_LINK_ARGS;
+extern const char* CHPL_TARGET_USE_SHARED_RUNTIME_LINK_ARGS;
 
 extern const char* CHPL_CUDA_LIBDEVICE_PATH;
 extern const char* CHPL_ROCM_LLVM_PATH;
@@ -160,6 +167,7 @@ extern const char* CHPL_GPU_ARCH;
 
 extern bool  printPasses;
 extern FILE* printPassesFile;
+extern bool  printPassesMemory;
 
 extern char fExplainCall[256];
 extern int  explainCallID;
@@ -218,6 +226,8 @@ extern bool fAllowExternC;
 extern char breakOnCodegenCname[256];
 extern int breakOnCodegenID;
 
+extern bool fBuiltinRuntime;
+
 enum { LS_DEFAULT=0, LS_STATIC, LS_DYNAMIC };
 
 extern int  fLinkStyle;
@@ -230,8 +240,8 @@ extern bool fLibraryMakefile;
 extern bool fLibraryCMakeLists;
 extern bool fLibraryPython;
 
-extern bool fMultiLocaleInterop;
-extern bool fMultiLocaleLibraryDebug;
+extern bool fClientServerLibrary;
+extern bool fClientServerLibraryDebug;
 
 extern bool no_codegen;
 extern bool developer;
@@ -278,7 +288,9 @@ extern bool fReportGpuTransformTime;
 
 extern bool fPermitUnhandledModuleErrors;
 
-extern bool debugCCode;
+extern bool fDebugSymbols;
+extern bool fDebugSafeOptOnly;
+
 extern bool optimizeCCode;
 extern bool specializeCCode;
 
@@ -304,9 +316,13 @@ extern const char* compileCommandFilename;
 extern const char* compileCommand;
 extern char compileVersion[64];
 
-// This flag is useful for testing
-// the compiler but breaks the language!
-extern bool fMinimalModules;
+// This is where the list of all supported editions goes
+extern std::array<std::string, 2> editions;
+extern std::string fEdition;
+
+bool isValidEdition(std::string maybeEdition);
+void checkEditionRangeValid(std::string first, std::string last, BaseAST* loc);
+bool isEditionApplicable(std::string first, std::string last, BaseAST* loc);
 
 // This flag sets the make -j value
 // <=0 == don't use -j
@@ -333,6 +349,8 @@ extern bool fDynoScopeBundled;
 extern bool fDynoDebugTrace;
 extern bool fDynoDebugPrintParsedFiles;
 extern bool fDynoVerifySerialization;
+extern bool fDynoWarnUnimplemented;
+extern bool fDynoWarnUnimplementedSet;
 extern bool fDynoGenLib;
 extern bool fDynoGenStdLib;
 extern bool fDynoLibGenOrUse;
@@ -350,8 +368,10 @@ extern bool fNoIODeserializeReadThis;
 namespace chpl {
   class Context;
 }
+class DynoErrorHandler;
 
 extern chpl::Context* gContext;
+extern DynoErrorHandler* gDynoErrorHandler;
 
 extern std::vector<std::pair<std::string, std::string>> gDynoParams;
 
@@ -365,5 +385,12 @@ extern std::unordered_set<const char*> gDynoGenLibModuleNameAstrs;
 extern std::string gMainModuleName;
 
 extern bool fForeachIntents;
+
+// Call to insert an instance of the error handler above into the context.
+DynoErrorHandler* dynoPrepareAndInstallErrorHandler(void);
+
+void dynoClearErrors(void);
+bool dynoRealizeErrors(void);
+bool dynoRealizeDeferredErrors(void);
 
 #endif

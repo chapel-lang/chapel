@@ -8,4 +8,4 @@ source $UTIL_CRON_DIR/common-localnode-paratest.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="linux64-aarch64"
 
-$UTIL_CRON_DIR/nightly -cron $(get_nightly_paratest_args 3)
+$UTIL_CRON_DIR/nightly -cron $(get_nightly_paratest_args 8)

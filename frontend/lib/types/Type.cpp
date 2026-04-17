@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -133,6 +133,9 @@ void Type::gatherBuiltins(Context* context,
   gatherType(context, map, "range", rangeType);
   gatherType(context, map, "_range", rangeType);
 
+  auto syncType = CompositeType::getSyncType(context);
+  gatherType(context, map, "sync", syncType);
+
   gatherType(context, map, "Error", CompositeType::getErrorType(context));
 
   gatherType(context, map, "domain", DomainType::getGenericDomainType(context));
@@ -171,6 +174,48 @@ void Type::stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
 
 IMPLEMENT_DUMP(Type);
 
+bool Type::isCArrayType(Context* context, const Type*& outEltType, const IntParam*& outSize) const {
+  auto rec = toRecordType();
+  if (!rec || rec->id().symbolPath() != "CTypes.c_array") return false;
+
+  auto rc = resolution::createDummyRC(context);
+  auto fields = resolution::fieldsForTypeDecl(&rc, rec, resolution::DefaultsPolicy::IGNORE_DEFAULTS);
+  bool foundEltType = false, foundSize = false;
+  for (int i = 0; i < fields.numFields(); i++) {
+    if (fields.fieldName(i) == "eltType") {
+      foundEltType = true;
+      outEltType = fields.fieldType(i).type();
+    } else if (fields.fieldName(i) == USTR("size")) {
+      foundSize = true;
+      auto param = fields.fieldType(i).param();
+      outSize = param ? param->toIntParam() : nullptr;
+    }
+  }
+
+  if (!foundEltType || !foundSize) {
+    context->error(rec->id(), "internal c_array record does not have eltType and size fields");
+    return false;
+  }
+
+  return true;
+}
+
+bool Type::isOwnedRecordType() const {
+  if (auto rec = toRecordType()) {
+    if (rec->id().symbolPath() == USTR("OwnedObject._owned"))
+      return true;
+  }
+  return false;
+}
+
+bool Type::isSharedRecordType() const {
+  if (auto rec = toRecordType()) {
+    if (rec->id().symbolPath() == USTR("SharedObject._shared"))
+      return true;
+  }
+  return false;
+}
+
 bool Type::isStringType() const {
   if (auto rec = toRecordType()) {
     if (rec->id().symbolPath() == USTR("String._string"))
@@ -191,6 +236,15 @@ bool Type::isLocaleType() const {
   if (auto rec = toRecordType()) {
     if (rec->id().symbolPath() == USTR("ChapelLocale._locale"))
       return true;
+  }
+  return false;
+}
+
+bool Type::isSyncType() const {
+  if (auto rec = toRecordType()) {
+    if (rec->id().symbolPath() == USTR("ChapelSyncvar._syncvar")) {
+      return true;
+    }
   }
   return false;
 }
@@ -245,10 +299,9 @@ bool Type::isRecordLike() const {
           decorator.isUnknownManagement())) {
       return true;
     }
-  } else if (this->isRecordType() || this->isUnionType()) {
+  } else if (this->isRecordType() || this->isUnionType() || this->isTupleType()) {
     return true;
   }
-  // TODO: tuples?
 
   return false;
 }
@@ -302,6 +355,8 @@ compositeTypeIsPod(resolution::ResolutionContext* rc, const Type* t) {
 
   if (auto cls = t->toClassType()) {
     return !cls->decorator().isManaged();
+  } else if (t->isBasicClassType()) {
+    return false;
   }
 
   auto ct = t->getCompositeType();
@@ -317,17 +372,26 @@ compositeTypeIsPod(resolution::ResolutionContext* rc, const Type* t) {
   const uast::AstNode* ast = nullptr;
   if (auto id = ct->id()) ast = parsing::idToAst(context, std::move(id));
 
-  if (auto tfs = tryResolveDeinit(context, ast, t)) {
-    if (!tfs->isCompilerGenerated()) return false;
-  }
-  if (auto tfs = tryResolveInitEq(context, ast, t, t)) {
-    if (!tfs->isCompilerGenerated()) return false;
-  }
-  if (auto tfs = tryResolveAssign(context, ast, t, t)) {
-    if (!tfs->isCompilerGenerated()) return false;
-  }
+  // Error messages issued as part of, e.g., resolving the body of `operator =`,
+  // are not relevant to whether the type has a user-defined init etc..
+  //
+  // As a concrete example, types with `const` fields have a compiler-generated
+  // `operator =` that errors if you use it (because `lhs.constField = rhs.constField`
+  // is not allowed). However, we still treat them as POD.
+  auto result = context->runAndDetectErrors([&](Context* context) {
+    if (auto tfs = tryResolveDeinit(context, ast, t)) {
+      if (!tfs->isCompilerGenerated()) return false;
+    }
+    if (auto tfs = tryResolveInitEq(context, ast, t, t)) {
+      if (!tfs->isCompilerGenerated()) return false;
+    }
+    if (auto tfs = tryResolveAssign(context, ast, t, t)) {
+      if (!tfs->isCompilerGenerated()) return false;
+    }
+    return true;
+  });
 
-  return true;
+  return result.result();
 }
 
 static const bool&

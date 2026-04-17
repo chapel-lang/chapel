@@ -4,8 +4,10 @@
 
 UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 
-export ARKOUDA_DEP_DIR=/hpelustre/chapelu/arkouda-deps
 export ARKOUDA_SKIP_CHECK_DEPS=true
+export CHPL_TEST_ARKOUDA_MULTI_DIM=true
+export CHPL_INSTANTIATION_LIMIT=1024  # This is needed for compiling multidim arkouda. See #27069
+export ARKOUDA_PARQUET_TEST_DATA_DIR=/nas/store/khandeka/parquet-testing/data  # Enable edge case parquet testing
 
 export CHPL_TEST_ARKOUDA_PERF=false
 export ARKOUDA_DEVELOPER=true
@@ -16,10 +18,10 @@ module list
 
 source $UTIL_CRON_DIR/common.bash
 source $UTIL_CRON_DIR/common-hpe-apollo.bash
-#
+
 # setup arkouda
-source $UTIL_CRON_DIR/common-arkouda.bash
 source $UTIL_CRON_DIR/common-arkouda-hpe-apollo-hdr.bash
+source $UTIL_CRON_DIR/common-arkouda.bash
 
 export ARKOUDA_NUMLOCALES=16
 
@@ -27,6 +29,8 @@ export CHPL_GASNET_SEGMENT=fast
 export GASNET_PHYSMEM_MAX="0.90"
 
 export CHPL_LLVM_GCC_PREFIX='none'
+
+setup_release true
 
 nightly_args="${nightly_args} -no-buildcheck"
 

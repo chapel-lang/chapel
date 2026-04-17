@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -73,7 +73,7 @@ static const int breakOnId3 = 0;
   do { \
     if (sym->id == breakOnId1 || sym->id == breakOnId2 || \
         sym->id == breakOnId3) { \
-      gdbShouldBreakHere(); \
+      debuggerBreakHere(); \
     } \
   } while (0)
 
@@ -460,7 +460,7 @@ static void maybeIssueRefMaybeConstWarning(ArgSymbol* arg) {
 
     const char* argName = nullptr;
     char argBuffer[64];
-    if (isTaskIntent && arg->hasFlag(FLAG_FIELD_ACCESSOR)) {
+    if (isTaskIntent && (arg->hasFlag(FLAG_FIELD_ACCESSOR) || isArgThis)) {
       argName = "this";
     } else if (arg->hasFlag(FLAG_EXPANDED_VARARGS)) {
       int varArgNum;

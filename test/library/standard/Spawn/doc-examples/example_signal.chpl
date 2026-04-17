@@ -1,0 +1,8 @@
+//
+// THIS TEST CASE IS AUTO-INCLUDED IN THE DOCUMENTATION
+//
+use CTypes;
+
+/* START_EXAMPLE */
+extern const SIGPOLL: c_int;
+/* STOP_EXAMPLE */

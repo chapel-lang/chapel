@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -88,12 +88,18 @@ void denormalize(void) {
   std::set<Symbol*> deferredSyms;
   SafeExprAnalysis analysisData;
 
-  if(fDenormalize) {
+  if (fDenormalize) {
     forv_Vec(FnSymbol, fn, gFnSymbols) {
       // remove unused epilogue labels
       removeUnnecessaryGotos(fn, true);
       if (!fReturnByRef && fn->hasFlag(FLAG_FN_RETARG))
         undoReturnByRef(fn);
+
+      // skip the rest of denormalization if we are only doing
+      // debug safe optimizations
+      if (fDebugSafeOptOnly)
+        continue;
+
 
       bool isFirstRound = true;
       do {
@@ -117,8 +123,8 @@ void denormalize(void) {
         isFirstRound = false;
       } while(deferredSyms.size() > 0);
     }
-
-    collapseTrivialMoves();
+    if (!fDebugSafeOptOnly)
+      collapseTrivialMoves();
   }
 }
 
@@ -535,7 +541,7 @@ void denormalize(Expr* def, SymExpr* use, Type* castTo) {
 }
 
 inline bool requiresCast(Type* t) {
-  if(is_int_type(t) || is_uint_type(t) || is_real_type(t)) {
+  if(isIntType(t) || isUIntType(t) || isRealType(t)) {
     return true;
   }
   return false;
@@ -550,8 +556,8 @@ inline bool isFloatComparisonPrimitive(CallExpr *ce) {
       case PRIM_GREATEROREQUAL:
       case PRIM_LESS:
       case PRIM_GREATER:
-        if(is_real_type(ce->get(1)->typeInfo()) ||
-           is_real_type(ce->get(2)->typeInfo())) {
+        if(isRealType(ce->get(1)->typeInfo()) ||
+           isRealType(ce->get(2)->typeInfo())) {
           return true;
         }
         break;

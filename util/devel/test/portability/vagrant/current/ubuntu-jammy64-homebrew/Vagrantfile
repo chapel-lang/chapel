@@ -1,0 +1,40 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# All Vagrant configuration is done below. The "2" in Vagrant.configure
+# configures the configuration version (we support older styles for
+# backwards compatibility). Please don't change it unless you know what
+# you're doing.
+
+# TODO: Migrate this configuration over to Apptainer. Michael ran into initial
+# difficulties with this because:
+# - Homebrew wants to install itself in system directories (/opt/homebrew on
+#   ARM macs), and Apptainer wants those to be bind mounted from the host,
+#   but we don't want to allow the Apptainer run to modify host system dirs. We
+#   would need to enumerate and set up the necessary dirs as within the
+#   container only.
+# - Homebrew is meant to be run as non-root, which would require more work in
+#   the image build (and perhaps container run) to accommodate.
+Vagrant.configure("2") do |config|
+  config.vm.box = "ubuntu/jammy64"
+
+  config.vm.provision "shell" do |s|
+    s.env =  { http_proxy:ENV['http_proxy'], https_proxy:ENV['https_proxy'] }
+    s.path =  "../../provision-scripts/proxy-setup.sh"
+  end
+
+  config.vm.provision "shell", privileged: false,
+    path: "../../provision-scripts/apt-get-and-linuxbrew.sh"
+
+  config.vm.provision "shell", privileged: false, run: "always",
+    path: "../../provision-scripts/git-clone-chapel.sh"
+
+  config.vm.provision "shell", privileged: false,
+    path: "../../provision-scripts/make-chapel-quick.sh"
+
+  config.vm.provider "virtualbox" do |vb|
+    vb.memory = 4096
+    vb.cpus = 2
+  end
+
+end

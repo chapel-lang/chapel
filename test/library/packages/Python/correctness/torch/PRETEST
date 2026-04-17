@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+FILE_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+# we have to have torch less than 2.6.0 due to
+# https://github.com/pytorch/pytorch/issues/150548
+$FILE_DIR/../../checkAndInstallPackage.sh $FILE_DIR 'torch<2.6.0' numpy

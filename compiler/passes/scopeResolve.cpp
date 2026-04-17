@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -178,6 +178,7 @@ static void handleReceiverFormals() {
   // resolve type of this for methods
   //
   forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->hasFlag(FLAG_RESOLVED_EARLY)) continue;
 
     if (fn->_this == NULL) continue; // not a method
     SET_LINENO(fn->_this);
@@ -230,32 +231,49 @@ static void markGenerics() {
       }
 
       // don't try to mark generic again
-      if (!at->isGeneric()) {
+      if (at->isGeneric()) {
+        continue;
+      }
 
-        bool anyGeneric = false;
-        bool anyNonDefaultedGeneric = false;
-        bool anyDefaultedGeneric = false;
-        for_fields(field, at) {
-          bool hasDefault = false;
-          if (at->fieldIsGeneric(field, hasDefault)) {
-            anyGeneric = true;
-            if (hasDefault == false)
-              anyNonDefaultedGeneric = true;
-            else
-              anyDefaultedGeneric = true;
+      bool anyGeneric = false;
+      bool anyNonDefaultedGeneric = false;
+      bool anyDefaultedGeneric = false;
+
+      for (auto dispatchParent : at->dispatchParents) {
+        if (dispatchParent->isGeneric()) {
+          anyGeneric = true;
+
+          if (dispatchParent->isGenericWithDefaults()) {
+            anyDefaultedGeneric = true;
+          } else if (dispatchParent->isGenericWithSomeDefaults()) {
+            anyDefaultedGeneric = true;
+            anyNonDefaultedGeneric = true;
+          } else {
+            anyNonDefaultedGeneric = true;
           }
         }
+      }
 
-        if (anyGeneric) {
-          at->markAsGeneric();
-          if (anyNonDefaultedGeneric == false)
-            at->markAsGenericWithDefaults();
-          else if (anyDefaultedGeneric == true &&
-                   anyNonDefaultedGeneric == true)
-            at->markAsGenericWithSomeDefaults();
-
-          changed = true;
+      for_fields(field, at) {
+        bool hasDefault = false;
+        if (at->fieldIsGeneric(field, hasDefault)) {
+          anyGeneric = true;
+          if (hasDefault == false)
+            anyNonDefaultedGeneric = true;
+          else
+            anyDefaultedGeneric = true;
         }
+      }
+
+      if (anyGeneric) {
+        at->markAsGeneric();
+        if (anyNonDefaultedGeneric == false)
+          at->markAsGenericWithDefaults();
+        else if (anyDefaultedGeneric == true &&
+                 anyNonDefaultedGeneric == true)
+          at->markAsGenericWithSomeDefaults();
+
+        changed = true;
       }
     }
   } while (changed);
@@ -812,6 +830,8 @@ static void handleForallGoto(ForallStmt* forall, GotoStmt* gs) {
 
 static void resolveGotoLabels() {
   forv_Vec(GotoStmt, gs, gGotoStmts) {
+    if (gs->parentSymbol->hasFlag(FLAG_RESOLVED_EARLY)) continue;
+
     SET_LINENO(gs);
 
     Stmt* loop = NULL;
@@ -1330,6 +1350,23 @@ static void errorDotInsideWithClause(UnresolvedSymExpr* origUSE,
   }
 }
 
+CallExpr* findBlockInfo(Expr* exprInAst) {
+  if (Expr* parent1 = exprInAst->parentExpr) {
+    if (BlockStmt* parent2 = toBlockStmt(parent1->parentExpr)) {
+      if (parent1 == parent2->byrefVars) {
+        return parent2->blockInfoGet();
+      }
+    }
+  }
+  return NULL;
+}
+
+bool isTaskBlockInfo(CallExpr* call) {
+  return call->isPrimitive(PRIM_BLOCK_COBEGIN)  ||
+         call->isPrimitive(PRIM_BLOCK_COFORALL) ||
+         call->isPrimitive(PRIM_BLOCK_BEGIN);
+}
+
 //
 // 'expr' ended up being a field reference (or perhaps a method call).
 // If we are inside a 'with' clause, report an error.
@@ -1337,19 +1374,9 @@ static void errorDotInsideWithClause(UnresolvedSymExpr* origUSE,
 static void checkIdInsideWithClause(Expr*              exprInAst,
                                     UnresolvedSymExpr* origUSE) {
   // A 'with' clause for a task construct.
-  if (Expr* parent1 = exprInAst->parentExpr) {
-    if (BlockStmt* parent2 = toBlockStmt(parent1->parentExpr)) {
-      if (parent1 == parent2->byrefVars) {
-        CallExpr* blockInfo = parent2->blockInfoGet();
-
-        // Ensure that an issue, indeed, occurred a task construct.
-        INT_ASSERT(blockInfo->isPrimitive(PRIM_BLOCK_COBEGIN)  ||
-                   blockInfo->isPrimitive(PRIM_BLOCK_COFORALL) ||
-                   blockInfo->isPrimitive(PRIM_BLOCK_BEGIN));
-
-        errorDotInsideWithClause(origUSE, blockInfo->primitive->name);
-      }
-    }
+  if (CallExpr* blockInfo = findBlockInfo(exprInAst)) {
+    INT_ASSERT(isTaskBlockInfo(blockInfo));
+    errorDotInsideWithClause(origUSE, blockInfo->primitive->name);
   }
 }
 

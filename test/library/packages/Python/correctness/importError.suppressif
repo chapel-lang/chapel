@@ -1,2 +1,0 @@
-# memory leaks due to https://github.com/chapel-lang/chapel/issues/26437
-EXECOPTS <= memLeaks

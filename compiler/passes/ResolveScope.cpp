@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -240,6 +240,7 @@ void ResolveScope::addBuiltIns() {
   extend(dtAny->symbol);
   extend(dtAnyComplex->symbol);
   extend(dtAnyEnumerated->symbol);
+  extend(dtAnyUnion->symbol);
   extend(dtAnyImag->symbol);
   extend(dtAnyReal->symbol);
   extend(dtAnyPOD->symbol);

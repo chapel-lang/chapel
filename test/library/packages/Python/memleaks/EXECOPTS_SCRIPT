@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+
+# respect CHPL_TEST_VENV_DIR if it is set and not none
+if [ -n "$CHPL_TEST_VENV_DIR" ] && [ "$CHPL_TEST_VENV_DIR" != "none" ]; then
+  chpl_python=$CHPL_TEST_VENV_DIR/bin/python3
+else
+  chpl_python=$($CHPL_HOME/util/config/find-python.sh)
+fi
+
+version_str=$($chpl_python -c 'import sys; print(*sys.version_info[0:3])')
+major_version=$(echo $version_str | cut -d' ' -f1)
+minor_version=$(echo $version_str | cut -d' ' -f2)
+patch_version=$(echo $version_str | cut -d' ' -f3)
+
+goodfile=""
+# since python 3.14.2, we have seen extra uncleaned up memory reported
+# so with a python 3.14.2 or higher, use a different expected output file
+if [ $major_version -gt 3 ] || \
+   [ $major_version -eq 3 -a $minor_version -gt 14 ] || \
+   [ $major_version -eq 3 -a $minor_version -eq 14 -a $patch_version -ge 2 ]; then
+  # just use the default expected output file
+  goodfile="";
+else
+  # get the basename of this file and chop off the extension
+  thisfile=$(basename "$0")
+  basefile="${thisfile%.*}"
+  goodfile=" # $basefile.noleak.good";
+fi
+
+echo "--pyMemLeaks $goodfile"
+

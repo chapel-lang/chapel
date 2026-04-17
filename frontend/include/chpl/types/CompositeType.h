@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -27,6 +27,7 @@
 namespace chpl {
 namespace types {
 
+class ClassTypeDecorator;
 
 /**
 
@@ -153,6 +154,10 @@ class CompositeType : public Type {
  public:
   virtual ~CompositeType() = 0; // this is an abstract base class
 
+  /* special logic for CHPL_SYNTAX display of param substitutions. */
+  static void stringifyParamSubstitution(std::ostream& ss,
+                                         const QualifiedType& qt);
+
   /* print the substitutions map like it would be printed for a composite type. */
   static void stringifySubstitutions(std::ostream& ss,
                                      chpl::StringifyKind stringKind,
@@ -241,10 +246,15 @@ class CompositeType : public Type {
   static const RecordType* getDistributionType(Context* context);
 
   /** Get the record _owned implementing owned */
-  static const RecordType* getOwnedRecordType(Context* context, const BasicClassType* bct);
+  static const RecordType* getOwnedRecordType(Context* context, const BasicClassType* bct,
+                                              const ClassTypeDecorator& copyNilabilityFrom);
 
   /** Get the record _shared implementing shared */
-  static const RecordType* getSharedRecordType(Context* context, const BasicClassType* bct);
+  static const RecordType* getSharedRecordType(Context* context, const BasicClassType* bct,
+                                               const ClassTypeDecorator& copyNilabilityFrom);
+
+  /** Get the sync type (_syncvar record) */
+  static const RecordType* getSyncType(Context* context);
 
   /* Get the Error type */
   static const ClassType* getErrorType(Context* context);

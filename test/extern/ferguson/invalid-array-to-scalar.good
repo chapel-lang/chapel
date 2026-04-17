@@ -1,0 +1,3 @@
+invalid-array-to-scalar.chpl:4: error: mismatched type for 'arr' when calling 'myFunc'
+invalid-array-to-scalar.chpl:8: note: function called here
+note: check that the argument types match the C function signature

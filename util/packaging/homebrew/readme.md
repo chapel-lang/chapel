@@ -2,7 +2,7 @@
 This folder contains a copy of the shipping homebrew formula `chapel-release.rb`,
 and the modified formula that would be used in the next chapel release as
 `chapel-main.rb`.  These are stored here to allow the Chapel team test upcoming changes without
-impacting the Homebrew core project formula: (https://github.com/Homebrew/homebrew-core/blob/master/Formula/chapel.rb).
+impacting the Homebrew core project formula: (https://github.com/Homebrew/homebrew-core/blob/main/Formula/chapel.rb).
 
 ## Tracking changes
 The homebrew team will update formulas under some circumstances without notifying
@@ -33,7 +33,7 @@ thhat would cause the homebrew CI process to fail.
 
 ### Linuxbrew testing
 The Ubuntu CI is run on a docker container per the instructions on their contribution documentation:
-https://github.com/Homebrew/homebrew-core/blob/master/CONTRIBUTING.md
+https://github.com/Homebrew/homebrew-core/blob/main/CONTRIBUTING.md
 
 The container is executed using the following instructions:
 ```

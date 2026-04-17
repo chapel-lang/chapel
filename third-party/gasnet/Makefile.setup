@@ -3,7 +3,7 @@
 # with the Chapel compiler options.
 
 
-include $(GASNET_INC_MAKEFILE)
+-include $(GASNET_INC_MAKEFILE)
 
 # 
 # The following lines try to combine GASNet's favorite C compiler

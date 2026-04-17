@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -22,6 +22,13 @@
 #define _MODULE_SYMBOL_H_
 
 #include "symbol.h"
+
+#ifdef HAVE_LLVM
+namespace llvm {
+  class DIBuilder;
+  class DICompileUnit;
+}
+#endif
 
 enum ModTag {
   MOD_INTERNAL,  // an internal module that the user shouldn't know about
@@ -91,14 +98,16 @@ public:
   std::vector<ModuleSymbol*> modUseList;
 
   const char*             filename;
-  const char*             doc;
 
-  // LLVM uses this for extern C blocks.
 #ifdef HAVE_LLVM
   ExternBlockInfo*        extern_info;
+  llvm::DIBuilder*        llvmDIBuilder;
+  llvm::DICompileUnit*    llvmDICompileUnit;
   llvm::MDNode*           llvmDINameSpace;
 #else
   void*                   extern_info;
+  void*                   llvmDIBuilder;
+  void*                   llvmDICompileUnit;
   void*                   llvmDINameSpace;
 #endif
 

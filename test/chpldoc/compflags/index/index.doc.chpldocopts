@@ -1,0 +1,3 @@
+# if everything works right, myIndex.rst should be just copied into the
+# source dir, and so can also server as the good file
+--index myIndex.rst --no-html --save-sphinx docs # myIndex.rst.good

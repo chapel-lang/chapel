@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -38,13 +38,6 @@
       - remove
       - pop
       - clear
-      - sort
-
-      .. warning::
-
-        :proc:`list.sort<List.list.sort>` is deprecated - please use the
-        :proc:`sort(x: list)<Sort.sort>` procedure from the
-        :mod:`Sort` module instead
 
   Additionally, all references to list elements are invalidated when the list
   is deinitialized.
@@ -65,11 +58,6 @@ module List {
   private use HaltWrappers;
   private use Math;
   private import Reflection.getRoutineName;
-
-  //
-  // TODO: remove me when `list.sort` is removed
-  //
-  private use Sort;
 
   @chpldoc.nodoc
   private const _initialCapacity = 8;
@@ -976,21 +964,42 @@ module List {
       :rtype: `bool`
     */
     proc const contains(x: eltType): bool {
-      var result = false;
+      return this.find(x) != -1;
+    }
 
-      on this {
-        _enter();
+    /*
+      Returns `true` if this list contains an element satisfying the given
+      predicate, and `false` otherwise.
 
-        for item in this do
-          if item == x {
-            result = true;
-            break;
-          }
+      :arg predicate: A callable that takes an element and returns `true`
+        if it matches.
 
-        _leave();
-      }
+      :return: `true` if an element satisfying `predicate` is found.
+      :rtype: `bool`
+      */
+    @edition(last="2.0")
+    @unstable("predicate-based 'list.contains' is unstable and may change in future.")
+    proc const contains(predicate): bool
+        where !isCoercible(predicate.type, eltType)
+    {
+      return this.find(predicate) != -1;
+    }
 
-      return result;
+    /*
+      Returns `true` if this list contains an element satisfying the given
+      predicate, and `false` otherwise.
+
+      :arg predicate: A callable that takes an element and returns `true`
+        if it matches.
+
+      :return: `true` if an element satisfying `predicate` is found.
+      :rtype: `bool`
+      */
+    @edition(first="preview")
+    proc const contains(predicate): bool
+        where !isCoercible(predicate.type, eltType)
+    {
+      return this.find(predicate) != -1;
     }
 
     /*
@@ -999,18 +1008,13 @@ module List {
       .. warning::
 
         Calling this method on an empty list will cause the currently running
-        program to halt. If the `--fast` flag is used, no safety checks will
+        program to halt. If the ``--fast`` flag is used, no safety checks will
         be performed.
 
       :return: A reference to the first item in this list.
       :rtype: `ref eltType`
     */
-    @deprecated(parenful=true, notes="`list.first()` is deprecated; please use the parenless version `list.first` instead")
-    proc ref first ref {
-      if parSafe then
-        compilerWarning('Calling `first()` on a list initialized with ' +
-                        '`parSafe=true` has been deprecated, consider ' +
-                        'using `set()` or `update()` instead');
+    proc ref first ref where parSafe == false {
       _enter();
 
       if boundsChecking && _size == 0 {
@@ -1024,6 +1028,13 @@ module List {
 
       return result;
     }
+    @chpldoc.nodoc
+    proc ref first ref where parSafe {
+      compilerError(
+        'Cannot call `first()` on a list initialized with `parSafe=true`, ' +
+        'consider using `update()`, `getValue()`, or '+
+        '`getBorrowed()` instead', 2);
+    }
 
     /*
       Returns a reference to the last item in this list.
@@ -1031,18 +1042,13 @@ module List {
       .. warning::
 
         Calling this method on an empty list will cause the currently running
-        program to halt. If the `--fast` flag is used, no safety checks will
+        program to halt. If the ``--fast`` flag is used, no safety checks will
         be performed.
 
       :return: A reference to the last item in this list.
       :rtype: `ref eltType`
     */
-    @deprecated(parenful=true, notes="`list.last()` is deprecated; please use the parenless version `list.last` instead")
-    proc ref last ref {
-      if parSafe then
-        compilerWarning('Calling `last()` on a list initialized with ' +
-                        '`parSafe=true` has been deprecated, consider ' +
-                        'using `set()` or `update()` instead');
+    proc ref last ref where parSafe == false {
       _enter();
 
       if boundsChecking && _size == 0 {
@@ -1055,6 +1061,13 @@ module List {
       _leave();
 
       return result;
+    }
+    @chpldoc.nodoc
+    proc ref last ref where parSafe {
+      compilerError(
+        'Cannot call `last()` on a list initialized with `parSafe=true`, ' +
+        'consider using `update()`, `getValue()`, or '+
+        '`getBorrowed()` instead', 2);
     }
 
     /*
@@ -1340,7 +1353,7 @@ module List {
       .. warning::
 
         Calling this method on an empty list will cause the currently running
-        program to halt. If the `--fast` flag is used, no safety checks will
+        program to halt. If the ``--fast`` flag is used, no safety checks will
         be performed.
 
       :return: The element popped.
@@ -1367,7 +1380,7 @@ module List {
 
         Calling this method on an empty list or with values of `idx` that
         are out of bounds will cause the currently running program to halt.
-        If the `--fast` flag is used, no safety checks will be performed.
+        If the ``--fast`` flag is used, no safety checks will be performed.
 
       :arg idx: The index of the element to remove.
       :type idx: `int`
@@ -1457,31 +1470,8 @@ module List {
       }
     }
 
-    /*
-      Return a zero-based index into this list of the first item whose value
-      is equal to `x`. If no such element can be found or if the list is empty,
-      this method returns the value `-1`.
-
-      .. warning::
-
-        Calling this method with values of `start` or `end` that are out of bounds
-        will cause the currently running program to halt. If the `--fast` flag is
-        used, no safety checks will be performed.
-
-      :arg x: An element to search for.
-      :type x: `eltType`
-
-      :arg start: The start index to start searching from.
-      :type start: `int`
-
-      :arg end: The end index to stop searching at. A value less than
-                `0` will search the entire list.
-      :type end: `int`
-
-      :return: The index of the element to search for, or `-1` on error.
-      :rtype: `int`
-    */
-    proc const find(x: eltType, start: int=0, end: int=-1): int {
+    @chpldoc.nodoc
+    proc const _findHelper(start: int, end: int, x, param usePredicate: bool): int {
       param error = -1;
 
       if _size == 0 then
@@ -1507,16 +1497,110 @@ module List {
 
         const stop = if end < 0 then _size-1 else end;
 
-        for i in start..stop do
-          if x == _getRef(i) {
+        for i in start..stop {
+          const matches = if usePredicate then x(_getRef(i))
+                                          else x == _getRef(i);
+          if matches {
             result = i;
             break;
           }
+        }
 
         _leave();
       }
 
       return result;
+    }
+
+    /*
+      Return a zero-based index into this list of the first item whose value
+      is equal to `x`. If no such element can be found or if the list is empty,
+      this method returns the value `-1`.
+
+      .. warning::
+
+        Calling this method with values of `start` or `end` that are out of
+        bounds will cause the currently running program to halt. If the
+        ``--fast`` flag is used, no safety checks will be performed.
+
+      :arg x: An element to search for.
+      :type x: `eltType`
+
+      :arg start: The start index to start searching from.
+      :type start: `int`
+
+      :arg end: The end index to stop searching at. A value less than
+                `0` will search the entire list.
+      :type end: `int`
+
+      :return: The index of the element to search for, or `-1` on error.
+      :rtype: `int`
+    */
+    proc const find(x: eltType, start: int=0, end: int=-1): int {
+      return _findHelper(start, end, x, false);
+    }
+
+    /*
+      Return a zero-based index into this list of the first item satisfying
+      the given predicate. If no such element can be found or if the list
+      is empty, this method returns the value `-1`.
+
+      .. warning::
+
+        Calling this method with values of `start` or `end` that are out of
+        bounds will cause the currently running program to halt. If the
+        ``--fast`` flag is used, no safety checks will be performed.
+
+      :arg predicate: A callable that takes an element and returns `true`
+                      if it matches.
+
+      :arg start: The start index to start searching from.
+      :type start: `int`
+
+      :arg end: The end index to stop searching at. A value less than
+                `0` will search the entire list.
+      :type end: `int`
+
+      :return: The index of the first matching element, or `-1`` if not found.
+      :rtype: `int`
+    */
+    @edition(last="2.0")
+    @unstable("predicate-based 'list.find' is unstable and may change in future.")
+    proc const find(predicate, start: int=0, end: int=-1): int
+        where !isCoercible(predicate.type, eltType)
+    {
+      return _findHelper(start, end, predicate, true);
+    }
+
+    /*
+      Return a zero-based index into this list of the first item satisfying
+      the given predicate. If no such element can be found or if the list
+      is empty, this method returns the value `-1`.
+
+      .. warning::
+
+        Calling this method with values of `start` or `end` that are out of
+        bounds will cause the currently running program to halt. If the
+        ``--fast`` flag is used, no safety checks will be performed.
+
+      :arg predicate: A callable that takes an element and returns `true`
+                      if it matches.
+
+      :arg start: The start index to start searching from.
+      :type start: `int`
+
+      :arg end: The end index to stop searching at. A value less than
+                `0` will search the entire list.
+      :type end: `int`
+
+      :return: The index of the first matching element, or `-1`` if not found.
+      :rtype: `int`
+    */
+    @edition(first="preview")
+    proc const find(predicate, start: int=0, end: int=-1): int
+        where !isCoercible(predicate.type, eltType)
+    {
+      return _findHelper(start, end, predicate, true);
     }
 
     /*
@@ -1547,22 +1631,6 @@ module List {
 
       return result;
     }
-
-    //TODO: When this is removed make sure to remove the `use Sort` from this module
-    /*
-      Sort the items of this list in place using a comparator. If no comparator
-      is provided, sort this list using the default sort order of its elements.
-
-      .. warning::
-
-        Sorting the elements of this list may invalidate existing references
-        to the elements contained in this list.
-
-      :arg comparator: A comparator used to sort this list.
-    */
-    @deprecated("'list.sort' is deprecated - please use the :proc:`sort(x: list)<Sort.sort>` procedure from the :mod:`Sort` module instead")
-    proc ref sort(comparator: ?rec= new Sort.DefaultComparator()) do
-      Sort.sort(this, comparator);
 
     /*
       Return a copy of the element at a given index in this list.
@@ -1680,15 +1748,6 @@ module List {
       return updater(i, slot);
     }
 
-    @chpldoc.nodoc
-    inline proc _warnForParSafeIndexing() {
-      if parSafe then
-        compilerWarning('Indexing a list initialized with `parSafe=true` ' +
-                        'has been deprecated, consider using `set()` ' +
-                        'or `update()` instead', 2);
-      return;
-    }
-
     /*
       Index this list via subscript. Returns a reference to the element at a
       given index in this list.
@@ -1709,9 +1768,7 @@ module List {
 
       :return: A reference to an element in this list
     */
-    proc ref this(i: int) ref {
-      _warnForParSafeIndexing();
-
+    proc ref this(i: int) ref where parSafe == false {
       if boundsChecking && !_withinBounds(i) {
         const msg = "Invalid list index: " + i:string;
         boundsCheckHalt(msg);
@@ -1720,11 +1777,15 @@ module List {
       ref result = _getRef(i);
       return result;
     }
+    @chpldoc.nodoc
+    proc ref this(i: int) ref where parSafe {
+      compilerError(
+        'Cannot index a list initialized with `parSafe=true`, ' +
+        'use `update()` to modify the list', 2);
+    }
 
     @chpldoc.nodoc
-    proc const ref this(i: int) const ref {
-      _warnForParSafeIndexing();
-
+    proc const ref this(i: int) const ref where parSafe == false {
       if boundsChecking && !_withinBounds(i) {
         const msg = "Invalid list index: " + i:string;
         halt(msg);
@@ -1732,6 +1793,12 @@ module List {
 
       const ref result = _getRef(i);
       return result;
+    }
+    @chpldoc.nodoc
+    proc const ref this(i: int) const ref where parSafe {
+      compilerError(
+        'Cannot index a list initialized with `parSafe=true`, ' +
+        'use `getValue()`/`getBorrowed()` to get values from the list', 2);
     }
 
     // TODO - make const ref return intent overloads for `these`
@@ -1925,20 +1992,11 @@ module List {
                       " with elements of a non-nilable owned type, here: ",
                       eltType:string);
 
-      // Once GitHub Issue #7704 is resolved, replace pragma "unsafe"
-      // with a remote var declaration.
-      pragma "unsafe" var result: [0..#_size] eltType;
+      _enter();
 
-      on this {
-        _enter();
+      var result: [0..#_size] eltType = forall i in 0..#_size do _getRef(i);
 
-        var tmp: [0..#_size] eltType =
-          forall i in 0..#_size do _getRef(i);
-
-        result = tmp;
-
-        _leave();
-      }
+      _leave();
 
       return result;
     }

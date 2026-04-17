@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -206,7 +206,7 @@ static llvm::MDNode* generateLoopMetadata(LoopStmt* loop,
 
   std::vector<llvm::Metadata*> args;
   // Resolve operand 0 for the loop id self reference
-  auto tmpNode        = llvm::MDNode::getTemporary(ctx, chpl::empty);
+  auto tmpNode        = llvm::MDNode::getTemporary(ctx, {});
   args.push_back(tmpNode.get());
 
   if(fNoVectorize == false && loop->isVectorizable()) {
@@ -266,7 +266,7 @@ static void addLoopMetadata(llvm::Instruction* instruction,
 GenRet CForLoop::codegen()
 {
   if (id == breakOnCodegenID)
-    gdbShouldBreakHere();
+    debuggerBreakHere();
 
   GenInfo* info    = gGenInfo;
   FILE*    outfile = info->cfile;

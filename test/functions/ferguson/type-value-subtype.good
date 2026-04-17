@@ -1,2 +1,4 @@
-type-value-subtype.chpl:1: error: Subtype queries require two types
-type-value-subtype.chpl:1: error: true
+type-value-subtype.chpl:1: error: unresolved call 'isSubtype(1, type int(64))'
+$CHPL_HOME/modules/standard/Types.chpl:nnnn: note: this candidate did not match: isSubtype(type sub, type sup)
+type-value-subtype.chpl:1: note: because non-type actual argument #1
+$CHPL_HOME/modules/standard/Types.chpl:nnnn: note: is passed to formal 'sub'

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -44,15 +44,6 @@ module Heap {
   private use IO;
 
   public use Sort only defaultComparator, reverseComparator;
-
-  // TODO: remove this module and its public use when the deprecations have been
-  // removed
-  pragma "ignore deprecated use"
-  private module HideDeprecatedReexport {
-    public use Sort only DefaultComparator, ReverseComparator;
-  }
-
-  public use HideDeprecatedReexport;
   private use Sort;
 
   // The locker is borrowed from List.chpl
@@ -105,10 +96,16 @@ module Heap {
     param parSafe = false;
 
     /*
+      The type of the comparator used by this heap.
+      Defaults to :record:`Sort.defaultComparator`.
+    */
+    type comparatorType = defaultComparator;
+
+    /*
       Comparator record that defines how the
       data is compared. The greatest element will be on the top.
     */
-    var comparator: record;
+    var comparator: comparatorType;
 
     @chpldoc.nodoc
     var _lock = if parSafe then new _LockWrapper() else none;
@@ -145,11 +142,33 @@ module Heap {
       :arg comparator: The comparator to use
     */
     proc init(type eltType, param parSafe = false,
-              comparator: record = new defaultComparator()) {
+              comparator: record) {
       _checkType(eltType);
       this.eltType = eltType;
       this.parSafe = parSafe;
+      this.comparatorType = comparator.type;
       this.comparator = comparator;
+      this._data = new list(eltType);
+    }
+
+      /*
+      Initializes an empty heap using default initialization.
+
+      :arg eltType: The type of the elements
+
+      :arg parSafe: If `true`, this heap will use parallel safe operations.
+      :type parSafe: `param bool`
+
+      :arg comparatorType: The type of the comparator to use.
+        Defaults to :record:`~Sort.defaultComparator`.
+    */
+    proc init(type eltType, param parSafe = false,
+              type comparatorType = defaultComparator) {
+      _checkType(eltType);
+      this.eltType = eltType;
+      this.parSafe = parSafe;
+      this.comparatorType = comparatorType;
+      this.comparator = new comparatorType();
       this._data = new list(eltType);
     }
 
@@ -166,6 +185,7 @@ module Heap {
 
       this.eltType = this.type.eltType;
       this.parSafe = this.type.parSafe;
+      this.comparatorType = other.comparator.type;
       this.comparator = other.comparator;
       init this;
       _commonInitFromIterable(other._data);
@@ -199,6 +219,16 @@ module Heap {
       return result;
     }
 
+
+    /*
+      Helper function for checking emptiness without locking
+    */
+    @chpldoc.nodoc
+    proc _isEmptyUnlocked(): bool {
+      return _data.isEmpty();
+    }
+
+
     /*
       Returns `true` if the heap is empty (has size == 0), `false` otherwise
 
@@ -207,7 +237,7 @@ module Heap {
     */
     proc isEmpty(): bool {
       _enter();
-      var result = _data.isEmpty();
+      var result = _isEmptyUnlocked();
       _leave();
       return result;
     }
@@ -226,7 +256,7 @@ module Heap {
                       eltType: string);
       }
       _enter();
-      if (boundsChecking && isEmpty()) {
+      if (boundsChecking && _isEmptyUnlocked()) {
         boundsCheckHalt("Called \"heap.top\" on an empty heap.");
       }
       var result = _data[0];
@@ -332,10 +362,9 @@ module Heap {
     */
     proc ref pop(): eltType {
       _enter();
-      if (boundsChecking && isEmpty()) {
+      if (boundsChecking && _isEmptyUnlocked()) {
         boundsCheckHalt("Called \"heap.pop\" on an empty heap.");
       }
-
       if _data.size != 1 then
         _data(0) <=> _data(_data.size-1);
 

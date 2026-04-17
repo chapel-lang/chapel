@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -74,6 +74,17 @@
   // always_inline is not supported, just use inline
   #define ___always_inline inline
 #endif
+
+#if defined __has_attribute
+  #if __has_attribute (noinline)
+    #define chpl_noinline __attribute__ ((noinline))
+  #endif
+#endif
+#ifndef chpl_noinline
+  // not supported
+  #define chpl_noinline
+#endif
+
 
 // Ask a C++ compiler if it would please include e.g. INT64_MAX
 #ifndef __STDC_CONSTANT_MACROS

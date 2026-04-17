@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -113,6 +113,7 @@ introspectParsedFiles(Context* context);
  */
 const uast::BuilderResult*
 parseFileContainingIdToBuilderResult(Context* context, ID id,
+                                     UniqueString* setSymbolPath=nullptr,
                                      UniqueString* setParentSymbolPath=nullptr);
 
 /**
@@ -299,6 +300,10 @@ void setBundledModulePath(Context* context, UniqueString path);
     chplSysModulesSubdir -- CHPL_SYS_MODULES_SUBDIR
     chplModulePath       -- CHPL_MODULE_PATH
 
+  The 'moduleRoot' argument allows overriding the default module root. If
+  'moduleRoot' is the empty string, then the default of 'CHPL_HOME/modules' is
+  used.
+
   The arguments 'prependInternalModulePaths' and 'prependStandardModulePaths',
   if non-empty, allow one to override where the context will search for
   internal and standard modules, respectively. It will search each successive
@@ -312,7 +317,7 @@ void setBundledModulePath(Context* context, UniqueString path);
 void setupModuleSearchPaths(
                   Context* context,
                   const std::string& chplHome,
-                  bool minimalModules,
+                  const std::string& moduleRoot,
                   const std::string& chplLocaleModel,
                   bool enableTaskTracking,
                   const std::string& chplTasks,
@@ -330,7 +335,17 @@ void setupModuleSearchPaths(
   arguments.
 */
 void setupModuleSearchPaths(Context* context,
-                            bool minimalModules,
+                            const std::string& moduleRoot,
+                            bool enableTaskTracking,
+                            const std::vector<std::string>& cmdLinePaths,
+                            const std::vector<std::string>& inputFilenames);
+
+/**
+  Overload of the more general setupModuleSearchPaths that uses the
+  context's stored chplHome and chplEnv to determine the values of most
+  arguments.
+*/
+void setupModuleSearchPaths(Context* context,
                             bool enableTaskTracking,
                             const std::vector<std::string>& cmdLinePaths,
                             const std::vector<std::string>& inputFilenames);
@@ -456,24 +471,6 @@ struct IdAndName {
 
 
 /**
- Given a particular (presumably standard) module, return the ID of a
- symbol with the given name in that module. Beyond creating the ID, this also
- ensures that the standard module is parsed, and thus, that 'idToAst' on the
- returned ID will return a non-null value.
- */
-ID getSymbolIdFromTopLevelModule(Context* context,
-                                 const char* modName,
-                                 const char* symName);
-
-/**
- Like getSymbolId..., but return also contains the name of the given symbol for
- convenience.
- */
-IdAndName getSymbolFromTopLevelModule(Context* context,
-                                      const char* modName,
-                                      const char* symName);
-
-/**
  This query parses a submodule for 'include submodule'.
  The ID passed should be the ID of an Include statement.
  Returns nullptr if no such file can be found.
@@ -579,6 +576,18 @@ const uast::AstNode* parentAst(Context* context, const uast::AstNode* node);
 ID idToParentModule(Context* context, ID id);
 
 /**
+  Returns the ID for the top-level module statement containing the given ID,
+  where possible.
+ */
+ID idToParentModuleStmt(Context* context, ID id);
+
+/**
+  Return the ID for the module containing the given ID,
+  unless the ID itself is a module, in which case return the ID itself.
+ */
+ID idToModule(Context* context, ID id);
+
+/**
   Given an ID 'id', attempt to lookup the declared linkage of the composite
   type associated with 'id'. Returns 'DEFAULT_LINKAGE' if no such AST was
   found.
@@ -611,14 +620,41 @@ ID idToContainingMultiDeclId(Context* context, ID id);
 
 /**
   Given an ID for a Record/Union/Class Decl,
-  returns 'true' if the passed name is the name of a field contained in it.
+  returns the declaration with the given name, if any.
  */
-bool idContainsFieldWithName(Context* context, ID typeDeclId,
-                             UniqueString fieldName);
+const uast::VarLikeDecl* idToFieldWithName(Context* context, ID typeDeclId,
+                                           UniqueString fieldName);
+
+/**
+  Given an AST node for a (multi-)declaration, find a Variable
+  node that declares a field of the given name. Returns whether the field
+  was found. Sets outFieldId to the ID of the Variable, or empty if one
+  was not found.
+
+  Performs a search for AST nodes covered by fieldIdWithName's documentation.
+ */
+bool findFieldIdInDeclaration(const uast::AstNode* varDecl,
+                              UniqueString fieldName,
+                              ID& outFieldId);
+
+/**
+  Given an expression (e.g., a formal's type expression), finds
+  all the type queries.
+ */
+std::vector<const uast::AstNode*> const&
+typeQueriesInExpression(Context* context, const uast::AstNode* expr);
 
 /**
   Given an ID for a Record/Union/Class Decl,
   and a field name, returns the ID for the Variable declaring that field.
+  Does so by looking recursively for either:
+
+  * the Variable declaration directly: 'var x: int'
+  * A MultiDecl containing the name: 'var x: int, y: int'
+  * A TupleDecl with the name as a component: 'var ((x, y), z) = ...'
+  * A ForwardingDecl that forwards methods from the variable: 'forwarding var x: R'
+
+  Ignores all other AST nodes in the Record/Union/Class.
  */
 ID fieldIdWithName(Context* context, ID typeDeclId,
                    UniqueString fieldName);
@@ -722,6 +758,23 @@ bool isSpecialMethodName(UniqueString name);
   Given a function call, determine if it is a call to a class manager.
 */
 bool isCallToClassManager(const uast::FnCall* call);
+
+/*
+ For all internal types required by the compiler, define getters that produce
+ their ID and UniqueString name.
+
+ Given a particular standard module, return the ID of a
+ symbol with the given name in that module. Beyond creating the ID, this also
+ ensures that the standard module is parsed, and thus, that 'idToAst' on the
+ returned ID will return a non-null value.
+
+ This is guaranteed to succeed, even if modules haven't been configured,
+ because Dyno provides stubs for all internal types.
+ */
+#define INTERNAL_TYPE(modname__, camelname__, name__, content__)\
+  ID get##camelname__##IdFromTopLevel##modname__##Module(Context* context); \
+  IdAndName get##camelname__##TypeFromTopLevel##modname__##Module(Context* context);
+#include "chpl/resolution/all-internal-types-list.h"
 
 } // end namespace parsing
 } // end namespace chpl

@@ -6,6 +6,8 @@ cd ${CHPL_HOME}/util/packaging/docker/test
 
 # Remove image with name homebrew_ci before creating a fresh image to avoid failures.
 docker image rm --force homebrew_ci
+
+# Build image
 docker build . --load --platform linux/amd64 -t homebrew_ci
 containerid= docker image ls | grep 'homebrew_ci' | awk '{print$3}'
 

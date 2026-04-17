@@ -1,0 +1,1 @@
+attributeCheck-badOrdering.chpl:3: error: last edition '2.0' is earlier than first edition 'preview'

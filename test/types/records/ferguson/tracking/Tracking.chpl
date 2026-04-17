@@ -49,15 +49,14 @@ var opsLock: sync bool = true;
 
 var counter: atomic int;
 
-require "gdb.h";
 config const breakOnAllocateId = -1;
 
 proc trackAllocation(c: RootClass, id:int, x:int) {
   opsLock.readFE();
   ops.pushBack( (1, c:unmanaged, id, x, 1+counter.fetchAdd(1)) );
   if id == breakOnAllocateId {
-    extern proc gdbShouldBreakHere();
-    gdbShouldBreakHere();
+    use Debugger;
+    breakpoint;
   }
   opsLock.writeEF(true);
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -231,6 +231,8 @@ static void test2a() {
       }
     )"""",
     {
+      {AssociatedAction::MOVE_INIT, "M.test@7", ""},
+      {AssociatedAction::MOVE_INIT, "M.test@11", ""},
       {AssociatedAction::DEINIT, "M.test@12", "x"},
       {AssociatedAction::DEINIT, "M.test@12", "y"}
     });
@@ -257,6 +259,8 @@ static void test2b() {
       }
     )"""",
     {
+      {AssociatedAction::MOVE_INIT, "M.test@7", ""},
+      {AssociatedAction::MOVE_INIT, "M.test@11", ""},
       {AssociatedAction::DEINIT, "M.test@12", "y"},
       {AssociatedAction::DEINIT, "M.test@12", "x"}
     });
@@ -285,6 +289,8 @@ static void test2c() {
       }
     )"""",
     {
+      {AssociatedAction::MOVE_INIT, "M.test@7", ""},
+      {AssociatedAction::MOVE_INIT, "M.test@11", ""},
       {AssociatedAction::DEINIT, "M.test@13", "y"},
       {AssociatedAction::DEINIT, "M.test@13", "x"}
     });
@@ -370,6 +376,7 @@ static void test3c() {
     )"""",
     {
       {AssociatedAction::DEFAULT_INIT, "y",        ""},
+      {AssociatedAction::MOVE_INIT,    "M.test@6", ""},
       {AssociatedAction::DEINIT,       "M.test@7", "x"}
     });
 }
@@ -397,6 +404,7 @@ static void test3d() {
     )"""",
     {
       {AssociatedAction::DEFAULT_INIT, "y",        ""},
+      {AssociatedAction::MOVE_INIT,    "M.test@6", ""},
       {AssociatedAction::DEINIT,       "M.test@8", "x"}
     });
 }
@@ -421,6 +429,7 @@ static void test4a() {
       }
     )"""",
     {
+      {AssociatedAction::MOVE_INIT,    "x",        ""},
       {AssociatedAction::DEINIT,       "M.test@4", "x"}
     });
 }
@@ -446,6 +455,7 @@ static void test4b() {
       }
     )"""",
     {
+      {AssociatedAction::MOVE_INIT,    "x",        ""},
       {AssociatedAction::COPY_INIT,    "y",        ""},
       {AssociatedAction::DEINIT,       "M.test@8", "y"},
       {AssociatedAction::DEINIT,       "M.test@8", "x"}
@@ -472,6 +482,8 @@ static void test4c() {
       }
     )"""",
     {
+      {AssociatedAction::MOVE_INIT,    "x",        ""},
+      {AssociatedAction::MOVE_INIT,    "y",        ""},
       {AssociatedAction::DEINIT,       "M.test@7", "y"}
     });
 }
@@ -540,6 +552,7 @@ static void test5c() {
       }
     )"""",
     {
+      {AssociatedAction::MOVE_INIT,    "i",        ""},
       {AssociatedAction::INIT_OTHER,   "x",        ""},
       {AssociatedAction::DEINIT,       "M.test@5", "x"},
     });
@@ -567,6 +580,7 @@ static void test5d() {
       }
     )"""",
     {
+      {AssociatedAction::MOVE_INIT,    "i",        ""},
       {AssociatedAction::INIT_OTHER,   "x",        ""},
       {AssociatedAction::INIT_OTHER,   "y",        ""},
       {AssociatedAction::DEINIT,       "M.test@12", "y"},
@@ -1163,6 +1177,7 @@ static void test13a() {
     )"""",
     {
       {AssociatedAction::NEW_INIT,     "M.test@9",   ""},
+      {AssociatedAction::MOVE_INIT,    "M.test@10",  ""},
       {AssociatedAction::DEINIT,       "M.test@11",  "x"}
     });
 }
@@ -1344,6 +1359,7 @@ static void test16c() {
     )"""",
     {
       {AssociatedAction::DEFAULT_INIT, "x",          ""},
+      {AssociatedAction::MOVE_INIT,    "M.test@3",   ""},
       // everything else is copy elided
     });
 }
@@ -1393,6 +1409,7 @@ static void test16e() {
       }
     )"""",
     {
+      {AssociatedAction::MOVE_INIT, "M.test@2", ""},
     });
 }
 // calling a function using 'in' intent with nested call returning ref
@@ -1438,6 +1455,7 @@ static void test16g() {
       }
     )"""",
     {
+      {AssociatedAction::MOVE_INIT,   "M.test@3",   ""},
     });
 }
 // 'in' intent argument returned
@@ -1459,6 +1477,32 @@ static void test16h() {
     {
       // note: this is dead code
       {AssociatedAction::DEINIT,       "M.test@4",   "x"},
+    });
+}
+// performing a redundant cast to the same type (treated as 'in' intent) without copy elision
+static void test16i() {
+  testActions("test16i",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+
+        proc test() {
+          var x: R;
+          var tmp = x : R;
+          x;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::DEFAULT_INIT, "x",          ""},
+      {AssociatedAction::COPY_INIT,    "M.test@2",   ""},
+      {AssociatedAction::MOVE_INIT,    "tmp",        ""},
+      {AssociatedAction::DEINIT,       "M.test@7",   "tmp"},
+      {AssociatedAction::DEINIT,       "M.test@7",   "x"},
     });
 }
 
@@ -1500,6 +1544,7 @@ static void test17b() {
       }
     )"""",
     {
+      {AssociatedAction::MOVE_INIT, "M.test@5", ""},
     });
 }
 
@@ -1586,6 +1631,7 @@ static void test20a() {
     )"""",
     {
       {AssociatedAction::NEW_INIT, "M.foo@2",          ""},
+      {AssociatedAction::MOVE_INIT,"x",                ""},
       {AssociatedAction::DEINIT,   "M.foo@6",          "x"},
     });
 }
@@ -1635,6 +1681,7 @@ static void test20c() {
     )"""",
     {
       {AssociatedAction::NEW_INIT,   "M.foo@3",    ""},
+      {AssociatedAction::MOVE_INIT,  "x",          ""},
       {AssociatedAction::DEINIT,     "M.foo@7",    "x"},
     });
 }
@@ -1660,7 +1707,13 @@ static void test21() {
           else ret = take2(arg);
         }
       }
-      )""", {} );
+      )""", {
+        {AssociatedAction::MOVE_INIT,  "cond",          ""},
+        {AssociatedAction::MOVE_INIT,  "M.test@9",      ""},
+        {AssociatedAction::MOVE_INIT,  "M.test@11",     ""},
+        {AssociatedAction::MOVE_INIT,  "M.test@15",     ""},
+        {AssociatedAction::MOVE_INIT,  "M.test@17",     ""},
+      } );
 }
 
 static void test22() {
@@ -1697,6 +1750,7 @@ static void test22() {
       }
       )""", {
         {AssociatedAction::DEFAULT_INIT, "r",          ""},
+        {AssociatedAction::MOVE_INIT,    "x",          ""},
         {AssociatedAction::DEINIT,       "M.test@6",   "r"}
       });
 }
@@ -1722,7 +1776,9 @@ static void test23a() {
         }
       }
       )""", {
-        {AssociatedAction::DEFAULT_INIT, "f",          ""}
+        {AssociatedAction::DEFAULT_INIT, "f",          ""},
+        {AssociatedAction::MOVE_INIT,    "M.test@3",   ""},
+        {AssociatedAction::MOVE_INIT,    "x",          ""}
       });
 }
 
@@ -1748,7 +1804,9 @@ static void test23b() {
         }
       }
       )""", {
-        {AssociatedAction::DEFAULT_INIT, "f",          ""}
+        {AssociatedAction::DEFAULT_INIT, "f",          ""},
+        {AssociatedAction::MOVE_INIT,    "M.test@3",   ""},
+        {AssociatedAction::MOVE_INIT,    "x",          ""},
       });
 }
 
@@ -1777,7 +1835,9 @@ static void test23c() {
         }
       }
       )""", {
-        {AssociatedAction::DEFAULT_INIT, "f",          ""}
+        {AssociatedAction::DEFAULT_INIT, "f",          ""},
+        {AssociatedAction::MOVE_INIT,    "M.test@3",   ""},
+        {AssociatedAction::MOVE_INIT,    "x",          ""},
       });
 }
 
@@ -1811,7 +1871,9 @@ static void test23d() {
         }
       }
       )""", {
-        {AssociatedAction::DEFAULT_INIT, "f",          ""}
+        {AssociatedAction::DEFAULT_INIT, "f",          ""},
+        {AssociatedAction::MOVE_INIT,    "M.test@3",   ""},
+        {AssociatedAction::MOVE_INIT,    "x",          ""},
       });
 }
 
@@ -1831,6 +1893,7 @@ static void test24() {
     )"""",
     {
       {AssociatedAction::NEW_INIT, "M.test@3",    ""},
+      {AssociatedAction::MOVE_INIT,"y",           ""},
       {AssociatedAction::ASSIGN,   "x",           ""},
     });
 }
@@ -1902,6 +1965,92 @@ static void test26() {
     test26("continue", "continue", false);
     test26("break", "break", false);
   */
+}
+
+// Copying then moving tuple
+static void test27() {
+  testActions("test27",
+    R""""(
+      module M {
+        record R { }
+        proc test() {
+          var r = new R();
+
+          var x = (1, r);
+          var y = x;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
+      {AssociatedAction::MOVE_INIT,  "r",           ""},
+      {AssociatedAction::INIT_OTHER, "x",           ""},
+      {AssociatedAction::MOVE_INIT,  "y",           ""},
+      {AssociatedAction::DEINIT,     "M.test@10",   "r"}
+    });
+}
+
+// Copying tuple twice
+static void test28() {
+  testActions("test28",
+    R""""(
+      module M {
+        record R { }
+        proc test() {
+          var r = new R();
+
+          var x = (1, r);
+          var y = x;
+          x;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
+      {AssociatedAction::MOVE_INIT,  "r",           ""},
+      {AssociatedAction::INIT_OTHER, "x",           ""},
+      {AssociatedAction::COPY_INIT,  "y",           ""},
+      {AssociatedAction::DEINIT,     "M.test@11",   "r"}
+    });
+}
+
+// Creating reference to tuple, then copying from it
+static void test29() {
+  testActions("test29",
+    R""""(
+      module M {
+        record R { }
+        proc test() {
+          var r = new R();
+
+          const ref x = (1, r);
+          var y = x;
+          x;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
+      {AssociatedAction::MOVE_INIT,  "r",           ""},
+      {AssociatedAction::INIT_OTHER, "y",           ""},
+      {AssociatedAction::DEINIT,     "M.test@11",   "r"}
+    });
+}
+
+// Returning a tuple expression (ref tuple) converted to value tuple
+static void test30() {
+  testActions("test30",
+    R""""(
+      module M {
+        record R { }
+        proc test(ref arg : R) {
+          return (1, arg);
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::INIT_OTHER, "M.test@5", ""},
+    });
 }
 
 // calling function with 'out' intent formal
@@ -1978,6 +2127,7 @@ int main() {
   test16f();
   test16g();
   test16h();
+  test16i();
 
   test17a();
   test17b();
@@ -2004,6 +2154,11 @@ int main() {
 
   test25();
   test26();
+
+  test27();
+  test28();
+  test29();
+  test30();
 
   return 0;
 }

@@ -8,7 +8,9 @@ UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 export CHPL_TEST_PERF_CONFIG_NAME="shootout"
 
 source $UTIL_CRON_DIR/common-perf.bash
-source $UTIL_CRON_DIR/common-llvm.bash
+export CHPL_LLVM=bundled
+
+export CHPL_LAUNCHER=none
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapel-shootout-llvm"
 

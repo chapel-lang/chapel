@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -25,15 +25,13 @@
 #include "chpl/uast/Variable.h"
 
 
-static void testRectangular(Context* context,
-                                  std::string domainType,
-                                  int rank,
-                                  std::string idxType,
-                                  std::string strides) {
+static void testRectangular(std::string domainType,
+                            int rank,
+                            std::string idxType,
+                            std::string strides) {
   printf("Testing: %s\n", domainType.c_str());
 
-  context->advanceToNextRevision(false);
-  setupModuleSearchPaths(context, false, false, {}, {});
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string program =
@@ -189,51 +187,67 @@ module M {
 
 // Ensure we gracefully error for bad domain type expressions, with or without
 // the standard modules available.
-static void testBadDomain(Context* contextWithStd, std::string domainType) {
+static void testBadDomain(std::string domainType) {
   printf("Testing: cannot resolve %s\n",
          domainType.c_str());
 
   // With standard modules
   {
-    contextWithStd->advanceToNextRevision(false);
-    setupModuleSearchPaths(contextWithStd, false, false, {}, {});
+    auto contextWithStd = buildStdContext();
     ErrorGuard guard(contextWithStd);
 
     testBadDomainHelper(domainType, contextWithStd, guard);
   }
 }
 
-int main() {
-  // Set up context with standard modules, re-used between tests for
-  // performance.
+// check that the 'dmapped' call is handled via a call to 'chpl__distributed'
+static void testDmapped() {
   auto context = buildStdContext();
+  ErrorGuard guard(context);
 
-  testRectangular(context, "domain(1)", 1, "int", "one");
-  testRectangular(context, "domain(2)", 2, "int", "one");
-  testRectangular(context, "domain(1, strides=strideKind.one)", 1, "int", "one");
-  testRectangular(context, "domain(2, int(8))", 2, "int(8)", "one");
-  testRectangular(context, "domain(3, int(16), strideKind.negOne)", 3, "int(16)", "negOne");
-  testRectangular(context, "domain(strides=strideKind.negative, idxType=int, rank=1)", 1, "int", "negative");
+  auto qt = resolveTypeOfXInit(context,
+    R"""(
+      use BlockDist;
 
-  testDomainLiteral(context, "{1..10}", DomainType::Kind::Rectangular);
-  testDomainLiteral(context, "{1..10, 1..10}", DomainType::Kind::Rectangular);
+      var Space = {1..10, 1..10};
+      var Dist = new blockDist(Space);
+      var D = Space dmapped Dist;
+      var x = D.distribution.type : string;
+  )""");
 
-  testDomainBadPass(context, "domain(1)", "domain(2)");
-  testDomainBadPass(context, "domain(1, int(16))", "domain(1, int(8))");
-  testDomainBadPass(context, "domain(1, int(8))", "domain(1, int(16))");
-  testDomainBadPass(context, "domain(1, strides=strideKind.negOne)", "domain(1, strides=strideKind.one)");
+  ensureParamString(qt, "blockDist(2, int(64), unmanaged DefaultDist)");
+}
 
-  testDomainIndex(context, "domain(1)", "int");
-  testDomainIndex(context, "domain(2)", "2*int");
-  testDomainIndex(context, "domain(1, bool)", "bool");
-  testDomainIndex(context, "domain(2, bool)", "2*bool");
+int main() {
+  testRectangular("domain(1)", 1, "int", "one");
+  testRectangular("domain(2)", 2, "int", "one");
+  testRectangular("domain(1, strides=strideKind.one)", 1, "int", "one");
+  testRectangular("domain(2, int(8))", 2, "int(8)", "one");
+  testRectangular("domain(3, int(16), strideKind.negOne)", 3, "int(16)", "negOne");
+  testRectangular("domain(strides=strideKind.negative, idxType=int, rank=1)", 1, "int", "negative");
 
-  testBadDomain(context, "domain()");
-  testBadDomain(context, "domain(1, 2, 3, 4)");
-  testBadDomain(context, "domain(\"asdf\")");
-  testBadDomain(context, "domain(\"asdf\", \"asdf2\")");
-  testBadDomain(context, "domain(1, \"asdf\")");
-  testBadDomain(context, "domain(1, int, \"asdf\")");
+  testDomainLiteral("{1..10}", DomainType::Kind::Rectangular);
+  testDomainLiteral("{1..10, 1..10}", DomainType::Kind::Rectangular);
+  testDomainLiteral("{(...(1..10, 1..10))}", DomainType::Kind::Rectangular);
+
+  testDomainBadPass("domain(1)", "domain(2)");
+  testDomainBadPass("domain(1, int(16))", "domain(1, int(8))");
+  testDomainBadPass("domain(1, int(8))", "domain(1, int(16))");
+  testDomainBadPass("domain(1, strides=strideKind.negOne)", "domain(1, strides=strideKind.one)");
+
+  testDomainIndex("domain(1)", "int");
+  testDomainIndex("domain(2)", "2*int");
+  testDomainIndex("domain(1, bool)", "bool");
+  testDomainIndex("domain(2, bool)", "2*bool");
+
+  testBadDomain("domain()");
+  testBadDomain("domain(1, 2, 3, 4)");
+  testBadDomain("domain(\"asdf\")");
+  testBadDomain("domain(\"asdf\", \"asdf2\")");
+  testBadDomain("domain(1, \"asdf\")");
+  testBadDomain("domain(1, int, \"asdf\")");
+
+  testDmapped();
 
   return 0;
 }

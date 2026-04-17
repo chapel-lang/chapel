@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -3687,6 +3687,8 @@ module HDF5 {
      If the generic fields in the `ArrayWrapper` could be queried that
      would be a nice replacement for these arguments.  e.g.
      `data: [] ArrayWrapper(?eltType, ?rank)`.
+
+     :throws IoError: If checking the existence of the file fails.
    */
   proc writeArraysToHDF5Files(dirName: string, dsetNames: [] string,
                               filenames: [] string, type eltType,

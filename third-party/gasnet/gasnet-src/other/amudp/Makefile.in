@@ -462,6 +462,7 @@ pdfdir = @pdfdir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
+runstatedir = @runstatedir@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
@@ -476,7 +477,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign 1.4 no-dependencies
 apputils_flags = 
-@BUILDCONFIG_DEBUG_FALSE@BUILDCONFIG_DEFINES = -DAMUDP_NDEBUG=1
+@BUILDCONFIG_DEBUG_FALSE@BUILDCONFIG_DEFINES = -DAMUDP_NDEBUG=1 -DNDEBUG
 @BUILDCONFIG_DEBUG_TRUE@BUILDCONFIG_DEFINES = -DAMUDP_DEBUG=1
 @VALGRIND_FALSE@VALGRIND_DEFINES = 
 @VALGRIND_TRUE@VALGRIND_DEFINES = -DUSE_CLEAR_UNUSED_SPACE

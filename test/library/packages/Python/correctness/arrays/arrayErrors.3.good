@@ -1,0 +1,3 @@
+$CHPL_HOME/modules/packages/Python.chpl:nnnn: In initializer:
+$CHPL_HOME/modules/packages/Python.chpl:nnnn: error: Unsupported array type: complex(128)
+  arrayErrors.chpl:122: called as (Array(?)).init(interpreter: borrowed Interpreter, arr: [domain(1,int(64),one)] complex(128))

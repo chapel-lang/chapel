@@ -1,4 +1,4 @@
-.. image:: https://chapel-lang.org/images/chapel-logo-200.png
+.. image:: https://chapel-lang.org/img/Chapel-HPSF-logo-draft.png
 
 The Chapel Language
 ===================
@@ -16,7 +16,7 @@ License
 -------
 Chapel is developed and released under the terms of the Apache 2.0
 license, though it also makes use of third-party packages under their
-own licensing terms.  See the `LICENSE`_ file in this directory for
+own licensing terms.  See the `<LICENSE>`_ file in this directory for
 details.
 
 Resources
@@ -39,7 +39,6 @@ GitHub:                https://github.com/chapel-lang/chapel
 Discussion forums:     https://chapel.discourse.group
 Gitter chat room:      https://gitter.im/chapel-lang/chapel
 Stack Overflow:        http://stackoverflow.com/questions/tagged/chapel
-Twitter:               https://twitter.com/ChapelLanguage
+X (Twitter):           https://x.com/ChapelLanguage
 Facebook:              https://www.facebook.com/ChapelLanguage
 =====================  ========================================================
-

@@ -91,7 +91,7 @@ To mimic the original C++ output, use the following:
 Chapel-specific optimizations:
 
 * Add the following to enable the BulkTransfer optimization:
-  -sdebugBlockDistBulkTransfer -sdisableAliasedBulkTransfer=false
+  -sdebugBlockDistBulkTransfer
 
 As with all Chapel benchmarks, for the best performance, compile
 miniMD with the --fast flag.

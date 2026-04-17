@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -25,7 +25,7 @@
 #include "chpl/types/CompositeType.h"
 #include "chpl/uast/all-uast.h"
 #include "InitResolver.h"
-#include "BranchSensitiveVisitor.h"
+#include "chpl/resolution/BranchSensitiveVisitor.h"
 
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/SmallVector.h"
@@ -37,7 +37,12 @@ namespace resolution {
 
 struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
   // types used below
-  using ActionAndId = std::tuple<AssociatedAction::Action, ID>;
+  struct ActionInfo {
+    public:
+      AssociatedAction::Action action;
+      ID id;
+      types::QualifiedType type;
+  };
   using SubstitutionsMap = types::CompositeType::SubstitutionsMap;
   using ReceiverScopesVec = SimpleMethodLookupHelper::ReceiverScopesVec;
   using IgnoredExtraData = std::variant<std::monostate>;
@@ -79,12 +84,49 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
     bool hasNonMethodCandidates() const { return hasNonMethodCandidates_; }
   };
 
+  /**
+   Not all resolution attempts are the same. In particular, Dyno has
+   two distinct phases to resolving called functions: an "initial resolution"
+   phase, during which formals are resolved without incorporating type
+   information from the call site, and a "instantiated resolution" phase,
+   in which all available information is incorporated. During the "initial"
+   phase, we might easily be missing instantiations and substitutions.
+   A simple example is:
+
+     proc foo(x, y: someFn(x.type)) { ... }
+
+   Above, during initial resolution, 'x.type' will be unknown. If we resolved
+   'someFn', we'd likely get garbage results. Things would get even more
+   complicated if 'x' had type 'numeric':
+
+     proc foo(x: numeric, y: someFn(x.type)) { ... }
+
+   'someFn' might try to distinguish between generic and non-generic type actuals.
+   Even if the call site provided a concrete type for 'x', during initial resolution,
+   we'd end up giving 'numeric' to 'someFn', which might lead to unexpected errors.
+   Moreover, in general, it's impossible to distinguish between "the argument to
+   someFn is supposed to be generic" from "it's just not instantiated yet" just
+   by looking at its type.
+
+   To disambiguate between the two cases, we want to define two "eagerness"
+   policies. During "initial resolution", we act lazily, avoiding resolving
+   things that may depend on incomplete information. This would include skipping
+   calls like 'someFn(x.type)' when 'x' is 'numeric'. During "instantiated
+   resolution", we resolve these calls and others, generally making the
+   assumption that all type information we could've had is now available.
+  */
+  enum class CallResolutionEagerness {
+    LAZY,      // for initial resolution; skip iffy-looking calls
+    EAGER,     // for instantiated resolution; resolve most calls
+  };
+
   // inputs to the resolution process
   Context* context = nullptr;
   const uast::AstNode* symbol = nullptr;
   const uast::AstNode* curStmt = nullptr;
   const uast::AstNode* curInheritanceExpr = nullptr;
   const types::CompositeType* inCompositeType = nullptr;
+  const types::BasicClassType* superInitClassType = nullptr;
   const SubstitutionsMap* substitutions = nullptr;
   DefaultsPolicy defaultsPolicy = DefaultsPolicy::IGNORE_DEFAULTS;
   const TypedFnSignature* typedSignature = nullptr;
@@ -93,20 +135,20 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
   bool skipTypeQueries = false;
   bool usePlaceholders = false;
   bool allowLocalSearch = true;
+  ID useConcreteArrayTypeForFormals = ID();
+  CallResolutionEagerness callEagerness = CallResolutionEagerness::EAGER;
 
   // internal variables
   ResolutionContext emptyResolutionContext;
   ResolutionContext* rc = &emptyResolutionContext;
   bool didPushFrame = false;
   std::vector<const uast::Decl*> declStack;
+  std::vector<const uast::Loop*> loopStack;
   std::vector<int> tagTracker;
   bool signatureOnly = false;
-  bool fieldOrFormalsComputed = false;
   bool scopeResolveOnly = false;
   bool fieldTypesOnly = false;
   const uast::Block* fnBody = nullptr;
-  std::set<ID> fieldOrFormals;
-  std::set<ID> instantiatedFieldOrFormals;
   std::set<UniqueString> namesWithErrorsEmitted;
   std::vector<const uast::Call*> callNodeStack;
   std::vector<std::pair<UniqueString, const uast::AstNode*>> genericReceiverOverrideStack;
@@ -148,6 +190,10 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
   // to be issued further up the call stack.
   std::vector<CompilerDiagnostic> userDiagnostics;
 
+  // whether the resolver emitted error messages for any parts of the formal AST.
+  // does not include errors from e.g., bodies of called functions.
+  bool encounteredErrors = false;
+
   static PoiInfo makePoiInfo(const PoiScope* poiScope) {
     if (poiScope == nullptr)
       return PoiInfo();
@@ -187,6 +233,15 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
   Resolver& operator=(const Resolver& rhs) = delete;
   Resolver(Resolver&& rhs) = default;
  ~Resolver();
+
+  const ResolvedFunction::ImplicitInitMap& getImplicitInits() {
+    static ResolvedFunction::ImplicitInitMap empty;
+    if (initResolver) {
+      return initResolver->implicitInits();
+    } else {
+      return empty;
+    }
+  }
 
   // set up Resolver to resolve a Module
   static Resolver
@@ -262,7 +317,8 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
                             const uast::AstNode* fieldStmt,
                             const types::CompositeType* compositeType,
                             ResolutionResultByPostorderID& byPostorder,
-                            DefaultsPolicy defaultsPolicy);
+                            DefaultsPolicy defaultsPolicy,
+                            bool fieldTypesOnly = true);
 
   // set up Resolver to resolve instantiated field declaration types
   static Resolver
@@ -272,22 +328,14 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
                                  const types::CompositeType* compositeType,
                                  const PoiScope* poiScope,
                                  ResolutionResultByPostorderID& byPostorder,
-                                 DefaultsPolicy defaultsPolicy);
+                                 DefaultsPolicy defaultsPolicy,
+                                 bool fieldTypesOnly = true);
 
   // Set up Resolver to resolve the numeric values of enum elements
   static Resolver
   createForEnumElements(Context* context,
                         const uast::Enum* enumNode,
                         ResolutionResultByPostorderID& byPostorder);
-
-  // set up Resolver to resolve instantiated field declaration types
-  // without knowing the CompositeType
-  static Resolver
-  createForInstantiatedSignatureFields(Context* context,
-                                       const uast::AggregateDecl* decl,
-                                       const SubstitutionsMap& substitutions,
-                                       const PoiScope* poiScope,
-                                       ResolutionResultByPostorderID& byId);
 
   // set up Resolver to resolve a parent class type expression
   static Resolver
@@ -309,6 +357,10 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
   static Resolver paramLoopResolver(Resolver& parent,
                                     const uast::For* loop,
                                     ResolutionResultByPostorderID& bodyResults);
+
+  bool isLazy() const {
+    return callEagerness == CallResolutionEagerness::LAZY;
+  }
 
   static const PoiScope*
   poiScopeOrNull(Context* context,
@@ -334,6 +386,12 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
      relevant to location for 'ast'.
    */
   types::QualifiedType typeErr(const uast::AstNode* ast, const char* msg);
+
+  /* Emit a general error message using the given format and arguments,
+     setting the 'encountered errors' flag.
+   */
+  void error(const uast::AstNode* ast, const char* fmt, ...);
+  void error(const ID& id, const char* fmt, ...);
 
   /** Try to get info about the closest method receiver. The first value
       is the ID of the containing symbol. It could be a method or a
@@ -384,21 +442,7 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
    */
   types::QualifiedType getSuperType(Context* context,
                                     const types::QualifiedType& sub,
-                                    const uast::Identifier* identForError);
-
-  /* When resolving a generic record or a generic function,
-     there might be generic types that we don't know yet.
-     E.g.
-
-       proc f(type t, arg: t)
-
-     before instantiating, we should conclude that:
-       * t has type AnyType
-       * arg has type UnknownType (and in particular, not AnyType)
-
-     But, if we have a substitution for `t`, we should use that.
-   */
-  bool shouldUseUnknownTypeForGeneric(const ID& id);
+                                    const uast::AstNode* identForError);
 
   // helper for resolveTypeQueriesFromFormalType
   void resolveTypeQueries(const uast::AstNode* formalTypeExpr,
@@ -421,7 +465,7 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
      This function resolves the types of all TypeQuery nodes
      contained in the passed Formal (by updating 'byPostorder').
    */
-  void resolveTypeQueriesFromFormalType(const uast::VarLikeDecl* formal,
+  void resolveTypeQueriesFromFormalType(const uast::Decl* formal,
                                         types::QualifiedType formalType);
 
   // helper for getTypeForDecl -- checks the Kinds are compatible
@@ -497,6 +541,7 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
                                            std::vector<const uast::VarLikeDecl*>& actualDecls) {
       CHPL_REPORT(r.parent->context, NoMatchingCandidates,
                   r.astForContext, *r.ci, rejected, actualDecls);
+      r.parent->encounteredErrors = true;
     }
 
     Resolver* parent = nullptr;
@@ -526,17 +571,18 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
     //
     // Instead, returns 'true' if an error needs to be issued.
     bool noteResultWithoutError(ResolvedExpression* r,
-                                optional<ActionAndId> associatedActionAndId = {});
+                                optional<ActionInfo> associatedActionInfo = {});
 
     static bool noteResultWithoutError(Resolver& resolver,
                                        ResolvedExpression* r,
                                        const uast::AstNode* astForContext,
                                        const CallResolutionResult& c,
-                                       optional<ActionAndId> associatedActionAndId = {});
+                                       const CallInfo* ci,
+                                       optional<ActionInfo> associatedActionInfo = {});
 
     // Same as noteResultWithoutError, but also issues errors.
     void noteResult(ResolvedExpression* r,
-                    optional<ActionAndId> associatedActionAndId = {});
+                    optional<ActionInfo> associatedActionInfo = {});
 
     // Issues a more specific error (listing rejected candidates) if possible.
     // To collect the candidates, re-runs the call. Returns true if an error
@@ -546,7 +592,7 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
     // Like noteResult, except attempts to do more work to print fancier errors
     // (see rerunCallAndPrintCandidates).
     void noteResultPrintCandidates(ResolvedExpression* r,
-                                   optional<ActionAndId> associatedActionAndId = {});
+                                     optional<ActionInfo> associatedActionInfo = {});
   };
 
   /* The resolver's wrapper of resolution::resolveGeneratedCall.
@@ -595,26 +641,18 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
   // handles setting types of variables for split init with 'out' formals
   void adjustTypesForOutFormals(const CallInfo& ci,
                                 const std::vector<const uast::AstNode*>& asts,
-                                const MostSpecificCandidates& fns);
-
-  // e.g. (a, b) = mytuple
-  // checks that tuple size matches and that the elements are assignable
-  // saves any '=' called into r.associatedFns
-  void resolveTupleUnpackAssign(ResolvedExpression& r,
-                                const uast::AstNode* astForErr,
-                                const uast::Tuple* lhsTuple,
-                                types::QualifiedType lhsType,
-                                types::QualifiedType rhsType);
+                                const CallResolutionResult& crr);
 
   // helper for resolveTupleDecl
   // e.g. var (a, b) = mytuple
   // checks that tuple size matches and establishes types for a and b
   void resolveTupleUnpackDecl(const uast::TupleDecl* lhsTuple,
-                              types::QualifiedType rhsType);
+                              const types::QualifiedType& rhsType);
 
   // e.g. var (a, b) = mytuple
+  void resolveTupleDecl(const uast::TupleDecl* td);
   void resolveTupleDecl(const uast::TupleDecl* td,
-                        const types::Type* useType);
+                        types::QualifiedType useType);
 
   void validateAndSetToId(ResolvedExpression& r,
                           const uast::AstNode* exr,
@@ -641,27 +679,6 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
 
   // Resolve a || or && operation.
   types::QualifiedType typeForBooleanOp(const uast::OpCall* op);
-
-  // find the element, if any, that a name refers to.
-  // Sets outAmbiguous to true if multiple elements of the same name are found,
-  // and to false otherwise.
-  ID scopeResolveEnumElement(const uast::Enum* enumAst,
-                             UniqueString elementName,
-                             const uast::AstNode* nodeForErr,
-                             bool& outAmbiguous);
-  // Given the results of looking up an enum element, construct a QualifiedType.
-  types::QualifiedType
-  typeForScopeResolvedEnumElement(const types::EnumType* enumType,
-                                  const ID& refersToId,
-                                  bool ambiguous);
-  types::QualifiedType
-  typeForScopeResolvedEnumElement(const ID& enumTypeId,
-                                  const ID& refersToId,
-                                  bool ambiguous);
-  // Given a particular enum type, determine the type of a particular element.
-  types::QualifiedType typeForEnumElement(const types::EnumType* type,
-                                          UniqueString elemName,
-                                          const uast::AstNode* astForErr);
 
   // helper to resolve a special call
   // returns 'true' if the call was a special call handled here, false
@@ -751,6 +768,9 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
 
   bool enter(const uast::Range* decl);
   void exit(const uast::Range* decl);
+
+  bool enter(const uast::Array* decl);
+  void exit(const uast::Array* decl);
 
   bool enter(const uast::Domain* decl);
   void exit(const uast::Domain* decl);

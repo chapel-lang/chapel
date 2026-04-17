@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -22,6 +22,8 @@
 #define _PASS_MANAGER_PASSES_H_
 
 #include "PassManager.h"
+#include "baseAST.h"
+#include "ValueMappedTable.h"
 
 /***
   A header containing passes runnable by the new pass manager. The order
@@ -230,19 +232,44 @@ class InsertNilChecks : public PassT<CallExpr*> {
   void process(CallExpr* call) override;
 };
 
-/**
-  This struct is used to store symbols representing the line and file.
-  It is used by the 'InsertLineNumbers' pass.
-
-  TODO: Embed this in the InsertLineNumbers namespace?
+/** This class operates over a container of symbols and transforms their
+    types accordingly. Uses of replaced types are enqueued so that they
+    can be adjusted as well.
 */
-struct LineAndFile {
-  Symbol* line;
-  Symbol* file;
+class AdjustSymbolTypes : public PassTU<Symbol*, SymExpr*> {
+ public:
+  virtual Type* computeAdjustedType(Type* t) const = 0;
+  bool shouldProcess(Symbol* sym) override;
+  void process(Symbol* sym) override;
+  void process(Symbol* newSymbol, SymExpr* oldUse) override;
+
+  // Common predicates that might be useful for child passes.
+  static bool shouldProcessIfNonForeignLinkage(Symbol* sym);
+  static bool shouldProcessDefault(Symbol* sym);
 };
 
 /**
-  Before this pass is run the 'ComputeCallSites' pass must be run.
+  This pass adjusts any symbol with a procedure-pointer type so that it is
+  a new, similiar type that has line/file formals appended.
+
+  After this pass the AST will be in an inconsistent state, and the pass
+  'InsertLineNumbers' must be run in order to fix it up.
+
+  TODO: This pass could be considered a "sub-pass" or a "hidden dependency"
+        of 'InsertLineNumbers', but we don't have the machinery to express
+        that at the moment.
+*/
+class AddLineFileInfoToProcPtrTypes : public AdjustSymbolTypes {
+ public:
+  bool shouldProcess(Symbol* sym) override;
+  Type* computeAdjustedType(Type* t) const override;
+};
+
+/**
+  This pass currently depends on:
+
+    - AddLineFileInfoToProcPtrTypes
+    - ComputeCallSites
 
   TODO: We don't need to recompute all callsites - only the subset
         that we'll be working on. Need to figure out a way to only
@@ -261,22 +288,50 @@ struct LineAndFile {
 */
 class InsertLineNumbers : public PassTU<FnSymbol*, CallExpr*> {
  public:
+  struct LineAndFile {
+    Symbol* line = nullptr;
+    Symbol* file = nullptr;
+  };
+
   void process(FnSymbol* fn) override;
   void process(FnSymbol* fn, CallExpr* call) override;
 
-  static bool shouldPreferASTLine(/*const*/ FnSymbol* fn,
-                                  ModuleSymbol* mod = nullptr);
-  static LineAndFile makeASTLine(CallExpr* call);
-  static void insertLineNumber(CallExpr* call, LineAndFile lineAndFile);
+  static int addFilenameTableEntry(const std::string& name);
+  static int getFilenameTableIndex(const std::string& name);
+  static const std::vector<std::string>& getFilenameTable();
 
  private:
-
-  static void precondition(FnSymbol *fn);
-
+  static bool shouldPreferASTLine(CallExpr* call);
+  static bool mustAddLineInfoFormalsToFn(FnSymbol* fn);
+  static bool mustAddLineInfoActualsToCall(CallExpr* call);
+  static LineAndFile makeASTLine(CallExpr* call);
+  static void insertLineNumber(CallExpr* call, LineAndFile lineAndFile);
+  static void assertInvariants(FnSymbol *fn);
   LineAndFile getLineAndFileForFn(FnSymbol *fn);
 
   std::unordered_map<FnSymbol*, LineAndFile> lineAndFilenameMap;
   std::unordered_set<CallExpr*> fixedCalls;
+
+  static ValueMappedTable<std::string> gFilenameTable;
+};
+
+class StreamlineProcPtrTypesForCodegen : public AdjustSymbolTypes {
+ public:
+  Type* computeAdjustedType(Type* t) const override;
+};
+
+/**
+  This pass adjusts any symbol with a procedure-pointer type so that it is
+  a new, similiar type where all of its widenable components are widened.
+  A widenable component is e.g., a 'ref' formal or a 'class' formal.
+
+  After this pass the AST will be in an inconsistent state, and the pass
+  'InsertWideReferences' must be run in order to fix it up.
+*/
+class WidenComponentsOfProcPtrTypes : public AdjustSymbolTypes {
+ public:
+  bool shouldProcess(Symbol* sym) override;
+  Type* computeAdjustedType(Type* t) const override;
 };
 
 #endif

@@ -1,0 +1,4 @@
+perfkeys: total memory
+files: compilerPerformance.dat
+graphtitle: Average Total Compilation Memory Usage
+ylabel: Memory (MB)

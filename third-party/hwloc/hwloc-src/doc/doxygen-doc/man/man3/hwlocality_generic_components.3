@@ -1,4 +1,4 @@
-.TH "hwlocality_generic_components" 3 "Version 2.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_generic_components" 3 "Version 2.12.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -25,6 +25,13 @@ hwlocality_generic_components \- Components and Plugins: Generic components
 .in +1c
 .ti -1c
 .RI "enum \fBhwloc_component_type_e\fP { \fBHWLOC_COMPONENT_TYPE_DISC\fP, \fBHWLOC_COMPONENT_TYPE_XML\fP }"
+.br
+.in -1c
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "int \fBhwloc_plugin_check_namespace\fP (const char *pluginname, const char *symbol)"
 .br
 .in -1c
 .SH "Detailed Description"
@@ -58,6 +65,30 @@ The data field must point to a struct \fBhwloc_disc_component\fP\&.
 .TP
 \fB\fIHWLOC_COMPONENT_TYPE_XML \fP\fP
 The data field must point to a struct hwloc_xml_component\&. 
+.SH "Function Documentation"
+.PP 
+.SS "int hwloc_plugin_check_namespace (const char * pluginname, const char * symbol)\fC [inline]\fP"
+
+.PP
+Make sure that plugins can lookup core symbols\&. This is a sanity check to avoid lazy-lookup failures when libhwloc is loaded within a plugin, and later tries to load its own plugins\&. This may fail (and abort the program) if libhwloc symbols are in a private namespace\&.
+.PP
+\fBReturns\fP
+.RS 4
+0 on success\&. 
+.PP
+-1 if the plugin cannot be successfully loaded\&. The caller plugin init() callback should return a negative error code as well\&.
+.RE
+.PP
+Plugins should call this function in their init() callback to avoid later crashes if lazy symbol resolution is used by the upper layer that loaded hwloc (e\&.g\&. OpenCL implementations using dlopen with RTLD_LAZY)\&.
+.PP
+\fBNote\fP
+.RS 4
+The build system must define HWLOC_INSIDE_PLUGIN if and only if building the caller as a plugin\&.
+.PP
+This function should remain inline so plugins can call it even when they cannot find libhwloc symbols\&. 
+.RE
+.PP
+
 .SH "Author"
 .PP 
 Generated automatically by Doxygen for Hardware Locality (hwloc) from the source code\&.

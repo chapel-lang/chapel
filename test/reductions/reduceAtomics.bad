@@ -1,1 +1,1 @@
-reduceAtomics.chpl:12: error: + reduce cannot be used on values of the type atomic int(64)
+reduceAtomics.chpl:12: error: + reduce cannot be used on values of the type atomic int(64) because they cannot be summed using '+'

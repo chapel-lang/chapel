@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -258,10 +258,10 @@ module Bytes {
     var buffLen: int = 0; // length of string in bytes
     var buffSize: int = 0; // size of the buffer we own
     var buff: bufferType = nil;
-    var isOwned: bool = true;
     // We use chpl_nodeID as a shortcut to get at here.id without actually constructing
     // a locale object. Used when determining if we should make a remote transfer.
     var locale_id = chpl_nodeID; // : chpl_nodeID_t
+    var isOwned: bool = true;
     // remember to update <=> if you add a field
 
     proc init() {
@@ -586,6 +586,37 @@ module Bytes {
   }
 
   /*
+    :arg pattern: The :type:`bytes` to search for
+
+    :arg indices: an optional range defining the indices to search within,
+                 default is the whole. Halts if the range is not
+                 within ``this.indices``
+
+    :returns: whether the :type:`bytes` contains the pattern.
+  */
+  @edition(last="2.0")
+  @unstable("'.contains' on 'bytes' is unstable and may change in future.")
+  inline proc bytes.contains(pattern: bytes,
+                              indices: range(?) = this.indices): bool {
+    return this.find(pattern, indices) != -1;
+  }
+
+  /*
+    :arg pattern: The :type:`bytes` to search for
+
+    :arg indices: an optional range defining the indices to search within,
+                 default is the whole. Halts if the range is not
+                 within ``this.indices``
+
+    :returns: whether the :type:`bytes` contains the pattern.
+  */
+  @edition(first="preview")
+  inline proc bytes.contains(pattern: bytes,
+                              indices: range(?) = this.indices): bool {
+    return this.find(pattern, indices) != -1;
+  }
+
+  /*
     Counts the number of occurrences of the argument in the :type:`bytes`
 
     :arg pattern: The :type:`bytes` to search for
@@ -657,10 +688,10 @@ module Bytes {
     the :type:`bytes` passed in with the contents of the method
     receiver inserted between them.
 
-    .. code-block:: chapel
-
-        var myBytes = b"|".join(b"a",b"10",b"d");
-        writeln(myBytes); // prints: "a|10|d"
+    .. literalinclude:: ../../../../test/types/bytes/doc-examples/BytesJoin.chpl
+       :language: chapel
+       :start-after: START_EXAMPLE_0
+       :end-before: STOP_EXAMPLE_0
 
     :arg x: :type:`bytes` values to be joined
 
@@ -675,14 +706,10 @@ module Bytes {
     the :type:`bytes` passed in with the contents of the method
     receiver inserted between them.
 
-    .. code-block:: chapel
-
-        var tup = (b"a",b"10",b"d");
-        var myJoinedTuple = b"|".join(tup);
-        writeln(myJoinedTuple); // prints: "a|10|d"
-
-        var myJoinedArray = b"|".join([b"a",b"10",b"d"]);
-        writeln(myJoinedArray); // prints: "a|10|d"
+    .. literalinclude:: ../../../../test/types/bytes/doc-examples/BytesJoin.chpl
+       :language: chapel
+       :start-after: START_EXAMPLE_1
+       :end-before: STOP_EXAMPLE_1
 
     :arg x: An array or tuple of :type:`bytes` values to be joined
 
@@ -1137,22 +1164,21 @@ module Bytes {
     return __primitive("string_concat", s0, s1);
 
   /*
-     :returns: A new :type:`bytes` which is the result of repeating `s`
-               `n` times.  If `n` is less than or equal to 0, an empty bytes is
-               returned.
+    :returns: A new :type:`bytes` which is the result of repeating `s`
+             `n` times.  If `n` is less than or equal to 0, an empty bytes is
+             returned.
 
-     The operation is commutative.
-     For example:
+    The operation is commutative.
+    For example:
 
-     .. code-block:: chapel
+    .. literalinclude:: ../../../../test/types/bytes/doc-examples/BytesRepeatConcat.chpl
+       :language: chapel
+       :start-after: START_EXAMPLE
+       :end-before: STOP_EXAMPLE
 
-        writeln(b"Hello! "*3);
-        or
-        writeln(3*b"Hello! ");
+    Results in:
 
-     Results in::
-
-        Hello! Hello! Hello!
+    .. literalinclude:: ../../../../test/types/bytes/doc-examples/BytesRepeatConcat.good
   */
   operator *(s: bytes, n: integral) : bytes {
     return doMultiply(s, n);

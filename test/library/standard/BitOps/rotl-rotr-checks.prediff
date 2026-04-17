@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+file=$2
+
+sed -E 's/chpl:[0-9]+:/chpl:NN:/' $file > $file.tmp
+mv $file.tmp $file
+
+sed -E 's/got -?[0-9]+/got N/' $file > $file.tmp
+mv $file.tmp $file

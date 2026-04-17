@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -189,11 +189,8 @@ static void test4() {
 // test that we can map _owned to owned
 static void test5() {
   printf("test5\n");
-  auto config = getConfigWithHome();
-  Context ctx(config);
-  Context* context = &ctx;
+  Context* context = buildStdContext();
   ErrorGuard guard(context);
-  setupModuleSearchPaths(context, false, false, {}, {});
 
   std::string program = R"""(
     class C { var y : int; }
@@ -262,11 +259,8 @@ static void test5() {
 // test that we can map _shared to shared
 static void test6() {
   printf("test6\n");
-  auto config = getConfigWithHome();
-  Context ctx(config);
-  Context* context = &ctx;
+  Context* context = buildStdContext();
   ErrorGuard guard(context);
-  setupModuleSearchPaths(context, false, false, {}, {});
 
   std::string program = R"""(
     class C { var y : int; }
@@ -400,17 +394,17 @@ static void testInstantiateManagerRecord() {
   std::string program = R"""(
     class C {}
 
-    proc _owned.foo() {
-      return this;
+    proc _owned.foo() type {
+      return this.type;
     }
 
-    proc _shared.foo() {
-      return this;
+    proc _shared.foo() type {
+      return this.type;
     }
 
 
-    var x = (new owned C()).foo();
-    var y = (new shared C()).foo();
+    type x = (new owned C()).foo();
+    type y = (new shared C()).foo();
   )""";
   auto context = buildStdContext();
   ErrorGuard guard(context);
@@ -439,6 +433,143 @@ static void testInstantiateManagerRecord() {
   checkChplT(vars.at("y"));
 }
 
+// same as testInstantiateManagerRecord, but in the other direction.
+static void testInstantiateOutOfManagerRecord() {
+  printf("testInstantiateOutOfManagerRecord\n");
+
+  std::string program = R"""(
+    class C {}
+
+    proc (owned).foo() type {
+      return this.type;
+    }
+
+    proc (shared).foo() type {
+      return this.type;
+    }
+
+
+    type x = (new _owned(new unmanaged C())).foo();
+    type y = (new _shared(new unmanaged C())).foo();
+    type z = (new _owned(new unmanaged C?())).foo();
+    type w = (new _shared(new unmanaged C?())).foo();
+  )""";
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context, program, {"x", "y", "z", "w"});
+
+  auto checkChplT = [](const QualifiedType qt, const Type* expectManager, bool expectNil) {
+    assert(!qt.isUnknownOrErroneous());
+    assert(qt.type()->isClassType());
+
+    auto ct = qt.type()->toClassType();
+    assert(ct->decorator().isManaged());
+    assert(expectNil ? ct->decorator().isNilable() : ct->decorator().isNonNilable());
+    assert(ct->manager() == expectManager);
+    assert(ct->basicClassType());
+    assert(ct->basicClassType()->name() == "C");
+  };
+
+  auto owned = AnyOwnedType::get(context);
+  auto shared = AnySharedType::get(context);
+  checkChplT(vars.at("x"), owned, false);
+  checkChplT(vars.at("y"), shared, false);
+  checkChplT(vars.at("z"), owned, true);
+  checkChplT(vars.at("w"), shared, true);
+}
+
+// a trickier case is a 'borrowed' formal and an '_owned' actual. So, the
+// actual needs to become 'owned', and then get borrowed.
+static void testBorrowManagerRecord() {
+  printf("testBorrowManagerRecord\n");
+
+  std::string program = R"""(
+    class C {}
+
+    proc (borrowed).foo() type {
+      return this.type;
+    }
+
+    type x = (new _owned(new unmanaged C())).foo();
+    type y = (new _shared(new unmanaged C())).foo();
+  )""";
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context, program, {"x", "y"});
+
+  auto checkChplT = [](const QualifiedType qt) {
+    assert(!qt.isUnknownOrErroneous());
+    assert(qt.type()->isClassType());
+
+    auto ct = qt.type()->toClassType();
+    assert(ct->decorator().isBorrowed());
+    assert(ct->basicClassType());
+    assert(ct->basicClassType()->name() == "C");
+  };
+
+  checkChplT(vars.at("x"));
+  checkChplT(vars.at("y"));
+
+}
+
+static void testInstantiateParentClass() {
+  printf("testInstantiateParentClass\n");
+
+  // test that there's no ambiguity between a parent method and a child
+  // method (ensuring parent doesn't become child as part of instantiation).
+  {
+    std::string program = R"""(
+      class parentCls {
+        param rank: int;
+      }
+
+
+      proc parentCls.foo(): int {}
+
+      class childCls : parentCls(?) {
+      }
+
+      override proc childCls.foo(): int {}
+
+      var c = new unmanaged childCls(1);
+      var x = c.foo();
+    )""";
+    auto context = buildStdContext();
+    ErrorGuard guard(context);
+
+    auto vars = resolveTypesOfVariables(context, program, {"x"});
+    auto qt = vars.at("x");
+    assert(!qt.isUnknownOrErroneous());
+    assert(qt.type()->isIntType());
+  }
+
+  {
+    std::string program = R"""(
+      class parentCls {
+        param rank: int;
+      }
+
+      class childCls : parentCls(?) {
+        param otherThing: int;
+      }
+
+      proc parentCls.foo() type do return this.type;
+
+      var c = new unmanaged childCls(1, 2);
+      param x = c.foo() : string;
+    )""";
+    auto context = buildStdContext();
+    ErrorGuard guard(context);
+
+    auto vars = resolveTypesOfVariables(context, program, {"x"});
+    auto qt = vars.at("x");
+    assert(!qt.isUnknownOrErroneous());
+    ensureParamString(qt, "borrowed parentCls(1)");
+  }
+}
+
 int main() {
   test1();
   test2();
@@ -450,6 +581,9 @@ int main() {
   test8();
 
   testInstantiateManagerRecord();
+  testInstantiateOutOfManagerRecord();
+  testBorrowManagerRecord();
+  testInstantiateParentClass();
 
   return 0;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -51,11 +51,9 @@ bool SafeExprAnalysis::exprHasNoSideEffects(Expr* e, Expr* exprToMove) {
 
       // Call to some sort of function type that is not -> function symbol.
       // Since it's an indirect call, we have to assume it side effects.
-      } else if (isFunctionType(e->qualType().type())) {
-        if (e != ce->baseExpr) {
-          safeExprCache[e] = false;
-          return false;
-        }
+      } else if (isFunctionType(ce->baseExpr->qualType().type())) {
+        safeExprCache[e] = false;
+        return false;
       }
     } else {
       if(!isSafePrimitive(ce)) {
@@ -174,16 +172,17 @@ bool SafeExprAnalysis::fnHasNoSideEffects(FnSymbol* fnSym) {
       if(!isNonEssentialPrimitive(ce)) {
         if(! ce->isPrimitive()) {
           FnSymbol* innerFnSym = ce->theFnSymbol();
-          INT_ASSERT(innerFnSym);
+          INT_ASSERT(innerFnSym || ce->isIndirectCall());
 
-          if(fnSym == innerFnSym) {
-            safeFnCache[fnSym] = true;
-            return true;
-          }
-          else {
-            const bool retval = fnHasNoSideEffects(innerFnSym);
-            safeFnCache[innerFnSym] = retval;
-            return retval;
+          if (innerFnSym) {
+            if(fnSym == innerFnSym) {
+              safeFnCache[fnSym] = true;
+              return true;
+            } else {
+              const bool retval = fnHasNoSideEffects(innerFnSym);
+              safeFnCache[innerFnSym] = retval;
+              return retval;
+            }
           }
         }
         safeFnCache[fnSym] = false;

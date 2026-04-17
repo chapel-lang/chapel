@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -194,6 +194,44 @@ static void test6() {
   assert(pval.type()->toIntType()->bitwidth() == 32);
 }
 
+static void test7() {
+  printf("test7\n");
+
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context,
+      R"""(
+      param x = chpl_INFINITY;
+      param y = chpl_NAN;
+      )""", {"x", "y"});
+
+  ensureParamReal(vars.at("x"), std::numeric_limits<double>::infinity());
+  ensureParamReal(vars.at("y"), std::numeric_limits<double>::quiet_NaN());
+}
+
+static void test8() {
+  printf("test8\n");
+
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context,
+      R"""(
+      param s = "Türkçe";
+      param x = s.size;
+      param y = s[1];
+      param z = s.item(1);
+      param w = b"Türkçe".item(1);
+      )""", {"x", "y", "z", "w"});
+
+  ensureParamInt(vars.at("x"), 6);
+  ensureParamString(vars.at("y"), "ü");
+  ensureParamString(vars.at("z"), "ü");
+  ensureParamString(vars.at("w"), "\xC3", /* isByteString */ true);
+}
+
 int main() {
   test1();
   test2();
@@ -201,6 +239,8 @@ int main() {
   test4();
   test5();
   test6();
+  test7();
+  test8();
 
   return 0;
 }

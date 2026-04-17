@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -186,6 +186,8 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_AND_ASSIGN:
   case PRIM_OR_ASSIGN:
   case PRIM_XOR_ASSIGN:
+  case PRIM_LOGICALAND_ASSIGN:
+  case PRIM_LOGICALOR_ASSIGN:
     if (isCallExpr(call->get(2))) { // callExprs checked in calling function
       // Not necessarily true, but we return true because
       // the callExpr will be checked in the calling function
@@ -333,7 +335,7 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_GPU_KERNEL_LAUNCH:
    return LOCAL_NOT_FAST;
 
-  case PRIM_BREAKPOINT:
+  case PRIM_DEBUG_TRAP:
     return FAST_AND_LOCAL;
 
   case PRIM_CONST_ARG_HASH:

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -49,13 +49,13 @@
 // results in something like:
 // INTERNAL ERROR in compilerSrc.c (lineno): your text here (usrSrc:usrLineno)
 
-#define INT_FATAL      gdbShouldBreakHere(), \
+#define INT_FATAL      debuggerBreakHere(), \
                        setupError(TOSTRING(COMPILER_SUBDIR), __FILE__, __LINE__, 1), handleError
 
-#define USR_FATAL      gdbShouldBreakHere(), \
+#define USR_FATAL      debuggerBreakHere(), \
                        setupError(TOSTRING(COMPILER_SUBDIR), __FILE__, __LINE__, 2), handleError
 
-#define USR_FATAL_CONT gdbShouldBreakHere(), \
+#define USR_FATAL_CONT debuggerBreakHere(), \
                        setupError(TOSTRING(COMPILER_SUBDIR), __FILE__, __LINE__, 3), handleError
 
 #define USR_WARN       setupError(TOSTRING(COMPILER_SUBDIR), __FILE__, __LINE__, 4), handleError
@@ -127,9 +127,9 @@ void        setupError(const char* subdir, const char* filename, int lineno, int
 void        setupDynoError(chpl::ErrorBase::Kind errKind);
 
 void        handleError(const char* fmt, ...) __attribute__ ((format (printf, 1, 2)));
-void        handleError(const BaseAST* ast, const char* fmt, ...)__attribute__ ((format (printf, 2, 3)));
-void        handleError(astlocT astloc, const char* fmt, ...)__attribute__ ((format (printf, 2, 3)));
-void        handleError(chpl::Location, const char* fmt, ...)__attribute__ ((format (printf, 2, 3)));
+void        handleError(const BaseAST* ast, const char* fmt, ...) __attribute__ ((format (printf, 2, 3)));
+void        handleError(astlocT astloc, const char* fmt, ...) __attribute__ ((format (printf, 2, 3)));
+void        handleError(chpl::Location, const char* fmt, ...) __attribute__ ((format (printf, 2, 3)));
 
 void        exitIfFatalErrorsEncountered();
 

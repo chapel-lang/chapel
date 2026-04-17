@@ -1,31 +1,21 @@
-diff --git a/modules/queens_aux.chpl b/modules/queens_aux.chpl
-index 55d2e57..a30e77e 100644
---- a/modules/queens_aux.chpl
-+++ b/modules/queens_aux.chpl
-@@ -105,6 +105,7 @@ module queens_aux{
+--- a/modules/queens_call_serial_search.chpl
++++ b/modules/queens_call_serial_search.chpl
+@@ -7,6 +7,7 @@ module queens_call_serial_search{
+     use queens_constants;
+     use queens_aux;
  
-     }//initial information
++  config const printElapsedTime = false;
  
-+    config const printElapsedTime = false;
+ 	proc queens_call_serial_search(const size: uint(16), const mode: string = "serial", const prepro: bool = false){
  
- 
- 	proc queens_mlocale_print_metrics(size: uint(16), ref metrics: (uint(64),uint(64)),
-@@ -135,11 +136,13 @@ module queens_aux{
-             writef("\n\tNumber of solutions found: %u", metrics[0]);
-         }
- 
--        writef("\n\tElapsed Initial Search: %.3dr", initial.elapsed());
--        writef("\n\tElapsed PGAS Data Distribution: %.3dr", distribution.elapsed());
--        writef("\n\tElapsed Final Search: %.3dr",     final.elapsed());
--        writef("\n\tElapsed TOTAL: %.3dr\n",  final.elapsed()+initial.elapsed()+distribution.elapsed());
--        writef("\n\tPGAS proportion: %.3dr\n", (distribution.elapsed())/(total_time)*100);
-+        if printElapsedTime {
-+          writef("\n\tElapsed Initial Search: %.3dr", initial.elapsed());
-+          writef("\n\tElapsed PGAS Data Distribution: %.3dr", distribution.elapsed());
-+          writef("\n\tElapsed Final Search: %.3dr",     final.elapsed());
-+          writef("\n\tElapsed time: %.3dr\n",  final.elapsed()+initial.elapsed()+distribution.elapsed());
-+          writef("\n\tPGAS proportion: %.3dr\n", (distribution.elapsed())/(total_time)*100);
-+        }
- 
- 
-         writef("\n\tInitial Tree size: %u",initial_tree_size);
+@@ -22,7 +23,9 @@ module queens_call_serial_search{
+ 		writeln("\nSerial Bitset Queens for size ", size);
+ 		writeln("\tNumber of solutions: ", metrics[0]);
+ 		writeln("\tTree size: ", metrics[1]);
+-		writeln("Elapsed time: ", timer.elapsed()*1000, " ms"); // Print elapsed time
++    if printElapsedTime {
++		  writeln("Elapsed time: ", timer.elapsed()*1000, " ms"); // Print elapsed time
++    }
+ 		writeln("Performance: ", metrics[1]/timer.elapsed(), " n/s\n\n"); // Print elapsed time
+ 		writeln("(performance in subproblems evaluation per sec.): "); // Print elapsed time
+         timer.clear(); // Clear timer for parallel loop

@@ -13,6 +13,7 @@ import Curl;
 import DistributedBag;
 import DistributedDeque;
 import DistributedIters;
+import DynamicLoading;
 import EpochManager;
 import ExplicitRefCount;
 import FFTW;

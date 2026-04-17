@@ -55,9 +55,9 @@ void ping_longhandler(gex_Token_t token, void *buf, size_t nbytes) {
 }
 
 gex_AM_Entry_t htable[] = { 
-  { hidx_ping_shorthandler, ping_shorthandler, GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_SHORT, 0 },
-  { hidx_ping_medhandler,   ping_medhandler,   GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_MEDIUM, 0 },
-  { hidx_ping_longhandler,  ping_longhandler,  GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_LONG, 0 }
+  { hidx_ping_shorthandler, (gex_AM_Fn_t)ping_shorthandler, GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_SHORT, 0 },
+  { hidx_ping_medhandler,   (gex_AM_Fn_t)ping_medhandler,   GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_MEDIUM, 0 },
+  { hidx_ping_longhandler,  (gex_AM_Fn_t)ping_longhandler,  GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_LONG, 0 }
 };
 
 int iters = 0;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -25,6 +25,7 @@
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/types/all-types.h"
+#include "chpl/uast/all-uast.h"
 #include "chpl/uast/Function.h"
 
 namespace chpl {
@@ -41,7 +42,7 @@ struct DisambiguationCandidate {
   QualifiedType forwardingTo; // actual passed to receiver when forwarding
   FormalActualMap formalActualMap;
   int idx = 0;
-  SubstitutionsMap promotedFormals;
+  PromotedFormalMap promotedFormals;
   bool nImplicitConversionsComputed = false;
   bool anyNegParamToUnsigned = false;
   int nImplicitConversions = 0;
@@ -1205,7 +1206,7 @@ void DisambiguationCandidate::computeConversionInfo(Context* context, int numAct
                                           fa1->formalType());
 
     if (canPass.passes() &&
-        canPass.conversionKind() == CanPassResult::ConversionKind::PARAM_NARROWING) {
+        canPass.conversionKind() == CanPassResult::PARAM_NARROWING) {
       numParamNarrowing++;
     }
 
@@ -1219,7 +1220,7 @@ void DisambiguationCandidate::computeConversionInfo(Context* context, int numAct
     }
 
     if (canPass.passes() &&
-        canPass.conversionKind() == CanPassResult::ConversionKind::NONE &&
+        canPass.conversionKind() == CanPassResult::NONE &&
         !canPass.promotes()) {
       continue;
     }
@@ -1253,10 +1254,7 @@ void DisambiguationCandidate::computeConversionInfo(Context* context, int numAct
     if (canPass.passes() && canPass.promotes()) {
       actualType = getPromotionType(context, fa1->actualType()).type();
 
-      auto promotionAnchor =
-        this->fn->untyped()->idIsField() ? this->fn->id() : fa1->formal()->id();
-
-      this->promotedFormals[promotionAnchor] = fa1->actualType();
+      this->promotedFormals[fa1->formalIdx()] = fa1->actualType();
     }
 
     nImplicitConversions++;
@@ -1453,6 +1451,10 @@ static int testArgMapping(const DisambiguationContext& dctx,
   auto actualType = actualQualType.type();
   CHPL_ASSERT(actualQualType == fa2->actualType());
 
+  // To ensure '==' and '!=' checks work below, normalize 'owned C' into '_owned(C)'.
+  tryConvertClassTypeIntoManagerRecordIfNeeded(dctx.rc->context(), f1Type, f2Type);
+  tryConvertClassTypeIntoManagerRecordIfNeeded(dctx.rc->context(), f2Type, f1Type);
+
   if (!actualQualType.hasTypePtr()) return -1;
 
   // Give up early for out intent arguments
@@ -1493,6 +1495,18 @@ static int testArgMapping(const DisambiguationContext& dctx,
 
   bool f1Param = f1QualType.hasParamPtr();
   bool f2Param = f2QualType.hasParamPtr();
+
+  // strip param values from QTs since the arg mapping comparison works only
+  // on types. (in production: Type*, no Immediate)
+  //
+  // Without appeal to tradition: one case this fixes is the "more specific"
+  // comparison on formals that determines that int(8) is more specific than
+  // int(16) because only the former can be passed to the latter, and not vice
+  // versa. If `param` values are kept, a param value of 1 of either type
+  // can be passed to the other due to narrowing.
+
+  if (f1Param) f1QualType = QualifiedType(QualifiedType::Kind::IN, f1Type);
+  if (f2Param) f2QualType = QualifiedType(QualifiedType::Kind::IN, f2Type);
 
   bool f1Instantiated = fa1->formalInstantiated();
   bool f2Instantiated = fa2->formalInstantiated();
@@ -1693,7 +1707,11 @@ static void testArgMapHelper(const DisambiguationContext& dctx,
   // since that affects the disambiguation.
 
   if (forwardingTo.type() != nullptr) {
-    actualType = forwardingTo;
+    if (auto fmlDecl = fa.formal()->toNamedDecl()) {
+      if (fmlDecl->name() == USTR("this")) {
+        actualType = forwardingTo;
+      }
+    }
   }
   CanPassResult result = canPass(dctx.rc->context(), actualType, formalType);
   CHPL_ASSERT(result.passes());
@@ -1763,8 +1781,80 @@ static bool isFormalInstantiatedAny(const DisambiguationCandidate& candidate,
  */
 static bool isFormalPartiallyGeneric(const DisambiguationCandidate& candidate,
                                      const FormalActual* fa) {
-  // TODO
-  return false;
+
+  // Production determines "partially generic" when it desugars type epxressions.
+  // Specifically, it desugars things like 'x : foo(?t, s)' to ' x : foo' and a
+  // 'where' clause in which 'x.type.secondField' must be a subtype of 's'.
+  // For the purposes of _only_ determining whether a formal is partially generic,
+  // we don't need to match that logic in full; any one 'where' clause is
+  // enough for a formal to be considered partially generic. So, the below
+  // list is a simplifcation of the logic. You may re-derive it by tracing
+  // 'addToWhereClause' in normalize.cpp.
+  //
+  // * a variadic argument has a size specifier
+  // * specifying an array element (non-query)
+  // * gated on 'formal contains generic expression':
+  //   * any tuple expression (because it constrains .size)
+  //   * any N*t expression (because it constrains .size)
+  //   * 'shared' or 'owned'. I think we should also use 'borrowed' and 'unmanaged'.
+  // * gated on 'formal contains genric expression', in the actuals of a call:
+  //   * any actual that isn't '?' or '?t'
+  //
+  // Here, make an assumption that since this function is called,
+  // the formal was generic to start with. Otherwise, why would we be checking?
+  auto faDecl = fa->formal();
+  if (!faDecl) return false;
+
+  const uast::AstNode* faTypeExpr = nullptr;
+  if (auto va = faDecl->toVarArgFormal()) {
+    faTypeExpr = va->typeExpression();
+  } else if (auto nf = faDecl->toVarLikeDecl()) {
+    faTypeExpr = nf->typeExpression();
+  } else if (faDecl->isTupleDecl()) {
+    // implicitly constrained, since the number of decls constrants its size
+    return true;
+  }
+
+  if (!faTypeExpr) return false;
+
+  if (faTypeExpr->isTuple()) {
+    return true;
+  } else if (auto op = faTypeExpr->toOpCall()) {
+    if (op->numActuals() == 2 && op->op() == USTR("*")) return true;
+  } else if (auto fnCall = faTypeExpr->toFnCall()) {
+    if (parsing::isCallToClassManager(fnCall) &&
+        fnCall->numActuals() >= 1) return true;
+
+    for (auto actual : fnCall->actuals()) {
+      if (actual->isTypeQuery() || isQuestionMark(actual)) continue;
+
+      // any non-fully-generic actual, like 'myType(int)' makes it partially generic.
+      return true;
+    }
+    return false;
+  } else if (auto le = faTypeExpr->toBracketLoop()) {
+    // Assume we're an array expression.
+    if (le->isExpressionLevel()) {
+      auto body = le->body();
+      auto elemTypeExpr = body && body->numStmts() > 0
+                          ? body->stmt(0)
+                          : nullptr;
+
+      if (elemTypeExpr && !elemTypeExpr->isTypeQuery() &&
+          !isQuestionMark(elemTypeExpr)) {
+        return true;
+      }
+    }
+    return false;
+  } else if (faTypeExpr->isIdentifier()) {
+    // the normalize pass (see above) doesn't add 'where' clauses for
+    // identifiers, even if they refer to generic types, so return false.
+    return false;
+  }
+
+  // Some other expression we haven't considered. It's complex (not an identifier),
+  // so assume it's partially generic.
+  return true;
 }
 
 typedef enum {

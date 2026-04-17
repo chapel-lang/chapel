@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -41,15 +41,6 @@ module SortedSet {
   private use Reflection;
   private use IO;
   public use Sort only defaultComparator;
-
-  // TODO: remove this module and its public use when the deprecations have been
-  // removed
-  pragma "ignore deprecated use"
-  private module HideDeprecatedReexport {
-    public use Sort only DefaultComparator;
-  }
-
-  public use HideDeprecatedReexport;
 
   record sortedSet : writeSerializable {
     /* The type of the elements contained in this sortedSet. */

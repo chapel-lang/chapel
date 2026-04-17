@@ -1913,15 +1913,15 @@ gasnetc_ofi_send_ctxt_t *gasnetc_ofi_get_am_header(int isreq, gex_Flags_t flags 
 
     gasnetc_ofi_send_ctxt_t *header = gasneti_lifo_pop(pool);
 #if GASNETC_IMMEDIATE_AMPOLLS
-    if (header) return header;
+    if (header) goto done;
 #else
-    if (header || imm) return header;
+    if (header || imm) goto done;
 #endif
 
     // Poll only the tx queue and retry the pool before (maybe) allocating another buffer
     gasnetc_ofi_tx_poll();
     header = gasneti_lifo_pop(pool);
-    if (header) return header;
+    if (header) goto done;
 
     // Allocate another unless doing so would exceed the max
     gasneti_semaphore_t* sema = isreq ? &num_unallocated_request_buffers
@@ -1936,7 +1936,7 @@ gasnetc_ofi_send_ctxt_t *gasnetc_ofi_get_am_header(int isreq, gex_Flags_t flags 
         } else {
             GASNETC_STAT_EVENT_VAL(ALLOC_REP_BUFF, 1);
         }
-        return header;
+        goto done;
     }
 
 #if GASNETC_IMMEDIATE_AMPOLLS
@@ -1955,13 +1955,19 @@ gasnetc_ofi_send_ctxt_t *gasnetc_ofi_get_am_header(int isreq, gex_Flags_t flags 
                              GASNETC_OFI_POLL_SELECTIVE(OFI_POLL_REPLY));
     }
 
-    gasneti_assert_uint((uintptr_t)&header->sendbuf.buf.medium_buf.data % GASNETI_MEDBUF_ALIGNMENT ,==, 0);
+done:
+    if (header) {
+        GASNETC_STAT_EVENT(ALLOC_HEADER);
+        gasneti_assert_uint((uintptr_t)&header->sendbuf.buf.medium_buf.data % GASNETI_MEDBUF_ALIGNMENT ,==, 0);
+    }
     return header;
 }
 
 // Release unused AM send buffer
-#define gasnetc_ofi_free_am_header(header) \
-        gasneti_lifo_push(header->pool, header)
+#define gasnetc_ofi_free_am_header(header) do {  \
+        gasneti_lifo_push(header->pool, header); \
+        GASNETC_STAT_EVENT(FREE_HEADER);         \
+  } while(0)
 
 // Process completed AM send
 // TODO: Async LC handling goes here
@@ -2087,6 +2093,8 @@ int gasnetc_ep_bindsegment(gasneti_EP_t i_ep, gasneti_Segment_t segment)
       }
     }
 #endif
+
+    gasneti_assert_zeroret( segment && gasneti_mk_segment_context_push(segment) );
 #if GASNETC_HAVE_FI_MR_REG_ATTR
     const char *reg_fn = "fi_mr_regattr";
     int ret = fi_mr_regattr(gasnetc_ofi_domainfd, &attr, flags, mrfd_p);
@@ -2097,6 +2105,8 @@ int gasnetc_ep_bindsegment(gasneti_EP_t i_ep, gasneti_Segment_t segment)
                         attr.access, attr.offset, attr.requested_key,
                         flags, mrfd_p, attr.context);
 #endif
+    gasneti_assert_zeroret( segment && gasneti_mk_segment_context_pop(segment) );
+
     if (ret) {
         if (gasneti_VerboseErrors) {
             gasneti_console_message("WARNING",
@@ -2163,7 +2173,7 @@ void gasnetc_segment_exchange(gex_TM_t tm, gex_EP_t *eps, size_t num_eps)
   // Pack
   p = local;
   for (gex_Rank_t i = 0; i < num_eps; ++i) {
-    gasnetc_EP_t c_ep = (gasnetc_EP_t) gasneti_import_ep(eps[i]);
+    gasnetc_EP_t c_ep = (gasnetc_EP_t) gasneti_import_ep_valid(eps[i]);
     if (! c_ep->_segment) continue;
     p->loc.gex_rank = gasneti_mynode;
     p->loc.gex_ep_index = c_ep->_index;
@@ -2641,7 +2651,6 @@ int gasnetc_medium_commit(
 
 out_imm:
     gasneti_assert(flags & GEX_FLAG_IMMEDIATE);
-    gasnetc_ofi_free_am_header(header);
     return 1;
 }
 
@@ -2653,8 +2662,11 @@ int gasnetc_ofi_am_send_medium(gex_Rank_t dest, gex_AM_Index_t handler,
     header = gasnetc_medium_prep(numargs, isreq, flags GASNETI_THREAD_PASS);
     if (!header) return 1;
     gasneti_assume((source_addr != NULL) || !nbytes);
-    return gasnetc_medium_commit(header, /*fixed*/1, dest, handler, source_addr, nbytes,
+    int rc = gasnetc_medium_commit(header, /*fixed*/1, dest, handler, source_addr, nbytes,
                                  numargs, argptr, isreq, flags GASNETI_THREAD_PASS);
+    gasneti_assert(!rc || (flags & GEX_FLAG_IMMEDIATE));
+    if (rc) gasnetc_ofi_free_am_header(header);
+    return rc;
 }
 
 
@@ -2697,11 +2709,12 @@ out_immediate:
     return NULL;
 }
 
-extern void gasnetc_ofi_CommitMedium(
+extern int gasnetc_ofi_CommitMedium(
                 gasneti_AM_SrcDesc_t sd,
                 int isreq,
                 gex_AM_Index_t handler,
                 size_t nbytes,
+                gex_Flags_t commit_flags,
                 va_list argptr
                 GASNETI_THREAD_FARG)
 {
@@ -2709,11 +2722,18 @@ extern void gasnetc_ofi_CommitMedium(
     unsigned int numargs = header->sendbuf.argnum;
     gex_Rank_t jobrank = sd->_dest._request._rank;
     const void *source_addr = sd->_gex_buf ? NULL : sd->_addr;
-    gasneti_assert_zeroret(
-        gasnetc_medium_commit(header, /*fixed*/0, jobrank, handler,
-                              source_addr, nbytes,
-                              numargs, argptr, isreq, /*flags*/0
-                              GASNETI_THREAD_PASS));
+    int rc = gasnetc_medium_commit(header, /*fixed*/0, jobrank, handler,
+                                   source_addr, nbytes, numargs,
+                                   argptr, isreq, commit_flags GASNETI_THREAD_PASS);
+
+    gasneti_assert(!rc || (commit_flags & GEX_FLAG_IMMEDIATE));
+    return rc;
+}
+
+void gasnetc_ofi_CancelMedium(gasneti_AM_SrcDesc_t sd)
+{
+    gasnetc_ofi_send_ctxt_t *header = (gasnetc_ofi_send_ctxt_t *)sd->_void_p;
+    gasnetc_ofi_free_am_header(header);
 }
 
 #endif // GASNET_NATIVE_NP_ALLOC_REQ_MEDIUM || GASNET_NATIVE_NP_ALLOC_REP_MEDIUM

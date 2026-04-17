@@ -80,6 +80,8 @@ ChapelRange
   from print-module-resolution.ChapelStandard.ChapelRange
 ChapelReduce
   from print-module-resolution.ChapelStandard.ChapelReduce
+Types
+  from print-module-resolution.ChapelStandard.ChapelSyncvar.AlignedTSupport.Types
 AlignedTSupport
   from print-module-resolution.ChapelStandard.ChapelSyncvar.AlignedTSupport
 SyncVarRuntimeSupport
@@ -108,8 +110,6 @@ ChapelIO
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.ChapelDomain.FormattedIO.IO.ChapelIO
 PrecisionSerializer
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.ChapelDomain.FormattedIO.IO.PrecisionSerializer
-Types
-  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.ChapelDomain.FormattedIO.IO.Types
 IO
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.ChapelDomain.FormattedIO.IO
 RegexIoSupport
@@ -125,7 +125,43 @@ ChapelDomain
 List
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.Sort.List
 RadixSortHelp
-  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.Sort.MSBRadixSort.RadixSortHelp
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.Sort.RadixSortHelp
+ChapelUtil
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.Sort.Partitioning.PartitioningUtility.BlockDist.ChapelUtil
+RangeChunk
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.Sort.Partitioning.PartitioningUtility.BlockDist.CompressedSparseLayout.RangeChunk
+Search
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.Sort.Partitioning.PartitioningUtility.BlockDist.CompressedSparseLayout.Search
+CompressedSparseLayout
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.Sort.Partitioning.PartitioningUtility.BlockDist.CompressedSparseLayout
+SparseBlockDist
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.Sort.Partitioning.PartitioningUtility.BlockDist.SparseBlockDist
+BlockDist
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.Sort.Partitioning.PartitioningUtility.BlockDist
+AggregationPrimitives
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.Sort.Partitioning.PartitioningUtility.CopyAggregation.AggregationPrimitives
+CopyAggregation
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.Sort.Partitioning.PartitioningUtility.CopyAggregation
+ChapelHashtable
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.Sort.Partitioning.PartitioningUtility.Time.JSON.Map.ChapelHashtable
+Map
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.Sort.Partitioning.PartitioningUtility.Time.JSON.Map
+JSON
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.Sort.Partitioning.PartitioningUtility.Time.JSON
+Time
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.Sort.Partitioning.PartitioningUtility.Time
+PartitioningUtility
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.Sort.Partitioning.PartitioningUtility
+PCGRandomLib
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.Sort.Partitioning.Random.PCGRandomLib
+Random
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.Sort.Partitioning.Random
+BitOps
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.Sort.Partitioning.BitOps
+Collectives
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.Sort.Partitioning.Collectives
+Partitioning
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.Sort.Partitioning
 ShallowCopy
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.Sort.MSBRadixSort.ShellSort.ShallowCopy
 ShellSort
@@ -148,16 +184,8 @@ ChapelShortArrayTransfer
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.ChapelShortArrayTransfer
 ChapelArray
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray
-ChapelHashtable
-  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelDistribution.ChapelHashtable
 ChapelDistribution
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelDistribution
-RangeChunk
-  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.DefaultSparse.RangeChunk
-HideDeprecatedReexport
-  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.DefaultSparse.Search.HideDeprecatedReexport
-Search
-  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.DefaultSparse.Search
 DefaultSparse
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.DefaultSparse
 ChapelHashing
@@ -190,16 +218,10 @@ ChapelTaskTable
   from print-module-resolution.ChapelStandard.ChapelTaskTable
 MemTracking
   from print-module-resolution.ChapelStandard.MemTracking
-ChapelUtil
-  from print-module-resolution.ChapelStandard.ChapelUtil
 ChapelSerializedBroadcast
   from print-module-resolution.ChapelStandard.ChapelSerializedBroadcast
 ExportWrappers
   from print-module-resolution.ChapelStandard.ExportWrappers
-AggregationPrimitives
-  from print-module-resolution.ChapelStandard.ChapelAutoAggregation.CopyAggregation.AggregationPrimitives
-CopyAggregation
-  from print-module-resolution.ChapelStandard.ChapelAutoAggregation.CopyAggregation
 ChapelAutoAggregation
   from print-module-resolution.ChapelStandard.ChapelAutoAggregation
 ChapelGpuSupport
@@ -210,10 +232,16 @@ ChapelStaticVars
   from print-module-resolution.ChapelStandard.ChapelStaticVars
 ChapelRemoteVars
   from print-module-resolution.ChapelStandard.ChapelRemoteVars
+ChapelUnion
+  from print-module-resolution.ChapelStandard.ChapelUnion
 AutoGpu
   from print-module-resolution.ChapelStandard.AutoGpu
 stopInitCommDiags
   from print-module-resolution.ChapelStandard.stopInitCommDiags
+ChapelDynamicLoading
+  from print-module-resolution.ChapelStandard.ChapelDynamicLoading
+ChapelProgramEntrypoints
+  from print-module-resolution.ChapelStandard.ChapelProgramEntrypoints
 ChapelStandard
   from print-module-resolution.ChapelStandard
 print-module-resolution

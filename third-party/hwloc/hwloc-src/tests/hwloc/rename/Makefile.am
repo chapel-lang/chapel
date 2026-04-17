@@ -77,8 +77,7 @@ needed: cpp.out
 	@if cat cpp.out \
 		| sed -e 's/foobar_ ##   hwloc_ ## /foobar_hwloc_/g' \
 		| sed -e 's/FOOBAR_ ##   hwloc_ ## /FOOBAR_hwloc_/g' \
-		| grep -vw HWLOC_DEBUG_VERBOSE \
-		| grep -vw hwloc_uint64_t \
+		| sed -e 's/hwloc_uint64_t/uint64_t/g' \
 		| egrep -i '(^| |\*)hwloc_' ; then false ; else true ; fi
 	@echo "# done"
 

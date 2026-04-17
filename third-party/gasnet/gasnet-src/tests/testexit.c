@@ -218,10 +218,10 @@ int main(int argc, char **argv) {
   static char usagestr[MAXLINE*(NUMTEST_SEQ+NUMTEST_PAR+NUMCRASHTEST)];
   char testdescstr[MAXLINE];
   gex_AM_Entry_t htable[] = { 
-    { hidx_exit_handler, test_exit_handler, GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_SHORT, 1 },
-    { hidx_ping_handler, ping_handler,      GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_MEDLONG, 0 },
-    { hidx_noop_handler, noop_handler,      GEX_FLAG_AM_REQREP|GEX_FLAG_AM_MEDLONG, 0 },
-    { hidx_npam_handler, npam_handler,      GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_SHORT, 1 },
+    { hidx_exit_handler, (gex_AM_Fn_t)test_exit_handler, GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_SHORT, 1 },
+    { hidx_ping_handler, (gex_AM_Fn_t)ping_handler,      GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_MEDLONG, 0 },
+    { hidx_noop_handler, (gex_AM_Fn_t)noop_handler,      GEX_FLAG_AM_REQREP|GEX_FLAG_AM_MEDLONG, 0 },
+    { hidx_npam_handler, (gex_AM_Fn_t)npam_handler,      GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_SHORT, 1 },
   };
 
   GASNET_Safe(gex_Client_Init(&myclient, &myep, &myteam, "testexit", &argc, &argv, 0));

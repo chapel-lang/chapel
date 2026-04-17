@@ -26,22 +26,22 @@ cleanall: FORCE clean
 clobber: FORCE clean
 	rm -rf install
 
-OLD_PYTHON_ERROR="python3 version 3.9 or later is required to install chpldoc and start_test dependencies. See https://www.python.org/"
+OLD_PYTHON_ERROR="python3 version 3.10 or later is required to install chpldoc and start_test dependencies. See https://www.python.org/"
 
 $(CHPL_VENV_VIRTUALENV_DIR_DEPS1_OK):
 	@# First check the python version is OK
-	@if $(PYTHON) -c 'import sys; sys.exit(int(sys.version_info[:2] >= (3, 9)))'; then \
+	@if $(PYTHON) -c 'import sys; sys.exit(int(sys.version_info[:2] >= (3, 10)))'; then \
 	  echo $(OLD_PYTHON_ERROR); \
 	  exit 1; \
 	fi
 
 	@# Now create the venv to use to get the dependencies
 	$(PYTHON) -m venv $(CHPL_VENV_VIRTUALENV_DIR)
-	@# Now install wheel so we can pip install
+	@# Now install pip/wheel so we can pip install
 	export PATH="$(CHPL_VENV_VIRTUALENV_BIN):$$PATH" && \
 	export VIRTUAL_ENV=$(CHPL_VENV_VIRTUALENV_DIR) && \
 	$(PIP) install --upgrade \
-	  $(CHPL_PIP_INSTALL_PARAMS) $(LOCAL_PIP_FLAGS) wheel && \
+	  $(CHPL_PIP_INSTALL_PARAMS) $(LOCAL_PIP_FLAGS) pip wheel && \
 	touch $(CHPL_VENV_VIRTUALENV_DIR_DEPS1_OK)
 
 ifdef CHPL_PIP_FROM_SOURCE
@@ -93,6 +93,13 @@ chpldoc-venv: install-chpldeps
 
 c2chapel-venv: install-chpldeps
 
+
+ifeq (, $(call isTrue, $(CHPL_DEVELOPER)))
+CHAPEL_PY_VENV_EXTRA_FLAGS=
+else
+CHAPEL_PY_VENV_EXTRA_FLAGS=--verbose --config-settings=cmake.build-type="Debug" --config-settings=build.verbose=true
+endif
+
 # the Python bindings depend on libChplFrontendShared.so and some additional
 # files listed in setup.py. The former is not consistently named (.so on UNIX,
 # .dylib on macOS), making it harder to list as a dependency. The latter we
@@ -107,13 +114,19 @@ chapel-py-venv: FORCE $(CHPL_VENV_VIRTUALENV_DIR_OK)
 	@# Install chapel-py's Python package into the Python Application
 	@# directory structure at $(CHPL_VENV_CHPL_FRONTEND_PY_DEPS)
 	@# this is python version specific
+	@#
+	@# note that CC/CXX are explicitly set to avoid scikit-build/scikit-build-core#1114
 	export PATH="$(CHPL_VENV_VIRTUALENV_BIN):$$PATH" && \
 	export VIRTUAL_ENV=$(CHPL_VENV_VIRTUALENV_DIR) && \
-	CHPL_HOME=$(CHPL_MAKE_HOME) $(PIP) install --upgrade \
+	CC=$(shell which $(CHPL_MAKE_HOST_CC)) \
+	CXX=$(shell which $(CHPL_MAKE_HOST_CXX)) \
+	CMAKE_GENERATOR="Unix Makefiles" \
+	CHPL_HOME=$(CHPL_MAKE_HOME) \
+	  $(PIP) install --upgrade \
+	  $(CHAPEL_PY_VENV_EXTRA_FLAGS) \
 	  $(CHPL_PIP_INSTALL_PARAMS) $(LOCAL_PIP_FLAGS) \
 	  --target $(CHPL_VENV_CHPL_FRONTEND_PY_DEPS) \
-	  $(CHPL_MAKE_HOME)/tools/chapel-py \
-	  -r $(CHPL_VENV_CHAPEL_PY_REQUIREMENTS_FILE)
+	  $(CHPL_MAKE_HOME)/tools/chapel-py
 	mkdir -p $(CHPL_MAKE_HOME)/tools/chapel-py/src/chapel/core
 	CHPL_HOME=$(CHPL_MAKE_HOME) bash \
 		$(CHPL_MAKE_HOME)/util/config/run-in-venv-with-python-bindings.bash \
@@ -126,8 +139,7 @@ cls-test-venv: chapel-py-venv
 	export VIRTUAL_ENV=$(CHPL_VENV_VIRTUALENV_DIR) && \
 	CHPL_HOME=$(CHPL_MAKE_HOME) $(PIP) install \
 	  $(CHPL_PIP_INSTALL_PARAMS) $(LOCAL_PIP_FLAGS) \
-	  --target $(CHPL_VENV_CHPLDEPS) \
-	  $(CHPL_MAKE_HOME)/tools/chapel-py \
+	  --target $(CHPL_VENV_CHPL_FRONTEND_PY_DEPS) \
 	  -r $(CHPL_VENV_CLS_TEST_REQUIREMENTS_FILE)
 	@# Using --upgrade above breaks the test venv, because there's a bug
 	@# in its interaction with --target. As a result, this command does

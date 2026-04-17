@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -26,12 +26,12 @@ All Chapel programs include :proc:`~IO.write`, :proc:`~IO.writeln` and
 :proc:`~IO.writef` by default. This allows for a simple implementation of a
 Hello World program:
 
-.. code-block:: chapel
+.. literalinclude:: ../../../../test/library/standard/ChapelIO/doc-examples/ChapelIOExamples.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE_0
+   :end-before: STOP_EXAMPLE_0
 
- writeln("Hello, World!");
- // outputs
- // Hello, World!
-
+.. begin ChapelIO docs
  */
 pragma "module included by default"
 @unstable("The module name 'ChapelIO' is unstable.  If you want to use qualified naming on the symbols within it, please 'use' or 'import' the :mod:`IO` module")
@@ -58,8 +58,8 @@ module ChapelIO {
       param n = __primitive("num fields", t);
       var ret = 0;
       pragma "no init"
-      var dummy : t;
-      for param i in 1..n {
+      var dummy: t;
+      for param i in 0..<n {
         if isIoField(dummy, i) then
           ret += 1;
       }
@@ -74,12 +74,12 @@ module ChapelIO {
       // print out just the set field for a union.
       writer.writeLiteral("(");
       param num_fields = __primitive("num fields", t);
-      var id = __primitive("get_union_id", x);
-      for param i in 1..num_fields {
+      var id = x.getActiveIndex();
+      for param i in 0..<num_fields {
         if isIoField(x, i) && i == id {
           const eq = __primitive("field num to name", t, i) + " = ";
           writer.writeLiteral(eq);
-          writer.write(__primitive("field by num", x, i));
+          writer.write(x(i));
         }
       }
       writer.writeLiteral(")");
@@ -109,11 +109,10 @@ module ChapelIO {
       }
 
       param num_fields = __primitive("num fields", t);
-      for param i in 1..num_fields {
+      for param i in 0..<num_fields {
         if isIoField(x, i) {
-          param name : string = __primitive("field num to name", x, i);
-          ser.writeField(name,
-                         __primitive("field by num", x, i));
+          param name : string = __primitive("field num to name", t, i);
+          ser.writeField(name, __primitive("field by num", x, i));
         }
       }
 
@@ -138,9 +137,9 @@ module ChapelIO {
       }
 
       param num_fields = __primitive("num fields", t);
-      for param i in 1..num_fields {
+      for param i in 0..<num_fields {
         if isIoField(x, i) {
-          param name : string = __primitive("field num to name", x, i);
+          param name : string = __primitive("field num to name", t, i);
           ref field = __primitive("field by num", x, i);
           des.readField(name, field);
         }
@@ -432,19 +431,17 @@ module ChapelIO {
 
   @chpldoc.nodoc
   proc chpl_stringify_wrapper(const args ...):string {
-    use IO only chpl_stringify;
+    import IO.{chpl_stringify};
     return chpl_stringify((...args));
   }
 
+  // NOTE: Moved here to avoid circular dependencies in 'StringCasts.chpl'.
   //
-  // handle casting FCF types to string
+  // Cast a procedure value to a string. This path handles both the legacy
+  // class types and the newer procedure pointer types.
   //
   @chpldoc.nodoc
-  proc isFcfType(type t) param do
-    return __primitive("is fcf type", t);
-
-  @chpldoc.nodoc
-  operator :(x, type t:string) where isFcfType(x.type) do
+  operator :(x: ?t1, type t2: string) where isProcedureType(t1) {
     return chpl_stringify_wrapper(x);
-
+  }
 }

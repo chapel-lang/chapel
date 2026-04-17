@@ -1,12 +1,10 @@
-:title: Mason Guide: *Testing*
-
 .. _testing-with-mason:
-        
+
 Testing your Package
 ~~~~~~~~~~~~~~~~~~~~
 
 Mason provides the functionality to test packages through the ``mason test``
-subcommand. There are two styles of writing mason tests:
+subcommand. There are two styles of writing Mason tests:
 
 1. Tests that utilize the ``UnitTest`` module to determine pass/fail status
 2. Tests that rely on the exit code to determine pass/fail status
@@ -53,7 +51,7 @@ These tests should be configured such that a failure produces an exit code other
 Returning a non-zero exit code can be accomplished by calling ``exit()`` or
 throwing an uncaught error.
 
-Both exit-code and ``UnitTest`` style tests can be used within a single mason
+Both exit-code and ``UnitTest`` style tests can be used within a single Mason
 package.
 
 After adding our test, the package structure will be as follows::
@@ -67,7 +65,7 @@ After adding our test, the package structure will be as follows::
    │   └── myPackage.chpl
    ├── target/
    │   ├── debug/
-   │   │   └── myPackage/
+   │   │   └── myPackage
    │   ├── example/
    │   ├── release/
    │   │   └── myPackage
@@ -101,17 +99,27 @@ Specific tests can be run by listing their names or substrings of their names as
 
 Specifying tests to run in the command line ignores the list of tests in `Mason.toml`, and searches all files in `test/`.
 
+Tests can be further filtered using the ``filter`` flag. The ``filter`` flag
+takes a regular expression for test names to run inside each test file. For
+example, if ``test/testFile.chpl`` contains three unit tests named ``testA``,
+``testB``, and ``testC``, the following command will run only ``testA`` and
+``testB``:
+
+.. code-block:: sh
+
+    mason test --filter 'testA|testB' test/testFile.chpl
+
 Additional output can be displayed by throwing the ``--show`` flag.
 
 .. note::
 
-    ``mason test`` can also be used outside of a mason package as a
+    ``mason test`` can also be used outside of a Mason package as a
     ``UnitTest`` test runner. See :chpl:mod:`UnitTest` for more information.
 
 Tests can be listed in the ``Mason.toml`` as a TOML array of strings for the
 ``tests`` field:
 
-.. code-block:: text
+.. code-block:: toml
 
    [brick]
    chplVersion = "1.18.0"

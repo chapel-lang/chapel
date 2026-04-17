@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -64,9 +64,6 @@ typedef float c_float;
 typedef double c_double;
 typedef void* raw_c_void_ptr;
 typedef void* c_fn_ptr;  // a white lie
-// Rehook used for convenience in unstable-izing this soon to be removed symbol,
-// similar to c_string_rehook.
-typedef c_fn_ptr c_fn_ptr_rehook;
 typedef uintptr_t c_uintptr;
 typedef intptr_t c_intptr;
 typedef ptrdiff_t c_ptrdiff;
@@ -395,6 +392,6 @@ typedef int8_t chpl_arg_bundle_kind_t;
 
 #include "chpl-string-support.h"
 
-#include "gdb.h"
+#include "debugger.h"
 
 #endif

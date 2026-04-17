@@ -1,6 +1,0 @@
-startEndReaderWriter.chpl:5: warning: openUrlReader with a start and/or end argument is deprecated. Please use the new region argument instead.
-startEndReaderWriter.chpl:6: warning: openUrlReader with a start and/or end argument is deprecated. Please use the new region argument instead.
-startEndReaderWriter.chpl:7: warning: openUrlReader with a start and/or end argument is deprecated. Please use the new region argument instead.
-startEndReaderWriter.chpl:9: warning: openUrlWriter with a start and/or end argument is deprecated. Please use the new region argument instead.
-startEndReaderWriter.chpl:10: warning: openUrlWriter with a start and/or end argument is deprecated. Please use the new region argument instead.
-startEndReaderWriter.chpl:11: warning: openUrlWriter with a start and/or end argument is deprecated. Please use the new region argument instead.

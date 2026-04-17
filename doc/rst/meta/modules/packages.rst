@@ -7,7 +7,7 @@ Package modules are libraries that currently live outside of the
 Chapel Standard Library, either because they are not considered to be
 fundamental enough or because they are not yet mature enough for
 inclusion there.  Over time, we expect many of these to become
-``mason`` packages.
+Mason packages.
 
 .. warning::
 
@@ -21,7 +21,6 @@ Algorithms
    Crypto <packages/Crypto>
    NPBRandom <packages/NPBRandom>
    Search <packages/Search>
-   Sort <packages/Sort>
 
 Communication (Inter-Locale)
 ----------------------------
@@ -41,7 +40,6 @@ Data Structures
 
    ConcurrentMap <packages/ConcurrentMap>
    DistributedBag <packages/DistributedBag>
-   DistributedBagDeprecated <packages/DistributedBagDeprecated>
    DistributedDeque <packages/DistributedDeque>
    DistributedIters <packages/DistributedIters>
    LinkedLists <packages/LinkedLists>
@@ -58,7 +56,6 @@ File Formats and I/O
 
    ChplFormat <packages/ChplFormat>
    HDF5 <packages/HDF5>
-   HDFS <packages/HDFS>
    Image <packages/Image>
    NetCDF <packages/NetCDF>
    ObjectSerialization <packages/ObjectSerialization>
@@ -74,6 +71,7 @@ Interoperability
 .. toctree::
    :maxdepth: 1
 
+   Dynamic Loading <packages/DynamicLoading>
    Python <packages/Python>
 
 Math / Numerical Computing

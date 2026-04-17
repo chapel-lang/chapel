@@ -1,4 +1,4 @@
-# Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+# Copyright 2021-2026 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -26,6 +26,17 @@ set(CMAKE_C_STANDARD_REQUIRED True)
 
 set(SRC_DIR     ${CMAKE_CURRENT_SOURCE_DIR})
 
+
+if (CHPL_HOST_MEM STREQUAL "mimalloc")
+if (APPLE)
+    # filter mimalloc out of CHPL_HOST_BUNDLED_LINK_ARGS
+    # this is a hack to avoid linking mimalloc twice
+    string(REPLACE "-lmimalloc" "" CHPL_HOST_BUNDLED_LINK_ARGS "${CHPL_HOST_BUNDLED_LINK_ARGS}")
+    string(STRIP "${CHPL_HOST_BUNDLED_LINK_ARGS}" CHPL_HOST_BUNDLED_LINK_ARGS)
+endif()
+endif()
+
+
 # TODO: See if we can use these directly, I am not sure we can because
 # the CMake way to concat strings requires an output variable
 string(CONCAT CHPL_LLVM_COMP_ARGS ${CHPL_HOST_BUNDLED_COMPILE_ARGS} " " ${CHPL_HOST_SYSTEM_COMPILE_ARGS})
@@ -50,7 +61,7 @@ add_custom_command(
           ${SRC_DIR}/../util/config/generate-license
           ${SRC_DIR}/../
           ${SRC_DIR}/main
-  DEPENDS ${SRC_DIR}/../LICENSE
+  DEPENDS ${SRC_DIR}/../LICENSE ${SRC_DIR}/../util/config/generate-license
   COMMENT "writing LICENSE file updates..."
   VERBATIM)
 
@@ -62,7 +73,7 @@ add_custom_command(
           ${SRC_DIR}/../util/config/generate-copyright
           ${SRC_DIR}/../
           ${SRC_DIR}/main
-  DEPENDS ${SRC_DIR}/../COPYRIGHT
+  DEPENDS ${SRC_DIR}/../COPYRIGHT ${SRC_DIR}/../util/config/generate-copyright
   COMMENT "writing COPYRIGHT file updates..."
   VERBATIM)
 
@@ -73,7 +84,7 @@ add_custom_command(
   COMMAND ${CHPL_CMAKE_PYTHON}
           ${SRC_DIR}/../util/config/generate-reservedSymbolNames
           ${SRC_DIR}/codegen
-  DEPENDS ${SRC_DIR}/codegen/reservedSymbolNames
+  DEPENDS ${SRC_DIR}/codegen/reservedSymbolNames ${SRC_DIR}/../util/config/generate-reservedSymbolNames
   COMMENT "writing reservedSymbolNames.h file updates..."
   VERBATIM)
 
@@ -88,6 +99,7 @@ target_include_directories(chpl PRIVATE
         ${SRC_DIR}/../build/compiler/${CHPL_COMPILER_SUBDIR} # for enabling CONFIGURED_PREFIX in configured_prefix.h
         ${SRC_DIR}/../runtime/include/encoding # support for sharing unicode support between compiler and runtime
         ${SRC_DIR}/../third-party/utf8-decoder # support for sharing unicode support between compiler and runtime
+        ${SRC_DIR}/../runtime/include/fileinfo # support for sharing line/file support between compiler and runtime
         )
 
 # all the compiler subdirectories with sources do these same things

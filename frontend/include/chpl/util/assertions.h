@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -43,9 +43,13 @@ void chpl_unimpl(const char* filename, const char* func, int lineno,
 // release mode
 #define CHPL_ASSERT(expr__) \
   do { \
-    bool ignore = expr__; \
-    (void) ignore; \
-   } while (0)
+    if constexpr (false) { \
+      auto res = expr__; \
+      (void) res; \
+    } \
+  } while (0)
+
+#define CHPL_UNIMPL(msg__) do {} while (0)
 
 #else
 // debug mode
@@ -54,16 +58,14 @@ void chpl_unimpl(const char* filename, const char* func, int lineno,
     chpl::assertion(expr__, __FILE__, __FUNCTION__, __LINE__, #expr__); \
   } while (0)
 
-#endif
-
 /// \cond DO_NOT_DOCUMENT
-
 #define CHPL_UNIMPL(msg__) \
   do { \
     chpl::chpl_unimpl(__FILE__, __FUNCTION__, __LINE__, msg__); \
   } while (0)
-
 /// \endcond DO_NOT_DOCUMENT
+
+#endif
 
 /*
   Set whether or not assertions in dyno are enabled
@@ -76,6 +78,11 @@ void setAssertions(bool enable);
 void setAssertionsFatal(bool enable);
 
 /*
+  Set whether or not unimplemented warnings are enabled in dyno
+*/
+void setUnimplementedWarnings(bool enable);
+
+/*
   Get whether or not assertions are enabled in dyno
 */
 bool assertionsAreOn();
@@ -84,6 +91,11 @@ bool assertionsAreOn();
   Get whether or not failed assertions are fatal in dyno
 */
 bool assertionsAreFatal();
+
+/*
+  Get whether or not unimplemented warnings are enabled in dyno
+*/
+bool unimplementedWarningsAreOn();
 
 
 } // namespace chpl

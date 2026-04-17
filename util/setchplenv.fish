@@ -23,7 +23,7 @@ eval set MYMANPATH (eval "$CHPL_PYTHON" "$chpl_home/util/config/fixpath.py \" $M
 # Double check $MYPATH before overwriting $PATH
 if [ (count $MYPATH) = 0 -o ! $exitcode = 0 ]
     echo "Error:  util/config/fixpath.py failed"
-    echo "        Make sure you have Python 2.5+"
+    echo "        Make sure you have Python 3.5+"
     exit 1
 end
 

@@ -1,0 +1,51 @@
+[project]
+name = "chapel"
+version = "0.1"
+description = "Python bindings for Chapel's frontend library"
+readme = "README.md"
+license = { text = "Apache-2.0" }
+maintainers = [{ name = "Chapel Team" }]
+classifiers = [
+  "License :: OSI Approved :: Apache Software License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+]
+keywords = ["chapel", "compiler", "frontend", "dyno"]
+requires-python = ">=3.10"
+dependencies = [
+  "attrs==25.3.0",
+  "cattrs==25.1.1",
+  "lsprotocol==2023.0.1",
+  "pygls==1.3.1",
+  "typeguard==4.4.4",
+  "ConfigArgParse==1.7.1",
+  "PyYAML==6.0.2",         # required by ConfigArgParse
+  "toml==0.10.2",          # required by ConfigArgParse
+  # needed for <python3.11
+  "exceptiongroup==1.3.0",
+]
+
+[project.urls]
+Homepage = "https://chapel-lang.org"
+Documentation = "https://chapel-lang.org/docs/tools/chapel-py/chapel-py.html"
+Repository = "https://github.com/chapel-lang/chapel"
+"Bug Tracker" = "https://github.com/chapel-lang/chapel/issues"
+
+[build-system]
+requires = ["scikit-build-core>=0.11.5"]
+build-backend = "scikit_build_core.build"
+
+[tool.scikit-build]
+wheel.py-api = "cp310" # limited API for 3.10
+wheel.expand-macos-universal-tags = true
+minimum-version = "build-system.requires"
+build-dir = "./build/{wheel_tag}"
+install.components = ["python"]
+cmake.version = ">=3.20"
+cmake.args = []
+cmake.build-type = "Release"
+cmake.source-dir = "."

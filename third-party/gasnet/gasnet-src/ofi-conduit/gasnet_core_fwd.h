@@ -13,7 +13,7 @@
 #ifndef _GASNET_CORE_FWD_H
 #define _GASNET_CORE_FWD_H
 
-#define GASNET_CORE_VERSION      1.3
+#define GASNET_CORE_VERSION      1.4
 #define GASNET_CORE_VERSION_STR  _STRINGIFY(GASNET_CORE_VERSION)
 #define GASNET_CORE_NAME         OFI
 #define GASNET_CORE_NAME_STR     _STRINGIFY(GASNET_CORE_NAME)
@@ -189,6 +189,8 @@
   /* this can be used to add conduit-specific 
      statistical collection values (see gasnet_trace.h) */
 #define GASNETC_CONDUIT_STATS(CNT,VAL,TIME)  \
+    CNT(C, ALLOC_HEADER, headers)            \
+    CNT(C, FREE_HEADER, headers)             \
     VAL(C, ALLOC_REQ_BUFF, buffers)          \
     VAL(C, ALLOC_REP_BUFF, buffers)          \
     VAL(C, CQ_READ_TX, events)               \

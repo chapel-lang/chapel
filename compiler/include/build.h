@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -73,16 +73,6 @@ Expr* buildDotExpr(const char* base, const char* member);
 
 BlockStmt* buildChapelStmt(Expr* expr = NULL);
 BlockStmt* buildErrorStandin();
-
-DefExpr* buildDeprecated(DefExpr* def);
-DefExpr* buildDeprecated(DefExpr* def, const char* msg);
-BlockStmt* buildDeprecated(BlockStmt* block);
-BlockStmt* buildDeprecated(BlockStmt* block, const char* msg);
-
-DefExpr* buildUnstable(DefExpr* def);
-DefExpr* buildUnstable(DefExpr* def, const char* msg);
-BlockStmt* buildUnstable(BlockStmt* block);
-BlockStmt* buildUnstable(BlockStmt* block, const char* msg);
 
 BlockStmt* buildUseStmt(std::vector<PotentialRename*>* args, bool privateUse);
 BlockStmt* buildUseStmt(Expr* mod, const char* rename,
@@ -214,8 +204,7 @@ BlockStmt* buildLocalStmt(Expr* stmt);
 BlockStmt* buildManagerBlock(Expr* managerExpr, std::set<Flag>* flags,
                              const char* resourceName,
                              Symbol*& outStoredResource);
-BlockStmt* buildManageStmt(BlockStmt* managers, BlockStmt* block,
-                           ModTag modTag);
+Expr* buildManageStmt(BlockStmt* managers, BlockStmt* block, ModTag modTag);
 BlockStmt* buildOnStmt(Expr* expr, Expr* stmt);
 BlockStmt* buildBeginStmt(CallExpr* byref_vars, Expr* stmt);
 BlockStmt* buildSyncStmt(Expr* stmt);

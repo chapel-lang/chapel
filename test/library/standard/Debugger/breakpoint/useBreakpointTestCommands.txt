@@ -1,0 +1,6 @@
+r
+p/d myVariable
+c
+p/d myVariable
+c
+quit

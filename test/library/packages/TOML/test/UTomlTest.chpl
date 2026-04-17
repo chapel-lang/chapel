@@ -38,7 +38,7 @@ proc main() {
   var tomlData2 = new shared Toml(tbl2);
 
   // copy Toml A.B in tomlData to Toml A in TomlData2
-  tomlData2["A"] = new shared Toml(tomlData["A"]!);
+  tomlData2.set("A", new shared Toml(tomlData["A"]!));
   writeln(tomlData["A"]);
   writeln("Should be the same as");
   writeln(tomlData2["A"]);

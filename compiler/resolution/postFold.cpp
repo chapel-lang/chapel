@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -32,6 +32,7 @@
 #include "symbol.h"
 
 #include "../../frontend/lib/immediates/prim_data.h"
+#include "chpl/util/string-utils.h"
 
 static Expr* postFoldNormal(CallExpr* call);
 
@@ -298,6 +299,31 @@ static std::string getStringAndIndexFromPrim(CallExpr* call, size_t* idx) {
   return unescaped;
 }
 
+static VarSymbol* getFieldAsVarSymbol(Expr* fieldExpr, AggregateType* type) {
+  VarSymbol* retval = NULL;
+
+  if (fieldExpr) {
+    if (SymExpr* se = toSymExpr(fieldExpr)) {
+      if (Symbol* sym = se->symbol()) {
+        if (getSymbolImmediate(sym)) {
+          // this must be the name of the field
+          const char* fieldName = get_string(fieldExpr);
+          retval = toVarSymbol(type->getField(fieldName));
+        } else if (VarSymbol* vs = toVarSymbol(sym)) {
+          // this must be the field itself
+          retval = vs;
+        }
+      }
+    }
+  }
+
+  if (retval == NULL) {
+    INT_FATAL(fieldExpr, "Unexpected expression in getFieldAsVarSymbol()");
+  }
+
+  return retval;
+}
+
 static Expr* postFoldPrimop(CallExpr* call) {
   Expr* retval = call;
 
@@ -334,11 +360,10 @@ static Expr* postFoldPrimop(CallExpr* call) {
 
   } else if (call->isPrimitive(PRIM_GET_MEMBER) == true) {
     SymExpr*       base      = toSymExpr (call->get(1));
-    const char*    fieldName = get_string(call->get(2));
 
     Type*          t         = canonicalDecoratedClassType(base->getValType());
     AggregateType* at        = toAggregateType(t);
-    VarSymbol*     field     = toVarSymbol(at->getField(fieldName));
+    VarSymbol*     field     = getFieldAsVarSymbol(call->get(2), at);
 
     if (field->isParameter() == true || field->isType() == true) {
       if (Symbol* value = at->getSubstitution(field->name)) {
@@ -357,14 +382,13 @@ static Expr* postFoldPrimop(CallExpr* call) {
 
   } else if (call->isPrimitive(PRIM_GET_MEMBER_VALUE) == true) {
     SymExpr*       base      = toSymExpr (call->get(1));
-    const char*    fieldName = get_string(call->get(2));
 
     Type*          t         = base->getValType();
     AggregateType* at        = toAggregateType(t);
     if (DecoratedClassType* dt = toDecoratedClassType(t))
       at = dt->getCanonicalClass();
 
-    VarSymbol*     field     = toVarSymbol(at->getField(fieldName));
+    VarSymbol*     field     = getFieldAsVarSymbol(call->get(2), at);
 
     if (field->isParameter() == true || field->isType() == true) {
       if (field->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) == false) {
@@ -528,7 +552,7 @@ static Expr* postFoldPrimop(CallExpr* call) {
     // Count it as an initial UTF-8 byte.
     size_t ncodepoints  = (nbytes > 0);
     for (size_t i = 1; i < nbytes; ++i)
-      if (isInitialUTF8Byte(unesc[i]))
+      if (chpl::isInitialUTF8Byte(unesc[i]))
         ++ncodepoints;
 
     retval = new SymExpr(new_IntSymbol(ncodepoints, INT_SIZE_DEFAULT));

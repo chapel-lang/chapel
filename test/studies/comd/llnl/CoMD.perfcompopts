@@ -1,1 +1,1 @@
--suseBulkTransferStride -sdataParTasksPerLocale=5 -sdefaultDoRADOpt=true -sdisableAliasedBulkTransfer=false -M utils -ssimpleTimings
+-suseBulkTransferStride -sdataParTasksPerLocale=5 -sdefaultDoRADOpt=true -M utils -ssimpleTimings

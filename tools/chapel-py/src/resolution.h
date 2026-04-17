@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2024-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -20,6 +20,7 @@
 #include "chpl/uast/AstNode.h"
 #include "chpl/types/Type.h"
 #include "chpl/resolution/resolution-types.h"
+#include "core-types.h"
 
 const chpl::resolution::ResolvedExpression*
 scopeResolveResultsForNode(chpl::Context* context, const chpl::uast::AstNode* node);
@@ -30,6 +31,8 @@ resolveResultsForNode(chpl::Context* context, const chpl::uast::AstNode* node);
 const chpl::uast::AstNode* const&
 nodeOrNullFromToId(chpl::Context* context, const chpl::uast::AstNode* node);
 
+bool const& nodeRefersToBuiltin(chpl::Context* context, const chpl::uast::AstNode* node);
+
 chpl::types::QualifiedType const&
 typeForNode(chpl::Context* context, const chpl::uast::AstNode* node);
 
@@ -38,3 +41,15 @@ calledFnForNode(chpl::Context* context, const chpl::uast::AstNode* node);
 
 std::vector<int> const&
 actualOrderForNode(chpl::Context* context, const chpl::uast::AstNode* node);
+
+std::vector<const chpl::uast::Function*> const&
+findTestFunctionsForModule(chpl::Context* context, const chpl::uast::Module* mod);
+
+const chpl::uast::FnCall* const&
+findUnitTestMainForModule(chpl::Context* context, const chpl::uast::Module* mod);
+
+std::pair<const chpl::resolution::TypedFnSignature*, const chpl::resolution::PoiScope*> const&
+makeDefaultRectangular(chpl::Context* context, const chpl::resolution::TypedFnSignature* sig, const chpl::resolution::PoiScope* poiScope);
+
+TypedSignatureObject*
+createCanonicalTypedSignatureObject(ContextObject* context, const chpl::resolution::TypedFnSignature* sig, const chpl::resolution::PoiScope* poiScope);

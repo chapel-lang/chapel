@@ -1,0 +1,7 @@
+throwQuery.chpl:1: In function 'main':
+throwQuery.chpl:2: error: unresolved call 'Error.init(?)'
+$CHPL_HOME/modules/standard/Errors.chpl:nnnn: note: this candidate did not match: Error.init(msg: string)
+throwQuery.chpl:2: note: because actual argument #1 with type '_uninstantiated'
+$CHPL_HOME/modules/standard/Errors.chpl:nnnn: note: is passed to formal 'msg: string'
+throwQuery.chpl:2: note: other candidates are:
+$CHPL_HOME/modules/standard/Errors.chpl:nnnn: note:   Error.init()

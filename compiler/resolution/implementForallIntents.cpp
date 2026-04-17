@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -254,7 +254,8 @@ static void insertFinalGenerate(LoopWithShadowVarsInterface* fs,
 {
   if (fs->needsInitialAccumulate()) {
     VarSymbol* genTemp = newTemp("chpl_gentemp");
-    fs->asExpr()->insertAfter(new CallExpr("=", fiVarSym, genTemp));
+    fs->asExpr()->insertAfter("chpl_check_assign_reduce_result(%S,%S)",
+                              fiVarSym, genTemp);
     fs->asExpr()->insertAfter("'move'(%S, generate(%S,%S))",
                     genTemp, gMethodToken, globalOp);
     fs->asExpr()->insertAfter(new DefExpr(genTemp));
@@ -641,7 +642,7 @@ static void handleTaskPrivate(LoopWithShadowVarsInterface* fs, ShadowVarSymbol* 
 
 static void handleOneShadowVar(LoopWithShadowVarsInterface* fs, ShadowVarSymbol* svar)
 {
-  if (svar->id == breakOnResolveID) gdbShouldBreakHere();
+  if (svar->id == breakOnResolveID) debuggerBreakHere();
 
   switch (svar->intent) {
     case TFI_IN:           handleIn(fs, svar, false);   break;
@@ -796,7 +797,7 @@ static void resolveShadowVarTypeIntent(LoopWithShadowVarsInterface* fs,
 // If 'sym' is the receiver and 'fs' has a shadow var for the receiver,
 // return that shadow var.
 static ShadowVarSymbol* svarForReceiver(LoopWithShadowVarsInterface* fs, Symbol* sym) {
-  if (sym->name == astrThis)
+  if (sym->name == astrThis && !sym->hasFlag(FLAG_TYPE_VARIABLE))
     for_shadow_vars(SV, TEMP, fs)
       if (SV->name == astrThis)
         return SV;
@@ -805,7 +806,7 @@ static ShadowVarSymbol* svarForReceiver(LoopWithShadowVarsInterface* fs, Symbol*
 
 // Helper: if this is a 'this' that needs our attention, return its type.
 static AggregateType* isRecordReceiver(Symbol* sym) {
-  if (sym->hasFlag(FLAG_ARG_THIS))
+  if (sym->hasFlag(FLAG_ARG_THIS) && !sym->hasFlag(FLAG_TYPE_VARIABLE))
     if (Type* type = sym->type->getValType())
       if (isUserRecord(type))
         return toAggregateType(type);

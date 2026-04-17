@@ -19,16 +19,19 @@ testDom("Block", blockDist.createDomain(dom));
 testDom("Block", blockDist.createDomain((...rng)));
 testDom("Block opts", blockDist.createDomain(dom, targetLocales=tls));
 testDom("Block opts:", blockDist.createDomain((...rng), targetLocales=tls));
+testDom("Block opts:", blockDist.createDomain((...rng), tls));
 
 testDom("Stencil:", stencilDist.createDomain(dom));
 testDom("Stencil:", stencilDist.createDomain((...rng)));
 testDom("Stencil opts:", stencilDist.createDomain(dom, targetLocales=tls, fluff=(2, 2), periodic=true));
 testDom("Stencil opts:", stencilDist.createDomain((...rng), targetLocales=tls, fluff=(2, 2), periodic=true));
+testDom("Stencil opts:", stencilDist.createDomain((...rng), tls, fluff=(2, 2), periodic=true));
 
 testDom("Cyclic:", cyclicDist.createDomain(dom));
 testDom("Cyclic:", cyclicDist.createDomain((...rng)));
 testDom("Cyclic opts:", cyclicDist.createDomain(dom, targetLocales=tls));
 testDom("Cyclic opts:", cyclicDist.createDomain((...rng), targetLocales=tls));
+testDom("Cyclic opts:", cyclicDist.createDomain((...rng), tls));
 
 proc testDom(test: string, D: domain(?)) {
   writeln("\n", test);
@@ -45,40 +48,69 @@ testArray("Block:", blockDist.createArray(dom, eltType));
 testArray("Block:", blockDist.createArray((...rng), eltType));
 testArray("Block opts:", blockDist.createArray(dom, eltType, targetLocales=tls));
 testArray("Block opts:", blockDist.createArray((...rng), eltType, targetLocales=tls));
+testArray("Block opts:", blockDist.createArray((...rng), eltType, tls));
 testArray("Block value:", blockDist.createArray(dom, eltType, literal));
 testArray("Block value:", blockDist.createArray((...rng), eltType, literal));
+testArray("Block value:", blockDist.createArray((...rng), eltType, literal, targetLocales=tls));
+testArray("Block value:", blockDist.createArray((...rng), eltType, literal, tls));
 testArray("Block iter:", blockDist.createArray(dom, eltType, [(i, j) in dom] i + j));
 testArray("Block iter:", blockDist.createArray((...rng), eltType, [(i, j) in dom] i + j));
+testArray("Block iter:", blockDist.createArray((...rng), eltType, [(i, j) in dom] i + j, targetLocales=tls));
+testArray("Block iter:", blockDist.createArray((...rng), eltType, [(i, j) in dom] i + j, tls));
 testArray("Block array:", blockDist.createArray(dom, eltType, a));
 testArray("Block array:", blockDist.createArray(dom, eltType, b));
 testArray("Block array:", blockDist.createArray((...rng), eltType, a));
+testArray("Block array:", blockDist.createArray((...rng), eltType, a, targetLocales=tls));
+testArray("Block array:", blockDist.createArray((...rng), eltType, a, tls));
 testArray("Block array:", blockDist.createArray((...rng), eltType, b));
+testArray("Block array:", blockDist.createArray((...rng), eltType, b, targetLocales=tls));
+testArray("Block array:", blockDist.createArray((...rng), eltType, b, tls));
+
+// note: commented out test cases do not work due to https://github.com/chapel-lang/chapel/issues/11610
 
 testArray("Stencil:", stencilDist.createArray(dom, eltType));
 testArray("Stencil:", stencilDist.createArray((...rng), eltType));
 testArray("Stencil opts:", stencilDist.createArray(dom, eltType, targetLocales=tls, fluff=(2, 2), periodic=true));
 testArray("Stencil opts:", stencilDist.createArray((...rng), eltType, targetLocales=tls, fluff=(2, 2), periodic=true));
+testArray("Stencil opts:", stencilDist.createArray((...rng), eltType, tls, fluff=(2, 2), periodic=true));
 testArray("Stencil value:", stencilDist.createArray(dom, eltType, literal));
 testArray("Stencil value:", stencilDist.createArray((...rng), eltType, literal));
+// testArray("Stencil value:", stencilDist.createArray((...rng), eltType, literal, targetLocales=tls));
+// testArray("Stencil value:", stencilDist.createArray((...rng), eltType, literal, tls));
 testArray("Stencil iter:", stencilDist.createArray(dom, eltType, [(i, j) in dom] i + j));
 testArray("Stencil iter:", stencilDist.createArray((...rng), eltType, [(i, j) in dom] i + j));
+// testArray("Stencil iter:", stencilDist.createArray((...rng), eltType, [(i, j) in dom] i + j, targetLocales=tls));
+// testArray("Stencil iter:", stencilDist.createArray((...rng), eltType, [(i, j) in dom] i + j, tls));
 testArray("Stencil array:", stencilDist.createArray(dom, eltType, a));
 testArray("Stencil array:", stencilDist.createArray(dom, eltType, b));
 testArray("Stencil array:", stencilDist.createArray((...rng), eltType, a));
+// testArray("Stencil array:", stencilDist.createArray((...rng), eltType, a, targetLocales=tls));
+// testArray("Stencil array:", stencilDist.createArray((...rng), eltType, a, tls));
 testArray("Stencil array:", stencilDist.createArray((...rng), eltType, b));
+// testArray("Stencil array:", stencilDist.createArray((...rng), eltType, b, targetLocales=tls));
+// testArray("Stencil array:", stencilDist.createArray((...rng), eltType, b, tls));
 
 testArray("Cyclic:", cyclicDist.createArray(dom, eltType));
 testArray("Cyclic:", cyclicDist.createArray((...rng), eltType));
 testArray("Cyclic opts:", cyclicDist.createArray(dom, eltType, targetLocales=tls));
 testArray("Cyclic opts:", cyclicDist.createArray((...rng), eltType, targetLocales=tls));
+testArray("Cyclic opts:", cyclicDist.createArray((...rng), eltType, tls));
 testArray("Cyclic value:", cyclicDist.createArray(dom, eltType, literal));
 testArray("Cyclic value:", cyclicDist.createArray((...rng), eltType, literal));
+testArray("Cyclic value:", cyclicDist.createArray((...rng), eltType, literal, targetLocales=tls));
+testArray("Cyclic value:", cyclicDist.createArray((...rng), eltType, literal, tls));
 testArray("Cyclic iter:", cyclicDist.createArray(dom, eltType, [(i, j) in dom] i + j));
 testArray("Cyclic iter:", cyclicDist.createArray((...rng), eltType, [(i, j) in dom] i + j));
+testArray("Cyclic iter:", cyclicDist.createArray((...rng), eltType, [(i, j) in dom] i + j, targetLocales=tls));
+testArray("Cyclic iter:", cyclicDist.createArray((...rng), eltType, [(i, j) in dom] i + j, tls));
 testArray("Cyclic array:", cyclicDist.createArray(dom, eltType, a));
 testArray("Cyclic array:", cyclicDist.createArray(dom, eltType, b));
 testArray("Cyclic array:", cyclicDist.createArray((...rng), eltType, a));
+testArray("Cyclic array:", cyclicDist.createArray((...rng), eltType, a, targetLocales=tls));
+testArray("Cyclic array:", cyclicDist.createArray((...rng), eltType, a, tls));
 testArray("Cyclic array:", cyclicDist.createArray((...rng), eltType, b));
+testArray("Cyclic array:", cyclicDist.createArray((...rng), eltType, b, targetLocales=tls));
+testArray("Cyclic array:", cyclicDist.createArray((...rng), eltType, b, tls));
 
 
 proc testArray(test: string, in A: [] int) {

@@ -109,6 +109,10 @@ The following features are extra visual aids:
 | Param Inlays   | ``param`` values can be computed and       | ``--param-inlays`` (default),         |
 |                | displayed inline as inlay hints.           | ``--no-param-inlays``                 |
 +----------------+--------------------------------------------+---------------------------------------+
+| Enum Inlays    | ``enum`` elements' numerical values can be | ``--enum-inlays`` (default),          |
+|                | inferred where not explicitly specified    | ``--no-enum-inlays``                  |
+|                | and displayed as inlay hints.              |                                       |
++----------------+--------------------------------------------+---------------------------------------+
 | Evaluated      | ``param`` values can also be computed and  | ``--evaluate-expressions`` (default), |
 | Tooltips       | displayed as tooltips.                     | ``--no-evaluate-expressions``         |
 +----------------+--------------------------------------------+---------------------------------------+
@@ -121,6 +125,37 @@ The following features are extra visual aids:
 | Generic        | ``CLS`` can show the various               | ``--show-instantiations`` (default),  |
 | Instantiations | instantiations of a generic function.      | ``--no-show-instantiations``          |
 +----------------+--------------------------------------------+---------------------------------------+
+| Default        | Procedures accepting array formals are     | ``--default-rect-arrays`` (default),  |
+| Instantiations | usually generic over the array's dimension | ``--no-default-rect-arrays``          |
+| For Arrays     | and distribution. ``CLS`` can automatically|                                       |
+|                | create concrete instantiations with        |                                       |
+|                | "regular" (default-rectangular) arrays.    |                                       |
++----------------+--------------------------------------------+---------------------------------------+
+| Common         | When generic functions are instantiated    | ``--common-inlays`` (default),        |
+| Instantiation  | with multiple different types, ``CLS`` can | ``--no-common-inlays``                |
+| Inlays         | show type inlays even for the generic      |                                       |
+|                | version of the function, by finding the    |                                       |
+|                | set of inlays shared between all           |                                       |
+|                | instantiations of the function.            |                                       |
++----------------+--------------------------------------------+---------------------------------------+
+
+Additionally, some of the above features can be tweaked.
+
++----------------+--------------------------------------------+------------------------------------------+
+| Behavior       | Description                                | Flag                                     |
++----------------+--------------------------------------------+------------------------------------------+
+| Type Inlays:   | Hides inlays for type aliases when the     | ``--hide-redundant-type-inlays``         |
+| hide obvious   | inlay exactly matches the right-hand side  | (default),                               |
+| inlays         | of the declaration.                        | ``--no-hide-redundant-type-inlays``      |
+|                |                                            |                                          |
+|                | Example: ``type myType = int(64);``        |                                          |
++----------------+--------------------------------------------+------------------------------------------+
+| Type Inlays:   | Hides potentially obvious inlays even if   | ``--hide-more-redundant-type-inlays``,   |
+| hide more      | the right-hand side of the type alias does | ``--no-hide-more-redundant-type-inlays`` |
+| inlays         | not exactly match the computed type.       | (default)                                |
+|                |                                            |                                          |
+|                | Example: ``type myType = range;``          |                                          |
++----------------+--------------------------------------------+------------------------------------------+
 
 Using ``chplcheck`` from ``CLS``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -140,6 +175,35 @@ language server with linting enabled various ``chplcheck`` flags:
      --chplcheck-enable-rule UseExplicitModules \
      --chplcheck-disable-rule UnusedLoopIndex \
      --chplcheck-add-rules path/to/my/myrules.py
+
+Configuration Files
+^^^^^^^^^^^^^^^^^^^
+
+``chpl-language-server`` can be configured without passing command line flags using a
+configuration file. This file can be specified using the ``--config`` (also
+``-c``) flag. The configuration file can either be a YAML file or a specific
+TOML file. For example, running ``chpl-language-server -c config.yaml`` will load the
+configuration from ``config.yaml``. Additionally, ``chpl-language-server`` will look for
+configuration files in the current directory named ``chpl-language-server.cfg`` or
+``.chpl-language-server.cfg`` (in that order).
+
+Most command line options can be specified in the configuration file. For
+example, the following YAML configuration file will enable end of block markers for loops and declarations.
+
+.. code-block:: yaml
+
+   end-markers: "loop,decl"
+
+TOML configuration files can also be used, for example the following is the same configuration as above:
+
+.. code-block:: toml
+
+   [tool.chpl-language-server]
+   end-markers = ["loop", "decl"]
+
+This configuration can also be added to a :ref:`Mason <readme-mason>`
+configuration file. ``CLS`` will automatically use a configuration file
+contained in a ``Mason.toml`` file in the current directory.
 
 Configuring Chapel Projects
 ---------------------------
@@ -162,20 +226,31 @@ project using ``make``:
 
 .. code-block:: bash
 
-   $CHPL_HOME/tools/chpl-language-server/chpl-shim make
+   chpl-shim make
 
 This is similarly done for ``mason`` projects:
 
 .. code-block:: bash
 
-   $CHPL_HOME/tools/chpl-language-server/chpl-shim mason build
-
-.. note::
-
-   The above commands assume a from-source build of Chapel. An installed Chapel
-   may require a different path to ``chpl-shim``.
+   chpl-shim mason build
 
 .. note::
 
    First-class ``mason`` support is currently planned (but not yet
    implemented), avoiding the need for ``chpl-shim`` in ``mason`` projects.
+
+Setting up VSCode tasks
+^^^^^^^^^^^^^^^^^^^^^^^
+
+VSCode users may wish to build their Chapel projects from the VSCode GUI.
+``chpl-shim`` can also be used to help generate a ``tasks.json`` file for
+building a Chapel project. For example, the following command will generate a
+``tasks.json`` file for a Chapel project using ``make``:
+
+.. code-block:: bash
+
+   chpl-shim --vscode make
+
+This will add a new task to the ``tasks.json`` file that will build the project
+(as well as writing the ``.cls-commands.json`` file). This can similarly be
+done for ``mason`` projects.

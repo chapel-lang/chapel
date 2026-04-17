@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -136,6 +136,8 @@ public:
 
   AggregateType*              getRootInstantiation();
 
+  void                        addInstantiation(AggregateType* at);
+
   DefExpr*                    toLocalField(const char* name)             const;
   DefExpr*                    toLocalField(SymExpr*    expr)             const;
   DefExpr*                    toLocalField(CallExpr*   expr)             const;
@@ -167,6 +169,8 @@ public:
   void                        buildCopyInitializer();
 
   Symbol*                     getSubstitution(const char* name)          const;
+  void                        saveGenericSubstitutions();
+  void                        renameInstantiation();
 
   Type*                       getDecoratedClass(ClassTypeDecoratorEnum d);
 
@@ -214,8 +218,6 @@ public:
   // What to delegate to with 'forwarding'
   AList                       forwardingTo;
 
-  const char*                 doc;
-
   // Used during code generation for subclass checking,
   // isa checking. This is the value we store in chpl__cid_XYZ.
   int                         classId;
@@ -239,7 +241,7 @@ public:
 private:
 
   // Only used for LLVM.
-  std::map<std::string, bool> isCArrayFieldMap;
+  llvm::SmallDenseMap<const char*, bool> isCArrayFieldMap;
 
   static ArgSymbol*           createGenericArg(VarSymbol* field);
 
@@ -255,8 +257,6 @@ private:
 
   void                        addClassToHierarchy(
                                           std::set<AggregateType*>& seen);
-
-  void                        renameInstantiation();
 
   AggregateType*              instantiationWithParent(AggregateType* parent, Expr* insnPoint = NULL);
 

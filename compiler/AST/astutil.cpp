@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -51,8 +51,11 @@
 #include <set>
 #include <vector>
 
+static bool shouldPruneAggregateType(TypeSymbol* ts, Vec<TypeSymbol*>& types);
+static bool shouldPruneRefType(TypeSymbol* ts, Vec<TypeSymbol*>& types);
 static void pruneUnusedAggregateTypes(Vec<TypeSymbol*>& types);
 static void pruneUnusedRefs(Vec<TypeSymbol*>& types);
+static void pruneStaleFunctionTypes(Vec<TypeSymbol*>& types);
 
 
 void collectFnCalls(BaseAST* ast, std::vector<CallExpr*>& calls) {
@@ -534,16 +537,19 @@ void addUse(Map<Symbol*,Vec<SymExpr*>*>& useMap, SymExpr* use) {
 // op= function call (such as before inlining)
 //
 bool isOpEqualPrim(CallExpr* call) {
-  if (call->isPrimitive(PRIM_ADD_ASSIGN)      ||
-      call->isPrimitive(PRIM_SUBTRACT_ASSIGN) ||
-      call->isPrimitive(PRIM_MULT_ASSIGN)     ||
-      call->isPrimitive(PRIM_DIV_ASSIGN)      ||
-      call->isPrimitive(PRIM_MOD_ASSIGN)      ||
-      call->isPrimitive(PRIM_LSH_ASSIGN)      ||
-      call->isPrimitive(PRIM_RSH_ASSIGN)      ||
-      call->isPrimitive(PRIM_AND_ASSIGN)      ||
-      call->isPrimitive(PRIM_OR_ASSIGN)       ||
-      call->isPrimitive(PRIM_XOR_ASSIGN)) {
+  if (call->isPrimitive(PRIM_ADD_ASSIGN)        ||
+      call->isPrimitive(PRIM_SUBTRACT_ASSIGN)   ||
+      call->isPrimitive(PRIM_MULT_ASSIGN)       ||
+      call->isPrimitive(PRIM_DIV_ASSIGN)        ||
+      call->isPrimitive(PRIM_MOD_ASSIGN)        ||
+      call->isPrimitive(PRIM_LSH_ASSIGN)        ||
+      call->isPrimitive(PRIM_RSH_ASSIGN)        ||
+      call->isPrimitive(PRIM_AND_ASSIGN)        ||
+      call->isPrimitive(PRIM_OR_ASSIGN)         ||
+      call->isPrimitive(PRIM_XOR_ASSIGN)        ||
+      call->isPrimitive(PRIM_LOGICALAND_ASSIGN) ||
+      call->isPrimitive(PRIM_LOGICALOR_ASSIGN)
+      ) {
     return true;
   }
   //otherwise false
@@ -592,6 +598,54 @@ bool isRelationalOperator(CallExpr* call) {
 
 }
 
+static constexpr int DEF = 1;
+static constexpr int USE = 2;
+static constexpr int DEF_USE = 3;
+
+static int computeDefAndOrUseDirectCall(FnSymbol* fn, SymExpr* se) {
+  auto ret = USE;
+
+  if (auto arg = actual_to_formal(se)) {
+    if (arg->intent == INTENT_REF   ||
+        arg->intent == INTENT_INOUT ||
+        (fn->name == astrSassign &&
+         fn->getFormal(1) == arg &&
+         isRecord(arg->type))) {
+      // BHARSH TODO: get rid of this 'isRecord' special case
+      ret = DEF_USE;
+    } else if (arg->intent == INTENT_OUT) {
+      ret = DEF;
+    }
+  }
+
+  // OK to fall through.
+  return ret;
+}
+
+static int computeDefAndOrUseFromFunctionType(CallExpr* call, SymExpr* se) {
+  auto fn = call->resolvedFunction();
+  auto ft = call->functionType();
+  INT_ASSERT(ft);
+
+  auto ret = USE;
+
+  int zeroBasedFormalIdx = -1;
+  if (auto formal = ft->formalByOrdinal(se, &zeroBasedFormalIdx)) {
+    if (fn && fn->name == astrSassign && zeroBasedFormalIdx == 0 &&
+        isRecord(formal->type())) {
+      // BHARSH TODO: get rid of this 'isRecord' special case
+      ret = DEF_USE;
+    } else if (formal->intent() == INTENT_INOUT ||
+               formal->intent() == INTENT_REF) {
+      ret = DEF_USE;
+    } else if (formal->intent() == INTENT_OUT) {
+      ret = DEF;
+    }
+  }
+
+  // OK to fall through.
+  return ret;
+}
 
 //
 // TODO this should be fixed to include PRIM_SET_MEMBER
@@ -610,11 +664,14 @@ bool isRelationalOperator(CallExpr* call) {
 // normalize, a DefExpr itself does not set a variable, and so it does not
 // count as a Def.
 int isDefAndOrUse(SymExpr* se) {
-  const int DEF = 1;
-  const int USE = 2;
-  const int DEF_USE = 3;
   if (CallExpr* call = toCallExpr(se->parentExpr)) {
     bool isFirstActual = (call->numActuals() && call->get(1) == se);
+    auto fn = call->resolvedFunction();
+
+    if (se->symbol() == fn && call->baseExpr == se) {
+      // The use is of a function that is called.
+      return USE;
+    }
 
     // TODO: PRIM_SET_MEMBER, PRIM_SET_SVEC_MEMBER
 
@@ -650,9 +707,13 @@ int isDefAndOrUse(SymExpr* se) {
       // ^-def    ^-use
       return DEF_USE;
     } else if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
-      // actual_to_formal() breaks if passed the cid argument
-      if (se == call->get(2))
+
+      if (se == call->get(1) || se == call->get(2)) {
+        // actual_to_formal() breaks if passed the cid argument, or the
+        // 'FnSymbol' representing the static method type.
         return USE;
+      }
+
       // same as for resolvedFunction()
       ArgSymbol* arg = actual_to_formal(se);
       if (arg->intent == INTENT_REF ||
@@ -660,19 +721,21 @@ int isDefAndOrUse(SymExpr* se) {
         return DEF_USE;
       else if (arg->intent == INTENT_OUT)
         return DEF;
-    } else if (FnSymbol* fn = call->resolvedFunction()) {
-      ArgSymbol* arg = actual_to_formal(se);
 
-      // BHARSH TODO: get rid of this 'isRecord' special case
-      if (arg->intent == INTENT_REF ||
-          arg->intent == INTENT_INOUT ||
-          (fn->name == astrSassign &&
-           fn->getFormal(1) == arg &&
-           isRecord(arg->type))) {
-        return DEF_USE;
-      } else if (arg->intent == INTENT_OUT) {
-        return DEF;
+    } else if ((fn && fn->isUsedAsValue()) || call->isIndirectCall()) {
+      auto ret = computeDefAndOrUseFromFunctionType(call, se);
+
+      if (fVerify && fn) {
+        // This is the old code, but we keep it around in a '--verify' branch
+        // to make sure that we're computing the correct result above.
+        auto check = computeDefAndOrUseDirectCall(fn, se);
+        INT_ASSERT(check == ret);
       }
+
+      return ret;
+
+    } else if (fn) {
+      return computeDefAndOrUseDirectCall(fn, se);
     }
   }
 
@@ -848,8 +911,8 @@ actual_to_formal(Expr *a) {
       }
     }
   }
-  INT_FATAL(a, "bad call to actual_to_formal");
-  return NULL;
+
+  return nullptr;
 }
 
 
@@ -888,11 +951,11 @@ static bool isNumericTypeSymExpr(Expr* expr) {
     Type* t = sym->type;
     // if it's the actual type symbol for that type
     if (t->symbol == sym && sym->hasFlag(FLAG_TYPE_VARIABLE))
-      return is_int_type(t) ||
-             is_uint_type(t) ||
-             is_real_type(t) ||
-             is_imag_type(t) ||
-             is_complex_type(t);
+      return isIntType(t) ||
+             isUIntType(t) ||
+             isRealType(t) ||
+             isImagType(t) ||
+             isComplexType(t);
   }
 
   return false;
@@ -902,6 +965,10 @@ bool isExternType(Type* t) {
   // narrow references are OK but not wide references
   if (t->isWideRef())
     return false;
+
+  if (isFunctionType(t) && fcfs::usePointerImplementation()) {
+    return false;
+  }
 
   ClassTypeDecoratorEnum d = ClassTypeDecorator::UNMANAGED_NONNIL;
   // unmanaged or borrowed classes are OK
@@ -1126,11 +1193,9 @@ visitVisibleFunctions(Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types)
   if (chpl_gen_main)
     pruneVisit(chpl_gen_main, fns, types);
 
-  // When present, the printModuleInitOrder function is always visible;
-  // it will be NULL for --minimal-modules compilations
-  if (gPrintModuleInitFn) {
-    pruneVisit(gPrintModuleInitFn, fns, types);
-  }
+  // printModuleInitOrder function is always visible
+  INT_ASSERT(gPrintModuleInitFn);
+  pruneVisit(gPrintModuleInitFn, fns, types);
 
   // Functions appearing the function pointer table are visible.
   // These are blocks that can be started through a forall, coforall,
@@ -1175,89 +1240,122 @@ visitVisibleFunctions(Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types)
 static void
 pruneUnusedTypes(Vec<TypeSymbol*>& types)
 {
-
+  pruneStaleFunctionTypes(types);
   pruneUnusedAggregateTypes(types);
   pruneUnusedRefs(types);
   cleanupAfterTypeRemoval();
 }
 
+static bool shouldPruneAggregateType(TypeSymbol* ts, Vec<TypeSymbol*>& types) {
+  // Do not delete reference types.
+  // We delete the reference type if the base type is dead (below).
+  if (ts->hasFlag(FLAG_REF)) return false;
 
-static void pruneUnusedAggregateTypes(Vec<TypeSymbol*>& types)
-{
+  // Ignore types flagged as primitive.
+  if (ts->hasFlag(FLAG_PRIMITIVE_TYPE)) return false;
+
+  // Ignore types that are not class types
+  if (!isAggregateType(ts->type)) return false;
+
+  // Do not delete the object class.  It's pretty crucial.
+  if (ts->hasFlag(FLAG_OBJECT_CLASS)) return false;
+
+  // Visit only those types not marked as visible.
+  if (types.set_in(ts)) return false;
+
+  return true;
+}
+
+static void pruneUnusedAggregateTypes(Vec<TypeSymbol*>& types) {
   //
   // delete unused AggregateType types, only deleting references to such
   // types when the value types are deleted
   //
-  forv_Vec(TypeSymbol, ts, gTypeSymbols)
-  {
-    // Do not delete reference types.
-    // We delete the reference type if the base type is dead (below).
-    if (ts->hasFlag(FLAG_REF))
-      continue;
-
-    // Ignore types flagged as primitive.
-    if (ts->hasFlag(FLAG_PRIMITIVE_TYPE))
-      continue;
-
-    // Ignore types that are not class types
-    if (!isAggregateType(ts->type))
-      continue;
-
-    // Do not delete the object class.  It's pretty crucial.
-    if (ts->hasFlag(FLAG_OBJECT_CLASS))
-      continue;
-
-    // Visit only those types not marked as visible.
-    if (types.set_in(ts))
-      continue;
-
-    ts->defPoint->remove();
+  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
+    if (shouldPruneAggregateType(ts, types)) ts->defPoint->remove();
   }
 }
 
+static bool shouldPruneRefType(TypeSymbol* ts, Vec<TypeSymbol*>& types) {
+  // This pass, we are interested only in ref types.
+  if (!ts->hasFlag(FLAG_REF)) return false;
 
-static void pruneUnusedRefs(Vec<TypeSymbol*>& types)
-{
-  forv_Vec(TypeSymbol, ts, gTypeSymbols)
-  {
-    // This pass, we are interested only in ref types.
-    if (!ts->hasFlag(FLAG_REF))
-      continue;
+  // Ignore types flagged as primitive.
+  if (ts->hasFlag(FLAG_PRIMITIVE_TYPE)) return false;
 
-    // Ignore types flagged as primitive.
-    if (ts->hasFlag(FLAG_PRIMITIVE_TYPE))
-      continue;
+  // Ignore types that are not class types
+  if (!isAggregateType(ts->type)) {
+    // hilde sez: Ref types are always class types.
+    // So we can't get here.
+    INT_ASSERT(false);
+    return false;
+  }
 
-    // Ignore types that are not class types
-    if (!isAggregateType(ts->type))
-    {
-      // hilde sez: Ref types are always class types.
-      // So we can't get here.
-      INT_ASSERT(false);
-      continue;
-    }
+  // Visit only those types not marked as visible.
+  if (types.set_in(ts)) return false;
 
-    // Visit only those types not marked as visible.
-    if (types.set_in(ts))
-      continue;
+  if (Type* vt = ts->getValType()) {
+    // Don't remove a ref type if it refers to a class type
+    if (isAggregateType(vt))
+      // and the class type is still alive.
+      if (types.set_in(vt->symbol)) return false;
 
-    if (Type* vt = ts->getValType())
-    {
-      // Don't remove a ref type if it refers to a class type
-      if (isAggregateType(vt))
-        // and the class type is still alive.
-        if (types.set_in(vt->symbol))
-          continue;
+    // Don't delete nil ref as it is used in widening.
+    if (vt == dtNil) return false;
 
-      // Don't delete nil ref as it is used in widening.
-      if (vt == dtNil)
-        continue;
+    // Ok, we can remove the ref type.
+    return true;
+  }
 
+  return false;
+}
+
+static void pruneUnusedRefs(Vec<TypeSymbol*>& types) {
+  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
+    if (shouldPruneRefType(ts, types)) {
+      Type* vt = ts->getValType();
+      INT_ASSERT(vt);
       // Unlink reference type from value type.
       vt->refType = NULL;
+      ts->defPoint->remove();
+    }
+  }
+}
+
+static void pruneStaleFunctionTypes(Vec<TypeSymbol*>& types) {
+  std::set<Type*> removed;
+
+  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
+    auto ft = toFunctionType(ts->type);
+    if (!ft || !ts->inTree()) continue;
+
+    // Visit only those types not marked as visible.
+    if (types.set_in(ts)) continue;
+
+    // A function type should not be pruned if it is simply "unused". This is
+    // because many function types are "unused" but still exist attached to
+    // a 'FnSymbol*'. Instead, it should be pruned if it is _stale_: that is,
+    // if its return type or any formal type is unused.
+    auto shouldPrune = [&](Type* t) {
+      return !t->inTree() ||
+        shouldPruneRefType(t->symbol, types) ||
+        shouldPruneAggregateType(t->symbol, types);
+    };
+
+    bool prune = shouldPrune(ft->returnType());
+
+    if (!prune && ft->numFormals() > 0) {
+      for (int i = 0; i < ft->numFormals(); i++) {
+        auto t = ft->formal(i)->type();
+        prune = shouldPrune(t);
+        if (prune) break;
+      }
     }
 
-    ts->defPoint->remove();
+    if (prune) {
+      removed.insert(ts->type);
+      ts->defPoint->remove();
+    }
   }
 }
 
@@ -1288,10 +1386,11 @@ void cleanupAfterTypeRemoval() {
     auto sym = def->sym;
     if (!def->inTree() || !sym || !sym->type) continue;
 
-    if (!sym->type->symbol->inTree() && isAggregateType(sym->type) &&
-        !isTypeSymbol(sym)) {
-      sym->type = dtNothing;
-    }
+    bool canChange = !sym->type->symbol->inTree() &&
+                     (isAggregateType(sym->type) ||
+                      isFunctionType(sym->type)) &&
+                     !isTypeSymbol(sym);
+    if (canChange) sym->type = dtNothing;
 
     // Some types must never reach code generation, as they have no runtime
     // representation. E.g., 'uninstantiated' is one of these types.
@@ -1322,7 +1421,6 @@ void cleanupAfterTypeRemoval() {
     }
   }
 }
-
 
 static void removeVoidMoves()
 {
@@ -1443,28 +1541,102 @@ void collectUsedFnSymbols(BaseAST* ast, std::set<FnSymbol*>& fnSymbols) {
   }
 }
 
-static void setQualRef(Symbol* sym) {
-  if (sym->isRefOrWideRef() && sym->type->symbol->hasEitherFlag(FLAG_REF, FLAG_WIDE_REF)) {
-    Qualifier q = sym->qualType().getQual();
-    const bool isRef = q == QUAL_REF        || q == QUAL_CONST_REF        ||
-                       q == QUAL_NARROW_REF || q == QUAL_CONST_NARROW_REF ||
-                       q == QUAL_WIDE_REF   || q == QUAL_CONST_WIDE_REF;
-    if (isRef == false) {
-      if (sym->type->symbol->hasFlag(FLAG_WIDE_REF)) {
+static QualifiedType computeFlattenedRefType(QualifiedType qt) {
+  Qualifier retQual = qt.getQual();
+  Type* retType = qt.type();
+
+  bool isRefType = qt.type()->symbol->hasEitherFlag(FLAG_REF, FLAG_WIDE_REF);
+
+  if (qt.isRefOrWideRef() && isRefType) {
+    Qualifier q = qt.getQual();
+    const bool isRefQual = QualifiedType::qualifierIsRef(q);
+
+    if (!isRefQual) {
+      if (qt.isWideRefType()) {
         q = QUAL_WIDE_REF;
       } else {
         q = QUAL_REF;
       }
-      sym->qual = q;
+      retQual = q;
+    }
+
+    retType = retType->getValType();
+  }
+
+  QualifiedType ret = { retQual, retType };
+
+  return ret;
+}
+
+static void setQualRef(Symbol* sym) {
+  auto qt1 = sym->qualType();
+  auto qt2 = computeFlattenedRefType(qt1);
+
+  if (qt1 != qt2) {
+    // Only write on a change.
+    if (qt1.getQual() != qt2.getQual()) sym->qual = qt2.getQual();
+
+    // Only write on a change.
+    if (qt1.type() != qt2.type()) sym->type = qt2.type();
+
+    if (qt2.isRefOrWideRef()) {
       if (ArgSymbol* arg = toArgSymbol(sym)) {
-        if (arg->intent != INTENT_CONST_REF) {
-          arg->intent = INTENT_REF;
+        // Invariant should already be maintained, so just assert.
+        if (qt2.isConst()) {
+          INT_ASSERT(arg->intent == INTENT_CONST_REF);
+        } else {
+          // TODO: Tuple types are weird here...
+          INT_ASSERT(arg->intent == INTENT_REF_MAYBE_CONST ||
+                     arg->intent == INTENT_REF);
         }
       }
     }
-    sym->type = sym->getValType();
   }
 }
+
+// TODO: At this point I've written this pattern enough that we could use a
+//       more general purpose component-transformer sort of utility...
+static FunctionType* flattenRefsForFunctionTypes(FunctionType* ft) {
+  FunctionType* ret = ft;
+
+  std::vector<FunctionType::Formal> newFormals;
+  bool changed = false;
+
+  for (auto& formal : ft->formals()) {
+    auto qt1 = formal.qualType();
+    auto qt2 = computeFlattenedRefType(qt1);
+
+    newFormals.push_back({ qt2.getQual(), qt2.type(),
+                           formal.intent(),
+                           formal.name(), formal.flags() });
+    changed = changed || qt1 != qt2;
+  }
+
+  if (changed) {
+    // If any formal type changed, then recompute the function type.
+    SET_LINENO(ft->symbol);
+    auto newFt = FunctionType::get(ft->kind(), ft->width(), ft->linkage(),
+                                   std::move(newFormals),
+                                   ft->returnIntent(),
+                                   ft->returnType(),
+                                   ft->throws());
+    INT_ASSERT(ft != newFt);
+    ret = newFt;
+  }
+
+  return ret;
+}
+
+class FlattenRefsInProcPtrTypes : public AdjustSymbolTypes {
+ public:
+  Type* computeAdjustedType(Type* t) const override {
+    if (auto ft = toFunctionType(t->getValType())) {
+      auto ret = flattenRefsForFunctionTypes(ft);
+      return ret;
+    }
+    return t;
+  };
+};
 
 void convertToQualifiedRefs() {
 #define fixRefSymbols(SymType) \
@@ -1475,6 +1647,10 @@ void convertToQualifiedRefs() {
   fixRefSymbols(VarSymbol);
   fixRefSymbols(ArgSymbol);
   fixRefSymbols(ShadowVarSymbol);
+
+  // TODO: Merge the above traversal with this pass to save a walk.
+  PassManager pm;
+  runPassOverAllSymbols(pm, FlattenRefsInProcPtrTypes());
 
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_ADDR_OF)) {
@@ -1553,4 +1729,286 @@ bool symExprIsUsedAsRef(
     }
   }
   return false;
+}
+
+static Type*
+computeNewSymbolType(std::unordered_map<Type*, Type*>& alreadyAdjusted,
+                     AdjustTypeFn adjustTypeFn,
+                     bool preserveRefLevels,
+                     Type* t) {
+  // This is a helper function that memoizes the result of performing the
+  // caller's type adjustment function. Additionally, if the type returned
+  // by the caller's function is a function type, this function will
+  // attempt to adjust the types embedded in the function type as well.
+
+  // Memoization - return the already computed type if it is stored.
+  auto it = alreadyAdjusted.find(t);
+  if (it != alreadyAdjusted.end()) return it->second;
+
+  Type* ret = t;
+  if (preserveRefLevels && t != t->getValType()) {
+    // For reference types, unpack and adjust the value type instead.
+    auto vt1 = t->getValType();
+    auto vt2 = computeNewSymbolType(alreadyAdjusted, adjustTypeFn,
+                                    preserveRefLevels, vt1);
+    INT_ASSERT(vt2);
+
+    // TODO: Do wide classes need any sort of special treatment?
+    ret = matchRefLevel(vt2, t);
+
+  } else {
+    // Otherwise, just perform the caller-given adjustment function.
+    ret = adjustTypeFn(t);
+  }
+
+  INT_ASSERT(ret);
+
+  // The type may still need adjustment if it embeds other 'Type*' without
+  // use of AST (e.g., not 'VarSymbol' fields in 'AggregateType').
+  // TODO: Do other subclass of Type that embed AST need special help here?
+  if (auto ft = toFunctionType(ret)) {
+    std::vector<FunctionType::Formal> newFormals;
+    bool anyChanged = false;
+
+    for (int i = 0; i < ft->numFormals(); i++) {
+      auto f = ft->formal(i);
+      auto newT = computeNewSymbolType(alreadyAdjusted, adjustTypeFn,
+                                       preserveRefLevels,
+                                       f->type());
+      if (newT != f->type()) {
+        newFormals.push_back({ f->qual(), newT, f->intent(), f->name(), f->flags() });
+        anyChanged = true;
+      } else {
+        newFormals.push_back(*f);
+      }
+    }
+
+    auto newRetType = computeNewSymbolType(alreadyAdjusted, adjustTypeFn,
+                                           preserveRefLevels,
+                                           ft->returnType());
+    anyChanged = anyChanged || newRetType != ft->returnType();
+
+    if (anyChanged) {
+      // If any types changed, then recompute the function type.
+      SET_LINENO(ft->symbol);
+      auto newFt = FunctionType::get(ft->kind(), ft->width(), ft->linkage(),
+                                     std::move(newFormals),
+                                     ft->returnIntent(),
+                                     newRetType,
+                                     ft->throws());
+      INT_ASSERT(ft != newFt);
+      ret = newFt;
+    }
+  }
+
+  // Emplace the result.
+  alreadyAdjusted.emplace_hint(it, t, ret);
+
+  return ret;
+}
+
+static SymbolNameVec* ptrToSubsOrNull(Symbol* sym) {
+  if (auto ts = toTypeSymbol(sym)) {
+    return &ts->type->substitutionsPostResolve;
+  } else if (auto fn = toFnSymbol(sym)) {
+    return &fn->substitutionsPostResolve;
+  }
+  return nullptr;
+}
+
+static
+Type* doAdjustSymbolType(std::unordered_map<Type*, Type*>& alreadyAdjusted,
+                         Symbol* sym,
+                         AdjustTypeFn adjustTypeFn,
+                         bool preserveRefLevels) {
+  // Wrapper that computes what the new type of the symbol should be.
+  auto doComputeType = [&](Type* t) {
+    return computeNewSymbolType(alreadyAdjusted, adjustTypeFn,
+                                preserveRefLevels, t);
+  };
+
+  Type* oldType = sym->type;
+  Type* ret = doComputeType(sym->type);
+  bool canModifySubstitutions = true;
+  bool setType = true;
+
+  if (isTypeSymbol(sym)) {
+    // Do not set the 'type' field of a type symbol.
+    setType = false;
+  }
+
+  if (ret->symbol->hasFlag(FLAG_WIDE_REF) ||
+      ret->symbol->hasFlag(FLAG_REF)) {
+    // Do not modify substitutions in reference types. Compute a new type.
+    canModifySubstitutions = false;
+  }
+
+  if (auto vs = toVarSymbol(sym)) {
+    auto parent = vs->defPoint->parentSymbol;
+    if (parent && isTypeSymbol(parent)) {
+      if (parent->hasFlag(FLAG_REF) || parent->hasFlag(FLAG_WIDE_REF)) {
+        // Do not modify fields in 'ref' or 'wide-ref' formals.
+        //
+        // TODO: In general, modifying fields and substitutions ends up making
+        //       the AST super wonky and hard to follow. The reason is because
+        //       we do not recompute certain properties such as the 'name' of
+        //       aggregates after we change things in them. For 'ref' types
+        //       this is extra egregious because they are used everywhere.
+        setType = false;
+      }
+    }
+  }
+
+  if (auto fn = toFnSymbol(sym)) {
+    // Recompute the return type.
+    Type* newRetT = doComputeType(fn->retType);
+    if (newRetT != fn->retType) fn->retType = newRetT;
+
+    if (fn->iteratorInfo && !fn->hasFlag(FLAG_TASK_FN_FROM_ITERATOR_FN)) {
+      // Recompute the yielded type, but only if this is a 'host' function
+      // that owns its 'IteratorInfo' and not a e.g., 'on_fn' that inherits
+      // the info from a parent function.
+      Type* newYieldT = doComputeType(fn->iteratorInfo->yieldedType);
+      if (newYieldT != fn->iteratorInfo->yieldedType)
+        fn->iteratorInfo->yieldedType = newYieldT;
+    }
+
+    if (!fn->isUsedAsValue()) {
+      // Clear types for functions not used as values.
+      ret = dtUnknown;
+    }
+  }
+
+  if (canModifySubstitutions) {
+    // TODO: Either we shouldn't be modifying subs at all, or we should be
+    //       recomputing certain properties of a type like the name after
+    //       we do so, because this leads to desync. E.g., for a tuple type,
+    //       if we change the component type 2*int -> 2*real, the name will
+    //       still print out at '2*int'. This is confusing when debugging
+    //       and from a structural perspective. I think we ought to make
+    //       entirely new, immutable types and deal with the consequences,
+    //       or do a better job of using (recomputable) properties e.g.,
+    //       '->name()' instead of just precomputing.
+    if (auto subsPtr = ptrToSubsOrNull(sym)) {
+      auto& subs = *subsPtr;
+
+      size_t n = subs.size();
+      for (size_t i = 0; i < n; i++) {
+        auto& ns = subs[i];
+        if (TypeSymbol* ets = toTypeSymbol(ns.value)) {
+          Type* newT = doComputeType(ets->type);
+          if (newT != ets->type) {
+            TypeSymbol* newTS = newT->symbol;
+            ns.value = newTS;
+          }
+        }
+      }
+    }
+  }
+
+  // Skip unnecessary writes to avoid triggering watchpoints.
+  if (setType && oldType != ret) sym->type = ret;
+
+  return ret;
+}
+
+Type* maybeAdjustSymbolType(Symbol* sym, AdjustTypeFn adjustTypeFn,
+                            bool preserveRefLevels) {
+  std::unordered_map<Type*, Type*> empty;
+  auto ret = doAdjustSymbolType(empty, sym, adjustTypeFn, preserveRefLevels);
+  return ret;
+}
+
+void adjustAllSymbolTypes(AdjustTypeFn adjustTypeFn, bool preserveRefLevels) {
+  std::unordered_map<Type*, Type*> alreadyAdjusted;
+
+  auto adjust = [&](Symbol* sym) {
+    return doAdjustSymbolType(alreadyAdjusted, sym, adjustTypeFn,
+                              preserveRefLevels);
+  };
+
+  forv_Vec(VarSymbol, var, gVarSymbols) {
+    adjust(var);
+  }
+
+  forv_Vec(ArgSymbol, arg, gArgSymbols) {
+    adjust(arg);
+  }
+
+  forv_Vec(ShadowVarSymbol, sv, gShadowVarSymbols) {
+    adjust(sv);
+  }
+
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    adjust(fn);
+  }
+
+  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
+    Type* newType = adjust(ts);
+
+    // NOTE: Type symbols are the only class of symbol for which 'sym->type'
+    //       is not actually changed (it doesn't really make sense). Instead,
+    //       we loop and re-target all uses of the old type to point to the
+    //       new type instead.
+    if (newType != ts->type) {
+      for_SymbolSymExprs(se, ts) se->setSymbol(newType->symbol);
+    }
+  }
+
+  for (auto [kt, vt] : alreadyAdjusted) {
+    // No change took place, so there is nothing to remove.
+    if (kt == vt) continue;
+
+    if (auto ts = kt->symbol) {
+      // Otherwise, try to remove the key type from the tree.
+      if (!ts->inTree()) continue;
+      if (!ts->isUsed()) {
+        ts->defPoint->remove();
+      }
+    }
+  }
+}
+
+bool isUseOfProcedureAsValue(SymExpr* se) {
+  auto fn = toFnSymbol(se->symbol());
+
+  if (!fn) return false;
+
+  if (auto call = toCallExpr(se->parentExpr)) {
+    // TODO: Detect/reject virtual calls if needed.
+
+    if (call->baseExpr != se) {
+      auto formal = call->resolvedFunction() ? actual_to_formal(se) : nullptr;
+      bool isMoveOrAssign = call->isPrimitive(PRIM_ASSIGN) ||
+                            call->isPrimitive(PRIM_MOVE);
+
+      if (isMoveOrAssign && call->get(2) == se) {
+        // Ok, being moved or assigned into a variable.
+        return true;
+
+      } else if (formal) {
+        // Ok, being passed (assume that the type matches).
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+Type* matchRefLevel(Type* t, Type* match) {
+  auto vt = t->getValType();
+  auto ret = t;
+
+  if (match->isRef() && !t->isRef()) {
+    if (!vt->refType) makeRefType(vt);
+    ret = vt->refType;
+
+  } else if (match->isWideRef() && !t->isWideRef()) {
+    ret = vt->getWideRefType();
+  }
+
+  INT_ASSERT(ret);
+
+  return ret;
 }

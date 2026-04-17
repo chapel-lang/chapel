@@ -491,6 +491,7 @@ pdfdir = @pdfdir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
+runstatedir = @runstatedir@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
@@ -545,7 +546,9 @@ CONDUIT_FILELIST = \
       gasnet_extended.c          \
       gasnet_extended_fwd.h      \
       gasnet_firehose.c          \
+      gasnet_ratomic.c           \
       gasnet_ibv.h               \
+      gasnet_ratomic_fwd.h       \
       firehose_fwd.h             
 
 
@@ -558,6 +561,7 @@ CONDUIT_SOURCELIST = \
       $(srcdir)/gasnet_core_thread.c \
       $(srcdir)/gasnet_extended.c    \
       $(srcdir)/gasnet_firehose.c    \
+      $(srcdir)/gasnet_ratomic.c     \
       $(fh_sourcelist) \
       $(hwloc_sources) \
       $(ssh_sources) $(pmi_sources)
@@ -874,9 +878,9 @@ distclean-generic:
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
-@USE_IBV_CONDUIT_FALSE@uninstall-local:
 @USE_IBV_CONDUIT_FALSE@install-data-local:
 @USE_IBV_CONDUIT_FALSE@clean-local:
+@USE_IBV_CONDUIT_FALSE@uninstall-local:
 clean: clean-recursive
 
 clean-am: clean-generic clean-libLIBRARIES clean-local mostlyclean-am

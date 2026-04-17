@@ -1,0 +1,18 @@
+In C's deinit
+In D(3)'s deinit
+In R(2)'s deinit
+In D(1)'s deinit
+In R(0)'s deinit
+Past creation of myC(0)
+In D(3)'s deinit
+In R(2)'s deinit
+In D(1)'s deinit
+In R(0)'s deinit
+Caught error
+Past creation of myC(1)
+In D(3)'s deinit
+In R(2)'s deinit
+In D(1)'s deinit
+In R(0)'s deinit
+Caught error
+Past creation of myC(2)

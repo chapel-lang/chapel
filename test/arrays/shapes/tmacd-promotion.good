@@ -12,4 +12,4 @@
 [ArrayViewRankChangeDom(2,int(64),one,3*bool,3*int(64),int(64),unmanaged ArrayViewRankChangeDist(unmanaged DefaultDist,3*bool,3*int(64)))] int(64)
 ====== const ref NN =====
 0 0 0 0
-iterator
+promoted expression yielding int(64)

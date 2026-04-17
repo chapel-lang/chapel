@@ -1,1 +1,1 @@
-splitInitIteratorExpressions.chpl:6: error: Split initialization uses multiple types; another initialization has type [domain(1,int(64),one)] string but this initialization has type iterator
+splitInitIteratorExpressions.chpl:6: error: Split initialization uses multiple types; another initialization has type [domain(1,int(64),one)] string but this initialization has type iterator yielding string

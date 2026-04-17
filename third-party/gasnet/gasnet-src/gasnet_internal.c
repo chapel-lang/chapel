@@ -455,6 +455,10 @@ gasneti_Client_t gasneti_import_client(gex_Client_t _client) {
   GASNETI_IMPORT_MAGIC(_real_client, CLIENT);
   return _real_client;
 }
+gasneti_Client_t gasneti_import_client_valid(gex_Client_t client) {
+  gasneti_assert(client != GEX_CLIENT_INVALID);
+  return gasneti_import_client(client);
+}
 #endif
 
 #ifndef gasneti_export_client
@@ -518,6 +522,10 @@ gasneti_Segment_t gasneti_import_segment(gex_Segment_t _segment) {
   const gasneti_Segment_t _real_segment = GASNETI_IMPORT_POINTER(gasneti_Segment_t,_segment);
   GASNETI_IMPORT_MAGIC(_real_segment, SEGMENT);
   return _real_segment;
+}
+gasneti_Segment_t gasneti_import_segment_valid(gex_Segment_t segment) {
+  gasneti_assert(segment != GEX_SEGMENT_INVALID);
+  return gasneti_import_segment(segment);
 }
 #endif
 
@@ -700,6 +708,10 @@ gasneti_EP_t gasneti_import_ep(gex_EP_t _ep) {
   const gasneti_EP_t _real_ep = GASNETI_IMPORT_POINTER(gasneti_EP_t,_ep);
   GASNETI_IMPORT_MAGIC(_real_ep, EP);
   return _real_ep;
+}
+gasneti_EP_t gasneti_import_ep_valid(gex_EP_t ep) {
+  gasneti_assert(ep != GEX_EP_INVALID); 
+  return gasneti_import_ep(ep);
 }
 #endif
 

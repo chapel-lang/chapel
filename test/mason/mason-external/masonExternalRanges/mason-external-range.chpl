@@ -1,7 +1,7 @@
 use MasonModify;
 use MasonExternal;
 use MasonBuild;
-use MasonInit;
+use MasonNewInit;
 
 proc main() {
   // Sets up Spack
@@ -14,5 +14,5 @@ proc main() {
   installSpkg(installArgs);
   // Build library that uses libtomlc99
   var buildArgs = ["build", "--force"];
-  masonBuild(buildArgs, checkProj=false);
+  masonBuild(buildArgs);
 }

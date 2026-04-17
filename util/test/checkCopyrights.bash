@@ -81,6 +81,7 @@ files_wo_copy=$(find $source_dirs -type f \( \
     grep -v frontend/lib/parsing/flex-chpl-lib.cpp | \
     grep -v frontend/lib/util/git-version.cpp | \
     grep -v 'modules/standard/gen/.*/ChapelSysCTypes.chpl' | \
+    grep -v 'modules/minimal/standard/gen/.*/ChapelSysCTypes.chpl' | \
     grep -v 'modules/packages/ImageHelper/stb/.*.h' | \
     xargs grep -i -L "${copyright_pattern}")
 

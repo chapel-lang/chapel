@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -40,7 +40,7 @@
 #include "qbuffer.h"
 #include "qio_plugin_api.h"
 
-#include "error.h"
+#include "chpl-error.h"
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -1340,6 +1340,11 @@ qioerr qio_file_length(qio_file_t* f, int64_t *len_out)
   qio_unlock(& f->lock);
 
   return err;
+}
+
+bool qio_isatty(qio_file_t* file)
+{
+  return (file->fd != -1) && isatty(file->fd);
 }
 
 /* CHANNELS ----------------------------- */
@@ -4606,9 +4611,6 @@ int64_t qio_channel_style_element(qio_channel_t* ch, int64_t element)
 {
   if( element == QIO_STYLE_ELEMENT_STRING ) return ch->style.str_style;
   if( element == QIO_STYLE_ELEMENT_COMPLEX ) return ch->style.complex_style;
-  if( element == QIO_STYLE_ELEMENT_ARRAY ) return ch->style.array_style;
-  if( element == QIO_STYLE_ELEMENT_AGGREGATE ) return ch->style.aggregate_style;
-  if( element == QIO_STYLE_ELEMENT_TUPLE ) return ch->style.tuple_style;
   if( element == QIO_STYLE_ELEMENT_BYTE_ORDER ) return ch->style.byteorder;
 # if __BYTE_ORDER == __LITTLE_ENDIAN
   if( element == QIO_STYLE_ELEMENT_IS_NATIVE_BYTE_ORDER ) {
@@ -4621,8 +4623,6 @@ int64_t qio_channel_style_element(qio_channel_t* ch, int64_t element)
             ch->style.byteorder == QIO_NATIVE) ? 1 : 0;
   }
 #endif // __BYTE_ORDER
-  if( element == QIO_STYLE_ELEMENT_SKIP_UNKNOWN_FIELDS )
-    return ch->style.skip_unknown_fields;
   return 0;
 }
 

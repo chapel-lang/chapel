@@ -1,0 +1,4 @@
+# this test is not that interesting for GPU locale model and some require
+# more locales than available on the test system. Without that limitation, we
+# could remove this skipif
+CHPL_LOCALE_MODEL==gpu

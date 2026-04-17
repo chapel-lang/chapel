@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -77,19 +77,17 @@ module CTypes {
     As with a Chapel class, a ``c_ptr`` can be tested non-nil simply
     by including it in an if statement conditional, like so:
 
-    .. code-block:: chapel
-
-      var x: c_ptr = c_ptrTo(...);
-      if x then do writeln("x is not nil");
-      if !x then do writeln("x is nil");
+    .. literalinclude:: ../../../../test/library/standard/CTypes/doc-examples/CptrExamples.chpl
+       :language: chapel
+       :start-after: START_EXAMPLE_0
+       :end-before: STOP_EXAMPLE_0
 
     Additionally, a ``c_ptr`` can be output like so:
 
-    .. code-block:: chapel
-
-      var x: c_ptr = c_ptrTo(...);
-      writeln(x); // outputs nil or e.g. 0xabc123000000
-
+    .. literalinclude:: ../../../../test/library/standard/CTypes/doc-examples/CptrExamples.chpl
+       :language: chapel
+       :start-after: START_EXAMPLE_1
+       :end-before: STOP_EXAMPLE_1
   */
 
   pragma "data class"
@@ -97,6 +95,7 @@ module CTypes {
   pragma "no default functions"
   pragma "no wide class"
   pragma "c_ptr class"
+  @chpldoc.hideImplType
   class c_ptr : writeSerializable {
     //   Similar to _ddata from ChapelBase, but differs
     //   from _ddata because it can never be wide.
@@ -104,10 +103,10 @@ module CTypes {
     /*
        The type that this pointer points to, which can be queried like so:
 
-       .. code-block:: chapel
-
-         var x: c_ptr = c_ptrTo(...);
-         if x.eltType == c_int then do writeln("x is an int pointer");
+       .. literalinclude:: ../../../../test/library/standard/CTypes/doc-examples/CptrExamples.chpl
+          :language: chapel
+          :start-after: START_EXAMPLE_2
+          :end-before: STOP_EXAMPLE_2
     */
     type eltType;
     /* Retrieve the i'th element (zero based) from a pointer to an array.
@@ -147,14 +146,15 @@ module CTypes {
   pragma "no wide class"
   pragma "c_ptr class"
   pragma "c_ptrConst class"
+  @chpldoc.hideImplType
   class c_ptrConst : writeSerializable {
     /*
        The type that this pointer points to, which can be queried like so:
 
-       .. code-block:: chapel
-
-         var x: c_ptrConst = c_ptrToConst(...);
-         if x.eltType == c_int then do writeln("x is a const int pointer");
+       .. literalinclude:: ../../../../test/library/standard/CTypes/doc-examples/CptrExamples.chpl
+          :language: chapel
+          :start-after: START_EXAMPLE_3
+          :end-before: STOP_EXAMPLE_3
     */
     type eltType;
     /* Retrieve the i'th element (zero based) from a pointer to an array.
@@ -185,6 +185,13 @@ module CTypes {
     }
   }
 
+
+  private proc isAnyManagedClass(type t) param {
+    return isGeneric(t) && isClassType(t) &&
+           !(isUnmanagedClass(t) || isBorrowedClass(t) ||
+             isSharedClass(t) || isOwnedClass(t));
+  }
+
   /*
   This type represents a C array with fixed size.  A variable of type
   ``c_array`` can coerce to a ``c_ptr`` with the same element type.  In that
@@ -199,23 +206,24 @@ module CTypes {
   */
   pragma "c_array record"
   pragma "default intent is ref if modified"
+  @chpldoc.hideImplType
   record c_array : writeSerializable {
     /*
        The array element type, which can be queried like so:
 
-       .. code-block:: chapel
-
-         var x: c_array = c_ptrToConst(...);
-         if x.eltType == c_int then do writeln("x is an array of ints");
+       .. literalinclude:: ../../../../test/library/standard/CTypes/doc-examples/CarrayExamples.chpl
+          :language: chapel
+          :start-after: START_EXAMPLE_0
+          :end-before: STOP_EXAMPLE_0
     */
     type eltType;
     /*
        The fixed number of elements, which can be queried like so:
 
-       .. code-block:: chapel
-
-         var x: c_array = c_ptrToConst(...);
-         writeln("x has ", x.size, " elements.");
+       .. literalinclude:: ../../../../test/library/standard/CTypes/doc-examples/CarrayExamples.chpl
+          :language: chapel
+          :start-after: START_EXAMPLE_1
+          :end-before: STOP_EXAMPLE_1
     */
     param size;
 
@@ -227,6 +235,15 @@ module CTypes {
         compilerError("c_array element type cannot be 'void'");
       if eltType == nothing then
         compilerError("c_array element type cannot be 'nothing'");
+      if isGeneric(eltType) {
+        param msg = "c_array element type cannot be generic";
+        if isAnyManagedClass(eltType) {
+          compilerError(msg + "\n" + eltType:string +
+                        " may be generic due to generic management");
+        } else {
+          compilerError(msg);
+        }
+      }
       this.eltType = eltType;
       this.size = size;
       init this;
@@ -253,25 +270,25 @@ module CTypes {
       }
     }
 
+    pragma "always propagate line file info"
+    @chpldoc.nodoc
+    proc boundsCheckThis(i) {
+      if i < 0 || i >= size then
+        HaltWrappers.boundsCheckHalt("c array index out of bounds " + i:string +
+                                     "(indices are 0.." + (size-1):string + ")");
+    }
+
     /* Retrieve the i'th element (zero based) from the array.
        Does the equivalent of arr[i] in C.
        Includes bounds checking when such checks are enabled.
     */
     inline proc ref this(i: integral) ref : eltType {
-      if boundsChecking then
-        if i < 0 || i >= size then
-          HaltWrappers.boundsCheckHalt("c array index out of bounds " + i:string +
-                                       "(indices are 0.." + (size-1):string + ")");
-
+      if boundsChecking then boundsCheckThis(i);
       return __primitive("array_get", this, i);
     }
     @chpldoc.nodoc
     inline proc const ref this(i: integral) const ref : eltType {
-      if boundsChecking then
-        if i < 0 || i >= size then
-          HaltWrappers.boundsCheckHalt("c array index out of bounds " + i:string +
-                                       "(indices are 0.." + (size-1):string + ")");
-
+      if boundsChecking then boundsCheckThis(i);
       return __primitive("array_get", this, i);
     }
 
@@ -389,6 +406,14 @@ module CTypes {
     __primitive("=", lhs, nil);
   }
 
+  @chpldoc.nodoc
+  inline operator :(x: ?t1, type t2: c_ptr(void))
+                   where chpl_enableProcPtrs(t1) {
+    var localProc = chpl_toLocalProc(x);
+    // The cast will go through because 'localProc' is a pointer.
+    var ret = __primitive("cast", t2, localProc);
+    return ret;
+  }
 
   @chpldoc.nodoc
   inline operator :(x:c_fn_ptr, type t:c_ptr(void)) {
@@ -792,6 +817,20 @@ module CTypes {
     return x;
   }
 
+  pragma "always propagate line file info"
+  @chpldoc.nodoc
+  proc checksFor_c_ptrTo_arr(l, arr_size, param constVersion=false) {
+    param name = if constVersion then "c_ptrToConst" else "c_ptrTo";
+    if l != here then
+      halt(
+        name + "() can only be applied to an array from the locale on " +
+        "which it lives (array is on locale " + l.id:string +
+        ", call was made on locale " + here.id:string + ")");
+
+    if arr_size == 0 then
+      halt("Can't create a C pointer for an array with 0 elements.");
+  }
+
   /*
     Returns a :type:`c_ptr` to the elements of a non-distributed
     Chapel rectangular array.  Note that the existence of this
@@ -808,16 +847,7 @@ module CTypes {
     if (!chpl__isDROrDRView(arr)) then
       compilerError("Only single-locale rectangular arrays support c_ptrTo() at present");
 
-    if boundsChecking {
-      if (arr._value.locale != here) then
-        halt(
-            "c_ptrTo() can only be applied to an array from the locale on " +
-            "which it lives (array is on locale " + arr._value.locale.id:string +
-            ", call was made on locale " + here.id:string + ")");
-
-      if (arr.size == 0) then
-        halt("Can't create a C pointer for an array with 0 elements.");
-    }
+    if boundsChecking then checksFor_c_ptrTo_arr(arr._value.locale, arr.size);
 
     return c_pointer_return(arr[arr.domain.low]);
   }
@@ -897,16 +927,7 @@ module CTypes {
     if (!chpl__isDROrDRView(arr)) then
       compilerError("Only single-locale rectangular arrays support c_ptrToConst() at present");
 
-    if boundsChecking {
-      if (arr._value.locale != here) then
-        halt(
-            "c_ptrToConst() can only be applied to an array from the locale on " +
-            "which it lives (array is on locale " + arr._value.locale.id:string +
-            ", call was made on locale " + here.id:string + ")");
-
-      if (arr.size == 0) then
-        halt("Can't create a C pointer for an array with 0 elements.");
-    }
+    if boundsChecking then checksFor_c_ptrTo_arr(arr._value.locale, arr.size, true);
 
     return c_pointer_return_const(arr[arr.domain.low]);
   }
@@ -1213,12 +1234,10 @@ module CTypes {
 
     For example:
 
-    .. code-block:: chapel
-
-      var myString = "Hello!";
-      on differentLocale {
-        writef("%s", myString.localize().c_str());
-      }
+    .. literalinclude:: ../../../../test/library/standard/CTypes/doc-examples/CstrExamples.chpl
+       :language: chapel
+       :start-after: START_EXAMPLE_0
+       :end-before: STOP_EXAMPLE_0
 
     .. warning::
 
@@ -1250,12 +1269,10 @@ module CTypes {
 
     For example:
 
-    .. code-block:: chapel
-
-        var myBytes = b"Hello!";
-        on differentLocale {
-          writef("%s", myBytes.localize().c_str());
-        }
+    .. literalinclude:: ../../../../test/library/standard/CTypes/doc-examples/CstrExamples.chpl
+       :language: chapel
+       :start-after: START_EXAMPLE_1
+       :end-before: STOP_EXAMPLE_1
 
     .. warning::
 

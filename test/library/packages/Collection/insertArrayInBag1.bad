@@ -1,2 +1,0 @@
-insertArrayInBag1.chpl:1: warning: The DistributedBagDeprecated module is deprecated
-insertArrayInBag1.chpl:5: error: attempt to dereference nil

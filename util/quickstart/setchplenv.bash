@@ -33,7 +33,7 @@ MYMANPATH=`$CHPL_PYTHON $chpl_home/util/config/fixpath.py "$MANPATH"`
 # Double check $MYPATH before overwriting $PATH
 if [ -z "${MYPATH}" -o "${exitcode}" -ne 0 ]; then
     echo "Error:  util/config/fixpath.py failed"
-    echo "        Make sure you have Python 2.5+"
+    echo "        Make sure you have Python 3.5+"
     return 1
 fi
 
@@ -57,15 +57,23 @@ export CHPL_TASKS=fifo
 
 echo "Setting CHPL_TARGET_MEM to cstdlib"
 export CHPL_TARGET_MEM=cstdlib
+unset CHPL_TARGET_JEMALLOC
+unset CHPL_TARGET_MIMALLOC
 
 echo "Setting CHPL_HOST_MEM to cstdlib"
 export CHPL_HOST_MEM=cstdlib
+unset CHPL_HOST_JEMALLOC
+unset CHPL_HOST_MIMALLOC
 
 echo "Setting CHPL_GMP to none"
 export CHPL_GMP=none
 
 echo "Setting CHPL_RE2 to none"
 export CHPL_RE2=none
+
+USE_UNWIND=`$CHPL_PYTHON $chpl_home/util/chplenv/chpl_unwind.py --quickstart`
+echo "Setting CHPL_UNWIND to $USE_UNWIND"
+export CHPL_UNWIND=$USE_UNWIND
 
 USE_LLVM=`$CHPL_PYTHON $chpl_home/util/chplenv/chpl_llvm.py --quickstart`
 echo "Setting CHPL_LLVM to $USE_LLVM"

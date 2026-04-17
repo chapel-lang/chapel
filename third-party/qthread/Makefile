@@ -63,9 +63,9 @@ ifeq ($(CFLAGS_NEEDS_RT_INCLUDES), y)
   # seems to cause Chapel programs built with the result to hang during
   # exit when shutting down Qthreads.
   #
-	# We also need to provide paths to system hwloc and jemalloc if they are
+  # We also need to provide paths to system hwloc and jemalloc if they are
   # enabled, since it might not be in default compiler search paths.
-	#
+  #
   # Note that we call compileline with CHPL_MAKE_COMM=none. Under
   # CHPL_MAKE_COMM=gasnet, compileline will fail if gasnet is not built,
   # so in order to avoid ordering/dependencies just ignore the comm
@@ -82,6 +82,9 @@ ifeq ($(CFLAGS_NEEDS_RT_INCLUDES), y)
 	ifeq ($(CHPL_MAKE_TARGET_JEMALLOC),system)
 	SYSTEM_INCS_DEFS := $(SYSTEM_INCS_DEFS)\|jemalloc
   endif
+	ifeq ($(CHPL_MAKE_TARGET_MIMALLOC),system)
+	SYSTEM_INCS_DEFS := $(SYSTEM_INCS_DEFS)\|mimalloc
+	endif
 
   COMPILELINE_STDERR_REDIRECT=2> /dev/null
   COMM_NONE_CHPLENV_CACHE := $(shell echo "$(CHPL_MAKE_CHPLENV_CACHE)" | sed 's/|CHPL_MAKE_COMM=[^|]*|/|CHPL_MAKE_COMM=none|/')
@@ -129,6 +132,12 @@ SCHEDULER = $(CHPL_QTHREAD_SCHEDULER)
 endif
 CHPL_QTHREAD_CFG_OPTIONS += -DQTHREADS_SCHEDULER=$(SCHEDULER)
 
+
+# sanitizers won't work with fastcontext switching
+ifneq ($(CHPL_MAKE_SANITIZE), none)
+	CHPL_QTHREAD_CFG_OPTIONS += -DDQTHREADS_CONTEXT_SWAP_IMPL=system
+endif
+
 # only do this on M1+ Macs
 ifeq ($(CHPL_MAKE_TARGET_ARCH),arm64)
 ifeq ($(CHPL_MAKE_TARGET_PLATFORM),darwin)
@@ -144,7 +153,7 @@ endif
 # reduce performance penalty in cases where numChapelTasks < numQthreadWorkers
 CHPL_QTHREAD_CFG_OPTIONS += -DQTHREADS_CONDWAIT_QUEUE=ON
 
-ifeq ($(CHPL_LIB_PIC),pic)
+ifeq ($(CHPL_MAKE_LIB_PIC),pic)
 CFLAGS += $(SHARED_LIB_CFLAGS)
 endif
 

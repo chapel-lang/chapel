@@ -1,0 +1,33 @@
+
+// Tests usage of standard module types/functions/methods, which have to
+// co-exist with untyped converted AST
+
+use Print;
+use CTypes;
+use IO;
+
+proc main() {
+  var x : int = 5;
+  var y = c_ptrTo(x);
+  println(y.deref());
+
+  {
+    var a : atomic int;
+    a.add(1);
+    a.add(5);
+    println(a.read());
+  }
+
+  {
+    var r = 1..10;
+    println(r.first);
+    println(r.last);
+  }
+
+  {
+    var s = new file(chpl_cstdout());
+    var w = s.writer();
+    w.writeLiteral("Hello, World!\n");
+  }
+}
+

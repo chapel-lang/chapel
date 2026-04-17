@@ -1,4 +1,4 @@
-.TH "hwlocality_levels" 3 "Version 2.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_levels" 3 "Version 2.12.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -26,10 +26,10 @@ hwlocality_levels \- Object levels, depths and types
 .RI "int \fBhwloc_get_memory_parents_depth\fP (\fBhwloc_topology_t\fP topology)"
 .br
 .ti -1c
-.RI "static int \fBhwloc_get_type_or_below_depth\fP (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_type_t\fP type)"
+.RI "int \fBhwloc_get_type_or_below_depth\fP (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_type_t\fP type)"
 .br
 .ti -1c
-.RI "static int \fBhwloc_get_type_or_above_depth\fP (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_type_t\fP type)"
+.RI "int \fBhwloc_get_type_or_above_depth\fP (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_type_t\fP type)"
 .br
 .ti -1c
 .RI "\fBhwloc_obj_type_t\fP \fBhwloc_get_depth_type\fP (\fBhwloc_topology_t\fP topology, int depth)"
@@ -38,22 +38,22 @@ hwlocality_levels \- Object levels, depths and types
 .RI "unsigned \fBhwloc_get_nbobjs_by_depth\fP (\fBhwloc_topology_t\fP topology, int depth)"
 .br
 .ti -1c
-.RI "static int \fBhwloc_get_nbobjs_by_type\fP (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_type_t\fP type)"
+.RI "int \fBhwloc_get_nbobjs_by_type\fP (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_type_t\fP type)"
 .br
 .ti -1c
-.RI "static \fBhwloc_obj_t\fP \fBhwloc_get_root_obj\fP (\fBhwloc_topology_t\fP topology)"
+.RI "\fBhwloc_obj_t\fP \fBhwloc_get_root_obj\fP (\fBhwloc_topology_t\fP topology)"
 .br
 .ti -1c
 .RI "\fBhwloc_obj_t\fP \fBhwloc_get_obj_by_depth\fP (\fBhwloc_topology_t\fP topology, int depth, unsigned idx)"
 .br
 .ti -1c
-.RI "static \fBhwloc_obj_t\fP \fBhwloc_get_obj_by_type\fP (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_type_t\fP type, unsigned idx)"
+.RI "\fBhwloc_obj_t\fP \fBhwloc_get_obj_by_type\fP (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_type_t\fP type, unsigned idx)"
 .br
 .ti -1c
-.RI "static \fBhwloc_obj_t\fP \fBhwloc_get_next_obj_by_depth\fP (\fBhwloc_topology_t\fP topology, int depth, \fBhwloc_obj_t\fP prev)"
+.RI "\fBhwloc_obj_t\fP \fBhwloc_get_next_obj_by_depth\fP (\fBhwloc_topology_t\fP topology, int depth, \fBhwloc_obj_t\fP prev)"
 .br
 .ti -1c
-.RI "static \fBhwloc_obj_t\fP \fBhwloc_get_next_obj_by_type\fP (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_type_t\fP type, \fBhwloc_obj_t\fP prev)"
+.RI "\fBhwloc_obj_t\fP \fBhwloc_get_next_obj_by_type\fP (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_type_t\fP type, \fBhwloc_obj_t\fP prev)"
 .br
 .in -1c
 .SH "Detailed Description"
@@ -133,7 +133,7 @@ The number of objects at topology depth \fCdepth\fP\&.
 .RE
 .PP
 
-.SS "static int hwloc_get_nbobjs_by_type (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_type_t\fP type)\fC [inline]\fP, \fC [static]\fP"
+.SS "int hwloc_get_nbobjs_by_type (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_type_t\fP type)\fC [inline]\fP"
 
 .PP
 Returns the width of level type \fCtype\fP\&. 
@@ -148,7 +148,7 @@ The number of objects of type \fCtype\fP\&.
 .RE
 .PP
 
-.SS "static \fBhwloc_obj_t\fP hwloc_get_next_obj_by_depth (\fBhwloc_topology_t\fP topology, int depth, \fBhwloc_obj_t\fP prev)\fC [inline]\fP, \fC [static]\fP"
+.SS "\fBhwloc_obj_t\fP hwloc_get_next_obj_by_depth (\fBhwloc_topology_t\fP topology, int depth, \fBhwloc_obj_t\fP prev)\fC [inline]\fP"
 
 .PP
 Returns the next object at depth \fCdepth\fP\&. 
@@ -163,7 +163,7 @@ The object after \fCprev\fP at depth \fCdepth\fP if \fCprev\fP is not \fCNULL\fP
 .RE
 .PP
 
-.SS "static \fBhwloc_obj_t\fP hwloc_get_next_obj_by_type (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_type_t\fP type, \fBhwloc_obj_t\fP prev)\fC [inline]\fP, \fC [static]\fP"
+.SS "\fBhwloc_obj_t\fP hwloc_get_next_obj_by_type (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_type_t\fP type, \fBhwloc_obj_t\fP prev)\fC [inline]\fP"
 
 .PP
 Returns the next object of type \fCtype\fP\&. 
@@ -193,7 +193,7 @@ The object if it exists\&.
 .RE
 .PP
 
-.SS "static \fBhwloc_obj_t\fP hwloc_get_obj_by_type (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_type_t\fP type, unsigned idx)\fC [inline]\fP, \fC [static]\fP"
+.SS "\fBhwloc_obj_t\fP hwloc_get_obj_by_type (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_type_t\fP type, unsigned idx)\fC [inline]\fP"
 
 .PP
 Returns the topology object at logical index \fCidx\fP with type \fCtype\fP\&. 
@@ -208,7 +208,7 @@ The object if it exists\&.
 .RE
 .PP
 
-.SS "static \fBhwloc_obj_t\fP hwloc_get_root_obj (\fBhwloc_topology_t\fP topology)\fC [inline]\fP, \fC [static]\fP"
+.SS "\fBhwloc_obj_t\fP hwloc_get_root_obj (\fBhwloc_topology_t\fP topology)\fC [inline]\fP"
 
 .PP
 Returns the top-object of the topology-tree\&. Its type is \fBHWLOC_OBJ_MACHINE\fP\&.
@@ -243,7 +243,7 @@ If the type is absent but a similar type is acceptable, see also \fBhwloc_get_ty
 .RE
 .PP
 
-.SS "static int hwloc_get_type_or_above_depth (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_type_t\fP type)\fC [inline]\fP, \fC [static]\fP"
+.SS "int hwloc_get_type_or_above_depth (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_type_t\fP type)\fC [inline]\fP"
 
 .PP
 Returns the depth of objects of type \fCtype\fP or above\&. If no object of this type is present on the underlying architecture, the function returns the depth of the first 'present' object typically containing \fCtype\fP\&.
@@ -251,7 +251,7 @@ Returns the depth of objects of type \fCtype\fP or above\&. If no object of this
 This function is only meaningful for normal object types\&. If a memory, I/O or Misc object type is given, the corresponding virtual depth is always returned (see \fBhwloc_get_type_depth()\fP)\&.
 .PP
 May return \fBHWLOC_TYPE_DEPTH_MULTIPLE\fP for \fBHWLOC_OBJ_GROUP\fP just like \fBhwloc_get_type_depth()\fP\&. 
-.SS "static int hwloc_get_type_or_below_depth (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_type_t\fP type)\fC [inline]\fP, \fC [static]\fP"
+.SS "int hwloc_get_type_or_below_depth (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_type_t\fP type)\fC [inline]\fP"
 
 .PP
 Returns the depth of objects of type \fCtype\fP or below\&. If no object of this type is present on the underlying architecture, the function returns the depth of the first 'present' object typically found inside \fCtype\fP\&.

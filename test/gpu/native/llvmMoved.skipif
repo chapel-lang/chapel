@@ -1,2 +1,1 @@
-# AMD requires a non-bundled llvm, which may confuse this test
-CHPL_GPU==amd
+CHPL_LLVM==bundled

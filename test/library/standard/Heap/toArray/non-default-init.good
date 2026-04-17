@@ -1,0 +1,6 @@
+empty: 
+arr: (x = 3) (x = 2) (x = 1)
+empty: 
+arr: (x = 3) (x = 2) (x = 1)
+empty: 
+arr: (arr = 3 3 3 3 3 3 3 3 3 3) (arr = 2 2 2 2 2 2 2 2 2 2) (arr = 1 1 1 1 1 1 1 1 1 1)

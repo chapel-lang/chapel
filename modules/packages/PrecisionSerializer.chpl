@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -35,17 +35,16 @@ module PrecisionSerializer {
 
     For example, the following code snippet:
 
-    .. code-block:: chapel
-
-      use PrecisionSerializer;
-      var x = [i in 1..5] i + 0.123456789;
-      stdout.withSerializer(new precisionSerializer(precision=7, padding=12)).write(x);
+    .. literalinclude:: ../../../../test/library/packages/PrecisionSerializer/doc-examples/example_preciseWrite.chpl
+     :language: chapel
+     :start-after: START_EXAMPLE
+     :end-before: STOP_EXAMPLE
 
     would produce the output:
 
     .. code-block:: text
 
-      1.1234568    2.1234568    3.1234568    4.1234568    5.1234568
+         1.1234568    2.1234568    3.1234568    4.1234568    5.1234568
 
     whereas the default serializer would output:
 

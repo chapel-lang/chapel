@@ -1,4 +1,4 @@
-.TH "hwlocality_components_core_funcs" 3 "Version 2.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_components_core_funcs" 3 "Version 2.12.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -36,9 +36,6 @@ hwlocality_components_core_funcs \- Components and Plugins: Core functions to be
 .br
 .ti -1c
 .RI "int \fBhwloc_topology_reconnect\fP (\fBhwloc_topology_t\fP topology, unsigned long flags)"
-.br
-.ti -1c
-.RI "static int \fBhwloc_plugin_check_namespace\fP (const char *pluginname, const char *symbol)"
 .br
 .in -1c
 .SH "Detailed Description"
@@ -114,28 +111,6 @@ The caller should check whether the object type is filtered-out before calling t
 Setup object cpusets/nodesets by OR'ing its children\&. Used when adding an object late in the topology\&. Will update the new object by OR'ing all its new children sets\&.
 .PP
 Used when PCI backend adds a hostbridge parent, when distances add a new Group, etc\&. 
-.SS "static int hwloc_plugin_check_namespace (const char * pluginname, const char * symbol)\fC [inline]\fP, \fC [static]\fP"
-
-.PP
-Make sure that plugins can lookup core symbols\&. This is a sanity check to avoid lazy-lookup failures when libhwloc is loaded within a plugin, and later tries to load its own plugins\&. This may fail (and abort the program) if libhwloc symbols are in a private namespace\&.
-.PP
-\fBReturns\fP
-.RS 4
-0 on success\&. 
-.PP
--1 if the plugin cannot be successfully loaded\&. The caller plugin init() callback should return a negative error code as well\&.
-.RE
-.PP
-Plugins should call this function in their init() callback to avoid later crashes if lazy symbol resolution is used by the upper layer that loaded hwloc (e\&.g\&. OpenCL implementations using dlopen with RTLD_LAZY)\&.
-.PP
-\fBNote\fP
-.RS 4
-The build system must define HWLOC_INSIDE_PLUGIN if and only if building the caller as a plugin\&.
-.PP
-This function should remain inline so plugins can call it even when they cannot find libhwloc symbols\&. 
-.RE
-.PP
-
 .SS "int hwloc_topology_reconnect (\fBhwloc_topology_t\fP topology, unsigned long flags)"
 
 .PP

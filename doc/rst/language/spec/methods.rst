@@ -22,6 +22,8 @@ Methods are declared with the following syntax:
    method-declaration-statement:
      procedure-kind[OPT] proc-or-iter this-intent[OPT] type-binding[OPT] identifier argument-list[OPT]
        return-intent[OPT] return-type[OPT] where-clause[OPT] function-body
+     procedure-kind[OPT] 'operator' type-binding[OPT] identifier argument-list[OPT]
+       return-intent[OPT] return-type[OPT] where-clause[OPT] function-body
 
    proc-or-iter:
      'proc'
@@ -426,6 +428,113 @@ resolution (see :ref:`Determining_Most_Specific_Functions`).
 
       221
 
+.. index::
+   single: methods; operators
+   single: operators; methods
+.. _Operator_Methods:
+
+Operator Methods
+----------------
+
+Operators may be overloaded (see :ref:`Function_Overloading`) to support new
+behavior on one or more types using the ``operator`` keyword.  Such overloads
+may be defined as standalone functions, e.g.
+
+.. code-block:: chapel
+
+   operator +(lhs: t1, rhs: t2) { ... }
+
+or as methods defined on a particular type, e.g.
+
+.. code-block:: chapel
+
+   record R {
+     var intField: int;
+
+     operator +(lhs: R, rhs: R) {
+       return new R(lhs.intField + rhs.intField);
+     }
+   }
+
+Operator methods are equivalent to type methods - the type on which the operator
+is declared causes the operator to have method-like visibility for that type,
+and the ``this`` receiver is a ``type``.
+
+Operator methods may be defined as primary, secondary, or tertiary methods.  For
+example, the following code defines a primary ``+`` operator and a secondary
+``-`` operator on a record:
+
+.. code-block:: chapel
+
+   record R {
+     var intField: int;
+
+     operator +(lhs: R, rhs: R) {
+       return new R(lhs.intField + rhs.intField);
+     }
+   }
+
+   operator R.-(lhs: R, rhs: R) {
+     return new R(lhs.intField - rhs.intField);
+   }
+
+
+The method receiver for an operator method will be used to determine when that
+operator is visible.  This behavior is most useful when the method receiver
+matches the type of at least one of the other arguments to the operator.
+However, it is possible to define an operator method where the receiver type
+does not match the type for any other argument.
+
+Operator methods can be defined on concrete types, generic types, or particular
+instantiations of generic types.
+
+A call to an operator - such as ``a + b`` which calls ``+`` - may resolve to any
+visible operator method or standalone operator function.
+
+.. index::
+   single: operators; methods; visible
+.. _Operator_Method_Visibility:
+
+Operator Method Visibility
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Primary and secondary operator methods have similar visibility to other primary
+and secondary methods.  In both cases, these methods can be viewed as part of
+the type and will be available along with the type.  For regular methods, the
+compiler searches for the method using the receiver's type (e.g. ``R`` in
+``myR.method()`` supposing ``myR`` has type ``R``) definition point as well as
+any type definition points for parent classes.  However, operator invocations
+(such as ``a + b``) don't have a method receiver in the same way.  Instead, the
+compiler uses the types of all the operator's arguments to find operator methods
+defined along with the type.
+
+As with other tertiary methods, ``import`` and ``use`` statements can be used to
+control the visibility of tertiary operator methods.
+
+.. index::
+   single: operators; methods; candidates
+.. _Determining_Operator_Candidate_Functions:
+
+Determining Operator Candidate Functions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When determining if an operator method or function is an appropriate candidate,
+only the arguments to the operator method or function will be considered.  The
+presence or absence of a type receiver is only used to determine visibility, and
+it will not eliminate an overload from candidate consideration.
+
+.. index::
+   single: operators; methods; more specific
+.. _Determining_More_Specific_Operators:
+
+Determining More Specific Operators
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When determining which operator method or function is more specific, only the
+arguments to the operator method or function will be considered.  The presence
+or absence of a type receiver is only used to determine visibility and does not
+impact the process of determining the best function (see
+:ref:`Determining_Best_Functions`).
 
 .. index::
    single: methods; indexing
@@ -495,7 +604,7 @@ The *these* Method
 An iterator method declared with the name ``these`` allows the receiver
 to be “iterated over” similarly to how a domain or array supports
 iteration. When a value supporting a ``these`` method is used as the
-``iteratable-expression`` of a loop, the loop proceeds in a manner
+``iterable-expression`` of a loop, the loop proceeds in a manner
 controlled by the ``these`` iterator.
 
    *Example (theseIterator.chpl)*.

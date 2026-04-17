@@ -1,0 +1,11 @@
+
+[brick]
+name = "FizzBuzz"
+version = "0.1.0"
+chplVersion = "1.17.0"
+type = "library"
+
+[examples]
+examples = ["ex.chpl"]
+
+[dependencies]

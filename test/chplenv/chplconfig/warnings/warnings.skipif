@@ -1,0 +1,3 @@
+# these configs mess up the goodfile matching, because they cause cause config errors
+CHPL_SANITIZE!=none
+CHPL_SANITIZE_EXE!=none

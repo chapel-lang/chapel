@@ -1,0 +1,10 @@
+++ which mason
++ MASON=$CHPL_HOME/bin/$CHPL_HOST_BIN_SUBDIR/mason
++ rm -rf testingPkg
++ mkdir testingPkg
++ cd testingPkg
++ PATH=
++ $CHPL_HOME/bin/$CHPL_HOST_BIN_SUBDIR/mason init
+Failed to run 'chpl --version'
++ echo 'expected failure for empty PATH'
+expected failure for empty PATH

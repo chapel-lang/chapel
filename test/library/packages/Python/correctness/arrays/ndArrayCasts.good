@@ -1,0 +1,12 @@
+cast array to array
+owned PyArray(nothing,-1) array('l', [1, 2, 3, 4, 5])
+owned PyArray(nothing,-1) array('l', [1, 2, 3, 4, 5])
+cast array to array change eltType
+owned PyArray(nothing,-1) array('l', [1, 2, 3, 4, 5])
+owned PyArray(int(64),-1) array('l', [1, 2, 3, 4, 5])
+cast array to array change rank
+owned PyArray(nothing,-1) array('l', [1, 2, 3, 4, 5])
+owned PyArray(nothing,1) array('l', [1, 2, 3, 4, 5])
+cast specific array to generic array
+owned PyArray(int(64),1) array('l', [1, 2, 3, 4, 5])
+owned PyArray(nothing,-1) array('l', [1, 2, 3, 4, 5])

@@ -1,0 +1,6 @@
+ErrorHandlingProductionModule.chpl:18: In function 'doesNotThrowErrorsOn':
+ErrorHandlingProductionModule.chpl:19: error: call to throwing function alwaysThrows without throws, try, or try! (relaxed mode)
+ErrorHandlingHelper.chpl:14: note: throwing function alwaysThrows defined here
+ErrorHandlingProductionModule.chpl:6: In module 'ProductionModule':
+ErrorHandlingProductionModule.chpl:10: error: call to throwing function canThrow without throws, try, or try! (relaxed mode)
+ErrorHandlingHelper.chpl:10: note: throwing function canThrow defined here

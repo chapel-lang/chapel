@@ -5,9 +5,9 @@
    2  
    2  new dimensionalDist2D()
    3  
-   3  wrapping ddf in dmap
+   3  taking ref to ddf
    4  
-   4  skipping: wrapping ddf in another dmap, without assignment
+   4  skipping: mentioning ddf without assignment
    5  
    5  (1, 1) is on locale:
    5  LOCALE0: LOCALE2

@@ -1,5 +1,5 @@
 #
-# Copyright 2023-2025 Hewlett Packard Enterprise Development LP
+# Copyright 2023-2026 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -18,11 +18,13 @@
 #
 
 from typing import Union, List
+import sys
 import chapel
 import chapel.lsp
 from pygls.server import LanguageServer
 from lsprotocol.types import TEXT_DOCUMENT_DID_OPEN, DidOpenTextDocumentParams
 from lsprotocol.types import TEXT_DOCUMENT_DID_SAVE, DidSaveTextDocumentParams
+from lsprotocol.types import TEXT_DOCUMENT_DID_CLOSE, DidCloseTextDocumentParams
 from lsprotocol.types import (
     TEXT_DOCUMENT_CODE_ACTION,
     CodeActionParams,
@@ -40,6 +42,11 @@ from lsprotocol.types import (
 )
 from fixits import Fixit, Edit
 from driver import LintDriver
+from indentation import build_and_run_indentation_collector
+
+
+def log(*args, **kwargs):
+    print(*args, **kwargs, file=sys.stderr)
 
 
 def get_lint_diagnostics(
@@ -150,6 +157,7 @@ def run_lsp(driver: LintDriver):
             context = contexts[uri]
             context.advance_to_next_revision(False)
             context.set_module_paths([], [])
+            build_and_run_indentation_collector.cache_clear()
         else:
             context = chapel.core.Context()
             context.set_module_paths([], [])
@@ -192,6 +200,12 @@ def run_lsp(driver: LintDriver):
     ):
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
         ls.publish_diagnostics(text_doc.uri, build_diagnostics(text_doc.uri))
+
+    @server.feature(TEXT_DOCUMENT_DID_CLOSE)
+    async def did_close(ls: LanguageServer, params: DidCloseTextDocumentParams):
+        text_doc = ls.workspace.get_text_document(params.text_document.uri)
+        del contexts[text_doc.uri]
+        ls.publish_diagnostics(text_doc.uri, [])
 
     @server.feature(TEXT_DOCUMENT_CODE_ACTION)
     async def code_action(ls: LanguageServer, params: CodeActionParams):

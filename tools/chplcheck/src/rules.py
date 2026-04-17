@@ -1,5 +1,5 @@
 #
-# Copyright 2023-2025 Hewlett Packard Enterprise Development LP
+# Copyright 2023-2026 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -19,11 +19,13 @@
 
 import re
 import typing
+import functools
 
 import chapel
 from chapel import *
 from driver import LintDriver
 from fixits import Fixit, Edit
+from indentation import build_and_run_indentation_collector
 from rule_types import (
     BasicRuleResult,
     AdvancedRuleResult,
@@ -39,45 +41,6 @@ def variables(node: AstNode):
     elif isinstance(node, TupleDecl):
         for child in node:
             yield from variables(child)
-
-
-def might_incorrectly_report_location(node: AstNode) -> bool:
-    """
-    Some Dyno AST nodes do not return locations in the way that we expect.
-    For instance, some NamedDecl nodes currently use the name as the location,
-    which does not indicate their actual indentation. Rules that depend on
-    indentation should leave these variables alone.
-    """
-
-    # some NamedDecl nodes currently use the name as the location, which
-    # does not indicate their actual indentation.
-    #
-    # https://github.com/chapel-lang/chapel/issues/25208
-    if isinstance(node, (VarLikeDecl, TupleDecl, ForwardingDecl)):
-        return True
-
-    # private function locations are bugged and don't include the 'private'
-    # keyword.
-    #
-    # https://github.com/chapel-lang/chapel/issues/24818
-    elif isinstance(node, (Function, Use, Import)) and node.visibility() != "":
-        return True
-
-    # 'else if' statements do not have proper locations
-    #
-    # https://github.com/chapel-lang/chapel/issues/25256
-    elif isinstance(node, Conditional):
-        parent = node.parent()
-        grandparent = parent.parent() if parent else None
-        if (
-            isinstance(parent, Block)
-            and parent.block_style() == "implicit"
-            and grandparent
-            and isinstance(grandparent, Conditional)
-        ):
-            return True
-
-    return False
 
 
 def fixit_remove_unused_node(
@@ -151,6 +114,71 @@ def check_pascal_case(
         r"(([A-Z][a-z]*|\d+)+|[A-Z]+)?",
         name_for_linting(context, node, internal_prefixes),
     )
+
+
+def extract_only_bool(
+    parent: Conditional, node: Optional[Block]
+) -> Optional[bool]:
+    if node is None:
+        return None
+
+    children = list(node)
+    if len(children) != 1:
+        return None
+
+    check_for_bool = children[0]
+    if not parent.is_expression_level():
+        if not isinstance(check_for_bool, Return):
+            return None
+        check_for_bool = check_for_bool.value()
+
+    if not isinstance(check_for_bool, BoolLiteral):
+        return None
+    return check_for_bool.value()
+
+
+def find_docstring_ranges(
+    lines: typing.List[str],
+) -> typing.List[typing.Tuple[typing.Tuple[int, int], typing.Tuple[int, int]]]:
+    docstring_ranges = []
+    docstring_stack = []
+    for row, line in enumerate(lines, start=1):
+        idx = 0
+        len_line = len(line)
+        while idx < len_line:
+            cur = (line[idx], line[idx + 1] if idx + 1 < len_line else None)
+            if cur == ("/", "*"):
+                docstring_stack.append((row, idx))
+                idx += 2
+            elif cur == ("*", "/"):
+                # pop stack and add a docstring range from the popped location
+                # to here
+                if docstring_stack:
+                    start = docstring_stack.pop()
+                    docstring_ranges.append((start, (row, idx + 2)))
+                else:
+                    # mismatched comment end, ignore it. should have been caught
+                    # by the chapel parser anyways
+                    pass
+                idx += 2
+            else:
+                idx += 1
+    # if docstring_stack is not empty here, we have mismatched comment starts,
+    # but we'll ignore those too since they should have been caught by the
+    # chapel parser
+    return docstring_ranges
+
+
+def is_in_docstring(
+    loc: typing.Tuple[int, int],
+    docstring_ranges: typing.List[
+        typing.Tuple[typing.Tuple[int, int], typing.Tuple[int, int]]
+    ],
+) -> bool:
+    for start, end in docstring_ranges:
+        if start <= loc and loc <= end:
+            return True
+    return False
 
 
 def rules(driver: LintDriver):
@@ -234,7 +262,7 @@ def rules(driver: LintDriver):
     @driver.basic_rule(SimpleBlockLike)
     @driver.basic_rule(When)
     def DoKeywordAndBlock(
-        context: Context, node: typing.Union[Loop, SimpleBlockLike]
+        context: Context, node: typing.Union[Loop, SimpleBlockLike, When]
     ):
         """
         Warn for redundant 'do' keyword before a curly brace '{'.
@@ -276,6 +304,40 @@ def rules(driver: LintDriver):
         new_text = header_text + sep + body_text
         fixit = Fixit.build(Edit.build(node.location(), new_text))
         return fixit
+
+    @driver.basic_rule(Conditional)
+    def ThenKeywordAndBlock(context: Context, node: Conditional):
+        """
+        Warn for redundant 'then' keyword before a curly brace '{'.
+        """
+
+        if (
+            node.then_keyword_location() is not None
+            and node.then_block().curly_braces_location() is not None
+        ):
+            return BasicRuleResult(node, ignorable=False)
+        return True
+
+    @driver.fixit(ThenKeywordAndBlock)
+    def RemoveUnnecessaryThen(context: Context, result: BasicRuleResult):
+        """
+        Remove the redundant 'then' keyword before a curly brace '{'.
+        """
+        node = result.node
+        assert isinstance(node, Conditional)
+        lines = chapel.get_file_lines(context, node)
+
+        len_kw_loc = node.then_keyword_location()
+        curly_loc = node.then_block().curly_braces_location()
+        assert len_kw_loc is not None and curly_loc is not None
+
+        loc = len_kw_loc + curly_loc - curly_loc
+        text = range_to_text(loc, lines)
+        if text.strip() != "then":
+            # if the text in this location isn't just 'then', other text
+            # is in the way (ie a comment)
+            return None
+        return Fixit.build(Edit.build(loc, ""))
 
     @driver.basic_rule(set((Loop, Conditional)))
     def ControlFlowParentheses(
@@ -340,6 +402,404 @@ def rules(driver: LintDriver):
 
         return [Fixit.build(Edit.build(paren_loc, new_text))]
 
+    def build_unattached_fixit(
+        lines: List[str],
+        loc: typing.Union[
+            Location, typing.Tuple[chapel.Location, chapel.Location]
+        ],
+    ):
+        if isinstance(loc, Location):
+            blank_loc = loc
+        else:
+            assert isinstance(loc, tuple) and len(loc) == 2
+            before_loc, after_loc = loc
+            full_loc = before_loc + after_loc
+            blank_loc = full_loc - after_loc - before_loc
+
+        blank_text = range_to_text(blank_loc, lines)
+        if blank_text.strip() == "":
+            return Fixit.build(Edit.build(blank_loc, " "))
+        else:
+            return None
+
+    def check_for_unattached(
+        context: chapel.Context,
+        node: chapel.AstNode,
+        before_loc: chapel.Location,
+        after_loc: chapel.Location,
+        ResultType: typing.Callable,
+        lines: typing.Optional[List[str]] = None,
+    ):
+        if lines is None:
+            lines = chapel.get_file_lines(context, node)
+        res = None
+        # the lines must be the same or on the same line with only 1 space in between
+        if (
+            before_loc.end()[0] != after_loc.start()[0]
+            or before_loc.end()[1] != after_loc.start()[1] - 1
+        ):
+            fixit = build_unattached_fixit(lines, (before_loc, after_loc))
+            res = ResultType(node, fixits=fixit)
+        return res
+
+    @driver.basic_rule(chapel.Conditional)
+    def UnattachedElse(context: Context, node: chapel.Conditional):
+        """
+        Warn for 'else' blocks that do not start on the same line as the closing brace of the 'then' block.
+        """
+
+        # skip if the if statement has no braces
+        if node.then_block().curly_braces_location() is None:
+            return True
+
+        # skip expressions
+        if node.is_expression_level():
+            return True
+
+        then_block_loc = node.then_block().location()
+        else_kw_loc = node.else_keyword_location()
+        if else_kw_loc is None:
+            return True
+
+        else_block = node.else_block()
+        assert else_block is not None
+
+        res = check_for_unattached(
+            context,
+            else_block,
+            then_block_loc,
+            else_kw_loc,
+            functools.partial(BasicRuleResult, ignorable=False),
+        )
+        return res if res is not None else True
+
+    @driver.basic_rule(chapel.Catch)
+    def UnattachedCatch(context: Context, node: chapel.Catch):
+        """
+        Warn for 'catch' blocks that do not start on the same line as the closing brace of the 'try' block.
+        """
+
+        try_stmt = node.parent()
+        if (
+            not isinstance(try_stmt, chapel.Try)
+            or try_stmt.is_expression_level()
+        ):
+            return True
+
+        catch_loc = node.location()
+
+        # find the block of the try before this catch. its either try.body()
+        # for the first catch, or the previous catch
+        prev = try_stmt.body()
+        for prev_catch in try_stmt.handlers():
+            if prev_catch.unique_id() == node.unique_id():
+                break
+            prev = prev_catch
+        if prev is None:
+            return True
+        prev_loc = prev.location()
+
+        res = check_for_unattached(
+            context,
+            node,
+            prev_loc,
+            catch_loc,
+            functools.partial(BasicRuleResult, ignorable=False),
+        )
+        return res if res is not None else True
+
+    @driver.advanced_rule
+    def UnattachedCurly(context: Context, root: AstNode):
+        """
+        Warn for blocks that do not have their opening curly brace on the same line as the controlling statement.
+        """
+
+        if isinstance(root, Comment):
+            return
+        lines = chapel.get_file_lines(context, root)
+
+        def check_conditional(node: chapel.Conditional):
+            then_block = node.then_block()
+            if curly_loc := then_block.curly_braces_location():
+                # the curly block start should be just after the location of the condition
+                condition_loc = node.condition().location()
+                # add the parentheses location if it exists
+                if paren_loc := node.condition().paren_location():
+                    condition_loc += paren_loc
+                # add the then keyword location if it exists
+                if then_kw_loc := node.then_keyword_location():
+                    condition_loc += then_kw_loc
+                res = check_for_unattached(
+                    context,
+                    then_block,
+                    condition_loc,
+                    curly_loc,
+                    AdvancedRuleResult,
+                )
+                if res is not None:
+                    yield res
+            if else_block := node.else_block():
+                if curly_loc := else_block.curly_braces_location():
+                    else_kw_loc = node.else_keyword_location()
+                    assert else_kw_loc is not None
+                    # the curly block start should be just after the location of the else keyword
+                    res = check_for_unattached(
+                        context,
+                        else_block,
+                        else_kw_loc,
+                        curly_loc,
+                        AdvancedRuleResult,
+                    )
+                    if res is not None:
+                        yield res
+
+        def check_try(node: chapel.Try):
+            body = node.body()
+            if body is None:
+                return
+            if curly_loc := body.curly_braces_location():
+                try_loc = node.location()
+                # the curly block start should be just after the location of the try keyword
+                len_of_keyword = (
+                    len("try") if not node.is_try_bang() else len("try!")
+                )
+                # adjust the location to be just the keyword
+                try_loc = try_loc - try_loc.modify_start((0, len_of_keyword))
+                res = check_for_unattached(
+                    context, body, try_loc, curly_loc, AdvancedRuleResult
+                )
+                if res is not None:
+                    yield res
+
+        def check_catch(node: chapel.Catch):
+            body = node.body()
+            if curly_loc := body.curly_braces_location():
+                if tgt := node.target():
+                    tgt_loc = tgt.location()
+                    before_loc = (
+                        tgt.paren_location()
+                        if node.has_parens_around_error()
+                        else tgt_loc
+                    )
+                else:
+                    # if there is no target, the curly block start should be just after the catch keyword
+                    catch_loc = node.location()
+                    len_of_keyword = len("catch")
+                    # adjust the location to be just the keyword
+                    before_loc = catch_loc - catch_loc.modify_start(
+                        (0, len_of_keyword)
+                    )
+                if before_loc is None:
+                    return
+                res = check_for_unattached(
+                    context, body, before_loc, curly_loc, AdvancedRuleResult
+                )
+                if res is not None:
+                    yield res
+
+        def check_loop(node: chapel.Loop):
+            if node.block_style() == "unnecessary":
+                return
+            # TODO: for now, ignore DoWhile and BracketLoop
+            if isinstance(node, (chapel.DoWhile, chapel.BracketLoop)):
+                return
+
+            if curly_loc := node.curly_braces_location():
+                header_loc = node.header_location()
+                if isinstance(node, IndexableLoop) and node.with_clause():
+                    with_ = node.with_clause()
+                    assert with_ is not None
+                    header_loc = with_.location()
+                if not header_loc:
+                    return
+                # the curly block start should be just after the location of the header
+                res = check_for_unattached(
+                    context, node, header_loc, curly_loc, AdvancedRuleResult
+                )
+                if res is not None:
+                    yield res
+
+        def check_named_decl(node: chapel.NamedDecl):
+            if curly_loc := node.curly_braces_location():
+                header_loc = node.header_location()
+                if not header_loc:
+                    return
+                if isinstance(node, chapel.Function):
+                    if where_ := node.where_clause():
+                        header_loc += where_.location()
+                    for lifetime in node.lifetime_clauses():
+                        header_loc += lifetime.location()
+                res = check_for_unattached(
+                    context, node, header_loc, curly_loc, AdvancedRuleResult
+                )
+                if res is not None:
+                    yield res
+
+        def check_simple_block_like(node):
+            if (
+                isinstance(node, (chapel.SimpleBlockLike, chapel.When))
+                and node.block_style() == "unnecessary"
+            ):
+                return
+            if curly_loc := node.curly_braces_location():
+                header_loc = node.block_header()
+                if not header_loc:
+                    return
+                if (
+                    isinstance(node, (chapel.Begin, chapel.Cobegin))
+                    and node.with_clause()
+                ):
+                    with_ = node.with_clause()
+                    assert with_ is not None
+                    header_loc += with_.location()
+
+                # the curly block start should be just after the location of the header
+                res = check_for_unattached(
+                    context, node, header_loc, curly_loc, AdvancedRuleResult
+                )
+                if res is not None:
+                    yield res
+
+        for node, _ in chapel.each_matching(
+            root,
+            set(
+                [
+                    chapel.Conditional,
+                    chapel.Try,
+                    chapel.Catch,
+                    chapel.Loop,
+                    chapel.NamedDecl,
+                    chapel.On,
+                    chapel.Cobegin,
+                    chapel.Begin,
+                    chapel.Defer,
+                    chapel.Serial,
+                    chapel.Sync,
+                    chapel.Local,
+                    chapel.Manage,
+                    chapel.Select,
+                    chapel.When,
+                ]
+            ),
+        ):
+            if isinstance(node, chapel.Conditional):
+                yield from check_conditional(node)
+            elif isinstance(node, chapel.Try):
+                yield from check_try(node)
+            elif isinstance(node, chapel.Catch):
+                yield from check_catch(node)
+            elif isinstance(node, chapel.Loop):
+                yield from check_loop(node)
+            elif isinstance(node, chapel.NamedDecl):
+                yield from check_named_decl(node)
+            elif isinstance(
+                node,
+                (
+                    chapel.On,
+                    chapel.Cobegin,
+                    chapel.Begin,
+                    chapel.Defer,
+                    chapel.Serial,
+                    chapel.Sync,
+                    chapel.Local,
+                    chapel.Manage,
+                    chapel.Select,
+                    chapel.When,
+                ),
+            ):
+                yield from check_simple_block_like(node)
+
+    @driver.basic_rule(chapel.OpCall)
+    def BoolComparison(context, node: chapel.OpCall):
+        """
+        Warn for comparing booleans to 'true' or 'false'.
+        """
+
+        op = node.op()
+        if op == "==" or op == "!=":
+            left = node.actual(0)
+            right = node.actual(1)
+            if isinstance(left, chapel.BoolLiteral):
+                return BasicRuleResult(node, data=(op, left, right))
+            elif isinstance(right, chapel.BoolLiteral):
+                return BasicRuleResult(node, data=(op, right, left))
+        return True
+
+    @driver.fixit(BoolComparison)
+    def FixBoolComparison(context, result: BasicRuleResult):
+        assert isinstance(result.data, tuple)
+        op, bool_lit, other = result.data
+        node = result.node
+        assert isinstance(node, chapel.OpCall)
+        lines = chapel.get_file_lines(context, node)
+
+        bool_value = bool_lit.value()
+        other_text = range_to_text(other.location(), lines)
+
+        if (op == "==" and bool_value) or (op == "!=" and not bool_value):
+            replacement = other_text
+        else:
+            already_has_parens = other.paren_location() is not None
+            needs_paren = not isinstance(
+                other, (chapel.FnCall, chapel.Identifier, chapel.Dot)
+            )
+            fmt = "!({0})" if needs_paren or already_has_parens else "!{0}"
+            replacement = fmt.format(other_text)
+
+        return [Fixit.build(Edit.build(node.location(), replacement))]
+
+    @driver.basic_rule(chapel.Conditional)
+    def SimpleBoolConditional(context, node: chapel.Conditional):
+        """
+        Warn for boolean conditionals that can be simplified.
+        """
+        then_ret = extract_only_bool(node, node.then_block())
+        else_ret = extract_only_bool(node, node.else_block())
+        if then_ret is None or else_ret is None:
+            return True
+
+        is_only_returns = not node.is_expression_level()
+        if then_ret != else_ret:
+            should_invert = not then_ret
+            return BasicRuleResult(
+                node,
+                ignorable=False,
+                data=(is_only_returns, should_invert, None),
+            )
+        else:
+            return BasicRuleResult(
+                node, ignorable=False, data=(is_only_returns, None, then_ret)
+            )
+
+        return True
+
+    @driver.fixit(SimpleBoolConditional)
+    def FixSimpleBoolConditional(context, result: BasicRuleResult):
+        assert isinstance(result.data, tuple)
+        is_only_returns, should_invert, replace_with_value = result.data
+        node = result.node
+        assert isinstance(node, chapel.Conditional)
+        condition = node.condition()
+        cond_loc = condition.location()
+        cond_loc_start_line, cond_loc_start_col = cond_loc.start()
+        _, cond_loc_end_col = cond_loc.end()
+
+        if replace_with_value is None:
+            # get the conditions text, using its location so we preserve comments
+            lines = chapel.get_file_lines(context, result.node)
+            condition_text = lines[cond_loc_start_line - 1][
+                cond_loc_start_col - 1 : cond_loc_end_col - 1
+            ]
+            if should_invert:
+                condition_text = "!(" + condition_text + ")"
+        else:
+            condition_text = "true" if replace_with_value else "false"
+
+        if is_only_returns:
+            condition_text = "return " + condition_text + ";"
+
+        return [Fixit.build(Edit.build(node.location(), condition_text))]
+
     @driver.basic_rule(Coforall, default=False)
     def NestedCoforalls(context: Context, node: Coforall):
         """
@@ -348,6 +808,10 @@ def rules(driver: LintDriver):
 
         parent = node.parent()
         while parent is not None:
+            if isinstance(parent, On):
+                # if at any point there is an on-statement, we are fine since
+                # the second coforall will be on another node
+                return True
             if isinstance(parent, Coforall):
                 return False
             parent = parent.parent()
@@ -372,6 +836,7 @@ def rules(driver: LintDriver):
         Remove the unused branch of a conditional statement, keeping the braces.
         """
         node = result.data
+        assert isinstance(node, Conditional)
         lines = chapel.get_file_lines(context, node)
 
         cond = node.condition()
@@ -383,7 +848,16 @@ def rules(driver: LintDriver):
         else:
             else_block = node.else_block()
             if else_block is not None:
-                text = range_to_text(else_block.location(), lines)
+                if curly_loc := else_block.curly_braces_location():
+                    loc = curly_loc
+                else:
+                    loc = else_block.location()
+                    if else_kw_loc := node.else_keyword_location():
+                        loc -= else_kw_loc
+                    if else_block.num_stmts() > 0:
+                        # clamp left to the start of the else block statements
+                        loc = loc.clamp_left(else_block.stmt(0).location())
+                text = range_to_text(loc, lines)
             else:
                 text = ""
         # should be set in all branches
@@ -426,9 +900,17 @@ def rules(driver: LintDriver):
         Warn for empty statements (i.e., unnecessary semicolons).
         """
         p = node.parent()
-        if p and isinstance(p, SimpleBlockLike) and len(list(p.stmts())) == 1:
-            # dont warn if the EmptyStmt is the only statement in a block
-            return True
+        if p:
+            if isinstance(p, SimpleBlockLike) and len(list(p.stmts())) == 1:
+                # dont warn if the EmptyStmt is the only statement in a block
+                return True
+            if (
+                isinstance(p, Module)
+                and p.kind() == "implicit"
+                and len(list(p)) == 1
+            ):
+                # dont warn if the EmptyStmt is the only statement in an implicit module
+                return True
 
         return BasicRuleResult(
             node, fixits=Fixit.build(Edit.build(node.location(), ""))
@@ -559,31 +1041,35 @@ def rules(driver: LintDriver):
         yield from recurse(root)
 
     @driver.advanced_rule
-    def MisleadingIndentation(context: Context, root: AstNode):
+    def MisleadingIndentation(
+        context: Context, root: AstNode, ChplcheckSilencedRules: List[str]
+    ):
         """
         Warn for single-statement blocks that look like they might be multi-statement blocks.
         """
-        if isinstance(root, Comment):
-            return
-        prev = []
-        fix = None
-        for child in root:
-            if isinstance(child, Comment):
-                continue
-            if might_incorrectly_report_location(child):
-                continue
-            yield from MisleadingIndentation(context, child)
+        collector = build_and_run_indentation_collector(root)
 
-            if prev and any(
-                p.location().start()[1] == child.location().start()[1]
-                for p in prev
+        no_incorrect_indentation = (
+            "IncorrectIndentation" in ChplcheckSilencedRules
+        )
+
+        for node, (
+            child,
+            anchor,
+            group,
+        ) in collector.misleadingly_indented_groups.items():
+            # If the thing we look like we're bundled under is itself
+            # incorrectly indented, that's the root cause, let that report
+            # take precedence.
+            if (
+                no_incorrect_indentation
+                or child not in collector.incorrectly_indented_nodes
             ):
-                yield AdvancedRuleResult(child, fix)
+                yield AdvancedRuleResult(node, anchor, data=(child, group))
 
-            prev = []
-            fix = append_nested_single_stmt(child, prev)
-
-    def append_nested_single_stmt(node, prev: List[AstNode]):
+    def append_nested_single_stmt(
+        node, prev: List[tuple[AstNode, List[AstNode]]]
+    ):
         if isinstance(node, Loop) and node.block_style() == "implicit":
             children = list(node)
             # safe to access [-1], loops must have at least 1 child
@@ -596,9 +1082,7 @@ def rules(driver: LintDriver):
         for stmt in inblock:
             if isinstance(stmt, Comment):
                 continue
-            if might_incorrectly_report_location(stmt):
-                continue
-            prev.append(stmt)
+            prev.append((stmt, []))
             append_nested_single_stmt(stmt, prev)
             return node  # Return the outermost on to use an anchor
 
@@ -627,6 +1111,56 @@ def rules(driver: LintDriver):
             fixit = Fixit.build(Edit(loc.path(), line_start, loc.end(), text))
         return [fixit] if fixit else []
 
+    @driver.fixit(MisleadingIndentation)
+    def FixMisleadingIndentationCurly(
+        context: Context, result: AdvancedRuleResult
+    ):
+        """
+        Change the 'do' keyword to an explicit curly-brace block.
+        """
+        assert isinstance(result.anchor, AstNode)
+        assert isinstance(result.data, tuple) and len(result.data) == 2
+        assert isinstance(result.data[0], AstNode)
+        assert isinstance(result.data[1], list)
+
+        misleading_child, group = result.data
+        implicit_block = misleading_child.parent()
+        assert implicit_block is not None
+        parent_blocklike = implicit_block.parent()
+        assert parent_blocklike is not None
+
+        if not isinstance(parent_blocklike, IndexableLoop):
+            return []
+
+        # the 'do' is the last two characters of the header.
+        loop_loc = parent_blocklike.location()
+        body_loc = implicit_block.location()
+        last_loc = group[-1].location()
+
+        # Strange shape, let's not try to fix it.
+        if loop_loc.start()[1] >= last_loc.start()[1]:
+            return []
+
+        path = last_loc.path()
+
+        parent_indent = max(loop_loc.start()[1] - 1, 0)
+
+        lines = chapel.get_file_lines(context, result.node)
+        end_of_last = (last_loc.end()[0], len(lines[last_loc.end()[0] - 1]) + 1)
+        edit_close = Edit(
+            path, end_of_last, end_of_last, "\n" + parent_indent * " " + "}"
+        )
+
+        do_begin_col = body_loc.start()[1]
+        do_end_col = do_begin_col + 2
+        do_start = (body_loc.start()[0], do_begin_col)
+        do_end = (body_loc.start()[0], do_end_col)
+        edit_open = Edit(path, do_start, do_end, "{")
+
+        fixit = Fixit.build(edit_close, edit_open)
+        fixit.changes_semantics = True
+        return [fixit]
+
     @driver.advanced_rule
     def UnusedFormal(context: Context, root: AstNode):
         """
@@ -638,7 +1172,9 @@ def rules(driver: LintDriver):
         formals = dict()
         uses = set()
 
-        for formal, _ in chapel.each_matching(root, Formal):
+        for formal, _ in chapel.each_matching(
+            root, set([Formal, VarArgFormal])
+        ):
             # For now, it's harder to tell if we're ignoring 'this' formals
             # (what about method calls with implicit receiver?). So skip
             # 'this' formals.
@@ -648,10 +1184,59 @@ def rules(driver: LintDriver):
             if formal.name() == "_":
                 continue
 
+            # skip formals named Self that have no name location
+            # (they are compiler generated)
+            if (
+                formal.name() == "Self"
+                and formal.name_location().start() == (0, 0)
+                and formal.name_location().end() == (0, 0)
+            ):
+                continue
+
             # extern functions have no bodies that can use their formals.
             parent = formal.parent()
             if isinstance(parent, NamedDecl) and parent.linkage() == "extern":
                 continue
+            # skip formals that are part of function signatures
+            if isinstance(parent, FunctionSignature):
+                continue
+
+            # skip the writer/serializer formals for serialize and
+            # the reader/deserializer formals for deserialize since a valid
+            # serialize/deserialize may not reference them
+            if isinstance(parent, Function):
+                if parent.name() == "serialize" and formal.name() in (
+                    "writer",
+                    "serializer",
+                ):
+                    continue
+                if parent.name() == "deserialize" and formal.name() in (
+                    "reader",
+                    "deserializer",
+                ):
+                    continue
+                if parent.name() == "init" and formal.name() in (
+                    "reader",
+                    "deserializer",
+                ):
+                    # all of the formals should be type intent, followed
+                    # by reader and deserializer
+                    parentFormals = [
+                        (f.name(), f.intent())
+                        for f in parent.formals()
+                        if isinstance(f, Formal) and not f.is_this()
+                    ]
+                    hasDeserializer = parentFormals[-1] == (
+                        "deserializer",
+                        "ref",
+                    )
+                    hasReader = parentFormals[-2][0] == "reader"
+                    allTypes = all(
+                        intent in ("type", "param")
+                        for _, intent in parentFormals[:-2]
+                    )
+                    if hasDeserializer and hasReader and allTypes:
+                        continue
 
             formals[formal.unique_id()] = formal
 
@@ -690,6 +1275,11 @@ def rules(driver: LintDriver):
                     or intent.init_expression() is not None
                 ):
                     continue
+            if intent.name() == "this":
+                # skip 'this' task intents, they may be used implicitly
+                # TODO: in the future, the resolver may be able to check if
+                # 'this' is actually used implicitly and we can remove this exception
+                continue
             intents[intent.unique_id()] = intent
 
         for use, _ in chapel.each_matching(root, Identifier):
@@ -848,143 +1438,24 @@ def rules(driver: LintDriver):
             yield AdvancedRuleResult(iterand, anchor=loop, fixits=[fixit])
 
     @driver.advanced_rule
-    def IncorrectIndentation(context: Context, root: AstNode):
+    def IncorrectIndentation(
+        context: Context, root: AstNode, ChplcheckSilencedRules: List[str]
+    ):
         """
         Warn for inconsistent or missing indentation
         """
+        collector = build_and_run_indentation_collector(root)
 
-        # First, recurse and find warnings in children.
-        for child in root:
-            yield from IncorrectIndentation(context, child)
+        no_misleading_indentation = (
+            "MisleadingIndentation" in ChplcheckSilencedRules
+        )
 
-        def contains_statements(node: AstNode) -> bool:
-            """
-            Returns true for allow-listed AST nodes that contain
-            just a list of statements.
-            """
-            classes = (
-                Record,
-                Class,
-                Module,
-                SimpleBlockLike,
-                Interface,
-                Union,
-                Enum,
-                Cobegin,
-            )
-            return isinstance(node, classes)
-
-        def unwrap_intermediate_block(node: AstNode) -> Optional[AstNode]:
-            """
-            Given a node, find the reference indentation that its children
-            should be compared against.
-
-            This method also rules out certain nodes that should
-            not be used for parent-child indentation comparison.
-            """
-            if not isinstance(node, Block):
-                return node
-
-            parent = node.parent()
-            if not parent:
-                return node
-
-            if isinstance(parent, (Function, Loop)):
-                return parent
-            elif isinstance(parent, Conditional):
-                return None if parent.is_expression_level() else parent
-            return node
-
-        # If root is something else (e.g., function call), do not
-        # apply indentation rules; only apply them to things that contain
-        # a list of statements.
-        is_eligible_parent_for_indentation = contains_statements(root)
-        if not is_eligible_parent_for_indentation:
-            return
-
-        parent_for_indentation = unwrap_intermediate_block(root)
-        parent_depth = None
-        if parent_for_indentation is None:
-            # don't compare against any parent depth.
-            pass
-        # For implicit modules, proper code will technically be on the same
-        # line as the module's body. But we don't want to warn about that,
-        # since we don't want to ask all code to be indented one level deeper.
-        elif not (
-            isinstance(parent_for_indentation, Module)
-            and parent_for_indentation.kind() == "implicit"
-        ):
-            parent_depth = parent_for_indentation.location().start()[1]
-
-        prev = None
-        prev_depth = None
-        prev_line = None
-
-        # We only care about misaligned statements, so we don't want to do stuff
-        # like warn for inherit-exprs or pragmas on a record.
-        iterable = root
-        if isinstance(root, AggregateDecl):
-            iterable = root.decls_or_comments()
-        elif isinstance(root, SimpleBlockLike):
-            iterable = root.stmts()
-        elif isinstance(root, Module) and root.attribute_group() is not None:
-            # attribute group is the first child, skip it
-            iterable = list(root)[1:]
-
-        for child in iterable:
-            if isinstance(child, Comment):
-                continue
-
-            if might_incorrectly_report_location(child):
-                continue
-            # Empty statements get their own warnings, no need to warn here.
-            elif isinstance(child, EmptyStmt):
-                continue
-
-            line, depth = child.location().start()
-
-            # Warn for two statements on one line:
-            #   var x: int; var y: int;
-            if line == prev_line:
-                # Exception for enums, which are allowed to be on the same line.
-                #   enum color { red, green, blue }
-                if not isinstance(child, EnumElement):
-                    yield child
-            # Warn for misaligned siblings:
-            #   var x: int;
-            #     var y: int;
-            elif prev_depth and depth != prev_depth:
-                # Special case, slightly coarse: avoid double-warning with
-                # MisleadingIndentation
-                if not (
-                    prev
-                    and (isinstance(prev, Loop) or isinstance(prev, On))
-                    and prev.block_style() == "implicit"
-                ):
-                    yield child
-
-                # Do not update 'prev_depth'; use original prev_depth as
-                # reference for next sibling.
-                prev_line = line
-                prev = child
-                continue
-            # Warn for children that are not indented relative to parent
-            #
-            #   record r {
-            #   var x: int;
-            #   }
-            elif parent_depth and depth == parent_depth:
-                # only loops and NamedDecls can be anchors for indentation
-                anchor = (
-                    parent_for_indentation
-                    if isinstance(parent_for_indentation, (Loop, NamedDecl))
-                    else None
-                )
-                yield AdvancedRuleResult(child, anchor=anchor)
-
-            prev_depth = depth
-            prev = child
-            prev_line = line
+        for node, anchor in collector.incorrectly_indented_nodes.items():
+            if (
+                no_misleading_indentation
+                or node not in collector.misleadingly_indented_groups
+            ):
+                yield AdvancedRuleResult(node, anchor)
 
     @driver.advanced_rule
     def MissingInIntent(_, root: chapel.AstNode):
@@ -1057,11 +1528,20 @@ def rules(driver: LintDriver):
         )
         return [fixit]
 
-    @driver.location_rule(settings=[".Max"])
-    def LineLength(_: chapel.Context, path: str, lines: List[str], Max=None):
+    @driver.location_rule(settings=[".Max", ".IgnoreDocStrings"])
+    def LineLength(
+        _: chapel.Context,
+        path: str,
+        lines: List[str],
+        Max=None,
+        IgnoreDocStrings=None,
+    ):
         """
         Warn for lines that exceed a maximum length.
-        By default, the maximum line length is 80 characters.
+        By default, the maximum line length is 80 characters. This can be
+        configured with ``--setting LineLength.Max=<number>``.
+        By default, docstrings are included in this check, but they can be
+        ignored with ``--setting LineLength.IgnoreDocStrings=true``.
         """
 
         Max = Max or "80"  # default to 80 characters
@@ -1069,7 +1549,23 @@ def rules(driver: LintDriver):
             max_line_length = int(Max)
         except ValueError:
             raise ValueError("Invalid value for Max: '{}'".format(Max))
+        if IgnoreDocStrings not in (None, "true", "false"):
+            raise ValueError(
+                "Invalid value for IgnoreDocStrings: '{}'".format(
+                    IgnoreDocStrings
+                )
+            )
+        IgnoreDocStrings = IgnoreDocStrings == "true"  # default to False
 
-        for i, line in enumerate(lines, start=1):
-            if len(line) > max_line_length:
-                yield RuleLocation(path, (i, 1), (i, len(line) + 1))
+        docstring_ranges = []
+        if IgnoreDocStrings:
+            docstring_ranges = find_docstring_ranges(lines)
+
+        for row, line in enumerate(lines, start=1):
+            nowhitespace = line.rstrip()
+            if IgnoreDocStrings and is_in_docstring(
+                (row, len(nowhitespace)), docstring_ranges
+            ):
+                continue
+            if len(nowhitespace) > max_line_length:
+                yield RuleLocation(path, (row, 1), (row, len(nowhitespace) + 1))

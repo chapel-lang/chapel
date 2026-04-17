@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -151,6 +151,13 @@ class DomainType final : public CompositeType {
     CHPL_ASSERT(parentDom.type()->isDomainType());
     return parentDom.type()->toDomainType();
   }
+
+  /* Return a version of this domain that isn't tied to a particular instance
+     (DefaultRectangular etc.), by stripping the _instance field substitution.
+     This makes the domain generic and suitable to being used in array formals. */
+  const DomainType* makeUninstanced(Context* context) const;
+
+  bool isUninstanced(Context* context) const;
 
   // Returns the integer representing the rank of this domain. This is more
   // general than `rank`, because `rank` returns the substitution

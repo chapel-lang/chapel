@@ -1,4 +1,4 @@
-# Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2026 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -36,10 +36,8 @@ CHPL_MAKE_HOST_TARGET = --target
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 
 SYS_MODULES_DIR=standard/gen/$(CHPL_MAKE_SYS_MODULES_SUBDIR)
-SYS_MODULES_DIR_MINIMAL=minimal/standard/gen/$(CHPL_MAKE_SYS_MODULES_SUBDIR)
 SYS_CTYPES_MODULE_DOC=standard/ChapelSysCTypes.chpl
 SYS_CTYPES_MODULE=$(SYS_MODULES_DIR)/ChapelSysCTypes.chpl
-SYS_CTYPES_MODULE_MINIMAL=$(SYS_MODULES_DIR_MINIMAL)/ChapelSysCTypes.chpl
 
 MODULE_SPHINX=${CHPL_MAKE_HOME}/modules/sphinx
 DOC_BUILD=${CHPL_MAKE_HOME}/build/doc
@@ -48,7 +46,7 @@ COPY_IF_DIFFERENT = $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/config/update-if-
 
 default: all
 
-all: $(SYS_CTYPES_MODULE) $(SYS_CTYPES_MODULE_MINIMAL)
+all: $(SYS_CTYPES_MODULE)
 	$(TAGS_COMMAND)
 
 clean: FORCE
@@ -62,18 +60,21 @@ clobber: FORCE clean-documentation
 depend:
 
 MAKE_SYS_BASIC_TYPES=$(CHPL_MAKE_HOME)/util/config/make_sys_basic_types.py
+MAKE_SYS_BASIC_TYPES_CMD=CHPL_HOST_COMPILER='$(CHPL_MAKE_HOST_COMPILER)' \
+                         CHPL_HOST_CC='$(CHPL_MAKE_HOST_CC)' \
+                         CHPL_HOST_CXX='$(CHPL_MAKE_HOST_CXX)' \
+                         CHPL_TARGET_COMPILER='$(CHPL_MAKE_TARGET_COMPILER)' \
+                         CHPL_TARGET_CC='$(CHPL_MAKE_TARGET_CC)' \
+                         CHPL_TARGET_CXX='$(CHPL_MAKE_TARGET_CXX)' \
+                         $(CHPL_MAKE_PYTHON) $(MAKE_SYS_BASIC_TYPES)
 
 $(SYS_CTYPES_MODULE): $(MAKE_SYS_BASIC_TYPES)
 	mkdir -p $(@D)
-	cd $(@D) && $(CHPL_MAKE_PYTHON) $(MAKE_SYS_BASIC_TYPES) $(@F)
-
-$(SYS_CTYPES_MODULE_MINIMAL): $(MAKE_SYS_BASIC_TYPES)
-	mkdir -p $(@D)
-	cd $(@D) && $(CHPL_MAKE_PYTHON) $(MAKE_SYS_BASIC_TYPES) --minimal $(@F)
+	cd $(@D) && $(MAKE_SYS_BASIC_TYPES_CMD) $(@F)
 
 $(SYS_CTYPES_MODULE_DOC): $(MAKE_SYS_BASIC_TYPES)
 	mkdir -p $(@D)
-	cd $(@D) && $(CHPL_MAKE_PYTHON) $(MAKE_SYS_BASIC_TYPES) --doc $(@F)
+	cd $(@D) && $(MAKE_SYS_BASIC_TYPES_CMD) --doc $(@F)
 
 MODULES_TO_DOCUMENT = \
 	standard/Allocators.chpl \
@@ -130,15 +131,14 @@ PACKAGES_TO_DOCUMENT = \
 	packages/Crypto.chpl \
 	packages/Curl.chpl \
 	packages/DistributedBag.chpl \
-	packages/DistributedBagDeprecated.chpl \
 	packages/DistributedDeque.chpl \
 	packages/DistributedIters.chpl \
+	packages/DynamicLoading.chpl \
 	packages/EpochManager.chpl \
 	packages/FFTW.chpl \
 	packages/FunctionalOperations.chpl \
 	packages/Futures.chpl \
 	packages/HDF5.chpl \
-	packages/HDFS.chpl \
 	packages/Image.chpl \
 	packages/LAPACK.chpl \
 	packages/LinearAlgebra.chpl \
@@ -185,7 +185,6 @@ DISTS_TO_DOCUMENT = \
 	dists/dims/BlockCycDim.chpl \
 	dists/dims/BlockDim.chpl \
 	dists/dims/ReplicatedDim.chpl \
-	layouts/LayoutCS.chpl \
 	layouts/CompressedSparseLayout.chpl \
 
 
@@ -195,7 +194,7 @@ DISTS_TO_DOCUMENT = \
 # live in a path named 'modules/internal/' so that they don't get
 # indexed like the user-facing modules.
 #
-INTERNAL_MODULES_TO_DOCUMENT =                        \
+INTERNAL_MODULES_TO_DOCUMENT =                          \
 	$(CHPL_MAKE_HOME)/modules/internal/Atomics.chpl       \
 	$(CHPL_MAKE_HOME)/modules/internal/Bytes.chpl         \
 	$(CHPL_MAKE_HOME)/modules/internal/ChapelArray.chpl   \
@@ -204,21 +203,22 @@ INTERNAL_MODULES_TO_DOCUMENT =                        \
 	$(CHPL_MAKE_HOME)/modules/internal/ChapelRange.chpl   \
 	$(CHPL_MAKE_HOME)/modules/internal/ChapelSyncvar.chpl \
 	$(CHPL_MAKE_HOME)/modules/internal/ChapelTuple.chpl   \
+	$(CHPL_MAKE_HOME)/modules/internal/ChapelUnion.chpl   \
 	$(CHPL_MAKE_HOME)/modules/internal/OwnedObject.chpl   \
 	$(CHPL_MAKE_HOME)/modules/internal/SharedObject.chpl  \
-	$(CHPL_MAKE_HOME)/modules/internal/String.chpl        \
+	$(CHPL_MAKE_HOME)/modules/internal/String.chpl
 
 
 documentation: $(SYS_CTYPES_MODULE_DOC)
 	@echo "Generating module documentation with chpldoc"
-	@export CHPLDOC_AUTHOR='Hewlett Packard Enterprise Development LP' && \
+	@export CHPLDOC_AUTHOR='Chapel a Series of LF Projects, LLC' && \
 	  $(CHPLDOC) --home $(CHPL_MAKE_HOME) --save-sphinx ${MODULE_SPHINX} --no-html $(MODULES_TO_DOCUMENT) $(DISTS_TO_DOCUMENT) $(PACKAGES_TO_DOCUMENT) $(INTERNAL_MODULES_TO_DOCUMENT) $(SYS_CTYPES_MODULE_DOC)
 	@echo "Running post-processing scripts"
 	@./internal/fixInternalDocs.sh ${MODULE_SPHINX}
 	@./dists/fixDistDocs.perl      ${MODULE_SPHINX}
 	@echo "Copying generated module documentation to ${DOC_BUILD}"
-	@rm -rf {DOC_BUILD}/modules
-	@rm -rf {DOC_BUILD}/builtins
+	@rm -rf ${DOC_BUILD}/modules
+	@rm -rf ${DOC_BUILD}/builtins
 	@mkdir -p ${DOC_BUILD}/modules
 	@mkdir -p ${DOC_BUILD}/builtins
 	@cp -rf ${MODULE_SPHINX}/source/modules/standard   ${DOC_BUILD}/modules

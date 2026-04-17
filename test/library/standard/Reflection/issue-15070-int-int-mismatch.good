@@ -1,0 +1,1 @@
+issue-15070-int-int-mismatch.chpl:6: error: halt reached - size mismatch in zippered iteration (dimension 0)

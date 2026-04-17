@@ -55,16 +55,16 @@ Flags                   Description
                         module is used (minus its ``.chpl`` extension).
 ``--no-checks``         turns off runtime semantic checks like bounds
                         checking and nil class instance dereferencing
-``-O``                  turns on optimization of the generated C code
+``-O``                  turns on backend optimization of the generated code
 ``--fast``              turns on ``--no-checks``, ``-O``, and enables
                         many other optimizations
 ``-s <name[=expr]>``    set a config declaration with the given expression
                         as its default value (config params must be set
                         to values that are known at compile time)
 ``-M <dir>``            add the specified directory to the module search path
-``--savec <dir>``       saves the generated C code in the specified
+``--savec <dir>``       saves the generated code in the specified
                         directory
-``-g``                  support debugging of the generated C code
+``-g``                  support debugging of the generated code
 ``--ccflags <flags>``   specify flags that should be used when invoking
                         the back-end C compiler
 ``--ldflags <flags>``   specify flags that should be used when invoking
@@ -203,3 +203,54 @@ will build a release version of the program:
    mkdir build && cd build
    cmake .. -DCMAKE_BUILD_TYPE=release
    cmake --build .
+
+
+Additional compilation flags for compiling the Chapel code can be added using
+``target_link_options``. For example, this snippet limits the amount of
+optimization done by the backend compiler to speed up compilation times.
+
+.. code-block:: cmake
+
+   target_link_options(myProgram PRIVATE --ccflags -O1)
+
+This also means that projects using a mix of C and Chapel code may need to
+specify arguments twice. For example, this snippet shows a project that uses
+both Chapel and C code:
+
+.. code-block:: cmake
+
+   add_executable(main)
+   target_sources(main PRIVATE myChapelProgram.chpl src/c_source_file.c)
+   set_target_properties(main PROPERTIES LINKER_LANGUAGE CHPL)
+
+   # used by C compiler
+   target_include_directories(main PRIVATE include)
+   # used by Chapel compiler
+   target_link_options(main PRIVATE -I${CMAKE_SOURCE_DIR}/include)
+
+
+In larger projects, it may be useful to compile the C code separately. This can
+be done by creating a library target for the C code and linking it to the Chapel
+code:
+
+.. code-block:: cmake
+
+   add_library(myCCode src/c_source_file.c)
+   target_include_directories(myCCode PRIVATE include)
+
+   add_executable(myChapelProgram main.chpl)
+   target_link_options(main PRIVATE -I${CMAKE_SOURCE_DIR}/include)
+   target_link_libraries(myChapelProgram PRIVATE myCCode)
+
+To enable use of CMake-based projects with the :ref:`language server <readme-chpl-language-server>`,
+the CMake integration provides a special variable ``CMAKE_EXPORT_CHPL_COMMANDS``.
+When set to ``ON``, CMake will generate a file named ``.cls-commands.json`` in
+the build directory. This file can be read by the language server to understand
+the module structure of the project. For example:
+
+.. code-block:: sh
+
+   mkdir build && cd build
+   cmake .. -CMAKE_EXPORT_CHPL_COMMANDS=ON
+   cmake --build .
+   cd .. && ln -s build/.cls-commands.json .cls-commands.json

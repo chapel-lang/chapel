@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -209,9 +209,12 @@ owned<AttributeGroup> ParserContext::buildAttributeGroup(YYLTYPE locationOfDecl)
                                 attributeGroupParts.isDeprecated,
                                 attributeGroupParts.isUnstable,
                                 attributeGroupParts.isParenfulDeprecated,
+                                attributeGroupParts.hasEdition,
                                 attributeGroupParts.deprecationMessage,
                                 attributeGroupParts.unstableMessage,
                                 attributeGroupParts.parenfulDeprecationMessage,
+                                attributeGroupParts.firstEdition,
+                                attributeGroupParts.lastEdition,
                                 std::move(attrList));
   return node;
 }
@@ -272,6 +275,8 @@ void ParserContext::noteAttribute(YYLTYPE loc, AstNode* firstIdent,
     noteDeprecation(loc, actuals);
   } else if (ident->name()==USTR("stable")) {
     noteStable(loc, actuals);
+  } else if (ident->name() == USTR("edition")) {
+    noteEdition(loc, actuals);
   }
 
   // check the actual names are not duplicates
@@ -437,11 +442,57 @@ void ParserContext::noteUnstable(YYLTYPE loc, MaybeNamedActualList* actuals) {
   }
 }
 
+void ParserContext::noteEdition(YYLTYPE loc, MaybeNamedActualList* actuals) {
+  hasAttributeGroupParts = true;
+
+  attributeGroupParts.hasEdition = true;
+
+  if (actuals != nullptr && actuals->size() > 0) {
+    for (auto& actual : *actuals) {
+      if (actual.name.isEmpty()) {
+        error(loc, "'@edition' attribute argument must be named");
+      }
+
+      if (!(actual.name == UniqueString::get(context(), "first").podUniqueString() ||
+            actual.name == UniqueString::get(context(), "last").podUniqueString() ||
+            actual.name.isEmpty())) {
+        error(loc, "unrecognized argument name '%s'. "
+                   "'@edition' attribute only accepts 'first' and 'last' "
+                   "arguments",
+                   actual.name.c_str());
+      }
+      if (!actual.expr->isStringLiteral()) {
+        error(loc, "'@edition' attribute arguments must be string literals for now");
+      }
+
+      if (actual.name == UniqueString::get(context(),
+                                           "first").podUniqueString()) {
+        AstNode* firstStr = actual.expr;
+
+        if (auto strLit = firstStr->toStringLiteral()) {
+          attributeGroupParts.firstEdition = strLit->value();
+        }
+      }
+
+      if (actual.name == UniqueString::get(context(),
+                                           "last").podUniqueString()) {
+        AstNode* lastStr = actual.expr;
+
+        if (auto strLit = lastStr->toStringLiteral()) {
+          attributeGroupParts.lastEdition = strLit->value();
+        }
+      }
+    }
+  } else {
+    error(loc, "'@edition' attribute requires an argument");
+  }
+}
+
 void ParserContext::resetAttributeGroupPartsState() {
   if (hasAttributeGroupParts) {
     auto& pragmas = attributeGroupParts.pragmas;
     if (pragmas) delete pragmas;
-    attributeGroupParts = {nullptr, nullptr, false, false, false, false, UniqueString(), UniqueString(), UniqueString() };
+    attributeGroupParts = {nullptr, nullptr, false, false, false, false, false, UniqueString(), UniqueString(), UniqueString(), UniqueString(), UniqueString() };
     hasAttributeGroupParts = false;
   }
 
@@ -451,9 +502,12 @@ void ParserContext::resetAttributeGroupPartsState() {
   CHPL_ASSERT(!attributeGroupParts.isUnstable);
   CHPL_ASSERT(!attributeGroupParts.isParenfulDeprecated);
   CHPL_ASSERT(!attributeGroupParts.isStable);
+  CHPL_ASSERT(!attributeGroupParts.hasEdition);
   CHPL_ASSERT(attributeGroupParts.deprecationMessage.isEmpty());
   CHPL_ASSERT(attributeGroupParts.unstableMessage.isEmpty());
   CHPL_ASSERT(attributeGroupParts.parenfulDeprecationMessage.isEmpty());
+  CHPL_ASSERT(attributeGroupParts.firstEdition.isEmpty());
+  CHPL_ASSERT(attributeGroupParts.lastEdition.isEmpty());
   CHPL_ASSERT(!hasAttributeGroupParts);
 
   numAttributesBuilt = 0;
@@ -507,8 +561,9 @@ bool ParserContext::noteIsBuildingFormal(bool isBuildingFormal) {
   return this->isBuildingFormal;
 }
 
-bool ParserContext::noteIsVarDeclConfig(bool isConfig) {
+bool ParserContext::noteIsVarDeclConfig(bool isConfig, YYLTYPE loc) {
   this->isVarDeclConfig = isConfig;
+  this->configLoc = std::move(loc);
   return this->isVarDeclConfig;
 }
 
@@ -576,8 +631,11 @@ void ParserContext::exitScope(asttags::AstTag tag, UniqueString name) {
 void ParserContext::noteCurlyBraces(YYLTYPE left, YYLTYPE right) {
   this->curlyBraceLocation = makeSpannedLocation(left, right);
 }
+bool ParserContext::isValidCurlyBracesLoc(YYLTYPE loc) {
+  return loc.first_line > 0;
+}
 bool ParserContext::hasCurlyBracesLoc() {
-  return this->curlyBraceLocation.first_line > 0;
+  return isValidCurlyBracesLoc(this->curlyBraceLocation);
 }
 YYLTYPE ParserContext::curlyBracesLoc() {
   return this->curlyBraceLocation;
@@ -1098,11 +1156,10 @@ ParserContext::buildBeginStmt(YYLTYPE location, YYLTYPE locBegin,
                            blockStyle,
                            std::move(stmts));
   builder->noteBlockHeaderLocation(node.get(), convertLocation(locBegin));
-  if (hasCurlyBracesLoc()) {
-    builder->noteCurlyBracesLocation(node.get(), convertLocation(curlyBracesLoc()));
-    resetCurlyBracesLoc();
+  if (isValidCurlyBracesLoc(stmt.curlyLoc)) {
+    builder->noteCurlyBracesLocation(node.get(), convertLocation(stmt.curlyLoc));
   }
-  CommentsAndStmt ret = { .comments=comments, .stmt=node.release() };
+  CommentsAndStmt ret = makeCommentsAndStmt(comments, node.release());
   return finishStmt(ret);
 }
 
@@ -1209,7 +1266,8 @@ AstNode* ParserContext::buildManagerExpr(YYLTYPE location,
                                          Variable::Kind kind,
                                          YYLTYPE locResourceName,
                                          UniqueString resourceName) {
-  auto var = Variable::build(builder, convertLocation(locResourceName),
+  auto nameLoc = convertLocation(locResourceName);
+  auto var = Variable::build(builder, nameLoc, nameLoc,
                              nullptr,
                              Decl::DEFAULT_VISIBILITY,
                              Decl::DEFAULT_LINKAGE,
@@ -1249,19 +1307,17 @@ CommentsAndStmt ParserContext::buildManageStmt(YYLTYPE location,
                     blockOrDo);
 
   AstList managers = consumeList(managerExprs);
-  AstList stmts = consumeList(stmtExprList);
+  AstList stmts = consumeAndFlattenTopLevelBlocks(stmtExprList);
 
   auto node = Manage::build(builder, convertLocation(location),
                             std::move(managers),
                             blockStyle,
                             std::move(stmts));
   builder->noteBlockHeaderLocation(node.get(), convertLocation(locHeader));
-  if (hasCurlyBracesLoc()) {
-    builder->noteCurlyBracesLocation(node.get(), convertLocation(curlyBracesLoc()));
-    resetCurlyBracesLoc();
+  if (isValidCurlyBracesLoc(blockOrDo.cs.curlyLoc)) {
+    builder->noteCurlyBracesLocation(node.get(), convertLocation(blockOrDo.cs.curlyLoc));
   }
-
-  CommentsAndStmt ret = { .comments=comments, .stmt=node.release() };
+  CommentsAndStmt ret = makeCommentsAndStmt(comments, node.release());
 
   return ret;
 }
@@ -1287,6 +1343,7 @@ FunctionParts ParserContext::makeFunctionParts(bool isInline,
                       false,
                       nullptr, nullptr, nullptr, nullptr,
                       nullptr,
+                      YYLTYPE::create(),
                       YYLTYPE::create()};
   return fp;
 }
@@ -1647,6 +1704,7 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
 
   builder->noteDeclNameLocation(f.get(), identNameLoc);
   builder->noteDeclHeaderLocation(f.get(), convertLocation(fp.headerLoc));
+  builder->noteCurlyBracesLocation(f.get(), convertLocation(fp.curlyLoc));
 
   // If we are not a method then the receiver intent is discarded,
   // because there is no receiver formal to store it in.
@@ -1666,7 +1724,9 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
     }
   }
 
-  this->clearComments();
+  auto last = makeLocationAtLast(location);
+  auto commentsToDiscard = gatherComments(last);
+  clearComments(commentsToDiscard);
 
   cs.stmt = f.release();
   return cs;
@@ -1693,62 +1753,17 @@ void ParserContext::enterScopeForFunctionDecl(FunctionParts& fp,
     this->enterScope(asttags::Function, fp.name->name());
   }
 }
-void ParserContext::exitScopeForFunctionDecl(FunctionParts& fp) {
-  this->clearComments();
+void ParserContext::exitScopeForFunctionDecl(YYLTYPE bodyLocation,
+                                             FunctionParts& fp) {
+  auto last = makeLocationAtLast(bodyLocation);
+  auto commentsToDiscard = gatherComments(last);
+  clearComments(commentsToDiscard);
 
   fp.errorExpr = checkForFunctionErrors(fp, fp.returnType);
   // May never have been built if there was a syntax error.
   if (!fp.errorExpr) {
     this->exitScope(asttags::Function, fp.name->name());
   }
-}
-
-AstNode* ParserContext::buildLambda(YYLTYPE location, FunctionParts& fp) {
-  // drop any comments before the lambda
-  clearComments(fp.comments);
-
-  AstNode* ret = nullptr;
-
-  if (fp.errorExpr == nullptr) {
-    owned<Block> body;
-    if (fp.body != nullptr) {
-      body = consumeToBlock(location, fp.body);
-    }
-
-    // Own the recorded identifier to clean it up, but grab its location.
-    owned<Identifier> identName = toOwned(fp.name);
-    CHPL_ASSERT(identName.get());
-    auto identNameLoc = builder->getLocation(identName.get());
-    CHPL_ASSERT(!identNameLoc.isEmpty());
-
-    auto returnIntent = checkReturnIntent(this, fp.returnIntentLoc, fp.returnIntent);
-
-    auto f = Function::build(builder, identNameLoc,
-                             toOwned(fp.attributeGroup),
-                             Decl::DEFAULT_VISIBILITY,
-                             Decl::DEFAULT_LINKAGE,
-                             /* linkageName */ nullptr,
-                             UniqueString(),
-                             /* inline */ false,
-                             /* override */ false,
-                             Function::LAMBDA,
-                             /* receiver */ nullptr,
-                             returnIntent,
-                             fp.throws,
-                             /* primaryMethod */ false,
-                             /* parenless */ false,
-                             this->consumeList(fp.formals),
-                             toOwned(fp.returnType),
-                             toOwned(fp.where),
-                             this->consumeList(fp.lifetime),
-                             std::move(body));
-    builder->noteDeclNameLocation(f.get(), identNameLoc);
-    ret = f.release();
-  } else {
-    ret = fp.errorExpr;
-  }
-  this->clearComments();
-  return ret;
 }
 
 AstNode*
@@ -1922,7 +1937,8 @@ buildTupleComponent(YYLTYPE location, PODUniqueString name) {
                               /*initExpression*/ nullptr);
     ret = node.release();
   } else {
-    auto node = Variable::build(builder, convertLocation(location),
+    auto loc = convertLocation(location);
+    auto node = Variable::build(builder, loc, loc,
                                 /*attributeGroup*/ nullptr,
                                 visibility,
                                 linkage,
@@ -1959,7 +1975,8 @@ owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
   auto convLoc = convertLocation(location);
 
   if (const Identifier* ident = e->toIdentifier()) {
-    auto var = Variable::build(builder, convLoc, /*attributeGroup*/ nullptr,
+    auto var = Variable::build(builder, convLoc, convLoc,
+                           /*attributeGroup*/ nullptr,
                            Decl::DEFAULT_VISIBILITY,
                            Decl::DEFAULT_LINKAGE,
                            /*linkageName*/ nullptr,
@@ -1969,7 +1986,6 @@ owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
                            /*isField*/ false,
                            /*typeExpression*/ nullptr,
                            /*initExpression*/ nullptr);
-    builder->noteDeclNameLocation(var.get(), convLoc);
     builder->copyExprParenLocation(e, var.get());
     builder->deleteAllLocations(e);
     // Delete the location of 'e' because it's about to be deallocated;
@@ -2252,11 +2268,10 @@ ParserContext::buildBracketLoopStmt(YYLTYPE locLoop,
                                  /*isExpressionLevel*/ false,
                                  this->popLoopAttributeGroup());
   builder->noteLoopHeaderLocation(node.get(), convertLocation(locHeader));
-  if (hasCurlyBracesLoc()) {
-    builder->noteCurlyBracesLocation(node.get(), convertLocation(curlyBracesLoc()));
-    resetCurlyBracesLoc();
+  if (isValidCurlyBracesLoc(cs.curlyLoc)) {
+    builder->noteCurlyBracesLocation(node.get(), convertLocation(cs.curlyLoc));
   }
-  return { .comments=comments, .stmt=node.release() };
+  return makeCommentsAndStmt(comments, node.release());
 }
 
 CommentsAndStmt ParserContext::buildBracketLoopStmt(YYLTYPE locLoop,
@@ -2300,11 +2315,10 @@ CommentsAndStmt ParserContext::buildBracketLoopStmt(YYLTYPE locLoop,
                                  /*isExpressionLevel*/ false,
                                  this->popLoopAttributeGroup());
   builder->noteLoopHeaderLocation(node.get(), convertLocation(locHeader));
-  if (hasCurlyBracesLoc()) {
-    builder->noteCurlyBracesLocation(node.get(), convertLocation(curlyBracesLoc()));
-    resetCurlyBracesLoc();
+  if (isValidCurlyBracesLoc(cs.curlyLoc)) {
+    builder->noteCurlyBracesLocation(node.get(), convertLocation(cs.curlyLoc));
   }
-  return { .comments=comments, .stmt=node.release() };
+  return makeCommentsAndStmt(comments, node.release());
 }
 
 CommentsAndStmt ParserContext::buildGeneralLoopStmt(YYLTYPE locLoop,
@@ -2384,15 +2398,14 @@ CommentsAndStmt ParserContext::buildGeneralLoopStmt(YYLTYPE locLoop,
 
   if (error) {
     CHPL_ASSERT(!result);
-    return { .comments=comments, .stmt=error };
+    return makeCommentsAndStmt(comments, error);
   } else {
     CHPL_ASSERT(result);
     builder->noteLoopHeaderLocation(result, convertLocation(locHeader));
-    if (hasCurlyBracesLoc()) {
-      builder->noteCurlyBracesLocation(result, convertLocation(curlyBracesLoc()));
-      resetCurlyBracesLoc();
+    if (isValidCurlyBracesLoc(blockOrDo.cs.curlyLoc)) {
+      builder->noteCurlyBracesLocation(result, convertLocation(blockOrDo.cs.curlyLoc));
     }
-    return { .comments=comments, .stmt=result };
+    return makeCommentsAndStmt(comments, result);
   }
 }
 
@@ -2475,12 +2488,11 @@ CommentsAndStmt ParserContext::buildCoforallLoopStmt(YYLTYPE locCoforall,
                               std::move(body),
                               this->popLoopAttributeGroup());
   builder->noteLoopHeaderLocation(node.get(), convertLocation(locHeader));
-  if (hasCurlyBracesLoc()) {
-    builder->noteCurlyBracesLocation(node.get(), convertLocation(curlyBracesLoc()));
-    resetCurlyBracesLoc();
+  if (isValidCurlyBracesLoc(blockOrDo.cs.curlyLoc)) {
+    builder->noteCurlyBracesLocation(node.get(), convertLocation(blockOrDo.cs.curlyLoc));
   }
 
-  return { .comments=comments, .stmt=node.release() };
+  return makeCommentsAndStmt(comments, node.release());
 }
 
 CommentsAndStmt
@@ -2500,16 +2512,19 @@ ParserContext::buildConditionalStmt(bool usesThenKeyword, YYLTYPE locIf,
                     thenCs);
 
   auto thenBlock = consumeToBlock(locThenBody, thenExprLst);
+  builder->tryNoteCurlyBracesLocation(thenBlock.get(), convertLocation(thenCs.curlyLoc));
 
   auto node = Conditional::build(builder, convertLocation(locIf),
                                  toOwned(condition),
                                  thenBlockStyle,
                                  std::move(thenBlock),
                                  /*isExpressionLevel*/ false);
+  if (usesThenKeyword)
+    builder->noteThenKeywordLocation(node.get(), convertLocation(locThenKw));
 
   // Do NOT clear comments here! Due to lookahead we might clear a valid
   // comment that has already been stored.
-  return { .comments=comments, .stmt=node.release() };
+  return makeCommentsAndStmt(comments, node.release());
 }
 
 CommentsAndStmt
@@ -2538,6 +2553,7 @@ ParserContext::buildConditionalStmt(bool usesThenKeyword, YYLTYPE locIf,
                                         : BlockStyle::IMPLICIT;
 
   auto thenBlock = consumeToBlock(locThenBody, thenExprLst);
+  builder->tryNoteCurlyBracesLocation(thenBlock.get(), convertLocation(thenCs.curlyLoc));
 
   // If the else body is a block, discard all comments preceding it.
   if (isElseBodyBlock) {
@@ -2551,6 +2567,9 @@ ParserContext::buildConditionalStmt(bool usesThenKeyword, YYLTYPE locIf,
   if (!isElseBodyBlock) discardCommentsFromList(elseExprLst, locElseKw);
 
   auto elseBlock = consumeToBlock(locElseBody, elseExprLst);
+  // adjust the else block location to include the 'else' keyword
+  builder->noteLocation(elseBlock.get(), convertLocation(makeSpannedLocation(locElseKw, locElseBody)));
+  builder->tryNoteCurlyBracesLocation(elseBlock.get(), convertLocation(elseCs.curlyLoc));
 
   auto node = Conditional::build(builder, convertLocation(locIf),
                                  toOwned(condition),
@@ -2559,8 +2578,11 @@ ParserContext::buildConditionalStmt(bool usesThenKeyword, YYLTYPE locIf,
                                  elseBlockStyle,
                                  std::move(elseBlock),
                                  /*isExpressionLevel*/ false);
+  if (usesThenKeyword)  
+    builder->noteThenKeywordLocation(node.get(), convertLocation(locThenKw));
+  builder->noteElseKeywordLocation(node.get(), convertLocation(locElseKw));
 
-  return { .comments=comments, .stmt=node.release() };
+  return makeCommentsAndStmt(comments, node.release());
 }
 
 CommentsAndStmt ParserContext::buildExternBlockStmt(YYLTYPE locEverything,
@@ -2573,7 +2595,7 @@ CommentsAndStmt ParserContext::buildExternBlockStmt(YYLTYPE locEverything,
   // This was allocated in 'eatExternCode', see 'lexer-help.h'.
   free((void*) sizedStr.allocatedData);
 
-  return { .comments=comments, .stmt=node.release() };
+  return makeCommentsAndStmt(comments, node.release());
 }
 
 AstNode* ParserContext::buildNumericLiteral(YYLTYPE location,
@@ -2724,7 +2746,7 @@ buildForwardingDecl(YYLTYPE location, owned<AttributeGroup> attributeGroup,
                                       std::move(attributeGroup),
                                       std::move(expr));
 
-    return { .comments=comments, .stmt=node.release() };
+    return makeCommentsAndStmt(comments, node.release());
   }
 
   auto limitationsList = limitations ? consumeList(limitations) : AstList();
@@ -2737,7 +2759,7 @@ buildForwardingDecl(YYLTYPE location, owned<AttributeGroup> attributeGroup,
                                     std::move(attributeGroup),
                                     toOwned(visClause));
 
-  return { .comments=comments, .stmt=node.release() };
+  return makeCommentsAndStmt(comments, node.release());
 }
 
 
@@ -2759,7 +2781,7 @@ buildForwardingDecl(YYLTYPE location,
                                     toOwned(cs.stmt),
                                     decl->visibility());
 
-  return { .comments=comments, .stmt=node.release() };
+  return makeCommentsAndStmt(comments, node.release());
 }
 
 
@@ -2788,13 +2810,13 @@ buildImportStmt(YYLTYPE locEverything, Decl::Visibility visibility,
   for (auto& vc : vcs) {
     if (vc->isErroneousExpression()) {
       auto node = ErroneousExpression::build(builder, convLoc);
-      return { .comments=comments, .stmt=node.release() };
+      return makeCommentsAndStmt(comments, node.release());
     }
   }
 
   auto node = Import::build(builder, convLoc, visibility, std::move(vcs));
 
-  CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+  CommentsAndStmt cs = makeCommentsAndStmt(comments, node.release());
 
   this->visibility = Decl::DEFAULT_VISIBILITY;
 
@@ -2813,14 +2835,14 @@ buildMultiUseStmt(YYLTYPE locEverything, Decl::Visibility visibility,
   for (auto& vc : vcs) {
     if (vc->isErroneousExpression()) {
       auto node = ErroneousExpression::build(builder, convLoc);
-      return { .comments=comments, .stmt=node.release() };
+      return makeCommentsAndStmt(comments, node.release());
     }
   }
 
   // TODO: Make sure that all the vis clauses are correct for multi-use?
   auto node = Use::build(builder, convLoc, visibility, std::move(vcs));
 
-  CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+  CommentsAndStmt cs = makeCommentsAndStmt(comments, node.release());
 
   this->visibility = Decl::DEFAULT_VISIBILITY;
 
@@ -2843,7 +2865,7 @@ buildSingleUseStmt(YYLTYPE locEverything, YYLTYPE locVisibilityClause,
   if (visClause->isErroneousExpression()) {
     auto convLoc = convertLocation(locVisibilityClause);
     auto node = ErroneousExpression::build(builder, convLoc);
-    return { .comments=comments, .stmt=node.release() };
+    return makeCommentsAndStmt(comments, node.release());
   }
 
   AstList uses;
@@ -2855,7 +2877,7 @@ buildSingleUseStmt(YYLTYPE locEverything, YYLTYPE locVisibilityClause,
 
   this->visibility = Decl::DEFAULT_VISIBILITY;
 
-  CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+  CommentsAndStmt cs = makeCommentsAndStmt(comments, node.release());
 
   return finishStmt(cs);
 }
@@ -2883,7 +2905,7 @@ ParserContext::buildVarOrMultiDeclStmt(YYLTYPE locEverything,
   CHPL_ASSERT(firstDecl && lastDecl);
 
   auto comments = gatherCommentsFromList(vars, locEverything);
-  CommentsAndStmt cs = { .comments=comments, .stmt=nullptr };
+  CommentsAndStmt cs = makeCommentsAndStmt(comments, nullptr);
 
   if (numDecls == 1) {
     cs.stmt = lastDecl;
@@ -2906,6 +2928,10 @@ ParserContext::buildVarOrMultiDeclStmt(YYLTYPE locEverything,
         error(locEverything, "only (multi)variable declarations can target a specific locale");
       }
     }
+    // fixup the existing decl location for configs
+    auto loc = !this->isVarDeclConfig ? locEverything :
+                                        makeSpannedLocation(this->configLoc, locEverything);
+    builder->noteLocation(lastDecl, convertLocation(loc));
   } else {
 
     // TODO: Just embed and catch this in a tree-walk instead.
@@ -2920,7 +2946,11 @@ ParserContext::buildVarOrMultiDeclStmt(YYLTYPE locEverything,
         CHPL_PARSER_REPORT(this, MultipleExternalRenaming, locEverything);
       }
     }
-    auto multi = MultiDecl::build(builder, convertLocation(locEverything),
+    // adjust the decl location for configs before building MultiDecl
+    auto loc = !this->isVarDeclConfig ? locEverything :
+                                        makeSpannedLocation(this->configLoc, locEverything);
+    auto multi = MultiDecl::build(builder,
+                                  convertLocation(loc),
                                   std::move(attributeGroup),
                                   visibility,
                                   linkage,
@@ -3209,7 +3239,7 @@ ParserContext::buildTryExprStmt(YYLTYPE location, AstNode* expr,
   auto node = Try::build(builder, convertLocation(location), toOwned(expr),
                          isTryBang,
                          /*isExpressionLevel*/ false);
-  CommentsAndStmt ret = { .comments=comments, .stmt=node.release() };
+  CommentsAndStmt ret = makeCommentsAndStmt(comments, node.release());
   return ret;
 }
 
@@ -3232,7 +3262,7 @@ ParserContext::buildTryExprStmt(YYLTYPE location, CommentsAndStmt cs,
                          isTryBang,
                          /*isExpressionLevel*/ false);
 
-  CommentsAndStmt ret = { .comments=comments, .stmt=node.release() };
+  CommentsAndStmt ret = makeCommentsAndStmt(comments, node.release());
   return ret;
 }
 
@@ -3268,19 +3298,21 @@ ParserContext::buildTryCatchStmt(YYLTYPE location, CommentsAndStmt block,
 
   CHPL_ASSERT(block.stmt != nullptr && block.stmt->isBlock());
   Block* bodyBlock = block.stmt->toBlock();
+  builder->tryNoteCurlyBracesLocation(bodyBlock, convertLocation(block.curlyLoc));
   auto catches = consumeList(handlers);
   auto node = Try::build(builder, convertLocation(location),
                          toOwned(bodyBlock),
                          std::move(catches),
                          isTryBang);
 
-  CommentsAndStmt ret = { .comments=comments, .stmt=node.release() };
+  CommentsAndStmt ret = makeCommentsAndStmt(comments, node.release());
   return ret;
 }
 
 AstNode* ParserContext::buildCatch(YYLTYPE location, AstNode* error,
                                    CommentsAndStmt cs,
-                                   bool hasParensAroundError) {
+                                   bool hasParensAroundError,
+                                   YYLTYPE parenLocation) {
   CHPL_ASSERT(cs.stmt->isBlock());
   if (error != nullptr) CHPL_ASSERT(error->isVariable());
 
@@ -3289,11 +3321,16 @@ AstNode* ParserContext::buildCatch(YYLTYPE location, AstNode* error,
 
   auto errorVar = error ? error->toVariable() : nullptr;
 
+  auto block = cs.stmt->toBlock();
+  builder->tryNoteCurlyBracesLocation(block, convertLocation(cs.curlyLoc));
+
   auto node = Catch::build(builder, convertLocation(location),
                            toOwned(errorVar),
-                           toOwned(cs.stmt->toBlock()),
+                           toOwned(block),
                            hasParensAroundError);
-
+  if (hasParensAroundError) {
+    builder->tryNoteExprParenLocation(errorVar, convertLocation(parenLocation));
+  }
   return node.release();
 }
 
@@ -3324,12 +3361,11 @@ ParserContext::buildWhenStmt(YYLTYPE location,
                           blockStyle,
                           std::move(stmtList));
   builder->noteBlockHeaderLocation(node.get(), convertLocation(headerLocation));
-  if (hasCurlyBracesLoc()) {
-    builder->noteCurlyBracesLocation(node.get(), convertLocation(curlyBracesLoc()));
-    resetCurlyBracesLoc();
+  if (isValidCurlyBracesLoc(blockOrDo.cs.curlyLoc)) {
+    builder->noteCurlyBracesLocation(node.get(), convertLocation(blockOrDo.cs.curlyLoc));
   }
 
-  CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+  CommentsAndStmt cs = makeCommentsAndStmt(comments, node.release());
 
   return cs;
 }
@@ -3367,7 +3403,7 @@ ParserContext::buildSelectStmt(YYLTYPE location,
                             std::move(stmts));
   builder->noteBlockHeaderLocation(node.get(), convertLocation(headerLocation));
 
-  CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+  CommentsAndStmt cs = makeCommentsAndStmt(comments, node.release());
 
   return cs;
 }
@@ -3426,7 +3462,7 @@ CommentsAndStmt ParserContext::buildInterfaceStmt(YYLTYPE location,
   builder->noteDeclHeaderLocation(node.get(), convertLocation(headerLoc));
 
 
-  CommentsAndStmt cs = { .comments=parts.comments, .stmt=node.release() };
+  CommentsAndStmt cs = makeCommentsAndStmt(parts.comments, node.release());
 
   return cs;
 }
@@ -3471,7 +3507,7 @@ ParserContext::buildImplementsStmt(YYLTYPE location,
                                 std::move(interfaceExpr),
                                 isExpressionLevel);
 
-  CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+  CommentsAndStmt cs = makeCommentsAndStmt(comments, node.release());
 
   return cs;
 }
@@ -3496,7 +3532,7 @@ ParserContext::buildImplementsStmt(YYLTYPE location,
                                 std::move(typeIdent),
                                 std::move(interfaceExpr),
                                 isExpressionLevel);
-  CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+  CommentsAndStmt cs = makeCommentsAndStmt(comments, node.release());
 
   return cs;
 }
@@ -3560,7 +3596,7 @@ ParserContext::buildLabelStmt(YYLTYPE location, PODUniqueString name,
     CHPL_ASSERT(loop);
     auto node = Label::build(builder, convertLocation(location), name,
                              toOwned(loop));
-    return { .comments=comments, .stmt=node.release() };
+    return makeCommentsAndStmt(comments, node.release());
   } else {
     return finishStmt(
         CHPL_PARSER_REPORT(this, LabelIneligibleStmt, location, cs.stmt));
@@ -3569,7 +3605,7 @@ ParserContext::buildLabelStmt(YYLTYPE location, PODUniqueString name,
 
 
 ParserExprList*
-ParserContext::buildSingleStmtRoutineBody(CommentsAndStmt cs) {
-  this->clearComments();
+ParserContext::buildSingleStmtRoutineBody(YYLTYPE location, CommentsAndStmt cs) {
+  cs = this->finishStmt(location, cs);
   return this->makeList(cs);
 }

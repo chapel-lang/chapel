@@ -1,34 +1,40 @@
 import os
 from chplenv import *
 
+
 # Given two 2-tuples of lists, add 2nd lists to the first lists
 def extend2(x, y):
     x[0].extend(y[0])
     x[1].extend(y[1])
 
+
 # Remove duplicate -l arguments, keeping last occurrence and preserving order
 # e.g. "-lhwloc -lqthread -lhwloc ..." -> "-lqthread -lhwloc ...
 def dedup(args):
     seen = set()
-    ret = [arg for arg in reversed(args)
-           if not arg.startswith("-l") or (not (arg in seen or seen.add(arg)))]
+    ret = [
+        arg
+        for arg in reversed(args)
+        if not arg.startswith("-l") or (not (arg in seen or seen.add(arg)))
+    ]
     return reversed(ret)
+
 
 # Returns the runtime includes and defines according
 # to the current configuration, for a target (not host) compile.
 # Returns tuple of (bundled_args, system_args)
 def get_runtime_includes_and_defines():
-    bundled = [ ]
-    system = [ ]
+    bundled = []
+    system = []
 
     incl = chpl_home_utils.get_chpl_runtime_incl()
     locale_model = chpl_locale_model.get()
     comm = chpl_comm.get()
     tasks = chpl_tasks.get()
     atomics = chpl_atomics.get()
-    mem = chpl_mem.get('target')
+    mem = chpl_mem.get("target")
     third_party = chpl_home_utils.get_chpl_third_party()
-    platform = chpl_platform.get('target')
+    platform = chpl_platform.get("target")
 
     bundled.append("-I" + os.path.join(incl, "localeModels", locale_model))
     bundled.append("-I" + os.path.join(incl, "localeModels"))
@@ -45,7 +51,7 @@ def get_runtime_includes_and_defines():
         # w32api is provided by cygwin32-w32api-runtime
         system.append("-I" + os.path.join("usr", "include", "w32api"))
 
-    if os.environ.get('CHPL_COMM_DEBUG', None):
+    if os.environ.get("CHPL_COMM_DEBUG", None):
         # add -DCHPL_COMM_DEBUG_
         # this is needed since it affects code inside of headers
         bundled.append("-DCHPL_COMM_DEBUG")
@@ -54,24 +60,20 @@ def get_runtime_includes_and_defines():
     bundled.extend(gpu_bundled)
     system.extend(gpu_system)
 
-    if mem == "jemalloc" and chpl_jemalloc.get('target') == "bundled":
+    if mem == "jemalloc" and chpl_jemalloc.get("target") == "bundled":
         # set -DCHPL_JEMALLOC_PREFIX=chpl_je_
         # this is needed since it affects code inside of headers
         bundled.append("-DCHPL_JEMALLOC_PREFIX=chpl_je_")
 
     return (bundled, system)
 
+
 # Returns the runtime -L and -l args according
 # to the current configuration, for a target (not host) compile.
 # Returns tuple of (bundled_args, system_args)
 def get_runtime_link_args(runtime_subdir):
-    bundled = [ ]
-    system = [ ]
-
-    lib = chpl_home_utils.get_chpl_runtime_lib()
-
-    bundled.append("-L" + os.path.join(lib, runtime_subdir))
-    bundled.append("-lchpl")
+    bundled = []
+    system = []
 
     gpu_bundled, gpu_system = chpl_gpu.get_runtime_link_args()
     bundled.extend(gpu_bundled)
@@ -81,32 +83,120 @@ def get_runtime_link_args(runtime_subdir):
     system.append("-lm")
     # always link with the pthreads library
     system.append("-lpthread")
+    # always link with the dlopen library
+    system.append("-ldl")
 
     return (bundled, system)
+
+
+def path_to_runtime_libs(runtime_subdir):
+    lib = chpl_home_utils.get_chpl_runtime_lib()
+    ret = os.path.join(lib, runtime_subdir)
+    return ret
+
+
+def static_runtime_lib_base_name():
+    return "chpl-static"
+
+
+def static_runtime_lib_name():
+    return "lib" + static_runtime_lib_base_name() + ".a"
+
+
+def shared_runtime_lib_ext():
+    platform = chpl_platform.get("target")
+    if platform == "darwin":
+        return "dylib"
+    return "so"
+
+
+def shared_runtime_lib_base_name():
+    return "chpl"
+
+
+def shared_runtime_lib_name():
+    ret = "lib" + shared_runtime_lib_base_name() + "."
+    ret += shared_runtime_lib_ext()
+    return ret
+
+
+def compute_static_runtime_lib_path(runtime_subdir):
+    lib_name = static_runtime_lib_name()
+    path_to_lib = path_to_runtime_libs(runtime_subdir)
+    ret = os.path.join(path_to_lib, lib_name)
+    return ret
+
+
+def compute_shared_runtime_lib_path(runtime_subdir):
+    lib_name = shared_runtime_lib_name()
+    path_to_lib = path_to_runtime_libs(runtime_subdir)
+    ret = os.path.join(path_to_lib, lib_name)
+    return ret
+
+
+# Returns a list of strings representing linker arguments.
+def compute_use_static_runtime_link_args(runtime_subdir):
+    ret = []
+    ret.append("-L" + path_to_runtime_libs(runtime_subdir))
+    ret.append("-l" + static_runtime_lib_base_name())
+    return ret
+
+
+def compute_use_shared_runtime_link_args(runtime_subdir):
+    ret = []
+    ret.append("-Wl,-rpath," + path_to_runtime_libs(runtime_subdir))
+    ret.append("-L" + path_to_runtime_libs(runtime_subdir))
+    ret.append("-l" + shared_runtime_lib_base_name())
+    return ret
+
 
 # Returns a dictionary containing keys
 #   'host_compile'
 #   'host_link'
 #   'target_compile'
-#   'target_link'
+#   'target_program_link'
+#   'target_runtime_link'
 #
 # where each value is a tuple of compile/link args
 #  (bundled_args, system_args)
+#
+# Current list of what links to program vs. runtime:
+#
+# "runtime includes/defines"    -> rt
+# "gmp"                         -> program
+# "hwloc"                       -> rt
+# "qthreads"                    -> rt
+# "libunwind"                   -> rt
+# "jemalloc"                    -> rt
+# "mimalloc"                    -> rt
+# "re2"                         -> rt (qio/regex/bundled/re2-interface.cc)
+# "ofi + libfabric"             -> rt
+# "gasnet"                      -> rt
+# "ugni"                        -> rt
+# "lustre"                      -> rt
+# "java"                        -> program
+# "hadoop"                      -> program
+# "chpl compiler args"          -> program
+#
 def compute_internal_compile_link_args(runtime_subdir):
     # compute the compiler / link args
     # each of these is bundled, system
-    host_compile = ([ ], [ ])
-    host_link = ([ ], [ ])
-    tgt_compile = ([ ], [ ])
-    tgt_link = ([ ], [ ])
+    host_compile = ([], [])
+    host_link = ([], [])
+    tgt_compile = ([], [])
+    tgt_program_link = ([], [])
+    tgt_runtime_link = ([], [])
 
-    skip_host = os.environ.get('CHPLENV_SKIP_HOST', None)
+    skip_host = os.environ.get("CHPLENV_SKIP_HOST", None)
 
     # add runtime includes and defines
     extend2(tgt_compile, get_runtime_includes_and_defines())
-    extend2(tgt_link, get_runtime_link_args(runtime_subdir))
+    extend2(tgt_runtime_link, get_runtime_link_args(runtime_subdir))
 
-    # add 3p arguments
+    # For the program, add visibility into runtime lib folder for linker.
+    # We do NOT link directly against '-lchpl', but we do let the linker
+    # see into the folder so that users can link '-lchplmalloc'.
+    tgt_program_link[0].append("-L" + path_to_runtime_libs(runtime_subdir))
 
     # add args from chpl_llvm
     if not skip_host:
@@ -114,27 +204,33 @@ def compute_internal_compile_link_args(runtime_subdir):
         extend2(host_link, chpl_llvm.get_host_link_args())
 
     extend2(tgt_compile, chpl_gmp.get_compile_args())
-    extend2(tgt_link, chpl_gmp.get_link_args())
+    extend2(tgt_program_link, chpl_gmp.get_link_args())
 
     extend2(tgt_compile, chpl_hwloc.get_compile_args())
-    extend2(tgt_link, chpl_hwloc.get_link_args())
+    extend2(tgt_runtime_link, chpl_hwloc.get_link_args())
 
-    if chpl_tasks.get() == 'qthreads':
+    if chpl_tasks.get() == "qthreads":
         extend2(tgt_compile, chpl_qthreads.get_compile_args())
-        extend2(tgt_link, chpl_qthreads.get_link_args())
+        extend2(tgt_runtime_link, chpl_qthreads.get_link_args())
 
     extend2(tgt_compile, chpl_unwind.get_compile_args())
-    extend2(tgt_link, chpl_unwind.get_link_args())
+    extend2(tgt_runtime_link, chpl_unwind.get_link_args())
 
-    extend2(tgt_compile, chpl_jemalloc.get_compile_args('target'))
-    extend2(tgt_link, chpl_jemalloc.get_link_args('target'))
+    extend2(tgt_compile, chpl_jemalloc.get_compile_args("target"))
+    extend2(tgt_runtime_link, chpl_jemalloc.get_link_args("target"))
     if not skip_host:
-        extend2(host_compile, chpl_jemalloc.get_compile_args('host'))
-        extend2(host_link, chpl_jemalloc.get_link_args('host'))
+        extend2(host_compile, chpl_jemalloc.get_compile_args("host"))
+        extend2(host_link, chpl_jemalloc.get_link_args("host"))
 
-    if chpl_re2.get() != 'none':
+    extend2(tgt_compile, chpl_mimalloc.get_compile_args("target"))
+    extend2(tgt_runtime_link, chpl_mimalloc.get_link_args("target"))
+    if not skip_host:
+        extend2(host_compile, chpl_mimalloc.get_compile_args("host"))
+        extend2(host_link, chpl_mimalloc.get_link_args("host"))
+
+    if chpl_re2.get() != "none":
         extend2(tgt_compile, chpl_re2.get_compile_args())
-        extend2(tgt_link, chpl_re2.get_link_args())
+        extend2(tgt_runtime_link, chpl_re2.get_link_args())
 
     # The following communication-oriented options have been moved to
     # the end of this sequence of third-party package options because
@@ -142,71 +238,76 @@ def compute_internal_compile_link_args(runtime_subdir):
     # after all of our bundled/local arguments to avoid conflicts.
     # See issue #23362 for a potential way to do this in a more
     # principled way going forward.
-    if chpl_comm.get() == 'ofi':
+    if chpl_comm.get() == "ofi":
         extend2(tgt_compile, chpl_libfabric.get_compile_args())
-        extend2(tgt_link, chpl_libfabric.get_link_args())
+        extend2(tgt_runtime_link, chpl_libfabric.get_link_args())
         extend2(tgt_compile, chpl_comm_ofi_oob.get_compile_args())
-        extend2(tgt_link, chpl_comm_ofi_oob.get_link_args())
-    elif chpl_comm.get() == 'gasnet':
+        extend2(tgt_runtime_link, chpl_comm_ofi_oob.get_link_args())
+    elif chpl_comm.get() == "gasnet":
         extend2(tgt_compile, chpl_gasnet.get_compile_args())
-        extend2(tgt_link, chpl_gasnet.get_link_args())
-    elif chpl_comm.get() == 'ugni':
+        extend2(tgt_runtime_link, chpl_gasnet.get_link_args())
+    elif chpl_comm.get() == "ugni":
         # If there isn't a hugepage module loaded, we need to request
         # libhugetlbfs ourselves.
-        pe_product_list = os.environ.get('PE_PRODUCT_LIST', None)
-        if pe_product_list and 'HUGETLB' in pe_product_list:
-            tgt_link[1].append('-lhugetlbfs')
+        pe_product_list = os.environ.get("PE_PRODUCT_LIST", None)
+        if pe_product_list and "HUGETLB" in pe_product_list:
+            tgt_runtime_link[1].append("-lhugetlbfs")
 
     aux_filesys = chpl_aux_filesys.get()
-    if 'lustre' in aux_filesys:
-        tgt_compile[1].append('-DSYS_HAS_LLAPI')
-        tgt_link[1].append('-llustreapi')
-    if 'hdfs' in aux_filesys:
-        java_install = os.environ.get('JAVA_INSTALL', None)
-        hadoop_install = os.environ.get('HADOOP_INSTALL', None)
+    if "lustre" in aux_filesys:
+        tgt_compile[1].append("-DSYS_HAS_LLAPI")
+        tgt_runtime_link[1].append("-llustreapi")
+    if "hdfs" in aux_filesys:
+        java_install = os.environ.get("JAVA_INSTALL", None)
+        hadoop_install = os.environ.get("HADOOP_INSTALL", None)
         if java_install:
-            java_include = os.path.join(java_install, 'include')
-            tgt_compile[1].append('-I' + java_include)
-            tgt_compile[1].append('-I' + os.path.join(java_include, 'linux'))
-            java_lib = os.path.join(java_install, 'lib', 'amd64', 'server')
-            tgt_link[1].append('-L' + java_lib)
+            java_include = os.path.join(java_install, "include")
+            tgt_compile[1].append("-I" + java_include)
+            tgt_compile[1].append("-I" + os.path.join(java_include, "linux"))
+            java_lib = os.path.join(java_install, "lib", "amd64", "server")
+            tgt_program_link[1].append("-L" + java_lib)
         if hadoop_install:
-            hadoop_include = os.path.join(hadoop_install, 'include')
-            tgt_compile[1].append('-I' + hadoop_include)
-            hadoop_lib = os.path.join(hadoop_install, 'lib', 'native')
-            tgt_link[1].append('-L' + hadoop_lib)
+            hadoop_include = os.path.join(hadoop_install, "include")
+            tgt_compile[1].append("-I" + hadoop_include)
+            hadoop_lib = os.path.join(hadoop_install, "lib", "native")
+            tgt_program_link[1].append("-L" + hadoop_lib)
 
     # add arguments indicated by compiler selection
     # (e.g. we might have a -I above for a particular LLVM version,
     #  so we want that version before /usr/local/include/llvm.)
     if not skip_host:
-        host_compile[0].extend(chpl_compiler.get_bundled_compile_args('host'))
-        host_compile[1].extend(chpl_compiler.get_system_compile_args('host'))
-        host_link[0].extend(chpl_compiler.get_bundled_link_args('host'))
-        host_link[1].extend(chpl_compiler.get_system_link_args('host'))
+        host_compile[0].extend(chpl_compiler.get_bundled_compile_args("host"))
+        host_compile[1].extend(chpl_compiler.get_system_compile_args("host"))
+        host_link[0].extend(chpl_compiler.get_bundled_link_args("host"))
+        host_link[1].extend(chpl_compiler.get_system_link_args("host"))
 
-    tgt_compile[0].extend(chpl_compiler.get_bundled_compile_args('target'))
-    tgt_compile[1].extend(chpl_compiler.get_system_compile_args('target'))
-    tgt_link[0].extend(chpl_compiler.get_bundled_link_args('target'))
-    tgt_link[1].extend(chpl_compiler.get_system_link_args('target'))
+    tgt_compile[0].extend(chpl_compiler.get_bundled_compile_args("target"))
+    tgt_compile[1].extend(chpl_compiler.get_system_compile_args("target"))
 
+    tgt_program_link[0].extend(chpl_compiler.get_bundled_link_args("target"))
+    tgt_program_link[1].extend(chpl_compiler.get_system_link_args("target"))
 
     # remove duplicate system libraries
     host_link = (host_link[0], dedup(host_link[1]))
-    tgt_link = (tgt_link[0], dedup(tgt_link[1]))
+    tgt_program_link = (tgt_program_link[0], dedup(tgt_program_link[1]))
+    tgt_runtime_link = (tgt_runtime_link[0], dedup(tgt_runtime_link[1]))
 
-    return {'host_compile': host_compile,
-            'host_link': host_link,
-            'target_compile': tgt_compile,
-            'target_link': tgt_link}
+    return {
+        "host_compile": host_compile,
+        "host_link": host_link,
+        "target_compile": tgt_compile,
+        "target_program_link": tgt_program_link,
+        "target_runtime_link": tgt_runtime_link,
+    }
+
 
 # return the target linker to use (it can be overriden by gasnet)
 # this function returns an array of arguments
 #  e.g. ['clang++', '--gcc-toolchain=/usr']
 def get_target_link_command():
-    if chpl_comm.get() == 'gasnet':
+    if chpl_comm.get() == "gasnet":
         override_ld = chpl_gasnet.get_override_ld()
         if override_ld != None:
             return override_ld.split()
 
-    return chpl_compiler.get_compiler_command('target', 'cxx')
+    return chpl_compiler.get_compiler_command("target", "cxx")

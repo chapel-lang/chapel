@@ -1,0 +1,1 @@
+-sGPUCUDA=false -s GPUAMD=false -I./ChOp/  -M ./ChOp/modules -savoidMirrored=false -sCPUGPUVerbose=false -snum_gpus='here.gpus.size:c_int'

@@ -417,10 +417,10 @@ The syntax for the coforall loop is given by
 .. code-block:: syntax
 
    coforall-statement:
-     'coforall' index-var-declaration 'in' iteratable-expression task-intent-clause[OPT] 'do' statement
-     'coforall' index-var-declaration 'in' iteratable-expression task-intent-clause[OPT] block-statement
-     'coforall' iteratable-expression task-intent-clause[OPT] 'do' statement
-     'coforall' iteratable-expression task-intent-clause[OPT] block-statement
+     'coforall' index-var-declaration 'in' iterable-expression task-intent-clause[OPT] 'do' statement
+     'coforall' index-var-declaration 'in' iterable-expression task-intent-clause[OPT] block-statement
+     'coforall' iterable-expression task-intent-clause[OPT] 'do' statement
+     'coforall' iterable-expression task-intent-clause[OPT] block-statement
 
 The ``coforall`` loop creates a separate task for each iteration of the
 loop. Control continues with the statement following the ``coforall``

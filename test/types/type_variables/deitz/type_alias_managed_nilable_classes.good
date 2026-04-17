@@ -1,0 +1,16 @@
+type_alias_managed_nilable_classes.chpl:14: warning: t     is unmanaged C?
+type_alias_managed_nilable_classes.chpl:14: warning: inner is unmanaged C(real(64))?
+type_alias_managed_nilable_classes.chpl:15: warning: t     is borrowed C?
+type_alias_managed_nilable_classes.chpl:15: warning: inner is borrowed C(real(64))?
+type_alias_managed_nilable_classes.chpl:16: warning: t     is owned C?
+type_alias_managed_nilable_classes.chpl:16: warning: inner is owned C(real(64))?
+type_alias_managed_nilable_classes.chpl:17: warning: t     is shared C?
+type_alias_managed_nilable_classes.chpl:17: warning: inner is shared C(real(64))?
+type_alias_managed_nilable_classes.chpl:18: warning: t     is unmanaged C
+type_alias_managed_nilable_classes.chpl:18: warning: inner is unmanaged C(real(64))
+type_alias_managed_nilable_classes.chpl:19: warning: t     is borrowed C
+type_alias_managed_nilable_classes.chpl:19: warning: inner is borrowed C(real(64))
+type_alias_managed_nilable_classes.chpl:20: warning: t     is owned C
+type_alias_managed_nilable_classes.chpl:20: warning: inner is owned C(real(64))
+type_alias_managed_nilable_classes.chpl:21: warning: t     is shared C
+type_alias_managed_nilable_classes.chpl:21: warning: inner is shared C(real(64))

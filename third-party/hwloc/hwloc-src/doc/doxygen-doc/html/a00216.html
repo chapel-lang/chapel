@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Hardware Locality (hwloc): Interoperability with OpenFabrics</title>
+<title>Hardware Locality (hwloc): Components and Plugins: distances</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -18,7 +18,7 @@
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Hardware Locality (hwloc)<span id="projectnumber">&#160;2.11.2</span>
+   <div id="projectname">Hardware Locality (hwloc)<span id="projectnumber">&#160;2.12.2</span>
    </div>
   </td>
  </tr>
@@ -40,49 +40,69 @@ $(function() {
 </div><!-- top -->
 <div class="header">
   <div class="summary">
+<a href="#typedef-members">Typedefs</a> &#124;
 <a href="#func-members">Functions</a>  </div>
-  <div class="headertitle"><div class="title">Interoperability with OpenFabrics</div></div>
+  <div class="headertitle"><div class="title">Components and Plugins: distances</div></div>
 </div><!--header-->
 <div class="contents">
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="typedef-members" name="typedef-members"></a>
+Typedefs</h2></td></tr>
+<tr class="memitem:gafe5e49d32dd0a28ead94b6e31048e042" id="r_gafe5e49d32dd0a28ead94b6e31048e042"><td class="memItemLeft" align="right" valign="top">typedef void *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00216.html#gafe5e49d32dd0a28ead94b6e31048e042">hwloc_backend_distances_add_handle_t</a></td></tr>
+<tr class="separator:gafe5e49d32dd0a28ead94b6e31048e042"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:ga3ea0d838c1e7f1671b35687aae2da6ae" id="r_ga3ea0d838c1e7f1671b35687aae2da6ae"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00216.html#ga3ea0d838c1e7f1671b35687aae2da6ae">hwloc_ibv_get_device_cpuset</a> (<a class="el" href="a00175.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, struct ibv_device *ibdev, <a class="el" href="a00172.html#ga4bbf39b68b6f568fb92739e7c0ea7801">hwloc_cpuset_t</a> set)</td></tr>
-<tr class="separator:ga3ea0d838c1e7f1671b35687aae2da6ae"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga31d794567f4420bbdc8baa7bf8bf6138" id="r_ga31d794567f4420bbdc8baa7bf8bf6138"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="a00174.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00216.html#ga31d794567f4420bbdc8baa7bf8bf6138">hwloc_ibv_get_device_osdev_by_name</a> (<a class="el" href="a00175.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, const char *ibname)</td></tr>
-<tr class="separator:ga31d794567f4420bbdc8baa7bf8bf6138"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga7324cdfd5db6ed2669c051ef7e1b64e1" id="r_ga7324cdfd5db6ed2669c051ef7e1b64e1"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="a00174.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00216.html#ga7324cdfd5db6ed2669c051ef7e1b64e1">hwloc_ibv_get_device_osdev</a> (<a class="el" href="a00175.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, struct ibv_device *ibdev)</td></tr>
-<tr class="separator:ga7324cdfd5db6ed2669c051ef7e1b64e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa66a0bd519a5b1183a3e9b0c35a7f6cc" id="r_gaa66a0bd519a5b1183a3e9b0c35a7f6cc"><td class="memItemLeft" align="right" valign="top"><a class="el" href="a00216.html#gafe5e49d32dd0a28ead94b6e31048e042">hwloc_backend_distances_add_handle_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00216.html#gaa66a0bd519a5b1183a3e9b0c35a7f6cc">hwloc_backend_distances_add_create</a> (<a class="el" href="a00166.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, const char *name, unsigned long kind, unsigned long flags)</td></tr>
+<tr class="separator:gaa66a0bd519a5b1183a3e9b0c35a7f6cc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa27036bd83102f8e406f1051d560da6c" id="r_gaa27036bd83102f8e406f1051d560da6c"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00216.html#gaa27036bd83102f8e406f1051d560da6c">hwloc_backend_distances_add_values</a> (<a class="el" href="a00166.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, <a class="el" href="a00216.html#gafe5e49d32dd0a28ead94b6e31048e042">hwloc_backend_distances_add_handle_t</a> handle, unsigned nbobjs, <a class="el" href="a00165.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> *objs, hwloc_uint64_t *values, unsigned long flags)</td></tr>
+<tr class="separator:gaa27036bd83102f8e406f1051d560da6c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga1468ac5f0bfb0e18bfc04c9ce5a5a4a3" id="r_ga1468ac5f0bfb0e18bfc04c9ce5a5a4a3"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00216.html#ga1468ac5f0bfb0e18bfc04c9ce5a5a4a3">hwloc_backend_distances_add_commit</a> (<a class="el" href="a00166.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, <a class="el" href="a00216.html#gafe5e49d32dd0a28ead94b6e31048e042">hwloc_backend_distances_add_handle_t</a> handle, unsigned long flags)</td></tr>
+<tr class="separator:ga1468ac5f0bfb0e18bfc04c9ce5a5a4a3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<p>This interface offers ways to retrieve topology information about OpenFabrics devices (InfiniBand, Omni-Path, usNIC, etc). </p>
+<dl class="section note"><dt>Note</dt><dd>These structures and functions may change when <a class="el" href="a00162.html#gaac5bc1f46f55e10ef0141a68ce70e21f" title="Current component and plugin ABI version (see hwloc/plugins.h)">HWLOC_COMPONENT_ABI</a> is modified. </dd></dl>
+<h2 class="groupheader">Typedef Documentation</h2>
+<a id="gafe5e49d32dd0a28ead94b6e31048e042" name="gafe5e49d32dd0a28ead94b6e31048e042"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gafe5e49d32dd0a28ead94b6e31048e042">&#9670;&#160;</a></span>hwloc_backend_distances_add_handle_t</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef void* <a class="el" href="a00216.html#gafe5e49d32dd0a28ead94b6e31048e042">hwloc_backend_distances_add_handle_t</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Handle to a new distances structure during its addition to the topology. </p>
+
+</div>
+</div>
 <h2 class="groupheader">Function Documentation</h2>
-<a id="ga3ea0d838c1e7f1671b35687aae2da6ae" name="ga3ea0d838c1e7f1671b35687aae2da6ae"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga3ea0d838c1e7f1671b35687aae2da6ae">&#9670;&#160;</a></span>hwloc_ibv_get_device_cpuset()</h2>
+<a id="ga1468ac5f0bfb0e18bfc04c9ce5a5a4a3" name="ga1468ac5f0bfb0e18bfc04c9ce5a5a4a3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga1468ac5f0bfb0e18bfc04c9ce5a5a4a3">&#9670;&#160;</a></span>hwloc_backend_distances_add_commit()</h2>
 
 <div class="memitem">
 <div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">static int hwloc_ibv_get_device_cpuset </td>
+          <td class="memname">int hwloc_backend_distances_add_commit </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="a00175.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="a00166.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
           <td class="paramname"><em>topology</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">struct ibv_device *&#160;</td>
-          <td class="paramname"><em>ibdev</em>, </td>
+          <td class="paramtype"><a class="el" href="a00216.html#gafe5e49d32dd0a28ead94b6e31048e042">hwloc_backend_distances_add_handle_t</a>&#160;</td>
+          <td class="paramname"><em>handle</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="a00172.html#ga4bbf39b68b6f568fb92739e7c0ea7801">hwloc_cpuset_t</a>&#160;</td>
-          <td class="paramname"><em>set</em>&#160;</td>
+          <td class="paramtype">unsigned long&#160;</td>
+          <td class="paramname"><em>flags</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -90,87 +110,42 @@ Functions</h2></td></tr>
           <td></td><td></td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
 
-<p>Get the CPU set of processors that are physically close to device <code>ibdev</code>. </p>
-<p>Store in <code>set</code> the CPU-set describing the locality of the OpenFabrics device <code>ibdev</code> (InfiniBand, etc).</p>
-<p>Topology <code>topology</code> and device <code>ibdev</code> must match the local machine. I/O devices detection is not needed in the topology.</p>
-<p>The function only returns the locality of the device. If more information about the device is needed, OS objects should be used instead, see <a class="el" href="a00216.html#ga7324cdfd5db6ed2669c051ef7e1b64e1" title="Get the hwloc OS device object corresponding to the OpenFabrics device ibdev.">hwloc_ibv_get_device_osdev()</a> and <a class="el" href="a00216.html#ga31d794567f4420bbdc8baa7bf8bf6138" title="Get the hwloc OS device object corresponding to the OpenFabrics device named ibname.">hwloc_ibv_get_device_osdev_by_name()</a>.</p>
-<p>This function is currently only implemented in a meaningful way for Linux; other systems will simply get a full cpuset.</p>
-<dl class="section return"><dt>Returns</dt><dd>0 on success. </dd>
-<dd>
--1 on error, for instance if device information could not be found. </dd></dl>
+<p>Commit a new distances structure. </p>
+<p>This is similar to <a class="el" href="a00190.html#ga1f5a29760ebb8f9af831e645315f553c" title="Commit a new distances structure.">hwloc_distances_add_commit()</a> but this variant is designed for backend inserting distances during topology discovery. </p>
 
 </div>
 </div>
-<a id="ga7324cdfd5db6ed2669c051ef7e1b64e1" name="ga7324cdfd5db6ed2669c051ef7e1b64e1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga7324cdfd5db6ed2669c051ef7e1b64e1">&#9670;&#160;</a></span>hwloc_ibv_get_device_osdev()</h2>
+<a id="gaa66a0bd519a5b1183a3e9b0c35a7f6cc" name="gaa66a0bd519a5b1183a3e9b0c35a7f6cc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaa66a0bd519a5b1183a3e9b0c35a7f6cc">&#9670;&#160;</a></span>hwloc_backend_distances_add_create()</h2>
 
 <div class="memitem">
 <div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">static <a class="el" href="a00174.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> hwloc_ibv_get_device_osdev </td>
+          <td class="memname"><a class="el" href="a00216.html#gafe5e49d32dd0a28ead94b6e31048e042">hwloc_backend_distances_add_handle_t</a> hwloc_backend_distances_add_create </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="a00175.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
-          <td class="paramname"><em>topology</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">struct ibv_device *&#160;</td>
-          <td class="paramname"><em>ibdev</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Get the hwloc OS device object corresponding to the OpenFabrics device <code>ibdev</code>. </p>
-<dl class="section return"><dt>Returns</dt><dd>The hwloc OS device object describing the OpenFabrics device <code>ibdev</code> (InfiniBand, etc). </dd>
-<dd>
-<code>NULL</code> if none could be found.</dd></dl>
-<p>Topology <code>topology</code> and device <code>ibdev</code> must match the local machine. I/O devices detection must be enabled in the topology. If not, the locality of the object may still be found using <a class="el" href="a00216.html#ga3ea0d838c1e7f1671b35687aae2da6ae" title="Get the CPU set of processors that are physically close to device ibdev.">hwloc_ibv_get_device_cpuset()</a>.</p>
-<dl class="section note"><dt>Note</dt><dd>The corresponding PCI device object can be obtained by looking at the OS device parent object. </dd></dl>
-
-</div>
-</div>
-<a id="ga31d794567f4420bbdc8baa7bf8bf6138" name="ga31d794567f4420bbdc8baa7bf8bf6138"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga31d794567f4420bbdc8baa7bf8bf6138">&#9670;&#160;</a></span>hwloc_ibv_get_device_osdev_by_name()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static <a class="el" href="a00174.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> hwloc_ibv_get_device_osdev_by_name </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="a00175.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="a00166.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
           <td class="paramname"><em>topology</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>ibname</em>&#160;</td>
+          <td class="paramname"><em>name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned long&#160;</td>
+          <td class="paramname"><em>kind</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned long&#160;</td>
+          <td class="paramname"><em>flags</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -178,20 +153,66 @@ Functions</h2></td></tr>
           <td></td><td></td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
 
-<p>Get the hwloc OS device object corresponding to the OpenFabrics device named <code>ibname</code>. </p>
-<dl class="section return"><dt>Returns</dt><dd>The hwloc OS device object describing the OpenFabrics device (InfiniBand, Omni-Path, usNIC, etc) whose name is <code>ibname</code> (mlx5_0, hfi1_0, usnic_0, qib0, etc). </dd>
-<dd>
-<code>NULL</code> if none could be found.</dd></dl>
-<p>The name <code>ibname</code> is usually obtained from ibv_get_device_name().</p>
-<p>The topology <code>topology</code> does not necessarily have to match the current machine. For instance the topology may be an XML import of a remote host. I/O devices detection must be enabled in the topology.</p>
-<dl class="section note"><dt>Note</dt><dd>The corresponding PCI device object can be obtained by looking at the OS device parent object. </dd></dl>
+<p>Create a new empty distances structure. </p>
+<p>This is identical to <a class="el" href="a00190.html#ga823d38fa8d21dc338497fb0f79c96704" title="Create a new empty distances structure.">hwloc_distances_add_create()</a> but this variant is designed for backend inserting distances during topology discovery. </p>
+
+</div>
+</div>
+<a id="gaa27036bd83102f8e406f1051d560da6c" name="gaa27036bd83102f8e406f1051d560da6c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaa27036bd83102f8e406f1051d560da6c">&#9670;&#160;</a></span>hwloc_backend_distances_add_values()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int hwloc_backend_distances_add_values </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="a00166.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
+          <td class="paramname"><em>topology</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="a00216.html#gafe5e49d32dd0a28ead94b6e31048e042">hwloc_backend_distances_add_handle_t</a>&#160;</td>
+          <td class="paramname"><em>handle</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned&#160;</td>
+          <td class="paramname"><em>nbobjs</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="a00165.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> *&#160;</td>
+          <td class="paramname"><em>objs</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">hwloc_uint64_t *&#160;</td>
+          <td class="paramname"><em>values</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned long&#160;</td>
+          <td class="paramname"><em>flags</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Specify the objects and values in a new empty distances structure. </p>
+<p>This is similar to <a class="el" href="a00190.html#ga8c9715481b0bce344c8a33c6e6a56469" title="Specify the objects and values in a new empty distances structure.">hwloc_distances_add_values()</a> but this variant is designed for backend inserting distances during topology discovery.</p>
+<p>The only semantical difference is that <code>objs</code> and <code>values</code> are not duplicated, but directly attached to the topology. On success, these arrays are given to the core and should not ever be freed by the caller anymore. </p>
 
 </div>
 </div>

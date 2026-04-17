@@ -4,7 +4,7 @@
 # Arkouda and runs testing.
 
 ARKOUDA_URL=${ARKOUDA_URL:-https://github.com/Bears-R-Us/arkouda.git}
-ARKOUDA_BRANCH=${ARKOUDA_BRANCH:-master}
+ARKOUDA_BRANCH=${ARKOUDA_BRANCH:-main}
 
 export CHPL_TEST_ARKOUDA_STOP_AFTER_BUILD=${CHPL_TEST_ARKOUDA_STOP_AFTER_BUILD:-"false"}
 
@@ -22,7 +22,7 @@ if [ -n "${CHPL_TEST_LAUNCHCMD}" ] ; then
   export ARKOUDA_SERVER_LAUNCH_PREFIX=$(echo "$CHPL_TEST_LAUNCHCMD --walltime=$ARKOUDA_ALLOC_TIMEOUT" | envsubst)
 fi
 
-export ARKOUDA_PYTEST_OPTIONS=${CHPL_TEST_ARKOUDA_PYTEST_OPTIONS:-""}
+export ARKOUDA_PYTEST_OPTIONS=${CHPL_TEST_ARKOUDA_CORRECTNESS_PYTEST_OPTIONS:-""}
 
 # Arkouda needs chpl in PATH
 bin_subdir=$($CHPL_HOME/util/chplenv/chpl_bin_subdir.py)
@@ -81,6 +81,11 @@ if [ -z "${CHPL_TEST_ARKOUDA_SKIP_CHAPEL_PY}" ] ; then
   (cd $CHPL_HOME && make chapel-py-venv)
 fi
 
+# Enable multi dim array support
+if [ -n "${CHPL_TEST_ARKOUDA_MULTI_DIM}" ] ; then
+  apply_git_patch $CHPL_HOME/test/studies/arkouda/multidim.patch $ARKOUDA_HOME
+fi
+
 # Compile Arkouda
 if [ "${CHPL_TEST_ARKOUDA_PERF}" = "true" ] ; then
   PERF_SUB_DIR="$CHPL_TEST_PERF_DIR/$CHPL_TEST_PERF_DESCRIPTION"
@@ -92,6 +97,7 @@ if [ "${CHPL_TEST_ARKOUDA_PERF}" = "true" ] ; then
   if [ -z "${CHPL_TEST_ARKOUDA_SKIP_BUILD}" ] ; then
     make 2>&1 | tee $ARKOUDA_EMITTED_CODE_SIZE_FILE.tmp
     if [ ${PIPESTATUS[0]} -ne "0" ] ; then
+      top bn1 2>/dev/null || echo "'top' failed (ignored)" # check for "competitors" for memory etc.
       log_fatal_error "compiling arkouda"
     fi
     if grep -q "Statements emitted:" $ARKOUDA_EMITTED_CODE_SIZE_FILE.tmp ; then
@@ -117,8 +123,10 @@ if [ ${CHPL_TEST_ARKOUDA_STOP_AFTER_BUILD} = "false" ]; then
     log "Using the existing virtual environment for Arkouda at '$CHPL_TEST_VENV_DIR'"
     source $CHPL_TEST_VENV_DIR/bin/activate
   else
-    log "Creating a new virtual environment for Arkouda using '$(which python3)'"
     ARKOUDA_TEST_VENV=.arkouda-nightly-test-venv
+    log "Removing the virtual environment (if it exists) in $ARKOUDA_TEST_VENV"
+    rm -rf $ARKOUDA_TEST_VENV
+    log "Creating a new virtual environment for Arkouda using '$(which python3)'"
     python3 -m venv $ARKOUDA_TEST_VENV
     source $ARKOUDA_TEST_VENV/bin/activate
   fi
@@ -126,6 +134,8 @@ if [ ${CHPL_TEST_ARKOUDA_STOP_AFTER_BUILD} = "false" ]; then
   log "Installing Arkouda in the virtual environment using '$(which python3)'"
   if ! python3 -m pip install --force-reinstall --timeout 60 $AK_PIP_CONTRAINTS -e .[dev] ; then
     log_fatal_error "installing arkouda"
+  else
+    log "Use 'source $(pwd)/$ARKOUDA_TEST_VENV/bin/activate' to activate the venv"
   fi
 
   # Check installation
@@ -152,7 +162,7 @@ if [ ${CHPL_TEST_ARKOUDA_STOP_AFTER_BUILD} = "false" ]; then
 
   # Run benchmarks
   if [ "${CHPL_TEST_ARKOUDA_PERF}" = "true" ] ; then
-    benchmark_opts="--save-data --dat-dir $CHPL_TEST_PERF_DIR --gen-graphs --graph-dir $CHPL_TEST_PERF_DIR/html"
+    benchmark_opts="--save-data --dat-dir $CHPL_TEST_PERF_DIR --gen-graphs --graph-dir $CHPL_TEST_PERF_DIR/$CHPL_TEST_PERF_DESCRIPTION/html"
     if [ "${CHPL_TEST_GEN_ARKOUDA_GRAPHS}" = "false" ] ; then
         # Where should perf logs go?
         export ARKOUDA_TEST_PERF_DIR="${WORKSPACE}/perfData"
@@ -189,6 +199,7 @@ if [ ${CHPL_TEST_ARKOUDA_STOP_AFTER_BUILD} = "false" ]; then
     fi
 
     test_start "benchmarks"
+    log "Running arkouda benchmarks with options: $benchmark_opts"
     if ./benchmarks/run_benchmarks.py ${benchmark_opts} ; then
       log_success "benchmark output"
     else
@@ -197,14 +208,85 @@ if [ ${CHPL_TEST_ARKOUDA_STOP_AFTER_BUILD} = "false" ]; then
     test_end
   fi
 
-  # deactivate the venv and cleanup
-  if [ -n "$CHPL_TEST_VENV_DIR" ] && [ "$CHPL_TEST_VENV_DIR" != "none" ]; then
-    deactivate
-  else
-    deactivate
-    log "Removing the virtual environment in $ARKOUDA_TEST_VENV"
-    rm -rf $ARKOUDA_TEST_VENV
+  # Run benchmarks_v2
+  if [ "${CHPL_TEST_ARKOUDA_PERF_V2}" = "true" ] ; then
+    PERF_SUB_DIR="$CHPL_TEST_PERF_DIR/$CHPL_TEST_PERF_DESCRIPTION"
+    mkdir -p "$PERF_SUB_DIR"
+    reformat_benchmark_opts=" --dat-dir $PERF_SUB_DIR --graph-dir $PERF_SUB_DIR/html"
+    if [ "${CHPL_TEST_GEN_ARKOUDA_GRAPHS}" = "false" ] ; then
+      # v2 benchmarks do not support not generating graphs
+      log_fatal_error "CHPL_TEST_GEN_ARKOUDA_GRAPHS must be true for benchmarks_v2"
+    fi
+    reformat_benchmark_opts="${reformat_benchmark_opts} --annotations $CHPL_HOME/test/ANNOTATIONS.yaml"
+    if [[ -n $CHPL_TEST_PERF_DESCRIPTION ]]; then
+      reformat_benchmark_opts="${reformat_benchmark_opts} --description $CHPL_TEST_PERF_DESCRIPTION"
+    fi
+    if [[ -n $CHPL_TEST_PERF_CONFIG_NAME ]]; then
+      reformat_benchmark_opts="${reformat_benchmark_opts} --platform-name $CHPL_TEST_PERF_CONFIG_NAME"
+    fi
+    if [[ -n $CHPL_TEST_PERF_START_DATE ]]; then
+      reformat_benchmark_opts="${reformat_benchmark_opts} --start-date $CHPL_TEST_PERF_START_DATE"
+    fi
+    if [[ -n $CHPL_TEST_PERF_CONFIGS ]]; then
+      reformat_benchmark_opts="${reformat_benchmark_opts} --configs $CHPL_TEST_PERF_CONFIGS"
+    fi
+    if [[ -n $CHPL_TEST_ARKOUDA_REFORMAT_BENCHMARKS_V2 ]]; then
+      reformat_benchmark_opts="${reformat_benchmark_opts} $CHPL_TEST_ARKOUDA_REFORMAT_BENCHMARKS_V2"
+    fi
+
+    # TODO: skip io_benchmark since it has issues with ordering of file
+    # reads/writes and gets lots of file-no-found errors
+    sed '/\/io_benchmark.py/d' benchmark.ini > benchmark.ini.tmp && mv benchmark.ini.tmp benchmark.ini
+    # TODO: skip dataframe indexing benchmark since it tries to transfer too
+    # much data and exceeds `maxTransferBytes`. the fix is not to just bump
+    # maxTransferBytes, but to understand why the non-v2 version of this
+    # benchmark doesn't have the same issue
+    sed '/\/dataframe_indexing_benchmark.py/d' benchmark.ini > benchmark.ini.tmp && mv benchmark.ini.tmp benchmark.ini
+    benchmark_size=$((10**8))
+
+    benchmark_data=benchmark_v2/data/benchmark_stats_$(date +%Y%m%d_%H%M%S).json
+    mkdir -p benchmark_v2/data
+    benchmark_opts="--benchmark-autosave --benchmark-storage=file://benchmark_v2/.benchmarks --size=$benchmark_size --benchmark-json=$benchmark_data --benchmark-min-rounds=1 --benchmark-warmup=off"
+    if [[ -n "$CHPL_TEST_ARKOUDA_TEMP_DIR" ]]; then
+      benchmark_opts="${benchmark_opts} --basetemp=$CHPL_TEST_ARKOUDA_TEMP_DIR --io_path=$CHPL_TEST_ARKOUDA_TEMP_DIR/ak_io_benchmark "
+    fi
+    if [[ -n $CHPL_TEST_NUM_TRIALS ]]; then
+      export ARKOUDA_NUM_PERF_TRIALS=$CHPL_TEST_NUM_TRIALS
+      # TODO: for now, 1 trial no matter what
+      export ARKOUDA_NUM_PERF_TRIALS=1
+    fi
+    if [[ -n $CHPL_TEST_ARKOUDA_BENCHMARKS_V2 ]]; then
+      benchmark_opts="${benchmark_opts} $CHPL_TEST_ARKOUDA_BENCHMARKS_V2"
+    fi
+
+    log "Running arkouda benchmarks_v2 with options: $benchmark_opts"
+    test_start "benchmarks_v2"
+    if python3 -m pytest -c benchmark.ini $benchmark_opts ; then
+      log_success "benchmark_v2 output"
+    else
+      log_error "running benchmarks_v2"
+    fi
+
+    log "Processing arkouda benchmarks_v2 data in dat-dir: $PERF_SUB_DIR"
+    if python3 benchmark_v2/generate_field_lookup_map.py --dat-dir $PERF_SUB_DIR ; then
+      log_success "benchmark_v2 field lookup map generation"
+    else
+      log_error "generating benchmark_v2 field lookup map"
+    fi
+
+    # process the data and create graphs
+    log "Reformatting arkouda benchmarks_v2 data with options: $reformat_benchmark_opts"
+    if python3 benchmark_v2/reformat_benchmark_results.py --benchmark-data $benchmark_data $reformat_benchmark_opts ; then
+      log_success "benchmark_v2 graph generation"
+    else
+      log_error "generating benchmark_v2 graphs"
+    fi
+
+    test_end
   fi
+
+  # deactivate the virtual environment
+  deactivate
 
 else
   # If we've gotten here then the build succeeded I need to create a "fake"

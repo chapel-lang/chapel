@@ -1,9 +1,15 @@
+use DSIUtil;
+
+record myDist {
+  forwarding const myDistHelp = new chpl__rectLayoutHelper(new MyDist());
+}
+
 class MyDist : BaseDist {
 
   proc init() { }
 
-  proc dsiNewRectangularDom(param rank: int, type idxType,
-                            param strides: strideKind, inds) {
+  override proc dsiNewRectangularDom(param rank: int, type idxType,
+                                     param strides: strideKind, inds) {
     const dom = new unmanaged MyDom(rank=rank, idxType=idxType, strides=strides);
     dom.dsiSetIndices(inds);
     return dom;

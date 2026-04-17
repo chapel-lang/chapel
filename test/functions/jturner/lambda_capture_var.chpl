@@ -1,6 +1,6 @@
 proc testme() {
   var i = 4;
-  var f = lambda() { return i; };
+  var f = proc(): int { return i; };
   writeln(f());
 }
 

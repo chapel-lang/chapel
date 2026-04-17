@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -34,8 +34,9 @@
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/all-uast.h"
 
+#include "extern-blocks.h"
 #include "Resolver.h"
-#include "resolution/BranchSensitiveVisitor.h"
+#include "chpl/resolution/BranchSensitiveVisitor.h"
 
 #include <cstdio>
 #include <iterator>
@@ -54,7 +55,8 @@ using namespace uast;
 using namespace types;
 
 // forward declarations
-static QualifiedType adjustForReturnIntent(uast::Function::ReturnIntent ri,
+static QualifiedType adjustForReturnIntent(Context* context,
+                                           uast::Function::ReturnIntent ri,
                                            QualifiedType retType);
 
 
@@ -205,18 +207,27 @@ const CompositeType* helpGetTypeForDecl(Context* context,
   const CompositeType* ret = nullptr;
 
   if (const Class* c = ad->toClass()) {
+    UniqueString name = c->name();
+
     const BasicClassType* parentClassType =
       processInheritanceExpressionsForAggregateQuery(context, ad,
                                                      substitutions,
                                                      poiScope).first;
 
     // All the parent expressions could've been interfaces, and we just
-    // inherit from object.
+    // inherit from object. Unless we are object itself.
     if (!parentClassType) {
-      parentClassType = BasicClassType::getRootClassType(context);
+      auto rootClass = BasicClassType::getRootClassType(context);
+      if (ad->id() != rootClass->id()) {
+        parentClassType = rootClass;
+      } else {
+        /* the object is '_object' in standard modules, but rename it to
+           RootClass. */
+        name = USTR("RootClass");
+      }
     }
 
-    if (!parentClassType->isObjectType() && !substitutions.empty()) {
+    if (parentClassType && !parentClassType->isRootClass() && !substitutions.empty()) {
       // recompute the parent class type with substitutions
       auto parentAst = parsing::idToAst(context, parentClassType->id());
       CHPL_ASSERT(parentAst);
@@ -236,7 +247,7 @@ const CompositeType* helpGetTypeForDecl(Context* context,
     // even if the filtered substitutions are empty. Keep that invariant
     // here, and set instantiatedFrom for this class because its parent
     // was instantiated.
-    if (parentClassType->instantiatedFrom() && !instantiatedFrom) {
+    if (parentClassType && parentClassType->instantiatedFrom() && !instantiatedFrom) {
       instantiatedFrom = initialTypeForTypeDecl(context, ad->id());
     }
 
@@ -254,7 +265,7 @@ const CompositeType* helpGetTypeForDecl(Context* context,
       }
     }
 
-    ret = BasicClassType::get(context, c->id(), c->name(),
+    ret = BasicClassType::get(context, c->id(), name,
                               parentClassType,
                               insnFromBct, std::move(filteredSubs));
 
@@ -336,6 +347,9 @@ struct ReturnTypeInferrer : BranchSensitiveVisitor<DefaultFrame, ResolvedVisitor
   const types::Param* determineWhenCaseValue(const uast::AstNode* ast, RV& rv) override;
   const types::Param* determineIfValue(const uast::AstNode* ast, RV& rv) override;
   void traverseNode(const uast::AstNode* ast, RV& rv) override;
+
+  bool enter(const FnCall* ast, RV& rv);
+  void exit(const FnCall* ast, RV& rv);
 
   bool enter(const Function* fn, RV& rv);
   void exit(const Function* fn, RV& rv);
@@ -465,7 +479,7 @@ QualifiedType ReturnTypeInferrer::returnedType() {
       context->error(fnAst, "could not determine return type for function");
       retType = QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context));
     }
-    auto adjType = adjustForReturnIntent(returnIntent, *retType);
+    auto adjType = adjustForReturnIntent(context, returnIntent, *retType);
     return adjType;
   }
 }
@@ -496,13 +510,33 @@ void ReturnTypeInferrer::doExitScope(const uast::AstNode* node, RV& rv) {
 }
 
 const types::Param* ReturnTypeInferrer::determineWhenCaseValue(const uast::AstNode* ast, RV& rv) {
-  return rv.byAst(ast).type().param();
+  if (auto action = rv.byAst(ast).getAction(AssociatedAction::COMPARE)) {
+    return action->type().param();
+  } else {
+    return nullptr;
+  }
 }
 const types::Param* ReturnTypeInferrer::determineIfValue(const uast::AstNode* ast, RV& rv) {
   return rv.byAst(ast).type().param();
 }
 void ReturnTypeInferrer::traverseNode(const uast::AstNode* ast, RV& rv) {
   ast->traverse(rv);
+}
+
+bool ReturnTypeInferrer::enter(const FnCall* ast, RV& rv) {
+  enterScope(ast, rv);
+
+  if (auto rr = rv.byPostorder().byAstOrNull(ast)) {
+    if (rr->causedFatalError()) {
+      markFatalError();
+    }
+  }
+
+  return true;
+}
+
+void ReturnTypeInferrer::exit(const FnCall* ast, RV& rv) {
+  exitScope(ast, rv);
 }
 
 bool ReturnTypeInferrer::enter(const Function* fn, RV& rv) {
@@ -550,18 +584,18 @@ void ReturnTypeInferrer::exit(const For* forLoop, RV& rv) {
 }
 
 bool ReturnTypeInferrer::enter(const Break* brk, RV& rv) {
-  markBreak();
+  markBreak(rv.getBreakOrContinueTarget(brk));
   return false;
 }
 void ReturnTypeInferrer::exit(const Break* brk, RV& rv) {}
 bool ReturnTypeInferrer::enter(const Continue* cont, RV& rv) {
-  markContinue();
+  markContinue(rv.getBreakOrContinueTarget(cont));
   return false;
 }
 void ReturnTypeInferrer::exit(const Continue* cont, RV& rv) {}
 
 bool ReturnTypeInferrer::enter(const Return* ret, RV& rv) {
-  markReturnOrThrow();
+  markReturn();
 
   if (functionKind == Function::ITER) {
     // Plain returns don't count towards type inference for iterators.
@@ -637,6 +671,13 @@ returnTypeForTypeCtorQuery(Context* context,
     if (instantiatedFrom != nullptr) {
       int nFormals = sig->numFormals();
       for (int i = 0; i < nFormals; i++) {
+        // If we didn't instantiate the formal with anything, don't create
+        // a substitution for the corresponding field. This comes up,
+        // e.g., if we made a type constructor call like R(?). In this
+        // case, we will compute the formal types to be their generic versions,
+        // but these formals oughtn't count as existing substitutions.
+        if (!sig->formalIsInstantiated(i)) continue;
+
         auto field = findFieldByName(context, ad, instantiatedFrom, untyped->formalName(i));
         const QualifiedType& formalType = sig->formalType(i);
         // Note that the formalDecl should already be a fieldDecl
@@ -727,14 +768,23 @@ static QualifiedType computeTypeOfField(ResolutionContext* rc,
   return QualifiedType(QualifiedType::VAR, ErroneousType::get(context));
 }
 
-static QualifiedType adjustForReturnIntent(uast::Function::ReturnIntent ri,
+static QualifiedType adjustForReturnIntent(Context* context,
+                                           uast::Function::ReturnIntent ri,
                                            QualifiedType retType) {
 
   QualifiedType::Kind kind = (QualifiedType::Kind) ri;
-  // adjust default / const return intent to 'var'
-  if (kind == QualifiedType::DEFAULT_INTENT ||
-      kind == QualifiedType::VAR) {
+  // adjust const return intent to 'var'
+  if (kind == QualifiedType::VAR) {
     kind = QualifiedType::CONST_VAR;
+  // do the same for default intent, except for aliasing arrays, which
+  // are non-const by default.
+  } else if (kind == QualifiedType::DEFAULT_INTENT) {
+    const ArrayType* at = nullptr;
+    if (retType.type() && (at = retType.type()->toArrayType()) && at->isAliasingArray(context)) {
+      kind = QualifiedType::VAR;
+    } else {
+      kind = QualifiedType::CONST_VAR;
+    }
   }
   return QualifiedType(kind, retType.type(), retType.param());
 }
@@ -1014,6 +1064,11 @@ static bool helpComputeCompilerGeneratedReturnType(ResolutionContext* rc,
       return helpComputeOrderToEnumReturnType(context, sig, result);
     } else if (untyped->name() == "chpl__enumToOrder") {
       return helpComputeEnumToOrderReturnType(context, sig, result);
+    } else if (untyped->idIsExternBlockFunction()) {
+      auto name = untyped->name();
+      auto externBlockId = untyped->id().parentSymbolId(context);
+      result = externBlockRetTypeForFn(context, externBlockId, name);
+      return true;
     }
     CHPL_ASSERT(false && "unhandled compiler-generated function");
     return true;
@@ -1056,7 +1111,7 @@ static bool helpComputeReturnType(ResolutionContext* rc,
     // if it needs instantiation, we don't know the return type yet.
     result = QualifiedType(QualifiedType::UNKNOWN, UnknownType::get(context));
     return true;
-  } else if (untyped->idIsFunction()) {
+  } else if (untyped->idIsFunction() && !untyped->idIsExternBlockFunction()) {
     const AstNode* ast = parsing::idToAst(context, untyped->id());
     const Function* fn = ast->toFunction();
     CHPL_ASSERT(fn);
@@ -1077,7 +1132,7 @@ static bool helpComputeReturnType(ResolutionContext* rc,
 
       auto g = getTypeGenericity(context, result.type());
       if (g == Type::CONCRETE) {
-        result = adjustForReturnIntent(fn->returnIntent(), result);
+        result = adjustForReturnIntent(context, fn->returnIntent(), result);
         return true;
       }
     }
@@ -1121,17 +1176,17 @@ static bool helpComputeReturnType(ResolutionContext* rc,
   return false;
 }
 
-static const QualifiedType&
-returnTypeWithoutIterableQuery(ResolutionContext* rc,
-                               const TypedFnSignature* sig,
-                               const PoiScope* poiScope) {
-  CHPL_RESOLUTION_QUERY_BEGIN(returnTypeWithoutIterableQuery, rc, sig, poiScope);
+const std::pair<QualifiedType, QualifiedType>&
+returnTypes(ResolutionContext* rc,
+            const TypedFnSignature* sig,
+            const PoiScope* poiScope) {
+  CHPL_RESOLUTION_QUERY_BEGIN(returnTypes, rc, sig, poiScope);
 
   Context* context = rc->context();
   const UntypedFnSignature* untyped = sig->untyped();
-  QualifiedType result;
+  std::pair<QualifiedType, QualifiedType> result;
 
-  bool computed = helpComputeReturnType(rc, sig, poiScope, result);
+  bool computed = helpComputeReturnType(rc, sig, poiScope, result.first);
   if (!computed) {
     const AstNode* ast = parsing::idToAst(context, untyped->id());
     const Function* fn = ast->toFunction();
@@ -1141,25 +1196,14 @@ returnTypeWithoutIterableQuery(ResolutionContext* rc,
     // resolveFunction will arrange to call computeReturnType
     // and store the return type in the result.
     if (auto rFn = resolveFunction(rc, sig, poiScope)) {
-      result = rFn->returnType();
+      result.first = rFn->returnType();
     }
   }
 
-  return CHPL_RESOLUTION_QUERY_END(result);
-}
-
-static const QualifiedType& returnTypeQuery(ResolutionContext* rc,
-                                            const TypedFnSignature* sig,
-                                            const PoiScope* poiScope) {
-  CHPL_RESOLUTION_QUERY_BEGIN(returnTypeQuery, rc, sig, poiScope);
-
-  Context* context = rc->context();
-  auto result = returnTypeWithoutIterableQuery(rc, sig, poiScope);
-
-  if (sig->isIterator() && !result.isUnknownOrErroneous()) {
-    result = QualifiedType(result.kind(),
-                           FnIteratorType::get(context, poiScope, sig));
-
+  result.second = result.first;
+  if (sig->isIterator() && !result.second.isUnknownOrErroneous()) {
+    result.second = QualifiedType(result.second.kind(),
+                                  FnIteratorType::get(context, poiScope, sig, result.second));
   }
 
   return CHPL_RESOLUTION_QUERY_END(result);
@@ -1168,14 +1212,14 @@ static const QualifiedType& returnTypeQuery(ResolutionContext* rc,
 QualifiedType returnType(ResolutionContext* rc,
                          const TypedFnSignature* sig,
                          const PoiScope* poiScope) {
-  return returnTypeQuery(rc, sig, poiScope);
+  return returnTypes(rc, sig, poiScope).second;
 }
 
 QualifiedType yieldType(ResolutionContext* rc,
                         const TypedFnSignature* sig,
                         const PoiScope* poiScope) {
   CHPL_ASSERT(sig->isIterator());
-  return returnTypeWithoutIterableQuery(rc, sig, poiScope);
+  return returnTypes(rc, sig, poiScope).first;
 }
 
 static const TypedFnSignature* const&
@@ -1219,20 +1263,11 @@ const TypedFnSignature* inferOutFormals(ResolutionContext* rc,
     return nullptr;
   }
 
-  bool anyGenericOutFormals = false;
-  int numFormals = sig->numFormals();
-  for (int i = 0; i < numFormals; i++) {
-    const types::QualifiedType& ft = sig->formalType(i);
-    if (ft.kind() == QualifiedType::OUT && ft.isGenericOrUnknown()) {
-      anyGenericOutFormals = true;
-      break;
-    }
-  }
 
   // if there are no 'out' formals with generic type, just return 'sig'.
-  // also just return 'sig' if the function needs instantiation;
+  // also just return 'sig' if the function needs instantiation for non-'out' reasons;
   // in that case, we can't infer the 'out' formals by resolving the body.
-  if (anyGenericOutFormals && !sig->needsInstantiation()) {
+  if (sig->instantiationState() == TypedFnSignature::INST_GENERIC_OUT) {
     return inferOutFormalsQuery(rc, sig, instantiationPoiScope);
   } else {
     return sig;

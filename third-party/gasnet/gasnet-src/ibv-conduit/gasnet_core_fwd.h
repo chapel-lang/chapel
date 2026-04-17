@@ -15,7 +15,7 @@
   #error "VAPI-conduit is no longer supported"
 #endif
 
-#define GASNET_CORE_VERSION      2.16
+#define GASNET_CORE_VERSION      2.17
 #define GASNET_CORE_VERSION_STR  _STRINGIFY(GASNET_CORE_VERSION)
 #define GASNET_CORE_NAME         IBV
 #define GASNET_CORE_NAME_STR     _STRINGIFY(GASNET_CORE_NAME)
@@ -265,6 +265,8 @@
 	CNT(C, GET_BBUF, cnt)                     \
 	TIME(C, GET_BBUF_STALL, stalled time)     \
 	CNT(C, SPARE_REPLY_BBUF, cnt)             \
+	CNT(C, GET_RATOMICBUF, cnt)               \
+	TIME(C, GET_RATOMICBUF_STALL, stalled time) \
 	VAL(C, ALLOC_SREQ, sreqs)                 \
 	VAL(C, POST_SR, segments)                 \
 	CNT(C, POST_INLINE_SR, cnt)               \

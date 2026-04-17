@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2023-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -45,6 +45,11 @@ CLASS_BEGIN(IntParam)
   PLAIN_GETTER(IntParam, value, "Get the value of this integer Param",
                int, return node->value())
 CLASS_END(IntParam)
+
+CLASS_BEGIN(UintParam)
+  PLAIN_GETTER(UintParam, value, "Get the value of this unsigned integer Param",
+               unsigned int, return node->value())
+CLASS_END(UintParam)
 
 CLASS_BEGIN(StringParam)
   PLAIN_GETTER(StringParam, value, "Get the value of this string Param",

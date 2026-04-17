@@ -1,0 +1,19 @@
+#!/usr/bin/env python3
+
+import sys
+
+file=sys.argv[2]
+
+with open(file, 'rb') as f:
+    contents = f.read()
+
+lines = contents.split(b'\n')
+output = []
+for line in lines:
+    if b'skipping debug map object with duplicate name and timestamp' not in line:
+        output.append(line)
+
+output = b'\n'.join(output)
+
+with open(file, 'wb') as f:
+    f.write(output)

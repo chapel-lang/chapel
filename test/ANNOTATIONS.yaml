@@ -624,6 +624,31 @@ all:
   03/20/25:
     - text: Update bundled qthreads to 1.22 (#26823)
       config: chapcs, 16-node-apollo-hdr, 16-node-hpe-cray-ex, 1-node-hpe-cray-ex
+  05/21/25:
+    - text: Update system LLVM to 20
+      config: chapcs, 16-node-apollo-hdr, 16-node-hpe-cray-ex, 1-node-hpe-cray-ex, 1-node-a100, 1-node-mi250x
+  08/28/25:
+    - text: Update to GASNet 2025.8 (#27717)
+      config: 16-node-apollo-hdr
+  09/27/25:
+    - text: System hardware/software change
+      config: 16-node-hpe-cray-ex, 1-node-a100, 1-node-mi250x
+    - text: Beginning of noise due to node with less memory
+      config: 16-node-apollo-hdr
+  10/22/25:
+    - text: End of noise due node now having full memory
+      config: 16-node-apollo-hdr
+  01/06/26:
+    - Add undefined behavior guardrails to strings, IO, and hashing (#28227)
+  02/17/26:
+    - text: Added new LICM optimizations for arrays passed by const (#28091)
+      config: chapcs, 16-node-apollo-hdr, 16-node-hpe-cray-ex, 1-node-a100, 1-node-mi250x
+  12/21/25:
+    - text: System hardware/software change
+      config: chapcs
+  02/23/26:
+    - text: System hardware/software change
+      config: 1-node-a100, 1-node-mi250x
 
 # End all
 
@@ -742,6 +767,11 @@ binary-trees: &binary-trees-base
 binarytrees-submitted:
   <<: *binary-trees-base
 
+bitops:
+  05/30/25:
+    - text: Fix mismatched types in test (#27308)
+      config: chapcs
+
 blackscholes:
   10/21/16:
     - Improvements to scalarReplace, refPropagation and copyPropagation (#4761)
@@ -801,6 +831,10 @@ cg:
 cg-a:
   04/05/18:
     - Convert BaseDist-inheriting classes to use initializers (#9075)
+  07/24/25:
+    - Avoid inlining functions that just do checks (#27531)
+  08/06/25:
+    - Add a pass to deadCodeElimination to remove empty functions that do nothing (#27562)
 
 c-ray:
   10/11/16:
@@ -1017,6 +1051,8 @@ fastaredux:
     - Propagate user thrown errors out of IO routines (#14739)
   01/06/21:
     - Remove lots of inlines in IO.chpl for non-trivial procedures (#16887)
+  01/12/26:
+    - Simplify sharing of serializers in fileReader/Writer (#28275)
 
 fft:
   05/15/19:
@@ -1096,6 +1132,10 @@ isx-no-return:
 isx-release:
   01/23/18:
     - Fix memory leak introduced in PR #8073 (#8268)
+  07/24/25:
+    - Avoid inlining functions that just do checks (#27531)
+  08/06/25:
+    - Add a pass to deadCodeElimination to remove empty functions that do nothing (#27562)
 
 isx.ml-time: &isx-ml-base
   02/26/16:
@@ -1604,6 +1644,8 @@ memleaksfull:
     - IO module error types cleanup (#22003)
   03/31/23:
     - Fix memory leaks in readAll tests (#22032)
+  02/26/26:
+    - Move testing to a bigger machine
 # End memleaksfull
 
 meteor:
@@ -1719,6 +1761,8 @@ nbody:
     - Change param-based nbody to foreach-based (#24745)
   10/06/24:
     - Update my study version of nbody to be like nbody#2, but using foreach loops (#26044)
+  08/11/25:
+    - Some cleanup and add future for line numbers (#27600)
  
 no-op:
   02/24/17:
@@ -1759,6 +1803,10 @@ pidigits-submitted:
 primes:
   07/01/20:
     - Optimize repeated insertions/deletions from chpl__hashtable (#15982)
+  07/28/25:
+    - Regression due to increased inlining of do_chpl_format (#27511)
+  07/31/25:
+    - Fix regression due to inlining (#27585)
 
 prk-stencil:
   02/14/16:
@@ -1834,6 +1882,10 @@ ra:
     - Convert BaseDist-inheriting classes to use initializers (#9075)
   07/15/20:
     - Enable parallel array init for all types (#16070)
+  07/24/25:
+    - Avoid inlining functions that just do checks (#27531)
+  08/06/25:
+    - Add a pass to deadCodeElimination to remove empty functions that do nothing (#27562)
 
 ra.ml-perf:
   09/19/17:
@@ -1889,19 +1941,53 @@ regexdna-submitted:
 regexdnaredux-submitted:
   <<: *regexdna-base
 
+remote-amos.ml-perf:
+  04/17/25:
+    - text: Suspected machine changes
+      config: 16-node-hpe-cray-ex
+  08/25/25:
+    - text: Suspected machine changes
+      config: 16-node-hpe-cray-ex
+  02/07/26:
+    - Switch this test's throttling to use recursive doubling (#28375)
+
+remote-fastOns.ml-perf:
+  02/07/26:
+    - Switch this test's throttling to use recursive doubling (#28375)
+
+remote-unordered-amos.ml-perf:
+  04/17/25:
+    - text: Suspected machine changes
+      config: 16-node-hpe-cray-ex
+  08/25/25:
+    - text: Suspected machine changes
+      config: 16-node-hpe-cray-ex
+  02/07/26:
+    - Switch this test's throttling to use recursive doubling (#28375)
+
+remote-gets.ml-perf:
+  02/07/26:
+    - Switch this test's throttling to use recursive doubling (#28375)
+
 remote-puts.ml-perf:
   11/03/20:
     - Do fewer GETs to force PUTs into a visible state, and do them later (#16634)
+  02/07/26:
+    - Switch this test's throttling to use recursive doubling (#28375)
 
 remote-fetchAmos.ml-perf:
   11/03/20:
     - Do fewer GETs to force PUTs into a visible state, and do them later (#16634)
+  02/07/26:
+    - Switch this test's throttling to use recursive doubling (#28375)
 
 remote-ons.ml-perf:
   05/17/19:
     - Avoid comm/compute overlap for short-lived tasks (#12964)
   05/13/20:
     - Reorganize arg bundles in the runtime (#15660)
+  02/07/26:
+    - Switch this test's throttling to use recursive doubling (#28375)
 
 remote-record-read-copy:
   11/15/18:
@@ -1912,6 +1998,8 @@ remote-record-read-copy:
 remote-unordered-gets.ml-perf:
   02/04/20:
     - Add unordered GET/PUT support in comm=ofi. (#14810)
+  02/07/26:
+    - Switch this test's throttling to use recursive doubling (#28375)
 
 return-array-8: &return-array-base
   03/04/17:
@@ -1965,6 +2053,10 @@ revcomp: &revcomp-base
     - Improve performance of readBinary and writeBinary for dense arrays (#23162)
   12/12/24:
     - Remove check on 'log' input with --no-checks (#26368)
+  01/08/26:
+    - Fix 'toArray()' for standard collections of non-default initializable records (#28259)
+  01/13/26:
+    - (no-local) Make serializer/deserializer fields non-nilable (#28280)
 
 revcomp-submitted:
   06/07/22:
@@ -1986,6 +2078,8 @@ scanPerf:
     - Support optionally parallel 1D scans on default rectangular (#12469)
   01/14/21:
     - Optimize scans by using noinit for the result array (#16919)
+  09/30/25:
+    - Halve memory used by scanPerf performance test (#27873)
 
 scanPerf.ml-time:
   03/06/19:
@@ -1994,6 +2088,8 @@ scanPerf.ml-time:
     - Increase the problem size for the multi-locale scan performance test (#16918)
   01/14/21:
     - Optimize scans by using noinit for the result array (#16919)
+  09/30/25:
+    - Halve memory used by scanPerf performance test (#27873)
 
 search:
   04/20/17:
@@ -2014,6 +2110,8 @@ search:
     - Allow messages in new Errors (#14545)
   09/03/20:
     - Improve string to numerical casts' compilation and execution performance (#16278)
+  01/13/20:
+    - Noted regression, did not investigate. Possibly due to serializer changes (#28280)
 
 search-throughput:
   07/29/20:
@@ -2353,6 +2451,16 @@ compilerAndTestingStats: &compiler-perf-base
     - Move the GpuSort Module code into the GPU module (#23989)
   01/18/24:
     - Remove 'use GPU' from ChapelGpuSupport (#24185)
+  11/13/25:
+    - Changed isDefAndOrUse (#27961)
+  11/14/25:
+    - System software change
+  11/19/25:
+    - Fixed regression due to isDefAndOrUse change (#28082)
+  01/09/26:
+    - Fix uniquifyName failure when compiling with debug flag (#28258)
+  01/13/26:
+    - Revert uniquifyName bug fix (#28297)
 
 allTotalTime:
   <<: *compiler-perf-base
@@ -2575,6 +2683,29 @@ arkouda: &arkouda-base
   01/02/25:
     - text: No longer running tests with --isolated
       config:  16-node-xc
+  03/06/25:
+    - text: Suspected systems changes
+      config: 16-node-xc
+  03/20/25:
+    - text: Add ARKOUDA_DEFAULT_TEMP_DIRECTORY for arkouda perf tests (#26949)
+      config: 16-node-hpe-apollo-hdr
+  07/02/25:
+    - Use Chapel 2.5 for Arkouda "release" nightly testing
+  08/18/25:
+    - Closes 4749, removes redundant cumsum, aligns cumsum, cumprod, cumulative_sum, cumulative_prod to numpy (Bears-R-Us/arkouda#4755)
+  09/23/25:
+    - Improve parquet read implementation and multiple column read performance (Bears-R-Us/arkouda#4906)
+  10/02/25:
+    - Resolves Issue 4810, cumSum and cumProd performance (Bears-R-Us/arkouda#4819)
+  12/01/25:
+    - Fix CSV Parsing of Quoted Fields, Escaped Quotes, Embedded Delimiters, and Multi-Line Records (Bears-R-Us/arkouda#5080)
+  01/13/26:
+    - text: Possible regression in array transfer performance due to bigint perf tweaks (?) (Bears-R-Us/arkouda#5151)
+      config: chapcs
+  02/10/26:
+    - Add runtime warning on divide-by-zero (Bears-R-Us/arkouda#5315)
+  02/19/26:
+    - Fix performance regressions from divide-by-zero check (Bears-R-Us/arkouda#5416)
 
 arkouda-string:
   <<: *arkouda-base
@@ -2583,6 +2714,14 @@ arkouda-bigint:
   <<: *arkouda-base
   09/27/24:
     - Fixes 3783, 3784, 3788 multilocale io test failures (Bears-R-Us/arkouda#3790)
+  10/17/25:
+    - Closes 4984 ak.array with negative numbers still has problems (Bears-R-Us/arkouda#4985)
+  11/21/25:
+    - Closes 4569 Simplify and extend logic in doBigIntBinOpvv and doBigIntBinOpvvBoolReturn (Bears-R-Us/arkouda#4593)
+  01/14/26:
+    - Closes 5150 Try to fix bigint performance again (Bears-R-Us/arkouda#5151)
+  02/05/26:
+    - Closes 5330 Improve ak.array Bigint array transfer performance (Bears-R-Us/arkouda#5334)
 
 arkouda-comp:
   <<: *arkouda-base
@@ -2616,6 +2755,12 @@ arkouda-comp:
     - Yield tuples by value when appropriate (#21789)
   05/02/23:
     - Generate write method stubs for FCF superclass types (#22195)
+  11/13/25:
+    - Changed isDefAndOrUse (#27961)
+  11/14/25:
+    - System software change
+  11/19/25:
+    - Fixed regression due to isDefAndOrUse change (#28082)
 
 arkouda-array_create:
   <<: *arkouda-base

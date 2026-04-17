@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# respect CHPL_TEST_VENV_DIR if it is set and not none
+if [ -n "$CHPL_TEST_VENV_DIR" ] && [ "$CHPL_TEST_VENV_DIR" != "none" ]; then
+  chpl_python=$CHPL_TEST_VENV_DIR/bin/python3
+else
+  chpl_python=$($CHPL_HOME/util/config/find-python.sh)
+fi
+
+$chpl_python -m venv .venv
+source ./.venv/bin/activate
+
+../../../../../../util/test/sub_test $1

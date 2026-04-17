@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -36,6 +36,17 @@ namespace resolution {
 const ResolutionResultByPostorderID& resolveModuleStmt(Context* context, ID id);
 
 /**
+  Resolve a module-level statement or variable declaration.
+
+  Unlike `resolveModuleStmt`, which will attempt split-init resolution of
+  global variables in `id` via other module statements, this query only
+  resolves the statement itself. If `id` is a variable declaration that
+  is split-init, this might produce an unknown/generic type.
+ */
+std::pair<ResolutionResultByPostorderID, std::map<ID, ID>> const&
+resolveModuleStmtStandalone(Context* context, ID id);
+
+/**
   Specialized version of resolveModuleStmt when the statement is an
   'implements'. This does the work of constructing an 'ImplementationPoint'.
  */
@@ -65,7 +76,7 @@ const ResolutionResultByPostorderID& scopeResolveModule(Context* context,
   Compute the type for a NamedDecl with a particular id.
  */
 const types::QualifiedType& typeForModuleLevelSymbol(
-    Context* context, ID id, bool currentModule = false);
+    Context* context, ID id);
 
 /**
   Compute the type for a Builtin type using just its name
@@ -92,6 +103,26 @@ types::QualifiedType getInstantiationType(Context* context,
                                           types::QualifiedType actualType,
                                           types::QualifiedType formalType);
 
+// A type to track what kind of signedness a value needs.
+// Aliasing an int to avoid defining mark<..>, hash<..>, update<..> for it.
+using RequiredSignedness = int;
+static constexpr RequiredSignedness RS_NONE = 0, RS_SIGNED = 1, RS_UNSIGNED = 2;
+
+/**
+  The language allows later enum elements to use previous enum
+  elements' values in their initialization expressions. However,
+  the type of an enum element cast is not determined until after each
+  element is considered (since later elements' values may affect the
+  signedness of the representation type).
+
+  To help bridge the gap (fetch enum numeric value, to use it in an initialization
+  expression for another enum, before the type of the numeric value is known),
+  this query provides the "intial guess", which is aware only of information
+  preceding the given element's declaration.
+ */
+std::pair<optional<types::QualifiedType>, RequiredSignedness> const&
+initialNumericValueOfEnumElement(Context* context, ID elementId);
+
 /**
   Returns a map from enum element IDs to their numeric values.
   The caller is responsible for validating that node is an enum ID.
@@ -105,6 +136,44 @@ computeNumericValuesOfEnumElements(Context* context, ID node);
 
 const chpl::optional<types::QualifiedType>&
 computeUnderlyingTypeOfEnum(Context* context, ID element);
+
+/**
+  Given a name and an Enum AST node, look up the ID of the enum's element.
+  Returns the ID, as well as whether the lookup was ambiguous (e.g.,
+  due to duplicate enum element names).
+ */
+const std::pair<ID, bool>&
+scopeResolveEnumElement(Context* context,
+                        const uast::Enum* enumAst,
+                        UniqueString elementName,
+                        const uast::AstNode* nodeForErr);
+
+/**
+  Given the result of a lookup of an enum element (see scopeResolveEnumElement),
+  construct the appropriate QualifiedType for the element. This type can be
+  `param` if enough information is present, but in some cases will not be
+  (e.g., due to ambiguity).
+ */
+types::QualifiedType
+typeForScopeResolvedEnumElement(Context* context,
+                                const ID& enumTypeId,
+                                const ID& refersToId,
+                                bool ambiguous);
+
+types::QualifiedType
+typeForScopeResolvedEnumElement(Context* context,
+                                const types::EnumType* enumType,
+                                const ID& refersToId,
+                                bool ambiguous);
+
+/**
+  Look up the type of an enum element by its name, and return
+  the QualifiedType for that element.
+ */
+const types::QualifiedType& typeForEnumElement(Context* context,
+                                               const types::EnumType* type,
+                                               UniqueString elemName,
+                                               const uast::AstNode* astForErr);
 
 /**
   Returns the numeric value of an enum element.
@@ -172,6 +241,36 @@ const ResolvedFields& resolveFieldDecl(ResolutionContext* rc,
                                        ID fieldId,
                                        DefaultsPolicy defaultsPolicy,
                                        bool syntaxOnly = false);
+
+/**
+  Resolve a single field decl (which could be e.g. a MultiDecl)
+  within a CompositeType.
+
+  The results can be used to examine detailed information about the field,
+  its type expression, and its initialization expression.
+
+  If syntaxOnly is set, computes basic information (field order, IDs)
+  but does not compute types.
+
+  If fieldTypesOnly is true, only resolves the type expressions of the fields
+  when possible (e.g. if the field has a type expression).
+ */
+const ResolvedFieldResults&
+resolveFieldResults(ResolutionContext* rc,
+                    const types::CompositeType* ct,
+                    ID fieldId,
+                    DefaultsPolicy defaultsPolicy,
+                    bool syntaxOnly = false,
+                    bool fieldTypesOnly = true);
+
+/**
+  Creates a ResolvedFields from ResolvedFieldResults.
+
+  When combined with ``resolveFieldResults``, it has the same effect as
+  having called ``resolveFieldDecl``.
+*/
+const ResolvedFields& resolvedFieldsFromResults(ResolutionContext* rc,
+                                                const ResolvedFieldResults& results);
 
 /**
   Compute the fields and their types for a CompositeType
@@ -259,10 +358,10 @@ types::Type::Genericity getTypeGenericity(Context* context,
 types::Type::Genericity getTypeGenericity(Context* context,
                                           types::QualifiedType qt);
 
-
 bool isFieldSyntacticallyGeneric(Context* context,
                                  const ID& field,
-                                 types::QualifiedType* formalType = nullptr);
+                                 types::QualifiedType* formalType = nullptr,
+                                 bool useLightResolution = true);
 
 /**
   Returns true if the field should be included in the type constructor.
@@ -285,6 +384,16 @@ const TypedFnSignature* typeConstructorInitial(Context* context,
                                                const types::Type* t);
 
 /**
+  Check if a signature from typedSignatureInitial matches the given CallInfo,
+  without instantiation. This is an early check before a more involved
+  instantiateSignature (if the function is generic).
+ */
+ApplicabilityResult
+isInitialTypedSignatureApplicable(Context* context,
+                                  const TypedFnSignature* tfs,
+                                  const FormalActualMap& faMap,
+                                  const CallInfo& ci);
+/**
   Instantiate a TypedFnSignature from
    * the result of typedSignatureInitial,
    * a CallInfo describing the types at the call site, and
@@ -304,6 +413,16 @@ const ResolvedFunction* resolveFunction(ResolutionContext* rc,
                                         const TypedFnSignature* sig,
                                         const PoiScope* poiScope,
                                         bool skipIfRunning = false);
+
+/**
+  Same as resolveFunction, but checks for various cases that would make
+  the function unresolvable (eg, ASt-less compiler-generated fn,
+  not-fully-instantiated fn, etc.)
+
+  */
+const ResolvedFunction* resolveFunctionIfPossible(ResolutionContext* rc,
+                                                  const TypedFnSignature* sig,
+                                                  const PoiScope* poiScope);
 
 
 /**
@@ -364,6 +483,14 @@ types::QualifiedType returnType(ResolutionContext* rc,
 types::QualifiedType yieldType(ResolutionContext* rc,
                                const TypedFnSignature* sig,
                                const PoiScope* poiScope);
+
+/* Returns a pair of (yieldType(), returnType()) for the function.
+   These can differ if the function has ITER kind, which may
+   have an 'int' return type but creates an iterable yielding 'int' when called. */
+const std::pair<types::QualifiedType, types::QualifiedType>&
+returnTypes(ResolutionContext* rc,
+            const TypedFnSignature* sig,
+            const PoiScope* poiScope);
 
 /**
   Compute the types for any generic 'out' formal types after instantiation
@@ -583,6 +710,12 @@ reportInvalidMultipleInheritance(Context* context,
                                  const uast::AstNode* firstParent,
                                  const uast::AstNode* secondParent);
 
+void reportDeprecatedSyncRead(Context* context,
+                              const types::Type* syncT,
+                              const uast::AstNode* astForErr,
+                              const uast::AstNode* source,
+                              const uast::AstNode* dest);
+
 /**
   One of the compiler primitives has the side effect of collecting all
   test functions. This helper retrieves the list of test functions that has
@@ -663,19 +796,24 @@ TheseResolutionResult resolveTheseCall(ResolutionContext* rc,
 const uast::BuilderResult*
 builderResultForDefaultFunction(Context* context,
                                 UniqueString typePath,
-                                UniqueString name);
+                                UniqueString name,
+                                UniqueString overloadPart);
 
 /** Get the 'promotion type' for the given type. E.g., the promotion type
     for a range is the type of the range's elements. */
 const types::QualifiedType& getPromotionType(Context* context, types::QualifiedType qt, bool skipIfRunning = false);
 
+/// \cond DO_NOT_DOCUMENT
+// Common helper for ArrayType and DomainType
 const types::RuntimeType* getRuntimeType(Context* context, const types::CompositeType* ct);
+/// \endcond
 
 Access accessForQualifier(uast::Qualifier q);
 
 const MostSpecificCandidate*
 determineBestReturnIntentOverload(const MostSpecificCandidates& candidates,
                                   Access access,
+                                  types::QualifiedType::Kind &outReturnKind,
                                   bool& outAmbiguity);
 
 /**

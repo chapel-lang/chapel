@@ -95,7 +95,7 @@ class F {
   @deprecated proc type bar() { }
 }
 
-// Ensures deprecation doesn't cause "no doc" symbols to turn up in
+// Ensures deprecation doesn't cause nodoc symbols to turn up in
 // documentation
 @chpldoc.nodoc
 @deprecated class G {

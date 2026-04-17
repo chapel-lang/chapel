@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -25,18 +25,9 @@
 
 #ifdef HAVE_LLVM
 
-namespace llvm {
-  class DIType;
-  class DIFile;
-  class DINamespace;
-  class DISubroutineType;
-  class DISubprogram;
-}
-
+#include "llvm/IR/DebugInfoMetadata.h"
 #include "llvm/IR/DIBuilder.h"
-#include <vector>
-
-#endif
+#include <map>
 
 struct lessAstr {
   bool operator() (const char* lhs, const char* rhs) const {
@@ -44,50 +35,52 @@ struct lessAstr {
   }
 };
 
-class debug_data
-{
-#ifdef HAVE_LLVM
- public:
-  static bool can_debug() { return true; }
-  debug_data(llvm::Module &m) : dibuilder(m){}
-  void finalize();
-  void create_compile_unit(const char *file, const char *directory, bool is_optimized, const char *flags);
-
-  llvm::DIType* construct_type(Type *type);
-  llvm::DIType* get_type(Type *type);
-
-  llvm::DIFile* construct_file(const char *file);
-  llvm::DIFile* get_file(const char *file);
-
-  llvm::DINamespace* construct_module_scope(ModuleSymbol* modSym);
-  llvm::DINamespace* get_module_scope(ModuleSymbol* modSym);
-
-  llvm::DISubroutineType* get_function_type(FnSymbol *function);
-  llvm::DISubprogram* construct_function(FnSymbol *function);
-  llvm::DISubprogram* get_function(FnSymbol *function);
-
-  llvm::DIGlobalVariableExpression* construct_global_variable(VarSymbol *gVarSym);
-  llvm::DIGlobalVariableExpression* get_global_variable(VarSymbol *gVarSym);
-  llvm::DIVariable* construct_variable(VarSymbol *varSym);
-  llvm::DIVariable* get_variable(VarSymbol *varSym);
-  llvm::DIVariable* construct_formal_arg(ArgSymbol *argSym, unsigned int ArgNo);
-  llvm::DIVariable* get_formal_arg(ArgSymbol *argSym, unsigned int ArgNo);
-
- private:
-  llvm::DIBuilder dibuilder;
+struct ConstructDIType;
+class DebugData {
+private:
   bool optimized;
-  //std::vector<llvm::DIFile>files;
-  std::map<const char*,llvm::DIFile*,lessAstr> filesByName;
-  //std::vector<llvm::DIType>types;
-  //std::map<const char*,llvm::DIType,lessAstr> typesByName;
-  //std::vector<llvm::DINameSpace>name_spaces;
-  //std::map<const char*,llvm::DINameSpace,lessAstr> modulesByName;
-  //std::vector<llvm::DISubprogram>functions;
-#else
-  static bool can_debug() { return false; }
-#endif
+  std::map<const char*, llvm::DIFile*, lessAstr> filesByName;
+
+public:
+  DebugData(bool optimized): optimized(optimized) {}
+  void finalize();
+  void createCompileUnit(ModuleSymbol* modSym,
+                         const char* file,
+                         const char* directory,
+                         const char* flags);
+
+  bool shouldAddDebugInfoFor(Symbol* sym);
+
+  llvm::DIType* getType(Type* type);
+  llvm::DIFile* getFile(llvm::DIBuilder* DIB, const char* file);
+  llvm::DINamespace* getModuleScope(ModuleSymbol* modSym);
+
+  llvm::DISubroutineType* getFunctionType(FnSymbol* function);
+  llvm::DISubprogram* getFunction(FnSymbol* function);
+
+  llvm::DIGlobalVariableExpression* getGlobalVariable(VarSymbol* gVarSym);
+  llvm::DIVariable* getVariable(VarSymbol* varSym);
+  llvm::DIVariable* getFormalArg(ArgSymbol* argSym, unsigned int ArgNo);
+
+private:
+  llvm::DIType* constructType(Type* type);
+  llvm::DIFile* constructFile(llvm::DIBuilder* DIB, const char* file);
+  llvm::DINamespace* constructModuleScope(ModuleSymbol* modSym);
+  llvm::DISubprogram* constructFunction(FnSymbol* function);
+  llvm::DIGlobalVariableExpression* constructGlobalVariable(VarSymbol* gVarSym);
+  llvm::DIVariable* constructVariable(VarSymbol* varSym);
+  llvm::DIVariable* constructFormalArg(ArgSymbol* argSym, unsigned int ArgNo);
+
+// These methods are not part of the public interface, but are needed by
+// ConstructDIType subclasses to help construct types.
+public:
+  llvm::DIType* constructTypeForPointer(llvm::Type* ty, Type* type);
+  llvm::DIType* constructTypeForAggregate(llvm::StructType* ty, AggregateType* type);
+  llvm::DIType* constructTypeFromChplType(llvm::Type* ty, Type* type);
+  llvm::DIType* maybeWrapTypeInPointer(llvm::DIType* N, Type* type);
 };
 
-extern debug_data *debug_info;
+extern DebugData *debugInfo;
 
+#endif
 #endif

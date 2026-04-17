@@ -1,4 +1,4 @@
-# Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2026 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -23,7 +23,7 @@ COMMON_LAUNCHER_SRCS = \
 	chpl-string-support.c \
 	chplcast.c \
 	config.c \
-	error.c
+	chpl-error.c
 
 ONLY_LAUNCHER_SRCS = \
 	chpl-launcher-common.c
@@ -37,6 +37,7 @@ COMMON_NOGEN_SRCS = \
 	chpl-comm-diags.c \
 	chpl-const-arg-check.c \
 	chpl-init.c \
+	chpl-exec.c \
 	chplexit.c \
 	chpl-export-wrappers.c \
 	chpl-external-array.c \
@@ -50,13 +51,15 @@ COMMON_NOGEN_SRCS = \
 	chpl-mem-hook.c \
 	chplmemtrack.c \
 	chpl-privatization.c \
+	chpl-dynamic-loading.c \
 	chpl-string.c \
 	chplsys.c \
 	chpl-tasks.c \
 	chpl-tasks-callbacks.c \
 	chpl-timers.c \
+	chpl-unwind.c \
 	chpl-visual-debug.c \
-	gdb.c \
+	debugger.c \
 
 MAIN_SRCS = \
 	main.c

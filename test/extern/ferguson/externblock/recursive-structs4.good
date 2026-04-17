@@ -1,0 +1,2 @@
+recursive-structs4.chpl:1: error: running clang on extern block failed -- clang errors follow
+recursive-structs4.chpl:3: note: error: field has incomplete type 'struct loopy'

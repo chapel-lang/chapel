@@ -6,5 +6,26 @@ lst[2] hi
 lst[lst.size-1] 5
 lst[-3] hi
 lst[-3] hi
+lst[2] hi
+lst[2] after insert -4
+lst post append: [1, 2, -4, 'hi', False, 5, 'goodbye']
+lst[1:4] [2, -4, 'hi']
+lst[5:] [5, 'goodbye']
+lst[:2] [1, 2]
+lst[:] [1, 2, -4, 'hi', False, 5, 'goodbye']
 lst[lst.size] Caught exception: PythonException: list index out of range
-lst [100, 2, 'hi', False, 5]
+checking trying to convert slice to an int
+Caught exception: PythonException: 'list' object cannot be interpreted as an integer
+lst [100, 2, -4, 'hi', False, 5, 'goodbye']
+lst [100, 2, 'oh', 'no', 3, 5, 'goodbye']
+lst [100, 2, 'oh', 'no', 3, 11, 'goodbye']
+lst [True, True, False, 'no', 3, 11, 'goodbye']
+lst [True, True, False, 'no', 3, 'goodbye']
+lst [True, 3, 'goodbye']
+lst [True, True, False, 'goodbye']
+lst [True, True, 'blah', -2]
+lst [11, False, 'blah', -2]
+lst ['a', 'b', 'c', 'd']
+lst ['a', 'b', 'c']
+lst ['c']
+lst []

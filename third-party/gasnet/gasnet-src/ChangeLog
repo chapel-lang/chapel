@@ -14,11 +14,9 @@ GASNet-EX ChangeLog
   - Portable UDP (udp-conduit)
   - Portable MPI (mpi-conduit)
   - Unified Communication X (ucx-conduit) [EXPERIMENTAL]
-  Users wishing to use other retired conduits may need to download 
-  the GASNet v1.x distribution from https://gasnet.lbl.gov.
 
 ----------------------------------------------------------------------
-2025-02-26: GASNet-EX 2025.2.0-snapshot
+2025-08-28: GASNet-EX 2025.8.0
 
 * Memory Kinds (support for non-host memory)
   - Fixed support for device memory allocated via cuMemMap (bug 4767)
@@ -29,11 +27,20 @@ GASNet-EX ChangeLog
     scripts `cross-configure-cray-xc-slurm` and `cross-configure-cray-xc-alps`,
     which enable ofi-conduit with libfabric's "gni" provider.
 
+* Libfabric (details in ofi-conduit README)
+  - Updates for compatibility of ofi-conduit CUDA UVA memory kinds with
+    HPE's Slingshot Host Software (SHS) 12.0.1.
+
 * InfiniBand Verbs (details in ibv-conduit README)
   - Setting `GASNET_IBV_PORTS_TYPE=auto` can now be used to automate
     topology-aware assignment of HCAs to processes on a multi-rail system.
     See the description of the `GASNET_IBV_PORTS_*` family of environment
     variables in the conduit `README` for more details.
+  - Support for `GEX_FLAG_IMMEDIATE` with AM injection (both FPAM and NPAM) has
+    been improved to detect full send queues and completion queues, conditions
+    which previously could have resulted in stalls rather than immediate return.
+  - NEW: Support for network offload of atomic operations.  See the
+    ibv-conduit README for more information, such as supported op/type pairs.
 
 * Unified Communication X framework (details in ucx-conduit README) [EXPERIMENTAL]
   - Reduced on-the-wire overheads of Active Messages
@@ -59,11 +66,20 @@ GASNet-EX ChangeLog
     in `README` for more details, including use of this variable to restore
     the old behavior.
 
+* GASNet-EX Spec v0.19: (details in docs/GASNet-EX.txt)
+  - Experimental new `gex_AM_Cancel{Request,Reply}{Medium,Long}()` APIs enable
+    a client to abandon a Prepare (called instead of the matching Commit).
+  - Experimental new `gex_AM_Commit*_v2()` APIs extend the `Commit` API
+    family with a `commit_flags` argument and an `int` return type.  This
+    enables use of `GEX_FLAG_IMMEDIATE` at commit time.
+
 * General and Misc.
   - Support for hwloc, used conditionally by ibv- and ofi-conduits, now
     defaults to thread-scope (not process-scope) for the cpuset query.
     See GASNET_HWLOC_QUERY in the top-level GASNet README for details.
+  - Improved tracing and statistics support for the `gex_AD_*()` APIs
   - Improved pseudo-random number generation used in many tests.
+  - Support for compilation of GASNet-EX with GCC-15
 
 * Notable bugs fixed in this release: (details at https://gasnet-bugs.lbl.gov)
   - bug4165 - ucx: AMMediumRequest bandwidth problems
@@ -90,6 +106,13 @@ GASNet-EX ChangeLog
   - bug4766 - Executing a NULL pointer via gasnete_barrier_pf
   - bug4767 - CUDA framebuffer memory allocated by cuMemMap failed when registering with GASNet-EX
   - bug4768 - memcpy with NULL destination in collectives
+  - bug4772 - regression in low-memory error handling with single-process runs
+  - bug4773 - (partial fix) improved error handling in segment allocation
+  - bug4774 - Add argument-checking to GASNet object query accessors
+  - bug4787 - GCC-15 errors and warnings regarding incompatible pointers-to-function
+  - bug4788 - amx/testam.c not C23-compatible
+  - bug4797 - Intermittent init-time crash inside gasneti_bootstrapBarrier_am()
+  - bug???? - gex_EP_BindSegment failures with CUDA device memory and SHS 12.0.1
 
 ----------------------------------------------------------------------
 2024-05-23: GASNet-EX 2024.5.0

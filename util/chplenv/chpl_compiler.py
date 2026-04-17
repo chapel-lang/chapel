@@ -17,32 +17,42 @@ from utils import which, error, memoize, warning
 #
 @memoize
 def validate_compiler(compiler_val, flag):
-    if compiler_val != 'llvm':
+    if compiler_val != "llvm":
         import chpl_home_utils
+
         chpl_home = chpl_home_utils.get_chpl_home()
-        comp_makefile = os.path.join(chpl_home, 'make', 'compiler', 'Makefile.{0}'.format(compiler_val))
+        comp_makefile = os.path.join(
+            chpl_home, "make", "compiler", "Makefile.{0}".format(compiler_val)
+        )
         if not os.path.isfile(comp_makefile):
             warning('Unknown compiler: "{0}"'.format(compiler_val))
 
         # if we are on an EX and not using LLVM, we should be using the prgenv compiler
-        if flag == 'target':
+        if flag == "target":
             prg_compiler = get_prgenv_compiler()
-            if prg_compiler != 'none' and compiler_val != prg_compiler:
-                warning('Prefer using a PrgEnv compiler (CHPL_TARGET_COMPILER={0}) for the C backend'.format(prg_compiler))
+            if prg_compiler != "none" and compiler_val != prg_compiler:
+                warning(
+                    "Prefer using a PrgEnv compiler (CHPL_TARGET_COMPILER={0}) for the C backend".format(
+                        prg_compiler
+                    )
+                )
 
 
 @memoize
 def get_prgenv_compiler():
-    platform_val = chpl_platform.get('target')
-    if 'cray-x' in platform_val or chpl_platform.is_hpe_cray('target'):
-        subcompiler = os.environ.get('PE_ENV', 'none')
-        if subcompiler != 'none':
+    platform_val = chpl_platform.get("target")
+    if "cray-x" in platform_val or chpl_platform.is_hpe_cray("target"):
+        subcompiler = os.environ.get("PE_ENV", "none")
+        if subcompiler != "none":
             return "cray-prgenv-{0}".format(subcompiler.lower())
 
         else:
-            warning("Compiling on {0} without a PrgEnv loaded".format(platform_val))
+            warning(
+                "Compiling on {0} without a PrgEnv loaded".format(platform_val)
+            )
 
-    return 'none'
+    return "none"
+
 
 # Don't use CC / CXX to set other variables if any of
 #  CHPL_HOST_COMPILER
@@ -57,11 +67,14 @@ def get_prgenv_compiler():
 # if we would like to default to LLVM.
 @memoize
 def should_consider_cc_cxx(flag):
-    return (should_consider_inferring_compiler(flag) and
-            overrides.get('CHPL_HOST_CC') is None and
-            overrides.get('CHPL_HOST_CXX') is None and
-            overrides.get('CHPL_TARGET_CC') is None and
-            overrides.get('CHPL_TARGET_CXX') is None)
+    return (
+        should_consider_inferring_compiler(flag)
+        and overrides.get("CHPL_HOST_CC") is None
+        and overrides.get("CHPL_HOST_CXX") is None
+        and overrides.get("CHPL_TARGET_CC") is None
+        and overrides.get("CHPL_TARGET_CXX") is None
+    )
+
 
 # Don't use CHPL_HOST_CC / CHPL_HOST_CXX to set CHPL_HOST_COMPILER
 # if CHPL_HOST_COMPILER is already set
@@ -76,15 +89,13 @@ def should_consider_inferring_compiler(flag):
     if default_llvm:
         return False
 
-    if (flag == 'host' and
-        overrides.get('CHPL_HOST_COMPILER') is not None):
+    if flag == "host" and overrides.get("CHPL_HOST_COMPILER") is not None:
         return False
 
-    if (flag == 'target' and
-        overrides.get('CHPL_TARGET_COMPILER') is not None):
+    if flag == "target" and overrides.get("CHPL_TARGET_COMPILER") is not None:
         return False
 
-    if flag == 'target' and get_prgenv_compiler() != 'none':
+    if flag == "target" and get_prgenv_compiler() != "none":
         # On an XC etc with a PrgEnv compiler,
         # setting CC/CXX should only impact the host compiler.
         return False
@@ -98,15 +109,15 @@ def should_consider_inferring_compiler(flag):
 # to something too complex.
 @memoize
 def get_compiler_from_cc_cxx(ccVarName, cxxVarName):
-    cc_compiler = 'unknown'
-    cxx_compiler = 'unknown'
+    cc_compiler = "unknown"
+    cxx_compiler = "unknown"
     fail = False
-    compiler_val = 'unknown'
-    cc_val = overrides.get(ccVarName, '')
-    cxx_val = overrides.get(cxxVarName, '')
+    compiler_val = "unknown"
+    cc_val = overrides.get(ccVarName, "")
+    cxx_val = overrides.get(cxxVarName, "")
 
-    if cc_val == '' and cxx_val == '':
-        return ''
+    if cc_val == "" and cxx_val == "":
+        return ""
 
     if cc_val:
         cc_compiler = get_compiler_from_command(cc_val)
@@ -117,14 +128,21 @@ def get_compiler_from_cc_cxx(ccVarName, cxxVarName):
         if cc_compiler == cxx_compiler:
             compiler_val = cc_compiler
         else:
-            error("Conflicting compiler families for {0} and {1} settings\n"
-                  "  {2} -> {3}\n"
-                  "  {4} -> {5}\n"
-                  "Set CHPL_HOST_COMPILER and CHPL_TARGET_COMPILER to the "
-                  "desired compiler family".format(ccVarName, cxxVarName,
-                                                   cc_val, cc_compiler,
-                                                   cxx_val, cxx_compiler))
-            compiler_val = 'unknown'
+            error(
+                "Conflicting compiler families for {0} and {1} settings\n"
+                "  {2} -> {3}\n"
+                "  {4} -> {5}\n"
+                "Set CHPL_HOST_COMPILER and CHPL_TARGET_COMPILER to the "
+                "desired compiler family".format(
+                    ccVarName,
+                    cxxVarName,
+                    cc_val,
+                    cc_compiler,
+                    cxx_val,
+                    cxx_compiler,
+                )
+            )
+            compiler_val = "unknown"
 
     else:
         # if we get here, CC or CXX is provided, but not both.
@@ -134,45 +152,56 @@ def get_compiler_from_cc_cxx(ccVarName, cxxVarName):
         # In that event, omit the error.
         if cc_val:
             compiler_val = cc_compiler
-            fail = (get_compiler_name_c(compiler_val) != cc_val)
+            fail = get_compiler_name_c(compiler_val) != cc_val
         if cxx_val:
             compiler_val = cxx_compiler
-            fail = (get_compiler_name_cxx(compiler_val) != cxx_val)
+            fail = get_compiler_name_cxx(compiler_val) != cxx_val
 
-    if compiler_val == 'unknown':
-        error("Could not infer CHPL_TARGET_COMPILER from "
-              "{0}={1} {2}={3}".format(ccVarName, cc_val, cxxVarName, cxx_val))
+    if compiler_val == "unknown":
+        error(
+            "Could not infer CHPL_TARGET_COMPILER from "
+            "{0}={1} {2}={3}".format(ccVarName, cc_val, cxxVarName, cxx_val)
+        )
     else:
         if fail and cc_val:
-            error('{0} is set but not {1} -- please set both\n'.format(
-                  ccVarName, cxxVarName))
+            error(
+                "{0} is set but not {1} -- please set both\n".format(
+                    ccVarName, cxxVarName
+                )
+            )
         if fail and cxx_val:
-            error('{0} is set but not {1} -- please set both\n'.format(
-                  cxxVarName, ccVarName))
+            error(
+                "{0} is set but not {1} -- please set both\n".format(
+                    cxxVarName, ccVarName
+                )
+            )
 
     return compiler_val
+
 
 # Returns True if the compiler defaults to LLVM
 def default_to_llvm(flag):
     ret = False
 
-    if flag == 'target':
+    if flag == "target":
         import chpl_llvm
+
         has_llvm = chpl_llvm.get()
 
-        if has_llvm == 'bundled' or has_llvm == 'system':
+        if has_llvm == "bundled" or has_llvm == "system":
             # Default to CHPL_TARGET_COMPILER=llvm when CHPL_LLVM!=none
             ret = True
 
     return ret
 
-@memoize
-def get(flag='host'):
 
-    if flag == 'host':
-        compiler_val = overrides.get('CHPL_HOST_COMPILER', '')
-    elif flag == 'target':
-        compiler_val = overrides.get('CHPL_TARGET_COMPILER', '')
+@memoize
+def get(flag="host"):
+
+    if flag == "host":
+        compiler_val = overrides.get("CHPL_HOST_COMPILER", "")
+    elif flag == "target":
+        compiler_val = overrides.get("CHPL_TARGET_COMPILER", "")
     else:
         error("Invalid flag: '{0}'".format(flag), ValueError)
 
@@ -184,19 +213,21 @@ def get(flag='host'):
         if should_consider_inferring_compiler(flag):
 
             # consider CHPL_HOST_CC / CHPL_HOST_CXX
-            if flag == 'host':
-                compiler_val = get_compiler_from_cc_cxx('CHPL_HOST_CC',
-                                                        'CHPL_HOST_CXX')
+            if flag == "host":
+                compiler_val = get_compiler_from_cc_cxx(
+                    "CHPL_HOST_CC", "CHPL_HOST_CXX"
+                )
             # consider CHPL_TARGET_CC / CHPL_TARGET_CXX
-            if flag == 'target':
-                compiler_val = get_compiler_from_cc_cxx('CHPL_TARGET_CC',
-                                                        'CHPL_TARGET_CXX')
+            if flag == "target":
+                compiler_val = get_compiler_from_cc_cxx(
+                    "CHPL_TARGET_CC", "CHPL_TARGET_CXX"
+                )
 
             # if the compiler family was not set by the above,
             # and none of CHPL_HOST_CC ... CHPL_TARGET_CXX are set,
             # consider CC and CXX
             if should_consider_cc_cxx(flag) and not compiler_val:
-                compiler_val = get_compiler_from_cc_cxx('CC', 'CXX')
+                compiler_val = get_compiler_from_cc_cxx("CC", "CXX")
 
     if compiler_val:
         validate_compiler(compiler_val, flag)
@@ -205,14 +236,14 @@ def get(flag='host'):
     prgenv_compiler = get_prgenv_compiler()
 
     if default_llvm:
-        compiler_val = 'llvm'
+        compiler_val = "llvm"
 
-    elif prgenv_compiler != 'none':
+    elif prgenv_compiler != "none":
         # The cray platforms are a special case in that we want to
         # "cross-compile" by default. (the compiler is different between host
         # and target, but the platform is the same).
-        if flag == 'host':
-            compiler_val = 'gnu'
+        if flag == "host":
+            compiler_val = "gnu"
         else:
             compiler_val = prgenv_compiler
 
@@ -221,66 +252,81 @@ def get(flag='host'):
         # Normal compilation (not "cross-compiling")
         # inherit the host compiler if the target compiler is not set and
         # the host and target platforms are the same
-        if flag == 'target':
-            if chpl_platform.get('host') == platform_val:
-                compiler_val = get('host')
-        elif platform_val.startswith('pwr'):
-            compiler_val = 'ibm'
-        elif platform_val == 'darwin' or platform_val == 'freebsd':
-            if which('clang'):
-                compiler_val = 'clang'
+        if flag == "target":
+            if chpl_platform.get("host") == platform_val:
+                compiler_val = get("host")
+        elif platform_val.startswith("pwr"):
+            compiler_val = "ibm"
+        elif platform_val == "darwin" or platform_val == "freebsd":
+            if which("clang"):
+                compiler_val = "clang"
             else:
-                compiler_val = 'gnu'
+                compiler_val = "gnu"
         else:
-            compiler_val = 'gnu'
+            compiler_val = "gnu"
 
     validate_compiler(compiler_val, flag)
     return compiler_val
 
+
 @memoize
-def get_path_component(flag='host'):
+def get_path_component(flag="host"):
 
     val = get(flag=flag)
 
-    if val == 'clang' and flag == 'target':
+    if val == "clang" and flag == "target":
 
         import chpl_llvm
+
         has_llvm = chpl_llvm.get()
 
-        if has_llvm == 'bundled':
+        if has_llvm == "bundled":
             # selecting the included clang - distinguish that
             # with 'llvm' in the path component.
-            val = 'llvm'
+            val = "llvm"
 
     return get(flag)
+
 
 # This array consists of tuples of
 #  ( family-name, c-compilation-command-name, c++compilation-command-name)
 # where family-name corresponds to CHPL_TARGET_COMPILER etc settings e.g. gnu.
 # This table only includes the cases where it is reasonable to
 # infer the family from the command name.
-COMPILERS = [('gnu', 'gcc', 'g++'),
-             ('clang', 'clang', 'clang++'),
-             ('ibm', 'xlc', 'xlC'),
-             ('intel', 'icc', 'icpc'),
-             ('pgi', 'pgcc', 'pgc++')]
+COMPILERS = [
+    ("gnu", "gcc", "g++"),
+    ("clang", "clang", "clang++"),
+    ("ibm", "xlc", "xlC"),
+    ("intel", "icc", "icpc"),
+    ("pgi", "pgcc", "pgc++"),
+]
+
 
 # given a compiler command string, (e.g. "gcc" or "/path/to/clang++"),
 # figure out the compiler family (e.g. gnu or clang),
 # and the C and C++ variants of that command
 def get_compiler_from_command(command):
     if not command:
-        return 'unknown'
+        return "unknown"
 
     # the following adjustments are to handle a command like
     #    /path/to/gcc-10.exe --some-option
     # where we are looking for just the 'gcc' part.
+    # we also need to consider paths like `/usr/bin/aarch64-linux-gnu-gcc-10`
     first = command.split()[0]
     basename = os.path.basename(first)
-    name = basename.split('-')[0].strip()
-    name = name.split('.')[0].strip()
+    # strip off the dot first
+    name = basename.split(".")[0].strip()
+    name_components = name.split("-")
+    # find the last part of the name, keep searching for one thats not a number
+    last_component = None
+    for component in reversed(name_components):
+        last_component = component.strip()
+        if not last_component.isdigit():
+            break
+    names = (name_components[0], last_component)
     for tup in COMPILERS:
-        if name == tup[1] or name == tup[2]:
+        if tup[1] in names or tup[2] in names:
             return tup[0]
 
     # if it was not one of the above cases we don't know how to
@@ -288,7 +334,8 @@ def get_compiler_from_command(command):
     # E.g. cc/CC/mpicc could be many compilers.
     #
     # We could consider trying to run it to figure it out.
-    return 'unknown'
+    return "unknown"
+
 
 def get_compiler_name_c(compiler):
     for tup in COMPILERS:
@@ -297,15 +344,16 @@ def get_compiler_name_c(compiler):
 
     # handle special cases not in the COMPILERS table
     if compiler_is_prgenv(compiler):
-        return 'cc'
-    elif compiler in ['llvm', 'allinea']:
-        return 'clang'
-    elif compiler == 'mpi-gnu':
-        return 'mpicc'
-    elif 'gnu' in compiler:
-        return 'gcc'
+        return "cc"
+    elif compiler in ["llvm", "allinea"]:
+        return "clang"
+    elif compiler == "mpi-gnu":
+        return "mpicc"
+    elif "gnu" in compiler:
+        return "gcc"
 
-    return 'unknown-c-compiler'
+    return "unknown-c-compiler"
+
 
 def get_compiler_name_cxx(compiler):
     for tup in COMPILERS:
@@ -314,19 +362,20 @@ def get_compiler_name_cxx(compiler):
 
     # handle special cases not in the COMPILERS table
     if compiler_is_prgenv(compiler):
-        return 'CC'
-    elif compiler in ['llvm', 'allinea']:
-        return 'clang++'
-    elif compiler == 'mpi-gnu':
-        return 'mpicxx'
-    elif 'gnu' in compiler:
-        return 'g++'
+        return "CC"
+    elif compiler in ["llvm", "allinea"]:
+        return "clang++"
+    elif compiler == "mpi-gnu":
+        return "mpicxx"
+    elif "gnu" in compiler:
+        return "g++"
 
-    return 'unknown-c++-compiler'
+    return "unknown-c++-compiler"
 
 
 def compiler_is_prgenv(compiler_val):
-    return compiler_val.startswith('cray-prgenv')
+    return compiler_val.startswith("cray-prgenv")
+
 
 # flag should be host or target
 # lang should be c or cxx (aka c++)
@@ -338,25 +387,25 @@ def get_compiler_command(flag, lang):
     flag_upper = flag.upper()
     lang_upper = lang.upper()
 
-    if lang_upper == 'C++':
-        lang_upper = 'CXX'
-    elif lang_upper == 'C':
-        lang_upper = 'CC'
+    if lang_upper == "C++":
+        lang_upper = "CXX"
+    elif lang_upper == "C":
+        lang_upper = "CC"
 
-    if flag_upper == 'HOST' or flag_upper == 'TARGET':
+    if flag_upper == "HOST" or flag_upper == "TARGET":
         pass
     else:
-        error('unknown flag {0}'.format(flag))
+        error("unknown flag {0}".format(flag))
 
-    if lang_upper == 'CC' or lang_upper == 'CXX':
+    if lang_upper == "CC" or lang_upper == "CXX":
         pass
     else:
-        error('unknown lang {0}'.format(lang))
+        error("unknown lang {0}".format(lang))
 
     # construct CHPL_HOST_CC / CHPL_TARGET_CXX etc
-    varname = 'CHPL_' + flag_upper + '_' + lang_upper
+    varname = "CHPL_" + flag_upper + "_" + lang_upper
 
-    command = overrides.get(varname, '')
+    command = overrides.get(varname, "")
     if command:
         return command.split()
 
@@ -364,28 +413,46 @@ def get_compiler_command(flag, lang):
 
     # If other settings allow it, look also at CC/CXX.
     if should_consider_cc_cxx(flag):
-        cc_cxx_val = overrides.get(lang_upper, '')
+        cc_cxx_val = overrides.get(lang_upper, "")
         if cc_cxx_val:
             return cc_cxx_val.split()
 
-    if lang_upper == 'CC':
+    if lang_upper == "CC":
         command = [get_compiler_name_c(compiler_val)]
-    elif lang_upper == 'CXX':
+    elif lang_upper == "CXX":
         command = [get_compiler_name_cxx(compiler_val)]
+
+    # if CHPL_*_COMPILER is clang, we may need to adjust the command, because
+    # 'clang' may not exist (it might be clang-VERSION)
+    if (
+        compiler_val == "clang"
+        and (lang_upper == "CC" or lang_upper == "CXX")
+        and not which(command[0])
+    ):
+        from chpl_llvm import llvm_versions
+
+        for v in llvm_versions():
+            newcommand = command[0] + "-" + v
+            if which(newcommand):
+                command[0] = newcommand
+                break
 
     # Adjust the path in two situations:
     #  CHPL_TARGET_COMPILER=llvm -- means use the selected llvm/clang
     #  CHPL_TARGET_COMPILER=clang with CHPL_LLVM=bundled -- use bundled clang
-    if compiler_val == 'clang' or compiler_val == 'llvm':
+    if compiler_val == "clang" or compiler_val == "llvm":
         import chpl_llvm
+
         llvm_val = chpl_llvm.get()
-        if llvm_val == 'none' and compiler_val == 'llvm':
+        if llvm_val == "none" and compiler_val == "llvm":
             error("Cannot use CHPL_TARGET_COMPILER=llvm when CHPL_LLVM=none")
-            command = ['unknown']
-        elif llvm_val == 'bundled' or compiler_val == 'llvm':
-            if (flag == 'host' and
-                llvm_val == 'bundled' and
-                compiler_val == 'clang'):
+            command = ["unknown"]
+        elif llvm_val == "bundled" or compiler_val == "llvm":
+            if (
+                flag == "host"
+                and llvm_val == "bundled"
+                and compiler_val == "clang"
+            ):
                 # don't change the prefix in this setting
                 # (bundled LLVM might not be built yet)
                 pass
@@ -394,6 +461,7 @@ def get_compiler_command(flag, lang):
                 command = chpl_llvm.get_llvm_clang(lang)
 
     return command
+
 
 # Returns any -I options needed to find bundled headers
 #
@@ -404,10 +472,11 @@ def get_compiler_command(flag, lang):
 # returns a Python list of -I flags
 @memoize
 def get_bundled_compile_args(flag):
-    paths = [ ]
+    paths = []
 
     # TODO - port over third-party arg gathering
     return paths
+
 
 # Returns any -I options needed for this compiler / system
 # to find headers
@@ -422,24 +491,26 @@ def get_system_compile_args(flag):
     platform_val = chpl_platform.get(flag)
     compiler_val = get(flag)
 
-    paths = [ ]
+    paths = []
 
     # For PrgEnv compilation with LLVM, gather arguments from PrgEnv driver
-    if compiler_val == 'llvm' and flag == 'target':
+    if compiler_val == "llvm" and flag == "target":
         import chpl_llvm
-        (comp_args, link_args) = chpl_llvm.get_clang_prgenv_args()
+
+        comp_args, link_args = chpl_llvm.get_clang_prgenv_args()
         paths.extend(comp_args)
 
     # FreeBSD uses /usr/local but compilers don't search there by default
-    if platform_val == 'freebsd':
-        paths.append('-I/usr/local/include')
+    if platform_val == "freebsd":
+        paths.append("-I/usr/local/include")
 
     # Add Homebrew include directory if Homebrew is installed
     homebrew_prefix = homebrew_utils.get_homebrew_prefix()
     if homebrew_prefix:
-        paths.append('-I' + homebrew_prefix + '/include')
+        paths.append("-isystem" + homebrew_prefix + "/include")
 
     return paths
+
 
 # Returns any -L options needed to find bundled libraries
 #
@@ -450,10 +521,11 @@ def get_system_compile_args(flag):
 # returns a Python list of -L flags
 @memoize
 def get_bundled_link_args(flag):
-    paths = [ ]
+    paths = []
 
     # TODO - port over third-party arg gathering
     return paths
+
 
 # Returns any -L options needed for this compiler / system
 # to find libraries
@@ -468,89 +540,122 @@ def get_system_link_args(flag):
     platform_val = chpl_platform.get(flag)
     compiler_val = get(flag)
 
-    paths = [ ]
+    paths = []
 
     # For PrgEnv compilation with LLVM, gather arguments from PrgEnv driver
-    if compiler_val == 'llvm' and flag == 'target':
+    if compiler_val == "llvm" and flag == "target":
         import chpl_llvm
-        (comp_args, link_args) = chpl_llvm.get_clang_prgenv_args()
+
+        comp_args, link_args = chpl_llvm.get_clang_prgenv_args()
         paths.extend(link_args)
 
     # FreeBSD uses /usr/local but compilers don't search there by default
-    if platform_val == 'freebsd':
-        paths.append('-L/usr/local/lib')
+    if platform_val == "freebsd":
+        paths.append("-L/usr/local/lib")
 
     # Add Homebrew lib directory if Homebrew is installed
     homebrew_prefix = homebrew_utils.get_homebrew_prefix()
     if homebrew_prefix:
-        paths.append('-L' + homebrew_prefix + '/lib')
+        paths.append("-L" + homebrew_prefix + "/lib")
 
     return paths
-
 
 
 def validate_inference_matches(flag, lang):
     flag_upper = flag.upper()
     lang_upper = lang.upper()
 
-    if lang_upper == 'C++':
-        lang_upper = 'CXX'
-    elif lang_upper == 'C':
-        lang_upper = 'CC'
+    if lang_upper == "C++":
+        lang_upper = "CXX"
+    elif lang_upper == "C":
+        lang_upper = "CC"
 
     compiler = get(flag)
     cmd = get_compiler_command(flag, lang)
     inferred = get_compiler_from_command(cmd[0])
 
-    if (inferred != 'unknown' and
-        inferred != compiler and
-        not (compiler == 'llvm' and inferred == 'clang')):
-        error("Conflicting compiler families: "
-              "CHPL_{0}_COMPILER={1} but CHPL_{0}_{2}={3} but has family {4}"
-              .format(flag_upper, compiler, lang_upper, cmd, inferred))
+    if (
+        inferred != "unknown"
+        and inferred != compiler
+        and not (compiler == "llvm" and inferred == "clang")
+    ):
+        error(
+            "Conflicting compiler families: "
+            "CHPL_{0}_COMPILER={1} but CHPL_{0}_{2}={3} but has family {4}".format(
+                flag_upper, compiler, lang_upper, cmd, inferred
+            )
+        )
         return False
 
     return True
+
 
 # Issue an error if, after all the various inferences are done,
 # CHPL_HOST_CC / CXX is inconsintent with CHPL_HOST_COMPILER
 # and similarly for TARGET variants.
 @memoize
 def validate_compiler_settings():
-    validate_inference_matches('host', 'c')
-    validate_inference_matches('host', 'c++')
-    validate_inference_matches('target', 'c')
-    validate_inference_matches('target', 'c++')
+    validate_inference_matches("host", "c")
+    validate_inference_matches("host", "c++")
+    validate_inference_matches("target", "c")
+    validate_inference_matches("target", "c++")
+
 
 def _main():
-    parser = optparse.OptionParser(usage='usage: %prog [--host|target])')
-    parser.add_option('--host', dest='flag', action='store_const',
-                      const='host', default='host')
-    parser.add_option('--target', dest='flag', action='store_const',
-                      const='target')
-    parser.add_option('--cc', dest='which', action='store_const',
-                      const='c', default=None, help='get CHPL_{flag}_CC')
-    parser.add_option('--cxx', dest='which', action='store_const',
-                      const='c++', help='get CHPL_{flag}_CXX')
-    parser.add_option('--compiler-only', dest='parts', action='store_const',
-                      const='compiler', default='all')
-    parser.add_option('--additional', dest='parts', action='store_const',
-                      const='additional', help='get additional compiler args')
-    (options, args) = parser.parse_args()
+    parser = optparse.OptionParser(usage="usage: %prog [--host|target])")
+    parser.add_option(
+        "--host",
+        dest="flag",
+        action="store_const",
+        const="host",
+        default="host",
+    )
+    parser.add_option(
+        "--target", dest="flag", action="store_const", const="target"
+    )
+    parser.add_option(
+        "--cc",
+        dest="which",
+        action="store_const",
+        const="c",
+        default=None,
+        help="get CHPL_{flag}_CC",
+    )
+    parser.add_option(
+        "--cxx",
+        dest="which",
+        action="store_const",
+        const="c++",
+        help="get CHPL_{flag}_CXX",
+    )
+    parser.add_option(
+        "--compiler-only",
+        dest="parts",
+        action="store_const",
+        const="compiler",
+        default="all",
+    )
+    parser.add_option(
+        "--additional",
+        dest="parts",
+        action="store_const",
+        const="additional",
+        help="get additional compiler args",
+    )
+    options, args = parser.parse_args()
 
     if options.which is None:
         compiler_val = get(options.flag)
         sys.stdout.write("{0}\n".format(compiler_val))
     else:
         compiler = get_compiler_command(options.flag, options.which)
-        if options.parts == 'compiler':
+        if options.parts == "compiler":
             sys.stdout.write("{0}\n".format(compiler[0]))
-        elif options.parts == 'additional':
-            sys.stdout.write("{0}\n".format(' '.join(compiler[1:])))
+        elif options.parts == "additional":
+            sys.stdout.write("{0}\n".format(" ".join(compiler[1:])))
         else:
-            sys.stdout.write("{0}\n".format(' '.join(compiler)))
+            sys.stdout.write("{0}\n".format(" ".join(compiler)))
 
 
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     _main()

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2024-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -60,10 +60,11 @@ static MostSpecificCandidate const& mscQuery(Context* context) {
   auto typed = TypedFnSignature::get(context, untyped,
       /* formalTypes */ { QualifiedType(QualifiedType::CONST_IN, IntType::get(context, 32)) },
       TypedFnSignature::WHERE_NONE,
-      /* needsInstantiation */ false,
+      /* instantiationState */ TypedFnSignature::INST_CONCRETE,
       /* instantiatedFrom */ nullptr,
       /* parentFn */ nullptr,
       /* instantiatedFormals */ Bitmap{},
+      /* erroredFormals */ Bitmap{},
       {});
 
   auto ci = CallInfo(
@@ -80,7 +81,7 @@ static MostSpecificCandidate const& mscQuery(Context* context) {
       });
 
   auto faMap = FormalActualMap(typed, ci);
-  auto promotedFormals = SubstitutionsMap();
+  auto promotedFormals = PromotedFormalMap();
 
   assert(faMap.isValid());
 

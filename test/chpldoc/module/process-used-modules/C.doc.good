@@ -1,0 +1,73 @@
+.. default-domain:: chpl
+
+.. module:: A
+
+A
+=
+**Usage**
+
+.. code-block:: chapel
+
+   use A;
+
+
+or
+
+.. code-block:: chapel
+
+   import A;
+
+.. function:: proc A_fn()
+
+   A_fn documentation 
+
+.. function:: proc main
+
+.. default-domain:: chpl
+
+.. module:: B
+
+B
+=
+**Usage**
+
+.. code-block:: chapel
+
+   use B;
+
+
+or
+
+.. code-block:: chapel
+
+   import B;
+
+.. data:: var X: int
+
+.. function:: proc B_fn()
+
+   B_fn documentation 
+
+.. default-domain:: chpl
+
+.. module:: C
+
+C
+=
+**Usage**
+
+.. code-block:: chapel
+
+   use C;
+
+
+or
+
+.. code-block:: chapel
+
+   import C;
+
+.. function:: proc C_fn()
+
+   C_fn documentation 
+

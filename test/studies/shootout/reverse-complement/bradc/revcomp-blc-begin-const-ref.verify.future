@@ -1,4 +1,0 @@
-bug: compiler complains about 'const' being passed to 'ref' incorrectly
-
-#19737
-

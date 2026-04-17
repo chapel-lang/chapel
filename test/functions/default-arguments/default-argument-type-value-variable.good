@@ -1,0 +1,1 @@
+default-argument-type-value-variable.chpl:6: error: unable to initialize a type formal with a value

@@ -1,5 +1,3 @@
-:title: Users Guide: Variable Declarations
-
 .. _ug-vars:
 
 Variable Declarations

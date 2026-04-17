@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+backend=$($CHPL_HOME/util/printchplenv --value --only CHPL_TARGET_COMPILER)
+
+if [[ "$backend" == "llvm" ]]; then
+  echo " -g"
+else
+  echo " -g --no-munge-user-idents"
+fi

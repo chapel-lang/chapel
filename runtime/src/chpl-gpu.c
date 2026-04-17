@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.  *
  * The entirety of this work is licensed under the Apache License,
@@ -38,7 +38,7 @@ bool chpl_gpu_use_stream_per_task = true;
 #include "chpl-gpu-impl.h"
 #include "chpl-gpu-diags.h"
 #include "chpl-tasks.h"
-#include "error.h"
+#include "chpl-error.h"
 #include "chplcgfns.h"
 #include "chpl-linefile-support.h"
 #include "chpl-env-gen.h"

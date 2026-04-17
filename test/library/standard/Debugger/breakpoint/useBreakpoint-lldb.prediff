@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+# keep all lines with 'p myVariable' and the line after
+
+grep 'p/d myVariable' -A 1 $2 > $2.tmp
+mv $2.tmp $2

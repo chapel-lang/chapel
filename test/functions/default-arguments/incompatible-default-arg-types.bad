@@ -1,0 +1,1 @@
+incompatible-default-arg-types.chpl:3: error: type mismatch between declared formal type and default value type

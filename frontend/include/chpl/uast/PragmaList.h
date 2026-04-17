@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -69,7 +69,6 @@ PRAGMA(ALWAYS_RVF, ypr,
        "always RVF",
        "attach to a type to force RVF for objects of that type")
 PRAGMA(ANONYMOUS_FN, npr, "anonymous fn", ncm)
-PRAGMA(LEGACY_LAMBDA, npr, "legacy lambda", ncm)
 PRAGMA(ANONYMOUS_FORMAL, npr, "anonymous formal", ncm)
 PRAGMA(DEAD_END_OF_BLOCK, ypr, "dead at end of block", ncm)
 PRAGMA(DEAD_LAST_MENTION, ypr, "dead after last mention", ncm)
@@ -189,6 +188,9 @@ PRAGMA(DEFAULT_INTENT_IS_REF_MAYBE_CONST, ypr,
        "default intent is ref if modified",
        "The default intent for this type is ref if modified const "
        "ref otherwise")
+PRAGMA(NO_USER_DEBUG_INFO, ypr,
+       "no user debug info",
+       "Do not emit user-level debug info for this symbol")
 
 PRAGMA(NO_PROMOTION_WHEN_BY_REF, ypr, "no promotion when by ref", ncm)
 
@@ -233,6 +235,7 @@ PRAGMA(EPILOGUE_LABEL, npr,
        "epilogue label",
        "distinguishes the epilogue label from other labels")
 PRAGMA(ERROR_LABEL, ypr, "error label", ncm)
+PRAGMA(BAD_UNINSTANTIATED_FORMAL, npr, "bad uninstantiated formal", "this formal was generic and not correctly instantiated with its default value")
 PRAGMA(EXPANDED_VARARGS, npr, "expanded varargs", ncm)
 PRAGMA(EXPAND_TUPLES_WITH_VALUES, ypr, "expand tuples with values", ncm)
 PRAGMA(EXPORT, npr, "export", ncm)
@@ -301,6 +304,8 @@ PRAGMA(NO_GPU_CODEGEN, ypr, "no gpu codegen", "this function is GPU-ineligible")
 PRAGMA(NOT_CALLED_FROM_GPU, ypr, "not called from gpu", "runtime error if this function is called from a gpu")
 PRAGMA(ASSERT_ON_GPU, ypr, "assert on gpu", "triggers runtime assertion if not running on device")
 
+PRAGMA(HAS_EDITION, npr, "has edition",
+       "applied to breaking changes to indicate which edition they are associated with")
 PRAGMA(HAS_POSTINIT, ypr, "has postinit", "type that has a postinit method")
 PRAGMA(HAS_RUNTIME_TYPE, ypr, "has runtime type", "type that has an associated runtime type")
 PRAGMA(IGNORE_RUNTIME_TYPE, ypr, "ignore runtime type", "use the static type only in the return value")
@@ -316,6 +321,7 @@ PRAGMA(INCLUDED_MODULE, npr, "included sub-module", ncm)
 PRAGMA(INCOMPLETE, npr, "incomplete", "an extern type that is incomplete in the C/C++ sense")
 PRAGMA(INDEX_VAR, npr, "index var", ncm)
 PRAGMA(INFER_CUSTOM_TYPE, ypr, "infer custom type", ncm)
+PRAGMA(IS_ARRAY_VIEW, npr, "is array view", "this expression is an array view")
 
 PRAGMA(MANAGER_HANDLE, npr, "manager handle", ncm)
 PRAGMA(MANAGER_RESOURCE_INFER_STORAGE, npr, "manager resource infer storage", ncm)
@@ -330,6 +336,7 @@ PRAGMA(INIT_TUPLE, ypr, "tuple init fn", ncm)
 PRAGMA(INLINE, npr, "inline", ncm)
 PRAGMA(INLINED_FN, npr, "inlined function", ncm)
 PRAGMA(INLINE_ITERATOR, npr, "inline iterator", "iterators that are always inlined, e.g., leaders")
+PRAGMA(NO_INLINE, ypr, "no inline", ncm)
 PRAGMA(INSERT_AUTO_DESTROY, ypr, "insert auto destroy", ncm)
 PRAGMA(INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW, npr, "insert auto destroy for explicit new", ncm)
 PRAGMA(INSERT_LINE_FILE_INFO, ypr, "insert line file info", ncm)
@@ -404,12 +411,12 @@ PRAGMA(MEMORY_ORDER_TYPE, ypr, "memory order type", "type implementing chpl memo
 PRAGMA(C_MEMORY_ORDER_TYPE, ypr, "c memory order type", "type implementing c memory order (normally called memory_order)")
 PRAGMA(METHOD, npr, "method", "function that is a method")
 PRAGMA(METHOD_PRIMARY, npr, "primary method", "function that is a method and defined in type declaration")
-PRAGMA(MODIFIES_CONST_FIELDS, npr, "modifies const fields", "... of 'this' argument")
 
 // marks top-level modules mentioned on the compiler command line
 PRAGMA(MODULE_FROM_COMMAND_LINE_FILE, npr, "module from command line file", "This is a module that came from a file named on the compiler command line")
 
 PRAGMA(MODULE_INIT, npr, "module init", "a module init function")
+PRAGMA(MODULE_DEINIT, npr, "module deinit", "a module deinit function")
 
 PRAGMA(MODULE_INCLUDED_BY_DEFAULT, ypr, "module included by default", "module is included by default")
 
@@ -421,7 +428,6 @@ PRAGMA(IGNORE_NOINIT, ypr, "ignore noinit", "this type must be initialized")
 PRAGMA(NON_BLOCKING, npr, "non blocking", "with ON/ON_BLOCK, non-blocking on functions")
 PRAGMA(NO_AUTO_DESTROY, ypr, "no auto destroy", ncm)
 PRAGMA(NO_FN_BODY, npr, "no fn body", "function has no body")
-PRAGMA(NO_BORROW_CONVERT, ypr, "no borrow convert", "arguments that are instantiated as owned/shared/etc do not need to convert to borrow")
 PRAGMA(NO_CAPTURE_FOR_TASKING, npr, "no capture for tasking", "does not need to be captured before spawning tasks")
 PRAGMA(NO_CODEGEN, ypr, "no codegen", "do not generate e.g. C code defining this symbol")
 PRAGMA(NO_COPY, ypr, "no copy", "do not apply chpl__initCopy to initialization of a variable")
@@ -429,7 +435,6 @@ PRAGMA(ERROR_ON_COPY, ypr, "error on copy", "error if actual is copied at callsi
 PRAGMA(NO_COPY_RETURN, ypr, "no copy return", ncm)
 PRAGMA(NO_COPY_RETURNS_OWNED, ypr, "no copy returns owned", ncm)
 PRAGMA(NO_DEFAULT_FUNCTIONS, ypr, "no default functions", ncm)
-PRAGMA(NO_WHERE_DOC, ypr, "no where doc", "do not include the where clause in chpldoc documentation for this symbol")
 PRAGMA(NO_IMPLICIT_COPY, ypr, "no implicit copy", "function does not require autoCopy/autoDestroy")
 
 // This flag disables initialization entirely. In contrast, `= noinit`
@@ -478,6 +483,8 @@ PRAGMA(OBJECT_CLASS, ypr, "object class", ncm)
 //
 PRAGMA(ON, npr, "on", ncm)
 PRAGMA(ON_BLOCK, npr, "on block", ncm)
+
+PRAGMA(OPAQUE_C_TYPE_ALIAS, ypr, "opaque c type alias", ncm)
 
 PRAGMA(OPERATOR, npr, "operator", ncm)
 

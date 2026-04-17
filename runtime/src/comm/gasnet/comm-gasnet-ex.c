@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -29,6 +29,8 @@
 #include "chpl-comm-callbacks-internal.h"
 #include "chpl-comm-internal.h"
 #include "chpl-env.h"
+#include "chpl-env-gen.h"
+#include "chpl-exec.h"
 #include "chpl-mem.h"
 #include "chplsys.h"
 #include "chpl-tasks.h"
@@ -38,7 +40,7 @@
 #include "chpl-gen-includes.h"
 #include "chpl-atomics.h"
 #include "chpl-linefile-support.h"
-#include "error.h"
+#include "chpl-error.h"
 #include "chpl-mem-desc.h"
 #include "chpl-mem-sys.h" // mem layer not initialized in init, need sys alloc
 
@@ -572,22 +574,22 @@ void AM_copy_payload(gasnet_token_t token, void* buf, size_t nbytes,
 }
 
 static gex_AM_Entry_t ftable[] = {
-  {FORK,             AM_fork,             GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_fork"             },
-  {FORK_SMALL,       AM_fork_small,       GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_fork_small"       },
-  {FORK_LARGE,       AM_fork_large,       GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_fork_large"       },
-  {FORK_NB,          AM_fork_nb,          GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_fork_nb"          },
-  {FORK_NB_SMALL,    AM_fork_nb_small,    GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_fork_nb_small"    },
-  {FORK_NB_LARGE,    AM_fork_nb_large,    GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_fork_nb_large"    },
-  {FORK_FAST,        AM_fork_fast,        GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_fork_fast"        },
-  {FORK_FAST_SMALL,  AM_fork_fast_small,  GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_fork_fast_small"  },
-  {SIGNAL,           AM_signal,           GEX_FLAG_AM_REQREP  | GEX_FLAG_AM_SHORT,  2, NULL, "AM_signal"           },
-  {SIGNAL_LONG,      AM_signal_long,      GEX_FLAG_AM_REPLY   | GEX_FLAG_AM_LONG,   2, NULL, "AM_signal_long"      },
-  {PRIV_BCAST,       AM_priv_bcast,       GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_priv_bcast"       },
-  {PRIV_BCAST_LARGE, AM_priv_bcast_large, GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_priv_bcast_large" },
-  {FREE,             AM_free,             GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_SHORT,  2, NULL, "AM_free"             },
-  {SHUTDOWN,         AM_shutdown,         GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_SHORT,  0, NULL, "AM_shutdown"         },
-  {DO_REPLY_PUT,     AM_reply_put,        GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_reply_put"        },
-  {DO_COPY_PAYLOAD,  AM_copy_payload,     GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 4, NULL, "AM_copy_payload"     }
+  {FORK,             (gex_AM_Fn_t)AM_fork,             GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_fork"             },
+  {FORK_SMALL,       (gex_AM_Fn_t)AM_fork_small,       GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_fork_small"       },
+  {FORK_LARGE,       (gex_AM_Fn_t)AM_fork_large,       GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_fork_large"       },
+  {FORK_NB,          (gex_AM_Fn_t)AM_fork_nb,          GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_fork_nb"          },
+  {FORK_NB_SMALL,    (gex_AM_Fn_t)AM_fork_nb_small,    GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_fork_nb_small"    },
+  {FORK_NB_LARGE,    (gex_AM_Fn_t)AM_fork_nb_large,    GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_fork_nb_large"    },
+  {FORK_FAST,        (gex_AM_Fn_t)AM_fork_fast,        GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_fork_fast"        },
+  {FORK_FAST_SMALL,  (gex_AM_Fn_t)AM_fork_fast_small,  GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_fork_fast_small"  },
+  {SIGNAL,           (gex_AM_Fn_t)AM_signal,           GEX_FLAG_AM_REQREP  | GEX_FLAG_AM_SHORT,  2, NULL, "AM_signal"           },
+  {SIGNAL_LONG,      (gex_AM_Fn_t)AM_signal_long,      GEX_FLAG_AM_REPLY   | GEX_FLAG_AM_LONG,   2, NULL, "AM_signal_long"      },
+  {PRIV_BCAST,       (gex_AM_Fn_t)AM_priv_bcast,       GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_priv_bcast"       },
+  {PRIV_BCAST_LARGE, (gex_AM_Fn_t)AM_priv_bcast_large, GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_priv_bcast_large" },
+  {FREE,             (gex_AM_Fn_t)AM_free,             GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_SHORT,  2, NULL, "AM_free"             },
+  {SHUTDOWN,         (gex_AM_Fn_t)AM_shutdown,         GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_SHORT,  0, NULL, "AM_shutdown"         },
+  {DO_REPLY_PUT,     (gex_AM_Fn_t)AM_reply_put,        GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_reply_put"        },
+  {DO_COPY_PAYLOAD,  (gex_AM_Fn_t)AM_copy_payload,     GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 4, NULL, "AM_copy_payload"     }
 };
 
 //
@@ -999,14 +1001,83 @@ void chpl_comm_post_mem_init(void) {
 // No support for gdb for now
 //
 int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
-  return 0;
+  chpl_error("Running Chapel with CHPL_COMM=gasnet and gdb is not yet supported", 0, 0);
+  return 1;
 }
 
 //
-// No support for lldb for now
+// Prototype support for using lldb-server
 //
 int chpl_comm_run_in_lldb(int argc, char* argv[], int lldbArgnum, int* status) {
-  return 0;
+
+#ifdef CHPL_TARGET_PLATFORM_DARWIN
+  // mac has some issues with debugserver, users will likely run into issues
+  // warn them about it
+  chpl_warning("Running Chapel with CHPL_COMM=gasnet and lldb is not well supported on MacOS", 0, 0);
+  const char* default_lldb_server =
+    "/Library/Developer/CommandLineTools/Library/PrivateFrameworks/LLDB.framework/Resources/debugserver";
+#else
+  const char* default_lldb_server = "lldb-server";
+#endif
+
+  const char* lldb_server =
+    chpl_env_rt_get("LLDB_DEBUG_SERVER_PATH", NULL);
+  int BASE_PORT = chpl_env_rt_get_int("DEBUG_SERVER_BASE_PORT", 5000);
+  // before launching the runtime, sleep for just a little bit to allow the
+  // parent to attach to the runtime process
+  // otherwise the child may end before the parent gets a chance to run
+  int SLEEP_FUDGE_FACTOR =
+    chpl_env_rt_get_int("DEBUG_SERVER_SLEEP_FUDGE_FACTOR", 2);
+
+  // this check is really important for good user errors and preventing injection
+  if (lldb_server != NULL && access(lldb_server, X_OK) != 0) {
+    char buf[1024];
+    snprintf(buf, sizeof(buf), "Could not find '%s'", lldb_server);
+    chpl_error(buf, 0, 0);
+    return 1;
+  }
+  if (lldb_server == NULL) {
+    lldb_server = default_lldb_server;
+  }
+
+  int port = BASE_PORT + chpl_nodeID;
+  char portStr[16];
+  snprintf(portStr, sizeof(portStr), "%d", port);
+
+  pid_t f = fork();
+  if (f < 0) {
+    chpl_internal_error_v("fork failed: %s", strerror(errno));
+    return 1;
+  } else if (f == 0) {
+    sleep(SLEEP_FUDGE_FACTOR);
+    return 0; // continue
+  } else {
+    // the parent attaches to the runtime process, which is the child
+    char pidStr[16];
+    snprintf(pidStr, sizeof(pidStr), "%d", f);
+
+    char* command;
+
+  // this is somewhat fragile, as a user could provide a different
+  // lldb_server path thats actually lldb-server on MacOS, but its unlikely
+  // (as of today, June 7th 2025, lldb-server segfaults on MacOS)
+#ifdef CHPL_TARGET_PLATFORM_DARWIN
+    command = chpl_glom_strings(5,
+      lldb_server,
+      " 127.0.0.1:",
+      portStr,
+      " --attach=", pidStr);
+    *status = chpl_invoke_using_system(command, "running debugserver", 0);
+#else
+    command = chpl_glom_strings(5,
+      lldb_server,
+      " g :",
+      portStr,
+      " --attach ", pidStr);
+    *status = chpl_invoke_using_system(command, "running lldb-server", 0);
+#endif
+    return 1;
+  }
 }
 
 static void start_gasnet_progress_threads(void) {

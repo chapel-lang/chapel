@@ -1,1 +1,0 @@
---llvm-print-ir main -g --llvm-print-ir-stage=basic --fast

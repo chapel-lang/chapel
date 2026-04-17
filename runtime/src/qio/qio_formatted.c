@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -4139,12 +4139,13 @@ static qioerr maybe_right_pad(qio_channel_t* restrict ch, int gotsize)
   return err;
 }
 
-
+// TODO: When 2.0 edition is removed, can remove `full_nan` argument and the
+// variables and if statement it supports
 qioerr qio_channel_print_complex(const int threadsafe,
                                  qio_channel_t* restrict ch,
                                  const void* restrict re_ptr,
                                  const void* restrict im_ptr,
-                                 size_t len)
+                                 size_t len, int full_nan)
 {
   char* re_buf = NULL;
   char* im_buf = NULL;
@@ -4189,8 +4190,8 @@ qioerr qio_channel_print_complex(const int threadsafe,
       QIO_GET_CONSTANT_ERROR(err, EINVAL, "bad floating point type");
   }
 
-  re_isnan = isnan(re_num);
-  im_isnan = isnan(im_num);
+  re_isnan = full_nan & isnan(re_num);
+  im_isnan = full_nan & isnan(im_num);
 
   // Lock before reading any style information from the
   // channel.
@@ -5160,7 +5161,6 @@ qioerr qio_conv_parse(c_string fmt,
       style_out->pad_char = ' ';
       style_out->realfmt = 0;
       style_out->string_format = QIO_STRING_FORMAT_WORD;
-      style_out->tuple_style = QIO_TUPLE_FORMAT_CHPL;
       style_out->showpointzero = 1;
 
       if (precision != WIDTH_NOT_SET || width != WIDTH_NOT_SET ) {

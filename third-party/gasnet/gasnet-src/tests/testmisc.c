@@ -77,12 +77,12 @@ void justreply_longhandler(gex_Token_t token, void *buf, size_t nbytes) {
  */
 int main(int argc, char **argv) {
   gex_AM_Entry_t htable[] = { 
-    { hidx_null_shorthandler,      null_shorthandler,      GEX_FLAG_AM_REQREP|GEX_FLAG_AM_SHORT, 0 },
-    { hidx_justreply_shorthandler, justreply_shorthandler, GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_SHORT, 0 },
-    { hidx_null_medhandler,        null_medhandler,        GEX_FLAG_AM_REQREP|GEX_FLAG_AM_MEDIUM, 0 },
-    { hidx_justreply_medhandler,   justreply_medhandler,   GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_MEDIUM, 0 },
-    { hidx_null_longhandler,       null_longhandler,       GEX_FLAG_AM_REQREP|GEX_FLAG_AM_LONG, 0 },
-    { hidx_justreply_longhandler,  justreply_longhandler,  GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_LONG, 0 }
+    { hidx_null_shorthandler,      (gex_AM_Fn_t)null_shorthandler,      GEX_FLAG_AM_REQREP|GEX_FLAG_AM_SHORT, 0 },
+    { hidx_justreply_shorthandler, (gex_AM_Fn_t)justreply_shorthandler, GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_SHORT, 0 },
+    { hidx_null_medhandler,        (gex_AM_Fn_t)null_medhandler,        GEX_FLAG_AM_REQREP|GEX_FLAG_AM_MEDIUM, 0 },
+    { hidx_justreply_medhandler,   (gex_AM_Fn_t)justreply_medhandler,   GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_MEDIUM, 0 },
+    { hidx_null_longhandler,       (gex_AM_Fn_t)null_longhandler,       GEX_FLAG_AM_REQREP|GEX_FLAG_AM_LONG, 0 },
+    { hidx_justreply_longhandler,  (gex_AM_Fn_t)justreply_longhandler,  GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_LONG, 0 }
   };
 
   GASNET_Safe(gex_Client_Init(&myclient, &myep, &myteam, "testmisc", &argc, &argv, 0));

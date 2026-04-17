@@ -45,5 +45,81 @@ or
 
       .. method:: proc innerMethod()
 
-      Inner Method. 
+         
+         Inner Method.
+         
+         Multiline comment.
+         
+
+      .. record:: InnerMost
+
+         
+         Documentation for ``InnerMost``
+         
+         .. code-block:: text
+         
+           This code-block should not overflow to 'innerMostMethod'!
+         
+         
+
+         .. method:: proc innerMostMethod()
+
+            
+            InnerMost Method.
+            
+            Multiline comment.
+            
+
+.. class:: C
+
+   
+   Documentation for class C.
+   
+   .. code-block:: text
+   
+     a code block!
+
+   .. attribute:: var x: int
+
+   .. method:: proc foo()
+
+      Document 'foo' 
+
+   .. class:: Inner
+
+      
+      Documentation for ``Inner``
+      
+      .. code-block:: text
+      
+        This code-block should not overflow to 'innerMethod'!
+      
+      
+
+      .. method:: proc innerMethod()
+
+         
+         Inner Method.
+         
+         Multiline comment.
+         
+
+      .. class:: InnerMost
+
+         
+         Documentation for ``InnerMost``
+         
+         .. code-block:: text
+         
+           This code-block should not overflow to 'innerMostMethod'!
+         
+         
+
+         .. method:: proc innerMostMethod()
+
+            
+            InnerMost Method.
+            
+            Multiline comment.
+            
 

@@ -1,0 +1,2 @@
+# CHPL_SANITIZE_EXE requires CHPL_TARGET_MEM=cstdlib, which is overridden by this test
+CHPL_SANITIZE_EXE!=none

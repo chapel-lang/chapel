@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -195,7 +195,7 @@ void trace_remove(BaseAST* ast, char flag) {
   }
   if (ast->id == breakOnRemoveID) {
     if (deletedIdON() == true) fflush(deletedIdHandle);
-    gdbShouldBreakHere();
+    debuggerBreakHere();
   }
   // There should never be an attempt to delete a global type.
   if (flag != 'z' && // At least, not before compiler shutdown.
@@ -232,7 +232,6 @@ static void clean_modvec(Vec<ModuleSymbol*>& modvec) {
 }
 
 void cleanAst() {
-
   std::vector<Type*> keysToRm;
 
   for (auto it = serializeMap.begin() ; it != serializeMap.end() ; it++) {
@@ -249,6 +248,19 @@ void cleanAst() {
   // clear back pointers to dead ast instances
   //
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
+
+    if (isAlive(ts)) {
+      if (auto ft = toFunctionType(ts->type)) {
+        for (auto& formal : ft->formals()) {
+          INT_ASSERT(isAlive(formal.type()));
+        }
+      }
+
+      if (ts->hasFlag(FLAG_REF)) {
+        INT_ASSERT(isAlive(ts->type->getValType()->symbol));
+      }
+    }
+
     for (int i = 0; i < ts->type->methods.n; i++) {
       FnSymbol* method = ts->type->methods.v[i];
 
@@ -344,7 +356,7 @@ int lastNodeIDUsed() {
 // BaseAST instance in gdb.
 static void checkid(int id) {
   if (id == breakOnID) {
-    gdbShouldBreakHere();
+    debuggerBreakHere();
   }
 }
 
@@ -365,7 +377,7 @@ BaseAST::BaseAST(AstTag type) :
       if (developer || fVerify) {
         INT_FATAL("no line number available");
       } else {
-        astloc = astlocT(0, astr("[file unknown]"));
+        astloc = astlocT::unknownLoc("[file unknown]");
       }
     }
   }
@@ -677,7 +689,7 @@ GenRet baseASTCodegen(BaseAST* ast)
   GenRet ret = ast->codegen();
   if (!ret.chplType)
     ret.chplType = ast->typeInfo();
-  ret.isUnsigned = ! is_signed(ret.chplType);
+  ret.isUnsigned = ! isSignedType(ret.chplType);
   return ret;
 }
 

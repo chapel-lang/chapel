@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -431,20 +431,20 @@ static void test9() {
                )""",
     /* primitive */ chpl::uast::primtags::PRIM_IS_COERCIBLE,
     /* calls */ {
-      { {"int", "bool"}, Test::FALSE },
-      { {"int(8)", "bool"}, Test::FALSE },
-      { {"int(16)", "bool"}, Test::FALSE },
-      { {"int(32)", "bool"}, Test::FALSE },
-      { {"int(64)", "bool"}, Test::FALSE },
+      { {"int", "bool"}, Test::TRUE },
+      { {"int(8)", "bool"}, Test::TRUE },
+      { {"int(16)", "bool"}, Test::TRUE },
+      { {"int(32)", "bool"}, Test::TRUE },
+      { {"int(64)", "bool"}, Test::TRUE },
       { {"r1", "bool"}, Test::FALSE },
       { {"c1", "bool"}, Test::FALSE },
       { {"c1?", "bool"}, Test::FALSE },
       { {"owned c1", "bool"}, Test::FALSE },
       { {"owned c1?", "bool"}, Test::FALSE },
-      { {"c1", "RootClass?"}, Test::TRUE },
-      { {"c1", "RootClass"}, Test::TRUE },
-      { {"c1?", "RootClass?"}, Test::TRUE },
-      { {"c1?", "RootClass"}, Test::FALSE },
+      { {"RootClass?", "c1"}, Test::TRUE },
+      { {"RootClass", "c1",}, Test::TRUE },
+      { {"RootClass?", "c1?"}, Test::TRUE },
+      { {"RootClass", "c1?"}, Test::FALSE },
      },
   };
   testPrimitive(tpg);
@@ -580,6 +580,8 @@ static void test12() {
             class c1 { var x: int; }
             record r10 { var x: owned c1?; }
             record r11 { var x: r9(?); }
+            operator =(ref lhs: int, const rhs: int) {}
+            operator =(ref lhs: real, const rhs: real) {}
             )""",
     /* primitive */ chpl::uast::primtags::PRIM_IS_POD,
     /* calls */ {

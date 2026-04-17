@@ -1,4 +1,4 @@
-.TH "hwlocality_advanced_io" 3 "Version 2.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_advanced_io" 3 "Version 2.12.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -10,25 +10,25 @@ hwlocality_advanced_io \- Finding I/O objects
 
 .in +1c
 .ti -1c
-.RI "static \fBhwloc_obj_t\fP \fBhwloc_get_non_io_ancestor_obj\fP (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_t\fP ioobj)"
+.RI "\fBhwloc_obj_t\fP \fBhwloc_get_non_io_ancestor_obj\fP (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_t\fP ioobj)"
 .br
 .ti -1c
-.RI "static \fBhwloc_obj_t\fP \fBhwloc_get_next_pcidev\fP (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_t\fP prev)"
+.RI "\fBhwloc_obj_t\fP \fBhwloc_get_next_pcidev\fP (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_t\fP prev)"
 .br
 .ti -1c
-.RI "static \fBhwloc_obj_t\fP \fBhwloc_get_pcidev_by_busid\fP (\fBhwloc_topology_t\fP topology, unsigned domain, unsigned bus, unsigned dev, unsigned func)"
+.RI "\fBhwloc_obj_t\fP \fBhwloc_get_pcidev_by_busid\fP (\fBhwloc_topology_t\fP topology, unsigned domain, unsigned bus, unsigned dev, unsigned func)"
 .br
 .ti -1c
-.RI "static \fBhwloc_obj_t\fP \fBhwloc_get_pcidev_by_busidstring\fP (\fBhwloc_topology_t\fP topology, const char *busid)"
+.RI "\fBhwloc_obj_t\fP \fBhwloc_get_pcidev_by_busidstring\fP (\fBhwloc_topology_t\fP topology, const char *busid)"
 .br
 .ti -1c
-.RI "static \fBhwloc_obj_t\fP \fBhwloc_get_next_osdev\fP (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_t\fP prev)"
+.RI "\fBhwloc_obj_t\fP \fBhwloc_get_next_osdev\fP (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_t\fP prev)"
 .br
 .ti -1c
-.RI "static \fBhwloc_obj_t\fP \fBhwloc_get_next_bridge\fP (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_t\fP prev)"
+.RI "\fBhwloc_obj_t\fP \fBhwloc_get_next_bridge\fP (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_t\fP prev)"
 .br
 .ti -1c
-.RI "static int \fBhwloc_bridge_covers_pcibus\fP (\fBhwloc_obj_t\fP bridge, unsigned domain, unsigned bus)"
+.RI "int \fBhwloc_bridge_covers_pcibus\fP (\fBhwloc_obj_t\fP bridge, unsigned domain, unsigned bus)"
 .br
 .in -1c
 .SH "Detailed Description"
@@ -36,9 +36,9 @@ hwlocality_advanced_io \- Finding I/O objects
 
 .SH "Function Documentation"
 .PP 
-.SS "static int hwloc_bridge_covers_pcibus (\fBhwloc_obj_t\fP bridge, unsigned domain, unsigned bus)\fC [inline]\fP, \fC [static]\fP"
+.SS "int hwloc_bridge_covers_pcibus (\fBhwloc_obj_t\fP bridge, unsigned domain, unsigned bus)\fC [inline]\fP"
 
-.SS "static \fBhwloc_obj_t\fP hwloc_get_next_bridge (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_t\fP prev)\fC [inline]\fP, \fC [static]\fP"
+.SS "\fBhwloc_obj_t\fP hwloc_get_next_bridge (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_t\fP prev)\fC [inline]\fP"
 
 .PP
 Get the next bridge in the system\&. 
@@ -53,7 +53,7 @@ the next bridge if \fCprev\fP is not \fCNULL\fP\&.
 .RE
 .PP
 
-.SS "static \fBhwloc_obj_t\fP hwloc_get_next_osdev (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_t\fP prev)\fC [inline]\fP, \fC [static]\fP"
+.SS "\fBhwloc_obj_t\fP hwloc_get_next_osdev (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_t\fP prev)\fC [inline]\fP"
 
 .PP
 Get the next OS device in the system\&. 
@@ -68,7 +68,7 @@ the next OS device if \fCprev\fP is not \fCNULL\fP\&.
 .RE
 .PP
 
-.SS "static \fBhwloc_obj_t\fP hwloc_get_next_pcidev (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_t\fP prev)\fC [inline]\fP, \fC [static]\fP"
+.SS "\fBhwloc_obj_t\fP hwloc_get_next_pcidev (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_t\fP prev)\fC [inline]\fP"
 
 .PP
 Get the next PCI device in the system\&. 
@@ -83,7 +83,7 @@ the next PCI device if \fCprev\fP is not \fCNULL\fP\&.
 .RE
 .PP
 
-.SS "static \fBhwloc_obj_t\fP hwloc_get_non_io_ancestor_obj (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_t\fP ioobj)\fC [inline]\fP, \fC [static]\fP"
+.SS "\fBhwloc_obj_t\fP hwloc_get_non_io_ancestor_obj (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_t\fP ioobj)\fC [inline]\fP"
 
 .PP
 Get the first non-I/O ancestor object\&. Given the I/O object \fCioobj\fP, find the smallest non-I/O ancestor object\&. This object (normal or memory) may then be used for binding because it has non-NULL CPU and node sets and because its locality is the same as \fCioobj\fP\&.
@@ -101,7 +101,7 @@ The resulting object is usually a normal object but it could also be a memory ob
 .RE
 .PP
 
-.SS "static \fBhwloc_obj_t\fP hwloc_get_pcidev_by_busid (\fBhwloc_topology_t\fP topology, unsigned domain, unsigned bus, unsigned dev, unsigned func)\fC [inline]\fP, \fC [static]\fP"
+.SS "\fBhwloc_obj_t\fP hwloc_get_pcidev_by_busid (\fBhwloc_topology_t\fP topology, unsigned domain, unsigned bus, unsigned dev, unsigned func)\fC [inline]\fP"
 
 .PP
 Find the PCI device object matching the PCI bus id given domain, bus device and function PCI bus id\&. 
@@ -112,7 +112,7 @@ a matching PCI device object if any, \fCNULL\fP otherwise\&.
 .RE
 .PP
 
-.SS "static \fBhwloc_obj_t\fP hwloc_get_pcidev_by_busidstring (\fBhwloc_topology_t\fP topology, const char * busid)\fC [inline]\fP, \fC [static]\fP"
+.SS "\fBhwloc_obj_t\fP hwloc_get_pcidev_by_busidstring (\fBhwloc_topology_t\fP topology, const char * busid)\fC [inline]\fP"
 
 .PP
 Find the PCI device object matching the PCI bus id given as a string xxxx:yy:zz\&.t or yy:zz\&.t\&. 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -116,8 +116,13 @@ void AdjustMaybeRefs::process(const uast::AstNode* symbol,
     if (auto body = fn->body()) {
       body->traverse(rv);
     }
+  } else if (auto mod = symbol->toModule()) {
+    // traverse the module contents
+    for (auto child : mod->children()) {
+      child->traverse(rv);
+    }
   } else {
-    CHPL_ASSERT(false && "should not be reached");
+    CHPL_ASSERT(parsing::idIsField(context, symbol->id()));
     symbol->traverse(rv);
   }
 
@@ -230,19 +235,22 @@ bool AdjustMaybeRefs::enter(const Call* ast, RV& rv) {
 
   // is it return intent overloading? resolve that
   if (candidates.numBest() > 1) {
-    Access access = currentAccess();
+    Access access = candidates.ignoreContextForReturnIntentOverloading() ?
+                    Access::REF : currentAccess();
+    auto kind = QualifiedType::UNKNOWN;
     bool ambiguity;
-    auto best = determineBestReturnIntentOverload(candidates, access, ambiguity);
+    auto best = determineBestReturnIntentOverload(candidates, access, kind, ambiguity);
+    if (kind == QualifiedType::UNKNOWN)
+      kind = re.type().kind();
     if (ambiguity)
       context->error(ast, "Too much recursion to infer return intent overload");
 
     CHPL_ASSERT(best);
-    auto fn = best->fn();
     resolver.validateAndSetMostSpecific(re, ast, MostSpecificCandidates::getOnly(*best));
 
-    // recompute the return type
-    // (all that actually needs to change is the return intent)
-    re.setType(returnType(rc, fn, re.poiScope()));
+    // adjust the return intent to one corresponding to the overload
+    CHPL_ASSERT(re.type().param() == nullptr);
+    re.setType(QualifiedType(kind, re.type().type()));
   }
 
   // there should be only one candidate at this point
@@ -285,29 +293,50 @@ bool AdjustMaybeRefs::enter(const Call* ast, RV& rv) {
       const FormalActual* fa = formalActualMap.byActualIdx(actualIdx);
       int formalIdx = fa->formalIdx();
 
-      if (fa->hasActual()) {
-        // actualAsts might not include an entry for the method receiver if
-        // it was inferred, so we need to offset by one.
-        const AstNode* actualAst = inferredReceiver ? actualAsts[actualIdx-1] :
-                                                      actualAsts[actualIdx];
-        Access access = accessForQualifier(fa->formalType().kind());
+      if (!fa->hasActual()) continue;
+      // actualAsts might not include an entry for the method receiver if
+      // it was inferred, so we need to offset by one.
+      const AstNode* actualAst = inferredReceiver ? actualAsts[actualIdx-1] :
+                                                    actualAsts[actualIdx];
 
-        exprStack.push_back(ExprStackEntry(actualAst, access,
-                                           fn, formalIdx));
-
-        actualAst->traverse(rv);
-
-        // check for const-ness errors after return-intent overloads
-        // are chosen
-        if (access == REF) {
-          ResolvedExpression& actualRe = rv.byAst(actualAst);
-          if (actualRe.type().isConst()) {
-            context->error(actualAst, "cannot pass const to non-const");
-          }
-        }
-
-        exprStack.pop_back();
+      // we could've inserted synthetic actuals when making a second
+      // call to a partially instantiated type.
+      if (!actualAst) {
+        continue;
       }
+
+      Access access = accessForQualifier(fa->formalType().kind());
+
+      exprStack.push_back(ExprStackEntry(actualAst, access,
+                                         fn, formalIdx));
+
+      actualAst->traverse(rv);
+
+      // if we are initializing the actual, a 'REF' access is allowed,
+      // since the assignment is providing the initial value.
+      ResolvedExpression& actualRe = rv.byAst(actualAst);
+      bool isInit = false;
+      for (auto& action : actualRe.associatedActions()) {
+        if (action.action() == AssociatedAction::COPY_INIT ||
+            action.action() == AssociatedAction::INIT_OTHER ||
+            action.action() == AssociatedAction::MOVE_INIT) {
+          isInit = true;
+          break;
+        }
+      }
+
+      // check for const-ness errors after return-intent overloads
+      // are chosen
+      if (isInit) {
+        // nothing to do regardless of access
+      } else if (access == REF) {
+        bool isConst = actualRe.type().isConst();
+        if (isConst) {
+          context->error(actualAst, "cannot pass const to non-const");
+        }
+      }
+
+      exprStack.pop_back();
     }
   }
 
@@ -336,8 +365,9 @@ void AdjustMaybeRefs::exit(const uast::AstNode* node, RV& rv) {
 }
 
 void adjustReturnIntentOverloadsAndMaybeConstRefs(Resolver& resolver) {
+  const AstNode* node = resolver.curStmt? resolver.curStmt : resolver.symbol;
   AdjustMaybeRefs uv(resolver.rc, resolver);
-  uv.process(resolver.symbol, resolver.byPostorder);
+  uv.process(node, resolver.byPostorder);
 }
 
 

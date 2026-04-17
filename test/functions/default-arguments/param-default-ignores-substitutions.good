@@ -1,0 +1,1 @@
+param-default-ignores-substitutions.chpl:1: error: cannot initialize 'arg2' of type 'int(64)' from '"hello"'

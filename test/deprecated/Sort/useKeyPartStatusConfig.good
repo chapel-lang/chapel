@@ -1,0 +1,3 @@
+warning: 'useKeyPartStatus' is deprecated and inactive. comparator keyPart methods must now return the keyPartStatus enum rather than an integer
+note: 'useKeyPartStatus' was set via a compiler flag
+hello

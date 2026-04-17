@@ -1,0 +1,22 @@
+# new on an existing dir
+rm -rf testingPkg && mkdir testingPkg
+mason new testingPkg || true
+mason new testingPkg --name myNewPkg || true
+mason new testingPkg --lib || true
+mason new testingPkg --light || true
+mason new testingPkg --no-vcs --app || true
+rm -rf testingPkg
+
+# new with no name
+mason new || true
+mason new --app || true
+mason new --lib || true
+mason new --light || true
+mason new --no-vcs || true
+mason new --app --name=myNewPkg || true
+mason new --name=myNewPkg || true
+mason new --name myNewPkg || true
+
+# new with a bad flag
+mason new --application || true
+mason new foo --application || true

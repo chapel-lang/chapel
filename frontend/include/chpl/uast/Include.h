@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -95,7 +95,7 @@ class Include final : public AstNode {
   static owned<Include> build(Builder* builder, Location loc,
                               Decl::Visibility visibility,
                               bool isPrototype,
-                              UniqueString name);
+                              UniqueString name, Location nameLoc);
 
   /**
     Return the visibility of this include statement.

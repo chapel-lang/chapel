@@ -238,7 +238,7 @@ within the ``use`` statement.
 
       use libsci.blas;
 
-    .. BLOCK-test-chapelpost
+   .. BLOCK-test-chapelpost
 
       } }
    

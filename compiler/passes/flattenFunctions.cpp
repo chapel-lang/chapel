@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -141,6 +141,21 @@ shouldPropagateOuterArg(Symbol* sym, FnSymbol* parentFn, FnSymbol* calledFn) {
   return isFnSymbol(symDefParent);
 }
 
+// Does this look like an outer variable, but won't end up being one?
+// Specifcially, toLeader and toFollower might insert references to
+// the iterator fn's formals, but those will turn into field access and
+// stop being outer uses. Replacing them with an alias when flattening
+// would preclude this eventual transformation and cause issues.
+static bool isTemporaryOuterUse(SymExpr* symExpr) {
+  if (auto call = toCallExpr(symExpr->parentExpr)) {
+    if (call->isPrimitive(PRIM_ITERATOR_RECORD_FIELD_VALUE_BY_FORMAL) &&
+        call->get(2) == symExpr) {
+      return true;
+    }
+  }
+  return false;
+}
+
 //
 // finds outer vars directly used in a function
 //
@@ -157,7 +172,8 @@ findOuterVars(FnSymbol* fn, SymbolMap* uses) {
     // functions.
     // This pattern could be clearer with an AST visitor.
     if (symExpr->getFunction() == fn &&
-        shouldPropagateOuterArg(sym, fn, nullptr)) {
+        shouldPropagateOuterArg(sym, fn, nullptr) &&
+        !isTemporaryOuterUse(symExpr)) {
       uses->put(sym,gNil);
     }
   }
@@ -167,13 +183,13 @@ findOuterVars(FnSymbol* fn, SymbolMap* uses) {
 // Is this type OK to pass by value (e.g. it's reasonably-sized)?
 static bool
 passableByVal(Type* type) {
-  if (is_bool_type(type)    ||
-      is_int_type(type)     ||
-      is_uint_type(type)    ||
-      is_real_type(type)    ||
-      is_imag_type(type)    ||
-      is_complex_type(type) ||
-      is_enum_type(type)    ||
+  if (isBoolType(type)    ||
+      isIntType(type)     ||
+      isUIntType(type)    ||
+      isRealType(type)    ||
+      isImagType(type)    ||
+      isComplexType(type) ||
+      isEnumType(type)    ||
       isClass(type)         ||
       type == dtTaskID      ||
       // For now, allow ranges as a special case, not records in general.

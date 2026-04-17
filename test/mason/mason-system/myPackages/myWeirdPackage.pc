@@ -1,0 +1,5 @@
+Name: myWeirdPackage
+Description: My weird package which abuses pkg-config to pass Chapel flags
+Version: 1
+Cflags: -I../myInclude
+Libs: -sMyChapelFlag=2

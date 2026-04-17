@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015-2023 Inria.  All rights reserved.
+ * Copyright © 2015-2025 Inria.  All rights reserved.
  * See COPYING in top-level directory.
  */
 
@@ -379,9 +379,38 @@ static int dump_one_proc(hwloc_topology_t topo, hwloc_obj_t pu, const char *path
     /* eax is number of subleaves but subleaves aren't documented?! */
   }
 
-  /* 0x21 is reserved on Intel and AMD */
+  /* 0x21 is Unimplemented on Intel (always returns 0) ; Reserved on AMD */
+  if (highest_cpuid >= 0x21) {
+    regs[0] = 0x21; regs[2] = 0;
+    dump_one_cpuid(output, regs, 0x5);
+  }
 
-  if (highest_cpuid > 0x21) {
+  /* TODO 0x22 is reserved on Intel and AMD? */
+  if (highest_cpuid >= 0x22) {
+    regs[0] = 0x22; regs[2] = 0;
+    dump_one_cpuid(output, regs, 0x5);
+  }
+
+  /* 0x23 is Architectural Performance Monitoring Extended Leaf on Intel ; Reserved on AMD */
+  if (highest_cpuid >= 0x23) {
+    unsigned subleafmask;
+    regs[0] = 0x23; regs[2] = 0;
+    dump_one_cpuid(output, regs, 0x5);
+    subleafmask = regs[0];
+    for(i=1; i<32; i++)
+      if ((1U<<i) & subleafmask) {
+        regs[0] = 0x23; regs[2] = i;
+        dump_one_cpuid(output, regs, 0x5);
+      }
+  }
+
+  /* 0x24 is Converged Vector ISA Main Leaf on Intel ; Reserved on AMD */
+  if (highest_cpuid >= 0x24) {
+    regs[0] = 0x24; regs[2] = 0;
+    dump_one_cpuid(output, regs, 0x5);
+  }
+
+  if (highest_cpuid > 0x25) {
     static int reported = 0;
     if (!reported)
       fprintf(stderr, "WARNING: Processor supports new CPUID leaves upto 0x%x\n", highest_cpuid);

@@ -22,9 +22,9 @@ import time
 
 # need to be able to find the util and chplenv dir even when start_test
 # doesn't live in $CHPL_HOME/util (such as for the release tarball)
-util_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'util')
-chplenv_dir = os.path.join(util_dir, 'chplenv')
-config_dir = os.path.join(util_dir, 'config')
+util_dir = os.path.join(os.path.dirname(__file__), "..", "..", "util")
+chplenv_dir = os.path.join(util_dir, "chplenv")
+config_dir = os.path.join(util_dir, "config")
 sys.path.insert(0, os.path.abspath(util_dir))
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 sys.path.insert(0, os.path.abspath(config_dir))
@@ -34,6 +34,7 @@ sys.path.insert(0, os.path.abspath(config_dir))
 # because the test venv is built inside of CHPL_HOME.
 # We do this so tests/prediffs can use the system python instead of the venv
 import fixpath
+
 fixpath.update_path_env()
 
 from chplenv import *
@@ -44,10 +45,12 @@ import re2_supports_valgrind
 import check_perf_graphs
 
 import argparse
+
 try:
     import argcomplete
 except ImportError:
     argcomplete = None
+
 
 # PROGRAM ENTRY POINT
 def main():
@@ -81,13 +84,14 @@ def run_tests(tests):
     dirs = []
     had_invalid_file = False
     for i in tests:
-        if os.path.isdir(i): # a directory (also get absolute path)
+        if os.path.isdir(i):  # a directory (also get absolute path)
             dirs.append(os.path.abspath(i))
-        elif os.path.isfile(i): # a file
+        elif os.path.isfile(i):  # a file
             files.append(os.path.abspath(i))
         else:
-            logger.write("[Error: {0} is not a valid file or directory]"
-                    .format(i))
+            logger.write(
+                "[Error: {0} is not a valid file or directory]".format(i)
+            )
             had_invalid_file = True
 
     if had_invalid_file and len(files) == 0 and len(dirs) == 0:
@@ -96,13 +100,13 @@ def run_tests(tests):
     # set up
     set_up_environment()
     set_up_general()
-    set_up_performance_testing_A() # A and B are separate in order to keep
-                                   # output the same from old start_test
+    set_up_performance_testing_A()  # A and B are separate in order to keep
+    # output the same from old start_test
     set_up_executables()
     set_up_performance_testing_B()
 
     # autogenerate tests from spec if no tests were given
-    if len(files) == 0 and len(dirs) == 0: # no tests specified
+    if len(files) == 0 and len(dirs) == 0:  # no tests specified
         auto_generate_tests()
         if os.getcwd() == home:
             dirs = [test_dir]
@@ -114,11 +118,19 @@ def run_tests(tests):
     if args.recurse:
         logger.write('[directories: "{0}"]'.format(" ".join(dirs)))
     else:
-        logger.write('[directories: (nonrecursive): "{0}"]'
-                .format(" ".join(dirs)))
+        logger.write(
+            '[directories: (nonrecursive): "{0}"]'.format(" ".join(dirs))
+        )
 
     # check for duplicate .graph and .dat files
-    check_perf_graphs.check_for_duplicates(logger, finish, test_dir, args.perflabel, args.performance, args.gen_graphs or args.comp_performance)
+    check_perf_graphs.check_for_duplicates(
+        logger,
+        finish,
+        test_dir,
+        args.perflabel,
+        args.performance,
+        args.gen_graphs or args.comp_performance,
+    )
 
     # print out Chapel environment
     print_chapel_environment()
@@ -169,6 +181,7 @@ def run_tests(tests):
 
 # ESCAPE ROUTINES AND CLEAN-UP
 
+
 def finish():
     # summarize
     if not args.clean_only:
@@ -196,11 +209,12 @@ def finish():
 
 # MAIN ROUTINES AND TESTING
 
+
 def test_file(test):
     path_to_test = os.path.relpath(test)
     test_name = os.path.basename(test)
 
-    with cd(os.path.dirname(test)): # cd into dir, and cd out later
+    with cd(os.path.dirname(test)):  # cd into dir, and cd out later
         # clean executables, etc
         logger.write()
         logger.write("[Cleaning file {0}]".format(test))
@@ -214,8 +228,11 @@ def test_file(test):
 
             # check for errors:
             if error != 0:
-                logger.write("[Error running sub_test (code {1}) for {0}]"
-                        .format(path_to_test, error))
+                logger.write(
+                    "[Error running sub_test (code {1}) for {0}]".format(
+                        path_to_test, error
+                    )
+                )
 
             if args.progress:
                 sys.stderr.write("[done]\n")
@@ -232,11 +249,19 @@ def test_directory(test, test_type):
     # recurse through directory
     for root, dirs, files in os.walk(test):
         if not os.access(root, os.X_OK):
-            logger.write("[Warning: Cannot cd into {0} skipping directory]"
-                    .format(root))
+            logger.write(
+                "[Warning: Cannot cd into {0} skipping directory]".format(root)
+            )
             continue
         else:
             dir = os.path.abspath(root)
+
+        # if the directory name ends with .dSYM, skip it
+        # if a parent directory is a .dSYM, skip it
+        if dir.endswith(".dSYM") or any(
+            e.endswith(".dSYM") for e in os.path.normpath(dir).split(os.sep)
+        ):
+            continue
 
         logger.write()
         logger.write("[Working on directory {0}]".format(root))
@@ -249,7 +274,7 @@ def test_directory(test, test_type):
 
         # ignore skipifs for --clean-only run
         if not args.clean_only:
-            with cd(dir): # cd into dir, and cd out later
+            with cd(dir):  # cd into dir, and cd out later
                 # SKIP IF IMPLEMENTATIONS
                 test_env = os.path.join(util_dir, "test", "testEnv")
 
@@ -261,8 +286,9 @@ def test_directory(test, test_type):
 
                 # Skip this directory and child directories
                 # if there is a <dir>.notest file
-                notest_file_name = os.path.join(root, "..",
-                        "{0}.notest".format(os.path.basename(root)))
+                notest_file_name = os.path.join(
+                    root, "..", "{0}.notest".format(os.path.basename(root))
+                )
                 notest_file_name = os.path.normpath(notest_file_name)
                 if os.path.isfile(notest_file_name):
                     del dirs[:]
@@ -271,17 +297,23 @@ def test_directory(test, test_type):
                 # Skip this directory and child directories
                 # if there is a <dir>.skipif file returning true
                 prune_if = False
-                skip_file_name = os.path.join(root, "..",
-                        "{0}.skipif".format(os.path.basename(root)))
+                skip_file_name = os.path.join(
+                    root, "..", "{0}.skipif".format(os.path.basename(root))
+                )
                 skip_file_name = os.path.normpath(skip_file_name)
                 if os.path.isfile(skip_file_name):
                     try:
-                        prune_if = process_skipif_output(run_command([test_env, skip_file_name]).strip())
+                        prune_if = process_skipif_output(
+                            run_command([test_env, skip_file_name]).strip()
+                        )
                         # check output and skip if true
                         if prune_if == "1" or prune_if == "True":
-                            logger.write("[Skipping directory and children bas"
-                                    "ed on .skipif environment settings in {0}]"
-                                    .format(skip_file_name))
+                            logger.write(
+                                "[Skipping directory and children bas"
+                                "ed on .skipif environment settings in {0}]".format(
+                                    skip_file_name
+                                )
+                            )
                             del dirs[:]
                             continue
                     except:
@@ -292,11 +324,16 @@ def test_directory(test, test_type):
                 skip_test = False
                 if os.path.isfile("SKIPIF"):
                     try:
-                        skip_test = process_skipif_output(run_command([test_env, "SKIPIF"]).strip())
+                        logger.write("[Checking SKIPIF]")
+                        skip_test = process_skipif_output(
+                            run_command([test_env, "SKIPIF"]).strip()
+                        )
                         # check output and skip if true
                         if skip_test == "1" or skip_test == "True":
-                            logger.write("[Skipping directory based on SKIPIF "
-                                    "environment settings]")
+                            logger.write(
+                                "[Skipping directory based on SKIPIF "
+                                "environment settings]"
+                            )
                             continue
                     except:
                         logger.write("[Warning: SKIPIF error.]")
@@ -304,7 +341,6 @@ def test_directory(test, test_type):
                 # skip this directory if there is a NOTEST file
                 if os.path.isfile(os.path.join(dir, "NOTEST")):
                     continue
-
 
         # run tests in directory
         # don't run if only doing performance graphs
@@ -314,8 +350,15 @@ def test_directory(test, test_type):
             are_tests = False
             for f in files:
                 if not test_type == "performance":
-                    if f.endswith((".chpl", ".test.c", ".ml-test.c",
-                                   ".test.cpp", ".ml-test.cpp")) :
+                    if f.endswith(
+                        (
+                            ".chpl",
+                            ".test.c",
+                            ".ml-test.c",
+                            ".test.cpp",
+                            ".ml-test.cpp",
+                        )
+                    ):
                         are_tests = True
                         break
                     # this directory may generate test files
@@ -330,7 +373,9 @@ def test_directory(test, test_type):
             # don't run local 'sub_test's on --performance or --gen-graphs runs
             run_local_sub_test = False
             if test_type == "run":
-                run_local_sub_test = os.access(os.path.join(dir, "sub_test"), os.X_OK)
+                run_local_sub_test = os.access(
+                    os.path.join(dir, "sub_test"), os.X_OK
+                )
 
             # check a lot of stuff before continuing
             if are_tests or run_local_sub_test:
@@ -344,8 +389,11 @@ def test_directory(test, test_type):
                         error = run_sub_test()
                         # check for errors:
                         if not error == 0:
-                            logger.write("[Error running sub_test (code {1}) in {0}]"
-                                    .format(root, error))
+                            logger.write(
+                                "[Error running sub_test (code {1}) in {0}]".format(
+                                    root, error
+                                )
+                            )
 
             # let user know no tests were found
             else:
@@ -354,7 +402,7 @@ def test_directory(test, test_type):
         else:
             with cd(dir):
                 # generate graphs for all testsin dir
-                    generate_graphs()
+                generate_graphs()
 
 
 def summarize():
@@ -375,14 +423,15 @@ def summarize():
         else:
             success_marker = r"\[Success matching"
     warning_marker = r"^\[Warning"
-    passing_suppressions_marker = ("{0}.*{1}"
-            .format(suppress_marker, success_marker))
+    passing_suppressions_marker = "{0}.*{1}".format(
+        suppress_marker, success_marker
+    )
     passing_futures_marker = "{0}.*{1}".format(future_marker, success_marker)
     success_marker = "^" + success_marker
     skip_stdin_redirect_marker = r"^\[Skipping test with .stdin input"
 
     # setup counts and blank strings to hold summaries
-    global failures # for exit codes later
+    global failures  # for exit codes later
     failures = 0
     successes = 0
     futures = 0
@@ -426,15 +475,20 @@ def summarize():
     summary += warning_summary
 
     if skip_stdin_redirects > 0:
-        logger.write("[Skipped {0} tests with .stdin input]"
-                .format(skip_stdin_redirects))
+        logger.write(
+            "[Skipped {0} tests with .stdin input]".format(skip_stdin_redirects)
+        )
 
-    summary += ("[Summary: #Successes = {0} | #Failures = {1} | #Futures = {2} "
-            "| #Warnings = {3} ]\n"
-            .format(successes, failures, futures, warnings))
-    summary += ("[Summary: #Passing Suppressions = {0} | "
-            "#Passing Futures = {1} ]\n"
-            .format(passing_suppressions, passing_futures))
+    summary += (
+        "[Summary: #Successes = {0} | #Failures = {1} | #Futures = {2} "
+        "| #Warnings = {3} ]\n".format(successes, failures, futures, warnings)
+    )
+    summary += (
+        "[Summary: #Passing Suppressions = {0} | "
+        "#Passing Futures = {1} ]\n".format(
+            passing_suppressions, passing_futures
+        )
+    )
     summary += "[END]\n"
 
     # log summary, and write it to its own .summary file
@@ -446,15 +500,17 @@ def summarize():
 
     # Note: Log file & summary copied tmp_log_file to log_file in cleanup
 
+
 def clean(test=False):
     date_str = time.strftime("%a %b %d %H:%M:%S %Z %Y")
 
     # clean executables, tmps, etc.
     sub_clean = os.path.join(util_dir, "test", "sub_clean")
     try:
-        if test: # single test
-            logger.write("[Starting {0} {1} {2}]"
-                    .format(sub_clean, test, date_str))
+        if test:  # single test
+            logger.write(
+                "[Starting {0} {1} {2}]".format(sub_clean, test, date_str)
+            )
             out = run_command([sub_clean, test])
         else:
             out = run_command([sub_clean])
@@ -469,7 +525,7 @@ def run_sub_test(test=False):
 
     # run test
     logger.write()
-    if test: # single test
+    if test:  # single test
         logger.write("[Working on file {0}]".format(os.path.relpath(test)))
         os.environ["CHPL_ONETEST"] = os.path.basename(test)
 
@@ -494,7 +550,7 @@ def generate_graphs(test=False):
         remove_dot = remove_dot.replace(".ml-test.c", "")
         remove_dot = remove_dot.replace(".test.cpp", "")
         remove_dot = remove_dot.replace(".test.c", "")
-        graph_files = [(remove_dot + ".graph")]
+        graph_files = [remove_dot + ".graph"]
         # exit if it isn't actually a file
         if not os.path.isfile(graph_files[0]):
             return
@@ -505,8 +561,11 @@ def generate_graphs(test=False):
         if len(graph_files) == 0 or os.environ.get("CHPL_TEST_PERF_DIR"):
             return
 
-    logger.write("[Executing genGraphs for graph_files in {0} in {1}]"
-            .format(basedir, perf_html_dir))
+    logger.write(
+        "[Executing genGraphs for graph_files in {0} in {1}]".format(
+            basedir, perf_html_dir
+        )
+    )
 
     cmd = [create_graphs]
     cmd += args.gen_graph_opts.split(" ")
@@ -517,11 +576,17 @@ def generate_graphs(test=False):
     status = run_and_log(cmd)
 
     if status == 0:
-        logger.write("[Success generating graphs for graph_files in {0} in {1}]"
-                .format(basedir, perf_html_dir))
+        logger.write(
+            "[Success generating graphs for graph_files in {0} in {1}]".format(
+                basedir, perf_html_dir
+            )
+        )
     else:
-        logger.write("[Error generating graphs for graph_files in {0} in {1}]"
-                .format(basedir, perf_html_dir))
+        logger.write(
+            "[Error generating graphs for graph_files in {0} in {1}]".format(
+                basedir, perf_html_dir
+            )
+        )
 
 
 def compiler_performance():
@@ -533,9 +598,17 @@ def compiler_performance():
     # combine smaller .dat files
     try:
         logger.write("[Combining dat files now]")
-        out = run_command([combine_comp_perf, "--tempDatDir",
-            temp_dat_dir,"--elapsedTestTime", str(elapsed), "--outDir",
-            comp_perf_dir])
+        out = run_command(
+            [
+                combine_comp_perf,
+                "--tempDatDir",
+                temp_dat_dir,
+                "--elapsedTestTime",
+                str(elapsed),
+                "--outDir",
+                comp_perf_dir,
+            ]
+        )
         logger.write(out)
         logger.write("[Success combining compiler performance dat files]")
     except:
@@ -547,61 +620,100 @@ def compiler_performance():
 
     cmd = [create_graphs]
     cmd += args.gen_graph_opts.split(" ")
-    cmd += ["-p", comp_perf_dir, "-o", comp_perf_html_dir, "-a", title, "-n",
-            compperf_test_name]
+    cmd += [
+        "-p",
+        comp_perf_dir,
+        "-o",
+        comp_perf_html_dir,
+        "-a",
+        title,
+        "-n",
+        compperf_test_name,
+    ]
     cmd += start_date_t.split(" ")
     cmd += ["-g", comp_graph_list, "-t", test_dir]
     cmd += "-m all:v,examples:v -x".split(" ")
     status = run_and_log(cmd)
     if status == 0:
-        logger.write("[Success generating compiler performance graphs from "
-                "{0} in {1}]".format(comp_graph_list, comp_perf_html_dir))
+        logger.write(
+            "[Success generating compiler performance graphs from "
+            "{0} in {1}]".format(comp_graph_list, comp_perf_html_dir)
+        )
     else:
-        logger.write("[Error generating compiler performance graphs from "
-            "{0} in {1}]".format(comp_graph_list, comp_perf_html_dir))
+        logger.write(
+            "[Error generating compiler performance graphs from "
+            "{0} in {1}]".format(comp_graph_list, comp_perf_html_dir)
+        )
 
     # delete temp files
     shutil.rmtree(temp_dat_dir)
 
 
 def generate_graph_files_graphs():
-    graphfiles_prefix = ''
+    graphfiles_prefix = ""
     if args.perflabel != "perf":
         graphfiles_prefix = args.perflabel.upper()
 
-    exec_graph_list = os.path.join(test_dir, "{0}GRAPHFILES".format(graphfiles_prefix))
+    exec_graph_list = os.path.join(
+        test_dir, "{0}GRAPHFILES".format(graphfiles_prefix)
+    )
 
-    logger.write("[Executing genGraphs for {0} in {1}]"
-            .format(exec_graph_list, perf_html_dir))
+    logger.write(
+        "[Executing genGraphs for {0} in {1}]".format(
+            exec_graph_list, perf_html_dir
+        )
+    )
 
     cmd = [create_graphs]
     cmd += args.gen_graph_opts.split(" ")
-    cmd += ["-p", perf_dir, "-o", perf_html_dir, "-t", test_dir, "-n",
-            perf_test_name]
+    cmd += [
+        "-p",
+        perf_dir,
+        "-o",
+        perf_html_dir,
+        "-t",
+        test_dir,
+        "-n",
+        perf_test_name,
+    ]
     cmd += start_date_t.split(" ")
-    cmd += [args.graphs_disp_range, "-r", args.graphs_gen_default, "-g",
-        exec_graph_list]
+    cmd += [
+        args.graphs_disp_range,
+        "-r",
+        args.graphs_gen_default,
+        "-g",
+        exec_graph_list,
+    ]
     status = run_and_log(cmd)
 
     if status == 0:
-        logger.write("[Success generating graphs from {0} in {1}]"
-                .format(exec_graph_list, perf_html_dir))
+        logger.write(
+            "[Success generating graphs from {0} in {1}]".format(
+                exec_graph_list, perf_html_dir
+            )
+        )
     else:
-        logger.write("[Error generating graphs from {0} in {1}]"
-                .format(exec_graph_list, perf_html_dir))
+        logger.write(
+            "[Error generating graphs from {0} in {1}]".format(
+                exec_graph_list, perf_html_dir
+            )
+        )
 
 
 # SET UP ROUTINES
 
+
 def check_environment():
-    if "CHPL_DEVELOPER" in os.environ: # unset CHPL_DEVELOPER
+    if "CHPL_DEVELOPER" in os.environ:  # unset CHPL_DEVELOPER
         del os.environ["CHPL_DEVELOPER"]
 
     if "CHPL_EXE_NAME" in os.environ:  # unset CHPL_EXE_NAME
         del os.environ["CHPL_EXE_NAME"]
-        
-    if "CHPL_UNWIND" in os.environ:    # squash CHPL_UNWIND output
-        os.environ["CHPL_RT_UNWIND"] = "0"
+
+    # squash CHPL_UNWIND output
+    # TODO: we should remove this if its the default behavior since we want
+    # to be testing the default behavior
+    os.environ["CHPL_RT_UNWIND"] = "0"
 
     # Check for $CHPL_HOME
     global home
@@ -627,6 +739,7 @@ def check_environment():
             print("Error: Cannot find {0}.".format(util_dir))
             sys.exit(1)
 
+
 def check_environment_with_args():
     # find test dir and check for access
     global test_dir, auto_gen_spec_tests
@@ -637,16 +750,25 @@ def check_environment_with_args():
         test_dir = str(args.test_root_dir)
     else:
         test_dir = os.path.join(home, "test")
-        if (not os.access(test_dir, os.F_OK) or not os.access(test_dir, os.W_OK)
-            or not os.access(test_dir, os.X_OK)):
+        if (
+            not os.access(test_dir, os.F_OK)
+            or not os.access(test_dir, os.W_OK)
+            or not os.access(test_dir, os.X_OK)
+        ):
             test_dir = os.path.join(home, "examples")
             auto_gen_spec_tests = False
-            if (not os.access(test_dir, os.F_OK) or not os.access(test_dir, os.W_OK)
-                or not os.access(test_dir, os.X_OK)):
+            if (
+                not os.access(test_dir, os.F_OK)
+                or not os.access(test_dir, os.W_OK)
+                or not os.access(test_dir, os.X_OK)
+            ):
                 test_dir = os.getcwd()
 
-    if (not os.access(test_dir, os.F_OK) or not os.access(test_dir, os.W_OK)
-        or not os.access(test_dir, os.X_OK)):
+    if (
+        not os.access(test_dir, os.F_OK)
+        or not os.access(test_dir, os.W_OK)
+        or not os.access(test_dir, os.X_OK)
+    ):
         print("Cannot write to test directory {0}".format(test_dir))
         sys.exit(-1)
 
@@ -676,10 +798,15 @@ def check_environment_with_args():
 
     global log_file
     global tmp_log_file
-    log_file = os.path.join(logs_dir, "{0}.{1}.log"
-            .format(getpass.getuser(), tgt_platform))
-    tmp_log_file = os.path.join(logs_dir, "{0}.{1}.pid{2}.log"
-            .format(getpass.getuser(), tgt_platform, os.getpid()))
+    log_file = os.path.join(
+        logs_dir, "{0}.{1}.log".format(getpass.getuser(), tgt_platform)
+    )
+    tmp_log_file = os.path.join(
+        logs_dir,
+        "{0}.{1}.pid{2}.log".format(
+            getpass.getuser(), tgt_platform, os.getpid()
+        ),
+    )
 
 
 # Strip quotes that might have been added by preprocess_options()
@@ -688,6 +815,7 @@ def strip_preprocessing(arg):
         return arg[1:-1]
     else:
         return arg
+
 
 def set_up_tmpdir():
     # create temporary directory
@@ -728,12 +856,19 @@ def set_up_environment():
         memleaksfile = os.path.abspath(args.mem_leaks_log)
         args.execopts += " --memLeaksLog=" + memleaksfile
         if os.path.isfile(memleaksfile):
-            logger.write("[Removing memory leaks log file with duplicate name {0}]"
-                         .format(memleaksfile))
+            logger.write(
+                "[Removing memory leaks log file with duplicate name {0}]".format(
+                    memleaksfile
+                )
+            )
             os.remove(memleaksfile)
 
     # performance (linking flags to each other)
-    if args.performance or args.performance_description or args.perflabel != "perf":
+    if (
+        args.performance
+        or args.performance_description
+        or args.perflabel != "perf"
+    ):
         args.performance = True
         args.gen_graphs = True
         args.compopts = "--fast " + args.compopts
@@ -747,6 +882,9 @@ def set_up_environment():
     # compiler only
     if args.comp_only:
         os.environ["CHPL_COMPONLY"] = "true"
+
+    if args.keep_executable:
+        os.environ["CHPL_TEST_KEEP_EXECUTABLE"] = "true"
 
     # stdin redirection
     if args.no_stdin_redirect or args.stdin_redirect:
@@ -789,8 +927,11 @@ def set_up_logger():
 
     log_file_dir = os.path.dirname(log_file)
     if not os.access(log_file_dir, os.X_OK):
-        print("[Permission denied for log_file directory: {0}]"
-                .format(log_file_dir))
+        print(
+            "[Permission denied for log_file directory: {0}]".format(
+                log_file_dir
+            )
+        )
         sys.exit(1)
 
     # Remove log file and summary file
@@ -811,8 +952,11 @@ def set_up_general():
     if args.comp_performance:
         start_time = int(time.time())
 
-    logger.write("[Starting Chapel regression tests - {0}]"
-            .format(time.strftime("%y%m%d.%H%M%S")))
+    logger.write(
+        "[Starting Chapel regression tests - {0}]".format(
+            time.strftime("%y%m%d.%H%M%S")
+        )
+    )
 
     branch = run_git_command(["rev-parse", "--abbrev-ref", "HEAD"])
     sha = run_git_command(["rev-parse", "--short", "HEAD"])
@@ -820,11 +964,13 @@ def set_up_general():
 
     # check to see if we are in subdir of CHPL_HOME
     if args.chpl_home_warn:
-        norm_cwd  = os.path.normpath(os.path.realpath(os.getcwd()))
+        norm_cwd = os.path.normpath(os.path.realpath(os.getcwd()))
         norm_home = os.path.normpath(os.path.realpath(home))
         if norm_cwd.find(norm_home) < 0:
-            print ("[Warning: start_test not invoked from a subdirectory of "
-                    "$CHPL_HOME]")
+            print(
+                "[Warning: start_test not invoked from a subdirectory of "
+                "$CHPL_HOME]"
+            )
 
     # log some messages
     logger.write('[starting directory: "{0}"]'.format(os.getcwd()))
@@ -843,7 +989,6 @@ def set_up_general():
         except:
             logger.write("[Error: Could not find valgrind.]")
             finish()
-
 
         # get first line of output
         try:
@@ -868,7 +1013,9 @@ def set_up_general():
         if not "CHPL_RT_NUM_THREADS_PER_LOCALE" in os.environ:
             os.environ["CHPL_RT_NUM_THREADS_PER_LOCALE"] = "450"
         else:
-            logger.write("[Warning: Deadlock is possible since you set CHPL_RT_NUM_THREADS_PER_LOCALE]")
+            logger.write(
+                "[Warning: Deadlock is possible since you set CHPL_RT_NUM_THREADS_PER_LOCALE]"
+            )
 
         # Squash the warning about the potential for deadlock when setting
         # the number of threads, or all tests will fail with that warning
@@ -877,21 +1024,27 @@ def set_up_general():
         # Additionally, fail with an error if valgrind testing is running without
         # tasks=fifo, mem=cstdlib, or with re2 built w/o valgrind support
         if chpl_tasks.get() != "fifo":
-            logger.write("[Error: valgrind requires tasks=fifo - try quickstart]")
+            logger.write(
+                "[Error: valgrind requires tasks=fifo - try quickstart]"
+            )
             finish()
-        if chpl_mem.get('target') != "cstdlib":
-            logger.write("[Error: valgrind requires mem=cstdlib - try quickstart]")
+        if chpl_mem.get("target") != "cstdlib":
+            logger.write(
+                "[Error: valgrind requires mem=cstdlib - try quickstart]"
+            )
             finish()
-        if chpl_re2.get() != 'none' and not re2_supports_valgrind.get():
-            logger.write("[Error: valgrind requires re2=none or re2 built with CHPL_RE2_VALGRIND_SUPPORT]")
+        if chpl_re2.get() != "none" and not re2_supports_valgrind.get():
+            logger.write(
+                "[Error: valgrind requires re2=none or re2 built with CHPL_RE2_VALGRIND_SUPPORT]"
+            )
             finish()
-
 
     # compiler
     global compiler
     if not args.compiler:
-        compiler = os.path.expandvars("$CHPL_HOME/bin/{0}/chpl"
-                .format(host_bin_subdir))
+        compiler = os.path.expandvars(
+            "$CHPL_HOME/bin/{0}/chpl".format(host_bin_subdir)
+        )
     else:
         compiler = args.compiler
 
@@ -915,8 +1068,9 @@ def set_up_performance_testing_A():
         logger.write("[compiler performance tests: OFF]")
 
     # this is here and not in setupexecutables for legacy compatibility reasons
-    logger.write("[number of trials: {0}]"
-            .format(os.environ["CHPL_TEST_NUM_TRIALS"]))
+    logger.write(
+        "[number of trials: {0}]".format(os.environ["CHPL_TEST_NUM_TRIALS"])
+    )
 
     # graphs
     if args.gen_graphs:
@@ -927,8 +1081,11 @@ def set_up_performance_testing_A():
         else:
             logger.write("[performance graph ranges: OFF]")
             args.graphs_disp_range = "--no-bounds"
-        logger.write("[performance graph data reduction: {0}]"
-                .format(args.graphs_gen_default))
+        logger.write(
+            "[performance graph data reduction: {0}]".format(
+                args.graphs_gen_default
+            )
+        )
     else:
         logger.write("[performance graph generation: OFF]")
 
@@ -939,23 +1096,26 @@ def set_up_performance_testing_B():
         # set global variables for later access and use
         global perf_dir, perf_html_dir, perf_test_name
 
-        perf_test_name = os.environ.get('CHPL_TEST_PERF_CONFIG_NAME',
-                                        platform.node().split(".")[0].lower())
+        perf_test_name = os.environ.get(
+            "CHPL_TEST_PERF_CONFIG_NAME", platform.node().split(".")[0].lower()
+        )
 
         if not os.environ.get("CHPL_TEST_PERF_DIR"):
-            perf_dir = os.path.expandvars("$CHPL_HOME/test/perfdat/"
-                    + perf_test_name)
+            perf_dir = os.path.expandvars(
+                "$CHPL_HOME/test/perfdat/" + perf_test_name
+            )
             os.environ["CHPL_TEST_PERF_DIR"] = perf_dir
-            logger.write("[Warning: CHPL_TEST_PERF_DIR must be set for gener"
-                    "ating performance graphs, using default {0}]"
-                    .format(perf_dir))
+            logger.write(
+                "[Warning: CHPL_TEST_PERF_DIR must be set for gener"
+                "ating performance graphs, using default {0}]".format(perf_dir)
+            )
         else:
             perf_dir = os.environ["CHPL_TEST_PERF_DIR"]
 
         perf_desc = args.performance_description
         perf_html_dir = os.path.join(perf_dir, perf_desc, "html")
 
-        if (perf_desc != "" and perf_desc != "default"):
+        if perf_desc != "" and perf_desc != "default":
             os.environ["CHPL_TEST_PERF_DESCRIPTION"] = perf_desc
 
     global perf_keys
@@ -967,29 +1127,38 @@ def set_up_performance_testing_B():
         global compperf_test_name, comp_perf_dir, temp_dat_dir, comp_perf_html_dir
         global combine_comp_perf
 
-        compperf_test_name = os.environ.get('CHPL_TEST_PERF_CONFIG_NAME',
-                                            platform.node().split(".")[0].lower())
+        compperf_test_name = os.environ.get(
+            "CHPL_TEST_PERF_CONFIG_NAME", platform.node().split(".")[0].lower()
+        )
 
         if "CHPL_TEST_COMP_PERF_DIR" in os.environ:
             comp_perf_dir = os.environ["CHPL_TEST_COMP_PERF_DIR"]
         else:
-            comp_perf_dir = os.path.join(home, "test", "compperfdat",
-                                         compperf_test_name)
-            logger.write("[Warning: CHPL_COMP_TEST_PERF DIR must be set for "
-                    "generating compiler performance graphs, using default {0}]"
-                    .format(comp_perf_dir))
+            comp_perf_dir = os.path.join(
+                home, "test", "compperfdat", compperf_test_name
+            )
+            logger.write(
+                "[Warning: CHPL_COMP_TEST_PERF DIR must be set for "
+                "generating compiler performance graphs, using default {0}]".format(
+                    comp_perf_dir
+                )
+            )
 
         compperf_test_name += args.comp_performance_description
 
-        temp_dat_dir = os.path.join(chpl_test_tmp_dir, "tempCompPerfDatFiles", "")
+        temp_dat_dir = os.path.join(
+            chpl_test_tmp_dir, "tempCompPerfDatFiles", ""
+        )
         os.environ["CHPL_TEST_COMP_PERF_TEMP_DAT_DIR"] = temp_dat_dir
-        #remove it if it wasn't cleaned up last time
+        # remove it if it wasn't cleaned up last time
         if os.path.isdir(temp_dat_dir):
             shutil.rmtree(temp_dat_dir)
 
         comp_perf_html_dir = os.path.join(comp_perf_dir, "html")
 
-        combine_comp_perf = os.path.join(util_dir, "test", "combineCompPerfData")
+        combine_comp_perf = os.path.join(
+            util_dir, "test", "combineCompPerfData"
+        )
 
     # for any performance testing
     if args.performance or args.comp_performance or args.gen_graphs:
@@ -1028,19 +1197,31 @@ def set_up_performance_testing_B():
                 pass
 
         sha_dat_file_name = "perfSha"
-        sha_dat_file_path = os.path.join(dat_dir, "{0}.dat"
-                .format(sha_dat_file_name))
+        sha_dat_file_path = os.path.join(
+            dat_dir, "{0}.dat".format(sha_dat_file_name)
+        )
 
-        logger.write("[Saving current git sha to {0}]"
-                .format(sha_dat_file_path))
+        logger.write(
+            "[Saving current git sha to {0}]".format(sha_dat_file_path)
+        )
         try:
             cmd = os.path.join(util_dir, "test", "computePerfStats")
-            out = run_command([cmd, sha_dat_file_name, dat_dir,
-                sha_pef_keys_name, sha_out_name])
+            out = run_command(
+                [
+                    cmd,
+                    sha_dat_file_name,
+                    dat_dir,
+                    sha_pef_keys_name,
+                    sha_out_name,
+                ]
+            )
             logger.write(out)
         except:
-            logger.write("[Error: Failed to save current sha to {0}]"
-                    .format(sha_dat_file_path))
+            logger.write(
+                "[Error: Failed to save current sha to {0}]".format(
+                    sha_dat_file_path
+                )
+            )
 
 
 def set_up_executables():
@@ -1051,22 +1232,23 @@ def set_up_executables():
 
         logger.write('[compiler: "{0}"]'.format(compiler))
     else:
-        logger.write("[Error: Cannot find or execute compiler: {0}]"
-                .format(compiler))
+        logger.write(
+            "[Error: Cannot find or execute compiler: {0}]".format(compiler)
+        )
         finish()
 
     # log more options
     logger.write('[compopts: "{0}"]'.format(args.compopts))
-    os.environ['COMPOPTS'] = args.compopts
+    os.environ["COMPOPTS"] = args.compopts
 
     logger.write('[execopts: "{0}"]'.format(args.execopts))
-    os.environ['EXECOPTS'] = args.execopts
+    os.environ["EXECOPTS"] = args.execopts
 
     logger.write('[launchcmd: "{0}"]'.format(args.launch_cmd))
-    os.environ['LAUNCHCMD'] = os.path.expandvars(args.launch_cmd)
+    os.environ["LAUNCHCMD"] = os.path.expandvars(args.launch_cmd)
 
     comm = chpl_comm.get()
-    network_atomics = chpl_atomics.get('network')
+    network_atomics = chpl_atomics.get("network")
     comm_substrate = chpl_comm_substrate.get()
     launcher = chpl_launcher.get()
     locale_model = chpl_locale_model.get()
@@ -1086,16 +1268,23 @@ def set_up_executables():
     os.environ["CHPL_TASKS"] = chpl_tasks.get()
 
     # skip stdin tests for most custom launchers, except for amdprun and slurm
-    if (launcher != "none" and launcher != "amudprun" and launcher !=
-        "slurm-srun" and not os.environ.get("CHPL_NO_STDIN_REDIRECT")
-        and not os.environ.get("CHPL_TEST_FORCE_STDIN_REDIRECT")):
-        print ("[Info: assuming stdin redirection is not supported, skipping "
-            "tests with stdin]")
+    if (
+        launcher != "none"
+        and launcher != "amudprun"
+        and launcher != "slurm-srun"
+        and not os.environ.get("CHPL_NO_STDIN_REDIRECT")
+        and not os.environ.get("CHPL_TEST_FORCE_STDIN_REDIRECT")
+    ):
+        print(
+            "[Info: assuming stdin redirection is not supported, skipping "
+            "tests with stdin]"
+        )
         os.environ["CHPL_NO_STDIN_REDIRECT"] = "true"
 
     # launcher timeout
-    if (not os.environ.get("CHPL_LAUNCHER_TIMEOUT")
-        and not os.environ.get("CHPL_TEST_DONT_SET_LAUNCHER_TIMEOUT")):
+    if not os.environ.get("CHPL_LAUNCHER_TIMEOUT") and not os.environ.get(
+        "CHPL_TEST_DONT_SET_LAUNCHER_TIMEOUT"
+    ):
         if "slurm" in launcher:
             os.environ["CHPL_LAUNCHER_TIMEOUT"] = "slurm"
         if "pbs" in launcher or "qsub" in launcher:
@@ -1123,7 +1312,9 @@ def set_up_executables():
         if comm != "none":
             os.environ["CHPL_TEST_MULTILOCALE_ONLY"] = "true"
         else:
-            logger.write("[Warning: Ignoring --multilocale-only for CHPL_COMM=none]")
+            logger.write(
+                "[Warning: Ignoring --multilocale-only for CHPL_COMM=none]"
+            )
 
     # pre-exec
     if args.preexec:
@@ -1133,12 +1324,13 @@ def set_up_executables():
                 preexec = os.path.abspath(preexec)
                 logger.write("[system-wide preexec: {0}]".format(preexec))
             else:
-                logger.write("[Error: Cannot find or execute system-wide preexec: "
-                        "{0}".format(preexec))
+                logger.write(
+                    "[Error: Cannot find or execute system-wide preexec: "
+                    "{0}".format(preexec)
+                )
                 finish()
             chpl_system_preexec.append(preexec)
-        os.environ["CHPL_SYSTEM_PREEXEC"] = ','.join(chpl_system_preexec)
-
+        os.environ["CHPL_SYSTEM_PREEXEC"] = ",".join(chpl_system_preexec)
 
     # pre-diff
     chpl_system_prediff = []
@@ -1148,8 +1340,10 @@ def set_up_executables():
                 prediff = os.path.abspath(prediff)
                 logger.write("[system-wide prediff: {0}]".format(prediff))
             else:
-                logger.write("[Error: Cannot find or execute system-wide prediff: "
-                        "{0}".format(prediff))
+                logger.write(
+                    "[Error: Cannot find or execute system-wide prediff: "
+                    "{0}".format(prediff)
+                )
                 finish()
             chpl_system_prediff.append(prediff)
     if "slurm" in launcher:
@@ -1157,19 +1351,35 @@ def set_up_executables():
         prediff_for_slurm = os.path.join(util_dir, "test", "prediff-for-slurm")
         if prediff_for_slurm not in chpl_system_prediff:
             chpl_system_prediff.append(prediff_for_slurm)
-    if 'lsf-' in launcher:
+    if "lsf-" in launcher:
         # With lsf-based launcher, auto-run prediff-for-lsf.
         prediff_for_lsf = os.path.join(util_dir, "test", "prediff-for-lsf")
         if prediff_for_lsf not in chpl_system_prediff:
             chpl_system_prediff.append(prediff_for_lsf)
-    if 'ucx' in comm_substrate:
+    if "ucx" in comm_substrate:
         # With ucx-based launcher, auto-run prediff-for-ucx.
         prediff_for_ucx = os.path.join(util_dir, "test", "prediff-for-ucx")
         if prediff_for_ucx not in chpl_system_prediff:
             chpl_system_prediff.append(prediff_for_ucx)
 
+    # TODO: remove this when
+    # https://github.com/chapel-lang/chapel/issues/27262 is resolved
+    if "darwin" == host_platform:
+        prediff_for_debug = os.path.join(util_dir, "test", "prediff-for-debug")
+        if prediff_for_debug not in chpl_system_prediff:
+            chpl_system_prediff.append(prediff_for_debug)
+
+    if "qthreads" == chpl_tasks.get() and "none" != chpl_sanitizers.get(
+        flag="exe"
+    ):
+        prediff_for_qthreads_asan = os.path.join(
+            util_dir, "test", "prediff-for-qthreads-asan"
+        )
+        if prediff_for_qthreads_asan not in chpl_system_prediff:
+            chpl_system_prediff.append(prediff_for_qthreads_asan)
+
     if chpl_system_prediff:
-        os.environ["CHPL_SYSTEM_PREDIFF"] = ','.join(chpl_system_prediff)
+        os.environ["CHPL_SYSTEM_PREDIFF"] = ",".join(chpl_system_prediff)
 
 
 def auto_generate_tests():
@@ -1179,13 +1389,16 @@ def auto_generate_tests():
     with cd(home):
         if path == home or path == test_dir and not args.clean_only:
             if not args.gen_graphs:
-                logger.write("[Generating tests from the Chapel Spec in "
-                        "{0}/spec".format(home))
+                logger.write(
+                    "[Generating tests from the Chapel Spec in "
+                    "{0}/spec".format(home)
+                )
                 returncode = subprocess.call(["make", "spectests"])
                 if returncode != 0:
-                    logger.write("[Error: Failed to generate Spec tests. Run "
-                            "'make spectests' in {0} for more info]"
-                            .format(home))
+                    logger.write(
+                        "[Error: Failed to generate Spec tests. Run "
+                        "'make spectests' in {0} for more info]".format(home)
+                    )
                     finish()
 
 
@@ -1193,13 +1406,17 @@ def print_chapel_environment():
     logger.write()
     logger.write("### Chapel Environment ###")
     try:
-        out = run_command([os.path.join(util_dir, "printchplenv"), "--all", "--no-tidy"])
+        out = run_command(
+            [os.path.join(util_dir, "printchplenv"), "--all", "--no-tidy"]
+        )
         logger.write(out)
     except:
         pass
     logger.write("##########################")
 
+
 # END STUFF
+
 
 # Execute 'cmd' and return its exit code.
 # Print its output to the console in real-time and log it too.
@@ -1208,6 +1425,7 @@ def run_and_log(cmd):
     printout(p.stdout)
     p.wait()
     return p.returncode
+
 
 def cleanup():
     # move the log from the temp log
@@ -1223,7 +1441,7 @@ def cleanup():
             os.remove(tmp_summary_file)
 
     if os.path.isdir(chpl_test_tmp_dir):
-      shutil.rmtree(chpl_test_tmp_dir)
+        shutil.rmtree(chpl_test_tmp_dir)
 
 
 def jUnit():
@@ -1233,13 +1451,15 @@ def jUnit():
 
     if args.junit_remove_prefix:
         junit_args.append(
-                "--remove-prefix={0}".format(args.junit_remove_prefix))
+            "--remove-prefix={0}".format(args.junit_remove_prefix)
+        )
     elif args.test_root_dir:
         # if --test-root was thrown, remove it from junit report
         junit_args.append("--remove-prefix={0}".format(args.test_root_dir))
 
-    cmd = [os.path.join(util_dir, "test",
-            "convert_start_test_log_to_junit_xml.py")]
+    cmd = [
+        os.path.join(util_dir, "test", "convert_start_test_log_to_junit_xml.py")
+    ]
 
     try:
         run_command(cmd + junit_args)
@@ -1262,178 +1482,432 @@ def help_all(help_msg):
 def parser_setup():
     parser = argparse.ArgumentParser(description="Test Chapel code.")
     # main args
-    p = parser.add_argument("tests", nargs="*", help="test files or directories")
+    p = parser.add_argument(
+        "tests", nargs="*", help="test files or directories"
+    )
     if argcomplete:
-        p.completer = argcomplete.completers.FilesCompleter([".chpl", ".test.c", ".test.cpp", ".ml-test.c", ".ml-test.cpp"])
+        p.completer = argcomplete.completers.FilesCompleter(
+            [".chpl", ".test.c", ".test.cpp", ".ml-test.c", ".ml-test.cpp"]
+        )
 
     # executing options
-    parser.add_argument("-execopts", "--execopts", action="append",
-            dest="execopts", help="set options for executing tests")
+    parser.add_argument(
+        "-execopts",
+        "--execopts",
+        action="append",
+        dest="execopts",
+        help="set options for executing tests",
+    )
     # lame hack to prevent abbreviations from not getting preprocessed in
     # preprocess_options() (makes things like --execop ambiguous)
-    parser.add_argument("-execopts ", "--execopts ", action="append",
-            dest="execopts", help=argparse.SUPPRESS)
+    parser.add_argument(
+        "-execopts ",
+        "--execopts ",
+        action="append",
+        dest="execopts",
+        help=argparse.SUPPRESS,
+    )
     # compiler
-    parser.add_argument("-compiler", "--compiler", action="store",
-            dest="compiler", help=help_all("set alternate compiler"))
+    parser.add_argument(
+        "-compiler",
+        "--compiler",
+        action="store",
+        dest="compiler",
+        help=help_all("set alternate compiler"),
+    )
     # program launch utility
-    parser.add_argument("-launchcmd", "--launchcmd", action="store",
-            dest="launch_cmd", default=os.getenv("CHPL_TEST_LAUNCHCMD", ""),
-            help="set a program to launch generated executables")
+    parser.add_argument(
+        "-launchcmd",
+        "--launchcmd",
+        action="store",
+        dest="launch_cmd",
+        default=os.getenv("CHPL_TEST_LAUNCHCMD", ""),
+        help="set a program to launch generated executables",
+    )
     # compiler options
-    parser.add_argument("-compopts", "--compopts", action="append",
-            dest="compopts", help="set options for the compiler")
+    parser.add_argument(
+        "-compopts",
+        "--compopts",
+        action="append",
+        dest="compopts",
+        help="set options for the compiler",
+    )
     # lame hack to prevent abbreviations from not getting preprocessed in
     # preprocess_options() (makes things like --compop ambiguous)
-    parser.add_argument("-compopts ", "--compopts ", action="append",
-            dest="compopts", help=argparse.SUPPRESS)
+    parser.add_argument(
+        "-compopts ",
+        "--compopts ",
+        action="append",
+        dest="compopts",
+        help=argparse.SUPPRESS,
+    )
     # log_file
-    parser.add_argument("-logfile", "--logfile", action="store",
-            dest="log_file", help="set alternate log file")
+    parser.add_argument(
+        "-logfile",
+        "--logfile",
+        action="store",
+        dest="log_file",
+        help="set alternate log file",
+    )
     # mem leaks
-    parser.add_argument("-memleaks", "--memleaks", "-memLeaks", "--memLeaks",
-            action="store_true", dest="mem_leaks", help="run with --memLeaks")
+    parser.add_argument(
+        "-memleaks",
+        "--memleaks",
+        "-memLeaks",
+        "--memLeaks",
+        action="store_true",
+        dest="mem_leaks",
+        help="run with --memLeaks",
+    )
     # mem leaks log
-    parser.add_argument("-memleakslog", "--memleakslog", "-memLeaksLog",
-            "--memLeaksLog", action="store", dest="mem_leaks_log", help=("set"
-            " location for memLeaks log, and run with --memLeaksLog"))
+    parser.add_argument(
+        "-memleakslog",
+        "--memleakslog",
+        "-memLeaksLog",
+        "--memLeaksLog",
+        action="store",
+        dest="mem_leaks_log",
+        help=("set" " location for memLeaks log, and run with --memLeaksLog"),
+    )
     # valgrind
-    parser.add_argument("-valgrind", "--valgrind", action="store_true",
-            dest="valgrind", help="run everything using valgrind")
-    parser.add_argument("-valgrindexe", "--valgrindexe", action="store_true",
-            dest="valgrind_exe", help="execute tests using valgrind")
+    parser.add_argument(
+        "-valgrind",
+        "--valgrind",
+        action="store_true",
+        dest="valgrind",
+        help="run everything using valgrind",
+    )
+    parser.add_argument(
+        "-valgrindexe",
+        "--valgrindexe",
+        action="store_true",
+        dest="valgrind_exe",
+        help="execute tests using valgrind",
+    )
     # pre exec, pre- etc....
-    parser.add_argument("-syspreexec", "--syspreexec", action="append",
-                        dest="preexec",
-                        help="set a PREEXEC script to run before execution"
-                             ", may be given more than once")
-    parser.add_argument("-sysprediff", "--sysprediff", action="append",
-                        dest="prediff",
-                        help="set a PREDIFF script to run on test output"
-                             ", may be given more than once")
+    parser.add_argument(
+        "-syspreexec",
+        "--syspreexec",
+        action="append",
+        dest="preexec",
+        help="set a PREEXEC script to run before execution"
+        ", may be given more than once",
+    )
+    parser.add_argument(
+        "-sysprediff",
+        "--sysprediff",
+        action="append",
+        dest="prediff",
+        help="set a PREDIFF script to run on test output"
+        ", may be given more than once",
+    )
     # future mode args
     futures_mode = 0
-    parser.add_argument("-futures", "--futures", action="store_const", const=1,
-            default=futures_mode, dest="futures_mode", help="run future tests")
-    parser.add_argument("-futuresonly", "--futuresonly", "-futures-only",
-            "--futures-only", action="store_const", const=2, default=
-            futures_mode, dest="futures_mode", help="only run future tests")
-    parser.add_argument("-futuresskipif", "--futuresskipif", "-futures-skipif",
-            "--futures-skipif", action="store_const", const=3, default=
-            futures_mode, dest="futures_mode", help="run future-skipif tests")
-    parser.add_argument("-futures-mode", "--futures-mode", action="store",
-            default=futures_mode, dest="futures_mode",
-            help=argparse.SUPPRESS)
+    parser.add_argument(
+        "-futures",
+        "--futures",
+        action="store_const",
+        const=1,
+        default=futures_mode,
+        dest="futures_mode",
+        help="run future tests",
+    )
+    parser.add_argument(
+        "-futuresonly",
+        "--futuresonly",
+        "-futures-only",
+        "--futures-only",
+        action="store_const",
+        const=2,
+        default=futures_mode,
+        dest="futures_mode",
+        help="only run future tests",
+    )
+    parser.add_argument(
+        "-futuresskipif",
+        "--futuresskipif",
+        "-futures-skipif",
+        "--futures-skipif",
+        action="store_const",
+        const=3,
+        default=futures_mode,
+        dest="futures_mode",
+        help="run future-skipif tests",
+    )
+    parser.add_argument(
+        "-futures-mode",
+        "--futures-mode",
+        action="store",
+        default=futures_mode,
+        dest="futures_mode",
+        help=argparse.SUPPRESS,
+    )
     # cleaning
-    parser.add_argument("-clean-only", "-cleanonly", "--clean-only",
-            "--cleanonly", action="store_true", dest="clean_only",
-            help="only clean files specified in CLEANFILES")
+    parser.add_argument(
+        "-clean-only",
+        "-cleanonly",
+        "--clean-only",
+        "--cleanonly",
+        action="store_true",
+        dest="clean_only",
+        help="only clean files specified in CLEANFILES",
+    )
     # recurse
-    parser.add_argument("-norecurse", "-no-recurse", "--norecurse",
-            "--no-recurse", action="store_false", dest="recurse",
-            help="don't recurse down through directories")
+    parser.add_argument(
+        "-norecurse",
+        "-no-recurse",
+        "--norecurse",
+        "--no-recurse",
+        action="store_false",
+        dest="recurse",
+        help="don't recurse down through directories",
+    )
     # performance
-    parser.add_argument("-performance", "--performance", action="store_true",
-            dest="performance", help="run performance tests")
-    p = parser.add_argument("-perflabel", "--perflabel", action="store",
-               default="perf", dest="perflabel",
-               help="set alternate performance test label")
+    parser.add_argument(
+        "-performance",
+        "--performance",
+        action="store_true",
+        dest="performance",
+        help="run performance tests",
+    )
+    p = parser.add_argument(
+        "-perflabel",
+        "--perflabel",
+        action="store",
+        default="perf",
+        dest="perflabel",
+        help="set alternate performance test label",
+    )
     if argcomplete:
-        p.completer = argcomplete.completers.ChoicesCompleter(('ml-', ))
+        p.completer = argcomplete.completers.ChoicesCompleter(("ml-",))
 
-    parser.add_argument("-performance-description",
-            "--performance-description", action="store", default="",
-            dest="performance_description", help=help_all(""))
-    parser.add_argument("-performance-configs", "--performance-configs",
-            "-performance-configurations", "--performance-configurations",
-            action="store", dest="performance_configs",
-            help=help_all("set performance configurations"))
-    parser.add_argument("-compperformance", "--compperformance",
-            action="store_true", dest="comp_performance",
-            help=help_all("test compiler performance"))
-    parser.add_argument("-compperformance-description",
-            "--compperformance-description", action="store", default="",
-            dest="comp_performance_description", help=help_all(""))
-    parser.add_argument("-numtrials", "--numtrials", "-num-trials",
-        "--num-trials", action="store", dest="num_trials",
+    parser.add_argument(
+        "-performance-description",
+        "--performance-description",
+        action="store",
+        default="",
+        dest="performance_description",
+        help=help_all(""),
+    )
+    parser.add_argument(
+        "-performance-configs",
+        "--performance-configs",
+        "-performance-configurations",
+        "--performance-configurations",
+        action="store",
+        dest="performance_configs",
+        help=help_all("set performance configurations"),
+    )
+    parser.add_argument(
+        "-compperformance",
+        "--compperformance",
+        action="store_true",
+        dest="comp_performance",
+        help=help_all("test compiler performance"),
+    )
+    parser.add_argument(
+        "-compperformance-description",
+        "--compperformance-description",
+        action="store",
+        default="",
+        dest="comp_performance_description",
+        help=help_all(""),
+    )
+    parser.add_argument(
+        "-numtrials",
+        "--numtrials",
+        "-num-trials",
+        "--num-trials",
+        action="store",
+        dest="num_trials",
         default=os.getenv("CHPL_TEST_NUM_TRIALS", "1"),
-        help="the number of times to run the performance tests")
+        help="the number of times to run the performance tests",
+    )
     # graphing
-    parser.add_argument("-gen-graphs", "--gen-graphs", "-generate-graphs",
-            "--generate-graphs", action="store_true", dest="gen_graphs",
-            help=help_all("only generate graphs, don't run tests"))
-    parser.add_argument("-nodisplaygraphrange", "--nodisplaygraphrange",
-            "-no-display-graph-range", "--no-display-graph-range",
-            action="store_false", dest="graphs_disp_range",
-            help=help_all("don't display trial range envelopes ongraphs"))
-    parser.add_argument("-graphsgendefault", "--graphsgendefault",
-            "-graphs-gen-default", "--graphs-gen-default", action="store",
-            choices=["avg", "min", "max", "med"], default="avg",
-            dest="graphs_gen_default",
-            help=help_all("set default method to reduce multiple trials"))
-    parser.add_argument("-startdate", "--startdate", action="store",
-            dest="start_date", metavar="<MM/DD/YY>",
-            help="set graph start date")
-    parser.add_argument("-gengraphopts", "--gengraphopts", "-genGraphOpts",
-            "--genGraphOpts", action="store", dest="gen_graph_opts",
-            default="", help=help_all("set additional graph gen options"))
+    parser.add_argument(
+        "-gen-graphs",
+        "--gen-graphs",
+        "-generate-graphs",
+        "--generate-graphs",
+        action="store_true",
+        dest="gen_graphs",
+        help=help_all("only generate graphs, don't run tests"),
+    )
+    parser.add_argument(
+        "-nodisplaygraphrange",
+        "--nodisplaygraphrange",
+        "-no-display-graph-range",
+        "--no-display-graph-range",
+        action="store_false",
+        dest="graphs_disp_range",
+        help=help_all("don't display trial range envelopes ongraphs"),
+    )
+    parser.add_argument(
+        "-graphsgendefault",
+        "--graphsgendefault",
+        "-graphs-gen-default",
+        "--graphs-gen-default",
+        action="store",
+        choices=["avg", "min", "max", "med"],
+        default="avg",
+        dest="graphs_gen_default",
+        help=help_all("set default method to reduce multiple trials"),
+    )
+    parser.add_argument(
+        "-startdate",
+        "--startdate",
+        action="store",
+        dest="start_date",
+        metavar="<MM/DD/YY>",
+        help="set graph start date",
+    )
+    parser.add_argument(
+        "-gengraphopts",
+        "--gengraphopts",
+        "-genGraphOpts",
+        "--genGraphOpts",
+        action="store",
+        dest="gen_graph_opts",
+        default="",
+        help=help_all("set additional graph gen options"),
+    )
     # only compile
-    parser.add_argument("-comp-only", "--comp-only", action="store_true",
-            dest="comp_only", help="only compile the tests, don't run")
+    parser.add_argument(
+        "-comp-only",
+        "--comp-only",
+        action="store_true",
+        dest="comp_only",
+        help="only compile the tests, don't run",
+    )
+    # keep executables
+    parser.add_argument(
+        "-keep-executable",
+        "--keep-executable",
+        "--keep",
+        action="store_true",
+        dest="keep_executable",
+        help="don't clean the generated executable after running",
+    )
     # num locales
-    parser.add_argument("-numlocales", "--numlocales", action="store",
-            dest="num_locales", default="0",
-            help="set the number of locales to run on")
+    parser.add_argument(
+        "-numlocales",
+        "--numlocales",
+        action="store",
+        dest="num_locales",
+        default="0",
+        help="set the number of locales to run on",
+    )
     # run tests that specify numlocales > 1
-    parser.add_argument("-max-locales", "--max-locales",
-            action="store", dest="max_locales", default="0",
-            help="Maximum number of locales to use")
+    parser.add_argument(
+        "-max-locales",
+        "--max-locales",
+        action="store",
+        dest="max_locales",
+        default="0",
+        help="Maximum number of locales to use",
+    )
     # run tests that specify numlocales > 1
-    parser.add_argument("-multilocale-only", "--multilocale-only",
-            action="store_true", dest="multilocale_only",
-            help="Only run multilocale test (ignored for comm none)")
+    parser.add_argument(
+        "-multilocale-only",
+        "--multilocale-only",
+        action="store_true",
+        dest="multilocale_only",
+        help="Only run multilocale test (ignored for comm none)",
+    )
     # stdin redirect
-    parser.add_argument("-nostdinredirect", "--nostdinredirect",
-            action="store_true", dest="no_stdin_redirect",
-            help=help_all("don't redirect stdin from /dev/null"))
-    parser.add_argument("-stdinredirect", "--stdinredirect",
-            action="store_true", dest="stdin_redirect",
-            help=help_all("force stdin redirection from /dev/null"))
+    parser.add_argument(
+        "-nostdinredirect",
+        "--nostdinredirect",
+        action="store_true",
+        dest="no_stdin_redirect",
+        help=help_all("don't redirect stdin from /dev/null"),
+    )
+    parser.add_argument(
+        "-stdinredirect",
+        "--stdinredirect",
+        action="store_true",
+        dest="stdin_redirect",
+        help=help_all("force stdin redirection from /dev/null"),
+    )
     # launcher timeout
-    parser.add_argument("-launchertimeout", "--launchertimeout",
-            action="store", dest="launcher_timeout",
-            help=help_all("rely on the launcher to enforce the timeout"))
+    parser.add_argument(
+        "-launchertimeout",
+        "--launchertimeout",
+        action="store",
+        dest="launcher_timeout",
+        help=help_all("rely on the launcher to enforce the timeout"),
+    )
     # no chpl home warning
-    parser.add_argument("-no-chpl-home-warn", "--no-chpl-home-warn",
-            action="store_false", dest="chpl_home_warn",
-            help=help_all("don't warn about not starting in CHPL_HOME"))
+    parser.add_argument(
+        "-no-chpl-home-warn",
+        "--no-chpl-home-warn",
+        action="store_false",
+        dest="chpl_home_warn",
+        help=help_all("don't warn about not starting in CHPL_HOME"),
+    )
     # progress
-    parser.add_argument("-progress", "--progress", action="store_true",
-            dest="progress", help=help_all("Log pass/fail for each test"))
+    parser.add_argument(
+        "-progress",
+        "--progress",
+        action="store_true",
+        dest="progress",
+        help=help_all("Log pass/fail for each test"),
+    )
     # test root
-    parser.add_argument("-test-root", "--test-root", action="store",
-        dest="test_root_dir", help=help_all("set abs path to test directory"))
+    parser.add_argument(
+        "-test-root",
+        "--test-root",
+        action="store",
+        dest="test_root_dir",
+        help=help_all("set abs path to test directory"),
+    )
     # jUnit
-    parser.add_argument("-junit-xml", "--junit-xml", action="store_true",
-            dest="junit_xml", help=help_all("create jUnit XML report"))
-    parser.add_argument("-junit-xml-file", "--junit-xml-file", action="store",
-            dest="junit_xml_file", metavar="<file>",
-            help=help_all("set the path to store the jUnit XML report"))
-    parser.add_argument("-junit-remove-prefix", "--junit-remove-prefix",
-            action="store", dest="junit_remove_prefix", metavar="<prefix>",
-            help=help_all("<prefix> to remove from tests in jUnit report"))
+    parser.add_argument(
+        "-junit-xml",
+        "--junit-xml",
+        action="store_true",
+        dest="junit_xml",
+        help=help_all("create jUnit XML report"),
+    )
+    parser.add_argument(
+        "-junit-xml-file",
+        "--junit-xml-file",
+        action="store",
+        dest="junit_xml_file",
+        metavar="<file>",
+        help=help_all("set the path to store the jUnit XML report"),
+    )
+    parser.add_argument(
+        "-junit-remove-prefix",
+        "--junit-remove-prefix",
+        action="store",
+        dest="junit_remove_prefix",
+        metavar="<prefix>",
+        help=help_all("<prefix> to remove from tests in jUnit report"),
+    )
     # respect skipifs
-    parser.add_argument("-respect-skipifs", "--respect-skipifs",
-            action="store_true", dest="respect_skipifs",
-            help="respect '.skipif' files even when testing individual files")
+    parser.add_argument(
+        "-respect-skipifs",
+        "--respect-skipifs",
+        action="store_true",
+        dest="respect_skipifs",
+        help="respect '.skipif' files even when testing individual files",
+    )
     # respect notests
-    parser.add_argument("-respect-notests", "--respect-notests",
-            action="store_true", dest="respect_notests",
-            help="respect '.notest' files even when testing individual files")
+    parser.add_argument(
+        "-respect-notests",
+        "--respect-notests",
+        action="store_true",
+        dest="respect_notests",
+        help="respect '.notest' files even when testing individual files",
+    )
     # extra help
     parser.add_argument("-help", action="help", help=argparse.SUPPRESS)
-    parser.add_argument("--help-all", action="help",
-            help="show all options, including ones meant for other scripts")
+    parser.add_argument(
+        "--help-all",
+        action="help",
+        help="show all options, including ones meant for other scripts",
+    )
 
     return parser
 
@@ -1445,22 +1919,24 @@ def parser_setup():
 def preprocess_options():
     index = 0
     for arg in sys.argv:
-        arg = arg.replace('\"', '').replace('\'', '')
+        arg = arg.replace('"', "").replace("'", "")
         if arg in ["-compopts", "--compopts", "-execopts", "--execopts"]:
             escape_next_argument(sys.argv, index)
         index += 1
 
+
 def escape_next_argument(args, index):
     if index + 1 < len(args):
         next = args[index + 1].strip()
-        if next and next[0] == "-": # single argument, not escaped
+        if next and next[0] == "-":  # single argument, not escaped
             args[index + 1] = "'{0}'".format(next)
         print(args)
 
 
 # UTILITY ROUTINES AND CLASSES
 
-class Logger():
+
+class Logger:
     def __init__(self):
         self.logger = logging.getLogger("start_test")
         self.logger.setLevel(logging.DEBUG)
@@ -1496,6 +1972,7 @@ class Logger():
 # missing log messages are not very important to the application.
 # In this program, however, the logging provides an essential function.
 
+
 class StreamHandlerWithException(logging.StreamHandler):
     """
     Same as StreamHandler except it raises an exception.
@@ -1504,6 +1981,7 @@ class StreamHandlerWithException(logging.StreamHandler):
     def handleError(self, record):
         logging.StreamHandler.handleError(self, record)
         raise OSError("fatal error, logging.StreamHandler")
+
 
 class FileHandlerWithException(logging.FileHandler):
     """
@@ -1514,13 +1992,19 @@ class FileHandlerWithException(logging.FileHandler):
         logging.FileHandler.handleError(self, record)
         raise OSError("fatal error, logging.FileHandler")
 
+
 class CommandError(Exception):
     def __init__(self, retcode, cmd, output=None):
         self.retcode = retcode
         self.cmd = cmd
         self.output = output
+
     def __str__(self):
-        return "Command '{0}' returned non-zero exit status {1}".format(self.cmd, self.retcode)
+        return "Command '{0}' returned non-zero exit status {1}".format(
+            self.cmd, self.retcode
+        )
+
+
 def run_command(cmd, stderr=None):
     """
     check_output like wrapper, but we're still committed to 2.6 so can't rely
@@ -1533,25 +2017,30 @@ def run_command(cmd, stderr=None):
         raise CommandError(retcode, cmd, output)
 
     if sys.version_info[0] >= 3 and not isinstance(output, str):
-        output = str(output, 'utf-8')
+        output = str(output, "utf-8")
 
     return output
+
 
 def process_skipif_output(output):
     lines = output.splitlines()
     if len(lines) == 0:
-      return output
+        return output
     elif len(lines) > 1:
-      print("\n".join(lines[:-1]))
+        print("\n".join(lines[:-1]))
     output = lines[-1]
     return output
 
+
 def run_git_command(command):
     try:
-        output = run_command(["git"]+command, stderr=subprocess.STDOUT).strip()
+        output = run_command(
+            ["git"] + command, stderr=subprocess.STDOUT
+        ).strip()
     except:
         output = None
     return output
+
 
 def printout(so):
     while True:
@@ -1559,9 +2048,10 @@ def printout(so):
         if not line:
             break
         if sys.version_info[0] >= 3 and not isinstance(line, str):
-            line = str(line, 'utf-8')
-        logger.write(line) # strip default newline
+            line = str(line, "utf-8")
+        logger.write(line)  # strip default newline
         logger.flush()
+
 
 @contextlib.contextmanager
 def cd(path):

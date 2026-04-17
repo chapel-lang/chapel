@@ -3,7 +3,7 @@
 
 #
 # Copyright © 2009 CNRS
-# Copyright © 2009-2024 Inria.  All rights reserved.
+# Copyright © 2009-2025 Inria.  All rights reserved.
 # Copyright © 2009 Université Bordeaux
 # Copyright © 2014 Cisco Systems, Inc.  All rights reserved.
 # See COPYING in top-level directory.
@@ -121,6 +121,9 @@ set -e
   echo
   echo "# only the highest capacity among 2 local-or-larger memories for one PU, silent"
   $info --if synthetic --input "pack:4 [numa(memory=1000000)] l3:2 [numa(memory=1000)] core:4 pu:2" --local-memory-flags larger --best-memattr capacity -s pu:63
+  echo
+  echo "# default NUMA node of a PU"
+  $info --if xml --input $xmldir/64intel64-fakeKNL-SNC4-hybrid.xml -s --default-nodes pu:44
   echo
 
   echo

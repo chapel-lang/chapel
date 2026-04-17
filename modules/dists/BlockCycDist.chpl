@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -95,46 +95,24 @@ This distribution is work in progress and so has significant limitations.
 
 It has not been tuned for performance.
 
-The only ``idxType`` currently supported is `int` or `int(64)`.
-
+The only ``idxType`` currently supported is ``int`` or ``int(64)``.
 
 **Example**
 
-The following code declares a domain ``D`` distributed over
-a Block-Cyclic distribution with a start index of ``(1,1)``
-and a block size of ``(2,3)``,
-and declares an array ``A`` over that domain.
-The `forall` loop sets each array element
-to the ID of the locale to which it is mapped.
+The following code declares a domain ``D`` distributed over a
+Block-Cyclic distribution with a start index of ``(1,1)`` and a block
+size of ``(2,3)``, and declares an array ``A`` over that domain.
+The ``forall`` loop sets each array element to the ID of the locale to
+which it is mapped.
 
-  .. code-block:: chapel
-
-    use BlockCycDist;
-
-    const Space = {1..8, 1..8};
-    const D: domain(2)
-      dmapped new blockCycDist(startIdx=Space.lowBound,blocksize=(2,3))
-      = Space;
-    var A: [D] int;
-
-    forall a in A do
-      a = a.here.id;
-
-    writeln(A);
+.. literalinclude:: ../../../../test/distributions/doc-examples/BlockCycDistExamples.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE
+   :end-before: STOP_EXAMPLE
 
 When run on 6 locales, the output is:
 
-  ::
-
-    0 0 0 1 1 1 0 0
-    0 0 0 1 1 1 0 0
-    2 2 2 3 3 3 2 2
-    2 2 2 3 3 3 2 2
-    4 4 4 5 5 5 4 4
-    4 4 4 5 5 5 4 4
-    0 0 0 1 1 1 0 0
-    0 0 0 1 1 1 0 0
-
+.. literalinclude:: ../../../../test/distributions/doc-examples/BlockCycDistExamples.good
 
 **Initializer Arguments**
 
@@ -276,10 +254,6 @@ operator =(ref a: blockCycDist(?), b: blockCycDist(?)) {
 }
 
 
-@deprecated("'BlockCyclic' is deprecated, please use 'blockCycDist' instead")
-type BlockCyclic = blockCycDist;
-
-
 class BlockCyclicImpl : BaseDist, writeSerializable {
   param rank: int;
   type idxType = int;
@@ -312,6 +286,15 @@ class BlockCyclicImpl : BaseDist, writeSerializable {
 
     this.lowIdx = _ensureTuple(startIdx);
     this.blocksize = _ensureTuple(blocksize);
+
+    if boundsChecking {
+      for param i in 0..#rank {
+        if this.blocksize(i) <= 0 {
+          halt("blocksize must be positive - got blocksize " +
+               this.blocksize:string + " instead");
+        }
+      }
+    }
 
     const ranges = setupTargetLocRanges(rank, targetLocales);
     this.targetLocDom = {(...ranges)};

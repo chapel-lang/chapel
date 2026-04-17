@@ -6,3 +6,5 @@ a() at stacktrace.chpl:1
 b() at stacktrace.chpl:5
 c() at stacktrace.chpl:9
 chpl__init_stacktrace() at stacktrace.chpl:1
+
+Disable full stacktrace by setting 'CHPL_RT_UNWIND=0'

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -153,17 +153,23 @@
   struct CommentsAndStmt {
     std::vector<ParserComment>* comments;
     AstNode* stmt;
+    TextLocation curlyLoc;
   };
   static inline
   CommentsAndStmt makeCommentsAndStmt(std::vector<ParserComment>* comments,
-                                      AstNode* stmt) {
-    CommentsAndStmt ret = {comments, stmt};
+                                      AstNode* stmt, TextLocation curlyLoc) {
+    CommentsAndStmt ret = {comments, stmt, curlyLoc};
     return ret;
   }
   static inline
   CommentsAndStmt makeCommentsAndStmt(std::vector<ParserComment>* comments,
+                                      AstNode* stmt) {
+    return makeCommentsAndStmt(comments, stmt, TextLocation::create());
+  }
+  static inline
+  CommentsAndStmt makeCommentsAndStmt(std::vector<ParserComment>* comments,
                                       owned<AstNode> stmt) {
-    return makeCommentsAndStmt(comments, stmt.release());
+    return makeCommentsAndStmt(comments, stmt.release(), TextLocation::create());
   }
 
   struct MaybeIntent {
@@ -221,6 +227,7 @@
     ParserExprList* lifetime;
     ParserExprList* body;
     TextLocation headerLoc;
+    TextLocation curlyLoc;
   };
 
   // A struct to thread along some pieces of a module before it is built.
@@ -436,7 +443,7 @@
 %token <uniqueStr> TIF TIMAG TIMPORT TIN TINCLUDE
 %token <uniqueStr> TINDEX TINLINE TINOUT TINT TITER TINIT TINITEQUALS
 %token <uniqueStr> TIMPLEMENTS TINTERFACE
-%token <uniqueStr> TLABEL TLAMBDA TLET TLIFETIME TLOCAL TLOCALE
+%token <uniqueStr> TLABEL TLET TLIFETIME TLOCAL TLOCALE
 %token <uniqueStr> TMANAGE TMINUSMINUS TMODULE
 %token <uniqueStr> TNEW TNIL TNOINIT TNONE TNOTHING
 %token <uniqueStr> TON TONLY TOPERATOR TOTHERWISE TOUT TOVERRIDE TOWNED
@@ -629,8 +636,6 @@
 %type <expr> opt_colon_formal_type
 %type <expr> colon_formal_type
 %type <expr> formal_type
-%type <functionParts> lambda_decl_start
-%type <expr> lambda_decl_expr
 %type <typeDeclParts> enum_header
 %type <exprList> enum_ls
 
@@ -671,7 +676,7 @@
 %type <functionParts> fn_type fn_expr
 %type <exprList> fn_type_formal_ls opt_fn_type_formal_ls
 %type <expr> fn_type_formal
-%type <exprList> opt_formal_ls req_formal_ls formal_ls formal_ls_inner
+%type <exprList> opt_formal_ls formal_ls formal_ls_inner
 %type <expr> fn_decl_receiver_expr
 %type <functionKind> proc_iter_or_op
 %type <functionParts> linkage_spec
@@ -729,7 +734,13 @@ stmt:
 
 stmt_base:
   tryable_stmt      // (no '->finishStmt()' required b/c 'tryable_stmt' did it)
-| decl_base                 { $$ = context->finishStmt($1); }
+
+// 'decl_base' passes its location because in the case of a single-stmt
+// proceduring using 'do', the parser might scoop up a comment following the
+// procedure. If we don't pass in the location, the comment will be cleared by
+// 'finishStmt'.
+| decl_base                 { $$ = context->finishStmt(@1, $1); }
+
 | include_module_stmt       { $$ = context->finishStmt($1); }
 | block_stmt                { $$ = context->finishStmt($1); }
 | use_stmt                  { $$ = context->finishStmt($1); }
@@ -748,11 +759,10 @@ stmt_base:
     auto node = Defer::build(BUILDER, LOC(@$), blockStyle,
                              std::move(stmts));
     BUILDER->noteBlockHeaderLocation(node.get(), LOC(@1));
-    if (context->hasCurlyBracesLoc()) {
-      BUILDER->noteCurlyBracesLocation(node.get(), LOC(context->curlyBracesLoc()));
-      context->resetCurlyBracesLoc();
+    if (context->isValidCurlyBracesLoc($2.curlyLoc)) {
+      BUILDER->noteCurlyBracesLocation(node.get(), LOC($2.curlyLoc));
     }
-    CommentsAndStmt ret = { .comments=comments, .stmt=node.release() };
+    CommentsAndStmt ret = makeCommentsAndStmt(comments, node.release());
     $$ = context->finishStmt(ret);
   }
 | try_stmt                  { $$ = context->finishStmt(@$, $1); }
@@ -762,7 +772,7 @@ stmt_base:
     auto comments = context->gatherComments(@1);
     auto ident = Identifier::build(BUILDER, LOC(@2), $2);
     auto node = Init::build(BUILDER, LOC(@$), std::move(ident));
-    CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+    CommentsAndStmt cs = makeCommentsAndStmt(comments, node.release());
     $$ = context->finishStmt(cs);
   }
 | TBREAK opt_label_ident TSEMI
@@ -771,7 +781,7 @@ stmt_base:
     auto ident = !$2.isEmpty() ? Identifier::build(BUILDER, LOC(@2), $2)
                                : nullptr;
     auto node = Break::build(BUILDER, LOC(@$), std::move(ident));
-    CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+    CommentsAndStmt cs = makeCommentsAndStmt(comments, node.release());
     $$ = context->finishStmt(cs);
   }
 | TCONTINUE opt_label_ident TSEMI
@@ -780,7 +790,7 @@ stmt_base:
     auto ident = !$2.isEmpty() ? Identifier::build(BUILDER, LOC(@2), $2)
                                : nullptr;
     auto node = Continue::build(BUILDER, LOC(@$), std::move(ident));
-    CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+    CommentsAndStmt cs = makeCommentsAndStmt(comments, node.release());
     $$ = context->finishStmt(cs);
   }
 | TLABEL ident_def stmt
@@ -791,7 +801,7 @@ stmt_base:
   {
     auto comments = context->gatherComments(@1);
     auto node = Yield::build(BUILDER, LOC(@$), toOwned($2));
-    CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+    CommentsAndStmt cs = makeCommentsAndStmt(comments, node.release());
     $$ = context->finishStmt(cs);
   }
 | error TSEMI
@@ -824,11 +834,10 @@ tryable_stmt:
     auto node = Cobegin::build(BUILDER, LOC(@$), toOwned($2),
                                std::move(taskBodies));
     BUILDER->noteBlockHeaderLocation(node.get(), LOC(@1));
-    if (context->hasCurlyBracesLoc()) {
-      BUILDER->noteCurlyBracesLocation(node.get(), LOC(context->curlyBracesLoc()));
-      context->resetCurlyBracesLoc();
+    if (context->isValidCurlyBracesLoc($3.curlyLoc)) {
+      BUILDER->noteCurlyBracesLocation(node.get(), LOC($3.curlyLoc));
     }
-    CommentsAndStmt ret = { .comments=comments, .stmt=node.release() };
+    CommentsAndStmt ret = makeCommentsAndStmt(comments, node.release());
     $$ = context->finishStmt(ret);
   }
 | TDELETE expr_ls TSEMI
@@ -836,7 +845,7 @@ tryable_stmt:
     auto comments = context->gatherComments(@1);
     auto exprs = context->consumeList($2);
     auto node = Delete::build(BUILDER, LOC(@$), std::move(exprs));
-    CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+    CommentsAndStmt cs = makeCommentsAndStmt(comments, node.release());
     $$ = context->finishStmt(cs);
   }
 | TLOCAL expr do_stmt
@@ -849,11 +858,10 @@ tryable_stmt:
     auto node = Local::build(BUILDER, LOC(@$), toOwned($2), blockStyle,
                              std::move(stmts));
     BUILDER->noteBlockHeaderLocation(node.get(), LOC2(@1, @2));
-    if (context->hasCurlyBracesLoc()) {
-      BUILDER->noteCurlyBracesLocation(node.get(), LOC(context->curlyBracesLoc()));
-      context->resetCurlyBracesLoc();
+    if (context->isValidCurlyBracesLoc($3.cs.curlyLoc)) {
+      BUILDER->noteCurlyBracesLocation(node.get(), LOC($3.cs.curlyLoc));
     }
-    CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+    CommentsAndStmt cs = makeCommentsAndStmt(comments, node.release());
     $$ = context->finishStmt(cs);
   }
 | TLOCAL do_stmt
@@ -865,11 +873,10 @@ tryable_stmt:
     auto stmts = context->consumeAndFlattenTopLevelBlocks(exprLst);
     auto node = Local::build(BUILDER, LOC(@$), blockStyle, std::move(stmts));
     BUILDER->noteBlockHeaderLocation(node.get(), LOC(@1));
-    if (context->hasCurlyBracesLoc()) {
-      BUILDER->noteCurlyBracesLocation(node.get(), LOC(context->curlyBracesLoc()));
-      context->resetCurlyBracesLoc();
+    if (context->isValidCurlyBracesLoc($2.cs.curlyLoc)) {
+      BUILDER->noteCurlyBracesLocation(node.get(), LOC($2.cs.curlyLoc));
     }
-    CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+    CommentsAndStmt cs = makeCommentsAndStmt(comments, node.release());
     $$ = context->finishStmt(cs);
   }
 | TON expr do_stmt
@@ -882,11 +889,10 @@ tryable_stmt:
     auto node = On::build(BUILDER, LOC(@$), toOwned($2), blockStyle,
                           std::move(stmts));
     BUILDER->noteBlockHeaderLocation(node.get(), LOC2(@1, @2));
-    if (context->hasCurlyBracesLoc()) {
-      BUILDER->noteCurlyBracesLocation(node.get(), LOC(context->curlyBracesLoc()));
-      context->resetCurlyBracesLoc();
+    if (context->isValidCurlyBracesLoc($3.cs.curlyLoc)) {
+      BUILDER->noteCurlyBracesLocation(node.get(), LOC($3.cs.curlyLoc));
     }
-    CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+    CommentsAndStmt cs = makeCommentsAndStmt(comments, node.release());
     $$ = context->finishStmt(cs);
   }
 | TSERIAL expr do_stmt
@@ -899,11 +905,10 @@ tryable_stmt:
     auto node = Serial::build(BUILDER, LOC(@$), toOwned($2), blockStyle,
                               std::move(stmts));
     BUILDER->noteBlockHeaderLocation(node.get(), LOC2(@1, @2));
-    if (context->hasCurlyBracesLoc()) {
-      BUILDER->noteCurlyBracesLocation(node.get(), LOC(context->curlyBracesLoc()));
-      context->resetCurlyBracesLoc();
+    if (context->isValidCurlyBracesLoc($3.cs.curlyLoc)) {
+      BUILDER->noteCurlyBracesLocation(node.get(), LOC($3.cs.curlyLoc));
     }
-    CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+    CommentsAndStmt cs = makeCommentsAndStmt(comments, node.release());
     $$ = context->finishStmt(cs);
   }
 | TSERIAL do_stmt
@@ -915,11 +920,10 @@ tryable_stmt:
     auto stmts = context->consumeAndFlattenTopLevelBlocks(exprLst);
     auto node = Serial::build(BUILDER, LOC(@$), blockStyle, std::move(stmts));
     BUILDER->noteBlockHeaderLocation(node.get(), LOC(@1));
-    if (context->hasCurlyBracesLoc()) {
-      BUILDER->noteCurlyBracesLocation(node.get(), LOC(context->curlyBracesLoc()));
-      context->resetCurlyBracesLoc();
+    if (context->isValidCurlyBracesLoc($2.cs.curlyLoc)) {
+      BUILDER->noteCurlyBracesLocation(node.get(), LOC($2.cs.curlyLoc));
     }
-    CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+    CommentsAndStmt cs = makeCommentsAndStmt(comments, node.release());
     $$ = context->finishStmt(cs);
   }
 | TSYNC stmt
@@ -933,11 +937,10 @@ tryable_stmt:
     auto node = Sync::build(BUILDER, LOC(@$), blockStyle,
                             std::move(stmts));
     BUILDER->noteBlockHeaderLocation(node.get(), LOC(@1));
-    if (context->hasCurlyBracesLoc()) {
-      BUILDER->noteCurlyBracesLocation(node.get(), LOC(context->curlyBracesLoc()));
-      context->resetCurlyBracesLoc();
+    if (context->isValidCurlyBracesLoc($2.curlyLoc)) {
+      BUILDER->noteCurlyBracesLocation(node.get(), LOC($2.curlyLoc));
     }
-    CommentsAndStmt ret = { .comments=comments, .stmt=node.release() };
+    CommentsAndStmt ret = makeCommentsAndStmt(comments, node.release());
     $$ = context->finishStmt(ret);
   }
 ;
@@ -1063,6 +1066,7 @@ module_decl_stmt:
                                context->consumeList(body));
       BUILDER->noteDeclNameLocation(mod.get(), LOC(parts.locName));
       BUILDER->noteDeclHeaderLocation(mod.get(), LOC(@1));
+      BUILDER->noteCurlyBracesLocation(mod.get(), LOC2(@2, @3));
       CommentsAndStmt cs = {parts.comments, mod.release()};
       $$ = cs;
     }
@@ -1080,6 +1084,7 @@ module_decl_stmt:
                                context->consumeList(body));
       BUILDER->noteDeclNameLocation(mod.get(), LOC(parts.locName));
       BUILDER->noteDeclHeaderLocation(mod.get(), LOC(@1));
+      BUILDER->noteCurlyBracesLocation(mod.get(), LOC2(@2, @4));
       CommentsAndStmt cs = {parts.comments, mod.release()};
       $$ = cs;
     }
@@ -1095,7 +1100,8 @@ module_decl_stmt:
                                context->consumeList(body));
       BUILDER->noteDeclNameLocation(mod.get(), LOC(parts.locName));
       BUILDER->noteDeclHeaderLocation(mod.get(), LOC(@1));
-      CommentsAndStmt cs = {parts.comments, mod.release()};
+      BUILDER->noteCurlyBracesLocation(mod.get(), LOC2(@2, @4));
+      CommentsAndStmt cs = makeCommentsAndStmt(parts.comments, mod.release());
       $$ = cs;
     }
 ;
@@ -1117,7 +1123,7 @@ opt_prototype:
 include_module_stmt:
   TINCLUDE opt_access_control opt_prototype TMODULE ident_def TSEMI
   {
-    auto node = Include::build(BUILDER, LOC(@$), context->visibility, $3, $5);
+    auto node = Include::build(BUILDER, LOC(@$), context->visibility, $3, $5, LOC(@5));
     $$ = STMT(@$, node.release());
     context->visibility = Decl::DEFAULT_VISIBILITY;
   }
@@ -1168,6 +1174,10 @@ block_stmt:
     // Create the BlockStmt
     auto blockstmt = Block::build(BUILDER, LOC(@$), context->consumeList($1));
     cs.stmt = blockstmt.release();
+    if (context->hasCurlyBracesLoc()) {
+      cs.curlyLoc = context->curlyBracesLoc();
+      context->resetCurlyBracesLoc();
+    }
     $$ = cs;
   }
 ;
@@ -1352,7 +1362,7 @@ require_stmt:
   {
     auto comments = context->gatherComments(@1);
     auto node = Require::build(BUILDER, LOC(@$), context->consumeList($2));
-    $$ = { .comments=comments, .stmt=node.release() };
+    $$ = makeCommentsAndStmt(comments, node.release());
   }
 ;
 
@@ -1366,14 +1376,6 @@ assignment_stmt:
       $$ = STMT(@$, context->buildBinOp(@$, $1, $2, $3));
     }
 | lhs_expr TASSIGNREDUCE   opt_try_expr TSEMI
-    {
-      $$ = STMT(@$, context->buildBinOp(@$, $1, $2, $3));
-    }
-| lhs_expr TASSIGNLAND     opt_try_expr TSEMI
-    {
-      $$ = STMT(@$, context->buildBinOp(@$, $1, $2, $3));
-    }
-| lhs_expr TASSIGNLOR      opt_try_expr TSEMI
     {
       $$ = STMT(@$, context->buildBinOp(@$, $1, $2, $3));
     }
@@ -1475,14 +1477,14 @@ return_stmt:
   {
     auto comments = context->gatherComments(@1);
     auto node = Return::build(BUILDER, LOC(@$), /*value*/ nullptr);
-    CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+    CommentsAndStmt cs = makeCommentsAndStmt(comments, node.release());
     $$ = context->finishStmt(cs);
   }
 | TRETURN opt_try_expr TSEMI
   {
     auto comments = context->gatherComments(@1);
     auto node = Return::build(BUILDER, LOC(@$), toOwned($2));
-    CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+    CommentsAndStmt cs = makeCommentsAndStmt(comments, node.release());
     $$ = context->finishStmt(cs);
   }
 ;
@@ -1495,19 +1497,21 @@ class_level_stmt:
 | inner_class_level_stmt
     {
       // visibility should be default when inner_class_level_stmt is parsed
-      $$ = context->finishStmt($1);
+      $$ = context->finishStmt(@1, $1);
       context->visibility = Decl::DEFAULT_VISIBILITY;
     }
 | TPUBLIC {context->noteDeclStartLoc(@1);
            context->noteVisibility(Decl::PUBLIC);} inner_class_level_stmt
     {
       $$ = context->finishStmt($3);
+      context->adjustLocation($$, @1, @3);
       context->visibility = Decl::DEFAULT_VISIBILITY;
     }
 | TPRIVATE {context->noteDeclStartLoc(@1);
             context->noteVisibility(Decl::PRIVATE);} inner_class_level_stmt
     {
       $$ = context->finishStmt($3);
+      context->adjustLocation($$, @1, @3);
       context->visibility = Decl::DEFAULT_VISIBILITY;
     }
 ;
@@ -1584,6 +1588,7 @@ extern_export_decl_stmt:
   {
     auto headerLoc = context->makeSpannedLocation(@1, $3 ? @3 : @2);
     $$ = context->buildAggregateTypeDecl(@$, headerLoc, $2, @3, $3, @4, $5, @6);
+    BUILDER->noteCurlyBracesLocation($$.stmt, LOC2(@4, @6));
     context->exitScope($2.tag, $2.name);
   }
 | extern_export_decl_stmt_start STRINGLITERAL class_start opt_inherit
@@ -1593,6 +1598,7 @@ extern_export_decl_stmt:
     $3.linkageName = $2;
     auto headerLoc = context->makeSpannedLocation(@1, $4 ? @4 : @3);
     $$ = context->buildAggregateTypeDecl(@$, headerLoc, $3, @4, $4, @5, $6, @7);
+    BUILDER->noteCurlyBracesLocation($$.stmt, LOC2(@5, @7));
     context->exitScope($3.tag, $3.name);
   }
 | extern_export_decl_stmt_start opt_expr fn_decl_stmt
@@ -1619,7 +1625,7 @@ extern_export_decl_stmt:
   }
   var_decl_start var_decl_stmt_inner_ls TSEMI
   {
-    $$ = context->buildVarOrMultiDeclStmt(YLOC2(@1, @2), $4, $5);
+    $$ = context->buildVarOrMultiDeclStmt(YLOC2(@1, @5), $4, $5);
     context->resetDeclState();
   }
 | extern_export_decl_stmt_start opt_expr extern_export_kind_inner
@@ -1629,7 +1635,7 @@ extern_export_decl_stmt:
   }
   type_alias_decl_stmt_inner_ls TSEMI
   {
-    $$ = context->buildVarOrMultiDeclStmt(@1, $3, $5);
+    $$ = context->buildVarOrMultiDeclStmt(YLOC2(@1, @5), $3, $5);
     context->resetDeclState();
   }
 ;
@@ -1637,7 +1643,7 @@ extern_export_decl_stmt:
 extern_block_stmt:
   TEXTERN EXTERNCODE
   {
-    $$ = context->buildExternBlockStmt(@1, $2);
+    $$ = context->buildExternBlockStmt(@$, $2);
   }
 ;
 
@@ -1681,11 +1687,10 @@ loop_stmt_base:
                                std::move(body),
                                toOwned($4),
                                context->popLoopAttributeGroup());
-    if (context->hasCurlyBracesLoc()) {
-      BUILDER->noteCurlyBracesLocation(node.get(), LOC(context->curlyBracesLoc()));
-      context->resetCurlyBracesLoc();
+    if (context->isValidCurlyBracesLoc($2.curlyLoc)) {
+      BUILDER->noteCurlyBracesLocation(node.get(), LOC($2.curlyLoc));
     }
-    CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+    CommentsAndStmt cs = makeCommentsAndStmt(comments, node.release());
     $$ = context->finishStmt(cs);
   }
 | TWHILE expr do_stmt
@@ -1700,11 +1705,10 @@ loop_stmt_base:
                              std::move(body),
                              context->popLoopAttributeGroup());
     BUILDER->noteLoopHeaderLocation(node.get(), LOC2(@1, @2));
-    if (context->hasCurlyBracesLoc()) {
-      BUILDER->noteCurlyBracesLocation(node.get(), LOC(context->curlyBracesLoc()));
-      context->resetCurlyBracesLoc();
+    if (context->isValidCurlyBracesLoc($3.cs.curlyLoc)) {
+      BUILDER->noteCurlyBracesLocation(node.get(), LOC($3.cs.curlyLoc));
     }
-    CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+    CommentsAndStmt cs = makeCommentsAndStmt(comments, node.release());
     $$ = context->finishStmt(cs);
   }
 | TWHILE ifvar do_stmt
@@ -1719,11 +1723,10 @@ loop_stmt_base:
                              std::move(body),
                              context->popLoopAttributeGroup());
     BUILDER->noteLoopHeaderLocation(node.get(), LOC2(@1, @2));
-    if (context->hasCurlyBracesLoc()) {
-      BUILDER->noteCurlyBracesLocation(node.get(), LOC(context->curlyBracesLoc()));
-      context->resetCurlyBracesLoc();
+    if (context->isValidCurlyBracesLoc($3.cs.curlyLoc)) {
+      BUILDER->noteCurlyBracesLocation(node.get(), LOC($3.cs.curlyLoc));
     }
-    CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+    CommentsAndStmt cs = makeCommentsAndStmt(comments, node.release());
     $$ = context->finishStmt(cs);
   }
 | TFOR TPARAM ident_def TIN expr do_stmt
@@ -1743,11 +1746,10 @@ loop_stmt_base:
                            /*isParam*/ true,
                            context->popLoopAttributeGroup());
     BUILDER->noteLoopHeaderLocation(node.get(), LOC2(@1, @5));
-    if (context->hasCurlyBracesLoc()) {
-      BUILDER->noteCurlyBracesLocation(node.get(), LOC(context->curlyBracesLoc()));
-      context->resetCurlyBracesLoc();
+    if (context->isValidCurlyBracesLoc($6.cs.curlyLoc)) {
+      BUILDER->noteCurlyBracesLocation(node.get(), LOC($6.cs.curlyLoc));
     }
-    CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+    CommentsAndStmt cs = makeCommentsAndStmt(comments, node.release());
     context->resetAttributeGroupPartsState();
     $$ = context->finishStmt(cs);
   }
@@ -1902,7 +1904,7 @@ if_stmt:
 ifvar:
   TVAR   ident_def TASSIGN expr
   {
-    auto varDecl = Variable::build(BUILDER, LOC(@$),
+    auto varDecl = Variable::build(BUILDER, LOC(@$), LOC(@2),
                                    /*attributeGroup*/ nullptr,
                                    Decl::DEFAULT_VISIBILITY,
                                    Decl::DEFAULT_LINKAGE,
@@ -1913,12 +1915,11 @@ ifvar:
                                    context->currentScopeIsAggregate(),
                                    /*typeExpression*/ nullptr,
                                    toOwned($4));
-    BUILDER->noteDeclNameLocation(varDecl.get(), LOC(@2));
     $$ = varDecl.release();
   }
 | TCONST ident_def TASSIGN expr
   {
-    auto varDecl = Variable::build(BUILDER, LOC(@$),
+    auto varDecl = Variable::build(BUILDER, LOC(@$), LOC(@2),
                                    /*attributeGroup*/ nullptr,
                                    Decl::DEFAULT_VISIBILITY,
                                    Decl::DEFAULT_LINKAGE,
@@ -1929,7 +1930,6 @@ ifvar:
                                    context->currentScopeIsAggregate(),
                                    /*typeExpression*/ nullptr,
                                    toOwned($4));
-    BUILDER->noteDeclNameLocation(varDecl.get(), LOC(@2));
     $$ = varDecl.release();
   }
 ;
@@ -1946,12 +1946,14 @@ interface_stmt:
   {
     TypeDeclParts parts = $1;
     $$ = context->buildInterfaceStmt(@$, @1, parts, $3, @5, $5);
+    BUILDER->noteCurlyBracesLocation($$.stmt, LOC($5.curlyLoc));
     context->exitScope(asttags::Interface, parts.name);
   }
 | interface_start                       block_stmt
   {
     TypeDeclParts parts = $1;
     $$ = context->buildInterfaceStmt(@$, @1, parts, nullptr, @2, $2);
+    BUILDER->noteCurlyBracesLocation($$.stmt, LOC($2.curlyLoc));
     context->exitScope(asttags::Interface, parts.name);
   }
 ;
@@ -2061,22 +2063,23 @@ catch_expr_ls:
 catch_expr:
   TCATCH                          block_stmt
   {
-    $$ = context->buildCatch(@$, nullptr, $2, false);
+    $$ = context->buildCatch(@$, nullptr, $2, false, TextLocation::create());
   }
 | TCATCH     catch_expr_inner     block_stmt
   {
-    $$ = context->buildCatch(@$, $2, $3, false);
+    $$ = context->buildCatch(@$, $2, $3, false, TextLocation::create());
   }
 | TCATCH TLP catch_expr_inner TRP block_stmt
   {
-    $$ = context->buildCatch(@$, $3, $5, true);
+    $$ = context->buildCatch(@$, $3, $5, true, context->makeSpannedLocation(@2, @4));
   }
 ;
 
 catch_expr_inner:
   ident_def
   {
-    auto varDecl = Variable::build(BUILDER, LOC(@$), /*attributeGroup*/ nullptr,
+    auto varDecl = Variable::build(BUILDER, LOC(@$), LOC(@1),
+                         /*attributeGroup*/ nullptr,
                          Decl::DEFAULT_VISIBILITY,
                          Decl::DEFAULT_LINKAGE,
                          /*linkageName*/ nullptr,
@@ -2086,12 +2089,12 @@ catch_expr_inner:
                          /*isField*/ false,
                          /*typeExpression*/ nullptr,
                          /*initExpression*/ nullptr);
-    BUILDER->noteDeclNameLocation(varDecl.get(), LOC(@1));
     $$ = varDecl.release();
   }
 | ident_def TCOLON expr
   {
-    auto varDecl = Variable::build(BUILDER, LOC(@$), /*attributeGroup*/ nullptr,
+    auto varDecl = Variable::build(BUILDER, LOC(@$), LOC(@1),
+                         /*attributeGroup*/ nullptr,
                          Decl::DEFAULT_VISIBILITY,
                          Decl::DEFAULT_LINKAGE,
                          /*linkageName*/ nullptr,
@@ -2101,7 +2104,6 @@ catch_expr_inner:
                          /*isField*/ false,
                          /*typeExpression*/ toOwned($3),
                          /*initExpression*/ nullptr);
-    BUILDER->noteDeclNameLocation(varDecl.get(), LOC(@1));
     $$ = varDecl.release();
   }
 ;
@@ -2111,7 +2113,7 @@ throw_stmt:
   {
     auto comments = context->gatherComments(@1);
     auto node = Throw::build(BUILDER, LOC(@$), toOwned($2));
-    $$ = { .comments=comments, .stmt=node.release() };
+    $$ = makeCommentsAndStmt(comments, node.release());
   }
 
 select_stmt:
@@ -2124,7 +2126,7 @@ select_stmt:
   {
     auto comments = context->gatherComments(@$);
     auto node = ErroneousExpression::build(BUILDER, LOC(@4));
-    $$ = { .comments=comments, .stmt=node.release() };
+    $$ = makeCommentsAndStmt(comments, node.release());
     BUILDER->noteCurlyBracesLocation($$.stmt, LOC2(@3, @5));
   }
 ;
@@ -2188,6 +2190,7 @@ class_decl_stmt:
     {
       auto headerLoc = context->makeSpannedLocation(@1, $2 ? @2 : @1);
       $$ = context->buildAggregateTypeDecl(@$, headerLoc, $1, @2, $2, @3, $4, @5);
+      BUILDER->noteCurlyBracesLocation($$.stmt, LOC2(@3, @5));
       context->exitScope($1.tag, $1.name);
     }
 | class_start opt_inherit TLCBR error TRCBR
@@ -2196,6 +2199,7 @@ class_decl_stmt:
         context->makeList(ErroneousExpression::build(BUILDER, LOC(@4)));
       auto headerLoc = context->makeSpannedLocation(@1, $2 ? @2 : @1);
       $$ = context->buildAggregateTypeDecl(@$, headerLoc, $1, @2, $2, @3, contents, @5);
+      BUILDER->noteCurlyBracesLocation($$.stmt, LOC2(@3, @5));
       context->exitScope($1.tag, $1.name);
     }
   /* see also extern_export_decl_stmt */
@@ -2245,34 +2249,46 @@ class_level_stmt_ls:
 // TODO: Move to builder methods, allow empty enums?
 enum_decl_stmt:
   enum_header TLCBR enum_ls TRCBR
-    {
-      TypeDeclParts parts = $1;
-      ParserExprList* list = $3;
-      // get any comments after the last element but before the closing brace
-      context->appendList(list, context->gatherComments(@4));
+  {
+    TypeDeclParts parts = $1;
+    ParserExprList* list = $3;
+    // get any comments after the last element but before the closing brace
+    context->appendList(list, context->gatherComments(@4));
 
-      auto decl = Enum::build(BUILDER, LOC(@$), toOwned(parts.attributeGroup),
-                              parts.visibility,
-                              parts.name,
-                              context->consumeList(list));
-      BUILDER->noteDeclNameLocation(decl.get(), LOC(parts.locName));
-      BUILDER->noteDeclHeaderLocation(decl.get(), LOC(@1));
-      CommentsAndStmt cs = {parts.comments, decl.release()};
-      $$ = cs;
-      context->exitScope(asttags::Enum, parts.name);
-      context->resetDeclState();
-      context->clearComments();
-    }
+    auto decl = Enum::build(BUILDER, LOC(@$), toOwned(parts.attributeGroup),
+                            parts.visibility,
+                            parts.name,
+                            context->consumeList(list));
+    BUILDER->noteDeclNameLocation(decl.get(), LOC(parts.locName));
+    BUILDER->noteDeclHeaderLocation(decl.get(), LOC(@1));
+    BUILDER->noteCurlyBracesLocation(decl.get(), LOC2(@2, @4));
+    CommentsAndStmt cs = makeCommentsAndStmt(parts.comments, decl.release());
+    $$ = cs;
+    context->exitScope(asttags::Enum, parts.name);
+    context->resetDeclState();
+    context->clearComments();
+  }
 | enum_header TLCBR error TRCBR
-    {
-      TypeDeclParts parts = $1;
-      auto err = ErroneousExpression::build(BUILDER, LOC(@3));
-      CommentsAndStmt cs = {parts.comments, err.release()};
-      $$ = cs;
-      context->exitScope(asttags::Enum, parts.name);
-      context->resetDeclState();
-      context->clearComments();
-    }
+  {
+    TypeDeclParts parts = $1;
+    auto err = ErroneousExpression::build(BUILDER, LOC(@3));
+    CommentsAndStmt cs = makeCommentsAndStmt(parts.comments, err.release());
+    $$ = cs;
+    context->exitScope(asttags::Enum, parts.name);
+    context->resetDeclState();
+    context->clearComments();
+  }
+| enum_header TLCBR TRCBR
+  {
+    CHPL_PARSER_REPORT(context, EmptyEnum, @$);
+    TypeDeclParts parts = $1;
+    auto err = ErroneousExpression::build(BUILDER, LOC(@$));
+    CommentsAndStmt cs = makeCommentsAndStmt(parts.comments, err.release());
+    $$ = cs;
+    context->exitScope(asttags::Enum, parts.name);
+    context->resetDeclState();
+    context->clearComments();
+  }
 ;
 
 enum_header:
@@ -2341,51 +2357,6 @@ enum_item:
       BUILDER->noteDeclNameLocation(decl.get(), LOC(@1));
       $$ = STMT(@$, decl.release());
       context->clearCommentsBefore(@3);
-    }
-;
-
-lambda_decl_start:
-  TLAMBDA
-    {
-      FunctionParts fp = context->makeFunctionParts(false, false);
-      context->noteDeclStartLoc(@1);
-      auto loc = context->declStartLoc(@$);
-      fp.comments = context->gatherComments(loc);
-      fp.attributeGroup = context->buildAttributeGroup(@$).release();
-      fp.visibility = context->visibility;
-      context->resetAttributeGroupPartsState();
-      fp.kind = Function::PROC;
-      $$ = fp;
-    }
-;
-
-lambda_decl_expr:
-  lambda_decl_start req_formal_ls opt_ret_tag opt_type
-  opt_throws_error
-  opt_lifetime_where
-    {
-      context->clearComments();
-      context->resetDeclState();
-      context->enterScope(asttags::Function, STR("lambda"));
-    }
-  function_body_stmt
-    {
-      FunctionParts fp = $1;
-      fp.name = context->buildIdent(@1, STR("lambda"));
-      fp.formals = $2;
-      fp.returnIntent = $3;
-      fp.returnIntentLoc = @3;
-      fp.returnType = $4;
-      fp.throws = ($5 == ThrowsTag_THROWS);
-      WhereAndLifetime wl = $6;
-      fp.lifetime = wl.lifetime;
-      fp.where = wl.where;
-      fp.body = $8;
-
-      context->clearComments();
-      context->exitScope(asttags::Function, STR("lambda"));
-
-      $$ = context->buildLambda(@$, fp);
     }
 ;
 
@@ -2459,11 +2430,15 @@ fn_expr:
     context->resetDeclState();
     context->enterScope(asttags::Function, STR("proc"));
   }
-  block_stmt_body
+  function_body_stmt
   {
     FunctionParts fp = $1;
     fp.isBodyNonBlockExpression = false;
     fp.body = $3;
+    if (context->hasCurlyBracesLoc()) {
+      fp.curlyLoc = context->curlyBracesLoc();
+      context->resetCurlyBracesLoc();
+    }
     context->clearComments();
     context->exitScope(asttags::Function, STR("proc"));
     $$ = fp;
@@ -2508,14 +2483,18 @@ fn_decl_stmt:
     fp.throws = ($4 == ThrowsTag_THROWS);
     WhereAndLifetime wl = $5;
     fp.body = $7;
+    if (context->hasCurlyBracesLoc()) {
+      fp.curlyLoc = context->curlyBracesLoc();
+      context->resetCurlyBracesLoc();
+    }
     fp.lifetime = wl.lifetime;
     fp.where = wl.where;
     // conditionals are needed since bison has weird behavior when the rule is empty
-    fp.headerLoc = context->makeSpannedLocation(@1,
+    fp.headerLoc = context->makeSpannedLocation(fp.headerLoc,
       $4 != ThrowsTag_DEFAULT ? @4 :
         ($3 != nullptr ? @3 :
           ($2.isValid && (Function::ReturnIntent)$2.intent != Function::DEFAULT_RETURN_INTENT ? @2 : @1)));
-    context->exitScopeForFunctionDecl(fp);
+    context->exitScopeForFunctionDecl(@7, fp);
     $$ = fp;
   }
 ;
@@ -2528,6 +2507,10 @@ fn_decl_stmt_inner:
       fp.thisIntentLoc = @2;
       fp.name = context->buildIdent(@3, $3);
       fp.formals = $4;
+      // store location of the header to handle weird bison location issues
+      // with empty rules
+      fp.headerLoc =
+        context->makeSpannedLocation(@1, $4 != context->parenlessMarker ? @4 : @3);
       $$ = fp;
     }
 | fn_decl_stmt_start opt_this_intent_tag assignop_ident opt_formal_ls
@@ -2537,6 +2520,10 @@ fn_decl_stmt_inner:
       fp.thisIntentLoc = @2;
       fp.name = context->buildIdent(@3, $3);
       fp.formals = $4;
+      // store location of the header to handle weird bison location issues
+      // with empty rules
+      fp.headerLoc =
+        context->makeSpannedLocation(@1, $4 != context->parenlessMarker ? @4 : @3);
       $$ = fp;
     }
 | fn_decl_stmt_start opt_this_intent_tag fn_decl_receiver_expr TDOT fn_ident opt_formal_ls
@@ -2547,6 +2534,10 @@ fn_decl_stmt_inner:
       fp.receiver = context->buildThisFormal(@3, @2, $2, $3, /*initExpr*/ nullptr);
       fp.name = context->buildIdent(@5, $5);
       fp.formals = $6;
+      // store location of the header to handle weird bison location issues
+      // with empty rules
+      fp.headerLoc =
+        context->makeSpannedLocation(@1, $6 != context->parenlessMarker ? @6 : @5);
       $$ = fp;
     }
 | fn_decl_stmt_start opt_this_intent_tag fn_decl_receiver_expr TDOT assignop_ident opt_formal_ls
@@ -2557,12 +2548,20 @@ fn_decl_stmt_inner:
       fp.receiver = context->buildThisFormal(@3, @2, $2, $3, /*initExpr*/ nullptr);
       fp.name = context->buildIdent(@5, $5);
       fp.formals = $6;
+      // store location of the header to handle weird bison location issues
+      // with empty rules
+      fp.headerLoc =
+        context->makeSpannedLocation(@1, $6 != context->parenlessMarker ? @6 : @5);
       $$ = fp;
     }
 | fn_decl_stmt_start opt_this_intent_tag error opt_formal_ls
     {
       FunctionParts fp = $1;
       fp.errorExpr = ErroneousExpression::build(BUILDER, LOC(@$)).release();
+      // store location of the header to handle weird bison location issues
+      // with empty rules
+      fp.headerLoc =
+        context->makeSpannedLocation(@1, $4 != context->parenlessMarker ? @4 : @3);
       $$ = fp;
     }
 ;
@@ -2641,6 +2640,8 @@ assignop_ident:
 | TASSIGNBAND
 | TASSIGNBOR
 | TASSIGNBXOR
+| TASSIGNLAND
+| TASSIGNLOR
 | TASSIGNSR
 | TASSIGNSL
 ;
@@ -2657,13 +2658,8 @@ formal_var_arg_expr:
 ;
 
 opt_formal_ls:
-                     { $$ = context->parenlessMarker; }
+                     { $$ = context->parenlessMarker; CHPL_NULL_YYLLOC(@$); }
 | TLP formal_ls TRP  { $$ = $2; }
-;
-
-req_formal_ls:
-  TLP TRP                   { $$ = context->makeList(); }
-| TLP formal_ls_inner TRP   { $$ = $2; }
 ;
 
 formal_ls_inner:
@@ -2782,7 +2778,7 @@ opt_function_body_stmt:
 
 function_body_stmt:
   block_stmt_body   { $$ = $1; }
-| TDO toplevel_stmt { $$ = context->buildSingleStmtRoutineBody($2); }
+| TDO toplevel_stmt { $$ = context->buildSingleStmtRoutineBody(@2, $2); }
 ;
 
 query_expr:
@@ -2851,7 +2847,7 @@ type_alias_decl_stmt_start:
 | TCONFIG TTYPE
   {
     context->noteVarDeclKind(Variable::TYPE);
-    context->noteIsVarDeclConfig(true);
+    context->noteIsVarDeclConfig(true, @1);
     $$ = context->buildAttributeGroup(@$).release();
     context->resetAttributeGroupPartsState();
   }
@@ -2872,7 +2868,7 @@ type_alias_decl_stmt_inner:
   ident_def opt_init_type
   {
     // TODO (dlongnecke-cray): Add a helper to build this and var_decl_stmt.
-    auto node = Variable::build(BUILDER, LOC(@$),
+    auto node = Variable::build(BUILDER, LOC(@$), LOC(@1),
                                 /*attributeGroup*/ nullptr,
                                 context->visibility,
                                 context->linkage,
@@ -2883,7 +2879,6 @@ type_alias_decl_stmt_inner:
                                 context->currentScopeIsAggregate(),
                                 /*typeExpression*/ nullptr,
                                 toOwned($2));
-    BUILDER->noteDeclNameLocation(node.get(), LOC(@1));
     // Gather the comments like a statement does.
     $$ = STMT(@1, node.release());
     context->clearComments();
@@ -2916,10 +2911,11 @@ var_decl_stmt:
   TCONFIG
   {
     // Use a mid-rule action to thread along 'isVarDeclConfig'.
-    context->noteIsVarDeclConfig(true);
+    context->noteIsVarDeclConfig(true, @1);
   }
   var_decl_start var_decl_stmt_inner_ls TSEMI {
-    $$ = context->buildVarOrMultiDeclStmt(YLOC2(@1, @2), $3, $4);
+    CHPL_ASSERT(context->isVarDeclConfig);
+    $$ = context->buildVarOrMultiDeclStmt(YLOC2(@1, @4), $3, $4);
     context->resetDeclState();
   }
 | TON expr
@@ -2929,7 +2925,7 @@ var_decl_stmt:
   }
   var_decl_start var_decl_stmt_inner_ls TSEMI
   {
-    $$ = context->buildVarOrMultiDeclStmt(YLOC2(@1, @2), $4, $5);
+    $$ = context->buildVarOrMultiDeclStmt(YLOC2(@1, @5), $4, $5);
     context->resetDeclState();
   }
 | var_decl_start var_decl_stmt_inner_ls TSEMI
@@ -2939,7 +2935,7 @@ var_decl_stmt:
   }
 | var_decl_start error TSEMI
   {
-    $$ = { .comments=nullptr, .stmt=ErroneousExpression::build(BUILDER, LOC(@2)).release() };
+    $$ = makeCommentsAndStmt(nullptr, ErroneousExpression::build(BUILDER, LOC(@2)).release());
     delete $1;
     context->resetDeclStateOnError();
   }
@@ -2961,7 +2957,7 @@ var_decl_stmt_inner:
     {
       // delay building the attributes for a variable, then update it later
       // in the context during the call to buildVarOrMultiDeclStmt
-      auto varDecl = Variable::build(BUILDER, LOC(@$),
+      auto varDecl = Variable::build(BUILDER, LOC(@$), LOC(@1),
                                      /*attributGroup*/nullptr,
                                      context->visibility,
                                      context->linkage,
@@ -2971,7 +2967,6 @@ var_decl_stmt_inner:
                                      context->isVarDeclConfig,
                                      context->currentScopeIsAggregate(),
                                      toOwned($2), toOwned($3));
-      BUILDER->noteDeclNameLocation(varDecl.get(), LOC(@1));
       // gather the comments like a statement does
       $$ = STMT(@1, varDecl.release());
       context->clearComments();
@@ -3173,7 +3168,6 @@ sub_type_level_expr:
   { $$ = context->buildTypeConstructor(@$, $1, $2); }
 | TSYNC expr
   { $$ = context->buildTypeConstructor(@$, $1, $2); }
-
 | TOWNED
   { $$ = Identifier::build(BUILDER, LOC(@1), $1).release(); }
 | TOWNED expr
@@ -3193,6 +3187,8 @@ sub_type_level_expr:
 | TCLASS
   { $$ = Identifier::build(BUILDER, LOC(@1), $1).release(); }
 | TRECORD
+  { $$ = Identifier::build(BUILDER, LOC(@1), $1).release(); }
+| TUNION
   { $$ = Identifier::build(BUILDER, LOC(@1), $1).release(); }
 ;
 
@@ -3312,7 +3308,6 @@ stmt_level_expr:
 | ident_expr
 | dot_expr
 | call_expr
-| lambda_decl_expr
 | new_expr
 | let_expr
 ;
@@ -3561,7 +3556,6 @@ expr:
 /** -- 'type_level_expr' -- **/
 | reduce_expr
 | scan_expr
-| lambda_decl_expr
 | new_expr
 | let_expr
 | ifc_constraint
@@ -3599,7 +3593,6 @@ call_base_expr:
                                                              STR("postfix!"),
                                                              $1); }
 | sub_type_level_expr TQUESTION { $$ = context->buildUnaryOp(@$, $2, $1); }
-| lambda_decl_expr
 | str_bytes_literal
 ;
 

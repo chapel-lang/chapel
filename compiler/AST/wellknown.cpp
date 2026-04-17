@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -283,26 +283,13 @@ AggregateType* shouldWireWellKnownType(const char* name) {
     WellKnownAggregateTypeNeededEarly& wkt =
       sWellKnownAggregateTypesNeededEarly[i];
 
-    if (0 == strcmp(name, wkt.name)) {
+    if (0 == strcmp(name, wkt.name) ||
+        0 == strcmp(name, wkt.userFacingName)) {
       return *wkt.type_;
     }
   }
 
   return nullptr;
-}
-
-static void removeIfUndefinedGlobalType(AggregateType*& t) {
-  if (t->symbol == NULL || t->symbol->defPoint == NULL) {
-    // This means there was no declaration of this type
-    if (t->symbol)
-      gTypeSymbols.remove(gTypeSymbols.index(t->symbol));
-
-    gAggregateTypes.remove(gAggregateTypes.index(t));
-
-    delete t;
-
-    t = NULL;
-  }
 }
 
 static void multipleDefinedTypeError(Symbol* sym, const char* name) {
@@ -352,8 +339,6 @@ void gatherWellKnownTypes() {
   int nTypes = sizeof(sWellKnownTypes) / sizeof(sWellKnownTypes[0]);
   int nAggregate = sizeof(sWellKnownAggregateTypes) /
                    sizeof(sWellKnownAggregateTypes[0]);
-  int nEarlyAggregate = sizeof(sWellKnownAggregateTypesNeededEarly) /
-                        sizeof(sWellKnownAggregateTypesNeededEarly[0]);
 
   // Check type aliases (for e.g. extern type c_int = int(32) )
   forv_Vec(VarSymbol, var, gVarSymbols) {
@@ -390,43 +375,32 @@ void gatherWellKnownTypes() {
     }
   }
 
-  if (fMinimalModules == false) {
-    // Make sure all well-known types are defined.
-    for (int i = 0; i < nTypes; ++i) {
-      WellKnownType& wkt = sWellKnownTypes[i];
+  // Make sure all well-known types are defined.
+  for (int i = 0; i < nTypes; ++i) {
+    WellKnownType& wkt = sWellKnownTypes[i];
 
-      if (*wkt.type_ == NULL) {
+    if (*wkt.type_ == NULL) {
+      USR_FATAL_CONT("Type '%s' must be defined in the "
+                     "Chapel internal modules.",
+                     wkt.name);
+    }
+  }
+
+  for (int i = 0; i < nAggregate; ++i) {
+    WellKnownAggregateType& wkt = sWellKnownAggregateTypes[i];
+
+    if (*wkt.type_ == NULL) {
+      if (wkt.type_ == &dtCFI_cdesc_t && !fLibraryFortran) {
+        // This should only be defined when --library-fortran is used
+      } else {
         USR_FATAL_CONT("Type '%s' must be defined in the "
                        "Chapel internal modules.",
                        wkt.name);
       }
     }
-
-    for (int i = 0; i < nAggregate; ++i) {
-      WellKnownAggregateType& wkt = sWellKnownAggregateTypes[i];
-
-      if (*wkt.type_ == NULL) {
-        if (wkt.type_ == &dtCFI_cdesc_t && !fLibraryFortran) {
-          // This should only be defined when --library-fortran is used
-        } else {
-          USR_FATAL_CONT("Type '%s' must be defined in the "
-                         "Chapel internal modules.",
-                         wkt.name);
-        }
-      }
-    }
-
-    USR_STOP();
-
-  } else {
-    // remove types that were defined with a dummy value if
-    // we never encountered their defining record/class
-    for (int i = 0; i < nEarlyAggregate; i++) {
-      WellKnownAggregateTypeNeededEarly& wkt =
-        sWellKnownAggregateTypesNeededEarly[i];
-      removeIfUndefinedGlobalType(*wkt.type_);
-    }
   }
+
+  USR_STOP();
 }
 
 std::vector<Type*> getWellKnownTypes()
@@ -693,26 +667,24 @@ void gatherWellKnownFns() {
     }
   }
 
-  if (fMinimalModules == false) {
-    for (int i = 0; i < nEntries; ++i) {
-      WellKnownFn& wkfn        = sWellKnownFns[i];
-      FnSymbol*    lastMatched = wkfn.lastNameMatchedFn;
-      FnSymbol*    fn          = *wkfn.fn;
+  for (int i = 0; i < nEntries; ++i) {
+    WellKnownFn& wkfn        = sWellKnownFns[i];
+    FnSymbol*    lastMatched = wkfn.lastNameMatchedFn;
+    FnSymbol*    fn          = *wkfn.fn;
 
-      if (lastMatched == NULL) {
-        USR_FATAL_CONT("Function '%s' must be defined in the "
-                       "Chapel internal modules.",
-                       wkfn.name);
+    if (lastMatched == NULL) {
+      USR_FATAL_CONT("Function '%s' must be defined in the "
+                     "Chapel internal modules.",
+                     wkfn.name);
 
-      } else if (fn == NULL) {
-        USR_FATAL_CONT(fn,
-                       "The '%s' function is missing a required flag.",
-                       wkfn.name);
-      }
+    } else if (fn == NULL) {
+      USR_FATAL_CONT(fn,
+                     "The '%s' function is missing a required flag.",
+                     wkfn.name);
     }
-
-    USR_STOP();
   }
+
+  USR_STOP();
 }
 
 std::vector<FnSymbol*> getWellKnownFunctions()
@@ -739,4 +711,19 @@ void clearGenericWellKnownFunctions()
     if (*wkfn.fn != NULL && (*wkfn.fn)->isGeneric())
       *wkfn.fn = NULL;
   }
+}
+
+Type* chapelTypeForPrimitiveCTypeName(const std::string& name) {
+  // TODO: Automate this mapping, for instance, all the 'c_...' C types
+  //       could automatically have e.g., 'c_opaque_c_char' generated
+  //       for them. Then we have a reliable way to generate 'char' and
+  //       not 'int(8)'.
+  if (name == "char") {
+    return dt_c_char;
+
+  } else if (name == "int") {
+    return dt_c_int;
+  }
+
+  return nullptr;
 }

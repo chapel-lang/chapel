@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -336,6 +336,22 @@ static bool canRHSBeConstRef(CallExpr* parent, SymExpr* use) {
   return isSafeRefPrimitive(use);
 }
 
+static bool isPassedToRefFormalInIndirectCall(Expr* use, CallExpr* call) {
+  INT_ASSERT(use->parentExpr == call);
+
+  if (call->isIndirectCall()) {
+    auto ft = call->functionType();
+    INT_ASSERT(ft);
+
+    if (auto formal = ft->formalByOrdinal(use)) {
+      auto qt = formal->qualType();
+      return qt.isRefOrWideRef() && !qt.isConst();
+    }
+  }
+
+  return false;
+}
+
 //
 // Returns 'true' if 'sym' is (or should be) a const-ref.
 // If 'sym' can be a const-ref, but is not, this function will change either
@@ -345,7 +361,15 @@ static bool inferConstRef(Symbol* sym) {
   INT_ASSERT(sym->isRef());
   bool wasConstRef = sym->qualType().getQual() == QUAL_CONST_REF;
 
-  if (sym->defPoint->parentSymbol->hasFlag(FLAG_EXTERN)) {
+  auto parent = sym->defPoint->parentSymbol;
+  auto parentFn = toFnSymbol(parent);
+
+  if (parent->hasFlag(FLAG_EXTERN)) {
+    // Do not modify intents of symbols in extern. TODO: Why?
+    return wasConstRef;
+
+  } else if (isArgSymbol(sym) && parentFn && parentFn->isUsedAsValue()) {
+    // Do not modify intents of formals for functions used as values.
     return wasConstRef;
   }
 
@@ -379,6 +403,11 @@ static bool inferConstRef(Symbol* sym) {
     if (call->isResolved()) {
       ArgSymbol* form = actual_to_formal(use);
       if (form->isRef() && !inferConstRef(form)) {
+        isConstRef = false;
+      }
+    }
+    else if (call->isIndirectCall()) {
+      if (isPassedToRefFormalInIndirectCall(use, call)) {
         isConstRef = false;
       }
     }
@@ -563,6 +592,9 @@ static bool inferConst(Symbol* sym) {
         }
       }
     }
+    else if (isPassedToRefFormalInIndirectCall(use, call)) {
+      isConstVal = false;
+    }
     else if (parent && isMoveOrAssign(parent)) {
       if (call->isPrimitive(PRIM_ADDR_OF) ||
           call->isPrimitive(PRIM_SET_REFERENCE)) {
@@ -649,6 +681,15 @@ static bool inferRefToConst(Symbol* sym) {
         info->fnUses = se->symbolSymExprsNext;
 
         CallExpr* call = toCallExpr(se->parentExpr);
+
+        // Used as an indirect call, give up for now until such time as this
+        // becomes relevant for performance.
+        if (call->baseExpr != se) {
+          isRefToConst = false;
+          break;
+        }
+
+        if (call->isPrimitive(PRIM_CAST_TO_TYPE)) continue;
         INT_ASSERT(call && call->isResolved());
 
         Symbol* actual = toSymExpr(formal_to_actual(call, sym))->symbol();

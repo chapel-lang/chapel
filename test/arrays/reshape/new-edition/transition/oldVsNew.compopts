@@ -1,0 +1,2 @@
+--edition=2.0          # oldVsNew.good
+--edition=preview      # oldVsNew-new.good

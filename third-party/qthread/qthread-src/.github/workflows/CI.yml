@@ -14,7 +14,7 @@ jobs:
     continue-on-error: true
     strategy:
       matrix:
-        gcc_version: [9, 10, 11, 12, 13]
+        gcc_version: [9, 10, 11, 12, 13, 14]
         scheduler: [nemesis, sherwood, distrib]
         topology: [hwloc, binders, no]
     env:
@@ -31,23 +31,22 @@ jobs:
     - name: build qthreads
       run: |
         mkdir build
-        pushd build
+        cd build
         cmake -DCMAKE_BUILD_TYPE=Release -DQTHREADS_SCHEDULER=${{ matrix.scheduler }} -DQTHREADS_TOPOLOGY=${{ matrix.topology }} ..
         make -j2 VERBOSE=1
-        popd
     - name: run tests
       run: |
-        pushd build
+        cd build
         CTEST_OUTPUT_ON_FAILURE=1 timeout -k 10s --foreground 12m make test VERBOSE=1
-        popd
       timeout-minutes: 13
 
   linux-clang:
     runs-on: ubuntu-24.04
+    container: ubuntu:25.04
     continue-on-error: true
     strategy:
       matrix:
-        clang_version: [14, 15, 16, 17, 18]
+        clang_version: [14, 15, 17, 18, 19, 20] # skip 16, see below.
         scheduler: [nemesis, sherwood, distrib]
         topology: [hwloc, binders, no]
         include:
@@ -55,37 +54,45 @@ jobs:
             gcc_version: 11
           - clang_version: 15
             gcc_version: 12
-          - clang_version: 16
-            gcc_version: 13
+          #- clang_version: 16 # ubuntu 25.04 doesn't provide this package. We'd like to include it, but doing so has limited marginal benefit so don't bother for now.
+          #  gcc_version: 13
           - clang_version: 17
             gcc_version: 13
           - clang_version: 18
             gcc_version: 13
+          - clang_version: 19
+            gcc_version: 14
+          - clang_version: 20
+            gcc_version: 15
     env:
       CC: clang-${{ matrix.clang_version }}
       CXX: clang++-${{ matrix.clang_version }}
     steps:
     - uses: actions/checkout@v4
+    - name: container prerequisites
+      run: |
+        # some additional setup steps are only needed when running in a container.
+        # These end up being no-ops in the github actions images.
+        apt-get update
+        apt-get install -y sudo wget software-properties-common cmake
     - name: install gcc
-      run: sudo apt-get install gcc-${{ matrix.gcc_version }} g++-${{ matrix.gcc_version }}
+      run: sudo apt-get install -y gcc-${{ matrix.gcc_version }} g++-${{ matrix.gcc_version }}
     - name: install clang
-      run: sudo apt-get install clang-${{ matrix.clang_version }}
+      run: sudo apt-get install -y clang-${{ matrix.clang_version }}
     - if: ${{ matrix.topology != 'no' }}
       run: |
-        sudo apt-get install hwloc libhwloc-dev
+        sudo apt-get install -y hwloc libhwloc-dev
         hwloc-ls --version
     - name: build qthreads
       run: |
         mkdir build
-        pushd build
+        cd build
         cmake -DCMAKE_BUILD_TYPE=Release -DQTHREADS_SCHEDULER=${{ matrix.scheduler }} -DQTHREADS_TOPOLOGY=${{ matrix.topology }} ..
         make -j2 VERBOSE=1
-        popd
     - name: run tests
       run: |
-        pushd build
+        cd build
         CTEST_OUTPUT_ON_FAILURE=1 timeout -k 10s --foreground 12m make test VERBOSE=1
-        popd
       timeout-minutes: 13
 
   linux-icx:
@@ -111,23 +118,21 @@ jobs:
       run: |
         wget -O - https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB | sudo apt-key add - && break || sleep 1
         sudo apt-add-repository 'deb https://apt.repos.intel.com/oneapi all main' && break || sleep 1
-        sudo apt-get install intel-oneapi-compiler-dpcpp-cpp-2024.2
+        sudo apt-get install intel-oneapi-compiler-dpcpp-cpp-2025.3
         source /opt/intel/oneapi/setvars.sh
         icx -v
     - name: build qthreads
       run: |
         source /opt/intel/oneapi/setvars.sh
         mkdir build
-        pushd build
+        cd build
         cmake -DCMAKE_BUILD_TYPE=Release -DQTHREADS_SCHEDULER=${{ matrix.scheduler }} -DQTHREADS_TOPOLOGY=${{ matrix.topology }} ..
         make -j2 VERBOSE=1
-        popd
     - name: run tests
       run: |
-        pushd build
+        cd build
         source /opt/intel/oneapi/setvars.sh
         CTEST_OUTPUT_ON_FAILURE=1 timeout -k 10s --foreground 12m make test VERBOSE=1
-        popd
       timeout-minutes: 13
 
   linux-icc:
@@ -162,16 +167,14 @@ jobs:
       run: |
         source /opt/intel/oneapi/setvars.sh
         mkdir build
-        pushd build
+        cd build
         cmake -DCMAKE_BUILD_TYPE=Release -DQTHREADS_SCHEDULER=${{ matrix.scheduler }} -DQTHREADS_TOPOLOGY=${{ matrix.topology }} ..
         make -j2 VERBOSE=1
-        popd
     - name: run tests
       run: |
-        pushd build
+        cd build
         source /opt/intel/oneapi/setvars.sh
         CTEST_OUTPUT_ON_FAILURE=1 timeout -k 10s --foreground 12m make test VERBOSE=1
-        popd
       timeout-minutes: 13
 
   linux-aocc:
@@ -192,31 +195,29 @@ jobs:
         hwloc-ls --version
     - name: install gcc
       run: |
-        sudo apt-get install gcc-13 g++-13
+        sudo apt-get install gcc-14 g++-14
     - name: install aocc
       run: |
-        wget -nv -O aocc.deb https://download.amd.com/developer/eula/aocc/aocc-4-2/aocc-compiler-4.2.0_1_amd64.deb
+        wget -nv -O aocc.deb https://download.amd.com/developer/eula/aocc/aocc-5-1/aocc-compiler-5.1.0_1_amd64.deb
         sudo apt install -y ./aocc.deb
         clang -v
     - name: build qthreads
       run: |
         mkdir build
-        pushd build
+        cd build
         cmake -DCMAKE_BUILD_TYPE=Release -DQTHREADS_SCHEDULER=${{ matrix.scheduler }} -DQTHREADS_TOPOLOGY=${{ matrix.topology }} ..
         make -j2 VERBOSE=1
-        popd
     - name: run tests
       run: |
-        pushd build
+        cd build
         CTEST_OUTPUT_ON_FAILURE=1 timeout -k 10s --foreground 12m make test VERBOSE=1
-        popd
       timeout-minutes: 13
 
   mac:
     continue-on-error: true
     strategy:
       matrix:
-        image: [macos-15, macos-13] # Test on both ARM and X86
+        image: [macos-15, macos-15-intel] # Test on both ARM and X86 (through fall 2027)
         scheduler: [nemesis, sherwood, distrib]
         topology: [hwloc, binders, no]
         build_type: [Release, Debug]
@@ -241,22 +242,21 @@ jobs:
         export CXXFLAGS="-I$(brew --prefix)/include $CXXFLAGS"
         export LDFLAGS="-L$(brew --prefix)/lib $LDFLAGS"
         mkdir build
-        pushd build
+        cd build
         cmake -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DQTHREADS_SCHEDULER=${{ matrix.scheduler }} -DQTHREADS_TOPOLOGY=${{ matrix.topology }} ..
         make -j3 VERBOSE=1
-        popd
     - name: run tests
       run: |
         # commented example for how to get a backtrace from CI usign lldb on OSX:
         #echo "settings set target.process.stop-on-exec false" > ~/.lldbinit
         #QT_NUM_SHEPHERDS=2 QT_NUM_WORKERS_PER_SHEPHERD=1 lldb bash --batch --one-line 'process launch' --one-line-on-crash 'bt' --one-line-on-crash 'quit' -- test/basics/hello_world
-        pushd build
+        cd build
         CTEST_OUTPUT_ON_FAILURE=1 gtimeout -k 10s --foreground 12m make test VERBOSE=1
-        popd
       timeout-minutes: 13
 
   sanitizers:
     runs-on: ubuntu-24.04
+    container: ubuntu:25.04
     continue-on-error: true
     strategy:
       matrix:
@@ -278,8 +278,8 @@ jobs:
           - sanitizer: thread
             topology: binders
     env:
-      CC: clang-19
-      CXX: clang++-19
+      CC: clang-21
+      CXX: clang++-21
       CFLAGS: "-fsanitize=${{ matrix.sanitizer }} -fno-sanitize-recover=all"
       CXXFLAGS: ${{ matrix.use_libcxx && format('-stdlib=libc++ -fsanitize={0} -fno-sanitize-recover=all', matrix.sanitizer) || format('-fsanitize={0} -fno-sanitize-recover=all', matrix.sanitizer) }}
       LDFLAGS: "-fsanitize=${{ matrix.sanitizer }} -fno-sanitize-recover=all"
@@ -287,37 +287,42 @@ jobs:
       ASAN_OPTIONS: "check_initialization_order=1"
     steps:
     - uses: actions/checkout@v4
+    - name: container prerequisites
+      run: |
+        # some additional setup steps are only needed when running in a container.
+        # These end up being no-ops in the github actions images.
+        apt-get update
+        apt-get install -y sudo wget software-properties-common cmake
     - if:  ${{ ! matrix.use_libcxx }}
       run: |
-        sudo apt-get install gcc-14 g++-14
+        sudo apt-get install -y gcc-15 g++-15
     - name: install compiler
       run: |
-        wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add - && break || sleep 1
-        sudo apt-add-repository 'deb https://apt.llvm.org/jammy/ llvm-toolchain-jammy-19 main' && break || sleep 1
-        sudo apt-get install clang-19
+        wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
+        sudo apt-add-repository 'deb https://apt.llvm.org/plucky/ llvm-toolchain-plucky-21 main' && break || sleep 1
+        sudo apt-get install -y clang-21
     - if: ${{ matrix.use_libcxx }}
-      run: sudo apt-get install libc++-19-dev libc++abi-19-dev
+      run: sudo apt-get install -y libc++-21-dev libc++abi-21-dev
     - if: ${{ matrix.topology != 'no' }}
       run: |
-        sudo apt-get install hwloc libhwloc-dev
+        sudo apt-get install -y hwloc libhwloc-dev
         hwloc-ls --version
     - name: build qthreads
       run: |
         mkdir build
-        pushd build
+        cd build
         cmake -DCMAKE_BUILD_TYPE=Release -DQTHREADS_SCHEDULER=${{ matrix.scheduler }} -DQTHREADS_TOPOLOGY=${{ matrix.topology }} ..
         make -j2 VERBOSE=1
-        popd
     - name: run tests
       run: |
-        pushd build
-        if [[ "${{ matrix.sanitizer }}" == "thread" ]]; then cd test/basics; fi
+        cd build
+        if [ "${{ matrix.sanitizer }}" = "thread" ]; then cd test/basics; fi
         CTEST_OUTPUT_ON_FAILURE=1 timeout -k 10s --foreground 18m make test VERBOSE=1
-        popd
       timeout-minutes: 19
 
   linux-thorough:
     runs-on: ubuntu-24.04
+    container: ubuntu:25.04
     continue-on-error: true
     strategy:
       matrix:
@@ -330,51 +335,55 @@ jobs:
           - compiler: gcc
             use_libcxx: true
     env:
-      CC: ${{ matrix.compiler == 'gcc' && 'gcc-14' || 'clang-19' }}
-      CXX: ${{ matrix.compiler == 'gcc' && 'g++-14' || 'clang++-19' }}
+      CC: ${{ matrix.compiler == 'gcc' && 'gcc-15' || 'clang-21' }}
+      CXX: ${{ matrix.compiler == 'gcc' && 'g++-15' || 'clang++-21' }}
       CXXFLAGS: ${{ matrix.use_libcxx && '-stdlib=libc++' || '' }}
       QTHREADS_ENABLE_ASSERTS: ${{ matrix.use_asserts && '--enable-asserts' || '' }}
     steps:
     - uses: actions/checkout@v4
+    - name: container prerequisites
+      run: |
+        # some additional setup steps are only needed when running in a container.
+        # These end up being no-ops in the github actions images.
+        apt-get update
+        apt-get install -y sudo wget software-properties-common cmake
     - run: |
-        sudo apt-get install gcc-14 g++-14
+        sudo apt-get install -y gcc-15 g++-15
     - if: ${{ matrix.compiler == 'clang' }}
       run: |
-        wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add - && break || sleep 1
-        sudo apt-add-repository 'deb https://apt.llvm.org/jammy/ llvm-toolchain-jammy-19 main' && break || sleep 1
-        sudo apt-get install clang-19
+        wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
+        sudo apt-add-repository 'deb https://apt.llvm.org/plucky/ llvm-toolchain-plucky-21 main' && break || sleep 1
+        sudo apt-get install -y clang-21
     - if: ${{ matrix.use_libcxx }}
-      run: sudo apt-get install libc++-19-dev libc++abi-19-dev
+      run: sudo apt-get install -y libc++-21-dev libc++abi-21-dev
     - if: ${{ matrix.topology != 'no' }}
       run: |
-        sudo apt-get install hwloc libhwloc-dev
+        sudo apt-get install -y hwloc libhwloc-dev
         hwloc-ls --version
     - name: build qthreads
       run: |
         mkdir build
-        pushd build
+        cd build
         cmake -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DQTHREADS_SCHEDULER=${{ matrix.scheduler }} -DQTHREADS_TOPOLOGY=${{ matrix.topology }} ..
         make -j2 VERBOSE=1
-        popd
     - name: run tests
       run: |
-        pushd build
+        cd build
         CTEST_OUTPUT_ON_FAILURE=1 timeout -k 10s --foreground 18m make test VERBOSE=1
-        popd
       timeout-minutes: 19
 
   clang-format:
     runs-on: ubuntu-24.04
     continue-on-error: true
     env:
-      CC: 'clang-19'
-      CXX: 'clang++-19'
+      CC: 'clang-21'
+      CXX: 'clang++-21'
     steps:
     - uses: actions/checkout@v4
     - run: |
         wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add - && break || sleep 1
-        sudo apt-add-repository 'deb https://apt.llvm.org/jammy/ llvm-toolchain-jammy-19 main' && break || sleep 1
-        sudo apt-get install clang-format-19
+        sudo apt-add-repository 'deb https://apt.llvm.org/noble/ llvm-toolchain-noble-21 main' && break || sleep 1
+        sudo apt-get install clang-format-21
     - name: check formatting
       run: |
         clang-format --version

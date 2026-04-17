@@ -14,6 +14,9 @@ if [ "$clang_version" != "14.0.0" ]; then
   exit 2
 fi
 
+export CHPL_LAUNCHER=none
+
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="linux64-llvm14"
+export CHPL_NIGHTLY_TEST_DIRS="llvm/"
 
 $UTIL_CRON_DIR/nightly -cron -examples -blog ${nightly_args}

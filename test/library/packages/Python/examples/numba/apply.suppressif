@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+# respect CHPL_TEST_VENV_DIR if it is set and not none
+if [ -n "$CHPL_TEST_VENV_DIR" ] && [ "$CHPL_TEST_VENV_DIR" != "none" ]; then
+  chpl_python=$CHPL_TEST_VENV_DIR/bin/python3
+else
+  chpl_python=$($CHPL_HOME/util/config/find-python.sh)
+fi
+
+# numba doesn't support python 3.14 yet
+if $chpl_python -c 'import sys; sys.exit(int(sys.version_info[:2] != (3, 14)))' ; then
+  echo "True"
+else
+  echo "False"
+fi

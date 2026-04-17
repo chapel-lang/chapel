@@ -152,7 +152,7 @@ Other tips
   (gdb) break checkNormalized
     stop right after the normalization pass
 
-  gdbShouldBreakHere()
+  debuggerBreakHere()
     compiler/etc/gdb.commands sets a breakpoint on this function
 
 

@@ -1,203 +1,99 @@
+.. index::
+    single: debug
+    single: debugging
+    single: debugging; gdb
+    single: debugging; lldb
 .. _readme-debugging:
 
 =========================
 Debugging Chapel Programs
 =========================
 
-This document discusses support for debugging your Chapel program and a set of
-experimental settings to enable task monitoring and memory tracking.
+Chapel compiler-generated executables have a flag to launch the program
+in a debug session. ``--gdb`` launches the program in a ``gdb`` session, while
+``--lldb`` launches it in an ``lldb`` session. For best results, you
+should read :ref:`this section <readme-debugging-bkc>` to build Chapel and
+build your application.
 
-.. contents::
+You can also just run the program with ``gdb`` or ``lldb`` directly. This
+may be useful, for example if you want to use a graphical debugger like VSCode.
+``--gdb`` and ``--lldb`` are just convenience flags that do the following:
 
--------------------
-Running in gdb/lldb
--------------------
+* Source the command files to setup the debugger for Chapel
 
-The compiler-generated executable has a ``--gdb`` flag that can be used to
-launch the program within a ``gdb`` session.  A similar flag, ``--lldb``,
-exists to launch the program within a ``lldb`` session. For best results, you
-should follow `Best Known Configuration`_ to build Chapel and build your
-application.
+  * For GDB: ``source $CHPL_HOME/runtime/etc/debug/gdb.commands``
 
-Running in gdb/lldb with a launcher
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  * For LLDB: ``command source $CHPL_HOME/runtime/etc/debug/lldb.commands``
 
-When using almost any launcher, you can launch ``gdb`` by setting the
-environment variable ``CHPL_COMM_USE_GDB`` when running the program.
-This will open up a separate terminal emulator window for each locale,
-each running the debugger on that locale's program instance.  On the Mac
-OS X (darwin) platform, you can launch ``lldb`` instead, by setting the
-``CHPL_COMM_USE_LLDB`` environment variable.  This works in all of these
-launchers::
+* LLDB only: Enable the Chapel pretty-printer for LLDB, i.e.
+  ``command script import $CHPL_HOME/runtime/etc/debug/chpl_lldb_pretty_print.py``
 
-  amudprun
-  aprun
-  gasnetrun_ibv
-  gasnetrun_mpi
-  gasnetrun_ofi
-  mpirun4ofi
-  pbs-aprun
-  smp
+* If specified, execute additional debugger commands from a file whose path is
+  set in ``CHPL_RT_DEBUGGER_CMD_FILE``
 
-The default terminal emulator program is ``xterm``,
-but by setting the environment variable ``CHPL_COMM_DBG_TERM=urxvt``
-you can force use of ``urxvt`` instead.
-Whichever terminal emulator is used must be in your ``PATH``
-on the compute node or an error will result.
-Note that it is the user's responsibility to make sure things are set up
-so the terminal emulator run in the target environment can open its
-display window in the launch environment.
+If you are not using ``--gdb`` or ``--lldb``, make sure to replicate the
+above steps in your debugger of choice for the best experience.
+
+.. note::
+
+   GDB/LLDB will not know about ``$CHPL_HOME``, you will need to expand that
+   variable to the actual path.
+
+The following sections provide more information on debugging Chapel programs:
+
+.. toctree::
+   :maxdepth: 1
+   :glob:
+
+   debugging/bkc
+   debugging/launchers
+   debugging/multilocale
+   debugging/memory
+   debugging/tasks
+   debugging/sanitizers
+
+Useful Debug Features
+---------------------
+
+Pretty Printing (LLDB only)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The Chapel pretty-printer for LLDB is automatically loaded when using the
+``--lldb`` flag. If you are using LLDB without this flag, you can load the
+pretty-printer manually by running the following command in LLDB:
+
+.. code-block:: bash
+
+    command script import $CHPL_HOME/runtime/etc/debug/chpl_lldb_pretty_print.py
+
+This pretty-printer understands a number of builtin Chapel types. This
+overrides the default printing for many types when using ``p`` (``print``) or
+``v`` (``frame variable``). To circumvent this, you can use ``v -R`` (``frame
+variable -R``) to print the raw value of a variable without the pretty-printer.
+
+Using a Graphical Debugger
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The Chapel VSCode extension provides a graphical debugging experience with
+either ``gdb`` or ``lldb``. See :ref:`vscode-debugging` for more information.
 
 The `Debugger.breakpoint` statement
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The :any:`Debugger` module provides a parenless function called `breakpoint`.
-When the code is compiled and run with debug symbols, i.e. ``-g``, the attached
-debugger will automatically stop at calls to this function as a breakpoint.
-Code that contains `breakpoint` that is compiled without ``-g`` will work as
-normal with no side effects. Saving the generated code to as temporary
-directory with ``--savec DIRECTORY`` will also allow the debugger to read and
-display Chapel source code. This works well with either the LLVM or C backends.
+The :chpl:mod:`Debugger` module provides a parenless function called
+:chpl:proc:`~Debugger.breakpoint`. This will cause an attached debugger to
+automatically stop at calls to this function as a breakpoint.
 
 .. note::
-   Executables will not run as expected if `breakpoint` is used in code compiled with ``-g`` and not run attached to a debugger.
 
-------------------------
-Best Known Configuration
-------------------------
+   This requires ``b debuggerBreakHere`` to be set in the debugger, which is
+   done automatically by the ``--gdb`` and ``--lldb`` flags. If you need a true
+   debug trap, see the :chpl:proc:`~Debugger.debugTrap` function.
 
-The current best practice for debugging Chapel source code is to use the C
-backend and use a series of flags to improve the debuggability of the generated
-executable. This can be done in two steps.
 
-1) Build the compiler with ``CHPL_TARGET_COMPILER`` set to ``gnu``
-   (or ``clang`` if on Mac):
+----
 
-   .. code-block:: bash
-
-        CHPL_TARGET_COMPILER=gnu make
-        # On MacOS
-        # CHPL_TARGET_COMPILER=clang make
-
-2) Build the executable from Chapel source code:
-
-   .. code-block:: bash
-
-        chpl -g --target-compiler=gnu --savec <dir> --preserve-inlined-line-numbers --no-munge-user-idents --no-return-by-ref --no-inline <source_file>
-        # On MacOS
-        # chpl -g --target-compiler=clang --savec <dir> --preserve-inlined-line-numbers --no-munge-user-idents --no-return-by-ref --no-inline <source_file>
-
-For more details on these settings, read the rest of this section.
-
-Building the Compiler
-~~~~~~~~~~~~~~~~~~~~~
-
-For best results while debugging, we recommend building the compiler with
-``CHPL_TARGET_COMPILER`` set to ``gnu`` (or ``clang`` if on Mac). See
-:ref:`readme-chplenv` for more information on building the compiler.
-
-With two invocations of the build command, both backends can be built. First
-execute ``make`` (which uses the LLVM backend by default) and then execute
-``CHPL_TARGET_COMPILER=gnu make``. This will keep the default as LLVM and allow
-switching to the C backend as needed for debugging. This can be done for a
-particular invocation of the compiler with ``chpl --target-compiler=gnu ...``.
-
-Building the Application
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-The following flags can be useful for making the generated C more amenable to
-debugging. Any of them can be omitted as desired.
-
-  ===================================  =========================================
-  Flag                                 Description
-  ===================================  =========================================
-  ``-g``                               Generate debug symbols in the executable
-  ``--target-compiler=gnu``            Target the C backend
-  ``--savec <dir>``                    Write out the generated C to a given
-                                       directory
-  ``--preserve-inlined-line-numbers``  When code gets inlined (e.g. replacing a
-                                       function call with the function body)
-                                       maintain the filename and line number
-                                       information of the original function.
-  ``--no-munge-user-idents``           Don't munge user identifiers (e.g.
-                                       variable or function names). Munging
-                                       typically prevents conflicts with
-                                       identifiers in external code but makes
-                                       debugging harder.
-  ``--no-return-by-ref``               Don't use an extra reference argument
-                                       when compiling a Chapel function that
-                                       returns a record.
-  ``--no-inline``                      Avoid inlining in many cases.
-  ===================================  =========================================
-
-Notes on munging
-''''''''''''''''
-
-The utility of using a debugger with Chapel depends greatly on your familiarity
-with the Chapel generated code.  However, if your program is crashing or running
-into a runtime error, you can often determine where that is taking place by
-looking at a stack trace within ``gdb``.
-
-When debugging Chapel, it is useful to know that in generating its code,
-the Chapel compiler renames user identifiers.  By default, the Chapel
-compiler munges all user identifiers, such that a variable named ``x``
-would be code generated as ``x_chpl``.  This munging can be controlled
-using the ``--[no-]munge-user-idents`` flag (see the ``chpl`` man page
-for more information).  In some cases, additional munging may be
-required or applied that cannot be turned off.
-
-The net effect of this is that Chapel variables can often be inspected
-using ``p`` *name*\ ``_chpl`` (or ``p`` *name*\ ``_chpl<TAB>`` in cases
-where the compiler has further renamed the variable).  If the
-``--no-munge-user-idents`` flag is used, ``p`` *name* or
-``p`` *name*\ ``<TAB>`` should work in most cases.
-
-See :ref:`more-munging-info` for more information on munging.
-
-Over time, we plan to improve our ability to debug the generated C
-code for a Chapel program.  If you find yourself debugging the
-generated code a lot and need help or have requests for better
-support, please let us know so that we can prioritize accordingly.
-
--------------------------------
-Tracking and Reporting on Tasks
--------------------------------
-
-For certain tasking layers, Chapel supports an experimental
-capability for tracking the status of tasks, primarily designed for
-use in a single-locale execution.  To enable this capability, your
-program must be compiled with the ``--task-tracking`` flag.
-
-The feature itself is enabled at execution time by setting the boolean
-environment variable ``CHPL_RT_ENABLE_TASK_REPORTING`` to any of the
-values "1", "yes", or "true".  If this is done, then when ``<CTRL-C>``
-is entered while a program is executing, a list of pending and executing
-tasks will be printed to the console, giving an indication of which
-tasks are at which source locations.  This is only supported with
-``CHPL_TASKS=fifo``.
-
-Note that task tracking adds a fair amount of runtime overhead to
-task-parallel programs.
-
--------------------------------------------
-Configuration Constants for Tracking Memory
--------------------------------------------
-
-Chapel supports a number of configuration constants related to dynamic
-memory allocation for the compiler-generated executable, currently
-designed for use primarily by the development team to track memory
-usage in tests.
-
-For full information on these configuration constants consult
-:chpl:mod:`MemDiagnostics`.
-
-A brief synopsis of these configuration constants is as follows:
-
-  --memTrack            turn on memory tracking and enable reporting
-  --memStats            call ``printMemAllocStats()`` on normal termination
-  --memLeaksByType      call ``printMemAllocsByType()`` on normal termination
-  --memLeaks            call ``printMemAllocs()`` on normal termination
-  --memMax=int          set maximum level of allocatable memory
-  --memThreshold=int    set minimum threshold for memory tracking
-  --memLog=string       file to contain all memory reporting
-  --memLeaksLog=string  if set, append final stats and leaks-by-type here
+We continue to improve our debugging support for Chapel programs. If you
+find cases where the debugging experience could be improved,
+`please let us <https://github.com/chapel-lang/chapel/issues/new/choose>`_
+know so that we can prioritize accordingly.

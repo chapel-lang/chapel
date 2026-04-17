@@ -29,10 +29,23 @@ Initializing Modules:
             Types
            Regex
             RegexIoSupport
+          MemMove
          Sort
           List
+          RadixSortHelp
+          Partitioning
+           PartitioningUtility
+            CopyAggregation
+             AggregationPrimitives
+            RangeChunk
+            Time
+             ChapelHashtable
+            ChapelUtil
+            CompressedSparseLayout
+           Random
+            PCGRandomLib
+           Collectives
           MSBRadixSort
-           RadixSortHelp
            ShellSort
             ShallowCopy
           TwoArrayRadixSort
@@ -41,22 +54,17 @@ Initializing Modules:
            InsertionSort
           TimSort
         ChapelDistribution
-         ChapelHashtable
         ExternalArray
-        RangeChunk
-        Search
-         HideDeprecatedReexport
+        ChapelHashing
       LocaleModelHelpRuntime
      LocaleModelHelpMem
     LocalesArray
     ChapelTaskTable
     MemTracking
-    ChapelUtil
     ExportWrappers
-    ChapelContext
     ChapelStaticVars
+    ChapelDynamicLoading
+    ChapelProgramEntrypoints
     AlignedTSupport
-    CopyAggregation
-     AggregationPrimitives
    printModuleInitOrder
     moduleInitTest

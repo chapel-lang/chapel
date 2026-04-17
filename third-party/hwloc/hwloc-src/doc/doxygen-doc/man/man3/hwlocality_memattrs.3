@@ -1,4 +1,4 @@
-.TH "hwlocality_memattrs" 3 "Version 2.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_memattrs" 3 "Version 2.12.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -30,7 +30,7 @@ hwlocality_memattrs \- Comparing memory node attributes for finding where to all
 .RI "enum \fBhwloc_location_type_e\fP { \fBHWLOC_LOCATION_TYPE_CPUSET\fP, \fBHWLOC_LOCATION_TYPE_OBJECT\fP }"
 .br
 .ti -1c
-.RI "enum \fBhwloc_local_numanode_flag_e\fP { \fBHWLOC_LOCAL_NUMANODE_FLAG_LARGER_LOCALITY\fP, \fBHWLOC_LOCAL_NUMANODE_FLAG_SMALLER_LOCALITY\fP, \fBHWLOC_LOCAL_NUMANODE_FLAG_ALL\fP }"
+.RI "enum \fBhwloc_local_numanode_flag_e\fP { \fBHWLOC_LOCAL_NUMANODE_FLAG_LARGER_LOCALITY\fP, \fBHWLOC_LOCAL_NUMANODE_FLAG_SMALLER_LOCALITY\fP, \fBHWLOC_LOCAL_NUMANODE_FLAG_INTERSECT_LOCALITY\fP, \fBHWLOC_LOCAL_NUMANODE_FLAG_ALL\fP }"
 .br
 .in -1c
 .SS "Functions"
@@ -41,6 +41,9 @@ hwlocality_memattrs \- Comparing memory node attributes for finding where to all
 .br
 .ti -1c
 .RI "int \fBhwloc_get_local_numanode_objs\fP (\fBhwloc_topology_t\fP topology, struct \fBhwloc_location\fP *location, unsigned *nr, \fBhwloc_obj_t\fP *nodes, unsigned long flags)"
+.br
+.ti -1c
+.RI "int \fBhwloc_topology_get_default_nodeset\fP (\fBhwloc_topology_t\fP topology, \fBhwloc_nodeset_t\fP nodeset, unsigned long flags)"
 .br
 .ti -1c
 .RI "int \fBhwloc_memattr_get_value\fP (\fBhwloc_topology_t\fP topology, \fBhwloc_memattr_id_t\fP attribute, \fBhwloc_obj_t\fP target_node, struct \fBhwloc_location\fP *initiator, unsigned long flags, hwloc_uint64_t *value)"
@@ -71,6 +74,8 @@ One way to use this API is to start with a cpuset describing the Cores where a p
 A more flexible approach consists in getting the list of local NUMA nodes by passing this cpuset to \fBhwloc_get_local_numanode_objs()\fP\&. Attribute values for these nodes, if any, may then be obtained with \fBhwloc_memattr_get_value()\fP and manually compared with the desired criteria\&.
 .PP
 Memory attributes are also used internally to build Memory Tiers which provide an easy way to distinguish NUMA nodes of different kinds, as explained in \fBHeterogeneous Memory\fP\&.
+.PP
+Beside tiers, hwloc defines a set of 'default' nodes where normal memory allocations should be made from (see \fBhwloc_topology_get_default_nodeset()\fP)\&. This is also useful for dividing the machine into a set of non-overlapping NUMA domains, for instance for binding tasks per domain\&.
 .PP
 \fBSee also\fP
 .RS 4
@@ -106,6 +111,9 @@ Select NUMA nodes whose locality is larger than the given cpuset\&. For instance
 .TP
 \fB\fIHWLOC_LOCAL_NUMANODE_FLAG_SMALLER_LOCALITY \fP\fP
 Select NUMA nodes whose locality is smaller than the given cpuset\&. For instance, if a package (or its cpuset) is given in \fCinitiator\fP, also select nodes that are attached to only a half of that package\&. 
+.TP
+\fB\fIHWLOC_LOCAL_NUMANODE_FLAG_INTERSECT_LOCALITY \fP\fP
+Select NUMA nodes whose locality intersects the given cpuset\&. This includes larger and smaller localities as well as localities that are partially included\&. For instance, if the locality is one core of both packages, a NUMA node local to one package is neither larger nor smaller than this locality, but it intersects it\&. 
 .TP
 \fB\fIHWLOC_LOCAL_NUMANODE_FLAG_ALL \fP\fP
 Select all NUMA nodes in the topology\&. The initiator \fCinitiator\fP is ignored\&. 
@@ -339,6 +347,42 @@ Return an attribute value for a specific target NUMA node\&. If the attribute do
 \fBNote\fP
 .RS 4
 The initiator \fCinitiator\fP should be of type \fBHWLOC_LOCATION_TYPE_CPUSET\fP when refering to accesses performed by CPU cores\&. \fBHWLOC_LOCATION_TYPE_OBJECT\fP is currently unused internally by hwloc, but users may for instance use it to provide custom information about host memory accesses performed by GPUs\&. 
+.RE
+.PP
+
+.SS "int hwloc_topology_get_default_nodeset (\fBhwloc_topology_t\fP topology, \fBhwloc_nodeset_t\fP nodeset, unsigned long flags)"
+
+.PP
+Return the set of default NUMA nodes\&. In machines with heterogeneous memory, some NUMA nodes are considered the default ones, i\&.e\&. where basic allocations should be made from\&. These are usually DRAM nodes\&.
+.PP
+Other nodes may be reserved for specific use (I/O device memory, e\&.g\&. GPU memory), small but high performance (HBM), large but slow memory (NVM), etc\&. Buffers should usually not be allocated from there unless explicitly required\&.
+.PP
+This function fills \fCnodeset\fP with the bits of NUMA nodes considered default\&.
+.PP
+It is guaranteed that these nodes have non-intersecting CPU sets, i\&.e\&. cores may not have multiple local NUMA nodes anymore\&. Hence this may be used to iterate over the platform divided into separate NUMA localities, for instance for binding one task per NUMA domain\&.
+.PP
+Any core that had some local NUMA node(s) in the initial topology should still have one in the default nodeset\&. Corner cases where this would be wrong consist in asymmetric platforms with missing DRAM nodes, or topologies that were already restricted to less NUMA nodes\&.
+.PP
+The returned nodeset may be passed to \fBhwloc_topology_restrict()\fP with \fBHWLOC_RESTRICT_FLAG_BYNODESET\fP to remove all non-default nodes from the topology\&. The resulting topology will be easier to use when iterating over (now homogeneous) NUMA nodes\&.
+.PP
+The heuristics for finding default nodes relies on memory tiers and subtypes (see \fBHeterogeneous Memory\fP) as well as the assumption that hardware vendors list default nodes first in hardware tables\&.
+.PP
+\fCflags\fP must be \fC0\fP for now\&.
+.PP
+\fBReturns\fP
+.RS 4
+0 on success\&. 
+.PP
+-1 on error\&.
+.RE
+.PP
+\fBNote\fP
+.RS 4
+The returned nodeset usually contains all nodes from a single memory tier, likely the DRAM one\&.
+.PP
+The returned nodeset is included in the list of available nodes returned by \fBhwloc_topology_get_topology_nodeset()\fP\&. It is strictly smaller if the machine has heterogeneous memory\&.
+.PP
+The heuristics may return a suboptimal set of nodes if hwloc could not guess memory types and/or if some default nodes were removed earlier from the topology (e\&.g\&. with \fBhwloc_topology_restrict()\fP)\&. 
 .RE
 .PP
 

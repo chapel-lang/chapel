@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+file=$2
+
+# clean addresses
+sed -E -e 's/0x[0-9a-fA-F]+/0xXXXX/g' $file > $file.tmp
+mv $file.tmp $file

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -886,6 +886,54 @@ static void testWhereClauseOnSizeQuery() {
 //
 
 
+// normally, generic varargs like `R(?)...` allow mixing instantiations,
+// like passing `R(int)` and `R(real)` in the same call. However, if there's
+// a type query on the record's type field, then we can't mix types, since
+// that would lead to ambiguity about what the type query should resolve to.
+static void testTypeQueryEnforced() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+  auto program = std::string(
+    R"""(
+    record R {
+      type x;
+      param b;
+    }
+    proc fooR(x: R(?t)...?k) do return x.type : string;
+    proc fooRange(x: range(?t)...?k) do return x.type : string;
+    proc fooAny(x: ?t...) do return x.type : string;
+
+
+    var rInt: R(int, true);
+    var rReal: R(real, false);
+
+    var x1 = fooR(rInt, rInt);
+    var x2 = fooR(rInt, rReal);
+    var x3 = fooRange(1..10, 1..10);
+    var x4 = fooRange(1..10, 1..10 by 2);
+    var x5 = fooAny(1, 2);
+    var x6 = fooAny(1.0, 1);
+    )""");
+
+  auto qts = resolveTypesOfVariables(context, program,
+                                    {"x1","x2","x3","x4","x5","x6"});
+
+  assert(guard.numErrors() == 3);
+  for (auto& err : guard.errors()) {
+    assert(err->type() == chpl::NoMatchingCandidates);
+  }
+  guard.realizeErrors();
+
+  assert(qts.at("x1").type() && qts.at("x1").type()->isStringType());
+  assert(qts.at("x3").type() && qts.at("x3").type()->isStringType());
+  assert(qts.at("x5").type() && qts.at("x5").type()->isStringType());
+
+  assert(qts.at("x2").isUnknownOrErroneous());
+  assert(qts.at("x4").isUnknownOrErroneous());
+  assert(qts.at("x6").isUnknownOrErroneous());
+}
+
+
 int main(int argc, char** argv) {
   for (int i = 1; i < argc; i++) {
     if (strcmp(argv[i], "--debug") == 0) {
@@ -903,6 +951,7 @@ int main(int argc, char** argv) {
   testAlignment();
   testGenericInstantiationDisambiguation();
   testWhereClauseOnSizeQuery();
+  testTypeQueryEnforced();
 
   printf("\nAll tests passed successfully.\n");
 

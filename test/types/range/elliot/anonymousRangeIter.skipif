@@ -8,7 +8,7 @@ COMPOPTS <= --baseline
 # Ditto for no-inline
 COMPOPTS <= --no-inline
 
-# --no-denormalize creates slightly differnet temporary names
+# --no-denormalize creates slightly different temporary names
 COMPOPTS <= --no-denormalize
 
 # this test looks at the generated C

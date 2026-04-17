@@ -1,0 +1,11 @@
+b targetVar.chpl:5
+b bar_chpl
+r
+info args
+info locals
+c
+n
+info args
+info locals
+c
+quit

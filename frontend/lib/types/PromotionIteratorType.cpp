@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2024-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -29,15 +29,17 @@ void PromotionIteratorType::markUniqueStringsInner(Context* context) const {
   for (const auto& pair : promotedFormals_) {
     pair.second.mark(context);
   }
+  yieldType_.mark(context);
 }
 
 const owned<PromotionIteratorType>&
 PromotionIteratorType::getPromotionIteratorType(Context* context,
                                                 const resolution::PoiScope* poiScope,
                                                 const resolution::TypedFnSignature* scalarFn,
-                                                resolution::SubstitutionsMap promotedFormals) {
-  QUERY_BEGIN(getPromotionIteratorType, context, poiScope, scalarFn, promotedFormals);
-  auto result = toOwned(new PromotionIteratorType(poiScope, scalarFn, std::move(promotedFormals)));
+                                                QualifiedType retType,
+                                                resolution::PromotedFormalMap promotedFormals) {
+  QUERY_BEGIN(getPromotionIteratorType, context, poiScope, scalarFn, retType, promotedFormals);
+  auto result = toOwned(new PromotionIteratorType(poiScope, scalarFn, std::move(retType), std::move(promotedFormals)));
   return QUERY_END(result);
 }
 
@@ -45,8 +47,9 @@ const PromotionIteratorType*
 PromotionIteratorType::get(Context* context,
                            const resolution::PoiScope* poiScope,
                            const resolution::TypedFnSignature* scalarFn,
-                           resolution::SubstitutionsMap promotedFormals) {
-  return getPromotionIteratorType(context, poiScope, scalarFn, std::move(promotedFormals)).get();
+                           QualifiedType retType,
+                           resolution::PromotedFormalMap promotedFormals) {
+  return getPromotionIteratorType(context, poiScope, scalarFn, std::move(retType), std::move(promotedFormals)).get();
 }
 
 }  // end namespace types

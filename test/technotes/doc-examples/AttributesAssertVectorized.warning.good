@@ -1,0 +1,1 @@
+AttributesAssertVectorized.chpl:5: warning: loop was marked 'assertVectorized' but did not vectorize

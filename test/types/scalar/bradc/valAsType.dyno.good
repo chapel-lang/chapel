@@ -1,0 +1,2 @@
+valAsType.chpl:1: error: type specifier is a param of type 'int(64)', but it was expected to be a type
+valAsType.chpl:2: error: type specifier is a param of type 'string', but it was expected to be a type

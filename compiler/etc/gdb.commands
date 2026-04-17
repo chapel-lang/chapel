@@ -25,4 +25,7 @@ end
 define parentlocid
   call debugSummary(debugParentSym($arg0))
 end
-break gdbShouldBreakHere
+break debuggerBreakHere
+commands $bpnum
+up
+end

@@ -45,7 +45,7 @@ static const char rodata[TEST_SEGSZ] =
 static int flag = 0;
 void handler(gex_Token_t token, void *buf, size_t len) { flag = 1; }
 gex_AM_Entry_t htable[] = {
-    { 0, handler, GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_LONG, 0, NULL, NULL }
+    { 0, (gex_AM_Fn_t)handler, GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_LONG, 0, NULL, NULL }
 };
 
 int main(int argc, char **argv) {

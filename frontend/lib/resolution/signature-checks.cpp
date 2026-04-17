@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -65,17 +65,19 @@ static const bool& checkSignatureQuery(Context* context,
           (isInQualifier(thisIntent) && sig->formalType(0).type()->isClassType()))) {
       context->error(errId, "Bad 'this' intent for init=");
     }
-    bool rhsIntentGenericOrRef = isGenericQualifier(rhsIntent) ||
-                                 isRefQualifier(rhsIntent);
+    bool rhsIntentGenericOrRefOrParam = isGenericQualifier(rhsIntent) ||
+                                        isRefQualifier(rhsIntent) ||
+                                        rhsIntent == Qualifier::PARAM;
     // check the intent of the rhs argument
     if (sig->formalType(0).type() == sig->formalType(1).type()) {
       // same-type case: only const/default/ref/const ref RHS is allowed
-      if (!rhsIntentGenericOrRef) {
+      // allow 'in' for borrowed RHS, such as when defining init= for a class.
+      if (!rhsIntentGenericOrRefOrParam && !sig->formalType(0).type()->isClassType()) {
         context->error(errId, "Bad intent for same-type init= other argument");
       }
     } else {
       // different-type case: RHS can be 'in' intent in addition
-      if (!(rhsIntentGenericOrRef || isInQualifier(rhsIntent))) {
+      if (!(rhsIntentGenericOrRefOrParam || isInQualifier(rhsIntent))) {
         context->error(errId, "Bad intent for cross-type init= other argument");
       }
     }

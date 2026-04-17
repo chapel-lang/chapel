@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -147,10 +147,10 @@ std::string str(T value) {
 // This is the main entrypoint for MLI code generation, call this if the
 // necessary conditions are met in codegen().
 //
-void codegenMultiLocaleInteropWrappers(void) {
+void codegenClientServerLibraryWrappers(void) {
   Vec<ModuleSymbol*> &mds = allModules;
 
-  MLIContext mli(fMultiLocaleLibraryDebug);
+  MLIContext mli(fClientServerLibraryDebug);
 
   mli.emitClientPrelude();
   mli.emitServerPrelude();
@@ -487,7 +487,7 @@ std::string MLIContext::genMarshalRoutine(Type* t, bool push) {
   // what we can translate is limited.
   //
 
-  if (isPrimitiveScalar(t) && !is_complex_type(t)) {
+  if (isPrimitiveScalar(t) && !isComplexType(t)) {
     gen += this->genMarshalBodyPrimitiveScalar(t, push);
   } else if (t->symbol->hasFlag(FLAG_C_PTR_CLASS) &&
              getDataClassType(t->symbol)->typeInfo() == dtInt[INT_SIZE_8]) {
@@ -697,7 +697,7 @@ MLIContext::genServerDispatchSwitch(const std::vector<FnSymbol*>& fns) {
 //
 bool MLIContext::isSupportedType(Type* t) {
   return (
-      (isPrimitiveScalar(t) && !is_complex_type(t)) ||
+      (isPrimitiveScalar(t) && !isComplexType(t)) ||
       t == exportTypeChplByteBuffer
   );
 }

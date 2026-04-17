@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -23,8 +23,9 @@
 #include "chpl-comm.h"
 #include "chpl-comm-internal.h"
 #include "chpl-comm-strd-xfer.h"
+#include "chpl-exec.h"
 #include "chplexit.h"
-#include "error.h"
+#include "chpl-error.h"
 #include "chpl-mem.h"
 #include "chpl-tasks.h"
 
@@ -41,21 +42,8 @@
 #include <string.h>
 #include <stdint.h>
 #include <assert.h>
+#include <unistd.h>
 
-// Helper functions
-
-static int mysystem(const char* command, const char* description,
-                    int ignorestatus) {
-  int status = system(command);
-
-  if (status == -1) {
-    chpl_error("system() fork failed", 0, CHPL_FILE_IDX_COMMAND_LINE);
-  } else if (status != 0 && !ignorestatus) {
-    chpl_error(description, 0, CHPL_FILE_IDX_COMMAND_LINE);
-  }
-
-  return status;
-}
 
 // Chapel interface
 chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
@@ -121,30 +109,131 @@ void chpl_comm_pre_mem_init(void) { }
 
 void chpl_comm_post_mem_init(void) { }
 
+static const char* chpl_get_debugger_cmd_file(void);
+static const char* chpl_get_debugger_cmd_file(void) {
+  //
+  // WARNING: while it would be nicer for users to just be able to specify
+  // arbitrary arguments, this is susceptible to injection. By forcing the
+  // user to specify a debugger command file (which we then pass via
+  // --command/--source) we can avoid this problem.
+  //
+  const char* debuggerCmdFile = chpl_env_rt_get("DEBUGGER_CMD_FILE", NULL);
+  if (debuggerCmdFile != NULL) {
+    if (access(debuggerCmdFile, R_OK) != 0) {
+      chpl_warning("CHPL_RT_DEBUGGER_CMD_FILE file not found, it will be ignored", 0,
+                   CHPL_FILE_IDX_COMMAND_LINE);
+      debuggerCmdFile = NULL;
+    }
+  }
+  return debuggerCmdFile;
+}
+
+static chpl_bool chpl_lldb_supports_python(void);
+static chpl_bool chpl_lldb_supports_python(void) {
+  char output[256];
+  const char* command = "lldb --python-path";
+  if (!chpl_get_command_output(command, output, sizeof(output))) {
+    return false;
+  }
+
+  if (output[0] == '\0') {
+    return false;
+  }
+  // remove trailing newline if present
+  size_t len = strlen(output);
+  if (len > 0 && output[len - 1] == '\n') {
+    output[len - 1] = '\0';
+  }
+  return access(output, R_OK) == 0;
+}
+
 int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
-  int i;
-  char* command = chpl_glom_strings(2, "gdb -q -ex 'break gdbShouldBreakHere' --args ",
-                                    argv[0]);
-  for (i=1; i<argc; i++) {
+
+  char* command = (char*)"gdb -q";
+
+  const char* gdb_commands = chpl_glom_strings(2, CHPL_HOME, "/runtime/etc/debug/gdb.commands");
+  if (access(gdb_commands, R_OK) == 0) {
+    command = chpl_glom_strings(4, command, " -x \"", gdb_commands, "\"");
+  } else {
+    chpl_warning(
+      "Could not find 'gdb.commands' file, falling back to basic settings",
+      0, CHPL_FILE_IDX_COMMAND_LINE);
+    command = chpl_glom_strings(2, command, " -ex 'break debuggerBreakHere'");
+  }
+
+  const char* debuggerCmdFile = chpl_get_debugger_cmd_file();
+  if (debuggerCmdFile != NULL) {
+    command = chpl_glom_strings(4, command, " --command \"", debuggerCmdFile, "\"");
+  }
+
+  command = chpl_glom_strings(3, command, " --args ", argv[0]);
+
+  for (int i=1; i<argc; i++) {
     if (i != gdbArgnum) {
       command = chpl_glom_strings(3, command, " ", argv[i]);
     }
   }
-  *status = mysystem(command, "running gdb", 0);
+  *status = chpl_invoke_using_system(command, "running gdb", 0);
 
   return 1;
 }
 
 int chpl_comm_run_in_lldb(int argc, char* argv[], int lldbArgnum, int* status) {
-  int i;
-  char* command = chpl_glom_strings(2, "lldb -o 'b gdbShouldBreakHere' -- ",
-                                    argv[0]);
-  for (i=1; i<argc; i++) {
+
+  char* command = (char*)"lldb";
+
+  const char* lldb_commands = chpl_glom_strings(2, CHPL_HOME, "/runtime/etc/debug/lldb.commands");
+  if (access(lldb_commands, R_OK) == 0) {
+    command = chpl_glom_strings(4, command, " --source \"", lldb_commands, "\"");
+  } else {
+    chpl_warning(
+      "Could not find 'lldb.commands' file, falling back to basic settings",
+      0, CHPL_FILE_IDX_COMMAND_LINE);
+    command = chpl_glom_strings(2, command, " -o 'b debuggerBreakHere'");
+  }
+
+
+  if (chpl_lldb_supports_python()) {
+
+    const char* debuggerBreakHereCommands = chpl_glom_strings(2, CHPL_HOME, "/runtime/etc/debug/chpl_lldb_debuggerBreakHere.py");
+    if (access(debuggerBreakHereCommands, R_OK) == 0) {
+      command = chpl_glom_strings(4, command,
+        " -o 'command script import \"", debuggerBreakHereCommands, "\"'");
+    } else {
+      chpl_warning("Could not find lldb debuggerBreakHere script, it will be ignored",
+                    0, CHPL_FILE_IDX_COMMAND_LINE);
+    }
+
+    const char* pretty_printer = chpl_glom_strings(2, CHPL_HOME, "/runtime/etc/debug/chpl_lldb_pretty_print.py");
+    if (access(pretty_printer, R_OK) == 0) {
+      command = chpl_glom_strings(4, command,
+        " -o 'command script import \"", pretty_printer, "\"'");
+    } else {
+      chpl_warning("Could not find lldb pretty-printer, it will be ignored",
+                    0, CHPL_FILE_IDX_COMMAND_LINE);
+    }
+  } else {
+    chpl_warning(
+      "LLDB does not support scripting with Python"
+      ", pretty-printer will not be used",
+      0, CHPL_FILE_IDX_COMMAND_LINE
+    );
+  }
+
+  const char* debuggerCmdFile = chpl_get_debugger_cmd_file();
+  if (debuggerCmdFile != NULL) {
+    command = chpl_glom_strings(4, command, " --source \"", debuggerCmdFile, "\"");
+  }
+
+  command = chpl_glom_strings(3, command, " -- ", argv[0]);
+
+
+  for (int i=1; i<argc; i++) {
     if (i != lldbArgnum) {
       command = chpl_glom_strings(3, command, " ", argv[i]);
     }
   }
-  *status = mysystem(command, "running lldb", 0);
+  *status = chpl_invoke_using_system(command, "running lldb", 0);
 
   return 1;
 }

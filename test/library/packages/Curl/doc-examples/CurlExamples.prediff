@@ -1,0 +1,9 @@
+#!/bin/bash
+# save a copy of the original output
+cat $2 > $2.orig.tmp
+# replace carriage returns
+cat $2 | sed 's/\r$//' > $2.tmp
+# keep only lines containing special symbol
+cat $2.tmp | grep ~@ > $2
+# done with temp file
+rm $2.tmp

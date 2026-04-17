@@ -1,4 +1,4 @@
-.TH "hwlocality_membinding" 3 "Version 2.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_membinding" 3 "Version 2.12.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -47,7 +47,7 @@ hwlocality_membinding \- Memory binding
 .RI "void * \fBhwloc_alloc_membind\fP (\fBhwloc_topology_t\fP topology, size_t len, \fBhwloc_const_bitmap_t\fP set, \fBhwloc_membind_policy_t\fP policy, int flags)"
 .br
 .ti -1c
-.RI "static void * \fBhwloc_alloc_membind_policy\fP (\fBhwloc_topology_t\fP topology, size_t len, \fBhwloc_const_bitmap_t\fP set, \fBhwloc_membind_policy_t\fP policy, int flags)"
+.RI "void * \fBhwloc_alloc_membind_policy\fP (\fBhwloc_topology_t\fP topology, size_t len, \fBhwloc_const_bitmap_t\fP set, \fBhwloc_membind_policy_t\fP policy, int flags)"
 .br
 .ti -1c
 .RI "int \fBhwloc_free\fP (\fBhwloc_topology_t\fP topology, void *addr, size_t len)"
@@ -202,7 +202,7 @@ The allocated memory should be freed with \fBhwloc_free()\fP\&.
 .RE
 .PP
 
-.SS "static void * hwloc_alloc_membind_policy (\fBhwloc_topology_t\fP topology, size_t len, \fBhwloc_const_bitmap_t\fP set, \fBhwloc_membind_policy_t\fP policy, int flags)\fC [inline]\fP, \fC [static]\fP"
+.SS "void * hwloc_alloc_membind_policy (\fBhwloc_topology_t\fP topology, size_t len, \fBhwloc_const_bitmap_t\fP set, \fBhwloc_membind_policy_t\fP policy, int flags)\fC [inline]\fP"
 
 .PP
 Allocate some memory on NUMA memory nodes specified by \fCset\fP\&. First, try to allocate properly with \fBhwloc_alloc_membind()\fP\&. On failure, the current process or thread memory binding policy is changed with \fBhwloc_set_membind()\fP before allocating memory\&. Thus this function works in more cases, at the expense of changing the current state (possibly affecting future allocations that would not specify any policy)\&.

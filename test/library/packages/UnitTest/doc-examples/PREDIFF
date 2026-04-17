@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+# remove the variable output for seconds
+sed '/seconds/d' $2 > $2.tmp
+mv $2.tmp $2

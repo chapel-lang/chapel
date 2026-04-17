@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -33,9 +33,40 @@ const ID ArrayType::domainId = ID(UniqueString(), 0, 0);
 const ID ArrayType::eltTypeId = ID(UniqueString(), 1, 0);
 
 const RuntimeType* ArrayType::runtimeType(Context* context) const {
+  auto dom = domainType().type()->toDomainType();
+  if (dom->kind() == DomainType::Kind::Unknown) return nullptr;
+
   return resolution::getRuntimeType(context, this);
 }
 
+static bool const& isAliasingArrayQuery(Context* context, const ArrayType* at) {
+  QUERY_BEGIN(isAliasingArrayQuery, context, at);
+  bool res = false;
+  // assume that there's only one ID that doesn't have a blank path,
+  // and that this ID is the instance field.
+  for (auto& sub : at->substitutions()) {
+    if (sub.first.symbolPath().isEmpty()) continue;
+    auto instanceQt = sub.second;
+
+    if (instanceQt.isUnknownOrErroneous()) break;
+
+    if (auto ct = instanceQt.type()->getCompositeType()) {
+      auto ast = parsing::idToAst(context, ct->id());
+      if (auto ag = ast->attributeGroup()) {
+        if (ag->hasPragma(uast::pragmatags::PRAGMA_ALIASING_ARRAY)) {
+          res = true;
+          break;
+        }
+      }
+    }
+  }
+
+  return QUERY_END(res);
+}
+
+bool ArrayType::isAliasingArray(Context* context) const {
+  return isAliasingArrayQuery(context, this);
+}
 
 void ArrayType::stringify(std::ostream& ss,
                            chpl::StringifyKind stringKind) const {
@@ -53,8 +84,7 @@ void ArrayType::stringify(std::ostream& ss,
 }
 
 static ID getArrayID(Context* context) {
-  return parsing::getSymbolIdFromTopLevelModule(context, "ChapelArray",
-                                                "_array");
+  return parsing::getArrayIdFromTopLevelChapelArrayModule(context);
 }
 
 const owned<ArrayType>&
@@ -103,6 +133,20 @@ ArrayType::getArrayType(Context* context,
     }
   }
   subs.emplace(instanceFieldId, instance);
+
+  auto id = getArrayID(context);
+  auto name = id.symbolName(context);
+  auto instantiatedFrom = getGenericArrayType(context);
+  return getArrayTypeQuery(context, id, name, instantiatedFrom, subs).get();
+}
+
+const ArrayType*
+ArrayType::getUninstancedArrayType(Context* context,
+                                   const QualifiedType& domainType,
+                                   const QualifiedType& eltType) {
+  SubstitutionsMap subs;
+  subs.emplace(ArrayType::domainId, domainType);
+  subs.emplace(ArrayType::eltTypeId, eltType);
 
   auto id = getArrayID(context);
   auto name = id.symbolName(context);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -126,7 +126,7 @@ void chpl_mli_smain(const char* setup_conn) {
       ack = CHPL_MLI_CODE_SHUTDOWN;
       execute = 0;
     } else {
-      chpl_mli_debugf("Received request for ID: %lld\n", id);
+      chpl_mli_debugf("Received request for ID: %" PRId64 "\n", id);
       ack = CHPL_MLI_CODE_NONE;
     }
 

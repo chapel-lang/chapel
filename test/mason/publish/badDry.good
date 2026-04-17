@@ -1,2 +1,3 @@
 Created new application project: publishCheck
+Tip: To convert existing code to a mason project, move the driver application to the `src/publishCheck.chpl` file. For adding other source code, using submodules is the recommended approach to avoid namespace collisions.
 ../bad-registry is not a valid path to a local mason-registry.

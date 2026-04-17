@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -33,15 +33,16 @@ void Include::dumpFieldsInner(const DumpSettings& s) const {
   if (isPrototype_) {
     s.out << " prototype";
   }
-  s.out << name_.str();
+  s.out << " " << name_.str();
 }
 
 owned<Include> Include::build(Builder* builder, Location loc,
                               Decl::Visibility visibility,
                               bool isPrototype,
-                              UniqueString name) {
+                              UniqueString name, Location nameLoc) {
   Include* ret = new Include(visibility, isPrototype, name);
   builder->noteLocation(ret, loc);
+  builder->noteIncludeNameLocation(ret, nameLoc);
   return toOwned(ret);
 }
 

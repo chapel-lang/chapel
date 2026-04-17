@@ -50,3 +50,45 @@ function log() {
   local msg=$@
   echo "[${msg}]"
 }
+
+function apply_git_patch() {
+  # Function to apply a git patch to a specified directory
+
+  local PATCH_FILE=$1
+  local TARGET_DIR=$2
+
+  # Some checks
+  if [[ ! -f "$PATCH_FILE" ]]; then
+    log_fatal_error "Patch file '$PATCH_FILE' does not exist."
+  fi
+
+  if [[ ! -d "$TARGET_DIR" ]]; then
+    log_fatal_error "Target directory '$TARGET_DIR' does not exist."
+  fi
+
+
+  (
+    cd "$TARGET_DIR" || log_fatal_error "Failed to change directory to '$TARGET_DIR'."
+
+    # Ensure the directory is a Git repository
+    if ! git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
+      log_fatal_error "Target directory '$TARGET_DIR' is not a Git repository."
+    fi
+
+    # Apply the patch
+    echo "Applying patch '$PATCH_FILE' to Git repository in '$TARGET_DIR'..."
+    if git apply --check "$PATCH_FILE"; then
+      git apply "$PATCH_FILE"
+      echo "Patch applied successfully."
+    else
+      log_fatal_error "Failed to apply patch '$PATCH_FILE'."
+    fi
+
+    # Verify
+    if git apply --check "$PATCH_FILE" > /dev/null 2>&1; then
+      log_fatal_error "Patch application verification failed (patch still applies cleanly)."
+    else
+      echo "Patch application verified."
+    fi
+  )
+}

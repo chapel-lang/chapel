@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -18,6 +18,7 @@
  */
 
 #include "chpl/types/RecordType.h"
+#include "chpl/types/TypeTag.h"
 #include "test-resolution.h"
 #include "chpl/resolution/resolution-queries.h"
 
@@ -352,21 +353,29 @@ static void test35() {
 //   testHelper(&ctx, program, ComplexType::get(&ctx, 0), ComplexParam::get(&ctx, Param::ComplexDouble(1.1, 2.2)));
 // }
 
-// TODO: enum to int cast
-// static void test37() {
-//   printf("test37\n");
-//   Context ctx;
-//   std::string program = "enum E { A=0, B, C } param x = E.A : int; ";
-//   testHelper(&ctx, program, IntType::get(&ctx, 0), IntParam::get(&ctx, 0));
-// }
+static void test37() {
+  printf("test37\n");
+  Context ctx;
+  std::string program = "enum E { A=0, B, C } param x = E.A : int; ";
+  testHelper(&ctx, program, IntType::get(&ctx, 0), IntParam::get(&ctx, 0));
+}
 
-// TODO: int to enum cast
-// static void test38() {
-//   printf("test38\n");
-//   Context ctx;
-//   std::string program = "enum E { A=0, B, C } param x = 0 : E; ";
-//   testHelper(&ctx, program, EnumType::get(&ctx, 0), EnumParam::get(&ctx, 0));
-// }
+static void test38() {
+  printf("test38\n");
+  Context ctx;
+  std::string program = "enum E { A=0, B, C } param x = 0 : E; ";
+
+  auto enumId = ID(UniqueString::get(&ctx, "input.E"), -1, 0);
+  auto eltId = ID(enumId.symbolPath(), 1, 1);
+
+  // invoking 'EnumType::get' prior to resolving a program causes problems,
+  // so don't use the helper in order to defer constructing the EnumType.
+  QualifiedType qt = resolveQualifiedTypeOfX(&ctx, program);
+
+  assert(qt.hasTypePtr());
+  assert(qt.type() == EnumType::get(&ctx, enumId, UniqueString::get(&ctx, "E")));
+  assert(qt.param() == EnumParam::get(&ctx, {eltId, "A"}));
+}
 
 
 // enum to nothing cast (error)
@@ -447,22 +456,17 @@ static void test43() {
 // param bytes to string (formely throwing assertions)
 static void test44() {
   printf("test44\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
   testHelper(context, "param x = b\"hello\" : string;",
                       ErroneousType::get(context), nullptr);
 }
 
 static void test45() {
   printf("test45\n");
-  auto config = getConfigWithHome();
-  Context ctx(config);
-  Context* context = &ctx;
 
   // Non-nilable
   {
-    context->advanceToNextRevision(false);
-    setupModuleSearchPaths(context, false, false, {}, {});
+    auto context = buildStdContext();
 
     std::string program =
       R"""(
@@ -493,8 +497,7 @@ static void test45() {
 
   // Nilable
   {
-    context->advanceToNextRevision(false);
-    setupModuleSearchPaths(context, false, false, {}, {});
+    auto context = buildStdContext();
 
     std::string program =
       R"""(
@@ -526,12 +529,10 @@ static void test45() {
 
 static void test46() {
   printf("test46\n");
-  Context ctx;
-  Context* context = &ctx;
 
   // Param
   {
-    context->advanceToNextRevision(false);
+    Context* context = buildStdContext();
     std::string program =
       R"""(
       param a = "asdf";
@@ -545,7 +546,7 @@ static void test46() {
 
   // Non-param
   {
-    context->advanceToNextRevision(false);
+    Context* context = buildStdContext();
     std::string program =
       R"""(
       var a = "asdf";
@@ -557,6 +558,413 @@ static void test46() {
     assert(!xInit.isParam());
     assert(xInit.type()->isStringType());
   }
+}
+
+static void test47() {
+  printf("test47\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto testBorrow = [context](std::string buildC, bool expectNilable) {
+    context->advanceToNextRevision(false);
+    ErrorGuard guard(context);
+
+    auto fullProg = "class C{}\n" + buildC + "\nvar x = c.borrow();";
+    auto xInit = resolveTypeOfXInit(context, fullProg);
+    assert(xInit.type());
+    assert(xInit.type()->isClassType());
+    assert(xInit.type()->toClassType()->decorator().isBorrowed());
+    assert(xInit.type()->toClassType()->decorator().isNilable() == expectNilable);
+  };
+
+  testBorrow("var cu = new unmanaged C();\n var c = cu : borrowed;", false);
+  testBorrow("var cu = new unmanaged C?();\n var c = cu : borrowed;", true);
+  testBorrow("var c = new unmanaged C();", false);
+  testBorrow("var c = new unmanaged C?();", true);
+}
+
+static void test48() {
+  {
+  // Mimics a situation found in CTypes, involving the casts for c_ptr(void)
+  // Technically these are ambiguous, but we avoid the cast entirely becase
+  // the src/dest types are the same.
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+  std::string program =
+    R"""(
+    record R {
+      type T;
+      var x : T;
+    }
+
+    operator :(x:R, type t:R(int)) {
+      return __primitive("cast", t, x);
+    }
+
+    operator :(x:R(int), type t:R) {
+      return __primitive("cast", t, x);
+    }
+
+    var r = new R(int);
+    var x = r:R(int);
+    )""";
+
+  auto xInit = resolveQualifiedTypeOfX(context, program);
+
+  assert(toString(xInit) == "R(int(64))");
+  }
+
+  {
+  // Mimics a situation found in CTypes, involving the casts for c_ptr(void)
+  // These should not be ambiguous because the second cast is more specific
+  // by having declared the type as `R(nothing)`.
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+  std::string program =
+    R"""(
+    record R {
+      type T;
+      var x : T;
+    }
+
+    operator :(arg: R(?), type t: R(?)) {
+      return arg;
+    }
+
+    operator :(arg: R(?), type k: R(nothing)) {
+      var ret : k;
+      return ret;
+    }
+
+    var r = new R(int);
+    var x = r:R(nothing);
+    )""";
+
+  auto xInit = resolveQualifiedTypeOfX(context, program);
+
+  assert(toString(xInit) == "R(nothing)");
+  }
+}
+
+// string -> int cast should work, but at runtime.
+static void test49() {
+  {
+    // the cast works at runtime...
+    auto context = buildStdContext();
+    ErrorGuard guard(context);
+    auto vars = resolveTypesOfVariables(context, "var x = \"1\" : int;", {"x"});
+    assert(vars.at("x").type() == IntType::get(context, 0));
+  }
+  {
+    // ... but it's not a param cast.
+    auto context = buildStdContext();
+    testHelper(context, "param x = \"hello\" : int;",
+                        ErroneousType::get(context), nullptr);
+  }
+}
+
+// Basic tuple cast with compatible element types (identity cast)
+static void test50() {
+  printf("test50\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  std::string program = "var x = (1, 2) : (int, int);";
+  auto vars = resolveTypesOfVariables(context, program, {"x"});
+  auto xType = vars.at("x").type();
+  assert(xType);
+  assert(xType->isTupleType());
+  auto tupleType = xType->toTupleType();
+  assert(tupleType->numElements() == 2);
+  assert(tupleType->elementType(0).type() == IntType::get(context, 0));
+  assert(tupleType->elementType(1).type() == IntType::get(context, 0));
+}
+
+// Tuple cast with type conversions (int to real)
+static void test51() {
+  printf("test51\n");
+  auto context = buildStdContext();
+
+  std::string program = "var x = (1, 2) : (real, real);";
+  auto vars = resolveTypesOfVariables(context, program, {"x"});
+  auto xType = vars.at("x").type();
+  assert(xType);
+  assert(xType->isTupleType());
+  auto tupleType = xType->toTupleType();
+  assert(tupleType->numElements() == 2);
+  assert(tupleType->elementType(0).type() == RealType::get(context, 0));
+  assert(tupleType->elementType(1).type() == RealType::get(context, 0));
+}
+
+// Tuple cast with mixed type conversions
+static void test52() {
+  printf("test52\n");
+  auto context = buildStdContext();
+
+  std::string program = "var x = (1, 2.5) : (real, int);";
+  auto vars = resolveTypesOfVariables(context, program, {"x"});
+  auto xType = vars.at("x").type();
+  assert(xType);
+  assert(xType->isTupleType());
+  auto tupleType = xType->toTupleType();
+  assert(tupleType->numElements() == 2);
+  assert(tupleType->elementType(0).type() == RealType::get(context, 0));
+  assert(tupleType->elementType(1).type() == IntType::get(context, 0));
+}
+
+// Nested tuple cast (identity cast)
+static void test53() {
+  printf("test53\n");
+  Context* context = buildStdContext();
+
+  std::string program = "var x = ((1, 2), (3, 4)) : ((int, int), (int, int));";
+  auto vars = resolveTypesOfVariables(context, program, {"x"});
+  auto xType = vars.at("x").type();
+  assert(xType);
+  assert(xType->isTupleType());
+  auto outerTuple = xType->toTupleType();
+  assert(outerTuple->numElements() == 2);
+
+  auto innerTuple0 = outerTuple->elementType(0).type()->toTupleType();
+  assert(innerTuple0);
+  assert(innerTuple0->numElements() == 2);
+  assert(innerTuple0->elementType(0).type() == IntType::get(context, 0));
+  assert(innerTuple0->elementType(1).type() == IntType::get(context, 0));
+
+  auto innerTuple1 = outerTuple->elementType(1).type()->toTupleType();
+  assert(innerTuple1);
+  assert(innerTuple1->numElements() == 2);
+  assert(innerTuple1->elementType(0).type() == IntType::get(context, 0));
+  assert(innerTuple1->elementType(1).type() == IntType::get(context, 0));
+}
+
+// Nested tuple cast with conversions
+static void test54() {
+  printf("test54\n");
+  auto context = buildStdContext();
+
+  std::string program = "var x = ((1, 2), (3, 4)) : ((real, real), (real, real));";
+  auto vars = resolveTypesOfVariables(context, program, {"x"});
+  auto xType = vars.at("x").type();
+  assert(xType);
+  assert(xType->isTupleType());
+  auto outerTuple = xType->toTupleType();
+  assert(outerTuple->numElements() == 2);
+
+  auto innerTuple0 = outerTuple->elementType(0).type()->toTupleType();
+  assert(innerTuple0);
+  assert(innerTuple0->numElements() == 2);
+  assert(innerTuple0->elementType(0).type() == RealType::get(context, 0));
+  assert(innerTuple0->elementType(1).type() == RealType::get(context, 0));
+
+  auto innerTuple1 = outerTuple->elementType(1).type()->toTupleType();
+  assert(innerTuple1);
+  assert(innerTuple1->numElements() == 2);
+  assert(innerTuple1->elementType(0).type() == RealType::get(context, 0));
+  assert(innerTuple1->elementType(1).type() == RealType::get(context, 0));
+}
+
+// Deeply nested tuple cast with conversions
+static void test55() {
+  printf("test55\n");
+  auto context = buildStdContext();
+
+  std::string program = "var x = (((1, 2), 3), 4) : (((real, real), real), real);";
+  auto vars = resolveTypesOfVariables(context, program, {"x"});
+  auto xType = vars.at("x").type();
+  assert(xType);
+  assert(xType->isTupleType());
+  auto outerTuple = xType->toTupleType();
+  assert(outerTuple->numElements() == 2);
+
+  auto midTuple = outerTuple->elementType(0).type()->toTupleType();
+  assert(midTuple);
+  assert(midTuple->numElements() == 2);
+
+  auto innerTuple = midTuple->elementType(0).type()->toTupleType();
+  assert(innerTuple);
+  assert(innerTuple->numElements() == 2);
+  assert(innerTuple->elementType(0).type() == RealType::get(context, 0));
+  assert(innerTuple->elementType(1).type() == RealType::get(context, 0));
+
+  assert(midTuple->elementType(1).type() == RealType::get(context, 0));
+  assert(outerTuple->elementType(1).type() == RealType::get(context, 0));
+}
+
+
+// Error: tuple size mismatch (source larger)
+static void test56() {
+  printf("test56\n");
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program = "var x = (1, 2, 3) : (int, int);";
+  auto m = parseModule(context, std::move(program));
+  resolveModule(context, m->id());
+
+  assert(guard.numErrors() == 1);
+  assert(guard.error(0)->type() == ErrorType::TupleCastSizeMismatch);
+  assert(guard.realizeErrors() == 1);
+}
+
+// Error: tuple size mismatch (destination larger)
+static void test57() {
+  printf("test57\n");
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program = "var x = (1, 2) : (int, int, int);";
+  auto m = parseModule(context, std::move(program));
+  resolveModule(context, m->id());
+
+  assert(guard.numErrors() == 1);
+  assert(guard.error(0)->type() == ErrorType::TupleCastSizeMismatch);
+  assert(guard.realizeErrors() == 1);
+}
+
+// Error: nested tuple size mismatch
+static void test58() {
+  printf("test58\n");
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program = "var x = ((1, 2), 3) : ((int, int, int), int);";
+  auto m = parseModule(context, std::move(program));
+  resolveModule(context, m->id());
+
+  assert(guard.numErrors() == 1);
+  assert(guard.error(0)->type() == ErrorType::TupleCastSizeMismatch);
+  assert(guard.realizeErrors() == 1);
+}
+
+// Error: invalid element type conversion
+static void test59() {
+  printf("test59\n");
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program =
+    R"""(
+    record R {}
+    var x = (new R(), 1) : (int, int);
+    )""";
+  auto m = parseModule(context, std::move(program));
+  resolveModule(context, m->id());
+
+  assert(guard.numErrors() >= 1);
+  assert(guard.error(0)->type() == ErrorType::InvalidTupleCast);
+  assert(guard.realizeErrors() >= 1);
+}
+
+// Test that tuple casts have the TUPLE_CAST associated action
+static void test60() {
+  printf("test60\n");
+  auto context = buildStdContext();
+
+  std::string program =
+    R"""(
+    var x = (1, 2) : (real, real);
+    )""";
+
+    auto m = parseModule(context, std::move(program));
+  auto& rr = resolveModule(context, m->id());
+
+  auto xVar = findVariable(m, "x");
+  assert(xVar);
+  assert(xVar->initExpression());
+
+  // The init expression should be a cast call
+  auto castCall = xVar->initExpression()->toOpCall();
+  assert(castCall);
+  assert(castCall->op() == USTR(":"));
+
+  // Check that the cast has the TUPLE_CAST associated action
+  assert(rr.hasAst(castCall));
+  auto& resolvedExpr = rr.byAst(castCall);
+  auto actions = resolvedExpr.associatedActions();
+
+  bool foundTupleCast = false;
+  for (auto aa : actions) {
+    if (aa.action() == AssociatedAction::TUPLE_CAST) {
+      foundTupleCast = true;
+      // TUPLE_CAST actions don't have an associated function (compiler-generated)
+      assert(aa.fn() == nullptr);
+    }
+  }
+  assert(foundTupleCast);
+}
+
+static void testAdjustCastCalls() {
+  printf("testAdjustCastCalls\n");
+
+
+  // Helper to test casts - works for both type-level and value-level
+  // expectedManager: owned/shared type for managed, nullptr for unmanaged/borrowed
+  // expectedClassName: name of the class in the result (C or D)
+  // expectError: true if we expect the cast to produce an error
+  auto testCast = [](const char* program, const char* varName,
+                            const typetags::TypeTag expectedManager,
+                            const char* expectedClassName,
+                            bool expectError = false) {
+    auto stdContext = buildStdContext();
+    ErrorGuard guard(stdContext);
+
+    std::string fullProgram =
+      "class C { }\n"
+      "class D : C { }\n"
+      "class E { }\n" +
+      std::string(program);
+
+    auto varType = resolveTypeOfVariable(stdContext, fullProgram, varName);
+
+    if (expectError) {
+      assert(guard.numErrors() > 0);
+      guard.realizeErrors();
+    } else {
+      assert(varType.type());
+      auto ct = varType.type()->toClassType();
+      assert(ct);
+      assert(ct->basicClassType()->name() == UniqueString::get(stdContext, expectedClassName));
+
+      if (expectedManager != typetags::NUM_TYPE_TAGS) {
+        assert(ct->decorator().isManaged());
+        assert(ct->manager());
+        assert(ct->manager()->tag() == expectedManager);
+      } else {
+        assert(!ct->decorator().isManaged());
+      }
+
+      assert(guard.numErrors() == 0);
+    }
+  };
+
+  // Type-level casts
+  testCast("type t = owned C : shared;", "t", typetags::AnySharedType, "C");
+  testCast("type t = owned C : shared C;", "t", typetags::AnySharedType, "C");
+  testCast("type t = owned C : unmanaged;", "t", typetags::NUM_TYPE_TAGS, "C");
+  testCast("type t = owned C : borrowed;", "t", typetags::NUM_TYPE_TAGS, "C");
+  testCast("type t = borrowed C : owned;", "t", typetags::AnyOwnedType, "C");
+  testCast("type t = borrowed C : owned C;", "t", typetags::AnyOwnedType, "C");
+  testCast("type t = unmanaged C : owned;", "t", typetags::AnyOwnedType, "C");
+  testCast("type t = unmanaged C : owned C;", "t", typetags::AnyOwnedType, "C");
+  testCast("type t = owned C : shared D;", "t", typetags::AnySharedType, "D");  // RHS class used
+  testCast("type t = owned D : shared C;", "t", typetags::AnySharedType, "C");  // RHS class used
+
+  // Type-level cast that should fail (unrelated classes)
+  testCast("type t = owned C : shared E;", "t", typetags::NUM_TYPE_TAGS, nullptr, true);
+
+  // Value-level casts
+  testCast("var oc = new owned C();\nvar v = oc.borrow();\nvar x = v : unmanaged;", "x", typetags::NUM_TYPE_TAGS, "C");
+  testCast("var oc = new owned C();\nvar v = oc.borrow();\nvar x = v : borrowed;", "x", typetags::NUM_TYPE_TAGS, "C");
+
+  // Value-level casts that should fail
+  testCast("var oc = new owned C();\nvar x = oc : shared;", "x", typetags::NUM_TYPE_TAGS, nullptr, true);
+  testCast("var oc = new owned C();\nvar x = oc : shared C;", "x", typetags::NUM_TYPE_TAGS, nullptr, true);
+  testCast("var oc = new owned C();\nvar x = oc : shared D;", "x", typetags::NUM_TYPE_TAGS, nullptr, true);  // C is parent of D
+  testCast("var od = new owned D();\nvar x = od : shared C;", "x", typetags::NUM_TYPE_TAGS, nullptr, true);  // D is child of C
+  testCast("var oc = new owned C();\nvar x = oc : shared E;", "x", typetags::NUM_TYPE_TAGS, nullptr, true);  // unrelated
+  testCast("var bc = (new owned C()).borrow();\nvar x = bc : owned;", "x", typetags::NUM_TYPE_TAGS, nullptr, true);
+  testCast("var bc = (new owned C()).borrow();\nvar x = bc : owned C;", "x", typetags::NUM_TYPE_TAGS, nullptr, true);
 }
 
 int main() {
@@ -596,8 +1004,8 @@ int main() {
   test34();
   test35();
   // test36();
-  // test37();
-  // test38();
+  test37();
+  test38();
   test39();
   test40();
   test41();
@@ -606,6 +1014,22 @@ int main() {
   test44();
   test45();
   test46();
+  test47();
+  test48();
+  test49();
+  test50();
+  test51();
+  test52();
+  test53();
+  test54();
+  test55();
+  test56();
+  test57();
+  test58();
+  test59();
+  test60();
+
+  testAdjustCastCalls();
 
   return 0;
 }

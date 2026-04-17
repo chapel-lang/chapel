@@ -6,6 +6,8 @@
 # replace the url and sha in the chapel formula with the url pointing to the tarball created and sha of the tarball.
 # run home-brew scripts to install chapel.
 
+set -exo pipefail
+
 UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 
 # common-tarball sets CHPL_HOME
@@ -14,6 +16,8 @@ source $UTIL_CRON_DIR/common-tarball.bash
 # Tell gen_release to use existing repo instead of creating a new one with
 # git-archive.
 export CHPL_GEN_RELEASE_NO_CLONE=true
+# skip docs build for a faster tarball
+export CHPL_GEN_RELEASE_SKIP_DOCS=true
 
 export CHPL_LLVM=none
 # $UTIL_CRON_DIR/common.bash sets this to none, but Homebrew builds with native
@@ -28,6 +32,7 @@ cd $CHPL_HOME
 
 # Create a tarball from current repo.
 # The tarball is left in root of repo in tar/ directory.
+short_version=$(get_short_version)
 gen_release $short_version
 
 cp ${CHPL_HOME}/util/packaging/homebrew/chapel-main.rb  ${CHPL_HOME}/util/packaging/homebrew/chapel.rb
@@ -53,47 +58,47 @@ sed_command="sed -i.bak -e "
 $sed_command "s#url.*#url \"file\:///$location\"#" chapel.rb
 $sed_command "1s/sha256.*/sha256 \"$sha256\"/;t" -e "1,/sha256.*/s//sha256 \"$sha256\"/" chapel.rb
 
+${CHPL_HOME}/util/packaging/docker/test/brew_get_bogus_bottles.bash | sed -e '/<bottle-block-placeholder-injected-during-testing>/r /dev/stdin' -e '/<bottle-block-placeholder-injected-during-testing>/d' -i '' chapel.rb
+
+log_info "Chapel formula to be tested:"
+cat chapel.rb
+
 # Test if homebrew install using the chapel formula works.
-brew upgrade
-brew uninstall --force chapel
+
+# update homebrew packages
+# we retry to install in case of either network issues or the error
+# "Error: File exists", this happens somewhat frequently and just
+# rerunning the command seems to fix it.
+RETRIES=10
+until brew upgrade --force --overwrite; do
+  if [ $RETRIES -le 0 ]; then
+    log_error "Failed to update Homebrew after multiple attempts."
+    exit 1
+  fi
+  log_info "Retrying brew update... Attempts left: $RETRIES"
+  RETRIES=$((RETRIES - 1))
+  sleep 5
+done
+
+# uninstall the old chapel so we can do a clean install
+HOMEBREW_NO_AUTO_UPDATE=1 brew uninstall --force chapel
+
 # Remove the cached chapel tar file before running brew install --build-from-source chapel.rb
-rm $HOME/Library/Caches/Homebrew/downloads/*--chapel-${short_version}.tar.gz
-HOMEBREW_NO_INSTALL_FROM_API=1 brew install -v --build-from-source chapel.rb
-INSTALL_STATUS=$?
-    if [ $INSTALL_STATUS -ne 0 ]
-    then
-      log_error "brew install --build-from-source chapel.rb failed"
-      exit 1
-      else
-      log_info "brew install --build-from-source chapel.rb succeeded"
-    fi
+rm -f $HOME/Library/Caches/Homebrew/downloads/*--chapel-${short_version}.tar.gz
+
+# install chapel.rb to the core tap
+cp ./chapel.rb $(brew --repository homebrew/core)/Formula/c/chapel.rb
+# install chapel
+# per the docs, HOMEBREW_NO_INSTALL_FROM_API must be set
+# https://docs.brew.sh/FAQ#can-i-edit-formulae-myself
+HOMEBREW_NO_AUTO_UPDATE=1 HOMEBREW_NO_INSTALL_FROM_API=1 \
+  brew install -v --build-from-source --overwrite chapel \
+    | awk 'tolower($0)~/failed steps? ignored/{r=1} 1; END{exit(r)}'
 chpl --version
-CHPL_INSTALL=$?
-    if [ $CHPL_INSTALL -ne 0 ]
-    then
-      log_error "chpl --version failed"
-      exit 1
-    else
-      log_info "chpl --version succeeded"
-    fi
 
 # Run pidigits and see if it works
 cd ${CHPL_HOME}/examples/benchmarks/shootout
 chpl pidigits.chpl
-   if [ $? -ne 0 ]
-   then
-     log_error "chpl pidigits.chpl failed to compile"
-     exit 1
-   else
-     log_info "Compiled pidigits.chpl"
-   fi
 ./pidigits
-  if [ $? -ne 0 ]
-   then
-     log_error "./pidigits failed"
-     exit 1
-   else
-     log_info "./pidigits succeeded"
-   fi
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="homebrew"

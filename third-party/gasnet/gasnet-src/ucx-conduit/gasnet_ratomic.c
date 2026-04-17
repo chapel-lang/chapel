@@ -77,19 +77,6 @@ ucp_atomic_post_op_t amo_post_op_map_gex_dt_I32(gasneti_op_idx_t op_idx) {
 #define amo_post_op_map_gex_dt_I64 amo_post_op_map_gex_dt_I32
 #define amo_post_op_map_gex_dt_U64 amo_post_op_map_gex_dt_I32
 
-GASNETI_INLINE(gasnete_ratomic_jobrank)
-gex_Rank_t gasnete_ratomic_jobrank(gasneti_TM_t i_tm, gex_Rank_t tgt_rank,
-                                   gex_Flags_t flags)
-{
-  if (flags & GEX_FLAG_RANK_IS_JOBRANK) {
-    gasneti_assert(GEX_RANK_INVALID !=
-        gasneti_i_tm_jobrank_to_rank(i_tm, tgt_rank));
-    return tgt_rank;
-  } else {
-    return gasneti_i_tm_rank_to_jobrank(i_tm, tgt_rank);
-  }
-}
-
 static
 void gasnetc_ucx_amo_cb(void *request, ucs_status_t status)
 {
@@ -655,7 +642,7 @@ void gasnete_ucxratomic_init_hook(gasneti_AD_t real_ad)
         if (ops & GASNETE_UCXRATOMIC_BADOPS##dtcode) goto use_am; \
         real_ad->_fn_tbl = (gasnete_ratomic_fn_tbl_t) &gasnete_ucxratomic##dtcode##_fn_tbl; \
         real_ad->_tools_safe = 0; \
-        GASNETI_TRACE_PRINTF(O,("gex_AD_Create(dt=%d, ops=0x%x) -> UCX", (int)dt, (unsigned int)ops)); \
+        real_ad->_is_ref = 0; \
         return;
   switch(dt) {
       GASNETE_DT_INT_APPLY(GASNETE_UCXRATOMIC_TBL_CASE)

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2016-2020 Inria.  All rights reserved.
+ * Copyright © 2016-2025 Inria.  All rights reserved.
  * See COPYING in top-level directory.
  */
 
@@ -37,7 +37,7 @@ static void _check(hwloc_topology_t topology, hwloc_obj_t obj, const char *buffe
 
   err = hwloc_type_sscanf_as_depth(buffer, NULL, topology, &depth);
   assert(!err);
-  assert(depth == (int) obj->depth);
+  assert((depth == HWLOC_TYPE_DEPTH_MULTIPLE && !checkattrs) || depth == (int) obj->depth);
 }
 
 static void check(hwloc_topology_t topology, hwloc_obj_t obj)
@@ -161,6 +161,10 @@ int main(void)
   assert(err == -1);
 
   printf("testing the local topology ...\n");
+  check_topo();
+
+  printf("testing synthetic topology group:2 group:2 pu:2 ...\n");
+  putenv((char *) "HWLOC_SYNTHETIC=group:2 group:2 pu:2");
   check_topo();
 
   printf("testing topology 32em64t-2n8c2t-pci-wholeio.xml ...\n");

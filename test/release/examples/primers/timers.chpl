@@ -10,8 +10,10 @@
 use Time;
 
 //
-// The ``quiet`` configuration constant is set to ``false`` when testing
-// (via start_test) so that this test is deterministic.
+// In order to aid in testing this primer, the ``quiet`` 
+// configuration constant is set to ``true``
+// (via start_test) so that this test is deterministic
+// (i.e., the output doesn't change every run)
 //
 config const quiet: bool = false;
 

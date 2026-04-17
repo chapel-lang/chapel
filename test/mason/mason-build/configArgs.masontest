@@ -1,0 +1,25 @@
+cd SwitchTypes
+
+# test records
+mason build -- -smyType=myRec -smyString1="'hello world'"
+mason run -- --myString2="'goodbye world'"
+mason build -- --set myType=myRec --set myString1="'hello world'"
+mason run -- --myString2="'goodbye world'"
+
+# test owned classes
+mason build -- -smyType='owned MyClass' -smyString1="'hello world'"
+mason run -- --myString2="'goodbye world'"
+mason build -- --set myType='owned MyClass' --set myString1="'hello world'"
+mason run -- --myString2="'goodbye world'"
+
+# test shared classes
+mason build -- -smyType='shared MyClass?' -smyString1="'hello world'"
+mason run -- --myString2="'goodbye world'"
+mason build -- --set myType='shared MyClass?' --set myString1="'hello world'"
+mason run -- --myString2="'goodbye world'"
+
+# test unmanaged classes
+mason build -- -smyType='unmanaged MyClass' -smyString1="'hello world'"
+mason run -- --myString2="'goodbye world'"
+mason build -- --set myType='unmanaged MyClass' --set myString1="'hello world'"
+mason run -- --myString2="'goodbye world'"

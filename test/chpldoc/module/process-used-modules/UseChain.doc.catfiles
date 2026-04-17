@@ -1,0 +1,8 @@
+docs/source/modules/UseChain.rst
+docs/source/modules/UseChain/PublicSubmodule.rst
+docs/source/modules/UseChain/NoDocSubmodule.rst
+docs/source/modules/UseChain/PrivateSubmodule.rst
+docs/source/modules/Used1.rst
+docs/source/modules/Used2.rst
+docs/source/modules/used-subdir/Used3.rst
+docs/source/modules/used-subdir/Used4.rst

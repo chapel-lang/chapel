@@ -1,0 +1,9 @@
+[brick]
+name="_subModule"
+version="0.1.0"
+chplVersion="2.6.0"
+license="None"
+type="library"
+
+[dependencies]
+

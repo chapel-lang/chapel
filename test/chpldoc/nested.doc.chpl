@@ -32,8 +32,81 @@ record R {
 
   */
   record Inner {
-    /* Inner Method. */
+    /*
+       Inner Method.
+
+       Multiline comment.
+    */
     proc innerMethod() {
+    }
+
+    /*
+      Documentation for ``InnerMost``
+
+      .. code-block:: text
+
+        This code-block should not overflow to 'innerMostMethod'!
+
+    */
+    record InnerMost {
+      /*
+         InnerMost Method.
+
+         Multiline comment.
+      */
+      proc innerMostMethod() {
+      }
+    }
+  }
+}
+
+/*
+  Documentation for class C.
+
+  .. code-block:: text
+
+    a code block!
+*/
+class C {
+  var x : int;
+
+  /* Document 'foo' */
+  proc foo() {
+  }
+
+  /*
+    Documentation for ``Inner``
+
+    .. code-block:: text
+
+      This code-block should not overflow to 'innerMethod'!
+
+  */
+  class Inner {
+    /*
+       Inner Method.
+
+       Multiline comment.
+    */
+    proc innerMethod() {
+    }
+
+    /*
+      Documentation for ``InnerMost``
+
+      .. code-block:: text
+
+        This code-block should not overflow to 'innerMostMethod'!
+
+    */
+    class InnerMost {
+      /*
+         InnerMost Method.
+
+         Multiline comment.
+      */
+      proc innerMostMethod() {
+      }
     }
   }
 }

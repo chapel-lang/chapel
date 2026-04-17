@@ -195,13 +195,15 @@ of shadow variables, one per outer variable.
    the :ref:`argument intent <Argument_Intents>` associated with
    the shadow variable, which is called a "task intent".
 
- - References within a task that seem to refer to an outer variable
-   will actually be referring to the corresponding shadow variable
+ - A reference within a task that seems to refer to an outer variable
+   actually refers to the corresponding shadow variable
    owned by the task. If the parallel iterator causes multiple
    iterations of the loop to be executed by the same task, these
    iterations refer to the same set of shadow variables.
 
  - Each shadow variable is deallocated at the end of its task.
+   For a shadow variable with a ``ref``-like intent, this does not result in
+   any user-visible activity, analogously to a ``ref`` formal of a function.
 
 For most types, forall intents use the default argument intent
 (:ref:`The_Default_Intent`). For numeric types, this implies capturing the
@@ -250,13 +252,17 @@ writeln();
     single: forall; with
 .. _primers-forallLoops-with:
 
-The task intents ``in``, ``const in``, ``ref``, ``const ref``,
-and ``reduce`` can be specified explicitly using a ``with`` clause.
+The task intents ``in``, ``const in``, ``ref``, and ``const ref``
+can be specified explicitly using a ``with`` clause.
 
 An ``in`` or ``const in`` intent creates a copy of the outer variable
-for each task. A ``ref`` or ``const ref`` makes the
-shadow variable an alias for the outer variable. Updates to a ``ref``
-shadow variable are reflected in the corresponding outer variable.
+for each task. Such a shadow variable is never accessed concurrently
+by its task.
+
+A ``ref`` or ``const ref`` makes the shadow variable an alias for the
+outer variable. Updates to a ``ref`` shadow variable are reflected
+in the corresponding outer variable. Data races due to concurrent updates
+to the outer variable are possible in this case.
 */
 
 var outerRealVariable = 1.0;
@@ -319,32 +325,56 @@ of forall loop.
 Task-Private Variables
 ----------------------
 
-A task-private variable is similar to an in-intent or ref-intent
-shadow variable in that it is initialized at the beginning of its
-task and deallocated at the end of the task. However, a task-private
-variable is initialized without regard to any outer variable.
+A task-private variable exists for the duration of a task.
+Like with shadow variables, each task created by the parallel iterator
+of a forall-loop gets its own set of task-private variable(s).
+Unlike shadow variables, task-private variables do not correspond to
+outer variables.
 
-A task-private variable is introduced using a with-clause
+Task-private variables are introduced in a with-clause
 in a way similar to a regular ``var``, ``const``, ``ref``,
-or ``const ref`` variable. A ``var`` or ``const`` variable
-must provide either its type or initializing expression, or both.
-As with a regular variable, it will be initialized
-to the default value of its type if the initializing expression
-is not given. A ``ref`` or ``const ref`` variable must
-have the initializing expression and cannot declare its type.
+or ``const ref`` variable.
 
-A ``var`` task-private variable could be used, for example,
-as a per-task scratch space that is never accessed concurrently.
+A ``var`` or ``const`` task-private variable must have either its type
+or initializing expression, or both.  As with a regular variable, a
+task-private variable is default-initialized if the initializing
+expression is not given.
+
+A ``ref`` or ``const ref`` variable must have an initializing expression
+and cannot declare its type. This expression defines what such a
+task-private variable is an alias for.
+
+The next example highlights some uses of task-private variables
+and their syntactic differences from explicit task intents for
+shadow varialbes.
 */
 
-forall i in 1..n with (var myReal: real,  // starts at 0 for each task
-                       ref outerIntVariable, // a shadow variable
-                       ref myRef = outerIntVariable) {
+outerAtomicVariable.write(1);
 
-  myReal += 0.1;   // ok: never accessed concurrently
+forall i in 1..n with (
+  // A task-private variable can be used to specify an action to be done
+  // at the beginning of each task, for example obtaining a unique number
+  // for each task.
+  const taskId = outerAtomicVariable.fetchAdd(1),
+  // Another use is to create a per-task scratch space that is never accessed
+  // concurrently or that is too expensive to create for each iteration.
+  var scratch: [1..n] real,
+  // Cf. `[const] in` without a type or initializer shows a shadow variable.
+  in outerRealVariable,
+  // A `ref` task-private variable lets me choose explicitly what to reference.
+  ref myRef = A[1],
+  // It can also reference something task-specific.
+  ref myB = B[taskId],
+  // Cf. `[const] ref` without a type or initializer shows a shadow variable.
+  ref outerIntVariable
+) {
+  scratch[1] += 0.1;         // ok: never accessed concurrently
+  outerRealVariable += 0.1;  // ditto
 
-  if i == 1 then   // ensure only one task accesses outerIntVariable
-    myRef *= 3;    // to avoid the risk of a data race
+  if i == 1 {                // ensure only one task accesses the outer:
+    myRef *= 3;              //   `A[1]` and
+    outerIntVariable *= 3;   //   `outerIntVariable`
+  }                          // to avoid the risk of a data race
 }
 
 writeln("After a loop with task-private variables:");

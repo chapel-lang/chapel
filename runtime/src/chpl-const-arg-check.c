@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -22,7 +22,7 @@
 #include "chplrt.h"
 #include "chpl-linefile-support.h"
 #include "chpl-mem.h"
-#include "error.h"
+#include "chpl-error.h"
 
 // FNV-1a hash function, a "string hash"
 uint64_t const_arg_hash(void* ptr, size_t size) {

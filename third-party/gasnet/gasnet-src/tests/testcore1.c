@@ -214,8 +214,8 @@ main(int argc, char **argv)
 {
 	int	iters = 0;
 	gex_AM_Entry_t htable[] = {
-		{ 201, chksum_reqh, GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_SHORT, 2 },
-		{ 202, chksum_reph, GEX_FLAG_AM_REPLY|GEX_FLAG_AM_MEDIUM, 1 }
+		{ 201, (gex_AM_Fn_t)chksum_reqh, GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_SHORT, 2 },
+		{ 202, (gex_AM_Fn_t)chksum_reph, GEX_FLAG_AM_REPLY|GEX_FLAG_AM_MEDIUM, 1 }
 	};
 
 	/* call startup */

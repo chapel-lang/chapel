@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -102,9 +102,6 @@ static void resolveExportWrapperTypeAliases(void) {
 }
 
 void fixupExportedFunctions(const std::vector<FnSymbol*>& fns) {
-
-  if (fMinimalModules)
-    return;
 
   //
   // We have to resolve type aliases for export wrapper types even if we
@@ -213,7 +210,7 @@ static void attemptFixups(FnSymbol* fn) {
 
   if (needsFixup(fn->retType) && validateReturnIntent(fn)) {
     if (wrapper == NULL) { wrapper = createWrapper(fn); }
-    if (fMultiLocaleInterop) {
+    if (fClientServerLibrary) {
       exportedStrRets.insert(wrapper);
     }
     changeRetType(wrapper);
@@ -259,7 +256,7 @@ static bool validateFormalIntent(FnSymbol* fn, ArgSymbol* as) {
                    || t == dtExternalArray || isCPtrConstChar(t)) {
     IntentTag tag = as->originalIntent;
 
-    bool multiloc = fMultiLocaleInterop || strcmp(CHPL_COMM, "none");
+    bool multiloc = fClientServerLibrary || strcmp(CHPL_COMM, "none");
 
     if ((multiloc || fLibraryPython) && isUserRoutine(fn)) {
       // TODO: After resolution, have abstract intents been normalized?

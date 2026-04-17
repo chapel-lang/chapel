@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+
+
+output=$2.tmp
+touch $output
+
+# make sure myRec got included
+grep '<span class="sig-name descname"><span class="pre">myRec</span></span>' docs/modules/MyModule.html
+if [ $? -ne 0 ]; then
+  echo "Error: expected to find myRec in the docs but did not" >> $output
+fi
+# make sure MyOtherClass got included
+grep '<span class="sig-name descname"><span class="pre">MyOtherClass</span></span>' docs/modules/MySubModules.html
+if [ $? -ne 0 ]; then
+  echo "Error: expected to find MyOtherClass in the docs but did not" >> $output
+fi
+
+# there should be no html files for SubA, SubB, or MyOtherModule
+if [ -f "docs/modules/MySubModules/SubA.html" ]; then
+  echo "Error: expected not to find MySubModules/SubA.html but it exists" >> $output
+fi
+if [ -f "docs/modules/MySubModules/SubB.html" ]; then
+  echo "Error: expected not to find MySubModules/SubB.html but it exists" >> $output
+fi
+if [ -f "docs/modules/MyOtherModule.html" ]; then
+  echo "Error: expected not to find MyOtherModule.html but it exists" >> $output
+fi
+
+mv $output $2

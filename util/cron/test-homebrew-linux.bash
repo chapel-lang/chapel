@@ -9,6 +9,8 @@
 # tarball created and sha of the tarball,
 # and run home-brew test-bot commands as homebrew CI does
 
+set -exo pipefail
+
 # Create a tarball from current repo.
 # The tarball is left in root of repo in tar/ directory.
 UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
@@ -16,10 +18,11 @@ UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 # common-tarball sets CHPL_HOME
 source $UTIL_CRON_DIR/common-tarball.bash
 
-
 # Tell gen_release to use existing repo instead of creating a new one with
 # git-archive.
 export CHPL_GEN_RELEASE_NO_CLONE=true
+# skip docs build for a faster tarball
+export CHPL_GEN_RELEASE_SKIP_DOCS=true
 
 export CHPL_LLVM=none
 
@@ -30,6 +33,7 @@ cd $CHPL_HOME
 # replace the url and sha in the chapel formula with the url pointing to the tarball created and sha of the tarball.
 # run home-brew scripts to install chapel.
 
+short_version=$(get_short_version)
 gen_release $short_version
 
 cp ${CHPL_HOME}/util/packaging/homebrew/chapel-main.rb  ${CHPL_HOME}/util/packaging/homebrew/chapel.rb
@@ -64,6 +68,9 @@ cd ${CHPL_HOME}/util/packaging/homebrew
 
 cp ${CHPL_HOME}/util/packaging/homebrew/chapel.rb  ${CHPL_HOME}/util/packaging/docker/test
 cp $location ${CHPL_HOME}/util/packaging/docker/test
+
+log_info "Chapel formula to be tested:"
+cat ${CHPL_HOME}/util/packaging/homebrew/chapel.rb
 
 # This will start a docker container that is similar to the one used by homebrew-ci and test the homebrew installation inside it.
 source ${CHPL_HOME}/util/packaging/docker/test/homebrew_ci.bash

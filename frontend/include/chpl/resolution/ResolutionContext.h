@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -500,7 +500,8 @@ class ResolutionContext::GlobalQuery {
   void inactiveStore(RetByVal x) {
     context_->querySetterUpdateResult(QUERY, ap_, std::move(x),
                                       name_,
-                                      isInput_);
+                                      isInput_,
+                                      /* markExternallySet */ false);
   }
 
   bool isRunning() {
@@ -674,7 +675,7 @@ ResolutionContext createDummyRC(Context* context);
 #define CHPL_RESOLUTION_REF_TO_CURRENT_QUERY_HANDLE() (rcquery__)
 
 /** Use this to store a result for any 'CHPL_RESOLUTION_QUERY...' query. */
-#define CHPL_RESOLUTION_QUERY_STORE_RESULT(fn__, rc__, x__, ...) do { \
+#define CHPL_RESOLUTION_QUERY_UNSAFE_STORE_RESULT(fn__, rc__, x__, ...) do { \
     auto rcq__ = rc__->createQueryClass<fn__>(#fn__, __VA_ARGS__); \
     rcq__.inactiveStore(std::move(x__)); \
   } while (0)

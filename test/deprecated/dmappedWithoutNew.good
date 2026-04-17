@@ -1,1 +1,0 @@
-dmappedWithoutNew.chpl:14: warning: omitting 'new' in a dmapped initialization expression is deprecated; please use '<domain> dmapped new <DistName>(<args>)'

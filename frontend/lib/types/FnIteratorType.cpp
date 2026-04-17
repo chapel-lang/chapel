@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2024-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -26,22 +26,25 @@ namespace types {
 
 void FnIteratorType::markUniqueStringsInner(Context* context) const {
   iteratorFn_->mark(context);
+  yieldType_.mark(context);
 }
 
 const owned<FnIteratorType>&
 FnIteratorType::getFnIteratorType(Context* context,
                                   const resolution::PoiScope* poiScope,
-                                  const resolution::TypedFnSignature* iteratorFn) {
-  QUERY_BEGIN(getFnIteratorType, context, poiScope, iteratorFn);
-  auto result = toOwned(new FnIteratorType(poiScope, iteratorFn));
+                                  const resolution::TypedFnSignature* iteratorFn,
+                                  QualifiedType retType) {
+  QUERY_BEGIN(getFnIteratorType, context, poiScope, iteratorFn, retType);
+  auto result = toOwned(new FnIteratorType(poiScope, iteratorFn, retType));
   return QUERY_END(result);
 }
 
 const FnIteratorType*
 FnIteratorType::get(Context* context,
                     const resolution::PoiScope* poiScope,
-                    const resolution::TypedFnSignature* iteratorFn) {
-  return getFnIteratorType(context, poiScope, iteratorFn).get();
+                    const resolution::TypedFnSignature* iteratorFn,
+                    QualifiedType retType) {
+  return getFnIteratorType(context, poiScope, iteratorFn, retType).get();
 }
 
 }  // end namespace types

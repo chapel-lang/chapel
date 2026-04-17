@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -207,6 +207,85 @@ proc isBorrowedClassType(type t)  param {
   return __primitive("is borrowed class type", t);
 }
 
+// These bitmasks mirror the ones defined on the compiler 'FunctionType'.
+param chpl_procMaskWidthLocal     = 0b00001;
+param chpl_procMaskWidthWide      = 0b00010;
+param chpl_procMaskLinkageExtern  = 0b00100;
+param chpl_procMaskLinkageDefault = 0b01000;
+
+//
+// User-facing predicates used to detect procedure types. Defined in the
+// standard fashion, but not exposed to users yet. These predicates do not
+// expose any notion of "wideness" or other properties used behind the scenes
+// by the procedure type.
+//
+
+@chpldoc.nodoc
+proc isProcedureType(type t) param do return __primitive("is proc type", t);
+
+@chpldoc.nodoc
+proc isProcedureValue(x: ?t) param do return isProcedureType(t);
+
+@chpldoc.nodoc
+proc isProcedure(x) param do return isProcedureValue(x);
+
+@chpldoc.nodoc
+proc isProcedure(type t) param do return isProcedureType(t);
+
+//
+// Predicates to detect variations of procedure types (for types and values).
+//
+
+proc chpl_isLocalProcType(type t) param do
+  return __primitive("is proc type", t, chpl_procMaskWidthLocal);
+proc chpl_isWideProcType(type t) param do
+  return __primitive("is proc type", t, chpl_procMaskWidthWide);
+proc chpl_isExternProcType(type t) param do
+  return __primitive("is proc type", t, chpl_procMaskLinkageExtern);
+
+proc chpl_isLocalProc(type t) param do return chpl_isLocalProcType(t);
+proc chpl_isWideProc(type t) param do return chpl_isWideProcType(t);
+proc chpl_isExternProc(type t) param do return chpl_isExternProcType(t);
+proc chpl_isLocalProc(x: ?t) param do return chpl_isLocalProcType(t);
+proc chpl_isWideProc(x: ?t) param do return chpl_isWideProcType(t);
+proc chpl_isExternProc(x: ?t) param do return chpl_isExternProcType(t);
+
+//
+// Type constructors to adjust the properties of a given procedure type (e.g.,
+// convert it from 'local' to 'wide'). These are not safe to use unless you
+// know what you're doing. The underlying representation of a procedure value
+// will change depending on the properties of its type, and only a cast is
+// guaranteed to properly translate between representations.
+//
+
+proc chpl_toLocalProcType(type t) type where isProcedureType(t) do
+  return __primitive("to proc type", t, chpl_procMaskWidthLocal);
+
+proc chpl_toWideProcType(type t) type where isProcedureType(t) do
+  return __primitive("to proc type", t, chpl_procMaskWidthWide);
+
+proc chpl_toExternProcType(type t) type where isProcedureType(t) do
+  return __primitive("to proc type", t, chpl_procMaskLinkageExtern);
+
+// Cast operation to produce a local procedure pointer. When given a wide
+// procedure value this cast will consult the procedure pointer cache to
+// produce a local pointer. When given a local procedure value this cast
+// will do nothing. This operation is always safe to call (provided your
+// procedure value was constructed via normal means and is present on all
+// locales).
+inline proc chpl_toLocalProc(x: ?t) where chpl_isLocalProc(t) do return x;
+inline proc chpl_toLocalProc(x: ?t) where chpl_isWideProc(t) {
+  use CTypes only c_ptr;
+
+  // Declare extern instead of 'use' to work around circular dependencies.
+  extern proc chpl_dynamicProcIdxToLocalPtr(idx: int(64)): c_ptr(void);
+
+  const idx = __primitive("cast", int, x);
+  const ptr = chpl_dynamicProcIdxToLocalPtr(idx);
+  const ret = __primitive("cast", chpl_toLocalProcType(t), ptr);
+  return ret;
+}
+
 /*
 POD stands for Plain Old Data and roughly corresponds to the meaning of Plain
 Old Data in C++.
@@ -363,16 +442,12 @@ proc isAtomicValue(e)    param do  return isAtomicType(e.type);
 
 @chpldoc.nodoc
 proc isHomogeneousTupleValue(x) param do return __primitive("is star tuple type", x);
-pragma "no borrow convert"
 @chpldoc.nodoc
 proc isOwnedClassValue(e)     param do return isOwnedClassType(e.type);
-pragma "no borrow convert"
 @chpldoc.nodoc
 proc isSharedClassValue(e)    param do return isSharedClassType(e.type);
-pragma "no borrow convert"
 @chpldoc.nodoc
 proc isUnmanagedClassValue(e) param do return isUnmanagedClassType(e.type);
-pragma "no borrow convert"
 @chpldoc.nodoc
 proc isBorrowedClassValue(e)  param do return isBorrowedClassType(e.type);
 @chpldoc.nodoc
@@ -541,8 +616,6 @@ proc isArray(e)     param do  return isArrayValue(e);
 proc isDmap(e)      param do  return isDmapValue(e);
 /* Returns ``true`` if the argument is a ``sync`` type or a ``sync`` variable. */
 proc isSync(e)      param do  return isSyncValue(e);
-/* Returns ``true`` if the argument is a ``single`` type or a ``single`` variable. */
-proc isSingle(e)    param do  return isSingleValue(e);
 /*Returns ``true`` if the argument is an ``atomic`` type or an ``atomic`` variable.*/
 proc isAtomic(e)    param do  return isAtomicValue(e);
 
@@ -552,16 +625,12 @@ proc isHomogeneousTuple(e)  param do  return isHomogeneousTupleValue(e);
 /* Returns ``true`` if the argument is a generic type, and ``false`` otherwise. */
 proc isGeneric(e)   param do  return false;
 /* Returns ``true`` if the argument is an ``owned`` class type. */
-pragma "no borrow convert"
 proc isOwnedClass(e)     param do  return isOwnedClassValue(e);
 /* Returns ``true`` if the argument is a ``shared`` class type. */
-pragma "no borrow convert"
 proc isSharedClass(e)     param do  return isSharedClassValue(e);
 /* Returns ``true`` if the argument is a ``unmanaged`` class type. */
-pragma "no borrow convert"
 proc isUnmanagedClass(e)     param do  return isUnmanagedClassValue(e);
 /* Returns ``true`` if the argument is a ``borrowed`` class type. */
-pragma "no borrow convert"
 proc isBorrowedClass(e)     param do  return isBorrowedClassValue(e);
 /* Returns ``true`` if the argument is a class type that can store ``nil``. */
 proc isNilableClass(e)     param do  return isNilableClassValue(e);
@@ -701,7 +770,7 @@ proc toNilableIfClassType(type arg) type {
 Returns the number of bits used to store the values of type ``t``.
 This is available for all numeric types.
 */
-pragma "no where doc"
+@chpldoc.noWhereClause
 proc numBits(type t) param where t == bool {
   compilerError("'bool' does not have a well-defined size");
 }
@@ -743,7 +812,7 @@ When ``t`` is a ``bool`` type, it returns ``false``.
 When ``t`` is ``real``, ``imag``, or ``complex`` type,
 it is a non-``param`` function.
 */
-pragma "no where doc"
+@chpldoc.noWhereClause
 proc min(type t) param  where isBool(t) do      return false: t;
 
 @chpldoc.nodoc
@@ -782,7 +851,7 @@ When ``t`` is a ``bool`` type, it returns ``true``.
 When ``t`` is a ``real``, ``imag``, or ``complex`` type,
 it is a non-``param`` function.
 */
-pragma "no where doc"
+@chpldoc.noWhereClause
 proc max(type t) param  where isBool(t) do      return true: t;
 
 @chpldoc.nodoc
@@ -915,8 +984,12 @@ proc integral.chpl_checkValue(type T: integral): owned IllegalArgumentError? {
 
 @unstable("integral.safeCast() is unstable and its behavior may change in the future")
 proc integral.safeCast(type T: bool) {
-  if this != 0 && this != 1 then
-    HaltWrappers.safeCastCheckHalt("casting "+this.type:string+" to 'bool' requires it to have a value of either 0 or 1, but the current value is " + this:string);
+  if castChecking then
+    if this != 0 && this != 1 then
+      HaltWrappers.safeCastCheckHalt(
+        "casting "+this.type:string+
+        " to 'bool' requires it to have a value of either 0 or 1,"+
+        " but the current value is " + this:string);
   return this: bool;
 }
 
@@ -986,9 +1059,9 @@ inline proc _bxor_id(type t) do return 0:t;
    or if ``isSubtype(from, to)`` would return ``true``. See
    :ref:`Implicit_Conversion_Call`.
  */
-pragma "docs only"
+pragma "suppress generic actual warning"
 proc isCoercible(type from, type to) param {
-  return __primitive("is_coercible", from, to);
+  return __primitive("is_coercible", to, from);
 }
 
 /* Returns ``true`` if the type ``sub`` is a subtype of the type ``sup``.
@@ -1002,7 +1075,7 @@ proc isCoercible(type from, type to) param {
      * ``sub`` is non-nilable class type and ``sup`` is the nilable version of the
        same class type
    */
-pragma "docs only"
+pragma "suppress generic actual warning"
 proc isSubtype(type sub, type sup) param {
   return __primitive("is_subtype", sup, sub);
 }
@@ -1010,7 +1083,7 @@ proc isSubtype(type sub, type sup) param {
 /* Similar to :proc:`isSubtype` but returns ``false`` if
    ``sub`` and ``sup`` refer to the same type.
    */
-pragma "docs only"
+pragma "suppress generic actual warning"
 proc isProperSubtype(type sub, type sup) param {
   return __primitive("is_proper_subtype", sup, sub);
 }

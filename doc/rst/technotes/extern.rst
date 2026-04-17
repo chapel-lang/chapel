@@ -98,12 +98,11 @@ The Chapel names for C types are:
   c_uchar
   c_short
   c_ushort
-  ssize_t
-  size_t
+  c_ssize_t
+  c_size_t
   c_ptr(T)
   c_ptrConst(T)
   c_array(T,n)
-  c_string
 
 For consistency, the following type aliases are also provided even
 though their sizes can't vary in C (thereby permitting the equivalent
@@ -114,15 +113,15 @@ Chapel types to always be usable):
   c_float  // (a real(32) in Chapel)
   c_double // (a real(64) in Chapel)
 
-c_string, c_ptr(T), c_ptrConst(T), and c_array(T,n) are
+c_ptr(T), c_ptrConst(T), and c_array(T,n) are
 described in the next section.
 
 
-Pointer and String Types
-------------------------
+Pointer Types
+-------------
 
 Chapel supports the following C pointer types: c_ptr(T),
-c_ptrConst(T), c_string, and c_fn_ptr. In addition, it supports c_array(T,n).
+c_ptrConst(T), and c_fn_ptr. In addition, it supports c_array(T,n).
 
 These types are the same as C types:
 
@@ -130,7 +129,6 @@ These types are the same as C types:
 
   c_ptr(T) is T*
   c_ptrConst(T) is const T*
-  c_string is const char* (c_string is deprecated in favor of c_ptrConst(c_char))
   c_fn_ptr represents a C function pointer (with unspecified arg and return types)
   c_array(T,n) is T[n]
 
@@ -207,26 +205,6 @@ prototype, but they must be used differently in Chapel:
   byPtr(c_ptrTo(x)); // c_ptr argument must be constructed explicitly
 
 Analogously, const ref may be used instead of c_ptrConst(T).
-
-
-c_string
-~~~~~~~~
-
-.. warning::
-
-  ``c_string`` is deprecated in favor of ``c_ptrConst(c_char)``. See
-  :ref:`c_string deprecation <readme-evolution.c_string-deprecation>` for more
-  information.
-
-The c_string type maps to a constant C string (that is, const char*)
-that is intended for use locally. A c_string can be obtained from a
-Chapel string using the method :proc:`~CTypes.string.c_str` and casting the
-result to c_string. A Chapel string can be constructed from a C string using
-:proc:`~String.string.createCopyingBuffer` or one of the other similarly named
-string creation methods. Note however, that because c_string is a local-only
-type, the .c_str() method can only be called on Chapel strings that are stored
-on the same locale; calling .c_str() on a non-local string will result in a
-runtime error.
 
 
 c_fn_ptr
@@ -860,10 +838,10 @@ types; for example:
  writeln(sum);
 
 
-Pointer Types
--------------
+Pointer Types in Extern Blocks
+------------------------------
 
-See the section `Pointer and String Types`_ above for background on
+See the section `Pointer Types`_ above for background on
 how the Chapel programs can work with C pointer types. Any pointer type used in
 an extern block will be made visible to the Chapel program as c_ptr(T),
 c_ptrConst(T).
@@ -1120,8 +1098,9 @@ two mechanisms.
     .. code-block:: sh
 
        chpl foo.h foo.c myProgram.chpl
-       chpl foo.h foo.o myProgram.chpl  # if foo.c had already been compiled
-       chpl foo.h -lfoo myProgram.chpl  # if foo.c had been archived in libfoo.a or libfoo.so
+       chpl foo.h foo.o myProgram.chpl    # if foo.c had already been compiled
+       chpl foo.h -lfoo myProgram.chpl    # if foo.c had been archived in libfoo.a or libfoo.so/libfoo.dylib
+       chpl foo.h libfoo.a myProgram.chpl # if foo.c had been archived in libfoo.a
 
  2) Alternatively, the required C resources can be listed within the
     Chapel file using the ``require`` statement. For example:
@@ -1185,9 +1164,9 @@ Either of the two approaches above will result in the following:
    in a ``require`` statement will be compiled using the same flags as the
    Chapel-generated C files (use ``--print-commands`` to see these compile
    commands).
- * During Chapel's link step, any ``.o`` and ``.a``/``.so`` files listed on the compiler's
-   command-line or in ``require`` statements will be linked into the final
-   executable.
+ * During Chapel's link step, any ``.o`` and ``.a``/``.so``/``.dylib`` files
+   listed on the compiler's command-line or in ``require`` statements will be
+   linked into the final executable.
  * Any paths specified using the ``-I`` and ``-L`` flags will be passed along
    to the back-end compiler.
 

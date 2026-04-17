@@ -1,0 +1,4 @@
+--edition only accepts a limited set of values.  Current options are:
+default (currently '2.0')
+2.0
+preview

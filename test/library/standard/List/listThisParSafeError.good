@@ -1,0 +1,1 @@
+listThisParSafeError.chpl:11: error: Cannot index a list initialized with `parSafe=true`, use `getValue()`/`getBorrowed()` to get values from the list

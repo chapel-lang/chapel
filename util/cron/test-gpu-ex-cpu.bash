@@ -12,5 +12,7 @@ export CHPL_GPU=cpu
 export CHPL_COMM=none
 export CHPL_GPU_NO_CPU_MODE_WARNING=y
 
+module list
+
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="gpu-ex-cpu"
 $UTIL_CRON_DIR/nightly -cron ${nightly_args}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -32,8 +32,8 @@ extern "C" {
 // This is the type of a global locale ID.
 //
 typedef struct {
-  int32_t node;
-  int32_t subloc;
+  c_nodeid_t node;
+  c_sublocid_t subloc;
 } chpl_localeID_t;
 
 //

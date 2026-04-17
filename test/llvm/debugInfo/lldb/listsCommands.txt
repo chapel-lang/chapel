@@ -1,0 +1,35 @@
+r
+
+p myIntList
+v myIntList[1]
+e -- myIntList.pushBack(8)
+p myIntList
+c
+
+p myRealList
+v myRealList[1]
+e -- myRealList.pushBack(8.8)
+p myRealList
+c
+
+p myRecList
+v myRecList[2]
+v myRecList[2].y
+c
+
+p myStrList
+v myStrList[0]
+c
+
+p myOwnedClassList
+v myOwnedClassList[2]
+v myOwnedClassList[2].b
+c
+
+p myClassList
+v myClassList[2]
+v *myClassList[2]
+v myClassList[2]->b
+c
+
+q

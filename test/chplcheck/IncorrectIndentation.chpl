@@ -5,6 +5,24 @@ module IncorrectIndentation {
     writeln("??");
   }
 
+  public proc f1Pub()
+  {
+    writeln("hi");
+    writeln("??");
+  }
+
+  private proc f1Priv()
+  {
+    writeln("hi");
+    writeln("??");
+  }
+
+  export proc f1Exp()
+  {
+    writeln("hi");
+    writeln("??");
+  }
+
   proc f2()
   {
   writeln("hi");
@@ -79,6 +97,7 @@ module IncorrectIndentation {
         proc firstProc() {}
          proc secondProc() {}
         proc thirdProc() {}
+         forwarding var foo = 10;
 
         proc nestedProcOuter() {
           proc nestedProcInner(x: int) do return x;
@@ -308,8 +327,8 @@ module IncorrectIndentation {
   // semicolon warning does not issue bad indentation
   enum color { red, green, blue };
 
-  // Since locations are incorrectly reported with 'public' and 'private',
-  // these shouldn't warn.
+
+
   module M7 {
     proc f1 {}
       proc g1 {}
@@ -384,5 +403,80 @@ if 1 < 2 {
   if 3 < 4 {
 
   }
+  }
+
+  proc vars()
+  {
+    var a = 10;
+    var b = 20;
+  }
+  proc vars2()
+  {
+    var a = 10;
+     var b = 20;
+  }
+  proc vars3()
+  {
+  var a = 10;
+  var b = 20;
+  }
+
+  proc ifElse() {
+    if 1 < 5 {
+      writeln("whee");
+    } else if 2 > 3 {
+      writeln("whoopie");
+    } else if 11 > 3 {
+      writeln("wooooow");
+    }
+
+    if 1 < 5 then
+      writeln("whee");
+    else if 2 > 3 then
+      writeln("whoopie");
+    else if 11 > 3 then
+      writeln("wooooow");
+
+    if 1 < 5 {
+      writeln("whee");
+    } else if 11 > 3 {
+        var x = 10;
+          var y = 20;
+    }
+
+    if 1 < 5 {
+      writeln("whee");
+    } else if 11 > 3 {
+      var x = 10;
+      var y = 20;
+        if 1 {
+        writeln("nested");
+      }
+    }
+  }
+
+  var arr: [1..10] int;
+  begin with (ref arr)
+  {
+    writeln("hi");
+    writeln("??");
+  }
+
+  record R { }
+  manage new R()
+  {
+    var x = 1;
+    var y = 2;
+  }
+  manage new R()
+  {
+     var x = 1;
+    var y = 2;
+  }
+
+  @chpldoc.nodoc
+  enum foo {
+    bar,
+    baz
   }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -101,7 +101,13 @@ static void runProgram(std::vector<const char*> prog, F&& f, Types... types) {
   auto context = &ctx;
   ErrorGuard guard(context);
 
-  std::string program = "module ChapelBase {\n  enum iterKind { standalone, leader, follower };\n}\n";
+  std::string program = R"""(
+module ChapelBase {
+  enum iterKind { standalone, leader, follower };
+  operator =(ref lhs:int, const rhs:int) {}
+  operator =(ref lhs:real, const rhs:real) {}
+}
+)""";
 
   auto addType = [&](auto arg) {
     for (const auto& line : arg.strs())
@@ -436,6 +442,78 @@ static void test20() {
       IterableType("R").defineSerialIterator("new pair(0, 0.0)"));
 }
 
+static void test21() {
+  // we can promoted generated binary operator calls
+  runProgram(
+      { "enum color { red = 1, green, blue }",
+        "operator =(ref lhs: color, in rhs: color) {}",
+        "for i in (new R()) : int {}" },
+      [](ErrorGuard& guard, const QualifiedType& t) {
+        assert(!t.isUnknownOrErroneous());
+        assert(t.type()->isIntType());
+      },
+      IterableType("R").definePromotionType("color").defineSerialIterator("color.red"));
+}
+
+static void test22() {
+  // Promotion gets triggered for methods
+  runProgram(
+      { "proc int.foo() do return this;",
+        "for i in (new R()).foo() {}" },
+      [](ErrorGuard& guard, const QualifiedType& t) {
+        assert(!t.isUnknownOrErroneous());
+        assert(t.type()->isIntType());
+      },
+      IterableType("R").definePromotionType("int").defineSerialIterator("1"));
+}
+
+// You can invoke primary methods on a type even if they are not imported
+// into the current scope, because the type's definition scope is considered.
+// However, in production, this rule doesn't apply to promoted methods.
+// Test that in Dyno, it does (which is more consistent).
+//
+// Tracking issue in prod: https://github.com/chapel-lang/chapel/issues/27578
+static void testPromotedMethodNotImported() {
+  auto prog = R"""(
+    module M1 {
+      record R {
+        proc foo() do return 42.0;
+      }
+    }
+    module M2 {
+      use M1;
+
+      record S {
+        proc chpl__promotionType() type do return R;
+        iter these() do yield new R();
+      }
+
+      var s = new S();
+    }
+    module M3 {
+      import M2.s;
+
+      var x = s.foo();
+    }
+  )""";
+
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  setFileText(context, "input.chpl", prog);
+  auto& res = parseFileToBuilderResultAndCheck(context, UniqueString::get(context, "input.chpl"), UniqueString());
+  assert(res.numTopLevelExpressions() == 3);
+  auto M3 = res.topLevelExpression(2)->toModule();
+  assert(M3->numStmts() == 2);
+  auto xInit = M3->stmt(1)->toVariable()->initExpression();
+
+  auto& rr = resolveModule(context, M3->id());
+  auto& re = rr.byAst(xInit);
+  assert(!re.type().isUnknownOrErroneous());
+  assert(re.type().type()->isPromotionIteratorType());
+  assert(re.type().type()->toPromotionIteratorType()->yieldType().type()->isRealType());
+}
+
 static void testFieldPromotionScoping() {
   // test that field access promotion works even if the field name itself
   // is not imported / in scope (it should be found in the receiver scopes).
@@ -502,6 +580,115 @@ static void regressionTestRecursivePromotionTypeBug() {
          CompositeType::getErrorType(context)->basicClassType());
 }
 
+// Helper to test that promoted functions with return intent overloading
+// choose the expected overload based on priority (ref > const ref > value)
+static void testPromotionChoosesOverload(
+  const char* testName,
+  const char* overloadDecls,
+  uast::Function::ReturnIntent expectedIntent) {
+  printf("%s\n", testName);
+
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program = R"""(
+record R {
+  proc chpl__promotionType() type do return int;
+}
+iter R.these() do yield 1;
+var global: int;
+)""";
+  program += overloadDecls;
+  program += R"""(
+var promoted = foo(new R());
+)""";
+
+  auto m = parseModule(context, program);
+  auto& rr = resolveModule(context, m->id());
+
+  // Find the 'promoted' variable
+  auto promoted = findVariable(m, "promoted");
+  CHPL_ASSERT(promoted && promoted->name() == "promoted");
+
+  auto& re = rr.byAst(promoted->initExpression());
+  assert(!re.type().isUnknownOrErroneous());
+  assert(re.type().type()->isPromotionIteratorType());
+
+  // Check that the expected overload was chosen
+  auto pit = re.type().type()->toPromotionIteratorType();
+  auto scalarSig = pit->scalarFn();
+  auto fnAst = idToAst(context, scalarSig->id());
+  assert(fnAst && fnAst->isFunction());
+  assert(re.mostSpecific().only().fn());
+  assert(re.mostSpecific().only().fn()->id() == scalarSig->id());
+
+  if (fnAst->toFunction()->returnIntent() != expectedIntent) {
+    printf("Test %s failed: expected %s return intent but got %s\n",
+           testName,
+           uast::Function::returnIntentToString(expectedIntent),
+           uast::Function::returnIntentToString(fnAst->toFunction()->returnIntent()));
+    assert(false);
+  }
+
+  // Verify yielded type is int
+  assert(pit->yieldType().type()->isIntType());
+}
+
+// Test that promoted functions with ref and const ref overloads prefer ref
+static void testPromotionReturnIntentOverloading() {
+  testPromotionChoosesOverload(
+    "testPromotionReturnIntentOverloading",
+    R"""(
+proc foo(x: int) ref { return global; }
+proc foo(x: int) const ref { return global; }
+)""",
+    uast::Function::REF);
+}
+
+// Test that promoted functions with ref and value overloads prefer ref
+static void testPromotionReturnIntentOverloadingRefValue() {
+  testPromotionChoosesOverload(
+    "testPromotionReturnIntentOverloadingRefValue",
+    R"""(
+proc foo(x: int) ref { return global; }
+proc foo(x: int) { return global; }
+)""",
+    uast::Function::REF);
+}
+
+// Test that promoted functions with all three return intent overloads prefer ref
+static void testPromotionReturnIntentOverloadingAll() {
+  testPromotionChoosesOverload(
+    "testPromotionReturnIntentOverloadingAll",
+    R"""(
+proc foo(x: int) ref { return global; }
+proc foo(x: int) const ref { return global; }
+proc foo(x: int) { return global; }
+)""",
+    uast::Function::REF);
+}
+
+// Test that promoted functions with const ref and value overloads prefer const ref
+static void testPromotionReturnIntentOverloadingConstRefValue() {
+  testPromotionChoosesOverload(
+    "testPromotionReturnIntentOverloadingConstRefValue",
+    R"""(
+proc foo(x: int) const ref { return global; }
+proc foo(x: int) { return global; }
+)""",
+    uast::Function::CONST_REF);
+}
+
+// Test that promoted functions with only value overload use value
+static void testPromotionReturnIntentOverloadingValueOnly() {
+  testPromotionChoosesOverload(
+    "testPromotionReturnIntentOverloadingValueOnly",
+    R"""(
+proc foo(x: int) { return global; }
+)""",
+    uast::Function::DEFAULT_RETURN_INTENT);
+}
+
 int main() {
   // Run tests with primary and secondary method definitions (expecting
   // the same results).
@@ -529,13 +716,23 @@ int main() {
     test18();
     test19();
     test20();
+    test21();
+    test22();
   }
+
+  testPromotedMethodNotImported();
 
   testFieldPromotionScoping();
 
   testTertiaryMethod();
 
   regressionTestRecursivePromotionTypeBug();
+
+  testPromotionReturnIntentOverloading();
+  testPromotionReturnIntentOverloadingRefValue();
+  testPromotionReturnIntentOverloadingAll();
+  testPromotionReturnIntentOverloadingConstRefValue();
+  testPromotionReturnIntentOverloadingValueOnly();
 
   return 0;
 }

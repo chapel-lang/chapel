@@ -19,5 +19,11 @@ module Nested {
         }
       }
     }
+
+    coforall loc in Locales do on loc {
+      coforall tid in 0..#loc.maxTaskPar {
+        writeln(loc, " ", tid);
+      }
+    }
   }
 }

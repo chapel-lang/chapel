@@ -1,0 +1,9 @@
+[brick]
+name="myDep"
+version="0.1.0"
+chplVersion="2.9.0"
+license="None"
+type="library"
+compopts="-smyDepConfig=456"
+
+[dependencies]

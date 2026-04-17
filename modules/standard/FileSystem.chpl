@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -560,7 +560,7 @@ proc locale.cwd(): string throws {
             symbolic links.
    :rtype: `bool`
 
-   :throws SystemError: Thrown to describe an error if one occurs.
+   :throws IoError: Thrown to describe an error if one occurs.
 */
 proc exists(name: string): bool throws {
   extern proc chpl_fs_exists(ref result:c_int, name: c_ptrConst(c_char)): errorCode;
@@ -953,8 +953,57 @@ proc isMount(name: string): bool throws {
 
    :yield: The names of the specified directory's contents, as strings
 */
+@edition(last="2.0")
 iter listDir(path: string = ".", hidden: bool = false, dirs: bool = true,
               files: bool = true, listlinks: bool = true): string {
+  var err: owned Error? = nil;
+  for l in listDirHelper(path=path, hidden=hidden,
+                          dirs=dirs, files=files, listlinks=listlinks,
+                          err=err) do
+    yield l;
+  if err != nil then writeln(err!.message());
+}
+/* Lists the contents of a directory.  May be invoked in serial
+   contexts only.
+
+   :arg path: The directory whose contents should be listed
+              (defaults to ``"."``)
+   :type path: `string`
+
+   :arg hidden: Indicates whether hidden files/directory should be listed
+                (defaults to `false`)
+   :type hidden: `bool`
+
+   :arg dirs: Indicates whether directories should be listed
+              (defaults to `true`)
+   :type dirs: `bool`
+
+   :arg files: Indicates whether files should be listed (defaults to `true`)
+   :type files: `bool`
+
+   :arg listlinks: Indicates whether symbolic links should be listed
+                   (defaults to `true`)
+   :type listlinks: `bool`
+
+   :yield: The names of the specified directory's contents, as strings
+
+   :throws SystemError: Thrown to describe a system error
+   :throws Error: Thrown to describe an unknown error
+*/
+@edition(first="preview")
+iter listDir(path: string = ".", hidden: bool = false, dirs: bool = true,
+              files: bool = true, listlinks: bool = true): string throws {
+  var err: owned Error? = nil;
+  for l in listDirHelper(path=path, hidden=hidden,
+                         dirs=dirs, files=files, listlinks=listlinks,
+                         err=err) do
+    yield l;
+  if err != nil then throw (err:owned class);
+}
+@chpldoc.nodoc
+iter listDirHelper(path: string, hidden: bool, dirs: bool,
+                   files: bool, listlinks: bool,
+                   ref err: owned Error?): string {
   extern record DIR {}
   extern type DIRptr = c_ptr(DIR);
   extern "struct dirent" record chpl_dirent {}
@@ -970,41 +1019,43 @@ iter listDir(path: string = ".", hidden: bool = false, dirs: bool = true,
   }
 
   var dir: DIRptr = opendir(unescape(path).c_str());
-  if (dir != nil) {
+  if dir != nil {
+    defer closedir(dir);
     var ent: direntptr = readdir(dir);
-    while (ent != nil) {
+    while ent != nil {
       var filename: string;
-      try! {
+      try {
         filename = string.createCopyingBuffer(ent.d_name(),
-                                             policy=decodePolicy.escape);
+                                              policy=decodePolicy.escape);
+      } catch e {
+        err = e;
+        return;
       }
-      if (hidden || filename[0] != '.') {
-        if (filename != "." && filename != "..") {
+      if hidden || filename[0] != '.' {
+        if filename != "." && filename != ".." {
           const fullpath = path + "/" + filename;
 
-          // TODO: revisit error handling for this method
           try {
-            if (listlinks || !isSymlink(fullpath)) {
-              if (dirs && isDir(fullpath)) then
+            if listlinks || !isSymlink(fullpath) {
+              if dirs && isDir(fullpath) then
                 yield filename;
-              else if (files && isFile(fullpath)) then
+              else if files && isFile(fullpath) then
                 yield filename;
             }
           } catch e: SystemError {
-            writeln("error in listDir(): ", errorToString(e.err));
-            break;
+            err = e;
+            return;
           } catch {
-            writeln("unknown error in listDir()");
-            break;
+            err = new Error("unknown error in listDir()");
+            return;
           }
         }
       }
       ent = readdir(dir);
     }
-    closedir(dir);
   } else {
-    extern proc perror(s: c_ptrConst(c_char));
-    perror(("error in listDir(): " + path).c_str());
+    err = new SystemError(errno:errorCode, "error in listDir(): " + path);
+    return;
   }
 }
 

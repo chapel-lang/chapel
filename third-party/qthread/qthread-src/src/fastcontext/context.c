@@ -118,6 +118,29 @@ void INTERNAL qt_makectxt(uctxt_t *ucp, void (*func)(void), int argc, ...) {
   ucp->mc.regs[31] = (uintptr_t)top_of_stack; // SP
   ucp->mc.first = 1;
 }
+#elif defined(NEEDRISCVMAKECONTEXT)
+
+void INTERNAL qt_makectxt(uctxt_t *ucp, void (*func)(void), int argc, ...) {
+  va_list arg;
+  uintptr_t *sp_base = (uintptr_t *)ucp->uc_stack.ss_sp;
+  uint64_t top_of_stack = (uint64_t)sp_base + ucp->uc_stack.ss_size;
+
+  // equivalent to the following:
+  // (top_of_stack / 16U) * 16U
+  // (top_of_stack >> 4U) << 4U
+  //
+  top_of_stack &= ~0xFULL;
+  assert((top_of_stack % 16U) == 0U);
+
+  va_start(arg, argc);
+  int const limit = (argc < 8) ? argc : 8;
+  for (int i = 0; i < limit; i++) { ucp->mc.regs[i] = va_arg(arg, uint64_t); }
+  va_end(arg);
+
+  ucp->mc.regs[13U] = (uintptr_t)func; // LR so that swapcontext returns into it
+  ucp->mc.regs[14U] = (uintptr_t)top_of_stack; // SP
+  ucp->mc.first = 1;
+}
 
 #endif /* ifdef NEEDPOWERMAKECONTEXT */
 
@@ -143,6 +166,7 @@ QT_SKIP_THREAD_SANITIZER int INTERNAL qt_swapctxt(uctxt_t *oucp, uctxt_t *ucp) {
    * 1, then I've just swapped back into a previously fetched context (i.e. I
    * do NOT want to swap again, because that'll put me into a nasty loop). */
   Q_PREFETCH(ucp, 0, 0);
+
   if (getcontext(oucp) == 0) {
 #if ((QTHREAD_ASSEMBLY_ARCH == QTHREAD_IA32) ||                                \
      (QTHREAD_ASSEMBLY_ARCH == QTHREAD_AMD64))
@@ -150,6 +174,7 @@ QT_SKIP_THREAD_SANITIZER int INTERNAL qt_swapctxt(uctxt_t *oucp, uctxt_t *ucp) {
     Q_PREFETCH((void *)ucp->mc.mc_esp, 1, 3);
 #endif
 #endif
+
     setcontext(ucp);
   }
   return 0;

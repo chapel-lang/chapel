@@ -1,4 +1,8 @@
 mason_home
+Mason.lock
+target
 project
 tmp/
 masonGitDeps
+runCommandHelper
+runCommandHelper_real

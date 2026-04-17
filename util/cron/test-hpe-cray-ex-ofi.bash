@@ -10,11 +10,13 @@ source $UTIL_CRON_DIR/common-hpe-cray-ex.bash
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="hpe-cray-ex-ofi"
 export CHPL_RT_COMM_OFI_EXPECTED_PROVIDER="cxi"
 export CHPL_RT_MAX_HEAP_SIZE=16g
-export SLURM_PARTITION=allnodes 
+export CHPL_LAUNCHER_PARTITION=bardpeak
 
 
 # test a small subset of all tests due to limited resources
 # ideally, we should run the whole suite
 export CHPL_NIGHTLY_TEST_DIRS="release/examples/ runtime/configMatters/ multilocale/"
+
+module list
 
 $UTIL_CRON_DIR/nightly -cron -blog ${nightly_args}

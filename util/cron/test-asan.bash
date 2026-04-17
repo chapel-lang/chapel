@@ -9,4 +9,4 @@ source $UTIL_CRON_DIR/common-localnode-paratest.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="asan"
 
-$UTIL_CRON_DIR/nightly -cron ${nightly_args} $(get_nightly_paratest_args 8)
+$UTIL_CRON_DIR/nightly -cron ${nightly_args} $(get_nightly_paratest_args 16)

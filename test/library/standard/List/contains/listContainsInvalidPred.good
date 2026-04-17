@@ -1,0 +1,5 @@
+$CHPL_HOME/modules/standard/List.chpl:nnnn: In method '_findHelper':
+$CHPL_HOME/modules/standard/List.chpl:nnnn: error: illegal access of first class function
+  $CHPL_HOME/modules/standard/List.chpl:nnnn: called as (list(int(64),false))._findHelper(start: int(64), end: int(64), x: proc(): bool, param usePredicate = true) from method 'find'
+  $CHPL_HOME/modules/standard/List.chpl:nnnn: called as (list(int(64),false)).find(predicate: proc(): bool, start: int(64), end: int(64)) from method 'contains'
+  listContainsInvalidPred.chpl:6: called as (list(int(64),false)).contains(predicate: proc(): bool)

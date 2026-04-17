@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -444,7 +444,6 @@ module String {
     buf = buf + offset;
     import OS.POSIX.memcpy;
     memcpy(buf:c_ptr(void), x:c_ptr(void), length.safeCast(c_size_t));
-    memcpy(buf:c_ptr(void), x:c_ptr(void), length.safeCast(c_size_t));
     // add null byte
     buf[length] = 0;
 
@@ -712,11 +711,11 @@ module String {
     var buffSize: int = 0; // size of the buffer we own
     var cachedNumCodepoints: int = 0;
     var buff: bufferType = nil;
-    var isOwned: bool = true;
-    var hasEscapes: bool = false;
     // We use chpl_nodeID as a shortcut to get at here.id without actually constructing
     // a locale object. Used when determining if we should make a remote transfer.
     var locale_id = chpl_nodeID; // : chpl_nodeID_t
+    var isOwned: bool = true;
+    var hasEscapes: bool = false;
     // remember to update <=> if you add a field
 
     proc init() {
@@ -1193,19 +1192,14 @@ module String {
 
     For example:
 
-    .. code-block:: chapel
+    .. literalinclude:: ../../../../test/types/string/doc-examples/StringItems.chpl
+       :language: chapel
+       :start-after: START_EXAMPLE
+       :end-before: STOP_EXAMPLE
 
-      var str = "abcd";
-      for c in str.items() {
-        writeln(c);
-      }
+    Output:
 
-    Output::
-
-      a
-      b
-      c
-      d
+    .. literalinclude:: ../../../../test/types/string/doc-examples/StringItems.good
    */
   iter string.items() : string {
     var localThis: string = this.localize();
@@ -1238,19 +1232,14 @@ module String {
 
     For example:
 
-    .. code-block:: chapel
+    .. literalinclude:: ../../../../test/types/string/doc-examples/StringThese.chpl
+       :language: chapel
+       :start-after: START_EXAMPLE
+       :end-before: STOP_EXAMPLE
 
-      var str = "abcd";
-      for c in str {
-        writeln(c);
-      }
+    Output:
 
-    Output::
-
-      a
-      b
-      c
-      d
+    .. literalinclude:: ../../../../test/types/string/doc-examples/StringThese.good
    */
   iter string.these() : string {
     for c in this.items() do
@@ -1545,6 +1534,35 @@ module String {
                  default is the whole string. Halts if the range is not
                  within ``0..<string.size``
 
+    :returns: whether the substring is present in the string.
+   */
+  @edition(last="2.0")
+  @unstable("'.contains' on 'string' is unstable and may change in future.")
+  inline proc string.contains(pattern: string,
+                              indices: range(?) = this.byteIndices:range(byteIndex)) : bool {
+    return this.find(pattern, indices) != -1;
+  }
+
+  /*
+    :arg pattern: the :type:`string` to search for
+    :arg indices: an optional range defining the substring to search within,
+                  default is the whole string. Halts if the range is not
+                  within ``0..<string.size``
+
+    :returns: whether the substring is present in the string.
+    */
+  @edition(first="preview")
+  inline proc string.contains(pattern: string,
+                              indices: range(?) = this.byteIndices:range(byteIndex)) : bool {
+    return this.find(pattern, indices) != -1;
+  }
+
+  /*
+    :arg pattern: the :type:`string` to search for
+    :arg indices: an optional range defining the substring to search within,
+                 default is the whole string. Halts if the range is not
+                 within ``0..<string.size``
+
     :returns: the number of times `pattern` occurs in the string
    */
   inline proc string.count(pattern: string,
@@ -1607,10 +1625,10 @@ module String {
     the :type:`string` passed in with the contents of the method
     receiver inserted between them.
 
-    .. code-block:: chapel
-
-        var myString = "|".join("a","10","d");
-        writeln(myString); // prints: "a|10|d"
+    .. literalinclude:: ../../../../test/types/string/doc-examples/StringJoin.chpl
+       :language: chapel
+       :start-after: START_EXAMPLE_0
+       :end-before: STOP_EXAMPLE_0
 
     :arg x: :type:`string` values to be joined
 
@@ -1625,14 +1643,10 @@ module String {
     the :type:`string` passed in with the contents of the method
     receiver inserted between them.
 
-    .. code-block:: chapel
-
-        var tup = ("a","10","d");
-        var myJoinedTuple = "|".join(tup);
-        writeln(myJoinedTuple); // prints: "a|10|d"
-
-        var myJoinedArray = "|".join(["a","10","d"]);
-        writeln(myJoinedArray); // prints: "a|10|d"
+    .. literalinclude:: ../../../../test/types/string/doc-examples/StringJoin.chpl
+       :language: chapel
+       :start-after: START_EXAMPLE_1
+       :end-before: STOP_EXAMPLE_1
 
     :arg x: An array or tuple of :type:`string` values to be joined
 
@@ -2092,15 +2106,14 @@ module String {
      The operation is commutative.
      For example:
 
-     .. code-block:: chapel
+    .. literalinclude:: ../../../../test/types/string/doc-examples/StringRepeatConcat.chpl
+       :language: chapel
+       :start-after: START_EXAMPLE
+       :end-before: STOP_EXAMPLE
 
-        writeln("Hello! " * 3);
-        or
-        writeln(3 * "Hello! ");
+    Results in:
 
-     Results in::
-
-       Hello! Hello! Hello!
+    .. literalinclude:: ../../../../test/types/string/doc-examples/StringRepeatConcat.good
   */
   operator *(s: string, n: integral) : string {
     return doMultiply(s, n);

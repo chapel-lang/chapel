@@ -89,15 +89,15 @@ module HPCC_PTRANS {
     norm_C = sqrt ( + reduce [ (i,j) in transpose_domain ] ( C [i,j] ** 2 ) );
     norm_A = sqrt ( + reduce [ (i,j) in matrix_domain    ] ( A [i,j] ** 2 ) );
 
-    //    norm_C$ = 0.0;
+    //    norm_C = 0.0;
     //    forall (i,j) in transpose_domain do
-    //      norm_C$ += C [i,j] ** 2;
-    //    norm_C$ = sqrt ( norm_C$ );
+    //      norm_C += C [i,j] ** 2;
+    //    norm_C = sqrt ( norm_C );
     //
-    //    norm_A$ = 0.0;
+    //    norm_A = 0.0;
     //    forall (i,j) in matrix_domain do
-    //      norm_A$ += A [i,j] ** 2;
-    //    norm_A$ = sqrt ( norm_A$ );
+    //      norm_A += A [i,j] ** 2;
+    //    norm_A = sqrt ( norm_A );
     
     writeln ( "    norm of A                 : ", norm_A );
     writeln ( "    norm of C                 : ", norm_C );

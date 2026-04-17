@@ -2,4 +2,5 @@
 # Ignore line numbers in modules.
 
 sed '\|CHPL_HOME/modules|s/:[0-9]*:/:nnnn:/' $2 > $2.tmp
-mv $2.tmp $2
+sed -E 's/and [0-9]+ other candidates/and XXX candidates/g' $2.tmp > $2
+touch $2.tmp && rm $2.tmp

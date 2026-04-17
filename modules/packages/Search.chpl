@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -22,15 +22,6 @@
  */
 module Search {
   public use Sort only defaultComparator, reverseComparator;
-
-  // TODO: remove this module and its public use when the deprecations have been
-  // removed
-  pragma "ignore deprecated use"
-  private module HideDeprecatedReexport {
-    public use Sort only DefaultComparator, ReverseComparator;
-  }
-
-  public use HideDeprecatedReexport;
   private use Sort;
 
 /*

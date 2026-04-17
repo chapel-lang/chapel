@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -27,6 +27,7 @@
 #include "chpl/uast/Module.h"
 #include "chpl/uast/Record.h"
 #include "chpl/uast/Variable.h"
+#include "chpl/framework/ErrorBase.h"
 
 static void test1() {
   printf("test1\n");
@@ -1024,7 +1025,7 @@ static void test36() {
 
   auto bct = ct->basicClassType();
   assert(bct);
-  assert(bct->parentClassType()->isObjectType());
+  assert(bct->parentClassType()->isRootClass());
 
   auto fields = p.second;
   assert(fields);
@@ -1059,7 +1060,7 @@ static void test37() {
 
   auto bct = ct->basicClassType();
   assert(bct);
-  assert(bct->parentClassType()->isObjectType());
+  assert(bct->parentClassType()->isRootClass());
 
   auto fields = p.second;
   assert(fields);
@@ -1094,7 +1095,7 @@ static void test38() {
 
   auto bct = ct->basicClassType();
   assert(bct);
-  assert(!bct->parentClassType()->isObjectType());
+  assert(!bct->parentClassType()->isRootClass());
 
   auto fields = p.second;
   assert(fields);
@@ -1111,7 +1112,7 @@ static void test38() {
 
   auto pct = bct->parentClassType()->toBasicClassType();
   assert(pct);
-  assert(pct->parentClassType()->isObjectType());
+  assert(pct->parentClassType()->isRootClass());
   assert(pct->parentClassType() == BasicClassType::getRootClassType(context));
 
   auto rc = createDummyRC(context);
@@ -1141,7 +1142,7 @@ static void test39() {
   assert(bct);
   auto pct = bct->parentClassType()->toBasicClassType();
   assert(pct);
-  assert(pct->isObjectType());
+  assert(pct->isRootClass());
 
   auto fields = p.second;
   assert(fields);
@@ -1336,9 +1337,14 @@ static void testRecursiveTypeConstructorGeneric() {
 
   bool foundError = false;
   for (auto& err : guard.errors()) {
-    if (err->type() == ErrorType::MissingFormalInstantiation) {
-      foundError = true;
-      break;
+    if (err->type() == ErrorType::NoMatchingCandidates) {
+      auto noCandidates = static_cast<ErrorNoMatchingCandidates*>(err.get());
+      auto& rejected = std::get<2>(noCandidates->info());
+      if (rejected.size() > 0 &&
+          rejected[0].reason() == chpl::resolution::FAIL_NO_DEFAULT_VALUE_FOR_GENERIC_FIELD) {
+        foundError = true;
+        break;
+      }
     }
   }
   assert(foundError);
@@ -1504,6 +1510,272 @@ static void test44() {
   assert(pf.begin()->second.param()->toEnumParam()->value().str == "red");
 }
 
+static void ensureMatchingClassOrRecord(const QualifiedType& root, const QualifiedType& inst) {
+  assert(!root.isUnknownOrErroneous() && !inst.isUnknownOrErroneous());
+  assert((root.type()->isClassType() && inst.type()->isClassType()) ||
+         (root.type()->isRecordType() && inst.type()->isRecordType()));
+
+  if (auto rCt = root.type()->toClassType()) {
+    auto iCt = inst.type()->toClassType();
+    assert(rCt->manager() == iCt->manager());
+    assert(rCt->decorator() == iCt->decorator());
+  }
+  assert(root.type()->getCompositeType() ==
+         inst.type()->getCompositeType()->instantiatedFromCompositeType());
+}
+
+static void testPartialInstantiation() {
+  std::pair<const char*, const char*> cases[] = {
+    {"record", ""},
+    {"class", ""},
+    {"class", "shared "},
+    {"class", "owned "},
+    {"class", "unmanaged "}
+  };
+
+  size_t numCases = sizeof(cases) / sizeof(cases[0]);
+  for (size_t i = 0; i < numCases; i++) {
+    auto [aggregate, management] = cases[i];
+
+    std::string program = std::string(R"""(
+      )""") + aggregate + " triple { type fst; type snd; type thd; }" + R"""(
+
+      type root = )""" + management + R"""(triple(?);
+
+      type R__ = root(real, ?);
+      type R_B = R__(thd=bool, ?);
+      type RIB = R_B(snd=int, ?);
+
+      type r__ = root(real, ?);
+      type ri_ = r__(int, ?);
+      type rib = ri_(bool, ?);
+    )""";
+
+    printf("testPartialInstantiation basic: %s %s\n", aggregate, management);
+    printf("%s\n", program.c_str());
+
+    auto context = buildStdContext();
+    ErrorGuard guard(context);
+    auto vars = resolveTypesOfVariables(context, program.c_str(), {"root", "R__", "R_B", "RIB", "r__", "ri_", "rib"});
+
+    auto& rootInst = vars["root"];
+    assert(rootInst.type());
+    assert(rootInst.type()->getCompositeType());
+    assert(rootInst.type()->getCompositeType()->name() == "triple");
+    assert(rootInst.type()->getCompositeType()->instantiatedFromCompositeType() == nullptr);
+
+    auto I = QualifiedType(QualifiedType::TYPE, IntType::get(context, 0));
+    auto R = QualifiedType(QualifiedType::TYPE, RealType::get(context, 0));
+    auto B = QualifiedType(QualifiedType::TYPE, BoolType::get(context));
+
+    auto& R__ = vars["R__"];
+    ensureSubs(context, R__.type()->getCompositeType(), {{"fst", R}});
+    ensureMatchingClassOrRecord(rootInst, R__);
+    auto& R_B = vars["R_B"];
+    ensureSubs(context, R_B.type()->getCompositeType(), {{"fst", R}, {"thd", B}});
+    ensureMatchingClassOrRecord(rootInst, R_B);
+    auto& RIB = vars["RIB"];
+    ensureSubs(context, RIB.type()->getCompositeType(), {{"fst", R}, {"snd", I}, {"thd", B}});
+    ensureMatchingClassOrRecord(rootInst, RIB);
+
+    auto& r__ = vars["r__"];
+    ensureSubs(context, r__.type()->getCompositeType(), {{"fst", R}});
+    ensureMatchingClassOrRecord(rootInst, r__);
+    auto& ri_ = vars["ri_"];
+    ensureSubs(context, ri_.type()->getCompositeType(), {{"fst", R}, {"snd", I}});
+    ensureMatchingClassOrRecord(rootInst, ri_);
+    auto& rib = vars["rib"];
+    ensureSubs(context, rib.type()->getCompositeType(), {{"fst", R}, {"snd", I}, {"thd", B}});
+    ensureMatchingClassOrRecord(rootInst, rib);
+  }
+
+  for (size_t i = 0; i < numCases; i++) {
+    auto [aggregate, management] = cases[i];
+
+    std::string program = std::string(R"""(
+      )""") + aggregate + " triple { type fst; type snd; type thd; }" + R"""(
+
+      proc checkApply(type Constructor, type Arg, type Dummy: Constructor(Arg)) type {
+          return Constructor(Arg);
+      }
+      type root = )""" + management + R"""(triple(?);
+
+      type r__ = checkApply(root, real, root(real, int, bool));
+      type ri_ = checkApply(r__, int, root(real, int, bool));
+      type rib = checkApply(ri_, bool, root(real, int, bool));
+
+      type bad1 = checkApply(root, real, root(int, int, bool));
+      type bad2 = checkApply(r__, int, root(real, real, bool));
+      type bad3 = checkApply(ri_, bool, root(real, int, int));
+    )""";
+
+    printf("testPartialInstantiation formals: %s %s\n", aggregate, management);
+    printf("%s\n", program.c_str());
+
+    auto context = buildStdContext();
+    ErrorGuard guard(context);
+    auto vars = resolveTypesOfVariables(context, program.c_str(), {"root", "r__", "ri_", "rib", "bad1", "bad2", "bad3"});
+
+    auto& rootInst = vars["root"];
+    assert(rootInst.type());
+    assert(rootInst.type()->getCompositeType());
+    assert(rootInst.type()->getCompositeType()->name() == "triple");
+    assert(rootInst.type()->getCompositeType()->instantiatedFromCompositeType() == nullptr);
+
+    auto I = QualifiedType(QualifiedType::TYPE, IntType::get(context, 0));
+    auto R = QualifiedType(QualifiedType::TYPE, RealType::get(context, 0));
+    auto B = QualifiedType(QualifiedType::TYPE, BoolType::get(context));
+
+    auto& r__ = vars["r__"];
+    ensureSubs(context, r__.type()->getCompositeType(), {{"fst", R}});
+    ensureMatchingClassOrRecord(rootInst, r__);
+    auto& ri_ = vars["ri_"];
+    ensureSubs(context, ri_.type()->getCompositeType(), {{"fst", R}, {"snd", I}});
+    ensureMatchingClassOrRecord(rootInst, ri_);
+    auto& rib = vars["rib"];
+    ensureSubs(context, rib.type()->getCompositeType(), {{"fst", R}, {"snd", I}, {"thd", B}});
+    ensureMatchingClassOrRecord(rootInst, rib);
+
+    assert(vars["bad1"].isUnknownOrErroneous());
+    assert(vars["bad2"].isUnknownOrErroneous());
+    assert(vars["bad3"].isUnknownOrErroneous());
+
+    auto numNoMatchingCandidates = 0;
+    for (auto& err : guard.errors()) {
+      if (err->type() == ErrorType::NoMatchingCandidates) {
+        numNoMatchingCandidates++;
+      }
+    };
+    assert(numNoMatchingCandidates == 3);
+    guard.realizeErrors();
+  }
+}
+
+static void testPartialInstantiationNoExtraSubstitutions() {
+  printf("testPartialInstantiationNoExtraSubstitutions\n");
+  auto context = buildStdContext();
+
+  std::string program = R"""(
+    record R {
+      type t1;
+      type t2;
+    }
+
+    var x: R(int, ?);
+  )""";
+
+  auto p = parseTypeAndFieldsOfX(context, program.c_str());
+
+  auto rt = p.first->toRecordType();
+  assert(rt);
+
+  auto fields = p.second;
+  assert(fields);
+  assert(fields->numFields() == 2);
+  assert(fields->fieldName(0) == "t1");
+  assert(fields->fieldType(0).type()->isIntType());
+  assert(rt->substitutions().size() == 1);
+  assert(rt->substitutions().begin()->first == fields->fieldDeclId(0));
+}
+
+// Helper function to check that an error is NoMatchingCandidates with
+// the FAIL_NO_TYPE_CONSTRUCTOR reason
+static void assertNoTypeConstructorError(ErrorGuard& guard, size_t errorIdx) {
+  assert(guard.numErrors() > errorIdx);
+  const auto& err = guard.error(errorIdx);
+  assert(err->type() == ErrorType::NoMatchingCandidates);
+
+  auto nmcErr = static_cast<const ErrorNoMatchingCandidates*>(err.get());
+  auto& info = nmcErr->info();
+  auto& rejectedCandidates = std::get<2>(info);
+
+  assert(rejectedCandidates.size() > 0);
+  bool foundNoTypeCtor = false;
+  for (const auto& result : rejectedCandidates) {
+    if (result.reason() == FAIL_NO_TYPE_CONSTRUCTOR) {
+      foundNoTypeCtor = true;
+      break;
+    }
+  }
+  assert(foundNoTypeCtor);
+}
+
+static void testEnumTypeConstructorError() {
+  printf("testEnumTypeConstructorError\n");
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program = R"""(
+    enum Color { red, green, blue }
+    var x = Color(0);
+  )""";
+
+  std::ignore = resolveTypeOfXInit(context, program, /* requireTypeKnown */ false);
+
+  assertNoTypeConstructorError(guard, 0);
+  assert(guard.realizeErrors() > 0);
+}
+
+static void testPrimitiveTypeConstructorErrors() {
+  printf("testPrimitiveTypeConstructorErrors\n");
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  // Test with integral, a builtin type that doesn't support constructors
+  std::string program = R"""(
+    type IntegralType = integral;
+    var b = IntegralType(5);
+  )""";
+
+  auto m = parseModule(context, program.c_str());
+  std::ignore = resolveModule(context, m->id());
+
+  assertNoTypeConstructorError(guard, 0);
+  assert(guard.realizeErrors() > 0);
+}
+
+static void testBuiltinTypeConstructorErrors() {
+  printf("testBuiltinTypeConstructorErrors\n");
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  // Test with void type - doesn't support constructors
+  std::string program = R"""(
+    type VoidType = void;
+    var x = VoidType(0);
+  )""";
+
+  auto m = parseModule(context, program.c_str());
+  std::ignore = resolveModule(context, m->id());
+
+  assertNoTypeConstructorError(guard, 0);
+  assert(guard.realizeErrors() > 0);
+}
+
+// regression test: only instantiating signature checing was done on
+// type constructors, which meant concrete type constructors could be invoked
+// with totally nonsensical arguments.
+static void testConcreteTypeConstructorBadCall() {
+  printf("testConcreteTypeConstructorBadCall\n");
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program = R"""(
+    record R {
+      var f: int;
+    }
+
+    var x: R(int); // bad call, R is concrete.
+  )""";
+
+  auto vars = resolveTypesOfVariables(context, program.c_str(), {"x"});
+
+  assert(vars["x"].isUnknownOrErroneous());
+  assert(guard.numErrors() == 1);
+  assert(guard.error(0)->type() == ErrorType::NoMatchingCandidates);
+  guard.realizeErrors();
+}
+
 int main() {
   test1();
   test2();
@@ -1556,6 +1828,15 @@ int main() {
   testRecursiveTypeConstructorMutual();
   test43();
   test44();
+
+  testPartialInstantiation();
+  testPartialInstantiationNoExtraSubstitutions();
+
+  testEnumTypeConstructorError();
+  testPrimitiveTypeConstructorErrors();
+  testBuiltinTypeConstructorErrors();
+
+  testConcreteTypeConstructorBadCall();
 
   return 0;
 }

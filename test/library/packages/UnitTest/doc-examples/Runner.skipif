@@ -1,0 +1,2 @@
+# uses mason, which requires regex
+CHPL_RE2==none

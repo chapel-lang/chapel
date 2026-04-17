@@ -1,0 +1,2 @@
+lst [1, 2, 'hi', False, 5]
+lst.size after clear 0

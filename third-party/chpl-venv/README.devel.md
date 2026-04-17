@@ -6,13 +6,14 @@ As the Makefile installs end-user Python packages into the virutalenv
 Python packages required by the developer tool `chplspell`.
 
 
-The primary packages required by `chplspell` are: `scspell`,
-`argparse`, and `virtualenv` (for installation).  `argparse` and
-`virtualenv` are described in [README.md](README.md) as they are also
-required by end-user tools.
+The primary package required by `chplspell` is `scspell3k`.
+
+The primary developer packages required by `chpl-language-server` (CLS) are
+`pytest` and `pytest-lsp`.  The general packages requires by CLS are mentioned
+in README.md.
 
 
-### scspell
+### scspell3k
 
 A spell checker for source code
 
@@ -21,3 +22,23 @@ A spell checker for source code
 **word list License**: public domain, assorted (See https://github.com/myint/scspell/blob/master/SCOWL-LICENSE.txt)
 
 **Website**: https://pypi.python.org/pypi/scspell3k
+
+### pytest
+
+A well-known Python testing framework.
+
+Required for testing CLS.
+
+**License**: MIT
+
+**Website**: https://pypi.org/project/pytest/
+
+### pytest-lsp
+
+A pytest plugin for end-to-end testing of language servers.
+
+Required for testing CLS.
+
+**License**: MIT
+
+**Website**: https://pypi.org/project/pytest-lsp/

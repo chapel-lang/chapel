@@ -119,6 +119,8 @@ def run_builds(d):
             continue
         run_build(subdir, "Debug")
         run_build(subdir, "Release")
+        run_build(subdir, "RelWithDebInfo")
+        run_build(subdir, "MinSizeRel")
 
 
 def main():

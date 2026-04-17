@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -190,6 +190,16 @@ class IdAndFlags {
                       /* isPublic */ true,
                       /* isMethodOrField */ false,
                       /* isParenfulFunction */ false,
+                      /* isMethod */ false,
+                      /* isModule */ false,
+                      /* isType */ false);
+  }
+
+  static IdAndFlags createForBuiltinFunction() {
+    return IdAndFlags(ID(),
+                      /* isPublic */ true,
+                      /* isMethodOrField */ false,
+                      /* isParenfulFunction */ true,
                       /* isMethod */ false,
                       /* isModule */ false,
                       /* isType */ false);
@@ -400,192 +410,6 @@ class OwnedIdsWithName {
 
 
 /**
-  Contains IDs with a particular name that matched some filter.
- */
-class MatchingIdsWithName {
- // To allow us to use the internals of OwnedIdsWithName
- friend class OwnedIdsWithName;
-
- public:
-  using const_iterator = std::vector<IdAndFlags>::const_iterator;
-
- private:
-  llvm::SmallVector<IdAndFlags, 1> idvs_;
-  bool encounteredFnNonFnConflict_ = false;
-
-  /** Construct a MatchingIdsWithName referring to the same IDs
-      as the passed OwnedIdsWithName.  */
-  MatchingIdsWithName(const OwnedIdsWithName& ownedIds,
-                      IdAndFlags::Flags filterFlags,
-                      const IdAndFlags::FlagSet& excludeFlagSet) {
-    ownedIds.gatherMatches(*this, filterFlags, excludeFlagSet);
-  }
-
-  /** Construct a MatchingIdsWithName referring to one ID. Assumes
-      that the caller did any necessary filtering.
-    */
-  MatchingIdsWithName(IdAndFlags idv) {
-    idvs_.push_back(std::move(idv));
-  }
-
- public:
-  /**
-    Iterator that yields IDs rather than IdAndFlags.
-   */
-  class MatchingIdsWithNameIter {
-    friend class MatchingIdsWithName;
-   private:
-    /** The ID this iterator is pointing too. */
-    const IdAndFlags* currentIdv;
-
-    MatchingIdsWithNameIter(const IdAndFlags* currentIdv)
-      : currentIdv(currentIdv) {
-    }
-
-   public:
-    bool operator!=(const MatchingIdsWithNameIter& other) const {
-      return currentIdv != other.currentIdv;
-    }
-    MatchingIdsWithNameIter& operator++() {
-      currentIdv++;
-      return *this;
-    }
-    inline const ID& operator*() const { return currentIdv->id_; }
-
-    // TODO: instead of having curIdAndFlags here, write support code
-    // so that the loop iterating requests IDs or IdAndFlags:
-    //   for (const IdAndFlags& x : myMatchingIdsWithName)
-    // vs
-    //   for (const ID& x : myMatchingIdsWithName.ids())
-    inline const IdAndFlags& curIdAndFlags() const { return *currentIdv; }
-
-    // iterator traits
-    using difference_type = std::ptrdiff_t;
-    using value_type = ID;
-    using pointer = const ID*;
-    using reference = const ID&;
-    using iterator_category = std::forward_iterator_tag;
-  };
-
-  static MatchingIdsWithName
-  createWithIdAndFlags(IdAndFlags idv) {
-    return MatchingIdsWithName(std::move(idv));
-  }
-
-  /** Construct a empty MatchingIdsWithName containing no IDs. */
-  MatchingIdsWithName() { }
-
-  /** Note that when populating this list, we found functions and non-functions
-      at the same scope level. */
-  void noteFnNonFnConflict() {
-    encounteredFnNonFnConflict_ = true;
-  }
-
-  /** Returns 'true' if we found functions and non-functions at the same scope level. */
-  bool encounteredFnNonFnConflict() const {
-    return encounteredFnNonFnConflict_;
-  }
-
-  /** Append an IdAndFlags. */
-  void append(IdAndFlags idv) {
-    idvs_.push_back(std::move(idv));
-  }
-
-  /** Remove any duplicates IDs present here. */
-  void removeDuplicateIds(); 
-
-  /** Truncate to a particular number of IDs. Must be < numIds(). */
-  void truncate(int sz);
-
-  /** Remove all IDs. */ 
-  void clear();
-
-  /** Returns 'true' if this MatchingIdsWithName has no IDs */
-  bool isEmpty() const { return idvs_.empty(); }
-
-  /** Return the number of IDs stored here */
-  int numIds() const {
-    return (int) idvs_.size();
-  }
-
-  /** Returns the first ID in this list. */
-  const ID& firstId() const {
-    return idvs_.front().id();
-  }
-
-  /** Returns the first IdAndFlags in this list. */
-  const IdAndFlags& firstIdAndFlags() const {
-    return idvs_.front();
-  }
-
-  /** Return the i'th ID in the list */
-  const ID& id(int i) const {
-    CHPL_ASSERT(0 <= i && i < (int) idvs_.size());
-    return idvs_[i].id();
-  }
-
-  /** Return the i'th IdAndFlags in the list */
-  const IdAndFlags& idAndFlags(int i) const {
-    CHPL_ASSERT(0 <= i && i < (int) idvs_.size());
-    return idvs_[i];
-  }
-  /** Return a mutable reference to the i'th IdAndFlags in the list */
-  IdAndFlags& idAndFlags(int i) {
-    CHPL_ASSERT(0 <= i && i < (int) idvs_.size());
-    return idvs_[i];
-  }
-
-  /** Returns 'true' if the list contains only IDs that represent
-      methods or fields. */
-  bool containsOnlyMethodsOrFields() const;
-
-  MatchingIdsWithNameIter begin() const {
-    if (idvs_.empty()) {
-      return MatchingIdsWithNameIter(nullptr);
-    }
-    const IdAndFlags* ptr = &idvs_.front();
-    return MatchingIdsWithNameIter(ptr);
-  }
-
-  MatchingIdsWithNameIter end() const {
-    if (idvs_.empty()) {
-      return MatchingIdsWithNameIter(nullptr);
-    }
-    const IdAndFlags* ptr = &idvs_.back();
-    return MatchingIdsWithNameIter(ptr + 1);
-  }
-
-  bool operator==(const MatchingIdsWithName& other) const {
-    return idvs_ == other.idvs_ &&
-           encounteredFnNonFnConflict_ == other.encounteredFnNonFnConflict_;
-  }
-  bool operator!=(const MatchingIdsWithName& other) const {
-    return !(*this == other);
-  }
-
-  size_t hash() const {
-    size_t ret = 0;
-    for (const auto& x : idvs_) {
-      ret = hash_combine(ret, chpl::hash(x));
-    }
-    ret = hash_combine(ret, encounteredFnNonFnConflict_);
-    return ret;
-  }
-
-  void mark(Context* context) const {
-    for (auto const& elt : idvs_) {
-      context->markPointer(&elt.id_);
-    }
-  }
-
-  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
-
-  /// \cond DO_NOT_DOCUMENT
-  DECLARE_DUMP;
-  /// \endcond DO_NOT_DOCUMENT
-};
-
-/**
   A DeclMap has key = string name, and value = vector of ID of a NamedDecl
   Using an ID here prevents needing to recompute the Scope
   if (say) something in the body of a Function changed.
@@ -658,6 +482,10 @@ class Scope {
   /** Add a builtin var with the provided name. This needs to
       be called to populate the root scope with builtins. */
   void addBuiltinVar(UniqueString name);
+
+  /** Add a builtin function with the provided name. This needs to
+      be called to populate the root scope with builtins. */
+  void addBuiltinFunction(UniqueString name);
 
   /** Return the parent scope for this scope. */
   const Scope* parentScope() const { return parentScope_; }
@@ -1342,6 +1170,203 @@ struct ResultVisibilityTrace {
       elt.mark(context);
     }
   }
+};
+
+/**
+  Contains IDs with a particular name that matched some filter.
+ */
+class MatchingIdsWithName {
+ // To allow us to use the internals of OwnedIdsWithName
+ friend class OwnedIdsWithName;
+
+ public:
+  using const_iterator = std::vector<IdAndFlags>::const_iterator;
+
+ private:
+  llvm::SmallVector<IdAndFlags, 1> idvs_;
+  bool encounteredFnNonFnConflict_ = false;
+
+  /** Construct a MatchingIdsWithName referring to the same IDs
+      as the passed OwnedIdsWithName.  */
+  MatchingIdsWithName(const OwnedIdsWithName& ownedIds,
+                      IdAndFlags::Flags filterFlags,
+                      const IdAndFlags::FlagSet& excludeFlagSet) {
+    ownedIds.gatherMatches(*this, filterFlags, excludeFlagSet);
+  }
+
+  /** Construct a MatchingIdsWithName referring to one ID. Assumes
+      that the caller did any necessary filtering.
+    */
+  MatchingIdsWithName(IdAndFlags idv) {
+    idvs_.push_back(std::move(idv));
+  }
+
+ public:
+  /**
+    Iterator that yields IDs rather than IdAndFlags.
+   */
+  class MatchingIdsWithNameIter {
+    friend class MatchingIdsWithName;
+   private:
+    /** The ID this iterator is pointing too. */
+    const IdAndFlags* currentIdv;
+
+    MatchingIdsWithNameIter(const IdAndFlags* currentIdv)
+      : currentIdv(currentIdv) {
+    }
+
+   public:
+    bool operator!=(const MatchingIdsWithNameIter& other) const {
+      return currentIdv != other.currentIdv;
+    }
+    MatchingIdsWithNameIter& operator++() {
+      currentIdv++;
+      return *this;
+    }
+    inline const ID& operator*() const { return currentIdv->id_; }
+
+    // TODO: instead of having curIdAndFlags here, write support code
+    // so that the loop iterating requests IDs or IdAndFlags:
+    //   for (const IdAndFlags& x : myMatchingIdsWithName)
+    // vs
+    //   for (const ID& x : myMatchingIdsWithName.ids())
+    inline const IdAndFlags& curIdAndFlags() const { return *currentIdv; }
+
+    // iterator traits
+    using difference_type = std::ptrdiff_t;
+    using value_type = ID;
+    using pointer = const ID*;
+    using reference = const ID&;
+    using iterator_category = std::forward_iterator_tag;
+  };
+
+  static MatchingIdsWithName
+  createWithIdAndFlags(IdAndFlags idv) {
+    return MatchingIdsWithName(std::move(idv));
+  }
+
+  /** Construct a empty MatchingIdsWithName containing no IDs. */
+  MatchingIdsWithName() { }
+
+  /** Note that when populating this list, we found functions and non-functions
+      at the same scope level. */
+  void noteFnNonFnConflict() {
+    encounteredFnNonFnConflict_ = true;
+  }
+
+  /** Returns 'true' if we found functions and non-functions at the same scope level. */
+  bool encounteredFnNonFnConflict() const {
+    return encounteredFnNonFnConflict_;
+  }
+
+  /** Append an IdAndFlags. */
+  void append(IdAndFlags idv) {
+    idvs_.push_back(std::move(idv));
+  }
+
+  /** Remove any duplicates IDs present here. */
+  void removeDuplicateIds(std::vector<ResultVisibilityTrace>* traces = nullptr);
+
+  /** Truncate to a particular number of IDs. Must be < numIds(). */
+  void truncate(int sz);
+
+  /** Remove all IDs. */ 
+  void clear();
+
+  /** Returns 'true' if this MatchingIdsWithName has no IDs */
+  bool isEmpty() const { return idvs_.empty(); }
+
+  /** Return the number of IDs stored here */
+  int numIds() const {
+    return (int) idvs_.size();
+  }
+
+  /** Returns the first ID in this list. */
+  const ID& firstId() const {
+    return idvs_.front().id();
+  }
+
+  /** Returns the first IdAndFlags in this list. */
+  const IdAndFlags& firstIdAndFlags() const {
+    return idvs_.front();
+  }
+
+  /** Return the i'th ID in the list */
+  const ID& id(int i) const {
+    CHPL_ASSERT(0 <= i && i < (int) idvs_.size());
+    return idvs_[i].id();
+  }
+
+  /** Return the i'th IdAndFlags in the list */
+  const IdAndFlags& idAndFlags(int i) const {
+    CHPL_ASSERT(0 <= i && i < (int) idvs_.size());
+    return idvs_[i];
+  }
+  /** Return a mutable reference to the i'th IdAndFlags in the list */
+  IdAndFlags& idAndFlags(int i) {
+    CHPL_ASSERT(0 <= i && i < (int) idvs_.size());
+    return idvs_[i];
+  }
+
+  /** Returns 'true' if the list contains only IDs that represent
+      methods or fields. */
+  bool containsOnlyMethodsOrFields() const;
+
+  MatchingIdsWithNameIter begin() const {
+    if (idvs_.empty()) {
+      return MatchingIdsWithNameIter(nullptr);
+    }
+    const IdAndFlags* ptr = &idvs_.front();
+    return MatchingIdsWithNameIter(ptr);
+  }
+
+  MatchingIdsWithNameIter end() const {
+    if (idvs_.empty()) {
+      return MatchingIdsWithNameIter(nullptr);
+    }
+    const IdAndFlags* ptr = &idvs_.back();
+    return MatchingIdsWithNameIter(ptr + 1);
+  }
+
+  bool operator==(const MatchingIdsWithName& other) const {
+    return idvs_ == other.idvs_ &&
+           encounteredFnNonFnConflict_ == other.encounteredFnNonFnConflict_;
+  }
+  bool operator!=(const MatchingIdsWithName& other) const {
+    return !(*this == other);
+  }
+
+  size_t hash() const {
+    size_t ret = 0;
+    for (const auto& x : idvs_) {
+      ret = hash_combine(ret, chpl::hash(x));
+    }
+    ret = hash_combine(ret, encounteredFnNonFnConflict_);
+    return ret;
+  }
+
+  void mark(Context* context) const {
+    for (const auto& idv : idvs_) {
+      idv.id_.mark(context);
+    }
+  }
+
+  void swap(MatchingIdsWithName& other) {
+    idvs_.swap(other.idvs_);
+    std::swap(encounteredFnNonFnConflict_,
+              other.encounteredFnNonFnConflict_);
+  }
+
+  static bool update(MatchingIdsWithName& keep,
+                     MatchingIdsWithName& addin) {
+    return defaultUpdate(keep, addin);
+  }
+
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
+
+  /// \cond DO_NOT_DOCUMENT
+  DECLARE_DUMP;
+  /// \endcond DO_NOT_DOCUMENT
 };
 
 using ScopeSet = llvm::SmallPtrSet<const Scope*, 5>;

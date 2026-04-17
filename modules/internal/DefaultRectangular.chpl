@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -139,11 +139,11 @@ module DefaultRectangular {
   // model initialization
   //
   pragma "locale private"
-  var defaultDist = new dmap(new unmanaged DefaultDist());
+  var defaultDist = new chpl_dmap(new unmanaged DefaultDist());
 
   proc chpl_defaultDistInitPrivate() {
     if defaultDist._value==nil {
-      defaultDist = new dmap(new DefaultDist());
+      defaultDist = new chpl_dmap(new DefaultDist());
     }
   }
 
@@ -883,7 +883,7 @@ module DefaultRectangular {
   proc ref _remoteAccessData.initShiftedData() {
     if earlyShiftData && hasUnitStride() {
       type idxSignedType = chpl__signedType(chpl__idxTypeToIntIdxType(idxType));
-      const shiftDist = if isIntType(idxType) then origin - factoredOffs
+      const shiftDist = if isIntegralType(idxType) then origin - factoredOffs
                         else origin:idxSignedType - factoredOffs:idxSignedType;
       shiftedData = _ddata_shift(eltType, data, shiftDist);
     }
@@ -1263,7 +1263,7 @@ module DefaultRectangular {
         // that the check is not necessary, but it seemed like unnecessary
         // work for something with no immediate reward.
         if dom.dsiNumIndices > 0 {
-          const shiftDist = if isIntType(idxType) then
+          const shiftDist = if isIntegralType(idxType) then
                               0:idxType - factoredOffs
                             else
                               // Not bothering to check for over/underflow
@@ -1444,6 +1444,9 @@ module DefaultRectangular {
     override proc dsiReallocate(bounds: rank*range(idxType,
                                                    boundKind.both,
                                                    strides)) {
+
+      if externArr || _borrowed then
+        halt("This domain cannot be modified because it is used to define array views");
 
       // check to see whether this realloc is actually changing the
       // bounds of the array
@@ -1732,7 +1735,7 @@ module DefaultRectangular {
   }
 
   proc DefaultRectangularDom.dsiSerialWrite(f) throws
-  where _supportsSerializers(f) && !isDefaultSerializerType(f.serializerType) {
+  where !isDefaultSerializerType(f.serializerType) {
     if chpl_warnUnstable then
       compilerWarning("Serialization of rectangular domains with non-default Serializer is unstable, and may change in the future");
     var ser = f.serializer.startList(f, rank);
@@ -1743,7 +1746,7 @@ module DefaultRectangular {
   // TODO: There is currently a bug when returning domains from
   // 'deserializeFrom', so this isn't tested yet.
   proc DefaultRectangularDom.dsiSerialRead(f) throws
-  where _supportsSerializers(f) && f.deserializerType != IO.defaultDeserializer {
+  where f.deserializerType != IO.defaultDeserializer {
     if chpl_warnUnstable then
       compilerWarning("Deserialization of rectangular domains with non-default Deserializer is unstable, and may change in the future");
     var des = f.deserializer.startList(f);
@@ -1810,11 +1813,6 @@ module DefaultRectangular {
       return Reflection.canResolveMethod(f.deserializer, "readBulkElements", f, temp, 0:uint);
   }
 
-  proc _supportsSerializers(f) param : bool {
-    if f._writing then return f.serializerType != nothing;
-    else return f.deserializerType != nothing;
-  }
-
   // Workaround: Moved out of chpl_serialReadWriteRectangularHelper and added
   // formals as needed, to avoid issues with generic parent procs and variable
   // capture.
@@ -1856,8 +1854,7 @@ module DefaultRectangular {
     helper.endDim();
   }
 
-  proc chpl_serialReadWriteRectangularHelper(f, arr, dom) throws
-  where _supportsSerializers(f) {
+  proc chpl_serialReadWriteRectangularHelper(f, arr, dom) throws {
     param rank = arr.rank;
     type idxType = arr.idxType;
     type idxSignedType = chpl__signedType(chpl__idxTypeToIntIdxType(idxType));
@@ -1893,115 +1890,6 @@ module DefaultRectangular {
     }
 
     helper.endArray();
-  }
-
-  proc chpl_serialReadWriteRectangularHelper(f, arr, dom) throws {
-    param rank = arr.rank;
-    type idxType = arr.idxType;
-    type idxSignedType = chpl__signedType(chpl__idxTypeToIntIdxType(idxType));
-    type eltType = arr.eltType;
-
-    const isNative = f.styleElement(QIO_STYLE_ELEMENT_IS_NATIVE_BYTE_ORDER): bool;
-
-    proc rwSpaces(dim:int) throws {
-      for i in 1..dim {
-        rwLiteral(f, " ");
-      }
-    }
-
-    proc recursiveArrayReaderWriter(in idx: rank*idxType, dom: domain, dim=0, in last=false) throws {
-
-      var binary = f._binary();
-      var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
-      var isspace = arrayStyle == QIO_ARRAY_FORMAT_SPACE && !binary;
-      var isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
-      var ischpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !binary;
-
-      type strType = idxSignedType;
-      var makeStridePositive = if dom.dsiDim(dim).stride > 0 then 1:strType else (-1):strType;
-
-      if isjson || ischpl {
-        if dim != rank-1 {
-          rwLiteral(f, "[\n");
-          rwSpaces(dim+1); // space for the next dimension
-        } else rwLiteral(f, "[");
-      }
-
-      if dim == rank-1 {
-        var first = true;
-        if debugDefaultDist && f._writing then f.writeln(dom.dsiDim(dim));
-        for j in dom.dsiDim(dim) by makeStridePositive {
-          if first then first = false;
-          else if isspace then rwLiteral(f, " ");
-          else if isjson || ischpl then rwLiteral(f, ", ");
-          idx(dim) = j;
-          if f._writing then f.write(arr.dsiAccess(idx));
-          else arr.dsiAccess(idx) = f.read(eltType);
-        }
-      } else {
-        for j in dom.dsiDim(dim) by makeStridePositive {
-          var lastIdx =  dom.dsiDim(dim).last;
-          idx(dim) = j;
-
-          recursiveArrayReaderWriter(idx, dom, dim=dim+1,
-                               last=(last || dim == 0) && (j == dom.dsiDim(dim).high));
-
-          if isjson || ischpl {
-            if j != lastIdx {
-              rwLiteral(f, ",\n");
-              rwSpaces(dim+1);
-            }
-          }
-        }
-      }
-
-      if isspace {
-        if !last && dim != 0 {
-          rwLiteral(f, "\n");
-        }
-      } else if isjson || ischpl {
-        if dim != rank-1 {
-          rwLiteral(f, "\n");
-          rwSpaces(dim); // space for this dimension
-          rwLiteral(f, "]");
-        }
-        else rwLiteral(f, "]");
-      }
-    }
-
-    if arr.isDefaultRectangular() && !chpl__isArrayView(arr) &&
-       _isSimpleIoType(arr.eltType) && f._binary() &&
-       isNative && arr.isDataContiguous(dom) {
-
-      // If we can, we would like to read/write the array as a single write op
-      // since _ddata is just a pointer to the memory location we just pass
-      // that along with the size of the array. This is only possible when the
-      // byte order is set to native or its equivalent.
-      const elemSize = c_sizeof(arr.eltType);
-      if boundsChecking {
-        var rw = if f._writing then "write" else "read";
-        assert((dom.dsiNumIndices:uint*elemSize:uint) <= max(c_ssize_t):uint,
-               "length of array to ", rw, " is greater than c_ssize_t can hold");
-      }
-
-      const len = dom.dsiNumIndices;
-      const src = arr.theData;
-      const idx = arr.getDataIndex(dom.dsiLow);
-      const size = len:c_ssize_t*elemSize:c_ssize_t;
-      try {
-        if f._writing {
-          f.writeBinary(c_ptrTo(_ddata_shift(arr.eltType, src, idx)[0]), size);
-        } else {
-          f.readBinary(c_ptrTo(_ddata_shift(arr.eltType, src, idx)[0]), size);
-        }
-      } catch err {
-        // Setting errors in channels has no effect, so just rethrow.
-        throw err;
-      }
-    } else {
-      const zeroTup: rank*idxType;
-      recursiveArrayReaderWriter(zeroTup, dom);
-    }
   }
 
   proc DefaultRectangularArr.dsiSerialWrite(f) throws {
@@ -2572,6 +2460,25 @@ module DefaultRectangular {
   proc DefaultRectangularArr.doiOptimizedSwap(other) where debugOptimizedSwap {
     writeln("DefaultRectangularArr doing unoptimized swap. Type mismatch");
     return false;
+  }
+
+  proc DefaultRectangularArr.doiSupportsReshape() param {
+    return true;
+  }
+
+  proc DefaultRectangularArr.doiReshape(dom: domain(?))
+   where dom._value.isDefaultRectangular() {
+    var ret = new unmanaged DefaultRectangularArr(eltType=this.eltType,
+                                                  rank = dom.rank,
+                                                  idxType=dom.idxType,
+                                                  strides=dom.strides,
+                                                  dom=dom._value,
+                                                  data=this.data,
+                                                  externFreeFunc=nil,
+                                                  externArr=true,
+                                                  _borrowed=true);
+    dom._value.add_arr(ret, locking = false);
+    return _newArray(ret);
   }
 
   // A helper routine to take the first parallel scan over a vector

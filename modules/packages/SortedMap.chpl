@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -34,15 +34,6 @@ module SortedMap {
   private use IO;
   import Sort.{relativeComparator};
   public use Sort only defaultComparator;
-
-  // TODO: remove this module and its public use when the deprecations have been
-  // removed
-  pragma "ignore deprecated use"
-  private module HideDeprecatedReexport {
-    public use Sort only DefaultComparator;
-  }
-
-  public use HideDeprecatedReexport;
 
   // Lock code lifted from modules/standard/List.chpl.
   @chpldoc.nodoc

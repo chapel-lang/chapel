@@ -1,0 +1,7 @@
+checking module --PASS
+checking functions --PASS
+checking types --PASS
+checking global variables --PASS
+checking local variables --PASS
+checking formal arguments --PASS
+DONE with debug checking

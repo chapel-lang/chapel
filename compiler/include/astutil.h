@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -26,6 +26,7 @@
 #include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/ADT/SmallVector.h"
 
+#include <functional>
 #include <vector>
 #include <set>
 
@@ -101,6 +102,23 @@ void reset_ast_loc(BaseAST* destNode, BaseAST* sourceNode);
 void compute_call_sites();
 void computeNonvirtualCallSites(FnSymbol* fn);
 void computeAllCallSites(FnSymbol* fn);
+
+using AdjustTypeFn = std::function<Type*(Type*)>;
+
+// Given 'adjustTypeFn', compute the new type of 'sym' and adjust 'sym->type'
+// if able. Returns the newly computed type. If the symbol is a 'TypeSymbol',
+// will not set 'sym->type'. The caller is responsible for walking the live
+// uses of the type symbol and retargeting them to the newly computed type.
+Type* maybeAdjustSymbolType(Symbol* sym, AdjustTypeFn adjustTypeFn,
+                            bool preserveRefLevels=true);
+
+// Given 'adjustTypeFn', walk all symbols and re-assign the type of the symbol
+// if the type produced by 'adjustTypeFn' differs from the symbol's current
+// type. If the symbol is a 'TypeSymbol' and the adjusted type differs, this
+// function will adjust all uses of the 'TypeSymbol' to point to the new type
+// instead of setting 'sym->type'.
+void adjustAllSymbolTypes(AdjustTypeFn adjustTypeFn,
+                          bool preserveRefLevels=true);
 
 //
 // collect set of symbols and vector of SymExpr; can be used to
@@ -244,5 +262,14 @@ bool symExprIsUsedAsRef(
   SymExpr* use,
   bool constRef,
   std::function<bool(SymExpr*, CallExpr*)> checkForMove);
+
+// Returns 'true' if the given 'SymExpr' refers to a 'FnSymbol' that is being
+// used as a value. This function relies on typed AST to make determinations.
+bool isUseOfProcedureAsValue(SymExpr* se);
+
+// Make the ref level of 't' match the ref level of 'matchType'. E.g., if
+// 'matchType' is 'ref', then 't' will be adjusted to be 't->refType' if it
+// is not already a ref type.
+Type* matchRefLevel(Type* t, Type* matchType);
 
 #endif

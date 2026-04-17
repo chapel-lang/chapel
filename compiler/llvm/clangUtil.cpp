@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -92,14 +92,13 @@
 #endif
 #include "llvm/Transforms/Utils/Cloning.h"
 
-#if HAVE_LLVM_VER >= 140
 #include "llvm/MC/TargetRegistry.h"
 #include "llvm/Passes/OptimizationLevel.h"
 using LlvmOptimizationLevel = llvm::OptimizationLevel;
-#else
-#include "llvm/Support/TargetRegistry.h"
-using LlvmOptimizationLevel = llvm::PassBuilder::OptimizationLevel;
-#endif
+
+#include "llvm/Transforms/Instrumentation/AddressSanitizerOptions.h"
+#include "llvm/Transforms/Instrumentation/AddressSanitizer.h"
+
 
 #ifdef HAVE_LLVM_RV
 #include "rv/passes.h"
@@ -131,6 +130,7 @@ using LlvmOptimizationLevel = llvm::PassBuilder::OptimizationLevel;
 
 #include "../../frontend/lib/immediates/prim_data.h"
 #include "chpl/util/clang-integration.h"
+#include "chpl/util/filesystem.h"
 
 #include "global-ast-vecs.h"
 
@@ -315,7 +315,7 @@ void addMinMax(const char* prefix, int nbits, bool isSigned)
 
   astlocT prevloc = currentAstLoc;
 
-  currentAstLoc = astlocT(0, astr("<internal>"));
+  currentAstLoc = astlocT::unknownLoc("<internal>");
 
   const char* min_name = astr(prefix, "_MIN");
   const char* max_name = astr(prefix, "_MAX");
@@ -362,8 +362,8 @@ static
 static
 void setupCIntType(::Type*& type, int nbits, bool unsigned_) {
   if (type != NULL) {
-    INT_ASSERT(get_width(type) == nbits);
-    INT_ASSERT(is_signed(type) == !unsigned_);
+    INT_ASSERT(getWidthOfType(type) == nbits);
+    INT_ASSERT(isSignedType(type) == !unsigned_);
   } else {
     type = getIntWithBits(nbits, unsigned_);
   }
@@ -1656,12 +1656,13 @@ void setupClang(GenInfo* info, std::string mainFile)
     clangInfo->driverArgs.push_back(clangInfo->clangOtherArgs[i]);
   }
 
-  clangInfo->driverArgs.push_back("-c");
-  // chpl - always compile rt file
-  clangInfo->driverArgs.push_back(mainFile.c_str());
-
   if (!fLlvmCodegen)
     clangInfo->driverArgs.push_back("-fsyntax-only");
+  else
+    clangInfo->driverArgs.push_back("-c");
+
+  // chpl - always compile rt file
+  clangInfo->driverArgs.push_back(mainFile.c_str());
 
   if( printSystemCommands && developer ) {
     for( size_t i = 0; i < clangInfo->driverArgs.size(); i++ ) {
@@ -1682,14 +1683,30 @@ void setupClang(GenInfo* info, std::string mainFile)
 
   // Create a compiler instance to handle the actual work.
   CompilerInstance* Clang = new CompilerInstance();
-  auto diagOptions =
-    chpl::util::wrapCreateAndPopulateDiagOpts(clangInfo->driverArgsCStrings);
+  auto diagOptions = clang::CreateAndPopulateDiagOpts(clangInfo->driverArgsCStrings);
   auto diagClient = new clang::TextDiagnosticPrinter(llvm::errs(),
-                                                     &*diagOptions);
+#if LLVM_VERSION_MAJOR >= 21
+                                                     *diagOptions
+#else
+                                                      diagOptions.get()
+#endif
+                                                    );
+#if LLVM_VERSION_MAJOR >= 20
+  auto clangDiags =
+    clang::CompilerInstance::createDiagnostics(*llvm::vfs::getRealFileSystem(),
+#if LLVM_VERSION_MAJOR >= 21
+                                              *diagOptions,
+#else
+                                               diagOptions.release(),
+#endif
+                                               diagClient,
+                                               /* owned */ true);
+#else
   auto clangDiags =
     clang::CompilerInstance::createDiagnostics(diagOptions.release(),
                                                diagClient,
                                                /* owned */ true);
+#endif
   Clang->setDiagnostics(&*clangDiags);
 
   if (usingGpuLocaleModel()) {
@@ -1799,7 +1816,11 @@ void setupClang(GenInfo* info, std::string mainFile)
   }
 
   // Create the compilers actual diagnostics engine.
+#if LLVM_VERSION_MAJOR >= 20
+  clangInfo->Clang->createDiagnostics(*llvm::vfs::getRealFileSystem());
+#else
   clangInfo->Clang->createDiagnostics();
+#endif
   if (!clangInfo->Clang->hasDiagnostics())
     INT_FATAL("Bad diagnostics from clang");
 
@@ -1863,6 +1884,42 @@ getCodeModel(const CodeGenOptions &CodeGenOpts) {
   return static_cast<llvm::CodeModel::Model>(CodeModel);
 }
 
+#if HAVE_LLVM_VER >= 200
+// copied from clang/lib/CodeGen/BackendUtil.cpp
+static std::string flattenClangCommandLine(ArrayRef<std::string> Args,
+                                           StringRef MainFilename) {
+  if (Args.empty())
+    return std::string{};
+
+  std::string FlatCmdLine;
+  raw_string_ostream OS(FlatCmdLine);
+  bool PrintedOneArg = false;
+  if (!StringRef(Args[0]).contains("-cc1")) {
+    llvm::sys::printArg(OS, "-cc1", /*Quote=*/true);
+    PrintedOneArg = true;
+  }
+  for (unsigned i = 0; i < Args.size(); i++) {
+    StringRef Arg = Args[i];
+    if (Arg.empty())
+      continue;
+    if (Arg == "-main-file-name" || Arg == "-o") {
+      i++; // Skip this argument and next one.
+      continue;
+    }
+    if (Arg.starts_with("-object-file-name") || Arg == MainFilename)
+      continue;
+    // Skip fmessage-length for reproducibility.
+    if (Arg.starts_with("-fmessage-length"))
+      continue;
+    if (PrintedOneArg)
+      OS << " ";
+    llvm::sys::printArg(OS, Arg, /*Quote=*/true);
+    PrintedOneArg = true;
+  }
+  return FlatCmdLine;
+}
+#endif
+
 // this function is substantially similar to clang's
 // initTargetOptions from BackendUtil.cpp
 static llvm::TargetOptions getTargetOptions(
@@ -1908,16 +1965,18 @@ static llvm::TargetOptions getTargetOptions(
     Options.AllowFPOpFusion = llvm::FPOpFusion::Standard;
   }
 
-#if HAVE_LLVM_VER >= 120
   Options.BinutilsVersion =
       llvm::TargetMachine::parseBinutilsVersion(CodeGenOpts.BinutilsVersion);
-#endif
 
   Options.UseInitArray = CodeGenOpts.UseInitArray;
   Options.DisableIntegratedAS = CodeGenOpts.DisableIntegratedAS;
 #if HAVE_LLVM_VER >= 190
   Options.MCOptions.CompressDebugSections = CodeGenOpts.getCompressDebugSections();
+#if HAVE_LLVM_VER >= 200
+  Options.MCOptions.X86RelaxRelocations = CodeGenOpts.X86RelaxRelocations;
+#else
   Options.MCOptions.X86RelaxRelocations = CodeGenOpts.RelaxELFRelocations;
+#endif
 #else
   Options.CompressDebugSections = CodeGenOpts.getCompressDebugSections();
   Options.RelaxELFRelocations = CodeGenOpts.RelaxELFRelocations;
@@ -1932,14 +1991,13 @@ static llvm::TargetOptions getTargetOptions(
   //Options.NoNaNsFPMath = LangOpts.NoHonorNaNs; -- set above
   Options.NoZerosInBSS = CodeGenOpts.NoZeroInitializedInBSS;
   //Options.UnsafeFPMath = LangOpts.UnsafeFPMath; -- set above
-#if HAVE_LLVM_VER <= 110
-  Options.StackAlignmentOverride = CodeGenOpts.StackAlignment;
-#endif
 
   Options.BBSections =
     llvm::StringSwitch<llvm::BasicBlockSection>(CodeGenOpts.BBSections)
         .Case("all", llvm::BasicBlockSection::All)
+#if HAVE_LLVM_VER < 200
         .Case("labels", llvm::BasicBlockSection::Labels)
+#endif
         .StartsWith("list=", llvm::BasicBlockSection::List)
         .Case("none", llvm::BasicBlockSection::None)
         .Default(llvm::BasicBlockSection::None);
@@ -1948,17 +2006,10 @@ static llvm::TargetOptions getTargetOptions(
     INT_FATAL("this clang configuration not supported");
   }
 
-#if HAVE_LLVM_VER >= 120
   Options.EnableMachineFunctionSplitter = CodeGenOpts.SplitMachineFunctions;
-#endif
 
   Options.FunctionSections = CodeGenOpts.FunctionSections;
   Options.DataSections = CodeGenOpts.DataSections;
-#if LLVM_VERSION_MAJOR == 12
-  // clang::CodeGenOptions::IgnoreXCOFFVisibility first appeared in
-  // LLVM version 12 and then went away in version 13.
-  Options.IgnoreXCOFFVisibility = CodeGenOpts.IgnoreXCOFFVisibility;
-#endif
   Options.UniqueSectionNames = CodeGenOpts.UniqueSectionNames;
   Options.UniqueBasicBlockSectionNames =
       CodeGenOpts.UniqueBasicBlockSectionNames;
@@ -1974,28 +2025,16 @@ static llvm::TargetOptions getTargetOptions(
 #endif
   Options.DebuggerTuning = CodeGenOpts.getDebuggerTuning();
   Options.EmitStackSizeSection = CodeGenOpts.StackSizeSection;
-#if HAVE_LLVM_VER >= 130
   Options.StackUsageOutput = CodeGenOpts.StackUsageOutput;
-#endif
   Options.EmitAddrsig = CodeGenOpts.Addrsig;
   Options.ForceDwarfFrameSection = CodeGenOpts.ForceDwarfFrameSection;
   Options.EmitCallSiteInfo = CodeGenOpts.EmitCallSiteInfo;
-#if HAVE_LLVM_VER >= 120
-  Options.EnableAIXExtendedAltivecABI = CodeGenOpts.EnableAIXExtendedAltivecABI;
-#if HAVE_LLVM_VER < 140
-  Options.PseudoProbeForProfiling = CodeGenOpts.PseudoProbeForProfiling;
-  Options.ValueTrackingVariableLocations =
-      CodeGenOpts.ValueTrackingVariableLocations;
-#endif
-#endif
 #if HAVE_LLVM_VER >= 170
   Options.XRayFunctionIndex = CodeGenOpts.XRayFunctionIndex;
 #else
   Options.XRayOmitFunctionIndex = CodeGenOpts.XRayOmitFunctionIndex;
 #endif
-#if HAVE_LLVM_VER >= 140
   Options.LoopAlignment = CodeGenOpts.LoopAlignment;
-#endif
 
   Options.MCOptions.SplitDwarfFile = CodeGenOpts.SplitDwarfFile;
   Options.MCOptions.MCRelaxAll = CodeGenOpts.RelaxAll;
@@ -2013,20 +2052,21 @@ static llvm::TargetOptions getTargetOptions(
   Options.MCOptions.MCFatalWarnings = CodeGenOpts.FatalWarnings;
   Options.MCOptions.MCNoWarn = CodeGenOpts.NoWarn;
   Options.MCOptions.AsmVerbose = CodeGenOpts.AsmVerbose;
-#if HAVE_LLVM_VER >= 120
   Options.MCOptions.Dwarf64 = CodeGenOpts.Dwarf64;
-#endif
   Options.MCOptions.PreserveAsmComments = CodeGenOpts.PreserveAsmComments;
   Options.MCOptions.ABIName = TargetOpts.ABI;
 
   // consider setting Options.MCOptions.IASSearchPaths
   // if .include directives with integrated assembler are needed
 
-  Options.MCOptions.Argv0 = CodeGenOpts.Argv0;
+  Options.MCOptions.Argv0 = CodeGenOpts.Argv0 ? CodeGenOpts.Argv0 : "";
+#if HAVE_LLVM_VER >= 200
+  Options.MCOptions.CommandlineArgs = flattenClangCommandLine(
+    CodeGenOpts.CommandLineArgs, CodeGenOpts.MainFileName);
+#else
   Options.MCOptions.CommandLineArgs = CodeGenOpts.CommandLineArgs;
-#if HAVE_LLVM_VER >= 130
-  Options.DebugStrictDwarf = CodeGenOpts.DebugStrictDwarf;
 #endif
+  Options.DebugStrictDwarf = CodeGenOpts.DebugStrictDwarf;
 
   return Options;
 }
@@ -2066,18 +2106,17 @@ static void setupModule()
 
   INT_ASSERT(info->module);
 
-#if HAVE_LLVM_VER >= 130
   clangInfo->asmTargetLayoutStr =
     clangInfo->Clang->getTarget().getDataLayoutString();
-#else
-  clangInfo->asmTargetLayoutStr =
-    clangInfo->Clang->getTarget().getDataLayout().getStringRepresentation();
-#endif
 
   // Set the target triple.
   const llvm::Triple &Triple =
     clangInfo->Clang->getTarget().getTriple();
+#if LLVM_VERSION_MAJOR >= 21
+  info->module->setTargetTriple(Triple);
+#else
   info->module->setTargetTriple(Triple.getTriple());
+#endif
 
   // Always set the module layout. This works around an apparent bug in
   // clang or LLVM (trivial/deitz/test_array_low.chpl would print out the
@@ -2145,13 +2184,23 @@ static void setupModule()
 #endif
 
   // Create the target machine.
-  info->targetMachine = Target->createTargetMachine(Triple.str(),
+#if LLVM_VERSION_MAJOR >= 21
+  info->targetMachine = Target->createTargetMachine(Triple,
                                                     cpu,
                                                     featuresString,
                                                     Options,
                                                     relocModel,
                                                     codeModel,
                                                     optLevel);
+#else
+  info->targetMachine = Target->createTargetMachine(Triple.getTriple(),
+                                                    cpu,
+                                                    featuresString,
+                                                    Options,
+                                                    relocModel,
+                                                    codeModel,
+                                                    optLevel);
+#endif
 
 
 
@@ -2315,7 +2364,7 @@ void finishCodegenLLVM() {
       llvm::MDString::get(info->module->getContext(), chapel_string))
   );
 
-  if (debug_info) debug_info->finalize();
+  if (debugInfo) debugInfo->finalize();
 
   // finish bringing in symbols from separately compiled .dyno files
   if (fDynoLibGenOrUse && !fDynoGenLib) {
@@ -2325,10 +2374,13 @@ void finishCodegenLLVM() {
   // Verify the LLVM module.
   if (developer || fVerify) {
     bool problems;
-    problems = verifyModule(*info->module, &errs());
-    //problems = false;
+    bool brokenDebugInfo = true;
+    problems = verifyModule(*info->module, &errs(), &brokenDebugInfo);
     if (problems) {
       INT_FATAL("LLVM module verification failed");
+    }
+    if (brokenDebugInfo) {
+      INT_FATAL("LLVM module has broken debug info");
     }
   }
 
@@ -2498,6 +2550,38 @@ static PassBuilder constructPassBuilder(
 }
 
 
+//
+// Copied from clang/lib/CodeGen/BackendUtil.cpp
+// It's probably not really relevant to Chapel since we don't do GC, but this
+// does return true for MachO
+//
+// Check if ASan should use GC-friendly instrumentation for globals.
+// First of all, there is no point if -fdata-sections is off (expect for MachO,
+// where this is not a factor). Also, on ELF this feature requires an assembler
+// extension that only works with -integrated-as at the moment.
+static bool asanUseGlobalsGC(const Triple &T, const CodeGenOptions &CGOpts) {
+  if (!CGOpts.SanitizeAddressGlobalsDeadStripping)
+    return false;
+  switch (T.getObjectFormat()) {
+  case Triple::MachO:
+  case Triple::COFF:
+    return true;
+  case Triple::ELF:
+    return !CGOpts.DisableIntegratedAS;
+  case Triple::GOFF:
+    llvm::report_fatal_error("ASan not implemented for GOFF");
+  case Triple::XCOFF:
+    llvm::report_fatal_error("ASan not implemented for XCOFF.");
+  case Triple::Wasm:
+  case Triple::DXContainer:
+  case Triple::SPIRV:
+  case Triple::UnknownObjectFormat:
+    break;
+  }
+  return false;
+}
+
+
 static void runModuleOptPipeline(bool addWideOpts) {
   GenInfo* info = gGenInfo;
 
@@ -2523,8 +2607,6 @@ static void runModuleOptPipeline(bool addWideOpts) {
   // some FAM add-ins
   std::unique_ptr<TargetLibraryInfoImpl> TLII(
       new TargetLibraryInfoImpl(llvm::Triple(info->targetMachine->getTargetTriple())));
-  // TODO: handle CodeGenOptions::LIBMVEC etc to support
-  // vectorizing the math library.
 
   // not sure if this one is needed
   FAM.registerPass([&] { return info->targetMachine->getTargetIRAnalysis(); });
@@ -2552,6 +2634,39 @@ static void runModuleOptPipeline(bool addWideOpts) {
     MPM = PB.buildO0DefaultPipeline(optLvl);
   } else {
     MPM = PB.buildPerModuleDefaultPipeline(optLvl);
+  }
+
+  if (strcmp(envMap["CHPL_SANITIZE_EXE"], "address") == 0) {
+
+    // if `--no-llvm-wide-opt` add asan
+    // if `--llvm-wide-opt` and `addWideOpts` is true, add asan
+    if (!fLLVMWideOpt || (fLLVMWideOpt && addWideOpts)) {
+
+      //
+      // Much of this logic comes from clang in clang/lib/CodeGen/BackendUtil.cpp
+      //
+      auto AsanCallback = [&](ModulePassManager &MPM, LlvmOptimizationLevel Level
+#if LLVM_VERSION_MAJOR >= 20
+                              , llvm::ThinOrFullLTOPhase Phase
+#endif
+      ) {
+        auto& clangInfo = gGenInfo->clangInfo;
+        auto& codegenOptions = clangInfo->codegenOptions;
+        Triple TargetTriple(info->module->getTargetTriple());
+
+        bool UseGlobalGC = asanUseGlobalsGC(TargetTriple, codegenOptions);
+        bool UseOdrIndicator = codegenOptions.SanitizeAddressUseOdrIndicator;
+        llvm::AsanDtorKind DestructorKind = codegenOptions.getSanitizeAddressDtor();
+        llvm::AddressSanitizerOptions Opts;
+        Opts.CompileKernel = false;
+        Opts.Recover = codegenOptions.SanitizeRecover.has(SanitizerKind::Address);
+        Opts.UseAfterScope = codegenOptions.SanitizeAddressUseAfterScope;
+        Opts.UseAfterReturn = codegenOptions.getSanitizeAddressUseAfterReturn();
+        MPM.addPass(AddressSanitizerPass(Opts, UseGlobalGC, UseOdrIndicator,
+                                        DestructorKind));
+      };
+      PB.registerOptimizerLastEPCallback(AsanCallback);
+    }
   }
 
   // Add the Global to Wide optimization if necessary.
@@ -2690,19 +2805,11 @@ void prepareCodegenLLVM()
 #endif
 }
 
-#if HAVE_LLVM_VER >= 140
 static void handleErrorLLVM(void* user_data, const char* reason,
                             bool gen_crash_diag)
 {
   INT_FATAL("llvm fatal error: %s", reason);
 }
-#else
-static void handleErrorLLVM(void* user_data, const std::string& reason,
-                            bool gen_crash_diag)
-{
-  INT_FATAL("llvm fatal error: %s", reason.c_str());
-}
-#endif
 
 struct ExternBlockInfo {
   GenInfo* gen_info;
@@ -2786,6 +2893,11 @@ static std::string generateClangGpuLangArgs() {
     if (gpuArches.size() >= 1) {
       args += " " + std::string("--offload-arch=") + *gpuArches.begin();
     }
+
+    // to get old behavior: https://releases.llvm.org/19.1.0/tools/clang/docs/ReleaseNotes.html#cuda-hip-language-changes
+    if (getGpuCodegenType() == GpuCodegenType::GPU_CG_NVIDIA_CUDA) {
+      args += " --cuda-include-ptx=all";
+    }
   }
   return args;
 }
@@ -2850,7 +2962,7 @@ static void helpComputeClangArgs(std::string& clangCC,
   StringSaver Saver(A);
 
   // get any args passed to CC/CXX and add them to the builtin clang invocation
-  SmallVector<const char *, 0> split;
+  SmallVector<const char *, 2> split;
   llvm::cl::TokenizeGNUCommandLine(CHPL_LLVM_CLANG_C, Saver, split);
   // set clangCC / clangCXX to just the first argument
   for (size_t i = 0; i < split.size(); i++) {
@@ -2896,8 +3008,9 @@ static void helpComputeClangArgs(std::string& clangCC,
     addFilteredArgs(clangCCArgs, args);
   }
 
-  // add a -I. so we can find headers named on command line in same dir
-  clangCCArgs.push_back("-I.");
+  // add a -iquote. so we can find headers named on command line in same dir
+  // using iquote over I to prevent accidently overriding system headers
+  clangCCArgs.push_back("-iquote.");
 
   // add a -I for the generated code directory
   clangCCArgs.push_back(std::string("-I") + getIntermediateDirName());
@@ -2907,15 +3020,28 @@ static void helpComputeClangArgs(std::string& clangCC,
     clangCCArgs.push_back(clangRequiredWarningFlags[i]);
   }
 
+#if HAVE_LLVM_VER >= 150
   if (usingGpuLocaleModel() &&
       getGpuCodegenType() == GpuCodegenType::GPU_CG_NVIDIA_CUDA) {
     // this is necessary for CUB 11. Once we drop CUDA 11 support, we can
     // probably remove this
     clangCCArgs.push_back("-Wno-deprecated-builtins");
   }
+#endif
+
+#if HAVE_LLVM_VER >= 210
+  if (usingGpuLocaleModel() &&
+      getGpuCodegenType() == GpuCodegenType::GPU_CG_AMD_HIP) {
+    // this is need to make hipcub wrappers work since
+    // TempStorage is marked deprecated, but I can't seem to find an alternative
+    // the rocm docs do not mention the deprecation and I can't find proper docs
+    // for the new API that the warning refers to
+    clangCCArgs.push_back("-Wno-deprecated-declarations");
+  }
+#endif
 
   // Add debug flags
-  if (debugCCode) {
+  if (fDebugSymbols) {
     clangCCArgs.push_back("-g");
     clangCCArgs.push_back("-DCHPL_DEBUG");
   }
@@ -2983,7 +3109,7 @@ static void helpComputeClangArgs(std::string& clangCC,
   // Library directories/files and ldflags are handled during linking later.
   // Skip this in multi-locale libraries because the C blob that is built
   // already defines this.
-  if (!fMultiLocaleInterop) {
+  if (!fClientServerLibrary) {
     clangCCArgs.push_back("-DCHPL_GEN_CODE");
   }
 
@@ -3037,7 +3163,7 @@ void runClang(const char* just_parse_filename) {
   // tell clang to use CUDA/AMD support
   if (isFullGpuCodegen()) {
     // Need to pass this flag so atomics header will compile
-    clangOtherArgs.push_back("--std=c++14");
+    clangOtherArgs.push_back("--std=c++17");
 
     // Need to select CUDA/AMD mode in embedded clang to
     // activate the GPU target
@@ -3102,7 +3228,7 @@ void runClang(const char* just_parse_filename) {
     }
 
     // Include a few extra things if generating a multi-locale library.
-    if (fMultiLocaleInterop) {
+    if (fClientServerLibrary) {
 
       // Include the contents of the server bundle...
       clangOtherArgs.push_back("-include");
@@ -3168,13 +3294,7 @@ void runClang(const char* just_parse_filename) {
   if (fDriverMakeBinaryPhase) {
     // Needed for makeBinary but is only otherwise run by the skipped
     // ExecuteAction below.
-#if HAVE_LLVM_VER >= 130
     clangInfo->Clang->createTarget();
-#else
-    clangInfo->Clang->setTarget(TargetInfo::CreateTargetInfo(
-        clangInfo->Clang->getDiagnostics(),
-        clangInfo->Clang->getInvocation().TargetOpts));
-#endif
 
     return;
   }
@@ -3352,12 +3472,8 @@ clang::FunctionDecl* getFunctionDeclClang(const char* name)
 llvm::Type* getTypeLLVM(const char* name)
 {
   GenInfo* info = gGenInfo;
-#if HAVE_LLVM_VER >= 120
   llvm::Type* t = llvm::StructType::getTypeByName(gContext->llvmContext(),
                                                   name);
-#else
-  llvm::Type* t = info->module->getTypeByName(name);
-#endif
 
   if( t ) return t;
 
@@ -3912,28 +4028,43 @@ static clang::CanQualType getClangType(::Type* t, bool makeRef) {
   if (cCastedToType)
     USR_FATAL(t, "Cannot use macro with type cast in export function argument");
 
-  if (cTypeDecl == NULL)
+  clang::CanQualType ret;
+
+  if (cTypeDecl) {
+    auto cQualType = Ctx->getTypeDeclType(cTypeDecl);
+    ret = cQualType->getCanonicalTypeUnqualified();
+
+  } else if (t->symbol->hasFlag(FLAG_OPAQUE_C_TYPE_ALIAS)) {
+    if (::Type* t = chapelTypeForPrimitiveCTypeName(cname)) {
+      ret = getClangType(t, makeRef);
+    } else {
+      INT_FATAL(t->symbol, "Unhandled type alias when fetching Clang type");
+    }
+
+  } else {
     USR_FATAL(t, "Could not find C type %s - "
                   "extern/export functions should only use extern types",
                    cname);
+  }
 
-  clang::QualType cQualType = Ctx->getTypeDeclType(cTypeDecl);
-  clang::CanQualType cTy = cQualType->getCanonicalTypeUnqualified();
+  return ret;
+}
 
-  return cTy;
+static clang::CanQualType
+getClangFormalType(IntentTag intent, ::Type* t, bool isReceiver) {
+  bool ref = (intent & INTENT_FLAG_REF) ||
+             (argRequiresCPtr(intent, t, isReceiver) &&
+              t->getValType()->symbol->hasFlag(FLAG_TUPLE));
+  if (t->symbol->hasFlag(FLAG_WIDE_REF)) {
+    USR_FATAL(t->symbol, "cannot convert wide reference type to Clang type");
+  }
+
+  return getClangType(t, ref);
 }
 
 static clang::CanQualType getClangFormalType(ArgSymbol* formal) {
-  ::Type* t = formal->type;
-
-  bool ref = (formal->intent & INTENT_FLAG_REF) ||
-             (formal->requiresCPtr() &&
-              formal->type->getValType()->symbol->hasFlag(FLAG_TUPLE));
-
-  if (formal->isWideRef())
-    USR_FATAL(formal, "Cannot use wide reference in exported function");
-
-  return getClangType(t, ref);
+  bool isReceiver = formal->hasFlag(FLAG_ARG_THIS);
+  return getClangFormalType(formal->intent, formal->type, isReceiver);
 }
 
 const clang::CodeGen::CGFunctionInfo& getClangABIInfoFD(clang::FunctionDecl* FD)
@@ -3959,6 +4090,45 @@ const clang::CodeGen::CGFunctionInfo& getClangABIInfoFD(clang::FunctionDecl* FD)
   return clang::CodeGen::arrangeFreeFunctionType(CGM, proto);
 }
 
+const clang::CodeGen::CGFunctionInfo& getClangABIInfo(::FunctionType* ft) {
+  auto info = gGenInfo;
+  auto clangInfo = info->clangInfo;
+  auto cCodeGen = clangInfo->cCodeGen;
+  INT_ASSERT(info && clangInfo && cCodeGen);
+  auto& CGM = cCodeGen->CGM();
+
+  // Otherwise, we should call arrangeFreeFunctionCall
+  // with the various types, which must be extern types.
+  // (An alternative strategy would be to generate the C headers
+  //  for these types before creating this clang parser).
+  llvm::SmallVector<clang::CanQualType,4> argTys;
+
+  // Convert each formal to a Clang type.
+  for (int i = 0; i < ft->numFormals(); i++) {
+    auto formal = ft->formal(i);
+    bool isReceiver = !strcmp(formal->name(), "this");
+    auto ty = getClangFormalType(formal->intent(), formal->type(), isReceiver);
+    argTys.push_back(ty);
+  }
+
+  // Convert the return type
+  bool retRef = ft->returnIntent() == RET_CONST_REF ||
+                ft->returnIntent() == RET_REF;
+
+  auto ts = ft->returnType()->symbol;
+  if (ts->hasFlag(FLAG_WIDE_REF)) {
+    // TODO: Error location is not useful and should be issued elsewhere.
+    USR_FATAL(ts, "cannot convert wide reference type to Clang type");
+  }
+
+  auto retTy = getClangType(ft->returnType(), retRef);
+  auto extInfo = clang::FunctionType::ExtInfo();
+  auto tag = CodeGen::RequiredArgs::All;
+  auto& ret = CodeGen::arrangeFreeFunctionCall(CGM, retTy, argTys,
+                                               extInfo,
+                                               tag);
+  return ret;
+}
 
 const clang::CodeGen::CGFunctionInfo& getClangABIInfo(FnSymbol* fn) {
   GenInfo* info = gGenInfo;
@@ -4017,9 +4187,9 @@ const clang::CodeGen::CGFunctionInfo& getClangABIInfo(FnSymbol* fn) {
 }
 
 const clang::CodeGen::ABIArgInfo*
-getCGArgInfo(const clang::CodeGen::CGFunctionInfo* CGI, int curCArg,
-             FnSymbol* fn)
-{
+getCGArgInfo(const clang::CodeGen::CGFunctionInfo* CGI,
+             int curCArg,
+             FnSymbol* fn) {
 
   // Don't try to use the calling convention code for variadic args.
   if ((unsigned) curCArg >= CGI->arg_size()) {
@@ -4124,20 +4294,29 @@ int getCTypeAlignment(::Type* type) {
   gGenInfo->lvt->getCDecl(type->symbol->cname, &cType, &cVal);
   const clang::TypeDecl* td = cType;
 
-  // find the QualType
   QualType qType;
-  if (const TypedefNameDecl* tnd = dyn_cast<TypedefNameDecl>(td)) {
-    qType = tnd->getCanonicalDecl()->getUnderlyingType();
-  } else if (const EnumDecl* ed = dyn_cast<EnumDecl>(td)) {
-    qType = ed->getCanonicalDecl()->getIntegerType();
-  } else if (const RecordDecl* rd = dyn_cast<RecordDecl>(td)) {
-    RecordDecl *def = rd->getDefinition();
-    if (def == nullptr)
-      // ex. opaque pointer in test/extern/records/OpaqueStructNoField.chpl
-      return ALIGNMENT_DEFER;
-    qType=def->getCanonicalDecl()->getTypeForDecl()->getCanonicalTypeInternal();
+
+  if (td) {
+    if (const TypedefNameDecl* tnd = dyn_cast<TypedefNameDecl>(td)) {
+      qType = tnd->getCanonicalDecl()->getUnderlyingType();
+    } else if (const EnumDecl* ed = dyn_cast<EnumDecl>(td)) {
+      qType = ed->getCanonicalDecl()->getIntegerType();
+    } else if (const RecordDecl* rd = dyn_cast<RecordDecl>(td)) {
+      RecordDecl *def = rd->getDefinition();
+      if (def == nullptr)
+        // ex. opaque pointer in test/extern/records/OpaqueStructNoField.chpl
+        return ALIGNMENT_DEFER;
+      qType=def->getCanonicalDecl()->getTypeForDecl()
+               ->getCanonicalTypeInternal();
+    } else {
+      INT_FATAL(type, "Unhandled Clang type declaration");
+    }
+  } else if (type->symbol->hasFlag(FLAG_OPAQUE_C_TYPE_ALIAS)) {
+    auto eqt = chapelTypeForPrimitiveCTypeName(type->symbol->cname);
+    INT_ASSERT(eqt);
+    return getCTypeAlignment(eqt);
   } else {
-    INT_FATAL("Unknown clang type declaration");
+    INT_FATAL(type, "Chapel type does not have a corresponding Clang type");
   }
 
   return getCTypeAlignment(qType);
@@ -4190,24 +4369,24 @@ bool isBuiltinExternCFunction(const char* cname)
 }
 
 #ifndef LLVM_USE_OLD_PASSES
-static void addDumpIrModule(ModulePassManager& MPM,
-                            LlvmOptimizationLevel v,
-                            llvmStageNum::llvmStageNum_t stage) {
+static void addDumpIr(ModulePassManager& MPM,
+                      LlvmOptimizationLevel v,
+                      llvmStageNum::llvmStageNum_t stage) {
   MPM.addPass(llvm::createModuleToFunctionPassAdaptor(DumpIRPass(stage)));
 }
-static void addDumpIrCG(CGSCCPassManager& CPM,
-                        LlvmOptimizationLevel v,
-                        llvmStageNum::llvmStageNum_t stage) {
+static void addDumpIr(CGSCCPassManager& CPM,
+                      LlvmOptimizationLevel v,
+                      llvmStageNum::llvmStageNum_t stage) {
   CPM.addPass(DumpIRPass(stage));
 }
-static void addDumpIrFunction(FunctionPassManager& FPM,
-                              LlvmOptimizationLevel v,
-                              llvmStageNum::llvmStageNum_t stage) {
+static void addDumpIr(FunctionPassManager& FPM,
+                      LlvmOptimizationLevel v,
+                      llvmStageNum::llvmStageNum_t stage) {
   FPM.addPass(DumpIRPass(stage));
 }
-static void addDumpIrLoop(LoopPassManager& LPM,
-                        LlvmOptimizationLevel v,
-                        llvmStageNum::llvmStageNum_t stage) {
+static void addDumpIr(LoopPassManager& LPM,
+                      LlvmOptimizationLevel v,
+                      llvmStageNum::llvmStageNum_t stage) {
   LPM.addPass(DumpIRPass(stage));
 }
 static void registerDumpIrExtensions(PassBuilder& PB) {
@@ -4215,12 +4394,23 @@ static void registerDumpIrExtensions(PassBuilder& PB) {
     llvmStageNum::llvmStageNum_t stage = (llvmStageNum::llvmStageNum_t) i;
     if (llvmPrintIrStageNum == llvmStageNum::EVERY ||
         llvmPrintIrStageNum == stage) {
+
+      auto dumpIRLambda = [stage](auto & PM, LlvmOptimizationLevel v) {
+        addDumpIr(PM, v, stage);
+      };
+#if LLVM_VERSION_MAJOR >= 20
+      auto dumpIRLambdaWithPhase = [stage](auto & PM, LlvmOptimizationLevel v,
+                                           llvm::ThinOrFullLTOPhase phase) {
+        addDumpIr(PM, v, stage);
+      };
+#else
+      // prior versions had no phase, use the same as the default
+      auto dumpIRLambdaWithPhase = dumpIRLambda;
+#endif
+
       switch (stage) {
         case llvmStageNum::EarlyAsPossible:
-          PB.registerPipelineStartEPCallback(
-            [stage](ModulePassManager &MPM, LlvmOptimizationLevel v) {
-                      addDumpIrModule(MPM, v, stage);
-                    });
+          PB.registerPipelineStartEPCallback(dumpIRLambda);
           break;
         case llvmStageNum::ModuleOptimizerEarly:
           if (llvmPrintIrStageNum != llvmStageNum::EVERY) {
@@ -4230,52 +4420,28 @@ static void registerDumpIrExtensions(PassBuilder& PB) {
           }
           break;
         case llvmStageNum::LateLoopOptimizer:
-          PB.registerLateLoopOptimizationsEPCallback(
-            [stage](LoopPassManager &LPM, LlvmOptimizationLevel v) {
-                      addDumpIrLoop(LPM, v, stage);
-                    });
+          PB.registerLateLoopOptimizationsEPCallback(dumpIRLambda);
           break;
         case llvmStageNum::LoopOptimizerEnd:
-          PB.registerLoopOptimizerEndEPCallback(
-            [stage](LoopPassManager &LPM, LlvmOptimizationLevel v) {
-                      addDumpIrLoop(LPM, v, stage);
-                    });
+          PB.registerLoopOptimizerEndEPCallback(dumpIRLambda);
           break;
         case llvmStageNum::ScalarOptimizerLate:
-          PB.registerScalarOptimizerLateEPCallback(
-            [stage](FunctionPassManager &FPM, LlvmOptimizationLevel v) {
-                      addDumpIrFunction(FPM, v, stage);
-                    });
+          PB.registerScalarOptimizerLateEPCallback(dumpIRLambda);
           break;
         case llvmStageNum::EarlySimplification:
-          PB.registerPipelineEarlySimplificationEPCallback(
-            [stage](ModulePassManager &MPM, LlvmOptimizationLevel v) {
-                      addDumpIrModule(MPM, v, stage);
-                    });
+          PB.registerPipelineEarlySimplificationEPCallback(dumpIRLambdaWithPhase);
           break;
         case llvmStageNum::OptimizerEarly:
-          PB.registerOptimizerEarlyEPCallback(
-            [stage](ModulePassManager &MPM, LlvmOptimizationLevel v) {
-                      addDumpIrModule(MPM, v, stage);
-                    });
+          PB.registerOptimizerEarlyEPCallback(dumpIRLambdaWithPhase);
           break;
         case llvmStageNum::OptimizerLast:
-          PB.registerOptimizerLastEPCallback(
-            [stage](ModulePassManager &MPM, LlvmOptimizationLevel v) {
-                      addDumpIrModule(MPM, v, stage);
-                    });
+          PB.registerOptimizerLastEPCallback(dumpIRLambdaWithPhase);
           break;
         case llvmStageNum::CGSCCOptimizerLate:
-          PB.registerCGSCCOptimizerLateEPCallback(
-            [stage](CGSCCPassManager &CPM, LlvmOptimizationLevel v) {
-                      addDumpIrCG(CPM, v, stage);
-                    });
+          PB.registerCGSCCOptimizerLateEPCallback(dumpIRLambda);
           break;
         case llvmStageNum::VectorizerStart:
-          PB.registerVectorizerStartEPCallback(
-              [stage](FunctionPassManager &FPM, LlvmOptimizationLevel v) {
-                      addDumpIrFunction(FPM, v, stage);
-                      });
+          PB.registerVectorizerStartEPCallback(dumpIRLambda);
           break;
         case llvmStageNum::EnabledOnOptLevel0:
           if (llvmPrintIrStageNum != llvmStageNum::EVERY) {
@@ -4285,10 +4451,7 @@ static void registerDumpIrExtensions(PassBuilder& PB) {
           }
           break;
         case llvmStageNum::Peephole:
-          PB.registerPeepholeEPCallback(
-              [stage](FunctionPassManager &FPM, LlvmOptimizationLevel v) {
-                      addDumpIrFunction(FPM, v, stage);
-                      });
+          PB.registerPeepholeEPCallback(dumpIRLambda);
           break;
         case llvmStageNum::NOPRINT:
         case llvmStageNum::NONE:
@@ -4410,7 +4573,11 @@ static void linkBitCodeFile(const char *bitCodeFilePath) {
 
   // adjust it
   const llvm::Triple &Triple = info->clangInfo->Clang->getTarget().getTriple();
+#if LLVM_VERSION_MAJOR >= 21
+  bcLib->setTargetTriple(Triple);
+#else
   bcLib->setTargetTriple(Triple.getTriple());
+#endif
   bcLib->setDataLayout(info->clangInfo->asmTargetLayoutStr);
 
   // link
@@ -4445,15 +4612,15 @@ static void linkGpuDeviceLibraries() {
   GenInfo* info = gGenInfo;
 
   // save external functions
-  std::set<std::string> externals;
-  for (auto it = info->module->begin() ; it!= info->module->end() ; ++it) {
-    if (it->hasExternalLinkage()) {
-      externals.insert(it->getGlobalIdentifier());
+  std::unordered_set<llvm::GlobalValue::GUID> externals;
+  for (const auto& f: info->module->functions()) {
+    if (f.hasExternalLinkage()) {
+      externals.insert(f.getGUID());
     }
   }
-  for (auto it = info->module->global_begin() ; it!= info->module->global_end() ; ++it) {
-    if (it->hasExternalLinkage()) {
-      externals.insert(it->getGlobalIdentifier());
+  for (const auto& g: info->module->globals()) {
+    if (g.hasExternalLinkage()) {
+      externals.insert(g.getGUID());
     }
   }
 
@@ -4491,7 +4658,7 @@ static void linkGpuDeviceLibraries() {
 
   // internalize all functions that are not in `externals`
   llvm::InternalizePass iPass([&externals](const llvm::GlobalValue& gv) {
-    return externals.count(gv.getGlobalIdentifier()) > 0;
+    return externals.count(gv.getGUID()) > 0;
   });
   iPass.internalizeModule(*info->module);
 }
@@ -4542,8 +4709,8 @@ void setupForGlobalToWide(void) {
   const char* dummy = "chpl_wide_opt_dummy";
   if( getFunctionLLVM(dummy) ) INT_FATAL("dummy function already exists");
 
-  llvm::Type* retType = getPointerType(ginfo->module->getContext());
-  llvm::Type* argType = llvm::Type::getInt64Ty(ginfo->module->getContext());
+  auto retType = getPointerType(ginfo->module->getContext());
+  auto argType = llvm::Type::getInt64Ty(ginfo->module->getContext());
   llvm::Value* fval = ginfo->module->getOrInsertFunction(
                         dummy, retType, argType).getCallee();
   llvm::Function* fn = llvm::dyn_cast<llvm::Function>(fval);
@@ -4637,7 +4804,7 @@ void checkAdjustedDataLayout() {
 
   // Check that the data layout setting worked
   const llvm::DataLayout& dl = info->module->getDataLayout();
-  llvm::Type* testTy = getPointerType(info->module->getContext(), GLOBAL_PTR_SPACE);
+  auto testTy = getPointerType(info->module->getContext(), GLOBAL_PTR_SPACE);
   INT_ASSERT(dl.getTypeSizeInBits(testTy) == GLOBAL_PTR_SIZE);
 }
 
@@ -4683,30 +4850,23 @@ static llvm::CodeGenFileType getCodeGenFileType() {
   }
 }
 
-static std::string findSiblingClangToolPath(const std::string &toolName) {
-  // Find path to a tool that is a sibling to clang
-  // note that if we have /path/to/clang-14, this logic
-  // will look for /path/to/${toolName}-14.
-  //
-  // If such suffixes do not turn out to matter in practice, it would
-  // be nice to update this code to use sys::path::parent_path().
-  std::vector<std::string> split;
-  std::string result = toolName;
-
-  splitStringWhitespace(CHPL_LLVM_CLANG_C, split);
+static std::string findSiblingClangToolPath(std::string_view toolName) {
+  BumpPtrAllocator A;
+  StringSaver Saver(A);
+  SmallVector<const char *, 2> split;
+  llvm::cl::TokenizeGNUCommandLine(CHPL_LLVM_CLANG_C, Saver, split);
   if (split.size() > 0) {
-    std::string tmp = split[0];
-    const char* clang = "clang";
-    auto pos = tmp.find(clang);
-    if (pos != std::string::npos) {
-      tmp.replace(pos, strlen(clang), toolName);
-      if (pathExists(tmp.c_str())) {
-        result = tmp;
+    auto clang = split[0];
+    auto parent = sys::path::parent_path(clang);
+    if (!parent.empty()) {
+      SmallString<128> path;
+      sys::path::append(path, parent, toolName);
+      if (chpl::pathExists(path.str())) {
+        return std::string(path);
       }
     }
   }
-
-  return result;
+  return std::string(toolName);
 }
 
 static void stripPtxDebugDirective(const std::string& artifactFilename) {
@@ -4765,7 +4925,7 @@ static void makeBinaryLLVMForCUDA(const std::string& artifactFilename,
     // with -O3, so then strip those directives.
 
     ptxasFlags = fFastFlag ? "-O3" : "-O0";
-    if (debugCCode) ptxasFlags += " -lineinfo";
+    if (fDebugSymbols) ptxasFlags += " -lineinfo";
 
     // Kind of a hack; manually turn
     //   .target sm_60, debug
@@ -4773,7 +4933,7 @@ static void makeBinaryLLVMForCUDA(const std::string& artifactFilename,
     //   .target sm_60
     // because we can't configure clang to not force
     // full debug info.
-    if (debugCCode && fFastFlag) {
+    if (fDebugSymbols && fFastFlag) {
       stripPtxDebugDirective(artifactFilename);
     }
   }
@@ -4837,7 +4997,7 @@ static void makeBinaryLLVMForHIP(const std::string& artifactFilename,
   // So this loop should run exactly one iteration.
   INT_ASSERT(gpuArches.size() == 1);
 
-  std::string targets = "-targets=host-x86_64-unknown-linux";
+  std::string targets = "-targets=host-x86_64-unknown-linux-unknown";
 #if HAVE_LLVM_VER >= 150
   std::string inputs = "-input=/dev/null ";
   std::string outputs = "-output=" + fatbinFilename;
@@ -4893,11 +5053,7 @@ static void saveIrToBcFileIfNeeded(const std::string& filename,
     GenInfo* info = gGenInfo;
     std::error_code tmpErr;
     // Save the generated LLVM IR to the given file
-#if HAVE_LLVM_VER >= 120
     ToolOutputFile output(filename.c_str(), tmpErr, sys::fs::OF_None);
-#else
-    ToolOutputFile output(filename.c_str(), tmpErr, sys::fs::F_None);
-#endif
     if (tmpErr) {
       USR_FATAL("Could not open output file %s", filename.c_str());
     }
@@ -5027,17 +5183,42 @@ void makeBinaryLLVM(void) {
     if (useLinkCXX != clangCXX)
       clangLDArgs.clear();
 
-    // Add runtime libs arguments
-    //readArgsFromFile(runtime_libs, clangLDArgs);
+    //
+    // Add link args. Order is runtime > program && bundled > system.
+    //
 
-    // add the bundled link args from printchplenv
-    splitStringWhitespace(CHPL_TARGET_BUNDLED_LINK_ARGS, clangLDArgs);
+    if (fBuiltinRuntime) {
+      // We are embedding a copy of the runtime, so link against 'libchpl.a'.
+      splitStringWhitespace(CHPL_TARGET_USE_STATIC_RUNTIME_LINK_ARGS,
+                            clangLDArgs);
+    } else {
+      // Even without a builtin runtime, we still need to pass in the
+      // shared library containing the runtime so that the linker will
+      // not complain about undefined symbols. This can happen on OSX.
+      //
+      // Link against 'libchpl.so'/'libchpl.dylib':
+      splitStringWhitespace(CHPL_TARGET_USE_SHARED_RUNTIME_LINK_ARGS,
+                            clangLDArgs);
+    }
 
-    // add the system link args from printchplenv
-    splitStringWhitespace(CHPL_TARGET_SYSTEM_LINK_ARGS, clangLDArgs);
+    if (fBuiltinRuntime) {
+      // If embedding, we need to also link against runtime dependencies.
+      splitStringWhitespace(CHPL_TARGET_BUNDLED_RUNTIME_LINK_ARGS,
+                            clangLDArgs);
+    }
+
+    splitStringWhitespace(CHPL_TARGET_BUNDLED_PROGRAM_LINK_ARGS, clangLDArgs);
+
+    if (fBuiltinRuntime) {
+      // If embedding, we need to also link against runtime dependencies.
+      splitStringWhitespace(CHPL_TARGET_SYSTEM_RUNTIME_LINK_ARGS,
+                            clangLDArgs);
+    }
+
+    splitStringWhitespace(CHPL_TARGET_SYSTEM_PROGRAM_LINK_ARGS, clangLDArgs);
 
     // Grab extra dependencies for multilocale libraries if needed.
-    if (fMultiLocaleInterop) {
+    if (fClientServerLibrary) {
       std::string cmd = std::string(CHPL_HOME);
       cmd += "/util/config/compileline --multilocale-lib-deps";
       std::string libs = runCommand(cmd,
@@ -5085,7 +5266,9 @@ void makeBinaryLLVM(void) {
 
         mysystem(cmd.c_str(), "Compile C File");
         dotOFiles.push_back(objFilename);
-      } else if( isObjFile(inputFilename) ) {
+      } else if(isObjFile(inputFilename) ||
+                isStaticLibrary(inputFilename) ||
+                isSharedLibrary(inputFilename)) {
         dotOFiles.push_back(inputFilename);
       }
     }
@@ -5103,7 +5286,7 @@ void makeBinaryLLVM(void) {
     // pass -Qunused-arguments or -Wno-error=unused-command-line-argument
     // to avoid unused argument errors for optimization flags.
 
-    if(debugCCode) {
+    if(fDebugSymbols) {
       bool isDarwin = !strcmp(CHPL_TARGET_PLATFORM, "darwin");
       options += isDarwin ? "-gfull" : "-g";
     }
@@ -5131,16 +5314,16 @@ void makeBinaryLLVM(void) {
     const char* tmpbinname = NULL;
     const char* tmpservername = NULL;
 
-    if (fMultiLocaleInterop) {
+    if (fClientServerLibrary) {
       codegen_makefile(&mainfile, &tmpbinname, &tmpservername, true);
-      INT_ASSERT(tmpservername);
-      INT_ASSERT(tmpbinname);
+      INT_ASSERT(tmpservername && strlen(tmpservername) > 0);
+      INT_ASSERT(tmpbinname && strlen(tmpbinname) > 0);
     } else {
       codegen_makefile(&mainfile, &tmpbinname, NULL, true);
-      INT_ASSERT(tmpbinname);
+      INT_ASSERT(tmpbinname && strlen(tmpbinname) > 0);
     }
 
-    if (fLibraryCompile && !fMultiLocaleInterop) {
+    if (fLibraryCompile && !fClientServerLibrary) {
       switch (fLinkStyle) {
       // The default library link style for Chapel is _static_.
       case LS_DEFAULT:
@@ -5156,7 +5339,7 @@ void makeBinaryLLVM(void) {
         break;
       }
     } else {
-      const char* outbin = fMultiLocaleInterop ? tmpservername : tmpbinname;
+      const char* outbin = fClientServerLibrary ? tmpservername : tmpbinname;
 
       // Runs the LLVM link command for executables.
       runLLVMLinking(useLinkCXX, options, filenames->moduleFilename, maino, outbin,
@@ -5167,30 +5350,35 @@ void makeBinaryLLVM(void) {
     // 'dsymutil' doesn't seem to know how to handle. So we'll probably
     // need a more complicated invocation.
     const bool generateDarwinSymArchive =
-          !strcmp(CHPL_TARGET_PLATFORM, "darwin") && debugCCode &&
+          !strcmp(CHPL_TARGET_PLATFORM, "darwin") && fDebugSymbols &&
           !fLibraryCompile;
 
     if (generateDarwinSymArchive) {
-      const char* bin = "dsymutil";
-      const char* sfx = ".dSYM";
-      const char* tmp = astr(tmpbinname, sfx);
-      const char* out = astr(executableFilename.c_str(), sfx);
+      auto bin = findSiblingClangToolPath("dsymutil");
+      const char* tmp = astr(tmpbinname, ".dSYM");
 
       // TODO: The innermost binary in the .dSYM with all the DWARF info
       // will have the name "executable.tmp", is there a way to give it a
       // better name?
       std::vector<std::string> cmd = { bin, tmpbinname, "-o", tmp };
       mysystem(cmd, "Make Binary - Generating OSX .dSYM Archive");
-      moveResultFromTmp(out, tmp);
     }
 
-    // If we're not using a launcher, copy the program here
-    if (0 == strcmp(CHPL_LAUNCHER, "none")) {
+    bool isLauncherNone = !strcmp(CHPL_LAUNCHER, "none");
+    bool needLauncher = !isLauncherNone && !isMultiLocaleLibrary();
+
+    if (!needLauncher) {
+      // If we're not using a launcher, copy the program here
 
       if (fLibraryCompile) {
         moveGeneratedLibraryFile(tmpbinname);
       } else {
         moveResultFromTmp(executableFilename.c_str(), tmpbinname);
+      }
+      if (generateDarwinSymArchive) {
+        const char* out = astr(executableFilename.c_str(), ".dSYM");
+        const char* tmp = astr(tmpbinname, ".dSYM");
+        moveResultFromTmp(out, tmp);
       }
 
     } else {
@@ -5216,11 +5404,7 @@ static void llvmEmitObjectFile(void) {
 
   // setup output file info
   std::error_code error;
-#if HAVE_LLVM_VER >= 120
   llvm::sys::fs::OpenFlags flags = llvm::sys::fs::OF_None;
-#else
-  llvm::sys::fs::OpenFlags flags = llvm::sys::fs::F_None;
-#endif
 
   // Make sure that we are generating PIC when we need to be.
   if (strcmp(CHPL_LIB_PIC, "pic") == 0) {
@@ -5610,48 +5794,12 @@ static void moveResultFromTmp(const char* resultName, const char* tmpbinname) {
   // mv tmp/hello.tmp hello
   if( printSystemCommands )
     printf("mv %s %s\n", tmpbinname, resultName);
-
-  err = llvm::sys::fs::rename(tmpbinname, resultName);
+  err = chpl::moveFile(tmpbinname, resultName);
   if (err) {
-    // But that might fail if /tmp is on a different filesystem.
-
-    std::string mv("mv ");
-    mv += tmpbinname;
-    mv += " ";
-    mv += resultName;
-
-    mysystem(mv.c_str(), mv.c_str());
-
-    /* For future LLVM,
-       err = llvm::sys::fs::copy_file(tmpbinname, resultName);
-       if (err) {
-         USR_FATAL("copying file %s to %s failed: %s\n",
-                   tmpbinname,
-                   resultName,
-                   err.message().c_str());
-       }
-
-       // and then set permissions, like mv
-       auto maybePerms = llvm::sys::fs::getPermissions(tmpbinname);
-       if (maybePerms.getError()) {
-         USR_FATAL("reading permissions on %s failed: %s\n",
-                   tmpbinname,
-                   err.message().c_str());
-       }
-       err = llvm::sys::fs::setPermissions(resultName, *maybePerms);
-       if (err) {
-         USR_FATAL("setting permissions on %s failed: %s\n",
-                   resultName,
-                   err.message().c_str());
-       }
-
-       // and then remove the file, so it's like mv
-       err = llvm::sys::fs::remove(tmpbinname);
-       if (err) {
-         USR_FATAL("removing file %s failed: %s\n",
-                   tmpbinname,
-                   err.message().c_str());
-       }*/
+    USR_FATAL("Moving temporary binary '%s' to '%s' failed: %s\n",
+              tmpbinname,
+              resultName,
+              err.message().c_str());
   }
 }
 
@@ -5675,8 +5823,14 @@ static std::string buildLLVMLinkCommand(std::string useLinkCXX,
   // that cannot be built with `-static`, because because it depends on
   // dynamic libraries. So even if the client library is being built as
   // static, the server cannot be.
-  if (fLinkStyle == LS_STATIC && !fMultiLocaleInterop) {
+  if (fLinkStyle == LS_STATIC && !fClientServerLibrary) {
     command += " -static";
+  }
+
+  if (strcmp(envMap["CHPL_SANITIZE_EXE"], "none") != 0) {
+    // If we are sanitizing, we need to add the sanitizer runtime library.
+    // This is done by the Makefile, but we need to do it here too.
+    command += " -fsanitize=" + std::string(envMap["CHPL_SANITIZE_EXE"]);
   }
 
   command += " -o ";

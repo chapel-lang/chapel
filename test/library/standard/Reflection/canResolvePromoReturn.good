@@ -1,12 +1,12 @@
 true
 true true true
-iterator
+promoted expression yielding bool
 bool
 true
 true
 true
 false false false
-iterator
+promoted expression yielding bool
 bool
 false
 false

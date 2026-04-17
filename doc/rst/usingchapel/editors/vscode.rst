@@ -35,3 +35,59 @@ Specifying the path to the executables:
 Open the settings for the Chapel extension and set
 ``chapel.chpl-language-server.path`` and ``chapel.chplcheck.path`` to the path
 of the Chapel language server and chplcheck executables, respectively.
+
+
+Building and running Chapel code
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. _vscode-debugging:
+
+Debugging in VSCode
+^^^^^^^^^^^^^^^^^^^
+
+The Chapel VSCode extension provides builtin support for debugging Chapel
+programs. Users can set breakpoints and inspect variables directly in the
+editor. This is done by configuring a ``launch.json`` file in the ``.vscode``
+directory of your project. See the `VSCode documentation on debugging
+<https://code.visualstudio.com/docs/debugtest/debugging>`_ for more information
+on creating launch configurations.
+
+Since version 0.0.7, the extension also provides builtin support to generate
+``launch.json`` files for Chapel programs via the "Create a debug launch.json
+for Chapel" command, which can be invoked from the `command palette
+<https://code.visualstudio.com/docs/getstarted/userinterface#_command-palette>`_.
+If custom arguments are needed, its recommend to generate a default
+``launch.json`` file and modify it to your needs.
+
+.. image:: editors/vscode-debug.png
+  :alt: Screenshot of using the Chapel extension to generate a launch.json configuration file for Chapel
+
+See :ref:`readme-debugging-bkc` for the best way to build your Chapel program
+for the best possible experience. Other configurations do work, but this works
+best.
+
+Using Tasks
+^^^^^^^^^^^
+
+The Chapel extension also provides support for building and running Chapel code
+with the ``chpl`` and ``chpl-run`` tasks. The extension automatically detects
+and creates tasks using the compiler in the default ``PATH`` with default
+settings. You can also create your own tasks by creating a ``tasks.json`` file
+in the ``.vscode`` directory of your project. See the `VSCode documentation on tasks
+<https://code.visualstudio.com/docs/editor/tasks>`_ for more information on
+creating tasks. For a good starting point, it is recommended to reconfigure one of
+the default tasks.
+
+If you are working on a Mason project, you can use the ``mason`` tasks to
+build, test, and run your project. The extension will automatically detect that
+and create tasks that use ``mason build`` and ``mason run`` instead of ``chpl``
+and ``chpl-run``.
+
+Running Unit Tests
+^^^^^^^^^^^^^^^^^^
+
+If you have written tests for your project using the :chpl:mod:`UnitTest`
+module, the VSCode extension and language server provide support for
+automatically detecting and running those tests. You can run all tests in a
+file or run individual tests by clicking on the "Run Test" button that appears
+above the test function definition.

@@ -1,4 +1,4 @@
-:title: Mason Guide: *External Dependencies*
+.. _mason-external-dependencies:
 
 Using Non-Chapel Dependencies
 =============================
@@ -62,7 +62,7 @@ Use the ``mason add --system`` command to add the dependency to the Mason.toml o
 
 The ``Mason.toml`` now looks like:
 
-.. code-block:: text
+.. code-block:: toml
 
    [brick]
    chplVersion = "1.18.0"
@@ -89,12 +89,12 @@ through the Spack integration. The following is a workflow of finding, installin
 
 **Setting up Spack backend**
 
-First, the Spack backend must be installed. Users can have mason install Spack
-or point mason to an existing spack installation.
+First, the Spack backend must be installed. Users can have Mason install Spack
+or point Mason to an existing Spack installation.
 
 This command will install Spack into ``$MASON_HOME/spack`` and set it up so that it
-can be used by Mason. It should be noted that this command pulls from the `master` branch of spack
-for setting up the spack registry at ``$MASON_HOME/spack-registry``::
+can be used by Mason. It should be noted that this command pulls from the `master` branch of Spack
+for setting up the Spack registry at ``$MASON_HOME/spack-registry``::
 
   mason external --setup
 
@@ -277,7 +277,7 @@ Now that the correct package is installed, add it to the ``Mason.toml`` as follo
 
 The ``Mason.toml`` now looks like:
 
-.. code-block:: text
+.. code-block:: toml
 
    [brick]
    chplVersion = "1.18.0"

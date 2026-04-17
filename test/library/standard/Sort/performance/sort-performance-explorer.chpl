@@ -21,7 +21,24 @@ config type eltType = int;
 config const seed = (new randomStream(int(32))).seed;
 
 var methods = ["default", "msbRadixSort", "quickSort", "mergeSort",
-               "twoArraySample", "twoArrayRadix", "timSort"];
+               "twoArraySample", "twoArrayRadix", "timSort",
+               "psort-radix",
+               "psort-comparison"];
+
+proc partitioningSort(ref input, comparator, param radixSort=true) {
+  var Scratch: [input.domain] input.eltType;
+  var BucketBoundaries: [input.domain] uint(8);
+
+  param logBuckets=8;
+
+  Partitioning.psort(
+        input, Scratch, BucketBoundaries, input.domain.dim(0),
+        comparator=comparator,
+        radixBits=if radixSort then logBuckets else 0,
+        logBuckets=logBuckets,
+        nTasksPerLocale=PartitioningUtility.computeNumTasks(),
+        endbit=numBits(eltType));
+}
 
 proc testsort(ref input, method, parallel, cmp) {
 
@@ -67,6 +84,19 @@ proc testsort(ref input, method, parallel, cmp) {
     } else {
       TwoArrayRadixSort.twoArrayRadixSort(input);
     }
+  } else if method == "psort-radix" {
+    if parallel == false {
+      serial { partitioningSort(input, cmp, radixSort=true); }
+    } else {
+      partitioningSort(input, cmp, radixSort=true);
+    }
+  } else if method == "psort-comparison" {
+    if parallel == false {
+      serial { partitioningSort(input, cmp, radixSort=false); }
+    } else {
+      partitioningSort(input, cmp, radixSort=false);
+    }
+
   } else {
     halt("Unknown sorting method " + method);
   }

@@ -1,0 +1,22 @@
+Caught exception when accessing unknown TOML entry.
+After accessing unknown TOML entry, data is:
+
+[myTable]
+field1 = "value1"
+
+[myTable.subTable]
+field2 = "value2"
+
+
+---
+Caught exception when accessing unknown nested TOML entry.
+After accessing unknown TOML entry, data is:
+
+[myTable]
+field1 = "value1"
+
+[myTable.subTable]
+field2 = "value2"
+
+
+---

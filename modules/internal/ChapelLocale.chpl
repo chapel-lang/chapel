@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -765,7 +765,8 @@ module ChapelLocale {
   // Returns a wide pointer to the locale with the given id.
   pragma "fn returns infinite lifetime"
   proc chpl_localeID_to_locale(id : chpl_localeID_t) : locale {
-    if rootLocale._instance != nil then
+    if __primitive("get compiler variable", "CHPL_DYNO") == "off" &&
+       rootLocale._instance != nil then
       return (rootLocale._instance:borrowed AbstractRootLocale?)!.localeIDtoLocale(id);
     else {
       // For code prior to rootLocale initialization

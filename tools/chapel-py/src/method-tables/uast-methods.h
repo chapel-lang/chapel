@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2023-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -45,7 +45,15 @@ CLASS_BEGIN(AstNode)
 
                auto id = node->id();
                auto parentId = id.parentSymbolId(context);
+               if (parentId.isEmpty()) return nullptr;
                return parsing::idToAst(context, parentId))
+  PLAIN_GETTER(AstNode, parent_module, "Get the parent module of this AST node, possibly skipping intermediate non-module parent symbols",
+               Nilable<const chpl::uast::Module*>,
+
+               auto id = node->id();
+               auto parentId = parsing::idToParentModule(context, id);
+               if (parentId.isEmpty()) return nullptr;
+               return parsing::idToAst(context, parentId)->toModule())
   PLAIN_GETTER(AstNode, pragmas, "Get the pragmas of this AST node",
                std::set<std::string>,
 
@@ -177,12 +185,38 @@ CLASS_END(Cobegin)
 CLASS_BEGIN(Conditional)
   PLAIN_GETTER(Conditional, condition, "Get the condition of this Conditional node",
                const chpl::uast::AstNode*, return node->condition())
-  PLAIN_GETTER(Conditional, else_block, "Get the else block of this Conditional node or None if no else block",
-               Nilable<const chpl::uast::Block*>, return node->elseBlock())
-  PLAIN_GETTER(Conditional, is_expression_level, "Checks if this Conditional node is expression-level",
-               bool, return node->isExpressionLevel())
   PLAIN_GETTER(Conditional, then_block, "Get the then block of this Conditional node",
                const chpl::uast::Block*, return node->thenBlock())
+  PLAIN_GETTER(Conditional, then_stmts, "Get the statements in the then block of this Conditional node",
+               IterAdapterBase*, return mkIterPair(node->thenStmts()))
+  PLAIN_GETTER(Conditional, num_then_stmts, "Get the number of statements in the then block of this Conditional node",
+               int, return node->numThenStmts())
+  METHOD(Conditional, then_stmt, "Get the i'th statement in the then block of this Conditional node",
+         const chpl::uast::AstNode*(int), return node->thenStmt(std::get<0>(args)))
+  PLAIN_GETTER(Conditional, then_block_style, "Get the block style of the then block of this Conditional node",
+               const char*, return blockStyleToString(node->thenBlockStyle()))
+  PLAIN_GETTER(Conditional, then_keyword_location, "Get the Location of the 'then' keyword of this Conditional node",
+               std::optional<chpl::Location>,
+               auto loc = chpl::parsing::locateThenKeywordWithAst(context, node);
+               return getValidLocation(loc))
+  PLAIN_GETTER(Conditional, has_else_block, "Check if this Conditional node has an else block",
+               bool, return node->hasElseBlock())
+  PLAIN_GETTER(Conditional, else_block, "Get the else block of this Conditional node or None if no else block",
+               Nilable<const chpl::uast::Block*>, return node->elseBlock())
+  PLAIN_GETTER(Conditional, else_stmts, "Get the statements in the else block of this Conditional node",
+               IterAdapterBase*, return mkIterPair(node->elseStmts()))
+  PLAIN_GETTER(Conditional, num_else_stmts, "Get the number of statements in the else block of this Conditional node",
+               int, return node->numElseStmts())
+  METHOD(Conditional, else_stmt, "Get the i'th statement in the else block of this Conditional node",
+         const chpl::uast::AstNode*(int), return node->elseStmt(std::get<0>(args)))
+  PLAIN_GETTER(Conditional, else_block_style, "Get the block style of the else block of this Conditional node",
+               const char*, return blockStyleToString(node->elseBlockStyle()))
+  PLAIN_GETTER(Conditional, else_keyword_location, "Get the Location of the 'else' keyword of this Conditional node",
+               std::optional<chpl::Location>,
+               auto loc = chpl::parsing::locateElseKeywordWithAst(context, node);
+               return getValidLocation(loc))
+  PLAIN_GETTER(Conditional, is_expression_level, "Checks if this Conditional node is expression-level",
+               bool, return node->isExpressionLevel())
 CLASS_END(Conditional)
 
 CLASS_BEGIN(Comment)
@@ -256,6 +290,8 @@ CLASS_BEGIN(Identifier)
                chpl::UniqueString, return node->name())
   PLAIN_GETTER(Identifier, to_node, "Get the AST node that this Identifier node refers to",
                Nilable<const chpl::uast::AstNode*>, return nodeOrNullFromToId(context, node))
+  PLAIN_GETTER(Identifier, refers_to_builtin, "Check if this Identifier refers to a builtin",
+               bool, return nodeRefersToBuiltin(context, node))
 CLASS_END(Identifier)
 
 CLASS_BEGIN(Import)
@@ -272,6 +308,12 @@ CLASS_BEGIN(Include)
                bool, return node->isPrototype())
   PLAIN_GETTER(Include, visibility, "Get the visibility of this Include node",
                const char*, return Decl::visibilityToString(node->visibility()))
+  PLAIN_GETTER(Include, to_node, "Get the AST node that this Include node refers to",
+               Nilable<const chpl::uast::AstNode*>, return nodeOrNullFromToId(context, node))
+  PLAIN_GETTER(Include, name_location, "Get the location of the name in this Include node",
+               std::optional<chpl::Location>,
+               auto loc = chpl::parsing::locateIncludeNameWithAst(context, node);
+               return getValidLocation(loc))
 CLASS_END(Include)
 
 CLASS_BEGIN(Init)
@@ -326,7 +368,7 @@ CLASS_END(Throw)
 
 CLASS_BEGIN(Try)
   PLAIN_GETTER(Try, body, "Get the body of this Try node",
-               const chpl::uast::Block*, return node->body())
+               Nilable<const chpl::uast::Block*>, return node->body())
   PLAIN_GETTER(Try, handlers, "Get the Catch node handlers of this Try node",
                TypedIterAdapterBase<const chpl::uast::Catch*>*, return mkIterPair(node->handlers()))
   PLAIN_GETTER(Try, is_expression_level, "Check if this Try node is expression level",
@@ -362,10 +404,14 @@ CLASS_BEGIN(Yield)
 CLASS_END(Yield)
 
 CLASS_BEGIN(SimpleBlockLike)
-  PLAIN_GETTER(SimpleBlockLike, block_style, "Get the block style of this SimpleBlockLike node",
-               const char*, return blockStyleToString(node->blockStyle()))
   PLAIN_GETTER(SimpleBlockLike, stmts, "Get the statements contained in this SimpleBlockLike.",
                IterAdapterBase*, return mkIterPair(node->stmts()))
+  PLAIN_GETTER(SimpleBlockLike, num_stmts, "Get the number of statements contained in this SimpleBlockLike.",
+               int, return node->numStmts())
+  METHOD(SimpleBlockLike, stmt, "Get the i'th statement contained in this SimpleBlockLike.",
+         const chpl::uast::AstNode*(int), return node->stmt(std::get<0>(args)))
+  PLAIN_GETTER(SimpleBlockLike, block_style, "Get the block style of this SimpleBlockLike node",
+               const char*, return blockStyleToString(node->blockStyle()))
 CLASS_END(SimpleBlockLike)
 
 CLASS_BEGIN(Begin)
@@ -565,6 +611,18 @@ CLASS_END(NamedDecl)
 CLASS_BEGIN(EnumElement)
   PLAIN_GETTER(EnumElement, init_expression, "Get the init expression of this EnumElement node",
                Nilable<const chpl::uast::AstNode*>, return node->initExpression())
+  PLAIN_GETTER(EnumElement, assigned_value, "Get the 'param' value assigned to this EnumElement node, either directly or via sequence increment",
+               Nilable<const chpl::types::Param*>,
+               auto parentId = node->id().parentSymbolId(context);
+               auto& numericValues = chpl::resolution::computeNumericValuesOfEnumElements(context, parentId);
+
+               if (auto it = numericValues.find(node->id());
+                   it != numericValues.end()) {
+                 return it->second.param();
+               }
+
+               return nullptr;
+               )
 CLASS_END(EnumElement)
 
 CLASS_BEGIN(Function)
@@ -602,6 +660,15 @@ CLASS_BEGIN(Function)
                bool, return node->throws())
   PLAIN_GETTER(Function, where_clause, "Get the where clause for this Function node",
                Nilable<const chpl::uast::AstNode*>, return node->whereClause())
+  PLAIN_GETTER(Function, initial_signature, "Compute the initial typed signature of this Function node",
+               std::optional<TypedSignatureObject*>,
+
+               auto rc = chpl::resolution::createDummyRC(context);
+               const chpl::resolution::PoiScope* poiScope = nullptr;
+               if (auto sig = chpl::resolution::typedSignatureInitialForId(&rc, node->id())) {
+                  return TypedSignatureObject::create(contextObject, {sig, poiScope});
+               }
+               return {})
 CLASS_END(Function)
 
 CLASS_BEGIN(Interface)
@@ -616,6 +683,14 @@ CLASS_END(Interface)
 CLASS_BEGIN(Module)
   PLAIN_GETTER(Module, kind, "Get the kind of this Module node",
                const char*, return Module::moduleKindToString(node->kind()))
+  PLAIN_GETTER(Module, find_test_functions,
+               "Get all of the UnitTest functions in this Module",
+               std::vector<const chpl::uast::Function*>,
+               return findTestFunctionsForModule(context, node))
+  PLAIN_GETTER(Module, find_unittest_main,
+               "Find the call to UnitTest.main in this module, if any",
+               Nilable<const chpl::uast::FnCall*>,
+               return findUnitTestMainForModule(context, node))
 CLASS_END(Module)
 
 CLASS_BEGIN(ReduceIntent)
@@ -633,6 +708,11 @@ CLASS_BEGIN(VarLikeDecl)
   PLAIN_GETTER(VarLikeDecl, intent, "Get the intent for this VarLikeDecl node",
                const char*, return intentToString(node->storageKind()))
 CLASS_END(VarLikeDecl)
+
+CLASS_BEGIN(Formal)
+  PLAIN_GETTER(Formal, is_this, "Check if this Formal node is a 'this' formal",
+               bool, return node->name() == USTR("this"))
+CLASS_END(Formal)
 
 CLASS_BEGIN(VarArgFormal)
   PLAIN_GETTER(VarArgFormal, count, "Get the count expression of this VarArgFormal node",

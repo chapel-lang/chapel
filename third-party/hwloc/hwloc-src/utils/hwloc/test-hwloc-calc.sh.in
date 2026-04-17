@@ -3,7 +3,7 @@
 
 #
 # Copyright © 2009, 2024 CNRS
-# Copyright © 2009-2024 Inria.  All rights reserved.
+# Copyright © 2009-2025 Inria.  All rights reserved.
 # Copyright © 2009, 2011 Université Bordeaux
 # Copyright © 2014 Cisco Systems, Inc.  All rights reserved.
 # See COPYING in top-level directory.
@@ -129,8 +129,23 @@ set -e
   echo "# List of MCDRAM subtype NUMA Nodes near 2 L3"
   $calc --if xml --input $xmldir/64intel64-fakeKNL-SNC4-hybrid.xml -I 'numa[mcdram]' l3:1-2
   echo
-  echo "# Hierarchical list of MCDRAM subtype NUMA nodes within Package"
-  $calc --if xml --input $xmldir/64intel64-fakeKNL-SNC4-hybrid.xml -H 'pack.numa[mcdram]' 'numa[mcdram]:0' 'numa[mcdram]:3'
+  echo "# Hierarchical list of MCDRAM subtype NUMA nodes within Package (DDR node is ignored)"
+  $calc --if xml --input $xmldir/64intel64-fakeKNL-SNC4-hybrid.xml -H 'pack.numa[mcdram]' 'numa[mcdram]:0' 'numa[ddr]:1' 'numa[mcdram]:3'
+  echo
+  echo "# List of default NUMA Nodes in a Package"
+  $calc --if xml --input $xmldir/64intel64-fakeKNL-SNC4-hybrid.xml --default-nodes -I NUMANode -p Package:0
+  echo
+  echo "# Number of Memory Tiers"
+  $calc --if xml --input $xmldir/64intel64-fakeKNL-SNC4-hybrid.xml -N memorytier all
+  echo
+  echo "# Memory Tier of a single node"
+  $calc --if xml --input $xmldir/64intel64-fakeKNL-SNC4-hybrid.xml -I memorytier node:4
+  echo
+  echo "# Check that we don't mix a single input NUMA node with other local nodes"
+  $calc --if synthetic -i "pack:2 [numa] group:2 [numa] [numa] pu:2" -I node node:2
+  echo
+  echo "# Check that we find CPU-less NUMA nodes like others"
+  $calc --if synthetic -i "pack:4 [numa] pu:2" --restrict 0xc3 -I node node:1 node:2
   echo
 
   echo "# List of Machine objects"
@@ -220,6 +235,24 @@ set -e
   $calc --if synthetic --input "[numa(memory=1000000)] pack:2 [numa(memory=100000)] die:2 [numa(memory=1000)] pu:2" --best-memattr capacity pu:4
   echo
 
+  echo
+  echo "# no node is local to one pu of each package"
+  $calc --if synthetic --input "pack:2 [numa] pu:2" --local-memory-flags small,large pack:all.pu:0 
+  echo
+  echo "# 1 node is local to one package and one pu of the other"
+  $calc --if synthetic --input "pack:2 [numa] pu:2" --local-memory-flags small,large pack:0 pack:1.pu:0
+  echo
+  echo "# both nodes are local to one pu of each package, if intersecting"
+  $calc --if synthetic --input "pack:2 [numa] pu:2" --local-memory-flags intersect pack:all.pu:0 --oo
+  echo
+  echo "# both nodes are local to one package and one pu of the other, if intersecting"
+  $calc --if synthetic --input "pack:2 [numa] pu:2" --local-memory-flags intersect pack:0 pack:1.pu:0
+  echo
+  echo "# all local nodes"
+  $calc --if synthetic --input "pack:2 [numa] pu:2" --local-memory-flags _all pu:0 --sep "%"
+  echo
+
+  echo
   echo "# CPU kind by index"
   $calc --if xml --input $linuxdir/fakeheterocpunuma.output --cpukind 1 all
   echo
@@ -228,6 +261,12 @@ set -e
   echo
   echo "# CPU kind by info attr"
   $calc --if xml --input $linuxdir/fakeheterocpunuma.output --cpukind FrequencyMaxMHz=3000 all
+  echo
+  echo "# Number of CPU kinds"
+  $calc --if xml --input $linuxdir/fakeheterocpunuma.output -N cpukind 0xf0f0
+  echo
+  echo "# List of CPU kinds"
+  $calc --if xml --input $linuxdir/fakeheterocpunuma.output -I cpukind 0xff00
   echo
 
   echo "# Caches with attributes"
@@ -297,14 +336,20 @@ set -e
   $calc --if synthetic --input "node:4 core:4 pu:4"  --cof list 0xf...f00
   echo
 
-  echo "# Converting to systemd-dbus-api"
+  echo "# Converting a cpuset to the systemd-dbus-api format"
   $calc --if synthetic --input "node:4 core:4 pu:4"  --cpuset-output-format systemd-dbus-api 0x01
   $calc --if synthetic --input "node:4 core:4 pu:4"  --cpuset-output-format systemd-dbus-api 0x80000001
   $calc --if synthetic --input "node:4 core:4 pu:4"  --cpuset-output-format systemd-dbus-api 0x8000000080000001
   $calc --if synthetic --input "node:4 core:4 pu:4"  --cpuset-output-format systemd-dbus-api 0xf000000f00000f00f
   $calc --if synthetic --input "node:4 core:4 pu:4"  --cpuset-output-format systemd-dbus-api "" && exit 1
-  $calc --if synthetic --input "node:4 core:4 pu:4"  --cpuset-output-format systemd-dbus-api "0xf...f" && exit 1
+  $calc --if synthetic --input "node:4 core:4 pu:4"  --cpuset-output-format systemd-dbus-api "0xf...f" && exit 1 # infinite cpuset cannot be represented -> KO
   $calc --if synthetic --input "node:4 core:4 pu:4"  --cpuset-output-format systemd-dbus-api --cpuset-input-format systemd-dbus-api "foo bar" && exit 1
+
+  echo "# Converting a nodeset to the systemd-dbus-api format"
+  $calc --if synthetic --input "node:4 core:4 pu:4"  --nodeset-output-format systemd-dbus-api node:0 node:2
+  $calc --if synthetic --input "node:4 core:4 pu:4"  --nodeset-output-format systemd-dbus-api "" && exit 1
+  $calc --if synthetic --input "node:4 core:4 pu:4"  --nodeset-output-format systemd-dbus-api "0xf...f" # infinite cpuset translates to a finite nodeset -> OK
+  $calc --if synthetic --input "node:4 core:4 pu:4"  --nodeset-output-format systemd-dbus-api --cpuset-input-format systemd-dbus-api "foo bar" && exit 1
   echo
 
   echo "# Reading from stdin"

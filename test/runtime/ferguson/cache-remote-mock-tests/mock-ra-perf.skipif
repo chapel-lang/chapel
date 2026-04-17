@@ -1,0 +1,7 @@
+#!/usr/bin/env python3
+
+import os
+
+lpn = os.getenv("CHPL_RT_LOCALES_PER_NODE", default="1")
+
+print(int(lpn) > 1 if lpn.isdigit() else False)

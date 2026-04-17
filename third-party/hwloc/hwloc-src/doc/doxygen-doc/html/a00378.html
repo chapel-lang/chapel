@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Hardware Locality (hwloc): Command-Line Tools</title>
+<title>Hardware Locality (hwloc): Interoperability With Other Software</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -18,7 +18,7 @@
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Hardware Locality (hwloc)<span id="projectnumber">&#160;2.11.2</span>
+   <div id="projectname">Hardware Locality (hwloc)<span id="projectnumber">&#160;2.12.2</span>
    </div>
   </td>
  </tr>
@@ -39,62 +39,63 @@ $(function() {
 <div id="main-nav"></div>
 </div><!-- top -->
 <div><div class="header">
-  <div class="headertitle"><div class="title">Command-Line Tools</div></div>
+  <div class="headertitle"><div class="title">Interoperability With Other Software</div></div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><p>hwloc comes with an extensive C programming interface and several command line utilities. Each of them is fully documented in its own manual page; the following is a summary of the available command line tools.</p>
-<h1><a class="anchor" id="cli_lstopo"></a>
-lstopo and lstopo-no-graphics</h1>
-<p>lstopo (also known as hwloc-ls) displays the hierarchical topology map of the current system. The output may be graphical, ascii-art or textual, and can also be exported to numerous file formats such as PDF, PNG, XML, and others. Advanced graphical outputs require the "Cairo" development package (usually <code>cairo-devel</code> or <code>libcairo2-dev</code>).</p>
-<p>lstopo and lstopo-no-graphics accept the same command-line options. However, graphical outputs are only available in lstopo. Textual outputs (those that do not depend on heavy external libraries such as Cairo) are supported in both lstopo and lstopo-no-graphics.</p>
-<p>This command can also display the processes currently bound to a part of the machine (via the <code>--ps</code> option).</p>
-<p>Note that lstopo can read XML files and/or alternate chroot filesystems and display topological maps representing those systems (e.g., use lstopo to output an XML file on one system, and then use lstopo to read in that XML file and display it on a different system).</p>
-<h1><a class="anchor" id="cli_hwloc_bind"></a>
-hwloc-bind</h1>
-<p>hwloc-bind binds processes to specific hardware objects through a flexible syntax. A simple example is binding an executable to specific cores (or packages or bitmaps or ...). The hwloc-bind(1) man page provides much more detail on what is possible.</p>
-<p>hwloc-bind can also be used to retrieve the current process' binding, or retrieve the last CPU(s) where a process ran, or operate on memory binding.</p>
-<p>Just like hwloc-calc, the input locations given to hwloc-bind may be either objects or cpusets (bitmaps as reported by hwloc-calc or hwloc-distrib).</p>
-<h1><a class="anchor" id="cli_hwloc_calc"></a>
-hwloc-calc</h1>
-<p>hwloc-calc is hwloc's Swiss Army Knife command-line tool for converting things. The input may be either objects or cpusets (bitmaps as reported by another hwloc-calc instance or by hwloc-distrib), that may be combined by addition, intersection or subtraction. The output may be expressed as: </p><ul>
-<li>
-a cpuset bitmap: This compact opaque representation of objects is useful for shell scripts etc. It may passed to hwloc command-line tools such as hwloc-calc or hwloc-bind, or to hwloc command-line options such as <code>lstopo --restrict</code>. </li>
-<li>
-a nodeset bitmap: Another opaque representation that represents memory locality more precisely, especially if some NUMA nodes are CPU less or if multiple NUMA nodes are local to the same CPUs. </li>
-<li>
-the amount of the equivalent hwloc objects from a specific type, or the list of their indexes. This is useful for iterating over all similar objects (for instance all cores) within a given part of a platform. </li>
-<li>
-a hierarchical description of objects, for instance a thread index within a core within a package. This gives a better view of the actual location of an object. </li>
-</ul>
-<p>Moreover, input and/or output may be use either physical/OS object indexes or as hwloc's logical object indexes. It eases cooperation with external tools such as taskset or numactl by exporting hwloc specifications into list of processor or NUMA node physical indexes. See also <a class="el" href="a00392.html#faq_indexes">Should I use logical or physical/OS indexes? and how?</a>.</p>
-<h1><a class="anchor" id="cli_hwloc_info"></a>
-hwloc-info</h1>
-<p>hwloc-info dumps information about the given objects, as well as all its specific attributes. It is intended to be used with tools such as grep for filtering certain attribute lines. When no object is specified, or when <code>--topology</code> is passed, hwloc-info prints a summary of the topology. When <code>--support</code> is passed, hwloc-info lists the supported features for the topology.</p>
-<h1><a class="anchor" id="cli_hwloc_distrib"></a>
-hwloc-distrib</h1>
-<p>hwloc-distrib generates a set of cpuset bitmaps that are uniformly distributed across the machine for the given number of processes. These strings may be used with hwloc-bind to run processes to maximize their memory bandwidth by properly distributing them across the machine.</p>
-<h1><a class="anchor" id="cli_hwloc_ps"></a>
-hwloc-ps</h1>
-<p>hwloc-ps is a tool to display the bindings of processes that are currently running on the local machine. By default, hwloc-ps only lists processes that are bound; unbound process (and Linux kernel threads) are not displayed.</p>
-<h1><a class="anchor" id="cli_hwloc_annotate"></a>
-hwloc-annotate</h1>
-<p>hwloc-annotate may modify object (and topology) attributes such as string information (see <a class="el" href="a00383.html#attributes_info">Custom string infos</a> for details) or Misc children objects. It may also add distances, memory attributes, etc. to the topology. It reads an input topology from a XML file and outputs the annotated topology as another XML file.</p>
-<h1><a class="anchor" id="cli_hwloc_diffpatchcompress"></a>
-hwloc-diff, hwloc-patch and hwloc-compress-dir</h1>
-<p>hwloc-diff computes the difference between two topologies and outputs it to another XML file.</p>
-<p>hwloc-patch reads such a difference file and applies to another topology.</p>
-<p>hwloc-compress-dir compresses an entire directory of XML files by using hwloc-diff to save the differences between topologies instead of entire topologies.</p>
-<h1><a class="anchor" id="cli_hwloc_dump_hwdata"></a>
-hwloc-dump-hwdata</h1>
-<p>hwloc-dump-hwdata is a Linux and x86-specific tool that dumps (during boot, privileged) some topology and locality information from raw hardware files (SMBIOS and ACPI tables) to human-readable and world-accessible files that the hwloc library will later reuse.</p>
-<p>Currently only used on Intel Xeon Phi processor platforms. See <a class="el" href="a00392.html#faq_knl_dump">Why do I need hwloc-dump-hwdata for memory on Intel Xeon Phi processor?</a>.</p>
-<p>See <code>HWLOC_DUMPED_HWDATA_DIR</code> in <a class="el" href="a00379.html">Environment Variables</a> for details about the location of dumped files.</p>
-<h1><a class="anchor" id="cli_hwloc_gather"></a>
-hwloc-gather-topology and hwloc-gather-cpuid</h1>
-<p>hwloc-gather-topology is a Linux-specific tool that saves the relevant topology files of the current machine into a tarball (and the corresponding lstopo outputs).</p>
-<p>hwloc-gather-cpuid is a x86-specific tool that dumps the result of CPUID instructions on the current machine into a directory.</p>
-<p>The output of hwloc-gather-cpuid is included in the tarball saved by hwloc-gather-topology when running on Linux/x86.</p>
-<p>These files may be used later (possibly offline) for simulating or debugging a machine without actually running on it. </p>
+<div class="textblock"><p>Although hwloc offers its own portable interface, it still may have to interoperate with specific or non-portable libraries that manipulate similar kinds of objects. hwloc therefore offers several specific "helpers" to assist converting between those specific interfaces and hwloc.</p>
+<p>Some external libraries may be specific to a particular OS; others may not always be available. The hwloc core therefore generally does not explicitly depend on these types of libraries. However, when a custom application uses or otherwise depends on such a library, it may optionally include the corresponding hwloc helper to extend the hwloc interface with dedicated helpers.</p>
+<p>Most of these helpers use structures that are specific to these external libraries and only meaningful on the local machine. If so, the helper requires the input topology to match the current machine. Some helpers also require I/O device discovery to be supported and enabled for the current topology.</p>
+<dl>
+<dt>Linux specific features </dt>
+<dd><p class="startdd"><a class="el" href="a00116_source.html">hwloc/linux.h</a> offers Linux-specific helpers that utilize some non-portable features of the Linux system, such as binding threads through their thread ID ("tid") or parsing kernel CPU mask files. See <a class="el" href="a00195.html">Linux-specific helpers</a>. </p>
+<p class="enddd"></p>
+</dd>
+<dt>Windows specific features </dt>
+<dd><p class="startdd"><a class="el" href="a00122_source.html">hwloc/windows.h</a> offers Windows-specific helpers to query information about Windows processor groups. See <a class="el" href="a00198.html">Windows-specific helpers</a>. </p>
+<p class="enddd"></p>
+</dd>
+<dt>Linux libnuma </dt>
+<dd><p class="startdd"><a class="el" href="a00119_source.html">hwloc/linux-libnuma.h</a> provides conversion helpers between hwloc CPU sets and libnuma-specific types, such as bitmasks. It helps you use libnuma memory-binding functions with hwloc CPU sets. See <a class="el" href="a00197.html">Interoperability with Linux libnuma bitmask</a> and <a class="el" href="a00196.html">Interoperability with Linux libnuma unsigned long masks</a>. </p>
+<p class="enddd"></p>
+</dd>
+<dt>Glibc </dt>
+<dd><p class="startdd"><a class="el" href="a00125_source.html">hwloc/glibc-sched.h</a> offers conversion routines between Glibc and hwloc CPU sets in order to use hwloc with functions such as sched_getaffinity() or pthread_attr_setaffinity_np(). See <a class="el" href="a00199.html">Interoperability with glibc sched affinity</a>. </p>
+<p class="enddd"></p>
+</dd>
+<dt>OpenFabrics Verbs </dt>
+<dd><p class="startdd"><a class="el" href="a00149_source.html">hwloc/openfabrics-verbs.h</a> helps interoperability with the OpenFabrics Verbs interface. For example, it can return a list of processors near an OpenFabrics device. It may also return the corresponding OS device hwloc object for further information (if I/O device discovery is enabled). See <a class="el" href="a00207.html">Interoperability with OpenFabrics</a>. </p>
+<p class="enddd"></p>
+</dd>
+<dt>OpenCL </dt>
+<dd><p class="startdd"><a class="el" href="a00128_source.html">hwloc/opencl.h</a> enables interoperability with the OpenCL interface. Only the AMD and NVIDIA implementations currently offer locality information. It may return the list of processors near a GPU given as a <code>cl_device_id</code>. It may also return the corresponding OS device hwloc object for further information (if I/O device discovery is enabled). See <a class="el" href="a00200.html">Interoperability with OpenCL</a>. </p>
+<p class="enddd"></p>
+</dd>
+<dt>oneAPI Level Zero </dt>
+<dd><p class="startdd"><a class="el" href="a00143_source.html">hwloc/levelzero.h</a> enables interoperability with the oneAPI Level Zero interface. It may return the list of processors near an accelerator or GPU. It may also return the corresponding OS device hwloc object for further information (if I/O device discovery is enabled). See <a class="el" href="a00205.html">Interoperability with the oneAPI Level Zero interface.</a>. </p>
+<p class="enddd"></p>
+</dd>
+<dt>AMD ROCm SMI Library (RSMI) </dt>
+<dd><p class="startdd"><a class="el" href="a00140_source.html">hwloc/rsmi.h</a> enables interoperability with the AMD ROCm SMI interface. It may return the list of processors near an AMD GPU. It may also return the corresponding OS device hwloc object for further information (if I/O device discovery is enabled). See <a class="el" href="a00204.html">Interoperability with the ROCm SMI Management Library</a>. </p>
+<p class="enddd"></p>
+</dd>
+<dt>NVIDIA CUDA </dt>
+<dd><p class="startdd"><a class="el" href="a00131_source.html">hwloc/cuda.h</a> and <a class="el" href="a00134_source.html">hwloc/cudart.h</a> enable interoperability with NVIDIA CUDA Driver and Runtime interfaces. For instance, it may return the list of processors near NVIDIA GPUs. It may also return the corresponding OS device hwloc object for further information (if I/O device discovery is enabled). See <a class="el" href="a00201.html">Interoperability with the CUDA Driver API</a> and <a class="el" href="a00202.html">Interoperability with the CUDA Runtime API</a>. </p>
+<p class="enddd"></p>
+</dd>
+<dt>NVIDIA Management Library (NVML) </dt>
+<dd><p class="startdd"><a class="el" href="a00137_source.html">hwloc/nvml.h</a> enables interoperability with the NVIDIA NVML interface. It may return the list of processors near a NVIDIA GPU given as a <code>nvmlDevice_t</code>. It may also return the corresponding OS device hwloc object for further information (if I/O device discovery is enabled). See <a class="el" href="a00203.html">Interoperability with the NVIDIA Management Library</a>. </p>
+<p class="enddd"></p>
+</dd>
+<dt>NVIDIA displays </dt>
+<dd><p class="startdd"><a class="el" href="a00146_source.html">hwloc/gl.h</a> enables interoperability with NVIDIA displays using the NV-CONTROL X extension (NVCtrl library). If I/O device discovery is enabled, it may return the OS device hwloc object that corresponds to a display given as a name such as <em>:0.0</em> or given as a port/device pair (server/screen). See <a class="el" href="a00206.html">Interoperability with OpenGL displays</a>. </p>
+<p class="enddd"></p>
+</dd>
+<dt>Taskset command-line tool </dt>
+<dd><p class="startdd">The taskset command-line tool is widely used for binding processes. It manipulates CPU set strings in a format that is slightly different from hwloc's one (it does not divide the string in fixed-size subsets and separates them with commas). To ease interoperability, hwloc offers routines to convert hwloc CPU sets from/to taskset-specific string format. See for instance <a class="el" href="a00185.html#ga5beb68a987fe48e5c5edef06ab260e14" title="Stringify a bitmap in the taskset-specific format.">hwloc_bitmap_taskset_snprintf()</a> in <a class="el" href="a00185.html">The bitmap API</a>.</p>
+<p class="interdd">Most hwloc command-line tools also support the option <code>--cpuset-output-format taskset</code> to manipulate taskset-specific strings. </p>
+<p class="enddd"></p>
+</dd>
+</dl>
 </div></div><!-- contents -->
 </div><!-- PageDoc -->
 <!-- start footer part -->

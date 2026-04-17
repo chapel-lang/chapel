@@ -26,6 +26,10 @@ gasneti_MK_t gasneti_import_mk_nonhost(gex_MK_t _mk) {
   }
   return gasneti_import_mk(_mk);
 }
+gasneti_MK_t gasneti_import_mk_nonhost_valid(gex_MK_t mk) {
+  gasneti_assert(mk != GEX_MK_INVALID);
+  return gasneti_import_mk_nonhost(mk);
+}
 #endif
 
 #ifndef gasneti_export_mk
@@ -250,4 +254,28 @@ const char *gasneti_formatmk(
   gasneti_MK_t i_mk = gasneti_import_mk_nonhost(e_mk);
   if (MK_IMPL(i_mk,format)) return MK_IMPL(i_mk,format)(i_mk);
   else                      return MK_IMPL(i_mk,name);
+}
+
+int gasneti_mk_segment_context_push(gasneti_Segment_t i_segment)
+{
+  gasneti_assert(i_segment);
+  if (i_segment->_kind != GEX_MK_HOST) {
+    gasneti_MK_t i_mk = gasneti_import_mk_nonhost(i_segment->_kind);
+    if (MK_IMPL(i_mk,segment_context_push)) { // Class-specific hook, if any
+      return MK_IMPL(i_mk,segment_context_push)(i_segment);
+    }
+  }
+  return 0;
+}
+
+int gasneti_mk_segment_context_pop(gasneti_Segment_t i_segment)
+{
+  gasneti_assert(i_segment);
+  if (i_segment->_kind != GEX_MK_HOST) {
+    gasneti_MK_t i_mk = gasneti_import_mk_nonhost(i_segment->_kind);
+    if (MK_IMPL(i_mk,segment_context_pop)) { // Class-specific hook, if any
+      return MK_IMPL(i_mk,segment_context_pop)(i_segment);
+    }
+  }
+  return 0;
 }

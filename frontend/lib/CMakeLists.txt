@@ -1,4 +1,4 @@
-# Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+# Copyright 2021-2026 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -59,7 +59,10 @@ target_include_directories(ChplFrontend-obj PUBLIC
 
 # Library code can also use headers from the lib/ directory
 # but these are not to be public
-target_include_directories(ChplFrontend-obj PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(ChplFrontend-obj PRIVATE
+                           ${CMAKE_CURRENT_SOURCE_DIR}
+                           ${CMAKE_CURRENT_SOURCE_DIR}/../../runtime/include/encoding # support for sharing unicode support between compiler and runtime
+                           ${CMAKE_CURRENT_SOURCE_DIR}/../../third-party/utf8-decoder) # support for sharing unicode support between compiler and runtime
 
 # SHELL: is needed here to remove unwanted quotes from the list of arguments
 # COMPILE_LANGUAGE:CXX is needed here to make sure we only set the flags

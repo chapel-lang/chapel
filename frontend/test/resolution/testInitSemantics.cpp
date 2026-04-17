@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -1799,17 +1799,13 @@ static void testInitGenericAfterConcrete() {
     assert(t);
     assert(t->isUnknownType());
 
-    assert(guard.errors().size() == 1);
+    assert(guard.errors().size() == 2);
     assert(guard.error(0)->message() ==
+        "cannot default initialize variable using generic or unknown type");
+    assert(guard.error(1)->message() ==
            "unable to instantiate generic type from initializer");
     assert(guard.realizeErrors());
   }
-}
-
-static std::string toString(QualifiedType type) {
-  std::stringstream ss;
-  type.type()->stringify(ss, chpl::StringifyKind::CHPL_SYNTAX);
-  return ss.str();
 }
 
 static void testNilFieldInit() {
@@ -1819,6 +1815,33 @@ static void testNilFieldInit() {
       var x: unmanaged C?;
       proc init() {
         x = nil;
+      }
+    }
+
+    // exists to work around current lack of default-init at module scope
+    proc test() {
+      var x: R;
+      return x;
+    }
+    var a = test();
+    var b = new R();
+  )""";
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context, program, {"a", "b"});
+
+  assert(toString(vars["a"]) == "R");
+  assert(toString(vars["b"]) == "R");
+}
+
+static void testForwardingFieldInit() {
+  std::string program = R"""(
+    record Inner { proc foo() {} }
+    record R {
+      forwarding var x: Inner;
+      proc init() {
+        this.x = new Inner();
       }
     }
 
@@ -1906,6 +1929,7 @@ static void testGenericFieldInit() {
   {
     printf("one\n");
     std::string program = R"""(
+      operator =(ref lhs: int, const rhs: int) {}
       record G { type T; var x : T; }
 
       proc G.init=(other: this.type) {
@@ -1954,6 +1978,8 @@ static void testGenericFieldInit() {
   }
   {
     std::string program = R"""(
+      operator =(ref lhs: int, const rhs: int) {}
+      operator =(ref lhs: real, const rhs: real) {}
       record G { type T; var x : T; }
 
       proc G.init=(other: this.type) {
@@ -1995,6 +2021,7 @@ static void testGenericFieldInit() {
 static void testDefaultArgs() {
   {
     std::string program = R"""(
+      operator =(ref lhs: real, const rhs: real) {}
       class Parent {
         var x, y: real;
       }
@@ -2281,6 +2308,277 @@ static void testInitEqRecursionError() {
   assert(guard.realizeErrors() > 0);
 }
 
+static void testPartialTypeInitEq() {
+  std::string prog = R"""(
+    record R {
+      type T;
+      param p : T;
+    }
+
+    proc R.init=(param p : this.type.T) {
+      this.T = p.type;
+      this.p = p;
+    }
+
+    operator :(from, type t: R(from.type)) {
+      var tmp: t = from;
+      return tmp;
+    }
+
+    type root = R(?);
+    var r1 : R(string, ?) = "hi";
+    var r2 : R(int, ?) = 1234;
+  )""";
+
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+  auto vars = resolveTypesOfVariables(context, prog, {"root", "r1", "r2"});
+
+  auto rootType = vars["root"].type();
+  assert(rootType && rootType->isRecordType());
+  assert(rootType->toRecordType()->instantiatedFrom() == nullptr);
+
+  auto r1Type = vars["r1"].type();
+  assert(r1Type && r1Type->isRecordType());
+  ensureSubs(context, r1Type->toCompositeType(), {
+    {"T", QualifiedType(QualifiedType::TYPE, RecordType::getStringType(context))},
+    {"p", QualifiedType::makeParamString(context, "hi")}
+  });
+
+  auto r2Type = vars["r2"].type();
+  assert(r2Type && r2Type->isRecordType());
+  ensureSubs(context, r2Type->toCompositeType(), {
+    {"T", QualifiedType(QualifiedType::TYPE, IntType::get(context, 64))},
+    {"p", QualifiedType::makeParamInt(context, 1234)}
+  });
+}
+
+// In types whose later fields invoke type constructor functions in
+// terms of previous fields' types, we want to avoid calling these type
+// constructors until we're ready (ie, until we have a substitution).
+static void testPartialTypeConstructor() {
+  bool useArray = false;
+  auto helpRunTest = [&useArray](const char* fields, const char* args, bool expectErrors) {
+    const char* nonGenericFn;
+    if (!useArray) {
+      nonGenericFn =
+        R"""(
+        proc typeConstructorFnNoGenerics(type t) type {
+          if __primitive("is generic type", t) then compilerError("cannot invoke with generic type");
+          return t;
+        }
+        )""";
+    } else {
+      nonGenericFn =
+        R"""(
+        proc typeConstructorFnNoGenerics(type t) type {
+          return [1..10] t;
+        }
+        )""";
+    }
+
+    auto program = std::string("") +
+      R"""(
+      record typeConstructor { type wrapping; }
+      record typeConstructor2 { type wrapping1; type wrapping2; }
+
+      proc typeConstructorFn(type t) type do return typeConstructor(t);
+      proc typeConstructorFn2(type t1, type t2) type do return typeConstructor2(t1, t2);
+
+      proc compilerError(param msg: string...) {
+        __primitive("error");
+      }
+      )""" + nonGenericFn +
+      "record R {" + fields + "}\n" +
+      "var x = new R(" + args + ");\n";
+
+    auto context = buildStdContext();
+    ErrorGuard guard(context);
+
+    auto xQt = resolveTypeOfXInit(context, program, /* requireTypeKnown */ !expectErrors);
+
+    if (!expectErrors) {
+      assert(xQt.type()->isRecordType());
+      auto rt = xQt.type()->toRecordType();
+      assert(rt->name() == "R");
+    } else {
+      assert(guard.numErrors() > 0);
+      bool foundError = false;
+      for (auto& error : guard.errors()) {
+        if (error->message() == (useArray ? "array element type cannot currently be generic"
+                                          : "cannot invoke with generic type")) {
+          foundError = true;
+        }
+      }
+      assert(foundError);
+      guard.realizeErrors();
+    }
+  };
+
+  for (auto arr : {false, true}) {
+    useArray = arr;
+
+    // basic case: as long as 't' is unknown, we shouldn't resolve the type
+    // of 'var A'.
+    {
+      printf("case 1\n");
+      auto fields = "type t; var A: typeConstructorFnNoGenerics(t);";
+      helpRunTest(fields, "int", false);
+      helpRunTest(fields, "numeric", true);
+    }
+
+    // slightly more complex case: if 't' is used in a type constructor before
+    // being forwarded to 'typeConstructorFnNoGenerics', we still want to
+    // avoid resolving until we have a substitution for 't'.
+    {
+      printf("case 2\n");
+      auto fields = "type t; var A: typeConstructorFnNoGenerics(typeConstructor(t));";
+      helpRunTest(fields, "int", false);
+      helpRunTest(fields, "numeric", true);
+    }
+
+    // same as the previous case, but now 'typeConstructor' is a function instead
+    // of a real type constructor.
+    {
+      printf("case 3\n");
+      auto fields = "type t; var A: typeConstructorFnNoGenerics(typeConstructorFn(t));";
+      helpRunTest(fields, "int", false);
+      helpRunTest(fields, "numeric", true);
+    }
+
+    // same as case 2, but with tuples, which used to behave differently.
+    {
+      printf("case 4\n");
+      auto fields = "type t; var A: typeConstructorFnNoGenerics((t,));";
+      helpRunTest(fields, "int", false);
+      helpRunTest(fields, "numeric", true);
+    }
+
+    // same cases, except use two generic fields.
+
+    // slightly more complex case: if 't' is used in a type constructor before
+    // being forwarded to 'typeConstructorFnNoGenerics', we still want to
+    // avoid resolving until we have a substitution for 't'.
+    {
+      printf("case 5\n");
+      auto fields = "type t1; type t2; var A: typeConstructorFnNoGenerics(typeConstructor2(t1, t2));";
+      helpRunTest(fields, "int, int", false);
+      helpRunTest(fields, "numeric, int", true);
+      helpRunTest(fields, "int, numeric", true);
+      helpRunTest(fields, "numeric, numeric", true);
+    }
+
+    // same as the previous case, but now 'typeConstructor' is a function instead
+    // of a real type constructor.
+    {
+      printf("case 6\n");
+      auto fields = "type t1; type t2; var A: typeConstructorFnNoGenerics(typeConstructorFn2(t1, t2));";
+      helpRunTest(fields, "int, int", false);
+      helpRunTest(fields, "numeric, int", true);
+      helpRunTest(fields, "int, numeric", true);
+      helpRunTest(fields, "numeric, numeric", true);
+    }
+
+    // same as case 2, but with tuples, which used to behave differently.
+    {
+      printf("case 7\n");
+      auto fields = "type t1; type t2; var A: typeConstructorFnNoGenerics((t1,t2));";
+      helpRunTest(fields, "int, int", false);
+      helpRunTest(fields, "numeric, int", true);
+      helpRunTest(fields, "int, numeric", true);
+      helpRunTest(fields, "numeric, numeric", true);
+    }
+  }
+}
+
+static void testInitWithGenericMultiDeclExplicit() {
+  std::string prog = R"""(
+    record R {
+      var x, y, z;
+      proc init(x, y, z) {
+        this.x = x;
+        this.y = y;
+        this.z = z;
+      }
+    }
+    var r = new R(1, 2.0, true);
+  )""";
+
+  auto ctx = buildStdContext();
+  ErrorGuard guard(ctx);
+  auto vars = resolveTypesOfVariables(ctx, prog, {"r"});
+  auto rType = vars.at("r").type();
+  assert(rType && rType->isRecordType());
+
+  ensureSubs(ctx, rType->toCompositeType(), {
+    {"x", QualifiedType(QualifiedType::VAR, IntType::get(ctx, 64))},
+    {"y", QualifiedType(QualifiedType::VAR, RealType::get(ctx, 64))},
+    {"z", QualifiedType(QualifiedType::VAR, BoolType::get(ctx))}
+  });
+}
+
+static void testInitWithGenericMultiDeclDefault() {
+  std::string prog = R"""(
+    record R {
+      var x, y, z;
+    }
+    var r = new R(1, 2.0, true);
+  )""";
+
+  auto ctx = buildStdContext();
+  ErrorGuard guard(ctx);
+  auto vars = resolveTypesOfVariables(ctx, prog, {"r"});
+  auto rType = vars.at("r").type();
+  assert(rType && rType->isRecordType());
+
+  ensureSubs(ctx, rType->toCompositeType(), {
+    {"x", QualifiedType(QualifiedType::VAR, IntType::get(ctx, 64))},
+    {"y", QualifiedType(QualifiedType::VAR, RealType::get(ctx, 64))},
+    {"z", QualifiedType(QualifiedType::VAR, BoolType::get(ctx))}
+  });
+}
+
+// If a call to 'super.init' was skipepd, we shouldn't segfault.
+static void testSkippedSuperCall() {
+  std::string prog = R"""(
+    class Parent {}
+    class Child : Parent {
+      proc init(x: int, x: int) {
+        super.init(x);
+      }
+    }
+    var x = new Child(1, 2);
+  )""";
+
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+  std::ignore = resolveTypeOfXInit(context, prog);
+
+  // We should've gotten an error, not a segfault.
+  assert(guard.numErrors() == 1);
+  assert(guard.error(0)->type() == ErrorType::Redefinition);
+  guard.realizeErrors();
+}
+
+// We can invoke super.init in any class, even if it doesn't have a marked
+// parent, in which case the implicit root class's super.init should be called.
+static void testSuperInitForRootClass() {
+  std::string prog = R"""(
+    class MyClass {
+      proc init() {
+        super.init();
+      }
+    }
+    var x = new MyClass();
+  )""";
+
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+  auto x = resolveTypeOfXInit(context, prog);
+  assert(x.type()->isClassType());
+  assert(x.type()->toClassType()->basicClassType()->name() == "MyClass");
+}
+
 // TODO:
 // - test using defaults for types and params
 //   - also in conditionals
@@ -2334,6 +2632,8 @@ int main() {
 
   testNilFieldInit();
 
+  testForwardingFieldInit();
+
   testGenericFieldInit();
 
   testDefaultArgs();
@@ -2344,6 +2644,15 @@ int main() {
 
   testInitEqRecursion();
   testInitEqRecursionError();
+
+  testPartialTypeInitEq();
+  testPartialTypeConstructor();
+
+  testInitWithGenericMultiDeclExplicit();
+  testInitWithGenericMultiDeclDefault();
+
+  testSkippedSuperCall();
+  testSuperInitForRootClass();
 
   return 0;
 }

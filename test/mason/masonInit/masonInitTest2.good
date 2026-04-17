@@ -1,4 +1,0 @@
-Created new application project: testSrc
-Created new application project: testSrc
-Tip: To convert existing code to a mason project, move the driver application to the `src/testSrc.chpl` file. For adding other source code, using submodules is the recommended approach to avoid namespace collisions.
-src has been successfully created

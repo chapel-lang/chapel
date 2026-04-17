@@ -1,0 +1,14 @@
+dict     2xxx
+list      6xx
+yielding Values from tuple
+1
+2
+3
+4
+5
+yielding ints from tuple
+1
+2
+3
+4
+5

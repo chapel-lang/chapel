@@ -1,0 +1,14 @@
+BootStrap: docker
+From: almalinux:9
+
+%files
+    ../../provision-scripts/* /provision-scripts/
+
+%post
+    /provision-scripts/dnf-upgrade.sh
+    /provision-scripts/dnf-epel.sh
+    /provision-scripts/dnf-deps.sh
+    /provision-scripts/dnf-llvm.sh
+
+%runscript
+    ../../provision-scripts/run.sh "$@"

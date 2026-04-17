@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -49,22 +49,19 @@ static void test1() {
 static void test2() {
   // Test resolution of 'this' on a taskVar in begin statement
   printf("test2\n");
-  auto config = getConfigWithHome();
-  Context ctx(config);
-  Context* context = &ctx;
+  Context* context = buildStdContext();
   ErrorGuard guard(context);
-  setupModuleSearchPaths(context, false, false, {}, {});
 
   auto program = R""""(
                   module M {
                     record R { var y : int; }
                     proc R.this(i: int) { return this.y + i; }
 
-                    var myVar = new R(42);                      
+                    var myVar = new R(42);
 
-                    begin with (in myVar) {                        
-                      var x = myVar[5];                        
-                    } 
+                    begin with (in myVar) {
+                      var x = myVar[5];
+                    }
                   }
                 )"""";
   auto m = parseModule(context, std::move(program));
@@ -79,28 +76,26 @@ static void test2() {
 
   auto qt = rr.byAst(x).type();
   assert(qt.type()->isIntType());
-  assert(!guard.realizeErrors()); 
+  assert(!guard.realizeErrors());
 }
 
 //test resolution of 'this' on a taskVar in a coforall statement
 static void test3() {
   printf("test3\n");
   auto config = getConfigWithHome();
-  Context ctx(config);
-  Context* context = &ctx;
+  Context* context = buildStdContext();
   ErrorGuard guard(context);
-  setupModuleSearchPaths(context, false, false, {}, {});
 
   auto program = R""""(
                   module M {
                     record R { var y : int; }
                     proc R.this(i: int) { return this.y + i; }
 
-                    var myVar = new R(42);                      
+                    var myVar = new R(42);
 
-                    coforall i in 1..10 with (in myVar) {                        
-                      var x = myVar[5];                        
-                    } 
+                    coforall i in 1..10 with (in myVar) {
+                      var x = myVar[5];
+                    }
                   }
                 )"""";
   auto m = parseModule(context, std::move(program));
@@ -116,7 +111,7 @@ static void test3() {
   auto qt = rr.byAst(x).type();
   assert(qt.type()->isIntType());
 
-  assert(!guard.realizeErrors()); 
+  assert(!guard.realizeErrors());
 }
 
 int main() {

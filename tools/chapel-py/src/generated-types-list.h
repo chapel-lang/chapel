@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -63,6 +63,11 @@
 #define PARAM_NODE(NAME, TYPE) GENERATED_TYPE(Param, chpl::types::Param, NAME, chpl::types::NAME, chpl::types::paramtags::NAME, Py_TPFLAGS_DEFAULT)
 #include "chpl/types/param-classes-list.h"
 #undef PARAM_NODE
+
+#define DIAGNOSTIC_CLASS(NAME, KIND, EINFO...) GENERATED_TYPE(Error, chpl::ErrorBase, NAME, chpl::Error##NAME, chpl::ErrorType::NAME, Py_TPFLAGS_DEFAULT)
+GENERATED_TYPE(Error, chpl::ErrorBase, GeneralError, chpl::GeneralError, chpl::ErrorType::General, Py_TPFLAGS_DEFAULT)
+#include "chpl/framework/error-classes-list.h"
+#undef DIAGNOSTIC_CLASS
 
 #undef GENERATED_TYPE
 #undef GENERATED_TYPE_BEGIN

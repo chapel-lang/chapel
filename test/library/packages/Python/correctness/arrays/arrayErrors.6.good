@@ -1,0 +1,2 @@
+arrayErrors.chpl:5: In function 'main':
+arrayErrors.chpl:131: error: Attempting to index an array of rank 3 with a 2-dimensional index

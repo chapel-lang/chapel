@@ -1,0 +1,37 @@
+#!/usr/bin/env python3
+
+import sys, shutil
+
+out_file = sys.argv[2]
+tmp_file  = out_file + ".prediff.tmp"
+
+entering_lines = []
+past_lines = []
+
+with open(out_file, "r") as f:
+  for i, line in enumerate(f):
+    text = line.strip()
+    if "entering the barrier" in text:
+      entering_lines.append(i)
+    elif "past the barrier" in text:
+      past_lines.append(i)
+
+with open(tmp_file, "w") as f:
+  # Check that we have some output at all
+  if not entering_lines or not past_lines:
+    f.write("Missing entering or past messages!")
+  else:
+    # Check ordering constraint
+    if max(entering_lines) < min(past_lines):
+      f.write("Output is valid: all 'entering' come before any 'past'.")
+    else:
+      f.write("Invalid order: an 'entering' occurred after a 'past'.")
+
+    # Optional check that number of messages matches
+    if len(entering_lines) != len(past_lines):
+      f.write(
+        f"Warning: different number of 'entering' ({len(entering_lines)}) and \
+        'past' ({len(past_lines)})"
+      )
+
+shutil.move(tmp_file, out_file)

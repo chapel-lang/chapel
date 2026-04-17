@@ -1272,9 +1272,6 @@
   "386cfb80-bd7c-11ee-b488-ff57a08c3497": [
     "modules/packages/DistributedBag.chpl"
   ],
-  "733029d2-8aba-11e7-b3f1-10ddb1d4c3d5": [
-    "modules/packages/DistributedBagDeprecated.chpl"
-  ],
   "838b0068-8aba-11e7-b3f1-10ddb1d4c3d5": [
     "modules/packages/DistributedDeque.chpl"
   ],
@@ -1322,9 +1319,6 @@
   ],
   "9be43b4a-9f6c-11ec-866d-111c8d7a1817": [
     "modules/packages/Socket.chpl"
-  ],
-  "c0ac0568-bd81-11e9-8464-10ddb1d4c3d5": [
-    "modules/packages/Sort.chpl"
   ],
   "3b5ef8a0-780c-11e7-88ba-10ddb1d4c3d5": [
     "modules/packages/TOML.chpl"

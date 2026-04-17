@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -25,7 +25,7 @@
 #include "chpl-env.h"
 #include "chpllaunch.h"
 #include "chpl-mem.h"
-#include "error.h"
+#include "chpl-error.h"
 
 static char** chpl_launch_create_argv(const char *launch_cmd,
                                       int argc, char* argv[],
@@ -34,9 +34,6 @@ static char** chpl_launch_create_argv(const char *launch_cmd,
     chpl_error("mpirun4ofi only supports CHPL_COMM=ofi", 0, 0);
   }
 
-  static char _nlbuf[16];
-  snprintf(_nlbuf, sizeof(_nlbuf), "%d", getArgNumLocales());
-
   char** largv = NULL;
   int largv_len = 0;
   int largc = 0;
@@ -44,10 +41,10 @@ static char** chpl_launch_create_argv(const char *launch_cmd,
                                             &largv_len, arg)
 
   ADD_LARGV(launch_cmd);
+  static char nlbuf[16];
+  snprintf(nlbuf, sizeof(nlbuf), "%d", getArgNumLocales());
   ADD_LARGV("-np");
-  ADD_LARGV(_nlbuf);
-  ADD_LARGV("-map-by");
-  ADD_LARGV("ppr:1:node");
+  ADD_LARGV(nlbuf);
   ADD_LARGV("-map-by");
   ADD_LARGV("node:oversubscribe");
   ADD_LARGV("-bind-to");

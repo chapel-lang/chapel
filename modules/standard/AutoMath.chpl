@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -370,6 +370,7 @@ module AutoMath {
    */
   inline proc max(x, y)
   where !isArray(x) && !isArray(y) &&
+        !isSubtype(x.type, _iteratorRecord) && !isSubtype(y.type, _iteratorRecord) &&
         !(isNumeric(_desync(x.type)) && isNumeric(_desync(y.type))) {
     return if x > y then x else y;
   }
@@ -441,6 +442,7 @@ module AutoMath {
    */
   inline proc min(x, y)
   where !isArray(x) && !isArray(y) &&
+        !isSubtype(x.type, _iteratorRecord) && !isSubtype(y.type, _iteratorRecord) &&
         !(isNumeric(_desync(x.type)) && isNumeric(_desync(y.type))) {
     return if x < y then x else y;
   }

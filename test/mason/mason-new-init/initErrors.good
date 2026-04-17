@@ -1,0 +1,85 @@
++ mason init IDontExist
+Directory does not exist: IDontExist Did you mean 'mason new' to create a new project from scratch?
++ echo 'expected failure'
+expected failure
++ rm -rf testingPkg
++ mkdir testingPkg
++ cd testingPkg
++ mason init
+Created new application project: testingPkg
+Tip: To convert existing code to a mason project, move the driver application to the `src/testingPkg.chpl` file. For adding other source code, using submodules is the recommended approach to avoid namespace collisions.
++ mason init
+Mason.toml already exists for current project. Remove or rename the existing manifest file and rerun `mason init` to initialize a new project.
++ echo 'expected failure for existing mason package'
+expected failure for existing mason package
++ mason init --light
+Mason.toml already exists for current project. Remove or rename the existing manifest file and rerun `mason init` to initialize a new project.
++ echo 'expected failure for existing mason package'
+expected failure for existing mason package
++ rm Mason.toml
++ mason init
+/src/ directory already exists for current project. Remove or rename the /src/ directory and rerun `mason init` to initialize a new project. Alternatively, run `mason init --light` to add only a manifest file.
++ echo 'expected failure for existing src/ directory'
+expected failure for existing src/ directory
++ mason init --light
+Created new light project: testingPkg
++ cd ..
++ rm -rf testingPkg
++ mkdir testingPkg
++ mason init testingPkg
+Created new application project: testingPkg
+Tip: To convert existing code to a mason project, move the driver application to the `src/testingPkg.chpl` file. For adding other source code, using submodules is the recommended approach to avoid namespace collisions.
++ mason init testingPkg --name foobar
+Mason.toml already exists for current project. Remove or rename the existing manifest file and rerun `mason init` to initialize a new project.
++ echo 'expected failure for existing mason package'
+expected failure for existing mason package
++ rm -rf testingPkg
++ mkdir testingPkg
++ cd testingPkg
++ mason init --no-vcs
+Created new application project: testingPkg
+Tip: To convert existing code to a mason project, move the driver application to the `src/testingPkg.chpl` file. For adding other source code, using submodules is the recommended approach to avoid namespace collisions.
++ mason init --no-vcs
+Mason.toml already exists for current project. Remove or rename the existing manifest file and rerun `mason init` to initialize a new project.
++ echo 'expected failure for existing mason package'
+expected failure for existing mason package
++ cd ..
++ rm -rf testing-pkg/foo-bar
++ mkdir -p testing-pkg/foo-bar
++ mason init testing-pkg/foo-bar
+Bad package name 'foo-bar' - only Chapel identifiers are legal package names.
+Use '--name <LegalName>' to specify a legal package name.
++ echo 'expected failure for invalid package name'
+expected failure for invalid package name
++ mason init testing-pkg/foo-bar --name foo-bar
+Bad package name 'foo-bar' - only Chapel identifiers are legal package names.
+Use '--name <LegalName>' to specify a legal package name.
++ echo 'expected failure for invalid package name'
+expected failure for invalid package name
++ rm -rf testing-pkg
++ rm -rf testingPkg
++ mkdir testingPkg
++ cd testingPkg
++ git init -b main
+Initialized empty Git repository in $CHPL_HOME/test/mason/mason-new-init/testingPkg/.git/
++ mason init
+'$CHPL_HOME/test/mason/mason-new-init/testingPkg' is already a git repository. Use `--no-vcs` to create a project without initializing a git repository.
++ echo 'expected failure for existing mason package'
+expected failure for existing mason package
++ rm -rf .git
++ echo foo
++ MASON_LOG_LEVEL=warn
++ mason init
++ grep '.gitignore already exists'
+mason new/init: .gitignore already exists, skipping creation of .gitignore file
++ cat .gitignore
+foo
++ cat Mason.toml
++ sed /chplVersion/d
+[brick]
+name="testingPkg"
+version="0.1.0"
+license="None"
+type="application"
+
+[dependencies]

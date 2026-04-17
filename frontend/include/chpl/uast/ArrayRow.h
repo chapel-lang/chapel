@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2025-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -22,6 +22,7 @@
 
 #include "chpl/framework/Location.h"
 #include "chpl/uast/AstNode.h"
+#include <iterator>
 
 namespace chpl {
 namespace uast {
@@ -77,8 +78,7 @@ class ArrayRow final : public AstNode {
     Return a way to iterate over the expressions of this array row.
   */
   AstListIteratorPair<AstNode> exprs() const {
-    return AstListIteratorPair<AstNode>(children_.begin(),
-                                        children_.end());
+    return AstListIteratorPair<AstNode>(children_.begin(), children_.end());
   }
 
   /**

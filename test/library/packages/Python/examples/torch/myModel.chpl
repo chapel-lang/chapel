@@ -5,6 +5,12 @@ use List;
 proc main() {
   var interp = new Interpreter();
 
+  //
+  // pytorch does not play well with switching GIL states
+  // grabbing an overarching GIL here helps matters
+  //
+  var gil = new GIL();
+
   // imports from mymodel
   var myModelModule = interp.importModule("mymodel");
   var myModelClass = myModelModule.get("MyModel");

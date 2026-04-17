@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -38,7 +38,7 @@
 #include "chpl-mem.h"
 #include "chpl-mem-desc.h"
 #include "chpltypes.h"
-#include "error.h"
+#include "chpl-error.h"
 
 // Uses the Chapel allocator.  Should not be used to create user-visible data
 // (error messages are OK).

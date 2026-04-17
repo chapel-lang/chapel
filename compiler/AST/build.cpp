@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -277,44 +277,6 @@ BlockStmt* buildErrorStandin() {
   return new BlockStmt(new CallExpr(PRIM_ERROR), BLOCK_SCOPELESS);
 }
 
-DefExpr* buildDeprecated(DefExpr* def) {
-  const char* msg = "";
-  return buildDeprecated(def, msg);
-}
-
-DefExpr* buildDeprecated(DefExpr* def, const char* msg) {
-  Symbol* sym = def->sym;
-  sym->addFlag(FLAG_DEPRECATED);
-  sym->deprecationMsg = msg;
-
-  if (sym->hasFlag(FLAG_CONFIG)) {
-    // Trigger a warning now if the deprecated config has been set via the
-    // compilation line
-    if (isUsedCmdLineConfig(sym->name)) {
-      USR_WARN("%s", sym->getDeprecationMsg());
-      USR_PRINT("'%s' was set via a compiler flag", sym->name);
-    }
-  }
-  return def;
-}
-
-BlockStmt* buildDeprecated(BlockStmt* block) {
-  const char* msg = "";
-  return buildDeprecated(block, msg);
-}
-
-BlockStmt* buildDeprecated(BlockStmt* block, const char* msg) {
-  if (DefExpr* def = toDefExpr(block->body.head)) {
-    buildDeprecated(def, msg);
-  } else if (ForwardingStmt* forward = toForwardingStmt(block->body.head)) {
-    USR_FATAL_CONT(forward, "Can't deprecate a forwarding statement");
-  } else {
-    INT_FATAL("Unexpected deprecation case");
-  }
-  return block;
-}
-
-
 static BlockStmt* buildUseList(BaseAST* module, const char* newName,
                                BlockStmt* list, bool privateUse) {
   UseStmt* newUse = new UseStmt(module, newName, privateUse);
@@ -350,7 +312,7 @@ bool processStringInRequireStmt(Expr* expr,
     if (isChplSource(str)) {
       if (parseTime) {
         if (!atModuleScope) {
-          USR_WARN(expr, "using 'require' on a Chapel source file not at module scope is deprecated");
+          USR_FATAL(expr, "cannot use 'require' on a Chapel source file not at module scope");
         }
         // no need to add the source file since that is handled
         // within resolveVisibilityStmtsQuery.
@@ -1246,7 +1208,7 @@ BlockStmt* buildSelectStmt(Expr* selectCond, BlockStmt* whenstmts) {
   tmp->addFlag(FLAG_EXPR_TEMP);
 
   block->insertAtTail(new DefExpr(tmp));
-  block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, selectCond));
+  block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr("_select_test", selectCond)));
 
   for_alist(stmt, whenstmts->body) {
     CondStmt* when = toCondStmt(stmt);
@@ -1549,6 +1511,13 @@ AggregateType* installInternalType(AggregateType* ct, AggregateType* dt) {
 
   // grab the existing symbol from the placeholder "dtString"
   ct->addSymbol(dt->symbol);
+
+  // During typed conversion we may populate RootClass fields. Save them here.
+  if (fDynoResolver && dt->symbol->defPoint) {
+    memcpy(ct->decoratedClasses, dt->decoratedClasses, NUM_PACKED_DECORATED_TYPES);
+    dt->symbol->defPoint->remove();
+  }
+
   *dt = *ct;
 
   // These fields get overwritten with `ct` by the assignment.
@@ -1911,67 +1880,29 @@ BlockStmt* buildConditionalLocalStmt(Expr* condExpr, Expr *stmt) {
 }
 
 /*
-  Builds the try/catch part of the manager block:
-
-  try {
-    // Insertion point for next manager or user block.
-  } catch chpl_tmp_err {
-    errorCaught = true;
-    manager.exitContext(chpl_tmp_err);
-  }
-
-*/
-static TryStmt* buildTryCatchForManagerBlock(VarSymbol* managerHandle,
-                                             VarSymbol* errorCaught) {
-  const char* errName = "chpl_tmp_err";
-
-  // Build the catch block.
-  auto catchBlock = new BlockStmt();
-
-  // BUILD: errorCaught = true;
-  auto seErrorCaught = new SymExpr(errorCaught);
-  auto seTrue = new SymExpr(gTrue);
-  auto errorCaughtToTrue = new CallExpr(PRIM_MOVE, seErrorCaught, seTrue);
-  catchBlock->insertAtTail(errorCaughtToTrue);
-
-  // BUILD: manager.exitContext(chpl_tmp_err);
-  auto leave = new CallExpr("exitContext",
-                            gMethodToken,
-                            new SymExpr(managerHandle),
-                            new UnresolvedSymExpr(errName));
-  catchBlock->insertAtTail(leave);
-
-  // BUILD: catch chpl_tmp_err { ... }
-  auto catchStmt = CatchStmt::build(errName, catchBlock);
-
-  // Build the entire try/catch.
-  auto catchList = new BlockStmt();
-  catchList->insertAtTail(catchStmt);
-
-  auto ret = new TryStmt(false, new BlockStmt(), catchList);
-
-  return ret;
-}
-
-/*
   The fragment 'myManager() as myResource' is lowered into something like:
 
   {
     TEMP ref manager = PRIM_ADDR_OF(myManager());
     chpl__verifyTypeContext(manager);
+
     USER [var/ref/const] myResource = manager.enterContext();
-    TEMP errorCaught = false;
+    TEMP error = nil;
+
+    // This is a special variation of 'defer' where the contents can throw.
+    // We need it in case the user code contains e.g., a 'return'. It is
+    // not exposed to the user so we don't need the semantics to be perfect.
+    unchecked-defer { manager.exitContext(error); }
 
     try {
       // Insertion point for next manager or user block.
+      //
+      // ... <scopeless block for user code> ...
+      //
     } catch chpl_temp_err {
-      errorCaught = true;
-      manager.exitContext(chpl_tmp_err);
+      error = chpl_temp_err;
     }
-
-    if !errorCaught then manager.exitContext(nil);
   }
-
 */
 BlockStmt* buildManagerBlock(Expr* managerExpr, std::set<Flag>* flags,
                              const char* resourceName,
@@ -1989,7 +1920,9 @@ BlockStmt* buildManagerBlock(Expr* managerExpr, std::set<Flag>* flags,
   auto moveIntoHandle = new CallExpr(PRIM_MOVE, managerHandle, addrOfExpr);
   ret->insertAtTail(moveIntoHandle);
 
-  auto verifyCall = new CallExpr("chpl__verifyTypeContext", new SymExpr(managerHandle));
+  // BUILD: chpl__verifyTypeContext(manager);
+  auto verifyCall = new CallExpr("chpl__verifyTypeContext",
+                                 new SymExpr(managerHandle));
   ret->insertAtTail(verifyCall);
 
   // Build call to 'enterContext', but don't insert into the tree yet.
@@ -2019,22 +1952,47 @@ BlockStmt* buildManagerBlock(Expr* managerExpr, std::set<Flag>* flags,
     ret->insertAtTail(enterContext);
   }
 
-  // BUILD: TEMP var errorCaught = false;
-  auto errorCaught = newTemp("errorCaught");
-  ret->insertAtTail(new DefExpr(errorCaught, gFalse));
+  // BUILD: TEMP var error = nil;
+  auto errorTemp = newTemp();
+  auto errorType = new CallExpr("_owned", new CallExpr(PRIM_TO_NILABLE_CLASS,
+                                new UnresolvedSymExpr("Error")));
+  ret->insertAtTail(new DefExpr(errorTemp, gNil, errorType));
 
-  // Call helper to construct try/catch block.
-  auto tryCatch = buildTryCatchForManagerBlock(managerHandle, errorCaught);
-  ret->insertAtTail(tryCatch);
-
-  // BUILD: if !errorCaught then manager.exitContext(nil);
-  auto ifCond = new CallExpr(PRIM_UNARY_LNOT, new SymExpr(errorCaught));
-  auto ifBranch = new CallExpr("exitContext",
+  // BUILD: unchecked-defer manager.exitContext(error);
+  auto exitCall = new CallExpr("exitContext",
                                gMethodToken,
                                new SymExpr(managerHandle),
-                               gNil);
-  auto ifStmt = new CondStmt(ifCond, ifBranch);
-  ret->insertAtTail(ifStmt);
+                               new SymExpr(errorTemp));
+  auto deferBlock = new BlockStmt();
+  deferBlock->insertAtTail(exitCall);
+  auto defer = new DeferStmt(DeferStmt::UNCHECKED, deferBlock);
+  ret->insertAtTail(defer);
+
+  // The try block contains the code for the next manager or user code.
+  auto tryBlock = new BlockStmt();
+
+  const char* caughtErrName = "chpl_tmp_err";
+
+  // Next, build the catch block.
+  auto catchBlock = new BlockStmt();
+
+  // BUILD: errorTemp = chpl_temp_err;
+  auto caughtErrUsym = new UnresolvedSymExpr(caughtErrName);
+  auto errorTempSet = new CallExpr("=", errorTemp, caughtErrUsym);
+  catchBlock->insertAtTail(errorTempSet);
+
+  // Assemble the AST for the catch statement.
+  auto catchStmt = CatchStmt::build(caughtErrName, catchBlock);
+  catchStmt->createErrSym();
+
+  // Assemble the entire try/catch.
+  auto catchList = new BlockStmt();
+  catchList->insertAtTail(catchStmt);
+
+  auto tryStmt = new TryStmt(false, tryBlock, catchList);
+
+  // And insert it into the scopeless block.
+  ret->insertAtTail(tryStmt);
 
   return ret;
 }
@@ -2048,20 +2006,36 @@ BlockStmt* buildManagerBlock(Expr* managerExpr, std::set<Flag>* flags,
   Managers call 'exitContext()' and are deinitialized in the reverse order of
   their initialization.
 
+  In order to facilitate proper handling of `throws` (the `exitContext()`
+  method on a manager can throw for any reason) this function will return
+  the following sort of lowered AST:
+
+  try! {
+    // Lowered manage statements...
+  }
+
+  The outermost `try!` can be manipulated later during `lowerErrorHandling`
+  in order to produce the correct error-handling semantics. By default it
+  is `try!` to facilitate use in non-throwing functions.
+
   TODO (dlongnecke-cray): In cleanup, recursively lift up the manager out of
   its try block if we detect exception handling is not needed (e.g. we're
-  not in a throwing function, and not in a try).
+  not in a throwing function, and not in a try). (We can't really do this
+  very well until we make use of the typed converter.)
 */
-BlockStmt* buildManageStmt(BlockStmt* managers, BlockStmt* block, ModTag modTag)
-{
-  auto ret = new BlockStmt();
+Expr*
+buildManageStmt(BlockStmt* managers, BlockStmt* block, ModTag modTag) {
+  auto markedTryBlock = new BlockStmt();
+  bool isTryBang = true;
+  bool isSyncTry = false;
+  auto ret = new TryStmt(isTryBang, markedTryBlock, nullptr, isSyncTry);
 
   if (fWarnUnstable && modTag == MOD_USER) {
     USR_WARN(managers, "manage statements are not stable and may change");
   }
 
   // Used to thread context managers. Start by inserting into outer block.
-  BlockStmt* insertionPoint = ret;
+  BlockStmt* insertionPoint = markedTryBlock;
 
   for_alist(manager, managers->body) {
     BlockStmt* managerBlock = toBlockStmt(manager);
@@ -2076,7 +2050,9 @@ BlockStmt* buildManageStmt(BlockStmt* managers, BlockStmt* block, ModTag modTag)
     // Scroll forward looking for the next insertion point.
     for_alist(stmt, managerBlock->body) {
       if (TryStmt* tryStmt = toTryStmt(stmt)) {
-        insertionPoint = tryStmt->body();
+        auto block = toBlockStmt(tryStmt->body());
+        INT_ASSERT(block);
+        insertionPoint = block;
         break;
       }
     }
@@ -2090,6 +2066,9 @@ BlockStmt* buildManageStmt(BlockStmt* managers, BlockStmt* block, ModTag modTag)
   // Lastly, insert the managed block (containing user code).
   insertionPoint->insertAtTail(block);
   block->flattenAndRemove();
+
+  // This should hold.
+  INT_ASSERT(ret->isForManageStmt());
 
   return ret;
 }
@@ -2400,14 +2379,15 @@ BlockStmt* convertTypesToExtern(BlockStmt* blk, const char* cname) {
 
         TypeSymbol* ts = new TypeSymbol(vs->name, pt);
         if (VarSymbol* theVs = toVarSymbol(vs)) {
-          // TODO: Loop/copy all flags here instead of two?
-          if (theVs->hasFlag(FLAG_PRIVATE)) ts->addFlag(FLAG_PRIVATE);
-          if (theVs->hasFlag(FLAG_C_MEMORY_ORDER_TYPE)) ts->addFlag(FLAG_C_MEMORY_ORDER_TYPE);
-          if (theVs->hasFlag(FLAG_DEPRECATED)) {
-            ts->addFlag(FLAG_DEPRECATED);
-            ts->deprecationMsg = theVs->deprecationMsg;
-          }
+          // Preserve old qualifier - for some reason 'copyFlags' copies it?
+          auto oldQual = ts->qual;
+          ts->copyFlags(theVs);
+          ts->qual = oldQual;
+
+          ts->deprecationMsg = theVs->deprecationMsg;
+          ts->unstableMsg = theVs->unstableMsg;
         }
+
         DefExpr* newde = new DefExpr(ts);
 
         de->replace(newde);

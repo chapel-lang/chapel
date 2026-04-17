@@ -389,7 +389,7 @@ extern int gasneti_amregister_legacy(gasneti_EP_t i_ep,
       _GASNETI_CHECK_PREPARE(cbuf,least_pl,most_pl,limit,lc_opt,nargs,0,cat);          \
     } while(0)
 
-  #define _GASNETI_CHECK_COMMIT(sd,handler,nbytes,dest_addr,nargs,is_req,cat) \
+  #define _GASNETI_CHECK_COMMIT(sd,handler,nbytes,dest_addr,flags,nargs,is_req,cat) \
     do {                                                                                                 \
       const char *_reqrep = is_req ? "Request" : "Reply";                                                \
       if (!sd)                                                                                           \
@@ -424,14 +424,45 @@ extern int gasneti_amregister_legacy(gasneti_EP_t i_ep,
                              "client did not write to the GASNet-provided buffer",                       \
                              _reqrep, nargs);                                                            \
       }                                                                                                  \
+      if (flags & ~GEX_FLAG_IMMEDIATE) {                                                                 \
+        gasneti_fatalerror("gex_AM_Commit%s" _STRINGIFY(cat) "%d: "                                      \
+                           "Invalid flags=0x%x", _reqrep, nargs, flags);                                 \
+      }                                                                                                  \
     } while(0)
-  #define GASNETI_COMMON_COMMIT_REQ(sd,handler,nbytes,dest_addr,nargs,cat) do {            \
-      GASNETI_TRACE_COMMIT_REQUEST##cat(handler,sd->_addr,sd->_size,dest_addr,sd->_nargs); \
-      _GASNETI_CHECK_COMMIT(sd,handler,nbytes,dest_addr,nargs,1,cat);                      \
+  #define GASNETI_COMMON_COMMIT_REQ(sd,handler,nbytes,dest_addr,flags,nargs,cat) do {            \
+      GASNETI_TRACE_COMMIT_REQUEST##cat(handler,(sd?sd->_addr:NULL),(sd?sd->_size:0),dest_addr,flags,(sd?sd->_nargs:0)); \
+      _GASNETI_CHECK_COMMIT(sd,handler,nbytes,dest_addr,flags,nargs,1,cat);                      \
     } while(0)
-  #define GASNETI_COMMON_COMMIT_REP(sd,handler,nbytes,dest_addr,nargs,cat) do {            \
-      GASNETI_TRACE_COMMIT_REPLY##cat(handler,sd->_addr,sd->_size,dest_addr,sd->_nargs);   \
-      _GASNETI_CHECK_COMMIT(sd,handler,nbytes,dest_addr,nargs,0,cat);                      \
+  #define GASNETI_COMMON_COMMIT_REP(sd,handler,nbytes,dest_addr,flags,nargs,cat) do {            \
+      GASNETI_TRACE_COMMIT_REPLY##cat(handler,(sd?sd->_addr:NULL),(sd?sd->_size:0),dest_addr,flags,(sd?sd->_nargs:0));   \
+      _GASNETI_CHECK_COMMIT(sd,handler,nbytes,dest_addr,flags,nargs,0,cat);                      \
+    } while(0)
+
+  #define _GASNETI_CHECK_CANCEL(sd,is_req,cat) \
+    do {                                                                                          \
+      const char *_reqrep = is_req ? "Request" : "Reply";                                         \
+      if (!sd)                                                                                    \
+        gasneti_fatalerror("gex_AM_Cancel%s" _STRINGIFY(cat) ": "                                 \
+                           "passed invalid gex_AM_SrcDesc (GEX_AM_SRCDESC_NO_OP == 0)", _reqrep); \
+      if (sd->_thread != _gasneti_mythread_slow())                                                \
+        gasneti_fatalerror("gex_AM_Cancel%s" _STRINGIFY(cat) ": "                                 \
+                           "return from Prepare passed to Cancel in a different thread", _reqrep);\
+      if (sd->_isreq != is_req)                                                                   \
+        gasneti_fatalerror("gex_AM_Cancel%s" _STRINGIFY(cat) ": "                                 \
+                           "paired with incompatible Prepare (%s)",                               \
+                           _reqrep, (sd->_isreq?"Request":"Reply"));                              \
+      if (sd->_category != (int)gasneti_##cat)                                                    \
+        gasneti_fatalerror("gex_AM_Cancel%s" _STRINGIFY(cat) ": "                                 \
+                           "paired with incompatible Prepare (%s)",                               \
+                           _reqrep, (sd->_category==(int)gasneti_Long?"Long":"Medium"));          \
+    } while(0)
+  #define GASNETI_COMMON_CANCEL_REQ(sd,flags,cat) do {      \
+      GASNETI_TRACE_CANCEL_REQUEST##cat(sd,flags);          \
+      _GASNETI_CHECK_CANCEL(sd,1,cat);                      \
+    } while(0)
+  #define GASNETI_COMMON_CANCEL_REP(sd,flags,cat) do {      \
+      GASNETI_TRACE_CANCEL_REPLY##cat(sd,flags);            \
+      _GASNETI_CHECK_CANCEL(sd,0,cat);                      \
     } while(0)
 
   #define GASNETI_CHECK_SD(cbuf, least_payload, most_payload, sd) \
@@ -459,21 +490,34 @@ extern int gasneti_amregister_legacy(gasneti_EP_t i_ep,
   #define GASNETI_COMMON_PREP_REP(sd,token,cbuf,least_pl,most_pl,dest_addr,lc_opt,flags,nargs,cat) do { \
       _GASNETI_COMMON_PREP_NARGS(sd,nargs);                                                    \
     } while(0)
-  #define GASNETI_COMMON_COMMIT_REQ(sd,handler,nbytes,dest_addr,nargs_arg,cat) \
-          GASNETI_TRACE_COMMIT_REQUEST##cat(handler,sd->_addr,sd->_size,dest_addr,sd->_nargs)
-  #define GASNETI_COMMON_COMMIT_REP(sd,handler,nbytes,dest_addr,nargs_arg,cat) \
-          GASNETI_TRACE_COMMIT_REPLY##cat(handler,sd->_addr,sd->_size,dest_addr,sd->_nargs)
+  #define GASNETI_COMMON_COMMIT_REQ(sd,handler,nbytes,dest_addr,flags,nargs_arg,cat) \
+          GASNETI_TRACE_COMMIT_REQUEST##cat(handler,sd->_addr,sd->_size,dest_addr,flags,sd->_nargs)
+  #define GASNETI_COMMON_COMMIT_REP(sd,handler,nbytes,dest_addr,flags,nargs_arg,cat) \
+          GASNETI_TRACE_COMMIT_REPLY##cat(handler,sd->_addr,sd->_size,dest_addr,flags,sd->_nargs)
+  #define GASNETI_COMMON_CANCEL_REQ(sd,flags,cat) \
+          GASNETI_TRACE_CANCEL_REQUEST##cat(sd,flags)
+  #define GASNETI_COMMON_CANCEL_REP(sd,flags,cat) \
+          GASNETI_TRACE_CANCEL_REPLY##cat(sd,flags)
   #define GASNETI_CHECK_SD(cbuf, least_payload, most_payload, sd) ((void)0)
 #endif
 
-#define GASNETI_TRACE_COMMIT_REQUESTMedium(handler,source_addr,nbytes,dest_addr,numargs) \
-        GASNETI_TRACE_COMMIT_REQUESTMEDIUM(handler,source_addr,nbytes,numargs)
-#define GASNETI_TRACE_COMMIT_REQUESTLong(handler,source_addr,nbytes,dest_addr,numargs) \
-        GASNETI_TRACE_COMMIT_REQUESTLONG(handler,source_addr,nbytes,dest_addr,numargs)
-#define GASNETI_TRACE_COMMIT_REPLYMedium(handler,source_addr,nbytes,dest_addr,numargs) \
-        GASNETI_TRACE_COMMIT_REPLYMEDIUM(handler,source_addr,nbytes,numargs)
-#define GASNETI_TRACE_COMMIT_REPLYLong(handler,source_addr,nbytes,dest_addr,numargs) \
-        GASNETI_TRACE_COMMIT_REPLYLONG(handler,source_addr,nbytes,dest_addr,numargs)
+#define GASNETI_TRACE_COMMIT_REQUESTMedium(handler,source_addr,nbytes,dest_addr,flags,numargs) \
+        GASNETI_TRACE_COMMIT_REQUESTMEDIUM(handler,source_addr,nbytes,flags,numargs)
+#define GASNETI_TRACE_COMMIT_REQUESTLong(handler,source_addr,nbytes,dest_addr,flags,numargs) \
+        GASNETI_TRACE_COMMIT_REQUESTLONG(handler,source_addr,nbytes,dest_addr,flags,numargs)
+#define GASNETI_TRACE_COMMIT_REPLYMedium(handler,source_addr,nbytes,dest_addr,flags,numargs) \
+        GASNETI_TRACE_COMMIT_REPLYMEDIUM(handler,source_addr,nbytes,flags,numargs)
+#define GASNETI_TRACE_COMMIT_REPLYLong(handler,source_addr,nbytes,dest_addr,flags,numargs) \
+        GASNETI_TRACE_COMMIT_REPLYLONG(handler,source_addr,nbytes,dest_addr,flags,numargs)
+
+#define GASNETI_TRACE_CANCEL_REQUESTMedium(sd,flags) \
+        GASNETI_TRACE_CANCEL_REQUESTMEDIUM(sd,flags)
+#define GASNETI_TRACE_CANCEL_REQUESTLong(sd,flags) \
+        GASNETI_TRACE_CANCEL_REQUESTLONG(sd,flags)
+#define GASNETI_TRACE_CANCEL_REPLYMedium(sd,flags) \
+        GASNETI_TRACE_CANCEL_REPLYMEDIUM(sd,flags)
+#define GASNETI_TRACE_CANCEL_REPLYLong(sd,flags) \
+        GASNETI_TRACE_CANCEL_REPLYLONG(sd,flags)
 
 #ifndef _GEX_AM_SRCDESC_T
 
@@ -1030,6 +1074,29 @@ void gasnetc_loopback_Commit(
                         dest_addr, argptr GASNETI_THREAD_PASS);
 }
 
+// After sd, remaining params (isReq, category) will be manifest constants
+// which should lead to specialization of the code upon inlining.
+GASNETI_INLINE(gasnetc_loopback_Cancel)
+int gasnetc_loopback_Cancel(
+                        gasneti_AM_SrcDesc_t sd,
+                        const int isReq,
+                        const gasneti_category_t category)
+{
+  GASNET_POST_THREADINFO(sd->_thread);
+  gasneti_assert(sd->_is_nbrhd);
+
+  if (category == gasneti_Medium) {
+    // All Mediums
+    gasneti_free_perthread_medium_buffer(sd->_void_p, isReq GASNETI_THREAD_PASS);
+  } else if (sd->_gex_buf) {
+    // NPAM Long with GASNet-allocated buffer
+    gasneti_assert(category == gasneti_Long);
+    gasneti_free_npam_buffer(sd);
+  }
+
+  return GASNET_OK;
+}
+
 /* ------------------------------------------------------------------------------------ */
 // NP-AM for "nbrhd" (PSHM and loopback)
 
@@ -1097,6 +1164,25 @@ void gasnetc_nbrhd_CommitRequest(
 
 // Parameter 'category' will be a manifest constant
 // which should lead to specialization of the code upon inlining.
+GASNETI_INLINE(gasnetc_nbrhd_CancelRequest)
+int gasnetc_nbrhd_CancelRequest(
+                        gasneti_AM_SrcDesc_t sd,
+                        gasneti_category_t   category,
+                        gex_Flags_t          flags)
+{
+#if GASNET_PSHM
+  if (category == gasneti_Medium) {
+    return gasnetc_AMPSHM_CancelRequestMedium(sd, flags);
+  } else {
+    return gasnetc_AMPSHM_CancelRequestLong(sd, flags);
+  }
+#else
+  return gasnetc_loopback_Cancel(sd, 1, category);
+#endif
+}
+
+// Parameter 'category' will be a manifest constant
+// which should lead to specialization of the code upon inlining.
 GASNETI_INLINE(gasnetc_nbrhd_PrepareReply)
 gasneti_AM_SrcDesc_t gasnetc_nbrhd_PrepareReply(
                         gasneti_category_t   category,
@@ -1112,6 +1198,9 @@ gasneti_AM_SrcDesc_t gasnetc_nbrhd_PrepareReply(
   GASNETI_POST_THREADINFO_FROM_NBRHD_TOKEN(token);
   gasneti_AM_SrcDesc_t sd = gasneti_init_reply_srcdesc(GASNETI_THREAD_PASS_ALONE);
   sd->_is_nbrhd = 1;
+#if GASNET_DEBUG
+  sd->_dest._reply._token = token;
+#endif
 
   if (category == gasneti_Medium) {
     GASNETI_COMMON_PREP_REP(sd,token,client_buf,least_payload,most_payload,dest_addr,lc_opt,flags,nargs,Medium);
@@ -1163,6 +1252,34 @@ void gasnetc_nbrhd_CommitReply(
   }
 #else
   gasnetc_loopback_Commit(sd, 0, category, handler, nbytes, dest_addr, argptr);
+#endif
+}
+
+// Parameter 'category' will be a manifest constant
+// which should lead to specialization of the code upon inlining.
+GASNETI_INLINE(gasnetc_nbrhd_CancelReply)
+int gasnetc_nbrhd_CancelReply(
+                        gasneti_AM_SrcDesc_t sd,
+                        gasneti_category_t   category,
+                        gex_Flags_t          flags)
+{
+#if GASNET_DEBUG
+  const gex_Token_t token = sd->_dest._reply._token;
+  gasneti_assert(gasnetc_token_in_nbrhd(token));
+  gasnetc_nbrhd_token_t *real_token = (gasnetc_nbrhd_token_t *)(1^(uintptr_t)token);
+  gasneti_assert(real_token);
+  gasneti_assert(real_token->replyIssued);
+  real_token->replyIssued = 0;
+#endif
+
+#if GASNET_PSHM
+  if (category == gasneti_Medium) {
+    return gasnetc_AMPSHM_CancelReplyMedium(sd, flags);
+  } else {
+    return gasnetc_AMPSHM_CancelReplyLong(sd, flags);
+  }
+#else
+  return gasnetc_loopback_Cancel(sd, 0, category);
 #endif
 }
 

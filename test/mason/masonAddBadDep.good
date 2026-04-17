@@ -1,1 +1,10 @@
-No TOML file in registry for badDep
+No TOML file in registry for badDep@5.5.5
+
+[root]
+name = "Tester"
+version = "0.1.0"
+
+[dependencies]
+test = "1.2.3"
+
+

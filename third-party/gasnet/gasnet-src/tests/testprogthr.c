@@ -74,8 +74,8 @@ int main(int argc, char **argv) {
   GASNET_Safe(gex_Client_Init(&myclient, &myep, &myteam, "testprogthr", &argc, &argv, GEX_FLAG_DEFER_THREADS));
 
   gex_AM_Entry_t htable[] = {
-    { hidx_ping_handler,  ping_handler,  GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_SHORT, 0 },
-    { hidx_pong_handler,  pong_handler,  GEX_FLAG_AM_REPLY  |GEX_FLAG_AM_SHORT, 0 },
+    { hidx_ping_handler,  (gex_AM_Fn_t)ping_handler,  GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_SHORT, 0 },
+    { hidx_pong_handler,  (gex_AM_Fn_t)pong_handler,  GEX_FLAG_AM_REPLY  |GEX_FLAG_AM_SHORT, 0 },
   };
 
   GASNET_Safe(gex_EP_RegisterHandlers(myep, htable, sizeof(htable)/sizeof(gex_AM_Entry_t)));

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1063,6 +1063,16 @@ module OS {
     /* Write ``size`` bytes to file descriptor from ``buf``. */
     extern proc write(fildes:c_int, buf:c_ptr(void), size:c_size_t):c_ssize_t;
 
+    @chpldoc.nodoc
+    proc checkSourceAndDestBuffer(param name: string,
+                                  dest: c_ptr(void), src: c_ptr(void)) {
+      import HaltWrappers;
+      if dest == nil then
+        HaltWrappers.nilCheckHalt("dest argument to " + name + " is nil");
+      if src == nil then
+        HaltWrappers.nilCheckHalt("src argument to " + name + " is nil");
+    }
+
     /*
       Copies n potentially overlapping bytes from memory area src to memory
       area dest.
@@ -1075,6 +1085,8 @@ module OS {
     */
     pragma "fn synchronization free"
     inline proc memmove(dest:c_ptr(void), const src:c_ptr(void), n: c_size_t) {
+      if chpl_checkNilDereferences then
+        checkSourceAndDestBuffer("memmove", dest, src);
       pragma "fn synchronization free"
       extern proc memmove(dest: c_ptr(void), const src: c_ptr(void), n: c_size_t);
       memmove(dest, src, n);
@@ -1092,6 +1104,8 @@ module OS {
     */
     pragma "fn synchronization free"
     inline proc memcpy(dest:c_ptr(void), const src:c_ptr(void), n: c_size_t) {
+      if chpl_checkNilDereferences then
+        checkSourceAndDestBuffer("memcpy", dest, src);
       pragma "fn synchronization free"
       extern proc memcpy(dest: c_ptr(void), const src: c_ptr(void), n: c_size_t);
       memcpy(dest, src, n);
@@ -1108,6 +1122,13 @@ module OS {
     */
     pragma "fn synchronization free"
     inline proc memcmp(const s1:c_ptr(void), const s2:c_ptr(void), n: c_size_t): int {
+      if chpl_checkNilDereferences {
+        import HaltWrappers;
+        if s1 == nil then
+          HaltWrappers.nilCheckHalt("first argument to memcmp is nil");
+        if s2 == nil then
+          HaltWrappers.nilCheckHalt("second argument to memcmp is nil");
+      }
       pragma "fn synchronization free"
       extern proc memcmp(const s1: c_ptr(void), const s2: c_ptr(void), n: c_size_t): c_int;
       return memcmp(s1, s2, n).safeCast(int);
@@ -1126,6 +1147,11 @@ module OS {
     */
     pragma "fn synchronization free"
     inline proc memset(s:c_ptr(void), c:integral, n: c_size_t) {
+      if chpl_checkNilDereferences {
+        import HaltWrappers;
+        if s == nil then
+          HaltWrappers.nilCheckHalt("first argument to memset is nil");
+      }
       pragma "fn synchronization free"
       extern proc memset(s: c_ptr(void), c: c_int, n: c_size_t): c_ptr(void);
       memset(s, c.safeCast(c_int), n);
@@ -1141,11 +1167,10 @@ module OS {
    value of a :type:`CTypes.c_int` or another :type:`errorCode`. In addition,
    :type:`errorCode` can be checked directly in an if statement like so:
 
-   .. code-block:: chapel
-
-     var err: errorCode;
-     if err then writeln("err contains an error, ie err != 0");
-     else writeln("err does not contain an error; err == 0");
+   .. literalinclude:: ../../../../test/library/standard/OS/doc-examples/example_errorCode.chpl
+    :language: chapel
+    :start-after: START_EXAMPLE
+    :end-before: STOP_EXAMPLE
 
    The default intent for a formal of type :type:`errorCode` is `const in`.
 
@@ -1251,11 +1276,9 @@ module OS {
     */
     override proc message() {
       var strerror_err: c_int = 0;
-      var errstr              = sys_strerror_syserr_str(err, strerror_err);
+      var errstr = sys_strerror_syserr_str(err, strerror_err);
       var err_msg: string;
-      try! {
-        err_msg = string.createAdoptingBuffer(errstr);
-      }
+      err_msg = try! string.createAdoptingBuffer(errstr);
 
       if !details.isEmpty() then
         err_msg += " (" + details + ")";
@@ -1277,9 +1300,7 @@ module OS {
     var strerror_err: c_int = 0;
     var errstr = sys_strerror_syserr_str(err, strerror_err);
     var err_msg: string;
-    try! {
-      err_msg = string.createAdoptingBuffer(errstr);
-    }
+    err_msg = try! string.createAdoptingBuffer(errstr);
 
     // return appropriate error
     select err {
@@ -1727,8 +1748,7 @@ module OS {
   pragma "insert line file info"
   pragma "always propagate line file info"
   @chpldoc.nodoc
-  proc ioerror(error:errorCode, msg:string, path:string, offset:int(64)) throws
-  {
+  proc ioerror(error:errorCode, msg:string, path:string, offset:int(64)) throws {
     if error {
       const quotedpath = quote_string(path, path.numBytes:c_ssize_t);
       var   details    = msg + " with path " + quotedpath +
@@ -1740,8 +1760,7 @@ module OS {
   pragma "insert line file info"
   pragma "always propagate line file info"
   @chpldoc.nodoc // documented in the offset version
-  proc ioerror(error:errorCode, msg:string, path:string) throws
-  {
+  proc ioerror(error:errorCode, msg:string, path:string) throws {
     if error {
       const quotedpath = quote_string(path, path.numBytes:c_ssize_t);
       var   details    = msg + " with path " + quotedpath;
@@ -1752,8 +1771,7 @@ module OS {
   pragma "insert line file info"
   pragma "always propagate line file info"
   @chpldoc.nodoc // documented in the offset version
-  proc ioerror(error:errorCode, msg:string) throws
-  {
+  proc ioerror(error:errorCode, msg:string) throws {
     if error then throw createSystemOrChplError(error, msg);
   }
 
@@ -1770,8 +1788,7 @@ module OS {
   pragma "insert line file info"
   pragma "always propagate line file info"
   @chpldoc.nodoc
-  proc ioerror(errstr:string, msg:string, path:string, offset:int(64)) throws
-  {
+  proc ioerror(errstr:string, msg:string, path:string, offset:int(64)) throws {
     const quotedpath = quote_string(path, path.numBytes:c_ssize_t);
     const details    = errstr + " " + msg + " with path " + quotedpath +
                        " offset " + offset:string;
@@ -1783,13 +1800,10 @@ module OS {
      :arg error: the error code
      :returns: a string describing the error
    */
-  proc errorToString(error:errorCode):string
-  {
+  proc errorToString(error:errorCode): string {
     var strerror_err:c_int = 0;
     const errstr = sys_strerror_syserr_str(error, strerror_err);
-    try! {
-      return string.createAdoptingBuffer(errstr);
-    }
+    return try! string.createAdoptingBuffer(errstr);
   }
 
 }

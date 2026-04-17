@@ -11,11 +11,11 @@ series systems.
 .. contents::
 
 
---------------------------------------------------------
-Getting Started with Chapel on HPE Cray EX or XC Systems
---------------------------------------------------------
+--------------------------------------------------
+Getting Started with Chapel on HPE Cray EX Systems
+--------------------------------------------------
 
-Chapel is available as a module for HPE Cray EX and XC systems.  When
+Chapel is available as a module for HPE Cray EX systems.  When
 it is installed on your system, you do not need to build Chapel from
 the source release (though you can).  Using the module systems on such
 platforms, you can use Chapel with the default settings and confirm it
@@ -45,7 +45,7 @@ is correctly installed, as follows:
      ./hello6-taskpar-dist -nl 4
 
 
-This should be all that is necessary to use Chapel on an HPE Cray EX or XC
+This should be all that is necessary to use Chapel on an HPE Cray EX
 system.  If the installation setup by your system administrator
 deviates from the default settings, or you are interested in other
 configuration options, see `Using Chapel on an HPE Cray System`_ below.  If
@@ -60,11 +60,11 @@ For information on obtaining and installing the Chapel module please
 contact your system administrator.
 
 
--------------------------------------------------------------
-Getting Started with Chapel on HPE Apollo and Cray CS Systems
--------------------------------------------------------------
+-------------------------------------------------------------------
+Getting Started with Chapel on HPE Apollo and Cray CS or XC Systems
+-------------------------------------------------------------------
 
-On HPE Apollo and Cray CS systems, Chapel is not currently available
+On HPE Apollo and Cray CS or XC systems, Chapel is not currently available
 as a module due to the wide diversity of configurations that these
 systems support.  For this reason, Chapel must be built from source on
 these systems using the `Building Chapel for an HPE Cray System from
@@ -85,7 +85,7 @@ Building Chapel for an HPE Cray System from Source
       export CHPL_HOST_PLATFORM=hpe-cray-ex
 
    The following table lists the supported systems and strings.  Note
-   that on HPE Cray EX and XC systems, these values should typically
+   that on HPE Cray EX systems, these values should typically
    be inferred automatically and not need to be set manually.  That said,
    there is also no downside to setting them manually.  As with most
    `CHPL_*` environment variables, the current set and inferred values
@@ -151,7 +151,7 @@ Building Chapel for an HPE Cray System from Source
 3) Select the target compiler that Chapel should use when compiling
    code for the compute node:
 
-   On an HPE Apollo or Cray CS series system, set the
+   On an HPE Apollo or Cray CS or XC series system, set the
    ``CHPL_TARGET_COMPILER`` environment variable to indicate which
    compiler to use (and make sure that the compiler is in your path).
 
@@ -164,7 +164,7 @@ Building Chapel for an HPE Cray System from Source
       ...the Intel compiler (icc)  intel
       ===========================  ==============================
 
-   On an HPE Cray EX or Cray XC system, when using the C back-end,
+   On an HPE Cray EX system, when using the C back-end,
    ensure that you have one of the following Programming Environment
    modules loaded to specify your target compiler::
 
@@ -187,6 +187,8 @@ Building Chapel for an HPE Cray System from Source
    order to create additional installations.  Thereafter, you can switch
    between any of these configurations without rebuilding.
 
+
+.. _readme-hpe-cray-ex:
 
 ----------------------------------
 Using Chapel on an HPE Cray System
@@ -361,252 +363,29 @@ Chapel program will be opened relative to the compute node's file
 system rather than the login node's.
 
 
-----------------------------------------------------
+----------------------------------------
 Special Notes for Cray XC Series Systems
-----------------------------------------------------
+----------------------------------------
 
 .. _ugni-comm-on-cray:
 
 Native ugni Communication Layer
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The :ref:`readme-multilocale` page describes the runtime communication
-layer implementations that can be used by Chapel programs.  In addition
-to the standard ones, Chapel supports a Cray-specific ``ugni``
-communication layer.  The ugni communication layer interacts with
-the system's network interface very closely through a lightweight
-interface called uGNI (user Generic Network Interface).  On Cray XC
-systems the ugni communication layer is the default.
+The native ugni communication layer is the default on Cray XC systems. See
+:ref:`readme-ugni` for more information on using the ugni communication layer.
 
 
-Using the ugni Communications Layer
-___________________________________
-
-To use ugni communications:
-
-1) Leave your ``CHPL_COMM`` environment variable unset or set it to
-   ``ugni``:
-
-   .. code-block:: sh
-
-      export CHPL_COMM=ugni
-
-   This specifies that you wish to use the Cray-specific communication
-   layer.
-
-
-2) *(Optional)* Load an appropriate ``craype-hugepages`` module.  For example::
-
-     module load craype-hugepages16M
-
-   The ugni communication layer can be used with or without so-called
-   *hugepages*.  Performance for remote variable references is much
-   better when hugepages are used.  The only downside of using hugepages
-   is that the tasking layer may not be able to detect task stack
-   overflows by means of guard pages (see below).
-
-   To use hugepages, you must have a ``craype-hugepages`` module loaded
-   both when building your program and when running it.  There are
-   several hugepage modules, with suffixes indicating the page size they
-   support.  For example, ``craype-hugepages16M`` supports 16 MiB
-   hugepages.  It does not matter which ``craype-hugepages`` module you
-   have loaded when you build your program.  Any of them will do.  Which
-   one you have loaded when you run a program does matter, however.  For
-   general use, the Chapel group recommends the ``craype-hugepages16M``
-   module.  You can read on for more information about hugepage modules
-   if you would like, but the recommended ``craype-hugepages16M`` module
-   will probably give you satisfactory results.
-
-   The Cray network interface chips (NICs) can only address memory that
-   has been registered with them. In practical terms, the Aries(TM) NIC
-   on Cray XC systems is not limited as to how much memory it can
-   register.  However, it does have an on-board cache of 512 registered
-   page table entries, and registering more than this can cause reduced
-   performance if the program's memory reference pattern causes refills
-   in this cache.  We have seen up to a 15% reduction from typical
-   nightly XC-16 performance in an ra-rmo run using hugepages small
-   enough that every reference should have missed in this cache.
-   Covering an entire 128 GiB XC compute node with only 512 hugepages
-   will require at least the ``craype-hugepages256M`` module's 256 MiB
-   hugepages.
-
-   Offsetting this, using larger hugepages may reduce performance because
-   it can result in poorer NUMA affinity.  With the ugni communication
-   layer, arrays larger than 2 hugepages are allocated separately from the
-   heap, which improves NUMA affinity.  An obvious side effect of using
-   larger hugepages is that an array has to be larger to qualify.  Thus,
-   achieving the best performance for any given program may require
-   striking a balance between using larger hugepages to reduce NIC page
-   table cache refills and using smaller ones to improve NUMA locality.
-
-   Note that when hugepages are used with the ugni comm layer, tasking
-   layers cannot use guard pages for stack overflow detection.  Qthreads
-   tasking cannot detect stack overflow except by means of guard pages,
-   so if ugni communications is combined with qthreads tasking and a
-   hugepage module is loaded, stack overflow detection is unavailable.
-
-
-Network Atomics
-_______________
-
-The Aries networks on Cray XC series systems support remote atomic
-memory operations (AMOs).  When the ``CHPL_NETWORK_ATOMICS`` environment
-variable is set to ``ugni``, the following operations on remote atomics
-are done using the network::
-
-    32- and 64-bit signed and unsigned integer types:
-    32- and 64-bit real types:
-      read()
-      write()
-      exchange()
-      compareAndSwap()
-      add(), fetchAdd()
-      sub(), fetchSub()
-
-    32- and 64-bit signed and unsigned integer types:
-      or(),  fetchOr()
-      and(), fetchAnd()
-      xor(), fetchXor()
-
-All of the operations shown above are done natively by the network
-hardware except 64-bit real add, which is disabled in hardware and thus
-done using ``on`` statements.
-
-
-ugni Communication Layer and the Heap
-_____________________________________
-
-The "heap" is an area of memory used for dynamic allocation of
-everything from user data to internal management data structures.
-When running on Cray XC systems using the default configuration
-with the ugni comm layer and a ``craype-hugepages`` module loaded, the
-heap is used for all dynamic allocations except data space for arrays
-larger than 2 hugepages.  (See `Using the ugni Communications Layer`_,
-just above, for more about hugepages.)  It is normally extended
-dynamically, as needed.  But if desired, the heap can instead be created
-at a specified fixed size at the beginning of execution.  In some cases
-this will reduce certain internal comm layer overheads and marginally
-improve performance.
-
-The disadvantage of a fixed heap is that it usually produces worse NUMA
-affinity, it limits available heap memory to the specified fixed size,
-and it limits memory for arrays to whatever remains after the fixed-size
-heap is created.  If either of the latter are less than what a program
-needs, it will terminate prematurely with an "Out of memory" message.
-
-To specify a fixed heap, set the ``CHPL_RT_MAX_HEAP_SIZE`` environment
-variable to indicate its size.  For the value of this variable you can
-use any of the following formats, where *num* is a positive integer
-number:
-
-    ======= ==========================================
-    Format  Resulting Heap Size
-    ======= ==========================================
-    num     num bytes
-    num[kK] num * 2**10 bytes
-    num[mM] num * 2**20 bytes
-    num[gG] num * 2**30 bytes
-    num%    percentage of compute node physical memory
-    ======= ==========================================
-
-Any of the following would specify an approximately 1 GiB heap on a
-128-GiB compute node, for example:
-
-  .. code-block:: sh
-
-    export CHPL_RT_MAX_HEAP_SIZE=1073741824
-    export CHPL_RT_MAX_HEAP_SIZE=1048576k
-    export CHPL_RT_MAX_HEAP_SIZE=1024m
-    export CHPL_RT_MAX_HEAP_SIZE=1g
-    export CHPL_RT_MAX_HEAP_SIZE=1% # 1.28 GiB, really
-
-Note that the resulting heap size may get rounded up to match the page
-alignment.  How much this will add, if any, depends on the hugepage size
-in any ``craype-hugepage`` module you have loaded at the time you
-execute the program.  It may also be reduced, if some resource
-limitation prevents making the heap as large as requested.
-
-
-ugni Communication Layer Registered Memory Regions
-__________________________________________________
-
-The ugni communication layer maintains information about every memory
-region it registers with Aries NIC.  Roughly speaking there are a few
-memory regions for each tasking layer thread, plus one for each array
-larger than 2 hugepages allocated and registered separately from the
-heap.  By default the comm layer can handle up to 16k (2**14) total
-memory regions, which is plenty under normal circumstances.  In the
-event a program needs more than this, a message like the following will
-be printed:
-
-  .. code-block:: sh
-
-    warning: no more registered memory region table entries (max is 16384).
-             Change using CHPL_RT_COMM_UGNI_MAX_MEM_REGIONS.
-
-To provide for more registered regions, set the
-``CHPL_RT_COMM_UGNI_MAX_MEM_REGIONS`` environment variable to a number
-indicating how many you want to allow.  For example:
-
-  .. code-block:: sh
-
-    export CHPL_RT_COMM_UGNI_MAX_MEM_REGIONS=30000
-
-Note that there are certain comm layer overheads that are proportional to
-the number of registered memory regions, so allowing a very high number of
-them may lead to reduced performance.
-
-
-ugni Hugepage-related Warnings
-______________________________
-
-   Communication performance with ugni is so much better when hugepages
-   are used that if you do not use them, the runtime will print the
-   following warning when a multilocale program starts::
-
-      warning: without hugepages, communication performance will suffer
-
-   If you definitely do not want to use hugepages you can quiet this
-   warning by giving the ``--quiet`` or ``-q`` option when you run the
-   executable.  Otherwise, load a hugepage module as described above in
-   `Using the ugni Communications Layer`_ before running.
-
-   When you are using hugepages and do not have a fixed heap (that is,
-   the ``CHPL_RT_MAX_HEAP_SIZE`` environment variable is not set), the
-   Chapel runtime expects certain hugepage-related environment variables
-   to have been set by the Chapel launcher.  If you do not use a Chapel
-   launcher you have to provide these settings yourself.  Not doing so
-   will result in one or both of the following messages::
-
-      warning: dynamic heap on hugepages needs HUGETLB_NO_RESERVE set to something
-      warning: dynamic heap on hugepages needs CHPL_JE_MALLOC_CONF set properly
-
-   To quiet these warnings, use the following settings:
-
-    .. code-block:: sh
-
-      export HUGETLB_NO_RESERVE=yes
-      export CHPL_JE_MALLOC_CONF=purge:decay,lg_chunk:log2HPS
-
-   where *log2HPS* is the base-2 log of the hugepage size.  For example,
-   with 16 MiB hugepages you would use:
-
-    .. code-block:: sh
-
-      export CHPL_JE_MALLOC_CONF=purge:decay,lg_chunk:24
-
-
-gasnet Communication Layer
+GASNet Communication Layer
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The GASNet-based communication layer discussed in the
-:ref:`readme-multilocale` page can be used on all Cray systems.  For
-best performance it should be used with native substrates and fixed
-segments, though even then its performance will rarely match that of the
-ugni communication layer.  The relevant configurations are::
+:ref:`readme-gasnet` page can be used on Cray XC systems, using the 'ofi'
+or 'mpi' substrates. This is not well supported or tested. The
+relevant configurations are:
 
   CHPL_COMM=gasnet
-    CHPL_COMM_SUBSTRATE=aries (for XC)
+    CHPL_COMM_SUBSTRATE=ofi or mpi
     CHPL_GASNET_SEGMENT=fast or large
 
 In these configurations the heap is created with a fixed size at the
@@ -615,11 +394,11 @@ if it doesn't a different size can be specified, as discussed in the
 following section.
 
 
-gasnet Communication Layer and the Heap
+GASNet Communication Layer and the Heap
 _______________________________________
 
 In contrast to the dynamic heap extension available in the ugni comm
-layer, when the gasnet comm layer is used with a native substrate for
+layer, when the GASNet comm layer is used with a native substrate for
 higher network performance, the runtime must know up front the maximum
 size the heap will grow to during execution.
 
@@ -630,12 +409,10 @@ for demands from other (system) programs running there.  Advanced users
 may want to make the heap smaller than the default.  Programs start more
 quickly with a smaller heap, and in the unfortunate event that you need
 to produce core files, those will be written more quickly if the heap is
-smaller.  Specify the heap size using the ``CHPL_RT_MAX_HEAP_SIZE``
-environment variable, as discussed above in `ugni Communication Layer
-and the Heap`_.  But be aware that just as in the ``CHPL_COMM=ugni``
-case, if you reduce the heap size to less than the amount your program
-actually needs and then run it, it will terminate prematurely due to not
-having enough memory.
+smaller.  Specify the heap size using the :ref:`CHPL_RT_MAX_HEAP_SIZE`
+environment variable.  But be aware that if you reduce the heap size
+to less than the amount your program actually needs and then run it,
+it will terminate prematurely due to not having enough memory.
 
 Note that for ``CHPL_COMM=gasnet``, ``CHPL_RT_MAX_HEAP_SIZE`` is
 synonymous with ``GASNET_MAX_SEGSIZE``, and the former overrides the
@@ -671,21 +448,106 @@ Known Constraints and Bugs
   variable affects all MPI programs, so remember to unset it after
   running your Chapel program.
 
-* The amount of memory available to a Chapel program running over
-  GASNet with the aries conduit is allocated at program start up.  The
-  default memory segment size may be too high on some platforms,
-  resulting in an internal Chapel error or a GASNet initialization
-  error such as::
 
-     node 1 log gasnetc_init_segment() at $CHPL_HOME/third-party/gasnet/gasnet-src/aries-conduit/gasnet_aries.c:<line#>: MemRegister segment fault 8 at  0x2aab6ae00000 60000000, code GNI_RC_ERROR_RESOURCE
+---------------
+Troubleshooting
+---------------
 
-  If your Chapel program exits with such an error, try setting the
-  environment variable ``CHPL_RT_MAX_HEAP_SIZE`` or ``GASNET_MAX_SEGSIZE`` to a
-  lower value than the default (say 1G) and re-running your program.
-  For more information, refer to the discussion of ``CHPL_RT_MAX_HEAP_SIZE``
-  above and/or the discussion of ``GASNET_MAX_SEGSIZE`` here::
+Each of the following subsection headers is an error message that you
+may receive in practice, followed by steps that can be taken to work
+around it.
 
-     $CHPL_HOME/third-party/gasnet/gasnet-src/README
+
+srun: error: Unable to allocate resources: Memory required by task is not available
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+See this :ref:`Slurm troubleshooting section <mem-not-avail>` for help
+with this error.
+
+
+.. _ex-register-too-much-mem:
+
+OFI error: fi_mr_reg(ofi_domain, ...): Cannot allocate memory
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This error suggests that the Chapel runtime is being too aggressive in
+registering memory with the network, or that something else is going
+wrong in the memory registration.  The typical workaround is to cap
+the amount of memory registered by using :ref:`CHPL_RT_MAX_HEAP_SIZE`,
+for example ``export CHPL_RT_MAX_HEAP_SIZE=50%`` will limit it to 50%
+of the available memory and is generally sufficient to get programs
+running.
+
+Note that changing this environment variable, as with any
+``CHPL_RT_*`` variable, does not require rebuilding Chapel or
+recompiling your program.
+
+
+Detected 1 oom_kill event in StepId=.... Some of the step tasks have been OOM Killed
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This error is also a sign that the Chapel runtime is being too aggressive in
+registering memory, or that something else is going wrong in the memory
+registration.
+
+See :ref:`the previous section <ex-register-too-much-mem>` for steps to work
+around this error.
+
+OFI error: fi_enable(tcip->txCtx): Invalid resource domain
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+We have seen this error message when running on compute nodes where
+the number of cores sharing a single NIC is greater than ~255.  For
+example, if running on a system where each compute node has four
+80-core processors, when running on more than one node (e.g., -nl 8),
+by default Chapel would attempt to create 320 endpoints per locale,
+all sharing a single NIC, and therefore hit this error.
+
+Two ways to resolve this error are:
+
+1) If the compute node has multiple NICs, run using :ref:`co-locales
+   <readme-colocale>` such that each gets its own NIC and uses a
+   fraction of the cores.  For example, if the node above had 4 NICs,
+   switching the command line from ``-nl 8`` to ``-nl 8x4`` would run
+   four co-locales per node such that each would get its own NIC and
+   create 80 endpoints on it, well below the limit.  Moreover, running
+   with co-locales typically has other benefits in terms of NUMA
+   affinity benefits.
+
+2) The other alternative is to cap the maximum number of endpoints
+   created by setting the environment variable
+   ``CHPL_RT_COMM_OFI_EP_CNT``.  For example.  ``export
+   CHPL_RT_COMM_OFI_EP_CNT=254``.  The impact of this approach is that
+   each core will not get its own endpoint, which could impact
+   performance.
+
+
+warning: The node has more locales (5) than co-locales (2)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In some cases, this warning can be indicative of an erroneous
+condition in which the Chapel launcher is not correctly comprehending
+the compute node structure.  This can happen on systems with multiple
+partitions if no partition is explicitly specified using
+``CHPL_LAUNCHER_PARTITION`` or ``--partition``.  The typical fix is to
+use one of these two mechanisms to specify the partition even if it is
+the default partition.
+
+Note that changing the ``CHPL_LAUNCHER_PARTITION`` environment
+variable, as with any ``CHPL_LAUNCHER_*`` variable, does not require
+rebuilding Chapel or recompiling your program.
+
+
+OFI error: fi_domain(ofi_fabric, ofi_info, ...): Function not implemented
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+We encounter this error on some systems when trying to execute on a
+single node using co-locales (e.g., `-nl 1x4`).
+
+When this happens, our experience is that ``export
+SLURM_NETWORK=single_node_vni`` can be set as a workaround with no
+need to recompile.
+
 
 .. |reg|    unicode:: U+000AE .. REGISTERED SIGN
 .. |trade|  unicode:: U+02122 .. TRADE MARK SIGN

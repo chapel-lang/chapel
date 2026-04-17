@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -281,6 +281,26 @@ returnInfoCast(CallExpr* call) {
 }
 
 static QualifiedType
+returnInfoForProcTypeConverter(CallExpr* call) {
+  Type* t = call->get(1)->typeInfo();
+  int64_t mask = 0;
+
+  // Get the second arg as a 'param int' if it exists.
+  auto arg2 = call->numActuals() >= 2 ? call->get(2) : nullptr;
+  bool got = get_int(arg2, &mask);
+  INT_ASSERT(got || !arg2);
+
+  Type* typeToUse = dtUnknown;
+  if (auto ft1 = toFunctionType(t)) {
+    bool maskConflicts = false;
+    typeToUse = ft1->getWithMask(mask, maskConflicts);
+    std::ignore = maskConflicts;
+  }
+
+  return QualifiedType(typeToUse, QUAL_VAL);
+}
+
+static QualifiedType
 returnInfoVal(CallExpr* call) {
   AggregateType* ct = toAggregateType(call->get(1)->typeInfo());
 
@@ -327,13 +347,13 @@ static QualifiedType
 returnInfoNumericUp(CallExpr* call) {
   Type* t1 = call->get(1)->typeInfo()->getValType();
   Type* t2 = call->get(2)->typeInfo()->getValType();
-  if (is_int_type(t1) && is_real_type(t2))
+  if (isIntType(t1) && isRealType(t2))
     return QualifiedType(t2, QUAL_VAL);
-  if (is_real_type(t1) && is_int_type(t2))
+  if (isRealType(t1) && isIntType(t2))
     return QualifiedType(t1, QUAL_VAL);
-  if (is_int_type(t1) && is_bool_type(t2))
+  if (isIntType(t1) && isBoolType(t2))
     return QualifiedType(t1, QUAL_VAL);
-  if (is_bool_type(t1) && is_int_type(t2))
+  if (isBoolType(t1) && isIntType(t2))
     return QualifiedType(t2, QUAL_VAL);
   return QualifiedType(t1, QUAL_VAL);
 }
@@ -358,7 +378,10 @@ returnInfoArrayIndexValue(CallExpr* call) {
 static QualifiedType
 returnInfoArrayIndex(CallExpr* call) {
   QualifiedType tmp = returnInfoArrayIndexValue(call);
-  return QualifiedType(tmp.type()->refType, QUAL_REF);
+  auto refType = tmp.type()->refType;
+  if (!refType)
+    INT_FATAL(call, "invalid attempt to get reference type");
+  return QualifiedType(refType, QUAL_REF);
 }
 
 static QualifiedType
@@ -407,15 +430,19 @@ returnInfoGetTupleMember(CallExpr* call) {
 static QualifiedType
 returnInfoGetTupleMemberRef(CallExpr* call) {
   Type* type = returnInfoGetTupleMember(call).type();
-  if (type->refType)
-    type = type->refType;
+
+  if (!type->refType) makeRefType(type);
+  INT_ASSERT(type->refType);
+  type = type->refType;
   Qualifier q = QUAL_REF;
+
   if (call->get(1)->isWideRef()) {
     q = QUAL_WIDE_REF;
-    if (Type* t = wideRefMap.get(type)) {
-      type = t;
-    }
+    Type* wideRefT = type->getWideRefType();
+    INT_ASSERT(wideRefT);
+    type = wideRefT;
   }
+
   return QualifiedType(type, q);
 }
 
@@ -859,6 +886,8 @@ initPrimitive() {
   prim_def(PRIM_AND_ASSIGN, "&=", returnInfoVoid, true);
   prim_def(PRIM_OR_ASSIGN, "|=", returnInfoVoid, true);
   prim_def(PRIM_XOR_ASSIGN, "^=", returnInfoVoid, true);
+  prim_def(PRIM_LOGICALAND_ASSIGN, "&&=", returnInfoVoid, true);
+  prim_def(PRIM_LOGICALOR_ASSIGN, "||=", returnInfoVoid, true);
   prim_def(PRIM_REDUCE_ASSIGN, "reduce=", returnInfoVoid, true);
 
   prim_def(PRIM_MIN, "_min", returnInfoFirst);
@@ -1026,7 +1055,7 @@ initPrimitive() {
   prim_def(PRIM_IS_PROPER_SUBTYPE, "is_proper_subtype", returnInfoBool);
   // accepts two arguments: A class/record type expression and a param string for the field name
   prim_def(PRIM_IS_BOUND, "is bound", returnInfoBool);
-  // PRIM_IS_COERCIBLE arguments are (source type, target type)
+  // PRIM_IS_COERCIBLE arguments are (target type, source type)
   prim_def(PRIM_IS_COERCIBLE, "is_coercible", returnInfoBool);
   // PRIM_CAST arguments are (type to cast to, value to cast)
   prim_def(PRIM_CAST, "cast", returnInfoCast, false, true);
@@ -1202,7 +1231,8 @@ initPrimitive() {
   prim_def(PRIM_STRING_COPY, "string_copy", returnInfoStringC, false, true);
   // Cast the object argument to void*.
   prim_def(PRIM_CAST_TO_VOID_STAR, "cast_to_void_star", returnInfoCVoidPtr, true, false);
-  // Cast to the second argument at codegen time.
+  // Cast to the second argument. The conversion is done at codegen time.
+  // In most cases the cast is effectively a bitcast/'reinterpret_cast'.
   prim_def(PRIM_CAST_TO_TYPE, "cast_to_type", returnInfoSecondActualTypeSymbol, true, false);
   prim_def(PRIM_STRING_SELECT, "string_select", returnInfoStringC, true, true);
   prim_def(PRIM_SLEEP, "sleep", returnInfoVoid, true);
@@ -1249,7 +1279,8 @@ initPrimitive() {
   prim_def(PRIM_IS_NILABLE_CLASS_TYPE, "is nilable class type", returnInfoBool);
   prim_def(PRIM_IS_NON_NILABLE_CLASS_TYPE, "is non nilable class type", returnInfoBool);
   prim_def(PRIM_IS_RECORD_TYPE, "is record type", returnInfoBool);
-  prim_def(PRIM_IS_FCF_TYPE, "is fcf type", returnInfoBool);
+  prim_def(PRIM_IS_PROC_TYPE, "is proc type", returnInfoBool);
+  prim_def(PRIM_TO_PROC_TYPE, "to proc type", returnInfoForProcTypeConverter);
   prim_def(PRIM_IS_UNION_TYPE, "is union type", returnInfoBool);
   prim_def(PRIM_IS_EXTERN_UNION_TYPE, "is extern union type", returnInfoBool);
   prim_def(PRIM_IS_ATOMIC_TYPE, "is atomic type", returnInfoBool);
@@ -1386,7 +1417,7 @@ initPrimitive() {
   prim_def(PRIM_REAL32_AS_UINT32, "real32 as uint32", returnInfoUInt32);
   prim_def(PRIM_REAL64_AS_UINT64, "real64 as uint64", returnInfoUInt64);
 
-  prim_def(PRIM_BREAKPOINT, "breakpoint", returnInfoVoid, true);
+  prim_def(PRIM_DEBUG_TRAP, "debug trap", returnInfoVoid, true);
 
   // Expects a single argument, which will be passed by pointer to an underlying
   // runtime function, so that the memory can be hashed.

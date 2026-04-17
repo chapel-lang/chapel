@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -29,7 +29,6 @@
 #include "chpl/uast/chpl-syntax-printer.h"
 
 #include <vector>
-#include <string.h>
 
 namespace {
 
@@ -142,7 +141,6 @@ struct Visitor {
   void checkOverrideNonMethod(const Function* node);
   void checkFormalsForTypeOrParamProcs(const Function* node);
   void checkNoReceiverClauseOnPrimaryMethod(const Function* node);
-  void checkLambdaReturnIntent(const Function* node);
   void checkConstReturnIntent(const Function* node);
   void checkProcTypeFormalsAreAnnotated(const FunctionSignature* node);
   void checkProcDefFormalsAreNamed(const Function* node);
@@ -155,7 +153,6 @@ struct Visitor {
   void checkUserModuleHasPragma(const AttributeGroup* node);
   void checkParenfulDeprecation(const AttributeGroup* node);
   void checkExternBlockAtModuleScope(const ExternBlock* node);
-  void checkLambdaDeprecated(const Function* node);
   void checkAllowedImplementsTypeIdent(const Implements* impl, const Identifier* node);
   void checkOtherwiseAfterWhens(const Select* sel);
   void checkUnstableSerial(const Serial* ser);
@@ -169,6 +166,7 @@ struct Visitor {
   void checkFunctionReturnsYields(const Function* node);
   void checkForwardingInNonRecordOrClass(const ForwardingDecl* node);
   void checkMainFunctions(const Function* node);
+  void checkUnionElements(const Union* node);
 
   /*
   TODO
@@ -186,10 +184,12 @@ struct Visitor {
   void checkRemoteVar(const Decl* node);
 
   void checkTupleDeclFormalIntent(const TupleDecl* node);
+  void checkTupleDeclAsField(const TupleDecl* node);
 
   // Warnings.
   void warnUnstableUnions(const Union* node);
   void warnUnstableForeachLoops(const Foreach* node);
+  void warnUnstableForwardingDecls(const ForwardingDecl* node);
   void warnUnstableSymbolNames(const NamedDecl* node);
 
   // Visitors.
@@ -444,6 +444,7 @@ void Visitor::check(const AstNode* node) {
   }
   if (auto tup = node->toTupleDecl()) {
     checkTupleDeclFormalIntent(tup);
+    checkTupleDeclAsField(tup);
   }
 
   // Now run checks via visitor and recurse to children.
@@ -546,6 +547,9 @@ void Visitor::checkDomainTypeQueryUsage(const TypeQuery* node) {
   // If we are descended from the formal's type expression, OK!
   if (auto foundFormal = searchParents(asttags::Formal, &lastInWalk)) {
     auto formal = foundFormal->toFormal();
+    if (lastInWalk == formal->typeExpression()) errorBadQueryLoc = false;
+  } else if (auto foundFormal = searchParents(asttags::VarArgFormal, &lastInWalk)) {
+    auto formal = foundFormal->toVarArgFormal();
     if (lastInWalk == formal->typeExpression()) errorBadQueryLoc = false;
   }
 
@@ -1000,6 +1004,10 @@ void Visitor::checkOperatorNameValidity(const Function* node) {
     if (!isOpName(node->name())) {
       error(node, "'%s' is not a legal operator name.", node->name().c_str());
     }
+    if ((node->name() == USTR("&&=") || node->name() == USTR("||=")) &&
+        isUserCode()) {
+      error(node, "'%s' operator may not be overloaded.", node->name().c_str());
+    }
   } else {
     // functions with operator names must be declared as operators
     if (isOpName(node->name())) {
@@ -1114,36 +1122,6 @@ void Visitor::checkNoReceiverClauseOnPrimaryMethod(const Function* node) {
               receiverTypeStr.c_str());
       }
     }
-  }
-}
-
-void Visitor::checkLambdaDeprecated(const Function* node) {
-  if (node->kind() != Function::LAMBDA) return;
-  warn(node, "'lambda' syntax is deprecated, please construct anonymous "
-             "procedures using the 'proc' keyword instead");
-}
-
-void Visitor::checkLambdaReturnIntent(const Function* node) {
-  if (node->kind() != Function::LAMBDA) return;
-
-  const char* disallowedReturnType = NULL;
-  switch (node->returnIntent()) {
-    case Function::CONST_REF:
-    case Function::REF:
-      disallowedReturnType = "[const] ref";
-      break;
-    case Function::PARAM:
-      disallowedReturnType = "param";
-      break;
-    case Function::TYPE:
-      disallowedReturnType = "type";
-      break;
-    default:
-      break;
-  }
-  if (disallowedReturnType) {
-    error(node, "'%s' return intent is not allowed in lambdas.",
-          disallowedReturnType);
   }
 }
 
@@ -1490,10 +1468,6 @@ void Visitor::checkReservedSymbolName(const NamedDecl* node) {
   } else if (isNameReservedType(name)) {
     error(node, "attempt to redefine reserved type '%s'.", name.c_str());
   }
-
-  if(strchr(name.c_str(), '$') != nullptr) {
-    warn(node, "Using '$' in identifiers is deprecated; rename this to not use a '$'.");
-  }
 }
 
 void Visitor::checkLinkageName(const NamedDecl* node) {
@@ -1518,6 +1492,12 @@ void Visitor::checkTupleDeclFormalIntent(const TupleDecl* node) {
       node->intentOrKind() != TupleDecl::IntentOrKind::DEFAULT_INTENT &&
       node->intentOrKind() != TupleDecl::IntentOrKind::VAR) {
     error(node, "intents on tuple-grouped arguments are not yet supported");
+  }
+}
+
+void Visitor::checkTupleDeclAsField(const TupleDecl* node) {
+  if (parent(0) && parent(0)->isAggregateDecl()) {
+    error(node, "de-tupling declarations are not currently supported as fields");
   }
 }
 
@@ -1581,6 +1561,12 @@ void Visitor::warnUnstableForeachLoops(const Foreach* node) {
   if (!shouldEmitUnstableWarning(node)) return;
   warn(node, "foreach loops are currently unstable and are expected to change "
              "in ways that may break some of their current uses.");
+}
+
+void Visitor::warnUnstableForwardingDecls(const ForwardingDecl* node) {
+  if (!shouldEmitUnstableWarning(node)) return;
+  warn(node, "forwarding is currently unstable and may change "
+             "in ways that will break some of its current uses.");
 }
 
 void Visitor::warnUnstableSymbolNames(const NamedDecl* node) {
@@ -1672,6 +1658,7 @@ void Visitor::checkAttributeNameRecognizedOrToolSpaced(const Attribute* node) {
   } else if (node->name() == USTR("deprecated") ||
              node->name() == USTR("unstable") ||
              node->name() == USTR("stable") ||
+             node->name() == USTR("edition") ||
              node->name() == USTR("functionStatic") ||
              node->name() == USTR("assertOnGpu") ||
              node->name() == USTR("gpu.assertEligible") ||
@@ -1798,8 +1785,6 @@ void Visitor::visit(const Function* node) {
   checkOverrideNonMethod(node);
   checkFormalsForTypeOrParamProcs(node);
   checkNoReceiverClauseOnPrimaryMethod(node);
-  checkLambdaDeprecated(node);
-  checkLambdaReturnIntent(node);
   checkConstReturnIntent(node);
   checkProcDefFormalsAreNamed(node);
   checkIterNames(node);
@@ -1812,6 +1797,7 @@ void Visitor::visit(const FunctionSignature* node) {
 }
 
 void Visitor::visit(const Union* node) {
+  checkUnionElements(node);
   warnUnstableUnions(node);
 }
 
@@ -1820,6 +1806,7 @@ void Visitor::visit(const Foreach* node) {
 }
 
 void Visitor::visit(const ForwardingDecl* node) {
+  warnUnstableForwardingDecls(node);
   checkForwardingInNonRecordOrClass(node);
 }
 
@@ -2102,6 +2089,20 @@ void Visitor::checkMainFunctions(const Function* fn) {
     if (fn->returnIntent() == Function::PARAM ||
         fn->returnIntent() == Function::TYPE) {
       error(fn, "'proc main' cannot return a 'type' or 'param'");
+    }
+  }
+}
+
+void Visitor::checkUnionElements(const Union* node) {
+  for (auto decl : node->decls()) {
+    if (auto var = decl->toVariable()) {
+      if (var->kind() != Variable::VAR) {
+        error(var, "union fields must be 'var'");
+      } else if (!var->typeExpression()) {
+        error(var, "union fields must have an explicit type");
+      } else if (var->initExpression()) {
+        error(var, "union fields cannot have initializers");
+      }
     }
   }
 }

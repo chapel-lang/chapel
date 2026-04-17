@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -43,7 +43,7 @@
 #include "chpl-tasks.h"
 #include "chpl-topo.h"
 #include "chpltypes.h"
-#include "error.h"
+#include "chpl-error.h"
 
 #include "comm-ofi-internal.h"
 
@@ -1185,14 +1185,16 @@ void chpl_comm_post_mem_init(void) {
 // No support for gdb for now
 //
 int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
-  return 0;
+  chpl_error("Running Chapel with CHPL_COMM=ofi and gdb is not yet supported", 0, 0);
+  return 1;
 }
 
 //
 // No support for lldb for now
 //
 int chpl_comm_run_in_lldb(int argc, char* argv[], int lldbArgnum, int* status) {
-  return 0;
+  chpl_error("Running Chapel with CHPL_COMM=ofi and lldb is not yet supported", 0, 0);
+  return 1;
 }
 
 

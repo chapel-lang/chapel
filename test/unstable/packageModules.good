@@ -13,6 +13,7 @@ packageModules.chpl:XX: warning: Curl is unstable
 packageModules.chpl:XX: warning: DistributedBag is unstable
 packageModules.chpl:XX: warning: DistributedDeque is unstable
 packageModules.chpl:XX: warning: DistributedIters is unstable
+packageModules.chpl:XX: warning: Dynamic loading support is experimental and unstable.
 packageModules.chpl:XX: warning: EpochManager is unstable
 packageModules.chpl:XX: warning: ExplicitRefCount is unstable
 packageModules.chpl:XX: warning: FFTW is unstable

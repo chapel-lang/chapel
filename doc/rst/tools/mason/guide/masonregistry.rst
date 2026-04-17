@@ -1,11 +1,9 @@
-:title: Mason Guide: *Registry*
+The Mason Registry
+==================
 
-Mason-Registry
-==============
+The default Mason registry is a GitHub repository containing a list of versioned manifest files.
 
-The default mason registry is a GitHub repository containing a list of versioned manifest files.
-
-View the official mason registry here: `Mason-Registry <https://github.com/chapel-lang/mason-registry>`_.
+View the official Mason registry here: `Mason-Registry <https://github.com/chapel-lang/mason-registry>`_.
 
 A registry will be downloaded to ``$MASON_HOME/<name>`` by ``mason update``
 for each registry named in ``$MASON_REGISTRY`` if a registry at that location
@@ -34,7 +32,7 @@ in which the version is located.
 
 Continuing the example from before, the 'registry' ``0.1.0.toml`` would include the additional source field:
 
-.. code-block:: text
+.. code-block:: toml
 
      [brick]
      authors = ["Sam Partee <Sam@Partee.com>"]
@@ -74,7 +72,7 @@ First create, commit, and tag the packages that will be in the registry:
 
 Create a local registry:
 
-.. code-block:: sh
+.. code-block:: bash
 
    # Create the local registry
    mkdir /path/to/local/registry
@@ -92,14 +90,14 @@ Alternatively, you may automatically create a local registry by running ``mason 
 Now ``MASON_REGISTRY`` can be set to point at both the local registry and the
 default registry.
 
-.. code-block:: sh
+.. code-block:: bash
 
    export MASON_REGISTRY="local-registry|/path/to/local/registry,mason-registry|https://github.com/chapel-lang/mason-registry"
 
 
 Adding a local package to the local registry
 
-.. code-block:: sh
+.. code-block:: bash
 
    mason new PackageA
    cd PackageA
@@ -110,7 +108,7 @@ Adding a local package to the local registry
 The ``MyPackage`` package is now free to include ``PackageA`` as dependency by adding
 the it as a dependency with ``mason add package@version``
 
-.. code-block:: sh
+.. code-block:: bash
 
    cd MyPackage
    mason add PackageA@0.1.0

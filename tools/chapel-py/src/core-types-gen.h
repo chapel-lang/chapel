@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2023-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -21,7 +21,6 @@
 #define CHAPEL_PY_CORE_TYPES_GEN_H
 
 #include "core-types.h"
-#include "error-tracker.h"
 #include "chpl/uast/all-uast.h"
 #include "python-types.h"
 
@@ -73,13 +72,6 @@
 
    Macros below take this a step further and compiler-generate the template
    specializations. */
-
-template <typename ObjectType>
-struct PerTypeMethods {
-  static constexpr PyMethodDef methods[] = {
-    {NULL, NULL, 0, NULL}  /* Sentinel */
-  };
-};
 
 #define CLASS_BEGIN(NAME) \
   template <> \

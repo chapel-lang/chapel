@@ -1,5 +1,5 @@
 #
-# Copyright 2023-2025 Hewlett Packard Enterprise Development LP
+# Copyright 2023-2026 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -17,19 +17,20 @@
 # limitations under the License.
 #
 
-import argparse
+import configargparse
 from collections import defaultdict
 import importlib.util
 import os
 import sys
-from typing import List, Tuple, Optional
+import glob
+import itertools
+import functools
+from typing import List, Optional
 
 import chapel
-import chapel.replace
 from driver import LintDriver
-from lsp import run_lsp
 from rules import rules
-from fixits import Fixit, Edit
+from fixits import Edit
 from rule_types import CheckResult, RuleLocation
 from config import Config
 
@@ -91,12 +92,24 @@ def apply_fixits(
     not_applied = []
     edits_to_apply = []
     for loc, node, rule, fixits in violations:
+        non_ignores = len([f for f in fixits if not f.default_ignore])
+        if non_ignores > 1 and not interactive:
+            # multiple fixits and not interactive, skip to avoid applying the
+            # wrong one
+            continue
+
+        if not interactive:
+            # Do not apply fixits that change semantics automatically.
+            # Too easy to accidentally break a program without a user knowing.
+            fixits = [f for f in fixits if not f.changes_semantics]
+
         if fixits is None or len(fixits) == 0:
             # no fixits to apply, skip
             not_applied.append((loc, node, rule, []))
             continue
+
         if not interactive:
-            # apply the first fixit
+            # apply the first fixit (this could be the default ignore)
             edits_to_apply.extend(fixits[0].edits)
             continue
 
@@ -145,12 +158,12 @@ def apply_edits(edits: List[Edit], suffix: Optional[str]):
     # Apply edits in reverse order to avoid invalidating the locations of
     # subsequent edits
     for file, edits in edits_per_file.items():
-        edits.sort(key=lambda f: f.start, reverse=True)
+        sorted_edits = sorted(edits, key=lambda f: f.start, reverse=True)
         with open(file, "r") as f:
             lines = f.readlines()
 
         prev_start = None
-        for edit in edits:
+        for edit in sorted_edits:
             line_start, char_start = edit.start
             line_end, char_end = edit.end
 
@@ -195,10 +208,33 @@ def print_rules(driver: LintDriver, show_all=True):
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        prog="chplcheck", description="A linter for the Chapel language"
+    parser = configargparse.ArgParser(
+        "chplcheck",
+        default_config_files=[
+            os.path.join(os.getcwd(), "chplcheck.cfg"),
+            os.path.join(os.getcwd(), ".chplcheck.cfg"),
+            os.path.join(os.getcwd(), "Mason.toml"),
+        ],
+        config_file_parser_class=configargparse.CompositeConfigParser(
+            [
+                configargparse.YAMLConfigFileParser,
+                configargparse.TomlConfigParser(["tool.chplcheck"]),
+            ]
+        ),
+        args_for_setting_config_path=["--config", "-c"],
+    )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"chplcheck {chapel.Context().get_compiler_version()}",
     )
     parser.add_argument("filenames", nargs="*")
+    parser.add_argument(
+        "--file",
+        action="append",
+        default=[],
+        help="Add a file to the list of 'filenames' to lint",
+    )
     Config.add_arguments(parser)
     parser.add_argument("--lsp", action="store_true", default=False)
     parser.add_argument(
@@ -232,6 +268,10 @@ def main():
         help="Apply fixits interactively, requires --fixit",
     )
     args = parser.parse_args()
+    args.filenames.extend(args.file)
+    args.filenames = itertools.chain(
+        *map(functools.partial(glob.glob, recursive=True), args.filenames)
+    )
 
     config = Config.from_args(args)
     driver = LintDriver(config)
@@ -262,6 +302,8 @@ def main():
         return 2
 
     if args.lsp:
+        from lsp import run_lsp
+
         run_lsp(driver)
         return 0
 

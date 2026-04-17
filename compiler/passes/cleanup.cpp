@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -37,15 +37,13 @@
 #include "symbol.h"
 #include "wellknown.h"
 
+#include "convert-help.h"
+
 static void cleanup(ModuleSymbol* module);
 
 static void normalizeNestedFunctionExpressions(FnSymbol* fn);
 
-static void replaceIsSubtypeWithPrimitive(CallExpr* call,
-                                          bool proper, bool coerce);
 static void addIntentRefMaybeConst(ArgSymbol* arg);
-
-static void flattenPrimaryMethod(TypeSymbol* ts, FnSymbol* fn);
 
 static void applyAtomicTypeToPrimaryMethod(TypeSymbol* ts, FnSymbol* fn);
 
@@ -91,15 +89,19 @@ static void handleNonTypedAndNonInitedVar(DefExpr* def) {
     if (needsInit) {
       if ((def->init && def->init->isNoInitExpr()) ||
           def->sym->hasFlag(FLAG_CONFIG)) {
-        USR_FATAL_CONT(def->sym,
-                       "Variable '%s' is not initialized and has no type",
-                       def->sym->name);
+        if (!def->sym->hasFlag(FLAG_RESOLVED_EARLY)) {
+          USR_FATAL_CONT(def->sym,
+                         "Variable '%s' is not initialized and has no type",
+                         def->sym->name);
+        }
       } else {
         bool skip = false;
         if (FnSymbol* inFn = toFnSymbol(def->parentSymbol)) {
           if (inFn->isNormalized()) {
             skip = true;
           }
+        } else if (def->sym->hasFlag(FLAG_RESOLVED_EARLY)) {
+          skip = true;
         }
 
         if (!skip) {
@@ -165,14 +167,6 @@ static void cleanup(ModuleSymbol* module) {
         }
       }
 
-    } else if (CallExpr* call = toCallExpr(ast)) {
-      if (call->isNamed("isSubtype"))
-        replaceIsSubtypeWithPrimitive(call, false, false);
-      else if (call->isNamed("isProperSubtype"))
-        replaceIsSubtypeWithPrimitive(call, true, false);
-      else if (call->isNamed("isCoercible"))
-        replaceIsSubtypeWithPrimitive(call, false, true);
-
     } else if (DefExpr* def = toDefExpr(ast)) {
       if (FnSymbol* fn = toFnSymbol(def->sym)) {
         // Is this function defined within a type i.e. is it a method?
@@ -214,21 +208,6 @@ static void normalizeNestedFunctionExpressions(FnSymbol* fn) {
     def->replace(new SymExpr(fn));
     stmt->insertBefore(def);
   }
-}
-
-
-static void replaceIsSubtypeWithPrimitive(CallExpr* call,
-                                          bool proper, bool coerce) {
-  Expr* sub = call->get(1);
-  Expr* sup = call->get(2);
-  sub->remove();
-  sup->remove();
-
-  PrimitiveTag prim = proper ? PRIM_IS_PROPER_SUBTYPE : PRIM_IS_SUBTYPE;
-  if (coerce)
-    prim = PRIM_IS_COERCIBLE;
-
-  call->replace(new CallExpr(prim, sup, sub));
 }
 
 
@@ -284,35 +263,6 @@ static void fixupVoidReturnFn(FnSymbol* fn) {
   }
   if (!foundReturn) {
     fn->addFlag(FLAG_VOID_NO_RETURN_VALUE);
-  }
-}
-
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-
-static void flattenPrimaryMethod(TypeSymbol* ts, FnSymbol* fn) {
-  Expr*    insertPoint = ts->defPoint;
-  DefExpr* def         = fn->defPoint;
-
-  while (isTypeSymbol(insertPoint->parentSymbol)) {
-    insertPoint = insertPoint->parentSymbol->defPoint;
-  }
-
-  insertPoint->insertBefore(def->remove());
-
-  if (fn->userString != NULL && fn->name != ts->name) {
-    if (strncmp(fn->userString, "ref ", 4) == 0) {
-      // fn->userString of "ref foo()"
-      // Move "ref " before the type name so we end up with "ref Type.foo()"
-      // instead of "Type.ref foo()"
-      fn->userString = astr("ref ", ts->name, ".", fn->userString + 4);
-
-    } else {
-      fn->userString = astr(ts->name, ".", fn->userString);
-    }
   }
 }
 

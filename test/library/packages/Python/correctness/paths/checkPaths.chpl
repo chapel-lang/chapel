@@ -21,7 +21,8 @@ proc cleanPath(in p) {
 proc getSysPathSpawn() {
   use Subprocess;
   var p = spawn(
-    [pythonToUse, "-c", "import sys; print(*sys.path, sep=',')"],
+    [pythonToUse,
+     "-c", "import sys; import site; site.main(); print(*sys.path, sep=',')"],
     stdout=pipeStyle.pipe);
 
   var output = p.stdout.readAll(string).strip();

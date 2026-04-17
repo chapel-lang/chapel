@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -629,6 +629,145 @@ static void test18() {
   assert(guard.realizeErrors() == 1);
 }
 
+// same as test18, except places the code in an internal module to ensure
+// it still works. This is a regression test; internal modules don't auto-use
+// `ChapelBase`, and thus didn't have `==` available.
+static void test18internal() {
+  // duplicated from buildStdContext
+  std::string chpl_home;
+  if (const char* chpl_home_env = getenv("CHPL_HOME")) {
+    chpl_home = chpl_home_env;
+  } else {
+    printf("CHPL_HOME must be set");
+    exit(1);
+  }
+  Context::Configuration config;
+  config.chplHome = chpl_home;
+  Context ctx(config);
+  // end duplicate
+
+  auto context = &ctx;
+  ErrorGuard guard(context);
+
+  // duplicate/inline/fuse from buildStdContext + setupModuleSearchPaths
+  // unlike those functions, configures `myint` to be an internal path
+  {
+    auto& chplHomeStr = context->chplHome();
+    CHPL_ASSERT(chplHomeStr != "");
+    auto chplEnv = context->getChplEnv();
+    CHPL_ASSERT(!chplEnv.getError() && "printchplenv error handling not implemented");
+
+    // CHPL_MODULE_PATH isn't always in the output; check if it's there.
+    auto it = chplEnv->find("CHPL_MODULE_PATH");
+    auto chplModulePath = (it != chplEnv->end()) ? it->second : "";
+    setupModuleSearchPaths(context,
+                           chplHomeStr,
+                           "",
+                           chplEnv->at("CHPL_LOCALE_MODEL"),
+                           false,
+                           chplEnv->at("CHPL_TASKS"),
+                           chplEnv->at("CHPL_COMM"),
+                           chplEnv->at("CHPL_SYS_MODULES_SUBDIR"),
+                           chplModulePath,
+                           {"myint"},  // prependInternalModulePaths
+                           {},  // prependStandardModulePaths
+                           {}, // cmdLinePaths
+                           {});
+  }
+  // end duplicate
+
+  auto path = UniqueString::get(context, "myint/input.chpl");
+  setFileText(context, path,
+      R"""(
+      // internal modules don't get auto-generated assignment operators
+      use ChapelBase only =;
+
+      enum color {
+        red, green, blue
+      }
+      var tmp = color.red;
+      var tmpStr = "red", tmpStrBytes = b"red";
+      param tmpParam = color.red;
+      var a = chpl__enumToOrder(tmp);
+      param b = chpl__enumToOrder(tmp); // error
+      param c = chpl__enumToOrder(tmpParam);
+      param d = chpl__enumToOrder(color.red);
+      param e = chpl__enumToOrder(color.green);
+      param f = chpl__enumToOrder(color.blue);
+      var g = tmp : string;
+      var h = tmp : bytes;
+      var i = tmpStr : color;
+      var j = tmpStrBytes : color;
+      )""");
+
+  auto& br = parseFileToBuilderResultAndCheck(context, path, {});
+  assert(br.numTopLevelExpressions() == 1);
+  auto mod = br.topLevelExpression(0)->toModule();
+  auto vars = resolveTypesOfVariables(context, mod,
+      {"a", "b", "c", "d", "e", "f", "g", "h", "i", "j"});
+
+  assert(vars.at("a").type());
+  assert(vars.at("a").type()->isIntType());
+  assert(!vars.at("a").param());
+  assert(vars.at("b").isErroneousType());
+  assert(vars.at("c").type());
+  assert(vars.at("c").type()->isIntType());
+  assert(vars.at("c").param());
+  assert(vars.at("c").param()->isIntParam());
+  assert(vars.at("c").param()->toIntParam()->value() == 0);
+  assert(vars.at("d").type());
+  assert(vars.at("d").type()->isIntType());
+  assert(vars.at("d").param());
+  assert(vars.at("d").param()->isIntParam());
+  assert(vars.at("d").param()->toIntParam()->value() == 0);
+  assert(vars.at("e").type());
+  assert(vars.at("e").type()->isIntType());
+  assert(vars.at("e").param());
+  assert(vars.at("e").param()->isIntParam());
+  assert(vars.at("e").param()->toIntParam()->value() == 1);
+  assert(vars.at("f").type());
+  assert(vars.at("f").type()->isIntType());
+  assert(vars.at("f").param());
+  assert(vars.at("f").param()->isIntParam());
+  assert(vars.at("f").param()->toIntParam()->value() == 2);
+  assert(vars.at("g").type());
+  assert(vars.at("g").type()->isStringType());
+  assert(vars.at("h").type());
+  assert(vars.at("h").type()->isBytesType());
+  assert(vars.at("i").type());
+  assert(vars.at("i").type()->isEnumType());
+  assert(vars.at("j").type());
+  assert(vars.at("j").type()->isEnumType());
+
+  assert(guard.realizeErrors(/*countWarnings*/false) == 1);
+}
+
+// regression test: we used to generate `e : e` formals, which was not valid.
+static void test18e() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context,
+      R"""(
+      enum e {
+        red, green, blue
+      }
+      var tmp = e.red;
+      param tmpParam = e.red;
+      var a = chpl__enumToOrder(tmp);
+      param c = chpl__enumToOrder(tmpParam);
+      )""", {"a","c" });
+
+  assert(vars.at("a").type());
+  assert(vars.at("a").type()->isIntType());
+  assert(!vars.at("a").param());
+  assert(vars.at("c").type());
+  assert(vars.at("c").type()->isIntType());
+  assert(vars.at("c").param());
+  assert(vars.at("c").param()->isIntParam());
+  assert(vars.at("c").param()->toIntParam()->value() == 0);
+}
+
 static void test19() {
   auto context = buildStdContext();
   ErrorGuard guard(context);
@@ -685,13 +824,12 @@ static void test20() {
 
   std::ostringstream oss;
   vars.at("r").type()->stringify(oss, StringifyKind::CHPL_SYNTAX);
-  assert(oss.str() == "R(green)");
+  assert(oss.str() == "R(colors.green)");
 }
 
 // Non-param cast to string
 static void test21() {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
@@ -741,6 +879,268 @@ static void test22() {
   ensureParamEnumStr(qt, "red");
 }
 
+static void test23() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  // Production allows multiple constants to have the same numeric value.
+  // When casting backwards, the first matching constant is picked.
+  auto vars = resolveTypesOfVariables(context,
+      R"""(
+      enum color {
+        red = 0,
+        green = 0,
+        blue = 1,
+        gold = 1,
+      }
+      param a = "red" : color;
+      param b = "green" : color;
+      param c = "blue" : color;
+      param d = "gold" : color;
+      )""", {"a", "b", "c", "d"});
+
+  auto param0 = vars.at("a").param();
+  assert(param0 && param0->isEnumParam());
+  assert(param0->toEnumParam()->value().str == "red");
+
+  auto param1 = vars.at("b").param();
+  assert(param1 && param1->isEnumParam());
+  assert(param1->toEnumParam()->value().str == "green");
+
+  auto param2 = vars.at("c").param();
+  assert(param2 && param2->isEnumParam());
+  assert(param2->toEnumParam()->value().str == "blue");
+
+  auto param3 = vars.at("d").param();
+  assert(param3 && param3->isEnumParam());
+  assert(param3->toEnumParam()->value().str == "gold");
+}
+
+// test numeric conversion of enums, with some dependent values
+static void test24() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context,
+      R"""(
+      var x = 1;
+      enum color {
+        red = 1,
+        green,
+        blue,
+        gold = (red:int + green:int) * blue:int
+      }
+      type t = color;
+      param a = color.red : int;
+      param b = color.green : int;
+      param c = color.blue : int;
+      param d = color.gold : int;
+      )""", {"t", "a", "b", "c", "d"});
+
+  auto qtT = vars.at("t");
+  auto enumValuesByName = enumConstantValues(context, qtT);
+  ensureParamInt(enumValuesByName.at("red"), 1);
+  ensureParamInt(enumValuesByName.at("green"), 2);
+  ensureParamInt(enumValuesByName.at("blue"), 3);
+  ensureParamInt(enumValuesByName.at("gold"), 9);
+
+  ensureParamInt(vars.at("a"), 1);
+  ensureParamInt(vars.at("b"), 2);
+  ensureParamInt(vars.at("c"), 3);
+  ensureParamInt(vars.at("d"), 9);
+}
+
+static void test25() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context,
+      R"""(
+      var x = 1;
+      enum color {
+        red = 1,
+        green,
+        gold = (red:int + green:int) * blue:int,
+        blue,
+      }
+      type t = color;
+      param a = color.red : int;
+      param b = color.green : int;
+      param c = color.blue : int;
+      param d = color.gold : int;
+      )""", {"t", "a", "b", "c", "d"});
+
+  assert(guard.realizeErrors());
+}
+
+// test accessing enum elements via aliases
+static void test26() {
+  auto context = buildStdContext();
+  auto vars = resolveTypesOfVariables(context,
+                         R""""(
+                         enum color {
+                           red, green, blue
+                         }
+                         type c1 = color;
+                         proc c2 type do return color;
+
+                         param x = c1.red;
+                         param y = c2.red;
+                         )"""", {"x", "y"});
+  ensureParamEnumStr(vars.at("x"), "red");
+  ensureParamEnumStr(vars.at("y"), "red");
+}
+
+static void test27() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context,
+      R"""(
+      enum color {
+        red = 0,
+        green = 0,
+      }
+      enum colorOther {
+        red = 0,
+        green = 0,
+      }
+      param a = "color.red" : color;
+      param b = "color.green" : color;
+      param c = "colorOther.red" : color;
+      param d = "colorOther.green" : color;
+      )""", {"a", "b", "c", "d"});
+
+  auto param0 = vars.at("a").param();
+  assert(param0 && param0->isEnumParam());
+  assert(param0->toEnumParam()->value().str == "red");
+
+  auto param1 = vars.at("b").param();
+  assert(param1 && param1->isEnumParam());
+  assert(param1->toEnumParam()->value().str == "green");
+
+  vars.at("c").isErroneousType();
+  vars.at("d").isErroneousType();
+
+  assert(guard.realizeErrors() == 2);
+}
+
+static void test28() {
+  auto prog =
+    R"""(
+    enum myenum {
+      a = 0x7fffffffffffffff,
+      b,
+      c = b:uint + 2
+    }
+
+    param x = myenum.a : uint;
+    param y = myenum.b : uint;
+    param z = myenum.c : uint;
+    )""";
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context, prog, {"x", "y", "z"});
+  ensureParamUint(vars.at("x"), 0x7fffffffffffffff);
+  ensureParamUint(vars.at("y"), 0x8000000000000000);
+  ensureParamUint(vars.at("z"), 0x8000000000000002);
+}
+
+static void test29() {
+  auto prog =
+    R"""(
+    enum myenum {
+      writeln, write
+    }
+
+    var x = chpl__enumToOrder(myenum.writeln);
+    var y = chpl__enumToOrder(myenum.write);
+    )""";
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context, prog, {"x", "y"});
+  assert(vars.at("x").type()->isIntType());
+  assert(vars.at("y").type()->isIntType());
+}
+
+// Param cast enum to bytes
+static void test30() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context,
+      R"""(
+        enum colors {red, green, blue};
+
+        param c = colors.red;
+        param s = c:bytes;
+
+        param x = colors.red:bytes;
+        param y = colors.green:bytes;
+        param z = colors.blue:bytes;
+
+        record R {
+          param p : colors;
+        }
+
+        var r = new R(colors.green);
+      )""", {"s", "x", "y", "z", "r"});
+
+  assert(guard.realizeErrors() == 0);
+
+  auto check = [] (QualifiedType qt, std::string text) {
+    assert(qt.type()->isBytesType());
+    assert(qt.param()->toStringParam()->value() == text);
+  };
+
+  check(vars.at("s"), "red");
+  check(vars.at("x"), "red");
+  check(vars.at("y"), "green");
+  check(vars.at("z"), "blue");
+
+  std::ostringstream oss;
+  vars.at("r").type()->stringify(oss, StringifyKind::CHPL_SYNTAX);
+  assert(oss.str() == "R(colors.green)");
+}
+
+// Param cast bytes to enum
+static void test31() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context,
+      R"""(
+      enum color {
+        red = 0,
+        green = 0,
+        blue = 1,
+        gold = 1,
+      }
+      param a = b"red" : color;
+      param b = b"green" : color;
+      param c = b"blue" : color;
+      param d = b"gold" : color;
+      )""", {"a", "b", "c", "d"});
+
+  auto param0 = vars.at("a").param();
+  assert(param0 && param0->isEnumParam());
+  assert(param0->toEnumParam()->value().str == "red");
+
+  auto param1 = vars.at("b").param();
+  assert(param1 && param1->isEnumParam());
+  assert(param1->toEnumParam()->value().str == "green");
+
+  auto param2 = vars.at("c").param();
+  assert(param2 && param2->isEnumParam());
+  assert(param2->toEnumParam()->value().str == "blue");
+
+  auto param3 = vars.at("d").param();
+  assert(param3 && param3->isEnumParam());
+  assert(param3->toEnumParam()->value().str == "gold");
+}
+
 int main() {
   test1();
   test2();
@@ -760,10 +1160,21 @@ int main() {
   test16();
   test17();
   test18();
+  test18internal();
+  test18e();
   test19();
   test20();
   test21();
   test22();
+  test23();
+  test24();
+  test25();
+  test26();
+  test27();
+  test28();
+  test29();
+  test30();
+  test31();
 
   return 0;
 }

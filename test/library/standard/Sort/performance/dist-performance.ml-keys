@@ -1,2 +1,6 @@
-Sort time :
-Sort MB/s per node :
+TwoArraySort time :
+TwoArraySort MB/s per node :
+LSDSort time :
+LSDSort MB/s per node :
+PSort time :
+PSort MB/s per node :

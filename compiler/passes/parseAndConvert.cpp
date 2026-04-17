@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -32,6 +32,7 @@
 #include "symbol.h"
 #include "wellknown.h"
 #include "misc.h"
+#include "pass-manager-passes.h"
 
 #include "chpl/libraries/LibraryFile.h"
 #include "chpl/libraries/LibraryFileWriter.h"
@@ -143,28 +144,12 @@ class DynoErrorHandler : public chpl::Context::ErrorHandler {
   inline void clearDeferred() { deferredErrors_.clear(); }
 };
 
-// Call to insert an instance of the error handler above into the context.
-static DynoErrorHandler* dynoPrepareAndInstallErrorHandler(void);
-
-static bool dynoRealizeErrors(void);
-static bool dynoRealizeDeferredErrors(void);
-
 static void dynoConvertInternalModule(UastConverter& c,
                                       const char* moduleName);
 static ModuleSymbol* dynoConvertFile(UastConverter& c,
                                      const char* fileName,
                                      ModTag      modTag,
                                      bool        namedOnCommandLine);
-
-void addInternalModulePath(const ArgumentDescription* desc, const char* newpath)
-{
-  gDynoPrependInternalModulePaths.push_back(newpath);
-}
-
-void addStandardModulePath(const ArgumentDescription* desc, const char* newpath)
-{
-  gDynoPrependStandardModulePaths.push_back(newpath);
-}
 
 /************************************* | **************************************
 *                                                                             *
@@ -222,10 +207,8 @@ static void checkCanLoadBundledModules() {
   // make sure that we can load important internal / standard modules
   checkCanLoadBundledModule("ChapelBase");
   checkCanLoadBundledModule("ChapelStandard");
-  if (fMinimalModules == false) {
-    checkCanLoadBundledModule("ChapelSysCTypes");
-    checkCanLoadBundledModule("Errors");
-  }
+  checkCanLoadBundledModule("ChapelSysCTypes");
+  checkCanLoadBundledModule("Errors");
 }
 
 static void checkCanLoadCommandLineFile(const char* path) {
@@ -704,7 +687,7 @@ static void maybePrintModuleFile(ModTag modTag, const char* path) {
 
 void noteParsedIncludedModule(ModuleSymbol* mod, const char* pathAstr) {
   maybePrintModuleFile(mod->modTag, pathAstr);
-  gFilenameLookup.push_back(pathAstr);
+  InsertLineNumbers::addFilenameTableEntry(pathAstr);
 }
 
 static ID findIdForContainingDecl(ID id) {
@@ -857,15 +840,13 @@ static void dynoDisplayError(chpl::Context* context,
   }
 }
 
-static DynoErrorHandler* dynoPrepareAndInstallErrorHandler(void) {
+DynoErrorHandler* gDynoErrorHandler = nullptr;
+DynoErrorHandler* dynoPrepareAndInstallErrorHandler(void) {
   auto ret = new DynoErrorHandler();
   auto handler = chpl::toOwned<chpl::Context::ErrorHandler>(ret);
   std::ignore = gContext->installErrorHandler(std::move(handler));
   return ret;
 }
-
-// Only install one of these for the entire session.
-static DynoErrorHandler* gDynoErrorHandler = nullptr;
 
 static bool dynoRealizeError(const chpl::owned<chpl::ErrorBase>& err) {
   bool hadErrors = false;
@@ -894,7 +875,12 @@ static bool dynoRealizeError(const chpl::owned<chpl::ErrorBase>& err) {
   return hadErrors;
 }
 
-static bool dynoRealizeErrors(void) {
+void dynoClearErrors(void) {
+  INT_ASSERT(gDynoErrorHandler);
+  gDynoErrorHandler->clear();
+}
+
+bool dynoRealizeErrors(void) {
   INT_ASSERT(gDynoErrorHandler);
   bool hadErrors = false;
   for (auto& err : gDynoErrorHandler->errors()) {
@@ -904,7 +890,7 @@ static bool dynoRealizeErrors(void) {
   return hadErrors;
 }
 
-static bool dynoRealizeDeferredErrors(void) {
+bool dynoRealizeDeferredErrors(void) {
   INT_ASSERT(gDynoErrorHandler);
   bool hadErrors = false;
   auto mainModulePath = ModuleSymbol::mainModule()->path();
@@ -1022,7 +1008,7 @@ static ModuleSymbol* dynoConvertFile(UastConverter& c,
   auto& builderResult =
     chpl::parsing::parseFileToBuilderResultAndCheck(gContext, path,
                                                     parentSymbolPath);
-  gFilenameLookup.push_back(path.c_str());
+  InsertLineNumbers::addFilenameTableEntry(path.c_str());
 
   if (dynoRealizeErrors()) USR_STOP();
 
@@ -1150,8 +1136,6 @@ void parseAndConvertUast() {
   if (debugParserLevel) {
     INT_FATAL("The '%s' flag currently has no effect", "parser-debug");
   }
-
-  gDynoErrorHandler = dynoPrepareAndInstallErrorHandler();
 
   chpl::owned<UastConverter> converter;
   if (fDynoResolver || fDynoResolveOnly) {

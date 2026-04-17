@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+#
+# Hide the Python version used
+
+tmpfile=$2
+
+command='s/Python [0-9]*.[0-9]*.[0-9]*/Python n.n.n/'
+
+sed -e "$command" $tmpfile > $tmpfile.tmp
+
+result=$?
+mv $tmpfile.tmp $tmpfile
+exit $result

@@ -1,0 +1,5 @@
+ # testFiltering.all.good
+--filter=testA # testFiltering.A.good
+--filter=testB # testFiltering.B.good
+--filter=failingTest # testFiltering.Failing.good
+--filter='testA|testB' # testFiltering.none.good

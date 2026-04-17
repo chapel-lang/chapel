@@ -14,13 +14,14 @@ use Image;
 //
 // the second example from the Image module docs
 //
+/* START_EXAMPLE */
 var arr = readImage("input.png", imageType.png);
 const fmt = (rgbColor.red, rgbColor.green, rgbColor.blue);
 var colors = pixelToColor(arr, format=fmt);
 [c in colors] c(1) = 0;
 arr = colorToPixel(colors, format=fmt);
 writeImage("output.jpg", imageType.jpg, arr);
-
+/* STOP_EXAMPLE */
 
 // clean up file not needed
 use FileSystem;

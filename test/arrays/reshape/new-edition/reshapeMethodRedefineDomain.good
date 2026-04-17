@@ -1,0 +1,4 @@
+1 2
+3 4
+5 2 3 4
+reshapeMethodRedefineDomain.chpl:11: error: halt reached - This domain cannot be modified because it is used to define array views

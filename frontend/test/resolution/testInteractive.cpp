@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -148,7 +148,8 @@ computeAndPrintStuff(ResolutionContext* rc,
     for (const MostSpecificCandidate& candidate : r->mostSpecific()) {
       if (candidate) {
         auto sig = candidate.fn();
-        if (sig->untyped()->idIsFunction()) {
+        if (sig->untyped()->idIsFunction() &&
+            !sig->untyped()->idIsExternBlockFunction()) {
           auto fn = resolveFunction(rc, sig, r->poiScope());
           calledFns.insert(fn);
         }
@@ -214,7 +215,7 @@ static void setupSearchPaths(Context* ctx, bool enableStdLib,
                              const std::vector<std::string>& cmdLinePaths,
                              const std::vector<std::string>& files) {
   if (enableStdLib) {
-    setupModuleSearchPaths(ctx, false, false, cmdLinePaths, files);
+    setupModuleSearchPaths(ctx, false, cmdLinePaths, files);
   } else {
     std::vector<UniqueString> uPaths;
     for (auto p: cmdLinePaths) {

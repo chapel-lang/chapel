@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -18,13 +18,6 @@
  * limitations under the License.
  */
 
-/* Version as of Chapel 1.25 - to be updated each release */
-const spackVersion = new VersionInfo('0.19.0');
-const major = spackVersion.major:string;
-const minor = spackVersion.minor:string;
-const spackBranch = 'releases/v' + '.'.join(major, minor);
-const spackDefaultPath = MASON_HOME + "/spack";
-
 use ArgumentParser;
 use FileSystem;
 use List;
@@ -32,9 +25,21 @@ use Map;
 use MasonEnv;
 use MasonHelp;
 use MasonUtils;
+use MasonLogger;
 use Path;
 use SpecParser;
 use TOML;
+import ThirdParty.Pathlib.path;
+
+var log = new logger("mason external");
+
+// We could consider bumping this version up as needed.
+const minSpackVersion = new versionInfo('1.0.0');
+const major = minSpackVersion.major:string;
+const minor = minSpackVersion.minor:string;
+const spackBranch = 'releases/v' + '.'.join(major, minor);
+const spackDefaultPath = MASON_HOME + "/spack";
+const spackRegistryDefaultPath = MASON_HOME + "/spack-registry";
 
 proc masonExternal(args: [] string) {
 
@@ -70,48 +75,66 @@ proc masonExternal(args: [] string) {
     if setupFlag.valueAsBool() {
       // if MASON_OFFLINE is set, then cannot install spack
       if MASON_OFFLINE {
-        throw new owned MasonError('Cannot setup Spack when MASON_OFFLINE is set to true');
+        throw new MasonError('Cannot setup Spack when MASON_OFFLINE ' +
+                             'is set to true');
       }
-      // If spack and spack registry is present with latest version, print message
+
+      // If spack and spack registry is present with latest version, print
       if isDir(SPACK_ROOT) &&
-      isDir(MASON_HOME+'/spack-registry') &&
-      getSpackVersion == spackVersion &&
-      SPACK_ROOT == spackDefaultPath {
+         isDir(spackRegistryDefaultPath) &&
+         getSpackVersion() == minSpackVersion &&
+         SPACK_ROOT == spackDefaultPath {
+
         throw new owned MasonError("Spack backend is already installed");
       }
+
       // If both spack and spack registry not installed then setup spack
-      if !isDir(SPACK_ROOT) && !isDir(MASON_HOME+'/spack-registry') then
+      if !isDir(SPACK_ROOT) && !isDir(spackRegistryDefaultPath) then
         setupSpack();
+
+      // Engin: Why do we clone spack itself while creating our own registry?
       // If spack registry is not installed then install it
-      if !isDir(MASON_HOME+'/spack-registry') {
-        writeln("Installing Spack Registry ...");
-        const dest = MASON_HOME + '/spack-registry';
-        const branch = ' --branch releases/latest ';
+      if !isDir(spackRegistryDefaultPath) {
+        log.infoln("Installing Spack Registry ...");
+        const dest:path = spackRegistryDefaultPath;
+        const branch = "releases/latest";
         const status = cloneSpackRepository(branch, dest);
         if status != 0 then
           throw new owned MasonError("Spack registry installation failed.");
+      } else {
+        log.infof("Using existing Spack Registry at %s\n",
+                  spackRegistryDefaultPath);
       }
+
+      /* Engin: Unclear to me why we do this. We _definitely_ shouldn't do it if
+         mason doesn't own the spack installation to say the least. I am not
+         sure if mason should ever own its own spack either.
       // If spack is installed and version is outdated, update it
-      if isDir(SPACK_ROOT) && getSpackVersion != spackVersion {
+      if isDir(SPACK_ROOT) && getSpackVersion() != minSpackVersion {
         writeln("Updating Spack backend ... ");
         const status = updateSpackCommandLine();
         if isDir(MASON_HOME + '/spack-registry') then generateYAML();
         if status != 0 then throw new owned MasonError("Spack update failed.");
       }
-      // If spack is not installed then install it
+       */
+
+      // If spack is not installed then install it. Note that this is going to
+      // be a spack installation owned by Mason, in that it will make it use its
+      // own registry. I am not sure if we should do that vs. making spack a
+      // mason dependency if a package has a spack-based dependency.
       if !isDir(SPACK_ROOT) {
         writeln("Installing Spack backend ... ");
-        const spackLatestBranch = ' --branch ' + spackBranch + ' ';
-        const status = cloneSpackRepository(spackLatestBranch, SPACK_ROOT);
-        if isDir(MASON_HOME + '/spack-registry') then generateYAML();
+        const status = cloneSpackRepository(spackBranch, SPACK_ROOT:path);
+        if isDir(spackRegistryDefaultPath) then generateYAML();
         if status != 0 then
           throw new owned MasonError("Spack installation failed.");
       }
       // check that after all this, the version of spack is as we expect it
-      if getSpackVersion != spackVersion then
-        throw new owned MasonError("Spack update or installation failed. \
-                                    Expected v%s, got v%s".format(spackVersion.str(),
-                                                                  getSpackVersion.str()));
+      if getSpackVersion() <= minSpackVersion then
+        throw new MasonError("Spack update or installation failed. " +
+                             "Expected v%s, got v%s".format(
+                                minSpackVersion.str(),
+                                getSpackVersion().str()));
       exit(0);
     }
     if spackInstalled() {
@@ -140,8 +163,7 @@ proc masonExternal(args: [] string) {
         }
       }
     }
-  }
-  catch e: MasonError {
+  } catch e: MasonError {
     writeln(e.message());
     exit(1);
   }
@@ -156,24 +178,23 @@ private proc specHelp() {
 /* Checks if updated spack and spack registry is installed*/
 proc spackInstalled() throws {
   if !isDir(SPACK_ROOT) {
-    throw new owned MasonError("To use mason external, call: mason external --setup");
+    throw new MasonError("To use mason external, call: mason external --setup");
   }
   if !isDir(getSpackRegistry) {
-    throw new owned MasonError("Mason has been updated. To use mason external, "
+    throw new MasonError("Mason has been updated. To use mason external, "
                                + "call: mason external --setup");
   }
   // if local spack version is lower than required version
-  if getSpackVersion < spackVersion && SPACK_ROOT == spackDefaultPath {
-    throw new owned MasonError("Mason has been updated and requires a newer " +
-          "version of Spack (%s).".format(spackVersion.str()) +
+  if getSpackVersion() < minSpackVersion && SPACK_ROOT == spackDefaultPath {
+    throw new MasonError("Mason has been updated and requires a newer " +
+          "version of Spack (%s).".format(minSpackVersion.str()) +
           "\nTo use mason external, call: mason external --setup");
   }
   // if local version is a major or minor version higher than required version
-  if !spackVersion.isCompatible(getSpackVersion) {
-    writeln("Your version of Spack (v%s) differs ".format(getSpackVersion.str()) +
-            "from that supported by Mason " +
-            "(v%s).\nThis may lead to unexpected ".format(spackVersion.str()) +
-            "behavior");
+  if !minSpackVersion.isCompatible(getSpackVersion()) {
+    log.warnf("Your version of Spack (v%s) differs from that supported by " +
+              "Mason (v%s).\nThis may lead to unexpected behavior",
+              getSpackVersion().str(), minSpackVersion.str());
   }
   return true;
 }
@@ -181,12 +202,12 @@ proc spackInstalled() throws {
 /* Spack installed to MASON_HOME/spack */
 proc setupSpack() throws {
   writeln("Installing Spack backend ...");
-  const destCLI = MASON_HOME + "/spack/";
-  const spackLatestBranch = ' --branch v' + spackVersion.str() + ' ';
-  const destPackages = MASON_HOME + "/spack-registry";
-  const spackMasterBranch = ' --branch releases/latest ';
+  const destCLI = MASON_HOME:path / "spack";
+  const spackLatestBranch = "v" + minSpackVersion.str();
+  const destPackages = MASON_HOME: path / "spack-registry";
+  const spackMasterBranch = "releases/latest";
   const statusCLI = cloneSpackRepository(spackLatestBranch, destCLI);
-  const statusPackages = cloneSpackRepository(spackMasterBranch, destPackages);
+  const statusPackages = cloneSpackRepository("releases/latest", destPackages);
   generateYAML();
   if statusCLI != 0 && statusPackages != 0 {
     throw new owned MasonError("Spack installation failed");
@@ -194,22 +215,25 @@ proc setupSpack() throws {
 }
 
 /* Clones the Spack repository */
-proc cloneSpackRepository(branch : string, dest: string) {
-  const repo = "https://github.com/spack/spack ";
-  const depth = '--depth 1 ';
-  const command = 'git clone -q -c advice.detachedHead=false ' + branch + depth + repo + dest;
-  const statusPackages = runWithStatus(command);
-  if statusPackages != 0 then return -1;
-  else return 0;
+proc cloneSpackRepository(branch: string, dest: path): int {
+  const repo = "https://github.com/spack/spack";
+  const extra = ["-c", "advice.detachedHead=false"];
+  try {
+    cloneSource(repo, dest, branch=branch, depth=1, extra=extra);
+  } catch {
+    return -1;
+  }
+  return 0;
 }
 
 /* git checkout command run at SPACK_ROOT */
 proc gitCheckOutSpack(tag: string) {
-  const checkOutCommand = 'git ' + '-C ' + SPACK_ROOT +
-                      ' checkout -q ' + tag;
-  const status = runWithStatus(checkOutCommand);
-  if status != 0 then return -1;
-  else return 0;
+  try {
+    checkoutSource(SPACK_ROOT:path, tag);
+  } catch {
+    return -1;
+  }
+  return 0;
 }
 
 /* git fetch command run at SPACK_ROOT */
@@ -223,7 +247,7 @@ proc gitFetch(branch: string) {
 
 /* Updates the spack directory used for spack commands */
 private proc updateSpackCommandLine() {
-  const releaseTag = 'v' + spackVersion.str();
+  const releaseTag = 'v' + minSpackVersion.str();
   var tag = 'refs/tags/' + releaseTag;
   tag = tag + ':' + tag;
   const statusFetch = gitFetch(tag);
@@ -232,6 +256,9 @@ private proc updateSpackCommandLine() {
   else return 0;
 }
 
+
+// ENGIN: If you have your independent spack installation, this function
+// basically hijacks it. This doesn't feel right.
 /*
   Generate site-specific repos.yaml :-
   Replaces package repository path of repos.yaml file at
@@ -242,8 +269,9 @@ private proc generateYAML() {
   if isFile(yamlFilePath) {
     remove(yamlFilePath);
   }
-  const reposOverride = 'repos:\n'+
-                        '  - ' + MASON_HOME + '/spack-registry/var/spack/repos/builtin \n';
+  const reposOverride =
+    'repos:\n'+
+    '  - ' + MASON_HOME + '/spack-registry/var/spack/repos/builtin \n';
   var yamlFile = open(yamlFilePath,ioMode.cw);
   var yamlWriter = yamlFile.writer(locking=false);
   yamlWriter.write(reposOverride);
@@ -257,15 +285,16 @@ private proc printSpackVersion() {
 }
 
 /* Returns spack version */
-proc getSpackVersion : VersionInfo {
+proc getSpackVersion(): versionInfo {
   const command = "spack --version";
-  const tmpVersion = getSpackResult(command,true).strip();
+  @functionStatic
+  ref tmpVersion = getSpackResult(command,true).strip();
   // on systems with their own spack, spack --version can provide
   // a version string like x.x.x.xxxx (hash)
   // partitioning the string allows us to separate the major.minor.bug
   // from the remaining values
   const version = tmpVersion.partition(" ");
-  return new VersionInfo(version[0]);
+  return new versionInfo(version[0]);
 }
 
 /* Lists available spack packages */
@@ -275,8 +304,9 @@ private proc listSpkgs() {
 }
 
 /* Queries spack for package existence */
-private proc searchSpkgs(args: [?d] string) {
-  var parser = new argumentParser(helpHandler=new MasonExternalSearchHelpHandler());
+private proc searchSpkgs(args: [] string) {
+  var parser = new argumentParser(helpHandler=
+                                  new MasonExternalSearchHelpHandler());
 
   var descFlag = parser.addFlag(name="description",
                                 opts=["-d","--desc"],
@@ -310,8 +340,9 @@ private proc listInstalled() {
 
 /* User facing function to show packages installed on
    system. Takes all spack arguments ex. -df <package> */
-private proc findSpkg(args: [?d] string) {
-  var parser = new argumentParser(helpHandler=new MasonExternalFindHelpHandler());
+private proc findSpkg(args: [] string) {
+  var parser = new argumentParser(helpHandler=
+                                  new MasonExternalFindHelpHandler());
 
   var findArgs = parser.addArgument(name="package", numArgs=0..);
 
@@ -324,9 +355,10 @@ private proc findSpkg(args: [?d] string) {
 }
 
 /* Entry point into the various info subcommands */
-private proc spkgInfo(args: [?d] string) {
+private proc spkgInfo(args: [] string) {
 
-  var parser = new argumentParser(helpHandler=new MasonExternalInfoHelpHandler());
+  var parser = new argumentParser(helpHandler=
+                                  new MasonExternalInfoHelpHandler());
 
   var archFlag = parser.addFlag(name="architecture",
                                 opts=["--arch"],
@@ -371,7 +403,7 @@ proc spkgInstalled(spec: string) {
 
 
 /* Entry point into the various compiler functions */
-private proc compiler(args: [?d] string) {
+private proc compiler(args: [] string) {
 
   var parser = new argumentParser(helpHandler=new MasonCompilerHelpHandler());
 
@@ -410,9 +442,13 @@ private proc editCompilers() {
 }
 
 
-/* Given a toml of external dependencies returns
-   the dependencies in a toml in lock file format */
-proc getExternalPackages(exDeps: Toml) /* [domain(string)] shared Toml? */ {
+/*
+  Given a toml of external dependencies returns
+  the dependencies in a toml in lock file format
+
+  Returns an associative array of tomls
+*/
+proc getExternalPackages(exDeps: Toml) {
 
   var exDom: domain(string, parSafe=false);
   var exDepTree: [exDom] shared Toml?;
@@ -430,7 +466,11 @@ proc getExternalPackages(exDeps: Toml) /* [domain(string)] shared Toml? */ {
               fullSpec = "@".join(name, spec.s);
             }
 
+            log.debugf("Dep %s: fullSpec: %s\n", name, fullSpec);
+
             const resolvedSpec = resolveSpec(fullSpec);
+
+            log.debugf("Dep %s: resolvedSpec: %s\n", name, resolvedSpec);
 
             var dependencies = getSpkgDependencies(resolvedSpec);
             const pkgInfo = getSpkgInfo(resolvedSpec, dependencies);
@@ -441,8 +481,7 @@ proc getExternalPackages(exDeps: Toml) /* [domain(string)] shared Toml? */ {
             exDepTree[name] = pkgInfo;
           }
         }
-    }
-    catch e: MasonError {
+    } catch e: MasonError {
       writeln(e.message());
       exit(1);
     }
@@ -452,7 +491,7 @@ proc getExternalPackages(exDeps: Toml) /* [domain(string)] shared Toml? */ {
 
 
 /* Retrieves build information for MasonUpdate */
-proc getSpkgInfo(spec: string, ref dependencies: list(string)): shared Toml throws {
+proc getSpkgInfo(spec: string, dependencies: list(string)): shared Toml throws {
 
   var depList: list(shared Toml);
   var spkgDom: domain(string, parSafe=false);
@@ -483,8 +522,7 @@ proc getSpkgInfo(spec: string, ref dependencies: list(string)): shared Toml thro
       spkgInfo.set("libs", libs);
       spkgInfo.set("include", includePath);
 
-      while dependencies.size > 0 {
-        var dep = dependencies[0];
+      for dep in dependencies {
         var depSpec = dep.split("@", 1);
         var name = depSpec[0];
 
@@ -497,20 +535,15 @@ proc getSpkgInfo(spec: string, ref dependencies: list(string)): shared Toml thro
         // get a toml that contains the dependency info and put it
         // in a subtable of the current dependencies table
         spkgInfo.set(name, getSpkgInfo(dep, depsOfDep));
-
-        // remove dep for recursion
-        dependencies.getAndRemove(0);
       }
       if depList.size > 0 {
         // Temporarily use toArray here to avoid supporting list.
         spkgInfo.set("dependencies", depList.toArray());
       }
+    } else {
+      throw new MasonError("No package installed by the name of: " + pkgName);
     }
-    else {
-      throw new owned MasonError("No package installed by the name of: " + pkgName);
-    }
-  }
-  catch e: MasonError {
+  } catch e: MasonError {
     writeln(e.message());
   }
   return spkgInfo;
@@ -534,17 +567,19 @@ proc getSpkgDependencies(spec: string): list(string) throws {
   var found = false;
   var dependencies: list(string);
   for item in pkgInfo.split() {
+    log.debugf("Spack dependency %s\n", item);
 
     if item.rfind(name) != -1 {
       found = true;
-    }
-    else if found {
+      log.debugln("Found");
+    } else if found {
       const dep = item.strip("^");
+      log.debugf("Had found already, adding %s\n", dep);
       dependencies.pushBack(dep);
     }
   }
   if !found {
-    throw new owned MasonError("Mason could not find dependency: " + spec);
+    throw new MasonError("Mason could not find dependency: " + spec);
   }
   return dependencies;
 }
@@ -559,25 +594,23 @@ private proc specName(spec: string): string throws {
 }
 
 
+// ENGIN: not sure why we need this, this seems to be sensitive to changes to
+// Spack syntax. All we need should be "spec"?
 /* Resolve spec, pinning to the installed version and eliminating ranges */
 private proc resolveSpec(spec: string): string throws {
-  const command = "spack spec %s".format(spec);
+  const command = "spack spec --no-install-status %s | head -n1".format(spec);
   const output = getSpackResult(command, quiet=true);
-  var lines = output.split('\n');
 
-  // Package on 7th line
-  var ret = lines[6].strip();
-
-  if ret == '' {
-    throw new owned MasonError("Package not found: " + spec);
+  if output == '' {
+    throw new MasonError("Package not found: " + spec);
   }
 
-  return ret;
+  return output;
 }
 
 
 /* Install an external package */
-proc installSpkg(args: [?d] string) throws {
+proc installSpkg(args: [] string) throws {
   var parser = new argumentParser(helpHandler=new MasonInstallHelpHandler());
 
   var quietFlag = parser.addFlag(name="quiet", defaultValue=false);
@@ -595,21 +628,21 @@ proc installSpkg(args: [?d] string) throws {
       return;
     }
     spec = " ".join(specArr);
-  }
-  else {
+  } else {
     masonInstallHelp();
     exit(1);
   }
 
-  const status = runSpackCommand(" ".join(command, spec), quietFlag.valueAsBool());
+  const status =
+    runSpackCommand(" ".join(command, spec), quietFlag.valueAsBool());
   if status != 0 {
-    throw new owned MasonError("Package could not be installed");
+    throw new MasonError("Package could not be installed");
   }
 }
 
 
 /* Uninstall an external package */
-proc uninstallSpkg(args: [?d] string) throws {
+proc uninstallSpkg(args: [] string) throws {
 
   var parser = new argumentParser(helpHandler=new MasonUninstallHelpHandler());
 
@@ -628,7 +661,7 @@ proc uninstallSpkg(args: [?d] string) throws {
   if forceFlag.valueAsBool() then uninstallArgs += "--force ";
   if allFlag.valueAsBool() then uninstallArgs += "--all ";
   if depFlag.valueAsBool() then uninstallArgs += "--dependents ";
-  if pkgArg.hasValue() then {
+  if pkgArg.hasValue() {
     var pkgArr = pkgArg.values();
     pkgName = "".join(pkgArr);
   } else {
