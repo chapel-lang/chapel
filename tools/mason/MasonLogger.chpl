@@ -19,7 +19,7 @@
  */
 
 module MasonLogger {
-  use ThirdParty.Logging;
+  use ThirdParty.Log;
   import ThirdParty.TerminalColors.{style, styledText, red, yellow, blue};
 
   import Time.dateTime;

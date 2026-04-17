@@ -26,6 +26,6 @@
 module ThirdParty {
   include module Pathlib;
   include module TemplateString;
-  include module Logging;
+  include module Log;
   include module TerminalColors;
 }
