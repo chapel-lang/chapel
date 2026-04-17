@@ -81,8 +81,8 @@ iter prereqs(const baseDir = path.cwd()): path {
   const prereqsPath = baseDir / prereqsDir;
 
   log.debug("Looking for the prerequisites directory ", prereqsPath);
-  if FS.exists(prereqsPath) {
-    if FS.isDir(prereqsPath) {
+  if prereqsPath.exists() {
+    if prereqsPath.isDir() {
       log.infof("Prerequisites directory exists (%s)", prereqsPath:string);
 
       // You shouldn't need an array here, but there seems to be a compiler bug
