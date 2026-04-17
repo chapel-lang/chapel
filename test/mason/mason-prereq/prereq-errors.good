@@ -8,4 +8,5 @@ mason utils   : void hello(void) {
 mason utils   :   printf("Hello world!\n")
 mason utils   : }
 mason utils   : error: missing ';'
+
 Mason build failed and correctly return a non-zero exit code
