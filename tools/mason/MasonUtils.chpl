@@ -625,7 +625,7 @@ proc depExists(dependency: string, repo='/src/') {
         exists = true;
     }
   } catch e {
-    log.debugf("Caught error ('%?') when checking for dependency in %s\n",
+    log.debugf("Caught error ('%?') when checking for dependency in %s",
                e, repos);
     exists = false;
   }
@@ -637,7 +637,7 @@ private const dummyExtraArgs: [1..0] string;
 proc cloneSource(url: string, dest: path,
                  quiet=true, checkout=true, branch="", depth=-1,
                  extra=dummyExtraArgs) throws {
-  log.debugf("Cloning from %s to %?\n", url, dest);
+  log.debugf("Cloning from %s to %?", url, dest);
   var baseCmd = new list(["git", "clone"]);
   if quiet then
     baseCmd.pushBack("--quiet");
@@ -659,19 +659,19 @@ proc cloneSource(url: string, dest: path,
   if runWithStatus(cmd, quiet=quiet) == 0 {
     cloneSucceeded = true;
   } else {
-    log.debugf("Failed to clone from %s to %?\n", url, dest);
+    log.debugf("Failed to clone from %s to %?", url, dest);
     // there was an error, if the url starts with git@, try with https
     if url.startsWith("git@") {
       var httpsUrl = url
         .replace(":", "/", count=1)
         .replace("git@", "https://", count=1);
-      log.debugf("Retrying with https url: %s\n", httpsUrl);
+      log.debugf("Retrying with https url: %s", httpsUrl);
       // rewrite the command with the new url
       cmd[baseCmd.size] = httpsUrl;
       if runWithStatus(cmd, quiet=quiet) == 0 {
         cloneSucceeded = true;
       } else {
-        log.debugf("Failed to clone from %s to %?\n", httpsUrl, dest);
+        log.debugf("Failed to clone from %s to %?", httpsUrl, dest);
       }
     }
   }
