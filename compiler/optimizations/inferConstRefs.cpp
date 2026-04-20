@@ -406,8 +406,10 @@ static bool inferConstRef(Symbol* sym) {
         isConstRef = false;
       }
     }
-    else if (isPassedToRefFormalInIndirectCall(use, call)) {
-      isConstRef = false;
+    else if (call->isIndirectCall()) {
+      if (isPassedToRefFormalInIndirectCall(use, call)) {
+        isConstRef = false;
+      }
     }
     else if (parent && isMoveOrAssign(parent)) {
       if (!canRHSBeConstRef(parent, use)) {

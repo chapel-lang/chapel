@@ -34,7 +34,7 @@ use Regex;
 import MasonLogger;
 import ThirdParty.Pathlib.path;
 
-private var log = new MasonLogger.logger("mason utils");
+private var log = MasonLogger.getLogger("mason utils");
 
 
 /* Gets environment variables for spawn commands */
@@ -108,10 +108,10 @@ proc runCommand(cmd: [] string, quiet=false,
   }
   var ret: retType;
   try {
-    log.debugf("runCommand: %?\n", cmd);
+    log.debugf("runCommand (quiet=%?): '%?'", quiet, cmd);
     var process = spawn(cmd, stdout=pipeStyle.pipe, stderr=pipeStyle.pipe);
 
-    log.debugln("stdout:");
+    log.debug("stdout:");
     // use .lines() to avoid https://github.com/chapel-lang/chapel/issues/28211
     for line in process.stdout.lines(stripNewline=true) {
       if retType == string then
@@ -119,32 +119,32 @@ proc runCommand(cmd: [] string, quiet=false,
       else
         ret.pushBack(line);
 
-      if quiet then log.debugln(line); else log.infoln(line);
+      if quiet then log.debug(line); else log.info(line);
     }
-    log.debugln("end stdout");
+    log.debug("end stdout");
 
-    log.debugln("stderr:");
+    log.debug("stderr:");
     for line in process.stderr.lines() {
       log.warn(line);
     }
-    log.debugln("end stderr.");
+    log.debug("end stderr.");
 
     process.wait();
 
-    log.debugf("exitCode: %i\n", process.exitCode);
+    log.debug("exitCode: ", process.exitCode);
     if process.exitCode != 0 {
       var cmdStr = " ".join(cmd);
-      throw new owned MasonError("Command failed: '" + cmdStr + "'");
+      throw new MasonError("Command failed: '" + cmdStr + "'");
     }
   } catch e: FileNotFoundError {
-    log.debugf("Caught FileNotFoundError for command: %?\n", cmd);
+    log.debug("Caught FileNotFoundError for command: ", cmd);
     var cmdStr = " ".join(cmd);
-    throw new owned MasonError("Command not found: '" + cmdStr + "'");
+    throw new MasonError("Command not found: '" + cmdStr + "'");
   } catch e: MasonError {
     throw e;
   } catch e {
-    log.debugf("Caught unknown error ('%?') for command: %?\n", e, cmd);
-    throw new owned MasonError("Internal mason error");
+    log.debugf("Caught unknown error ('%?') for command: %?", e, cmd);
+    throw new MasonError("Internal mason error");
   }
   return ret;
 }
@@ -162,7 +162,8 @@ proc runWithStatus(command: string, quiet=false, capture=true): int {
 }
 proc runWithStatus(command: [] string, quiet=false, capture=true): int {
   try {
-    log.debugf("runWithStatus: %?\n", command);
+    log.debugf("runWithStatus (quiet=%?, capture=%?): %?",
+               quiet, capture, command);
     if !capture then log.flush();
     var sub =
       if capture
@@ -177,7 +178,7 @@ proc runWithStatus(command: [] string, quiet=false, capture=true): int {
     sub.wait();
     return sub.exitCode;
   } catch e {
-    log.debugf("Caught unknown error ('%?') for command: %?\n", e, command);
+    log.debugf("Caught unknown error ('%?') for command: %?", e, command);
     return -1;
   }
 }
@@ -248,7 +249,7 @@ proc getSpackResult(cmd, quiet=false) : string throws {
                " && . $SPACK_ROOT/share/spack/setup-env.sh && ";
   var splitCmd = prefix + cmd;
   try {
-    log.debugf("running spack command %s\n", splitCmd);
+    log.debug("running spack command ", splitCmd);
     var process = spawnshell(splitCmd,
                              stdout=pipeStyle.pipe, executable="bash");
 
@@ -260,7 +261,7 @@ proc getSpackResult(cmd, quiet=false) : string throws {
     }
     process.wait();
   } catch e {
-    log.debugf("Caught unknown error ('%?') for command: %?\n", e, splitCmd);
+    log.debugf("Caught unknown error ('%?') for command: %?", e, splitCmd);
     throw new owned MasonError("Internal mason error");
   }
   return ret;
@@ -448,10 +449,16 @@ proc getChapelVersionStr() throws {
   return chplVersion;
 }
 
-proc gitC(newDir, command, quiet=false) throws {
-  const oldDir = here.cwd();
-  here.chdir(newDir);
-  defer here.chdir(oldDir);
+// TODO: only exists because I don't want to rewrite everything to use path, yet
+proc gitC(newDir:string, command, quiet=false) throws {
+  return gitC(newDir:path, command, quiet);
+}
+proc gitC(newDir:path, command, quiet=false) throws {
+  const oldDir = path.cwd();
+  newDir.chdir();
+  defer oldDir.chdir();
+  // TODO: I would love to use newDir.pushChdir(), but I don't trust
+  // error handling + context managers enough
   var ret = runCommand(command, quiet=quiet);
 
   return ret;
@@ -610,13 +617,80 @@ proc getMasonDependencies(sourceList: list(srcSource),
 proc depExists(dependency: string, repo='/src/') {
   var repos = MASON_HOME + repo;
   var exists = false;
-  for dir in listDir(repos) {
-    if dir == dependency then
-      exists = true;
+  if !isDir(repos) then
+    return false;
+  try {
+    for dir in listDir(repos) {
+      if dir == dependency then
+        exists = true;
+    }
+  } catch e {
+    log.debugf("Caught error ('%?') when checking for dependency in %s",
+               e, repos);
+    exists = false;
   }
   return exists;
 }
 
+
+private const dummyExtraArgs: [1..0] string;
+proc cloneSource(url: string, dest: path,
+                 quiet=true, checkout=true, branch="", depth=-1,
+                 extra=dummyExtraArgs) throws {
+  log.debugf("Cloning from %s to %?", url, dest);
+  var baseCmd = new list(["git", "clone"]);
+  if quiet then
+    baseCmd.pushBack("--quiet");
+  if !checkout then
+    baseCmd.pushBack("--no-checkout");
+  if branch != "" then
+    baseCmd.pushBack("--branch=" + branch);
+  if depth > 0 then
+    baseCmd.pushBack("--depth=" + depth:string);
+  if extra.size > 0 then
+    baseCmd.pushBack(extra);
+
+  var cmd: [0..#(baseCmd.size + 2)] string;
+  cmd[0..#baseCmd.size] = baseCmd.toArray();
+  cmd[baseCmd.size] = url;
+  cmd[baseCmd.size + 1] = dest:string;
+
+  var cloneSucceeded = false;
+  if runWithStatus(cmd, quiet=quiet) == 0 {
+    cloneSucceeded = true;
+  } else {
+    log.debugf("Failed to clone from %s to %?", url, dest);
+    // there was an error, if the url starts with git@, try with https
+    if url.startsWith("git@") {
+      var httpsUrl = url
+        .replace(":", "/", count=1)
+        .replace("git@", "https://", count=1);
+      log.debugf("Retrying with https url: %s", httpsUrl);
+      // rewrite the command with the new url
+      cmd[baseCmd.size] = httpsUrl;
+      if runWithStatus(cmd, quiet=quiet) == 0 {
+        cloneSucceeded = true;
+      } else {
+        log.debugf("Failed to clone from %s to %?", httpsUrl, dest);
+      }
+    }
+  }
+  if !cloneSucceeded then
+    throw new MasonError("Failed to clone from " + url);
+}
+
+proc checkoutSource(repo: path, target: string, quiet=true,
+                     createBranch=false) throws {
+  var cmd: list(string);
+  cmd.pushBack("git");
+  cmd.pushBack("checkout");
+  if quiet then
+    cmd.pushBack("--quiet");
+  if createBranch then
+    cmd.pushBack("-b");
+  cmd.pushBack(target);
+  gitC(repo:string, cmd.toArray());
+}
 
 proc getProjectType(): string throws {
   const cwd = here.cwd();
@@ -692,7 +766,7 @@ proc searchDependencies(pattern: regex(string)): list(package) throws {
       const name = dir.replace("/", "");
       if pattern.search(name) {
         if isHidden(name) {
-          log.debugln("found hidden package: " + name);
+          log.debug("found hidden package: " + name);
         } else {
           const ver = findLatest(joinPath(searchDir, dir));
           if ver != versionInfo.zero() {
@@ -745,7 +819,7 @@ proc findLatest(packageDir: string): versionInfo {
   for manifest in listDir(packageDir, files=true, dirs=false) {
     // Check that it is a valid TOML file
     if !manifest.endsWith(suffix) {
-      log.warnf("File without '.toml' extension encountered - skipping %s %s\n",
+      log.warnf("File without '.toml' extension encountered - skipping %s %s",
                 packageName, manifest);
       continue;
     }

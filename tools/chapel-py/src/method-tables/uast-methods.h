@@ -47,6 +47,13 @@ CLASS_BEGIN(AstNode)
                auto parentId = id.parentSymbolId(context);
                if (parentId.isEmpty()) return nullptr;
                return parsing::idToAst(context, parentId))
+  PLAIN_GETTER(AstNode, parent_module, "Get the parent module of this AST node, possibly skipping intermediate non-module parent symbols",
+               Nilable<const chpl::uast::Module*>,
+
+               auto id = node->id();
+               auto parentId = parsing::idToParentModule(context, id);
+               if (parentId.isEmpty()) return nullptr;
+               return parsing::idToAst(context, parentId)->toModule())
   PLAIN_GETTER(AstNode, pragmas, "Get the pragmas of this AST node",
                std::set<std::string>,
 
@@ -513,6 +520,8 @@ CLASS_END(UintLiteral)
 CLASS_BEGIN(StringLikeLiteral)
   PLAIN_GETTER(StringLikeLiteral, value, "Get the value of this StringLikeLiteral node",
                chpl::UniqueString, return node->value())
+  PLAIN_GETTER(StringLikeLiteral, quote_style, "Get the quote style of this StringLikeLiteral node",
+               const char*, return StringLikeLiteral::quoteStyleToString(node->quoteStyle()))
 CLASS_END(StringLikeLiteral)
 
 CLASS_BEGIN(Call)

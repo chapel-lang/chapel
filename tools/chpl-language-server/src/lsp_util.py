@@ -1411,6 +1411,32 @@ class FileInfo:
 
         return None
 
+    def get_source_segment_at_position(
+        self, position: Position
+    ) -> Optional[NodeAndRange]:
+        """
+        Like get_target_segment_at_position, but returns the source expression
+        (the identifier under the cursor) rather than the declaration it resolves
+        to. This is useful for queries like go-to-type-definition, where we want
+        the type of the expression written by the user, not the type stored on
+        the declaration node (which is generally harder to come by and ought
+        to be equivalent).
+        """
+
+        segment = self.get_call_segment_at_position(position)
+        if segment:
+            return segment.ident
+
+        segment = self.get_use_segment_at_position(position)
+        if segment:
+            return segment.ident
+
+        segment = self.get_def_segment_at_position(position)
+        if segment:
+            return segment
+
+        return None
+
     def file_lines(self) -> List[str]:
         file_text = self.context.context.get_file_text(
             self.uri[len("file://") :]
@@ -1502,7 +1528,9 @@ class WorkspaceConfig:
 
     def files(self) -> List[str]:
         files = set()
-        for file_cfg in self._files.values():
+        for key, file_cfg in self._files.items():
+            if key == "invocation":
+                continue
             files.update(file_cfg.get("files", []))
         if self.mason:
             files.update(self.mason.get_files())

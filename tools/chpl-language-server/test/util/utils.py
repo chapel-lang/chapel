@@ -125,7 +125,7 @@ class SourceFilesContext:
                 SourceFilesContext._create_file_at_path(name, contents)
 
     def _build_cls_commands(self, files: typing.Dict[str, str]):
-        commands = {}
+        commands = {"invocation": ["chpl", "--dummy", "--invocation"]}
         allfiles = []
         for name, contents in files.items():
             filepath = os.path.join(self.tempdir.name, name + ".chpl")

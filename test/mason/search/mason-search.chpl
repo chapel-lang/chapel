@@ -14,10 +14,6 @@ proc main() {
     if arg != "" then args.pushBack(arg);
   }
 
-  if debug {
-    MasonLogger.logs = MasonLogger.logLevel.debug;
-  }
-
   try! {
     masonSearch(args.toArray());
   } catch e: MasonError {

@@ -26,7 +26,7 @@ use MasonUtils;
 import MasonLogger;
 use List only list;
 
-private var log = new MasonLogger.logger("mason doc");
+private var log = MasonLogger.getLogger("mason doc");
 
 proc masonDoc(args: [] string) throws {
 
@@ -94,7 +94,7 @@ proc masonDoc(args: [] string) throws {
     writeln(commandStr);
     runCommand(commandArr);
   } else {
-    log.warnln('Mason could not find the project to document!');
+    log.warn("Mason could not find the project to document!");
     var command = new list([
       "chpldoc",
     ]);

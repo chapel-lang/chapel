@@ -118,6 +118,38 @@ async def test_go_to_call_generic(client: LanguageClient):
 
 
 @pytest.mark.asyncio
+async def test_goto_type_def_member_field(client: LanguageClient):
+    """
+    Ensure that goto-type-definition works on a field accessed via implicit
+    'this' inside a method body (issue #28574).
+    """
+
+    file = """
+           record myOtherRec {
+             proc foo(x) { }
+           }
+           record myRec {
+             var x: myOtherRec;
+             proc doIt() {
+               var y = x;
+               x.foo(1);
+               y.foo(1);
+             }
+           }
+           var r: myRec;
+           r.doIt();
+           """
+
+    async with source_file(client, file) as doc:
+        # Both 'y' and 'x' are of type 'myOtherRec' and go-to-type-def
+        # should take you there.
+        await check_goto_type_def(client, doc, pos((6, 8)), pos((0, 7)))
+        await check_goto_type_def(client, doc, pos((6, 12)), pos((0, 7)))
+        await check_goto_type_def(client, doc, pos((7, 4)), pos((0, 7)))
+        await check_goto_type_def(client, doc, pos((8, 4)), pos((0, 7)))
+
+
+@pytest.mark.asyncio
 async def test_string(client: LanguageClient):
     """
     Ensure that goto-type works on a string.

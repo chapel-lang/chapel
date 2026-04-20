@@ -33,7 +33,8 @@ namespace {
 }
 
 Type* Pass::computeAdjustedType(Type* t) const {
-  if (auto ft = toFunctionType(t->getValType())) {
+  if (auto ft = toFunctionType(t->getValType());
+      ft && !ft->isGeneric()) {
     auto ret = ft->getWithStreamlinedComponents();
     return ret;
   }
