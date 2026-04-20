@@ -798,15 +798,15 @@ void CallInitDeinit::processTupleRhsHelper(VarFrame* frame,
 
     // Process each (LHS) element corresponding to the current RHS actual.
     for (; eltIdx < endEltIdxForActual; eltIdx++) {
-      auto lhsEltType = lhsTupleType->elementType(i);
-      auto rhsEltType = rhsTupleType->elementType(i);
+      auto lhsEltType = lhsTupleType->elementType(eltIdx);
+      auto rhsEltType = rhsTupleType->elementType(eltIdx);
       processInit(frame, ast, lhsEltType, rhsEltType, rv, actual);
       for (auto action : re.associatedActions()) {
         subActions.emplace_back(action.action(),
                                 action.fn(),
                                 /* id */ actual->id(),
                                 action.type(),
-                                /* tupleEltIdx */ i,
+                                /* tupleEltIdx */ eltIdx,
                                 action.subActions());
       }
       re.clearAssociatedActions();
