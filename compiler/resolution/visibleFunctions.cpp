@@ -88,6 +88,13 @@ static bool useMethodVisibilityRules(CallExpr* call, const char* name) {
           || typeHelperNames.count(name) || isAstrOpName(name);
 }
 
+static inline bool symbolExcludedBasedOnEdition(Symbol* sym) {
+  return sym->hasFlag(FLAG_HAS_EDITION) &&
+          !isEditionApplicable(sym->getFirstEdition(),
+                               sym->getLastEdition(),
+                               sym);
+}
+
 
 // This constructor creates a fresh VisibilityInfo
 // when we start processing the call described by 'info'.
@@ -240,15 +247,7 @@ static void buildVisibleFunctionMap() {
   for (int i = nVisibleFunctions; i < gFnSymbols.n; i++) {
     FnSymbol* fn = gFnSymbols.v[i];
     if (!fn->hasFlag(FLAG_INVISIBLE_FN) && fn->inTree() && !isArgSymbol(fn->defPoint->parentSymbol)) {
-      if (fn->hasFlag(FLAG_HAS_EDITION)) {
-        // Only allow functions with a specified edition if that edition
-        // matches
-        if (!isEditionApplicable(fn->getFirstEdition(),
-                                 fn->getLastEdition(),
-                                 fn)) {
-          continue;
-        }
-      }
+      if (symbolExcludedBasedOnEdition(fn)) continue;
       BlockStmt* block = NULL;
       if (fn->hasFlag(FLAG_AUTO_II) || fn->hasFlag(FLAG_THUNK_INVOKE)) {
         block = theProgram->block;
@@ -581,14 +580,7 @@ static void getVisibleMethodsFirstVisit(const char* name, CallExpr* call,
 
     if (Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(name)) {
       forv_Vec(FnSymbol, fn, *fns) {
-        if (fn->hasFlag(FLAG_HAS_EDITION)) {
-          // Only allow functions with a specified edition if that edition
-          // matches
-          if (!isEditionApplicable(fn->getFirstEdition(), fn->getLastEdition(),
-                                   fn)) {
-            continue;
-          }
-        }
+        if (symbolExcludedBasedOnEdition(fn)) continue;
 
         // Don't allow operators that aren't methods to be found unless they're
         // publicly visible
@@ -632,14 +624,7 @@ static void getVisibleMethodsFirstVisitFiltered(const char* name,
 
     if (Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(name)) {
       forv_Vec(FnSymbol, fn, *fns) {
-        if (fn->hasFlag(FLAG_HAS_EDITION)) {
-          // Only allow functions with a specified edition if that edition
-          // matches
-          if (!isEditionApplicable(fn->getFirstEdition(), fn->getLastEdition(),
-                                   fn)) {
-            continue;
-          }
-        }
+        if (symbolExcludedBasedOnEdition(fn)) continue;
 
         // When private methods and fields are supported, we'll need to extend
         // this
@@ -1135,14 +1120,7 @@ static void getVisibleFnsFirstVisit(const char*       name,
       bool privateOkay = false;
 
       forv_Vec(FnSymbol, fn, *fns) {
-        if (fn->hasFlag(FLAG_HAS_EDITION)) {
-          // Only allow functions with a specified edition if that edition
-          // matches
-          if (!isEditionApplicable(fn->getFirstEdition(), fn->getLastEdition(),
-                                   fn)) {
-            continue;
-          }
-        }
+        if (symbolExcludedBasedOnEdition(fn)) continue;
 
         if (fn->hasFlag(FLAG_PRIVATE)) {
           // Ensure that private functions are not used outside of their
