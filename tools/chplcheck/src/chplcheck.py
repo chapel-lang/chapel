@@ -313,7 +313,11 @@ def main():
         # Silence errors, warnings etc. -- we're just linting.
         with context.track_errors() as _:
             asts = context.parse(filename)
-            violations = list(driver.run_checks(context, asts))
+            try:
+                violations = list(driver.run_checks(context, asts))
+            except ValueError as e:
+                print(f"Error running checks on {filename}: {e}")
+                continue
 
             # sort the failures in order of appearance
             violations.sort(key=lambda f: f[0].start()[0])
