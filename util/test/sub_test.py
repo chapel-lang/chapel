@@ -1168,7 +1168,7 @@ def main():
     globalTimeout = int(os.getenv("CHPL_TEST_TIMEOUT", defaultTimeout))
 
     # global maxQueueTime, in seconds
-    globallMaxQueueTime = int(os.getenv("CHPL_TEST_MAX_QUEUE_TIME", 0))
+    globalMaxQueueTime = int(os.getenv("CHPL_TEST_MAX_QUEUE_TIME", 0))
 
     # get a threshold for which to report long running tests
     if os.getenv("CHPL_TEST_EXEC_TIME_WARN_LIMIT"):
@@ -2716,7 +2716,7 @@ def main():
                 # lastexecopts really must be last, so add any launcher timeout now
                 if useLauncherTimeout:
                     args += LauncherTimeoutArgs(
-                        timeout, maxQueueTime=globallMaxQueueTime
+                        timeout, maxQueueTime=globalMaxQueueTime
                     )
                 if lastexecopts:
                     args += lastexecopts
