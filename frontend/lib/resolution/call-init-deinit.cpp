@@ -832,14 +832,9 @@ void CallInitDeinit::processInit(VarFrame* frame,
 
   // Force copying when tuple destructuring or when the RHS is part of a
   // tuple expression, matching production's behavior.
-  bool isTupleDestructure = false;
-  bool rhsIsTupleElt = false;
-  isTupleDestructure |= ast->isTupleDecl();
-  if (op && op->op() == USTR("=")) {
-    isTupleDestructure |= op->lhs()->isTuple();
-  }
-  rhsIsTupleElt |= setRhsAst && setRhsAst->isTuple();
-  bool forceTupleCopy = isTupleDestructure || rhsIsTupleElt;
+  bool forceTupleCopy = ast->isTupleDecl() ||
+                        (op && op->op() == USTR("=") && op->lhs()->isTuple()) ||
+                        (setRhsAst && setRhsAst->isTuple());
 
   if (lhsType.isType() || lhsType.isParam()) {
     // these are basically 'move' initialization
