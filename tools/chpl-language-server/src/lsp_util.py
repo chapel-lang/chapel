@@ -1528,7 +1528,9 @@ class WorkspaceConfig:
 
     def files(self) -> List[str]:
         files = set()
-        for file_cfg in self._files.values():
+        for key, file_cfg in self._files.items():
+            if key == "invocation":
+                continue
             files.update(file_cfg.get("files", []))
         if self.mason:
             files.update(self.mason.get_files())
