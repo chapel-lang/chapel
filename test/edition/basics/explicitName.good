@@ -1,0 +1,12 @@
+explicitName.chpl:13: In function 'test1':
+explicitName.chpl:15: warning: old
+explicitName.chpl:17: In function 'test2':
+explicitName.chpl:19: warning: old
+explicitName.chpl:21: In function 'test3':
+explicitName.chpl:23: warning: old
+explicitName.chpl:25: In function 'test4':
+explicitName.chpl:27: warning: old
+explicitName.chpl:29: In function 'test5':
+explicitName.chpl:31: warning: old
+explicitName.chpl:33: In function 'test6':
+explicitName.chpl:35: warning: old
