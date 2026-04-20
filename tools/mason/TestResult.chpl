@@ -28,141 +28,141 @@
   formatted traceback of the error that occurred.
 */
 module TestResult {
-  private use List;
-  import ChapelLocks;
-  class TestResult {
-    type tupType = 2*string;
-    var failures: list(tupType),
-        errors: list(tupType),
-        skipped: list(tupType);
-    var testsRun = 0;
-    var testsPassed = 0;
-    var shouldStop = false;
-    var separator1 = "="* 70,
-        separator2 = "-"* 70;
+private use List;
+import ChapelLocks;
+class TestResult {
+  type tupType = 2*string;
+  var failures: list(tupType),
+      errors: list(tupType),
+      skipped: list(tupType);
+  var testsRun = 0;
+  var testsPassed = 0;
+  var shouldStop = false;
+  var separator1 = "="* 70,
+      separator2 = "-"* 70;
 
-    // the lock is only taken when modifying the result, as thats the only
-    // time we need to be thread-safe
-    var lock = new ChapelLocks.chpl_LocalSpinlock();
+  // the lock is only taken when modifying the result, as thats the only
+  // time we need to be thread-safe
+  var lock = new ChapelLocks.chpl_LocalSpinlock();
 
-    // called when a test ran
-    proc testRan() {
-      this.testsRun += 1;
-    }
+  // called when a test ran
+  proc testRan() {
+    this.testsRun += 1;
+  }
 
-    /*Called when an error has occurred.*/
-    proc addError(testName: string, fileName: string, errMsg: string) {
-      manage lock {
-        this.testRan();
-        var fileAdd = fileName + ": " + testName;
-        this.errors.pushBack((fileAdd, errMsg));
-      }
-    }
-
-    /*called when error occured */
-    proc addFailure(testName: string, fileName: string, errMsg: string) {
-      manage lock {
-        this.testRan();
-        var fileAdd = fileName + ": " + testName;
-        this.failures.pushBack((fileAdd, errMsg));
-      }
-    }
-
-    /*Called when a test has completed successfully*/
-    proc addSuccess() {
-      manage lock {
-        this.testRan();
-        this.testsPassed += 1;
-      }
-    }
-
-    /*Called when a test is skipped.*/
-    proc addSkip(testName: string, fileName: string, errMsg: string) {
-      manage lock {
-        this.testRan();
-        var fileAdd = fileName + ": " + testName;
-        this.skipped.pushBack((fileAdd, errMsg));
-      }
-    }
-
-    /*Tells whether or not this result was a success.*/
-    proc wasSuccessful() {
-      return this.failures.size == 0 && this.errors.size == 0;
-    }
-
-    /* Indicates that the tests should be aborted. */
-    proc stop() {
-      this.shouldStop = true;
-    }
-
-    /*Count of test skipped*/
-    proc numSkippedTests() {
-      return this.skipped.size;
-    }
-
-    /*Count of test failed*/
-    proc numFailedTests() {
-      return this.failures.size;
-    }
-
-    /*Count of tests giving error*/
-    proc numErroredTests() {
-      return this.errors.size;
-    }
-
-    proc printErrors() {
-      writeln();
-      this.printErrorList("ERROR", this.errors);
-      this.printErrorList("FAIL", this.failures);
-      this.printErrorList("SKIPPED", this.skipped);
-    }
-
-    proc printErrorList(flavour, errors) {
-      for (test, err) in errors {
-        writeln(this.separator1);
-        writeln(flavour, " ", test);
-        writeln(this.separator2);
-        writeln(err);
-      }
-    }
-
-    /* Function to print the result*/
-    proc printResult(timeTaken: real) {
-      var skipped = this.numSkippedTests();
-      var run = this.testsRun - skipped;
-      if this.testsRun != 0 {
-        writeln("Ran ", run, " ", printTest(run)," in ",timeTaken," seconds");
-        writeln();
-        var infos: list((string));
-        if testsPassed != 0 then
-          infos.pushBack("passed = " + testsPassed: string);
-        if !this.wasSuccessful() {
-          write("FAILED");
-          var failed = this.numFailedTests(),
-            errored = this.numErroredTests();
-          if failed then
-            infos.pushBack("failures = " + failed: string);
-          if errored then
-            infos.pushBack("errors = " + errored: string);
-        } else
-          write("OK");
-        if skipped then
-          infos.pushBack("skipped = " + skipped: string);
-        if infos.size {
-          write(" (");
-          for info in infos do write(info, " ");
-          writeln(")");
-        }
-      } else {
-        writeln("No Tests Found");
-      }
-    }
-
-    proc printTest(count) {
-      if count > 1 {
-        return "tests";
-      }
-      return "test";
+  /*Called when an error has occurred.*/
+  proc addError(testName: string, fileName: string, errMsg: string) {
+    manage lock {
+      this.testRan();
+      var fileAdd = fileName + ": " + testName;
+      this.errors.pushBack((fileAdd, errMsg));
     }
   }
+
+  /*called when error occured */
+  proc addFailure(testName: string, fileName: string, errMsg: string) {
+    manage lock {
+      this.testRan();
+      var fileAdd = fileName + ": " + testName;
+      this.failures.pushBack((fileAdd, errMsg));
+    }
+  }
+
+  /*Called when a test has completed successfully*/
+  proc addSuccess() {
+    manage lock {
+      this.testRan();
+      this.testsPassed += 1;
+    }
+  }
+
+  /*Called when a test is skipped.*/
+  proc addSkip(testName: string, fileName: string, errMsg: string) {
+    manage lock {
+      this.testRan();
+      var fileAdd = fileName + ": " + testName;
+      this.skipped.pushBack((fileAdd, errMsg));
+    }
+  }
+
+  /*Tells whether or not this result was a success.*/
+  proc wasSuccessful() {
+    return this.failures.size == 0 && this.errors.size == 0;
+  }
+
+  /* Indicates that the tests should be aborted. */
+  proc stop() {
+    this.shouldStop = true;
+  }
+
+  /*Count of test skipped*/
+  proc numSkippedTests() {
+    return this.skipped.size;
+  }
+
+  /*Count of test failed*/
+  proc numFailedTests() {
+    return this.failures.size;
+  }
+
+  /*Count of tests giving error*/
+  proc numErroredTests() {
+    return this.errors.size;
+  }
+
+  proc printErrors() {
+    writeln();
+    this.printErrorList("ERROR", this.errors);
+    this.printErrorList("FAIL", this.failures);
+    this.printErrorList("SKIPPED", this.skipped);
+  }
+
+  proc printErrorList(flavour, errors) {
+    for (test, err) in errors {
+      writeln(this.separator1);
+      writeln(flavour, " ", test);
+      writeln(this.separator2);
+      writeln(err);
+    }
+  }
+
+  /* Function to print the result*/
+  proc printResult(timeTaken: real) {
+    var skipped = this.numSkippedTests();
+    var run = this.testsRun - skipped;
+    if this.testsRun != 0 {
+      writeln("Ran ", run, " ", printTest(run)," in ",timeTaken," seconds");
+      writeln();
+      var infos: list((string));
+      if testsPassed != 0 then
+        infos.pushBack("passed = " + testsPassed: string);
+      if !this.wasSuccessful() {
+        write("FAILED");
+        var failed = this.numFailedTests(),
+          errored = this.numErroredTests();
+        if failed then
+          infos.pushBack("failures = " + failed: string);
+        if errored then
+          infos.pushBack("errors = " + errored: string);
+      } else
+        write("OK");
+      if skipped then
+        infos.pushBack("skipped = " + skipped: string);
+      if infos.size {
+        write(" (");
+        for info in infos do write(info, " ");
+        writeln(")");
+      }
+    } else {
+      writeln("No Tests Found");
+    }
+  }
+
+  proc printTest(count) {
+    if count > 1 {
+      return "tests";
+    }
+    return "test";
+  }
+}
 }
