@@ -7703,18 +7703,28 @@ static void captureTaskIntentValues(int        argNum,
 
 // Ensure 'parent' is the block before which we want to do the capturing.
 static void verifyTaskFnCall(BlockStmt* parent, CallExpr* call) {
-  if (call->isNamed("coforall_fn") == true ||
-      call->isNamed("on_fn")       == true) {
+
+  auto isTaskFuncCall = [](CallExpr* call, const char* prefix) {
+    if (SymExpr* base = toSymExpr(call->baseExpr))
+      return startsWith(base->symbol()->name, prefix);
+    else if (UnresolvedSymExpr* base = toUnresolvedSymExpr(call->baseExpr))
+      return startsWith(base->unresolved, prefix);
+    else
+      return false;
+  };
+
+  if (isTaskFuncCall(call, "coforall_fn") ||
+      isTaskFuncCall(call, "on_fn")) {
     INT_ASSERT(parent->isForLoop());
 
-  } else if (call->isNamed("cobegin_fn") == true) {
+  } else if (isTaskFuncCall(call, "cobegin_fn")) {
     DefExpr* first = toDefExpr(parent->getFirstExpr());
 
     // just documenting the current state
     INT_ASSERT(first && !strcmp(first->sym->name, "_cobeginCount"));
 
   } else {
-    INT_ASSERT(call->isNamed("begin_fn"));
+    INT_ASSERT(isTaskFuncCall(call, "begin_fn"));
   }
 }
 

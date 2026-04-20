@@ -2320,9 +2320,9 @@ buildCobeginStmt(CallExpr* byref_vars, BlockStmt* block) {
   VarSymbol* numTasks = new_IntSymbol(block->length());
 
   for_alist(stmt, block->body) {
+    SET_LINENO(stmt);
     BlockStmt* beginBlk = new BlockStmt();
     beginBlk->blockInfoSet(new CallExpr(PRIM_BLOCK_COBEGIN));
-    beginBlk->astloc = stmt->astloc;
     // the original byref_vars is dead - will be clean_gvec-ed
     addByrefVars(beginBlk, copyByrefVars(byref_vars));
     stmt->insertBefore(beginBlk);
