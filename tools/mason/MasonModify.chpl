@@ -18,6 +18,9 @@
  * limitations under the License.
  */
 
+/**/
+module MasonModify {
+
 use ArgumentParser;
 use FileSystem;
 use Map;
@@ -261,4 +264,6 @@ private proc checkDepName(dep: string) throws {
     throw new MasonError("Bad package name '" + dep +
                          "' - only Chapel identifiers are legal package names");
   }
+}
+
 }

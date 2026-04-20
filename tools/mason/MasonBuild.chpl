@@ -18,6 +18,9 @@
  * limitations under the License.
  */
 
+/**/
+module MasonBuild {
+
 import MasonPrereqs;
 
 use ArgumentParser;
@@ -592,4 +595,6 @@ proc invalidateFingerprint(projectName:string, fingerprintDir: string) {
   if isFile(fingerprintFile) {
     FileSystem.remove(fingerprintFile);
   }
+}
+
 }

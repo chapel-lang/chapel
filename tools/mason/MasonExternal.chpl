@@ -18,6 +18,9 @@
  * limitations under the License.
  */
 
+/**/
+module MasonExternal {
+
 use ArgumentParser;
 use FileSystem;
 use List;
@@ -680,4 +683,6 @@ proc uninstallSpkg(args: [] string) throws {
   if status != 0 {
     throw new owned MasonError("Package could not be uninstalled");
   }
+}
+
 }

@@ -18,6 +18,8 @@
  * limitations under the License.
  */
 
+/**/
+module SpecParser {
 
 private use List;
 use MasonUtils;
@@ -156,4 +158,6 @@ private proc parseSpec(ref tokenList: list(string)): 4*string throws {
   }
   return (package, packageVersion, compiler,
           " ".join(variants.these()).strip());
+}
+
 }

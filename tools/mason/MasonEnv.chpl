@@ -18,6 +18,9 @@
  * limitations under the License.
  */
 
+/**/
+module MasonEnv {
+
 use ArgumentParser;
 use List;
 use MasonUtils;
@@ -205,4 +208,6 @@ private proc getRegNameFromLoc(location: string): string throws {
   } else {
     return strippedLoc[lastSlashPos+1..];
   }
+}
+
 }

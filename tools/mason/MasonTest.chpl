@@ -18,6 +18,8 @@
  * limitations under the License.
  */
 
+/**/
+module MasonTest {
 
 use ArgumentParser;
 use FileSystem;
@@ -831,4 +833,6 @@ proc addTestResult(ref result, ref localesCountMap, ref testNames,
       testNames.pushBack(testName);
     }
   }
+}
+
 }

@@ -18,6 +18,8 @@
  * limitations under the License.
  */
 
+/**/
+module MasonPublish {
 
 use ArgumentParser;
 use FileSystem;
@@ -973,4 +975,6 @@ proc masonTomlFileCheck(projectHome: string): tomlCheckResult {
       mismatchedTypes.pushBack(field);
   }
   return new tomlCheckResult(missingFields, mismatchedTypes);
+}
+
 }

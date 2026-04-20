@@ -20,6 +20,7 @@
 
 
 /* A help module for the mason package manager */
+module MasonHelp {
 
 use ArgumentParser;
 use Help;
@@ -738,4 +739,6 @@ proc masonModulesHelp() {
                                   being used programmatically.
   """.dedent().strip();
   writeln(s);
+}
+
 }

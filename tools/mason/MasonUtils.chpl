@@ -21,6 +21,9 @@
 
 
 /* A helper file of utilities for Mason */
+/**/
+module MasonUtils {
+
 private use CTypes;
 private use ChplConfig;
 public use FileSystem;
@@ -997,4 +1000,6 @@ record chplOptions {
 @chplcheck.ignore("CamelCaseFunctions")
 proc MASON_VERSION : string {
   return "0.2.0";
+}
+
 }

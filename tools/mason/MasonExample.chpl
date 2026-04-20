@@ -18,6 +18,8 @@
  * limitations under the License.
  */
 
+/**/
+module MasonExample {
 
 use ArgumentParser;
 use FileSystem;
@@ -421,4 +423,6 @@ proc exampleModified(projectHome: string,
       } else
         return true;
   }
+}
+
 }

@@ -18,6 +18,9 @@
  * limitations under the License.
  */
 
+/**/
+module MasonRun {
+
 use ArgumentParser;
 use FileSystem;
 use List;
@@ -194,4 +197,6 @@ private proc masonBuildRun(args: [] string) throws {
     for val in passArgs.values() do execopts.pushBack(val);
     runProjectBinary(show, release, execopts, nLocales=1);
   }
+}
+
 }

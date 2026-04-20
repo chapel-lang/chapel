@@ -18,6 +18,9 @@
  * limitations under the License.
  */
 
+/**/
+module MasonUpdate {
+
 use FileSystem;
 use List;
 use Map;
@@ -615,4 +618,6 @@ private proc pullGitDeps(gitDeps, show=false) {
     }
   }
   return gitDepsWithRevision;
+}
+
 }

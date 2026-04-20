@@ -18,6 +18,9 @@
  * limitations under the License.
  */
 
+/**/
+module MasonPrereqs {
+
 import FileSystem as FS;
 import List.list;
 import ThirdParty.Pathlib.path;
@@ -106,4 +109,6 @@ iter prereqs(const baseDir = path.cwd()): path {
   } else {
     log.debugf("%s don't exist.", prereqsDir:string);
   }
+}
+
 }
