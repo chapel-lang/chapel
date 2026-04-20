@@ -156,6 +156,15 @@ inline size_t hashOwned(const chpl::owned<T>& key) {
   return ret;
 }
 
+template <typename T>
+inline size_t hashOptional(const chpl::optional<T>& key) {
+  size_t ret = 0;
+  bool hasValue = (bool) key;
+  ret = hash_combine(ret, hash(hasValue));
+  if (hasValue) ret = hash_combine(ret, hash(*key));
+  return ret;
+}
+
 template<typename T, typename U>
 inline size_t hashPair(const std::pair<T, U>& key) {
   size_t ret = 0;
@@ -206,6 +215,11 @@ template<typename K, typename V> struct hasher<std::map<K, V>> {
 template<typename T> struct hasher<chpl::owned<T>> {
   size_t operator()(const chpl::owned<T>& key) const {
     return chpl::hashOwned(key);
+  }
+};
+template<typename T> struct hasher<chpl::optional<T>> {
+  size_t operator()(const chpl::optional<T>& key) const {
+    return chpl::hashOptional(key);
   }
 };
 template<typename T, typename U> struct hasher<std::pair<T,U>> {
