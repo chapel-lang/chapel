@@ -235,13 +235,21 @@ def SuckOutputWithTimeout(stream, timeout):
     return buffer
 
 
-def LauncherTimeoutArgs(seconds):
+def LauncherTimeoutArgs(seconds, maxQueueTime=0):
     if useLauncherTimeout == "pbs" or useLauncherTimeout == "slurm":
         # --walltime=hh:mm:ss
         m, s = divmod(seconds, 60)
         h, m = divmod(m, 60)
         fmttime = "--walltime={0:02d}:{1:02d}:{2:02d}".format(h, m, s)
-        return [fmttime]
+        args = [fmttime]
+
+        if maxQueueTime >= 0:
+            # deadline is the walltime + max time in queue
+            time = maxQueueTime + seconds
+            fmtdeadline = "--deadline=now+{}seconds".format(time)
+            args.append(fmtdeadline)
+        return args
+
     else:
         Fatal(
             "LauncherTimeoutArgs encountered an unknown format spec: "
@@ -1158,6 +1166,9 @@ def main():
     else:
         defaultTimeout = 300
     globalTimeout = int(os.getenv("CHPL_TEST_TIMEOUT", defaultTimeout))
+
+    # global maxQueueTime, in seconds
+    gloablMaxQueueTime = int(os.getenv("CHPL_TEST_MAX_QUEUE_TIME", 0))
 
     # get a threshold for which to report long running tests
     if os.getenv("CHPL_TEST_EXEC_TIME_WARN_LIMIT"):
@@ -2704,7 +2715,9 @@ def main():
                     args += shlex.split(envExecopts)
                 # lastexecopts really must be last, so add any launcher timeout now
                 if useLauncherTimeout:
-                    args += LauncherTimeoutArgs(timeout)
+                    args += LauncherTimeoutArgs(
+                        timeout, maxQueueTime=gloablMaxQueueTime
+                    )
                 if lastexecopts:
                     args += lastexecopts
                 # sys.stdout.write("args=%s\n"%(args))
