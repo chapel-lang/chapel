@@ -67,18 +67,33 @@ def get_lint_diagnostics(
         )
     )
     with context.track_errors() as _:
-        for loc, node, rule, fixits in driver.run_checks(context, asts):
-            diagnostic = Diagnostic(
-                range=chapel.lsp.location_to_range(loc),
-                message="Lint: rule [{}] violated".format(rule),
-                severity=DiagnosticSeverity.Warning,
-                code=rule,
-                code_description=CodeDescription(base_url + "#" + rule.lower()),
+        try:
+            for loc, node, rule, fixits in driver.run_checks(context, asts):
+                diagnostic = Diagnostic(
+                    range=chapel.lsp.location_to_range(loc),
+                    message="Lint: rule [{}] violated".format(rule),
+                    severity=DiagnosticSeverity.Warning,
+                    code=rule,
+                    code_description=CodeDescription(
+                        base_url + "#" + rule.lower()
+                    ),
+                )
+                if fixits:
+                    fixits = [Fixit.to_dict(f) for f in fixits]
+                    diagnostic.data = {"rule": rule, "fixits": fixits}
+                diagnostics.append(diagnostic)
+        except ValueError as e:
+            diagnostics.append(
+                Diagnostic(
+                    range=Range(
+                        start=Position(0, 0),
+                        end=Position(0, 0),
+                    ),
+                    message=f"Error running checks: {e}",
+                    severity=DiagnosticSeverity.Error,
+                )
             )
-            if fixits:
-                fixits = [Fixit.to_dict(f) for f in fixits]
-                diagnostic.data = {"rule": rule, "fixits": fixits}
-            diagnostics.append(diagnostic)
+
     return diagnostics
 
 
