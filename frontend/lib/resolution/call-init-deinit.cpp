@@ -776,22 +776,43 @@ void CallInitDeinit::processTupleRhsHelper(VarFrame* frame,
 
   re.clearAssociatedActions();
   AssociatedAction::ActionsList subActions;
-  for (int i = 0; i < lhsTupleType->numElements(); i++) {
+  size_t eltIdx = 0, endEltIdxForActual = 0;
+  for (int i = 0; i < rhsTupleExpr->numActuals(); i++) {
     auto actual = rhsTupleExpr->actual(i);
-    auto lhsEltType = lhsTupleType->elementType(i);
-    auto rhsEltType = rv.byPostorder().byAst(actual).type();
-    processInit(frame, ast, lhsEltType,
-                rhsEltType, rv, actual);
-    for (auto action : re.associatedActions()) {
-      subActions.emplace_back(action.action(),
-                              action.fn(),
-                              /* id */ actual->id(),
-                              action.type(),
-                              /* tupleEltIdx */ i,
-                              action.subActions());
+    endEltIdxForActual++;
+
+    // If this RHS actual is a tuple expansion, match up the appropriate number
+    // of (LHS) tuple elements to it.
+    if (auto op = actual->toOpCall()) {
+      if (op->op() == USTR("...")) {
+        CHPL_ASSERT(op->numActuals() == 1);
+        auto expandedTup = op->actual(0);
+        auto expandedType = rv.byAst(expandedTup).type().type();
+        CHPL_ASSERT(expandedType);
+        auto expandedTupType = expandedType->toTupleType();
+        CHPL_ASSERT(expandedTupType);
+
+        endEltIdxForActual += expandedTupType->numElements() - 1;
+      }
     }
-    re.clearAssociatedActions();
+
+    // Process each (LHS) element corresponding to the current RHS actual.
+    for (; eltIdx < endEltIdxForActual; eltIdx++) {
+      auto lhsEltType = lhsTupleType->elementType(i);
+      auto rhsEltType = rhsTupleType->elementType(i);
+      processInit(frame, ast, lhsEltType, rhsEltType, rv, actual);
+      for (auto action : re.associatedActions()) {
+        subActions.emplace_back(action.action(),
+                                action.fn(),
+                                /* id */ actual->id(),
+                                action.type(),
+                                /* tupleEltIdx */ i,
+                                action.subActions());
+      }
+      re.clearAssociatedActions();
+    }
   }
+
   // Re-add the top-level action with the sub-actions.
   re.addAssociatedAction(topLevelAction.action(), topLevelAction.fn(),
                             topLevelAction.id(), topLevelAction.type(),

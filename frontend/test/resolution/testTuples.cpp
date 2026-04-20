@@ -619,23 +619,47 @@ static void test14() {
 
 static void test15() {
   printf("%s\n", __FUNCTION__);
-  auto context = buildStdContext();
+  {
+    auto context = buildStdContext();
+    auto qt = resolveTypeOfXInit(context,
+                  R""""(
+                    var tup = (1, 2);
+                    var x = ( (... tup), 3.0);
+                  )"""");
 
-  auto qt = resolveTypeOfXInit(context,
-                R""""(
-                  var tup = (1, 2);
-                  var x = ( (... tup), 3.0);
-                )"""");
+    assert(qt.kind() == QualifiedType::CONST_VAR);
+    assert(qt.type()->isTupleType());
+    auto tt = qt.type()->toTupleType();
 
-  assert(qt.kind() == QualifiedType::CONST_VAR);
-  assert(qt.type()->isTupleType());
-  auto tt = qt.type()->toTupleType();
+    assert(tt->numElements() == 3);
+    assert(!tt->isStarTuple());
+    assert(tt->elementType(0).type()->isIntType());
+    assert(tt->elementType(1).type()->isIntType());
+    assert(tt->elementType(2).type()->isRealType());
+  }
 
-  assert(tt->numElements() == 3);
-  assert(!tt->isStarTuple());
-  assert(tt->elementType(0).type()->isIntType());
-  assert(tt->elementType(1).type()->isIntType());
-  assert(tt->elementType(2).type()->isRealType());
+  {
+    auto context = buildStdContext();
+    auto qt = resolveTypeOfXInit(context,
+                  R""""(
+                    var tup1 = (1, 2);
+                    var tup2 = (3.0, "hi");
+                    var x = ( (... tup1), false, (... tup2), true);
+                  )"""");
+
+    assert(qt.kind() == QualifiedType::CONST_VAR);
+    assert(qt.type()->isTupleType());
+    auto tt = qt.type()->toTupleType();
+
+    assert(tt->numElements() == 6);
+    assert(!tt->isStarTuple());
+    assert(tt->elementType(0).type()->isIntType());
+    assert(tt->elementType(1).type()->isIntType());
+    assert(tt->elementType(2).type()->isBoolType());
+    assert(tt->elementType(3).type()->isRealType());
+    assert(tt->elementType(4).type()->isStringType());
+    assert(tt->elementType(5).type()->isBoolType());
+  }
 }
 
 static void test16() {
