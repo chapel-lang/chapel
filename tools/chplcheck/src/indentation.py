@@ -282,7 +282,7 @@ class IndentationCollector:
                 if self.UnindentedModule and isinstance(
                     parent_for_indentation, Module
                 ):
-                    # this is ok, its what the user asked for
+                    # this is ok, it is what the user asked for
                     prev_line = line
                     continue
                 self._note_incorrectly_indented(
