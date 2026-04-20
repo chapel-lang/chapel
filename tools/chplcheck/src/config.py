@@ -53,10 +53,14 @@ class RuleSettingAction(argparse.Action):
         # values must match the following regex, if they don't raise an error
         regex = r"^(\w+\.)?(\w+)=(.+)$"
         if not isinstance(values, str):
-            raise argparse.ArgumentError(self, f"Invalid rule setting: {values}")
+            raise argparse.ArgumentError(
+                self, f"Invalid rule setting: {values}"
+            )
         m = re.match(regex, values)
         if not m:
-            raise argparse.ArgumentError(self, f"Invalid rule setting: {values}")
+            raise argparse.ArgumentError(
+                self, f"Invalid rule setting: {values}"
+            )
 
         rule_name = m.group(1)[:-1] if m.group(1) else None
         setting_name = m.group(2)

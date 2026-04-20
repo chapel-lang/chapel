@@ -1439,7 +1439,11 @@ def rules(driver: LintDriver):
 
     @driver.advanced_rule(settings=[".UnindentedModule"])
     def IncorrectIndentation(
-        context: Context, root: AstNode, ChplcheckSilencedRules: List[str], Indent=None, UnindentedModule=None
+        context: Context,
+        root: AstNode,
+        ChplcheckSilencedRules: List[str],
+        Indent=None,
+        UnindentedModule=None,
     ):
         """
         Warn for inconsistent or missing indentation
@@ -1453,12 +1457,17 @@ def rules(driver: LintDriver):
             )
         UnindentedModule = UnindentedModule == "true"  # default to False
 
-        collector = build_and_run_indentation_collector(root, UnindentedModule=UnindentedModule)
+        collector = build_and_run_indentation_collector(
+            root, UnindentedModule=UnindentedModule
+        )
         no_misleading_indentation = (
             "MisleadingIndentation" in ChplcheckSilencedRules
         )
 
-        for node, (indent_to_change, anchor) in collector.incorrectly_indented_nodes.items():
+        for node, (
+            indent_to_change,
+            anchor,
+        ) in collector.incorrectly_indented_nodes.items():
             if (
                 no_misleading_indentation
                 or node not in collector.misleadingly_indented_groups
@@ -1491,9 +1500,11 @@ def rules(driver: LintDriver):
             new_loc = node.location().modify_start((0, indent_to_change))
             new_text = "\n".join(
                 [
-                    line[-indent_to_change :]
-                    if line.startswith(" " * -indent_to_change)
-                    else line
+                    (
+                        line[-indent_to_change:]
+                        if line.startswith(" " * -indent_to_change)
+                        else line
+                    )
                     for line in node_text.splitlines()
                 ]
             )

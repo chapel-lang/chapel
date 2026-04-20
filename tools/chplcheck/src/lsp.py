@@ -74,20 +74,25 @@ def get_lint_diagnostics(
                     message="Lint: rule [{}] violated".format(rule),
                     severity=DiagnosticSeverity.Warning,
                     code=rule,
-                    code_description=CodeDescription(base_url + "#" + rule.lower()),
+                    code_description=CodeDescription(
+                        base_url + "#" + rule.lower()
+                    ),
                 )
                 if fixits:
                     fixits = [Fixit.to_dict(f) for f in fixits]
                     diagnostic.data = {"rule": rule, "fixits": fixits}
                 diagnostics.append(diagnostic)
         except ValueError as e:
-            diagnostics.append(Diagnostic(
-                range=Range(
-                    start=Position(0, 0),
-                    end=Position(0, 0),
-                ),
-                message=f"Error running checks: {e}",
-                severity=DiagnosticSeverity.Error))
+            diagnostics.append(
+                Diagnostic(
+                    range=Range(
+                        start=Position(0, 0),
+                        end=Position(0, 0),
+                    ),
+                    message=f"Error running checks: {e}",
+                    severity=DiagnosticSeverity.Error,
+                )
+            )
 
     return diagnostics
 
