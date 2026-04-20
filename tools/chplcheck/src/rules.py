@@ -1442,7 +1442,6 @@ def rules(driver: LintDriver):
         context: Context,
         root: AstNode,
         ChplcheckSilencedRules: List[str],
-        Indent=None,
         UnindentedModule=None,
     ):
         """
