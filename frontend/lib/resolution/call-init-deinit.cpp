@@ -812,34 +812,33 @@ void CallInitDeinit::processInit(VarFrame* frame,
   //  * an actual passed by 'in' intent
   //  * a Return or Yield
 
+  const AstNode* setRhsAst = nullptr;
   auto op = ast->toOpCall();
+  if (op && op->op() == USTR("=")) {
+    setRhsAst = op->rhs();
+  } else if (auto vd = ast->toVarLikeDecl()) {
+    setRhsAst = vd->initExpression();
+  } else if (auto r = ast->toReturn()) {
+    setRhsAst = r->value();
+  } else if (auto y = ast->toYield()) {
+    setRhsAst = y->value();
+  }
+  if (!setRhsAst) {
+    setRhsAst = ast;
+  }
   if (!rhsAst) {
-    if (op && op->op() == USTR("=")) {
-      rhsAst = op->rhs();
-    } else if (auto vd = ast->toVarLikeDecl()) {
-      rhsAst = vd->initExpression();
-    } else if (auto r = ast->toReturn()) {
-      rhsAst = r->value();
-    } else if (auto y = ast->toYield()) {
-      rhsAst = y->value();
-    }
-
-    if (rhsAst == nullptr) {
-      rhsAst = ast;
-    }
+    rhsAst = setRhsAst;
   }
 
-  // Force copying for tuple destructuring, or when the RHS is part of a
+  // Force copying when tuple destructuring or when the RHS is part of a
   // tuple expression, matching production's behavior.
-  bool isTupleDestructure =
-      ast->isTupleDecl() ||
-      (op && op->op() == USTR("=") && op->lhs()->isTuple());
-  // TODO: better logic for detecting when RHS is in a tuple
+  bool isTupleDestructure = false;
   bool rhsIsTupleElt = false;
-  auto parentId = parsing::idToParentId(context, rhsAst->id());
-  if (auto parentAst = parsing::idToAst(context, parentId)) {
-    rhsIsTupleElt = parentAst->isTuple();
+  isTupleDestructure |= ast->isTupleDecl();
+  if (op && op->op() == USTR("=")) {
+    isTupleDestructure |= op->lhs()->isTuple();
   }
+  rhsIsTupleElt |= setRhsAst && setRhsAst->isTuple();
   bool forceTupleCopy = isTupleDestructure || rhsIsTupleElt;
 
   if (lhsType.isType() || lhsType.isParam()) {
