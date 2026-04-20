@@ -243,7 +243,7 @@ def LauncherTimeoutArgs(seconds, maxQueueTime=0):
         fmttime = "--walltime={0:02d}:{1:02d}:{2:02d}".format(h, m, s)
         args = [fmttime]
 
-        if maxQueueTime >= 0:
+        if maxQueueTime > 0:
             # deadline is the walltime + max time in queue
             time = maxQueueTime + seconds
             fmtdeadline = "--deadline=now+{}seconds".format(time)
