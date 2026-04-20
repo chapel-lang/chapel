@@ -38,16 +38,19 @@ from chapel import (
     SimpleBlockLike,
     Union,
 )
-from typing import Optional, List, Tuple, Iterable
+from typing import Optional, List, Tuple, Iterable, Dict
 from functools import cache
 
 
 class IndentationCollector:
-    def __init__(self):
-        self.misleadingly_indented_groups: dict[
+    def __init__(self, UnindentedModule=False):
+        self.misleadingly_indented_groups: Dict[
             AstNode, Tuple[AstNode, Optional[AstNode], List[AstNode]]
         ] = {}
-        self.incorrectly_indented_nodes: dict[AstNode, Optional[AstNode]] = {}
+        self.incorrectly_indented_nodes: Dict[
+            AstNode, Tuple[Optional[int], Optional[AstNode]]
+        ] = {}
+        self.UnindentedModule: bool = UnindentedModule
 
     def _append_nested_single_stmt(
         self,
@@ -144,9 +147,12 @@ class IndentationCollector:
             )
 
     def _note_incorrectly_indented(
-        self, child: AstNode, anchor: Optional[AstNode]
+        self,
+        child: AstNode,
+        anchor: Optional[AstNode],
+        indent_to_change: Optional[int] = None,
     ):
-        self.incorrectly_indented_nodes[child] = anchor
+        self.incorrectly_indented_nodes[child] = (indent_to_change, anchor)
 
     def _get_iterable_for_node(self, root: AstNode) -> Iterable[AstNode]:
         # We only care about misaligned statements, so we don't want to do stuff
@@ -198,7 +204,6 @@ class IndentationCollector:
         prev_depth = None
         prev_line = None
         prev_single_stmts: List[Tuple[AstNode, AstNode, List[AstNode]]] = []
-        misleading_indent_child = None
 
         iterable = self._get_iterable_for_node(root)
         for child in iterable:
@@ -274,8 +279,27 @@ class IndentationCollector:
                     # don't warn if the child is the only statement in an else implicit block
                     prev_line = line
                     continue
+                if self.UnindentedModule and isinstance(
+                    parent_for_indentation, Module
+                ):
+                    # this is ok, its what the user asked for
+                    prev_line = line
+                    continue
                 self._note_incorrectly_indented(
                     child, self._find_anchor(parent_for_indentation)
+                )
+            elif (
+                is_eligible_parent_for_indentation
+                and parent_depth
+                and depth != parent_depth
+                and self.UnindentedModule
+                and isinstance(parent_for_indentation, Module)
+            ):
+                # the user wants modules to be unindented, so warn if the child is indented relative to the parent
+                self._note_incorrectly_indented(
+                    child,
+                    self._find_anchor(parent_for_indentation),
+                    indent_to_change=(parent_depth - depth),
                 )
 
             prev_depth = depth
@@ -286,7 +310,9 @@ class IndentationCollector:
 
 
 @cache
-def build_and_run_indentation_collector(root: AstNode) -> IndentationCollector:
-    collector = IndentationCollector()
+def build_and_run_indentation_collector(
+    root: AstNode, UnindentedModule: bool = False
+) -> IndentationCollector:
+    collector = IndentationCollector(UnindentedModule=UnindentedModule)
     collector.collect(root)
     return collector
