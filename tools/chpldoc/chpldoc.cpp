@@ -1645,9 +1645,7 @@ struct RstResultBuilder {
               << " was added in the " << firstEdition.str()
               << " edition and was removed after the "
               << lastEdition.str()
-              << " edition. It is only available in editions between the "
-              << firstEdition.str() << " and " << lastEdition.str()
-              << " editions.";
+              << " edition.";
         } else {
           // this case should be impossible because hasEdition() should only be
           // true if at least one of first or last edition is non-empty
