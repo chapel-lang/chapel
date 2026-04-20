@@ -520,6 +520,8 @@ CLASS_END(UintLiteral)
 CLASS_BEGIN(StringLikeLiteral)
   PLAIN_GETTER(StringLikeLiteral, value, "Get the value of this StringLikeLiteral node",
                chpl::UniqueString, return node->value())
+  PLAIN_GETTER(StringLikeLiteral, quote_style, "Get the quote style of this StringLikeLiteral node",
+               const char*, return StringLikeLiteral::quoteStyleToString(node->quoteStyle()))
 CLASS_END(StringLikeLiteral)
 
 CLASS_BEGIN(Call)
