@@ -157,6 +157,15 @@ proc main(args: [] string) throws {
   } catch ex: MasonError {
     stderr.writeln(ex.message());
     retCode = 1;
+  } catch ex: TaskErrors {
+    for e in ex {
+      if e then
+        stderr.writeln(e!.message());
+    }
+    retCode = 1;
+  } catch ex {
+    stderr.writeln("An unexpected error occurred: " + ex.message());
+    retCode = 1;
   }
   return retCode;
 }

@@ -53,20 +53,16 @@ config const debugSpecParser=false;
   Chapel for version ranges. They use ':' as a
   separator instead of '..'
  */
-proc getSpecFields(spec: string) {
+proc getSpecFields(spec: string) throws {
   var specFields: 4*string;
-  try! {
-    var tokenList = readSpec(spec);
-    const specInfo = parseSpec(tokenList);
-    var compiler = specInfo[2];
-    if compiler.size < 1 {
-      compiler = inferCompiler();
-    }
-    specFields = (specInfo[0], specInfo[1], compiler,
-                  specInfo[3]);
-  } catch e: MasonError {
-    stderr.writeln(e.message());
+  var tokenList = readSpec(spec);
+  const specInfo = parseSpec(tokenList);
+  var compiler = specInfo[2];
+  if compiler.size < 1 {
+    compiler = inferCompiler();
   }
+  specFields = (specInfo[0], specInfo[1], compiler,
+                specInfo[3]);
   return specFields;
 }
 
@@ -82,7 +78,7 @@ private proc inferCompiler() throws {
 
 
 /* Tokenize spec into list of tokens */
-private proc readSpec(spec: string): list(string) {
+private proc readSpec(spec: string): list(string) throws {
   const pkgVersion = "([A-Za-z0-9\\-\\@\\.\\:]+)",
         compilerVersion = "(\\%[A-Za-z0-9\\_\\@\\.\\-]+)",
         variantInclude = "(\\+[A-Za-z0-9\\-\\_]+)",

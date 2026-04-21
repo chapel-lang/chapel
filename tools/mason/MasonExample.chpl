@@ -36,6 +36,7 @@ use TOML;
 import MasonLogger;
 import MasonPrereqs;
 import ThirdParty.Pathlib.path;
+use ThirdParty.Pathlib.IOHelpers;
 
 private var log = MasonLogger.getLogger("mason example");
 
@@ -54,7 +55,7 @@ proc runExamples(show: bool, run: bool, build: bool, release: bool,
 
   // Get buildInfo: dependencies, path to src code, compopts,
   // names of examples, example compopts
-  var buildInfo = getBuildInfo(projectHome, skipUpdate, build);
+  var buildInfo = getBuildInfo(projectHome:path, skipUpdate, build);
   const projectName = basename(stripExt(buildInfo.projectPath, ".chpl"));
   //TODO: This build info is weird and only used here, we should
   //      move away from this
@@ -151,16 +152,18 @@ record examplesBuildInfo {
   if build is false, it only computes the example names and the path to the
   project source code. the rest of the information is left blank
 */
-private proc getBuildInfo(projectHome: string,
+private proc getBuildInfo(projectHome: path,
                           skipUpdate: bool,
                           build: bool): examplesBuildInfo throws {
 
-  const toml = open(Path.joinPath(projectHome, "Mason.toml"), ioMode.r);
-  defer toml.close();
-  const tomlFile = parseToml(toml);
+  var tomlFile: shared Toml;
+  {
+    const toml = open(projectHome / "Mason.toml", ioMode.r);
+    tomlFile = parseToml(toml);
+  }
 
   // get the example names from lockfile or from example directory
-  const exampleNames = getExamples(tomlFile.borrow(), projectHome);
+  const exampleNames = getExamples(tomlFile.borrow(), projectHome:string);
 
   var sourceList: list(srcSource);
   var gitList: list(gitSource);
@@ -168,16 +171,18 @@ private proc getBuildInfo(projectHome: string,
   var perExampleOptions = getExampleOptions(tomlFile.borrow(), exampleNames);
 
   const project = tomlFile["brick.name"]!.s;
-  const projectPath = Path.joinPath(projectHome, "src", project + ".chpl");
+  const projectPath = projectHome / "src" / (project + ".chpl");
 
   if build {
-    const lock = open(Path.joinPath(projectHome, "Mason.lock"), ioMode.r);
-    defer lock.close();
-    const lockFile = parseToml(lock);
+    var lockFile: shared Toml;
+    {
+      const lock = open(projectHome / "Mason.lock", ioMode.r);
+      lockFile = parseToml(lock);
+    }
     // Get project source code and dependencies
     (sourceList, gitList) = genSourceList(lockFile);
-    const depPath = Path.joinPath(MASON_HOME, 'src');
-    const gitDepPath = Path.joinPath(MASON_HOME, 'git');
+    const depPath = MASON_HOME:path / 'src';
+    const gitDepPath = MASON_HOME:path / 'git';
 
 
     getSrcCode(sourceList, skipUpdate, false);
@@ -201,14 +206,13 @@ private proc getBuildInfo(projectHome: string,
       const nameVer = "%s-%s".format(name, version);
       // version of -1 specifies a git dep
       if version != "-1" {
-        const depDir = Path.joinPath(depPath, nameVer);
-        const depSrc = Path.replaceExt(Path.joinPath(depDir, "src", name),
-                                        "chpl");
+        const depDir = depPath / nameVer;
+        const depSrc = (depDir / "src" / name).withSuffix(".chpl");
 
         log.debugf("Adding source dependency %s's flags", name);
-        compopts.pushBack(depSrc);
+        compopts.pushBack(depSrc:string);
 
-        for flag in MasonPrereqs.chplFlags(depDir:path) {
+        for flag in MasonPrereqs.chplFlags(depDir) {
           log.debug("+compflag ", flag);
           compopts.pushBack(flag);
         }
@@ -219,11 +223,11 @@ private proc getBuildInfo(projectHome: string,
     // see https://github.com/chapel-lang/chapel/issues/25926
     @chplcheck.ignore("UnusedLoopIndex")
     for (_x, name, branch, _y) in gitSource.iterList(gitList) {
-      const depDir = Path.joinPath(gitDepPath, name + "-" + branch);
-      const gitDepSrc = Path.joinPath(depDir, "src", name + ".chpl");
-      compopts.pushBack(gitDepSrc);
+      const depDir = gitDepPath / (name + "-" + branch);
+      const gitDepSrc = (depDir / "src" / name).withSuffix(".chpl");
+      compopts.pushBack(gitDepSrc:string);
 
-      for flag in MasonPrereqs.chplFlags(depDir:path) {
+      for flag in MasonPrereqs.chplFlags(depDir) {
         log.debug("+compflag ", flag);
         compopts.pushBack(flag);
       }
@@ -244,7 +248,7 @@ private proc getBuildInfo(projectHome: string,
     }
   }
 
-  return new examplesBuildInfo(sourceList, gitList, projectPath,
+  return new examplesBuildInfo(sourceList, gitList, projectPath:string,
                                compopts, exampleNames, perExampleOptions);
 }
 
@@ -277,7 +281,7 @@ private proc getExampleOptions(
 }
 
 // Cleans out example dir from a previous run
-private proc setupExampleDir(projectHome: string) {
+private proc setupExampleDir(projectHome: string) throws {
 
   const exampleDir = joinPath(projectHome, "target/example/");
   if !isDir(exampleDir) {
@@ -286,7 +290,7 @@ private proc setupExampleDir(projectHome: string) {
 }
 
 // prevent building one example from removing all.
-private proc removeExampleBinary(projectHome: string, exampleName: string) {
+private proc removeExampleBinary(projectHome: string, exampleName: string) throws {
 
   const exampleDir = joinPath(projectHome, "target/example/");
   if isDir(exampleDir) {
@@ -342,7 +346,7 @@ private proc runExampleBinary(projectHome: string, exampleName: string,
   const exampleResult = runWithStatus(command.toArray(), capture=false);
 }
 
-private proc getExamples(toml: Toml, projectHome: string) {
+private proc getExamples(toml: Toml, projectHome: string) throws {
   var exampleNames: list(string);
   const examplePath = joinPath(projectHome, "example");
 
@@ -400,7 +404,7 @@ proc printAvailableExamples() throws {
 proc exampleModified(projectHome: string,
                      projectName: string,
                      exampleName: string,
-                     commandLineCompopts: list(string)) {
+                     commandLineCompopts: list(string)) throws {
   const example = basename(stripExt(exampleName, ".chpl"));
   const exampleBinPath = joinPath(projectHome, "target/example", example);
   const examplePath = joinPath(projectHome, "example");

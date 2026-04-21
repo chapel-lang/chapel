@@ -238,8 +238,10 @@ proc publishPackage(username: string,
     mkdir(safeDir);
   }
   defer {
-    // make sure we always cleanup
-    if !isLocal && exists(safeDir) then rmTree(safeDir + '/');
+    try {
+      // make sure we always cleanup
+      if !isLocal && exists(safeDir) then rmTree(safeDir + '/');
+    } catch { }
   }
 
   if !isLocal {
@@ -358,7 +360,7 @@ proc doesGitOriginExist() {
  */
 private proc usernameCheck(username: string) {
   const gitRemote = 'git ls-remote https://github.com/%s/mason-registry';
-  var usernameCheck = runWithStatus(gitRemote.format(username), true);
+  var usernameCheck = runWithStatus(try! gitRemote.format(username), true);
   return usernameCheck;
 }
 
@@ -366,13 +368,13 @@ private proc usernameCheck(username: string) {
  */
 private proc checkIfForkExists(username: string) {
   var getFork = 'git ls-remote https://github.com/%s/mason-registry';
-  var status = runWithStatus(getFork.format(username), false);
+  var status = runWithStatus(try! getFork.format(username), false);
   return status;
 }
 
 /* Gets the GitHub username of the user, by parsing from the remote origin url.
  */
-private proc getUsername(dir: string) {
+private proc getUsername(dir: string) throws {
   var usernameUrl = gitUrl(dir);
   var username: string;
   if usernameUrl.startsWith("http") {
@@ -388,7 +390,7 @@ private proc getUsername(dir: string) {
 }
 
 
-private proc getRemoteName(dir: string) {
+private proc getRemoteName(dir: string) throws {
   var url = gitUrl(dir).strip();
   var head = url.rfind("/") + 1;
   var remoteName = url(head..);
@@ -514,7 +516,7 @@ private proc addPackageToBricks(projectLocal: string, safeDir: string,
  */
 proc check(p: string, ci: bool) throws {
   const spacer = '------------------------------------------------------';
-  const package = (ensureMasonProject(here.cwd(), 'Mason.toml') == 'true');
+  const package = ensureMasonProject(here.cwd(), 'Mason.toml');
   const projectCheckHome = here.cwd();
   var packageTest = true;
   var moduleTest = true;
@@ -831,7 +833,7 @@ private proc registryPathCheck(p: string,
 }
 
 /* Grabs the remote origin of the package */
-private proc getRemoteOrigin() {
+private proc getRemoteOrigin() throws {
   const packageDir = here.cwd();
   const gitRemoteOrigin =
     gitC(packageDir, 'git config --get remote.origin.url', true);
@@ -842,16 +844,13 @@ private proc getRemoteOrigin() {
   Makes sure that the directory `mason publish --check`
   is called in is a mason package
 */
-private proc ensureMasonProject(cwd : string, tomlName="Mason.toml") : string {
-  const (dirname, basename) = splitPath(cwd);
-  if dirname == '/' {
-    return 'false';
+private proc ensureMasonProject(cwd: string, tomlName="Mason.toml"): bool {
+  try {
+    getProjectHome(cwd, tomlName);
+  } catch {
+    return false;
   }
-  const tomlFile = joinPath(cwd, tomlName);
-  if exists(tomlFile) {
-    return 'true';
-  }
-  return ensureMasonProject(dirname, tomlName);
+  return true;
 }
 
 /*
@@ -878,7 +877,7 @@ private proc moduleCheck(projectHome : string) throws {
 }
 
 /* Checks package for examples */
-proc exampleCheck(projectHome: string) {
+proc exampleCheck(projectHome: string) throws {
   if isDir(projectHome + '/example') {
     const examples = listDir(projectHome + '/example');
     return examples.size > 0;
@@ -886,19 +885,19 @@ proc exampleCheck(projectHome: string) {
 }
 
 /* Checks package for tests */
-proc testCheck(projectHome: string) {
+proc testCheck(projectHome: string) throws {
   if isDir(projectHome + '/test') {
     const tests = listDir(projectHome + '/test');
     return tests.size > 0;
   } else return false;
 }
 /* Returns the mason env */
-private proc returnMasonEnv() {
+private proc returnMasonEnv() throws {
   const fakeArgs = ['env'];
   masonEnv(fakeArgs);
 }
 
-private proc falseIfRemotePath() {
+private proc falseIfRemotePath() throws {
   var registryInEnv = MASON_REGISTRY;
   for (_, registry) in registryInEnv {
     if registry.find(':') != -1 {
@@ -953,7 +952,7 @@ record tomlCheckResult {
 
   Returns (isValid, missingFields, mismatchedTypes)
 */
-proc masonTomlFileCheck(projectHome: string): tomlCheckResult {
+proc masonTomlFileCheck(projectHome: string): tomlCheckResult throws {
   const toParse = open(joinPath(projectHome, "Mason.toml"), ioMode.r);
   const tomlFile = parseToml(toParse);
   var missingFields: list(string);

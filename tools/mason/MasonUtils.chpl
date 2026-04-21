@@ -27,6 +27,7 @@ module MasonUtils {
 private use CTypes;
 private use ChplConfig;
 public use FileSystem;
+import FileSystem;
 private use List;
 private use Map;
 public use Subprocess;
@@ -45,7 +46,7 @@ proc getEnv(name: string): string {
   extern proc getenv(name : c_ptrConst(c_char)) : c_ptrConst(c_char);
   var cname = name.c_str();
   var value = getenv(cname);
-  return string.createCopyingBuffer(value);
+  return try! string.createCopyingBuffer(value);
 }
 
 
@@ -61,7 +62,7 @@ class MasonError : Error {
 
 
 /* Creates the rest of the project structure */
-proc makeTargetFiles(binLoc: string, projectHome: string) {
+proc makeTargetFiles(binLoc: string, projectHome: string) throws {
 
   const target = joinPath(projectHome, 'target');
   const srcBin = joinPath(target, binLoc);
@@ -79,7 +80,10 @@ proc makeTargetFiles(binLoc: string, projectHome: string) {
 
   const actualTest = joinPath(projectHome,'test');
   if isDir(actualTest) {
-    for dir in walkDirs(actualTest) {
+    // temp var to work around
+    // https://github.com/chapel-lang/chapel/issues/27855
+    const dirs = walkDirs(actualTest);
+    for dir in dirs {
       const internalDir = target+dir.replace(projectHome,"");
       if !isDir(internalDir) {
         mkdir(internalDir);
@@ -265,7 +269,7 @@ proc getSpackResult(cmd, quiet=false) : string throws {
     process.wait();
   } catch e {
     log.debugf("Caught unknown error ('%?') for command: %?", e, splitCmd);
-    throw new owned MasonError("Internal mason error");
+    throw new MasonError("Internal mason error");
   }
   return ret;
 }
@@ -280,24 +284,28 @@ proc runSpackCommand(command, quiet=false) {
     " && export PATH=\"$SPACK_ROOT/bin:$PATH\"" +
     " && . $SPACK_ROOT/share/spack/setup-env.sh && ";
 
-  var cmd = (prefix + command);
-  var sub = spawnshell(cmd, stdout=pipeStyle.pipe,
-                            stderr=pipeStyle.pipe, executable="bash");
+  try {
+    var cmd = (prefix + command);
+    var sub = spawnshell(cmd, stdout=pipeStyle.pipe,
+                              stderr=pipeStyle.pipe, executable="bash");
 
-  // quiet flag necessary for tests to be portable
-  if !quiet {
-    var line:string;
-    while sub.stdout.readLine(line) {
+    // quiet flag necessary for tests to be portable
+    if !quiet {
+      var line:string;
+      while sub.stdout.readLine(line) {
+        write(line);
+      }
+    }
+    sub.wait();
+
+    for line in sub.stderr.lines() {
       write(line);
     }
-  }
-  sub.wait();
 
-  for line in sub.stderr.lines() {
-    write(line);
+    return sub.exitCode;
+  } catch {
+    return -1;
   }
-
-  return sub.exitCode;
 }
 
 // TODO: Can we get away with the Chapel Version object instead?
@@ -322,7 +330,8 @@ record versionInfo {
     this.bug   = bug;
   }
 
-  proc init(str: string) {
+  proc init(str: string) throws {
+    init this;
     const s: [1..3] string = str.split(".");
     assert(s.size == 3);
 
@@ -453,21 +462,27 @@ proc getChapelVersionStr() throws {
 }
 
 // TODO: only exists because I don't want to rewrite everything to use path, yet
-proc gitC(newDir:string, command, quiet=false) throws {
+proc gitC(newDir:string, command, quiet=false): string throws {
   return gitC(newDir:path, command, quiet);
 }
-proc gitC(newDir:path, command, quiet=false) throws {
+proc gitC(newDir:path, command, quiet=false): string throws {
   const oldDir = path.cwd();
   newDir.chdir();
-  defer oldDir.chdir();
-  // TODO: I would love to use newDir.pushChdir(), but I don't trust
-  // error handling + context managers enough
-  var ret = runCommand(command, quiet=quiet);
+  var ret: string;
+  try {
+    // TODO: I would love to use newDir.pushChdir(), but I don't trust
+    // error handling + context managers enough
+    ret = runCommand(command, quiet=quiet);
+  } catch e {
+    oldDir.chdir();
+    throw e;
+  }
+  oldDir.chdir();
 
   return ret;
 }
 
-proc getProjectHome(cwd: string, tomlName="Mason.toml") : string throws {
+proc getProjectHome(cwd: string, tomlName="Mason.toml"): string throws {
   var dir = cwd:path;
   while true {
     if (dir/tomlName).exists() then
@@ -498,7 +513,12 @@ proc projectModified(projectHome, projectName, binLocation) : bool {
   const binaryPath = joinPath(projectHome, "target", binLocation, projectName);
   const tomlPath = joinPath(projectHome, "Mason.toml");
 
-  if isFile(binaryPath) {
+  var isFile = false;
+  try {
+    isFile = FileSystem.isFile(binaryPath);
+  } catch { }
+
+  if isFile {
     const binModTime = getLastModified(binaryPath);
     for file in findFiles(joinPath(projectHome, "src"), recursive=true) {
       var srcPath = joinPath(projectHome, "src", file);
@@ -594,8 +614,8 @@ proc getMasonDependencies(sourceList: list(srcSource),
     // see https://github.com/chapel-lang/chapel/issues/25926
     @chplcheck.ignore("UnusedLoopIndex")
     for (_x, name, version) in srcSource.iterList(sourceList) {
-      const depSrc = joinPath(depPath, "%s-%s".format(name, version),
-                              "src", "%s.chpl".format(name));
+      const depSrc = joinPath(depPath, try! "%s-%s".format(name, version),
+                              "src", name + ".chpl");
       masonCompopts.pushBack(depSrc);
     }
   }
@@ -607,8 +627,8 @@ proc getMasonDependencies(sourceList: list(srcSource),
     // see https://github.com/chapel-lang/chapel/issues/25926
     @chplcheck.ignore("UnusedLoopIndex")
     for (_x, name, branch, _y) in gitSource.iterList(gitList) {
-      const gitDepSrc = joinPath(gitDepPath, "%s-%s".format(name, branch),
-                                 "src", "%s.chpl".format(name));
+      const gitDepSrc = joinPath(gitDepPath, try! "%s-%s".format(name, branch),
+                                 "src", name + ".chpl");
       masonCompopts.pushBack(gitDepSrc);
     }
   }
@@ -617,7 +637,7 @@ proc getMasonDependencies(sourceList: list(srcSource),
 
 /* Checks to see if dependency has already been
    downloaded previously */
-proc depExists(dependency: string, repo='/src/') {
+proc depExists(dependency: string, repo='/src/') throws {
   var repos = MASON_HOME + repo;
   var exists = false;
   if !isDir(repos) then
@@ -813,7 +833,7 @@ proc getDepToml(depName: string, depVersion: string) throws {
 
 /* Search TOML files within a package directory to find the latest package
    version number that is supported with current Chapel version */
-proc findLatest(packageDir: string): versionInfo {
+proc findLatest(packageDir: string): versionInfo throws {
   use Path;
 
   var ret = versionInfo.zero();
@@ -847,7 +867,7 @@ proc findLatest(packageDir: string): versionInfo {
 
 /* Reads the Chapel version specified by a mason project's
    TOML file and returns the min and max compatible versions */
-proc parseChplVersion(brick: borrowed Toml?): (versionInfo, versionInfo) {
+proc parseChplVersion(brick: borrowed Toml?): (versionInfo, versionInfo) throws {
   use Regex;
 
   if brick == nil {
@@ -940,35 +960,40 @@ proc checkChplVersion(chplVersion) throws {
 }
 
 /* Print a TOML file. Expects full path. */
-proc showToml(tomlFile : string) {
+proc showToml(tomlFile: string) throws {
   const openFile = openReader(tomlFile, locking=false);
   const toml = parseToml(openFile);
   writeln(toml);
-  openFile.close();
 }
 
 /* Iterator to collect fields from a toml
    TODO custom fields returned */
 iter allFields(tomlTbl: Toml) {
   for (k,v) in zip(tomlTbl.A.keys(), tomlTbl.A.values()) {
-    if v!.tag == fieldtag.fieldToml then
-      continue;
-    else yield(k,v);
+    try {
+      if v!.tag == fieldtag.fieldToml then
+        continue;
+      else yield(k,v);
+    } catch { }
   }
 }
 
-proc isStringOrStringArray(toml: Toml) : bool {
-  if toml.tomlType == "string" {
-    return true;
-  } else if toml.tomlType == "array" {
-    const tomlArr = toml.arr;
-    for f in tomlArr {
-      if f == nil || f!.tomlType != "string" {
-        return false;
+proc isStringOrStringArray(toml: Toml): bool {
+  try {
+    if toml.tomlType == "string" {
+      return true;
+    } else if toml.tomlType == "array" {
+      const tomlArr = toml.arr;
+      for f in tomlArr {
+        if f == nil || f!.tomlType != "string" {
+          return false;
+        }
       }
+      return true;
+    } else {
+      return false;
     }
-    return true;
-  } else {
+  } catch {
     return false;
   }
 }

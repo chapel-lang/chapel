@@ -37,14 +37,14 @@ import ThirdParty.Pathlib.path;
 private var log = MasonLogger.getLogger("mason external");
 
 // We could consider bumping this version up as needed.
-const minSpackVersion = new versionInfo('1.0.0');
+const minSpackVersion = new versionInfo(1, 0, 0);
 const major = minSpackVersion.major:string;
 const minor = minSpackVersion.minor:string;
 const spackBranch = 'releases/v' + '.'.join(major, minor);
 const spackDefaultPath = MASON_HOME + "/spack";
 const spackRegistryDefaultPath = MASON_HOME + "/spack-registry";
 
-proc masonExternal(args: [] string) {
+proc masonExternal(args: [] string) throws {
 
   var parser = new argumentParser(helpHandler=new MasonExternalHelpHandler());
 
@@ -267,7 +267,7 @@ private proc updateSpackCommandLine() {
   Replaces package repository path of repos.yaml file at
   /spack/etc/spack/defaults with that of spack-registry
 */
-private proc generateYAML() {
+private proc generateYAML() throws {
   const yamlFilePath = SPACK_ROOT + '/etc/spack/defaults/repos.yaml';
   if isFile(yamlFilePath) {
     remove(yamlFilePath);
@@ -288,7 +288,7 @@ private proc printSpackVersion() {
 }
 
 /* Returns spack version */
-proc getSpackVersion(): versionInfo {
+proc getSpackVersion(): versionInfo throws {
   const command = "spack --version";
   @functionStatic
   ref tmpVersion = getSpackResult(command,true).strip();
@@ -307,7 +307,7 @@ private proc listSpkgs() {
 }
 
 /* Queries spack for package existence */
-private proc searchSpkgs(args: [] string) {
+private proc searchSpkgs(args: [] string) throws {
   var parser = new argumentParser(helpHandler=
                                   new MasonExternalSearchHelpHandler());
 
@@ -343,7 +343,7 @@ private proc listInstalled() {
 
 /* User facing function to show packages installed on
    system. Takes all spack arguments ex. -df <package> */
-private proc findSpkg(args: [] string) {
+private proc findSpkg(args: [] string) throws {
   var parser = new argumentParser(helpHandler=
                                   new MasonExternalFindHelpHandler());
 
@@ -358,7 +358,7 @@ private proc findSpkg(args: [] string) {
 }
 
 /* Entry point into the various info subcommands */
-private proc spkgInfo(args: [] string) {
+private proc spkgInfo(args: [] string) throws {
 
   var parser = new argumentParser(helpHandler=
                                   new MasonExternalInfoHelpHandler());
@@ -391,7 +391,7 @@ private proc printArch() {
 
 
 /* Queries system to see if package is installed on system */
-proc spkgInstalled(spec: string) {
+proc spkgInstalled(spec: string) throws {
   const command = "spack find -df --show-full-compiler " + spec;
   const pkgInfo = getSpackResult(command, quiet=true);
   var found = false;
@@ -406,7 +406,7 @@ proc spkgInstalled(spec: string) {
 
 
 /* Entry point into the various compiler functions */
-private proc compiler(args: [] string) {
+private proc compiler(args: [] string) throws {
 
   var parser = new argumentParser(helpHandler=new MasonCompilerHelpHandler());
 
@@ -501,53 +501,49 @@ proc getSpkgInfo(spec: string, dependencies: list(string)): shared Toml throws {
   var spkgToml: [spkgDom] shared Toml?;
   var spkgInfo = new shared Toml(spkgToml);
 
-  try {
-    const specFields = getSpecFields(spec);
-    var pkgName = specFields[0];
-    var version = specFields[1];
-    var compiler = specFields[2];
+  const specFields = getSpecFields(spec);
+  var pkgName = specFields[0];
+  var version = specFields[1];
+  var compiler = specFields[2];
 
-    // Remove variants from spec
-    var simpleSpec = pkgName + '@' + version + '%' + compiler;
+  // Remove variants from spec
+  var simpleSpec = pkgName + '@' + version + '%' + compiler;
 
-    if spkgInstalled(simpleSpec) {
-      const spkgPath = getSpkgPath(simpleSpec);
-      const libs = joinPath(spkgPath, "lib");
-      const includePath = joinPath(spkgPath, "include");
-      const other = joinPath(spkgPath, "other");
+  if spkgInstalled(simpleSpec) {
+    const spkgPath = getSpkgPath(simpleSpec);
+    const libs = joinPath(spkgPath, "lib");
+    const includePath = joinPath(spkgPath, "include");
+    const other = joinPath(spkgPath, "other");
 
-      if isDir(other) {
-        spkgInfo.set("other", other);
-      }
-      spkgInfo.set("name", pkgName);
-      spkgInfo.set("version", version);
-      spkgInfo.set("compiler", compiler);
-      spkgInfo.set("libs", libs);
-      spkgInfo.set("include", includePath);
-
-      for dep in dependencies {
-        var depSpec = dep.split("@", 1);
-        var name = depSpec[0];
-
-        // put dep into current packages dep list
-        depList.pushBack(new shared Toml(name));
-
-        // get dependencies of dep
-        var depsOfDep = getSpkgDependencies(dep);
-
-        // get a toml that contains the dependency info and put it
-        // in a subtable of the current dependencies table
-        spkgInfo.set(name, getSpkgInfo(dep, depsOfDep));
-      }
-      if depList.size > 0 {
-        // Temporarily use toArray here to avoid supporting list.
-        spkgInfo.set("dependencies", depList.toArray());
-      }
-    } else {
-      throw new MasonError("No package installed by the name of: " + pkgName);
+    if isDir(other) {
+      spkgInfo.set("other", other);
     }
-  } catch e: MasonError {
-    writeln(e.message());
+    spkgInfo.set("name", pkgName);
+    spkgInfo.set("version", version);
+    spkgInfo.set("compiler", compiler);
+    spkgInfo.set("libs", libs);
+    spkgInfo.set("include", includePath);
+
+    for dep in dependencies {
+      var depSpec = dep.split("@", 1);
+      var name = depSpec[0];
+
+      // put dep into current packages dep list
+      depList.pushBack(new shared Toml(name));
+
+      // get dependencies of dep
+      var depsOfDep = getSpkgDependencies(dep);
+
+      // get a toml that contains the dependency info and put it
+      // in a subtable of the current dependencies table
+      spkgInfo.set(name, getSpkgInfo(dep, depsOfDep));
+    }
+    if depList.size > 0 {
+      // Temporarily use toArray here to avoid supporting list.
+      spkgInfo.set("dependencies", depList.toArray());
+    }
+  } else {
+    throw new MasonError("No package installed by the name of: " + pkgName);
   }
   return spkgInfo;
 }
