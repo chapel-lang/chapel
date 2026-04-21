@@ -13339,6 +13339,33 @@ static void printUnusedFunctions() {
 #endif
 }
 
+static bool shouldProcessForCallGraph(CallExpr* call, FnSymbol* fn) {
+  bool isCallOrFnInUserModule = fn->getModule()->modTag == MOD_USER ||
+                                call->getModule()->modTag == MOD_USER;
+  bool isFnInternal = fn->getModule()->modTag == MOD_INTERNAL;
+  bool isInitCmdLineModulesFn =
+    fn->name == astr("chpl_initProgramCommandLineModules") && isFnInternal;
+
+  if (isInitCmdLineModulesFn ||
+      (isCallOrFnInUserModule && !isFnInternal &&
+       !fn->hasFlag(FLAG_COMPILER_GENERATED) &&
+       !fn->hasFlag(FLAG_COMPILER_NESTED_FUNCTION))) {
+
+    if (!strncmp("chpl_", fn->name, 5) &&
+        !fn->hasFlag(FLAG_MODULE_INIT) &&
+        !isInitCmdLineModulesFn) {
+      // skip any functions that are internal (start with "chpl_")
+      // except for the init function for the module, which needs
+      // to be traversed to find top-level calls in the module
+      return false;
+    }
+
+    return true;
+  }
+
+  return false;
+}
+
 //
 // Print a representation of the call graph of the program.
 // This needs to be done after function resolution so we can follow calls
@@ -13377,20 +13404,7 @@ static void printCallGraph(FnSymbol* startPoint, int indent, std::set<FnSymbol*>
   for_vector(BaseAST, ast, asts) {
     if (CallExpr* call = toCallExpr(ast)) {
       if (FnSymbol* fn = call->resolvedFunction()) {
-        if ((fn->getModule()->modTag == MOD_USER ||
-             call->getModule()->modTag == MOD_USER) &&
-            fn->getModule()->modTag != MOD_INTERNAL &&
-            !fn->hasFlag(FLAG_COMPILER_GENERATED) &&
-            !fn->hasFlag(FLAG_COMPILER_NESTED_FUNCTION)) {
-
-          if (strncmp("chpl_", fn->name, 5) == 0 &&
-              !fn->hasFlag(FLAG_MODULE_INIT)) {
-            // skip any functions that are internal (start with "chpl_")
-            // except for the init function for the module, which needs
-            // to be traversed to find top-level calls in the module
-            continue;
-          }
-
+        if (shouldProcessForCallGraph(call, fn)) {
           FnSymbol* instFn = fn;
           if (FnSymbol* gfn = fn->instantiatedFrom) {
             instFn = gfn;
