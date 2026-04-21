@@ -1508,12 +1508,16 @@ static llvm::GlobalVariable*
 replaceGlobalInitializerLlvm(llvm::GlobalVariable* global,
                              llvm::Type* type,
                              llvm::Constant* init) {
+  // Copy the name into a 'std::string' because we will use it later.
+  std::string name = global->getName().str();
+
   // Create a new global which is a duplicate of the existing one.
   auto& mod = *global->getParent();
   auto linkage = global->getLinkage();
-  auto name = global->getName();
   auto ret = new llvm::GlobalVariable(mod, type, false, linkage, init, name);
 
+  // Set some more properties...
+  ret->setVisibility(global->getVisibility());
   ret->setAlignment(global->getAlign());
 
   // Replace the old global with the new one.
@@ -1525,9 +1529,11 @@ replaceGlobalInitializerLlvm(llvm::GlobalVariable* global,
   global->eraseFromParent();
 
   // Re-set the new global's name, since there is now no name conflict.
+  // This call updates the symbol table kept by the module.
   ret->setName(name);
 
-  // If this doesn't hold, we have big (i.e., link-time) problems.
+  // If these don't hold, we have big (i.e., link-time) problems.
+  INT_ASSERT(ret->getLinkage() == llvm::GlobalValue::ExternalLinkage);
   INT_ASSERT(ret->getName() == name);
 
   return ret;
