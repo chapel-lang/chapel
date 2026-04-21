@@ -1,0 +1,3 @@
+throwUnhandledTry.chpl:6: In function 'caller':
+throwUnhandledTry.chpl:7: error: call to throwing function 'canThrow' is in a try but not handled
+throwUnhandledTry.chpl:7: error: try without a catchall in a non-throwing function

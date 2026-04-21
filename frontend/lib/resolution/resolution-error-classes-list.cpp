@@ -294,6 +294,56 @@ void ErrorAssignFieldBeforeInit::write(ErrorWriterBase& wr) const {
   }
 }
 
+void ErrorCallToThrowingFunctionRelaxed::write(ErrorWriterBase& wr) const {
+  auto call = std::get<const uast::FnCall*>(info_);
+  auto sig = std::get<const resolution::UntypedFnSignature*>(info_);
+
+  wr.heading(kind_, type_, locationOnly(call),
+             "call to throwing function '", sig->name(), "' without "
+             "throws, try, or try! (relaxed mode)");
+
+  wr.code(call, { call });
+
+  wr.message("The call must either be enclosed in a 'try' or 'try!' block, "
+             "or the enclosing function must be declared with 'throws'.");
+
+  wr.note(sig->id(), "The function was declared to throw here:");
+  wr.codeForLocation(sig->id());
+}
+
+void ErrorCallToThrowingFunctionStrict::write(ErrorWriterBase& wr) const {
+  auto call = std::get<const uast::FnCall*>(info_);
+  auto sig = std::get<const resolution::UntypedFnSignature*>(info_);
+
+  wr.heading(kind_, type_, locationOnly(call),
+             "call to throwing function '", sig->name(), "'  must be marked "
+             "with try or try! (strict mode)");
+
+  wr.code(call, { call });
+
+  wr.message("The call must be explicitly marked with 'try' or 'try!' to "
+             "indicate where errors may propagate from.");
+
+  wr.note(sig->id(), "The function was declared to throw here:");
+  wr.codeForLocation(sig->id());
+}
+
+void ErrorCallToThrowingFunctionFromNon::write(ErrorWriterBase& wr) const {
+  auto call = std::get<const uast::FnCall*>(info_);
+  auto sig = std::get<const resolution::UntypedFnSignature*>(info_);
+
+  wr.heading(kind_, type_, locationOnly(call),
+             "call to throwing function '", sig->name(), "' from a non-throwing context");
+
+  wr.code(call, { call });
+
+  wr.message("The call must be enclosed in a 'try' or 'try!' block, "
+             "or the enclosing function must be declared with 'throws'.");
+
+  wr.note(sig->id(), "The function was declared to throw here:");
+  wr.codeForLocation(sig->id());
+}
+
 void ErrorConstRefCoercion::write(ErrorWriterBase& wr) const {
   auto ast = std::get<const uast::AstNode*>(info_);
   auto& c = std::get<resolution::MostSpecificCandidate>(info_);
@@ -2365,6 +2415,38 @@ void ErrorTertiaryUseImportUnstable::write(ErrorWriterBase& wr) const {
   wr.message("In the following clause:");
   wr.code(clause, { node });
   wr.message("The type '", name, "' is not defined in '", searchedScope->name(), "'.");
+}
+
+void ErrorThrowInNonThrowingFunction::write(ErrorWriterBase& wr) const {
+  auto throwNode = std::get<const uast::Throw*>(info_);
+  auto fn = std::get<const uast::Function*>(info_);
+
+  wr.heading(kind_, type_, throwNode,
+             "cannot throw in a non-throwing function");
+  wr.code(throwNode, { throwNode });
+  wr.message("Either put the throw inside a try block, or add 'throws' to the function declaration.");
+  if (fn) {
+    wr.note(fn, "the function is declared here:");
+    wr.codeForLocation(fn);
+  }
+}
+
+void ErrorThrowUnhandled::write(ErrorWriterBase& wr) const {
+  auto call = std::get<const uast::FnCall*>(info_);
+  auto sig = std::get<const resolution::UntypedFnSignature*>(info_);
+
+  wr.heading(kind_, type_, call,
+             "call to throwing function '", sig->name(), "' is in a try "
+             "but not handled");
+  wr.code(call, { call });
+}
+
+void ErrorTryNoCatchAll::write(ErrorWriterBase& wr) const {
+  auto tryNode = std::get<const uast::Try*>(info_);
+
+  wr.heading(kind_, type_, tryNode,
+             "try without a catchall in a non-throwing function");
+  wr.code(tryNode, { tryNode });
 }
 
 void ErrorTupleDeclMismatchedElems::write(ErrorWriterBase& wr) const {
