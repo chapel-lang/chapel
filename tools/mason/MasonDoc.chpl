@@ -18,6 +18,9 @@
  * limitations under the License.
  */
 
+/**/
+module MasonDoc {
+
 use ArgumentParser;
 use FileSystem;
 use IO;
@@ -116,4 +119,6 @@ proc getTomlDocopts(lock: borrowed Toml): list(string) throws {
   }
 
   return docopts;
+}
+
 }

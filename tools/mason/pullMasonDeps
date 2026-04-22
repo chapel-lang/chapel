@@ -50,8 +50,14 @@ echo "Patching includes to be relative..."
 for dep in $(ls $MASON_DIR/ThirdParty/*.chpl); do
   modName=$(basename $dep .chpl)
   for other in $(ls $MASON_DIR/ThirdParty/*.chpl); do
+  otherName=$(basename $other .chpl)
     if grep -q "import $modName" $other; then
-      sed "s/import $modName/import super.$modName/g" $other > $other.tmp && mv $other.tmp $other
+      if [ "$otherName" != "$modName" ]; then
+        sed "s/import $modName/import super.$modName/g" $other > $other.tmp && mv $other.tmp $other
+      else
+        # relative imports to ourselves need to use the parent module name
+        sed "s/import $modName/import ThirdParty.${modName}/g" $other > $other.tmp && mv $other.tmp $other
+      fi
     fi
   done
 done

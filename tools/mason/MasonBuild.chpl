@@ -18,6 +18,9 @@
  * limitations under the License.
  */
 
+/**/
+module MasonBuild {
+
 import MasonPrereqs;
 
 use ArgumentParser;
@@ -119,9 +122,11 @@ proc buildProgram(release: bool, show: bool, force: bool, skipUpdate: bool,
   if !isFile(lockPath) then
     throw new owned MasonError("Cannot build: no Mason.lock found");
 
-  const toParse = open(lockPath, ioMode.r);
-  defer toParse.close();
-  var lockFile = parseToml(toParse);
+  var lockFile: shared Toml;
+  {
+    const toParse = open(lockPath, ioMode.r);
+    lockFile = parseToml(toParse);
+  }
   const projectName = lockFile["root.name"]!.s;
 
   var binLoc = 'debug';
@@ -275,7 +280,7 @@ proc compileSrc(lockFile: borrowed Toml, binLoc: string,
 
 /* Generates a list of tuples that holds the git repo
    url and the name for local mason dependency pool */
-proc genSourceList(lockFile: borrowed Toml) {
+proc genSourceList(lockFile: borrowed Toml) throws {
   var sourceList: list(srcSource);
   var gitList: list(gitSource);
   log.info("Generating source list");
@@ -539,7 +544,7 @@ proc getInterestingEnvVars(): string {
 
 proc computeFingerprint(
   commandLineCompopts: list(string) = new list(string)
-): string {
+): string throws {
   var fingerprint = "";
   fingerprint += "MasonVersion=" + MASON_VERSION + "\n";
   fingerprint += "ChapelVersion=" + getChapelVersionStr() + "\n";
@@ -557,7 +562,7 @@ proc computeFingerprint(
 */
 proc checkFingerprint(projectName:string,
                       fingerprintDir: string,
-                      fingerprint: string): bool {
+                      fingerprint: string): bool throws {
   const fingerprintFile = joinPath(fingerprintDir,
                                    "%s-%s".format(projectName, "fingerprint"));
   if !isFile(fingerprintFile) {
@@ -585,11 +590,13 @@ proc checkFingerprint(projectName:string,
   }
 }
 
-proc invalidateFingerprint(projectName:string, fingerprintDir: string) {
+proc invalidateFingerprint(projectName:string, fingerprintDir: string) throws {
   const fingerprintFile = joinPath(fingerprintDir,
                                    "%s-%s".format(projectName, "fingerprint"));
   log.debugf("Invalidating fingerprint '%s'", fingerprintFile);
   if isFile(fingerprintFile) {
     FileSystem.remove(fingerprintFile);
   }
+}
+
 }

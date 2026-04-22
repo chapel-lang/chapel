@@ -18,67 +18,68 @@
  * limitations under the License.
  */
 
+/**/
 module MasonLogger {
-  use ThirdParty.Log;
-  import ThirdParty.TerminalColors.{style, styledText, red, yellow, blue};
+use ThirdParty.Log;
+import ThirdParty.TerminalColors.{style, styledText, red, yellow, blue};
 
-  import Time.dateTime;
-  import IO.format;
+import Time.dateTime;
+import IO.format;
 
-  private var color = ColorMode.AUTO;
-  private var logStream = new shared LogStream();
-  private var logFormat = new shared MasonLogFormat("%NAME%: %m%");
-  private var pad = 0;
+private var color = ColorMode.AUTO;
+private var logStream = new shared LogStream();
+private var logFormat = new shared MasonLogFormat("%NAME%: %m%");
+private var pad = 0;
 
-  proc colorModeFromString(s: string): ColorMode throws {
-    const lower = s.toLower();
-    if lower == "true" || lower == "always" then
-      return ColorMode.ALWAYS;
-    else if lower == "false" || lower == "never" then
-      return ColorMode.NEVER;
-    else if lower == "auto" then
-      return ColorMode.AUTO;
-    else
-      throw new Error("Invalid value: '"+ s +"'");
+proc colorModeFromString(s: string): ColorMode throws {
+  const lower = s.toLower();
+  if lower == "true" || lower == "always" then
+    return ColorMode.ALWAYS;
+  else if lower == "false" || lower == "never" then
+    return ColorMode.NEVER;
+  else if lower == "auto" then
+    return ColorMode.AUTO;
+  else
+    throw new Error("Invalid value: '"+ s +"'");
+}
+
+proc setColorMode(c: ColorMode) {
+  color = c;
+  logFormat.setUseColor(c, logStream);
+}
+
+class MasonLogFormat: LogFormat {
+  proc init(args...) {
+    super.init((...args));
   }
-
-  proc setColorMode(c: ColorMode) {
-    color = c;
-    logFormat.setUseColor(c, logStream);
+  override proc format(
+    timestamp: dateTime, level: LogLevel,
+    moduleName: string, routineName: string, lineNumber: int,
+    loggerName: string, message: string): string {
+    const paddedName = try! ("%<"+pad:string+"s").format(loggerName);
+    return super.format(timestamp, level,
+                        moduleName, routineName, lineNumber,
+                        paddedName, message);
   }
-
-  class MasonLogFormat: LogFormat {
-    proc init(args...) {
-      super.init((...args));
-    }
-    override proc format(
-      timestamp: dateTime, level: LogLevel,
-      moduleName: string, routineName: string, lineNumber: int,
-      loggerName: string, message: string): string {
-      const paddedName = try! ("%<"+pad:string+"s").format(loggerName);
-      return super.format(timestamp, level,
-                          moduleName, routineName, lineNumber,
-                          paddedName, message);
-    }
-    override proc styleForLogName(level: LogLevel): styledText {
-      var s = style().bold();
-      if level == LogLevel.ERROR then
-        s = s.fg(red());
-      else if level == LogLevel.WARNING then
-        s = s.fg(yellow());
-      else if level == LogLevel.DEBUG then
-        s = s.fg(blue());
-      return s;
-    }
+  override proc styleForLogName(level: LogLevel): styledText {
+    var s = style().bold();
+    if level == LogLevel.ERROR then
+      s = s.fg(red());
+    else if level == LogLevel.WARNING then
+      s = s.fg(yellow());
+    else if level == LogLevel.DEBUG then
+      s = s.fg(blue());
+    return s;
   }
+}
 
-  proc getLogger(name: string): logger {
-    pad = max(pad, name.size);
-    return new logger(name,
-                      colorMode=color,
-                      logLevelEnvVar="MASON_LOG_LEVEL",
-                      stream=logStream,
-                      format=logFormat);
-  }
+proc getLogger(name: string): logger {
+  pad = max(pad, name.size);
+  return new logger(name,
+                    colorMode=color,
+                    logLevelEnvVar="MASON_LOG_LEVEL",
+                    stream=logStream,
+                    format=logFormat);
+}
 }
 

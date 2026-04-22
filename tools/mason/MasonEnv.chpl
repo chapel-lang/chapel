@@ -18,6 +18,9 @@
  * limitations under the License.
  */
 
+/**/
+module MasonEnv {
+
 use ArgumentParser;
 use List;
 use MasonUtils;
@@ -38,7 +41,7 @@ proc MASON_HOME : string {
   each name in MASON_REGISTRY.
 */
 @chplcheck.ignore("CamelCaseFunctions")
-proc MASON_CACHED_REGISTRY {
+proc MASON_CACHED_REGISTRY throws {
   const masonRegistry = MASON_REGISTRY;
   const masonHome = MASON_HOME;
   var cachedRegistry: list(string);
@@ -133,7 +136,7 @@ proc MASON_LICENSE_CACHE_PATH: string {
   return licenseCache;
 }
 
-proc masonEnv(args) {
+proc masonEnv(args) throws {
 
   var parser = new argumentParser(helpHandler=new MasonEnvHelpHandler());
 
@@ -205,4 +208,6 @@ private proc getRegNameFromLoc(location: string): string throws {
   } else {
     return strippedLoc[lastSlashPos+1..];
   }
+}
+
 }

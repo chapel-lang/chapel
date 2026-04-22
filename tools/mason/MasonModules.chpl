@@ -18,6 +18,8 @@
  * limitations under the License.
  */
 
+/**/
+module MasonModules {
 
 use ArgumentParser;
 use FileSystem;
@@ -131,4 +133,6 @@ proc masonModules(args: [] string) throws {
                            "Valid options are 'json' and 'text'.");
     }
   }
+}
+
 }

@@ -18,6 +18,8 @@
  * limitations under the License.
  */
 
+/**/
+module MasonTest {
 
 use ArgumentParser;
 use FileSystem;
@@ -334,7 +336,7 @@ private proc runTests(show: bool, run: bool, parallel: bool, filter: string,
 
       proc compile(test: string,
                    ref result: TestResult,
-                   ref testsCompiled: list(?)): (string, bool) {
+                   ref testsCompiled: list(?)): (string, bool) throws {
         var testPath: string;
         if isAbsPath(test) {
           testPath = test;
@@ -371,7 +373,7 @@ private proc runTests(show: bool, run: bool, parallel: bool, filter: string,
         const success = compilation == 0;
 
         if !success {
-          stderr.writeln("compilation failed for " + test);
+          try! stderr.writeln("compilation failed for " + test);
           var errMsg = test + " failed to compile";
           if !show then
             errMsg += "\nTry running 'mason test --show' for more details";
@@ -424,7 +426,7 @@ private proc runTests(show: bool, run: bool, parallel: bool, filter: string,
 
 
 private proc runTestBinary(outputLoc: string, testName: string, filter: string,
-                           ref result, show: bool) {
+                           ref result, show: bool) throws {
   const command = outputLoc;
   var testNames: list(string),
       failedTestNames: list(string),
@@ -452,7 +454,7 @@ private proc runTestBinary(outputLoc: string, testName: string, filter: string,
 
 
 private proc runTestBinaries(projectHome: string, testNames: list(string),
-                             filter: string, ref result, show: bool) {
+                             filter: string, ref result, show: bool) throws {
 
   const cwd = here.cwd();
   for test in testNames {
@@ -477,7 +479,7 @@ private proc printTestResults(ref result, timeElapsed) {
 }
 
 
-private proc getTests(lock: borrowed Toml, projectHome: string) {
+private proc getTests(lock: borrowed Toml, projectHome: string) throws {
   var testNames: list(string);
   const testPath = joinPath(projectHome, "test");
 
@@ -831,4 +833,6 @@ proc addTestResult(ref result, ref localesCountMap, ref testNames,
       testNames.pushBack(testName);
     }
   }
+}
+
 }

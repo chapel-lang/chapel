@@ -51,129 +51,138 @@ $CHPL_HOME/doc/rst/tools/mason/mason.rst
 
 */
 module Mason {
-  use ArgumentParser;
-  use FileSystem;
-  use Map;
-  use MasonBuild;
-  use MasonDoc;
-  use MasonEnv;
-  use MasonExternal;
-  use MasonHelp;
-  use MasonModify;
-  use MasonPublish;
-  use MasonRun;
-  use MasonSearch;
-  use MasonSystem;
-  use MasonTest;
-  use MasonUpdate;
-  use MasonUtils;
-  use MasonModules;
-  import MasonNewInit;
+use ArgumentParser;
+use FileSystem;
+use Map;
+use MasonBuild;
+use MasonDoc;
+use MasonEnv;
+use MasonExternal;
+use MasonHelp;
+use MasonModify;
+use MasonPublish;
+use MasonRun;
+use MasonSearch;
+use MasonSystem;
+use MasonTest;
+use MasonUpdate;
+use MasonUtils;
+use MasonModules;
+import MasonNewInit;
 
-  import MasonLogger;
-  use List;
+import MasonLogger;
+use List;
 
-  proc main(args: [] string) throws {
+proc main(args: [] string) throws {
 
-    var parser = new argumentParser(helpHandler = new MasonHelpHandler());
+  var parser = new argumentParser(helpHandler = new MasonHelpHandler());
 
-    var subCmds = new map(string, shared Argument);
+  var subCmds = new map(string, shared Argument);
 
-    // define all the supported subcommand strings here
-    var cmds = ["add","build","clean","doc","env","external","init","publish",
-                "new","rm","run","search","system","test","update",
-                "help","version","modules"];
-    for cmd in cmds {
-      subCmds.add(cmd,parser.addSubCommand(cmd));
+  // define all the supported subcommand strings here
+  var cmds = ["add","build","clean","doc","env","external","init","publish",
+              "new","rm","run","search","system","test","update",
+              "help","version","modules"];
+  for cmd in cmds {
+    subCmds.add(cmd,parser.addSubCommand(cmd));
+  }
+
+  var versionFlag = parser.addFlag(name="versionFlag",
+                                  opts=["-V","--version"],
+                                  defaultValue=false);
+
+  var colorFlag = parser.addOption(name="color",
+                                  opts=["--color"],
+                                  defaultValue="auto");
+
+  parser.parseArgs(args);
+
+  // TODO: Can printVersion take an exit code?
+  if versionFlag.valueAsBool() {
+    printVersion();
+    return 0;
+  }
+
+  try {
+    MasonLogger.setColorMode(
+      MasonLogger.colorModeFromString(colorFlag.value()));
+  } catch {
+    writeln("Unknown color mode: '", colorFlag.value(), "'. ",
+            "Valid options are 'auto', 'always', and 'never'.");
+    masonHelp();
+    return 1;
+  }
+
+  var usedCmd:string;
+  var cmdList:list(string);
+  // identify which, if any, subcommand was used and collect its arguments
+  for (cmd, arg) in zip(subCmds.keys(), subCmds.values()) {
+    if arg.hasValue() {
+      usedCmd = cmd;
+      cmdList = new list(arg.values());
+      break;
     }
-
-    var versionFlag = parser.addFlag(name="versionFlag",
-                                    opts=["-V","--version"],
-                                    defaultValue=false);
-
-    var colorFlag = parser.addOption(name="color",
-                                    opts=["--color"],
-                                    defaultValue="auto");
-
-    parser.parseArgs(args);
-
-    // TODO: Can printVersion take an exit code?
-    if versionFlag.valueAsBool() {
-      printVersion();
-      return 0;
-    }
-
-    try {
-      MasonLogger.setColorMode(
-        MasonLogger.colorModeFromString(colorFlag.value()));
-    } catch {
-      writeln("Unknown color mode: '", colorFlag.value(), "'. ",
-              "Valid options are 'auto', 'always', and 'never'.");
-      masonHelp();
-      return 1;
-    }
-
-    var usedCmd:string;
-    var cmdList:list(string);
-    // identify which, if any, subcommand was used and collect its arguments
-    for (cmd, arg) in zip(subCmds.keys(), subCmds.values()) {
-      if arg.hasValue() {
-        usedCmd = cmd;
-        cmdList = new list(arg.values());
-        break;
+  }
+  var cmdArgs = cmdList.toArray();
+  var retCode = 0;
+  // pass the arguments to the appropriate subcommand
+  try! {
+    select (usedCmd) {
+      when "add" do masonModify(cmdArgs);
+      when "build" do masonBuild(cmdArgs);
+      when "clean" do masonClean(cmdArgs);
+      when "doc" do masonDoc(cmdArgs);
+      when "env" do masonEnv(cmdArgs);
+      when "external" do masonExternal(cmdArgs);
+      when "help" do masonHelp();
+      when "init" do MasonNewInit.masonInit(cmdArgs);
+      when "new" do MasonNewInit.masonNew(cmdArgs);
+      // when "init" do masonInit(cmdArgs);
+      // when "new" do masonNew(cmdArgs);
+      when "publish" do masonPublish(cmdArgs);
+      when "rm" do masonModify(cmdArgs);
+      when "run" do masonRun(cmdArgs);
+      when "search" do retCode = masonSearch(cmdArgs);
+      when "system" do retCode = masonSystem(cmdArgs);
+      when "test" do masonTest(cmdArgs);
+      when "update" do masonUpdate(cmdArgs);
+      when "modules" do masonModules(cmdArgs);
+      when "version" do printVersion();
+      otherwise {
+        writeln("No subcommand provided");
+        masonHelp();
+        retCode = 1;
       }
     }
-    var cmdArgs = cmdList.toArray();
-    var retCode = 0;
-    // pass the arguments to the appropriate subcommand
-    try! {
-      select (usedCmd) {
-        when "add" do masonModify(cmdArgs);
-        when "build" do masonBuild(cmdArgs);
-        when "clean" do masonClean(cmdArgs);
-        when "doc" do masonDoc(cmdArgs);
-        when "env" do masonEnv(cmdArgs);
-        when "external" do masonExternal(cmdArgs);
-        when "help" do masonHelp();
-        when "init" do MasonNewInit.masonInit(cmdArgs);
-        when "new" do MasonNewInit.masonNew(cmdArgs);
-        // when "init" do masonInit(cmdArgs);
-        // when "new" do masonNew(cmdArgs);
-        when "publish" do masonPublish(cmdArgs);
-        when "rm" do masonModify(cmdArgs);
-        when "run" do masonRun(cmdArgs);
-        when "search" do retCode = masonSearch(cmdArgs);
-        when "system" do retCode = masonSystem(cmdArgs);
-        when "test" do masonTest(cmdArgs);
-        when "update" do masonUpdate(cmdArgs);
-        when "modules" do masonModules(cmdArgs);
-        when "version" do printVersion();
-        otherwise {
-          writeln("No subcommand provided");
-          masonHelp();
-          retCode = 1;
-        }
-      }
-    } catch ex: MasonError {
-      stderr.writeln(ex.message());
-      retCode = 1;
+  } catch ex: MasonError {
+    stderr.writeln(ex.message());
+    retCode = 1;
+  } catch ex: TaskErrors {
+    for e in ex {
+      if e then
+        stderr.writeln(e!.message());
     }
-    return retCode;
+    retCode = 1;
+  } catch ex {
+    stderr.writeln("An unexpected error occurred: " + ex.message());
+    retCode = 1;
   }
+  return retCode;
+}
 
 
-  proc masonClean(args) throws {
-    var parser = new argumentParser(helpHandler=new MasonCleanHelpHandler());
+proc masonClean(args) throws {
+  var parser = new argumentParser(helpHandler=new MasonCleanHelpHandler());
 
-    parser.parseArgs(args);
-    const cwd = here.cwd();
+  parser.parseArgs(args);
+  const cwd = here.cwd();
 
-    const projectHome = getProjectHome(cwd);
-    runCommand("rm -rf " + projectHome + "/target");
-  }
+  const projectHome = getProjectHome(cwd);
+  runCommand("rm -rf " + projectHome + "/target");
+}
 
 
-  proc printVersion() {
-    writeln("mason " + MASON_VERSION);
-  }
+proc printVersion() {
+  writeln("mason " + MASON_VERSION);
+}
 }

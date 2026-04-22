@@ -18,6 +18,9 @@
  * limitations under the License.
  */
 
+/**/
+module MasonSearch {
+
 use ArgumentParser;
 use FileSystem;
 use IO;
@@ -99,3 +102,4 @@ proc masonSearch(args: [] string): int throws {
   return if pkgs.size == 0 then 1 else 0;
 }
 
+}

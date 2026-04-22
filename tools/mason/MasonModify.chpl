@@ -18,6 +18,9 @@
  * limitations under the License.
  */
 
+/**/
+module MasonModify {
+
 use ArgumentParser;
 use FileSystem;
 use Map;
@@ -238,7 +241,7 @@ private proc masonExternalRemove(toml: shared Toml, toRm: string) throws {
 }
 
 /* Generate the modified Mason.toml */
-proc generateToml(toml: borrowed Toml, tomlPath: string) {
+proc generateToml(toml: borrowed Toml, tomlPath: string) throws {
   const tomlFile = open(tomlPath, ioMode.cw);
   const tomlWriter = tomlFile.writer(locking=false);
   tomlWriter.writeln(toml);
@@ -261,4 +264,6 @@ private proc checkDepName(dep: string) throws {
     throw new MasonError("Bad package name '" + dep +
                          "' - only Chapel identifiers are legal package names");
   }
+}
+
 }

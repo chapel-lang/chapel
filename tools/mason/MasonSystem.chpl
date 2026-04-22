@@ -18,6 +18,8 @@
  * limitations under the License.
  */
 
+/**/
+module MasonSystem {
 
 use ArgumentParser;
 use List;
@@ -223,4 +225,6 @@ proc getPCDeps(exDeps: Toml) throws {
     exDepTree[name] = pkgInfo;
   }
   return exDepTree;
+}
+
 }

@@ -18,6 +18,9 @@
  * limitations under the License.
  */
 
+/**/
+module MasonUpdate {
+
 use FileSystem;
 use List;
 use Map;
@@ -151,7 +154,7 @@ proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock",
 
 
 /* Writes out the lock file */
-proc genLock(lock: borrowed Toml, lf: string) {
+proc genLock(lock: borrowed Toml, lf: string) throws {
   const lockFile = open(lf, ioMode.cw);
   const tomlWriter = lockFile.writer(locking=false);
   tomlWriter.writeln(lock);
@@ -159,7 +162,7 @@ proc genLock(lock: borrowed Toml, lf: string) {
   lockFile.close();
 }
 
-proc checkRegistryChanged() {
+proc checkRegistryChanged() throws {
   for ((_, registry), cached) in zip(MASON_REGISTRY, MASON_CACHED_REGISTRY) {
     if !isDir(cached) {
       return;
@@ -175,7 +178,7 @@ proc checkRegistryChanged() {
       writeln();
       writeln("Removing cached registry and sources to avoid conflicts");
 
-      proc tryRemove(name : string) {
+      proc tryRemove(name : string) throws {
         if isDir(name) {
           writeln("Removing ", name);
           rmTree(name);
@@ -214,7 +217,7 @@ proc updateRegistry(skipUpdate: bool, show=true) throws {
   }
 }
 
-proc verifyChapelVersion(brick:borrowed Toml) {
+proc verifyChapelVersion(brick:borrowed Toml) throws {
   const tupInfo = getChapelVersionInfo();
   const current = new versionInfo(tupInfo(0), tupInfo(1), tupInfo(2));
 
@@ -233,7 +236,7 @@ proc prettyVersionRange(low, hi) {
     return low.str() + ".." + hi.str();
 }
 
-proc chplVersionError(brick:borrowed Toml) {
+proc chplVersionError(brick:borrowed Toml) throws {
   const info = verifyChapelVersion(brick);
   if !info(0) {
     const low  = info(1);
@@ -375,7 +378,7 @@ private proc createDepTrees(depTree: Toml,
   return depTree;
 }
 
-private proc addGitDeps(depTree: Toml, ref gitDeps) {
+private proc addGitDeps(depTree: Toml, ref gitDeps) throws {
   //val url branch revision
   for key in gitDeps {
     if !depTree.pathExists(key[0]) {
@@ -402,7 +405,7 @@ private proc addGitDeps(depTree: Toml, ref gitDeps) {
    - differing major versions are not allowed
    - Always newest minor and patch
    - in accordance with semantic versioning  */
-private proc IVRS(A: borrowed Toml, B: borrowed Toml) {
+private proc IVRS(A: borrowed Toml, B: borrowed Toml) throws {
   const name = A["name"]!.s;
   const (okA, Alo, Ahi) = verifyChapelVersion(A);
   const (okB, Blo, Bhi) = verifyChapelVersion(B);
@@ -484,7 +487,9 @@ private proc retrieveDep(name: string, version: string) throws {
 }
 
 /* Returns the Mason.toml for each dep listed as a Toml */
-private proc getGitManifests(deps: list((string, string, string, string))) {
+private proc getGitManifests(
+  deps: list((string, string, string, string))
+) throws {
   var manifests: list(shared Toml);
   for dep in deps {
     var toAdd = retrieveGitDep(dep(0), dep(2));
@@ -495,7 +500,7 @@ private proc getGitManifests(deps: list((string, string, string, string))) {
 
 /* Responsible for parsing the Mason.toml that have been
    already pulled down from git dependencies */
-private proc retrieveGitDep(name: string, branch: string) {
+private proc retrieveGitDep(name: string, branch: string) throws {
   var baseDir = MASON_HOME +'/git/';
   const tomlPath = baseDir + "/"+name+"-"+branch+"/Mason.toml";
   if isFile(tomlPath) {
@@ -511,7 +516,7 @@ private proc retrieveGitDep(name: string, branch: string) {
 
 /* Checks if a dependency has deps; if so, the
    dependencies are returned as a (string, Toml) */
-private proc getDependencies(tomlTbl: Toml) {
+private proc getDependencies(tomlTbl: Toml) throws {
   var depsD: domain(1);
   var deps: list((string, shared Toml?));
   for k in tomlTbl.A.keys() {
@@ -524,7 +529,7 @@ private proc getDependencies(tomlTbl: Toml) {
   return deps;
 }
 
-private proc getGitDeps(tomlTbl: Toml) {
+private proc getGitDeps(tomlTbl: Toml) throws {
   var gitDeps: list((string, string, shared Toml?));
   const dependencies = tomlTbl["dependencies"]!;
   for k in dependencies.A.keys() {
@@ -536,7 +541,7 @@ private proc getGitDeps(tomlTbl: Toml) {
   return gitDeps;
 }
 
-private proc pullGitDeps(gitDeps, show=false) {
+private proc pullGitDeps(gitDeps, show=false) throws {
   if !isDir(MASON_HOME + '/git/') {
     mkdir(MASON_HOME + '/git/', parents=true);
   }
@@ -615,4 +620,6 @@ private proc pullGitDeps(gitDeps, show=false) {
     }
   }
   return gitDepsWithRevision;
+}
+
 }

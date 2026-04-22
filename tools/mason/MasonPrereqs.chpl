@@ -18,6 +18,9 @@
  * limitations under the License.
  */
 
+/**/
+module MasonPrereqs {
+
 import FileSystem as FS;
 import List.list;
 import ThirdParty.Pathlib.path;
@@ -34,11 +37,16 @@ proc install(baseDir: path, p: path) throws {
   log.info("Installing prerequisite ", p:string);
   const oldDir = path.cwd();
   p.chdir();
-  defer oldDir.chdir();
-  // TODO: I would love to use p.pushChdir(), but I don't trust
-  // error handling + context managers enough
-  // TODO check for errors
-  MasonUtils.runCommand(["make", "MASON_PACKAGE_HOME=" + baseDir:string]);
+  try {
+    // TODO: I would love to use p.pushChdir(), but I don't trust
+    // error handling + context managers enough
+    // TODO check for errors
+    MasonUtils.runCommand(["make", "MASON_PACKAGE_HOME=" + baseDir:string]);
+  } catch e {
+    oldDir.chdir();
+    throw e;
+  }
+  oldDir.chdir();
 }
 
 proc install() throws {
@@ -60,23 +68,29 @@ iter chplFlags(const baseDir = path.cwd()) throws {
     var makeOutput: string;
     const oldDir = path.cwd();
     prereq.chdir();
-    defer oldDir.chdir();
-    // TODO: I would love to use prereq.pushChdir(), but I don't trust
-    // error handling + context managers enough
-    makeOutput = MasonUtils.runCommand(cmd).strip();
+    try {
+      // TODO: I would love to use prereq.pushChdir(), but I don't trust
+      // error handling + context managers enough
+      makeOutput = MasonUtils.runCommand(cmd).strip();
 
-    for pFlag in makeOutput.split(" ") {
-      if pFlag.strip() != "" then
-        yield pFlag.strip();
+      for pFlag in makeOutput.split(" ") {
+        if pFlag.strip() != "" then
+          yield pFlag.strip();
+      }
+    } catch e {
+      oldDir.chdir();
+      throw e;
     }
+    oldDir.chdir();
   }
 }
 
 proc dirHasMakefile(dir: path) {
-  return (dir / "Makefile").isFile();
+  // TODO: in pathlib 0.3.0 isFile does not throw
+  return try! (dir / "Makefile").isFile();
 }
 
-iter prereqs(const baseDir = path.cwd()): path {
+iter prereqs(const baseDir = path.cwd()): path throws {
   const prereqsDir = "prereqs";
   const prereqsPath = baseDir / prereqsDir;
 
@@ -106,4 +120,6 @@ iter prereqs(const baseDir = path.cwd()): path {
   } else {
     log.debugf("%s don't exist.", prereqsDir:string);
   }
+}
+
 }

@@ -110,9 +110,9 @@ lint-standard-modules: chplcheck FORCE
 		--disable-rule UnattachedCurly \
 		$(MODULES_TO_LINT)
 
-MASON_MODULES_TO_LINT = $(shell find $(CHPL_MAKE_HOME)/tools/mason -name '*.chpl')
+MASON_MODULES_TO_LINT = $(shell find $(CHPL_MAKE_HOME)/tools/mason -name '*.chpl' -not -path '$(CHPL_MAKE_HOME)/tools/mason/ThirdParty/*')
 lint-mason: chplcheck FORCE
-	tools/chplcheck/chplcheck $(MASON_MODULES_TO_LINT)
+	tools/chplcheck/chplcheck --enable-rule UseExplicitModules --setting IncorrectIndentation.UnindentedModule=true $(MASON_MODULES_TO_LINT)
 
 mason-deps: FORCE
 	cd tools/mason && $(MAKE) deps
