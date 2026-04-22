@@ -86,7 +86,7 @@ proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock",
   const openFile = openReader(tomlPath:string, locking=false);
   const TomlFile = parseToml(openFile);
   openFile.close();
-  log.debugf("Parsed ", tomlPath:string);
+  log.debug("Parsed ", tomlPath:string);
 
   var updated = false;
   if tomlPath.isFile() {
@@ -202,14 +202,16 @@ proc updateRegistry(skipUpdate: bool, show=true) throws {
     log.debugf("Updating registry %s (%s) at %s",
                 name, registry, registryHome);
 
-    if isDir(registryHome) {
+    const registryHomePath = registryHome:path;
+    if registryHomePath.isDir() {
       var pullRegistry = 'git pull -q origin';
       if show then writeln("Updating ", name);
-      gitC(registryHome, pullRegistry);
+      gitC(registryHomePath, pullRegistry);
     } else {
       // Registry has moved or does not exist
-      (MASON_HOME:path / "src").mkdir(parents=true);
-      const localRegistry:path = registryHome;
+      if !(MASON_HOME:path / "src").isDir() then
+        (MASON_HOME:path / "src").mkdir(parents=true);
+      const localRegistry = registryHomePath;
       localRegistry.mkdir(parents=true);
       if show then writeln("Updating ", name);
       cloneSource(registry, localRegistry, quiet=true);

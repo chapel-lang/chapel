@@ -253,7 +253,7 @@ proc compileSrc(lockFile: borrowed Toml, binLoc: string,
       cmd.pushBack(gitDepSrc);
 
       for flag in MasonPrereqs.chplFlags(depDir:path) {
-        log.debugf("+compflag ", flag);
+        log.debug("+compflag ", flag);
         cmd.pushBack(flag);
       }
     }
