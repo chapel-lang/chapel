@@ -83,7 +83,7 @@ proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock",
   const openFile = openReader(tomlPath:string, locking=false);
   const TomlFile = parseToml(openFile);
   openFile.close();
-  log.debugf("Parsed ", tomlPath:string);
+  log.debug("Parsed ", tomlPath:string);
 
   var updated = false;
   if tomlPath.isFile() {
