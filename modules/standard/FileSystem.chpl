@@ -616,8 +616,7 @@ iter findFiles(startdir: string = ".", recursive: bool = false,
                hidden: bool = false, param tag: iterKind): string
 where tag == iterKind.standalone {
   var err: owned Error? = nil;
-  for f in findFilesHelper(startdir, recursive, hidden,
-                           err, tag=iterKind.standalone) {
+  forall f in findFilesHelper(startdir, recursive, hidden, err) {
     yield f;
   }
   if err != nil then writeln(err!.message());
@@ -661,8 +660,7 @@ iter findFiles(startdir: string = ".", recursive: bool = false,
                hidden: bool = false, param tag: iterKind): string throws
 where tag == iterKind.standalone {
   var err: owned Error? = nil;
-  for f in findFilesHelper(startdir, recursive, hidden,
-                           err, tag=iterKind.standalone) {
+  forall f in findFilesHelper(startdir, recursive, hidden, err) {
     yield f;
   }
   if err != nil then throw (err:owned class);
@@ -1475,9 +1473,9 @@ iter walkDirs(path: string = ".", topdown: bool = true, depth: int = max(int),
               sort: bool = false, param tag: iterKind): string
 where tag == iterKind.standalone {
   var err: owned Error? = nil;
-  for d in walkDirsHelper(path=path, topdown=topdown, depth=depth,
-                          hidden=hidden, followlinks=followlinks, sort=sort,
-                          err=err, tag=iterKind.standalone) do
+  forall d in walkDirsHelper(path=path, topdown=topdown, depth=depth,
+                             hidden=hidden, followlinks=followlinks, sort=sort,
+                             err=err) do
     yield d;
   if err != nil then writeln(err!.message());
 }
@@ -1538,9 +1536,9 @@ iter walkDirs(path: string = ".", topdown: bool = true, depth: int = max(int),
               sort: bool = false, param tag: iterKind): string throws
 where tag == iterKind.standalone {
   var err: owned Error? = nil;
-  for d in walkDirsHelper(path=path, topdown=topdown, depth=depth,
-                          hidden=hidden, followlinks=followlinks, sort=sort,
-                          err=err, tag=iterKind.standalone) do
+  forall d in walkDirsHelper(path=path, topdown=topdown, depth=depth,
+                             hidden=hidden, followlinks=followlinks, sort=sort,
+                             err=err) do
     yield d;
   if err != nil then throw (err:owned class);
 }
