@@ -2,6 +2,7 @@ import chapel
 from rule_types import BasicRuleResult
 from fixits import Fixit, Edit
 
+
 def rules(driver):
 
     @driver.basic_rule(chapel.StringLikeLiteral)
