@@ -61,6 +61,7 @@
 #include "llvm/Bitcode/BitcodeWriter.h"
 #include "llvm/IR/DiagnosticInfo.h"
 #include "llvm/IR/DiagnosticPrinter.h"
+#include "llvm/IR/GlobalVariable.h"
 #include "llvm/IR/LLVMRemarkStreamer.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Verifier.h"
@@ -1467,6 +1468,118 @@ static void protectNameFromC(Symbol* sym) {
   //  free(oldName);
 }
 
+#ifdef HAVE_LLVM
+// Returns 'true' if the global was declared but not defined.
+static bool errorIfGlobalDefinedLlvm(const char* name) {
+  auto info = gGenInfo;
+
+  if (auto gGet = info->module->getNamedGlobal(name)) {
+    if (auto gVar = llvm::cast_or_null<llvm::GlobalVariable>(gGet)) {
+      bool isDeclaration = gVar->isDeclaration();
+      bool hasInitializer = gVar->hasInitializer();
+      bool hasExternalLinkage = gVar->getLinkage() ==
+                                llvm::GlobalValue::ExternalLinkage;
+
+      if (!isDeclaration || hasInitializer || !hasExternalLinkage) {
+        // NOTE: No code should be defining this. It is possible for the
+        //       type to mismatch, that is, the first declaration might
+        //       be something like 'name: c_ptr(void)' instead of the proper
+        //       type. This is OK for our purposes because the LVT will
+        //       provide the proper type that we define later.
+        //
+        //       This does mean that uses prior to the definition will be
+        //       manipulated using an "incorrect type", but that is in
+        //       line with C semantics where you can fudge the type a bit.
+        INT_FATAL("Reserved symbol '%s' should not be defined", name);
+      }
+
+      return true;
+    }
+  }
+
+  return false;
+}
+
+// Create a new global with the same name and a new type and replace (all
+// uses of) the old global. In later versions of LLVM there is a method to
+// do this called 'replaceInitializer', but we don't seem to have that yet.
+// I cannot reimplement it 1-to-1 since it uses private/protected state.
+static llvm::GlobalVariable*
+replaceGlobalInitializerLlvm(llvm::GlobalVariable* global,
+                             llvm::Type* type,
+                             llvm::Constant* init) {
+  // Copy the name into a 'std::string' because we will use it later.
+  std::string name = global->getName().str();
+
+  // Create a new global which is a duplicate of the existing one.
+  auto& mod = *global->getParent();
+  auto linkage = global->getLinkage();
+  auto ret = new llvm::GlobalVariable(mod, type, false, linkage, init, name);
+
+  // Set some more properties...
+  ret->setVisibility(global->getVisibility());
+  ret->setAlignment(global->getAlign());
+  ret->setDSOLocal(global->isDSOLocal());
+
+  // Replace the old global with the new one.
+  //
+  // The documentation says that the replacement must have the same type.
+  // I think this code works because the type is an opaque "ptr", due to
+  // both being global variables.
+  global->replaceAllUsesWith(ret);
+  global->eraseFromParent();
+
+  // Re-set the new global's name, since there is now no name conflict.
+  // This call updates the symbol table kept by the module.
+  ret->setName(name);
+
+  // If these don't hold, we have big (i.e., link-time) problems.
+  INT_ASSERT(ret->getLinkage() == llvm::GlobalValue::ExternalLinkage);
+  INT_ASSERT(ret->getName() == name);
+
+  return ret;
+}
+
+// If 'entries' is non-empty, use 'entries.size()'. Otherwise use 'size'.
+static void
+buildGlobalArrayLlvm(const char* name, llvm::Type* eltType, size_t size,
+                     const std::vector<llvm::Constant*>& entries,
+                     bool isConstant) {
+  auto info = gGenInfo;
+  auto mod = info->module;
+  bool hasEntries = !entries.empty();
+  size_t sizeToUse = hasEntries ? entries.size() : size;
+
+  bool declared = errorIfGlobalDefinedLlvm(name);
+  auto type = llvm::ArrayType::get(eltType, sizeToUse);
+  auto get = mod->getOrInsertGlobal(name, type);
+  auto var = llvm::cast<llvm::GlobalVariable>(get);
+
+  llvm::Constant* init = hasEntries ? llvm::ConstantArray::get(type, entries)
+                                    : llvm::Constant::getNullValue(type);
+
+  if (declared) {
+    var = replaceGlobalInitializerLlvm(var, type, init);
+  } else {
+    var->setInitializer(init);
+  }
+
+  // Either way, track the value. We replaced it or it was just created.
+  trackLLVMValue(var);
+
+  //
+  // TODO: Attach or copy over debugging info?
+  //
+
+  bool isUnsigned = true;
+  info->lvt->addGlobalValue(name, var, GEN_VAL, isUnsigned, dtCVoidPtr);
+
+  if (isConstant) {
+    var->setConstant(true);
+  }
+}
+#endif
+
 static void genGlobalSerializeTable(GenInfo* info) {
   FILE* hdrfile = info->cfile;
   std::vector<CallExpr*> serializeCalls;
@@ -1506,39 +1619,24 @@ static void genGlobalSerializeTable(GenInfo* info) {
     fprintf(hdrfile, "\n};\n");
   } else if (!gCodegenGPU) {
 #ifdef HAVE_LLVM
-    auto global_serializeTableEntryType =
-      getPointerType(info->module->getContext());
+    auto name = "chpl_global_serialize_table";
+    auto eltType = getPointerType(info->module->getContext());
+    bool isConstant = false;
 
-    std::vector<llvm::Constant *> global_serializeTable;
-
+    // Build up the table entries.
+    std::vector<llvm::Constant*> entries;
     for_vector(CallExpr, call, serializeCalls) {
       SymExpr* se = toSymExpr(call->get(1));
       INT_ASSERT(se);
 
-      llvm::Value* ptrCast = info->irBuilder->CreatePointerCast(
-                               info->lvt->getValue(se->symbol()->cname).val,
-                               global_serializeTableEntryType);
+      auto ptrCast = info->irBuilder->CreatePointerCast(
+                             info->lvt->getValue(se->symbol()->cname).val,
+                             eltType);
       trackLLVMValue(ptrCast);
-      global_serializeTable.push_back(llvm::cast<llvm::Constant>(ptrCast));
+      entries.push_back(llvm::cast<llvm::Constant>(ptrCast));
     }
 
-    if(llvm::GlobalVariable *GVar = llvm::cast_or_null<llvm::GlobalVariable>(
-          info->module->getNamedGlobal("chpl_global_serialize_table"))) {
-      GVar->eraseFromParent();
-    }
-
-    llvm::ArrayType *global_serializeTableType =
-      llvm::ArrayType::get(global_serializeTableEntryType,
-                          global_serializeTable.size());
-    llvm::GlobalVariable *global_serializeTableGVar =
-      llvm::cast<llvm::GlobalVariable>(
-          info->module->getOrInsertGlobal("chpl_global_serialize_table",
-                                          global_serializeTableType));
-    global_serializeTableGVar->setInitializer(
-        llvm::ConstantArray::get(
-          global_serializeTableType, global_serializeTable));
-    info->lvt->addGlobalValue("chpl_global_serialize_table",
-                              global_serializeTableGVar, GEN_VAL, true, dtCVoidPtr);
+    buildGlobalArrayLlvm(name, eltType, entries.size(), entries, isConstant);
 #endif
   }
 }
@@ -2063,55 +2161,37 @@ static void codegen_header(std::set<const char*> & cnames,
   flushStatements();
 
   genGlobalInt("chpl_numGlobalsOnHeap", numGlobalsOnHeap, true);
-  int globals_registry_static_size = (numGlobalsOnHeap ? numGlobalsOnHeap : 1);
+  int globalsRegistrySize = (numGlobalsOnHeap ? numGlobalsOnHeap : 1);
+
   if( hdrfile ) {
     fprintf(hdrfile, "\nextern ptr_wide_ptr_t chpl_globals_registry[%d];\n",
-                    globals_registry_static_size);
+                     globalsRegistrySize);
   } else {
 #ifdef HAVE_LLVM
-    llvm::Type* ptr_wide_ptr_t = info->lvt->getType("ptr_wide_ptr_t");
-    INT_ASSERT(ptr_wide_ptr_t);
+    auto name = "chpl_globals_registry";
+    auto eltType = info->lvt->getType("ptr_wide_ptr_t");
+    bool isConstant = false;
 
-    if(llvm::GlobalVariable *GVar = llvm::cast_or_null<llvm::GlobalVariable>(
-          info->module->getNamedGlobal("chpl_globals_registry"))) {
-      GVar->eraseFromParent();
-    }
-    llvm::Type* globValType =
-      llvm::ArrayType::get(ptr_wide_ptr_t, globals_registry_static_size);
-    llvm::GlobalVariable *chpl_globals_registryGVar =
-      llvm::cast<llvm::GlobalVariable>(
-          info->module->getOrInsertGlobal("chpl_globals_registry",
-                                          globValType));
-    chpl_globals_registryGVar->setInitializer(
-        llvm::Constant::getNullValue(globValType));
-    info->lvt->addGlobalValue("chpl_globals_registry",
-                              chpl_globals_registryGVar, GEN_VAL, true, /* chplType= */ nullptr);
+    INT_ASSERT(eltType);
+
+    buildGlobalArrayLlvm(name, eltType, globalsRegistrySize, {}, isConstant);
 #endif
   }
   if( hdrfile ) {
       fprintf(hdrfile, "\nextern const char* chpl_mem_descs[];\n");
     } else {
 #ifdef HAVE_LLVM
-    std::vector<llvm::Constant *> memDescTable;
+    // Build up the values of the array.
+    std::vector<llvm::Constant*> entries;
     forv_Vec(const char*, memDesc, memDescsVec) {
-      memDescTable.push_back(llvm::cast<llvm::GlobalVariable>(
+      entries.push_back(llvm::cast<llvm::GlobalVariable>(
             new_CStringSymbol(memDesc)->codegen().val)->getInitializer());
     }
-    llvm::ArrayType *memDescTableType = llvm::ArrayType::get(
-        getPointerType(info->module->getContext()),
-        memDescTable.size());
 
-    if(llvm::GlobalVariable *GVar =llvm::cast_or_null<llvm::GlobalVariable>(
-          info->module->getNamedGlobal("chpl_mem_descs"))) {
-      GVar->eraseFromParent();
-    }
-
-    llvm::GlobalVariable *chpl_memDescsGVar = llvm::cast<llvm::GlobalVariable>(
-        info->module->getOrInsertGlobal("chpl_mem_descs", memDescTableType));
-    chpl_memDescsGVar->setInitializer(
-        llvm::ConstantArray::get(memDescTableType, memDescTable));
-    chpl_memDescsGVar->setConstant(true);
-    info->lvt->addGlobalValue("chpl_mem_descs", chpl_memDescsGVar, GEN_VAL, true, dtStringC);
+    auto name = "chpl_mem_descs";
+    auto eltType = getPointerType(info->module->getContext());
+    bool isConstant = true;
+    buildGlobalArrayLlvm(name, eltType, entries.size(), entries, isConstant);
 #endif
   }
 
@@ -2124,11 +2204,12 @@ static void codegen_header(std::set<const char*> & cnames,
     fprintf(hdrfile, "\nextern void* const chpl_private_broadcast_table[];\n");
   } else if(!gCodegenGPU) {
 #ifdef HAVE_LLVM
-    auto private_broadcastTableEntryType =
-      getPointerType(info->module->getContext());
+    auto eltType = getPointerType(info->module->getContext());
+    auto name = "chpl_private_broadcast_table";
+    bool isConstant = false;
 
-    std::vector<llvm::Constant *> private_broadcastTable;
-
+    // Build up the table entries.
+    std::vector<llvm::Constant*> entries;
     int broadcastID = 0;
     forv_Vec(CallExpr, call, gCallExprs) {
       if (call->isPrimitive(PRIM_PRIVATE_BROADCAST)) {
@@ -2137,33 +2218,19 @@ static void codegen_header(std::set<const char*> & cnames,
 
         llvm::Value* ptrCast = info->irBuilder->CreatePointerCast(
                                  info->lvt->getValue(se->symbol()->cname).val,
-                                 private_broadcastTableEntryType);
+                                 eltType);
         trackLLVMValue(ptrCast);
-        private_broadcastTable.push_back(llvm::cast<llvm::Constant>(ptrCast));
+        entries.push_back(llvm::cast<llvm::Constant>(ptrCast));
         // To preserve operand order, this should be insertAtTail.
         call->insertAtHead(new_IntSymbol(broadcastID++));
       }
     }
 
-    if(llvm::GlobalVariable *GVar = llvm::cast_or_null<llvm::GlobalVariable>(
-          info->module->getNamedGlobal("chpl_private_broadcast_table"))) {
-      GVar->eraseFromParent();
-    }
+    buildGlobalArrayLlvm(name, eltType, entries.size(), entries, isConstant);
 
-    llvm::ArrayType *private_broadcastTableType =
-      llvm::ArrayType::get(private_broadcastTableEntryType,
-                          private_broadcastTable.size());
-    llvm::GlobalVariable *private_broadcastTableGVar =
-      llvm::cast<llvm::GlobalVariable>(
-          info->module->getOrInsertGlobal("chpl_private_broadcast_table",
-                                          private_broadcastTableType));
-    private_broadcastTableGVar->setInitializer(
-        llvm::ConstantArray::get(
-          private_broadcastTableType, private_broadcastTable));
-    info->lvt->addGlobalValue("chpl_private_broadcast_table",
-                              private_broadcastTableGVar, GEN_VAL, true, dtCVoidPtr);
     genGlobalInt("chpl_private_broadcast_table_len",
-                 private_broadcastTable.size(), false);
+                 entries.size(),
+                 false);
 #endif
   }
 
