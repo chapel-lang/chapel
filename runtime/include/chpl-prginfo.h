@@ -27,7 +27,7 @@
 extern "C" {
 #endif
 
-// Uncomment this to embed debugging information.
+// Change the level to embed debugging info.
 // LEVELS: 0 = none, 1 = reasonable, 2 = ALL
 //
 #define CHPL_RT_DEBUG_PRGINFO_ACCESS 0
@@ -39,7 +39,7 @@ extern "C" {
 
 /**
   This file contains an interface to access critical pieces of data that the
-  runtime requires from compiled Chapel programs. This includes data such as
+  runtime requires from Chapel programs. This includes data such as
   a program's function table or its broadcast constants table. It also
   includes constants such the value of 'CHPL_HOME' that the program was
   compiled with, 'CHPL_COMM', and additional compiler flags.
@@ -53,14 +53,14 @@ extern "C" {
 
   The 'root' Chapel program is the program that is first loaded into the
   process space on each locale and first initializes the runtime. It has a
-  special identifier and can be used to maintain state in module code that
-  you would like all loaded Chapel programs to use (e.g., privatized
-  hashtables for pointers or other state, global variables, etc).
+  special identifier and can be used to maintain state thatyou would like
+  all loaded Chapel programs to use (e.g., privatized hashtables for
+  pointers, global variables, etc).
 
-  The root program is assumed to have an infinite lifetime - that is, it isa
-  alive for as long as the current process is executing. All other programs
-  are introduced dynamically via dynamic loading, and it is possible for
-  their state to be unloaded (or reloaded) during process execution.
+  The root Chapel program is assumed to persist for the entirety of program
+  execution. All other programs are introduced dynamically via dynamic
+  loading, and it is possible for their state to be unloaded (or reloaded)
+  during process execution.
 
   ---
 
@@ -81,7 +81,7 @@ extern "C" {
   constant without declaring a variable with the name 'foo' (assume here
   that 'foo' has the type 'int') via:
 
-  int bar = CHPL_RT_PRGINFO_DATA(prg_id, foo);
+  int bar = CHPL_RT_PRGINFO_DATA(prg, foo);
 
   If you don't have a 'chpl_rt_prginfo*' but you do have that program's
   unique ID, you can get the info using:
@@ -89,12 +89,11 @@ extern "C" {
   chpl_rt_prginfo* prg = CHPL_RT_PRGINFO_FETCH(id);
 
   Do not declare global variables with values retrieved from these functions!
-  The values returned are only valid on the currently executing locale during
-  the lifetime of the executing function.
+  Likewise, do not utilize 'static' variables either!
 
   Multiple Chapel programs can be loaded into a single process space and the
-  values they contain for these constants can differ. There is no guarantee
-  that a value retrieved for one program has any meaning in another.
+  values they contain for the data constants can differ. There is no guarantee
+  that a value retrieved for one program has any meaning for another.
 */
 
 // TODO: Where the heck does this live (i.e., launcher or us?). It was
@@ -144,11 +143,12 @@ typedef uint64_t chpl_rt_prg_id;
 #define CHPL_RT_PRGINFO_DATA_TEMP(prg__, data_name__) \
   data_name__##_type data_name__ = CHPL_RT_PRGINFO_DATA(prg__, data_name__)
 
-// This structure contains "data entries" which must be supplied by each
-// compiled Chapel program. Currently it is unorganized and per-locale.
+/** Contains data that the runtime needs to execute Chapel code. */
 typedef struct chpl_rt_prginfo {
   chpl_rt_prg_id id;
 
+  // This structure contains "data entries" which must be supplied by each
+  // compiled Chapel program. Currently it is unorganized and per-locale.
   struct chpl_rt_prginfo_data {
     #define E_CONSTANT(name__, type__) type__ name__;
     #define E_CALLBACK(name__) name__##_type name__;
