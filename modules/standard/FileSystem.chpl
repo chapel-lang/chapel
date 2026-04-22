@@ -693,7 +693,7 @@ where tag == iterKind.standalone {
     // Why "with (ref hidden)"?  A: the compiler currently allows only
     // [const] ref intents in forall loops over recursive parallel iterators
     // such as walkDirs().
-    forall subdir in walkDirsHelper(startdir,topdown=true,
+    forall subdir in walkDirsHelper(startdir, topdown=true,
                                     depth=max(int), hidden=hidden,
                                     followlinks=false, sort=false, err=err)
     with (ref hidden, ref err) {
