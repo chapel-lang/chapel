@@ -867,7 +867,9 @@ proc findLatest(packageDir: string): versionInfo throws {
 
 /* Reads the Chapel version specified by a mason project's
    TOML file and returns the min and max compatible versions */
-proc parseChplVersion(brick: borrowed Toml?): (versionInfo, versionInfo) throws {
+proc parseChplVersion(
+  brick: borrowed Toml?
+): (versionInfo, versionInfo) throws {
   use Regex;
 
   if brick == nil {

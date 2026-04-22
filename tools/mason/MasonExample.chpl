@@ -282,7 +282,6 @@ private proc getExampleOptions(
 
 // Cleans out example dir from a previous run
 private proc setupExampleDir(projectHome: string) throws {
-
   const exampleDir = joinPath(projectHome, "target/example/");
   if !isDir(exampleDir) {
     makeTargetFiles("debug", projectHome);
@@ -290,8 +289,9 @@ private proc setupExampleDir(projectHome: string) throws {
 }
 
 // prevent building one example from removing all.
-private proc removeExampleBinary(projectHome: string, exampleName: string) throws {
-
+private proc removeExampleBinary(
+  projectHome: string, exampleName: string
+) throws {
   const exampleDir = joinPath(projectHome, "target/example/");
   if isDir(exampleDir) {
     const exampleBinPath = joinPath(exampleDir, exampleName);
