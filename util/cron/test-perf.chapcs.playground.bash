@@ -34,10 +34,10 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 #
 # E.g., 'CHPL_COMM' is replaced with 'program->data.CHPL_COMM'.
 
-GITHUB_USER=dlongnecke-cray
-GITHUB_BRANCH=dynamic-loading-runtime-explore
-SHORT_NAME=runtimeIndirectlyReferencesProgramData
-START_DATE=3/16/26
+GITHUB_USER=insertinterestingnamehere
+GITHUB_BRANCH=some-branch-1.2.3
+SHORT_NAME=somebranch123
+START_DATE=4/22/2026
 
 set -e
 checkout_branch $GITHUB_USER $GITHUB_BRANCH
