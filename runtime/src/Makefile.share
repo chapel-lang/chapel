@@ -26,7 +26,8 @@ COMMON_LAUNCHER_SRCS = \
 	chpl-error.c
 
 ONLY_LAUNCHER_SRCS = \
-	chpl-launcher-common.c
+	chpl-launcher-common.c \
+	chpl-prginfo-launcher.c
 
 COMMON_NOGEN_SRCS = \
 	$(COMMON_LAUNCHER_SRCS) \
@@ -50,6 +51,7 @@ COMMON_NOGEN_SRCS = \
 	chpl-mem-desc.c \
 	chpl-mem-hook.c \
 	chplmemtrack.c \
+	chpl-prginfo.c \
 	chpl-privatization.c \
 	chpl-dynamic-loading.c \
 	chpl-string.c \
