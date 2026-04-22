@@ -136,13 +136,13 @@ private proc parseSpec(ref tokenList: list(string)): 4*string throws {
     var toke = tokenList.getAndRemove(0);
 
     // Package should be first token
-    if package == '' {
-      const pkgSplit = toke.split('@');
+    if package == "" {
+      const pkgSplit = toke.split("@");
       package = pkgSplit[0];
       packageVersion = pkgSplit[1];
-    } else if reCompilerVersion.match(toke).matched && compilerVersion == '' {
-      const strippedToke = toke.strip('%');
-      const compilerSplit = strippedToke.split('@');
+    } else if reCompilerVersion.match(toke).matched && compilerVersion == "" {
+      const strippedToke = toke.strip("%");
+      const compilerSplit = strippedToke.split("@");
       compiler = compilerSplit[0];
       if compilerSplit.size > 1 {
         // Note: This is currently unused

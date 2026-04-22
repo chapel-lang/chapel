@@ -64,9 +64,9 @@ class MasonError : Error {
 /* Creates the rest of the project structure */
 proc makeTargetFiles(binLoc: string, projectHome: string) throws {
 
-  const target = joinPath(projectHome, 'target');
+  const target = joinPath(projectHome, "target");
   const srcBin = joinPath(target, binLoc);
-  const example = joinPath(target, 'example');
+  const example = joinPath(target, "example");
 
   if !isDir(target) {
     mkdir(target);
@@ -78,7 +78,7 @@ proc makeTargetFiles(binLoc: string, projectHome: string) throws {
     mkdir(example);
   }
 
-  const actualTest = joinPath(projectHome,'test');
+  const actualTest = joinPath(projectHome,"test");
   if isDir(actualTest) {
     // temp var to work around
     // https://github.com/chapel-lang/chapel/issues/27855
@@ -90,7 +90,7 @@ proc makeTargetFiles(binLoc: string, projectHome: string) throws {
       }
     }
   }
-  const test = joinPath(target, 'test');
+  const test = joinPath(target, "test");
   if !isDir(test) {
     mkdir(test);
   }
@@ -363,7 +363,7 @@ record versionInfo {
       when 2 do
         return this.bug;
       otherwise
-        halt('Out of bounds access of versionInfo');
+        halt("Out of bounds access of versionInfo");
     }
   }
 
@@ -637,7 +637,7 @@ proc getMasonDependencies(sourceList: list(srcSource),
 
 /* Checks to see if dependency has already been
    downloaded previously */
-proc depExists(dependency: string, repo='/src/') throws {
+proc depExists(dependency: string, repo="/src/") throws {
   var repos = MASON_HOME + repo;
   var exists = false;
   if !isDir(repos) then
@@ -722,7 +722,7 @@ proc getProjectType(): string throws {
   const tomlFile = parseToml(toParse);
   if const type_ = tomlFile.get("brick.type") then
     return type_.s;
-  throw new MasonError('Type not found in TOML file; '+
+  throw new MasonError("Type not found in TOML file; "+
                        'please add a type="application" key');
 }
 
@@ -853,7 +853,7 @@ proc findLatest(packageDir: string): versionInfo throws {
     const manifestReader = openReader(joinPath(packageDir, manifest),
                                       locking=false);
     const manifestToml = parseToml(manifestReader);
-    const brick = manifestToml['brick'];
+    const brick = manifestToml["brick"];
     var (low, high) = parseChplVersion(brick);
     if chplVersion < low || chplVersion > high then continue;
 
@@ -878,12 +878,12 @@ proc parseChplVersion(
   }
 
   // Assert some expected fields are not nil
-  if brick!.get['name'] == nil || brick!.get['version'] == nil {
+  if brick!.get["name"] == nil || brick!.get["version"] == nil {
     stderr.writeln("Error: Unable to parse manifest file");
     exit(1);
   }
 
-  if brick!.get['chplVersion'] == nil {
+  if brick!.get["chplVersion"] == nil {
     const name = brick!["name"]!.s + "-" + brick!["version"]!.s;
     stderr.writeln("Brick '", name, "' missing required 'chplVersion' field");
     exit(1);

@@ -66,7 +66,7 @@ proc masonModify(args: [] string) throws {
 proc modifyToml(add: bool, spec: string, external: bool, system: bool,
                 skipCheck: bool, projectHome: string, tf="Mason.toml") throws {
 
-  const tomlPath = '/'.join(projectHome, tf);
+  const tomlPath = "/".join(projectHome, tf);
   const openFile = openReader(tomlPath, locking=false);
   const toml = parseToml(openFile);
   var newToml: shared Toml?;
@@ -81,10 +81,10 @@ proc modifyToml(add: bool, spec: string, external: bool, system: bool,
         throw new MasonError("Dependency formatted incorrectly.\n"+
                             "Format: package@version");
       }
-      (dependency, _, version) = spec.partition('@');
+      (dependency, _, version) = spec.partition("@");
     } else {
-      if spec.find('@') != -1 {
-        (dependency, _, version) = spec.partition('@');
+      if spec.find("@") != -1 {
+        (dependency, _, version) = spec.partition("@");
       } else {
         dependency = spec;
         version = "*";
@@ -126,8 +126,8 @@ proc modifyToml(add: bool, spec: string, external: bool, system: bool,
   } else {
     // Removing a dependency
     var depName: string;
-    if spec.find('@') != -1 {
-      const split = spec.split('@');
+    if spec.find("@") != -1 {
+      const split = spec.split("@");
       depName = split[0];
     } else depName = spec;
     const dependency = depName;

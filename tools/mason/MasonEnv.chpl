@@ -30,7 +30,7 @@ const regUrl: string = "https://github.com/chapel-lang/mason-registry";
 @chplcheck.ignore("CamelCaseFunctions")
 proc MASON_HOME : string {
   const envHome = getEnv("MASON_HOME");
-  const default = getEnv('HOME') + "/.mason";
+  const default = getEnv("HOME") + "/.mason";
   const masonHome = if envHome != "" then envHome else default;
 
   return masonHome;
@@ -57,12 +57,12 @@ proc MASON_CACHED_REGISTRY throws {
 */
 @chplcheck.ignore("CamelCaseFunctions")
 proc MASON_OFFLINE {
-  const offlineEnv = getEnv('MASON_OFFLINE');
+  const offlineEnv = getEnv("MASON_OFFLINE");
   const default = false;
   var offline = false;
 
-  if (offlineEnv == 'true') || (offlineEnv == 'True') ||
-     (offlineEnv == 'TRUE') || (offlineEnv == '1') {
+  if (offlineEnv == "true") || (offlineEnv == "True") ||
+     (offlineEnv == "TRUE") || (offlineEnv == "1") {
     offline = true;
   } else offline = default;
 
@@ -86,9 +86,9 @@ proc MASON_REGISTRY throws {
   if env == "" {
     registries.pushBack(default);
   } else {
-    for str in env.split(',') {
+    for str in env.split(",") {
       if str.strip().isEmpty() then continue;
-      const regArr = str.split('|');
+      const regArr = str.split("|");
       if regArr.size > 2 || regArr.size < 1 {
         const msg = "expected MASON_REGISTRY to contain a comma separated " +
                     "list of locations or 'name|location' pairs\n" + str;
@@ -181,13 +181,13 @@ proc masonEnv(args) throws {
     }
     writeln(star);
   }
-  var offlineString = 'false';
+  var offlineString = "false";
   if MASON_OFFLINE {
-    offlineString = 'true';
+    offlineString = "true";
   }
   printVar("MASON_HOME", MASON_HOME);
   printVar("MASON_REGISTRY", MASON_REGISTRY);
-  printVar('MASON_OFFLINE', offlineString);
+  printVar("MASON_OFFLINE", offlineString);
   printVar("SPACK_ROOT", SPACK_ROOT);
 
   if debug {

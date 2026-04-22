@@ -112,7 +112,7 @@ proc masonTest(args: [] string) throws {
     var flagInArgs = false;
     for arg in otherArgs.values() {
       // try to get option values meant for compilation
-      if flagInArgs && !arg.startsWith('-') {
+      if flagInArgs && !arg.startsWith("-") {
         compopts.pushBack(arg);
         flagInArgs=false;
       } else if isFile(arg) && arg.endsWith(".chpl") {
@@ -122,7 +122,7 @@ proc masonTest(args: [] string) throws {
       } else if isDir(arg) {
         // assume this is a test directory
         dirs.pushBack(arg);
-      } else if arg.startsWith('-') {
+      } else if arg.startsWith("-") {
         // assume a flag for compiler
         compopts.pushBack(arg);
         flagInArgs=true;
@@ -173,7 +173,7 @@ proc masonTest(args: [] string) throws {
           if testName.find(subString) != -1 {
             isSubString = true;
             if inProjectDir {
-              files.pushBack("".join('test/', testName));
+              files.pushBack("".join("test/", testName));
             } else {
               files.pushBack(testName);
             }
@@ -194,8 +194,8 @@ proc masonTest(args: [] string) throws {
       if !searchSubStrings.isEmpty() {
         var testNames: list(string);
 
-        if isDir('.') {
-          var tests = findFiles(startdir='.', recursive=subdir);
+        if isDir(".") {
+          var tests = findFiles(startdir=".", recursive=subdir);
           for test in tests {
             if test.endsWith(".chpl") {
               testNames.pushBack(test);
@@ -230,8 +230,8 @@ private proc runTests(show: bool, run: bool, parallel: bool, filter: string,
 
     // Get project source code and dependencies
     const (sourceList, gitList) = genSourceList(lockFile);
-    const depPath = Path.joinPath(MASON_HOME, 'src');
-    const gitDepPath = Path.joinPath(MASON_HOME, 'git');
+    const depPath = Path.joinPath(MASON_HOME, "src");
+    const gitDepPath = Path.joinPath(MASON_HOME, "git");
 
     getSrcCode(sourceList, skipUpdate, show);
     getGitCode(gitList, skipUpdate, show);
@@ -289,7 +289,7 @@ private proc runTests(show: bool, run: bool, parallel: bool, filter: string,
     }
 
     // get system deps
-    if const pkgDeps = lockFile.get['system'] {
+    if const pkgDeps = lockFile.get["system"] {
       for (_, depInfo) in zip(pkgDeps.A.keys(), pkgDeps.A.values()) {
         for (k,v) in allFields(depInfo!) {
           var val = v!;
@@ -344,7 +344,7 @@ private proc runTests(show: bool, run: bool, parallel: bool, filter: string,
           if customTest then
             testPath = "".join(cwd,"/",test);
           else
-            testPath = "".join('test/', test);
+            testPath = "".join("test/", test);
         }
         log.info("Testing ", testPath);
         const testName = basename(stripExt(test, ".chpl"));
@@ -485,7 +485,7 @@ private proc getTests(lock: borrowed Toml, projectHome: string) throws {
 
   if const testsToml = lock.get("root.tests") {
     var tests = testsToml.toString();
-    var strippedTests = tests.split(',').strip('[]');
+    var strippedTests = tests.split(",").strip("[]");
     for test in strippedTests {
       const t = test.strip().strip('"');
       testNames.pushBack(t);

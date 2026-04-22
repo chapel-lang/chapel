@@ -40,7 +40,7 @@ private var log = MasonLogger.getLogger("mason external");
 const minSpackVersion = new versionInfo(1, 0, 0);
 const major = minSpackVersion.major:string;
 const minor = minSpackVersion.minor:string;
-const spackBranch = 'releases/v' + '.'.join(major, minor);
+const spackBranch = "releases/v" + ".".join(major, minor);
 const spackDefaultPath = MASON_HOME + "/spack";
 const spackRegistryDefaultPath = MASON_HOME + "/spack-registry";
 
@@ -78,8 +78,8 @@ proc masonExternal(args: [] string) throws {
     if setupFlag.valueAsBool() {
       // if MASON_OFFLINE is set, then cannot install spack
       if MASON_OFFLINE {
-        throw new MasonError('Cannot setup Spack when MASON_OFFLINE ' +
-                             'is set to true');
+        throw new MasonError("Cannot setup Spack when MASON_OFFLINE " +
+                             "is set to true");
       }
 
       // If spack and spack registry is present with latest version, print
@@ -160,8 +160,8 @@ proc masonExternal(args: [] string) throws {
         when "info" do spkgInfo(cmdArgs);
         when "find" do findSpkg(cmdArgs);
         otherwise {
-          writeln('error: no such subcommand %s'.format(usedCmd));
-          writeln('try mason external --help');
+          writeln("error: no such subcommand %s".format(usedCmd));
+          writeln("try mason external --help");
           exit(1);
         }
       }
@@ -241,8 +241,8 @@ proc gitCheckOutSpack(tag: string) {
 
 /* git fetch command run at SPACK_ROOT */
 proc gitFetch(branch: string) {
-  const command = 'git ' + '-C ' + SPACK_ROOT + ' fetch -q ' +
-                  ' --depth 1 origin ' + branch;
+  const command = "git " + "-C " + SPACK_ROOT + " fetch -q " +
+                  " --depth 1 origin " + branch;
   const status = runWithStatus(command);
   if status != 0 then return -1;
   else return 0;
@@ -250,9 +250,9 @@ proc gitFetch(branch: string) {
 
 /* Updates the spack directory used for spack commands */
 private proc updateSpackCommandLine() {
-  const releaseTag = 'v' + minSpackVersion.str();
-  var tag = 'refs/tags/' + releaseTag;
-  tag = tag + ':' + tag;
+  const releaseTag = "v" + minSpackVersion.str();
+  var tag = "refs/tags/" + releaseTag;
+  tag = tag + ":" + tag;
   const statusFetch = gitFetch(tag);
   const statusCheckOut = gitCheckOutSpack(releaseTag);
   if statusFetch != 0 || statusCheckOut != 0 then return -1;
@@ -268,13 +268,13 @@ private proc updateSpackCommandLine() {
   /spack/etc/spack/defaults with that of spack-registry
 */
 private proc generateYAML() throws {
-  const yamlFilePath = SPACK_ROOT + '/etc/spack/defaults/repos.yaml';
+  const yamlFilePath = SPACK_ROOT + "/etc/spack/defaults/repos.yaml";
   if isFile(yamlFilePath) {
     remove(yamlFilePath);
   }
   const reposOverride =
-    'repos:\n'+
-    '  - ' + MASON_HOME + '/spack-registry/var/spack/repos/builtin \n';
+    "repos:\n"+
+    "  - " + MASON_HOME + "/spack-registry/var/spack/repos/builtin \n";
   var yamlFile = open(yamlFilePath,ioMode.cw);
   var yamlWriter = yamlFile.writer(locking=false);
   yamlWriter.write(reposOverride);
@@ -507,7 +507,7 @@ proc getSpkgInfo(spec: string, dependencies: list(string)): shared Toml throws {
   var compiler = specFields[2];
 
   // Remove variants from spec
-  var simpleSpec = pkgName + '@' + version + '%' + compiler;
+  var simpleSpec = pkgName + "@" + version + "%" + compiler;
 
   if spkgInstalled(simpleSpec) {
     const spkgPath = getSpkgPath(simpleSpec);
@@ -586,8 +586,8 @@ proc getSpkgDependencies(spec: string): list(string) throws {
 
 /* Get package name from spec */
 private proc specName(spec: string): string throws {
-  const fields = spec.split('%');
-  const subfields = fields[0].split('@');
+  const fields = spec.split("%");
+  const subfields = fields[0].split("@");
   const name = subfields[0];
   return name;
 }
@@ -600,7 +600,7 @@ private proc resolveSpec(spec: string): string throws {
   const command = "spack spec --no-install-status %s | head -n1".format(spec);
   const output = getSpackResult(command, quiet=true);
 
-  if output == '' {
+  if output == "" {
     throw new MasonError("Package not found: " + spec);
   }
 

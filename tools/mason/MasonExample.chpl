@@ -71,7 +71,7 @@ proc runExamples(show: bool, run: bool, build: bool, release: bool,
   if numExamples > 0 {
     for example in examplesToRun {
 
-      const examplePath = "".join(projectHome, '/example/', example);
+      const examplePath = "".join(projectHome, "/example/", example);
       const exampleName = basename(stripExt(example, ".chpl"));
 
       // retrieves compopts and execopts found per example in the toml file
@@ -181,8 +181,8 @@ private proc getBuildInfo(projectHome: path,
     }
     // Get project source code and dependencies
     (sourceList, gitList) = genSourceList(lockFile);
-    const depPath = MASON_HOME:path / 'src';
-    const gitDepPath = MASON_HOME:path / 'git';
+    const depPath = MASON_HOME:path / "src";
+    const gitDepPath = MASON_HOME:path / "git";
 
 
     getSrcCode(sourceList, skipUpdate, false);
@@ -234,7 +234,7 @@ private proc getBuildInfo(projectHome: path,
     }
 
     // get system deps
-    if const pkgDeps = lockFile.get['system'] {
+    if const pkgDeps = lockFile.get["system"] {
       for (_, depInfo) in zip(pkgDeps.A.keys(), pkgDeps.A.values()) {
         for (k,v) in allFields(depInfo!) {
           var val = v!;
@@ -352,7 +352,7 @@ private proc getExamples(toml: Toml, projectHome: string) throws {
 
   if const examplesToml = toml.get("examples.examples") {
     var examples = examplesToml.toString();
-    var strippedExamples = examples.split(',').strip('[]');
+    var strippedExamples = examples.split(",").strip("[]");
     for example in strippedExamples {
       const t = example.strip().strip('"');
       exampleNames.pushBack(t);
