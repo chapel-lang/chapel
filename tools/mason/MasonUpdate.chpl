@@ -205,7 +205,8 @@ proc updateRegistry(skipUpdate: bool, show=true) throws {
       gitC(registryHome, pullRegistry);
     } else {
       // Registry has moved or does not exist
-      (MASON_HOME:path / "src").mkdir(parents=true);
+      if !(MASON_HOME:path / "src").isDir() then
+        (MASON_HOME:path / "src").mkdir(parents=true);
       const localRegistry:path = registryHome;
       localRegistry.mkdir(parents=true);
       if show then writeln("Updating ", name);
