@@ -21,6 +21,11 @@ def rules(driver):
         if result.node.quote_style() == '"""':
             return None
         loc = result.node.location()
-        s = result.node.value()
+        s = (
+            result.node.value()
+            .replace('"', '\\"')
+            .replace("\n", "\\n")
+            .replace("\t", "\\t")
+        )
         fixit = Fixit.build(Edit.build(loc, '"' + s + '"'))
         return fixit
