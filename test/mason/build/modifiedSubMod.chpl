@@ -5,7 +5,7 @@ proc main() {
   const package = '_subModule';
   here.chdir(package);
   const args = ["build"];
-  masonBuild(args);
+  try! masonBuild(args);
 
   sleep(2); // ensure mod time difference
 
