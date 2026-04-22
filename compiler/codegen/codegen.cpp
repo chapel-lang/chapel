@@ -1519,6 +1519,7 @@ replaceGlobalInitializerLlvm(llvm::GlobalVariable* global,
   // Set some more properties...
   ret->setVisibility(global->getVisibility());
   ret->setAlignment(global->getAlign());
+  ret->setDSOLocal(global->isDSOLocal());
 
   // Replace the old global with the new one.
   //
@@ -1539,6 +1540,7 @@ replaceGlobalInitializerLlvm(llvm::GlobalVariable* global,
   return ret;
 }
 
+// If 'entries' is non-empty, use 'entries.size()'. Otherwise use 'size'.
 static void
 buildGlobalArrayLlvm(const char* name, llvm::Type* eltType, size_t size,
                      const std::vector<llvm::Constant*>& entries,
@@ -1561,6 +1563,13 @@ buildGlobalArrayLlvm(const char* name, llvm::Type* eltType, size_t size,
   } else {
     var->setInitializer(init);
   }
+
+  // Either way, track the value. We replaced it or it was just created.
+  trackLLVMValue(var);
+
+  //
+  // TODO: Attach or copy over debugging info?
+  //
 
   bool isUnsigned = true;
   info->lvt->addGlobalValue(name, var, GEN_VAL, isUnsigned, dtCVoidPtr);
