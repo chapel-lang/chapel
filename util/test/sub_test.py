@@ -246,7 +246,7 @@ def LauncherTimeoutArgs(seconds, maxQueueTime=0):
         if maxQueueTime > 0:
             # deadline is the walltime + max time in queue
             time = maxQueueTime + seconds
-            fmtdeadline = "--deadline=now+{}seconds".format(time)
+            fmtdeadline = "--system-launcher-flags='--deadline=now+{}seconds'".format(time)
             args.append(fmtdeadline)
         return args
 
