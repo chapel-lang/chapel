@@ -150,11 +150,3 @@ const char* chpl_rt_prginfo_load_path(chpl_rt_prginfo* prg) {
   // This should be valid as long as 'prg' is loaded.
   return info.dli_fname;
 }
-
-int chpl_rt_prginfo_num_data_entries(void) {
-  int ret = 0;
-  #define E_CONSTANT(name__, type__) ret += 1;
-  #define E_CALLBACK(name__, ret_type__, ...) ret += 1;
-  #include "chpl-prginfo-data-macro-adapter.h"
-  return ret;
-}

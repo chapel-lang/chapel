@@ -197,15 +197,6 @@ chpl_rt_prg_id chpl_rt_prginfo_id(chpl_rt_prginfo* prg);
 /** Get the load path of a program info. */
 const char* chpl_rt_prginfo_load_path(chpl_rt_prginfo* prg);
 
-/** Get the number of data entries in a program info. */
-int chpl_rt_prginfo_num_data_entries(void);
-
-/** Get the names of the data entries as a null terminated array. */
-const char** chpl_rt_prginfo_data_entry_names(void);
-
-/** Get the types of the data entries as a null terminated array. */
-const char** chpl_rt_prginfo_data_entry_type(void);
-
 // Private implementation details.
 #include "chpl-prginfo-detail.h"
 
