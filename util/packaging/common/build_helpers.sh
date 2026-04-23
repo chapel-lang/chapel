@@ -253,7 +253,7 @@ __run_container() {
 }
 
 __test_package() {
-  python3 $CHPL_HOME/util/packaging/common/test_package.py $@
+  python3 $CHPL_HOME/util/packaging/common/test_package.py "$@"
 }
 __test_all_packages() {
   for deb in $(set +e && find $CHPL_HOME/util/packaging/apt/build -name '*.deb'); do

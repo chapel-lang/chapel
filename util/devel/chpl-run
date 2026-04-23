@@ -40,7 +40,7 @@ fi
 chpl_file="${BASH_ARGV[0]}"
 output_file=$(echo "${chpl_file}" | sed 's/\.chpl$//')
 
-chpl --output $output_file $@
+chpl --output $output_file "$@"
 
 # Ensure the compiled output file is removed.
 function cleanup()

@@ -96,7 +96,7 @@ function release_dependencies() {
 
 function setup_release() {
   if [ -n "$CHPL_WHICH_RELEASE_FOR_ARKOUDA" ]; then
-    release_dependencies $@
+    release_dependencies "$@"
   else
     echo "CHPL_WHICH_RELEASE_FOR_ARKOUDA not set, cannot run Arkouda release test!"
     exit 1
