@@ -1,0 +1,10 @@
+HSV, YUV identical
+LAB, RGB identical
+picked color space HSV
+picked color space HSV
+
+From the command line you picked color space HSV
+
+enum vals             R 0xff0000  G 0x00ff00  B 0x0000ff
+decompose 0x123456    R 0x120000  G 0x003400  B 0x000056
+convert int to enum   RED
