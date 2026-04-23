@@ -6,6 +6,7 @@
 if [ -n "${BASH_VERSION}" ]; then
     filepath=${BASH_SOURCE[0]}
 elif [ -n "${ZSH_VERSION}" ]; then
+    # shellcheck disable=SC2296
     filepath=${(%):-%N}
 else
     echo "Error: setchplenv.bash can only be sourced from bash and zsh"
