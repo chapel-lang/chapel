@@ -20,7 +20,7 @@ DIR=$(cd "$(dirname "${filepath}")" && pwd)
 # indicating that we are probably in a Chapel root directory.
 chpl_home=$( cd $DIR/../../ && pwd )
 if [ ! -d "$chpl_home/util" ] || [ ! -d "$chpl_home/compiler" ] || [ ! -d "$chpl_home/runtime" ] || [ ! -d "$chpl_home/modules" ]; then
-    # Chapel home is assumed to be one directory up from setenvchpl.bash script
+    # Chapel home is assumed to be one directory up from setchplenv.bash script
     echo "Error: \$CHPL_HOME is not where it is expected"
     return 1
 fi
