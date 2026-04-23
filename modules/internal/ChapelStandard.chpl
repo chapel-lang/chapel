@@ -90,4 +90,5 @@ module ChapelStandard {
   // These need to be compiled but do not need to be in the global namespace.
   use ChapelDynamicLoading;
   use ChapelProgramEntrypoints;
+  use ChapelProgramRegistration;
 }
