@@ -1615,7 +1615,7 @@ iter walkDirsHelper(path: string, topdown: bool, depth: int,
                     param tag: iterKind): string
 where tag == iterKind.standalone {
   if sort then
-    warning("sorting has no effect for parallel invocations of walkdirs()");
+    warning("sorting has no effect for parallel invocations of walkDirs()");
   use List only list;
   if topdown {
     // preorder: yield the directory and then push its children onto the stack
