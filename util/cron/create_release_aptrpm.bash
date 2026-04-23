@@ -30,7 +30,7 @@ log_info "Setting CHPL_HOME to: ${CHPL_HOME}"
 # if any errors occur, this script should fail
 set -e
 
-source $CHPL_HOME/util/packaging/common/build_helpers.sh
+source $CHPL_HOME/util/packaging/common/build_helpers.bash
 
 # if using a remote tarball, download it
 if [ -n "$CHPL_TARBALL_LOCATION" ]; then
