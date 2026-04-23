@@ -30,9 +30,10 @@
 #ifndef E_CALLBACK_RT
   #ifdef LAUNCHER
     // By default, expand to nothing under the launcher.
-    #define E_CALLBACK_RT(name__)
+    #define E_CALLBACK_RT(name__, ret_type__, ...)
   #else
-    #define E_CALLBACK_RT(name__) E_CALLBACK(name__)
+    #define E_CALLBACK_RT(name__, ret_type__, ...) \
+      E_CALLBACK(name__, ret_type__, __VA_ARGS__)
   #endif
 #endif
 

@@ -21,20 +21,13 @@
 #ifndef CHPL_RT_PRGINFO_H
 #define CHPL_RT_PRGINFO_H
 
-#include "chpl-prginfo-data-macro-includes.h"
+#include "chpl-string-support.h"
+#include "chpltypes.h"
+#include <inttypes.h>
+#include <stddef.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-// Change the level to embed debugging info.
-// LEVELS: 0 = none, 1 = reasonable, 2 = ALL
-//
-#define CHPL_RT_DEBUG_PRGINFO_ACCESS 0
-
-#ifdef LAUNCHER
-  // Except, never bother in the launcher...
-  #undef CHPL_RT_DEBUG_PRGINFO_ACCESS
+#ifndef LAUNCHER
+  #include "qio_error.h"
 #endif
 
 /**
@@ -53,7 +46,7 @@ extern "C" {
 
   The 'root' Chapel program is the program that is first loaded into the
   process space on each locale and first initializes the runtime. It has a
-  special identifier and can be used to maintain state thatyou would like
+  special identifier and can be used to maintain state that you would like
   all loaded Chapel programs to use (e.g., privatized hashtables for
   pointers, global variables, etc).
 
@@ -96,6 +89,43 @@ extern "C" {
   that a value retrieved for one program has any meaning for another.
 */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#ifdef LAUNCHER
+  typedef void syserr;
+#endif
+
+// Forward declare some QIO types we don't need a full header for here.
+struct qio_channel_s;
+typedef struct qio_channel_s qio_channel_t;
+
+// Change the level to embed debugging info.
+// LEVELS: 0 = none, 1 = reasonable, 2 = ALL
+//
+#define CHPL_RT_DEBUG_PRGINFO_ACCESS 0
+
+#ifdef LAUNCHER
+  // Except, never bother in the launcher...
+  #undef CHPL_RT_DEBUG_PRGINFO_ACCESS
+#endif
+
+/** Get the typedef for a specific program data entry. */
+#define CHPL_RT_PRGINFO_DATA_ENTRY_TYPE(name__) chpl_rt_ ## name__ ## _type
+
+// Expand out unique typedefs for each data entry.
+#define ENTRY_NAME__(name__) CHPL_RT_PRGINFO_DATA_ENTRY_TYPE(name__)
+#define E_CONSTANT(name__, type__) typedef type__ ENTRY_NAME__(name__);
+#define E_CALLBACK(name__, ret_type__, ...) \
+  typedef ret_type__ (*ENTRY_NAME__(name__))(__VA_ARGS__);
+#include "chpl-prginfo-data-macro-adapter.h"
+#undef ENTRY_NAME__
+
+/** Get a unique enum value for a given data entry. */
+#define CHPL_RT_PRGINFO_DATA_ENTRY_IDX(name__) \
+    CHPL_RT_PRGINFO_DATA_ENTRY_ ## name__
+
 // TODO: Where the heck does this live (i.e., launcher or us?). It was
 //       declared in 'chplcgfns.h', but clearly that's not correct as
 //       it is not code-generated (and that header is going away).
@@ -129,7 +159,7 @@ typedef uint64_t chpl_rt_prg_id;
   #define CHPL_RT_PRGINFO_DATA(prg__, data_name__) (prg__->data.data_name__)
 #else
   #define CHPL_RT_PRGINFO_DATA(prg__, data_name__)                          \
-    (*((data_name__##_type*)                                                \
+    (*((CHPL_RT_PRGINFO_DATA_ENTRY_TYPE(data_name__))                       \
       chpl_rt_prginfo_data_debug_print_hook(CHPL_RT_DEBUG_PRGINFO_ACCESS,   \
                                             prg__,                          \
                                             &(prg__->data.data_name__),     \
@@ -140,8 +170,9 @@ typedef uint64_t chpl_rt_prg_id;
 #endif
 
 /** Declares a local that is a copy of a program data, with the same name. */
-#define CHPL_RT_PRGINFO_DATA_TEMP(prg__, data_name__) \
-  data_name__##_type data_name__ = CHPL_RT_PRGINFO_DATA(prg__, data_name__)
+#define CHPL_RT_PRGINFO_DATA_TEMP(prg__, data_name__)             \
+  CHPL_RT_PRGINFO_DATA_ENTRY_TYPE(data_name__) data_name__ =      \
+      CHPL_RT_PRGINFO_DATA(prg__, data_name__)
 
 /** Contains data that the runtime needs to execute Chapel code. */
 typedef struct chpl_rt_prginfo {
@@ -151,7 +182,8 @@ typedef struct chpl_rt_prginfo {
   // compiled Chapel program. Currently it is unorganized and per-locale.
   struct chpl_rt_prginfo_data {
     #define E_CONSTANT(name__, type__) type__ name__;
-    #define E_CALLBACK(name__) name__##_type name__;
+    #define E_CALLBACK(name__, ret_type__, ...) \
+      CHPL_RT_PRGINFO_DATA_ENTRY_TYPE(name__) name__;
     #include "chpl-prginfo-data-macro-adapter.h"
   } data;
 } chpl_rt_prginfo;
@@ -170,6 +202,9 @@ int chpl_rt_prginfo_num_data_entries(void);
 
 /** Get the names of the data entries as a null terminated array. */
 const char** chpl_rt_prginfo_data_entry_names(void);
+
+/** Get the types of the data entries as a null terminated array. */
+const char** chpl_rt_prginfo_data_entry_type(void);
 
 // Private implementation details.
 #include "chpl-prginfo-detail.h"

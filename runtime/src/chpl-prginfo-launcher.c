@@ -33,7 +33,7 @@ chpl_rt_prginfo chpl_rt_prginfo_singleton;
 // need their address. Constants are expanded normally, and both categories
 // are expanded to 'extern' symbols that should be linked into the launcher.
 #define E_CONSTANT(name__, type__) extern type__ name__;
-#define E_CALLBACK(name__) extern void name__(void);
+#define E_CALLBACK(name__, ret_type__, ...) extern void name__(void);
 #include "chpl-prginfo-data-macro-adapter.h"
 
 static
@@ -44,7 +44,8 @@ void prepare_launcher_info_via_external_symbols(chpl_rt_prginfo* prg) {
   // expanding out the X-macro pattern again and assigning the extern symbols
   // that we declared above.
   #define E_CONSTANT(name__, type__) prg->data.name__ = name__;
-  #define E_CALLBACK(name__) prg->data.name__ = (name__##_type) &name__;
+  #define E_CALLBACK(name__, ret_type__, ...) \
+    prg->data.name__ = (CHPL_RT_PRGINFO_DATA_ENTRY_TYPE(name__)) &name__;
   #include "chpl-prginfo-data-macro-adapter.h"
 }
 

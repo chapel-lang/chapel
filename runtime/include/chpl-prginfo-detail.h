@@ -33,13 +33,23 @@
 extern "C" {
 #endif
 
+// Expand out an enum that is used internally and by a macro.
+typedef enum chpl_rt_prginfo_data_entries {
+  #define ENUM_PREFIX__(name__) CHPL_RT_PRGINFO_DATA_ENTRY_IDX(name__)
+  #define E_CONSTANT(name__, type__) ENUM_PREFIX__ ## name__ ,
+  #define E_CALLBACK(name__, ret_type__, ...) ENUM_PREFIX__ ## name__ ,
+  #include "chpl-prginfo-data-macro-adapter.h"
+  CHPL_RT_PRGINFO_DATA_ENTRY_COUNT
+  #undef ENUM_PREFIX__
+} chpl_rt_prginfo_data_entries;
+
 /** Define setters that module code can call to set up program data. */
 #define CONCAT(a__, b__) a__##b__
 #define PREFIX chpl_rt_prginfo_data_entry_set_
 #define SETTER(prefix__, name__) \
   void CONCAT(prefix__, name__)(chpl_rt_prginfo* prg, const void* data);
 #define E_CONSTANT(name__, type__) SETTER(PREFIX, name__)
-#define E_CALLBACK(name__) SETTER(PREFIX, name__)
+#define E_CALLBACK(name__, ret_type__, ...) SETTER(PREFIX, name__)
 #include "chpl-prginfo-data-macro-adapter.h"
 #undef PREFIX
 #undef SETTER
@@ -59,6 +69,9 @@ chpl_rt_prginfo_register_here_nosync(chpl_rt_prg_id id, chpl_rt_prginfo* prg);
 // TODO: Just pass the root program into 'chpl_rt_init'.
 /** Call to register the root program here. Returns '1' if registered. */
 int chpl_rt_prginfo_register_root_here(chpl_rt_prginfo* prg);
+
+/** Dump the values of data entries to the console. */
+void chpl_rt_prginfo_data_entry_dump(int no_addresses);
 
 #ifdef __cplusplus
 }

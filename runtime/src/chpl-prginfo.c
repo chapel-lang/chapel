@@ -45,10 +45,11 @@ static chpl_rt_prginfo* chpl_prg_root;
 #define PREFIX chpl_rt_prginfo_data_entry_set_
 #define SETTER(prefix__, name__)                                            \
   void CONCAT(prefix__, name__)(chpl_rt_prginfo* prg, const void* data) {   \
-    memcpy(&prg->data.name__, data, sizeof(name__##_type));                 \
+    size_t sz = sizeof(CHPL_RT_PRGINFO_DATA_ENTRY_TYPE(name__));            \
+    memcpy(&prg->data.name__, data, sz);                                    \
   }
 #define E_CONSTANT(name__, type__) SETTER(PREFIX, name__)
-#define E_CALLBACK(name__) SETTER(PREFIX, name__)
+#define E_CALLBACK(name__, ret_type__, ...) SETTER(PREFIX, name__)
 #include "chpl-prginfo-data-macro-adapter.h"
 #undef PREFIX
 #undef SETTER
@@ -71,7 +72,7 @@ chpl_rt_prginfo_register_here_nosync(chpl_rt_prg_id id, chpl_rt_prginfo* prg) {
   if (prg->id != CHPL_RT_PRGINFO_NULL_ID) return ret;
 
   // Map the pointer to the index using code in the root program.
-  int requestingNewIdx = (id == CHPL_RT_PRGINFO_NULL_ID);
+  chpl_bool requestingNewIdx = (id == CHPL_RT_PRGINFO_NULL_ID);
   int64_t idxToUse = requestingNewIdx ? 0 : ((int64_t) id);
 
   CHPL_RT_PRGINFO_DATA_TEMP(CHPL_RT_PRGINFO_ROOT, chpl_mapPtrToIdxHere);
@@ -153,7 +154,7 @@ const char* chpl_rt_prginfo_load_path(chpl_rt_prginfo* prg) {
 int chpl_rt_prginfo_num_data_entries(void) {
   int ret = 0;
   #define E_CONSTANT(name__, type__) ret += 1;
-  #define E_CALLBACK(name__) ret += 1;
+  #define E_CALLBACK(name__, ret_type__, ...) ret += 1;
   #include "chpl-prginfo-data-macro-adapter.h"
   return ret;
 }
