@@ -8,7 +8,7 @@
 if [ ! -d "$CHPL_HOME" ]
 then
   echo 'Please set $CHPL_HOME before running'
-  exit -1
+  exit 1
 fi
 
 URL=$1
@@ -17,7 +17,7 @@ if [ -z "$URL" ] || [ -z "$BRANCH" ]
 then
   echo "Usage: test_rpm_module github-url branch"
   echo "  For example, https://github.com/chapel-lang/chapel main"
-  exit -1
+  exit 1
 fi
 
 export CHPL_HOME_REPOSITORY="$URL"

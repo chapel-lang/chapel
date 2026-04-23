@@ -4,7 +4,7 @@
 if [ $# -lt 1 ] ; then
     blah=`basename $0`
     echo "usage: $blah filename [compiler|program|timeout]"
-    exit -1
+    exit 1
 fi
 
 if [ $# -ge 2 ] ; then
