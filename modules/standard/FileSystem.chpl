@@ -1543,38 +1543,71 @@ where tag == iterKind.standalone {
   if err != nil then throw (err:owned class);
 }
 
-
 @chpldoc.nodoc
-iter walkDirsHelper(path: string, topdown: bool, depth: int,
+iter walkDirsHelper(path: string, topdown: bool, in depth: int,
                     hidden: bool, followlinks: bool, sort: bool,
                     ref err: owned Error?): string {
-  if topdown then
-    yield path;
+  use List only list;
+  if topdown {
+    // preorder: yield the directory and then push its children onto the stack
+    var stack: list((string, int));
+    stack.pushBack((path, depth));
+    while !stack.isEmpty() {
+      var (curPath, curDepth) = stack.popBack();
+      yield curPath;
 
-  if depth {
-    var subdirs = listDirHelper(path, hidden=hidden, files=false, dirs=true,
-                                listlinks=followlinks, err=err);
-    if err != nil then return;
-    if sort {
-      use Sort only sort as sortList;
-      sortList(subdirs);
+      if curDepth {
+        var subdirs = listDirHelper(curPath, hidden=hidden, files=false, dirs=true,
+                                    listlinks=followlinks, err=err);
+        if err != nil then return;
+        if sort {
+          use Sort only sort as sortList;
+          sortList(subdirs);
+        }
+
+        // Push in reverse order so left-to-right ordering is preserved on pop
+        for i in subdirs.domain by -1 {
+          stack.pushBack((curPath + "/" + subdirs[i], curDepth - 1));
+        }
+      }
     }
+  } else {
+    // postorder: On first visit, push the
+    // directory back as "expanded" and then push its children. On second
+    // visit (expanded=true), yield it.
+    var stack: list((string, int, bool)); // (path, depth, expanded)
+    stack.pushBack((path, depth, false));
 
-    for subdir in subdirs {
-      const fullpath = path + "/" + subdir;
-      for subdir in walkDirsHelper(path=fullpath, topdown=topdown,
-                                   depth=depth-1, hidden=hidden,
-                                   followlinks=followlinks, sort=false,
-                                   err=err) do
-        yield subdir;
-      if err != nil then return;
+    while !stack.isEmpty() {
+      var (curPath, curDepth, expanded) = stack.popBack();
+
+      if expanded || curDepth == 0 {
+        yield curPath;
+      } else {
+        // Re-push as expanded so it will be yielded after its children
+        stack.pushBack((curPath, curDepth, true));
+
+        var subdirs = listDirHelper(curPath, hidden=hidden, files=false, dirs=true,
+                                    listlinks=followlinks, err=err);
+        if err != nil then return;
+        if sort {
+          use Sort only sort as sortList;
+          sortList(subdirs);
+        }
+
+        // Push in reverse order so left-to-right ordering is preserved on pop
+        for i in subdirs.domain by -1 {
+          stack.pushBack((curPath + "/" + subdirs[i], curDepth - 1, false));
+        }
+      }
     }
   }
-
-  if !topdown then
-    yield path;
 }
 
+// this uses parSafe lists as the stack, which probably
+// makes the parallelism inefficent and pretty useless. This was better
+// when written as a recursive iterator, but recursive iterators are too
+// fragile
 @chpldoc.nodoc
 iter walkDirsHelper(path: string, topdown: bool, depth: int,
                     hidden: bool, followlinks: bool, sort: bool,
@@ -1583,32 +1616,50 @@ iter walkDirsHelper(path: string, topdown: bool, depth: int,
 where tag == iterKind.standalone {
   if sort then
     warning("sorting has no effect for parallel invocations of walkdirs()");
+  use List only list;
+  if topdown {
+    // preorder: yield the directory and then push its children onto the stack
+    var stack: list((string, int), true);
+    stack.pushBack((path, depth));
+    while !stack.isEmpty() {
+      var (curPath, curDepth) = stack.popBack();
+      yield curPath;
 
-  if topdown then
-    yield path;
-
-  if depth {
-    var subdirs = listDirHelper(path, hidden=hidden, files=false, dirs=true,
-                                listlinks=followlinks, err=err);
-    if err != nil then return;
-
-    forall subdir in subdirs with (ref err) {
-      if err != nil then continue;
-      const fullpath = path + "/" + subdir;
-      //
-      // Call standalone walkdirs() iterator recursively; set sort=false since
-      // it is not useful and we've already printed the warning
-      //
-      for subdir in walkDirsHelper(path=fullpath, topdown=topdown,
-                                   depth=depth-1, hidden=hidden,
-                                   followlinks=followlinks, sort=false,
-                                   err=err, tag=iterKind.standalone) do
-        yield subdir;
+      if curDepth {
+        var subdirs = listDirHelper(curPath, hidden=hidden, files=false, dirs=true,
+                                    listlinks=followlinks, err=err);
+        if err != nil then return;
+        // Push in reverse order so left-to-right ordering is preserved on pop
+        forall i in subdirs.domain by -1 with (ref stack) {
+          stack.pushBack((curPath + "/" + subdirs[i], curDepth - 1));
+        }
+      }
     }
-    if err != nil then return;
-  }
+  } else {
+    // postorder: On first visit, push the
+    // directory back as "expanded" and then push its children. On second
+    // visit (expanded=true), yield it.
+    var stack: list((string, int, bool), true); // (path, depth, expanded)
+    stack.pushBack((path, depth, false));
 
-  if !topdown then
-    yield path;
+    while !stack.isEmpty() {
+      var (curPath, curDepth, expanded) = stack.popBack();
+
+      if expanded || curDepth == 0 {
+        yield curPath;
+      } else {
+        // Re-push as expanded so it will be yielded after its children
+        stack.pushBack((curPath, curDepth, true));
+
+        var subdirs = listDirHelper(curPath, hidden=hidden, files=false, dirs=true,
+                                    listlinks=followlinks, err=err);
+        if err != nil then return;
+        // Push in reverse order so left-to-right ordering is preserved on pop
+        forall i in subdirs.domain by -1 with (ref stack) {
+          stack.pushBack((curPath + "/" + subdirs[i], curDepth - 1, false));
+        }
+      }
+    }
+  }
 }
 }
