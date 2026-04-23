@@ -12,4 +12,4 @@ jobs:
         uses: ludeeus/action-shellcheck@master
         with:
           severity: error
-          ignore_paths: ./test ./third-party
+          ignore_paths: ./test/* ./third-party/*
