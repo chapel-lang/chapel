@@ -218,9 +218,11 @@ module Futures {
         compilerError("andThen() task function arguments are incompatible with parent future return type");
       */
       if !isValid() then halt("andThen() called on invalid future");
-      if !canResolveMethod(taskFn, "retType") then
+      if !useProcedurePointers && !canResolveMethod(taskFn, "retType") then
         compilerError("cannot determine return type of andThen() task function");
-      var f: Future(taskFn.retType);
+      pragma "no init"
+      var tmp : retType;
+      var f: Future(_retType(taskFn, tmp));
       f.classRef!.valid = true;
 
       // it isn't necessary to copy 'f' because the Future.deinit
@@ -273,6 +275,25 @@ module Futures {
     lhs.acquire(rhs.classRef!);
   }
 
+  @chpldoc.nodoc
+  proc _retType(in taskFn) type {
+    if useProcedurePointers {
+      var ret = taskFn();
+      return ret.type;
+    } else {
+      return taskFn.retType;
+    }
+  }
+
+  proc _retType(taskFn, args...) type {
+    if useProcedurePointers {
+      var ret = taskFn((...args));
+      return ret.type;
+    } else {
+      return taskFn.retType;
+    }
+  }
+
   /*
     Asynchronously execute a function (taking no arguments) and return a
     :record:`Future` that will eventually hold the result of the function call.
@@ -281,11 +302,19 @@ module Futures {
     :returns: A future of the return type of `taskFn`
    */
   proc async(in taskFn) {
-    if !canResolveMethod(taskFn, "this") then
-      compilerError("async() task function (expecting arguments) provided without arguments");
-    if !canResolveMethod(taskFn, "retType") then
-      compilerError("cannot determine return type of andThen() task function");
-    var f: Future(taskFn.retType);
+    if !useProcedurePointers {
+      if !canResolveMethod(taskFn, "this") then
+        compilerError("async() task function (expecting arguments) provided without arguments");
+      if !canResolveMethod(taskFn, "retType") then
+        compilerError("cannot determine return type of task function");
+    } else {
+      proc _wrapper(fn) {
+        return fn();
+      }
+      if !canResolve("_wrapper", taskFn) then
+        compilerError("async() task function (expecting arguments) provided without arguments");
+    }
+    var f: Future(_retType(taskFn));
     f.classRef!.valid = true;
     // it is not necessary to copy f / bump reference counts
     // because Future.deinit will wait for the task before deleting
@@ -302,11 +331,19 @@ module Futures {
     :returns: A future of the return type of `taskFn`
    */
   proc async(in taskFn, args...) {
-    if !canResolveMethod(taskFn, "this", (...args)) then
-      compilerError("async() task function provided with mismatching arguments");
-    if !canResolveMethod(taskFn, "retType") then
-      compilerError("cannot determine return type of async() task function");
-    var f: Future(taskFn.retType);
+    if !useProcedurePointers {
+      if !canResolveMethod(taskFn, "this", (...args)) then
+       compilerError("async() task function provided with mismatching arguments");
+      if !canResolveMethod(taskFn, "retType") then
+        compilerError("cannot determine return type of task function");
+    } else {
+      proc _wrapper(fn, args...) {
+        return fn((...args));
+      }
+      if !canResolve("_wrapper", taskFn, (...args)) then
+       compilerError("async() task function provided with mismatching arguments");
+    }
+    var f: Future(_retType(taskFn, (...args)));
     f.classRef!.valid = true;
     // it is not necessary to copy f / bump reference counts
     // because Future.deinit will wait for the task before deleting
