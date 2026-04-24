@@ -27,7 +27,7 @@ module ChapelProgramRegistration {
   // The type of a program ID - this is defined in the runtime header.
   extern type chpl_rt_prg_id = uint(64);
 
-  // Contains all sorts of information that describes a Chapel program.
+  // Contains information that the runtime needs from a Chapel program.
   // Defined in 'runtime/include/chpl-prginfo.h'. Intentionally opaque.
   extern type chpl_rt_prginfo;
 
@@ -63,9 +63,7 @@ module ChapelProgramRegistration {
       // Use 'const ref val' to avoid any copies at this time.
       param cname = 'chpl_rt_prginfo_data_entry_set_' + name;
 
-      // The setter is defined in the runtime and it knows the size in bytes it
-      // needs to memcopy from 'data'. Instead, the module code is responsible
-      // for passing in a pointer to a type of the correct size!
+      // Setter is in the runtime and knows the number of bytes to copy.
       extern cname proc setter(ref info: chpl_rt_prginfo,
                                data: c_ptrConst(void)): void;
       const ptrToData = c_addrOfConst(val);
@@ -139,13 +137,14 @@ module ChapelProgramRegistration {
   // TODO: In the future we can generate a module containing this function by
   //       using a script, similiar to what we do for 'SysCTypes.chpl'.
   proc setProgramInfoDataFieldsHere(ref info: chpl_programInfo) {
-    extern type mainHasArgs_type;
-    extern const mainHasArgs: mainHasArgs_type;
+    extern type chpl_rt_mainHasArgs_type;
+    extern const mainHasArgs: chpl_rt_mainHasArgs_type;
     info.setConstant('mainHasArgs', mainHasArgs);
-    extern type mainPreserveDelimiter_type;
-    extern const mainPreserveDelimiter: mainPreserveDelimiter_type;
+    extern type chpl_rt_mainPreserveDelimiter_type;
+    extern const mainPreserveDelimiter: chpl_rt_mainPreserveDelimiter_type;
     info.setConstant('mainPreserveDelimiter', mainPreserveDelimiter);
     info.setCallback('chpl_program_about');
+    // More calls to follow...one for every entry in the X-macro.
   }
 
   export proc chpl_prepareProgramInfoHere(): c_ptr(chpl_rt_prginfo) {
