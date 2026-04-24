@@ -202,8 +202,8 @@ void buildDefaultFunctions() {
         buildRecordHashFunction(ct);
 
         if (!isRecordWrappedType(ct)) {
-          buildRecordComparisonFunc(ct, "==");
-          buildRecordComparisonFunc(ct, "!=");
+          //          buildRecordComparisonFunc(ct, "==");
+          //          buildRecordComparisonFunc(ct, "!=");
           buildRecordComparisonFunc(ct, "<");
           buildRecordComparisonFunc(ct, "<=");
           buildRecordComparisonFunc(ct, ">");

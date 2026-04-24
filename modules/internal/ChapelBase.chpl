@@ -3433,4 +3433,23 @@ module ChapelBase {
 
     return locIdCheck && isLocalCheck;
   }
+
+  operator ==(r1: record, r2: r1.type) where r1.type == r2.type {
+    use Reflection;
+    for param i in 0..<getNumFields(r1.type) do
+      if getField(r1, i) == getField(r2, i) {
+      } else {
+        return false;
+      }
+    return true;
+  }
+
+  operator !=(r1: record, r2: r1.type) where r1.type == r2.type {
+    use Reflection;
+    for param i in 0..<getNumFields(r1.type) do
+      if getField(r1, i) != getField(r2, i) {
+        return true;
+      }
+    return false;
+  }
 }
