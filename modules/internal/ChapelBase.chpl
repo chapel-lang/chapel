@@ -3434,6 +3434,7 @@ module ChapelBase {
     return locIdCheck && isLocalCheck;
   }
 
+  pragma "last resort"
   operator ==(r1: record, r2: r1.type) where r1.type == r2.type {
     use Reflection;
     for param i in 0..<getNumFields(r1.type) {
@@ -3455,6 +3456,7 @@ module ChapelBase {
     return true;
   }
 
+  pragma "last resort"
   operator !=(r1: record, r2: r1.type) where r1.type == r2.type {
     use Reflection;
     for param i in 0..<getNumFields(r1.type) {
