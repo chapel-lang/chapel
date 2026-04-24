@@ -3436,20 +3436,37 @@ module ChapelBase {
 
   operator ==(r1: record, r2: r1.type) where r1.type == r2.type {
     use Reflection;
-    for param i in 0..<getNumFields(r1.type) do
-      if getField(r1, i) == getField(r2, i) {
+    for param i in 0..<getNumFields(r1.type) {
+      const ref f1 = getField(r1, i),
+            f2 = getField(r2, i);
+      if isArray(f1) {
+        if && reduce (f1 == f2) == false {
+          return false;
+        }
       } else {
-        return false;
+        if f1 == f2 {
+        } else {
+          return false;
+        }
       }
+    }
     return true;
   }
 
   operator !=(r1: record, r2: r1.type) where r1.type == r2.type {
     use Reflection;
-    for param i in 0..<getNumFields(r1.type) do
-      if getField(r1, i) != getField(r2, i) {
-        return true;
+    for param i in 0..<getNumFields(r1.type) {
+      const ref f1 = getField(r1, i),
+                f2 = getField(r2, i);
+
+      if isArray(f1) {
+        if || reduce (f1 != f2) then
+          return true;
+      } else {
+        if f1 != f2 then
+          return true;
       }
+    }
     return false;
   }
 }
