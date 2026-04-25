@@ -109,7 +109,8 @@ module ChapelProgramRegistration {
 
     inline proc ref prepare(): void {
       if !_isPrepared {
-        setProgramInfoDataFieldsHere(this);
+        use ChapelSetProgramInfoDataEntries;
+        chpl_setProgramInfoDataEntriesHere(this);
         _isPrepared = true;
       }
     }
@@ -129,23 +130,6 @@ module ChapelProgramRegistration {
   pragma "no init"          /** Initialized manually at program startup.  */
   pragma "locale private"   /** One per locale, per program.              */
   var chpl_programInfoHere: chpl_programInfo;
-
-  // TODO: This function will bind symbols to fields in the struct. Currently
-  //       it is almost empty, but it will be populated later. Set some fields
-  //       just to leave an example of what it looks like.
-  //
-  // TODO: In the future we can generate a module containing this function by
-  //       using a script, similiar to what we do for 'SysCTypes.chpl'.
-  proc setProgramInfoDataFieldsHere(ref info: chpl_programInfo) {
-    extern type chpl_rt_mainHasArgs_type;
-    extern const mainHasArgs: chpl_rt_mainHasArgs_type;
-    info.setConstant('mainHasArgs', mainHasArgs);
-    extern type chpl_rt_mainPreserveDelimiter_type;
-    extern const mainPreserveDelimiter: chpl_rt_mainPreserveDelimiter_type;
-    info.setConstant('mainPreserveDelimiter', mainPreserveDelimiter);
-    info.setCallback('chpl_program_about');
-    // More calls to follow...one for every entry in the X-macro.
-  }
 
   export proc chpl_prepareProgramInfoHere(): c_ptr(chpl_rt_prginfo) {
     ref prg = chpl_programInfoHere;
