@@ -1,3 +1,14 @@
+//
+// This C++ program uses runtime headers in order to generate a Chapel
+// module which prepares the data entries of a 'chpl_rt_prginfo'
+// struct on a given locale. The entries can be found in the runtime
+// header 'chpl-prginfo-data-macro.h'.
+//
+// The module contents currently do not vary based on the Chapel
+// configuration, so the output directory does not need a cfg-based
+// prefix.
+//
+
 #include "chpl-prginfo.h"
 #include <cstdio>
 #include <string>
