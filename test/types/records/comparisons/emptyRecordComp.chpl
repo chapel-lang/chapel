@@ -1,9 +1,7 @@
 record R {
-  type t;
-  param x: int;
 }
 
-var myR = new R(t=int, x=42);
+var myR = new R();
 writeln(myR == myR);
 writeln(myR != myR);
 writeln(myR < myR);

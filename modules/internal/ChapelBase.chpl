@@ -3405,14 +3405,6 @@ module ChapelBase {
     return locIdCheck && isLocalCheck;
   }
 
-  inline proc chpl_field_neq(type a, type b) param {
-    return false;
-  }
-
-  inline proc chpl_field_neq(param a, param b) param {
-    return false;
-  }
-
   inline proc chpl_field_neq(a, b) where !isArrayType(a.type) {
     return a != b;
   }
@@ -3442,48 +3434,39 @@ module ChapelBase {
   pragma "last resort"
   operator ==(r1: record, r2: r1.type) where r1.type == r2.type {
     use Reflection;
+
     for param i in 0..<getNumFields(r1.type) do
-      if chpl_field_neq(getField(r1, i), getField(r2, i)) then
-        return false;
+      // TODO: I think this should probably be && !isParam(...) -- see #28723
+      if !isType(getField(r1, i)) then
+        if chpl_field_neq(getField(r1, i), getField(r2, i)) then
+          return false;
     return true;
   }
 
   pragma "last resort"
   operator !=(r1: record, r2: r1.type) where r1.type == r2.type {
-    use Reflection;
-    for param i in 0..<getNumFields(r1.type) do
-      if !chpl_field_neq(getField(r1, i), getField(r2, i)) then
-        return true;
-    return false;
+    return !(r1 == r2);
   }
       
   pragma "last resort"
   operator <(r1: record, r2: r1.type) where r1.type == r2.type {
-    use Reflection;
-    for param i in 0..<getNumFields(r1.type) do
-      // TODO: I think this should probably be && !isParam(...) -- see #28723
-      if !isType(getField(r1, i)) then
-        if !chpl_field_lt(getField(r1, i), getField(r2, i)) then
-          return false;
-
-    return true;
+    return !(r1 >= r2);
   }
 
   pragma "last resort"
   operator <=(r1: record, r2: r1.type) where r1.type == r2.type {
-    use Reflection;
-    for param i in 0..<getNumFields(r1.type) do
-      if !isType(getField(r1, i)) then
-        if chpl_field_gt(getField(r1, i), getField(r2, i)) then
-          return false;
-
-    return true;
+    return !(r1 > r2);
   }
 
   pragma "last resort"
   operator >(r1: record, r2: r1.type) where r1.type == r2.type {
     use Reflection;
-    for param i in 0..<getNumFields(r1.type) do
+
+    param numFields = getNumFields(r1.type);
+    if numFields == 0 then return false;
+
+    for param i in 0..<numFields do
+      // TODO: I think this should probably be && !isParam(...) -- see #28723
       if !isType(getField(r1, i)) then
         if !chpl_field_gt(getField(r1, i), getField(r2, i)) then
           return false;
@@ -3494,7 +3477,9 @@ module ChapelBase {
   pragma "last resort"
   operator >=(r1: record, r2: r1.type) where r1.type == r2.type {
     use Reflection;
+
     for param i in 0..<getNumFields(r1.type) do
+      // TODO: I think this should probably be && !isParam(...) -- see #28723
       if !isType(getField(r1, i)) then
         if chpl_field_lt(getField(r1, i), getField(r2, i)) then
           return false;

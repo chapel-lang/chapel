@@ -9,3 +9,5 @@ writeln(myR < myR2);
 writeln(myR <= myR2);
 writeln(myR > myR2);
 writeln(myR >= myR2);
+writeln(myR == myR2);
+writeln(myR != myR2);
