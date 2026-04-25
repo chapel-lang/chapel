@@ -63,7 +63,9 @@ static void buildRecordAssignmentFunction(AggregateType* ct);
 static void checkNotPod(AggregateType* ct);
 static void buildRecordHashFunction(AggregateType* ct);
 
-static FnSymbol* buildRecordIsComparableFunc(AggregateType* ct, const char* op);
+//static FnSymbol* buildRecordIsComparableFunc(AggregateType* ct, const char* op);
+
+/*
 static void buildRecordComparisonFunc(AggregateType* ct, const char* op);
 static void buildRecordEqualsBody(AggregateType* ct, FnSymbol *fn,
                                   ArgSymbol *arg1, ArgSymbol *arg2);
@@ -75,6 +77,7 @@ static void buildRecordLessThanBody(AggregateType* ct, FnSymbol *fn,
 static void buildRecordGreaterThanBody(AggregateType* ct, FnSymbol *fn,
                                        ArgSymbol *arg1, ArgSymbol *arg2,
                                        bool allowEquals);
+*/
 
 static void buildDefaultReadWriteFunctions(AggregateType* type);
 
@@ -204,10 +207,10 @@ void buildDefaultFunctions() {
         if (!isRecordWrappedType(ct)) {
           //          buildRecordComparisonFunc(ct, "==");
           //          buildRecordComparisonFunc(ct, "!=");
-          buildRecordComparisonFunc(ct, "<");
-          buildRecordComparisonFunc(ct, "<=");
-          buildRecordComparisonFunc(ct, ">");
-          buildRecordComparisonFunc(ct, ">=");
+          //          buildRecordComparisonFunc(ct, "<");
+          //buildRecordComparisonFunc(ct, "<=");
+          //buildRecordComparisonFunc(ct, ">");
+          //buildRecordComparisonFunc(ct, ">=");
         }
 
 
@@ -987,6 +990,7 @@ static void buildChplEntryPoints() {
   normalize(chpl_gen_main);
 }
 
+/*
 static FnSymbol* buildRecordIsComparableFunc(AggregateType* ct,
                                              const char* op) {
   Symbol* opSym = new_CStringSymbol(op);
@@ -1215,7 +1219,7 @@ static void buildRecordGreaterThanBody(AggregateType *ct, FnSymbol *fn,
     fn->insertAtTail(new CallExpr(PRIM_RETURN, gFalse));
   }
 }
-
+*/
 // Builds default enum functions that are defined outside of the scope in which
 // the enum type is defined
 // It is necessary to have this separated out, because such functions are not
