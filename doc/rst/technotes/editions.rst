@@ -162,5 +162,5 @@ remain in the preview until they are deemed sufficiently complete.
   condition rather than only equality comparison.
 
 - The ``FileSystem.listDir()``, ``FileSystem.findFiles()``,
-  and ``FileSystem.walkDirs()`` iterators throw when they encounters an error,
+  and ``FileSystem.walkDirs()`` iterators throw when they encounter an error,
   rather than just printing the error to stdout.
