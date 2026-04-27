@@ -111,27 +111,36 @@ typedef struct qio_channel_s qio_channel_t;
   #undef CHPL_RT_DEBUG_PRGINFO_ACCESS
 #endif
 
+/** Prefix for typedef generated for each data entry. */
+#define CHPL_RT_PRGINFO_DATA_ENTRY_TYPE_PREFIX chpl_rt_
+
+/** Suffix for typedef generated for each data entry. */
+#define CHPL_RT_PRGINFO_DATA_ENTRY_TYPE_SUFFIX _type
+
+// Helpers to perform macro token concatenation.
+#define CHPL_RT_CONCAT_INNER__(a__, b__) a__ ## b__
+#define CHPL_RT_CONCAT__(a__, b__) CHPL_RT_CONCAT_INNER__(a__, b__)
+#define CHPL_RT_CONCAT3__(a__, b__, c__) \
+  CHPL_RT_CONCAT__(a__, CHPL_RT_CONCAT__(b__, c__))
+
 /** Get the typedef for a specific program data entry. */
-#define CHPL_RT_PRGINFO_DATA_ENTRY_TYPE(name__) chpl_rt_ ## name__ ## _type
+#define CHPL_RT_PRGINFO_DATA_ENTRY_TYPE(name__) \
+  CHPL_RT_CONCAT3__(CHPL_RT_PRGINFO_DATA_ENTRY_TYPE_PREFIX, name__, \
+                    CHPL_RT_PRGINFO_DATA_ENTRY_TYPE_SUFFIX)
 
 // Expand out unique typedefs for each data entry.
-#define ENTRY_NAME__(name__) CHPL_RT_PRGINFO_DATA_ENTRY_TYPE(name__)
-#define E_CONSTANT(name__, type__) typedef type__ ENTRY_NAME__(name__);
+#define E_CONSTANT(name__, type__) \
+  typedef type__ CHPL_RT_PRGINFO_DATA_ENTRY_TYPE(name__);
 #define E_CALLBACK(name__, ret_type__, ...) \
-  typedef ret_type__ (*ENTRY_NAME__(name__))(__VA_ARGS__);
+  typedef ret_type__ (*CHPL_RT_PRGINFO_DATA_ENTRY_TYPE(name__))(__VA_ARGS__);
 #include "chpl-prginfo-data-macro-adapter.h"
-#undef ENTRY_NAME__
-
-/** Get a unique enum value for a given data entry. */
-#define CHPL_RT_PRGINFO_DATA_ENTRY_IDX(name__) \
-    CHPL_RT_PRGINFO_DATA_ENTRY_ ## name__
 
 // TODO: Where the heck does this live (i.e., launcher or us?). It was
 //       declared in 'chplcgfns.h', but clearly that's not correct as
 //       it is not code-generated (and that header is going away).
 extern char* chpl_executionCommand;
 
-// Whether or not the runtime is compiled as a dynamic library or not.
+/** Whether or not the runtime is compiled as a dynamic library or not. */
 extern int chpl_rt_is_dynamic_library;
 
 // The type of a unique program identifier. These are assigned by the runtime

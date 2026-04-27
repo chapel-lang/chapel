@@ -39,6 +39,8 @@ SYS_MODULES_DIR=standard/gen/$(CHPL_MAKE_SYS_MODULES_SUBDIR)
 SYS_CTYPES_MODULE_DOC=standard/ChapelSysCTypes.chpl
 SYS_CTYPES_MODULE=$(SYS_MODULES_DIR)/ChapelSysCTypes.chpl
 
+SET_PROGRAM_DATA_MODULE=$(CHPL_MAKE_HOME)/modules/internal/ChapelSetProgramInfoDataEntries.chpl
+
 MODULE_SPHINX=${CHPL_MAKE_HOME}/modules/sphinx
 DOC_BUILD=${CHPL_MAKE_HOME}/build/doc
 DOC_RST=${CHPL_MAKE_HOME}/doc/rst
@@ -46,7 +48,7 @@ COPY_IF_DIFFERENT = $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/config/update-if-
 
 default: all
 
-all: $(SYS_CTYPES_MODULE)
+all: $(SYS_CTYPES_MODULE) $(SET_PROGRAM_DATA_MODULE)
 	$(TAGS_COMMAND)
 
 clean: FORCE
@@ -75,6 +77,13 @@ $(SYS_CTYPES_MODULE): $(MAKE_SYS_BASIC_TYPES)
 $(SYS_CTYPES_MODULE_DOC): $(MAKE_SYS_BASIC_TYPES)
 	mkdir -p $(@D)
 	cd $(@D) && $(MAKE_SYS_BASIC_TYPES_CMD) --doc $(@F)
+
+MAKE_PROGRAM_DATA_SCRIPT=$(CHPL_MAKE_HOME)/util/config/gen-set-program-data-module.cpp
+MAKE_PROGRAM_DATA_HEADER=$(CHPL_MAKE_HOME)/runtime/include/chpl-prginfo-data-macro.h
+COMPILELINE=$(CHPL_MAKE_HOME)/util/config/compileline
+
+$(SET_PROGRAM_DATA_MODULE): $(MAKE_PROGRAM_DATA_SCRIPT) $(MAKE_PROGRAM_DATA_HEADER)
+	`$(COMPILELINE) --compile-c++` -o script $< && (./script $@; rm script)
 
 MODULES_TO_DOCUMENT = \
 	standard/Allocators.chpl \

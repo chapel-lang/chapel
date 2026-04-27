@@ -222,7 +222,7 @@ void chpl_comm_regMemHeapTouch(void* start, uintptr_t size) {
   }
 }
 
-void* chpl_get_global_serialize_table(int64_t idx) {
+const void* chpl_get_global_serialize_table(int64_t idx) {
   return chpl_global_serialize_table[idx];
 }
 
