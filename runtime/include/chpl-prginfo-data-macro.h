@@ -53,7 +53,7 @@ E_CALLBACK_RT(chpl_task_setCommDiagsTemporarilyDisabled, void, chpl_bool)
 /** CODE-GENERATED
     Table of private broadcast constants.
 */
-E_CONSTANT_RT(chpl_private_broadcast_table, void**)
+E_CONSTANT_RT(chpl_private_broadcast_table, const void**)
 
 /** CODE-GENERATED
     Length of table of private broadcast constants.
@@ -63,10 +63,11 @@ E_CONSTANT_RT(chpl_private_broadcast_table_len, int)
 /** CODE-GENERATED
     TODO: Not exactly sure what this thing is. Table of serializers for RVF?
 */
-E_CONSTANT_RT(chpl_global_serialize_table, void**)
+E_CONSTANT_RT(chpl_global_serialize_table, const void**)
 
-/** CODE-GENERATED
+/** CODE-GENERATED | WRITEABLE
     A table of local addresses of wide pointers containing global vars.
+    This table is writeable memory.
 */
 E_CONSTANT_RT(chpl_globals_registry, wide_ptr_t**)
 
@@ -78,7 +79,7 @@ E_CONSTANT_RT(chpl_numGlobalsOnHeap, int)
 /** CODE-GENERATED
     The function table.
 */
-E_CONSTANT_RT(chpl_ftable, chpl_fn_p*)
+E_CONSTANT_RT(chpl_ftable, const chpl_fn_p*)
 
 /** CODE-GENERATED (TODO NOT USED)
     Length of the function table.
@@ -134,8 +135,10 @@ E_CALLBACK_RT(chpl_gen_main, int64_t, chpl_main_argument* _arg)
 
 /** CODE-GENERATED
     Contains filenames, and maybe other strings besides?
+
+    TODO: Get rid of this 'const c_string' nonsense.
 */
-E_CONSTANT(chpl_filenameTable, c_string*)
+E_CONSTANT(chpl_filenameTable, const c_string*) 
 
 /** CODE-GENERATED
     Length of the filename table.
@@ -215,14 +218,16 @@ E_CONSTANT(CHPL_LLVM_BIN_DIR, const char*)
     Chapel line number). TODO: Could we just refactor this whole table
     to be defined in the runtime and use a 'struct' instead for clarity?
 */
-E_CONSTANT_RT(chpl_filenumSymTable, int*)
+E_CONSTANT_RT(chpl_filenumSymTable, const int*)
 
 /** CODE-GENERATED
     One piece of the symbol table. This is a flat 1D array with 2 elements
     per entry, so you need to scale indices by (idx*2). This portion of
     the table contains two 'const char*' per entry: (C name, Chapel name).
+
+    TODO: Get rid of this 'const c_string' nonsense.
 */
-E_CONSTANT_RT(chpl_funSymTable, const char**)
+E_CONSTANT_RT(chpl_funSymTable, const c_string*)
 
 /** CODE-GENERATED
     The number of entries in the combined 'Chapel symbol table'.

@@ -32,6 +32,7 @@
 #include "chpl-comm-locales.h"
 #include "chpl-mem-consistency.h"
 #include "chpl-mem-desc.h"
+#include "chplcgfns.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -57,26 +58,6 @@ static inline c_nodeid_t get_chpl_nodeID(void) {
 extern int32_t chpl_numNodes; // number of nodes
 
 ssize_t chpl_comm_getenvMaxHeapSize(void);
-
-
-//
-// Shared interface (implemented in the compiler generated code)
-//
-extern void chpl__heapAllocateGlobals(void);
-
-//
-// chpl_globals_registry is an array of size chpl_numGlobalsOnHeap
-// storing ptr_wide_ptr_t, that is, local addresses of wide pointers.
-// It is filled in and used by chpl_comm_register_global_var() and
-// chpl_comm_broadcast_global_vars(), respectively, declared below.
-//
-extern const int chpl_numGlobalsOnHeap;
-extern ptr_wide_ptr_t chpl_globals_registry[];
-
-extern void* const chpl_private_broadcast_table[];
-extern int const chpl_private_broadcast_table_len;
-
-extern void* const chpl_global_serialize_table[];
 
 //
 // Comm layer-specific interface
@@ -592,7 +573,7 @@ void chpl_comm_task_end(void) {
 }
 
 
-void* chpl_get_global_serialize_table(int64_t idx);
+const void* chpl_get_global_serialize_table(int64_t idx);
 
 // Used to park and wake up the main process
 void chpl_signal_shutdown(void);

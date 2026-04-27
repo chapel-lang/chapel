@@ -79,9 +79,10 @@ $(SYS_CTYPES_MODULE_DOC): $(MAKE_SYS_BASIC_TYPES)
 	cd $(@D) && $(MAKE_SYS_BASIC_TYPES_CMD) --doc $(@F)
 
 MAKE_PROGRAM_DATA_SCRIPT=$(CHPL_MAKE_HOME)/util/config/gen-set-program-data-module.cpp
+MAKE_PROGRAM_DATA_HEADER=$(CHPL_MAKE_HOME)/runtime/include/chpl-prginfo-data-macro.h
 COMPILELINE=$(CHPL_MAKE_HOME)/util/config/compileline
 
-$(SET_PROGRAM_DATA_MODULE): $(MAKE_PROGRAM_DATA_SCRIPT)
+$(SET_PROGRAM_DATA_MODULE): $(MAKE_PROGRAM_DATA_SCRIPT) $(MAKE_PROGRAM_DATA_HEADER)
 	`$(COMPILELINE) --compile-c++` -o script $< && (./script $@; rm script)
 
 MODULES_TO_DOCUMENT = \
