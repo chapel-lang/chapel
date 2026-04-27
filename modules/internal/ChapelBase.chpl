@@ -3448,7 +3448,7 @@ module ChapelBase {
   operator !=(r1: record, r2: r1.type) where r1.type == r2.type {
     return !(r1 == r2);
   }
-      
+
   pragma "last resort"
   @edition(first="preview")
   operator >(r1: record, r2: r1.type) where r1.type == r2.type {
@@ -3484,7 +3484,7 @@ module ChapelBase {
         else if chpl_field_gt(f1, f2) then
           return true;
       }
-    
+
     return true;
   }
 
