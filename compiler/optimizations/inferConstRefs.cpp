@@ -747,7 +747,7 @@ static bool inferRefToConst(Symbol* sym) {
         }
       }
     }
-    else if (call->isResolved()) {
+    else if (call->isResolved() || call->isIndirectCall()) {
       isRefToConst = true;
     } else if (call->isPrimitive()) {
       isRefToConst = isSafeRefPrimitive(use);
