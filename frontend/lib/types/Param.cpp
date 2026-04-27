@@ -192,8 +192,8 @@ optional<Immediate> paramToImmediate(Context* context,
         ret.const_kind = NUM_KIND_COMPLEX;
         if (ct->bitwidth() == 32) {
           ret.num_index = COMPLEX_SIZE_32;
-          ret.v_complex32.r = v.re;
-          ret.v_complex32.i = v.im;
+          ret.v_complex32.r = (_Float16)v.re;
+          ret.v_complex32.i = (_Float16)v.im;
         } else if (ct->bitwidth() == 64) {
           ret.num_index = COMPLEX_SIZE_64;
           ret.v_complex64.r = v.re;
