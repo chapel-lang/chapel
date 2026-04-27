@@ -15,7 +15,7 @@ EXTERN_TOOL=extern-tool
 if [ -e $CHALAPACK ]
 then
   echo "Please move or delete existing $CHALAPACK directory"
-  exit -1
+  exit 1
 fi
 
 cp $PATCHFILE $PATCHROOM/.

@@ -32,7 +32,7 @@ do
       echo "                e.g. for staged installation as with"
       echo "                     the DESTDIR Makefile variable"
       echo
-      exit -1
+      exit 1
     ;;
   esac
 
@@ -47,7 +47,7 @@ then
     echo "Detecting CHPL_HOME as $CHPL_HOME"
   else
     echo Exiting: CHPL_HOME not set or not a directory
-    exit -1
+    exit 1
   fi
 fi
 
@@ -63,7 +63,7 @@ then
   if [ ! -d "$PREFIX" ]
   then
     echo "Exiting: Installation prefix path '$PREFIX' does not exist"
-    exit -1
+    exit 1
   fi
 else
   if [ -f "$CHPL_HOME/configured-chpl-home" ]
@@ -75,12 +75,12 @@ else
     if [ ! -d "$DEST_DIR" ]
     then
       echo "Exiting: Installation dest path '$DEST_DIR' does not exist"
-      exit -1
+      exit 1
     fi
   else
     echo "Exiting: Installation path not configured."
     echo "         See ./configure --help"
-    exit -1
+    exit 1
   fi
 fi
 
@@ -88,7 +88,7 @@ case "$PREFIX" in
   '""')
     echo Exiting: PREFIX was not set.
     echo          ... did you forget to run configure ?
-    exit -1
+    exit 1
     ;;
   *\\*)
     # For now, fail if PREFIX contains a backslash.
@@ -96,7 +96,7 @@ case "$PREFIX" in
     # the prefix differently.
     echo Exiting: PREFIX contains backslash
     echo          ... please use a prefix that does not contain backslash
-    exit -1
+    exit 1
     ;;
   *)
     ;;
@@ -110,7 +110,7 @@ if [ $? -ne 0 ]
 then
   echo "Error: failed to run chpl --version; Have you already built the compiler using make?"
   echo "       If not, please run 'make' before running this script."
-  exit -1
+  exit 1
 fi
 # Remove the "chpl version " part
 VERS=${VERS#chpl version }
@@ -135,7 +135,7 @@ then
     echo
     echo "Error: destination prefix is Chapel source directory"
     echo "Please run configure again to select a different installation path"
-    exit -1
+    exit 1
   fi
 else
   DEST_RUNTIME_LIB="$DEST_DIR/lib"
@@ -149,7 +149,7 @@ else
     echo
     echo "Error: destination directory is Chapel source directory"
     echo "Please run configure again to select a different installation path"
-    exit -1
+    exit 1
   fi
 fi
 
@@ -167,12 +167,12 @@ myinstalldir () {
   if [ ! -d "$FROM" ]
   then
     echo "Error: source directory '$FROM' missing"
-    exit -1
+    exit 1
   fi
   if [ ! -d "$TO" ]
   then
     echo "Error: could not find/create destination directory '$TO'"
-    exit -1
+    exit 1
   fi
 
   # If we wanted to exclude the built Python files, we would use e.g.
@@ -185,7 +185,7 @@ myinstalldir () {
   if [ $? -ne 0 ]
   then
     echo "Error: failed directory copy '$FROM' '$TO'"
-    exit -1
+    exit 1
   fi
 }
 
@@ -198,12 +198,12 @@ myinstallfile () {
   if [ ! -f "$FROM" ]
   then
     echo "Error: source file '$FROM' missing"
-    exit -1
+    exit 1
   fi
   if [ ! -d "$TO" ]
   then
     echo "Error: could not find/create destination directory '$TO'"
-    exit -1
+    exit 1
   fi
 
   #echo myinstallfile $FROM $TO
@@ -212,7 +212,7 @@ myinstallfile () {
   if [ $? -ne 0 ]
   then
     echo "Error: failed cp '$FROM' '$TO'"
-    exit -1
+    exit 1
   fi
 }
 
@@ -223,7 +223,7 @@ myinstallfileto () {
   if [ ! -f "$FROM" ]
   then
     echo "Error: source file '$FROM' missing"
-    exit -1
+    exit 1
   fi
 
   cp "$FROM" "$TO"
@@ -231,13 +231,13 @@ myinstallfileto () {
   if [ $? -ne 0 ]
   then
     echo "Error: failed cp '$FROM' '$TO'"
-    exit -1
+    exit 1
   fi
 
   if [ ! -f "$TO" ]
   then
     echo "Error: could not install to '$TO'"
-    exit -1
+    exit 1
   fi
 }
 

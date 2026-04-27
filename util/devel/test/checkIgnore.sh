@@ -21,7 +21,7 @@ if [ -f $1 ]
 then
   if [ -x $1 ]
   then
-    skip = `$1`
+    skip=`$1`
     if [ "1" == "$skip" -o "True" == "$skip" ]
     then
       exit 1
