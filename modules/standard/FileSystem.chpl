@@ -486,8 +486,9 @@ private proc copyTreeHelper(src: string, dest: string, copySymbolically: bool=fa
     }
   }
 
-
-  for filename in listDir(path=src, dirs=false, files=true, listlinks=true) {
+  var lsDirErr: owned Error? = nil;
+  for filename in listDirHelper(path=src, dirs=false, files=true,
+                                listlinks=true, hidden=true, err=lsDirErr) {
     // Take care of files in src
     var fileDestName = dest + "/" + filename;
     var fileSrcName = src + "/" + filename;
@@ -501,8 +502,10 @@ private proc copyTreeHelper(src: string, dest: string, copySymbolically: bool=fa
       try copy(fileSrcName, fileDestName, metadata=metadata);
     }
   }
+  if lsDirErr != nil then throw (lsDirErr:owned class);
 
-  for dirname in listDir(path=src, dirs=true, files=false, listlinks=true) {
+  for dirname in listDirHelper(path=src, dirs=true, files=false,
+                               listlinks=true, hidden=true, err=lsDirErr) {
     var dirDestName = dest+"/"+dirname;
     var dirSrcName = src+"/"+dirname;
     if (try isSymlink(dirSrcName) && copySymbolically) {
@@ -515,6 +518,7 @@ private proc copyTreeHelper(src: string, dest: string, copySymbolically: bool=fa
       try copyTreeHelper(dirSrcName, dirDestName, copySymbolically);
     }
   }
+  if lsDirErr != nil then throw (lsDirErr:owned class);
 }
 
 /* Obtains and returns the current working directory for this locale.
@@ -590,35 +594,117 @@ proc exists(name: string): bool throws {
                    subdirectories (defaults to `false`)
    :type recursive: `bool`
 
-   :arg hidden: Indicates whether or not to descend into hidden subdirectories and yield hidden files (defaults to `false`)
+   :arg hidden: Indicates whether or not to descend into hidden subdirectories
+                and yield hidden files (defaults to `false`)
    :type hidden: `bool`
 
    :yield:  The paths to any files found, relative to `startdir`, as strings
 */
+@edition(last="2.0")
 iter findFiles(startdir: string = ".", recursive: bool = false,
                hidden: bool = false): string {
-  if (recursive) then
-    foreach subdir in walkDirs(startdir, hidden=hidden) do
-      foreach file in listDir(subdir, hidden=hidden, dirs=false, files=true, listlinks=true) do
-        yield subdir+"/"+file;
-  else
-    foreach file in listDir(startdir, hidden=hidden, dirs=false, files=true, listlinks=false) do
-      yield startdir+"/"+file;
+  var err: owned Error? = nil;
+  for f in findFilesHelper(startdir, recursive, hidden, err) {
+    yield f;
+  }
+  if err != nil then writeln(err!.message());
 }
 
 @chpldoc.nodoc
+@edition(last="2.0")
 iter findFiles(startdir: string = ".", recursive: bool = false,
                hidden: bool = false, param tag: iterKind): string
-       where tag == iterKind.standalone {
-  if (recursive) then
+where tag == iterKind.standalone {
+  var err: owned Error? = nil;
+  forall f in findFilesHelper(startdir, recursive, hidden, err) {
+    yield f;
+  }
+  if err != nil then writeln(err!.message());
+}
+
+
+/* Finds files from a given start directory and yields their names,
+   similar to simple invocations of the command-line `find` utility.
+   May be invoked in serial or non-zippered parallel contexts.
+
+   :arg startdir: The root directory from which to start the search
+                  (defaults to ``"."``)
+   :type startdir: `string`
+
+   :arg recursive: Indicates whether or not to descend recursively into
+                   subdirectories (defaults to `false`)
+   :type recursive: `bool`
+
+   :arg hidden: Indicates whether or not to descend into hidden subdirectories
+                and yield hidden files (defaults to `false`)
+   :type hidden: `bool`
+
+   :yield:  The paths to any files found, relative to `startdir`, as strings
+
+   :throws SystemError: Thrown to describe an error if one occurs.
+   :throws Error: Thrown to describe an error if one occurs.
+*/
+@edition(first="preview")
+iter findFiles(startdir: string = ".", recursive: bool = false,
+               hidden: bool = false): string throws {
+  var err: owned Error? = nil;
+  for f in findFilesHelper(startdir, recursive, hidden, err) {
+    yield f;
+  }
+  if err != nil then throw (err:owned class);
+}
+
+@chpldoc.nodoc
+@edition(first="preview")
+iter findFiles(startdir: string = ".", recursive: bool = false,
+               hidden: bool = false, param tag: iterKind): string throws
+where tag == iterKind.standalone {
+  var err: owned Error? = nil;
+  forall f in findFilesHelper(startdir, recursive, hidden, err) {
+    yield f;
+  }
+  if err != nil then throw (err:owned class);
+}
+
+
+@chpldoc.nodoc
+iter findFilesHelper(startdir: string, recursive: bool, hidden: bool,
+                     ref err: owned Error?): string {
+  if recursive then
+    foreach subdir in walkDirsHelper(startdir, topdown=true,
+                                     depth=max(int), hidden=hidden,
+                                     followlinks=false, sort=false, err=err)
+    with (ref err) {
+      if err != nil then continue;
+      foreach file in listDirHelper(subdir, hidden=hidden, dirs=false,
+                                    files=true, listlinks=true, err=err) do
+        yield subdir+"/"+file;
+    }
+  else
+    foreach file in listDirHelper(startdir, hidden=hidden, dirs=false,
+                                  files=true, listlinks=false, err=err) do
+      yield startdir+"/"+file;
+}
+@chpldoc.nodoc
+iter findFilesHelper(startdir: string, recursive: bool, hidden: bool,
+                     ref err: owned Error?, param tag: iterKind): string
+where tag == iterKind.standalone {
+  if recursive then
     // Why "with (ref hidden)"?  A: the compiler currently allows only
     // [const] ref intents in forall loops over recursive parallel iterators
     // such as walkDirs().
-    forall subdir in walkDirs(startdir, hidden=hidden) with (ref hidden) do
-      foreach file in listDir(subdir, hidden=hidden, dirs=false, files=true, listlinks=true) do
+    forall subdir in walkDirsHelper(startdir, topdown=true,
+                                    depth=max(int), hidden=hidden,
+                                    followlinks=false, sort=false, err=err)
+    with (ref hidden, ref err) {
+      if err != nil then continue;
+      foreach file in listDirHelper(subdir, hidden=hidden, dirs=false,
+                                    files=true, listlinks=true, err=err) do
         yield subdir+"/"+file;
+    }
   else
-    foreach file in listDir(startdir, hidden=hidden, dirs=false, files=true, listlinks=false) do
+    foreach file in listDirHelper(startdir, hidden=hidden, dirs=false,
+                                  files=true, listlinks=false, err=err) do
       yield startdir+"/"+file;
 }
 
@@ -760,7 +846,7 @@ iter glob(pattern: string = "*"): string {
 
 @chpldoc.nodoc
 iter glob(pattern: string = "*", param tag: iterKind): string
-       where tag == iterKind.standalone {
+where tag == iterKind.standalone {
   use GlobWrappers;
   var glb : glob_t;
 
@@ -1221,21 +1307,27 @@ proc rmTree(root: string) throws {
 
 private proc rmTreeHelper(root: string) throws {
   // Go through all the files in this current directory and remove them
-  for filename in listDir(path=root, dirs=false, files=true, listlinks=true, hidden=true) {
+  var err: owned Error? = nil;
+  for filename in listDirHelper(path=root, dirs=false, files=true,
+                                listlinks=true, hidden=true, err=err) {
     var name = root + "/" + filename;
     try remove(name);
   }
+  if err != nil then throw (err:owned class);
   // Then traverse all the directories within this current directory and have
   // them handle cleaning up their contents and themselves
-  for dirname in listDir(path=root, dirs=true, files=false, listlinks=true, hidden=true) {
+  err = nil;
+  for dirname in listDirHelper(path=root, dirs=true, files=false,
+                               listlinks=true, hidden=true, err=err) {
     var fullpath = root + "/" + dirname;
     var dirIsLink = try isSymlink(fullpath);
-    if (dirIsLink) {
+    if dirIsLink {
       try remove(fullpath);
     } else {
       try rmTreeHelper(fullpath);
     }
   }
+  if err != nil then throw (err:owned class);
   // Once everything else has been removed, remove ourself.
   try remove(root);
 }
@@ -1340,79 +1432,234 @@ proc locale.umaskHelper(mask: int): int {
    :arg path: The directory from which to start the walk (defaults to ``"."``)
    :type path: `string`
 
-   :arg topdown: Indicates whether to yield a directory before or after descending into its children (defaults to `true`)
+   :arg topdown: Indicates whether to yield a directory before or after
+                 descending into its children (defaults to `true`)
    :type topdown: `bool`
 
-   :arg depth: Indicates the maximum recursion depth to use (defaults to `max(int)`)
+   :arg depth: Indicates the maximum recursion depth to use
+               (defaults to `max(int)`)
    :type depth: `int`
 
-   :arg hidden: Indicates whether to descend into hidden directories (defaults to `false`)
+   :arg hidden: Indicates whether to descend into hidden directories
+                (defaults to `false`)
    :type hidden: `bool`
 
-   :arg followlinks: Indicates whether to follow symbolic links (defaults to `false`)
+   :arg followlinks: Indicates whether to follow symbolic links
+                     (defaults to `false`)
    :type followlinks: `bool`
 
-   :arg sort: Indicates whether or not to consider subdirectories in sorted order (defaults to `false`).  Note that requesting sorting has no effect in parallel invocations.
+   :arg sort: Indicates whether or not to consider subdirectories in sorted
+              order (defaults to `false`).  Note that requesting sorting
+              has no effect in parallel invocations.
    :type sort: `bool`
 
    :yield: The directory names encountered, relative to `path`, as strings
 */
+@edition(last="2.0")
 iter walkDirs(path: string = ".", topdown: bool = true, depth: int = max(int),
               hidden: bool = false, followlinks: bool = false,
               sort: bool = false): string {
-
-  if (topdown) then
-    yield path;
-
-  if (depth) {
-    var subdirs = listDir(path, hidden=hidden, files=false, listlinks=followlinks);
-    if (sort) {
-      use Sort only sort as sortList;
-      sortList(subdirs);
-    }
-
-    for subdir in subdirs {
-      const fullpath = path + "/" + subdir;
-      for subdir in walkDirs(fullpath, topdown, depth-1, hidden,
-                             followlinks, sort) do
-        yield subdir;
-    }
-  }
-
-  if (!topdown) then
-    yield path;
+  var err: owned Error? = nil;
+  for d in walkDirsHelper(path=path, topdown=topdown, depth=depth,
+                          hidden=hidden, followlinks=followlinks, sort=sort,
+                          err=err) do
+    yield d;
+  if err != nil then writeln(err!.message());
 }
-
-//
-// Here's a parallel version
-//
 @chpldoc.nodoc
-iter walkDirs(path: string = ".", topdown: bool = true, depth: int =max(int),
+@edition(last="2.0")
+iter walkDirs(path: string = ".", topdown: bool = true, depth: int = max(int),
               hidden: bool = false, followlinks: bool = false,
               sort: bool = false, param tag: iterKind): string
-       where tag == iterKind.standalone {
-
-  if (sort) then
-    warning("sorting has no effect for parallel invocations of walkdirs()");
-
-  if (topdown) then
-    yield path;
-
-  if (depth) {
-    var subdirs = listDir(path, hidden=hidden, files=false, listlinks=followlinks);
-    forall subdir in subdirs {
-      const fullpath = path + "/" + subdir;
-      //
-      // Call standalone walkdirs() iterator recursively; set sort=false since it is
-      // not useful and we've already printed the warning
-      //
-      for subdir in walkDirs(fullpath, topdown, depth-1, hidden, followlinks, sort=false, iterKind.standalone) do
-        yield subdir;
-    }
-  }
-
-  if (!topdown) then
-    yield path;
+where tag == iterKind.standalone {
+  var err: owned Error? = nil;
+  forall d in walkDirsHelper(path=path, topdown=topdown, depth=depth,
+                             hidden=hidden, followlinks=followlinks, sort=sort,
+                             err=err) do
+    yield d;
+  if err != nil then writeln(err!.message());
 }
 
+/* Recursively walk a directory structure, yielding directory names.
+   May be invoked in serial or non-zippered parallel contexts.
+
+   .. note::
+            The current parallel version is not very adaptive/dynamic
+            in its application of parallelism to the list of
+            subdirectories at any given level of the traversal, and
+            could be improved in this regard.
+
+   :arg path: The directory from which to start the walk (defaults to ``"."``)
+   :type path: `string`
+
+   :arg topdown: Indicates whether to yield a directory before or after
+                 descending into its children (defaults to `true`)
+   :type topdown: `bool`
+
+   :arg depth: Indicates the maximum recursion depth to use
+               (defaults to `max(int)`)
+   :type depth: `int`
+
+   :arg hidden: Indicates whether to descend into hidden directories
+                (defaults to `false`)
+   :type hidden: `bool`
+
+   :arg followlinks: Indicates whether to follow symbolic links
+                     (defaults to `false`)
+   :type followlinks: `bool`
+
+   :arg sort: Indicates whether or not to consider subdirectories in sorted
+              order (defaults to `false`).  Note that requesting sorting
+              has no effect in parallel invocations.
+   :type sort: `bool`
+
+   :yield: The directory names encountered, relative to `path`, as strings
+
+   :throws SystemError: Thrown to describe an error if one occurs.
+   :throws Error: Thrown to describe an error if one occurs.
+*/
+@edition(first="preview")
+iter walkDirs(path: string = ".", topdown: bool = true, depth: int = max(int),
+              hidden: bool = false, followlinks: bool = false,
+              sort: bool = false): string throws {
+  var err: owned Error? = nil;
+  for d in walkDirsHelper(path=path, topdown=topdown, depth=depth,
+                          hidden=hidden, followlinks=followlinks, sort=sort,
+                          err=err) do
+    yield d;
+  if err != nil then throw (err:owned class);
+}
+@chpldoc.nodoc
+@edition(first="preview")
+iter walkDirs(path: string = ".", topdown: bool = true, depth: int = max(int),
+              hidden: bool = false, followlinks: bool = false,
+              sort: bool = false, param tag: iterKind): string throws
+where tag == iterKind.standalone {
+  var err: owned Error? = nil;
+  forall d in walkDirsHelper(path=path, topdown=topdown, depth=depth,
+                             hidden=hidden, followlinks=followlinks, sort=sort,
+                             err=err) do
+    yield d;
+  if err != nil then throw (err:owned class);
+}
+
+@chpldoc.nodoc
+iter walkDirsHelper(path: string, topdown: bool, in depth: int,
+                    hidden: bool, followlinks: bool, sort: bool,
+                    ref err: owned Error?): string {
+  use List only list;
+  if topdown {
+    // preorder: yield the directory and then push its children onto the stack
+    var stack: list((string, int));
+    stack.pushBack((path, depth));
+    while !stack.isEmpty() {
+      var (curPath, curDepth) = stack.popBack();
+      yield curPath;
+
+      if curDepth {
+        var subdirs = listDirHelper(curPath, hidden=hidden, files=false, dirs=true,
+                                    listlinks=followlinks, err=err);
+        if err != nil then return;
+        if sort {
+          use Sort only sort as sortList;
+          sortList(subdirs);
+        }
+
+        // Push in reverse order so left-to-right ordering is preserved on pop
+        for i in subdirs.domain by -1 {
+          stack.pushBack((curPath + "/" + subdirs[i], curDepth - 1));
+        }
+      }
+    }
+  } else {
+    // postorder: On first visit, push the
+    // directory back as "expanded" and then push its children. On second
+    // visit (expanded=true), yield it.
+    var stack: list((string, int, bool)); // (path, depth, expanded)
+    stack.pushBack((path, depth, false));
+
+    while !stack.isEmpty() {
+      var (curPath, curDepth, expanded) = stack.popBack();
+
+      if expanded || curDepth == 0 {
+        yield curPath;
+      } else {
+        // Re-push as expanded so it will be yielded after its children
+        stack.pushBack((curPath, curDepth, true));
+
+        var subdirs = listDirHelper(curPath, hidden=hidden, files=false, dirs=true,
+                                    listlinks=followlinks, err=err);
+        if err != nil then return;
+        if sort {
+          use Sort only sort as sortList;
+          sortList(subdirs);
+        }
+
+        // Push in reverse order so left-to-right ordering is preserved on pop
+        for i in subdirs.domain by -1 {
+          stack.pushBack((curPath + "/" + subdirs[i], curDepth - 1, false));
+        }
+      }
+    }
+  }
+}
+
+// this uses parSafe lists as the stack, which probably
+// makes the parallelism inefficent and pretty useless. This was better
+// when written as a recursive iterator, but recursive iterators are too
+// fragile
+@chpldoc.nodoc
+iter walkDirsHelper(path: string, topdown: bool, depth: int,
+                    hidden: bool, followlinks: bool, sort: bool,
+                    ref err: owned Error?,
+                    param tag: iterKind): string
+where tag == iterKind.standalone {
+  if sort then
+    warning("sorting has no effect for parallel invocations of walkDirs()");
+  use List only list;
+  if topdown {
+    // preorder: yield the directory and then push its children onto the stack
+    var stack: list((string, int), true);
+    stack.pushBack((path, depth));
+    while !stack.isEmpty() {
+      var (curPath, curDepth) = stack.popBack();
+      yield curPath;
+
+      if curDepth {
+        var subdirs = listDirHelper(curPath, hidden=hidden, files=false, dirs=true,
+                                    listlinks=followlinks, err=err);
+        if err != nil then return;
+        // Push in reverse order so left-to-right ordering is preserved on pop
+        forall i in subdirs.domain by -1 with (ref stack) {
+          stack.pushBack((curPath + "/" + subdirs[i], curDepth - 1));
+        }
+      }
+    }
+  } else {
+    // postorder: On first visit, push the
+    // directory back as "expanded" and then push its children. On second
+    // visit (expanded=true), yield it.
+    var stack: list((string, int, bool), true); // (path, depth, expanded)
+    stack.pushBack((path, depth, false));
+
+    while !stack.isEmpty() {
+      var (curPath, curDepth, expanded) = stack.popBack();
+
+      if expanded || curDepth == 0 {
+        yield curPath;
+      } else {
+        // Re-push as expanded so it will be yielded after its children
+        stack.pushBack((curPath, curDepth, true));
+
+        var subdirs = listDirHelper(curPath, hidden=hidden, files=false, dirs=true,
+                                    listlinks=followlinks, err=err);
+        if err != nil then return;
+        // Push in reverse order so left-to-right ordering is preserved on pop
+        forall i in subdirs.domain by -1 with (ref stack) {
+          stack.pushBack((curPath + "/" + subdirs[i], curDepth - 1, false));
+        }
+      }
+    }
+  }
+}
 }

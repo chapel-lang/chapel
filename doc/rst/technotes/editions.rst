@@ -161,5 +161,6 @@ remain in the preview until they are deemed sufficiently complete.
   predicate callable, allowing users to search for elements matching a custom
   condition rather than only equality comparison.
 
-- The ``FileSystem.listDir()`` iterator throws when it encounters an error,
+- The ``FileSystem.listDir()``, ``FileSystem.findFiles()``,
+  and ``FileSystem.walkDirs()`` iterators throw when they encounter an error,
   rather than just printing the error to stdout.
