@@ -5,4 +5,4 @@
 ./subdir-link/subdir3
 ./subdir/subdir2
 ./subdir/subdir3
-mywalk-par.chpl:12: warning: sorting has no effect for parallel invocations of walkdirs()
+MyWalkDirs.chpl:46: warning: sorting has no effect for parallel invocations of walkdirs()
