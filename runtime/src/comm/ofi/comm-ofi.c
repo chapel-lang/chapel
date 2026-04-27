@@ -2567,6 +2567,8 @@ void init_ofiEp(void) {
       } else {
         DBG_PRINTF(DBG_PROV, "fi_open_ops failed: %s", fi_strerror(rc));
       }
+#else
+      chpl_warning("The Chapel runtime was built without enhanced CXI support. Make sure your libfabric was built using `--enable-cxi`.", 0, 0);
 #endif
     }
     if (cxiHybridMRMode) {
