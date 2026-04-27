@@ -42,7 +42,7 @@
 #include <stdlib.h>
 
 
-static char xnet_prov_name[FI_NAME_MAX] = "tcp";
+static char xnet_prov_name[OFI_NAME_MAX] = "tcp";
 
 static int xnet_getinfo(uint32_t version, const char *node, const char *service,
 			uint64_t flags, const struct fi_info *hints,
@@ -71,6 +71,7 @@ int xnet_max_saved = 64;
 size_t xnet_max_inject = XNET_DEF_INJECT;
 size_t xnet_buf_size = XNET_DEF_BUF_SIZE;
 size_t xnet_max_saved_size = SIZE_MAX;
+int xnet_firewall_addr = 0;
 
 
 static void xnet_init_env(void)
@@ -186,6 +187,9 @@ static void xnet_init_env(void)
 			"Enable io_uring support if available (default: %d)", xnet_io_uring);
 	fi_param_get_bool(&xnet_prov, "io_uring",
 			 &xnet_io_uring);
+
+	fi_param_define(&xnet_prov, "firewall_addr", FI_PARAM_BOOL, "if this node is behind firewall");
+	fi_param_get_bool(&xnet_prov, "firewall_addr", &xnet_firewall_addr);
 }
 
 static void xnet_fini(void)
@@ -207,6 +211,7 @@ TCP_INI
 #if HAVE_TCP_DL
 	ofi_pmem_init();
 	ofi_mem_init();
+	ofi_params_init();
 #endif
 	xnet_init_env();
 	xnet_init_infos();

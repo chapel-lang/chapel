@@ -262,6 +262,11 @@ static int ofi_is_hook_prov(const struct fi_provider *provider)
 	return ofi_prov_ctx(provider)->type == OFI_PROV_HOOK;
 }
 
+static int ofi_is_lnx_prov(const struct fi_provider *provider)
+{
+	return ofi_prov_ctx(provider)->type == OFI_PROV_LNX;
+}
+
 int ofi_apply_filter(struct ofi_filter *filter, const char *name)
 {
 	if (!filter->names)
@@ -474,7 +479,8 @@ static void ofi_ordered_provs_init(void)
 		/* These are hooking providers only.  Their order
 		 * doesn't matter
 		 */
-		"ofi_hook_perf", "ofi_hook_trace", "ofi_hook_profile", "ofi_hook_debug",
+		"ofi_hook_perf", "ofi_hook_trace", "ofi_hook_profile",
+		"ofi_hook_monitor", "ofi_hook_debug",
 		"ofi_hook_noop", "ofi_hook_hmem", "ofi_hook_dmabuf_peer_mem",
 
 		/* So do the offload providers. */
@@ -500,6 +506,8 @@ static void ofi_set_prov_type(struct fi_provider *provider)
 		ofi_prov_ctx(provider)->type = OFI_PROV_UTIL;
 	else if (ofi_has_offload_prefix(provider->name))
 		ofi_prov_ctx(provider)->type = OFI_PROV_OFFLOAD;
+	else if (ofi_is_lnx(provider->name))
+		ofi_prov_ctx(provider)->type = OFI_PROV_LNX;
 	else
 		ofi_prov_ctx(provider)->type = OFI_PROV_CORE;
 }
@@ -944,12 +952,12 @@ void fi_ini(void)
 			"(default: no). Setting this to yes could improve "
 			"performance at the expense of making fork() potentially "
 			"unsafe");
+
 	fi_param_define(NULL, "universe_size", FI_PARAM_SIZE_T,
 			"Defines the maximum number of processes that will be "
 			"used by distribute OFI application. The provider uses "
 			"this to optimize resource allocations "
 			"(default: provider specific)");
-	fi_param_get_size_t(NULL, "universe_size", &ofi_universe_size);
 
 	fi_param_define(NULL, "av_remove_cleanup", FI_PARAM_BOOL,
 			"When true, release any underlying resources, such as "
@@ -960,13 +968,12 @@ void fi_ini(void)
 			"from peers that are active at the time their "
 			"address is removed from the local AV.  "
 			"(default: false)");
-	fi_param_get_bool(NULL, "av_remove_cleanup", &ofi_av_remove_cleanup);
 
 	fi_param_define(NULL, "offload_coll_provider", FI_PARAM_STRING,
 			"The name of a colective offload provider (default: \
 			empty - no provider)");
-	fi_param_get_str(NULL, "offload_coll_provider",
-			    &ofi_offload_coll_prov_name);
+
+	ofi_params_init();
 
 	ofi_load_dl_prov();
 
@@ -988,9 +995,11 @@ void fi_ini(void)
 	ofi_register_provider(SOCKETS_INIT, NULL);
 	ofi_register_provider(TCP_INIT, NULL);
 
+	ofi_register_provider(LNX_INIT, NULL);
 	ofi_register_provider(HOOK_PERF_INIT, NULL);
 	ofi_register_provider(HOOK_TRACE_INIT, NULL);
 	ofi_register_provider(HOOK_PROFILE_INIT, NULL);
+	ofi_register_provider(HOOK_MONITOR_INIT, NULL);
 	ofi_register_provider(HOOK_DEBUG_INIT, NULL);
 	ofi_register_provider(HOOK_HMEM_INIT, NULL);
 	ofi_register_provider(HOOK_DMABUF_PEER_MEM_INIT, NULL);
@@ -1022,9 +1031,9 @@ FI_DESTRUCTOR(fi_fini(void))
 	}
 
 	ofi_free_filter(&prov_filter);
+	ofi_shm_p2p_cleanup();
 	ofi_monitors_cleanup();
 	ofi_hmem_cleanup();
-	ofi_shm_p2p_cleanup();
 	ofi_hook_fini();
 	ofi_mem_fini();
 	fi_log_fini();
@@ -1070,7 +1079,7 @@ void DEFAULT_SYMVER_PRE(fi_freeinfo)(struct fi_info *info)
 		free(info);
 	}
 }
-CURRENT_SYMVER(fi_freeinfo_, fi_freeinfo);
+DEFAULT_SYMVER(fi_freeinfo_, fi_freeinfo, FABRIC_1.9);
 
 static bool
 ofi_info_match_prov(struct fi_info *info, struct ofi_info_match *match)
@@ -1207,9 +1216,11 @@ static void ofi_set_prov_attr(struct fi_fabric_attr *attr,
 
 	core_name = attr->prov_name;
 	if (core_name) {
-		assert(ofi_is_util_prov(prov));
-		attr->prov_name = ofi_strdup_append(core_name, prov->name);
-		free(core_name);
+		if (!ofi_is_lnx_prov(prov)) {
+			assert(ofi_is_util_prov(prov));
+			attr->prov_name = ofi_strdup_append(core_name, prov->name);
+			free(core_name);
+		}
 	} else {
 		attr->prov_name = strdup(prov->name);
 	}
@@ -1408,7 +1419,7 @@ int DEFAULT_SYMVER_PRE(fi_getinfo)(uint32_t version, const char *node,
 
 	return *info ? 0 : -FI_ENODATA;
 }
-CURRENT_SYMVER(fi_getinfo_, fi_getinfo);
+DEFAULT_SYMVER(fi_getinfo_, fi_getinfo, FABRIC_1.9);
 
 struct fi_info *ofi_allocinfo_internal(void)
 {
@@ -1539,7 +1550,7 @@ fail:
 	fi_freeinfo(dup);
 	return NULL;
 }
-CURRENT_SYMVER(fi_dupinfo_, fi_dupinfo);
+DEFAULT_SYMVER(fi_dupinfo_, fi_dupinfo, FABRIC_1.9);
 
 __attribute__((visibility ("default"),EXTERNALLY_VISIBLE))
 int DEFAULT_SYMVER_PRE(fi_fabric)(struct fi_fabric_attr *attr,
@@ -1595,6 +1606,17 @@ int DEFAULT_SYMVER_PRE(fi_fabric)(struct fi_fabric_attr *attr,
 DEFAULT_SYMVER(fi_fabric_, fi_fabric, FABRIC_1.1);
 
 __attribute__((visibility ("default"),EXTERNALLY_VISIBLE))
+int DEFAULT_SYMVER_PRE(fi_fabric2)(struct fi_info *info,
+		struct fid_fabric **fabric, uint64_t flags, void *context)
+{
+	if (flags || !info)
+		return -FI_EINVAL;
+
+	return fi_fabric(info->fabric_attr, fabric, context);
+}
+DEFAULT_SYMVER(fi_fabric2_, fi_fabric2, FABRIC_1.8);
+
+__attribute__((visibility ("default"),EXTERNALLY_VISIBLE))
 uint32_t DEFAULT_SYMVER_PRE(fi_version)(void)
 {
 	return FI_VERSION(FI_MAJOR_VERSION, FI_MINOR_VERSION);
@@ -1633,6 +1655,7 @@ static const char *const errstr[] = {
 	[FI_EOVERRUN - FI_ERRNO_OFFSET] = "Queue has been overrun",
 	[FI_ENORX - FI_ERRNO_OFFSET] = "Receiver not ready, no receive buffers available",
 	[FI_ENOMR - FI_ERRNO_OFFSET] = "Memory registration limit exceeded",
+	[FI_EFIREWALLADDR - FI_ERRNO_OFFSET] = "Host unreacheable due to firewall",
 };
 
 __attribute__((visibility ("default"),EXTERNALLY_VISIBLE))

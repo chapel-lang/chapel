@@ -40,7 +40,7 @@ static int hook_do_poll(struct fid_poll *pollset, void **context, int count)
 	struct fid *fid;
 	int i, ret;
 
-	ret = fi_poll(poll->hpoll, context, count);
+	ret = ofi_poll(poll->hpoll, context, count);
 	for (i = 0; i < ret; i++) {
 		fid = context[i];
 		context[i] = fid->context;
@@ -54,7 +54,7 @@ static int hook_poll_add(struct fid_poll *pollset, struct fid *event_fid,
 {
 	struct hook_poll *poll = container_of(pollset, struct hook_poll, poll);
 
-	return fi_poll_add(poll->hpoll, hook_to_hfid(event_fid), flags);
+	return ofi_poll_add(poll->hpoll, hook_to_hfid(event_fid), flags);
 }
 
 static int hook_poll_del(struct fid_poll *pollset, struct fid *event_fid,
@@ -62,7 +62,7 @@ static int hook_poll_del(struct fid_poll *pollset, struct fid *event_fid,
 {
 	struct hook_poll *poll = container_of(pollset, struct hook_poll, poll);
 
-	return fi_poll_del(poll->hpoll, hook_to_hfid(event_fid), flags);
+	return ofi_poll_del(poll->hpoll, hook_to_hfid(event_fid), flags);
 }
 
 static struct fi_ops_poll hook_poll_ops = {
@@ -88,7 +88,7 @@ int hook_poll_open(struct fid_domain *domain, struct fi_poll_attr *attr,
 	poll->poll.fid.ops = &hook_fid_ops;
 	poll->poll.ops = &hook_poll_ops;
 
-	ret = fi_poll_open(dom->hdomain, attr, &poll->hpoll);
+	ret = ofi_poll_open(dom->hdomain, attr, &poll->hpoll);
 	if (ret)
 		free(poll);
 	else
@@ -121,7 +121,7 @@ static int hook_do_wait(struct fid_wait *waitset, int timeout)
 {
 	struct hook_wait *wait = container_of(waitset, struct hook_wait, wait);
 
-	return fi_wait(wait->hwait, timeout);
+	return ofi_wait(wait->hwait, timeout);
 }
 
 static struct fi_ops_wait hook_wait_ops = {
@@ -145,7 +145,7 @@ int hook_wait_open(struct fid_fabric *fabric, struct fi_wait_attr *attr,
 	wait->wait.fid.ops = &hook_fid_ops;
 	wait->wait.ops = &hook_wait_ops;
 
-	ret = fi_wait_open(fab->hfabric, attr, &wait->hwait);
+	ret = ofi_wait_open(fab->hfabric, attr, &wait->hwait);
 	if (ret)
 		free(wait);
 	else

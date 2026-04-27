@@ -1,0 +1,19 @@
+
+EXPORTS
+    fi_getinfo = fi_getinfo
+    fi_freeinfo = fi_freeinfo
+    fi_dupinfo = fi_dupinfo
+    fi_fabric = fi_fabric
+    fi_version = fi_version
+    fi_strerror = fi_strerror
+    fi_tostr = fi_tostr
+    fi_log_enabled = fi_log_enabled
+    fi_log = fi_log
+    fi_param_define = fi_param_define
+    fi_param_get = fi_param_get
+    fi_getparams  = fi_getparams
+    fi_freeparams = fi_freeparams
+    fi_tostr_r = fi_tostr_r
+    fi_open = fi_open
+    fi_log_ready = fi_log_ready
+    fi_fabric2 = fi_fabric2

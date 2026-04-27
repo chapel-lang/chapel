@@ -12,6 +12,7 @@
 #include "efa_rdm_rma.h"
 #include "efa_rdm_ope.h"
 #include "efa_rdm_pke.h"
+#include "efa_rdm_pke_rtw.h"
 #include "efa_rdm_pke_utils.h"
 #include "efa_rdm_protocol.h"
 #include "efa_rdm_pke_req.h"
@@ -59,13 +60,12 @@ ssize_t efa_rdm_pke_init_rtw_common(struct efa_rdm_pke *pkt_entry,
  * pointer to the newly allocated RX entry.
  * NULL when OP entry pool has been exhausted.
  */
-static
 struct efa_rdm_ope *efa_rdm_pke_alloc_rtw_rxe(struct efa_rdm_pke *pkt_entry)
 {
 	struct efa_rdm_ope *rxe;
 	struct efa_rdm_base_hdr *base_hdr;
 
-	rxe = efa_rdm_ep_alloc_rxe(pkt_entry->ep, pkt_entry->addr, ofi_op_write);
+	rxe = efa_rdm_ep_alloc_rxe(pkt_entry->ep, pkt_entry->peer, ofi_op_write);
 	if (OFI_UNLIKELY(!rxe))
 		return NULL;
 
@@ -75,9 +75,7 @@ struct efa_rdm_ope *efa_rdm_pke_alloc_rtw_rxe(struct efa_rdm_pke *pkt_entry)
 		rxe->cq_entry.data = efa_rdm_pke_get_req_cq_data(pkt_entry);
 	}
 
-	rxe->addr = pkt_entry->addr;
-	rxe->bytes_received = 0;
-	rxe->bytes_copied = 0;
+	rxe->internal_flags |= EFA_RDM_OPE_INTERNAL;
 	return rxe;
 }
 
@@ -348,6 +346,18 @@ void efa_rdm_pke_handle_longcts_rtw_send_completion(struct efa_rdm_pke *pkt_entr
 {
 	struct efa_rdm_ope *txe;
 
+	/**
+	 * A zero-payload longcts rtw pkt currently should only happen when it's
+	 * used for the READ NACK protocol. In this case, this pkt doesn't
+	 * contribute to the send completion, and the associated tx entry
+	 * may be released earlier as the CTSDATA pkts have already kicked off
+	 * and finished the send.
+	 */
+	if (pkt_entry->payload_size == 0) {
+		assert(efa_rdm_pke_get_rtw_base_hdr(pkt_entry)->flags & EFA_RDM_REQ_READ_NACK);
+		return;
+	}
+
 	txe = pkt_entry->ope;
 	txe->bytes_acked += pkt_entry->payload_size;
 	if (txe->total_len == txe->bytes_acked)
@@ -551,20 +561,20 @@ void efa_rdm_pke_handle_longread_rtw_recv(struct efa_rdm_pke *pkt_entry)
 
 	hdr_size = efa_rdm_pke_get_req_hdr_size(pkt_entry);
 	read_iov = (struct fi_rma_iov *)(pkt_entry->wiredata + hdr_size);
-	rxe->addr = pkt_entry->addr;
+	rxe->peer = pkt_entry->peer;
 	rxe->tx_id = rtw_hdr->send_id;
 	rxe->rma_iov_count = rtw_hdr->read_iov_count;
 	memcpy(rxe->rma_iov, read_iov,
 	       rxe->rma_iov_count * sizeof(struct fi_rma_iov));
 
+	err = efa_rdm_pke_post_remote_read_or_nack(rxe->ep, pkt_entry, rxe);
+
 	efa_rdm_pke_release_rx(pkt_entry);
 
-	err = efa_rdm_ope_post_remote_read_or_queue(rxe);
 	if (OFI_UNLIKELY(err)) {
 		EFA_WARN(FI_LOG_CQ,
 			"RDMA post read or queue failed.\n");
 		efa_base_ep_write_eq_error(&ep->base_ep, err, FI_EFA_ERR_RDMA_READ_POST);
 		efa_rdm_rxe_release(rxe);
-		efa_rdm_pke_release_rx(pkt_entry);
 	}
 }

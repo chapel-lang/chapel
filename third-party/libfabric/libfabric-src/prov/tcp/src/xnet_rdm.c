@@ -653,6 +653,14 @@ static int xnet_rdm_getopt(struct fid *fid, int level, int optname,
 		*((size_t *) optval) = rdm->srx->min_multi_recv_size;
 		*optlen = sizeof(size_t);
 		break;
+	case FI_OPT_FIREWALL_ADDR:
+		if (*optlen < sizeof(int)) {
+			*optlen = sizeof(int);
+			return -FI_ETOOSMALL;
+		}
+		*((int *) optval) = xnet_firewall_addr;
+		*optlen = sizeof(int);
+		break;
 	default:
 		return -FI_ENOPROTOOPT;
 	}
@@ -695,12 +703,222 @@ static struct fi_ops_ep xnet_rdm_ep_ops = {
 	.tx_size_left = fi_no_tx_size_left,
 };
 
+static int xnet_mplex_av_dup(struct util_ep *ep, struct xnet_mplex_av *mplex_av,
+			     struct xnet_domain *subdomain, struct fid_av **av_fid)
+{
+	int ret, i;
+	struct util_av *subav;
+	size_t addr_size = sizeof(struct sockaddr_in6);
+	char addr[sizeof(struct sockaddr_in6)];
+	struct fi_av_attr av_attr = {
+		.type = ep->domain->av_type,
+		.count = mplex_av->util_av.av_entry_pool->entry_cnt,
+		.flags = 0,
+	};
+
+	assert(ofi_genlock_held(&mplex_av->lock));
+	ret = fi_av_open(&subdomain->util_domain.domain_fid, &av_attr, av_fid, NULL);
+	if (ret)
+		return ret;
+
+	subav = container_of(*av_fid, struct util_av, av_fid);
+	for (i = 0; i < mplex_av->util_av.av_entry_pool->entry_cnt; i++) {
+		if (!ofi_ip_av_is_valid(&mplex_av->util_av.av_fid, i))
+			continue;
+
+		ret = ofi_ip_av_lookup(&mplex_av->util_av.av_fid, i, addr, &addr_size);
+		if (ret)
+			continue;
+
+		ofi_genlock_lock(&subav->lock);
+		ret = ofi_av_insert_addr_at(subav, addr, i);
+		ofi_genlock_unlock(&subav->lock);
+		if (ret)
+			return ret;
+	}
+	fid_list_insert(&mplex_av->subav_list, NULL, &subav->av_fid.fid);
+	return FI_SUCCESS;
+};
+
+static int xnet_set_subav(struct util_ep *ep, struct xnet_domain *subdomain)
+{
+	int ret;
+	struct fid_list_entry *item;
+	struct util_av *subav;
+	struct fid_av *subav_fid;
+	struct xnet_mplex_av *xnet_av;
+
+	xnet_av = container_of(&ep->av->av_fid, struct xnet_mplex_av, util_av.av_fid);
+
+	ofi_genlock_lock(&xnet_av->lock);
+	dlist_foreach_container(&xnet_av->subav_list, struct fid_list_entry, item, entry) {
+		subav = container_of(item->fid, struct util_av, av_fid.fid);
+		if (subav->domain == &subdomain->util_domain)
+			goto move_av;
+	}
+	ret = xnet_mplex_av_dup(ep, xnet_av, subdomain, &subav_fid);
+	if (ret)
+		goto out;
+	subav = container_of(subav_fid, struct util_av, av_fid.fid);
+move_av:
+	ofi_genlock_lock(&ep->av->ep_list_lock);
+	dlist_remove(&ep->av_entry);
+	ofi_genlock_unlock(&ep->av->ep_list_lock);
+	ofi_atomic_dec32(&ep->av->ref);
+	ep->av = NULL;
+	ret = ofi_ep_bind_av(ep, subav);
+out:
+	ofi_genlock_unlock(&xnet_av->lock);
+	return ret;
+}
+
+static int xnet_reg_subdomain_mr(struct ofi_rbmap *map, struct ofi_rbnode *node, void *context)
+{
+	int ret;
+	struct fi_mr_attr *attr = (struct fi_mr_attr *)node->data;
+	struct xnet_domain *subdomain = context;
+
+	ret = ofi_mr_map_insert(&subdomain->util_domain.mr_map, attr,
+				&attr->requested_key, attr->context,
+				((struct ofi_mr*)attr->context)->flags);
+	if (ret) {
+		XNET_WARN_ERR(FI_LOG_MR, "ofi_mr_map_insert", ret);
+		return ret;
+	}
+
+	ofi_atomic_inc32(&subdomain->util_domain.ref);
+	return FI_SUCCESS;
+}
+
+static struct xnet_domain *xnet_find_subdomain(struct xnet_rdm *rdm)
+{
+	int i;
+	struct util_cntr *cntr;
+
+	if (!xnet_domain_multiplexed(&rdm->util_ep.rx_cq->domain->domain_fid)) {
+		return container_of(&rdm->util_ep.rx_cq->domain->domain_fid,
+				    struct xnet_domain, util_domain.domain_fid);
+	}
+
+	if (!xnet_domain_multiplexed(&rdm->util_ep.tx_cq->domain->domain_fid)) {
+		return container_of(&rdm->util_ep.tx_cq->domain->domain_fid,
+					 struct xnet_domain, util_domain.domain_fid);
+	}
+
+	for (i = 0; i < CNTR_CNT; i++) {
+		cntr = rdm->util_ep.cntrs[i];
+		if (!cntr)
+			continue;
+
+		if (!xnet_domain_multiplexed(&cntr->domain->domain_fid)) {
+			return container_of(&cntr->domain->domain_fid,
+					 struct xnet_domain, util_domain.domain_fid);
+		}
+	}
+
+	return NULL;
+}
+
+static void xnet_set_subdomain(struct xnet_rdm *rdm, struct xnet_domain *domain,
+			  struct xnet_domain *subdomain)
+{
+	int i;
+	struct util_cntr *cntr;
+
+	assert(ofi_genlock_held(&domain->util_domain.lock));
+
+	if (rdm->util_ep.rx_cq->domain == &domain->util_domain) {
+		ofi_atomic_dec32(&rdm->util_ep.rx_cq->domain->ref);
+		ofi_atomic_inc32(&subdomain->util_domain.ref);
+		rdm->util_ep.rx_cq->domain = &subdomain->util_domain;
+	}
+	assert(rdm->util_ep.rx_cq->domain == &subdomain->util_domain);
+
+	if (rdm->util_ep.tx_cq->domain == &domain->util_domain) {
+		ofi_atomic_dec32(&rdm->util_ep.tx_cq->domain->ref);
+		ofi_atomic_inc32(&subdomain->util_domain.ref);
+		rdm->util_ep.tx_cq->domain = &subdomain->util_domain;
+	}
+	assert(rdm->util_ep.tx_cq->domain == &subdomain->util_domain);
+
+	for (i = 0; i < CNTR_CNT; i++) {
+		cntr = rdm->util_ep.cntrs[i];
+		if (!cntr)
+			continue;
+
+		if (cntr->domain == &domain->util_domain) {
+			ofi_atomic_dec32(&cntr->domain->ref);
+			ofi_atomic_inc32(&subdomain->util_domain.ref);
+			cntr->domain = &subdomain->util_domain;
+		}
+		assert(cntr->domain == &subdomain->util_domain);
+	}
+}
+
+int xnet_rdm_resolve_domains(struct xnet_rdm *rdm)
+{
+	int ret;
+	struct fid_domain *subdomain_fid;
+	struct xnet_domain *subdomain;
+	struct xnet_domain *domain;
+
+	domain = container_of(rdm->util_ep.domain, struct xnet_domain, util_domain);
+	ofi_genlock_lock(&domain->util_domain.lock);
+	subdomain = xnet_find_subdomain(rdm);
+	if (!subdomain) {
+		ret = fi_domain(&domain->util_domain.fabric->fabric_fid,
+				domain->subdomain_info,
+				&subdomain_fid, NULL);
+		if (ret)
+			goto out;
+
+		subdomain = container_of(subdomain_fid, struct xnet_domain,
+					 util_domain.domain_fid);
+		ret = fid_list_insert2(&domain->subdomain_list,
+				       &domain->subdomain_list_lock,
+				       &subdomain_fid->fid);
+		if (ret) {
+			fi_close(&subdomain_fid->fid);
+			goto out;
+		}
+
+		ret = ofi_rbmap_foreach(domain->util_domain.mr_map.rbtree,
+					domain->util_domain.mr_map.rbtree->root,
+					xnet_reg_subdomain_mr, subdomain);
+		if (ret)
+			goto out;
+	}
+
+	xnet_set_subdomain(rdm, domain, subdomain);
+	ret = xnet_set_subav(&rdm->util_ep, subdomain);
+	if (ret)
+		goto out;
+
+	ofi_atomic_dec32(&rdm->util_ep.domain->ref);
+	ofi_atomic_inc32(&subdomain->util_domain.ref);
+	rdm->util_ep.domain = &subdomain->util_domain;
+
+	ofi_atomic_dec32(&rdm->srx->domain->util_domain.ref);
+	ofi_atomic_inc32(&subdomain->util_domain.ref);
+	rdm->srx->domain = subdomain;
+
+out:
+	ofi_genlock_unlock(&domain->util_domain.lock);
+	return ret;
+}
+
 static int xnet_enable_rdm(struct xnet_rdm *rdm)
 {
 	struct xnet_progress *progress;
 	struct fi_info *info;
 	size_t len;
 	int ret;
+
+	if (xnet_domain_multiplexed(&rdm->util_ep.domain->domain_fid)) {
+		ret = xnet_rdm_resolve_domains(rdm);
+		if (ret)
+			return ret;
+	}
 
 	(void) fi_ep_bind(&rdm->srx->rx_fid, &rdm->util_ep.rx_cq->cq_fid.fid,
 			  FI_RECV);
@@ -803,7 +1021,7 @@ static struct fi_ops xnet_rdm_fid_ops = {
 	.close = xnet_rdm_close,
 	.bind = ofi_ep_fid_bind,
 	.control = xnet_rdm_ctrl,
-	.ops_open = fi_no_ops_open,
+	.ops_open = xnet_rdm_ops_open,
 };
 
 static int xnet_init_rdm(struct xnet_rdm *rdm, struct fi_info *info)
@@ -891,7 +1109,6 @@ int xnet_rdm_ep(struct fid_domain *domain, struct fi_info *info,
 	(*ep_fid)->rma = &xnet_rdm_rma_ops;
 	(*ep_fid)->tagged = &xnet_rdm_tagged_ops;
 	(*ep_fid)->atomic = &xnet_rdm_atomic_ops;
-	(*ep_fid)->fid.ops->ops_open = xnet_rdm_ops_open;
 
 	return 0;
 

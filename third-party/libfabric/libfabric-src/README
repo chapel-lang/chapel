@@ -79,6 +79,53 @@ To install from a libfabric source package run the following commands:
 If building directly from the libfabric git tree, run './autogen.sh'
 before the configure step.
 
+Configure Options
+-----------------
+The configure script has many built-in options (see './configure --help').
+Some useful options are:
+
+--prefix=<directory>
+    By default 'make install' will place the files in the '/usr' tree.
+    The '--prefix' option specifies that libfabric files should be
+    installed into the tree specified by named <directory>.
+
+--with-cuda[=DIR]
+    Enable CUDA build and fail if not found. Optional=<Path to where the
+    CUDA libraries and headers are installed.> This enables CUDA memory
+    support for heterogeneous memory (HMEM) operations.
+
+--with-rocr[=DIR]
+    Enable ROCR/HSA build and fail if not found. Optional=<Path to where
+    the ROCR/HSA libraries and headers are installed.> This enables ROCr
+    memory support for heterogeneous memory (HMEM) operations.
+
+--with-neuron[=DIR]
+    Enable Neuron build and fail if not found. Optional=<Path to where the
+    Neuron libraries and headers are installed.> This enables Neuron memory
+    support for heterogeneous memory (HMEM) operations.
+
+--with-synapseai[=DIR]
+    Enable SynapseAI build and fail if not found. Optional=<Path to where
+    the SynapseAI libraries and headers are installed.> This enables
+    SynapseAI memory support for heterogeneous memory (HMEM) operations.
+
+--with-ze[=DIR]
+    Enable ZE build and fail if not found. Optional=<Path to where the ZE
+    libraries and headers are installed.> This enables Intel GPU memory
+    support for heterogeneous memory (HMEM) operations.
+
+--enable-cuda-dlopen
+    Enable dlopen of CUDA libraries [default=no]. This allows building
+    binaries that can run on systems with or without CUDA runtime.
+
+--enable-rocr-dlopen
+    Enable dlopen of ROCR libraries [default=no]. This allows building
+    binaries that can run on systems with or without ROCR runtime.
+
+--enable-ze-dlopen
+    Enable dlopen of ZE libraries [default=no]. This allows building
+    binaries that can run on systems with or without ZE runtime.
+
 Windows
 =======
 Please find Windows specific instructions in docs/windows.txt file

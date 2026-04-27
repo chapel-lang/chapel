@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2014 Intel Corporation, Inc.  All rights reserved.
  * Copyright (c) 2016 Cisco Systems, Inc.  All rights reserved.
+ * Copyright (c) 2025 VDURA, Inc.  All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -135,7 +136,7 @@ static inline void sock_pe_discard_field(struct sock_pe_entry *pe_entry)
 
 	SOCK_LOG_DBG("Remaining for %p: %" PRId64 "\n", pe_entry, pe_entry->rem);
 	ret = sock_comm_discard(pe_entry, pe_entry->rem);
-	SOCK_LOG_DBG("Discarded %ld\n", ret);
+	SOCK_LOG_DBG("Discarded %zu\n", ret);
 
 	pe_entry->rem -= ret;
 	if (pe_entry->rem == 0)
@@ -224,7 +225,7 @@ static struct sock_pe_entry *sock_pe_acquire_entry(struct sock_pe *pe)
 		assert(ofi_rbempty(&pe_entry->comm_buf));
 		dlist_remove(&pe_entry->entry);
 		dlist_insert_tail(&pe_entry->entry, &pe->busy_list);
-		SOCK_LOG_DBG("progress entry %p acquired : %lu\n", pe_entry,
+		SOCK_LOG_DBG("progress entry %p acquired : %zd\n", pe_entry,
 			     PE_INDEX(pe, pe_entry));
 	}
 	return pe_entry;
@@ -1486,7 +1487,7 @@ static int sock_pe_process_rx_conn_msg(struct sock_pe *pe,
 	struct sock_conn_map *map;
 	union ofi_sock_ip *addr;
 	struct sock_conn *conn;
-	uint64_t index;
+	int index;
 
 	if (!pe_entry->comm_addr) {
 		pe_entry->comm_addr = calloc(1, sizeof(union ofi_sock_ip));
@@ -1506,11 +1507,11 @@ static int sock_pe_process_rx_conn_msg(struct sock_pe *pe,
 	pe_entry->conn->addr = *addr;
 
 	index = (ep_attr->ep_type == FI_EP_MSG) ? 0 : sock_av_get_addr_index(ep_attr->av, addr);
-	if (index != -1) {
+	if (index >= 0) {
 		ofi_mutex_lock(&map->lock);
-		conn = sock_ep_lookup_conn(ep_attr, index, addr);
+		conn = sock_ep_lookup_conn(ep_attr, (fi_addr_t)index, addr);
 		if (conn == NULL || conn == SOCK_CM_CONN_IN_PROGRESS) {
-			if (ofi_idm_set(&ep_attr->av_idm, (int) index, pe_entry->conn) < 0)
+			if (ofi_idm_set(&ep_attr->av_idm, index, pe_entry->conn) < 0)
 				SOCK_LOG_ERROR("ofi_idm_set failed\n");
 		}
 		ofi_mutex_unlock(&map->lock);
@@ -2107,7 +2108,7 @@ static void sock_pe_new_rx_entry(struct sock_pe *pe, struct sock_rx_ctx *rx_ctx,
 	else
 		pe_entry->comp = &rx_ctx->comp;
 
-	SOCK_LOG_DBG("New RX on PE entry %p (%ld)\n",
+	SOCK_LOG_DBG("New RX on PE entry %p (%zd)\n",
 		      pe_entry, PE_INDEX(pe, pe_entry));
 
 	SOCK_LOG_DBG("Inserting rx_entry to PE entry %p, conn: %p\n",
@@ -2408,7 +2409,7 @@ static int sock_pe_progress_rx_ep(struct sock_pe *pe,
 
 	ofi_mutex_lock(&map->lock);
 	for (i = 0; i < num_fds; i++) {
-		conn = map->epoll_events[i].data.ptr;
+		conn = OFI_EPOLL_EVT_DATA(map->epoll_events[i]);
 		if (!conn)
 			SOCK_LOG_ERROR("ofi_idm_lookup failed\n");
 

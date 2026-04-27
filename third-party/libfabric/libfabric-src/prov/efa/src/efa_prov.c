@@ -2,7 +2,9 @@
 /* SPDX-FileCopyrightText: Copyright Amazon.com, Inc. or its affiliates. All rights reserved. */
 
 #include <ofi_prov.h>
+#include <ofi_lock.h>
 #include "efa.h"
+#include "efa_prov.h"
 #include "efa_prov_info.h"
 #include "efa_env.h"
 
@@ -22,6 +24,7 @@ int efa_win_lib_initialize(void)
 
 #include "efawin.h"
 
+static bool efa_win_initialized = false;
 /**
  * @brief open efawin.dll and load the symbols on windows platform
  *
@@ -36,10 +39,11 @@ int efa_win_lib_initialize(void)
 	* functions from efawin dll
 	*/
 	int err = efa_load_efawin_lib();
-	if (err) {
+	if (err)
 		EFA_WARN(FI_LOG_CORE, "Failed to load efawin dll. error: %d\n",
 			 err);
-	}
+	else
+		efa_win_initialized = true;
 	return err;
 }
 
@@ -49,7 +53,9 @@ int efa_win_lib_initialize(void)
  * This function is a no-op on windows
  */
 void efa_win_lib_finalize(void) {
-	efa_free_efawin_lib();
+	if (efa_win_initialized)
+		efa_free_efawin_lib();
+	efa_win_initialized = false;
 }
 
 #endif // _WIN32
@@ -67,8 +73,9 @@ struct fi_provider efa_prov = {
 
 struct util_prov efa_util_prov = {
 	.prov = &efa_prov,
-	.flags = 0,
 };
+
+ofi_mutex_t g_efa_domain_list_lock;
 
 /**
  * @brief initialize global variable: efa_util_prov
@@ -79,15 +86,53 @@ struct util_prov efa_util_prov = {
 static int efa_util_prov_initialize()
 {
 	int i, err;
-	struct fi_info *head, *tail, *prov_info_rdm, *prov_info_dgram;
+	struct fi_info *head, *tail, *prov_info_rdm, *prov_info_dgram, *prov_info_direct;
 
 	head = NULL;
 	tail = NULL;
-	for (i = 0; i < g_device_cnt; ++i) {
-		err = efa_prov_info_alloc_for_rdm(&prov_info_rdm, &g_device_list[i]);
+
+	/*
+	* EFA direct provider is more performant if the application can use it
+	* Therefore, the efa-direct info objects should be returned _before_ efa rdm or dgram
+	* So we populate the efa-direct info objects first
+	*/
+	for (i = 0; i < g_efa_selected_device_cnt; ++i) {
+		prov_info_direct = fi_dupinfo(g_efa_selected_device_list[i].rdm_info);
+		if (!prov_info_direct) {
+			EFA_WARN(FI_LOG_DOMAIN, "Failed to allocate prov_info for EFA direct\n");
+			continue;
+		}
+
+		err = efa_prov_info_set_fabric_name(prov_info_direct, EFA_DIRECT_FABRIC_NAME);
+		if (err) {
+			EFA_WARN(FI_LOG_DOMAIN, "Failed to allocate fabric name. error: %d\n", err);
+			continue;
+		}
+
+		/* This function must be called after efa_hmem_info_initialize() */
+		efa_prov_info_direct_set_hmem_flags(prov_info_direct);
+
+		if (!head) {
+			head = prov_info_direct;
+		} else {
+			assert(tail);
+			tail->next = prov_info_direct;
+		}
+
+		tail = prov_info_direct;
+	}
+
+	for (i = 0; i < g_efa_selected_device_cnt; ++i) {
+		err = efa_prov_info_alloc_for_rdm(&prov_info_rdm, &g_efa_selected_device_list[i]);
 		if (err) {
 			EFA_WARN(FI_LOG_DOMAIN, "Failed to allocate prov_info for rdm. error: %d\n",
 				 err);
+			continue;
+		}
+
+		err = efa_prov_info_set_fabric_name(prov_info_rdm, EFA_FABRIC_NAME);
+		if (err) {
+			EFA_WARN(FI_LOG_DOMAIN, "Failed to allocate fabric name. error: %d\n", err);
 			continue;
 		}
 
@@ -101,10 +146,16 @@ static int efa_util_prov_initialize()
 		tail = prov_info_rdm;
 	}
 
-	for (i = 0; i < g_device_cnt; ++i) {
-		prov_info_dgram = fi_dupinfo(g_device_list[i].dgram_info);
+	for (i = 0; i < g_efa_selected_device_cnt; ++i) {
+		prov_info_dgram = fi_dupinfo(g_efa_selected_device_list[i].dgram_info);
 		if (!prov_info_dgram) {
 			EFA_WARN(FI_LOG_DOMAIN, "Failed to allocate prov_info for dgram\n");
+			continue;
+		}
+
+		err = efa_prov_info_set_fabric_name(prov_info_dgram, EFA_FABRIC_NAME);
+		if (err) {
+			EFA_WARN(FI_LOG_DOMAIN, "Failed to allocate fabric name. error: %d\n", err);
 			continue;
 		}
 
@@ -130,7 +181,8 @@ static void efa_util_prov_finalize()
 	struct fi_info *prov_info;
 
 	prov_info = (struct fi_info *)efa_util_prov.info;
-	fi_freeinfo(prov_info);
+	if (prov_info)
+		fi_freeinfo(prov_info);
 	efa_util_prov.info = NULL;
 }
 
@@ -140,6 +192,7 @@ EFA_INI
 	ofi_mem_init();
 	ofi_hmem_init();
 	ofi_monitors_init();
+	ofi_params_init();
 #endif
 	int err;
 
@@ -147,30 +200,54 @@ EFA_INI
 	if (err)
 		goto err_free;
 
-	err = efa_device_list_initialize();
-	if (err)
-		return NULL;
-
-	if (g_device_cnt <= 0)
-		return NULL;
-
-	/*
-	 * efa_env_initialize uses g_efa_device_list
-	 * so it must be called after efa_device_list_initialize()
-	 */
 	efa_env_initialize();
 
+	/*
+	 * efa_device_list_initialize uses FI_EFA_IFACE, so
+	 * efa_device_list_initialize must be called after efa_env_initialize
+	 */
+	err = efa_device_list_initialize();
+	if (err)
+		return &efa_prov;
+
+
+	/*
+	 * efa_fork_support_enable_if_requested must be called before
+	 * efa_hmem_info_initialize.
+	 *
+	 * efa_hmem_info_initialize calls ibv_reg_mr to test for p2p support.
+	 *
+	 * On older kernels (without support for IBV_FORK_UNNEEDED),
+	 * efa_fork_support_enable_if_requested calls ibv_fork_init,
+	 * when fork support is requested.
+	 *
+	 * If ibv_fork_init is called, it must be called before any
+	 * ibv_reg_mr calls. Otherwise, ibv_fork_init will return EINVAL.
+	 */
+	err = efa_fork_support_enable_if_requested();
+	if (err)
+		goto err_free;
+
+	err = efa_hmem_info_initialize();
+	if (err)
+		goto err_free;
+
+	/*
+	* efa_util_prov_initialize uses g_efa_hmem_info, so it
+	* must be called after efa_hmem_info_initialize
+	*/
 	err = efa_util_prov_initialize();
 	if (err)
 		goto err_free;
 
+	ofi_mutex_init(&g_efa_domain_list_lock);
 	dlist_init(&g_efa_domain_list);
 
 	return &efa_prov;
 
 err_free:
 	efa_prov_finalize();
-	return NULL;
+	return &efa_prov;
 }
 
 /**
@@ -193,4 +270,3 @@ static void efa_prov_finalize(void)
 	ofi_mem_fini();
 #endif
 }
-

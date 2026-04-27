@@ -175,7 +175,7 @@ static void
 usdf_post_insert_request_error(struct usdf_av_insert *insert,
 		struct usdf_av_req *req)
 {
-	struct fi_eq_err_entry err_entry;
+	struct fi_eq_err_entry err_entry = {0};
 	struct usdf_av *av;
 
 	av = insert->avi_av;
@@ -481,7 +481,7 @@ usdf_am_insert_sync(struct fid_av *fav, const void *addr, size_t count,
 			u_dest->ds_dest.ds_udp.u_hdr.uh_ip.frag_off |=
 				htons(IP_DF);
 			dest->ds_dest = *u_dest;
-			fi_addr[i] = (fi_addr_t)dest;
+			fi_addr[i] = (fi_addr_t)(uintptr_t)dest;
 			LIST_INSERT_HEAD(&av->av_addresses, dest,
 					 ds_addresses_entry);
 			++ret_count;
@@ -829,6 +829,7 @@ struct sockaddr_in *usdf_format_to_sin(const struct fi_info *info, const void *a
 	switch (info->addr_format) {
 	case FI_FORMAT_UNSPEC:
 	case FI_SOCKADDR:
+	case FI_SOCKADDR_IP:
 	case FI_SOCKADDR_IN:
 		return (struct sockaddr_in *)addr;
 	case FI_ADDR_STR:
@@ -861,6 +862,7 @@ void *usdf_sin_to_format(const struct fi_info *info, void *addr, size_t *len)
 	switch (info->addr_format) {
 	case FI_FORMAT_UNSPEC:
 	case FI_SOCKADDR:
+	case FI_SOCKADDR_IP:
 	case FI_SOCKADDR_IN:
 		if (len)
 			*len = sizeof(struct sockaddr_in);

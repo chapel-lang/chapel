@@ -197,7 +197,7 @@ struct sm2_cma_data {
 };
 
 struct sm2_ep_name {
-	char name[FI_NAME_MAX];
+	char name[OFI_NAME_MAX];
 	struct sm2_region *region;
 	struct dlist_entry entry;
 };
@@ -242,7 +242,7 @@ static inline void sm2_generic_format(struct sm2_xfer_entry *xfer_entry,
 	xfer_entry->hdr.tag = tag;
 	xfer_entry->hdr.sender_gid = self_gid;
 	xfer_entry->hdr.cq_data = cq_data;
-	xfer_entry->hdr.context = (uint64_t) context;
+	xfer_entry->hdr.context = (uint64_t) (uintptr_t) context;
 }
 
 struct sm2_xfer_ctx {

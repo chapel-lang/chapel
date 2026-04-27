@@ -20,13 +20,13 @@ enum efa_rdm_ope_type {
  * @brief EFA RDM operation entry (ope)'s state
  */
 enum efa_rdm_ope_state {
-	EFA_RDM_OPE_FREE = 0,	/**< txe/rxe free state */
-	EFA_RDM_TXE_REQ,	/**< txe sending REQ packet */
-	EFA_RDM_TXE_SEND,	/**< txe sending data in progress */
+	EFA_RDM_TXE_REQ = 1,	/**< txe sending REQ packet */
+	EFA_RDM_OPE_SEND,	/**< ope sending data in progress */
 	EFA_RDM_RXE_INIT,	/**< rxe ready to recv RTM */
 	EFA_RDM_RXE_UNEXP,	/**< rxe unexp msg waiting for post recv */
 	EFA_RDM_RXE_MATCHED,	/**< rxe matched with RTM */
 	EFA_RDM_RXE_RECV,	/**< rxe large msg recv data pkts */
+	EFA_RDM_OPE_ERR, /*< ope is in error state */
 };
 
 /**
@@ -51,8 +51,7 @@ struct efa_rdm_atomic_ex {
 	struct iovec comp_iov[EFA_RDM_IOV_LIMIT];
 	int comp_iov_count;
 	void *result_desc[EFA_RDM_IOV_LIMIT];
-	/* compare_desc does not require persistence b/c it is only used to send the RTA */
-	void **compare_desc;
+	void *compare_desc[EFA_RDM_IOV_LIMIT];
 };
 
 /**
@@ -72,7 +71,6 @@ struct efa_rdm_ope {
 	enum efa_rdm_ope_type type;
 
 	struct efa_rdm_ep *ep;
-	fi_addr_t addr;
 	struct efa_rdm_peer *peer;
 
 	uint32_t tx_id;
@@ -105,12 +103,11 @@ struct efa_rdm_ope {
 	 * This flag is different from #cq_entry.flags, which is
 	 * applied to CQ entry's returned to user.
 	 */
-	uint16_t internal_flags;
+	uint32_t internal_flags;
 
 	size_t iov_count;
 	struct iovec iov[EFA_RDM_IOV_LIMIT];
 	void *desc[EFA_RDM_IOV_LIMIT];
-	void *shm_desc[EFA_RDM_IOV_LIMIT];
 	struct fid_mr *mr[EFA_RDM_IOV_LIMIT];
 
 	size_t rma_iov_count;
@@ -118,22 +115,17 @@ struct efa_rdm_ope {
 
 	struct fi_cq_tagged_entry cq_entry;
 
-	/* For txe, entry is linked with tx_pending_list, ope_longcts_send_list in efa_rdm_ep.
-	 * For rxe, entry is linked with ope_longcts_send_list.
-	 */
+	/* entry is linked with ope_longcts_send_list in efa_domain */
 	struct dlist_entry entry;
 
 	/* ep_entry is linked to tx/rxe_list in efa_rdm_ep */
 	struct dlist_entry ep_entry;
 
-	/* queued_ctrl_entry is linked with tx/rx_queued_ctrl_list in efa_rdm_ep */
-	struct dlist_entry queued_ctrl_entry;
+	/* ack_list_entry is linked to ope_posted_ack_list in efa_rdm_ep */
+	struct dlist_entry ack_list_entry;
 
-	/* queued_read_entry is linked with ope_queued_read_list in efa_rdm_ep */
-	struct dlist_entry queued_read_entry;
-
-	/* queued_rnr_entry is linked with tx/rx_queued_rnr_list in efa_rdm_ep */
-	struct dlist_entry queued_rnr_entry;
+	/* queued_entry is linked with ope_queued_list in efa_domain */
+	struct dlist_entry queued_entry;
 
 	/* Queued packets due to TX queue full or RNR backoff */
 	struct dlist_entry queued_pkts;
@@ -150,8 +142,6 @@ struct efa_rdm_ope {
 	uint64_t bytes_copied;
 	uint64_t bytes_queued_blocking_copy;
 
-	/* linked to peer->rx_unexp_list or peer->rx_unexp_tagged_list */
-	struct dlist_entry peer_unexp_entry;
 #if ENABLE_DEBUG
 	/* linked with ope_recv_list in efa_rdm_ep */
 	struct dlist_entry pending_recv_entry;
@@ -162,6 +152,8 @@ struct efa_rdm_ope {
 	struct efa_rdm_pke *unexp_pkt;
 	char *atomrsp_data;
 	enum efa_rdm_cuda_copy_method cuda_copy_method;
+	/* the rxe_map that the rxe is ever inserted */
+	struct efa_rdm_rxe_map *rxe_map;
 	/* end of RX related variables */
 	/* the following variables are for TX operation only */
 	uint64_t bytes_acked;
@@ -218,7 +210,7 @@ void efa_rdm_rxe_release_internal(struct efa_rdm_ope *rxe);
 /**
  * @brief flag to tell if an ope encouter RNR when sending packets
  *
- * If an ope has this flag, it is on the ope_queued_rnr_list
+ * If an ope has this flag, it is on the ope_queued_list
  * of the endpoint.
  */
 #define EFA_RDM_OPE_QUEUED_RNR BIT_ULL(9)
@@ -242,7 +234,7 @@ void efa_rdm_rxe_release_internal(struct efa_rdm_ope *rxe);
 /**
  * @brief flag to indicate an ope has queued ctrl packet,
  *
- * If this flag is on, the op_entyr is on the ope_queued_ctrl_list
+ * If this flag is on, the op_entyr is on the ope_queued_list
  * of the endpoint
  */
 #define EFA_RDM_OPE_QUEUED_CTRL BIT_ULL(11)
@@ -264,7 +256,7 @@ void efa_rdm_rxe_release_internal(struct efa_rdm_ope *rxe);
 /**
  * @brief flag to indicate an ope has queued read requests
  *
- * When this flag is on, the ope is on ope_queued_read_list
+ * When this flag is on, the ope is on ope_queued_list
  * of the endpoint
  */
 #define EFA_RDM_OPE_QUEUED_READ 	BIT_ULL(12)
@@ -275,6 +267,33 @@ void efa_rdm_rxe_release_internal(struct efa_rdm_ope *rxe);
  *
  */
 #define EFA_RDM_OPE_READ_NACK 	BIT_ULL(13)
+
+/**
+ * @brief flag to indicate that the ope was queued because it hasn't
+ * made a handshake with the peer. Because this happens before
+ * EFA provider makes any protocol selection, the progress engine
+ * needs to determine the protocol from the peer status when
+ * progressing the queued opes.
+ */
+#define EFA_RDM_OPE_QUEUED_BEFORE_HANDSHAKE	BIT_ULL(14)
+
+/**
+ * @brief flag to indicate that the ope was created
+ * for internal operations, so it should not generate
+ * any cq entry or err entry.
+ */
+#define EFA_RDM_OPE_INTERNAL			BIT_ULL(15)
+
+/**
+ * @brief flag to indicate that a DC txe has received its receipt packet
+ *
+ * This flag is used to track when a delivery complete operation has
+ * received acknowledgment from the receiver, preventing premature
+ * completion before all TX operations finish.
+ */
+#define EFA_RDM_TXE_RECEIPT_RECEIVED		BIT_ULL(16)
+
+#define EFA_RDM_OPE_QUEUED_FLAGS (EFA_RDM_OPE_QUEUED_RNR | EFA_RDM_OPE_QUEUED_CTRL | EFA_RDM_OPE_QUEUED_READ | EFA_RDM_OPE_QUEUED_BEFORE_HANDSHAKE)
 
 void efa_rdm_ope_try_fill_desc(struct efa_rdm_ope *ope, int mr_iov_start, uint64_t access);
 
@@ -296,6 +315,27 @@ void efa_rdm_rxe_report_completion(struct efa_rdm_ope *rxe);
 void efa_rdm_ope_handle_recv_completed(struct efa_rdm_ope *ope);
 
 void efa_rdm_ope_handle_send_completed(struct efa_rdm_ope *ope);
+
+/**
+ * @brief Check if a delivery complete (DC) TXE is ready for release
+ *
+ * @details
+ * For DC packets, this function prevents use-after-free race conditions by
+ * ensuring the TXE is only released when both conditions are met:
+ * 1. All TX operations have completed (efa_outstanding_tx_ops == 0)
+ * 2. Receipt packet has been received (EFA_RDM_TXE_RECEIPT_RECEIVED flag set)
+ *
+ * This dual-condition check ensures proper synchronization between send
+ * completions and receipt acknowledgments in the delivery complete protocol.
+ *
+ * @param[in] txe TX operation entry to check
+ * @return true if TXE is ready for release, false otherwise
+ */
+static inline bool efa_rdm_txe_dc_ready_for_release(struct efa_rdm_ope *txe)
+{
+	return (txe->efa_outstanding_tx_ops == 0) &&
+	       (txe->internal_flags & EFA_RDM_TXE_RECEIPT_RECEIVED);
+}
 
 int efa_rdm_ope_prepare_to_post_read(struct efa_rdm_ope *ope);
 
@@ -323,5 +363,11 @@ ssize_t efa_rdm_ope_post_send_fallback(struct efa_rdm_ope *ope,
 					   int pkt_type, ssize_t err);
 
 ssize_t efa_rdm_ope_post_send_or_queue(struct efa_rdm_ope *ope, int pkt_type);
+
+ssize_t efa_rdm_ope_repost_ope_queued_before_handshake(struct efa_rdm_ope *ope);
+
+ssize_t efa_rdm_txe_prepare_local_read_pkt_entry(struct efa_rdm_ope *txe);
+
+int efa_rdm_ope_process_queued_ope(struct efa_rdm_ope *ope, uint32_t flag);
 
 #endif

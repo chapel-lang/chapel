@@ -301,7 +301,7 @@ int psmx3_domain_open(struct fid_fabric *fabric, struct fi_info *info,
 	struct psmx3_fid_fabric *fabric_priv;
 	struct psmx3_fid_domain *domain_priv;
 	struct psmx3_ep_name *src_addr = info->src_addr;
-	int mr_mode = (info->domain_attr->mr_mode & FI_MR_BASIC) ? FI_MR_BASIC : 0;
+	int mr_mode = (info->domain_attr->mr_mode & OFI_MR_BASIC) ? OFI_MR_BASIC : 0;
 	int err;
 
 	PSMX3_INFO(&psmx3_prov, FI_LOG_DOMAIN, "\n");

@@ -493,7 +493,8 @@ static struct fi_ops_av_set X = {
 	.straddr = X,
 };
 */
-
+int fi_no_av_set(struct fid_av *av_fid, struct fi_av_set_attr *attr,
+		 struct fid_av_set **av_set_fid, void *context);
 int fi_no_av_set_union(struct fid_av_set *dst, const struct fid_av_set *src);
 int fi_no_av_set_intersect(struct fid_av_set *dst, const struct fid_av_set *src);
 int fi_no_av_set_diff(struct fid_av_set *dst, const struct fid_av_set *src);

@@ -81,7 +81,7 @@ static int hook_hmem_add_region(struct hook_hmem_domain *domain,
 	attr.access = FI_SEND | FI_RECV | FI_READ | FI_WRITE |
 		      FI_REMOTE_READ | FI_REMOTE_WRITE;
 	attr.offset = 0;
-	attr.requested_key = (uint64_t) *hmem_desc;
+	attr.requested_key = (uint64_t)(uintptr_t) *hmem_desc;
 	attr.iface = iface;
 	attr.device.reserved = device;
 
@@ -1914,8 +1914,9 @@ out:
 
 HOOK_HMEM_INI
 {
-#ifdef HAVE_HOOK_HMEM_DL
+#if HAVE_HOOK_HMEM_DL
 	ofi_hmem_init();
+	ofi_params_init();
 #endif
 	hook_hmem_fabric_ops = hook_fabric_ops;
 	hook_hmem_fabric_ops.domain = hook_hmem_domain;

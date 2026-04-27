@@ -410,7 +410,7 @@ static unsigned long reg_tracker_get_rightmost(const struct psm3_uffd_region *re
 // then provides all the rbtree manipulation functions.
 
 // we don't need RBTREE_CMP nor the ips_cl_qmap_searchv
-//#define RBTREE_CMP(a,b) reg_tracker_key_cmp((a), (b))
+//#define RBTREE_CMP(a, b, c) reg_tracker_key_cmp((a), (b))
 #define RBTREE_ASSERT                     psmi_assert
 #define RBTREE_MAP_COUNT(PAYLOAD_PTR)     ((PAYLOAD_PTR)->nelems)
 // this is used to enable ips_cl_qmap_search() in psm3_rbtree.c
@@ -438,6 +438,10 @@ static unsigned long reg_tracker_get_rightmost(const struct psm3_uffd_region *re
 struct uffd_thread {
 	int pipefd[2];
 	pthread_t thread;
+	// The mutex is used to guard done and exited for synchronizing with thread exit.
+	pthread_mutex_t mutex;
+	pthread_cond_t done;
+	int exited;
 };
 
 psmi_lock_t psm3_uffd_lock;
@@ -1477,7 +1481,11 @@ static void *uffd_handler(void *arg)
 	}
 	close(fd_pipe);
 	PSM2_LOG_MSG("leaving");
-	pthread_exit(NULL);
+	pthread_mutex_lock(&tracker->uffd_handler.mutex);
+	tracker->uffd_handler.exited = 1;
+	pthread_cond_signal(&tracker->uffd_handler.done);
+	pthread_mutex_unlock(&tracker->uffd_handler.mutex);
+	return NULL;
 }
 
 // --------------------------------------------------------------------------
@@ -1556,7 +1564,11 @@ static void *uffd_dereg_worker(void *arg)
 	}
 	close(fd_pipe);
 	PSM2_LOG_MSG("leaving");
-	pthread_exit(NULL);
+	pthread_mutex_lock(&tracker->uffd_worker.mutex);
+	tracker->uffd_worker.exited = 1;
+	pthread_cond_signal(&tracker->uffd_worker.done);
+	pthread_mutex_unlock(&tracker->uffd_worker.mutex);
+	return NULL;
 }
 
 // --------------------------------------------------------------------------
@@ -1582,10 +1594,16 @@ static psm2_error_t psm3_uffd_thread_init(struct uffd_thread *thrd, void *(*thre
 						strerror(errno));
 		goto fail;
 	}
+	pthread_cond_init(&thrd->done, NULL);
+	pthread_mutex_init(&thrd->mutex, NULL);
+	thrd->exited = 0;
 	if (pthread_create(&thrd->thread, NULL, thread_main, tracker)) {
 		int save_errno = errno;
 		close(thrd->pipefd[0]);
 		close(thrd->pipefd[1]);
+		thrd->exited = 1;
+		pthread_cond_destroy(&thrd->done);
+		pthread_mutex_destroy(&thrd->mutex);
 		err = psm3_handle_error(PSMI_EP_NORETURN, PSM2_INTERNAL_ERR,
 						"Cannot start uffd thread: %s\n",
 						strerror(save_errno));
@@ -1601,15 +1619,28 @@ fail:
 // finalize one of the UFFD threads
 static void psm3_uffd_thread_fini(struct uffd_thread* thrd)
 {
+	struct timespec ts;
+	uint8_t emsg = 0;
+
 	PSMI_LOCK_ASSERT(psm3_creation_lock);
 
-	uint8_t emsg = 0;
 	if (write(thrd->pipefd[1],(const void *)&emsg, sizeof(emsg)) == -1 ||
 			close(thrd->pipefd[1]) == -1) {
 		_HFI_MMDBG("unable to close pipe to uffd thread cleanly\n");
 		pthread_cancel(thrd->thread); // try to cancel
 	}
-	pthread_join(thrd->thread, NULL);
+	clock_gettime(CLOCK_REALTIME, &ts);
+	// Max wait time: 2 seconds;
+	ts.tv_sec += 2;
+	// pthread_join() should not be used in dlclose path
+	pthread_mutex_lock(&thrd->mutex);
+	while (!thrd->exited) {
+		if (pthread_cond_timedwait(&thrd->done, &thrd->mutex, &ts))
+			break;
+	}
+	pthread_mutex_unlock(&thrd->mutex);
+	pthread_cond_destroy(&thrd->done);
+	pthread_mutex_destroy(&thrd->mutex);
 }
 
 // allocate and initialize the tracker singleton

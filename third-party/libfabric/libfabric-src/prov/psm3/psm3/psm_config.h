@@ -81,6 +81,11 @@
 /* #define INTEL_GPU_DIRECT */
 #endif
 
+// define here so pxmx3 and psm_user.h can use this define
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#define PSM_HAVE_GPU
+#endif
+
 #ifndef PSM3_BRAKE_DEBUG
 /* #define PSM3_BRAKE_DEBUG */
 #endif
@@ -104,12 +109,12 @@
 /* #define PSM_INJECT_NOSDMA */
 #endif
 
-#define PSMI_MIN_EP_CONNECT_TIMEOUT	(2 * SEC_ULL)
-#define PSMI_MIN_EP_CLOSE_TIMEOUT	(1 * SEC_ULL)
-#define PSMI_MAX_EP_CLOSE_TIMEOUT	(2 * SEC_ULL)
+#define PSMI_MIN_EP_CONNECT_TIMEOUT	(2 * NSEC_PER_SEC)
+#define PSMI_MIN_EP_CLOSE_TIMEOUT	(1 * NSEC_PER_SEC)
+#define PSMI_MAX_EP_CLOSE_TIMEOUT	(2 * NSEC_PER_SEC)
 
-#define PSMI_MIN_EP_CLOSE_GRACE_INTERVAL (1 * SEC_ULL)
-#define PSMI_MAX_EP_CLOSE_GRACE_INTERVAL (2 * SEC_ULL)
+#define PSMI_MIN_EP_CLOSE_GRACE_INTERVAL (1 * NSEC_PER_SEC)
+#define PSMI_MAX_EP_CLOSE_GRACE_INTERVAL (2 * NSEC_PER_SEC)
 
 
 #define PSMI_MAX_RAILS		32 /* Max number of unique devices */
@@ -140,9 +145,13 @@
  * Mutexlock should be used for experimentation while the more useful
  * mutexlock-debug should be enabled during development to catch potential
  * errors.
+ *
+ * When mutexlock-debug is enabled, mutexlock-debug-log-contention may also
+ * be enabled to log anytime a lock is contended for
  */
 #ifdef PSM_DEBUG
 #define PSMI_LOCK_IS_MUTEXLOCK_DEBUG
+//#define PSMI_LOCK_MUTEXLOCK_DEBUG_LOG_CONTENTION
 #else
 #define PSMI_LOCK_IS_SPINLOCK
 /* #define PSMI_LOCK_IS_MUTEXLOCK */
@@ -160,40 +169,29 @@
 
 #endif // PSM_CUDA
 
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 #define GPU_WINDOW_PREFETCH_DEFAULT	2
 #define GPU_SMALLHOSTBUF_SZ	(256*1024)
 #define GPU_PAGE_OFFSET_MASK (PSMI_GPU_PAGESIZE -1)
 #define GPU_PAGE_MASK ~GPU_PAGE_OFFSET_MASK
-/* All GPU transfers beyond this threshold use
- * RNDV protocol. It is mostly a send side knob.
- */
-#define GPU_THRESH_RNDV 8000
 
 #define GPUDIRECT_THRESH_RV 3
 
 #define GDR_COPY_LIMIT_SEND 128
 #define GDR_COPY_LIMIT_RECV 64000
 
-#endif /* PSM_CUDA || PSM_ONEAPI */
+#endif /* PSM_HAVE_GPU */
 
 
 #define PSM_MQ_NIC_MAX_TINY		8	/* max TINY payload allowed */
-#define PSM_MQ_NIC_RNDV_THRESH	 	64000
+#define PSM3_MQ_RNDV_NIC_THRESH	 	64000
 #define PSM_CPU_NIC_RNDV_WINDOW_STR "131072"
-#ifdef PSM_CUDA
-#define PSM_GPU_NIC_RNDV_WINDOW_STR "2097152"
-#elif defined(PSM_ONEAPI)
-#define PSM_GPU_NIC_RNDV_WINDOW_STR "131072:524287,262144:1048575,524288"
-#endif
-#define PSM_MQ_NIC_MAX_RNDV_WINDOW	(4 * 1024 * 1024) /* max rndv window */
+#define PSM3_MQ_RNDV_NIC_WINDOW_MAX	(4 * 1024 * 1024) /* max rndv window */
 
-#define MQ_SHM_THRESH_RNDV 16000
-#if defined(PSM_CUDA)
-#define MQ_SHM_GPU_THRESH_RNDV 127
-#elif defined(PSM_ONEAPI)
-#define MQ_SHM_GPU_THRESH_RNDV 127
-#endif
+/*
+ * Rendezvous threshold is same for CMA, scale-up or LONG_DATA mechanisms
+ */
+#define PSM3_MQ_RNDV_SHM_THRESH 16000
 
 // LEARN_HASH_SELECTOR has PSM3 dynamically learn the combinations
 // of src_addr presence and tagsel used by a given middleware.  This
@@ -235,7 +233,11 @@
 #define PSMI_DEVICES_DEFAULT	"self,shm,nic"
 
 /* Lock */
+#if defined(__x86_64__) || defined(__i386__)
 #define PSMI_USE_PTHREAD_SPINLOCKS	0
+#else /* non-Intel arch */
+#define PSMI_USE_PTHREAD_SPINLOCKS	1
+#endif
 
 /* Utils */
 #define PSMI_EPID_TABSIZE_CHUNK		128

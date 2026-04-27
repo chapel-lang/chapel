@@ -94,7 +94,7 @@ static int ucx_ep_getopt(fid_t fid, int level, int optname, void *optval,
 		*optlen = sizeof(size_t);
 		return FI_SUCCESS;
 	}
-	return -FI_EINVAL;
+	return -FI_ENOPROTOOPT;
 }
 
 static int ucx_ep_setopt(fid_t fid, int level, int optname,
@@ -102,14 +102,30 @@ static int ucx_ep_setopt(fid_t fid, int level, int optname,
 {
 	struct ucx_ep *ep;
 
-	if (level == FI_OPT_ENDPOINT &&
-	    optname == FI_OPT_MIN_MULTI_RECV &&
-	    optlen >= sizeof(size_t)) {
+	if (level != FI_OPT_ENDPOINT)
+		return -FI_ENOPROTOOPT;
+
+	if (optname == FI_OPT_MIN_MULTI_RECV && optlen >= sizeof(size_t)) {
 		ep = container_of(fid, struct ucx_ep, ep.ep_fid.fid);
 		ep->ep_opts.mrecv_min_size = *(size_t*)optval;
 		return FI_SUCCESS;
 	}
-	return -FI_EINVAL;
+
+	if (optname == FI_OPT_CUDA_API_PERMITTED) {
+		if (!hmem_ops[FI_HMEM_CUDA].initialized) {
+			FI_WARN(&ucx_prov, FI_LOG_EP_CTRL,
+				"Cannot set CUDA API permitted when"
+				"CUDA library or CUDA device is not available\n");
+			return -FI_EINVAL;
+		}
+
+		/* our HMEM support does not make calls to CUDA API,
+		 * therefore we can accept any option for FI_OPT_CUDA_API_PERMITTED.
+		 */
+		return FI_SUCCESS;
+	}
+
+	return -FI_ENOPROTOOPT;
 }
 
 static int ucx_ep_close(fid_t fid)
@@ -217,6 +233,10 @@ struct fi_ops_ep ucx_ep_ops = {
 	.cancel = ucx_ep_cancel,
 	.getopt = ucx_ep_getopt,
 	.setopt = ucx_ep_setopt,
+	.tx_ctx = fi_no_tx_ctx,
+	.rx_ctx = fi_no_rx_ctx,
+	.rx_size_left = fi_no_rx_size_left,
+	.tx_size_left = fi_no_tx_size_left,
 };
 
 static struct fi_ops ucx_fi_ops = {
@@ -224,6 +244,9 @@ static struct fi_ops ucx_fi_ops = {
 	.close = ucx_ep_close,
 	.bind = ucx_ep_bind,
 	.control = ucx_ep_control,
+	.ops_open = fi_no_ops_open,
+	.tostr = fi_no_tostr,
+	.ops_set = fi_no_ops_set,
 };
 
 extern struct fi_ops_cm ucx_cm_ops;
@@ -240,7 +263,6 @@ int ucx_ep_open(struct fid_domain *domain, struct fi_info *info,
 	ucs_status_t status = UCS_OK;
 	ucp_worker_params_t worker_params = {
 		.field_mask = UCP_WORKER_PARAM_FIELD_THREAD_MODE,
-		.thread_mode = UCS_THREAD_MODE_SINGLE,
 	};
 	void *addr_local = NULL;
 	size_t addr_len_local;
@@ -255,6 +277,13 @@ int ucx_ep_open(struct fid_domain *domain, struct fi_info *info,
 				       context, ucx_ep_progress);
 	if (ofi_status)
 		goto free_ep;
+
+	if (ucx_descriptor.single_thread)
+		worker_params.thread_mode = UCS_THREAD_MODE_SINGLE;
+	else if (info->domain_attr->threading == FI_THREAD_SAFE)
+		worker_params.thread_mode = UCS_THREAD_MODE_MULTI;
+	else
+		worker_params.thread_mode = UCS_THREAD_MODE_SERIALIZED;
 
 #if HAVE_DECL_UCP_WORKER_FLAG_IGNORE_REQUEST_LEAK
 	if (!ucx_descriptor.check_req_leak) {

@@ -48,4 +48,6 @@ ssize_t efa_rdm_pke_init_longread_rtw(struct efa_rdm_pke *pkt_entry,
 
 void efa_rdm_pke_handle_longread_rtw_recv(struct efa_rdm_pke *pkt_entry);
 
+struct efa_rdm_ope *efa_rdm_pke_alloc_rtw_rxe(struct efa_rdm_pke *pkt_entry);
+
 #endif

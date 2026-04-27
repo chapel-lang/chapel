@@ -127,7 +127,7 @@ static int sock_wait_wait(struct fid_wait *wait_fid, int timeout)
 
 	wait = container_of(wait_fid, struct sock_wait, wait_fid);
 	if (timeout > 0)
-		start_ms = ofi_gettime_ms();
+		start_ms = ofi_get_realtime_ms();
 
 	head = &wait->fid_list;
 	for (p = head->next; p != head; p = p->next) {
@@ -137,8 +137,13 @@ static int sock_wait_wait(struct fid_wait *wait_fid, int timeout)
 			cq = container_of(list_item->fid,
 					  struct sock_cq, cq_fid);
 			sock_cq_progress(cq);
+			pthread_mutex_lock(&cq->lock);
 			if (ofi_rbused(&cq->cqerr_rb))
-				return 1;
+				err = 1;
+
+			pthread_mutex_unlock(&cq->lock);
+			if (err)
+				return err;
 			break;
 
 		case FI_CLASS_CNTR:
@@ -149,7 +154,7 @@ static int sock_wait_wait(struct fid_wait *wait_fid, int timeout)
 		}
 	}
 	if (timeout > 0) {
-		end_ms = ofi_gettime_ms();
+		end_ms = ofi_get_realtime_ms();
 		timeout -=  (int) (end_ms - start_ms);
 		timeout = timeout < 0 ? 0 : timeout;
 	}

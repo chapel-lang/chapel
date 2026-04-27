@@ -1,0 +1,62 @@
+#
+# Copyright (c) 2022 ORNL. All rights reserved.
+#
+# This software is available to you under a choice of one of two
+# licenses.  You may choose to be licensed under the terms of the GNU
+# General Public License (GPL) Version 2, available from the file
+# COPYING in the main directory of this source tree, or the
+# BSD license below:
+#
+#     Redistribution and use in source and binary forms, with or
+#     without modification, are permitted provided that the following
+#     conditions are met:
+#
+#      - Redistributions of source code must retain the above
+#        copyright notice, this list of conditions and the following
+#        disclaimer.
+#
+#      - Redistributions in binary form must reproduce the above
+#        copyright notice, this list of conditions and the following
+#        disclaimer in the documentation and/or other materials
+#        provided with the distribution.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+# BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+# ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+# CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+#
+
+
+if HAVE_LNX
+_lnx_files = \
+	prov/lnx/src/lnx_cq.c		\
+	prov/lnx/src/lnx_domain.c	\
+	prov/lnx/src/lnx_ep.c		\
+	prov/lnx/src/lnx_init.c		\
+	prov/lnx/src/lnx_ops.c		\
+	prov/lnx/src/lnx_mr.c		\
+	prov/lnx/src/lnx_av.c
+
+_lnx_headers = \
+	prov/lnx/include/lnx.h
+
+if HAVE_LNX_DL
+pkglib_LTLIBRARIES += liblnx-fi.la
+liblnx_fi_la_SOURCES = $(_lnx_files) $(_lnx_headers)
+liblnx_fi_la_LIBADD = $(linkback) $(lnx_LIBS)
+liblnx_fi_la_LDFLAGS = -module -avoid-version -shared -export-dynamic
+liblnx_fi_la_DEPENDENCIES = $(linkback)
+else
+src_libfabric_la_SOURCES += $(_lnx_files) $(_lnx_headers)
+src_libfabric_la_CPPFLAGS += -I$(top_srcdir)/prov/lnx/include
+endif
+
+prov_install_man_pages += man/man7/fi_lnx.7
+
+endif HAVE_LNX
+
+prov_dist_man_pages += man/man7/fi_lnx.7

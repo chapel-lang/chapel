@@ -313,7 +313,9 @@ static int sock_eq_control(struct fid *fid, int command, void *arg)
 		case FI_WAIT_NONE:
 		case FI_WAIT_UNSPEC:
 		case FI_WAIT_FD:
+			ofi_mutex_lock(&eq->lock);
 			memcpy(arg, &eq->list.signal.fd[FI_READ_FD], sizeof(int));
+			ofi_mutex_unlock(&eq->lock);
 			break;
 		case FI_WAIT_SET:
 		case FI_WAIT_MUTEX_COND:

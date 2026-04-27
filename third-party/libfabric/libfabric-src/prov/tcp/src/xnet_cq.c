@@ -129,6 +129,7 @@ void xnet_report_success(struct xnet_xfer_entry *xfer_entry)
 	struct util_cq *cq;
 	uint64_t flags, data, tag;
 	size_t len;
+	int ret;
 
 	if (xfer_entry->ctrl_flags & (XNET_INTERNAL_XFER | XNET_SAVED_XFER))
 		return;
@@ -172,14 +173,18 @@ void xnet_report_success(struct xnet_xfer_entry *xfer_entry)
 	}
 
 	if (cq->src) {
-		ofi_cq_write_src(cq, xfer_entry->context, flags, len,
-				 xfer_entry->user_buf, data, tag,
-				 xfer_entry->src_addr);
+		ret = ofi_cq_write_src(cq, xfer_entry->context, flags, len,
+				       xfer_entry->user_buf, data, tag,
+				       xfer_entry->src_addr);
 	} else {
-		ofi_cq_write(cq, xfer_entry->context, flags, len,
-			     xfer_entry->user_buf, data, tag);
+		ret = ofi_cq_write(cq, xfer_entry->context, flags, len,
+				   xfer_entry->user_buf, data, tag);
 	}
-	if (cq->wait)
+
+	if (ret) 
+		FI_WARN(&xnet_prov, FI_LOG_CQ, "cq write failed (%s)\n",
+			fi_strerror(ret));
+	else if (cq->wait)
 		cq->wait->signal(cq->wait);
 }
 
@@ -202,13 +207,15 @@ void xnet_report_error(struct xnet_xfer_entry *xfer_entry, int err)
 
 	err_entry.flags = xfer_entry->cq_flags & ~FI_COMPLETION;
 	if (err_entry.flags & FI_RECV) {
-		if (xfer_entry->ctrl_flags & XNET_MULTI_RECV &&
-		    xfer_entry->mrecv) {
-			xfer_entry->mrecv->ref_cnt--;
-			if (!xfer_entry->mrecv->ref_cnt) {
+		if (xfer_entry->ctrl_flags & XNET_MULTI_RECV) {
+			if (xfer_entry->mrecv) {
+				xfer_entry->mrecv->ref_cnt--;
+				if (!xfer_entry->mrecv->ref_cnt) {
+					err_entry.flags |= FI_MULTI_RECV;
+					free(xfer_entry->mrecv);
+				}
+			} else
 				err_entry.flags |= FI_MULTI_RECV;
-				free(xfer_entry->mrecv);
-			}
 		}
 		xnet_get_cq_info(xfer_entry, &err_entry.flags, &err_entry.data,
 				 &err_entry.tag);

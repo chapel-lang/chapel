@@ -51,48 +51,45 @@ static int cxip_cntr_copy_ct_writeback(struct cxip_cntr *cntr,
 	return FI_SUCCESS;
 }
 
-static int cxip_cntr_get_ct_error(struct cxip_cntr *cntr, uint64_t *error)
+static int cxip_cntr_get_wb(struct cxip_cntr *cntr, struct c_ct_writeback *wb)
 {
-	struct c_ct_writeback wb_copy;
 	int ret;
 
-	/* Only can reference the ct_failure field directly if dealing with
-	 * system memory. Device memory requires a memcpy of the contents into
-	 * system memory.
-	 */
 	if (cntr->wb_iface == FI_HMEM_SYSTEM) {
-		*error = cntr->wb->ct_failure;
+		*wb = *cntr->wb;
 		return FI_SUCCESS;
 	}
 
-	ret = cxip_cntr_copy_ct_writeback(cntr, &wb_copy);
-	if (ret)
-		return ret;
+	/* Device memory requires a memcpy of the contents into
+	 * system memory.
+	 */
+	ret = cxip_cntr_copy_ct_writeback(cntr, wb);
 
-	*error = wb_copy.ct_failure;
-	return FI_SUCCESS;
+	return ret;
+}
+
+static int cxip_cntr_get_ct_error(struct cxip_cntr *cntr, uint64_t *error)
+{
+	struct c_ct_writeback wb;
+	int ret;
+
+	ret = cxip_cntr_get_wb(cntr, &wb);
+	if (ret == FI_SUCCESS)
+		*error = wb.ct_failure;
+
+	return ret;
 }
 
 static int cxip_cntr_get_ct_success(struct cxip_cntr *cntr, uint64_t *success)
 {
-	struct c_ct_writeback wb_copy;
+	struct c_ct_writeback wb;
 	int ret;
 
-	/* Only can reference the ct_success field directly if dealing with
-	 * system memory. Device memory requires a memcpy of the contents into
-	 * system memory.
-	 */
-	if (cntr->wb_iface == FI_HMEM_SYSTEM) {
-		*success = cntr->wb->ct_success;
-		return FI_SUCCESS;
-	}
+	ret = cxip_cntr_get_wb(cntr, &wb);
+	if (ret == FI_SUCCESS)
+		*success = wb.ct_success;
 
-	ret = cxip_cntr_copy_ct_writeback(cntr, &wb_copy);
-	if (ret)
-		return ret;
-
-	*success = wb_copy.ct_success;
-	return FI_SUCCESS;
+	return ret;
 }
 
 #define CT_WRITEBACK_OFFSET 7U
@@ -253,6 +250,37 @@ const struct fi_cntr_attr cxip_cntr_attr = {
 };
 
 /*
+ * cxip_trig_cmdq_lock() - acquire lock for triggered cmdq
+ *
+ * Acquire trig cmdq. If cntr has a dedicated cmdq use it, otherwise grab the
+ * domain trigger_cmdq_lock and use the domain trig_cmdq.
+ *
+ * Caller must hold cntr->lock between this and cxip_trig_cmdq_unlock
+ */
+static void cxip_trig_cmdq_lock(struct cxip_cntr *cntr,
+				struct cxip_cmdq **cmdq)
+{
+	if (cntr->trig_cmdq) {
+		*cmdq = cntr->trig_cmdq;
+	} else {
+		ofi_genlock_lock(&cntr->domain->trig_cmdq_lock);
+		*cmdq = cntr->domain->trig_cmdq;
+	}
+}
+
+/*
+ * cxip_trig_cmdq_unlock() - release lock for triggered cmdq
+ *
+ * Release domain trig cmdq lock if it was used.
+ */
+static void cxip_trig_cmdq_unlock(struct cxip_cntr *cntr)
+{
+	if (!cntr->trig_cmdq) {
+		ofi_genlock_unlock(&cntr->domain->trig_cmdq_lock);
+	}
+}
+
+/*
  * cxip_cntr_mod() - Modify counter value.
  *
  * Set or increment the success or failure value of a counter by 'value'.
@@ -279,7 +307,6 @@ int cxip_cntr_mod(struct cxip_cntr *cxi_cntr, uint64_t value, bool set,
 				cxi_ct_reset_success(cxi_cntr->ct);
 		} else {
 			memset(&cmd, 0, sizeof(cmd));
-			cmdq = cxi_cntr->domain->trig_cmdq;
 
 			/* Use CQ to set a specific counter value */
 			cmd.ct = cxi_cntr->ct->ctn;
@@ -290,22 +317,27 @@ int cxip_cntr_mod(struct cxip_cntr *cxi_cntr, uint64_t value, bool set,
 				cmd.set_ct_success = 1;
 				cmd.ct_success = value;
 			}
-			ofi_genlock_lock(&cxi_cntr->domain->trig_cmdq_lock);
+
+			ofi_genlock_lock(&cxi_cntr->lock);
+			cxip_trig_cmdq_lock(cxi_cntr, &cmdq);
 
 			ret = cxi_cq_emit_ct(cmdq->dev_cmdq, C_CMD_CT_SET,
 					     &cmd);
 			if (ret) {
-				ofi_genlock_unlock(&cxi_cntr->domain->trig_cmdq_lock);
+				cxip_trig_cmdq_unlock(cxi_cntr);
+				ofi_genlock_unlock(&cxi_cntr->lock);
 				return -FI_EAGAIN;
 			}
 			cxi_cq_ring(cmdq->dev_cmdq);
-			ofi_genlock_unlock(&cxi_cntr->domain->trig_cmdq_lock);
+			cxip_trig_cmdq_unlock(cxi_cntr);
+			ofi_genlock_unlock(&cxi_cntr->lock);
 		}
 	}
 
 	return FI_SUCCESS;
 }
 
+/* Caller must hold cntr->lock */
 static int cxip_cntr_issue_ct_get(struct cxip_cntr *cntr, bool *issue_ct_get)
 {
 	int ret;
@@ -313,8 +345,6 @@ static int cxip_cntr_issue_ct_get(struct cxip_cntr *cntr, bool *issue_ct_get)
 	/* The calling thread which changes CT writeback bit from 1 to 0 must
 	 * issue a CT get command.
 	 */
-	ofi_mutex_lock(&cntr->lock);
-
 	ret = cxip_cntr_get_ct_writeback(cntr);
 	if (ret < 0) {
 		CXIP_WARN("Failed to read counter writeback: rc=%d\n", ret);
@@ -334,12 +364,10 @@ static int cxip_cntr_issue_ct_get(struct cxip_cntr *cntr, bool *issue_ct_get)
 		*issue_ct_get = false;
 	}
 
-	ofi_mutex_unlock(&cntr->lock);
-
 	return FI_SUCCESS;
 
 err_unlock:
-	ofi_mutex_unlock(&cntr->lock);
+	ofi_genlock_unlock(&cntr->lock);
 
 	*issue_ct_get = false;
 	return ret;
@@ -351,6 +379,8 @@ err_unlock:
  * Schedule hardware to write the value of a counter to memory. Avoid
  * scheduling multiple write-backs at once. The counter value will appear in
  * memory a small amount of time later.
+ *
+ * Caller must hold cntr->lock
  */
 static int cxip_cntr_get(struct cxip_cntr *cxi_cntr, bool force)
 {
@@ -367,24 +397,24 @@ static int cxip_cntr_get(struct cxip_cntr *cxi_cntr, bool force)
 			return ret;
 		}
 
-		if (!issue_ct_get)
+		if (!issue_ct_get && cxi_cntr->attr.flags & FI_CXI_CNTR_CACHED)
 			return FI_SUCCESS;
 	}
 
 	memset(&cmd, 0, sizeof(cmd));
-	cmdq = cxi_cntr->domain->trig_cmdq;
 
 	/* Request a write-back */
 	cmd.ct = cxi_cntr->ct->ctn;
 
-	ofi_genlock_lock(&cxi_cntr->domain->trig_cmdq_lock);
+	cxip_trig_cmdq_lock(cxi_cntr, &cmdq);
+
 	ret = cxi_cq_emit_ct(cmdq->dev_cmdq, C_CMD_CT_GET, &cmd);
 	if (ret) {
-		ofi_genlock_unlock(&cxi_cntr->domain->trig_cmdq_lock);
+		cxip_trig_cmdq_unlock(cxi_cntr);
 		return -FI_EAGAIN;
 	}
 	cxi_cq_ring(cmdq->dev_cmdq);
-	ofi_genlock_unlock(&cxi_cntr->domain->trig_cmdq_lock);
+	cxip_trig_cmdq_unlock(cxi_cntr);
 
 	return FI_SUCCESS;
 }
@@ -396,18 +426,57 @@ static void cxip_cntr_progress(struct cxip_cntr *cntr)
 {
 	struct fid_list_entry *fid_entry;
 	struct dlist_entry *item;
+	unsigned int progress_count;
 
-	/* Lock is used to protect bound context list. Note that
-	 * CQ processing updates counters via doorbells, use of
-	 * cntr->lock is not required by CQ processing.
-	 */
-	ofi_mutex_lock(&cntr->lock);
+	progress_count = cxip_cntr_progress_get(cntr);
 
-	dlist_foreach(&cntr->ctx_list, item) {
-		fid_entry = container_of(item, struct fid_list_entry, entry);
-		cxip_ep_progress(fid_entry->fid);
+	if (progress_count) {
+		/* Lock is used to protect bound context list. Note that
+		 * CQ processing updates counters via doorbells, use of
+		 * cntr->lock is not required by CQ processing.
+		 */
+		ofi_genlock_lock(&cntr->lock);
+
+		dlist_foreach(&cntr->ctx_list, item) {
+			fid_entry = container_of(item, struct fid_list_entry,
+						 entry);
+			cxip_ep_progress(fid_entry->fid);
+		}
+
+		ofi_genlock_unlock(&cntr->lock);
 	}
-	ofi_mutex_unlock(&cntr->lock);
+
+}
+
+static void cxip_cntr_read_wb(struct cxip_cntr *cntr, struct c_ct_writeback *wb)
+{
+	int ret;
+
+	cxip_cntr_progress(cntr);
+
+	ofi_genlock_lock(&cntr->lock);
+	cxip_cntr_get(cntr, false);
+
+	int spin_before_yield = cxip_env.cntr_spin_before_yield;
+	do {
+		ret = cxip_cntr_get_wb(cntr, wb);
+		if (ret != FI_SUCCESS) {
+			CXIP_WARN("Failed to read counter: rc=%d\n", ret);
+			break;
+		}
+
+		if (wb->ct_writeback || (cntr->attr.flags & FI_CXI_CNTR_CACHED))
+			break;
+		if (spin_before_yield == 0) {
+			sched_yield();
+			spin_before_yield = cxip_env.cntr_spin_before_yield;
+		} else {
+			CXIP_PAUSE();
+			spin_before_yield--;
+		}
+	} while (true);
+
+	ofi_genlock_unlock(&cntr->lock);
 }
 
 /*
@@ -416,20 +485,13 @@ static void cxip_cntr_progress(struct cxip_cntr *cntr)
 static uint64_t cxip_cntr_read(struct fid_cntr *fid_cntr)
 {
 	struct cxip_cntr *cxi_cntr;
-	uint64_t success = 0;
-	int ret;
+	struct c_ct_writeback wb = {};
 
 	cxi_cntr = container_of(fid_cntr, struct cxip_cntr, cntr_fid);
 
-	cxip_cntr_progress(cxi_cntr);
-	cxip_cntr_get(cxi_cntr, false);
+	cxip_cntr_read_wb(cxi_cntr, &wb);
 
-	/* TODO: Fall back to reading register on error? */
-	ret = cxip_cntr_get_ct_success(cxi_cntr, &success);
-	if (ret != FI_SUCCESS)
-		CXIP_WARN("Failed to read counter success: rc=%d\n", ret);
-
-	return success;
+	return wb.ct_success;
 }
 
 /*
@@ -438,20 +500,13 @@ static uint64_t cxip_cntr_read(struct fid_cntr *fid_cntr)
 static uint64_t cxip_cntr_readerr(struct fid_cntr *fid_cntr)
 {
 	struct cxip_cntr *cxi_cntr;
-	uint64_t error = 0;
-	int ret;
+	struct c_ct_writeback wb = {};
 
 	cxi_cntr = container_of(fid_cntr, struct cxip_cntr, cntr_fid);
 
-	cxip_cntr_progress(cxi_cntr);
-	cxip_cntr_get(cxi_cntr, false);
+	cxip_cntr_read_wb(cxi_cntr, &wb);
 
-	/* TODO: Fall back to reading register on error? */
-	ret = cxip_cntr_get_ct_error(cxi_cntr, &error);
-	if (ret != FI_SUCCESS)
-		CXIP_WARN("Failed to read counter error: rc=%d\n", ret);
-
-	return error;
+	return wb.ct_failure;
 }
 
 /*
@@ -522,15 +577,19 @@ static int cxip_cntr_emit_trig_event_cmd(struct cxip_cntr *cntr,
 		.threshold = threshold,
 		.eq = C_EQ_NONE,
 	};
-	struct cxip_cmdq *cmdq = cntr->domain->trig_cmdq;
+	struct cxip_cmdq *cmdq;
 	int ret;
 
 	/* TODO: Need to handle TLE exhaustion. */
-	ofi_genlock_lock(&cntr->domain->trig_cmdq_lock);
+
+	ofi_genlock_lock(&cntr->lock);
+	cxip_trig_cmdq_lock(cntr, &cmdq);
+
 	ret = cxi_cq_emit_ct(cmdq->dev_cmdq, C_CMD_CT_TRIG_EVENT, &cmd);
 	if (!ret)
 		cxi_cq_ring(cmdq->dev_cmdq);
-	ofi_genlock_unlock(&cntr->domain->trig_cmdq_lock);
+	cxip_trig_cmdq_unlock(cntr);
+	ofi_genlock_unlock(&cntr->lock);
 
 	if (ret)
 		return -FI_EAGAIN;
@@ -579,6 +638,7 @@ static int cxip_cntr_wait(struct fid_cntr *fid_cntr, uint64_t threshold,
 	/* Spin until the trigger list entry fires which updates the CT success
 	 * field.
 	 */
+	int spin_before_yield = cxip_env.cntr_spin_before_yield;
 	do {
 		ret = cxip_cntr_get_ct_success(cntr, &success);
 		if (ret) {
@@ -600,8 +660,13 @@ static int cxip_cntr_wait(struct fid_cntr *fid_cntr, uint64_t threshold,
 		if (ofi_adjust_timeout(endtime, &timeout))
 			return -FI_ETIMEDOUT;
 
-		/* Only FI_WAIT_YIELD is supported. */
-		sched_yield();
+		if (spin_before_yield == 0) {
+			sched_yield();
+			spin_before_yield = cxip_env.cntr_spin_before_yield;
+		} else {
+			CXIP_PAUSE();
+			spin_before_yield--;
+		}
 
 		cxip_cntr_progress(cntr);
 
@@ -686,13 +751,16 @@ static int cxip_cntr_enable(struct cxip_cntr *cxi_cntr)
 static int cxip_cntr_close(struct fid *fid)
 {
 	struct cxip_cntr *cntr;
-	int ret;
+	int ret, count;
 
 	cntr = container_of(fid, struct cxip_cntr, cntr_fid.fid);
-	if (ofi_atomic_get32(&cntr->ref))
+	count = ofi_atomic_get32(&cntr->ref);
+	if (count) {
+		CXIP_DBG("CNTR refcount non-zero:%d returning FI_EBUSY\n", count);
 		return -FI_EBUSY;
-
+	}
 	assert(dlist_empty(&cntr->ctx_list));
+	assert(cntr->progress_count == 0);
 
 	if (cntr->wb_iface != FI_HMEM_SYSTEM &&
 	    cntr->wb_handle_valid)
@@ -704,7 +772,14 @@ static int cxip_cntr_close(struct fid *fid)
 	else
 		CXIP_DBG("Counter disabled: %p\n", cntr);
 
-	ofi_mutex_destroy(&cntr->lock);
+	if (cntr->trig_cmdq != NULL) {
+		assert(cxip_cmdq_empty(cntr->trig_cmdq));
+		cxip_cmdq_free(cntr->trig_cmdq);
+		cntr->trig_cmdq = NULL;
+	}
+
+	ofi_genlock_destroy(&cntr->lock);
+	ofi_genlock_destroy(&cntr->progress_count_lock);
 
 	cxip_domain_remove_cntr(cntr->domain, cntr);
 
@@ -746,9 +821,11 @@ int cxip_set_wb_buffer(struct fid *fid, void *buf, size_t len)
 	}
 
 	/* Force a counter writeback into the user's provider buffer. */
+	ofi_genlock_lock(&cntr->lock);
 	do {
 		ret = cxip_cntr_get(cntr, true);
 	} while (ret == -FI_EAGAIN);
+	ofi_genlock_unlock(&cntr->lock);
 
 	return ret;
 }
@@ -825,7 +902,7 @@ static int cxip_cntr_verify_attr(struct fi_cntr_attr *attr)
 		return -FI_ENOSYS;
 	}
 
-	if (attr->flags)
+	if (attr->flags & ~FI_CXI_CNTR_CACHED)
 		return -FI_ENOSYS;
 
 	return FI_SUCCESS;
@@ -859,7 +936,15 @@ int cxip_cntr_open(struct fid_domain *domain, struct fi_cntr_attr *attr,
 	ofi_atomic_initialize32(&_cntr->ref, 0);
 	dlist_init(&_cntr->ctx_list);
 
-	ofi_mutex_init(&_cntr->lock);
+	/* Allow FI_THREAD_DOMAIN optimizaiton */
+	if (dom->util_domain.threading == FI_THREAD_DOMAIN ||
+	    dom->util_domain.threading == FI_THREAD_COMPLETION) {
+		ofi_genlock_init(&_cntr->lock, OFI_LOCK_NONE);
+		ofi_genlock_init(&_cntr->progress_count_lock, OFI_LOCK_NONE);
+	} else {
+		ofi_genlock_init(&_cntr->lock, OFI_LOCK_SPINLOCK);
+		ofi_genlock_init(&_cntr->progress_count_lock, OFI_LOCK_SPINLOCK);
+	}
 
 	_cntr->cntr_fid.fid.fclass = FI_CLASS_CNTR;
 	_cntr->cntr_fid.fid.context = context;

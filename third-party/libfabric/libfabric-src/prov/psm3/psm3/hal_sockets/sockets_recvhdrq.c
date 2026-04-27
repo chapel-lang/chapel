@@ -236,7 +236,7 @@ psm3_sockets_tcp_preprocess_packet(psm2_ep_t ep, int fd, struct ips_recvhdrq_eve
 		goto out;
 	}
 
-#if !defined(PSM_CUDA) && !defined(PSM_ONEAPI)
+#ifndef PSM_HAVE_GPU
 	psm2_mq_req_t req = psm3_mq_req_match(rcv_ev->proto->mq,
 		(psm2_epaddr_t) &epstaddr->ipsaddr->msgctl->master_epaddr,
 		(psm2_mq_tag_t *) rcv_ev->p_hdr->tag, 0);

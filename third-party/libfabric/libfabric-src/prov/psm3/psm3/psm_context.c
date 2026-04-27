@@ -110,18 +110,12 @@ psm3_context_open(const psm2_ep_t ep, long unit_param, long port, long addr_inde
 		  psm2_uuid_t const job_key, uint16_t network_pkey,
 		  int64_t timeout_ns)
 {
-	long open_timeout = 0, unit_start, unit_end, unit_id, unit_id_prev;
+	long open_timeout = 0;
 	psm2_error_t err = PSM2_OK;
-	int nunits = psmi_hal_get_num_units(), nunitsactive=0;
+	int nunits = psmi_hal_get_num_units();
 	union psmi_envvar_val env_rcvthread;
 	static int norcvthread;	/* only for first rail */
 
-	/*
-	 * If shared contexts are enabled, try our best to schedule processes
-	 * across one or many devices
-	 */
-
-	/* if no units, then no joy. */
 	if (nunits <= 0)
 	{
 		err = psm3_handle_error(NULL, PSM2_EP_DEVICE_FAILURE,
@@ -129,94 +123,25 @@ psm3_context_open(const psm2_ep_t ep, long unit_param, long port, long addr_inde
 		goto ret;
 	}
 
-	/* Calculate the number of active units: */
-	for (unit_id=0;unit_id < nunits;unit_id++)
-	{
-		if (psmi_hal_get_unit_active(unit_id) > 0)
-			nunitsactive++;
-	}
-	/* if no active units, then no joy. */
-	if (nunitsactive == 0)
-	{
-		err = psm3_handle_error(NULL, PSM2_EP_DEVICE_FAILURE,
-					"PSM3 no nic units are active");
-		goto ret;
-	}
 	if (timeout_ns > 0)
-		open_timeout = (long)(timeout_ns / MSEC_ULL);
+		open_timeout = (long)(timeout_ns / NSEC_PER_MSEC);
 
-
-	unit_start = 0; unit_end = nunits - 1;
-	err = psm3_compute_start_and_end_unit(unit_param, addr_index,
-					      nunitsactive, nunits, job_key,
-					      &unit_start, &unit_end);
-	if (err != PSM2_OK)
-		goto ret;
-
-	/* Loop from unit_start to unit_end inclusive and pick 1st active found
-	 * As needed wrap, so it's valid for unit_start >= unit_end
-	 */
-	int success = 0;
-	unit_id_prev = unit_id = unit_start;
-	do
-	{
-		/* if the unit_id is not active, go to next one. */
-		if (psmi_hal_get_unit_active(unit_id) <= 0) {
-			unit_id_prev = unit_id;
-			unit_id = (unit_id + 1) % nunits;
-			continue;
+	if (unit_param == PSM3_NIC_ANY) {
+		/* user did not set PSM3_NIC and not PSM3_MULTIRAIL */
+		unit_param = psm3_autoselect_one(addr_index, nunits, job_key);
+		if (unit_param < 0) {
+			err = psm3_handle_error(NULL, PSM2_EP_DEVICE_FAILURE,
+					"PSM3 no nic units are active");
+			goto ret;
 		}
-
-		/* open this unit. */
-		if (psmi_hal_context_open(unit_id, port,
-				psmi_hash_addr_index(unit_id, port, addr_index),
-				open_timeout,
-				ep, job_key, HAL_CONTEXT_OPEN_RETRY_MAX)) {
-			// in modes where we refcount NIC use,
-			// psm3_compute_start_and_end_unit will have returned exactly
-			// 1 NIC and refcount'ed it, so we dec refcount here
-			psm3_dec_nic_refcount(unit_id);
-			/* go to next unit if failed to open. */
-			unit_id_prev = unit_id;
-			unit_id = (unit_id + 1) % nunits;
-			continue;
-		}
-		// HAL context_open has initialized:
-		// ep->unit_id, ep->portnum, ep->addr_index,
-		// ep->dev_name, ep->subnet, ep->addr, ep->gid, ep->wiremode,
-		// ep->epid and
-		// HAL specific ep fields (context, verbs_ep or sockets_ep)
-		psmi_assert_always(! psm3_epid_zero_internal(ep->epid));
-		success = 1;
-		break;
-
-	} while (unit_id_prev != unit_end);
-
-	if (!success)
-	{
-		err = psm3_handle_error(NULL, PSM2_EP_DEVICE_FAILURE,
-					"PSM3 can't open nic unit: %ld",unit_param);
-		goto bail;
+	} else {
+		_HFI_DBG("Caller selected NIC %ld.\n", unit_param);
+		psmi_assert(unit_param >= 0);	// caller checked valid
 	}
-
-	_HFI_VDBG("hal_context_open() passed.\n");
-
-	psmi_assert_always(PSMI_IPS_ADDR_FMT_IS_VALID(ep->addr.fmt));
-	psmi_assert_always(ep->addr.fmt == ep->subnet.fmt);
-	psmi_assert_always(ep->addr.prefix_len == ep->subnet.prefix_len);
-	ep->addr_fmt = ep->addr.fmt;
-
-	_HFI_DBG("[%d]use unit %d port %d addr %d\n", getpid(), ep->unit_id, 1, ep->addr_index);
-
-	/* device is opened, make sure we can find a valid desirable pkey */
-	if ((err =
-	     psm3_ep_verify_pkey(ep, network_pkey,
-			&ep->network_pkey, &ep->network_pkey_index)) != PSM2_OK)
-		goto close;
 
 	/* See if we want to activate support for receive thread */
 	psm3_getenv("PSM3_RCVTHREAD",
-		    "Enable Recv thread (0 disables thread)",
+		    "Enable receive thread (0 disables thread)",
 		    PSMI_ENVVAR_LEVEL_USER, PSMI_ENVVAR_TYPE_UINT_FLAGS,
 			// default to 0 for all but 1st rail
 		    (union psmi_envvar_val)(norcvthread++ ? 0 :
@@ -233,7 +158,43 @@ psm3_context_open(const psm2_ep_t ep, long unit_param, long port, long addr_inde
 				  "with RCVTHREAD on");
 #endif
 	}
-	_HFI_PRDBG("Opened unit %ld port %ld: EPID=%s %s\n", unit_id, port,
+
+	/* open this unit. */
+	if (psmi_hal_get_unit_active(unit_param) <= 0
+	    || psmi_hal_context_open(unit_param, port,
+			psmi_hash_addr_index(unit_param, port, addr_index),
+			open_timeout,
+			ep, job_key, HAL_CONTEXT_OPEN_RETRY_MAX)) {
+		// in modes where we refcount NIC use,
+		// psm3_autoselect_one refcount'ed it, so we dec refcount here
+		psm3_dec_nic_refcount(unit_param);
+		err = psm3_handle_error(NULL, PSM2_EP_DEVICE_FAILURE,
+				"PSM3 can't open nic unit: %ld",unit_param);
+		goto bail;
+	}
+	// HAL context_open has initialized:
+	// ep->unit_id, ep->portnum, ep->addr_index,
+	// ep->dev_name, ep->subnet, ep->addr, ep->gid, ep->wiremode,
+	// ep->epid and
+	// HAL specific ep fields (context, verbs_ep or sockets_ep)
+	psmi_assert_always(! psm3_epid_zero_internal(ep->epid));
+
+	_HFI_VDBG("hal_context_open() passed.\n");
+
+	psmi_assert_always(PSMI_IPS_ADDR_FMT_IS_VALID(ep->addr.fmt));
+	psmi_assert_always(ep->addr.fmt == ep->subnet.fmt);
+	psmi_assert_always(ep->addr.prefix_len == ep->subnet.prefix_len);
+	ep->addr_fmt = ep->addr.fmt;
+
+	_HFI_DBG("[%d]use unit %d port %d addr %d\n", getpid(), ep->unit_id, 1, ep->addr_index);
+
+	/* device is opened, make sure we can find a valid desirable pkey */
+	if ((err =
+	     psm3_ep_verify_pkey(ep, network_pkey,
+			&ep->network_pkey, &ep->network_pkey_index)) != PSM2_OK)
+		goto close;
+
+	_HFI_PRDBG("Opened unit %ld port %ld: EPID=%s %s\n", unit_param, port,
 		psm3_epid_fmt_internal(ep->epid, 0), psm3_epid_fmt_addr(ep->epid, 1));
 
 	goto ret;
@@ -242,7 +203,7 @@ close:
 	psmi_hal_close_context(ep);
 	psm3_dec_nic_refcount(ep->unit_id);
 bail:
-	_HFI_PRDBG("open failed: unit_id: %ld, err: %d (%s)\n", unit_id, err, strerror(errno));
+	_HFI_PRDBG("open failed: unit_id: %ld, err: %d (%s)\n", unit_param, err, strerror(errno));
 ret:
 
 	_HFI_VDBG("psm3_context_open() return %d\n", err);
@@ -386,8 +347,6 @@ psm3_context_set_affinity(psm2_ep_t ep, int unit)
 		int cpu_and_count = CPU_COUNT(&andcpuset);
 
 		if (cpu_and_count > 0 && pthread_setaffinity_np(mythread, sizeof(andcpuset), &andcpuset)) {
-			// bug on OPA, dev_name not yet initialized
-			// ok on UD and UDP
 			_HFI_ERROR( "Failed to set %s (unit %d) cpu set: %s\n", ep->dev_name,  unit, strerror(errno));
 			//err = -PSM_HAL_ERROR_GENERAL_ERROR;
 			goto bail;

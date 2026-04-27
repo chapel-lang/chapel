@@ -259,6 +259,14 @@ static inline void smr_freestack_push_by_offset(struct smr_freestack *fs,
                         fs->object_size);
 }
 
+/* Get entry index in fs */
+static inline int16_t smr_freestack_get_index(struct smr_freestack *fs,
+					      char *local_p)
+{
+	uint64_t offset = ((char*) local_p - (char*) fs);
+	return (offset - fs->entry_base_offset) / fs->object_size;
+}
+
 /* Push by object */
 static inline void smr_freestack_push(struct smr_freestack *fs, void *local_p)
 {
@@ -278,9 +286,9 @@ static inline void smr_freestack_init(struct smr_freestack *fs, size_t elem_coun
 	fs->entry_base_offset =
 		((char*) &fs->entry_next[0] - (char*) fs) +
 		fs->size * sizeof(fs->top);
-	next_aligned_addr = ofi_get_aligned_size((( (uint64_t) fs) +
+	next_aligned_addr = ofi_get_aligned_size((( (uintptr_t) fs) +
 			fs->entry_base_offset), SMR_ALIGN_BOUNDARY);
-	fs->entry_base_offset = next_aligned_addr - ((uint64_t) fs);
+	fs->entry_base_offset = next_aligned_addr - ((uintptr_t) fs);
 	for (i = elem_count - 1; i >= 0; i--)
 		smr_freestack_push_by_index(fs, i);
 }
@@ -318,6 +326,12 @@ static inline void* smr_freestack_pop(struct smr_freestack *fs)
 {
 	return (void *) ( ((char*)fs) + smr_freestack_pop_by_offset(fs) );
 }
+
+static inline int16_t smr_freestack_avail(struct smr_freestack *fs)
+{
+	return fs->free;
+}
+
 /*
  * Buffer Pool
  */
@@ -327,6 +341,7 @@ enum {
 	OFI_BUFPOOL_NO_TRACK		= 1 << 2,
 	OFI_BUFPOOL_HUGEPAGES		= 1 << 3,
 	OFI_BUFPOOL_NONSHARED		= 1 << 4,
+	OFI_BUFPOOL_NO_ZERO		= 1 << 5,
 };
 
 struct ofi_bufpool_region;
@@ -383,7 +398,6 @@ struct ofi_bufpool_hdr {
 	struct ofi_bufpool_region	*region;
 	size_t 				index;
 
-	OFI_DBG_VAR(bool, allocated)
 	OFI_DBG_VAR(struct ofi_bufpool_ftr *, ftr)
 	OFI_DBG_VAR(size_t,		magic)
 };
@@ -433,15 +447,33 @@ static inline struct ofi_bufpool *ofi_buf_pool(void *buf)
 	return ofi_buf_region(buf)->pool;
 }
 
+static inline bool ofi_buf_is_valid(void *buf)
+{
+	struct ofi_bufpool_hdr *buf_hdr = ofi_buf_hdr(buf);
+	return buf_hdr->entry.slist.next == &buf_hdr->entry.slist;
+}
+
+static inline bool ofi_bufpool_ibuf_is_valid(struct ofi_bufpool *pool, size_t index)
+{
+	void *buf;
+	size_t region_index = index / pool->attr.chunk_cnt;
+
+	if (region_index >= pool->region_cnt)
+		return false;
+
+	buf = pool->region_table[region_index]->mem_region +
+		(index % pool->attr.chunk_cnt) * pool->entry_size;
+
+	return ofi_buf_is_valid(buf);
+}
+
 static inline void ofi_buf_free(void *buf)
 {
 	assert(ofi_atomic_dec32(&ofi_buf_region(buf)->use_cnt) >= 0);
 	assert(!(ofi_buf_pool(buf)->attr.flags & OFI_BUFPOOL_INDEXED));
 	assert(ofi_buf_hdr(buf)->magic == OFI_MAGIC_SIZE_T);
 	assert(ofi_buf_hdr(buf)->ftr->magic == OFI_MAGIC_SIZE_T);
-	assert(ofi_buf_hdr(buf)->allocated == true);
-
-	OFI_DBG_SET(ofi_buf_hdr(buf)->allocated, false);
+	assert(ofi_buf_is_valid(buf));
 
 	slist_insert_head(&ofi_buf_hdr(buf)->entry.slist,
 			  &ofi_buf_pool(buf)->free_list.entries);
@@ -460,9 +492,7 @@ static inline void ofi_ibuf_free(void *buf)
 	assert(ofi_buf_pool(buf)->attr.flags & OFI_BUFPOOL_INDEXED);
 	assert(buf_hdr->magic == OFI_MAGIC_SIZE_T);
 	assert(buf_hdr->ftr->magic == OFI_MAGIC_SIZE_T);
-	assert(buf_hdr->allocated == true);
-
-	OFI_DBG_SET(buf_hdr->allocated, false);
+	assert(ofi_buf_is_valid(buf));
 
 	dlist_insert_order(&buf_hdr->region->free_list,
 			   ofi_ibuf_is_lower, &buf_hdr->entry.dlist);
@@ -487,8 +517,7 @@ static inline void *ofi_bufpool_get_ibuf(struct ofi_bufpool *pool, size_t index)
 
 	buf = pool->region_table[region_index]->mem_region +
 		(index % pool->attr.chunk_cnt) * pool->entry_size;
-
-	assert(ofi_buf_hdr(buf)->allocated);
+	assert(ofi_buf_is_valid(buf));
 
 	return buf;
 }
@@ -516,9 +545,9 @@ static inline void *ofi_buf_alloc(struct ofi_bufpool *pool)
 	slist_remove_head_container(&pool->free_list.entries,
 				struct ofi_bufpool_hdr, buf_hdr, entry.slist);
 	assert(ofi_atomic_inc32(&buf_hdr->region->use_cnt));
-	assert(buf_hdr->allocated == false);
+	assert(!ofi_buf_is_valid(ofi_buf_data(buf_hdr)));
 
-	OFI_DBG_SET(buf_hdr->allocated, true);
+	buf_hdr->entry.slist.next = &buf_hdr->entry.slist;
 
 	return ofi_buf_data(buf_hdr);
 }
@@ -552,15 +581,42 @@ static inline void *ofi_ibuf_alloc(struct ofi_bufpool *pool)
 	dlist_pop_front(&buf_region->free_list, struct ofi_bufpool_hdr,
 			buf_hdr, entry.dlist);
 	assert(ofi_atomic_inc32(&buf_hdr->region->use_cnt));
-	assert(buf_hdr->allocated == false);
+	assert(!ofi_buf_is_valid(ofi_buf_data(buf_hdr)));
 
-	OFI_DBG_SET(buf_hdr->allocated, true);
+	buf_hdr->entry.dlist.next = &buf_hdr->entry.dlist;
 
 	if (dlist_empty(&buf_region->free_list))
 		dlist_remove_init(&buf_region->entry);
 	return ofi_buf_data(buf_hdr);
 }
 
+static inline void *ofi_ibuf_alloc_at(struct ofi_bufpool *pool, size_t index)
+{
+	void *buf;
+	struct ofi_bufpool_hdr *buf_hdr;
+	struct ofi_bufpool_region *buf_region;
+	size_t region_index = index / pool->attr.chunk_cnt;
+
+	assert(pool->attr.flags & OFI_BUFPOOL_INDEXED);
+	while (region_index >= pool->region_cnt) {
+		if (ofi_bufpool_grow(pool))
+			return NULL;
+	}
+	buf_region = pool->region_table[region_index];
+	buf = buf_region->mem_region +
+		(index % pool->attr.chunk_cnt) * pool->entry_size;
+	buf_hdr = ofi_buf_hdr(buf);
+	assert(ofi_atomic_inc32(&buf_hdr->region->use_cnt));
+	assert(!ofi_buf_is_valid(buf));
+
+	dlist_remove(&buf_hdr->entry.dlist);
+	buf_hdr->entry.dlist.next = &buf_hdr->entry.dlist;
+
+	if (dlist_empty(&buf_region->free_list))
+		dlist_remove_init(&buf_region->entry);
+
+	return buf;
+}
 
 /*
  * Persistent memory support

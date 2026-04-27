@@ -6,7 +6,7 @@
   GPL LICENSE SUMMARY
 
   Copyright(c) 2015 Intel Corporation.
-  Copyright(c) 2021-2024 Cornelis Networks.
+  Copyright(c) 2021-2025 Cornelis Networks.
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of version 2 of the GNU General Public License as
@@ -23,7 +23,7 @@
   BSD LICENSE
 
   Copyright(c) 2015 Intel Corporation.
-  Copyright(c) 2021-2024 Cornelis Networks.
+  Copyright(c) 2021-2025 Cornelis Networks.
 
   Redistribution and use in source and binary forms, with or without
   modification, are permitted provided that the following conditions
@@ -74,23 +74,15 @@
 #include "opa_service.h"
 #include "rdma/opx/fi_opx_sysfs.h"
 
-typedef union
-{
-	struct
-	{
+typedef union {
+	struct {
 		uint16_t minor;
 		uint16_t major;
 	};
 	uint32_t version;
 } sw_version_t;
 
-static sw_version_t sw_version =
-{
-	{
-	.major = HFI1_USER_SWMAJOR,
-	.minor = HFI1_USER_SWMINOR
-	}
-};
+static sw_version_t sw_version = {{.major = HFI1_USER_SWMAJOR, .minor = HFI1_USER_SWMINOR}};
 
 /*
  * This function is necessary in a udev-based world.  There can be an
@@ -106,26 +98,28 @@ static sw_version_t sw_version =
  */
 static int opx_hfi_wait_for_device(const char *path, long timeout)
 {
-	int saved_errno;
+	int	    saved_errno;
 	struct stat st;
-	long elapsed;
-	int ret;
+	long	    elapsed;
+	int	    ret;
 
-	if (timeout == 0)
+	if (timeout == 0) {
 		timeout = 15000;
+	}
 
 	elapsed = 0;
 
 	while (1) {
 		static const long default_ms = 250;
-		struct timespec req = { 0 };
-		long ms;
+		struct timespec	  req	     = {0};
+		long		  ms;
 
-		ret = stat(path, &st);
+		ret	    = stat(path, &st);
 		saved_errno = errno;
 
-		if (ret == 0 || (ret == -1 && errno != ENOENT))
+		if (ret == 0 || (ret == -1 && errno != ENOENT)) {
 			break;
+		}
 
 		if ((timeout > 0) && ((timeout - elapsed) <= 0)) {
 			saved_errno = ETIMEDOUT;
@@ -133,38 +127,40 @@ static int opx_hfi_wait_for_device(const char *path, long timeout)
 		}
 
 		if (elapsed == 0) {
-			if (timeout < 0)
-				_HFI_DBG
-				    ("Device file %s not present on first check; "
-				     "waiting indefinitely...\n", path);
-			else
-				_HFI_DBG
-				    ("Device file %s not present on first check; "
-				     "waiting up to %.1f seconds...\n", path,
-				     timeout / 1e3);
+			if (timeout < 0) {
+				_HFI_DBG("Device file %s not present on first check; "
+					 "waiting indefinitely...\n",
+					 path);
+			} else {
+				_HFI_DBG("Device file %s not present on first check; "
+					 "waiting up to %.1f seconds...\n",
+					 path, timeout / 1e3);
+			}
 		}
 
-		if (timeout < 0 || timeout - elapsed >= default_ms)
+		if (timeout < 0 || timeout - elapsed >= default_ms) {
 			ms = default_ms;
-		else
+		} else {
 			ms = timeout;
+		}
 
 		elapsed += ms;
 		req.tv_nsec = ms * 1000000;
 
-		ret = nanosleep(&req, NULL);
+		ret	    = nanosleep(&req, NULL);
 		saved_errno = errno;
 
-		if (ret == -1)
+		if (ret == -1) {
 			break;
+		}
 	}
 
-	if (ret == 0)
+	if (ret == 0) {
 		_HFI_INFO("Found %s after %.1f seconds\n", path, elapsed / 1e3);
-	else
-		_HFI_INFO
-		    ("The %s device failed to appear after %.1f seconds: %s\n",
-		     path, elapsed / 1e3, strerror(saved_errno));
+	} else {
+		_HFI_INFO("The %s device failed to appear after %.1f seconds: %s\n", path, elapsed / 1e3,
+			  strerror(saved_errno));
+	}
 
 	errno = saved_errno;
 	return ret;
@@ -205,42 +201,37 @@ void opx_hfi_set_user_version(uint32_t version)
 	sw_version.version = version;
 }
 
-int opx_hfi_context_open(int unit, int port, uint64_t open_timeout)
+int opx_hfi_context_open(int unit, int port, uint64_t open_timeout, unsigned int *user_version)
 {
-	char dev_name_ignored[256];
-
-	return opx_hfi_context_open_ex(unit, port, open_timeout,
-				   dev_name_ignored, sizeof(dev_name_ignored));
+	return opx_hfi_context_open_ex(unit, port, open_timeout, user_version);
 }
 
-int opx_hfi_context_open_ex(int unit, int port, uint64_t open_timeout,
-		     char *dev_name,size_t dev_name_len)
+int opx_hfi_context_open_ex(int unit, int port, uint64_t open_timeout, unsigned int *user_version)
 {
-	int fd;
+	int	     fd;
+	const size_t dev_name_len = 255;
+	char	     dev_name[dev_name_len + 1];
 
-	if (unit != OPX_UNIT_ID_ANY && unit >= 0)
-		snprintf(dev_name, dev_name_len, "%s_%u", OPX_DEVICE_PATH,
-			 unit);
-	else
-		snprintf(dev_name, dev_name_len, "%s_%u", OPX_DEVICE_PATH,
-			 0);
+	if (unit != OPX_UNIT_ID_ANY && unit >= 0) {
+		snprintf(dev_name, dev_name_len, "%s_%u", OPX_DEVICE_PATH, unit);
+	} else {
+		snprintf(dev_name, dev_name_len, "%s_%u", OPX_DEVICE_PATH, 0);
+	}
 
-	if (opx_hfi_wait_for_device(dev_name, (long)open_timeout) == -1) {
-		_HFI_DBG("Could not find an HFI Unit on device "
-			 "%s (%lds elapsed)", dev_name,
-			 (long)open_timeout / 1000);
+	if (opx_hfi_wait_for_device(dev_name, (long) open_timeout) == -1) {
+		_HFI_DBG("Could not find an HFI Unit on device %s (%lds elapsed)\n", dev_name,
+			 (long) open_timeout / 1000);
 		return -1;
 	}
 
 	if ((fd = open(dev_name, O_RDWR)) == -1) {
-		_HFI_DBG("(host:Can't open %s for reading and writing",
-			 dev_name);
+		_HFI_DBG("(host:Can't open %s for reading and writing\n", dev_name);
 		return -1;
 	}
 
-	if (fcntl(fd, F_SETFD, FD_CLOEXEC))
-		_HFI_INFO("Failed to set close on exec for device: %s\n",
-			  strerror(errno));
+	if (fcntl(fd, F_SETFD, FD_CLOEXEC)) {
+		_HFI_INFO("Failed to set close on exec for device: %s\n", strerror(errno));
+	}
 
 #ifdef PSM2_SUPPORT_IW_CMD_API
 	{
@@ -258,29 +249,31 @@ int opx_hfi_context_open_ex(int unit, int port, uint64_t open_timeout,
 			opx_hfi_set_user_major_version(IOCTL_CMD_API_MODULE_MAJOR - 1);
 			/* the old driver uses write() for its command interface: */
 			_hfi_cmd_send = _opx_hfi_cmd_write;
-		}
-		else
-		{
+		} else {
 			int major = c.addr >> HFI1_SWMAJOR_SHIFT;
 			if (major != opx_hfi_get_user_major_version()) {
-					/* If there is a skew between the major version of the driver
-					   that is executing and the major version which was used during
-					   compilation of PSM, we treat that is a fatal error. */
-					_HFI_INFO("PSM2 and driver version mismatch: (%d != %d)\n",
-						  major, opx_hfi_get_user_major_version());
+				/* If there is a skew between the major version of the driver
+				   that is executing and the major version which was used during
+				   compilation of PSM, we treat that is a fatal error. */
+				_HFI_INFO("PSM2 and driver version mismatch: (%d != %d)\n", major,
+					  opx_hfi_get_user_major_version());
 				close(fd);
 				return -1;
 			}
 		}
 	}
+	*user_version = HFI1_USER_SWMINOR | (opx_hfi_get_user_major_version() << HFI1_SWMAJOR_SHIFT);
 
 #endif
 	return fd;
 }
 
-void opx_hfi_context_close(int fd)
+void opx_hfi_context_close(int fd_cdev, int fd_verbs)
 {
-	(void)close(fd);
+	if (fd_verbs != -1) {
+		(void) close(fd_verbs);
+	}
+	(void) close(fd_cdev);
 }
 
 int opx_hfi_cmd_writev(int fd, const struct iovec *iov, int iovcnt)
@@ -293,69 +286,64 @@ int opx_hfi_cmd_write(int fd, struct hfi1_cmd *cmd, size_t count)
 	return _hfi_cmd_send(fd, cmd, count);
 }
 
-static
-int _opx_hfi_cmd_write(int fd, struct hfi1_cmd *cmd, size_t count)
+static int _opx_hfi_cmd_write(int fd, struct hfi1_cmd *cmd, size_t count)
 {
-    static const unsigned int cmdTypeToWriteNum[OPX_HFI_CMD_LAST] = {
-        [OPX_HFI_CMD_ASSIGN_CTXT]      = LEGACY_HFI1_CMD_ASSIGN_CTXT,
-        [OPX_HFI_CMD_CTXT_INFO]        = LEGACY_HFI1_CMD_CTXT_INFO,
-        [OPX_HFI_CMD_USER_INFO]        = LEGACY_HFI1_CMD_USER_INFO,
-        [OPX_HFI_CMD_TID_UPDATE]       = LEGACY_HFI1_CMD_TID_UPDATE,
-        [OPX_HFI_CMD_TID_FREE]         = LEGACY_HFI1_CMD_TID_FREE,
-        [OPX_HFI_CMD_CREDIT_UPD]       = LEGACY_HFI1_CMD_CREDIT_UPD,
-        [OPX_HFI_CMD_RECV_CTRL]        = LEGACY_HFI1_CMD_RECV_CTRL,
-        [OPX_HFI_CMD_POLL_TYPE]        = LEGACY_HFI1_CMD_POLL_TYPE,
-        [OPX_HFI_CMD_ACK_EVENT]        = LEGACY_HFI1_CMD_ACK_EVENT,
-        [OPX_HFI_CMD_SET_PKEY]         = LEGACY_HFI1_CMD_SET_PKEY,
-        [OPX_HFI_CMD_CTXT_RESET]       = LEGACY_HFI1_CMD_CTXT_RESET,
-        [OPX_HFI_CMD_TID_INVAL_READ]   = LEGACY_HFI1_CMD_TID_INVAL_READ,
-        [OPX_HFI_CMD_GET_VERS]         = LEGACY_HFI1_CMD_GET_VERS,
-    };
+	static const unsigned int cmdTypeToWriteNum[OPX_HFI_CMD_LAST] = {
+		[OPX_HFI_CMD_ASSIGN_CTXT]    = LEGACY_HFI1_CMD_ASSIGN_CTXT,
+		[OPX_HFI_CMD_CTXT_INFO]	     = LEGACY_HFI1_CMD_CTXT_INFO,
+		[OPX_HFI_CMD_USER_INFO]	     = LEGACY_HFI1_CMD_USER_INFO,
+		[OPX_HFI_CMD_TID_UPDATE]     = LEGACY_HFI1_CMD_TID_UPDATE,
+		[OPX_HFI_CMD_TID_FREE]	     = LEGACY_HFI1_CMD_TID_FREE,
+		[OPX_HFI_CMD_CREDIT_UPD]     = LEGACY_HFI1_CMD_CREDIT_UPD,
+		[OPX_HFI_CMD_RECV_CTRL]	     = LEGACY_HFI1_CMD_RECV_CTRL,
+		[OPX_HFI_CMD_POLL_TYPE]	     = LEGACY_HFI1_CMD_POLL_TYPE,
+		[OPX_HFI_CMD_ACK_EVENT]	     = LEGACY_HFI1_CMD_ACK_EVENT,
+		[OPX_HFI_CMD_SET_PKEY]	     = LEGACY_HFI1_CMD_SET_PKEY,
+		[OPX_HFI_CMD_CTXT_RESET]     = LEGACY_HFI1_CMD_CTXT_RESET,
+		[OPX_HFI_CMD_TID_INVAL_READ] = LEGACY_HFI1_CMD_TID_INVAL_READ,
+		[OPX_HFI_CMD_GET_VERS]	     = LEGACY_HFI1_CMD_GET_VERS,
+	};
 
-    if (cmd->type < OPX_HFI_CMD_LAST) {
-        cmd->type = cmdTypeToWriteNum[cmd->type];
+	if (cmd->type < OPX_HFI_CMD_LAST) {
+		cmd->type = cmdTypeToWriteNum[cmd->type];
 
-	    return write(fd, cmd, count);
-    } else {
-        errno = EINVAL;
-        return -1;
-    }
+		return write(fd, cmd, count);
+	} else {
+		errno = EINVAL;
+		return -1;
+	}
 }
 
 #ifdef PSM2_SUPPORT_IW_CMD_API
-static
-int _hfi_cmd_ioctl(int fd, struct hfi1_cmd *cmd, size_t count)
+static int _hfi_cmd_ioctl(int fd, struct hfi1_cmd *cmd, size_t count)
 {
-	uint64_t addrOrLiteral[2] = { (uint64_t)cmd->addr, (uint64_t)&cmd->addr };
-	static const struct
-	{
+	uint64_t addrOrLiteral[2] = {(uint64_t) cmd->addr, (uint64_t) &cmd->addr};
+	static const struct {
 		unsigned int ioctlCmd;
 		unsigned int addrOrLiteralIdx;
 	} cmdTypeToIoctlNum[OPX_HFI_CMD_LAST] = {
-        [OPX_HFI_CMD_ASSIGN_CTXT]      = {HFI1_IOCTL_ASSIGN_CTXT   , 0},
-        [OPX_HFI_CMD_CTXT_INFO]        = {HFI1_IOCTL_CTXT_INFO     , 0},
-        [OPX_HFI_CMD_USER_INFO]        = {HFI1_IOCTL_USER_INFO     , 0},
-        [OPX_HFI_CMD_TID_UPDATE]       = {HFI1_IOCTL_TID_UPDATE    , 0},
-        [OPX_HFI_CMD_TID_FREE]         = {HFI1_IOCTL_TID_FREE      , 0},
-        [OPX_HFI_CMD_CREDIT_UPD]       = {HFI1_IOCTL_CREDIT_UPD    , 1},
-        [OPX_HFI_CMD_RECV_CTRL]        = {HFI1_IOCTL_RECV_CTRL     , 1},
-        [OPX_HFI_CMD_POLL_TYPE]        = {HFI1_IOCTL_POLL_TYPE     , 1},
-        [OPX_HFI_CMD_ACK_EVENT]        = {HFI1_IOCTL_ACK_EVENT     , 1},
-        [OPX_HFI_CMD_SET_PKEY]         = {HFI1_IOCTL_SET_PKEY      , 1},
-        [OPX_HFI_CMD_CTXT_RESET]       = {HFI1_IOCTL_CTXT_RESET    , 1},
-        [OPX_HFI_CMD_TID_INVAL_READ]   = {HFI1_IOCTL_TID_INVAL_READ, 0},
-        [OPX_HFI_CMD_GET_VERS]         = {HFI1_IOCTL_GET_VERS      , 1},
+		[OPX_HFI_CMD_ASSIGN_CTXT]    = {HFI1_IOCTL_ASSIGN_CTXT, 0},
+		[OPX_HFI_CMD_CTXT_INFO]	     = {HFI1_IOCTL_CTXT_INFO, 0},
+		[OPX_HFI_CMD_USER_INFO]	     = {HFI1_IOCTL_USER_INFO, 0},
+		[OPX_HFI_CMD_TID_UPDATE]     = {HFI1_IOCTL_TID_UPDATE, 0},
+		[OPX_HFI_CMD_TID_FREE]	     = {HFI1_IOCTL_TID_FREE, 0},
+		[OPX_HFI_CMD_CREDIT_UPD]     = {HFI1_IOCTL_CREDIT_UPD, 1},
+		[OPX_HFI_CMD_RECV_CTRL]	     = {HFI1_IOCTL_RECV_CTRL, 1},
+		[OPX_HFI_CMD_POLL_TYPE]	     = {HFI1_IOCTL_POLL_TYPE, 1},
+		[OPX_HFI_CMD_ACK_EVENT]	     = {HFI1_IOCTL_ACK_EVENT, 1},
+		[OPX_HFI_CMD_SET_PKEY]	     = {HFI1_IOCTL_SET_PKEY, 1},
+		[OPX_HFI_CMD_CTXT_RESET]     = {HFI1_IOCTL_CTXT_RESET, 1},
+		[OPX_HFI_CMD_TID_INVAL_READ] = {HFI1_IOCTL_TID_INVAL_READ, 0},
+		[OPX_HFI_CMD_GET_VERS]	     = {HFI1_IOCTL_GET_VERS, 1},
 #ifdef OPX_HMEM
-	[OPX_HFI_CMD_TID_UPDATE_V3]	= {HFI1_IOCTL_TID_UPDATE_V3 , 0},
+		[OPX_HFI_CMD_TID_UPDATE_V3] = {HFI1_IOCTL_TID_UPDATE_V3, 0},
 #endif
-    };
-        _HFI_INFO("command OPX_HFI_CMD %#X, HFI1_IOCTL %#X\n",cmd->type, cmdTypeToIoctlNum[cmd->type].ioctlCmd);
-	if (cmd->type < OPX_HFI_CMD_LAST)
-		return ioctl(fd,
-			     cmdTypeToIoctlNum[cmd->type].ioctlCmd,
+	};
+	_HFI_INFO("command OPX_HFI_CMD %#X, HFI1_IOCTL %#X\n", cmd->type, cmdTypeToIoctlNum[cmd->type].ioctlCmd);
+	if (cmd->type < OPX_HFI_CMD_LAST) {
+		return ioctl(fd, cmdTypeToIoctlNum[cmd->type].ioctlCmd,
 			     addrOrLiteral[cmdTypeToIoctlNum[cmd->type].addrOrLiteralIdx]);
-	else
-	{
+	} else {
 		_HFI_ERROR("EINVAL\n");
 		errno = EINVAL;
 		return -1;
@@ -372,8 +360,7 @@ int _hfi_cmd_ioctl(int fd, struct hfi1_cmd *cmd, size_t count)
    redirects mmap to mmap64 for us, but at least through suse10 and fc4,
    it doesn't work when the address being mapped is > 32 bits.  It chips
    off bits 32 and above.   So we stay with mmap64. */
-void *opx_hfi_mmap64(void *addr, size_t length, int prot, int flags, int fd,
-		 __off64_t offset)
+void *opx_hfi_mmap64(void *addr, size_t length, int prot, int flags, int fd, __off64_t offset)
 {
 	return mmap64(addr, length, prot, flags, fd, offset);
 }
@@ -387,60 +374,121 @@ int opx_hfi_get_num_units(void)
 	int ret;
 
 	for (ret = 0;; ret++) {
-		char pathname[PATH_MAX];
+		char	    pathname[PATH_MAX];
 		struct stat st;
-		int r;
+		int	    r;
 
 		snprintf(pathname, sizeof(pathname), OPX_DEVICE_PATH "_%d", ret);
-		if (ret == 0)
+		if (ret == 0) {
 			/* We only wait for the first device to come up.  Not
 			   on subsequent devices in order to save time. */
 			r = opx_hfi_wait_for_device(pathname, 0);
-		else
+		} else {
 			r = stat(pathname, &st);
-		if (!r)
+		}
+		if (!r) {
 			continue;
-		else
+		} else {
 			break;
+		}
 	}
 
 	return ret;
+}
+
+/* get the number of ports per hfi unit */
+/* should return OPX_MAX_PORT if number of ports is greater than OPX_MAX_PORT*/
+/* should return 0 if number of ports is less than OPX_MIN_PORT*/
+int opx_hfi_get_num_ports(int hfi_unit)
+{
+	char path[256];
+	snprintf(path, sizeof(path), "%s_%d/ports/", OPX_CLASS_PATH, hfi_unit);
+	DIR *dir = opendir(path);
+	if (!dir) {
+		FI_WARN(fi_opx_global.prov, FI_LOG_EP_DATA,
+			"Failed to open directory to read the number of ports on HFI unit %d. \n", hfi_unit);
+		return 0;
+	}
+
+	struct dirent *entry;
+	int	       port_count = 0;
+
+	while ((entry = readdir(dir)) != NULL) {
+		if (entry->d_type == DT_DIR && isdigit(entry->d_name[0])) {
+			port_count++;
+		}
+	}
+
+	closedir(dir);
+
+	if (port_count < OPX_MIN_PORT) {
+		FI_WARN(fi_opx_global.prov, FI_LOG_EP_DATA,
+			"Number of ports should be greater than or equal to OPX_MIN_PORT. \n");
+		return 0;
+	}
+
+	if (port_count > OPX_MAX_PORT) {
+		FI_WARN(fi_opx_global.prov, FI_LOG_EP_DATA,
+			"Number of ports should be less than or equal to OPX_MAX_PORT. \n");
+		return OPX_MAX_PORT;
+	}
+
+	return port_count;
 }
 
 /* Given a unit number, returns 1 if any port on the unit is active.
    returns 0 if no port on the unit is active. */
 int opx_hfi_get_unit_active(int unit)
 {
-	int p,rv;
+	int p, rv;
 
-	for (p = OPX_MIN_PORT; p <= OPX_MAX_PORT; p++)
-		if ((rv=opx_hfi_get_port_lid(unit, p)) > 0)
+	for (p = OPX_MIN_PORT; p <= OPX_MAX_PORT; p++) {
+		if ((rv = opx_hfi_get_port_lid(unit, p)) > 0) {
 			break;
+		}
+	}
 
-	if (p <= OPX_MAX_PORT)
-	{
+	if (p <= OPX_MAX_PORT) {
 		return 1;
 	}
 
-	return (rv>0);
+	return (rv > 0);
 }
 
 /* Get the number of free contexts from the unit id. */
 /* Returns 0 if no unit or no match. */
 int opx_hfi_get_num_free_contexts(int unit_id)
 {
-	int64_t val;
+	int64_t	 val;
 	uint32_t p = OPX_MIN_PORT;
 
-	for (; p <= OPX_MAX_PORT; p++)
-		if (opx_hfi_get_port_lid(unit_id, p) > 0)
+	for (; p <= OPX_MAX_PORT; p++) {
+		if (opx_hfi_get_port_lid(unit_id, p) > 0) {
 			break;
+		}
+	}
 
-	if (p <= OPX_MAX_PORT &&
-			!opx_sysfs_unit_read_s64(unit_id, "nfreectxts", &val, 0)) {
+	if (p <= OPX_MAX_PORT && !opx_sysfs_unit_read_s64(unit_id, "nfreectxts", &val, 0)) {
 		return (uint32_t) val;
 	}
 
+	return 0;
+}
+
+/* Get the number of contexts from the unit id. */
+/* Returns 0 if no unit or no match. */
+int opx_hfi_get_num_contexts(int unit_id)
+{
+	int64_t	 val;
+	uint32_t p = OPX_MIN_PORT;
+	for (; p <= OPX_MAX_PORT; p++) {
+		if (opx_hfi_get_port_lid(unit_id, p) > 0) {
+			break;
+		}
+	}
+	if (p <= OPX_MAX_PORT && !opx_sysfs_unit_read_s64(unit_id, "nctxts", &val, 0)) {
+		return (uint32_t) val;
+	}
 	return 0;
 }
 
@@ -449,20 +497,17 @@ int opx_hfi_get_num_free_contexts(int unit_id)
    returns -1 when an error occurred. */
 int opx_hfi_get_port_active(int unit, int port)
 {
-	int ret;
+	int   ret;
 	char *state;
 
 	ret = opx_sysfs_port_read(unit, port, "state", &state);
 	if (ret == -1) {
-		if (errno == ENODEV)
+		if (errno == ENODEV) {
 			/* this is "normal" for port != 1, on single port chips */
-			_HFI_VDBG
-			    ("Failed to get logical link state for unit %u:%u: %s\n",
-			     unit, port, strerror(errno));
-		else
-			_HFI_DBG
-			    ("Failed to get logical link state for unit %u:%u: %s\n",
-			     unit, port, strerror(errno));
+			_HFI_VDBG("Failed to get logical link state for unit %u:%u: %s\n", unit, port, strerror(errno));
+		} else {
+			_HFI_DBG("Failed to get logical link state for unit %u:%u: %s\n", unit, port, strerror(errno));
+		}
 		return -1;
 	} else {
 		if (strncmp(state, "4: ACTIVE", 9)) {
@@ -484,23 +529,23 @@ int opx_hfi_get_port_active(int unit, int port)
    ports without knowing if both ports exist (or are connected) */
 int opx_hfi_get_port_lid(int unit, int port)
 {
-	int ret;
+	int	ret;
 	int64_t val;
+	_HFI_DBG("%s unit %d, port %d\n", __func__, unit, port);
 
-	if (opx_hfi_get_port_active(unit,port) != 1)
+	if (opx_hfi_get_port_active(unit, port) != 1) {
 		return -2;
-	ret = opx_sysfs_port_read_s64(unit, port, "lid", &val, 0);
-	_HFI_VDBG("opx_hfi_get_port_lid: ret %d, unit %d port %d val=%ld\n", ret, unit,
-		  port, val);
+	}
 
+	ret = opx_sysfs_port_read_s64(unit, port, "lid", &val, 0);
+	_HFI_VDBG("opx_hfi_get_port_lid: ret %d, unit %d port %d val=%ld\n", ret, unit, port, val);
 	if (ret == -1) {
-		if (errno == ENODEV)
+		if (errno == ENODEV) {
 			/* this is "normal" for port != 1, on single port chips */
-			_HFI_VDBG("Failed to get LID for unit %u:%u: %s\n",
-				  unit, port, strerror(errno));
-		else
-			_HFI_DBG("Failed to get LID for unit %u:%u: %s\n",
-				 unit, port, strerror(errno));
+			_HFI_VDBG("Failed to get LID for unit %u:%u: %s\n", unit, port, strerror(errno));
+		} else {
+			_HFI_DBG("Failed to get LID for unit %u:%u: %s\n", unit, port, strerror(errno));
+		}
 	} else {
 		ret = val;
 	}
@@ -515,37 +560,31 @@ int opx_hfi_get_port_lid(int unit, int port)
    ports without knowing if both ports exist (or are connected) */
 int opx_hfi_get_port_gid(int unit, int port, uint64_t *hi, uint64_t *lo)
 {
-	int ret;
+	int   ret;
 	char *gid_str = NULL;
+	_HFI_DBG("%s unit %d, port %d\n", __func__, unit, port);
 
 	ret = opx_sysfs_port_read(unit, port, "gids/0", &gid_str);
 
 	if (ret == -1) {
-		if (errno == ENODEV)
+		if (errno == ENODEV) {
 			/* this is "normal" for port != 1, on single
 			 * port chips */
-			_HFI_VDBG("Failed to get GID for unit %u:%u: %s\n",
-				  unit, port, strerror(errno));
-		else
-			_HFI_DBG("Failed to get GID for unit %u:%u: %s\n",
-				 unit, port, strerror(errno));
+			_HFI_VDBG("Failed to get GID for unit %u:%u: %s\n", unit, port, strerror(errno));
+		} else {
+			_HFI_DBG("Failed to get GID for unit %u:%u: %s\n", unit, port, strerror(errno));
+		}
 	} else {
 		int gid[8];
-		if (sscanf(gid_str, "%4x:%4x:%4x:%4x:%4x:%4x:%4x:%4x",
-			   &gid[0], &gid[1], &gid[2], &gid[3],
-			   &gid[4], &gid[5], &gid[6], &gid[7]) != 8) {
-			_HFI_DBG("Failed to parse GID for unit %u:%u: %s\n",
-				 unit, port, gid_str);
+		if (sscanf(gid_str, "%4x:%4x:%4x:%4x:%4x:%4x:%4x:%4x", &gid[0], &gid[1], &gid[2], &gid[3], &gid[4],
+			   &gid[5], &gid[6], &gid[7]) != 8) {
+			_HFI_DBG("Failed to parse GID for unit %u:%u: %s\n", unit, port, gid_str);
 			ret = -1;
 		} else {
-			*hi = (((uint64_t) gid[0]) << 48) | (((uint64_t) gid[1])
-							     << 32) |
-			    (((uint64_t)
-			      gid[2]) << 16) | (((uint64_t) gid[3]) << 0);
-			*lo = (((uint64_t) gid[4]) << 48) | (((uint64_t) gid[5])
-							     << 32) |
-			    (((uint64_t)
-			      gid[6]) << 16) | (((uint64_t) gid[7]) << 0);
+			*hi = (((uint64_t) gid[0]) << 48) | (((uint64_t) gid[1]) << 32) | (((uint64_t) gid[2]) << 16) |
+			      (((uint64_t) gid[3]) << 0);
+			*lo = (((uint64_t) gid[4]) << 48) | (((uint64_t) gid[5]) << 32) | (((uint64_t) gid[6]) << 16) |
+			      (((uint64_t) gid[7]) << 0);
 		}
 		free(gid_str);
 	}
@@ -558,16 +597,16 @@ int opx_hfi_get_port_gid(int unit, int port, uint64_t *hi, uint64_t *lo)
 /* Returns an int, so -1 indicates an error.  0 */
 int opx_hfi_get_port_lmc(int unit, int port)
 {
-	int ret;
+	int	ret;
 	int64_t val;
 
 	ret = opx_sysfs_port_read_s64(unit, port, "lid_mask_count", &val, 0);
 
 	if (ret == -1) {
-		_HFI_INFO("Failed to get LMC for unit %u:%u: %s\n",
-			  unit, port, strerror(errno));
-	} else
+		_HFI_INFO("Failed to get LMC for unit %u:%u: %s\n", unit, port, strerror(errno));
+	} else {
 		ret = val;
+	}
 
 	return ret;
 }
@@ -577,26 +616,26 @@ int opx_hfi_get_port_lmc(int unit, int port)
 /* Returns an int, so -1 indicates an error. */
 int opx_hfi_get_port_rate(int unit, int port)
 {
-	int ret;
+	int    ret;
 	double rate;
-	char *data_rate = NULL, *newptr;
+	char  *data_rate = NULL, *newptr;
 
 	ret = opx_sysfs_port_read(unit, port, "rate", &data_rate);
-	if (ret == -1)
+	if (ret == -1) {
 		goto get_port_rate_error;
-	else {
+	} else {
 		rate = strtod(data_rate, &newptr);
-		if ((rate == 0) && (data_rate == newptr))
+		if ((rate == 0) && (data_rate == newptr)) {
 			goto get_port_rate_error;
+		}
 	}
 
 	free(data_rate);
 	data_rate = NULL;
-	return ((int)(rate * 2) >> 1);
+	return ((int) (rate * 2) >> 1);
 
 get_port_rate_error:
-	_HFI_INFO("Failed to get link rate for unit %u:%u: %s\n",
-		  unit, port, strerror(errno));
+	_HFI_INFO("Failed to get link rate for unit %u:%u: %s\n", unit, port, strerror(errno));
 	free(data_rate);
 	data_rate = NULL;
 	return ret;
@@ -607,19 +646,19 @@ get_port_rate_error:
 /* Returns an int, so -1 indicates an error. */
 int opx_hfi_get_port_sl2sc(int unit, int port, int sl)
 {
-	int ret;
+	int	ret;
 	int64_t val;
-	char sl2scpath[16];
+	char	sl2scpath[16];
+	_HFI_DBG("%s unit %d, port %d\n", __func__, unit, port);
 
 	snprintf(sl2scpath, sizeof(sl2scpath), "sl2sc/%d", sl);
 	ret = opx_sysfs_port_read_s64(unit, port, sl2scpath, &val, 0);
 
 	if (ret == -1) {
-		_HFI_DBG
-		    ("Failed to get SL2SC mapping for SL %d unit %u:%u: %s\n",
-		     sl, unit, port, strerror(errno));
-	} else
+		_HFI_DBG("Failed to get SL2SC mapping for SL %d unit %u:%u: %s\n", sl, unit, port, strerror(errno));
+	} else {
 		ret = val;
+	}
 
 	return ret;
 }
@@ -629,19 +668,19 @@ int opx_hfi_get_port_sl2sc(int unit, int port, int sl)
 /* Returns an int, so -1 indicates an error. */
 int opx_hfi_get_port_sc2vl(int unit, int port, int sc)
 {
-	int ret;
+	int	ret;
 	int64_t val;
-	char sc2vlpath[16];
+	char	sc2vlpath[16];
+	_HFI_DBG("%s unit %d, port %d\n", __func__, unit, port);
 
 	snprintf(sc2vlpath, sizeof(sc2vlpath), "sc2vl/%d", sc);
 	ret = opx_sysfs_port_read_s64(unit, port, sc2vlpath, &val, 0);
 
 	if (ret == -1) {
-		_HFI_DBG
-		    ("Failed to get SC2VL mapping for SC %d unit %u:%u: %s\n",
-		     sc, unit, port, strerror(errno));
-	} else
+		_HFI_DBG("Failed to get SC2VL mapping for SC %d unit %u:%u: %s\n", sc, unit, port, strerror(errno));
+	} else {
 		ret = val;
+	}
 
 	return ret;
 }
@@ -651,19 +690,19 @@ int opx_hfi_get_port_sc2vl(int unit, int port, int sc)
 /* Returns an int, so -1 indicates an error. */
 int opx_hfi_get_port_vl2mtu(int unit, int port, int vl)
 {
-	int ret;
+	int	ret;
 	int64_t val;
-	char vl2mtupath[16];
+	char	vl2mtupath[16];
+	_HFI_DBG("%s unit %d, port %d\n", __func__, unit, port);
 
 	snprintf(vl2mtupath, sizeof(vl2mtupath), "vl2mtu/%d", vl);
 	ret = opx_sysfs_port_read_s64(unit, port, vl2mtupath, &val, 0);
 
 	if (ret == -1) {
-		_HFI_DBG
-		    ("Failed to get VL2MTU mapping for VL %d unit %u:%u: %s\n",
-		     vl, unit, port, strerror(errno));
-	} else
+		_HFI_DBG("Failed to get VL2MTU mapping for VL %d unit %u:%u: %s\n", vl, unit, port, strerror(errno));
+	} else {
 		ret = val;
+	}
 
 	return ret;
 }
@@ -673,19 +712,19 @@ int opx_hfi_get_port_vl2mtu(int unit, int port, int vl)
 /* Returns an int, so -1 indicates an error. */
 int opx_hfi_get_port_index2pkey(int unit, int port, int index)
 {
-	int ret;
+	int	ret;
 	int64_t val;
-	char index2pkeypath[16];
+	char	index2pkeypath[16];
 
 	snprintf(index2pkeypath, sizeof(index2pkeypath), "pkeys/%d", index);
 	ret = opx_sysfs_port_read_s64(unit, port, index2pkeypath, &val, 0);
 
 	if (ret == -1) {
-		_HFI_DBG
-		    ("Failed to get index2pkey mapping for index %d unit %u:%u: %s\n",
-		     index, unit, port, strerror(errno));
-	} else
+		_HFI_DBG("Failed to get index2pkey mapping for index %d unit %u:%u: %s\n", index, unit, port,
+			 strerror(errno));
+	} else {
 		ret = val;
+	}
 
 	return ret;
 }
@@ -696,14 +735,13 @@ int opx_hfi_get_port_index2pkey(int unit, int port, int index)
  */
 int opx_hfi_get_cc_settings_bin(int unit, int port, char *ccabuf)
 {
-	int fd;
+	int    fd;
 	size_t count;
-/*
- * Check qib driver CCA setting, and try to use it if available.
- * Fall to self CCA setting if errors.
- */
-	sprintf(ccabuf, OPX_CLASS_PATH "_%d/ports/%d/CCMgtA/cc_settings_bin",
-		unit, port);
+	/*
+	 * Check qib driver CCA setting, and try to use it if available.
+	 * Fall to self CCA setting if errors.
+	 */
+	sprintf(ccabuf, OPX_CLASS_PATH "_%d/ports/%d/CCMgtA/cc_settings_bin", unit, port);
 	fd = open(ccabuf, O_RDONLY);
 	if (fd < 0) {
 		return 0;
@@ -727,15 +765,14 @@ int opx_hfi_get_cc_settings_bin(int unit, int port, char *ccabuf)
 
 int opx_hfi_get_cc_table_bin(int unit, int port, uint16_t **cctp)
 {
-	int i;
+	int	       i;
 	unsigned short ccti_limit;
-	uint16_t *cct;
-	int fd;
-	char pathname[256];
+	uint16_t      *cct;
+	int	       fd;
+	char	       pathname[256];
 
 	*cctp = NULL;
-	sprintf(pathname, OPX_CLASS_PATH "_%d/ports/%d/CCMgtA/cc_table_bin",
-		unit, port);
+	sprintf(pathname, OPX_CLASS_PATH "_%d/ports/%d/CCMgtA/cc_table_bin", unit, port);
 	fd = open(pathname, O_RDONLY);
 	if (fd < 0) {
 		_HFI_CCADBG("Open cc_table_bin failed. using static CCA\n");
@@ -751,12 +788,13 @@ int opx_hfi_get_cc_table_bin(int unit, int port, uint16_t **cctp)
 
 	if (ccti_limit < 63) {
 		_HFI_CCADBG("Read ccti_limit %d not in range [63, 65535], "
-			    "using static CCA.\n", ccti_limit);
+			    "using static CCA.\n",
+			    ccti_limit);
 		close(fd);
 		return 0;
 	}
 
-	i = (ccti_limit + 1) * sizeof(uint16_t);
+	i   = (ccti_limit + 1) * sizeof(uint16_t);
 	cct = malloc(i);
 	if (!cct) {
 		close(fd);
@@ -782,10 +820,10 @@ int opx_hfi_get_cc_table_bin(int unit, int port, uint16_t **cctp)
  */
 int opx_hfi_cmd_wait_for_packet(int fd)
 {
-	int ret;
+	int	      ret;
 	struct pollfd pfd;
 
-	pfd.fd = fd;
+	pfd.fd	   = fd;
 	pfd.events = POLLIN;
 
 	ret = poll(&pfd, 1, 500 /* ms */);
@@ -793,25 +831,89 @@ int opx_hfi_cmd_wait_for_packet(int fd)
 	return ret;
 }
 
-/* 
+/*
  * A fast check to count the number of hfi1 devs.
  * Device(s) may not be usable, more checking is needed
  * returns number of hfi1 devices found in /dev (0 means none)
  */
-int opx_hfi_get_hfi1_count() {
+int opx_hfi_get_hfi1_count()
+{
 	struct stat st;
-	int ret;
-	char hfi1_pathname[256];
-	int hfi1_count = 0;
+	int	    ret;
+	char	    hfi1_pathname[256];
+	int	    hfi1_count = 0;
 
-	for (int i = 0; i < FI_OPX_MAX_HFIS; i++) {
-		snprintf(hfi1_pathname, sizeof(hfi1_pathname), "%s_%u", 
-			OPX_DEVICE_PATH, i);
+	for (int i = 0; i < OPX_MAX_HFIS; i++) {
+		snprintf(hfi1_pathname, sizeof(hfi1_pathname), "%s_%u", OPX_DEVICE_PATH, i);
 		ret = stat(hfi1_pathname, &st);
 		if (!ret) {
-			//TODO add additional check opx_hfi_get_unit_active
+			// TODO add additional check opx_hfi_get_unit_active
 			hfi1_count++;
 		}
 	}
 	return hfi1_count;
+}
+
+/**
+ * @brief Reset the HFI context.
+ *
+ * This function resets the HFI context by sending a command to the specified file descriptor.
+ * The command type is set to OPX_HFI_CMD_CTXT_RESET and the command length and address are set to 0.
+ * If the command write fails, the function will retry if the error is ENOLCK.
+ * If the error is not EINVAL, a warning message will be printed.
+ *
+ * @param fd The file descriptor to send the command to.
+ * @return 0 on success, -1 on failure.
+ */
+int opx_hfi_reset_context(int fd)
+{
+	struct hfi1_cmd cmd;
+
+	cmd.type = OPX_HFI_CMD_CTXT_RESET;
+	cmd.len	 = 0;
+	cmd.addr = 0;
+
+retry:
+	if (opx_hfi_cmd_write(fd, &cmd, sizeof(cmd)) == -1) {
+		if (errno == ENOLCK) {
+			goto retry;
+		}
+
+		if (errno != EINVAL) {
+			_HFI_INFO("reset ctxt failed: %s\n", strerror(errno));
+		}
+
+		return -1;
+	}
+	return 0;
+}
+
+/**
+ * @brief Acknowledge events for the HFI.
+ *
+ * This function sends an acknowledgment for events to the HFI.
+ *
+ * @param fd The file descriptor for the HFI control.
+ * @param ackbits The bits to be acknowledged.
+ * @return 0 on success, -1 on failure.
+ */
+int opx_hfi_ack_events(int fd, uint64_t ackbits)
+{
+	struct hfi1_cmd cmd;
+
+	cmd.type = OPX_HFI_CMD_ACK_EVENT;
+	cmd.len	 = 0;
+	cmd.addr = ackbits; // 	uint64_t ackbits = *(uint64_t *) (opx_ep->hfi->ctrl->base_info.events_bufbase);
+
+retry:
+	if (opx_hfi_cmd_write(fd, &cmd, sizeof(cmd)) == -1) {
+		if (errno == ENOLCK) {
+			_HFI_ERROR("ack event failed: %s, retry\n", strerror(errno));
+			goto retry;
+		}
+		_HFI_ERROR("ack event failed: %s\n", strerror(errno));
+		return -1;
+	}
+	_HFI_ERROR("%s", "ack event success \n");
+	return 0;
 }

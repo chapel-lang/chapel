@@ -74,7 +74,7 @@ psm3_tcp_proto_local_ack(struct ips_proto *proto, struct ips_flow *flow)
 
 	psmi_seqnum_t last_seq_num = STAILQ_LAST(unackedq, ips_scb, nextq)->seq_num;
 	while (between((scb = STAILQ_FIRST(unackedq))->seq_num.psn_num,
-		       last_seq_num.psn_num, flow->xmit_ack_num.psn_num-1)
+		       last_seq_num.psn_num, (flow->xmit_ack_num.psn_num-1) & proto->psn_mask)
 	    ) {
 		STAILQ_REMOVE_HEAD(unackedq, nextq);
 #ifdef PSM_DEBUG
@@ -84,40 +84,15 @@ psm3_tcp_proto_local_ack(struct ips_proto *proto, struct ips_flow *flow)
 		if (scb->callback)
 			(*scb->callback) (scb->cb_param, scb->nfrag > 1 ?
 					  scb->chunk_size : scb->payload_size);
-		if (!(scb->scb_flags & IPS_SEND_FLAG_PERSISTENT))
-			psm3_ips_scbctrl_free(scb);
+		psm3_ips_scbctrl_free(scb);
 		if (STAILQ_EMPTY(unackedq)) {
 			// timer_ack shall not start
-			psmi_assert(! (flow->timer_ack->flags & PSMI_TIMER_FLAG_PENDING));
-			flow->timer_ack = NULL;
-			psmi_timer_cancel(proto->timerq, flow->timer_send);
-			flow->timer_send = NULL;
+			psmi_assert(! (flow->timer_ack.flags & PSMI_TIMER_FLAG_PENDING));
+			psmi_timer_cancel(proto->timerq, &flow->timer_send);
 
 			SLIST_FIRST(scb_pend) = NULL;
 			psmi_assert(flow->scb_num_pending == 0);
 			break;
-		} else if (flow->timer_ack == scb->timer_ack) {
-			/*
-			 * Exchange timers with last scb on unackedq.
-			 * timer in scb is used by flow, cancelling current
-			 * timer and then requesting a new timer takes more
-			 * time, instead, we exchange the timer between current
-			 * freeing scb and the last scb on unacked queue.
-			 */
-			psmi_timer *timer;
-			ips_scb_t *last = STAILQ_LAST(unackedq, ips_scb, nextq);
-
-			timer = scb->timer_ack;
-			scb->timer_ack = last->timer_ack;
-			last->timer_ack = timer;
-			timer = scb->timer_send;
-			scb->timer_send = last->timer_send;
-			last->timer_send = timer;
-
-			scb->timer_ack->context = scb;
-			scb->timer_send->context = scb;
-			last->timer_ack->context = last;
-			last->timer_send->context = last;
 		}
 	}
 }
@@ -151,12 +126,13 @@ psm3_tcp_proto_flow_flush_pio(struct ips_flow *flow, int *nflushed)
 		// local ack
 		if (scb) { // this check is unnecessary, but can make KW happy
 			flow->xmit_ack_num.psn_num = 1 + (__be32_to_cpu(scb->ips_lrh.bth[2]) & proto->psn_mask);
+			flow->xmit_ack_num.psn_num &= proto->psn_mask;
 		}
 		psm3_tcp_proto_local_ack(proto, flow);
 	}
 
 	if (!SLIST_EMPTY(scb_pend)) {
-		psmi_timer_request(proto->timerq, flow->timer_send,
+		psmi_timer_request(proto->timerq, &flow->timer_send,
 				   get_cycles() + proto->timeout_send);
 	}
 

@@ -89,6 +89,11 @@ static FILE *perf_stats_fd;
 static int print_stats_freq;
 static int print_stats_running;
 static pthread_t perf_print_thread;
+// The mutex is used only for print_stats_done and print_stats_exited for
+// synchronizing with perf_print_thread exit.
+static pthread_mutex_t print_stats_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t print_stats_done  = PTHREAD_COND_INITIALIZER;
+static int print_stats_exited;
 
 // any psm3 env variables parsed prior to psm3_stats_initialize get stashed here
 #define MAX_SAVED_ENV 40	// only a handful parsed early, more than enough
@@ -539,17 +544,25 @@ void
 	} while (print_stats_running);
 
 end:
-	pthread_exit(NULL);
+	pthread_mutex_lock(&print_stats_mutex);
+	print_stats_exited = 1;
+	pthread_cond_signal(&print_stats_done);
+	pthread_mutex_unlock(&print_stats_mutex);
+	return NULL;
 }
 
 static void
 psm3_print_stats_init_thread(void)
 {
 	print_stats_running = 1;
+	print_stats_exited = 0;
 	if (pthread_create(&perf_print_thread, NULL,
 				psm3_print_stats_thread, (void*)NULL))
 	{
 		print_stats_running = 0;
+		print_stats_exited = 1;
+		pthread_cond_signal(&print_stats_done);
+		pthread_mutex_unlock(&print_stats_mutex);
 		_HFI_ERROR("Failed to create logging thread\n");
 	}
 }
@@ -757,8 +770,19 @@ psm3_stats_finalize(void)
 	if (print_stats_freq == -1) {
 		psm3_stats_show(print_statsmask);
 	} else if (print_stats_running) {
+		struct timespec ts;
+
+		clock_gettime(CLOCK_REALTIME, &ts);
+		// Max time: 2 * print_stats_freq
+		ts.tv_sec += 2 * print_stats_freq;
 		print_stats_running = 0;
-		pthread_join(perf_print_thread, NULL);
+		// pthread_join() should not be used in dlclose path.
+		pthread_mutex_lock(&print_stats_mutex);
+		while (!print_stats_exited) {
+			if (pthread_cond_timedwait(&print_stats_done, &print_stats_mutex, &ts))
+				break;
+		}
+		pthread_mutex_unlock(&print_stats_mutex);
 	}
 	if (perf_stats_fd) {
 		fclose(perf_stats_fd);
@@ -769,6 +793,8 @@ psm3_stats_finalize(void)
 		perf_help_fd = NULL;
 	}
 	psm3_stats_deregister_all();
+	pthread_cond_destroy(&print_stats_done);
+	pthread_mutex_destroy(&print_stats_mutex);
 	perf_stats_env_num = 0;
 	perf_stats_initialized = 0;
 }

@@ -140,10 +140,12 @@ static int ucx_cm_getname(fid_t fid, void *addr, size_t *addrlen)
 struct fi_ops_cm ucx_cm_ops = {
 	.size = sizeof(struct fi_ops_cm),
 	.getname = ucx_cm_getname,
+	.setname = fi_no_setname,
 	.getpeer = fi_no_getpeer,
 	.connect = fi_no_connect,
 	.listen = fi_no_listen,
 	.accept = fi_no_accept,
 	.reject = fi_no_reject,
 	.shutdown = fi_no_shutdown,
+	.join = fi_no_join,
 };

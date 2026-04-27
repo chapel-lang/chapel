@@ -73,6 +73,7 @@ ssize_t efa_rdm_pke_init_rta_common(struct efa_rdm_pke *pkt_entry,
 
 	pkt_entry->pkt_size = hdr_size + data_size;
 	pkt_entry->ope = txe;
+	pkt_entry->peer = txe->peer;
 	return 0;
 }
 
@@ -91,17 +92,17 @@ struct efa_rdm_ope *efa_rdm_pke_alloc_rta_rxe(struct efa_rdm_pke *pkt_entry, int
 	struct efa_rdm_ope *rxe;
 	struct efa_rdm_rta_hdr *rta_hdr;
 
-	rxe = efa_rdm_ep_alloc_rxe(pkt_entry->ep, pkt_entry->addr, op);
+	rxe = efa_rdm_ep_alloc_rxe(pkt_entry->ep, pkt_entry->peer, op);
 	if (OFI_UNLIKELY(!rxe)) {
 		EFA_WARN(FI_LOG_CQ,
 			"RX entries exhausted.\n");
 		return NULL;
 	}
 
-	if (op == ofi_op_atomic) {
-		rxe->addr = pkt_entry->addr;
+	rxe->internal_flags |= EFA_RDM_OPE_INTERNAL;
+
+	if (op == ofi_op_atomic)
 		return rxe;
-	}
 
 	rta_hdr = (struct efa_rdm_rta_hdr *)pkt_entry->wiredata;
 	rxe->atomic_hdr.atomic_op = rta_hdr->atomic_op;

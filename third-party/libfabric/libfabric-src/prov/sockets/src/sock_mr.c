@@ -131,7 +131,6 @@ struct sock_mr *sock_mr_verify_desc(struct sock_domain *domain, void *desc,
 static int sock_regattr(struct fid *fid, const struct fi_mr_attr *attr,
 	uint64_t flags, struct fid_mr **mr)
 {
-	struct fi_eq_entry eq_entry;
 	struct sock_domain *dom;
 	struct fi_mr_attr cur_abi_attr;
 	struct sock_mr *_mr;
@@ -171,14 +170,6 @@ static int sock_regattr(struct fid *fid, const struct fi_mr_attr *attr,
 
 	*mr = &_mr->mr_fid;
 	ofi_atomic_inc32(&dom->ref);
-
-	if (dom->mr_eq) {
-		eq_entry.fid = &domain->fid;
-		eq_entry.context = attr->context;
-		return sock_eq_report_event(dom->mr_eq, FI_MR_COMPLETE,
-			&eq_entry, sizeof(eq_entry), 0);
-	}
-
 	return 0;
 
 err:

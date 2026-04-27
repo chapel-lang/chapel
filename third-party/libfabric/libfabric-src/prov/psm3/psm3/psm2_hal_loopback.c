@@ -131,16 +131,6 @@ static int psm3_hfp_loopback_get_port_active(int unit, int port)
 	return (unit == 0) && (port == 1);
 }
 
-static int psm3_hfp_loopback_get_num_contexts(int unit)
-{
-	return 1024;
-}
-
-static int psm3_hfp_loopback_get_num_free_contexts(int unit)
-{
-	return 1024;
-}
-
 static int psm3_hfp_loopback_get_port_subnet(int unit, int port, int addr_index,
 	psmi_subnet128_t *subnet, psmi_naddr128_t *addr,
 	int *idx, psmi_gid128_t *gid)
@@ -210,10 +200,10 @@ static int psm3_hfp_loopback_get_port_lid(int unit, int port, int addr_index)
 static void psm3_hfp_loopback_mq_init_defaults(struct psm2_mq *mq)
 {
 	mq->ips_cpu_window_rv_str =  NULL; // no rendezvous
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 	mq->ips_gpu_window_rv_str =  NULL; // no rendezvous
 #endif
-	mq->hfi_thresh_rv = (~(uint32_t)0); // disable rendezvous
+	mq->rndv_nic_thresh = (~(uint32_t)0); // disable rendezvous
 	mq->hfi_thresh_tiny = PSM_MQ_NIC_MAX_TINY;
 	// RDMA and MR cache N/A, leave ep->rdmamode, ep->mr_cache_mode and
 	// ep->rv_gpu_cache_size as set by caller (0, NONE, 0)
@@ -232,11 +222,11 @@ static int psm3_hfp_loopback_get_default_pkey(void)
 	return 0x8001;	// not used (only used in ptl_ips), pick a safe value
 }
 
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 static void psm3_hfp_loopback_gdr_open(void)
 {
 	/* disable GPU Direct copy, no driver to help us */
-	is_gdr_copy_enabled = gdr_copy_limit_send = gdr_copy_limit_recv = 0;
+	psm3_gpu_is_gdr_copy_enabled = psm3_gpu_gdr_copy_limit_send = psm3_gpu_gdr_copy_limit_recv = 0;
 }
 #endif
 
@@ -267,7 +257,7 @@ hfp_loopback_t psm3_loopback_hi = {
 		.hfp_mq_init_defaults			  = psm3_hfp_loopback_mq_init_defaults,
 		.hfp_ep_open_opts_get_defaults		  = psm3_hfp_loopback_ep_open_opts_get_defaults,
 		.hfp_context_initstats			  = NULL, // ptl_ips only
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 		.hfp_gdr_open			  	= psm3_hfp_loopback_gdr_open,
 #endif
 
@@ -276,8 +266,6 @@ hfp_loopback_t psm3_loopback_hi = {
 		.hfp_get_num_ports			  = psm3_hfp_loopback_get_num_ports,
 		.hfp_get_unit_active			  = psm3_hfp_loopback_get_unit_active,
 		.hfp_get_port_active			  = psm3_hfp_loopback_get_port_active,
-		.hfp_get_num_contexts			  = psm3_hfp_loopback_get_num_contexts,
-		.hfp_get_num_free_contexts		  = psm3_hfp_loopback_get_num_free_contexts,
 		.hfp_get_default_pkey			  = psm3_hfp_loopback_get_default_pkey,
 		.hfp_get_port_subnet			  = psm3_hfp_loopback_get_port_subnet,
 		.hfp_get_unit_pci_bus			  = psm3_hfp_loopback_get_unit_pci_bus,
@@ -310,14 +298,16 @@ hfp_loopback_t psm3_loopback_hi = {
 		.hfp_ips_ipsaddr_init_connections	  = NULL,
 		.hfp_ips_ipsaddr_free			  = NULL,
 		.hfp_ips_flow_init			  = NULL,
-		.hfp_ips_ipsaddr_disconnect		  = NULL,
+		.hfp_ips_ipsaddr_start_disconnect	  = NULL,
+		.hfp_ips_ipsaddr_done_disconnect	  = NULL,
+		.hfp_ips_ipsaddr_start_reconnect	  = NULL,
 		.hfp_ips_ibta_init			  = NULL,
 		.hfp_ips_path_rec_init			  = NULL,
 		.hfp_ips_ptl_pollintr			  = NULL,
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 		.hfp_gdr_close				  = NULL,
 		.hfp_gdr_convert_gpu_to_host_addr	  = NULL,
-#endif /* PSM_CUDA || PSM_ONEAPI */
+#endif /* PSM_HAVE_GPU */
 		.hfp_get_port_index2pkey		  = NULL,
 		.hfp_poll_type				  = NULL,
 		.hfp_spio_transfer_frame		  = NULL,

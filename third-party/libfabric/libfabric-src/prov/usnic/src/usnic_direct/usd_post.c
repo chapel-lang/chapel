@@ -90,7 +90,7 @@ usd_post_recv(
     while (recv_list != NULL) {
         iovp = recv_list->urd_iov;
         rq->urq_context[index] = recv_list->urd_context;
-        rq_enet_desc_enc(desc, (dma_addr_t) iovp[0].iov_base,
+        rq_enet_desc_enc(desc, (dma_addr_t)(uintptr_t) iovp[0].iov_base,
                          RQ_ENET_TYPE_ONLY_SOP, iovp[0].iov_len);
         count++;
 
@@ -100,7 +100,7 @@ usd_post_recv(
 
         for (i = 1; i < recv_list->urd_iov_cnt; ++i) {
             rq->urq_context[index] = recv_list->urd_context;
-            rq_enet_desc_enc(desc, (dma_addr_t) iovp[i].iov_base,
+            rq_enet_desc_enc(desc, (dma_addr_t)(uintptr_t) iovp[i].iov_base,
                              RQ_ENET_TYPE_NOT_SOP, iovp[i].iov_len);
             count++;
 

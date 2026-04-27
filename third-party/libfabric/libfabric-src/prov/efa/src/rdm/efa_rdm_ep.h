@@ -7,10 +7,10 @@
 #include <ctype.h>
 #include "efa.h"
 #include "efa_tp.h"
+#include "efa_rdm_peer.h"
 #include "efa_base_ep.h"
 #include "efa_rdm_rxe_map.h"
 
-#define EFA_RDM_ERROR_MSG_BUFFER_LENGTH 1024
 
 /** @brief Information of a queued copy.
  *
@@ -27,15 +27,21 @@ struct efa_rdm_ep_queued_copy {
 };
 
 #define EFA_RDM_MAX_QUEUED_COPY (8)
-/** @brief max number of concurrent send reuqests allowed by EFA device
- *
- * The value was from EFA device's attribute (device->efa_attr.max_sq_wr)
+
+/**
+ * Max number of opes queued before handshake is made
+ * with their peers. This cnt is per EP.
  */
-#define EFA_RDM_EP_MAX_WR_PER_IBV_POST_SEND (4096)
-#define EFA_RDM_EP_MAX_WR_PER_IBV_POST_RECV (8192)
+#define EFA_RDM_MAX_QUEUED_OPE_BEFORE_HANDSHAKE (16)
+
+#define EFA_RDM_EP_MIN_PEER_POOL_SIZE (1024)
 
 struct efa_rdm_ep {
 	struct efa_base_ep base_ep;
+
+	/* self_ah necessary for local reads when application does not insert
+	 * its own address into the AV */
+	struct efa_ah *self_ah;
 
 	/**
 	 * Default to 0
@@ -47,18 +53,16 @@ struct efa_rdm_ep {
 
 	/* shm provider fid */
 	struct fid_ep *shm_ep;
+	/* shm srx fid (shm-owned) */
+	struct fid_ep *shm_srx;
+	/* shm peer_srx (efa-owned) */
+	struct fid_peer_srx *shm_peer_srx;
 
-	/*
-	 * EFA RDM endpoint rx/tx queue sizes. These may be different from the core
-	 * provider's rx/tx size and will either limit the number of possible
-	 * receives/sends or allow queueing.
-	 */
-	size_t rx_size;
-	size_t tx_size;
 	size_t mtu_size;
-	size_t rx_iov_limit;
-	size_t tx_iov_limit;
-	size_t inject_size;
+	size_t max_tagged_size;		/**< #FI_OPT_MAX_TAGGED_SIZE */
+	size_t max_atomic_size;		/**< #FI_OPT_MAX_ATOMIC_SIZE */
+	size_t inject_tagged_size;	/**< #FI_OPT_INJECT_TAGGED_SIZE */
+	size_t inject_atomic_size;	/**< #FI_OPT_INJECT_ATOMIC_SIZE */
 
 	/* Endpoint's capability to support zero-copy rx */
 	bool use_zcpy_rx;
@@ -75,20 +79,9 @@ struct efa_rdm_ep {
 	/* Resource management flag */
 	uint64_t rm_full;
 
-	/* application's ordering requirements */
-	uint64_t msg_order;
-
-	/* Application's maximum msg size hint */
-	size_t max_msg_size;
 
 	/* Applicaiton's message prefix size. */
 	size_t msg_prefix_size;
-
-	/* EFA RDM protocol's max header size */
-	size_t max_proto_hdr_size;
-
-	/* tx iov limit of EFA device */
-	size_t efa_device_iov_limit;
 
 	/* threshold to release multi_recv buffer */
 	size_t min_multi_recv_size;
@@ -96,6 +89,7 @@ struct efa_rdm_ep {
 	/* buffer pool for send & recv */
 	struct ofi_bufpool *efa_tx_pkt_pool;
 	struct ofi_bufpool *efa_rx_pkt_pool;
+	struct ofi_bufpool *user_rx_pkt_pool;
 
 	/* staging area for unexpected and out-of-order packets */
 	struct ofi_bufpool *rx_unexp_pkt_pool;
@@ -108,10 +102,10 @@ struct efa_rdm_ep {
 
 	/* datastructure to maintain send/recv states */
 	struct ofi_bufpool *ope_pool;
+	/* data structure to maintain overflow pke linked list entry */
+	struct ofi_bufpool *overflow_pke_pool;
 	/* data structure to maintain pkt rx map */
 	struct ofi_bufpool *map_entry_pool;
-	/** a map between sender address + msg_id to RX entry */
-	struct efa_rdm_rxe_map rxe_map;
 	/*
 	 * buffer pool for atomic response data, used by
 	 * emulated fetch and compare atomic.
@@ -119,23 +113,19 @@ struct efa_rdm_ep {
 	struct ofi_bufpool *rx_atomrsp_pool;
 	/* list of pre-posted recv buffers */
 	struct dlist_entry rx_posted_buf_list;
-	/* op entries with queued rnr packets */
-	struct dlist_entry ope_queued_rnr_list;
-	/* op entries with queued ctrl packets */
-	struct dlist_entry ope_queued_ctrl_list;
-	/* op entries with queued read requests */
-	struct dlist_entry ope_queued_read_list;
-	/* tx/rx_entries used by long CTS msg/write/read protocol
-         * which have data to be sent */
-	struct dlist_entry ope_longcts_send_list;
-	/* read entries with data to be read */
-	struct dlist_entry read_pending_list;
-	/* list of #efa_rdm_peer that are in backoff due to RNR */
-	struct dlist_entry peer_backoff_list;
-	/* list of #efa_rdm_peer that will retry posting handshake pkt */
-	struct dlist_entry handshake_queued_peer_list;
+
+	/* bufpool to hold the fi_addr->peer hashmap entries */
+	struct ofi_bufpool *peer_map_entry_pool;
+
+	/**< List of peers associated with this endpoint */
+	struct dlist_entry ep_peer_list;
+
+	/* buffer pool for peer reorder circular buffer */
+	struct ofi_bufpool *peer_robuf_pool;
 
 #if ENABLE_DEBUG
+	/* buffer pool for packet debug info */
+	struct ofi_bufpool *pke_debug_info_pool;
 	/* tx/rx_entries waiting to receive data in
          * long CTS msg/read/write protocols */
 	struct dlist_entry ope_recv_list;
@@ -172,6 +162,11 @@ struct efa_rdm_ep {
 	 */
 	size_t efa_rx_pkts_held;
 
+	/*
+	 * number of RX pkts posted by user (for zero-copy recv)
+	 */
+	size_t user_rx_pkts_posted;
+
 	/* number of outstanding tx ops on efa device */
 	size_t efa_outstanding_tx_ops;
 
@@ -194,11 +189,20 @@ struct efa_rdm_ep {
 	*/
 	bool use_device_rdma;
 
-	struct fi_info *user_info; /**< fi_info passed by user when calling fi_endpoint */
 	bool sendrecv_in_order_aligned_128_bytes; /**< whether to support in order send/recv of each aligned 128 bytes memory region */
 	bool write_in_order_aligned_128_bytes; /**< whether to support in order write of each aligned 128 bytes memory region */
-	char err_msg[EFA_RDM_ERROR_MSG_BUFFER_LENGTH]; /* A large enough buffer to store CQ/EQ error data used by e.g. fi_cq_readerr */
 	struct efa_rdm_pke **pke_vec;
+	/* Work arrays for efa_rdm_ope_post_send to avoid stack allocation */
+	struct efa_rdm_pke **send_pkt_entry_vec;
+	int *send_pkt_entry_size_vec;
+	struct dlist_entry entry;
+	/* the count of opes queued before handshake is made with their peers */
+	size_t ope_queued_before_handshake_cnt;
+	bool homogeneous_peers; /* peers always support the same capabilities in extra_info as this ep */
+	struct fi_info *shm_info;	/* fi_info used to create shm_ep */
+
+	/* track operations with posted packets to ack a remote */
+	struct dlist_entry ope_posted_ack_list;
 };
 
 int efa_rdm_ep_flush_queued_blocking_copy_to_hmem(struct efa_rdm_ep *ep);
@@ -208,15 +212,12 @@ int efa_rdm_ep_flush_queued_blocking_copy_to_hmem(struct efa_rdm_ep *ep);
 
 struct efa_ep_addr *efa_rdm_ep_raw_addr(struct efa_rdm_ep *ep);
 
-const char *efa_rdm_ep_raw_addr_str(struct efa_rdm_ep *ep, char *buf, size_t *buflen);
-
-struct efa_ep_addr *efa_rdm_ep_get_peer_raw_addr(struct efa_rdm_ep *ep, fi_addr_t addr);
-
-const char *efa_rdm_ep_get_peer_raw_addr_str(struct efa_rdm_ep *ep, fi_addr_t addr, char *buf, size_t *buflen);
-
 struct efa_rdm_peer *efa_rdm_ep_get_peer(struct efa_rdm_ep *ep, fi_addr_t addr);
 
+struct efa_rdm_peer *efa_rdm_ep_get_peer_explicit(struct efa_rdm_ep *ep, fi_addr_t addr);
+
 int32_t efa_rdm_ep_get_peer_ahn(struct efa_rdm_ep *ep, fi_addr_t addr);
+struct efa_rdm_peer *efa_rdm_ep_get_peer_implicit(struct efa_rdm_ep *ep, fi_addr_t addr);
 
 struct efa_rdm_ope *efa_rdm_ep_alloc_txe(struct efa_rdm_ep *efa_rdm_ep,
 					 struct efa_rdm_peer *peer,
@@ -226,45 +227,27 @@ struct efa_rdm_ope *efa_rdm_ep_alloc_txe(struct efa_rdm_ep *efa_rdm_ep,
 					 uint64_t flags);
 
 struct efa_rdm_ope *efa_rdm_ep_alloc_rxe(struct efa_rdm_ep *ep,
-					   fi_addr_t addr, uint32_t op);
+					   struct efa_rdm_peer *peer, uint32_t op);
 
 void efa_rdm_ep_record_tx_op_submitted(struct efa_rdm_ep *ep, struct efa_rdm_pke *pkt_entry);
 
 void efa_rdm_ep_record_tx_op_completed(struct efa_rdm_ep *ep, struct efa_rdm_pke *pkt_entry);
 
-static inline size_t efa_rdm_ep_get_rx_pool_size(struct efa_rdm_ep *ep)
-{
-	return MIN(ep->efa_max_outstanding_rx_ops, ep->rx_size);
-}
-
-static inline size_t efa_rdm_ep_get_tx_pool_size(struct efa_rdm_ep *ep)
-{
-	return MIN(ep->efa_max_outstanding_tx_ops, ep->tx_size);
-}
-
 static inline int efa_rdm_ep_need_sas(struct efa_rdm_ep *ep)
 {
-	return ep->msg_order & FI_ORDER_SAS;
+	return ((ep->base_ep.info->tx_attr->msg_order & FI_ORDER_SAS) || (ep->base_ep.info->rx_attr->msg_order & FI_ORDER_SAS));
 }
-
-
 
 /* Initialization functions */
 int efa_rdm_ep_open(struct fid_domain *domain, struct fi_info *info,
 		    struct fid_ep **ep, void *context);
-
-/* EP sub-functions */
-void efa_rdm_ep_progress(struct util_ep *util_ep);
-void efa_rdm_ep_progress_internal(struct efa_rdm_ep *efa_rdm_ep);
 
 int efa_rdm_ep_post_user_recv_buf(struct efa_rdm_ep *ep, struct efa_rdm_ope *rxe,
 			      uint64_t flags);
 
 struct efa_rdm_peer;
 
-void efa_rdm_ep_queue_rnr_pkt(struct efa_rdm_ep *ep,
-			      struct dlist_entry *list,
-			      struct efa_rdm_pke *pkt_entry);
+void efa_rdm_ep_queue_rnr_pkt(struct efa_rdm_ep *ep, struct efa_rdm_pke *pkt_entry);
 
 ssize_t efa_rdm_ep_post_queued_pkts(struct efa_rdm_ep *ep,
 				    struct dlist_entry *pkts);
@@ -277,26 +260,9 @@ struct efa_domain *efa_rdm_ep_domain(struct efa_rdm_ep *ep)
 	return container_of(ep->base_ep.util_ep.domain, struct efa_domain, util_domain);
 }
 
-/**
- * @brief return whether this endpoint should write error cq entry for RNR.
- *
- * For an endpoint to write RNR completion, two conditions must be met:
- *
- * First, the end point must be able to receive RNR completion from rdma-core,
- * which means rnr_etry must be less then EFA_RNR_INFINITE_RETRY.
- *
- * Second, the app need to request this feature when opening endpoint
- * (by setting info->domain_attr->resource_mgmt to FI_RM_DISABLED).
- * The setting was saved as efa_rdm_ep->handle_resource_management.
- *
- * @param[in]	ep	endpoint
- */
-static inline
-bool efa_rdm_ep_should_write_rnr_completion(struct efa_rdm_ep *ep)
-{
-	return (efa_env.rnr_retry < EFA_RNR_INFINITE_RETRY) &&
-		(ep->handle_resource_management == FI_RM_DISABLED);
-}
+void efa_rdm_ep_post_internal_rx_pkts(struct efa_rdm_ep *ep);
+
+int efa_rdm_ep_bulk_post_internal_rx_pkts(struct efa_rdm_ep *ep);
 
 /*
  * @brief: check whether we should use p2p for this transaction
@@ -310,16 +276,14 @@ bool efa_rdm_ep_should_write_rnr_completion(struct efa_rdm_ep *ep)
 static inline
 int efa_rdm_ep_use_p2p(struct efa_rdm_ep *efa_rdm_ep, struct efa_mr *efa_mr)
 {
-	if (!efa_mr)
-		return 0;
-
 	/*
-	 * always send from host buffers if we have a descriptor
+	 * P2P is always available for host memory (Unregistered buffer will be
+	 * regarded as host memory as EFA provider requires FI_MR_HMEM)
 	 */
-	if (efa_mr->peer.iface == FI_HMEM_SYSTEM)
+	if (!efa_mr || efa_mr->peer.iface == FI_HMEM_SYSTEM)
 		return 1;
 
-	if (efa_rdm_ep_domain(efa_rdm_ep)->hmem_info[efa_mr->peer.iface].p2p_supported_by_device)
+	if (g_efa_hmem_info[efa_mr->peer.iface].p2p_supported_by_device)
 		return (efa_rdm_ep->hmem_p2p_opt != FI_HMEM_P2P_DISABLED);
 
 	if (efa_rdm_ep->hmem_p2p_opt == FI_HMEM_P2P_REQUIRED) {
@@ -346,6 +310,60 @@ bool efa_rdm_ep_support_rdma_read(struct efa_rdm_ep *ep)
 	return efa_rdm_ep_domain(ep)->device->device_caps & EFADV_DEVICE_ATTR_CAPS_RDMA_READ;
 }
 
+/**
+ * @brief determine if both peers support RDMA read
+ *
+ * This function can only return true if peers are homogeneous,
+ * or a handshake packet has already been exchanged and the peer
+ * set the EFA_RDM_EXTRA_FEATURE_RDMA_READ flag.
+ * @params[in]		ep		Endpoint for communication with peer
+ * @params[in]		peer		An EFA peer
+ * @return		boolean		both self and peer support RDMA read
+ */
+static inline
+bool efa_both_support_rdma_read(struct efa_rdm_ep *ep, struct efa_rdm_peer *peer)
+{
+	return efa_rdm_ep_support_rdma_read(ep) &&
+	       (ep->homogeneous_peers || peer->is_self || efa_rdm_peer_support_rdma_read(peer));
+}
+
+/**
+ * @brief Determine interoperability for RDMA read between peers
+ *
+ * RDMA read is currently not interoperable between all EFA platforms; older
+ * platforms cannot fully interoperate with newer platforms. The platform
+ * version can be inferred from ibv_device_attr.vendor_part_id (see
+ * ibv_query_device(3)).
+ *
+ * In this context, version 0xEFA0 is considered "older", while versions 0xEFA1+
+ * are considered "newer"
+ *
+ * @todo Either:
+ * - Refactor this logic if the interoperability is ever reported
+ *   directly via firmware or rdma-core
+ * - Remove altogether if RDMA read becomes interoperable between all EFA
+ *   platforms
+ *
+ * @param[in]	ep	Endpoint for communication with peer
+ * @param[in]	peer	An EFA peer
+ *
+ * @return true if peers can interoperate via RDMA read; false otherwise
+ */
+static inline
+bool efa_rdm_interop_rdma_read(struct efa_rdm_ep *ep, struct efa_rdm_peer *peer)
+{
+	bool rdma_read_support = efa_both_support_rdma_read(ep, peer);
+	uint32_t ep_dev_ver, peer_dev_ver;
+
+	if (!rdma_read_support)
+		return false;
+
+	ep_dev_ver = efa_rdm_ep_domain(ep)->device->ibv_attr.vendor_part_id;
+	peer_dev_ver = peer->device_version;
+
+	return (ep_dev_ver == 0xEFA0) ? (peer_dev_ver == 0xEFA0) : (peer_dev_ver != 0xEFA0);
+}
+
 /*
  * @brief: check whether the endpoint supports rdma write
  *
@@ -367,13 +385,46 @@ bool efa_rdm_ep_support_rdma_write(struct efa_rdm_ep *ep)
 }
 
 /**
+ * @brief determine if both peers support RDMA write
+ *
+ * This function can only return true if peers are homogeneous, or
+ * a handshake packet has already been exchanged and the peer set
+ * the EFA_RDM_EXTRA_FEATURE_RDMA_WRITE flag.
+ * @params[in]		ep		Endpoint for communication with peer
+ * @params[in]		peer		An EFA peer
+ * @return		boolean		both self and peer support RDMA write
+ */
+static inline
+bool efa_both_support_rdma_write(struct efa_rdm_ep *ep, struct efa_rdm_peer *peer)
+{
+	return efa_rdm_ep_support_rdma_write(ep) &&
+	       (ep->homogeneous_peers || peer->is_self || efa_rdm_peer_support_rdma_write(peer));
+}
+
+/**
+ * @brief determine if both peers support zero hdr data transfer
+ *
+ * This function can only return true if a handshake packet has already been
+ * exchanged, and the peer set the EFA_RDM_EXTRA_FEATURE_REQUEST_USER_RECV_QP flag.
+ * @params[in]		ep		Endpoint for communication with peer
+ * @params[in]		peer		An EFA peer
+ * @return		boolean		both self and peer support RDMA read
+ */
+static inline
+bool efa_both_support_zero_hdr_data_transfer(struct efa_rdm_ep *ep, struct efa_rdm_peer *peer)
+{
+	return ((ep->extra_info[0] & EFA_RDM_EXTRA_FEATURE_REQUEST_USER_RECV_QP) &&
+		(peer->extra_info[0] & EFA_RDM_EXTRA_FEATURE_REQUEST_USER_RECV_QP));
+}
+
+/**
  * @brief check whether endpoint was configured with FI_RMA capability
  * @return -FI_EOPNOTSUPP if FI_RMA wasn't requested, 0 if it was.
  */
 static inline int efa_rdm_ep_cap_check_rma(struct efa_rdm_ep *ep) {
-	if ((ep->user_info->caps & FI_RMA) == FI_RMA)
+	if ((ep->base_ep.info->caps & FI_RMA) == FI_RMA)
 		return 0;
-	EFA_WARN_ONCE(FI_LOG_EP_DATA, "Operation requires FI_RMA capability, which was not requested.");
+	EFA_WARN_ONCE(FI_LOG_EP_DATA, "Operation requires FI_RMA capability, which was not requested.\n");
 	return -FI_EOPNOTSUPP;
 }
 
@@ -382,9 +433,9 @@ static inline int efa_rdm_ep_cap_check_rma(struct efa_rdm_ep *ep) {
  * @return -FI_EOPNOTSUPP if FI_ATOMIC wasn't requested, 0 if it was.
  */
 static inline int efa_rdm_ep_cap_check_atomic(struct efa_rdm_ep *ep) {
-	if ((ep->user_info->caps & FI_ATOMIC) == FI_ATOMIC)
+	if ((ep->base_ep.info->caps & FI_ATOMIC) == FI_ATOMIC)
 		return 0;
-	EFA_WARN_ONCE(FI_LOG_EP_DATA, "Operation requires FI_ATOMIC capability, which was not requested.");
+	EFA_WARN_ONCE(FI_LOG_EP_DATA, "Operation requires FI_ATOMIC capability, which was not requested.\n");
 	return -FI_EOPNOTSUPP;
 }
 
@@ -408,37 +459,34 @@ ssize_t efa_rdm_ep_trigger_handshake(struct efa_rdm_ep *ep, struct efa_rdm_peer 
 
 ssize_t efa_rdm_ep_post_handshake(struct efa_rdm_ep *ep, struct efa_rdm_peer *peer);
 
+int efa_rdm_ep_enforce_handshake_for_txe(struct efa_rdm_ep *ep, struct efa_rdm_ope *txe);
+
 void efa_rdm_ep_post_handshake_or_queue(struct efa_rdm_ep *ep,
 				     struct efa_rdm_peer *peer);
-
-static inline int efa_rdm_attempt_to_sync_memops(struct efa_rdm_ep *ep, void *buf, void *desc)
-{
-	int err = 0;
-	struct efa_mr *efa_mr = (struct efa_mr *) desc;
-
-	if (OFI_UNLIKELY(ep->cuda_api_permitted && efa_mr && efa_mr->needs_sync)) {
-		err = cuda_set_sync_memops(buf);
-		if (err) {
-			EFA_WARN(FI_LOG_MR, "Unable to set memops for cuda ptr %p\n", buf);
-			return err;
-		}
-		efa_mr->needs_sync = false;
-	}
-
-	return err;
-}
 
 static inline int efa_rdm_attempt_to_sync_memops_iov(struct efa_rdm_ep *ep, struct iovec *iov, void **desc, int num_desc)
 {
 	int err = 0, i;
+	struct efa_mr *efa_mr;
 
 	if (!desc)
 		return err;
 
-	for (i = 0; i < num_desc; i++) {
-		err = efa_rdm_attempt_to_sync_memops(ep, iov[i].iov_base, (struct efa_mr *) desc[i]);
-		if (err)
-			return err;
+	if (OFI_UNLIKELY(ep->cuda_api_permitted)) {
+		for (i = 0; i < num_desc; i++) {
+			efa_mr = (struct efa_mr *) desc[i];
+			if (efa_mr && efa_mr->needs_sync) {
+				err = cuda_set_sync_memops(iov[i].iov_base);
+				if (err) {
+					EFA_WARN(FI_LOG_MR,
+						 "Unable to set memops for "
+						 "cuda ptr %p\n",
+						 iov[i].iov_base);
+					return err;
+				}
+				efa_mr->needs_sync = false;
+			}
+		}
 	}
 
 	return err;
@@ -447,17 +495,46 @@ static inline int efa_rdm_attempt_to_sync_memops_iov(struct efa_rdm_ep *ep, stru
 static inline int efa_rdm_attempt_to_sync_memops_ioc(struct efa_rdm_ep *ep, struct fi_ioc *ioc, void **desc, int num_desc)
 {
 	int err = 0, i;
+	struct efa_mr *efa_mr;
 
 	if (!desc)
 		return err;
 
-	for (i = 0; i < num_desc; i++) {
-		err = efa_rdm_attempt_to_sync_memops(ep, ioc[i].addr, (struct efa_mr *) desc[i]);
-		if (err)
-			return err;
+	if (OFI_UNLIKELY(ep->cuda_api_permitted)) {
+		for (i = 0; i < num_desc; i++) {
+			efa_mr = (struct efa_mr *) desc[i];
+			if (efa_mr && efa_mr->needs_sync) {
+				err = cuda_set_sync_memops(ioc[i].addr);
+				if (err) {
+					EFA_WARN(FI_LOG_MR,
+						 "Unable to set memops for "
+						 "cuda ptr %p\n",
+						 ioc[i].addr);
+					return err;
+				}
+				efa_mr->needs_sync = false;
+			}
+		}
 	}
 
 	return err;
 }
+
+static inline
+bool efa_rdm_ep_support_unsolicited_write_recv(struct efa_rdm_ep *ep)
+{
+	return ep->extra_info[0] & EFA_RDM_EXTRA_FEATURE_UNSOLICITED_WRITE_RECV;
+}
+
+bool efa_rdm_ep_has_unfinished_send(struct efa_rdm_ep *efa_rdm_ep);
+
+int efa_rdm_ep_close_shm_resources(struct efa_rdm_ep *efa_rdm_ep);
+
+void efa_rdm_ep_wait_send(struct efa_rdm_ep *efa_rdm_ep);
+
+/* Macro for getting local endpoint address string */
+#define EFA_RDM_GET_EP_ADDR_STR(ep, ep_addr_str) \
+	char ep_addr_str[OFI_ADDRSTRLEN] = {0}; \
+	efa_base_ep_raw_addr_str(&ep->base_ep, ep_addr_str, &(size_t){sizeof ep_addr_str});
 
 #endif

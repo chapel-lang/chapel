@@ -84,6 +84,13 @@
 #define PSMI_SL_MIN	0
 #define PSMI_SL_MAX	31
 
+#ifdef PSM_FI
+#define EP_FAULTINJ_DELAYCONN 10       /* 1 every X connect calls delayed */
+#define EP_DELAYCONN_DELAY_SECS 30
+#define EP_FAULTINJ_DELAYDISC 10       /* 1 every X disconect calls delayed */
+#define EP_DELAYDISC_DELAY_SECS 30
+#endif /* PSM_FI */
+
 #define PSM_MCTXT_APPEND(head, node)	\
 	node->mctxt_prev = head->mctxt_prev; \
 	node->mctxt_next = head; \
@@ -95,6 +102,11 @@
 	node->mctxt_next->mctxt_prev = node->mctxt_prev; \
 	node->mctxt_next = node->mctxt_prev = node; \
 	node->mctxt_master = NULL
+
+#define PSM_EP_FOR_EACH_MCTXT(root, iter) \
+	for ( struct psm2_ep *iter = (root)->mctxt_master \
+	    ; iter \
+	    ; iter = iter->mctxt_next == iter->mctxt_master ? NULL : iter->mctxt_next)
 
 struct psm2_ep {
 	psm2_epid_t epid;	    /**> This endpoint's Endpoint ID */
@@ -108,6 +120,9 @@ struct psm2_ep {
 		struct psm3_sockets_ep sockets_ep;
 #endif
 	};
+#ifdef PSM_HAVE_GPU
+	union psm2_ep_gpu_specific gpu_specific;
+#endif
 
 	/* unit_id and portnum are set to 0 when ptl_ips not enabled */
 	int unit_id;
@@ -136,7 +151,7 @@ struct psm2_ep {
 #ifdef PSM_HAVE_RNDV_MOD
 	psm3_rv_t rv;   // rendezvous module open handle
 	uint32_t rv_mr_cache_size; /** PSM3_RV_MR_CACHE_SIZE */
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 	uint32_t rv_gpu_cache_size; /** PSM3_RV_GPU_CACHE_SIZE */
 #endif
 #endif /* PSM_HAVE_RNDV_MOD */
@@ -144,14 +159,6 @@ struct psm2_ep {
 	uint32_t hfi_num_descriptors;/** Number of allocated scb descriptors*/
 #ifdef PSM_HAVE_REG_MR
 	uint32_t hfi_num_send_rdma;/** Number of concurrent RDMA*/
-#endif
-#ifdef PSM_ONEAPI
-#ifndef PSM_HAVE_PIDFD
-	// TBD - move to ptl_am
-	int ze_ipc_socket;	// AF_UNIX listener sock to recv GPU Dev FDs
-	char *listen_sockname;	// /dev/shm filename for ze_ipc_socket
-	int need_dev_fds_poll;	// are there outstanding dev_fds to be polled
-#endif
 #endif
 	uint8_t wiremode; /* EPID protocol specific basic modes
 			   * For RoCE/IB reflects
@@ -172,8 +179,13 @@ struct psm2_ep {
 #endif
 	uint32_t hfi_imm_size;	  /** Immediate data size */
 	uint32_t connections;	    /**> Number of connections */
+	uint32_t reconnect_timeout; // max total secs to restore HAL connection
+				    // PSM3_RECONNECT_TIMEOUT
+	uint8_t allow_reconnect:1;
+	uint8_t reserved:7;
+	// 1 byte unused for alignment
 
-	/* HAL indicates send segmentation support (OPA Send DMA or UDP GSO)
+	/* HAL indicates send segmentation support (Send DMA or UDP GSO)
 	 * by setting max_segs>1 and max_size > 1 MTU.
 	 * chunk_size used will be min(chunk_max_segs*frag_size, chunk_max_size)
 	 * Can set 1 huge and other reasonable if want only 1 to control
@@ -272,10 +284,13 @@ struct psm2_epaddr {
 	PSMI_PROFILE_UNBLOCK();						\
 } while (0)
 
+void psm3_ep_init(void);
+void psm3_ep_fini(void);
+
 int psm3_ep_device_is_enabled(const psm2_ep_t ep, int devid);
 
 #ifdef PSM_HAVE_RNDV_MOD
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 extern int64_t psm3_gpu_evict_some(psm2_ep_t ep, uint64_t length, int access);
 #endif
 #endif

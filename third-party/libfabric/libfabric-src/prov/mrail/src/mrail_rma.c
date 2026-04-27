@@ -52,7 +52,7 @@ static void mrail_subreq_to_rail(struct mrail_subreq *subreq, uint32_t rail,
 	}
 
 	for (i = 0; i < subreq->rma_iov_count; ++i) {
-		mr_map = (struct mrail_addr_key *)subreq->rma_iov[i].key;
+		mr_map = (struct mrail_addr_key *)(uintptr_t)subreq->rma_iov[i].key;
 		//TODO: add base address from mrail_addr_key
 		out_rma_iovs[i].addr 	= subreq->rma_iov[i].addr;
 		out_rma_iovs[i].len	= subreq->rma_iov[i].len;
@@ -391,7 +391,7 @@ static ssize_t mrail_ep_inject_write(struct fid_ep *ep_fid, const void *buf,
 	ssize_t ret;
 
 	mrail_ep = container_of(ep_fid, struct mrail_ep, util_ep.ep_fid.fid);
-	mr_map = (struct mrail_addr_key *) key;
+	mr_map = (struct mrail_addr_key *)(uintptr_t) key;
 
 	rail = mrail_get_tx_rail_rr(mrail_ep);
 	ret = fi_inject_write(mrail_ep->rails[rail].ep, buf, len,

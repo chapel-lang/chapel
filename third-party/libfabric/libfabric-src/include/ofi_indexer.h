@@ -317,4 +317,14 @@ static inline void *ofi_array_at(struct ofi_dyn_arr *arr, int index)
 			      ofi_idx_offset(index));
 }
 
+static inline void *ofi_array_at_max(struct ofi_dyn_arr *arr, int index,
+				     int max_size)
+{
+	if (index >= max_size || !ofi_array_chunk(arr, index))
+		return NULL;
+
+	return ofi_array_item(arr, ofi_array_chunk(arr, index),
+			      ofi_idx_offset(index));
+}
+
 #endif /* _OFI_INDEXER_H_ */

@@ -51,6 +51,8 @@ static struct fi_ops ucx_fabric_fi_ops = {
 	.bind = fi_no_bind,
 	.control = fi_no_control,
 	.ops_open = fi_no_ops_open,
+	.tostr = fi_no_tostr,
+	.ops_set = fi_no_ops_set,
 };
 
 static struct fi_ops_fabric ucx_fabric_ops = {
@@ -87,7 +89,7 @@ static char* ucx_local_host_resolve()
 	char *result = NULL;
 
 	status = fi_param_get(&ucx_prov, "ns_iface", &iface);
-	if (!status)
+	if (status != FI_SUCCESS)
 		iface = NULL;
 
 	if (getifaddrs(&ifaddr) == -1) {

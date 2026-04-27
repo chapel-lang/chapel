@@ -63,15 +63,40 @@
  */
 
 /*
- * define connection version. this is the basic version, optimized
- * version will be added later for scalability.
+ * define connection version.
  * version kept in 2 nibbles in this format: 0xMMmm MM=major, mm=minor version
+ * Note that a UD or UDP connect can't reach a STL100 PSM recv context.
+ * We don't worry about UDP vs UD since can't reach eachother either.
  */
-// a litle paranod as a UD or UDP connect can't reach a STL100 PSM recv context
-// but we don't worry about UDP vs UD since can't reach eachother either
-#define IPS_CONNECT_VERNO	  0x0200 // 2.0 - epid_size of 24 bytes (3 word)
+#define IPS_CONNECT_VERNO	  0x0201 // 2.1
+// 1.0 was STL100 PSM
+//   epid of 8 bytes (1 word)
+// 2.0 moved to epid_size of 24 bytes (3 words).  Cannot interop with 1.x
+// 2.1 added:
+//   - optional HAL reconnect with new reconnect_count (for user RC QP)
+//   - connidx high bit in connect_hdr indiates disconnect timewait (! force)
+//   when 2.1 connects with 2.0, the mismatch disables the reconnect and
+//   timewait features in the 2.1 peer.
 #define IPS_CONNECT_VER_MAJOR(verno) (((verno) & 0xff00) >> 8)
 #define IPS_CONNECT_VER_MINOR(verno) ((verno) & 0x00ff)
+
+// does connection version allow HAL reconnect
+#define IPS_CONNECT_VER_ALLOW_RECONNECT(verno) \
+	(IPS_CONNECT_VER_MAJOR(verno) > 2 \
+	|| (IPS_CONNECT_VER_MAJOR(verno) == 2 \
+		&& IPS_CONNECT_VER_MINOR(verno) >= 1))
+
+// when sending CONNECT_REQUEST outside of psm2_connect, how long to
+// wait if output queue full/busy before reattempt.  Kept short.
+#define IPS_CONNECT_BUSY_TIMER (20 * NSEC_PER_USEC) // in nanoseconds
+
+// how long to stay in DISCONNECTED state for timewait before free ipsaddr
+// and allow a fresh connect.  A fixed timer is used since
+// ep->reconnect_timeout could be quite large.  Since this is 1/2 second
+// it is always less than reconnect_timeout, so remote retries
+// should be able to complete a connect after disconnect even if disconnect
+//  must time wait (provided both sides disconnect so time wait starts).
+#define IPS_CONNECT_TIMEWAIT (500 * NSEC_PER_MSEC)
 
 // prior to attempting connections, the address formats of each rail are checked
 // on both sides and must exactly match.  Unfortunately, the epid's exchanged
@@ -86,24 +111,47 @@
 // The connect_verno dictates the hdr format and multi-rail format.
 // When connect_verno major version is equal, connections are allowed and
 // psm_verno may indicate any differences in the remaining PSM wire protocols.
+// in CONNECT_REQUEST/REPLY, connidx is the senders index into
+//   ips_epaddr table (plus a base offset randomized at job start).  The index
+//   is limited in size by IPS_EPSTATE_CONNIDX_MAX.
+// in DISCONNECT_REQUEST/REPLY connidx is not used. For DISCON_REQ it holds
+//   just the IPS_DISCONNECT_NOFORCE bit.  Note in 2.0 connect protocol the
+//   connidx held the index, however in 2.0 builds limited it to 26 bits so
+//   the high bit can safely be used for NOFORCE even when 2.0 & 2.1 interop.
+//   For further safety, when 2.1 interops with 2.0 it disables 2.1 timewait
+//   and effectively ignores connidx in incoming disconnect packets.
 struct ips_connect_hdr {
 	uint16_t connect_verno;	/* should be ver IPS_CONNECT_VERNO */
 	uint16_t psm_verno;	/* should be 2.0 */
 	uint32_t connidx;	/* ignore if 0xffffffff */
+#define IPS_DISCONNECT_NOFORCE 0x80000000	// discon w/o force (timewait)
 	uint64_t epid_w[3];	/* epid of connector process */
 } PACK_SUFFIX;
 
 // payload of CONNECT_REQUEST/REPLY (including header above)
+// In 2.1 and later connect protocol, the reconnect_count is used to indicate
+// HAL reconnection count in REQ/REP (user RC QP reconnect for verbs).
+// Only the initial connect is 0, while reconnects increment reconnect_count
+// and wrap after 255 back to 1.
+// The protocol is designed such that peers will have a value within 1 of
+// eachother and when an incoming REQ/REP is 1 beyond the local value (in
+// ips_epaddr) the receiver knows peer is performing or expecting a reconnect.
 struct ips_connect_reqrep {
 	struct ips_connect_hdr hdr;
-	uint16_t connect_result;	/* error code */
+	uint8_t connect_result;	/* error code */
+	uint8_t reconnect_count; /* incrementing count */
+		
 	uint16_t job_pkey;	/* partition key for verification */
 	uint32_t mtu;		/* max PSM payload in bytes */
 
-	uint32_t runid_key;	/* one-time stamp connect key */
+	uint32_t runid_key;	/* one-time stamp connect key (PID) */
 	uint32_t initpsn;	/* initial psn for flow */
 
 	char hostname[128];	/* sender's hostname string */
+	// sl is 16 bits in many PSM fields, but only 4 bits in IB PathRecord
+	// and only 8 bits in ips_path_rec.pr_sl. PSMI_SL_MAX is 31
+	// Ethernet TClass is 8 bits, so at least 1 unused byte here for
+	// future expansion by reducing sl to 8 bits.
 	uint16_t sl;		/* service level for matching */
 	uint8_t static_rate;	// ibv_rate enum, ignored for OPA
 	uint8_t wiremode;	// sub-mode within epid_protocol
@@ -123,15 +171,28 @@ struct ips_connect_reqrep {
 			uint8_t reserved[16];	// 64b aligned
 			// fields below can be zero depending on rdmamode
 
-			// TBD - we could combine the RDMA=1 and RDMA=2,3
-			// sets of fields below into a union and save space
-			// or make room for more reserved space
-
-			// For rndv module connection establishment, PSM3_RDMA=1
-			// zero if no rndv mod RDMA
-			union ibv_gid gid; // sender's gid
-			uint32_t rv_index; // senders process index
-			uint32_t resv;	// alignment
+			union {
+				struct {
+					// For rndv module connection establishment, PSM3_RDMA=1
+					// zero if no rndv mod RDMA
+					union ibv_gid gid; // sender's gid
+					uint32_t rv_index; // senders process index
+					uint32_t resv;	// alignment
+				} rv;
+				struct {
+#ifdef USE_RDMA_READ
+					// For PSM3_RDMA=3 only
+					uint64_t recv_addr;
+					uint32_t recv_rkey;
+					uint8_t resv[12];
+#else
+					// reserved for future use
+					// When need, we can potentially use the fields here to
+					// delivery data during connection establishment
+					uint8_t resv[24];
+#endif
+				} urc; // user space RC
+			};
 
 			// For user space RC QP connection establishment
 			// only set for USE_RC with PSM3_RDMA=2 or 3

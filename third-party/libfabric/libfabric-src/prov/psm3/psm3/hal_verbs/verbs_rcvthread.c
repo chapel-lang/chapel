@@ -63,18 +63,60 @@
 #include "ips_proto.h"
 #include "verbs_hal.h"
 
+// There is a race/deadlock potential between the rcvThread polling for
+// async events and the psm3_ep_close need to call finalize the receive thread
+// in psm3_ep_close while already holding the psm3_creation_lock and the
+// mp->progress_lock.  This invites the potential for a deadlock where
+// the main thread is in psm3_ep_close holding both locks and is waiting
+// for the rcvThread to exit.  Meanwhile if the rcvThread  tries to obtain
+// either of these locks it can block, resulting in a deadlock.
+//
+// The psm3_creation_lock is only held during psm3_ep_open, psm3_ep_close
+// while the EP is added or removed from various linked lists of EPs.
+// It is also held briefly in psm3_wait and rcvThread while walking these lists.
+//
+// The mq->progress_lock is used throughout most of PSM3 to protect races for
+// most of the MQ specific resources, including the resources specific to
+// each EP within a given MQ.
+//
+// The rcvThread needs the progress_lock when processing the CQ.  Also if
+// SRQ is being used with allow_reconnect, async event processing needs the
+// progress lock to properly handle IBV_EVENT_QP_LAST_WQE_REACHED events.
+//
+// In general, async events should be infrequent as they generally reflect
+// issues, many of which PSM3 treats as fatal.  The exception being the LAST_WQE
+// event, which is important to properly draining QPs using SRQ while establishing
+// a replacement QP and determining what IOs successfully completed on the old QP.
+//
+// To address the deadlock, rcvThread use of psm3_creation_lock uses a LOCK_TRY
+// so it can skip processing when it can't get the lock.  In which case it
+// reschedules itself quickly.
+// While in psm3_ep_close, CQ completions and async events may be ignored.
+// Since we are closing, none of these async events are critical (and QPs still
+// draining will simply be destroyed even though not drained).
+//
+// Fortunately, both async events and CQ events will continue to report POLLIN
+// by poll() until the event is processed, so when LOCK_TRY detects a contention
+// we can let the next execution of rcvThread poll() again and it will detect
+// the event.  In general when there is contention during CQ events, the main
+// thread is likely to process the CQ during it's own CQ polling.
+
 static void psm3_verbs_process_async_event(psm2_ep_t ep)
 {
 	struct ibv_async_event async_event;
 	const char* errstr = NULL;
+	int err;
 
-	if (ibv_get_async_event(ep->verbs_ep.context, &async_event)) {
+	err = ibv_get_async_event(ep->verbs_ep.context, &async_event);
+	if (err) {
 		psm3_handle_error(PSMI_EP_NORETURN, PSM2_INTERNAL_ERR,
-			"Receive thread ibv_get_async_event() error on %s port %u: %s", ep->dev_name, ep->portnum, strerror(errno));
+			"Receive thread ibv_get_async_event() error on %s port %u: %s",
+			ep->dev_name, ep->portnum, strerror(err));
 	}
 	/* Ack the event */
 	ibv_ack_async_event(&async_event);
 
+	_HFI_VDBG("process async event %u\n", async_event.event_type);
 	switch (async_event.event_type) {
 	case IBV_EVENT_CQ_ERR:
 		if (async_event.element.cq == ep->verbs_ep.send_cq)
@@ -89,12 +131,80 @@ static void psm3_verbs_process_async_event(psm2_ep_t ep)
 	case IBV_EVENT_QP_ACCESS_ERR:
 		if (async_event.element.qp == ep->verbs_ep.qp)
 			errstr = "UD QP";
+#ifdef PSM_RC_RECONNECT
+		else if (! ep->allow_reconnect)
+			errstr = "RC QP";	// qp->context will be an ipsaddr
+		// if allow_reconnect, be silient about RC QP errors
+		// CQE processing will start a reconnect
+#else
 		else
 			errstr = "RC QP";	// qp->context will be an ipsaddr
+#endif
+		break;
+	case IBV_EVENT_QP_LAST_WQE_REACHED:	//  QP using SRQ had an error
+		psmi_assert(async_event.element.qp != ep->verbs_ep.qp); // not UD
+		psmi_assert(ep->verbs_ep.srq);
+#ifdef PSM_RC_RECONNECT_SRQ
+		// when using SRQ with RC reconnect, we can't specifically count
+		// RQ WQEs still in flight.  Instead, the QP_LAST_WQE_REACHED
+		// async event indicates no more SRQ WQEs will be used by the
+		// given QP.  However, we must wait for the CQ to be empty so we
+		// know CQEs for all SRQ WQEs consumed by the given RC QP have
+		// been processed.
+		// If we destroy the QP before processing such CQEs, the CQEs may
+		// be discarded by the NIC driver, resulting in the loss of some
+		// inbound completions.  For inbound RDMA, such loss can lead to
+		// the sender thinking the RDMA was successfully completed, while
+		// the receiver is still waiting for it's completion.
+		if (! ep->allow_reconnect) {
+			errstr = "RC QP with SRQ";	// qp->context will be an ipsaddr
+		} else {
+			ips_epaddr_t *ipsaddr = (ips_epaddr_t *)async_event.element.qp->qp_context;
+			if (! ipsaddr->allow_reconnect) {
+				errstr = "RC QP with SRQ";	// qp->context will be an ipsaddr
+			} else {
+				struct psm3_verbs_rc_qp *rc_qp;
+				PSMI_LOCK(ep->mq->progress_lock);
+				rc_qp = psm3_verbs_lookup_rc_qp(ipsaddr,
+							async_event.element.qp->qp_num);
+				psmi_assert_always(rc_qp);
+				_HFI_CONNDBG("Last SRQ WQE, QP %u recv posted %u send posted %u rdma %u draining %d\n",
+					rc_qp->qp->qp_num,
+					rc_qp->recv_pool.posted,
+					rc_qp->send_posted,
+					ep->verbs_ep.send_rdma_outstanding,
+					rc_qp->draining);
+				psmi_assert(rc_qp->recv_pool.posted == 1);
+				if (! rc_qp->draining) {
+					// 1st discovery of QP issue,
+					// start reconnect
+					(void)psm3_ips_proto_connection_error(
+						ipsaddr, "RC QP AE",
+						"before wc_error", 0, 1);
+				}
+				// draining, but RQ CQ not yet empty
+				psmi_assert(rc_qp->draining);
+				psmi_assert(rc_qp->recv_pool.posted == 1);
+				// next time we find RQ CQ empty, we can be sure
+				// all RQ CQEs for this rc_qp have been
+				// processed
+				SLIST_INSERT_HEAD(&ep->verbs_ep.qps_draining,
+							rc_qp, drain_next);
+				PSMI_UNLOCK(ep->mq->progress_lock);
+			}
+		}
+#else /* PSM_RC_RECONNECT_SRQ */
+		psmi_assert(! ep->allow_reconnect);
+		errstr = "RC QP with SRQ";	// qp->context will be an ipsaddr
+#endif /* PSM_RC_RECONNECT_SRQ */
+		break;
+	case IBV_EVENT_SRQ_ERR: // also generates QP FATAL for assoc QPs
+		errstr = "SRQ";
 		break;
 	case IBV_EVENT_DEVICE_FATAL:
 		errstr = "NIC";
 		break;
+	case IBV_EVENT_SRQ_LIMIT_REACHED: // should not happen srq_limit set to 0
 	default:
 		// be silent about other events
 		break;
@@ -109,12 +219,14 @@ static void psm3_verbs_rearm_cq_event(psm2_ep_t ep)
 {
 	struct ibv_cq *ev_cq;
 	void *ev_ctx;
+	int err;
 
 	_HFI_VDBG("rcvthread got solicited event\n");
-	if (ibv_get_cq_event(ep->verbs_ep.recv_comp_channel, &ev_cq, &ev_ctx)) {
+	err = ibv_get_cq_event(ep->verbs_ep.recv_comp_channel, &ev_cq, &ev_ctx);
+	if (err) {
 		psm3_handle_error(PSMI_EP_NORETURN, PSM2_INTERNAL_ERR,
 			  "Receive thread ibv_get_cq_event() error on %s port %u: %s",
-			  ep->dev_name, ep->portnum, strerror(errno));
+			  ep->dev_name, ep->portnum, strerror(err));
 	}
 
 	/* Ack the event */
@@ -126,10 +238,11 @@ static void psm3_verbs_rearm_cq_event(psm2_ep_t ep)
 	// psmi_hal_has_sw_status(PSM_HAL_PSMI_RUNTIME_INTR_ENABLED)
 	// to make sure we still want enabled.  But given these are only
 	// for PSM urgent protocol packets, that seems like overkill
-	if (ibv_req_notify_cq(ep->verbs_ep.recv_cq, 1)) {
+	err = ibv_req_notify_cq(ep->verbs_ep.recv_cq, 1);
+	if (err) {
 		psm3_handle_error(PSMI_EP_NORETURN, PSM2_INTERNAL_ERR,
 			  "Receive thread ibv_req_notify_cq() error on %s port %u: %s",
-			  ep->dev_name, ep->portnum, strerror(errno));
+			  ep->dev_name, ep->portnum, strerror(err));
 	}
 }
 
@@ -143,6 +256,7 @@ static void psm3_verbs_poll_async_events(psm2_ep_t ep)
 	int ret;
 	int i;
 
+	PSMI_LOCK_ASSERT(psm3_creation_lock);
 	first = ep;
 	do {
 #ifdef RNDV_MOD
@@ -240,9 +354,19 @@ again:
 		close(fd_pipe);
 		return PSM2_IS_FINALIZED;
 	} else {
+		static uint64_t next_report = 0;
+		int report_inflight = _HFI_VDBG_ON && t_cyc > next_report;
+
 		(*pollintr) += ret;
-		// we got an async event
+		// we got an async event, most events are fatal or ignored, but
+		// when using SRQ with allow_reconnect we need locking so we defer
+		// the processing until psm3_verbs_poll_async_events() below
+#ifdef PSM_RC_RECONNECT_SRQ
+		if ((pfd[2].revents & POLLIN)
+			&& (! ep->allow_reconnect || ! ep->verbs_ep.srq))
+#else
 		if (pfd[2].revents & POLLIN)
+#endif
 			psm3_verbs_process_async_event(ep);
 
 		// we got here due to a CQ event (as opposed to timeout)
@@ -268,7 +392,15 @@ again:
 			psm3_verbs_poll_type(PSMI_HAL_POLL_TYPE_ANYRCV, ep);
 
 		{
-			if (ret == 0 || pfd[0].revents & (POLLIN | POLLERR)) {
+#ifdef PSM_RC_RECONNECT_SRQ
+			// if we got an async event on our main EP, it's best
+			// to also poll all the EPs since they could
+			// have async events too
+			if (ret == 0 || (pfd[0].revents & (POLLIN | POLLERR))
+					|| (pfd[2].revents & POLLIN)) {
+#else
+			if (ret == 0 || (pfd[0].revents & (POLLIN | POLLERR))) {
+#endif
 				if (PSMI_LOCK_DISABLED) {
 					// this path is not supported.  having rcvthread
 					// and PSMI_PLOCK_IS_NOLOCK define not allowed.
@@ -297,14 +429,13 @@ again:
 					ep = psm3_opened_endpoint;
 
 					/* Go through all master endpoints. */
-					do{
+					do {
 						if (!PSMI_LOCK_TRY(ep->mq->progress_lock)) {
 							/* If we time out, we service shm and NIC.
 							* If not, we assume to have received an urgent
 							* packet and service only NIC.
 							*/
-							err = psm3_poll_internal(ep,
-										 ret == 0 ? PSMI_TRUE : PSMI_FALSE, 0);
+							err = psm3_poll_internal(ep, ret == 0 ? PSMI_TRUE : PSMI_FALSE, 0);
 							if (err == PSM2_OK)
 								(*pollok)++;
 							else
@@ -316,6 +447,23 @@ again:
 						/* get next endpoint from multi endpoint list */
 						ep = ep->user_ep_next;
 					} while(NULL != ep);
+				}
+			}
+			if (report_inflight) {
+				if (next_report) {	// skip time 0 report
+					/* Go through all master endpoints. */
+					ep = psm3_opened_endpoint;
+					do {
+						if (!PSMI_LOCK_TRY(ep->mq->progress_lock)) {
+							ips_proto_report_inflight(ep);
+							// reported at least one ep, next output in a minute
+							next_report = t_cyc + nanosecs_to_cycles(60*NSEC_PER_SEC);
+							PSMI_UNLOCK(ep->mq->progress_lock);
+						}
+						ep = ep->user_ep_next;
+					} while(NULL != ep);
+				} else {
+					next_report = t_cyc + nanosecs_to_cycles(60*NSEC_PER_SEC);
 				}
 			}
 			if (psmi_hal_has_sw_status(PSM_HAL_PSMI_RUNTIME_RX_THREAD_WAITING)

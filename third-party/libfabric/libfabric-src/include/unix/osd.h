@@ -36,6 +36,9 @@
 
 #include "config.h"
 
+#include <stdio.h>
+#include <fcntl.h>
+#include <stdarg.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <complex.h>
@@ -83,6 +86,22 @@
 
 #define OFI_MAX_SOCKET_BUF_SIZE	SIZE_MAX
 
+#if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 202311L)
+    // C23 and above: use thread_local directly
+    #define OFI_THREAD_LOCAL thread_local
+#elif defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 201102L) && defined(_Thread_local)
+    // C11: use _Thread_local
+    #define OFI_THREAD_LOCAL _Thread_local
+#elif defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__SUNPRO_CC) || defined(__IBMCPP__) || defined(__clang__)
+    // GCC/Clang/Intel/SunPro/IBM compilers
+    #define OFI_THREAD_LOCAL __thread
+#else
+    // Unsupported compiler
+    #warning "Thread-local storage is not supported on this platform"
+	#define OFI_THREAD_LOCAL
+#endif
+
+
 struct util_shm
 {
 	int		shared_fd;
@@ -97,6 +116,16 @@ int ofi_unmap_anon_pages(void *memptr, size_t size);
 static inline int ofi_memalign(void **memptr, size_t alignment, size_t size)
 {
 	return posix_memalign(memptr, alignment, size);
+}
+
+static inline int ofi_close(int fd)
+{
+	return close(fd);
+}
+
+static inline FILE* ofi_fdopen(int fd, const char* mode)
+{
+	return fdopen(fd, mode);
 }
 
 static inline void ofi_freealign(void *memptr)

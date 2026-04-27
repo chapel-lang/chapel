@@ -73,10 +73,10 @@ typedef atomic_long	ofi_atomic_int64_t;
 #endif
 
 #define OFI_ATOMIC_DEFINE(radix)									\
-	typedef struct {										\
-		ofi_atomic_int##radix##_t val;								\
-		ATOMIC_DEF_INIT;									\
-	} ofi_atomic##radix##_t;									\
+	 typedef struct {                                                  \
+		ofi_atomic_int##radix##_t val __attribute__((aligned((radix)/8))); \
+		ATOMIC_DEF_INIT;                                                \
+	 } ofi_atomic##radix##_t;									\
 													\
 	static inline											\
 	int##radix##_t ofi_atomic_inc##radix(ofi_atomic##radix##_t *atomic)				\

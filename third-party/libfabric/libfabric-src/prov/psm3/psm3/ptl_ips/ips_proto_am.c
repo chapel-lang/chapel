@@ -116,7 +116,7 @@ MOCKABLE(psm3_ips_proto_am_init)(struct ips_proto *proto,
 	 * number of request send buffers would be awkward, as they have no
 	 * knowledge of the subdivision of the memory into separate mempools for
 	 * requests and replies. It's an internal concern at this point. */
-	if ((err = psm3_ips_scbctrl_init(proto->ep,
+	if ((err = psm3_ips_scbctrl_init(proto,
 				    num_req_slots,
 				    num_req_slots,
 				    imm_size,
@@ -126,7 +126,7 @@ MOCKABLE(psm3_ips_proto_am_init)(struct ips_proto *proto,
 				    &proto_am->scbc_request)))
 		goto fail;
 
-	if ((err = psm3_ips_scbctrl_init(proto->ep,
+	if ((err = psm3_ips_scbctrl_init(proto,
 				    num_rep_slots,
 				    num_rep_slots,
 				    imm_size,
@@ -296,7 +296,7 @@ calculate_pad_bytes(size_t len)
 static inline
 void
 ips_am_scb_init(ips_scb_t *scb, uint8_t handler, int nargs,
-		int pad_bytes,
+		int pad_bytes, bool is_request,
 		psm2_am_completion_fn_t completion_fn, void *completion_ctxt)
 {
 	psmi_assert(pad_bytes < (1 << IPS_AM_HDR_LEN_BITS));
@@ -309,6 +309,14 @@ ips_am_scb_init(ips_scb_t *scb, uint8_t handler, int nargs,
 	scb->ips_lrh.flags = 0;
 	if (completion_fn)
 		scb->scb_flags |= IPS_SEND_FLAG_ACKREQ;
+
+	/* AM can discard requests if there are no reply scb slots.  due to
+	 * this, mark these as unreliable to prevent RC QPs from acknowledging
+	 * them prematurely.
+	 */
+	if (is_request)
+		scb->scb_flags |= IPS_SEND_FLAG_UNRELIABLE;
+
 	return;
 }
 
@@ -346,11 +354,11 @@ psm3_ips_am_short_request(psm2_epaddr_t epaddr,
 		PSMI_BLOCKUNTIL(epaddr->ptlctl->ep,
 				err,
 				((scb = psm3_ips_scbctrl_alloc_tiny(
-				      &proto_am->scbc_request)) != NULL));
+				      &proto_am->scbc_request, 0)) != NULL));
 	}
 
 	psmi_assert_always(scb != NULL);
-	ips_am_scb_init(scb, handler, nargs, pad_bytes,
+	ips_am_scb_init(scb, handler, nargs, pad_bytes, true,
 			completion_fn, completion_ctxt);
 
 	if (payload_sz >= epaddr->proto->multirail_thresh_load_balance) {
@@ -386,10 +394,14 @@ psm3_ips_am_short_reply(psm2_am_token_t tok,
 		return PSM2_AM_INVALID_REPLY;
 	}
 
-	psmi_assert(psm3_ips_scbctrl_avail(&proto_am->scbc_reply));
+	/*
+	 * No need to check the availability of reply scb if dynamic
+	 * allocation is enabled here.
+	 */
 
 	if ((nargs << 3) + len <= (IPS_AM_HDR_NARGS << 3)) {
-		scb = psm3_ips_scbctrl_alloc_tiny(&proto_am->scbc_reply);
+		scb = psm3_ips_scbctrl_alloc_tiny(&proto_am->scbc_reply,
+						  IPS_SCB_FLAG_PRIORITY);
 	} else {
 		int payload_sz = (nargs << 3);
 
@@ -397,6 +409,7 @@ psm3_ips_am_short_reply(psm2_am_token_t tok,
 			      0 : (len + pad_bytes);
 		scb_flags |= (payload_sz > (IPS_AM_HDR_NARGS << 3)) ?
 		    IPS_SCB_FLAG_ADD_BUFFER : 0;
+		scb_flags |= IPS_SCB_FLAG_PRIORITY;
 
 		scb =
 		    psm3_ips_scbctrl_alloc(&proto_am->scbc_reply, 1, payload_sz,
@@ -404,7 +417,7 @@ psm3_ips_am_short_reply(psm2_am_token_t tok,
 	}
 
 	psmi_assert_always(scb != NULL);
-	ips_am_scb_init(scb, handler, nargs, pad_bytes,
+	ips_am_scb_init(scb, handler, nargs, pad_bytes, false,
 			completion_fn, completion_ctxt);
 	am_short_reqrep(scb, ipsaddr, args, nargs, OPCODE_AM_REPLY,
 			src, len, flags, pad_bytes);
@@ -541,12 +554,10 @@ int psm3_ips_proto_am(struct ips_recvhdrq_event *rcv_ev)
 	/*
 	 * Based on AM request/reply traffic pattern, if we don't have a reply
 	 * scb slot then we can't process the request packet, we just silently
-	 * drop it.  Otherwise, it will be a deadlock.  note:
-	 * ips_proto_is_expected_or_nak() can not be called in this case.
+	 * drop it.  Otherwise, it will be a deadlock. This scenario is avoided
+	 * by the scb dynamic allocation. As a result, we don't need to check
+	 * the scb availability anymore.
 	 */
-	if (_get_proto_hfi_opcode(p_hdr) == OPCODE_AM_REQUEST &&
-	    !psm3_ips_scbctrl_avail(&proto_am->scbc_reply))
-		return IPS_RECVHDRQ_CONTINUE;
 
 	if (!ips_proto_is_expected_or_nak(rcv_ev))
 		return IPS_RECVHDRQ_CONTINUE;

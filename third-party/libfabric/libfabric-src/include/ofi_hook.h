@@ -64,6 +64,7 @@ enum ofi_hook_class {
 	HOOK_DEBUG,
 	HOOK_HMEM,
 	HOOK_DMABUF_PEER_MEM,
+	HOOK_MONITOR
 };
 
 

@@ -6,7 +6,7 @@
   GPL LICENSE SUMMARY
 
   Copyright(c) 2015 Intel Corporation.
-  Copyright(c) 2021-2024 Cornelis Networks.
+  Copyright(c) 2021-2025 Cornelis Networks.
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of version 2 of the GNU General Public License as
@@ -17,13 +17,10 @@
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
   General Public License for more details.
 
-  Contact Information:
-  Intel Corporation, www.intel.com
-
   BSD LICENSE
 
   Copyright(c) 2015 Intel Corporation.
-  Copyright(c) 2021-2024 Cornelis Networks.
+  Copyright(c) 2021-2025 Cornelis Networks.
 
   Redistribution and use in source and binary forms, with or without
   modification, are permitted provided that the following conditions
@@ -68,14 +65,15 @@
 
 /* upper and lower bounds for HFI port numbers */
 #define OPX_MIN_PORT 1
-#define OPX_MAX_PORT 1
+/* Be aware this is the JKR max. Current WFR code handles it. */
+#define OPX_MAX_PORT 2 // JKR max is 2, WFR is 1
 #ifndef OPX_NUM_PORTS_GEN1
 #define OPX_NUM_PORTS_GEN1 (OPX_MAX_PORT - OPX_MIN_PORT + 1)
 #endif
 /* any unit id to match. */
-#define OPX_UNIT_ID_ANY ((long)-1)
+#define OPX_UNIT_ID_ANY ((long) -1)
 /* any port num to match. */
-#define OPX_PORT_NUM_ANY ((long)0)
+#define OPX_PORT_NUM_ANY ((long) 0)
 
 /* base name of path (without unit #) for qib driver */
 #ifndef OPX_DEVICE_PATH_GEN1
@@ -91,48 +89,48 @@
 #define HFI1_USER_SWMINOR_NON_DW_MUL_MSG_SIZE_ALLOWED 2
 
 /* base name of path (without unit #) for opa driver */
-#define OPX_DEVICE_PATH "/dev/hfi1"
-#define OPX_CLASS_PATH "/sys/class/infiniband/hfi1"
+#define OPX_DEVICE_PATH	   "/dev/hfi1"
+#define OPX_CLASS_PATH	   "/sys/class/infiniband/hfi1"
 #define OPX_CLASS_DIR_PATH "/sys/class/infiniband"
 
 /* Commands used to communicate with driver. */
 enum OPX_HFI_CMD {
-    OPX_HFI_CMD_ASSIGN_CTXT = 0,   /* allocate HFI and context */
-    OPX_HFI_CMD_CTXT_INFO,         /* find out what resources we got */
-    OPX_HFI_CMD_USER_INFO,         /* set up userspace */
-    OPX_HFI_CMD_TID_UPDATE,        /* update expected TID entries */
-    OPX_HFI_CMD_TID_FREE,          /* free expected TID entries */
-    OPX_HFI_CMD_CREDIT_UPD,        /* force an update of PIO credit */
-    OPX_HFI_CMD_RECV_CTRL,         /* control receipt of packets */
-    OPX_HFI_CMD_POLL_TYPE,         /* set the kind of polling we want */
-    OPX_HFI_CMD_ACK_EVENT,         /* ack & clear user status bits */
-    OPX_HFI_CMD_SET_PKEY,          /* set context's pkey */
-    OPX_HFI_CMD_CTXT_RESET,        /* reset context's HW send context */
-    OPX_HFI_CMD_TID_INVAL_READ,    /* read TID cache invalidations */
-    OPX_HFI_CMD_GET_VERS,          /* get the version of the user cdev */
+	OPX_HFI_CMD_ASSIGN_CTXT = 0, /* allocate HFI and context */
+	OPX_HFI_CMD_CTXT_INFO,	     /* find out what resources we got */
+	OPX_HFI_CMD_USER_INFO,	     /* set up userspace */
+	OPX_HFI_CMD_TID_UPDATE,	     /* update expected TID entries */
+	OPX_HFI_CMD_TID_FREE,	     /* free expected TID entries */
+	OPX_HFI_CMD_CREDIT_UPD,	     /* force an update of PIO credit */
+	OPX_HFI_CMD_RECV_CTRL,	     /* control receipt of packets */
+	OPX_HFI_CMD_POLL_TYPE,	     /* set the kind of polling we want */
+	OPX_HFI_CMD_ACK_EVENT,	     /* ack & clear user status bits */
+	OPX_HFI_CMD_SET_PKEY,	     /* set context's pkey */
+	OPX_HFI_CMD_CTXT_RESET,	     /* reset context's HW send context */
+	OPX_HFI_CMD_TID_INVAL_READ,  /* read TID cache invalidations */
+	OPX_HFI_CMD_GET_VERS,	     /* get the version of the user cdev */
 
 #ifdef OPX_HMEM
-    OPX_HFI_CMD_TID_UPDATE_V3,
+	OPX_HFI_CMD_TID_UPDATE_V3,
 #endif
-    OPX_HFI_CMD_LAST,
+	OPX_HFI_CMD_LAST,
 };
 
 /* Legacy commands used to communicate with driver using 'write' */
 enum LEGACY_HFI1_CMD {
-    LEGACY_HFI1_CMD_ASSIGN_CTXT     = 1,     /* allocate HFI and context */
-    LEGACY_HFI1_CMD_CTXT_INFO       = 2,     /* find out what resources we got */
-    LEGACY_HFI1_CMD_USER_INFO       = 3,     /* set up userspace */
-    LEGACY_HFI1_CMD_TID_UPDATE      = 4,     /* update expected TID entries */
-    LEGACY_HFI1_CMD_TID_FREE        = 5,     /* free expected TID entries */
-    LEGACY_HFI1_CMD_CREDIT_UPD      = 6,     /* force an update of PIO credit */
+	LEGACY_HFI1_CMD_ASSIGN_CTXT = 1, /* allocate HFI and context */
+	LEGACY_HFI1_CMD_CTXT_INFO   = 2, /* find out what resources we got */
+	LEGACY_HFI1_CMD_USER_INFO   = 3, /* set up userspace */
+	LEGACY_HFI1_CMD_TID_UPDATE  = 4, /* update expected TID entries */
+	LEGACY_HFI1_CMD_TID_FREE    = 5, /* free expected TID entries */
+	LEGACY_HFI1_CMD_CREDIT_UPD  = 6, /* force an update of PIO credit */
 
-    LEGACY_HFI1_CMD_RECV_CTRL       = 8,     /* control receipt of packets */
-    LEGACY_HFI1_CMD_POLL_TYPE       = 9,     /* set the kind of polling we want */
-    LEGACY_HFI1_CMD_ACK_EVENT       = 10,    /* ack & clear user status bits */
-    LEGACY_HFI1_CMD_SET_PKEY        = 11,    /* set context's pkey */
-    LEGACY_HFI1_CMD_CTXT_RESET      = 12,    /* reset context's HW send context */
-    LEGACY_HFI1_CMD_TID_INVAL_READ  = 13,    /* read TID cache invalidations */
-    LEGACY_HFI1_CMD_GET_VERS        = 14    /* get the version of the user cdev */
+	LEGACY_HFI1_CMD_RECV_CTRL      = 8,  /* control receipt of packets */
+	LEGACY_HFI1_CMD_POLL_TYPE      = 9,  /* set the kind of polling we want */
+	LEGACY_HFI1_CMD_ACK_EVENT      = 10, /* ack & clear user status bits */
+	LEGACY_HFI1_CMD_SET_PKEY       = 11, /* set context's pkey */
+	LEGACY_HFI1_CMD_CTXT_RESET     = 12, /* reset context's HW send context */
+	LEGACY_HFI1_CMD_TID_INVAL_READ = 13, /* read TID cache invalidations */
+	LEGACY_HFI1_CMD_GET_VERS       = 14  /* get the version of the user cdev */
 };
 
 /* Given a unit number and port number, returns 1 if the unit and port are active.
@@ -183,6 +181,11 @@ int opx_hfi_get_port_index2pkey(int unit, int port, int index);
    Returns -1 with errno set, or number of units >=0 (0 means none found). */
 int opx_hfi_get_num_units();
 
+/* get the number of ports per hfi unit */
+/* should return OPX_MAX_PORT if number of ports is greater than OPX_MAX_PORT*/
+/* should return 0 if number of ports is less than OPX_MIN_PORT*/
+int opx_hfi_get_num_ports(int hfi_unit);
+
 /* Given a unit number, returns 1 if any port on the unit is active.
    returns 0 if no port on the unit is active.
    returns -1 when an error occurred. */
@@ -190,16 +193,19 @@ int opx_hfi_get_unit_active(int unit);
 
 /* Get the number of free contexts from the unit id. */
 /* Returns 0 if no unit or no match. */
-int opx_hfi_get_num_free_contexts(int unit);
+int opx_hfi_get_num_free_contexts(int unit_id);
+
+/* Get the number of contexts from the unit id. */
+/* Returns 0 if no unit or no match. */
+int opx_hfi_get_num_contexts(int unit_id);
 
 /* Open hfi device file, return -1 on error. */
-int opx_hfi_context_open(int unit, int port, uint64_t open_timeout);
-int opx_hfi_context_open_ex(int unit, int port, uint64_t open_timeout,
-		     char *dev_name,size_t dev_name_len);
+int opx_hfi_context_open(int unit, int port, uint64_t open_timeout, unsigned int *user_version);
+int opx_hfi_context_open_ex(int unit, int port, uint64_t open_timeout, unsigned int *user_version);
 
 uint32_t opx_hfi_check_non_dw_mul_sdma(void);
 
-void opx_hfi_context_close(int fd);
+void opx_hfi_context_close(int fd_cdev, int fd_verbs);
 
 /* opx_hfi_get_user_major_version() returns the major version of the driver
    that should be used for this session of psm. Valid only after
@@ -228,7 +234,7 @@ int opx_hfi_get_cc_table_bin(int unit, int port, uint16_t **cctp);
    it doesn't work when the address being mapped is > 32 bits.  It chips
    off bits 32 and above.   So we stay with mmap64. */
 extern void *mmap64(void *, size_t, int, int, int, __off64_t);
-void *opx_hfi_mmap64(void *, size_t, int, int, int, __off64_t);
+void	    *opx_hfi_mmap64(void *, size_t, int, int, int, __off64_t);
 
 /* Statistics maintained by the driver */
 int opx_hfi_get_stats(uint64_t *, int);
@@ -245,30 +251,24 @@ int opx_hfi_get_ctrs_port_names(int unitno, char **namep);
 const char *hfi_sysfs_path(void);
 
 /* read a string value */
-int opx_hfi_sysfs_port_read(uint32_t unit, uint32_t port, const char *attr,
-			char **datap);
+int opx_hfi_sysfs_port_read(uint32_t unit, uint32_t port, const char *attr, char **datap);
 
 /* read a string value into buff, no more than size bytes.
    returns the number of bytes read */
-size_t opx_hfi_sysfs_unit_port_read(uint32_t unit, uint32_t port, const char *attr,
-			char *buff, size_t size);
+size_t opx_hfi_sysfs_unit_port_read(uint32_t unit, uint32_t port, const char *attr, char *buff, size_t size);
 
 /* open attribute in unit's sysfs directory via open(2) */
 int opx_hfi_sysfs_unit_open(uint32_t unit, const char *attr, int flags);
-int opx_hfi_sysfs_port_open(uint32_t unit, uint32_t port, const char *attr,
-			int flags);
+int opx_hfi_sysfs_port_open(uint32_t unit, uint32_t port, const char *attr, int flags);
 /* print to attribute in {unit,port} sysfs directory */
-int opx_hfi_sysfs_port_printf(uint32_t unit, uint32_t port, const char *attr,
-			  const char *fmt, ...)
-			  __attribute__((format(printf, 4, 5)));
+int opx_hfi_sysfs_port_printf(uint32_t unit, uint32_t port, const char *attr, const char *fmt, ...)
+	__attribute__((format(printf, 4, 5)));
 int opx_hfi_sysfs_unit_printf(uint32_t unit, const char *attr, const char *fmt, ...)
-			  __attribute__((format(printf, 3, 4)));
+	__attribute__((format(printf, 3, 4)));
 
 /* read a signed 64-bit quantity, in some arbitrary base */
-int opx_hfi_sysfs_unit_read_s64(uint32_t unit, const char *attr,
-			    int64_t *valp, int base);
-int opx_hfi_sysfs_port_read_s64(uint32_t unit, uint32_t port, const char *attr,
-			    int64_t *valp, int base);
+int	opx_hfi_sysfs_unit_read_s64(uint32_t unit, const char *attr, int64_t *valp, int base);
+int	opx_hfi_sysfs_port_read_s64(uint32_t unit, uint32_t port, const char *attr, int64_t *valp, int base);
 int64_t opx_hfi_sysfs_unit_read_node_s64(uint32_t unit);
 
 int opx_hfi_cmd_wait_for_packet(int fd);
