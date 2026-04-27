@@ -539,30 +539,30 @@ switch (to->const_kind) {
      switch (from->const_kind) {
      default: CHPL_ASSERT(false && "Illegal case in coerce_immediate switch statement"); break;
      case NUM_KIND_BOOL:
-       to->v_float16 = (float)from->bool_value(); break;
+       to->v_float16 = (_Float16)from->bool_value(); break;
      case NUM_KIND_UINT:
        switch (from->num_index) {
        case INT_SIZE_8:
-         to->v_float16 = (float)from->v_uint8; break;
+         to->v_float16 = (_Float16)from->v_uint8; break;
        case INT_SIZE_16:
-         to->v_float16 = (float)from->v_uint16; break;
+         to->v_float16 = (_Float16)from->v_uint16; break;
        case INT_SIZE_32:
-         to->v_float16 = (float)from->v_uint32; break;
+         to->v_float16 = (_Float16)from->v_uint32; break;
        case INT_SIZE_64:
-         to->v_float16 = (float)from->v_uint64; break;
+         to->v_float16 = (_Float16)from->v_uint64; break;
        default:
          CHPL_ASSERT(false && "Illegal case in coerce_immediate switch statement"); break;
        } break;
      case NUM_KIND_INT:
        switch (from->num_index) {
        case INT_SIZE_8:
-         to->v_float16 = (float)from->v_int8; break;
+         to->v_float16 = (_Float16)from->v_int8; break;
        case INT_SIZE_16:
-         to->v_float16 = (float)from->v_int16; break;
+         to->v_float16 = (_Float16)from->v_int16; break;
        case INT_SIZE_32:
-         to->v_float16 = (float)from->v_int32; break;
+         to->v_float16 = (_Float16)from->v_int32; break;
        case INT_SIZE_64:
-         to->v_float16 = (float)from->v_int64; break;
+         to->v_float16 = (_Float16)from->v_int64; break;
        default:
          CHPL_ASSERT(false && "Illegal case in coerce_immediate switch statement"); break;
        } break;
@@ -570,11 +570,11 @@ switch (to->const_kind) {
      case NUM_KIND_IMAG:
        switch (from->num_index) {
        case FLOAT_SIZE_16:
-         to->v_float16 = (float)from->v_float16; break;
+         to->v_float16 = (_Float16)from->v_float16; break;
        case FLOAT_SIZE_32:
-         to->v_float16 = (float)from->v_float32; break;
+         to->v_float16 = (_Float16)from->v_float32; break;
        case FLOAT_SIZE_64:
-         to->v_float16 = (float)from->v_float64; break;
+         to->v_float16 = (_Float16)from->v_float64; break;
        default:
          CHPL_ASSERT(false && "Illegal case in coerce_immediate switch statement"); break;
        } break;
@@ -582,22 +582,22 @@ switch (to->const_kind) {
        if (to->const_kind == NUM_KIND_REAL) {
          switch (from->num_index) {
          case COMPLEX_SIZE_32:
-           to->v_float16 = (float)from->v_complex32.r; break;
+           to->v_float16 = (_Float16)from->v_complex32.r; break;
          case COMPLEX_SIZE_64:
-           to->v_float16 = (float)from->v_complex64.r; break;
+           to->v_float16 = (_Float16)from->v_complex64.r; break;
          case COMPLEX_SIZE_128:
-           to->v_float16 = (float)from->v_complex128.r; break;
+           to->v_float16 = (_Float16)from->v_complex128.r; break;
          default:
            CHPL_ASSERT(false && "Illegal case in coerce_immediate switch statement"); break;
          }
        } else if (to->const_kind == NUM_KIND_IMAG) {
          switch (from->num_index) {
          case COMPLEX_SIZE_32:
-           to->v_float16 = (float)from->v_complex32.i; break;
+           to->v_float16 = (_Float16)from->v_complex32.i; break;
          case COMPLEX_SIZE_64:
-           to->v_float16 = (float)from->v_complex64.i; break;
+           to->v_float16 = (_Float16)from->v_complex64.i; break;
          case COMPLEX_SIZE_128:
-           to->v_float16 = (float)from->v_complex128.i; break;
+           to->v_float16 = (_Float16)from->v_complex128.i; break;
          default:
            CHPL_ASSERT(false && "Illegal case in coerce_immediate switch statement"); break;
          }
@@ -829,26 +829,26 @@ switch (to->const_kind) {
      switch (from->const_kind) {
      default: CHPL_ASSERT(false && "Illegal case in coerce_immediate switch statement"); break;
      case NUM_KIND_BOOL:
-       to->v_complex32.r = (float)from->bool_value();
-       to->v_complex32.i = (float)0;
+       to->v_complex32.r = (_Float16)from->bool_value();
+       to->v_complex32.i = (_Float16)0;
        break;
      case NUM_KIND_UINT:
        switch (from->num_index) {
        case INT_SIZE_8:
-         to->v_complex32.r = (float)from->v_uint8;
-         to->v_complex32.i = (float)0;
+         to->v_complex32.r = (_Float16)from->v_uint8;
+         to->v_complex32.i = (_Float16)0;
          break;
        case INT_SIZE_16:
-         to->v_complex32.r = (float)from->v_uint16;
-         to->v_complex32.i = (float)0;
+         to->v_complex32.r = (_Float16)from->v_uint16;
+         to->v_complex32.i = (_Float16)0;
          break;
        case INT_SIZE_32:
-         to->v_complex32.r = (float)from->v_uint32;
-         to->v_complex32.i = (float)0;
+         to->v_complex32.r = (_Float16)from->v_uint32;
+         to->v_complex32.i = (_Float16)0;
          break;
        case INT_SIZE_64:
-         to->v_complex32.r = (float)from->v_uint64;
-         to->v_complex32.i = (float)0;
+         to->v_complex32.r = (_Float16)from->v_uint64;
+         to->v_complex32.i = (_Float16)0;
          break;
        default:
          CHPL_ASSERT(false && "Illegal case in coerce_immediate switch statement"); break;
@@ -856,20 +856,20 @@ switch (to->const_kind) {
      case NUM_KIND_INT:
        switch (from->num_index) {
        case INT_SIZE_8:
-         to->v_complex32.r = (float)from->v_int8;
-         to->v_complex32.i = (float)0;
+         to->v_complex32.r = (_Float16)from->v_int8;
+         to->v_complex32.i = (_Float16)0;
          break;
        case INT_SIZE_16:
-         to->v_complex32.r = (float)from->v_int16;
-         to->v_complex32.i = (float)0;
+         to->v_complex32.r = (_Float16)from->v_int16;
+         to->v_complex32.i = (_Float16)0;
          break;
        case INT_SIZE_32:
-         to->v_complex32.r = (float)from->v_int32;
-         to->v_complex32.i = (float)0;
+         to->v_complex32.r = (_Float16)from->v_int32;
+         to->v_complex32.i = (_Float16)0;
          break;
        case INT_SIZE_64:
-         to->v_complex32.r = (float)from->v_int64;
-         to->v_complex32.i = (float)0;
+         to->v_complex32.r = (_Float16)from->v_int64;
+         to->v_complex32.i = (_Float16)0;
          break;
        default:
          CHPL_ASSERT(false && "Illegal case in coerce_immediate switch statement"); break;
@@ -877,16 +877,16 @@ switch (to->const_kind) {
      case NUM_KIND_REAL:
        switch (from->num_index) {
        case FLOAT_SIZE_16:
-         to->v_complex32.r = (float)from->v_float16;
-         to->v_complex32.i = (float)0;
+         to->v_complex32.r = (_Float16)from->v_float16;
+         to->v_complex32.i = (_Float16)0;
          break;
        case FLOAT_SIZE_32:
-         to->v_complex32.r = (float)from->v_float32;
-         to->v_complex32.i = (float)0;
+         to->v_complex32.r = (_Float16)from->v_float32;
+         to->v_complex32.i = (_Float16)0;
          break;
        case FLOAT_SIZE_64:
-         to->v_complex32.r = (float)from->v_float64;
-         to->v_complex32.i = (float)0;
+         to->v_complex32.r = (_Float16)from->v_float64;
+         to->v_complex32.i = (_Float16)0;
          break;
        default:
          CHPL_ASSERT(false && "Illegal case in coerce_immediate switch statement"); break;
@@ -894,16 +894,16 @@ switch (to->const_kind) {
      case NUM_KIND_IMAG:
        switch (from->num_index) {
        case FLOAT_SIZE_16:
-         to->v_complex32.r = (float)0;
-         to->v_complex32.i = (float)from->v_float16;
+         to->v_complex32.r = (_Float16)0;
+         to->v_complex32.i = (_Float16)from->v_float16;
          break;
        case FLOAT_SIZE_32:
-         to->v_complex32.r = (float)0;
-         to->v_complex32.i = (float)from->v_float32;
+         to->v_complex32.r = (_Float16)0;
+         to->v_complex32.i = (_Float16)from->v_float32;
          break;
        case FLOAT_SIZE_64:
-         to->v_complex32.r = (float)0;
-         to->v_complex32.i = (float)from->v_float64;
+         to->v_complex32.r = (_Float16)0;
+         to->v_complex32.i = (_Float16)from->v_float64;
          break;
        default:
          CHPL_ASSERT(false && "Illegal case in coerce_immediate switch statement"); break;
@@ -911,16 +911,16 @@ switch (to->const_kind) {
      case NUM_KIND_COMPLEX:
        switch (from->num_index) {
        case COMPLEX_SIZE_32:
-         to->v_complex32.r = (float)from->v_complex32.r;
-         to->v_complex32.i = (float)from->v_complex32.i;
+         to->v_complex32.r = (_Float16)from->v_complex32.r;
+         to->v_complex32.i = (_Float16)from->v_complex32.i;
          break;
        case COMPLEX_SIZE_64:
-         to->v_complex32.r = (float)from->v_complex64.r;
-         to->v_complex32.i = (float)from->v_complex64.i;
+         to->v_complex32.r = (_Float16)from->v_complex64.r;
+         to->v_complex32.i = (_Float16)from->v_complex64.i;
          break;
        case COMPLEX_SIZE_128:
-         to->v_complex32.r = (float)from->v_complex128.r;
-         to->v_complex32.i = (float)from->v_complex128.i;
+         to->v_complex32.r = (_Float16)from->v_complex128.r;
+         to->v_complex32.i = (_Float16)from->v_complex128.i;
          break;
        default:
          CHPL_ASSERT(false && "Illegal case in coerce_immediate switch statement"); break;

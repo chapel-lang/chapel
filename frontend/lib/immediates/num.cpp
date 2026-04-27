@@ -644,7 +644,8 @@ static void doFoldAbs(chpl::Context* context,
     case NUM_KIND_REAL: case NUM_KIND_IMAG:
       switch (im1.num_index) {
         case FLOAT_SIZE_16:
-          imm->v_float16 = fabsf(im1.v_float16); break;
+          // TODO: Is this right?
+          imm->v_float16 = (_Float16)fabsf(im1.v_float16); break;
         case FLOAT_SIZE_32:
           imm->v_float32 = fabsf(im1.v_float32); break;
         case FLOAT_SIZE_64:
