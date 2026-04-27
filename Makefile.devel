@@ -112,7 +112,7 @@ lint-standard-modules: chplcheck FORCE
 
 MASON_MODULES_TO_LINT = $(shell find $(CHPL_MAKE_HOME)/tools/mason -name '*.chpl' -not -path '$(CHPL_MAKE_HOME)/tools/mason/ThirdParty/*')
 lint-mason: chplcheck FORCE
-	tools/chplcheck/chplcheck --enable-rule UseExplicitModules --setting IncorrectIndentation.UnindentedModule=true $(MASON_MODULES_TO_LINT)
+	tools/chplcheck/chplcheck --add-rules $(CHPL_MAKE_HOME)/tools/mason/rules.py --enable-rule UseExplicitModules --setting IncorrectIndentation.UnindentedModule=true $(MASON_MODULES_TO_LINT)
 
 mason-deps: FORCE
 	cd tools/mason && $(MAKE) deps

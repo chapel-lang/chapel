@@ -99,8 +99,8 @@ proc runProjectBinary(show: bool, release: bool,
   const project = tomlFile["brick.name"]!.s;
 
   // Find the Binary and execute
-  if isDir(joinPath(projectHome, 'target')) {
-    var execs = ' '.join(execopts.these());
+  if isDir(joinPath(projectHome, "target")) {
+    var execs = " ".join(execopts.these());
 
     // decide which binary(release or debug) to run
     var command: list(string);

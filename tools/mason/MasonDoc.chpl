@@ -37,7 +37,7 @@ proc masonDoc(args: [] string) throws {
   var passArgs = parser.addPassThrough();
   parser.parseArgs(args);
 
-  const tomlName = 'Mason.toml';
+  const tomlName = "Mason.toml";
   const cwd = here.cwd();
 
   const projectHome = getProjectHome(cwd, tomlName);
@@ -47,7 +47,7 @@ proc masonDoc(args: [] string) throws {
   var tomlFile = parseToml(toParse);
 
   const projectName = tomlFile["brick.name"]!.s;
-  const projectFile = projectName + '.chpl';
+  const projectFile = projectName + ".chpl";
 
   const version = tomlFile["brick.version"]!.s;
 
@@ -67,8 +67,8 @@ proc masonDoc(args: [] string) throws {
     copyrightYear = copyrightToml.s;
   }
 
-  if isDir(projectHome + '/src/') &&
-      isFile(projectHome + '/src/' + projectFile) {
+  if isDir(projectHome + "/src/") &&
+      isFile(projectHome + "/src/" + projectFile) {
     // Must use relative paths with chpldoc to prevent baking in abs paths
     here.chdir(projectHome);
 

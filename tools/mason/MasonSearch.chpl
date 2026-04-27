@@ -79,18 +79,18 @@ proc masonSearch(args: [] string): int throws {
   if show {
     if pkgs.size == 1 {
       const pkg = pkgs[0];
-      writeln('Displaying the latest version: ' +
-              pkg.name + '@' + pkg.version.str());
-      const brickPath = joinPath(pkg.registry, 'Bricks',
-                                 pkg.name, pkg.version.str() + '.toml');
+      writeln("Displaying the latest version: " +
+              pkg.name + "@" + pkg.version.str());
+      const brickPath = joinPath(pkg.registry, "Bricks",
+                                 pkg.name, pkg.version.str() + ".toml");
       showToml(brickPath);
     } else if pkgs.size == 0 {
       throw new MasonError('"%s" returned no packages\n'.format(query) +
-                           '--show requires the search to return one package');
+                           "--show requires the search to return one package");
     } else if pkgs.size > 1 {
-      var msg = '';
-      if query == '.*' {
-        msg += 'You must specify a package to show the manifest\n';
+      var msg = "";
+      if query == ".*" {
+        msg += "You must specify a package to show the manifest\n";
       } else {
         msg += '"%s"  returned more than one package.\n'.format(query);
       }

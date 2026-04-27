@@ -90,8 +90,8 @@ proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock",
 
   var updated = false;
   if tomlPath.isFile() {
-    if TomlFile.pathExists('dependencies') {
-      if force || TomlFile['dependencies']!.A.size > 0 {
+    if TomlFile.pathExists("dependencies") {
+      if force || TomlFile["dependencies"]!.A.size > 0 {
         log.info("Updating registry");
         updateRegistry(skipUpdate, show);
         updated = true;
@@ -108,7 +108,7 @@ proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock",
 
   if !skipUpdate {
     log.info("Will do external update");
-    if isDir(SPACK_ROOT) && TomlFile.pathExists('external') {
+    if isDir(SPACK_ROOT) && TomlFile.pathExists("external") {
       if getSpackVersion() < minSpackVersion then
         throw new MasonError("Mason has been updated. " +
                               "To install Spack, run: mason external --setup.");
@@ -204,7 +204,7 @@ proc updateRegistry(skipUpdate: bool, show=true) throws {
 
     const registryHomePath = registryHome:path;
     if registryHomePath.isDir() {
-      var pullRegistry = 'git pull -q origin';
+      var pullRegistry = "git pull -q origin";
       if show then writeln("Updating ", name);
       gitC(registryHomePath, pullRegistry);
     } else {
@@ -430,8 +430,8 @@ private proc IVRS(A: borrowed Toml, B: borrowed Toml) throws {
 
   if version1 == version2 then return A;
 
-  var vers1 = version1.split('.');
-  var vers2 = version2.split('.');
+  var vers1 = version1.split(".");
+  var vers2 = version2.split(".");
   var v1 = vers1(0): int;
   var v2 = vers2(0): int;
   if vers1(0) != vers2(0) {
@@ -485,7 +485,7 @@ private proc retrieveDep(name: string, version: string) throws {
   }
 
   throw new MasonError("No toml file found in mason-registry for " +
-                       name +'-'+ version);
+                       name +"-"+ version);
 }
 
 /* Returns the Mason.toml for each dep listed as a Toml */
@@ -503,7 +503,7 @@ private proc getGitManifests(
 /* Responsible for parsing the Mason.toml that have been
    already pulled down from git dependencies */
 private proc retrieveGitDep(name: string, branch: string) throws {
-  var baseDir = MASON_HOME +'/git/';
+  var baseDir = MASON_HOME +"/git/";
   const tomlPath = baseDir + "/"+name+"-"+branch+"/Mason.toml";
   if isFile(tomlPath) {
     var tomlFile = open(tomlPath, ioMode.r);
@@ -512,7 +512,7 @@ private proc retrieveGitDep(name: string, branch: string) throws {
   }
 
   stderr.writeln("No toml file found in git dependency for " +
-                 name + '-' + branch);
+                 name + "-" + branch);
   exit(1);
 }
 
@@ -544,8 +544,8 @@ private proc getGitDeps(tomlTbl: Toml) throws {
 }
 
 private proc pullGitDeps(gitDeps, show=false) throws {
-  if !isDir(MASON_HOME + '/git/') {
-    mkdir(MASON_HOME + '/git/', parents=true);
+  if !isDir(MASON_HOME + "/git/") {
+    mkdir(MASON_HOME + "/git/", parents=true);
   }
 
   var gitDepsWithRevision: list((string, string, string, string));
@@ -574,7 +574,7 @@ private proc pullGitDeps(gitDeps, show=false) throws {
     var branch = if origBranch == "" then "HEAD" else origBranch;
     const nameVers = val + "-" + branch;
     const destination = baseDir / nameVers;
-    if !depExists(nameVers, '/git/') {
+    if !depExists(nameVers, "/git/") {
       writef("Downloading dependency: %s\n", nameVers);
       cloneSource(srcURL, destination, quiet=true);
 
