@@ -1,5 +1,5 @@
 //Check if zipped 'foreach' loop is vectorizable
-proc loop (A, B) {
+proc loop (ref A, B) {
   foreach (i,j) in zip(0..511, 0..511) {
     // CHECK: <4 x i32>
     A[i,j] = B[i,j]*3;

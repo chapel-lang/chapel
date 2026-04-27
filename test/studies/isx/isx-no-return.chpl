@@ -246,7 +246,7 @@ proc bucketSort(bucketID, trial: int, time = false, verify = false) {
 }
 
 
-proc bucketizeLocalKeys(myBucketedKeys, bucketID, myKeys, sendOffsets) {
+proc bucketizeLocalKeys(ref myBucketedKeys, bucketID, myKeys, sendOffsets) {
   var bucketOffsets: [LocBucketSpace] atomic int;
 
   bucketOffsets.write(sendOffsets);
@@ -262,7 +262,7 @@ proc bucketizeLocalKeys(myBucketedKeys, bucketID, myKeys, sendOffsets) {
 }
 
 
-proc countLocalBucketSizes(bucketSizes, myKeys) {
+proc countLocalBucketSizes(ref bucketSizes, myKeys) {
   forall key in myKeys {
     const bucketIndex = key / bucketWidth;
     bucketSizes[bucketIndex].add(1);
@@ -287,7 +287,7 @@ proc exchangeKeys(bucketID, sendOffsets, bucketSizes, myBucketedKeys) {
 }
 
 
-proc countLocalKeys(myLocalKeyCounts, bucketID, myBucketSize, myMinKeyVal) {
+proc countLocalKeys(ref myLocalKeyCounts, bucketID, myBucketSize, myMinKeyVal) {
   ref myBucket = allBucketKeys[bucketID];
   forall i in 0..#myBucketSize do
     myLocalKeyCounts[myBucket[i]].add(1);
@@ -330,7 +330,7 @@ proc verifyResults(bucketID, myBucketSize, myLocalKeyCounts) {
 }
 
 
-proc makeInput(myKeys, bucketID) {
+proc makeInput(ref myKeys, bucketID) {
   use Random;
   use Random.PCGRandomLib;
 
