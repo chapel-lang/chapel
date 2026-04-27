@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+grep 'remote put' $2 | sort > $2.tmp
+mv $2.tmp $2
