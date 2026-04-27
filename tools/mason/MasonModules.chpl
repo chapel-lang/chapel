@@ -31,9 +31,12 @@ use MasonEnv;
 use MasonBuild;
 use Subprocess;
 use MasonUpdate;
+import MasonExample;
+import MasonTest;
 use TOML;
 import Path.joinPath;
 import ThirdParty.Pathlib.path;
+use ThirdParty.Pathlib.IOHelpers;
 
 enum OutputFormat {
   json,
@@ -55,8 +58,6 @@ proc masonModules(args: [] string) throws {
   var updateFlag = parser.addFlag(name="update", flagInversion=true);
   var formatFlag = parser.addOption(name="format", defaultValue="text");
 
-  var passArgs = parser.addPassThrough();
-
   parser.parseArgs(args);
 
   var skipUpdate = MASON_OFFLINE;
@@ -75,13 +76,11 @@ proc masonModules(args: [] string) throws {
   if !isDir(MASON_HOME) {
     mkdir(MASON_HOME, parents=true);
   }
-  const configNames = updateLock(skipUpdate, show=false);
-  const tomlName = configNames[0];
-  const lockName = configNames[1];
+  const (tomlName, lockName) = updateLock(skipUpdate, show=false);
 
-  const cwd = here.cwd():path;
-  const toParse = open((cwd / lockName):string, ioMode.r);
-  var lockFile = parseToml(toParse);
+  const projectHome = getProjectHome(path.cwd());
+  var tomlFile = parseToml(open(projectHome / tomlName, ioMode.r));
+  var lockFile = parseToml(open(projectHome / lockName, ioMode.r));
 
   // generate list of dependencies and get src code
   var (sourceList, gitList) = genSourceList(lockFile);
@@ -108,6 +107,17 @@ proc masonModules(args: [] string) throws {
     modules.pushBack(gitDepSrc);
   }
 
+  const srcPath = projectHome / "src";
+  const testPath = projectHome / "test";
+  const examplePath = projectHome / "example";
+  const sources = [f in srcPath.findFiles(recursive=true)]
+                    if f.suffix == ".chpl" then f;
+
+  const tests =
+    [f in MasonTest.getTests(lockFile, projectHome)] testPath / f;
+  const examples =
+    [f in MasonExample.getExamples(tomlFile, projectHome)] examplePath / f;
+
   select outputFormat {
     when OutputFormat.text {
       var sep = "";
@@ -118,14 +128,13 @@ proc masonModules(args: [] string) throws {
       writeln();
     }
     when OutputFormat.json {
-      var jsonModules = "{\"modules\":[";
-      var sep = "";
-      for m in modules {
-        jsonModules += sep + "\"" + m:string + "\"";
-        sep = ",";
-      }
-      jsonModules += "]}";
-      writeln(jsonModules);
+      import JSON;
+      var jsonObj = new map(string, list(string));
+      jsonObj["modules"] = new list([m in modules] m:string);
+      jsonObj["sources"] = new list([s in sources] s:string);
+      jsonObj["tests"] = new list([t in tests] t:string);
+      jsonObj["examples"] = new list([e in examples] e:string);
+      stdout.withSerializer(new JSON.jsonSerializer()).writeln(jsonObj);
     }
     otherwise {
       // this should be impossible since we check the output format above

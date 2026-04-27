@@ -163,7 +163,7 @@ private proc getBuildInfo(projectHome: path,
   }
 
   // get the example names from lockfile or from example directory
-  const exampleNames = getExamples(tomlFile.borrow(), projectHome:string);
+  const exampleNames = getExamples(tomlFile.borrow(), projectHome);
 
   var sourceList: list(srcSource);
   var gitList: list(gitSource);
@@ -346,9 +346,9 @@ private proc runExampleBinary(projectHome: string, exampleName: string,
   const exampleResult = runWithStatus(command.toArray(), capture=false);
 }
 
-private proc getExamples(toml: Toml, projectHome: string) throws {
+proc getExamples(toml: Toml, projectHome: path) throws {
   var exampleNames: list(string);
-  const examplePath = joinPath(projectHome, "example");
+  const examplePath = projectHome / "example";
 
   if const examplesToml = toml.get("examples.examples") {
     var examples = examplesToml.toString();
@@ -358,12 +358,11 @@ private proc getExamples(toml: Toml, projectHome: string) throws {
       exampleNames.pushBack(t);
     }
     return exampleNames;
-  } else if isDir(examplePath) {
-    var examples = findFiles(startdir=examplePath,
-                             recursive=true, hidden=false);
+  } else if examplePath.isDir() {
+    var examples = examplePath.findFiles(recursive=true, hidden=false);
     for example in examples {
-      if example.endsWith(".chpl") {
-        exampleNames.pushBack(getExamplePath(example));
+      if example.suffix == ".chpl" {
+        exampleNames.pushBack(relPath(example:string, examplePath:string));
       }
     }
     return exampleNames;
@@ -371,26 +370,10 @@ private proc getExamples(toml: Toml, projectHome: string) throws {
   return exampleNames;
 }
 
-/* Gets the path of the example by following the example dir */
-proc getExamplePath(fullPath: string, examplePath = "") : string {
-  var split = splitPath(fullPath);
-  if split[1] == "example" {
-    return examplePath;
-  } else {
-    if examplePath == "" {
-      return getExamplePath(split[0], split[1]);
-    } else {
-      var appendedPath = joinPath(split[1], examplePath);
-      return getExamplePath(split[0], appendedPath);
-    }
-  }
-}
-
 // used when user calls `mason run --example` without argument
 proc printAvailableExamples() throws {
-  const cwd = here.cwd();
-  const projectHome = getProjectHome(cwd);
-  const toParse = open(projectHome + "/Mason.toml", ioMode.r);
+  const projectHome = getProjectHome(path.cwd());
+  const toParse = open(projectHome / "Mason.toml", ioMode.r);
   const toml = parseToml(toParse);
   const examples = getExamples(toml, projectHome);
   writeln("--- available examples ---");
