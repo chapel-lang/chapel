@@ -86,7 +86,7 @@ proc masonDoc(args: [] string) throws {
       command.pushBack("--project-copyright-year=" + copyrightYear);
     }
     const srcFiles = [f in srcDir.findFiles(recursive=true)]
-                        if f.suffix == ".chpl" then (srcDir / f):string;
+                        if f.suffix == ".chpl" then f:string;
     command.pushBack(srcFiles);
     command.pushBack([
       "-o",
