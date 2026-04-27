@@ -3465,11 +3465,16 @@ module ChapelBase {
     if numFields == 0 then return false;
 
     for param i in 0..<numFields do
-      if !isType(getField(r1, i)) && !isParam(getField(r1, i)) then
-        if !chpl_field_gt(getField(r1, i), getField(r2, i)) then
+      if !isType(getField(r1, i)) && !isParam(getField(r1, i)) {
+        const ref f1 = getField(r1, i),
+                  f2 = getField(r2, i);
+        if chpl_field_gt(f1, f2) then
+          return true;
+        else if chpl_field_lt(f1, f2) then
           return false;
+      }
 
-    return true;
+    return false;
   }
 
   pragma "last resort"
@@ -3477,10 +3482,15 @@ module ChapelBase {
     use Reflection;
 
     for param i in 0..<getNumFields(r1.type) do
-      if !isType(getField(r1, i)) && !isParam(getField(r1, i)) then
-        if chpl_field_lt(getField(r1, i), getField(r2, i)) then
+      if !isType(getField(r1, i)) && !isParam(getField(r1, i)) {
+        const ref f1 = getField(r1, i),
+                  f2 = getField(r2, i);
+        if chpl_field_lt(f1, f2) then
           return false;
-
+        else if chpl_field_gt(f1, f2) then
+          return true;
+      }
+    
     return true;
   }
 }
