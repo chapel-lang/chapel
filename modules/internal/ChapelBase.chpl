@@ -3432,6 +3432,7 @@ module ChapelBase {
   }
 
   pragma "last resort"
+  @edition(first="preview")
   operator ==(r1: record, r2: r1.type) where r1.type == r2.type {
     use Reflection;
 
@@ -3443,21 +3444,13 @@ module ChapelBase {
   }
 
   pragma "last resort"
+  @edition(first="preview")
   operator !=(r1: record, r2: r1.type) where r1.type == r2.type {
     return !(r1 == r2);
   }
       
   pragma "last resort"
-  operator <(r1: record, r2: r1.type) where r1.type == r2.type {
-    return !(r1 >= r2);
-  }
-
-  pragma "last resort"
-  operator <=(r1: record, r2: r1.type) where r1.type == r2.type {
-    return !(r1 > r2);
-  }
-
-  pragma "last resort"
+  @edition(first="preview")
   operator >(r1: record, r2: r1.type) where r1.type == r2.type {
     use Reflection;
 
@@ -3478,6 +3471,7 @@ module ChapelBase {
   }
 
   pragma "last resort"
+  @edition(first="preview")
   operator >=(r1: record, r2: r1.type) where r1.type == r2.type {
     use Reflection;
 
@@ -3492,5 +3486,17 @@ module ChapelBase {
       }
     
     return true;
+  }
+
+  pragma "last resort"
+  @edition(first="preview")
+  operator <(r1: record, r2: r1.type) where r1.type == r2.type {
+    return !(r1 >= r2);
+  }
+
+  pragma "last resort"
+  @edition(first="preview")
+  operator <=(r1: record, r2: r1.type) where r1.type == r2.type {
+    return !(r1 > r2);
   }
 }
