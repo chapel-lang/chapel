@@ -1,5 +1,3 @@
-#!/usr/bin/env csh
-
 # csh/tcsh-compatibility shell script to set the Chapel environment variables
 # Due to csh/tcsh limitations and inconsistencies, source this from $CHPL_HOME
 

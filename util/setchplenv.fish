@@ -1,5 +1,3 @@
-#!/usr/bin/env fish
-
 # fish shell script to set the Chapel environment variables
 
 # Directory of setchplenv script, will not work if script is a symlink

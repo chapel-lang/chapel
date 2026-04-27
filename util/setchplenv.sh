@@ -1,5 +1,3 @@
-#!/usr/bin/env sh
-
 # POSIX-standard compatibility shell script to set the Chapel environment variables
 # Source this for POSIX-standard shells such as 'sh' and 'dash'
 # Due to POSIX-standard limitations, this must be sourced from $CHPL_HOME

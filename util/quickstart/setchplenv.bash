@@ -1,5 +1,3 @@
-#!/usr/bin/env bash
-
 # bash/zsh shell script to set the Chapel environment variables
 
 # Find out filepath depending on shell
