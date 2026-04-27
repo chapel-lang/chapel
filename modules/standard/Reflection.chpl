@@ -158,7 +158,7 @@ proc getField(const ref obj:?t, param name: string) type
 pragma "unsafe"
 pragma "suppress generic actual warning"
 inline proc getField(const ref obj:?t, param name:string) const ref {
-  param i = __primitive("field name to num", t, name);
+  param i = __primitive("field name to num", checkQueryT(t), name);
   if i == -1 then
     compilerError("field ", name, " not found in ", t:string);
   return __primitive("field by num", obj, i);
@@ -250,8 +250,7 @@ inline proc getFieldRef(x: borrowed, param i:int) ref {
 pragma "unsafe"
 @unstable(reason="'getFieldRef' is unstable")
 proc getFieldRef(ref x:?t, param s:string) ref {
-  checkValidQueryT(t);
-  param i = __primitive("field name to num", t, s);
+  param i = __primitive("field name to num", checkQueryT(t), s);
   if i == -1 then
     compilerError("field ", s, " not found in ", t:string);
   if isType(__primitive("field by num", x, i)) then
