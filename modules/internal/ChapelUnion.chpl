@@ -171,4 +171,27 @@ module ChapelUnion {
 
   @chpldoc.nodoc
   proc _select_test(x: union) do return x.getActiveIndex();
+
+  // TODO: The following where clauses shouldn't be required
+  @chpldoc.nodoc
+  operator ==(u1: union, u2: u1.type) where u1.type == u2.type {
+    use Reflection;
+    const i = u1.getActiveIndex();
+    if  i != u2.getActiveIndex() then return false;
+    if i == -1 then return true;
+    for param j in 0..<getNumFields(u1.type) do
+      if i == j then return u1(j) == u2(j);
+    halt("Cannot get here");
+  }
+
+  @chpldoc.nodoc
+  operator !=(u1: union, u2: u1.type) where u1.type == u2.type {
+    use Reflection;
+    const i = u1.getActiveIndex();
+    if  i != u2.getActiveIndex() then return true;
+    if i == -1 then return false;
+    for param j in 0..<getNumFields(u1.type) do
+      if i == j then return u1(j) != u2(j);
+    halt("Cannot get here");
+  }
 }
