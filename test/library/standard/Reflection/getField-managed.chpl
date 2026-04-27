@@ -4,7 +4,9 @@ proc test(in obj) {
   writeln("  getNumFields    ", getNumFields(obj.type)         :string);
   writeln("  getFieldName    ", getFieldName(obj.type, 5)             );
   writeln("  getField        ", getField(obj, 5)               :string);
-  writeln("  getFieldRef     ", getFieldRef(obj, 5)             :string);
+  writeln("  getField        ", getField(obj, "f6")            :string);
+  writeln("  getFieldRef     ", getFieldRef(obj, 5)            :string);
+  writeln("  getFieldRef     ", getFieldRef(obj, "f6")         :string);
   writeln("  hasField        ", hasField(obj.type, "f6")       :string);
   writeln("  getFieldIndex   ", getFieldIndex(obj.type, "f6")  :string);
   writeln("  isFieldBound 5  ", isFieldBound(obj.type, 5)      :string);
