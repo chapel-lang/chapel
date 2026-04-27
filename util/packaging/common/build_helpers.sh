@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+
 
 __get_docker_tag() {
   local os=$1
