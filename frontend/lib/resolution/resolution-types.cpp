@@ -338,7 +338,7 @@ void CallInfo::prepareActual(Context* context,
     bool handledTupleExpansion = false;
     if (auto op = actual->toOpCall()) {
       if (op->op() == USTR("...")) {
-        if (op->numActuals() != 1) {
+        if (!op->isUnaryOp()) {
           if (raiseErrors) {
             context->error(op, "tuple expansion can only accept one argument");
           }
@@ -1648,6 +1648,19 @@ void AssociatedAction::stringify(std::ostream& ss,
     ss << " type=";
     type_.stringify(ss, stringKind);
   }
+  if (tupleEltIdx_) {
+    ss << " tuple-elt-idx=" << *tupleEltIdx_;
+  }
+
+  ss << " sub-actions: {";
+  for (size_t i = 0; i < subActions_.size(); i++) {
+    ss << "";
+    subActions_[i].stringify(ss, stringKind);
+    if (i < subActions_.size() - 1) {
+      ss << ", ";
+    }
+  }
+  ss << "}";
 }
 
 void ResolvedExpression::stringify(std::ostream& ss,
@@ -2131,6 +2144,7 @@ IMPLEMENT_DUMP(CallInfoActual);
 IMPLEMENT_DUMP(CallInfo);
 IMPLEMENT_DUMP(MostSpecificCandidates);
 IMPLEMENT_DUMP(CallResolutionResult);
+IMPLEMENT_DUMP(AssociatedAction);
 IMPLEMENT_DUMP(SimpleMethodLookupHelper);
 IMPLEMENT_DUMP(TypedMethodLookupHelper);
 IMPLEMENT_DUMP(ResolvedFunction);

@@ -117,7 +117,7 @@ ERROR_CLASS(SuperFromTopLevelModule, const uast::AstNode*, const uast::Module*, 
 ERROR_CLASS(SyntacticGenericityMismatch, const uast::Decl*, const types::Type::Genericity, const types::Type::Genericity, types::QualifiedType)
 WARNING_CLASS(FieldWithGenericManagement, const uast::Decl*)
 WARNING_CLASS(TertiaryUseImportUnstable, UniqueString, const uast::AstNode*, const uast::VisibilityClause*, const resolution::Scope*, resolution::VisibilityStmtKind)
-ERROR_CLASS(TupleDeclMismatchedElems, const uast::TupleDecl*, const types::TupleType*)
+ERROR_CLASS(TupleDeclAssignMismatchedElems, const uast::AstNode*, const types::TupleType*)
 ERROR_CLASS(TupleDeclNotTuple, const uast::TupleDecl*, const types::Type*)
 ERROR_CLASS(TupleDeclUnknownType, const uast::TupleDecl*)
 ERROR_CLASS(TupleExpansionNamedArgs, const uast::OpCall*, const uast::FnCall*)

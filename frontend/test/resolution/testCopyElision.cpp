@@ -67,7 +67,7 @@ static void testCopyElision(const char* test,
   }
 
   std::set<ID> splitIds;
-  std::set<ID> elisionPoints;
+  ElidedCopyInfo elisionPoints;
 
   if (testModule == false) {
     assert(func);
@@ -1442,5 +1442,6 @@ int main() {
   test47();
   test48();
   test49();
+
   return 0;
 }

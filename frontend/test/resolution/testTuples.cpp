@@ -87,7 +87,7 @@ static void test3() {
                   var x = (r, r);
                 )"""");
 
-  assert(qt.kind() == QualifiedType::CONST_REF);
+  assert(qt.kind() == QualifiedType::CONST_VAR);
   assert(qt.type()->isTupleType());
   auto tt = qt.type()->toTupleType();
   assert(tt->numElements() == 2);
@@ -619,23 +619,47 @@ static void test14() {
 
 static void test15() {
   printf("%s\n", __FUNCTION__);
-  auto context = buildStdContext();
+  {
+    auto context = buildStdContext();
+    auto qt = resolveTypeOfXInit(context,
+                  R""""(
+                    var tup = (1, 2);
+                    var x = ( (... tup), 3.0);
+                  )"""");
 
-  auto qt = resolveTypeOfXInit(context,
-                R""""(
-                  var tup = (1, 2);
-                  var x = ( (... tup), 3.0);
-                )"""");
+    assert(qt.kind() == QualifiedType::CONST_VAR);
+    assert(qt.type()->isTupleType());
+    auto tt = qt.type()->toTupleType();
 
-  assert(qt.kind() == QualifiedType::CONST_VAR);
-  assert(qt.type()->isTupleType());
-  auto tt = qt.type()->toTupleType();
+    assert(tt->numElements() == 3);
+    assert(!tt->isStarTuple());
+    assert(tt->elementType(0).type()->isIntType());
+    assert(tt->elementType(1).type()->isIntType());
+    assert(tt->elementType(2).type()->isRealType());
+  }
 
-  assert(tt->numElements() == 3);
-  assert(!tt->isStarTuple());
-  assert(tt->elementType(0).type()->isIntType());
-  assert(tt->elementType(1).type()->isIntType());
-  assert(tt->elementType(2).type()->isRealType());
+  {
+    auto context = buildStdContext();
+    auto qt = resolveTypeOfXInit(context,
+                  R""""(
+                    var tup1 = (1, 2);
+                    var tup2 = (3.0, "hi");
+                    var x = ( (... tup1), false, (... tup2), true);
+                  )"""");
+
+    assert(qt.kind() == QualifiedType::CONST_VAR);
+    assert(qt.type()->isTupleType());
+    auto tt = qt.type()->toTupleType();
+
+    assert(tt->numElements() == 6);
+    assert(!tt->isStarTuple());
+    assert(tt->elementType(0).type()->isIntType());
+    assert(tt->elementType(1).type()->isIntType());
+    assert(tt->elementType(2).type()->isBoolType());
+    assert(tt->elementType(3).type()->isRealType());
+    assert(tt->elementType(4).type()->isStringType());
+    assert(tt->elementType(5).type()->isBoolType());
+  }
 }
 
 static void test16() {
@@ -1070,7 +1094,9 @@ static void test24() {
 
   // Get the type of the '(x, _)' tuple itself.
   auto testFn = mod->stmt(3)->toFunction();
-  auto astTup = testFn->stmt(1)->toCall()->actual(0)->toTuple();
+  auto astOp = testFn->stmt(1)->toOpCall();
+  assert(astOp);
+  auto astTup = astOp->lhs()->toTuple();
   assert(astTup);
   auto& qtTup = fnRR.byAst(astTup).type();
 
@@ -1079,21 +1105,18 @@ static void test24() {
   assert(qtTup.type()->isTupleType());
   auto tpTup = qtTup.type()->toTupleType();
 
-  // Its components are 'ref real(64)' and 'var nothing'.
+  // Its components are 'var real(64)' and 'var nothing'.
   for (int i = 0; i < tpTup->numElements(); i++) {
     auto qt = tpTup->elementType(i);
-    assert(i != 0 || (qt.type()->isRealType() && qt.kind() == QualifiedType::REF));
+    assert(i != 0 || (qt.type()->isRealType() && qt.kind() == QualifiedType::VAR));
     assert(i != 1 || (qt.type()->isNothingType() && qt.kind() == QualifiedType::VAR));
   }
 
   // Finally confirm that there is an assignment for 'x' but not for '_'.
-  for (int i = 0; i < astTup->numActuals(); i++) {
-    auto actual = astTup->actual(i);
-    auto& actions = fnRR.byAst(actual).associatedActions();
-    assert(i != 0 || (actions.size() == 1 &&
-                      actions[0].action() == AssociatedAction::ASSIGN));
-    assert(i != 1 || actions.size() == 0);
-  }
+  auto& actions = fnRR.byAst(astOp).associatedActions();
+  assert(actions.size() == 1 &&
+         actions[0].action() == AssociatedAction::ASSIGN &&
+         actions[0].tupleEltIdx() && actions[0].tupleEltIdx() == 0);
 }
 
 static void test25() {
@@ -1344,8 +1367,7 @@ static void test33() {
   resolveModule(context, mod->id());
 
   assert(guard.numErrors() == 1);
-  auto& err = guard.error(0);
-  assert(err->message() == "tuple size mismatch in split tuple assign");
+  assert(guard.error(0)->type() == ErrorType::TupleDeclAssignMismatchedElems);
   guard.realizeErrors();
 }
 
