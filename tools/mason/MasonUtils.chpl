@@ -483,10 +483,13 @@ proc gitC(newDir:path, command, quiet=false): string throws {
 }
 
 proc getProjectHome(cwd: string, tomlName="Mason.toml"): string throws {
-  var dir = cwd:path;
+  return getProjectHome(cwd:path, tomlName):string;
+}
+proc getProjectHome(cwd: path, tomlName="Mason.toml"): path throws {
+  var dir = cwd;
   while true {
-    if (dir/tomlName).exists() then
-      return dir:string;
+    if (dir / tomlName).exists() then
+      return dir;
     if dir:string == "/" then
       throw new MasonError("Mason could not find your " +
                            "configuration file (Mason.toml)");
@@ -494,7 +497,7 @@ proc getProjectHome(cwd: string, tomlName="Mason.toml"): string throws {
   }
   throw new MasonError("Mason could not find your " +
                        "configuration file (Mason.toml)");
-  return ""; // should never reach here
+  return new path(); // should never reach here
 }
 
 proc getLastModified(filename: string) : int {
