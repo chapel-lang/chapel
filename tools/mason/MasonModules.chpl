@@ -88,8 +88,8 @@ proc masonModules(args: [] string) throws {
   getSrcCode(sourceList, skipUpdate, false);
   getGitCode(gitList, skipUpdate, false);
 
-  const depPath = MASON_HOME:path / 'src';
-  const gitDepPath = MASON_HOME:path / 'git';
+  const depPath = MASON_HOME:path / "src";
+  const gitDepPath = MASON_HOME:path / "git";
   var modules: list(path);
   // can't use _ since it will leak
   // see https://github.com/chapel-lang/chapel/issues/25926

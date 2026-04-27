@@ -129,9 +129,9 @@ proc buildProgram(release: bool, show: bool, force: bool, skipUpdate: bool,
   }
   const projectName = lockFile["root.name"]!.s;
 
-  var binLoc = 'debug';
+  var binLoc = "debug";
   if release then
-    binLoc = 'release';
+    binLoc = "release";
 
 
   // build on last modification
@@ -154,7 +154,7 @@ proc buildProgram(release: bool, show: bool, force: bool, skipUpdate: bool,
     // generate list of dependencies and get src code
     var (sourceList, gitList) = genSourceList(lockFile);
 
-    if lockFile.pathExists('external') {
+    if lockFile.pathExists("external") {
       spackInstalled();
     }
     getSrcCode(sourceList, skipUpdate, show);
@@ -188,14 +188,14 @@ proc compileSrc(lockFile: borrowed Toml, binLoc: string,
                 sourceList: list(srcSource),
                 gitList: list(gitSource)) : bool throws {
 
-  const depPath = Path.joinPath(MASON_HOME, 'src');
-  const gitDepPath = Path.joinPath(MASON_HOME, 'git');
+  const depPath = Path.joinPath(MASON_HOME, "src");
+  const gitDepPath = Path.joinPath(MASON_HOME, "git");
   const project = lockFile["root.name"]!.s;
   const pathToProj = Path.replaceExt(Path.joinPath(projectHome,
-                                                   'src',
-                                                   project), 'chpl');
+                                                   "src",
+                                                   project), "chpl");
 
-  const moveTo = Path.joinPath(projectHome, 'target', binLoc, project);
+  const moveTo = Path.joinPath(projectHome, "target", binLoc, project);
 
   if !isFile(pathToProj) {
     throw new MasonError("Mason could not find your project");
@@ -272,7 +272,7 @@ proc compileSrc(lockFile: borrowed Toml, binLoc: string,
     }
 
     // Confirming File Structure
-    return isFile(Path.joinPath(projectHome, 'target', binLoc, project));
+    return isFile(Path.joinPath(projectHome, "target", binLoc, project));
   }
   return false;
 }
@@ -381,7 +381,7 @@ proc getGitCode(gitList: list(gitSource),
   with (ref errors) {
     const nameVers = name + "-" + branch;
     const destination = baseDir / nameVers;
-    if !depExists(nameVers, '/git/') {
+    if !depExists(nameVers, "/git/") {
       if !skipUpdate {
         writeln("Downloading dependency: " + nameVers);
         try {
@@ -470,7 +470,7 @@ proc getTomlCompopts(lock: borrowed Toml): list(string) throws {
       }
   }
 
-  if const exDeps = lock.get['external'] {
+  if const exDeps = lock.get["external"] {
     for (_, depInfo) in zip(exDeps.A.keys(), exDeps.A.values()) {
       for (k,v) in allFields(depInfo!) {
         var val = v!;
@@ -483,7 +483,7 @@ proc getTomlCompopts(lock: borrowed Toml): list(string) throws {
       }
     }
   }
-  if const pkgDeps = lock.get['system'] {
+  if const pkgDeps = lock.get["system"] {
     for (_, depInfo) in zip(pkgDeps.A.keys(), pkgDeps.A.values()) {
       for (k,v) in allFields(depInfo!) {
         var val = v!;

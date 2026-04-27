@@ -2706,6 +2706,8 @@ arkouda: &arkouda-base
     - Add runtime warning on divide-by-zero (Bears-R-Us/arkouda#5315)
   02/19/26:
     - Fix performance regressions from divide-by-zero check (Bears-R-Us/arkouda#5416)
+  04/19/26:
+    - Make the loop iterating over multiple parquet files parallel (Bears-R-Us/arkouda#5486)
 
 arkouda-string:
   <<: *arkouda-base
