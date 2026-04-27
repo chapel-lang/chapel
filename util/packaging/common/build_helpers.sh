@@ -1,4 +1,4 @@
-
+# shellcheck shell=sh
 
 __get_docker_tag() {
   local os=$1
