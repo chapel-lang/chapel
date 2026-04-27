@@ -1,0 +1,12 @@
+─── error in throwNoTryStrict.chpl:7 [CallToThrowingFunctionStrict] ───
+  Call to throwing function 'canThrow'  must be marked with try or try! (strict mode)
+      |
+    7 |     canThrow();
+      |     ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      |
+  The call must be explicitly marked with 'try' or 'try!' to indicate where errors may propagate from.
+  The function was declared to throw here:
+      |
+    3 |   proc canThrow() throws {
+      |
+
