@@ -1,0 +1,128 @@
+(x = 42, y = 42) ?<===> (x = 42, y = 42)
+ == :true
+ != :false
+ < :false
+ <= :true
+ > :false
+ >= :true
+
+(x = 42, y = 42) ?<===> (x = 42, y = 43)
+ == :false
+ != :true
+ < :true
+ <= :true
+ > :false
+ >= :false
+
+(x = 42, y = 42) ?<===> (x = 43, y = 42)
+ == :false
+ != :true
+ < :true
+ <= :true
+ > :false
+ >= :false
+
+(x = 42, y = 42) ?<===> (x = 43, y = 43)
+ == :false
+ != :true
+ < :true
+ <= :true
+ > :false
+ >= :false
+
+(x = 42, y = 43) ?<===> (x = 42, y = 42)
+ == :false
+ != :true
+ < :false
+ <= :false
+ > :true
+ >= :true
+
+(x = 42, y = 43) ?<===> (x = 42, y = 43)
+ == :true
+ != :false
+ < :false
+ <= :true
+ > :false
+ >= :true
+
+(x = 42, y = 43) ?<===> (x = 43, y = 42)
+ == :false
+ != :true
+ < :true
+ <= :true
+ > :false
+ >= :false
+
+(x = 42, y = 43) ?<===> (x = 43, y = 43)
+ == :false
+ != :true
+ < :true
+ <= :true
+ > :false
+ >= :false
+
+(x = 43, y = 42) ?<===> (x = 42, y = 42)
+ == :false
+ != :true
+ < :false
+ <= :false
+ > :true
+ >= :true
+
+(x = 43, y = 42) ?<===> (x = 42, y = 43)
+ == :false
+ != :true
+ < :false
+ <= :false
+ > :true
+ >= :true
+
+(x = 43, y = 42) ?<===> (x = 43, y = 42)
+ == :true
+ != :false
+ < :false
+ <= :true
+ > :false
+ >= :true
+
+(x = 43, y = 42) ?<===> (x = 43, y = 43)
+ == :false
+ != :true
+ < :true
+ <= :true
+ > :false
+ >= :false
+
+(x = 43, y = 43) ?<===> (x = 42, y = 42)
+ == :false
+ != :true
+ < :false
+ <= :false
+ > :true
+ >= :true
+
+(x = 43, y = 43) ?<===> (x = 42, y = 43)
+ == :false
+ != :true
+ < :false
+ <= :false
+ > :true
+ >= :true
+
+(x = 43, y = 43) ?<===> (x = 43, y = 42)
+ == :false
+ != :true
+ < :false
+ <= :false
+ > :true
+ >= :true
+
+(x = 43, y = 43) ?<===> (x = 43, y = 43)
+ == :true
+ != :false
+ < :false
+ <= :true
+ > :false
+ >= :true
+

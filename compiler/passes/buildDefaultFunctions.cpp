@@ -201,7 +201,7 @@ void buildDefaultFunctions() {
         // compiler-generated '==' operator
         buildRecordHashFunction(ct);
 
-        if (!isRecordWrappedType(ct)) {
+        if (fEdition != "preview" && !isRecordWrappedType(ct)) {
           buildRecordComparisonFunc(ct, "==");
           buildRecordComparisonFunc(ct, "!=");
           buildRecordComparisonFunc(ct, "<");

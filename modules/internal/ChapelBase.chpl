@@ -3380,35 +3380,6 @@ module ChapelBase {
       compilerError("Called chpl_boundedCoforallSize on an unsupported type");
   }
 
-  /* The following chpl_field_*() overloads support compiler-generated
-     comparison operators for records with array fields */
-
-  proc chpl_field_neq(a: [] ?t, b: [] t) {
-    return || reduce (a != b);
-  }
-
-  inline proc chpl_field_neq(a, b) where !isArrayType(a.type) {
-    return a != b;
-  }
-
-  proc chpl_field_lt(a: [] ?t, b: [] t) {
-    compilerError("ordered comparisons not supported by default on records with array fields");
-    return false;
-  }
-
-  inline proc chpl_field_lt(a, b) where !isArrayType(a.type) {
-    return a < b;
-  }
-
-  proc chpl_field_gt(a: [] ?t, b: [] t) {
-    compilerError("ordered comparisons not supported by default on records with array fields");
-    return false;
-  }
-
-  inline proc chpl_field_gt(a, b) where !isArrayType(a.type) {
-    return a > b;
-  }
-
   // check if both arguments are local without `.locale` or `here`
   inline proc chpl__bothLocal(const ref a, const ref b) {
     // this implementation is a bit tricky. There are two checks that make
@@ -3432,5 +3403,100 @@ module ChapelBase {
                           __primitive("is_local", b);
 
     return locIdCheck && isLocalCheck;
+  }
+
+  inline proc chpl_field_neq(a, b) where !isArrayType(a.type) {
+    return a != b;
+  }
+
+  proc chpl_field_neq(a: [] ?t, b: [] t) {
+    return || reduce (a != b);
+  }
+
+  inline proc chpl_field_lt(a, b) where !isArrayType(a.type) {
+    return a < b;
+  }
+
+  proc chpl_field_lt(a: [] ?t, b: [] t) {
+    compilerError("ordered comparisons not supported by default on records with array fields");
+    return false;
+  }
+
+  inline proc chpl_field_gt(a, b) where !isArrayType(a.type) {
+    return a > b;
+  }
+
+  proc chpl_field_gt(a: [] ?t, b: [] t) {
+    compilerError("ordered comparisons not supported by default on records with array fields");
+    return false;
+  }
+
+  pragma "last resort"
+  @edition(first="preview")
+  operator ==(r1: record, r2: r1.type) where r1.type == r2.type {
+    use Reflection;
+
+    for param i in 0..<getNumFields(r1.type) do
+      if !isType(getField(r1, i)) && !isParam(getField(r1, i)) then
+        if chpl_field_neq(getField(r1, i), getField(r2, i)) then
+          return false;
+    return true;
+  }
+
+  pragma "last resort"
+  @edition(first="preview")
+  operator !=(r1: record, r2: r1.type) where r1.type == r2.type {
+    return !(r1 == r2);
+  }
+
+  pragma "last resort"
+  @edition(first="preview")
+  operator >(r1: record, r2: r1.type) where r1.type == r2.type {
+    use Reflection;
+
+    param numFields = getNumFields(r1.type);
+    if numFields == 0 then return false;
+
+    for param i in 0..<numFields do
+      if !isType(getField(r1, i)) && !isParam(getField(r1, i)) {
+        const ref f1 = getField(r1, i),
+                  f2 = getField(r2, i);
+        if chpl_field_gt(f1, f2) then
+          return true;
+        else if chpl_field_lt(f1, f2) then
+          return false;
+      }
+
+    return false;
+  }
+
+  pragma "last resort"
+  @edition(first="preview")
+  operator >=(r1: record, r2: r1.type) where r1.type == r2.type {
+    use Reflection;
+
+    for param i in 0..<getNumFields(r1.type) do
+      if !isType(getField(r1, i)) && !isParam(getField(r1, i)) {
+        const ref f1 = getField(r1, i),
+                  f2 = getField(r2, i);
+        if chpl_field_lt(f1, f2) then
+          return false;
+        else if chpl_field_gt(f1, f2) then
+          return true;
+      }
+
+    return true;
+  }
+
+  pragma "last resort"
+  @edition(first="preview")
+  operator <(r1: record, r2: r1.type) where r1.type == r2.type {
+    return !(r1 >= r2);
+  }
+
+  pragma "last resort"
+  @edition(first="preview")
+  operator <=(r1: record, r2: r1.type) where r1.type == r2.type {
+    return !(r1 > r2);
   }
 }
