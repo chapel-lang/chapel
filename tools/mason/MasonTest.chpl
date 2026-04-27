@@ -313,7 +313,7 @@ private proc runTests(show: bool, run: bool, parallel: bool, filter: string,
     var testsCompiled: list(string, parSafe=true);
     // get the test names from lockfile or from test directory
     if files.size == 0 && dirs.size == 0 {
-      testNames = getTests(lockFile.borrow(), projectHome);
+      testNames = getTests(lockFile.borrow(), projectHome:path);
       numTests = testNames.size;
     } else {
       try! {
@@ -479,9 +479,9 @@ private proc printTestResults(ref result, timeElapsed) {
 }
 
 
-private proc getTests(lock: borrowed Toml, projectHome: string) throws {
+proc getTests(lock: borrowed Toml, projectHome: path) throws {
   var testNames: list(string);
-  const testPath = joinPath(projectHome, "test");
+  const testPath = projectHome / "test";
 
   if const testsToml = lock.get("root.tests") {
     var tests = testsToml.toString();
@@ -490,11 +490,11 @@ private proc getTests(lock: borrowed Toml, projectHome: string) throws {
       const t = test.strip().strip('"');
       testNames.pushBack(t);
     }
-  } else if isDir(testPath) {
-    var tests = findFiles(startdir=testPath, recursive=true, hidden=false);
+  } else if testPath.isDir() {
+    var tests = testPath.findFiles(recursive=true, hidden=false);
     for test in tests {
-      if test.endsWith(".chpl") {
-        testNames.pushBack(getTestPath(test));
+      if test.suffix == ".chpl" {
+        testNames.pushBack(relPath(test:string, testPath:string));
       }
     }
   }
