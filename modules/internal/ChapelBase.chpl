@@ -3436,8 +3436,7 @@ module ChapelBase {
     use Reflection;
 
     for param i in 0..<getNumFields(r1.type) do
-      // TODO: I think this should probably be && !isParam(...) -- see #28723
-      if !isType(getField(r1, i)) then
+      if !isType(getField(r1, i)) && !isParam(getField(r1, i)) then
         if chpl_field_neq(getField(r1, i), getField(r2, i)) then
           return false;
     return true;
@@ -3466,8 +3465,7 @@ module ChapelBase {
     if numFields == 0 then return false;
 
     for param i in 0..<numFields do
-      // TODO: I think this should probably be && !isParam(...) -- see #28723
-      if !isType(getField(r1, i)) then
+      if !isType(getField(r1, i)) && !isParam(getField(r1, i)) then
         if !chpl_field_gt(getField(r1, i), getField(r2, i)) then
           return false;
 
@@ -3479,8 +3477,7 @@ module ChapelBase {
     use Reflection;
 
     for param i in 0..<getNumFields(r1.type) do
-      // TODO: I think this should probably be && !isParam(...) -- see #28723
-      if !isType(getField(r1, i)) then
+      if !isType(getField(r1, i)) && !isParam(getField(r1, i)) then
         if chpl_field_lt(getField(r1, i), getField(r2, i)) then
           return false;
 
