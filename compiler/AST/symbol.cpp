@@ -1910,7 +1910,6 @@ VarSymbol *new_RealSymbol(const char *n, IF1_float_type size) {
   return new_FloatSymbol(n, size, NUM_KIND_REAL, dtReal[size]);
 }
 
-/*
 VarSymbol *new_RealSymbol(_Float16 val) {
   Immediate imm;
   imm.v_float16 = val;
@@ -1918,7 +1917,6 @@ VarSymbol *new_RealSymbol(_Float16 val) {
   imm.num_index = FLOAT_SIZE_16;
   return new_ImmediateSymbol(&imm);
 }
-*/
 
 VarSymbol *new_RealSymbol(float val) {
   Immediate imm;

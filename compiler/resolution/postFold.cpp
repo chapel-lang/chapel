@@ -777,7 +777,7 @@ static Expr* postFoldPrimop(CallExpr* call) {
     Expr* uintArg = call->get(1);
     Immediate* uintVal = getSymbolImmediate(toSymExpr(uintArg)->symbol());
     uint16_t ui = uintVal->v_uint16;
-    float f;
+    _Float16 f;
     INT_ASSERT(sizeof(f) == sizeof(ui));
     memcpy(&f, &ui, sizeof(f));
     retval = new SymExpr(new_RealSymbol(f));
