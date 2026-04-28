@@ -321,7 +321,10 @@ optional<Immediate> paramToImmediate(Context* context,
         } else {
           CHPL_ASSERT(false && "case not handled");
         }
-        if (bw == 32) {
+        if (bw == 16) {
+          ret.num_index = FLOAT_SIZE_16;
+          ret.v_float16 = getImmediateValueOrEmpty<float, RealParam>(rp);
+        } else if (bw == 32) {
           ret.num_index = FLOAT_SIZE_32;
           ret.v_float32 = getImmediateValueOrEmpty<float, RealParam>(rp);
         } else if (bw == 64) {
@@ -418,6 +421,9 @@ std::pair<const Param*, const Type*> immediateToParam(Context* context,
       }
   case NUM_KIND_REAL:
     switch (imm.num_index) {
+      case FLOAT_SIZE_16:
+        return {RealParam::get(context, imm.v_float16),
+                RealType::get(context, 16)};
       case FLOAT_SIZE_32:
         return {RealParam::get(context, imm.v_float32),
                 RealType::get(context, 32)};
@@ -429,6 +435,9 @@ std::pair<const Param*, const Type*> immediateToParam(Context* context,
     }
   case NUM_KIND_IMAG:
     switch (imm.num_index) {
+      case FLOAT_SIZE_16:
+        return {RealParam::get(context, imm.v_float16),
+                ImagType::get(context, 16)};
       case FLOAT_SIZE_32:
         return {RealParam::get(context, imm.v_float32),
                 ImagType::get(context, 32)};
