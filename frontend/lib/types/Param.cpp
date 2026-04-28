@@ -323,7 +323,7 @@ optional<Immediate> paramToImmediate(Context* context,
         }
         if (bw == 16) {
           ret.num_index = FLOAT_SIZE_16;
-          ret.v_float16 = getImmediateValueOrEmpty<float, RealParam>(rp);
+          ret.v_float16 = getImmediateValueOrEmpty<_Float16, RealParam>(rp);
         } else if (bw == 32) {
           ret.num_index = FLOAT_SIZE_32;
           ret.v_float32 = getImmediateValueOrEmpty<float, RealParam>(rp);
