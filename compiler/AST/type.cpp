@@ -1874,11 +1874,14 @@ void initPrimitiveTypes() {
   INIT_PRIM_UINT( "uint(32)", 32);
   INIT_PRIM_UINT( "uint", 64);          // default size
 
+  INIT_PRIM_REAL( "real(16)", 16);
   INIT_PRIM_REAL( "real(32)", 32);
 
+  INIT_PRIM_IMAG( "imag(16)", 16);
   INIT_PRIM_IMAG( "imag(32)", 32);
   INIT_PRIM_IMAG( "imag", 64);            // default size
 
+  INIT_PRIM_COMPLEX( "complex(32)", 32);
   INIT_PRIM_COMPLEX( "complex(64)", 64);
   INIT_PRIM_COMPLEX( "complex", 128);       // default size
 
@@ -2148,19 +2151,22 @@ bool isSignedType(Type *t) {
 bool isRealType(Type *t) {
   return
     t == dtReal[FLOAT_SIZE_64] ||
-    t == dtReal[FLOAT_SIZE_32];
+    t == dtReal[FLOAT_SIZE_32] ||
+    t == dtReal[FLOAT_SIZE_16];
 }
 
 bool isImagType(Type *t) {
   return
     t == dtImag[FLOAT_SIZE_64] ||
-    t == dtImag[FLOAT_SIZE_32];
+    t == dtImag[FLOAT_SIZE_32] ||
+    t == dtImag[FLOAT_SIZE_16];
 }
 
 bool isComplexType(Type *t) {
   return
     t == dtComplex[COMPLEX_SIZE_128] ||
-    t == dtComplex[COMPLEX_SIZE_64];
+    t == dtComplex[COMPLEX_SIZE_64] ||
+    t == dtComplex[COMPLEX_SIZE_32];
 }
 
 bool isEnumType(Type *t) {
@@ -2186,12 +2192,15 @@ int getWidthOfType(Type *t) {
       t == dtUInt[INT_SIZE_8])
     return 8;
   if (t == dtInt[INT_SIZE_16] ||
-      t == dtUInt[INT_SIZE_16])
+      t == dtUInt[INT_SIZE_16] ||
+      t == dtReal[FLOAT_SIZE_16] ||
+      t == dtImag[FLOAT_SIZE_16])
     return 16;
   if (t == dtInt[INT_SIZE_32] ||
       t == dtUInt[INT_SIZE_32] ||
       t == dtReal[FLOAT_SIZE_32] ||
-      t == dtImag[FLOAT_SIZE_32])
+      t == dtImag[FLOAT_SIZE_32] ||
+      t == dtComplex[COMPLEX_SIZE_32])
     return 32;
   if (t == dtInt[INT_SIZE_64] ||
       t == dtUInt[INT_SIZE_64] ||
@@ -2215,7 +2224,12 @@ int getComponentWidthOfType(Type *t) {
 // numbers between -2**width .. 2**width
 // will fit exactly in a floating-point representation.
 int get_mantissa_width(Type *t) {
-  // FLOAT_SIZE_16 would have 11 bits of precision
+  if (t == dtReal[FLOAT_SIZE_16] ||
+      t == dtImag[FLOAT_SIZE_16] ||
+      t == dtComplex[COMPLEX_SIZE_32]
+      )
+    // mantissa for 32-bit float
+    return 11;
   if (t == dtReal[FLOAT_SIZE_32] ||
       t == dtImag[FLOAT_SIZE_32] ||
       t == dtComplex[COMPLEX_SIZE_64])
@@ -2231,7 +2245,12 @@ int get_mantissa_width(Type *t) {
 }
 
 int get_exponent_width(Type *t) {
-  // FLOAT_SIZE_16 would have 5 bits of exponent
+  if (t == dtReal[FLOAT_SIZE_16] ||
+      t == dtImag[FLOAT_SIZE_16] ||
+      t == dtComplex[COMPLEX_SIZE_32]
+      )
+    // exponent bits for 32-bit float
+    return 5;
   if (t == dtReal[FLOAT_SIZE_32] ||
       t == dtImag[FLOAT_SIZE_32] ||
       t == dtComplex[COMPLEX_SIZE_64])
@@ -2814,12 +2833,15 @@ bool isPrimitiveScalar(Type* type) {
       type == dtUInt[INT_SIZE_32]          ||
       type == dtUInt[INT_SIZE_64]          ||
 
+      type == dtReal[FLOAT_SIZE_16]        ||
       type == dtReal[FLOAT_SIZE_32]        ||
       type == dtReal[FLOAT_SIZE_64]        ||
 
+      type == dtImag[FLOAT_SIZE_16]        ||
       type == dtImag[FLOAT_SIZE_32]        ||
       type == dtImag[FLOAT_SIZE_64]        ||
 
+      type == dtComplex[COMPLEX_SIZE_32]   ||
       type == dtComplex[COMPLEX_SIZE_64]   ||
       type == dtComplex[COMPLEX_SIZE_128]) {
 

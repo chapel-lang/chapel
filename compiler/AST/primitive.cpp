@@ -126,8 +126,18 @@ returnInfoDefaultInt(CallExpr* call) {
 }
 
 static QualifiedType
+returnInfoUInt16(CallExpr* call) {
+  return QualifiedType(dtUInt[INT_SIZE_16], QUAL_VAL);
+}
+
+static QualifiedType
 returnInfoUInt32(CallExpr* call) { // unexecuted none/gasnet on 4/25/08
   return QualifiedType(dtUInt[INT_SIZE_32], QUAL_VAL);
+}
+
+static QualifiedType
+returnInfoReal16(CallExpr* call) {
+  return QualifiedType(dtReal[FLOAT_SIZE_16], QUAL_VAL);
 }
 
 static QualifiedType
@@ -143,7 +153,9 @@ returnInfoReal64(CallExpr* call) {
 static QualifiedType
 returnInfoComplexField(CallExpr* call) {  // for get real/imag primitives
   Type *t = call->get(1)->getValType();
-  if (t == dtComplex[COMPLEX_SIZE_64]) {
+  if (t == dtComplex[COMPLEX_SIZE_32]) {
+    return QualifiedType(dtReal[FLOAT_SIZE_16]->refType, QUAL_REF);
+  } else if (t == dtComplex[COMPLEX_SIZE_64]) {
     return QualifiedType(dtReal[FLOAT_SIZE_32]->refType, QUAL_REF);
   } else if (t == dtComplex[COMPLEX_SIZE_128]) {
     return QualifiedType(dtReal[FLOAT_SIZE_64]->refType, QUAL_REF);
@@ -156,10 +168,14 @@ returnInfoComplexField(CallExpr* call) {  // for get real/imag primitives
 static QualifiedType
 returnInfoAbs(CallExpr* call) {
   Type *t = call->get(1)->getValType();
-  if (t == dtComplex[COMPLEX_SIZE_64]) {
+  if (t == dtComplex[COMPLEX_SIZE_32]) {
+    return QualifiedType(dtReal[FLOAT_SIZE_16], QUAL_VAL);
+  } else if (t == dtComplex[COMPLEX_SIZE_64]) {
     return QualifiedType(dtReal[FLOAT_SIZE_32], QUAL_VAL);
   } else if (t == dtComplex[COMPLEX_SIZE_128]) {
     return QualifiedType(dtReal[FLOAT_SIZE_64], QUAL_VAL);
+  } else if (t == dtImag[FLOAT_SIZE_16]) {
+    return QualifiedType(dtReal[FLOAT_SIZE_16], QUAL_VAL);
   } else if (t == dtImag[FLOAT_SIZE_32]) {
     return QualifiedType(dtReal[FLOAT_SIZE_32], QUAL_VAL);
   } else if (t == dtImag[FLOAT_SIZE_64]) {
@@ -1394,8 +1410,10 @@ initPrimitive() {
 
   prim_def(PRIM_REF_DESERIALIZE, "deserialize for ref fields", returnInfoCVoidPtr);
 
+  prim_def(PRIM_UINT16_AS_REAL16, "uint16 as real16", returnInfoReal16);
   prim_def(PRIM_UINT32_AS_REAL32, "uint32 as real32", returnInfoReal32);
   prim_def(PRIM_UINT64_AS_REAL64, "uint64 as real64", returnInfoReal64);
+  prim_def(PRIM_REAL16_AS_UINT16, "real16 as uint16", returnInfoUInt16);
   prim_def(PRIM_REAL32_AS_UINT32, "real32 as uint32", returnInfoUInt32);
   prim_def(PRIM_REAL64_AS_UINT64, "real64 as uint64", returnInfoUInt64);
 

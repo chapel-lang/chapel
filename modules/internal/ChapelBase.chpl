@@ -112,12 +112,15 @@ module ChapelBase {
   inline operator =(ref a: uint(32), b: uint(32)) do __primitive("=", a, b);
   inline operator =(ref a: uint(64), b: uint(64)) do __primitive("=", a, b);
 
+  inline operator =(ref a: real(16), b: real(16)) do __primitive("=", a, b);
   inline operator =(ref a: real(32), b: real(32)) do __primitive("=", a, b);
   inline operator =(ref a: real(64), b: real(64)) do __primitive("=", a, b);
 
+  inline operator =(ref a: imag(16), b: imag(16)) do __primitive("=", a, b);
   inline operator =(ref a: imag(32), b: imag(32)) do __primitive("=", a, b);
   inline operator =(ref a: imag(64), b: imag(64)) do __primitive("=", a, b);
 
+  inline operator =(ref a: complex(32), b: complex(32)) do __primitive("=", a, b);
   inline operator =(ref a: complex(64), b: complex(64)) do __primitive("=", a, b);
   inline operator =(ref a: complex(128), b: complex(128)) do __primitive("=", a, b);
   inline operator =(ref a:opaque, b:opaque) {__primitive("=", a, b); }
@@ -166,12 +169,15 @@ module ChapelBase {
   inline operator ==(a: uint(32), b: uint(32)) do return __primitive("==", a, b);
   inline operator ==(a: uint(64), b: uint(64)) do return __primitive("==", a, b);
 
+  inline operator ==(a: real(16), b: real(16)) do return __primitive("==", a, b);
   inline operator ==(a: real(32), b: real(32)) do return __primitive("==", a, b);
   inline operator ==(a: real(64), b: real(64)) do return __primitive("==", a, b);
 
+  inline operator ==(a: imag(16), b: imag(16)) do return __primitive("==", a, b);
   inline operator ==(a: imag(32), b: imag(32)) do return __primitive("==", a, b);
   inline operator ==(a: imag(64), b: imag(64)) do return __primitive("==", a, b);
 
+  inline operator ==(a: complex(32), b: complex(32)) do return a.re == b.re && a.im == b.im;
   inline operator ==(a: complex(64), b: complex(64)) do return a.re == b.re && a.im == b.im;
   inline operator ==(a: complex(128), b: complex(128)) do return a.re == b.re && a.im == b.im;
   inline operator ==(a: borrowed RootClass?, b: borrowed RootClass?) do return __primitive("ptr_eq", a, b);
@@ -234,12 +240,15 @@ module ChapelBase {
   inline operator !=(a: uint(32), b: uint(32)) do return __primitive("!=", a, b);
   inline operator !=(a: uint(64), b: uint(64)) do return __primitive("!=", a, b);
 
+  inline operator !=(a: real(16), b: real(16)) do return __primitive("!=", a, b);
   inline operator !=(a: real(32), b: real(32)) do return __primitive("!=", a, b);
   inline operator !=(a: real(64), b: real(64)) do return __primitive("!=", a, b);
 
+  inline operator !=(a: imag(16), b: imag(16)) do return __primitive("!=", a, b);
   inline operator !=(a: imag(32), b: imag(32)) do return __primitive("!=", a, b);
   inline operator !=(a: imag(64), b: imag(64)) do return __primitive("!=", a, b);
 
+  inline operator !=(a: complex(32), b: complex(32)) do return a.re != b.re || a.im != b.im;
   inline operator !=(a: complex(64), b: complex(64)) do return a.re != b.re || a.im != b.im;
   inline operator !=(a: complex(128), b: complex(128)) do return a.re != b.re || a.im != b.im;
   inline operator !=(a: borrowed RootClass?, b: borrowed RootClass?) do return __primitive("ptr_neq", a, b);
@@ -274,12 +283,15 @@ module ChapelBase {
   // param enum routines are defined as module code to avoid having to
   // teach the compiler how to implement all enum comparisons.
 
+  inline operator ==(param a: real(16), param b: real(16)) param do return __primitive("==", a, b);
   inline operator ==(param a: real(32), param b: real(32)) param do return __primitive("==", a, b);
   inline operator ==(param a: real(64), param b: real(64)) param do return __primitive("==", a, b);
 
+  inline operator ==(param a: imag(16), param b: imag(16)) param do return __primitive("==", a, b);
   inline operator ==(param a: imag(32), param b: imag(32)) param do return __primitive("==", a, b);
   inline operator ==(param a: imag(64), param b: imag(64)) param do return __primitive("==", a, b);
 
+  inline operator ==(param a: complex(32), param b: complex(32)) param do return __primitive("==", a, b);
   inline operator ==(param a: complex(64), param b: complex(64)) param do return __primitive("==", a, b);
   inline operator ==(param a: complex(128), param b: complex(128)) param do return __primitive("==", a, b);
   inline operator ==(a: nothing, b: nothing) param do return true;
@@ -298,12 +310,15 @@ module ChapelBase {
 
   inline operator !=(param a: enum, param b: enum) param where (a.type == b.type) do return __primitive("!=", chpl__enumToOrder(a), chpl__enumToOrder(b));
 
+  inline operator !=(param a: real(16), param b: real(16)) param do return __primitive("!=", a, b);
   inline operator !=(param a: real(32), param b: real(32)) param do return __primitive("!=", a, b);
   inline operator !=(param a: real(64), param b: real(64)) param do return __primitive("!=", a, b);
 
+  inline operator !=(param a: imag(16), param b: imag(16)) param do return __primitive("!=", a, b);
   inline operator !=(param a: imag(32), param b: imag(32)) param do return __primitive("!=", a, b);
   inline operator !=(param a: imag(64), param b: imag(64)) param do return __primitive("!=", a, b);
 
+  inline operator !=(param a: complex(32), param b: complex(32)) param do return __primitive("!=", a, b);
   inline operator !=(param a: complex(64), param b: complex(64)) param do return __primitive("!=", a, b);
   inline operator !=(param a: complex(128), param b: complex(128)) param do return __primitive("!=", a, b);
   inline operator !=(a: nothing, b: nothing) param do return false;
@@ -321,6 +336,7 @@ module ChapelBase {
   inline operator <=(a: uint(32), b: uint(32)) do return __primitive("<=", a, b);
   inline operator <=(a: uint(64), b: uint(64)) do return __primitive("<=", a, b);
 
+  inline operator <=(a: real(16), b: real(16)) do return __primitive("<=", a, b);
   inline operator <=(a: real(32), b: real(32)) do return __primitive("<=", a, b);
   inline operator <=(a: real(64), b: real(64)) do return __primitive("<=", a, b);
   operator <=(a: enum, b: enum) where (a.type == b.type) {
@@ -342,6 +358,7 @@ module ChapelBase {
   inline operator >=(a: uint(32), b: uint(32)) do return __primitive(">=", a, b);
   inline operator >=(a: uint(64), b: uint(64)) do return __primitive(">=", a, b);
 
+  inline operator >=(a: real(16), b: real(16)) do return __primitive(">=", a, b);
   inline operator >=(a: real(32), b: real(32)) do return __primitive(">=", a, b);
   inline operator >=(a: real(64), b: real(64)) do return __primitive(">=", a, b);
   operator >=(a: enum, b: enum) where (a.type == b.type) {
@@ -389,6 +406,7 @@ module ChapelBase {
   inline operator <(param a: bool, param b: bool) param
     do return __primitive("<", a, b);
 
+  inline operator <(a: real(16), b: real(16)) do return __primitive("<", a, b);
   inline operator <(a: real(32), b: real(32)) do return __primitive("<", a, b);
   inline operator <(a: real(64), b: real(64)) do return __primitive("<", a, b);
 
@@ -411,6 +429,7 @@ module ChapelBase {
   inline operator >(a: uint(32), b: uint(32)) do return __primitive(">", a, b);
   inline operator >(a: uint(64), b: uint(64)) do return __primitive(">", a, b);
 
+  inline operator >(a: real(16), b: real(16)) do return __primitive(">", a, b);
   inline operator >(a: real(32), b: real(32)) do return __primitive(">", a, b);
   inline operator >(a: real(64), b: real(64)) do return __primitive(">", a, b);
   operator >(a: enum, b: enum) where (a.type == b.type) {
@@ -433,6 +452,7 @@ module ChapelBase {
   inline operator <=(param a: uint(64), param b: uint(64)) param do return __primitive("<=", a, b);
   inline operator <=(param a: enum, param b: enum) param where (a.type == b.type) do return __primitive("<=", chpl__enumToOrder(a), chpl__enumToOrder(b));
 
+  inline operator <=(param a: real(16), param b: real(16)) param do return __primitive("<=", a, b);
   inline operator <=(param a: real(32), param b: real(32)) param do return __primitive("<=", a, b);
   inline operator <=(param a: real(64), param b: real(64)) param do return __primitive("<=", a, b);
 
@@ -447,11 +467,13 @@ module ChapelBase {
   inline operator >=(param a: uint(64), param b: uint(64)) param do return __primitive(">=", a, b);
   inline operator >=(param a: enum, param b: enum) param where (a.type == b.type) do return __primitive(">=", chpl__enumToOrder(a), chpl__enumToOrder(b));
 
+  inline operator >=(param a: real(16), param b: real(16)) param do return __primitive(">=", a, b);
   inline operator >=(param a: real(32), param b: real(32)) param do return __primitive(">=", a, b);
   inline operator >=(param a: real(64), param b: real(64)) param do return __primitive(">=", a, b);
 
   inline operator <(param a: enum, param b: enum) param where (a.type == b.type) do return __primitive("<", chpl__enumToOrder(a), chpl__enumToOrder(b));
 
+  inline operator <(param a: real(16), param b: real(16)) param do return __primitive("<", a, b);
   inline operator <(param a: real(32), param b: real(32)) param do return __primitive("<", a, b);
   inline operator <(param a: real(64), param b: real(64)) param do return __primitive("<", a, b);
 
@@ -466,6 +488,7 @@ module ChapelBase {
   inline operator >(param a: uint(64), param b: uint(64)) param do return __primitive(">", a, b);
   inline operator >(param a: enum, param b: enum) param where (a.type == b.type) do return __primitive(">", chpl__enumToOrder(a), chpl__enumToOrder(b));
 
+  inline operator >(param a: real(16), param b: real(16)) param do return __primitive(">", a, b);
   inline operator >(param a: real(32), param b: real(32)) param do return __primitive(">", a, b);
   inline operator >(param a: real(64), param b: real(64)) param do return __primitive(">", a, b);
 
@@ -513,31 +536,40 @@ module ChapelBase {
   inline operator +(a: uint(32), b: uint(32)) do return __primitive("+", a, b);
   inline operator +(a: uint(64), b: uint(64)) do return __primitive("+", a, b);
 
+  inline operator +(a: real(16), b: real(16)) do return __primitive("+", a, b);
   inline operator +(a: real(32), b: real(32)) do return __primitive("+", a, b);
   inline operator +(a: real(64), b: real(64)) do return __primitive("+", a, b);
 
+  inline operator +(a: imag(16), b: imag(16)) do return __primitive("+", a, b);
   inline operator +(a: imag(32), b: imag(32)) do return __primitive("+", a, b);
   inline operator +(a: imag(64), b: imag(64)) do return __primitive("+", a, b);
 
+  inline operator +(a: complex(32), b: complex(32)) do return __primitive("+", a, b);
   inline operator +(a: complex(64), b: complex(64)) do return __primitive("+", a, b);
   inline operator +(a: complex(128), b: complex(128)) do return __primitive("+", a, b);
 
 
+  inline operator +(a: real(16), b: imag(16)) do return (a, _i2r(b)) : complex(32);
   inline operator +(a: real(32), b: imag(32)) do return (a, _i2r(b)) : complex(64);
   inline operator +(a: real(64), b: imag(64)) do return (a, _i2r(b)) : complex(128);
 
+  inline operator +(a: imag(16), b: real(16)) do return (b, _i2r(a)) : complex(32);
   inline operator +(a: imag(32), b: real(32)) do return (b, _i2r(a)) : complex(64);
   inline operator +(a: imag(64), b: real(64)) do return (b, _i2r(a)) : complex(128);
 
+  inline operator +(a: real(16), b: complex(32)) do return (a+b.re, b.im) : complex(32);
   inline operator +(a: real(32), b: complex(64)) do return (a+b.re, b.im) : complex(64);
   inline operator +(a: real(64), b: complex(128)) do return (a+b.re, b.im) : complex(128);
 
+  inline operator +(a: complex(32), b: real(16)) do return (a.re+b, a.im) : complex(32);
   inline operator +(a: complex(64), b: real(32)) do return (a.re+b, a.im) : complex(64);
   inline operator +(a: complex(128), b: real(64)) do return (a.re+b, a.im) : complex(128);
 
+  inline operator +(a: imag(16), b: complex(32)) do return (b.re, _i2r(a)+b.im) : complex(32);
   inline operator +(a: imag(32), b: complex(64)) do return (b.re, _i2r(a)+b.im) : complex(64);
   inline operator +(a: imag(64), b: complex(128)) do return (b.re, _i2r(a)+b.im) : complex(128);
 
+  inline operator +(a: complex(32), b: imag(16)) do return (a.re, a.im+_i2r(b)) : complex(32);
   inline operator +(a: complex(64), b: imag(32)) do return (a.re, a.im+_i2r(b)) : complex(64);
   inline operator +(a: complex(128), b: imag(64)) do return (a.re, a.im+_i2r(b)) : complex(128);
 
@@ -552,30 +584,39 @@ module ChapelBase {
   inline operator -(a: uint(32), b: uint(32)) do return __primitive("-", a, b);
   inline operator -(a: uint(64), b: uint(64)) do return __primitive("-", a, b);
 
+  inline operator -(a: real(16), b: real(16)) do return __primitive("-", a, b);
   inline operator -(a: real(32), b: real(32)) do return __primitive("-", a, b);
   inline operator -(a: real(64), b: real(64)) do return __primitive("-", a, b);
 
+  inline operator -(a: imag(16), b: imag(16)) do return __primitive("-", a, b);
   inline operator -(a: imag(32), b: imag(32)) do return __primitive("-", a, b);
   inline operator -(a: imag(64), b: imag(64)) do return __primitive("-", a, b);
 
+  inline operator -(a: complex(32), b: complex(32)) do return __primitive("-", a, b);
   inline operator -(a: complex(64), b: complex(64)) do return __primitive("-", a, b);
   inline operator -(a: complex(128), b: complex(128)) do return __primitive("-", a, b);
 
+  inline operator -(a: real(16), b: imag(16)) do return (a, -_i2r(b)) : complex(32);
   inline operator -(a: real(32), b: imag(32)) do return (a, -_i2r(b)) : complex(64);
   inline operator -(a: real(64), b: imag(64)) do return (a, -_i2r(b)) : complex(128);
 
+  inline operator -(a: imag(16), b: real(16)) do return (-b, _i2r(a)) : complex(32);
   inline operator -(a: imag(32), b: real(32)) do return (-b, _i2r(a)) : complex(64);
   inline operator -(a: imag(64), b: real(64)) do return (-b, _i2r(a)) : complex(128);
 
+  inline operator -(a: real(16), b: complex(32)) do return (a-b.re, -b.im) : complex(32);
   inline operator -(a: real(32), b: complex(64)) do return (a-b.re, -b.im) : complex(64);
   inline operator -(a: real(64), b: complex(128)) do return (a-b.re, -b.im) : complex(128);
 
+  inline operator -(a: complex(32), b: real(16)) do return (a.re-b, a.im) : complex(32);
   inline operator -(a: complex(64), b: real(32)) do return (a.re-b, a.im) : complex(64);
   inline operator -(a: complex(128), b: real(64)) do return (a.re-b, a.im) : complex(128);
 
+  inline operator -(a: imag(16), b: complex(32)) do return (-b.re, _i2r(a)-b.im) : complex(32);
   inline operator -(a: imag(32), b: complex(64)) do return (-b.re, _i2r(a)-b.im) : complex(64);
   inline operator -(a: imag(64), b: complex(128)) do return (-b.re, _i2r(a)-b.im) : complex(128);
 
+  inline operator -(a: complex(32), b: imag(16)) do return (a.re, a.im-_i2r(b)) : complex(32);
   inline operator -(a: complex(64), b: imag(32)) do return (a.re, a.im-_i2r(b)) : complex(64);
   inline operator -(a: complex(128), b: imag(64)) do return (a.re, a.im-_i2r(b)) : complex(128);
 
@@ -592,18 +633,23 @@ module ChapelBase {
   inline operator +(param a: uint(32), param b: uint(32)) param do return __primitive("+", a, b);
   inline operator +(param a: uint(64), param b: uint(64)) param do return __primitive("+", a, b);
 
+  inline operator +(param a: real(16), param b: real(16)) param do return __primitive("+", a, b);
   inline operator +(param a: real(32), param b: real(32)) param do return __primitive("+", a, b);
   inline operator +(param a: real(64), param b: real(64)) param do return __primitive("+", a, b);
 
+  inline operator +(param a: imag(16), param b: imag(16)) param do return __primitive("+", a, b);
   inline operator +(param a: imag(32), param b: imag(32)) param do return __primitive("+", a, b);
   inline operator +(param a: imag(64), param b: imag(64)) param do return __primitive("+", a, b);
 
+  inline operator +(param a: complex(32), param b: complex(32)) param do return __primitive("+", a, b);
   inline operator +(param a: complex(64), param b: complex(64)) param do return __primitive("+", a, b);
   inline operator +(param a: complex(128), param b: complex(128)) param do return __primitive("+", a, b);
 
+  inline operator +(param a: real(16), param b: imag(16)) param do return __primitive("+", a, b);
   inline operator +(param a: real(32), param b: imag(32)) param do return __primitive("+", a, b);
   inline operator +(param a: real(64), param b: imag(64)) param do return __primitive("+", a, b);
 
+  inline operator +(param a: imag(16), param b: real(16)) param do return __primitive("+", a, b);
   inline operator +(param a: imag(32), param b: real(32)) param do return __primitive("+", a, b);
   inline operator +(param a: imag(64), param b: real(64)) param do return __primitive("+", a, b);
   /*inline operator +(param a: real(?w), param b: complex(w*2)) param do return
@@ -619,18 +665,23 @@ module ChapelBase {
   inline operator -(param a: uint(32), param b: uint(32)) param do return __primitive("-", a, b);
   inline operator -(param a: uint(64), param b: uint(64)) param do return __primitive("-", a, b);
 
+  inline operator -(param a: real(16), param b: real(16)) param do return __primitive("-", a, b);
   inline operator -(param a: real(32), param b: real(32)) param do return __primitive("-", a, b);
   inline operator -(param a: real(64), param b: real(64)) param do return __primitive("-", a, b);
 
+  inline operator -(param a: imag(16), param b: imag(16)) param do return __primitive("-", a, b);
   inline operator -(param a: imag(32), param b: imag(32)) param do return __primitive("-", a, b);
   inline operator -(param a: imag(64), param b: imag(64)) param do return __primitive("-", a, b);
 
+  inline operator -(param a: complex(32), param b: complex(32)) param do return __primitive("-", a, b);
   inline operator -(param a: complex(64), param b: complex(64)) param do return __primitive("-", a, b);
   inline operator -(param a: complex(128), param b: complex(128)) param do return __primitive("-", a, b);
 
+  inline operator -(param a: real(16), param b: imag(16)) param do return __primitive("-", a, b);
   inline operator -(param a: real(32), param b: imag(32)) param do return __primitive("-", a, b);
   inline operator -(param a: real(64), param b: imag(64)) param do return __primitive("-", a, b);
 
+  inline operator -(param a: imag(16), param b: real(16)) param do return __primitive("-", a, b);
   inline operator -(param a: imag(32), param b: real(32)) param do return __primitive("-", a, b);
   inline operator -(param a: imag(64), param b: real(64)) param do return __primitive("-", a, b);
   /*inline operator -(param a: real(?w), param b: complex(w*2)) param do return
@@ -649,30 +700,39 @@ module ChapelBase {
   inline operator *(a: uint(32), b: uint(32)) do return __primitive("*", a, b);
   inline operator *(a: uint(64), b: uint(64)) do return __primitive("*", a, b);
 
+  inline operator *(a: real(16), b: real(16)) do return __primitive("*", a, b);
   inline operator *(a: real(32), b: real(32)) do return __primitive("*", a, b);
   inline operator *(a: real(64), b: real(64)) do return __primitive("*", a, b);
 
+  inline operator *(a: imag(16), b: imag(16)) do return _i2r(__primitive("*", -a, b));
   inline operator *(a: imag(32), b: imag(32)) do return _i2r(__primitive("*", -a, b));
   inline operator *(a: imag(64), b: imag(64)) do return _i2r(__primitive("*", -a, b));
 
+  inline operator *(a: complex(32), b: complex(32)) do return __primitive("*", a, b);
   inline operator *(a: complex(64), b: complex(64)) do return __primitive("*", a, b);
   inline operator *(a: complex(128), b: complex(128)) do return __primitive("*", a, b);
 
+  inline operator *(a: real(16), b: imag(16)) do return _r2i(a*_i2r(b));
   inline operator *(a: real(32), b: imag(32)) do return _r2i(a*_i2r(b));
   inline operator *(a: real(64), b: imag(64)) do return _r2i(a*_i2r(b));
 
+  inline operator *(a: imag(16), b: real(16)) do return _r2i(_i2r(a)*b);
   inline operator *(a: imag(32), b: real(32)) do return _r2i(_i2r(a)*b);
   inline operator *(a: imag(64), b: real(64)) do return _r2i(_i2r(a)*b);
 
+  inline operator *(a: real(16), b: complex(32)) do return (a*b.re, a*b.im) : complex(32);
   inline operator *(a: real(32), b: complex(64)) do return (a*b.re, a*b.im) : complex(64);
   inline operator *(a: real(64), b: complex(128)) do return (a*b.re, a*b.im) : complex(128);
 
+  inline operator *(a: complex(32), b: real(16)) do return (a.re*b, a.im*b) : complex(32);
   inline operator *(a: complex(64), b: real(32)) do return (a.re*b, a.im*b) : complex(64);
   inline operator *(a: complex(128), b: real(64)) do return (a.re*b, a.im*b) : complex(128);
 
+  inline operator *(a: imag(16), b: complex(32)) do return (-_i2r(a)*b.im, _i2r(a)*b.re) : complex(32);
   inline operator *(a: imag(32), b: complex(64)) do return (-_i2r(a)*b.im, _i2r(a)*b.re) : complex(64);
   inline operator *(a: imag(64), b: complex(128)) do return (-_i2r(a)*b.im, _i2r(a)*b.re) : complex(128);
 
+  inline operator *(a: complex(32), b: imag(16)) do return (-a.im*_i2r(b), a.re*_i2r(b)) : complex(32);
   inline operator *(a: complex(64), b: imag(32)) do return (-a.im*_i2r(b), a.re*_i2r(b)) : complex(64);
   inline operator *(a: complex(128), b: imag(64)) do return (-a.im*_i2r(b), a.re*_i2r(b)) : complex(128);
 
@@ -719,21 +779,30 @@ module ChapelBase {
     return __primitive("/", a, b);
   }
 
+  inline operator /(a: real(16), b: real(16)) do return __primitive("/", a, b);
   inline operator /(a: real(32), b: real(32)) do return __primitive("/", a, b);
   inline operator /(a: real(64), b: real(64)) do return __primitive("/", a, b);
 
+  inline operator /(a: imag(16), b: imag(16)) do return _i2r(__primitive("/", a, b));
   inline operator /(a: imag(32), b: imag(32)) do return _i2r(__primitive("/", a, b));
   inline operator /(a: imag(64), b: imag(64)) do return _i2r(__primitive("/", a, b));
 
+  inline operator /(a: complex(32), b: complex(32)) do return __primitive("/", a, b);
   inline operator /(a: complex(64), b: complex(64)) do return __primitive("/", a, b);
   inline operator /(a: complex(128), b: complex(128)) do return __primitive("/", a, b);
 
+  inline operator /(a: real(16), b: imag(16)) do return _r2i(-a/_i2r(b));
   inline operator /(a: real(32), b: imag(32)) do return _r2i(-a/_i2r(b));
   inline operator /(a: real(64), b: imag(64)) do return _r2i(-a/_i2r(b));
 
+  inline operator /(a: imag(16), b: real(16)) do return _r2i(_i2r(a)/b);
   inline operator /(a: imag(32), b: real(32)) do return _r2i(_i2r(a)/b);
   inline operator /(a: imag(64), b: real(64)) do return _r2i(_i2r(a)/b);
 
+  inline operator /(a: real(16), b: complex(32)) {
+    const d = abs(b);
+    return ((a/d)*(b.re/d), (-a/d)*(b.im/d)):complex(32);
+  }
   inline operator /(a: real(32), b: complex(64)) {
     const d = abs(b);
     return ((a/d)*(b.re/d), (-a/d)*(b.im/d)):complex(64);
@@ -743,9 +812,14 @@ module ChapelBase {
     return ((a/d)*(b.re/d), (-a/d)*(b.im/d)):complex(128);
   }
 
+  inline operator /(a: complex(32), b: real(16)) do return (a.re/b, a.im/b) : complex(32);
   inline operator /(a: complex(64), b: real(32)) do return (a.re/b, a.im/b) : complex(64);
   inline operator /(a: complex(128), b: real(64)) do return (a.re/b, a.im/b) : complex(128);
 
+  inline operator /(a: imag(16), b: complex(32)) {
+    const d = abs(b);
+    return ((_i2r(a)/d)*(b.im/d), (_i2r(a)/d)*(b.re/d)):complex(32);
+  }
   inline operator /(a: imag(32), b: complex(64)) {
     const d = abs(b);
     return ((_i2r(a)/d)*(b.im/d), (_i2r(a)/d)*(b.re/d)):complex(64);
@@ -755,6 +829,7 @@ module ChapelBase {
     return ((_i2r(a)/d)*(b.im/d), (_i2r(a)/d)*(b.re/d)):complex(128);
   }
 
+  inline operator /(a: complex(32), b: imag(16)) do return (a.im/_i2r(b), -a.re/_i2r(b)) : complex(32);
   inline operator /(a: complex(64), b: imag(32)) do return (a.im/_i2r(b), -a.re/_i2r(b)) : complex(64);
   inline operator /(a: complex(128), b: imag(64)) do return (a.im/_i2r(b), -a.re/_i2r(b)) : complex(128);
 
@@ -768,15 +843,19 @@ module ChapelBase {
   inline operator *(param a: uint(32), param b: uint(32)) param do return __primitive("*", a, b);
   inline operator *(param a: uint(64), param b: uint(64)) param do return __primitive("*", a, b);
 
+  inline operator *(param a: real(16), param b: real(16)) param do return __primitive("*", a, b);
   inline operator *(param a: real(32), param b: real(32)) param do return __primitive("*", a, b);
   inline operator *(param a: real(64), param b: real(64)) param do return __primitive("*", a, b);
 
+  inline operator *(param a: imag(16), param b: imag(16)) param do return __primitive("*", -a, b) : real(16);
   inline operator *(param a: imag(32), param b: imag(32)) param do return __primitive("*", -a, b) : real(32);
   inline operator *(param a: imag(64), param b: imag(64)) param do return __primitive("*", -a, b) : real(64);
 
+  inline operator *(param a: real(16), param b: imag(16)) param do return __primitive("*", a, b : real(16)) : imag(16);
   inline operator *(param a: real(32), param b: imag(32)) param do return __primitive("*", a, b : real(32)) : imag(32);
   inline operator *(param a: real(64), param b: imag(64)) param do return __primitive("*", a, b : real(64)) : imag(64);
 
+  inline operator *(param a: imag(16), param b: real(16)) param do return __primitive("*", a : real(16), b) : imag(16);
   inline operator *(param a: imag(32), param b: real(32)) param do return __primitive("*", a : real(32), b) : imag(32);
   inline operator *(param a: imag(64), param b: real(64)) param do return __primitive("*", a : real(64), b) : imag(64);
 
@@ -814,15 +893,19 @@ module ChapelBase {
     return __primitive("/", a, b);
   }
 
+  inline operator /(param a: real(16), param b: real(16)) param do return __primitive("/", a, b);
   inline operator /(param a: real(32), param b: real(32)) param do return __primitive("/", a, b);
   inline operator /(param a: real(64), param b: real(64)) param do return __primitive("/", a, b);
 
+  inline operator /(param a: imag(16), param b: imag(16)) param do return __primitive("/", a, b) : real(16);
   inline operator /(param a: imag(32), param b: imag(32)) param do return __primitive("/", a, b) : real(32);
   inline operator /(param a: imag(64), param b: imag(64)) param do return __primitive("/", a, b) : real(64);
 
+  inline operator /(param a: real(16), param b: imag(16)) param do return __primitive("/", -a, b : real(16)) : imag(16);
   inline operator /(param a: real(32), param b: imag(32)) param do return __primitive("/", -a, b : real(32)) : imag(32);
   inline operator /(param a: real(64), param b: imag(64)) param do return __primitive("/", -a, b : real(64)) : imag(64);
 
+  inline operator /(param a: imag(16), param b: real(16)) param do return __primitive("/", a : real(16), b) : imag(16);
   inline operator /(param a: imag(32), param b: real(32)) param do return __primitive("/", a : real(32), b) : imag(32);
   inline operator /(param a: imag(64), param b: real(64)) param do return __primitive("/", a : real(64), b) : imag(64);
 
@@ -946,9 +1029,16 @@ module ChapelBase {
   inline operator **(a: uint(32), b: uint(32)) do return _intExpHelp(a, b);
   inline operator **(a: uint(64), b: uint(64)) do return _intExpHelp(a, b);
 
+  inline operator **(a: real(16), b: real(16)) do return __primitive("**", a, b);
   inline operator **(a: real(32), b: real(32)) do return __primitive("**", a, b);
   inline operator **(a: real(64), b: real(64)) do return __primitive("**", a, b);
 
+  inline operator **(a: complex(32), b: complex(32)) {
+    pragma "fn synchronization free"
+    extern proc cpowf(x: complex(32), y: complex(32)): complex(32);
+    // TODO: Is there a way to avoid the upcast and downcast
+    return cpowf(a, b): complex(16);
+  }
   inline operator **(a: complex(64), b: complex(64)) {
     pragma "fn synchronization free"
     extern proc cpowf(x: complex(64), y: complex(64)): complex(64);
@@ -1420,11 +1510,16 @@ module ChapelBase {
       pragma "codegen for CPU and GPU"
       extern proc chpl_creal(x:complex(128)): real(64);
       return chpl_creal(this);
-    } else {
+    } else if this.type == complex(64) {
       pragma "fn synchronization free"
       pragma "codegen for CPU and GPU"
       extern proc chpl_crealf(x:complex(64)): real(32);
       return chpl_crealf(this);
+    } else {
+      pragma "fn synchronization free"
+      pragma "codegen for CPU and GPU"
+      extern proc chpl_crealh(x:complex(32)): real(16);
+      return chpl_crealh(this);
     }
   }
   inline proc ref chpl_anycomplex.im ref {
@@ -1439,11 +1534,16 @@ module ChapelBase {
       pragma "codegen for CPU and GPU"
       extern proc chpl_cimag(x:complex(128)): real(64);
       return chpl_cimag(this);
-    } else {
+    } else if this.type == complex(64) {
       pragma "fn synchronization free"
       pragma "codegen for CPU and GPU"
       extern proc chpl_cimagf(x:complex(64)): real(32);
       return chpl_cimagf(this);
+    } else {
+      pragma "fn synchronization free"
+      pragma "codegen for CPU and GPU"
+      extern proc chpl_cimagh(x:complex(32)): real(16);
+      return chpl_cimagh(this);
     }
   }
 
@@ -2159,6 +2259,18 @@ module ChapelBase {
   }
 
   @unstable("This routine may change names / signatures")
+  proc param (real(16)).transmute(type t) param : t {
+    if t != uint(16) {
+      compilerError("Cannot (currently) transmute from " + this.type:string +
+                    " to " + t:string);
+    } else {
+      // TODO: need to implement this primitive
+      param ui: uint(16) = __primitive("real16 as uint16", this);
+      return ui;
+    }
+  }
+
+  @unstable("This routine may change names / signatures")
   proc param (real(32)).transmute(type t) param : t {
     if t != uint(32) {
       compilerError("Cannot (currently) transmute from " + this.type:string +
@@ -2192,6 +2304,18 @@ module ChapelBase {
                     " to " + t:string);
     } else {
       param r: real(64) = __primitive("uint64 as real64", this);
+      return r;
+    }
+  }
+
+  @unstable("This routine may change names / signatures")
+  inline proc param (uint(16)).transmute(type t) param : t {
+    if t != real(16) {
+      compilerError("Cannot (currently) transmute from " + this.type:string +
+                    " to " + t:string);
+    } else {
+      // TODO: Nor this one...
+      param r: real(16) = __primitive("uint16 as real16", this);
       return r;
     }
   }
@@ -2677,12 +2801,15 @@ module ChapelBase {
   inline operator +=(ref lhs: uint(32), rhs: uint(32)) do __primitive("+=", lhs, rhs);
   inline operator +=(ref lhs: uint(64), rhs: uint(64)) do __primitive("+=", lhs, rhs);
 
+  inline operator +=(ref lhs: real(16), rhs: real(16)) do __primitive("+=", lhs, rhs);
   inline operator +=(ref lhs: real(32), rhs: real(32)) do __primitive("+=", lhs, rhs);
   inline operator +=(ref lhs: real(64), rhs: real(64)) do __primitive("+=", lhs, rhs);
 
+  inline operator +=(ref lhs: imag(16), rhs: imag(16)) do __primitive("+=", lhs, rhs);
   inline operator +=(ref lhs: imag(32), rhs: imag(32)) do __primitive("+=", lhs, rhs);
   inline operator +=(ref lhs: imag(64), rhs: imag(64)) do __primitive("+=", lhs, rhs);
 
+  inline operator +=(ref lhs: complex(32), rhs: complex(32)) do lhs = (lhs+rhs);
   inline operator +=(ref lhs: complex(64), rhs: complex(64)) do lhs = (lhs+rhs);
   inline operator +=(ref lhs: complex(128), rhs: complex(128)) do lhs = (lhs+rhs);
   // This function shouldn't be 'last resort'
@@ -2706,12 +2833,15 @@ module ChapelBase {
   inline operator -=(ref lhs: uint(32), rhs: uint(32)) do __primitive("-=", lhs, rhs);
   inline operator -=(ref lhs: uint(64), rhs: uint(64)) do __primitive("-=", lhs, rhs);
 
+  inline operator -=(ref lhs: real(16), rhs: real(16)) do __primitive("-=", lhs, rhs);
   inline operator -=(ref lhs: real(32), rhs: real(32)) do __primitive("-=", lhs, rhs);
   inline operator -=(ref lhs: real(64), rhs: real(64)) do __primitive("-=", lhs, rhs);
 
+  inline operator -=(ref lhs: imag(16), rhs: imag(16)) do __primitive("-=", lhs, rhs);
   inline operator -=(ref lhs: imag(32), rhs: imag(32)) do __primitive("-=", lhs, rhs);
   inline operator -=(ref lhs: imag(64), rhs: imag(64)) do __primitive("-=", lhs, rhs);
   // this one is just here so we can use !isNumericType(t) below
+  inline operator -=(ref lhs: complex(32), rhs: complex(32)) do lhs = (lhs-rhs);
   inline operator -=(ref lhs: complex(64), rhs: complex(64)) do lhs = (lhs-rhs);
   inline operator -=(ref lhs: complex(128), rhs: complex(128)) do lhs = (lhs-rhs);
   inline operator -=(ref lhs, rhs)
@@ -2729,6 +2859,7 @@ module ChapelBase {
   inline operator *=(ref lhs: uint(32), rhs: uint(32)) do __primitive("*=", lhs, rhs);
   inline operator *=(ref lhs: uint(64), rhs: uint(64)) do __primitive("*=", lhs, rhs);
 
+  inline operator *=(ref lhs: real(16), rhs: real(16)) do __primitive("*=", lhs, rhs);
   inline operator *=(ref lhs: real(32), rhs: real(32)) do __primitive("*=", lhs, rhs);
   inline operator *=(ref lhs: real(64), rhs: real(64)) do __primitive("*=", lhs, rhs);
   private proc isIntegralOrRealType(type t) param {
@@ -2773,6 +2904,7 @@ module ChapelBase {
     __primitive("/=", lhs, rhs);
   }
 
+  inline operator /=(ref lhs: real(16), rhs: real(16)) do __primitive("/=", lhs, rhs);
   inline operator /=(ref lhs: real(32), rhs: real(32)) do __primitive("/=", lhs, rhs);
   inline operator /=(ref lhs: real(64), rhs: real(64)) do __primitive("/=", lhs, rhs);
   inline operator /=(ref lhs, rhs)

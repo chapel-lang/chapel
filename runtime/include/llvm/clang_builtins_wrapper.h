@@ -45,6 +45,11 @@ static inline float ADD_WRAPPER_PREFIX(cimagf)(_Complex float arg0)
   return __builtin_cimagf(arg0);
 }
 
+static inline float ADD_WRAPPER_PREFIX(cimagh)(_Complex _Float16 arg0)
+{
+  return __builtin_cimagf(arg0);
+}
+
 static inline long double ADD_WRAPPER_PREFIX(cimagl)(_Complex long double arg0)
 {
   return __builtin_cimagl(arg0);
@@ -56,6 +61,11 @@ static inline double ADD_WRAPPER_PREFIX(creal)(_Complex double arg0)
 }
 
 static inline float ADD_WRAPPER_PREFIX(crealf)(_Complex float arg0)
+{
+  return __builtin_crealf(arg0);
+}
+
+static inline float ADD_WRAPPER_PREFIX(crealh)(_Complex _Float16 arg0)
 {
   return __builtin_crealf(arg0);
 }

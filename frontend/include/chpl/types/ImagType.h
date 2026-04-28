@@ -65,6 +65,8 @@ class ImagType final : public PrimitiveType {
 
   const char* c_str() const override {
     switch (bitwidth_) {
+      case 16:
+        return "imag(16)";
       case 32:
         return "imag(32)";
       case 64:

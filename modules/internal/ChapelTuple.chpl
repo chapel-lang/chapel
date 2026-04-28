@@ -276,13 +276,22 @@ module ChapelTuple {
   //
 
   //
-  // tuple casts to complex(64) and complex(128)
+  // tuple casts to complex(32), complex(64), and complex(128)
   //
   // TODO: These could instead use 'noinit' and manually assign the fields.
   //
   // Note: statically inlining the _chpl_complex runtime functions is necessary
   // for good performance
   //
+  /*
+  Cast from a generic two-tuple to a ``complex(32)``
+  */
+  inline operator :(x: (?,?), type t: complex(32)) {
+    pragma "fn synchronization free"
+    extern proc _chpl_complex32(re:real(16),im:real(16)) : complex(32);
+    return _chpl_complex32(x(0):real(16),x(1):real(16));
+  }
+
   /*
   Cast from a generic two-tuple to a ``complex(64)``
   */

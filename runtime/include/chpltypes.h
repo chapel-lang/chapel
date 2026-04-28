@@ -33,6 +33,7 @@
 #include <wchar.h> // for wchar_t
 
 #include <complex.h>
+typedef _Float16 _Complex     _complex32;
 typedef float _Complex        _complex64;
 typedef double _Complex       _complex128;
 
@@ -161,6 +162,7 @@ typedef void* chpl_opaque;
 #define UINT32( i) ((uint32_t)(UINT32_C(i)))
 #define UINT64( i) ((uint64_t)(UINT64_C(i)))
 
+#define REAL16(i) ((_Float16)(i))
 #define REAL32(i) ((float)(i))
 #define REAL64(i) ((double)(i))
 
@@ -193,8 +195,10 @@ typedef struct _chpl_fn_info {
 #endif
 #endif
 
+typedef _Float16            _real16;
 typedef float               _real32;
 typedef double              _real64;
+typedef _Float16            _imag16;
 typedef float               _imag32;
 typedef double              _imag64;
 typedef int64_t             _symbol;
@@ -283,6 +287,30 @@ static inline _complex64 _chpl_complex64(_real32 re, _real32 im) {
 #else
   // This can generate bad values in the face of inf/nan values
   return re + im*_Complex_I;
+#endif
+#endif
+}
+
+static inline _complex32 _chpl_complex32(_real16 re, _real16 im) {
+// though CMPLXH works for some C++ compilers, it doesn't work for all in our
+// test environments, so dodge it to be safe;  Currently, we only compile
+// this header using a C++ compiler when compiling our re2 stubs, which
+// don't seem to use this routine anyway.
+#if defined(CMPLXH) && !defined(__cplusplus)
+  return (_complex32)(CMPLXH(re, im));
+#else
+#ifndef CHPL_DONT_USE_CMPLX_PTR_ALIASING
+#define cmplx_re16(c) (((_Float16 *)&(c))[0])
+#define cmplx_im16(c) (((_Float16 *)&(c))[1])
+  _complex32 val;
+  cmplx_re16(val) = re;
+  cmplx_im16(val) = im;
+  return val;
+#else
+  // This can generate bad values in the face of inf/nan values
+  _complex32 c32 = re + im*_Complex_I;
+  printf("%d\n", *(int*)((void*)(&c32)));
+  return c32;
 #endif
 #endif
 }

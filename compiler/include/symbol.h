@@ -796,6 +796,7 @@ VarSymbol *new_RealSymbol(const char *n,
 // bit-width will be taken as 32 for the 'float' case and 64 for the
 // 'double' case.  The resulting symbol will have a cname equal to a
 // normalized version of 'val'.
+VarSymbol* new_RealSymbol(_Float16 val);
 VarSymbol* new_RealSymbol(float val);
 VarSymbol* new_RealSymbol(double val);
 
