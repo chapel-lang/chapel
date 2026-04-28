@@ -104,7 +104,7 @@ bool Param::isParamOpFoldable(chpl::uast::PrimitiveTag op) {
 template<typename T, typename S>
 static T getImmediateValueOrEmpty(const S* p) {
   if (p) {
-    return p->value();
+    return (T) p->value();
   }
   // handle complex and string types in overloads below
   return (T) 0;
