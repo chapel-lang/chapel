@@ -338,8 +338,7 @@ proc type (Version.version).fromString(ver: string) throws {
 
 private var chplVersionInfo = new Version.version(-1, -1, -1);
 /*
-   Returns a tuple containing information about the `chpl --version`:
-   (major, minor, bugFix, isMain)
+   Returns a version record with the current Chapel version.
 */
 proc getChapelVersionInfo(): Version.version throws {
   use Regex;

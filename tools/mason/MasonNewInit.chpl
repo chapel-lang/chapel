@@ -31,7 +31,7 @@ import MasonUtils;
 import MasonUtils.MasonError;
 import MasonLogger;
 import MasonHelp.{MasonNewHelpHandler, MasonInitHelpHandler};
-import Manifest.{manifestFile, packageType};
+import Package.{MasonPackage, packageType};
 
 import ThirdParty.TemplateString.templateString;
 import ThirdParty.Pathlib.path;
@@ -39,10 +39,10 @@ import ThirdParty.Pathlib.path;
 private var log = MasonLogger.getLogger("mason new/init");
 
 class MasonPackageTemplate {
-  var manifest: manifestFile;
+  var manifest: owned MasonPackage;
   var directory: path;
 
-  proc init(in manifest: manifestFile, directory: path) {
+  proc init(in manifest: owned MasonPackage, directory: path) {
     this.manifest = manifest;
     this.directory = directory;
   }
@@ -111,7 +111,7 @@ class MasonPackageTemplate {
   proc makeSourceFiles() throws do HaltWrappers.pureVirtualMethodHalt();
 
   proc makeBasicToml() throws {
-    const s = manifest.toToml();
+    const s = manifest.toManifest();
     var writer = IO.openWriter((directory / "Mason.toml"):string);
     writer.write(s);
   }
@@ -152,7 +152,7 @@ class MasonPackageTemplate {
 
 }
 class MasonApplicationTemplate: MasonPackageTemplate {
-  proc init(in manifest: manifestFile, directory: path) {
+  proc init(in manifest: owned MasonPackage, directory: path) {
     super.init(manifest, directory);
   }
   override proc makeSourceFiles() throws {
@@ -173,7 +173,7 @@ class MasonApplicationTemplate: MasonPackageTemplate {
   }
 }
 class MasonLibraryTemplate: MasonPackageTemplate {
-  proc init(in manifest: manifestFile, directory: path) {
+  proc init(in manifest: owned MasonPackage, directory: path) {
     super.init(manifest, directory);
   }
 
@@ -193,7 +193,7 @@ class MasonLibraryTemplate: MasonPackageTemplate {
   }
 }
 class MasonLightTemplate: MasonPackageTemplate {
-  proc init(in manifest: manifestFile, directory: path) {
+  proc init(in manifest: owned MasonPackage, directory: path) {
     super.init(manifest, directory);
   }
 
@@ -210,7 +210,7 @@ class MasonLightTemplate: MasonPackageTemplate {
 }
 
 
-private proc getTemplate(in manifest: manifestFile,
+private proc getTemplate(in manifest: owned MasonPackage,
                         directory: path): owned MasonPackageTemplate throws {
   use packageType;
   select manifest.pkgType {
@@ -315,7 +315,7 @@ proc masonNew(args: [] string) throws {
                                 legalNameOpt=legalNameOpt);
 
   var pkgType = determinePackageType(appFlag, libFlag, lightFlag);
-  var newPkgManifest = manifestFile.defaultNewPkg(name, pkgType);
+  var newPkgManifest = MasonPackage.defaultNewPkg(name, pkgType);
   var template = getTemplate(newPkgManifest, directory);
 
   template.checks(isNew=true);
@@ -350,7 +350,7 @@ proc masonInit(args: [] string) throws {
                                 legalNameOpt=legalNameOpt);
 
   var pkgType = determinePackageType(appFlag, libFlag, lightFlag);
-  var newPkgManifest = manifestFile.defaultNewPkg(name, pkgType);
+  var newPkgManifest = MasonPackage.defaultNewPkg(name, pkgType);
   var template = getTemplate(newPkgManifest, directory);
 
   template.checks(isNew=false);

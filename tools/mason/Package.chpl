@@ -23,8 +23,8 @@ private var log = MasonLogger.getLogger("package");
 
 class Dependency {
   var name: string;
-  proc typeID type do return this.type:borrowed;
 
+  proc isFromRegistry() do return false;
   proc isMasonPackage() do return (this:borrowed MasonPackage?) != nil;
   proc isSystemDependency() do return (this:borrowed SystemDependency?) != nil;
   proc isExternalDependency() do
@@ -59,7 +59,6 @@ class Dependency {
 class SystemDependency: Dependency {
   var version: string;
   var info: MasonSystem.systemPkgInfo;
-  override proc typeID type do return this.type:borrowed;
 }
 class ExternalDependency: Dependency {
   var spec: string;
@@ -67,7 +66,6 @@ class ExternalDependency: Dependency {
   // one should be added in the future, but I am trying to touch
   // external deps as little as possible
   var info: shared Toml?;
-  override proc typeID type do return this.type:borrowed;
 }
 class MasonPackage: Dependency {
   var version: string;
@@ -75,12 +73,10 @@ class MasonPackage: Dependency {
   var license: string;
   var pkgType: packageType;
 
-  // TODO: can only have 1 owned class
-  // https://github.com/chapel-lang/chapel/issues/22261
-  var dependencies: list(owned MasonPackage?);
-  var system: list(owned SystemDependency?);
-  var external: list(owned ExternalDependency?);
-  var prerequisites: list(owned PrerequisiteDependency?);
+  var dependencies: list(shared MasonPackage);
+  var system: list(shared SystemDependency);
+  var external: list(shared ExternalDependency);
+  var prerequisites: list(shared PrerequisiteDependency);
 
   // optional
   var source: string;
@@ -91,7 +87,7 @@ class MasonPackage: Dependency {
   var tests: list(test);
   var examples: list(example);
 
-  override proc typeID type do return this.type:borrowed;
+  override proc isFromRegistry() do return true;
 }
 class GitMasonPackage: MasonPackage {
   var git: string;
@@ -100,7 +96,7 @@ class GitMasonPackage: MasonPackage {
   var revLock: string;
   proc reference do return if rev != "" then rev else branch;
 
-  override proc typeID type do return this.type:borrowed;
+  override proc isFromRegistry() do return false;
 }
 record test {
   var name: path;
@@ -138,7 +134,7 @@ record docInfo {
 
 proc type MasonPackage.defaultNewPkg(name: string,
                                       pkgType = packageType.default) throws {
-  var b = new MasonPackage();
+  var b = new shared MasonPackage();
   b.name = name;
   b.version = "0.1.0";
   b.chplVersion = MasonUtils.getChapelVersionStr();
@@ -192,16 +188,16 @@ proc MasonPackage.toManifest(): string throws {
     s += "\n[dependencies]\n";
   } else {
     s += "\n[dependencies]\n" +
-      "\n".join(for dep in dependencies do dep!.toToml());
+      "\n".join(for dep in dependencies do dep.toToml());
   }
 
   if !system.isEmpty() {
     s += "\n\n[system]\n" +
-      "\n".join(for dep in system do dep!.toToml());
+      "\n".join(for dep in system do dep.toToml());
   }
   if !external.isEmpty() {
     s += "\n\n[external]\n" +
-      "\n".join(for dep in external do dep!.toToml());
+      "\n".join(for dep in external do dep.toToml());
   }
 }
 
@@ -283,21 +279,26 @@ where T == string || isSubtype(T, fileReader) {
 
   // eagerly load dependencies here. this is slow, but if we usually load
   // packages from a lock file (like we should anyways, doesn't matter)
-  for dep in this.allDependencies(recursive=true) do dep.loadInfo();
+  for dep in this.allDependencies() do dep.loadInfo();
 }
 
 proc type MasonPackage.fromManifest(tomlStr: ?T): MasonPackage throws
 where T == string || isSubtype(T, fileReader) {
-  var m = new MasonPackage();
+  var m = new shared MasonPackage();
   m.fillFromManifest(tomlStr);
+  m.resolveDependencies();
   return m;
 }
 
 
-
+iter MasonPackage.allDependencies(): shared Dependency {
+  for dep in dependencies do yield dep;
+  for dep in system do yield dep;
+  for dep in external do yield dep;
+}
 // can't use a FCP since we need to capture current and they don't
 // currently support that
-record toYieldDuplicateFunctor {
+record checkDuplicatesFunctor {
   var current: borrowed Dependency;
   proc this(x: borrowed Dependency): bool {
     // a duplicate cannot occur between a system/external dep and
@@ -311,32 +312,107 @@ record toYieldDuplicateFunctor {
       return x.name == current.name;
   }
 }
-iter MasonPackage.allDependenciesNoRecurseHelper(): borrowed Dependency {
-  for dep in dependencies do yield (dep:borrowed Dependency?)!;
-  for dep in system do yield (dep:borrowed Dependency?)!;
-  for dep in external do yield (dep:borrowed Dependency?)!;
+record findMasonPackageNamedFunctor {
+  var name: string;
+  proc this(x: borrowed MasonPackage): bool {
+    return x.name == name;
+  }
 }
-iter MasonPackage.allDependencies(
-  recursive = false, skipDuplicateChecks = false
-): borrowed Dependency {
-  log.debugf("Getting all dependencies for package '%s', "+
-            "recursive: %s, skipDuplicateChecks: %s",
-            name, recursive, skipDuplicateChecks);
-  // yield all direct dependencies first, then yield recursive dependencies
-  // topdown. cycles/IVRS is handled here
-  var toYield = new list(borrowed Dependency);
+// iter MasonPackage.allDependenciesNoRecurseHelper(): borrowed Dependency {
+//   for dep in dependencies do yield (dep:borrowed Dependency?)!;
+//   for dep in system do yield (dep:borrowed Dependency?)!;
+//   for dep in external do yield (dep:borrowed Dependency?)!;
+// }
+// iter MasonPackage.allDependencies(
+//   recursive = false, skipDuplicateChecks = false
+// ): borrowed Dependency {
+//   log.debugf("Getting all dependencies for package '%s', "+
+//             "recursive: %s, skipDuplicateChecks: %s",
+//             name, recursive, skipDuplicateChecks);
+//   // yield all direct dependencies first, then yield recursive dependencies
+//   // topdown. cycles/IVRS is handled here
+//   var toYield = new list(borrowed Dependency);
+//   // TODO: ideally we use a queue and do BFS, but Chapel lists
+//   // are not well suited to queues.
+//   var stack = new list(allDependenciesNoRecurseHelper());
+//   while !stack.isEmpty() {
+//     var current = stack.popBack();
+//     log.debugf("Processing dependency '%s'", current.name);
+//     const duplicateIdx =
+//       if !skipDuplicateChecks
+//         then toYield.find(new checkDuplicatesFunctor(current))
+//         else -1;
+//     if duplicateIdx >= 0 {
+//       var duplicate = toYield[duplicateIdx];
+//       // if we have seen this dependency before, we need to disambiguate
+//       // for system/external deps, we just warn FOR NOW
+//       // for MasonPackage deps, disambiguate on IVRS
+//       // for GitMasonPackage deps, print an error and just pick the first one
+//       // this logic DOES NOT handle cases where 2 versions have different
+//       // dependencies, the first one wins
+
+//       log.debugf("Found a duplicate dependency on '%s'", current.name);
+
+//       if duplicate.isSystemOrExternalDependency() &&
+//           current.isSystemOrExternalDependency() {
+//         log.warnf(
+//           "Duplicate system/external dependencies on '%s'. This is not " +
+//           "currently handled by Mason, but may cause unexpected behavior " +
+//           "if the version requirements are different.", current.name);
+//       }
+
+//       if duplicate.typeID() == borrowed MasonPackage &&
+//           current.typeID() == borrowed MasonPackage {
+//         // TODO: IVRS
+//         log.error("TODO: no IVRS yet");
+//       } else {
+//         // at this point, we should only have MasonPackages and at least
+//         // one is not in the registry. We can't disambiguate them, error
+//         log.errorf(
+//           "Duplicate dependencies on package '%s' cannot currently be " +
+//           "disambiguated using Incompatible Version Resolution Strategy. " +
+//           "Using the first one found, this may cause unexpected behavior.",
+//           current.name);
+//       }
+//       continue;
+//     }
+//     log.debugf("Adding dependency '%s' to list of dependencies to yield",
+//                current.name);
+//     toYield.pushBack(current);
+//     if recursive && current.isMasonPackage() {
+//       for dep in
+//         (current:borrowed MasonPackage?)!.allDependenciesNoRecurseHelper() do
+//         stack.pushBack(dep);
+//     }
+//   }
+//   for dep in toYield do yield dep;
+// }
+
+
+proc MasonPackage.resolveDependencies() throws {
+  // walk the dependencies and handle duplicates/version resolution
+
+  var originalPackage = this;
+  var resolvedDeps = new list(shared Dependency);
   // TODO: ideally we use a queue and do BFS, but Chapel lists
   // are not well suited to queues.
-  var stack = new list(allDependenciesNoRecurseHelper());
+  // stack holds the parent of the dependency, if the parent is nil its the
+  // originalPackage
+  var stack = new list((shared MasonPackage?, shared Dependency));
+  for dep in originalPackage.allDependencies() do
+    stack.pushBack((nil, dep));
   while !stack.isEmpty() {
-    var current = stack.popBack();
+    var (currentParent, current) = stack.popBack();
     log.debugf("Processing dependency '%s'", current.name);
-    const duplicateIdx =
-      if !skipDuplicateChecks
-        then toYield.find(new toYieldDuplicateFunctor(current))
-        else -1;
+
+    // if the current dependency is the originalPackage, thats a hard error
+    if current.isMasonPackage() && current.name == originalPackage.name then
+      throw new MasonError("Package '%s' has a cyclic dependency on itself"
+                        .format(originalPackage.name));
+
+    const duplicateIdx = resolvedDeps.find(new checkDuplicatesFunctor(current));
     if duplicateIdx >= 0 {
-      var duplicate = toYield[duplicateIdx];
+      var duplicate = resolvedDeps[duplicateIdx];
       // if we have seen this dependency before, we need to disambiguate
       // for system/external deps, we just warn FOR NOW
       // for MasonPackage deps, disambiguate on IVRS
@@ -350,12 +426,9 @@ iter MasonPackage.allDependencies(
           current.isSystemOrExternalDependency() {
         log.warnf(
           "Duplicate system/external dependencies on '%s'. This is not " +
-          "currently handled by Mason, but may cause unexpected behavior " +
+          "currently handled by Mason and may cause unexpected behavior " +
           "if the version requirements are different.", current.name);
-      }
-
-      if duplicate.typeID == borrowed MasonPackage &&
-          current.typeID == borrowed MasonPackage {
+      } else if duplicate.isFromRegistry() && current.isFromRegistry() {
         // TODO: IVRS
         log.error("TODO: no IVRS yet");
       } else {
@@ -366,19 +439,33 @@ iter MasonPackage.allDependencies(
           "disambiguated using Incompatible Version Resolution Strategy. " +
           "Using the first one found, this may cause unexpected behavior.",
           current.name);
+        // remove the duplicate from the parent
+        const parentToUse =
+          if currentParent != nil then currentParent! else originalPackage;
+        const idxToRemove =
+          parentToUse.dependencies.find(
+            new findMasonPackageNamedFunctor(current.name));
+        const removed = parentToUse.dependencies.getAndRemove(idxToRemove);
+        log.debugf("Removed the duplicate dependency '%s' from parent '%s'",
+                   removed.name, parentToUse.name);
       }
       continue;
     }
-    log.debugf("Adding dependency '%s' to list of dependencies to yield",
-               current.name);
-    toYield.pushBack(current);
-    if recursive && current.isMasonPackage() {
-      for dep in
-        (current:borrowed MasonPackage?)!.allDependenciesNoRecurseHelper() do
-        stack.pushBack(dep);
+    log.debugf("Keeping the resolved dependency '%s'", current.name);
+    resolvedDeps.pushBack(current);
+    if current.isMasonPackage() {
+      const newParent = (current:MasonPackage);
+      for dep in newParent.allDependencies() do
+        stack.pushBack((newParent, dep));
     }
   }
-  for dep in toYield do yield dep;
+}
+
+
+proc MasonPackage.IVRS(
+  other: borrowed MasonPackage
+): borrowed MasonPackage throws {
+  
 }
 
 proc MasonPackage.createLockFile(): shared Toml throws {
@@ -415,7 +502,7 @@ proc MasonPackage.createLockFile(): shared Toml throws {
 
   // TODO: just dump the full structure
 
-  // // packagesToProcess exists solely to keep track of new MasonPackage instances
+  // // packagesToProcess exists solely to keep track of new shared MasonPackage instances
   // // for lifetime reasons
   // var packagesToProcess = new list(owned MasonPackage?);
   // var depsToProcess = new list(this.allDependencies());
@@ -433,7 +520,7 @@ proc MasonPackage.createLockFile(): shared Toml throws {
   //     // that has all the info
   //     packagesToProcess.last!.addDepToLock(root);
   //   } else {
-  //     dep!.addDepToLock(root);
+  //     dep.addDepToLock(root);
   //   }
   // }
 
@@ -444,8 +531,8 @@ proc MasonPackage.createLockFile(): shared Toml throws {
 proc Dependency.toToml(): string throws do return this.name;
 proc type Dependency.fromToml(
   name: string, toml: borrowed Toml
-): owned Dependency throws {
-  return new Dependency(name);
+): shared Dependency throws {
+  return new shared Dependency(name);
 }
 // proc Dependency.addDepToLock(root: shared Toml) throws { }
 proc Dependency.loadInfo() throws {
@@ -460,11 +547,11 @@ override proc MasonPackage.toToml(): string throws {
 // BUG: see https://github.com/chapel-lang/chapel/issues/28722
 override proc type MasonPackage.fromToml(
   name: string, toml: borrowed Toml
-): owned MasonPackage throws {
+): shared MasonPackage throws {
   if toml.tomlType != "string" then
     throw new MasonError("Mason dependencies must be specified as a " +
                           "single version string");
-  var m = new MasonPackage(name, toml.s);
+  var m = new shared MasonPackage(name, toml.s);
   // TODO: check that the version is correct format
   return m;
 }
@@ -511,10 +598,10 @@ override proc GitMasonPackage.toToml(): string throws {
 // BUG: see https://github.com/chapel-lang/chapel/issues/28722
 override proc type GitMasonPackage.fromToml(
   name: string, toml: borrowed Toml
-): owned GitMasonPackage throws {
+): shared GitMasonPackage throws {
   if toml.tomlType != "toml" then
     throw new MasonError("Git dependencies must be specified as a table");
-  var g = new GitMasonPackage();
+  var g = new shared GitMasonPackage();
   g.name = name;
   (g.git, g.branch, g.rev) =
     TomlHelpers.readStringsFromTable(toml, ("git", "branch", "rev"),
@@ -536,10 +623,10 @@ override proc SystemDependency.toToml(): string throws {
 }
 proc type SystemDependency.fromToml(
   name: string, toml: borrowed Toml
-): owned SystemDependency throws {
+): shared SystemDependency throws {
   if toml.tomlType != "string" then
     throw new MasonError("System dependencies must be specified as a string");
-  var s = new SystemDependency(name, toml.s);
+  var s = new shared SystemDependency(name, toml.s);
   // TODO: check that the version is correct format
   return s;
 }
@@ -570,11 +657,11 @@ override proc ExternalDependency.toToml(): string throws {
 }
 proc type ExternalDependency.fromToml(
   name: string, toml: borrowed Toml
-): owned ExternalDependency throws {
+): shared ExternalDependency throws {
   if toml.tomlType != "string" then
     throw new MasonError("External dependencies must be " +
                           "specified as a string");
-  var s = new ExternalDependency(name, toml.s);
+  var s = new shared ExternalDependency(name, toml.s);
   // TODO: check that the spec is correct format
   return s;
 }
@@ -761,7 +848,7 @@ private proc listFromToml(
   tomlField: string,
   value: borrowed Toml
 ): resultType throws
-where isSubtype(resultType, list(owned MasonPackage?)) {
+where isSubtype(resultType, list(shared MasonPackage)) {
   var result: resultType;
   if value.tomlType == "toml" {
     for k in value.keys() {
@@ -785,8 +872,8 @@ private proc listFromToml(
   tomlField: string,
   value: borrowed Toml
 ): resultType throws
-where isSubtype(resultType, list(owned SystemDependency?)) ||
-      isSubtype(resultType, list(owned ExternalDependency?)) {
+where isSubtype(resultType, list(shared SystemDependency)) ||
+      isSubtype(resultType, list(shared ExternalDependency)) {
   var result: resultType;
   if value.tomlType == "toml" {
     for k in value.keys() {

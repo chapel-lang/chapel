@@ -23,55 +23,134 @@
 */
 module Lock {
 
-  import TOML.Toml;
+import TOML.Toml;
+import TomlHelpers;
+import Manifest;
+import MasonUtils.MasonError;
+import List.list;
+import ThirdParty.TemplateString.templateString;
 
-  record lockFile {
-    var dependencies: list(masonDependency);
-    var systemDependencies: list(systemDependency);
-    var externalDependencies: list(externalDependency);
-  }
+record lockFile {
+  var root: rootPackage;
+  var dependencies: list(owned MasonDependency?);
+  var systemDependencies: list(owned SystemDependency?);
+  var externalDependencies: list(owned ExternalDependency?);
+}
 
-  record rootPackage {
-    var name: string;
-    var version: string;
-    var chplVersion: string;
-    var license: string;
-    var pkgType: packageType;
+proc lockFile.toToml(): string throws {
+  var entries: list(string);
+  entries.pushBack(root.toToml());
+  for d in dependencies do
+    entries.pushBack(d!.toToml());
+  if systemDependencies.size > 0 then
+    entries.pushBack("[system]");
+  for s in systemDependencies do
+    entries.pushBack(s!.toToml());
+  if externalDependencies.size > 0 then
+    entries.pushBack("[external]");
+  for e in externalDependencies do
+    entries.pushBack(e!.toToml());
+  return "\n".join(entries.toArray());
+}
+proc type lockFile.fromToml(tomlStr: ?T): lockFile throws
+where T == string || isSubtype(T, fileReader) {
+  var toml = parseToml(tomlStr);
 
-    var compopts: list(string);
-    var prereqs: list(prereq);
-  }
+  var lf = new lockFile();
 
-  class Dependency {
-    var name: string;
-    proc toToml(): string throws {
-      return name;
-    }
-    proc type fromToml(toml: borrowed Toml): owned Dependency throws {
-      // TODO:
-      return new Dependency("");
-    }
-  }
-  class ChapelDependency: Dependency {
-    var compopts: list(string);
-  }
-  class MasonDependency: ChapelDependency {
-    var version: string;
-  }
-  class GitDependency: ChapelDependency {
-    var git: string;
-    var branch: string;
-    var rev: string;
-  }
+  return lf;
+}
 
-  class SystemDependency: Dependency {
+record rootPackage {
+  var name: string;
+  var version: string;
+  var chplVersion: string;
+  var dependencies: list(string);
+  proc toToml(): string throws {
+    const t: templateString = """
+    [root]
+    name = "{{name}}"
+    version = "{{version}}"
+    chplVersion = "{{chplVersion}}"
+    """.dedent();
+    return t(["name"=>name, "version"=>version, "chplVersion"=>chplVersion]);
+  }
+  proc type fromToml(toml: borrowed Toml): rootPackage throws {
+    if toml.tomlType != "toml" then
+      throw new MasonError("Invalid root package in lock file");
+    var r = new rootPackage();
+    r.name = name;
+    (r.version, r.chplVersion) =
+      TomlHelpers.readStringsFromTable(toml, ("version", "chplVersion"));
+    return r;
+  }
+}
 
+class Dependency {
+  var name: string;
+  proc toToml(): string throws do return name;
+  @chplcheck.ignore("UnusedFormal")
+  proc type fromToml(name: string,
+                     toml: borrowed Toml): owned Dependency throws {
+    return new Dependency(name);
   }
-  class ExternalDependency: Dependency {
+}
+class ChapelDependency: Dependency {
+  var source: string;
+  var chplVersion: string;
+}
+class MasonDependency: ChapelDependency {
+  var version: string;
+  override proc toToml(): string throws {
+    const t: templateString = """
+    [{{name}}]
+    name = "{{name}}"
+    source = "{{source}}"
+    version = "{{version}}"
+    chplVersion = "{{chplVersion}}"
+    """.dedent();
+    return t(["name"=>name, "source"=>source,
+              "version"=>version, "chplVersion"=>chplVersion]);
+  }
+}
+class GitDependency: ChapelDependency {
+  var branch: string;
+  var rev: string;
+  override proc toToml(): string throws {
+    const t: templateString = """
+    [{{name}}]
+    name = "{{name}}"
+    source = "{{source}}"
+    branch = "{{branch}}"
+    rev = "{{rev}}"
+    chplVersion = "{{chplVersion}}"
+    """.dedent();
+    return t(["name"=>name, "source"=>source, "branch"=>branch,
+              "rev"=>rev, "chplVersion"=>chplVersion]);
+  }
+}
 
+class SystemDependency: Dependency {
+  var version: string;
+  override proc toToml(): string throws {
+    const t: templateString = """
+    [systen.{{name}}]
+    name = "{{name}}"
+    version = "{{version}}"
+    """.dedent();
+    return t(["name"=>name, "version"=>version]);
   }
-  class PrerequisiteDependency: Dependency {
-    var compopts: list(string);
+}
+class ExternalDependency: Dependency {
+  var spec: string;
+  override proc toToml(): string throws {
+    const t: templateString = """
+    [external.{{name}}]
+    name = "{{name}}"
+    spec = "{{spec}}"
+    """.dedent();
+    return t(["name"=>name, "spec"=>spec]);
   }
+}
 
 }

@@ -35,6 +35,8 @@ import MasonUtils.MasonError;
 import ThirdParty.TemplateString.templateString;
 import ThirdParty.Pathlib.path;
 
+import TomlHelpers;
+
 record manifestFile {
   // required
   var name: string;
@@ -126,26 +128,12 @@ proc manifestFile.toToml(): string throws {
       "\n".join(for dep in external do dep!.toToml());
   }
 }
-class SystemDependency: Dependency {
-  var version: string;
 
-  override proc toToml(): string throws {
-    return '%s = %"S'.format(name, version);
-  }
-}
-class ExternalDependency: Dependency {
-  var spec: string;
-
-  override proc toToml(): string throws {
-    return '%s = %"S'.format(name, spec);
-  }
-}
-
-proc readField(ref manifest: manifestFile,
-                toml: borrowed Toml,
-                tomlField: string,
-                param fieldName: string,
-                required: bool) throws {
+private proc readField(ref manifest: manifestFile,
+                       toml: borrowed Toml,
+                       tomlField: string,
+                       param fieldName: string,
+                       required: bool) throws {
   if !toml.pathExists(tomlField) {
     if required then
       throw new MasonError("Manifest must contain required field: " +
@@ -181,7 +169,6 @@ proc readField(ref manifest: manifestFile,
   }
 }
 
-}
 proc type manifestFile.fromToml(tomlStr: ?T): manifestFile throws
 where T == string || isSubtype(T, fileReader) {
   var toml = parseToml(tomlStr);
@@ -206,7 +193,9 @@ where T == string || isSubtype(T, fileReader) {
   readField(m, toml, "examples", "examples", required=false);
   // examples have other options too
 
-  // TODO
+  readField(m, toml, "dependencies", "dependencies", required=false);
+  readField(m, toml, "system", "system", required=false);
+  readField(m, toml, "external", "external", required=false);
 
   return m;
 }
@@ -219,22 +208,32 @@ proc type packageType.default do return this.application;
 
 class Dependency {
   var name: string;
-  proc toToml(): string throws {
-    return name;
-  }
-  proc type fromToml(toml: borrowed Toml): owned Dependency throws {
-    // TODO:
-    return new Dependency("");
+  proc toToml(): string throws do return name;
+  @chplcheck.ignore("UnusedFormal")
+  proc type fromToml(name: string,
+                     toml: borrowed Toml): owned Dependency throws {
+    return new Dependency(name);
   }
 }
 class ChapelDependency: Dependency { }
-class MasonDependency : ChapelDependency {
-  var version: string;
-  override proc toToml(): string throws {
-    return '%s = %"S'.format(name, version);
-  }
-}
-class GitDependency: Dependency {
+// class MasonDependency: ChapelDependency {
+//   var version: string;
+//   override proc toToml(): string throws {
+//     return '%s = %"S'.format(name, version);
+//   }
+//   // BUG: see https://github.com/chapel-lang/chapel/issues/28722
+//   override proc type fromToml(name: string,
+//                      toml: borrowed Toml): owned MasonDependency throws {
+//     if toml.tomlType != "string" then
+//       throw new MasonError("Mason dependencies must be specified as a " +
+//                            "single version string");
+//     var m = new MasonDependency(name, toml.s);
+//     // TODO: check that the version is correct format
+//     return m;
+//   }
+// }
+
+class GitDependency: ChapelDependency {
   var git: string;
   var branch: string;
   var rev: string;
@@ -246,6 +245,19 @@ class GitDependency: Dependency {
     s += " }";
     return s;
   }
+  // BUG: see https://github.com/chapel-lang/chapel/issues/28722
+  override proc type fromToml(name: string,
+                     toml: borrowed Toml): owned GitDependency throws {
+    if toml.tomlType != "toml" then
+      throw new MasonError("Git dependencies must be specified as a table");
+    var g = new GitDependency();
+    g.name = name;
+    (g.git, g.branch, g.rev) = TomlHelpers.readStringsFromTable(toml, ("git", "branch", "rev"), extraFieldsError=true, missingFieldsError=false);
+    if g.git == "" then
+      throw new MasonError("Git dependencies must specify a 'git' field");
+    return g;
+  }
+
 }
 class SystemDependency: Dependency {
   var version: string;
@@ -253,12 +265,29 @@ class SystemDependency: Dependency {
   override proc toToml(): string throws {
     return '%s = %"S'.format(name, version);
   }
+  proc type fromToml(name: string,
+                     toml: borrowed Toml): owned SystemDependency throws {
+    if toml.tomlType != "string" then
+      throw new MasonError("System dependencies must be specified as a string");
+    var s = new SystemDependency(name, toml.s);
+    // TODO: check that the version is correct format
+    return s;
+  }
 }
 class ExternalDependency: Dependency {
   var spec: string;
 
   override proc toToml(): string throws {
     return '%s = %"S'.format(name, spec);
+  }
+  proc type fromToml(name: string,
+                     toml: borrowed Toml): owned ExternalDependency throws {
+    if toml.tomlType != "string" then
+      throw new MasonError("External dependencies must be " +
+                           "specified as a string");
+    var s = new ExternalDependency(name, toml.s);
+    // TODO: check that the spec is correct format
+    return s;
   }
 }
 // TODO: allow prerequisites in the toml
@@ -272,88 +301,6 @@ class ExternalDependency: Dependency {
 //   var printFlagsCommand: list(string);
 //   var cleanCommand: list(string);
 // }
-
-proc listFromToml(
-  type resultType,
-  tomlField: string,
-  value: borrowed Toml
-): resultType throws
-where isSubtype(resultType, list(string)) {
-  var result: resultType;
-  if value.tomlType == "array" {
-    for x in value.arr {
-      if x!.tomlType != "string" then
-        throw new MasonError("All elements of '%s' must be strings"
-                              .format(tomlField));
-      result.pushBack(x!.s);
-    }
-  } else if value.tomlType == "string" {
-    for s in value.s.split() do
-      if s.strip() != "" then
-        result.pushBack(s.strip());
-  } else {
-    throw new MasonError("'%s' must be a string or array of strings"
-                          .format(tomlField));
-  }
-  return result;
-}
-
-proc listFromToml(
-  type resultType,
-  tomlField: string,
-  value: borrowed Toml
-): resultType throws
-where isSubtype(resultType, list(test)) {
-  var result: resultType;
-  if value.tomlType != "array" then
-    throw new MasonError("'%s' must be an array of strings"
-                          .format(tomlField));
-  for x in value.arr do
-    result.pushBack(test.fromToml(x!));
-  return result;
-}
-
-proc listFromToml(
-  type resultType,
-  tomlField: string,
-  value: borrowed Toml
-): resultType throws
-where isSubtype(resultType, list(example)) {
-  var result: resultType;
-  use IO;
-  value.writeJSON(stdout);
-  if const examplesList = value["examples"] {
-    if examplesList.tomlType != "array" then
-      throw new MasonError("'%s' must be a list of examples"
-                            .format(tomlField+".examples"));
-    for exampleToml in examplesList.arr {
-      var ex = example.fromToml(exampleToml!);
-      var compopts: list(string);
-      var execopts: list(string);
-      if value.pathExists(ex.name.stem) {
-        // TODO parse compopts
-      }
-    }
-    // TODO check that there is no `[examples.UNKNOWN]`
-  }
-  // if value.tomlType != "array" then
-  //   throw new MasonError("'%s' must be an array of strings"
-  //                         .format(tomlField));
-  // for x in value.arr do
-  //   result.pushBack(example.fromToml(x!));
-  return result;
-}
-
-
-@chplcheck.ignore("UnusedFormal")
-proc listFromToml(
-  type resultType,
-  tomlField: string,
-  value: borrowed Toml
-): resultType throws {
-  compilerError("Unhandled dependency type in manifest: " +
-                resultType:string);
-}
 
 
 record test {
