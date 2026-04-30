@@ -11,6 +11,7 @@ import MasonUtils.MasonError;
 import MasonEnv;
 import MasonExternal;
 import MasonSystem;
+import MasonPrereqs;
 import MasonLogger;
 
 import ThirdParty.TemplateString.templateString;
@@ -84,8 +85,8 @@ class MasonPackage: Dependency {
   var copyrightYear: string;
   var compopts: list(string);
   var docopts: list(string);
-  var tests: list(test);
-  var examples: list(example);
+  var tests: packageTests;
+  var examples: packageExamples;
 
   override proc isFromRegistry() do return true;
 }
@@ -98,8 +99,16 @@ class GitMasonPackage: MasonPackage {
 
   override proc isFromRegistry() do return false;
 }
+record packageTests {
+  var tests: list(test);
+  var specifiedInManifest: bool = false;
+}
 record test {
   var name: path;
+}
+record packageExamples {
+  var examples: list(example);
+  var specifiedInManifest: bool = false;
 }
 record example {
   var name: path;
@@ -111,11 +120,25 @@ enum prerequisiteType {
   makefile, script
 }
 proc type prerequisiteType.default do return this.makefile;
+private proc defaultPrereqVariables() {
+  var m = new map(string, string);
+  m["CHPL_HOME"] = "{{CHPL_HOME}}";
+  m["MASON_PACKAGE_HOME"] = "{{MASON_PACKAGE_HOME}}";
+  return m;
+}
 class PrerequisiteDependency: Dependency {
   var prereqType: prerequisiteType;
   var buildCommand: list(string);
   var printFlagsCommand: list(string);
   var cleanCommand: list(string);
+  var envVariables: map(string, string) = defaultPrereqVariables();
+  proc type defaultMakefilePrereq(name: string) do
+    return new shared PrerequisiteDependency(
+      name, prerequisiteType.makefile,
+      new list(["make"]),
+      new list(["make", "--quiet", "printchplflags"]),
+      new list(["make", "clean"]),
+      defaultPrereqVariables());
 }
 enum packageType {
   application, library, light
@@ -236,6 +259,8 @@ private proc readField(package: borrowed MasonPackage,
     }
   } else if isSubtype(field.type, list(?)) {
     field = listFromToml(field.type, tomlField, value);
+  } else if Reflection.canResolveTypeMethod(field.type, "fromToml", value) {
+    field = field.type.fromToml(value);
   } else {
     throw new MasonError(
       "Unsupported field type of '%s' in manifest for '%s'"
@@ -245,7 +270,9 @@ private proc readField(package: borrowed MasonPackage,
   }
 }
 
-proc MasonPackage.fillFromManifest(tomlStr: ?T): MasonPackage throws
+proc MasonPackage.fillFromManifest(
+  tomlStr: ?T, manifestPath: path
+): MasonPackage throws
 where T == string || isSubtype(T, fileReader) {
   var toml = parseToml(tomlStr);
   if !toml.pathExists("brick") then
@@ -280,12 +307,22 @@ where T == string || isSubtype(T, fileReader) {
   // eagerly load dependencies here. this is slow, but if we usually load
   // packages from a lock file (like we should anyways, doesn't matter)
   for dep in this.allDependencies() do dep.loadInfo();
+  this.tests.loadInfo(manifestPath.parent);
+  this.examples.loadInfo(manifestPath.parent);
+  
+  for prereqPath in MasonPrereqs.prereqs(manifestPath.parent) {
+    var p = PrerequisiteDependency.defaultMakefilePrereq(prereqPath.name);
+    this.prerequisites.pushBack(p);
+  }
+
 }
 
-proc type MasonPackage.fromManifest(tomlStr: ?T): MasonPackage throws
+proc type MasonPackage.fromManifest(
+  tomlStr: ?T, manifestPath: path
+): MasonPackage throws
 where T == string || isSubtype(T, fileReader) {
   var m = new shared MasonPackage();
-  m.fillFromManifest(tomlStr);
+  m.fillFromManifest(tomlStr, manifestPath);
   m.resolveDependencies();
   return m;
 }
@@ -556,10 +593,10 @@ override proc type MasonPackage.fromToml(
   return m;
 }
 override proc MasonPackage.loadInfo() throws {
-  var manifestPath = this.getDepManifestPath();
+  const manifestPath = this.getDepManifestPath();
   log.debugf("Loading manifest for dependency '%s' from path '%?'",
              this.name, manifestPath);
-  this.fillFromManifest(openReader(manifestPath));
+  this.fillFromManifest(openReader(manifestPath), manifestPath);
 }
 // override proc MasonPackage.addDepToLock(root: shared Toml) throws {
 
@@ -682,7 +719,22 @@ override proc ExternalDependency.loadInfo() throws {
 // }
 
 
+proc packageTests.toToml(): string throws {
+  const s: templateString = """
+  tests = [{{tests}}]
+  """.dedent();
+  var testStr = ", ".join([t in this.tests] '%"S'.format(t.toToml()));
+  return s(["tests" => testStr]);
+}
+proc type packageTests.fromToml(toml: borrowed Toml): packageTests throws {
+  if toml.tomlType != "array" then
+    throw new MasonError("Tests must be specified as an array of strings");
 
+  var result = new packageTests();
+  result.specifiedInManifest = true;
+  result.tests = new list([x in toml.arr] test.fromToml(x!));
+  return result;
+}
 proc test.toToml(): string throws {
   return name:string;
 }
@@ -693,6 +745,57 @@ proc type test.fromToml(toml: borrowed Toml): test throws {
   if name.suffix != ".chpl" then
     throw new MasonError("Tests must be Chapel files");
   return new test(name);
+}
+proc packageExamples.toToml(): string throws {
+  const s: templateString = """
+  [examples]
+  examples = [{{examples}}]
+  {{examplesTables}}
+  """.dedent();
+  const exampleStr = ", ".join([e in this.examples] '%"S'.format(e.name));
+  const examplesTables = [e in this.examples] e.toToml();
+  const examplesTablesStr =
+    "\n\n".join([e in examplesTables] if e != "" then e);
+  return s(["examples" => exampleStr, "examplesTables" => examplesTablesStr]);
+}
+proc type packageExamples.fromToml(
+  toml: borrowed Toml
+): packageExamples throws {
+  if toml!.tomlType != "toml" then
+    throw new MasonError("Examples must be specified as a table");
+
+  var result = new packageExamples();
+  result.specifiedInManifest = true;
+  // if const examplesList = toml!["examples"] {
+  //   if examplesList.tomlType != "array" then
+  //   throw new MasonError("The 'examples' field must be an array of strings");
+  //   for x in examplesList.arr do
+  //     result.examples.pushBack(example.fromToml(x!));
+  // }
+  // var result: resultType;
+  // // use IO;
+  // // value.writeJSON(stdout);
+  // if const examplesList = value["examples"] {
+  //   if examplesList.tomlType != "array" then
+  //     throw new MasonError("'%s' must be a list of examples"
+  //                           .format(tomlField+".examples"));
+  //   for exampleToml in examplesList.arr {
+  //     var ex = example.fromToml(exampleToml!);
+  //     var compopts: list(string);
+  //     var execopts: list(string);
+  //     if value.pathExists(ex.name.stem) {
+  //       // TODO parse compopts
+  //     }
+  //   }
+  //   // TODO check that there is no `[examples.UNKNOWN]`
+  // }
+  // if value.tomlType != "array" then
+  //   throw new MasonError("'%s' must be an array of strings"
+  //                         .format(tomlField));
+  // for x in value.arr do
+  //   result.pushBack(example.fromToml(x!));
+
+  return result;
 }
 proc example.toToml(): string throws {
   if compopts.isEmpty() && execopts.isEmpty() then
@@ -717,6 +820,46 @@ proc type example.fromToml(toml: borrowed Toml): example throws {
     throw new MasonError("Example names must be Chapel files");
   return new example(name, new list(string), new list(string));
 }
+
+
+
+proc ref packageTests.loadInfo(projectSourceDir: path) throws {
+  import Path; // TODO: if Pathlib supports relPath we can remove this
+  if this.specifiedInManifest {
+    log.debug("Tests were explicitly specified in the manifest, ",
+              "no need to infer them");
+    return;
+  }
+  const testPath = projectSourceDir / "test";
+  if !testPath.isDir() {
+    log.debug("No 'test' directory found '%s', no tests to load"
+                .format(testPath:string));
+    return;
+  }
+  for t in testPath.findFiles(recursive=true, hidden=false) do
+    if t.suffix == ".chpl" then
+      this.tests.pushBack(
+        new test(Path.relPath(t:string, testPath:string):path));
+}
+proc ref packageExamples.loadInfo(projectSourceDir: path) throws {
+  import Path; // TODO: if Pathlib supports relPath we can remove this
+  if this.specifiedInManifest {
+    log.debug("Examples were explicitly specified in the manifest, ",
+              "no need to infer them");
+    return;
+  }
+  const examplePath = projectSourceDir / "example";
+  if !examplePath.isDir() {
+    log.debug("No 'example' directory found '%s', no examples to load"
+                .format(examplePath:string));
+    return;
+  }
+  for e in examplePath.findFiles(recursive=true, hidden=false) do
+    if e.suffix == ".chpl" then
+      this.examples.pushBack(
+        new example(Path.relPath(e:string, examplePath:string):path));
+}
+
 
 proc MasonPackage.getDepManifestPath(): path throws {
   for cached in MasonEnv.MASON_CACHED_REGISTRY {
@@ -794,52 +937,6 @@ where isSubtype(resultType, list(string)) {
     throw new MasonError("'%s' must be a string or array of strings"
                           .format(tomlField));
   }
-  return result;
-}
-
-private proc listFromToml(
-  type resultType,
-  tomlField: string,
-  value: borrowed Toml
-): resultType throws
-where isSubtype(resultType, list(test)) {
-  var result: resultType;
-  if value.tomlType != "array" then
-    throw new MasonError("'%s' must be an array of strings"
-                          .format(tomlField));
-  for x in value.arr do
-    result.pushBack(test.fromToml(x!));
-  return result;
-}
-
-private proc listFromToml(
-  type resultType,
-  tomlField: string,
-  value: borrowed Toml
-): resultType throws
-where isSubtype(resultType, list(example)) {
-  var result: resultType;
-  // use IO;
-  // value.writeJSON(stdout);
-  if const examplesList = value["examples"] {
-    if examplesList.tomlType != "array" then
-      throw new MasonError("'%s' must be a list of examples"
-                            .format(tomlField+".examples"));
-    for exampleToml in examplesList.arr {
-      var ex = example.fromToml(exampleToml!);
-      var compopts: list(string);
-      var execopts: list(string);
-      if value.pathExists(ex.name.stem) {
-        // TODO parse compopts
-      }
-    }
-    // TODO check that there is no `[examples.UNKNOWN]`
-  }
-  // if value.tomlType != "array" then
-  //   throw new MasonError("'%s' must be an array of strings"
-  //                         .format(tomlField));
-  // for x in value.arr do
-  //   result.pushBack(example.fromToml(x!));
   return result;
 }
 
