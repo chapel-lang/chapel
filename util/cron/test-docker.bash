@@ -97,11 +97,8 @@ update_image() {
   fi
 
   # Run test script inside container
-  echo 'writeln("Hello, world!");' > hello.chpl
   docker run --rm -i "$imageName"  <  "$script"
   CONTAINER_RUN=$?
-  # Clean up scratch chpl file for testing
-  rm hello.chpl
 
   if [ $CONTAINER_RUN -ne 0 ]
   then
