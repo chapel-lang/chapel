@@ -255,11 +255,7 @@ proc getFieldRef(ref x:?t, param s:string) ref where !isClassType(t) {
   param i = __primitive("field name to num", checkQueryT(t), s);
   if i == -1 then
     compilerError("field ", s, " not found in ", t:string);
-  if isType(__primitive("field by num", x, i)) then
-    compilerError("cannot return a reference to 'type' field '", s, "'");
-  if isParam(__primitive("field by num", x, i)) then
-    compilerError("cannot return a reference to 'param' field '", s, "'");
-  return __primitive("field by num", x, i);
+  return getFieldRef(x, i);
 }
 
 pragma "unsafe"
@@ -269,11 +265,7 @@ proc getFieldRef(x:?t, param s:string) ref where isClassType(t) {
   param i = __primitive("field name to num", checkQueryT(x.type), s);
   if i == -1 then
     compilerError("field ", s, " not found in ", x.type:string);
-  if isType(__primitive("field by num", x, i)) then
-    compilerError("cannot return a reference to 'type' field '", s, "'");
-  if isParam(__primitive("field by num", x, i)) then
-    compilerError("cannot return a reference to 'param' field '", s, "'");
-  return __primitive("field by num", x, i);
+  return getFieldRef(x, i);
 }
 
 /* Get the index of a field named `name` in a class or record type `t`,
