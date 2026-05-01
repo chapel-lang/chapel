@@ -23,8 +23,13 @@ module MasonEnv {
 
 use ArgumentParser;
 use List;
+use Map;
 use MasonUtils;
 public use MasonHelp;
+
+use CTypes;
+require "EnvironCHelper.h";
+
 const regUrl: string = "https://github.com/chapel-lang/mason-registry";
 
 @chplcheck.ignore("CamelCaseFunctions")
@@ -210,4 +215,34 @@ private proc getRegNameFromLoc(location: string): string throws {
   }
 }
 
+
+private var env: map(string, string);
+proc getFullEnv(): map(string, string) {
+  if env.isEmpty() then
+    env = cloneEnv();
+  return env;
+}
+
+proc cloneEnv(): map(string, string) {
+  extern var environ: c_ptr(c_ptr(c_char));
+  var env = new map(string, string);
+  if environ != nil {
+    var i: int = 0;
+    while environ[i] != nil {
+      var entry = try! string.createCopyingBuffer(environ[i]);
+      var parts = entry.split('=', 2);
+      if parts.size == 2 {
+        env.add(parts[0], parts[1]);
+      } else if parts.size == 1 {
+        env.add(parts[0], "");
+      }
+      i += 1;
+    }
+  }
+  return env;
+}
+proc envForSpawn(env: map(string, string)) {
+  var arr = [(k, v) in zip(env.keys(), env.values())] k + "=" + v;
+  return arr;
+}
 }

@@ -77,7 +77,6 @@ class MasonPackage: Dependency {
   var dependencies: list(shared MasonPackage);
   var system: list(shared SystemDependency);
   var external: list(shared ExternalDependency);
-  var prerequisites: list(shared PrerequisiteDependency);
 
   // optional
   var source: string;
@@ -87,6 +86,10 @@ class MasonPackage: Dependency {
   var docopts: list(string);
   var tests: packageTests;
   var examples: packageExamples;
+
+  // not in TOML
+  var prerequisites: list(shared PrerequisiteDependency);
+  var projectHome: path;
 
   override proc isFromRegistry() do return true;
 }
@@ -127,14 +130,15 @@ private proc defaultPrereqVariables() {
   return m;
 }
 class PrerequisiteDependency: Dependency {
+  var location: path;
   var prereqType: prerequisiteType;
   var buildCommand: list(string);
   var printFlagsCommand: list(string);
   var cleanCommand: list(string);
   var envVariables: map(string, string) = defaultPrereqVariables();
-  proc type defaultMakefilePrereq(name: string) do
+  proc type defaultMakefilePrereq(location: path) do
     return new shared PrerequisiteDependency(
-      name, prerequisiteType.makefile,
+      location.name, location, prerequisiteType.makefile,
       new list(["make"]),
       new list(["make", "--quiet", "printchplflags"]),
       new list(["make", "clean"]),
@@ -145,29 +149,19 @@ enum packageType {
 }
 proc type packageType.default do return this.application;
 
-
-record buildInfo {
-  var sourceFiles: list(path);
-  var compopts: list(string);
-}
-record docInfo {
-  var sourceFiles: list(path);
-  var docopts: list(string);
-}
-
 proc type MasonPackage.defaultNewPkg(name: string,
                                       pkgType = packageType.default) throws {
   var b = new shared MasonPackage();
   b.name = name;
   b.version = "0.1.0";
-  b.chplVersion = MasonUtils.getChapelVersionStr();
+  b.chplVersion = MasonUtils.getChapelVersionInfo():string;
   b.license = "None";
   b.pkgType = pkgType;
   return b;
 }
 
 proc MasonPackage.toManifest(): string throws {
-    const baseToml: templateString = """
+  const baseToml: templateString = """
     [brick]
     name="{{name}}"
     version="{{version}}"
@@ -271,33 +265,42 @@ private proc readField(package: borrowed MasonPackage,
 }
 
 proc MasonPackage.fillFromManifest(
-  tomlStr: ?T, manifestPath: path
-): MasonPackage throws
-where T == string || isSubtype(T, fileReader) {
-  var toml = parseToml(tomlStr);
-  if !toml.pathExists("brick") then
+  toml: borrowed Toml, postResolve=false
+): MasonPackage throws {
+  if !toml.pathExists("brick") {
+    log.debug("Toml content: ", toml);
     throw new MasonError("TOML must contain [brick] section");
-  readField(this, toml, "brick.name", "name", required=true);
-  readField(this, toml, "brick.version", "version", required=true);
-  readField(this, toml, "brick.chplVersion", "chplVersion", required=true);
-  readField(this, toml, "brick.license", "license", required=true);
-  readField(this, toml, "brick.type", "pkgType", required=true);
+  }
+  if !postResolve {
+    readField(this, toml, "brick.name", "name", required=true);
+    readField(this, toml, "brick.version", "version", required=true);
+    readField(this, toml, "brick.chplVersion", "chplVersion", required=true);
+    readField(this, toml, "brick.license", "license", required=true);
+    readField(this, toml, "brick.type", "pkgType", required=true);
+  }
 
   // read optional fields
-  readField(this, toml, "brick.source", "source", required=false);
-  readField(this, toml, "brick.authors", "authors", required=false);
-  readField(this, toml, "brick.copyrightYear", "copyrightYear", required=false);
-  readField(this, toml, "brick.compopts", "compopts", required=false);
-  readField(this, toml, "brick.docopts", "docopts", required=false);
+  if !postResolve {
+    readField(this, toml, "brick.source", "source", required=false);
+    readField(this, toml, "brick.authors", "authors", required=false);
+    readField(this, toml, "brick.copyrightYear", "copyrightYear", required=false);
+  } else {
+    readField(this, toml, "brick.compopts", "compopts", required=false);
+    readField(this, toml, "brick.docopts", "docopts", required=false);
+  }
 
   // read tests and examples
-  readField(this, toml, "brick.tests", "tests", required=false);
-  readField(this, toml, "examples", "examples", required=false);
-  // examples have other options too
+  if postResolve {
+    readField(this, toml, "brick.tests", "tests", required=false);
+    readField(this, toml, "examples", "examples", required=false);
+    // examples have other options too
+  }
 
-  readField(this, toml, "dependencies", "dependencies", required=false);
-  readField(this, toml, "system", "system", required=false);
-  readField(this, toml, "external", "external", required=false);
+  if !postResolve {
+    readField(this, toml, "dependencies", "dependencies", required=false);
+    readField(this, toml, "system", "system", required=false);
+    readField(this, toml, "external", "external", required=false);
+  }
   // TODO: read prerequisites
 
   // TODO: some things like tests, examples, and prerequisites can be inferred
@@ -306,24 +309,37 @@ where T == string || isSubtype(T, fileReader) {
 
   // eagerly load dependencies here. this is slow, but if we usually load
   // packages from a lock file (like we should anyways, doesn't matter)
-  for dep in this.allDependencies() do dep.loadInfo();
-  this.tests.loadInfo(manifestPath.parent);
-  this.examples.loadInfo(manifestPath.parent);
-  
-  for prereqPath in MasonPrereqs.prereqs(manifestPath.parent) {
-    var p = PrerequisiteDependency.defaultMakefilePrereq(prereqPath.name);
-    this.prerequisites.pushBack(p);
+  for dep in this.allDependencies() do dep.loadInfo(postResolve=postResolve);
+  if postResolve {
+    this.tests.loadInfo(this.getPackageHome());
+    this.examples.loadInfo(this.getPackageHome());
+  }
+
+  if postResolve {
+    for prereqPath in MasonPrereqs.prereqs(this.getPackageHome()) {
+      var p = PrerequisiteDependency.defaultMakefilePrereq(prereqPath);
+      this.prerequisites.pushBack(p);
+    }
   }
 
 }
 
 proc type MasonPackage.fromManifest(
-  tomlStr: ?T, manifestPath: path
+  tomlStr: ?T, projectHome: path
 ): MasonPackage throws
 where T == string || isSubtype(T, fileReader) {
   var m = new shared MasonPackage();
-  m.fillFromManifest(tomlStr, manifestPath);
+  m.projectHome = projectHome;
+  log.debug("Creating package from manifest at ", projectHome);
+  var toml = parseToml(tomlStr);
+  log.debug("Manifest Contents", toml);
+  m.fillFromManifest(toml, postResolve=false);
+  log.debug("Filled in initial fields from manifest, ",
+            "now resolving dependencies");
   m.resolveDependencies();
+  log.debug("Resolved all the dependencies, ",
+            "now filling in post-resolve fields");
+  m.fillFromManifest(toml, postResolve=true);
   return m;
 }
 
@@ -548,7 +564,7 @@ proc MasonPackage.createLockFile(): shared Toml throws {
   //   log.debug("Processing dependency: ", dep.name);
   //   // for MasonPackages, also process their dependencies
   //   if dep:MasonPackage? {
-  //     var tomlPath = (dep:MasonPackage).getDepManifestPath();
+  //     var tomlPath = (dep:MasonPackage).getManifestPath();
   //     packagesToProcess.pushBack(
   //       MasonPackage.fromManifest(openReader(tomlPath)));
   //     depsToProcess.pushBack(packagesToProcess.last!.allDependencies());
@@ -572,7 +588,7 @@ proc type Dependency.fromToml(
   return new shared Dependency(name);
 }
 // proc Dependency.addDepToLock(root: shared Toml) throws { }
-proc Dependency.loadInfo() throws {
+proc Dependency.loadInfo(postResolve=false) throws {
   log.debug("Generic dependency has no info to load");
 }
 
@@ -592,11 +608,16 @@ override proc type MasonPackage.fromToml(
   // TODO: check that the version is correct format
   return m;
 }
-override proc MasonPackage.loadInfo() throws {
-  const manifestPath = this.getDepManifestPath();
+override proc MasonPackage.loadInfo(postResolve=false) throws {
+  const manifestPath =
+    if !postResolve
+      then this.getRegistryManifestPath()
+      else this.getManifestPath();
   log.debugf("Loading manifest for dependency '%s' from path '%?'",
              this.name, manifestPath);
-  this.fillFromManifest(openReader(manifestPath), manifestPath);
+  const toml = parseToml(openReader(manifestPath));
+  log.debug("Manifest contents: ", toml);
+  this.fillFromManifest(toml, postResolve=postResolve);
 }
 // override proc MasonPackage.addDepToLock(root: shared Toml) throws {
 
@@ -667,7 +688,8 @@ proc type SystemDependency.fromToml(
   // TODO: check that the version is correct format
   return s;
 }
-override proc SystemDependency.loadInfo() throws {
+override proc SystemDependency.loadInfo(postResolve=false) throws {
+  if postResolve then return;
   this.info = MasonSystem.getPCDep(name, version);
 }
 // override proc SystemDependency.addDepToLock(root: shared Toml) throws {
@@ -702,7 +724,8 @@ proc type ExternalDependency.fromToml(
   // TODO: check that the spec is correct format
   return s;
 }
-override proc ExternalDependency.loadInfo() throws {
+override proc ExternalDependency.loadInfo(postResolve=false) throws {
+  if postResolve then return;
   this.info = MasonExternal.getExternalPackage(this.name, this.spec)[1];
 }
 // override proc ExternalDependency.addDepToLock(root: shared Toml) throws {
@@ -860,8 +883,23 @@ proc ref packageExamples.loadInfo(projectSourceDir: path) throws {
         new example(Path.relPath(e:string, examplePath:string):path));
 }
 
-
-proc MasonPackage.getDepManifestPath(): path throws {
+proc MasonPackage.getPackageHome(): path throws {
+  if this.projectHome != "":path then
+    return this.projectHome;
+  const base = MasonEnv.MASON_HOME:path / "src";
+  const slug = "%s-%s".format(this.name, this.version);
+  const pkgDir = base / slug;
+  if !pkgDir.isDir() {
+    // we have not yet cloned this dependency, so do that now
+    this.cloneSource();
+  }
+  if (pkgDir / "Mason.toml").isFile() then
+    return pkgDir;
+  else
+    throw new MasonError("No toml file found in dependency for " +
+                          this.name + "@" + this.version);
+}
+proc MasonPackage.getRegistryManifestPath(): path throws {
   for cached in MasonEnv.MASON_CACHED_REGISTRY {
     const tomlPath =
       cached:path / "Bricks" / this.name / (this.version + ".toml");
@@ -870,7 +908,11 @@ proc MasonPackage.getDepManifestPath(): path throws {
   throw new MasonError("No toml file found in mason-registry for " +
                        this.name + "@" + this.version);
 }
-override proc GitMasonPackage.getDepManifestPath(): path throws {
+proc MasonPackage.getManifestPath(): path throws {
+  return getPackageHome() / "Mason.toml";
+}
+
+override proc GitMasonPackage.getPackageHome(): path throws {
   const base = MasonEnv.MASON_HOME:path / "git";
   const slug = "%s-%s".format(this.name, this.reference);
   const gitDir = base / slug;
@@ -878,14 +920,31 @@ override proc GitMasonPackage.getDepManifestPath(): path throws {
     // we have not yet cloned this dependency, so do that now
     this.cloneSource();
   }
-  const tomlPath = gitDir / "Mason.toml";
-  if tomlPath.isFile() then return tomlPath;
-  throw new MasonError("No toml file found in git dependency for " +
-                        this.name + "@" + this.reference);
+  if (gitDir / "Mason.toml").isFile() then
+    return gitDir;
+  else
+    throw new MasonError("No toml file found in git dependency for " +
+                          this.name + "@" + this.reference);
+}
+override proc GitMasonPackage.getRegistryManifestPath(): path throws {
+  return getManifestPath();
 }
 
+proc MasonPackage.cloneSource() throws {
+  const base = MasonEnv.MASON_HOME:path / "src";
+  const slug = "%s-%s".format(name, version);
+  const pkgDir = base / slug;
+  if !pkgDir.isDir() {
+    writeln("Downloading dependency: ", slug);
+    log.debugf("Cloning dependency from %s into %?", source, pkgDir);
+    MasonUtils.cloneSource(source, pkgDir, quiet=true);
+    MasonUtils.checkoutSource(pkgDir, "v" + version, quiet=true);
+  } else {
+    log.debug("Dependency already cloned: ", slug);
+  }
+}
 
-proc GitMasonPackage.cloneSource() throws {
+override proc GitMasonPackage.cloneSource() throws {
   const base = MasonEnv.MASON_HOME:path / "git";
   const slug = "%s-%s".format(name, reference);
   const gitDir = base / slug;

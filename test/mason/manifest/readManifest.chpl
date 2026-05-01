@@ -9,7 +9,7 @@ config const tomlPath: path;
 
 proc main() {
   var reader = openReader(tomlPath);
-  var m = MasonPackage.fromManifest(reader);
+  var m = MasonPackage.fromManifest(reader, tomlPath.parent);
   stdout.withSerializer(new jsonSerializer()).writeln(m);
 
   // var l = m.createLockFile();

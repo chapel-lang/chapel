@@ -110,14 +110,18 @@ proc stripExt(toStrip: string, ext: string) : string {
 
 /* Uses the Subprocess module to create a subprocess */
 proc runCommand(cmd: [] string, quiet=false,
-                type retType=string): retType throws {
+                type retType=string,
+                env:?envType=none): retType throws {
   if retType != string && !isSubtype(retType, list(string)) {
     compilerError("Improper usage of runCommand");
   }
   var ret: retType;
   try {
     log.debugf("runCommand (quiet=%?): '%?'", quiet, cmd);
-    var process = spawn(cmd, stdout=pipeStyle.pipe, stderr=pipeStyle.pipe);
+    var process =
+      if envType == nothing
+        then spawn(cmd, stdout=pipeStyle.pipe, stderr=pipeStyle.pipe)
+        else spawn(cmd, stdout=pipeStyle.pipe, stderr=pipeStyle.pipe, env=env);
 
     log.debug("stdout:");
     // use .lines() to avoid https://github.com/chapel-lang/chapel/issues/28211
