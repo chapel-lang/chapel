@@ -129,6 +129,11 @@ update_all_images() {
   dockerfile_nightly_patch
   update_image chapel/chapel-gasnet-smp "$CHPL_HOME/util/packaging/docker/test/docker-gasnet.bash" "$release_tag"
   dockerfile_nightly_patch -R
+
+  cd "$CHPL_HOME/util/packaging/docker/gasnet-udp"
+  dockerfile_nightly_patch
+  update_image chapel/chapel-gasnet-udp "$CHPL_HOME/util/packaging/docker/test/docker-gasnet.bash" "$release_tag"
+  dockerfile_nightly_patch -R
 }
 # END FUNCTIONS
 
