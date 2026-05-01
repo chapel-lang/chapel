@@ -97,11 +97,8 @@ update_image() {
   fi
 
   # Run test script inside container
-  echo 'writeln("Hello, world!");' > hello.chpl
   docker run --rm -i "$imageName"  <  "$script"
   CONTAINER_RUN=$?
-  # Clean up scratch chpl file for testing
-  rm hello.chpl
 
   if [ $CONTAINER_RUN -ne 0 ]
   then
@@ -121,18 +118,21 @@ update_all_images() {
   local release_tag="$1"
 
   cd "$CHPL_HOME"
-  update_image chapel/chapel "${CHPL_HOME}/util/cron/docker-chapel.bash" "$release_tag"
+  update_image chapel/chapel "$CHPL_HOME/util/packaging/docker/test/docker-chapel.bash" "$release_tag"
 
   cd "$CHPL_HOME/util/packaging/docker/gasnet"
   dockerfile_nightly_patch
-  update_image chapel/chapel-gasnet "${CHPL_HOME}/util/cron/docker-gasnet.bash" "$release_tag"
-  # Clean up after patch changes
+  update_image chapel/chapel-gasnet "$CHPL_HOME/util/packaging/docker/test/docker-gasnet.bash" "$release_tag"
   dockerfile_nightly_patch -R
 
   cd "$CHPL_HOME/util/packaging/docker/gasnet-smp"
   dockerfile_nightly_patch
-  update_image chapel/chapel-gasnet-smp "${CHPL_HOME}/util/cron/docker-gasnet.bash" "$release_tag"
-  # Clean up after patch changes
+  update_image chapel/chapel-gasnet-smp "$CHPL_HOME/util/packaging/docker/test/docker-gasnet.bash" "$release_tag"
+  dockerfile_nightly_patch -R
+
+  cd "$CHPL_HOME/util/packaging/docker/gasnet-udp"
+  dockerfile_nightly_patch
+  update_image chapel/chapel-gasnet-udp "$CHPL_HOME/util/packaging/docker/test/docker-gasnet.bash" "$release_tag"
   dockerfile_nightly_patch -R
 }
 # END FUNCTIONS
