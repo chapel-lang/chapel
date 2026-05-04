@@ -2043,6 +2043,10 @@ static void codegen_header(std::set<const char*> & cnames,
   genSubclassArray(true);
   genClassNames(types, true);
 
+  // Generate root class first to satisfy assumptions made elsewhere
+  dtObject->codegenPrototype();
+  dtObject->codegenDef();
+
   // Generate procedure pointer types first to handle circular dependencies.
   genComment("Procedure Pointer Types");
   forv_Vec(TypeSymbol, ts, types) {
