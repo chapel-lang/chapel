@@ -52,7 +52,7 @@ proc test2() {
   assert(m.size == 0);
 
   // Any key with a bitwise value of zero should not be added.
-  const addedZeroKey = m.add(0, 128);
+  const addedZeroKey = m.addOrSet(0, 128);
   assert(!addedZeroKey);
 
   // Size should not have changed yet.
@@ -60,13 +60,13 @@ proc test2() {
 
   for i in 1..<hi {
     // Any key with a bitwise value of zero should not be added.
-    const addedZeroKey = m.add(0, i);
+    const addedZeroKey = m.addOrSet(0, i);
     assert(!addedZeroKey);
 
     // Size should not have changed yet.
     assert(m.size == (i - 1));
 
-    const addedIdx1 = m.add(i, 0);
+    const addedIdx1 = m.addOrSet(i, 0);
     assert(addedIdx1);
 
     // Size should have increased by 1.
@@ -82,7 +82,7 @@ proc test2() {
     assert(m.size == i);
 
     // We should not have added an entry.
-    const addedIdx2 = m.add(i, (i*2));
+    const addedIdx2 = m.addOrSet(i, (i*2));
     assert(!addedIdx2);
 
     // Size should be the same.
@@ -123,12 +123,37 @@ proc test3() {
 proc test4() {
   var m: mod.chpl_localMap(int, bool);
 
-  for i in 1..<hi do m.add(i, false);
-  for i in 1..<hi do m.add(i, true, addOnlyIfAbsent=true);
+  for i in 1..<hi do m.addOrSet(i, false);
+  for i in 1..<hi do m.add(i, true);
   for i in 1..<hi {
     var outVal;
     const got = m.get(i, outVal);
     assert(got && !outVal);
+  }
+}
+
+proc test5() {
+  var m: mod.chpl_localMap(int, int);
+
+  for i in 1..<hi {
+    const added = m.add(i, 0);
+    assert(added);
+  }
+
+  for i in 1..<hi {
+    const added1 = m.add(i, i);
+    assert(!added1);
+
+    var outVal1;
+    const got1 = m.get(i, outVal1);
+    assert(got1 && outVal1 == 0);
+
+    const added2 = m.addOrSet(i, i);
+    assert(!added2);
+
+    var outVal2;
+    const got2 = m.get(i, outVal2);
+    assert(got2 && outVal2 == i);
   }
 }
 
@@ -138,4 +163,5 @@ proc main() {
   test2();
   test3();
   test4();
+  test5();
 }
