@@ -900,8 +900,10 @@ static Expr* preFoldPrimOp(CallExpr* call) {
               if (isSubtypeOrInstantiation(fn->getFormal(1)->type,
                                           testType,
                                           call)) {
+                auto prim = fcfs::usePointerImplementation() ? PRIM_CAPTURE_FN :
+                              PRIM_CAPTURE_FN_TO_CLASS;
                 // TODO: Replace me with a function pointer.
-                auto capture = new CallExpr(PRIM_CAPTURE_FN_TO_CLASS,
+                auto capture = new CallExpr(prim,
                                             new SymExpr(fn));
                 fn->defPoint->getStmtExpr()->insertAfter(capture);
                 Expr* val = resolveExpr(capture);
