@@ -22,11 +22,10 @@ Chapel with libfabric.
 Cross-compiling for Slingshot
 ------------------------------
 
-If you are building Chapel on one system for execution on a different
-Slingshot-based system (cross-compiling), set
-:ref:`readme-chplenv.CHPL_TARGET_PLATFORM` to the target platform in addition
-to ``CHPL_COMM=ofi``. In most cases, the target platform for a Slingshot system
-will be ``hpe-cray-ex``.
+If you are building Chapel on one system for execution on a different,
+Slingshot-based system, set :ref:`readme-chplenv.CHPL_TARGET_PLATFORM` to the 
+target platform in addition to ``CHPL_COMM=ofi``. In most cases, the target 
+platform for a Slingshot system will be ``hpe-cray-ex``.
 
 .. code-block:: bash
 
@@ -37,7 +36,7 @@ will be ``hpe-cray-ex``.
 If Chapel does not correctly infer the build system, also set
 :ref:`readme-chplenv.CHPL_HOST_PLATFORM`.
 
-When cross-compiling to an HPE Cray EX system, see
+When targeting an HPE Cray EX system, see
 :ref:`readme-hpe-cray-ex` for target-compiler, launcher, and PMI-related
 settings. Provider selection happens at run time, so no additional Chapel
 build-time option is required to request the ``cxi`` provider specifically.
