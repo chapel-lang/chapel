@@ -1012,6 +1012,32 @@ module ChapelBase {
       compilerError("unexpected case in exponentiation optimization");
   }
 
+  inline proc _expHelpParam(param a, param b: integral) param {
+    if b == 0 {
+      return 1:a.type;
+    } else if b == 1 {
+      return a;
+    } else if b == 2 {
+      return a*a;
+    } else if b == 3 {
+      return a*a*a;
+    } else if b == 4 {
+      param t = a*a;
+      return t*t;
+    } else if b == 5 {
+      param t = a*a;
+      return t*t*a;
+    } else if b == 6 {
+      param t = a*a;
+      return t*t*t;
+    } else if b == 8 {
+      param t = a*a, u = t*t;
+      return u*u;
+    }
+    else
+      compilerError("unexpected case in exponentiation optimization");
+  }
+
   inline proc _expBaseHelp(param a: int, b) where _basePowerTwo(a) {
     if b == 0 then
       return 1:a.type;
@@ -1039,6 +1065,7 @@ module ChapelBase {
   inline operator **(a: int(?w), param b: integral) where _canOptimizeExp(b) do return _expHelp(a, b);
   inline operator **(a: uint(?w), param b: integral) where _canOptimizeExp(b) do return _expHelp(a, b);
   inline operator **(a: real(?w), param b: integral) where _canOptimizeExp(b) do return _expHelp(a, b);
+  inline operator **(param a: real(?w), param b: integral) param where _canOptimizeExp(b) do return _expHelpParam(a, b);
   inline operator **(param a: integral, b: int) where _basePowerTwo(a) do return _expBaseHelp(a, b);
 
   //
