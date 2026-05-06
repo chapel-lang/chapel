@@ -741,7 +741,10 @@ static void setLLVMFlags(const ArgumentDescription* desc, const char* arg) {
 
   llvmFlags += arg;
 
-  if (0 == strcmp(arg, "--help")) {
+  if (0 == strcmp(arg, "--help-hidden")) {
+    std::vector<const char*> Args = {"chpl --mllvm", "--help-hidden", nullptr};
+    llvm::cl::ParseCommandLineOptions(Args.size()-1, &Args[0]);
+  } else if (0 == strcmp(arg, "--help")) {
     std::vector<const char*> Args = {"chpl --mllvm", "--help", nullptr};
     llvm::cl::ParseCommandLineOptions(Args.size()-1, &Args[0]);
   }
