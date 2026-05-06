@@ -1687,7 +1687,7 @@ static std::string getConfiguredTargetTripleString() {
 static std::string getConfiguredTargetTriple() {
   return llvm::sys::getDefaultTargetTriple();
 }
-static std:string getConfiguredTargetTripleString() {
+static std::string getConfiguredTargetTripleString() {
   return getConfiguredTargetTriple();
 }
 #endif
