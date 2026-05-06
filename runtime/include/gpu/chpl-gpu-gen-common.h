@@ -114,37 +114,44 @@ MAYBE_GPU static inline void chpl_gpu_printf1(const char *fmt,
 }
 MAYBE_GPU static inline void chpl_gpu_printf2(const char *fmt,
   void *x1, void *x2)
+__attribute__ ((format (printf, 1, 2)))
 {
   printf(fmt, x1, x2);
 }
 MAYBE_GPU static inline void chpl_gpu_printf3(const char *fmt,
   void *x1, void *x2, void *x3)
+__attribute__ ((format (printf, 1, 2)))
 {
   printf(fmt, x1, x2, x3);
 }
 MAYBE_GPU static inline void chpl_gpu_printf4(const char *fmt,
   void *x1, void *x2, void *x3, void *x4)
+__attribute__ ((format (printf, 1, 2)))
 {
   printf(fmt, x1, x2, x3, x4);
 }
 MAYBE_GPU static inline void chpl_gpu_printf5(const char *fmt,
   void *x1, void *x2, void *x3, void *x4, void *x5)
+__attribute__ ((format (printf, 1, 2)))
 {
   printf(fmt, x1, x2, x3, x4, x5);
 }
 MAYBE_GPU static inline void chpl_gpu_printf6(const char *fmt,
   void *x1, void *x2, void *x3, void *x4, void *x5, void *x6)
+__attribute__ ((format (printf, 1, 2)))
 {
   printf(fmt, x1, x2, x3, x4, x5, x6);
 }
 MAYBE_GPU static inline void chpl_gpu_printf7(const char *fmt,
   void *x1, void *x2, void *x3, void *x4, void *x5, void *x6, void *x7)
+__attribute__ ((format (printf, 1, 2)))
 {
   printf(fmt, x1, x2, x3, x4, x5, x6, x7);
 }
 MAYBE_GPU static inline void chpl_gpu_printf8(const char *fmt,
   void *x1, void *x2, void *x3, void *x4, void *x5, void *x6, void *x7,
   void *x8)
+__attribute__ ((format (printf, 1, 2)))
 {
   printf(fmt, x1, x2, x3, x4, x5, x6, x7, x8);
 }
