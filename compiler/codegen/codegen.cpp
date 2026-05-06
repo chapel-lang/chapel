@@ -2059,6 +2059,7 @@ static void codegen_header(std::set<const char*> & cnames,
   forv_Vec(TypeSymbol, typeSymbol, types) {
     if (!typeSymbol->hasFlag(FLAG_REF) && !typeSymbol->hasFlag(FLAG_DATA_CLASS))
     {
+      if (typeSymbol->type == dtObject) continue;
       typeSymbol->codegenPrototype();
     }
   }
@@ -2100,7 +2101,9 @@ static void codegen_header(std::set<const char*> & cnames,
 
   while (current.n) {
     forv_Vec(TypeSymbol, ts, current) {
-      ts->codegenDef();
+      if (ts->type != dtObject) {
+        ts->codegenDef();
+      }
 
       if (AggregateType* at = toAggregateType(ts->type)) {
         forv_Vec(AggregateType, child, at->dispatchChildren) {
