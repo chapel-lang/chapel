@@ -2238,7 +2238,11 @@ struct VectorLibraryInfo {
   }
   static std::optional<std::string> getBackendVectorLibFlag() {
     if (0 == strcmp(CHPL_TARGET_COMPILER, "llvm")) {
+#if HAVE_LLVM_VER < 220
       return "-vector-library=";
+#else
+      return "--vector-library=";
+#endif
     } else if (0 == strcmp(CHPL_TARGET_COMPILER, "clang")) {
       return "-fveclib=";
     } else if (0 == strcmp(CHPL_TARGET_COMPILER, "gnu")) {
