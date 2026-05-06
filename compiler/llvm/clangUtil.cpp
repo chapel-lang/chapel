@@ -3107,7 +3107,7 @@ static void helpComputeClangArgs(std::string& clangCC,
     // these come from applying the format attribute to non-variadic functions,
     // which clang allows but gcc does not. we never compiler GPU code with gcc,
     // so this is fine
-    clangCCArgs.push_back("-Wno-gcc-compat ");
+    clangCCArgs.push_back("-Wno-gcc-compat");
     clangCCArgs.push_back("-DUSE_FORMAT_ATTR_FOR_NON_VARIADIC");
   }
 #endif
