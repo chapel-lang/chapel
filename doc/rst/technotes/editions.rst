@@ -169,4 +169,14 @@ remain in the preview until they are deemed sufficiently complete.
   ``<=``, ``>``, ``>=``) are defined as module code accepting two
   generic arguments of type ``record`` rather than being inserted by
   the compiler in cases where it believes the user did not define such
-  operators for a given record type.
+  operators for a given record type.  For most programs, this should
+  not result in any behavior change, and we encourage you to reach out
+  and let us know if you find otherwise.
+
+  The most significant anticipated behavioral change is for records
+  that only have tertiary definitions of such operators (which is to
+  say, ones that are defined in a different module than the record
+  itself).  In such cases, these default, module-defined comparison
+  operators will be available for the record type in scopes where the
+  tertiary operators are not available.  We consider this to be an
+  improvement.
