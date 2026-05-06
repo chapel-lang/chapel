@@ -64,6 +64,9 @@
 #include "llvm/Support/CommandLine.h"
 #include "llvm/MC/TargetRegistry.h"
 #include "llvm/Support/TargetSelect.h"
+#if HAVE_LLVM_VER >= 220
+#include "llvm/IR/SystemLibraries.h"
+#endif
 #endif
 
 
@@ -2206,10 +2209,20 @@ struct VectorLibraryInfo {
     std::string llvmBackendName;
     std::string clangBackendName;
     std::string gccBackendName;
+#if HAVE_LLVM_VER >= 220
+    llvm::VectorLibrary llvmLib;
+    KnownVectorLib(std::string name, std::string llvmBackendName,
+                   std::string clangBackendName, std::string gccBackendName,
+                   llvm::VectorLibrary llvmLib)
+      : name(name), llvmBackendName(llvmBackendName),
+        clangBackendName(clangBackendName), gccBackendName(gccBackendName),
+        llvmLib(llvmLib) {}
+#else
     KnownVectorLib(std::string name, std::string llvmBackendName,
                    std::string clangBackendName, std::string gccBackendName)
       : name(name), llvmBackendName(llvmBackendName),
         clangBackendName(clangBackendName), gccBackendName(gccBackendName) {}
+#endif
     std::string getBackendName() {
       if (0 == strcmp(CHPL_TARGET_COMPILER, "llvm")) {
         return llvmBackendName;
@@ -2223,12 +2236,17 @@ struct VectorLibraryInfo {
     }
   };
 
+#if HAVE_LLVM_VER >= 220
+  static inline const auto libmvec = KnownVectorLib("libmvec", "LIBMVEC", "libmvec", "", llvm::VectorLibrary::LIBMVEC);
+  static inline const auto darwinLibSystemM = KnownVectorLib("darwinLibSystemM", "Darwin_libsystem_m", "Darwin_libsystem_m", "", llvm::VectorLibrary::DarwinLibSystemM);
+#else
 #if HAVE_LLVM_VER < 210
   static inline const auto libmvec = KnownVectorLib("libmvec", "LIBMVEC-X86", "libmvec", "");
 #else
   static inline const auto libmvec = KnownVectorLib("libmvec", "LIBMVEC", "libmvec", "");
 #endif
   static inline const auto darwinLibSystemM = KnownVectorLib("darwinLibSystemM", "Darwin_libsystem_m", "Darwin_libsystem_m", "");
+#endif
 
   static std::optional<KnownVectorLib> getKnownVectorLib(const std::string& vecLib) {
     static std::array<KnownVectorLib, 2> knownVectorLibs = {libmvec, darwinLibSystemM};
@@ -2241,10 +2259,10 @@ struct VectorLibraryInfo {
   }
   static std::optional<std::string> getBackendVectorLibFlag() {
     if (0 == strcmp(CHPL_TARGET_COMPILER, "llvm")) {
-#if HAVE_LLVM_VER < 220
-      return "-vector-library=";
+#if HAVE_LLVM_VER >= 220
+      return "DELAYED";
 #else
-      return "--vector-library=";
+      return "-vector-library=";
 #endif
     } else if (0 == strcmp(CHPL_TARGET_COMPILER, "clang")) {
       return "-fveclib=";
@@ -2275,20 +2293,26 @@ static void setVectorLib() {
              fVectorLib.c_str(), flagName.value().c_str(), flagValue.c_str());
   }
 
-
-  if (0 == strcmp(CHPL_TARGET_COMPILER, "llvm")) {
-    if (llvmFlags.length() > 0)
-      llvmFlags += ' ';
-    llvmFlags += flagName.value();
-    llvmFlags += flagValue;
+  if (flagName.value() != "DELAYED") {
+    if (0 == strcmp(CHPL_TARGET_COMPILER, "llvm")) {
+      if (llvmFlags.length() > 0)
+        llvmFlags += ' ';
+      llvmFlags += flagName.value();
+      llvmFlags += flagValue;
+    } else {
+      if (ccflags.length() > 0)
+        ccflags += ' ';
+      ccflags += flagName.value();
+      ccflags += flagValue;
+    }
   } else {
-    if (ccflags.length() > 0)
-      ccflags += ' ';
-    ccflags += flagName.value();
-    ccflags += flagValue;
+#if HAVE_LLVM_VER >= 220
+  if (knownLib.has_value()) {
+    fVectorLibLLVM = knownLib.value().llvmLib;
+  }
+#endif
   }
 }
-
 // Check for inconsistencies in compiler-driver control flags
 static void checkCompilerDriverFlags() {
   if (fDriverDoMonolithic) {

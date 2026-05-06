@@ -40,6 +40,9 @@ namespace llvm {
   class Function;
   class Type;
   class Value;
+#if HAVE_LLVM_VER >= 220
+  enum class VectorLibrary;
+#endif
 }
 namespace clang {
   class Decl;
@@ -144,6 +147,10 @@ llvm::FunctionType*
 codegenFunctionTypeLLVM(FunctionType* ft,
                         llvm::AttributeList& outAttrs,
                         std::vector<const char*>& outArgNames);
+
+#if HAVE_LLVM_VER >= 220
+extern llvm::VectorLibrary fVectorLibLLVM;
+#endif
 
 #endif // HAVE_LLVM
 

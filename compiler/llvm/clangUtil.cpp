@@ -99,6 +99,10 @@ using LlvmOptimizationLevel = llvm::OptimizationLevel;
 #include "llvm/Transforms/Instrumentation/AddressSanitizerOptions.h"
 #include "llvm/Transforms/Instrumentation/AddressSanitizer.h"
 
+#if HAVE_LLVM_VER >= 220
+#include "llvm/IR/SystemLibraries.h"
+#endif
+
 
 #ifdef HAVE_LLVM_RV
 #include "rv/passes.h"
@@ -169,6 +173,10 @@ static void adjustLayoutForGlobalToWide();
 static void setupModule();
 
 fileinfo    gAllExternCode;
+
+#if HAVE_LLVM_VER >= 220
+llvm::VectorLibrary fVectorLibLLVM = llvm::VectorLibrary::NoLibrary;
+#endif
 
 // forward declare
 class CCodeGenConsumer;
@@ -1991,6 +1999,10 @@ static llvm::TargetOptions getTargetOptions(
           .Case("softfp", llvm::FloatABI::Soft)
           .Case("hard", llvm::FloatABI::Hard)
           .Default(llvm::FloatABI::Default);
+
+#if HAVE_LLVM_VER >= 220
+  Options.VecLib = fVectorLibLLVM;
+#endif
 
 
   // Set the floating point optimization level
