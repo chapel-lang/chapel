@@ -3101,6 +3101,17 @@ static void helpComputeClangArgs(std::string& clangCC,
   }
 #endif
 
+#if HAVE_LLVM_VER >= 220
+  if (usingGpuLocaleModel()) {
+    // silence warnings about gcc compat with clang 22
+    // these come from applying the format attribute to non-variadic functions,
+    // which clang allows but gcc does not. we never compiler GPU code with gcc,
+    // so this is fine
+    clangCCArgs.push_back("-Wno-gcc-compat ");
+    clangCCArgs.push_back("-DUSE_FORMAT_ATTR_FOR_NON_VARIADIC");
+  }
+#endif
+
   // Add debug flags
   if (fDebugSymbols) {
     clangCCArgs.push_back("-g");

@@ -26,6 +26,14 @@ RUNTIME_CXXFLAGS += -x hip --offload-arch=$(CHPL_MAKE_GPU_ARCH)
 # Some ROCm headers have `foo()`, suppress warnings/errors from them
 RUNTIME_CFLAGS += -Wno-strict-prototypes
 
+# silence warnings about gcc compat with clang 22
+# these come from applying the format attribute to non-variadic functions,
+# which clang allows but gcc does not. we never compiler GPU code with gcc,
+# so this is fine
+ifeq ($(shell test $(CHPL_MAKE_LLVM_VERSION) -ge 22; echo "$$?"),0)
+	RUNTIME_CXXFLAGS += -Wno-error=gcc-compat -DUSE_FORMAT_ATTR_FOR_NON_VARIADIC
+endif
+
 $(RUNTIME_OBJ_DIR)/gpu-amd-cub.o: gpu-amd-cub.cc \
                                          $(RUNTIME_OBJ_DIR_STAMP)
 	PATH=$(PATH):$(CHPL_MAKE_ROCM_LLVM_PATH)/bin $(CXX) -c $(RUNTIME_CXXFLAGS) $(RUNTIME_INCLS) -std=c++17 -o $@ $<
