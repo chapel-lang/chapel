@@ -1,5 +1,8 @@
 #include "deviceAttributes.h"
 
+#include <stdio.h>
+#include <stdlib.h>
+
 #ifndef __HIP_PLATFORM_AMD__
 #define __HIP_PLATFORM_AMD__
 #endif
