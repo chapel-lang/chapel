@@ -1344,7 +1344,7 @@ const clang::Type* getClangASTType(ASTContext& ctx, Ty decl) {
     return ctx.getCanonicalTypeDeclType(decl)->getTypePtr();
   }
 #else
-  std::ignore ctx;
+  std::ignore = ctx;
   return decl->getTypeForDecl();
 #endif
 }
