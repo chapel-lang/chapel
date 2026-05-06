@@ -2343,6 +2343,15 @@ codegenFunctionTypeLLVMImpl(
           clang::CharUnits align = argInfo->getIndirectAlign();
           if (argInfo->getIndirectByVal()) {
             b.addAlignmentAttr(align.getQuantity());
+          } else {
+#if LLVM_VERSION_MAJOR >= 22
+            // mark dead on return for records only for non-sret indirect
+            auto isMaybeStructLike = isPrimitiveType(formalInfo->type()) &&
+                                     formalInfo->type()->symbol->hasFlag(FLAG_EXTERN);
+            if ((isRecord(formalInfo->type()) || isMaybeStructLike) &&
+                !outAttrs.hasParamAttr(i, llvm::Attribute::StructRet))
+              b.addAttribute(llvm::Attribute::DeadOnReturn);
+#endif
           }
 
           llvmAddAttr(ctx, outAttrs, argTys.size(), b);
