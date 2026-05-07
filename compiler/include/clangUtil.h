@@ -34,6 +34,7 @@
 #if HAVE_LLVM_VER >= 160
 #include "clang/Basic/AddressSpaces.h"
 #endif
+#include "clang/AST/ASTContext.h"
 
 // forward declare some llvm and clang things
 namespace llvm {
@@ -151,7 +152,7 @@ codegenFunctionTypeLLVM(FunctionType* ft,
 template <typename Ty,
           std::enable_if_t<std::is_pointer_v<Ty> &&
                            std::is_base_of_v<clang::TypeDecl, std::remove_pointer_t<Ty>>, bool> = true>
-const clang::Type* getClangASTType(ASTContext& ctx, Ty decl) {
+const clang::Type* getClangASTType(clang::ASTContext& ctx, Ty decl) {
 #if LLVM_VERSION_MAJOR >= 22
   if constexpr (std::is_same_v<Ty, clang::TagDecl*>) {
     return ctx.getCanonicalTagType(decl)->getTypePtr();
