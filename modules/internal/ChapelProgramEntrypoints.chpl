@@ -19,7 +19,7 @@
  */
 
 module ChapelProgramEntrypoints {
-  use ChapelBase, CTypes;
+  use ChapelBase, ChapelProgramRegistration, CTypes;
 
   // This is an opaque alias for "char" used to make sure the compiler will
   // generate the proper type instead of e.g., "int(8)" as is usually done
@@ -70,7 +70,8 @@ module ChapelProgramEntrypoints {
   //                    runtime initialization is split out from library init.
   export proc chpl_library_init(argc: chpl_opaque_c_int,
                                 argv: chpl_opaque_argv_array) {
-    extern proc chpl_rt_init(argc: chpl_opaque_c_int,
+    extern proc chpl_rt_init(root_prg: c_ptr(chpl_rt_prginfo),
+                             argc: chpl_opaque_c_int,
                              argv: chpl_opaque_argv_array): void;
     // TODO: A lie, 'chpl_main' is actually a local function pointer.
     extern proc chpl_task_callMain(chpl_main: c_ptr(void)): void;
@@ -89,7 +90,7 @@ module ChapelProgramEntrypoints {
 
     // NOTE: The call 'chpl_rt_init' is idempotent and nothing will happen
     // if the runtime is already initialized.
-    chpl_rt_init(argc, argv);
+    chpl_rt_init(chpl_programInfoHere.asPtr(), argc, argv);
 
     // TODO: There really needs to be a better way to do this. Is the normal
     //       casting not working because the proc-ptr is a class right now?
