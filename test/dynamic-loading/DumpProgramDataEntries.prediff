@@ -39,6 +39,8 @@ program_name = sys.argv[1] + "_real" if is_multilocale else sys.argv[1]
 binary_path = Path(os.path.join(script_dir, program_name)).absolute()
 lines = original_output.splitlines()
 execution_flags = sys.argv[-1]
+compilation_flags = sys.argv[-2]
+is_fast_flag_thrown = "--fast" in compilation_flags
 
 # Get the number of locales by searching the execution flags.
 match = re.search(pattern_0, execution_flags)
@@ -51,7 +53,7 @@ expected_value_map = {
     "mainPreserveDelimiter": 0,
     "warnUnstable": 0,
     "CHPL_INTERLEAVE_MEM": 0,
-    "CHPL_STACK_CHECKS": 1,
+    "CHPL_STACK_CHECKS": (0 if is_fast_flag_thrown else 1),
 }
 
 
@@ -73,13 +75,13 @@ class ProgramField(object):
     def is_pointer_type(self):
         return not self.is_callback() and "*" in self._c_type
 
-    def _expect_val(self, out, val):
+    def _expect_val(self, out, expected_val):
         passed = True
-        t = type(val)
-        if t(self._val) != val:
+        t = type(expected_val)
+        if t(self._val) != expected_val:
             print(
                 "Bad value {} for '{}', expected {}".format(
-                    self._val, name, val
+                    self._val, self._name, expected_val
                 ),
                 file=out,
             )
