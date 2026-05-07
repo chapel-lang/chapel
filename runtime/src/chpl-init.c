@@ -276,12 +276,18 @@ void chpl_rt_init(chpl_rt_prginfo* root_prg, int argc, char** argv) {
 
   chpl_comm_barrier("about to leave comm init code");
 
+  CHPL_RT_PRGINFO_DATA_TEMP(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                            CreateConfigVarTable);
+
   CreateConfigVarTable();      // get ready to start tracking config vars
+
   chpl_gen_main_arg.argv = chpl_malloc(argc * sizeof(char*));
   chpl_gen_main_arg.argv[0] = argv[0];
   chpl_gen_main_arg.argc = 1;
   chpl_gen_main_arg.return_value = 0;
+
   parseArgs(false, parse_normally, &argc, argv);
+
   recordExecutionCommand(argc, argv);
 
   chpl_topo_post_args_init();
