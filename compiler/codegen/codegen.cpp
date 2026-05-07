@@ -985,6 +985,8 @@ public:
     }
 
     for (auto& [cname, fns] : nameMap) {
+      std::ignore = cname;
+
       FnSymbol* lastNonExternFn = nullptr;
       FnSymbol* lastExternFn = nullptr;
       int numExportOrDefault = 0;
