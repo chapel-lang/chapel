@@ -2938,6 +2938,14 @@ static void initPromotionWrapper(PromotionInfo& promotion,
 
     ArgSymbol* newFormal = NULL;
 
+    if (promotion.promotedType[i] == nullptr &&
+        (formal->intent == INTENT_OUT || formal->intent == INTENT_INOUT)) {
+      const char* intent = formal->intent == INTENT_OUT ? "out" : "inout";
+      USR_FATAL_CONT(formal, "cannot promote function '%s' while keeping the formal '%s %s' scalar", fn->name, intent, formal->name);
+      USR_PRINT(formal, "'%s' actuals will be written to by each iteration of the promoted function, which can lead to races.", intent);
+      USR_STOP();
+    }
+
     if (promotion.defaulted[i] == false) {
       // Only create promotion wrapper formals for those arguments that
       // aren't receiving the default value.
