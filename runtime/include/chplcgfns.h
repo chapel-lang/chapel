@@ -107,11 +107,6 @@ void chpl__init_ChapelStandard(int64_t _ln, int32_t _fn);
 extern int64_t chpl_gen_main(chpl_main_argument* const _arg);
 
 //
-// Shared interface (implemented in the compiler generated code)
-//
-extern void chpl__heapAllocateGlobals(void);
-
-//
 // chpl_globals_registry is an array of size chpl_numGlobalsOnHeap
 // storing ptr_wide_ptr_t, that is, local addresses of wide pointers.
 // It is filled in and used by chpl_comm_register_global_var() and

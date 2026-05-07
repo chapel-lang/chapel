@@ -352,6 +352,9 @@ void chpl_rt_init(chpl_rt_prginfo* root_prg, int argc, char** argv) {
 // each locale in order for the Chapel program to function correctly.
 //
 void chpl_std_module_init(void) {
+  CHPL_RT_PRGINFO_DATA_TEMP(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                            chpl__heapAllocateGlobals);
+
   // chpl__initStringLiterals runs the constructors for all string literals. We
   // need to setup the literals on every locale before any other chapel code is
   // run.
