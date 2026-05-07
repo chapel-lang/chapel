@@ -240,12 +240,12 @@ stopInitCommDiags
   from print-module-resolution.ChapelStandard.stopInitCommDiags
 ChapelDynamicLoading
   from print-module-resolution.ChapelStandard.ChapelDynamicLoading
+ChapelSetProgramInfoDataEntries
+  from print-module-resolution.ChapelStandard.ChapelProgramEntrypoints.ChapelProgramRegistration.ChapelSetProgramInfoDataEntries
+ChapelProgramRegistration
+  from print-module-resolution.ChapelStandard.ChapelProgramEntrypoints.ChapelProgramRegistration
 ChapelProgramEntrypoints
   from print-module-resolution.ChapelStandard.ChapelProgramEntrypoints
-ChapelSetProgramInfoDataEntries
-  from print-module-resolution.ChapelStandard.ChapelProgramRegistration.ChapelSetProgramInfoDataEntries
-ChapelProgramRegistration
-  from print-module-resolution.ChapelStandard.ChapelProgramRegistration
 ChapelStandard
   from print-module-resolution.ChapelStandard
 print-module-resolution
