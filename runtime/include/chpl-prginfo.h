@@ -163,6 +163,10 @@ typedef uint64_t chpl_rt_prg_id;
 #define CHPL_RT_PRGINFO_ROOT \
   (chpl_rt_prginfo_from_id_here(CHPL_RT_PRGINFO_ROOT_ID))
 
+// TODO: Eventually replace all references to this with either a program
+//       pointer or a deliberate use of 'CHPL_RT_PRGINFO_ROOT'.
+#define CHPL_RT_ROOT_PROGRAM_PLACEHOLDER CHPL_RT_PRGINFO_ROOT
+
 /** Retrieve a program's info on the current locale given an ID. */
 #define CHPL_RT_PRGINFO_FETCH(id__) (chpl_rt_prginfo_from_id_here(id__))
 

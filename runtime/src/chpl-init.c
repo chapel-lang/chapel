@@ -68,7 +68,8 @@ void deallocate_string_literals_buf(void) {
 
 int handleNonstandardArg(int* argc, char* argv[], int argNum,
                          int32_t lineno, int32_t filename) {
-
+  CHPL_RT_PRGINFO_DATA_TEMP(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                            mainHasArgs);
   if (mainHasArgs) {
     chpl_gen_main_arg.argv[chpl_gen_main_arg.argc] = argv[argNum];
     chpl_gen_main_arg.argc++;

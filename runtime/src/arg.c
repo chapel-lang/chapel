@@ -27,6 +27,7 @@
 #include "chplexit.h"
 #include "chplio.h"
 #include "chpl-mem.h"
+#include "chpl-prginfo.h"
 #include "chplmemtrack.h"
 #include "chpl-tasks.h"
 #include "chpl-linefile-support.h"
@@ -358,12 +359,15 @@ int32_t getArgNumLocalesPerNode(void) {
 extern void chpl_program_about(void); // The generated code provides this
 void parseArgs(chpl_bool isLauncher, chpl_parseArgsMode_t mode,
                int* argc, char* argv[]) {
-  int i;
+  int i = 0;
   int printHelp = 0;
   int printAbout = 0;
   int origargc = *argc;
   int stop_parsing = 0;
   int saw_socket_conn = 0;
+
+  CHPL_RT_PRGINFO_DATA_TEMP(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                            mainHasArgs);
 
   //
   // Handle the pre-parse for '-E' arguments separately.
