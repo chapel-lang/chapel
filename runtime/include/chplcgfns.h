@@ -136,7 +136,6 @@ extern void* const chpl_global_serialize_table[];
 extern const char* const chpl_mem_descs[];
 extern const int chpl_mem_numDescs;
 
-extern const int warnUnstable;
 extern chpl_main_argument chpl_gen_main_arg;
 extern const int launcher_is_mli;
 extern const char* launcher_mli_real_name;
