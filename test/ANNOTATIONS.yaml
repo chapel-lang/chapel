@@ -649,6 +649,12 @@ all:
   02/23/26:
     - text: System hardware/software change
       config: 1-node-a100, 1-node-mi250x
+  04/29/26:
+    - text: System hardware/software change
+      config: 16-node-hpe-cray-ex
+  05/06/26:
+    - text: System hardware/software change
+      config: 16-node-hpe-cray-ex
 
 # End all
 
