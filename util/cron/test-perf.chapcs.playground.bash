@@ -37,7 +37,7 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 GITHUB_USER=chapel-lang
 GITHUB_BRANCH=main
 SHORT_NAME=unset
-START_DATE=4/23/2026
+START_DATE=4/23/26
 
 set -e
 checkout_branch $GITHUB_USER $GITHUB_BRANCH
