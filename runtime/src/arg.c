@@ -399,6 +399,10 @@ void parseArgs(chpl_bool isLauncher, chpl_parseArgsMode_t mode,
      */
     if (mainHasArgs && strcmp(currentArg, "--") == 0) {
       stop_parsing = 1;
+
+      CHPL_RT_PRGINFO_DATA_TEMP(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                                mainPreserveDelimiter);
+
       // if the ArgumentParser was also included, copy the -- through so it
       // may use it as a passthrough delimiter
       if (mainPreserveDelimiter) {
