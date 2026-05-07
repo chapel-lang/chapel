@@ -31,7 +31,8 @@ BASE_URL=https://github.com/llvm/llvm-project/releases/download/llvmorg-$LLVM_VE
 (set -x && cd $LLVM_DIR && mv llvm-project-$LLVM_VERSION.src/third-party third-party)
 
 # remove unused folders
-(set -x && cd $LLVM_DIR && rm -rf llvm-src/test llvm-src/tools/clang/test)
+(set -x && cd $LLVM_DIR && rm -rf llvm-src/test llvm-src/unittests llvm-src/examples llvm-src/benchmarks llvm-src/docs)
+(set -x && cd $LLVM_DIR && rm -rf llvm-src/tools/clang/test llvm-src/tools/clang/unittests llvm-src/tools/clang/examples llvm-src/tools/clang/docs)
 
 # git add and commit
 (set -x && cd $LLVM_DIR && git add --force llvm-src cmake)
