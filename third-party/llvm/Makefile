@@ -23,9 +23,9 @@ endif
 # select the cmake generator to use for the LLVM build
 # this can be set to "Unix Makefiles" or "Ninja" (or others supported by cmake)
 ifndef CHPL_LLVM_CMAKE_GENERATOR
-	CHPL_LLVM_CMAKE_GENERATOR := -G "Unix Makefiles"
+  CHPL_LLVM_CMAKE_GENERATOR := -G "Unix Makefiles"
 else
-	CHPL_LLVM_CMAKE_GENERATOR := -G "$(CHPL_LLVM_CMAKE_GENERATOR)"
+  CHPL_LLVM_CMAKE_GENERATOR := -G "$(CHPL_LLVM_CMAKE_GENERATOR)"
 endif
 
 # activate LLVM asserts if it's from `make ASSERTS=1`
@@ -63,9 +63,9 @@ CHPL_LLVM_NO_EXTRAS := -DLLVM_BUILD_TESTS=OFF -DLLVM_INCLUDE_TESTS=OFF \
                        -DLLVM_BUILD_BENCHMARKS=OFF -DLLVM_INCLUDE_BENCHMARKS=OFF \
                        -DLLVM_BUILD_EXAMPLES=OFF -DLLVM_INCLUDE_EXAMPLES=OFF  \
                        -DLLVM_BUILD_DOCS=OFF -DLLVM_INCLUDE_DOCS=OFF \
-											 -DCLANG_BUILD_TESTS=OFF -DCLANG_INCLUDE_TESTS=OFF \
-											 -DCLANG_BUILD_EXAMPLES=OFF -DCLANG_INCLUDE_EXAMPLES=OFF \
-											 -DCLANG_BUILD_DOCS=OFF -DCLANG_INCLUDE_DOCS=OFF
+                       -DCLANG_BUILD_TESTS=OFF -DCLANG_INCLUDE_TESTS=OFF \
+                       -DCLANG_BUILD_EXAMPLES=OFF -DCLANG_INCLUDE_EXAMPLES=OFF \
+                       -DCLANG_BUILD_DOCS=OFF -DCLANG_INCLUDE_DOCS=OFF
 
 CMAKE ?= cmake
 
@@ -129,12 +129,12 @@ llvm-config: FORCE
 	    $(CHPL_LLVM_DYNAMIC_OPTS) \
 	    $(CHPL_RV_CMAKE) \
 	    -Wno-dev \
-			$(CHPL_LLVM_CMAKE_GENERATOR) \
+	    $(CHPL_LLVM_CMAKE_GENERATOR) \
 	    $(LLVM_SRC_DIR) ; \
 
 llvm-config-support-only: FORCE
 	mkdir -p $(LLVM_SUPPORT_BUILD_DIR)
-	
+
 	@if [ "$(CHPL_MAKE_LLVM)" = "bundled" ] && \
 	    [ "$(CHPL_MAKE_COMPILER)" = "llvm" ]; then \
 	  echo Error: Cannot build bundled LLVM with itself ;\
