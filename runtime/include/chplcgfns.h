@@ -136,6 +136,11 @@ extern void* const chpl_global_serialize_table[];
 extern const char* const chpl_mem_descs[];
 extern const int chpl_mem_numDescs;
 
+extern const int mainHasArgs;
+extern const int mainPreserveDelimiter;
+extern const int warnUnstable;
+extern chpl_main_argument chpl_gen_main_arg;
+
 #ifdef __cplusplus
 }
 #endif
