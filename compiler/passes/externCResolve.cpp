@@ -487,12 +487,8 @@ void convertDeclToChpl(ModuleSymbol* module,
   //struct
   if (clang::RecordDecl *rd =
       llvm::dyn_cast_or_null<clang::RecordDecl>(cType)) {
-#if LLVM_VERSION_MAJOR >= 22
     auto& ctx = rd->getASTContext();
-    convertToChplType(module, ctx.getCanonicalTagType(rd)->getTypePtr());
-#else
-    convertToChplType(module, rd->getTypeForDecl());
-#endif
+    convertToChplType(module, getClangASTType(ctx, rd));
   }
 
   //enum constant

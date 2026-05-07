@@ -148,6 +148,22 @@ codegenFunctionTypeLLVM(FunctionType* ft,
                         llvm::AttributeList& outAttrs,
                         std::vector<const char*>& outArgNames);
 
+template <typename Ty,
+          std::enable_if_t<std::is_pointer_v<Ty> &&
+                           std::is_base_of_v<clang::TypeDecl, std::remove_pointer_t<Ty>>, bool> = true>
+const clang::Type* getClangASTType(ASTContext& ctx, Ty decl) {
+#if LLVM_VERSION_MAJOR >= 22
+  if constexpr (std::is_same_v<Ty, clang::TagDecl*>) {
+    return ctx.getCanonicalTagType(decl)->getTypePtr();
+  } else {
+    return ctx.getCanonicalTypeDeclType(decl)->getTypePtr();
+  }
+#else
+  std::ignore = ctx;
+  return decl->getTypeForDecl();
+#endif
+}
+
 #if HAVE_LLVM_VER >= 220
 extern llvm::VectorLibrary fVectorLibLLVM;
 #endif
