@@ -39,46 +39,12 @@ Our deletion of the test directories as noted above makes the
 following patch necessary.
 
 * The llvm-src/tools/clang/CMakeLists.txt file was edited to
-include https://github.com/llvm/llvm-project/pull/187317:
-```
-diff --git a/third-party/llvm/llvm-src/tools/clang/CMakeLists.txt b/third-party/llvm/llvm-src/tools/clang/CMakeLists.txt
-index e4cb1a35962..0a19b263ec0 100644
---- a/third-party/llvm/llvm-src/tools/clang/CMakeLists.txt
-+++ b/third-party/llvm/llvm-src/tools/clang/CMakeLists.txt
-@@ -508,7 +508,12 @@ add_subdirectory(tools)
- add_subdirectory(runtime)
- 
- option(CLANG_BUILD_EXAMPLES "Build CLANG example programs by default." OFF)
--add_subdirectory(examples)
-+option(CLANG_INCLUDE_EXAMPLES
-+       "Generate build targets for the Clang examples."
-+       ${LLVM_INCLUDE_EXAMPLES})
-+if (CLANG_INCLUDE_EXAMPLES)
-+  add_subdirectory(examples)
-+endif()
- 
- if(APPLE)
-   # this line is needed as a cleanup to ensure that any CMakeCaches with the old
-```
+include https://github.com/llvm/llvm-project/pull/187317.patch?full_index=1
+  SHA256: 1d44f40367fb8cce65e49279bd499f69048e32bbbaac9b4b9bf10dcba5850388
 
 * The llvm-src/cmake/modules/CrossCompile.cmake file was edited to
-include https://github.com/llvm/llvm-project/pull/187824:
-```
-diff --git a/third-party/llvm/llvm-src/cmake/modules/CrossCompile.cmake b/third-party/llvm/llvm-src/cmake/modules/CrossCompile.cmake
-index 6075e6abdde..1b29c0a1689 100644
---- a/third-party/llvm/llvm-src/cmake/modules/CrossCompile.cmake
-+++ b/third-party/llvm/llvm-src/cmake/modules/CrossCompile.cmake
-@@ -102,6 +102,8 @@ function(llvm_create_cross_target project_name target_name toolchain buildtype)
-         -DLLVM_TEMPORARILY_ALLOW_OLD_TOOLCHAIN="${LLVM_TEMPORARILY_ALLOW_OLD_TOOLCHAIN}"
-         -DLLVM_INCLUDE_BENCHMARKS=OFF
-         -DLLVM_INCLUDE_TESTS=OFF
-+        -DLLVM_INCLUDE_DOCS=OFF
-+        -DLLVM_INCLUDE_EXAMPLES=OFF
-         -DLLVM_TABLEGEN_FLAGS="${llvm_tablegen_flags}"
-         -DPYTHON_EXECUTABLE="${PYTHON_EXECUTABLE}"
-         ${build_type_flags} ${linker_flag} ${external_clang_dir} ${libc_flags}
-
-```
+include https://github.com/llvm/llvm-project/pull/187824.patch?full_index=1
+  SHA256: 1f1fdfc9c8807d54336cbe6571ef0b0b83dd791d7446cdcc30b4597e7ee04a3b
 
 Upgrading LLVM versions
 =======================
