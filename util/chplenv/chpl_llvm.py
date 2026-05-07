@@ -894,7 +894,7 @@ def get_gcc_prefix_dir(clang_cfg_args):
 @memoize
 def is_gcc_install_dir_supported():
     llvm_version = get_llvm_version()
-    return llvm_version not in ("14", "15")
+    return int(llvm_version) >= 16
 
 
 @memoize
@@ -1534,20 +1534,20 @@ def compute_host_link_settings():
     if llvm_val == "system" or llvm_val == "bundled":
         llvm_version = get_llvm_version()
         # Starting with clang 15, clang needs additional libraries
-        if llvm_version not in ("14",):
+        if int(llvm_version) >= 15:
             clang_static_libs.append("-lclangSupport")
             llvm_components.append("windowsdriver")
         # Starting with clang 16, clang needs additional libraries
-        if llvm_version not in ("14", "15"):
+        if int(llvm_version) >= 16:
             llvm_components.append("frontendhlsl")
         # Starting with clang 18, clang needs additional libraries
-        if llvm_version not in ("14", "15", "16", "17"):
+        if int(llvm_version) >= 18:
             llvm_components.append("frontenddriver")
             # clangAPINotes must go immediately after clangSema
             idx = clang_static_libs.index("-lclangSema") + 1
             clang_static_libs.insert(idx, "-lclangAPINotes")
         # Starting with clang 22, clang needs additional libraries
-        if llvm_version not in ("14", "15", "16", "17", "18", "19", "20", "21"):
+        if int(llvm_version) >= 22:
             # goes after the driver
             idx = clang_static_libs.index("-lclangDriver") + 1
             clang_static_libs.insert(idx, "-lclangOptions")
