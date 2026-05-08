@@ -97,9 +97,6 @@ extern char* chpl_executionCommand;
 extern const chpl_fn_p chpl_ftable[];
 extern const chpl_fn_info chpl_finfo[];
 
-/* used for entry point: */
-extern int64_t chpl_gen_main(chpl_main_argument* const _arg);
-
 //
 // chpl_globals_registry is an array of size chpl_numGlobalsOnHeap
 // storing ptr_wide_ptr_t, that is, local addresses of wide pointers.

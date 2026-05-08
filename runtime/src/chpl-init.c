@@ -406,9 +406,12 @@ void chpl_std_module_init(void) {
 // into chpl-init.c:chapel_std_module_init().
 //
 void chpl_executable_init(void) {
-
   chpl_std_module_init();
+
   if (chpl_nodeID == 0) {
+    CHPL_RT_PRGINFO_DATA_TEMP(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                              chpl_gen_main);
+
     //
     // Call the compiler-generated main() routine
     //
