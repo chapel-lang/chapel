@@ -360,6 +360,8 @@ void chpl_std_module_init(void) {
                             chpl__init_preInit);
   CHPL_RT_PRGINFO_DATA_TEMP(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
                             chpl__init_PrintModuleInitOrder);
+  CHPL_RT_PRGINFO_DATA_TEMP(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                            chpl__init_ChapelStandard);
 
   // chpl__initStringLiterals runs the constructors for all string literals. We
   // need to setup the literals on every locale before any other chapel code is

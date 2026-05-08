@@ -97,8 +97,6 @@ extern char* chpl_executionCommand;
 extern const chpl_fn_p chpl_ftable[];
 extern const chpl_fn_info chpl_finfo[];
 
-void chpl__init_ChapelStandard(int64_t _ln, int32_t _fn);
-
 /* used for entry point: */
 extern int64_t chpl_gen_main(chpl_main_argument* const _arg);
 
