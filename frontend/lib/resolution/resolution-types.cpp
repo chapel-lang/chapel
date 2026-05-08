@@ -1481,6 +1481,9 @@ MostSpecificCandidate::fromTypedFnSignature(ResolutionContext* rc,
 
   int coercionFormal = -1;
   int coercionActual = -1;
+  int raceyOutFormal = -1;
+  int raceyOutActual = -1;
+  bool promoted = !promotedFormals.empty();
   SyncReadsList syncReads;
   for (auto fa : faMap.byFormals()) {
     auto& formalType = fa.formalType();
@@ -1502,12 +1505,26 @@ MostSpecificCandidate::fromTypedFnSignature(ResolutionContext* rc,
         coercionActual = fa.actualIdx();
       }
     }
+
+    // If this candiadte is being turned into an iterator via promotion,
+    // flag any formals that are scalar but 'out' or 'inout', since they will
+    // be potentially written to in parallel and thus racey / invalid.
+    if (promoted && (formalType.kind() == QualifiedType::OUT ||
+                     formalType.kind() == QualifiedType::INOUT)) {
+      if (promotedFormals.find(fa.formalIdx()) == promotedFormals.end()) {
+        if (raceyOutFormal == -1 && raceyOutActual == -1) {
+          raceyOutFormal = fa.formalIdx();
+          raceyOutActual = fa.actualIdx();
+        }
+      }
+    }
+
     if (got.conversionKind() & CanPassResult::READS) {
       syncReads.push_back(std::make_pair(fa.formalIdx(), fa.actualIdx()));
     }
   }
 
-  return MostSpecificCandidate(fn, std::move(newFaMap), promotedFormals, coercionFormal, coercionActual, syncReads);
+  return MostSpecificCandidate(fn, std::move(newFaMap), promotedFormals, coercionFormal, coercionActual, raceyOutFormal, raceyOutActual, syncReads);
 }
 
 MostSpecificCandidate

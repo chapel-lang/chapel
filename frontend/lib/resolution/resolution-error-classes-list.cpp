@@ -2057,6 +2057,34 @@ static bool firstIdFromDecls(
   return false;
 }
 
+void ErrorRaceyOutInoutInPromotion::write(ErrorWriterBase& wr) const {
+  auto ast = std::get<const uast::AstNode*>(info_);
+  auto& c = std::get<resolution::MostSpecificCandidate>(info_);
+
+  auto formalName = c.fn()->formalName(c.raceyScalarOutFormal());
+  const char* intent = "out";
+  auto fmlDecl = c.fn()->untyped()->formalDecl(c.raceyScalarOutFormal());
+  if (fmlDecl) {
+    if (auto vld = fmlDecl->toVarLikeDecl()) {
+      intent = vld->storageKind() == uast::Qualifier::OUT ? "out" : "inout";
+    }
+  }
+
+  wr.heading(kind_, type_, ast, "cannot promote function '",
+             c.fn()->untyped()->name(), "' while keeping the formal '", intent, " ", formalName, "' scalar");
+  if (auto call = ast->toCall()) {
+    wr.code(call, { call->actual(c.raceyScalarOutActual()) });
+  } else {
+    wr.code(ast);
+  }
+  wr.message("'", intent, "' actuals will be written to by each iteration of the promoted function, which can lead to races.");
+
+  if (fmlDecl) {
+    wr.message("The formal was declared '", intent, "' here:");
+    wr.code(fmlDecl, { fmlDecl });
+  }
+}
+
 void ErrorRecursion::write(ErrorWriterBase& wr) const {
   auto queryName = std::get<UniqueString>(info_);
   wr.heading(kind_, type_, ID(),

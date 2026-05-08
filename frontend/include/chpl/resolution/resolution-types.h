@@ -1893,6 +1893,8 @@ class MostSpecificCandidate {
   owned<PromotedFormalMap> promotedFormals_;
   int constRefCoercionFormal_;
   int constRefCoercionActual_;
+  int raceyScalarOutFormal_;
+  int raceyScalarOutActual_;
   SyncReadsList syncReads_;
 
   MostSpecificCandidate(const TypedFnSignature* fn,
@@ -1900,11 +1902,15 @@ class MostSpecificCandidate {
                         PromotedFormalMap promotedFormals,
                         int constRefCoercionFormal,
                         int constRefCoercionActual,
+                        int raceyScalarOutFormal,
+                        int raceyScalarOutActual,
                         SyncReadsList syncReads)
     : fn_(fn), faMap_(new FormalActualMap(std::move(faMap))),
       promotedFormals_(new PromotedFormalMap(std::move(promotedFormals))),
       constRefCoercionFormal_(constRefCoercionFormal),
       constRefCoercionActual_(constRefCoercionActual),
+      raceyScalarOutFormal_(raceyScalarOutFormal),
+      raceyScalarOutActual_(raceyScalarOutActual),
       syncReads_(std::move(syncReads)) {}
 
  public:
@@ -1912,6 +1918,8 @@ class MostSpecificCandidate {
     : fn_(nullptr), faMap_(), promotedFormals_(),
       constRefCoercionFormal_(-1),
       constRefCoercionActual_(-1),
+      raceyScalarOutFormal_(-1),
+      raceyScalarOutActual_(-1),
       syncReads_() {}
 
   MostSpecificCandidate& operator=(MostSpecificCandidate&& other) = default;
@@ -1925,6 +1933,8 @@ class MostSpecificCandidate {
     }
     constRefCoercionFormal_ = other.constRefCoercionFormal_;
     constRefCoercionActual_ = other.constRefCoercionActual_;
+    raceyScalarOutFormal_ = other.raceyScalarOutFormal_;
+    raceyScalarOutActual_ = other.raceyScalarOutActual_;
     syncReads_ = other.syncReads_;
     return *this;
   }
@@ -1958,12 +1968,20 @@ class MostSpecificCandidate {
 
   bool hasConstRefCoercion() const { return constRefCoercionFormal_ != -1; }
 
+  int raceyScalarOutFormal() const { return raceyScalarOutFormal_; }
+
+  int raceyScalarOutActual() const { return raceyScalarOutActual_; }
+
+  bool hasRaceyScalarOut() const { return raceyScalarOutFormal_ != -1; }
+
   bool hasSyncReads() const { return !syncReads_.empty(); }
 
   SyncReadsList const& syncReads() const { return syncReads_; }
 
   operator bool() const {
-    CHPL_ASSERT(fn_ || (constRefCoercionFormal_ == -1 && constRefCoercionActual_ == -1 && hasSyncReads() == false));
+    CHPL_ASSERT(fn_ || (constRefCoercionFormal_ == -1 && constRefCoercionActual_ == -1 &&
+                              raceyScalarOutFormal_ == -1 && raceyScalarOutActual_ == -1 &&
+                              hasSyncReads() == false));
     return fn_ != nullptr;
   }
 
@@ -1986,6 +2004,8 @@ class MostSpecificCandidate {
            faMapsEqual &&
            constRefCoercionFormal_ == other.constRefCoercionFormal_ &&
            constRefCoercionActual_ == other.constRefCoercionActual_ &&
+           raceyScalarOutFormal_ == other.raceyScalarOutFormal_ &&
+           raceyScalarOutActual_ == other.raceyScalarOutActual_ &&
            syncReads_ == other.syncReads_;
   }
 
@@ -2001,11 +2021,13 @@ class MostSpecificCandidate {
     }
     (void) constRefCoercionFormal_; // nothing to mark
     (void) constRefCoercionActual_; // nothing to mark
+    (void) raceyScalarOutFormal_; // nothing to mark
+    (void) raceyScalarOutActual_; // nothing to mark
     (void) syncReads_; // nothing to mark
   }
 
   size_t hash() const {
-    return chpl::hash(fn_, faMap_, promotedFormals_, constRefCoercionFormal_, constRefCoercionActual_, syncReads_);
+    return chpl::hash(fn_, faMap_, promotedFormals_, constRefCoercionFormal_, constRefCoercionActual_, raceyScalarOutFormal_, raceyScalarOutActual_, syncReads_);
   }
 
   static bool update(MostSpecificCandidate& keep,
@@ -2019,6 +2041,8 @@ class MostSpecificCandidate {
     std::swap(promotedFormals_, other.promotedFormals_);
     std::swap(constRefCoercionFormal_, other.constRefCoercionFormal_);
     std::swap(constRefCoercionActual_, other.constRefCoercionActual_);
+    std::swap(raceyScalarOutFormal_, other.raceyScalarOutFormal_);
+    std::swap(raceyScalarOutActual_, other.raceyScalarOutActual_);
     std::swap(syncReads_, other.syncReads_);
   }
 
