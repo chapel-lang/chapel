@@ -560,7 +560,10 @@ def _validate_rocm_llvm_version_impl(gpu: gpu_type):
                 )
     elif major_version == "7":
         # requires LLVM 21+
-        if int(chpl_llvm.get_llvm_version()) < 21:
+        if (
+            int(chpl_llvm.get_llvm_version()) < 21
+            and chpl_llvm.get() != "bundled"
+        ):
             error("Cannot target AMD GPUs with ROCm 7.x without LLVM 21+")
     elif not validateLlvmBuiltForTgt(gpu.llvm_target):
         _reportMissingGpuReq(
