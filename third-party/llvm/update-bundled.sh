@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -ex
+set -exuo pipefail
 
 LLVM_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 LLVM_VERSION=$1
