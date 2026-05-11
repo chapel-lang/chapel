@@ -24,4 +24,29 @@ proc testit(type tUint, type tMinusOne, type tZero) {
   compilerAssert((minusOne < x) == true);
   compilerAssert((zero < minusOne) == false);
   compilerAssert((minusOne < zero) == true);
+
+  compilerAssert((zero > x    ) == false);
+  compilerAssert((minusOne > x) == false);
+  compilerAssert((zero > minusOne) == true);
+  compilerAssert((minusOne > zero) == false);
+
+  compilerAssert((x >= zero    ) == true);
+  compilerAssert((minusOne >= x) == false);
+  compilerAssert((zero >= minusOne) == true);
+  compilerAssert((minusOne >= zero) == false);
+
+  compilerAssert((zero <= x    ) == true);
+  compilerAssert((minusOne <= x) == true);
+  compilerAssert((zero <= minusOne) == false);
+  compilerAssert((minusOne <= zero) == true);
+
+  compilerAssert((x == minusOne) == false);
+  compilerAssert((minusOne == x) == false);
+  compilerAssert((zero == minusOne) == false);
+  compilerAssert((minusOne == zero) == false);
+
+  compilerAssert((x != minusOne) == true);
+  compilerAssert((minusOne != x) == true);
+  compilerAssert((zero != minusOne) == true);
+  compilerAssert((minusOne != zero) == true);
 }
