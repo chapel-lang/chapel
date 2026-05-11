@@ -3024,9 +3024,16 @@ module ChapelBase {
   inline operator ==(a: int(32), b: uint(32)) do return !(a < 0) && a : uint(32) == b;
   inline operator ==(a: int(64), b: uint(64)) do return !(a < 0) && a : uint(64) == b;
 
-  // non-param/param and param/non-param
-  // not necessary since the == versions above
-  // work there (and aren't an error)
+  // optimize PARAM(negative) == uint
+  inline operator ==(param a: int(8), b: uint(8)) param where __primitive("<", a, 0) do return false;
+  inline operator ==(param a: int(16), b: uint(16)) param where __primitive("<", a, 0) do return false;
+  inline operator ==(param a: int(32), b: uint(32)) param where __primitive("<", a, 0) do return false;
+  inline operator ==(param a: int(64), b: uint(64)) param where __primitive("<", a, 0) do return false;
+  // optimize uint == PARAM(negative)
+  inline operator ==(a: uint(8), param b: int(8)) param where __primitive("<", b, 0) do return false;
+  inline operator ==(a: uint(16), param b: int(16)) param where __primitive("<", b, 0) do return false;
+  inline operator ==(a: uint(32), param b: int(32)) param where __primitive("<", b, 0) do return false;
+  inline operator ==(a: uint(64), param b: int(64)) param where __primitive("<", b, 0) do return false;
 
 
 
@@ -3041,9 +3048,16 @@ module ChapelBase {
   inline operator !=(a: int(32), b: uint(32)) do return a < 0 || a : uint(32) != b;
   inline operator !=(a: int(64), b: uint(64)) do return a < 0 || a : uint(64) != b;
 
-  // non-param/param and param/non-param
-  // not necessary since the == versions above
-  // work there (and aren't an error)
+  // optimize PARAM(negative) != uint
+  inline operator !=(param a: int(8), b: uint(8)) param where __primitive("<", a, 0) do return true;
+  inline operator !=(param a: int(16), b: uint(16)) param where __primitive("<", a, 0) do return true;
+  inline operator !=(param a: int(32), b: uint(32)) param where __primitive("<", a, 0) do return true;
+  inline operator !=(param a: int(64), b: uint(64)) param where __primitive("<", a, 0) do return true;
+  // optimize uint != PARAM(negative)
+  inline operator !=(a: uint(8), param b: int(8)) param where __primitive("<", b, 0) do return true;
+  inline operator !=(a: uint(16), param b: int(16)) param where __primitive("<", b, 0) do return true;
+  inline operator !=(a: uint(32), param b: int(32)) param where __primitive("<", b, 0) do return true;
+  inline operator !=(a: uint(64), param b: int(64)) param where __primitive("<", b, 0) do return true;
 
 
   // non-param/non-param
@@ -3056,28 +3070,21 @@ module ChapelBase {
   inline operator >(a: int(32), b: uint(32)) do return !(a < 0) && a : uint(32) > b;
   inline operator >(a: int(64), b: uint(64)) do return !(a < 0) && a : uint(64) > b;
 
-  // non-param/param and param/non-param
-  // non-param/param version not necessary since > above works fine for that
-  inline operator >(param a: uint(8), b: uint(8)) do
-    if __primitive("==", a, 0)
-      then return false;
-      else return __primitive(">", a, b);
-  inline operator >(param a: uint(16), b: uint(16)) do
-    if __primitive("==", a, 0)
-      then return false;
-      else return __primitive(">", a, b);
-  inline operator >(param a: uint(32), b: uint(32)) do
-    if __primitive("==", a, 0)
-      then return false;
-      else return __primitive(">", a, b);
-  inline operator >(param a: uint(64), b: uint(64)) do
-    if __primitive("==", a, 0)
-      then return false;
-      else return __primitive(">", a, b);
-  inline operator >(param a: int(8), b: int(8)) do return __primitive(">", a, b);
-  inline operator >(param a: int(16), b: int(16)) do return __primitive(">", a, b);
-  inline operator >(param a: int(32), b: int(32)) do return __primitive(">", a, b);
-  inline operator >(param a: int(64), b: int(64)) do return __primitive(">", a, b);
+  // optimize PARAM(0) > uint
+  inline operator >(param a: uint(8), b: uint(8)) param where __primitive("==", a, 0) do return false;
+  inline operator >(param a: uint(16), b: uint(16)) param where __primitive("==", a, 0) do return false;
+  inline operator >(param a: uint(32), b: uint(32)) param where __primitive("==", a, 0) do return false;
+  inline operator >(param a: uint(64), b: uint(64)) param where __primitive("==", a, 0) do return false;
+  // optimize PARAM(negative) > uint
+  inline operator >(param a: int(8), b: uint(8)) param where __primitive("<", a, 0) do return false;
+  inline operator >(param a: int(16), b: uint(16)) param where __primitive("<", a, 0) do return false;
+  inline operator >(param a: int(32), b: uint(32)) param where __primitive("<", a, 0) do return false;
+  inline operator >(param a: int(64), b: uint(64)) param where __primitive("<", a, 0) do return false;
+  // optimize uint > PARAM(negative)
+  inline operator >(a: uint(8), param b: int(8)) param where __primitive("<", b, 0) do return true;
+  inline operator >(a: uint(16), param b: int(16)) param where __primitive("<", b, 0) do return true;
+  inline operator >(a: uint(32), param b: int(32)) param where __primitive("<", b, 0) do return true;
+  inline operator >(a: uint(64), param b: int(64)) param where __primitive("<", b, 0) do return true;
 
   // non-param/non-param
   inline operator <(a: uint(8), b: int(8)) do return !(b < 0) && a < b : uint(8);
@@ -3089,28 +3096,21 @@ module ChapelBase {
   inline operator <(a: int(32), b: uint(32)) do return a < 0 || a : uint(32) < b;
   inline operator <(a: int(64), b: uint(64)) do return a < 0 || a : uint(64) < b;
 
-  // non-param/param and param/non-param
-  // param/non-param version not necessary since < above works fine for that
-  inline operator <(a: uint(8), param b: uint(8)) do
-    if __primitive("==", b, 0)
-      then return false;
-      else return __primitive("<", a, b);
-  inline operator <(a: uint(16), param b: uint(16)) do
-    if __primitive("==", b, 0)
-      then return false;
-      else return __primitive("<", a, b);
-  inline operator <(a: uint(32), param b: uint(32)) do
-    if __primitive("==", b, 0)
-      then return false;
-      else return __primitive("<", a, b);
-  inline operator <(a: uint(64), param b: uint(64)) do
-    if __primitive("==", b, 0)
-      then return false;
-      else return __primitive("<", a, b);
-  inline operator <(a: int(8), param b: int(8)) do return __primitive("<", a, b);
-  inline operator <(a: int(16), param b: int(16)) do return __primitive("<", a, b);
-  inline operator <(a: int(32), param b: int(32)) do return __primitive("<", a, b);
-  inline operator <(a: int(64), param b: int(64)) do return __primitive("<", a, b);
+  // optimize uint < PARAM(0)
+  inline operator <(a: uint(8), param b: uint(8)) param where __primitive("==", b, 0) do return false;
+  inline operator <(a: uint(16), param b: uint(16)) param where __primitive("==", b, 0) do return false;
+  inline operator <(a: uint(32), param b: uint(32)) param where __primitive("==", b, 0) do return false;
+  inline operator <(a: uint(64), param b: uint(64)) param where __primitive("==", b, 0) do return false;
+  // optimize PARAM(negative) < uint
+  inline operator <(param a: int(8), b: uint(8)) param where __primitive("<", a, 0) do return true;
+  inline operator <(param a: int(16), b: uint(16)) param where __primitive("<", a, 0) do return true;
+  inline operator <(param a: int(32), b: uint(32)) param where __primitive("<", a, 0) do return true;
+  inline operator <(param a: int(64), b: uint(64)) param where __primitive("<", a, 0) do return true;
+  // optimize uint < PARAM(negative)
+  inline operator <(a: uint(8), param b: int(8)) param where __primitive("<", b, 0) do return false;
+  inline operator <(a: uint(16), param b: int(16)) param where __primitive("<", b, 0) do return false;
+  inline operator <(a: uint(32), param b: int(32)) param where __primitive("<", b, 0) do return false;
+  inline operator <(a: uint(64), param b: int(64)) param where __primitive("<", b, 0) do return false;
 
   // non-param/non-param
   inline operator >=(a: uint(8), b: int(8)) do return b < 0 || a >= b : uint(8);
@@ -3122,28 +3122,21 @@ module ChapelBase {
   inline operator >=(a: int(32), b: uint(32)) do return !(a < 0) && a : uint(32) >= b;
   inline operator >=(a: int(64), b: uint(64)) do return !(a < 0) && a : uint(64) >= b;
 
-  // non-param/param and param/non-param
-  inline operator >=(a: uint(8), param b: uint(8)) do
-    if __primitive("==", b, 0)
-      then return true;
-      else return __primitive(">=", a, b);
-  inline operator >=(a: uint(16), param b: uint(16)) do
-    if __primitive("==", b, 0)
-      then return true;
-      else return __primitive(">=", a, b);
-  inline operator >=(a: uint(32), param b: uint(32)) do
-    if __primitive("==", b, 0)
-      then return true;
-      else return __primitive(">=", a, b);
-  inline operator >=(a: uint(64), param b: uint(64)) do
-    if __primitive("==", b, 0)
-      then return true;
-      else return __primitive(">=", a, b);
-  inline operator >=(a: int(8), param b: int(8)) do return __primitive(">=", a, b);
-  inline operator >=(a: int(16), param b: int(16)) do return __primitive(">=", a, b);
-  inline operator >=(a: int(32), param b: int(32)) do return __primitive(">=", a, b);
-  inline operator >=(a: int(64), param b: int(64)) do return __primitive(">=", a, b);
-
+  // optimize uint >= PARAM(0)
+  inline operator >=(a: uint(8), param b: uint(8)) param where __primitive("==", b, 0) do return true;
+  inline operator >=(a: uint(16), param b: uint(16)) param where __primitive("==", b, 0) do return true;
+  inline operator >=(a: uint(32), param b: uint(32)) param where __primitive("==", b, 0) do return true;
+  inline operator >=(a: uint(64), param b: uint(64)) param where __primitive("==", b, 0) do return true;
+  // optimize PARAM(negative) >= uint
+  inline operator >=(param a: int(8), b: uint(8)) param where __primitive("<", a, 0) do return false;
+  inline operator >=(param a: int(16), b: uint(16)) param where __primitive("<", a, 0) do return false;
+  inline operator >=(param a: int(32), b: uint(32)) param where __primitive("<", a, 0) do return false;
+  inline operator >=(param a: int(64), b: uint(64)) param where __primitive("<", a, 0) do return false;
+  // optimize uint >= PARAM(negative)
+  inline operator >=(a: uint(8), param b: int(8)) param where __primitive("<", b, 0) do return true;
+  inline operator >=(a: uint(16), param b: int(16)) param where __primitive("<", b, 0) do return true;
+  inline operator >=(a: uint(32), param b: int(32)) param where __primitive("<", b, 0) do return true;
+  inline operator >=(a: uint(64), param b: int(64)) param where __primitive("<", b, 0) do return true;
 
   // non-param/non-param
   inline operator <=(a: uint(8), b: int(8)) do return !(b < 0) && a <= b : uint(8);
@@ -3155,27 +3148,21 @@ module ChapelBase {
   inline operator <=(a: int(32), b: uint(32)) do return a < 0 || a : uint(32) <= b;
   inline operator <=(a: int(64), b: uint(64)) do return a < 0 || a : uint(64) <= b;
 
-  // non-param/param and param/non-param
-  inline operator <=(param a: uint(8), b: uint(8)) do
-    if __primitive("==", a, 0)
-      then return true;
-      else return __primitive("<=", a, b);
-  inline operator <=(param a: uint(16), b: uint(16)) do
-    if __primitive("==", a, 0)
-      then return true;
-      else return __primitive("<=", a, b);
-  inline operator <=(param a: uint(32), b: uint(32)) do
-    if __primitive("==", a, 0)
-      then return true;
-      else return __primitive("<=", a, b);
-  inline operator <=(param a: uint(64), b: uint(64)) do
-    if __primitive("==", a, 0)
-      then return true;
-      else return __primitive("<=", a, b);
-  inline operator <=(param a: int(8), b: int(8)) do return __primitive("<=", a, b);
-  inline operator <=(param a: int(16), b: int(16)) do return __primitive("<=", a, b);
-  inline operator <=(param a: int(32), b: int(32)) do return __primitive("<=", a, b);
-  inline operator <=(param a: int(64), b: int(64)) do return __primitive("<=", a, b);
+  // optimize PARAM(0) <= uint
+  inline operator <=(param a: uint(8), b: uint(8)) param where __primitive("==", a, 0) do return true;
+  inline operator <=(param a: uint(16), b: uint(16)) param where __primitive("==", a, 0) do return true;
+  inline operator <=(param a: uint(32), b: uint(32)) param where __primitive("==", a, 0) do return true;
+  inline operator <=(param a: uint(64), b: uint(64)) param where __primitive("==", a, 0) do return true;
+  // optimize PARAM(negative) <= uint
+  inline operator <=(param a: int(8), b: uint(8)) param where __primitive("<", a, 0) do return true;
+  inline operator <=(param a: int(16), b: uint(16)) param where __primitive("<", a, 0) do return true;
+  inline operator <=(param a: int(32), b: uint(32)) param where __primitive("<", a, 0) do return true;
+  inline operator <=(param a: int(64), b: uint(64)) param where __primitive("<", a, 0) do return true;
+  // optimize uint <= PARAM(negative)
+  inline operator <=(a: uint(8), param b: int(8)) param where __primitive("<", b, 0) do return false;
+  inline operator <=(a: uint(16), param b: int(16)) param where __primitive("<", b, 0) do return false;
+  inline operator <=(a: uint(32), param b: int(32)) param where __primitive("<", b, 0) do return false;
+  inline operator <=(a: uint(64), param b: int(64)) param where __primitive("<", b, 0) do return false;
 
 
   pragma "suppress generic actual warning"
