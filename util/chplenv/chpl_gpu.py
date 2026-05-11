@@ -425,6 +425,11 @@ def get_runtime_compile_args():
         # workaround an issue with __float128 not being supported by clang in device code
         system.append("-D__STRICT_ANSI__=1")
 
+        major_version, minor_version = get_sdk_version().split(".")[:2]
+        bundled.append("-DCUDA_VERSION_MAJOR=" + major_version)
+        bundled.append("-DCUDA_VERSION_MINOR=" + minor_version)
+        bundled.append("-DCUDA_VERSION=" + major_version + minor_version)
+
     elif gpu_type == "amd":
         # -isystem instead of -I silences warnings from inside these includes.
         system.append("-isystem" + os.path.join(sdk_path, "include"))
