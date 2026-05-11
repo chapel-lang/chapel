@@ -35,7 +35,7 @@ BASE_URL=https://github.com/llvm/llvm-project/releases/download/llvmorg-$LLVM_VE
 (set -x && cd $LLVM_DIR && rm -rf llvm-src/tools/clang/test llvm-src/tools/clang/unittests llvm-src/tools/clang/examples llvm-src/tools/clang/docs)
 
 # git add and commit
-(set -x && cd $LLVM_DIR && git add --force llvm-src cmake)
+(set -x && cd $LLVM_DIR && git add --force llvm-src cmake third-party)
 (set -x && cd $LLVM_DIR && git commit -sm "Update bundled LLVM to version $LLVM_VERSION")
 
 # cleanup
