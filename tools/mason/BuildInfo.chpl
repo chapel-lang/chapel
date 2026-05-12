@@ -7,7 +7,7 @@ module BuildInfo {
   import ThirdParty.TemplateString.templateString;
 
   import Package;
-  import Package.{Dependency, SystemDependency, ExternalDependency,
+  import Package.{Dependency, SystemDependency,
                   MasonPackage, PrerequisiteDependency,
                   example, test};
 
@@ -27,21 +27,6 @@ module BuildInfo {
     var res = new list(string);
     res.pushBack(this.info.includes.split(" "));
     res.pushBack(this.info.libs.split(" "));
-    return res;
-  }
-
-  override proc ExternalDependency.getCompopts(): list(string) throws {
-    log.debug("Getting build info for external dependency ", name);
-    var res = new list(string);
-    for (k,v) in MasonUtils.allFields(this.info!) {
-      var val = v!;
-      select k {
-        when "libs" do res.pushBack("-L" + val.s);
-        when "include" do res.pushBack("-I" + val.s);
-        when "other" do res.pushBack("-I" + val.s);
-        otherwise continue;
-      }
-    }
     return res;
   }
 

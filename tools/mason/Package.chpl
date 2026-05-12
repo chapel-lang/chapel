@@ -13,7 +13,6 @@ import MasonUtils;
 import MasonUtils.MasonError;
 import MasonUpdate;
 import MasonEnv;
-import MasonExternal;
 import MasonSystem;
 import MasonPrereqs;
 import MasonLogger;
@@ -33,10 +32,6 @@ class Dependency {
   proc isFromRegistry() do return false;
   proc isMasonPackage() do return (this:borrowed MasonPackage?) != nil;
   proc isSystemDependency() do return (this:borrowed SystemDependency?) != nil;
-  proc isExternalDependency() do
-    return (this:borrowed ExternalDependency?) != nil;
-  proc isSystemOrExternalDependency() do
-    return isSystemDependency() || isExternalDependency();
 
 
   proc toToml(): string throws do return this.name;
@@ -79,13 +74,6 @@ class SystemDependency: Dependency {
   var version: string;
   var info: MasonSystem.systemPkgInfo;
 }
-class ExternalDependency: Dependency {
-  var spec: string;
-  // TODO: external deps don't have a standalone structure for their info
-  // one should be added in the future, but I am trying to touch
-  // external deps as little as possible
-  var info: shared Toml?;
-}
 class MasonPackage: Dependency {
   var version: Version.version;
   var chplVersion: versionRange;
@@ -94,7 +82,6 @@ class MasonPackage: Dependency {
 
   var dependencies: list(shared MasonPackage);
   var system: list(shared SystemDependency);
-  var external: list(shared ExternalDependency);
 
   // optional
   var source: string;
@@ -415,10 +402,6 @@ proc MasonPackage.toManifest(): string throws {
     s += "\n\n[system]\n" +
       "\n".join(for dep in system do dep.toToml());
   }
-  if !external.isEmpty() {
-    s += "\n\n[external]\n" +
-      "\n".join(for dep in external do dep.toToml());
-  }
 }
 
 private proc readField(ref field,
@@ -542,7 +525,6 @@ proc MasonPackage.fillFromManifest(
   if !postResolve {
     readField(this, toml, "dependencies", "dependencies", required=false);
     readField(this, toml, "system", "system", required=false);
-    readField(this, toml, "external", "external", required=false);
   }
 
   // eagerly load dependencies here. this is slow, but if we usually load
@@ -615,7 +597,6 @@ where T == string || isSubtype(T, fileReader) {
 
   var deps = new list(shared MasonPackage);
   var systemDeps = new list(shared SystemDependency);
-  var externalDeps = new list(shared ExternalDependency);
 
   // read root only fields
   log.debug("Reading root-level fields from lock file");
@@ -627,7 +608,7 @@ where T == string || isSubtype(T, fileReader) {
   readField(p, toml, "root.examples", "examples", required=true);
   // fill in the remaining fields
   log.debug("Reading remaining fields from lock file");
-  p.fillFromLock(toml, toml["root"]!, deps, systemDeps, externalDeps);
+  p.fillFromLock(toml, toml["root"]!, deps, systemDeps);
 
   return p;
 }
@@ -635,8 +616,7 @@ proc MasonPackage.fillFromLock(
   lock: borrowed Toml,
   toml: borrowed Toml,
   ref dependencyList: list(shared MasonPackage),
-  ref systemList: list(shared SystemDependency),
-  ref externalList: list(shared ExternalDependency)
+  ref systemList: list(shared SystemDependency)
 ) throws {
   log.debug("Filling in package fields from lock file");
   readField(this, toml, "name", "name", required=true);
@@ -674,8 +654,7 @@ proc MasonPackage.fillFromLock(
         } else {
           newDep = new shared MasonPackage();
         }
-        newDep.fillFromLock(lock, depToml, dependencyList,
-                              systemList, externalList);
+        newDep.fillFromLock(lock, depToml, dependencyList, systemList);
         dependencyList.pushBack(newDep);
         this.dependencies.pushBack(newDep);
       }
@@ -711,7 +690,6 @@ proc MasonPackage.fillFromLock(
     }
   }
 
-  // TODO: external
   // TODO: prereqs
 
 }
@@ -720,10 +698,9 @@ override proc GitMasonPackage.fillFromLock(
   lock: borrowed Toml,
   toml: borrowed Toml,
   ref dependencyList: list(shared MasonPackage),
-  ref systemList: list(shared SystemDependency),
-  ref externalList: list(shared ExternalDependency)
+  ref systemList: list(shared SystemDependency)
 ) throws {
-  super.fillFromLock(lock, toml, dependencyList, systemList, externalList);
+  super.fillFromLock(lock, toml, dependencyList, systemList);
   readField(this, toml, "git", "git", required=true);
   readField(this, toml, "branch", "branch", required=true);
   readField(this, toml, "rev", "rev", required=true);
@@ -742,19 +719,17 @@ proc SystemDependency.fromLock(toml: borrowed Toml) throws {
 iter MasonPackage.allDependencies(): shared Dependency {
   for dep in dependencies do yield dep;
   for dep in system do yield dep;
-  for dep in external do yield dep;
 }
 // can't use a FCP since we need to capture current and they don't
 // currently support that
 record checkDuplicatesFunctor {
   var current: borrowed Dependency;
   proc this(x: borrowed Dependency): bool {
-    // a duplicate cannot occur between a system/external dep and
+    // a duplicate cannot occur between a system dep and
     // a MasonPackage.
-    if current.isMasonPackage() && x.isSystemOrExternalDependency() then
+    if current.isMasonPackage() && x.isSystemDependency() then
       return false;
-    else if current.isSystemOrExternalDependency() &&
-            x.isMasonPackage() then
+    else if current.isSystemDependency() && x.isMasonPackage() then
       return false;
     else
       return x.name == current.name;
@@ -770,76 +745,6 @@ record findMasonPackageNameVersionFunctor {
   proc this(x: borrowed MasonPackage): bool do
     return x.name == name && x.version == version;
 }
-// iter MasonPackage.allDependenciesNoRecurseHelper(): borrowed Dependency {
-//   for dep in dependencies do yield (dep:borrowed Dependency?)!;
-//   for dep in system do yield (dep:borrowed Dependency?)!;
-//   for dep in external do yield (dep:borrowed Dependency?)!;
-// }
-// iter MasonPackage.allDependencies(
-//   recursive = false, skipDuplicateChecks = false
-// ): borrowed Dependency {
-//   log.debugf("Getting all dependencies for package '%s', "+
-//             "recursive: %s, skipDuplicateChecks: %s",
-//             name, recursive, skipDuplicateChecks);
-//   // yield all direct dependencies first, then yield recursive dependencies
-//   // topdown. cycles/IVRS is handled here
-//   var toYield = new list(borrowed Dependency);
-//   // TODO: ideally we use a queue and do BFS, but Chapel lists
-//   // are not well suited to queues.
-//   var stack = new list(allDependenciesNoRecurseHelper());
-//   while !stack.isEmpty() {
-//     var current = stack.popBack();
-//     log.debugf("Processing dependency '%s'", current.name);
-//     const duplicateIdx =
-//       if !skipDuplicateChecks
-//         then toYield.find(new checkDuplicatesFunctor(current))
-//         else -1;
-//     if duplicateIdx >= 0 {
-//       var duplicate = toYield[duplicateIdx];
-//       // if we have seen this dependency before, we need to disambiguate
-//       // for system/external deps, we just warn FOR NOW
-//       // for MasonPackage deps, disambiguate on IVRS
-//       // for GitMasonPackage deps, print an error and just pick the first one
-//       // this logic DOES NOT handle cases where 2 versions have different
-//       // dependencies, the first one wins
-
-//       log.debugf("Found a duplicate dependency on '%s'", current.name);
-
-//       if duplicate.isSystemOrExternalDependency() &&
-//           current.isSystemOrExternalDependency() {
-//         log.warnf(
-//           "Duplicate system/external dependencies on '%s'. This is not " +
-//           "currently handled by Mason, but may cause unexpected behavior " +
-//           "if the version requirements are different.", current.name);
-//       }
-
-//       if duplicate.typeID() == borrowed MasonPackage &&
-//           current.typeID() == borrowed MasonPackage {
-//         // TODO: IVRS
-//         log.error("TODO: no IVRS yet");
-//       } else {
-//         // at this point, we should only have MasonPackages and at least
-//         // one is not in the registry. We can't disambiguate them, error
-//         log.errorf(
-//           "Duplicate dependencies on package '%s' cannot currently be " +
-//           "disambiguated using Incompatible Version Resolution Strategy. " +
-//           "Using the first one found, this may cause unexpected behavior.",
-//           current.name);
-//       }
-//       continue;
-//     }
-//     log.debugf("Adding dependency '%s' to list of dependencies to yield",
-//                current.name);
-//     toYield.pushBack(current);
-//     if recursive && current.isMasonPackage() {
-//       for dep in
-//         (current:borrowed MasonPackage?)!.allDependenciesNoRecurseHelper() do
-//         stack.pushBack(dep);
-//     }
-//   }
-//   for dep in toYield do yield dep;
-// }
-
 
 proc MasonPackage.resolveDependencies() throws {
   // walk the dependencies and handle duplicates/version resolution
@@ -866,7 +771,7 @@ proc MasonPackage.resolveDependencies() throws {
     if duplicateIdx >= 0 {
       var duplicate = resolvedDeps[duplicateIdx];
       // if we have seen this dependency before, we need to disambiguate
-      // for system/external deps, we just warn FOR NOW
+      // for system deps, we just warn FOR NOW
       // for MasonPackage deps, disambiguate on IVRS
       // for GitMasonPackage deps, print an error and just pick the first one
       // this logic DOES NOT handle cases where 2 versions have different
@@ -874,10 +779,9 @@ proc MasonPackage.resolveDependencies() throws {
 
       log.debugf("Found a duplicate dependency on '%s'", current.name);
 
-      if duplicate.isSystemOrExternalDependency() &&
-          current.isSystemOrExternalDependency() {
+      if duplicate.isSystemDependency() && current.isSystemDependency() {
         log.warnf(
-          "Duplicate system/external dependencies on '%s'. This is not " +
+          "Duplicate system dependencies on '%s'. This is not " +
           "currently handled by Mason and may cause unexpected behavior " +
           "if the version requirements are different.", current.name);
       } else if duplicate.isFromRegistry() && current.isFromRegistry() {
@@ -962,7 +866,6 @@ proc MasonPackage.createLockFile(): shared Toml throws {
   // list the direct dependencies of the root package
   this.addDependencyListToLock(lock, "root.dependencies", this.dependencies);
   this.addDependencyListToLock(lock, "root.system", this.system);
-  this.addDependencyListToLock(lock, "root.external", this.external);
 
   if !this.prerequisites.isEmpty() then
     lock.set("root.prerequisites",
@@ -1042,7 +945,6 @@ override proc MasonPackage.addDepToLock(lock: shared Toml) throws {
   // list the direct dependencies of the root package
   this.addDependencyListToLock(newToml, "dependencies", this.dependencies);
   this.addDependencyListToLock(newToml, "system", this.system);
-  this.addDependencyListToLock(newToml, "external", this.external);
 
   if !this.prerequisites.isEmpty() then
     newToml.set("prerequisites",
@@ -1120,33 +1022,6 @@ override proc SystemDependency.addDepToLock(lock: shared Toml) throws {
   lock.set("system." + name, toml);
 }
 
-override proc ExternalDependency.toToml(): string throws {
-  return '%s = %"S'.format(name, spec);
-}
-proc type ExternalDependency.fromToml(
-  name: string, toml: borrowed Toml
-): shared ExternalDependency throws {
-  if toml.tomlType != "string" then
-    throw new MasonError("External dependencies must be " +
-                          "specified as a string");
-  var s = new shared ExternalDependency(name, toml.s);
-  // TODO: check that the spec is correct format
-  return s;
-}
-override proc ExternalDependency.loadInfo(postResolve=false) throws {
-  if postResolve then return;
-  this.info = MasonExternal.getExternalPackage(this.name, this.spec)[1];
-}
-override proc ExternalDependency.addDepToLock(lock: shared Toml) throws {
-  if !lock.pathExists("external") then
-    lock.set("external", new shared Toml(new map(string, shared Toml?)));
-  if lock.pathExists("external." + this.name) {
-    // this should not happen, we should never generate lock files
-    // before resolving dependencies
-    log.errorf("Duplicate external dependency added for ", this.name);
-  }
-  lock.set("external." + this.name, this.info!);
-}
 
 proc MasonPackage.getPackageHome(): path throws {
   log.debugf("Getting package home for dependency '%s'", this.name);
@@ -1407,8 +1282,7 @@ private proc listFromToml(
   tomlField: string,
   value: borrowed Toml
 ): resultType throws
-where isSubtype(resultType, list(shared SystemDependency)) ||
-      isSubtype(resultType, list(shared ExternalDependency)) {
+where isSubtype(resultType, list(shared SystemDependency)) {
   var result: resultType;
   if value.tomlType == "toml" {
     for k in value.keys() {
