@@ -917,7 +917,7 @@ record chplOptions {
 
 @chplcheck.ignore("CamelCaseFunctions")
 proc MASON_VERSION : string {
-  return "0.2.0";
+  return "0.3.0";
 }
 
 }
