@@ -217,7 +217,7 @@ proc verifyChapelVersion(brick:borrowed Toml) throws {
   return (ret, low, hi);
 }
 
-proc prettyVersionRange(low, hi) {
+proc prettyVersionRange(low, hi):string {
   if low == hi then
     return low:string;
   else if hi.containsMax() then

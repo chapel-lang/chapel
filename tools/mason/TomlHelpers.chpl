@@ -33,4 +33,18 @@ module TomlHelpers {
     return res;
   }
 
+  proc iterableToTomlArray(iterable, transform:?=none): [] shared Toml? {
+    record myTransform {}
+    proc myTransform.this(x) {
+      const tempRes = if transform.type != nothing then transform(x) else x;
+      if tempRes.type == shared Toml? then
+        return tempRes;
+      else
+        return new shared Toml?(tempRes);
+    }
+    const myTransformInstance = new myTransform();
+    const res = [i in iterable] myTransformInstance(i);
+    return res;
+  }
+
 }

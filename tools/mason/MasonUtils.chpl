@@ -810,7 +810,7 @@ proc parseChplVersion(
 }
 
 
-private proc parseChplVersionString(ver: string) throws {
+proc parseChplVersionString(ver: string) throws {
   // Finds 'x.x' or 'x.x.x' where x is a positive number
   const pattern = new regex("^(\\d+\\.\\d+(\\.\\d+)?)$");
   var semver: string;
@@ -919,8 +919,9 @@ record chplOptions {
 }
 
 @chplcheck.ignore("CamelCaseFunctions")
-proc MASON_VERSION : string {
-  return "0.3.0";
-}
+proc MASON_VERSION : string do return "0.3.0";
+
+@chplcheck.ignore("CamelCaseFunctions")
+proc MASON_LOCKFILE_VERSION : string do return "1";
 
 }

@@ -25,9 +25,10 @@ import ThirdParty.TerminalColors.{style, styledText, red, yellow, blue};
 
 import Time.dateTime;
 import IO.format;
+import IO;
 
 private var color = ColorMode.AUTO;
-private var logStream = new shared LogStream();
+private var logStream = new shared ToggleableLogStream();
 private var logFormat = new shared MasonLogFormat("%NAME%: %m%");
 private var pad = 0;
 
@@ -46,6 +47,30 @@ proc colorModeFromString(s: string): ColorMode throws {
 proc setColorMode(c: ColorMode) {
   color = c;
   logFormat.setUseColor(c, logStream);
+}
+proc setStream(s: IO.fileWriter(?)) {
+  logStream.stream = s;
+  logFormat.setUseColor(color, logStream);
+}
+
+class ToggleableLogStream: LogStream {
+  var stream = IO.stdout;
+  override proc write(message: string) {
+    try {
+      stream.writeln(message);
+    } catch e {
+      handleError(e, (message,));
+    }
+  }
+  override proc flush() {
+    try {
+      stream.flush();
+    } catch e {
+      handleError(e, none);
+    }
+  }
+  override proc getFile(): IO.file do
+    return stream.getFile();
 }
 
 class MasonLogFormat: LogFormat {
@@ -72,6 +97,8 @@ class MasonLogFormat: LogFormat {
     return s;
   }
 }
+
+
 
 proc getLogger(name: string): logger {
   pad = max(pad, name.size);

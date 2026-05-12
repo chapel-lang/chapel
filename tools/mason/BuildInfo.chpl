@@ -8,80 +8,92 @@ module BuildInfo {
 
   import Package;
   import Package.{Dependency, SystemDependency, ExternalDependency,
-                  MasonPackage, PrerequisiteDependency};
+                  MasonPackage, PrerequisiteDependency,
+                  example, test};
+
+  import List.list;
 
   private var log = MasonLogger.getLogger("package");
 
   record buildOptions {
     var releaseMode: bool;
-    iter compopts(): string {
+    iter getCompopts(): string {
       if releaseMode then yield "--fast";
     }
   }
 
-
-  proc Dependency.preBuild() throws { }
-  proc Dependency.postBuild() throws { }
-  iter Dependency.sourceFiles(): string throws { }
-  @chplcheck.ignore("UnusedFormal")
-  iter Dependency.compopts(options: buildOptions): string throws { }
-
-  @chplcheck.ignore("UnusedFormal")
-  override iter SystemDependency.compopts(
-    options: buildOptions
-  ): string throws {
-    for x in this.info.includes.split(" ") do
-      yield x;
-    for x in this.info.libs.split(" ") do
-      yield x;
+  override proc SystemDependency.getCompopts(): list(string) throws {
+    log.debug("Getting build info for system dependency ", name);
+    var res = new list(string);
+    res.pushBack(this.info.includes.split(" "));
+    res.pushBack(this.info.libs.split(" "));
+    return res;
   }
 
-  @chplcheck.ignore("UnusedFormal")
-  override iter ExternalDependency.compopts(
-    options: buildOptions
-  ): string throws {
+  override proc ExternalDependency.getCompopts(): list(string) throws {
+    log.debug("Getting build info for external dependency ", name);
+    var res = new list(string);
     for (k,v) in MasonUtils.allFields(this.info!) {
       var val = v!;
       select k {
-        when "libs" do yield ("-L" + val.s);
-        when "include" do yield ("-I" + val.s);
-        when "other" do yield ("-I" + val.s);
+        when "libs" do res.pushBack("-L" + val.s);
+        when "include" do res.pushBack("-I" + val.s);
+        when "other" do res.pushBack("-I" + val.s);
         otherwise continue;
       }
     }
+    return res;
   }
 
   override proc MasonPackage.preBuild() throws {
+    log.debug("Pre-building package ", this.name);
     for dep in this.allDependencies() do dep.preBuild();
     for dep in this.prerequisites do dep.preBuild();
   }
   override proc MasonPackage.postBuild() throws {
+    log.debug("Post-building package ", this.name);
     for dep in this.allDependencies() do dep.postBuild();
     for dep in this.prerequisites do dep.postBuild();
   }
-  override iter MasonPackage.sourceFiles(): string throws {
+  override proc MasonPackage.getSourceFiles(): list(string) throws {
+    log.debug("Getting source files for package ", this.name);
+    var res = new list(string);
     for dep in this.allDependencies() do
-      for src in dep.sourceFiles() do yield src;
+      res.pushBack(dep.getSourceFiles());
     for dep in this.prerequisites do
-      for src in dep.sourceFiles() do yield src;
-    // TODO: compute mason source files. should just be the main source file
+      res.pushBack(dep.getSourceFiles());
+    var f = this.getPackageHome() / "src" / (this.name + ".chpl");
+    if f.exists() then
+      res.pushBack(f:string);
+    else
+      log.warnf("No source file found for package %s at expected location %s",
+        this.name, f:string);
+    return res;
   }
-  override iter MasonPackage.compopts(options: buildOptions): string throws {
+  override proc MasonPackage.getCompopts(): list(string) throws {
+    log.debug("Getting compopts for package ", this.name);
+    var res = new list(string);
     for dep in this.allDependencies() do
-      for opt in dep.compopts(options) do yield opt;
+      res.pushBack(dep.getCompopts());
     for dep in this.prerequisites do
-      for opt in dep.compopts(options) do yield opt;
-    for opt in this.compopts do yield opt;
-    for opt in options.compopts() do yield opt;
+      res.pushBack(dep.getCompopts());
+    res.pushBack(this.compopts);
+    return res;
   }
 
   proc PrerequisiteDependency.getEnv() {
     var env = MasonEnv.getFullEnv();
     var varsToFill = ["CHPL_HOME"=>MasonUtils.CHPL_HOME,
-                      "MASON_PACKAGE_HOME"=>location.parent];
+                      "MASON_PACKAGE_HOME"=>location.parent:string];
     for (k, v) in zip(envVariables.keys(), envVariables.values()) {
-      var val = (new templateString(v)).fill(varsToFill);
-      env.addOrReplace(k, val);
+      try {
+        var val = (new templateString(v)).fill(varsToFill);
+        env.addOrReplace(k, val);
+      } catch e {
+        log.errorf(
+          "Error filling environment variable '%s' with template '%s': %s",
+          k, v, e.message());
+      }
     }
     return MasonEnv.envForSpawn(env);
   }
@@ -102,28 +114,63 @@ module BuildInfo {
     }
     oldDir.chdir();
   }
-  @chplcheck.ignore("UnusedFormal")
-  override iter PrerequisiteDependency.compopts(
-    options: buildOptions
-  ): string throws {
+  override proc PrerequisiteDependency.getCompopts(): list(string) throws {
+    log.debug("Getting compopts for prerequisite dependency ", name);
+    var res = new list(string);
+
     const env = getEnv();
     const oldDir = path.cwd();
     location.chdir();
+    var err : owned Error? = nil;
     try {
-      // TODO: I would love to use prereq.pushChdir(), but I don't trust
+      // TODO: I would love to use p.pushChdir(), but I don't trust
       // error handling + context managers enough
+      // TODO check for errors
       const makeOutput =
-        MasonUtils.runCommand(printFlagsCommand.toArray(), env=env).strip();
+        MasonUtils.runCommand(printFlagsCommand.toArray(),
+                              env=env, quiet=true).strip();
 
-      for pFlag in makeOutput.split(" ") {
+      for pFlag in makeOutput.split(" ") do
         if pFlag.strip() != "" then
-          yield pFlag.strip();
-      }
+          res.pushBack(pFlag.strip());
     } catch e {
-      oldDir.chdir();
-      throw e;
+      err = e;
     }
     oldDir.chdir();
+    if err != nil then throw (err:owned);
+    return res;
+  }
+
+  proc MasonPackage.getBuildCmd(buildOps: buildOptions): list(string) throws {
+    var buildCmd = new list(string);
+    buildCmd.pushBack(this.getSourceFiles());
+    buildCmd.pushBack(this.getCompopts());
+    buildCmd.pushBack(buildOps.getCompopts());
+    buildCmd.pushBack("--main-module=" + this.name);
+    return buildCmd;
+  }
+  proc MasonPackage.getBuildCmd(
+    buildOps: buildOptions, ex: example
+  ): list(string) throws {
+    var buildCmd = new list(string);
+    buildCmd.pushBack(this.getSourceFiles());
+    buildCmd.pushBack(this.getCompopts());
+    buildCmd.pushBack(buildOps.getCompopts());
+    buildCmd.pushBack((projectHome / "example" / ex.name):string);
+    buildCmd.pushBack(ex.compopts);
+    buildCmd.pushBack("--main-module=" + ex.name.stem);
+    return buildCmd;
+  }
+  proc MasonPackage.getBuildCmd(
+    buildOps: buildOptions, t: test
+  ): list(string) throws {
+    var buildCmd = new list(string);
+    buildCmd.pushBack(this.getSourceFiles());
+    buildCmd.pushBack(this.getCompopts());
+    buildCmd.pushBack(buildOps.getCompopts());
+    buildCmd.pushBack((projectHome / "test" / t.name):string);
+    buildCmd.pushBack("--main-module=" + t.name.stem);
+    return buildCmd;
   }
 
 }
