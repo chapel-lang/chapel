@@ -26,11 +26,3 @@ checkOutput mason system search -h
 checkOutput mason test -h
 checkOutput mason external -h
 checkOutput mason modules -h
-
-# following commands require spack
-mason external --setup || true
-checkOutput mason external search -h
-checkOutput mason external compiler -h
-checkOutput mason external install -h
-checkOutput mason external uninstall -h
-checkOutput mason external info -h
