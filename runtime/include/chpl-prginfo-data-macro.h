@@ -181,6 +181,11 @@ E_CALLBACK_RT(chpl_memTracking_returnConfigVals, void,
 */
 E_CONSTANT_RT(chpl_compileCommand, const char*)
 
+/** CODE-GENERATED | WRITEABLE
+    Pointer used to store the execution command used to run this program.
+*/
+E_CONSTANT_RT(chpl_executionCommand, char*)
+
 /** CODE-GENERATED
     Directory where the compiler invocation took place.
 */

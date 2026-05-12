@@ -255,20 +255,35 @@ genGlobalDefClassId(const char* cname, int id, bool isHeader) {
   }
 }
 static void
-genGlobalString(const char *cname, const char *value) {
+genGlobalString(const char *cname, const char *value, bool isConstant=true) {
   GenInfo* info = gGenInfo;
-  if( info->cfile ) {
-    fprintf(info->cfile, "const char* %s = \"%s\";\n", cname, value);
+  bool hasValue = value != nullptr;
+  FILE* fp = info->cfile;
+
+  if (fp) {
+    const char* constPart = isConstant ? "const " : "";
+    if (hasValue) {
+      fprintf(fp, "%schar* %s = \"%s\";\n", constPart, cname, value);
+    } else {
+      fprintf(fp, "%schar* %s = NULL;\n", constPart, cname);
+    }
   } else {
 #ifdef HAVE_LLVM
-    if(gCodegenGPU == false) {
-      llvm::GlobalVariable *globalString = llvm::cast<llvm::GlobalVariable>(
-          info->module->getOrInsertGlobal(
-            cname, getPointerType(info->module->getContext())));
-      globalString->setInitializer(llvm::cast<llvm::GlobalVariable>(
-            new_CStringSymbol(value)->codegen().val)->getInitializer());
-      globalString->setConstant(true);
-      info->lvt->addGlobalValue(cname, globalString, GEN_PTR, true, dtStringC);
+    if (!gCodegenGPU) {
+      auto llvmPtrType = getPointerType(info->module->getContext());
+      auto lookup = info->module->getOrInsertGlobal(cname, llvmPtrType);
+      auto gVar = llvm::cast<llvm::GlobalVariable>(lookup);
+
+      if (hasValue) {
+        gVar->setInitializer(llvm::cast<llvm::GlobalVariable>(
+              new_CStringSymbol(value)->codegen().val)->getInitializer());
+      } else {
+        gVar->setInitializer(llvm::Constant::getNullValue(llvmPtrType));
+      }
+
+      if (isConstant) gVar->setConstant(true);
+
+      info->lvt->addGlobalValue(cname, gVar, GEN_PTR, true, dtStringC);
     }
 #endif
   }
@@ -1370,6 +1385,8 @@ static void genConfigGlobalsAndAbout() {
   genGlobalString("chpl_compileCommand", compileCommand);
   genGlobalString("chpl_compileVersion", compileVersion);
   genGlobalString("chpl_compileDirectory", getCwd());
+  genGlobalString("chpl_executionCommand", nullptr, /**isConstant*/ false);
+
   if (!saveCDir.empty()) {
     char *actualPath = realpath(saveCDir.c_str(), NULL);
     genGlobalString("chpl_saveCDir", actualPath);

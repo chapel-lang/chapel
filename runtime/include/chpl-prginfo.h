@@ -139,11 +139,6 @@ typedef struct qio_channel_s qio_channel_t;
   typedef ret_type__ (*CHPL_RT_PRGINFO_DATA_ENTRY_TYPE(name__))(__VA_ARGS__);
 #include "chpl-prginfo-data-macro-adapter.h"
 
-// TODO: Where the heck does this live (i.e., launcher or us?). It was
-//       declared in 'chplcgfns.h', but clearly that's not correct as
-//       it is not code-generated (and that header is going away).
-extern char* chpl_executionCommand;
-
 /** Whether or not the runtime is compiled as a dynamic library or not. */
 extern int chpl_rt_is_dynamic_library;
 

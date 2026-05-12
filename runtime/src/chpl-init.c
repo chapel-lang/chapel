@@ -50,8 +50,6 @@ static const int32_t myFilename = CHPL_FILE_IDX_INTERNAL;
 
 chpl_main_argument chpl_gen_main_arg;
 
-char* chpl_executionCommand;
-
 void* chpl_string_literals_buffer;
 
 const char* allocate_string_literals_buf(int64_t s) {
@@ -89,6 +87,10 @@ static void recordExecutionCommand(int argc, char *argv[]) {
   for (i = 0; i < argc; i++) {
     length += strlen(argv[i]) + 1;
   }
+
+  CHPL_RT_PRGINFO_DATA_TEMP(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                            chpl_executionCommand);
+
   chpl_executionCommand =
     (char*)chpl_mem_allocMany(length+1, sizeof(char),
                               CHPL_RT_MD_EXECUTION_COMMAND, 0, 0);
