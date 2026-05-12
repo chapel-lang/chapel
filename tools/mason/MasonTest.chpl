@@ -190,7 +190,8 @@ proc masonTest(args: [] string) throws {
     compopts.pushBack("--comm="+comm);
     runTests(show, run, parallel, filter, skipUpdate, compopts);
   } catch e: MasonError {
-    log.debugf("Got error '%s', falling back to basic test runner", e.message());
+    log.debugf("Got error '%s', falling back to basic test runner",
+                e.message());
     try! {
       if !searchSubStrings.isEmpty() {
         var testNames: list(string);
@@ -771,7 +772,8 @@ proc runAndLog(executable, fileName, filter: string, ref result,
   }
   exec.wait();//wait till the subprocess is complete
   exitCode = exec.exitCode;
-  log.debugf("Finished exec, exitCode=%i, haltOccured=%?", exitCode, haltOccurred);
+  log.debugf("Finished exec, exitCode=%i, haltOccured=%?",
+              exitCode, haltOccurred);
   if haltOccurred {
     log.debug("Running a second time");
     exitCode =
