@@ -190,6 +190,7 @@ proc masonTest(args: [] string) throws {
     compopts.pushBack("--comm="+comm);
     runTests(show, run, parallel, filter, skipUpdate, compopts);
   } catch e: MasonError {
+    log.debugf("Got error '%s', falling back to basic test runner", e.message());
     try! {
       if !searchSubStrings.isEmpty() {
         var testNames: list(string);
@@ -239,7 +240,7 @@ private proc runTests(show: bool, run: bool, parallel: bool, filter: string,
     const project = lockFile["root.name"]!.s;
     const projectPath = "".join(projectHome, "/src/", project, ".chpl");
 
-    // Get system, and external compopts
+    // Get system compopts
     var compopts = new list(string);
     compopts.pushBack(getTomlCompopts(lockFile));
     log.debug("compopts from Mason.toml: ", compopts);
@@ -428,6 +429,7 @@ private proc runTests(show: bool, run: bool, parallel: bool, filter: string,
 private proc runTestBinary(outputLoc: string, testName: string, filter: string,
                            ref result, show: bool) throws {
   const command = outputLoc;
+  log.debugf("Running '%s' name='%s'", command, testName);
   var testNames: list(string),
       failedTestNames: list(string),
       erroredTestNames: list(string),
@@ -438,6 +440,7 @@ private proc runTestBinary(outputLoc: string, testName: string, filter: string,
     runAndLog(command, testName + ".chpl", filter, result, numLocales,
               testsPassed, testNames, localesCountMap,
               failedTestNames, erroredTestNames, skippedTestNames, show);
+  log.debugf("%s got exitCode=%i", testName, exitCode);
   if exitCode != 0 {
     var newCommand = " ".join(command,"-nl","1");
     if filter != "" then newCommand += " --filter=" + filter;
@@ -677,7 +680,7 @@ proc runAndLog(executable, fileName, filter: string, ref result,
       testExecMsg: string;
   var reqLocales = 0;
   var sep1Found = false,
-      haltOccured = false;
+      haltOccurred = false;
   var testNamesStr,
       failedTestNamesStr,
       erroredTestNamesStr,
@@ -712,12 +715,14 @@ proc runAndLog(executable, fileName, filter: string, ref result,
      "--errorTestNames", erroredTestNamesStr, "--ranTests", passedTestStr,
      "--skippedTestNames", skippedTestNamesStr]
   );
+  log.debugf("Exec %?", lst);
   var exec =
     spawn(lst.toArray(),
           stdout = pipeStyle.pipe,
           stderr = pipeStyle.pipe); //Executing the file
   //std output pipe
   while exec.stdout.readLine(line) {
+    log.debug(line.strip(leading=false));
     if line.strip() == separator1 then sep1Found = true;
     else if line.strip() == separator2 && sep1Found {
       var testName = try! currentRunningTests.popBack();
@@ -747,8 +752,12 @@ proc runAndLog(executable, fileName, filter: string, ref result,
   }
   //this is to check the error
   if exec.stderr.readLine(line) {
+    log.debug(line.strip(leading=false));
     var testErrMsg = line;
-    while exec.stderr.readLine(line) do testErrMsg += line;
+    while exec.stderr.readLine(line) {
+      log.debug(line.strip(leading=false));
+      testErrMsg += line;
+    }
     if !currentRunningTests.isEmpty() {
       var testNameIndex = try! currentRunningTests.popBack();
       var testName = testNameIndex;
@@ -757,12 +766,14 @@ proc runAndLog(executable, fileName, filter: string, ref result,
       erroredTestNames.pushBack(testName);
       if show then writeln("Ran ",testName," ERROR");
       result.addError(testName, fileName, testErrMsg);
-      haltOccured =  true;
+      haltOccurred = true;
     }
   }
   exec.wait();//wait till the subprocess is complete
   exitCode = exec.exitCode;
-  if haltOccured {
+  log.debugf("Finished exec, exitCode=%i, haltOccured=%?", exitCode, haltOccurred);
+  if haltOccurred {
+    log.debug("Running a second time");
     exitCode =
       runAndLog(executable, fileName, filter, result, reqNumLocales,
                 testsPassed, testNames, localesCountMap,
@@ -777,6 +788,7 @@ proc runAndLog(executable, fileName, filter: string, ref result,
       }
     }
     localesCountMap.remove(reqLocales);
+    log.debug("Running a third time");
     exitCode =
       runAndLog(executable, fileName, filter, result, reqLocales,
                 testsPassed, testNames, localesCountMap, failedTestNames,
