@@ -80,7 +80,6 @@ proc runExamples(show: bool, run: bool, build: bool, release: bool,
       var exampleExecopts = optsFromToml.execopts;
       exampleExecopts.pushBack(extraExecopts);
 
-      // TODO: include --fast in fingerprint!!
       if release then exampleCompopts.pushBack("--fast");
 
       if build {
