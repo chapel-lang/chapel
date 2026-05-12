@@ -27,7 +27,6 @@ use Map;
 import Version;
 use ArgumentParser;
 use MasonEnv;
-use MasonExternal;
 use MasonHelp;
 use MasonSystem;
 use MasonUtils;
@@ -105,17 +104,6 @@ proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock",
           else " since no dependency found in manifest file";
       log.info("Skipping registry update" + reason);
     }
-  }
-
-  if !skipUpdate {
-    log.info("Will do external update");
-    if isDir(SPACK_ROOT) && TomlFile.pathExists("external") {
-      if getSpackVersion() < minSpackVersion then
-        throw new MasonError("Mason has been updated. " +
-                              "To install Spack, run: mason external --setup.");
-    }
-  } else {
-    log.debug("Skipping external update");
   }
 
 
@@ -316,12 +304,11 @@ private proc createDepTree(root: Toml) throws {
     depTree.set("system", exDeps);
   }
 
-  // Check for non-Chapel dependencies
-  log.debug("Setting depTree for external dependencies");
-  if root.pathExists("external") {
-    const externals = getExternalPackages(root["external"]!);
-    depTree.set("external", externals);
-  }
+  if root.pathExists("external") then
+    throw new MasonError(
+      "Mason no longer supports external dependencies. " +
+      "If you were relying on this feature, " +
+      "please migrate to use system dependencies instead.");
   return depTree;
 }
 

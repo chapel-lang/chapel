@@ -31,7 +31,6 @@ use MasonHelp;
 use MasonEnv;
 use MasonUpdate;
 use MasonSystem;
-use MasonExternal;
 use MasonExample;
 import MasonLogger;
 use Subprocess;
@@ -154,13 +153,10 @@ proc buildProgram(release: bool, show: bool, force: bool, skipUpdate: bool,
     // generate list of dependencies and get src code
     var (sourceList, gitList) = genSourceList(lockFile);
 
-    if lockFile.pathExists("external") {
-      spackInstalled();
-    }
     getSrcCode(sourceList, skipUpdate, show);
     getGitCode(gitList, skipUpdate, show);
 
-    // get compilation options including external dependencies
+    // get compilation options
     var compopts = getTomlCompopts(lockFile);
     // Compile Program
     if compileSrc(lockFile, binLoc, release, cmdLineCompopts, compopts,
@@ -287,7 +283,7 @@ proc genSourceList(lockFile: borrowed Toml) throws {
   for (name, package) in zip(lockFile.A.keys(), lockFile.A.values()) {
     log.debug("name: ", name);
     if package!.tag == fieldtag.fieldToml {
-      if name == "root" || name == "system" || name == "external" then continue;
+      if name == "root" || name == "system" then continue;
       else {
         var toml = lockFile[name]!;
         var version = toml["version"]!.s;
@@ -432,7 +428,7 @@ proc getGitCode(gitList: list(gitSource),
   }
 }
 
-// Retrieves root table compopts, external compopts, and system compopts
+// Retrieves root table compopts and system compopts
 proc getTomlCompopts(lock: borrowed Toml): list(string) throws {
   var compopts = new list(string);
   // Checks for compilation options are present in Mason.toml
@@ -448,7 +444,7 @@ proc getTomlCompopts(lock: borrowed Toml): list(string) throws {
   for (name, package) in zip(lock.A.keys(), lock.A.values()) {
     log.debug("name: ", name);
     if package!.tag != fieldtag.fieldToml then continue;
-    if name == "root" || name == "system" || name == "external" then continue;
+    if name == "root" || name == "system" then continue;
     if const depFlags = package!.get["compopts"] {
       try {
         compopts.pushBack(parseCompilerOptions(depFlags));
@@ -470,19 +466,6 @@ proc getTomlCompopts(lock: borrowed Toml): list(string) throws {
       }
   }
 
-  if const exDeps = lock.get["external"] {
-    for (_, depInfo) in zip(exDeps.A.keys(), exDeps.A.values()) {
-      for (k,v) in allFields(depInfo!) {
-        var val = v!;
-        select k {
-            when "libs" do compopts.pushBack("-L" + val.s);
-            when "include" do compopts.pushBack("-I" + val.s);
-            when "other" do compopts.pushBack("-I" + val.s);
-            otherwise continue;
-          }
-      }
-    }
-  }
   if const pkgDeps = lock.get["system"] {
     for (_, depInfo) in zip(pkgDeps.A.keys(), pkgDeps.A.values()) {
       for (k,v) in allFields(depInfo!) {
