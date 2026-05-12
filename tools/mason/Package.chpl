@@ -510,7 +510,8 @@ proc MasonPackage.fillFromManifest(
   if !postResolve {
     readField(this, toml, "brick.source", "source", required=false);
     readField(this, toml, "brick.authors", "authors", required=false);
-    readField(this, toml, "brick.copyrightYear", "copyrightYear", required=false);
+    readField(this, toml, "brick.copyrightYear", "copyrightYear",
+                required=false);
   } else {
     readField(this, toml, "brick.compopts", "compopts", required=false);
     readField(this, toml, "brick.docopts", "docopts", required=false);
@@ -583,7 +584,8 @@ where T == string || isSubtype(T, fileReader) {
   log.debug("Creating package from lock file at ", projectHome);
   log.debug("Lock file contents: ", toml);
 
-  if !toml.pathExists("lockfileVersion") || toml["lockfileVersion"]!.tomlType != "string" then
+  if !toml.pathExists("lockfileVersion") ||
+      toml["lockfileVersion"]!.tomlType != "string" then
     throw new MasonError(
       "Unknown lockfile version. Please delete your lock file " +
       " and run 'mason update' to generate a new one.");
@@ -600,12 +602,13 @@ where T == string || isSubtype(T, fileReader) {
 
   // read root only fields
   log.debug("Reading root-level fields from lock file");
-  readField(p, toml, "root.license", "license", required=true);
-  readField(p, toml, "root.type", "pkgType", required=true);
-  readField(p, toml, "root.authors", "authors", required=true);
-  readField(p, toml, "root.copyrightYear", "copyrightYear", required=true);
-  readField(p, toml, "root.tests", "tests", required=true);
-  readField(p, toml, "root.examples", "examples", required=true);
+  readField(p:borrowed, toml, "root.license", "license", required=true);
+  readField(p:borrowed, toml, "root.type", "pkgType", required=true);
+  readField(p:borrowed, toml, "root.authors", "authors", required=true);
+  readField(p:borrowed, toml, "root.copyrightYear", "copyrightYear",
+              required=true);
+  readField(p:borrowed, toml, "root.tests", "tests", required=true);
+  readField(p:borrowed, toml, "root.examples", "examples", required=true);
   // fill in the remaining fields
   log.debug("Reading remaining fields from lock file");
   p.fillFromLock(toml, toml["root"]!, deps, systemDeps);
@@ -627,7 +630,7 @@ proc MasonPackage.fillFromLock(
   readField(this, toml, "docopts", "docopts", required=true);
 
   log.debug("Adding dependencies from lock file to package");
-  if const deps = lock.get("dependencies") {
+  if const deps = toml.get("dependencies") {
     var depNames = listFromToml(list(string), "dependencies", deps!);
     for depName in depNames {
       const existingIdx =
@@ -639,30 +642,30 @@ proc MasonPackage.fillFromLock(
         this.dependencies.pushBack(existingDep);
       } else {
         log.debug("Reading dependency '%s' from lock file".format(depName));
-        if !lock.pathExists(depName) {
+        if const depToml = lock.get("dependencies." + depName) {
+          // if depToml has a 'git' field, it's a GitMasonPackage,
+          // otherwise it's a MasonPackage
+          var newDep: shared MasonPackage;
+          if depToml!.pathExists("git") {
+            newDep = new shared GitMasonPackage();
+          } else {
+            newDep = new shared MasonPackage();
+          }
+          newDep.fillFromLock(lock, depToml!, dependencyList, systemList);
+          dependencyList.pushBack(newDep);
+          this.dependencies.pushBack(newDep);
+        } else {
           throw new MasonError(
             ("Lock file is missing information for dependency '%s'. " +
             "Please delete your lock file and run 'mason update' to " +
             "generate a new one.").format(depName));
         }
-        // if depToml has a 'git' field, it's a GitMasonPackage,
-        // otherwise it's a MasonPackage
-        const depToml = lock[depName]!;
-        var newDep: shared MasonPackage;
-        if depToml.pathExists("git") {
-          newDep = new shared GitMasonPackage();
-        } else {
-          newDep = new shared MasonPackage();
-        }
-        newDep.fillFromLock(lock, depToml, dependencyList, systemList);
-        dependencyList.pushBack(newDep);
-        this.dependencies.pushBack(newDep);
       }
     }
   }
 
   log.debug("Adding system dependencies from lock file to package");
-  if const systemDeps = lock.get("system") {
+  if const systemDeps = toml.get("system") {
     var sysDepNames = listFromToml(list(string), "system", systemDeps!);
     for depName in sysDepNames {
       const existingIdx =
@@ -675,17 +678,17 @@ proc MasonPackage.fillFromLock(
       } else {
         log.debug(("Reading system dependency '%s' " +
                    "from lock file").format(depName));
-        if !lock.pathExists(depName) {
+        if const depToml = lock.get("system." + depName) {
+          var newDep = new shared SystemDependency();
+          newDep.fromLock(depToml!);
+          systemList.pushBack(newDep);
+          this.system.pushBack(newDep);
+        } else {
           throw new MasonError(
             ("Lock file is missing information for system dependency '%s'. " +
             "Please delete your lock file and run 'mason update' to " +
             "generate a new one.").format(depName));
         }
-        const depToml = lock[depName]!;
-        var newDep = new shared SystemDependency();
-        newDep.fromLock(depToml);
-        systemList.pushBack(newDep);
-        this.system.pushBack(newDep);
       }
     }
   }
@@ -911,7 +914,8 @@ override proc type MasonPackage.fromToml(
   if toml.tomlType != "string" then
     throw new MasonError("Mason dependencies must be specified as a " +
                           "single version string");
-  var m = new shared MasonPackage(name, MasonUtils.parseChplVersionString(toml.s));
+  var m =
+    new shared MasonPackage(name, MasonUtils.parseChplVersionString(toml.s));
   return m;
 }
 override proc MasonPackage.loadInfo(postResolve=false) throws {
@@ -926,7 +930,9 @@ override proc MasonPackage.loadInfo(postResolve=false) throws {
   this.fillFromManifest(toml, postResolve=postResolve);
 }
 override proc MasonPackage.addDepToLock(lock: shared Toml) throws {
-  if lock.pathExists(this.name) {
+  if !lock.pathExists("dependencies") then
+    lock.set("dependencies", new shared Toml(new map(string, shared Toml?)));
+  if lock.pathExists("dependencies." + this.name) {
     // this should not happen, we should never generate lock files
     // before resolving dependencies
     log.errorf("unhandled multiple dependencies on package '%s'", this.name);
@@ -952,15 +958,15 @@ override proc MasonPackage.addDepToLock(lock: shared Toml) throws {
   for p in this.prerequisites do
     newToml.set("prerequisites." + p.name, p.toLock()!);
 
-  lock.set(this.name, newToml);
+  lock.set("dependencies." + this.name, newToml);
 }
 override proc GitMasonPackage.addDepToLock(lock: shared Toml) throws {
   super.addDepToLock(lock);
 
-  lock.set(this.name + ".git", this.git);
-  lock.set(this.name + ".branch", this.branch);
-  lock.set(this.name + ".rev", this.rev);
-  lock.set(this.name + ".revLock", this.revLock);
+  lock.set("dependencies." + this.name + ".git", this.git);
+  lock.set("dependencies." + this.name + ".branch", this.branch);
+  lock.set("dependencies." + this.name + ".rev", this.rev);
+  lock.set("dependencies." + this.name + ".revLock", this.revLock);
 
 }
 

@@ -194,7 +194,7 @@ proc updateRegistry(skipUpdate: bool, show=true) throws {
     const registryHomePath = registryHome:path;
     if registryHomePath.isDir() {
       var pullRegistry = "git pull -q origin";
-      if show then writeln("Updating ", name);
+      if show then log.info("Updating ", name);
       gitC(registryHomePath, pullRegistry);
     } else {
       // Registry has moved or does not exist
@@ -202,7 +202,7 @@ proc updateRegistry(skipUpdate: bool, show=true) throws {
         (MASON_HOME:path / "src").mkdir(parents=true);
       const localRegistry = registryHomePath;
       localRegistry.mkdir(parents=true);
-      if show then writeln("Updating ", name);
+      if show then log.info("Updating ", name);
       cloneSource(registry, localRegistry, quiet=true);
     }
   }

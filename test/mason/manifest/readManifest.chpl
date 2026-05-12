@@ -7,6 +7,7 @@ use Regex;
 import ThirdParty.Pathlib.path;
 use ThirdParty.Pathlib.IOHelpers;
 import MasonLogger;
+import MasonUpdate;
 
 MasonLogger.setStream(IO.stderr);
 
@@ -44,6 +45,7 @@ proc prettyManifest(m) {
 
 
 proc main() {
+  MasonUpdate.updateRegistry(false, true);
   var m =
     MasonPackage.fromManifest(openReader(tomlPath), tomlPath.resolve().parent);
   if printManifest then
