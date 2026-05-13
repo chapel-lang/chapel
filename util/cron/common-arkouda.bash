@@ -88,7 +88,7 @@ function release_dependencies() {
     : # no extra setup needed yet
   elif [ "$CHPL_WHICH_RELEASE_FOR_ARKOUDA" = "2.8.0" ]; then
     # use LLVM 21, latest supported by 2.8.0
-    if [ -f source /hpcdc/project/chapel/chpl-deps/chapcs11/setup_llvm.bash 18 ] ; then
+    if [ -f /hpcdc/project/chapel/chpl-deps/chapcs11/setup_llvm.bash ] ; then
       source /hpcdc/project/chapel/chpl-deps/chapcs11/setup_llvm.bash 21
     else
       echo "CHPL_WHICH_RELEASE_FOR_ARKOUDA is set to $CHPL_WHICH_RELEASE_FOR_ARKOUDA, but no setup_llvm.bash found."
