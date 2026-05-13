@@ -10,6 +10,7 @@ import contextlib
 import fnmatch
 import getpass
 import glob
+import io
 import logging
 import os
 import platform
@@ -43,6 +44,7 @@ from chplenv import *
 import py3_compat
 import re2_supports_valgrind
 import check_perf_graphs
+import sub_clean
 
 import argparse
 
@@ -504,17 +506,20 @@ def summarize():
 def clean(test=False):
     date_str = time.strftime("%a %b %d %H:%M:%S %Z %Y")
 
-    # clean executables, tmps, etc.
-    sub_clean = os.path.join(util_dir, "test", "sub_clean")
+    # clean executables, tmps, etc. — call sub_clean directly (no subprocess)
+    sub_clean_path = os.path.join(util_dir, "test", "sub_clean.py")
     try:
         if test:  # single test
             logger.write(
-                "[Starting {0} {1} {2}]".format(sub_clean, test, date_str)
+                "[Starting {0} {1} {2}]".format(sub_clean_path, test, date_str)
             )
-            out = run_command([sub_clean, test])
+            to_clean = [test]
         else:
-            out = run_command([sub_clean])
-        logger.write(out)
+            to_clean = ["."]
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            sub_clean.clean(to_clean)
+        logger.write(buf.getvalue())
     except:
         logger.write("[Error: sub_clean error]")
 
