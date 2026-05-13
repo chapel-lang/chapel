@@ -505,10 +505,10 @@ def summarize():
 def clean(test=False):
     date_str = time.strftime("%a %b %d %H:%M:%S %Z %Y")
 
-    # clean executables, tmps, etc. — call sub_clean directly (no subprocess)
+    # clean executables, tmps, etc.
     try:
         if test:  # single test
-            logger.write("[Starting {0} {1}]".format(test, date_str))
+            logger.write("[Starting sub_clean {0} {1}]".format(test, date_str))
             to_clean = [test]
         else:
             to_clean = ["."]
