@@ -220,15 +220,20 @@ jobs:
           echo "${{ secrets.WEBSITE_KEY }}" > ~/.ssh/id_rsa
           echo "${{ secrets.WEBSITE_KNOWN_HOSTS}}" > ~/.ssh/known_hosts
 
-      - name: push docs
-        run: |
-          echo "extract docs"
-          tar -xvf docs.tar.gz
-          echo "Publish module docs to web server"
-          # py-modindex.html is not needed
-          rm -f py-modindex.html
-          # Remove all hidden files except .htaccess
-          find . -maxdepth 1 -type f -name ".*" ! -name ".htaccess" -exec rm -f {} +
-          rsync -avz --cvs-exclude --delete --relative . ${{ secrets.WEBSITE_USER }}@${{ secrets.WEBSITE_URL }}:${{ secrets.WEBSITE_PATH }}
-          rm ~/.ssh/id_rsa
-          rm ~/.ssh/known_hosts
+      - name: push docs (retrying)
+        uses: nick-fields/retry@v4
+        with:
+          max_attempts: 3
+          timeout_seconds: 60
+          retry_wait_seconds: 30
+          command: |
+            echo "extract docs"
+            tar -xvf docs.tar.gz
+            echo "Publish module docs to web server"
+            # py-modindex.html is not needed
+            rm -f py-modindex.html
+            # Remove all hidden files except .htaccess
+            find . -maxdepth 1 -type f -name ".*" ! -name ".htaccess" -exec rm -f {} +
+            rsync -avz --cvs-exclude --delete --relative . ${{ secrets.WEBSITE_USER }}@${{ secrets.WEBSITE_URL }}:${{ secrets.WEBSITE_PATH }}
+            rm ~/.ssh/id_rsa
+            rm ~/.ssh/known_hosts
