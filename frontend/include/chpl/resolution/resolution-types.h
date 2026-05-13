@@ -758,6 +758,9 @@ class CallInfo {
   /** check if the call is a method call */
   bool isMethodCall() const { return isMethodCall_; }
 
+  /** check if the call is an explicit (user-specified) method call */
+  bool isExplicitMethodCall() const { return isMethodCall_ && !isImplicitMethodCall_; }
+
   /** check if the call is an operator call */
   bool isOpCall() const { return isOpCall_; }
 
@@ -1891,6 +1894,7 @@ class MostSpecificCandidate {
   const TypedFnSignature* fn_;
   owned<FormalActualMap> faMap_;
   owned<PromotedFormalMap> promotedFormals_;
+  bool explicitMethodCall_;
   int constRefCoercionFormal_;
   int constRefCoercionActual_;
   int raceyScalarOutFormal_;
@@ -1900,6 +1904,7 @@ class MostSpecificCandidate {
   MostSpecificCandidate(const TypedFnSignature* fn,
                         FormalActualMap faMap,
                         PromotedFormalMap promotedFormals,
+                        bool explicitMethodCall,
                         int constRefCoercionFormal,
                         int constRefCoercionActual,
                         int raceyScalarOutFormal,
@@ -1907,6 +1912,7 @@ class MostSpecificCandidate {
                         SyncReadsList syncReads)
     : fn_(fn), faMap_(new FormalActualMap(std::move(faMap))),
       promotedFormals_(new PromotedFormalMap(std::move(promotedFormals))),
+      explicitMethodCall_(explicitMethodCall),
       constRefCoercionFormal_(constRefCoercionFormal),
       constRefCoercionActual_(constRefCoercionActual),
       raceyScalarOutFormal_(raceyScalarOutFormal),
@@ -1916,6 +1922,7 @@ class MostSpecificCandidate {
  public:
   MostSpecificCandidate()
     : fn_(nullptr), faMap_(), promotedFormals_(),
+      explicitMethodCall_(false),
       constRefCoercionFormal_(-1),
       constRefCoercionActual_(-1),
       raceyScalarOutFormal_(-1),
@@ -1931,6 +1938,7 @@ class MostSpecificCandidate {
     if (other.promotedFormals_) {
       promotedFormals_ = toOwned(new PromotedFormalMap(*other.promotedFormals_));
     }
+    explicitMethodCall_ = other.explicitMethodCall_;
     constRefCoercionFormal_ = other.constRefCoercionFormal_;
     constRefCoercionActual_ = other.constRefCoercionActual_;
     raceyScalarOutFormal_ = other.raceyScalarOutFormal_;
@@ -1944,6 +1952,7 @@ class MostSpecificCandidate {
 
   static MostSpecificCandidate fromTypedFnSignature(ResolutionContext* rc,
                                         const TypedFnSignature* fn,
+                                        const CallInfo& info,
                                         const FormalActualMap& faMap,
                                         const Scope* scope,
                                         const PoiScope* poiScope,
@@ -1961,6 +1970,8 @@ class MostSpecificCandidate {
   const FormalActualMap& formalActualMap() const { return *faMap_; }
 
   const PromotedFormalMap& promotedFormals() const { return *promotedFormals_; }
+
+  bool explicitMethodCall() const { return explicitMethodCall_; }
 
   int constRefCoercionFormal() const { return constRefCoercionFormal_; }
 
@@ -2002,6 +2013,7 @@ class MostSpecificCandidate {
 
     return fn_ == other.fn_ &&
            faMapsEqual &&
+           explicitMethodCall_ == other.explicitMethodCall_ &&
            constRefCoercionFormal_ == other.constRefCoercionFormal_ &&
            constRefCoercionActual_ == other.constRefCoercionActual_ &&
            raceyScalarOutFormal_ == other.raceyScalarOutFormal_ &&
@@ -2019,6 +2031,7 @@ class MostSpecificCandidate {
     if (promotedFormals_) {
       chpl::mark<PromotedFormalMap>{}(context, *promotedFormals_);
     }
+    (void) explicitMethodCall_; // nothing to mark
     (void) constRefCoercionFormal_; // nothing to mark
     (void) constRefCoercionActual_; // nothing to mark
     (void) raceyScalarOutFormal_; // nothing to mark
@@ -2027,7 +2040,7 @@ class MostSpecificCandidate {
   }
 
   size_t hash() const {
-    return chpl::hash(fn_, faMap_, promotedFormals_, constRefCoercionFormal_, constRefCoercionActual_, raceyScalarOutFormal_, raceyScalarOutActual_, syncReads_);
+    return chpl::hash(fn_, faMap_, promotedFormals_, explicitMethodCall_, constRefCoercionFormal_, constRefCoercionActual_, raceyScalarOutFormal_, raceyScalarOutActual_, syncReads_);
   }
 
   static bool update(MostSpecificCandidate& keep,
@@ -2039,6 +2052,7 @@ class MostSpecificCandidate {
     std::swap(fn_, other.fn_);
     std::swap(faMap_, other.faMap_);
     std::swap(promotedFormals_, other.promotedFormals_);
+    std::swap(explicitMethodCall_, other.explicitMethodCall_);
     std::swap(constRefCoercionFormal_, other.constRefCoercionFormal_);
     std::swap(constRefCoercionActual_, other.constRefCoercionActual_);
     std::swap(raceyScalarOutFormal_, other.raceyScalarOutFormal_);

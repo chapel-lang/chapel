@@ -1457,6 +1457,7 @@ size_t hashPromotedFormalMap(const PromotedFormalMap& map) {
 MostSpecificCandidate
 MostSpecificCandidate::fromTypedFnSignature(ResolutionContext* rc,
                                             const TypedFnSignature* fn,
+                                            const CallInfo& ci,
                                             const FormalActualMap& faMap,
                                             const Scope* scope,
                                             const PoiScope* poiScope,
@@ -1502,7 +1503,7 @@ MostSpecificCandidate::fromTypedFnSignature(ResolutionContext* rc,
         got.conversionKind() != CanPassResult::TO_REFERENTIAL_TUPLE) {
       if (coercionFormal == -1 && coercionActual == -1) {
         coercionFormal = fa.formalIdx();
-        coercionActual = fa.actualIdx();
+        coercionActual = ci.originalActualIdx(fa.actualIdx());
       }
     }
 
@@ -1514,7 +1515,7 @@ MostSpecificCandidate::fromTypedFnSignature(ResolutionContext* rc,
       if (promotedFormals.find(fa.formalIdx()) == promotedFormals.end()) {
         if (raceyOutFormal == -1 && raceyOutActual == -1) {
           raceyOutFormal = fa.formalIdx();
-          raceyOutActual = fa.actualIdx();
+          raceyOutActual = ci.originalActualIdx(fa.actualIdx());
         }
       }
     }
@@ -1524,7 +1525,7 @@ MostSpecificCandidate::fromTypedFnSignature(ResolutionContext* rc,
     }
   }
 
-  return MostSpecificCandidate(fn, std::move(newFaMap), promotedFormals, coercionFormal, coercionActual, raceyOutFormal, raceyOutActual, syncReads);
+  return MostSpecificCandidate(fn, std::move(newFaMap), promotedFormals, ci.isExplicitMethodCall(), coercionFormal, coercionActual, raceyOutFormal, raceyOutActual, syncReads);
 }
 
 MostSpecificCandidate
@@ -1535,7 +1536,7 @@ MostSpecificCandidate::fromTypedFnSignature(ResolutionContext* rc,
                                             const PoiScope* poiScope,
                                             const PromotedFormalMap& promotedFormals) {
   auto faMap = FormalActualMap(fn, ci);
-  return MostSpecificCandidate::fromTypedFnSignature(rc, fn, faMap, scope, poiScope, promotedFormals);
+  return MostSpecificCandidate::fromTypedFnSignature(rc, fn, ci, faMap, scope, poiScope, promotedFormals);
 }
 
 void MostSpecificCandidate::stringify(std::ostream& ss,
