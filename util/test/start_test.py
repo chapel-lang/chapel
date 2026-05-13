@@ -10,7 +10,6 @@ import contextlib
 import fnmatch
 import getpass
 import glob
-import io
 import logging
 import os
 import platform
