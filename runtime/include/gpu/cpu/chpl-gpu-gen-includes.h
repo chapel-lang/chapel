@@ -26,45 +26,60 @@
 #include "chpltypes.h"
 #include "chpl-comm.h"
 
+#ifdef USE_FORMAT_ATTR_FOR_NON_VARIADIC
+#define GPU_PRINT_ATTR __attribute__ ((format (printf, 1, 2)))
+#else
+#define GPU_PRINT_ATTR
+#endif
+
 static inline void chpl_gpu_write(const char *str) { printf("%s", str); }
 static inline void chpl_gpu_printf0(const char *fmt) {
   printf("%s", fmt);
 }
+
+GPU_PRINT_ATTR
 static inline void chpl_gpu_printf1(const char *fmt,
  void *x1)
 {
   printf(fmt, x1);
 }
+GPU_PRINT_ATTR
 static inline void chpl_gpu_printf2(const char *fmt,
   void *x1, void *x2)
 {
   printf(fmt, x1, x2);
 }
+GPU_PRINT_ATTR
 static inline void chpl_gpu_printf3(const char *fmt,
   void *x1, void *x2, void *x3)
 {
   printf(fmt, x1, x2, x3);
 }
+GPU_PRINT_ATTR
 static inline void chpl_gpu_printf4(const char *fmt,
   void *x1, void *x2, void *x3, void *x4)
 {
   printf(fmt, x1, x2, x3, x4);
 }
+GPU_PRINT_ATTR
 static inline void chpl_gpu_printf5(const char *fmt,
   void *x1, void *x2, void *x3, void *x4, void *x5)
 {
   printf(fmt, x1, x2, x3, x4, x5);
 }
+GPU_PRINT_ATTR
 static inline void chpl_gpu_printf6(const char *fmt,
   void *x1, void *x2, void *x3, void *x4, void *x5, void *x6)
 {
   printf(fmt, x1, x2, x3, x4, x5, x6);
 }
+GPU_PRINT_ATTR
 static inline void chpl_gpu_printf7(const char *fmt,
   void *x1, void *x2, void *x3, void *x4, void *x5, void *x6, void *x7)
 {
   printf(fmt, x1, x2, x3, x4, x5, x6, x7);
 }
+GPU_PRINT_ATTR
 static inline void chpl_gpu_printf8(const char *fmt,
   void *x1, void *x2, void *x3, void *x4, void *x5, void *x6, void *x7,
   void *x8)
