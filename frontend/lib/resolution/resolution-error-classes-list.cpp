@@ -354,7 +354,12 @@ void ErrorConstRefCoercion::write(ErrorWriterBase& wr) const {
              (c.constRefCoercionActual() + 1) ," for 'const ref' formal '",
              formalName, "'.");
   if (auto call = ast->toCall()) {
-    wr.code(call, { call->actual(c.constRefCoercionActual()) });
+    int idx = c.constRefCoercionActual();
+    if (c.fromExplicitMethodCall()) idx -= 1; // receiver is not in actual list
+    if (idx >= 0) {
+      CHPL_ASSERT(idx < call->numActuals());
+      wr.code(call, { call->actual(idx) });
+    }
   } else {
     wr.code(ast);
   }
@@ -2073,7 +2078,12 @@ void ErrorRaceyOutInoutInPromotion::write(ErrorWriterBase& wr) const {
   wr.heading(kind_, type_, ast, "cannot promote function '",
              c.fn()->untyped()->name(), "' while keeping the formal '", intent, " ", formalName, "' scalar");
   if (auto call = ast->toCall()) {
-    wr.code(call, { call->actual(c.raceyScalarOutActual()) });
+    int idx = c.raceyScalarOutActual();
+    if (c.fromExplicitMethodCall()) idx -= 1; // receiver is not in actual list
+    if (idx >= 0) {
+      CHPL_ASSERT(idx < call->numActuals());
+      wr.code(call, { call->actual(idx) });
+    }
   } else {
     wr.code(ast);
   }
