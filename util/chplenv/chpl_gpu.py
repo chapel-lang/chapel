@@ -436,7 +436,7 @@ def get_runtime_compile_args():
         system.append("-isystem" + os.path.join(sdk_path, "hip", "include"))
 
         major_version = get_sdk_version().split(".")[0]
-        bundled.append("-DROCM_VERSION_MAJOR=" + major_version)
+        bundled.append("-DCHPL_ROCM_VERSION_MAJOR=" + major_version)
 
     return bundled, system
 

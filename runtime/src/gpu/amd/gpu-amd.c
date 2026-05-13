@@ -176,7 +176,7 @@ void chpl_gpu_impl_begin_init(int* num_all_devices) {
 }
 
 static hipDevice_t ith_device(int i) {
-#if ROCM_VERSION_MAJOR >= 6
+#if CHPL_ROCM_VERSION_MAJOR >= 6
   return i;
 #else
   hipDevice_t device;
@@ -232,7 +232,7 @@ void chpl_gpu_impl_setup_with_device_count(int num_my_devices) {
 
 void chpl_gpu_impl_setup_device(int my_index, int global_index) {
   hipDevice_t device = ith_device(global_index);
-#if ROCM_VERSION_MAJOR >= 6
+#if CHPL_ROCM_VERSION_MAJOR >= 6
   ROCM_CALL(hipSetDevice(device));
   ROCM_CALL(hipSetDeviceFlags(hipDeviceScheduleBlockingSync))
 #else
@@ -270,7 +270,7 @@ bool chpl_gpu_impl_is_device_ptr(const void* ptr) {
     }
   }
 
-#if ROCM_VERSION_MAJOR >= 6
+#if CHPL_ROCM_VERSION_MAJOR >= 6
   // TODO: is this right?
   return res.type != hipMemoryTypeUnregistered;
 #else
@@ -294,7 +294,7 @@ bool chpl_gpu_impl_is_host_ptr(const void* ptr) {
     }
   }
   else {
-#if ROCM_VERSION_MAJOR >= 6
+#if CHPL_ROCM_VERSION_MAJOR >= 6
     return res.type == hipMemoryTypeHost || res.type == hipMemoryTypeUnregistered;
 #else
     return res.memoryType == hipMemoryTypeHost;
