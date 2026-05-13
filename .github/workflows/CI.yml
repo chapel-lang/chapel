@@ -70,24 +70,6 @@ jobs:
       run: |
         ./util/buildRelease/smokeTest quickstart mason chpl
 
-  test_retry_failure:
-    runs-on: ubuntu-latest
-    steps:
-      - name: fail and retry
-        uses: nick-fields/retry@v4
-        with:
-          max_attempts: 15
-          timeout_seconds: 60
-          retry_wait_seconds: 1
-          command: |
-            python3 -c '
-            import sys
-            import secrets
-            a = secrets.randbelow(10)
-            print(a)
-            if a > 2:
-              sys.exit(1)'
-
   check_dyno_linters:
     runs-on: ubuntu-latest
     container:
