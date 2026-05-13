@@ -24,9 +24,9 @@ on:
       - .github/workflows/build-CI-container.yml
   # Adds a "manual run" option in the GH UI
   workflow_dispatch:
-  # Also rebuild nightly
+  # Also rebuild weekly
   schedule:
-    - cron: '0 0 * * *'
+    - cron: '0 0 * * 0'
 
 
 jobs:
