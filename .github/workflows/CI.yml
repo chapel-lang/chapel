@@ -50,7 +50,7 @@ jobs:
         ./util/buildRelease/smokeTest quickstart chapel-py docs
         tar -cvf docs.tar.gz -C doc/html .
     - name: upload docs
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: documentation
         path: docs.tar.gz
