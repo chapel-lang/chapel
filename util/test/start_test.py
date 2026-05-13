@@ -508,9 +508,7 @@ def clean(test=False):
     # clean executables, tmps, etc. — call sub_clean directly (no subprocess)
     try:
         if test:  # single test
-            logger.write(
-                "[Starting {0} {1}]".format(test, date_str)
-            )
+            logger.write("[Starting {0} {1}]".format(test, date_str))
             to_clean = [test]
         else:
             to_clean = ["."]
