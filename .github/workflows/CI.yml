@@ -26,7 +26,7 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     - name: make check
       run: |
         ./util/buildRelease/smokeTest chpl
@@ -39,7 +39,7 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     - name: make frontend-docs
       run: |
         make frontend-docs
@@ -63,7 +63,7 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     - name: make mason
       # Use a quickstart config to keep it from running to long
       # While there, run a make check in that config for more coverage
@@ -78,7 +78,7 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     - name: run dyno linters
       run: |
         CHPL_HOME=$PWD CHPL_HOST_COMPILER=clang make run-dyno-linters
@@ -91,7 +91,7 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     - name: make test-dyno-with-asserts
       # 'make modules' so the ChapelSysCTypes module is available
       run: |
@@ -116,7 +116,7 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     - name: set llvm_none make check
       run: |
        CHPL_LLVM=none ./util/buildRelease/smokeTest chpl
@@ -128,7 +128,7 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         fetch-depth: 100000
     - name: Set ownership
@@ -157,7 +157,7 @@ jobs:
       - name: count PR commits
         run: echo "PR_NUM_COMMITS=$(( ${{ github.event.pull_request.commits }} + 2 ))" >> "${GITHUB_ENV}"
       - name: checkout commits on PR branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: ${{ env.PR_NUM_COMMITS }}
       - name: check commits for large files

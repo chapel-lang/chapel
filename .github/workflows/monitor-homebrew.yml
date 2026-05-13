@@ -19,7 +19,7 @@ jobs:
 
     steps:
     - name: Checkout this repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
 
     - name: Fetch released version of Chapel formula
       run: |
