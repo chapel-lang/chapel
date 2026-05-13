@@ -246,7 +246,7 @@ def check_llvm_packages(llvm_config):
     else:
         clang_lib_name = "libclang-cpp.so"
 
-    if os.path.isdir(llvm_lib_dir):
+    if llvm_lib_dir and os.path.isdir(llvm_lib_dir):
         clang_cpp_lib = os.path.join(llvm_lib_dir, clang_lib_name)
         clang_cpp_lib_ok = os.path.exists(clang_cpp_lib)
         if usr_include_clang_ok and not clang_cpp_lib_ok:
