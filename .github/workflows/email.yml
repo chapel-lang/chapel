@@ -73,8 +73,8 @@ jobs:
            subject: "[Chapel Merge] ${{github.event.pull_request.title}}"
            # Required recipients' addresses:
            to: chapel+commits@discoursemail.com
-           # Required sender full name (address can be skipped):
-           from:  ${{env.AUTHOR}}
+           # Required sender (supported formats: see "Supported address formats" below)
+           from:  "${{env.AUTHOR}} <chapel_commits@cray.com>"
            body: |
 
               Branch: ${{github.ref}}
