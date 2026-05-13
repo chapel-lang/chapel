@@ -516,10 +516,7 @@ def clean(test=False):
             to_clean = [test]
         else:
             to_clean = ["."]
-        buf = io.StringIO()
-        with contextlib.redirect_stdout(buf):
-            sub_clean.clean(to_clean)
-        logger.write(buf.getvalue())
+        logger.write(sub_clean.clean(to_clean))
     except:
         logger.write("[Error: sub_clean error]")
 

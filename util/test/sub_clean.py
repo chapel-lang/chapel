@@ -47,10 +47,11 @@ def unlink(f, removeDirs=False):
         pass
 
 # Clean the files associated with a Chapel test program
-def cleanChapelTest(f):
+def _cleanChapelTest(f):
     execname = getExecname(f)
+    lines = []
     if execname:
-        print('Cleaning test: '+execname)
+        lines.append('Cleaning test: '+execname+'\n')
         globfiles = glob.glob(execname+'.*.out.tmp')
         for g in globfiles:
             unlink(g)
@@ -58,14 +59,16 @@ def cleanChapelTest(f):
         unlink(execname+'_real')
         unlink(execname+'.dSYM', removeDirs=True)
         unlink(execname+'_real.dSYM', removeDirs=True)
-        cleanCleanfiles(None, execname+'.cleanfiles', False)
+        lines.extend(_cleanCleanfiles(None, execname+'.cleanfiles', False))
+    return lines
 
 # Clean files listed in the file c, in the directory d (if given)
-def cleanCleanfiles(d, c, rmCore):
+def _cleanCleanfiles(d, c, rmCore):
     if d:
         cleanfile = os.path.join(d,c)
     else:
         cleanfile = c
+    lines = []
     if os.access(cleanfile,os.R_OK):
         cleanfiles = ReadCleanfiles(cleanfile)
         if rmCore:
@@ -76,30 +79,35 @@ def cleanCleanfiles(d, c, rmCore):
             else:
                 globfiles = glob.glob(f)
             for g in globfiles:
-                print('Removing '+g)
+                lines.append('Removing '+g+'\n')
                 unlink(g, removeDirs=True)
+    return lines
 
 
-def clean(to_clean = ['.']):
+def clean(to_clean=['.']):
     #
     # Cleaning..
     #
-    sys.stdout.write('[Starting sub_clean - %s]\n'%(time.strftime('%a %b %d %H:%M:%S %Z %Y', time.localtime())))
-    sys.stdout.write('[pwd: '+os.getcwd()+']\n')
+    lines = [
+        '[Starting sub_clean - %s]\n'%(time.strftime('%a %b %d %H:%M:%S %Z %Y', time.localtime())),
+        '[pwd: '+os.getcwd()+']\n',
+    ]
 
     for f in to_clean:
         if os.path.isdir(f):
-            print('Cleaning directory: '+f)
+            lines.append('Cleaning directory: '+f+'\n')
             dirlist = glob.glob(f+'/*.chpl')
             dirlist += glob.glob(f+'/*.test.c')
             dirlist += glob.glob(f+'/*.ml-test.c')
             dirlist.sort()
             for file in dirlist:
-                cleanChapelTest(file)
-            cleanCleanfiles(f, 'CLEANFILES', True)
+                lines.extend(_cleanChapelTest(file))
+            lines.extend(_cleanCleanfiles(f, 'CLEANFILES', True))
         else:
-            cleanChapelTest(f)
-            cleanCleanfiles(os.path.dirname(f), 'CLEANFILES', True)
+            lines.extend(_cleanChapelTest(f))
+            lines.extend(_cleanCleanfiles(os.path.dirname(f), 'CLEANFILES', True))
+
+    return ''.join(lines)
 
 
 if __name__ == '__main__':
@@ -107,4 +115,4 @@ if __name__ == '__main__':
         to_clean = ['.']
     else:
         to_clean = sys.argv[1:]
-    clean(to_clean)
+    sys.stdout.write(clean(to_clean))
