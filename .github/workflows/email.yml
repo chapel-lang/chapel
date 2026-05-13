@@ -58,7 +58,7 @@ jobs:
               echo 'EOF' >> $GITHUB_ENV
 
       - name: Send mail
-        uses: dawidd6/action-send-mail@v3
+        uses: dawidd6/action-send-mail@v17
         with:
            # Required mail server address if not connection_url:
            server_address: ${{ secrets.SMTP_PROVIDER}}
