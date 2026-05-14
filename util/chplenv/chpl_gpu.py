@@ -435,8 +435,14 @@ def get_runtime_compile_args():
         system.append("-isystem" + os.path.join(sdk_path, "include"))
         system.append("-isystem" + os.path.join(sdk_path, "hip", "include"))
 
-        major_version = get_sdk_version().split(".")[0]
+        major_version, minor_version = get_sdk_version().split(".")[:2]
         bundled.append("-DCHPL_ROCM_VERSION_MAJOR=" + major_version)
+        bundled.append("-DCHPL_ROCM_VERSION_MINOR=" + minor_version)
+
+        # with LLVM 22+, __AMDGCN_WAVEFRONT_SIZE is removed. but to support
+        # rocm 6.x, we still need it
+        if int(chpl_llvm.get_llvm_version()) >= 22 and int(major_version) == 6:
+            bundled.append("-D__AMDGCN_WAVEFRONT_SIZE=64")
 
     return bundled, system
 
