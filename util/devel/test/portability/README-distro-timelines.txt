@@ -164,7 +164,7 @@ x 18.04 "Bionic Beaver"     LTS until Jun 2023, EOL Apr 2028
 x 20.04 "Focal Fossa"       LTS until Apr 2025, EOL Apr 2030
   22.04 "Jammy Jellyfish"   LTS until Jun 2027, EOL Apr 2032
   24.04 "Noble Numbat"      LTS until Jun 2029, EOL Apr 2036
-  26.04 "Resolute Raccoon"  Upcoming release in April 2026
+  26.04 "Resolute Raccoon"  LTS until Apr 2031, EOL Apr 2036
 
 non-LTS:
 x 14.10 "Utopic Unicorn"    EOL July 2015
