@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-#include <primitive_field.h>
+#include "primitive_field.h"
 
 namespace chapel {
 

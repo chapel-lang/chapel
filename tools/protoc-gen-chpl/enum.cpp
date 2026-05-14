@@ -18,8 +18,8 @@
  * limitations under the License.
  */
 
-#include <enum.h>
-#include <helpers.h>
+#include "enum.h"
+#include "helpers.h"
 
 namespace chapel {
 

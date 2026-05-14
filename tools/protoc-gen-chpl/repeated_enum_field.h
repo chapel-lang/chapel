@@ -24,7 +24,7 @@
 #include <google/protobuf/io/printer.h>
 #include <google/protobuf/descriptor.h>
 
-#include <field_base.h>
+#include "field_base.h"
 
 namespace chapel {
 
