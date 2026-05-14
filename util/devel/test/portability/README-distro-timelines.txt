@@ -1,6 +1,6 @@
 x means reached end of life
 - means end of life soon
-  (last updated: 2026-02-24)
+  (last updated: 2026-05-14)
 
 Alma Linux -- see https://wiki.almalinux.org/release-notes/
            -- Version 9 will have active support until 31 May 2027, and security support until 31 May 2032.
