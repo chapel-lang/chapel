@@ -47,7 +47,7 @@ x  7 "wheezy"   long-term support until May 2018
 x  8 "jessie"   long-term support until May 2020
 x  9 "stretch"  long-term support until Jun 2022
 x 10 "buster"   long-term support until Jun 2024
-  11 "bullseye" long-term support until Jun 2026
+  11 "bullseye" long-term support until Aug 2026
   12 "bookworm" long-term support until Jun 2028
   13 "trixie"   long-term support until Jun 2030
   14 "forky"    expected release ?
