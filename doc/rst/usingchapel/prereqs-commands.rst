@@ -45,7 +45,7 @@
       sudo pacman -Syu
       sudo pacman -S base-devel
       sudo pacman -S cmake git python libunwind
-      sudo pacman -S llvm22 clang22
+      sudo pacman -S llvm clang
 
 
   * CentOS Stream 9, 10::
