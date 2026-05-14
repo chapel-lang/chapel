@@ -108,9 +108,10 @@ x 13.3 EOL Dec 2024
 x 14.0 EOL Sep 2024
 x 14.1 EOL Mar 2025
 x 13.4 EOL Jun 2025
-  13.5 EOL Apr 2026 (Legacy Release)
+x 13.5 EOL Apr 2026 (still testing as newer don't have boxes)
 x 14.2 EOL Sep 2025
-  14.3 EOL Jun 2026 (Production Release)
+x 14.3 EOL Jun 2026
+  14.4 EOL Dec 2026 (awaiting vagrant box)
   15.0 EOL Sep 2026 (awaiting vagrant box)
 
 OpenSuse -- see https://en.opensuse.org/Lifetime
