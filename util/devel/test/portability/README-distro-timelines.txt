@@ -78,7 +78,9 @@ x 40 EOL May 2025
 x 41 EOL Nov 2025
   42 EOL May 2026
   43 EOL Dec 2026
-  44 release April 2026
+  44 EOL Jun 2027
+  45 release Oct 2026
+  46 release Apr 2027
 
 FreeBSD -- see https://www.freebsd.org/security/unsupported.html (unsupported releases)
         -- and https://www.freebsd.org/releases/ (all releases)
