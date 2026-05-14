@@ -8,7 +8,7 @@ source $UTIL_CRON_DIR/common.bash
 source /hpcdc/project/chapel/setup_llvm.bash 14
 
 clang_version=$(clang -dumpversion)
-clang_version_major=$(echo $clang_version | cut -d. -f1)
+clang_version_major=$(cut -d. -f1 <<< "$clang_version")
 if [ "$clang_version_major" != "14" ]; then
   echo "Wrong clang version"
   echo "Expected Version: 14 Actual Version: $clang_version"
