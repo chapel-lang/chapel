@@ -155,7 +155,7 @@ The following are further requirements for GPU support:
     * While CUDA 12.9 may work, it is untested and may generate deprecation
       warnings.
 
-  * We test with LLVM 20. Older versions may work.
+  * We test with LLVM 22. Older versions may work.
 
     * Note that LLVM versions older than 16 do not support CUDA 12.
 
