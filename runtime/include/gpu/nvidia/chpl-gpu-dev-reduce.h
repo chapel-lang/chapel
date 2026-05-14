@@ -78,7 +78,7 @@ chpl_gpu_dev_##chpl_kind##_breduce_##data_type##_##block_size(data_type thread_v
   } \
 }
 
-#if defined(CUDA_VERSION) && CUDA_VERSION >= 129
+#if defined(CHPL_CUDA_VERSION) && CHPL_CUDA_VERSION >= 129
 GPU_DEV_REDUCE(DEF_ONE_DEV_REDUCE_RET_VAL, cuda::minimum, min);
 GPU_DEV_REDUCE(DEF_ONE_DEV_REDUCE_RET_VAL, cuda::maximum, max);
 #else

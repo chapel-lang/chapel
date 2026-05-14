@@ -43,6 +43,7 @@ from chplenv import *
 import py3_compat
 import re2_supports_valgrind
 import check_perf_graphs
+import sub_clean
 
 import argparse
 
@@ -505,16 +506,13 @@ def clean(test=False):
     date_str = time.strftime("%a %b %d %H:%M:%S %Z %Y")
 
     # clean executables, tmps, etc.
-    sub_clean = os.path.join(util_dir, "test", "sub_clean")
     try:
         if test:  # single test
-            logger.write(
-                "[Starting {0} {1} {2}]".format(sub_clean, test, date_str)
-            )
-            out = run_command([sub_clean, test])
+            logger.write("[Starting sub_clean {0} {1}]".format(test, date_str))
+            to_clean = [test]
         else:
-            out = run_command([sub_clean])
-        logger.write(out)
+            to_clean = ["."]
+        logger.write(sub_clean.clean(to_clean))
     except:
         logger.write("[Error: sub_clean error]")
 
