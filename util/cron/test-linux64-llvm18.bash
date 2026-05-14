@@ -9,9 +9,10 @@ source /hpcdc/project/chapel/chpl-deps/chapcs11/setup_llvm.bash 18
 
 # Check LLVM version via llvm-config from CHPL_LLVM_CONFIG
 llvm_version=$($CHPL_LLVM_CONFIG --version)
-if [ "$llvm_version" != "18.1.8" ]; then
+llvm_version_major=$(echo $llvm_version | cut -d. -f1)
+if [ "$llvm_version_major" != "18" ]; then
   echo "Wrong LLVM version"
-  echo "Expected Version: 18.1.8 Actual Version: $llvm_version"
+  echo "Expected Version: 18 Actual Version: $llvm_version"
   exit 2
 fi
 
