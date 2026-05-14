@@ -7,7 +7,6 @@ From: ubuntu:resolute
 %post
     # the deps will pause setting up tzdata if not set to noninteractive
     DEBIAN_FRONTEND=noninteractive /provision-scripts/apt-get-deps.sh
-    # installs LLVM 20
     /provision-scripts/apt-get-llvm.sh
 
 %runscript
