@@ -258,6 +258,8 @@ def check_llvm_packages(llvm_config):
             # use e.g. /usr/lib64/libclang-cpp.so
             clang_cpp_lib = os.path.join("/usr/lib64", clang_lib_name)
             clang_cpp_lib_ok = os.path.exists(clang_cpp_lib)
+    else:
+        llvm_include_ok = False
 
     s = ""
     if not llvm_include_ok:
