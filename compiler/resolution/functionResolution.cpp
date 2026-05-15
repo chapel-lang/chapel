@@ -3448,11 +3448,12 @@ static bool resolveFunctionPointerCall(CallExpr* call) {
 
   // Instead of refactoring promotion wrapping machinery, create a wrapper for
   // this particular call and resolve it normally.
-  if (anyPromotes) {
+  if (!call->parentSymbol->hasFlag(FLAG_POINTER_WRAPPER)) {
     static int promoWrapperId = 0;
-    auto name = astr("chpl_fnptr_promo_wrapper_", std::to_string(promoWrapperId++).c_str());
+    auto name = astr("chpl_fnptr_wrapper_", std::to_string(promoWrapperId++).c_str());
     FnSymbol* fn = new FnSymbol(name);
     fn->addFlag(FLAG_COMPILER_GENERATED);
+    fn->addFlag(FLAG_POINTER_WRAPPER);
     CallExpr* wrappedCall = new CallExpr(call->baseExpr->copy());
     for (int i = 0; i < ft->numFormals(); i++) {
       auto formal = ft->formal(i);
@@ -3463,7 +3464,7 @@ static bool resolveFunctionPointerCall(CallExpr* call) {
 
     fn->retType = ft->returnType();
     if (ft->returnType() != dtVoid) {
-      VarSymbol* ret = newTemp("fnptr_promo_wrapper_ret", ft->returnType());
+      VarSymbol* ret = newTemp("chpl_fnptr_wrapper_ret", ft->returnType());
       fn->body->insertAtTail(new DefExpr(ret));
       fn->body->insertAtTail(new CallExpr(PRIM_MOVE, ret, wrappedCall));
       fn->body->insertAtTail(new CallExpr(PRIM_RETURN, ret));
@@ -3472,6 +3473,7 @@ static bool resolveFunctionPointerCall(CallExpr* call) {
     }
 
     call->getStmtExpr()->insertBefore(new DefExpr(fn));
+    normalize(fn);
 
     call->baseExpr->replace(new SymExpr(fn));
     resolveNormalCall(call);
