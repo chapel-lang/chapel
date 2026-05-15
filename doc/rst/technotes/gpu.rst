@@ -165,17 +165,16 @@ The following are further requirements for GPU support:
 
 * Specifically for targeting AMD GPUs:
 
-  * ROCm version between 5.0 and 5.4, between ROCm 6.0 and 6.3, or ROCm 7 must be
+  * ROCm version between 5.0 and 5.4, 6.3, or ROCm 7 must be
     installed.
 
   * For ROCm 5.x, ``CHPL_LLVM`` must be set to ``system``. Note that, ROCm
     installations come with LLVM. Setting ``CHPL_LLVM=system`` will allow you to
     use that LLVM. Note that ROCm 5.x is not actively tested and we recommend
-    using ROCm 6.x.
+    using ROCm 7.
 
-  * For ROCm 6.x, only ``CHPL_LLVM=bundled`` is supported. Only with ROCm 6.3
-    and above, ``CHPL_LLVM=system`` can be used as long as it is at least
-    LLVM 21+.
+  * For ROCm 6.3, only LLVM 21 is supported. Note that ROCm 6.x is not
+    actively tested and we recommend using ROCm 7.
 
   * For ROCm 7.x, only LLVM 21+ is supported.
 
@@ -708,13 +707,13 @@ marked with * are covered in our nightly testing configurations.
 
   * Hardware: RTX A2000, P100*, V100*, A100*, H100, GH200
 
-  * Software: CUDA 11.7, 11.8*, 12.0, 12.2, 12.4, 12.8*
+  * Software: CUDA 11.7, 11.8, 12.0, 12.2, 12.4, 12.8*, 12.9
 
 * AMD
 
   * Hardware: MI60, MI100 and MI250X*
 
-  * Software:ROCm 5.4, 6.0, 6.1, 6.2*, 6.3*
+  * Software:ROCm 5.4, 6.0, 6.1, 6.2, 6.3, 7.0*, 7.1, 7.2
 
 
 GPU Support on Windows Subsystem for Linux
