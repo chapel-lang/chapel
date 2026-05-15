@@ -2127,20 +2127,20 @@ static void codegen_header(std::set<const char*> & cnames,
   dtObject->codegenPrototype();
   dtObject->codegenDef();
 
-  // Generate procedure pointer types first to handle circular dependencies.
-  genComment("Procedure Pointer Types");
-  forv_Vec(TypeSymbol, ts, types) {
-    if (auto ft = toFunctionType(ts->type)) {
-      ft->codegenDef();
-    }
-  }
-
   genComment("Class Prototypes");
   forv_Vec(TypeSymbol, typeSymbol, types) {
     if (!typeSymbol->hasFlag(FLAG_REF) && !typeSymbol->hasFlag(FLAG_DATA_CLASS))
     {
       if (typeSymbol->type == dtObject) continue;
       typeSymbol->codegenPrototype();
+    }
+  }
+
+  // Generate procedure pointer types first to handle circular dependencies.
+  genComment("Procedure Pointer Types");
+  forv_Vec(TypeSymbol, ts, types) {
+    if (auto ft = toFunctionType(ts->type)) {
+      ft->codegenDef();
     }
   }
 
