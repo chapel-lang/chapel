@@ -15,5 +15,5 @@ export CHPL_GPU_ARCH=gfx90a
 
 module list
 
-export CHPL_NIGHTLY_TEST_CONFIG_NAME="gpu-ex-rocm-63"
+export CHPL_NIGHTLY_TEST_CONFIG_NAME="gpu-ex-rocm-7"
 $UTIL_CRON_DIR/nightly -cron ${nightly_args}
