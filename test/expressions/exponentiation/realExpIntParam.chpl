@@ -5,6 +5,5 @@ proc testit(param exp) {
   writeln(b, "**", exp, " = ", res);
 }
 
-for param i in 0..8 do
-  if i != 7 then
-    testit(i);
+for param i in 0..10 do
+  testit(i);
