@@ -1066,7 +1066,9 @@ module ChapelBase {
   inline operator **(a: uint(?w), param b: integral) where _canOptimizeExp(b) do return _expHelp(a, b);
   inline operator **(a: real(?w), param b: integral) where _canOptimizeExp(b) do return _expHelp(a, b);
   inline operator **(param a: real(?w), param b: integral) param where _canOptimizeExp(b) do return _expHelpParam(a, b);
-  inline operator **(param a: real(?w), param b: integral) param do return __primitive("**", a, b);
+  inline operator **(param a: real(?w), param b: integral) param do return __primitive("**", a, b:real(w));
+  inline operator **(param a: real(32), param b: real(32)) param do return __primitive("**", a, b:real(32));
+  inline operator **(param a: real(64), param b: real(64)) param do return __primitive("**", a, b:real(64));
   inline operator **(param a: integral, b: int) where _basePowerTwo(a) do return _expBaseHelp(a, b);
 
   //
