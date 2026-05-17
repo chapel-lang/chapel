@@ -86,7 +86,8 @@ public:
 private:
   typedef std::map<int, ReturnByRef*> RefMap;
 
-  static void             returnByRefCollectCalls(RefMap& calls);
+  static void             returnByRefCollectCalls(RefMap& calls,
+                                                   std::vector<CallExpr*>& indirectMoves);
   static bool             isTransformableFunction(FnSymbol* fn);
   static void             transformFunction(FnSymbol* fn);
   static ArgSymbol*       addFormal(FnSymbol* fn);
@@ -109,7 +110,7 @@ private:
   void                    addCall(CallExpr* call);
 
   void                    transform();
-  void                    transformMove(CallExpr* moveExpr);
+  static void             transformMove(CallExpr* moveExpr);
 
   FnSymbol*               mFunction;
   std::vector<CallExpr*>  mCalls;
@@ -117,10 +118,11 @@ private:
 
 void ReturnByRef::apply()
 {
-  RefMap           map;
-  RefMap::iterator iter;
+  RefMap                  map;
+  RefMap::iterator        iter;
+  std::vector<CallExpr*>  indirectMoves;
 
-  returnByRefCollectCalls(map);
+  returnByRefCollectCalls(map, indirectMoves);
 
   for (iter = map.begin(); iter != map.end(); iter++)
     iter->second->transform();
@@ -140,6 +142,71 @@ void ReturnByRef::apply()
       }
     }
   }
+
+  // Transform FnSymbols that are used as procedurepointers. Such functions
+  // may have no direct call sites and therefore would not appear in the
+  // RefMap collected above. We also build a mapping from old to new
+  // FunctionType so that the types stored on procedure-pointer variables can
+  // be updated to reflect the new signature (e.g., retarg formal).
+  //
+  // Note: transformFunction is a no-op when FLAG_FN_RETARG is already
+  // set, so functions that were already handled via a direct call site
+  // in the loop above are skipped here without double-transformation.
+  std::map<FunctionType*, FunctionType*> ftUpdateMap;
+
+  forv_Vec(FnSymbol, fn, gFnSymbols)
+  {
+    if (fn->hasFlag(FLAG_FIRST_CLASS_FUNCTION_INVOCATION) &&
+        isTransformableFunction(fn))
+    {
+      FunctionType* oldFT = toFunctionType(fn->type);
+
+      transformFunction(fn);
+
+      // Recompute fn->type to incorporate the retarg formal and void
+      // return that transformFunction introduced.
+      FunctionType* newFT = fn->computeAndSetType();
+
+      if (oldFT != NULL && newFT != NULL && oldFT != newFT)
+        ftUpdateMap[oldFT] = newFT;
+    }
+  }
+
+  // Update the stored FunctionType on every VarSymbol and ArgSymbol
+  // that holds a reference to one of the now-transformed functions.
+  // Without this step the indirect call sites would be compiled using
+  // the stale (pre-retarg) signature.
+  if (!ftUpdateMap.empty())
+  {
+    forv_Vec(VarSymbol, var, gVarSymbols)
+    {
+      if (FunctionType* ft = toFunctionType(var->type))
+      {
+        auto it = ftUpdateMap.find(ft);
+        if (it != ftUpdateMap.end())
+          var->type = it->second;
+      }
+    }
+
+    forv_Vec(ArgSymbol, arg, gArgSymbols)
+    {
+      if (FunctionType* ft = toFunctionType(arg->type))
+      {
+        auto it = ftUpdateMap.find(ft);
+        if (it != ftUpdateMap.end())
+          arg->type = it->second;
+      }
+    }
+  }
+
+  // Transform the indirect call sites collected by returnByRefCollectCalls.
+  // Each element is a PRIM_MOVE/PRIM_ASSIGN whose RHS is an indirect call
+  // returning a record type that requires the retarg transformation.
+  for (CallExpr* moveExpr : indirectMoves)
+  {
+    if (moveExpr->inTree())
+      transformMove(moveExpr);
+  }
 }
 
 //
@@ -147,7 +214,8 @@ void ReturnByRef::apply()
 // and all calls to these functions.
 //
 
-void ReturnByRef::returnByRefCollectCalls(RefMap& calls)
+void ReturnByRef::returnByRefCollectCalls(RefMap&                 calls,
+                                          std::vector<CallExpr*>& indirectMoves)
 {
   RefMap::iterator iter;
 
@@ -178,6 +246,25 @@ void ReturnByRef::returnByRefCollectCalls(RefMap& calls)
 
         info->addCall(call);
        }
+      }
+
+      // Collect indirect calls (through a procedure pointer) whose
+      // return type requires the retarg transformation. These cannot
+      // be paired with a specific FnSymbol at this point, so they are
+      // gathered independently and transformed later in apply().
+      // We only handle the PRIM_MOVE / PRIM_ASSIGN parent pattern here,
+      // mirroring the direct-call path in transform().
+      if (call->isIndirectCall()) {
+        if (FunctionType* ft = call->functionType()) {
+          if (typeNeedsCopyInitDeinit(ft->returnType())) {
+            if (CallExpr* parentCall = toCallExpr(call->parentExpr)) {
+              if (parentCall->isPrimitive(PRIM_MOVE) ||
+                  parentCall->isPrimitive(PRIM_ASSIGN)) {
+                indirectMoves.push_back(parentCall);
+              }
+            }
+          }
+        }
       }
     }
   }
