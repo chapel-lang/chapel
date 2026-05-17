@@ -3454,7 +3454,7 @@ static bool resolveFunctionPointerCall(CallExpr* call) {
     FnSymbol* fn = new FnSymbol(name);
     fn->addFlag(FLAG_COMPILER_GENERATED);
     fn->addFlag(FLAG_POINTER_WRAPPER);
-    fn->throwsErrorInit();
+    if (ft->throws()) fn->throwsErrorInit();
     CallExpr* wrappedCall = new CallExpr(call->baseExpr->copy());
     for (int i = 0; i < ft->numFormals(); i++) {
       auto formal = ft->formal(i);
