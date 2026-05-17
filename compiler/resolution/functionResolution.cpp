@@ -3464,11 +3464,9 @@ static bool resolveFunctionPointerCall(CallExpr* call) {
     }
 
     fn->retType = ft->returnType();
+    fn->retTag = ft->returnIntent();
     if (ft->returnType() != dtVoid) {
-      VarSymbol* ret = newTemp("chpl_fnptr_wrapper_ret", ft->returnType());
-      fn->body->insertAtTail(new DefExpr(ret));
-      fn->body->insertAtTail(new CallExpr(PRIM_MOVE, ret, wrappedCall));
-      fn->body->insertAtTail(new CallExpr(PRIM_RETURN, ret));
+      fn->body->insertAtTail(new CallExpr(PRIM_RETURN, wrappedCall));
     } else {
       fn->body->insertAtTail(wrappedCall);
     }
