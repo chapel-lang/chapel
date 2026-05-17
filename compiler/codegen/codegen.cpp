@@ -770,7 +770,7 @@ genFinfo(std::vector<FnSymbol*> & fSymbols, bool isHeader) {
   }
 
   forv_Vec(FnSymbol, fn, fSymbols) {
-    const char* fn_name = fn->cname;
+    const char* fn_name = fn->name;
     int fileno = getFilenameTableIndex(fn->astloc.filename());
     int lineno = fn->astloc.lineno();
 
