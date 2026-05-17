@@ -357,6 +357,9 @@ static bool isValPassedByRef(CallExpr* ce, SymExpr* se)
 bool isDenormalizable(Symbol* sym,
     SymExpr** useOut, Expr** defOut, Type** castTo,
     SafeExprAnalysis& analysisData) {
+  // The rest of denormalize/codegen is not well-equipped to handle
+  // procedure pointers, so let's keep things simple.
+  if (sym && isFunctionType(sym->type->getValType())) return false;
 
   if(sym && !(toFnSymbol(sym) || toArgSymbol(sym) || toTypeSymbol(sym))) {
     if(sym->name != astrThis) { //avoid issue with --baseline
