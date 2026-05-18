@@ -3,7 +3,7 @@
 #
 # Skip running these tests if we are doing "memleaks" or "ml-memleaks"
 # nightly test configs and we are version 3.14.x. We seem to have issues
-# in tests that use our Chpael array wrapper objects in 3.14.x.
+# in tests that use our Chapel array wrapper objects in 3.14.x.
 #
 # Specifically, whenever we make a call to a Python callable on the Chapel
 # side and pass in one of our array wrapper objects, we appear to leak one
