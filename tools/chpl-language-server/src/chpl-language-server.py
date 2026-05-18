@@ -658,6 +658,46 @@ class ChapelLanguageServer(LanguageServer):
         inlays.extend(self._get_type_inlays(decl, qt))
         return inlays
 
+    def _fn_return_type_str(
+        self,
+        fn: chapel.Function,
+        sig: chapel.TypedSignature,
+    ) -> Optional[str]:
+        """
+        Return the inferred return type string for a function given its typed
+        signature, or None if it cannot be determined or is not needed (e.g.,
+        the function already has an explicit return type annotation).
+        """
+        if fn.return_type() is not None:
+            return None
+
+        qt = sig.return_type()
+        if qt is None:
+            return None
+
+        _, type_, _ = qt
+        if not type_ or isinstance(type_, chapel.ErroneousType):
+            return None
+
+        return str(type_)
+
+    def _fn_inlay_from_type_str(
+        self,
+        fn: chapel.Function,
+        type_str: str,
+    ) -> InlayHint:
+        """
+        Build the InlayHint for a function return type
+        """
+        position = location_to_range(fn.header_location()).end
+        edit_text = ": " + type_str
+        text_edits = [TextEdit(Range(position, position), edit_text)]
+        return InlayHint(
+            position=position,
+            label=[InlayHintLabelPart(": "), InlayHintLabelPart(type_str)],
+            text_edits=text_edits,
+        )
+
     def get_fn_inlays(
         self,
         decl: NodeAndRange,
@@ -670,41 +710,60 @@ class ChapelLanguageServer(LanguageServer):
         if not isinstance(fn, chapel.Function):
             return []
 
-        # Skip if the function already has an explicit return type annotation.
-        if fn.return_type() is not None:
-            return []
-
         # Get the typed signature to query the inferred return type.
-        if via is not None:
+        if via is not None and via.ast() == fn:
             sig = via
         else:
             sig = fn.initial_signature()
         if sig is None:
             return []
 
-        qt = sig.return_type()
-        if qt is None:
+        type_str = self._fn_return_type_str(fn, sig)
+        if type_str is None:
             return []
 
-        _, type_, _ = qt
-        if isinstance(type_, chapel.ErroneousType):
+        return [self._fn_inlay_from_type_str(fn, type_str)]
+
+    def get_common_fn_inlays(
+        self,
+        decl: NodeAndRange,
+        fi: FileInfo,
+    ) -> List[InlayHint]:
+
+        if not self.fn_type_inlays or not self.use_resolver:
             return []
 
-        type_str = str(type_)
+        fn = decl.node
+        if not isinstance(fn, chapel.Function):
+            return []
 
-        position = location_to_range(fn.header_location()).end
-        edit_text = ": " + type_str
-        text_edits = [TextEdit(Range(position, position), edit_text)]
-        colon_label = InlayHintLabelPart(": ")
-        label = InlayHintLabelPart(type_str)
+        # * If there are no instantiations, nothing to show.
+        # * If there's only one, we can't distinguish "common" from
+        #   "just in this one", so don't show anything.
+        insts = list(fi.context.instantiations(fn.unique_id()))
+        if len(insts) < 2:
+            return []
 
-        return [
-            InlayHint(
-                position=position,
-                label=[colon_label, label],
-                text_edits=text_edits,
+        type_strs = set()
+        for i, _ in insts:
+            # If any one of the instantiations is purely provided by
+            # CLS, don't show common inlays.
+            from_real_call = any(
+                ctx != () for ctx in fi.context.call_contexts(i)
             )
-        ]
+            if not from_real_call:
+                return []
+
+            type_str = self._fn_return_type_str(fn, i)
+            if type_str is None:
+                return []
+
+            type_strs.add(type_str)
+
+        if len(type_strs) != 1:
+            return []
+
+        return [self._fn_inlay_from_type_str(fn, type_strs.pop())]
 
     def get_common_decl_inlays(
         self,
@@ -1421,6 +1480,7 @@ def run_lsp():
 
             # Get inalys gathered if all instantiations show the same hint.
             inlays.extend(ls.get_common_decl_inlays(decl, fi))
+            inlays.extend(ls.get_common_fn_inlays(decl, fi))
 
         for call in calls:
             call_range = location_to_range(call.location())
