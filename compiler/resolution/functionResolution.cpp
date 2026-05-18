@@ -3443,6 +3443,8 @@ static bool resolveFunctionPointerCall(CallExpr* call) {
                              "passed to formal '%s'",
                              toString(actualType),
                              toString(formalType));
+
+      return true;
     }
   }
 
