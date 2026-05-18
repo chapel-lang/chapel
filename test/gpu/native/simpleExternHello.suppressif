@@ -1,0 +1,2 @@
+# printf from a kernel results in a segfault
+CHPL_GPU==amd
