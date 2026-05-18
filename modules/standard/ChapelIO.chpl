@@ -40,7 +40,7 @@ module ChapelIO {
   use ChapelLocale;
 
   use IO;
-  import CTypes.{c_ptr, c_int, c_char};
+  import CTypes.{c_ptr, c_ptrConst, c_int, c_char};
 
     private
     proc isIoField(x, param i) param {
@@ -444,11 +444,11 @@ module ChapelIO {
   operator :(x: ?t1, type t2: string) where isProcedureType(t1) {
     if useProcedurePointers then try! {
       extern record chpl_fn_info {
-        const name: c_ptr(c_char);
+        const name: c_ptrConst(c_char);
       }
       extern const chpl_ftableSize: int(64);
       extern proc chpl_get_ftable(): c_ptr(c_ptr(void));
-      extern const chpl_finfo: c_ptr(chpl_fn_info);
+      extern const chpl_finfo: c_ptrConst(chpl_fn_info);
       const chpl_ftable = chpl_get_ftable();
       const xPtr = x : c_ptr(void);
       var name : string;
