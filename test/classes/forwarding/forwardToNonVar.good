@@ -1,2 +1,1 @@
 forwardToNonVar.chpl:4: syntax error: near '('
-forwardToNonVar.chpl:4: error: invalid forwarding declaration, expected a variable declaration

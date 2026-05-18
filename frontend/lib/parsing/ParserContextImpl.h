@@ -2767,19 +2767,13 @@ CommentsAndStmt ParserContext::
 buildForwardingDecl(YYLTYPE location,
                     owned<AttributeGroup> attributeGroup,
                     CommentsAndStmt cs) {
-  auto decl = cs.stmt->toDecl();
-  if (!cs.stmt->isVariable() &&
-      !cs.stmt->isMultiDecl() &&
-      !cs.stmt->isTupleDecl() &&
-      decl == nullptr) {
-    error(location, "invalid forwarding declaration, expected a variable declaration");
-    if (cs.stmt->isErroneousExpression()) {
-      return cs;
-    } else {
-      auto node = ErroneousExpression::build(builder, convertLocation(location));
-      return makeCommentsAndStmt(cs.comments, node.release());
-    }
+  if (cs.stmt->isErroneousExpression()) {
+    auto node = ErroneousExpression::build(builder, convertLocation(location));
+    return makeCommentsAndStmt(cs.comments, node.release());
   }
+  CHPL_ASSERT(cs.stmt->isVariable() || cs.stmt->isMultiDecl() || cs.stmt->isTupleDecl());
+  auto decl = cs.stmt->toDecl();
+  CHPL_ASSERT(decl);
   CHPL_ASSERT(!decl->attributeGroup());
   // TODO: pattern for composing comments should be extracted to helper
   auto commentExprs = appendList(makeList(), cs.comments);
