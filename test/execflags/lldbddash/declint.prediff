@@ -15,6 +15,8 @@ grep -v "Breakpoint 1: where" $tmpfile | \
   grep -v 'breakpoint set -n debuggerBreakHere -N debuggerBreakHere' | \
   grep -v 'breakpoint command add' | \
   grep -v 'command script import' | \
+  grep -v 'target stop-hook add' | \
+  grep -v 'Stop hook #' | \
   grep -v 'runtime/etc/debug/lldb.commands' \
   > $outfile
 # Also filter out line about memleaks arguments to executable
