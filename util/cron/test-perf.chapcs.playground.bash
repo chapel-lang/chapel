@@ -46,4 +46,4 @@ set +e
 
 perf_args="-performance-description $SHORT_NAME -performance-configs default:v,$SHORT_NAME:v -sync-dir-suffix $SHORT_NAME"
 perf_args="${perf_args} -numtrials 1 -startdate $START_DATE"
-$UTIL_CRON_DIR/nightly -cron ${perf_args} ${nightly_args}'
+$UTIL_CRON_DIR/nightly -cron ${perf_args} ${nightly_args}
