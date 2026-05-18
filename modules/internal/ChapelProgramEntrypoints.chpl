@@ -88,9 +88,11 @@ module ChapelProgramEntrypoints {
       return;
     }
 
+    const ptr = chpl_prepareProgramInfoHere();
+
     // NOTE: The call 'chpl_rt_init' is idempotent and nothing will happen
     // if the runtime is already initialized.
-    chpl_rt_init(chpl_programInfoHere.asPtr(), argc, argv);
+    chpl_rt_init(ptr, argc, argv);
 
     // TODO: There really needs to be a better way to do this. Is the normal
     //       casting not working because the proc-ptr is a class right now?
