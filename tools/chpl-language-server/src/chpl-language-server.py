@@ -730,7 +730,11 @@ class ChapelLanguageServer(LanguageServer):
         fi: FileInfo,
     ) -> List[InlayHint]:
 
-        if not self.fn_type_inlays or not self.common_inlays or not self.use_resolver:
+        if (
+            not self.fn_type_inlays
+            or not self.common_inlays
+            or not self.use_resolver
+        ):
             return []
 
         fn = decl.node
