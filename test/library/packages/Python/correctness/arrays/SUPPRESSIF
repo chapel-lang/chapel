@@ -58,8 +58,7 @@ major_version=$(echo $version_str | cut -d' ' -f1)
 minor_version=$(echo $version_str | cut -d' ' -f2)
 patch_version=$(echo $version_str | cut -d' ' -f3)
 
-# since python 3.14 we have seen extra uncleaned up memory reported
-# so with a python 3.14 or higher, use a different expected output file
+# Suppress output if we're 3.14.x and doing nightly memleak testing.
 if [ $major_version -gt 3 ] || \
    [ $major_version -eq 3 -a $minor_version -ge 14 ]; then \
   if [[ "$is_memleaks_nightly" -ge 0 ]]; then
