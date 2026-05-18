@@ -2767,6 +2767,10 @@ CommentsAndStmt ParserContext::
 buildForwardingDecl(YYLTYPE location,
                     owned<AttributeGroup> attributeGroup,
                     CommentsAndStmt cs) {
+  if (cs.stmt->isErroneousExpression()) {
+    auto node = ErroneousExpression::build(builder, convertLocation(location));
+    return makeCommentsAndStmt(cs.comments, node.release());
+  }
   CHPL_ASSERT(cs.stmt->isVariable() || cs.stmt->isMultiDecl() || cs.stmt->isTupleDecl());
   auto decl = cs.stmt->toDecl();
   CHPL_ASSERT(decl);
