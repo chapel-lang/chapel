@@ -15,6 +15,10 @@ module load cray-pmi
 
 export CHPL_HOST_PLATFORM=hpe-cray-ex
 
+# `common.bash` sets CHPL_TARGET_CPU to 'none' but we'd prefer to test
+# the CPU defined by the environment on the EX
+unset CHPL_TARGET_CPU
+
 # Work around cxi provider bugs that limit memory registration
 export CHPL_RT_MAX_HEAP_SIZE="50%"
 export CHPL_LAUNCHER_MEM=unset
