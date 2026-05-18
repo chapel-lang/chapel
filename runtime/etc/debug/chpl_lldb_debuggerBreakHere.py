@@ -1,4 +1,6 @@
 import lldb
+
+
 class DebuggerBreakHereStopHook:
     def __init__(self, target, extra_args, internal_dict):
         pass
@@ -16,8 +18,14 @@ class DebuggerBreakHereStopHook:
         if count < 2:
             return True
         brkId = thread.GetStopReasonDataAtIndex(0)
-        breakpointInfo = thread.GetProcess().GetTarget().FindBreakpointByID(brkId)
-        isNamedDebuggerBreakHere = breakpointInfo and breakpointInfo.IsValid() and breakpointInfo.MatchesName("debuggerBreakHere")
+        breakpointInfo = (
+            thread.GetProcess().GetTarget().FindBreakpointByID(brkId)
+        )
+        isNamedDebuggerBreakHere = (
+            breakpointInfo
+            and breakpointInfo.IsValid()
+            and breakpointInfo.MatchesName("debuggerBreakHere")
+        )
         numLocations = breakpointInfo.GetNumLocations()
         if numLocations < 1:
             return True
@@ -25,7 +33,11 @@ class DebuggerBreakHereStopHook:
         if not location or not location.IsValid():
             return True
         breakFunc = location.GetAddress().GetFunction()
-        isBreakOnDebuggerBreakHere = breakFunc and breakFunc.IsValid() and breakFunc.GetName().startswith("debuggerBreakHere(")
+        isBreakOnDebuggerBreakHere = (
+            breakFunc
+            and breakFunc.IsValid()
+            and breakFunc.GetName().startswith("debuggerBreakHere(")
+        )
 
         if not (isNamedDebuggerBreakHere or isBreakOnDebuggerBreakHere):
             return True
