@@ -692,11 +692,6 @@ class ChapelLanguageServer(LanguageServer):
 
         type_str = str(type_)
 
-        if fn.where_clause():
-            # TODO: 'where' clause location improperly reported;
-            #       the anchor is in the wrong spot. Skip.
-            return []
-
         position = location_to_range(fn.header_location()).end
         edit_text = ": " + type_str
         text_edits = [TextEdit(Range(position, position), edit_text)]
