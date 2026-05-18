@@ -1507,7 +1507,7 @@ MostSpecificCandidate::fromTypedFnSignature(ResolutionContext* rc,
       }
     }
 
-    // If this candiadte is being turned into an iterator via promotion,
+    // If this candidate is being turned into an iterator via promotion,
     // flag any formals that are scalar but 'out' or 'inout', since they will
     // be potentially written to in parallel and thus racey / invalid.
     if (promoted && (formalType.kind() == QualifiedType::OUT ||
