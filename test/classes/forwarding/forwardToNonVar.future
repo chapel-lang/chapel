@@ -1,3 +1,0 @@
-bug: forwarding to a badly-formed variable declaration causes internal error
-
-#25067
