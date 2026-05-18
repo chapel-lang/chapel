@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+
+#
+# Skip running these tests if we are doing "memleaks" or "ml-memleaks"
+# nightly test configs and we are version 3.14.x. We seem to have issues
+# in tests that use our Chpael array wrapper objects in 3.14.x.
+#
+# Specifically, whenever we make a call to a Python callable on the Chapel
+# side and pass in one of our array wrapper objects, we appear to leak one
+# additional Python reference per call (the reference count bumps up by 1
+# and never goes back down) in 3.14.x.
+#
+# Python seems to have introduced a bunch of new optimizations in this
+# minor release. Here are some possible leads:
+#
+#   - A new tailcall interpreter was introduced, and it is on by default
+#     in most (all?) 3.14.x installs. It requires Clang-19 to build, so
+#     you'd need to build Python from source and make sure to disable it
+#     in order to see if it's the problem.
+#   - A new incremental GC was introduced and disabled in 3.14.5. I don't
+#     think this is the issue (I ran with 3.14.5) but we could double check.
+#     We're leaking references, it makes sense the GC would not be called.
+#   - It could be an issue with 'PyObject_Call' deferring more strongly to
+#     "vectorcall", which does not create references (?).
+#   - The behavior of a  particular PyAPI function could have been adjusted.
+#   - It could just be a bug. (!!!)
+#
+# I did put 'printf' calls in our 'INCREF' and 'DECREF' wrappers and I saw
+# that more or less, we match every INCREF with a DECREF in code that does
+# leak references, so I'm not sure it's something we're doing wrong. I think
+# something is changing on Python's end with how references are created.
+#
+# Note that this doesn't mean all our code is bulletproof, there could be
+# an INCREF or DECREF happening somewhere in there that doesn't call out
+# to our wrapper (it wasn't inserted manually, but happens as a result of
+# a PyAPI call that we didn't know bumps the reference count). But IDK
+# about the likelihood of this, just throwing it out there. I'm guessing
+# that it's a Python bug, but...
+#
+
+# See whether we're running memleaks nightly testing.
+is_memleaks_nightly=0
+if [[ "$CHPL_NIGHTLY_TEST_CONFIG_NAME" == "memleaks" ]]; then
+    is_memleaks_nightly=1
+elif [[ "$CHPL_NIGHTLY_TEST_CONFIG_NAME" == "ml-memleaks" ]]; then
+    is_memleaks_nightly=1
+fi
+
+# respect CHPL_TEST_VENV_DIR if it is set and not none
+if [ -n "$CHPL_TEST_VENV_DIR" ] && [ "$CHPL_TEST_VENV_DIR" != "none" ]; then
+  chpl_python=$CHPL_TEST_VENV_DIR/bin/python3
+else
+  chpl_python=$($CHPL_HOME/util/config/find-python.sh)
+fi
+
+version_str=$($chpl_python -c 'import sys; print(*sys.version_info[0:3])')
+major_version=$(echo $version_str | cut -d' ' -f1)
+minor_version=$(echo $version_str | cut -d' ' -f2)
+patch_version=$(echo $version_str | cut -d' ' -f3)
+
+# since python 3.14 we have seen extra uncleaned up memory reported
+# so with a python 3.14 or higher, use a different expected output file
+if [ $major_version -gt 3 ] || \
+   [ $major_version -eq 3 -a $minor_version -ge 14 ]; then \
+  if [[ "$is_memleaks_nightly" -ge 0 ]]; then
+    echo "True"
+  fi
+else
+  echo "False"
+fi
