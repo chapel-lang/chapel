@@ -658,6 +658,59 @@ class ChapelLanguageServer(LanguageServer):
         inlays.extend(self._get_type_inlays(decl, qt))
         return inlays
 
+    def get_fn_inlays(
+        self,
+        decl: NodeAndRange,
+        via: Optional[chapel.TypedSignature] = None,
+    ) -> List[InlayHint]:
+        if not self.fn_type_inlays or not self.use_resolver:
+            return []
+
+        fn = decl.node
+        if not isinstance(fn, chapel.Function):
+            return []
+
+        # Skip if the function already has an explicit return type annotation.
+        if fn.return_type() is not None:
+            return []
+
+        # Get the typed signature to query the inferred return type.
+        if via is not None:
+            sig = via
+        else:
+            sig = fn.initial_signature()
+        if sig is None:
+            return []
+
+        qt = sig.return_type()
+        if qt is None:
+            return []
+
+        _, type_, _ = qt
+        if isinstance(type_, chapel.ErroneousType):
+            return []
+
+        type_str = str(type_)
+
+        if fn.where_clause():
+            # TODO: 'where' clause location improperly reported;
+            #       the anchor is in the wrong spot. Skip.
+            return []
+
+        position = location_to_range(fn.header_location()).end
+        edit_text = ": " + type_str
+        text_edits = [TextEdit(Range(position, position), edit_text)]
+        colon_label = InlayHintLabelPart(": ")
+        label = InlayHintLabelPart(type_str)
+
+        return [
+            InlayHint(
+                position=position,
+                label=[colon_label, label],
+                text_edits=text_edits,
+            )
+        ]
+
     def get_common_decl_inlays(
         self,
         decl: NodeAndRange,
@@ -1366,6 +1419,7 @@ def run_lsp():
         for decl in decls:
             instantiation = fi.get_inst_segment_at_position(decl.rng.start)
             inlays.extend(ls.get_decl_inlays(decl, instantiation))
+            inlays.extend(ls.get_fn_inlays(decl, instantiation))
 
             if instantiation is not None:
                 continue
