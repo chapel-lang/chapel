@@ -217,6 +217,15 @@ CLASS_BEGIN(TypedSignature)
                bool, return node->signature->instantiatedFrom() != nullptr)
   PLAIN_GETTER(TypedSignature, ast, "Get the AST from which this function signature is computed",
                Nilable<const chpl::uast::AstNode*>, return chpl::parsing::idToAst(context, node->signature->id()))
+  PLAIN_GETTER(TypedSignature, return_type, "Get the return type of this function signature",
+               std::optional<QualifiedTypeTuple>,
+               // Avoid computing return type for nested functions, as creating
+               // a dummy RC for nested functions is incorrect.
+               if (node->signature->isNestedFunction()) return {};
+               auto rc = chpl::resolution::createDummyRC(context);
+               auto qt = chpl::resolution::returnType(&rc, node->signature, node->poiScope);
+               if (qt.isUnknown() || qt.isErroneousType()) return {};
+               return std::make_tuple(intentToString(qt.kind()), qt.type(), qt.param()))
   PLAIN_GETTER(TypedSignature, rectangularize, "Replace all generic array formals in this signature with default-rectangular arrays, if possible",
                std::optional<TypedSignatureObject*>,
 
