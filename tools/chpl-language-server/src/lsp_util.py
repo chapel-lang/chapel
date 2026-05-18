@@ -1610,6 +1610,9 @@ class CLSConfig:
             self.parser, "literal-arg-inlays", "literal_arg_inlays", True
         )
         chplcheck().config.add_bool_flag(
+            self.parser, "fn-type-inlays", "fn_type_inlays", True
+        )
+        chplcheck().config.add_bool_flag(
             self.parser, "dead-code", "dead_code", True
         )
         chplcheck().config.add_bool_flag(

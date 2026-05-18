@@ -182,6 +182,7 @@ class ChapelLanguageServer(LanguageServer):
         self.use_resolver: bool = config.get("resolver")
         self.type_inlays: bool = config.get("type_inlays")
         self.literal_arg_inlays: bool = config.get("literal_arg_inlays")
+        self.fn_type_inlays: bool = config.get("fn_type_inlays")
         self.param_inlays: bool = config.get("param_inlays")
         self.enum_inlays: bool = config.get("enum_inlays")
         self.default_rect_arrays: bool = config.get("default_rect_arrays")
