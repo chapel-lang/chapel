@@ -4261,7 +4261,9 @@ void Resolver::validateAndSetMostSpecific(ResolvedExpression& r,
     // is allowed by the spec, but can't be compiled in the C backend due
     // to C's aliasing rules.
 
-    if (only.hasConstRefCoercion()) {
+    if (only.hasRaceyScalarOut()) {
+      r.setType(RESOLVER_TYPE_ERROR(*this, RaceyOutInoutInPromotion, expr, only));
+    } else if (only.hasConstRefCoercion()) {
       r.setType(RESOLVER_TYPE_ERROR(*this, ConstRefCoercion, expr, only));
     }
   }

@@ -2062,10 +2062,15 @@ static void handleOutIntents(FnSymbol* fn, CallExpr* call,
     SET_LINENO(currActual);
     nextActual = currActual->next;
 
-    bool out = formal->intent == INTENT_OUT ||
-               formal->originalIntent == INTENT_OUT;
-    bool inout = formal->intent == INTENT_INOUT ||
-                 formal->originalIntent == INTENT_INOUT;
+    // Promotion wrappers already model written formals with ref wrapper
+    // formals, so only add a write-back for out/inout formals in non-promotion
+    // wrappers.
+    bool out = (formal->intent == INTENT_OUT ||
+                formal->originalIntent == INTENT_OUT) &&
+               fn->hasFlag(FLAG_PROMOTION_WRAPPER) == false;
+    bool inout = (formal->intent == INTENT_INOUT ||
+                  formal->originalIntent == INTENT_INOUT) &&
+                 fn->hasFlag(FLAG_PROMOTION_WRAPPER) == false;
 
     if (out || inout) {
       Expr* useExpr = currActual;
@@ -2932,6 +2937,14 @@ static void initPromotionWrapper(PromotionInfo& promotion,
   for_formals(formal, fn) {
 
     ArgSymbol* newFormal = NULL;
+
+    if (promotion.promotedType[i] == nullptr &&
+        (formal->intent == INTENT_OUT || formal->intent == INTENT_INOUT)) {
+      const char* intent = formal->intent == INTENT_OUT ? "out" : "inout";
+      USR_FATAL_CONT(formal, "cannot promote function '%s' while keeping the formal '%s %s' scalar", fn->name, intent, formal->name);
+      USR_PRINT(formal, "'%s' actuals will be written to by each iteration of the promoted function, which can lead to races.", intent);
+      USR_STOP();
+    }
 
     if (promotion.defaulted[i] == false) {
       // Only create promotion wrapper formals for those arguments that

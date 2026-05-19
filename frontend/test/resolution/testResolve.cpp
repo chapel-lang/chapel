@@ -521,6 +521,51 @@ static void test10() {
   guard.realizeErrors();
 }
 
+// Tests 'const ref' formals disallowing coercion, and that this
+// error happens after disambiguation.
+static void test10b() {
+  printf("test10b\n");
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto path = UniqueString::get(context, "input.chpl");
+  std::string contents = R""""(
+                           module M {
+                             class Parent { }
+                             class Child : Parent { }
+
+                             /* Both functions should be considered, one
+                                should be picked (numeric, since we prefer
+                                instantiating), and this function should be
+                                rejected. */
+                             proc const ref Parent.f(x: int(8)) { }
+                             proc const ref Parent.f(x: numeric) { }
+
+                             var x = new Child();
+                             var sixtyFourBits: int = 0;
+                             x.f(sixtyFourBits);
+                          }
+                        )"""";
+
+  setFileText(context, path, contents);
+
+  const ModuleVec& vec = parseToplevel(context, path);
+  assert(vec.size() == 1);
+  const Module* m = vec[0]->toModule();
+  assert(m);
+  assert(m->numStmts() == 8);
+  const Call* call = m->stmt(7)->toCall();
+  assert(call);
+
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+  const ResolvedExpression& re = rr.byAst(call);
+
+  assert(re.type().type()->isErroneousType());
+  assert(guard.numErrors() == 1);
+  assert(guard.error(0)->type() == chpl::ConstRefCoercion);
+  guard.realizeErrors();
+}
+
 // Test transmutation primitives (for params, currently only real(64) -> uint(64)
 // is possible since there's no way to get other params of these types.
 
@@ -2459,6 +2504,7 @@ int main() {
   test8();
   test9();
   test10();
+  test10b();
   test11();
   test12();
   test13();
