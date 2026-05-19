@@ -290,3 +290,21 @@ Tests pass if they exit with status code 0
 ********************************************************************************
 $ mason external -h
 Mason no longer supports external dependencies. If you were relying on this feature, please migrate to use system dependencies instead.
+********************************************************************************
+$ mason modules -h
+Print the dependencies of a Mason project
+
+Usage:
+    mason modules
+
+Options:
+    -h, --help                  Display this message
+    --[no-]update               [Do not] update the mason registry before
+                                printing the modules
+    --format {text,json}        Adjust the output format. The default is
+                                'text', which is prints the modules in a
+                                simple space-separated list.
+                                'json' prints the modules in a JSON format,
+                                which is easier to parse if the output is
+                                being used programmatically.
+********************************************************************************
