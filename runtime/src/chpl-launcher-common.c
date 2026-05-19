@@ -640,10 +640,8 @@ int handleNonstandardArg(int* argc, char* argv[], int argNum,
   }
 
   if (numHandled == 0) {
-    CHPL_RT_PRGINFO_DATA_TEMP(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
-                              mainHasArgs);
-
-    if (mainHasArgs) {
+    if (CHPL_RT_PRGINFO_DATA(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                             mainHasArgs)) {
       chpl_gen_main_arg.argv[chpl_gen_main_arg.argc] = argv[argNum];
       chpl_gen_main_arg.argc++;
     } else {
@@ -810,9 +808,6 @@ int chpl_launch_prep(int* c_argc, char* argv[], int32_t* c_execNumLocales,
   int32_t execNumLocalesPerNode;
   int argc = *c_argc;
 
-  CHPL_RT_PRGINFO_DATA_TEMP(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
-                            CreateConfigVarTable);
-
   // Set up main argument parsing.
   chpl_gen_main_arg.argv = chpl_mem_allocMany(argc, sizeof(char*),
                                       CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
@@ -820,7 +815,10 @@ int chpl_launch_prep(int* c_argc, char* argv[], int32_t* c_execNumLocales,
   chpl_gen_main_arg.argc = 1;
   chpl_gen_main_arg.return_value = 0;
 
-  CreateConfigVarTable();
+  // Call a callback to create the table which stores config vars.
+  CHPL_RT_PRGINFO_DATA(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                       CreateConfigVarTable)();
+
   parseArgs(true, parse_normally, &argc, argv);
 
   execNumLocales = getArgNumLocales();

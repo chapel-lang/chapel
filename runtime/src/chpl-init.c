@@ -68,9 +68,7 @@ void deallocate_string_literals_buf(void) {
 
 int handleNonstandardArg(int* argc, char* argv[], int argNum,
                          int32_t lineno, int32_t filename) {
-  CHPL_RT_PRGINFO_DATA_TEMP(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
-                            mainHasArgs);
-  if (mainHasArgs) {
+  if (CHPL_RT_PRGINFO_DATA(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER, mainHasArgs)) {
     chpl_gen_main_arg.argv[chpl_gen_main_arg.argc] = argv[argNum];
     chpl_gen_main_arg.argc++;
   } else {
@@ -276,10 +274,9 @@ void chpl_rt_init(chpl_rt_prginfo* root_prg, int argc, char** argv) {
 
   chpl_comm_barrier("about to leave comm init code");
 
-  CHPL_RT_PRGINFO_DATA_TEMP(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
-                            CreateConfigVarTable);
-
-  CreateConfigVarTable();      // get ready to start tracking config vars
+  // Call a callback from the program data to initialize the config table.
+  CHPL_RT_PRGINFO_DATA(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                       CreateConfigVarTable)();
 
   chpl_gen_main_arg.argv = chpl_malloc(argc * sizeof(char*));
   chpl_gen_main_arg.argv[0] = argv[0];
@@ -352,33 +349,25 @@ void chpl_rt_init(chpl_rt_prginfo* root_prg, int argc, char** argv) {
 // each locale in order for the Chapel program to function correctly.
 //
 void chpl_std_module_init(void) {
-  CHPL_RT_PRGINFO_DATA_TEMP(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
-                            chpl__initStringLiterals);
-  CHPL_RT_PRGINFO_DATA_TEMP(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
-                            chpl__heapAllocateGlobals);
-  CHPL_RT_PRGINFO_DATA_TEMP(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
-                            chpl__init_preInit);
-  CHPL_RT_PRGINFO_DATA_TEMP(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
-                            chpl__init_PrintModuleInitOrder);
-  CHPL_RT_PRGINFO_DATA_TEMP(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
-                            chpl__init_ChapelStandard);
+  chpl_rt_prginfo* prg = CHPL_RT_ROOT_PROGRAM_PLACEHOLDER;
 
-  // chpl__initStringLiterals runs the constructors for all string literals. We
-  // need to setup the literals on every locale before any other chapel code is
-  // run.
-  chpl__initStringLiterals();
-  chpl__heapAllocateGlobals(); // allocate global vars on heap for multilocale
+  // Set up the string literals on every locale before other code is run.
+  // Note that this calls a function pointer from the program info's data.
+  CHPL_RT_PRGINFO_DATA(prg, chpl__initStringLiterals)();
+
+  // Allocate globals on the heap. Does nothing if not in multi-locale.
+  CHPL_RT_PRGINFO_DATA(prg, chpl__heapAllocateGlobals)();
 
   if (chpl_nodeID == 0) {
     //
     // This just sets all of the initialization predicates to false.
     // Must occur before any other call to a chpl__init_<foo> function.
     //
-    chpl__init_preInit(0, myFilename);
+    CHPL_RT_PRGINFO_DATA(prg, chpl__init_preInit)(0, myFilename);
 
     // Initialize the internal modules.
-    chpl__init_PrintModuleInitOrder(0, myFilename);
-    chpl__init_ChapelStandard(0, myFilename);
+    CHPL_RT_PRGINFO_DATA(prg, chpl__init_PrintModuleInitOrder)(0, myFilename);
+    CHPL_RT_PRGINFO_DATA(prg, chpl__init_ChapelStandard)(0, myFilename);
 
     // Note that in general, module code can contain "on" clauses
     // and should therefore not be called before the call to
@@ -409,8 +398,9 @@ void chpl_executable_init(void) {
   chpl_std_module_init();
 
   if (chpl_nodeID == 0) {
-    CHPL_RT_PRGINFO_DATA_TEMP(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
-                              chpl_gen_main);
+    // Fetch 'chpl_gen_main' from the root program's data.
+    CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                            chpl_gen_main);
 
     //
     // Call the compiler-generated main() routine

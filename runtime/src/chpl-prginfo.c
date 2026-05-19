@@ -77,7 +77,8 @@ chpl_rt_prginfo_register_here_nosync(chpl_rt_prg_id id, chpl_rt_prginfo* prg) {
   chpl_bool requestingNewIdx = (id == CHPL_RT_PRGINFO_NULL_ID);
   int64_t idxToUse = requestingNewIdx ? 0 : ((int64_t) id);
 
-  CHPL_RT_PRGINFO_DATA_TEMP(CHPL_RT_PRGINFO_ROOT, chpl_mapPtrToIdxHere);
+  // Fetch and invoke callback from the root program specifically.
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_PRGINFO_ROOT, chpl_mapPtrToIdxHere);
   int64_t got = chpl_mapPtrToIdxHere(prg, idxToUse);
 
   if (!requestingNewIdx && idxToUse != got) {
@@ -119,7 +120,7 @@ chpl_rt_prginfo* chpl_rt_prginfo_from_id_here(chpl_rt_prg_id id) {
   if (id == CHPL_RT_PRGINFO_ROOT_ID) return chpl_prg_root;
 
   // Fetch pointers from the root program.
-  CHPL_RT_PRGINFO_DATA_TEMP(CHPL_RT_PRGINFO_ROOT, chpl_getPtrForIdxHere);
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_PRGINFO_ROOT, chpl_getPtrForIdxHere);
   int64_t idx = (int64_t) id;
   chpl_rt_prginfo* ret = chpl_getPtrForIdxHere(idx);
 

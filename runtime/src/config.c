@@ -315,8 +315,7 @@ static configVarType* lookupConfigVar(const char* moduleName,
 void initSetValue(const char* varName, const char* value,
                   const char* moduleName,
                   int32_t lineno, int32_t filename) {
-  CHPL_RT_PRGINFO_DATA_TEMP(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
-                            warnUnstable);
+  chpl_rt_prginfo* root = CHPL_RT_ROOT_PROGRAM_PLACEHOLDER;
   configVarType* configVar;
   if  (*varName == '\0') {
     const char* message = "No variable name given";
@@ -346,7 +345,8 @@ void initSetValue(const char* varName, const char* value,
       chpl_warning(configVar->deprecationMsg, lineno, filename);
     }
     #endif
-  } else if (warnUnstable && configVar->unstable) {
+  } else if (CHPL_RT_PRGINFO_DATA(root, warnUnstable) &&
+             configVar->unstable) {
     #ifndef LAUNCHER
     if (chpl_nodeID == 0) {
       chpl_warning(configVar->unstableMsg, lineno, filename);

@@ -366,8 +366,7 @@ void parseArgs(chpl_bool isLauncher, chpl_parseArgsMode_t mode,
   int stop_parsing = 0;
   int saw_socket_conn = 0;
 
-  CHPL_RT_PRGINFO_DATA_TEMP(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
-                            mainHasArgs);
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER, mainHasArgs);
 
   //
   // Handle the pre-parse for '-E' arguments separately.
@@ -400,12 +399,10 @@ void parseArgs(chpl_bool isLauncher, chpl_parseArgsMode_t mode,
     if (mainHasArgs && strcmp(currentArg, "--") == 0) {
       stop_parsing = 1;
 
-      CHPL_RT_PRGINFO_DATA_TEMP(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
-                                mainPreserveDelimiter);
-
       // if the ArgumentParser was also included, copy the -- through so it
       // may use it as a passthrough delimiter
-      if (mainPreserveDelimiter) {
+      if (CHPL_RT_PRGINFO_DATA(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                               mainPreserveDelimiter)) {
         chpl_gen_main_arg.argv[chpl_gen_main_arg.argc] = currentArg;
         chpl_gen_main_arg.argc++;
       }
