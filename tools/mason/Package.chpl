@@ -402,6 +402,8 @@ proc MasonPackage.toManifest(): string throws {
     s += "\n\n[system]\n" +
       "\n".join(for dep in system do dep.toToml());
   }
+
+  return s;
 }
 
 private proc readField(ref field,
