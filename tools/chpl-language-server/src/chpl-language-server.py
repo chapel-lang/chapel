@@ -183,6 +183,7 @@ class ChapelLanguageServer(LanguageServer):
         self.type_inlays: bool = config.get("type_inlays")
         self.literal_arg_inlays: bool = config.get("literal_arg_inlays")
         self.return_type_inlays: bool = config.get("return_type_inlays")
+        self.generic_fn_type_inlays: bool = config.get("generic_fn_type_inlays")
         self.param_inlays: bool = config.get("param_inlays")
         self.enum_inlays: bool = config.get("enum_inlays")
         self.default_rect_arrays: bool = config.get("default_rect_arrays")
@@ -672,6 +673,9 @@ class ChapelLanguageServer(LanguageServer):
         type in terms of these placeholders, and then replacing placeholders
         with the names of the formals/type queries they correspond to.
         """
+        if not self.generic_fn_type_inlays:
+            return None
+
         if fn.return_type() is not None:
             return None
 
