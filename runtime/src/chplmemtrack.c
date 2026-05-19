@@ -671,6 +671,8 @@ void chpl_reportMemInfo(void) {
   if (memLeaksLog && strcmp(memLeaksLog, "")) {
     CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
                             chpl_executionCommand);
+    CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                            chpl_compileCommand);
 
     memLogFile = fopen(memLeaksLog, "a");
     fprintf(memLogFile, "\nCompiler Command : %s\n", chpl_compileCommand);
