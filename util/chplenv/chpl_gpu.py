@@ -636,7 +636,7 @@ def _validate_cuda_version_impl():
     # CUDA 13 requires LLVM 22+
     if is_ver_in_range(cuda_version, "13", "14"):
         llvm_ver_str = int(chpl_llvm.get_llvm_version())
-        if chpl_llvm.get() == "system" and llvm_ver_str < 21:
+        if chpl_llvm.get() == "system" and llvm_ver_str < 22:
             _reportMissingGpuReq(
                 "LLVM versions before 22 do not support CUDA 13. "
                 "Your LLVM version is {}".format(llvm_ver_str),
