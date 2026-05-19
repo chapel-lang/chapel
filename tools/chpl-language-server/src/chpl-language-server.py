@@ -715,6 +715,12 @@ class ChapelLanguageServer(LanguageServer):
         for ph_str, replacement in subs.items():
             ret_str = ret_str.replace(ph_str, replacement)
 
+        # Only return a result if we actually substituted a PlaceholderType.
+        # If the return type is already concrete (e.g. int(32)), common inlays
+        # will handle it and we don't want to produce a duplicate.
+        if ret_str == str(type_):
+            return None
+
         return ret_str
 
     def _fn_return_type_str(
