@@ -107,12 +107,12 @@ def find_cuda_libdevice_path(compiler: str):
 
 
 def _cuda_default_arch():
-    # if using cuda <13, default to sm_60. Otherwise default to sm_80
+    # if using cuda <13, default to sm_60. Otherwise default to sm_75
     cuda_version_major = get_sdk_version().split(".")[0]
     if cuda_version_major and int(cuda_version_major) < 13:
         return "sm_60"
     else:
-        return "sm_80"
+        return "sm_75"
 
 
 def find_llvm_amd_bin_path(compiler: str):

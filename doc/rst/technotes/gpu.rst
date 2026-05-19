@@ -202,7 +202,7 @@ These variables include:
 
 * ``CHPL_GPU_ARCH`` --- specifies GPU architecture to generate kernel code for.
   This must be set while targeting AMD GPUs. If unset and targeting NVIDIA
-  GPUs, will default to ``sm_80`` for CUDA 13+ and ``sm_60`` otherwise.
+  GPUs, will default to ``sm_75`` for CUDA 13+ and ``sm_60`` otherwise.
   This may also be set by passing the ``chpl``  compiler
   ``--gpu-arch=<architecture>``. For more information, see the
   `Vendor Portability`_ section.
@@ -272,7 +272,7 @@ automatically detected (or you would like to use a different installation) you
 may set ``CHPL_CUDA_PATH`` and/or ``CHPL_ROCM_PATH`` explicitly.
 
 The ``CHPL_GPU_ARCH`` environment variable can be set to control the desired
-GPU architecture to compile for. The default value is ``sm_80`` for CUDA 13+
+GPU architecture to compile for. The default value is ``sm_75`` for CUDA 13+
 and ``sm_60`` otherwise for ``CHPL_GPU=nvidia``. You may also use the
 ``--gpu-arch`` compiler flag to set GPU architecture.  If using AMD, this
 variable must be set. `This table in the ROCm documentation
