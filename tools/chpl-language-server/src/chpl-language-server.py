@@ -658,6 +658,48 @@ class ChapelLanguageServer(LanguageServer):
         inlays.extend(self._get_type_inlays(decl, qt))
         return inlays
 
+    def _try_generic_fn_return_type_str(
+        self,
+        fn: chapel.Function,
+        context: chapel.Context,
+    ) -> Optional[str]:
+        """
+        For generic functions (where _fn_return_type_str returns None), attempt
+        to compute a return type string using PlaceholderType substitution.
+        Each generic formal is proxied with a unique PlaceholderType; we then
+        compute the return type and replace each PlaceholderType string with
+        'formalName.type'.
+        """
+        if fn.return_type() is not None:
+            return None
+
+        template_sig = fn.template_signature()
+        if template_sig is None:
+            return None
+
+        with context.track_errors():
+            qt = template_sig.return_type()
+        if qt is None:
+            return None
+
+        _, type_, _ = qt
+        if not type_ or isinstance(type_, chapel.ErroneousType):
+            return None
+
+        ret_str = str(type_)
+
+        # Replace each formal's PlaceholderType representation with formalName.type
+        for i, formal in enumerate(fn.formals()):
+            formal_qt = template_sig.formal_type(i)
+            if formal_qt is None:
+                continue
+            _, formal_type, _ = formal_qt
+            if not isinstance(formal_type, chapel.PlaceholderType):
+                continue
+            ret_str = ret_str.replace(str(formal_type), formal.name() + ".type")
+
+        return ret_str
+
     def _fn_return_type_str(
         self,
         fn: chapel.Function,
@@ -722,6 +764,7 @@ class ChapelLanguageServer(LanguageServer):
     def get_fn_inlays(
         self,
         decl: NodeAndRange,
+        fi: "FileInfo",
         via: Optional[chapel.TypedSignature] = None,
     ) -> List[InlayHint]:
         if not self.return_type_inlays or not self.use_resolver:
@@ -740,6 +783,8 @@ class ChapelLanguageServer(LanguageServer):
             return []
 
         type_str = self._fn_return_type_str(fn, sig)
+        if type_str is None:
+            type_str = self._try_generic_fn_return_type_str(fn, fi.context.context)
         if type_str is None:
             return []
 
@@ -1498,7 +1543,7 @@ def run_lsp():
         for decl in decls:
             instantiation = fi.get_inst_segment_at_position(decl.rng.start)
             inlays.extend(ls.get_decl_inlays(decl, instantiation))
-            inlays.extend(ls.get_fn_inlays(decl, instantiation))
+            inlays.extend(ls.get_fn_inlays(decl, fi, instantiation))
 
             if instantiation is not None:
                 continue
