@@ -5029,10 +5029,10 @@ static void makeBinaryLLVMForCUDA(const std::string& artifactFilename,
   std::string profiles;
   for (auto& gpuArch : gpuArches) {
     // Figure out the corresponding compute capability and object name
-    if (strncmp(gpuArch.c_str(), "sm_", 3) != 0 || gpuArch.size() != 5) {
+    if (strncmp(gpuArch.c_str(), "sm_", 3) != 0 || gpuArch.size() < 4) {
       USR_FATAL("Unrecognized CUDA arch");
     }
-    std::string computeCap = std::string("compute_") + gpuArch[3] + gpuArch[4];
+    std::string sm = gpuArch.substr(3);
     std::string gpuObject = gpuObjectFilenamePrefix + "_" + gpuArch + ".o";
 
     // Execute the assembler for this architecture
@@ -5043,11 +5043,8 @@ static void makeBinaryLLVMForCUDA(const std::string& artifactFilename,
                          " " + artifactFilename.c_str();
     mysystem(ptxCmd.c_str(), "PTX to object file");
 
-    // Track the new object we created and the CC we enabled.
-    profiles += std::string(" --image=profile=") + computeCap +
-                ",file=" + artifactFilename;
-    profiles += std::string(" --image=profile=") + gpuArch +
-                ",file=" + gpuObject;
+    profiles += std::string(" --image3=kind=elf,sm=") + sm +
+                  ",file=" + gpuObject;
   }
 
   std::string fatbinaryCmd = std::string("fatbinary -64 ") +
