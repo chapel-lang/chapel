@@ -1,0 +1,11 @@
+caught error: oops
+stack trace:
+  (frame 1) basicInline.chpl:14
+  (frame 2) basicInline.chpl:8
+  (frame 3) basicInline.chpl:5
+  (frame 4) basicInline.chpl:2
+uncaught Error: oops
+  basicInline.chpl:24: uncaught here
+  basicInline.chpl:8: called from here
+  basicInline.chpl:5: called from here
+  basicInline.chpl:2: thrown here
