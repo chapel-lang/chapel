@@ -377,6 +377,11 @@ CLASS_BEGIN(Try)
                bool, return node->isTryBang())
 CLASS_END(Try)
 
+CLASS_BEGIN(TypeQuery)
+  PLAIN_GETTER(TypeQuery, placeholder_type, "Get the PlaceholderType corresponding to this TypeQuery node",
+               const chpl::types::PlaceholderType*, return chpl::types::PlaceholderType::get(context, node->id()))
+CLASS_END(TypeQuery)
+
 CLASS_BEGIN(Use)
   PLAIN_GETTER(Use, visibility, "Get the visibility of this Use node",
                const char*, return Decl::visibilityToString(node->visibility()))

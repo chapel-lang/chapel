@@ -688,15 +688,32 @@ class ChapelLanguageServer(LanguageServer):
 
         ret_str = str(type_)
 
-        # Replace each formal's PlaceholderType representation with formalName.type
+        # Build a substitution map: PlaceholderType string → readable label.
+        #
+        # Two cases:
+        #  1. Direct-generic formal (no type annotation): the formal type IS a
+        #     PlaceholderType anchored to the Formal node → replace with "x.type".
+        #  2. TypeQuery in a formal's type annotation (e.g. "x: list(?t)"): the
+        #     PlaceholderType is anchored to the TypeQuery node → replace with "t".
+        subs: dict = {}
+
+        # Case 2: scan all TypeQuery nodes anywhere in the function's formals
+        for tq, _ in chapel.each_matching(fn, chapel.TypeQuery):
+            pt = tq.placeholder_type()
+            if pt is not None:
+                subs[str(pt)] = tq.name()
+
+        # Case 1: direct-generic formals whose type IS a PlaceholderType
         for i, formal in enumerate(fn.formals()):
             formal_qt = template_sig.formal_type(i)
             if formal_qt is None:
                 continue
             _, formal_type, _ = formal_qt
-            if not isinstance(formal_type, chapel.PlaceholderType):
-                continue
-            ret_str = ret_str.replace(str(formal_type), formal.name() + ".type")
+            if isinstance(formal_type, chapel.PlaceholderType):
+                subs.setdefault(str(formal_type), formal.name() + ".type")
+
+        for ph_str, replacement in subs.items():
+            ret_str = ret_str.replace(ph_str, replacement)
 
         return ret_str
 
