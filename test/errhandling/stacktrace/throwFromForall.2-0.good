@@ -1,0 +1,16 @@
+caught error: 1 errors: Error: oops
+stack trace:
+  (frame 1) throwFromForall.chpl:17
+  (frame 2) throwFromForall.chpl:11
+  (frame 3) throwFromForall.chpl:8
+  (frame 4) throwFromForall.chpl:2
+  (frame 5) throwFromForall.chpl:2
+caught error: oops
+stack trace:
+  (frame 1) throwFromForall.chpl:4
+uncaught TaskErrors: 1 errors: Error: oops
+  throwFromForall.chpl:34: uncaught here
+  throwFromForall.chpl:11: called from here
+  throwFromForall.chpl:8: called from here
+  throwFromForall.chpl:2: called from here
+  throwFromForall.chpl:2: thrown here

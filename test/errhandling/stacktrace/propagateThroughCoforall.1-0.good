@@ -1,0 +1,5 @@
+uncaught TaskErrors: 1 errors: Error: oops
+  propagateThroughCoforall.chpl:34: uncaught here
+  propagateThroughCoforall.chpl:11: called from here
+  propagateThroughCoforall.chpl:5: called from here
+  propagateThroughCoforall.chpl:5: thrown here
