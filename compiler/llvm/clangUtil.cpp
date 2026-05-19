@@ -5043,6 +5043,8 @@ static void makeBinaryLLVMForCUDA(const std::string& artifactFilename,
                          " " + artifactFilename.c_str();
     mysystem(ptxCmd.c_str(), "PTX to object file");
 
+    profiles += std::string(" --image3=kind=ptx,sm=") + sm +
+                  ",file=" + artifactFilename;
     profiles += std::string(" --image3=kind=elf,sm=") + sm +
                   ",file=" + gpuObject;
   }
