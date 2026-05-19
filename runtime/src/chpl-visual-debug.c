@@ -29,6 +29,7 @@
 #include "chpl-tasks-callbacks.h"
 #include "chpl-comm-callbacks.h"
 #include "chpl-linefile-support.h"
+#include "chpl-prginfo.h"
 #include <stdint.h>
 #include <string.h>
 #include <unistd.h>
@@ -166,8 +167,11 @@ void chpl_vdebug_start (const char *fileroot, double now) {
 
   // Dump directory names, file names and function names
   if (chpl_nodeID == 0) {
-    int ix;
-    int numFIDnames;
+    int ix = 0;
+    int numFIDnames = 0;
+
+    CHPL_RT_PRGINFO_DATA_TEMP(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                              chpl_compileDirectory);
 
     chpl_dprintf (chpl_vdebug_fd, "CHPL_HOME: %s\n", CHPL_HOME);
     chpl_dprintf (chpl_vdebug_fd, "DIR: %s\n", chpl_compileDirectory);
