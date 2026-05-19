@@ -117,9 +117,6 @@ extern void* const chpl_global_serialize_table[];
 extern const char* const chpl_mem_descs[];
 extern const int chpl_mem_numDescs;
 
-extern const int launcher_is_mli;
-extern const char* launcher_mli_real_name;
-
 #ifdef __cplusplus
 }
 #endif
