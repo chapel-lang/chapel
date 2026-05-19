@@ -51,9 +51,14 @@ int main(int argc, char* argv[]) {
   // Run the main function for this node.
   chpl_task_callMain(chpl_executable_init);
 
+  // Fetch the main argument from the program data.
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                          chpl_genMainArgPtr);
+  chpl_main_argument* main_arg_ptr = chpl_genMainArgPtr();
+
   // have everyone exit, returning the value returned by the user written main
   // or 0 if it didn't return anything
-  chpl_exit_all(chpl_gen_main_arg.return_value);
+  chpl_exit_all(main_arg_ptr->return_value);
 
   return 0; // should never get here
 }

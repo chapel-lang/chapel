@@ -133,6 +133,11 @@ E_CALLBACK_RT(chpl__init_ChapelStandard, void, int64_t _ln, int32_t _fn)
 */
 E_CALLBACK_RT(chpl_gen_main, int64_t, chpl_main_argument* _arg)
 
+/** MODULE-CODE: ChapelProgramEntrypoints.chpl | WRITEABLE
+    Get a writeable pointer to the main argument stored on this locale.
+*/
+E_CALLBACK(chpl_genMainArgPtr, chpl_main_argument*, void)
+
 /** CODE-GENERATED
     Contains filenames, and maybe other strings besides?
 

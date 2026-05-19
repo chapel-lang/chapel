@@ -365,8 +365,13 @@ void parseArgs(chpl_bool isLauncher, chpl_parseArgsMode_t mode,
   int origargc = *argc;
   int stop_parsing = 0;
   int saw_socket_conn = 0;
+  chpl_main_argument* main_arg_ptr = NULL;
 
   CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER, mainHasArgs);
+
+  // Fetch the main argument pointer using a callback in program code.
+  main_arg_ptr = CHPL_RT_PRGINFO_DATA(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                                      chpl_genMainArgPtr)();
 
   //
   // Handle the pre-parse for '-E' arguments separately.
@@ -388,8 +393,8 @@ void parseArgs(chpl_bool isLauncher, chpl_parseArgsMode_t mode,
       /* update the argv structure passed to a Chapel program, but don't parse
        * the arguments
        */
-      chpl_gen_main_arg.argv[chpl_gen_main_arg.argc] = argv[i];
-      chpl_gen_main_arg.argc++;
+      main_arg_ptr->argv[main_arg_ptr->argc] = argv[i];
+      main_arg_ptr->argc++;
       continue;
     }
 
@@ -403,8 +408,8 @@ void parseArgs(chpl_bool isLauncher, chpl_parseArgsMode_t mode,
       // may use it as a passthrough delimiter
       if (CHPL_RT_PRGINFO_DATA(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
                                mainPreserveDelimiter)) {
-        chpl_gen_main_arg.argv[chpl_gen_main_arg.argc] = currentArg;
-        chpl_gen_main_arg.argc++;
+        main_arg_ptr->argv[main_arg_ptr->argc] = currentArg;
+        main_arg_ptr->argc++;
       }
       continue;
     }
@@ -434,8 +439,8 @@ void parseArgs(chpl_bool isLauncher, chpl_parseArgsMode_t mode,
 
           if (strcmp(flag, "help") == 0) {
             printHelp = 1;
-            chpl_gen_main_arg.argv[chpl_gen_main_arg.argc] = "--help";
-            chpl_gen_main_arg.argc++;
+            main_arg_ptr->argv[main_arg_ptr->argc] = "--help";
+            main_arg_ptr->argc++;
             break;
           }
           if (strcmp(flag, "about") == 0) {
@@ -470,9 +475,9 @@ void parseArgs(chpl_bool isLauncher, chpl_parseArgsMode_t mode,
             saw_socket_conn = 1;
             // We reached information about the socket in a multilocale library
             // run.  Save it.
-            chpl_gen_main_arg.argv[chpl_gen_main_arg.argc++] =
+            main_arg_ptr->argv[main_arg_ptr->argc++] =
               "--chpl-mli-socket-loc";
-            chpl_gen_main_arg.argv[chpl_gen_main_arg.argc++] = currentArg;
+            main_arg_ptr->argv[main_arg_ptr->argc++] = currentArg;
             break;
           }
           if (argLength < 3) {
@@ -522,8 +527,8 @@ void parseArgs(chpl_bool isLauncher, chpl_parseArgsMode_t mode,
       case 'h':
         if (currentArg[2] == '\0') {
           printHelp = 1;
-          chpl_gen_main_arg.argv[chpl_gen_main_arg.argc] = "-h";
-          chpl_gen_main_arg.argc++;
+          main_arg_ptr->argv[main_arg_ptr->argc] = "-h";
+          main_arg_ptr->argc++;
         } else {
           i += handleNonstandardArg(argc, argv, i, lineno, filename);
         }

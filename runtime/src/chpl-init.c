@@ -48,8 +48,6 @@
 
 static const int32_t myFilename = CHPL_FILE_IDX_INTERNAL;
 
-chpl_main_argument chpl_gen_main_arg;
-
 void* chpl_string_literals_buffer;
 
 const char* allocate_string_literals_buf(int64_t s) {
@@ -67,8 +65,13 @@ void deallocate_string_literals_buf(void) {
 int handleNonstandardArg(int* argc, char* argv[], int argNum,
                          int32_t lineno, int32_t filename) {
   if (CHPL_RT_PRGINFO_DATA(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER, mainHasArgs)) {
-    chpl_gen_main_arg.argv[chpl_gen_main_arg.argc] = argv[argNum];
-    chpl_gen_main_arg.argc++;
+    chpl_main_argument* main_arg_ptr = NULL;
+
+    main_arg_ptr = CHPL_RT_PRGINFO_DATA(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                                        chpl_genMainArgPtr)();
+
+    main_arg_ptr->argv[main_arg_ptr->argc] = argv[argNum];
+    main_arg_ptr->argc++;
   } else {
     char* message = chpl_glom_strings(3, "Unexpected flag:  \"", argv[argNum], "\"");
     chpl_error(message, lineno, filename);
@@ -280,10 +283,14 @@ void chpl_rt_init(chpl_rt_prginfo* root_prg, int argc, char** argv) {
   CHPL_RT_PRGINFO_DATA(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
                        CreateConfigVarTable)();
 
-  chpl_gen_main_arg.argv = chpl_malloc(argc * sizeof(char*));
-  chpl_gen_main_arg.argv[0] = argv[0];
-  chpl_gen_main_arg.argc = 1;
-  chpl_gen_main_arg.return_value = 0;
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                          chpl_genMainArgPtr);
+  chpl_main_argument* main_arg_ptr = chpl_genMainArgPtr();
+
+  main_arg_ptr->argv = chpl_malloc(argc * sizeof(char*));
+  main_arg_ptr->argv[0] = argv[0];
+  main_arg_ptr->argc = 1;
+  main_arg_ptr->return_value = 0;
 
   parseArgs(false, parse_normally, &argc, argv);
 
@@ -400,14 +407,19 @@ void chpl_executable_init(void) {
   chpl_std_module_init();
 
   if (chpl_nodeID == 0) {
+    chpl_rt_prginfo* prg = CHPL_RT_ROOT_PROGRAM_PLACEHOLDER;
+
+    // Get the main argument.
+    chpl_main_argument* main_arg_ptr = NULL;
+    main_arg_ptr = CHPL_RT_PRGINFO_DATA(prg, chpl_genMainArgPtr)();
+
     // Fetch 'chpl_gen_main' from the root program's data.
-    CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
-                            chpl_gen_main);
+    CHPL_RT_PRGINFO_DECLARE(prg, chpl_gen_main);
 
     //
     // Call the compiler-generated main() routine
     //
-    chpl_gen_main_arg.return_value = chpl_gen_main(&chpl_gen_main_arg);
+    main_arg_ptr->return_value = chpl_gen_main(main_arg_ptr);
   }
 
 }
