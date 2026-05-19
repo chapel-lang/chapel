@@ -93,6 +93,7 @@ FnSymbol *gChplUncaughtError;
 FnSymbol *gChplPropagateError;
 FnSymbol *gChplSaveTaskError;
 FnSymbol *gChplForallError;
+FnSymbol *gChplErrorPropagateStackInfo;
 FnSymbol *gAtomicFenceFn;
 FnSymbol *gChplAfterForallFence;
 FnSymbol *gAllocateStringLiteralsBuf;
@@ -584,6 +585,12 @@ static WellKnownFn sWellKnownFns[] = {
   {
     "chpl_forall_error",
     &gChplForallError,
+    FLAG_UNKNOWN
+  },
+
+  {
+    "chpl_error_propagate_stack_info",
+    &gChplErrorPropagateStackInfo,
     FLAG_UNKNOWN
   },
 

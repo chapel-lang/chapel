@@ -36,6 +36,17 @@ module Errors {
   private use ChapelLocks;
   private use CTypes;
 
+  @chpldoc.nodoc
+  class ErrorStackNode {
+    var thrownLine:int;
+    var thrownFileId:int(32);
+    var next: unmanaged ErrorStackNode? = nil;
+    proc deinit() {
+      if next != nil then
+        delete next;
+    }
+  }
+
   // Base class for errors
   // TODO: should Error include list pointers for TaskErrors?
   /* :class:`Error` is the base class for errors */
@@ -48,6 +59,8 @@ module Errors {
     var thrownLine:int;
     @chpldoc.nodoc
     var thrownFileId:int(32);
+    @chpldoc.nodoc
+    var stackTraceHead: unmanaged ErrorStackNode? = nil;
 
     @chpldoc.nodoc
     var _msg: string;
@@ -65,6 +78,12 @@ module Errors {
       this._msg = msg;
     }
 
+    @chpldoc.nodoc
+    proc deinit() {
+      if stackTraceHead != nil then
+        delete stackTraceHead;
+    }
+
     /* Override this method to provide an error message
        of type string in case the error is printed out or never caught.
 
@@ -72,6 +91,37 @@ module Errors {
     */
     proc message():string {
       return _msg;
+    }
+
+    /*
+      Yields the stack trace for this error, starting with the most recent call
+      site and ending with the original throw site. Each yielded value is a
+      tuple of the form ``(filename, line number)``.
+    */
+    @edition(last="2.0")
+    @unstable()
+    iter stacktrace(): (string, int) do
+      foreach tup in chpl_stacktrace() do yield tup;
+
+    /*
+      Yields the stack trace for this error, starting with the most recent call
+      site and ending with the original throw site. Each yielded value is a
+      tuple of the form ``(filename, line number)``.
+    */
+    @edition(first="preview")
+    iter stacktrace(): (string, int) do
+      foreach tup in chpl_stacktrace() do yield tup;
+
+    @chpldoc.nodoc
+    iter chpl_stacktrace(): (string, int) {
+      var node = stackTraceHead;
+      while node {
+        const l = node!.thrownLine;
+        const fC = __primitive("chpl_lookupFilename", node!.thrownFileId);
+        var fS: string = try! string.createCopyingBuffer(fC:c_ptrConst(c_char));
+        yield (fS, l);
+        node = node!.next;
+      }
     }
   }
 
@@ -499,6 +549,21 @@ module Errors {
     compilerError("Cannot throw a type: '", errType:string, "'. Did you forget the keyword 'new'?");
   }
 
+  pragma "insert line file info"
+  pragma "always propagate line file info"
+  pragma "ignore in global analysis"
+  proc chpl_error_propagate_stack_info(in err: unmanaged Error?): unmanaged Error? {
+    if err != nil {
+      const line = __primitive("_get_user_line");
+      const fileId = __primitive("_get_user_file");
+
+      var newNode = new unmanaged ErrorStackNode(line, fileId);
+      newNode.next = err!.stackTraceHead;
+      err!.stackTraceHead = newNode;
+    }
+    return err;
+  }
+
   proc chpl_delete_error(err: unmanaged Error?) {
     if err != nil then delete err;
   }
@@ -508,25 +573,38 @@ module Errors {
   proc chpl_uncaught_error(err: unmanaged Error) {
     extern proc chpl_error_preformatted(ptr:c_ptrConst(c_char));
 
-    const myFileC = __primitive("chpl_lookupFilename",
-                                         __primitive("_get_user_file"));
-    var myFileS: string;
-    try! {
-      myFileS = string.createCopyingBuffer(myFileC:c_ptrConst(c_char));
-    }
-    const myLine = __primitive("_get_user_line");
+    var s = "uncaught " + chpl_describe_error(err);
+    if err.stackTraceHead {
+      var first = true;
+      var node = err.stackTraceHead;
+      while node {
+        const l = node!.thrownLine;
+        const fC = __primitive("chpl_lookupFilename", node!.thrownFileId);
+        var fS: string = try! string.createCopyingBuffer(fC:c_ptrConst(c_char));
+        node = node!.next;
 
-    const thrownFileC = __primitive("chpl_lookupFilename",
-                                             err.thrownFileId);
-    var thrownFileS: string;
-    try! {
-      thrownFileS = string.createCopyingBuffer(thrownFileC:c_ptrConst(c_char));
-    }
-    const thrownLine = err.thrownLine;
+        s += "\n  " + fS + ":" + l:string + ":";
+        if first then
+          s += " uncaught here";
+        else if node != nil then
+          s += " called from here";
+        else
+           s += " thrown here";
+        first = false;
+      }
+    } else {
+      const myFileC =
+        __primitive("chpl_lookupFilename", __primitive("_get_user_file"));
+      const myFileS = try! string.createCopyingBuffer(myFileC:c_ptrConst(c_char));
+      const myLine = __primitive("_get_user_line");
 
-    var s = "uncaught " + chpl_describe_error(err) +
-            "\n  " + thrownFileS + ":" + thrownLine:string + ": thrown here" +
-            "\n  " + myFileS + ":" + myLine:string + ": uncaught here";
+      const thrownFileC = __primitive("chpl_lookupFilename", err.thrownFileId);
+      const thrownFileS =
+        try! string.createCopyingBuffer(thrownFileC:c_ptrConst(c_char));
+      const thrownLine = err.thrownLine;
+      s += "\n  " + thrownFileS + ":" + thrownLine:string + ": thrown here" +
+           "\n  " + myFileS + ":" + myLine:string + ": uncaught here";
+    }
     chpl_error_preformatted(s.c_str());
   }
   // This is like the above, but it is only ever added by the
