@@ -80,6 +80,7 @@ def gpu_compiler_basic_compile(compiler: str, lang: str):
     # all we care about is the output
     return stdout
 
+
 def _find_cuda_variable(compiler: str, variable_name: str):
     out = gpu_compiler_basic_compile(compiler, "cu")
     if not out:
@@ -88,8 +89,10 @@ def _find_cuda_variable(compiler: str, variable_name: str):
     match = re.search(regex, out, re.MULTILINE)
     return match.group(1) if match else None
 
+
 def _find_cuda_sdk_path(compiler: str):
     return _find_cuda_variable(compiler, "TOP")
+
 
 def find_cuda_libdevice_path(compiler: str):
     libdevice_path = _find_cuda_variable(compiler, "NVVMIR_LIBRARY_DIR")
@@ -105,11 +108,12 @@ def find_cuda_libdevice_path(compiler: str):
 
 def _cuda_default_arch():
     # if using cuda <13, default to sm_60. Otherwise default to sm_75
-    cuda_version_major = get_sdk_version().split('.')[0]
+    cuda_version_major = get_sdk_version().split(".")[0]
     if cuda_version_major and int(cuda_version_major) < 13:
         return "sm_60"
     else:
         return "sm_75"
+
 
 def find_llvm_amd_bin_path(compiler: str):
     out = gpu_compiler_basic_compile(compiler, "hip")
@@ -181,46 +185,54 @@ def _find_rocm_version(compiler: str):
 
 
 GPU_TYPES = {
-    "nvidia": gpu_type(sdk_path_env="CHPL_CUDA_PATH",
-                       compiler="nvcc",
-                       default_arch=_cuda_default_arch,
-                       llvm_target="NVPTX",
-                       runtime_impl="cuda",
-                       find_sdk_path=_find_cuda_sdk_path,
-                       find_version=_find_cuda_version,
-                       version_validator=_validate_cuda_version,
-                       llvm_validator=_validate_cuda_llvm_version,
-                       real_gpu=True),
-    "amd": gpu_type(sdk_path_env="CHPL_ROCM_PATH",
-                    compiler="hipcc",
-                    default_arch=lambda: "",
-                    llvm_target="AMDGPU",
-                    runtime_impl="rocm",
-                    find_sdk_path=_find_hip_sdk_path,
-                    find_version=_find_rocm_version,
-                    version_validator=_validate_rocm_version,
-                    llvm_validator=_validate_rocm_llvm_version,
-                    real_gpu=True),
-    "cpu": gpu_type(sdk_path_env="",
-                    compiler="",
-                    default_arch=lambda: "",
-                    llvm_target="",
-                    runtime_impl="cpu",
-                    find_sdk_path=lambda compiler: None,
-                    find_version=lambda compiler: None,
-                    version_validator=lambda: None,
-                    llvm_validator=lambda: None,
-                    real_gpu=False),
-    "none": gpu_type(sdk_path_env="",
-                     compiler="",
-                     default_arch=lambda: "",
-                     llvm_target="",
-                     runtime_impl="",
-                     find_sdk_path=lambda compiler: None,
-                     find_version=lambda compiler: None,
-                     version_validator=lambda: None,
-                     llvm_validator=lambda: None,
-                     real_gpu=False)
+    "nvidia": gpu_type(
+        sdk_path_env="CHPL_CUDA_PATH",
+        compiler="nvcc",
+        default_arch=_cuda_default_arch,
+        llvm_target="NVPTX",
+        runtime_impl="cuda",
+        find_sdk_path=_find_cuda_sdk_path,
+        find_version=_find_cuda_version,
+        version_validator=_validate_cuda_version,
+        llvm_validator=_validate_cuda_llvm_version,
+        real_gpu=True,
+    ),
+    "amd": gpu_type(
+        sdk_path_env="CHPL_ROCM_PATH",
+        compiler="hipcc",
+        default_arch=lambda: "",
+        llvm_target="AMDGPU",
+        runtime_impl="rocm",
+        find_sdk_path=_find_hip_sdk_path,
+        find_version=_find_rocm_version,
+        version_validator=_validate_rocm_version,
+        llvm_validator=_validate_rocm_llvm_version,
+        real_gpu=True,
+    ),
+    "cpu": gpu_type(
+        sdk_path_env="",
+        compiler="",
+        default_arch=lambda: "",
+        llvm_target="",
+        runtime_impl="cpu",
+        find_sdk_path=lambda compiler: None,
+        find_version=lambda compiler: None,
+        version_validator=lambda: None,
+        llvm_validator=lambda: None,
+        real_gpu=False,
+    ),
+    "none": gpu_type(
+        sdk_path_env="",
+        compiler="",
+        default_arch=lambda: "",
+        llvm_target="",
+        runtime_impl="",
+        find_sdk_path=lambda compiler: None,
+        find_version=lambda compiler: None,
+        version_validator=lambda: None,
+        llvm_validator=lambda: None,
+        real_gpu=False,
+    ),
 }
 
 
@@ -586,7 +598,7 @@ def _validate_cuda_version_impl():
     """Check that the installed CUDA version is >= MIN_REQ_VERSION and <
     MAX_REQ_VERSION"""
     MIN_REQ_VERSION = "11.7"
-    MAX_REQ_VERSION = "14" # upper bound non-inclusive
+    MAX_REQ_VERSION = "14"  # upper bound non-inclusive
 
     cuda_version = get_sdk_version()
 
@@ -597,8 +609,9 @@ def _validate_cuda_version_impl():
     if not is_ver_in_range(cuda_version, MIN_REQ_VERSION, MAX_REQ_VERSION):
         warning(
             "Chapel requires a CUDA version between %s and %s, "
-            "detected version %s on system." %
-            (MIN_REQ_VERSION, MAX_REQ_VERSION, cuda_version))
+            "detected version %s on system."
+            % (MIN_REQ_VERSION, MAX_REQ_VERSION, cuda_version)
+        )
         return False
 
     # CUDA 12 requires the bundled LLVM or the major LLVM version must be >15
@@ -631,7 +644,6 @@ def _validate_cuda_version_impl():
                 allowExempt=False,
             )
             return False
-
 
     return True
 
