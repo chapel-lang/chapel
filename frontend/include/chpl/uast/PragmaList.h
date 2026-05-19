@@ -532,7 +532,6 @@ PRAGMA(PARTIAL_TUPLE, npr, "partial tuple", ncm)
 //  * use isPOD()
 PRAGMA(POD, ypr, "plain old data", "data can be bit copied")
 
-PRAGMA(POINTER_WRAPPER, npr, "pointer wrapper", "fn wrapper for proc ptr calls")
 // This flag is used to identify variables to which accesses within
 // an order-independent loop can be vectorized by the LLVM loop vectorizer.
 // The LLVM loop vectorizer has problems with loop-local stack variables.

@@ -3450,35 +3450,38 @@ static bool resolveFunctionPointerCall(CallExpr* call) {
 
   // Instead of refactoring promotion wrapping machinery, create a wrapper for
   // this particular call and resolve it normally.
-  if (!call->parentSymbol->hasFlag(FLAG_POINTER_WRAPPER)) {
-    static int promoWrapperId = 0;
-    auto name = astr("chpl_fnptr_wrapper_", std::to_string(promoWrapperId++).c_str());
-    FnSymbol* fn = new FnSymbol(name);
-    fn->addFlag(FLAG_COMPILER_GENERATED);
-    fn->addFlag(FLAG_POINTER_WRAPPER);
-    if (ft->throws()) fn->throwsErrorInit();
-    CallExpr* wrappedCall = new CallExpr(call->baseExpr->copy());
-    for (int i = 0; i < ft->numFormals(); i++) {
-      auto formal = ft->formal(i);
-      ArgSymbol* arg = new ArgSymbol(formal->intent(), formal->name(), formal->type());
-      fn->insertFormalAtTail(arg);
-      wrappedCall->insertAtTail(new SymExpr(arg));
-    }
-
-    fn->retType = ft->returnType();
-    fn->retTag = ft->returnIntent();
-    if (ft->returnType() != dtVoid) {
-      fn->body->insertAtTail(new CallExpr(PRIM_RETURN, wrappedCall));
-    } else {
-      fn->body->insertAtTail(wrappedCall);
-    }
-
-    call->getStmtExpr()->insertBefore(new DefExpr(fn));
-    normalize(fn);
-
-    call->baseExpr->replace(new SymExpr(fn));
-    resolveNormalCall(call);
+  static int promoWrapperId = 0;
+  auto name = astr("chpl_fnptr_wrapper_", std::to_string(promoWrapperId++).c_str());
+  FnSymbol* fn = new FnSymbol(name);
+  fn->addFlag(FLAG_COMPILER_GENERATED);
+  if (ft->throws()) fn->throwsErrorInit();
+  CallExpr* wrappedCall = new CallExpr(call->baseExpr->copy());
+  for (int i = 0; i < ft->numFormals(); i++) {
+    auto formal = ft->formal(i);
+    ArgSymbol* arg = new ArgSymbol(formal->intent(), formal->name(), formal->type());
+    fn->insertFormalAtTail(arg);
+    wrappedCall->insertAtTail(new SymExpr(arg));
   }
+
+  fn->retType = ft->returnType();
+  fn->retTag = ft->returnIntent();
+  if (ft->returnType() != dtVoid) {
+    fn->body->insertAtTail(new CallExpr(PRIM_RETURN, wrappedCall));
+  } else {
+    fn->body->insertAtTail(wrappedCall);
+  }
+
+  call->getStmtExpr()->insertBefore(new DefExpr(fn));
+  normalize(fn);
+
+  auto old = call->baseExpr;
+  call->baseExpr->replace(new SymExpr(fn));
+  resolveNormalCall(call);
+
+  // Then replace the call to the wrapper with the call to the procedure
+  // pointer.
+  call->baseExpr->replace(old);
+  fn->defPoint->remove();
 
   return true;
 }
