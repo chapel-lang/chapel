@@ -24,7 +24,6 @@ Mason commands:
     doc         Build this project's documentation
     system      Integrate with system packages found via pkg-config
     test        Compile and run tests found in /test
-    external    Integrate external dependencies into Mason packages
     publish     Publish package to mason-registry
     modules     Print the dependencies of a Mason project
 ********************************************************************************
@@ -70,7 +69,6 @@ Usage:
 
 Options:
     -h, --help                  Display this message
-        --external              Add/Remove dependency from external dependencies
         --system                Add/Remove dependency from system dependencies
 
 Not listing an option will add/remove the dependency from the Mason
@@ -89,7 +87,6 @@ Usage:
 
 Options:
     -h, --help                  Display this message
-        --external              Add/Remove dependency from external dependencies
         --system                Add/Remove dependency from system dependencies
 
 Not listing an option will add/remove the dependency from the Mason
@@ -290,4 +287,24 @@ Options:
 
 Test configuration is up to the user
 Tests pass if they exit with status code 0
+********************************************************************************
+$ mason external -h
+Mason no longer supports external dependencies. If you were relying on this feature, please migrate to use system dependencies instead.
+********************************************************************************
+$ mason modules -h
+Print the dependencies of a Mason project
+
+Usage:
+    mason modules
+
+Options:
+    -h, --help                  Display this message
+    --[no-]update               [Do not] update the mason registry before
+                                printing the modules
+    --format {text,json}        Adjust the output format. The default is
+                                'text', which is prints the modules in a
+                                simple space-separated list.
+                                'json' prints the modules in a JSON format,
+                                which is easier to parse if the output is
+                                being used programmatically.
 ********************************************************************************
