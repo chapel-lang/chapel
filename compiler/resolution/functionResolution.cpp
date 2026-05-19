@@ -3448,10 +3448,10 @@ static bool resolveFunctionPointerCall(CallExpr* call) {
     }
   }
 
-  // Instead of refactoring promotion wrapping machinery, create a wrapper for
+  // Instead of refactoring wrapper machinery, create a wrapper for
   // this particular call and resolve it normally.
-  static int promoWrapperId = 0;
-  auto name = astr("chpl_fnptr_wrapper_", std::to_string(promoWrapperId++).c_str());
+  static int wrapperId = 0;
+  auto name = astr("chpl_fnptr_wrapper_", std::to_string(wrapperId++).c_str());
   FnSymbol* fn = new FnSymbol(name);
   fn->addFlag(FLAG_COMPILER_GENERATED);
   if (ft->throws()) fn->throwsErrorInit();
@@ -3478,10 +3478,12 @@ static bool resolveFunctionPointerCall(CallExpr* call) {
   call->baseExpr->replace(new SymExpr(fn));
   resolveNormalCall(call);
 
-  // Then replace the call to the wrapper with the call to the procedure
-  // pointer.
-  call->baseExpr->replace(old);
-  fn->defPoint->remove();
+  if (!anyPromotes) {
+    // Then replace the call to the wrapper with the call to the procedure
+    // pointer, so long as there is no promotion.
+    call->baseExpr->replace(old);
+    fn->defPoint->remove();
+  }
 
   return true;
 }
