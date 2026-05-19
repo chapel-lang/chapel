@@ -903,6 +903,10 @@ bool canInstantiate(Type* actualType, Type* formalType) {
     return true;
   }
 
+  if (formalType == dtAnyProc && isFunctionType(actualType)) {
+    return true;
+  }
+
   if (formalType == dtNumeric &&
       (isIntType(actualType)  ||
        isUIntType(actualType) ||
