@@ -785,7 +785,7 @@ genFinfo(std::vector<FnSymbol*> & fSymbols, bool isHeader) {
   }
 
   forv_Vec(FnSymbol, fn, fSymbols) {
-    const char* fn_name = fn->cname;
+    const char* fn_name = fn->name;
     int fileno = getFilenameTableIndex(fn->astloc.filename());
     int lineno = fn->astloc.lineno();
 
@@ -2144,20 +2144,20 @@ static void codegen_header(std::set<const char*> & cnames,
   dtObject->codegenPrototype();
   dtObject->codegenDef();
 
-  // Generate procedure pointer types first to handle circular dependencies.
-  genComment("Procedure Pointer Types");
-  forv_Vec(TypeSymbol, ts, types) {
-    if (auto ft = toFunctionType(ts->type)) {
-      ft->codegenDef();
-    }
-  }
-
   genComment("Class Prototypes");
   forv_Vec(TypeSymbol, typeSymbol, types) {
     if (!typeSymbol->hasFlag(FLAG_REF) && !typeSymbol->hasFlag(FLAG_DATA_CLASS))
     {
       if (typeSymbol->type == dtObject) continue;
       typeSymbol->codegenPrototype();
+    }
+  }
+
+  // Do this after class prototypes to avoid circular dependencies.
+  genComment("Procedure Pointer Types");
+  forv_Vec(TypeSymbol, ts, types) {
+    if (auto ft = toFunctionType(ts->type)) {
+      ft->codegenDef();
     }
   }
 

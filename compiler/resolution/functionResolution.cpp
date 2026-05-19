@@ -3443,38 +3443,46 @@ static bool resolveFunctionPointerCall(CallExpr* call) {
                              "passed to formal '%s'",
                              toString(actualType),
                              toString(formalType));
+
+      return true;
     }
   }
 
-  // Instead of refactoring promotion wrapping machinery, create a wrapper for
+  // Instead of refactoring wrapper machinery, create a wrapper for
   // this particular call and resolve it normally.
-  if (anyPromotes) {
-    static int promoWrapperId = 0;
-    auto name = astr("chpl_fnptr_promo_wrapper_", std::to_string(promoWrapperId++).c_str());
-    FnSymbol* fn = new FnSymbol(name);
-    fn->addFlag(FLAG_COMPILER_GENERATED);
-    CallExpr* wrappedCall = new CallExpr(call->baseExpr->copy());
-    for (int i = 0; i < ft->numFormals(); i++) {
-      auto formal = ft->formal(i);
-      ArgSymbol* arg = new ArgSymbol(formal->intent(), formal->name(), formal->type());
-      fn->insertFormalAtTail(arg);
-      wrappedCall->insertAtTail(new SymExpr(arg));
-    }
+  static int wrapperId = 0;
+  auto name = astr("chpl_fnptr_wrapper_", std::to_string(wrapperId++).c_str());
+  FnSymbol* fn = new FnSymbol(name);
+  fn->addFlag(FLAG_COMPILER_GENERATED);
+  if (ft->throws()) fn->throwsErrorInit();
+  CallExpr* wrappedCall = new CallExpr(call->baseExpr->copy());
+  for (int i = 0; i < ft->numFormals(); i++) {
+    auto formal = ft->formal(i);
+    ArgSymbol* arg = new ArgSymbol(formal->intent(), formal->name(), formal->type());
+    fn->insertFormalAtTail(arg);
+    wrappedCall->insertAtTail(new SymExpr(arg));
+  }
 
-    fn->retType = ft->returnType();
-    if (ft->returnType() != dtVoid) {
-      VarSymbol* ret = newTemp("fnptr_promo_wrapper_ret", ft->returnType());
-      fn->body->insertAtTail(new DefExpr(ret));
-      fn->body->insertAtTail(new CallExpr(PRIM_MOVE, ret, wrappedCall));
-      fn->body->insertAtTail(new CallExpr(PRIM_RETURN, ret));
-    } else {
-      fn->body->insertAtTail(wrappedCall);
-    }
+  fn->retType = ft->returnType();
+  fn->retTag = ft->returnIntent();
+  if (ft->returnType() != dtVoid) {
+    fn->body->insertAtTail(new CallExpr(PRIM_RETURN, wrappedCall));
+  } else {
+    fn->body->insertAtTail(wrappedCall);
+  }
 
-    call->getStmtExpr()->insertBefore(new DefExpr(fn));
+  call->getStmtExpr()->insertBefore(new DefExpr(fn));
+  normalize(fn);
 
-    call->baseExpr->replace(new SymExpr(fn));
-    resolveNormalCall(call);
+  auto old = call->baseExpr;
+  call->baseExpr->replace(new SymExpr(fn));
+  resolveNormalCall(call);
+
+  if (!anyPromotes) {
+    // Then replace the call to the wrapper with the call to the procedure
+    // pointer, so long as there is no promotion.
+    call->baseExpr->replace(old);
+    fn->defPoint->remove();
   }
 
   return true;
