@@ -87,7 +87,7 @@ private:
   typedef std::map<int, ReturnByRef*> RefMap;
 
   static void             returnByRefCollectCalls(RefMap& calls,
-                                                   std::vector<CallExpr*>& indirectMoves);
+                                                  std::vector<CallExpr*>& indirectMoves);
   static bool             isTransformableFunction(FnSymbol* fn);
   static void             transformFunction(FnSymbol* fn);
   static ArgSymbol*       addFormal(FnSymbol* fn);
@@ -143,7 +143,7 @@ void ReturnByRef::apply()
     }
   }
 
-  // Transform FnSymbols that are used as procedurepointers. Such functions
+  // Transform FnSymbols that are used as procedure pointers. Such functions
   // may have no direct call sites and therefore would not appear in the
   // RefMap collected above. We also build a mapping from old to new
   // FunctionType so that the types stored on procedure-pointer variables can
