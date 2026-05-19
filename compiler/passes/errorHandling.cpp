@@ -410,6 +410,9 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
       errorVar = info.errorVar;
 
       // (a) an enclosing try/try!
+      errorPolicy->insertAtTail(
+        new CallExpr(PRIM_MOVE, errorVar,
+          new CallExpr(gChplErrorPropagateStackInfo, new SymExpr(errorVar))));
       errorPolicy->insertAtTail(gotoHandler());
     } else {
       // without try, need an error variable
@@ -769,6 +772,31 @@ void ErrorHandlingVisitor::checkThrowingFuncInInit(CallExpr* node,
 }
 
 
+// // Sets the fn out variable with the given error, then goes to the fn epilogue.
+// void ErrorHandlingVisitor::setOutGotoEpilogue(VarSymbol* error, BlockStmt* block) {
+
+//   SymExpr* castedError = NULL;
+//   AList    ret         = castToErrorNilable(error, castedError);
+//   block->insertAtTail(ret);
+
+//   // update stack info
+//   auto updatedErrorVar = newTemp("updatedError", castedError->typeInfo());
+//   auto propagateStackInfo = new CallExpr(gChplErrorPropagateStackInfo, castedError);
+//   auto setUpdatedError = new CallExpr(PRIM_MOVE, updatedErrorVar, propagateStackInfo);
+
+//   block->insertAtTail(new DefExpr(updatedErrorVar));
+//   block->insertAtTail(setUpdatedError);
+//   resolveExpr(propagateStackInfo);
+//   resolveExpr(setUpdatedError);
+
+//   // Using PRIM_ASSIGN instead of PRIM_MOVE here to work around
+//   // errors that come up in C compilation.
+//   block->insertAtTail(new CallExpr(PRIM_ASSIGN, outError, new SymExpr(updatedErrorVar)));
+//   block->insertAtTail(new GotoStmt(GOTO_ERROR_HANDLING_RETURN, epilogue));
+
+//   // return ret;
+// }
+
 // Sets the fn out variable with the given error, then goes to the fn epilogue.
 AList ErrorHandlingVisitor::setOutGotoEpilogue(VarSymbol* error) {
 
@@ -776,7 +804,9 @@ AList ErrorHandlingVisitor::setOutGotoEpilogue(VarSymbol* error) {
   AList    ret         = castToErrorNilable(error, castedError);
   // Using PRIM_ASSIGN instead of PRIM_MOVE here to work around
   // errors that come up in C compilation.
-  ret.insertAtTail(new CallExpr(PRIM_ASSIGN, outError, castedError));
+  ret.insertAtTail(
+    new CallExpr(PRIM_ASSIGN, outError,
+      new CallExpr(gChplErrorPropagateStackInfo, castedError)));
   ret.insertAtTail(new GotoStmt(GOTO_ERROR_HANDLING_RETURN, epilogue));
 
   return ret;
@@ -798,7 +828,9 @@ AList ErrorHandlingVisitor::setOuterErrorAndGotoHandler(VarSymbol* error) {
   TryInfo& outerTry    = tryStack.top();
   SymExpr* castedError = NULL;
   AList    ret         = castToErrorNilable(error, castedError);
-  ret.insertAtTail(new CallExpr(PRIM_MOVE, outerTry.errorVar, castedError));
+  ret.insertAtTail(
+    new CallExpr(PRIM_MOVE, outerTry.errorVar,
+      new CallExpr(gChplErrorPropagateStackInfo, castedError)));
   ret.insertAtTail(gotoHandler());
 
   return ret;
