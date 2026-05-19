@@ -65,7 +65,7 @@
   locale by writing (e.g., for a 'chpl_rt_prginfo*' named 'prg' and
   for a data named 'foo'):
 
-  CHPL_RT_PRGINFO_DATA_TEMP(prg, foo);
+  CHPL_RT_PRGINFO_DECLARE(prg, foo);
 
   This will declare a temporary in the current scope with the name 'foo' that
   has the C type for the constant.
@@ -163,6 +163,10 @@ typedef uint64_t chpl_rt_prg_id;
 #define CHPL_RT_PRGINFO_ROOT \
   (chpl_rt_prginfo_from_id_here(CHPL_RT_PRGINFO_ROOT_ID))
 
+// TODO: Eventually replace all references to this with either a program
+//       pointer or a deliberate use of 'CHPL_RT_PRGINFO_ROOT'.
+#define CHPL_RT_ROOT_PROGRAM_PLACEHOLDER CHPL_RT_PRGINFO_ROOT
+
 /** Retrieve a program's info on the current locale given an ID. */
 #define CHPL_RT_PRGINFO_FETCH(id__) (chpl_rt_prginfo_from_id_here(id__))
 
@@ -183,7 +187,7 @@ typedef uint64_t chpl_rt_prg_id;
 #endif
 
 /** Declares a local that is a copy of a program data, with the same name. */
-#define CHPL_RT_PRGINFO_DATA_TEMP(prg__, data_name__)             \
+#define CHPL_RT_PRGINFO_DECLARE(prg__, data_name__)               \
   CHPL_RT_PRGINFO_DATA_ENTRY_TYPE(data_name__) data_name__ =      \
       CHPL_RT_PRGINFO_DATA(prg__, data_name__)
 

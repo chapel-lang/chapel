@@ -29,6 +29,7 @@
 #include <string.h>
 #include <assert.h>
 #include "chplcgfns.h"
+#include "chpl-prginfo.h"
 #include "chpl-comm-launch.h"
 #include "chpl-comm-locales.h"
 #include "chplexit.h"
@@ -44,13 +45,6 @@ extern char** environ;
 // This global variable stores the arguments to main
 // that should be handled by the program.
 chpl_main_argument chpl_gen_main_arg;
-// This variable is normally declared in config.h
-// and comes from the generated code.
-extern const int mainHasArgs;
-extern const int mainPreserveDelimiter;
-extern const int launcher_is_mli;
-extern const char* launcher_mli_real_name;
-
 
 //
 // Are we doing a dry run, printing the system launcher command but
@@ -646,7 +640,8 @@ int handleNonstandardArg(int* argc, char* argv[], int argNum,
   }
 
   if (numHandled == 0) {
-    if (mainHasArgs) {
+    if (CHPL_RT_PRGINFO_DATA(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                             mainHasArgs)) {
       chpl_gen_main_arg.argv[chpl_gen_main_arg.argc] = argv[argNum];
       chpl_gen_main_arg.argc++;
     } else {
@@ -820,7 +815,10 @@ int chpl_launch_prep(int* c_argc, char* argv[], int32_t* c_execNumLocales,
   chpl_gen_main_arg.argc = 1;
   chpl_gen_main_arg.return_value = 0;
 
-  CreateConfigVarTable();
+  // Call a callback to create the table which stores config vars.
+  CHPL_RT_PRGINFO_DATA(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                       CreateConfigVarTable)();
+
   parseArgs(true, parse_normally, &argc, argv);
 
   execNumLocales = getArgNumLocales();

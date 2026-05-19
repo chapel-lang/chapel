@@ -97,23 +97,6 @@ extern char* chpl_executionCommand;
 extern const chpl_fn_p chpl_ftable[];
 extern const chpl_fn_info chpl_finfo[];
 
-extern void chpl__initStringLiterals(void);
-
-void chpl__init_preInit(int64_t _ln, int32_t _fn);
-void chpl__init_PrintModuleInitOrder(int64_t _ln, int32_t _fn);
-void chpl__init_ChapelStandard(int64_t _ln, int32_t _fn);
-
-/* used for entry point: */
-extern int64_t chpl_gen_main(chpl_main_argument* const _arg);
-
-/* used for config vars: */
-extern void CreateConfigVarTable(void);
-
-//
-// Shared interface (implemented in the compiler generated code)
-//
-extern void chpl__heapAllocateGlobals(void);
-
 //
 // chpl_globals_registry is an array of size chpl_numGlobalsOnHeap
 // storing ptr_wide_ptr_t, that is, local addresses of wide pointers.
@@ -135,6 +118,10 @@ extern void* const chpl_global_serialize_table[];
 //
 extern const char* const chpl_mem_descs[];
 extern const int chpl_mem_numDescs;
+
+extern chpl_main_argument chpl_gen_main_arg;
+extern const int launcher_is_mli;
+extern const char* launcher_mli_real_name;
 
 #ifdef __cplusplus
 }
