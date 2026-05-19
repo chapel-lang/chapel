@@ -1,0 +1,9 @@
+caught error: oops
+stack trace:
+  (frame 1) throwFromParIterator.chpl:23
+  (frame 2) throwFromParIterator.chpl:17
+  (frame 3) throwFromParIterator.chpl:17
+uncaught Error: oops
+  throwFromParIterator.chpl:33: uncaught here
+  throwFromParIterator.chpl:17: called from here
+  throwFromParIterator.chpl:17: thrown here
