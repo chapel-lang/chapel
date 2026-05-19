@@ -355,6 +355,7 @@ ArgSymbol* ReturnByRef::addFormal(FnSymbol* fn)
   // Note: other code does strcmps against the name _retArg
   ArgSymbol*     formal  = new ArgSymbol(INTENT_REF, "_retArg", refType);
   formal->addFlag(FLAG_RETARG);
+  formal->qual = formal->qualType().getQual();
 
   fn->insertFormalAtTail(formal);
   fn->addFlag(FLAG_FN_RETARG);
