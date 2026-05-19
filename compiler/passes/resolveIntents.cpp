@@ -472,6 +472,27 @@ static FunctionType* computeConcreteIntentsForFunctionType(FunctionType* ft) {
       newIntent = concreteIntent(formal.intent(), formal.type());
     }
 
+    if (newIntent == INTENT_OUT ||
+        newIntent == INTENT_INOUT) {
+      // Resolution already handled out/inout copying
+      newIntent = INTENT_REF;
+    } else if (newIntent == INTENT_IN) {
+      // Replicates and merges some of the logic from `resolveArgIntent`
+      auto type = formal.type()->getValType();
+      bool addedTmp = (isRecord(type) || isUnion(type) ||
+                       isConstrainedType(type));
+
+      // How can we anticipate this for procedure pointers?
+      if (ft->isExtern())
+        addedTmp = false;
+
+      if (addedTmp &&
+          ft->returnIntent() != RET_PARAM &&
+          formalRequiresTemp(formal)) {
+          newIntent = INTENT_REF;
+      }
+    }
+
     bool isFormal = true;
     auto qualForIntent = QualifiedType::qualifierForArgIntent(newIntent);
     bool isConst = QualifiedType::qualifierIsConst(qualForIntent);
