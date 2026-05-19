@@ -30,6 +30,7 @@
 #include "chpl-comm-internal.h"
 #include "chplcgfns.h"
 #include "chpl-linefile-support.h"
+#include "chpl-prginfo.h"
 #include "config.h"
 #include "chpl-error.h"
 
@@ -668,6 +669,9 @@ void chpl_reportMemInfo(void) {
   if (memLogFile && memLogFile != stdout)
     fclose(memLogFile);
   if (memLeaksLog && strcmp(memLeaksLog, "")) {
+    CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                            chpl_executionCommand);
+
     memLogFile = fopen(memLeaksLog, "a");
     fprintf(memLogFile, "\nCompiler Command : %s\n", chpl_compileCommand);
     fprintf(memLogFile, "Execution Command: %s\n\n", chpl_executionCommand);

@@ -91,8 +91,6 @@ extern const c_string chpl_funSymTable[];
 extern const int chpl_filenumSymTable[];
 extern const int32_t chpl_sizeSymTable;
 
-extern char* chpl_executionCommand;
-
 /* generated */
 extern const chpl_fn_p chpl_ftable[];
 extern const chpl_fn_info chpl_finfo[];
