@@ -88,8 +88,8 @@ static void recordExecutionCommand(int argc, char *argv[]) {
     length += strlen(argv[i]) + 1;
   }
 
-  CHPL_RT_PRGINFO_DATA_TEMP(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
-                            chpl_executionCommand);
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                          chpl_executionCommand);
 
   chpl_executionCommand =
     (char*)chpl_mem_allocMany(length+1, sizeof(char),
