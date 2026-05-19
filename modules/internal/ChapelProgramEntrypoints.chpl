@@ -47,7 +47,8 @@ module ChapelProgramEntrypoints {
     chpl_error(msg, 0, 0);
   }
 
-  pragma "locale private"
+  pragma "locale private"   // TODO: May not need this, but...
+  pragma "no init"          // Don't overwite work done later.
   private var chpl_genMainArg: chpl_main_argument;
 
   // For the runtime. Get a pointer to the main argument on this locale.
