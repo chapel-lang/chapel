@@ -665,10 +665,12 @@ class ChapelLanguageServer(LanguageServer):
     ) -> Optional[str]:
         """
         For generic functions (where _fn_return_type_str returns None), attempt
-        to compute a return type string using PlaceholderType substitution.
-        Each generic formal is proxied with a unique PlaceholderType; we then
-        compute the return type and replace each PlaceholderType string with
-        'formalName.type'.
+        to compute a return type string in terms of their generic formals'
+        names. This works best for parametrically polymorphic functions.
+        Do this by using the 'template' mechanism Dyno uses to resolve
+        interfaces, creating placeholders in the signature, resolving a return
+        type in terms of these placeholders, and then replacing placeholders
+        with the names of the formals/type queries they correspond to.
         """
         if fn.return_type() is not None:
             return None
@@ -688,38 +690,54 @@ class ChapelLanguageServer(LanguageServer):
 
         ret_str = str(type_)
 
-        # Build a substitution map: PlaceholderType string → readable label.
-        #
-        # Two cases:
-        #  1. Direct-generic formal (no type annotation): the formal type IS a
-        #     PlaceholderType anchored to the Formal node → replace with "x.type".
-        #  2. TypeQuery in a formal's type annotation (e.g. "x: list(?t)"): the
-        #     PlaceholderType is anchored to the TypeQuery node → replace with "t".
+        # Postorder traversal of each formal's subtree. For every node whose
+        # resolved type (under the template signature) is a PlaceholderType,
+        # record a substitution that describes how to refer to it.
+        #  * For formals: formal.type
+        #  * For type queries: just the query name (tq)
+        #  * Anything else: we don't know!
         subs: dict = {}
+        for formal in fn.formals():
+            for node in chapel.postorder(formal):
+                rr = node.resolve_via(template_sig)
+                if rr is None:
+                    continue
+                qt, t, _ = rr.type()
+                if not isinstance(t, chapel.PlaceholderType):
+                    continue
 
-        # Case 2: scan all TypeQuery nodes anywhere in the function's formals
-        for tq, _ in chapel.each_matching(fn, chapel.TypeQuery):
-            pt = tq.placeholder_type()
-            if pt is not None:
-                subs[str(pt)] = tq.name()
+                if isinstance(node, chapel.Formal):
+                    if node == t.node() or node.type_expression() == t.node():
+                        if qt == "type":
+                            subs[str(t)] = node.name()
+                        else:
+                            subs[str(t)] = node.name() + ".type"
+                        continue
 
-        # Case 1: direct-generic formals whose type IS a PlaceholderType
-        for i, formal in enumerate(fn.formals()):
-            formal_qt = template_sig.formal_type(i)
-            if formal_qt is None:
-                continue
-            _, formal_type, _ = formal_qt
-            if isinstance(formal_type, chapel.PlaceholderType):
-                subs.setdefault(str(formal_type), formal.name() + ".type")
+                elif isinstance(node, chapel.TypeQuery):
+                    subs[str(t)] = node.name()
+                    continue
+
+                # This node has a placeholder type, but didn't create it
+                # in a way we can refer to. This could be benign. Some
+                # examples:
+                #
+                #  proc foo(x, y: x.type), and we're looking at 'y'.
+                #  proc bar(x: list(?tq).eltType), and we're looking at the whole type expr.
+                #
+                # In both of these cases, another subexpression would have
+                # already inserted the substitution. Ensure it has; if not,
+                # give up on creating a generic signature.
+                if str(t) not in subs:
+                    return None
+
+        # No PlaceholderTypes found, the return type is already concrete;
+        # let common inlays handle it to avoid duplicates.
+        if not subs:
+            return None
 
         for ph_str, replacement in subs.items():
             ret_str = ret_str.replace(ph_str, replacement)
-
-        # Only return a result if we actually substituted a PlaceholderType.
-        # If the return type is already concrete (e.g. int(32)), common inlays
-        # will handle it and we don't want to produce a duplicate.
-        if ret_str == str(type_):
-            return None
 
         return ret_str
 
