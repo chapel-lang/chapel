@@ -706,7 +706,9 @@ class ChapelLanguageServer(LanguageServer):
                 rr = node.resolve_via(template_sig)
                 if rr is None:
                     continue
-                qt, t, _ = rr.type()
+                if not (node_type := rr.type()):
+                    continue
+                qt, t, _ = node_type
                 if not isinstance(t, chapel.PlaceholderType):
                     continue
 
