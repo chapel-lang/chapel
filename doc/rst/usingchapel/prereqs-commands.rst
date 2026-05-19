@@ -57,7 +57,7 @@
       sudo dnf install llvm-devel clang clang-devel
 
 
-  * Debian 11 "Bullseye"::
+  * Debian 11 "Bullseye" (but note `Newer CMake required to build LLVM`_)::
 
       sudo apt-get update
       sudo apt-get install gcc g++ m4 perl python3 python3-dev bash make mawk git pkg-config cmake libunwind-dev
