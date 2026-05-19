@@ -475,4 +475,10 @@ module ChapelIO {
 
     return chpl_stringify_wrapper(x);
   }
+
+  @chpldoc.nodoc
+  proc const chpl_anyProc.serialize(writer, ref serializer) throws {
+    writer.write(this:string);
+  }
+  implements writeSerializable(chpl_anyProc);
 }
