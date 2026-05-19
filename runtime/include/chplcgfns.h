@@ -42,8 +42,6 @@ extern "C" {
 #endif
 
 /* defined in chpl_compilation_config.c: */
-extern const char* chpl_saveCDir;
-
 extern const char* CHPL_HOME;
 extern const char* CHPL_HOST_PLATFORM;
 extern const char* CHPL_HOST_COMPILER;
