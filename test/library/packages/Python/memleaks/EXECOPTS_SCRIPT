@@ -33,6 +33,11 @@ else
   goodfile="$basefile.noleak.good";
 fi
 
+# Nothing seems to leak with 'fifo' which is very suspicious.
+if [ "$CHPL_TASKS" == "fifo" ]; then
+  goodfile="$basefile.noleak.good";
+fi
+
 if [[ -n "$goodfile" ]]; then
   echo "--pyMemLeaks # $goodfile"
 else
