@@ -40,6 +40,7 @@
 #include "stmt.h"
 #include "symbol.h"
 #include "TryStmt.h"
+#include "DeferStmt.h"
 
 /************************************* | **************************************
 *                                                                             *
@@ -786,6 +787,17 @@ static ReturnInfo doFindCopyElisionPoints(Expr* start,
   if (start == NULL)
     return false;
 
+  // Process defers after we're done with 'start', in reverse order of appearence
+  llvm::SmallVector<DeferStmt*, 4> defers;
+  auto clearDefers = [&]() {
+    while (!defers.empty()) {
+      DeferStmt* defer = defers.back();
+      defers.pop_back();
+      VariablesSet newEligible;
+      doFindCopyElisionPoints(defer->body()->body.first(), map, newEligible);
+    }
+  };
+
   // Scroll forwards in the block containing start.
   for (Expr* cur = start->getStmtExpr(); cur != NULL; cur = cur->next) {
 
@@ -875,6 +887,7 @@ static ReturnInfo doFindCopyElisionPoints(Expr* start,
       }
 
       if (regularReturn || errorReturn) {
+        clearDefers();
         bool elide = !errorReturn || cannotRecover;
         if (elide) doElideCopies(map);
         return { true, elide };
@@ -894,8 +907,10 @@ static ReturnInfo doFindCopyElisionPoints(Expr* start,
         // non-loop block
         Expr* start = block->body.first();
         auto returned = doFindCopyElisionPoints(start, map, eligible);
-        if (returned.returnedUnconditionally)
+        if (returned.returnedUnconditionally) {
+          clearDefers();
           return returned; // stop traversing if it returned
+        }
       }
 
       // If we had a reason to, we could remove variables going
@@ -957,6 +972,7 @@ static ReturnInfo doFindCopyElisionPoints(Expr* start,
 
       // If both blocks return, then they have already been copy elided.
       if (ifRet.elidedCopies && elseRet.elidedCopies) {
+        clearDefers();
         return true;
 
       // Neither if nor else block unconditionally elided copies.
@@ -1025,16 +1041,21 @@ static ReturnInfo doFindCopyElisionPoints(Expr* start,
         }
       }
       if (ifRet.returnedUnconditionally && elseRet.returnedUnconditionally) {
+        clearDefers();
         return ReturnInfo { true, ifRet.elidedCopies && elseRet.elidedCopies };
       }
     } else if (isFunctionOrTypeDeclaration(cur)) {
       // OK: mentions like `proc f() { ... x ... }` don't count
+    } else if (auto defer = toDeferStmt(cur)) {
+      // Handle later; mentions aren't logically here.
+      defers.push_back(defer);
     } else {
       // Look for uses of 'x'
       noteUses(cur, map);
     }
   }
 
+  clearDefers();
   return false;
 }
 
