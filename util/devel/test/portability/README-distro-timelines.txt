@@ -113,9 +113,12 @@ x 14.1 EOL Mar 2025
 x 13.4 EOL Jun 2025
 x 13.5 EOL Apr 2026 (still testing as newer don't have boxes)
 x 14.2 EOL Sep 2025
-x 14.3 EOL Jun 2026
+x 14.3 EOL Jun 2026 (still testing as newer don't have boxes)
   14.4 EOL Dec 2026 (awaiting vagrant box)
   15.0 EOL Sep 2026 (awaiting vagrant box)
+** As of May 2026, we couldn't find Vagrant boxes for any production releases
+   of FreeBSD, and plan to just keep testing 13.5 and 14.3 unless newer boxes
+   appear.
 
 OpenSuse -- see https://en.opensuse.org/Lifetime
          -- and https://app.vagrantup.com/opensuse
