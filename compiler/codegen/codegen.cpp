@@ -2136,7 +2136,7 @@ static void codegen_header(std::set<const char*> & cnames,
     }
   }
 
-  // Generate procedure pointer types first to handle circular dependencies.
+  // Do this after class prototypes to avoid circular dependencies.
   genComment("Procedure Pointer Types");
   forv_Vec(TypeSymbol, ts, types) {
     if (auto ft = toFunctionType(ts->type)) {
