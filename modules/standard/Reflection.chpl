@@ -370,6 +370,26 @@ proc canResolveTypeMethod(type t, param fname : string) param : bool do
 proc canResolveTypeMethod(type t, param fname : string, args ...) param : bool do
   return __primitive("method call and fn resolves", t, fname, (...args));
 
+/* Returns ``true`` if a call to a first-class function can be resolved
+   without any arguments.
+
+  .. note:: Does not attempt to resolve the body of the invoked function.
+
+    */
+@unstable(reason="The 'canResolve...' family of procedures are unstable")
+proc canResolveCall(fn) param : bool do
+  return __primitive("resolves", fn());
+
+/* Returns ``true`` if a call to a first-class function can be resolved with
+   the given arguments.
+
+  .. note:: Does not attempt to resolve the body of the invoked function.
+
+    */
+@unstable(reason="The 'canResolve...' family of procedures are unstable")
+proc canResolveCall(fn, args...) param : bool do
+  return __primitive("resolves", fn((...args)));
+
 // TODO -- do we need a different version of can resolve with ref this?
 
 /* Returns the line number of the call to this function. */
