@@ -8,7 +8,7 @@ in their git tree. This file is meant to provide similar information for
 developers, and to map between the developer directory structure and the
 release directory structure.
 
-Most files/directories are the same and in the sam place for developers and end
+Most files/directories are the same and in the same place for developers and end
 users. See README.files for a description of these.
 
 The following files/directories in the release are based on those in
