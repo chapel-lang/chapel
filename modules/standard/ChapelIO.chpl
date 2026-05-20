@@ -471,9 +471,9 @@ module ChapelIO {
       const parenIndex = typeName.find("(");
       const ret = typeName[..<start] + " " + name + typeName[parenIndex..];
       return ret;
+    } else {
+      return chpl_stringify_wrapper(x);
     }
-
-    return chpl_stringify_wrapper(x);
   }
 
   @chpldoc.nodoc
