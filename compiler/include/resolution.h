@@ -266,6 +266,7 @@ enum class PoiSearchMode {
 };
 
 FnSymbol* tryResolveCall(CallExpr* call, bool checkWithin=false, PoiSearchMode poiMode = PoiSearchMode::NORMAL);
+bool      resolveFunctionPointerCall(CallExpr* call, bool checkOnly, bool* resolved = nullptr);
 void      makeRefType(Type* type);
 
 // FnSymbol changes

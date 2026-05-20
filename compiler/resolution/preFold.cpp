@@ -810,6 +810,8 @@ static Expr* preFoldPrimResolves(CallExpr* call) {
           INT_ASSERT(expr);
         } break;
       }
+    } else if (call->isIndirectCall()) {
+      resolveFunctionPointerCall(call, true, &didResolveExpr);
 
     // Otherwise, it is a normal call, so rely on 'tryResolveCall'.
     } else {
