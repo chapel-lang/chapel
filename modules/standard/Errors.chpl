@@ -556,6 +556,14 @@ module Errors {
       const line = __primitive("_get_user_line");
       const fileId = __primitive("_get_user_file");
 
+      // TODO: we might want to avoid allocating a stack trace for every single
+      // call.
+      // a few ideas:
+      //   * pre allocate an array when the Error is created, and
+      //     cap it at some size (e.g. 8?, 16?)
+      //   * use a custom allocator that uses a pool of pre-allocated nodes
+      //     sized for error nodes, and then only allocating dynamically when
+      //     we exceed the pre-allocated size
       var newNode = new unmanaged ErrorStackNode(line, fileId);
       newNode.next = err!.stackTraceHead;
       err!.stackTraceHead = newNode;
