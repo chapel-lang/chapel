@@ -380,9 +380,9 @@ module Map {
                    Reflection.canResolveCall(updater, key, val)
                  else
                    Reflection.canResolveMethod(updater, "this", key, val);
-      param str = if useProcedurePointers then " for arguments ("
-            else ".this() for arguments (";
-      param kind = if useProcedurePointers then "updater " else "method ";
+      param str = if useProcedurePointers then "' for arguments ("
+            else ".this()' for arguments (";
+      param kind = if useProcedurePointers then "updater '" else "method '";
       if !resolves then
         compilerError('`map.update()` failed to resolve ' + kind +
                       updater.type:string + str +

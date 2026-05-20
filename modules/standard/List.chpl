@@ -1744,10 +1744,11 @@ module List {
                          Reflection.canResolveCall(updater, i, slot)
                        else
                          Reflection.canResolveMethod(updater, "this", i, slot);
-      param str = if useProcedurePointers then " for arguments ("
-                  else ".this() for arguments (";
+      param str = if useProcedurePointers then "' for arguments ("
+                  else ".this()' for arguments (";
+      param kind = if useProcedurePointers then "updater '" else "method '";
       if !resolves then
-        compilerError('`list.update()` failed to resolve updater ' +
+        compilerError('`list.update()` failed to resolve ' + kind +
                       updater.type:string + str +
                       i.type:string + ', ' + slot.type:string + ')');
 
