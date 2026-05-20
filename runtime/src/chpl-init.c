@@ -64,11 +64,9 @@ void deallocate_string_literals_buf(void) {
 
 int handleNonstandardArg(int* argc, char* argv[], int argNum,
                          int32_t lineno, int32_t filename) {
-  if (CHPL_RT_PRGINFO_DATA(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER, mainHasArgs)) {
-    chpl_main_argument* main_arg_ptr = NULL;
-
-    main_arg_ptr = CHPL_RT_PRGINFO_DATA(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
-                                        chpl_genMainArgPtr)();
+  chpl_rt_prginfo* prg = CHPL_RT_ROOT_PROGRAM_PLACEHOLDER;
+  if (CHPL_RT_PRGINFO_DATA(prg, mainHasArgs)) {
+    chpl_main_argument* main_arg_ptr = chpl_rt_prginfo_main_argument(prg);
 
     main_arg_ptr->argv[main_arg_ptr->argc] = argv[argNum];
     main_arg_ptr->argc++;
@@ -280,12 +278,9 @@ void chpl_rt_init(chpl_rt_prginfo* root_prg, int argc, char** argv) {
   chpl_comm_barrier("about to leave comm init code");
 
   // Call a callback from the program data to initialize the config table.
-  CHPL_RT_PRGINFO_DATA(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
-                       CreateConfigVarTable)();
+  CHPL_RT_PRGINFO_DATA(root_prg, CreateConfigVarTable)();
 
-  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
-                          chpl_genMainArgPtr);
-  chpl_main_argument* main_arg_ptr = chpl_genMainArgPtr();
+  chpl_main_argument* main_arg_ptr = chpl_rt_prginfo_main_argument(root_prg);
 
   main_arg_ptr->argv = chpl_malloc(argc * sizeof(char*));
   main_arg_ptr->argv[0] = argv[0];
@@ -410,8 +405,7 @@ void chpl_executable_init(void) {
     chpl_rt_prginfo* prg = CHPL_RT_ROOT_PROGRAM_PLACEHOLDER;
 
     // Get the main argument.
-    chpl_main_argument* main_arg_ptr = NULL;
-    main_arg_ptr = CHPL_RT_PRGINFO_DATA(prg, chpl_genMainArgPtr)();
+    chpl_main_argument* main_arg_ptr = chpl_rt_prginfo_main_argument(prg);
 
     // Fetch 'chpl_gen_main' from the root program's data.
     CHPL_RT_PRGINFO_DECLARE(prg, chpl_gen_main);

@@ -636,11 +636,10 @@ int handleNonstandardArg(int* argc, char* argv[], int argNum,
   }
 
   if (numHandled == 0) {
-    if (CHPL_RT_PRGINFO_DATA(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
-                             mainHasArgs)) {
-      chpl_main_argument* main_arg_ptr = NULL;
-      main_arg_ptr = CHPL_RT_PRGINFO_DATA(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
-                                          chpl_genMainArgPtr)();
+    chpl_rt_prginfo* prg = CHPL_RT_ROOT_PROGRAM_PLACEHOLDER;
+
+    if (CHPL_RT_PRGINFO_DATA(prg, mainHasArgs)) {
+      chpl_main_argument* main_arg_ptr = chpl_rt_prginfo_main_argument(prg);
 
       main_arg_ptr->argv[main_arg_ptr->argc] = argv[argNum];
       main_arg_ptr->argc++;
@@ -807,10 +806,8 @@ int chpl_launch_prep(int* c_argc, char* argv[], int32_t* c_execNumLocales,
   int32_t execNumLocales;
   int32_t execNumLocalesPerNode;
   int argc = *c_argc;
-  chpl_main_argument* main_arg_ptr = NULL;
-
-  main_arg_ptr = CHPL_RT_PRGINFO_DATA(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
-                                      chpl_genMainArgPtr)();
+  chpl_rt_prginfo* prg = CHPL_RT_ROOT_PROGRAM_PLACEHOLDER;
+  chpl_main_argument* main_arg_ptr = chpl_rt_prginfo_main_argument(prg);
 
   // Set up main argument parsing.
   main_arg_ptr->argv = chpl_mem_allocMany(argc, sizeof(char*),

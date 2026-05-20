@@ -365,13 +365,10 @@ void parseArgs(chpl_bool isLauncher, chpl_parseArgsMode_t mode,
   int origargc = *argc;
   int stop_parsing = 0;
   int saw_socket_conn = 0;
-  chpl_main_argument* main_arg_ptr = NULL;
+  chpl_rt_prginfo* prg = CHPL_RT_ROOT_PROGRAM_PLACEHOLDER;
+  chpl_main_argument* main_arg_ptr = chpl_rt_prginfo_main_argument(prg);
 
-  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER, mainHasArgs);
-
-  // Fetch the main argument pointer using a callback in program code.
-  main_arg_ptr = CHPL_RT_PRGINFO_DATA(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
-                                      chpl_genMainArgPtr)();
+  CHPL_RT_PRGINFO_DECLARE(prg, mainHasArgs);
 
   //
   // Handle the pre-parse for '-E' arguments separately.

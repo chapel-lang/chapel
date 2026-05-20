@@ -237,3 +237,9 @@ void chpl_rt_prginfo_dump_data_entries(chpl_rt_prginfo* prg,
 
   #include "chpl-prginfo-data-macro-adapter.h"
 }
+
+chpl_main_argument* chpl_rt_prginfo_main_argument(chpl_rt_prginfo* prg) {
+  CHPL_RT_PRGINFO_DECLARE(prg, chpl_genMainArgPtr);
+  chpl_main_argument* ret = chpl_genMainArgPtr();
+  return ret;
+}

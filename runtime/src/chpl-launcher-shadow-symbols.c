@@ -18,15 +18,7 @@
  * limitations under the License.
  */
 
-#include "chplcgfns.h"
-#include "chpl-prginfo.h"
-#include "chpl-comm-launch.h"
-#include "chpl-comm-locales.h"
-#include "chplexit.h"
-#include "chpllaunch.h"
-#include "chpl-mem.h"
 #include "chpltypes.h"
-#include "chpl-error.h"
 
 //
 // Symbols declared in this source are launcher-only copies of symbols that
@@ -37,7 +29,6 @@
 
 // This mimics a function that is defined in module code.
 chpl_main_argument* chpl_genMainArgPtr(void);
-
 chpl_main_argument* chpl_genMainArgPtr(void) {
   static chpl_main_argument main_argument;
   return &main_argument;
