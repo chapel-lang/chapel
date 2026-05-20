@@ -41,10 +41,6 @@ module Errors {
     var thrownLine:int;
     var thrownFileId:int(32);
     var next: unmanaged ErrorStackNode? = nil;
-    proc deinit() {
-      if next != nil then
-        delete next;
-    }
   }
 
   // Base class for errors
@@ -80,8 +76,11 @@ module Errors {
 
     @chpldoc.nodoc
     proc deinit() {
-      if stackTraceHead != nil then
+      while stackTraceHead {
+        var next = stackTraceHead!.next;
         delete stackTraceHead;
+        stackTraceHead = next;
+      }
     }
 
     /* Override this method to provide an error message
