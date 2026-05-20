@@ -574,7 +574,9 @@ module Errors {
     extern proc chpl_error_preformatted(ptr:c_ptrConst(c_char));
 
     var s = "uncaught " + chpl_describe_error(err);
-    if err.stackTraceHead {
+    // if we have stack trace info (at least 2 entires) then print that,
+    // otherwise just fallback to printing the throw and catch site info
+    if err.stackTraceHead != nil && err.stackTraceHead!.next != nil {
       var first = true;
       var node = err.stackTraceHead;
       while node {
