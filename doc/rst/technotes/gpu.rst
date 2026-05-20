@@ -708,7 +708,7 @@ marked with * are covered in our nightly testing configurations.
 
   * Hardware: RTX A2000, P100*, V100*, A100*, H100, GH200
 
-  * Software: CUDA 11.7, 11.8, 12.0, 12.2, 12.4, 12.8*, 12.9, 13.0
+  * Software: CUDA 11.7, 11.8, 12.0, 12.2, 12.4, 12.8, 12.9*, 13.0
 
 * AMD
 
