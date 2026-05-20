@@ -205,14 +205,14 @@ private:
   ArgSymbol*          outError;
   LabelSymbol*        epilogue;
 
-  void   lowerCatches      (const TryInfo& info);
-  AList  setOutGotoEpilogue(VarSymbol*     error);
+  void   lowerCatches(const TryInfo& info);
+  AList  setOutGotoEpilogue(VarSymbol* error, Symbol* parent);
   GotoStmt*  gotoHandler();
-  AList  setOuterErrorAndGotoHandler(VarSymbol* error);
-  AList  errorCond         (VarSymbol*     errorVar,
-                            BlockStmt*     thenBlock,
-                            BlockStmt*     elseBlock = NULL);
-  CallExpr* haltExpr       (VarSymbol*     error, bool tryBang);
+  AList  setOuterErrorAndGotoHandler(VarSymbol* error, Symbol* parent);
+  AList  errorCond(VarSymbol* errorVar,
+                   BlockStmt* thenBlock,
+                   BlockStmt* elseBlock = NULL);
+  CallExpr* haltExpr(VarSymbol* error, bool tryBang);
   void setupForThrowingLoop(Stmt* node,
                             LabelSymbol* handlerLabel,
                             BlockStmt* body);
@@ -358,9 +358,9 @@ void ErrorHandlingVisitor::lowerCatches(const TryInfo& info) {
     if (tryStmt->tryBang()) {
       currHandler->insertAtTail(haltExpr(errorVar, true));
     } else if (!tryStack.empty()) {
-      currHandler->insertAtTail(setOuterErrorAndGotoHandler(errorVar));
+      currHandler->insertAtTail(setOuterErrorAndGotoHandler(errorVar, tryStmt->parentSymbol));
     } else if (outError != NULL) {
-      currHandler->insertAtTail(setOutGotoEpilogue(errorVar));
+      currHandler->insertAtTail(setOutGotoEpilogue(errorVar, tryStmt->parentSymbol));
     } else {
       INT_FATAL(tryStmt, "try without a catchall in a non-throwing function");
     }
@@ -423,7 +423,7 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
       if (outError != NULL && node->tryTag != TRY_TAG_IN_TRYBANG &&
           deferDepth == 0 && !node->parentSymbol->hasFlag(FLAG_OUTSIDE_TRY)) {
         // (b) throw from the enclosing function
-        errorPolicy->insertAtTail(setOutGotoEpilogue(errorVar));
+        errorPolicy->insertAtTail(setOutGotoEpilogue(errorVar, node->parentSymbol));
       }
       else if (calledFn && calledFn->hasFlag(FLAG_TASK_JOIN_IMPL_FN)) {
         if (node->parentSymbol->hasFlag(FLAG_ITERATOR_FN))
@@ -433,7 +433,7 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
         else if (node->parentSymbol->hasFlag(FLAG_TASK_FN_FROM_ITERATOR_FN))
           // (d) coforall/... in a task function in a non-throwing iterator
           // ==> propagate the error through the task function
-          errorPolicy->insertAtTail(setOutGotoEpilogue(errorVar));
+          errorPolicy->insertAtTail(setOutGotoEpilogue(errorVar, node->parentSymbol));
         else
           // (e) coforall or similar in a non-throwing procedure
           // ==> halt right away
@@ -482,9 +482,9 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
     VarSymbol* fixedError = thrownError;
 
     if (insideTry) {
-      throwBlock->insertAtTail(setOuterErrorAndGotoHandler(fixedError));
+      throwBlock->insertAtTail(setOuterErrorAndGotoHandler(fixedError, node->parentSymbol));
     } else if (outError != NULL) {
-      throwBlock->insertAtTail(setOutGotoEpilogue(fixedError));
+      throwBlock->insertAtTail(setOutGotoEpilogue(fixedError, node->parentSymbol));
     } else {
       INT_FATAL(node, "cannot throw in a non-throwing function");
     }
@@ -629,9 +629,9 @@ void ErrorHandlingVisitor::exitForallLoop(Stmt* node)
                                      new CallExpr(gChplForallError, err)));
 
   if (!tryStack.empty()) {
-    handler->insertAtTail(setOuterErrorAndGotoHandler(normErr));
+    handler->insertAtTail(setOuterErrorAndGotoHandler(normErr, node->parentSymbol));
   } else if (outError != NULL) {
-    handler->insertAtTail(setOutGotoEpilogue(normErr));
+    handler->insertAtTail(setOutGotoEpilogue(normErr, node->parentSymbol));
   } else {
     handler->insertAtTail(haltExpr(normErr, false));
   }
@@ -773,15 +773,19 @@ void ErrorHandlingVisitor::checkThrowingFuncInInit(CallExpr* node,
 }
 
 // Sets the fn out variable with the given error, then goes to the fn epilogue.
-AList ErrorHandlingVisitor::setOutGotoEpilogue(VarSymbol* error) {
+AList ErrorHandlingVisitor::setOutGotoEpilogue(VarSymbol* error, Symbol* parent) {
 
   SymExpr* castedError = NULL;
   AList    ret         = castToErrorNilable(error, castedError);
   // Using PRIM_ASSIGN instead of PRIM_MOVE here to work around
   // errors that come up in C compilation.
-  ret.insertAtTail(
-    new CallExpr(PRIM_ASSIGN, outError,
-      new CallExpr(gChplErrorPropagateStackInfo, castedError)));
+  if (parent && parent->hasFlag(FLAG_COMPILER_GENERATED)) {
+    ret.insertAtTail(new CallExpr(PRIM_ASSIGN, outError, castedError));
+  } else {
+    ret.insertAtTail(
+      new CallExpr(PRIM_ASSIGN, outError,
+        new CallExpr(gChplErrorPropagateStackInfo, castedError)));
+  }
   ret.insertAtTail(new GotoStmt(GOTO_ERROR_HANDLING_RETURN, epilogue));
 
   return ret;
@@ -797,15 +801,19 @@ GotoStmt* ErrorHandlingVisitor::gotoHandler() {
     return new GotoStmt(GOTO_ERROR_HANDLING, outerTry.handlerLabel);
 }
 
-AList ErrorHandlingVisitor::setOuterErrorAndGotoHandler(VarSymbol* error) {
+AList ErrorHandlingVisitor::setOuterErrorAndGotoHandler(VarSymbol* error, Symbol* parent) {
 
   INT_ASSERT(!tryStack.empty());
   TryInfo& outerTry    = tryStack.top();
   SymExpr* castedError = NULL;
   AList    ret         = castToErrorNilable(error, castedError);
-  ret.insertAtTail(
-    new CallExpr(PRIM_MOVE, outerTry.errorVar,
-      new CallExpr(gChplErrorPropagateStackInfo, castedError)));
+  if (parent && parent->hasFlag(FLAG_COMPILER_GENERATED)) {
+    ret.insertAtTail(new CallExpr(PRIM_MOVE, outerTry.errorVar, castedError));
+  } else {
+    ret.insertAtTail(
+      new CallExpr(PRIM_MOVE, outerTry.errorVar,
+        new CallExpr(gChplErrorPropagateStackInfo, castedError)));
+  }
   ret.insertAtTail(gotoHandler());
 
   return ret;
