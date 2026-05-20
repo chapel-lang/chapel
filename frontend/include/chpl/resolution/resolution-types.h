@@ -1041,6 +1041,14 @@ class TypedFnSignature {
   // that was refined.
   bool isRefinementOnly_ = false;
 
+  // Was this TypedFnSignature created with placeholder types enabled?
+  // When true, generic formals are assigned PlaceholderType instead of
+  // AnyType, and TypeQuery nodes inside formal type expressions are also
+  // assigned PlaceholderType. This flag must be propagated to any Resolver
+  // that re-resolves the function body (e.g. via resolve_via) so that the
+  // same placeholder-based resolution is reproduced.
+  bool usePlaceholders_ = false;
+
   // Is this TypedFnSignature representing an instantiation?
   // If so, what is the generic TypedFnSignature that was instantiated?
   const TypedFnSignature* instantiatedFrom_ = nullptr;
@@ -1065,6 +1073,7 @@ class TypedFnSignature {
                    WhereClauseResult whereClauseResult,
                    InstantiationState needsInstantiation,
                    bool isRefinementOnly,
+                   bool usePlaceholders,
                    const TypedFnSignature* instantiatedFrom,
                    const TypedFnSignature* parentFn,
                    Bitmap formalsInstantiated,
@@ -1075,6 +1084,7 @@ class TypedFnSignature {
       whereClauseResult_(whereClauseResult),
       instantiationState_(needsInstantiation),
       isRefinementOnly_(isRefinementOnly),
+      usePlaceholders_(usePlaceholders),
       instantiatedFrom_(instantiatedFrom),
       parentFn_(parentFn),
       formalsInstantiated_(std::move(formalsInstantiated)),
@@ -1088,6 +1098,7 @@ class TypedFnSignature {
                       TypedFnSignature::WhereClauseResult whereClauseResult,
                       InstantiationState needsInstantiation,
                       bool isRefinementOnly,
+                      bool usePlaceholders,
                       const TypedFnSignature* instantiatedFrom,
                       const TypedFnSignature* parentFn,
                       Bitmap formalsInstantiated,
@@ -1111,7 +1122,8 @@ class TypedFnSignature {
                               const TypedFnSignature* parentFn,
                               Bitmap formalsInstantiated,
                               Bitmap formalsErrored,
-                              OuterVariables outerVariables);
+                              OuterVariables outerVariables,
+                              bool usePlaceholders = false);
 
   /** Get the unique TypedFnSignature containing these components
       for a refinement where some types are inferred (e.g. generic 'out'
@@ -1131,6 +1143,7 @@ class TypedFnSignature {
            whereClauseResult_ == other.whereClauseResult_ &&
            instantiationState_ == other.instantiationState_ &&
            isRefinementOnly_ == other.isRefinementOnly_ &&
+           usePlaceholders_ == other.usePlaceholders_ &&
            instantiatedFrom_ == other.instantiatedFrom_ &&
            parentFn_ == other.parentFn_ &&
            formalsInstantiated_ == other.formalsInstantiated_ &&
@@ -1195,6 +1208,15 @@ class TypedFnSignature {
 
   InstantiationState instantiationState() const {
     return instantiationState_;
+  }
+
+  /** Returns whether this signature was created with placeholder types
+      enabled. When true, generic formals and TypeQuery nodes in formal type
+      expressions were assigned PlaceholderType instead of AnyType. A Resolver
+      resolving the function body from this signature should also enable
+      placeholders so that the same placeholder types are produced. */
+  bool usePlaceholders() const {
+    return usePlaceholders_;
   }
 
   bool isMethod() const { return untyped()->isMethod(); }

@@ -411,6 +411,7 @@ Resolver::createForFunction(ResolutionContext* rc,
   ret.signatureOnly = false;
   ret.fnBody = fn->body();
   ret.rc = rc;
+  ret.usePlaceholders = typedFnSignature->usePlaceholders();
 
   // TODO: Stop copying these back in.
   ret.outerVariables = typedFnSignature->outerVariables();
