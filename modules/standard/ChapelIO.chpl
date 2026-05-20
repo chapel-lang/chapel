@@ -460,6 +460,7 @@ module ChapelIO {
 
       // TODO: handle dynamically loaded procs
       if name == "" then name = "<unknown procedure>";
+      if name.startsWith("chpl_anon_proc") then name = "";
 
       const typeName = t1:string;
 
@@ -469,8 +470,10 @@ module ChapelIO {
       else if typeName.startsWith("extern proc") then start = 11;
       else assert(false, "Unexpected function format: " + typeName);
 
+      if name != "" then name = " " + name;
+
       const parenIndex = typeName.find("(");
-      const ret = typeName[..<start] + " " + name + typeName[parenIndex..];
+      const ret = typeName[..<start] + name + typeName[parenIndex..] + " { ... }";
       return ret;
     } else {
       return chpl_stringify_wrapper(x);
