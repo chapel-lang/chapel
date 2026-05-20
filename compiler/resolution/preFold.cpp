@@ -3155,6 +3155,24 @@ static Expr* preFoldNamed(CallExpr* call) {
     // Handle a reference to an interface associated type, if applicable.
     if (ConstrainedType* recv = toConstrainedType(call->get(2)->getValType())) {
       retval = resolveCallToAssociatedType(call, recv);
+    } else if (auto ft = toFunctionType(call->get(2)->getValType())) {
+      if (call->isNamed("retType")) {
+        if (shouldWarnUnstableFor(call)) {
+          USR_WARN(call, "The 'retType' method is unstable");
+        }
+        retval = new SymExpr(ft->returnType()->symbol);
+        call->replace(retval);
+      } else if (call->isNamed("argTypes")) {
+        if (shouldWarnUnstableFor(call)) {
+          USR_WARN(call, "The 'argTypes' method is unstable");
+        }
+        CallExpr* expr = new CallExpr("_build_tuple");
+        for (auto& formal : ft->formals()) {
+          expr->insertAtTail(formal.type()->symbol);
+        }
+        retval = expr;
+        call->replace(expr);
+      }
     }
   }
 

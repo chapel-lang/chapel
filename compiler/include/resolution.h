@@ -82,6 +82,7 @@ Type*      getMoreInstantiatedParentForGenericFormal(Type* actualType,
 bool       isInstantiation(Type* sub, Type* super);
 
 bool       formalRequiresTemp(ArgSymbol* formal, FnSymbol* fn);
+bool       formalRequiresTemp(FunctionType::Formal formal);
 
 // If formalRequiresTemp(formal,fn), when this function returns true,
 // the new strategy of making the temporary at the call site will be used.

@@ -2572,6 +2572,7 @@ struct ConvertTypeHelper {
   Type* visit(const types::AnyNumericType* t) { return dtNumeric; }
   Type* visit(const types::AnyOwnedType* t) { return dtOwned; }
   Type* visit(const types::AnyPodType* t) { return dtAnyPOD; }
+  Type* visit(const types::AnyProcType* t) { return dtAnyProc; }
   Type* visit(const types::AnyRealType* t) { return dtAnyReal; }
   Type* visit(const types::AnyRecordType* t) { return dtAnyRecord; }
   Type* visit(const types::AnySharedType* t) { return dtShared; }
