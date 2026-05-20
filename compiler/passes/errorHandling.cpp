@@ -772,32 +772,6 @@ void ErrorHandlingVisitor::checkThrowingFuncInInit(CallExpr* node,
   } // not in an initializer
 }
 
-
-// // Sets the fn out variable with the given error, then goes to the fn epilogue.
-// void ErrorHandlingVisitor::setOutGotoEpilogue(VarSymbol* error, BlockStmt* block) {
-
-//   SymExpr* castedError = NULL;
-//   AList    ret         = castToErrorNilable(error, castedError);
-//   block->insertAtTail(ret);
-
-//   // update stack info
-//   auto updatedErrorVar = newTemp("updatedError", castedError->typeInfo());
-//   auto propagateStackInfo = new CallExpr(gChplErrorPropagateStackInfo, castedError);
-//   auto setUpdatedError = new CallExpr(PRIM_MOVE, updatedErrorVar, propagateStackInfo);
-
-//   block->insertAtTail(new DefExpr(updatedErrorVar));
-//   block->insertAtTail(setUpdatedError);
-//   resolveExpr(propagateStackInfo);
-//   resolveExpr(setUpdatedError);
-
-//   // Using PRIM_ASSIGN instead of PRIM_MOVE here to work around
-//   // errors that come up in C compilation.
-//   block->insertAtTail(new CallExpr(PRIM_ASSIGN, outError, new SymExpr(updatedErrorVar)));
-//   block->insertAtTail(new GotoStmt(GOTO_ERROR_HANDLING_RETURN, epilogue));
-
-//   // return ret;
-// }
-
 // Sets the fn out variable with the given error, then goes to the fn epilogue.
 AList ErrorHandlingVisitor::setOutGotoEpilogue(VarSymbol* error) {
 
