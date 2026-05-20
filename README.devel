@@ -31,5 +31,8 @@ the git tree, but not exactly the same:
 
 The following files/directories are for developers only:
 
-  README.devel     : this file
-  test/            : the Chapel testing system in all its glory
+  CODE_OF_CONDUCT.md : Chapel contributor code of conduct
+  LICENSE.devel      : third-party licenses of code not appearing in release
+  Makefile.devel     : Makefile containing targets for dev use
+  README.devel       : this file
+  test/              : the Chapel testing system in all its glory
