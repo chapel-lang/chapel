@@ -1,5 +1,6 @@
 import os
 import glob
+import shlex
 import chpl_locale_model
 import chpl_platform
 import chpl_llvm
@@ -80,30 +81,38 @@ def gpu_compiler_basic_compile(compiler: str, lang: str):
     return stdout
 
 
-def _find_cuda_sdk_path(compiler: str):
+def _find_cuda_variable(compiler: str, variable_name: str):
     out = gpu_compiler_basic_compile(compiler, "cu")
     if not out:
         return None
-    regex = r"^#\$ TOP=(.+)$"
+    regex = r"^#\$ {}=(.+)$".format(variable_name)
     match = re.search(regex, out, re.MULTILINE)
     return match.group(1) if match else None
 
 
+def _find_cuda_sdk_path(compiler: str):
+    return _find_cuda_variable(compiler, "TOP")
+
+
 def find_cuda_libdevice_path(compiler: str):
-    out = gpu_compiler_basic_compile(compiler, "cu")
-    if not out:
+    libdevice_path = _find_cuda_variable(compiler, "NVVMIR_LIBRARY_DIR")
+    if not libdevice_path:
         return None
-    regex = r"^#\$ NVVMIR_LIBRARY_DIR=(.+)$"
-    match = re.search(regex, out, re.MULTILINE)
-    if not match:
-        return None
-    libdevice_path = match.group(1)
     # there can be multiple libdevices for multiple compute architectures. Not
     # sure how realistic that is, nor I see multiple instances in the systems I
     # have access to. They are always named `libdevice.10.bc`, but I just want
     # to be sure here.
     libdevices = glob.glob(os.path.join(libdevice_path, "libdevice.*.bc"))
     return libdevices[0] if len(libdevices) > 0 else None
+
+
+def _cuda_default_arch():
+    # if using cuda <13, default to sm_60. Otherwise default to sm_75
+    cuda_version_major = get_sdk_version().split(".")[0]
+    if cuda_version_major and int(cuda_version_major) < 13:
+        return "sm_60"
+    else:
+        return "sm_75"
 
 
 def find_llvm_amd_bin_path(compiler: str):
@@ -179,7 +188,7 @@ GPU_TYPES = {
     "nvidia": gpu_type(
         sdk_path_env="CHPL_CUDA_PATH",
         compiler="nvcc",
-        default_arch="sm_60",
+        default_arch=_cuda_default_arch,
         llvm_target="NVPTX",
         runtime_impl="cuda",
         find_sdk_path=_find_cuda_sdk_path,
@@ -191,7 +200,7 @@ GPU_TYPES = {
     "amd": gpu_type(
         sdk_path_env="CHPL_ROCM_PATH",
         compiler="hipcc",
-        default_arch="",
+        default_arch=lambda: "",
         llvm_target="AMDGPU",
         runtime_impl="rocm",
         find_sdk_path=_find_hip_sdk_path,
@@ -203,7 +212,7 @@ GPU_TYPES = {
     "cpu": gpu_type(
         sdk_path_env="",
         compiler="",
-        default_arch="",
+        default_arch=lambda: "",
         llvm_target="",
         runtime_impl="cpu",
         find_sdk_path=lambda compiler: None,
@@ -215,7 +224,7 @@ GPU_TYPES = {
     "none": gpu_type(
         sdk_path_env="",
         compiler="",
-        default_arch="",
+        default_arch=lambda: "",
         llvm_target="",
         runtime_impl="",
         find_sdk_path=lambda compiler: None,
@@ -309,7 +318,7 @@ def get_arch():
         return arch
 
     # Return vendor-specific default architecture
-    arch = GPU_TYPES[gpu_type].default_arch
+    arch = GPU_TYPES[gpu_type].default_arch()
     if arch != "":
         return arch
     else:
@@ -424,6 +433,15 @@ def get_runtime_compile_args():
 
         # workaround an issue with __float128 not being supported by clang in device code
         system.append("-D__STRICT_ANSI__=1")
+
+        # add includes and system includes from nvcc
+        gpu = GPU_TYPES[gpu_type]
+        includes = _find_cuda_variable(gpu.compiler, "INCLUDES")
+        if includes:
+            system.extend(shlex.split(includes))
+        system_includes = _find_cuda_variable(gpu.compiler, "SYSTEM_INCLUDES")
+        if system_includes:
+            system.extend(shlex.split(system_includes))
 
         major_version, minor_version = get_sdk_version().split(".")[:2]
         bundled.append("-DCHPL_CUDA_VERSION_MAJOR=" + major_version)
@@ -580,7 +598,7 @@ def _validate_cuda_version_impl():
     """Check that the installed CUDA version is >= MIN_REQ_VERSION and <
     MAX_REQ_VERSION"""
     MIN_REQ_VERSION = "11.7"
-    MAX_REQ_VERSION = "13"
+    MAX_REQ_VERSION = "14"  # upper bound non-inclusive
 
     cuda_version = get_sdk_version()
 
@@ -589,7 +607,7 @@ def _validate_cuda_version_impl():
         return False
 
     if not is_ver_in_range(cuda_version, MIN_REQ_VERSION, MAX_REQ_VERSION):
-        _reportMissingGpuReq(
+        warning(
             "Chapel requires a CUDA version between %s and %s, "
             "detected version %s on system."
             % (MIN_REQ_VERSION, MAX_REQ_VERSION, cuda_version)
@@ -614,6 +632,18 @@ def _validate_cuda_version_impl():
                     allowExempt=False,
                 )
                 return False
+
+    # CUDA 13 requires LLVM 22+
+    if is_ver_in_range(cuda_version, "13", "14"):
+        llvm_ver_str = int(chpl_llvm.get_llvm_version())
+        if chpl_llvm.get() == "system" and llvm_ver_str < 22:
+            _reportMissingGpuReq(
+                "LLVM versions before 22 do not support CUDA 13. "
+                "Your LLVM version is {}".format(llvm_ver_str),
+                suggestNone=False,
+                allowExempt=False,
+            )
+            return False
 
     return True
 
