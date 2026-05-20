@@ -17,9 +17,6 @@
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
   General Public License for more details.
 
-  Contact Information:
-  Intel Corporation, www.intel.com
-
   BSD LICENSE
 
   Copyright(c) 2016 Intel Corporation.
@@ -74,7 +71,7 @@
 /* Determine if we need to define and declare deprecated
    entities based on the IB_IOCTL_MAGIC macro. */
 
-#if defined( IB_IOCTL_MAGIC )
+#if defined(IB_IOCTL_MAGIC)
 
 /* The macro: PSM2_SUPPORT_IW_CMD_API is used to stipulate
    adding compile-time support of either the ioctl() or write()
@@ -86,7 +83,7 @@
  * module that supports the ioctl() command interface.  Prior to this
  * (IOCTL_CMD_API_MODULE_MAJOR - 1 and smaller), the module used
  * write() for the command interface. */
-#define IOCTL_CMD_API_MODULE_MAJOR        6
+#define IOCTL_CMD_API_MODULE_MAJOR 6
 
 /*
  * round robin contexts across HFIs, then
@@ -104,15 +101,15 @@
 #define HFI1_ALG_WITHIN_DEP 1
 
 struct hfi1_cmd_deprecated {
-	__u32 type;        /* command type */
-	__u32 len;         /* length of struct pointed to by add */
-	__u64 addr;        /* pointer to user structure */
+	__u32 type; /* command type */
+	__u32 len;  /* length of struct pointed to by add */
+	__u64 addr; /* pointer to user structure */
 };
 
 #define hfi1_cmd hfi1_cmd_deprecated
 
-#define HFI1_ALG_ACROSS		HFI1_ALG_ACROSS_DEP
-#define HFI1_ALG_WITHIN		HFI1_ALG_WITHIN_DEP
+#define HFI1_ALG_ACROSS HFI1_ALG_ACROSS_DEP
+#define HFI1_ALG_WITHIN HFI1_ALG_WITHIN_DEP
 
 #else
 

@@ -148,7 +148,7 @@ struct ips_message_header {
 
 	};
 } PACK_SUFFIX;
-/* desc_genc is up to 32 bits, but EXPTID header (and RDMA immediate data)
+/* desc_genc is up to 32 bits, RDMA immediate data
  * only has room for 16 bits
  */
 #define IPS_HDR_RDESCID_GENC_MASK 0xffff
@@ -157,7 +157,7 @@ struct ips_message_header {
  * OpCodes in BTH[0], 24-31 bits. Order is important!!!
  */
 #define OPCODE_RESERVED			0xC0	/* reserved */
-/* TINY to EXPTID_COMPLETION/ERR_CHK_RDMA_RESP are level 2 packets */
+/* TINY to ERR_CHK_RDMA_RESP are level 2 packets */
 /* sending queue keeps a copy and resends if timeout waiting for ack */
 /* order and reliability maintained */
 #define OPCODE_TINY			0xC1	/* 0 <= msglen <= 8 */

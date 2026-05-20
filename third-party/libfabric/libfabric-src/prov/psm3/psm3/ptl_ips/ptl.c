@@ -86,31 +86,65 @@ int ips_ptl_epaddr_stats_init(char **desc, uint16_t *flags)
 
 	desc[j++] = "errchecks send";
 	desc[j++] = "errchecks recv";
-#if defined(PSM_VERBS)
-#ifdef PSM_HAVE_RNDV_MOD
+#ifdef PSM_HAVE_RDMA_ERR_CHK
 	desc[j++] = "err_chk_rdma send"
 	desc[j++] = "err_chk_rdma recv"
-#endif
+	desc[j++] = "err_chk_rdma_resp send"
+	desc[j++] = "err_chk_rdma_resp recv"
 #endif
 	desc[j++] = "nak send";
 	desc[j++] = "nak recv";
+	desc[j++] = "max connected outgoing";
+	desc[j++] = "max connected incoming";
 	desc[j++] = "connect req send";
+	desc[j++] = "connect req retry";
+	desc[j++] = "reconnect req send";
+	desc[j++] = "reconnect req retry";
 	desc[j++] = "connect req recv";
+	desc[j++] = "connect req rej";
+	desc[j++] = "connect req inconsistent";
+	desc[j++] = "connect req dup";
+	desc[j++] = "connect req stale";
+	desc[j++] = "connect req disc";
+	desc[j++] = "reconnect req recv";
+	desc[j++] = "reconnect req inconsistent";
+	desc[j++] = "reconnect req dup";
 	desc[j++] = "connect rep send";
 	desc[j++] = "connect rep recv";
+	desc[j++] = "connect rep unknown";
+	desc[j++] = "connect rep inconsistent";
+	desc[j++] = "connect rep dup";
+	desc[j++] = "connect rep stale";
+	desc[j++] = "connect rep disc";
 	desc[j++] = "disconnect req send";
+	desc[j++] = "disconnect req retry";
 	desc[j++] = "disconnect req recv";
+	desc[j++] = "disconnect req dup";
 	desc[j++] = "disconnect rep send";
 	desc[j++] = "disconnect rep recv";
-	desc[j++] = "tid grants send";
-	desc[j++] = "tid grants recv";
+	desc[j++] = "disconnect rep unknown";
+	desc[j++] = "disconnect rep dup";
+	desc[j++] = "connections lost";
+	desc[j++] = "reconnect started";
+	desc[j++] = "max reconnect count";
+	desc[j++] = "max reconnect usec";
+	desc[j++] = "tid requests send";
+	desc[j++] = "tid requests recv";
+	desc[j++] = "tid grants long data send";
+	desc[j++] = "tid grants long data recv";
+	desc[j++] = "tid grants rdma send";
+	desc[j++] = "tid grants rdma recv";
 	desc[j++] = "send rexmit";
-#if defined(PSM_VERBS)
-#ifdef PSM_HAVE_RNDV_MOD
+#ifdef PSM_HAVE_RDMA_ERR_CHK
 	desc[j++] = "rdma rexmit";
 #endif
+	desc[j++] = "rep processing err";
+#ifdef PSM_RC_RECONNECT
+	desc[j++] = "send wc error";
+	desc[j++] = "rdma wc error";
+	desc[j++] = "drain wc error";
+	desc[j++] = "recv wc error";
 #endif
-	desc[j++] = "congestion packets";
 
 	psmi_assert(num_stats == j);
 	return num_stats;
@@ -268,25 +302,31 @@ static psm2_error_t ips_ptl_fini(ptl_t *ptl_gen, int force, uint64_t timeout_in)
 	 * like to have no pollers waiting */
 	if ((err = psm3_ips_proto_disconnect_all(&ptl->proto, force, timeout_in)))
 		goto fail;
+	_HFI_PRDBG("disconnect_all done\n");
 
 	/* stop the threads.  They may be accessing fields in proto such as
 	 * proto->mr_cache, or ep linked lists.  In practice the threads are
 	 * already mostly blocked since our caller has psm3_creation_lock */
 	if ((err = psm3_ips_ptl_rcvthread_fini(ptl_gen)))
 		goto fail;
+	_HFI_PRDBG("rcvthread_fini done\n");
 
 	/* now free the proto resources */
 	if ((err = psm3_ips_proto_fini(&ptl->proto)))
 		goto fail;
+	_HFI_PRDBG("proto_fini done\n");
 
 	if ((err = psm3_ips_epstate_fini(&ptl->epstate)))
 		goto fail;
+	_HFI_PRDBG("epstate_fini done\n");
 
 	if ((err = psmi_hal_ips_ptl_fini(ptl)))
 		goto fail;
+	_HFI_PRDBG("hal_ips_ptl_fini done\n");
 
 	if ((err = psm3_timer_fini(&ptl->timerq)))
 		goto fail;
+	_HFI_PRDBG("timer_fini done\n");
 
 fail:
 	return err;
@@ -560,14 +600,15 @@ psm3_ips_ptl_disconnect(ptl_t *ptl_gen, int force, int numep,
 }
 
 /* Only symbol we expose out of here */
-struct ptl_ctl_init
-psm3_ptl_ips = {
-	ips_ptl_sizeof, ips_ptl_init, ips_ptl_fini, ips_ptl_setopt,
-	    ips_ptl_getopt
+struct ptl_ctl_init psm3_ptl_ips = {
+	.sizeof_ptl = ips_ptl_sizeof,
+	.init = ips_ptl_init,
+	.fini = ips_ptl_fini,
+	.setopt = ips_ptl_setopt,
+	.getopt = ips_ptl_getopt,
 };
 
-struct ptl_ctl_rcvthread
-psm3_ptl_ips_rcvthread = {
-	ips_ptl_rcvthread_is_enabled,
-	psm3_ips_ptl_rcvthread_transfer_ownership,
+struct ptl_ctl_rcvthread psm3_ptl_ips_rcvthread = {
+	.is_enabled = ips_ptl_rcvthread_is_enabled,
+	.transfer_ownership = psm3_ips_ptl_rcvthread_transfer_ownership,
 };

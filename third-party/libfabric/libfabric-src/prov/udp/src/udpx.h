@@ -91,8 +91,8 @@ struct udpx_ep_entry {
 OFI_DECLARE_CIRQUE(struct udpx_ep_entry, udpx_rx_cirq);
 
 struct udpx_ep;
-typedef void (*udpx_rx_comp_func)(struct udpx_ep *ep, void *context,
-		uint64_t flags, size_t len, void *buf, void *addr);
+typedef void (*udpx_rx_comp_func)(struct udpx_ep *ep, void *context, size_t len,
+				  void *addr);
 typedef void (*udpx_tx_comp_func)(struct udpx_ep *ep, void *context);
 
 struct udpx_ep {

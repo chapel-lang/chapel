@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause OR GPL-2.0-only
  *
- * Copyright (c) 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright (c) 2020-2024 Hewlett Packard Enterprise Development LP
  */
 
 #ifndef _FI_CXI_EXT_H_
@@ -57,6 +57,11 @@ enum {
 	FI_OPT_CXI_SET_PROV_KEY_CACHE,			/* bool */
 	FI_OPT_CXI_GET_PROV_KEY_CACHE,			/* bool */
 	FI_OPT_CXI_SET_RNR_MAX_RETRY_TIME,		/* uint64_t */
+	FI_OPT_CXI_SET_RX_MATCH_MODE_OVERRIDE,		/* char string */
+	FI_OPT_CXI_GET_RX_MATCH_MODE_OVERRIDE,		/* char string */
+	FI_OPT_CXI_SET_REQ_BUF_SIZE_OVERRIDE,		/* size_t */
+	FI_OPT_CXI_GET_REQ_BUF_SIZE_OVERRIDE,		/* size_t */
+
 };
 
 /*
@@ -66,6 +71,15 @@ enum {
  * main branch (enum or define) and this CXI equivalent will exist forever.
  */
 #define FI_CXI_CNTR_EVENTS_BYTES	1	/* FI_CNTR_EVENTS_BYTES */
+
+/*
+ * CXI provider specific counter flag to return current/cached counter value
+ * in host memory. A request to update the count is requested, but the routine
+ * does not wait for the update to complete. Subsequent reads will pick up
+ * the updated counter value. The normal behavior is to wait for a memory update
+ * to complete (or to use the domain ops counter routines).
+ */
+#define FI_CXI_CNTR_CACHED	(1ULL << 32)
 
 /*
  * TODO: Set this to the upstream value prior to releasing software.
@@ -109,11 +123,10 @@ enum {
  */
 #define FI_CXI_UNRELIABLE (1ULL << 61)
 
-/*
- * Request a provider specific weak FENCE operation to facilitate an
- * EP alias ordering point, when the original EP utilizes PCIe RO=1.
- */
-#define FI_CXI_WEAK_FENCE (1ULL << 63)
+/* Depreciated. */
+#define FI_CXI_WEAK_FENCE \
+	_Pragma ("GCC warning \"'FI_CXI_WEAK_FENCE' macro is deprecated\"") \
+	(1ULL << 63)
 
 /*
  * Used in conjunction with the deferred work queue API. If a deferred work
@@ -394,6 +407,66 @@ enum cxip_comm_key_type {
 	COMM_KEY_UNICAST,
 	COMM_KEY_RANK,
 	COMM_KEY_MAX
+};
+
+/* Extends C_RC_* driver errors for libfabric */
+/* Translated to strings by cxip_strerror() -- keep synchronized */
+enum cxip_coll_prov_errno {
+	/* C_RC_* from cxi-driver overlaps first 6 bits of space [0,63] */
+
+	/* collectives CQ reduction error codes
+	 * highest number error predominates
+	 */
+	FI_CXI_ERRNO_RED_FIRST = 1024,
+	FI_CXI_ERRNO_RED_FLT_OVERFLOW = 1024,
+		/* double precision value overflow */
+	FI_CXI_ERRNO_RED_FLT_INVALID = 1025,
+		/* double precision sNAN/inf value */
+	FI_CXI_ERRNO_RED_INT_OVERFLOW = 1026,
+		/* reproducible sum overflow */
+	FI_CXI_ERRNO_RED_CONTR_OVERFLOW = 1027,
+		/* reduction contribution overflow */
+	FI_CXI_ERRNO_RED_OP_MISMATCH = 1028,
+		/* reduction opcode mismatch */
+	FI_CXI_ERRNO_RED_MC_FAILURE = 1029,
+		/* unused */
+	FI_CXI_COLL_RC_RDMA_FAILURE = 1030,
+		/* leaf rdma read error */
+	FI_CXI_COLL_RC_RDMA_DATA_FAILURE = 1031,
+		/* leaf rdma read data miscompare, unexpected packet data */
+	FI_CXI_ERRNO_RED_OTHER = 1032,
+		/* non-specific reduction error, fatal */
+	FI_CXI_ERRNO_RED_LAST = 1033,
+
+	/* collectives EQ join error codes
+	 * highest number error predominates
+	 */
+	FI_CXI_ERRNO_JOIN_FIRST = 2048,
+	FI_CXI_ERRNO_JOIN_MCAST_INUSE = 2048,
+		/* endpoint already using mcast address */
+	FI_CXI_ERRNO_JOIN_HWROOT_INUSE = 2049,
+		/* endpoint already serving as HWRoot */
+	FI_CXI_ERRNO_JOIN_MCAST_INVALID = 2050,
+		/* mcast address from FM is invalid */
+	FI_CXI_ERRNO_JOIN_HWROOT_INVALID = 2051,
+		/* HWRoot address from FM is invalid */
+	FI_CXI_ERRNO_JOIN_CURL_FAILED = 2052,
+		/* libcurl initiation failed */
+	FI_CXI_ERRNO_JOIN_CURL_TIMEOUT = 2053,
+		/* libcurl timed out */
+	FI_CXI_ERRNO_JOIN_SERVER_ERR = 2054,
+		/* unhandled CURL response code */
+	FI_CXI_ERRNO_JOIN_FAIL_PTE = 2055,
+		/* libfabric PTE allocation failed */
+	FI_CXI_ERRNO_JOIN_OTHER = 2056,
+		/* non-specific JOIN error, fatal */
+	FI_CXI_ERRNO_JOIN_FAIL_RDMA = 2057,
+		/* root or leaf rdma init failure */
+	FI_CXI_ERRNO_JOIN_LAST = FI_CXI_ERRNO_JOIN_FIRST + 43,
+		/* LAST is determined by the 43-bit error mask .
+		 * Result is the OR of all bits set by different endpoints.
+		 * This reserves space for all 43 bits for new errors.
+		 */
 };
 
 typedef unsigned int cxip_coll_op_t;	// CXI collective opcode

@@ -44,6 +44,8 @@ AC_DEFUN([FI_VERBS_CONFIGURE],[
 
 	      ])
 
+	AC_CHECK_HEADERS([asm/types.h])
+
 	AS_IF([test $verbs_ibverbs_happy -eq 1 && \
 	       test $verbs_rdmacm_happy -eq 1], [$1], [$2])
 

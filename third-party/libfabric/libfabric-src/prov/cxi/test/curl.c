@@ -101,7 +101,7 @@ int auto_test_cxip_json(void)
 	single_to_double_quote(json2);
 
 	/* Test parsing of json1 */
-	if (!(json_obj = json_tokener_parse(json1)))
+	if (!(json_obj = cxip_json_tokener_parse(json1)))
 		failtest(return 1, "json1 could not be parsed\n");
 
 	key = "string";
@@ -187,10 +187,10 @@ int auto_test_cxip_json(void)
 		if (int_val != i)
 			failtest(return 1, "'%s' returned %d\n", key, int_val);
 	}
-	json_object_put(json_obj);
+	cxip_json_object_put(json_obj);
 
 	/* Test parsing of json2 */
-	if (!(json_obj = json_tokener_parse(json2)))
+	if (!(json_obj = cxip_json_tokener_parse(json2)))
 		failtest(return 1, "json2 could not be parsed\n");
 	for (i = 0; i < 4; i++) {
 		char key[256];
@@ -200,7 +200,7 @@ int auto_test_cxip_json(void)
 		if (int_val != i)
 			failtest(return 1, "'%s' returned %d\n", key, int_val);
 	}
-	json_object_put(json_obj);
+	cxip_json_object_put(json_obj);
 
 	if (verbose)
 		printf("PASSED JSON tests\n");
@@ -328,7 +328,7 @@ int auto_test_cxip_curl(void)
 			 * }
 			 */
 			const char *str;
-			json_obj = json_tokener_parse(handle->response);
+			json_obj = cxip_json_tokener_parse(handle->response);
 			if (! json_obj) {
 				fprintf(stderr, "%s: JSON unparseable\n",
 					opname);
@@ -362,7 +362,7 @@ int auto_test_cxip_curl(void)
 			if (seqid != nextseqid)
 				reordered = true;
 free_json:
-			json_object_put(json_obj);
+			cxip_json_object_put(json_obj);
 free_handle:
 			cxip_curl_free(handle);
 			nextseqid++;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 Intel Corporation, Inc.  All rights reserved.
+ * Copyright (c) Intel Corporation, Inc.  All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -29,9 +29,6 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-
-#include <stdlib.h>
-#include <string.h>
 
 #include "smr.h"
 
@@ -63,10 +60,12 @@ static int smr_fabric_close(fid_t fid)
 {
 	int ret;
 	struct util_fabric *fabric;
+
 	fabric = container_of(fid, struct util_fabric, fabric_fid.fid);
 	ret = ofi_fabric_close(fabric);
 	if (ret)
 		return ret;
+
 	free(fabric);
 	return 0;
 }
@@ -80,23 +79,23 @@ static struct fi_ops smr_fabric_fi_ops = {
 };
 
 int smr_fabric(struct fi_fabric_attr *attr, struct fid_fabric **fabric,
-		void *context)
+	       void *context)
 {
 	int ret;
-	struct smr_fabric *smr_fabric;
+	struct util_fabric *util_fabric;
 
-	smr_fabric = calloc(1, sizeof(*smr_fabric));
-	if (!smr_fabric)
+	util_fabric = calloc(1, sizeof(*util_fabric));
+	if (!util_fabric)
 		return -FI_ENOMEM;
 
 	ret = ofi_fabric_init(&smr_prov, smr_info.fabric_attr, attr,
-			      &smr_fabric->util_fabric, context);
+			      util_fabric, context);
 	if (ret) {
-		free(smr_fabric);
+		free(util_fabric);
 		return ret;
 	}
 
-	*fabric = &smr_fabric->util_fabric.fabric_fid;
+	*fabric = &util_fabric->fabric_fid;
 	(*fabric)->fid.ops = &smr_fabric_fi_ops;
 	(*fabric)->ops = &smr_fabric_ops;
 	return 0;

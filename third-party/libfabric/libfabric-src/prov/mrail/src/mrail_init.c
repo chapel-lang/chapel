@@ -159,7 +159,7 @@ static struct fi_info *mrail_create_core_hints(const struct fi_info *hints)
 		core_hints->mode &= MRAIL_PASSTHRU_MODES;
 
 		if (core_hints->domain_attr) {
-			if (core_hints->domain_attr->mr_mode == FI_MR_BASIC)
+			if (core_hints->domain_attr->mr_mode == OFI_MR_BASIC)
 				core_hints->domain_attr->mr_mode = OFI_MR_BASIC_MAP;
 			removed_mr_mode = core_hints->domain_attr->mr_mode &
 					  ~MRAIL_PASSTHRU_MR_MODES;
@@ -182,7 +182,7 @@ static struct fi_info *mrail_create_core_hints(const struct fi_info *hints)
 		}
 	}
 
-	core_hints->mode |= FI_BUFFERED_RECV;
+	core_hints->mode |= OFI_BUFFERED_RECV;
 	core_hints->caps |= FI_SOURCE;
 
 	if (!core_hints->fabric_attr) {
@@ -378,7 +378,7 @@ out:
 
 static void mrail_adjust_info(struct fi_info *info, const struct fi_info *hints)
 {
-	info->mode &= ~FI_BUFFERED_RECV;
+	info->mode &= ~OFI_BUFFERED_RECV;
 
 	if (!hints)
 		return;
@@ -432,8 +432,6 @@ static struct fi_info *mrail_get_prefix_info(struct fi_info *core_info, int id)
 	assert(fi->tx_attr->iov_limit);
 	fi->tx_attr->iov_limit--;
 
-	/* Claiming messages larger than FI_OPT_BUFFERED_LIMIT would consume
-	 * a scatter/gather entry for mrail_hdr */
 	fi->rx_attr->iov_limit--;
 
 	if (fi->tx_attr->inject_size < sizeof(struct mrail_hdr))

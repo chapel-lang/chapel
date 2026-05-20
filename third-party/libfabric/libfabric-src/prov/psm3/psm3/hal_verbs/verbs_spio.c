@@ -67,6 +67,90 @@
 #include "ips_proto_internal.h"
 #include "ips_proto_params.h"
 
+#ifdef USE_RC
+// update remote PSN via err_chk based on UD
+static inline psm2_error_t
+psm3_verbs_update_remote_psn_ud(struct ips_proto *proto, struct ips_flow *flow) {
+	psm2_error_t ret = PSM2_OK;
+	psmi_seqnum_t err_chk_seq;
+	ips_scb_t ctrlscb;
+
+	ctrlscb.scb_flags = 0;
+	if (proto->flags & IPS_PROTO_FLAG_RCVTHREAD)
+		ctrlscb.scb_flags |= IPS_SEND_FLAG_INTR;
+
+	// When a sender doesn't get ack for a psn within certain time period,
+	// it will send err_chk msg to its receiver to ask for an update for
+	// this psn. If the receiver doesn't get the specified psn, it returns
+	// back nak msg that will trigger the sender to re-send all messages
+	// back to the psn (the GO_BACK_N approach). If the receiver already got
+	// the psn, it returns back ack msg with the latest received psn.
+	// Here, we purposely send an err_chk msg with a psn we know the receiver
+	// already got, so we will get an ack msg with latest received psn
+	err_chk_seq.psn_num = (flow->ipsaddr->verbs.remote_recv_psn - 1)
+		& proto->psn_mask;
+	ctrlscb.ips_lrh.bth[2] = __cpu_to_be32(err_chk_seq.psn_num);
+
+	psm3_ips_proto_send_ctrl_message(flow, OPCODE_ERR_CHK,
+			&flow->ipsaddr->ctrl_msg_queued,
+			&ctrlscb, ctrlscb.cksum, 0);
+
+	_HFI_VDBG("posted UD err_chk to get remote recv psn (cur=%d)\n",
+		flow->ipsaddr->verbs.remote_recv_psn);
+	return ret;
+}
+
+#ifdef USE_RDMA_READ
+// get remote PSN via RDMA_Read
+static inline psm2_error_t
+psm3_verbs_read_remote_psn(psm2_ep_t ep, struct ips_epaddr *ipsaddr) {
+	psm2_error_t ret = PSM2_OK;
+	int err;
+	struct ibv_send_wr wr;
+	struct ibv_send_wr *bad_wr;
+	struct ibv_sge list;
+#ifdef PSM_RC_RECONNECT
+	struct psm3_verbs_rc_qp *rc_qp = SLIST_FIRST(&ipsaddr->verbs.rc_qps);
+	struct ibv_qp *qp = rc_qp->qp;
+#else
+	struct ibv_qp *qp = ipsaddr->verbs.rc_qp;
+#endif
+
+	// set local location to store received data
+	list.addr = (uintptr_t)ipsaddr->verbs.remote_recv_psn_mr->addr;
+	list.length = sizeof(ipsaddr->verbs.remote_recv_psn);
+	list.lkey = ipsaddr->verbs.remote_recv_psn_mr->lkey;
+
+	wr.next = NULL; // just post 1
+	wr.wr_id = (uintptr_t)ipsaddr;
+	wr.sg_list = &list;
+	wr.num_sge = 1; // size of sg_list
+	wr.opcode = IBV_WR_RDMA_READ;
+
+	// set remote location where to read data from
+	wr.wr.rdma.remote_addr = ipsaddr->verbs.remote_recv_seq_addr;
+	wr.wr.rdma.rkey = ipsaddr->verbs.remote_recv_seq_rkey;
+	wr.send_flags = IBV_SEND_SIGNALED;
+
+	err = ibv_post_send(qp, &wr, &bad_wr);
+	if_pf(err) {
+		if (err != EBUSY && err != EAGAIN && err != ENOMEM)
+			_HFI_ERROR("failed to get remote psn num on %s port %u: %s\n",
+				ep->dev_name, ep->portnum, strerror(err));
+		return PSM2_EP_NO_RESOURCES;
+	}
+	ipsaddr->verbs.remote_seq_outstanding = 1;
+	_HFI_VDBG("posted remote_recv_psn RDMA READ: from 0x%"PRIx64" to 0x%"PRIx64" len %u rkey 0x%x\n",
+		wr.wr.rdma.remote_addr, list.addr, list.length, wr.wr.rdma.rkey);
+	return ret;
+}
+#endif
+
+// psn update strategy. Below defines that for every 32 send attempts
+// we update psn only for the first 2 attempts
+#define NEED_PSN_UPDATE(count) ((count & 0x1f) < 2)
+#endif
+
 // TBD we could get also get scb->cksum out of scb
 // when called:
 //		scb->ips_lrh has fixed size PSM header including OPA LRH
@@ -100,13 +184,14 @@ psm3_verbs_spio_transfer_frame(struct ips_proto *proto, struct ips_flow *flow,
 			struct ips_scb *scb, uint32_t *payload,
 			uint32_t length, uint32_t isCtrlMsg,
 			uint32_t cksum_valid, uint32_t cksum
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 			, uint32_t is_gpu_payload
 #endif
 			)
 {
 	psm2_error_t ret = PSM2_OK;
-	psm2_error_t err;
+	psm2_error_t err_psm; // psm errors
+	int err_ibv;          // ibv errors
 	psm2_ep_t ep = proto->ep;
 	struct ibv_send_wr wr;
 	struct ibv_send_wr *bad_wr;
@@ -116,54 +201,189 @@ psm3_verbs_spio_transfer_frame(struct ips_proto *proto, struct ips_flow *flow,
 	struct ips_message_header *ips_lrh = &scb->ips_lrh;
 	int send_dma = ips_scb_flags(scb) & IPS_SEND_FLAG_SEND_MR;
 
-	psmi_assert(flow->transfer == PSM_TRANSFER_PIO);
-	// these defines are bit ugly, but make code below simpler with less ifdefs
-	// once we decide if USE_RC is valuable we can cleanup
+	struct psm3_verbs_send_allocator *allocator;
+	struct ibv_qp *qp;
+	uint32_t max_inline;
+#ifdef PSM_RC_RECONNECT
+	struct psm3_verbs_rc_qp *rc_qp;
+#endif
+
 #ifdef USE_RC
 	// for RC we continue to use UD QP for control messages
 	// (connect/disconnect/ack/nak/becn), this avoids issues especially during
 	// QP teardown in disconnect.  We also use UD for ACK/NAK, this allows
 	// flow credits to be managed over UD
-#define USE_ALLOCATOR (isCtrlMsg?&ep->verbs_ep.send_allocator:flow->ipsaddr->verbs.use_allocator)
-#define USE_QP (isCtrlMsg?ep->verbs_ep.qp:flow->ipsaddr->verbs.use_qp)
-#define USE_MAX_INLINE (isCtrlMsg?ep->verbs_ep.qp_cap.max_inline_data:flow->ipsaddr->verbs.use_max_inline_data)
-#else
-#define USE_ALLOCATOR (&ep->verbs_ep.send_allocator)
-#define USE_QP (ep->verbs_ep.qp)
-#define USE_MAX_INLINE	(ep->verbs_ep.qp_cap.max_inline_data)
+	if (isCtrlMsg) {
+		// always use UD QP for control messages
+		allocator = &ep->verbs_ep.send_allocator;
+		qp = ep->verbs_ep.qp;
+		max_inline = ep->verbs_ep.qp_cap.max_inline_data;
+#ifdef PSM_RC_RECONNECT
+		rc_qp = NULL;
 #endif
-
-#ifdef PSM_FI
-	if_pf(PSM3_FAULTINJ_ENABLED_EP(ep)) {
-		PSM3_FAULTINJ_STATIC_DECL(fi_sendlost, "sendlost",
-				"drop "
-#ifdef USE_RC
-				"RC eager or any "
+	} else {
+		// curr_* will refer to RC QP if connected and RDMA=3
+		// otherwise points to UD QP
+		allocator = flow->ipsaddr->verbs.curr_allocator;
+		qp = flow->ipsaddr->verbs.curr_qp;
+		max_inline = flow->ipsaddr->verbs.curr_max_inline_data;
+#ifdef PSM_RC_RECONNECT
+		rc_qp = flow->ipsaddr->verbs.curr_rc_qp;
+		psmi_assert(! rc_qp || rc_qp->qp == qp);
+		psmi_assert(! rc_qp || allocator == &rc_qp->send_allocator);
+		psmi_assert(! rc_qp || flow->ipsaddr->verbs.rc_connected);
 #endif
-				"UD packet before sending",
-				1, IPS_FAULTINJ_SENDLOST);
-		if_pf(PSM3_FAULTINJ_IS_FAULT(fi_sendlost, ep, ""))
-			return PSM2_OK;
 	}
-#endif // PSM_FI
+#else /* USE_RC */
+	allocator = &ep->verbs_ep.send_allocator;
+	qp = ep->verbs_ep.qp;
+	max_inline = ep->verbs_ep.qp_cap.max_inline_data;
+#endif /* USE_RC */
+
+	psmi_assert(flow->transfer == PSM_TRANSFER_PIO);
+
 	PSMI_LOCK_ASSERT(proto->mq->progress_lock);
 	psmi_assert_always(! cksum_valid);	// no software checksum yet
+
+	/* When using RC, we do not need an explicit ACK as we can depend on the
+	 * underlying reliability of RC itself.  This means we can:
+	 *
+	 *   a) avoid sending ACKREQ, and...
+	 *   b) indicate to the caller that this send can be immediately
+	 *      treated as though it were ACKed.
+	 *
+	 * However, this is only true if the upper layer protocol is itself
+	 * reliable and scb can be freed immediately.  For example, PSM RMA
+	 * is NOT reliable, and may discard at the receiver even though the
+	 * send completed with respect to the QP (e.g. when the reply pool is
+	 * exhausted to prevent deadlock).  Thus, PSM RMA depends on PSM ACKs
+	 * being propagated normally.
+	 *
+	 * scb's are expected to indicate if the upper layer protocol is reliable
+	 * via the IPS_SEND_FLAG_UNRELIABLE flag.
+	 *
+	 * However, when using SDMA (send_dma), we can't free the scb nor indicate
+	 * a completion to the app until the DMA is done because the data is coming
+	 * directly from the app, using the MR associated with the scb.
+	 *
+	 * When not using SDMA, the bounce buffer has a copy of the data, so the
+	 * WQE is not dependent on the scb nor app buffer.
+	 *
+	 * When the RC QP reconnect protocol is enabled (allow_reconnect), RC QP
+	 * errors may cause loss of packets, so we must depend on end to end ACKs
+	 * and the PSM recovery protocols to ensure reliable data delivery.
+	 */
+	bool is_reliable;
+
+	if (isCtrlMsg || send_dma || ep->allow_reconnect) {
+		is_reliable = false;
+	} else {
+		bool is_qp_rc            = qp->qp_type == IBV_QPT_RC;
+		bool is_scb_unacked_head = scb == STAILQ_FIRST(&flow->scb_unacked);
+		bool is_scb_reliable     = !(scb->scb_flags & IPS_SEND_FLAG_UNRELIABLE);
+
+		/* head of queue is a reliable scb and flow is reliable */
+		is_reliable = is_qp_rc
+		            && is_scb_unacked_head
+		            && is_scb_reliable;
+
+		if (is_reliable)
+			ips_lrh->bth[2] &= __cpu_to_be32(~IPS_SEND_FLAG_ACKREQ);
+	}
+
+#ifdef PSM_FI
+	if_pf(! is_reliable && PSM3_FAULTINJ_ENABLED_EP(ep)) {
+		PSM3_FAULTINJ_STATIC_DECL(fi_sendlost, "sendlost",
+#ifdef USE_RC
+				"drop RC eager or any UD packet before sending",
+#else
+				"drop UD packet before sending",
+#endif
+				1, IPS_FAULTINJ_SENDLOST);
+		if_pf(PSM3_FAULTINJ_IS_FAULT(fi_sendlost, ep, "")) {
+			return PSM2_OK;
+		}
+	}
+#endif // PSM_FI
+
+#ifdef USE_RC
+	if (is_reliable && proto->credits_allow_adv_ctrl) {
+#ifdef USE_RDMA_READ
+		if (flow->ipsaddr->verbs.remote_seq_outstanding) {
+			psm3_verbs_completion_update(ep, 1);
+			if (flow->ipsaddr->verbs.remote_seq_outstanding)
+				return PSM2_EP_NO_RESOURCES;
+		}
+#endif
+		// NOTE: the remote_recv_psn is the actual received pkt psn + 1 (see ips_proto_is_expected_or_nak())
+		//       and the scb psn_num is the pkt we are going to send out. So we have below diff calculation
+		int diff = scb->seq_num.psn_num - flow->ipsaddr->verbs.remote_recv_psn;
+
+		if (diff < 0)
+			diff += proto->psn_mask + 1;
+		if (diff >= proto->max_credits || (flow->ipsaddr->verbs.rc_cc_count && diff >= proto->min_credits)) {
+#ifdef USE_RDMA_READ
+			if (RDMA_READ_AVAILABLE(ep))
+				psm3_verbs_read_remote_psn(ep, flow->ipsaddr);
+			else
+#endif
+			if (NEED_PSN_UPDATE(flow->ipsaddr->verbs.rc_cc_count))
+				psm3_verbs_update_remote_psn_ud(proto, flow);
+			// rc_cc_count is congestion control count. right now we use it to indicate whether is
+			// under congestion control. The count can potentially used in dynamic CC adjustment
+			// in the future
+			flow->ipsaddr->verbs.rc_cc_count += 1;
+			if (flow->ipsaddr->verbs.rc_cc_count > proto->stats.pio_rc_cc_max_duration)
+				proto->stats.pio_rc_cc_max_duration = flow->ipsaddr->verbs.rc_cc_count;
+
+			return PSM2_EP_NO_RESOURCES;
+		}
+
+		flow->ipsaddr->verbs.rc_cc_count = 0;
+	}
+#endif
 	// allocate a send buffer
 	// if we have no buffers, we can return PSM2_EP_NO_RESOURCES and caller
 	// will try again later
-	sbuf = psm3_ep_verbs_alloc_sbuf(USE_ALLOCATOR, &prev_sbuf);
+#ifdef PSM_RC_RECONNECT
+	sbuf = psm3_ep_verbs_alloc_sbuf(allocator, rc_qp, &prev_sbuf);
+#else
+	sbuf = psm3_ep_verbs_alloc_sbuf(allocator, &prev_sbuf);
+#endif
 	if_pf (! sbuf) {
 		// reap some SQ completions
-		ret = psm3_verbs_completion_update(proto->ep, 0);
-		if_pf (ret != PSM2_OK)
-			return ret;
-		sbuf = psm3_ep_verbs_alloc_sbuf(USE_ALLOCATOR, &prev_sbuf);
+		err_psm = psm3_verbs_completion_update(ep, 0);
+		if_pf (err_psm != PSM2_OK)
+			return err_psm;
+#ifdef PSM_RC_RECONNECT
+		// processing of completions may have detected an RC QP error
+		// and reverted to UD QP while reconnect, so re-evaluate curr_*
+		if (rc_qp) {
+			_HFI_VDBG("RC QP re-evaluated mid-transfer old %p new %p\n",
+				rc_qp, flow->ipsaddr->verbs.curr_rc_qp);
+			// curr_* will refer to RC QP if still connected
+			// otherwise points to UD QP
+			allocator = flow->ipsaddr->verbs.curr_allocator;
+			qp = flow->ipsaddr->verbs.curr_qp;
+			max_inline = flow->ipsaddr->verbs.curr_max_inline_data;
+			rc_qp = flow->ipsaddr->verbs.curr_rc_qp;
+			psmi_assert(! rc_qp || rc_qp->qp == qp);
+			psmi_assert(! rc_qp || allocator == &rc_qp->send_allocator);
+			psmi_assert(! rc_qp || flow->ipsaddr->verbs.rc_connected);
+		}
+		sbuf = psm3_ep_verbs_alloc_sbuf(allocator, rc_qp, &prev_sbuf);
+#else
+		sbuf = psm3_ep_verbs_alloc_sbuf(allocator, &prev_sbuf);
+#endif
 	}
 	if_pf (! sbuf) {
 		_HFI_VDBG("out of send buffers\n");
+		// try to poll send completion and see if we can free some sbuf
+		psm3_verbs_completion_update(ep, 1);
 		return PSM2_EP_NO_RESOURCES;
 	}
 	_HFI_VDBG("got sbuf %p index %lu\n", sbuf_to_buffer(sbuf), send_buffer_index(sbuf_pool(ep, sbuf), sbuf_to_buffer(sbuf)));
+
 	// TBD - we should be able to skip sending some headers such as OPA lrh and
 	// perhaps bth (does PSM use bth to hold PSNs?)
 	// copy scb->ips_lrh to send buffer
@@ -171,7 +391,7 @@ psm3_verbs_spio_transfer_frame(struct ips_proto *proto, struct ips_flow *flow,
 	memcpy(sbuf_to_buffer(sbuf), ips_lrh, sizeof(*ips_lrh));
 	if (!send_dma) {
 		// copy payload to send buffer, length could be zero, be safe
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 		if (is_gpu_payload) {
 			_HFI_VDBG("copy gpu payload %p %u\n",  payload, length);
 			PSM3_GPU_MEMCPY_DTOH(sbuf_to_buffer(sbuf) + sizeof(*ips_lrh),
@@ -183,11 +403,11 @@ psm3_verbs_spio_transfer_frame(struct ips_proto *proto, struct ips_flow *flow,
 			memcpy(sbuf_to_buffer(sbuf)+sizeof(*ips_lrh), payload, length);
 		}
 	}
-	_HFI_VDBG("%s send - opcode %x dma %d MR %p\n", qp_type_str(USE_QP),
-            _get_proto_hfi_opcode((struct  ips_message_header*)sbuf_to_buffer(sbuf)), !!send_dma, scb->mr);
+	_HFI_VDBG("%s send - opcode %x dma %d MR %p\n", qp_type_str(qp),
+            _get_proto_hfi_opcode(ips_lrh), !!send_dma, scb->mr);
 	// we don't support software checksum
 	psmi_assert_always(! (proto->flags & IPS_PROTO_FLAG_CKSUM));
-	psmi_assert_always(USE_QP);	// make sure we aren't called too soon
+	psmi_assert_always(qp);	// make sure we aren't called too soon
 	list[0].addr = (uintptr_t)sbuf_to_buffer(sbuf);
 	list[0].lkey = sbuf_lkey(ep, sbuf);
 	if (send_dma) {
@@ -206,19 +426,6 @@ psm3_verbs_spio_transfer_frame(struct ips_proto *proto, struct ips_flow *flow,
 		list[0].length = sizeof(*ips_lrh)+ length ;	// note no UD_ADDITION
 		list[1].length = 0;
 	}
-#ifdef PSM_FI
-	if_pf(PSM3_FAULTINJ_ENABLED_EP(ep)) {
-		PSM3_FAULTINJ_STATIC_DECL(fi_sq_lkey, "sq_lkey",
-				"send "
-#ifdef USE_RC
-				"RC eager or any "
-#endif
-				"UD packet with bad lkey",
-				0, IPS_FAULTINJ_SQ_LKEY);
-		if_pf(PSM3_FAULTINJ_IS_FAULT(fi_sq_lkey, ep, " QP %u", USE_QP->qp_num ))
-			list[0].lkey = 0x55;
-	}
-#endif // PSM_FI
 	psmi_assert(!((uintptr_t)sbuf & VERBS_SQ_WR_ID_MASK));
 	wr.wr_id = (uintptr_t)sbuf | VERBS_SQ_WR_ID_SEND;	// we'll get this back in completion
 	wr.next = NULL;	// just post 1
@@ -243,9 +450,9 @@ psm3_verbs_spio_transfer_frame(struct ips_proto *proto, struct ips_flow *flow,
 	// WQEs and no traffic for a while, hence consuming a few send buffers per
 	// QP.  By tracking it per RC QP we at least avoid the case of a rotating
 	// traffic pattern never asking for a CQE for a given QP
-	if_pf ( ! --(USE_ALLOCATOR->send_num_til_coallesce)) {
+	if_pf ( ! --(allocator->send_num_til_coallesce)) {
 		wr.send_flags = IBV_SEND_SIGNALED;	// get a completion
-		USE_ALLOCATOR->send_num_til_coallesce = VERBS_SEND_CQ_COALLESCE;
+		allocator->send_num_til_coallesce = VERBS_SEND_CQ_COALLESCE;
 	}
 	if_pf (ips_lrh->khdr.kdeth0 & __cpu_to_le32(IPS_SEND_FLAG_INTR)) {
 		_HFI_VDBG("send solicted event\n");
@@ -253,12 +460,41 @@ psm3_verbs_spio_transfer_frame(struct ips_proto *proto, struct ips_flow *flow,
 	}
 
 		// for small messages, we may use IBV_SEND_INLINE for performance
-	if (! send_dma && list[0].length <= USE_MAX_INLINE)
+	if (! send_dma && list[0].length <= max_inline)
 		wr.send_flags |= IBV_SEND_INLINE;
+#ifdef PSM_FI
+		// don't inject bad lkey for inline since lkey ignored
+	else if_pf(PSM3_FAULTINJ_ENABLED_EP(ep)) {
+		PSM3_FAULTINJ_STATIC_DECL(fi_sq_lkey, "sq_lkey",
+				"send "
+#ifdef USE_RC
+				"RC eager or any "
+#endif
+				"UD packet with bad lkey",
+				0, IPS_FAULTINJ_SQ_LKEY);
+#ifdef PSM_RC_RECONNECT
+		PSM3_FAULTINJ_STATIC_DECL(fi_rc_sq_lkey, "rc_sq_lkey",
+				"send RC eager packet with bad lkey",
+				ep->allow_reconnect?1:0,
+				IPS_FAULTINJ_RC_SQ_LKEY);
+#endif
+		if_pf(PSM3_FAULTINJ_IS_FAULT(fi_sq_lkey, ep,
+			    " QP %u wr_id %p op 0x%x len %u", qp->qp_num,
+			    (void *)wr.wr_id, _get_proto_hfi_opcode(ips_lrh),
+			    (uint32_t)sizeof(*ips_lrh) + length ))
+			list[0].lkey = IPS_BAD_LKEY;
+#ifdef PSM_RC_RECONNECT
+		else if_pf(rc_qp && PSM3_FAULTINJ_IS_FAULT(fi_rc_sq_lkey, ep,
+			    " RC QP %u wr_id %p op 0x%x len %u", qp->qp_num,
+			    (void *)wr.wr_id, _get_proto_hfi_opcode(ips_lrh),
+			    (uint32_t)sizeof(*ips_lrh) + length ))
+			list[0].lkey = IPS_BAD_LKEY;
+#endif /* PSM_RC_RECONNECT */
+	}
+#endif // PSM_FI
 	//wr.imm_data = 0;	// only if we use IBV_WR_SEND_WITH_IMM;
 	// ud fields are ignored for RC send (overlay fields for RDMA)
 	// so reduce branches by just always filling in these few fields
-	//if (USE_QP->qp_type == IBV_QPT_UD)
 	psmi_assert_always(flow->path->verbs.pr_ah);
 	wr.wr.ud.ah = flow->path->verbs.pr_ah;
 	wr.wr.ud.remote_qpn = flow->ipsaddr->verbs.remote_qpn;
@@ -267,9 +503,9 @@ psm3_verbs_spio_transfer_frame(struct ips_proto *proto, struct ips_flow *flow,
 	if (_HFI_PDBG_ON) {
 		_HFI_PDBG_ALWAYS("len %u, QP %p (%u) remote qpn %u payload %u\n",
 			list[0].length+list[1].length,
-			USE_QP, USE_QP->qp_num,
+			qp, qp->qp_num,
 #ifdef USE_RC
-				(USE_QP->qp_type != IBV_QPT_UD)? flow->ipsaddr->verbs.remote_qpn :
+				(qp->qp_type != IBV_QPT_UD)? flow->ipsaddr->verbs.remote_qpn :
 #endif
 				 wr.wr.ud.remote_qpn,
 			length);
@@ -277,30 +513,28 @@ psm3_verbs_spio_transfer_frame(struct ips_proto *proto, struct ips_flow *flow,
 		// cannot dump list[1] since SDMA may be a GPU address or iova
 		// could be different from CPU virtual
 	}
-	if_pf (ibv_post_send(USE_QP, &wr, &bad_wr)) {
-		if (errno != EBUSY && errno != EAGAIN && errno != ENOMEM)
-			_HFI_ERROR("failed to post SQ on %s: %s", ep->dev_name, strerror(errno));
+	err_ibv = ibv_post_send(qp, &wr, &bad_wr);
+	if_pf (err_ibv) {
+		if (err_ibv != EBUSY && err_ibv != EAGAIN && err_ibv != ENOMEM)
+			_HFI_ERROR("failed to post SQ on %s: %s", ep->dev_name, strerror(err_ibv));
 		proto->stats.post_send_fail++;
 		// unwind our allocation and our update to send_num_til_coalllesce
-		if_pf ( (USE_ALLOCATOR->send_num_til_coallesce) == VERBS_SEND_CQ_COALLESCE)
-			(USE_ALLOCATOR->send_num_til_coallesce) = 1;
-		psm3_ep_verbs_unalloc_sbuf(USE_ALLOCATOR, sbuf, prev_sbuf);
+		if_pf ( (allocator->send_num_til_coallesce) == VERBS_SEND_CQ_COALLESCE)
+			(allocator->send_num_til_coallesce) = 1;
+		psm3_ep_verbs_unalloc_sbuf(allocator, sbuf, prev_sbuf);
 		ret = PSM2_EP_NO_RESOURCES;
 	}
-	_HFI_VDBG("done ud_transfer_frame: len %u, remote qpn %u\n",
+	_HFI_VDBG("done spio_transfer_frame: len %u, remote qpn %u\n",
 		list[0].length +list[1].length,
 #ifdef USE_RC
-		(USE_QP->qp_type != IBV_QPT_UD)? flow->ipsaddr->verbs.remote_qpn :
+		qp->qp_type != IBV_QPT_UD ? flow->ipsaddr->verbs.remote_qpn :
 #endif
- 		wr.wr.ud.remote_qpn);
+		wr.wr.ud.remote_qpn);
 	// reap any completions
-	err = psm3_verbs_completion_update(proto->ep, 0);
-	if_pf (err != PSM2_OK)
-		return err;
-	return ret;
-#undef USE_ALLOCATOR
-#undef USE_QP
-#undef USE_MAX_INLINE
+	err_psm = psm3_verbs_completion_update(ep, 0);
+	if_pf (err_psm != PSM2_OK)
+		return err_psm;
+	return (is_reliable && ret == PSM2_OK) ? PSM2_RELIABLE_DATA_SENT : ret;
 }
 
 #endif /* PSM_VERBS */

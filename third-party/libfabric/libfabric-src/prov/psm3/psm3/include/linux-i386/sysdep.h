@@ -56,34 +56,6 @@
 #ifndef _HFI_i386_SYSDEP_H
 #define _HFI_i386_SYSDEP_H
 
-typedef struct cpuid {
-        unsigned eax, ebx, ecx, edx;
-} cpuid_t;
-
-static __inline__ void
-get_cpuid(const unsigned func, const unsigned subfunc, cpuid_t *id)
-{
-	unsigned a, b, c, d;
-
-	asm (" \
-	mov %4, %%eax \n\
-	mov %5, %%ecx \n\
-	cpuid \n\
-	mov %%eax, %0 \n\
-	mov %%ebx, %1 \n\
-	mov %%ecx, %2 \n\
-	mov %%edx, %3 \n\
-	" : "=g" (a), "=g" (b), "=g" (c), "=g" (d)
-	: "g" (func), "g" (subfunc)
-	: "%eax", "%ebx", "%ecx", "%edx"
-	);
-
-	id->eax = a;
-	id->ebx = b;
-	id->ecx = c;
-	id->edx = d;
-}
-
 static __inline__ uint64_t get_cycles(void)
 {
 	uint64_t v;

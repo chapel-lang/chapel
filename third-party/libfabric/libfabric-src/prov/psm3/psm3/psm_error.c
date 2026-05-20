@@ -206,7 +206,7 @@ psm2_error_t psm3_error_cmp(psm2_error_t errA, psm2_error_t errB)
 	_PSMI_ERR_IS(PSM2_INIT_NOT_INIT);
 	_PSMI_ERR_IS(PSM2_INIT_BAD_API_VERSION);
 
-	/* Before we cget an endpoint */
+	/* Before we get an endpoint */
 	_PSMI_ERR_IS(PSM2_EP_NO_DEVICE);
 	_PSMI_ERR_IS(PSM2_EP_UNIT_NOT_FOUND);
 	_PSMI_ERR_IS(PSM2_EP_DEVICE_FAILURE);
@@ -228,7 +228,8 @@ psm2_error_t psm3_error_cmp(psm2_error_t errA, psm2_error_t errB)
 	_PSMI_ERR_IS(PSM2_EPID_INVALID_VERSION);
 	_PSMI_ERR_IS(PSM2_EPID_INVALID_UUID_KEY);
 	_PSMI_ERR_IS(PSM2_EPID_INVALID_MTU);
-	_PSMI_ERR_IS(PSM2_EPID_RV_CONNECT_ERROR);
+	_PSMI_ERR_IS(PSM2_EPID_PATH_RESOLUTION);
+	_PSMI_ERR_IS(PSM2_EPID_RC_CONNECT_ERROR);
 
 	/* Timeout if nothing else */
 	_PSMI_ERR_IS(PSM2_TIMEOUT);
@@ -268,7 +269,7 @@ struct psmi_error_item psmi_error_items[] = {
 	{PSMI_NOLOG, "unknown 18"},
 	{PSMI_NOLOG, "unknown 19"},
 	{PSMI_NOLOG, "Endpoint was closed"},	/* PSM2_EP_WAS_CLOSED = 20 */
-	{LOG_ALERT, "PSM Could not find an OPA Unit"},	/* PSM2_EP_NO_DEVICE = 21 */
+	{LOG_ALERT, "PSM Could not find a NIC"},	/* PSM2_EP_NO_DEVICE = 21 */
 	{PSMI_NOLOG, "User passed a bad unit number"},	/* PSM2_EP_UNIT_NOT_FOUND = 22 */
 	{LOG_ALERT, "Failure in initializing endpoint"},	/* PSM2_EP_DEVICE_FAILURE = 23 */
 	{PSMI_NOLOG, "Error closing the endpoing error"},	/* PSM2_EP_CLOSE_TIMEOUT = 24 */
@@ -299,7 +300,7 @@ struct psmi_error_item psmi_error_items[] = {
 	{LOG_CRIT, "Two or more endpoints have the same network id (LID)"},	/* PSM2_EPID_NETWORK_ERROR = 49 */
 	{LOG_CRIT, "Endpoint provided incompatible Partition Key"},
 	{LOG_CRIT, "Unable to resolve network path. Check connectivity and routing between nodes"},
-	{LOG_CRIT, "Unable to establish RV RC QP connection"}, /* PSM2_EPID_RV_CONNECT_ERROR */
+	{LOG_CRIT, "Unable to establish RV or user RC QP connection"}, /* PSM2_EPID_RC_CONNECT_ERROR */
 	{LOG_INFO, "Recovering RV RC QP connection"}, /* PSM2_EPID_RV_CONNECT_RECOVERING */
 	{PSMI_NOLOG, "unknown 54"},
 	{PSMI_NOLOG, "unknown 55"},

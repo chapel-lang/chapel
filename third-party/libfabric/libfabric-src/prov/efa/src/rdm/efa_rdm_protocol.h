@@ -16,18 +16,7 @@
 
 #define EFA_RDM_PROTOCOL_VERSION	(4)
 
-/* raw address format. (section 1.4) */
-#define EFA_GID_LEN	16
 
-struct efa_ep_addr {
-	uint8_t			raw[EFA_GID_LEN];
-	uint16_t		qpn;
-	uint16_t		pad;
-	uint32_t		qkey;
-	struct efa_ep_addr	*next;
-};
-
-#define EFA_EP_ADDR_LEN sizeof(struct efa_ep_addr)
 
 /*
  * Extra Feature/Request Flags (section 2.1)
@@ -39,8 +28,17 @@ struct efa_ep_addr {
 #define EFA_RDM_EXTRA_FEATURE_RUNT			BIT_ULL(4)
 #define EFA_RDM_EXTRA_FEATURE_RDMA_WRITE		BIT_ULL(5)
 #define EFA_RDM_EXTRA_FEATURE_READ_NACK		BIT_ULL(6)
-#define EFA_RDM_NUM_EXTRA_FEATURE_OR_REQUEST		7
-#define EFA_RDM_MAX_NUM_EXINFO				(256)
+#define EFA_RDM_EXTRA_FEATURE_REQUEST_USER_RECV_QP	BIT_ULL(7)
+#define EFA_RDM_EXTRA_FEATURE_UNSOLICITED_WRITE_RECV	BIT_ULL(8)
+#define EFA_RDM_NUM_EXTRA_FEATURE_OR_REQUEST		9
+/*
+ * The length of 64-bit extra_info array used in efa_rdm_ep
+ * and efa_rdm_peer
+ * 4 means 64*4=256 bits of extra features or requests
+ */
+#define EFA_RDM_MAX_NUM_EXINFO				(4)
+
+#define EFA_RDM_HEADERLESS_PKT 0 /**< Sentinel value for headerless packets */
 
 /*
  * Packet type ID of each packet type (section 1.3)
@@ -108,7 +106,7 @@ struct efa_ep_addr {
 #define EFA_RDM_RUNT_PKT_END		148
 #define EFA_RDM_EXTRA_REQ_PKT_END   	148
 
-#if defined(static_assert) && defined(__x86_64__)
+#if defined(static_assert)
 #define EFA_RDM_ENSURE_HEADER_SIZE(hdr, size)	\
 	static_assert(sizeof (struct hdr) == (size), #hdr " size check")
 #else
@@ -336,6 +334,7 @@ struct efa_rdm_handshake_hdr {
 /* indicate this package has the sender host id */
 #define EFA_RDM_HANDSHAKE_HOST_ID_HDR		BIT_ULL(0)
 #define EFA_RDM_HANDSHAKE_DEVICE_VERSION_HDR	BIT_ULL(1)
+#define EFA_RDM_HANDSHAKE_USER_RECV_QP_HDR	BIT_ULL(2)
 
 EFA_RDM_ENSURE_HEADER_SIZE(efa_rdm_handshake_hdr, 8);
 
@@ -357,9 +356,15 @@ struct efa_rdm_handshake_opt_device_version_hdr {
 	};
 };
 
+struct efa_rdm_handshake_opt_user_recv_qp_hdr {
+	uint32_t qpn;
+	uint32_t qkey;
+};
+
 EFA_RDM_ENSURE_HEADER_SIZE(efa_rdm_handshake_opt_connid_hdr, 8);
 EFA_RDM_ENSURE_HEADER_SIZE(efa_rdm_handshake_opt_host_id_hdr, 8);
 EFA_RDM_ENSURE_HEADER_SIZE(efa_rdm_handshake_opt_device_version_hdr, 8);
+EFA_RDM_ENSURE_HEADER_SIZE(efa_rdm_handshake_opt_user_recv_qp_hdr, 8);
 
 /* @brief header format of RECEIPT packet */
 struct efa_rdm_receipt_hdr {
@@ -406,7 +411,7 @@ struct efa_rdm_req_opt_raw_addr_hdr {
 };
 
 struct efa_rdm_req_opt_cq_data_hdr {
-	int64_t cq_data;
+	uint64_t cq_data;
 };
 
 struct efa_rdm_req_opt_connid_hdr {

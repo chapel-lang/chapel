@@ -325,7 +325,7 @@ static int sock_cntr_wait(struct fid_cntr *fid_cntr, uint64_t threshold,
 	ofi_atomic_inc32(&cntr->num_waiting);
 
 	if (timeout >= 0) {
-		start_ms = ofi_gettime_ms();
+		start_ms = ofi_get_realtime_ms();
 		end_ms = start_ms + timeout;
 	}
 
@@ -341,7 +341,7 @@ static int sock_cntr_wait(struct fid_cntr *fid_cntr, uint64_t threshold,
 			ret = ofi_wait_cond(&cntr->cond, &cntr->mut, (int) remaining_ms);
 		}
 
-		uint64_t curr_ms = ofi_gettime_ms();
+		uint64_t curr_ms = ofi_get_realtime_ms();
 		if (timeout >= 0) {
 			if (curr_ms >= end_ms) {
 				ret = -FI_ETIMEDOUT;
@@ -452,8 +452,10 @@ static uint64_t sock_cntr_readerr(struct fid_cntr *cntr)
 	_cntr = container_of(cntr, struct sock_cntr, cntr_fid);
 	if (_cntr->domain->progress_mode == FI_PROGRESS_MANUAL)
 		sock_cntr_progress(_cntr);
+	pthread_mutex_lock(&_cntr->mut);
 	if (_cntr->err_flag)
 		_cntr->err_flag = 0;
+	pthread_mutex_unlock(&_cntr->mut);
 	return ofi_atomic_get32(&_cntr->err_cnt);
 }
 

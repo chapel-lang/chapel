@@ -33,4 +33,6 @@ ssize_t efa_rdm_pke_init_compare_rta(struct efa_rdm_pke *pkt_entry,
 
 int efa_rdm_pke_proc_compare_rta(struct efa_rdm_pke *pkt_entry);
 
+struct efa_rdm_ope *efa_rdm_pke_alloc_rta_rxe(struct efa_rdm_pke *pkt_entry, int op);
+
 #endif

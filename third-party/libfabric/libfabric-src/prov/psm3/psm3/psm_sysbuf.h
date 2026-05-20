@@ -58,7 +58,7 @@
 
 #include "psm_user.h"
 
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 #define MM_NUM_OF_POOLS 9
 #else
 #define MM_NUM_OF_POOLS 7

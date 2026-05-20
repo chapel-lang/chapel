@@ -1,0 +1,88 @@
+# Makefile.include for lpp provider
+
+AM_CPPFLAGS += -I$(top_srcdir)/prov/lpp/include -I$(top_srcdir)/prov/lpp
+ROCM_CFLAGS = -D__HIP_PLATFORM_HCC__=0 -D__HIP_PLATFORM_AMD__=0 -D__HIP_DEVICE_COMPILE__=0 -DUSE_PROF_API=0
+
+if HAVE_LPP
+
+_lpp_files = \
+	prov/lpp/src/lpp_init.c \
+	prov/lpp/src/lpp_atomic.c \
+	prov/lpp/src/lpp_av.c \
+	prov/lpp/src/lpp_cm.c \
+	prov/lpp/src/lpp_cntr.c \
+	prov/lpp/src/lpp_completion.c \
+	prov/lpp/src/lpp_control.c \
+	prov/lpp/src/lpp_cq.c \
+	prov/lpp/src/lpp_ctx.c \
+	prov/lpp/src/lpp_hmem.c \
+	prov/lpp/src/lpp_domain.c \
+	prov/lpp/src/lpp_ep.c \
+	prov/lpp/src/lpp_eq.c \
+	prov/lpp/src/lpp_fabric.c \
+	prov/lpp/src/lpp_getinfo.c \
+	prov/lpp/src/lpp_io.c \
+	prov/lpp/src/lpp_klpp.c \
+	prov/lpp/src/lpp_memcpy.c \
+	prov/lpp/src/lpp_mr.c \
+	prov/lpp/src/lpp_msg.c \
+	prov/lpp/src/lpp_rma.c \
+	prov/lpp/src/lpp_rx.c \
+	prov/lpp/src/lpp_stx.c \
+	prov/lpp/src/lpp_tagged.c \
+	prov/lpp/src/lpp_umc.c \
+	prov/lpp/src/lpp_util.c
+
+_lpp_headers =  \
+	prov/lpp/include/linux/klpp/klpp_ioctl.h \
+	prov/lpp/include/linux/klpp/klpp_shared.h \
+	prov/lpp/include/linux/klpp/klpp_shared_ringbuf.h \
+	prov/lpp/include/lpp.h \
+	prov/lpp/include/lpp_atomic.h \
+	prov/lpp/include/lpp_av.h \
+	prov/lpp/include/lpp_cm.h \
+	prov/lpp/include/lpp_cntr.h \
+	prov/lpp/include/lpp_completion.h \
+	prov/lpp/include/lpp_control.h \
+	prov/lpp/include/lpp_cq.h \
+	prov/lpp/include/lpp_ctx.h \
+	prov/lpp/include/lpp_hmem.h \
+	prov/lpp/include/lpp_domain.h \
+	prov/lpp/include/lpp_ep.h \
+	prov/lpp/include/lpp_eq.h \
+	prov/lpp/include/lpp_fabric.h \
+	prov/lpp/include/lpp_getinfo.h \
+	prov/lpp/include/lpp_jhash.h \
+	prov/lpp/include/lpp_klpp.h \
+	prov/lpp/include/lpp_memcpy.h \
+	prov/lpp/include/lpp_mr.h \
+	prov/lpp/include/lpp_msg.h \
+	prov/lpp/include/lpp_rma.h \
+	prov/lpp/include/lpp_rx.h \
+	prov/lpp/include/lpp_stx.h \
+	prov/lpp/include/lpp_tagged.h \
+	prov/lpp/include/lpp_umc.h \
+	prov/lpp/include/lpp_util.h
+
+if HAVE_LPP_DL
+pkglib_LTLIBRARIES += liblpp-fi.la
+liblpp_fi_la_SOURCES = $(_lpp_files) $(_lpp_headers)
+liblpp_fi_la_CPPFLAGS = -I$(top_srcdir)/include	\
+			$(AM_CPPFLAGS) $(lpp_CPPFLAGS) $(ROCM_CFLAGS)
+liblpp_fi_la_LDFLAGS = -module -avoid-version -shared -export-dynamic \
+			$(verbs_LDFLAGS)
+liblpp_fi_la_LIBADD = $(linkback)
+liblpp_fi_la_DEPENDENCIES = $(linkback)
+else !HAVE_LPP_DL
+src_libfabric_la_SOURCES += $(_lpp_files) $(_lpp_headers)
+src_libfabric_la_CPPFLAGS += -I$(top_srcdir)/include	\
+			$(AM_CPPFLAGS) $(lpp_CPPFLAGS) $(ROCM_CFLAGS)
+src_libfabric_la_LDFLAGS += $(lpp_LDFLAGSL)
+src_libfabric_la_LIBADD += $(lpp_LIBS)
+endif !HAVE_LPP_DL
+
+prov_install_man_pages += man/man7/fi_lpp.7
+
+endif HAVE_LPP
+
+prov_dist_man_pages += man/man7/fi_lpp.7

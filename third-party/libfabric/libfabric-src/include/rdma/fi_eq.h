@@ -60,7 +60,7 @@ enum fi_wait_obj {
 	FI_WAIT_UNSPEC,
 	FI_WAIT_SET,
 	FI_WAIT_FD,
-	FI_WAIT_MUTEX_COND,	/* pthread mutex & cond */
+	FI_WAIT_MUTEX_COND,	/* pthread mutex & cond, deprecated */
 	FI_WAIT_YIELD,
 	FI_WAIT_POLLFD,
 };
@@ -70,11 +70,13 @@ struct fi_wait_attr {
 	uint64_t		flags;
 };
 
+/* deprecated */
 struct fi_ops_wait {
 	size_t	size;
 	int	(*wait)(struct fid_wait *waitset, int timeout);
 };
 
+/* deprecated */
 struct fid_wait {
 	struct fid		fid;
 	struct fi_ops_wait	*ops;
@@ -102,6 +104,7 @@ struct fi_poll_attr {
 	uint64_t		flags;
 };
 
+/* deprecated */
 struct fi_ops_poll {
 	size_t	size;
 	int	(*poll)(struct fid_poll *pollset, void **context, int count);
@@ -111,6 +114,7 @@ struct fi_ops_poll {
 			uint64_t flags);
 };
 
+/* deprecated */
 struct fid_poll {
 	struct fid		fid;
 	struct fi_ops_poll	*ops;
@@ -126,7 +130,7 @@ struct fi_eq_attr {
 	uint64_t		flags;
 	enum fi_wait_obj	wait_obj;
 	int			signaling_vector;
-	struct fid_wait		*wait_set;
+	struct fid_wait		*wait_set;	/* deprecated */
 };
 
 /* Standard EQ events */
@@ -254,7 +258,7 @@ struct fi_cq_attr {
 	enum fi_wait_obj	wait_obj;
 	int			signaling_vector;
 	enum fi_cq_wait_cond	wait_cond;
-	struct fid_wait		*wait_set;
+	struct fid_wait		*wait_set;	/* deprecated */
 };
 
 struct fi_ops_cq {
@@ -292,7 +296,7 @@ enum fi_cntr_events {
 struct fi_cntr_attr {
 	enum fi_cntr_events	events;
 	enum fi_wait_obj	wait_obj;
-	struct fid_wait		*wait_set;
+	struct fid_wait		*wait_set;	/* deprecated */
 	uint64_t		flags;
 };
 
@@ -325,25 +329,25 @@ fi_trywait(struct fid_fabric *fabric, struct fid **fids, int count)
 	return fabric->ops->trywait(fabric, fids, count);
 }
 
-static inline int
+static inline FI_DEPRECATED_FUNC int
 fi_wait(struct fid_wait *waitset, int timeout)
 {
 	return waitset->ops->wait(waitset, timeout);
 }
 
-static inline int
+static inline FI_DEPRECATED_FUNC int
 fi_poll(struct fid_poll *pollset, void **context, int count)
 {
 	return pollset->ops->poll(pollset, context, count);
 }
 
-static inline int
+static inline FI_DEPRECATED_FUNC int
 fi_poll_add(struct fid_poll *pollset, struct fid *event_fid, uint64_t flags)
 {
 	return pollset->ops->poll_add(pollset, event_fid, flags);
 }
 
-static inline int
+static inline FI_DEPRECATED_FUNC int
 fi_poll_del(struct fid_poll *pollset, struct fid *event_fid, uint64_t flags)
 {
 	return pollset->ops->poll_del(pollset, event_fid, flags);

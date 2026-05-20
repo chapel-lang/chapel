@@ -63,7 +63,7 @@ static inline void *pci_alloc_consistent(struct pci_dev *hwdev,
 
     ret = usd_alloc_mr((struct usd_device *) hwdev, size, &va);
     if (ret == 0) {
-        *dma_handle = (dma_addr_t) va;
+        *dma_handle = (dma_addr_t)(uintptr_t) va;
         return va;
     } else {
         return NULL;

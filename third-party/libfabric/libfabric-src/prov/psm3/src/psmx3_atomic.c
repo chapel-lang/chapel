@@ -115,6 +115,19 @@ static inline size_t psmx3_ioc_size(const struct fi_ioc *ioc, size_t count,
 }
 #endif
 
+#ifdef HAVE___INT128
+#define CASE_INT_TYPE(FUNC,...) \
+		case FI_INT8:	FUNC(__VA_ARGS__,int8_t); break; \
+		case FI_UINT8:	FUNC(__VA_ARGS__,uint8_t); break; \
+		case FI_INT16:	FUNC(__VA_ARGS__,int16_t); break; \
+		case FI_UINT16: FUNC(__VA_ARGS__,uint16_t); break; \
+		case FI_INT32:	FUNC(__VA_ARGS__,int32_t); break; \
+		case FI_UINT32: FUNC(__VA_ARGS__,uint32_t); break; \
+		case FI_INT64:	FUNC(__VA_ARGS__,int64_t); break; \
+		case FI_UINT64: FUNC(__VA_ARGS__,uint64_t); break; \
+		case FI_INT128:	FUNC(__VA_ARGS__,ofi_int128_t); break; \
+		case FI_UINT128: FUNC(__VA_ARGS__,ofi_uint128_t); break;
+#else
 #define CASE_INT_TYPE(FUNC,...) \
 		case FI_INT8:	FUNC(__VA_ARGS__,int8_t); break; \
 		case FI_UINT8:	FUNC(__VA_ARGS__,uint8_t); break; \
@@ -124,6 +137,7 @@ static inline size_t psmx3_ioc_size(const struct fi_ioc *ioc, size_t count,
 		case FI_UINT32: FUNC(__VA_ARGS__,uint32_t); break; \
 		case FI_INT64:	FUNC(__VA_ARGS__,int64_t); break; \
 		case FI_UINT64: FUNC(__VA_ARGS__,uint64_t); break;
+#endif
 
 #define CASE_FP_TYPE(FUNC,...) \
 		case FI_FLOAT:	FUNC(__VA_ARGS__,float); break; \
@@ -168,6 +182,20 @@ static inline size_t psmx3_ioc_size(const struct fi_ioc *ioc, size_t count,
 #define PSMX3_BXOR(dst,src)	(dst) ^= (src)
 #define PSMX3_COPY(dst,src)	(dst) = (src)
 
+#ifdef PSM_HAVE_GPU
+/* res is always CPU address, dst could be GPU address */
+#define PSMX3_ATOMIC_READ(dst,res,cnt,TYPE) \
+		do { \
+			/*int i;*/ \
+			TYPE *d = (dst); \
+			TYPE *r = (res); \
+			psmx3_lock(&psmx3_atomic_lock, 1); \
+			/* for (i=0; i<(cnt); i++) */ \
+				/*r[i] = d[i];*/ \
+			psm3_memcpy(r, d, sizeof(TYPE)*cnt); \
+			psmx3_unlock(&psmx3_atomic_lock, 1); \
+		} while (0)
+#else /* PSM_HAVE_GPU */
 #define PSMX3_ATOMIC_READ(dst,res,cnt,TYPE) \
 		do { \
 			int i; \
@@ -178,7 +206,29 @@ static inline size_t psmx3_ioc_size(const struct fi_ioc *ioc, size_t count,
 				r[i] = d[i]; \
 			psmx3_unlock(&psmx3_atomic_lock, 1); \
 		} while (0)
+#endif /* PSM_HAVE_GPU */
 
+#ifdef PSM_HAVE_GPU
+/* src is always CPU address, dst could be GPU address */
+#define PSMX3_ATOMIC_WRITE(dst,src,cnt,OP,TYPE) \
+		do { \
+			int i; \
+			TYPE *d = (dst); \
+			TYPE *s = (src); \
+			psmx3_lock(&psmx3_atomic_lock, 1); \
+			for (i=0; i<cnt; i++) { \
+				/*OP(d[i],s[i]);*/ \
+				TYPE tmp; \
+				psm3_memcpy(&tmp, d+i, sizeof(TYPE)); \
+				TYPE orig = tmp; \
+				OP(tmp,s[i]); \
+				/* GPU copy slow, worth extra check to avoid HTOD */\
+				if (tmp != orig) \
+					psm3_memcpy(d+i, &tmp, sizeof(TYPE)); \
+			} \
+			psmx3_unlock(&psmx3_atomic_lock, 1); \
+		} while (0)
+#else /* PSM_HAVE_GPU */
 #define PSMX3_ATOMIC_WRITE(dst,src,cnt,OP,TYPE) \
 		do { \
 			int i; \
@@ -189,7 +239,49 @@ static inline size_t psmx3_ioc_size(const struct fi_ioc *ioc, size_t count,
 				OP(d[i],s[i]); \
 			psmx3_unlock(&psmx3_atomic_lock, 1); \
 		} while (0)
+#endif /* PSM_HAVE_GPU */
 
+#ifdef PSM_HAVE_GPU
+/* src is always CPU address, dst could be GPU address */
+// optimized to avoid unnecessary read and compare, OP==PSMX3_COPY and not used
+#define PSMX3_ATOMIC_WRITE_COPY(dst,src,cnt,OP,TYPE) \
+		do { \
+			/*int i;*/ \
+			TYPE *d = (dst); \
+			TYPE *s = (src); \
+			psmx3_lock(&psmx3_atomic_lock, 1); \
+			/* for (i=0; i<cnt; i++) */ \
+				/*PSMX3_COPY(d[i],s[i]);*/ \
+			psm3_memcpy(d, s, sizeof(TYPE)*cnt); \
+			psmx3_unlock(&psmx3_atomic_lock, 1); \
+		} while (0)
+#else /* PSM_HAVE_GPU */
+#define PSMX3_ATOMIC_WRITE_COPY(dst,src,cnt,OP,TYPE) \
+	PSMX3_ATOMIC_WRITE(dst,src,cnt,OP,TYPE)
+#endif /* PSM_HAVE_GPU */
+
+#ifdef PSM_HAVE_GPU
+/* src, res are always CPU address, dst could be GPU address */
+#define PSMX3_ATOMIC_READWRITE(dst,src,res,cnt,OP,TYPE) \
+		do { \
+			int i; \
+			TYPE *d = (dst); \
+			TYPE *s = (src); \
+			TYPE *r = (res); \
+			psmx3_lock(&psmx3_atomic_lock, 1); \
+			psm3_memcpy(r, d, sizeof(TYPE)*cnt); \
+			for (i=0; i<(cnt); i++) { \
+				/*r[i] = d[i]; - done above */ \
+				/*OP(d[i],s[i]); */ \
+				TYPE tmp = r[i]; \
+				OP(tmp, s[i]); \
+				/* GPU copy slow, worth extra check to avoid HTOD */ \
+				if (tmp != r[i]) \
+					psm3_memcpy(d+i, &tmp, sizeof(TYPE)); \
+			} \
+			psmx3_unlock(&psmx3_atomic_lock, 1); \
+		} while (0)
+#else /* PSM_HAVE_GPU */
 #define PSMX3_ATOMIC_READWRITE(dst,src,res,cnt,OP,TYPE) \
 		do { \
 			int i; \
@@ -203,7 +295,32 @@ static inline size_t psmx3_ioc_size(const struct fi_ioc *ioc, size_t count,
 			} \
 			psmx3_unlock(&psmx3_atomic_lock, 1); \
 		} while (0)
+#endif /* PSM_HAVE_GPU */
 
+#ifdef PSM_HAVE_GPU
+/* src, cmp, res are always CPU address, dst could be GPU address */
+#define PSMX3_ATOMIC_CSWAP(dst,src,cmp,res,cnt,CMP_OP,TYPE) \
+		do { \
+			int i; \
+			TYPE *d = (dst); \
+			TYPE *s = (src); \
+			TYPE *c = (cmp); \
+			TYPE *r = (res); \
+			psmx3_lock(&psmx3_atomic_lock, 1); \
+			psm3_memcpy(r, d, sizeof(TYPE)*cnt); \
+			for (i=0; i<(cnt); i++) { \
+				/*r[i] = d[i]; - done above*/ \
+				/* if (c[i] CMP_OP d[i]) */ \
+				if (c[i] CMP_OP r[i]) { \
+					/* d[i] = s[i]; */ \
+					/* GPU copy slow, may be worth check to avoid HTOD */ \
+					if (s[i] != r[i]) \
+						psm3_memcpy(d+i, &s[i], sizeof(TYPE)); \
+				} \
+			} \
+			psmx3_unlock(&psmx3_atomic_lock, 1); \
+		} while (0)
+#else /* PSM_HAVE_GPU */
 #define PSMX3_ATOMIC_CSWAP(dst,src,cmp,res,cnt,CMP_OP,TYPE) \
 		do { \
 			int i; \
@@ -219,7 +336,30 @@ static inline size_t psmx3_ioc_size(const struct fi_ioc *ioc, size_t count,
 			} \
 			psmx3_unlock(&psmx3_atomic_lock, 1); \
 		} while (0)
+#endif /* PSM_HAVE_GPU */
 
+#ifdef PSM_HAVE_GPU
+/* src, cmp, res are always CPU address, dst could be GPU address */
+#define PSMX3_ATOMIC_MSWAP(dst,src,cmp,res,cnt,TYPE) \
+		do { \
+			int i; \
+			TYPE *d = (dst); \
+			TYPE *s = (src); \
+			TYPE *c = (cmp); \
+			TYPE *r = (res); \
+			psmx3_lock(&psmx3_atomic_lock, 1); \
+			psm3_memcpy(r, d, sizeof(TYPE)*cnt); \
+			for (i=0; i<(cnt); i++) { \
+				/*r[i] = d[i]; - done above*/ \
+				/* d[i] = (s[i] & c[i]) | (d[i] & ~c[i]) */; \
+				TYPE tmp = (s[i] & c[i]) | (r[i] & ~c[i]); \
+				/* GPU copy slow, may be worth check to avoid HTOD */ \
+				if (tmp != r[i]) \
+					psm3_memcpy(d+i, &tmp, sizeof(TYPE)); \
+			} \
+			psmx3_unlock(&psmx3_atomic_lock, 1); \
+		} while (0)
+#else /* PSM_HAVE_GPU */
 #define PSMX3_ATOMIC_MSWAP(dst,src,cmp,res,cnt,TYPE) \
 		do { \
 			int i; \
@@ -234,6 +374,7 @@ static inline size_t psmx3_ioc_size(const struct fi_ioc *ioc, size_t count,
 			} \
 			psmx3_unlock(&psmx3_atomic_lock, 1); \
 		} while (0)
+#endif /* PSM_HAVE_GPU */
 
 static int psmx3_atomic_do_write(void *dest, void *src,
 				 int datatype, int op, int count)
@@ -260,12 +401,12 @@ static int psmx3_atomic_do_write(void *dest, void *src,
 		break;
 
 	case FI_LOR:
-		SWITCH_INT_TYPE(datatype,PSMX3_ATOMIC_WRITE,
+		SWITCH_ALL_TYPE(datatype,PSMX3_ATOMIC_WRITE,
 				dest,src,count,PSMX3_LOR);
 		break;
 
 	case FI_LAND:
-		SWITCH_INT_TYPE(datatype,PSMX3_ATOMIC_WRITE,
+		SWITCH_ALL_TYPE(datatype,PSMX3_ATOMIC_WRITE,
 				dest,src,count,PSMX3_LAND);
 		break;
 
@@ -280,7 +421,7 @@ static int psmx3_atomic_do_write(void *dest, void *src,
 		break;
 
 	case FI_LXOR:
-		SWITCH_INT_TYPE(datatype,PSMX3_ATOMIC_WRITE,
+		SWITCH_ALL_TYPE(datatype,PSMX3_ATOMIC_WRITE,
 				dest,src,count,PSMX3_LXOR);
 		break;
 
@@ -290,7 +431,7 @@ static int psmx3_atomic_do_write(void *dest, void *src,
 		break;
 
 	case FI_ATOMIC_WRITE:
-		SWITCH_ALL_TYPE(datatype,PSMX3_ATOMIC_WRITE,
+		SWITCH_ALL_TYPE(datatype,PSMX3_ATOMIC_WRITE_COPY,
 				dest,src,count,PSMX3_COPY);
 		break;
 
@@ -460,7 +601,8 @@ int psmx3_am_atomic_handler(psm2_am_token_t token,
 
 		if (!op_error) {
 			addr += mr->offset;
-			psmx3_atomic_do_write(addr, src, datatype, op, count);
+			op_error = psmx3_atomic_do_write(addr, src, datatype,
+							 op, count);
 
 			if (rx->ep->caps & FI_RMA_EVENT) {
 				cntr = rx->ep->remote_write_cntr;
@@ -505,8 +647,8 @@ int psmx3_am_atomic_handler(psm2_am_token_t token,
 			addr += mr->offset;
 			tmp_buf = malloc(len);
 			if (tmp_buf)
-				psmx3_atomic_do_readwrite(addr, src, tmp_buf,
-							  datatype, op, count);
+				op_error = psmx3_atomic_do_readwrite(addr, src,
+						tmp_buf, datatype, op, count);
 			else
 				op_error = -FI_ENOMEM;
 
@@ -557,9 +699,10 @@ int psmx3_am_atomic_handler(psm2_am_token_t token,
 			addr += mr->offset;
 			tmp_buf = malloc(len);
 			if (tmp_buf)
-				psmx3_atomic_do_compwrite(addr, src, (uint8_t *)src + len,
-							  tmp_buf, datatype,
-							  op, count);
+				op_error = psmx3_atomic_do_compwrite(addr, src,
+							(uint8_t *)src + len,
+							tmp_buf, datatype,
+							op, count);
 			else
 				op_error = -FI_ENOMEM;
 
@@ -828,8 +971,8 @@ ssize_t psmx3_atomic_write_generic(struct fid_ep *ep,
 							flags);
 
 	assert(buf);
-	assert((int)datatype >= 0 && (int)datatype < FI_DATATYPE_LAST);
-	assert((int)op >= 0 && (int)op < FI_ATOMIC_OP_LAST);
+	assert((int)datatype >= 0 && (int)datatype < OFI_DATATYPE_LAST);
+	assert((int)op >= 0 && (int)op < OFI_ATOMIC_OP_LAST);
 
 	av = ep_priv->av;
 	assert(av);
@@ -928,8 +1071,8 @@ ssize_t psmx3_atomic_writev_generic(struct fid_ep *ep,
 
 	assert(iov);
 	assert(count);
-	assert((int)datatype >= 0 && (int)datatype < FI_DATATYPE_LAST);
-	assert((int)op >= 0 && (int)op < FI_ATOMIC_OP_LAST);
+	assert((int)datatype >= 0 && (int)datatype < OFI_DATATYPE_LAST);
+	assert((int)op >= 0 && (int)op < OFI_ATOMIC_OP_LAST);
 
 	while (count && !iov[count-1].count)
 		count--;
@@ -1134,8 +1277,8 @@ ssize_t psmx3_atomic_readwrite_generic(struct fid_ep *ep,
 							    context, flags);
 
 	assert(buf || op == FI_ATOMIC_READ);
-	assert((int)datatype >= 0 && (int)datatype < FI_DATATYPE_LAST);
-	assert((int)op >= 0 && (int)op < FI_ATOMIC_OP_LAST);
+	assert((int)datatype >= 0 && (int)datatype < OFI_DATATYPE_LAST);
+	assert((int)op >= 0 && (int)op < OFI_ATOMIC_OP_LAST);
 
 	av = ep_priv->av;
 	assert(av);
@@ -1247,8 +1390,8 @@ ssize_t psmx3_atomic_readwritev_generic(struct fid_ep *ep,
 	assert((iov && count) || op == FI_ATOMIC_READ);
 	assert(resultv);
 	assert(result_count);
-	assert((int)datatype >= 0 && (int)datatype < FI_DATATYPE_LAST);
-	assert((int)op >= 0 && (int)op < FI_ATOMIC_OP_LAST);
+	assert((int)datatype >= 0 && (int)datatype < OFI_DATATYPE_LAST);
+	assert((int)op >= 0 && (int)op < OFI_ATOMIC_OP_LAST);
 
 	dt_size = ofi_datatype_size(datatype);
 
@@ -1532,8 +1675,8 @@ ssize_t psmx3_atomic_compwrite_generic(struct fid_ep *ep,
 							    context, flags);
 
 	assert(buf);
-	assert((int)datatype >= 0 && (int)datatype < FI_DATATYPE_LAST);
-	assert((int)op >= 0 && (int)op < FI_ATOMIC_OP_LAST);
+	assert((int)datatype >= 0 && (int)datatype < OFI_DATATYPE_LAST);
+	assert((int)op >= 0 && (int)op < OFI_ATOMIC_OP_LAST);
 
 	av = ep_priv->av;
 	assert(av);
@@ -1653,8 +1796,8 @@ ssize_t psmx3_atomic_compwritev_generic(struct fid_ep *ep,
 	assert(compare_count);
 	assert(resultv);
 	assert(result_count);
-	assert((int)datatype >= 0 && (int)datatype < FI_DATATYPE_LAST);
-	assert((int)op >= 0 && (int)op < FI_ATOMIC_OP_LAST);
+	assert((int)datatype >= 0 && (int)datatype < OFI_DATATYPE_LAST);
+	assert((int)op >= 0 && (int)op < OFI_ATOMIC_OP_LAST);
 
 	while (count && !iov[count-1].count)
 		count--;
@@ -1920,12 +2063,17 @@ static int psmx3_atomic_writevalid_internal(size_t chunk_size,
 					    enum fi_datatype datatype,
 					    enum fi_op op, size_t *count)
 {
-	if (datatype >= FI_DATATYPE_LAST)
+	if (datatype >= OFI_DATATYPE_LAST)
 		return -FI_EOPNOTSUPP;
 
 	switch (op) {
 	case FI_MIN:
 	case FI_MAX:
+		if (datatype == FI_FLOAT_COMPLEX ||
+		    datatype == FI_DOUBLE_COMPLEX ||
+		    datatype == FI_LONG_DOUBLE_COMPLEX)
+			return -FI_EOPNOTSUPP;
+	/* fall through */
 	case FI_SUM:
 	case FI_PROD:
 	case FI_LOR:
@@ -1951,12 +2099,17 @@ static int psmx3_atomic_readwritevalid_internal(size_t chunk_size,
 						enum fi_datatype datatype,
 						enum fi_op op, size_t *count)
 {
-	if (datatype >= FI_DATATYPE_LAST)
+	if (datatype >= OFI_DATATYPE_LAST)
 		return -FI_EOPNOTSUPP;
 
 	switch (op) {
 	case FI_MIN:
 	case FI_MAX:
+		if (datatype == FI_FLOAT_COMPLEX ||
+		    datatype == FI_DOUBLE_COMPLEX ||
+		    datatype == FI_LONG_DOUBLE_COMPLEX)
+			return -FI_EOPNOTSUPP;
+	/* fall through */
 	case FI_SUM:
 	case FI_PROD:
 	case FI_LOR:
@@ -1984,7 +2137,7 @@ static int psmx3_atomic_compwritevalid_internal(size_t chunk_size,
 						enum fi_op op, size_t *count)
 {
 
-	if (datatype >= FI_DATATYPE_LAST)
+	if (datatype >= OFI_DATATYPE_LAST)
 		return -FI_EOPNOTSUPP;
 
 	switch (op) {

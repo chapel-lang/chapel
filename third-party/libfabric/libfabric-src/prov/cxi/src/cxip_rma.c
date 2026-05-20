@@ -22,6 +22,7 @@
 #include "cxip.h"
 
 #define CXIP_WARN(...) _CXIP_WARN(FI_LOG_EP_CTRL, __VA_ARGS__)
+#define CXIP_DBG(...) _CXIP_DBG(FI_LOG_EP_DATA, __VA_ARGS__)
 
 /*
  * cxip_rma_selective_completion_cb() - RMA selective completion callback.
@@ -127,6 +128,9 @@ static int cxip_rma_cb(struct cxip_req *req, const union c_event *event)
 
 	req->flags &= (FI_RMA | FI_READ | FI_WRITE);
 
+	if (req->rma.cntr)
+		cxip_cntr_progress_dec(req->rma.cntr);
+
 	if (req->rma.local_md)
 		cxip_unmap(req->rma.local_md);
 
@@ -150,10 +154,44 @@ static int cxip_rma_cb(struct cxip_req *req, const union c_event *event)
 			TXC_WARN(txc, "Failed to report error: %d\n", ret);
 	}
 
-	ofi_atomic_dec32(&req->rma.txc->otx_reqs);
+	cxip_txc_otx_reqs_dec(req->rma.txc);
 	cxip_evtq_req_free(req);
 
 	return FI_SUCCESS;
+}
+
+static bool cxip_rma_emit_dma_need_req(size_t len, uint64_t flags,
+				       struct cxip_mr *mr)
+{
+	/* DMA commands with FI_INJECT always require a request structure to
+	 * track the bounce buffer.
+	 */
+	if (len && (flags & FI_INJECT))
+		return true;
+
+	/* If user request FI_COMPLETION, need request structure to return
+	 * user context back.
+	 *
+	 * TODO: This can be optimized for zero byte operations. Specifically,
+	 * The user context can be associated with the DMA command. But, this
+	 * requires reworking on event queue processing to support.
+	 */
+	if (flags & FI_COMPLETION)
+		return true;
+
+	/* If the user has provider their own MR, internal memory registration
+	 * is not needed. Thus, no request structure is needed.
+	 */
+	if (mr)
+		return false;
+
+	/* In the initiator buffer length is zero, no memory registration is
+	 * needed. Thus, no request structure is needed.
+	 */
+	if (!len)
+		return false;
+
+	return true;
 }
 
 static int cxip_rma_emit_dma(struct cxip_txc *txc, const void *buf, size_t len,
@@ -169,23 +207,20 @@ static int cxip_rma_emit_dma(struct cxip_txc *txc, const void *buf, size_t len,
 {
 	struct cxip_req *req = NULL;
 	struct cxip_md *dma_md = NULL;
-	void *dma_buf;
+	void *dma_buf = NULL;
 	struct c_full_dma_cmd dma_cmd = {};
 	int ret;
 	struct cxip_domain *dom = txc->domain;
 	struct cxip_cntr *cntr;
 	void *inject_req;
+	uint64_t access = write ? CXI_MAP_READ : CXI_MAP_WRITE;
+	uint64_t match_key = key;
 
 	/* MR desc cannot be value unless hybrid MR desc is enabled. */
 	if (!dom->hybrid_mr_desc)
 		mr = NULL;
 
-	/* DMA commands always require a request structure regardless if
-	 * FI_COMPLETION is set. This is due to the provider doing internally
-	 * memory registration and having to clean up the registration on DMA
-	 * operation completion.
-	 */
-	if ((len && (flags & FI_INJECT)) || (flags & FI_COMPLETION) || !mr) {
+	if (cxip_rma_emit_dma_need_req(len, flags, mr)) {
 		req = cxip_evtq_req_alloc(&txc->tx_evtq, 0, txc);
 		if (!req) {
 			ret = -FI_EAGAIN;
@@ -208,7 +243,7 @@ static int cxip_rma_emit_dma(struct cxip_txc *txc, const void *buf, size_t len,
 		 * when doing RMA commands to unoptimized MRs), a provider
 		 * bounce buffer is always needed to store the user payload.
 		 *
-		 * Always prefer user provider MR over internally mapping the
+		 * Always prefer user-provided MR over internally mapping the
 		 * buffer.
 		 */
 		if (flags & FI_INJECT) {
@@ -240,7 +275,8 @@ static int cxip_rma_emit_dma(struct cxip_txc *txc, const void *buf, size_t len,
 		} else {
 			assert(req != NULL);
 
-			ret = cxip_map(dom, buf, len, 0, &req->rma.local_md);
+			ret = cxip_ep_obj_map(txc->ep_obj, buf, len, access, 0,
+					      &req->rma.local_md);
 			if (ret) {
 				TXC_WARN(txc, "Failed to map buffer: %d:%s\n",
 					ret, fi_strerror(-ret));
@@ -256,6 +292,7 @@ static int cxip_rma_emit_dma(struct cxip_txc *txc, const void *buf, size_t len,
 	dma_cmd.index_ext = *idx_ext;
 	dma_cmd.event_send_disable = 1;
 	dma_cmd.dfa = *dfa;
+	dma_cmd.initiator = cxip_msg_match_id(txc);
 	ret = cxip_adjust_remote_offset(&addr, key);
 	if (ret) {
 		TXC_WARN(txc, "Remote offset overflow\n");
@@ -263,7 +300,25 @@ static int cxip_rma_emit_dma(struct cxip_txc *txc, const void *buf, size_t len,
 	}
 	dma_cmd.remote_offset = addr;
 	dma_cmd.eq = cxip_evtq_eqn(&txc->tx_evtq);
-	dma_cmd.match_bits = CXIP_KEY_MATCH_BITS(key);
+
+	/* For writedata operations with dual entry enabled, use writedata key
+	 * and preserve solicited + events bits (59,60). Only mask off provider
+	 * bit 63 so the dual LE distinction remains.
+	 */
+	if (write && (flags & FI_REMOTE_CQ_DATA) && dom->rma_cq_data_size)
+		match_key = cxip_key_set_writedata(key);
+
+	if (write && (flags & FI_REMOTE_CQ_DATA) && dom->rma_cq_data_size) {
+		/* Preserve bits 60:59 */
+		dma_cmd.match_bits = match_key & ~CXIP_IS_PROV_MR_KEY_BIT;
+	} else {
+		dma_cmd.match_bits = CXIP_KEY_MATCH_BITS(match_key);
+	}
+
+	/* Set header data for fi_writedata operations */
+	if (write && (flags & FI_REMOTE_CQ_DATA)) {
+		dma_cmd.header_data = data;
+	}
 
 	if (req) {
 		dma_cmd.user_ptr = (uint64_t)req;
@@ -298,6 +353,11 @@ static int cxip_rma_emit_dma(struct cxip_txc *txc, const void *buf, size_t len,
 		if (cntr) {
 			dma_cmd.event_ct_ack = 1;
 			dma_cmd.ct = cntr->ct->ctn;
+
+			if (req) {
+				req->rma.cntr = cntr;
+				cxip_cntr_progress_inc(cntr);
+			}
 		}
 
 		if (flags & (FI_DELIVERY_COMPLETE | FI_MATCH_COMPLETE))
@@ -312,6 +372,11 @@ static int cxip_rma_emit_dma(struct cxip_txc *txc, const void *buf, size_t len,
 		if (cntr) {
 			dma_cmd.event_ct_reply = 1;
 			dma_cmd.ct = cntr->ct->ctn;
+
+			if (req) {
+				req->rma.cntr = cntr;
+				cxip_cntr_progress_inc(cntr);
+			}
 		}
 	}
 
@@ -415,6 +480,11 @@ static int cxip_rma_emit_idc(struct cxip_txc *txc, const void *buf, size_t len,
 	if (txc->write_cntr) {
 		cstate_cmd.event_ct_ack = 1;
 		cstate_cmd.ct = txc->write_cntr->ct->ctn;
+
+		if (req) {
+			req->rma.cntr = txc->write_cntr;
+			cxip_cntr_progress_inc(txc->write_cntr);
+		}
 	}
 
 	/* If the user has not request a completion, success events will be
@@ -473,8 +543,15 @@ err:
 }
 
 static bool cxip_rma_is_unrestricted(struct cxip_txc *txc, uint64_t key,
-				     uint64_t msg_order, bool write)
+				     uint64_t msg_order, bool write, uint64_t flags)
 {
+	/* Operations with FI_REMOTE_CQ_DATA need unrestricted mode to generate
+	 * target-side PUT events for completion notifications.
+	 */
+	if (flags & FI_REMOTE_CQ_DATA) {
+		return true;
+	}
+
 	/* Unoptimized keys are implemented with match bits and must always be
 	 * unrestricted.
 	 */
@@ -499,14 +576,10 @@ static bool cxip_rma_is_unrestricted(struct cxip_txc *txc, uint64_t key,
 }
 
 static bool cxip_rma_is_idc(struct cxip_txc *txc, uint64_t key, size_t len,
-			    bool write, bool triggered, bool unr)
+			    bool write, bool triggered, bool unr, uint64_t flags)
 {
 	size_t max_idc_size = unr ? CXIP_INJECT_SIZE : C_MAX_IDC_PAYLOAD_RES;
 
-	/* DISABLE_NON_INJECT_MSG_IDC disables the IDC
-	 */
-	if (cxip_env.disable_non_inject_msg_idc)
-		return false;
 	/* IDC commands are not supported for unoptimized MR since the IDC
 	 * small message format does not support remote offset which is needed
 	 * for RMA commands.
@@ -525,6 +598,17 @@ static bool cxip_rma_is_idc(struct cxip_txc *txc, uint64_t key, size_t len,
 	/* Triggered operations never can be issued with an IDC. */
 	if (triggered)
 		return false;
+
+	/* IDC commands do not support header_data for fi_writedata.
+	 * Must use DMA commands for operations with FI_REMOTE_CQ_DATA.
+	 */
+	if (flags & FI_REMOTE_CQ_DATA) {
+		return false;
+	}
+
+	/* Don't issue non-inject operation as IDC if disabled by env */
+	if (!(flags & FI_INJECT) && cxip_env.disable_non_inject_rma_idc)
+	       return false;
 
 	return true;
 }
@@ -585,8 +669,22 @@ ssize_t cxip_rma_common(enum fi_op_type op, struct cxip_txc *txc,
 		return -FI_EKEYREJECTED;
 	}
 
-	unr = cxip_rma_is_unrestricted(txc, key, msg_order, write);
-	idc = cxip_rma_is_idc(txc, key, len, write, triggered, unr);
+	/* Writedata operations require provider keys and unoptimized (standard)
+	 * MRs to support target-side event generation.
+	 */
+	if (flags & FI_REMOTE_CQ_DATA) {
+		if (!(key & CXIP_IS_PROV_MR_KEY_BIT)) {
+			TXC_WARN(txc, "FI_REMOTE_CQ_DATA requires provider key: 0x%lx\n", key);
+			return -FI_EINVAL;
+		}
+		if (cxip_generic_is_mr_key_opt(key)) {
+			TXC_WARN(txc, "FI_REMOTE_CQ_DATA requires unoptimized MR key: 0x%lx\n", key);
+			return -FI_EINVAL;
+		}
+	}
+
+	unr = cxip_rma_is_unrestricted(txc, key, msg_order, write, flags);
+	idc = cxip_rma_is_idc(txc, key, len, write, triggered, unr, flags);
 
 	/* Build target network address. */
 	ret = cxip_av_lookup_addr(txc->ep_obj->av, tgt_addr, &caddr);
@@ -608,7 +706,7 @@ ssize_t cxip_rma_common(enum fi_op_type op, struct cxip_txc *txc,
 	/* Select the correct traffic class type within a traffic class. */
 	if (!unr && (flags & FI_CXI_HRP))
 		tc_type = CXI_TC_TYPE_HRP;
-	else if (!unr)
+	else if (!unr && !triggered)
 		tc_type = CXI_TC_TYPE_RESTRICTED;
 	else
 		tc_type = CXI_TC_TYPE_DEFAULT;
@@ -633,12 +731,14 @@ ssize_t cxip_rma_common(enum fi_op_type op, struct cxip_txc *txc,
 
 	if (ret)
 		TXC_WARN(txc,
-			 "%s RMA %s failed: buf=%p len=%lu rkey=%#lx roffset=%#lx nic=%#x pid=%u pid_idx=%u\n",
+			 "%s %s RMA %s failed: buf=%p len=%lu rkey=%#lx roffset=%#lx nic=%#x pid=%u pid_idx=%u\n",
+			 unr ? "Ordered" : "Un-ordered",
 			 idc ? "IDC" : "DMA", write ? "write" : "read",
 			 buf, len, key, addr, caddr.nic, caddr.pid, pid_idx);
 	else
 		TXC_DBG(txc,
-			"%s RMA %s emitted: buf=%p len=%lu rkey=%#lx roffset=%#lx nic=%#x pid=%u pid_idx=%u\n",
+			"%s %s RMA %s emitted: buf=%p len=%lu rkey=%#lx roffset=%#lx nic=%#x pid=%u pid_idx=%u\n",
+			unr ? "Ordered" : "Un-ordered",
 			idc ? "IDC" : "DMA", write ? "write" : "read",
 			buf, len, key, addr, caddr.nic, caddr.pid, pid_idx);
 
@@ -752,6 +852,32 @@ ssize_t cxip_rma_inject(struct fid_ep *fid_ep, const void *buf, size_t len,
 			       false, 0, NULL, NULL);
 }
 
+/* Inject write with immediate (remote CQ) data - used when writedata enabled */
+static ssize_t cxip_rma_injectdata(struct fid_ep *fid_ep, const void *buf,
+	size_t len, uint64_t data, fi_addr_t dest_addr, uint64_t addr,
+	uint64_t key)
+{
+	struct cxip_ep *ep = container_of(fid_ep, struct cxip_ep, ep);
+	/* FI_REMOTE_CQ_DATA implies header_data presence in DMA path */
+	return cxip_rma_common(FI_OP_WRITE, ep->ep_obj->txc, buf, len, NULL,
+			       dest_addr, addr, key, data,
+			       FI_INJECT | FI_REMOTE_CQ_DATA,
+			       ep->tx_attr.tclass, ep->tx_attr.msg_order, NULL,
+			       false, 0, NULL, NULL);
+}
+
+static ssize_t cxip_rma_writedata(struct fid_ep *fid_ep, const void *buf,
+			  size_t len, void *desc, uint64_t data,
+			  fi_addr_t dest_addr, uint64_t addr,
+			  uint64_t key, void *context)
+{
+	struct cxip_ep *ep = container_of(fid_ep, struct cxip_ep, ep);
+	return cxip_rma_common(FI_OP_WRITE, ep->ep_obj->txc, buf, len, desc,
+			       dest_addr, addr, key, data,
+			       ep->tx_attr.op_flags | FI_REMOTE_CQ_DATA,
+			       ep->tx_attr.tclass, ep->tx_attr.msg_order,
+			       context, false, 0, NULL, NULL);
+}
 static ssize_t cxip_rma_read(struct fid_ep *fid_ep, void *buf, size_t len,
 			     void *desc, fi_addr_t src_addr, uint64_t addr,
 			     uint64_t key, void *context)
@@ -854,6 +980,24 @@ struct fi_ops_rma cxip_ep_rma_ops = {
 	.inject = cxip_rma_inject,
 	.injectdata = fi_no_rma_injectdata,
 	.writedata = fi_no_rma_writedata,
+};
+
+/* RMA ops when writedata and remote CQ data injection are enabled.
+ * Domain must have rma_cq_data_size != 0.
+ * Provides fi_rma_injectdata via cxip_rma_inject (with FI_REMOTE_CQ_DATA flag
+ * set by upper layer call path) and writedata support.
+ */
+struct fi_ops_rma cxip_ep_rma_writedata_ops = {
+	.size = sizeof(struct fi_ops_rma),
+	.read = cxip_rma_read,
+	.readv = cxip_rma_readv,
+	.readmsg = cxip_rma_readmsg,
+	.write = cxip_rma_write,
+	.writev = cxip_rma_writev,
+	.writemsg = cxip_rma_writemsg,
+	.inject = cxip_rma_inject,
+	.injectdata = cxip_rma_injectdata,
+	.writedata = cxip_rma_writedata,
 };
 
 struct fi_ops_rma cxip_ep_rma_no_ops = {

@@ -97,14 +97,6 @@ struct ptl_rcvthread {
 pthread_t psm3_rcv_threadid;
 #endif
 
-#ifdef PSM_CUDA
-/* This is a global cuda context (extern declaration in psm_user.h)
- * stored to provide hints during a cuda failure
- * due to a null cuda context.
- */
-CUcontext cu_ctxt;
-#endif
-
 // for psm3_wait and psm3_wake
 static pthread_mutex_t     wait_mutex;
 static pthread_cond_t      wait_condvar;
@@ -120,6 +112,11 @@ static uint64_t wait_sleep_timeout_count;
 static uint64_t wait_sleep_signal_count;
 static uint64_t wakeup_count;
 
+// The mutex is used to guard rcv_thread_done and rcv_thread_exited for
+// synchronizing with rcv_thread exit.
+static pthread_mutex_t rcv_thread_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t rcv_thread_done  = PTHREAD_COND_INITIALIZER;
+static int rcv_thread_exited;
 
 /*
  * The receive thread knows about the ptl interface, so it can muck with it
@@ -144,15 +141,16 @@ psm2_error_t psm3_ips_ptl_rcvthread_init(ptl_t *ptl_gen, struct ips_recvhdrq *re
 	rcvc->ptl = ptl_gen;
 	rcvc->t_start_cyc = get_cycles();
 
-#ifdef PSM_CUDA
-	if (PSMI_IS_GPU_ENABLED)
-		PSMI_CUDA_CALL(cuCtxGetCurrent, &cu_ctxt);
-#endif
+	PSM3_GPU_FETCH_CTXT();
 
 	if (psmi_hal_has_sw_status(PSM_HAL_PSMI_RUNTIME_RTS_RX_THREAD) &&
 	    (!psmi_hal_has_sw_status(PSM_HAL_PSMI_RUNTIME_RX_THREAD_STARTED))){
 
-		pthread_cond_init(&wait_condvar, NULL);
+		pthread_condattr_t attr;
+		pthread_condattr_init(&attr);
+		pthread_condattr_setclock(&attr, CLOCK_MONOTONIC);
+		pthread_cond_init(&wait_condvar, &attr);
+
 		pthread_mutex_init(&wait_mutex, NULL);
 		wait_signalled = 0;
 
@@ -168,10 +166,14 @@ psm2_error_t psm3_ips_ptl_rcvthread_init(ptl_t *ptl_gen, struct ips_recvhdrq *re
 		}
 
 		psmi_hal_add_sw_status(PSM_HAL_PSMI_RUNTIME_RX_THREAD_STARTED);
+		rcv_thread_exited = 0;
 		if (pthread_create(&rcvc->hdrq_threadid, NULL,
 				   ips_ptl_pollintr, ptl->rcvthread)) {
 			close(rcvc->pipefd[0]);
 			close(rcvc->pipefd[1]);
+			rcv_thread_exited = 1;
+			pthread_cond_destroy(&rcv_thread_done);
+			pthread_mutex_destroy(&rcv_thread_mutex);
 			err = psm3_handle_error(ptl->ep, PSM2_EP_DEVICE_FAILURE,
 						"Cannot start receive thread: %s\n",
 						strerror(errno));
@@ -204,6 +206,8 @@ psm2_error_t psm3_ips_ptl_rcvthread_fini(ptl_t *ptl_gen)
 
 	psm3_stats_deregister_type(PSMI_STATSTYPE_RCVTHREAD, rcvc);
 	if (rcvc->hdrq_threadid && psmi_hal_has_sw_status(PSM_HAL_PSMI_RUNTIME_RX_THREAD_STARTED)) {
+		struct timespec ts;
+
 		t_now = get_cycles();
 
 		/* Disable interrupts then kill the receive thread */
@@ -223,7 +227,16 @@ psm2_error_t psm3_ips_ptl_rcvthread_fini(ptl_t *ptl_gen)
 			_HFI_VDBG
 			    ("unable to close pipe to receive thread cleanly\n");
 		}
-		pthread_join(rcvc->hdrq_threadid, NULL);
+		clock_gettime(CLOCK_REALTIME, &ts);
+		// Max time: 2 seconds
+		ts.tv_sec += 2;
+		// pthread_join() should not be used in dlclose path
+		pthread_mutex_lock(&rcv_thread_mutex);
+		while (!rcv_thread_exited) {
+			if (pthread_cond_timedwait(&rcv_thread_done, &rcv_thread_mutex, &ts))
+				break;
+		}
+		pthread_mutex_unlock(&rcv_thread_mutex);
 		psmi_hal_sub_sw_status(PSM_HAL_PSMI_RUNTIME_RX_THREAD_STARTED);
 		rcvc->hdrq_threadid = 0;
 		_HFI_PRDBG("rcvthread poll success %lld/%lld times, "
@@ -233,6 +246,8 @@ psm2_error_t psm3_ips_ptl_rcvthread_fini(ptl_t *ptl_gen)
 
 		pthread_cond_destroy(&wait_condvar);
 		pthread_mutex_destroy(&wait_mutex);
+		pthread_cond_destroy(&rcv_thread_done);
+		pthread_mutex_destroy(&rcv_thread_mutex);
 		wait_signalled = 0;
 	}
 
@@ -375,12 +390,12 @@ psm2_error_t rcvthread_initsched(struct ptl_rcvthread *rcvc)
 // means migrating to a singleton model and properly fixing/removing the
 // transfer_ownership of rcvc when EPs are destroyed so can ensure
 // poll_type properly maintained on all affected EPs.
-psm2_error_t psm3_wait(int timeout)
+psm2_error_t psm3_wait(int timeout_ms)
 {
 	psm2_ep_t ep;
 	psm2_error_t ret = PSM2_OK;
 
-	_HFI_VDBG("Wait for event. timeout=%d\n", timeout);
+	_HFI_VDBG("Wait for event. timeout=%d ms\n", timeout_ms);
 	// TBD - while psm3_wait is active, we would like a quick poll() timeout
 	// because it is our only checking for PSM protocol timeouts.  However
 	// poll() has probably already started, so too late to change it now.
@@ -460,20 +475,20 @@ psm2_error_t psm3_wait(int timeout)
 		wait_signalled = 0;
 		wait_nosleep_signalled_count++;
 		_HFI_VDBG("found already signaled, no sleep\n");
-	} else if (timeout < 0) {	// infinite timeout
+	} else if (timeout_ms < 0) {	// infinite timeout
 		// Wait for condition variable to be signaled or broadcast.
 		pthread_cond_wait(&wait_condvar, &wait_mutex);
 		wait_signalled = 0;
 		wait_sleep_til_signal_count++;
 		_HFI_VDBG("slept, infinite timeout\n");
 	} else {
-		struct timespec wait_time;
+		struct timespec wait_time; // absolute timestamp
 		clock_gettime(CLOCK_MONOTONIC, &wait_time);	// current time
-		wait_time.tv_sec += timeout / 1000;
-		wait_time.tv_nsec += (timeout % 1000) * 1000;
-		if (wait_time.tv_nsec > 1000000000) { // handle carry from nsec to sec
-			wait_time.tv_sec++; 
-			wait_time.tv_nsec -= 1000000000;
+		wait_time.tv_sec  +=  timeout_ms / MSEC_PER_SEC;
+		wait_time.tv_nsec += (timeout_ms % MSEC_PER_SEC) * NSEC_PER_MSEC;
+		if (wait_time.tv_nsec >= NSEC_PER_SEC) { // handle carry from nsec to sec
+			wait_time.tv_sec++;
+			wait_time.tv_nsec -= NSEC_PER_SEC;
 		}
 		if (0 > pthread_cond_timedwait(&wait_condvar, &wait_mutex, &wait_time)) {
 			_HFI_VDBG("slept, timeout\n");
@@ -486,7 +501,7 @@ psm2_error_t psm3_wait(int timeout)
 			wait_sleep_signal_count++;
 		}
 	}
-	pthread_mutex_unlock( &wait_mutex );
+	pthread_mutex_unlock(&wait_mutex);
 	// TBD if ret == PSM2_OK we could use ipeek to see if any real progress
 	// was made and loop back to start to wait again if not.  For now we
 	// leave that to our caller
@@ -564,10 +579,7 @@ void *ips_ptl_pollintr(void *rcvthreadc)
 	int next_timeout = rcvc->last_timeout;
 	psm2_error_t err;
 
-#ifdef PSM_CUDA
-	if (PSMI_IS_GPU_ENABLED && cu_ctxt != NULL)
-		PSMI_CUDA_CALL(cuCtxSetCurrent, cu_ctxt);
-#endif
+	PSM3_GPU_REFRESH_CTXT();
 
 	PSM2_LOG_MSG("entering");
 	/* No reason to have many of these, keep this as a backup in case the
@@ -608,6 +620,10 @@ void *ips_ptl_pollintr(void *rcvthreadc)
 	}
 
 	PSM2_LOG_MSG("leaving");
+	pthread_mutex_lock(&rcv_thread_mutex);
+	rcv_thread_exited = 1;
+	pthread_cond_signal(&rcv_thread_done);
+	pthread_mutex_unlock(&rcv_thread_mutex);
 	return NULL;
 }
 

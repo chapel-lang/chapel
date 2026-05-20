@@ -106,6 +106,9 @@ int synapseai_init(void)
 	synStatus status;
 	uint32_t device_count = 0;
 
+	fi_param_define(NULL, "hmem_synapseai_use_dmabuf", FI_PARAM_BOOL,
+			"Use DMABUF for SynapseAI device memory registration. (Default: true)");
+
 	err = synapseai_dl_init();
 	if (err)
 		return err;
@@ -206,6 +209,14 @@ int synapseai_get_dmabuf_fd(const void *addr, uint64_t size, int *fd,
 	return FI_SUCCESS;
 }
 
+bool synapseai_is_dmabuf_requested(void)
+{
+	int use_dmabuf = 1;
+
+	fi_param_get_bool(NULL, "hmem_synapseai_use_dmabuf", &use_dmabuf);
+	return use_dmabuf;
+}
+
 #else
 int synapseai_init(void)
 {
@@ -249,5 +260,10 @@ int synapseai_get_dmabuf_fd(const void *addr, uint64_t size, int *fd,
 			    uint64_t *offset)
 {
 	return -FI_ENOSYS;
+}
+
+bool synapseai_is_dmabuf_requested(void)
+{
+	return false;
 }
 #endif /* HAVE_SYNAPSEAI */

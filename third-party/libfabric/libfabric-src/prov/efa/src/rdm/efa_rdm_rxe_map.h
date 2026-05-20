@@ -9,12 +9,6 @@
 #include "uthash.h"
 
 
-struct efa_rdm_rxe_map_key {
-	uint64_t msg_id;
-	fi_addr_t addr;
-};
-
-
 struct efa_rdm_rxe_map_entry;
 
 /**
@@ -35,7 +29,7 @@ struct efa_rdm_rxe_map {
 struct efa_rdm_ope;
 
 struct efa_rdm_rxe_map_entry {
-	struct efa_rdm_rxe_map_key key;
+	uint64_t msg_id;
 	struct efa_rdm_ope *rxe;
 	UT_hash_handle hh;
 };
@@ -49,12 +43,11 @@ void efa_rdm_rxe_map_construct(struct efa_rdm_rxe_map *rxe_map)
 struct efa_rdm_pke;
 
 struct efa_rdm_ope *efa_rdm_rxe_map_lookup(struct efa_rdm_rxe_map *rxe_map,
-					   struct efa_rdm_pke *pkt_entry);
+					   uint64_t msg_id);
 
-void efa_rdm_rxe_map_insert(struct efa_rdm_rxe_map *rxe_map,
-			    struct efa_rdm_pke *pkt_entry,
+void efa_rdm_rxe_map_insert(struct efa_rdm_rxe_map *rxe_map, uint64_t msg_id,
 			    struct efa_rdm_ope *rxe);
 
 void efa_rdm_rxe_map_remove(struct efa_rdm_rxe_map *rxe_map, uint64_t msg_id,
-			    fi_addr_t addr, struct efa_rdm_ope *rxe);
+			    struct efa_rdm_ope *rxe);
 #endif

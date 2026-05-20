@@ -768,7 +768,9 @@ static void zbsend(struct cxip_ep_obj *ep_obj, uint32_t dstnic, uint32_t dstpid,
 {
 	struct cxip_ep_zbcoll_obj *zbcoll;
 	struct cxip_ctrl_req *req;
-	int ret;
+	int ret, mcast_id;
+	uint64_t rdma_lac=0, user_data=0;
+	struct cxip_coll_mc *mc_obj;
 
 	zbcoll = &ep_obj->zbcoll;
 
@@ -786,13 +788,37 @@ static void zbsend(struct cxip_ep_obj *ep_obj, uint32_t dstnic, uint32_t dstpid,
 	req->send.vni = ep_obj->auth_key.vni;
 	req->send.mb.raw = mbv;
 	req->send.mb.ctrl_le_type = CXIP_CTRL_LE_TYPE_CTRL_MSG;
-	req->send.mb.ctrl_msg_type = CXIP_CTRL_MSG_ZB_DATA;
+	if(ep_obj->coll.leaf_save_root_lac) {
+		mcast_id = (0x00000000ffffffff & mbv);
+		TRACE("%s: root rdma mcast_id %x\n", __func__, mcast_id);
+		/* get the mc_obj based on the outbound mcast_id */
+		mc_obj = ofi_idm_lookup(&ep_obj->coll.mcast_map, mcast_id);
+		if(mc_obj) {
 
+			if(mc_obj->mcast_addr == mcast_id) {
+				TRACE("%s: rdma get save lac %016lx is set\n",
+					__func__, mc_obj->rdma_get_lac_va_tx);
+				req->send.mb.ctrl_msg_type = CXIP_CTRL_MSG_ZB_DATA_RDMA_LAC;
+				rdma_lac = mc_obj->rdma_get_lac_va_tx;
+				user_data = rdma_lac;
+			} else {
+				TRACE("%s - leaf rdma mcast_id mismatch %x %x\n",
+					__func__, mc_obj->mcast_addr, mcast_id);
+				return;
+			}
+
+		} else {
+			TRACE("%s - mc_obj not found\n", __func__);
+			return;
+		}
+
+	} else
+		req->send.mb.ctrl_msg_type = CXIP_CTRL_MSG_ZB_DATA;
 	/* If we can't send, collective cannot complete, just spin */
 	do {
-		ret =  cxip_ctrl_msg_send(req);
+		ret =  cxip_ctrl_msg_send(req, user_data);
 		if (ret == -FI_EAGAIN)
-			cxip_ep_ctrl_progress_locked(ep_obj);
+			cxip_ep_ctrl_progress_locked(ep_obj, true);
 	} while (ret == -FI_EAGAIN);
 	if (ret) {
 		CXIP_WARN("failed CTRL message send\n");
@@ -833,7 +859,7 @@ void cxip_zbcoll_send(struct cxip_zbcoll_obj *zb, int srcidx, int dstidx,
 	struct cxip_addr dstaddr;
 
 	/* resolve NETSIM testcase */
-	TRACE("SND %04x->%04x %016lx\n", srcidx, dstidx, payload);
+	TRACE("%s - SND %04x->%04x %016lx\n", __func__, srcidx, dstidx, payload);
 	if (zb->simcount > 1) {
 		if (dstidx >= zb->simcount) {
 			ofi_atomic_inc32(&zb->ep_obj->zbcoll.err_count);
@@ -1052,10 +1078,11 @@ static void discard_msg(uint32_t inic, uint32_t ipid, char *msg)
  * @param init_nic  : received (actual) initiator NIC
  * @param init_pid  : received (actual) initiator PID
  * @param mbv       : received match bits
+ * @param data      : received ctrl msg user defined data
  * @return int : FI_SUCCESS (formal return)
  */
 int cxip_zbcoll_recv_cb(struct cxip_ep_obj *ep_obj, uint32_t init_nic,
-			uint32_t init_pid, uint64_t mbv)
+			uint32_t init_pid, uint64_t mbv, uint64_t user_data)
 {
 	struct cxip_ep_zbcoll_obj *zbcoll;
 	struct cxip_zbcoll_obj *zb;
@@ -1077,8 +1104,8 @@ int cxip_zbcoll_recv_cb(struct cxip_ep_obj *ep_obj, uint32_t init_nic,
 		inic = init_nic;
 		ipid = init_pid;
 	}
-	TRACE("RCV INI=%04x PID=%04x sim=%d %d->%d grp=%d dat=%016lx\n",
-	    inic, ipid, sim, src, dst, grpid, dat);
+	TRACE("RCV INI=%04x PID=%04x sim=%d %d->%d grp=%d dat=%016lx udat=%016lx\n",
+	    inic, ipid, sim, src, dst, grpid, dat, user_data);
 
 	/* discard if grpid is explicitly invalid (bad packet) */
 	if (grpid > ZB_NEG_BIT) {
@@ -1254,13 +1281,13 @@ static int zbdata_send_cb(struct cxip_ctrl_req *req, const union c_event *event)
 			/* likely a target queue is full, retry */
 			CXIP_WARN("Target dropped packet, retry\n");
 			usleep(cxip_env.fc_retry_usec_delay);
-			ret = cxip_ctrl_msg_send(req);
+			ret = cxip_ctrl_msg_send(req, 0);
 			break;
 		case C_RC_PTLTE_NOT_FOUND:
 			/* could be a race during setup, retry */
 			CXIP_WARN("Target connection failed, retry\n");
 			usleep(cxip_env.fc_retry_usec_delay);
-			ret = cxip_ctrl_msg_send(req);
+			ret = cxip_ctrl_msg_send(req, 0);
 			break;
 		default:
 			CXIP_WARN("ACK return code = %d, failed\n",
@@ -1482,7 +1509,6 @@ static int _zbreduce(struct cxip_zbcoll_obj *zb, uint64_t *dataptr, bool reduce)
 	struct cxip_zbcoll_state *zbs;
 	union cxip_match_bits mb = {.raw = 0};
 	int i, n;
-
 	/* function could be called on non-participating NIDs */
 	if (!zb) {
 		TRACE("[-] zb is NULL\n");
@@ -1608,7 +1634,7 @@ void cxip_ep_zbcoll_progress(struct cxip_ep_obj *ep_obj)
 	zbcoll = &ep_obj->zbcoll;
 	while (true) {
 		/* progress the underlying ctrl transfers */
-		cxip_ep_ctrl_progress_locked(ep_obj);
+		cxip_ep_ctrl_progress_locked(ep_obj, true);
 
 		/* see if there is a zb ready to be advanced */
 		zb = NULL;

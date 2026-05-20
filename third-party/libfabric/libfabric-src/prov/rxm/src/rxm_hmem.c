@@ -62,11 +62,11 @@ ssize_t rxm_copy_hmem(void *desc, char *host_buf, void *dev_buf, size_t size,
 		 * to ofi_hmem regular copy */
 		if (dir == OFI_COPY_IOV_TO_BUF) {
 			ofi_hmem_dev_reg_copy_from_hmem(
-				iface, (uint64_t) hmem_handle, host_buf,
+				iface, (uint64_t)(uintptr_t) hmem_handle, host_buf,
 				dev_buf, size);
 		} else {
 			ofi_hmem_dev_reg_copy_to_hmem(iface,
-						      (uint64_t) hmem_handle,
+						      (uint64_t)(uintptr_t) hmem_handle,
 						      dev_buf, host_buf, size);
 		}
 		return FI_SUCCESS;

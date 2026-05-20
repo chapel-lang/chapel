@@ -155,7 +155,7 @@ void cxip_evtq_flush_trig_reqs(struct cxip_evtq *evtq)
 					  req->type);
 			}
 
-			ofi_atomic_dec32(&txc->otx_reqs);
+			cxip_txc_otx_reqs_dec(txc);
 			cxip_evtq_req_free_no_lock(req);
 		}
 
@@ -360,7 +360,7 @@ static struct cxip_req *cxip_evtq_event_req(struct cxip_evtq *evtq,
  *
  * Caller must hold ep_obj->lock.
  */
-void cxip_evtq_progress(struct cxip_evtq *evtq)
+void cxip_evtq_progress(struct cxip_evtq *evtq, bool internal)
 {
 	const union c_event *event;
 	struct cxip_req *req;
@@ -373,6 +373,16 @@ void cxip_evtq_progress(struct cxip_evtq *evtq)
 	 * determine if the OFI completion queue is saturated.
 	 */
 	evtq->prev_eq_status = *evtq->eq->status;
+
+	/* When external progress and using wait objectss disable interrupts.
+	 * By our definition, only the waiter can be making progress.
+	 * Interrupts will be re-enabled on fi_trywait().
+	 */
+	if (!internal && evtq->event_wait_obj &&
+	    !evtq->eq->sw_state.event_int_disable) {
+		cxi_eq_int_disable(evtq->eq);
+		evtq->unacked_events = 0;
+	}
 
 	while ((event = cxi_eq_peek_event(evtq->eq))) {
 
@@ -457,7 +467,8 @@ static size_t cxip_evtq_get_queue_size(struct cxip_cq *cq, size_t num_events)
 
 #define MAP_HUGE_2MB    (21 << MAP_HUGE_SHIFT)
 int cxip_evtq_init(struct cxip_evtq *evtq, struct cxip_cq *cq,
-		   size_t num_events, size_t num_fc_events)
+		   size_t num_events, size_t num_fc_events,
+		   struct cxil_wait_obj *priv_wait)
 {
 	struct cxi_eq_attr eq_attr = {
 		.reserved_slots = num_fc_events,
@@ -561,7 +572,7 @@ mmap_success:
 
 	/* cq->priv_wait is NULL if not backed by wait object */
 	ret = cxil_alloc_evtq(cq->domain->lni->lni, evtq->md, &eq_attr,
-			      cq->priv_wait, NULL, &evtq->eq);
+			      priv_wait, NULL, &evtq->eq);
 	if (ret) {
 		CXIP_WARN("Failed to allocated EQ: %d\n", ret);
 		goto err_unmap_eq_buf;

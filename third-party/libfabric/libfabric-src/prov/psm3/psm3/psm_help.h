@@ -150,6 +150,12 @@
 	(((uint32_t)(val)) & (~((uint32_t)(align)-1)))
 #endif
 
+/* round down 64-bit value to align, align must be a power of 2 */
+#ifndef ROUNDDOWN64P2
+#define ROUNDDOWN64P2(val, align) \
+	(((uint64_t)(val)) & (~((uint64_t)(align)-1)))
+#endif
+
 /* round down value to align, align can be any value, less efficient than ROUNDDOWNP2 */
 #ifndef ROUNDDOWN
 #define ROUNDDOWN(val, align)   \
@@ -165,11 +171,13 @@
 /* how many entries are in a statically allocated table */
 #define PSMI_HOWMANY(table) (sizeof(table)/sizeof(table[0]))
 
-
-#define SEC_ULL	 1000000000ULL
-#define MSEC_ULL 1000000ULL
-#define USEC_ULL 1000ULL
-#define NSEC_ULL 1ULL
+// time units conversions
+#define NSEC_PER_SEC  1000000000ULL
+#define NSEC_PER_MSEC 1000000ULL
+#define NSEC_PER_USEC 1000ULL
+#define USEC_PER_SEC  1000000ULL
+#define USEC_PER_MSEC 1000ULL
+#define MSEC_PER_SEC  1000ULL
 
 #define PSMI_TRUE   1
 #define PSMI_FALSE  0
