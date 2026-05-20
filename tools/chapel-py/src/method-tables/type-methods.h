@@ -67,3 +67,11 @@ CLASS_BEGIN(ClassType)
                Nilable<const chpl::types::BasicClassType*>,
                return node->basicClassType())
 CLASS_END(ClassType)
+
+CLASS_BEGIN(PlaceholderType)
+  PLAIN_GETTER(PlaceholderType, node, "Get the AST node corresponding to this PlaceholderType's ID",
+               Nilable<const chpl::uast::AstNode*>,
+               auto& id = node->id();
+               if (id.isEmpty()) return nullptr;
+               return parsing::idToAst(context, id))
+CLASS_END(PlaceholderType)
