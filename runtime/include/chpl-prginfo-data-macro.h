@@ -31,6 +31,11 @@
 E_CONSTANT(mainHasArgs, int)
 
 /** CODE-GENERATED
+    The launcher setting that was used when this program was compiled.
+*/
+E_CONSTANT(CHPL_LAUNCHER, const char*)
+
+/** CODE-GENERATED
     Whether or not 'main' should preserve the delimiter when parsing args.
 */
 E_CONSTANT(mainPreserveDelimiter, int)

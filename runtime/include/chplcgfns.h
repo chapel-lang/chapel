@@ -43,7 +43,6 @@ extern "C" {
 
 /* defined in chpl_compilation_config.c: */
 extern const char* CHPL_COMM;
-extern const char* CHPL_LAUNCHER;
 extern const char* CHPL_TARGET_MEM;
 extern const char* CHPL_LLVM_BIN_DIR;
 extern const char* CHPL_THIRD_PARTY;

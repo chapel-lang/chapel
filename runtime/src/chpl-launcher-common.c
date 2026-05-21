@@ -885,6 +885,7 @@ int chpl_launcher_main(int argc, char* argv[]) {
 void chpl_launcher_no_colocales_error(const char *name) {
   char msg[100];
   if (name == NULL) {
+    CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER, CHPL_LAUNCHER);
     name = CHPL_LAUNCHER;
   }
   snprintf(msg, sizeof(msg), "'%s' launcher does not support co-locales.", name);
