@@ -62,7 +62,6 @@ extern const char* CHPL_MAKE;
 extern const char* CHPL_ATOMICS;
 extern const char* CHPL_NETWORK_ATOMICS;
 extern const char* CHPL_HWLOC;
-extern const char* CHPL_RE2;
 extern const char* CHPL_LLVM;
 extern const char* CHPL_LLVM_BIN_DIR;
 extern const char* CHPL_AUX_FILESYS;
