@@ -52,7 +52,6 @@ extern const char* CHPL_NETWORK_ATOMICS;
 extern const char* CHPL_HWLOC;
 extern const char* CHPL_LLVM;
 extern const char* CHPL_LLVM_BIN_DIR;
-extern const char* CHPL_AUX_FILESYS;
 extern const char* CHPL_UNWIND;
 extern const char* CHPL_RUNTIME_LIB;
 extern const char* CHPL_RUNTIME_INCL;
