@@ -170,10 +170,10 @@ void chpl_vdebug_start (const char *fileroot, double now) {
     int ix = 0;
     int numFIDnames = 0;
 
-    CHPL_RT_PRGINFO_DATA_TEMP(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
-                              chpl_compileDirectory);
-    CHPL_RT_PRGINFO_DATA_TEMP(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
-                              chpl_saveCDir);
+    CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                            chpl_compileDirectory);
+    CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                            chpl_saveCDir);
 
     chpl_dprintf (chpl_vdebug_fd, "CHPL_HOME: %s\n", CHPL_HOME);
     chpl_dprintf (chpl_vdebug_fd, "DIR: %s\n", chpl_compileDirectory);
