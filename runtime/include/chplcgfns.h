@@ -49,7 +49,6 @@ extern const char* CHPL_LLVM_BIN_DIR;
 extern const char* CHPL_UNWIND;
 extern const char* CHPL_RUNTIME_INCL;
 extern const char* CHPL_THIRD_PARTY;
-extern const int CHPL_CACHE_REMOTE;
 
 // Sorted lookup table of filenames used with insertLineNumbers for error
 // messages and logging. Defined in chpl_compilation_config.c (needed by launchers)
