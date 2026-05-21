@@ -52,7 +52,6 @@ extern const char* CHPL_RUNTIME_LIB;
 extern const char* CHPL_RUNTIME_INCL;
 extern const char* CHPL_THIRD_PARTY;
 extern const int CHPL_CACHE_REMOTE;
-extern const int CHPL_INTERLEAVE_MEM;
 
 // Sorted lookup table of filenames used with insertLineNumbers for error
 // messages and logging. Defined in chpl_compilation_config.c (needed by launchers)
