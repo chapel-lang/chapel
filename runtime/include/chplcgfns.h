@@ -51,10 +51,6 @@ extern const char* CHPL_THIRD_PARTY;
 extern const c_string chpl_filenameTable[];
 extern const int32_t chpl_filenameTableSize;
 
-// Lookup tables used as a symbol table by the stack unwinder for translating
-// C symbols into Chapel symbols. Defined in chpl_compilation_config.c
-extern const int32_t chpl_sizeSymTable;
-
 /* generated */
 extern const chpl_fn_p chpl_ftable[];
 extern const chpl_fn_info chpl_finfo[];

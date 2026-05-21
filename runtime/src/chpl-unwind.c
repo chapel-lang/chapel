@@ -319,6 +319,9 @@ static void chpl_stack_unwind_helper(enum chpl_stack_unwind_mode mode, char sep,
   char** strPtr = (char**)out;
   char sepstr[2] = {sep, '\0'};
 
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                          chpl_sizeSymTable);
+
   if (chpl_sizeSymTable > 0) {
     switch (mode) {
       case CHPL_STACK_UNWIND_MODE_FILE:
