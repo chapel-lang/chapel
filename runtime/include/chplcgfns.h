@@ -46,7 +46,6 @@ extern const char* CHPL_COMM;
 extern const char* CHPL_GASNET_SEGMENT;
 extern const char* CHPL_LAUNCHER;
 extern const char* CHPL_TARGET_MEM;
-extern const char* CHPL_ATOMICS;
 extern const char* CHPL_LLVM;
 extern const char* CHPL_LLVM_BIN_DIR;
 extern const char* CHPL_UNWIND;
