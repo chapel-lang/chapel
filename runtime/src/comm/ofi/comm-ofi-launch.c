@@ -70,6 +70,9 @@ void chpl_comm_preLaunch(int32_t numLocales) {
     chpl_env_set("FI_SOCKETS_PE_WAITTIME", "0", 0);
   }
 
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                          CHPL_TARGET_PLATFORM);
+
   if (strcmp(CHPL_TARGET_PLATFORM, "hpe-cray-ex") == 0) {
     //
     // On HPE Cray EX systems, temporarily work around a PMI bug by

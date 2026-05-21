@@ -44,6 +44,7 @@
 #include "chpl-mem.h"
 #include "chplsys.h"
 #include "chpl-linefile-support.h"
+#include "chpl-prginfo.h"
 #include "chpl-tasks.h"
 #include "chpl-tasks-callbacks-internal.h"
 #include "chpl-tasks-impl.h"
@@ -685,6 +686,9 @@ static void setupWorkStealing(void) {
 
 static void setupSpinWaiting(void) {
   const char *crayPlatform = "cray-x";
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                          CHPL_TARGET_PLATFORM);
+
   if (chpl_topo_isOversubscribed()) {
     chpl_qt_setenv("SPINCOUNT", "300", 0);
   } else if (strncmp(crayPlatform, CHPL_TARGET_PLATFORM, strlen(crayPlatform)) == 0) {
