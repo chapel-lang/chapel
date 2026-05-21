@@ -330,6 +330,9 @@ static void chpl_stack_unwind_helper(enum chpl_stack_unwind_mode mode, char sep,
     }
   }
 
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                          chpl_funSymTable);
+
   // This loop does the effective stack unwind, see libunwind documentation
   while (unw_step(&cursor) > 0) {
     unw_get_proc_name(&cursor, buffer, sizeof(buffer), &wordValue);
