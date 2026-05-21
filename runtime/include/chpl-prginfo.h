@@ -210,7 +210,12 @@ chpl_rt_prg_id chpl_rt_prginfo_id(chpl_rt_prginfo* prg);
 const char* chpl_rt_prginfo_load_path(chpl_rt_prginfo* prg);
 
 /** Fetch a pointer to the main argument for a given program. */
-chpl_main_argument* chpl_rt_prginfo_main_argument(chpl_rt_prginfo* prg);
+static inline chpl_main_argument*
+chpl_rt_prginfo_main_argument(chpl_rt_prginfo* prg) {
+  CHPL_RT_PRGINFO_DECLARE(prg, chpl_genMainArgPtr);
+  chpl_main_argument* ret = chpl_genMainArgPtr();
+  return ret;
+}
 
 // Private implementation details.
 #include "chpl-prginfo-detail.h"
