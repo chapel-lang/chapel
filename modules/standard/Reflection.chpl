@@ -376,6 +376,7 @@ proc canResolveTypeMethod(type t, param fname : string, args ...) param : bool d
   .. note:: Does not attempt to resolve the body of the invoked function.
 
     */
+@chpldoc.nodoc
 @unstable(reason="The 'canResolve...' family of procedures are unstable")
 proc canResolveCall(fn) param : bool do
   return __primitive("resolves", fn());
@@ -386,6 +387,7 @@ proc canResolveCall(fn) param : bool do
   .. note:: Does not attempt to resolve the body of the invoked function.
 
     */
+@chpldoc.nodoc
 @unstable(reason="The 'canResolve...' family of procedures are unstable")
 proc canResolveCall(fn, args...) param : bool do
   return __primitive("resolves", fn((...args)));
