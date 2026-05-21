@@ -233,49 +233,55 @@ class FindUndocumentedSymbols:
         asts: List[chapel.AstNode],
         ignore_deprecated: bool = False,
         ignore_unstable: bool = False,
+        ignore_enum_elements: bool = False,
     ):
         self.asts = asts
         self.ignore_deprecated = ignore_deprecated
         self.ignore_unstable = ignore_unstable
+        self.ignore_enum_elements = ignore_enum_elements
 
-    def _parent_is_module_or_aggregate(node: chapel.AstNode, match):
-        return isinstance(node.parent(), (chapel.Module, chapel.AggregateDecl))
+        _parent_is_module_or_aggregate = lambda node, match: isinstance(
+            node.parent(), (chapel.Module, chapel.AggregateDecl)
+        )
 
-    # (pattern, extra check fun)
-    documentable_symbol_patterns = {
-        "function": (
-            chapel.Function,
-            lambda node, match: isinstance(
-                node.parent(),
-                (chapel.Module, chapel.AggregateDecl, chapel.Interface),
+        # (pattern, extra check fun)
+        self.documentable_symbol_patterns = {
+            "function": (
+                chapel.Function,
+                lambda node, match: isinstance(
+                    node.parent(),
+                    (chapel.Module, chapel.AggregateDecl, chapel.Interface),
+                ),
             ),
-        ),
-        "module": (
-            chapel.Module,
-            lambda node, match: node.kind() != "implicit",
-        ),
-        "aggregate_decl": (
-            chapel.AggregateDecl,
-            _parent_is_module_or_aggregate,
-        ),
-        "decl": (
-            chapel.Variable,
-            _parent_is_module_or_aggregate,
-        ),
-        "multi_decl": (
-            chapel.MultiDecl,
-            _parent_is_module_or_aggregate,
-        ),
-        "enum": (
-            chapel.Enum,
-            _parent_is_module_or_aggregate,
-        ),
-        "enum_element": (chapel.EnumElement, None),
-        "interface": (
-            chapel.Interface,
-            _parent_is_module_or_aggregate,
-        ),
-    }
+            "module": (
+                chapel.Module,
+                lambda node, match: node.kind() != "implicit",
+            ),
+            "aggregate_decl": (
+                chapel.AggregateDecl,
+                _parent_is_module_or_aggregate,
+            ),
+            "decl": (
+                chapel.Variable,
+                _parent_is_module_or_aggregate,
+            ),
+            "multi_decl": (
+                chapel.MultiDecl,
+                _parent_is_module_or_aggregate,
+            ),
+            "enum": (
+                chapel.Enum,
+                _parent_is_module_or_aggregate,
+            ),
+            "enum_element": (
+                chapel.EnumElement,
+                lambda node, match: not ignore_enum_elements,
+            ),
+            "interface": (
+                chapel.Interface,
+                _parent_is_module_or_aggregate,
+            ),
+        }
 
     def _get_previous_sibling(self, node: chapel.AstNode):
         parent = node.parent()
@@ -308,7 +314,7 @@ class FindUndocumentedSymbols:
         for (
             pat,
             check_func,
-        ) in FindUndocumentedSymbols.documentable_symbol_patterns.values():
+        ) in self.documentable_symbol_patterns.values():
             matches = [
                 m
                 for m in each_matching(root, pat, iterator=_preorder)
@@ -374,6 +380,12 @@ def main(raw_args: List[str]) -> int:
         action="store_true",
         default=False,
         help="don't report warnings for unstable symbols",
+    )
+    a.add_argument(
+        "--ignore-enum-elements",
+        action="store_true",
+        default=False,
+        help="don't report warnings for enum elements",
     )
     # hidden option, converts warnings to errors to be used in a ci
     a.add_argument("--ci", action="store_true", default=False, help=ap.SUPPRESS)
