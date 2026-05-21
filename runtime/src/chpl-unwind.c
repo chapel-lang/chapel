@@ -121,6 +121,9 @@ static int chpl_unwind_refineGetLineNum(void *addr) {
   // then space
   // then the address
 
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                          CHPL_LLVM_BIN_DIR);
+
   int scriptLen = strlen(script);
   int llvmBinDirLen = strlen(CHPL_LLVM_BIN_DIR);
 
