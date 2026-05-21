@@ -33,6 +33,7 @@
 #define _chpl_tasks_impl_fns_h_
 
 #include "chpl-locale-model.h"
+#include "chpl-prginfo.h"
 #include "chpltypes.h"
 
 #include <assert.h>
@@ -181,6 +182,8 @@ static inline
 void chpl_task_setSubloc(c_sublocid_t full_subloc)
 {
     qthread_shepherd_id_t curr_shep;
+    CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                            CHPL_LOCALE_MODEL);
 
     // We allow using c_sublocid_none to represent the CPU in the gpu locale
     // model. This isn't currently used by the numa (or other locale) models.

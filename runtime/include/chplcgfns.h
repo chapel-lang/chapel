@@ -42,7 +42,6 @@ extern "C" {
 #endif
 
 /* defined in chpl_compilation_config.c: */
-extern const char* CHPL_LOCALE_MODEL;
 extern const char* CHPL_COMM;
 extern const char* CHPL_COMM_SUBSTRATE;
 extern const char* CHPL_GASNET_SEGMENT;
