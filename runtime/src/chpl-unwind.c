@@ -242,6 +242,9 @@ static int chpl_unwind_refineGetLineNum(void *addr) {
 static unsigned int chpl_unwind_getLineNum(unw_cursor_t* cursor,
                                            unw_word_t wordValue,
                                            int tableIdx) {
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                          chpl_filenumSymTable);
+
   // use the procedure line number
   unsigned int line = chpl_filenumSymTable[tableIdx + 1];
 
@@ -332,6 +335,8 @@ static void chpl_stack_unwind_helper(enum chpl_stack_unwind_mode mode, char sep,
 
   CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
                           chpl_funSymTable);
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                          chpl_filenumSymTable);
 
   // This loop does the effective stack unwind, see libunwind documentation
   while (unw_step(&cursor) > 0) {
