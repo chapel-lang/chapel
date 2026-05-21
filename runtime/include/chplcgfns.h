@@ -48,7 +48,6 @@ extern const char* CHPL_TARGET_MEM;
 extern const char* CHPL_LLVM;
 extern const char* CHPL_LLVM_BIN_DIR;
 extern const char* CHPL_UNWIND;
-extern const char* CHPL_RUNTIME_LIB;
 extern const char* CHPL_RUNTIME_INCL;
 extern const char* CHPL_THIRD_PARTY;
 extern const int CHPL_CACHE_REMOTE;
