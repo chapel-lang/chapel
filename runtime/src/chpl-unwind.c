@@ -29,6 +29,7 @@
 
 #include "chplrt.h"
 #include "chpl-linefile-support.h"
+#include "chpl-prginfo.h"
 #include "chplcgfns.h"
 
 #include "chpl-unwind.h"
@@ -383,6 +384,9 @@ void chpl_stack_unwind(FILE* out, char sep) {
   if (!should_print) {
     return;
   }
+
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER, CHPL_UNWIND);
+
   chpl_stack_unwind_helper(CHPL_STACK_UNWIND_MODE_FILE, sep, out);
   if (!user_set && strcmp(CHPL_UNWIND, "none") != 0) {
     fprintf(out, "%cDisable full stacktrace by setting 'CHPL_RT_UNWIND=0'%c", sep, sep);
