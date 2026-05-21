@@ -169,11 +169,11 @@ void chpl_vdebug_start (const char *fileroot, double now) {
   if (chpl_nodeID == 0) {
     int ix = 0;
     int numFIDnames = 0;
+    chpl_rt_prginfo* prg = CHPL_RT_ROOT_PROGRAM_PLACEHOLDER;
 
-    CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
-                            chpl_compileDirectory);
-    CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
-                            chpl_saveCDir);
+    CHPL_RT_PRGINFO_DECLARE(prg, chpl_compileDirectory);
+    CHPL_RT_PRGINFO_DECLARE(prg, chpl_saveCDir);
+    CHPL_RT_PRGINFO_DECLARE(prg, CHPL_HOME);
 
     chpl_dprintf (chpl_vdebug_fd, "CHPL_HOME: %s\n", CHPL_HOME);
     chpl_dprintf (chpl_vdebug_fd, "DIR: %s\n", chpl_compileDirectory);

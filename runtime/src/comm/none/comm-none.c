@@ -148,7 +148,7 @@ static chpl_bool chpl_lldb_supports_python(void) {
 }
 
 int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
-
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER, CHPL_HOME);
   char* command = (char*)"gdb -q";
 
   const char* gdb_commands = chpl_glom_strings(2, CHPL_HOME, "/runtime/etc/debug/gdb.commands");
@@ -179,7 +179,7 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
 }
 
 int chpl_comm_run_in_lldb(int argc, char* argv[], int lldbArgnum, int* status) {
-
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER, CHPL_HOME);
   char* command = (char*)"lldb";
 
   const char* lldb_commands = chpl_glom_strings(2, CHPL_HOME, "/runtime/etc/debug/lldb.commands");
