@@ -138,7 +138,6 @@ PACKAGES_TO_DOCUMENT = \
 	packages/Collection.chpl \
 	packages/ConcurrentMap.chpl \
 	packages/CopyAggregation.chpl \
-	packages/Crypto.chpl \
 	packages/Curl.chpl \
 	packages/DistributedBag.chpl \
 	packages/DistributedDeque.chpl \
