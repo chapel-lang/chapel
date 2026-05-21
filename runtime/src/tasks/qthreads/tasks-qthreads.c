@@ -564,6 +564,9 @@ static chpl_bool setupGuardPages(void) {
     // default value set by compiler (--[no-]stack-checks)
     chpl_bool defaultVal = (CHPL_STACK_CHECKS == 1);
 
+    CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                            CHPL_TARGET_CPU);
+
     // Setup guard pages. Default to enabling guard pages, only disabling them
     // under the following conditions (Precedence high-to-low):
     //  - Guard pages disabled at configure time
