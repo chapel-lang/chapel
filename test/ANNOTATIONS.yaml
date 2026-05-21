@@ -657,10 +657,13 @@ all:
       config: 16-node-hpe-cray-ex
   05/13/26:
     - text: Upgrade system LLVM to 22
-      config: chapcs, 16-node-apollo-hdr, 1-node-mi250x
+      config: 16-node-apollo-hdr
+  05/14/26:
+    - text: Upgrade system LLVM to 22
+      config: chapcs, 16-node-hpe-cray-ex, 1-node-mi250x
   05/20/26:
     - text: Upgrade system LLVM to 22
-      config: 16-node-hpe-cray-ex, 1-node-a100
+      config: 1-node-a100
 
 # End all
 
