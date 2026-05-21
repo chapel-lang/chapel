@@ -10,7 +10,7 @@ Ok = False
 if platform != 'linux64':
     Ok = False  # not linux
 else:
-    sub = subprocess.run(['pkg-config', '--exists', 'libcrypto >= 1.1'])
+    sub = subprocess.run(['pkg-config', '--exists', 'openssl >= 1.1'])
     if sub.returncode == 0:
         Ok = True
 
