@@ -27,6 +27,7 @@ COMMON_LAUNCHER_SRCS = \
 
 ONLY_LAUNCHER_SRCS = \
 	chpl-launcher-common.c \
+	chpl-launcher-shadow-symbols.c \
 	chpl-prginfo-launcher.c
 
 COMMON_NOGEN_SRCS = \

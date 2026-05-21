@@ -30,30 +30,33 @@ extern chpl_rt_prginfo* chpl_prepareProgramInfoHere(void);
 
 int main(int argc, char* argv[]) {
   // Run the code that initializes our program information.
-  chpl_rt_prginfo* our_root_prg = chpl_prepareProgramInfoHere();
-  chpl_rt_prginfo* got_root_prg = NULL;
+  chpl_rt_prginfo* prg = chpl_prepareProgramInfoHere();
+  chpl_rt_prginfo* got_prg = NULL;
 
   // Initialize the runtime, giving it our program info.
-  chpl_rt_init(our_root_prg, argc, argv);
+  chpl_rt_init(prg, argc, argv);
 
   // Have the runtime fetch the root program.
-  got_root_prg = CHPL_RT_PRGINFO_ROOT;
+  got_prg = CHPL_RT_PRGINFO_ROOT;
 
   // It should match what we gave 'chpl_rt_init'.
-  if (got_root_prg && our_root_prg != got_root_prg) {
+  if (got_prg && prg != got_prg) {
     chpl_internal_error("a Chapel program tried to initialize the Chapel "
                         "runtime, but the root program was already bound");
 
-  } else if (!got_root_prg) {
+  } else if (!got_prg) {
     chpl_internal_error("the Chapel runtime has not bound a root program");
   }
 
   // Run the main function for this node.
   chpl_task_callMain(chpl_executable_init);
 
+  // Fetch the main argument from the program data.
+  chpl_main_argument* main_arg_ptr = chpl_rt_prginfo_main_argument(prg);
+
   // have everyone exit, returning the value returned by the user written main
   // or 0 if it didn't return anything
-  chpl_exit_all(chpl_gen_main_arg.return_value);
+  chpl_exit_all(main_arg_ptr->return_value);
 
   return 0; // should never get here
 }

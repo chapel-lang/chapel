@@ -47,6 +47,15 @@ module ChapelProgramEntrypoints {
     chpl_error(msg, 0, 0);
   }
 
+  pragma "locale private"   // TODO: May not need this, but...
+  pragma "no init"          // Don't overwite work done later.
+  private var chpl_genMainArg: chpl_main_argument;
+
+  // For the runtime. Get a pointer to the main argument on this locale.
+  export proc chpl_genMainArgPtr: c_ptr(chpl_main_argument) {
+    return c_ptrTo(chpl_genMainArg);
+  }
+
   //
   // A program using Chapel as a library might look like:
   //

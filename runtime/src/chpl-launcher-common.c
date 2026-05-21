@@ -42,10 +42,6 @@
 // used in get_enviro_keys
 extern char** environ;
 
-// This global variable stores the arguments to main
-// that should be handled by the program.
-chpl_main_argument chpl_gen_main_arg;
-
 //
 // Are we doing a dry run, printing the system launcher command but
 // not running it?
@@ -640,10 +636,13 @@ int handleNonstandardArg(int* argc, char* argv[], int argNum,
   }
 
   if (numHandled == 0) {
-    if (CHPL_RT_PRGINFO_DATA(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
-                             mainHasArgs)) {
-      chpl_gen_main_arg.argv[chpl_gen_main_arg.argc] = argv[argNum];
-      chpl_gen_main_arg.argc++;
+    chpl_rt_prginfo* prg = CHPL_RT_ROOT_PROGRAM_PLACEHOLDER;
+
+    if (CHPL_RT_PRGINFO_DATA(prg, mainHasArgs)) {
+      chpl_main_argument* main_arg_ptr = chpl_rt_prginfo_main_argument(prg);
+
+      main_arg_ptr->argv[main_arg_ptr->argc] = argv[argNum];
+      main_arg_ptr->argc++;
     } else {
       char* message;
       message = chpl_glom_strings(3,"Unexpected flag:  \"",argv[argNum],"\"");
@@ -807,13 +806,15 @@ int chpl_launch_prep(int* c_argc, char* argv[], int32_t* c_execNumLocales,
   int32_t execNumLocales;
   int32_t execNumLocalesPerNode;
   int argc = *c_argc;
+  chpl_rt_prginfo* prg = CHPL_RT_ROOT_PROGRAM_PLACEHOLDER;
+  chpl_main_argument* main_arg_ptr = chpl_rt_prginfo_main_argument(prg);
 
   // Set up main argument parsing.
-  chpl_gen_main_arg.argv = chpl_mem_allocMany(argc, sizeof(char*),
-                                      CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
-  chpl_gen_main_arg.argv[0] = argv[0];
-  chpl_gen_main_arg.argc = 1;
-  chpl_gen_main_arg.return_value = 0;
+  main_arg_ptr->argv = chpl_mem_allocMany(argc, sizeof(char*),
+                                          CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
+  main_arg_ptr->argv[0] = argv[0];
+  main_arg_ptr->argc = 1;
+  main_arg_ptr->return_value = 0;
 
   // Call a callback to create the table which stores config vars.
   CHPL_RT_PRGINFO_DATA(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
