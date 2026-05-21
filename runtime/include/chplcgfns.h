@@ -54,7 +54,6 @@ extern const char* CHPL_COMM_SUBSTRATE;
 extern const char* CHPL_GASNET_SEGMENT;
 extern const char* CHPL_COMM_OFI_OOB;
 extern const char* CHPL_LAUNCHER;
-extern const char* CHPL_TIMERS;
 extern const char* CHPL_TARGET_MEM;
 extern const char* CHPL_MAKE;
 extern const char* CHPL_ATOMICS;
