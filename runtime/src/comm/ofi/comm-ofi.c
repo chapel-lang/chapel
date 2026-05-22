@@ -40,6 +40,7 @@
 #include "chpl-mem.h"
 #include "chpl-mem-sys.h"
 #include "chplsys.h"
+#include "chpl-prginfo.h"
 #include "chpl-tasks.h"
 #include "chpl-topo.h"
 #include "chpltypes.h"
