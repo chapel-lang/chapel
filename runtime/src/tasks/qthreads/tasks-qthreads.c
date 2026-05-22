@@ -505,6 +505,10 @@ static void setupAvailableParallelism(int32_t maxThreads) {
         if (0 < maxThreads && maxThreads < hwpar) {
           if (chpl_nodeID == 0) {
             char msg[1024];
+
+            CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                                    CHPL_COMM);
+
             snprintf(msg, sizeof(msg),
                      "The CHPL_COMM setting is limiting the number of threads "
                      "to %d, rather than the hardware's preference of %d.%s",

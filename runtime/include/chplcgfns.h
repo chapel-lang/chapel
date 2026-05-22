@@ -42,7 +42,6 @@ extern "C" {
 #endif
 
 /* defined in chpl_compilation_config.c: */
-extern const char* CHPL_COMM;
 extern const char* CHPL_TARGET_MEM;
 extern const char* CHPL_THIRD_PARTY;
 
