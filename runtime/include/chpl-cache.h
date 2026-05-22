@@ -35,9 +35,6 @@
 extern "C" {
 #endif
 
-// Is the cache supposed to be enabled? (set at compile time)
-extern const int CHPL_CACHE_REMOTE;
-
 #if defined(__SANITIZE_ADDRESS__)
 #define CHPL_ASAN 1
 #endif
@@ -55,6 +52,9 @@ extern const int CHPL_CACHE_REMOTE;
 static inline
 void chpl_cache_warn_if_disabled(void)
 {
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                          CHPL_CACHE_REMOTE);
+
   if (CHPL_CACHE_REMOTE && !chpl_env_rt_get_bool("CACHE_QUIET", false)) {
     if (CHPL_ASAN) {
       chpl_warning("Disabling --cache-remote due to incompatibility with "
@@ -69,6 +69,9 @@ void chpl_cache_warn_if_disabled(void)
 static inline
 int chpl_cache_enabled(void)
 {
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                          CHPL_CACHE_REMOTE);
+
   // The remote cache is not compatible with ASan, and it uses thread local
   // storage, so if tasks can migrate between threads we lose our ability to
   // correctly fence.

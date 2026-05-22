@@ -42,54 +42,14 @@ extern "C" {
 #endif
 
 /* defined in chpl_compilation_config.c: */
-extern const char* chpl_compileCommand;
-extern const char* chpl_compileVersion;
-extern const char* chpl_compileDirectory;
-extern const char* chpl_saveCDir;
-
-extern const char* CHPL_HOME;
-extern const char* CHPL_HOST_PLATFORM;
-extern const char* CHPL_HOST_COMPILER;
-extern const char* CHPL_TARGET_PLATFORM;
-extern const char* CHPL_TARGET_COMPILER;
-extern const char* CHPL_TARGET_CPU;
-extern const char* CHPL_LOCALE_MODEL;
 extern const char* CHPL_COMM;
-extern const char* CHPL_COMM_SUBSTRATE;
-extern const char* CHPL_GASNET_SEGMENT;
-extern const char* CHPL_LIBFABRIC;
-extern const char* CHPL_COMM_OFI_OOB;
-extern const char* CHPL_TASKS;
-extern const char* CHPL_LAUNCHER;
-extern const char* CHPL_TIMERS;
 extern const char* CHPL_TARGET_MEM;
-extern const char* CHPL_MAKE;
-extern const char* CHPL_ATOMICS;
-extern const char* CHPL_NETWORK_ATOMICS;
-extern const char* CHPL_GMP;
-extern const char* CHPL_HWLOC;
-extern const char* CHPL_RE2;
-extern const char* CHPL_LLVM;
-extern const char* CHPL_LLVM_BIN_DIR;
-extern const char* CHPL_AUX_FILESYS;
-extern const char* CHPL_UNWIND;
-extern const char* CHPL_RUNTIME_LIB;
-extern const char* CHPL_RUNTIME_INCL;
 extern const char* CHPL_THIRD_PARTY;
-extern const int CHPL_STACK_CHECKS;
-extern const int CHPL_CACHE_REMOTE;
-extern const int CHPL_INTERLEAVE_MEM;
 
 // Sorted lookup table of filenames used with insertLineNumbers for error
 // messages and logging. Defined in chpl_compilation_config.c (needed by launchers)
 extern const c_string chpl_filenameTable[];
 extern const int32_t chpl_filenameTableSize;
-
-// Lookup tables used as a symbol table by the stack unwinder for translating
-// C symbols into Chapel symbols. Defined in chpl_compilation_config.c
-extern const c_string chpl_funSymTable[];
-extern const int chpl_filenumSymTable[];
-extern const int32_t chpl_sizeSymTable;
 
 /* generated */
 extern const chpl_fn_p chpl_ftable[];
@@ -116,9 +76,6 @@ extern void* const chpl_global_serialize_table[];
 //
 extern const char* const chpl_mem_descs[];
 extern const int chpl_mem_numDescs;
-
-extern const int launcher_is_mli;
-extern const char* launcher_mli_real_name;
 
 #ifdef __cplusplus
 }
