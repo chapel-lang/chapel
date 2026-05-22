@@ -30,6 +30,7 @@
 #include "chpl-tasks.h"
 #include "config.h"
 #include "chpl-error.h"
+#include "chpl-prginfo.h"
 #include "chplsys.h"
 #include <assert.h>
 #include <errno.h>

@@ -32,6 +32,7 @@
 #include "chplcgfns.h"
 #include "chpl-gen-includes.h"
 #include "chpl-linefile-support.h"
+#include "chpl-prginfo.h"
 
 // Don't get warning macros for chpl_comm_get etc
 #include "chpl-comm-no-warning-macros.h"
