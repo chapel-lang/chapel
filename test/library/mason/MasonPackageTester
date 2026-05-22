@@ -48,7 +48,9 @@ if [[ $? -eq 0 ]]; then
   echo "[Success matching unit tests for $BRICK_NAME]"
 else
   echo "[Error running unit tests for $BRICK_NAME]"
+  echo "[Output from mason test for $BRICK_NAME]"
+  cat $DIR/mason.exec.log
 fi
+test_end
 
-echo "[Finished subtest $DIR]"
-
+subtest_end
