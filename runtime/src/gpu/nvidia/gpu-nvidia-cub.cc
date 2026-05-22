@@ -65,7 +65,7 @@ GPU_DEV_CUB_WRAP(DEF_ONE_REDUCE_RET_VAL, Max, max)
 
 #undef DEF_ONE_REDUCE_RET_VAL
 
-#if defined(CUDA_VERSION) && CUDA_VERSION >= 129
+#if defined(CHPL_CUDA_VERSION) && CHPL_CUDA_VERSION >= 129
 #define DEF_ONE_REDUCE_RET_VAL_IDX(cub_kind, chpl_kind, data_type) \
 void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
                                                     data_type* val, int* idx,\
