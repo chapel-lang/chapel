@@ -57,35 +57,6 @@ GPU_DEV_CUB_WRAP(DEF_ONE_REDUCE_RET_VAL, Max, max)
 
 #undef DEF_ONE_REDUCE_RET_VAL
 
-#if defined(CHPL_ROCM_VERSION) && CHPL_ROCM_VERSION >= 710
-#define DEF_ONE_REDUCE_RET_VAL_IDX(impl_kind, chpl_kind, data_type) \
-void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
-                                                    data_type* val, int* idx,\
-                                                    void* stream) {\
-  data_type* result_val; \
-  int* result_idx; \
-  ROCM_CALL(hipMalloc(&result_val, sizeof(data_type))); \
-  ROCM_CALL(hipMalloc(&result_idx, sizeof(int))); \
-  void* temp = NULL; \
-  size_t temp_bytes = 0; \
-  ROCM_CALL(hipcub::DeviceReduce::impl_kind(temp, temp_bytes, data,\
-                                            (data_type*)result_val, \
-                                            (int*)result_idx,\
-                                            n, (hipStream_t)stream)); \
-  ROCM_CALL(hipMalloc(&temp, temp_bytes)); \
-  ROCM_CALL(hipcub::DeviceReduce::impl_kind(temp, temp_bytes, data,\
-                                            (data_type*)result_val, \
-                                            (int*)result_idx,\
-                                            n, (hipStream_t)stream)); \
-  ROCM_CALL(hipMemcpyDtoHAsync(val, result_val, sizeof(data_type),\
-                               (hipStream_t)stream)); \
-  ROCM_CALL(hipMemcpyDtoHAsync(idx, result_idx, sizeof(int),\
-                               (hipStream_t)stream)); \
-  ROCM_CALL(hipFree(result_val)); \
-  ROCM_CALL(hipFree(result_idx)); \
-  ROCM_CALL(hipFree(temp)); \
-}
-#else
 #define DEF_ONE_REDUCE_RET_VAL_IDX(impl_kind, chpl_kind, data_type) \
 void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
                                                     data_type* val, int* idx,\
@@ -108,7 +79,6 @@ void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
   ROCM_CALL(hipFree(result)); \
   ROCM_CALL(hipFree(temp)); \
 }
-#endif
 
 GPU_DEV_CUB_WRAP(DEF_ONE_REDUCE_RET_VAL_IDX, ArgMin, minloc)
 GPU_DEV_CUB_WRAP(DEF_ONE_REDUCE_RET_VAL_IDX, ArgMax, maxloc)
