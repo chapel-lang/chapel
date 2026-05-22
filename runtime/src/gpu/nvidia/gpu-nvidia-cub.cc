@@ -69,22 +69,25 @@ GPU_DEV_CUB_WRAP(DEF_ONE_REDUCE_RET_VAL, Max, max)
 void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
                                                     data_type* val, int* idx,\
                                                     void* stream) {\
-  using kvp = cub::KeyValuePair<int,data_type>; \
-  CUdeviceptr result; \
-  CUDA_CALL(cuMemAlloc(&result, sizeof(kvp))); \
+  CUdeviceptr result_val; \
+  CUdeviceptr result_idx; \
+  CUDA_CALL(cuMemAlloc(&result_val, sizeof(data_type))); \
+  CUDA_CALL(cuMemAlloc(&result_idx, sizeof(int))); \
   void* temp = NULL; \
   size_t temp_bytes = 0; \
-  CUDA_CALL(cub::DeviceReduce::cub_kind(temp, temp_bytes, data, (kvp*)result, n,\
+  CUDA_CALL(cub::DeviceReduce::cub_kind(temp, temp_bytes, data,\
+                              (data_type*)result_val, (int*)result_idx, n,\
                               (CUstream)stream));\
   CUDA_CALL(cuMemAlloc(((CUdeviceptr*)&temp), temp_bytes)); \
-  CUDA_CALL(cub::DeviceReduce::cub_kind(temp, temp_bytes, data, (kvp*)result, n,\
+  CUDA_CALL(cub::DeviceReduce::cub_kind(temp, temp_bytes, data,\
+                              (data_type*)result_val, (int*)result_idx, n,\
                               (CUstream)stream));\
-  kvp result_host; \
-  CUDA_CALL(cuMemcpyDtoHAsync(&result_host, result, sizeof(kvp),\
+  CUDA_CALL(cuMemcpyDtoHAsync(val, result_val, sizeof(data_type),\
                               (CUstream)stream)); \
-  *val = result_host.value; \
-  *idx = result_host.key; \
-  CUDA_CALL(cuMemFree(result)); \
+  CUDA_CALL(cuMemcpyDtoHAsync(idx, result_idx, sizeof(int),\
+                              (CUstream)stream)); \
+  CUDA_CALL(cuMemFree(result_val)); \
+  CUDA_CALL(cuMemFree(result_idx)); \
   CUDA_CALL(cuMemFree((CUdeviceptr)temp)); \
 }
 
