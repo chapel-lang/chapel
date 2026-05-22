@@ -742,8 +742,15 @@ class ChapelLanguageServer(LanguageServer):
         if not subs:
             return None
 
+        orig_str = ret_str
         for ph_str, replacement in subs.items():
             ret_str = ret_str.replace(ph_str, replacement)
+
+        # If no substitution was actually applied (the final type does not
+        # depend on a placeholder), don't show a generic inlay, common inlays
+        # will get it.
+        if ret_str == orig_str:
+            return None
 
         return ret_str
 
