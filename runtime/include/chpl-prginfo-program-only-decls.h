@@ -27,6 +27,9 @@
 // DO NOT INCLUDE THIS HEADER WITHIN RUNTIME CODE!
 //
 
+//
+// This header fixes issues with '--incremental' compilation.
+//
 // This header is a workaround for the fact that the compiler cannot tell
 // the types of certain global compiler-generated symbols such as
 // 'CreateConfigVarTable' or 'mainHasArgs' because it previously relied
@@ -49,7 +52,25 @@
 extern void CreateConfigVarTable(void);
 extern const int mainHasArgs;
 extern const int mainPreserveDelimiter;
+extern const char* chpl_compileCommand;
 extern char* chpl_executionCommand;
+extern const char* chpl_compileDirectory;
+extern const char* chpl_saveCDir;
 extern const int warnUnstable;
+extern const char* CHPL_LOCALE_MODEL;
+extern const char* CHPL_TARGET_CPU;
+extern const char* CHPL_TARGET_PLATFORM;
+extern const char* CHPL_UNWIND;
+extern const char* CHPL_HOME;
+extern const char* CHPL_LAUNCHER;
+extern const char* CHPL_GASNET_SEGMENT;
+extern const char* CHPL_LLVM_BIN_DIR;
+extern const int CHPL_INTERLEAVE_MEM;
+extern const int CHPL_STACK_CHECKS;
+extern const int CHPL_CACHE_REMOTE;
+extern const int chpl_sizeSymTable;
+extern const int chpl_filenumSymTable[];
+extern const c_string chpl_funSymTable[];
+
 
 #endif
