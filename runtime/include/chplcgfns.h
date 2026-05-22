@@ -63,14 +63,6 @@ extern const int chpl_private_broadcast_table_len;
 
 extern void* const chpl_global_serialize_table[];
 
-//
-// The compiler generates a separate array of descriptions for the
-// allocation types it defines.  Indices into that compiler-generated
-// array conceptually start after the CHPL_RT_MD_NUM enum value in
-// chpl-mem.h).  This is that compiler-generated array, and how many
-// entries it has (also defined in the generated code).
-//
-extern const char* const chpl_mem_descs[];
 extern const int chpl_mem_numDescs;
 
 #ifdef __cplusplus
