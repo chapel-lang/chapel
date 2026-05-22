@@ -655,6 +655,15 @@ all:
   05/06/26:
     - text: System hardware/software change
       config: 16-node-hpe-cray-ex
+  05/13/26:
+    - text: Upgrade system LLVM to 22
+      config: 16-node-apollo-hdr
+  05/14/26:
+    - text: Upgrade system LLVM to 22
+      config: chapcs, 16-node-hpe-cray-ex, 1-node-mi250x
+  05/20/26:
+    - text: Upgrade system LLVM to 22
+      config: 1-node-a100
 
 # End all
 
@@ -811,6 +820,8 @@ chameneos-redux:
     - Enable parallelism for shape-ful expressions over ranges (#11501)
   03/20/20:
     - Fix up chameneos benchmarks (#15250)
+  05/14/26:
+    - Investigate chameneos regressions due to LLVM-22 (#28839)
 
 CoMD:
   07/26/17:
@@ -1769,6 +1780,8 @@ nbody:
     - Update my study version of nbody to be like nbody#2, but using foreach loops (#26044)
   08/11/25:
     - Some cleanup and add future for line numbers (#27600)
+  05/14/26:
+    - Investigate nbody regressions due to LLVM-22 (#28837)
  
 no-op:
   02/24/17:
@@ -2142,6 +2155,8 @@ spectralnorm:
     - brad version changed to serial implementation (#11904)
   02/18/22:
     - A spectral norm variant that avoids a reciprocal and unrolls by two (#19271)
+  05/14/26:
+    - Investigate spectralnorm regressions due to LLVM-22 (#28838)
 
 spectral-norm-specify-step:
   01/21/15:
