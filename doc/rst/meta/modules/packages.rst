@@ -18,7 +18,6 @@ Algorithms
 .. toctree::
    :maxdepth: 1
 
-   Crypto <packages/Crypto>
    NPBRandom <packages/NPBRandom>
    Search <packages/Search>
 
