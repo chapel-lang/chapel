@@ -671,6 +671,9 @@ class ChapelLanguageServer(LanguageServer):
         if fn.return_type() is not None:
             return None
 
+        if sig.needs_instantiation():
+            return None
+
         qt = sig.return_type()
         if qt is None:
             return None
