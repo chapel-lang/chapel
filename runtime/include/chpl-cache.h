@@ -25,6 +25,7 @@
 #include "chpl-atomics.h"
 #include "chpl-comm-task-decls.h"
 #include "chpl-env.h"
+#include "chpl-prginfo.h"
 #include "chpl-tasks.h"
 #include "chpl-error.h"
 

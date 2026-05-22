@@ -30,6 +30,7 @@
 #include "chplcgfns.h"
 #include "chpl-comm-launch.h"
 #include "chpl-env.h"
+#include "chpl-prginfo.h"
 
 
 void chpl_comm_preLaunch(int32_t numLocales) {
