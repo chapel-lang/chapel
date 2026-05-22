@@ -377,11 +377,6 @@ CLASS_BEGIN(Try)
                bool, return node->isTryBang())
 CLASS_END(Try)
 
-CLASS_BEGIN(TypeQuery)
-  PLAIN_GETTER(TypeQuery, placeholder_type, "Get the PlaceholderType corresponding to this TypeQuery node",
-               const chpl::types::PlaceholderType*, return chpl::types::PlaceholderType::get(context, node->id()))
-CLASS_END(TypeQuery)
-
 CLASS_BEGIN(Use)
   PLAIN_GETTER(Use, visibility, "Get the visibility of this Use node",
                const char*, return Decl::visibilityToString(node->visibility()))
@@ -680,7 +675,7 @@ CLASS_BEGIN(Function)
                   return TypedSignatureObject::create(contextObject, {sig, poiScope});
                }
                return {})
-  PLAIN_GETTER(Function, template_signature, "Compute a template typed signature for this Function node, where each generic formal is assigned a unique PlaceholderType. Can be used to infer return types of generic functions.",
+  PLAIN_GETTER(Function, template_signature, "Compute a template typed signature for this Function node, where each generic formal is assigned a unique PlaceholderType.",
                std::optional<TypedSignatureObject*>,
 
                // Dummy RCs are not correct for nested functions.

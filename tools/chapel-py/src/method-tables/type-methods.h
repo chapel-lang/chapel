@@ -69,7 +69,7 @@ CLASS_BEGIN(ClassType)
 CLASS_END(ClassType)
 
 CLASS_BEGIN(PlaceholderType)
-  PLAIN_GETTER(PlaceholderType, node, "Get the AST node corresponding to this PlaceholderType's ID",
+  PLAIN_GETTER(PlaceholderType, originator, "Get the AST node corresponding to this PlaceholderType's ID",
                Nilable<const chpl::uast::AstNode*>,
                auto& id = node->id();
                if (id.isEmpty()) return nullptr;

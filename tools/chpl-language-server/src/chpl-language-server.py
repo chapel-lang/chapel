@@ -683,6 +683,9 @@ class ChapelLanguageServer(LanguageServer):
         if template_sig is None:
             return None
 
+        if template_sig.needs_instantiation():
+            return None
+
         with context.track_errors():
             qt = template_sig.return_type()
         if qt is None:
@@ -713,7 +716,7 @@ class ChapelLanguageServer(LanguageServer):
                     continue
 
                 if isinstance(node, chapel.Formal):
-                    if node == t.node() or node.type_expression() == t.node():
+                    if node == t.originator() or node.type_expression() == t.originator():
                         if qt == "type":
                             subs[str(t)] = node.name()
                         else:
