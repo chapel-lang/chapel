@@ -30,10 +30,12 @@
 #include "chplrt.h"
 #include "chpl-dynamic-loading.h"
 #include "chplcgfns.h"
+#include "chpl-prginfo.h"
 
 int CHPL_RTLD_LAZY = RTLD_LAZY;
 
 void** chpl_get_ftable(void) {
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER, chpl_ftable);
   return (void**) chpl_ftable;
 }
 

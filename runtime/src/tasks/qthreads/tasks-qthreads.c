@@ -1002,6 +1002,8 @@ void chpl_task_addTask(chpl_fn_int_t       fid,
                        int                 lineno,
                        int32_t             filename)
 {
+    CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER, chpl_ftable);
+
     chpl_fn_p requested_fn = chpl_ftable[fid];
 
     // We allow using c_sublocid_none to represent the CPU in the gpu locale
@@ -1075,6 +1077,7 @@ void chpl_task_taskCallFTable(chpl_fn_int_t fid,
 {
     PROFILE_INCR(profile_task_taskCallFTable,1);
 
+    CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER, chpl_ftable);
     taskCallBody(fid, chpl_ftable[fid], arg, arg_size, subloc, lineno, filename);
 }
 

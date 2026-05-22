@@ -71,6 +71,7 @@
 #include "chpl-mem.h"
 #include "chpl-mem-desc.h"
 #include "chpl-mem-sys.h"
+#include "chpl-prginfo.h"
 #include "chplsys.h"
 #include "chpl-tasks.h"
 #include "chpltypes.h"
@@ -4198,6 +4199,8 @@ void rf_handler(gni_cq_entry_t* ev)
         if (f_c->comm.rf_done != NULL) {
           fn = (chpl_fn_p) fork_call_wrapper_blocking;
         } else {
+          CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                                  chpl_ftable);
           fn = (chpl_fn_p) chpl_ftable[f_c->comm.fid];
         }
         chpl_task_startMovedTask(f_c->comm.fid,
