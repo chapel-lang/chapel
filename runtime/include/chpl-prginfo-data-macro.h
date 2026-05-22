@@ -282,7 +282,7 @@ E_CONSTANT_RT(CHPL_STACK_CHECKS, int)
 /** CODE-GENERATED
     Value of '$CHPL_TARGET_PLATFORM' when this program was compiled.
 */
-E_CONSTANT_RT(CHPL_TARGET_PLATFORM, const char*)
+E_CONSTANT(CHPL_TARGET_PLATFORM, const char*)
 
 /** CODE-GENERATED
     Value of '$CHPL_TARGET_MEM' when this program was compiled.
