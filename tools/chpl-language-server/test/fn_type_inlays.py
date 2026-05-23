@@ -46,7 +46,9 @@ async def test_fn_type_inlay_concrete_int(client: LanguageClient):
            """
     inlays = [(pos((0, 11)), "int(64)")]
     async with source_file(client, file) as doc:
-        await check_type_inlay_hints(client, doc, rng((0, 0), endpos(file)), inlays)
+        await check_type_inlay_hints(
+            client, doc, rng((0, 0), endpos(file)), inlays
+        )
 
 
 @pytest.mark.asyncio
@@ -61,7 +63,9 @@ async def test_fn_type_inlay_concrete_real(client: LanguageClient):
            """
     inlays = [(pos((0, 10)), "real(64)")]
     async with source_file(client, file) as doc:
-        await check_type_inlay_hints(client, doc, rng((0, 0), endpos(file)), inlays)
+        await check_type_inlay_hints(
+            client, doc, rng((0, 0), endpos(file)), inlays
+        )
 
 
 @pytest.mark.asyncio
@@ -89,7 +93,9 @@ async def test_fn_type_inlay_generic_const_return(client: LanguageClient):
            """
     inlays = [(pos((0, 12)), "int(64)")]
     async with source_file(client, file) as doc:
-        await check_type_inlay_hints(client, doc, rng((0, 0), endpos(file)), inlays)
+        await check_type_inlay_hints(
+            client, doc, rng((0, 0), endpos(file)), inlays
+        )
 
 
 @pytest.mark.asyncio
@@ -102,7 +108,9 @@ async def test_fn_type_inlay_return_intent_type(client: LanguageClient):
            """
     inlays = [(pos((0, 15)), "int(64)")]
     async with source_file(client, file) as doc:
-        await check_type_inlay_hints(client, doc, rng((0, 0), endpos(file)), inlays)
+        await check_type_inlay_hints(
+            client, doc, rng((0, 0), endpos(file)), inlays
+        )
 
 
 @pytest.mark.asyncio
@@ -116,7 +124,9 @@ async def test_fn_type_inlay_where_clause(client: LanguageClient):
            """
     inlays = [(pos((0, 16)), "int(64)")]
     async with source_file(client, file) as doc:
-        await check_type_inlay_hints(client, doc, rng((0, 0), endpos(file)), inlays)
+        await check_type_inlay_hints(
+            client, doc, rng((0, 0), endpos(file)), inlays
+        )
 
 
 @pytest.mark.asyncio
@@ -139,5 +149,6 @@ async def test_fn_type_inlay_per_instantiation(client: LanguageClient):
     real_inlays: EXPECTED_INLAYS = [(pos((0, 12)), ": real(64)", None)]
     all_inlays = [generic_inlays, int_inlays, real_inlays]
 
-    await click_lenses_and_check_inlays(client, expected_lens, all_inlays, A=file)
-
+    await click_lenses_and_check_inlays(
+        client, expected_lens, all_inlays, A=file
+    )
