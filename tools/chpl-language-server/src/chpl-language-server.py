@@ -716,7 +716,10 @@ class ChapelLanguageServer(LanguageServer):
                     continue
 
                 if isinstance(node, chapel.Formal):
-                    if node == t.originator() or node.type_expression() == t.originator():
+                    if (
+                        node == t.originator()
+                        or node.type_expression() == t.originator()
+                    ):
                         if qt == "type":
                             subs[str(t)] = node.name()
                         else:
@@ -841,7 +844,9 @@ class ChapelLanguageServer(LanguageServer):
 
         type_str = self._fn_return_type_str(fn, sig)
         if type_str is None:
-            type_str = self._try_generic_fn_return_type_str(fn, fi.context.context)
+            type_str = self._try_generic_fn_return_type_str(
+                fn, fi.context.context
+            )
         if type_str is None:
             return []
 
