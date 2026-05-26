@@ -2,7 +2,7 @@
 LLVM for Chapel release
 =======================
 
-This copy of LLVM 22.1.1 is being released with Chapel for
+This copy of LLVM 22.1.6 is being released with Chapel for
 convenience and was obtained from
 
 https://www.llvm.org/
@@ -63,13 +63,13 @@ follows, assuming CWD is $CHPL_HOME/third-party/llvm/. Note that steps 1-11 can
 be done automatically by $CHPL_HOME/third-party/llvm/update-bundled.sh.
 
 1.  download the new release and signature and verify them with e.g.
-    gpg --verify llvm-project-22.1.1.src.tar.xz.sig
+    gpg --verify llvm-project-22.1.6.src.tar.xz.sig
 2.  git rm -r llvm-src cmake third-party
-3.  tar xfv llvm-project-22.1.1.src.tar.xz
-4.  mv llvm-project-22.1.1.src/llvm llvm-src
-5.  mv llvm-project-22.1.1.src/clang llvm-src/tools/clang
-6.  mv llvm-project-22.1.1.src/cmake cmake
-7.  mv llvm-project-22.1.1.src/third-party third-party
+3.  tar xfv llvm-project-22.1.6.src.tar.xz
+4.  mv llvm-project-22.1.6.src/llvm llvm-src
+5.  mv llvm-project-22.1.6.src/clang llvm-src/tools/clang
+6.  mv llvm-project-22.1.6.src/cmake cmake
+7.  mv llvm-project-22.1.6.src/third-party third-party
 8.  rm -r llvm-src/test llvm-src/unittests llvm-src/examples llvm-src/benchmarks llvm-src/docs
 9.  rm -r llvm-src/tools/clang/test llvm-src/tools/clang/unittests llvm-src/tools/clang/examples llvm-src/tools/clang/docs
 10. git add --force llvm-src cmake third-party
