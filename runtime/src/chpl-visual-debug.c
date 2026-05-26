@@ -191,6 +191,9 @@ void chpl_vdebug_start (const char *fileroot, double now) {
                       chpl_filenameTable[ix]);
       }
     }
+
+    CHPL_RT_PRGINFO_DECLARE(prg, chpl_finfo);
+
     for (numFIDnames = 0; chpl_finfo[numFIDnames].name != NULL; numFIDnames++);
     chpl_dprintf (chpl_vdebug_fd, "FIDNsize: %d\n", numFIDnames);
     for (ix = 0; ix < numFIDnames; ix++)

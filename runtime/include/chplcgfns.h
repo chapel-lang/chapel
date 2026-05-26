@@ -51,8 +51,6 @@ extern const char* CHPL_THIRD_PARTY;
 extern const c_string chpl_filenameTable[];
 extern const int32_t chpl_filenameTableSize;
 
-extern const chpl_fn_info chpl_finfo[];
-
 //
 // chpl_globals_registry is an array of size chpl_numGlobalsOnHeap
 // storing ptr_wide_ptr_t, that is, local addresses of wide pointers.
