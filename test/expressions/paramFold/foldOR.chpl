@@ -6,28 +6,35 @@ proc getBool(): bool {
 
 writeln("TRUE || non-param:");
 if true || getBool() {
+  compilerWarning("resolve true branch");
   writeln("passed if");
 } else {
-  writeln("shouldn't reach");
+  compilerError("shouldn't reach");
 }
 
 writeln("FALSE || non-param:");
 if false || getBool() {
+  compilerWarning("resolve true branch");
   writeln("passed if");
 } else {
+  compilerWarning("resolve false branch");
   writeln("shouldn't reach");
 }
 
 writeln("non-param || TRUE:");
 if getBool() || true {
+  compilerWarning("resolve true branch");
   writeln("passed if");
 } else {
+  compilerWarning("resolve false branch");
   writeln("shouldn't reach");
 }
 
 writeln("non-param || FALSE:");
 if getBool() || false {
+  compilerWarning("resolve true branch");
   writeln("passed if");
 } else {
+  compilerWarning("resolve false branch");
   writeln("shouldn't reach");
 }
