@@ -36,7 +36,7 @@ E_CONSTANT(mainHasArgs, int)
 E_CONSTANT(CHPL_LAUNCHER, const char*)
 
 /** CODE-GENERATED
-    The path to '$CHPL_HOME/third-party' when this program was compiled.A
+    The path to '$CHPL_HOME/third-party' when this program was compiled.
 */
 E_CONSTANT(CHPL_THIRD_PARTY, const char*)
 
