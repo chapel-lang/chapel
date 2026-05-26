@@ -3322,6 +3322,8 @@ wide_ptr_t* chpl_comm_broadcast_global_vars_helper(void) {
   if (chpl_nodeID == 0) {
     CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
                             chpl_globals_registry);
+    CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                            chpl_numGlobalsOnHeap);
 
     CHPL_CALLOC(buf, chpl_numGlobalsOnHeap);
     for (int i = 0; i < chpl_numGlobalsOnHeap; i++) {

@@ -89,6 +89,8 @@ void chpl_comm_broadcast_global_vars(int numGlobals) {
   } else {
     CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
                             chpl_globals_registry);
+    CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                            chpl_numGlobalsOnHeap);
 
     wide_ptr_t* buf;
     size_t size = chpl_numGlobalsOnHeap * sizeof(*buf);

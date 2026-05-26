@@ -41,14 +41,6 @@
 extern "C" {
 #endif
 
-//
-// chpl_globals_registry is an array of size chpl_numGlobalsOnHeap
-// storing ptr_wide_ptr_t, that is, local addresses of wide pointers.
-// It is filled in and used by chpl_comm_register_global_var() and
-// chpl_comm_broadcast_global_vars(), respectively, declared below.
-//
-extern const int chpl_numGlobalsOnHeap;
-
 extern void* const chpl_private_broadcast_table[];
 extern const int chpl_private_broadcast_table_len;
 

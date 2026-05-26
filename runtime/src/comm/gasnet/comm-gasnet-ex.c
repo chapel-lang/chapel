@@ -969,6 +969,9 @@ void chpl_comm_pre_mem_init(void) {
     // of the global variable locations; everyone else will just peek at its copy.  So
     // locale 0 sets up its segment to an appropriate size:
     //
+    CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                            chpl_numGlobalsOnHeap);
+
     int global_table_size = chpl_numGlobalsOnHeap * sizeof(wide_ptr_t) + GASNETT_PAGESIZE;
     void* global_table = sys_malloc(global_table_size);
     seginfo_table[0].addr = ((void *)(((uint8_t*)global_table) +
@@ -1152,6 +1155,9 @@ void chpl_comm_rollcall(void) {
 
 void chpl_comm_impl_regMemHeapInfo(void** start_p, size_t* size_p) {
 #if defined(GASNET_SEGMENT_FAST) || defined(GASNET_SEGMENT_LARGE)
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                          chpl_numGlobalsOnHeap);
+
   *start_p = chpl_numGlobalsOnHeap * sizeof(wide_ptr_t)
              + (char*)seginfo_table[chpl_nodeID].addr;
   *size_p  = seginfo_table[chpl_nodeID].size
@@ -1173,6 +1179,8 @@ wide_ptr_t* chpl_comm_broadcast_global_vars_helper(void) {
   if (chpl_nodeID == 0) {
     CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
                             chpl_globals_registry);
+    CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                            chpl_numGlobalsOnHeap);
 
     for (int i = 0; i < chpl_numGlobalsOnHeap; i++) {
       ((wide_ptr_t*) seginfo_table[0].addr)[i] = *chpl_globals_registry[i];
