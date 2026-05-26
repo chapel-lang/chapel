@@ -55,7 +55,7 @@ class ComplexType final : public PrimitiveType {
 
   static const ComplexType* get(Context* context, int bitwidth);
 
-  /** Returns the bit width of this complex (64 or 128 bits,
+  /** Returns the bit width of this complex (32, 64, or 128 bits,
       including both components */
   int bitwidth() const override {
     return bitwidth_;
@@ -73,6 +73,8 @@ class ComplexType final : public PrimitiveType {
 
   const char* c_str() const override {
     switch (bitwidth_) {
+      case 32:
+        return "complex(32)";
       case 64:
         return "complex(64)";
       case 128:

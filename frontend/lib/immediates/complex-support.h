@@ -27,6 +27,10 @@
 
  */
 
+struct complex32 {
+  _Float16 r;
+  _Float16 i;
+};
 struct complex64 {
   float r;
   float i;
@@ -36,6 +40,7 @@ struct complex128 {
   double i;
 };
 
+struct complex32 complexSqrt32(struct complex32 x);
 struct complex64 complexSqrt64(struct complex64 x);
 struct complex128 complexSqrt128(struct complex128 x);
 

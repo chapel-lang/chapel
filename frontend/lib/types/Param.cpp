@@ -104,7 +104,7 @@ bool Param::isParamOpFoldable(chpl::uast::PrimitiveTag op) {
 template<typename T, typename S>
 static T getImmediateValueOrEmpty(const S* p) {
   if (p) {
-    return p->value();
+    return (T) p->value();
   }
   // handle complex and string types in overloads below
   return (T) 0;
@@ -190,7 +190,11 @@ optional<Immediate> paramToImmediate(Context* context,
         CHPL_ASSERT(ct);
         if (ct == nullptr) return ret;
         ret.const_kind = NUM_KIND_COMPLEX;
-        if (ct->bitwidth() == 64) {
+        if (ct->bitwidth() == 32) {
+          ret.num_index = COMPLEX_SIZE_32;
+          ret.v_complex32.r = (_Float16)v.re;
+          ret.v_complex32.i = (_Float16)v.im;
+        } else if (ct->bitwidth() == 64) {
           ret.num_index = COMPLEX_SIZE_64;
           ret.v_complex64.r = v.re;
           ret.v_complex64.i = v.im;
@@ -317,7 +321,10 @@ optional<Immediate> paramToImmediate(Context* context,
         } else {
           CHPL_ASSERT(false && "case not handled");
         }
-        if (bw == 32) {
+        if (bw == 16) {
+          ret.num_index = FLOAT_SIZE_16;
+          ret.v_float16 = getImmediateValueOrEmpty<_Float16, RealParam>(rp);
+        } else if (bw == 32) {
           ret.num_index = FLOAT_SIZE_32;
           ret.v_float32 = getImmediateValueOrEmpty<float, RealParam>(rp);
         } else if (bw == 64) {
@@ -414,6 +421,9 @@ std::pair<const Param*, const Type*> immediateToParam(Context* context,
       }
   case NUM_KIND_REAL:
     switch (imm.num_index) {
+      case FLOAT_SIZE_16:
+        return {RealParam::get(context, imm.v_float16),
+                RealType::get(context, 16)};
       case FLOAT_SIZE_32:
         return {RealParam::get(context, imm.v_float32),
                 RealType::get(context, 32)};
@@ -425,6 +435,9 @@ std::pair<const Param*, const Type*> immediateToParam(Context* context,
     }
   case NUM_KIND_IMAG:
     switch (imm.num_index) {
+      case FLOAT_SIZE_16:
+        return {RealParam::get(context, imm.v_float16),
+                ImagType::get(context, 16)};
       case FLOAT_SIZE_32:
         return {RealParam::get(context, imm.v_float32),
                 ImagType::get(context, 32)};
@@ -436,6 +449,11 @@ std::pair<const Param*, const Type*> immediateToParam(Context* context,
     }
   case NUM_KIND_COMPLEX:
     switch (imm.num_index) {
+      case COMPLEX_SIZE_32:
+        return {ComplexParam::get(context,
+                                  Param::ComplexDouble(imm.v_complex32.r,
+                                                       imm.v_complex32.i)),
+                ComplexType::get(context, 32)};
       case COMPLEX_SIZE_64:
         return {ComplexParam::get(context,
                                   Param::ComplexDouble(imm.v_complex64.r,

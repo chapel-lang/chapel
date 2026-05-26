@@ -101,8 +101,15 @@ static void getMantissaExponentWidth(const Type *t,
   const int exponent_64 = 15; // exponent bits for 64-bit float
   const int mantissa_32 = 24; // mantissa for 32-bit float
   const int exponent_32 = 8; // exponent bits for 32-bit float
+  const int mantissa_16 = 11; // mantissa for 16-bit float
+  const int exponent_16 = 5; // exponent bits for 16-bit float
 
   if (auto rt = t->toRealType()) {
+    if (rt->bitwidth() == 16) {
+      mantissa = mantissa_16;
+      exponent = exponent_16;
+      return;
+    }
     if (rt->bitwidth() == 32) {
       mantissa = mantissa_32;
       exponent = exponent_32;
@@ -115,6 +122,11 @@ static void getMantissaExponentWidth(const Type *t,
     }
   }
   if (auto it = t->toImagType()) {
+    if (it->bitwidth() == 16) {
+      mantissa = mantissa_16;
+      exponent = exponent_16;
+      return;
+    }
     if (it->bitwidth() == 32) {
       mantissa = mantissa_32;
       exponent = exponent_32;
@@ -127,6 +139,11 @@ static void getMantissaExponentWidth(const Type *t,
     }
   }
   if (auto ct = t->toComplexType()) {
+    if (ct->bitwidth() == 32) {
+      mantissa = mantissa_16;
+      exponent = exponent_16;
+      return;
+    }
     if (ct->bitwidth() == 64) {
       mantissa = mantissa_32;
       exponent = exponent_32;

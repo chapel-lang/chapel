@@ -48,13 +48,13 @@ PrimitiveType::getWithNameAndWidth(Context* context,
     if (bitwidth == 8 || bitwidth == 16 || bitwidth == 32 || bitwidth == 64)
       return UintType::get(context, bitwidth);
   if (name == USTR("real"))
-    if (bitwidth == 32 || bitwidth == 64)
+    if (bitwidth == 16 || bitwidth == 32 || bitwidth == 64)
       return RealType::get(context, bitwidth);
   if (name == USTR("imag"))
-    if (bitwidth == 32 || bitwidth == 64)
+    if (bitwidth == 16 || bitwidth == 32 || bitwidth == 64)
       return ImagType::get(context, bitwidth);
   if (name == USTR("complex"))
-    if (bitwidth == 64 || bitwidth == 128)
+    if (bitwidth == 32 || bitwidth == 64 || bitwidth == 128)
       return ComplexType::get(context, bitwidth);
 
   // otherwise it is an invalid name or width

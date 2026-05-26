@@ -92,15 +92,15 @@ proc isUintType(type t) param do return
 
 /* Returns ``true`` if the type ``t`` is a ``real`` type, of any width. */
 proc isRealType(type t) param do return
-  (t == real(32)) || (t == real(64));
+  (t == real(16) || t == real(32)) || (t == real(64));
 
 /* Returns ``true`` if the type ``t`` is an ``imag`` type, of any width. */
 proc isImagType(type t) param do return
-  (t == imag(32)) || (t == imag(64));
+  (t == imag(16) || t == imag(32)) || (t == imag(64));
 
 /* Returns ``true`` if the type ``t`` is a ``complex`` type, of any width. */
 proc isComplexType(type t) param do return
-  (t == complex(64)) || (t == complex(128));
+  (t == complex(32) || t == complex(64)) || (t == complex(128));
 
 /* Returns ``true`` if the type ``t`` is the ``string`` type. */
 proc isStringType(type t) param do return t == string;
@@ -774,34 +774,21 @@ This is available for all numeric types.
 proc numBits(type t) param where t == bool {
   compilerError("'bool' does not have a well-defined size");
 }
+
 @chpldoc.nodoc
-proc numBits(type t) param where t == int(8) do return 8;
+proc numBits(type t: int(?w)) param do return w;
+
 @chpldoc.nodoc
-proc numBits(type t) param where t == int(16) do return 16;
+proc numBits(type t: uint(?w)) param do return w;
+
 @chpldoc.nodoc
-proc numBits(type t) param where t == int(32) do return 32;
+proc numBits(type t: real(?w)) param do return w;
+
 @chpldoc.nodoc
-proc numBits(type t) param where t == int(64) do return 64;
+proc numBits(type t: imag(?w)) param do return w;
+
 @chpldoc.nodoc
-proc numBits(type t) param where t == uint(8) do return 8;
-@chpldoc.nodoc
-proc numBits(type t) param where t == uint(16) do return 16;
-@chpldoc.nodoc
-proc numBits(type t) param where t == uint(32) do return 32;
-@chpldoc.nodoc
-proc numBits(type t) param where t == uint(64) do return 64;
-@chpldoc.nodoc
-proc numBits(type t) param where t == real(32) do return 32;
-@chpldoc.nodoc
-proc numBits(type t) param where t == real(64) do return 64;
-@chpldoc.nodoc
-proc numBits(type t) param where t == imag(32) do return 32;
-@chpldoc.nodoc
-proc numBits(type t) param where t == imag(64) do return 64;
-@chpldoc.nodoc
-proc numBits(type t) param where t == complex(64) do return 64;
-@chpldoc.nodoc
-proc numBits(type t) param where t == complex(128) do return 128;
+proc numBits(type t: complex(?w)) param do return w;
 
 //
 // numBytes(type) -- returns the number of bytes in a type

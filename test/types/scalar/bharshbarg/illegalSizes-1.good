@@ -1,3 +1,12 @@
-illegalSizes-1.chpl:1: error: illegal size 32 for complex
-illegalSizes-1.chpl:1: error: illegal type index expression 'complex(128)(32)'
-illegalSizes-1.chpl:1: note: primitive type 'complex(128)' cannot be indexed in this manner
+illegalSizes-1.chpl:3: error: illegal size 42 for imag
+illegalSizes-1.chpl:3: error: illegal type index expression 'imag(64)(42)'
+illegalSizes-1.chpl:3: note: primitive type 'imag(64)' cannot be indexed in this manner
+illegalSizes-1.chpl:4: error: illegal size 37 for int
+illegalSizes-1.chpl:4: error: illegal type index expression 'int(64)(37)'
+illegalSizes-1.chpl:4: note: primitive type 'int(64)' cannot be indexed in this manner
+illegalSizes-1.chpl:5: error: illegal size 1 for real
+illegalSizes-1.chpl:5: error: illegal type index expression 'real(64)(1)'
+illegalSizes-1.chpl:5: note: primitive type 'real(64)' cannot be indexed in this manner
+illegalSizes-1.chpl:6: error: illegal size 7 for uint
+illegalSizes-1.chpl:6: error: illegal type index expression 'uint(64)(7)'
+illegalSizes-1.chpl:6: note: primitive type 'uint(64)' cannot be indexed in this manner
