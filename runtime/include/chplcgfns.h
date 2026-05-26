@@ -48,7 +48,6 @@ extern "C" {
 // chpl_comm_broadcast_global_vars(), respectively, declared below.
 //
 extern const int chpl_numGlobalsOnHeap;
-extern ptr_wide_ptr_t chpl_globals_registry[];
 
 extern void* const chpl_private_broadcast_table[];
 extern const int chpl_private_broadcast_table_len;

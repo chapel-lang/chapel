@@ -43,6 +43,7 @@
 #include "chpl-error.h"
 #include "chpl-mem-desc.h"
 #include "chpl-mem-sys.h" // mem layer not initialized in init, need sys alloc
+#include "chpl-prginfo.h"
 
 // Don't get warning macros for chpl_comm_get etc
 #include "chpl-comm-no-warning-macros.h"
@@ -1170,6 +1171,9 @@ wide_ptr_t* chpl_comm_broadcast_global_vars_helper(void) {
   // node 0 has filled in that buffer, however.
   //
   if (chpl_nodeID == 0) {
+    CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                            chpl_globals_registry);
+
     for (int i = 0; i < chpl_numGlobalsOnHeap; i++) {
       ((wide_ptr_t*) seginfo_table[0].addr)[i] = *chpl_globals_registry[i];
     }
