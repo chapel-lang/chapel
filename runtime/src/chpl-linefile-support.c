@@ -70,9 +70,10 @@ c_string chpl_lookupFilename(const int32_t idx) {
     }
     }
   } else {
-    if (idx < chpl_filenameTableSize) {
-      return CHPL_RT_PRGINFO_DATA(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
-                                  chpl_filenameTable)[idx];
+    chpl_rt_prginfo* prg = CHPL_RT_ROOT_PROGRAM_PLACEHOLDER;
+
+    if (idx < CHPL_RT_PRGINFO_DATA(prg, chpl_filenameTableSize)) {
+      return CHPL_RT_PRGINFO_DATA(prg, chpl_filenameTable)[idx];
     } else {
       snprintf(CHPL_TLS_GET(unknownFileBuffer), 48,
                "<unknown file idx %" PRId32 ">", idx);

@@ -175,6 +175,7 @@ void chpl_vdebug_start (const char *fileroot, double now) {
     CHPL_RT_PRGINFO_DECLARE(prg, chpl_saveCDir);
     CHPL_RT_PRGINFO_DECLARE(prg, CHPL_HOME);
     CHPL_RT_PRGINFO_DECLARE(prg, chpl_filenameTable);
+    CHPL_RT_PRGINFO_DECLARE(prg, chpl_filenameTableSize);
 
     chpl_dprintf (chpl_vdebug_fd, "CHPL_HOME: %s\n", CHPL_HOME);
     chpl_dprintf (chpl_vdebug_fd, "DIR: %s\n", chpl_compileDirectory);

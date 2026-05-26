@@ -3306,6 +3306,9 @@ void SIGBUS_handler(int signo, siginfo_t *info, void *context)
         // Only try to provide a source file if we can give at least some
         // of it, and without using snprintf() in chpl_lookupFilename()).
         //
+        CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                                chpl_filenameTableSize);
+
         if (bufi > 10
             && mr_mregs_supplement[mr_i].fn >= 0
             && mr_mregs_supplement[mr_i].fn < chpl_filenameTableSize) {
