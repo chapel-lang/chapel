@@ -9,4 +9,4 @@ void
 int(64)
 1*bool
 (int(64),real(64),string)
-proc multi(x: int, y: real, z: string)
+proc multi(x: int, y: real, z: string) { ... }
