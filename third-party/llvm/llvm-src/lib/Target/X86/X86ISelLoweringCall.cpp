@@ -2251,6 +2251,7 @@ X86TargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI,
         SDValue CopyChain =
             CreateCopyOfByValArgument(Src, Temp, Chain, Flags, DAG, dl);
         ByValCopyChains.push_back(CopyChain);
+        ByValTemporaries[ArgIdx] = Temp;
       }
     }
     if (!ByValCopyChains.empty())
