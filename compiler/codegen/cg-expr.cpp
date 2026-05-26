@@ -6202,8 +6202,7 @@ DEFINE_PRIM(REGISTER_GLOBAL_VAR) {
     }
 #endif
 
-    codegenCall("chpl_comm_register_global_var",
-                idx,
+    codegenCall("chpl_registerGlobalVar", idx,
                 codegenCast("ptr_wide_ptr_t", ptr_wide_ptr));
 }
 DEFINE_PRIM(BROADCAST_GLOBAL_VARS) {

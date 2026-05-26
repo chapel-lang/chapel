@@ -50,16 +50,6 @@ static int32_t   localRank = -1;
 static int32_t   numColocalesOnNode = 1;
 
 
-//
-// Global variable broadcast support.
-//
-void chpl_comm_register_global_var(int i, wide_ptr_t *ptr_to_wide_ptr) {
-  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
-                          chpl_globals_registry);
-  chpl_globals_registry[i] = ptr_to_wide_ptr;
-}
-
-
 void chpl_comm_broadcast_global_vars(int numGlobals) {
   //
   // On node 0: gather up the global variables' wide pointers into a

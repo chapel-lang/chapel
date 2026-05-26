@@ -91,4 +91,5 @@ module ChapelStandard {
   use ChapelDynamicLoading;
   use ChapelProgramEntrypoints;
   use ChapelProgramRegistration;
+  use ChapelRuntimeInterface;
 }
