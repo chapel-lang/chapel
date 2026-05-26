@@ -51,8 +51,6 @@ extern const char* CHPL_THIRD_PARTY;
 extern const c_string chpl_filenameTable[];
 extern const int32_t chpl_filenameTableSize;
 
-/* generated */
-extern const chpl_fn_p chpl_ftable[];
 extern const chpl_fn_info chpl_finfo[];
 
 //
@@ -63,8 +61,10 @@ extern const chpl_fn_info chpl_finfo[];
 //
 extern const int chpl_numGlobalsOnHeap;
 extern ptr_wide_ptr_t chpl_globals_registry[];
+
 extern void* const chpl_private_broadcast_table[];
 extern const int chpl_private_broadcast_table_len;
+
 extern void* const chpl_global_serialize_table[];
 
 //
