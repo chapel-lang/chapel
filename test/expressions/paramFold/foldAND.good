@@ -1,0 +1,11 @@
+TRUE && non-param:
+getBool called
+passed if
+FALSE && non-param:
+passed else
+non-param && TRUE:
+getBool called
+passed if
+non-param && FALSE:
+getBool called
+passed else
