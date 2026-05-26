@@ -111,6 +111,11 @@ The following features are extra visual aids:
 | Inlays         | be displayed where a return type           | ``--no-return-type-inlays``           |
 |                | annotation would normally occur.           |                                       |
 +----------------+--------------------------------------------+---------------------------------------+
+| Generic Return | In some cases, the language server can     | ``--generic-fn-type-inlays``,         |
+| Type Inlays    | infer a general return type for a generic  | ``--no-generic-fn-type-inlays``       |
+|                | function, written in terms of its formals  | (default)                             |
+|                | (e.g., ``myFormal.type``).                 |                                       |
++----------------+--------------------------------------------+---------------------------------------+
 | Param Inlays   | ``param`` values can be computed and       | ``--param-inlays`` (default),         |
 |                | displayed inline as inlay hints.           | ``--no-param-inlays``                 |
 +----------------+--------------------------------------------+---------------------------------------+
@@ -142,6 +147,9 @@ The following features are extra visual aids:
 |                | version of the function, by finding the    |                                       |
 |                | set of inlays shared between all           |                                       |
 |                | instantiations of the function.            |                                       |
+|                |                                            |                                       |
+|                | Affects type, param, and return type       |                                       |
+|                | inlays.                                    |                                       |
 +----------------+--------------------------------------------+---------------------------------------+
 
 Additionally, some of the above features can be tweaked.
