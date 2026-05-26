@@ -41,9 +41,6 @@
 extern "C" {
 #endif
 
-/* defined in chpl_compilation_config.c: */
-extern const char* CHPL_THIRD_PARTY;
-
 //
 // chpl_globals_registry is an array of size chpl_numGlobalsOnHeap
 // storing ptr_wide_ptr_t, that is, local addresses of wide pointers.

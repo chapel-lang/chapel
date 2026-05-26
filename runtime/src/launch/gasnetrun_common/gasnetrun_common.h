@@ -25,6 +25,7 @@
 #include "chpl-env.h"
 #include "chpl-mem.h"
 #include "chpl-error.h"
+#include "chpl-prginfo.h"
 
 #ifndef GASNETRUN_LAUNCHER
 #error GASNETRUN_LAUNCHER must be defined
@@ -67,6 +68,8 @@ static char** chpl_launch_create_argv(const char *launch_cmd,
 
 int chpl_launch(int argc, char* argv[], int32_t numLocales,
                 int32_t numLocalesPerNode) {
+
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER, CHPL_THIRD_PARTY);
 
   int len = strlen(CHPL_THIRD_PARTY) + strlen(WRAP_TO_STR(LAUNCH_PATH)) + strlen(GASNETRUN_LAUNCHER) + 2;
   char *cmd = chpl_mem_allocMany(len, sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, 0);

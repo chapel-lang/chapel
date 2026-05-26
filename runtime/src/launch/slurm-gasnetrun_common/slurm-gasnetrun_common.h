@@ -31,6 +31,7 @@
 #include "chpl-mem.h"
 #include "chpltypes.h"
 #include "chpl-error.h"
+#include "chpl-prginfo.h"
 
 #ifndef GASNETRUN_LAUNCHER
 #error GASNETRUN_LAUNCHER must be defined
@@ -325,6 +326,9 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 
     if (errorfn != NULL)
       fprintf(slurmFile, "#SBATCH -e %s\n", errorfn);
+
+    CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                            CHPL_THIRD_PARTY);
 
     fprintf(slurmFile, "%s/%s/%s -n %d -N %d -c 0",
             CHPL_THIRD_PARTY, WRAP_TO_STR(LAUNCH_PATH), GASNETRUN_LAUNCHER,
