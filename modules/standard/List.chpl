@@ -1740,9 +1740,16 @@ module List {
       // Print a prettier error message if arguments fail resolve, to avoid
       // pointing into module code.
       import Reflection;
-      if !Reflection.canResolveMethod(updater, "this", i, slot) then
-        compilerError('`list.update()` failed to resolve method ' +
-                      updater.type:string + '.this() for arguments (' +
+      param resolves = if useProcedurePointers then
+                         Reflection.canResolveCall(updater, i, slot)
+                       else
+                         Reflection.canResolveMethod(updater, "this", i, slot);
+      param str = if useProcedurePointers then "' for arguments ("
+                  else ".this()' for arguments (";
+      param kind = if useProcedurePointers then "updater '" else "method '";
+      if !resolves then
+        compilerError('`list.update()` failed to resolve ' + kind +
+                      updater.type:string + str +
                       i.type:string + ', ' + slot.type:string + ')');
 
       return updater(i, slot);

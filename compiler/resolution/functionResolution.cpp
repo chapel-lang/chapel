@@ -2858,7 +2858,6 @@ void resolveDestructor(AggregateType* at) {
 static bool resolveTypeComparisonCall(CallExpr* call);
 static bool resolveBuiltinCastCall(CallExpr* call);
 static bool resolveClassBorrowMethod(CallExpr* call);
-static bool resolveFunctionPointerCall(CallExpr* call);
 static void resolveCoerceCopyMove(CallExpr* call);
 static void resolvePrimInit(CallExpr* call);
 static void resolveInitRef(CallExpr* call);
@@ -2938,7 +2937,7 @@ void resolveCall(CallExpr* call) {
     if (resolveClassBorrowMethod(call))
       return;
 
-    if (resolveFunctionPointerCall(call))
+    if (resolveFunctionPointerCall(call, false))
       return;
 
     if (call->isNamedAstr(astr_coerceCopy)) {
@@ -3379,7 +3378,9 @@ static bool resolveClassBorrowMethod(CallExpr* call) {
 // TODO: Ideally, we would be able to leverage the existing machinery for
 // resolving calls, but we may not be able to do that until dyno is used
 // to resolve code.
-static bool resolveFunctionPointerCall(CallExpr* call) {
+bool resolveFunctionPointerCall(CallExpr* call, bool checkOnly, bool* resolved) {
+  if (resolved) *resolved = false; // set this in case of early return
+
   auto ft = call->isIndirectCall() ? call->functionType() : nullptr;
   if (!ft) return false;
 
@@ -3387,10 +3388,12 @@ static bool resolveFunctionPointerCall(CallExpr* call) {
 
   // TODO: Support default arguments?
   if (call->numActuals() != ft->numFormals()) {
-    USR_FATAL(call, "incorrect number of arguments - expected '%d', "
-                    "but found '%d'",
-                    ft->numFormals(),
-                    call->numActuals());
+    if (!checkOnly) {
+      USR_FATAL(call, "incorrect number of arguments - expected '%d', "
+                      "but found '%d'",
+                      ft->numFormals(),
+                      call->numActuals());
+    }
     return true;
   }
 
@@ -3401,13 +3404,15 @@ static bool resolveFunctionPointerCall(CallExpr* call) {
       auto se = toSymExpr(base);
       const char* name = se ? se->symbol()->name : nullptr;
 
-      if (name) {
-        USR_FATAL_CONT(actual, "calls to function values ('%s' in this "
-                               "case) do not support named arguments yet",
-                               name);
-      } else {
-        USR_FATAL_CONT(actual, "calls to function values do not support "
-                               "named arguments yet");
+      if (!checkOnly) {
+        if (name) {
+          USR_FATAL_CONT(actual, "calls to function values ('%s' in this "
+                                 "case) do not support named arguments yet",
+                                 name);
+        } else {
+          USR_FATAL_CONT(actual, "calls to function values do not support "
+                                 "named arguments yet");
+        }
       }
     }
   }
@@ -3438,19 +3443,25 @@ static bool resolveFunctionPointerCall(CallExpr* call) {
                           ft);
     anyPromotes = anyPromotes || promotes;
     if (!ok) {
-      if (onceForErrorHeader) {
-        USR_FATAL_CONT(call, "failed to resolve call");
-        onceForErrorHeader = false;
-      }
+      if (!checkOnly) {
+        if (onceForErrorHeader) {
+          USR_FATAL_CONT(call, "failed to resolve call");
+          onceForErrorHeader = false;
+        }
 
-      USR_FATAL_CONT(actual, "because actual argument with type '%s' is "
-                             "passed to formal '%s'",
-                             toString(actualType),
-                             toString(formalType));
+        USR_FATAL_CONT(actual, "because actual argument with type '%s' is "
+                               "passed to formal '%s'",
+                               toString(actualType),
+                               toString(formalType));
+      }
 
       return true;
     }
   }
+
+  if (resolved) *resolved = true;
+
+  if (checkOnly) return true;
 
   // Instead of refactoring wrapper machinery, create a wrapper for
   // this particular call and resolve it normally.

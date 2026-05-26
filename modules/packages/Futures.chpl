@@ -308,10 +308,7 @@ module Futures {
       if !canResolveMethod(taskFn, "retType") then
         compilerError("cannot determine return type of task function");
     } else {
-      proc _wrapper(fn) {
-        return fn();
-      }
-      if !canResolve("_wrapper", taskFn) then
+      if !canResolveCall(taskFn) then
         compilerError("async() task function (expecting arguments) provided without arguments");
     }
     var f: Future(_retType(taskFn));
@@ -337,10 +334,7 @@ module Futures {
       if !canResolveMethod(taskFn, "retType") then
         compilerError("cannot determine return type of task function");
     } else {
-      proc _wrapper(fn, args...) {
-        return fn((...args));
-      }
-      if !canResolve("_wrapper", taskFn, (...args)) then
+      if !canResolveCall(taskFn, (...args)) then
        compilerError("async() task function provided with mismatching arguments");
     }
     var f: Future(_retType(taskFn, (...args)));

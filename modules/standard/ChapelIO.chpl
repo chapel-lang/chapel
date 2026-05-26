@@ -466,6 +466,7 @@ module ChapelIO {
       var start : byteIndex;
       if typeName.startsWith("proc") then start = 4;
       else if (typeName.startsWith("wide proc")) then start = 9;
+      else if typeName.startsWith("extern proc") then start = 11;
       else assert(false, "Unexpected function format: " + typeName);
 
       const parenIndex = typeName.find("(");
