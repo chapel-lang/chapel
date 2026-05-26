@@ -45,14 +45,14 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build Docker Image
-        uses: docker/build-push-action@v7.1.0
+        uses: docker/build-push-action@v7.2.0
         with:
           file: ${{ env.DOCKERFILE }}
           # example: ghcr.io/chapel-lang/chapel-github-ci:latest
           tags: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest
       - name: Push Docker Image if on main
         if: github.repository_owner == 'chapel-lang' && ((github.event.pull_request.head.repo.full_name == github.repository) || (github.event_name == 'push') || (github.event_name == 'workflow_dispatch') || (github.event_name == 'schedule'))
-        uses: docker/build-push-action@v7.1.0
+        uses: docker/build-push-action@v7.2.0
         with:
           file: ${{ env.DOCKERFILE }}
           push: true
