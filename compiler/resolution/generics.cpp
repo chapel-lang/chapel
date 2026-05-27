@@ -913,14 +913,16 @@ bool evaluateWhereClause(FnSymbol* fn) {
 
     SymExpr* se = toSymExpr(fn->where->body.last());
 
-    if (se->symbol() == gFalse) {
+    if (se == NULL) {
+      INT_FATAL("Unexpected expression type after evaluating 'where' clause");
+    } else if (se->symbol() == gFalse) {
       cleanupWhereClause(fn->where, se);
       return false;
-    }
-
-    if (se->symbol() == gTrue) {
+    } else if (se->symbol() == gTrue) {
       cleanupWhereClause(fn->where, se);
       return true;
+    } else {
+      INT_FATAL("Non-param-bool symbol after evaluating 'where' clause");
     }
   }
 
