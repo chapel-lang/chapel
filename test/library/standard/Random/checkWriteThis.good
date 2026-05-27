@@ -1,3 +1,6 @@
 uncaught SystemError: Invalid argument: Argument type mismatch in argument 0 (in string.format)
-  checkWriteThis.chpl:34: thrown here
   checkWriteThis.chpl:41: uncaught here
+  checkWriteThis.chpl:34: called from here
+  checkWriteThis.chpl:34: called from here
+  checkWriteThis.chpl:34: called from here
+  checkWriteThis.chpl:34: thrown here

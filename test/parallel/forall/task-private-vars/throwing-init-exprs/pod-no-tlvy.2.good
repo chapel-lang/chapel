@@ -1,7 +1,7 @@
 nt 2
 uncaught TaskErrors: 1 errors: IllegalArgumentError: 2
-  pod-no-tlvy.chpl:48: thrown here
   pod-no-tlvy.chpl:48: uncaught here
+  pod-no-tlvy.chpl:48: thrown here
 starting task
 finished task
 asdf(1), returning

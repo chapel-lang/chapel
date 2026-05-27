@@ -1,3 +1,5 @@
 uncaught SystemError: Bad file descriptor: not readable (in file.reader with path "_test_freadIntFailed.txt")
-  freadIntFailed.chpl:4: thrown here
   freadIntFailed.chpl:4: uncaught here
+  freadIntFailed.chpl:4: called from here
+  freadIntFailed.chpl:4: called from here
+  freadIntFailed.chpl:4: thrown here

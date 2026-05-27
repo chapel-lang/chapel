@@ -1,7 +1,7 @@
 nt 2000   nt2 1000
 uncaught TaskErrors: 2 errors: IllegalArgumentError: 1000 ... IllegalArgumentError: 2000
-  pod-no-tlvy.chpl:48: thrown here
   pod-no-tlvy.chpl:48: uncaught here
+  pod-no-tlvy.chpl:48: thrown here
 starting task
 starting task
 asdf(1), returning

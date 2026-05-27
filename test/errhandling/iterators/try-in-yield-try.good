@@ -12,5 +12,5 @@ Case 3 - try
 110
 Case 4 - try
 uncaught Error: test
-  try-in-yield.chpl:104: thrown here
   try-in-yield.chpl:112: uncaught here
+  try-in-yield.chpl:104: thrown here
