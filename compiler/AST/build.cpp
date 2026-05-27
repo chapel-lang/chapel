@@ -1745,7 +1745,7 @@ setupFunctionDecl(FnSymbol*   fn,
 
   if (optWhere)
   {
-    fn->where = new BlockStmt(optWhere);
+    fn->where = new BlockStmt(new CallExpr("chpl_validateWhere", optWhere));;
   }
 
   if (optLifetimeConstraints)

@@ -3374,4 +3374,14 @@ module ChapelBase {
 
     return equals;
   }
+
+  proc chpl_validateWhere(param test) param : bool {
+    if test.type != bool then
+      compilerError("a 'where' clause expression must evaluate to a 'param bool', but got a 'param " + test.type:string + "' instead");
+    return test;
+  }
+
+  proc chpl_validateWhere(test) param : bool {
+    compilerError("a 'where' clause expression must be a 'param', but got a non-'param'");
+  }
 }
