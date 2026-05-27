@@ -1725,6 +1725,27 @@ BlockStmt* buildExternExportFunctionDecl(Flag externOrExport, Expr* paramCNameEx
   return blockFnDef;
 }
 
+static Expr* wrapNonImplementsWhereExprs(Expr* whereExpr) {
+  CallExpr* call = toCallExpr(whereExpr);
+
+  // leave 'implements' clauses alone; they don't need validation
+  if (isIfcConstraint(whereExpr)) {
+    return whereExpr;
+
+  // wrap most expressions in a validation to make sure they're param bool
+  } else if (!call || !call->isNamed("&&")) {
+    return new CallExpr("chpl_validateWhere", whereExpr);
+
+  // but pick apart && clauses because they may contain multiple 'implements'
+  // clauses or arbitrary expressions (or a mix?); note that implements must
+  // currently be separated by "&&"
+  } else {
+    call->get(1)->replace(wrapNonImplementsWhereExprs(call->get(1)->copy()));
+    call->get(2)->replace(wrapNonImplementsWhereExprs(call->get(2)->copy()));
+    return call;
+  }
+}
+
 void
 setupFunctionDecl(FnSymbol*   fn,
                   RetTag      optRetTag,
@@ -1745,7 +1766,7 @@ setupFunctionDecl(FnSymbol*   fn,
 
   if (optWhere)
   {
-    fn->where = new BlockStmt(new CallExpr("chpl_validateWhere", optWhere));;
+    fn->where = new BlockStmt(wrapNonImplementsWhereExprs(optWhere));
   }
 
   if (optLifetimeConstraints)
