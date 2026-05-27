@@ -3041,16 +3041,16 @@ module ChapelBase {
 
   // non-param/param and param/non-param
   inline operator **(a: uint(64), param b: uint(64)) {
-    return __primitive("**", a, b);
+    return _intExpHelp(a, b);
   }
   inline operator **(param a: uint(64), b: uint(64)) {
-    return __primitive("**", a, b);
+    return _intExpHelp(a, b);
   }
   inline operator **(a: int(64), param b: int(64)) {
-    return __primitive("**", a, b);
+    return _intExpHelp(a, b);
   }
   inline operator **(param a: int(64), b: int(64)) {
-    return __primitive("**", a, b);
+    return _intExpHelp(a, b);
   }
 
 
