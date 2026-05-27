@@ -34,6 +34,7 @@ private use Map;
 public use Subprocess;
 public use MasonEnv;
 public use Path;
+import Path;
 public use TOML;
 use Regex;
 import MasonLogger;
@@ -63,40 +64,29 @@ class MasonError : Error {
 
 
 /* Creates the rest of the project structure */
-proc makeTargetFiles(binLoc: string, projectHome: string) throws {
+proc makeTargetFiles(binLoc: path, projectHome: path) throws {
 
-  const target = joinPath(projectHome, "target");
-  const srcBin = joinPath(target, binLoc);
-  const example = joinPath(target, "example");
+  const target = projectHome / "target";
+  const srcBin = target / binLoc;
+  const example = target / "example";
 
-  if !isDir(target) {
-    mkdir(target);
-  }
-  if !isDir(srcBin) {
-    mkdir(srcBin);
-  }
-  if !isDir(example) {
-    mkdir(example);
-  }
+  if !target.isDir() then target.mkdir();
+  if !srcBin.isDir() then srcBin.mkdir();
+  if !example.isDir() then example.mkdir();
 
-  const actualTest = joinPath(projectHome,"test");
-  if isDir(actualTest) {
+  const actualTest = projectHome / "test";
+  if actualTest.isDir() {
     // temp var to work around
     // https://github.com/chapel-lang/chapel/issues/27855
-    const dirs = walkDirs(actualTest);
+    const dirs = actualTest.walkDirs();
     for dir in dirs {
-      const internalDir = target+dir.replace(projectHome,"");
-      if !isDir(internalDir) {
-        mkdir(internalDir);
-      }
+      const internalDir = target / Path.relPath(dir:string, projectHome:string);
+      if !internalDir.isDir() then internalDir.mkdir();
     }
   }
-  const test = joinPath(target, "test");
-  if !isDir(test) {
-    mkdir(test);
-  }
+  const test = target / "test";
+  if !test.isDir() then test.mkdir();
 }
-
 
 proc stripExt(toStrip: string, ext: string) : string {
   if toStrip.endsWith(ext) {
@@ -195,16 +185,6 @@ proc runWithStatus(command: [] string, quiet=false, capture=true): int {
   }
 }
 
-@chplcheck.ignore("CamelCaseFunctions")
-proc SPACK_ROOT : string {
-  const envHome = getEnv("SPACK_ROOT");
-  const default = MASON_HOME + "/spack";
-
-  const spackRoot = if !envHome.isEmpty() then envHome else default;
-
-  return spackRoot;
-}
-
 /*
   Returns the current CHPL_HOME. Tries the following in order:
   1. The CHPL_HOME environment variable
@@ -238,79 +218,6 @@ proc CHPL_HOME : string {
   @functionStatic
   ref chplHome = CHPL_HOME_inner();
   return chplHome;
-}
-
-
-/*
-This fetches the mason-installed spack registry only.
-Users that define SPACK_ROOT to their own spack installation will use
-the registry of their spack installation.
-*/
-proc getSpackRegistry : string {
-  return MASON_HOME + "/spack-registry";
-}
-
-/* uses spawnshell and the prefix to setup Spack before
-   calling the spack command. This also returns the stdout
-   of the spack call.
-   TODO: get to work with Subprocess */
-proc getSpackResult(cmd, quiet=false) : string throws {
-  var ret : string;
-  var prefix = "export SPACK_ROOT=" + SPACK_ROOT +
-               " && export PATH=\"$SPACK_ROOT/bin:$PATH\"" +
-               " && . $SPACK_ROOT/share/spack/setup-env.sh && ";
-  var splitCmd = prefix + cmd;
-  try {
-    log.debug("running spack command ", splitCmd);
-    var process = spawnshell(splitCmd,
-                             stdout=pipeStyle.pipe, executable="bash");
-
-    for line in process.stdout.lines() {
-      ret += line;
-      if !quiet {
-        write(line);
-      }
-    }
-    process.wait();
-  } catch e {
-    log.debugf("Caught unknown error ('%?') for command: %?", e, splitCmd);
-    throw new MasonError("Internal mason error");
-  }
-  return ret;
-}
-
-
-/* Sets up spack by prefixing command with spack env vars
-   Only returns the exit status of the command
-   TODO: get to work with Subprocess */
-proc runSpackCommand(command, quiet=false) {
-
-  var prefix = "export SPACK_ROOT=" + SPACK_ROOT +
-    " && export PATH=\"$SPACK_ROOT/bin:$PATH\"" +
-    " && . $SPACK_ROOT/share/spack/setup-env.sh && ";
-
-  try {
-    var cmd = (prefix + command);
-    var sub = spawnshell(cmd, stdout=pipeStyle.pipe,
-                              stderr=pipeStyle.pipe, executable="bash");
-
-    // quiet flag necessary for tests to be portable
-    if !quiet {
-      var line:string;
-      while sub.stdout.readLine(line) {
-        write(line);
-      }
-    }
-    sub.wait();
-
-    for line in sub.stderr.lines() {
-      write(line);
-    }
-
-    return sub.exitCode;
-  } catch {
-    return -1;
-  }
 }
 
 /*
@@ -408,31 +315,31 @@ proc getProjectHome(cwd: path, tomlName="Mason.toml"): path throws {
   return new path(); // should never reach here
 }
 
-proc getLastModified(filename: string) : int {
+proc getLastModified(filename: path): int do
+  return getLastModified(filename:string);
+proc getLastModified(filename: string): int {
   use CTypes, OS.POSIX;
 
   var file_buf: struct_stat;
   var file_path = filename.c_str();
 
-  if stat(file_path, c_ptrTo(file_buf)) == 0 then
-    return file_buf.st_mtim.tv_sec;
-  else
-    return -1;
+  const ret = if stat(file_path, c_ptrTo(file_buf)) == 0
+                then file_buf.st_mtim.tv_sec:int
+                else -1;
+  log.debugf("getLastModified for %s: %n", filename, ret);
+  return ret;
 }
 
-proc projectModified(projectHome, projectName, binLocation) : bool {
-  const binaryPath = joinPath(projectHome, "target", binLocation, projectName);
-  const tomlPath = joinPath(projectHome, "Mason.toml");
+proc projectModified(
+  projectHome: path, projectName: string, binLocation: string
+): bool throws {
+  const binaryPath = projectHome / "target" / binLocation / projectName;
+  const tomlPath = projectHome / "Mason.toml";
 
-  var isFile = false;
-  try {
-    isFile = FileSystem.isFile(binaryPath);
-  } catch { }
-
-  if isFile {
+  if binaryPath.isFile() {
     const binModTime = getLastModified(binaryPath);
-    for file in findFiles(joinPath(projectHome, "src"), recursive=true) {
-      var srcPath = joinPath(projectHome, "src", file);
+    for file in (projectHome / "src").findFiles(recursive=true) {
+      var srcPath = projectHome / "src" / file;
       if getLastModified(srcPath) > binModTime {
         return true;
       }
