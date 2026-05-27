@@ -42,6 +42,7 @@ import MasonLogger;
 import Package;
 import BuildInfo;
 import BuildInfo.MasonPackage;
+import Compilation;
 
 var subdir = false;
 var keepExec = false;
@@ -292,7 +293,8 @@ private proc runTests(
           throw new MasonError("Test '" + testTemp + "' not found in package");
         }
         const packageTest = package.tests[packageTestIdx];
-        var compCommand = package.getBuildCmd(options, packageTest);
+        var compOpts = package.getBuildCmd(options, packageTest);
+        var compCommand = Compilation.getCompilationCmd(outputLoc, compOpts);
         log.debugf("\t%?", compCommand);
         const compilation = runWithStatus(compCommand.toArray(), !show);
         const success = compilation == 0;
@@ -310,6 +312,7 @@ private proc runTests(
         return (outputLoc:string, success);
       }
 
+      package.preBuild();
 
       var timeElapsed = new stopwatch();
       timeElapsed.start();
@@ -337,6 +340,9 @@ private proc runTests(
         }
       }
       timeElapsed.stop();
+
+      package.postBuild();
+
       if run {
         printTestResults(result, timeElapsed);
       }

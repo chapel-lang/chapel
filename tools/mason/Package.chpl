@@ -46,29 +46,6 @@ class Dependency {
   proc addDepToLock(lock: shared Toml) throws {
     log.debug("No info to add to lock file for dependency ", name);
   }
-
-  proc preBuild() throws do
-    log.debug("No pre-build steps for dependency ", name);
-  proc postBuild() throws do
-    log.debug("No post-build steps for dependency ", name);
-
-  // this should be 'iter Dependency.getSourceFiles(): string throws'
-  // (and 'getCompopts' should be the same)
-  // but error handling and virtual iterators don't play well together.
-  // the workaround is
-  // 'iter Dependency.getSourceFiles(ref err: owned Error?): string'
-  // but that also doesn't work with deeply nested virtual iterators
-  // (see https://github.com/chapel-lang/chapel/issues/28762)
-  // at this point, I had had enough of workarounds for iterators so these are
-  // functions just return lists
-  proc getSourceFiles(): list(string) throws {
-    log.debug("No source files for dependency ", name);
-    return new list(string);
-  }
-  proc getCompopts(): list(string) throws {
-    log.debug("No compopts for dependency ", name);
-    return new list(string);
-  }
 }
 class SystemDependency: Dependency {
   var version: string;
@@ -151,7 +128,7 @@ record packageTests {
   proc find(name: string): int {
     record finder {
       var name: string;
-      proc this(t: test) do return t.name.name == name;
+      proc this(t: test) do return t.name:string == name;
     }
     return this.tests.find(new finder(name));
   }
@@ -250,7 +227,7 @@ record packageExamples {
   proc find(name: string): int {
     record finder {
       var name: string;
-      proc this(e: example) do return e.name.name == name;
+      proc this(e: example) do return e.name:string == name;
     }
     return this.examples.find(new finder(name));
   }
