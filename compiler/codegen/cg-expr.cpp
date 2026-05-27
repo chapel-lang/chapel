@@ -5206,9 +5206,6 @@ DEFINE_PRIM(LOGICALAND_ASSIGN) {
 DEFINE_PRIM(LOGICALOR_ASSIGN) {
     codegenOpAssign(call->get(1), call->get(2), " ||= ", codegenLogicalOr);
 }
-DEFINE_PRIM(POW) {
-    ret = codegenCallExpr("pow", call->get(1), call->get(2));
-}
 
 DEFINE_PRIM(MIN) {
     Type* t = call->get(1)->typeInfo();

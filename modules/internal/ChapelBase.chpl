@@ -908,8 +908,16 @@ module ChapelBase {
   inline operator **(a: uint(32), b: uint(32)) do return _intExpHelp(a, b);
   inline operator **(a: uint(64), b: uint(64)) do return _intExpHelp(a, b);
 
-  inline operator **(a: real(32), b: real(32)) do return __primitive("**", a, b);
-  inline operator **(a: real(64), b: real(64)) do return __primitive("**", a, b);
+  inline operator **(a: real(32), b: real(32)) {
+    pragma "fn synchronization free"
+    extern proc powf(x: real(32), y: real(32)): real(32);
+    return powf(a, b);
+  }
+  inline operator **(a: real(64), b: real(64)) {
+    pragma "fn synchronization free"
+    extern proc pow(x: real(64), y: real(64)): real(64);
+    return pow(a, b);
+  }
 
   inline operator **(a: complex(64), b: complex(64)) {
     pragma "fn synchronization free"
