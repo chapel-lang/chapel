@@ -491,6 +491,12 @@ FnSymbol* build_accessor(AggregateType* ct, Symbol* field,
     fn->unstableMsg = field->unstableMsg;
   }
 
+  if (field->hasFlag(FLAG_HAS_EDITION)) {
+    fn->addFlag(FLAG_HAS_EDITION);
+    fn->firstEdition = field->firstEdition;
+    fn->lastEdition = field->lastEdition;
+  }
+
   if (!typeMethod) {
     if (fieldIsConst)
       fn->addFlag(FLAG_REF_TO_CONST);
