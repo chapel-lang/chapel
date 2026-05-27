@@ -50,6 +50,11 @@ static int32_t   localRank = -1;
 static int32_t   numColocalesOnNode = 1;
 
 
+void chpl_rt_comm_broadcast_private(chpl_rt_prginfo* prg, int id,
+                                    size_t size) {
+  chpl_rt_comm_broadcast_private_impl(prg, id, size);
+}
+
 void chpl_rt_comm_broadcast_global_vars(chpl_rt_prginfo* prg) {
   //
   // On node 0: gather up the global variables' wide pointers into a

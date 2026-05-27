@@ -1205,7 +1205,8 @@ wide_ptr_t* chpl_rt_comm_broadcast_global_vars_impl(chpl_rt_prginfo* prg) {
   }
 }
 
-void chpl_comm_broadcast_private(int id, size_t size) {
+void chpl_rt_comm_broadcast_private_impl(chpl_rt_prginfo* prg, int id,
+                                         size_t size) {
   int  node, offset;
   int  payloadSize = size + sizeof(priv_bcast_t);
   done_t* done;

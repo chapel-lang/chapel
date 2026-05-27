@@ -3936,8 +3936,8 @@ wide_ptr_t* chpl_rt_comm_broadcast_global_vars_impl(chpl_rt_prginfo* prg) {
 }
 
 
-void chpl_comm_broadcast_private(int id, size_t size)
-{
+void chpl_rt_comm_broadcast_private_impl(chpl_rt_prginfo* prg, int id,
+                                         size_t size) {
   int i;
 
   DBG_P_LP(DBGF_IFACE, "IFACE chpl_comm_broadcast_private(%d, %zd)", id, size);

@@ -3354,7 +3354,8 @@ void init_broadcast_private(void) {
 }
 
 
-void chpl_comm_broadcast_private(int id, size_t size) {
+void chpl_rt_comm_broadcast_private_impl(chpl_rt_prginfo* prg, int id,
+                                         size_t size) {
   DBG_PRINTF(DBG_IFACE_SETUP, "%s(%d, %zd)", __func__, id, size);
 
   for (int i = 0; i < chpl_numNodes; i++) {
