@@ -12,14 +12,55 @@ module BuildInfo {
                   example, test};
 
   import List.list;
+  import IO;
 
   private var log = MasonLogger.getLogger("package");
 
   record buildOptions {
-    var releaseMode: bool;
+    var releaseMode: bool = false;
+    var extraCompopts: list(string) = new list(string);
+    var commandLineCompopts: list(string) = new list(string);
     iter getCompopts(): string {
       if releaseMode then yield "--fast";
+      for c in extraCompopts do yield c;
+      for c in commandLineCompopts do yield c;
     }
+    operator :(x: buildOptions, type t: string): t {
+      try {
+        var mem = IO.openMemFile();
+        var w = mem.writer();
+        w.write(x);
+        w.close();
+        var r = mem.reader();
+        return "buildOptions" + r.readAll(string);
+      } catch {
+        log.error("Error serializing build options: ", x);
+        return "buildOptions()";
+      }
+    }
+  }
+
+  proc Dependency.preBuild() throws do
+    log.debug("No pre-build steps for dependency ", name);
+  proc Dependency.postBuild() throws do
+    log.debug("No post-build steps for dependency ", name);
+
+  // this should be 'iter Dependency.getSourceFiles(): string throws'
+  // (and 'getCompopts' should be the same)
+  // but error handling and virtual iterators don't play well together.
+  // the workaround is
+  // 'iter Dependency.getSourceFiles(ref err: owned Error?): string'
+  // but that also doesn't work with deeply nested virtual iterators
+  // (see https://github.com/chapel-lang/chapel/issues/28762)
+  // at this point, I had had enough of workarounds for iterators so these are
+  // functions just return lists
+  proc Dependency.getSourceFiles(): list(string) throws {
+    log.debug("No source files for dependency ", name);
+    return new list(string);
+  }
+  proc Dependency.getCompopts(): list(string) throws {
+    log.debug("No compopts for dependency ", name);
+    return new list(string);
   }
 
   override proc SystemDependency.getCompopts(): list(string) throws {
