@@ -10,12 +10,12 @@ import MasonUtils.{isCompatible, zero, max, containsMax, fromString};
 
 
 import MasonUtils;
-import MasonUtils.MasonError;
-import MasonUpdate;
+import MasonUtils.{MasonError, getLastModified};
 import MasonEnv;
 import MasonSystem;
 import MasonPrereqs;
 import MasonLogger;
+import Registry;
 
 import ThirdParty.TemplateString.templateString;
 import ThirdParty.Pathlib.path;
@@ -268,6 +268,8 @@ record example {
   var name: path;
   var compopts: list(string);
   var execopts: list(string);
+
+  proc plainName() do return name.withSuffix(""):string;
 
   proc toToml(): string throws {
     if compopts.isEmpty() && execopts.isEmpty() then
@@ -548,19 +550,21 @@ proc MasonPackage.fillFromManifest(
     }
   }
 
+  packageChecks();
+
 }
 
 proc type MasonPackage.fromManifest(
   tomlStr: ?T, projectHome: path
 ): MasonPackage throws
-where T == string || isSubtype(T, fileReader) {
+where T == string || isSubtype(T, fileReader) || isSubtype(T, shared Toml) {
   if !projectHome.isAbsolute() then
     throw new MasonError("projectHome must be an absolute path");
 
   var m = new shared MasonPackage();
   m.projectHome = projectHome;
   log.debug("Creating package from manifest at ", projectHome);
-  var toml = parseToml(tomlStr);
+  var toml = if isSubtype(T, shared Toml?) then tomlStr else parseToml(tomlStr);
   log.debug("Manifest Contents", toml);
   m.fillFromManifest(toml, postResolve=false);
   log.debug("Filled in initial fields from manifest, ",
@@ -572,17 +576,16 @@ where T == string || isSubtype(T, fileReader) {
   return m;
 }
 proc type MasonPackage.fromLock(
-  tomlStr: ?T,
-  projectHome: path
+  tomlStr: ?T, projectHome: path
 ): MasonPackage throws
-where T == string || isSubtype(T, fileReader) {
+where T == string || isSubtype(T, fileReader) || isSubtype(T, shared Toml) {
   if !projectHome.isAbsolute() then
     throw new MasonError("projectHome must be an absolute path");
 
   var p = new shared MasonPackage();
   p.projectHome = projectHome;
 
-  var toml = parseToml(tomlStr);
+  var toml = if isSubtype(T, shared Toml?) then tomlStr else parseToml(tomlStr);
   log.debug("Creating package from lock file at ", projectHome);
   log.debug("Lock file contents: ", toml);
 
@@ -697,6 +700,8 @@ proc MasonPackage.fillFromLock(
 
   // TODO: prereqs
 
+  packageChecks();
+
 }
 
 override proc GitMasonPackage.fillFromLock(
@@ -719,6 +724,16 @@ proc SystemDependency.fromLock(toml: borrowed Toml) throws {
   this.info.version = this.version;
   readField(this.info.libs, toml, "libs", "libs", required=true);
   readField(this.info.includes, toml, "includes", "includes", required=true);
+}
+
+proc MasonPackage.packageChecks() throws {
+  const current = MasonUtils.getChapelVersionInfo();
+  var (low, hi) = this.chplVersion.toTuple();
+  if !(low <= current && current <= hi) {
+    throw new MasonError(
+      "Package %s requires Chapel version %s, but current version is %s"
+        .format(this.name, this.chplVersion:string, current:string));
+  }
 }
 
 iter MasonPackage.allDependencies(): shared Dependency {
@@ -1157,7 +1172,14 @@ record versionRange {
   }
 
   proc isUnboundedUpper() do return high == Version.version.max();
-  proc toPrettyStr(): string do return MasonUpdate.prettyVersionRange(low, high);
+  proc toPrettyStr(): string {
+    if low == high then
+      return low:string;
+    else if high.containsMax() then
+      return low:string + " or later";
+    else
+      return low:string + ".." + high:string;
+  }
   proc toTuple() do return (low, high);
   /* Returns a new versionRange with the max set to the current Chapel version*/
   proc toBounded() throws do if this.isUnboundedUpper()
@@ -1174,7 +1196,6 @@ proc versionRange.serialize(writer, ref serializer) throws do
 module VersionResolution {
 import super.MasonPackage;
 import MasonUtils;
-import MasonUpdate;
 import MasonLogger;
 import Version;
 import IO.format;
@@ -1312,5 +1333,83 @@ private proc listFromToml(
 ): resultType throws {
   compilerError("Unhandled dependency type in manifest: " +
                 resultType:string);
+}
+
+// TODO: skipUpdate and --no-update in general don't make much sense
+// when we have proper lock file semantics
+// the only thing we really need to preserve is MASON_OFFLINE
+proc getMasonPackage(skipUpdate: bool,
+                     show=true, force=false): shared MasonPackage throws {
+  const projectHome = MasonUtils.getProjectHome(path.cwd());
+  const tomlPath = projectHome / "Mason.toml";
+  const lockPath = projectHome / "Mason.lock";
+
+  // if the lock file exists and is newer than the manifest
+  // then read from the lock file
+  var readFromLock = false;
+  if force || skipUpdate then
+    readFromLock = true;
+  else if lockPath.isFile() then
+    readFromLock = getLastModified(lockPath) > getLastModified(tomlPath);
+
+  if readFromLock {
+    if force || skipUpdate then
+      log.debug("Reading from lock file since --force or ",
+                "--no-update was specified");
+    else
+      log.debug("Reading from lock file since it is newer than the manifest");
+    if !lockPath.isFile() {
+      if skipUpdate then
+        throw new MasonError("Lock file does not exist, " +
+                             "cannot use `--no-update`");
+      else
+        throw new MasonError(
+          "Lock file does not exist, try using " +
+          "`mason update --force` to generate a new lock file");
+    }
+    var m = MasonPackage.fromLock(openReader(lockPath), projectHome);
+    return m;
+  } else {
+    if !lockPath.isFile() then
+      log.debug("Reading from manifest since lock file does not exist");
+    else
+      log.debug("Reading from manifest since lock file is older than manifest");
+
+
+    // if no dependencies will be found in the manifest, we can skip the
+    // registry update and just read the manifest
+    const toml = parseToml(openReader(tomlPath));
+    if force || (toml.pathExists("dependencies") &&
+                 toml["dependencies"]!.A.size > 0) {
+      Registry.updateRegistry(skipUpdate, show);
+    } else {
+      if show {
+        const reason =
+          if skipUpdate
+            then ""
+            else " since no dependency found in manifest file";
+        log.info("Skipping registry update" + reason);
+      }
+    }
+
+    var m = MasonPackage.fromManifest(toml, projectHome);
+    log.debug("Generating lock file");
+    var lockFile = m.createLockFile();
+    log.debug("Lock file generated, writing to disk");
+    openWriter(lockPath).writeln(lockFile);
+    return m;
+  }
+}
+
+
+proc MasonPackage.getTargetExecutable(targetSubdir: path, name=""): path {
+  const targetName = if name != "" then name else this.name;
+  return projectHome / "target" / targetSubdir / targetName;
+}
+
+proc MasonPackage.getTargetFingerprintPath(targetSubdir: path, name=""): path {
+  const targetName = if name != "" then name else this.name;
+  return projectHome / "target" / targetSubdir /
+                    ".fingerprint" / (targetName + "-fingerprint");
 }
 }
