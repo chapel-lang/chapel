@@ -1,0 +1,3 @@
+whereClauseRealAndArrayArg.chpl:3: In function 'wrong':
+whereClauseRealAndArrayArg.chpl:3: error: a 'where' clause expression must evaluate to a 'param bool', but got a 'param real(64)' instead
+  whereClauseRealAndArrayArg.chpl:1: called as wrong(ax: [domain(1,int(64),one)] real(64))
