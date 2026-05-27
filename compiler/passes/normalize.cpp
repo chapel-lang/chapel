@@ -621,6 +621,7 @@ static void moveAndCheckInterfaceConstraints() {
 
     FnSymbol* fn = toFnSymbol(icon->parentSymbol);
     if (fn != nullptr) {
+      // TODO: I think we know we'll never hit this case now?
       if (BlockStmt* block = toBlockStmt(icon->parentExpr)) {
         if (fn->where == block) {
           icon->remove();
@@ -630,8 +631,14 @@ static void moveAndCheckInterfaceConstraints() {
           continue;
         }
       } else if (CallExpr* call = toCallExpr(icon->parentExpr)) {
-        if (isInWhereBlock(fn, call)) {
-          if (! call->isNamed("&&")) {
+        // unwrap the compiler-inserted where-clause validation if it's there
+        if (call->isNamed("chpl_validateWhere")) {
+          icon->remove();
+          fn->addInterfaceConstraint(icon);
+          call->parentExpr->remove(); // remove the BlockStmt containing it
+          continue;
+        } else if (isInWhereBlock(fn, call)) {
+          if (!call->isNamed("&&")) {
             USR_FATAL_CONT(icon, "combining an 'implements' constraint"
                   " with others is currently supported only using '&&'");
             continue;
