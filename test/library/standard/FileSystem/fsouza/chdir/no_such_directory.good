@@ -1,3 +1,4 @@
 uncaught FileNotFoundError: No such file or directory (in chdir with path "no-such-dir")
-  no_such_directory.chpl:3: thrown here
   no_such_directory.chpl:3: uncaught here
+  no_such_directory.chpl:3: called from here
+  no_such_directory.chpl:3: thrown here

@@ -1,3 +1,4 @@
 uncaught FileNotFoundError: No such file or directory (realPath with path "foo.txt")
-  doesNotExist.chpl:4: thrown here
   doesNotExist.chpl:4: uncaught here
+  doesNotExist.chpl:4: called from here
+  doesNotExist.chpl:4: thrown here

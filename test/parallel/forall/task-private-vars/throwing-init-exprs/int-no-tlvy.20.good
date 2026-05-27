@@ -1,7 +1,7 @@
 nt 20
 uncaught TaskErrors: 1 errors: IllegalArgumentError: 20
-  int-no-tlvy.chpl:44: thrown here
   int-no-tlvy.chpl:44: uncaught here
+  int-no-tlvy.chpl:44: thrown here
 starting task
 finished task
 asdf(1), returning
