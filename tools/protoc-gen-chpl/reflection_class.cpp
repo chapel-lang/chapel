@@ -18,10 +18,10 @@
  * limitations under the License.
  */
 
-#include <reflection_class.h>
-#include <message.h>
-#include <helpers.h>
-#include <enum.h>
+#include "reflection_class.h"
+#include "message.h"
+#include "helpers.h"
+#include "enum.h"
 
 namespace chapel {
 
@@ -62,7 +62,7 @@ namespace chapel {
 
       for (int i = 0; i < descriptor->real_oneof_decl_count(); i++) {
         const OneofDescriptor* oneof = descriptor->oneof_decl(i);
-        string oneof_name = GetOneofName(oneof);
+        std::string oneof_name = GetOneofName(oneof);
         printer->Print("enum $oneof_name$ {\n",
                        "oneof_name", oneof_name);
         printer->Indent();

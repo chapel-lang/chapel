@@ -2487,6 +2487,25 @@ bool formalRequiresTemp(ArgSymbol* formal, FnSymbol* fn) {
     );
 }
 
+// Matches the logic above for the case when we don't have an FnSymbol to work
+// with.
+bool formalRequiresTemp(FunctionType::Formal formal) {
+  return
+    //
+    // 'out' requires a temp currently
+    //
+    (formal.intent() == INTENT_OUT ||
+     //
+     // 'in' and 'const in' also require a copy, but for simple types
+     // (like ints or class references), we can rely on C's copy when
+     // passing the argument, as long as the routine is not
+     // inlined or an iterator.
+     //
+     ((formal.intent() == INTENT_IN || formal.intent() == INTENT_CONST_IN) &&
+      backendRequiresCopyForIn(formal.type()))
+    );
+}
+
 bool shouldAddInFormalTempAtCallSite(ArgSymbol* formal, FnSymbol* fn) {
 
   // Don't add copies at call site if function body will be removed anyway.

@@ -489,11 +489,11 @@ usd_ib_cmd_create_cq(
             sched_getaffinity(getpid(),
                         CPU_ALLOC_SIZE(sysconf(_SC_NPROCESSORS_ONLN)),
                         affinity_mask) == 0) {
-            cmd.usnic_cmd.cur.affinity_mask_ptr = (u64)affinity_mask;
+            cmd.usnic_cmd.cur.affinity_mask_ptr = (uint64_t)(uintptr_t)affinity_mask;
             cmd.usnic_cmd.cur.affinity_mask_len =
                             CPU_ALLOC_SIZE(sysconf(_SC_NPROCESSORS_ONLN));
         } else {
-            cmd.usnic_cmd.cur.affinity_mask_ptr = (u64)NULL;
+            cmd.usnic_cmd.cur.affinity_mask_ptr = (uint64_t)(uintptr_t) 0;
             cmd.usnic_cmd.cur.affinity_mask_len = 0;
         }
     } else {

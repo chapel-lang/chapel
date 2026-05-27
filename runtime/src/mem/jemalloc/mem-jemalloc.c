@@ -31,6 +31,7 @@
 #include "chpl-linefile-support.h"
 #include "chpl-mem.h"
 #include "chpl-mem-desc.h"
+#include "chpl-prginfo.h"
 #include "chpl-topo.h"
 #include "chplcgfns.h"
 #include "chplmemtrack.h"
@@ -617,6 +618,7 @@ void chpl_mem_layerInit(void) {
   void* heap_base;
   size_t heap_size;
 
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_PRGINFO_ROOT, CHPL_INTERLEAVE_MEM);
   interleave_mem = chpl_env_rt_get_bool("INTERLEAVE_MEMORY", CHPL_INTERLEAVE_MEM);
   CHPL_JE_LG_ARENA = get_num_arenas()-1;
 

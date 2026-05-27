@@ -1208,14 +1208,20 @@ if both operands evaluate to true; otherwise it returns false. If the
 first operand evaluates to false, the second operand is not evaluated
 and the result is false.
 
+.. note::
+
+   The short-circuiting behavior also occurs at compile-time, if the first
+   operand is a ``param`` value that resolves to true, the second operand will
+   not be resolved.
+
 The logical and operator over expressions ``a`` and ``b`` given by
 
 
 .. code-block:: chapel
 
-   a && b 
+   a && b
 
-is evaluated as the expression 
+is evaluated as the expression
 
 .. code-block:: chapel
 
@@ -1245,6 +1251,12 @@ either operand evaluate to true; otherwise it returns false. If the
 first operand evaluates to true, the second operand is not evaluated and
 the result is true.
 
+.. note::
+
+   The short-circuiting behavior also occurs at compile-time, if the first
+   operand is a ``param`` value that resolves to true, the second operand will
+   not be resolved.
+
 The logical or operator over expressions ``a`` and ``b`` given by
 
 
@@ -1252,7 +1264,7 @@ The logical or operator over expressions ``a`` and ``b`` given by
 
    a || b
 
-is evaluated as the expression 
+is evaluated as the expression
 
 .. code-block:: chapel
 

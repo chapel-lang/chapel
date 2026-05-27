@@ -159,14 +159,6 @@ static __inline__ uint32_t psm3_next_power2(uint64_t x)
 #define HFI_KHDR_TINYLEN_MASK 0xf
 #define HFI_KHDR_TINYLEN_SHIFT 16
 
-
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
-extern int is_driver_gpudirect_enabled;
-
-#define PSMI_IS_DRIVER_GPUDIRECT_ENABLED  likely(is_driver_gpudirect_enabled)
-#define PSMI_IS_DRIVER_GPUDIRECT_DISABLED unlikely(!is_driver_gpudirect_enabled)
-#endif
-
 /* hfi kdeth header format */
 struct hfi_kdeth {
 	__le32 kdeth0;
@@ -267,5 +259,16 @@ static __inline__ uint64_t nanosecs_to_cycles(uint64_t ns)
 {
 	return (ns * 1000ULL) / psm3_pico_per_cycle;
 }
+
+/* concatenate two symbols, giving the caller the opportunity to do macro
+ * expansion of either argument.  in particular, this is required for CUDA,
+ * which #define-maps legacy functions to alternate versions (by appending
+ * _v2 suffixes).
+ *
+ * without this, macro authors will get different results depending on whether
+ * they immediately use a passed symbol in a concatenation (will not expand),
+ * or pass it to a nested macro (will expand).
+ */
+#define PSM3_CONCAT(a, b) a##b
 
 #endif /* UTILS_USER_H */

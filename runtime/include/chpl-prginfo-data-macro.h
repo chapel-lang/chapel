@@ -31,6 +31,16 @@
 E_CONSTANT(mainHasArgs, int)
 
 /** CODE-GENERATED
+    The launcher setting that was used when this program was compiled.
+*/
+E_CONSTANT(CHPL_LAUNCHER, const char*)
+
+/** CODE-GENERATED
+    The path to '$CHPL_HOME/third-party' when this program was compiled.
+*/
+E_CONSTANT(CHPL_THIRD_PARTY, const char*)
+
+/** CODE-GENERATED
     Whether or not 'main' should preserve the delimiter when parsing args.
 */
 E_CONSTANT(mainPreserveDelimiter, int)
@@ -89,18 +99,18 @@ E_CONSTANT_RT(chpl_ftableSize, int64_t)
 /** MODULE-CODE: ChapelLocale.chpl
     Call to increment the task running count.
 */
-E_CALLBACK_RT(chpl_taskRunningCntInc, void, int32_t ln, int32_t fn)
+E_CALLBACK_RT(chpl_taskRunningCntInc, void, int64_t _ln, int32_t _fn)
 
 /** MODULE-CODE: ChapelLocale.chpl
     Call to decrement the task running count. Seemingly only invoked
     by the compiler at codegen time (see 'gChplDecRunningTask').
 */
-E_CALLBACK_RT(chpl_taskRunningCntDec, void, int32_t ln, int32_t fn)
+E_CALLBACK_RT(chpl_taskRunningCntDec, void, int64_t _ln, int32_t _fn)
 
 /** MODULE-CODE: ChapelLocale.chpl
     Call to reset the task running count.
 */
-E_CALLBACK_RT(chpl_taskRunningCntReset, void, int32_t ln, int32_t fn)
+E_CALLBACK_RT(chpl_taskRunningCntReset, void, int64_t _ln, int32_t _fn)
 
 /** CODE-GENERATED
     Function which constructs the config variable table.
@@ -116,22 +126,27 @@ E_CALLBACK_RT(chpl__initStringLiterals, void, void)
     Module initializer which sets initialization flags to false.
     TODO: Why? Won't zero-initialization set these to false?
 */
-E_CALLBACK_RT(chpl__init_preInit, void, int32_t ln, int32_t fn)
+E_CALLBACK_RT(chpl__init_preInit, void, int64_t _ln, int32_t _fn)
 
 /** CODE-GENERATED
     Module initializer for the 'PrintModuleInitOrder' module.
 */
-E_CALLBACK_RT(chpl__init_PrintModuleInitOrder, void, int32_t ln, int32_t fn)
+E_CALLBACK_RT(chpl__init_PrintModuleInitOrder, void, int64_t _ln, int32_t _fn)
 
 /** CODE-GENERATED
     Module initializer for the 'ChapelStandard' module.
 */
-E_CALLBACK_RT(chpl__init_ChapelStandard, void, int32_t ln, int32_t fn)
+E_CALLBACK_RT(chpl__init_ChapelStandard, void, int64_t _ln, int32_t _fn)
 
 /** CODE-GENERATED
     Main entrypoint for this program.
 */
 E_CALLBACK_RT(chpl_gen_main, int64_t, chpl_main_argument* _arg)
+
+/** MODULE-CODE: ChapelProgramEntrypoints.chpl | WRITEABLE
+    Get a writeable pointer to the main argument stored on this locale.
+*/
+E_CALLBACK(chpl_genMainArgPtr, chpl_main_argument*, void)
 
 /** CODE-GENERATED
     Contains filenames, and maybe other strings besides?
@@ -180,6 +195,11 @@ E_CALLBACK_RT(chpl_memTracking_returnConfigVals, void,
     Text of the compiler invocation used to create this program.
 */
 E_CONSTANT_RT(chpl_compileCommand, const char*)
+
+/** CODE-GENERATED | WRITEABLE
+    Pointer used to store the execution command used to run this program.
+*/
+E_CONSTANT_RT(chpl_executionCommand, char*)
 
 /** CODE-GENERATED
     Directory where the compiler invocation took place.
@@ -267,7 +287,7 @@ E_CONSTANT_RT(CHPL_STACK_CHECKS, int)
 /** CODE-GENERATED
     Value of '$CHPL_TARGET_PLATFORM' when this program was compiled.
 */
-E_CONSTANT_RT(CHPL_TARGET_PLATFORM, const char*)
+E_CONSTANT(CHPL_TARGET_PLATFORM, const char*)
 
 /** CODE-GENERATED
     Value of '$CHPL_TARGET_MEM' when this program was compiled.

@@ -236,6 +236,7 @@ static int usdf_cm_copy_name(struct fi_info *info, struct sockaddr_in *sin,
 		snprintf(addr, MIN(len, *addrlen), "%s", addr_str);
 		break;
 	case FI_SOCKADDR:
+	case FI_SOCKADDR_IP:
 	case FI_SOCKADDR_IN:
 		len = sizeof(*sin);
 		memcpy(addr, sin, MIN(len, *addrlen));
@@ -305,6 +306,7 @@ bool usdf_cm_addr_is_valid_sin(void *addr, size_t addrlen, uint32_t addr_format)
 	switch (addr_format) {
 	case FI_SOCKADDR_IN:
 	case FI_SOCKADDR:
+	case FI_SOCKADDR_IP:
 		if (addrlen != sizeof(struct sockaddr_in)) {
 			USDF_WARN("addrlen is incorrect\n");
 			return false;

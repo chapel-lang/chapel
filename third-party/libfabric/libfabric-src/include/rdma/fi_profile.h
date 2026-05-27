@@ -45,6 +45,12 @@
 enum {
 	FI_VAR_UNEXP_MSG_CNT,      // datatype: FI_UINT64
 	FI_VAR_UNEXP_MSG_QUEUE,    // datatype: FI_TYPE_CQ_ERR_ENTRY
+	FI_VAR_MSG_QUEUE_CNT,      // datatype: FI_UNIT64
+	FI_VAR_CONNECTION_CNT,	   // datatype: FI_UNIT64
+	FI_VAR_CONN_REQUEST,       // datatype: FI_UNIT64
+	FI_VAR_CONN_ACCEPT,        // datatype: FI_UNIT64
+	FI_VAR_CONN_REJECT,        // datatype: FI_UNIT64
+	FI_VAR_OFI_MEM,            // datatype: FI_UINT64
 };
 
 /*

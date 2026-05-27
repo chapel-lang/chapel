@@ -7,7 +7,7 @@
       sudo dnf install llvm-devel clang clang-devel
 
 
-  * Alpine 3.20, 3.21, 3.22, 3.23::
+  * Alpine 3.21, 3.22, 3.23::
 
       sudo apk add gcc g++ m4 perl python3 python3-dev bash make gawk git cmake libunwind-dev coreutils
       sudo apk add llvm-dev clang-dev clang-static llvm-static
@@ -57,7 +57,7 @@
       sudo dnf install llvm-devel clang clang-devel
 
 
-  * Debian 11 "Bullseye"::
+  * Debian 11 "Bullseye" (but note `Newer CMake required to build LLVM`_)::
 
       sudo apt-get update
       sudo apt-get install gcc g++ m4 perl python3 python3-dev bash make mawk git pkg-config cmake libunwind-dev
@@ -71,7 +71,7 @@
       sudo apt-get install llvm-dev llvm clang libclang-dev libclang-cpp-dev libedit-dev
 
 
-  * Fedora 42, 43::
+  * Fedora 42, 43, 44::
 
       sudo dnf upgrade
       sudo dnf install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake libunwind-devel
@@ -79,7 +79,7 @@
       sudo dnf install llvm-devel clang clang-devel
 
 
-  * FreeBSD 13.5, 14.3::
+  * FreeBSD 13.5, 14.3 (but see note `Outdated FreeBSD testing`_)::
 
       sudo pkg install gcc m4 perl5 python3 bash gmake gawk git pkgconf cmake libunwind
       sudo pkg install llvm
@@ -101,7 +101,7 @@
       sudo dnf install llvm-devel clang clang-devel
 
 
-  * Ubuntu 22.04 "Jammy Jellyfish", 24.04 "Noble Numbat", 25.10 "Questing Quokka"::
+  * Ubuntu 22.04 "Jammy Jellyfish", 24.04 "Noble Numbat", 25.10 "Questing Quokka", 26.04 "Resolute Raccoon"::
 
       sudo apt-get update
       sudo apt-get install gcc g++ m4 perl python3 python3-dev bash make mawk git pkg-config cmake libunwind-dev

@@ -409,7 +409,7 @@ static int psm3_getenv_is_verblevel(int printlevel)
 
 // count number of fields in a str_tuple (field:field:....)
 // The number is number of colons + 1
-static int psm3_count_tuples(const char *str)
+int psm3_count_tuples(const char *str)
 {
 	int ret = 1;
 	if (! str)

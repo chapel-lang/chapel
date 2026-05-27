@@ -2386,6 +2386,8 @@ BlockStmt* convertTypesToExtern(BlockStmt* blk, const char* cname) {
 
           ts->deprecationMsg = theVs->deprecationMsg;
           ts->unstableMsg = theVs->unstableMsg;
+          ts->firstEdition = theVs->firstEdition;
+          ts->lastEdition = theVs->lastEdition;
         }
 
         DefExpr* newde = new DefExpr(ts);

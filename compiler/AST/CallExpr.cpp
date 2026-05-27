@@ -457,8 +457,9 @@ QualifiedType CallExpr::qualType(void) {
   if (primitive) {
     retval = primitive->returnInfo(this);
 
-  } else if (isResolved() || (se && isFunctionType(se->symbol()->type))) {
-    auto ft = toFunctionType(se->symbol()->type);
+  } else if (isResolved() ||
+             (se && isFunctionType(se->symbol()->getValType()) && !se->symbol()->hasFlag(FLAG_TYPE_VARIABLE))) {
+    auto ft = toFunctionType(se->symbol()->getValType());
     auto fn = resolvedFunction();
     INT_ASSERT(fn || ft);
 

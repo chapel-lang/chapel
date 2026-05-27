@@ -37,7 +37,7 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 GITHUB_USER=chapel-lang
 GITHUB_BRANCH=main
 SHORT_NAME=unset
-START_DATE=4/23/2026
+START_DATE=4/23/26
 
 set -e
 checkout_branch $GITHUB_USER $GITHUB_BRANCH
@@ -46,4 +46,4 @@ set +e
 
 perf_args="-performance-description $SHORT_NAME -performance-configs default:v,$SHORT_NAME:v -sync-dir-suffix $SHORT_NAME"
 perf_args="${perf_args} -numtrials 1 -startdate $START_DATE"
-$UTIL_CRON_DIR/nightly -cron ${perf_args} ${nightly_args} -compopts '--mllvm -vector-library=LIBMVEC-X86'
+$UTIL_CRON_DIR/nightly -cron ${perf_args} ${nightly_args}

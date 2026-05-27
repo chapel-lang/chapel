@@ -95,6 +95,8 @@ int main(int argc, char* argv[]) {
   if (numCoLocales > 0) {
     setenv("CHPL_RT_LOCALES_PER_NODE", numCoLocalesStr, 1);
   }
+
+  setupProgramInfoHereManually();
   chpl__init_colocales(0, 0); // unsure why this is needed
   chpl_topo_pre_comm_init(mask);
   chpl_comm_init(NULL, NULL);

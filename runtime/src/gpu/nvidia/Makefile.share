@@ -38,6 +38,14 @@ ifeq ($(shell test $(CHPL_MAKE_LLVM_VERSION) -ge 15; echo "$$?"),0)
 			    -Wno-error=unknown-pragmas
 endif
 
+# silence warnings about gcc compat with clang 22
+# these come from applying the format attribute to non-variadic functions,
+# which clang allows but gcc does not. we never compiler GPU code with gcc,
+# so this is fine
+ifeq ($(shell test $(CHPL_MAKE_LLVM_VERSION) -ge 22; echo "$$?"),0)
+	RUNTIME_CXXFLAGS += -Wno-error=gcc-compat -DUSE_FORMAT_ATTR_FOR_NON_VARIADIC
+endif
+
 $(RUNTIME_OBJ_DIR)/gpu-nvidia-cub.o: gpu-nvidia-cub.cc \
                                          $(RUNTIME_OBJ_DIR_STAMP)
-	$(CXX) -c $(CXX11_STD) $(RUNTIME_CXXFLAGS) $(RUNTIME_INCLS) -o $@ $<
+	$(CXX) -c $(RUNTIME_CXXFLAGS) $(RUNTIME_INCLS) -std=c++17 -o $@ $<

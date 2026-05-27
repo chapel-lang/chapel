@@ -23,8 +23,8 @@
 #include "chpllaunch.h"
 #include "chpl-mem.h"
 #include "chpl-error.h"
+#include "chpl-prginfo.h"
 
-// To get CHPL_THIRD_PARTY from chpl invocation
 #include "chplcgfns.h"
 
 #define LAUNCH_PATH_HELP WRAP_TO_STR(LAUNCH_PATH)
@@ -104,6 +104,8 @@ int chpl_launch(int argc, char* argv[], int32_t numLocales,
   if (numLocalesPerNode > 1) {
     chpl_launcher_no_colocales_error(NULL);
   }
+
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER, CHPL_THIRD_PARTY);
 
   int len = strlen(CHPL_THIRD_PARTY) + strlen(WRAP_TO_STR(LAUNCH_PATH)) + strlen("amudprun") + 2;
   char *cmd = chpl_mem_allocMany(len, sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, 0);

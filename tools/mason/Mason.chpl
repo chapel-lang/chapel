@@ -57,7 +57,6 @@ use Map;
 use MasonBuild;
 use MasonDoc;
 use MasonEnv;
-use MasonExternal;
 use MasonHelp;
 use MasonModify;
 use MasonPublish;
@@ -133,7 +132,11 @@ proc main(args: [] string) throws {
       when "clean" do masonClean(cmdArgs);
       when "doc" do masonDoc(cmdArgs);
       when "env" do masonEnv(cmdArgs);
-      when "external" do masonExternal(cmdArgs);
+      when "external" do
+        throw new MasonError(
+          "Mason no longer supports external dependencies. " +
+          "If you were relying on this feature, " +
+          "please migrate to use system dependencies instead.");
       when "help" do masonHelp();
       when "init" do MasonNewInit.masonInit(cmdArgs);
       when "new" do MasonNewInit.masonNew(cmdArgs);

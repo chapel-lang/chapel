@@ -4,20 +4,42 @@
 #include "config.h"
 #include <ofi_util.h>
 #include "efa.h"
+#include "rdm/efa_rdm_ep.h"
+#include "rdm/efa_rdm_ope.h"
 #if HAVE_CUDA
 #include <cuda.h>
 #endif
 
 static int efa_mr_regattr(struct fid *fid, const struct fi_mr_attr *attr,
 			  uint64_t flags, struct fid_mr **mr_fid);
-static int efa_mr_reg_impl(struct efa_mr *efa_mr, uint64_t flags, const void *attr);
+static int efa_mr_reg_impl(struct efa_mr *efa_mr, uint64_t flags, const struct fi_mr_attr *mr_attr);
 static int efa_mr_dereg_impl(struct efa_mr *efa_mr);
 
 
-#define EFA_DEF_MR_CACHE_ENABLE 1
-int efa_mr_cache_enable	= EFA_DEF_MR_CACHE_ENABLE;
+/*
+ * Disable MR cache by default under ASAN. The memhooks monitor is
+ * incompatible with ASAN, and userfaultfd may not be available on
+ * all systems. Without a working monitor, efa_mr_cache_open fails.
+ * Can be overridden at runtime with FI_EFA_MR_CACHE_ENABLE=1.
+ */
+#ifdef ENABLE_ASAN
+int efa_mr_cache_enable	= 0;
+#else
+int efa_mr_cache_enable	= 1;
+#endif
 size_t efa_mr_max_cached_count;
 size_t efa_mr_max_cached_size;
+
+#define EFA_MR_ATTR_INIT_SYSTEM(iov, count, access, offset, requested_key, context) \
+	{ \
+		.mr_iov = (iov), \
+		.iov_count = (count), \
+		.access = (access), \
+		.offset = (offset), \
+		.requested_key = (requested_key), \
+		.context = (context), \
+		.iface = FI_HMEM_SYSTEM, \
+	}
 
 /*
  * Initial values for internal keygen functions to generate MR keys
@@ -31,7 +53,7 @@ size_t efa_mr_max_cached_size;
  * and should be sufficiently spaced apart s.t. they don't collide with each
  * other.
  */
-#define CUDA_NON_P2P_MR_KEYGEN_INIT	(0x100000000ull)
+#define NON_P2P_MR_KEYGEN_INIT	BIT_ULL(32)
 
 /* @brief Setup the MR cache.
  *
@@ -46,6 +68,7 @@ int efa_mr_cache_open(struct ofi_mr_cache **cache, struct efa_domain *domain)
 	struct ofi_mem_monitor *memory_monitors[OFI_HMEM_MAX] = {
 		[FI_HMEM_SYSTEM] = default_monitor,
 		[FI_HMEM_CUDA] = cuda_monitor,
+		[FI_HMEM_ROCR] = rocr_monitor,
 	};
 	int err;
 
@@ -184,12 +207,6 @@ static int efa_mr_hmem_setup(struct efa_mr *efa_mr,
 {
 	int err;
 	struct iovec mr_iov = {0};
-
-	if (flags & FI_MR_DMABUF)
-		ofi_mr_get_iov_from_dmabuf(&mr_iov, attr->dmabuf, 1);
-	else
-		mr_iov = *attr->mr_iov;
-
 	efa_mr->peer.flags = flags;
 
 	if (attr->iface == FI_HMEM_SYSTEM) {
@@ -198,12 +215,12 @@ static int efa_mr_hmem_setup(struct efa_mr *efa_mr,
 	}
 
 	if (efa_mr->domain->util_domain.info_domain_caps & FI_HMEM) {
-		if (efa_mr->domain->hmem_info[attr->iface].initialized) {
+		if (g_efa_hmem_info[attr->iface].initialized) {
 			efa_mr->peer.iface = attr->iface;
 		} else {
 			EFA_WARN(FI_LOG_MR,
-				 "FI_HMEM is not initialized for device type %d\n",
-				 attr->iface);
+				"%s is not initialized\n",
+				fi_tostr(&attr->iface, FI_TYPE_HMEM_IFACE));
 			return -FI_ENOSYS;
 		}
 	} else {
@@ -214,20 +231,21 @@ static int efa_mr_hmem_setup(struct efa_mr *efa_mr,
 		 * whatever reason.
 		 */
 		EFA_WARN_ONCE(FI_LOG_MR,
-		             "FI_HMEM support is disabled, assuming FI_HMEM_SYSTEM not type: %d.\n",
-		             attr->iface);
+		             "FI_HMEM support is disabled, assuming FI_HMEM_SYSTEM instead of %s\n",
+		             fi_tostr(&attr->iface, FI_TYPE_HMEM_IFACE));
 		efa_mr->peer.iface = FI_HMEM_SYSTEM;
 	}
 
-	/* efa_mr->peer.device is an union. Setting reserved to 0 cleared everything in it (cuda, neuron, synapseai etc) */
-	efa_mr->peer.device.reserved = 0;
+	efa_mr->peer.device = 0;
 	efa_mr->peer.flags &= ~OFI_HMEM_DATA_DEV_REG_HANDLE;
 	efa_mr->peer.hmem_data = NULL;
 	if (efa_mr->peer.iface == FI_HMEM_CUDA) {
 		efa_mr->needs_sync = true;
-		efa_mr->peer.device.cuda = attr->device.cuda;
+		efa_mr->peer.device = attr->device.cuda;
 
-		if (cuda_is_gdrcopy_enabled()) {
+		/* Only attempt GDRCopy registrations for efa rdm path */
+		if (efa_mr->domain->info_type == EFA_INFO_RDM && !(flags & FI_MR_DMABUF) && cuda_is_gdrcopy_enabled()) {
+			mr_iov = *attr->mr_iov;
 			err = ofi_hmem_dev_register(FI_HMEM_CUDA, mr_iov.iov_base, mr_iov.iov_len,
 						    (uint64_t *)&efa_mr->peer.hmem_data);
 			efa_mr->peer.flags |= OFI_HMEM_DATA_DEV_REG_HANDLE;
@@ -240,10 +258,12 @@ static int efa_mr_hmem_setup(struct efa_mr *efa_mr,
 				efa_mr->peer.flags &= ~OFI_HMEM_DATA_DEV_REG_HANDLE;
 			}
 		}
+	} else if (attr->iface == FI_HMEM_ROCR) {
+		efa_mr->peer.device = attr->device.rocr;
 	} else if (attr->iface == FI_HMEM_NEURON) {
-		efa_mr->peer.device.neuron = attr->device.neuron;
+		efa_mr->peer.device = attr->device.neuron;
 	} else if (attr->iface == FI_HMEM_SYNAPSEAI) {
-		efa_mr->peer.device.synapseai = attr->device.synapseai;
+		efa_mr->peer.device = attr->device.synapseai;
 	}
 
 	return FI_SUCCESS;
@@ -256,12 +276,11 @@ int efa_mr_cache_entry_reg(struct ofi_mr_cache *cache,
 	int ret = 0;
 	/* TODO
 	 * Since, access is not passed as a parameter to efa_mr_cache_entry_reg,
-	 * for now we will set access to all supported access modes i.e.
-	 * FI_SEND | FI_RECV | FI_REMOTE_READ | FI_REMOTE_WRITE. Once access
+	 * for now we will set access to all supported access modes. Once access
 	 * information is available this can be removed.
 	 * Issue: https://github.com/ofiwg/libfabric/issues/5677
 	 */
-	uint64_t access = FI_SEND | FI_RECV | FI_REMOTE_READ | FI_REMOTE_WRITE;
+	uint64_t access = EFA_MR_SUPPORTED_PERMISSIONS;
 	struct fi_mr_attr attr = {0};
 	struct efa_mr *efa_mr = (struct efa_mr *)entry->data;
 
@@ -287,7 +306,7 @@ int efa_mr_cache_entry_reg(struct ofi_mr_cache *cache,
 	else if (attr.iface == FI_HMEM_SYNAPSEAI)
 		attr.device.synapseai = entry->info.device;
 
-	ret = efa_mr_reg_impl(efa_mr, 0, (const void *)&attr);
+	ret = efa_mr_reg_impl(efa_mr, 0, &attr);
 	return ret;
 }
 
@@ -311,18 +330,6 @@ static int efa_mr_cache_regattr(struct fid *fid, const struct fi_mr_attr *attr,
 	struct ofi_mr_info info = {0};
 	int ret;
 
-	/*
-	 * dmabuf reg currently doesn't support caching because there is no memory monitor for
-	 * the dmabuf region yet.
-	 */
-	if (attr->iface == FI_HMEM_NEURON || attr->iface == FI_HMEM_SYNAPSEAI || (flags & FI_MR_DMABUF))
-		flags |= OFI_MR_NOCACHE;
-
-	if (flags & OFI_MR_NOCACHE) {
-		ret = efa_mr_regattr(fid, attr, flags, mr_fid);
-		return ret;
-	}
-
 	if (attr->iov_count > EFA_MR_IOV_LIMIT) {
 		EFA_WARN(FI_LOG_MR, "iov count > %d not supported\n",
 			 EFA_MR_IOV_LIMIT);
@@ -331,14 +338,15 @@ static int efa_mr_cache_regattr(struct fid *fid, const struct fi_mr_attr *attr,
 
 	if (!ofi_hmem_is_initialized(attr->iface)) {
 		EFA_WARN(FI_LOG_MR,
-			 "Cannot register memory for uninitialized iface\n");
+			"Cannot register memory for uninitialized iface (%s)\n",
+			fi_tostr(&attr->iface, FI_TYPE_HMEM_IFACE));
 		return -FI_ENOSYS;
 	}
 
 	domain = container_of(fid, struct efa_domain,
 			      util_domain.domain_fid.fid);
 
-	assert(attr->iov_count == 1);
+	assert(attr->iov_count > 0 && attr->iov_count <= domain->info->domain_attr->mr_iov_limit);
 	ofi_mr_info_get_iov_from_mr_attr(&info, attr, flags);
 	info.iface = attr->iface;
 	info.device = attr->device.reserved;
@@ -353,58 +361,52 @@ static int efa_mr_cache_regattr(struct fid *fid, const struct fi_mr_attr *attr,
 	return 0;
 }
 
-static int efa_mr_cache_regv(struct fid *fid, const struct iovec *iov,
-			     size_t count, uint64_t access, uint64_t offset,
-			     uint64_t requested_key, uint64_t flags,
-			     struct fid_mr **mr_fid, void *context)
+/**
+ * @brief Register a memory region and add it to the MR cache
+ *
+ * This function is only used internally by the EFA provider to register
+ * a memory region containing application memory and add it to the MR cache
+ * It is only used when FI_MR_LOCAL is not set and the MR cache is enabled
+ *
+ * @param[in]	fid		domain fid
+ * @param[in]	iov		iovec to be registered
+ * @param[in]	access		access flags for MR
+ * @param[in]	flags		MR flags
+ * @param[out]	mr_fid		MR descriptor fids
+ *
+ * @return FI_SUCCESS or negative FI error code
+ */
+int efa_mr_cache_regv(struct fid_domain *domain_fid, const struct iovec *iov,
+		      size_t count, uint64_t access, uint64_t offset,
+		      uint64_t requested_key, uint64_t flags,
+		      struct fid_mr **mr, void *context)
 {
-	struct fi_mr_attr attr = {0};
+	struct fi_mr_attr attr = EFA_MR_ATTR_INIT_SYSTEM(iov, count, access, offset, requested_key, context);
 
-	attr.mr_iov = iov;
-	attr.iov_count = count;
-	attr.access = access;
-	attr.offset = offset;
-	attr.requested_key = requested_key;
-	attr.context = context;
-	attr.iface = FI_HMEM_SYSTEM;
-	attr.hmem_data = NULL;
-
-	return efa_mr_cache_regattr(fid, &attr, flags, mr_fid);
+	return efa_mr_cache_regattr(&domain_fid->fid, &attr, flags, mr);
 }
-
-static int efa_mr_cache_reg(struct fid *fid, const void *buf, size_t len,
-			    uint64_t access, uint64_t offset,
-			    uint64_t requested_key, uint64_t flags,
-			    struct fid_mr **mr_fid, void *context)
-{
-	struct iovec iov;
-
-	iov.iov_base = (void *)buf;
-	iov.iov_len = len;
-	return efa_mr_cache_regv(fid, &iov, 1, access, offset, requested_key,
-				 flags, mr_fid, context);
-}
-
-struct fi_ops_mr efa_domain_mr_cache_ops = {
-	.size = sizeof(struct fi_ops_mr),
-	.reg = efa_mr_cache_reg,
-	.regv = efa_mr_cache_regv,
-	.regattr = efa_mr_cache_regattr,
-};
 
 static int efa_mr_dereg_impl(struct efa_mr *efa_mr)
 {
 	struct efa_domain *efa_domain;
 	int ret = 0;
 	int err;
+	size_t ibv_mr_size;
+	int64_t reg_ct, reg_sz;
 
 	efa_domain = efa_mr->domain;
 	if (efa_mr->ibv_mr) {
+		ibv_mr_size = efa_mr->ibv_mr->length;
 		err = -ibv_dereg_mr(efa_mr->ibv_mr);
 		if (err) {
 			EFA_WARN(FI_LOG_MR,
 				"Unable to deregister memory registration\n");
 			ret = err;
+		} else {
+			reg_ct = ofi_atomic_dec64(&efa_mr->domain->ibv_mr_reg_ct);
+			reg_sz = ofi_atomic_sub64(&efa_mr->domain->ibv_mr_reg_sz, ibv_mr_size);
+			EFA_INFO(FI_LOG_MR, "Deregistered memory of size %zu for ibv pd %p, total mr reg size %zd, mr reg count %zd\n",
+				 ibv_mr_size, efa_mr->domain->ibv_pd, reg_sz, reg_ct);
 		}
 	}
 
@@ -425,17 +427,6 @@ static int efa_mr_dereg_impl(struct efa_mr *efa_mr)
 		efa_mr->inserted_to_mr_map = false;
 	}
 
-	if (efa_mr->shm_mr) {
-		err = fi_close(&efa_mr->shm_mr->fid);
-		if (err) {
-			EFA_WARN(FI_LOG_MR,
-				"Unable to close shm MR\n");
-			ret = err;
-		}
-
-		efa_mr->shm_mr = NULL;
-	}
-
 	if (efa_mr->peer.iface == FI_HMEM_CUDA &&
 	    (efa_mr->peer.flags & OFI_HMEM_DATA_DEV_REG_HANDLE)) {
 		assert(efa_mr->peer.hmem_data);
@@ -454,12 +445,111 @@ static int efa_mr_dereg_impl(struct efa_mr *efa_mr)
 	return ret;
 }
 
+/**
+ * @brief Warn about MR descriptor references in an in-flight operation
+ *
+ * This helper function iterates through an operation's descriptor array and
+ * clears any references to the specified MR that is being closed. It logs a
+ * warning when such references are found, as this indicates the MR is being
+ * closed while operations are still in flight.
+ *
+ * @param[in,out] desc      The descriptor array
+ * @param[in]     iov_count Number of IOVs in the operation
+ * @param[in]     cq_entry  CQ entry with diagnostic info for the warning
+ * @param[in]     efa_mr    The MR being closed
+ * @param[in]     base_ep   The base ep
+ */
+static inline void efa_mr_close_warn_inflight_ope(void **desc, size_t iov_count,
+					       struct fi_cq_tagged_entry *cq_entry,
+					       struct efa_mr *efa_mr,
+					       struct efa_base_ep *base_ep)
+{
+	size_t i;
+	char ep_addr_str[OFI_ADDRSTRLEN] = {0};
+	size_t ep_addr_strlen = sizeof(ep_addr_str);
+
+	for (i = 0; i < iov_count; i++) {
+		if (desc[i] == efa_mr) {
+			efa_base_ep_raw_addr_str(base_ep, ep_addr_str, &ep_addr_strlen);
+			EFA_WARN(FI_LOG_MR,
+				 "MR %p (key: %ld) on EP %s is being closed "
+				 "while an operation is still in flight: "
+				 "context=%p, flags=%s, len=%zu, "
+				 "buf=%p, data=%lx, tag=%lx.\n",
+				 efa_mr, efa_mr->mr_fid.key,
+				 ep_addr_str,
+				 cq_entry->op_context,
+				 fi_tostr(&cq_entry->flags, FI_TYPE_CAPS),
+				 cq_entry->len, cq_entry->buf,
+				 cq_entry->data, cq_entry->tag);
+			desc[i] = NULL;
+		}
+	}
+}
+
+/**
+ * @brief Check all in-flight operations for references to a closing MR
+ *
+ * Iterates across all endpoints in the domain and warns about any
+ * in-flight operations that still reference the MR being closed.
+ *
+ * @param[in] efa_mr	The MR being closed
+ */
+static void efa_mr_close_check_inflight_ope(struct efa_mr *efa_mr)
+{
+	struct efa_domain *efa_domain = efa_mr->domain;
+	struct efa_base_ep *base_ep;
+	struct dlist_entry *tmp;
+
+	ofi_genlock_lock(&efa_domain->util_domain.lock);
+	dlist_foreach_container(&efa_domain->base_ep_list, struct efa_base_ep,
+				base_ep, base_ep_entry) {
+		if (efa_domain->info_type == EFA_INFO_RDM) {
+			struct efa_rdm_ep *rdm_ep;
+			struct efa_rdm_ope *ope;
+			rdm_ep = container_of(base_ep, struct efa_rdm_ep, base_ep);
+			dlist_foreach_container_safe (
+				&rdm_ep->txe_list, struct efa_rdm_ope,
+				ope, ep_entry, tmp) {
+				efa_mr_close_warn_inflight_ope(ope->desc, ope->iov_count, &ope->cq_entry, efa_mr, base_ep);
+			}
+			dlist_foreach_container_safe (
+				&rdm_ep->rxe_list, struct efa_rdm_ope,
+				ope, ep_entry, tmp) {
+				efa_mr_close_warn_inflight_ope(ope->desc, ope->iov_count, &ope->cq_entry, efa_mr, base_ep);
+			}
+		} else if (efa_domain->info_type == EFA_INFO_DIRECT) {
+			struct efa_direct_ope *direct_ope;
+			dlist_foreach_container_safe (
+				&base_ep->efa_direct_ope_list,
+				struct efa_direct_ope, direct_ope,
+				entry, tmp) {
+				efa_mr_close_warn_inflight_ope(direct_ope->desc, direct_ope->iov_count, &direct_ope->cq_entry, efa_mr, base_ep);
+			}
+		}
+	}
+	ofi_genlock_unlock(&efa_domain->util_domain.lock);
+}
+
 static int efa_mr_close(fid_t fid)
 {
 	struct efa_mr *efa_mr;
-	int ret;
+	int ret, err;
 
 	efa_mr = container_of(fid, struct efa_mr, mr_fid.fid);
+	if (efa_env.track_mr)
+		efa_mr_close_check_inflight_ope(efa_mr);
+
+	if (efa_mr->shm_mr) {
+		err = fi_close(&efa_mr->shm_mr->fid);
+		if (err) {
+			EFA_WARN(FI_LOG_MR,
+				"Unable to close shm MR\n");
+			ret = err;
+		}
+		efa_mr->shm_mr = NULL;
+	}
+
 	ret = efa_mr_dereg_impl(efa_mr);
 	if (ret)
 		EFA_WARN(FI_LOG_MR, "Unable to close MR\n");
@@ -499,6 +589,23 @@ struct ibv_mr *efa_mr_reg_ibv_dmabuf_mr(struct ibv_pd *pd, uint64_t offset,
 }
 
 #endif
+
+static inline void efa_mark_dmabuf_fail(struct efa_hmem_info *i, enum fi_hmem_iface iface)
+{
+	if (DMABUF_IS_NOT_SUPPORTED(i)) {
+		return;
+	} else if (DMABUF_IS_ASSUMED(i)) {
+		EFA_INFO(FI_LOG_MR,
+			 "assumed dmabuf support for %s was incorrect\n",
+			 fi_tostr(&iface, FI_TYPE_HMEM_IFACE));
+	} else {
+		EFA_WARN(FI_LOG_MR,
+			 "Explicit dmabuf support for %s was incorrect\n",
+			 fi_tostr(&iface, FI_TYPE_HMEM_IFACE));
+	}
+	i->dmabuf_supported_by_device = EFA_DMABUF_NOT_SUPPORTED;
+}
+
 /**
  * @brief Register a memory buffer with rdma-core api.
  *
@@ -508,79 +615,107 @@ struct ibv_mr *efa_mr_reg_ibv_dmabuf_mr(struct ibv_pd *pd, uint64_t offset,
  * @param flags flags in fi_mr_reg/fi_mr_regattr
  * @return struct ibv_mr* the ptr to the registered MR
  */
-static struct ibv_mr *efa_mr_reg_ibv_mr(struct efa_mr *efa_mr, struct fi_mr_attr *mr_attr,
-					int access, const uint64_t flags)
+static struct ibv_mr *efa_mr_reg_ibv_mr(struct efa_mr *efa_mr,
+					 struct fi_mr_attr *mr_attr,
+					 int access, const uint64_t flags)
 {
-	if (flags & FI_MR_DMABUF)
-		return efa_mr_reg_ibv_dmabuf_mr(
+	struct efa_hmem_info *p_info = &g_efa_hmem_info[efa_mr->peer.iface];
+	struct ibv_mr *dmabuf_mr;
+	uint64_t offset;
+	int dmabuf_fd;
+	int ret;
+
+	/* Explicit dmabuf registration */
+	if (flags & FI_MR_DMABUF) {
+		if (!mr_attr->dmabuf) {
+			EFA_WARN(FI_LOG_MR, "FI_MR_DMABUF set but mr_attr->dmabuf == NULL\n");
+			return NULL;
+		}
+
+		EFA_INFO(FI_LOG_MR,
+			 "FI_MR_DMABUF: fd=%d offset=%lu len=%zu\n",
+			 mr_attr->dmabuf->fd, mr_attr->dmabuf->offset,
+			 mr_attr->dmabuf->len);
+
+		dmabuf_mr = efa_mr_reg_ibv_dmabuf_mr(
 			efa_mr->domain->ibv_pd,
 			mr_attr->dmabuf->offset,
 			mr_attr->dmabuf->len,
 			(uintptr_t) mr_attr->dmabuf->base_addr + mr_attr->dmabuf->offset,
 			mr_attr->dmabuf->fd,
-			access
-		);
+			access);
 
-	/*
-	 * TODO: remove the synapseai and neuron blocks by onboarding the
-	 * ofi_hmem_get_dmabuf_fd API.
-	 */
-#if HAVE_SYNAPSEAI
-	if (efa_mr_is_synapseai(efa_mr)) {
-		int dmabuf_fd;
-		uint64_t offset;
-		int ret;
+		if (!dmabuf_mr)
+			EFA_WARN(FI_LOG_MR,
+				 "Could not register dmabuf fd=%d offset=%lu len=%zu\n",
+				 mr_attr->dmabuf->fd, mr_attr->dmabuf->offset,
+				 mr_attr->dmabuf->len);
 
-		ret = synapseai_get_dmabuf_fd(mr_attr->mr_iov->iov_base,
-						(uint64_t) mr_attr->mr_iov->iov_len,
-						&dmabuf_fd, &offset);
-		if (ret != FI_SUCCESS) {
-			EFA_WARN(FI_LOG_MR, "Unable to get dmabuf fd for Gaudi device buffer \n");
-			return NULL;
-		}
-		return efa_mr_reg_ibv_dmabuf_mr(efa_mr->domain->ibv_pd, offset,
-					mr_attr->mr_iov->iov_len,
-					(uint64_t)mr_attr->mr_iov->iov_base,
-					dmabuf_fd, access);
+		return dmabuf_mr;
 	}
-#endif
 
-#if HAVE_NEURON
-	if (efa_mr_is_neuron(efa_mr)) {
-		int dmabuf_fd;
-		uint64_t offset;
-		int ret;
-
-		ret = neuron_get_dmabuf_fd(
-				mr_attr->mr_iov->iov_base,
-				mr_attr->mr_iov->iov_len,
-				&dmabuf_fd,
-				&offset);
-
+	/* Implicit VA path with dmabuf-first */
+	if (DMABUF_IS_SUPPORTED(p_info)) {
+		ret = ofi_hmem_get_dmabuf_fd(
+			efa_mr->peer.iface,
+			mr_attr->mr_iov->iov_base,
+			(uint64_t) mr_attr->mr_iov->iov_len,
+			&dmabuf_fd, &offset);
 		if (ret == FI_SUCCESS) {
-			/* Success => invoke ibv_reg_dmabuf_mr */
-			return efa_mr_reg_ibv_dmabuf_mr(
-					efa_mr->domain->ibv_pd, 0,
-					mr_attr->mr_iov->iov_len,
-					(uint64_t)mr_attr->mr_iov->iov_base,
-					dmabuf_fd, access);
-		} else if (ret == -FI_ENOPROTOOPT) {
-			/* Protocol not availabe => fallback */
+			/* get fd succeeded */
 			EFA_INFO(FI_LOG_MR,
-				"Unable to get dmabuf fd for Neuron device buffer, "
-				"Fall back to ibv_reg_mr\n");
-			return ibv_reg_mr(
-				efa_mr->domain->ibv_pd,
-				(void *)mr_attr->mr_iov->iov_base,
-				mr_attr->mr_iov->iov_len, access);
-		}
-		return NULL;
-	}
-#endif
+				 "Registering dmabuf MR: fd=%d offset=%lu len=%zu\n",
+				 dmabuf_fd, offset, mr_attr->mr_iov->iov_len);
 
-	return ibv_reg_mr(efa_mr->domain->ibv_pd,
-			(void *)mr_attr->mr_iov->iov_base,
-			mr_attr->mr_iov->iov_len, access);
+			dmabuf_mr = efa_mr_reg_ibv_dmabuf_mr(
+				efa_mr->domain->ibv_pd, offset,
+				mr_attr->mr_iov->iov_len,
+				(uint64_t)mr_attr->mr_iov->iov_base,
+				dmabuf_fd, access);
+
+			/* Close the dmabuf file descriptor - it's no longer needed
+			 * after registration
+			 */
+			(void) ofi_hmem_put_dmabuf_fd(efa_mr->peer.iface, dmabuf_fd);
+
+			if (!dmabuf_mr) {
+				efa_mark_dmabuf_fail(p_info, efa_mr->peer.iface);
+				if (p_info->dmabuf_fallback_enabled) {
+					return ibv_reg_mr(efa_mr->domain->ibv_pd,
+						  	  (void *)mr_attr->mr_iov->iov_base,
+						  	  mr_attr->mr_iov->iov_len, access);
+				}
+				return NULL;
+			}
+
+			p_info->dmabuf_supported_by_device = EFA_DMABUF_SUPPORTED;
+			return dmabuf_mr;
+
+		} else if (p_info->dmabuf_fallback_enabled) {
+			/* get fd failed, fallback */
+			EFA_INFO(FI_LOG_MR,
+				 "Unable to get dmabuf fd for %s device buffer, "
+				 "Fall back to ibv_reg_mr\n",
+				 fi_tostr(&efa_mr->peer.iface, FI_TYPE_HMEM_IFACE));
+			efa_mark_dmabuf_fail(p_info, efa_mr->peer.iface);
+			return ibv_reg_mr(efa_mr->domain->ibv_pd,
+					  (void *)mr_attr->mr_iov->iov_base,
+					  mr_attr->mr_iov->iov_len, access);
+		}
+		
+		/* get fd failed, no fallback */
+		EFA_WARN(FI_LOG_MR,
+			 "ofi_hmem_get_dmabuf_fd failed for %s: ret=%d (%s)\n",
+			 fi_tostr(&efa_mr->peer.iface, FI_TYPE_HMEM_IFACE), ret, fi_strerror(-ret));
+		p_info->dmabuf_supported_by_device = EFA_DMABUF_NOT_SUPPORTED;
+
+		return NULL;
+	} else {
+		/* dmabuf is not supported */
+		return ibv_reg_mr(efa_mr->domain->ibv_pd,
+				  (void *)mr_attr->mr_iov->iov_base,
+				  mr_attr->mr_iov->iov_len, access);
+	}
 }
 
 #if HAVE_CUDA
@@ -665,12 +800,12 @@ int efa_mr_update_domain_mr_map(struct efa_mr *efa_mr, struct fi_mr_attr *mr_att
 	if (err != -FI_ENOKEY) {
 		/* no way we can recover from this error, return error code */
 		EFA_WARN(FI_LOG_MR,
-			"Unable to add MR to map. errno: %d errmsg: (%s) key: %ld buff: %p hmem_iface: %d len: %zu\n",
+			"Unable to add MR to map. errno: %d errmsg: (%s) key: %ld buff: %p hmem_iface: %s len: %zu\n",
 			err,
 			fi_strerror(-err),
 			efa_mr->mr_fid.key,
 			mr_attr->mr_iov->iov_base,
-			mr_attr->iface,
+			fi_tostr(&mr_attr->iface, FI_TYPE_HMEM_IFACE),
 			mr_attr->mr_iov->iov_len);
 		return err;
 	}
@@ -681,10 +816,10 @@ int efa_mr_update_domain_mr_map(struct efa_mr *efa_mr, struct fi_mr_attr *mr_att
 
 	if (existing_mr->peer.iface != FI_HMEM_CUDA) {
 		/* no way we can recover from this situation, return error code */
-		EFA_WARN(FI_LOG_DOMAIN, "key %ld already assigned to buffer: %p hmem_iface: %d length: %ld\n",
+		EFA_WARN(FI_LOG_DOMAIN, "key %ld already assigned to buffer: %p hmem_iface: %s length: %ld\n",
 			 existing_mr->mr_fid.key,
 			 existing_mr->ibv_mr->addr,
-			 existing_mr->peer.iface,
+			 fi_tostr(&existing_mr->peer.iface, FI_TYPE_HMEM_IFACE),
 			 existing_mr->ibv_mr->length);
 		return -FI_ENOKEY;
 	}
@@ -731,12 +866,12 @@ int efa_mr_update_domain_mr_map(struct efa_mr *efa_mr, struct fi_mr_attr *mr_att
 	if (err) {
 		EFA_WARN(FI_LOG_MR,
 			"Unable to add MR to map, even though we already tried to evict staled memory registration."
-			"errno: %d errmsg: (%s) key: %ld buff: %p hmem_iface: %d len: %zu\n",
+			"errno: %d errmsg: (%s) key: %ld buff: %p hmem_iface: %s len: %zu\n",
 			err,
 			fi_strerror(-err),
 			efa_mr->mr_fid.key,
 			mr_attr->mr_iov->iov_base,
-			mr_attr->iface,
+			fi_tostr(&mr_attr->iface, FI_TYPE_HMEM_IFACE),
 			mr_attr->mr_iov->iov_len);
 		return err;
 	}
@@ -757,12 +892,12 @@ int efa_mr_update_domain_mr_map(struct efa_mr *efa_mr, struct fi_mr_attr *mr_att
 	ofi_genlock_unlock(&efa_mr->domain->util_domain.lock);
 	if (err) {
 		EFA_WARN(FI_LOG_MR,
-			"Unable to add MR to map. errno: %d errmsg: (%s) key: %ld buff: %p hmem_iface: %d len: %zu\n",
+			"Unable to add MR to map. errno: %d errmsg: (%s) key: %ld buff: %p hmem_iface: %s len: %zu\n",
 			err,
 			fi_strerror(-err),
 			efa_mr->mr_fid.key,
 			mr_attr->mr_iov->iov_base,
-			mr_attr->iface,
+			fi_tostr(&mr_attr->iface, FI_TYPE_HMEM_IFACE),
 			mr_attr->mr_iov->iov_len);
 		return err;
 	}
@@ -772,29 +907,113 @@ int efa_mr_update_domain_mr_map(struct efa_mr *efa_mr, struct fi_mr_attr *mr_att
 #endif /* HAVE_CUDA */
 
 /*
- * Since ibv_reg_mr() will fail for CUDA buffers when p2p is unavailable (and
- * thus isn't called), generate a proprietary internal key for
- * efa_mr->mr_fid.key. The key must be larger than UINT32_MAX to avoid
- * potential collisions with keys returned by ibv_reg_mr() for standard MR
- * registrations.
+ * Since ibv_reg_mr() will fail for accelerator buffers when p2p is unavailable
+ * (and thus isn't called), generate a proprietary internal key for
+ * efa_mr->mr_fid.key. The key must be larger than UINT32_MAX to avoid potential
+ * collisions with keys returned by ibv_reg_mr() for standard MR registrations.
  */
-static uint64_t efa_mr_cuda_non_p2p_keygen(void) {
-	static uint64_t CUDA_NON_P2P_MR_KEYGEN = CUDA_NON_P2P_MR_KEYGEN_INIT;
-	return CUDA_NON_P2P_MR_KEYGEN++;
+static uint64_t efa_mr_non_p2p_keygen(void) {
+	static uint64_t NON_P2P_MR_KEYGEN = NON_P2P_MR_KEYGEN_INIT;
+	return NON_P2P_MR_KEYGEN++;
 }
 
 /*
- * Set core_access to FI_SEND | FI_RECV if not already set,
- * set the fi_ibv_access modes and do real registration (ibv_mr_reg)
+ * Set ofi_access to FI_SEND | FI_RECV if not already set,
+ * Convert ofi_access flags to ibv_access flags.
+ */
+int efa_mr_ofi_to_ibv_access(uint64_t ofi_access,
+			     bool device_support_rdma_read,
+			     bool device_support_rdma_write)
+{
+	int ibv_access = 0;
+
+	/* To support Emulated RMA path, if the access is not supported
+	 * by EFA, modify it to FI_SEND | FI_RECV
+	 */
+	if (!ofi_access || (ofi_access & ~EFA_MR_SUPPORTED_PERMISSIONS))
+		ofi_access = FI_SEND | FI_RECV;
+
+	if (ofi_access & FI_RECV)
+		ibv_access |= IBV_ACCESS_LOCAL_WRITE;
+
+	if (device_support_rdma_read) {
+		if (ofi_access & (FI_REMOTE_WRITE | FI_READ))
+			ibv_access |= IBV_ACCESS_LOCAL_WRITE;
+
+		if (ofi_access & (FI_REMOTE_READ | FI_SEND) ||
+		    (ofi_access & FI_WRITE && !device_support_rdma_write))
+			/* IBV_ACCESS_REMOTE_READ is needed for emulating
+			 * fi_send/fi_write with RDMA read */
+			ibv_access |= IBV_ACCESS_REMOTE_READ;
+	}
+
+	if (device_support_rdma_write && (ofi_access & FI_REMOTE_WRITE))
+		/* If IBV_ACCESS_REMOTE_WRITE is set, then
+		 * IBV_ACCESS_LOCAL_WRITE must be set too since remote write
+		 * should be allowed only if local write is allowed. */
+		ibv_access |= IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE;
+
+	return ibv_access;
+}
+
+/**
+ * @brief Register a memory region and for efa internal usage
+ * This function is only used internally by the EFA provider to register
+ * a memory region to EFA device when the mr cache is NOT availble
+ *
+ * @param[in]	fid		domain fid
+ * @param[in]	iov		iovec to be registered
+ * @param[in]	access		access flags for MR
+ * @param[in]	flags		MR flags
+ * @param[out]	mr_fid		MR descriptor fids
+ *
+ * @return FI_SUCCESS or negative FI error code
+ */
+int efa_mr_internal_regv(struct fid_domain *domain_fid, const struct iovec *iov,
+		      size_t count, uint64_t access, uint64_t offset,
+		      uint64_t requested_key, uint64_t flags,
+		      struct fid_mr **mr, void *context)
+{
+	struct fi_mr_attr attr = EFA_MR_ATTR_INIT_SYSTEM(iov, count, access, offset, requested_key, context);
+	struct efa_mr *efa_mr;
+	struct efa_domain *domain;
+	int ret;
+	*mr = NULL;
+
+	domain = container_of(domain_fid, struct efa_domain,
+			      util_domain.domain_fid);
+	efa_mr = calloc(1, sizeof(*efa_mr));
+	if (!efa_mr) {
+		EFA_WARN(FI_LOG_MR, "Unable to initialize MR\n");
+		return -FI_ENOMEM;
+	}
+
+	efa_mr->domain = domain;
+	efa_mr->mr_fid.fid.fclass = FI_CLASS_MR;
+	efa_mr->mr_fid.fid.context = attr.context;
+	efa_mr->mr_fid.fid.ops = &efa_mr_ops;
+
+	ret = efa_mr_reg_impl(efa_mr, flags, &attr);
+	if (ret) {
+		EFA_WARN(FI_LOG_MR, "Unable to register MR: %s\n",
+			fi_strerror(-ret));
+		free(efa_mr);
+		return ret;
+	}
+	*mr = &efa_mr->mr_fid;
+	return 0;
+}
+
+/*
+ * Set the fi_ibv_access modes and do real registration (ibv_mr_reg)
  * Insert the key returned by ibv_mr_reg into efa mr_map and shm mr_map
  */
-static int efa_mr_reg_impl(struct efa_mr *efa_mr, uint64_t flags, const void *attr)
+static int efa_mr_reg_impl(struct efa_mr *efa_mr, uint64_t flags, const struct fi_mr_attr *mr_attr)
 {
-	uint64_t core_access, original_access;
-	struct fi_mr_attr mr_attr = {0};
-	int fi_ibv_access = 0;
-	uint64_t shm_flags;
+	int64_t reg_sz, reg_ct;
 	int ret = 0;
+	bool device_support_rdma_read = false;
+	bool device_support_rdma_write = false;
 
 	efa_mr->ibv_mr = NULL;
 	efa_mr->shm_mr = NULL;
@@ -803,35 +1022,32 @@ static int efa_mr_reg_impl(struct efa_mr *efa_mr, uint64_t flags, const void *at
 	efa_mr->mr_fid.key = FI_KEY_NOTAVAIL;
 	efa_mr->needs_sync = false;
 
-	ofi_mr_update_attr(
-		efa_mr->domain->util_domain.fabric->fabric_fid.api_version,
-		efa_mr->domain->util_domain.info_domain_caps,
-		(const struct fi_mr_attr *) attr, &mr_attr, flags);
-
-	ret = efa_mr_hmem_setup(efa_mr, &mr_attr, flags);
+	ret = efa_mr_hmem_setup(efa_mr, mr_attr, flags);
 	if (ret)
 		return ret;
 
-	/* To support Emulated RMA path, if the access is not supported
-	 * by EFA, modify it to FI_SEND | FI_RECV
-	 */
-	core_access = mr_attr.access;
-	if (!core_access || (core_access & ~EFA_MR_SUPPORTED_PERMISSIONS))
-		core_access = FI_SEND | FI_RECV;
-
-	/* Local read access to an MR is enabled by default in verbs */
-	if (core_access & FI_RECV)
-		fi_ibv_access |= IBV_ACCESS_LOCAL_WRITE;
-
-	if (efa_mr->domain->device->device_caps & EFADV_DEVICE_ATTR_CAPS_RDMA_READ) {
-		fi_ibv_access |= IBV_ACCESS_REMOTE_READ;
-	}
-
+	device_support_rdma_read = efa_mr->domain->device->device_caps & EFADV_DEVICE_ATTR_CAPS_RDMA_READ;
 #if HAVE_CAPS_RDMA_WRITE
-	if (efa_mr->domain->device->device_caps & EFADV_DEVICE_ATTR_CAPS_RDMA_WRITE) {
-		fi_ibv_access |= IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE;
-	}
+	device_support_rdma_write = efa_mr->domain->device->device_caps & EFADV_DEVICE_ATTR_CAPS_RDMA_WRITE;
 #endif
+	/* For efa-direct, fail registration if RDMA operations are requested 
+	 * but hardware doesn't support them */
+	if (efa_mr->domain->info_type == EFA_INFO_DIRECT) {
+		if ((mr_attr->access & (FI_READ | FI_REMOTE_READ)) &&
+		    !device_support_rdma_read) {
+			EFA_WARN(FI_LOG_MR, "FI_READ or FI_REMOTE_READ "
+					    "requested but hardware does not "
+					    "support RDMA read operations\n");
+			return -FI_EOPNOTSUPP;
+		}
+		if (mr_attr->access & (FI_WRITE | FI_REMOTE_WRITE) &&
+		    !device_support_rdma_write) {
+			EFA_WARN(FI_LOG_MR, "FI_WRITE or FI_REMOTE_WRITE "
+					    "requested but hardware does not "
+					    "support RDMA write operations\n");
+			return -FI_EOPNOTSUPP;
+		}
+	}
 
 	if (efa_mr->domain->cache)
 		ofi_mr_cache_flush(efa_mr->domain->cache, false);
@@ -840,65 +1056,61 @@ static int efa_mr_reg_impl(struct efa_mr *efa_mr, uint64_t flags, const void *at
 	 * For FI_HMEM_CUDA iface when p2p is unavailable, skip ibv_reg_mr() and
 	 * generate proprietary mr_fid key.
 	 */
-	if (mr_attr.iface == FI_HMEM_CUDA && !efa_mr->domain->hmem_info[FI_HMEM_CUDA].p2p_supported_by_device) {
-		efa_mr->mr_fid.key = efa_mr_cuda_non_p2p_keygen();
+	if ((mr_attr->iface == FI_HMEM_CUDA || mr_attr->iface == FI_HMEM_ROCR)
+		&& !g_efa_hmem_info[mr_attr->iface].p2p_supported_by_device) {
+		efa_mr->mr_fid.key = efa_mr_non_p2p_keygen();
 	} else {
-		efa_mr->ibv_mr = efa_mr_reg_ibv_mr(efa_mr, &mr_attr, fi_ibv_access, flags);
+		efa_mr->ibv_mr = efa_mr_reg_ibv_mr(
+			efa_mr, (struct fi_mr_attr *)mr_attr,
+			efa_mr_ofi_to_ibv_access(mr_attr->access,
+						 device_support_rdma_read,
+						 device_support_rdma_write),
+			flags);
 		if (!efa_mr->ibv_mr) {
-			EFA_WARN(FI_LOG_MR, "Unable to register MR: %s\n",
-					fi_strerror(-errno));
+			/* error path that doesn't call ibv_reg doesn't set errno */
+			if (!errno)
+				errno = ENOTSUP;
+			EFA_WARN(FI_LOG_MR,
+				 "Unable to register MR of %zu bytes: %s, "
+				 "flags %ld, ibv pd: %p, total mr "
+				 "reg size %zd, mr reg count %zd\n",
+				 (flags & FI_MR_DMABUF) ?
+					 mr_attr->dmabuf->len :
+					 mr_attr->mr_iov->iov_len,
+				 strerror(errno), flags,
+				 efa_mr->domain->ibv_pd,
+				 ofi_atomic_get64(&efa_mr->domain->ibv_mr_reg_sz),
+				 ofi_atomic_get64(&efa_mr->domain->ibv_mr_reg_ct));
 			if (efa_mr->peer.iface == FI_HMEM_CUDA &&
 			    (efa_mr->peer.flags & OFI_HMEM_DATA_DEV_REG_HANDLE)) {
-					assert(efa_mr->peer.hmem_data);
-					ofi_hmem_dev_unregister(FI_HMEM_CUDA, (uint64_t)efa_mr->peer.hmem_data);
-				}
+				assert(efa_mr->peer.hmem_data);
+				ofi_hmem_dev_unregister(FI_HMEM_CUDA, (uint64_t)efa_mr->peer.hmem_data);
+			}
 
 			return -errno;
 		}
+		reg_ct = ofi_atomic_inc64(&efa_mr->domain->ibv_mr_reg_ct);
+		reg_sz = ofi_atomic_add64(&efa_mr->domain->ibv_mr_reg_sz, efa_mr->ibv_mr->length);
+		EFA_INFO(FI_LOG_MR,
+			 "Registered memory at %p of size %zu"
+			 "flags %ld for ibv pd %p, "
+			 "total mr reg size %zd, mr reg count %zd\n",
+			 efa_mr->ibv_mr->addr, efa_mr->ibv_mr->length,
+			 flags, efa_mr->domain->ibv_pd,
+			 reg_sz,
+			 reg_ct);
 		efa_mr->mr_fid.key = efa_mr->ibv_mr->rkey;
 	}
 	efa_mr->mr_fid.mem_desc = efa_mr;
 	assert(efa_mr->mr_fid.key != FI_KEY_NOTAVAIL);
 
-	ret = efa_mr_update_domain_mr_map(efa_mr, &mr_attr, flags);
+	ret = efa_mr_update_domain_mr_map(efa_mr, (struct fi_mr_attr *)mr_attr, flags);
 	if (ret) {
 		efa_mr_dereg_impl(efa_mr);
 		return ret;
 	}
 
 	efa_mr->inserted_to_mr_map = true;
-
-	if (efa_mr->domain->shm_domain) {
-		/* We need to add FI_REMOTE_READ to allow for Read implemented
-		* message protocols.
-		*/
-		original_access = mr_attr.access;
-		mr_attr.access |= FI_REMOTE_READ;
-		/* Inherit peer.flags with addtional feature bits such as gdrcopy handle switch */
-		shm_flags = efa_mr->peer.flags;
-		if (mr_attr.iface != FI_HMEM_SYSTEM) {
-			/* shm provider need the flag to turn on IPC support */
-			shm_flags |= FI_HMEM_DEVICE_ONLY;
-		}
-
-		mr_attr.hmem_data = efa_mr->peer.hmem_data;
-
-		ret = fi_mr_regattr(efa_mr->domain->shm_domain, &mr_attr,
-				    shm_flags, &efa_mr->shm_mr);
-
-		mr_attr.access = original_access;
-		if (ret) {
-			EFA_WARN(FI_LOG_MR,
-				"Unable to register shm MR. errno: %d err_msg: (%s) key: %ld buf: %p len: %zu\n",
-				ret,
-				fi_strerror(-ret),
-				efa_mr->mr_fid.key,
-				mr_attr.mr_iov ? mr_attr.mr_iov->iov_base : NULL,
-				mr_attr.mr_iov ? mr_attr.mr_iov->iov_len : 0);
-			efa_mr_dereg_impl(efa_mr);
-			return ret;
-		}
-	}
 
 	return 0;
 }
@@ -911,17 +1123,10 @@ static int efa_mr_regattr(struct fid *fid, const struct fi_mr_attr *attr,
 	uint64_t supported_flags;
 	int ret = 0;
 	uint32_t api_version;
+	struct fi_mr_attr mr_attr = {0};
 
 	/*
 	 * Notes supported memory registration flags:
-	 *
-	 * OFI_MR_NOCACHE:
-	 * when MR cache is enabled, application's call to fi_mr_regattr
-	 * was directed to efa_mr_cache_regattr(). If OFI_MR_NOCACHE
-	 * was specified, efa_mr_cache_regattr() will call this
-	 * function directly (bypassing MR cache), therefore
-	 * this function does not do anything special for this flag
-	 * other than allow it.
 	 *
 	 * FI_HMEM_DEVICE_ONLY:
 	 * This flag is used by some provider that need to distinguish
@@ -937,7 +1142,7 @@ static int efa_mr_regattr(struct fid *fid, const struct fi_mr_attr *attr,
 	 * usable for domains opened with FI_HMEM capability support.
 	 * This flag is introduced since Libfabric 1.20.
 	 */
-	supported_flags = OFI_MR_NOCACHE | FI_HMEM_DEVICE_ONLY;
+	supported_flags = FI_HMEM_DEVICE_ONLY;
 
 	domain = container_of(fid, struct efa_domain,
 			      util_domain.domain_fid.fid);
@@ -966,9 +1171,10 @@ static int efa_mr_regattr(struct fid *fid, const struct fi_mr_attr *attr,
 		return -FI_EINVAL;
 	}
 
-	if (!ofi_hmem_is_initialized(attr->iface)) {
+	if (attr->iface >= OFI_HMEM_MAX || !g_efa_hmem_info[attr->iface].initialized) {
 		EFA_WARN(FI_LOG_MR,
-			 "Cannot register memory for uninitialized iface\n");
+			 "Cannot register memory for uninitialized iface (%s)\n",
+			 fi_tostr(&attr->iface, FI_TYPE_HMEM_IFACE));
 		return -FI_ENOSYS;
 	}
 
@@ -983,9 +1189,46 @@ static int efa_mr_regattr(struct fid *fid, const struct fi_mr_attr *attr,
 	efa_mr->mr_fid.fid.context = attr->context;
 	efa_mr->mr_fid.fid.ops = &efa_mr_ops;
 
-	ret = efa_mr_reg_impl(efa_mr, flags, (const void *)attr);
+	/* Update attr for ABI compatibility */
+	ofi_mr_update_attr(
+		efa_mr->domain->util_domain.fabric->fabric_fid.api_version,
+		efa_mr->domain->util_domain.info_domain_caps,
+		attr, &mr_attr, flags);
+
+	ret = efa_mr_reg_impl(efa_mr, flags, &mr_attr);
 	if (ret)
 		goto err;
+
+	if (efa_mr->domain->shm_domain) {
+		uint64_t shm_flags;
+
+		/* Inherit peer.flags with addtional feature bits such as gdrcopy handle switch */
+		shm_flags = efa_mr->peer.flags;
+		if (mr_attr.iface != FI_HMEM_SYSTEM) {
+			/* shm provider need the flag to turn on IPC support */
+			shm_flags |= FI_HMEM_DEVICE_ONLY;
+		}
+
+		mr_attr.hmem_data = efa_mr->peer.hmem_data;
+
+		ret = fi_mr_regattr(efa_mr->domain->shm_domain, &mr_attr,
+				    shm_flags, &efa_mr->shm_mr);
+
+		if (ret) {
+			EFA_WARN(FI_LOG_MR,
+				 "Unable to register shm MR. errno: %d "
+				 "err_msg: (%s) key: %ld buf: %p len: %zu "
+				 "flags %ld\n",
+				 ret, fi_strerror(-ret), efa_mr->mr_fid.key,
+				 mr_attr.mr_iov ? mr_attr.mr_iov->iov_base :
+						  NULL,
+				 mr_attr.mr_iov ? mr_attr.mr_iov->iov_len : 0,
+				 flags);
+			efa_mr_dereg_impl(efa_mr);
+			free(efa_mr);
+			return ret;
+		}
+	}
 
 	*mr_fid = &efa_mr->mr_fid;
 	return 0;
@@ -1000,15 +1243,7 @@ static int efa_mr_regv(struct fid *fid, const struct iovec *iov,
 		       size_t count, uint64_t access, uint64_t offset, uint64_t requested_key,
 		       uint64_t flags, struct fid_mr **mr_fid, void *context)
 {
-	struct fi_mr_attr attr = {0};
-
-	attr.mr_iov = iov;
-	attr.iov_count = count;
-	attr.access = access;
-	attr.offset = offset;
-	attr.requested_key = requested_key;
-	attr.context = context;
-	attr.iface = FI_HMEM_SYSTEM;
+	struct fi_mr_attr attr = EFA_MR_ATTR_INIT_SYSTEM(iov, count, access, offset, requested_key, context);
 
 	return efa_mr_regattr(fid, &attr, flags, mr_fid);
 }

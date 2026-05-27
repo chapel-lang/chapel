@@ -26,8 +26,8 @@ be better suited.
    applications written entirely in Chapel. If your program relies solely
    on Chapel dependencies and compiles directly from Chapel modules, Mason
    is the perfect tool.
-2. External Dependencies with `Spack` or `pkg-config`: Mason integrates
-   seamlessly with external dependencies managed by `Spack` or
+2. External Dependencies with `pkg-config`: Mason integrates
+   seamlessly with external dependencies via
    `pkg-config`. If your project uses such dependencies, Mason can handle
    them efficiently.
 

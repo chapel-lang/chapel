@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2014-2016 Intel Corporation, Inc.  All rights reserved.
+ * Copyright (c) 2025 VDURA, Inc.  All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -363,7 +364,7 @@ static int util_wait_fd_try(struct util_wait *wait)
 	}
 
 	ofi_mutex_unlock(&wait->lock);
-	ret = fi_poll(&wait->pollset->poll_fid, &context, 1);
+	ret = ofi_poll(&wait->pollset->poll_fid, &context, 1);
 	return (ret > 0) ? -FI_EAGAIN : (ret == -FI_EAGAIN) ? FI_SUCCESS : ret;
 
 release:
@@ -418,7 +419,7 @@ static int util_wait_fd_control(struct fid *fid, int command, void *arg)
 	switch (command) {
 	case FI_GETWAIT:
 		if (wait->util_wait.wait_obj == FI_WAIT_FD) {
-#ifdef HAVE_EPOLL
+#if defined (HAVE_EPOLL) || defined(HAVE_KQUEUE)
 			*(int *) arg = wait->epoll_fd;
 			return 0;
 #else

@@ -71,6 +71,7 @@
 #include "chpl-mem.h"
 #include "chpl-mem-desc.h"
 #include "chpl-mem-sys.h"
+#include "chpl-prginfo.h"
 #include "chplsys.h"
 #include "chpl-tasks.h"
 #include "chpltypes.h"
@@ -1991,6 +1992,9 @@ void chpl_comm_post_task_init(void)
                      0, 0);
       }
 
+      CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                              CHPL_TARGET_MEM);
+
       if (strcmp(CHPL_TARGET_MEM, "jemalloc") == 0
           && getenv(chpl_comm_ugni_jemalloc_conf_ev_name()) == NULL) {
         char buf[200];
@@ -3302,6 +3306,9 @@ void SIGBUS_handler(int signo, siginfo_t *info, void *context)
         // Only try to provide a source file if we can give at least some
         // of it, and without using snprintf() in chpl_lookupFilename()).
         //
+        CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                                chpl_filenameTableSize);
+
         if (bufi > 10
             && mr_mregs_supplement[mr_i].fn >= 0
             && mr_mregs_supplement[mr_i].fn < chpl_filenameTableSize) {
@@ -4198,6 +4205,8 @@ void rf_handler(gni_cq_entry_t* ev)
         if (f_c->comm.rf_done != NULL) {
           fn = (chpl_fn_p) fork_call_wrapper_blocking;
         } else {
+          CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                                  chpl_ftable);
           fn = (chpl_fn_p) chpl_ftable[f_c->comm.fid];
         }
         chpl_task_startMovedTask(f_c->comm.fid,

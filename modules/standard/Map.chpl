@@ -376,9 +376,16 @@ module Map {
       ref val = table.table[slot].val;
 
       import Reflection;
-      if !Reflection.canResolveMethod(updater, "this", key, val) then
-        compilerError('`map.update()` failed to resolve method ' +
-                      updater.type:string + '.this() for arguments (' +
+      param resolves = if useProcedurePointers then
+                   Reflection.canResolveCall(updater, key, val)
+                 else
+                   Reflection.canResolveMethod(updater, "this", key, val);
+      param str = if useProcedurePointers then "' for arguments ("
+            else ".this()' for arguments (";
+      param kind = if useProcedurePointers then "updater '" else "method '";
+      if !resolves then
+        compilerError('`map.update()` failed to resolve ' + kind +
+                      updater.type:string + str +
                       key.type:string + ', ' + val.type:string + ')');
 
       return updater(key, val);

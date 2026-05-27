@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-#include <map_field.h>
+#include "map_field.h"
 
 namespace chapel {
 

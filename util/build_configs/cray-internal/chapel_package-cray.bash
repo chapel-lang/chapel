@@ -74,7 +74,7 @@ verbose=
 dry_run=
 
 # Timestamp values
-date_ymd=$( date '+%Y%m%d' )
+date_ymd=${RPM_DATE:-$(date '+%Y%m%d')}
 date_hms=$( date '+%H%M%S' )
 
 while getopts :vnkC:T:o:b:p:R:r:h opt; do

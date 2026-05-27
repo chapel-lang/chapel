@@ -95,7 +95,8 @@
 	_(nvmlShutdown)
 
 static struct {
-	int   device_count;
+	int   device_count;                 /* Exposed CUDA device count - can be modified by CUDA_VISIBLE_DEVICES */
+	unsigned int  nvml_device_count;    /* NVML device count - cannot be modified by CUDA_VISIBLE_DEVICES */
 	bool  p2p_access_supported;
 	bool  use_gdrcopy;
 	bool  use_ipc;
@@ -105,6 +106,7 @@ static struct {
 	void *nvml_handle;
 } cuda_attr = {
 	.device_count         = -1,
+	.nvml_device_count    = 0,
 	.p2p_access_supported = false,
 	.use_gdrcopy          = false,
 	.use_ipc              = false,
@@ -270,7 +272,7 @@ int cuda_set_sync_memops(void *ptr)
 	ofi_cuGetErrorName(cu_result, &cu_error_name);
 	ofi_cuGetErrorString(cu_result, &cu_error_str);
 	FI_WARN(&core_prov, FI_LOG_CORE,
-		"Failed to perform cuPointerSetAttribute: %s:%s\n",
+		"Failed to set CU_POINTER_ATTRIBUTE_SYNC_MEMOPS: %s:%s\n",
 		cu_error_name, cu_error_str);
 	return -FI_EINVAL;
 }
@@ -420,7 +422,7 @@ int cuda_open_handle(void **handle, size_t size, uint64_t device,
 	return (cuda_ret == cudaErrorAlreadyMapped) ? -FI_EALREADY:-FI_EINVAL;
 }
 
-int cuda_close_handle(void *ipc_ptr)
+int cuda_close_handle(void *ipc_ptr, void **handle)
 {
 	cudaError_t cuda_ret;
 
@@ -487,22 +489,17 @@ static int cuda_hmem_dl_init(void)
 		return -FI_ENOSYS;
 	}
 
-	cuda_attr.driver_handle = dlopen("libcuda.so", RTLD_NOW);
+	cuda_attr.driver_handle = dlopen("libcuda.so.1", RTLD_NOW);
 	if (!cuda_attr.driver_handle) {
 		FI_WARN(&core_prov, FI_LOG_CORE,
-			"Failed to dlopen libcuda.so\n");
+			"Failed to dlopen libcuda.so.1\n");
 		goto err_dlclose_cuda_runtime;
 	}
 
-	cuda_attr.nvml_handle = dlopen("libnvidia-ml.so", RTLD_NOW);
+	cuda_attr.nvml_handle = dlopen("libnvidia-ml.so.1", RTLD_NOW);
 	if (!cuda_attr.nvml_handle) {
 		FI_WARN(&core_prov, FI_LOG_CORE,
-			"Failed to dlopen libnvidia-ml.so.  Trying libnvidia-ml.so.1\n");
-		cuda_attr.nvml_handle = dlopen("libnvidia-ml.so.1", RTLD_NOW);
-		if (!cuda_attr.nvml_handle) {
-			FI_WARN(&core_prov, FI_LOG_CORE,
-			"Failed to dlopen libnvidia-ml.so.1 also, bypassing nvml calls\n");
-		}
+			"Failed to dlopen libnvidia-ml.so.1, bypassing nvml calls\n");
 	}
 
 	CUDA_DRIVER_FUNCS_DEF(CUDA_DRIVER_FUNCS_DLOPEN)
@@ -540,8 +537,6 @@ static int cuda_hmem_verify_devices(void)
 {
 	nvmlReturn_t nvml_ret;
         cudaError_t cuda_ret;
-	unsigned int nvml_device_count = 0;
-
 	/* Check w/ nvmlDeviceGetCount_v2() first, to avoid more expensive
 	 * call to cudaGetDeviceCount() when possible.
 	 */
@@ -555,7 +550,7 @@ static int cuda_hmem_verify_devices(void)
 			return -FI_ENOSYS;
 
 		/* Verify NVIDIA devices are present on the host. */
-		nvml_ret = ofi_nvmlDeviceGetCount_v2(&nvml_device_count);
+		nvml_ret = ofi_nvmlDeviceGetCount_v2(&cuda_attr.nvml_device_count);
 		if (nvml_ret != NVML_SUCCESS) {
 			ofi_nvmlShutdown();
 			return -FI_ENOSYS;
@@ -570,8 +565,8 @@ static int cuda_hmem_verify_devices(void)
 			return -FI_ENOSYS;
 
 		FI_INFO(&core_prov, FI_LOG_CORE,
-			"Number of NVIDIA devices detected: %u\n",
-			nvml_device_count);
+			"Number of NVIDIA devices detected with NVML: %u\n",
+			cuda_attr.nvml_device_count);
 	} else {
 		FI_INFO(&core_prov, FI_LOG_CORE,
 			"Skipping check for NVIDIA devices with NVML routines\n");
@@ -580,7 +575,7 @@ static int cuda_hmem_verify_devices(void)
         /* If NVIDIA devices are present, now perform more expensive check
          * for actual GPUs.
          */
-        if (!cuda_attr.nvml_handle || nvml_device_count > 0) {
+        if (!cuda_attr.nvml_handle || cuda_attr.nvml_device_count > 0) {
                 /* Verify CUDA compute-capable devices are present on the host. */
                 cuda_ret = ofi_cudaGetDeviceCount(&cuda_attr.device_count);
                 switch (cuda_ret) {
@@ -629,8 +624,15 @@ static int cuda_hmem_detect_p2p_access_support(void)
 	CUdevice dev, peer;
 	int can_access_peer = 1;
 
-	if (cuda_attr.device_count <= 1)
+	/* cuda_hmem_verify_devices will return -FI_ENOSYS if no CUDA devices
+	 * are available. If we got here, there must be at least one CUDA
+	 * device. */
+	assert(cuda_attr.device_count >= 1);
+
+	if (cuda_attr.device_count == 1) {
+		cuda_attr.p2p_access_supported = true;
 		return FI_SUCCESS;
+	}
 
 	/*
 	 * CUDA API always enumerates available devices contiguously starting
@@ -640,12 +642,7 @@ static int cuda_hmem_detect_p2p_access_support(void)
 		peer = dev + 1;
 		cuda_ret = ofi_cuDeviceCanAccessPeer(&can_access_peer, dev, peer);
 		if (CUDA_SUCCESS != cuda_ret) {
-			FI_WARN(&core_prov, FI_LOG_CORE,
-				"Failed to detect support for peer-to-peer "
-				"access between CUDA devices via "
-				"cuDeviceCanAccessPeer(): %s:%s\n",
-				ofi_cudaGetErrorName((cudaError_t)cuda_ret),
-				ofi_cudaGetErrorString((cudaError_t)cuda_ret));
+			CUDA_DRIVER_LOG_ERR(cuda_ret, "cuDeviceCanAccessPeer");
 			return -FI_EIO;
 		}
 		FI_INFO(&core_prov, FI_LOG_CORE,
@@ -719,6 +716,7 @@ int cuda_get_dmabuf_fd(const void *addr, uint64_t size, int *fd,
 	size_t host_page_size = ofi_get_page_size();
 	void *base_addr;
 	size_t total_size;
+	unsigned long long flags;
 
 	if (!cuda_is_dmabuf_supported())
 		return -FI_EOPNOTSUPP;
@@ -731,11 +729,27 @@ int cuda_get_dmabuf_fd(const void *addr, uint64_t size, int *fd,
 	aligned_size = (uintptr_t) ofi_get_page_end((void *) ((uintptr_t) base_addr + total_size - 1),
 						    host_page_size) - (uintptr_t) aligned_ptr + 1;
 
+	flags = 0;
+#if HAVE_CUDA_DMABUF_MAPPING_TYPE_PCIE
+	flags = CU_MEM_RANGE_FLAG_DMA_BUF_MAPPING_TYPE_PCIE;
+# endif /* HAVE_CUDA_DMABUF_MAPPING_TYPE_PCIE */
 	cuda_ret = cuda_ops.cuMemGetHandleForAddressRange(
 						(void *)fd,
 						aligned_ptr, aligned_size,
 						CU_MEM_RANGE_HANDLE_TYPE_DMA_BUF_FD,
+						flags);
+
+	if ((cuda_ret == CUDA_ERROR_INVALID_VALUE || cuda_ret == CUDA_ERROR_NOT_SUPPORTED) && flags != 0) {
+		FI_INFO(&core_prov, FI_LOG_CORE,
+			"cuMemGetHandleForAddressRange failed with flags: %llu, "
+			"invalid argument. Retrying with no flags.\n", flags);
+		cuda_ret = cuda_ops.cuMemGetHandleForAddressRange(
+						(void *) fd,
+						aligned_ptr, aligned_size,
+						CU_MEM_RANGE_HANDLE_TYPE_DMA_BUF_FD,
 						0);
+	}
+
 	if (cuda_ret != CUDA_SUCCESS) {
 		CUDA_DRIVER_LOG_ERR(cuda_ret, "cuMemGetHandleForAddressRange");
 		return -FI_EIO;
@@ -758,6 +772,16 @@ int cuda_get_dmabuf_fd(const void *addr, uint64_t size, int *fd,
 #endif /* HAVE_CUDA_DMABUF */
 }
 
+int cuda_put_dmabuf_fd(int fd)
+{
+#if HAVE_CUDA_DMABUF
+	close(fd);
+	return FI_SUCCESS;
+#else
+	return -FI_ENOSYS;
+#endif /* HAVE_CUDA_DMABUF */
+}
+
 int cuda_hmem_init(void)
 {
 	int ret;
@@ -767,6 +791,9 @@ int cuda_hmem_init(void)
 			"Use gdrcopy to copy data to/from CUDA GPU memory. "
 			"If libfabric is not compiled with gdrcopy support, "
 			"this variable is not checked. (default: true)");
+
+	fi_param_define(NULL, "hmem_cuda_use_dmabuf", FI_PARAM_BOOL,
+			"Use dma-buf for sharing buffer with hardware. (default: true)");
 
 	ret = cuda_hmem_dl_init();
 	if (ret != FI_SUCCESS)
@@ -807,7 +834,7 @@ int cuda_hmem_init(void)
 	 * - cudaMemcpy() is available
 	 */
 	cuda_attr.use_ipc =
-		cuda_attr.p2p_access_supported || cuda_attr.device_count == 1;
+		cuda_attr.p2p_access_supported || cuda_attr.nvml_device_count == 1;
 
 	return FI_SUCCESS;
 
@@ -939,9 +966,17 @@ bool cuda_is_gdrcopy_enabled(void)
 	return cuda_attr.use_gdrcopy;
 }
 
+bool cuda_is_dmabuf_requested(void)
+{
+	int use_dmabuf = 1;
+
+	fi_param_get_bool(NULL, "hmem_cuda_use_dmabuf", &use_dmabuf);
+	return use_dmabuf;
+}
+
 bool cuda_is_dmabuf_supported(void)
 {
-	return cuda_attr.dmabuf_supported;
+	return cuda_is_dmabuf_requested() && cuda_attr.dmabuf_supported;
 }
 
 #else
@@ -1014,7 +1049,7 @@ int cuda_open_handle(void **handle, size_t size, uint64_t device,
 	return -FI_ENOSYS;
 }
 
-int cuda_close_handle(void *ipc_ptr)
+int cuda_close_handle(void *ipc_ptr, void **handle)
 {
 	return -FI_ENOSYS;
 }
@@ -1044,8 +1079,18 @@ bool cuda_is_dmabuf_supported(void)
 	return false;
 }
 
+bool cuda_is_dmabuf_requested(void)
+{
+	return false;
+}
+
 int cuda_get_dmabuf_fd(const void *addr, uint64_t size, int *fd,
 		       uint64_t *offset)
+{
+	return -FI_ENOSYS;
+}
+
+int cuda_put_dmabuf_fd(int fd)
 {
 	return -FI_ENOSYS;
 }

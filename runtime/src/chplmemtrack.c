@@ -30,6 +30,7 @@
 #include "chpl-comm-internal.h"
 #include "chplcgfns.h"
 #include "chpl-linefile-support.h"
+#include "chpl-prginfo.h"
 #include "config.h"
 #include "chpl-error.h"
 
@@ -419,6 +420,8 @@ static void printMemAllocsByType(_Bool forLeaks,
   memTableEntry* me;
   int i;
   const int numberWidth   = 9;
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                          chpl_mem_numDescs);
   const int numEntries = CHPL_RT_MD_NUM+chpl_mem_numDescs;
 
   if (!chpl_memTrack) {
@@ -481,6 +484,9 @@ void chpl_printMemAllocsByType(int32_t lineno, int32_t filename) {
 static chpl_mem_descInt_t
 find_desc(const char* descString)
 {
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                          chpl_mem_numDescs);
+
   const int numEntries = CHPL_RT_MD_NUM+chpl_mem_numDescs;
   for (chpl_mem_descInt_t i = 0; i < numEntries; ++i)
     if (! strcmp(descString, chpl_mem_descString(i)))
@@ -668,6 +674,11 @@ void chpl_reportMemInfo(void) {
   if (memLogFile && memLogFile != stdout)
     fclose(memLogFile);
   if (memLeaksLog && strcmp(memLeaksLog, "")) {
+    CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                            chpl_executionCommand);
+    CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                            chpl_compileCommand);
+
     memLogFile = fopen(memLeaksLog, "a");
     fprintf(memLogFile, "\nCompiler Command : %s\n", chpl_compileCommand);
     fprintf(memLogFile, "Execution Command: %s\n\n", chpl_executionCommand);

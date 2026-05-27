@@ -30,6 +30,7 @@
 #include "chpl-tasks.h"
 #include "config.h"
 #include "chpl-error.h"
+#include "chpl-prginfo.h"
 #include "chplsys.h"
 #include <assert.h>
 #include <errno.h>
@@ -113,7 +114,8 @@ void                   chpl_free_pthread_stack(void*);
 void chpl_init_heap_stack(void){
 
   // We don't want a guard page, but we want the stack in the heap
-  if (CHPL_STACK_CHECKS == 0) {
+  if (CHPL_RT_PRGINFO_DATA(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                           CHPL_STACK_CHECKS) == 0) {
     chpl_alloc_stack_in_heap = true;
     chpl_use_guard_page      = false;
     return;

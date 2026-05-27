@@ -24,6 +24,9 @@ on:
       - .github/workflows/build-CI-container.yml
   # Adds a "manual run" option in the GH UI
   workflow_dispatch:
+  # Also rebuild weekly
+  schedule:
+    - cron: '0 0 * * 2'
 
 
 jobs:
@@ -34,22 +37,22 @@ jobs:
       packages: write
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@v1.14.1
+        uses: docker/login-action@v4.1.0
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build Docker Image
-        uses: docker/build-push-action@v2.9.0
+        uses: docker/build-push-action@v7.1.0
         with:
           file: ${{ env.DOCKERFILE }}
           # example: ghcr.io/chapel-lang/chapel-github-ci:latest
           tags: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest
       - name: Push Docker Image if on main
-        if: github.repository_owner == 'chapel-lang' && ((github.event.pull_request.head.repo.full_name == github.repository) || (github.event_name == 'push'))
-        uses: docker/build-push-action@v2.9.0
+        if: github.repository_owner == 'chapel-lang' && ((github.event.pull_request.head.repo.full_name == github.repository) || (github.event_name == 'push') || (github.event_name == 'workflow_dispatch') || (github.event_name == 'schedule'))
+        uses: docker/build-push-action@v7.1.0
         with:
           file: ${{ env.DOCKERFILE }}
           push: true

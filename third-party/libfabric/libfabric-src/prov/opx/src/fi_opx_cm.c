@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2016 by Argonne National Laboratory.
- * Copyright (C) 2021 Cornelis Networks.
+ * Copyright (C) 2021-2025 Cornelis Networks.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -36,7 +36,6 @@
 #include "rdma/opx/fi_opx_endpoint.h"
 #include "rdma/opx/fi_opx.h"
 
-
 #include <ofi_enosys.h>
 
 #include <string.h>
@@ -50,43 +49,41 @@ int fi_opx_getname(fid_t fid, void *addr, size_t *addrlen)
 
 	const size_t len = *addrlen;
 
-	switch(fid->fclass) {
-	case FI_CLASS_EP:
-		{
-			struct fi_opx_ep *opx_ep;
-			opx_ep = container_of(fid, struct fi_opx_ep, ep_fid);
+	switch (fid->fclass) {
+	case FI_CLASS_EP: {
+		struct fi_opx_ep *opx_ep;
+		opx_ep = container_of(fid, struct fi_opx_ep, ep_fid);
 
-			if (!opx_ep->daos_info.hfi_rank_enabled) {
-				*addrlen = sizeof(union fi_opx_addr);
-				if (len > 0) {
-					if (!addr) {
-						errno = FI_EINVAL;
-						return -errno;
-					}
-
-					memcpy(addr, (void*)&opx_ep->rx->self, MIN(len, *addrlen));
+		if (!opx_ep->daos_info.hfi_rank_enabled) {
+			*addrlen = sizeof(union fi_opx_addr);
+			if (len > 0) {
+				if (!addr) {
+					errno = FI_EINVAL;
+					return -errno;
 				}
-			} else {
-				*addrlen = sizeof(struct fi_opx_extended_addr);
-				if (len > 0) {
-					if (!addr) {
-						errno = FI_EINVAL;
-						return -errno;
-					}
 
-					struct fi_opx_extended_addr *ext_addr = (struct fi_opx_extended_addr *)addr;
-					memcpy(&ext_addr->addr, (void*)&opx_ep->rx->self, sizeof(union fi_opx_addr));
-					ext_addr->rank = opx_ep->hfi->daos_info.rank;
-					ext_addr->rank_inst = opx_ep->hfi->daos_info.rank_inst;
-				}
+				memcpy(addr, (void *) &opx_ep->rx->self, MIN(len, *addrlen));
 			}
+		} else {
+			*addrlen = sizeof(struct fi_opx_extended_addr);
+			if (len > 0) {
+				if (!addr) {
+					errno = FI_EINVAL;
+					return -errno;
+				}
 
-			if (len < *addrlen) {
-				errno = FI_ETOOSMALL;
-				return -errno;
+				struct fi_opx_extended_addr *ext_addr = (struct fi_opx_extended_addr *) addr;
+				memcpy(&ext_addr->addr, (void *) &opx_ep->rx->self, sizeof(union fi_opx_addr));
+				ext_addr->rank	    = opx_ep->hfi->daos_info.rank;
+				ext_addr->rank_inst = opx_ep->hfi->daos_info.rank_inst;
 			}
 		}
-		break;
+
+		if (len < *addrlen) {
+			errno = FI_ETOOSMALL;
+			return -errno;
+		}
+	} break;
 	case FI_CLASS_SEP:
 		*addrlen = sizeof(union fi_opx_addr);
 		if (len > 0) {
@@ -98,7 +95,8 @@ int fi_opx_getname(fid_t fid, void *addr, size_t *addrlen)
 			struct fi_opx_sep *opx_sep;
 			opx_sep = container_of(fid, struct fi_opx_sep, ep_fid);
 			unsigned i;
-			for (i = 0; (i < FI_OPX_ADDR_SEP_RX_MAX) && (opx_sep->ep[i] == NULL); ++i);
+			for (i = 0; (i < FI_OPX_ADDR_SEP_RX_MAX) && (opx_sep->ep[i] == NULL); ++i)
+				;
 			if (i == FI_OPX_ADDR_SEP_RX_MAX) {
 				/* no sep rx ctx were created? */
 				errno = FI_EINVAL;
@@ -106,14 +104,11 @@ int fi_opx_getname(fid_t fid, void *addr, size_t *addrlen)
 			}
 
 			union fi_opx_addr tmp;
-			tmp.raw64b = 0;
-			tmp.rx_index = 0;
-			tmp.uid.endpoint_id = opx_sep->ep[i]->hfi->send_ctxt;
-			tmp.reliability_rx = opx_sep->ep[i]->hfi->info.rxe.id;
-			tmp.uid.lid = htons(opx_sep->ep[i]->hfi->lid);
-			tmp.hfi1_rx = opx_sep->ep[i]->rx->self.hfi1_rx;
-			tmp.hfi1_unit = opx_sep->ep[i]->rx->self.hfi1_unit;
-			memcpy(addr, (void*)&tmp, MIN(len, *addrlen));
+			tmp.raw64b	    = 0;
+			tmp.lid		    = htons(opx_sep->ep[i]->hfi->lid);
+			tmp.hfi1_subctxt_rx = opx_sep->ep[i]->rx->self.hfi1_subctxt_rx;
+			tmp.hfi1_unit	    = opx_sep->ep[i]->rx->self.hfi1_unit;
+			memcpy(addr, (void *) &tmp, MIN(len, *addrlen));
 		}
 
 		if (len < sizeof(union fi_opx_addr)) {
@@ -130,31 +125,35 @@ int fi_opx_getname(fid_t fid, void *addr, size_t *addrlen)
 }
 
 static struct fi_ops_cm fi_opx_cm_ops = {
-	.size		= sizeof(struct fi_ops_cm),
-	.getname 	= fi_opx_getname,
-	.getpeer 	= fi_no_getpeer,
-	.connect 	= fi_no_connect,
-	.listen  	= fi_no_listen,
-	.accept  	= fi_no_accept,
-	.reject  	= fi_no_reject,
-	.shutdown 	= fi_no_shutdown,
+	.size	  = sizeof(struct fi_ops_cm),
+	.getname  = fi_opx_getname,
+	.getpeer  = fi_no_getpeer,
+	.connect  = fi_no_connect,
+	.listen	  = fi_no_listen,
+	.accept	  = fi_no_accept,
+	.reject	  = fi_no_reject,
+	.shutdown = fi_no_shutdown,
 };
 
 int fi_opx_init_cm_ops(fid_t fid, struct fi_info *info)
 {
-	if (!info) goto err;
+	if (!info) {
+		goto err;
+	}
 
-	struct fi_opx_ep *opx_ep;
+	struct fi_opx_ep  *opx_ep;
 	struct fi_opx_sep *opx_sep;
 
-	switch(fid->fclass) {
-    case FI_CLASS_RX_CTX:
-    case FI_CLASS_TX_CTX:
+	switch (fid->fclass) {
+	case FI_CLASS_RX_CTX:
+	case FI_CLASS_TX_CTX:
 	case FI_CLASS_EP:
 
 		opx_ep = container_of(fid, struct fi_opx_ep, ep_fid);
 
-		if (!opx_ep) goto err;
+		if (!opx_ep) {
+			goto err;
+		}
 
 		opx_ep->ep_fid.cm = &fi_opx_cm_ops;
 		break;
@@ -162,7 +161,9 @@ int fi_opx_init_cm_ops(fid_t fid, struct fi_info *info)
 
 		opx_sep = container_of(fid, struct fi_opx_sep, ep_fid);
 
-		if (!opx_sep) goto err;
+		if (!opx_sep) {
+			goto err;
+		}
 
 		opx_sep->ep_fid.cm = &fi_opx_cm_ops;
 		break;
@@ -172,7 +173,6 @@ int fi_opx_init_cm_ops(fid_t fid, struct fi_info *info)
 		abort();
 		break;
 	}
-
 
 	return 0;
 err:

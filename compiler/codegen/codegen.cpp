@@ -255,20 +255,35 @@ genGlobalDefClassId(const char* cname, int id, bool isHeader) {
   }
 }
 static void
-genGlobalString(const char *cname, const char *value) {
+genGlobalString(const char *cname, const char *value, bool isConstant=true) {
   GenInfo* info = gGenInfo;
-  if( info->cfile ) {
-    fprintf(info->cfile, "const char* %s = \"%s\";\n", cname, value);
+  bool hasValue = value != nullptr;
+  FILE* fp = info->cfile;
+
+  if (fp) {
+    const char* constPart = isConstant ? "const " : "";
+    if (hasValue) {
+      fprintf(fp, "%schar* %s = \"%s\";\n", constPart, cname, value);
+    } else {
+      fprintf(fp, "%schar* %s = NULL;\n", constPart, cname);
+    }
   } else {
 #ifdef HAVE_LLVM
-    if(gCodegenGPU == false) {
-      llvm::GlobalVariable *globalString = llvm::cast<llvm::GlobalVariable>(
-          info->module->getOrInsertGlobal(
-            cname, getPointerType(info->module->getContext())));
-      globalString->setInitializer(llvm::cast<llvm::GlobalVariable>(
-            new_CStringSymbol(value)->codegen().val)->getInitializer());
-      globalString->setConstant(true);
-      info->lvt->addGlobalValue(cname, globalString, GEN_PTR, true, dtStringC);
+    if (!gCodegenGPU) {
+      auto llvmPtrType = getPointerType(info->module->getContext());
+      auto lookup = info->module->getOrInsertGlobal(cname, llvmPtrType);
+      auto gVar = llvm::cast<llvm::GlobalVariable>(lookup);
+
+      if (hasValue) {
+        gVar->setInitializer(llvm::cast<llvm::GlobalVariable>(
+              new_CStringSymbol(value)->codegen().val)->getInitializer());
+      } else {
+        gVar->setInitializer(llvm::Constant::getNullValue(llvmPtrType));
+      }
+
+      if (isConstant) gVar->setConstant(true);
+
+      info->lvt->addGlobalValue(cname, gVar, GEN_PTR, true, dtStringC);
     }
 #endif
   }
@@ -770,7 +785,7 @@ genFinfo(std::vector<FnSymbol*> & fSymbols, bool isHeader) {
   }
 
   forv_Vec(FnSymbol, fn, fSymbols) {
-    const char* fn_name = fn->cname;
+    const char* fn_name = fn->name;
     int fileno = getFilenameTableIndex(fn->astloc.filename());
     int lineno = fn->astloc.lineno();
 
@@ -942,16 +957,123 @@ static void genFilenameTable() {
   genGlobalInt32(sizeName, InsertLineNumbers::getFilenameTable().size());
 }
 
-static bool shouldAddToUnwindTable(FnSymbol* fn) {
-  // Always keep module initializers.
-  if (fn->hasFlag(FLAG_MODULE_INIT)) return true;
+//
+// Rules for building up the unwind table:
+//
+//    -- There is exactly _one_ best function for a given 'cname', and when
+//       disambiguating matches, extern functions are always replaced by
+//       non-extern ones. If there is more than one non-extern function
+//       mapped to a cname, it is an internal error because the compiler
+//       should have caught that earlier.
+//    -- Always add module initializers to the table.
+//    -- Always add 'chpl_user_main' / 'main()' to the table.
+//    -- If the the Chapel name starts with 'chpl_', then omit that function.
+//    -- If the the C name starts with 'chpl_', then omit that function.
+//    -- A non-extern function can always be renamed.
+//    -- An extern function can be renamed only if there is 1 occurence.
+//
+class UnwindTable {
+  // Use an ordered map to sort the table contents in alphabetical order.
+  using NameMap = std::map<std::string, std::vector<FnSymbol*>>;
 
-  // Name or C name starts with 'chpl_', which is reserved.
-  if (!strncmp(fn->name, "chpl_", 5)) return false;
-  if (!strncmp(fn->cname, "chpl_", 5)) return false;
+  std::vector<std::pair<FnSymbol*, bool>> table_;
 
-  return true;
-}
+  static bool shouldAddToTable(FnSymbol* fn) {
+    if (fn->hasFlag(FLAG_MODULE_INIT)) return true;
+    if (fn == chplUserMain) return true;
+    if (!strncmp(fn->name, "chpl_", 5)) return false;
+    if (!strncmp(fn->cname, "chpl_", 5)) return false;
+    return true;
+  }
+
+public:
+  UnwindTable() = default;
+ ~UnwindTable() = default;
+
+  static UnwindTable create(Vec<FnSymbol*>& vec) {
+    UnwindTable ret;
+    NameMap nameMap;
+
+    forv_Vec(FnSymbol, fn, gFnSymbols) {
+      auto& v = nameMap[fn->cname];
+      v.push_back(fn);
+    }
+
+    for (auto& [cname, fns] : nameMap) {
+      std::ignore = cname;
+
+      FnSymbol* lastNonExternFn = nullptr;
+      FnSymbol* lastExternFn = nullptr;
+      int numExportOrDefault = 0;
+      int numExtern = 0;
+
+      for (auto fn : fns) {
+        if (fn->hasFlag(FLAG_EXTERN)) {
+          lastExternFn = fn;
+          numExtern++;
+        } else {
+          lastNonExternFn = fn;
+          numExportOrDefault++;
+        }
+      }
+
+      // If this fires, we have a naming problem we didn't catch.
+      INT_ASSERT(numExportOrDefault <= 1);
+
+      auto fn = lastNonExternFn ? lastNonExternFn : lastExternFn;
+      bool canRename = !fn->hasFlag(FLAG_EXTERN) || numExtern == 1;
+
+      if (shouldAddToTable(fn)) ret.table_.push_back({ fn, canRename });
+    }
+
+    return ret;
+  }
+
+  std::vector<GenRet> buildNameTable() const {
+    std::vector<GenRet> ret;
+
+    ret.reserve(table_.size() * 2);
+
+    for (auto [fn, canRename] : table_) {
+      const char* str1 = fn->cname;
+      const char* str2 = canRename ? fn->name : fn->cname;
+
+      ret.push_back(codegenStringForTable(str1));
+      ret.push_back(codegenStringForTable(str2));
+    }
+
+    ret.push_back(codegenStringForTable(""));
+    ret.push_back(codegenStringForTable(""));
+
+    return ret;
+  }
+
+  std::vector<GenRet> buildFileLineTable() const {
+    std::vector<GenRet> ret;
+
+    ret.reserve(table_.size() * 2);
+
+    for (auto [fn, canRename] : table_) {
+      std::ignore = canRename;
+
+      int fileno = getFilenameTableIndex(fn->fname());
+      int lineno = fn->linenum();
+
+      ret.push_back(new_IntSymbol(fileno, INT_SIZE_32)->codegen());
+      ret.push_back(new_IntSymbol(lineno, INT_SIZE_32)->codegen());
+    }
+
+    ret.push_back(new_IntSymbol(0, INT_SIZE_32)->codegen());
+    ret.push_back(new_IntSymbol(0, INT_SIZE_32)->codegen());
+
+    return ret;
+  }
+
+  size_t size() const {
+    return table_.size();
+  }
+};
+
 
 //
 // This adds the Chapel symbol table to the config file
@@ -962,16 +1084,11 @@ static bool shouldAddToUnwindTable(FnSymbol* fn) {
 // chpl_filenumSymTable = Chapel file name index, Chapel line number
 //
 static void genUnwindSymbolTable(){
-  std::vector<FnSymbol*> symbols;
+  UnwindTable unwindTable;
 
   //If CHPL_UNWIND is none we don't want any symbols in our tables
   if(strcmp(CHPL_UNWIND, "none") != 0){
-    // Gets only user symbols
-    forv_Vec(FnSymbol, fn, gFnSymbols) {
-      if (shouldAddToUnwindTable(fn)) {
-        symbols.push_back(fn);
-      }
-    }
+    unwindTable = UnwindTable::create(gFnSymbols);
   }
 
   // Generate the cname, Chapel name table
@@ -982,16 +1099,7 @@ static void genUnwindSymbolTable(){
     // Compute the element type
     GenRet cstringType = codegenTypeByName(eltType);
 
-    // Construct the table elements
-    std::vector<GenRet> table;
-    table.reserve(symbols.size() * 2);
-
-    for (FnSymbol* fn : symbols) {
-      table.push_back(codegenStringForTable(fn->cname));
-      table.push_back(codegenStringForTable(fn->name));
-    }
-    table.push_back(codegenStringForTable(""));
-    table.push_back(codegenStringForTable(""));
+    auto table = unwindTable.buildNameTable();
 
     // Now emit the global array declaration
     codegenGlobalConstArray(name, eltType, &table, false);
@@ -1005,27 +1113,14 @@ static void genUnwindSymbolTable(){
     // Compute the element type
     GenRet cintType = codegenTypeByName(eltType);
 
-    // Construct the table elements
-    std::vector<GenRet> table;
-    table.reserve(symbols.size() * 2);
-
-    for (FnSymbol* fn : symbols) {
-      int fileno = getFilenameTableIndex(fn->fname());
-      int lineno = fn->linenum();
-
-      table.push_back( new_IntSymbol(fileno, INT_SIZE_32)->codegen() );
-      table.push_back( new_IntSymbol(lineno, INT_SIZE_32)->codegen() );
-    }
-
-    table.push_back( new_IntSymbol(0, INT_SIZE_32)->codegen() );
-    table.push_back( new_IntSymbol(0, INT_SIZE_32)->codegen() );
+    auto table = unwindTable.buildFileLineTable();
 
     // Now emit the global array declaration
     codegenGlobalConstArray(name, eltType, &table, false);
   }
 
   // Now emit the size of the symbol table
-  genGlobalInt32("chpl_sizeSymTable", symbols.size() * 2);
+  genGlobalInt32("chpl_sizeSymTable", unwindTable.size() * 2);
 }
 
 static void
@@ -1290,6 +1385,8 @@ static void genConfigGlobalsAndAbout() {
   genGlobalString("chpl_compileCommand", compileCommand);
   genGlobalString("chpl_compileVersion", compileVersion);
   genGlobalString("chpl_compileDirectory", getCwd());
+  genGlobalString("chpl_executionCommand", nullptr, /**isConstant*/ false);
+
   if (!saveCDir.empty()) {
     char *actualPath = realpath(saveCDir.c_str(), NULL);
     genGlobalString("chpl_saveCDir", actualPath);
@@ -1370,8 +1467,6 @@ static void genFunctionTables() {
 //
 // Only put C data objects into this file, not Chapel ones, as it may
 // also be #include'd into a launcher, and those are C/C++ code.
-//
-// New generated variables should be added to runtime/include/chplcgfns.h
 //
 static const char* sCfgFname = "chpl_compilation_config";
 
@@ -2043,19 +2138,24 @@ static void codegen_header(std::set<const char*> & cnames,
   genSubclassArray(true);
   genClassNames(types, true);
 
-  // Generate procedure pointer types first to handle circular dependencies.
-  genComment("Procedure Pointer Types");
-  forv_Vec(TypeSymbol, ts, types) {
-    if (auto ft = toFunctionType(ts->type)) {
-      ft->codegenDef();
-    }
-  }
+  // Generate root class first to satisfy assumptions made elsewhere
+  dtObject->codegenPrototype();
+  dtObject->codegenDef();
 
   genComment("Class Prototypes");
   forv_Vec(TypeSymbol, typeSymbol, types) {
     if (!typeSymbol->hasFlag(FLAG_REF) && !typeSymbol->hasFlag(FLAG_DATA_CLASS))
     {
+      if (typeSymbol->type == dtObject) continue;
       typeSymbol->codegenPrototype();
+    }
+  }
+
+  // Do this after class prototypes to avoid circular dependencies.
+  genComment("Procedure Pointer Types");
+  forv_Vec(TypeSymbol, ts, types) {
+    if (auto ft = toFunctionType(ts->type)) {
+      ft->codegenDef();
     }
   }
 
@@ -2096,7 +2196,9 @@ static void codegen_header(std::set<const char*> & cnames,
 
   while (current.n) {
     forv_Vec(TypeSymbol, ts, current) {
-      ts->codegenDef();
+      if (ts->type != dtObject) {
+        ts->codegenDef();
+      }
 
       if (AggregateType* at = toAggregateType(ts->type)) {
         forv_Vec(AggregateType, child, at->dispatchChildren) {
@@ -2891,8 +2993,11 @@ static void codegenGpuGlobals() {
 struct ChapelRemarkSerializer : public llvm::remarks::RemarkSerializer {
   ChapelRemarkSerializer(llvm::raw_ostream& OS)
       : llvm::remarks::RemarkSerializer(
-            llvm::remarks::Format::Unknown, OS,
-            llvm::remarks::SerializerMode::Standalone) {}
+            llvm::remarks::Format::Unknown, OS
+#if LLVM_VERSION_MAJOR < 22
+            , llvm::remarks::SerializerMode::Standalone
+#endif
+          ) {}
 
   void emit(const llvm::remarks::Remark& Remark) override {
 
@@ -2940,6 +3045,15 @@ struct ChapelRemarkSerializer : public llvm::remarks::RemarkSerializer {
     OS << " for '" << Remark.PassName << "'";
     OS << " - " << Remark.getArgsAsMsg() << "\n";
   }
+#if LLVM_VERSION_MAJOR >= 22
+  // just use the YAML (default) meta serializer, which gets encoded in the asm
+  std::unique_ptr<llvm::remarks::MetaSerializer> metaSerializer(
+      llvm::raw_ostream& OS,
+      llvm::StringRef ExternalFilename) override {
+    return std::make_unique<llvm::remarks::YAMLMetaSerializer>(
+        OS, ExternalFilename);
+  }
+#else
   // just use the YAML (default) meta serializer, which gets encoded in the asm
   std::unique_ptr<llvm::remarks::MetaSerializer> metaSerializer(
       llvm::raw_ostream& OS,
@@ -2947,6 +3061,7 @@ struct ChapelRemarkSerializer : public llvm::remarks::RemarkSerializer {
     return std::make_unique<llvm::remarks::YAMLMetaSerializer>(
         OS, ExternalFilename);
   }
+#endif
   private:
   std::string typeToString(llvm::remarks::Type t) {
     switch (t) {

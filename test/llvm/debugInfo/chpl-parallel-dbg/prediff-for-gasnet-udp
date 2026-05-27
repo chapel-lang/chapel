@@ -1,0 +1,21 @@
+#!/usr/bin/env python3
+
+import sys
+import re
+
+file=sys.argv[2]
+
+with open(file, 'rb') as f:
+    contents = f.read()
+
+out_of_order = rb"""\*\*\* GASNET WARNING\(Node \d+\): Detected arrival of out-of-order [a-zA-Z]+!
+ It appears your system is delivering IP packets out-of-order between worker nodes,
+ most likely due to striping over multiple adapters or links\.
+ This might \(rarely\) lead to corruption of AMUDP traffic\.
+"""
+
+output = re.sub(out_of_order, b'', contents, flags=re.MULTILINE)
+
+
+with open(file, 'wb') as f:
+    f.write(output)

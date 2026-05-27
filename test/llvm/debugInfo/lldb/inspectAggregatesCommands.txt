@@ -1,3 +1,4 @@
+settings set target.max-children-count 1024
 r
 
 p myIntList

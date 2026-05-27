@@ -161,6 +161,11 @@ vrb_msg_ep_connect(struct fid_ep *ep_fid, const void *addr,
 	struct vrb_cm_data_hdr *cm_hdr;
 	int ret = 0;
 
+	if (ep->profile)
+		vrb_prof_st_start(ep->profile, ofi_gettime_ns());
+
+	vrb_prof_func_start(__func__);
+
 	if (OFI_UNLIKELY(paramlen > VERBS_CM_DATA_SIZE))
 		return -FI_EINVAL;
 
@@ -200,6 +205,7 @@ vrb_msg_ep_connect(struct fid_ep *ep_fid, const void *addr,
 	ofi_genlock_lock(&vrb_ep2_progress(ep)->ep_lock);
 	assert(ep->state == VRB_IDLE);
 	ep->state = VRB_RESOLVE_ADDR;
+	vrb_prof_func_start("rdma_resolve_addr");
 	if (rdma_resolve_addr(ep->id, ep->info_attr.src_addr,
 			      ep->info_attr.dest_addr, VERBS_RESOLVE_TIMEOUT)) {
 		ret = -errno;
@@ -212,7 +218,9 @@ vrb_msg_ep_connect(struct fid_ep *ep_fid, const void *addr,
 		ep->cm_priv_data = NULL;
 		ep->state = VRB_IDLE;
 	}
+	vrb_prof_func_end("rdma_resolve_addr");
 	ofi_genlock_unlock(&vrb_ep2_progress(ep)->ep_lock);
+	vrb_prof_func_end(__func__);
 	return ret;
 }
 
@@ -247,7 +255,9 @@ vrb_msg_ep_accept(struct fid_ep *ep, const void *param, size_t paramlen)
 	ofi_genlock_lock(&vrb_ep2_progress(_ep)->ep_lock);
 	assert(_ep->state == VRB_REQ_RCVD);
 	_ep->state = VRB_ACCEPTING;
+	vrb_prof_func_start("rdma_accept");
 	ret = rdma_accept(_ep->id, &conn_param);
+	vrb_prof_func_end("rdma_accept");
 	if (ret) {
 		VRB_WARN_ERRNO(FI_LOG_EP_CTRL, "rdma_accept");
 		_ep->state = VRB_DISCONNECTED;
@@ -257,6 +267,9 @@ vrb_msg_ep_accept(struct fid_ep *ep, const void *param, size_t paramlen)
 				       struct vrb_connreq, handle);
 		free(connreq);
 	}
+	if (!ret && _ep->profile) 
+		vrb_prof_cntr_inc(_ep->profile, FI_VAR_CONN_ACCEPT);
+
 	ofi_genlock_unlock(&vrb_ep2_progress(_ep)->ep_lock);
 	return ret;
 }
@@ -302,8 +315,11 @@ vrb_msg_xrc_ep_reject(struct vrb_connreq *connreq,
 
 	vrb_set_xrc_cm_data(cm_data, connreq->xrc.is_reciprocal,
 			       connreq->xrc.conn_tag, connreq->xrc.port, 0, 0);
+	vrb_prof_func_start("rdma_reject");
 	ret = rdma_reject(connreq->id, cm_data,
 			  (uint8_t) paramlen) ? -errno : 0;
+	vrb_prof_func_end("rdma_reject");
+
 	if (rdma_destroy_id(connreq->id))
 		VRB_WARN_ERR(FI_LOG_EP_CTRL, "rdma_destroy_id", -errno);
 	connreq->id = NULL;
@@ -333,16 +349,20 @@ vrb_msg_ep_reject(struct fid_pep *pep, fid_t handle,
 		ret = vrb_msg_xrc_ep_reject(connreq, cm_hdr,
 				(uint8_t)(sizeof(*cm_hdr) + paramlen));
 	} else if (connreq->id) {
+		vrb_prof_func_start("rdma_reject");
 		ret = rdma_reject(connreq->id, cm_hdr,
 			(uint8_t)(sizeof(*cm_hdr) + paramlen)) ? -errno : 0;
+		vrb_prof_func_end("rdma_reject");
 		if (rdma_destroy_id(connreq->id))
 			VRB_WARN_ERR(FI_LOG_EP_CTRL, "rdma_destroy_id", -errno);
 		connreq->id = NULL;
 	} else {
 		ret = -FI_EBUSY;
 	}
-	ofi_mutex_unlock(&_pep->eq->event_lock);
+	if (!ret && _pep->profile) 
+		vrb_prof_cntr_inc(_pep->profile, FI_VAR_CONN_REJECT);
 
+	ofi_mutex_unlock(&_pep->eq->event_lock);
 	if (ret)
 		VRB_WARN_ERR(FI_LOG_EP_CTRL, "rdma_reject", ret);
 

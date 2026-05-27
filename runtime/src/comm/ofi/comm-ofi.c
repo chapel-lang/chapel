@@ -40,6 +40,7 @@
 #include "chpl-mem.h"
 #include "chpl-mem-sys.h"
 #include "chplsys.h"
+#include "chpl-prginfo.h"
 #include "chpl-tasks.h"
 #include "chpl-topo.h"
 #include "chpltypes.h"
@@ -1485,6 +1486,8 @@ chpl_bool isUseableProvider(struct fi_info* info) {
   static struct sockaddr_in6 t2;
   static chpl_bool initialized = false;
   static chpl_bool darwin = false;
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                          CHPL_TARGET_PLATFORM);
 
   if (! initialized) {
     darwin = !strcmp(CHPL_TARGET_PLATFORM, "darwin");
@@ -2203,6 +2206,9 @@ void init_ofiFabricDomain(void) {
   //
   OFI_CHK(fi_fabric(ofi_info->fabric_attr, &ofi_fabric, NULL));
 
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                          CHPL_TARGET_PLATFORM);
+
   if (strcmp(CHPL_TARGET_PLATFORM, "hpe-cray-ex") == 0
       && chpl_env_rt_get_bool("COMM_OFI_SLINGSHOT_CHECK_ENV", true)) {
     heedSlingshotSettings(ofi_info);
@@ -2247,6 +2253,8 @@ struct fi_info* getBaseProviderHints(chpl_bool* pTxAttrsForced) {
   const char* prov_name = getProviderName();
   struct fi_info* hints;
   CHK_TRUE((hints = fi_allocinfo()) != NULL);
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                          CHPL_TARGET_PLATFORM);
 
   hints->caps = (FI_MSG | FI_MULTI_RECV
                  | FI_RMA | FI_LOCAL_COMM | FI_REMOTE_COMM);
@@ -2567,6 +2575,8 @@ void init_ofiEp(void) {
       } else {
         DBG_PRINTF(DBG_PROV, "fi_open_ops failed: %s", fi_strerror(rc));
       }
+#else
+      chpl_warning("The Chapel runtime was built without enhanced CXI support. Make sure your libfabric was built using `--enable-cxi`.", 0, 0);
 #endif
     }
     if (cxiHybridMRMode) {
@@ -3581,6 +3591,8 @@ void init_fixedHeap(void) {
     // that can meet our base requirements has FI_MR_ALLOCATED set to
     // indicate it wants one.
     //
+    CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                            CHPL_TARGET_PLATFORM);
     if (!strcmp(CHPL_TARGET_PLATFORM, "cray-xc") ||
         !strcmp(CHPL_TARGET_PLATFORM, "hpe-cray-ex")) {
       createHeap = true;

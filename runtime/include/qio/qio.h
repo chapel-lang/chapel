@@ -1480,10 +1480,8 @@ qioerr qio_channel_write_bits(const int threadsafe, qio_channel_t* restrict ch, 
 
   if( nbits < 0 ) QIO_RETURN_CONSTANT_ERROR(EINVAL, "negative number of bits");
   if( nbits == 0 ) return 0;
-  if( nbits < 64 && (v >> nbits) != 0 ) {
-    // v must not have any extra bits set.
-    QIO_RETURN_CONSTANT_ERROR(EINVAL, "no more bits");
-  }
+  // if there are significant bits at positions greater than nbits, we ignore them
+  v = nbits < 64 ? ((1LL << nbits) - 1) & v : v;
 
   if( threadsafe ) {
     err = qio_lock(&ch->lock);

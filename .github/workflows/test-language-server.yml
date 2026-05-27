@@ -16,7 +16,7 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     - name: test chpl-language-server
       run: |
         make test-chpl-language-server -j`util/buildRelease/chpl-make-cpu_count`

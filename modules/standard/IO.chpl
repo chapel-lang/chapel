@@ -2256,17 +2256,6 @@ record defaultSerializer {
       writer.writeLiteral("nil");
     } else if isClassType(t) {
       x!.serialize(writer=writer, serializer=this);
-    } else if isProcedureType(t) {
-      // The legacy procedure classes should have been handled by above.
-      compilerAssert(!isClassType(t));
-
-      // TODO: We might like to print the symbol name instead, here, and
-      // that may be achievable since the names of loaded symbols are
-      // stored in the binary cache (though they won't necessarily be
-      // retrievable without comm). So we'd just have to arrange to store
-      // the names of 'ftable' entries as well.
-      const ptr = x : c_ptr(void);
-      ptr.serialize(writer=writer, serializer=this);
     } else {
       x.serialize(writer=writer, serializer=this);
     }
@@ -2309,8 +2298,7 @@ record defaultSerializer {
       writer._writeOne(_iokind.dynamic, val, writer.getLocaleOfIoRequest());
     } else if t == _nilType {
       writer.writeLiteral("nil");
-    } else if isClassType(t) || isAnyCPtr(t) || chpl_isDdata(t) ||
-              isProcedureType(t) {
+    } else if isClassType(t) || isAnyCPtr(t) || chpl_isDdata(t) {
       _serializeClassOrPtr(writer, val);
     } else {
       val.serialize(writer=writer, serializer=this);

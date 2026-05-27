@@ -26,11 +26,13 @@
 #include "chpllaunch.h"
 #include "chpl-mem.h"
 #include "chpl-error.h"
+#include "chpl-prginfo.h"
 
 static char** chpl_launch_create_argv(const char *launch_cmd,
                                       int argc, char* argv[],
                                       int32_t numLocales) {
-  if (strcmp(CHPL_COMM, "ofi") != 0) {
+  if (strcmp(CHPL_RT_PRGINFO_DATA(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                                  CHPL_COMM), "ofi") != 0) {
     chpl_error("mpirun4ofi only supports CHPL_COMM=ofi", 0, 0);
   }
 

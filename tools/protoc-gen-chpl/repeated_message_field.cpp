@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-#include <repeated_message_field.h>
+#include "repeated_message_field.h"
 
 namespace chapel {
 

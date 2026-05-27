@@ -70,6 +70,10 @@ chpl_rt_prginfo_register_here_nosync(chpl_rt_prg_id id, chpl_rt_prginfo* prg);
 /** Call to register the root program here. Returns '1' if registered. */
 int chpl_rt_prginfo_register_root_here(chpl_rt_prginfo* prg);
 
+/** Used to debug the data listings in a 'chpl_rt_prginfo'. */
+void chpl_rt_prginfo_dump_data_entries(chpl_rt_prginfo* prg,
+                                       int show_addresses);
+
 #ifdef __cplusplus
 }
 #endif

@@ -77,7 +77,8 @@ chpl_rt_prginfo_register_here_nosync(chpl_rt_prg_id id, chpl_rt_prginfo* prg) {
   chpl_bool requestingNewIdx = (id == CHPL_RT_PRGINFO_NULL_ID);
   int64_t idxToUse = requestingNewIdx ? 0 : ((int64_t) id);
 
-  CHPL_RT_PRGINFO_DATA_TEMP(CHPL_RT_PRGINFO_ROOT, chpl_mapPtrToIdxHere);
+  // Fetch and invoke callback from the root program specifically.
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_PRGINFO_ROOT, chpl_mapPtrToIdxHere);
   int64_t got = chpl_mapPtrToIdxHere(prg, idxToUse);
 
   if (!requestingNewIdx && idxToUse != got) {
@@ -119,7 +120,7 @@ chpl_rt_prginfo* chpl_rt_prginfo_from_id_here(chpl_rt_prg_id id) {
   if (id == CHPL_RT_PRGINFO_ROOT_ID) return chpl_prg_root;
 
   // Fetch pointers from the root program.
-  CHPL_RT_PRGINFO_DATA_TEMP(CHPL_RT_PRGINFO_ROOT, chpl_getPtrForIdxHere);
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_PRGINFO_ROOT, chpl_getPtrForIdxHere);
   int64_t idx = (int64_t) id;
   chpl_rt_prginfo* ret = chpl_getPtrForIdxHere(idx);
 
@@ -151,4 +152,88 @@ const char* chpl_rt_prginfo_load_path(chpl_rt_prginfo* prg) {
 
   // This should be valid as long as 'prg' is loaded.
   return info.dli_fname;
+}
+
+#define STR_INNER(x__) #x__
+#define STR(x__) STR_INNER(x__)
+
+// Counts and returns the number of '*' in a type string.
+static int type_pointer_depth(const char* type) {
+  int ret = 0;
+  for (size_t i = 0; i < strlen(type); i++) {
+    if (type[i] == '*') ret += 1;
+  }
+  return ret;
+}
+
+static void dump_prginfo_data_entry(FILE* fp, chpl_rt_prginfo* prg,
+                                    const char* name,
+                                    const char* type,
+                                    void* addr,
+                                    int is_callback,
+                                    int show_address) {
+
+  bool is_array = type_pointer_depth(type) > 0;
+
+  // If true then 'addr' is a pointer to a pointer, so deref it.
+  void* ptr = (is_callback || is_array) ? *((void**) addr) : NULL;
+
+  fprintf(fp, "%s : %s = ", name, type);
+
+  if (is_callback && show_address) {
+    fprintf(fp, "%p", ptr);
+
+  } else if (is_callback) {
+    fprintf(fp, "%s", ptr == NULL ? "nil" : "non-nil");
+
+  } else {
+    // TODO: Replace me with more sophisticated debugging machinery?
+    if (!strcmp(type, "int")) {
+      fprintf(fp, "%d", *((int*) addr));
+    } else if (!strcmp(type, "int64_t")) {
+      fprintf(fp, "%" PRId64, *((int64_t*) addr));
+    } else if (!strcmp(type, "int32_t")) {
+      fprintf(fp, "%" PRId32, *((int32_t*) addr));
+    } else if (!strcmp(type, "const char*") || !strcmp(type, "c_string")) {
+      fprintf(fp, "%s", addr != NULL ? *((const char**) addr) : "nil");
+    } else if (is_array) {
+      fprintf(fp, "%s", ptr == NULL ? "nil" : "non-nil");
+    } else {
+      fprintf(fp, "<value of unknown type '%s'>", type);
+    }
+  }
+
+  fprintf(fp, "\n");
+}
+
+void chpl_rt_prginfo_dump_data_entries(chpl_rt_prginfo* prg,
+                                       int show_addresses) {
+  FILE* fp = stdout;
+
+  fprintf(fp, "Data entries for P%d@L%d (%s)\n",
+              ((int) prg->id),
+              ((int) chpl_nodeID),
+              chpl_rt_prginfo_load_path(prg));
+
+  #define E_CONSTANT(name__, type__) do {                                   \
+    const char* name = STR(name__);                                         \
+    const char* type = STR(type__);                                         \
+    void* addr = &(CHPL_RT_PRGINFO_DATA(prg, name__));                      \
+    int is_callback = 0;                                                    \
+    dump_prginfo_data_entry(fp, prg, name, type, addr, is_callback,         \
+                            show_addresses);                                \
+  } while (0);
+
+  #define E_CALLBACK(name__, ret_type__, ...) do {                          \
+    const char* name = STR(name__);                                         \
+    const char* type = STR(CHPL_RT_PRGINFO_CALLBACK_TYPE(name__,            \
+                                                         ret_type__,        \
+                                                         __VA_ARGS__));     \
+    void * addr = &(CHPL_RT_PRGINFO_DATA(prg, name__));                     \
+    int is_callback = 1;                                                    \
+    dump_prginfo_data_entry(fp, prg, name, type, addr, is_callback,         \
+                            show_addresses);                                \
+  } while (0);
+
+  #include "chpl-prginfo-data-macro-adapter.h"
 }
