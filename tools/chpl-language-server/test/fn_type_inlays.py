@@ -152,3 +152,28 @@ async def test_fn_type_inlay_per_instantiation(client: LanguageClient):
     await click_lenses_and_check_inlays(
         client, expected_lens, all_inlays, A=file
     )
+
+
+@pytest.mark.asyncio
+async def test_fn_type_inlay_header_variants(client: LanguageClient):
+    """
+    More cases for return inlays.
+    """
+    file = """
+            proc f1() param { return 42; }
+            proc f2() throws { return 42; }
+            proc f3() throws where true do return 42;
+            proc f4() where true do return 42;
+            proc f5() param throws where true do return 42;
+            proc f6() param where true do return 42;
+           """
+    inlays = [
+        (pos((0, 15)), "int(64)"),
+        (pos((1, 16)), "int(64)"),
+        (pos((2, 16)), "int(64)"),
+        (pos((3, 9)), "int(64)"),
+        (pos((4, 22)), "int(64)"),
+        (pos((5, 15)), "int(64)"),
+    ]
+    async with source_file(client, file) as doc:
+        await check_type_inlay_hints(client, doc, rng((0, 0), endpos(file)), inlays)
