@@ -228,6 +228,15 @@ CLASS_BEGIN(TypedSignature)
                auto qt = chpl::resolution::returnType(&rc, node->signature, node->poiScope);
                if (qt.isUnknown() || qt.isErroneousType()) return {};
                return std::make_tuple(intentToString(qt.kind()), qt.type(), qt.param()))
+  PLAIN_GETTER(TypedSignature, yield_type, "Get the yield type of this function signature",
+               std::optional<QualifiedTypeTuple>,
+               // Avoid computing return type for nested functions, as creating
+               // a dummy RC for nested functions is incorrect.
+               if (node->signature->isNestedFunction()) return {};
+               auto rc = chpl::resolution::createDummyRC(context);
+               auto qt = chpl::resolution::yieldType(&rc, node->signature, node->poiScope);
+               if (qt.isUnknown() || qt.isErroneousType()) return {};
+               return std::make_tuple(intentToString(qt.kind()), qt.type(), qt.param()))
   PLAIN_GETTER(TypedSignature, rectangularize, "Replace all generic array formals in this signature with default-rectangular arrays, if possible",
                std::optional<TypedSignatureObject*>,
 

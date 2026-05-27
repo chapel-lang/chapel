@@ -674,7 +674,7 @@ class ChapelLanguageServer(LanguageServer):
         if sig.needs_instantiation():
             return None
 
-        qt = sig.return_type()
+        qt = sig.yield_type() if fn.kind() == "iter" else sig.return_type()
         if qt is None:
             return None
 
