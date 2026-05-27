@@ -81,6 +81,8 @@ void chpl_comm_init_prv_bcast_tab(void);
 
 static inline
 void chpl_comm_really_bcast_rt_private(int id) {
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                          chpl_private_broadcast_table_len);
   chpl_comm_broadcast_private(chpl_private_broadcast_table_len + id,
                               chpl_rt_priv_bcast_lens[id]);
 }

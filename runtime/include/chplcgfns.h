@@ -41,8 +41,6 @@
 extern "C" {
 #endif
 
-extern const int chpl_private_broadcast_table_len;
-
 extern void* const chpl_global_serialize_table[];
 
 #ifdef __cplusplus

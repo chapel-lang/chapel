@@ -102,6 +102,9 @@ size_t chpl_rt_priv_bcast_lens[chpl_rt_prv_tab_num_idxs] =
 #undef _RT_PRV_BCAST_M
 
 void chpl_comm_init_prv_bcast_tab(void) {
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                          chpl_private_broadcast_table_len);
+
   //
   // Make a copy of chpl_private_broadcast_table[], but with some more of
   // our own entries following the compiler-emitted ones.
