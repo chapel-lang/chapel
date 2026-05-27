@@ -57,7 +57,7 @@ void chpl_rt_comm_broadcast_global_vars(chpl_rt_prginfo* prg) {
   //            after the communication, otherwise NULL.
   // On other nodes: retrieve the node 0 local address of that buffer.
   //
-  wide_ptr_t* buf_on_0 = chpl_comm_broadcast_global_vars_helper();
+  wide_ptr_t* buf_on_0 = chpl_rt_comm_broadcast_global_vars_impl(prg);
 
   //
   // On node 0: barrier to ensure the other nodes have the global vars;
