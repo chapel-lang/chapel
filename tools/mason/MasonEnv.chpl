@@ -193,7 +193,6 @@ proc masonEnv(args) throws {
   printVar("MASON_HOME", MASON_HOME);
   printVar("MASON_REGISTRY", MASON_REGISTRY);
   printVar("MASON_OFFLINE", offlineString);
-  printVar("SPACK_ROOT", SPACK_ROOT);
 
   if debug {
     printVar("MASON_CACHED_REGISTRY", MASON_CACHED_REGISTRY);
