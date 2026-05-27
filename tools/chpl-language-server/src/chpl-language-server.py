@@ -692,12 +692,30 @@ class ChapelLanguageServer(LanguageServer):
         """
         Build the InlayHint for a function return type
         """
-        position = location_to_range(fn.header_location()).end
-        edit_text = ": " + type_str
+
+        # 'throws' is part of the header location but after the type
+        # declaration. Unlike type intents (where the ':' character
+        # at the beginning of the inlay distinguishes it from the preceding
+        # code), 'throws' is on the RIGHT of the inlay, and hard to distinguish.
+        # On top of that, it might be preceded by a space, or it might not
+        # be. To not overcomplicate, insert a potentially too spaced-out hint,
+        # padding it on the right.
+        loc = fn.header_location()
+        padding = ""
+        if throws_loc := fn.throws_location():
+            loc -= throws_loc
+            padding = " "
+
+        position = location_to_range(loc).end
+        edit_text = ": " + type_str + padding
         text_edits = [TextEdit(Range(position, position), edit_text)]
         return InlayHint(
             position=position,
-            label=[InlayHintLabelPart(": "), InlayHintLabelPart(type_str)],
+            label=[
+                InlayHintLabelPart(": "),
+                InlayHintLabelPart(type_str),
+                InlayHintLabelPart(padding),
+            ],
             text_edits=text_edits,
         )
 
