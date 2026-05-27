@@ -1180,7 +1180,21 @@ wide_ptr_t* chpl_rt_comm_broadcast_global_vars_impl(chpl_rt_prginfo* prg) {
     CHPL_RT_PRGINFO_DECLARE(prg, chpl_globals_registry);
     CHPL_RT_PRGINFO_DECLARE(prg, chpl_numGlobalsOnHeap);
 
+    // TODO: This is racey. How do we prevent that?
+    // TODO: A quick hack here is to just allocate some large segment e.g.,
+    //       say 1024 wide pointers long and error if a program exceeds that
+    //       number of global variables.
+    // TODO: And then we can just adjust the caller algorithm to work in
+    //       chunks of e.g., 1024 in the case that there are more globals.
+    int needed_global_table_size = chpl_numGlobalsOnHeap * sizeof(wide_ptr_t)
+                                 + GASNETT_PAGESIZE;
+    if (needed_global_table_size > seginfo_table[0].size) {
+      chpl_internal_error("gasnet segment used to communicate global vars "
+                          "is not large enough");
+    }
+
     for (int i = 0; i < chpl_numGlobalsOnHeap; i++) {
+      // Populate the segment buffer with the wide pointer values from L0.
       ((wide_ptr_t*) seginfo_table[0].addr)[i] = *chpl_globals_registry[i];
     }
     chpl_comm_barrier("fill node 0 globals buf");
