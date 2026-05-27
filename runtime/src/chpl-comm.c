@@ -113,6 +113,9 @@ void chpl_comm_init_prv_bcast_tab(void) {
                        sizeof(chpl_rt_priv_bcast_tab[0]),
                        CHPL_RT_MD_COMM_UTIL, 0, 0);
 
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                          chpl_private_broadcast_table);
+
   // Duplicate the compiler-emitted entries.
   memcpy(chpl_rt_priv_bcast_tab,
          chpl_private_broadcast_table,
