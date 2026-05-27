@@ -39,10 +39,10 @@ import ThirdParty.Pathlib.path;
 private var log = MasonLogger.getLogger("mason new/init");
 
 class MasonPackageTemplate {
-  var manifest: owned MasonPackage;
+  var manifest: shared MasonPackage;
   var directory: path;
 
-  proc init(in manifest: owned MasonPackage, directory: path) {
+  proc init(in manifest: shared MasonPackage, directory: path) {
     this.manifest = manifest;
     this.directory = directory;
   }
@@ -152,7 +152,7 @@ class MasonPackageTemplate {
 
 }
 class MasonApplicationTemplate: MasonPackageTemplate {
-  proc init(in manifest: owned MasonPackage, directory: path) {
+  proc init(in manifest: shared MasonPackage, directory: path) {
     super.init(manifest, directory);
   }
   override proc makeSourceFiles() throws {
@@ -173,7 +173,7 @@ class MasonApplicationTemplate: MasonPackageTemplate {
   }
 }
 class MasonLibraryTemplate: MasonPackageTemplate {
-  proc init(in manifest: owned MasonPackage, directory: path) {
+  proc init(in manifest: shared MasonPackage, directory: path) {
     super.init(manifest, directory);
   }
 
@@ -193,7 +193,7 @@ class MasonLibraryTemplate: MasonPackageTemplate {
   }
 }
 class MasonLightTemplate: MasonPackageTemplate {
-  proc init(in manifest: owned MasonPackage, directory: path) {
+  proc init(in manifest: shared MasonPackage, directory: path) {
     super.init(manifest, directory);
   }
 
@@ -210,7 +210,7 @@ class MasonLightTemplate: MasonPackageTemplate {
 }
 
 
-private proc getTemplate(in manifest: owned MasonPackage,
+private proc getTemplate(in manifest: shared MasonPackage,
                         directory: path): owned MasonPackageTemplate throws {
   use packageType;
   select manifest.pkgType {
