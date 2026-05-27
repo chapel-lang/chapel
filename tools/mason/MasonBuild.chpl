@@ -65,7 +65,7 @@ proc masonBuild(args: [] string) throws {
   var show = showFlag.valueAsBool();
   var release = releaseFlag.valueAsBool();
   var force = forceFlag.valueAsBool();
-  var compopts: list(string);
+  var compopts = new list(passArgs.values());
   var example = exampleOpts._present; // --example provided w/wo a value
   var skipUpdate = MASON_OFFLINE;
 
@@ -80,7 +80,7 @@ proc masonBuild(args: [] string) throws {
                          "currently support 'mason build'");
 
   var options = new BuildInfo.buildOptions(releaseMode=release);
-  options.commandLineCompopts = new list(passArgs.values());
+  options.commandLineCompopts = compopts;
 
   log.debug("Is example? ", example);
   if example {
