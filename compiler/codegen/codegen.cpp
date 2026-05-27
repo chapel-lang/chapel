@@ -2074,6 +2074,24 @@ static void codegen_header(std::set<const char*> & cnames,
     }
   }
 
+  // After denormalization, we won't necessarily know if a TypeSymbol for a
+  // FunctionType is 'alive', and so we need to actually check the uses of
+  // VarSymbols and ArgSymbols
+  forv_Vec(VarSymbol, var, gVarSymbols) {
+    if (auto ft = toFunctionType(var->type->getValType())) {
+      if (var->isUsed()) {
+        fnTypesToCodegen.insert(ft);
+      }
+    }
+  }
+  forv_Vec(ArgSymbol, arg, gArgSymbols) {
+    if (auto ft = toFunctionType(arg->type->getValType())) {
+      if (arg->isUsed()) {
+        fnTypesToCodegen.insert(ft);
+      }
+    }
+  }
+
   for (auto ft : fnTypesToCodegen) {
     // Non-determinism here doesn't matter since we sort below.
     types.push_back(ft->symbol);
