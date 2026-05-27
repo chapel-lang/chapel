@@ -3342,6 +3342,8 @@ Type* AggregateType::getDecoratedClass(ClassTypeDecoratorEnum d) {
     tsDec->copyFlags(at->symbol);
     tsDec->deprecationMsg = at->symbol->deprecationMsg;
     tsDec->unstableMsg = at->symbol->unstableMsg;
+    tsDec->firstEdition = at->symbol->firstEdition;
+    tsDec->lastEdition = at->symbol->lastEdition;
     tsDec->addFlag(FLAG_NO_OBJECT);
     // this flag avoids scope resolve considering it duplicative
     tsDec->addFlag(FLAG_TEMP);

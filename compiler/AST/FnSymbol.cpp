@@ -243,6 +243,8 @@ FnSymbol* FnSymbol::copyInnerCore(SymbolMap* map) {
   newFn->deprecationMsg = this->deprecationMsg;
   newFn->unstableMsg = this->unstableMsg;
   newFn->parenfulDeprecationMsg = this->parenfulDeprecationMsg;
+  newFn->firstEdition = this->firstEdition;
+  newFn->lastEdition = this->lastEdition;
 
   if (this->throwsError() == true) {
     newFn->throwsErrorInit();
