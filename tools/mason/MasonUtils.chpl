@@ -533,17 +533,6 @@ proc checkoutSource(repo: path, target: string, quiet=true,
   gitC(repo:string, cmd.toArray());
 }
 
-proc getProjectType(): string throws {
-  const cwd = here.cwd();
-  const projectHome = getProjectHome(cwd);
-  const toParse = open(projectHome + "/Mason.toml", ioMode.r);
-  const tomlFile = parseToml(toParse);
-  if const type_ = tomlFile.get("brick.type") then
-    return type_.s;
-  throw new MasonError("Type not found in TOML file; "+
-                       'please add a type="application" key');
-}
-
 record package {
   var name: string;
   var version: Version.version;

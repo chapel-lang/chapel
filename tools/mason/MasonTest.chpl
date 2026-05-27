@@ -101,8 +101,9 @@ proc masonTest(args: [] string) throws {
   }
 
   if isMasonProject {
-    const projectType = getProjectType();
-    if projectType == "light" then
+    const package =
+      Package.getMasonPackage(skipUpdate, show=false, force=false);
+    if package.pkgType == Package.packageType.light then
       throw new MasonError("Mason light projects do not " +
                            "currently support 'mason test'");
   }
