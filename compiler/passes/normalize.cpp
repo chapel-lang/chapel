@@ -636,7 +636,7 @@ static void moveAndCheckInterfaceConstraints() {
       // The following conditional strives to pluck 'implements'
       // statements out of this pattern, leaving anything else
       // intact, or removing it if nothing's left.
-      //      
+      //
       if (CallExpr* call = toCallExpr(icon->parentExpr)) {
         // unwrap the compiler-inserted where-clause validation if it's there
         if (call->isNamed("chpl_validateWhere")) {
