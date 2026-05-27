@@ -277,7 +277,7 @@ E_CALLBACK_RT(chpl_localeModel_sublocToExecutionSubloc, c_sublocid_t,
 /** CODE-GENERATED
     Value of '$CHPL_COMM' when this program was compiled.
 */
-E_CONSTANT_RT(CHPL_COMM, const char*)
+E_CONSTANT(CHPL_COMM, const char*)
 
 /** CODE-GENERATED
     If '--stack-checks' was set when this program was compiled.
