@@ -621,6 +621,22 @@ static void moveAndCheckInterfaceConstraints() {
 
     FnSymbol* fn = toFnSymbol(icon->parentSymbol);
     if (fn != nullptr) {
+
+      // If this 'implements' statement appears within a 'where'
+      // clause, it should take one of the following forms at this
+      // point:
+      //
+      // - BlockStmt
+      //   - CallExpr("chpl_validateWhere")
+      //     - ImplementsStmt()
+      //     - CallExpr("&&")
+      //       - ImplementsStmt() | expr
+      //       - expr | ImplementsStmt()
+      //
+      // The following conditional strives to pluck 'implements'
+      // statements out of this pattern, leaving anything else
+      // intact, or removing it if nothing's left.
+      //      
       if (CallExpr* call = toCallExpr(icon->parentExpr)) {
         // unwrap the compiler-inserted where-clause validation if it's there
         if (call->isNamed("chpl_validateWhere")) {
