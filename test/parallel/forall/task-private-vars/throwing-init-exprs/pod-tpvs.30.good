@@ -1,7 +1,7 @@
 nt 30
 uncaught TaskErrors: 1 errors: IllegalArgumentError: 30
-  pod-tpvs.chpl:48: thrown here
   pod-tpvs.chpl:48: uncaught here
+  pod-tpvs.chpl:48: thrown here
 starting task
 finished task
 asdf(1), returning
