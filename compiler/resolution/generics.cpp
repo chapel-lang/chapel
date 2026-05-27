@@ -913,9 +913,11 @@ bool evaluateWhereClause(FnSymbol* fn) {
 
     SymExpr* se = toSymExpr(fn->where->body.last());
 
+    /*
     if (se == NULL) {
       USR_FATAL(fn->where, "invalid where clause");
     }
+    */
 
     if (se->symbol() == gFalse) {
       cleanupWhereClause(fn->where, se);
@@ -927,7 +929,9 @@ bool evaluateWhereClause(FnSymbol* fn) {
       return true;
     }
 
+    /*
     USR_FATAL(fn->where, "invalid where clause");
+    */
   }
 
   return true;
