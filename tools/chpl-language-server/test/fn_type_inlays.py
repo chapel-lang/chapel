@@ -167,12 +167,14 @@ async def test_fn_type_inlay_header_variants(client: LanguageClient):
             proc f5() param throws where true do return 42;
             proc f6() param where true do return 42;
            """
+
+    # For 'throws' CLS inserts spaces to sidestep tedious formatting cases.
     inlays = [
         (pos((0, 15)), "int(64)"),
-        (pos((1, 16)), "int(64)"),
-        (pos((2, 16)), "int(64)"),
+        (pos((1, 10)), "int(64) "),
+        (pos((2, 10)), "int(64) "),
         (pos((3, 9)), "int(64)"),
-        (pos((4, 22)), "int(64)"),
+        (pos((4, 16)), "int(64) "),
         (pos((5, 15)), "int(64)"),
     ]
     async with source_file(client, file) as doc:
