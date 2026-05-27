@@ -246,6 +246,8 @@ ChapelProgramRegistration
   from print-module-resolution.ChapelStandard.ChapelProgramEntrypoints.ChapelProgramRegistration
 ChapelProgramEntrypoints
   from print-module-resolution.ChapelStandard.ChapelProgramEntrypoints
+ChapelRuntimeInterface
+  from print-module-resolution.ChapelStandard.ChapelRuntimeInterface
 ChapelStandard
   from print-module-resolution.ChapelStandard
 print-module-resolution

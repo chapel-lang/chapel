@@ -76,8 +76,14 @@ E_CONSTANT_RT(chpl_private_broadcast_table_len, int)
 E_CONSTANT_RT(chpl_global_serialize_table, void* const*)
 
 /** CODE-GENERATED | WRITEABLE
+
     A table of local addresses of wide pointers containing global vars.
-    This table is writeable memory.
+    This table is writeable memory. Its size is specified by the constant
+    'chpl_numGlobalsOnHeap', defined below.
+
+    This table is used primarily by 'chpl_comm_broadcast_global_vars()',
+    which assists in broadcasting the addresses of heap-allocated globals
+    to every locale at program initialization.
 */
 E_CONSTANT_RT(chpl_globals_registry, wide_ptr_t**)
 

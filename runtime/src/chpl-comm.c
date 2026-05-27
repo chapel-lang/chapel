@@ -32,6 +32,7 @@
 #include "chpl-gpu-diags.h"
 #include "chpl-env.h"
 #include "chpl-mem.h"
+#include "chpl-prginfo.h"
 #include "chpl-topo.h"
 
 // Don't get warning macros for chpl_comm_get etc.
@@ -47,14 +48,6 @@ int32_t          chpl_numNodes = -1;
 static int32_t   numLocalesOnNode = -1;
 static int32_t   localRank = -1;
 static int32_t   numColocalesOnNode = 1;
-
-
-//
-// Global variable broadcast support.
-//
-void chpl_comm_register_global_var(int i, wide_ptr_t *ptr_to_wide_ptr) {
-  chpl_globals_registry[i] = ptr_to_wide_ptr;
-}
 
 
 void chpl_comm_broadcast_global_vars(int numGlobals) {
@@ -84,6 +77,11 @@ void chpl_comm_broadcast_global_vars(int numGlobals) {
       chpl_mem_free(buf_on_0, 0, 0);
     }
   } else {
+    CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                            chpl_globals_registry);
+    CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                            chpl_numGlobalsOnHeap);
+
     wide_ptr_t* buf;
     size_t size = chpl_numGlobalsOnHeap * sizeof(*buf);
     buf = (wide_ptr_t*)

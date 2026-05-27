@@ -3317,8 +3317,14 @@ wide_ptr_t* chpl_comm_broadcast_global_vars_helper(void) {
   // buffer, and broadcast the address of that buffer to the other
   // nodes.
   //
-  wide_ptr_t* buf;
+
+  wide_ptr_t* buf = NULL;
   if (chpl_nodeID == 0) {
+    CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                            chpl_globals_registry);
+    CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                            chpl_numGlobalsOnHeap);
+
     CHPL_CALLOC(buf, chpl_numGlobalsOnHeap);
     for (int i = 0; i < chpl_numGlobalsOnHeap; i++) {
       buf[i] = *chpl_globals_registry[i];
