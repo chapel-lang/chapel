@@ -23,8 +23,10 @@ module ChapelRuntimeInterface {
 
   extern type wide_ptr_t;
 
-  export
-  proc chpl_registerGlobalVar(idx: c_int, ptrToWidePtr: c_ptr(wide_ptr_t)) {
+  // The compiler will generate code that calls this procedure in order to
+  // deterministically populate the 'chpl_globals_registry' on all locales.
+  export proc
+  chpl_registerGlobalVar(idx: c_int, ptrToWidePtr: c_ptr(wide_ptr_t)) {
     // Extern, but declared by the compiler and lives in program code.
     extern var chpl_globals_registry: c_ptr(c_ptr(wide_ptr_t));
     chpl_globals_registry[idx] = ptrToWidePtr;
