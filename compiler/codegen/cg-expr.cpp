@@ -6206,14 +6206,14 @@ DEFINE_PRIM(REGISTER_GLOBAL_VAR) {
                 codegenCast("ptr_wide_ptr_t", ptr_wide_ptr));
 }
 
-// TODO: Mark this as a primitive that needs line/file information?
 DEFINE_PRIM(BROADCAST_GLOBAL_VARS) {
   // Call the module code wrapper.
   std::vector<GenRet> args(2);
-  args[0] = call->linenum();
-  args[1] = new_IntSymbol(getFilenameTableIndex(call->fname()), INT_SIZE_32);
+  args[0] = call->get(1);   // Line
+  args[1] = call->get(2);   // File
   codegenCallWithArgs("chpl_broadcastGlobalVars", args);
 }
+
 DEFINE_PRIM(PRIVATE_BROADCAST) {
     codegenCall("chpl_comm_broadcast_private",
                 call->get(1),
