@@ -18,8 +18,8 @@
  * limitations under the License.
  */
 
-#ifndef _chpl_comm_internal_h_
-#define _chpl_comm_internal_h_
+#ifndef CHPL_RT_COMM_INTERNAL_H
+#define CHPL_RT_COMM_INTERNAL_H
 
 #include <stdint.h>
 #include "chpltypes.h"
