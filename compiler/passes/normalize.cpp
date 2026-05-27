@@ -621,21 +621,20 @@ static void moveAndCheckInterfaceConstraints() {
 
     FnSymbol* fn = toFnSymbol(icon->parentSymbol);
     if (fn != nullptr) {
-      // TODO: I think we know we'll never hit this case now?
-      if (BlockStmt* block = toBlockStmt(icon->parentExpr)) {
-        if (fn->where == block) {
-          icon->remove();
-          fn->addInterfaceConstraint(icon);
-          if (block->body.empty())
-            block->remove();
-          continue;
-        }
-      } else if (CallExpr* call = toCallExpr(icon->parentExpr)) {
+      if (CallExpr* call = toCallExpr(icon->parentExpr)) {
         // unwrap the compiler-inserted where-clause validation if it's there
         if (call->isNamed("chpl_validateWhere")) {
           icon->remove();
           fn->addInterfaceConstraint(icon);
-          call->parentExpr->remove(); // remove the BlockStmt containing it
+          if (BlockStmt* block = toBlockStmt(call->parentExpr)) {
+            if (block->body.empty()) {
+              block->remove();
+            } else {
+              INT_FATAL("Unexpected non-empty block in where clause");
+            }
+          } else {
+            INT_FATAL("Unexpected parent expression in where clause");
+          }
           continue;
         } else if (isInWhereBlock(fn, call)) {
           if (!call->isNamed("&&")) {
@@ -653,6 +652,8 @@ static void moveAndCheckInterfaceConstraints() {
         if (icon->list == &(ifcInfo->interfaceConstraints))
           continue; // this constraint is already in the right spot, due to
                     // handleReceiverFormals() -> desugarInterfaceAsType()
+      } else {
+        INT_FATAL("Unexpected case in moveAndCheckInterfaceConstraints()");
       }
     }
 
