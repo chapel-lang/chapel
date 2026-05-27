@@ -221,6 +221,7 @@
     MaybeIntent returnIntent;
     TextLocation returnIntentLoc;
     bool throws;
+    TextLocation throwsLoc;
     ParserExprList* formals;
     AstNode* returnType;
     AstNode* where;
@@ -2481,6 +2482,9 @@ fn_decl_stmt:
     fp.returnIntentLoc = @2;
     fp.returnType = $3;
     fp.throws = ($4 == ThrowsTag_THROWS);
+    if ($4 == ThrowsTag_THROWS) {
+      fp.throwsLoc = @4;
+    }
     WhereAndLifetime wl = $5;
     fp.body = $7;
     if (context->hasCurlyBracesLoc()) {
