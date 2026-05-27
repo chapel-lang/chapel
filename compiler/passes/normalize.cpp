@@ -627,6 +627,7 @@ static void moveAndCheckInterfaceConstraints() {
           icon->remove();
           fn->addInterfaceConstraint(icon);
           if (BlockStmt* block = toBlockStmt(call->parentExpr)) {
+            call->remove();
             if (block->body.empty()) {
               block->remove();
             } else {
