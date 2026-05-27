@@ -176,4 +176,6 @@ async def test_fn_type_inlay_header_variants(client: LanguageClient):
         (pos((5, 15)), "int(64)"),
     ]
     async with source_file(client, file) as doc:
-        await check_type_inlay_hints(client, doc, rng((0, 0), endpos(file)), inlays)
+        await check_type_inlay_hints(
+            client, doc, rng((0, 0), endpos(file)), inlays
+        )
