@@ -67,6 +67,7 @@ Initializing Modules:
     ChapelProgramEntrypoints
      ChapelProgramRegistration
       ChapelSetProgramInfoDataEntries
+    ChapelRuntimeInterface
     AlignedTSupport
    printModuleInitOrder
     moduleInitTest
