@@ -27,6 +27,7 @@
 #include "chpl-thread-local-storage.h"
 
 #include "chpl-linefile-support.h"
+#include "chpl-prginfo.h"
 
 static const char *savedFilename;
 
@@ -69,8 +70,10 @@ c_string chpl_lookupFilename(const int32_t idx) {
     }
     }
   } else {
-    if (idx < chpl_filenameTableSize) {
-      return chpl_filenameTable[idx];
+    chpl_rt_prginfo* prg = CHPL_RT_ROOT_PROGRAM_PLACEHOLDER;
+
+    if (idx < CHPL_RT_PRGINFO_DATA(prg, chpl_filenameTableSize)) {
+      return CHPL_RT_PRGINFO_DATA(prg, chpl_filenameTable)[idx];
     } else {
       snprintf(CHPL_TLS_GET(unknownFileBuffer), 48,
                "<unknown file idx %" PRId32 ">", idx);

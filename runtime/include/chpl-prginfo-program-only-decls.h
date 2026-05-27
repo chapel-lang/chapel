@@ -62,15 +62,20 @@ extern const char* CHPL_TARGET_CPU;
 extern const char* CHPL_TARGET_PLATFORM;
 extern const char* CHPL_UNWIND;
 extern const char* CHPL_HOME;
+extern const char* CHPL_COMM;
 extern const char* CHPL_LAUNCHER;
 extern const char* CHPL_GASNET_SEGMENT;
 extern const char* CHPL_LLVM_BIN_DIR;
+extern const char* CHPL_TARGET_MEM;
+extern const char* CHPL_THIRD_PARTY;
 extern const int CHPL_INTERLEAVE_MEM;
 extern const int CHPL_STACK_CHECKS;
 extern const int CHPL_CACHE_REMOTE;
 extern const int chpl_sizeSymTable;
 extern const int chpl_filenumSymTable[];
 extern const c_string chpl_funSymTable[];
+extern const c_string chpl_filenameTable[];
+extern const int chpl_filenameTableSize;
 
 
 #endif

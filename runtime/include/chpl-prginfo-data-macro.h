@@ -36,6 +36,11 @@ E_CONSTANT(mainHasArgs, int)
 E_CONSTANT(CHPL_LAUNCHER, const char*)
 
 /** CODE-GENERATED
+    The path to '$CHPL_HOME/third-party' when this program was compiled.
+*/
+E_CONSTANT(CHPL_THIRD_PARTY, const char*)
+
+/** CODE-GENERATED
     Whether or not 'main' should preserve the delimiter when parsing args.
 */
 E_CONSTANT(mainPreserveDelimiter, int)

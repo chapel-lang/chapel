@@ -30,6 +30,7 @@
 #include "chpl-env.h"
 #include "chpltypes.h"
 #include "chpl-error.h"
+#include "chpl-prginfo.h"
 
 #define LAUNCH_PATH_HELP WRAP_TO_STR(LAUNCH_PATH)
 #define WRAP_TO_STR(x) TO_STR(x)
@@ -208,6 +209,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
    * first sentinel would appear in the output and confuse the 'expect'
    * logic.
    */
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER, CHPL_THIRD_PARTY);
   fprintf(expectFile, "set timeout -1\n");
   fprintf(expectFile, "set env(CHPL_ENV_EXPECT_SENTINEL_1) CHPL_EXPECT_SENTINEL_1\n");
   fprintf(expectFile, "spawn qsub -z ");

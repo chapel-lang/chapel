@@ -174,6 +174,8 @@ void chpl_vdebug_start (const char *fileroot, double now) {
     CHPL_RT_PRGINFO_DECLARE(prg, chpl_compileDirectory);
     CHPL_RT_PRGINFO_DECLARE(prg, chpl_saveCDir);
     CHPL_RT_PRGINFO_DECLARE(prg, CHPL_HOME);
+    CHPL_RT_PRGINFO_DECLARE(prg, chpl_filenameTable);
+    CHPL_RT_PRGINFO_DECLARE(prg, chpl_filenameTableSize);
 
     chpl_dprintf (chpl_vdebug_fd, "CHPL_HOME: %s\n", CHPL_HOME);
     chpl_dprintf (chpl_vdebug_fd, "DIR: %s\n", chpl_compileDirectory);
@@ -191,6 +193,9 @@ void chpl_vdebug_start (const char *fileroot, double now) {
                       chpl_filenameTable[ix]);
       }
     }
+
+    CHPL_RT_PRGINFO_DECLARE(prg, chpl_finfo);
+
     for (numFIDnames = 0; chpl_finfo[numFIDnames].name != NULL; numFIDnames++);
     chpl_dprintf (chpl_vdebug_fd, "FIDNsize: %d\n", numFIDnames);
     for (ix = 0; ix < numFIDnames; ix++)

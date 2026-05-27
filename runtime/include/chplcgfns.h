@@ -41,18 +41,6 @@
 extern "C" {
 #endif
 
-/* defined in chpl_compilation_config.c: */
-extern const char* CHPL_COMM;
-extern const char* CHPL_TARGET_MEM;
-extern const char* CHPL_THIRD_PARTY;
-
-// Sorted lookup table of filenames used with insertLineNumbers for error
-// messages and logging. Defined in chpl_compilation_config.c (needed by launchers)
-extern const c_string chpl_filenameTable[];
-extern const int32_t chpl_filenameTableSize;
-
-extern const chpl_fn_info chpl_finfo[];
-
 //
 // chpl_globals_registry is an array of size chpl_numGlobalsOnHeap
 // storing ptr_wide_ptr_t, that is, local addresses of wide pointers.
@@ -66,16 +54,6 @@ extern void* const chpl_private_broadcast_table[];
 extern const int chpl_private_broadcast_table_len;
 
 extern void* const chpl_global_serialize_table[];
-
-//
-// The compiler generates a separate array of descriptions for the
-// allocation types it defines.  Indices into that compiler-generated
-// array conceptually start after the CHPL_RT_MD_NUM enum value in
-// chpl-mem.h).  This is that compiler-generated array, and how many
-// entries it has (also defined in the generated code).
-//
-extern const char* const chpl_mem_descs[];
-extern const int chpl_mem_numDescs;
 
 #ifdef __cplusplus
 }
