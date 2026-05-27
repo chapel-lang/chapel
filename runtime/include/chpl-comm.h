@@ -32,6 +32,7 @@
 #include "chpl-comm-locales.h"
 #include "chpl-mem-consistency.h"
 #include "chpl-mem-desc.h"
+#include "chpl-prginfo.h"
 #include "chplcgfns.h"
 
 #ifdef __cplusplus
@@ -352,7 +353,7 @@ chpl_bool chpl_comm_regMemFree(void* p, size_t size) {
 // on that locale. Then, the compiler invokes this function in order to
 // broadcast and set the wide pointers on each locale.
 //
-void chpl_comm_broadcast_global_vars(int numGlobals);
+void chpl_rt_comm_broadcast_global_vars(chpl_rt_prginfo* prg);
 
 //
 // This routine is used by the generated Chapel code to broadcast
