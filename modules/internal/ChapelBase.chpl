@@ -1027,11 +1027,44 @@ module ChapelBase {
   inline operator **(a: int(?w), param b: integral) where _canOptimizeExp(b) do return _expHelp(a, b);
   inline operator **(a: uint(?w), param b: integral) where _canOptimizeExp(b) do return _expHelp(a, b);
   inline operator **(a: real(?w), param b: integral) where _canOptimizeExp(b) do return _expHelp(a, b);
-  inline operator **(param a: real(?w), param b: integral) param where _canOptimizeExp(b) do return _expHelpParam(a, b);
-  inline operator **(param a: real(?w), param b: integral) param do return __primitive("**", a, b:real(w));
-  inline operator **(param a: real(32), param b: real(32)) param do return __primitive("**", a, b:real(32));
-  inline operator **(param a: real(64), param b: real(64)) param do return __primitive("**", a, b:real(64));
   inline operator **(param a: integral, b: int) where _basePowerTwo(a) do return _expBaseHelp(a, b);
+
+  //
+  // `param real **` overloads marked stable for the preview edition
+  //
+
+  @edition(first="preview")
+  inline operator **(param a: real(?w), param b: integral) param where _canOptimizeExp(b) do return _expHelpParam(a, b);
+
+  @edition(first="preview")
+  inline operator **(param a: real(?w), param b: integral) param do return __primitive("**", a, b:real(w));
+
+  @edition(first="preview")
+  inline operator **(param a: real(32), param b: real(32)) param do return __primitive("**", a, b:real(32));
+
+  @edition(first="preview")
+  inline operator **(param a: real(64), param b: real(64)) param do return __primitive("**", a, b:real(64));
+
+  //
+  // `param real **` overloads marked unstable for the 2.0 edition
+  //
+
+  @edition(last="2.0")
+  @unstable("The '**' operator on `param real` values is currently unstable and will be stabilized in a future edition")
+  inline operator **(param a: real(?w), param b: integral) param where _canOptimizeExp(b) do return _expHelpParam(a, b);
+
+  @edition(last="2.0")
+  @unstable("The '**' operator on `param real` values is currently unstable and will be stabilized in a future edition")
+  inline operator **(param a: real(?w), param b: integral) param do return __primitive("**", a, b:real(w));
+
+  @edition(last="2.0")
+  @unstable("The '**' operator on `param real` values is currently unstable and will be stabilized in a future edition")
+  inline operator **(param a: real(32), param b: real(32)) param do return __primitive("**", a, b:real(32));
+
+  @edition(last="2.0")
+  @unstable("The '**' operator on `param real` values is currently unstable and will be stabilized in a future edition")
+  inline operator **(param a: real(64), param b: real(64)) param do return __primitive("**", a, b:real(64));
+
 
   //
   // logical operations on primitive types
