@@ -1,0 +1,36 @@
+realExpRealParam.chpl:3: In function 'testit':
+realExpRealParam.chpl:4: warning: The '**' operator on `param real` values is currently unstable and will be stabilized in a future edition
+  realExpRealParam.chpl:9: called as testit(param exp = 1.0)
+realExpRealParam.chpl:3: In function 'testit':
+realExpRealParam.chpl:4: warning: The '**' operator on `param real` values is currently unstable and will be stabilized in a future edition
+  realExpRealParam.chpl:9: called as testit(param exp = 0.5)
+realExpRealParam.chpl:3: In function 'testit':
+realExpRealParam.chpl:4: warning: The '**' operator on `param real` values is currently unstable and will be stabilized in a future edition
+  realExpRealParam.chpl:9: called as testit(param exp = 0.25)
+realExpRealParam.chpl:3: In function 'testit':
+realExpRealParam.chpl:4: warning: The '**' operator on `param real` values is currently unstable and will be stabilized in a future edition
+  realExpRealParam.chpl:9: called as testit(param exp = 0.125)
+realExpRealParam.chpl:3: In function 'testit':
+realExpRealParam.chpl:4: warning: The '**' operator on `param real` values is currently unstable and will be stabilized in a future edition
+  realExpRealParam.chpl:9: called as testit(param exp = 0.0625)
+realExpRealParam.chpl:3: In function 'testit':
+realExpRealParam.chpl:4: warning: The '**' operator on `param real` values is currently unstable and will be stabilized in a future edition
+  realExpRealParam.chpl:9: called as testit(param exp = 0.03125)
+realExpRealParam.chpl:3: In function 'testit':
+realExpRealParam.chpl:4: warning: The '**' operator on `param real` values is currently unstable and will be stabilized in a future edition
+  realExpRealParam.chpl:9: called as testit(param exp = 0.015625)
+realExpRealParam.chpl:3: In function 'testit':
+realExpRealParam.chpl:4: warning: The '**' operator on `param real` values is currently unstable and will be stabilized in a future edition
+  realExpRealParam.chpl:9: called as testit(param exp = 0.0078125)
+realExpRealParam.chpl:3: In function 'testit':
+realExpRealParam.chpl:4: warning: The '**' operator on `param real` values is currently unstable and will be stabilized in a future edition
+  realExpRealParam.chpl:9: called as testit(param exp = 0.00390625)
+16.0**1.0 = 16.0
+16.0**0.5 = 4.0
+16.0**0.25 = 2.0
+16.0**0.125 = 1.41421
+16.0**0.0625 = 1.18921
+16.0**0.03125 = 1.09051
+16.0**0.015625 = 1.04427
+16.0**0.0078125 = 1.0219
+16.0**0.00390625 = 1.01089
