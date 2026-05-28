@@ -1,0 +1,5 @@
+caught error: oops
+  (frame 1) stacktrace.chpl:13
+  (frame 2) stacktrace.chpl:8
+  (frame 3) stacktrace.chpl:5
+  (frame 4) stacktrace.chpl:2

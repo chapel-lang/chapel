@@ -1,3 +1,4 @@
 uncaught IllegalArgumentError: bad cast from empty string to enum 'color'
-  emptyStringToType.chpl:6: thrown here
   emptyStringToType.chpl:6: uncaught here
+  emptyStringToType.chpl:6: called from here
+  emptyStringToType.chpl:6: thrown here

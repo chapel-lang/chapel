@@ -1,4 +1,7 @@
 {x = 8}
 uncaught Error: value too large
-  tryBangExpression.chpl:5: thrown here
   tryBangExpression.chpl:22: uncaught here
+  tryBangExpression.chpl:22: called from here
+  tryBangExpression.chpl:22: called from here
+  tryBangExpression.chpl:22: called from here
+  tryBangExpression.chpl:5: thrown here

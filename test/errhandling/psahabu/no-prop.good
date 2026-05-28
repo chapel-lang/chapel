@@ -1,5 +1,6 @@
 calling noPropError
 should not propagate
 uncaught Error: 
-  ../ExampleErrors.chpl:2: thrown here
   no-prop.chpl:5: uncaught here
+  no-prop.chpl:5: called from here
+  ../ExampleErrors.chpl:2: thrown here

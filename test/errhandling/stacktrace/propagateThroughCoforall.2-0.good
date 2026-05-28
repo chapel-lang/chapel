@@ -1,0 +1,16 @@
+caught error: 1 errors: Error: oops
+stack trace:
+  (frame 1) propagateThroughCoforall.chpl:17
+  (frame 2) propagateThroughCoforall.chpl:11
+  (frame 3) propagateThroughCoforall.chpl:5
+  (frame 4) propagateThroughCoforall.chpl:5
+caught error: oops
+stack trace:
+  (frame 1) propagateThroughCoforall.chpl:7
+  (frame 2) propagateThroughCoforall.chpl:2
+uncaught TaskErrors: 1 errors: Error: oops
+  propagateThroughCoforall.chpl:34: uncaught here
+  propagateThroughCoforall.chpl:34: called from here
+  propagateThroughCoforall.chpl:11: called from here
+  propagateThroughCoforall.chpl:5: called from here
+  propagateThroughCoforall.chpl:5: thrown here

@@ -3,5 +3,7 @@ castEnumRange4a.chpl:5: warning: Casts between ranges involving 'enum' indices a
 42..56
 red..orange
 uncaught IllegalArgumentError: bad cast from int '0' to enum 'color'
-  castEnumRange4a.chpl:7: thrown here
   castEnumRange4a.chpl:7: uncaught here
+  castEnumRange4a.chpl:7: called from here
+  castEnumRange4a.chpl:7: called from here
+  castEnumRange4a.chpl:7: thrown here

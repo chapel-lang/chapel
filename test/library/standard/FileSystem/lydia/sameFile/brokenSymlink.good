@@ -1,3 +1,5 @@
 uncaught FileNotFoundError: No such file or directory (in sameFile(moved.txt, linkToIt))
-  brokenSymlink.chpl:25: thrown here
   brokenSymlink.chpl:25: uncaught here
+  brokenSymlink.chpl:25: called from here
+  brokenSymlink.chpl:25: called from here
+  brokenSymlink.chpl:25: thrown here

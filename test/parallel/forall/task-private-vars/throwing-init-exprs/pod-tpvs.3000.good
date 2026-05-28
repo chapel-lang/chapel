@@ -1,7 +1,8 @@
 nt 3000
 uncaught TaskErrors: 1 errors: IllegalArgumentError: 3000
-  pod-tpvs.chpl:48: thrown here
   pod-tpvs.chpl:48: uncaught here
+  pod-tpvs.chpl:48: called from here
+  pod-tpvs.chpl:48: thrown here
 starting task
 starting task
 finished task

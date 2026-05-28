@@ -1,3 +1,4 @@
 uncaught Error: ALWAYS
-  ErrorHandlingStrictMode.chpl:22: thrown here
   ErrorHandlingStrictMode.chpl:22: uncaught here
+  ErrorHandlingStrictMode.chpl:22: called from here
+  ErrorHandlingStrictMode.chpl:22: thrown here

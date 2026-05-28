@@ -2,5 +2,8 @@ in rethrow
 in willthrow
 catch in rethrow
 uncaught Error: 
-  preserveLineNoUponRethrow.chpl:4: thrown here
   preserveLineNoUponRethrow.chpl:18: uncaught here
+  preserveLineNoUponRethrow.chpl:19: called from here
+  preserveLineNoUponRethrow.chpl:14: called from here
+  preserveLineNoUponRethrow.chpl:10: called from here
+  preserveLineNoUponRethrow.chpl:4: thrown here

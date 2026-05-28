@@ -1,3 +1,6 @@
 uncaught SystemError: Bad file descriptor (Operation attempted on an invalid file)
-  freadIntUnopenedFile.chpl:6: thrown here
   freadIntUnopenedFile.chpl:6: uncaught here
+  freadIntUnopenedFile.chpl:6: called from here
+  freadIntUnopenedFile.chpl:6: called from here
+  freadIntUnopenedFile.chpl:6: called from here
+  freadIntUnopenedFile.chpl:6: thrown here

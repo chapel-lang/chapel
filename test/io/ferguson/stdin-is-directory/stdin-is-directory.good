@@ -1,3 +1,6 @@
 uncaught SystemError: Invalid argument: fd 0 (stdin) is a directory (in file.init with path "/<snip>/test-dir")
-  <internal>:0: thrown here
   <internal>:0: uncaught here
+  <internal>:0: called from here
+  <internal>:0: called from here
+  <internal>:0: called from here
+  <internal>:0: thrown here

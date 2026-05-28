@@ -1,4 +1,5 @@
 throwing nil
 uncaught NilThrownError: thrown error was nil
-  throw-nil.chpl:3: thrown here
   throw-nil.chpl:7: uncaught here
+  throw-nil.chpl:7: called from here
+  throw-nil.chpl:3: thrown here

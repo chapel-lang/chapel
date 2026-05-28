@@ -1,3 +1,6 @@
 uncaught Error: value too large
-  tryBangExpressionDefault.chpl:5: thrown here
   tryBangExpressionDefault.chpl:28: uncaught here
+  tryBangExpressionDefault.chpl:28: called from here
+  tryBangExpressionDefault.chpl:28: called from here
+  tryBangExpressionDefault.chpl:28: called from here
+  tryBangExpressionDefault.chpl:5: thrown here

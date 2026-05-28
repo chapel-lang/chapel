@@ -1,7 +1,8 @@
 nt 30
 uncaught TaskErrors: 1 errors: IllegalArgumentError: 30
-  int-tpvs.chpl:44: thrown here
   int-tpvs.chpl:44: uncaught here
+  int-tpvs.chpl:44: called from here
+  int-tpvs.chpl:44: thrown here
 starting task
 finished task
 asdf(1), returning

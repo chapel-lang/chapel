@@ -1,0 +1,7 @@
+uncaught TaskErrors: 1 errors: Error: oops
+  throwFromCoforall.chpl:34: uncaught here
+  throwFromCoforall.chpl:34: called from here
+  throwFromCoforall.chpl:11: called from here
+  throwFromCoforall.chpl:8: called from here
+  throwFromCoforall.chpl:2: called from here
+  throwFromCoforall.chpl:2: thrown here

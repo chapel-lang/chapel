@@ -1,7 +1,8 @@
 nt 3000   nt2 2000
 uncaught TaskErrors: 2 errors: IllegalArgumentError: 2000 ... IllegalArgumentError: 3000
-  int-tpvs.chpl:44: thrown here
   int-tpvs.chpl:44: uncaught here
+  int-tpvs.chpl:44: called from here
+  int-tpvs.chpl:44: thrown here
 starting task
 starting task
 asdf(1), returning

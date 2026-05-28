@@ -1,7 +1,8 @@
 nt 2   nt2 10
 uncaught TaskErrors: 2 errors: IllegalArgumentError: 10 ... IllegalArgumentError: 2
-  pod-no-tlvy.chpl:48: thrown here
   pod-no-tlvy.chpl:48: uncaught here
+  pod-no-tlvy.chpl:48: called from here
+  pod-no-tlvy.chpl:48: thrown here
 asdf(1), returning
 asdf(10), throwing
 asdf(2), throwing

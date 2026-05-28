@@ -1,3 +1,4 @@
 uncaught IllegalArgumentError: bad cast from string 'xyz' to int(32)
-  <command line setting of 'permissions'>:0: thrown here
   <command line setting of 'permissions'>:0: uncaught here
+  <command line setting of 'permissions'>:0: called from here
+  <command line setting of 'permissions'>:0: thrown here

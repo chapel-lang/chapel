@@ -1,0 +1,21 @@
+uncaught MyError: oops
+  stressTest.chpl:17: uncaught here
+  stressTest.chpl:17: called from here
+  stressTest.chpl:9: called from here
+  stressTest.chpl:9: called from here
+  stressTest.chpl:9: called from here
+  stressTest.chpl:9: called from here
+  stressTest.chpl:9: called from here
+  stressTest.chpl:9: called from here
+  stressTest.chpl:9: called from here
+  stressTest.chpl:9: called from here
+  stressTest.chpl:9: called from here
+  stressTest.chpl:9: called from here
+  stressTest.chpl:9: called from here
+  stressTest.chpl:9: called from here
+  stressTest.chpl:9: called from here
+  stressTest.chpl:9: called from here
+  stressTest.chpl:9: called from here
+  stressTest.chpl:9: called from here
+  stressTest.chpl:11: called from here
+  stressTest.chpl:5: thrown here

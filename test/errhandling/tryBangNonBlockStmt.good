@@ -1,3 +1,5 @@
 uncaught TaskErrors: 1 errors: Error: Intended to fail
-  tryBangNonBlockStmt.chpl:1: thrown here
   tryBangNonBlockStmt.chpl:1: uncaught here
+  tryBangNonBlockStmt.chpl:1: called from here
+  tryBangNonBlockStmt.chpl:1: called from here
+  tryBangNonBlockStmt.chpl:1: thrown here

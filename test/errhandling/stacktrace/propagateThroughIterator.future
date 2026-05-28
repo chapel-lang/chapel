@@ -1,0 +1,2 @@
+bug: can't catch and rethrow iterator
+#27008

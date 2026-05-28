@@ -1,3 +1,4 @@
 uncaught Error: Halt!
-  ThrowingAnonProcHalts.chpl:2: thrown here
   ThrowingAnonProcHalts.chpl:3: uncaught here
+  ThrowingAnonProcHalts.chpl:3: called from here
+  ThrowingAnonProcHalts.chpl:2: thrown here

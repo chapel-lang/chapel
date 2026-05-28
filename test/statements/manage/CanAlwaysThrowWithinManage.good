@@ -4,5 +4,9 @@ default-init (ptr = {x = 0})
 What happens if I throw?!
 deinit (ptr = {x = 0})
 uncaught Error: It halts at the 'manage'!
-  CanAlwaysThrowWithinManage.chpl:10: thrown here
   CanAlwaysThrowWithinManage.chpl:14: uncaught here
+  CanAlwaysThrowWithinManage.chpl:14: called from here
+  CanAlwaysThrowWithinManage.chpl:14: called from here
+  CanAlwaysThrowWithinManage.chpl:6: called from here
+  CanAlwaysThrowWithinManage.chpl:16: called from here
+  CanAlwaysThrowWithinManage.chpl:10: thrown here

@@ -1,3 +1,23 @@
 uncaught BadFormatError: bad format: missing expected literal (while reading string literal "{" with path "unknown" offset 0)
-  issue-16945-error-read-nil-non-nilable.chpl:12: thrown here
   issue-16945-error-read-nil-non-nilable.chpl:12: uncaught here
+  issue-16945-error-read-nil-non-nilable.chpl:12: called from here
+  issue-16945-error-read-nil-non-nilable.chpl:12: called from here
+  issue-16945-error-read-nil-non-nilable.chpl:12: called from here
+  issue-16945-error-read-nil-non-nilable.chpl:12: called from here
+  issue-16945-error-read-nil-non-nilable.chpl:12: called from here
+  issue-16945-error-read-nil-non-nilable.chpl:12: called from here
+  issue-16945-error-read-nil-non-nilable.chpl:12: called from here
+  issue-16945-error-read-nil-non-nilable.chpl:12: called from here
+  issue-16945-error-read-nil-non-nilable.chpl:12: called from here
+  issue-16945-error-read-nil-non-nilable.chpl:12: called from here
+  issue-16945-error-read-nil-non-nilable.chpl:12: called from here
+  issue-16945-error-read-nil-non-nilable.chpl:12: called from here
+  issue-16945-error-read-nil-non-nilable.chpl:12: called from here
+  issue-16945-error-read-nil-non-nilable.chpl:12: called from here
+  issue-16945-error-read-nil-non-nilable.chpl:12: called from here
+  issue-16945-error-read-nil-non-nilable.chpl:12: called from here
+  issue-16945-error-read-nil-non-nilable.chpl:12: called from here
+  issue-16945-error-read-nil-non-nilable.chpl:12: called from here
+  issue-16945-error-read-nil-non-nilable.chpl:12: called from here
+  issue-16945-error-read-nil-non-nilable.chpl:12: called from here
+  issue-16945-error-read-nil-non-nilable.chpl:12: thrown here
