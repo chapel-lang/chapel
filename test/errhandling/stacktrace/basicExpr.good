@@ -1,0 +1,5 @@
+uncaught Error: oops
+  basicExpr.chpl:13: uncaught here
+  basicExpr.chpl:9: called from here
+  basicExpr.chpl:6: called from here
+  basicExpr.chpl:2: thrown here
