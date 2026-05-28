@@ -946,7 +946,7 @@ extended to handle real, imaginary, and complex types in the future.
 Exponentiation Operators
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-The exponentiation operator, `**` computes the value of the first
+The exponentiation operator, ``**``, computes the value of the first
 operand raised to the power of the second, potentially appoximated by
 the limits of the numeric representations.
 
@@ -983,6 +983,10 @@ The first of these overloads returns a value whose type matches the
 operand whose bit width is larger; if both operands have the same
 width, it returns a value of that width, using ``uint`` if either is
 unsigned, and ``int`` otherwise.
+
+The final three ``param real`` overloads are currently considered
+unstable by default, but stable in the ``preview`` :ref:`edition of
+Chapel <readme-editions>`.
 
    *Implementation Notes*.
 
