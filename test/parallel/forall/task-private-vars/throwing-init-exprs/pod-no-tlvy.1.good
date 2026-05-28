@@ -1,6 +1,7 @@
 nt 1
 uncaught TaskErrors: 1 errors: IllegalArgumentError: 1
   pod-no-tlvy.chpl:48: uncaught here
+  pod-no-tlvy.chpl:48: called from here
   pod-no-tlvy.chpl:48: thrown here
 starting task
 finished task

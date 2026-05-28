@@ -4,4 +4,5 @@ uncaught SystemError: Invalid argument: '%?' does not support width or precision
   no_precision_on_serde.chpl:1: called from here
   no_precision_on_serde.chpl:1: called from here
   no_precision_on_serde.chpl:1: called from here
+  no_precision_on_serde.chpl:1: called from here
   no_precision_on_serde.chpl:1: thrown here

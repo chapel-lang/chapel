@@ -1,4 +1,5 @@
 uncaught SystemError: Bad file descriptor (in realPath with a file argument)
   fileNotValid.chpl:5: uncaught here
   fileNotValid.chpl:5: called from here
+  fileNotValid.chpl:5: called from here
   fileNotValid.chpl:5: thrown here

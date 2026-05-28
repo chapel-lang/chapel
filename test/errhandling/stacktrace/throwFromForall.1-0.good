@@ -1,5 +1,6 @@
 uncaught TaskErrors: 1 errors: Error: oops
   throwFromForall.chpl:34: uncaught here
+  throwFromForall.chpl:34: called from here
   throwFromForall.chpl:11: called from here
   throwFromForall.chpl:8: called from here
   throwFromForall.chpl:2: called from here

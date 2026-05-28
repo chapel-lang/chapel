@@ -2,4 +2,5 @@ uncaught FileNotFoundError: No such file or directory (in open with path "_test_
   unableToOpenFile.chpl:3: uncaught here
   unableToOpenFile.chpl:3: called from here
   unableToOpenFile.chpl:3: called from here
+  unableToOpenFile.chpl:3: called from here
   unableToOpenFile.chpl:3: thrown here

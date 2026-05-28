@@ -1,3 +1,4 @@
 uncaught StringError: Test
-  try-expr.chpl:18: uncaught here
+  try-expr.chpl:39: uncaught here
+  try-expr.chpl:18: called from here
   try-expr.chpl:9: thrown here

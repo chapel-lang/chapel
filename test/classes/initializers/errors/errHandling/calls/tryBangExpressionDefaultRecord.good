@@ -1,3 +1,4 @@
 uncaught Error: value too large
-  tryBangExpressionDefaultRecord.chpl:22: uncaught here
+  tryBangExpressionDefaultRecord.chpl:28: uncaught here
+  tryBangExpressionDefaultRecord.chpl:22: called from here
   tryBangExpressionDefaultRecord.chpl:5: thrown here

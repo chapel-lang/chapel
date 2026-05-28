@@ -1,3 +1,4 @@
 uncaught IllegalArgumentError: bad cast from string '5.6+7.8j' to complex(128)
   <command line setting of 'x'>:0: uncaught here
+  <command line setting of 'x'>:0: called from here
   <command line setting of 'x'>:0: thrown here

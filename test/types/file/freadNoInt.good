@@ -8,4 +8,5 @@ uncaught BadFormatError: bad format: malformed number (while reading int(64) wit
   freadNoInt.chpl:6: called from here
   freadNoInt.chpl:6: called from here
   freadNoInt.chpl:6: called from here
+  freadNoInt.chpl:6: called from here
   freadNoInt.chpl:6: thrown here

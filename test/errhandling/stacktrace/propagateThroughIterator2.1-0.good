@@ -1,5 +1,6 @@
 uncaught Error: oops
   propagateThroughIterator2.chpl:30: uncaught here
+  propagateThroughIterator2.chpl:30: called from here
   propagateThroughIterator2.chpl:14: called from here
   propagateThroughIterator2.chpl:14: called from here
   propagateThroughIterator2.chpl:2: thrown here

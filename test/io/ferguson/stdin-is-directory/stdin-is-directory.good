@@ -2,4 +2,5 @@ uncaught SystemError: Invalid argument: fd 0 (stdin) is a directory (in file.ini
   <internal>:0: uncaught here
   <internal>:0: called from here
   <internal>:0: called from here
+  <internal>:0: called from here
   <internal>:0: thrown here

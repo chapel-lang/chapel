@@ -10,4 +10,5 @@ uncaught BadFormatError: bad format: missing expected literal (while reading wee
   readWriteEnum.chpl:8: called from here
   readWriteEnum.chpl:8: called from here
   readWriteEnum.chpl:8: called from here
+  readWriteEnum.chpl:8: called from here
   readWriteEnum.chpl:8: thrown here

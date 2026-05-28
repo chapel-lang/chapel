@@ -8,4 +8,5 @@ uncaught BadFormatError: bad format: malformed number (while reading real(64) wi
   freadNoFloat.chpl:6: called from here
   freadNoFloat.chpl:6: called from here
   freadNoFloat.chpl:6: called from here
+  freadNoFloat.chpl:6: called from here
   freadNoFloat.chpl:6: thrown here

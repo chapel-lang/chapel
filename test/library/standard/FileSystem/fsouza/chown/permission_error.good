@@ -1,4 +1,5 @@
 uncaught PermissionError: SYS_ERR (in chown with path "file.txt")
   permission_error.chpl:9: uncaught here
   permission_error.chpl:9: called from here
+  permission_error.chpl:9: called from here
   permission_error.chpl:9: thrown here

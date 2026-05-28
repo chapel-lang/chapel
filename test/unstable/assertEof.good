@@ -5,4 +5,5 @@ uncaught IoError: Input/output error (assert failed - Not at EOF with path "asse
   assertEof.chpl:30: uncaught here
   assertEof.chpl:30: called from here
   assertEof.chpl:30: called from here
+  assertEof.chpl:30: called from here
   assertEof.chpl:30: thrown here

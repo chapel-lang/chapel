@@ -6,4 +6,5 @@ uncaught IllegalArgumentError: bad cast: enum 'G.F1' has no integer value
   readSemiAbstractEnumAsValue.chpl:6: called from here
   readSemiAbstractEnumAsValue.chpl:6: called from here
   readSemiAbstractEnumAsValue.chpl:6: called from here
+  readSemiAbstractEnumAsValue.chpl:6: called from here
   readSemiAbstractEnumAsValue.chpl:6: thrown here

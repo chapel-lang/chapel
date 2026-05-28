@@ -1,4 +1,5 @@
 uncaught StringError: Test
   try-expr-nested.chpl:39: uncaught here
+  try-expr-nested.chpl:39: called from here
   try-expr-nested.chpl:33: called from here
   try-expr-nested.chpl:9: thrown here

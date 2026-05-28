@@ -1,3 +1,4 @@
 uncaught Error: 
-  coforall-try-bang-2.chpl:9: uncaught here
+  coforall-try-bang-2.chpl:8: uncaught here
+  coforall-try-bang-2.chpl:9: called from here
   coforall-try-bang-2.chpl:3: thrown here

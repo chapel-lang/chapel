@@ -14,4 +14,5 @@ uncaught BadFormatError: bad format: missing i when reading #.# + #.#i complex (
   freadComplex.chpl:9: called from here
   freadComplex.chpl:9: called from here
   freadComplex.chpl:9: called from here
+  freadComplex.chpl:9: called from here
   freadComplex.chpl:9: thrown here
