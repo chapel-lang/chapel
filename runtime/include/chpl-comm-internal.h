@@ -55,9 +55,10 @@ extern void* chpl_rt_private_broadcast_table_for_rt[];
 extern size_t chpl_rt_private_broadcast_table_for_rt_len;
 extern size_t chpl_rt_private_broadcast_table_for_rt_byte_lens[];
 
-// These are entries for broadcastable symbols that the runtime needs.
-// They do NOT include any per-program symbols. Those can be found
-// in the 'chpl_rt_prginfo*' for a given Chapel program.
+// These are entries for broadcastable symbols that the runtime needs. They do
+// NOT include any per-program symbols. Those can be found in the broadcast
+// table for a given Chapel program, see 'chpl_private_broadcast_table' in the
+// header 'chpl-prginfo-data-macro.h'.
 #define CHPL_RT_RUNTIME_PRIVATE_BROADCAST_TABLE_ENTRIES(MACRO__)  \
   MACRO__(chpl_verbose_comm)                                      \
   MACRO__(chpl_comm_diagnostics)                                  \
@@ -86,12 +87,10 @@ typedef enum chpl_rt_private_broadcast_table_entries_for_rt {
 #undef CHPL_RT_BCAST_TABLE_FOR_RT_ENTRY_ENUM
 
 static inline void chpl_rt_comm_broadcast_rt_symbol_hook(int32_t idx) {
-  assert(idx >= 0 && idx < chpl_rt_private_broadcast_table_for_rt_len);
-
-  // No program indicates we are asking for a runtime symbol.
-  chpl_rt_prginfo* null_prg = NULL;
+  assert(0 <= idx && idx < chpl_rt_private_broadcast_table_for_rt_len);
   size_t size = chpl_rt_private_broadcast_table_for_rt_byte_lens[idx];
-  chpl_rt_comm_broadcast_private(null_prg, idx, size);
+  // Passing a 'NULL' program indicates we are asking for a runtime symbol.
+  chpl_rt_comm_broadcast_private(NULL, idx, size);
 }
 
 // Runtime code calls this to broadcast a runtime-specific symbol.
@@ -105,6 +104,9 @@ void chpl_rt_comm_broadcast_private_impl(chpl_rt_prginfo* prg, int id,
                                          size_t size);
 
 // Given a program info pointer OR a program ID, fetch a broadcast table.
+// If 'prg' is not 'NULL', it will be used, otherwise 'prg_id' will be used
+// to translate to a 'chpl_rt_prginfo*' on the current locale. If both
+// 'prg' and 'prg_id' are empty then the runtime table will be used instead.
 void* chpl_rt_comm_fetch_broadcast_table(chpl_rt_prginfo* prg,
                                          chpl_rt_prg_id prg_id,
                                          size_t* out_table_len);
