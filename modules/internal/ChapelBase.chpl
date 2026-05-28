@@ -86,7 +86,7 @@ module ChapelBase {
   enum iterKind {leader, follower, standalone};
 
   // This flag toggles on the new pointer-based implementation.
-  config param useProcedurePointers = false;
+  config param useProcedurePointers = true;
 
   proc chpl_enableProcPtrs(type t) param {
     if !useProcedurePointers then return false;
