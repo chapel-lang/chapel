@@ -522,7 +522,8 @@ static void AM_signal_long(gasnet_token_t token, void *buf, size_t nbytes,
 
 static void AM_priv_bcast(gasnet_token_t token, void* buf, size_t nbytes) {
   priv_bcast_t* pbp = buf;
-  chpl_memcpy(chpl_rt_priv_bcast_tab[pbp->id], pbp->data, pbp->size);
+  chpl_memcpy(chpl_rt_unified_private_broadcast_table[pbp->id], pbp->data,
+              pbp->size);
 
   // Signal that the handler has completed
   GASNET_Safe(gasnet_AMReplyShort2(token, SIGNAL,
@@ -531,7 +532,8 @@ static void AM_priv_bcast(gasnet_token_t token, void* buf, size_t nbytes) {
 
 static void AM_priv_bcast_large(gasnet_token_t token, void* buf, size_t nbytes) {
   priv_bcast_large_t* pblp = buf;
-  chpl_memcpy((char*)chpl_rt_priv_bcast_tab[pblp->id]+pblp->offset, pblp->data, pblp->size);
+  char* start = chpl_rt_unified_private_broadcast_table[pblp->id];
+  chpl_memcpy(start + pblp->offset, pblp->data, pblp->size);
 
   // Signal that the handler has completed
   GASNET_Safe(gasnet_AMReplyShort2(token, SIGNAL,
@@ -998,7 +1000,7 @@ void chpl_comm_pre_mem_init(void) {
 }
 
 void chpl_comm_post_mem_init(void) {
-  chpl_comm_init_prv_bcast_tab();
+  chpl_rt_comm_init_unified_private_broadcast_table();
 }
 
 //
@@ -1218,7 +1220,7 @@ void chpl_rt_comm_broadcast_private_impl(chpl_rt_prginfo* prg, int id,
                                           0, 0);
   if (payloadSize <= gasnet_AMMaxMedium()) {
     priv_bcast_t* pbp = chpl_mem_allocMany(1, payloadSize, CHPL_RT_MD_COMM_PRV_BCAST_DATA, 0, 0);
-    chpl_memcpy(pbp->data, chpl_rt_priv_bcast_tab[id], size);
+    chpl_memcpy(pbp->data, chpl_rt_unified_private_broadcast_table[id], size);
     pbp->id = id;
     pbp->size = size;
     for (node = 0; node < chpl_numNodes; node++) {
@@ -1245,7 +1247,9 @@ void chpl_rt_comm_broadcast_private_impl(chpl_rt_prginfo* prg, int id,
         thissize = maxsize;
       pblp->offset = offset;
       pblp->size = thissize;
-      chpl_memcpy(pblp->data, (char*)chpl_rt_priv_bcast_tab[id]+offset, thissize);
+      chpl_memcpy(pblp->data,
+                  (char*) chpl_rt_unified_private_broadcast_table[id] + offset,
+                  thissize);
       for (node = 0; node < chpl_numNodes; node++) {
         if (node != chpl_nodeID) {
           pblp->ack = &done[node];

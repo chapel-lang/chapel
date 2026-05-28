@@ -1939,7 +1939,7 @@ void chpl_comm_pre_mem_init(void) { }
 
 void chpl_comm_post_mem_init(void)
 {
-  chpl_comm_init_prv_bcast_tab();
+  chpl_rt_comm_init_unified_private_broadcast_table();
 }
 
 
@@ -3950,8 +3950,8 @@ void chpl_rt_comm_broadcast_private_impl(chpl_rt_prginfo* prg, int id,
   //
   for (i = 0; i < chpl_numNodes; i++) {
     if (i != chpl_nodeID) {
-      do_remote_put(chpl_rt_priv_bcast_tab[id], i,
-                    chpl_rt_priv_bcast_tab[id], size,
+      do_remote_put(chpl_rt_unified_private_broadcast_table[id], i,
+                    chpl_rt_unified_private_broadcast_table[id], size,
                     NULL, may_proxy_true);
     }
   }
