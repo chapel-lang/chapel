@@ -946,7 +946,9 @@ extended to handle real, imaginary, and complex types in the future.
 Exponentiation Operators
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-The exponentiation operators are predefined as follows: 
+The exponentiation operator, ``**``, computes the value of the first
+operand raised to the power of the second, potentially appoximated by
+the limits of the numeric representations.
 
 .. code-block:: chapel
 
@@ -963,11 +965,44 @@ The exponentiation operators are predefined as follows:
    operator **(a: real(32), b: real(32)): real(32)
    operator **(a: real(64), b: real(64)): real(64)
 
-For each of these definitions that return a value, the result is the
-value of the first operand raised to the power of the second operand.
+   operator **(a: complex(64), b: complex(64)): complex(64);
+   operator **(a: complex(128), b: complex(128)): complex(128);
+
+Chapel also supports overloads that operate on ``param`` values,
+returning ``param`` results:
+
+.. code-block:: chapel
+
+   operator **(param a: integral, param b: integral) param
+   operator **(param a: real(?w), param b: integral) param : real(w)
+
+   operator **(param a: real(32), param b: real(32)) param : real(32)
+   operator **(param a: real(64), param b: real(64)) param : real(64)
+
+The first of these overloads returns a value whose type matches the
+operand whose bit width is larger; if both operands have the same
+width, it returns a value of that width, using ``uint`` if either is
+unsigned, and ``int`` otherwise.
+
+The final three ``param real`` overloads are currently considered
+unstable by default, but stable in the ``preview`` :ref:`edition of
+Chapel <readme-editions>`.
+
+   *Implementation Notes*.
+
+   For ``real(?)`` floating point values, ``**`` is currently
+   implemented using the C ``pow[f]()`` library routines.  For
+   `complex(?)` values, it is currently computed using ``cpow[f]()``.
+
+   In the current implementation, values taken to a ``param int``
+   exponent whose value is 0–6 or 8 are special-cased to be
+   implemented using a reduced number of multiplications.  Similarly,
+   ``param`` integer base expressions that are powers of two are
+   implemented using bit shift operators.
 
 There is an expectation that the predefined exponentiation operators
-will be extended to handle imaginary and complex types in the future.
+will be extended to handle imaginary and ``param complex`` values in
+the future.
 
 .. index::
    single: operators; bitwise

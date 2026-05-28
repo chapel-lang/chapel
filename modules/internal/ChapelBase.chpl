@@ -908,8 +908,18 @@ module ChapelBase {
   inline operator **(a: uint(32), b: uint(32)) do return _intExpHelp(a, b);
   inline operator **(a: uint(64), b: uint(64)) do return _intExpHelp(a, b);
 
-  inline operator **(a: real(32), b: real(32)) do return __primitive("**", a, b);
-  inline operator **(a: real(64), b: real(64)) do return __primitive("**", a, b);
+  inline operator **(a: real(32), b: real(32)) {
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc powf(x: real(32), y: real(32)): real(32);
+    return powf(a, b);
+  }
+  inline operator **(a: real(64), b: real(64)) {
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc pow(x: real(64), y: real(64)): real(64);
+    return pow(a, b);
+  }
 
   inline operator **(a: complex(64), b: complex(64)) {
     pragma "fn synchronization free"
@@ -948,6 +958,35 @@ module ChapelBase {
   operator **(param a: uint(32), param b: uint(32)) param do return __primitive("**", a, b);
   operator **(param a: uint(64), param b: uint(64)) param do return __primitive("**", a, b);
 
+  // The following is a catch-all that became necessary when
+  // `param real**param int` was introduced to break ambiguities.
+  // It could replace the previous 8 overloads, but its additional
+  // complexity made that seem unattractive for "obvious" cases to me
+  // that are more trivially represented as above.  The 'where' clause
+  // below avoids it being ambiguous with them.
+  //
+  // I've implemented it to follow historical precedent for '**' in
+  // terms of the resulting type, which I believe is similar to other
+  // operators like '+'.  However, I wonder whether the base value should
+  // determine the result type since exponentiation is a less symmetrical
+  // operator.  E.g., myParamInt8**2 seems more appropriate to produce an
+  // int(8) than an int(64) due to '2'.  This feels related to
+  // https://github.com/chapel-lang/chapel/issues/28509
+
+  operator **(param a: integral, param b: integral) param where a.type != b.type {
+    param aBits = numBits(a.type),
+          bBits = numBits(b.type);
+    type resType = if aBits > bBits then a.type
+                   else if bBits > aBits then b.type
+                   else if isUint(a) || isUint(b) then uint(aBits)
+                                                          else int(aBits);
+
+    if a == 0 && b < 0 then
+      compilerError("0 cannot be raised to a negative power");
+
+    return __primitive("**", a:resType, b:resType);
+  }
+
   inline proc _expHelp(a, param b: integral) {
     if b == 0 {
       return 1:a.type;
@@ -968,6 +1007,32 @@ module ChapelBase {
       return t*t*t;
     } else if b == 8 {
       const t = a*a, u = t*t;
+      return u*u;
+    }
+    else
+      compilerError("unexpected case in exponentiation optimization");
+  }
+
+  inline proc _expHelpParam(param a, param b: integral) param {
+    if b == 0 {
+      return 1:a.type;
+    } else if b == 1 {
+      return a;
+    } else if b == 2 {
+      return a*a;
+    } else if b == 3 {
+      return a*a*a;
+    } else if b == 4 {
+      param t = a*a;
+      return t*t;
+    } else if b == 5 {
+      param t = a*a;
+      return t*t*a;
+    } else if b == 6 {
+      param t = a*a;
+      return t*t*t;
+    } else if b == 8 {
+      param t = a*a, u = t*t;
       return u*u;
     }
     else
@@ -1002,6 +1067,43 @@ module ChapelBase {
   inline operator **(a: uint(?w), param b: integral) where _canOptimizeExp(b) do return _expHelp(a, b);
   inline operator **(a: real(?w), param b: integral) where _canOptimizeExp(b) do return _expHelp(a, b);
   inline operator **(param a: integral, b: int) where _basePowerTwo(a) do return _expBaseHelp(a, b);
+
+  //
+  // `param real **` overloads marked stable for the preview edition
+  //
+
+  @edition(first="preview")
+  operator **(param a: real(?w), param b: integral) param where _canOptimizeExp(b) do return _expHelpParam(a, b);
+
+  @edition(first="preview")
+  operator **(param a: real(?w), param b: integral) param do return __primitive("**", a, b:real(w));
+
+  @edition(first="preview")
+  operator **(param a: real(32), param b: real(32)) param do return __primitive("**", a, b:real(32));
+
+  @edition(first="preview")
+  operator **(param a: real(64), param b: real(64)) param do return __primitive("**", a, b:real(64));
+
+  //
+  // `param real **` overloads marked unstable for the 2.0 edition
+  //
+
+  @edition(last="2.0")
+  @unstable("The '**' operator on `param real` values is currently unstable and will be stabilized in a future edition")
+  operator **(param a: real(?w), param b: integral) param where _canOptimizeExp(b) do return _expHelpParam(a, b);
+
+  @edition(last="2.0")
+  @unstable("The '**' operator on `param real` values is currently unstable and will be stabilized in a future edition")
+  operator **(param a: real(?w), param b: integral) param do return __primitive("**", a, b:real(w));
+
+  @edition(last="2.0")
+  @unstable("The '**' operator on `param real` values is currently unstable and will be stabilized in a future edition")
+  operator **(param a: real(32), param b: real(32)) param do return __primitive("**", a, b:real(32));
+
+  @edition(last="2.0")
+  @unstable("The '**' operator on `param real` values is currently unstable and will be stabilized in a future edition")
+  operator **(param a: real(64), param b: real(64)) param do return __primitive("**", a, b:real(64));
+
 
   //
   // logical operations on primitive types
@@ -2970,16 +3072,16 @@ module ChapelBase {
 
   // non-param/param and param/non-param
   inline operator **(a: uint(64), param b: uint(64)) {
-    return __primitive("**", a, b);
+    return _intExpHelp(a, b);
   }
   inline operator **(param a: uint(64), b: uint(64)) {
-    return __primitive("**", a, b);
+    return _intExpHelp(a, b);
   }
   inline operator **(a: int(64), param b: int(64)) {
-    return __primitive("**", a, b);
+    return _intExpHelp(a, b);
   }
   inline operator **(param a: int(64), b: int(64)) {
-    return __primitive("**", a, b);
+    return _intExpHelp(a, b);
   }
 
 

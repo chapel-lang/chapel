@@ -170,3 +170,7 @@ remain in the preview until they are deemed sufficiently complete.
   generic arguments of type ``record`` rather than being inserted by
   the compiler in cases where it believes the user did not define such
   operators for a given record type.
+
+- Exponentiation operator overloads (``**``) are supported for ``param
+  real`` values taken to ``param real`` or ``integral`` exponents and
+  considered stable.
