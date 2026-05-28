@@ -946,7 +946,9 @@ extended to handle real, imaginary, and complex types in the future.
 Exponentiation Operators
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-The basic exponentiation operators are predefined as follows:
+The exponentiation operator, `**` computes the value of the first
+operand raised to the power of the second, potentially appoximated by
+the limits of the numeric representations.
 
 .. code-block:: chapel
 
@@ -971,24 +973,16 @@ returning ``param`` results:
 
 .. code-block:: chapel
 
-   operator **(param a: int(8), param b: int(8)) param
-   operator **(param a: int(16), param b: int(16)) param
-   operator **(param a: int(32), param b: int(32)) param
-   operator **(param a: int(64), param b: int(64)) param
+   operator **(param a: integral, param b: integral) param
+   operator **(param a: real(?w), param b: integral) param : real(w)
 
-   operator **(param a: uint(8), param b: uint(8)) param
-   operator **(param a: uint(16), param b: uint(16)) param
-   operator **(param a: uint(32), param b: uint(32)) param
-   operator **(param a: uint(64), param b: uint(64)) param
+   operator **(param a: real(32), param b: real(32)) param : real(32)
+   operator **(param a: real(64), param b: real(64)) param : real(64)
 
-   operator **(param a: real(?w), param b: integral) param
-
-   operator **(param a: real(32), param b: real(32)) param
-   operator **(param a: real(64), param b: real(64)) param
-
-For each of these operations, the resulting value is the value of the
-first operand raised to the power of the second operand, potentially
-approximated given the limits of the numeric representations.
+The first of these overloads returns a value whose type matches the
+operand whose bit width is larger; if both operands have the same
+width, it returns a value of that width, using ``uint`` if either is
+unsigned, and ``int`` otherwise.
 
    *Implementation Notes*.
 

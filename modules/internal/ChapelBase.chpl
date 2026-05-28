@@ -955,10 +955,35 @@ module ChapelBase {
   operator **(param a: uint(16), param b: uint(16)) param do return __primitive("**", a, b);
   operator **(param a: uint(32), param b: uint(32)) param do return __primitive("**", a, b);
   operator **(param a: uint(64), param b: uint(64)) param do return __primitive("**", a, b);
-  inline operator **(param a: uint(64), param b: int(64)) param {
-    if b < 0 then
-      compilerError("Can't take a `uint` to a negative power; consider casting to `real`");
-    return __primitive("**", a, b:uint(64));
+
+  // The following is a catch-all that became necessary when
+  // `param real**param int` was introduced to break ambiguities.
+  // It could replace the previous 8 overloads, but its additional
+  // complexity made that seem unattractive for "obvious" cases to me
+  // that are more trivially represented as above.  The 'where' clause
+  // below avoids it being ambiguous with them.
+  //
+  // I've implemented it to follow historical precedent for '**' in
+  // terms of the resulting type, which I believe is similar to other
+  // operators like '+'.  However, I wonder whether the base value should
+  // determine the result type since exponentiation is a less symmetrical
+  // operator.  E.g., myParamInt8**2 seems more appropriate to produce an
+  // int(8) than an int(64) due to '2'.  This feels related to
+  // https://github.com/chapel-lang/chapel/issues/28509
+
+  operator **(param a: integral, param b: integral) param where a.type != b.type {
+    use Types;
+    param aBits = numBits(a.type),
+          bBits = numBits(b.type);
+    type resType = if aBits > bBits then a.type
+                   else if bBits > aBits then b.type
+                   else if isUint(a) || isUint(b) then uint(aBits)
+                                                          else int(aBits);
+
+    if a == 0 && b < 0 then
+      compilerError("0 cannot be raised to a negative power");
+
+    return __primitive("**", a:resType, b:resType);
   }
 
   inline proc _expHelp(a, param b: integral) {
@@ -1047,16 +1072,16 @@ module ChapelBase {
   //
 
   @edition(first="preview")
-  inline operator **(param a: real(?w), param b: integral) param where _canOptimizeExp(b) do return _expHelpParam(a, b);
+  operator **(param a: real(?w), param b: integral) param where _canOptimizeExp(b) do return _expHelpParam(a, b);
 
   @edition(first="preview")
-  inline operator **(param a: real(?w), param b: integral) param do return __primitive("**", a, b:real(w));
+  operator **(param a: real(?w), param b: integral) param do return __primitive("**", a, b:real(w));
 
   @edition(first="preview")
-  inline operator **(param a: real(32), param b: real(32)) param do return __primitive("**", a, b:real(32));
+  operator **(param a: real(32), param b: real(32)) param do return __primitive("**", a, b:real(32));
 
   @edition(first="preview")
-  inline operator **(param a: real(64), param b: real(64)) param do return __primitive("**", a, b:real(64));
+  operator **(param a: real(64), param b: real(64)) param do return __primitive("**", a, b:real(64));
 
   //
   // `param real **` overloads marked unstable for the 2.0 edition
@@ -1064,19 +1089,19 @@ module ChapelBase {
 
   @edition(last="2.0")
   @unstable("The '**' operator on `param real` values is currently unstable and will be stabilized in a future edition")
-  inline operator **(param a: real(?w), param b: integral) param where _canOptimizeExp(b) do return _expHelpParam(a, b);
+  operator **(param a: real(?w), param b: integral) param where _canOptimizeExp(b) do return _expHelpParam(a, b);
 
   @edition(last="2.0")
   @unstable("The '**' operator on `param real` values is currently unstable and will be stabilized in a future edition")
-  inline operator **(param a: real(?w), param b: integral) param do return __primitive("**", a, b:real(w));
+  operator **(param a: real(?w), param b: integral) param do return __primitive("**", a, b:real(w));
 
   @edition(last="2.0")
   @unstable("The '**' operator on `param real` values is currently unstable and will be stabilized in a future edition")
-  inline operator **(param a: real(32), param b: real(32)) param do return __primitive("**", a, b:real(32));
+  operator **(param a: real(32), param b: real(32)) param do return __primitive("**", a, b:real(32));
 
   @edition(last="2.0")
   @unstable("The '**' operator on `param real` values is currently unstable and will be stabilized in a future edition")
-  inline operator **(param a: real(64), param b: real(64)) param do return __primitive("**", a, b:real(64));
+  operator **(param a: real(64), param b: real(64)) param do return __primitive("**", a, b:real(64));
 
 
   //
