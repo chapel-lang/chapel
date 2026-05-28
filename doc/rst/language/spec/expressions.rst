@@ -1001,7 +1001,8 @@ Chapel <readme-editions>`.
    implemented using bit shift operators.
 
 There is an expectation that the predefined exponentiation operators
-will be extended to handle imaginary and complex types in the future.
+will be extended to handle imaginary and ``param complex`` values in
+the future.
 
 .. index::
    single: operators; bitwise

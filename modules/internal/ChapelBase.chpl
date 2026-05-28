@@ -910,11 +910,13 @@ module ChapelBase {
 
   inline operator **(a: real(32), b: real(32)) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc powf(x: real(32), y: real(32)): real(32);
     return powf(a, b);
   }
   inline operator **(a: real(64), b: real(64)) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc pow(x: real(64), y: real(64)): real(64);
     return pow(a, b);
   }
@@ -972,7 +974,6 @@ module ChapelBase {
   // https://github.com/chapel-lang/chapel/issues/28509
 
   operator **(param a: integral, param b: integral) param where a.type != b.type {
-    use Types;
     param aBits = numBits(a.type),
           bBits = numBits(b.type);
     type resType = if aBits > bBits then a.type
