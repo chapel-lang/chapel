@@ -26,6 +26,7 @@ Initializing Modules:
           FormattedIO
            IO
             ChapelIO
+            Types
            Regex
             RegexIoSupport
           MemMove

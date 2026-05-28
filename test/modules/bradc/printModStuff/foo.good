@@ -23,11 +23,11 @@ Parsing module files:
   $CHPL_HOME/modules/standard/ChplConfig.chpl
   $CHPL_HOME/modules/standard/Communication.chpl
   $CHPL_HOME/modules/standard/CTypes.chpl
-  $CHPL_HOME/modules/standard/Types.chpl
   $CHPL_HOME/modules/standard/CommDiagnostics.chpl
   $CHPL_HOME/modules/standard/Errors.chpl
   $CHPL_HOME/modules/standard/WeakPointer.chpl
   $CHPL_HOME/modules/dists/DSIUtil.chpl
+  $CHPL_HOME/modules/standard/Types.chpl
   $CHPL_HOME/modules/standard/ChapelIO.chpl
   $CHPL_HOME/modules/standard/Regex.chpl
   $CHPL_HOME/modules/packages/PrecisionSerializer.chpl
