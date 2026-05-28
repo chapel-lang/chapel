@@ -30,7 +30,7 @@ jobs:
               echo "FILES_CHANGED=$(echo '$PR_LINK/files' )" >> $GITHUB_ENV
 
       - name: checkout
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         # To get git diff on the files that were changed in the PR checkout with fetch-depth 2.
         with:
           fetch-depth: 0
@@ -58,7 +58,7 @@ jobs:
               echo 'EOF' >> $GITHUB_ENV
 
       - name: Send mail
-        uses: dawidd6/action-send-mail@v17
+        uses: dawidd6/action-send-mail@42942bc2f8fba4e611b459a018967a6a7c78c68c # v17
         with:
            # Required mail server address if not connection_url:
            server_address: ${{ secrets.SMTP_PROVIDER}}
