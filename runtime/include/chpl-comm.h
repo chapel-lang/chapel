@@ -378,7 +378,7 @@ void chpl_rt_comm_broadcast_global_vars(chpl_rt_prginfo* prg);
 // values, and during execution to do things like enabling and disabling
 // memory tracking/reporting and comm diagnostics.
 //
-void chpl_rt_comm_broadcast_private(chpl_rt_prginfo* prg, int32_t id,
+void chpl_rt_comm_private_broadcast(chpl_rt_prginfo* prg, int32_t id,
                                     size_t size);
 
 //

@@ -90,7 +90,7 @@ static inline void chpl_rt_comm_broadcast_rt_symbol_hook(int32_t idx) {
   assert(0 <= idx && idx < chpl_rt_private_broadcast_table_for_rt_len);
   size_t size = chpl_rt_private_broadcast_table_for_rt_byte_lens[idx];
   // Passing a 'NULL' program indicates we are asking for a runtime symbol.
-  chpl_rt_comm_broadcast_private(NULL, idx, size);
+  chpl_rt_comm_private_broadcast(NULL, idx, size);
 }
 
 // Runtime code calls this to broadcast a runtime-specific symbol.
@@ -100,7 +100,7 @@ static inline void chpl_rt_comm_broadcast_rt_symbol_hook(int32_t idx) {
 } while (0)
 
 // Per comm layer implementation.
-void chpl_rt_comm_broadcast_private_impl(chpl_rt_prginfo* prg, int32_t id,
+void chpl_rt_comm_private_broadcast_impl(chpl_rt_prginfo* prg, int32_t id,
                                          size_t size);
 
 // Given a program info pointer OR a program ID, fetch a broadcast table.

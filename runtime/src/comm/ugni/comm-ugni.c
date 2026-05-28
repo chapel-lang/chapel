@@ -3936,11 +3936,11 @@ wide_ptr_t* chpl_rt_comm_broadcast_global_vars_impl(chpl_rt_prginfo* prg) {
 }
 
 
-void chpl_rt_comm_broadcast_private_impl(chpl_rt_prginfo* prg, int32_t id,
+void chpl_rt_comm_private_broadcast_impl(chpl_rt_prginfo* prg, int32_t id,
                                          size_t size) {
   int i;
 
-  DBG_P_LP(DBGF_IFACE, "IFACE chpl_comm_broadcast_private(%d, %zd)", id, size);
+  DBG_P_LP(DBGF_IFACE, "IFACE chpl_comm_private_broadcast(%d, %zd)", id, size);
 
   //
   // TODO: Currently this does a PUT and wait for remote completion to

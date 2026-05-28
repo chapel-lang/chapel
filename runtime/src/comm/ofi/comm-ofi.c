@@ -3340,7 +3340,7 @@ void init_broadcast_private(void) {
   //
   //
   // Share the nodes' private broadcast tables around.  These are
-  // needed by chpl_comm_broadcast_private(), below.
+  // needed by chpl_comm_private_broadcast(), below.
   //
   void** pbtMap;
   size_t pbtSize = chpl_rt_unified_private_broadcast_table_len
@@ -3356,7 +3356,7 @@ void init_broadcast_private(void) {
 }
 
 
-void chpl_rt_comm_broadcast_private_impl(chpl_rt_prginfo* prg, int32_t id,
+void chpl_rt_comm_private_broadcast_impl(chpl_rt_prginfo* prg, int32_t id,
                                          size_t size) {
   DBG_PRINTF(DBG_IFACE_SETUP, "%s(%d, %zd)", __func__, id, size);
 

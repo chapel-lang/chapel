@@ -6221,7 +6221,7 @@ DEFINE_PRIM(PRIVATE_BROADCAST) {
   args[1] = codegenSizeof(call->get(2)->typeInfo());
   args[2] = call->linenum();
   args[3] = new_IntSymbol(getFilenameTableIndex(call->fname()), INT_SIZE_32);
-  codegenCallWithArgs("chpl_broadcastPrivate", args);
+  codegenCallWithArgs("chpl_privateBroadcast", args);
 }
 
 DEFINE_PRIM(INT_ERROR) {

@@ -1240,7 +1240,7 @@ wide_ptr_t* chpl_rt_comm_broadcast_global_vars_impl(chpl_rt_prginfo* prg) {
   }
 }
 
-void chpl_rt_comm_broadcast_private_impl(chpl_rt_prginfo* prg, int32_t id,
+void chpl_rt_comm_private_broadcast_impl(chpl_rt_prginfo* prg, int32_t id,
                                          size_t size) {
   chpl_mem_descInt_t pbp_dsc = CHPL_RT_MD_COMM_PRV_BCAST_DATA;
   int node = 0;

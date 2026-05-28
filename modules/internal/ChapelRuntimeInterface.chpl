@@ -49,8 +49,8 @@ module ChapelRuntimeInterface {
 
   pragma "insert line file info"
   pragma "always propagate line file info"
-  export proc chpl_broadcastPrivate(idx: int(32), size: c_size_t) {
-    param cname = 'chpl_rt_comm_broadcast_private';
+  export proc chpl_privateBroadcast(idx: int(32), size: c_size_t) {
+    param cname = 'chpl_rt_comm_private_broadcast';
     extern cname proc fn(prg: c_ptr(chpl_rt_prginfo),
                          idx: int(32),
                          size: c_size_t): void;
