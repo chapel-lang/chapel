@@ -3356,7 +3356,7 @@ void init_broadcast_private(void) {
 }
 
 
-void chpl_rt_comm_broadcast_private_impl(chpl_rt_prginfo* prg, int id,
+void chpl_rt_comm_broadcast_private_impl(chpl_rt_prginfo* prg, int32_t id,
                                          size_t size) {
   DBG_PRINTF(DBG_IFACE_SETUP, "%s(%d, %zd)", __func__, id, size);
 

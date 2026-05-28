@@ -3936,7 +3936,7 @@ wide_ptr_t* chpl_rt_comm_broadcast_global_vars_impl(chpl_rt_prginfo* prg) {
 }
 
 
-void chpl_rt_comm_broadcast_private_impl(chpl_rt_prginfo* prg, int id,
+void chpl_rt_comm_broadcast_private_impl(chpl_rt_prginfo* prg, int32_t id,
                                          size_t size) {
   int i;
 
