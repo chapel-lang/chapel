@@ -11,4 +11,5 @@ uncaught BadFormatError: bad format: missing expected literal (while reading boo
   readWriteBool.chpl:11: called from here
   readWriteBool.chpl:11: called from here
   readWriteBool.chpl:11: called from here
+  readWriteBool.chpl:11: called from here
   readWriteBool.chpl:11: thrown here

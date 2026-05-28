@@ -1,3 +1,4 @@
 uncaught IllegalArgumentError: bad cast: enum 'color2.red' has no integer value
   enumCastErrors.chpl:33: uncaught here
+  enumCastErrors.chpl:33: called from here
   enumCastErrors.chpl:33: thrown here

@@ -4,4 +4,5 @@ C
 D
 uncaught IllegalArgumentError: bad cast from int '4' to enum 'myEnum'
   varEnumOutOfBounds.chpl:10: uncaught here
+  varEnumOutOfBounds.chpl:10: called from here
   varEnumOutOfBounds.chpl:10: thrown here

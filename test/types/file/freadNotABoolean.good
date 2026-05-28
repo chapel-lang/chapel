@@ -8,4 +8,5 @@ uncaught BadFormatError: bad format: missing expected literal (while reading boo
   freadNotABoolean.chpl:7: called from here
   freadNotABoolean.chpl:7: called from here
   freadNotABoolean.chpl:7: called from here
+  freadNotABoolean.chpl:7: called from here
   freadNotABoolean.chpl:7: thrown here

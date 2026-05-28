@@ -1,4 +1,5 @@
 uncaught Error: oops
   throwFromParIterator.chpl:33: uncaught here
+  throwFromParIterator.chpl:33: called from here
   throwFromParIterator.chpl:17: called from here
   throwFromParIterator.chpl:17: thrown here

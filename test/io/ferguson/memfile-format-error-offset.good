@@ -6,4 +6,5 @@ uncaught BadFormatError: bad format: missing expected literal (while reading str
   memfile-format-error-offset.chpl:12: called from here
   memfile-format-error-offset.chpl:12: called from here
   memfile-format-error-offset.chpl:12: called from here
+  memfile-format-error-offset.chpl:12: called from here
   memfile-format-error-offset.chpl:12: thrown here

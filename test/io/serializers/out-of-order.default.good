@@ -8,4 +8,5 @@ uncaught BadFormatError: bad format: missing expected literal (while reading str
   out-of-order.chpl:50: called from here
   out-of-order.chpl:50: called from here
   out-of-order.chpl:50: called from here
+  out-of-order.chpl:50: called from here
   out-of-order.chpl:50: thrown here

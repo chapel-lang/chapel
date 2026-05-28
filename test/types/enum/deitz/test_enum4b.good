@@ -1,3 +1,4 @@
 uncaught IllegalArgumentError: bad cast: enum 'ExprTypes.ADD' has no integer value
   test_enum4b.chpl:6: uncaught here
+  test_enum4b.chpl:6: called from here
   test_enum4b.chpl:6: thrown here

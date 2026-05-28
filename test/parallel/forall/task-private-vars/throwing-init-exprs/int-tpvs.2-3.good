@@ -1,6 +1,7 @@
 nt 3   nt2 2
 uncaught TaskErrors: 2 errors: IllegalArgumentError: 2 ... IllegalArgumentError: 3
   int-tpvs.chpl:44: uncaught here
+  int-tpvs.chpl:44: called from here
   int-tpvs.chpl:44: thrown here
 asdf(1), returning
 asdf(10), returning
