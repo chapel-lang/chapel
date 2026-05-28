@@ -41,6 +41,9 @@
 extern "C" {
 #endif
 
+extern chpl_bool chpl_task_setCommDiagsTemporarilyDisabled(chpl_bool);
+extern chpl_bool chpl_task_getCommDiagsTemporarilyDisabled(void);
+
 extern void* const chpl_global_serialize_table[];
 
 #ifdef __cplusplus
