@@ -492,7 +492,7 @@ coerce_immediate(chpl::Context* context, Immediate *from, Immediate *to) {
               }                                                         \
             case FLOAT_SIZE_64:                                         \
               {                                                         \
-                imm->v_float64 = powf(im1.v_float64, im2.v_float64);    \
+                imm->v_float64 = pow(im1.v_float64, im2.v_float64);     \
                 break;                                                  \
               }                                                         \
           }                                                             \
