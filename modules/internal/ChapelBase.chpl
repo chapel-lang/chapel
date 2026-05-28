@@ -955,6 +955,11 @@ module ChapelBase {
   operator **(param a: uint(16), param b: uint(16)) param do return __primitive("**", a, b);
   operator **(param a: uint(32), param b: uint(32)) param do return __primitive("**", a, b);
   operator **(param a: uint(64), param b: uint(64)) param do return __primitive("**", a, b);
+  inline operator **(param a: uint(64), param b: int(64)) param {
+    if b < 0 then
+      compilerError("Can't take a `uint` to a negative power; consider casting to `real`");
+    return __primitive("**", a, b:uint(64));
+  }
 
   inline proc _expHelp(a, param b: integral) {
     if b == 0 {
