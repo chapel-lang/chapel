@@ -5,4 +5,5 @@ uncaught IllegalArgumentError: User error thrown from writeThis!
   writeThisUserError.chpl:20: called from here
   writeThisUserError.chpl:20: called from here
   writeThisUserError.chpl:20: called from here
+  writeThisUserError.chpl:20: called from here
   writeThisUserError.chpl:12: thrown here

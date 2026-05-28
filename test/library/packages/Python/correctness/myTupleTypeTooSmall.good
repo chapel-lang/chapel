@@ -3,4 +3,5 @@ t[0:2] (no type) (2, 3)
 uncaught ChapelException: type specified was smaller than returned value
   myTupleTypeTooSmall.chpl:22: uncaught here
   myTupleTypeTooSmall.chpl:22: called from here
+  myTupleTypeTooSmall.chpl:22: called from here
   myTupleTypeTooSmall.chpl:22: thrown here

@@ -1,6 +1,7 @@
 nt 3   nt2 20
 uncaught TaskErrors: 2 errors: IllegalArgumentError: 20 ... IllegalArgumentError: 3
   pod-tpvs.chpl:48: uncaught here
+  pod-tpvs.chpl:48: called from here
   pod-tpvs.chpl:48: thrown here
 asdf(1), returning
 asdf(10), returning

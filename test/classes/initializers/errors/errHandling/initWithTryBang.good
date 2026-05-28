@@ -1,3 +1,4 @@
 uncaught Error: 
   initWithTryBang.chpl:19: uncaught here
+  initWithTryBang.chpl:19: called from here
   initWithTryBang.chpl:16: thrown here

@@ -1,4 +1,5 @@
 uncaught IllegalArgumentError: bad cast from string 'garlic' to enum 'ingredients'
   <command line setting of 'gingerbread'>:0: uncaught here
   <command line setting of 'gingerbread'>:0: called from here
+  <command line setting of 'gingerbread'>:0: called from here
   <command line setting of 'gingerbread'>:0: thrown here

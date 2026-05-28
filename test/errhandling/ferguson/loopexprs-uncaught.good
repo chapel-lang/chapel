@@ -1,5 +1,6 @@
 uncaught Error: 
-  loopexprs-uncaught.chpl:7: uncaught here
+  loopexprs-uncaught.chpl:6: uncaught here
+  loopexprs-uncaught.chpl:7: called from here
   loopexprs-uncaught.chpl:7: called from here
   loopexprs-uncaught.chpl:7: called from here
   loopexprs-uncaught.chpl:3: thrown here

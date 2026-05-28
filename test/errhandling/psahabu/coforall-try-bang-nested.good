@@ -1,4 +1,5 @@
 uncaught Error: 
-  coforall-try-bang-nested.chpl:9: uncaught here
+  coforall-try-bang-nested.chpl:8: uncaught here
+  coforall-try-bang-nested.chpl:9: called from here
   coforall-try-bang-nested.chpl:10: called from here
   coforall-try-bang-nested.chpl:3: thrown here

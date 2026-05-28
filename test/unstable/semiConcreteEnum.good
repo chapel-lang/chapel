@@ -2,4 +2,5 @@ semiConcreteEnum.chpl:1: warning: it has been suggested that support for semi-co
 black
 uncaught IllegalArgumentError: bad cast: enum 'color.black' has no integer value
   semiConcreteEnum.chpl:4: uncaught here
+  semiConcreteEnum.chpl:4: called from here
   semiConcreteEnum.chpl:4: thrown here

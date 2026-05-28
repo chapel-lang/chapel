@@ -3,4 +3,5 @@ F1
 uncaught SystemError: Invalid argument: Argument type mismatch in argument 0 (in string.format)
   readAbstractEnum.chpl:6: uncaught here
   readAbstractEnum.chpl:6: called from here
+  readAbstractEnum.chpl:6: called from here
   readAbstractEnum.chpl:6: thrown here

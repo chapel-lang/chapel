@@ -2,4 +2,5 @@ uncaught SystemError: Bad file descriptor (Operation attempted on an invalid fil
   example-pr-13203-b.chpl:4: uncaught here
   example-pr-13203-b.chpl:4: called from here
   example-pr-13203-b.chpl:4: called from here
+  example-pr-13203-b.chpl:4: called from here
   example-pr-13203-b.chpl:4: thrown here

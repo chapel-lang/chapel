@@ -6,6 +6,7 @@ stack trace:
   (frame 4) basicInline.chpl:2
 uncaught Error: oops
   basicInline.chpl:24: uncaught here
+  basicInline.chpl:24: called from here
   basicInline.chpl:8: called from here
   basicInline.chpl:5: called from here
   basicInline.chpl:2: thrown here
