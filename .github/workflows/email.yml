@@ -30,7 +30,7 @@ jobs:
               echo "FILES_CHANGED=$(echo '$PR_LINK/files' )" >> $GITHUB_ENV
 
       - name: checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.0.2
         # To get git diff on the files that were changed in the PR checkout with fetch-depth 2.
         with:
           fetch-depth: 0

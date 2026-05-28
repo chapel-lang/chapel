@@ -6,7 +6,7 @@ jobs:
   check-format:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6.0.2
       - uses: psf/black@26.5.1
         with:
           options: "--check --verbose --line-length 80 --extend-exclude '^/(third-party|test)/'"
