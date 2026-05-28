@@ -24,20 +24,21 @@
 #include <stdint.h>
 #include "chpltypes.h"
 #include "chpl-mem-desc.h"
+#include "chpl-prginfo.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 //
-// Support for broadcasting globals.  Comm layer implementations must
-// supply this.  It is called collectively.  On node 0 it must arrange
+// Support for broadcasting globals. Comm layer implementations must
+// supply this. It is called collectively. On node 0 it must arrange
 // that all the global variable wide pointers are in a buffer that can
 // be the source of a GET from the other nodes and return either that
-// buffer's address (if it wants it freed later) or NULL.  On all other
+// buffer's address (if it wants it freed later) or NULL. On all other
 // nodes it should return the node-0 local address of that buffer.
 //
-wide_ptr_t* chpl_comm_broadcast_global_vars_helper(void);
+wide_ptr_t* chpl_rt_comm_broadcast_global_vars_impl(chpl_rt_prginfo* prg);
 
 //
 // These are runtime-private copies of chpl_private_broadcast_table[]

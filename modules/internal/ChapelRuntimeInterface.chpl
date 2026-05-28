@@ -19,9 +19,11 @@
  */
 
 module ChapelRuntimeInterface {
-  use ChapelBase, CTypes;
+  use ChapelBase, ChapelProgramRegistration, CTypes;
 
   extern type wide_ptr_t;
+
+  inline proc ptrToPrgInfoHere do return chpl_programInfoHere.asPtr();
 
   // The compiler will generate code that calls this procedure in order to
   // deterministically populate the 'chpl_globals_registry' on all locales.
@@ -30,5 +32,18 @@ module ChapelRuntimeInterface {
     // Extern, but declared by the compiler and lives in program code.
     extern var chpl_globals_registry: c_ptr(c_ptr(wide_ptr_t));
     chpl_globals_registry[idx] = ptrToWidePtr;
+  }
+
+  // These pragmas will be useful for debugging what is going on when a RT
+  // shim is called. As well, some runtime functions need this information
+  // to be passed.
+  //
+  // TODO: Replace me with a new pragma that means the same thing.
+  pragma "insert line file info"
+  pragma "always propagate line file info"
+  export proc chpl_broadcastGlobalVars() {
+    param cname = 'chpl_rt_comm_broadcast_global_vars';
+    extern cname proc fn(prg: c_ptr(chpl_rt_prginfo)): void;
+    fn(ptrToPrgInfoHere);
   }
 }

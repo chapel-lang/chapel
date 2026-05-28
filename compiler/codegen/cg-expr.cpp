@@ -6205,9 +6205,15 @@ DEFINE_PRIM(REGISTER_GLOBAL_VAR) {
     codegenCall("chpl_registerGlobalVar", idx,
                 codegenCast("ptr_wide_ptr_t", ptr_wide_ptr));
 }
+
 DEFINE_PRIM(BROADCAST_GLOBAL_VARS) {
-    codegenCall("chpl_comm_broadcast_global_vars", call->get(1));
+  // Call the module code wrapper.
+  std::vector<GenRet> args(2);
+  args[0] = call->get(1);   // Line
+  args[1] = call->get(2);   // File
+  codegenCallWithArgs("chpl_broadcastGlobalVars", args);
 }
+
 DEFINE_PRIM(PRIVATE_BROADCAST) {
     codegenCall("chpl_comm_broadcast_private",
                 call->get(1),

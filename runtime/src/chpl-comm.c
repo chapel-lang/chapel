@@ -50,15 +50,14 @@ static int32_t   localRank = -1;
 static int32_t   numColocalesOnNode = 1;
 
 
-void chpl_comm_broadcast_global_vars(int numGlobals) {
+void chpl_rt_comm_broadcast_global_vars(chpl_rt_prginfo* prg) {
   //
   // On node 0: gather up the global variables' wide pointers into a
   //            buffer; return that buffer if it needs deallocating
   //            after the communication, otherwise NULL.
   // On other nodes: retrieve the node 0 local address of that buffer.
   //
-  wide_ptr_t* buf_on_0;
-  buf_on_0 = chpl_comm_broadcast_global_vars_helper();
+  wide_ptr_t* buf_on_0 = chpl_rt_comm_broadcast_global_vars_impl(prg);
 
   //
   // On node 0: barrier to ensure the other nodes have the global vars;
@@ -77,10 +76,8 @@ void chpl_comm_broadcast_global_vars(int numGlobals) {
       chpl_mem_free(buf_on_0, 0, 0);
     }
   } else {
-    CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
-                            chpl_globals_registry);
-    CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
-                            chpl_numGlobalsOnHeap);
+    CHPL_RT_PRGINFO_DECLARE(prg, chpl_globals_registry);
+    CHPL_RT_PRGINFO_DECLARE(prg, chpl_numGlobalsOnHeap);
 
     wide_ptr_t* buf;
     size_t size = chpl_numGlobalsOnHeap * sizeof(*buf);
