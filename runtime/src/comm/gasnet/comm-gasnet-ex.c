@@ -1238,6 +1238,10 @@ wide_ptr_t* chpl_rt_comm_broadcast_global_vars_impl(chpl_rt_prginfo* prg) {
   }
 }
 
+// TODO (@bonachea, thanks!): This naive/non-scalable code was written for
+// GASNet-1 and has not been updated to take advantage of EX. If it ever
+// becomes a problem, we can rewrite it to use e.g., 'gex_Coll_BroadcastNB'
+// which should be simpler to use and scale better.
 void chpl_rt_comm_private_broadcast_impl(chpl_rt_prginfo* prg, int32_t id,
                                          size_t size) {
   chpl_mem_descInt_t pbp_dsc = CHPL_RT_MD_COMM_PRV_BCAST_DATA;
@@ -1248,6 +1252,9 @@ void chpl_rt_comm_private_broadcast_impl(chpl_rt_prginfo* prg, int32_t id,
   int num_offsets = 1;
   void** table = NULL;
   size_t table_len = 0;
+
+  // Check for overflow. TODO: Make this code more robust w.r.t. overflows.
+  assert((size_t) payload_size == size + sizeof(priv_bcast_t));
 
   // Get the broadcast table to use on this node.
   table = chpl_rt_comm_fetch_broadcast_table(prg, 0, &table_len);
