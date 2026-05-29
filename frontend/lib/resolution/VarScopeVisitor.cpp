@@ -554,32 +554,30 @@ bool VarScopeVisitor::enter(const Tuple* ast, RV& rv) {
   // Gather info for this assignment (at whatever level of nesting)
   // Determine RHS (init expr) and type for this assign, either directly if
   // in a top-level assign, or from parent tuple if nested.
-  QualifiedType tupInitType = QualifiedType();
-  const Tuple* tupInitPart = nullptr;
+  QualifiedType initType = QualifiedType();
+  const Tuple* initPart = nullptr;
   auto parentAst = parsing::parentAst(context, ast);
   if (parentAst == inTupleAssignment) {
     CHPL_ASSERT(ast == inTupleAssignment->lhs());
     auto rhsAst = inTupleAssignment->rhs();
-    tupInitType = rv.byAst(rhsAst).type();
-    tupInitPart = rhsAst->toTuple();
+    initType = rv.byAst(rhsAst).type();
+    initPart = rhsAst->toTuple();
   } else {
     CHPL_ASSERT(outermostContainingTuple());
     CHPL_ASSERT(parentAst->isTuple());
     if (auto parentInitType = nestedTupleInfoStack.back().first.type()) {
       auto parentTupleType = parentInitType->toTupleType();
       CHPL_ASSERT(parentTupleType);
-      tupInitType =
-          parentTupleType->elementType(indexWithinContainingTuple(ast));
+      initType = parentTupleType->elementType(indexWithinContainingTuple(ast));
     }
     if (auto parentInit = nestedTupleInfoStack.back().second) {
-      tupInitPart =
-          parentInit->actual(indexWithinContainingTuple(ast))->toTuple();
+      initPart = parentInit->actual(indexWithinContainingTuple(ast))->toTuple();
     }
   }
-  if (tupInitPart) {
-    CHPL_ASSERT(ast->numActuals() == tupInitPart->numActuals());
+  if (initPart) {
+    CHPL_ASSERT(ast->numActuals() == initPart->numActuals());
   }
-  nestedTupleInfoStack.emplace_back(tupInitType, tupInitPart);
+  nestedTupleInfoStack.emplace_back(initType, initPart);
 
   // Traverse components in order and resolve assignments for each
   auto& re = rv.byPostorder().byAst(inTupleAssignment);
@@ -595,11 +593,11 @@ bool VarScopeVisitor::enter(const Tuple* ast, RV& rv) {
     const AstNode* rhsAst = inTupleAssignment->rhs();
     QualifiedType rhsType = QualifiedType();
 
-    if (tupInitPart) {
-      rhsAst = tupInitPart->actual(i);
+    if (initPart) {
+      rhsAst = initPart->actual(i);
     }
-    if (auto tupInitTy = tupInitType.type()) {
-      auto tupType = tupInitTy->toTupleType();
+    if (auto initTy = initType.type()) {
+      auto tupType = initTy->toTupleType();
       CHPL_ASSERT(tupType);
       rhsType = tupType->elementType(i);
     }
