@@ -1510,7 +1510,7 @@ qioerr qio_channel_write_bits(const int threadsafe, qio_channel_t* restrict ch, 
     // Can we just put it into bitbuffer?
     if( tmp_live + nbits <= (int) (8*sizeof(qio_bitbuffer_t)) ) {
       //printf("WRITE BITS LOCAL WRITING %llx %i %llx %i\n", (long long int) tmp_bits, tmp_live, (long long int) v, nbits);
-      tmp_bits = CHPL_SAFE_LSHIFT(tmp_bits, nbits, 8*sizeof(qio_bitbuffer_t)) | v;
+      tmp_bits = CHPL_SAFE_LSHIFT(tmp_bits, nbits, (int)(8*sizeof(qio_bitbuffer_t))) | v;
       tmp_live += nbits;
       ch->bit_buffer = tmp_bits;
       ch->bit_buffer_bits = tmp_live;
@@ -1600,7 +1600,7 @@ qioerr qio_channel_read_bits(const int threadsafe, qio_channel_t* restrict ch, u
     if( nbits <= tmp_live ) {
       //printf("READ BITS LOCAL\n");
       *v = tmp_bits >> (8*sizeof(qio_bitbuffer_t) - nbits);
-      tmp_bits = CHPL_SAFE_LSHIFT(tmp_bits, nbits, 8*sizeof(qio_bitbuffer_t));
+      tmp_bits = CHPL_SAFE_LSHIFT(tmp_bits, nbits, (int)(8*sizeof(qio_bitbuffer_t)));
       tmp_live -= nbits;
       ch->bit_buffer = tmp_bits;
       ch->bit_buffer_bits = tmp_live;
