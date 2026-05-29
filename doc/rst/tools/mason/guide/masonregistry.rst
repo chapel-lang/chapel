@@ -3,7 +3,10 @@ The Mason Registry
 
 The default Mason registry is a GitHub repository containing a list of versioned manifest files.
 
-View the official Mason registry here: `Mason-Registry <https://github.com/chapel-lang/mason-registry>`_.
+The official registry can be browsed
+`on the Chapel website <https://chapel-lang.org/packages/>`_.
+The actual repository of package entries can be found at
+`Mason-Registry <https://github.com/chapel-lang/mason-registry/>`_.
 
 A registry will be downloaded to ``$MASON_HOME/<name>`` by ``mason update``
 for each registry named in ``$MASON_REGISTRY`` if a registry at that location
