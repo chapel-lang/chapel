@@ -50,6 +50,11 @@ static int32_t   localRank = -1;
 static int32_t   numColocalesOnNode = 1;
 
 
+void chpl_rt_comm_private_broadcast(chpl_rt_prginfo* prg, int32_t id,
+                                    size_t size) {
+  chpl_rt_comm_private_broadcast_impl(prg, id, size);
+}
+
 void chpl_rt_comm_broadcast_global_vars(chpl_rt_prginfo* prg) {
   //
   // On node 0: gather up the global variables' wide pointers into a
@@ -92,41 +97,86 @@ void chpl_rt_comm_broadcast_global_vars(chpl_rt_prginfo* prg) {
   }
 }
 
+// Populate the runtime's table of private broadcast constants.
+void* chpl_rt_private_broadcast_table_for_rt[] = {
+  #define EXPAND_PER_ENTRY(sym__) ((void*) &sym__),
+  CHPL_RT_RUNTIME_PRIVATE_BROADCAST_TABLE_ENTRIES(EXPAND_PER_ENTRY)
+  NULL
+  #undef EXPAND_PER_ENTRY
+};
 
-void** chpl_rt_priv_bcast_tab;
-int chpl_rt_priv_bcast_tab_len;
+// Length of runtime table.
+size_t chpl_rt_private_broadcast_table_for_rt_len =
+          chpl_rt_runtime_private_broadcast_table_for_rt_num_entries;
 
-#define _RT_PRV_BCAST_M(sym) sizeof(sym),
-size_t chpl_rt_priv_bcast_lens[chpl_rt_prv_tab_num_idxs] =
-         { CHPL_RT_PRV_BCAST_TAB_ENTRIES(_RT_PRV_BCAST_M) };
-#undef _RT_PRV_BCAST_M
+// Byte lengths of runtime table entries.
+size_t chpl_rt_private_broadcast_table_for_rt_byte_lens[] = {
+  #define EXPAND_PER_ENTRY(sym__) sizeof(sym__),
+  CHPL_RT_RUNTIME_PRIVATE_BROADCAST_TABLE_ENTRIES(EXPAND_PER_ENTRY)
+  0
+  #undef EXPAND_PER_ENTRY
+};
 
-void chpl_comm_init_prv_bcast_tab(void) {
-  //
-  // Make a copy of chpl_private_broadcast_table[], but with some more of
-  // our own entries following the compiler-emitted ones.
-  //
-  chpl_rt_priv_bcast_tab_len = chpl_private_broadcast_table_len
-                               + chpl_rt_prv_tab_num_idxs;
-  chpl_rt_priv_bcast_tab =
-    chpl_mem_allocMany(chpl_rt_priv_bcast_tab_len,
-                       sizeof(chpl_rt_priv_bcast_tab[0]),
+// State for the old 'unified' broadcast table.
+void** chpl_rt_unified_private_broadcast_table = NULL;
+int chpl_rt_unified_private_broadcast_table_len = 0;
+
+void chpl_rt_comm_init_unified_private_broadcast_table(void) {
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_PRGINFO_ROOT,
+                          chpl_private_broadcast_table);
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_PRGINFO_ROOT,
+                          chpl_private_broadcast_table_len);
+
+  chpl_rt_unified_private_broadcast_table_len =
+            chpl_private_broadcast_table_len +
+            chpl_rt_private_broadcast_table_for_rt_len;
+
+  chpl_rt_unified_private_broadcast_table =
+    chpl_mem_allocMany(chpl_rt_unified_private_broadcast_table_len,
+                       sizeof(chpl_rt_unified_private_broadcast_table[0]),
                        CHPL_RT_MD_COMM_UTIL, 0, 0);
 
-  // Duplicate the compiler-emitted entries.
-  memcpy(chpl_rt_priv_bcast_tab,
+  // Copy over the compiler-emitted entries from the root program.
+  memcpy(chpl_rt_unified_private_broadcast_table,
          chpl_private_broadcast_table,
          chpl_private_broadcast_table_len
          * sizeof(chpl_private_broadcast_table[0]));
 
   // Fill in our entries that follow those.
-#define _RT_PRV_BCAST_M(sym)                                            \
-  chpl_rt_priv_bcast_tab[chpl_private_broadcast_table_len               \
-                         + chpl_rt_prv_tab_ ## sym ## _idx] = &sym;
-  CHPL_RT_PRV_BCAST_TAB_ENTRIES(_RT_PRV_BCAST_M)
-#undef _RT_PRV_BCAST_M
+  #define EXPAND_PER_ENTRY(sym__) do {                        \
+    const int idx = chpl_private_broadcast_table_len          \
+                  + CHPL_RT_BCAST_TABLE_FOR_RT_ENTRY(sym__);  \
+    chpl_rt_unified_private_broadcast_table[idx] = &sym__;    \
+  } while (0);
+  CHPL_RT_RUNTIME_PRIVATE_BROADCAST_TABLE_ENTRIES(EXPAND_PER_ENTRY)
+  #undef EXPAND_PER_ENTRY
 }
 
+void* chpl_rt_comm_fetch_broadcast_table(chpl_rt_prginfo* prg,
+                                         chpl_rt_prg_id prg_id,
+                                         size_t* out_table_len) {
+  size_t table_len = 0;
+  void** ret = NULL;
+  bool use_rt_table = prg_id == CHPL_RT_PRGINFO_NULL_ID && prg == NULL;
+
+  if (use_rt_table) {
+    ret = chpl_rt_private_broadcast_table_for_rt;
+    table_len = chpl_rt_private_broadcast_table_for_rt_len;
+
+  } else {
+    chpl_rt_prginfo* p = prg ? prg : CHPL_RT_PRGINFO_FETCH(prg_id);
+    assert(p != NULL);
+    // It is OK to discard constness here, table is read-only anyways.
+    ret = (void*) CHPL_RT_PRGINFO_DATA(p, chpl_private_broadcast_table);
+    table_len = CHPL_RT_PRGINFO_DATA(p, chpl_private_broadcast_table_len);
+  }
+
+  assert(ret != NULL && table_len != 0);
+
+  if (out_table_len != NULL) *out_table_len = table_len;
+
+  return ret;
+}
 
 static pthread_once_t maxHeapSize_once = PTHREAD_ONCE_INIT;
 static ssize_t maxHeapSize;

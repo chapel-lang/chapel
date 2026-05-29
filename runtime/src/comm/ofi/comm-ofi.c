@@ -1165,7 +1165,7 @@ void chpl_comm_pre_mem_init(void) {
 
 void chpl_comm_post_mem_init(void) {
   DBG_PRINTF(DBG_IFACE_SETUP, "%s()", __func__);
-  chpl_comm_init_prv_bcast_tab();
+  chpl_rt_comm_init_unified_private_broadcast_table();
   init_broadcast_private();
 
   /*
@@ -3340,26 +3340,29 @@ void init_broadcast_private(void) {
   //
   //
   // Share the nodes' private broadcast tables around.  These are
-  // needed by chpl_comm_broadcast_private(), below.
+  // needed by chpl_comm_private_broadcast(), below.
   //
   void** pbtMap;
-  size_t pbtSize = chpl_rt_priv_bcast_tab_len
-                   * sizeof(chpl_rt_priv_bcast_tab[0]);
+  size_t pbtSize = chpl_rt_unified_private_broadcast_table_len
+                   * sizeof(chpl_rt_unified_private_broadcast_table[0]);
   CHPL_CALLOC(pbtMap, chpl_numNodes * pbtSize);
-  chpl_comm_ofi_oob_allgather(chpl_rt_priv_bcast_tab, pbtMap, pbtSize);
+  chpl_comm_ofi_oob_allgather(chpl_rt_unified_private_broadcast_table,
+                              pbtMap, pbtSize);
   CHPL_CALLOC(chplPrivBcastTabMap, chpl_numNodes);
+  const size_t len = chpl_rt_unified_private_broadcast_table_len;
   for (int i = 0; i < chpl_numNodes; i++) {
-    chplPrivBcastTabMap[i] = &pbtMap[i * chpl_rt_priv_bcast_tab_len];
+    chplPrivBcastTabMap[i] = &pbtMap[i * len];
   }
 }
 
 
-void chpl_comm_broadcast_private(int id, size_t size) {
+void chpl_rt_comm_private_broadcast_impl(chpl_rt_prginfo* prg, int32_t id,
+                                         size_t size) {
   DBG_PRINTF(DBG_IFACE_SETUP, "%s(%d, %zd)", __func__, id, size);
 
   for (int i = 0; i < chpl_numNodes; i++) {
     if (i != chpl_nodeID) {
-      (void) ofi_put(chpl_rt_priv_bcast_tab[id], i,
+      (void) ofi_put(chpl_rt_unified_private_broadcast_table[id], i,
                      chplPrivBcastTabMap[i][id], size);
     }
   }

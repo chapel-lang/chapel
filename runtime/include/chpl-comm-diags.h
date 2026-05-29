@@ -28,6 +28,7 @@
 #include "chpl-comm.h"
 #include "chpl-error.h"
 #include "chpl-unwind.h"
+#include "chplcgfns.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -121,9 +122,6 @@ void chpl_comm_diags_copy(chpl_commDiagnostics* cd) {
   CHPL_COMM_DIAGS_VARS_ALL(_COMM_DIAGS_COPY);
 #undef _COMM_DIAGS_COPY
 }
-
-extern chpl_bool chpl_task_setCommDiagsTemporarilyDisabled(chpl_bool);
-extern chpl_bool chpl_task_getCommDiagsTemporarilyDisabled(void);
 
 #define chpl_comm_diags_verbose_printf(is_unstable, format, ...)   \
   do {                                                             \

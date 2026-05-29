@@ -6212,9 +6212,13 @@ DEFINE_PRIM(BROADCAST_GLOBAL_VARS) {
 }
 
 DEFINE_PRIM(PRIVATE_BROADCAST) {
-    codegenCall("chpl_comm_broadcast_private",
-                call->get(1),
-                codegenSizeof(call->get(2)->typeInfo()));
+  // Call the module code wrapper.
+  std::vector<GenRet> args(4);
+  args[0] = call->get(1);
+  args[1] = codegenSizeof(call->get(2)->typeInfo());
+  args[2] = call->linenum();
+  args[3] = new_IntSymbol(getFilenameTableIndex(call->fname()), INT_SIZE_32);
+  codegenCallWithArgs("chpl_privateBroadcast", args);
 }
 
 DEFINE_PRIM(INT_ERROR) {

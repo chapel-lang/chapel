@@ -798,12 +798,12 @@ void chpl_track_realloc_post(void* newMemAlloc,
 
 void chpl_startVerboseMem(void) {
   chpl_verbose_mem = 1;
-  chpl_comm_bcast_rt_private(chpl_verbose_mem);
+  chpl_rt_comm_broadcast_rt_symbol(chpl_verbose_mem);
 }
 
 void chpl_stopVerboseMem(void) {
   chpl_verbose_mem = 0;
-  chpl_comm_bcast_rt_private(chpl_verbose_mem);
+  chpl_rt_comm_broadcast_rt_symbol(chpl_verbose_mem);
 }
 
 void chpl_startVerboseMemHere(void) {

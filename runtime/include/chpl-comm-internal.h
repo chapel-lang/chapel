@@ -18,8 +18,8 @@
  * limitations under the License.
  */
 
-#ifndef _chpl_comm_internal_h_
-#define _chpl_comm_internal_h_
+#ifndef CHPL_RT_COMM_INTERNAL_H
+#define CHPL_RT_COMM_INTERNAL_H
 
 #include <stdint.h>
 #include "chpltypes.h"
@@ -40,50 +40,76 @@ extern "C" {
 //
 wide_ptr_t* chpl_rt_comm_broadcast_global_vars_impl(chpl_rt_prginfo* prg);
 
-//
-// These are runtime-private copies of chpl_private_broadcast_table[]
-// and chpl_private_broadcast_table_len, extended with a few more
-// addresses of runtime-specific variables we also want to be able
-// broadcast around.
-//
-extern void** chpl_rt_priv_bcast_tab;
-extern int chpl_rt_priv_bcast_tab_len;
-extern size_t chpl_rt_priv_bcast_lens[];
+// This "unified" table is allocated at runtime and merges the address table
+// of the root program and the runtime together. This approach is not
+// compatible with dynamic loading, but some comm layers (such as 'ofi') rely
+// upon it and have not been adjusted yet.
+extern void** chpl_rt_unified_private_broadcast_table;
+extern int chpl_rt_unified_private_broadcast_table_len;
 
-#define CHPL_RT_PRV_BCAST_TAB_ENTRIES(MACRO) \
-  MACRO(chpl_verbose_comm)                   \
-  MACRO(chpl_comm_diagnostics)               \
-  MACRO(chpl_comm_diags_print_unstable)      \
-  MACRO(chpl_verbose_comm_stacktrace)        \
-  MACRO(chpl_verbose_gpu)                   \
-  MACRO(chpl_gpu_diagnostics)               \
-  MACRO(chpl_gpu_diags_print_unstable)      \
-  MACRO(chpl_verbose_gpu_stacktrace)        \
-  MACRO(chpl_verbose_mem)
+// Called by the comm layer to initialize the unified broadcast table.
+void chpl_rt_comm_init_unified_private_broadcast_table(void);
 
-#define _RT_PRV_BCAST_M(sym)  chpl_rt_prv_tab_ ## sym ## _idx,
-typedef enum {
-  CHPL_RT_PRV_BCAST_TAB_ENTRIES(_RT_PRV_BCAST_M)
-  chpl_rt_prv_tab_num_idxs,
-} chpl_rt_prv_bcast_tab_idx_t;
-#undef _RT_PRV_BCAST_M
+// Each program has a table of broadcastable symbols, and so does the runtime.
+extern void* chpl_rt_private_broadcast_table_for_rt[];
+extern size_t chpl_rt_private_broadcast_table_for_rt_len;
+extern size_t chpl_rt_private_broadcast_table_for_rt_byte_lens[];
 
-//
-// This is in chpl-comm.c.
-//
-void chpl_comm_init_prv_bcast_tab(void);
+// These are entries for broadcastable symbols that the runtime needs. They do
+// NOT include any per-program symbols. Those can be found in the broadcast
+// table for a given Chapel program, see 'chpl_private_broadcast_table' in the
+// header 'chpl-prginfo-data-macro.h'.
+#define CHPL_RT_RUNTIME_PRIVATE_BROADCAST_TABLE_ENTRIES(MACRO__)  \
+  MACRO__(chpl_verbose_comm)                                      \
+  MACRO__(chpl_comm_diagnostics)                                  \
+  MACRO__(chpl_comm_diags_print_unstable)                         \
+  MACRO__(chpl_verbose_comm_stacktrace)                           \
+  MACRO__(chpl_verbose_gpu)                                       \
+  MACRO__(chpl_gpu_diagnostics)                                   \
+  MACRO__(chpl_gpu_diags_print_unstable)                          \
+  MACRO__(chpl_verbose_gpu_stacktrace)                            \
+  MACRO__(chpl_verbose_mem)
 
-//
-// Broadcast one of our runtime-specific variables.
-//
-#define chpl_comm_bcast_rt_private(var) \
-  chpl_comm_really_bcast_rt_private(chpl_rt_prv_tab_ ## var ## _idx)
+// Helper macros for managing the table of runtime symbols.
+#define CHPL_RT_BCAST_TABLE_FOR_RT_PREFIX \
+  chpl_rt_runtime_private_broadcast_table_for_rt_
+#define CHPL_RT_BCAST_TABLE_FOR_RT_ENTRY(sym__) \
+  CHPL_RT_TABLE_PREFIX ## sym__ ## _idx
+#define CHPL_RT_BCAST_TABLE_FOR_RT_ENUM_ENTRY(sym__) \
+  CHPL_RT_TABLE_PREFIX ## sym__ ## _idx ,
 
-static inline
-void chpl_comm_really_bcast_rt_private(int id) {
-  chpl_comm_broadcast_private(chpl_private_broadcast_table_len + id,
-                              chpl_rt_priv_bcast_lens[id]);
+typedef enum chpl_rt_private_broadcast_table_entries_for_rt {
+  CHPL_RT_RUNTIME_PRIVATE_BROADCAST_TABLE_ENTRIES(
+    CHPL_RT_BCAST_TABLE_FOR_RT_ENUM_ENTRY
+  )
+  chpl_rt_runtime_private_broadcast_table_for_rt_num_entries
+} chpl_rt_private_broadcast_table_entries_for_rt;
+#undef CHPL_RT_BCAST_TABLE_FOR_RT_ENTRY_ENUM
+
+static inline void chpl_rt_comm_broadcast_rt_symbol_hook(int32_t idx) {
+  assert(0 <= idx && idx < chpl_rt_private_broadcast_table_for_rt_len);
+  size_t size = chpl_rt_private_broadcast_table_for_rt_byte_lens[idx];
+  // Passing a 'NULL' program indicates we are asking for a runtime symbol.
+  chpl_rt_comm_private_broadcast(NULL, idx, size);
 }
+
+// Runtime code calls this to broadcast a runtime-specific symbol.
+#define chpl_rt_comm_broadcast_rt_symbol(sym__) do {                \
+  int32_t idx = (int32_t) CHPL_RT_BCAST_TABLE_FOR_RT_ENTRY(sym__);  \
+  chpl_rt_comm_broadcast_rt_symbol_hook(idx);                       \
+} while (0)
+
+// Per comm layer implementation.
+void chpl_rt_comm_private_broadcast_impl(chpl_rt_prginfo* prg, int32_t id,
+                                         size_t size);
+
+// Given a program info pointer OR a program ID, fetch a broadcast table.
+// If 'prg' is not 'NULL', it will be used, otherwise 'prg_id' will be used
+// to translate to a 'chpl_rt_prginfo*' on the current locale. If both
+// 'prg' and 'prg_id' are empty then the runtime table will be used instead.
+void* chpl_rt_comm_fetch_broadcast_table(chpl_rt_prginfo* prg,
+                                         chpl_rt_prg_id prg_id,
+                                         size_t* out_table_len);
 
 #ifdef __cplusplus
 }

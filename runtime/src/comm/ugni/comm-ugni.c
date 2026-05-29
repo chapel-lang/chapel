@@ -1939,7 +1939,7 @@ void chpl_comm_pre_mem_init(void) { }
 
 void chpl_comm_post_mem_init(void)
 {
-  chpl_comm_init_prv_bcast_tab();
+  chpl_rt_comm_init_unified_private_broadcast_table();
 }
 
 
@@ -3936,11 +3936,11 @@ wide_ptr_t* chpl_rt_comm_broadcast_global_vars_impl(chpl_rt_prginfo* prg) {
 }
 
 
-void chpl_comm_broadcast_private(int id, size_t size)
-{
+void chpl_rt_comm_private_broadcast_impl(chpl_rt_prginfo* prg, int32_t id,
+                                         size_t size) {
   int i;
 
-  DBG_P_LP(DBGF_IFACE, "IFACE chpl_comm_broadcast_private(%d, %zd)", id, size);
+  DBG_P_LP(DBGF_IFACE, "IFACE chpl_comm_private_broadcast(%d, %zd)", id, size);
 
   //
   // TODO: Currently this does a PUT and wait for remote completion to
@@ -3950,8 +3950,8 @@ void chpl_comm_broadcast_private(int id, size_t size)
   //
   for (i = 0; i < chpl_numNodes; i++) {
     if (i != chpl_nodeID) {
-      do_remote_put(chpl_rt_priv_bcast_tab[id], i,
-                    chpl_rt_priv_bcast_tab[id], size,
+      do_remote_put(chpl_rt_unified_private_broadcast_table[id], i,
+                    chpl_rt_unified_private_broadcast_table[id], size,
                     NULL, may_proxy_true);
     }
   }
