@@ -714,7 +714,7 @@ void printAdditionalHelpEntry(const argDescTuple_t* argTuple,
 extern const char launcher_real_suffix[];
 extern const char launcher_exe_suffix[];    // May be the empty string.
 extern const int launcher_is_mli;
-extern const char launcher_mli_real_name[];
+extern const char* launcher_mli_real_name;
 
 static char* chpl_real_binary_name;
 
