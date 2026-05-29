@@ -534,7 +534,6 @@ static void AM_priv_bcast(gasnet_token_t token, void* buf, size_t nbytes) {
 
   // Make sure the index is in bounds.
   assert(0 <= hdr.id && hdr.id < table_len);
-  (void) table_len;
 
   void* dst = table[hdr.id];
   void* src = pbp->data;
@@ -559,7 +558,6 @@ static void AM_priv_bcast_large(gasnet_token_t token, void* buf,
 
   // Make sure the index is in bounds.
   assert(0 <= hdr.id && hdr.id < table_len);
-  (void) table_len;
 
   // Compute the starting byte offset.
   char* start = ((char*) table[hdr.id] + pblp->offset);
