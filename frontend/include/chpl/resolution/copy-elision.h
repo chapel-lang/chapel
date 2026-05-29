@@ -24,7 +24,6 @@
 #include "chpl/resolution/resolution-types.h"
 
 #include <set>
-#include <unordered_map>
 
 namespace chpl {
 namespace resolution {
