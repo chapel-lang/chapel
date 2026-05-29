@@ -234,44 +234,6 @@ int VarScopeVisitor::indexWithinContainingTuple(const AstNode* ast) const {
   return indexWithinParent;
 }
 
-// Adjusts LHS tuple type so that its components are all values.
-// Does no sanity checks.
-static QualifiedType getLhsForTupleUnpackAssign(Context* context,
-                                                const uast::AstNode* astForErr,
-                                                const Tuple* lhsTuple,
-                                                const QualifiedType& lhsType) {
-  std::vector<QualifiedType> eltTypes;
-
-  auto lhsT = lhsType.type() ? lhsType.type()->toTupleType() : nullptr;
-  if (!lhsT || lhsT->numElements() != lhsTuple->numActuals()) return lhsType;
-
-  for (int i = 0; i < lhsTuple->numActuals(); i++) {
-    auto actual = lhsTuple->actual(i);
-    auto ident = actual->toIdentifier();
-    QualifiedType qt;
-
-    if (ident && ident->name() == USTR("_")) {
-      // If the LHS actual is '_', then use the Nothing type. This is fine
-      // since the '_' will never be set.
-      qt = {QualifiedType::VAR, NothingType::get(context)};
-
-    } else {
-      // Otherwise, turn its qualifier into 'var' / 'const var'
-      auto eqt = lhsT->elementType(i);
-      auto useKind = KindProperties::removeRef(eqt.kind());
-      qt = {useKind, eqt.type(), eqt.param()};
-    }
-
-    eltTypes.push_back(std::move(qt));
-  }
-
-  // Set the 'LHS' tuple type.
-  auto k = QualifiedType::VAR;
-  auto t = TupleType::getQualifiedTuple(context, std::move(eltTypes));
-  QualifiedType ret = {k, t};
-  return ret;
-}
-
 const QualifiedType& VarScopeVisitor::returnOrYieldType() {
   return fnReturnType;
 }
@@ -564,6 +526,11 @@ bool VarScopeVisitor::enter(const OpCall* ast, RV& rv) {
   }
 }
 
+static bool isUnderscoreIdent(const AstNode* ast) {
+  auto ident = ast->toIdentifier();
+  return ident && ident->name() == USTR("_");
+}
+
 void VarScopeVisitor::exit(const OpCall* ast, RV& rv) {
   exitAst(ast);
 }
@@ -573,12 +540,16 @@ bool VarScopeVisitor::enter(const Tuple* ast, RV& rv) {
 
   if (!inTupleAssignment) return true;
 
-  // TODO: Our tests expect these adjustments to the variable's kind, but should
-  // it be done here or in the resolver?
-  auto lhsTupleType = rv.byAst(ast).type();
-  auto adjustedLhsType =
-      getLhsForTupleUnpackAssign(context, inTupleAssignment, ast, lhsTupleType);
-  rv.byPostorder().byAst(ast).setType(adjustedLhsType);
+  // TODO: Our tests expect these adjustments to the variable's kind (and for _
+  // to be made NothingType), but should it be done here or in the resolver?
+  std::vector<const Type*> eltTypes;
+  for (const auto& actual : ast->actuals()) {
+    eltTypes.push_back(isUnderscoreIdent(actual)
+                           ? NothingType::get(context)
+                           : rv.byAst(actual).type().type());
+  }
+  rv.byPostorder().byAst(ast).setType(QualifiedType(
+      QualifiedType::VAR, TupleType::getValueTuple(context, eltTypes)));
 
   // Gather info for this assignment (at whatever level of nesting)
   // Determine RHS (init expr) and type for this assign, either directly if
@@ -619,8 +590,7 @@ bool VarScopeVisitor::enter(const Tuple* ast, RV& rv) {
     elt->traverse(rv);
 
     if (elt->isTuple()) continue;
-    auto ident = elt->toIdentifier();
-    if (ident && ident->name() == USTR("_")) continue;
+    if (isUnderscoreIdent(elt)) continue;
 
     const AstNode* rhsAst = inTupleAssignment->rhs();
     QualifiedType rhsType = QualifiedType();
