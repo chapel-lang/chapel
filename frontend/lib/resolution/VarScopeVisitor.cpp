@@ -343,15 +343,21 @@ bool VarScopeVisitor::enter(const TupleDecl* ast, RV& rv) {
     }
   }
 
-  const Tuple* initPart = nullptr;
-  if (auto initExpr = ast->initExpression()) {
-    initPart = initExpr->toTuple();
+  const AstNode* initPart = nullptr;
+  if ((initPart = ast->initExpression())) {
   } else if (outermostContainingTuple()) {
     if (auto parentInit = nestedTupleInfoStack.back().second) {
-      initPart = parentInit->actual(indexWithinContainingTuple(ast))->toTuple();
+      initPart = parentInit;
+      if (auto parentInitTup = parentInit->toTuple()) {
+        initPart = parentInitTup->actual(indexWithinContainingTuple(ast));
+      }
     }
   }
-  if (initPart) CHPL_ASSERT(ast->numDecls() == initPart->numActuals());
+  if (initPart) {
+    if (auto initPartTupExpr = initPart->toTuple()) {
+      CHPL_ASSERT(ast->numDecls() == initPartTupExpr->numActuals());
+    }
+  }
   nestedTupleInfoStack.emplace_back(initType, initPart);
 
 
@@ -463,11 +469,15 @@ void VarScopeVisitor::exit(const NamedDecl* ast, RV& rv) {
           // Skip _ ident in tuple
           skipHandling = true;
         } else {
+          if (vld->name() == "foo") debuggerBreakHere();
           parent = parsing::parentAst(context, outerTupleDecl);
           initExpr = outerTupleDecl->initExpression();
-          auto parentInitExpr = nestedTupleInfoStack.back().second;
-          if (parentInitExpr) {
-            initExpr = parentInitExpr->actual(indexWithinContainingTuple(ast));
+          if (auto parentInitExpr = nestedTupleInfoStack.back().second) {
+            initExpr = parentInitExpr;
+            if (auto parentInitTupExpr = parentInitExpr->toTuple()) {
+              initExpr =
+                  parentInitTupExpr->actual(indexWithinContainingTuple(ast));
+            }
           }
           auto parentInitType = nestedTupleInfoStack.back().first;
           if (!parentInitType.isUnknown()) {
@@ -555,13 +565,13 @@ bool VarScopeVisitor::enter(const Tuple* ast, RV& rv) {
   // Determine RHS (init expr) and type for this assign, either directly if
   // in a top-level assign, or from parent tuple if nested.
   QualifiedType initType = QualifiedType();
-  const Tuple* initPart = nullptr;
+  const AstNode* initPart = nullptr;
   auto parentAst = parsing::parentAst(context, ast);
   if (parentAst == inTupleAssignment) {
     CHPL_ASSERT(ast == inTupleAssignment->lhs());
     auto rhsAst = inTupleAssignment->rhs();
     initType = rv.byAst(rhsAst).type();
-    initPart = rhsAst->toTuple();
+    initPart = rhsAst;
   } else {
     CHPL_ASSERT(outermostContainingTuple());
     CHPL_ASSERT(parentAst->isTuple());
@@ -571,11 +581,16 @@ bool VarScopeVisitor::enter(const Tuple* ast, RV& rv) {
       initType = parentTupleType->elementType(indexWithinContainingTuple(ast));
     }
     if (auto parentInit = nestedTupleInfoStack.back().second) {
-      initPart = parentInit->actual(indexWithinContainingTuple(ast))->toTuple();
+      initPart = parentInit;
+      if (auto parentInitTupExpr = parentInit->toTuple()) {
+        initPart = parentInitTupExpr->actual(indexWithinContainingTuple(ast));
+      }
     }
   }
   if (initPart) {
-    CHPL_ASSERT(ast->numActuals() == initPart->numActuals());
+    if (auto initPartTupExpr = initPart->toTuple()) {
+      CHPL_ASSERT(ast->numActuals() == initPartTupExpr->numActuals());
+    }
   }
   nestedTupleInfoStack.emplace_back(initType, initPart);
 
@@ -594,7 +609,9 @@ bool VarScopeVisitor::enter(const Tuple* ast, RV& rv) {
     QualifiedType rhsType = QualifiedType();
 
     if (initPart) {
-      rhsAst = initPart->actual(i);
+      if (auto initPartTupExpr = initPart->toTuple()) {
+        rhsAst = initPartTupExpr->actual(i);
+      }
     }
     if (auto initTy = initType.type()) {
       auto tupType = initTy->toTupleType();
