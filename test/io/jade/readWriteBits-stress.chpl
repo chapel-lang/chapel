@@ -5,10 +5,10 @@ use Random;
 
 config const n = 10_000_000;
 config const repeat = 20;
-config const filename = "out.bin";
+config const filename = "test.bin";
 
 for 1..repeat {
-  var f = open("out.bin", ioMode.cwr);
+  var f = open(filename, ioMode.cwr);
   var writes: [1..n] (uint(64), int(64));
   {
     var w = f.writer(serializer=new binarySerializer(), locking=false);
