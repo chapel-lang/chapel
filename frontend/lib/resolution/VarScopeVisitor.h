@@ -68,7 +68,7 @@ class VarScopeVisitor : public BranchSensitiveVisitor<VarFrame, MutatingResolved
   // Matches the number and order of tuples/tuple decls in the AST stack.
   llvm::SmallVector<std::pair<types::QualifiedType, const Tuple*>>
       nestedTupleInfoStack;
-  // Tuple assignment we are currently within, if any.
+  // Tuple assignment we are currently within the LHS of, if any.
   const uast::OpCall* inTupleAssignment = nullptr;
 
   // ----- methods to be implemented by specific analysis subclass
