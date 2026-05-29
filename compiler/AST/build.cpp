@@ -1745,7 +1745,7 @@ setupFunctionDecl(FnSymbol*   fn,
 
   if (optWhere)
   {
-    fn->where = new BlockStmt(optWhere);
+    fn->where = new BlockStmt(new CallExpr("chpl_validateWhere", optWhere));;
   }
 
   if (optLifetimeConstraints)
@@ -2320,9 +2320,9 @@ buildCobeginStmt(CallExpr* byref_vars, BlockStmt* block) {
   VarSymbol* numTasks = new_IntSymbol(block->length());
 
   for_alist(stmt, block->body) {
+    SET_LINENO(stmt);
     BlockStmt* beginBlk = new BlockStmt();
     beginBlk->blockInfoSet(new CallExpr(PRIM_BLOCK_COBEGIN));
-    beginBlk->astloc = stmt->astloc;
     // the original byref_vars is dead - will be clean_gvec-ed
     addByrefVars(beginBlk, copyByrefVars(byref_vars));
     stmt->insertBefore(beginBlk);
@@ -2386,6 +2386,8 @@ BlockStmt* convertTypesToExtern(BlockStmt* blk, const char* cname) {
 
           ts->deprecationMsg = theVs->deprecationMsg;
           ts->unstableMsg = theVs->unstableMsg;
+          ts->firstEdition = theVs->firstEdition;
+          ts->lastEdition = theVs->lastEdition;
         }
 
         DefExpr* newde = new DefExpr(ts);

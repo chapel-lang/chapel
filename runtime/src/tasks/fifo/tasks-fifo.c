@@ -37,6 +37,7 @@
 #include "chpltypes.h"
 #include "chpl-linefile-support.h"
 #include "chpl-error.h"
+#include "chpl-prginfo.h"
 #include <stdio.h>
 #include <string.h>
 #include <signal.h>
@@ -500,6 +501,8 @@ void chpl_task_addTask(chpl_fn_int_t fid,
   // begin critical section
   chpl_thread_mutexLock(&threading_lock);
 
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER, chpl_ftable);
+
   (void) add_to_task_pool(fid, chpl_ftable[fid], arg, arg_size,
                           false, lineno, filename);
 
@@ -512,6 +515,7 @@ void chpl_task_taskCallFTable(chpl_fn_int_t fid,
                         void* arg, size_t arg_size,
                         c_sublocid_t subloc,
                         int lineno, int32_t filename) {
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER, chpl_ftable);
   taskCallBody(fid, chpl_ftable[fid], arg, arg_size, subloc, lineno, filename);
 }
 

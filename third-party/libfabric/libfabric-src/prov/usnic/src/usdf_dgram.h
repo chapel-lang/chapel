@@ -41,10 +41,9 @@
 
 #define USDF_DGRAM_CAPS (FI_MSG | FI_SOURCE | FI_SEND | FI_RECV)
 
-#define USDF_DGRAM_SUPP_MODE (FI_LOCAL_MR | FI_MSG_PREFIX)
+#define USDF_DGRAM_SUPP_MODE (OFI_LOCAL_MR | FI_MSG_PREFIX)
 
-#define USDF_DGRAM_MSG_ORDER (FI_ORDER_NONE)
-#define USDF_DGRAM_COMP_ORDER (FI_ORDER_NONE)
+#define USDF_DGRAM_MSG_ORDER (0)
 #define USDF_DGRAM_INJECT_SIZE                                                 \
 	(USD_SEND_MAX_COPY - sizeof(struct usd_udp_hdr))
 #define USDF_DGRAM_SUPP_SENDMSG_FLAGS                                          \

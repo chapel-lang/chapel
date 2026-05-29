@@ -50,28 +50,12 @@
 #include <ofi_rbuf.h>
 
 #define OFI_DECL_RECVWIN_BUF(entrytype, name, id_type)			\
-OFI_DECLARE_CIRQUE(entrytype, recvwin_cirq);				\
+OFI_DECLARE_CIRQUE_STRUCT(entrytype, recvwin_cirq);			\
 struct name {								\
 	id_type exp_msg_id;						\
 	id_type win_size;						\
 	struct recvwin_cirq *pending;					\
 };									\
-									\
-static inline struct name *						\
-ofi_recvwin_buf_alloc(struct name *recvq, unsigned int size)		\
-{									\
-	assert(size == roundup_power_of_two(size));			\
-	recvq->exp_msg_id = 0;						\
-	recvq->win_size	= size;						\
-	recvq->pending	= recvwin_cirq_create(recvq->win_size);		\
-	return recvq;							\
-}									\
-									\
-static inline void							\
-ofi_recvwin_free(struct name *recvq)					\
-{									\
-	recvwin_cirq_free(recvq->pending);				\
-}									\
 									\
 static inline int							\
 ofi_recvwin_id_valid(struct name *recvq, id_type id)			\

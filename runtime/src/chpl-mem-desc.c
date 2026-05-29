@@ -27,6 +27,7 @@
 #include "chpl-mem-desc.h"
 #include "chpltypes.h"
 #include "chpl-error.h"
+#include "chpl-prginfo.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -54,8 +55,8 @@ static struct md_desc_type rt_md[] = {
 
 
 const char* chpl_mem_descString(chpl_mem_descInt_t mdi) {
-  if (mdi < CHPL_RT_MD_NUM)
-    return rt_md[mdi].string;
+  if (mdi < CHPL_RT_MD_NUM) return rt_md[mdi].string;
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER, chpl_mem_descs);
   return chpl_mem_descs[mdi-CHPL_RT_MD_NUM];
 }
 

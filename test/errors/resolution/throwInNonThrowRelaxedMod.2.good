@@ -1,0 +1,12 @@
+─── error in throwInNonThrowRelaxedMod.chpl:5 [CallToThrowingFunctionRelaxed] ───
+  Call to throwing function 'canThrow' without throws, try, or try! (relaxed mode)
+      |
+    5 |   canThrow();
+      |   ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      |
+  The call must either be enclosed in a 'try' or 'try!' block, or the enclosing function must be declared with 'throws'.
+  The function was declared to throw here:
+      |
+    2 |   proc canThrow() throws {
+      |
+

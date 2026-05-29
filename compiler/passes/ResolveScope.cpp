@@ -241,6 +241,7 @@ void ResolveScope::addBuiltIns() {
   extend(dtAnyImag->symbol);
   extend(dtAnyReal->symbol);
   extend(dtAnyPOD->symbol);
+  extend(dtAnyProc->symbol);
 
   extend(dtIntegral->symbol);
   extend(dtNumeric->symbol);

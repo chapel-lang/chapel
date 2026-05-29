@@ -1,0 +1,15 @@
+─── error in throwUnhandledTry.chpl:7 [ThrowUnhandled] ───
+  Call to throwing function 'canThrow' is in a 'try' but not handled
+      |
+    7 |     try canThrow();
+      |         ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      |
+
+─── error in throwUnhandledTry.chpl:7 [TryNoCatchAll] ───
+  Try without a catchall in a non-throwing function
+      |
+    7 |     try canThrow();
+      |     ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      |
+  This allows for unhandled exceptions to propagate out of the function, which is not allowed in a non-throwing function. Either add a catchall to handle those errors or make the function throwing.
+

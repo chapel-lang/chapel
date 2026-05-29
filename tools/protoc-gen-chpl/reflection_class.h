@@ -28,8 +28,6 @@
 
 namespace chapel {
 
-  using namespace std;
-
   using namespace google::protobuf;
   using namespace google::protobuf::io;
 
@@ -43,7 +41,7 @@ namespace chapel {
    private:
     const FileDescriptor* file_;
 
-    string module_name;
+    std::string module_name;
 
     void WriteIntroduction(Printer* printer);
     bool HasNestedGeneratedTypes(const Descriptor* descriptor);

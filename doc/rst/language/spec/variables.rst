@@ -669,7 +669,16 @@ Parameter expressions are restricted to the following constructs:
    then- and else-expressions are parameters.
 
 -  Call expressions of parameter functions.
-   See :ref:`Param_Return_Intent`.
+   See :ref:`Param_Return_Intent`.
+
+
+Parameter values and non-parameter values may be mixed in the same expression,
+but the result of the expression will only be a parameter if all of its
+sub-expressions are parameters. The notable exception are the two
+short-cuirting logical operators ``&&`` and ``||``. They will not evaluate
+their second operand if the first operand is sufficient to determine the result
+of the expression. In such cases, the result of the expression will be a
+parameter even if the second operand is not a parameter.
 
 .. index::
    single: constants; runtime

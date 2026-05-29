@@ -18,13 +18,18 @@
  * limitations under the License.
  */
 
+// Needed to access 'dladdr' and 'Dl_info'.
 #ifndef _GNU_SOURCE
-#define _GNU_SOURCE
+  #define _GNU_SOURCE 1
 #endif
-// needed for dlfcn.h on linux
+#ifdef __FreeBSD__
+  #include <link.h>
+#endif
+#include <dlfcn.h>
 
 #include "chplrt.h"
 #include "chpl-linefile-support.h"
+#include "chpl-prginfo.h"
 #include "chplcgfns.h"
 
 #include "chpl-unwind.h"
@@ -57,7 +62,6 @@
 // Necessary for instruct libunwind to use only the local unwind
 #define UNW_LOCAL_ONLY
 #include <libunwind.h>
-#include <dlfcn.h>
 
 #ifdef __linux__
 // We create a pipe with addr2line and try to get a line number
@@ -116,6 +120,9 @@ static int chpl_unwind_refineGetLineNum(void *addr) {
   // then the path
   // then space
   // then the address
+
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                          CHPL_LLVM_BIN_DIR);
 
   int scriptLen = strlen(script);
   int llvmBinDirLen = strlen(CHPL_LLVM_BIN_DIR);
@@ -235,6 +242,9 @@ static int chpl_unwind_refineGetLineNum(void *addr) {
 static unsigned int chpl_unwind_getLineNum(unw_cursor_t* cursor,
                                            unw_word_t wordValue,
                                            int tableIdx) {
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                          chpl_filenumSymTable);
+
   // use the procedure line number
   unsigned int line = chpl_filenumSymTable[tableIdx + 1];
 
@@ -309,6 +319,9 @@ static void chpl_stack_unwind_helper(enum chpl_stack_unwind_mode mode, char sep,
   char** strPtr = (char**)out;
   char sepstr[2] = {sep, '\0'};
 
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                          chpl_sizeSymTable);
+
   if (chpl_sizeSymTable > 0) {
     switch (mode) {
       case CHPL_STACK_UNWIND_MODE_FILE:
@@ -322,6 +335,11 @@ static void chpl_stack_unwind_helper(enum chpl_stack_unwind_mode mode, char sep,
       break;
     }
   }
+
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                          chpl_funSymTable);
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                          chpl_filenumSymTable);
 
   // This loop does the effective stack unwind, see libunwind documentation
   while (unw_step(&cursor) > 0) {
@@ -380,6 +398,9 @@ void chpl_stack_unwind(FILE* out, char sep) {
   if (!should_print) {
     return;
   }
+
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER, CHPL_UNWIND);
+
   chpl_stack_unwind_helper(CHPL_STACK_UNWIND_MODE_FILE, sep, out);
   if (!user_set && strcmp(CHPL_UNWIND, "none") != 0) {
     fprintf(out, "%cDisable full stacktrace by setting 'CHPL_RT_UNWIND=0'%c", sep, sep);

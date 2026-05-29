@@ -150,6 +150,63 @@ async def test_goto_type_def_member_field(client: LanguageClient):
 
 
 @pytest.mark.asyncio
+async def test_goto_type_classes(client: LanguageClient):
+    """
+    Ensure that goto-type-definition works on a class type.
+    """
+
+    template = """
+        class C {{ }}
+
+        var c = new {}();
+        var cb = c.borrow();
+        var cu = cb:unmanaged;
+        """
+    init_exprs = [
+        "C",
+        "C?",
+        "owned C",
+        "owned C?",
+        "shared C",
+        "unmanaged C",
+        "unmanaged C?",
+    ]
+    for init_expr in init_exprs:
+        file = template.format(init_expr)
+        async with source_file(client, file) as doc:
+            await check_goto_type_def(
+                client, doc, pos((2, 4)), pos((0, 6)), "class C"
+            )
+            await check_goto_type_def(
+                client, doc, pos((3, 5)), pos((0, 6)), "class C"
+            )
+            await check_goto_type_def(
+                client, doc, pos((4, 6)), pos((0, 6)), "class C"
+            )
+
+
+@pytest.mark.asyncio
+async def test_goto_type_enum(client: LanguageClient):
+    """
+    Ensure that goto-type-definition works on an enum type.
+    """
+
+    file = """
+           enum E { A, B, C }
+           var e = E.A;
+           var e1 = e;
+           """
+
+    async with source_file(client, file) as doc:
+        await check_goto_type_def(
+            client, doc, pos((1, 4)), pos((0, 5)), "enum E"
+        )
+        await check_goto_type_def(
+            client, doc, pos((2, 5)), pos((0, 5)), "enum E"
+        )
+
+
+@pytest.mark.asyncio
 async def test_string(client: LanguageClient):
     """
     Ensure that goto-type works on a string.

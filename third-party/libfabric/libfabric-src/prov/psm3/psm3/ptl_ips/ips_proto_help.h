@@ -261,16 +261,10 @@ ips_scb_prepare_flow_inner(struct ips_proto *proto, struct ips_epaddr *ipsaddr,
 	scb->abs_timeout = TIMEOUT_INFINITE;
 	scb->scb_flags |= IPS_SEND_FLAG_PENDING;
 
-	if (flow->protocol == PSM_PROTOCOL_TIDFLOW) {
-		flow->xmit_seq_num.psn_seq += scb->nfrag;
-		scb->seq_num = flow->xmit_seq_num;
-		scb->seq_num.psn_seq--;
-	} else {
-		flow->xmit_seq_num.psn_num =
+	flow->xmit_seq_num.psn_num =
 		    (flow->xmit_seq_num.psn_num + scb->nfrag) & proto->psn_mask;
-		scb->seq_num.psn_num =
+	scb->seq_num.psn_num =
 		    (flow->xmit_seq_num.psn_num - 1) & proto->psn_mask;
-	}
 
 	return;
 }
@@ -383,7 +377,7 @@ ips_proto_is_expected_or_nak(struct ips_recvhdrq_event *rcv_ev))
 	psmi_assert(flowid == EP_FLOW_GO_BACK_N_PIO);
 	flow = &ipsaddr->flows[flowid];
 
-	sequence_num.psn_val = __be32_to_cpu(p_hdr->bth[2]);
+	sequence_num.psn_val = __be32_to_cpu(p_hdr->bth[2]) & proto->psn_mask;
 	if_pf(flow->recv_seq_num.psn_num == sequence_num.psn_num) {
 		flow->flags &= ~IPS_FLOW_FLAG_NAK_SEND;
 

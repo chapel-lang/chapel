@@ -72,14 +72,19 @@ chpl_gpu_dev_##chpl_kind##_breduce_##data_type##_##block_size(data_type thread_v
 \
   typedef cub::BlockReduce<data_type, block_size> BlockReduce; \
   __shared__ typename BlockReduce::TempStorage temp_storage; \
-  data_type res = BlockReduce(temp_storage).Reduce(thread_val, cub::impl_kind()); \
+  data_type res = BlockReduce(temp_storage).Reduce(thread_val, impl_kind()); \
   if (threadIdx.x == 0) { \
     interim_res[blockIdx.x] = res; \
   } \
 }
 
-GPU_DEV_REDUCE(DEF_ONE_DEV_REDUCE_RET_VAL, Min, min);
-GPU_DEV_REDUCE(DEF_ONE_DEV_REDUCE_RET_VAL, Max, max);
+#if defined(CHPL_CUDA_VERSION) && CHPL_CUDA_VERSION >= 129
+GPU_DEV_REDUCE(DEF_ONE_DEV_REDUCE_RET_VAL, cuda::minimum, min);
+GPU_DEV_REDUCE(DEF_ONE_DEV_REDUCE_RET_VAL, cuda::maximum, max);
+#else
+GPU_DEV_REDUCE(DEF_ONE_DEV_REDUCE_RET_VAL, cub::Min, min);
+GPU_DEV_REDUCE(DEF_ONE_DEV_REDUCE_RET_VAL, cub::Max, max);
+#endif
 
 #undef DEF_ONE_DEV_REDUCE_RET_VAL
 

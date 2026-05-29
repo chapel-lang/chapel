@@ -35,6 +35,7 @@
 
 #ifdef HAVE_LLVM
 // clang headers
+#include "clang/AST/ASTContext.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/Type.h"
 #include "llvm/ADT/SmallSet.h"
@@ -486,7 +487,8 @@ void convertDeclToChpl(ModuleSymbol* module,
   //struct
   if (clang::RecordDecl *rd =
       llvm::dyn_cast_or_null<clang::RecordDecl>(cType)) {
-    convertToChplType(module, rd->getTypeForDecl());
+    auto& ctx = rd->getASTContext();
+    convertToChplType(module, getClangASTType(ctx, rd));
   }
 
   //enum constant

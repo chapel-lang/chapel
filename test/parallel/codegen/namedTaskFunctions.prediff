@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+output=$2
+
+function getTaskFunctions() {
+  type=$1
+  # get all the task functions, prediff the line numbers for ChapelRange
+  grep -E "void (wrap)?${type}_fn" gen/namedTaskFunctions.c | \
+    sed -E -e 's/([^(]+).*/\1/' \
+           -e 's/_chpl([0-9]+)?/_chpl/' \
+           -e 's/ChapelRange_line_[0-9]+/ChapelRange_line_NN/' | \
+    sort >> $output
+}
+
+getTaskFunctions "coforall"
+getTaskFunctions "on"
+getTaskFunctions "begin"
+getTaskFunctions "cobegin"

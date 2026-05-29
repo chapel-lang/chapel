@@ -59,7 +59,4 @@
 /* Symbol in am ptl */
 extern struct ptl_ctl_init psm3_ptl_amsh;
 
-extern int psm3_shm_mq_rv_thresh;
-extern int psm3_shm_mq_gpu_rv_thresh;
-
 #endif

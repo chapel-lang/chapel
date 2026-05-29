@@ -87,7 +87,19 @@ function release_dependencies() {
   elif [ "$CHPL_WHICH_RELEASE_FOR_ARKOUDA" = "2.7.0" ]; then
     : # no extra setup needed yet
   elif [ "$CHPL_WHICH_RELEASE_FOR_ARKOUDA" = "2.8.0" ]; then
-    : # no extra setup needed yet
+    # use LLVM 21, latest supported by 2.8.0
+    if [ -f /hpcdc/project/chapel/chpl-deps/chapcs11/setup_llvm.bash ] ; then
+      source /hpcdc/project/chapel/chpl-deps/chapcs11/setup_llvm.bash 21
+    else
+      echo "CHPL_WHICH_RELEASE_FOR_ARKOUDA is set to $CHPL_WHICH_RELEASE_FOR_ARKOUDA, but no setup_llvm.bash found."
+      if [ "$fallback_to_bundled_llvm" = "true" ]; then
+        echo "Falling back to a bundled LLVM."
+        export CHPL_LLVM=bundled
+        unset CHPL_LLVM_CONFIG
+      else
+        exit 1
+      fi
+    fi
   else
     echo "CHPL_WHICH_RELEASE_FOR_ARKOUDA is set to $CHPL_WHICH_RELEASE_FOR_ARKOUDA, but is not supported by this script."
     exit 1
@@ -96,7 +108,7 @@ function release_dependencies() {
 
 function setup_release() {
   if [ -n "$CHPL_WHICH_RELEASE_FOR_ARKOUDA" ]; then
-    release_dependencies $@
+    release_dependencies "$@"
   else
     echo "CHPL_WHICH_RELEASE_FOR_ARKOUDA not set, cannot run Arkouda release test!"
     exit 1

@@ -1946,6 +1946,9 @@ void initPrimitiveTypes() {
   dtAnyPOD = createInternalType ("chpl_anyPOD", "POD");
   dtAnyPOD->symbol->addFlag(FLAG_GENERIC);
 
+  dtAnyProc = createInternalType("chpl_anyProc", "_proc");
+  dtAnyProc->symbol->addFlag(FLAG_GENERIC);
+
   // could also be called dtAnyIntegral
   dtIntegral = createInternalType ("integral", "integral");
   dtIntegral->symbol->addFlag(FLAG_GENERIC);
@@ -2331,6 +2334,7 @@ bool isBuiltinGenericType(Type* t) {
          t == dtIteratorRecord || t == dtIteratorClass ||
          t == dtThunkRecord ||
          t == dtAnyPOD ||
+         t == dtAnyProc ||
          t == dtOwned || t == dtShared ||
          t == dtAnyRecord || t == dtTuple ||
          t->symbol->hasFlag(FLAG_SYNC);  // _syncvar

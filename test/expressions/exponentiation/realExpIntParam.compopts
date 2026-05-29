@@ -1,0 +1,3 @@
+                                   # realExpIntParam.good
+--warn-unstable                    # realExpIntParam-unstable.good
+--warn-unstable --edition=preview  # realExpIntParam.good

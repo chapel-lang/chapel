@@ -138,6 +138,7 @@ static int xnet_pep_sock_create(struct xnet_pep *pep)
 
 	switch (pep->info->addr_format) {
 	case FI_SOCKADDR:
+	case FI_SOCKADDR_IP:
 	case FI_SOCKADDR_IN:
 	case FI_SOCKADDR_IN6:
 		af = ((struct sockaddr *)pep->info->src_addr)->sa_family;

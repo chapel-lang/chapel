@@ -716,6 +716,15 @@ void nprint_view(int id) {
     nprint_view(ast);
 }
 
+void nprint_view(astlocT loc) {
+  if (loc.isEmpty()) {
+    printf("<empty location>\n");
+  } else {
+    printf("%s:%d\n", loc.filename(), loc.lineno());
+  }
+  fflush(stdout);
+}
+
 void nprint_view(BaseAST* ast) {
   if (ast == nullptr) {
     printf("<NULL>");

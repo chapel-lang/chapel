@@ -1,3 +1,5 @@
+diff --git a/modules/queens_call_serial_search.chpl b/modules/queens_call_serial_search.chpl
+index e039256..84f7915 100644
 --- a/modules/queens_call_serial_search.chpl
 +++ b/modules/queens_call_serial_search.chpl
 @@ -7,6 +7,7 @@ module queens_call_serial_search{
@@ -6,16 +8,16 @@
  
 +  config const printElapsedTime = false;
  
- 	proc queens_call_serial_search(const size: uint(16), const mode: string = "serial", const prepro: bool = false){
+ 	proc queens_call_serial_search(const size: uint(16), const mode: string = "serial"){
  
 @@ -22,7 +23,9 @@ module queens_call_serial_search{
  		writeln("\nSerial Bitset Queens for size ", size);
  		writeln("\tNumber of solutions: ", metrics[0]);
  		writeln("\tTree size: ", metrics[1]);
 -		writeln("Elapsed time: ", timer.elapsed()*1000, " ms"); // Print elapsed time
-+    if printElapsedTime {
-+		  writeln("Elapsed time: ", timer.elapsed()*1000, " ms"); // Print elapsed time
-+    }
++		if printElapsedTime {
++			writeln("Elapsed time: ", timer.elapsed()*1000, " ms"); // Print elapsed time
++		}
  		writeln("Performance: ", metrics[1]/timer.elapsed(), " n/s\n\n"); // Print elapsed time
  		writeln("(performance in subproblems evaluation per sec.): "); // Print elapsed time
          timer.clear(); // Clear timer for parallel loop

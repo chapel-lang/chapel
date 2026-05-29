@@ -1,5 +1,5 @@
-list      6xx
 dict     2xxx
+list      7xx
 d size 3
 d size after deleting second 2
 d size after swap 3

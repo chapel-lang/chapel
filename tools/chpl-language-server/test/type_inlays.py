@@ -369,23 +369,48 @@ async def test_type_inlays_clickable_def(client: LanguageClient):
 
     file = """
             record R { }
+            class C { }
+            enum E { A, B, C }
 
             var x = new R();
+            var y = new C();
+            var z = new shared C?();
+            var w = y.borrow();
+            var e = E.A;
            """
 
     async with source_file(client, file) as doc:
         inlays = await check_type_inlay_hints(
-            client, doc, rng((0, 0), endpos(file)), [(pos((2, 5)), "R")]
+            client,
+            doc,
+            rng((0, 0), endpos(file)),
+            [
+                (pos((4, 5)), "R"),
+                (pos((5, 5)), "owned C"),
+                (pos((6, 5)), "shared C?"),
+                (pos((7, 5)), "borrowed C"),
+                (pos((8, 5)), "E"),
+            ],
         )
+        R_range = rng((0, 7), (0, 8))
+        C_range = rng((1, 6), (1, 7))
+        E_range = rng((2, 5), (2, 6))
 
-        assert len(inlays) == 1
-        # the second inlay part is the definition and should be clickable
-        assert isinstance(inlays[0].label, list) and len(inlays[0].label) == 2
+        def check_inlay(inlay, expected_range):
+            # the second inlay part is the definition and should be clickable
+            assert isinstance(inlay.label, list) and len(inlay.label) == 2
 
-        loc = inlays[0].label[1].location
-        assert loc is not None
-        assert loc.uri == doc.uri
-        assert loc.range == rng((0, 7), (0, 8))
+            loc = inlay.label[1].location
+            assert loc is not None
+            assert loc.uri == doc.uri
+            assert loc.range == expected_range
+
+        assert len(inlays) == 5
+        check_inlay(inlays[0], R_range)
+        check_inlay(inlays[1], C_range)
+        check_inlay(inlays[2], C_range)
+        check_inlay(inlays[3], C_range)
+        check_inlay(inlays[4], E_range)
 
 
 @pytest.mark.asyncio

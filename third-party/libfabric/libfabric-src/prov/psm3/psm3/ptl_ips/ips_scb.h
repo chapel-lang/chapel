@@ -63,6 +63,7 @@
 /* ips_alloc_scb flags */
 #define IPS_SCB_FLAG_NONE	0x0
 #define IPS_SCB_FLAG_ADD_BUFFER 0x1
+#define IPS_SCB_FLAG_PRIORITY	0x2
 
 /* macros to update scb */
 // TBD - these accessor macros provide limited value, just use the raw fields
@@ -98,13 +99,13 @@ struct ips_scbctrl {
 	uint32_t scb_num_cur;
 	 SLIST_HEAD(scb_free, ips_scb) scb_free;
 	void *scb_base;
+	struct ips_proto *proto;
 	ips_scbctrl_avail_callback_fn_t scb_avail_callback;
 	void *scb_avail_context;
 
 	/* Immediate data for send buffers */
 	uint32_t scb_imm_size;
 	void *scb_imm_buf;
-	psmi_timer *timers;	/* ack/send timers */
 
 	/*
 	 * Send buffers (or bounce buffers) to keep user data if we need to
@@ -141,16 +142,13 @@ struct ips_scb {
 	uint64_t ack_timeout;	/* in cycles  */
 	uint64_t abs_timeout;	/* in cycles  */
 
-	psmi_timer *timer_send;	/* for sending packets */
-	psmi_timer *timer_ack;	/* for acking packets */
-
 	/* Used when composing packet */
 	psmi_seqnum_t seq_num;	// psn of last packet to xmit as part of this scb
 	uint32_t cksum[2]; /* only valid when FLAG_CKSUM */
 	uint32_t scb_flags;
 	/* When nfrag==1, frag_size and *remaining are undefined.
 	 * An scb can describe a large user buffer (nfrag>1) for segmentation
-	 * (UDP GSO and OPA send DMA).
+	 * (UDP GSO and verbs send DMA).
 	 * When such a buffer needs retransmission, the payload and payload_size
 	 * will be advanced to reflect what needs to be retransmitted.
 	 * *_remaining also are reduced to reflect what remains.
@@ -185,29 +183,32 @@ struct ips_scb {
 		psm2_am_completion_fn_t completion_am;
 	};
 	void *cb_param;
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 	psm2_mq_req_t mq_req;		/* back pointer to original request */
-#endif /* PSM_CUDA || PSM_ONEAPI */
+#endif /* PSM_HAVE_GPU */
 	struct {
 		struct ips_message_header ips_lrh;
 	} PSMI_CACHEALIGN;
+
+	bool is_dynamic; /* true if allocated dynamically */
+	void *dyn_buf; /* buffer allocated dynamically */
 };
 
 
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 #define IS_TRANSFER_BUF_GPU_MEM(scb) (ips_scb_flags(scb) & IPS_SEND_FLAG_PAYLOAD_BUF_GPU)
 #endif
 
 void psm3_ips_scbctrl_free(ips_scb_t *scb);
 int psm3_ips_scbctrl_bufalloc(ips_scb_t *scb);
-int psm3_ips_scbctrl_avail(struct ips_scbctrl *scbc);
 ips_scb_t *MOCKABLE(psm3_ips_scbctrl_alloc)(struct ips_scbctrl *scbc,
 				int scbnum, int len, uint32_t flags);
 MOCK_DCL_EPILOGUE(psm3_ips_scbctrl_alloc);
-ips_scb_t *MOCKABLE(psm3_ips_scbctrl_alloc_tiny)(struct ips_scbctrl *scbc);
+ips_scb_t *MOCKABLE(psm3_ips_scbctrl_alloc_tiny)(struct ips_scbctrl *scbc,
+						 uint32_t flags);
 MOCK_DCL_EPILOGUE(psm3_ips_scbctrl_alloc_tiny);
 
-psm2_error_t psm3_ips_scbctrl_init(psm2_ep_t ep,
+psm2_error_t psm3_ips_scbctrl_init(const struct ips_proto *proto,
 			     uint32_t numscb, uint32_t numbufs,
 			     uint32_t imm_size, uint32_t bufsize,
 			     ips_scbctrl_avail_callback_fn_t,

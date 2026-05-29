@@ -702,6 +702,14 @@ bool isAtomicFunctionWithOrderArgument(FnSymbol* fnSymbol, ArgSymbol** order = N
   return false;
 }
 
+static const char* nameForTaskFunction(CallExpr* info, const char* prefix) {
+  auto filename = info->astloc.filename();
+  auto line = info->astloc.stringLineno();
+  auto moduleName = chpl::uast::Builder::filenameToModulename(filename);
+  auto name = astr(prefix, "_", moduleName.c_str(), "_line_", line);
+  return name;
+}
+
 /********************** createTaskFunctions **********************/
 
 //
@@ -766,13 +774,13 @@ void createTaskFunctions(void) {
       FnSymbol* fn = NULL;
 
       if (info->isPrimitive(PRIM_BLOCK_BEGIN)) {
-        fn = new FnSymbol("begin_fn");
+        fn = new FnSymbol(nameForTaskFunction(info, "begin_fn"));
         fn->addFlag(FLAG_BEGIN);
       } else if (info->isPrimitive(PRIM_BLOCK_COBEGIN)) {
-        fn = new FnSymbol("cobegin_fn");
+        fn = new FnSymbol(nameForTaskFunction(info, "cobegin_fn"));
         fn->addFlag(FLAG_COBEGIN_OR_COFORALL);
       } else if (info->isPrimitive(PRIM_BLOCK_COFORALL)) {
-        fn = new FnSymbol("coforall_fn");
+        fn = new FnSymbol(nameForTaskFunction(info, "coforall_fn"));
         fn->addFlag(FLAG_COBEGIN_OR_COFORALL);
       } else if (info->isPrimitive(PRIM_BLOCK_ELIDED_ON)) {
         // ignore it until after resolution. It will be removed in
@@ -781,7 +789,7 @@ void createTaskFunctions(void) {
                  info->isPrimitive(PRIM_BLOCK_BEGIN_ON) ||
                  info->isPrimitive(PRIM_BLOCK_COBEGIN_ON) ||
                  info->isPrimitive(PRIM_BLOCK_COFORALL_ON)) {
-        fn = new FnSymbol("on_fn");
+        fn = new FnSymbol(nameForTaskFunction(info, "on_fn"));
         fn->addFlag(FLAG_ON);
 
         // Remove the param arg that distinguishes a local-on

@@ -120,6 +120,9 @@ static ssize_t ucx_mrecvmsg(struct fid_ep *ep, const struct fi_msg *msg,
 static ssize_t ucx_recvmsg(struct fid_ep *ep, const struct fi_msg *msg,
 			   uint64_t flags)
 {
+	struct ucx_ep *u_ep = container_of(ep, struct ucx_ep, ep.ep_fid);
+
+	flags |= u_ep->ep.rx_msg_flags;
 	if (flags & (FI_REMOTE_CQ_DATA | FI_PEEK | FI_CLAIM))
 		return -FI_EBADFLAGS;
 
@@ -227,11 +230,12 @@ ssize_t ucx_sendmsg(struct fid_ep *ep, const struct fi_msg *msg,
 		.context = msg->context,
 		.data = 0,
 	};
+	struct ucx_ep *u_ep = container_of(ep, struct ucx_ep, ep.ep_fid);
 
 	if(flags & FI_REMOTE_CQ_DATA)
 		return -FI_EBADFLAGS;
 
-	return ucx_do_sendmsg(ep, &tmsg, flags, UCX_MSG);
+	return ucx_do_sendmsg(ep, &tmsg, flags | u_ep->ep.tx_msg_flags, UCX_MSG);
 }
 
 

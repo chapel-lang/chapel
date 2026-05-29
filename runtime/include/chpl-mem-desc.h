@@ -22,6 +22,7 @@
 #define _chpl_mem_desc_H_
 
 #include "chpltypes.h"
+#include "chplcgfns.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -115,18 +116,6 @@ typedef enum {
 } chpl_mem_rtMemDesc_t;
 
 #undef CHPL_MEMDESC_MACRO
-
-
-//
-// The compiler generates a separate array of descriptions for the
-// allocation types it defines.  Indices into that compiler-generated
-// array conceptually start after the CHPL_RT_MD_NUM enum value in
-// chpl-mem.h).  This is that compiler-generated array, and how many
-// entries it has (also defined in the generated code).
-//
-extern const char* chpl_mem_descs[];
-extern const int chpl_mem_numDescs;
-
 
 typedef int16_t chpl_mem_descInt_t;
 

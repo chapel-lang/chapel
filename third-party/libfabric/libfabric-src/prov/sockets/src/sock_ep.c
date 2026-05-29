@@ -1268,12 +1268,6 @@ static int sock_verify_rx_attr(const struct fi_rx_attr *attr)
 	if ((attr->msg_order | SOCK_EP_MSG_ORDER) != SOCK_EP_MSG_ORDER)
 		return -FI_ENODATA;
 
-	if ((attr->comp_order | SOCK_EP_COMP_ORDER) != SOCK_EP_COMP_ORDER)
-		return -FI_ENODATA;
-
-	if (attr->total_buffered_recv > SOCK_EP_MAX_BUFF_RECV)
-		return -FI_ENODATA;
-
 	if (sock_get_tx_size(attr->size) > sock_get_tx_size(SOCK_EP_TX_SZ))
 		return -FI_ENODATA;
 
@@ -1435,7 +1429,7 @@ static void sock_set_domain_attr(uint32_t api_version, void *src_addr,
 		*attr = sock_domain_attr;
 
 		if (FI_VERSION_LT(api_version, FI_VERSION(1, 5)))
-			attr->mr_mode = FI_MR_SCALABLE;
+			attr->mr_mode = OFI_MR_SCALABLE;
 		goto out;
 	}
 
@@ -1455,11 +1449,11 @@ static void sock_set_domain_attr(uint32_t api_version, void *src_addr,
 	if (attr->data_progress == FI_PROGRESS_UNSPEC)
 		attr->data_progress = sock_domain_attr.data_progress;
 	if (FI_VERSION_LT(api_version, FI_VERSION(1, 5))) {
-		if (attr->mr_mode == FI_MR_UNSPEC)
-			attr->mr_mode = FI_MR_SCALABLE;
+		if (attr->mr_mode == OFI_MR_UNSPEC)
+			attr->mr_mode = OFI_MR_SCALABLE;
 	} else {
-		if ((attr->mr_mode != FI_MR_BASIC) &&
-		    (attr->mr_mode != FI_MR_SCALABLE))
+		if ((attr->mr_mode != OFI_MR_BASIC) &&
+		    (attr->mr_mode != OFI_MR_SCALABLE))
 			attr->mr_mode = 0;
 	}
 

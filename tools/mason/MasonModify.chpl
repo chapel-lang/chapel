@@ -18,6 +18,9 @@
  * limitations under the License.
  */
 
+/**/
+module MasonModify {
+
 use ArgumentParser;
 use FileSystem;
 use Map;
@@ -31,7 +34,6 @@ proc masonModify(args: [] string) throws {
 
   var parser = new argumentParser(helpHandler=new MasonModifyHelpHandler());
 
-  var extFlag = parser.addFlag("external", defaultValue=false);
   var sysFlag = parser.addFlag("system", defaultValue=false);
   var skipCheckFlag = parser.addFlag("skip-check", defaultValue=false);
   var depArg = parser.addArgument("dep", numArgs=0..1);
@@ -45,25 +47,21 @@ proc masonModify(args: [] string) throws {
   }
   var add = false;
   if args[0] == "add" then add = true;
-  // TODO: remove this once argument parser supports mutual exclusivity
-  if extFlag.valueAsBool() && sysFlag.valueAsBool() {
-    throw new owned MasonError("Use only '--external' or '--system'");
-  }
 
   // Modify the manifest file based on arguments
   const cwd = here.cwd();
   const projectHome = getProjectHome(cwd, "Mason.toml");
 
-  const result = modifyToml(add, depArg.value(), extFlag.valueAsBool(),
+  const result = modifyToml(add, depArg.value(),
                             sysFlag.valueAsBool(), skipCheckFlag.valueAsBool(),
                             projectHome);
   generateToml(result[0]!, result[1]);
 }
 
-proc modifyToml(add: bool, spec: string, external: bool, system: bool,
+proc modifyToml(add: bool, spec: string, system: bool,
                 skipCheck: bool, projectHome: string, tf="Mason.toml") throws {
 
-  const tomlPath = '/'.join(projectHome, tf);
+  const tomlPath = "/".join(projectHome, tf);
   const openFile = openReader(tomlPath, locking=false);
   const toml = parseToml(openFile);
   var newToml: shared Toml?;
@@ -78,10 +76,10 @@ proc modifyToml(add: bool, spec: string, external: bool, system: bool,
         throw new MasonError("Dependency formatted incorrectly.\n"+
                             "Format: package@version");
       }
-      (dependency, _, version) = spec.partition('@');
+      (dependency, _, version) = spec.partition("@");
     } else {
-      if spec.find('@') != -1 {
-        (dependency, _, version) = spec.partition('@');
+      if spec.find("@") != -1 {
+        (dependency, _, version) = spec.partition("@");
       } else {
         dependency = spec;
         version = "*";
@@ -89,7 +87,7 @@ proc modifyToml(add: bool, spec: string, external: bool, system: bool,
     }
 
     // Name and version checks are only valid for mason packages
-    if !external && !system {
+    if !system {
       checkDepName(dependency);
       checkVersion(version);
     }
@@ -98,9 +96,6 @@ proc modifyToml(add: bool, spec: string, external: bool, system: bool,
       writeln("Adding system dependency", dependency,
               "version", version, sep=" ");
       newToml = masonSystemAdd(toml, dependency, version);
-    } else if external {
-      writeln("Adding external dependency with spec", spec, sep=" ");
-      newToml = masonExternalAdd(toml, dependency, spec);
     } else {
 
       if !skipCheck {
@@ -123,22 +118,20 @@ proc modifyToml(add: bool, spec: string, external: bool, system: bool,
   } else {
     // Removing a dependency
     var depName: string;
-    if spec.find('@') != -1 {
-      const split = spec.split('@');
+    if spec.find("@") != -1 {
+      const split = spec.split("@");
       depName = split[0];
     } else depName = spec;
     const dependency = depName;
     checkDepName(depName);
 
-    if !system && !external {
+    if !system {
       writeln("Removing Mason dependency " + dependency);
       newToml = masonRemove(toml, dependency);
-    } else if system {
+    } else {
+      assert(system);
       writeln("Removing system dependency " + dependency);
       newToml = masonSystemRemove(toml, dependency);
-    } else if external {
-      writeln("Removing external dependency " + dependency);
-      newToml = masonExternalRemove(toml, dependency);
     }
   }
   return (newToml, tomlPath);
@@ -206,39 +199,9 @@ private proc masonSystemRemove(toml: shared Toml, toRm: string) throws {
   return toml;
 }
 
-/* Add an external dependency to Mason.toml */
-private proc masonExternalAdd(toml: shared Toml,
-                              toAdd: string, spec: string) throws {
-  if toml.pathExists("external") {
-    if toml.pathExists("external." + toAdd) {
-      throw new MasonError("An external dependency by the name '" + toAdd +
-                           "' already exists in Mason.toml");
-    } else {
-      toml["external"]!.set(toAdd, spec);
-    }
-  } else {
-    var exdom: domain(string, parSafe=false);
-    var exdeps: [exdom] shared Toml?;
-    toml.set("external", exdeps);
-    toml["external"]!.set(toAdd, spec);
-  }
-  return toml;
-}
-
-/* Remove an external dependency from Mason.toml */
-private proc masonExternalRemove(toml: shared Toml, toRm: string) throws {
-  if toml.pathExists("external." + toRm) {
-    var old = toml["external"]![toRm]!;
-    toml["external"]!.A.remove(toRm);
-  } else {
-    throw new MasonError("No external dependency exists by the name '" +
-                          toRm + "'");
-  }
-  return toml;
-}
 
 /* Generate the modified Mason.toml */
-proc generateToml(toml: borrowed Toml, tomlPath: string) {
+proc generateToml(toml: borrowed Toml, tomlPath: string) throws {
   const tomlFile = open(tomlPath, ioMode.cw);
   const tomlWriter = tomlFile.writer(locking=false);
   tomlWriter.writeln(toml);
@@ -261,4 +224,6 @@ private proc checkDepName(dep: string) throws {
     throw new MasonError("Bad package name '" + dep +
                          "' - only Chapel identifiers are legal package names");
   }
+}
+
 }

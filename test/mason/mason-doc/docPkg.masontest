@@ -14,6 +14,10 @@ checkforfiles() {
     echo "Error: expected to find $dir/Included.rst.txt but it does not exist"
     exit 1
   fi
+  if [ ! -f "$dir/Pkg/Included/Sub.rst.txt" ]; then
+    echo "Error: expected to find $dir/Included/Sub.rst.txt but it does not exist"
+    exit 1
+  fi
   if [ -f "$dir/FileSystem.rst.txt" ]; then
     echo "Error: expected not to find $dir/FileSystem.rst.txt but it exists"
     exit 1

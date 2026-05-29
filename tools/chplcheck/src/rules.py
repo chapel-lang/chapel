@@ -1437,25 +1437,79 @@ def rules(driver: LintDriver):
             fixit = Fixit.build(Edit.build(iterand.location(), s))
             yield AdvancedRuleResult(iterand, anchor=loop, fixits=[fixit])
 
-    @driver.advanced_rule
+    @driver.advanced_rule(settings=[".UnindentedModule"])
     def IncorrectIndentation(
-        context: Context, root: AstNode, ChplcheckSilencedRules: List[str]
+        context: Context,
+        root: AstNode,
+        ChplcheckSilencedRules: List[str],
+        UnindentedModule=None,
     ):
         """
         Warn for inconsistent or missing indentation
         """
-        collector = build_and_run_indentation_collector(root)
 
+        if UnindentedModule not in (None, "true", "false"):
+            raise ValueError(
+                "Invalid value for UnindentedModule: '{}'".format(
+                    UnindentedModule
+                )
+            )
+        UnindentedModule = UnindentedModule == "true"  # default to False
+
+        collector = build_and_run_indentation_collector(
+            root, UnindentedModule=UnindentedModule
+        )
         no_misleading_indentation = (
             "MisleadingIndentation" in ChplcheckSilencedRules
         )
 
-        for node, anchor in collector.incorrectly_indented_nodes.items():
+        for node, (
+            indent_to_change,
+            anchor,
+        ) in collector.incorrectly_indented_nodes.items():
             if (
                 no_misleading_indentation
                 or node not in collector.misleadingly_indented_groups
             ):
-                yield AdvancedRuleResult(node, anchor)
+                yield AdvancedRuleResult(node, anchor, data=(indent_to_change,))
+
+    @driver.fixit(IncorrectIndentation)
+    def FixIncorrectIndentation(context: Context, result: AdvancedRuleResult):
+        """
+        Fix the indentation to be consistent with the rest of the file.
+        """
+        assert isinstance(result.data, tuple) and len(result.data) == 1
+        indent_to_change = result.data[0]
+        if indent_to_change is None or indent_to_change == 0:
+            return None
+        node = result.node
+        lines = chapel.get_file_lines(context, node)
+
+        # get the current node's text, and either indent or dedent it based on whether we need to add or remove indentation
+        node_text = range_to_text(node.location(), lines)
+        if indent_to_change > 0:
+            new_loc = node.location()
+            new_text = "\n".join(
+                [
+                    (" " * indent_to_change + line) if line.strip() else line
+                    for line in node_text.splitlines()
+                ]
+            )
+        else:
+            new_loc = node.location().modify_start((0, indent_to_change))
+            new_text = "\n".join(
+                [
+                    (
+                        line[-indent_to_change:]
+                        if line.startswith(" " * -indent_to_change)
+                        else line
+                    )
+                    for line in node_text.splitlines()
+                ]
+            )
+        fixit = Fixit.build(Edit.build(new_loc, new_text))
+
+        return [fixit]
 
     @driver.advanced_rule
     def MissingInIntent(_, root: chapel.AstNode):

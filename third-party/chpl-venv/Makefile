@@ -73,6 +73,9 @@ create-virtualenv: $(CHPL_VENV_VIRTUALENV_DIR_OK)
 
 $(CHPL_VENV_CHPLDEPS_MAIN): $(CHPL_VENV_VIRTUALENV_DIR_OK) $(CHPL_VENV_TEST_REQUIREMENTS_FILE) $(CHPL_VENV_CHPLDOC_REQUIREMENTS_FILE1) $(CHPL_VENV_CHPLDOC_REQUIREMENTS_FILE2) $(CHPL_VENV_CHPLDOC_REQUIREMENTS_FILE3) $(CHPL_VENV_C2CHAPEL_REQUIREMENTS_FILE) chpldeps-main.py
 	@# Install dependencies to $(CHPL_VENV_CHPLDEPS)
+	@# Blow away the directory first to clear out old deps (apparently
+	@# --update w/ --target doesn't do this and versions accumulate)
+	rm -rf $(CHPL_VENV_CHPLDEPS)
 	@# Rely on pip to create the directory
 	export PATH="$(CHPL_VENV_VIRTUALENV_BIN):$$PATH" && \
 	export VIRTUAL_ENV=$(CHPL_VENV_VIRTUALENV_DIR) && \

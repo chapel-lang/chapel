@@ -9,6 +9,12 @@ class FieldType {
   proc setup() {
     ref xRef = Reflection.getFieldRef(this, 0);
     xRef = 20;
+    writeln("x: ", this.x);
+
+    ref xRef2 = Reflection.getFieldRef(this, "x");
+    xRef2 = 30;
+
+    writeln("x: ", this.x);
   }
 }
 

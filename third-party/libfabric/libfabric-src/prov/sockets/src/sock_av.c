@@ -123,8 +123,11 @@ static inline void sock_av_report_success(struct sock_av *av, void *context,
 	eq_entry.fid = &av->av_fid.fid;
 	eq_entry.context = context;
 	eq_entry.data = num_done;
-	sock_eq_report_event(av->eq, FI_AV_COMPLETE,
-			     &eq_entry, sizeof(eq_entry), flags);
+	if (sock_eq_report_event(av->eq, FI_AV_COMPLETE,
+	    &eq_entry, sizeof(eq_entry), flags))
+		SOCK_LOG_ERROR("Error in writing to EQ\n");
+
+
 }
 
 static void sock_av_report_error(struct sock_av *av, fi_addr_t *fi_addr,
@@ -306,15 +309,20 @@ static int sock_av_lookup(struct fid_av *av, fi_addr_t fi_addr, void *addr,
 	ofi_mutex_lock(&_av->table_lock);
 	if (index >= _av->table_hdr->size || index < 0) {
 		SOCK_LOG_ERROR("requested address not inserted\n");
-		ofi_mutex_unlock(&_av->table_lock);
-		return -EINVAL;
+		goto inval;
 	}
 
 	av_addr = &_av->table[index];
+	if (!av_addr->valid)
+		goto inval;
+
 	memcpy(addr, &av_addr->addr, MIN(*addrlen, (size_t)_av->addrlen));
 	ofi_mutex_unlock(&_av->table_lock);
 	*addrlen = _av->addrlen;
 	return 0;
+inval:
+	ofi_mutex_unlock(&_av->table_lock);
+	return -FI_EINVAL;
 }
 
 static int _sock_av_insertsvc(struct fid_av *av, const char *node,
@@ -368,9 +376,9 @@ static int sock_av_insertsym(struct fid_av *av, const char *node, size_t nodecnt
 {
 	int ret = 0, success = 0, err_code = 0, len1, len2;
 	int var_port, var_host;
-	char base_host[FI_NAME_MAX] = {0};
-	char tmp_host[FI_NAME_MAX] = {0};
-	char tmp_port[FI_NAME_MAX] = {0};
+	char base_host[OFI_NAME_MAX] = {0};
+	char tmp_host[OFI_NAME_MAX] = {0};
+	char tmp_port[OFI_NAME_MAX] = {0};
 	int hostlen, offset = 0, fmt;
 	size_t i, j;
 
@@ -388,7 +396,7 @@ static int sock_av_insertsym(struct fid_av *av, const char *node, size_t nodecnt
 	else
 		fmt = offset;
 
-	if (hostlen - offset >= FI_NAME_MAX)
+	if (hostlen - offset >= OFI_NAME_MAX)
 		return -FI_ETOOSMALL;
 	memcpy(base_host, node, hostlen - offset);
 	var_port = atoi(service);
@@ -396,11 +404,11 @@ static int sock_av_insertsym(struct fid_av *av, const char *node, size_t nodecnt
 
 	for (i = 0; i < nodecnt; i++) {
 		for (j = 0; j < svccnt; j++) {
-			len1 = snprintf(tmp_host, FI_NAME_MAX, "%s%0*d",
+			len1 = snprintf(tmp_host, OFI_NAME_MAX, "%s%0*d",
 					base_host, fmt, var_host + (int)i);
-			len2 = snprintf(tmp_port, FI_NAME_MAX,  "%d",
+			len2 = snprintf(tmp_port, OFI_NAME_MAX,  "%d",
 					var_port + (int)j);
-			if (len1 > 0 && len1 < FI_NAME_MAX && len2 > 0 && len2 < FI_NAME_MAX) {
+			if (len1 > 0 && len1 < OFI_NAME_MAX && len2 > 0 && len2 < OFI_NAME_MAX) {
 				ret = _sock_av_insertsvc(av, tmp_host, tmp_port, fi_addr, flags, context);
 				if (ret == 1)
 					success++;
@@ -427,6 +435,8 @@ static int sock_av_remove(struct fid_av *av, fi_addr_t *fi_addr, size_t count,
 	struct sock_ep *sock_ep;
 	struct sock_conn *conn;
 	uint16_t idx;
+	int64_t index;
+	int ret = FI_SUCCESS;
 
 	_av = container_of(av, struct sock_av, av_fid);
 	ofi_mutex_lock(&_av->list_lock);
@@ -437,7 +447,11 @@ static int sock_av_remove(struct fid_av *av, fi_addr_t *fi_addr, size_t count,
 		for (i = 0; i < count; i++) {
 			idx = (uint16_t)(fi_addr[i] & sock_ep->attr->av->mask);
 			conn = ofi_idm_lookup(&sock_ep->attr->av_idm, idx);
-			if (conn && conn != SOCK_CM_CONN_IN_PROGRESS) {
+			if (!conn) {
+				ret = -FI_EINVAL;
+				continue;
+			}
+			if (conn != SOCK_CM_CONN_IN_PROGRESS) {
 				/* A peer may be using the connection, so leave
 				 * it operational, just dissociate it from AV.
 				 */
@@ -452,12 +466,20 @@ static int sock_av_remove(struct fid_av *av, fi_addr_t *fi_addr, size_t count,
 
 	ofi_mutex_lock(&_av->table_lock);
 	for (i = 0; i < count; i++) {
+		index = fi_addr[i] & _av->mask;
+		if (index >= _av->table_hdr->size || index < 0) {
+			ret = -FI_EINVAL;
+			continue;
+		}
 		av_addr = &_av->table[fi_addr[i]];
-		av_addr->valid = 0;
+		if (av_addr->valid)
+			av_addr->valid = 0;
+		else
+			ret = -FI_EINVAL;
 	}
 	ofi_mutex_unlock(&_av->table_lock);
 
-	return 0;
+	return ret;
 }
 
 static const char *sock_av_straddr(struct fid_av *av, const void *addr,

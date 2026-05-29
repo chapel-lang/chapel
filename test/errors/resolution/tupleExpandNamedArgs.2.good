@@ -6,6 +6,14 @@
       |     ⎺⎺⎺⎺⎺⎺
       |
 
-─── error in tupleExpandNamedArgs.chpl:3 ───
-  Cannot resolve call: no matching candidates
+─── error in tupleExpandNamedArgs.chpl:3 [NoMatchingCandidates] ───
+  Unable to resolve call to 'f': no matching candidates.
+      |
+    3 | f(a=(...t));
+      |
+  
+  The following candidate didn't match because the provided actuals could not be mapped to its formals:
+      |
+    1 | proc f(a: int, b: int, c: int) {}
+      |
 

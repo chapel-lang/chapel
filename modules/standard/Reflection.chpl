@@ -158,7 +158,7 @@ proc getField(const ref obj:?t, param name: string) type
 pragma "unsafe"
 pragma "suppress generic actual warning"
 inline proc getField(const ref obj:?t, param name:string) const ref {
-  param i = __primitive("field name to num", t, name);
+  param i = __primitive("field name to num", checkQueryT(t), name);
   if i == -1 then
     compilerError("field ", name, " not found in ", t:string);
   return __primitive("field by num", obj, i);
@@ -214,7 +214,8 @@ proc getImplementationField(const ref x:?t, param i:int) const ref {
  */
 pragma "unsafe"
 @unstable(reason="'getFieldRef' is unstable")
-inline proc getFieldRef(ref x:?t, param i:int) ref {
+@chpldoc.noWhereClause
+inline proc getFieldRef(ref x:?t, param i:int) ref where !isClassType(t) {
   checkValidQueryT(t);
   if isType(__primitive("field by num", x, i)) then
     compilerError("cannot return a reference to 'type' field '",
@@ -228,7 +229,7 @@ inline proc getFieldRef(ref x:?t, param i:int) ref {
 pragma "unsafe"
 @chpldoc.nodoc
 @unstable(reason="'getFieldRef' is unstable")
-inline proc getFieldRef(x: borrowed, param i:int) ref {
+inline proc getFieldRef(x:?t, param i:int) ref where isClassType(t) {
   checkValidQueryT(x.type);
   if isType(__primitive("field by num", x, i)) then
     compilerError("cannot return a reference to 'type' field '",
@@ -249,11 +250,25 @@ inline proc getFieldRef(x: borrowed, param i:int) ref {
  */
 pragma "unsafe"
 @unstable(reason="'getFieldRef' is unstable")
-proc getFieldRef(ref x:?t, param s:string) ref {
-  checkValidQueryT(t);
-  param i = __primitive("field name to num", t, s);
+@chpldoc.noWhereClause
+proc getFieldRef(ref x:?t, param s:string) ref where !isClassType(t) {
+  param i = __primitive("field name to num", checkQueryT(t), s);
   if i == -1 then
     compilerError("field ", s, " not found in ", t:string);
+  if isType(__primitive("field by num", x, i)) then
+    compilerError("cannot return a reference to 'type' field '", s, "'");
+  if isParam(__primitive("field by num", x, i)) then
+    compilerError("cannot return a reference to 'param' field '", s, "'");
+  return __primitive("field by num", x, i);
+}
+
+pragma "unsafe"
+@chpldoc.nodoc
+@unstable(reason="'getFieldRef' is unstable")
+proc getFieldRef(x:?t, param s:string) ref where isClassType(t) {
+  param i = __primitive("field name to num", checkQueryT(x.type), s);
+  if i == -1 then
+    compilerError("field ", s, " not found in ", x.type:string);
   if isType(__primitive("field by num", x, i)) then
     compilerError("cannot return a reference to 'type' field '", s, "'");
   if isParam(__primitive("field by num", x, i)) then
@@ -354,6 +369,28 @@ proc canResolveTypeMethod(type t, param fname : string) param : bool do
 @unstable(reason="The 'canResolve...' family of procedures are unstable")
 proc canResolveTypeMethod(type t, param fname : string, args ...) param : bool do
   return __primitive("method call and fn resolves", t, fname, (...args));
+
+/* Returns ``true`` if a call to a first-class function can be resolved
+   without any arguments.
+
+  .. note:: Does not attempt to resolve the body of the invoked function.
+
+    */
+@chpldoc.nodoc
+@unstable(reason="The 'canResolve...' family of procedures are unstable")
+proc canResolveCall(fn) param : bool do
+  return __primitive("resolves", fn());
+
+/* Returns ``true`` if a call to a first-class function can be resolved with
+   the given arguments.
+
+  .. note:: Does not attempt to resolve the body of the invoked function.
+
+    */
+@chpldoc.nodoc
+@unstable(reason="The 'canResolve...' family of procedures are unstable")
+proc canResolveCall(fn, args...) param : bool do
+  return __primitive("resolves", fn((...args)));
 
 // TODO -- do we need a different version of can resolve with ref this?
 

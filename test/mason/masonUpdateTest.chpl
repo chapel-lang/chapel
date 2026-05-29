@@ -14,7 +14,7 @@ proc main() throws {
   // passing anything to UpdateLock we need to replace that sentinel with the
   // actual current version.
 
-  const currentVersion = getChapelVersionStr();
+  const currentVersion = getChapelVersionInfo():string;
 
   // file.good -> file.lock
   const lf = goodLock.replace('good', 'lock');

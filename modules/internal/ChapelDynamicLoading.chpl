@@ -410,7 +410,7 @@ module ChapelDynamicLoading {
 
       // Get the wide index to use by interning on 'this.locale'. By passing
       // in '0' we tell the routine to assign us a unique index to use.
-      var ret = chpl_insertExternLocalPtrNoSync(ptrOnThis, this.locale.id);
+      var ret = chpl_mapPtrToIdxHere(ptrOnThis, this.locale.id);
       assert(ret != 0);
 
       if shouldFanOut {
@@ -433,7 +433,7 @@ module ChapelDynamicLoading {
 
           } else {
             assert(ptr != nil);
-            const got = chpl_insertExternLocalPtrNoSync(ptr, ret);
+            const got = chpl_mapPtrToIdxHere(ptr, ret);
             assert(got == ret);
           }
         }
@@ -879,7 +879,7 @@ module ChapelDynamicLoading {
   // if it has done so. It does not do synchronization on LOCALE-0 as it
   // expects the caller to do so if necessary.
   export proc
-  chpl_insertExternLocalPtrNoSync(ptr: c_ptr(void), idx: int): int {
+  chpl_mapPtrToIdxHere(ptr: c_ptr(void), idx: int): int {
     const ret = if idx == 0
       then chpl_dynamicProcIdxCounter.fetchAdd(1)
       else idx;
@@ -894,6 +894,25 @@ module ChapelDynamicLoading {
     }
 
     return ret;
+  }
+
+  // Needed by the runtime.
+  export proc chpl_areAnyChapelProgramsLoaded(): c_int {
+    // TODO: Cannot lock - will lead to deadlock. Need reentrant locks.
+    ref m = chpl_binaryInfoStore.handleToInfo.unsafeAccess();
+    return m.size != 0;
+  }
+
+  // Needed by the runtime.
+  export proc chpl_getPtrForIdxHere(idx: int): c_ptr(void) {
+    if idx <= 0 then return nil;
+
+    local do manage chpl_localPtrCache.guard.read() as m {
+      var ret: c_ptr(void);
+      if m.get(idx, ret) then return ret;
+    }
+
+    return nil;
   }
 
   // This function is called by the compiler to lookup wide pointer indices.

@@ -1,0 +1,5 @@
+paramResolution.chpl:1: In module 'M':
+paramResolution.chpl:11: warning: M.x=17
+paramResolution.chpl:25: warning: M.t=T1
+paramResolution.chpl:31: warning: x=17
+paramResolution.chpl:33: warning: t=T1

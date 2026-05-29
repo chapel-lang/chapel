@@ -483,7 +483,21 @@ coerce_immediate(chpl::Context* context, Immediate *from, Immediate *to) {
           } \
           break; \
         } \
-        case NUM_KIND_REAL: case NUM_KIND_IMAG: case NUM_KIND_COMPLEX: \
+        case NUM_KIND_REAL:                                             \
+          switch (imm->num_index) {                                     \
+            case FLOAT_SIZE_32:                                         \
+              {                                                         \
+                imm->v_float32 = powf(im1.v_float32, im2.v_float32);    \
+                break;                                                  \
+              }                                                         \
+            case FLOAT_SIZE_64:                                         \
+              {                                                         \
+                imm->v_float64 = pow(im1.v_float64, im2.v_float64);     \
+                break;                                                  \
+              }                                                         \
+          }                                                             \
+          break;                                                        \
+      case NUM_KIND_IMAG: case NUM_KIND_COMPLEX:                        \
           CHPL_ASSERT(false && "Cannot fold ** on floating point values"); \
           break; \
       }

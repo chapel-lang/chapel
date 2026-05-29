@@ -64,8 +64,9 @@ static ssize_t ucx_write(struct fid_ep *ep, const void *buf, size_t len,
 		.context = context,
 		.data = 0,
 	};
+	uint64_t flags = u_ep->ep.tx_op_flags | FI_RMA | FI_WRITE;
 
-	return ucx_proc_rma_msg(ep, &msg, u_ep->ep.tx_op_flags, UCX_DO_WRITE);
+	return ucx_proc_rma_msg(ep, &msg, flags, UCX_DO_WRITE);
 }
 
 static ssize_t ucx_writev(struct fid_ep *ep, const struct iovec *iov,
@@ -91,9 +92,9 @@ static ssize_t ucx_writev(struct fid_ep *ep, const struct iovec *iov,
 			.context = context,
 			.data = 0,
 		};
+		uint64_t flags = u_ep->ep.tx_op_flags | FI_RMA | FI_WRITE;
 
-		return ucx_proc_rma_msg(ep, &msg, u_ep->ep.tx_op_flags,
-					UCX_DO_WRITE);
+		return ucx_proc_rma_msg(ep, &msg, flags, UCX_DO_WRITE);
 	}
 }
 
@@ -121,8 +122,9 @@ static ssize_t ucx_read(struct fid_ep *ep, void *buf, size_t len,
 		.context = context,
 		.data = 0,
 	};
+	uint64_t flags = u_ep->ep.tx_op_flags | FI_RMA | FI_READ;
 
-	return ucx_proc_rma_msg(ep, &msg, u_ep->ep.tx_op_flags, UCX_DO_READ);
+	return ucx_proc_rma_msg(ep, &msg, flags, UCX_DO_READ);
 }
 
 static ssize_t ucx_readv(struct fid_ep *ep, const struct iovec *iov,
@@ -148,9 +150,9 @@ static ssize_t ucx_readv(struct fid_ep *ep, const struct iovec *iov,
 			.context = context,
 			.data = 0,
 		};
+		uint64_t flags = u_ep->ep.tx_op_flags | FI_RMA | FI_READ;
 
-		return ucx_proc_rma_msg(ep, &msg, u_ep->ep.tx_op_flags,
-					UCX_DO_READ);
+		return ucx_proc_rma_msg(ep, &msg, flags, UCX_DO_READ);
 	}
 }
 
@@ -158,6 +160,9 @@ static ssize_t ucx_writemsg(struct fid_ep *ep,
 			    const struct fi_msg_rma *msg,
 			    uint64_t flags)
 {
+	struct ucx_ep *u_ep = container_of(ep, struct ucx_ep, ep.ep_fid);
+
+	flags |= (u_ep->ep.tx_msg_flags | FI_RMA | FI_WRITE);
 	return ucx_proc_rma_msg(ep, msg, flags, UCX_DO_WRITE);
 }
 
@@ -165,6 +170,9 @@ static ssize_t ucx_readmsg(struct fid_ep *ep,
 			   const struct fi_msg_rma *msg,
 			   uint64_t flags)
 {
+	struct ucx_ep *u_ep = container_of(ep, struct ucx_ep, ep.ep_fid);
+
+	flags |= (u_ep->ep.tx_msg_flags | FI_RMA | FI_READ);
 	return ucx_proc_rma_msg(ep, msg, flags, UCX_DO_READ);
 }
 
@@ -181,7 +189,7 @@ void ucx_rma_callback(void *request, ucs_status_t status)
 		if (ucx_req->completion.flags & FI_COMPLETION)
 			ofi_cq_write(ucx_req->ep->ep.tx_cq,
 				     ucx_req->completion.op_context,
-				     ucx_req->completion.flags,
+				     ucx_req->completion.flags & ~FI_COMPLETION,
 				     0, NULL, 0, 0);
 	} else {
 		FI_DBG( &ucx_prov,FI_LOG_CORE,
@@ -193,14 +201,12 @@ void ucx_rma_callback(void *request, ucs_status_t status)
 		if (cntr)
 			cntr->cntr_fid.ops->adderr(&cntr->cntr_fid, 1);
 
-		if (ucx_req->completion.flags & FI_COMPLETION) {
-			ucx_write_error_completion(ucx_req->ep->ep.tx_cq,
-						   ucx_req->completion.op_context,
-						   ucx_req->completion.flags,
-						   status,
-						   -ucx_translate_errcode(status),
-						   0, ucx_req->completion.tag);
-		}
+		ucx_write_error_completion(ucx_req->ep->ep.tx_cq,
+					   ucx_req->completion.op_context,
+					   ucx_req->completion.flags & ~FI_COMPLETION,
+					   status,
+					   -ucx_translate_errcode(status),
+					   0, ucx_req->completion.tag);
 	}
 	ucx_req_release(request);
 }
@@ -220,7 +226,10 @@ static struct ucx_mr_rkey *ucx_get_rkey(struct ucx_ep *ep,
 	HASH_FIND(hh, domain->remote_keys, &tmp_rkey.id, sizeof(tmp_rkey.id),
 		  rkey);
 	if (!rkey) {
-		struct ucx_ave *ep_ave = (struct ucx_ave *)owner_addr;
+		struct ucx_ave *ep_ave = (struct ucx_ave *)
+			ofi_array_at_max(&ep->av->ave_array, owner_addr,
+					 ep->av->count);
+		assert(ep_ave);
 
 		pkey = (struct ucx_mr_pkey *)tmp_rkey.id.key;
 		if (!pkey || pkey->signature != FI_UCX_PKEY_SIGNATURE) {
@@ -267,6 +276,8 @@ static ssize_t ucx_proc_rma_msg(struct fid_ep *ep,
 
 	u_ep = container_of(ep, struct ucx_ep, ep.ep_fid);
 	dst_ep = UCX_GET_UCP_EP(u_ep, msg->addr);
+	if (!dst_ep)
+		return -FI_EINVAL;
 
 	if (msg->rma_iov_count > 1 || msg->iov_count > 1) {
 		FI_DBG(&ucx_prov,FI_LOG_CORE,
@@ -301,8 +312,8 @@ static ssize_t ucx_proc_rma_msg(struct fid_ep *ep,
 			ofi_ep_cntr_inc(&u_ep->ep, CNTR_RD);
 
 		if (flags & FI_COMPLETION)
-			ofi_cq_write(u_ep->ep.tx_cq, msg->context, flags,
-				     0, NULL, 0, 0);
+			ofi_cq_write(u_ep->ep.tx_cq, msg->context,
+				     flags & ~FI_COMPLETION, 0, NULL, 0, 0);
 		return FI_SUCCESS;
 	}
 
@@ -333,13 +344,15 @@ ssize_t ucx_inject_write(struct fid_ep *ep, const void *buf, size_t len,
 
 	u_ep = container_of(ep, struct ucx_ep, ep.ep_fid);
 	dst_ep = UCX_GET_UCP_EP(u_ep, dest_addr);
+	if (!dst_ep)
+		return -FI_EINVAL;
 
 	rkey = ucx_get_rkey(u_ep, dest_addr, key);
 	if (!rkey)
 		return -FI_EINVAL;
 
 	status = ucp_put_nb(dst_ep, buf, len, addr, rkey->rkey,
-			    ucx_send_callback_no_compl);
+			    ucx_callback_noop);
 
 	if (status != UCS_OK) {
 		if (UCS_PTR_IS_ERR(status))
@@ -348,6 +361,8 @@ ssize_t ucx_inject_write(struct fid_ep *ep, const void *buf, size_t len,
 		while ((ret = ucp_request_check_status(status)) ==
 		       UCS_INPROGRESS)
 			ucp_worker_progress(u_ep->worker);
+
+		ucx_req_release(status);
 	}
 
 	ofi_ep_cntr_inc(&(u_ep->ep), CNTR_WR);

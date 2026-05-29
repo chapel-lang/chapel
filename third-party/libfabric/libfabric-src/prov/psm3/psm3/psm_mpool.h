@@ -80,7 +80,7 @@ MOCKABLE(psm3_mpool_create)(size_t obj_size, uint32_t num_obj_per_chunk,
 			  non_empty_callback_fn_t cb, void *context);
 MOCK_DCL_EPILOGUE(psm3_mpool_create);
 
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 mpool_t psm3_mpool_create_for_gpu(size_t obj_size, uint32_t num_obj_per_chunk,
 				  uint32_t num_obj_max_total, int flags,
 				  psmi_memtype_t statstype,
@@ -105,5 +105,10 @@ int psm3_mpool_get_obj_index_gen_count(void *obj,
 				       uint32_t *index, uint32_t *gen_count);
 
 void *psm3_mpool_find_obj_by_index(mpool_t mp, int index);
+
+// to help debug IOs in flight
+typedef void psmi_mpool_callback_func_t(void *obj, void *context);
+void psmi_mpool_foreach(mpool_t mp, void *context,
+			psmi_mpool_callback_func_t *func);
 
 #endif

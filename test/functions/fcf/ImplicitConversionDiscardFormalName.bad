@@ -1,2 +1,1 @@
-ImplicitConversionDiscardFormalName.chpl:2: error: cannot initialize 'proc(_: int): int' from a 'proc(i: int): int'
-note: An additional error is hidden. Use --print-additional-errors to see it.
+ImplicitConversionDiscardFormalName.chpl:5: error: Cannot assign to proc(_: int): int from proc(j: int): int

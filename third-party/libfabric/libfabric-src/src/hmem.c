@@ -100,7 +100,7 @@ static int ofi_hmem_no_dev_reg_copy_from_hmem(uint64_t handle, void *dest,
 static int ofi_hmem_system_dev_register(const void *addr, size_t size,
 					uint64_t *handle)
 {
-	*handle = (uint64_t) addr;
+	*handle = (uint64_t)(uintptr_t) addr;
 	return FI_SUCCESS;
 }
 
@@ -141,6 +141,7 @@ struct ofi_hmem_ops hmem_ops[] = {
 		.dev_reg_copy_to_hmem = ofi_hmem_system_dev_reg_copy,
 		.dev_reg_copy_from_hmem = ofi_hmem_system_dev_reg_copy,
 		.get_dmabuf_fd = ofi_hmem_no_get_dmabuf_fd,
+		.put_dmabuf_fd = ofi_hmem_no_put_dmabuf_fd,
 	},
 	[FI_HMEM_CUDA] = {
 		.initialized = false,
@@ -167,6 +168,7 @@ struct ofi_hmem_ops hmem_ops[] = {
 		.dev_reg_copy_to_hmem = cuda_dev_reg_copy_to_hmem,
 		.dev_reg_copy_from_hmem = cuda_dev_reg_copy_from_hmem,
 		.get_dmabuf_fd = cuda_get_dmabuf_fd,
+		.put_dmabuf_fd = cuda_put_dmabuf_fd,
 	},
 	[FI_HMEM_ROCR] = {
 		.initialized = false,
@@ -193,6 +195,7 @@ struct ofi_hmem_ops hmem_ops[] = {
 		.dev_reg_copy_to_hmem = rocr_dev_reg_copy_to_hmem,
 		.dev_reg_copy_from_hmem = rocr_dev_reg_copy_from_hmem,
 		.get_dmabuf_fd = rocr_hmem_get_dmabuf_fd,
+		.put_dmabuf_fd = rocr_hmem_put_dmabuf_fd,
 	},
 	[FI_HMEM_ZE] = {
 		.initialized = false,
@@ -219,6 +222,7 @@ struct ofi_hmem_ops hmem_ops[] = {
 		.dev_reg_copy_to_hmem = ze_dev_reg_copy_to_hmem,
 		.dev_reg_copy_from_hmem = ze_dev_reg_copy_from_hmem,
 		.get_dmabuf_fd = ze_hmem_get_dmabuf_fd,
+		.put_dmabuf_fd = ofi_hmem_no_put_dmabuf_fd,
 	},
 	[FI_HMEM_NEURON] = {
 		.initialized = false,
@@ -244,6 +248,7 @@ struct ofi_hmem_ops hmem_ops[] = {
 		.dev_reg_copy_to_hmem = ofi_hmem_no_dev_reg_copy_to_hmem,
 		.dev_reg_copy_from_hmem = ofi_hmem_no_dev_reg_copy_from_hmem,
 		.get_dmabuf_fd = neuron_get_dmabuf_fd,
+		.put_dmabuf_fd = neuron_put_dmabuf_fd,
 	},
 	[FI_HMEM_SYNAPSEAI] = {
 		.initialized = false,
@@ -269,6 +274,7 @@ struct ofi_hmem_ops hmem_ops[] = {
 		.dev_reg_copy_to_hmem = ofi_hmem_no_dev_reg_copy_to_hmem,
 		.dev_reg_copy_from_hmem = ofi_hmem_no_dev_reg_copy_from_hmem,
 		.get_dmabuf_fd = synapseai_get_dmabuf_fd,
+		.put_dmabuf_fd = ofi_hmem_no_put_dmabuf_fd,
 	},
 };
 
@@ -314,7 +320,7 @@ static ssize_t
 ofi_async_copy_hmem_iov_buf(enum fi_hmem_iface hmem_iface, uint64_t device,
 			    const struct iovec *hmem_iov,
 			    size_t hmem_iov_count,
-			    uint64_t hmem_iov_offset, void *buf,
+			    size_t hmem_iov_offset, void *buf,
 			    size_t size, int dir, ofi_hmem_async_event_t event)
 {
 	uint64_t done = 0, len;
@@ -353,7 +359,7 @@ ofi_async_copy_hmem_iov_buf(enum fi_hmem_iface hmem_iface, uint64_t device,
 static ssize_t ofi_copy_hmem_iov_buf(enum fi_hmem_iface hmem_iface, uint64_t device,
 				     const struct iovec *hmem_iov,
 				     size_t hmem_iov_count,
-				     uint64_t hmem_iov_offset, void *buf,
+				     size_t hmem_iov_offset, void *buf,
 				     size_t size, int dir)
 {
 	uint64_t done = 0, len;
@@ -385,7 +391,7 @@ static ssize_t ofi_copy_hmem_iov_buf(enum fi_hmem_iface hmem_iface, uint64_t dev
 static ssize_t ofi_dev_reg_copy_hmem_iov_buf(enum fi_hmem_iface hmem_iface, uint64_t handle,
 					      const struct iovec *hmem_iov,
 					      size_t hmem_iov_count,
-					      uint64_t hmem_iov_offset, void *buf,
+					      size_t hmem_iov_offset, void *buf,
 					      size_t size, int dir)
 {
 	uint64_t done = 0, len;
@@ -413,9 +419,9 @@ static ssize_t ofi_dev_reg_copy_hmem_iov_buf(enum fi_hmem_iface hmem_iface, uint
 	return done;
 }
 
-static ssize_t ofi_copy_mr_iov(struct ofi_mr **mr, const struct iovec *iov,
-		size_t iov_count, uint64_t offset, void *buf,
-		size_t size, int dir)
+ssize_t ofi_copy_mr_iov(struct ofi_mr **mr, const struct iovec *iov,
+			size_t iov_count, size_t offset, void *buf,
+			size_t size, int dir)
 {
 	uint64_t done = 0, len;
 	uint64_t hmem_iface, hmem_device, hmem_flags;
@@ -444,11 +450,11 @@ static ssize_t ofi_copy_mr_iov(struct ofi_mr **mr, const struct iovec *iov,
 		if (hmem_flags & OFI_HMEM_DATA_DEV_REG_HANDLE) {
 			if (dir == OFI_COPY_BUF_TO_IOV)
 				ofi_hmem_dev_reg_copy_to_hmem(
-					hmem_iface, (uint64_t) hmem_data,
+					hmem_iface, (uint64_t)(uintptr_t) hmem_data,
 					hmem_buf, (char *) buf + done, len);
 			else
 				ofi_hmem_dev_reg_copy_from_hmem(
-					hmem_iface, (uint64_t) hmem_data,
+					hmem_iface, (uint64_t)(uintptr_t) hmem_data,
 					(char *) buf + done, hmem_buf, len);
 			ret = FI_SUCCESS;
 		} else if (dir == OFI_COPY_BUF_TO_IOV)
@@ -568,9 +574,10 @@ int ofi_hmem_open_handle(enum fi_hmem_iface iface, void **handle,
 					   mapped_addr);
 }
 
-int ofi_hmem_close_handle(enum fi_hmem_iface iface, void *mapped_addr)
+int ofi_hmem_close_handle(enum fi_hmem_iface iface, void *mapped_addr,
+			  void **handle)
 {
-	return hmem_ops[iface].close_handle(mapped_addr);
+	return hmem_ops[iface].close_handle(mapped_addr, handle);
 }
 
 int ofi_hmem_get_base_addr(enum fi_hmem_iface iface, const void *addr,
@@ -818,4 +825,38 @@ int ofi_hmem_get_dmabuf_fd(enum fi_hmem_iface iface, const void *addr,
 			   uint64_t size, int *fd, uint64_t *offset)
 {
 	return hmem_ops[iface].get_dmabuf_fd(addr, size, fd, offset);
+}
+
+int ofi_hmem_put_dmabuf_fd(enum fi_hmem_iface iface, int fd)
+{
+	return hmem_ops[iface].put_dmabuf_fd(fd);
+}
+
+/**
+ * @brief Check if DMABUF is enabled for a specific HMEM interface
+ *
+ * This function checks the environment variables to determine if DMABUF
+ * should be used for the specified HMEM interface.
+ *
+ * @param[in] iface The HMEM interface to check
+ * @return true if DMABUF is enabled for the interface, false otherwise
+ */
+bool ofi_hmem_is_dmabuf_env_var_enabled(enum fi_hmem_iface iface)
+{
+	switch (iface) {
+	case FI_HMEM_SYSTEM:
+		return false;
+	case FI_HMEM_CUDA:
+		return cuda_is_dmabuf_requested();
+	case FI_HMEM_NEURON:
+		return neuron_is_dmabuf_requested();
+	case FI_HMEM_SYNAPSEAI:
+		return synapseai_is_dmabuf_requested();
+	case FI_HMEM_ROCR:
+		return rocr_is_dmabuf_requested();
+	case FI_HMEM_ZE:
+		return ze_is_dmabuf_requested();
+	default:
+		return false;
+	}
 }

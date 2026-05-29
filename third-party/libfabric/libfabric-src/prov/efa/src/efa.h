@@ -37,6 +37,7 @@
 #include "ofi_file.h"
 
 #include "efa_base_ep.h"
+#include "efa_direct_ope.h"
 #include "efa_mr.h"
 #include "efa_env.h"
 #include "efa_shm.h"
@@ -58,10 +59,22 @@
 
 #define SHM_MAX_INJECT_SIZE 4096
 
+#define EFA_FABRIC_NAME 	"efa"
+#define EFA_DIRECT_FABRIC_NAME "efa-direct"
+
 #define EFA_EP_TYPE_IS_RDM(_info) \
 	(_info && _info->ep_attr && (_info->ep_attr->type == FI_EP_RDM))
 
 #define EFA_EP_TYPE_IS_DGRAM(_info) \
+	(_info && _info->ep_attr && (_info->ep_attr->type == FI_EP_DGRAM))
+
+#define EFA_INFO_TYPE_IS_RDM(_info) \
+	(_info && _info->ep_attr && (_info->ep_attr->type == FI_EP_RDM) && !strcasecmp(_info->fabric_attr->name, EFA_FABRIC_NAME))
+
+#define EFA_INFO_TYPE_IS_DIRECT(_info) \
+	(_info && _info->ep_attr && (_info->ep_attr->type == FI_EP_RDM) && !strcasecmp(_info->fabric_attr->name, EFA_DIRECT_FABRIC_NAME))
+
+#define EFA_INFO_TYPE_IS_DGRAM(_info) \
 	(_info && _info->ep_attr && (_info->ep_attr->type == FI_EP_DGRAM))
 
 #define EFA_DGRAM_CONNID (0x0)
@@ -69,7 +82,8 @@
 #define EFA_DEF_POOL_ALIGNMENT (8)
 #define EFA_MEM_ALIGNMENT (64)
 
-#define EFA_DEF_CQ_SIZE 1024
+/* 4k tx_attr.size + 8k rx_attr.size */
+#define EFA_DEF_CQ_SIZE 12288
 
 
 #define EFA_DEFAULT_RUNT_SIZE (307200)
@@ -99,6 +113,12 @@
  */
 #define EFA_RDM_BUFPOOL_ALIGNMENT	(64)
 
+/*
+ * Define bitmask to compare packet generation
+ */
+#define EFA_RDM_PACKET_GEN_MASK (EFA_RDM_BUFPOOL_ALIGNMENT - 1)
+
+
 struct efa_fabric {
 	struct util_fabric	util_fabric;
 	struct fid_fabric *shm_fabric;
@@ -106,6 +126,77 @@ struct efa_fabric {
 	struct ofi_perfset perf_set;
 #endif
 };
+
+struct efa_context {
+	uint64_t completion_flags;
+	fi_addr_t addr;
+};
+
+#if defined(static_assert)
+static_assert(sizeof(struct efa_context) <= sizeof(struct fi_context2),
+	      "efa_context must not be larger than fi_context2");
+#endif
+
+#define EFA_SETUP_IOV(iov, buf, len)           \
+	do {                                   \
+		iov.iov_base = (void *)buf;    \
+		iov.iov_len = (size_t)len;     \
+	} while (0)
+
+#define EFA_SETUP_MSG(msg, iov, _desc, count, _addr, _context, _data)    \
+	do {                                                             \
+		msg.msg_iov = (const struct iovec *)iov;                 \
+		msg.desc = (void **)_desc;                               \
+		msg.iov_count = (size_t)count;                           \
+		msg.addr = (fi_addr_t)_addr;                             \
+		msg.context = (void *)_context;                          \
+		msg.data = (uint32_t)_data;                              \
+	} while (0)
+
+#define EFA_SETUP_RMA_IOV(rma_iov, _addr, _len, _key) \
+    do {                                          \
+        rma_iov.addr = (uint64_t) _addr;      \
+        rma_iov.len = (size_t) _len;          \
+        rma_iov.key = (uint64_t) _key;        \
+    } while (0)
+
+#define EFA_SETUP_MSG_RMA(msg, iov, _desc, count, _addr, _rma_iov,  \
+              _rma_iov_count, _context, _data)          \
+    do {                                                        \
+        msg.msg_iov = (const struct iovec *) iov;           \
+        msg.desc = (void **) _desc;                         \
+        msg.iov_count = (size_t) count;                     \
+        msg.addr = (fi_addr_t) _addr;                       \
+        msg.rma_iov = (const struct fi_rma_iov *) _rma_iov; \
+        msg.rma_iov_count = (size_t) _rma_iov_count;        \
+        msg.context = (void *) _context;                    \
+        msg.data = (uint32_t) _data;                        \
+    } while (0)
+
+/**
+ * Prepare and return a pointer to an EFA context structure.
+ *
+ * @param context           Pointer to the msg context.
+ * @param addr              Peer address associated with the operation.
+ * @param flags             Operation flags (e.g., FI_COMPLETION).
+ * @param completion_flags  Completion flags reported in the cq entry.
+ * @return A pointer to an initialized EFA context structure,
+ *  or NULL if context is invalid or FI_COMPLETION is not set.
+ */
+static inline struct efa_context *efa_fill_context(const void *context,
+						   fi_addr_t addr,
+						   uint64_t flags,
+						   uint64_t completion_flags)
+{
+	if (!context || !(flags & FI_COMPLETION))
+		return NULL;
+
+	struct efa_context *efa_context = (struct efa_context *) context;
+	efa_context->completion_flags = completion_flags;
+	efa_context->addr = addr;
+
+	return efa_context;
+}
 
 static inline
 int efa_str_to_ep_addr(const char *node, const char *service, struct efa_ep_addr *addr)
@@ -220,5 +311,28 @@ static inline void efa_perfset_end(struct efa_rdm_ep *ep, size_t index)
 #define efa_perfset_start(ep, index) do {} while (0)
 #define efa_perfset_end(ep, index) do {} while (0)
 #endif
+
+static inline
+bool efa_use_unsolicited_write_recv()
+{
+	return efa_env.use_unsolicited_write_recv && efa_device_support_unsolicited_write_recv();
+}
+
+/**
+ * Convenience macro for setopt with an enforced threshold
+ */
+#define EFA_EP_SETOPT_THRESHOLD(opt, field, threshold) { \
+	size_t _val = *(size_t *) optval; \
+	if (optlen != sizeof field) \
+		return -FI_EINVAL; \
+	if (_val > threshold) { \
+		EFA_WARN(FI_LOG_EP_CTRL, \
+			"Requested size of %zu for FI_OPT_" #opt " " \
+			"exceeds the maximum (%zu)\n", \
+			_val, threshold); \
+		return -FI_EINVAL; \
+	} \
+	field = _val; \
+}
 
 #endif /* EFA_H */

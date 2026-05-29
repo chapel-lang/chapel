@@ -28,8 +28,6 @@
 
 namespace chapel {
 
-  using namespace std;
-
   using namespace google::protobuf::compiler;
   using namespace google::protobuf;
 
@@ -38,11 +36,9 @@ namespace chapel {
     Generator();
     ~Generator();
     bool Generate(
-      const FileDescriptor *file,
-      const string &parameter,
-      GeneratorContext *generator_context,
-      string *error)
-    const override;
+      const FileDescriptor* file, const std::string& parameter,
+      GeneratorContext* generator_context, std::string* error
+    ) const override;
   };
 
 } // namespace chapel

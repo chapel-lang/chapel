@@ -29,28 +29,26 @@
 
 namespace chapel {
 
-  using namespace std;
-
   using namespace google::protobuf;
   using namespace google::protobuf::compiler;
 
   class FieldGeneratorBase;
 
-  string GetOutputFile(const FileDescriptor* descriptor, string*error);
+  std::string GetOutputFile(const FileDescriptor* descriptor, std::string& error);
 
-  string GetFieldName(const FieldDescriptor* descriptor);
+  std::string GetFieldName(const FieldDescriptor* descriptor);
 
   FieldGeneratorBase* CreateFieldGenerator(const FieldDescriptor* descriptor);
 
-  string GetModuleName(const FileDescriptor* descriptor);
+  std::string GetModuleName(const FileDescriptor* descriptor);
 
-  string GetMessageName(const Descriptor* descriptor);
+  std::string GetMessageName(const Descriptor* descriptor);
 
-  string GetEnumName(const EnumDescriptor* descriptor);
+  std::string GetEnumName(const EnumDescriptor* descriptor);
 
-  string GetPackageName(const FileDescriptor* descriptor);
+  std::string GetPackageName(const FileDescriptor* descriptor);
 
-  string GetOneofName(const OneofDescriptor* descriptor);
+  std::string GetOneofName(const OneofDescriptor* descriptor);
 
   inline bool IsMapEntryMessage(const Descriptor* descriptor) {
     return descriptor->options().map_entry();

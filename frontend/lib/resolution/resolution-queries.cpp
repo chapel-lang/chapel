@@ -5843,6 +5843,7 @@ lookupCalledExpr(Context* context,
   }
 
   if (ci.isOpCall()) {
+    // lookup both sides of the operator
     config |= LOOKUP_METHODS;
   }
 

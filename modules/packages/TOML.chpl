@@ -105,15 +105,9 @@ module TOML {
     return tomlData;
   }
 
-
-  class TomlError : Error {
-
-    var msg:string;
-    proc init(msg:string) {
-      this.msg = msg;
-    }
-    override proc message() {
-      return msg;
+  class TomlError: Error {
+    proc init(msg: string) {
+      super.init(msg);
     }
   }
 

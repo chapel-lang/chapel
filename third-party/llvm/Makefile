@@ -20,6 +20,14 @@ else
   CHPL_LLVM_TARGETS_TO_BUILD := "$(CHPL_LLVM_TARGETS_TO_BUILD)"
 endif
 
+# select the cmake generator to use for the LLVM build
+# this can be set to "Unix Makefiles" or "Ninja" (or others supported by cmake)
+ifndef CHPL_LLVM_CMAKE_GENERATOR
+  CHPL_LLVM_CMAKE_GENERATOR := -G "Unix Makefiles"
+else
+  CHPL_LLVM_CMAKE_GENERATOR := -G "$(CHPL_LLVM_CMAKE_GENERATOR)"
+endif
+
 # activate LLVM asserts if it's from `make ASSERTS=1`
 # or if CHPL_LLVM_DEVELOPER is set
 CHPL_LLVM_ASSERTS := 0
@@ -51,7 +59,13 @@ ifeq ($(CHPL_LLVM_DYNAMIC),1)
   CHPL_LLVM_DYNAMIC_OPTS:=-DLLVM_BUILD_LLVM_DYLIB=ON -DLLVM_LINK_LLVM_DYLIB=ON
 endif
 
-CHPL_LLVM_NO_TESTS := -DLLVM_BUILD_TESTS=OFF -DLLVM_INCLUDE_TESTS=OFF -DLLVM_BUILD_BENCHMARKS=OFF -DLLVM_INCLUDE_BENCHMARKS=OFF
+CHPL_LLVM_NO_EXTRAS := -DLLVM_BUILD_TESTS=OFF -DLLVM_INCLUDE_TESTS=OFF \
+                       -DLLVM_BUILD_BENCHMARKS=OFF -DLLVM_INCLUDE_BENCHMARKS=OFF \
+                       -DLLVM_BUILD_EXAMPLES=OFF -DLLVM_INCLUDE_EXAMPLES=OFF  \
+                       -DLLVM_BUILD_DOCS=OFF -DLLVM_INCLUDE_DOCS=OFF \
+                       -DCLANG_BUILD_TESTS=OFF -DCLANG_INCLUDE_TESTS=OFF \
+                       -DCLANG_BUILD_EXAMPLES=OFF -DCLANG_INCLUDE_EXAMPLES=OFF \
+                       -DCLANG_BUILD_DOCS=OFF -DCLANG_INCLUDE_DOCS=OFF
 
 CMAKE ?= cmake
 
@@ -110,16 +124,17 @@ llvm-config: FORCE
 	    -DCLANG_ENABLE_STATIC_ANALYZER=0 \
 	    -DLLVM_TARGETS_TO_BUILD=$(CHPL_LLVM_TARGETS_TO_BUILD) \
 	    -DLLVM_INSTALL_UTILS=ON \
-	    $(CHPL_LLVM_NO_TESTS) \
+	    $(CHPL_LLVM_NO_EXTRAS) \
 	    $(CHPL_LLVM_ENABLE_PROJECTS) \
 	    $(CHPL_LLVM_DYNAMIC_OPTS) \
 	    $(CHPL_RV_CMAKE) \
 	    -Wno-dev \
+	    $(CHPL_LLVM_CMAKE_GENERATOR) \
 	    $(LLVM_SRC_DIR) ; \
 
 llvm-config-support-only: FORCE
 	mkdir -p $(LLVM_SUPPORT_BUILD_DIR)
-	
+
 	@if [ "$(CHPL_MAKE_LLVM)" = "bundled" ] && \
 	    [ "$(CHPL_MAKE_COMPILER)" = "llvm" ]; then \
 	  echo Error: Cannot build bundled LLVM with itself ;\
@@ -143,14 +158,15 @@ llvm-config-support-only: FORCE
 	    -DCLANG_ENABLE_STATIC_ANALYZER=0 \
 	    -DLLVM_TARGETS_TO_BUILD="host" \
 	    -DLLVM_INSTALL_UTILS=OFF \
-	    $(CHPL_LLVM_NO_TESTS) \
+	    $(CHPL_LLVM_NO_EXTRAS) \
 	    -Wno-dev \
+			$(CHPL_LLVM_CMAKE_GENERATOR) \
 	    $(LLVM_SRC_DIR) ; \
 
 
 
 # note: the conditional below allows parallel make to continue
-# if cmake us also using Make.
+# if cmake is also using Make.
 llvm-build: FORCE
 	if [ -f $(LLVM_BUILD_DIR)/Makefile ]; then \
 	  cd $(LLVM_BUILD_DIR) && \

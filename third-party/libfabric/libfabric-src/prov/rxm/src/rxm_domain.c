@@ -221,6 +221,31 @@ static struct fi_ops_av_owner rxm_av_owner_ops = {
 	.ep_addr = rxm_peer_av_ep_addr,
 };
 
+static fi_addr_t rxm_get_addr(struct fi_peer_rx_entry *rx_entry)
+{
+	struct rxm_rx_buf *rx_buf = rx_entry->peer_context;
+
+	if (!rx_buf->conn)
+		return rx_entry->addr;
+
+	return rx_buf->conn->peer->fi_addr;
+}
+
+static void rxm_foreach_ep(struct util_av *av, struct util_ep *ep)
+{
+	struct rxm_ep *rxm_ep;
+	struct fid_peer_srx *peer_srx;
+
+	rxm_ep = container_of(ep, struct rxm_ep, util_ep);
+	peer_srx = container_of(rxm_ep->srx, struct fid_peer_srx, ep_fid);
+	if (peer_srx) {
+		ofi_genlock_lock(&rxm_ep->util_ep.lock);
+		peer_srx->owner_ops->foreach_unspec_addr(peer_srx, &rxm_get_addr);
+		ofi_genlock_unlock(&rxm_ep->util_ep.lock);
+	}
+}
+
+
 static int
 rxm_av_open(struct fid_domain *domain_fid, struct fi_av_attr *attr,
 	    struct fid_av **fid_av, void *context)
@@ -236,7 +261,8 @@ rxm_av_open(struct fid_domain *domain_fid, struct fi_av_attr *attr,
 
 	ret = rxm_util_av_open(domain_fid, attr, &fid_av_new,
 			context, sizeof(struct rxm_conn),
-			ofi_av_remove_cleanup ? rxm_av_remove_handler : NULL);
+			ofi_av_remove_cleanup ? rxm_av_remove_handler : NULL,
+			&rxm_foreach_ep);
 	if (ret)
 		return ret;
 
@@ -346,7 +372,7 @@ static struct fi_ops_domain rxm_domain_ops = {
 	.cntr_open = rxm_cntr_open,
 	.poll_open = fi_poll_create,
 	.stx_ctx = fi_no_stx_context,
-	.srx_ctx = fi_no_srx_context,
+	.srx_ctx = rxm_srx_context,
 	.query_atomic = rxm_ep_query_atomic,
 	.query_collective = rxm_query_collective,
 };
@@ -450,7 +476,7 @@ static int rxm_mr_close(fid_t fid)
 
 	if (rxm_mr->hmem_handle) {
 		ofi_hmem_dev_unregister(rxm_mr->iface,
-					(uint64_t) rxm_mr->hmem_handle);
+					(uint64_t)(uintptr_t) rxm_mr->hmem_handle);
 	}
 
 	ret = fi_close(&rxm_mr->msg_mr->fid);

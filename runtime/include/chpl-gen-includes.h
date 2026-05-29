@@ -31,6 +31,7 @@
 #include "chpl-comm-compiler-macros.h"
 #include "chplcgfns.h"
 #include "chpl-locale-model.h"
+#include "chpl-prginfo.h"
 #include "chpl-tasks.h"
 #include "chpltypes.h"
 
@@ -45,6 +46,7 @@ extern "C" {
 static inline
 void chpl_ftable_call(chpl_fn_int_t fid, void* bundle)
 {
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER, chpl_ftable);
   (*chpl_ftable[fid])(bundle);
 }
 

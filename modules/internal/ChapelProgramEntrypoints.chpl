@@ -19,7 +19,7 @@
  */
 
 module ChapelProgramEntrypoints {
-  use ChapelBase, CTypes;
+  use ChapelBase, ChapelProgramRegistration, CTypes;
 
   // This is an opaque alias for "char" used to make sure the compiler will
   // generate the proper type instead of e.g., "int(8)" as is usually done
@@ -47,6 +47,15 @@ module ChapelProgramEntrypoints {
     chpl_error(msg, 0, 0);
   }
 
+  pragma "locale private"   // TODO: May not need this, but...
+  pragma "no init"          // Don't overwite work done later.
+  private var chpl_genMainArg: chpl_main_argument;
+
+  // For the runtime. Get a pointer to the main argument on this locale.
+  export proc chpl_genMainArgPtr: c_ptr(chpl_main_argument) {
+    return c_ptrTo(chpl_genMainArg);
+  }
+
   //
   // A program using Chapel as a library might look like:
   //
@@ -70,7 +79,8 @@ module ChapelProgramEntrypoints {
   //                    runtime initialization is split out from library init.
   export proc chpl_library_init(argc: chpl_opaque_c_int,
                                 argv: chpl_opaque_argv_array) {
-    extern proc chpl_rt_init(argc: chpl_opaque_c_int,
+    extern proc chpl_rt_init(root_prg: c_ptr(chpl_rt_prginfo),
+                             argc: chpl_opaque_c_int,
                              argv: chpl_opaque_argv_array): void;
     // TODO: A lie, 'chpl_main' is actually a local function pointer.
     extern proc chpl_task_callMain(chpl_main: c_ptr(void)): void;
@@ -87,9 +97,11 @@ module ChapelProgramEntrypoints {
       return;
     }
 
+    const ptr = chpl_prepareProgramInfoHere();
+
     // NOTE: The call 'chpl_rt_init' is idempotent and nothing will happen
     // if the runtime is already initialized.
-    chpl_rt_init(argc, argv);
+    chpl_rt_init(ptr, argc, argv);
 
     // TODO: There really needs to be a better way to do this. Is the normal
     //       casting not working because the proc-ptr is a class right now?

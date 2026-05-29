@@ -34,10 +34,10 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 #
 # E.g., 'CHPL_COMM' is replaced with 'program->data.CHPL_COMM'.
 
-GITHUB_USER=dlongnecke-cray
-GITHUB_BRANCH=dynamic-loading-runtime-explore
-SHORT_NAME=runtimeIndirectlyReferencesProgramData
-START_DATE=3/16/26
+GITHUB_USER=chapel-lang
+GITHUB_BRANCH=main
+SHORT_NAME=unset
+START_DATE=4/23/26
 
 set -e
 checkout_branch $GITHUB_USER $GITHUB_BRANCH
@@ -46,4 +46,4 @@ set +e
 
 perf_args="-performance-description $SHORT_NAME -performance-configs default:v,$SHORT_NAME:v -sync-dir-suffix $SHORT_NAME"
 perf_args="${perf_args} -numtrials 1 -startdate $START_DATE"
-$UTIL_CRON_DIR/nightly -cron ${perf_args} ${nightly_args} -compopts '--mllvm -vector-library=LIBMVEC-X86'
+$UTIL_CRON_DIR/nightly -cron ${perf_args} ${nightly_args}

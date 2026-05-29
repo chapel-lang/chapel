@@ -3,7 +3,7 @@
   In the following if-expression:
       |
     2 | var y = if b then 42 else "hello";
-      |                   ⎺⎺       ⎺⎺⎺⎺⎺⎺
+      |                   ⎺⎺      ⎺⎺⎺⎺⎺⎺⎺
       |
   the first branch is of type 'int(64)', while the second is of type 'string'.
 
@@ -15,7 +15,7 @@
     6 |   then 42
       |        ⎺⎺
     7 |   else "hello";
-      |         ⎺⎺⎺⎺⎺⎺
+      |        ⎺⎺⎺⎺⎺⎺⎺
       |
   the first branch is of type 'int(64)', while the second is of type 'string'.
 

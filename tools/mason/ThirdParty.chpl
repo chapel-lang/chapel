@@ -24,8 +24,8 @@
   `use ThirdParty.DependencyName`.
 */
 module ThirdParty {
-  include module Pathlib;
-  include module TemplateString;
-  include module Log;
-  include module TerminalColors;
+include module Pathlib;
+include module TemplateString;
+include module Log;
+include module TerminalColors;
 }

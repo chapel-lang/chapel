@@ -66,6 +66,7 @@ void nprint_view(int id);
 void nprint_view(BaseAST* ast);
 void nprint_view(GenRet& gen); // defined in codegen/codegen.cpp
 void nprint_view_noline(BaseAST* ast);
+void nprint_view(astlocT loc);
 
 // Add overloads for 'dyno' stuff, as needed.
 void nprint_view(const chpl::uast::AstNode* x);

@@ -1,0 +1,4 @@
+throwNonThrowing.chpl:2: In function 'canThrow':
+throwNonThrowing.chpl:3: error: cannot throw in a non-throwing function
+throwNonThrowing.chpl:1: In module 'M':
+throwNonThrowing.chpl:2: note: the function is declared here

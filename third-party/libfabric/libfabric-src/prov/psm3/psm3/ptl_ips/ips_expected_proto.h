@@ -105,8 +105,6 @@ struct ips_protoexp {
 
 	psm_transfer_type_t ctrl_xfer_type;
 	struct ips_scbctrl tid_scbc_rv;	// pool of SCBs for TID sends
-									// for OPA this includes: TIDEXP, CTS,
-									// EXPTID_COMPLETION
 									// For UD: CTS, ERR_CHK_RDMA,
 									// ERR_CHK_RDMA_RESP
 	mpool_t tid_desc_send_pool;
@@ -120,25 +118,20 @@ struct ips_protoexp {
 	struct psmi_timer timer_send;
 
 	STAILQ_HEAD(ips_tid_get_pend, ips_tid_get_request) pend_getreqsq;	/* pending tid reqs */
-#ifdef PSM_HAVE_RNDV_MOD
+#ifdef PSM_HAVE_RDMA_ERR_CHK
 	STAILQ_HEAD(ips_tid_err_resp_pend, ips_epaddr) pend_err_resp;	/* pending ERR CHK RDMA RESP */
 #endif
 	/* services pend_getreqsq and pend_err_chk_rdma_resp */
 	struct psmi_timer timer_getreqs;
 
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 	STAILQ_HEAD(ips_tid_get_gpupend, /* pending GPU transfers */
 		    ips_tid_get_request) gpupend_getreqsq;
 	struct ips_gpu_hostbuf_mpool_cb_context gpu_hostbuf_recv_cfg;
 	struct ips_gpu_hostbuf_mpool_cb_context gpu_hostbuf_small_recv_cfg;
 	mpool_t gpu_hostbuf_pool_recv;
 	mpool_t gpu_hostbuf_pool_small_recv;
-#endif
-#ifdef PSM_CUDA
-	CUstream cudastream_recv;
-#elif defined(PSM_ONEAPI)
-	/* Will not be usd if psm3_oneapi_immed_async_copy */
-	ze_command_queue_handle_t cq_recvs[MAX_ZE_DEVICES];
+	union ips_protoexp_gpu_specific gpu_specific;
 #endif
 };
 
@@ -166,6 +159,10 @@ typedef struct ips_tid_session_list_tag {
  */
 #define TIDSENDC_SDMA_VEC_DEFAULT	260
 
+#ifdef PSM_RC_RECONNECT
+struct psm3_verbs_rc_qp;
+#endif
+
 struct ips_tid_send_desc {
 	struct ips_protoexp *protoexp;
 	 STAILQ_ENTRY(ips_tid_send_desc) next;
@@ -187,16 +184,22 @@ struct ips_tid_send_desc {
 
 
 	uint8_t is_complete:1;	// all packets for send queued, waiting CQE/response
-#ifdef PSM_HAVE_RNDV_MOD
-	uint8_t rv_need_err_chk_rdma:1; // need to determine if a retry is required
+#ifdef PSM_HAVE_RDMA_ERR_CHK
+	uint8_t need_err_chk_rdma:1; // need to determine if a retry is required
 	uint8_t reserved:6;
-	uint8_t rv_sconn_index;	// sconn in rv we issued RDMA write on
-	uint32_t rv_conn_count;// Count of sconn completed conn establishments
+#ifdef PSM_RC_RECONNECT
+	struct psm3_verbs_rc_qp *rc_qp;	// set when post WQE, cleared on CQE
+	uint8_t err_chk_rdma_rcnt;	// reconnect_count to put in ERR_CHK_RDMA
+#endif
 #else
 	uint8_t reserved:7;
 #endif
+#if defined(PSM_HAVE_RDMA) && defined(RNDV_MOD)
+	uint8_t rv_sconn_index;	// sconn in rv we issued RDMA write on
+	uint32_t rv_conn_count;// Count of sconn completed conn establishments
+#endif
 
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 	/* As size of gpu_hostbuf is less than equal to window size,
 	 * there is a guarantee that the maximum number of host bufs we
 	 * would need to attach to a tidsendc would be 2
@@ -241,7 +244,7 @@ struct ips_tid_recv_desc {
 	uint32_t tidflow_nswap_gen;
 	psmi_seqnum_t tidflow_genseq;
 
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 	struct ips_gpu_hostbuf *gpu_hostbuf;
 	uint8_t is_ptr_gpu_backed;
 #endif
@@ -284,7 +287,7 @@ struct ips_tid_get_request {
 	uint32_t tidgr_bytesdone;
 	uint32_t tidgr_flags;
 
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 	int gpu_hostbuf_used;
 	uint32_t tidgr_gpu_bytesdone;
 	STAILQ_HEAD(ips_tid_getreq_gpu_hostbuf_pend,	/* pending exp. sends */
@@ -325,18 +328,22 @@ MOCK_DCL_EPILOGUE(psm3_ips_protoexp_init);
 psm2_error_t psm3_ips_protoexp_fini(struct ips_protoexp *protoexp);
 
 #ifdef PSM_VERBS
+#ifdef PSM_HAVE_RDMA
 int ips_protoexp_handle_immed_data(struct ips_proto *proto, uint64_t conn_ref,
                                    int conn_type, uint32_t immed, uint32_t len);
 int ips_protoexp_rdma_write_completion(uint64_t wr_id);
-#ifdef PSM_HAVE_RNDV_MOD
+#endif
+#ifdef PSM_HAVE_RDMA_ERR_CHK
+#ifdef PSM_RC_RECONNECT
+struct psm3_verbs_rc_qp * ips_protoexp_rdma_write_completion_rc_qp(psm2_ep_t ep,
+                                             uint64_t wr_id);
+#endif
 int ips_protoexp_rdma_write_completion_error(psm2_ep_t ep, uint64_t wr_id,
                                              enum ibv_wc_status wc_status);
 int ips_protoexp_process_err_chk_rdma(struct ips_recvhdrq_event *rcv_ev);
 int ips_protoexp_process_err_chk_rdma_resp(struct ips_recvhdrq_event *rcv_ev);
-#endif // PSM_HAVE_RNDV_MOD
-
-#endif //PSM_VERBS
-
+#endif
+#endif
 
 PSMI_ALWAYS_INLINE(
 void ips_protoexp_unaligned_copy(uint8_t *dst, uint8_t *src, uint16_t len))
@@ -365,10 +372,18 @@ psm3_ips_tid_send_handle_tidreq(struct ips_protoexp *protoexp,
 			    ips_tid_session_list *tid_list,
 			    uint32_t tid_list_size);
 
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 // buffers for GPU send copy pipeline
 struct ips_gpu_hostbuf* psm3_ips_allocate_send_chb(struct ips_proto *proto,
 				uint32_t nbytes, int allow_temp);
 void psm3_ips_deallocate_send_chb(struct ips_gpu_hostbuf* chb, int reset);
 #endif
+
+#ifdef PSM_RC_RECONNECT
+extern void ips_protoexp_report_inflight_rc_qp(struct ips_protoexp *protoexp,
+				struct psm3_verbs_rc_qp *rc_qp);
+#endif
+extern void ips_protoexp_report_send_inflight(psm2_ep_t ep,
+				struct ips_protoexp *protoexp);
+extern void ips_protoexp_report_recv_inflight(struct ips_protoexp *protoexp);
 #endif /* #ifndef __IPS_EXPECTED_PROTO_H__ */

@@ -10,7 +10,7 @@ proc test(goodLock: string, tf: string) {
   // passing anything to updateLock we need to replace that sentinel with the
   // actual current version.
 
-  const currentVersion = getChapelVersionStr();
+  const currentVersion = getChapelVersionInfo():string;
 
   // file.good -> file.lock
   const lf = goodLock.replace('good', 'lock');

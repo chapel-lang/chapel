@@ -32,6 +32,8 @@
 #include "chpl-comm-locales.h"
 #include "chpl-mem-consistency.h"
 #include "chpl-mem-desc.h"
+#include "chpl-prginfo.h"
+#include "chplcgfns.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -57,26 +59,6 @@ static inline c_nodeid_t get_chpl_nodeID(void) {
 extern int32_t chpl_numNodes; // number of nodes
 
 ssize_t chpl_comm_getenvMaxHeapSize(void);
-
-
-//
-// Shared interface (implemented in the compiler generated code)
-//
-extern void chpl__heapAllocateGlobals(void);
-
-//
-// chpl_globals_registry is an array of size chpl_numGlobalsOnHeap
-// storing ptr_wide_ptr_t, that is, local addresses of wide pointers.
-// It is filled in and used by chpl_comm_register_global_var() and
-// chpl_comm_broadcast_global_vars(), respectively, declared below.
-//
-extern const int chpl_numGlobalsOnHeap;
-extern ptr_wide_ptr_t chpl_globals_registry[];
-
-extern void* const chpl_private_broadcast_table[];
-extern int const chpl_private_broadcast_table_len;
-
-extern void* const chpl_global_serialize_table[];
 
 //
 // Comm layer-specific interface
@@ -357,28 +339,21 @@ chpl_bool chpl_comm_regMemFree(void* p, size_t size) {
 }
 
 //
-// These routines are used by the Chapel runtime to broadcast the
-// locations of module-level ("global") variables to all locales
-// so that all locales can put/get the value of a global variable
-// directly, knowing where it lives remotely.
+// This routine is used by the Chapel runtime to broadcast the locations of
+// module-level ("global") variables within a program to all locales so that
+// all locales can put/get the value of a global variable directly, knowing
+// where it lives remotely.
 //
-// The named symbol for a global var is a wide pointer referring to
-// that global's heap-allocated space on node 0.  At program start,
-// all of these wide pointers must be communicated from node 0 to
-// all the other nodes.  To achieve this, the compiler-emitted code
-// first calls chpl_comm_register_global_var() on every node for
-// each global (passing a global var index which starts at 0 and
-// increments each time, and the address of the global's named
-// symbol), then finally calls chpl_comm_broadcast_global_vars().
-// The implementation of these two could either broadcast the wide
-// pointer values one by one in the 'register' calls and then do
-// nothing in the 'broadcast' call, or batch up the wide pointers
-// in the 'register' calls and actually do a broadcast in the
-// 'broadcast' call.  Currently we do the latter in order to
-// reduce startup overhead.
+// The named symbol for a global var is a wide pointer referring to that
+// global's heap-allocated space on node 0. At program start, all of these
+// wide pointers must be communicated from node 0 to all the other nodes.
 //
-void chpl_comm_register_global_var(int i, wide_ptr_t* ptr_to_wide_ptr);
-void chpl_comm_broadcast_global_vars(int numGlobals);
+// To achieve this, the compiler-emitted code first prepares an array on
+// every locale that contains addresses of wide pointers for every global
+// on that locale. Then, the compiler invokes this function in order to
+// broadcast and set the wide pointers on each locale.
+//
+void chpl_rt_comm_broadcast_global_vars(chpl_rt_prginfo* prg);
 
 //
 // This routine is used by the generated Chapel code to broadcast
@@ -403,7 +378,8 @@ void chpl_comm_broadcast_global_vars(int numGlobals);
 // values, and during execution to do things like enabling and disabling
 // memory tracking/reporting and comm diagnostics.
 //
-void chpl_comm_broadcast_private(int id, size_t size);
+void chpl_rt_comm_private_broadcast(chpl_rt_prginfo* prg, int32_t id,
+                                    size_t size);
 
 //
 // Barrier for synchronization between all top-level locales; currently

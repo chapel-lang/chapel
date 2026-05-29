@@ -1,0 +1,1 @@
+unionEqDiffType.chpl:24: error: Cannot compare unions of type u0 and u3 using '=='

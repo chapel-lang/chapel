@@ -18,6 +18,9 @@
  * limitations under the License.
  */
 
+/**/
+module MasonSearch {
+
 use ArgumentParser;
 use FileSystem;
 use IO;
@@ -69,25 +72,25 @@ proc masonSearch(args: [] string): int throws {
   sort(pkgs, comparator=new pkgComparator(query));
 
   for package in pkgs {
-    writef("%s (%s)\n", package.name, package.version.str());
+    writef("%s (%s)\n", package.name, package.version:string);
   }
 
   // Handle --show flag
   if show {
     if pkgs.size == 1 {
       const pkg = pkgs[0];
-      writeln('Displaying the latest version: ' +
-              pkg.name + '@' + pkg.version.str());
-      const brickPath = joinPath(pkg.registry, 'Bricks',
-                                 pkg.name, pkg.version.str() + '.toml');
+      writeln("Displaying the latest version: " +
+              pkg.name + "@" + pkg.version:string);
+      const brickPath = joinPath(pkg.registry, "Bricks",
+                                 pkg.name, pkg.version:string + ".toml");
       showToml(brickPath);
     } else if pkgs.size == 0 {
       throw new MasonError('"%s" returned no packages\n'.format(query) +
-                           '--show requires the search to return one package');
+                           "--show requires the search to return one package");
     } else if pkgs.size > 1 {
-      var msg = '';
-      if query == '.*' {
-        msg += 'You must specify a package to show the manifest\n';
+      var msg = "";
+      if query == ".*" {
+        msg += "You must specify a package to show the manifest\n";
       } else {
         msg += '"%s"  returned more than one package.\n'.format(query);
       }
@@ -99,3 +102,4 @@ proc masonSearch(args: [] string): int throws {
   return if pkgs.size == 0 then 1 else 0;
 }
 
+}

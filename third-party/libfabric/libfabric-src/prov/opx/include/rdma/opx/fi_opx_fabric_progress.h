@@ -30,15 +30,14 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#ifndef _FI_PROV_OPX_FABRIC_PROGRESS_H_ 
+#ifndef _FI_PROV_OPX_FABRIC_PROGRESS_H_
 #define _FI_PROV_OPX_FABRIC_PROGRESS_H_
 
 #ifdef FI_OPX_FABRIC_HFI1
 #include "rdma/opx/fi_opx_hfi1_progress.h"
 
-#define FI_OPX_FABRIC_POLL_ONCE	fi_opx_hfi1_poll_once
-#define FI_OPX_FABRIC_POLL_MANY	fi_opx_hfi1_poll_many
-
+#define FI_OPX_FABRIC_POLL_ONCE fi_opx_hfi1_poll_once
+#define FI_OPX_FABRIC_POLL_MANY fi_opx_hfi1_poll_many
 
 #endif
 

@@ -35,7 +35,12 @@ Checking out specified revision for myNewGitDep-HEAD...
 $CWD/mason_home/src/myNewDep-0.1.0/src/myNewDep.chpl $CWD/mason_home/git/myNewGitDep-HEAD/src/myNewGitDep.chpl
 mason modules --no-update --format=json
 Checking out specified revision for myNewGitDep-HEAD...
-{"modules":["$CWD/mason_home/src/myNewDep-0.1.0/src/myNewDep.chpl","$CWD/mason_home/git/myNewGitDep-HEAD/src/myNewGitDep.chpl"]}
+{
+  "tests": [], 
+  "sources": ["$CWD/myPackage/src/myPackage.chpl"], 
+  "modules": ["$CWD/mason_home/src/myNewDep-0.1.0/src/myNewDep.chpl", "$CWD/mason_home/git/myNewGitDep-HEAD/src/myNewGitDep.chpl"], 
+  "examples": []
+}
 mason modules --no-update with no lock file, should error
 Cannot skip update without an existing lock file.
 error as expected: 1
@@ -43,4 +48,9 @@ mason modules without --no-update should recreate it
 Fetching latest changes for: myNewGitDep-HEAD...
 Checking out specified revision for myNewGitDep-HEAD...
 Checking out specified revision for myNewGitDep-HEAD...
-{"modules":["$CWD/mason_home/src/myNewDep-0.1.0/src/myNewDep.chpl","$CWD/mason_home/git/myNewGitDep-HEAD/src/myNewGitDep.chpl"]}
+{
+  "tests": [], 
+  "sources": ["$CWD/myPackage/src/myPackage.chpl"], 
+  "modules": ["$CWD/mason_home/src/myNewDep-0.1.0/src/myNewDep.chpl", "$CWD/mason_home/git/myNewGitDep-HEAD/src/myNewGitDep.chpl"], 
+  "examples": []
+}

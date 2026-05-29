@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause OR GPL-2.0-only
  *
- * Copyright (c) 2019 Hewlett Packard Enterprise Development LP
+ * Copyright (c) 2019-2024 Hewlett Packard Enterprise Development LP
  */
 
 /* Fault injection. */
@@ -60,89 +60,14 @@ enum {
 	CXIP_TRAP_GETGRP,
 	CXIP_TRAP_BCAST,
 	CXIP_TRAP_REDUCE,
+	CXIP_TRAP_CURL_FM_URL,
+	CXIP_TRAP_CURL_TOKEN,
+	CXIP_TRAP_HWROOT_INVAL,
+	CXIP_TRAP_HWROOT_INUSE,
+	CXIP_TRAP_MCAST_INUSE,
 	CXIP_TRAP_INITPTE,
-	CXIP_TRAP_CURLSND,
-	CXIP_TRAP_CURLRCV,
 };
 
-#if ENABLE_DEBUG
-/* structure used to simulate failures */
-struct _cxip_trap {
-	struct dlist_entry link;
-	int index;
-	int trap;
-	int err;
-};
-
-struct dlist_entry _trap_list;
-bool _trap_initialized;
-
-static void _cxip_trap_close(void)
-{
-	struct _cxip_trap *trap_obj;
-
-	if (!_trap_initialized)
-		return;
-	while (!dlist_empty(&_trap_list)) {
-		dlist_pop_front(&_trap_list, struct _cxip_trap, trap_obj, link);
-		free(trap_obj);
-	}
-}
-
-static void _cxip_trap_set(int index, int trap, int err)
-{
-	struct _cxip_trap *trap_obj;
-
-	if (!_trap_initialized) {
-		dlist_init(&_trap_list);
-		_trap_initialized = true;
-	}
-	trap_obj = calloc(1, sizeof(*trap_obj));
-	if (!trap_obj)
-		return;
-	dlist_init(&trap_obj->link);
-	trap_obj->index = index;
-	trap_obj->trap = trap;
-	trap_obj->err = err;
-	dlist_insert_tail(&_trap_list, &trap_obj->link);
-}
-
-static bool _cxip_trap_search(int index, int trap, int *err)
-{
-	struct _cxip_trap *trap_obj;
-	struct dlist_entry *item;
-
-	if (!_trap_initialized)
-		return false;
-
-	dlist_foreach(&_trap_list, item) {
-		trap_obj = container_of(item, struct _cxip_trap, link);
-		if (trap_obj->index != index)
-			continue;
-		if (trap_obj->trap != trap)
-			continue;
-		dlist_remove(item);
-		*err = trap_obj->err;
-		free(trap_obj);
-		return true;
-	}
-	return false;
-}
-
-static inline void cxip_trap_close(void)
-{
-	_cxip_trap_close();
-}
-static inline void cxip_trap_set(int index, int trap, int err)
-{
-	_cxip_trap_set(index, trap, err);
-}
-static inline bool cxip_trap_search(int index, int trap, int *err)
-{
-	return _cxip_trap_search(index, trap, err);
-}
-#else
-static inline void cxip_trap_close(void) {}
-static inline void cxip_trap_set(int a, int b, int c) {}
-static inline bool cxip_trap_search(int a, int b, int *c) {return false;}
-#endif
+void cxip_trap_close(void);
+void cxip_trap_set(int index, int trap, int err, int prov_errno);
+bool cxip_trap_search(int index, int trap, int *err, int *prov_errno);

@@ -121,5 +121,4 @@ psm2_error_t psm3_ips_tf_allocate(struct ips_tf *tfc,
 /* Deallocate a tidflow */
 psm2_error_t psm3_ips_tf_deallocate(struct ips_tf *tfc, uint32_t tf_idx, int used);
 
-
 #endif

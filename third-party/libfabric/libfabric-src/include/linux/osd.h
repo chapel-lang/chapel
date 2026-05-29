@@ -100,6 +100,29 @@ size_t ofi_ifaddr_get_speed(struct ifaddrs *ifa);
 # define __NR_process_vm_writev 311
 #endif
 
+#ifndef __NR_pidfd_open
+# define __NR_pidfd_open 434
+#endif
+
+#ifndef __NR_pidfd_getfd
+# define __NR_pidfd_getfd 438
+#endif
+
+static inline int ofi_open(const char* path, int flags, ...)
+{
+	va_list arg;
+	mode_t mode = 0;
+
+	// open takes a variadic argument 'mode_t mode', but not a va_list
+	// extract mode if required, as indicated by flags O_CREAT and O_TMPFILE
+	if ((flags & O_CREAT) != 0 || (flags & O_TMPFILE) == O_TMPFILE) {
+		va_start(arg, flags);
+		mode = (mode_t)va_arg(arg, int);
+		va_end(arg);
+	}
+	return open(path, flags, mode);
+}
+
 static inline ssize_t ofi_process_vm_readv(pid_t pid,
 			const struct iovec *local_iov,
 			unsigned long liovcnt,
@@ -120,6 +143,16 @@ static inline size_t ofi_process_vm_writev(pid_t pid,
 {
 	return syscall(__NR_process_vm_writev, pid, local_iov, liovcnt,
 		       remote_iov, riovcnt, flags);
+}
+
+static inline int ofi_pidfd_open(pid_t pid, unsigned int flags)
+{
+	return syscall(__NR_pidfd_open, pid, flags);
+}
+
+static inline int ofi_pidfd_getfd(int pidfd, int targetfd, unsigned int flags)
+{
+	return syscall(__NR_pidfd_getfd, pidfd, targetfd, flags);
 }
 
 static inline ssize_t ofi_read_socket(SOCKET fd, void *buf, size_t count)
@@ -210,4 +243,5 @@ ofi_recvv_socket(SOCKET fd, const struct iovec *iov, size_t cnt, int flags)
        return ofi_recvmsg_tcp(fd, &msg, flags);
 }
 
+#define OFI_KEEPALIVE	TCP_KEEPIDLE
 #endif /* _LINUX_OSD_H_ */

@@ -4,13 +4,13 @@
 if [ ! -d util ]
 then
   echo Error: missing util/. Must be run from CHPL_HOME.
-  exit -1
+  exit 1
 fi
 
 if [ ! -d compiler/main ]
 then
   echo Error: missing compiler/main/. Must be run from CHPL_HOME.
-  exit -1
+  exit 1
 fi
 
 
@@ -60,7 +60,7 @@ do
       echo "                     matching the source code / release"
       echo "                     e.g.  /opt/chapel/modules"
       echo
-      exit -1
+      exit 1
     ;;
   esac
 
@@ -72,7 +72,7 @@ then
   if [ "$DEST_DIR_SET" -ne 0 ]
   then
     echo "Error: both --prefix and --chpl-home were provided"
-    exit -1
+    exit 1
   fi
 fi
 
@@ -83,10 +83,10 @@ CONFIGURED=""
 if [ "$DEST_DIR_SET" -ne 0 ]
 then
   case $DEST_DIR in 
-    (/*) pathchk "$DEST_DIR" || { echo "error: invalid directory name for --chpl-home: $DEST_DIR"; exit -1; };;
+    (/*) pathchk "$DEST_DIR" || { echo "error: invalid directory name for --chpl-home: $DEST_DIR"; exit 1; };;
     (*) 
     echo "error: expected an absolute directory name for --chpl-home: $DEST_DIR"
-    exit -1
+    exit 1
     ;; 
   esac
   # Save target installation directory for 'make install' / install.sh
@@ -94,10 +94,10 @@ then
   CONFIGURED=configured-chpl-home
 else
   case $PREFIX in 
-    (/*) pathchk "$PREFIX" || { echo "error: invalid directory name for --prefix: $PREFIX"; exit -1; };;
+    (/*) pathchk "$PREFIX" || { echo "error: invalid directory name for --prefix: $PREFIX"; exit 1; };;
     (*) 
     echo "error: expected an absolute directory name for --prefix: $PREFIX"
-    exit -1
+    exit 1
     ;; 
   esac
   # Save prefix for building the compiler
@@ -116,7 +116,7 @@ then
   echo
   echo "       unset CHPL_HOME"
   echo
-  exit -1
+  exit 1
 fi
 
 # Save currently selected configuration

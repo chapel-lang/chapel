@@ -810,6 +810,8 @@ static Expr* preFoldPrimResolves(CallExpr* call) {
           INT_ASSERT(expr);
         } break;
       }
+    } else if (call->isIndirectCall()) {
+      resolveFunctionPointerCall(call, true, &didResolveExpr);
 
     // Otherwise, it is a normal call, so rely on 'tryResolveCall'.
     } else {
@@ -900,8 +902,10 @@ static Expr* preFoldPrimOp(CallExpr* call) {
               if (isSubtypeOrInstantiation(fn->getFormal(1)->type,
                                           testType,
                                           call)) {
+                auto prim = fcfs::usePointerImplementation() ? PRIM_CAPTURE_FN :
+                              PRIM_CAPTURE_FN_TO_CLASS;
                 // TODO: Replace me with a function pointer.
-                auto capture = new CallExpr(PRIM_CAPTURE_FN_TO_CLASS,
+                auto capture = new CallExpr(prim,
                                             new SymExpr(fn));
                 fn->defPoint->getStmtExpr()->insertAfter(capture);
                 Expr* val = resolveExpr(capture);
@@ -3153,6 +3157,24 @@ static Expr* preFoldNamed(CallExpr* call) {
     // Handle a reference to an interface associated type, if applicable.
     if (ConstrainedType* recv = toConstrainedType(call->get(2)->getValType())) {
       retval = resolveCallToAssociatedType(call, recv);
+    } else if (auto ft = toFunctionType(call->get(2)->getValType())) {
+      if (call->isNamed("retType")) {
+        if (shouldWarnUnstableFor(call)) {
+          USR_WARN(call, "The 'retType' method is unstable");
+        }
+        retval = new SymExpr(ft->returnType()->symbol);
+        call->replace(retval);
+      } else if (call->isNamed("argTypes")) {
+        if (shouldWarnUnstableFor(call)) {
+          USR_WARN(call, "The 'argTypes' method is unstable");
+        }
+        CallExpr* expr = new CallExpr("_build_tuple");
+        for (auto& formal : ft->formals()) {
+          expr->insertAtTail(formal.type()->symbol);
+        }
+        retval = expr;
+        call->replace(expr);
+      }
     }
   }
 

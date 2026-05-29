@@ -67,7 +67,6 @@
 /* 4k allocated for all sockets headers */
 #define SOCK_EP_MAX_MSG_SZ (OFI_MAX_SOCKET_BUF_SIZE - 4096)
 #define SOCK_EP_MAX_INJECT_SZ ((1<<8) - 1)
-#define SOCK_EP_MAX_BUFF_RECV (1<<26)
 #define SOCK_EP_MAX_ORDER_RAW_SZ SOCK_EP_MAX_MSG_SZ
 #define SOCK_EP_MAX_ORDER_WAR_SZ SOCK_EP_MAX_MSG_SZ
 #define SOCK_EP_MAX_ORDER_WAW_SZ SOCK_EP_MAX_MSG_SZ
@@ -112,8 +111,6 @@
 #define SOCK_EP_MSG_ORDER (OFI_ORDER_RAR_SET | OFI_ORDER_RAW_SET | FI_ORDER_RAS| \
 			   OFI_ORDER_WAR_SET | OFI_ORDER_WAW_SET | FI_ORDER_WAS | \
 			   FI_ORDER_SAR | FI_ORDER_SAW | FI_ORDER_SAS)
-
-#define SOCK_EP_COMP_ORDER (FI_ORDER_STRICT | FI_ORDER_DATA)
 
 #define SOCK_EP_CQ_FLAGS (FI_SEND | FI_TRANSMIT | FI_RECV | \
 			FI_SELECTIVE_COMPLETION)
@@ -232,7 +229,6 @@ struct sock_domain {
 	ofi_atomic32_t		ref;
 
 	struct sock_eq		*eq;
-	struct sock_eq		*mr_eq;
 
 	enum fi_progress	progress_mode;
 	struct ofi_mr_map	mr_map;

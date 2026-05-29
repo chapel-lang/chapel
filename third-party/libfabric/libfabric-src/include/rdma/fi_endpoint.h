@@ -70,6 +70,15 @@ enum {
 	FI_OPT_XPU_TRIGGER,		/* reserved for compatibility */
 	FI_OPT_CUDA_API_PERMITTED,	/* bool */
 	FI_OPT_SHARED_MEMORY_PERMITTED, /* bool */
+	FI_OPT_MAX_MSG_SIZE,		/* size_t */
+	FI_OPT_MAX_TAGGED_SIZE,		/* size_t */
+	FI_OPT_MAX_RMA_SIZE,		/* size_t */
+	FI_OPT_MAX_ATOMIC_SIZE,		/* size_t */
+	FI_OPT_INJECT_MSG_SIZE,		/* size_t */
+	FI_OPT_INJECT_TAGGED_SIZE,	/* size_t */
+	FI_OPT_INJECT_RMA_SIZE,		/* size_t */
+	FI_OPT_INJECT_ATOMIC_SIZE,	/* size_t */
+	FI_OPT_FIREWALL_ADDR,           /* bool */
 };
 
 /*
@@ -220,7 +229,7 @@ static inline int fi_enable(struct fid_ep *ep)
 
 static inline ssize_t fi_cancel(fid_t fid, void *context)
 {
-	struct fid_ep *ep = container_of(fid, struct fid_ep, fid);
+	struct fid_ep *ep = (struct fid_ep *) fid;
 	return ep->ops->cancel(fid, context);
 }
 
@@ -228,7 +237,7 @@ static inline int
 fi_setopt(fid_t fid, int level, int optname,
 	  const void *optval, size_t optlen)
 {
-	struct fid_ep *ep = container_of(fid, struct fid_ep, fid);
+	struct fid_ep *ep = (struct fid_ep *) fid;
 	return ep->ops->setopt(fid, level, optname, optval, optlen);
 }
 
@@ -236,7 +245,7 @@ static inline int
 fi_getopt(fid_t fid, int level, int optname,
 	  void *optval, size_t *optlen)
 {
-	struct fid_ep *ep = container_of(fid, struct fid_ep, fid);
+	struct fid_ep *ep = (struct fid_ep *) fid;
 	return ep->ops->getopt(fid, level, optname, optval, optlen);
 }
 
@@ -247,7 +256,7 @@ static inline int fi_ep_alias(struct fid_ep *ep, struct fid_ep **alias_ep,
 	struct fid *fid;
 	ret = fi_alias(&ep->fid, &fid, flags);
 	if (!ret)
-		*alias_ep = container_of(fid, struct fid_ep, fid);
+		*alias_ep = (struct fid_ep *) fid;
 	return ret;
 }
 

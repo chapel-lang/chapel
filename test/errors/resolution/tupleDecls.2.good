@@ -1,10 +1,9 @@
-─── error in tupleDecls.chpl:1 [TupleDeclNotTuple] ───
-  Value of non-tuple type 'unknown type' cannot be split using a tuple declaration.
-  In the following tuple declaration:
+─── error in tupleDecls.chpl:1 [UnknownIdentifier] ───
+  'notKnown' cannot be found
       |
     1 | var (x,y) = notKnown;
+      |             ⎺⎺⎺⎺⎺⎺⎺⎺
       |
-  the initialization expression has type 'unknown type', while it is expected to be a 2-tuple.
 
 ─── error in tupleDecls.chpl:3 [TupleDeclNotTuple] ───
   Value of non-tuple type 'int(64)' cannot be split using a tuple declaration.

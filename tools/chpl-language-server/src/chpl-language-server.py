@@ -606,12 +606,17 @@ class ChapelLanguageServer(LanguageServer):
         text_edits = [TextEdit(Range(name_rng.end, name_rng.end), edit_text)]
         colon_label = InlayHintLabelPart(": ")
         label = InlayHintLabelPart(type_str)
-        if isinstance(type_, chapel.CompositeType):
+        typedecl = None
+        if isinstance(type_, (chapel.CompositeType, chapel.EnumType)):
             typedecl = type_.decl()
-            if typedecl and isinstance(typedecl, chapel.NamedDecl):
-                label.location = location_to_location(typedecl.name_location())
-            elif typedecl:
-                label.location = location_to_location(typedecl.location())
+        elif isinstance(type_, chapel.ClassType):
+            if clstype := type_.basic_class_type():
+                typedecl = clstype.decl()
+
+        if typedecl and isinstance(typedecl, chapel.NamedDecl):
+            label.location = location_to_location(typedecl.name_location())
+        elif typedecl:
+            label.location = location_to_location(typedecl.location())
 
         # if the inlay hint is for a loop index type, we cannot insert the type
         # as it would be a syntax error
@@ -1156,10 +1161,18 @@ def run_lsp():
             return None
 
         _, type_, _ = qt
-        if not isinstance(type_, chapel.CompositeType):
+        if not isinstance(
+            type_, (chapel.CompositeType, chapel.ClassType, chapel.EnumType)
+        ):
             return None
 
-        decl = type_.decl()
+        decl = None
+        if isinstance(type_, (chapel.CompositeType, chapel.EnumType)):
+            decl = type_.decl()
+        elif isinstance(type_, chapel.ClassType):
+            if clstype := type_.basic_class_type():
+                decl = clstype.decl()
+
         if not decl:
             return None
 

@@ -4,6 +4,8 @@
 #ifndef EFA_ERRNO_H
 #define EFA_ERRNO_H
 
+#include <ofi_osd.h>
+
 #define EFA_IO_COMP_STATUS_START	0
 
 /**
@@ -53,21 +55,24 @@
  * These status codes correspond directly to the `efa_io_comp_status` codes
  * defined by the RDMA Core EFA provider.
  */
-#define EFA_IO_COMP_STATUSES(_)									\
-	_(0,	OK,				Success)					\
-	_(1,	FLUSHED,			Flushed during queue pair destroy)		\
-	_(2,	LOCAL_ERROR_QP_INTERNAL_ERROR,	Internal queue pair error)			\
-	_(3,	LOCAL_ERROR_INVALID_OP_TYPE,	Invalid operation type)				\
-	_(4,	LOCAL_ERROR_INVALID_AH,		Invalid address handle)				\
-	_(5,	LOCAL_ERROR_INVALID_LKEY,	Invalid local key (LKEY))			\
-	_(6,	LOCAL_ERROR_BAD_LENGTH,		Message too long)				\
-	_(7,	REMOTE_ERROR_BAD_ADDRESS,	Destination ENI is down or does not run EFA)	\
-	_(8,	REMOTE_ERROR_ABORT,		Receiver connection aborted)			\
-	_(9,	REMOTE_ERROR_BAD_DEST_QPN,	Invalid receiver queue pair number (QPN))	\
-	_(10,	REMOTE_ERROR_RNR,		Receiver not ready)				\
-	_(11,	REMOTE_ERROR_BAD_LENGTH,	Receiver scatter-gather list (SGL) too short)	\
-	_(12,	REMOTE_ERROR_BAD_STATUS,	Unexpected status received from remote)		\
-	_(13,	LOCAL_ERROR_UNRESP_REMOTE,	Unresponsive receiver (connection never established or unknown))
+#define EFA_IO_COMP_STATUSES(_)													\
+	_(0,	OK,				Success)									\
+	_(1,	FLUSHED,			Flushed during queue pair destroy)						\
+	_(2,	LOCAL_ERROR_QP_INTERNAL_ERROR,	Internal queue pair error (local))						\
+	_(3,	LOCAL_ERROR_UNSUPPORTED_OP,	Unsupported operation type)							\
+	_(4,	LOCAL_ERROR_INVALID_AH,		Invalid address handle (local))							\
+	_(5,	LOCAL_ERROR_INVALID_LKEY,	Local memory registration is invalid, has insufficient access flags or does not match IOVA)				\
+	_(6,	LOCAL_ERROR_BAD_LENGTH,		Message too long)								\
+	_(7,	REMOTE_ERROR_BAD_ADDRESS,	Remote memory registration is invalid, has insufficient access flags or does not match IOVA)				\
+	_(8,	REMOTE_ERROR_ABORT,		Connection was reset by remote peer)						\
+	_(9,	REMOTE_ERROR_BAD_DEST_QPN,	Bad queue pair (QP) number (QP does not exist or is in error state))		\
+	_(10,	REMOTE_ERROR_RNR,		Destination resource not ready (no work queue entries posted on receive queue))	\
+	_(11,	REMOTE_ERROR_BAD_LENGTH,	Remote scatter-gather list too short)						\
+	_(12,	REMOTE_ERROR_BAD_STATUS,	Unexpected status returned by responder)					\
+	_(13,	LOCAL_ERROR_UNRESP_REMOTE,	Unresponsive remote (was previously responsive))						\
+	_(14,	REMOTE_ERROR_UNKNOWN_PEER,	No valid address handle at remote side (required for RDMA operations))	\
+	_(15,	LOCAL_ERROR_UNREACH_REMOTE,	Unreachable remote - never received a response)					\
+	_(18,	REMOTE_ERROR_FEATURE_MISMATCH,	Remote feature mismatch)							\
 
 /**
  * @brief EFA provider proprietary error codes
@@ -101,7 +106,9 @@
 	_(4121,	DGRAM_CQ_READ,			Error reading from DGRAM CQ)			\
 	_(4122,	SHM_INTERNAL_ERROR,		SHM internal error)				\
 	_(4123,	WRITE_SHM_CQ_ENTRY,		Failure to write CQ entry for SHM operation)	\
-	_(4124, ESTABLISHED_RECV_UNRESP,	Unresponsive receiver (connection previously established))
+	_(4124, ESTABLISHED_RECV_UNRESP,	Unresponsive receiver (connection previously established))	\
+	_(4125,	INVALID_PKT_TYPE_ZCPY_RX,	Invalid packet type received when zero copy recv mode is ON)	\
+	_(4126, UNESTABLISHED_RECV_UNRESP,	Unresponsive receiver (reachable by EFA device but handshake failed))
 
 /** @} */
 
@@ -131,6 +138,51 @@ enum efa_errno {
 
 #undef EFA_IO_COMP_STATUS_ENUM
 #undef EFA_PROV_ERRNO_ENUM
+
+/**
+ * @brief Convert an EFA error code into a common Libfabric error code
+ *
+ * @param[in]	err	An EFA-specific error code
+ * @return	Analogous common Libfabric error code
+ *
+ * @sa fi_errno(3)
+ */
+static inline int to_fi_errno(enum efa_errno err) {
+	switch (err) {
+	case EFA_IO_COMP_STATUS_OK:
+		return FI_SUCCESS;
+	case EFA_IO_COMP_STATUS_FLUSHED:
+		return FI_ECANCELED;
+	case EFA_IO_COMP_STATUS_LOCAL_ERROR_QP_INTERNAL_ERROR:
+	case EFA_IO_COMP_STATUS_LOCAL_ERROR_INVALID_AH:
+	case EFA_IO_COMP_STATUS_LOCAL_ERROR_INVALID_LKEY:
+	case EFA_IO_COMP_STATUS_LOCAL_ERROR_UNSUPPORTED_OP:
+	case EFA_IO_COMP_STATUS_REMOTE_ERROR_BAD_ADDRESS:
+	case EFA_IO_COMP_STATUS_REMOTE_ERROR_FEATURE_MISMATCH:
+		return FI_EINVAL;
+	case EFA_IO_COMP_STATUS_LOCAL_ERROR_UNREACH_REMOTE:
+		return FI_EHOSTUNREACH;
+	case EFA_IO_COMP_STATUS_LOCAL_ERROR_BAD_LENGTH:
+	case EFA_IO_COMP_STATUS_REMOTE_ERROR_BAD_LENGTH:
+		return FI_EMSGSIZE;
+	case EFA_IO_COMP_STATUS_REMOTE_ERROR_ABORT:
+	case EFA_IO_COMP_STATUS_LOCAL_ERROR_UNRESP_REMOTE:
+	case FI_EFA_ERR_ESTABLISHED_RECV_UNRESP:
+	case FI_EFA_ERR_UNESTABLISHED_RECV_UNRESP:
+		return FI_ECONNABORTED;
+	case EFA_IO_COMP_STATUS_REMOTE_ERROR_BAD_DEST_QPN:
+	case EFA_IO_COMP_STATUS_REMOTE_ERROR_UNKNOWN_PEER:
+		return FI_ENOTCONN;
+	case EFA_IO_COMP_STATUS_REMOTE_ERROR_RNR:
+		return FI_ENORX;
+	case EFA_IO_COMP_STATUS_REMOTE_ERROR_BAD_STATUS:
+		return FI_EREMOTEIO;
+	case FI_EFA_ERR_OOM:
+		return FI_ENOMEM;
+	default:
+		return FI_EOTHER;
+	}
+}
 
 const char *efa_strerror(enum efa_errno);
 void efa_show_help(enum efa_errno);

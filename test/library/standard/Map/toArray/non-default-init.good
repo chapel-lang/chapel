@@ -1,6 +1,18 @@
 empty: 
+empty keys: 
+empty values: 
 arr: ((x = 1), hi)
+keys: (x = 1)
+values: hi
 empty: 
+empty keys: 
+empty values: 
 arr: ((x = 1), hi)
+keys: (x = 1)
+values: hi
 empty: 
+empty keys: 
+empty values: 
 arr: ((arr = 1 1 1 1 1 1 1 1 1 1), hi)
+keys: (arr = 1 1 1 1 1 1 1 1 1 1)
+values: hi

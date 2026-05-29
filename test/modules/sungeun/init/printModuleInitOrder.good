@@ -21,6 +21,7 @@ Initializing Modules:
         ChapelNumLocales
        DefaultRectangular
         ChapelArray
+         ArrayViewSlice
          ChapelPrivatization
          ChapelDomain
           FormattedIO
@@ -65,6 +66,9 @@ Initializing Modules:
     ChapelStaticVars
     ChapelDynamicLoading
     ChapelProgramEntrypoints
+     ChapelProgramRegistration
+      ChapelSetProgramInfoDataEntries
+    ChapelRuntimeInterface
     AlignedTSupport
    printModuleInitOrder
     moduleInitTest

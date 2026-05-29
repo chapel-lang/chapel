@@ -4259,7 +4259,8 @@ void _qio_channel_write_bits_cached_realign(qio_channel_t* restrict ch, uint64_t
   // We've got > 64 bits to write.
   part_one = 8*sizeof(qio_bitbuffer_t) - tmp_live;
   part_two = nbits - part_one;
-  part_one_bits = (tmp_bits << part_one) | ( v >> part_two );
+  part_one_bits = CHPL_SAFE_LSHIFT(tmp_bits, part_one, 64) |
+                  CHPL_SAFE_RSHIFT(v, part_two, 64);
   part_one_bits_be = qio_bitbuffer_tobe(part_one_bits); // big endian now.
   tmp_bits = v;
   tmp_live = part_two;
@@ -4320,7 +4321,6 @@ qioerr _qio_channel_write_bits_slow(qio_channel_t* restrict ch, uint64_t v, int8
   qio_bitbuffer_t part_one, part_two;
   qio_bitbuffer_t parts_be[2];
   qio_bitbuffer_t tmp_bits;
-  uint64_t tmpv;
   int tmp_live;
   int tmp_leftshift;
   int part_bits;
@@ -4345,15 +4345,14 @@ qioerr _qio_channel_write_bits_slow(qio_channel_t* restrict ch, uint64_t v, int8
   if( nbits > tmp_leftshift ) {
     // we will need more than one word...
     v_rightshift = nbits - tmp_leftshift;
-    tmpv = (v_rightshift < 64) ? v : 0;
-    part_one = (tmp_bits << tmp_leftshift) | (tmpv >> v_rightshift);
-    tmpv = (v_rightshift > 0) ? v : 0;
-    part_two = tmpv << (8*sizeof(qio_bitbuffer_t) - v_rightshift);
+    part_one = CHPL_SAFE_LSHIFT(tmp_bits, tmp_leftshift, 64) |
+               CHPL_SAFE_RSHIFT(v, v_rightshift, 64);
+    part_two = CHPL_SAFE_LSHIFT(v, 8*sizeof(qio_bitbuffer_t) - v_rightshift, 64);
   } else {
     // otherwise, we will not spill over..
     v_leftshift = tmp_leftshift - nbits;
-    tmpv = (v_leftshift < 64) ? v : 0;
-    part_one = (tmp_bits << tmp_leftshift) | (tmpv << v_leftshift);
+    part_one = CHPL_SAFE_LSHIFT(tmp_bits, tmp_leftshift, 64) |
+               CHPL_SAFE_LSHIFT(v, v_leftshift, 64);
     part_two = 0;
   }
 
@@ -4390,10 +4389,11 @@ qioerr _qio_channel_write_bits_slow(qio_channel_t* restrict ch, uint64_t v, int8
   if( writebytes < (int) sizeof(qio_bitbuffer_t) ) {
     // remainder in part_one
     // put the byte in question to the hi byte
-    tmp_bits = part_one << (8*writebytes);
+    tmp_bits = CHPL_SAFE_LSHIFT(part_one, 8*writebytes, 64);
   } else {
     // put the byte in question to the hi byte
-    tmp_bits = part_two << (8*(writebytes-sizeof(qio_bitbuffer_t)));
+    tmp_bits = CHPL_SAFE_LSHIFT(part_two,
+                                8*(writebytes-sizeof(qio_bitbuffer_t)), 64);
   }
   // put the byte in question to the lo byte
   tmp_bits = tmp_bits >> (8*sizeof(qio_bitbuffer_t) - 8);
@@ -4480,7 +4480,7 @@ void _qio_channel_read_bits_cached_realign(qio_channel_t* restrict ch, uint64_t*
   buf = qio_bitbuffer_unbe(buf);
 
   // Extract the part that applies to our value.
-  value <<= value_part;
+  value = CHPL_SAFE_LSHIFT(value, value_part, 64);
   value |= qio_bitbuffer_topn(buf, value_part);
 
   *v = value;
@@ -4488,7 +4488,7 @@ void _qio_channel_read_bits_cached_realign(qio_channel_t* restrict ch, uint64_t*
   // Now what's left in buf (<8bits) needs to go into
   // tmp_bits.
   part_one = 8*to_copy - value_part;
-  buf <<= value_part;
+  buf = CHPL_SAFE_LSHIFT(buf, value_part, 64);
   tmp_bits = qio_bitbuffer_topn(buf, part_one); // currently storing at bottom.
   tmp_live = part_one;
 
@@ -4510,13 +4510,14 @@ void _qio_channel_read_bits_cached_realign(qio_channel_t* restrict ch, uint64_t*
   buf = qio_bitbuffer_unbe(buf);
 
   // OK, now extract the part of buf that we care about.
-  tmp_bits <<= part_two;
+  tmp_bits = CHPL_SAFE_LSHIFT(tmp_bits, part_two, 64);
   tmp_bits |= qio_bitbuffer_topn(buf, part_two);
   tmp_live += part_two;
 
   // Now move tmp_bits to the higher order bits
   // like we want for reading.
-  tmp_bits <<= (8*sizeof(qio_bitbuffer_t) - tmp_live);
+  tmp_bits = CHPL_SAFE_LSHIFT(tmp_bits,
+                              8*sizeof(qio_bitbuffer_t) - tmp_live, 64);
 
   ch->bit_buffer = tmp_bits;
   ch->bit_buffer_bits = tmp_live;
@@ -4540,7 +4541,7 @@ qioerr _qio_channel_read_bits_slow(qio_channel_t* restrict ch, uint64_t* restric
   if( nbits <= tmp_live ) {
     // we're going to get everything we need from tmp_bits.
     *v = tmp_bits >> (8*sizeof(qio_bitbuffer_t) - nbits);
-    tmp_bits <<= nbits;
+    tmp_bits = CHPL_SAFE_LSHIFT(tmp_bits, nbits, 64);
     tmp_live -= nbits;
   } else {
     part_two = nbits - tmp_live;
@@ -4573,10 +4574,10 @@ qioerr _qio_channel_read_bits_slow(qio_channel_t* restrict ch, uint64_t* restric
     buf = qio_bitbuffer_unbe(buf);
 
     value = qio_bitbuffer_topn(tmp_bits, tmp_live);
-    value <<= part_two;
+    value = CHPL_SAFE_LSHIFT(value, part_two, 64);
 
     value |= qio_bitbuffer_topn(buf, part_two);
-    tmp_bits = buf << part_two;
+    tmp_bits = CHPL_SAFE_LSHIFT(buf, part_two, 64);
     tmp_live = 8*tmp_read - part_two;
 
     // Now we haven't read ahead any bytes beyond

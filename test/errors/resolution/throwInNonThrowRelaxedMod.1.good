@@ -1,0 +1,3 @@
+throwInNonThrowRelaxedMod.chpl:5: error: call to throwing function 'canThrow' without throws, try, or try! (relaxed mode)
+throwInNonThrowRelaxedMod.chpl:1: In module 'M':
+throwInNonThrowRelaxedMod.chpl:2: note: The function was declared to throw here

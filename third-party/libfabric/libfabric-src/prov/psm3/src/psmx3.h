@@ -129,7 +129,6 @@ extern struct fi_provider psmx3_prov;
 #define PSMX3_RMA_ORDER_SIZE	(4096)
 #define PSMX3_MSG_ORDER		(FI_ORDER_SAS | OFI_ORDER_RAR_SET | OFI_ORDER_RAW_SET | \
 				 OFI_ORDER_WAR_SET | OFI_ORDER_WAW_SET)
-#define PSMX3_COMP_ORDER	FI_ORDER_NONE
 
 /*
  * Four bits are reserved from the 64-bit tag space as a flags to identify the
@@ -558,7 +557,7 @@ struct psmx3_fid_domain {
 	uint64_t		mode;
 	uint64_t		caps;
 
-	enum fi_mr_mode		mr_mode;
+	int			mr_mode;
 	ofi_spin_t		mr_lock;
 	uint64_t		mr_reserved_key;
 	RbtHandle		mr_map;
@@ -854,12 +853,13 @@ struct psmx3_env {
 	char	*tag_layout;
 #endif
 	int	yield_mode;
+	int	wait_enable;
 };
 
 #define PSMX3_MAX_UNITS	PSMI_MAX_RAILS /* from psm_config.h */
+#define PSMX3_MAX_EPS	64 /* no real limit, used to report max_trx_ctxt */
 struct psmx3_domain_info {
 	int max_trx_ctxt;
-	int free_trx_ctxt;
 	int num_units;	/* total HW units found by PSM3 */
 	int num_reported_units;	/* num entries in arrays below */
 	int num_active_units;	/* total active found, >= num_reported_units */
@@ -867,8 +867,6 @@ struct psmx3_domain_info {
 	int unit_is_active[PSMX3_MAX_UNITS];
 	int unit_id[PSMX3_MAX_UNITS];	/* PSM3 unit_id */
 	int addr_index[PSMX3_MAX_UNITS];/* PSM3 address index within unit_id */
-	int unit_nctxts[PSMX3_MAX_UNITS];
-	int unit_nfreectxts[PSMX3_MAX_UNITS];
 	char default_domain_name[PSMX3_MAX_UNITS * NAME_MAX]; /* autoselect:irdma0;irdma1;..... */
 	char default_fabric_name[PSMX3_MAX_UNITS * NAME_MAX]; /* RoCE 192.168.101.0/24;RoCE 192.168.102.0/24;.... */
 };
@@ -997,6 +995,11 @@ int	psmx3_wait_trywait(struct fid_fabric *fabric, struct fid **fids,
 int	psmx3_query_atomic(struct fid_domain *doamin, enum fi_datatype datatype,
 			   enum fi_op op, struct fi_atomic_attr *attr,
 			   uint64_t flags);
+
+struct psmx3_ep_name *psmx3_lookup(const char *node, const char *service);
+
+int psmx3_av_insertsvc(struct fid_av *av, const char *node, const char *service,
+				       fi_addr_t *fi_addr, uint64_t flags,	void *context);
 
 static inline void psmx3_fabric_acquire(struct psmx3_fid_fabric *fabric)
 {

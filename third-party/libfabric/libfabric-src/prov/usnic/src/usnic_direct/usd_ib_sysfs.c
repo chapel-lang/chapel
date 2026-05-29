@@ -111,8 +111,11 @@ usd_ib_get_devlist(
         }
 
         /* Must be a directory */
-        if (!S_ISDIR(sbuf.st_mode))
+        if (!S_ISDIR(sbuf.st_mode)) {
+            free(dev_path);
+            dev_path = NULL;
             continue;
+        }
 
         /* read the ibdev */
         if (asprintf(&ibdev_path, "%s/ibdev", dev_path) <= 0) {

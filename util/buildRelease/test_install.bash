@@ -10,7 +10,7 @@ unset CHPL_HOME
 export CHPL_CHECK_HOME=`pwd`
 wd=`pwd`
 
-num_procs=${$($CHPL_HOME/util/buildRelease/chpl-make-cpu_count):-1}
+num_procs=`$CHPL_HOME/util/buildRelease/chpl-make-cpu_count`
 echo "Using $num_procs threads for parallel make"
 
 export CHPL_LLVM=bundled

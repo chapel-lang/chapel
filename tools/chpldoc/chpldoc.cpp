@@ -1528,6 +1528,7 @@ struct RstResultBuilder {
     node->traverse(ppv);
     if (!fDocsTextOnly) os_ << "\n";
 
+    showEdition(node, indentComment);
     showDeprecationMessage(node, indentComment);
     // TODO: how do deprecation and unstable messages interplay?
     showUnstableWarning(node, indentComment);
@@ -1602,6 +1603,55 @@ struct RstResultBuilder {
           }
           os_ << "\n";
         }
+      }
+    }
+  }
+
+  void showEdition(const Decl* node, bool indentComment=true) {
+    if (auto attrs = node->attributeGroup()) {
+      if (attrs->hasEdition()) {
+        // write the pertinent edition information
+        os_ << "\n";
+
+        int commentShift = 0;
+        if (indentComment) {
+          indentStream(os_, indentDepth_ * indentPerDepth);
+          commentShift = 1;
+        }
+        os_ << ".. note::\n\n";
+        indentStream(os_, (indentDepth_ + commentShift) * indentPerDepth);
+        auto firstEdition = attrs->firstEdition();
+        auto lastEdition = attrs->lastEdition();
+        if (firstEdition.isEmpty() && !lastEdition.isEmpty()) {
+          os_ << getNodeName((AstNode*) node)
+              << " was removed after the " << lastEdition.str() << " edition."
+              << " It is not available in editions after the "
+              << lastEdition.str() << " edition.";
+        } else if (!firstEdition.isEmpty() && lastEdition.isEmpty()) {
+          // special message for new preview items, since "preview"
+          // isn't a real edition
+          if (firstEdition == "preview") {
+            os_ << getNodeName((AstNode*) node)
+                << " is available in the preview edition and is expected "
+                << "to be available in the next new edition.";
+          } else {
+            os_ << getNodeName((AstNode*) node)
+                << " was added in the " << firstEdition.str()
+                << " edition and is also available in all editions after the "
+                << firstEdition.str() << " edition.";
+          }
+        } else if (!firstEdition.isEmpty() && !lastEdition.isEmpty()) {
+          os_ << getNodeName((AstNode*) node)
+              << " was added in the " << firstEdition.str()
+              << " edition and was removed after the "
+              << lastEdition.str()
+              << " edition.";
+        } else {
+          // this case should be impossible because hasEdition() should only be
+          // true if at least one of first or last edition is non-empty
+          assert(false);
+        }
+        os_ << "\n";
       }
     }
   }
@@ -1816,7 +1866,8 @@ struct RstResultBuilder {
         os_ << moduleName << "/ directory" << std::endl;
       }
     }
-    if (fDocsTextOnly) indentDepth_ --;
+    if (fDocsTextOnly) indentDepth_--;
+    showEdition(m, false);
     showDeprecationMessage(m, false);
     showUnstableWarning(m, false);
     showComment(m, fDocsTextOnly);

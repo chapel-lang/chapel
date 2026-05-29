@@ -1,0 +1,55 @@
+.. default-domain:: chpl
+
+.. module:: basicEditions.doc
+
+basicEditions.doc
+=================
+**Usage**
+
+.. code-block:: chapel
+
+   use basicEditions.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import basicEditions.doc;
+
+.. function:: proc myFunc()
+
+   .. note::
+
+      myFunc was removed after the 2.0 edition. It is not available in editions after the 2.0 edition.
+
+   
+   This is some function
+
+.. function:: proc myFunc()
+
+   .. note::
+
+      myFunc was added in the Maybe 3.0 edition and is also available in all editions after the Maybe 3.0 edition.
+
+   
+   This is some function
+
+.. function:: proc myFunc()
+
+   .. note::
+
+      myFunc is available in the preview edition and is expected to be available in the next new edition.
+
+   
+   This is some function
+
+.. function:: proc other()
+
+   .. note::
+
+      other was added in the 2.0 edition and was removed after the Maybe 3.0 edition.
+
+   
+   This is some other function
+

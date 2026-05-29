@@ -26,11 +26,15 @@ proc test(type R) {
   var l = new map(R, string);
   var empty = l.toArray();
   writeln("empty: ", empty);
+  writeln("empty keys: ", l.keysToArray());
+  writeln("empty values: ", l.valuesToArray());
 
   l.add(new R(1), "hi");
 
   var arr = l.toArray();
   writeln("arr: ", arr);
+  writeln("keys: ", l.keysToArray());
+  writeln("values: ", l.valuesToArray());
 }
 
 test(R1);

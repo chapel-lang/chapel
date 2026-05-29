@@ -2007,7 +2007,7 @@ static void heapAllocateGlobalsTail(FnSymbol* heapAllocateGlobals,
   for_vector(Symbol, sym, heapVars) {
     heapAllocateGlobals->insertAtTail(new CallExpr(PRIM_REGISTER_GLOBAL_VAR, new_IntSymbol(i++), sym));
   }
-  heapAllocateGlobals->insertAtTail(new CallExpr(PRIM_BROADCAST_GLOBAL_VARS, new_IntSymbol(i)));
+  heapAllocateGlobals->insertAtTail(new CallExpr(PRIM_BROADCAST_GLOBAL_VARS));
   heapAllocateGlobals->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
   numGlobalsOnHeap = i;
 }

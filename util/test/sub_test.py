@@ -246,7 +246,11 @@ def LauncherTimeoutArgs(seconds, maxQueueTime=0):
         if maxQueueTime > 0:
             # deadline is the walltime + max time in queue
             time = maxQueueTime + seconds
-            fmtdeadline = "--deadline=now+{}seconds".format(time)
+            fmtdeadline = (
+                "--system-launcher-flags='--deadline=now+{}seconds'".format(
+                    time
+                )
+            )
             args.append(fmtdeadline)
         return args
 
@@ -2303,9 +2307,13 @@ def main():
                 if not os.path.isfile(goodfile) or not os.access(
                     goodfile, os.R_OK
                 ):
-                    if perftest or executebin:
+                    if perftest:
                         sys.stdout.write(
                             f"{futuretest}[Error compilation failed for {test_name}]\n"
+                        )
+                    elif executebin:
+                        sys.stdout.write(
+                            f"{futuretest}[Error compilation failed for {test_name}, but could not find {localdir}/{goodfile}]\n"
                         )
                     else:
                         sys.stdout.write(

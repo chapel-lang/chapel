@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Condition="'$(WindowsTargetPlatformVersion)'==''">
+    <!-- Default the installed latest Win10.0 SDK -->
+    <WindowsSdkInstallFolder_10_0 Condition="'$(WindowsSdkInstallFolder_10_0)' == ''">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v10.0@InstallationFolder)</WindowsSdkInstallFolder_10_0>
+    <WindowsSdkInstallFolder_10_0 Condition="'$(WindowsSdkInstallFolder_10_0)' == ''">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\Microsoft SDKs\Windows\v10.0@InstallationFolder)</WindowsSdkInstallFolder_10_0>
+    <WindowsTargetPlatformVersion_10_0 Condition="'$(WindowsTargetPlatformVersion_10_0)' == ''">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v10.0@ProductVersion)</WindowsTargetPlatformVersion_10_0>
+    <WindowsTargetPlatformVersion_10_0 Condition="'$(WindowsTargetPlatformVersion_10_0)' == ''">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\Microsoft SDKs\Windows\v10.0@ProductVersion)</WindowsTargetPlatformVersion_10_0>
+    <!-- Sometimes the version in the registry has to .0 suffix, and sometimes it doesn't. Check and add it -->
+    <WindowsTargetPlatformVersion_10_0 Condition="'$(WindowsTargetPlatformVersion_10_0)' != '' and !$(WindowsTargetPlatformVersion_10_0.EndsWith('.0'))">$(WindowsTargetPlatformVersion_10_0).0</WindowsTargetPlatformVersion_10_0>
+    <WindowsTargetPlatformVersion>$(WindowsTargetPlatformVersion_10_0)</WindowsTargetPlatformVersion>
+
+    <!-- Default the installed latest Win8.1 SDK -->
+    <WindowsSdkInstallFolder_8_1 Condition="'$(WindowsSdkInstallFolder_8_1)' == ''">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v8.1@InstallationFolder)</WindowsSdkInstallFolder_8_1>
+    <WindowsSdkInstallFolder_8_1 Condition="'$(WindowsSdkInstallFolder_8_1)' == ''">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\Microsoft SDKs\Windows\v8.1@InstallationFolder)</WindowsSdkInstallFolder_8_1>
+    <WindowsTargetPlatformVersion_8_1 Condition="'$(WindowsTargetPlatformVersion_8_1)' == ''">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v8.1@ProductVersion)</WindowsTargetPlatformVersion_8_1>
+    <WindowsTargetPlatformVersion_8_1 Condition="'$(WindowsTargetPlatformVersion_8_1)' == ''">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\Microsoft SDKs\Windows\v8.1@ProductVersion)</WindowsTargetPlatformVersion_8_1>
+    <!-- Sometimes the version in the registry has to .0 suffix, and sometimes it doesn't. Check and add it -->
+    <WindowsTargetPlatformVersion_8_1 Condition="'$(WindowsTargetPlatformVersion_8_1)' != '' and !$(WindowsTargetPlatformVersion_8_1.EndsWith('.0'))">$(WindowsTargetPlatformVersion_8_1).0</WindowsTargetPlatformVersion_8_1>
+    <WindowsTargetPlatformVersion Condition="'$(WindowsTargetPlatformVersion)' == ''">$(WindowsTargetPlatformVersion_8_1)</WindowsTargetPlatformVersion>
+
+    <!-- Default the installed latest Win8.0 SDK -->
+    <WindowsSdkInstallFolder_8_0 Condition="'$(WindowsSdkInstallFolder_8_0)' == ''">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v8.0@InstallationFolder)</WindowsSdkInstallFolder_8_0>
+    <WindowsSdkInstallFolder_8_0 Condition="'$(WindowsSdkInstallFolder_8_0)' == ''">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\Microsoft SDKs\Windows\v8.0@InstallationFolder)</WindowsSdkInstallFolder_8_0>
+    <WindowsTargetPlatformVersion_8_0 Condition="'$(WindowsTargetPlatformVersion_8_0)' == ''">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v8.0@ProductVersion)</WindowsTargetPlatformVersion_8_0>
+    <WindowsTargetPlatformVersion_8_0 Condition="'$(WindowsTargetPlatformVersion_8_0)' == ''">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\Microsoft SDKs\Windows\v8.0@ProductVersion)</WindowsTargetPlatformVersion_8_0>
+    <!-- Sometimes the version in the registry has to .0 suffix, and sometimes it doesn't. Check and add it -->
+    <WindowsTargetPlatformVersion_8_0 Condition="'$(WindowsTargetPlatformVersion_8_0)' != '' and !$(WindowsTargetPlatformVersion_8_0.EndsWith('.0'))">$(WindowsTargetPlatformVersion_8_0).0</WindowsTargetPlatformVersion_8_0>
+    <WindowsTargetPlatformVersion Condition="'$(WindowsTargetPlatformVersion)' == ''">$(WindowsTargetPlatformVersion_8_0)</WindowsTargetPlatformVersion>
+
+    <!-- Default the installed latest Win7.1 SDK -->
+    <WindowsSdkInstallFolder_7_1 Condition="'$(WindowsSdkInstallFolder_7_1)' == ''">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v7.1@InstallationFolder)</WindowsSdkInstallFolder_7_1>
+    <WindowsSdkInstallFolder_7_1 Condition="'$(WindowsSdkInstallFolder_7_1)' == ''">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\Microsoft SDKs\Windows\v7.1@InstallationFolder)</WindowsSdkInstallFolder_7_1>
+    <WindowsTargetPlatformVersion_7_1 Condition="'$(WindowsTargetPlatformVersion_7_1)' == ''">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v7.1@ProductVersion)</WindowsTargetPlatformVersion_7_1>
+    <WindowsTargetPlatformVersion_7_1 Condition="'$(WindowsTargetPlatformVersion_7_1)' == ''">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\Microsoft SDKs\Windows\v7.1@ProductVersion)</WindowsTargetPlatformVersion_7_1>
+    <!-- Sometimes the version in the registry has to .0 suffix, and sometimes it doesn't. Check and add it -->
+    <WindowsTargetPlatformVersion_7_1 Condition="'$(WindowsTargetPlatformVersion_7_1)' != '' and !$(WindowsTargetPlatformVersion_7_1.EndsWith('.0'))">$(WindowsTargetPlatformVersion_7_1).0</WindowsTargetPlatformVersion_7_1>
+    <WindowsTargetPlatformVersion Condition="'$(WindowsTargetPlatformVersion)' == ''">$(WindowsTargetPlatformVersion_7_1)</WindowsTargetPlatformVersion>
+
+    <!-- Default the installed latest Win7.1 SDK -->
+    <WindowsSdkInstallFolder_7_0 Condition="'$(WindowsSdkInstallFolder_7_0)' == ''">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v7.0@InstallationFolder)</WindowsSdkInstallFolder_7_0>
+    <WindowsSdkInstallFolder_7_0 Condition="'$(WindowsSdkInstallFolder_7_0)' == ''">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\Microsoft SDKs\Windows\v7.0@InstallationFolder)</WindowsSdkInstallFolder_7_0>
+    <WindowsTargetPlatformVersion_7_0 Condition="'$(WindowsTargetPlatformVersion_7_0)' == ''">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v7.0@ProductVersion)</WindowsTargetPlatformVersion_7_0>
+    <WindowsTargetPlatformVersion_7_0 Condition="'$(WindowsTargetPlatformVersion_7_0)' == ''">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\Microsoft SDKs\Windows\v7.0@ProductVersion)</WindowsTargetPlatformVersion_7_0>
+    <!-- Sometimes the version in the registry has to .0 suffix, and sometimes it doesn't. Check and add it -->
+    <WindowsTargetPlatformVersion_7_0 Condition="'$(WindowsTargetPlatformVersion_7_0)' != '' and !$(WindowsTargetPlatformVersion_7_0.EndsWith('.0'))">$(WindowsTargetPlatformVersion_7_0).0</WindowsTargetPlatformVersion_7_0>
+    <WindowsTargetPlatformVersion Condition="'$(WindowsTargetPlatformVersion)' == ''">$(WindowsTargetPlatformVersion_7_0)</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+</Project>

@@ -65,7 +65,7 @@ struct sm2_mmap {
 
 struct sm2_ep_allocation_entry {
 	int pid; /* This is for allocation startup */
-	char ep_name[FI_NAME_MAX];
+	char ep_name[OFI_NAME_MAX];
 	bool startup_ready; /* TODO Do I need to make atomic */
 };
 

@@ -71,13 +71,13 @@ struct fi_ops_cm {
 
 static inline int fi_setname(fid_t fid, void *addr, size_t addrlen)
 {
-	struct fid_ep *ep = container_of(fid, struct fid_ep, fid);
+	struct fid_ep *ep = (struct fid_ep *) fid;
 	return ep->cm->setname(fid, addr, addrlen);
 }
 
 static inline int fi_getname(fid_t fid, void *addr, size_t *addrlen)
 {
-	struct fid_ep *ep = container_of(fid, struct fid_ep, fid);
+	struct fid_ep *ep = (struct fid_ep *) fid;
 	return ep->cm->getname(fid, addr, addrlen);
 }
 

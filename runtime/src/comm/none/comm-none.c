@@ -32,6 +32,7 @@
 #include "chplcgfns.h"
 #include "chpl-gen-includes.h"
 #include "chpl-linefile-support.h"
+#include "chpl-prginfo.h"
 
 // Don't get warning macros for chpl_comm_get etc
 #include "chpl-comm-no-warning-macros.h"
@@ -148,7 +149,7 @@ static chpl_bool chpl_lldb_supports_python(void) {
 }
 
 int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
-
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER, CHPL_HOME);
   char* command = (char*)"gdb -q";
 
   const char* gdb_commands = chpl_glom_strings(2, CHPL_HOME, "/runtime/etc/debug/gdb.commands");
@@ -179,7 +180,7 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
 }
 
 int chpl_comm_run_in_lldb(int argc, char* argv[], int lldbArgnum, int* status) {
-
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER, CHPL_HOME);
   char* command = (char*)"lldb";
 
   const char* lldb_commands = chpl_glom_strings(2, CHPL_HOME, "/runtime/etc/debug/lldb.commands");
@@ -244,9 +245,12 @@ void chpl_comm_rollcall(void) {
   chpl_msg(2, "executing on a single node\n");
 }
 
-wide_ptr_t* chpl_comm_broadcast_global_vars_helper(void) { return NULL; }
+wide_ptr_t* chpl_rt_comm_broadcast_global_vars_impl(chpl_rt_prginfo* prg) {
+  return NULL;
+}
 
-void chpl_comm_broadcast_private(int id, size_t size) { }
+void chpl_rt_comm_private_broadcast_impl(chpl_rt_prginfo* prg, int32_t id,
+                                         size_t size) {}
 
 void chpl_comm_impl_barrier(const char *msg) { }
 
@@ -340,6 +344,7 @@ void chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
                              chpl_comm_on_bundle_t *arg, size_t arg_size,
                              int ln, int32_t fn) {
   assert(node==0);
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER, chpl_ftable);
 
   chpl_task_startMovedTask(fid, chpl_ftable[fid],
                            chpl_comm_on_bundle_task_bundle(arg), arg_size,

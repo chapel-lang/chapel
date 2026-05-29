@@ -351,7 +351,7 @@ static void test10(Parser* parser) {
   assert(resFunc);
 
   assert(guard.numErrors() == 1);
-  assert(guard.error(0)->message() == "Try without a catchall in a non-throwing function");
+  assert(guard.error(0)->type() == chpl::TryNoCatchAll);
   assert(guard.error(0)->kind() == ErrorBase::Kind::ERROR);
   assert(guard.realizeErrors() == 1);
 }
@@ -415,7 +415,7 @@ static void test12(Parser* parser) {
   assert(resFunc);
 
   assert(guard.numErrors() == 1);
-  assert(guard.error(0)->message() == "cannot throw in a non-throwing function");
+  assert(guard.error(0)->type() == chpl::ThrowInNonThrowingFunction);
   assert(guard.error(0)->kind() == ErrorBase::Kind::ERROR);
   assert(guard.realizeErrors() == 1);
 }
@@ -521,7 +521,7 @@ static void test12e(Parser* parser) {
   std::ignore = resolveModule(ctx, mod->id());
 
   assert(guard.numErrors() == 1);
-  assert(guard.error(0)->message() == "cannot throw in a non-throwing function");
+  assert(guard.error(0)->type() == chpl::ThrowInNonThrowingFunction);
   assert(guard.error(0)->kind() == ErrorBase::Kind::ERROR);
   assert(guard.realizeErrors() == 1);
 }
@@ -561,9 +561,9 @@ static void test13(Parser* parser) {
   // TODO: Should this be two errors? It seems like the Try without catchall
   // is the real error here. What's the purpose of the first error?
   assert(guard.numErrors() == 2);
-  assert(guard.error(0)->message() == "call to throwing function 'throwit' is in a try but not handled");
+  assert(guard.error(0)->type() == chpl::ThrowUnhandled);
   assert(guard.error(0)->kind() == ErrorBase::Kind::ERROR);
-  assert(guard.error(1)->message() == "Try without a catchall in a non-throwing function");
+  assert(guard.error(1)->type() == chpl::TryNoCatchAll);
   assert(guard.error(1)->kind() == ErrorBase::Kind::ERROR);
   assert(guard.realizeErrors() == 2);
 }
@@ -628,7 +628,7 @@ static void test15(Parser* parser) {
   assert(resFunc);
 
   assert(guard.numErrors() == 1);
-  assert(guard.error(0)->message() == "Try without a catchall in a non-throwing function");
+  assert(guard.error(0)->type() == chpl::TryNoCatchAll);
   assert(guard.error(0)->kind() == ErrorBase::Kind::ERROR);
   assert(guard.realizeErrors() == 1);
 }
@@ -693,7 +693,7 @@ static void test17(Parser* parser) {
   auto canThrowFn = mod->stmt(0)->toFunction();
   assert(canThrowFn);
   assert(guard.numErrors() == 1);
-  assert(guard.error(0)->message() == "call to throwing function 'canThrow' without throws, try, or try! (relaxed mode)");
+  assert(guard.error(0)->type() == chpl::CallToThrowingFunctionRelaxed);
   assert(guard.error(0)->kind() == ErrorBase::Kind::ERROR);
   assert(guard.realizeErrors() == 1);
 }
@@ -799,7 +799,7 @@ static void test20(Parser* parser) {
   auto gRes = resolveConcreteFunction(ctx, gFunc->id());
   assert(gRes);
   assert(guard.numErrors() == 1);
-  assert(guard.error(0)->message() == "Try without a catchall in a non-throwing function");
+  assert(guard.error(0)->type() == chpl::TryNoCatchAll);
   assert(guard.error(0)->kind() == ErrorBase::Kind::ERROR);
   assert(guard.realizeErrors() == 1);
 }
@@ -866,9 +866,9 @@ static void test22(Parser* parser) {
   auto func = mod->stmt(2)->toFunction();
   assert(func);
   assert(guard.numErrors() == 2);
-  assert(guard.error(0)->message() == "call to throwing function 'f' is in a try but not handled");
+  assert(guard.error(0)->type() == chpl::ThrowUnhandled);
   assert(guard.error(0)->kind() == ErrorBase::Kind::ERROR);
-  assert(guard.error(1)->message() == "Try without a catchall in a non-throwing function");
+  assert(guard.error(1)->type() == chpl::TryNoCatchAll);
   assert(guard.error(1)->kind() == ErrorBase::Kind::ERROR);
   assert(guard.realizeErrors() == 2);
 }
@@ -926,9 +926,9 @@ static void test24(Parser* parser) {
   auto modRes = resolveModule(ctx, mod->id());
   // guard.realizeErrors();
   assert(guard.numErrors() == 2);
-  assert(guard.error(0)->message() == "call to throwing function 'f' is in a try but not handled");
+  assert(guard.error(0)->type() == chpl::ThrowUnhandled);
   assert(guard.error(0)->kind() == ErrorBase::Kind::ERROR);
-  assert(guard.error(1)->message() == "Try without a catchall in a non-throwing function");
+  assert(guard.error(1)->type() == chpl::TryNoCatchAll);
   assert(guard.error(1)->kind() == ErrorBase::Kind::ERROR);
   assert(guard.realizeErrors() == 2);
 }
@@ -974,8 +974,8 @@ static void test26() {
   assert(resFunc);
 
   assert(guard.numErrors() == 1);
-  assert(guard.error(0)->message() == "call to throwing function 'canThrow' must be marked with try or try! (strict mode)");
   assert(guard.error(0)->kind() == ErrorBase::Kind::ERROR);
+  assert(guard.error(0)->type() == chpl::CallToThrowingFunctionStrict);
   assert(guard.realizeErrors() == 1);
 }
 

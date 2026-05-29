@@ -31,8 +31,8 @@ linkFile=$(bdir)/protoc-gen-chpl
 
 SOURCES=$(wildcard *.cpp)
 HEADERS=$(wildcard *.h)
-LDFLAGS = $(shell pkg-config --libs protobuf 2>/dev/null) -lprotobuf -lprotoc
-CPPFLAGS = $(shell pkg-config --cflags protobuf 2>/dev/null) -I. -std=c++17
+LDFLAGS = $(shell pkg-config --libs protobuf 2>/dev/null) -lprotoc
+CPPFLAGS = $(shell pkg-config --cflags protobuf 2>/dev/null) -std=c++17
 
 ifeq ($(CHPL_MAKE_PLATFORM),darwin)
 	PROTOC_LIB_LOC=$(dir $(shell which protoc))../lib
@@ -50,9 +50,9 @@ protoc-gen-chpl: $(bdir)/protoc-gen-chpl FORCE
 
 install: $(bdir)/protoc-gen-chpl FORCE
 
-$(bdir)/protoc-gen-chpl:	$(SOURCES)	$(HEADERS)
+$(bdir)/protoc-gen-chpl: $(SOURCES) $(HEADERS)
 	@echo "Building protoc-gen-chpl.."
-	$(CC) $(CPPFLAGS) -o $@ $(SOURCES) $(LDFLAGS) -lstdc++
+	$(CXX) $(CPPFLAGS) -o $@ $(SOURCES) $(LDFLAGS)
 	$(UPDATE_RPATH) $@
 
 clean:
