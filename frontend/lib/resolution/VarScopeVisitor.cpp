@@ -469,7 +469,6 @@ void VarScopeVisitor::exit(const NamedDecl* ast, RV& rv) {
           // Skip _ ident in tuple
           skipHandling = true;
         } else {
-          if (vld->name() == "foo") debuggerBreakHere();
           parent = parsing::parentAst(context, outerTupleDecl);
           initExpr = outerTupleDecl->initExpression();
           if (auto parentInitExpr = nestedTupleInfoStack.back().second) {
