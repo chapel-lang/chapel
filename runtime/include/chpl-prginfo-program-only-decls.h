@@ -76,6 +76,7 @@ extern const int chpl_filenumSymTable[];
 extern const c_string chpl_funSymTable[];
 extern const c_string chpl_filenameTable[];
 extern const int chpl_filenameTableSize;
-
+extern void* const chpl_private_broadcast_table[];
+extern const int chpl_private_broadcast_table_len;
 
 #endif
