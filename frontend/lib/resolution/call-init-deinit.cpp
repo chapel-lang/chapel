@@ -807,7 +807,7 @@ void CallInitDeinit::processTupleRhsHelper(VarFrame* frame,
                                 /* id */ actual->id(),
                                 action.type(),
                                 /* tupleEltIdx */ eltIdx,
-                                action.subActions());
+                                std::move(action.subActions()));
       }
       re.clearAssociatedActions();
     }

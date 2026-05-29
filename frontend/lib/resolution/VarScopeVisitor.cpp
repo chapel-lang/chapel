@@ -546,6 +546,7 @@ bool VarScopeVisitor::enter(const OpCall* ast, RV& rv) {
       rhsAst->traverse(rv);
 
       // Set containing tuple assignment only while traversing LHS
+      CHPL_ASSERT(!inTupleAssignment);
       inTupleAssignment = ast;
       lhsAst->traverse(rv);
       inTupleAssignment = nullptr;
@@ -586,8 +587,8 @@ bool VarScopeVisitor::enter(const Tuple* ast, RV& rv) {
   const Tuple* tupInitPart = nullptr;
   auto parentAst = parsing::parentAst(context, ast);
   if (parentAst == inTupleAssignment) {
-    CHPL_ASSERT(ast == inTupleAssignment->actual(0));
-    auto rhsAst = inTupleAssignment->actual(1);
+    CHPL_ASSERT(ast == inTupleAssignment->lhs());
+    auto rhsAst = inTupleAssignment->rhs();
     tupInitType = rv.byAst(rhsAst).type();
     tupInitPart = rhsAst->toTuple();
   } else {
@@ -621,7 +622,7 @@ bool VarScopeVisitor::enter(const Tuple* ast, RV& rv) {
     auto ident = elt->toIdentifier();
     if (ident && ident->name() == USTR("_")) continue;
 
-    const AstNode* rhsAst = inTupleAssignment->actual(1);
+    const AstNode* rhsAst = inTupleAssignment->rhs();
     QualifiedType rhsType = QualifiedType();
 
     if (tupInitPart) {

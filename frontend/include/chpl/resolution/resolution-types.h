@@ -2708,7 +2708,7 @@ class AssociatedAction {
 
   const types::QualifiedType type() const { return type_; }
 
-  const chpl::optional<int> tupleEltIdx() const {
+  const chpl::optional<int>& tupleEltIdx() const {
     return tupleEltIdx_;
   }
 

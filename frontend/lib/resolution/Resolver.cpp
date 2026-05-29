@@ -3276,17 +3276,16 @@ bool Resolver::resolveSpecialOpCall(const Call* call) {
   auto op = call->toOpCall();
 
   if (op->op() == USTR("=")) {
-    if (op->isBinaryOp()) {
-      // Update a generic/unknown type when split-init is used.
-      adjustTypesOnAssign(op->lhs(), op->rhs());
+    CHPL_ASSERT(op->isBinaryOp());
+    // Update a generic/unknown type when split-init is used.
+    adjustTypesOnAssign(op->lhs(), op->rhs());
 
-      if (auto lhsTuple = op->lhs()->toTuple()) {
-        auto rhsQt = byPostorder.byAst(op->rhs()).type();
-        if (auto rhsTupleType = rhsQt.type()->toTupleType()) {
-          if (lhsTuple->numActuals() != rhsTupleType->numElements()) {
-            byPostorder.byAst(call).setType(RESOLVER_TYPE_ERROR(
-                *this, TupleDeclAssignMismatchedElems, op, rhsTupleType));
-          }
+    if (auto lhsTuple = op->lhs()->toTuple()) {
+      auto rhsQt = byPostorder.byAst(op->rhs()).type();
+      if (auto rhsTupleType = rhsQt.type()->toTupleType()) {
+        if (lhsTuple->numActuals() != rhsTupleType->numElements()) {
+          byPostorder.byAst(call).setType(RESOLVER_TYPE_ERROR(
+              *this, TupleDeclAssignMismatchedElems, op, rhsTupleType));
         }
       }
     }
