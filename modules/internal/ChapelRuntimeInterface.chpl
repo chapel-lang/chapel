@@ -28,10 +28,12 @@ module ChapelRuntimeInterface {
   // The compiler will generate code that calls this procedure in order to
   // deterministically populate the 'chpl_globals_registry' on all locales.
   export proc
-  chpl_registerGlobalVar(idx: c_int, ptrToWidePtr: c_ptr(wide_ptr_t)) {
-    // Extern, but declared by the compiler and lives in program code.
-    extern var chpl_globals_registry: c_ptr(c_ptr(wide_ptr_t));
-    chpl_globals_registry[idx] = ptrToWidePtr;
+  chpl_registerGlobalVar(idx: int(32), ptrToWidePtr: c_ptr(wide_ptr_t)) {
+    param cname = 'chpl_rt_comm_register_global_var';
+    extern cname proc fn(prg: c_ptr(chpl_rt_prginfo),
+                         idx: int(32),
+                         ptr_to_wide_ptr: c_ptr(wide_ptr_t)): void;
+    fn(ptrToPrgInfoHere, idx, ptrToWidePtr);
   }
 
   // These pragmas will be useful for debugging what is going on when a RT

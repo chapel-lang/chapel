@@ -338,6 +338,16 @@ chpl_bool chpl_comm_regMemFree(void* p, size_t size) {
   return CHPL_COMM_IMPL_REG_MEM_FREE(p, size);
 }
 
+// Helper to register a global variable to be broadcasted later.
+// TODO: Move this entirely to module code.
+static inline
+void chpl_rt_comm_register_global_var(chpl_rt_prginfo* prg,
+                                      int32_t idx,
+                                      wide_ptr_t* ptr_to_wide_ptr) {
+  CHPL_RT_PRGINFO_DECLARE(prg, chpl_globals_registry);
+  chpl_globals_registry[idx] = ptr_to_wide_ptr;
+}
+
 //
 // This routine is used by the Chapel runtime to broadcast the locations of
 // module-level ("global") variables within a program to all locales so that
