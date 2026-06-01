@@ -120,12 +120,19 @@ size_t chpl_rt_private_broadcast_table_for_rt_byte_lens[] = {
 // State for the old 'unified' broadcast table.
 void** chpl_rt_unified_private_broadcast_table = NULL;
 int chpl_rt_unified_private_broadcast_table_len = 0;
+bool chpl_rt_use_unified_private_broadcast_table = false;
 
 void chpl_rt_comm_init_unified_private_broadcast_table(void) {
   CHPL_RT_PRGINFO_DECLARE(CHPL_RT_PRGINFO_ROOT,
                           chpl_private_broadcast_table);
   CHPL_RT_PRGINFO_DECLARE(CHPL_RT_PRGINFO_ROOT,
                           chpl_private_broadcast_table_len);
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_PRGINFO_ROOT, CHPL_COMM);
+
+  bool is_gasnet = !strcmp(CHPL_COMM, "gasnet");
+
+  // Only really changes OFI comm layer, COMM=none shouldn't use this.
+  chpl_rt_use_unified_private_broadcast_table = !is_gasnet;
 
   chpl_rt_unified_private_broadcast_table_len =
             chpl_private_broadcast_table_len +
