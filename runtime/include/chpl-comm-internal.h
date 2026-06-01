@@ -46,6 +46,7 @@ wide_ptr_t* chpl_rt_comm_broadcast_global_vars_impl(chpl_rt_prginfo* prg);
 // upon it and have not been adjusted yet.
 extern void** chpl_rt_unified_private_broadcast_table;
 extern int chpl_rt_unified_private_broadcast_table_len;
+extern bool chpl_rt_use_unified_private_broadcast_table;
 
 // Called by the comm layer to initialize the unified broadcast table.
 void chpl_rt_comm_init_unified_private_broadcast_table(void);
@@ -74,9 +75,9 @@ extern size_t chpl_rt_private_broadcast_table_for_rt_byte_lens[];
 #define CHPL_RT_BCAST_TABLE_FOR_RT_PREFIX \
   chpl_rt_runtime_private_broadcast_table_for_rt_
 #define CHPL_RT_BCAST_TABLE_FOR_RT_ENTRY(sym__) \
-  CHPL_RT_TABLE_PREFIX ## sym__ ## _idx
+  CHPL_RT_BCAST_TABLE_FOR_RT_PREFIX ## sym__ ## _idx
 #define CHPL_RT_BCAST_TABLE_FOR_RT_ENUM_ENTRY(sym__) \
-  CHPL_RT_TABLE_PREFIX ## sym__ ## _idx ,
+  CHPL_RT_BCAST_TABLE_FOR_RT_PREFIX ## sym__ ## _idx ,
 
 typedef enum chpl_rt_private_broadcast_table_entries_for_rt {
   CHPL_RT_RUNTIME_PRIVATE_BROADCAST_TABLE_ENTRIES(
@@ -88,9 +89,19 @@ typedef enum chpl_rt_private_broadcast_table_entries_for_rt {
 
 static inline void chpl_rt_comm_broadcast_rt_symbol_hook(int32_t idx) {
   assert(0 <= idx && idx < chpl_rt_private_broadcast_table_for_rt_len);
+
   size_t size = chpl_rt_private_broadcast_table_for_rt_byte_lens[idx];
+  int32_t idx_to_use = idx;
+
+  // Adjust to use a "unified index" if needed.
+  if (chpl_rt_use_unified_private_broadcast_table) {
+    chpl_rt_prginfo* prg = CHPL_RT_PRGINFO_ROOT;
+    CHPL_RT_PRGINFO_DECLARE(prg, chpl_private_broadcast_table_len);
+    idx_to_use = chpl_private_broadcast_table_len + idx;
+  }
+
   // Passing a 'NULL' program indicates we are asking for a runtime symbol.
-  chpl_rt_comm_private_broadcast(NULL, idx, size);
+  chpl_rt_comm_private_broadcast(NULL, idx_to_use, size);
 }
 
 // Runtime code calls this to broadcast a runtime-specific symbol.
