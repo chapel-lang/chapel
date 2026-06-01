@@ -339,7 +339,10 @@ bool VarScopeVisitor::enter(const TupleDecl* ast, RV& rv) {
     if (auto parentInitType = nestedTupleInfoStack.back().first.type()) {
       auto parentTupleType = parentInitType->toTupleType();
       CHPL_ASSERT(parentTupleType);
-      initType = parentTupleType->elementType(indexWithinContainingTuple(ast));
+      auto eltIdx = indexWithinContainingTuple(ast);
+      if (eltIdx < parentTupleType->numElements()) {
+        initType = parentTupleType->elementType(eltIdx);
+      }
     }
   }
 
@@ -349,13 +352,11 @@ bool VarScopeVisitor::enter(const TupleDecl* ast, RV& rv) {
     if (auto parentInit = nestedTupleInfoStack.back().second) {
       initPart = parentInit;
       if (auto parentInitTup = parentInit->toTuple()) {
-        initPart = parentInitTup->actual(indexWithinContainingTuple(ast));
+        auto eltIdx = indexWithinContainingTuple(ast);
+        if (eltIdx < parentInitTup->numActuals()) {
+          initPart = parentInitTup->actual(eltIdx);
+        }
       }
-    }
-  }
-  if (initPart) {
-    if (auto initPartTupExpr = initPart->toTuple()) {
-      CHPL_ASSERT(ast->numDecls() == initPartTupExpr->numActuals());
     }
   }
   nestedTupleInfoStack.emplace_back(initType, initPart);
@@ -474,16 +475,21 @@ void VarScopeVisitor::exit(const NamedDecl* ast, RV& rv) {
           if (auto parentInitExpr = nestedTupleInfoStack.back().second) {
             initExpr = parentInitExpr;
             if (auto parentInitTupExpr = parentInitExpr->toTuple()) {
-              initExpr =
-                  parentInitTupExpr->actual(indexWithinContainingTuple(ast));
+              auto eltIdx = indexWithinContainingTuple(ast);
+              if (eltIdx < parentInitTupExpr->numActuals()) {
+                initExpr = parentInitTupExpr->actual(eltIdx);
+              }
             }
           }
           auto parentInitType = nestedTupleInfoStack.back().first;
           if (!parentInitType.isUnknown()) {
-            auto parentInitTupleType = parentInitType.type()->toTupleType();
-            CHPL_ASSERT(parentInitTupleType);
-            initType = parentInitTupleType->elementType(
-                indexWithinContainingTuple(ast));
+            if (auto parentInitTupleType =
+                    parentInitType.type()->toTupleType()) {
+              auto eltIdx = indexWithinContainingTuple(ast);
+              if (eltIdx < parentInitTupleType->numElements()) {
+                initType = parentInitTupleType->elementType(eltIdx);
+              }
+            }
           }
           intentOrKind = (Qualifier)outerTupleDecl->intentOrKind();
           isFormal = outerTupleDecl->isFormal() ||
@@ -584,11 +590,6 @@ bool VarScopeVisitor::enter(const Tuple* ast, RV& rv) {
       if (auto parentInitTupExpr = parentInit->toTuple()) {
         initPart = parentInitTupExpr->actual(indexWithinContainingTuple(ast));
       }
-    }
-  }
-  if (initPart) {
-    if (auto initPartTupExpr = initPart->toTuple()) {
-      CHPL_ASSERT(ast->numActuals() == initPartTupExpr->numActuals());
     }
   }
   nestedTupleInfoStack.emplace_back(initType, initPart);
