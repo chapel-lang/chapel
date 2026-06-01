@@ -828,7 +828,7 @@ bool InitResolver::isMentionOfNodeInLhsOfAssign(const AstNode* node) {
 
     if (auto opCall = parent->toOpCall())
       if (opCall->op() == USTR("="))
-        if (prior && opCall->actual(0) == prior)
+        if (prior && opCall->lhs() == prior)
           return true;
     prior = parent;
   }
@@ -1046,6 +1046,7 @@ bool InitResolver::handleAssignmentToField(const OpCall* node) {
   auto lhs = node->actual(0);
   auto rhs = node->actual(1);
 
+  // TODO: Handle assignment to fields via tuple destructuring assignment
   // TODO: Is 'field' or 'this.field' too strict of a pattern?
   auto [fieldId, isSuperField] = fieldIdFromPossibleMentionOfField(lhs);
 

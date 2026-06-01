@@ -20,6 +20,7 @@
 #include "VarScopeVisitor.h"
 
 #include "chpl/parsing/parsing-queries.h"
+#include "chpl/resolution/can-pass.h"
 #include "chpl/resolution/ResolvedVisitor.h"
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/resolution-types.h"
@@ -149,12 +150,11 @@ void VarScopeVisitor::processMentions(const AstNode* ast, RV& rv) {
 }
 
 bool
-VarScopeVisitor::processSplitInitAssign(const OpCall* ast,
+VarScopeVisitor::processSplitInitAssign(const AstNode* lhsAst,
                                         const std::set<ID>& allSplitInitedVars,
                                         RV& rv) {
   bool inserted = false;
   auto frame = currentFrame();
-  auto lhsAst = ast->actual(0);
   ID lhsVarId = refersToId(lhsAst, rv);
   if (!lhsVarId.isEmpty() && allSplitInitedVars.count(lhsVarId) > 0) {
     inserted = frame->addToInitedVars(lhsVarId);
@@ -176,13 +176,62 @@ VarScopeVisitor::processSplitInitOut(const Call* ast,
   return inserted;
 }
 
-bool VarScopeVisitor::processDeclarationInit(const VarLikeDecl* ast, RV& rv) {
+bool VarScopeVisitor::processDeclarationInit(const NamedDecl* lhsAst, const AstNode* initExpression, RV& rv) {
   auto frame = currentFrame();
   bool inserted = false;
-  if (ast->initExpression() != nullptr) {
-    inserted = frame->addToInitedVars(ast->id());
+  if (initExpression) {
+    inserted = frame->addToInitedVars(lhsAst->id());
   }
   return inserted;
+}
+
+bool VarScopeVisitor::isLoopIndex(const AstNode* ast) const {
+  if (auto parentAst = parsing::parentAst(context, ast)) {
+    if (auto indexableLoop = parentAst->toIndexableLoop()) {
+      if (ast == indexableLoop->index()) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+const AstNode* VarScopeVisitor::outermostContainingTuple() const {
+  if (nestedTupleInfoStack.empty()) return nullptr;
+
+  CHPL_ASSERT(!inAstStack.empty());
+  auto currentAst = inAstStack.back();
+
+  size_t distanceFromEnd = nestedTupleInfoStack.size();
+  if (!(currentAst->isTuple() || currentAst->isTupleDecl())) {
+    distanceFromEnd += 1;
+  }
+
+  return inAstStack.at(inAstStack.size() - distanceFromEnd);
+}
+
+int VarScopeVisitor::indexWithinContainingTuple(const AstNode* ast) const {
+  CHPL_ASSERT(inAstStack.size() > 1);
+  auto parentAst = inAstStack[inAstStack.size() - 2];
+
+  int parentNumDecls = -1;
+  int indexWithinParent = -1;
+  if (auto tuple = parentAst->toTuple()) {
+    parentNumDecls = tuple->numActuals();
+    while (++indexWithinParent < parentNumDecls &&
+           tuple->actual(indexWithinParent) != ast);
+  } else if (auto tupleDecl = parentAst->toTupleDecl()) {
+    parentNumDecls = tupleDecl->numDecls();
+    while (++indexWithinParent < parentNumDecls &&
+           tupleDecl->decl(indexWithinParent) != ast);
+  } else {
+    CHPL_ASSERT(false && "expected parent to be a tuple or tuple decl");
+  }
+  CHPL_ASSERT(indexWithinParent < parentNumDecls &&
+              "could not find child within parent tuple decl");
+
+  return indexWithinParent;
 }
 
 const QualifiedType& VarScopeVisitor::returnOrYieldType() {
@@ -282,18 +331,93 @@ bool VarScopeVisitor::enter(const TupleDecl* ast, RV& rv) {
   enterAst(ast);
   enterScope(ast, rv);
 
-  // TODO: handle tuple decls
+  // Determine type part and init part for this decl, either directly for a
+  // top-level decl, or from the parent tuple decl in the case of nesting.
+  QualifiedType initType = rv.byAst(ast).type();
+  if (initType.isUnknown() && outermostContainingTuple()) {
+    CHPL_ASSERT(!nestedTupleInfoStack.empty());
+    if (auto parentInitType = nestedTupleInfoStack.back().first.type()) {
+      auto parentTupleType = parentInitType->toTupleType();
+      CHPL_ASSERT(parentTupleType);
+      auto eltIdx = indexWithinContainingTuple(ast);
+      if (eltIdx < parentTupleType->numElements()) {
+        initType = parentTupleType->elementType(eltIdx);
+      }
+    }
+  }
+
+  const AstNode* initPart = nullptr;
+  if ((initPart = ast->initExpression())) {
+  } else if (outermostContainingTuple()) {
+    if (auto parentInit = nestedTupleInfoStack.back().second) {
+      initPart = parentInit;
+      if (auto parentInitTup = parentInit->toTuple()) {
+        auto eltIdx = indexWithinContainingTuple(ast);
+        if (eltIdx < parentInitTup->numActuals()) {
+          initPart = parentInitTup->actual(eltIdx);
+        }
+      }
+    }
+  }
+  nestedTupleInfoStack.emplace_back(initType, initPart);
+
+
+  // Loop index variables don't need default-initialization and aren't
+  // subject to split init etc., so skip them.
+  //
+  // TODO: I think it's fine to skip this for all users of VarScopeVisitor;
+  //       is there an analysis that does need to handle loop indices?
+  // See also: skip for NamedDecl
+  // In this tuple decl case, also prevent descending into the contained decls.
+  if (!isLoopIndex(outermostContainingTuple())) {
+    // Traversal order: contained decls must come after init expr, or variables
+    // mentioned in init expr may be incorrectly considered ineligible for
+    // copy elision in this statement.
+    if (auto typeExpr = ast->typeExpression()) {
+      typeExpr->traverse(rv);
+    }
+    if (auto initExpr = ast->initExpression()) {
+      initExpr->traverse(rv);
+    }
+    for (auto decl : ast->decls()) {
+      decl->traverse(rv);
+    }
+  }
+
+  // Traversed explicitly above
   return false;
 }
+
 void VarScopeVisitor::exit(const TupleDecl* ast, RV& rv) {
+  CHPL_ASSERT(!scopeStack.empty());
+
+  // Add tuple index info to AssociatedActions on contained decls
+  for (int i = 0; i < ast->numDecls(); i++) {
+    auto decl = ast->decl(i);
+    auto& re = rv.byPostorder().byAst(decl);
+    llvm::SmallVector<AssociatedAction> subActions;
+    for (auto action : re.associatedActions()) {
+      auto useId = action.id();
+      auto useTupleEltIdx = i;
+      subActions.emplace_back(action.action(), action.fn(), useId,
+                              action.type(), useTupleEltIdx,
+                              action.subActions());
+    }
+
+    re.clearAssociatedActions();
+    for (auto action : subActions) {
+      re.addAssociatedAction(std::move(action));
+    }
+  }
+
+  CHPL_ASSERT(!nestedTupleInfoStack.empty());
+  nestedTupleInfoStack.pop_back();
+
   exitScope(ast, rv);
   exitAst(ast);
-
-  return;
 }
 
 bool VarScopeVisitor::enter(const NamedDecl* ast, RV& rv) {
-
   if (ast->id().isSymbolDefiningScope()) {
     // It's a symbol with a different path, e.g. a Function.
     // Don't try to resolve it now in this
@@ -314,25 +438,70 @@ void VarScopeVisitor::exit(const NamedDecl* ast, RV& rv) {
     return;
   }
 
+  CHPL_ASSERT(!scopeStack.empty());
+
   // Loop index variables don't need default-initialization and aren't
   // subject to split init etc., so skip them.
   //
   // TODO: I think it's fine to skip this for all users of VarScopeVisitor;
   //       is there an analysis that does need to handle loop indices?
-  bool skipDecl = false;
-  if (inAstStack.size() > 1) {
-    auto parentAst = inAstStack[inAstStack.size() - 2];
-    if (auto indexableLoop = parentAst->toIndexableLoop()) {
-      if (ast == indexableLoop->index()) {
-        skipDecl = true;
-      }
-    }
-  }
-
-  CHPL_ASSERT(!scopeStack.empty());
-  if (!scopeStack.empty() && !skipDecl) {
+  if (!isLoopIndex(ast)) {
     if (auto vld = ast->toVarLikeDecl()) {
-      handleDeclaration(vld, rv);
+      const AstNode* parent;
+      const AstNode* initExpr;
+      QualifiedType initType;
+      Qualifier intentOrKind;
+      bool isFormal;
+
+      bool skipHandling = false;
+      auto maybeOuterTuple = outermostContainingTuple();
+
+      if (!maybeOuterTuple) {
+        parent = parsing::parentAst(context, vld);
+        initExpr = vld->initExpression();
+        initType = initExpr ? rv.byAst(initExpr).type() : QualifiedType();
+        intentOrKind = vld->storageKind();
+        isFormal = vld->isFormal() || vld->isVarArgFormal();
+      } else {
+        auto outerTupleDecl = maybeOuterTuple->toTupleDecl();
+        CHPL_ASSERT(outerTupleDecl);
+
+        if (vld->name() == USTR("_")) {
+          // Skip _ ident in tuple
+          skipHandling = true;
+        } else {
+          parent = parsing::parentAst(context, outerTupleDecl);
+          initExpr = outerTupleDecl->initExpression();
+          if (auto parentInitExpr = nestedTupleInfoStack.back().second) {
+            initExpr = parentInitExpr;
+            if (auto parentInitTupExpr = parentInitExpr->toTuple()) {
+              auto eltIdx = indexWithinContainingTuple(ast);
+              if (eltIdx < parentInitTupExpr->numActuals()) {
+                initExpr = parentInitTupExpr->actual(eltIdx);
+              }
+            }
+          }
+          auto parentInitType = nestedTupleInfoStack.back().first;
+          if (!parentInitType.isUnknown()) {
+            if (auto parentInitTupleType =
+                    parentInitType.type()->toTupleType()) {
+              auto eltIdx = indexWithinContainingTuple(ast);
+              if (eltIdx < parentInitTupleType->numElements()) {
+                initType = parentInitTupleType->elementType(eltIdx);
+              }
+            }
+          }
+          intentOrKind = (Qualifier)outerTupleDecl->intentOrKind();
+          isFormal = outerTupleDecl->isFormal() ||
+                     outerTupleDecl->isVarArgFormal() ||
+                     outerTupleDecl->isTupleDeclFormal();
+        }
+      }
+
+      if (!skipHandling) {
+        handleDeclaration(vld, parent, initExpr, initType, intentOrKind,
+                          isFormal, rv);
+      }
     }
   }
 
@@ -345,13 +514,26 @@ bool VarScopeVisitor::enter(const OpCall* ast, RV& rv) {
   enterAst(ast);
 
   if (ast->op() == USTR("=")) {
-    // What is the RHS of the '=' call?
-    auto rhsAst = ast->actual(1);
+    auto lhsAst = ast->lhs();
+    auto rhsAst = ast->rhs();
 
-    // visit the RHS first
-    rhsAst->traverse(rv);
+    if (lhsAst->isTuple()) {
+      // Tuple destructuring assignment
 
-    handleAssign(ast, rv);
+      rhsAst->traverse(rv);
+
+      // Set containing tuple assignment only while traversing LHS
+      CHPL_ASSERT(!inTupleAssignment);
+      inTupleAssignment = ast;
+      lhsAst->traverse(rv);
+      inTupleAssignment = nullptr;
+    } else {
+      // visit the RHS first
+      rhsAst->traverse(rv);
+
+      auto rhsType = rv.byAst(rhsAst).type();
+      handleAssign(lhsAst, rhsAst, rhsType, ast, rv);
+    }
 
     return false;
   } else {
@@ -359,7 +541,105 @@ bool VarScopeVisitor::enter(const OpCall* ast, RV& rv) {
   }
 }
 
+static bool isUnderscoreIdent(const AstNode* ast) {
+  auto ident = ast->toIdentifier();
+  return ident && ident->name() == USTR("_");
+}
+
 void VarScopeVisitor::exit(const OpCall* ast, RV& rv) {
+  exitAst(ast);
+}
+
+bool VarScopeVisitor::enter(const Tuple* ast, RV& rv) {
+  enterAst(ast);
+
+  if (!inTupleAssignment) return true;
+
+  // TODO: Our tests expect these adjustments to the variable's kind (and for _
+  // to be made NothingType), but should it be done here or in the resolver?
+  std::vector<const Type*> eltTypes;
+  for (const auto& actual : ast->actuals()) {
+    eltTypes.push_back(isUnderscoreIdent(actual)
+                           ? NothingType::get(context)
+                           : rv.byAst(actual).type().type());
+  }
+  rv.byPostorder().byAst(ast).setType(QualifiedType(
+      QualifiedType::VAR, TupleType::getValueTuple(context, eltTypes)));
+
+  // Gather info for this assignment (at whatever level of nesting)
+  // Determine RHS (init expr) and type for this assign, either directly if
+  // in a top-level assign, or from parent tuple if nested.
+  QualifiedType initType = QualifiedType();
+  const AstNode* initPart = nullptr;
+  auto parentAst = parsing::parentAst(context, ast);
+  if (parentAst == inTupleAssignment) {
+    CHPL_ASSERT(ast == inTupleAssignment->lhs());
+    auto rhsAst = inTupleAssignment->rhs();
+    initType = rv.byAst(rhsAst).type();
+    initPart = rhsAst;
+  } else {
+    CHPL_ASSERT(outermostContainingTuple());
+    CHPL_ASSERT(parentAst->isTuple());
+    if (auto parentInitType = nestedTupleInfoStack.back().first.type()) {
+      auto parentTupleType = parentInitType->toTupleType();
+      CHPL_ASSERT(parentTupleType);
+      initType = parentTupleType->elementType(indexWithinContainingTuple(ast));
+    }
+    if (auto parentInit = nestedTupleInfoStack.back().second) {
+      initPart = parentInit;
+      if (auto parentInitTupExpr = parentInit->toTuple()) {
+        initPart = parentInitTupExpr->actual(indexWithinContainingTuple(ast));
+      }
+    }
+  }
+  nestedTupleInfoStack.emplace_back(initType, initPart);
+
+  // Traverse components in order and resolve assignments for each
+  auto& re = rv.byPostorder().byAst(inTupleAssignment);
+  llvm::SmallVector<AssociatedAction> subActions;
+  for (int i = 0; i < ast->numActuals(); i++) {
+    auto elt = ast->actual(i);
+
+    elt->traverse(rv);
+
+    if (elt->isTuple()) continue;
+    if (isUnderscoreIdent(elt)) continue;
+
+    const AstNode* rhsAst = inTupleAssignment->rhs();
+    QualifiedType rhsType = QualifiedType();
+
+    if (initPart) {
+      if (auto initPartTupExpr = initPart->toTuple()) {
+        rhsAst = initPartTupExpr->actual(i);
+      }
+    }
+    if (auto initTy = initType.type()) {
+      auto tupType = initTy->toTupleType();
+      CHPL_ASSERT(tupType);
+      rhsType = tupType->elementType(i);
+    }
+
+    handleAssign(elt, rhsAst, rhsType, inTupleAssignment, rv);
+
+    for (auto action : re.associatedActions()) {
+      auto useTupleEltIdx = i;
+      subActions.emplace_back(action.action(), action.fn(), action.id(),
+                              action.type(), useTupleEltIdx,
+                              action.subActions());
+    }
+    re.clearAssociatedActions();
+  }
+  for (auto action : subActions) {
+    re.addAssociatedAction(std::move(action));
+  }
+
+  nestedTupleInfoStack.pop_back();
+
+  // Traversed explicitly above
+  return false;
+}
+
+void VarScopeVisitor::exit(const Tuple* ast, RV& rv) {
   exitAst(ast);
 }
 
@@ -415,8 +695,8 @@ bool VarScopeVisitor::resolvedCallHelper(const Call* callAst, RV& rv) {
     // the special case. - D.F.
     if (auto op = callAst->toOpCall()) {
       if (op->op() == USTR(":")) {
-        CHPL_ASSERT(op->numActuals() == 2);
-        auto lhs = op->actual(0);
+        CHPL_ASSERT(op->isBinaryOp());
+        auto lhs = op->lhs();
         auto lhsRr = rv.byPostorder().byAst(lhs);
         if (!rr->type().isUnknownOrErroneous() &&
             rr->type().type() == lhsRr.type().type()) {
@@ -585,13 +865,17 @@ void VarScopeVisitor::exit(const Yield* ast, RV& rv) {
 
 bool VarScopeVisitor::enter(const Identifier* ast, RV& rv) {
   enterAst(ast);
+
   return true;
 }
+
 void VarScopeVisitor::exit(const Identifier* ast, RV& rv) {
   if (!scopeStack.empty()) {
-    ID toId = rv.byAst(ast).toId();
-    if (!toId.isEmpty()) {
-      handleMention(ast, toId, rv);
+    if (!inTupleAssignment) {
+      ID toId = rv.byAst(ast).toId();
+      if (!toId.isEmpty()) {
+        handleMention(ast, toId, rv);
+      }
     }
   }
   exitAst(ast);

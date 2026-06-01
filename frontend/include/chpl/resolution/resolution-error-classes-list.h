@@ -124,7 +124,7 @@ WARNING_CLASS(TertiaryUseImportUnstable, UniqueString, const uast::AstNode*, con
 ERROR_CLASS(ThrowInNonThrowingFunction, const uast::Throw*, const uast::Function*)
 ERROR_CLASS(ThrowUnhandled, const uast::FnCall*, const resolution::UntypedFnSignature*)
 ERROR_CLASS(TryNoCatchAll, const uast::Try*)
-ERROR_CLASS(TupleDeclMismatchedElems, const uast::TupleDecl*, const types::TupleType*)
+ERROR_CLASS(TupleDeclAssignMismatchedElems, const uast::AstNode*, const types::TupleType*)
 ERROR_CLASS(TupleDeclNotTuple, const uast::TupleDecl*, const types::Type*)
 ERROR_CLASS(TupleDeclUnknownType, const uast::TupleDecl*)
 ERROR_CLASS(TupleExpansionNamedArgs, const uast::OpCall*, const uast::FnCall*)
