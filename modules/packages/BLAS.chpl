@@ -789,8 +789,7 @@ module BLAS {
     var m = Ydom.dim(0).size : c_int,
         n = Xdom.dim(0).size : c_int;
 
-    // TODO -- 'order' may need to be swapped for banded matrices
-    var _ldA = getLeadingDim(A, order);
+    var _ldA = Adom.dim(1).size : c_int;
 
     var _kl = kl : c_int,
         _ku = ku : c_int;
