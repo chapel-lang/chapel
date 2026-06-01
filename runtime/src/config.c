@@ -478,8 +478,8 @@ int handlePossibleConfigVar(int* argc, char* argv[], int argnum,
       handleUnexpectedConfigVar(moduleName, varName, lineno, filename);
     }
   } else {
-    char* value = equalsSign + 1;
-    if (equalsSign && *value) {
+    char* value = equalsSign ? equalsSign + 1 : NULL;
+    if (value && *value) {
       initSetValue(varName, value, moduleName, lineno, filename);
     } else if (!strcmp(configVar->defaultType, "bool")) {
       initSetValue(varName, "true", moduleName, lineno, filename);
