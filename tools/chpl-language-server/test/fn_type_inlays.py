@@ -3,6 +3,10 @@ Test that function return type inlay hints
 """
 
 import sys
+import typing
+from dataclasses import dataclass
+from enum import Enum
+from typing import List, Tuple
 
 from lsprotocol.types import ClientCapabilities
 from lsprotocol.types import InitializeParams
@@ -12,6 +16,168 @@ from pytest_lsp import ClientServerConfig, LanguageClient
 
 from util.utils import *
 from util.config import CLS_PATH
+
+
+# ---------------------------------------------------------------------------
+# Function variant testing infrastructure
+# ---------------------------------------------------------------------------
+
+class _FnVariant(Enum):
+    PROC = "proc"
+    ITER = "iter"
+    METHOD = "method"
+    SECONDARY = "secondary"
+
+
+@dataclass
+class FnDecl:
+    """
+    Describes a function signature, which will be rendered in multiple
+    variants to robustly test return type inlays.
+    """
+
+    name: str
+    params: str = ""  # parameters without enclosing parens
+    return_intent: str = ""
+    throws: bool = False
+    where_expr: str = ""
+    return_expr: str = "42"
+    yield_expr: str = ""  # defaults to return_expr
+    expected_type: str = ""  # expected inlay if any
+    explicit_return_type: str = ""  # if set, fn has explicit annotation (expect no inlay)
+    do_body: bool = False  # use 'do' instead of '{..}'
+    parenless: bool = False  # omit parameter list entirely (parenless function)
+
+    def _render_header(
+        self, variant: _FnVariant, record_name: str
+    ) -> tuple[str, int]:
+        is_iter = variant == _FnVariant.ITER
+        kw = "iter" if is_iter else "proc"
+        intent = "" if is_iter else self.return_intent
+        name = (
+            f"{record_name}.{self.name}"
+            if variant == _FnVariant.SECONDARY
+            else self.name
+        )
+        prefix = "  " if variant == _FnVariant.METHOD else ""
+        param_str = "" if self.parenless else f"({self.params})"
+        parts = [f"{prefix}{kw} {name}{param_str}"]
+        if self.explicit_return_type:
+            parts.append(f": {self.explicit_return_type}")
+        if intent:
+            parts.append(f" {intent}")
+        if self.throws:
+            parts.append(" ")
+
+        # Return type goes here. Length so far is where the inlay column should
+        # go, so compute it.
+        inlay_col = len("".join(parts))
+
+        if self.throws:
+            parts.append("throws")
+        if self.where_expr:
+            parts.append(f" where {self.where_expr}")
+        return ("".join(parts), inlay_col)
+
+    def _render_body(self, variant: _FnVariant) -> str:
+        is_iter = variant == _FnVariant.ITER
+        kw = "yield" if is_iter else "return"
+        if is_iter:
+            expr = self.yield_expr or self.return_expr
+        else:
+            expr = self.return_expr
+        if self.do_body:
+            return f" do {kw} {expr};"
+        return " { " + f"{kw} {expr};" + " }"
+
+    def _render(
+        self, variant: _FnVariant, record_name: str
+    ) -> tuple[str, int]:
+        (header, inlay) = self._render_header(variant, record_name)
+        return (header + self._render_body(variant), inlay)
+
+
+@dataclass
+class FnCall:
+    name: str
+    args: str = ""  # call arguments without enclosing parens
+
+    def _render(self, variant: _FnVariant, parenless: bool = False) -> str:
+        args_str = "" if parenless else f"({self.args})"
+        if variant == _FnVariant.ITER:
+            return f"for {self.name}{args_str} do {{}}"
+        elif variant in (_FnVariant.METHOD, _FnVariant.SECONDARY):
+            return f"_r.{self.name}{args_str};"
+        else:
+            return f"{self.name}{args_str};"
+
+
+FnPart = typing.Union[FnDecl, FnCall]
+
+
+def _render_fn_variant(
+    parts: List[FnPart],
+    variant: _FnVariant,
+    record_name: str = "R",
+) -> Tuple[str, list]:
+    """
+    Render a parts list into (source_string, inlay_list) for the given variant.
+
+    All FnDecl items are rendered as declarations; all FnCall items follow as
+    calls. For METHOD, declarations are wrapped inside 'record R { ... }' with
+    a 2-space indent. For others (for simplicity), a bare 'record R {}' precedes
+    the declarations. Calls to methods get a '_r.' receiver.
+    """
+    decls = [p for p in parts if isinstance(p, FnDecl)]
+    calls = [p for p in parts if isinstance(p, FnCall)]
+
+    # Build a lookup from function name to its FnDecl for call rendering.
+    decl_by_name = {d.name: d for d in decls}
+    inlays: list = []
+    lines: List[str] = []
+
+    def render():
+        nonlocal inlays, decls, lines
+
+        for d in decls:
+            decl, inlay_col = d._render(variant, record_name)
+            lines.append(decl)
+            if d.expected_type:
+                type_text = d.expected_type + (" " if d.throws else "")
+                inlays.append((pos((len(lines) - 1, inlay_col)), type_text))
+
+    lines.append(f"record {record_name} {{")
+    if variant == _FnVariant.METHOD:
+        render()
+    lines.append("}")
+    if variant != _FnVariant.METHOD:
+        render()
+
+    lines.append(f"var _r: {record_name};")
+    for c in calls:
+        assert c.name in decl_by_name
+        pl = decl_by_name[c.name].parenless
+        lines.append(c._render(variant, pl))
+
+    source = "\n".join(lines) + "\n"
+    return source, inlays
+
+
+async def check_fn_variants(
+    client: LanguageClient,
+    parts: List[FnPart],
+    record_name: str = "R",
+) -> None:
+    """
+    Run check_type_inlay_hints for all 4 function variants:
+    proc, iter, primary method (inside record), and secondary method.
+    """
+    for variant in _FnVariant:
+        source, inlays = _render_fn_variant(parts, variant, record_name)
+        async with source_file(client, source) as doc:
+            await check_type_inlay_hints(
+                client, doc, rng((0, 0), endpos(source)), inlays
+            )
 
 
 @pytest_lsp.fixture(
@@ -41,18 +207,10 @@ async def test_fn_type_inlay_concrete_int(client: LanguageClient):
     """
     Ensure that a concrete function returning int gets an inlay.
     """
-    file = """
-            proc test() do return 42;
-            iter testI() do yield 42;
-           """
-    inlays = [
-        (pos((0, 11)), "int(64)"),
-        (pos((1, 12)), "int(64)"),
-    ]
-    async with source_file(client, file) as doc:
-        await check_type_inlay_hints(
-            client, doc, rng((0, 0), endpos(file)), inlays
-        )
+    await check_fn_variants(
+        client,
+        [FnDecl("test", return_expr="42", expected_type="int(64)", do_body=True)],
+    )
 
 
 @pytest.mark.asyncio
@@ -60,22 +218,10 @@ async def test_fn_type_inlay_concrete_real(client: LanguageClient):
     """
     Ensure that a concrete function returning real gets an inlay.
     """
-    file = """
-            proc foo() {
-              return 42.0;
-            }
-            iter fooI() {
-              yield 42.0;
-            }
-           """
-    inlays = [
-        (pos((0, 10)), "real(64)"),
-        (pos((3, 11)), "real(64)"),
-    ]
-    async with source_file(client, file) as doc:
-        await check_type_inlay_hints(
-            client, doc, rng((0, 0), endpos(file)), inlays
-        )
+    await check_fn_variants(
+        client,
+        [FnDecl("foo", return_expr="42.0", expected_type="real(64)")],
+    )
 
 
 @pytest.mark.asyncio
@@ -83,12 +229,10 @@ async def test_fn_type_inlay_explicit_no_inlay(client: LanguageClient):
     """
     Ensure that a function with an explicit return type annotation gets no inlay.
     """
-    file = """
-            proc bar(): int do return 1;
-            iter barI(): int do yield 1;
-           """
-    async with source_file(client, file) as doc:
-        await check_type_inlay_hints(client, doc, rng((0, 0), endpos(file)), [])
+    await check_fn_variants(
+        client,
+        [FnDecl("bar", return_expr="1", explicit_return_type="int", do_body=True)],
+    )
 
 
 @pytest.mark.asyncio
@@ -97,22 +241,14 @@ async def test_fn_type_inlay_generic_const_return(client: LanguageClient):
     Ensure that a generic function with a concrete return value gets the
     common inlay when called with multiple types.
     """
-    file = """
-            proc idk2(x) { return 42; }
-            iter idk3(x) { yield 42; }
-            idk2(10);
-            idk2(10.0);
-            for z in idk3(10) do {}
-            for z in idk3(10.0) do {}
-           """
-    inlays = [
-        (pos((0, 12)), "int(64)"),
-        (pos((1, 12)), "int(64)"),
-    ]
-    async with source_file(client, file) as doc:
-        await check_type_inlay_hints(
-            client, doc, rng((0, 0), endpos(file)), inlays
-        )
+    await check_fn_variants(
+        client,
+        [
+            FnDecl("idk2", params="x", return_expr="42", expected_type="int(64)"),
+            FnCall("idk2", "10"),
+            FnCall("idk2", "10.0"),
+        ],
+    )
 
 
 @pytest.mark.asyncio
@@ -120,18 +256,25 @@ async def test_fn_type_inlay_return_intent_type(client: LanguageClient):
     """
     Ensure return type annotations for functions with explicit return intents.
     """
-    file = """
-            proc baz() type { return int; }
-            iter bazI() { yield 42; }
-           """
-    inlays = [
-        (pos((0, 15)), "int(64)"),
-        (pos((1, 11)), "int(64)"),
-    ]
-    async with source_file(client, file) as doc:
-        await check_type_inlay_hints(
-            client, doc, rng((0, 0), endpos(file)), inlays
-        )
+    await check_fn_variants(
+        client,
+        [
+
+            FnDecl(
+                "bloop",
+                return_intent="const",
+                return_expr="42",
+                expected_type="int(64)",
+            ),
+            FnDecl(
+                "baz",
+                return_intent="type",
+                return_expr="int",
+                yield_expr="42",
+                expected_type="int(64)",
+            )
+        ],
+    )
 
 
 @pytest.mark.asyncio
@@ -140,18 +283,26 @@ async def test_fn_type_inlay_where_clause(client: LanguageClient):
     Ensure that a function with a 'where' clause gets an inlay in the right
     spot.
     """
-    file = """
-            proc boop() type where true { return int; }
-            iter boopI() where true { yield 42; }
-           """
-    inlays = [
-        (pos((0, 16)), "int(64)"),
-        (pos((1, 12)), "int(64)"),
-    ]
-    async with source_file(client, file) as doc:
-        await check_type_inlay_hints(
-            client, doc, rng((0, 0), endpos(file)), inlays
-        )
+    await check_fn_variants(
+        client,
+        [
+            FnDecl(
+                "bloop",
+                return_intent="const",
+                where_expr="true",
+                return_expr="42",
+                expected_type="int(64)",
+            ),
+            FnDecl(
+                "boop",
+                return_intent="type",
+                where_expr="true",
+                return_expr="int",
+                yield_expr="42",
+                expected_type="int(64)",
+            )
+        ],
+    )
 
 
 @pytest.mark.asyncio
@@ -200,39 +351,59 @@ async def test_fn_type_inlay_per_instantiation(client: LanguageClient):
 @pytest.mark.asyncio
 async def test_fn_type_inlay_header_variants(client: LanguageClient):
     """
-    More cases for return inlays.
+    More cases for return inlays: param intent, throws, where, and combinations.
     """
-    file = """
-            proc f1() param { return 42; }
-            iter f1I() { yield 42; }
-            proc f2() throws { return 42; }
-            iter f2I() throws { yield 42; }
-            proc f3() throws where true do return 42;
-            iter f3I() throws where true do yield 42;
-            proc f4() where true do return 42;
-            iter f4I() where true do yield 42;
-            proc f5() param throws where true do return 42;
-            iter f5I() throws where true do yield 42;
-            proc f6() param where true do return 42;
-            iter f6I() where true do yield 42;
-           """
+    # For 'throws', CLS inserts a trailing space to sidestep formatting issues.
+    await check_fn_variants(
+        client,
+        [
+            # param intent, braces body
+            FnDecl("f1", return_intent="param", return_expr="42", expected_type="int(64)"),
+            # throws, braces body
+            FnDecl("f2", throws=True, return_expr="42", expected_type="int(64)"),
+            # throws + where, do body
+            FnDecl(
+                "f3",
+                throws=True,
+                where_expr="true",
+                return_expr="42",
+                expected_type="int(64)",
+                do_body=True,
+            ),
+            # where, do body
+            FnDecl(
+                "f4", where_expr="true", return_expr="42", expected_type="int(64)", do_body=True
+            ),
+            # param intent + throws + where, do body
+            FnDecl(
+                "f5",
+                return_intent="param",
+                throws=True,
+                where_expr="true",
+                return_expr="42",
+                expected_type="int(64)",
+                do_body=True,
+            ),
+            # param intent + where, do body
+            FnDecl(
+                "f6",
+                return_intent="param",
+                where_expr="true",
+                return_expr="42",
+                expected_type="int(64)",
+                do_body=True,
+            ),
+        ],
+    )
 
-    # For 'throws' CLS inserts spaces to sidestep tedious formatting cases.
-    inlays = [
-        (pos((0, 15)), "int(64)"),
-        (pos((1, 10)), "int(64)"),
-        (pos((2, 10)), "int(64) "),
-        (pos((3, 11)), "int(64) "),
-        (pos((4, 10)), "int(64) "),
-        (pos((5, 11)), "int(64) "),
-        (pos((6, 9)), "int(64)"),
-        (pos((7, 10)), "int(64)"),
-        (pos((8, 16)), "int(64) "),
-        (pos((9, 11)), "int(64) "),
-        (pos((10, 15)), "int(64)"),
-        (pos((11, 10)), "int(64)"),
-    ]
-    async with source_file(client, file) as doc:
-        await check_type_inlay_hints(
-            client, doc, rng((0, 0), endpos(file)), inlays
-        )
+
+@pytest.mark.asyncio
+async def test_fn_type_inlay_parenless(client: LanguageClient):
+    """
+    Ensure that parenless functions get an inlay at the right spot
+    (right after the function name, with no parentheses in the declaration).
+    """
+    await check_fn_variants(
+        client,
+        [FnDecl("foo", return_expr="42", expected_type="int(64)", parenless=True)],
+    )
