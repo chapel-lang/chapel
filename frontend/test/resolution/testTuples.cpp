@@ -1446,8 +1446,11 @@ static void test35c() {
   auto mod = parseModule(context, program);
   resolveModule(context, mod->id());
 
-  assert(guard.numErrors() == 1);
-  assert(guard.error(0)->type() == ErrorType::TupleDeclNotTuple);
+  const size_t expectedErrors = 2;
+  assert(guard.numErrors() == expectedErrors);
+  for (size_t i = 0; i < expectedErrors; i++) {
+    assert(guard.error(i)->type() == ErrorType::VariableWithoutInitOrType);
+  }
   guard.realizeErrors();
 }
 
