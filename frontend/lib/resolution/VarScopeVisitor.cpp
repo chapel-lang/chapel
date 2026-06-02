@@ -618,7 +618,7 @@ bool VarScopeVisitor::enter(const Tuple* ast, RV& rv) {
     }
     if (auto initTy = initType.type()) {
       auto tupType = initTy->toTupleType();
-      CHPL_ASSERT(tupType);
+      if (!tupType) continue;
       rhsType = tupType->elementType(i);
     }
 
