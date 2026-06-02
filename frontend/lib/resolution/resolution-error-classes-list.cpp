@@ -2504,7 +2504,7 @@ void ErrorTupleDeclAssignMismatchedElems::write(ErrorWriterBase& wr) const {
     declOrAssign = "declaration";
     lhsSize = td->numDecls();
   } else if (op && op->op() == USTR("=") && op->lhs()->isTuple()) {
-    declOrAssign = "assignment";
+    declOrAssign = "assign";
     lhsSize = op->lhs()->toTuple()->numActuals();
   } else {
     CHPL_ASSERT(false && "invalid input");
