@@ -84,7 +84,7 @@ module LocaleModelHelpGPU {
   //
   pragma "insert line file info"
   pragma "always resolve function"
-  proc chpl_localeModelExecuteOn(
+  export proc chpl_localeModelExecuteOn(
                         in loc: chpl_localeID_t,      // target locale
                         fn: int,                      // on-body function idx
                         args: chpl_comm_on_bundle_p,  // function args
@@ -125,10 +125,10 @@ module LocaleModelHelpGPU {
   //
   pragma "insert line file info"
   pragma "always resolve function"
-  proc chpl_localeModelExecuteOnFast(in loc: chpl_localeID_t,
-                                     fn: int,
-                                     args: chpl_comm_on_bundle_p,
-                                     args_size: c_size_t) {
+  export proc chpl_localeModelExecuteOnFast(in loc: chpl_localeID_t,
+                                            fn: int,
+                                            args: chpl_comm_on_bundle_p,
+                                            args_size: c_size_t) {
     const dnode =  chpl_nodeFromLocaleID(loc);
     const dsubloc =  chpl_sublocFromLocaleID(loc);
     if dnode != chpl_nodeID {
@@ -153,10 +153,10 @@ module LocaleModelHelpGPU {
   //
   pragma "insert line file info"
   pragma "always resolve function"
-  proc chpl_localeModelExecuteOnNb(in loc: chpl_localeID_t,
-                                   fn: int,
-                                   args: chpl_comm_on_bundle_p,
-                                   args_size: c_size_t) {
+  export proc chpl_localeModelExecuteOnNb(in loc: chpl_localeID_t,
+                                          fn: int,
+                                          args: chpl_comm_on_bundle_p,
+                                          args_size: c_size_t) {
     //
     // If we're in serial mode, we should use blocking rather than
     // non-blocking "on" in order to serialize the executeOns.

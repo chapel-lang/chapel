@@ -92,5 +92,4 @@ module ChapelStandard {
   use ChapelDynamicLoading;
   use ChapelProgramEntrypoints;
   use ChapelProgramRegistration;
-
 }
