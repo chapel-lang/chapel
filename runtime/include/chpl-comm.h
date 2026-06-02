@@ -74,6 +74,7 @@ typedef struct {
   chpl_arg_bundle_kind_t kind;  // 'kind' indicator must be first in any bundle
   chpl_comm_bundleData_t comm;  // for comm layer wrappers
   chpl_task_bundle_t task_bundle;
+  chpl_rt_prg_id prg_id;
   uint64_t payload[0];
 } chpl_comm_on_bundle_t;
 

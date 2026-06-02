@@ -28,7 +28,10 @@
 #include "chpl-comm.h"
 #include "chpl-comm-compiler-macros.h"
 #include "chpl-comm-diags.h"
+#include "chpl-comm-callbacks.h"
+#include "chpl-comm-callbacks-internal.h"
 #include "chpl-comm-internal.h"
+#include "chpl-linefile-support.h"
 #include "chpl-gpu-diags.h"
 #include "chpl-env.h"
 #include "chpl-mem.h"
@@ -184,6 +187,25 @@ void* chpl_rt_comm_fetch_broadcast_table(chpl_rt_prginfo* prg,
 
   return ret;
 }
+static void execute_on_family_common_setup(chpl_rt_prginfo* prg,
+                                           c_nodeid_t node,
+                                           c_sublocid_t subloc,
+                                           chpl_fn_int_t fid,
+                                           chpl_comm_on_bundle_t *arg,
+                                           size_t arg_size,
+                                           int ln,
+                                           int32_t fn) {
+  chpl_task_bundle_t* tb = &arg->task_bundle;
+
+  // This is needed so that we can translate program info across locales.
+  arg->prg_id = prg->id;
+
+  // Local pointer is probably not needed, but just set it anyway.
+  tb->prg = prg;
+
+  // Also set the 'arg->kind'. It can be overridden by a comm-layer if needed.
+  arg->kind = CHPL_ARG_BUNDLE_KIND_COMM;
+}
 
 void chpl_rt_comm_execute_on(chpl_rt_prginfo* prg, c_nodeid_t node,
                              c_sublocid_t subloc,
@@ -192,6 +214,19 @@ void chpl_rt_comm_execute_on(chpl_rt_prginfo* prg, c_nodeid_t node,
                              size_t arg_size,
                              int ln,
                              int32_t fn) {
+  if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn)) {
+    chpl_comm_cb_info_t cb_data =
+      {chpl_comm_cb_event_kind_executeOn, chpl_nodeID, node,
+       .iu.executeOn={subloc, fid, arg, arg_size, ln, fn}};
+    chpl_comm_do_callbacks (&cb_data);
+  }
+
+  chpl_comm_diags_verbose_executeOn("", node, ln, fn);
+  chpl_comm_diags_incr(execute_on);
+
+  execute_on_family_common_setup(prg, node, subloc, fid, arg,
+                                 arg_size, ln, fn);
+
   chpl_rt_comm_execute_on_impl(prg, node, subloc, fid, arg,
                                arg_size, ln, fn);
 }
@@ -199,10 +234,23 @@ void chpl_rt_comm_execute_on(chpl_rt_prginfo* prg, c_nodeid_t node,
 void chpl_rt_comm_execute_on_nb(chpl_rt_prginfo* prg, c_nodeid_t node,
                                 c_sublocid_t subloc,
                                 chpl_fn_int_t fid,
-                                chpl_comm_on_bundle_t *arg,
+                                chpl_comm_on_bundle_t* arg,
                                 size_t arg_size,
                                 int ln,
                                 int32_t fn) {
+  if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_nb)) {
+    chpl_comm_cb_info_t cb_data =
+      {chpl_comm_cb_event_kind_executeOn_nb, chpl_nodeID, node,
+       .iu.executeOn={subloc, fid, arg, arg_size, ln, fn}};
+    chpl_comm_do_callbacks (&cb_data);
+  }
+
+  chpl_comm_diags_verbose_executeOn("non-blocking", node, ln, fn);
+  chpl_comm_diags_incr(execute_on_nb);
+
+  execute_on_family_common_setup(prg, node, subloc, fid, arg,
+                                 arg_size, ln, fn);
+
   chpl_rt_comm_execute_on_nb_impl(prg, node, subloc, fid, arg,
                                   arg_size, ln, fn);
 }
@@ -214,6 +262,19 @@ void chpl_rt_comm_execute_on_fast(chpl_rt_prginfo* prg, c_nodeid_t node,
                                   size_t arg_size,
                                   int ln,
                                   int32_t fn) {
+  if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_fast)) {
+    chpl_comm_cb_info_t cb_data =
+      {chpl_comm_cb_event_kind_executeOn_fast, chpl_nodeID, node,
+       .iu.executeOn={subloc, fid, arg, arg_size, ln, fn}};
+    chpl_comm_do_callbacks (&cb_data);
+  }
+
+  chpl_comm_diags_verbose_executeOn("fast", node, ln, fn);
+  chpl_comm_diags_incr(execute_on_fast);
+
+  execute_on_family_common_setup(prg, node, subloc, fid, arg,
+                                 arg_size, ln, fn);
+
   chpl_rt_comm_execute_on_fast_impl(prg, node, subloc, fid, arg,
                                     arg_size, ln, fn);
 }

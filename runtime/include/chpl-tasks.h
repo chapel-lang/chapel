@@ -27,6 +27,7 @@
 #include "chplcgfns.h"
 #include "chpltypes.h"
 #include "chpl-comm-task-decls.h"
+#include "chpl-prginfo.h"
 #include "chpl-tasks-impl.h"
 
 #ifdef __cplusplus
@@ -75,6 +76,7 @@ typedef struct chpl_task_bundle {
   chpl_bool is_executeOn;
   int lineno;
   int filename;
+  chpl_rt_prginfo* prg;
   c_sublocid_t requestedSubloc;
   chpl_fn_int_t requested_fid;
   chpl_fn_p requested_fn;

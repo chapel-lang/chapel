@@ -4230,17 +4230,6 @@ void chpl_rt_comm_execute_on_impl(chpl_rt_prginfo* prg, c_nodeid_t node,
              (int) node, (int) subloc, (int) fid, arg, argSize);
 
   CHK_TRUE(node != chpl_nodeID); // handled by the locale model
-
-  if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn)) {
-    chpl_comm_cb_info_t cb_data =
-      {chpl_comm_cb_event_kind_executeOn, chpl_nodeID, node,
-       .iu.executeOn={subloc, fid, arg, argSize, ln, fn}};
-    chpl_comm_do_callbacks (&cb_data);
-  }
-
-  chpl_comm_diags_verbose_executeOn("", node, ln, fn);
-  chpl_comm_diags_incr(execute_on);
-
   amRequestExecOn(node, subloc, fid, arg, argSize, false, true);
 }
 
@@ -4257,17 +4246,6 @@ void chpl_rt_comm_execute_on_nb_impl(chpl_rt_prginfo* prg, c_nodeid_t node,
              (int) node, (int) subloc, (int) fid, arg, argSize);
 
   CHK_TRUE(node != chpl_nodeID); // handled by the locale model
-
-  if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_nb)) {
-    chpl_comm_cb_info_t cb_data =
-      {chpl_comm_cb_event_kind_executeOn_nb, chpl_nodeID, node,
-       .iu.executeOn={subloc, fid, arg, argSize, ln, fn}};
-    chpl_comm_do_callbacks (&cb_data);
-  }
-
-  chpl_comm_diags_verbose_executeOn("non-blocking", node, ln, fn);
-  chpl_comm_diags_incr(execute_on_nb);
-
   amRequestExecOn(node, subloc, fid, arg, argSize, false, false);
 }
 
@@ -4284,17 +4262,6 @@ void chpl_rt_comm_execute_on_fast_impl(chpl_rt_prginfo* prg, c_nodeid_t node,
              (int) node, (int) subloc, (int) fid, arg, argSize);
 
   CHK_TRUE(node != chpl_nodeID); // handled by the locale model
-
-  if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_fast)) {
-    chpl_comm_cb_info_t cb_data =
-      {chpl_comm_cb_event_kind_executeOn_fast, chpl_nodeID, node,
-       .iu.executeOn={subloc, fid, arg, argSize, ln, fn}};
-    chpl_comm_do_callbacks (&cb_data);
-  }
-
-  chpl_comm_diags_verbose_executeOn("fast", node, ln, fn);
-  chpl_comm_diags_incr(execute_on_fast);
-
   amRequestExecOn(node, subloc, fid, arg, argSize, true, true);
 }
 

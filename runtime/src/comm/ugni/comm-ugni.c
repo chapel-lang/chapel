@@ -6966,18 +6966,6 @@ void chpl_rt_comm_execute_on_impl(chpl_rt_prginfo* prg, c_nodeid_t locale,
            (int) locale, (int) subloc, (int) fid, arg, arg_size);
 
   assert(locale != chpl_nodeID); // locale model code should prevent this ...
-
-  // Communications callback support
-  if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn)) {
-      chpl_comm_cb_info_t cb_data =
-        {chpl_comm_cb_event_kind_executeOn, chpl_nodeID, locale,
-         .iu.executeOn={subloc, fid, arg, arg_size, ln, fn}};
-      chpl_comm_do_callbacks (&cb_data);
-  }
-
-  chpl_comm_diags_verbose_executeOn("", locale, ln, fn);
-  chpl_comm_diags_incr(execute_on);
-
   PERFSTATS_INC(fork_call_cnt);
   fork_call_common(locale, subloc, fid, arg, arg_size, false, true);
 }
@@ -6995,18 +6983,6 @@ void chpl_rt_comm_execute_on_nb_impl(chpl_rt_prginfo* prg, c_nodeid_t locale,
            (int) locale, (int) subloc, (int) fid, arg, arg_size);
 
   assert(locale != chpl_nodeID); // locale model code should prevent this ...
-
-  // Communications callback support
-  if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_nb)) {
-      chpl_comm_cb_info_t cb_data =
-        {chpl_comm_cb_event_kind_executeOn_nb, chpl_nodeID, locale,
-         .iu.executeOn={subloc, fid, arg, arg_size, ln, fn}};
-      chpl_comm_do_callbacks (&cb_data);
-  }
-
-  chpl_comm_diags_verbose_executeOn("non-blocking", locale, ln, fn);
-  chpl_comm_diags_incr(execute_on_nb);
-
   PERFSTATS_INC(fork_call_nb_cnt);
   fork_call_common(locale, subloc, fid, arg, arg_size, false, false);
 }
@@ -7024,17 +7000,6 @@ void chpl_rt_comm_execute_on_fast_impl(chpl_rt_prginfo* prg, c_nodeid_t locale,
            (int) locale, (int) subloc, (int) fid, arg, arg_size);
 
   assert(locale != chpl_nodeID); // locale model code should prevent this ...
-
-  // Communications callback support
-  if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_fast)) {
-      chpl_comm_cb_info_t cb_data =
-        {chpl_comm_cb_event_kind_executeOn_fast, chpl_nodeID, locale,
-         .iu.executeOn={subloc, fid, arg, arg_size, ln, fn}};
-      chpl_comm_do_callbacks (&cb_data);
-  }
-
-  chpl_comm_diags_verbose_executeOn("fast", locale, ln, fn);
-  chpl_comm_diags_incr(execute_on_fast);
 
   //
   // Note: the rf_handler() logic assumes that fast implies blocking.
