@@ -805,13 +805,16 @@ def findIgnores():
             with open(defs, "r") as fi:
                 for line in fi:
                     if line.startswith("typedef"):
+                        # handle multi-line 'typedef enum {' case by
+                        # skipping to '} ident;'
+                        if line.endswith(" {\n"):
+                            # assume no nesting for simplicity
+                            for line2 in fi:
+                                if line2.startswith("}"):
+                                    line = line2
+                                    break
                         rhs = line.replace(";", "")
-                        rhs = rhs.replace("typedef int ", "")
-                        rhs = rhs.replace("typedef uint32_t ", "")
-                        rhs = rhs.replace("typedef _Bool ", "")
-                        rhs = rhs.replace("typedef void* ", "")
-                        if "typedef struct" in rhs:
-                            rhs = rhs.split()[-1]
+                        rhs = rhs.split()[-1]
 
                         ret.add(rhs.strip())
 
