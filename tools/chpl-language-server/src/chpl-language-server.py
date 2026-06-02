@@ -687,7 +687,10 @@ class ChapelLanguageServer(LanguageServer):
             return None
 
         with context.track_errors():
-            qt = template_sig.return_type()
+            if fn.kind() == "iter":
+                qt = template_sig.yield_type()
+            else:
+                qt = template_sig.return_type()
         if qt is None:
             return None
 
