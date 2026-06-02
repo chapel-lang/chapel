@@ -513,28 +513,37 @@ void chpl_comm_getput_unordered_task_fence(void);
 // notes:
 //   multiple executeOns to the same locale should be handled concurrently
 //
-void chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
-                          chpl_fn_int_t fid,
-                          chpl_comm_on_bundle_t *arg, size_t arg_size,
-                          int ln, int32_t fn);
+void chpl_rt_comm_execute_on(chpl_rt_prginfo* prg, c_nodeid_t node,
+                             c_sublocid_t subloc,
+                             chpl_fn_int_t fid,
+                             chpl_comm_on_bundle_t *arg,
+                             size_t arg_size,
+                             int ln,
+                             int32_t fn);
 
 //
 // non-blocking execute_on
 // arg can be reused immediately after this call completes.
 //
-void chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
-                             chpl_fn_int_t fid,
-                             chpl_comm_on_bundle_t *arg, size_t arg_size,
-                             int ln, int32_t fn);
+void chpl_rt_comm_execute_on_nb(chpl_rt_prginfo* prg, c_nodeid_t node,
+                                c_sublocid_t subloc,
+                                chpl_fn_int_t fid,
+                                chpl_comm_on_bundle_t *arg,
+                                size_t arg_size,
+                                int ln,
+                                int32_t fn);
 
 //
 // fast execute_on (i.e., run in handler)
 // arg can be reused immediately after this call completes.
 //
-void chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
-                               chpl_fn_int_t fid,
-                               chpl_comm_on_bundle_t *arg, size_t arg_size,
-                               int ln, int32_t fn);
+void chpl_rt_comm_execute_on_fast(chpl_rt_prginfo* prg, c_nodeid_t node,
+                                  c_sublocid_t subloc,
+                                  chpl_fn_int_t fid,
+                                  chpl_comm_on_bundle_t *arg,
+                                  size_t arg_size,
+                                  int ln,
+                                  int32_t fn);
 
 //
 // Ensure that the communication layer makes progress if there are any

@@ -1825,10 +1825,13 @@ void  execute_on_common(c_nodeid_t node, c_sublocid_t subloc,
 
 ////GASNET - introduce locale-int size
 ////GASNET - is caller in chpl_comm_on_bundle_t redundant? active message can determine this.
-void  chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
-                           chpl_fn_int_t fid,
-                           chpl_comm_on_bundle_t *arg, size_t arg_size,
-                           int ln, int32_t fn) {
+void chpl_rt_comm_execute_on_impl(chpl_rt_prginfo* prg, c_nodeid_t node,
+                                  c_sublocid_t subloc,
+                                  chpl_fn_int_t fid,
+                                  chpl_comm_on_bundle_t *arg,
+                                  size_t arg_size,
+                                  int ln,
+                                  int32_t fn) {
   if (chpl_nodeID == node) {
     assert(0);
     chpl_ftable_call(fid, arg);
@@ -1849,11 +1852,13 @@ void  chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
   }
 }
 
-void  chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
-                              chpl_fn_int_t fid,
-                              chpl_comm_on_bundle_t *arg, size_t arg_size,
-                              int ln, int32_t fn) {
-
+void chpl_rt_comm_execute_on_nb_impl(chpl_rt_prginfo* prg, c_nodeid_t node,
+                                     c_sublocid_t subloc,
+                                     chpl_fn_int_t fid,
+                                     chpl_comm_on_bundle_t *arg,
+                                     size_t arg_size,
+                                     int ln,
+                                     int32_t fn) {
   if (chpl_nodeID == node) {
     assert(0); // locale model code should prevent this...
   } else {
@@ -1874,10 +1879,13 @@ void  chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
 }
 
 // GASNET - should only be called for "small" functions
-void  chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
-                                chpl_fn_int_t fid,
-                                chpl_comm_on_bundle_t *arg, size_t arg_size,
-                                int ln, int32_t fn) {
+void chpl_rt_comm_execute_on_fast_impl(chpl_rt_prginfo* prg, c_nodeid_t node,
+                                       c_sublocid_t subloc,
+                                       chpl_fn_int_t fid,
+                                       chpl_comm_on_bundle_t *arg,
+                                       size_t arg_size,
+                                       int ln,
+                                       int32_t fn) {
   if (chpl_nodeID == node) {
     assert(0);
     chpl_ftable_call(fid, arg);

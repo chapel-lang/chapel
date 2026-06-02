@@ -185,6 +185,39 @@ void* chpl_rt_comm_fetch_broadcast_table(chpl_rt_prginfo* prg,
   return ret;
 }
 
+void chpl_rt_comm_execute_on(chpl_rt_prginfo* prg, c_nodeid_t node,
+                             c_sublocid_t subloc,
+                             chpl_fn_int_t fid,
+                             chpl_comm_on_bundle_t *arg,
+                             size_t arg_size,
+                             int ln,
+                             int32_t fn) {
+  chpl_rt_comm_execute_on_impl(prg, node, subloc, fid, arg,
+                               arg_size, ln, fn);
+}
+
+void chpl_rt_comm_execute_on_nb(chpl_rt_prginfo* prg, c_nodeid_t node,
+                                c_sublocid_t subloc,
+                                chpl_fn_int_t fid,
+                                chpl_comm_on_bundle_t *arg,
+                                size_t arg_size,
+                                int ln,
+                                int32_t fn) {
+  chpl_rt_comm_execute_on_nb_impl(prg, node, subloc, fid, arg,
+                                  arg_size, ln, fn);
+}
+
+void chpl_rt_comm_execute_on_fast(chpl_rt_prginfo* prg, c_nodeid_t node,
+                                  c_sublocid_t subloc,
+                                  chpl_fn_int_t fid,
+                                  chpl_comm_on_bundle_t *arg,
+                                  size_t arg_size,
+                                  int ln,
+                                  int32_t fn) {
+  chpl_rt_comm_execute_on_fast_impl(prg, node, subloc, fid, arg,
+                                    arg_size, ln, fn);
+}
+
 static pthread_once_t maxHeapSize_once = PTHREAD_ONCE_INIT;
 static ssize_t maxHeapSize;
 
