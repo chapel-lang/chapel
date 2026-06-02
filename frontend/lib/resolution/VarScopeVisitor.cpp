@@ -379,8 +379,11 @@ bool VarScopeVisitor::enter(const TupleDecl* ast, RV& rv) {
     if (auto initExpr = ast->initExpression()) {
       initExpr->traverse(rv);
     }
-    for (auto decl : ast->decls()) {
-      decl->traverse(rv);
+    const Type* initTy = rv.byAst(ast).type().type();
+    if (initTy && initTy->isTupleType()) {
+      for (auto decl : ast->decls()) {
+        decl->traverse(rv);
+      }
     }
   }
 
