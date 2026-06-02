@@ -17,10 +17,10 @@ from pytest_lsp import ClientServerConfig, LanguageClient
 from util.utils import *
 from util.config import CLS_PATH
 
-
 # ---------------------------------------------------------------------------
 # Function variant testing infrastructure
 # ---------------------------------------------------------------------------
+
 
 class _FnVariant(Enum):
     PROC = "proc"
@@ -44,7 +44,9 @@ class FnDecl:
     return_expr: str = "42"
     yield_expr: str = ""  # defaults to return_expr
     expected_type: str = ""  # expected inlay if any
-    explicit_return_type: str = ""  # if set, fn has explicit annotation (expect no inlay)
+    explicit_return_type: str = (
+        ""  # if set, fn has explicit annotation (expect no inlay)
+    )
     do_body: bool = False  # use 'do' instead of '{..}'
     parenless: bool = False  # omit parameter list entirely (parenless function)
 
@@ -90,10 +92,8 @@ class FnDecl:
             return f" do {kw} {expr};"
         return " { " + f"{kw} {expr};" + " }"
 
-    def _render(
-        self, variant: _FnVariant, record_name: str
-    ) -> tuple[str, int]:
-        (header, inlay) = self._render_header(variant, record_name)
+    def _render(self, variant: _FnVariant, record_name: str) -> tuple[str, int]:
+        header, inlay = self._render_header(variant, record_name)
         return (header + self._render_body(variant), inlay)
 
 
@@ -209,7 +209,11 @@ async def test_fn_type_inlay_concrete_int(client: LanguageClient):
     """
     await check_fn_variants(
         client,
-        [FnDecl("test", return_expr="42", expected_type="int(64)", do_body=True)],
+        [
+            FnDecl(
+                "test", return_expr="42", expected_type="int(64)", do_body=True
+            )
+        ],
     )
 
 
@@ -231,7 +235,11 @@ async def test_fn_type_inlay_explicit_no_inlay(client: LanguageClient):
     """
     await check_fn_variants(
         client,
-        [FnDecl("bar", return_expr="1", explicit_return_type="int", do_body=True)],
+        [
+            FnDecl(
+                "bar", return_expr="1", explicit_return_type="int", do_body=True
+            )
+        ],
     )
 
 
@@ -244,7 +252,9 @@ async def test_fn_type_inlay_generic_const_return(client: LanguageClient):
     await check_fn_variants(
         client,
         [
-            FnDecl("idk2", params="x", return_expr="42", expected_type="int(64)"),
+            FnDecl(
+                "idk2", params="x", return_expr="42", expected_type="int(64)"
+            ),
             FnCall("idk2", "10"),
             FnCall("idk2", "10.0"),
         ],
@@ -259,7 +269,6 @@ async def test_fn_type_inlay_return_intent_type(client: LanguageClient):
     await check_fn_variants(
         client,
         [
-
             FnDecl(
                 "bloop",
                 return_intent="const",
@@ -272,7 +281,7 @@ async def test_fn_type_inlay_return_intent_type(client: LanguageClient):
                 return_expr="int",
                 yield_expr="42",
                 expected_type="int(64)",
-            )
+            ),
         ],
     )
 
@@ -300,7 +309,7 @@ async def test_fn_type_inlay_where_clause(client: LanguageClient):
                 return_expr="int",
                 yield_expr="42",
                 expected_type="int(64)",
-            )
+            ),
         ],
     )
 
@@ -358,9 +367,16 @@ async def test_fn_type_inlay_header_variants(client: LanguageClient):
         client,
         [
             # param intent, braces body
-            FnDecl("f1", return_intent="param", return_expr="42", expected_type="int(64)"),
+            FnDecl(
+                "f1",
+                return_intent="param",
+                return_expr="42",
+                expected_type="int(64)",
+            ),
             # throws, braces body
-            FnDecl("f2", throws=True, return_expr="42", expected_type="int(64)"),
+            FnDecl(
+                "f2", throws=True, return_expr="42", expected_type="int(64)"
+            ),
             # throws + where, do body
             FnDecl(
                 "f3",
@@ -372,7 +388,11 @@ async def test_fn_type_inlay_header_variants(client: LanguageClient):
             ),
             # where, do body
             FnDecl(
-                "f4", where_expr="true", return_expr="42", expected_type="int(64)", do_body=True
+                "f4",
+                where_expr="true",
+                return_expr="42",
+                expected_type="int(64)",
+                do_body=True,
             ),
             # param intent + throws + where, do body
             FnDecl(
@@ -405,5 +425,9 @@ async def test_fn_type_inlay_parenless(client: LanguageClient):
     """
     await check_fn_variants(
         client,
-        [FnDecl("foo", return_expr="42", expected_type="int(64)", parenless=True)],
+        [
+            FnDecl(
+                "foo", return_expr="42", expected_type="int(64)", parenless=True
+            )
+        ],
     )
