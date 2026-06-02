@@ -443,18 +443,18 @@ module ChapelIO {
   @chpldoc.nodoc
   operator :(x: ?t1, type t2: string) where isProcedureType(t1) {
     if useProcedurePointers then try! {
-      extern record chpl_fn_info {
-        const name: c_ptrConst(c_char);
-      }
+      // In LLVM 14, we encounter bugs when indexing into chpl_finfo directly
+      // from module code, so we use this shim.
+      extern proc chpl_rt_finfo_name(idx: c_int): c_ptrConst(c_char);
+
       extern const chpl_ftableSize: int(64);
       extern proc chpl_get_ftable(): c_ptr(c_ptr(void));
-      extern const chpl_finfo: c_ptrConst(chpl_fn_info);
       const chpl_ftable = chpl_get_ftable();
       const xPtr = x : c_ptr(void);
       var name : string;
       for idx in 0..<chpl_ftableSize {
         if xPtr == chpl_ftable[idx] : c_ptr(void) {
-          name = string.createBorrowingBuffer(chpl_finfo[idx].name);
+          name = string.createBorrowingBuffer(chpl_rt_finfo_name(idx:c_int));
         }
       }
 
