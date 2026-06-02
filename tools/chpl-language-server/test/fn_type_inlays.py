@@ -168,14 +168,16 @@ async def check_fn_variants(
     client: LanguageClient,
     parts: List[FnPart],
     record_name: str = "R",
-    preamble = [],
+    preamble=[],
 ) -> None:
     """
     Run check_type_inlay_hints for all 4 function variants:
     proc, iter, primary method (inside record), and secondary method.
     """
     for variant in _FnVariant:
-        source, inlays = _render_fn_variant(parts, variant, record_name, preamble)
+        source, inlays = _render_fn_variant(
+            parts, variant, record_name, preamble
+        )
         async with source_file(client, source) as doc:
             await check_type_inlay_hints(
                 client, doc, rng((0, 0), endpos(source)), inlays
