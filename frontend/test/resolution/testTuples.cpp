@@ -1390,6 +1390,67 @@ static void test34() {
   resolveModule(context, mod->id());
 }
 
+static void test35a() {
+  printf("%s\n", __FUNCTION__);
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program =
+    R""""(
+    var (x): (int);
+    x;
+    )"""";
+
+  auto mod = parseModule(context, program);
+  resolveModule(context, mod->id());
+
+  assert(guard.numErrors() == 1);
+  assert(guard.error(0)->type() == ErrorType::TupleDeclNotTuple);
+  guard.realizeErrors();
+}
+
+static void test35b() {
+  printf("%s\n", __FUNCTION__);
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program =
+    R""""(
+    var (x, y): (int);
+    x;
+    y;
+    )"""";
+
+  auto mod = parseModule(context, program);
+  resolveModule(context, mod->id());
+
+  assert(guard.numErrors() == 1);
+  assert(guard.error(0)->type() == ErrorType::TupleDeclNotTuple);
+  guard.realizeErrors();
+}
+
+static void test35c() {
+  printf("%s\n", __FUNCTION__);
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program =
+    R""""(
+    var x;
+    var y;
+    (x, y) = 5;
+    x;
+    y;
+    )"""";
+
+  auto mod = parseModule(context, program);
+  resolveModule(context, mod->id());
+
+  assert(guard.numErrors() == 1);
+  assert(guard.error(0)->type() == ErrorType::TupleDeclNotTuple);
+  guard.realizeErrors();
+}
+
 int main() {
   test1();
   test2();
@@ -1431,6 +1492,9 @@ int main() {
   test32();
   test33();
   test34();
+  test35a();
+  test35b();
+  test35c();
 
   return 0;
 }
