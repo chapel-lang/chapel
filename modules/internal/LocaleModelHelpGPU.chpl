@@ -26,6 +26,7 @@ module LocaleModelHelpGPU {
   use CTypes;
   use ChapelBase;
   use ChapelLocale;
+  use ChapelRuntimeInterface;
 
   @chpldoc.nodoc
   config param debugGPULocale = false;
@@ -62,8 +63,7 @@ module LocaleModelHelpGPU {
   //         chpl_executeOn / chpl_executeOnFast
   //
   pragma "always resolve function"
-  proc chpl_doDirectExecuteOn(in loc: chpl_localeID_t // target locale
-                             ):bool {
+  proc chpl_doDirectExecuteOn(in loc: chpl_localeID_t): bool {
     const dnode =  chpl_nodeFromLocaleID(loc);
     const dsubloc =  chpl_sublocFromLocaleID(loc);
 
@@ -84,11 +84,11 @@ module LocaleModelHelpGPU {
   //
   pragma "insert line file info"
   pragma "always resolve function"
-  proc chpl_executeOn(in loc: chpl_localeID_t, // target locale
-                      fn: int,              // on-body function idx
-                      args: chpl_comm_on_bundle_p,     // function args
-                      args_size: c_size_t     // args size
-                     ) {
+  proc chpl_localeModelExecuteOn(
+                        in loc: chpl_localeID_t,      // target locale
+                        fn: int,                      // on-body function idx
+                        args: chpl_comm_on_bundle_p,  // function args
+                        args_size: c_size_t) {        // args size
     const dnode =  chpl_nodeFromLocaleID(loc);
     const dsubloc =  chpl_sublocFromLocaleID(loc);
 
@@ -104,7 +104,7 @@ module LocaleModelHelpGPU {
     if dnode != chpl_nodeID {
       var tls = chpl_task_getInfoChapel();
       chpl_task_data_setup(chpl_comm_on_bundle_task_bundle(args), tls);
-      chpl_comm_execute_on(dnode, dsubloc, fn, args, args_size);
+      chpl_executeOn(dnode, dsubloc, fn, args, args_size);
     } else {
       // run directly on this node
       var origSubloc = chpl_task_getRequestedSubloc();
@@ -125,17 +125,16 @@ module LocaleModelHelpGPU {
   //
   pragma "insert line file info"
   pragma "always resolve function"
-  proc chpl_executeOnFast(in loc: chpl_localeID_t, // target locale
-                          fn: int,              // on-body function idx
-                          args: chpl_comm_on_bundle_p,     // function args
-                          args_size: c_size_t     // args size
-                         ) {
+  proc chpl_localeModelExecuteOnFast(in loc: chpl_localeID_t,
+                                     fn: int,
+                                     args: chpl_comm_on_bundle_p,
+                                     args_size: c_size_t) {
     const dnode =  chpl_nodeFromLocaleID(loc);
     const dsubloc =  chpl_sublocFromLocaleID(loc);
     if dnode != chpl_nodeID {
       var tls = chpl_task_getInfoChapel();
       chpl_task_data_setup(chpl_comm_on_bundle_task_bundle(args), tls);
-      chpl_comm_execute_on_fast(dnode, dsubloc, fn, args, args_size);
+      chpl_executeOnFast(dnode, dsubloc, fn, args, args_size);
     } else {
       var origSubloc = chpl_task_getRequestedSubloc();
       if (dsubloc==origSubloc) {
@@ -154,14 +153,13 @@ module LocaleModelHelpGPU {
   //
   pragma "insert line file info"
   pragma "always resolve function"
-  proc chpl_executeOnNB(in loc: chpl_localeID_t, // target locale
-                        fn: int,              // on-body function idx
-                        args: chpl_comm_on_bundle_p,     // function args
-                        args_size: c_size_t     // args size
-                       ) {
+  proc chpl_localeModelExecuteOnNb(in loc: chpl_localeID_t,
+                                   fn: int,
+                                   args: chpl_comm_on_bundle_p,
+                                   args_size: c_size_t) {
     //
     // If we're in serial mode, we should use blocking rather than
-    // non-blocking "on" in order to serialize the execute_ons.
+    // non-blocking "on" in order to serialize the executeOns.
     //
     const dnode =  chpl_nodeFromLocaleID(loc);
     const dsubloc =  chpl_sublocFromLocaleID(loc);
@@ -177,9 +175,9 @@ module LocaleModelHelpGPU {
     } else {
       chpl_task_data_setup(chpl_comm_on_bundle_task_bundle(args), tls);
       if isSerial {
-        chpl_comm_execute_on(dnode, dsubloc, fn, args, args_size);
+        chpl_executeOn(dnode, dsubloc, fn, args, args_size);
       } else {
-        chpl_comm_execute_on_nb(dnode, dsubloc, fn, args, args_size);
+        chpl_executeOnNb(dnode, dsubloc, fn, args, args_size);
       }
     }
   }

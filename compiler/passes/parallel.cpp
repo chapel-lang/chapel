@@ -1360,7 +1360,7 @@ static void insertEndCounts()
 // if ( chpl_doDirectExecuteOn( targetLocale ) )
 //     call un-wrapped task function
 // else
-//     proceed as with chpl_executeOn/chpl_executeOnFast
+//     proceed as with chpl_localeModelExecuteOn/chpl_localeModelExecuteOnFast
 //     fid call to wrapper function on a remote local
 //     (possibly just a different sublocale)
 //
