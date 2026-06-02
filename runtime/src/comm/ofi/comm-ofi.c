@@ -5280,7 +5280,7 @@ void amWrapExecOnBody(void* p) {
 
   chpl_comm_bundleData_t* comm = &((chpl_comm_on_bundle_t*) p)->comm;
 
-  chpl_ftable_call(comm->fid, p);
+  chpl_rt_ftable_call(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER, comm->fid, p);
   forceMemFxVisAllNodes_noTcip(true /*checkPuts*/, true /*checkAmos*/);
   DBG_PRINTF(DBG_AM | DBG_AM_RECV, "%s", am_reqDoneStr(p));
   if (comm->pAmDone != NULL) {
@@ -5342,7 +5342,8 @@ void amWrapExecOnLrgBody(struct amRequest_execOnLrg_t* xol) {
   //
   // Now we can finally call the body function.
   //
-  chpl_ftable_call(bundle->comm.fid, bundle);
+  chpl_rt_ftable_call(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER, bundle->comm.fid,
+                      bundle);
   forceMemFxVisAllNodes_noTcip(true /*checkPuts*/, true /*checkAmos*/);
   DBG_PRINTF(DBG_AM | DBG_AM_RECV, "%s", am_reqDoneStr((amRequest_t*) xol));
   if (comm->pAmDone != NULL) {

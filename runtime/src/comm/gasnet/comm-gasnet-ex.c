@@ -276,7 +276,8 @@ static void AM_fork_fast(gasnet_token_t token, void* buf, size_t nbytes) {
   chpl_comm_on_bundle_t *f = buf;
 
   // Run the function
-  chpl_ftable_call(f->task_bundle.requested_fid, f);
+  chpl_rt_ftable_call(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                      f->task_bundle.requested_fid, f);
 
   // Signal that the handler has completed if that was requested.
   if (f->comm.ack)
@@ -334,7 +335,7 @@ static void AM_fork_fast_small(gasnet_token_t token, void* buf, size_t nbytes) {
   setup_small_fork_task(&task, f, nbytes);
 
   // Run the function
-  chpl_ftable_call(f->fid, bptr);
+  chpl_rt_ftable_call(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER, f->fid, bptr);
 
   // Signal that the handler has completed if that was requested.
   if (f->ack)
@@ -344,7 +345,8 @@ static void AM_fork_fast_small(gasnet_token_t token, void* buf, size_t nbytes) {
 
 
 static void fork_wrapper(chpl_comm_on_bundle_t *f) {
-  chpl_ftable_call(f->task_bundle.requested_fid, f);
+  chpl_rt_ftable_call(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                      f->task_bundle.requested_fid, f);
 
   GASNET_Safe(gasnet_AMRequestShort2(f->comm.caller, SIGNAL,
                                      Arg0(f->comm.ack), Arg1(f->comm.ack)));
@@ -399,7 +401,7 @@ static void fork_large_wrapper(large_fork_task_t* f) {
                 CHPL_COMM_UNKNOWN_ID, 0, CHPL_FILE_IDX_FORK_LARGE);
 
   // Call the on body function
-  chpl_ftable_call(fid, arg);
+  chpl_rt_ftable_call(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER, fid, arg);
 
   // Signal completion
   GASNET_Safe(gasnet_AMRequestShort2(caller, SIGNAL, Arg0(ack), Arg1(ack)));
@@ -426,7 +428,8 @@ static void AM_fork_large(gasnet_token_t token, void* buf, size_t nbytes) {
 }
 
 static void fork_nb_wrapper(chpl_comm_on_bundle_t *f) {
-  chpl_ftable_call(f->task_bundle.requested_fid, f);
+  chpl_rt_ftable_call(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                      f->task_bundle.requested_fid, f);
 }
 
 static void AM_fork_nb(gasnet_token_t  token,
@@ -484,7 +487,7 @@ static void fork_nb_large_wrapper(large_fork_task_t* f) {
                                      Arg1(arg_on_caller)));
 
   // Call the user function
-  chpl_ftable_call(fid, arg);
+  chpl_rt_ftable_call(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER, fid, arg);
 
   // Free the bundle we just allocated
   chpl_mem_free(arg, 0, 0);
@@ -1834,7 +1837,7 @@ void chpl_rt_comm_execute_on_impl(chpl_rt_prginfo* prg, c_nodeid_t node,
                                   int32_t fn) {
   if (chpl_nodeID == node) {
     assert(0);
-    chpl_ftable_call(fid, arg);
+    chpl_rt_ftable_call(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER, fid, arg);
   } else {
     // Communications callback support
     if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn)) {
@@ -1888,7 +1891,7 @@ void chpl_rt_comm_execute_on_fast_impl(chpl_rt_prginfo* prg, c_nodeid_t node,
                                        int32_t fn) {
   if (chpl_nodeID == node) {
     assert(0);
-    chpl_ftable_call(fid, arg);
+    chpl_rt_ftable_call(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER, fid, arg);
   } else {
     // Communications callback support
     if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_fast)) {

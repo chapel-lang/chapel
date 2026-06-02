@@ -67,7 +67,7 @@ module LocaleModelHelpFlat {
       // one day, we could rely on this always being handled
       // by the compiler's use of doDirectExecuteOn, but for now
       // the compiler calls this version in some cases.
-      chpl_ftable_call(fn, args);
+      chpl_ftableCall(fn, args);
     } else {
       var tls = chpl_task_getInfoChapel();
       chpl_task_data_setup(chpl_comm_on_bundle_task_bundle(args), tls);
@@ -89,7 +89,7 @@ module LocaleModelHelpFlat {
     const node = chpl_nodeFromLocaleID(loc);
     if (node == chpl_nodeID) {
       // don't call the runtime fast execute_on function if we can stay local
-      chpl_ftable_call(fn, args);
+      chpl_ftableCall(fn, args);
     } else {
       var tls = chpl_task_getInfoChapel();
       chpl_task_data_setup(chpl_comm_on_bundle_task_bundle(args), tls);
@@ -117,10 +117,10 @@ module LocaleModelHelpFlat {
     if (node == chpl_nodeID) {
       // don't call the runtime nb execute_on function if we can stay local
       if isSerial {
-        chpl_ftable_call(fn, args);
+        chpl_ftableCall(fn, args);
       } else {
         chpl_task_data_setup(chpl_comm_on_bundle_task_bundle(args), tls);
-        chpl_comm_taskCallFTable(fn, args, args_size, c_sublocid_none);
+        chpl_commTaskFtableCall(fn, args, args_size, c_sublocid_none);
       }
     } else {
       chpl_task_data_setup(chpl_comm_on_bundle_task_bundle(args), tls);

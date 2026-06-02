@@ -174,7 +174,7 @@ void chpl_task_callMain(void (*chpl_main)(void));
 
 
 //
-// Task creation.  chpl_task_addTask adds a new task to the pool of
+// Task creation. 'chpl_rt_task_add_task' adds a new task to the pool of
 // runnable candidate tasks.  It is called by Chapel tasking support
 // functions in the internal modules, which are in turn called by the
 // compiler-emitted code for all task-parallel constructs.  Tasking
@@ -184,7 +184,8 @@ void chpl_task_callMain(void (*chpl_main)(void));
 // Note that the tasking layer must generally copy the arguments
 // as it cannot assume anything about the lifetime of that memory.
 //
-void chpl_task_addTask(
+void chpl_rt_task_add_task(
+         chpl_rt_prginfo*,
          chpl_fn_int_t,      // function to call for task
          chpl_task_bundle_t*,// argument to the function
          size_t,             // length of the argument
@@ -201,12 +202,13 @@ void chpl_task_addTask(
 // Note that the tasking layer must generally copy the arguments
 // as it cannot assume anything about the lifetime of that memory.
 //
-void chpl_task_taskCallFTable(chpl_fn_int_t fid,      // ftable[] entry to call
-                              void* arg,              // function arg
-                              size_t arg_size,        // length of arg
-                              c_sublocid_t subloc,    // desired sublocale
-                              int lineno,             // source line
-                              int32_t filename);      // source filename
+void chpl_rt_task_task_ftable_call(chpl_rt_prginfo* prg,
+                                   chpl_fn_int_t fid,   // ftable[] entry
+                                   void* arg,           // function arg
+                                   size_t arg_size,     // length of arg
+                                   c_sublocid_t subloc, // desired sublocale
+                                   int lineno,          // source line
+                                   int32_t filename);   // source filename
 
 // In some cases, we are not worried about the "function number" (fid)
 

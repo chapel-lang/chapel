@@ -92,20 +92,18 @@ chpl_task_bundle_t* chpl_comm_on_bundle_task_bundle(chpl_comm_on_bundle_t* a)
 // we have function table indices rather than function pointers.
 //
 static inline
-void chpl_comm_taskCallFTable(chpl_fn_int_t fid,      // ftable[] entry to call
-                              chpl_comm_on_bundle_t* arg,// function arg
-                              size_t arg_size,        // length of arg in bytes
-                              c_sublocid_t subloc,    // desired sublocale
-                              int lineno,             // source line
-                              int32_t filename) {     // source filename
+void chpl_rt_comm_task_ftable_call(
+                      chpl_rt_prginfo* prg,
+                      chpl_fn_int_t fid,            // ftable[] entry to call
+                      chpl_comm_on_bundle_t* arg,   // function arg
+                      size_t arg_size,              // length of arg in bytes
+                      c_sublocid_t subloc,          // desired sublocale
+                      int lineno,                   // source line
+                      int32_t filename) {           // source filename
     arg->kind = CHPL_ARG_BUNDLE_KIND_COMM;
-    chpl_task_taskCallFTable(fid,
-                             arg, arg_size,
-                             subloc,
-                             lineno, filename);
+    chpl_rt_task_task_ftable_call(prg, fid, arg, arg_size, subloc,
+                                  lineno, filename);
 }
-
-
 
 // Do a GET in a nonblocking fashion, returning a handle which can be used to
 // wait for the GET to complete. The destination buffer must not be modified

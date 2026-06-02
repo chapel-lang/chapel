@@ -999,14 +999,13 @@ int chpl_task_createCommTask(chpl_fn_p fn,
     return rc;
 }
 
-void chpl_task_addTask(chpl_fn_int_t       fid,
-                       chpl_task_bundle_t *arg,
-                       size_t              arg_size,
-                       c_sublocid_t        full_subloc,
-                       int                 lineno,
-                       int32_t             filename)
-{
-    CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER, chpl_ftable);
+void chpl_rt_task_add_task(chpl_rt_prginfo* prg, chpl_fn_int_t fid,
+                           chpl_task_bundle_t *arg,
+                           size_t arg_size,
+                           c_sublocid_t full_subloc,
+                           int lineno,
+                           int32_t filename) {
+    CHPL_RT_PRGINFO_DECLARE(prg, chpl_ftable);
 
     chpl_fn_p requested_fn = chpl_ftable[fid];
 
@@ -1074,14 +1073,14 @@ static inline void taskCallBody(chpl_fn_int_t fid, chpl_fn_p fp,
     }
 }
 
-void chpl_task_taskCallFTable(chpl_fn_int_t fid,
-                              void *arg, size_t arg_size,
-                              c_sublocid_t subloc,
-                              int lineno, int32_t filename)
-{
+void chpl_rt_task_task_ftable_call(chpl_rt_prginfo* prg, chpl_fn_int_t fid,
+                                   void *arg,
+                                   size_t arg_size,
+                                   c_sublocid_t subloc,
+                                   int lineno,
+                                   int32_t filename) {
     PROFILE_INCR(profile_task_taskCallFTable,1);
-
-    CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER, chpl_ftable);
+    CHPL_RT_PRGINFO_DECLARE(prg, chpl_ftable);
     taskCallBody(fid, chpl_ftable[fid], arg, arg_size, subloc, lineno, filename);
 }
 
