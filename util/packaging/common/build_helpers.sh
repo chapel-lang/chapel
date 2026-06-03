@@ -31,11 +31,11 @@ __docker_image_from_os() {
     "amzn2023")
     docker_image_base="amazonlinux:2023"
     ;;
-    "fc42")
-    docker_image_base="fedora:42"
-    ;;
     "fc43")
     docker_image_base="fedora:43"
+    ;;
+    "fc44")
+    docker_image_base="fedora:44"
     ;;
     "el10")
     docker_image_base="almalinux:10"
@@ -51,6 +51,9 @@ __docker_image_from_os() {
     ;;
     "ubuntu24")
     docker_image_base="ubuntu:24.04"
+    ;;
+    "ubuntu26")
+    docker_image_base="ubuntu:26.04"
     ;;
     *)
     docker_image_base="unknown"
