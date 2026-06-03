@@ -122,6 +122,7 @@ struct DefinitionInfo {
       astr("SharedObject"),
       astr("String"),
       astr("LocaleModelHelpRuntime"),
+      astr("ChapelRuntimeInterface"),
     });
     if (sym_->getModule()->modTag == MOD_INTERNAL) {
       auto modName = sym_->getModule()->name;

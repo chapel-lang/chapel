@@ -74,6 +74,7 @@ typedef struct {
   chpl_arg_bundle_kind_t kind;  // 'kind' indicator must be first in any bundle
   chpl_comm_bundleData_t comm;  // for comm layer wrappers
   chpl_task_bundle_t task_bundle;
+  chpl_rt_prg_id prg_id;
   uint64_t payload[0];
 } chpl_comm_on_bundle_t;
 
@@ -92,20 +93,18 @@ chpl_task_bundle_t* chpl_comm_on_bundle_task_bundle(chpl_comm_on_bundle_t* a)
 // we have function table indices rather than function pointers.
 //
 static inline
-void chpl_comm_taskCallFTable(chpl_fn_int_t fid,      // ftable[] entry to call
-                              chpl_comm_on_bundle_t* arg,// function arg
-                              size_t arg_size,        // length of arg in bytes
-                              c_sublocid_t subloc,    // desired sublocale
-                              int lineno,             // source line
-                              int32_t filename) {     // source filename
+void chpl_rt_comm_task_ftable_call(
+                      chpl_rt_prginfo* prg,
+                      chpl_fn_int_t fid,            // ftable[] entry to call
+                      chpl_comm_on_bundle_t* arg,   // function arg
+                      size_t arg_size,              // length of arg in bytes
+                      c_sublocid_t subloc,          // desired sublocale
+                      int lineno,                   // source line
+                      int32_t filename) {           // source filename
     arg->kind = CHPL_ARG_BUNDLE_KIND_COMM;
-    chpl_task_taskCallFTable(fid,
-                             arg, arg_size,
-                             subloc,
-                             lineno, filename);
+    chpl_rt_task_task_ftable_call(prg, fid, arg, arg_size, subloc,
+                                  lineno, filename);
 }
-
-
 
 // Do a GET in a nonblocking fashion, returning a handle which can be used to
 // wait for the GET to complete. The destination buffer must not be modified
@@ -513,28 +512,37 @@ void chpl_comm_getput_unordered_task_fence(void);
 // notes:
 //   multiple executeOns to the same locale should be handled concurrently
 //
-void chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
-                          chpl_fn_int_t fid,
-                          chpl_comm_on_bundle_t *arg, size_t arg_size,
-                          int ln, int32_t fn);
+void chpl_rt_comm_execute_on(chpl_rt_prginfo* prg, c_nodeid_t node,
+                             c_sublocid_t subloc,
+                             chpl_fn_int_t fid,
+                             chpl_comm_on_bundle_t *arg,
+                             size_t arg_size,
+                             int ln,
+                             int32_t fn);
 
 //
 // non-blocking execute_on
 // arg can be reused immediately after this call completes.
 //
-void chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
-                             chpl_fn_int_t fid,
-                             chpl_comm_on_bundle_t *arg, size_t arg_size,
-                             int ln, int32_t fn);
+void chpl_rt_comm_execute_on_nb(chpl_rt_prginfo* prg, c_nodeid_t node,
+                                c_sublocid_t subloc,
+                                chpl_fn_int_t fid,
+                                chpl_comm_on_bundle_t *arg,
+                                size_t arg_size,
+                                int ln,
+                                int32_t fn);
 
 //
 // fast execute_on (i.e., run in handler)
 // arg can be reused immediately after this call completes.
 //
-void chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
-                               chpl_fn_int_t fid,
-                               chpl_comm_on_bundle_t *arg, size_t arg_size,
-                               int ln, int32_t fn);
+void chpl_rt_comm_execute_on_fast(chpl_rt_prginfo* prg, c_nodeid_t node,
+                                  c_sublocid_t subloc,
+                                  chpl_fn_int_t fid,
+                                  chpl_comm_on_bundle_t *arg,
+                                  size_t arg_size,
+                                  int ln,
+                                  int32_t fn);
 
 //
 // Ensure that the communication layer makes progress if there are any

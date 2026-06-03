@@ -7181,13 +7181,13 @@ void CallExpr::codegenInvokeOnFun() {
   // get(4) is a dummy class type for the argument bundle
 
   if (fn->hasFlag(FLAG_NON_BLOCKING))
-    fname = "chpl_executeOnNB";
+    fname = "chpl_localeModelExecuteOnNb";
 
   else if (fn->hasFlag(FLAG_FAST_ON))
-    fname = "chpl_executeOnFast";
+    fname = "chpl_localeModelExecuteOnFast";
 
   else
-    fname = "chpl_executeOn";
+    fname = "chpl_localeModelExecuteOn";
 
   argBundle  = codegenValue(get(2));
   bundleSize = codegenValue(get(3));

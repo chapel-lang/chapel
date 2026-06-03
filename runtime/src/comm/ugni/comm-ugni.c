@@ -4198,7 +4198,8 @@ void rf_handler(gni_cq_entry_t* ev)
       chpl_comm_on_bundle_t* f_c = (chpl_comm_on_bundle_t*) f;
 
       if (f_c->comm.fast) {
-        chpl_ftable_call(f_c->comm.fid, f);
+        chpl_rt_ftable_call(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                            f_c->comm.fid, f);
         indicate_done2(f_c->comm.caller, (rf_done_t*) f_c->comm.rf_done);
         // doesn't call release_req_buf, because that
         // is handled on the sender side for fast forks
@@ -4313,7 +4314,7 @@ static
 void fork_call_wrapper_blocking(chpl_comm_on_bundle_t* f)
 {
   // Call the on body
-  chpl_ftable_call(f->comm.fid, f);
+  chpl_rt_ftable_call(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER, f->comm.fid, f);
   indicate_done2(f->comm.caller, (rf_done_t*) f->comm.rf_done);
 }
 
@@ -4355,7 +4356,8 @@ void fork_call_wrapper_large(fork_large_call_info_t* lc)
   }
 
   // Call the on body
-  chpl_ftable_call(bundle->comm.fid, bundle);
+  chpl_rt_ftable_call(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER, bundle->comm.fid,
+                      bundle);
 
   // Free the bundle we just allocated.
   chpl_mem_free(bundle, 0, 0);
@@ -6952,81 +6954,52 @@ void do_nic_amo(void* opnd1, void* opnd2, c_nodeid_t locale,
 }
 
 
-void chpl_comm_execute_on(c_nodeid_t locale, c_sublocid_t subloc,
-                          chpl_fn_int_t fid,
-                          chpl_comm_on_bundle_t* arg, size_t arg_size,
-                          int ln, int32_t fn)
-{
+void chpl_rt_comm_execute_on_impl(chpl_rt_prginfo* prg, c_nodeid_t locale,
+                                  c_sublocid_t subloc,
+                                  chpl_fn_int_t fid,
+                                  chpl_comm_on_bundle_t* arg,
+                                  size_t arg_size,
+                                  int ln,
+                                  int32_t fn) {
   DBG_P_LP(DBGF_IFACE|DBGF_RF,
            "IFACE chpl_comm_execute_on(%d:%d, ftable[%d](%p, %zd))",
            (int) locale, (int) subloc, (int) fid, arg, arg_size);
 
   assert(locale != chpl_nodeID); // locale model code should prevent this ...
-
-  // Communications callback support
-  if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn)) {
-      chpl_comm_cb_info_t cb_data =
-        {chpl_comm_cb_event_kind_executeOn, chpl_nodeID, locale,
-         .iu.executeOn={subloc, fid, arg, arg_size, ln, fn}};
-      chpl_comm_do_callbacks (&cb_data);
-  }
-
-  chpl_comm_diags_verbose_executeOn("", locale, ln, fn);
-  chpl_comm_diags_incr(execute_on);
-
   PERFSTATS_INC(fork_call_cnt);
   fork_call_common(locale, subloc, fid, arg, arg_size, false, true);
 }
 
 
-void chpl_comm_execute_on_nb(c_nodeid_t locale, c_sublocid_t subloc,
-                             chpl_fn_int_t fid,
-                             chpl_comm_on_bundle_t* arg, size_t arg_size,
-                             int ln, int32_t fn)
-{
+void chpl_rt_comm_execute_on_nb_impl(chpl_rt_prginfo* prg, c_nodeid_t locale,
+                                     c_sublocid_t subloc,
+                                     chpl_fn_int_t fid,
+                                     chpl_comm_on_bundle_t* arg,
+                                     size_t arg_size,
+                                     int ln,
+                                     int32_t fn) {
   DBG_P_LP(DBGF_IFACE|DBGF_RF,
            "IFACE chpl_comm_execute_on_nb(%d:%d, ftable[%d](%p, %zd))",
            (int) locale, (int) subloc, (int) fid, arg, arg_size);
 
   assert(locale != chpl_nodeID); // locale model code should prevent this ...
-
-  // Communications callback support
-  if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_nb)) {
-      chpl_comm_cb_info_t cb_data =
-        {chpl_comm_cb_event_kind_executeOn_nb, chpl_nodeID, locale,
-         .iu.executeOn={subloc, fid, arg, arg_size, ln, fn}};
-      chpl_comm_do_callbacks (&cb_data);
-  }
-
-  chpl_comm_diags_verbose_executeOn("non-blocking", locale, ln, fn);
-  chpl_comm_diags_incr(execute_on_nb);
-
   PERFSTATS_INC(fork_call_nb_cnt);
   fork_call_common(locale, subloc, fid, arg, arg_size, false, false);
 }
 
 
-void chpl_comm_execute_on_fast(c_nodeid_t locale, c_sublocid_t subloc,
-                               chpl_fn_int_t fid,
-                               chpl_comm_on_bundle_t* arg, size_t arg_size,
-                               int ln, int32_t fn)
-{
+void chpl_rt_comm_execute_on_fast_impl(chpl_rt_prginfo* prg, c_nodeid_t locale,
+                                       c_sublocid_t subloc,
+                                       chpl_fn_int_t fid,
+                                       chpl_comm_on_bundle_t* arg,
+                                       size_t arg_size,
+                                       int ln,
+                                       int32_t fn) {
   DBG_P_LP(DBGF_IFACE|DBGF_RF,
            "IFACE chpl_comm_execute_on_fast(%d:%d, ftable[%d](%p, %zd))",
            (int) locale, (int) subloc, (int) fid, arg, arg_size);
 
   assert(locale != chpl_nodeID); // locale model code should prevent this ...
-
-  // Communications callback support
-  if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_fast)) {
-      chpl_comm_cb_info_t cb_data =
-        {chpl_comm_cb_event_kind_executeOn_fast, chpl_nodeID, locale,
-         .iu.executeOn={subloc, fid, arg, arg_size, ln, fn}};
-      chpl_comm_do_callbacks (&cb_data);
-  }
-
-  chpl_comm_diags_verbose_executeOn("fast", locale, ln, fn);
-  chpl_comm_diags_incr(execute_on_fast);
 
   //
   // Note: the rf_handler() logic assumes that fast implies blocking.

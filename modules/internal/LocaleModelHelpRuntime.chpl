@@ -28,30 +28,7 @@
 // duplication. If necessary, a locale model using this file
 // should feel free to reimplement them in some other way.
 module LocaleModelHelpRuntime {
-  private use ChapelStandard, CTypes;
-
-  // The chpl_localeID_t type is used internally.  It should not be exposed to
-  // the user.  The runtime defines the actual type, as well as a functional
-  // interface for assembling and disassembling chpl_localeID_t values.  This
-  // module then provides the interface the compiler-emitted code uses to do
-  // the same.
-
-  extern record chpl_localeID_t {
-    // We need to know that this is a record type in order to pass it to and
-    // return it from runtime functions properly, but we don't need or want
-    // to see its contents.
-  };
-
-  // runtime stuff about argument bundles
-  extern record chpl_comm_on_bundle_t {
-  };
-
-  extern record chpl_task_bundle_t {
-  };
-
-  extern type chpl_comm_on_bundle_p;
-
-  extern type chpl_task_bundle_p;
+  private use ChapelStandard, CTypes, ChapelRuntimeInterface;
 
   pragma "fn synchronization free"
   extern proc chpl_comm_on_bundle_task_bundle(bundle:chpl_comm_on_bundle_p):chpl_task_bundle_p;
@@ -90,40 +67,8 @@ module LocaleModelHelpRuntime {
 
   //////////////////////////////////////////
   //
-  // support for "on" statements
-  //
-
-  //
-  // runtime interface
-  //
-  pragma "insert line file info"
-  extern proc chpl_comm_execute_on(loc_id: int, subloc_id: int, fn: int,
-                                   args: chpl_comm_on_bundle_p, arg_size: c_size_t);
-  pragma "insert line file info"
-  extern proc chpl_comm_execute_on_fast(loc_id: int, subloc_id: int, fn: int,
-                                        args: chpl_comm_on_bundle_p, args_size: c_size_t);
-  pragma "insert line file info"
-  extern proc chpl_comm_execute_on_nb(loc_id: int, subloc_id: int, fn: int,
-                                      args: chpl_comm_on_bundle_p, args_size: c_size_t);
-  pragma "insert line file info"
-    extern proc chpl_comm_taskCallFTable(fn: int,
-                                         args: chpl_comm_on_bundle_p, args_size: c_size_t,
-                                         subloc_id: int): void;
-  extern proc chpl_ftable_call(fn: int, args: chpl_comm_on_bundle_p): void;
-  extern proc chpl_ftable_call(fn: int, args: chpl_task_bundle_p): void;
-
-  //////////////////////////////////////////
-  //
   // support for tasking statements: begin, cobegin, coforall
   //
-
-  //
-  // runtime interface
-  //
-  pragma "insert line file info"
-  extern proc chpl_task_addTask(fn: int,
-                                args: chpl_task_bundle_p, args_size: c_size_t,
-                                subloc_id: int);
 
   //
   // Add a task for a begin statement.
@@ -138,10 +83,10 @@ module LocaleModelHelpRuntime {
     var tls = chpl_task_getInfoChapel();
     var isSerial = chpl_task_data_getSerial(tls);
     if isSerial {
-      chpl_ftable_call(fn, args);
+      chpl_ftableCall(fn, args);
     } else {
       chpl_task_data_setup(args, tls);
-      chpl_task_addTask(fn, args, args_size, subloc_id);
+      chpl_addTask(fn, args, args_size, subloc_id);
     }
   }
 
@@ -162,10 +107,10 @@ module LocaleModelHelpRuntime {
       chpl_task_data_setNextCoStmtSerial(tls, false);
     }
     if isSerial {
-      chpl_ftable_call(fn, args);
+      chpl_ftableCall(fn, args);
     } else {
       chpl_task_data_setup(args, tls);
-      chpl_task_addTask(fn, args, args_size, subloc_id);
+      chpl_addTask(fn, args, args_size, subloc_id);
      }
   }
 

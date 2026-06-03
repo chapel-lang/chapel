@@ -64,9 +64,9 @@ START_INTERNAL_MODULE(ChapelLocale)
   INTERNAL_TYPE(ChapelLocale, Locale, _locale, "record _locale {}")
 END_INTERNAL_MODULE(ChapelLocale)
 
-START_INTERNAL_MODULE(LocaleModelHelpRuntime)
-  INTERNAL_TYPE(LocaleModelHelpRuntime, LocaleId, chpl_localeID_t, "record chpl_localeID_t {}")
-END_INTERNAL_MODULE(LocaleModelHelpRuntime)
+START_INTERNAL_MODULE(ChapelRuntimeInterface)
+  INTERNAL_TYPE(ChapelRuntimeInterface, LocaleId, chpl_localeID_t, "record chpl_localeID_t {}")
+END_INTERNAL_MODULE(ChapelRuntimeInterface)
 
 START_INTERNAL_MODULE(OwnedObject)
   INTERNAL_TYPE(OwnedObject, Owned, _owned, "record _owned {}")

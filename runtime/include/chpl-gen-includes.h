@@ -44,12 +44,11 @@ extern "C" {
 // one argument.
 //
 static inline
-void chpl_ftable_call(chpl_fn_int_t fid, void* bundle)
-{
-  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER, chpl_ftable);
+void chpl_rt_ftable_call(chpl_rt_prginfo* prg, chpl_fn_int_t fid,
+                         void* bundle) {
+  CHPL_RT_PRGINFO_DECLARE(prg, chpl_ftable);
   (*chpl_ftable[fid])(bundle);
 }
-
 
 // used for converting between the Chapel idea of a locale ID: chpl_localeID_t
 // and the runtime idea of a locale ID: c_localeid_t.
